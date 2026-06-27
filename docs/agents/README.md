@@ -14,6 +14,7 @@ examples over simplified prose.
 6. `docs/agents/cli-parity-release-gate.md`
 7. `docs/agents/local-llm-backends.md`
 8. `docs/agents/publication-rules.md`
+9. `docs/agents/legacy-codename-rename-plan.md`
 
 ## Working Rule
 

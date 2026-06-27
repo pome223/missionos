@@ -3,6 +3,7 @@ name = "missionos-monorepo"
 version = "0.1.0"
 description = "MissionOS monorepo with CLI, Gateway, and opt-in PX4/Gazebo SITL backend."
 requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
 dependencies = [
   "google-adk>=0.1.0",
   "python-dotenv>=1.0.0",

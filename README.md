@@ -12,6 +12,23 @@ The point is safe success, not honest failure. Honesty and evidence are the inst
 
 Most agent demos stop once something moves. Real missions do not. A command gets acknowledged, yet nothing happens. Wind shifts the plan. Recovery is proposed and approved, but observed progress never arrives. MissionOS is built for that world.
 
+## Disclaimer
+
+MissionOS is reference software for AI-assisted mission-control research and
+simulation. It is not a certified autopilot, flight controller, safety system,
+legal compliance system, or substitute for a qualified human operator.
+
+Do not use MissionOS to operate drones, robots, vehicles, or other physical
+systems unless you have independent safety controls, appropriate supervision,
+applicable permissions, and a test environment designed for that use. Live SITL,
+PX4/Gazebo, MAVLink, and hardware-related paths are opt-in surfaces and must be
+treated as experimental.
+
+MissionOS separates AI proposals, human approval, constrained dispatch,
+runtime observations, verifier evidence, and completion claims. A proposal,
+approval, ACK, simulator observation, or map display is not proof of safe
+physical execution or delivery completion.
+
 ## Current Status
 
 MissionOS is currently a publication candidate extracted from a private
@@ -276,6 +293,7 @@ Start with the concepts if you want the reasoning. Jump to the packages if you w
 - [docs/agents/e2e-verification.md](docs/agents/e2e-verification.md)
 - [docs/agents/cli-parity-release-gate.md](docs/agents/cli-parity-release-gate.md)
 - [docs/agents/publication-rules.md](docs/agents/publication-rules.md)
+- [docs/agents/legacy-codename-rename-plan.md](docs/agents/legacy-codename-rename-plan.md)
 
 ## Documentation Layers
 
@@ -290,4 +308,5 @@ MAVLink upload, or live flight must remain opt-in and evidence-bounded.
 
 ## License
 
-Apache-2.0
+MissionOS is licensed under the Apache License, Version 2.0. See
+[LICENSE](LICENSE).
