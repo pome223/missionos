@@ -1,0 +1,25 @@
+{
+  "completed_pose_xy_m": [
+    4.979365091822441,
+    4.944281632200323
+  ],
+  "completed_pose_z_m": -0.01435477994526721,
+  "horizontal_progress_m": 7.017121744431501,
+  "max_pose_z_m": 2.5403897878069395,
+  "min_pose_z_m": -0.01435477994526721,
+  "phase_counts": {
+    "climb": 5,
+    "completed": 1,
+    "landing": 5,
+    "pickup": 1,
+    "route": 1
+  },
+  "pickup_pose_xy_m": [
+    -6.627123364968239e-19,
+    1.3574478903935325e-18
+  ],
+  "route_pose_xy_m": [
+    5.013798338140707,
+    4.933008612589457
+  ]
+}

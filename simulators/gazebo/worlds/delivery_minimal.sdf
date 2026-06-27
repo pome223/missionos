@@ -1,0 +1,90 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <world name="delivery_minimal">
+    <gravity>0 0 -9.8</gravity>
+    <scene>
+      <ambient>0.4 0.4 0.4 1</ambient>
+      <background>0.7 0.8 1.0 1</background>
+    </scene>
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>80 80</size>
+            </plane>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>80 80</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.45 0.48 0.45 1</ambient>
+            <diffuse>0.45 0.48 0.45 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="pickup_pad_a">
+      <static>true</static>
+      <pose>0 0 0.025 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>3 3 0.05</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.1 0.5 0.9 1</ambient>
+            <diffuse>0.1 0.5 0.9 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="dropoff_pad_b">
+      <static>true</static>
+      <pose>25 0 0.025 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>3 3 0.05</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.1 0.8 0.25 1</ambient>
+            <diffuse>0.1 0.8 0.25 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="safe_corridor_pickup_to_dropoff">
+      <static>true</static>
+      <pose>12.5 0 0.01 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>25 2 0.02</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.9 0.9 0.15 0.35</ambient>
+            <diffuse>0.9 0.9 0.15 0.35</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+  </world>
+</sdf>

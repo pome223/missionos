@@ -1,0 +1,12 @@
+{
+  "vehicle_id": "missionos_fixture_quadrotor",
+  "profile_version": "2026-06-11.v1",
+  "max_payload_kg": 3.5,
+  "max_range_m": 12000.0,
+  "max_takeoff_altitude_m": 3200.0,
+  "max_wind_speed_mps": 10.0,
+  "nominal_battery_wh": 420.0,
+  "reserve_percent": 25.0,
+  "cruise_energy_wh_per_km": 22.0,
+  "climb_energy_wh_per_100m": 4.0
+}

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mission OS PX4/Gazebo Run Evidence Report</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f5ef;
+      --panel: #ffffff;
+      --ink: #232522;
+      --muted: #686b63;
+      --line: #dad7cd;
+      --accent: #23645a;
+      --warn: #8a4f12;
+      --code: #f1efe6;
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main { max-width: 1120px; margin: 0 auto; padding: 40px 24px 56px; }
+    header { margin-bottom: 24px; }
+    h1 { font-size: 34px; line-height: 1.15; margin: 0 0 10px; letter-spacing: 0; }
+    h2 { font-size: 20px; margin: 0 0 14px; }
+    h3 { font-size: 15px; margin: 18px 0 8px; }
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 20px;
+      margin: 16px 0;
+    }
+    code {
+      background: var(--code);
+      border-radius: 5px;
+      padding: 2px 5px;
+      font-size: 13px;
+      word-break: break-word;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-top: 1px solid var(--line); text-align: left; padding: 8px; vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; }
+    ul { padding-left: 20px; margin: 8px 0 0; }
+    .badge {
+      display: inline-block;
+      border: 1px solid var(--accent);
+      border-radius: 999px;
+      color: var(--accent);
+      padding: 3px 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 12px;
+    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+    .grid > div {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 12px;
+      background: #fcfbf7;
+    }
+    .label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+    .muted { color: var(--muted); }
+    .warning { color: var(--warn); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <span class="badge">completed</span>
+      <h1>Mission OS PX4/Gazebo Run Evidence Report</h1>
+      <p class="muted">Redacted static review report generated at <code>2026-01-01T12:00:00+00:00</code>.</p>
+      <p class="warning">Public-safe review surface only. This report excludes raw logs, sqlite state, full telemetry, reproduction steps, runtime entrypoint names, transport details, low-level command details, and output paths.</p>
+    </header>
+
+    <section>
+      <h2>Why Completed Or Blocked</h2>
+      <ul><li><code>all_required_phases_observed</code></li><li><code>phase_gates_passed_or_recorded</code></li><li><code>replay_timeline_available</code></li><li><code>safety_boundary_preserved</code></li></ul>
+    </section>
+
+    <section>
+      <h2>Evidence Chain</h2>
+      <ul><li><code>px4_gazebo_delivery_mission_runner_v1_result:px4_gazebo_delivery_mission_runner_v1_33423ea50c6c</code></li><li><code>px4_gazebo_mission_run_replay_index:px4_gazebo_mission_run_replay_index_e87b77084c9a</code></li><li><code>px4_gazebo_mission_safety_boundary_summary:px4_gazebo_mission_safety_boundary_summary_1e2495dc92e9</code></li><li><code>px4_gazebo_fleet_memory_provenance_summary:px4_gazebo_fleet_memory_provenance_summary_43dd50b418e0</code></li></ul>
+    </section>
+
+    <section>
+      <h2>Safety Boundary</h2>
+      <div class="grid"><div><span class="label">hardware_target_allowed</span><strong>false</strong></div><div><span class="label">physical_execution_invoked</span><strong>false</strong></div><div><span class="label">px4_mission_upload_allowed</span><strong>false</strong></div><div><span class="label">unbounded_setpoint_stream_allowed</span><strong>false</strong></div><div><span class="label">arbitrary_gazebo_mutation_allowed</span><strong>false</strong></div><div><span class="label">approval_free_dispatch_allowed</span><strong>false</strong></div><div><span class="label">approval_free_stronger_execution_allowed</span><strong>false</strong></div><div><span class="label">memory_direct_command_authority_allowed</span><strong>false</strong></div><div><span class="label">memory_grants_dispatch_authority</span><strong>false</strong></div></div>
+      <h3>Statements</h3>
+      <ul><li><code>hardware_target_disabled</code></li><li><code>physical_execution_disabled</code></li><li><code>mission_upload_disabled</code></li><li><code>unbounded_setpoint_stream_disabled</code></li><li><code>arbitrary_gazebo_mutation_disabled</code></li><li><code>approval_free_dispatch_disabled</code></li><li><code>approval_free_stronger_execution_disabled</code></li><li><code>memory_not_command_authority</code></li></ul>
+    </section>
+
+    <section>
+      <h2>Memory Authority Boundary</h2>
+      <ul><li><code>memory_is_evidence_not_authority</code></li><li><code>memory_used_for_planning_only</code></li><li><code>memory_cannot_dispatch</code></li><li><code>memory_cannot_bypass_approval</code></li></ul>
+    </section>
+
+
+        <section>
+          <h2>Fleet Memory Provenance</h2>
+          <div class="grid">
+            <div><span class="label">Promotion</span><strong>promoted</strong></div>
+            <div><span class="label">Use Scope</span><strong>planning_gates_risk_scoring_only</strong></div>
+            <div><span class="label">Planning Only</span><strong>true</strong></div>
+            <div><span class="label">Dispatch Authority</span><strong>false</strong></div>
+          </div>
+          <h3>Promoted Memory Refs</h3>
+          <ul><li><code>px4_gazebo_fleet_memory_snapshot:px4_gazebo_fleet_memory_snapshot_5e5d17230c03</code></li></ul>
+          <h3>Negative Cases</h3>
+          <ul><li><code>stale_ignored</code></li><li><code>contradictory_blocked</code></li><li><code>outlier_not_adopted</code></li><li><code>unsafe_rejected</code></li></ul>
+        </section>
+
+
+    <section>
+      <h2>Replay Timeline</h2>
+      <table><thead><tr><th>#</th><th>t+sec</th><th>phase</th><th>event</th><th>artifact</th></tr></thead><tbody><tr><td>0</td><td>0.00</td><td>preflight</td><td>phase_observed</td><td><code>px4_gazebo_delivery_mission_phase_evidence:px4_gazebo_delivery_mission_phase_evidence_863c277f44e6</code></td></tr>
+<tr><td>1</td><td>1.00</td><td>takeoff</td><td>phase_observed</td><td><code>px4_gazebo_delivery_mission_phase_evidence:px4_gazebo_delivery_mission_phase_evidence_963404505a1f</code></td></tr>
+<tr><td>2</td><td>2.00</td><td>waypoint_route</td><td>phase_observed</td><td><code>px4_gazebo_delivery_mission_phase_evidence:px4_gazebo_delivery_mission_phase_evidence_6e0494e9e505</code></td></tr>
+<tr><td>3</td><td>3.00</td><td>pickup_approach</td><td>phase_observed</td><td><code>px4_gazebo_delivery_mission_phase_evidence:px4_gazebo_delivery_mission_phase_evidence_2df9fa32769a</code></td></tr>
+<tr><td>4</td><td>4.00</td><td>pickup_verified</td><td>phase_observed</td><td><code>px4_gazebo_delivery_mission_phase_evidence:px4_gazebo_delivery_mission_phase_evidence_e39c91165395</code></td></tr>
+<tr><td>5</td><td>5.00</td><td>delivery_route</td><td>phase_observed</td><td><code>px4_gazebo_delivery_mission_phase_evidence:px4_gazebo_delivery_mission_phase_evidence_31b59e845829</code></td></tr>
+<tr><td>6</td><td>6.00</td><td>dropoff_approach</td><td>phase_observed</td><td><code>px4_gazebo_delivery_mission_phase_evidence:px4_gazebo_delivery_mission_phase_evidence_fca388121378</code></td></tr>
+<tr><td>7</td><td>7.00</td><td>dropoff_verified</td><td>phase_observed</td><td><code>px4_gazebo_delivery_mission_phase_evidence:px4_gazebo_delivery_mission_phase_evidence_c46fbb2ba23a</code></td></tr>
+<tr><td>8</td><td>8.00</td><td>return_land</td><td>phase_observed</td><td><code>px4_gazebo_delivery_mission_phase_evidence:px4_gazebo_delivery_mission_phase_evidence_4ac27c9e120c</code></td></tr>
+<tr><td>9</td><td>9.00</td><td>completed</td><td>phase_observed</td><td><code>px4_gazebo_delivery_mission_phase_evidence:px4_gazebo_delivery_mission_phase_evidence_06fb70ba24d1</code></td></tr>
+<tr><td>10</td><td>10.00</td><td>completed</td><td>mission_completed</td><td><code>px4_gazebo_delivery_mission_runner_v1_result:px4_gazebo_delivery_mission_runner_v1_33423ea50c6c</code></td></tr></tbody></table>
+    </section>
+
+    <section>
+      <h2>Reviewer Notes</h2>
+      <ul><li><code>redacted_report_only</code></li><li><code>no_raw_logs_or_full_telemetry</code></li><li><code>no_reproduction_steps</code></li></ul>
+    </section>
+  </main>
+</body>
+</html>

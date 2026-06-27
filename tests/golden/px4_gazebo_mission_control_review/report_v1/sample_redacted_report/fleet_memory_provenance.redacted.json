@@ -1,0 +1,42 @@
+{
+  "feedback_candidate_ref": "px4_gazebo_fleet_feedback_candidate:px4_gazebo_fleet_feedback_candidate_9e2b636acae5",
+  "fleet_learning_corpus_ref": "px4_gazebo_fleet_learning_corpus:px4_gazebo_fleet_learning_corpus_ec6979594a3c",
+  "fleet_learning_replay_ref": "px4_gazebo_fleet_learning_replay:px4_gazebo_fleet_learning_replay_ceccd2055bac",
+  "fleet_memory_snapshot_ref": "px4_gazebo_fleet_memory_snapshot:px4_gazebo_fleet_memory_snapshot_5e5d17230c03",
+  "followup_feedback_ref": "px4_gazebo_followup_mission_feedback:px4_gazebo_followup_mission_feedback_d387f24f7533",
+  "full_telemetry_included": false,
+  "generated_at": "2026-01-01T12:00:00Z",
+  "lead_observation_ref": "px4_gazebo_lead_drone_observation:px4_gazebo_lead_drone_observation_6c7068830d01",
+  "low_level_command_details_included": false,
+  "memory_decision_trace": [
+    "px4_gazebo_fleet_memory_snapshot:px4_gazebo_fleet_memory_snapshot_5e5d17230c03",
+    "px4_gazebo_fleet_feedback_promotion_gate:px4_gazebo_fleet_feedback_promotion_gate_ae8ca7069ed5",
+    "memory_used_for_planning_not_dispatch"
+  ],
+  "memory_direct_command_authority_allowed": false,
+  "memory_grants_dispatch_authority": false,
+  "memory_informed_plan_ref": "px4_gazebo_memory_informed_mission_plan:px4_gazebo_memory_informed_mission_plan_c30b0e95b1b2",
+  "memory_use_scope": "planning_gates_risk_scoring_only",
+  "memory_used_for_planning_only": true,
+  "negative_case_labels": [
+    "stale_ignored",
+    "contradictory_blocked",
+    "outlier_not_adopted",
+    "unsafe_rejected"
+  ],
+  "output_paths_included": false,
+  "part2_finalization_ref": "px4_gazebo_fleet_memory_part2_finalization:px4_gazebo_fleet_memory_part2_finalization_9c4c29cc2660",
+  "promoted_memory_refs": [
+    "px4_gazebo_fleet_memory_snapshot:px4_gazebo_fleet_memory_snapshot_5e5d17230c03"
+  ],
+  "promotion_gate_ref": "px4_gazebo_fleet_feedback_promotion_gate:px4_gazebo_fleet_feedback_promotion_gate_ae8ca7069ed5",
+  "promotion_status": "promoted",
+  "raw_logs_included": false,
+  "redacted_for_review": true,
+  "reproduction_steps_included": false,
+  "runtime_script_names_included": false,
+  "schema_version": "px4_gazebo_fleet_memory_provenance_summary.v1",
+  "sqlite_included": false,
+  "summary_id": "px4_gazebo_fleet_memory_provenance_summary_43dd50b418e0",
+  "transport_details_included": false
+}

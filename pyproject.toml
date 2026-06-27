@@ -1,0 +1,56 @@
+[project]
+name = "missionos-monorepo"
+version = "0.1.0"
+description = "MissionOS monorepo with CLI, Gateway, and opt-in PX4/Gazebo SITL backend."
+requires-python = ">=3.11"
+dependencies = [
+  "google-adk>=0.1.0",
+  "python-dotenv>=1.0.0",
+  "pydantic>=2.0.0",
+  "pydantic-settings>=2.0.0",
+  "fastapi>=0.110.0",
+  "uvicorn[standard]>=0.29.0",
+  "websockets>=12.0",
+  "httpx>=0.27.0",
+  "ddgs>=0.1.0",
+  "rich>=13.0.0",
+  "click>=8.0.0",
+  "prompt_toolkit>=3.0.43",
+  "numpy>=1.24.0",
+  "pyyaml>=6.0.0",
+  "croniter>=1.3.0",
+  "mcp>=1.0.0",
+]
+
+[project.optional-dependencies]
+hardware = [
+  "pymavlink>=2.4.40",
+  "pyserial>=3.5",
+]
+local-llm = [
+  "google-adk[extensions]>=0.1.0",
+]
+dev = [
+  "pytest>=8.0.0",
+  "pytest-asyncio>=0.23.0",
+  "ruff>=0.4.0",
+  "black>=24.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["src*", "scripts*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "contract: schema and boundary contract tests",
+  "e2e: runtime smoke tests against real process or network boundaries",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

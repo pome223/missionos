@@ -1,0 +1,109 @@
+{
+  "entries": [
+    {
+      "artifact_ref": "px4_gazebo_delivery_mission_phase_evidence:px4_gazebo_delivery_mission_phase_evidence_863c277f44e6",
+      "event_type": "phase_observed",
+      "phase": "preflight",
+      "sequence": 0,
+      "t_relative_seconds": 0.0
+    },
+    {
+      "artifact_ref": "px4_gazebo_delivery_mission_phase_evidence:px4_gazebo_delivery_mission_phase_evidence_963404505a1f",
+      "event_type": "phase_observed",
+      "phase": "takeoff",
+      "sequence": 1,
+      "t_relative_seconds": 1.0
+    },
+    {
+      "artifact_ref": "px4_gazebo_delivery_mission_phase_evidence:px4_gazebo_delivery_mission_phase_evidence_6e0494e9e505",
+      "event_type": "phase_observed",
+      "phase": "waypoint_route",
+      "sequence": 2,
+      "t_relative_seconds": 2.0
+    },
+    {
+      "artifact_ref": "px4_gazebo_delivery_mission_phase_evidence:px4_gazebo_delivery_mission_phase_evidence_2df9fa32769a",
+      "event_type": "phase_observed",
+      "phase": "pickup_approach",
+      "sequence": 3,
+      "t_relative_seconds": 3.0
+    },
+    {
+      "artifact_ref": "px4_gazebo_delivery_mission_phase_evidence:px4_gazebo_delivery_mission_phase_evidence_e39c91165395",
+      "event_type": "phase_observed",
+      "phase": "pickup_verified",
+      "sequence": 4,
+      "t_relative_seconds": 4.0
+    },
+    {
+      "artifact_ref": "px4_gazebo_delivery_mission_phase_evidence:px4_gazebo_delivery_mission_phase_evidence_31b59e845829",
+      "event_type": "phase_observed",
+      "phase": "delivery_route",
+      "sequence": 5,
+      "t_relative_seconds": 5.0
+    },
+    {
+      "artifact_ref": "px4_gazebo_delivery_mission_phase_evidence:px4_gazebo_delivery_mission_phase_evidence_fca388121378",
+      "event_type": "phase_observed",
+      "phase": "dropoff_approach",
+      "sequence": 6,
+      "t_relative_seconds": 6.0
+    },
+    {
+      "artifact_ref": "px4_gazebo_delivery_mission_phase_evidence:px4_gazebo_delivery_mission_phase_evidence_c46fbb2ba23a",
+      "event_type": "phase_observed",
+      "phase": "dropoff_verified",
+      "sequence": 7,
+      "t_relative_seconds": 7.0
+    },
+    {
+      "artifact_ref": "px4_gazebo_delivery_mission_phase_evidence:px4_gazebo_delivery_mission_phase_evidence_4ac27c9e120c",
+      "event_type": "phase_observed",
+      "phase": "return_land",
+      "sequence": 8,
+      "t_relative_seconds": 8.0
+    },
+    {
+      "artifact_ref": "px4_gazebo_delivery_mission_phase_evidence:px4_gazebo_delivery_mission_phase_evidence_06fb70ba24d1",
+      "event_type": "phase_observed",
+      "phase": "completed",
+      "sequence": 9,
+      "t_relative_seconds": 9.0
+    },
+    {
+      "artifact_ref": "px4_gazebo_delivery_mission_runner_v1_result:px4_gazebo_delivery_mission_runner_v1_33423ea50c6c",
+      "event_type": "mission_completed",
+      "phase": "completed",
+      "sequence": 10,
+      "t_relative_seconds": 10.0
+    }
+  ],
+  "event_count": 11,
+  "final_status": "completed",
+  "full_telemetry_included": false,
+  "generated_at": "2026-01-01T12:00:00Z",
+  "index_id": "px4_gazebo_mission_run_replay_index_e87b77084c9a",
+  "low_level_command_details_included": false,
+  "output_paths_included": false,
+  "phase_sequence": [
+    "preflight",
+    "takeoff",
+    "waypoint_route",
+    "pickup_approach",
+    "pickup_verified",
+    "delivery_route",
+    "dropoff_approach",
+    "dropoff_verified",
+    "return_land",
+    "completed"
+  ],
+  "raw_logs_included": false,
+  "redacted_for_review": true,
+  "replay_timeline_ref": "px4_gazebo_delivery_mission_replay_timeline:px4_gazebo_delivery_mission_replay_timeline_a4ec574f79f9",
+  "reproduction_steps_included": false,
+  "runner_result_ref": "px4_gazebo_delivery_mission_runner_v1_result:px4_gazebo_delivery_mission_runner_v1_33423ea50c6c",
+  "runtime_script_names_included": false,
+  "schema_version": "px4_gazebo_mission_run_replay_index.v1",
+  "sqlite_included": false,
+  "transport_details_included": false
+}

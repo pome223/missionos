@@ -1,0 +1,60 @@
+{
+  "exact": {
+    "actual_px4_gazebo_horizontal_smoke_observed": true,
+    "blocked_reasons": [],
+    "bounded_setpoint_stream_allowed": true,
+    "completion_gate_schema_version": "px4_gazebo_route_delivery_completion_gate.v1",
+    "deviation_samples": [],
+    "dispatch_schema_version": "px4_gazebo_route_command_dispatch_result.v2",
+    "dropoff_region_reached": true,
+    "final_status": "completed",
+    "hardware_target_allowed": false,
+    "offboard_mode_switch_ack_command_id": 176,
+    "offboard_mode_switch_ack_observed": true,
+    "offboard_mode_switch_ack_required": true,
+    "offboard_mode_switch_ack_result_code": 0,
+    "physical_execution_invoked": false,
+    "pose_deviation_aborted": false,
+    "pose_deviation_gate_active": true,
+    "progress_schema_version": "px4_gazebo_route_progress_evidence.v2",
+    "px4_mission_upload_allowed": false,
+    "route_allowlist_schema_version": "px4_gazebo_route_command_allowlist.v1",
+    "route_geofence_violation": false,
+    "route_plan_schema_version": "px4_gazebo_pickup_dropoff_route_plan.v2",
+    "runner_schema_version": "px4_gazebo_route_delivery_runner_result.v1",
+    "task_status": "completed",
+    "unbounded_setpoint_stream_allowed": false
+  },
+  "expected_numeric": {
+    "completed_pose_xy_m": [
+      4.979365091822441,
+      4.944281632200323
+    ],
+    "completed_pose_z_m": -0.01435477994526721,
+    "horizontal_progress_m": 7.017121744431501,
+    "pose_summary_completed_pose_xy_m": [
+      4.979365091822441,
+      4.944281632200323
+    ],
+    "pose_summary_completed_pose_z_m": -0.01435477994526721,
+    "pose_summary_horizontal_progress_m": 7.017121744431501,
+    "pose_summary_route_pose_xy_m": [
+      5.013798338140707,
+      4.933008612589457
+    ],
+    "route_pose_xy_m": [
+      5.013798338140707,
+      4.933008612589457
+    ],
+    "setpoint_frames_sent": 528,
+    "setpoint_stream_duration_seconds": 25.0
+  },
+  "tolerances": {
+    "completed_pose_xy_m_abs": 0.5,
+    "completed_pose_z_m_abs": 0.2,
+    "horizontal_progress_m_pct": 0.1,
+    "route_pose_xy_m_abs": 0.5,
+    "setpoint_frames_sent_pct": 0.1,
+    "setpoint_stream_duration_seconds_pct": 0.1
+  }
+}

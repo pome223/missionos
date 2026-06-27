@@ -1,0 +1,30 @@
+[project]
+name = "missionos-cli"
+version = "0.1.0"
+description = "MissionOS operator CLI — a self-contained HTTP client for the MissionOS Gateway."
+license = "MIT"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "click>=8.0.0",
+    "httpx>=0.27.0",
+    "pyyaml>=6.0.0",
+    "rich>=13.0.0",
+    "prompt_toolkit>=3.0.43",
+]
+
+[project.scripts]
+missionos = "missionos_cli.cli:missionos"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.4.0",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

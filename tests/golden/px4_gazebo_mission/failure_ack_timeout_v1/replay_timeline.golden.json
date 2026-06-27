@@ -1,0 +1,34 @@
+{
+  "event_count": 3,
+  "events": [
+    {
+      "artifact_ref_present": true,
+      "artifact_ref_shape": "px4_gazebo_delivery_mission_phase_evidence:<sanitized>",
+      "artifact_schema": "px4_gazebo_delivery_mission_phase_evidence",
+      "event_type": "phase_observed",
+      "phase": "preflight",
+      "sequence": 0,
+      "t_relative_seconds": 0.0
+    },
+    {
+      "artifact_ref_present": true,
+      "artifact_ref_shape": "px4_gazebo_delivery_mission_phase_evidence:<sanitized>",
+      "artifact_schema": "px4_gazebo_delivery_mission_phase_evidence",
+      "event_type": "phase_blocked",
+      "phase": "takeoff",
+      "sequence": 1,
+      "t_relative_seconds": 1.0
+    },
+    {
+      "artifact_ref_present": true,
+      "artifact_ref_shape": "px4_gazebo_delivery_mission_runner_v1_result:<sanitized>",
+      "artifact_schema": "px4_gazebo_delivery_mission_runner_v1_result",
+      "event_type": "mission_blocked",
+      "phase": "preflight",
+      "sequence": 2,
+      "t_relative_seconds": 2.0
+    }
+  ],
+  "final_status": "blocked",
+  "schema_version": "px4_gazebo_delivery_mission_replay_timeline.v1"
+}

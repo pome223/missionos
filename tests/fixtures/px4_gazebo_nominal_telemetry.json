@@ -1,0 +1,26 @@
+{
+  "sample_id": "px4_gazebo_nominal_hover_telemetry",
+  "source": {
+    "source_kind": "px4_gazebo_sitl_log",
+    "source_id": "px4-gazebo-sitl-fixture",
+    "vehicle_id": "iris-001"
+  },
+  "captured_at": "2026-04-30T16:00:00+00:00",
+  "telemetry": {
+    "armed": false,
+    "battery_remaining_pct": 82.5,
+    "battery_voltage_v": 16.1,
+    "failsafe": false,
+    "global_position_valid": true,
+    "gps_fix_type": 3,
+    "heading_deg": 90.0,
+    "local_position_valid": true,
+    "nav_state": "hold",
+    "position_ned_x_m": 0.0,
+    "position_ned_y_m": 0.0,
+    "position_ned_z_m": -1.2,
+    "velocity_ned_x_mps": 0.0,
+    "velocity_ned_y_mps": 0.0,
+    "velocity_ned_z_mps": 0.0
+  }
+}

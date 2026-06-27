@@ -1,0 +1,93 @@
+[
+  {
+    "id": "battery_low_return_home_recovered",
+    "kind": "battery_low_recovery",
+    "action": "return_to_home_recommended",
+    "fault_category": "battery_low",
+    "facts": {
+      "safe_landing_event_source": "logic_only_stub",
+      "safe_landing_observed": true,
+      "mission_terminated_safely": true,
+      "vehicle_disarmed_or_landed": true
+    }
+  },
+  {
+    "id": "battery_reserve_abort_aborted_safely",
+    "kind": "battery_low_recovery",
+    "action": "abort_recommended",
+    "fault_category": "battery_reserve_violation",
+    "facts": {
+      "safe_landing_event_source": "logic_only_stub",
+      "safe_landing_observed": true,
+      "mission_terminated_safely": true,
+      "vehicle_disarmed_or_landed": true
+    }
+  },
+  {
+    "id": "payload_retry_recovered",
+    "kind": "payload_retry_recovery",
+    "action": "operator_escalation_required",
+    "fault_category": "payload_release_not_observed",
+    "facts": {
+      "payload_release_event_source": "logic_only_stub",
+      "position_in_zone_observed": true,
+      "altitude_within_tolerance_observed": true,
+      "release_within_time_window_observed": true
+    }
+  },
+  {
+    "id": "payload_retry_failed_missing_time_window",
+    "kind": "payload_retry_recovery",
+    "action": "operator_escalation_required",
+    "fault_category": "payload_release_not_observed",
+    "facts": {
+      "payload_release_event_source": "logic_only_stub",
+      "position_in_zone_observed": true,
+      "altitude_within_tolerance_observed": true,
+      "release_within_time_window_observed": false
+    }
+  },
+  {
+    "id": "telemetry_stale_hold_recovered",
+    "kind": "telemetry_stale_hold",
+    "action": "hold_recommended",
+    "fault_category": "telemetry_stale",
+    "facts": {
+      "hold_event_source": "logic_only_stub",
+      "hold_state_observed": true,
+      "telemetry_restored": true,
+      "operator_escalation_required": false
+    }
+  },
+  {
+    "id": "telemetry_missing_hold_escalated",
+    "kind": "operator_escalation",
+    "action": "hold_recommended",
+    "fault_category": "telemetry_missing",
+    "facts": {
+      "hold_event_source": "logic_only_stub",
+      "hold_state_observed": true,
+      "telemetry_restored": false,
+      "operator_escalation_required": true
+    }
+  },
+  {
+    "id": "vehicle_health_unsafe_blocks_run",
+    "kind": "blocked_failed_path",
+    "action": "abort_recommended",
+    "fault_category": "vehicle_health_unsafe",
+    "facts": {}
+  },
+  {
+    "id": "safe_termination_incomplete_blocks_success",
+    "kind": "observed_facts_incomplete",
+    "action": "return_to_home_recommended",
+    "fault_category": "battery_low",
+    "facts": {
+      "safe_landing_event_source": "logic_only_stub",
+      "safe_landing_observed": true,
+      "mission_terminated_safely": true,
+      "vehicle_disarmed_or_landed": false
+    }
+  }
+]

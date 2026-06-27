@@ -1,0 +1,53 @@
+schema_version: missionos_llm_response_planner_parameter_bounds.v1
+allowed_response_kinds:
+  - operator_gated_wind_replan_with_compensation
+  - operator_gated_wind_compensated_reroute
+  - operator_gated_continue_with_wind_warning
+  - operator_gated_hold_and_reobserve
+  - operator_gated_abort_and_replan
+  - operator_gated_payload_recovery_land
+parameter_bounds:
+  direction_deg:
+    min: 0.0
+    max: 360.0
+    exclusive_max: true
+  magnitude_m:
+    min: 0.0
+    max: 2.0
+  preemptive_offset_m:
+    min: 0.0
+    max: 0.75
+  feed_forward_mps:
+    min: 0.0
+    max: 1.0
+  cruise_speed_mps:
+    min: 0.5
+    max: 5.0
+  payload_mass_kg:
+    min: 0.0
+    max: 2.0
+response_kind_required_parameters:
+  operator_gated_wind_replan_with_compensation:
+    any_of:
+      - [direction_deg, feed_forward_mps]
+      - [direction_deg, preemptive_offset_m]
+  operator_gated_wind_compensated_reroute:
+    any_of:
+      - [direction_deg, feed_forward_mps]
+      - [direction_deg, preemptive_offset_m]
+  operator_gated_continue_with_wind_warning:
+    all_of: []
+  operator_gated_hold_and_reobserve:
+    all_of: []
+  operator_gated_abort_and_replan:
+    all_of: []
+  operator_gated_payload_recovery_land:
+    all_of: [payload_mass_kg]
+required_false_fields:
+  - llm_judgment_in_gate
+  - progress_counted
+  - goal_640_progress_counted
+  - ai_agent_progress_counted
+  - drone_physics_affected
+  - dispatch_authority_created
+  - operator_approved

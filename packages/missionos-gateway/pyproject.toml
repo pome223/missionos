@@ -1,0 +1,16 @@
+[project]
+name = "missionos-gateway"
+version = "0.1.0"
+description = "MissionOS Gateway fixture server and future runtime boundary."
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+missionos-gateway = "missionos_gateway.__main__:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

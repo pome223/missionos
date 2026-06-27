@@ -1,0 +1,284 @@
+[
+  {
+    "id": "dropoff_verified_nominal",
+    "kind": "dropoff_verification",
+    "position": [0.14, 0.10, 0.08],
+    "release_position": [0.15, 0.12, 0.08],
+    "release_present": true,
+    "mission_item_seq": 2,
+    "release_age_seconds": 0
+  },
+  {
+    "id": "dropoff_pending_missing_release",
+    "kind": "dropoff_verification",
+    "position": [0.14, 0.10, 0.08],
+    "release_present": false,
+    "mission_item_seq": 2,
+    "release_age_seconds": 0
+  },
+  {
+    "id": "dropoff_release_outside_zone",
+    "kind": "dropoff_verification",
+    "position": [0.10, 0.00, 0.10],
+    "release_position": [10.0, 0.0, 0.08],
+    "release_present": true,
+    "mission_item_seq": 2,
+    "release_age_seconds": 0
+  },
+  {
+    "id": "dropoff_release_altitude_outside_tolerance",
+    "kind": "dropoff_verification",
+    "position": [0.10, 0.00, 0.10],
+    "release_position": [0.15, 0.12, 5.0],
+    "release_present": true,
+    "mission_item_seq": 2,
+    "release_age_seconds": 0
+  },
+  {
+    "id": "dropoff_old_release_event",
+    "kind": "dropoff_verification",
+    "position": [0.10, 0.00, 0.10],
+    "release_position": [0.15, 0.12, 0.08],
+    "release_present": true,
+    "mission_item_seq": 2,
+    "release_age_seconds": 30
+  },
+  {
+    "id": "dropoff_wrong_mission_item",
+    "kind": "dropoff_verification",
+    "position": [0.10, 0.00, 0.10],
+    "release_position": [0.15, 0.12, 0.08],
+    "release_present": true,
+    "mission_item_seq": 1,
+    "release_age_seconds": 0
+  },
+  {
+    "id": "dropoff_vehicle_pose_outside_zone",
+    "kind": "dropoff_verification",
+    "position": [4.0, 0.00, 0.10],
+    "release_position": [0.15, 0.12, 0.08],
+    "release_present": true,
+    "mission_item_seq": 2,
+    "release_age_seconds": 0
+  },
+  {
+    "id": "dropoff_pose_altitude_outside_tolerance",
+    "kind": "dropoff_verification",
+    "position": [0.10, 0.00, 4.0],
+    "release_position": [0.15, 0.12, 0.08],
+    "release_present": true,
+    "mission_item_seq": 2,
+    "release_age_seconds": 0
+  },
+  {
+    "id": "recovery_return_home_recovered",
+    "kind": "recovery_outcome_logic",
+    "action": "return_to_home_recommended",
+    "fault_category": "battery_low",
+    "facts": {
+      "safe_landing_event_source": "logic_only_stub",
+      "safe_landing_observed": true,
+      "mission_terminated_safely": true,
+      "vehicle_disarmed_or_landed": true
+    }
+  },
+  {
+    "id": "recovery_abort_safely",
+    "kind": "recovery_outcome_logic",
+    "action": "abort_recommended",
+    "fault_category": "battery_reserve_violation",
+    "facts": {
+      "safe_landing_event_source": "logic_only_stub",
+      "safe_landing_observed": true,
+      "mission_terminated_safely": true,
+      "vehicle_disarmed_or_landed": true
+    }
+  },
+  {
+    "id": "recovery_safe_landing_missing",
+    "kind": "recovery_outcome_logic",
+    "action": "return_to_home_recommended",
+    "fault_category": "battery_low",
+    "facts": {
+      "safe_landing_event_source": "logic_only_stub",
+      "safe_landing_observed": false,
+      "mission_terminated_safely": true,
+      "vehicle_disarmed_or_landed": true
+    }
+  },
+  {
+    "id": "recovery_retry_dropoff_recovered",
+    "kind": "recovery_outcome_logic",
+    "action": "operator_escalation_required",
+    "fault_category": "payload_release_not_observed",
+    "facts": {
+      "payload_release_event_source": "logic_only_stub",
+      "position_in_zone_observed": true,
+      "altitude_within_tolerance_observed": true,
+      "release_within_time_window_observed": true
+    }
+  },
+  {
+    "id": "recovery_retry_dropoff_time_missing",
+    "kind": "recovery_outcome_logic",
+    "action": "operator_escalation_required",
+    "fault_category": "payload_release_not_observed",
+    "facts": {
+      "payload_release_event_source": "logic_only_stub",
+      "position_in_zone_observed": true,
+      "altitude_within_tolerance_observed": true,
+      "release_within_time_window_observed": false
+    }
+  },
+  {
+    "id": "recovery_hold_operator_escalation",
+    "kind": "recovery_outcome_logic",
+    "action": "hold_recommended",
+    "fault_category": "telemetry_stale",
+    "facts": {
+      "hold_event_source": "logic_only_stub",
+      "hold_state_observed": true,
+      "telemetry_restored": false,
+      "operator_escalation_required": true
+    }
+  },
+  {
+    "id": "episode_review_nominal",
+    "kind": "delivery_episode_review",
+    "params": {}
+  },
+  {
+    "id": "episode_review_missing_dropoff",
+    "kind": "delivery_episode_review",
+    "params": {"missing_dropoff": true}
+  },
+  {
+    "id": "episode_review_stale_hil",
+    "kind": "delivery_episode_review",
+    "params": {"stale_hil": true}
+  },
+  {
+    "id": "episode_review_gate_failed",
+    "kind": "delivery_episode_review",
+    "params": {"gate_passed": false}
+  },
+  {
+    "id": "episode_review_battery_low",
+    "kind": "delivery_episode_review",
+    "params": {"battery_percent": 20.0}
+  },
+  {
+    "id": "episode_review_vehicle_health_unsafe",
+    "kind": "delivery_episode_review",
+    "params": {"vehicle_health": "unsafe"}
+  },
+  {
+    "id": "real_sitl_battery_low_aborted_safely",
+    "kind": "recovery_real_sitl",
+    "variant": "battery_low_aborted_safely",
+    "summary": {
+      "artifact_dir": "fixtures/real-sitl/battery-low-aborted",
+      "actual_px4_gazebo_horizontal_smoke_observed": true,
+      "task_status": "completed",
+      "final_status": "completed",
+      "completed_pose_z_m": -0.013024675675240682,
+      "hardware_target_allowed": false,
+      "physical_execution_invoked": false,
+      "blocked_reasons": []
+    }
+  },
+  {
+    "id": "real_sitl_battery_low_safe_landing_threshold_edge",
+    "kind": "recovery_real_sitl",
+    "variant": "battery_low_safe_landing_threshold_edge",
+    "summary": {
+      "artifact_dir": "fixtures/real-sitl/battery-low-threshold-edge",
+      "actual_px4_gazebo_horizontal_smoke_observed": true,
+      "task_status": "completed",
+      "final_status": "completed",
+      "completed_pose_z_m": 0.15,
+      "hardware_target_allowed": false,
+      "physical_execution_invoked": false,
+      "blocked_reasons": []
+    }
+  },
+  {
+    "id": "real_sitl_battery_low_safe_landing_predicate_failure",
+    "kind": "recovery_real_sitl",
+    "variant": "battery_low_safe_landing_predicate_failure",
+    "expect_error": true,
+    "summary": {
+      "artifact_dir": "fixtures/real-sitl/battery-low-safe-landing-failed",
+      "actual_px4_gazebo_horizontal_smoke_observed": true,
+      "task_status": "completed",
+      "final_status": "completed",
+      "completed_pose_z_m": 0.35,
+      "hardware_target_allowed": false,
+      "physical_execution_invoked": false,
+      "blocked_reasons": []
+    }
+  },
+  {
+    "id": "real_sitl_payload_retry_recovered",
+    "kind": "recovery_real_sitl",
+    "variant": "payload_retry_recovered",
+    "initial_summary": {
+      "artifact_dir": "fixtures/real-sitl/payload-initial-missing",
+      "actual_px4_gazebo_horizontal_smoke_observed": true,
+      "task_status": "completed",
+      "final_status": "completed",
+      "dropoff_region_reached": true,
+      "payload_release_observed": false,
+      "payload_release_event_source": "",
+      "hardware_target_allowed": false,
+      "physical_execution_invoked": false,
+      "blocked_reasons": []
+    },
+    "retry_summary": {
+      "artifact_dir": "fixtures/real-sitl/payload-retry-recovered",
+      "actual_px4_gazebo_horizontal_smoke_observed": true,
+      "task_status": "completed",
+      "final_status": "completed",
+      "dropoff_region_reached": true,
+      "payload_release_observed": true,
+      "payload_release_event_source": "gazebo_detachable_joint_detach_event",
+      "payload_release_position_x_m": 0.12,
+      "payload_release_position_y_m": -0.04,
+      "payload_release_position_z_m": 0.08,
+      "payload_release_observed_at": "2026-01-01T12:00:00+00:00",
+      "hardware_target_allowed": false,
+      "physical_execution_invoked": false,
+      "blocked_reasons": []
+    }
+  },
+  {
+    "id": "real_sitl_payload_retry_release_predicate_failure",
+    "kind": "recovery_real_sitl",
+    "variant": "payload_retry_release_predicate_failure",
+    "expect_error": true,
+    "initial_summary": {
+      "artifact_dir": "fixtures/real-sitl/payload-initial-missing-for-failure",
+      "actual_px4_gazebo_horizontal_smoke_observed": true,
+      "task_status": "completed",
+      "final_status": "completed",
+      "dropoff_region_reached": true,
+      "payload_release_observed": false,
+      "payload_release_event_source": "",
+      "hardware_target_allowed": false,
+      "physical_execution_invoked": false,
+      "blocked_reasons": []
+    },
+    "retry_summary": {
+      "artifact_dir": "fixtures/real-sitl/payload-retry-release-failed",
+      "actual_px4_gazebo_horizontal_smoke_observed": true,
+      "task_status": "completed",
+      "final_status": "completed",
+      "dropoff_region_reached": true,
+      "payload_release_observed": false,
+      "payload_release_event_source": "",
+      "hardware_target_allowed": false,
+      "physical_execution_invoked": false,
+      "blocked_reasons": []
+    }
+  }
+]

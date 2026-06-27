@@ -1,0 +1,24 @@
+{
+  "case_id": "failure_gate_blocked_v1",
+  "exact": {
+    "blocked_phase": "dropoff_approach",
+    "blocked_reasons": [
+      "mission_gate_blocked"
+    ],
+    "final_status": "blocked",
+    "hardware_target_allowed": false,
+    "memory_direct_command_authority_allowed": false,
+    "physical_execution_invoked": false,
+    "px4_mission_upload_allowed": false,
+    "unbounded_setpoint_stream_allowed": false
+  },
+  "expected_counts": {
+    "health_snapshot_count_min": 2,
+    "phase_gate_evaluation_count_min": 1,
+    "route_segment_count_min": 3,
+    "waypoint_count_min": 3
+  },
+  "tolerances": {
+    "dropoff_landing_error_m_max": 0.5
+  }
+}

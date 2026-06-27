@@ -1,0 +1,37 @@
+{
+  "schema_versions": {
+    "report": "px4_gazebo_mission_run_evidence_report.v1",
+    "replay_index": "px4_gazebo_mission_run_replay_index.v1",
+    "safety_boundary_summary": "px4_gazebo_mission_safety_boundary_summary.v1",
+    "fleet_memory_provenance_summary": "px4_gazebo_fleet_memory_provenance_summary.v1"
+  },
+  "required_why": [
+    "all_required_phases_observed",
+    "phase_gates_passed_or_recorded",
+    "replay_timeline_available",
+    "safety_boundary_preserved"
+  ],
+  "required_safety_boundary": [
+    "hardware_target_disabled",
+    "physical_execution_disabled",
+    "mission_upload_disabled",
+    "unbounded_setpoint_stream_disabled",
+    "memory_not_command_authority"
+  ],
+  "required_memory_authority_boundary": [
+    "memory_is_evidence_not_authority",
+    "memory_used_for_planning_only",
+    "memory_cannot_dispatch",
+    "memory_cannot_bypass_approval"
+  ],
+  "redaction_exact": {
+    "raw_logs_included": false,
+    "sqlite_included": false,
+    "full_telemetry_included": false,
+    "reproduction_steps_included": false,
+    "runtime_script_names_included": false,
+    "transport_details_included": false,
+    "low_level_command_details_included": false,
+    "output_paths_included": false
+  }
+}
