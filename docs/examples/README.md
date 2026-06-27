@@ -4,18 +4,18 @@ Examples should read like short operational stories. They should show the
 mission, the operator action, the evidence collected, and what remained
 unproven.
 
-## Planned Examples
+## Examples
 
-These examples are planned documentation targets, not guaranteed public
-quickstarts. Each example must include commands, observed evidence, and
-limitations before it is promoted as runnable.
+Each example should include commands, observed evidence, and limitations.
 
-- Mock/fixture mission: no simulator required, useful for maintainer CLI and
-  Gateway boundary checks.
-- Tokyo to Akihabara SITL story: public-safe writeup of a simulator mission with
-  recovery and map evidence.
-- Mt. Fuji delivery tutorial: planned until the tutorial path is explicitly
-  verified in a public checkout.
+- [MissionOS Chat: Tokyo Station to Akihabara](missionos-chat-tokyo-akihabara.md)
+  shows an actual LLM-backed `missionos chat` planning run. It stops at proposal
+  and does not claim approval, dispatch, ACK, progress, completion, or physical
+  execution.
+- [MissionOS Chat: Obstacle Recovery Run](missionos-chat-obstacle-recovery.md)
+  shows an actual obstacle-context `missionos chat --autostart
+  --enable-live-sitl` run. It includes human-approved recovery dispatches,
+  `watch`, `operate`, a map screenshot, and the terminal limitations.
 
 ## Example Checklist
 
@@ -24,7 +24,7 @@ Each example should state:
 - scenario
 - exact commands
 - production boundary exercised
-- observed task id or mock/fixture id
+- observed task id or conversation route
 - observed evidence
 - warnings and limitations
 - whether delivery completion and physical execution were proven

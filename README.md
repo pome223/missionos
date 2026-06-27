@@ -33,11 +33,12 @@ physical execution or delivery completion.
 MissionOS is an early public snapshot. The public path documented here is:
 
 ```bash
-missionos chat --autostart
+MISSIONOS_GATEWAY_BACKEND=production missionos --timeout 240 chat --autostart
 ```
 
-Use it with an explicit LLM backend. Other runtime and simulator paths exist in
-the repository, but they are not presented as public quickstarts in this
+Use it with an explicit LLM backend. Local Gemma may need the longer timeout;
+hosted Gemini usually responds faster. Other runtime and simulator paths exist
+in the repository, but they are not presented as public quickstarts in this
 snapshot unless separately verified.
 
 MissionOS does not claim:
@@ -94,11 +95,22 @@ cp .env.example .env
 Then start chat:
 
 ```bash
-missionos chat --autostart
+MISSIONOS_GATEWAY_BACKEND=production missionos --timeout 240 chat --autostart
 ```
 
 `MISSIONOS_LLM_BACKEND=off` exists for development fallbacks and boundary tests.
 It is not the main MissionOS product experience.
+
+See [MissionOS Chat: Tokyo Station to Akihabara](docs/examples/missionos-chat-tokyo-akihabara.md)
+for an actual LLM-backed chat run. In that run, MissionOS proposed a bounded
+mission and asked for human approval; it did not approve, dispatch, observe
+progress, or claim completion.
+
+See [MissionOS Chat: Obstacle Recovery Run](docs/examples/missionos-chat-obstacle-recovery.md)
+for an actual obstacle-context live SITL run with human-approved recovery
+dispatches, `missionos watch`, `missionos operate`, and a map screenshot. That
+run reached terminal completion through recovery/return evidence, but it still
+does not claim delivery completion or physical execution.
 
 ## Why MissionOS Exists
 
