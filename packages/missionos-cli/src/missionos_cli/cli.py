@@ -1,4 +1,4 @@
-"""MissionOS operator CLI backed by the same Gateway routes as the Control UI."""
+"""MissionOS operator CLI backed by the Gateway HTTP and WebSocket routes."""
 
 from __future__ import annotations
 
@@ -120,8 +120,8 @@ FUJI_DELIVERY_ROUTE: dict[str, Any] = {
     "wind_direction_deg": 0,
 }
 TUTORIAL_PLAN_INSTRUCTION = (
-    "Plan the same Mt. Fuji delivery used by the GUI. Use the Mt. Fuji "
-    "coordinate route and prepare it through payload delivery SITL readiness."
+    "Plan the Mt. Fuji delivery. Use the Mt. Fuji coordinate route and prepare "
+    "it through payload delivery SITL readiness."
 )
 DEFAULT_TUTORIAL_SESSION_ID = "missionos-cli-tutorial"
 
@@ -2940,7 +2940,7 @@ def missionos(
     json_output: bool,
     state_path: Path,
 ) -> None:
-    """Operate MissionOS through the same Gateway boundaries as the GUI."""
+    """Operate MissionOS through Gateway-backed CLI boundaries."""
     ctx.obj = ctx.obj or {}
     ctx.obj["missionos_client"] = make_client(gateway_url, timeout)
     ctx.obj["missionos_gateway_url"] = gateway_url
@@ -3308,7 +3308,7 @@ def recover_command(
     recovery_action: str,
     recovery_params: tuple[str, ...],
 ) -> None:
-    """Send an operator-approved recovery dispatch used by the GUI."""
+    """Send an operator-approved recovery dispatch."""
     client: MissionOSGatewayClient = ctx.obj["missionos_client"]
     payload = client.recovery_dispatch(
         task_id=task_id,
@@ -3332,7 +3332,7 @@ def recover_command(
     "--live-flight/--upload-only",
     default=True,
     show_default=True,
-    help="Request the GUI-equivalent Execute Live SITL boundary.",
+    help="Request the explicit Execute Live SITL boundary.",
 )
 @click.option(
     "--poll-interval",
@@ -3348,7 +3348,7 @@ def execute_sitl_command(
     live_flight: bool,
     poll_interval: float,
 ) -> None:
-    """Run the GUI-equivalent explicit Execute Live SITL boundary."""
+    """Run the explicit Execute Live SITL boundary."""
     resolved_task_id = task_id or _stored_sitl_task_id(ctx)
     if not resolved_task_id:
         raise click.ClickException(
@@ -3408,7 +3408,7 @@ def execute_sitl_command(
 )
 @click.pass_context
 def start_sitl_command(ctx: click.Context, task_id: str) -> None:
-    """Start the GUI-equivalent PX4/Gazebo SITL environment readiness action."""
+    """Start the PX4/Gazebo SITL environment readiness action."""
     resolved_task_id = task_id or _stored_sitl_task_id(ctx)
     if not resolved_task_id:
         raise click.ClickException(
@@ -7086,7 +7086,7 @@ def _tutorial_execute_sitl(
 
 
 def build_tutorial_steps() -> list[TutorialStep]:
-    """The ordered Fuji-delivery walkthrough, mirroring the GUI operator flow."""
+    """The ordered Fuji-delivery CLI walkthrough."""
     return [
         TutorialStep(
             key="status",
@@ -7121,7 +7121,7 @@ def build_tutorial_steps() -> list[TutorialStep]:
             title="Approve (approve)",
             explanation=(
                 "Approve the plan as the operator. This uses the same conversation "
-                "route as the GUI approval button, with Gateway policy gates still active."
+                "route as MissionOS chat approval, with Gateway policy gates still active."
             ),
             command="missionos approve",
             boundary="Sends only the approval intent. It does not bypass gates.",
@@ -7143,8 +7143,8 @@ def build_tutorial_steps() -> list[TutorialStep]:
             key="start-sitl",
             title="Start SITL (start-sitl)",
             explanation=(
-                "Use the same PX4/Gazebo SITL startup boundary as the GUI. This is "
-                "where simulator readiness is brought up (task_id is read from state)."
+                "Use the PX4/Gazebo SITL startup boundary. This is where simulator "
+                "readiness is brought up (task_id is read from state)."
             ),
             command="missionos start-sitl",
             boundary="Real PX4/Gazebo processes begin here.",
@@ -7154,9 +7154,9 @@ def build_tutorial_steps() -> list[TutorialStep]:
             key="execute-sitl",
             title="Execute Live SITL (execute-sitl)",
             explanation=(
-                "Use the same Execute Live SITL boundary as the GUI. The CLI sends "
-                "explicit execution approval and live_flight_mode=true. This is a "
-                "real execution gate, so it requires explicit confirmation."
+                "Use the Execute Live SITL boundary. The CLI sends explicit execution "
+                "approval and live_flight_mode=true. This is a real execution gate, "
+                "so it requires explicit confirmation."
             ),
             command="missionos execute-sitl --live-flight",
             boundary=(
@@ -7204,8 +7204,8 @@ def run_fuji_tutorial(
     steps = build_tutorial_steps()
     console.print(
         Panel(
-            "Walk through the same Mt. Fuji delivery as the GUI while learning the "
-            "CLI one command at a time.\n"
+            "Walk through the Mt. Fuji delivery while learning the CLI one command "
+            "at a time.\n"
             "Each step shows the manual command and the production boundary it crosses.\n"
             "[dim]Enter=run / s=skip / q=quit. Live SITL execution requires 'yes'.[/dim]",
             title="MissionOS CLI Tutorial (Mt. Fuji Delivery)",
@@ -7356,8 +7356,8 @@ CHAT_HELP_LINES = (
     "  /status                      — show operator surfaces",
     "  /approve /reject /revision   — operator review intents",
     "  /run /repair                 — execution and repair intents",
-    "  /start-sitl [task_id]        — GUI-equivalent SITL startup",
-    "  /execute-sitl [task_id]      — GUI-equivalent Execute Live SITL",
+    "  /start-sitl [task_id]        — SITL startup boundary",
+    "  /execute-sitl [task_id]      — Execute Live SITL boundary",
     "                                interactive chat opens operate/watch/map companion terminals",
     "  /job-status [task_id]        — show stored/running task status",
     "  /map [task_id]               — open the live source-backed route map",

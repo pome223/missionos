@@ -169,6 +169,18 @@ def test_copied_production_gateway_imports() -> None:
     assert gateway.app is not None
 
 
+def test_production_gateway_does_not_serve_legacy_control_ui() -> None:
+    from fastapi.testclient import TestClient
+
+    from src.gateway.server import create_gateway
+
+    gateway = create_gateway()
+    client = TestClient(gateway.app)
+
+    assert client.get("/chat").status_code == 404
+    assert client.get("/chat-static/index.html").status_code == 404
+
+
 def test_form2a_operator_review_summary_handles_empty_public_repo(tmp_path) -> None:
     from src.gateway.missionos_knowledge_sharing import (
         build_form2a_operator_review_summary,

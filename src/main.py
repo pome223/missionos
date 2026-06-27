@@ -405,7 +405,6 @@ def quickstart_smoke(gateway_url, user_id, session_id, json_output):
     console.print("[green]Quickstart smoke completed.[/green]")
     console.print(f"Task: {result['task_url']}")
     console.print(f"Timeline: {result['timeline_url']}")
-    console.print(f"Control UI: {result['control_ui_url']}")
     console.print(
         "[dim]No GOOGLE_API_KEY, Chrome extension, Host Bridge, or Desktop Bridge required.[/dim]"
     )

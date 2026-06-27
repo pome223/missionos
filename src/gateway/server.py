@@ -26,8 +26,7 @@ from typing import Any, Dict, Optional
 
 from fastapi import Body, FastAPI, HTTPException, Query, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 from google.adk.events.event import Event
 from google.adk.runners import Runner
@@ -2745,10 +2744,10 @@ _CURRENT_BROWSER_CONTROL_BASE_CONSTRAINTS = [
 _CURRENT_BROWSER_CONTROL_SAME_TAB_CONSTRAINT = (
     "Do not open a new browser tab or window unless the user explicitly asked for it."
 )
-_CURRENT_BROWSER_PRESERVE_CONTROL_UI_TAB_CONSTRAINT = (
-    "If the current tab is the boiled-claw Control UI chat, preserve that tab and "
-    "open a new tab in the same browser window for browsing or search. Otherwise "
-    "stay on the current tab."
+_CURRENT_BROWSER_PRESERVE_USER_TAB_CONSTRAINT = (
+    "Preserve the user's current browser tab. If browsing or search requires a "
+    "different page, open a new tab in the same browser window. Otherwise stay "
+    "on the current tab."
 )
 _ISOLATED_BROWSER_TEXT_ENTRY_CONSTRAINTS = [
     "For current-browser visible text-entry or form-filling work, use an isolated browser or managed browser page instead of the user's existing browser tabs or forms.",
@@ -2872,7 +2871,6 @@ class GatewayServer:
     def __init__(self):
         self.settings = get_settings()
         self.session_backend = describe_session_backend(self.settings)
-        self.static_dir = Path(__file__).resolve().parent / "static"
         self.manager = ConnectionManager()
         self.session_service = create_session_service(self.settings)
         self.memory_service = get_promoted_memory_service()
@@ -2931,7 +2929,7 @@ class GatewayServer:
             api_key = self.settings.gateway_api_key
             if not api_key:
                 return await call_next(request)
-            public_prefixes = ("/health", "/chat-static", "/chat", "/protocol")
+            public_prefixes = ("/health", "/protocol")
             if any(request.url.path.startswith(p) for p in public_prefixes) or request.url.path == "/":
                 return await call_next(request)
             token = (
@@ -2942,22 +2940,6 @@ class GatewayServer:
             if token != api_key:
                 return JSONResponse({"detail": "Unauthorized"}, status_code=401)
             return await call_next(request)
-
-        @self.app.middleware("http")
-        async def chat_cache_control_middleware(request: Request, call_next):
-            response = await call_next(request)
-            path = request.url.path
-            if path == "/chat" or path.startswith("/chat-static"):
-                response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-                response.headers["Pragma"] = "no-cache"
-                response.headers["Expires"] = "0"
-            return response
-
-        self.app.mount(
-            "/chat-static",
-            StaticFiles(directory=str(self.static_dir)),
-            name="chat_static",
-        )
 
         # subagent -> WS notifier
         async def _subagent_notifier(payload: Dict[str, Any]) -> None:
@@ -7004,12 +6986,6 @@ class GatewayServer:
                 "results": results,
             }
 
-        # --- static / chat UI ---
-
-        @self.app.get("/chat")
-        async def chat_ui():
-            return FileResponse(self.static_dir / "index.html")
-
         self.app.include_router(build_websocket_router(self))
 
     # ------------------------------------------------------------------
@@ -7484,11 +7460,11 @@ class GatewayServer:
                     _CURRENT_BROWSER_CONTROL_SAME_TAB_CONSTRAINT
                 )
             if (
-                _CURRENT_BROWSER_PRESERVE_CONTROL_UI_TAB_CONSTRAINT
+                _CURRENT_BROWSER_PRESERVE_USER_TAB_CONSTRAINT
                 not in effective_constraints
             ):
                 effective_constraints.append(
-                    _CURRENT_BROWSER_PRESERVE_CONTROL_UI_TAB_CONSTRAINT
+                    _CURRENT_BROWSER_PRESERVE_USER_TAB_CONSTRAINT
                 )
         elif (
             _CURRENT_BROWSER_CONTROL_SAME_TAB_CONSTRAINT

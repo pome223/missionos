@@ -22,7 +22,7 @@ def run_quickstart_smoke(
     user_id: str = DEFAULT_USER_ID,
     session_id: str = DEFAULT_SESSION_ID,
 ) -> dict[str, Any]:
-    """Create and complete a deterministic task visible in the Gateway UI."""
+    """Create and complete a deterministic task visible through Gateway APIs."""
 
     base_url = _trim_gateway_url(gateway_url)
     task = create_task_record(
@@ -87,7 +87,6 @@ def run_quickstart_smoke(
         "task_id": task_id,
         "task": completed,
         "gateway_url": base_url,
-        "control_ui_url": f"{base_url}/chat",
         "task_url": f"{base_url}/tasks/{task_id}",
         "timeline_url": f"{base_url}/tasks/{task_id}/timeline?limit=20",
         "requires": {

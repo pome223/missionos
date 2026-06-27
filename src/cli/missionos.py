@@ -1,4 +1,4 @@
-"""MissionOS operator CLI backed by the same Gateway routes as the Control UI."""
+"""MissionOS operator CLI backed by the Gateway HTTP and WebSocket routes."""
 
 from __future__ import annotations
 
@@ -98,7 +98,7 @@ FUJI_DELIVERY_ROUTE: dict[str, Any] = {
     "wind_direction_deg": 0,
 }
 TUTORIAL_PLAN_INSTRUCTION = (
-    "GUI と同じ富士山デリバリーを計画して。Mt. Fuji coordinate route を使い、"
+    "富士山デリバリーを計画して。Mt. Fuji coordinate route を使い、"
     "payload delivery SITL readiness まで準備して。"
 )
 DEFAULT_TUTORIAL_SESSION_ID = "missionos-cli-tutorial"
@@ -2563,7 +2563,7 @@ def missionos(
     json_output: bool,
     state_path: Path,
 ) -> None:
-    """Operate MissionOS through the same Gateway boundaries as the GUI."""
+    """Operate MissionOS through Gateway-backed CLI boundaries."""
     ctx.obj = ctx.obj or {}
     ctx.obj["missionos_client"] = make_client(gateway_url, timeout)
     ctx.obj["missionos_gateway_url"] = gateway_url
@@ -2895,7 +2895,7 @@ def clear_state_command(ctx: click.Context) -> None:
 )
 @click.pass_context
 def recover_command(ctx: click.Context, task_id: str, recovery_action: str) -> None:
-    """Send the same operator-approved LAND/RTL dispatch used by the GUI."""
+    """Send an operator-approved LAND/RTL dispatch."""
     client: MissionOSGatewayClient = ctx.obj["missionos_client"]
     payload = client.recovery_dispatch(task_id=task_id, recovery_action=recovery_action)
     if ctx.obj["missionos_json_output"]:
@@ -2915,7 +2915,7 @@ def recover_command(ctx: click.Context, task_id: str, recovery_action: str) -> N
     "--live-flight/--upload-only",
     default=True,
     show_default=True,
-    help="Request the GUI-equivalent Execute Live SITL boundary.",
+    help="Request the explicit Execute Live SITL boundary.",
 )
 @click.option(
     "--poll-interval",
@@ -2931,7 +2931,7 @@ def execute_sitl_command(
     live_flight: bool,
     poll_interval: float,
 ) -> None:
-    """Run the GUI-equivalent explicit Execute Live SITL boundary."""
+    """Run the explicit Execute Live SITL boundary."""
     resolved_task_id = task_id or _stored_sitl_task_id(ctx)
     if not resolved_task_id:
         raise click.ClickException(
@@ -2993,7 +2993,7 @@ def execute_sitl_command(
 )
 @click.pass_context
 def start_sitl_command(ctx: click.Context, task_id: str) -> None:
-    """Start the GUI-equivalent PX4/Gazebo SITL environment readiness action."""
+    """Start the PX4/Gazebo SITL environment readiness action."""
     resolved_task_id = task_id or _stored_sitl_task_id(ctx)
     if not resolved_task_id:
         raise click.ClickException(
@@ -4891,7 +4891,7 @@ def _tutorial_execute_sitl(
 
 
 def build_tutorial_steps() -> list[TutorialStep]:
-    """The ordered Fuji-delivery walkthrough, mirroring the GUI operator flow."""
+    """The ordered Fuji-delivery CLI walkthrough."""
     return [
         TutorialStep(
             key="status",
@@ -4924,7 +4924,7 @@ def build_tutorial_steps() -> list[TutorialStep]:
             key="approve",
             title="承認する (approve)",
             explanation=(
-                "operator として計画を承認します。GUI の承認ボタンと同じ会話ルートで、"
+                "operator として計画を承認します。MissionOS chat と同じ会話ルートで、"
                 "ポリシーゲートは Gateway 側で効いたままです。"
             ),
             command="missionos approve",
@@ -4946,7 +4946,7 @@ def build_tutorial_steps() -> list[TutorialStep]:
             key="start-sitl",
             title="SITL を起動する (start-sitl)",
             explanation=(
-                "GUI と同じ PX4/Gazebo SITL 起動境界です。ここで実シミュレータの readiness が "
+                "PX4/Gazebo SITL 起動境界です。ここで実シミュレータの readiness が "
                 "立ち上がります（task_id は state から自動補完）。"
             ),
             command="missionos start-sitl",
@@ -4957,7 +4957,7 @@ def build_tutorial_steps() -> list[TutorialStep]:
             key="execute-sitl",
             title="ライブ実行する (execute-sitl)",
             explanation=(
-                "GUI の Execute Live SITL と同じ境界です。explicit execution approval と "
+                "Execute Live SITL 境界です。explicit execution approval と "
                 "live_flight_mode=true を送ります。これは本物のゲートなので明示確認します。"
             ),
             command="missionos execute-sitl --live-flight",
@@ -5005,7 +5005,7 @@ def run_fuji_tutorial(
     steps = build_tutorial_steps()
     console.print(
         Panel(
-            "GUI と同じ富士山デリバリーを、CLI のコマンドを1つずつ学びながら通します。\n"
+            "富士山デリバリーを、CLI のコマンドを1つずつ学びながら通します。\n"
             "各ステップで『手で打つなら何を打つか』と『どの境界を通るか』を示します。\n"
             "[dim]Enter=実行 / s=スキップ / q=終了。ライブ SITL 実行だけは 'yes' を要求します。[/dim]",
             title="MissionOS CLI チュートリアル（富士山デリバリー）",
@@ -5156,8 +5156,8 @@ CHAT_HELP_LINES = (
     "  /status                      — show operator surfaces",
     "  /approve /reject /revision   — operator review intents",
     "  /run /repair                 — execution and repair intents",
-    "  /start-sitl [task_id]        — GUI-equivalent SITL startup",
-    "  /execute-sitl [task_id]      — GUI-equivalent Execute Live SITL",
+    "  /start-sitl [task_id]        — SITL startup boundary",
+    "  /execute-sitl [task_id]      — Execute Live SITL boundary",
     "                                interactive chat opens operate/watch/map companion terminals",
     "  /job-status [task_id]        — show stored/running task status",
     "  /land <task_id>              — operator-approved LAND dispatch",
