@@ -1,5 +1,9 @@
 # MissionOS
 
+<p align="center">
+  <img src="docs/assets/missionos-icon.png" alt="MissionOS icon" width="180">
+</p>
+
 MissionOS is a control CLI for LLM-assisted drone missions.
 
 The LLM proposes routes and recovery actions. A human approves them. MissionOS
