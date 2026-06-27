@@ -2,19 +2,15 @@
 
 Operator-facing command line package.
 
-Initial migration target:
+The primary public path is `missionos chat --autostart` with an explicit LLM
+backend. MissionOS is designed for the LLM to judge, plan, diagnose, and propose
+bounded mission actions while the human operator approves and Gateway/rules keep
+dispatch, runtime evidence, and completion claims separate.
 
-- fixture-backed `missionos gateway start/status/stop`
-- fixture-backed `missionos status`
-- fixture-backed `missionos say`
-- fixture-backed `missionos job-status`
-- fixture-backed `missionos start-sitl` / `execute-sitl` / `recover`
-- fixture-backed `missionos map --snapshot --no-open`
-- Gateway client extracted behind a clean interface
-
-The CLI currently preserves the operator-visible command surface from the
-research repository while its local Gateway launcher points at
-`python -m missionos_gateway web`.
+The CLI also carries Gateway commands, local mock/fixture boundary-test paths,
+experimental `play` / `tutorial` surfaces, and opt-in SITL helpers. Treat those
+as development or experimental surfaces unless you verify them in your own
+environment.
 
 Operator prompts, help text, chat suggestions, and guided tutorial copy are
 English by default. Gateway intent payloads are also English in this public
@@ -31,5 +27,5 @@ python -m pip install -e packages/missionos-gateway -e packages/missionos-cli
 missionos --help
 ```
 
-Use `missionos chat --autostart` for a quick interactive session against the
-current fixture Gateway.
+Use `missionos chat --autostart` with `MISSIONOS_LLM_BACKEND=gemini` or
+`MISSIONOS_LLM_BACKEND=ollama` for the intended MissionOS chat path.

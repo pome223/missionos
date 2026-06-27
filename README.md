@@ -1,10 +1,15 @@
 # MissionOS
 
-One drone in a simulator today. More vehicles and more complex missions later. The control loop has to keep its authority boundaries clear as the system grows.
+One LLM-assisted mission conversation today. Simulator and runtime paths are
+present, but opt-in and evidence-bounded. The control loop has to keep its
+authority boundaries clear as the system grows.
 
 That is the bet behind MissionOS.
 
-MissionOS is a mission control game and runtime for AI-assisted physical missions. The AI reads the situation, plans the route, adapts when conditions change, and proposes the safest path to mission success. Humans approve. Rules constrain. Evidence verifies what actually happened.
+MissionOS is an LLM mission-control boundary system for AI-assisted physical
+missions. The LLM reads the situation, plans the route, adapts when conditions
+change, and proposes the safest path to mission success. Humans approve. Rules
+constrain. Evidence verifies what actually happened.
 
 You are not the pilot. You are the controller, working *with* MissionOS to bring a mission home safely. A destination is given. MissionOS reads wind, distance, battery, terrain, and route, then proposes a plan — and when conditions shift mid-mission, it re-judges toward success: raise altitude here, detour around that ridge, land at a safe point instead of pushing on, or return home while there is still reserve. You approve. It never self-approves or dispatches itself.
 
@@ -31,22 +36,47 @@ physical execution or delivery completion.
 
 ## Current Status
 
-MissionOS is currently a publication candidate extracted from a private
-experiment history. It now includes the operator CLI, fixture
-Gateway, copied MissionOS backend, PX4/Gazebo SITL runtime modules, scripts,
-simulator helpers, and curated fixture/golden assets.
+MissionOS is an early public snapshot. The primary public path documented here
+is the LLM-in-the-loop chat surface:
 
-The default Gateway remains fixture-backed for safe demos. The copied production
-backend is opt-in:
+```bash
+missionos chat --autostart
+```
+
+MissionOS is valuable when an LLM is part of the loop: the LLM judges, plans,
+diagnoses, and proposes bounded mission actions; humans approve; Gateway and
+rules keep approval, dispatch, runtime evidence, and completion claims separate.
+
+| Surface | Public status | Notes |
+|---------|---------------|-------|
+| `missionos chat --autostart` | Primary tested path | Use with an explicit LLM backend. |
+| `missionos play` | Present, experimental | Deterministic sandbox; not the main LLM loop. |
+| `missionos tutorial` | Present, unverified as a public entrypoint | Do not treat as quickstart. |
+| local mock/fixture Gateway paths | Maintainer boundary tests | Useful for contract checks, not product demos. |
+| live SITL / PX4 / Gazebo | Opt-in experimental runtime | Requires local Docker/PX4/Gazebo preparation and operator approval. |
+
+Not claimed:
+
+- physical execution
+- real hardware flight
+- delivery completion
+- general-purpose destination planning
+- simulator observation as proof of real-world success
+
+The repository also includes copied backend/runtime modules, simulator helpers,
+and curated fixture/golden assets. Those are useful for development and
+boundary verification, but they are not the public first-run story.
+
+The copied production backend is opt-in:
 
 ```bash
 missionos gateway start --enable-live-sitl
 missionos chat --autostart --enable-live-sitl
 ```
 
-Live SITL still requires the local Docker/PX4/Gazebo environment and explicit
-operator approval. Fixture runs do not prove delivery completion or physical
-execution.
+Live SITL still requires the local Docker/PX4/Gazebo environment, an explicit
+runtime opt-in, and explicit operator approval. It does not prove physical
+execution or delivery completion.
 
 ## What MissionOS Does
 
@@ -63,158 +93,79 @@ An operator gives an instruction. MissionOS turns it into a bounded path with ev
 
 > The LLM owns mission intelligence — situation judgment, response selection, parameter computation, planning, diagnosis, and repair. Humans own approval. Rules own guardrails only. So the LLM may judge and propose, but it never self-approves, dispatches, or turns evidence into a success claim. An ACK is not observed progress, and observed progress is not mission completion.
 
-## CLI Quickstart
+## Chat Quickstart
 
-Install the local CLI packages (requires Python 3.11+):
+Install the repository and CLI packages (requires Python 3.11+):
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e packages/missionos-gateway -e packages/missionos-cli
+python -m pip install -e . -e packages/missionos-gateway -e packages/missionos-cli
 missionos --help
 ```
 
-Configure the environment. The fixture Gateway and the smoke test below run
-without any key. The default `.env.example` keeps LLM-backed ADK calls off so
-first-run demos use deterministic fallbacks unless you explicitly choose a
-backend. Use Gemini for the fastest hosted API path, or Ollama/Gemma for a
-local no-spend path that can be slower.
+Configure an LLM backend before running the intended MissionOS experience.
+Gemini is the fastest hosted path; Ollama/Gemma is a local no-spend path that
+can be slower and may need longer timeouts.
 
 ```bash
 cp .env.example .env
-# Default: MISSIONOS_LLM_BACKEND=off
-# Gemini/API opt-in: MISSIONOS_LLM_BACKEND=gemini plus GOOGLE_API_KEY
-# Local Gemma opt-in: MISSIONOS_LLM_BACKEND=ollama plus MISSIONOS_OLLAMA_MODEL=gemma4:26b
+# For the intended chat path, edit .env:
+# MISSIONOS_LLM_BACKEND=gemini
+# GOOGLE_API_KEY=...
+#
+# Or use local Ollama/Gemma:
+# MISSIONOS_LLM_BACKEND=ollama
+# MISSIONOS_OLLAMA_MODEL=gemma4:26b
 ```
 
-Then play a mission. `missionos play` is a deterministic mission-control lab —
-no Gateway, Docker, network, or API key required. You turn the knobs; MissionOS
-shows how the situation changes and proposes the safest path to success:
+Then start chat:
 
 ```bash
-missionos play
+missionos chat --autostart
 ```
 
-```text
-play> altitude 2960     # too low: clearance falls under the safety rule
-play> altitude 3150     # clears the ridge, but return reserve drops
-play> compare           # +clearance vs −battery: going higher is never free
-play> route west        # detour skirts a lower ridge, at a distance cost
-play> approve           # you are the controller; MissionOS never self-approves
-```
+`MISSIONOS_LLM_BACKEND=off` exists for development fallbacks and boundary tests.
+It is not the main MissionOS product experience.
 
-MissionOS reads each plan and recommends — raise altitude, reroute, return to
-home while reserve remains — and rules block anything past the vehicle envelope.
+## Experimental Surfaces
 
-### Live SITL: real weather, real flight, real recovery
+These commands are present in the repository, but they are not the primary
+tested public path.
 
-`missionos play --real-weather` goes further. It pulls live local weather for
-the scenario — the hourly surface forecast *and* a real multi-height wind
-profile (Open-Meteo 10/80/120/180 m) — and `fly` launches a real headless
-PX4/Gazebo SITL flight, injecting that weather as wind on the vehicle *during*
-flight: recomputed each step from the forecast (time-varying) and read from the
-real profile at the drone's current altitude (altitude-varying). When the
-profile is unavailable it falls back to a modelled power-law lift, and the
-capability matrix records which was used (`real_forecast_profile` vs
-`modelled_power_law`) — so the sim run is honest evidence about what weather it
-actually reproduced.
+### `missionos play`
 
-```bash
-# needs Docker + the px4io/px4-sitl-gazebo image
-# opt-in: --battery-coupling (rotor-load battery), --gps-denied (EKF GPS off)
-missionos play --real-weather --flight-duration 24 --wind-step 3 --battery-coupling
-play> fly
-```
+`missionos play` is an experimental deterministic lab. It does not currently
+represent the main LLM mission-control loop, and it should not be treated as
+the tested public quickstart.
 
-When wind pushes the drone off track, the runtime recovery agent reads
-the telemetry and proposes a bounded action — you approve it. From a real
-strong-wind run:
+### `missionos tutorial`
 
-```text
-wind 14.7 m/s @ ~39 m AGL · route deviation above limit
-recovery agent → return_to_launch
-  triggers: wind_speed_exceeds_limit, route_deviation_exceeds_limit
-  requires_human_approval: true
-  physical_execution_invoked: false   delivery_completion_claimed: false
-```
+`missionos tutorial` is present, but it is not documented as a verified public
+entrypoint in this snapshot.
 
-The agent advises; the human approves; rules constrain; nothing self-dispatches
-or claims delivery. The live recovery agent uses ADK when
-`MISSIONOS_AGENT_RUNTIME_ADK_ENABLED=1`. By default,
-`MISSIONOS_LLM_BACKEND=off` keeps LLM-backed ADK calls disabled and uses
-deterministic fallbacks where available. `MISSIONOS_LLM_BACKEND=gemini` is the
-hosted API opt-in. `MISSIONOS_LLM_BACKEND=ollama` routes ADK model calls to a
-local Ollama/LiteLLM backend and does not propagate `GOOGLE_API_KEY` to the
-Gateway child process. Previous Gemma 4 26B MoE verification showed that the
-Chief/planning function-tool path can work locally with longer timeouts, while
-the live Runtime Recovery loop was too slow and JSON-mode fragile for repeated
-in-flight use. Use per-agent env overrides only when that tradeoff is
-intentional. Without an enabled LLM backend, play falls back to bundled weather
-and a deterministic recommendation rather than fabricating one.
-The LLM Repair Planner is proposal-only and is enabled for CLI-managed Gateway
-sessions with `MISSIONOS_LLM_REPAIR_PLANNER_ADK_ENABLED=1`; it can draft a
-next-run repair proposal from blocked evidence, but it never approves,
-dispatches, executes, or counts progress.
+### Local mock/fixture Gateway paths
+
+The local fixture-backed Gateway routes are maintainer-facing boundary tests.
+They can be useful for contract checks because they avoid private state and
+live runtime effects, but they should not be presented as the product demo.
+
+### Live SITL / PX4 / Gazebo
+
+Live SITL paths are experimental and opt-in. They may use source-backed route
+planning, PX4/Gazebo, MAVLink upload, live-weather inputs, runtime recovery,
+and companion views, but each boundary must be verified in the local
+environment before making claims from it.
+
+Historical SITL runs have shown useful evidence such as route progress,
+recovery proposals, and simulated payload events. They remain simulator
+evidence only: no live SITL run proves physical execution or delivery
+completion.
 
 For the current agent map, see `docs/concepts/agent-roles.md`. In short:
 `missionos chat` is the Chief Agent surface for planning and `/repair`,
 `missionos operate` is the active Runtime Recovery surface, and Gateway remains
 the approval, dispatch, execution, and evidence boundary.
-
-Opt-in **battery coupling** makes the energy real too: the
-`motor_load_battery_coupler` gz-sim plugin discharges the simulated battery in
-proportion to actual rotor effort, so fighting wind draws more current and
-drains faster (verified idle ~0.48 A → hover ~8.6 A). It is a *simulated*
-endurance signal — physics-coupled to rotor load, but recorded as
-`real_hardware_endurance_evidence: false`, not real power-module evidence.
-
-Run a safe fixture smoke test:
-
-```bash
-missionos gateway stop
-missionos gateway start
-missionos status
-missionos say "Check the fixture Gateway"
-missionos job-status --task-id task_fixture_delivery
-missionos map --task-id task_fixture_delivery --snapshot --no-open
-missionos gateway stop
-```
-
-Fixture mode is deterministic. It checks the CLI/Gateway/status/map path, but it
-does not geocode real destinations, start Docker, upload a mission, claim
-delivery completion, or invoke physical execution.
-
-Try source-backed route planning with the copied production backend:
-
-```bash
-missionos gateway restart --enable-live-sitl
-missionos say "New York Public Library -> Brooklyn Bridge"
-```
-
-The production backend resolves the two place names through source-backed route
-tools and returns a bounded proposal. It still does not approve, prepare SITL,
-dispatch, or count progress from the planning command alone.
-
-When an interactive `missionos chat` session reaches `fly` / `/execute-sitl`,
-MissionOS opens companion terminals for `missionos operate`, `missionos watch`,
-and `missionos map` for the active task. Those companion views are read-only or
-operator-gated surfaces, and the chat session closes the companion terminals it
-started when chat exits. Use `--no-companion-terminals` or
-`MISSIONOS_CHAT_COMPANION_TERMINALS=0` to disable that desktop UX.
-
-Or let chat start an interactive session:
-
-```bash
-missionos chat --autostart
-missionos chat --autostart --enable-live-sitl
-```
-
-When the production backend is running, `missionos gateway status` shows:
-
-```text
-Live SITL env  enabled
-Backend        production
-```
 
 ## Why MissionOS Exists
 
@@ -232,17 +183,19 @@ Without that separation, mission control is unlikely to scale beyond demonstrati
 
 The gap between "the agent did something" and "we can explain what actually happened" is where physical AI either matures or collapses under ambiguity. MissionOS is being built to close that gap without turning weak evidence into confident success claims.
 
-## Experiments
+## Historical Experiment Notes
 
-These ideas come from running actual mission loops and recording where the boundaries broke.
+These notes come from development mission loops and record where boundaries
+held or broke. They are not public quickstarts, and each claim remains limited
+to the evidence named in the row.
 
-| Experiment              | Environment          | What was proven                          | What was not claimed              |
+| Experiment              | Environment          | Observed evidence                        | Not claimed                       |
 |-------------------------|----------------------|------------------------------------------|-----------------------------------|
 | Strong-wind recovery    | PX4 SITL, 9 m/s wind | Recovery proposal → approval → dispatch path | Return progress was not observed |
 | AUTO delivery probe     | PX4/Gazebo SITL      | Route completion, dropoff, ACK, RTL      | Physical delivery completion     |
 | Cargo release           | Gazebo L1 cargo      | Payload separation observed              | Real hardware release            |
 | Play live-weather recovery | PX4/Gazebo SITL, real Open-Meteo surface + altitude-profile wind, real-gust turbulence, relative-airflow drag, rotor-coupled battery | LLM read wind + drift → proposed return_to_launch, human approval required; battery drains with rotor effort | Drag uses the vehicle's own velocity (relative airflow) but a modelled coefficient; turbulence dynamics modelled (amplitude is real gust); battery is a sim signal not hardware endurance; no delivery/physical execution |
-| Play delivery in wind | PX4/Gazebo SITL, real MAVLink waypoint mission, gust-driven turbulence | takeoff → dropoff → real cargo separation (detachable joint, verified drop) → return, real wind, cross-track tracked | Sim cargo not real hardware; delivery completion not claimed |
+| Play delivery in wind | PX4/Gazebo SITL, MAVLink waypoint mission, gust-driven turbulence | simulated takeoff → dropoff → detachable cargo-joint separation → return, weather-driven wind, cross-track tracked | Sim cargo not real hardware; delivery completion not claimed |
 | Play GPS-denied | PX4/Gazebo SITL, EKF GPS fusion disabled | xy position estimate goes invalid (position_trustworthy=false) and surfaces to the recovery agent | SDF sensor-noise scaling and PX4 failure-injection do NOT degrade the GPS-dominated estimate here; only EKF GPS denial does; sim EKF signal, not real GNSS |
 
 More experiments will be added as the public extraction progresses.
@@ -302,8 +255,9 @@ Agent-facing docs (`docs/agents/`) should be precise enough for automated agents
 
 ## Initial Development
 
-The repository now carries both safe fixtures and copied production runtime code.
-The safe default remains fixture mode; anything that starts Docker, PX4/Gazebo,
+The repository now carries local mock/fixture boundary-test paths and copied
+production runtime code. Mock/fixture paths are for maintainers and contract
+checks, not the public product demo. Anything that starts Docker, PX4/Gazebo,
 MAVLink upload, or live flight must remain opt-in and evidence-bounded.
 
 ## License

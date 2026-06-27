@@ -21,6 +21,9 @@ Treat each migration into this repository as a publication event.
 
 ## Preferred Public Shape
 
-Publish fixture-backed runnable paths first. Add live SITL or hardware paths only
+Publish only the public paths that have been verified in the current release
+snapshot. Local mock/fixture paths may be documented as maintainer boundary
+tests, but should not be presented as the main user demo unless they have been
+validated and explained in plain language. Add live SITL or hardware paths only
 after they are opt-in, documented, and fail closed when the environment is not
 explicitly prepared.

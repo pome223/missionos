@@ -1,15 +1,18 @@
 # Local LLM Backends
 
-MissionOS defaults to deterministic fallbacks for first-run demos. LLM-backed
-ADK paths must be selected explicitly: Gemini for the fastest hosted API path,
-or Ollama/Gemma for a local no-spend path that is slower and role-dependent.
+MissionOS is designed around an LLM-in-the-loop chat path. LLM-backed ADK paths
+must be selected explicitly: Gemini for the fastest hosted API path, or
+Ollama/Gemma for a local no-spend path that is slower and role-dependent.
+
+`MISSIONOS_LLM_BACKEND=off` is a development fallback for boundary tests. It is
+not the intended public product experience.
 
 ## Backend Selection
 
 Global backend:
 
 ```bash
-MISSIONOS_LLM_BACKEND=off      # default, no LLM-backed ADK paths
+MISSIONOS_LLM_BACKEND=off      # development fallback, no LLM-backed ADK paths
 MISSIONOS_LLM_BACKEND=gemini   # Google ADK/Gemini opt-in
 MISSIONOS_LLM_BACKEND=ollama   # local Ollama through ADK LiteLLM
 ```
@@ -22,7 +25,8 @@ MISSIONOS_OLLAMA_BASE_URL=http://localhost:11434
 ```
 
 When `MISSIONOS_LLM_BACKEND=off`, CLI-managed Gateway child processes disable
-LLM-backed ADK paths and use deterministic fallbacks where available.
+LLM-backed ADK paths and use deterministic fallbacks where available. Use this
+for boundary tests, not as the main MissionOS chat experience.
 
 When `MISSIONOS_LLM_BACKEND=ollama`, CLI-managed Gateway child processes do not
 receive `GOOGLE_API_KEY`, even when it is present in the parent environment or

@@ -371,9 +371,9 @@ def _gateway_unreachable_message(base_url: str) -> str:
         f"  missionos gateway start\n"
         f"  missionos gateway start --enable-live-sitl  # SITL dispatch opt-in\n"
         f"  # raw: {_gateway_start_command(base_url)}\n"
-        "For temporary sessions, use `missionos chat --autostart` or "
-        "`missionos tutorial --autostart`. Add `--enable-live-sitl` when the "
-        "session must reach live SITL dispatch."
+        "For temporary chat sessions, use `missionos chat --autostart`. Add "
+        "`--enable-live-sitl` only when the session must reach opt-in live "
+        "SITL dispatch."
     )
 
 
@@ -7328,7 +7328,7 @@ def tutorial_command(
     autostart: bool,
     enable_live_sitl: bool,
 ) -> None:
-    """Guided, step-by-step walkthrough that teaches the MissionOS CLI."""
+    """Experimental guided walkthrough; not the public quickstart."""
     client: MissionOSGatewayClient = ctx.obj["missionos_client"]
     gateway_proc = _ensure_gateway(
         client,
@@ -8811,7 +8811,7 @@ def play_command(
     gps_denied: bool,
     history_path: Path,
 ) -> None:
-    """Play AI mission control: adapt a mission toward safe success, then approve.
+    """Experimental deterministic lab; not the main LLM chat path.
 
     Deterministic what-if lab. With --bundled-weather (default) it needs no
     network; --real-weather pulls live Open-Meteo conditions for the scenario

@@ -1,8 +1,8 @@
 [project]
 name = "missionos-cli"
 version = "0.1.0"
-description = "MissionOS operator CLI — a self-contained HTTP client for the MissionOS Gateway."
-license = "MIT"
+description = "MissionOS operator CLI with chat, Gateway commands, local labs, and opt-in SITL launchers."
+license = "Apache-2.0"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

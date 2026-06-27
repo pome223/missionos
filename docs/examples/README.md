@@ -6,11 +6,16 @@ unproven.
 
 ## Planned Examples
 
-- Fixture mission: no simulator required, useful for CLI and Gateway smoke tests.
+These examples are planned documentation targets, not guaranteed public
+quickstarts. Each example must include commands, observed evidence, and
+limitations before it is promoted as runnable.
+
+- Mock/fixture mission: no simulator required, useful for maintainer CLI and
+  Gateway boundary checks.
 - Tokyo to Akihabara SITL story: public-safe writeup of a simulator mission with
   recovery and map evidence.
-- Mt. Fuji delivery tutorial: a bounded tutorial route that can run against a
-  fixture or opt-in SITL backend.
+- Mt. Fuji delivery tutorial: planned until the tutorial path is explicitly
+  verified in a public checkout.
 
 ## Example Checklist
 
@@ -19,7 +24,7 @@ Each example should state:
 - scenario
 - exact commands
 - production boundary exercised
-- observed task id or fixture id
+- observed task id or mock/fixture id
 - observed evidence
 - warnings and limitations
 - whether delivery completion and physical execution were proven

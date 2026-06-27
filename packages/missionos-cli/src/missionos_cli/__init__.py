@@ -1,11 +1,9 @@
 """MissionOS operator CLI.
 
-The operator-facing command surface for MissionOS. This package is a
-self-contained HTTP client: every command talks to a MissionOS Gateway over
-HTTP and renders the result. It carries no backend logic of its own.
-
-``cli.py`` is a byte-identical copy of the operator CLI shipped in the
-research mothership, so behaviour is the same by construction.
+The operator-facing command surface for MissionOS. The primary public path is
+the LLM-in-the-loop `missionos chat` surface. Most mission commands talk to a
+MissionOS Gateway over HTTP, while local labs and opt-in SITL helpers may call
+runtime modules directly.
 """
 
 from missionos_cli.cli import missionos

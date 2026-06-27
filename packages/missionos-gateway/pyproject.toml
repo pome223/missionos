@@ -1,8 +1,9 @@
 [project]
 name = "missionos-gateway"
 version = "0.1.0"
-description = "MissionOS Gateway fixture server and future runtime boundary."
+description = "MissionOS Gateway mock boundary server and future runtime boundary."
 requires-python = ">=3.11"
+license = "Apache-2.0"
 dependencies = []
 
 [project.scripts]
