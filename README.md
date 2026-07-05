@@ -70,14 +70,19 @@ MissionOS does not claim:
 > LLM judges. Human approves. Rules constrain. Executor acts. Verifier checks.
 > Repair loops.
 
-The same loop drives ground robots. Below, a TurtleBot3 in the stock Gazebo
-`turtlebot3_house` world was asked in chat to deliver to the bedroom: the
+The same loop drives an outdoor PX4 drone and an indoor ground robot. On the
+left, a chat-planned PX4/Gazebo SITL delivery across Tokyo: the initial plan,
+the observed trajectory, and an operator-approved obstacle-avoidance maneuver
+on a real OpenStreetMap basemap. On the right, a TurtleBot3 in the stock
+Gazebo `turtlebot3_house` world asked in chat to deliver to the bedroom: the
 approved plan (orange) and the AMCL-corrected observed trail (blue) pass
-through three real doorways from the front yard to the bedroom dropoff.
-MissionOS claims only `sim_action`; physical execution and payload delivery
-are never claimed.
+through three real doorways from the front yard to the bedroom dropoff. Both
+views are read-only evidence displays; MissionOS claims only sim results and
+never claims physical execution or payload delivery.
 
-![TurtleBot3 chat delivery to the bedroom in turtlebot3_house, planned route and observed trail on the evidence map](docs/agents/evidence/pr7-turtlebot3-chat-e2e-map-task_d9ecedc8e7d5.png)
+| PX4 drone · city delivery with obstacle avoidance | TurtleBot3 · house delivery to a named room |
+| --- | --- |
+| ![PX4 chat delivery across Tokyo with an approved obstacle-avoidance maneuver on the OpenStreetMap evidence map](docs/examples/assets/missionos-chat-obstacle-final-map.png) | ![TurtleBot3 chat delivery to the bedroom in turtlebot3_house, planned route and observed trail on the evidence map](docs/agents/evidence/pr7-turtlebot3-chat-e2e-map-task_d9ecedc8e7d5.png) |
 
 ## Chat Quickstart
 
