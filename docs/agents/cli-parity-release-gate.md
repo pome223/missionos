@@ -1,7 +1,7 @@
 # CLI Parity Release Gate
 
 This repository remains private until the extracted MissionOS CLI is verified to
-behave like the upstream private CLI for the supported MissionOS operator
+behave like the current `boiled-claw` CLI for the supported MissionOS operator
 workflow.
 
 The goal is not byte-for-byte source equality. The goal is operator-visible
@@ -64,7 +64,7 @@ Compare command inventory, help text, option names, defaults, and exit behavior.
 
 Evidence should include the exact commands used to capture help output from:
 
-- the upstream private CLI
+- current `boiled-claw`
 - extracted `missionos`
 
 ### 2. Fixture Gateway Parity
@@ -116,7 +116,7 @@ tree for:
 - private generated output
 - local absolute paths
 - private hostnames or endpoints
-- stale upstream package references that would break the extracted CLI
+- stale `boiled-claw` package references that would break the extracted CLI
 
 ## Non-Negotiable Claim Boundary
 

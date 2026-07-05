@@ -42,6 +42,58 @@ Gateway server internals, simulator runtimes, or hardware adapters.
 Runtime adapters are opt-in execution boundaries. They may produce runtime
 evidence, but they must not rewrite prior proposal or approval facts.
 
+## Hardware Adapter Contract
+
+The Real Hardware Bridge v1 starts with hardware-adapter evidence contracts in
+`src/runtime/hardware_adapter_contract.py`, a projection from the existing PX4
+bench arm/disarm executor, and a bounded ROS2/Nav2 ground-robot adapter wrapper
+and Unitree SDK2/MuJoCo adapter wrapper around injected client boundaries. It is
+not a field robot, drone, MAVSDK, or outdoor integration.
+
+`HardwareAdapter` is a structural protocol for future adapters. The current
+runtime implementation is the existing PX4 props-removed bench executor plus
+adapter artifacts plus Nav2 and Unitree client-wrapper slices, not a standalone
+fake adapter route.
+
+Hardware adapters must separate:
+
+- capability declaration
+- preflight
+- dispatch candidate
+- operator approval
+- dispatch request
+- ACK
+- progress observation
+- completion claim
+- completion scope
+- physical execution
+- safe stop or abort
+
+The contract tests prove that invalid evidence is rejected and that the existing
+PX4 bench executor writes structured adapter artifacts for blocked preflight and
+for executed arm/disarm results. Executed loopback results write
+`missionos_hardware_adapter_evidence` after command send, ACK, and state
+readback. Loopback execution remains `physical_execution_invoked=false`; real
+serial bench execution remains opt-in and separate from flight or delivery
+completion.
+
+The ROS2/Nav2 ground-robot slice can call a supplied `Nav2DispatchClient` after
+preflight and approval, but it does not import ROS2 and does not claim physical
+execution. The TurtleBot4 simulator bridge may cross an opt-in external ROS2
+command boundary and send a bounded Nav2 `NavigateToPose` action goal, but it
+can claim only simulator completion and must reject physical-execution or
+MissionOS-generated raw velocity/topic-command claims. Diagnostic simulator
+shims must be reported separately and cannot satisfy completion without Nav2
+success plus odometry motion. The Unitree SDK2/MuJoCo slice can call a supplied `UnitreeSimClient`
+after preflight, approval, and opt-in, but it does not import Unitree SDK2,
+start MuJoCo, issue raw motor or velocity commands, invoke special motions, or
+claim physical execution. Sim completion uses `completion_scope=sim_action`,
+not `adapter_action`.
+
+A real ROS2 client wrapper, real Unitree runner, PX4/MAVSDK, cage, or field
+adapter must preserve the same claim boundaries and add its own runtime smoke
+before it touches any live controller.
+
 ## Runtime Recovery Maneuvers
 
 The runtime recovery agent may propose these bounded actions:

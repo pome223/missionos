@@ -45,7 +45,9 @@ SITL_DISPATCH_TIMEOUT = 3600.0
 SITL_EXECUTION_POLL_INTERVAL = 5.0
 SITL_EXECUTION_POLL_TIMELINE_LIMIT = 5
 ACTIVE_RUNNER_RECOVERY_OBSERVATION_TIMEOUT_SECONDS = 95.0
-TERMINAL_TASK_STATUSES = frozenset({"completed", "blocked", "failed", "cancelled", "canceled"})
+TERMINAL_TASK_STATUSES = frozenset(
+    {"completed", "recovered", "blocked", "failed", "cancelled", "canceled"}
+)
 LIVE_SITL_RESPONSE_WAIT_EXCEEDED_MESSAGE = (
     "Execute Live SITL Gateway response exceeded the client wait window; "
     "showing observed task state."
@@ -59,6 +61,10 @@ DEFAULT_HISTORY_PATH = "data/missionos_cli_history"
 DEFAULT_OPERATE_HISTORY_PATH = "data/missionos_operate_history"
 DEFAULT_GATEWAY_PID_PATH = Path("data/missionos_gateway.pid")
 DEFAULT_GATEWAY_LOG_PATH = Path("data/missionos_gateway.log")
+DEFAULT_TURTLEBOT3_CHAT_INSTRUCTION = (
+    "TurtleBot3で屋内配送ルートを走って。障害物を避けて、目的地まで届けて。"
+)
+TURTLEBOT3_CHAT_TIMEOUT = 600.0
 GATEWAY_PID_RECORD_SCHEMA_VERSION = "missionos_gateway_pidfile.v1"
 CHAT_COMPANION_TERMINAL_ROOT = Path("data/missionos_chat_companions")
 CHAT_COMPANION_TERMINAL_SURFACES = ("operate", "watch", "map")
@@ -872,12 +878,19 @@ def _mission_designer_sitl_task_id(payload: dict[str, Any]) -> str:
         if isinstance(mission_designer.get("summary"), dict)
         else {}
     )
-    task_id = summary.get("sitl_execution_task_id")
+    task_id = (
+        summary.get("sitl_execution_task_id")
+        or summary.get("turtlebot3_home_mission_task_id")
+        or summary.get("task_id")
+    )
     if task_id:
         return str(task_id)
     task = mission_designer.get("sitl_execution_task")
     if isinstance(task, dict) and task.get("task_id"):
         return str(task["task_id"])
+    turtlebot3_task = mission_designer.get("turtlebot3_home_mission_task")
+    if isinstance(turtlebot3_task, dict) and turtlebot3_task.get("task_id"):
+        return str(turtlebot3_task["task_id"])
     return ""
 
 
@@ -929,7 +942,7 @@ def _remember_mission_designer_context(
     state["session_id"] = session_id
     state["missionos_gateway_url"] = str(ctx.obj.get("missionos_gateway_url") or "")
     state["mission_designer_context"] = context
-    task_id = _mission_designer_sitl_task_id(payload)
+    task_id = _mission_designer_sitl_task_id(payload) or _payload_task_id(payload)
     if task_id:
         state["sitl_execution_task_id"] = task_id
     _save_state(ctx.obj["missionos_state_path"], state)
@@ -4296,6 +4309,206 @@ def _watch_overlay_status_text(
     return "overlay: " + " · ".join(parts) if parts else None
 
 
+def _indoor_xy_points(records: Any) -> list[tuple[float, float]]:
+    points: list[tuple[float, float]] = []
+    if not isinstance(records, list):
+        return points
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        x_m = _as_float(record.get("x_m"))
+        y_m = _as_float(record.get("y_m"))
+        if x_m is None or y_m is None:
+            continue
+        points.append((x_m, y_m))
+    return points
+
+
+def _project_indoor_xy_points(
+    points: list[tuple[float, float]],
+    *,
+    width: int,
+    height: int,
+) -> list[tuple[int, int]]:
+    """Project ROS local-XY points onto a terminal grid.
+
+    Unlike the PX4/NED map, TurtleBot3 indoor maps use x to the right and y up.
+    Terminal rows are roughly twice as tall as columns, so vertical scale uses the
+    same compensation as the flight map projection.
+    """
+    if not points:
+        return []
+    xs = [p[0] for p in points]
+    ys = [p[1] for p in points]
+    xmin, xmax = min(xs), max(xs)
+    ymin, ymax = min(ys), max(ys)
+    span_x = max(xmax - xmin, 1e-6)
+    span_y = max(ymax - ymin, 1e-6)
+    scale = max(span_x / max(width - 1, 1), span_y / max((height - 1) * 2, 1)) or 1.0
+    cx = (xmin + xmax) / 2.0
+    cy = (ymin + ymax) / 2.0
+    projected: list[tuple[int, int]] = []
+    for x_m, y_m in points:
+        col = round((width - 1) / 2.0 + (x_m - cx) / scale)
+        row = round((height - 1) / 2.0 - (y_m - cy) / (scale * 2.0))
+        col = min(max(col, 0), width - 1)
+        row = min(max(row, 0), height - 1)
+        projected.append((row, col))
+    return projected
+
+
+TURTLEBOT3_MAP_ICON = "🐢"
+
+
+def _render_turtlebot3_indoor_map(
+    *,
+    indoor_map: dict[str, Any],
+    status: str,
+    task_id: str,
+) -> Group:
+    planned_records = indoor_map.get("planned_points")
+    planned_records = planned_records if isinstance(planned_records, list) else []
+    observed_records = indoor_map.get("observed_points")
+    observed_records = observed_records if isinstance(observed_records, list) else []
+    obstacle_records = indoor_map.get("obstacles")
+    obstacle_records = obstacle_records if isinstance(obstacle_records, list) else []
+    floor_plan = indoor_map.get("floor_plan")
+    floor_plan = floor_plan if isinstance(floor_plan, dict) else {}
+    furniture_records = floor_plan.get("furniture")
+    furniture_records = furniture_records if isinstance(furniture_records, list) else []
+    recovery = indoor_map.get("recovery")
+    recovery = recovery if isinstance(recovery, dict) else {}
+    recovery_records = recovery.get("observed_points")
+    recovery_records = recovery_records if isinstance(recovery_records, list) else []
+    recovery_target = recovery.get("target")
+    recovery_target_records = [recovery_target] if isinstance(recovery_target, dict) else []
+
+    planned_points = _indoor_xy_points(planned_records)
+    observed_points = _indoor_xy_points(observed_records)
+    obstacle_points = _indoor_xy_points(obstacle_records)
+    furniture_points = _indoor_xy_points(furniture_records)
+    recovery_points = _indoor_xy_points(recovery_records)
+    recovery_target_points = _indoor_xy_points(recovery_target_records)
+    obstacle_record = (
+        obstacle_records[0]
+        if obstacle_records and isinstance(obstacle_records[0], dict)
+        else {}
+    )
+    anchors = [
+        *planned_points,
+        *observed_points,
+        *furniture_points,
+        *obstacle_points,
+        *recovery_points,
+        *recovery_target_points,
+    ]
+    if not anchors:
+        anchors = [(0.0, 0.0)]
+    projected = _project_indoor_xy_points(
+        anchors,
+        width=FLIGHT_MAP_WIDTH,
+        height=FLIGHT_MAP_HEIGHT,
+    )
+    sections: dict[str, tuple[int, int]] = {}
+    cursor = 0
+    for name, points in (
+        ("planned", planned_points),
+        ("observed", observed_points),
+        ("furniture", furniture_points),
+        ("obstacles", obstacle_points),
+        ("recovery", recovery_points),
+        ("recovery_target", recovery_target_points),
+    ):
+        sections[name] = (cursor, cursor + len(points))
+        cursor += len(points)
+
+    def section(name: str) -> list[tuple[int, int]]:
+        start, end = sections.get(name, (0, 0))
+        return projected[start:end]
+
+    grid: list[list[tuple[str, str]]] = [
+        [(" ", "")] * FLIGHT_MAP_WIDTH for _ in range(FLIGHT_MAP_HEIGHT)
+    ]
+    for row, col in section("planned"):
+        grid[row][col] = ("p", "cyan")
+    for index, (row, col) in enumerate(section("observed")):
+        style = "green" if index >= max(0, len(observed_points) - 12) else "grey42"
+        grid[row][col] = ("·", style)
+    for (row, col), record in zip(section("furniture"), furniture_records, strict=False):
+        label = str(record.get("label") or record.get("kind") or "f").lower()
+        char = "F"
+        if "sofa" in label:
+            char = "S"
+        elif "table" in label:
+            char = "T"
+        elif "book" in label:
+            char = "B"
+        elif "counter" in label:
+            char = "C"
+        grid[row][col] = (char, "bold white")
+    for row, col in section("recovery"):
+        grid[row][col] = ("r", "bright_magenta")
+    for row, col in section("obstacles"):
+        grid[row][col] = ("O", "bold red")
+    for row, col in section("recovery_target"):
+        grid[row][col] = ("R", "bold magenta")
+    if planned_points:
+        home_row, home_col = section("planned")[0]
+        grid[home_row][home_col] = ("H", "bold blue")
+        drop_row, drop_col = section("planned")[-1]
+        grid[drop_row][drop_col] = ("D", "bold yellow")
+    if observed_points:
+        robot_row, robot_col = section("observed")[-1]
+        grid[robot_row][robot_col] = (TURTLEBOT3_MAP_ICON, "bold green")
+
+    body = Text()
+    for row in range(FLIGHT_MAP_HEIGHT):
+        for col in range(FLIGHT_MAP_WIDTH):
+            char, style = grid[row][col]
+            body.append(char, style=style)
+        if row != FLIGHT_MAP_HEIGHT - 1:
+            body.append("\n")
+
+    motion = indoor_map.get("motion")
+    motion = motion if isinstance(motion, dict) else {}
+    room = indoor_map.get("room_boundary")
+    room = room if isinstance(room, dict) else {}
+    alignment = indoor_map.get("display_alignment")
+    alignment = alignment if isinstance(alignment, dict) else {}
+    hud = Text.from_markup(
+        f"[bold]task[/bold]={task_id}  [bold]status[/bold]={status}  "
+        f"[bold]mission[/bold]={_status_text(indoor_map.get('mission_kind'))}\n"
+        f"frame={_status_text(indoor_map.get('frame_id'), 'map')}  "
+        f"planned={len(planned_points)}pts  observed={len(observed_points)}pts  "
+        f"obstacles={len(obstacle_points)}  furniture={len(furniture_points)}  "
+        f"recovery={_status_text(recovery.get('triggered'))}\n"
+        f"motion={_status_text(motion.get('robot_motion_observed'))}  "
+        f"odom={_fmt_metres(motion.get('odom_delta_m'))}  "
+        f"observed_source={_status_text(indoor_map.get('observed_pose_source'))}\n"
+        f"obstacle_clearance={_status_text(obstacle_record.get('trajectory_clearance_observed'))}  "
+        f"intersects_obstacle={_status_text(obstacle_record.get('trajectory_intersects_obstacle'))}\n"
+        f"display_alignment={_status_text(alignment.get('method'))}  "
+        f"applied={_status_text(alignment.get('applied'))}  "
+        f"dx={_fmt_metres(alignment.get('dx_m'))}  "
+        f"dy={_fmt_metres(alignment.get('dy_m'))}\n"
+        f"room={_status_text(room.get('source'))}; physical_execution_invoked=false\n"
+        f"floor_plan={_status_text(floor_plan.get('floor_plan_id'))}; "
+        "furniture is display-only unless separately spawned\n"
+        f"[blue]H[/blue]=home  [yellow]D[/yellow]=dropoff  [green]{TURTLEBOT3_MAP_ICON}[/green]=TurtleBot3  "
+        "[cyan]p[/cyan]=plan  [green]·[/green]=odom  "
+        "[white]S/T/B/C[/white]=sofa/table/bookshelf/counter  "
+        "[bright_magenta]r/R[/bright_magenta]=recovery path/target  [red]O[/red]=obstacle"
+    )
+    return Group(
+        Panel(
+            body,
+            title="MissionOS Indoor Map (TurtleBot3/Nav2 sim · right=+map x top=+map y)",
+            border_style="cyan",
+        ),
+        hud,
+    )
+
+
 def _render_flight_map(
     *,
     trail: list[tuple[float, float]],
@@ -4689,6 +4902,210 @@ def _mission_map_weather_model(artifacts: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _turtlebot3_indoor_map_model_from_artifacts(
+    artifacts: dict[str, Any],
+) -> dict[str, Any]:
+    direct = artifacts.get("turtlebot3_indoor_map_model")
+    if isinstance(direct, dict):
+        return _repair_turtlebot3_indoor_map_display_alignment(dict(direct))
+    execution = artifacts.get("turtlebot3_home_mission_execution")
+    execution = execution if isinstance(execution, dict) else {}
+    embedded = execution.get("turtlebot3_indoor_map_model")
+    if isinstance(embedded, dict):
+        return _repair_turtlebot3_indoor_map_display_alignment(dict(embedded))
+    summary = artifacts.get("summary")
+    summary = summary if isinstance(summary, dict) else {}
+    summary_embedded = summary.get("turtlebot3_indoor_map_model")
+    if isinstance(summary_embedded, dict):
+        return _repair_turtlebot3_indoor_map_display_alignment(dict(summary_embedded))
+    return {}
+
+
+def _turtlebot3_xy(point: dict[str, Any], *, raw: bool = False) -> tuple[float, float] | None:
+    x_key = "raw_x_m" if raw else "x_m"
+    y_key = "raw_y_m" if raw else "y_m"
+    x = _as_float(point.get(x_key))
+    y = _as_float(point.get(y_key))
+    if x is None or y is None:
+        return None
+    return x, y
+
+
+def _turtlebot3_indoor_map_dropoff_xy(
+    indoor_map: dict[str, Any],
+) -> tuple[float, float] | None:
+    planned = indoor_map.get("planned_points")
+    if not isinstance(planned, list):
+        return None
+    candidates = [point for point in planned if isinstance(point, dict)]
+    for point in reversed(candidates):
+        label = " ".join(
+            _status_text(point.get(key)).lower()
+            for key in ("phase", "label", "name", "kind", "role")
+        )
+        if "dropoff" in label:
+            xy = _turtlebot3_xy(point)
+            if xy is not None:
+                return xy
+    for point in reversed(candidates):
+        xy = _turtlebot3_xy(point)
+        if xy is not None:
+            return xy
+    return None
+
+
+def _repair_turtlebot3_indoor_map_points(
+    points: Any,
+) -> list[dict[str, Any]]:
+    repaired: list[dict[str, Any]] = []
+    if not isinstance(points, list):
+        return repaired
+    for point in points:
+        if not isinstance(point, dict):
+            continue
+        next_point = dict(point)
+        raw_xy = _turtlebot3_xy(next_point, raw=True)
+        if raw_xy is not None:
+            next_point["x_m"], next_point["y_m"] = raw_xy
+            next_point["frame_id"] = "map"
+            next_point["display_alignment_applied"] = False
+            next_point["display_alignment_repaired_from_raw_fields"] = True
+        repaired.append(next_point)
+    segment_counts: dict[str, int] = {}
+    for point in repaired:
+        segment_ref = _status_text(point.get("segment_ref"))
+        if segment_ref:
+            segment_counts[segment_ref] = segment_counts.get(segment_ref, 0) + 1
+    pruned: list[dict[str, Any]] = []
+    for point in repaired:
+        segment_ref = _status_text(point.get("segment_ref"))
+        sample_index = _as_float(point.get("sample_index"))
+        if (
+            point.get("display_alignment_repaired_from_raw_fields") is True
+            and segment_counts.get(segment_ref, 0) > 1
+            and sample_index == 0
+        ):
+            continue
+        pruned.append(point)
+    return pruned
+
+
+def _repair_turtlebot3_indoor_map_display_alignment(
+    indoor_map: dict[str, Any],
+) -> dict[str, Any]:
+    """Display-only repair for older maps that aligned map-frame samples as odom.
+
+    Some saved TurtleBot3 artifacts contain mixed odom/map trajectory samples.
+    Older display code aligned the whole observed path to home when the first
+    sample was odom, which also shifted later map-frame samples. When the raw
+    coordinates are clearly closer to the planned dropoff than the displayed
+    coordinates, recover the read-only map from the preserved raw fields.
+    """
+
+    alignment = indoor_map.get("display_alignment")
+    if not isinstance(alignment, dict):
+        return indoor_map
+    if alignment.get("method") != "first_observed_pose_to_planned_home":
+        return indoor_map
+    if alignment.get("applied") is not True:
+        return indoor_map
+    observed = indoor_map.get("observed_points")
+    if not isinstance(observed, list) or not observed:
+        return indoor_map
+    observed_points = [point for point in observed if isinstance(point, dict)]
+    if not observed_points:
+        return indoor_map
+    latest_observed = observed_points[-1]
+    latest_display_xy = _turtlebot3_xy(latest_observed)
+    latest_raw_xy = _turtlebot3_xy(latest_observed, raw=True)
+    dropoff_xy = _turtlebot3_indoor_map_dropoff_xy(indoor_map)
+    if (
+        latest_display_xy is None
+        or latest_raw_xy is None
+        or dropoff_xy is None
+    ):
+        return indoor_map
+    display_distance = math.hypot(
+        latest_display_xy[0] - dropoff_xy[0],
+        latest_display_xy[1] - dropoff_xy[1],
+    )
+    raw_distance = math.hypot(
+        latest_raw_xy[0] - dropoff_xy[0],
+        latest_raw_xy[1] - dropoff_xy[1],
+    )
+    if display_distance < 0.5 or raw_distance + 0.25 >= display_distance:
+        return indoor_map
+
+    repaired = dict(indoor_map)
+    repaired_observed = _repair_turtlebot3_indoor_map_points(observed_points)
+    repaired["observed_points"] = repaired_observed
+    recovery = repaired.get("recovery")
+    if isinstance(recovery, dict):
+        repaired_recovery = dict(recovery)
+        repaired_recovery["observed_points"] = _repair_turtlebot3_indoor_map_points(
+            recovery.get("observed_points")
+        )
+        repaired["recovery"] = repaired_recovery
+    if repaired_observed:
+        latest = dict(repaired_observed[-1])
+        latest["source"] = _status_text(
+            latest.get("source"),
+            "ros2_nav2_bridge_trajectory_samples",
+        )
+        repaired["current_pose"] = latest
+    repaired["display_alignment"] = {
+        "applied": False,
+        "method": "map_frame_samples_recovered_from_raw_fields",
+        "dx_m": 0.0,
+        "dy_m": 0.0,
+        "previous_method": "first_observed_pose_to_planned_home",
+        "previous_dx_m": alignment.get("dx_m"),
+        "previous_dy_m": alignment.get("dy_m"),
+        "repaired_display_only": True,
+        "claim_boundary": (
+            "Display-only recovery for older TurtleBot3 indoor maps that "
+            "preserved map-frame raw coordinates after odom-origin alignment. "
+            "This does not rewrite runtime evidence or change completion claims."
+        ),
+    }
+    return repaired
+
+
+def _mission_indoor_map_model(
+    *,
+    task_payload: dict[str, Any],
+    indoor_map: dict[str, Any],
+    live_task_url: str | None,
+    poll_interval: float,
+) -> dict[str, Any]:
+    task = _task_record(task_payload)
+    return {
+        **indoor_map,
+        "schema_version": "missionos_cli_indoor_map.v1",
+        "source_schema_version": indoor_map.get("schema_version"),
+        "map_kind": "indoor_local_xy",
+        "task_id": _status_text(task.get("task_id")),
+        "task_status": _task_status(task_payload),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "provider": {
+            "label": "Indoor local XY",
+            "url_template": "",
+            "attribution": "MissionOS TurtleBot3/Nav2 simulator evidence",
+            "attribution_url": "",
+        },
+        "live": {
+            "enabled": bool(live_task_url),
+            "task_url": live_task_url or "",
+            "poll_interval_ms": max(500, int(float(poll_interval) * 1000)),
+            "terminal_statuses": sorted(TERMINAL_TASK_STATUSES),
+        },
+        "boundaries": [
+            *list(indoor_map.get("claim_boundaries") or []),
+            "Indoor map display is read-only and is not a verifier, dispatch control, delivery claim, or physical-execution claim.",
+        ],
+    }
+
+
 def _mission_map_model(
     *,
     task_payload: dict[str, Any],
@@ -4698,6 +5115,14 @@ def _mission_map_model(
 ) -> dict[str, Any]:
     artifacts = _task_artifacts(task_payload)
     task = _task_record(task_payload)
+    indoor_map = _turtlebot3_indoor_map_model_from_artifacts(artifacts)
+    if indoor_map:
+        return _mission_indoor_map_model(
+            task_payload=task_payload,
+            indoor_map=indoor_map,
+            live_task_url=live_task_url,
+            poll_interval=poll_interval,
+        )
     route = _mission_map_latlon_from_route(artifacts)
     if route is None:
         raise click.ClickException(
@@ -4840,7 +5265,432 @@ def _json_for_html_script(payload: dict[str, Any]) -> str:
     return json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
 
 
+def _mission_indoor_map_html(model: dict[str, Any]) -> str:
+    model_json = _json_for_html_script(model)
+    escaped_title = html.escape(f"MissionOS Indoor Map · {model['task_id']}")
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{escaped_title}</title>
+  <style>
+    :root {{
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --ink: #172033;
+      --muted: #667085;
+      --line: #cbd5e1;
+      --room: #ffffff;
+      --room-zone: #f8fafc;
+      --furniture: #475569;
+      --plan: #d97706;
+      --observed: #0284c7;
+      --recovery: #7c3aed;
+      --home: #2563eb;
+      --dropoff: #16a34a;
+      --obstacle: #dc2626;
+    }}
+    * {{ box-sizing: border-box; }}
+    body {{
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }}
+    main {{ display: grid; gap: 14px; padding: 16px; }}
+    header {{ display: flex; justify-content: space-between; gap: 16px; align-items: start; }}
+    h1 {{ margin: 0; font-size: 1.15rem; letter-spacing: 0; }}
+    .muted {{ color: var(--muted); font-size: 0.86rem; line-height: 1.45; }}
+    .pill {{
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: white;
+      padding: 6px 10px;
+      white-space: nowrap;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }}
+    .map {{
+      position: relative;
+      min-height: 420px;
+      height: min(72vh, 760px);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background:
+        linear-gradient(90deg, rgba(148, 163, 184, .18) 1px, transparent 1px),
+        linear-gradient(rgba(148, 163, 184, .18) 1px, transparent 1px),
+        #eef2f7;
+      background-size: 32px 32px;
+      overflow: hidden;
+    }}
+    svg {{ position: absolute; inset: 0; width: 100%; height: 100%; }}
+    .room {{ fill: var(--room); stroke: #64748b; stroke-width: 2; }}
+    .room-zone {{ fill: var(--room-zone); stroke: #cbd5e1; stroke-width: 1.4; }}
+    .arena-wall {{ fill: none; stroke: #334155; stroke-width: 3.5; stroke-linejoin: round; }}
+    .wall-rect {{ fill: #334155; stroke: none; }}
+    .pillar {{ fill: rgba(71, 85, 105, .30); stroke: var(--furniture); stroke-width: 1.7; }}
+    .room-label {{ fill: #64748b; font-size: 10px; font-weight: 800; text-anchor: start; }}
+    .furniture {{ fill: rgba(71, 85, 105, .16); stroke: var(--furniture); stroke-width: 1.7; rx: 5; }}
+    .furniture-label {{ fill: #334155; font-size: 10px; font-weight: 800; text-anchor: middle; paint-order: stroke; stroke: white; stroke-width: 3; }}
+    .path-shadow {{ fill: none; stroke: rgba(15, 23, 42, .16); stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }}
+    .planned-path {{ fill: none; stroke: var(--plan); stroke-width: 2.5; stroke-dasharray: 8 7; stroke-linecap: round; stroke-linejoin: round; }}
+    .observed-path {{ fill: none; stroke: var(--observed); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }}
+    .recovery-path {{ fill: none; stroke: var(--recovery); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }}
+    .marker-home {{ fill: var(--home); stroke: white; stroke-width: 2; }}
+    .marker-dropoff {{ fill: var(--dropoff); stroke: white; stroke-width: 2; }}
+    .marker-current {{ fill: #ef4444; stroke: white; stroke-width: 2; }}
+    .marker-turtle {{
+      dominant-baseline: central;
+      font-size: 24px;
+      paint-order: stroke;
+      stroke: rgba(255, 255, 255, .95);
+      stroke-width: 5px;
+      text-anchor: middle;
+    }}
+    .marker-recovery {{ fill: var(--recovery); stroke: white; stroke-width: 2; }}
+    .obstacle {{ fill: rgba(220, 38, 38, .22); stroke: var(--obstacle); stroke-width: 2; }}
+    .obstacle-label {{ fill: var(--obstacle); font-size: 10px; font-weight: 800; text-anchor: middle; paint-order: stroke; stroke: white; stroke-width: 3; }}
+    .label {{ fill: #0f172a; font-size: 12px; font-weight: 800; paint-order: stroke; stroke: white; stroke-width: 4; }}
+    .legend {{
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, .88);
+      padding: 7px;
+      font-size: .72rem;
+    }}
+    .legend span {{ white-space: nowrap; }}
+    .facts {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+      gap: 8px;
+    }}
+    .fact {{
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      padding: 10px;
+      min-width: 0;
+    }}
+    .fact span {{ display: block; color: var(--muted); font-size: .74rem; }}
+    .fact strong {{ display: block; margin-top: 3px; overflow-wrap: anywhere; }}
+    code {{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }}
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>MissionOS Indoor Map</h1>
+        <div class="muted">TurtleBot3/Nav2 simulator local-XY evidence. This view is read-only and does not claim physical execution or payload delivery.</div>
+        <div class="muted" id="liveStatus">Snapshot loaded.</div>
+      </div>
+      <div class="pill" id="providerPill">Indoor local XY</div>
+    </header>
+    <section id="map" class="map" aria-label="MissionOS TurtleBot3 indoor map"></section>
+    <section class="facts" id="facts"></section>
+  </main>
+  <script id="mission-map-data" type="application/json">{model_json}</script>
+  <script>
+    let data = JSON.parse(document.getElementById("mission-map-data").textContent);
+    const mapEl = document.getElementById("map");
+    const factsEl = document.getElementById("facts");
+    const liveStatusEl = document.getElementById("liveStatus");
+    const terminalStatuses = new Set((data.live || {{}}).terminal_statuses || []);
+
+    function statusText(value, fallback = "-") {{
+      return value === null || value === undefined || value === "" ? fallback : String(value);
+    }}
+
+    function firstNumber(...values) {{
+      for (const value of values) {{
+        if (value === null || value === undefined || value === "") continue;
+        const number = Number(value);
+        if (Number.isFinite(number)) return number;
+      }}
+      return null;
+    }}
+
+    function points(records) {{
+      return (Array.isArray(records) ? records : []).filter((point) =>
+        point && Number.isFinite(Number(point.x_m)) && Number.isFinite(Number(point.y_m))
+      );
+    }}
+
+    function pathD(records, project) {{
+      return points(records).map(project).map((point, index) =>
+        `${{index ? "L" : "M"}}${{point.x.toFixed(2)}} ${{point.y.toFixed(2)}}`
+      ).join(" ");
+    }}
+
+    function pathGroupsBySegment(records) {{
+      const groups = [];
+      let current = [];
+      let currentKey = null;
+      for (const point of points(records)) {{
+        const key = statusText(
+          point.segment_ref || point.segment_label || point.segment_index,
+          "unsegmented",
+        );
+        if (current.length && key !== currentKey) {{
+          groups.push(current);
+          current = [];
+        }}
+        current.push(point);
+        currentKey = key;
+      }}
+      if (current.length) groups.push(current);
+      return groups;
+    }}
+
+    function pathMarkup(records, cssClass, project) {{
+      return pathGroupsBySegment(records).map((group) => {{
+        const d = pathD(group, project);
+        return d
+          ? `<path class="path-shadow" d="${{d}}"></path><path class="${{cssClass}}" d="${{d}}"></path>`
+          : "";
+      }}).join("");
+    }}
+
+    function escapeHtml(value) {{
+      const element = document.createElement("div");
+      element.textContent = String(value);
+      return element.innerHTML;
+    }}
+
+    function modelFromTaskPayload(payload) {{
+      const artifacts = payload && payload.artifacts ? payload.artifacts : (payload.task?.artifacts || {{}});
+      const indoor = artifacts.turtlebot3_indoor_map_model
+        || artifacts.turtlebot3_home_mission_execution?.turtlebot3_indoor_map_model
+        || artifacts.summary?.turtlebot3_indoor_map_model
+        || null;
+      if (!indoor) return data;
+      return {{
+        ...data,
+        ...indoor,
+        task_id: statusText(payload.task_id || payload.task?.task_id, data.task_id),
+        task_status: statusText(payload.status || payload.task?.status || payload.task?.task_status, data.task_status),
+        generated_at: new Date().toISOString(),
+      }};
+    }}
+
+    function render() {{
+      const width = mapEl.clientWidth || 980;
+      const height = mapEl.clientHeight || 560;
+      const pad = 46;
+      const boundary = data.room_boundary || {{}};
+      const allPoints = [
+        ...(data.planned_points || []),
+        ...(data.observed_points || []),
+        ...((data.recovery || {{}}).observed_points || []),
+        ...((data.recovery || {{}}).target ? [(data.recovery || {{}}).target] : []),
+        ...(data.obstacles || []),
+      ].filter((point) => point && Number.isFinite(Number(point.x_m)) && Number.isFinite(Number(point.y_m)));
+      const xs = allPoints.map((point) => Number(point.x_m));
+      const ys = allPoints.map((point) => Number(point.y_m));
+      let minX = firstNumber(boundary.min_x_m, Math.min(...xs), -2.5);
+      let maxX = firstNumber(boundary.max_x_m, Math.max(...xs), 1.0);
+      let minY = firstNumber(boundary.min_y_m, Math.min(...ys), -1.0);
+      let maxY = firstNumber(boundary.max_y_m, Math.max(...ys), 1.0);
+      if (Math.abs(maxX - minX) < 0.5) {{ minX -= 0.5; maxX += 0.5; }}
+      if (Math.abs(maxY - minY) < 0.5) {{ minY -= 0.5; maxY += 0.5; }}
+      const scale = Math.min((width - pad * 2) / (maxX - minX), (height - pad * 2) / (maxY - minY));
+      const roomW = (maxX - minX) * scale;
+      const roomH = (maxY - minY) * scale;
+      const roomX = (width - roomW) / 2;
+      const roomY = (height - roomH) / 2;
+      const project = (point) => ({{
+        x: roomX + (Number(point.x_m) - minX) * scale,
+        y: roomY + (maxY - Number(point.y_m)) * scale,
+      }});
+      const floorPlan = data.floor_plan || {{}};
+      const rectFromBounds = (record, cssClass, labelClass = "room-label") => {{
+        const minRectX = firstNumber(record.min_x_m);
+        const maxRectX = firstNumber(record.max_x_m);
+        const minRectY = firstNumber(record.min_y_m);
+        const maxRectY = firstNumber(record.max_y_m);
+        if (minRectX === null || maxRectX === null || minRectY === null || maxRectY === null) return "";
+        const a = project({{ x_m: minRectX, y_m: minRectY }});
+        const b = project({{ x_m: maxRectX, y_m: maxRectY }});
+        const x = Math.min(a.x, b.x);
+        const y = Math.min(a.y, b.y);
+        const w = Math.abs(a.x - b.x);
+        const h = Math.abs(a.y - b.y);
+        const label = statusText(record.label || record.room_id || record.name);
+        return `<rect class="${{cssClass}}" x="${{x.toFixed(2)}}" y="${{y.toFixed(2)}}" width="${{w.toFixed(2)}}" height="${{h.toFixed(2)}}"></rect><text class="${{labelClass}}" x="${{(x + 8).toFixed(2)}}" y="${{(y + 15).toFixed(2)}}">${{escapeHtml(label)}}</text>`;
+      }};
+      const rectFromCenter = (record, cssClass, labelClass = "furniture-label", labelDy = -6) => {{
+        if (!record || !Number.isFinite(Number(record.x_m)) || !Number.isFinite(Number(record.y_m))) return "";
+        const center = project(record);
+        const sizeX = firstNumber(record.size_x_m, 0.3) * scale;
+        const sizeY = firstNumber(record.size_y_m, 0.3) * scale;
+        const x = center.x - sizeX / 2;
+        const y = center.y - sizeY / 2;
+        const label = statusText(record.label || record.name || record.kind);
+        const labelOffsetX = firstNumber(record.label_offset_x_px, 0);
+        const fallbackOffsetY = label.toLowerCase() === "person" ? 34 : null;
+        const labelOffsetY = firstNumber(record.label_offset_y_px, fallbackOffsetY);
+        const labelX = center.x + labelOffsetX;
+        const labelY = labelOffsetY === null ? y + labelDy : center.y + labelOffsetY;
+        return `<rect class="${{cssClass}}" x="${{x.toFixed(2)}}" y="${{y.toFixed(2)}}" width="${{sizeX.toFixed(2)}}" height="${{sizeY.toFixed(2)}}"><title>${{escapeHtml(statusText(record.kind || record.name))}}</title></rect><text class="${{labelClass}}" x="${{labelX.toFixed(2)}}" y="${{labelY.toFixed(2)}}">${{escapeHtml(label)}}</text>`;
+      }};
+      const roomMarkup = (Array.isArray(floorPlan.rooms) ? floorPlan.rooms : [])
+        .map((room) => rectFromBounds(room, "room-zone"))
+        .join("");
+      const wallPolygon = Array.isArray(floorPlan.wall_polygon) ? floorPlan.wall_polygon : [];
+      const wallMarkup = wallPolygon.length >= 3
+        ? `<polygon class="arena-wall" points="${{wallPolygon.map((point) => {{
+            const p = project(point);
+            return `${{p.x.toFixed(2)}},${{p.y.toFixed(2)}}`;
+          }}).join(" ")}}"><title>turtlebot3_world wall (Nav2 SLAM map)</title></polygon>`
+        : "";
+      const wallRects = Array.isArray(floorPlan.walls) ? floorPlan.walls : [];
+      const wallRectMarkup = wallRects.map((wall) => {{
+        if (!Number.isFinite(Number(wall.x_m)) || !Number.isFinite(Number(wall.y_m))) return "";
+        const center = project(wall);
+        const sizeX = firstNumber(wall.size_x_m, 0.15) * scale;
+        const sizeY = firstNumber(wall.size_y_m, 0.15) * scale;
+        const deg = -(firstNumber(wall.yaw_rad, 0) * 180 / Math.PI);
+        return `<rect class="wall-rect" x="${{(center.x - sizeX / 2).toFixed(2)}}" y="${{(center.y - sizeY / 2).toFixed(2)}}" width="${{sizeX.toFixed(2)}}" height="${{sizeY.toFixed(2)}}" transform="rotate(${{deg.toFixed(2)}} ${{center.x.toFixed(2)}} ${{center.y.toFixed(2)}})"></rect>`;
+      }}).join("");
+      const pillars = Array.isArray(floorPlan.pillars) ? floorPlan.pillars : [];
+      const pillarMarkup = pillars.map((pillar) => {{
+        if (!Number.isFinite(Number(pillar.x_m)) || !Number.isFinite(Number(pillar.y_m))) return "";
+        const p = project(pillar);
+        const radius = firstNumber(pillar.radius_m, 0.15) * scale;
+        const label = statusText(pillar.furniture_label || pillar.name);
+        return `<circle class="pillar" cx="${{p.x.toFixed(2)}}" cy="${{p.y.toFixed(2)}}" r="${{radius.toFixed(2)}}"><title>${{escapeHtml(statusText(pillar.source))}}</title></circle><text class="furniture-label" x="${{p.x.toFixed(2)}}" y="${{(p.y - radius - 5).toFixed(2)}}">${{escapeHtml(label)}}</text>`;
+      }}).join("");
+      const pillarPositions = pillars
+        .filter((pillar) => Number.isFinite(Number(pillar.x_m)) && Number.isFinite(Number(pillar.y_m)));
+      const sitsOnPillar = (item) => pillarPositions.some((pillar) =>
+        Math.abs(Number(pillar.x_m) - Number(item.x_m)) < 0.01
+        && Math.abs(Number(pillar.y_m) - Number(item.y_m)) < 0.01);
+      const furnitureMarkup = (Array.isArray(floorPlan.furniture) ? floorPlan.furniture : [])
+        .filter((item) => !sitsOnPillar(item))
+        .map((item) => rectFromCenter(item, "furniture"))
+        .join("");
+      const plannedD = pathD(data.planned_points || [], project);
+      const recovery = data.recovery || {{}};
+      const recoveryPoints = [
+        ...(recovery.observed_points || []),
+        ...(recovery.target ? [recovery.target] : []),
+      ];
+      const observedMarkup = pathMarkup(data.observed_points || [], "observed-path", project);
+      const recoveryMarkup = pathMarkup(recoveryPoints, "recovery-path", project);
+      const recoveryLabel = recovery.selected_action === "avoid_obstacle"
+        ? "avoid obstacle"
+        : recovery.selected_action === "return_home"
+          ? "return home"
+          : statusText(recovery.selected_action, "recovery");
+      const planned = points(data.planned_points || []);
+      const home = planned.find((point) => point.role === "home") || planned[0];
+      const dropoff = [...planned].reverse().find((point) => point.role === "dropoff") || planned[planned.length - 1];
+      const current = data.current_pose || points(data.observed_points || []).at(-1) || points(recovery.observed_points || []).at(-1);
+      const obstacleMarkup = points(data.obstacles || []).map((obstacle) => {{
+        return rectFromCenter(obstacle, "obstacle", "obstacle-label", -7);
+      }}).join("");
+      const marker = (point, cssClass, label, labelDx = 12, labelDy = -10) => {{
+        if (!point) return "";
+        const p = project(point);
+        return `<circle class="${{cssClass}}" cx="${{p.x.toFixed(2)}}" cy="${{p.y.toFixed(2)}}" r="8"></circle><text class="label" x="${{(p.x + labelDx).toFixed(2)}}" y="${{(p.y + labelDy).toFixed(2)}}">${{label}}</text>`;
+      }};
+      const turtleMarker = (point) => {{
+        if (!point) return "";
+        const p = project(point);
+        return `<text class="marker-turtle" x="${{p.x.toFixed(2)}}" y="${{p.y.toFixed(2)}}">{TURTLEBOT3_MAP_ICON}</text><text class="label" x="${{(p.x + 18).toFixed(2)}}" y="${{(p.y + 16).toFixed(2)}}">TurtleBot3</text>`;
+      }};
+      mapEl.innerHTML = `
+        <svg viewBox="0 0 ${{width}} ${{height}}">
+          <rect class="room" x="${{roomX.toFixed(2)}}" y="${{roomY.toFixed(2)}}" width="${{roomW.toFixed(2)}}" height="${{roomH.toFixed(2)}}"></rect>
+          ${{roomMarkup}}
+          ${{wallMarkup}}
+          ${{wallRectMarkup}}
+          ${{pillarMarkup}}
+          ${{furnitureMarkup}}
+          ${{plannedD ? `<path class="path-shadow" d="${{plannedD}}"></path><path class="planned-path" d="${{plannedD}}"></path>` : ""}}
+          ${{observedMarkup}}
+          ${{recoveryMarkup}}
+          ${{obstacleMarkup}}
+          ${{marker(home, "marker-home", "H home")}}
+          ${{marker(dropoff, "marker-dropoff", dropoff && dropoff.room_label ? `D dropoff · ${{escapeHtml(statusText(dropoff.room_label))}}` : "D dropoff", 12, -18)}}
+          ${{marker(recovery.target, "marker-recovery", recoveryLabel, 12, 18)}}
+          ${{turtleMarker(current)}}
+        </svg>
+        <div class="legend">
+          <span style="color: var(--plan)">plan</span>
+          <span style="color: var(--observed)">observed odom</span>
+          <span>{TURTLEBOT3_MAP_ICON} TurtleBot3</span>
+          <span style="color: var(--furniture)">furniture (sim pillars)</span>
+          <span style="color: #334155">wall</span>
+          <span style="color: var(--recovery)">recovery</span>
+          <span style="color: var(--obstacle)">obstacle</span>
+        </div>
+      `;
+      factsEl.innerHTML = [
+        ["task", data.task_id],
+        ["status", data.task_status || data.mission_status || "-"],
+        ["mission", data.mission_kind || "-"],
+        ["frame", data.frame_id || "map"],
+        ["planned", `${{points(data.planned_points || []).length}}pts`],
+        ["observed", `${{points(data.observed_points || []).length}}pts · source=${{statusText(data.observed_pose_source)}}`],
+        ["obstacles", `${{points(data.obstacles || []).length}} · observed=${{statusText((data.obstacles || [])[0]?.observed)}}`],
+        ["floor plan", statusText((data.floor_plan || {{}}).floor_plan_id)],
+        ["furniture", `${{Array.isArray((data.floor_plan || {{}}).furniture) ? data.floor_plan.furniture.length : 0}} · on_sim_pillars=${{Array.isArray((data.floor_plan || {{}}).pillars) && data.floor_plan.pillars.length > 0}}`],
+        ["display decimation", `${{statusText((data.display_decimation || {{}}).method)}} · ${{statusText((data.display_decimation || {{}}).raw_point_count)}}→${{statusText((data.display_decimation || {{}}).display_point_count)}}pts`],
+        ["obstacle clearance", `clear=${{statusText((data.obstacles || [])[0]?.trajectory_clearance_observed)}} · intersects=${{statusText((data.obstacles || [])[0]?.trajectory_intersects_obstacle)}}`],
+        ["recovery", `triggered=${{statusText(recovery.triggered)}} · action=${{statusText(recovery.selected_action)}} · completion=${{statusText(recovery.completion_claimed)}}`],
+        ["motion", `observed=${{statusText((data.motion || {{}}).robot_motion_observed)}} · odom=${{statusText((data.motion || {{}}).odom_delta_m)}}m`],
+        ["display alignment", `${{statusText((data.display_alignment || {{}}).method)}} · applied=${{statusText((data.display_alignment || {{}}).applied)}} · dx=${{statusText((data.display_alignment || {{}}).dx_m)}}m · dy=${{statusText((data.display_alignment || {{}}).dy_m)}}m`],
+        ["boundary", statusText((data.room_boundary || {{}}).claim_boundary)],
+        ["physical", statusText(data.physical_execution_invoked)],
+        ["generated", data.generated_at],
+      ].map(([key, value]) => `<div class="fact"><span>${{key}}</span><strong><code>${{escapeHtml(value)}}</code></strong></div>`).join("");
+    }}
+
+    async function refreshLive() {{
+      const live = data.live || {{}};
+      if (!live.enabled || !live.task_url) return;
+      try {{
+        const response = await fetch(live.task_url, {{ cache: "no-store" }});
+        if (!response.ok) throw new Error(`HTTP ${{response.status}}`);
+        data = modelFromTaskPayload(await response.json());
+        render();
+        liveStatusEl.textContent = `Live: updated ${{new Date().toLocaleTimeString()}} · status=${{data.task_status || "-"}}`;
+        if (terminalStatuses.has(data.task_status) && window.__missionIndoorTimer) {{
+          window.clearInterval(window.__missionIndoorTimer);
+          window.__missionIndoorTimer = null;
+        }}
+      }} catch (error) {{
+        liveStatusEl.textContent = `Live update failed: ${{error.message}}`;
+      }}
+    }}
+
+    window.addEventListener("resize", render);
+    render();
+    if (data.live && data.live.enabled && data.live.task_url) {{
+      liveStatusEl.textContent = `Live: polling Gateway`;
+      window.__missionIndoorTimer = window.setInterval(refreshLive, data.live.poll_interval_ms || 1000);
+      refreshLive();
+    }} else {{
+      liveStatusEl.textContent = "Snapshot: no live polling";
+    }}
+  </script>
+</body>
+</html>
+"""
+
+
 def _mission_map_html(model: dict[str, Any]) -> str:
+    if model.get("map_kind") == "indoor_local_xy":
+        return _mission_indoor_map_html(model)
     model_json = _json_for_html_script(model)
     escaped_title = html.escape(f"MissionOS 2D Map · {model['task_id']}")
     return f"""<!doctype html>
@@ -5828,6 +6678,20 @@ def _watch_flight_map(
                 time.sleep(max(0.05, poll_interval))
                 continue
             artifacts = _task_artifacts(task_payload)
+            indoor_map = _turtlebot3_indoor_map_model_from_artifacts(artifacts)
+            status = _task_status(task_payload)
+            if indoor_map:
+                live.update(
+                    _render_turtlebot3_indoor_map(
+                        indoor_map=indoor_map,
+                        status=status,
+                        task_id=task_id,
+                    )
+                )
+                if status in TERMINAL_TASK_STATUSES:
+                    break
+                time.sleep(max(0.05, poll_interval))
+                continue
             snapshot = artifacts.get("missionos_auto_mission_runtime_snapshot")
             snapshot = snapshot if isinstance(snapshot, dict) else {}
             north = _as_float(snapshot.get("local_x_m"))
@@ -5837,7 +6701,6 @@ def _watch_flight_map(
                     trail.append((north, east))
                     if len(trail) > _FLIGHT_MAP_TRAIL_LIMIT:
                         del trail[: len(trail) - _FLIGHT_MAP_TRAIL_LIMIT]
-            status = _task_status(task_payload)
             if trail:
                 live.update(
                     _render_flight_map(
@@ -5953,16 +6816,23 @@ def map_command(
     path = _write_mission_map_html(model=model, output_path=output_path)
     file_url = path.resolve().as_uri()
     if ctx.obj["missionos_json_output"]:
+        display_points = len(
+            model.get("points")
+            or model.get("observed_points")
+            or model.get("planned_points")
+            or []
+        )
         _print_json(
             {
                 "task_id": resolved_task_id,
+                "map_kind": model.get("map_kind", "wgs84_route_overlay"),
                 "map_provider": model["provider"]["label"],
-	                "output_path": str(path),
-	                "file_url": file_url,
-	                "point_count": len(model.get("points") or []),
-	                "planned_point_count": len(model.get("planned_points") or []),
-	                "observed_point_count": len(model.get("observed_points") or []),
-	                "obstacle_count": len(model.get("obstacles") or []),
+                "output_path": str(path),
+                "file_url": file_url,
+                "point_count": display_points,
+                "planned_point_count": len(model.get("planned_points") or []),
+                "observed_point_count": len(model.get("observed_points") or []),
+                "obstacle_count": len(model.get("obstacles") or []),
 	                "avoidance_sample_count": len(
 	                    (model.get("avoidance") or {}).get("samples") or []
 	                ),
@@ -5974,23 +6844,35 @@ def map_command(
     opened = False
     if not no_open:
         opened = click.launch(file_url) == 0
+    display_points = len(
+        model.get("points")
+        or model.get("observed_points")
+        or model.get("planned_points")
+        or []
+    )
+    boundary_text = (
+        "boundary=indoor local-XY MissionOS/Nav2 evidence display; read-only, not verifier/dispatch/delivery/physical claim"
+        if model.get("map_kind") == "indoor_local_xy"
+        else "boundary=real basemap tiles + MissionOS route/telemetry overlay; read-only, not verifier/dispatch/delivery claim"
+    )
     console.print(
         Panel(
             "\n".join(
                 [
                     f"task_id={resolved_task_id}",
-	                    f"provider={model['provider']['label']}",
-	                    f"points={len(model.get('points') or [])}",
-	                    f"planned={len(model.get('planned_points') or [])}",
-	                    f"observed={len(model.get('observed_points') or [])}",
-	                    f"obstacles={len(model.get('obstacles') or [])}",
+                    f"map_kind={model.get('map_kind', 'wgs84_route_overlay')}",
+                    f"provider={model['provider']['label']}",
+                    f"points={display_points}",
+                    f"planned={len(model.get('planned_points') or [])}",
+                    f"observed={len(model.get('observed_points') or [])}",
+                    f"obstacles={len(model.get('obstacles') or [])}",
 	                    "avoidance_samples="
 	                    f"{len((model.get('avoidance') or {}).get('samples') or [])}",
 	                    f"html={path}",
                     f"url={file_url}",
                     "live=" + ("true" if model.get("live", {}).get("enabled") else "false"),
                     "opened=" + ("true" if opened else "false"),
-                    "boundary=real basemap tiles + MissionOS route/telemetry overlay; read-only, not verifier/dispatch/delivery claim",
+                    boundary_text,
                 ]
             ),
             title="MissionOS 2D Map",
@@ -6044,6 +6926,19 @@ def _agent_proposal_from_task(task_payload: dict[str, Any]) -> dict[str, Any] | 
         if isinstance(assessment.get("proposed_parameters"), dict)
         else {},
     }
+
+
+def _is_turtlebot3_task_artifacts(artifacts: dict[str, Any]) -> bool:
+    summary = artifacts.get("summary")
+    summary = summary if isinstance(summary, dict) else {}
+    execution = artifacts.get("turtlebot3_home_mission_execution")
+    execution = execution if isinstance(execution, dict) else {}
+    indoor_map = artifacts.get("turtlebot3_indoor_map_model")
+    return (
+        summary.get("execution_target") == "ros2_nav2_turtlebot3_sim"
+        or execution.get("execution_target") == "ros2_nav2_turtlebot3_sim"
+        or isinstance(indoor_map, dict)
+    )
 
 
 def _is_real_mission_designer_sitl_task(task: dict[str, Any]) -> bool:
@@ -6336,6 +7231,7 @@ def _render_recovery_agent_console(
     Rendered at the top of `operate` so it is always visible (never scrolled off).
     """
     artifacts = _task_artifacts(task_payload)
+    is_turtlebot3 = _is_turtlebot3_task_artifacts(artifacts)
     bridge = artifacts.get("missionos_runtime_recovery_agent_live_bridge")
     bridge = bridge if isinstance(bridge, dict) else {}
     telemetry = bridge.get("telemetry_snapshot")
@@ -6393,17 +7289,32 @@ def _render_recovery_agent_console(
     elif status == "running":
         lines.append("[dim]Recognition/proposal: waiting (live proposals appear here)[/dim]")
     else:
-        lines.append(f"[dim]status={status} (proposals are shown only while flying)[/dim]")
+        if is_turtlebot3:
+            lines.append(
+                f"[dim]status={status} "
+                "(TurtleBot3 recovery proposals appear only during an active sim route)[/dim]"
+            )
+        else:
+            lines.append(f"[dim]status={status} (proposals are shown only while flying)[/dim]")
 
     lines.append("")
     tid = task_id or "<task>"
-    lines.append(
-        "[dim]Type here; every dispatch still uses standard y/N confirmation:[/dim] "
-        f"[bold]rtl[/bold] / [bold]land[/bold] / [bold]climb <m>[/bold] / "
-        f"[bold]speed <m/s>[/bold] / [bold]reroute <x> <y> (alt)[/bold] / "
-        f"[bold]avoid <x> <y> (alt)[/bold]  "
-        f"[dim](task={tid}) · exit: Ctrl-C[/dim]"
-    )
+    if is_turtlebot3:
+        lines.append(
+            "[dim]Type here; bounded recovery dispatches still use standard y/N "
+            "confirmation:[/dim] "
+            f"[bold]status[/bold] / [bold]avoid <x> <y>[/bold] / "
+            f"[bold]reroute <x> <y>[/bold]  "
+            f"[dim](TurtleBot3 local XY, task={tid}) · exit: Ctrl-C[/dim]"
+        )
+    else:
+        lines.append(
+            "[dim]Type here; every dispatch still uses standard y/N confirmation:[/dim] "
+            f"[bold]rtl[/bold] / [bold]land[/bold] / [bold]climb <m>[/bold] / "
+            f"[bold]speed <m/s>[/bold] / [bold]reroute <x> <y> (alt)[/bold] / "
+            f"[bold]avoid <x> <y> (alt)[/bold]  "
+            f"[dim](task={tid}) · exit: Ctrl-C[/dim]"
+        )
     border = "yellow" if (show_proposal and proposal) else "cyan"
     return Panel(
         "\n".join(lines),
@@ -6476,20 +7387,32 @@ _OPERATE_PARAMETER_ALIASES = {
 }
 
 
-def _operate_console_help_panel(task_id: str) -> Panel:
-    lines = [
-        "[bold]Commands[/bold]",
-        "  status | refresh        show the latest recovery/telemetry state",
-        "  rtl                     request return-to-launch",
-        "  land                    request land",
-        "  climb 45                request altitude adjustment to 45 m above home",
-        "  speed 7                 request speed adjustment to 7 m/s",
-        "  reroute 120 -20 (45)    request local NED x/y target, optional altitude",
-        "  avoid 40 20 (45)        request obstacle-avoidance target",
-        "  quit                    exit operate",
-        "",
-        "[dim]Dispatches still go through recovery-dispatch and require human confirmation.[/dim]",
-    ]
+def _operate_console_help_panel(task_id: str, *, robot: str = "px4") -> Panel:
+    if robot == "turtlebot3":
+        lines = [
+            "[bold]Commands[/bold]",
+            "  status | refresh        show the latest TurtleBot3 sim state",
+            "  avoid -0.85 -0.85      request bounded local-XY obstacle recovery",
+            "  reroute 0.75 0.0       request bounded local-XY route adjustment",
+            "  quit                    exit operate",
+            "",
+            "[dim]Dispatches still go through recovery-dispatch and require human confirmation. "
+            "TurtleBot3 operate does not expose land/climb/speed/RTL flight controls.[/dim]",
+        ]
+    else:
+        lines = [
+            "[bold]Commands[/bold]",
+            "  status | refresh        show the latest recovery/telemetry state",
+            "  rtl                     request return-to-launch",
+            "  land                    request land",
+            "  climb 45                request altitude adjustment to 45 m above home",
+            "  speed 7                 request speed adjustment to 7 m/s",
+            "  reroute 120 -20 (45)    request local NED x/y target, optional altitude",
+            "  avoid 40 20 (45)        request obstacle-avoidance target",
+            "  quit                    exit operate",
+            "",
+            "[dim]Dispatches still go through recovery-dispatch and require human confirmation.[/dim]",
+        ]
     return Panel(
         "\n".join(lines),
         title=f"Operate Commands · task={task_id}",
@@ -6637,6 +7560,23 @@ def _render_operate_status_line(
     snapshot: dict[str, Any], *, artifacts: dict[str, Any], status: str, task_id: str
 ) -> Text:
     """One compact live-telemetry line for operate (full map is in `missionos watch`)."""
+    if _is_turtlebot3_task_artifacts(artifacts):
+        summary = artifacts.get("summary")
+        summary = summary if isinstance(summary, dict) else {}
+        motion = summary.get("motion_evidence")
+        motion = motion if isinstance(motion, dict) else summary
+        indoor_map = _turtlebot3_indoor_map_model_from_artifacts(artifacts)
+        observed_points = indoor_map.get("observed_points")
+        planned_points = indoor_map.get("planned_points")
+        return Text.from_markup(
+            f"[dim]task={task_id} status={status} · "
+            f"robot=TurtleBot3 sim · "
+            f"motion={_status_text(motion.get('robot_motion_observed'))} · "
+            f"odom={_status_text(motion.get('odom_delta_m'))}m · "
+            f"map_points={len(observed_points) if isinstance(observed_points, list) else 0}/"
+            f"{len(planned_points) if isinstance(planned_points, list) else 0} · "
+            "full indoor map in a separate pane: `missionos watch`[/dim]"
+        )
     reached = _status_text(_as_int(snapshot.get("mission_reached_seq")))
     total = _status_text(_as_int(snapshot.get("waypoint_total")))
     return Text.from_markup(
@@ -6680,6 +7620,12 @@ def _operate_status_group(
     )
 
 
+def _operate_robot_for_task(client: MissionOSGatewayClient, task_id: str) -> str:
+    task_payload, _ = _task_and_timeline(client, task_id, timeline_limit=0)
+    artifacts = _task_artifacts(task_payload)
+    return "turtlebot3" if _is_turtlebot3_task_artifacts(artifacts) else "px4"
+
+
 def _handle_operate_console_command(
     client: MissionOSGatewayClient,
     task_id: str,
@@ -6688,7 +7634,12 @@ def _handle_operate_console_command(
     if command.kind == "quit":
         return False
     if command.kind == "help":
-        console.print(_operate_console_help_panel(task_id))
+        console.print(
+            _operate_console_help_panel(
+                task_id,
+                robot=_operate_robot_for_task(client, task_id),
+            )
+        )
         return True
     if command.kind == "refresh":
         return True
@@ -6726,7 +7677,12 @@ def _operate_live(
     """
     session = _build_operate_session(history_path) if sys.stdin.isatty() else None
     scripted_input = None if session is not None else iter(sys.stdin)
-    console.print(_operate_console_help_panel(task_id))
+    console.print(
+        _operate_console_help_panel(
+            task_id,
+            robot=_operate_robot_for_task(client, task_id),
+        )
+    )
 
     render_lock = threading.Lock()
     stop_refresh = threading.Event()
@@ -7428,6 +8384,33 @@ def _looks_like_mission_planning_request(raw: str) -> bool:
         return True
     if re.search(r"\bfrom\s+.+\bto\s+.+", text):
         return True
+    home_robot_terms = (
+        "turtlebot3",
+        "turtlebot",
+        "亀",
+        "かめ",
+        "タートルボット",
+        "屋内",
+        "家の中",
+        "部屋",
+    )
+    mission_terms = (
+        "配送",
+        "配達",
+        "届け",
+        "目的地",
+        "ルート",
+        "走って",
+        "一周",
+        "patrol",
+        "delivery",
+        "deliver",
+        "route",
+    )
+    if any(term in text for term in home_robot_terms) and any(
+        term in text for term in mission_terms
+    ):
+        return True
     return False
 
 
@@ -7930,6 +8913,20 @@ def _ensure_chat_companion_terminals(ctx: click.Context, task_id: str) -> None:
         )
 
 
+def _maybe_open_turtlebot3_companion_terminals(
+    ctx: click.Context,
+    payload: dict[str, Any],
+) -> None:
+    operation = payload.get("operation_result")
+    operation = operation if isinstance(operation, dict) else {}
+    summary = operation.get("summary") if isinstance(operation.get("summary"), dict) else {}
+    if summary.get("execution_target") != "ros2_nav2_turtlebot3_sim":
+        return
+    task_id = _payload_task_id(operation) or _payload_task_id(payload)
+    if task_id:
+        _ensure_chat_companion_terminals(ctx, task_id)
+
+
 def _conversation_has_approvable_plan(payload: dict[str, Any]) -> bool:
     mission_designer = payload.get("mission_designer")
     mission_designer = mission_designer if isinstance(mission_designer, dict) else {}
@@ -8017,7 +9014,18 @@ def _update_chat_suggestion_from_conversation(
     elif action == "approve":
         _set_chat_suggestion(ctx, raw="/run", label="prepare")
     elif action == "execute" and _stored_sitl_task_id(ctx):
-        _set_chat_suggestion(ctx, raw="/start-sitl", label="start")
+        operation = payload.get("operation_result")
+        operation = operation if isinstance(operation, dict) else {}
+        summary = (
+            operation.get("summary")
+            if isinstance(operation.get("summary"), dict)
+            else {}
+        )
+        if summary.get("execution_target") == "ros2_nav2_turtlebot3_sim":
+            task_id = _stored_sitl_task_id(ctx)
+            _set_chat_suggestion(ctx, raw=f"/map {task_id}", label="map")
+        else:
+            _set_chat_suggestion(ctx, raw="/start-sitl", label="start")
     else:
         _clear_chat_suggestion(ctx)
 
@@ -8350,6 +9358,7 @@ def _handle_chat_input(
                         client_surface="chat",
                 )
                 _remember_mission_designer_context(ctx, payload, session_id=session_id)
+                _maybe_open_turtlebot3_companion_terminals(ctx, payload)
                 _print_conversation_result(payload)
                 _update_chat_suggestion_from_conversation(ctx, payload)
                 return True
@@ -8372,6 +9381,7 @@ def _handle_chat_input(
                 client_surface="chat",
         )
         _remember_mission_designer_context(ctx, payload, session_id=session_id)
+        _maybe_open_turtlebot3_companion_terminals(ctx, payload)
         _print_conversation_result(payload)
         _update_chat_suggestion_from_conversation(ctx, payload)
     except click.ClickException as exc:
@@ -8425,8 +9435,259 @@ def _chat_initial_instruction_and_autostart(
             enable_live_sitl = False
 
 
+def _find_repo_root_for_turtlebot3_smoke() -> Path:
+    script_rel = Path("scripts/smoke_ros2_nav2_turtlebot3_obstacle_delivery_docker.sh")
+    candidates: list[Path] = []
+    cwd = Path.cwd().resolve()
+    candidates.extend([cwd, *cwd.parents])
+    module_path = Path(__file__).resolve()
+    candidates.extend([module_path.parent, *module_path.parents])
+    for candidate in candidates:
+        if (candidate / script_rel).is_file():
+            return candidate
+    return cwd
+
+
+def _run_turtlebot3_chat_smoke(
+    *,
+    instruction: str,
+    build_image: bool,
+    mid_recovery: bool,
+    dry_run: bool,
+) -> int:
+    repo_root = _find_repo_root_for_turtlebot3_smoke()
+    script = repo_root / "scripts" / "smoke_ros2_nav2_turtlebot3_obstacle_delivery_docker.sh"
+    if not script.is_file():
+        console.print(
+            "[red]TurtleBot3 Docker smoke script was not found. "
+            "Run this command from the MissionOS repository root.[/red]"
+        )
+        return 2
+    image = os.environ.get(
+        "MISSIONOS_TB3_DOCKER_IMAGE",
+        "missionos-ros2-nav2-turtlebot3:local",
+    )
+    env = os.environ.copy()
+    env["MISSIONOS_CHAT_TURTLEBOT3_HOME_MISSION_INSTRUCTION"] = (
+        instruction.strip() or DEFAULT_TURTLEBOT3_CHAT_INSTRUCTION
+    )
+    if mid_recovery:
+        env["MISSIONOS_CHAT_TURTLEBOT3_MID_RECOVERY_SMOKE"] = "1"
+
+    build_cmd = (
+        "docker",
+        "build",
+        "-f",
+        "docker/ros2_nav2_turtlebot3/Dockerfile",
+        "-t",
+        image,
+        ".",
+    )
+    run_cmd = (str(script),)
+    console.print(
+        Panel(
+            "\n".join(
+                (
+                    f"instruction={env['MISSIONOS_CHAT_TURTLEBOT3_HOME_MISSION_INSTRUCTION']}",
+                    f"repo_root={repo_root}",
+                    f"image={image}",
+                    "boundary=MissionOS chat -> Gateway -> TurtleBot3/Nav2/Gazebo sim",
+                    "claim_scope=sim_action; physical_execution_invoked=false",
+                )
+            ),
+            title="TurtleBot3 MissionOS Chat",
+            border_style="green",
+        )
+    )
+    if dry_run:
+        if build_image:
+            console.print("[cyan]build:[/cyan] " + shlex.join(build_cmd))
+        console.print(
+            "[cyan]run:[/cyan] "
+            + "MISSIONOS_CHAT_TURTLEBOT3_HOME_MISSION_INSTRUCTION="
+            + shlex.quote(env["MISSIONOS_CHAT_TURTLEBOT3_HOME_MISSION_INSTRUCTION"])
+            + (" MISSIONOS_CHAT_TURTLEBOT3_MID_RECOVERY_SMOKE=1" if mid_recovery else "")
+            + " "
+            + shlex.join(run_cmd)
+        )
+        return 0
+    if build_image:
+        build_result = subprocess.run(build_cmd, cwd=str(repo_root), env=env, check=False)
+        if build_result.returncode != 0:
+            return int(build_result.returncode)
+    run_result = subprocess.run(run_cmd, cwd=str(repo_root), env=env, check=False)
+    return int(run_result.returncode)
+
+
+def _turtlebot3_gateway_container_name() -> str:
+    return os.environ.get(
+        "MISSIONOS_TB3_GATEWAY_CONTAINER",
+        "missionos-turtlebot3-gateway",
+    ).strip() or "missionos-turtlebot3-gateway"
+
+
+def _turtlebot3_gateway_start_script(repo_root: Path) -> Path:
+    return repo_root / "scripts" / "start_ros2_nav2_turtlebot3_gateway_docker.sh"
+
+
+def _start_turtlebot3_gateway_container(
+    *,
+    gateway_url: str,
+    instruction: str,
+    build_image: bool,
+    dry_run: bool,
+) -> bool:
+    repo_root = _find_repo_root_for_turtlebot3_smoke()
+    script = _turtlebot3_gateway_start_script(repo_root)
+    if not script.is_file():
+        raise click.ClickException(
+            "TurtleBot3 Gateway Docker launcher was not found. "
+            "Run this command from the MissionOS repository root."
+        )
+    host, port = _gateway_host_port(gateway_url)
+    if host not in {"127.0.0.1", "localhost"}:
+        raise click.ClickException(
+            "--robot turtlebot3 can autostart the Docker Gateway only on localhost. "
+            f"Current gateway host is {host!r}."
+        )
+    image = os.environ.get(
+        "MISSIONOS_TB3_DOCKER_IMAGE",
+        "missionos-ros2-nav2-turtlebot3:local",
+    )
+    env = os.environ.copy()
+    env["MISSIONOS_TB3_DOCKER_IMAGE"] = image
+    env["MISSIONOS_TB3_GATEWAY_CONTAINER"] = _turtlebot3_gateway_container_name()
+    env["MISSIONOS_TB3_GATEWAY_PORT"] = str(port)
+    world_profile = os.environ.get("MISSIONOS_TURTLEBOT3_WORLD_PROFILE", "house").strip()
+    world_profile = world_profile if world_profile in {"arena", "house"} else "house"
+    env["MISSIONOS_TURTLEBOT3_WORLD_PROFILE"] = world_profile
+    build_cmd = (
+        "docker",
+        "build",
+        "-f",
+        "docker/ros2_nav2_turtlebot3/Dockerfile",
+        "-t",
+        image,
+        ".",
+    )
+    console.print(
+        Panel(
+            "\n".join(
+                (
+                    f"instruction={instruction.strip() or DEFAULT_TURTLEBOT3_CHAT_INSTRUCTION}",
+                    f"gateway_url={gateway_url}",
+                    f"repo_root={repo_root}",
+                    f"image={image}",
+                    f"world_profile={world_profile}",
+                    "boundary=MissionOS chat -> Gateway -> TurtleBot3/Nav2/Gazebo sim",
+                    "surfaces=chat + operate + watch + map",
+                    "claim_scope=sim_action; physical_execution_invoked=false",
+                )
+            ),
+            title="TurtleBot3 MissionOS Gateway",
+            border_style="green",
+        )
+    )
+    if dry_run:
+        if build_image:
+            console.print("[cyan]build:[/cyan] " + shlex.join(build_cmd))
+        console.print(
+            "[cyan]start gateway/sim:[/cyan] "
+            + f"MISSIONOS_TB3_GATEWAY_PORT={port} "
+            + f"MISSIONOS_TB3_GATEWAY_CONTAINER={shlex.quote(env['MISSIONOS_TB3_GATEWAY_CONTAINER'])} "
+            + f"MISSIONOS_TURTLEBOT3_WORLD_PROFILE={world_profile} "
+            + shlex.join((str(script),))
+        )
+        return False
+    if build_image:
+        build_result = subprocess.run(build_cmd, cwd=str(repo_root), env=env, check=False)
+        if build_result.returncode != 0:
+            raise click.ClickException(
+                f"TurtleBot3 Docker image build failed with exit code {build_result.returncode}."
+            )
+    start_result = subprocess.run((str(script),), cwd=str(repo_root), env=env, check=False)
+    if start_result.returncode != 0:
+        raise click.ClickException(
+            f"TurtleBot3 Docker Gateway startup failed with exit code {start_result.returncode}."
+        )
+    return True
+
+
+def _stop_turtlebot3_gateway_container() -> None:
+    subprocess.run(
+        ("docker", "rm", "-f", _turtlebot3_gateway_container_name()),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+
+
+def _maybe_retarget_turtlebot3_gateway_url(ctx: click.Context) -> None:
+    gateway_url = str(ctx.obj.get("missionos_gateway_url") or DEFAULT_GATEWAY_URL)
+    if gateway_url.rstrip("/") != DEFAULT_GATEWAY_URL:
+        return
+    client = ctx.obj.get("missionos_client")
+    if not isinstance(client, MissionOSGatewayClient) or not _gateway_reachable(client):
+        return
+    alternate_url = os.environ.get(
+        "MISSIONOS_TB3_GATEWAY_URL",
+        "http://127.0.0.1:18792",
+    ).strip()
+    if not alternate_url:
+        return
+    ctx.obj["missionos_gateway_url"] = alternate_url
+    ctx.obj["missionos_client"] = make_client(alternate_url, client.timeout)
+    console.print(
+        "[yellow]Default Gateway is already reachable at "
+        f"{DEFAULT_GATEWAY_URL}; using TurtleBot3 Gateway URL {alternate_url}. "
+        "Pass --gateway-url explicitly to override.[/yellow]"
+    )
+
+
+def _floor_turtlebot3_chat_timeout(ctx: click.Context) -> None:
+    client = ctx.obj.get("missionos_client")
+    if not isinstance(client, MissionOSGatewayClient):
+        return
+    if client.timeout >= TURTLEBOT3_CHAT_TIMEOUT:
+        return
+    gateway_url = str(ctx.obj.get("missionos_gateway_url") or DEFAULT_GATEWAY_URL)
+    ctx.obj["missionos_client"] = make_client(gateway_url, TURTLEBOT3_CHAT_TIMEOUT)
+
+
 @missionos.command("chat")
 @click.argument("initial_instruction", nargs=-1, required=False)
+@click.option(
+    "--robot",
+    type=click.Choice(["default", "turtlebot3"], case_sensitive=False),
+    default="default",
+    show_default=True,
+    help="Route chat through a robot-specific simulator entrypoint.",
+)
+@click.option(
+    "--turtlebot3-build-image/--no-turtlebot3-build-image",
+    default=False,
+    show_default=True,
+    help="Build the TurtleBot3 Docker image before running --robot turtlebot3.",
+)
+@click.option(
+    "--turtlebot3-mid-recovery/--no-turtlebot3-mid-recovery",
+    default=False,
+    show_default=True,
+    help="Run the TurtleBot3 mid-mission low-battery recovery smoke.",
+)
+@click.option(
+    "--turtlebot3-dry-run",
+    is_flag=True,
+    help="Print the TurtleBot3 simulator/Gateway command without starting Docker.",
+)
+@click.option(
+    "--turtlebot3-smoke",
+    is_flag=True,
+    help=(
+        "Run the non-interactive TurtleBot3 Docker smoke. By default, "
+        "`--robot turtlebot3` uses normal MissionOS chat plus operate/watch/map."
+    ),
+)
 @click.option("--session-id", default=DEFAULT_SESSION_ID, show_default=True)
 @click.option(
     "--history-path",
@@ -8460,6 +9721,11 @@ def _chat_initial_instruction_and_autostart(
 def chat_command(
     ctx: click.Context,
     initial_instruction: tuple[str, ...],
+    robot: str,
+    turtlebot3_build_image: bool,
+    turtlebot3_mid_recovery: bool,
+    turtlebot3_dry_run: bool,
+    turtlebot3_smoke: bool,
     session_id: str,
     history_path: Path,
     autostart: bool,
@@ -8472,15 +9738,50 @@ def chat_command(
         autostart=autostart,
         enable_live_sitl=enable_live_sitl,
     )
+    if robot.lower() == "turtlebot3":
+        _floor_turtlebot3_chat_timeout(ctx)
+        if turtlebot3_smoke:
+            raise SystemExit(
+                _run_turtlebot3_chat_smoke(
+                    instruction=initial_raw or DEFAULT_TURTLEBOT3_CHAT_INSTRUCTION,
+                    build_image=turtlebot3_build_image,
+                    mid_recovery=turtlebot3_mid_recovery,
+                    dry_run=turtlebot3_dry_run,
+                )
+            )
+        if not initial_raw:
+            initial_raw = DEFAULT_TURTLEBOT3_CHAT_INSTRUCTION
+        if session_id == DEFAULT_SESSION_ID:
+            session_id = "missionos-cli-turtlebot3"
+        if turtlebot3_dry_run:
+            _maybe_retarget_turtlebot3_gateway_url(ctx)
+            _start_turtlebot3_gateway_container(
+                gateway_url=ctx.obj["missionos_gateway_url"],
+                instruction=initial_raw,
+                build_image=turtlebot3_build_image,
+                dry_run=True,
+            )
+            return
+        _maybe_retarget_turtlebot3_gateway_url(ctx)
     client: MissionOSGatewayClient = ctx.obj["missionos_client"]
     ctx.obj["missionos_chat_session_id"] = session_id
     ctx.obj["missionos_chat_companion_terminals_enabled"] = (
         companion_terminals and sys.stdin.isatty()
     )
+    turtlebot3_container_started = False
+    if robot.lower() == "turtlebot3" and not _gateway_reachable(client):
+        turtlebot3_container_started = _start_turtlebot3_gateway_container(
+            gateway_url=ctx.obj["missionos_gateway_url"],
+            instruction=initial_raw,
+            build_image=turtlebot3_build_image,
+            dry_run=turtlebot3_dry_run,
+        )
+        if turtlebot3_dry_run:
+            return
     gateway_proc = _ensure_gateway(
         client,
         ctx.obj["missionos_gateway_url"],
-        autostart=autostart,
+        autostart=autostart and robot.lower() != "turtlebot3",
         enable_live_sitl=enable_live_sitl,
     )
     console.print(_chat_help_panel())
@@ -8489,6 +9790,8 @@ def chat_command(
         if initial_raw:
             console.print(f"[bold green]MissionOS>[/bold green] {initial_raw}")
             if not _handle_chat_input(ctx, client, initial_raw, session_id=session_id):
+                return
+            if not sys.stdin.isatty():
                 return
         while True:
             try:
@@ -8502,6 +9805,9 @@ def chat_command(
                 break
     finally:
         _stop_chat_companion_terminals(ctx)
+        if turtlebot3_container_started:
+            console.print("[blue]Stopping the TurtleBot3 Gateway container...[/blue]")
+            _stop_turtlebot3_gateway_container()
         if gateway_proc is not None:
             console.print("[blue]Stopping the autostarted Gateway...[/blue]")
             _terminate_gateway(gateway_proc)

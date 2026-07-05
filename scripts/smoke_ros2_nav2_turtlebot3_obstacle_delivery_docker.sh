@@ -1,0 +1,214 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+image="${MISSIONOS_TB3_DOCKER_IMAGE:-missionos-ros2-nav2-turtlebot3:local}"
+instruction="${MISSIONOS_CHAT_TURTLEBOT3_HOME_MISSION_INSTRUCTION:-TurtleBot3 indoor delivery route with obstacle avoidance}"
+
+docker run --rm -i --shm-size=1g \
+  -e "MISSIONOS_CHAT_TURTLEBOT3_HOME_MISSION_INSTRUCTION=${instruction}" \
+  -e "MISSIONOS_CHAT_TURTLEBOT3_HOME_MISSION_RECOVERY_INSTRUCTION=${MISSIONOS_CHAT_TURTLEBOT3_HOME_MISSION_RECOVERY_INSTRUCTION:-}" \
+  -e "MISSIONOS_CHAT_TURTLEBOT3_HOME_MISSION_HTTP_TIMEOUT_SECONDS=${MISSIONOS_CHAT_TURTLEBOT3_HOME_MISSION_HTTP_TIMEOUT_SECONDS:-600}" \
+  -e "MISSIONOS_TB3_SKIP_GATEWAY_DEP_INSTALL=${MISSIONOS_TB3_SKIP_GATEWAY_DEP_INSTALL:-0}" \
+  -e "MISSIONOS_LLM_BACKEND=${MISSIONOS_LLM_BACKEND:-off}" \
+  -e "MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_LLM_BACKEND=${MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_LLM_BACKEND:-}" \
+  -e "MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_OLLAMA_MODEL=${MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_OLLAMA_MODEL:-}" \
+  -e "MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_OLLAMA_BASE_URL=${MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_OLLAMA_BASE_URL:-}" \
+  -e "MISSIONOS_OLLAMA_BASE_URL=${MISSIONOS_OLLAMA_BASE_URL:-}" \
+  -e "MISSIONOS_OLLAMA_MODEL=${MISSIONOS_OLLAMA_MODEL:-}" \
+  -e "MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_ADK_ENABLED=${MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_ADK_ENABLED:-0}" \
+  -e "MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_COMMAND=${MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_COMMAND:-}" \
+  -e "MISSIONOS_ALLOW_TURTLEBOT3_RECOVERY_PLANNER_COMMAND_OVERRIDE=${MISSIONOS_ALLOW_TURTLEBOT3_RECOVERY_PLANNER_COMMAND_OVERRIDE:-}" \
+  -e "MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_MODEL_ID=${MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_MODEL_ID:-}" \
+  -e "MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_TIMEOUT_SECONDS=${MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_TIMEOUT_SECONDS:-}" \
+  -e "MISSIONOS_EXPECT_TURTLEBOT3_RECOVERY_PROPOSAL_SOURCE=${MISSIONOS_EXPECT_TURTLEBOT3_RECOVERY_PROPOSAL_SOURCE:-}" \
+  -e "MISSIONOS_CHAT_TURTLEBOT3_MID_RECOVERY_SMOKE=${MISSIONOS_CHAT_TURTLEBOT3_MID_RECOVERY_SMOKE:-0}" \
+  -e "MISSIONOS_CHAT_TURTLEBOT3_DYNAMIC_OBSTACLE_RECOVERY_SMOKE=${MISSIONOS_CHAT_TURTLEBOT3_DYNAMIC_OBSTACLE_RECOVERY_SMOKE:-0}" \
+  -e "MISSIONOS_CHAT_TURTLEBOT3_RECOVERY_GUARDRAIL_FALLBACK_SMOKE=${MISSIONOS_CHAT_TURTLEBOT3_RECOVERY_GUARDRAIL_FALLBACK_SMOKE:-0}" \
+  -e "MISSIONOS_CHAT_TURTLEBOT3_LOCALIZATION_DRIFT_FAULT_SMOKE=${MISSIONOS_CHAT_TURTLEBOT3_LOCALIZATION_DRIFT_FAULT_SMOKE:-0}" \
+  -e "MISSIONOS_CHAT_TURTLEBOT3_LOCALIZATION_DRIFT_INITIALPOSE_X_M=${MISSIONOS_CHAT_TURTLEBOT3_LOCALIZATION_DRIFT_INITIALPOSE_X_M:-8.0}" \
+  -e "MISSIONOS_CHAT_TURTLEBOT3_LOCALIZATION_DRIFT_INITIALPOSE_Y_M=${MISSIONOS_CHAT_TURTLEBOT3_LOCALIZATION_DRIFT_INITIALPOSE_Y_M:-8.0}" \
+  -e "MISSIONOS_CHAT_TURTLEBOT3_HOME_MISSION_MAP_MODEL_OUT=${MISSIONOS_CHAT_TURTLEBOT3_HOME_MISSION_MAP_MODEL_OUT:-}" \
+  -e "MISSIONOS_TURTLEBOT3_WORLD_PROFILE=${MISSIONOS_TURTLEBOT3_WORLD_PROFILE:-house}" \
+  -e "ROS2_NAV2_BRIDGE_TIMEOUT_S=${ROS2_NAV2_BRIDGE_TIMEOUT_S:-420}" \
+  -e "ROS2_NAV2_GOAL_RESULT_TIMEOUT_S=${ROS2_NAV2_GOAL_RESULT_TIMEOUT_S:-180}" \
+  -v "${repo_root}:/work/missionos" \
+  -w /work/missionos \
+  "${image}" \
+  bash -s <<'CONTAINER'
+set -eo pipefail
+
+if [ "${MISSIONOS_TB3_SKIP_GATEWAY_DEP_INSTALL:-0}" != "1" ]; then
+  if ! python3 - <<'PY' >/tmp/missionos_gateway_dep_probe.log 2>&1
+import fastapi
+import google.adk
+import uvicorn
+PY
+  then
+    pip3 install --no-cache-dir \
+      "fastapi>=0.110.0" \
+      "uvicorn[standard]>=0.29.0" \
+      "python-dotenv>=1.0.0" \
+      "pyyaml>=6.0.0" \
+      "click>=8.0.0" \
+      "rich>=13.0.0" \
+      "google-adk>=0.1.0" \
+      "websockets>=12.0" \
+      "httpx>=0.27.0" \
+      "ddgs>=0.1.0" \
+      "croniter>=1.3.0" \
+      "mcp>=1.0.0" \
+      >/tmp/missionos_pip_gateway.log 2>&1
+  fi
+fi
+
+source /opt/ros/humble/setup.bash
+source /opt/turtlebot3_ws/install/setup.bash
+export PYTHONPATH=/work/missionos:/work/missionos/src:/work/missionos/packages/missionos-gateway/src:${PYTHONPATH:-}
+export TURTLEBOT3_MODEL=burger
+
+cleanup() {
+  kill ${telemetry_sidecar_pid:-} ${relay_pid:-} ${nav2_pid:-} ${gz_pid:-} 2>/dev/null || true
+}
+
+finish() {
+  status=$?
+  if [ "$status" -ne 0 ]; then
+    for log_file in /tmp/missionos_*; do
+      [ -f "$log_file" ] || continue
+      printf "\n===== %s =====\n" "$log_file"
+      tail -120 "$log_file" || true
+    done
+  fi
+  # Keep Nav2/Gazebo tails on the mounted repo for post-run diagnosis.
+  diag_dir=/work/missionos/output/turtlebot3_smoke
+  mkdir -p "$diag_dir" 2>/dev/null || true
+  tail -400 /tmp/missionos_nav2_delivery.log >"$diag_dir/last_nav2_delivery_tail.log" 2>/dev/null || true
+  tail -200 /tmp/missionos_gazebo_delivery.log >"$diag_dir/last_gazebo_delivery_tail.log" 2>/dev/null || true
+  cleanup
+  return "$status"
+}
+trap finish EXIT
+
+world_profile="${MISSIONOS_TURTLEBOT3_WORLD_PROFILE:-house}"
+if [ "$world_profile" = "house" ]; then
+  # The stock turtlebot3_house.launch.py still targets Gazebo Classic
+  # (gazebo_ros), which this gz-sim image does not ship. Reuse the migrated
+  # turtlebot3_world launch with the house world swapped in.
+  world_launch_dir=/opt/turtlebot3_ws/install/turtlebot3_gazebo/share/turtlebot3_gazebo/launch
+  sed "s/turtlebot3_world\.world/turtlebot3_house.world/" \
+    "$world_launch_dir/turtlebot3_world.launch.py" \
+    >/tmp/turtlebot3_house_gz.launch.py
+  world_launch=/tmp/turtlebot3_house_gz.launch.py
+  # turtlebot3_house.world declares <world name="default">.
+  spawn_world="default"
+  nav2_map_arg="map:=/work/missionos/config/turtlebot3_house/map.yaml"
+else
+  world_launch="turtlebot3_gazebo turtlebot3_world.launch.py"
+  spawn_world="turtlebot3_world"
+  nav2_map_arg=""
+fi
+
+# shellcheck disable=SC2086
+xvfb-run -a ros2 launch $world_launch \
+  x_pose:=-2.0 y_pose:=-0.5 \
+  >/tmp/missionos_gazebo_delivery.log 2>&1 &
+gz_pid=$!
+sleep 30
+
+: >/tmp/missionos_spawn_obstacle.log
+spawn_status=0
+spawned_count=0
+spawn_box() {
+  name="$1"
+  size_x="$2"
+  size_y="$3"
+  x_m="$4"
+  y_m="$5"
+  box_sdf="<sdf version='1.7'><model name='${name}'><static>true</static><link name='link'><collision name='collision'><geometry><box><size>${size_x} ${size_y} 0.5</size></box></geometry></collision><visual name='visual'><geometry><box><size>${size_x} ${size_y} 0.5</size></box></geometry></visual></link></model></sdf>"
+  set +e
+  ros2 run ros_gz_sim create \
+    -world "$spawn_world" \
+    -string "$box_sdf" \
+    -name "$name" \
+    -x "$x_m" -y "$y_m" -z 0.25 \
+    >>/tmp/missionos_spawn_obstacle.log 2>&1
+  status=$?
+  set -e
+  printf "%s spawn_status=%s\n" "$name" "$status" >>/tmp/missionos_spawn_obstacle.log
+  if [ "$status" -ne 0 ]; then
+    spawn_status="$status"
+  else
+    spawned_count=$((spawned_count + 1))
+  fi
+}
+if [ "$world_profile" = "house" ]; then
+  spawn_box missionos_closed_door_blocker 0.32 0.32 0.2 -1.2
+  spawn_box missionos_human_blocker 0.24 0.24 -1.75 1.6
+  spawn_box missionos_dog_blocker 0.16 0.16 -0.7 2.6
+else
+  spawn_box missionos_closed_door_blocker 0.32 0.32 -1.15 -0.5
+  spawn_box missionos_human_blocker 0.24 0.24 -1.00 0.55
+  spawn_box missionos_dog_blocker 0.16 0.16 0.70 0.55
+fi
+
+# shellcheck disable=SC2086
+xvfb-run -a ros2 launch turtlebot3_navigation2 navigation2.launch.py \
+  use_sim_time:=True $nav2_map_arg \
+  >/tmp/missionos_nav2_delivery.log 2>&1 &
+nav2_pid=$!
+sleep 55
+
+RUN_MISSIONOS_ROS2_NAV2_NAV_VELOCITY_RELAY=1 \
+ROS2_NAV2_NAV_VELOCITY_RELAY_SOURCE_TOPIC=/cmd_vel_nav \
+ROS2_NAV2_NAV_VELOCITY_RELAY_TARGET_TOPIC=/cmd_vel \
+python3 /work/missionos/scripts/ros2_nav2_turtlebot3_nav_velocity_relay.py \
+  >/tmp/missionos_relay_delivery.log 2>&1 &
+relay_pid=$!
+sleep 5
+
+telemetry_sidecar_jsonl=/tmp/missionos_turtlebot3_telemetry_sidecar.jsonl
+rm -f "$telemetry_sidecar_jsonl"
+python3 /work/missionos/scripts/ros2_nav2_turtlebot3_telemetry_sidecar.py \
+  --output "$telemetry_sidecar_jsonl" \
+  --duration-s 600 \
+  --max-samples 12000 \
+  >/tmp/missionos_turtlebot3_telemetry_sidecar.log 2>&1 &
+telemetry_sidecar_pid=$!
+sleep 2
+
+export RUN_MISSIONOS_ROS2_NAV2_BOUNDED_DISPATCH_SMOKE=1
+export RUN_MISSIONOS_ROS2_NAV2_TURTLEBOT3_BRIDGE=1
+export ROS2_NAV2_BRIDGE_COMMAND="python3 /work/missionos/scripts/ros2_nav2_turtlebot3_bridge.py"
+export ROS2_NAV2_BRIDGE_TIMEOUT_S="${ROS2_NAV2_BRIDGE_TIMEOUT_S:-420}"
+export ROS2_NAV2_INITIALPOSE_ENABLE=1
+export ROS2_NAV2_INITIALPOSE_X_M=-2.0
+export ROS2_NAV2_INITIALPOSE_Y_M=-0.5
+export ROS2_NAV2_INITIALPOSE_PUBLISHES=12
+export ROS2_NAV2_TF_READY_TIMEOUT_S=30
+export ROS2_NAV2_REQUIRE_TF_READY=1
+export ROS2_NAV2_LIFECYCLE_READY_TIMEOUT_S=40
+export ROS2_NAV2_REQUIRE_LIFECYCLE_READY=1
+export ROS2_NAV2_VELOCITY_OBSERVE_ENABLE=1
+export ROS2_NAV2_OBSTACLE_OBSERVE_ENABLE=1
+export ROS2_NAV2_TRAJECTORY_OBSERVE_ENABLE=1
+export ROS2_NAV2_TRAJECTORY_LATERAL_DEVIATION_THRESHOLD_M=0.03
+export ROS2_NAV2_GOAL_RESULT_TIMEOUT_S="${ROS2_NAV2_GOAL_RESULT_TIMEOUT_S:-180}"
+export ROS2_NAV2_POST_RESULT_SETTLE_S=3.0
+export MISSIONOS_TURTLEBOT3_TELEMETRY_SIDECAR_JSONL="$telemetry_sidecar_jsonl"
+export MISSIONOS_TURTLEBOT3_LOG_BUNDLE_PATHS='{"gazebo":"/tmp/missionos_gazebo_delivery.log","nav2":"/tmp/missionos_nav2_delivery.log","relay":"/tmp/missionos_relay_delivery.log","telemetry_sidecar":"/tmp/missionos_turtlebot3_telemetry_sidecar.log","spawn_obstacle":"/tmp/missionos_spawn_obstacle.log"}'
+export RUN_MISSIONOS_CHAT_TURTLEBOT3_HOME_MISSION_SMOKE_WITH_BRIDGE=1
+case "${MISSIONOS_CHAT_TURTLEBOT3_RECOVERY_GUARDRAIL_FALLBACK_SMOKE:-0}" in
+1|true|TRUE|yes|YES|on|ON)
+  export MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_ADK_ENABLED=0
+  export MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_COMMAND="python3 /work/missionos/scripts/turtlebot3_recovery_planner_guardrail_fault_fixture.py"
+  export MISSIONOS_ALLOW_TURTLEBOT3_RECOVERY_PLANNER_COMMAND_OVERRIDE=1
+  export MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_MODEL_ID="guardrail_fault_fixture"
+  export MISSIONOS_EXPECT_TURTLEBOT3_RECOVERY_PROPOSAL_SOURCE="${MISSIONOS_EXPECT_TURTLEBOT3_RECOVERY_PROPOSAL_SOURCE:-deterministic_fallback}"
+  ;;
+esac
+
+printf "sim_obstacle_spawn_status=%s\n" "$spawn_status"
+printf "sim_obstacle_spawned_count=%s\n" "$spawned_count"
+python3 /work/missionos/scripts/smoke_missionos_chat_turtlebot3_home_mission.py
+CONTAINER

@@ -27,3 +27,4 @@ output/
 .DS_Store
 .idea/
 .vscode/
+.playwright-cli/

@@ -27,6 +27,15 @@ from src.runtime.missionos_llm_schemas import (
     MissionOSLLMSchemaValidationError,
     validate_llm_response_proposal,
 )
+from src.runtime.hardware_adapter_contract import (
+    HardwareExecutionMode,
+    build_blocked_px4_bench_hardware_adapter_evidence,
+    build_px4_bench_hardware_adapter_capabilities,
+    build_px4_bench_hardware_adapter_evidence,
+    build_px4_bench_hardware_adapter_preflight,
+    build_px4_bench_hardware_dispatch_candidate,
+    build_px4_bench_hardware_operator_approval,
+)
 from src.runtime.px4_real_hardware_actuator_backend import (
     LINK_KIND_REAL_SERIAL_PYMAVLINK,
     PX4RealHardwareActuatorApproval,
@@ -83,6 +92,102 @@ def _persist_list(store: Any, task_id: str, key: str, value: Mapping[str, Any]) 
     store.update(task_id, artifacts={key: [*existing, dict(value)]})
 
 
+def _persist_hardware_adapter_stage(
+    *,
+    store: Any,
+    task_id: str,
+    missionos_action_ref: str,
+    operator_approval_ref: str | None,
+    blocking_reasons: tuple[str, ...],
+    execution_mode: HardwareExecutionMode,
+) -> dict[str, Any]:
+    capabilities = build_px4_bench_hardware_adapter_capabilities(
+        execution_mode=execution_mode
+    )
+    preflight = build_px4_bench_hardware_adapter_preflight(
+        blocking_reasons=blocking_reasons
+    )
+    candidate = build_px4_bench_hardware_dispatch_candidate(
+        missionos_action_ref=missionos_action_ref,
+        preflight=preflight,
+    )
+
+    _persist_list(
+        store,
+        task_id,
+        "missionos_hardware_adapter_capabilities",
+        capabilities.model_dump(mode="json"),
+    )
+    _persist_list(
+        store,
+        task_id,
+        "missionos_hardware_adapter_preflight",
+        preflight.model_dump(mode="json"),
+    )
+    _persist_list(
+        store,
+        task_id,
+        "missionos_hardware_dispatch_candidates",
+        candidate.model_dump(mode="json"),
+    )
+
+    approval_artifact: dict[str, Any] | None = None
+    if operator_approval_ref:
+        approval = build_px4_bench_hardware_operator_approval(
+            operator_approval_ref=operator_approval_ref,
+            approval_actor="missionos_gateway_operator",
+            approval_timestamp=datetime.now(timezone.utc),
+            missionos_action_ref=missionos_action_ref,
+        )
+        approval_artifact = approval.model_dump(mode="json")
+        _persist_list(
+            store,
+            task_id,
+            "missionos_hardware_operator_approvals",
+            approval_artifact,
+        )
+
+    return {
+        "capabilities": capabilities.model_dump(mode="json"),
+        "preflight": preflight.model_dump(mode="json"),
+        "candidate": candidate.model_dump(mode="json"),
+        "operator_approval": approval_artifact,
+    }
+
+
+def _persist_blocked_hardware_adapter_evidence(
+    *,
+    store: Any,
+    task_id: str,
+    missionos_action_ref: str,
+    operator_approval_ref: str | None,
+    blocking_reasons: tuple[str, ...],
+    execution_mode: HardwareExecutionMode,
+) -> dict[str, Any]:
+    stage = _persist_hardware_adapter_stage(
+        store=store,
+        task_id=task_id,
+        missionos_action_ref=missionos_action_ref,
+        operator_approval_ref=operator_approval_ref,
+        blocking_reasons=blocking_reasons,
+        execution_mode=execution_mode,
+    )
+    evidence = build_blocked_px4_bench_hardware_adapter_evidence(
+        missionos_action_ref=missionos_action_ref,
+        operator_approval_ref=operator_approval_ref,
+        blocking_reasons=blocking_reasons,
+        execution_mode=execution_mode,
+    )
+    evidence_payload = evidence.model_dump(mode="json")
+    _persist_list(
+        store,
+        task_id,
+        "missionos_hardware_adapter_evidence",
+        evidence_payload,
+    )
+    return {**stage, "hardware_adapter_evidence": evidence_payload}
+
+
 def invoke_missionos_real_hardware_dispatch_runtime(
     *,
     store: Any,
@@ -136,13 +241,58 @@ def invoke_missionos_real_hardware_dispatch_runtime(
 
     # Bench gate: a real serial run needs the opt-in env and opt_in=True. A fake
     # injected connection bypasses the gate because it never touches hardware.
+    execution_mode = (
+        HardwareExecutionMode.LOOPBACK
+        if connection_factory is not None
+        else HardwareExecutionMode.BENCH
+    )
+    missionos_action_ref = str(proposal.get("response_kind"))
+    operator_approval_ref = (
+        str(dispatch_validation.get("operator_approval_id"))
+        if dispatch_validation.get("operator_approval_id")
+        else None
+    )
+
     if connection_factory is None:
         if not _opt_in_enabled():
+            adapter_stage = _persist_blocked_hardware_adapter_evidence(
+                store=store,
+                task_id=task_id,
+                missionos_action_ref=missionos_action_ref,
+                operator_approval_ref=operator_approval_ref,
+                blocking_reasons=(
+                    f"{MISSIONOS_REAL_HARDWARE_DISPATCH_RUNTIME_OPT_IN_ENV}_not_enabled",
+                ),
+                execution_mode=execution_mode,
+            )
             return _blocked(
-                f"{MISSIONOS_REAL_HARDWARE_DISPATCH_RUNTIME_OPT_IN_ENV}_not_enabled"
+                f"{MISSIONOS_REAL_HARDWARE_DISPATCH_RUNTIME_OPT_IN_ENV}_not_enabled",
+                **adapter_stage,
             )
         if opt_in is not True or not serial_device:
-            return _blocked("real_serial_dispatch_requires_opt_in_and_serial_device")
+            adapter_stage = _persist_blocked_hardware_adapter_evidence(
+                store=store,
+                task_id=task_id,
+                missionos_action_ref=missionos_action_ref,
+                operator_approval_ref=operator_approval_ref,
+                blocking_reasons=(
+                    "real_serial_dispatch_requires_opt_in_and_serial_device",
+                ),
+                execution_mode=execution_mode,
+            )
+            return _blocked(
+                "real_serial_dispatch_requires_opt_in_and_serial_device",
+                **adapter_stage,
+            )
+
+    _persist_hardware_adapter_stage(
+        store=store,
+        task_id=task_id,
+        missionos_action_ref=missionos_action_ref,
+        operator_approval_ref=operator_approval_ref,
+        blocking_reasons=(),
+        execution_mode=execution_mode,
+    )
 
     started_at = _utc_now()
     result = run_px4_real_hardware_arm_disarm_bench(
@@ -249,6 +399,17 @@ def invoke_missionos_real_hardware_dispatch_runtime(
         "missionos_real_hardware_dispatch_stage_evidence",
         stage_evidence,
     )
+    hardware_adapter_evidence = build_px4_bench_hardware_adapter_evidence(
+        missionos_action_ref=missionos_action_ref,
+        operator_approval_ref=str(operator_approval_ref),
+        runtime_result=result,
+    )
+    _persist_list(
+        store,
+        task_id,
+        "missionos_hardware_adapter_evidence",
+        hardware_adapter_evidence.model_dump(mode="json"),
+    )
 
     return {
         "runtime_invoked": True,
@@ -256,6 +417,7 @@ def invoke_missionos_real_hardware_dispatch_runtime(
         "response_kind": proposal.get("response_kind"),
         "runtime_invocation_evidence": runtime_invocation_evidence,
         "dispatch_stage_evidence": stage_evidence,
+        "hardware_adapter_evidence": hardware_adapter_evidence.model_dump(mode="json"),
         "arm": arm,
         "disarm": disarm,
     }
