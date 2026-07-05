@@ -246,17 +246,15 @@ missionos chat "TurtleBot3で家の中を一周して"
 
 This chat slice may claim that a bounded Nav2 simulator route completed only
 when every planned route segment reports Nav2 success and `/odom` motion is
-observed. For indoor delivery, MissionOS uses a ten-segment indoor local-XY
-route of about 7.6 m: obstacle-avoidance approach, lower corridor, kitchen entry,
-dining-table bypass, living-room turn, bookshelf aisle, alternate door,
-person/pet detour, return corridor, and simulated dropoff. The route is a
-virtual home loop rather than repeated hallway points. The opt-in Docker smoke
-scene places three small simulated blockers: a closed door, a person marker, and
-a dog marker. These markers are scenario objects in the simulator, not
-discovered real home objects, people, or pets. The indoor map artifact also
-includes a static simulated-home floor-plan scaffold with sofa, table,
-bookshelf, and counter markers. Those furniture markers are display-only unless
-a separate simulator obstacle marker says the object was spawned. It
+observed. The route depends on the active world profile (see the next
+section). In the default `turtlebot3_house` world an indoor delivery runs from
+the front yard through the real front-door opening to the named destination
+room (six segments and about 10.2 m for the default living-room dropoff, ten
+segments and about 17.4 m for the bedroom). In the opt-in pillar arena it uses
+the historical ten-segment local-XY loop of about 8.0 m. The Docker smoke
+scene places three small simulated blockers: a closed door, a person marker,
+and a dog marker. These markers are scenario objects spawned in the simulator,
+not discovered real home objects, people, or pets. It
 still does not claim:
 
 - whole-home loop completion
@@ -620,6 +618,95 @@ This is MissionOS simulator control parity for the Nav2 adapter. It is not
 physical execution, not mission delivery completion, and not evidence that the
 same bridge will work on a physical robot without a separate hardware adapter
 bench.
+
+## World Profiles: turtlebot3_house (default) and the pillar arena
+
+`MISSIONOS_TURTLEBOT3_WORLD_PROFILE` selects the simulator world for the chat
+home mission, the Docker smoke, and the gateway wrapper:
+
+- `house` (default, also when the env is unset): the stock `turtlebot3_house`
+  Gazebo world with real walls, door openings, and furniture. The floor plan
+  and the Nav2 map are derived deterministically from the house model SDF box
+  collisions with `scripts/turtlebot3_house_map_from_sdf.py` (door lintels are
+  filtered by the robot lidar height band); the generated assets are committed
+  under `config/turtlebot3_house/`. Because the stock
+  `turtlebot3_house.launch.py` still targets Gazebo Classic, the Docker
+  wrappers reuse the migrated gz-sim world launch with the house world swapped
+  in. House goals declare an 8.0 m operating volume covering the full floor
+  plan; each goal's own bound is propagated into adapter preflight.
+- `arena`: the historical `turtlebot3_world` pillar arena, kept for the
+  regression corpus (fault-injection smokes, recovery loop evidence). The
+  arena map draws the wall polygon simplified from the Nav2 SLAM occupancy
+  grid and the nine pillars from the world SDF; furniture labels sit on real
+  pillar footprints. Arena-era contract tests pin
+  `MISSIONOS_TURTLEBOT3_WORLD_PROFILE=arena` with an autouse fixture.
+
+### Room-addressable deliveries (house)
+
+Chat instructions may name a destination room in Japanese or English; the
+route passes only through real door openings extracted from the SDF and the
+map dropoff marker shows the room (for example `D dropoff · Bedroom`):
+
+| Room | Terms | Doors on the way |
+| --- | --- | --- |
+| Living room (default) | living / リビング / 居間 | front door |
+| Study | study / 書斎 / 勉強部屋 | front door, study door |
+| Bedroom | bedroom / 寝室 / ベッドルーム | front door, study door, bedroom door |
+| Lounge | lounge / ラウンジ / 応接 | front door, lounge door |
+| Dining | dining / ダイニング / 食堂 | front door, lounge door, dining door |
+| Pantry | pantry / パントリー / 納戸 | front door, lounge door, pantry door |
+
+Example: `亀さん、bedroomへ荷物を届けて` plans the ten-segment bedroom route.
+The instruction must be a delivery request (`配送` / `届けて` / deliver);
+other verbs classify as different mission kinds with their own blocked claims.
+
+### Live mission progress
+
+The gateway creates the execution task with `status=running` before dispatch
+and the dispatch loop streams claim-safe partial summaries (segment counts
+plus a running indoor map model, `completion_claimed` always false) into the
+task artifacts after every route and recovery segment, so `missionos map` /
+watch / operate show the robot advancing room by room during the run.
+Displayed trails are AMCL-corrected map-frame samples (odom-frame fallbacks
+and unconfirmed single-sample jumps are dropped from display only; raw bridge
+samples stay in `bridge_responses`).
+
+### Runtime failure recovery
+
+An unplanned Nav2 segment failure convenes the same recovery machinery as the
+scripted battery/obstacle triggers: the recovery planner (LLM with
+source-binding guardrails, deterministic return-home floor as fallback)
+proposes, the autonomy envelope classifies, and only an envelope-permitted
+`return_home` is dispatched immediately under the existing mission approval.
+Any other proposal is attached to the blocked result for the operator. The
+failure context is recorded source-bound as `runtime_failure_context`.
+
+### Gateway and chat commands
+
+```bash
+# start / restart the full sim + gateway stack (house by default)
+bash scripts/start_ros2_nav2_turtlebot3_gateway_docker.sh
+
+# pillar arena instead
+MISSIONOS_TURTLEBOT3_WORLD_PROFILE=arena bash scripts/start_ros2_nav2_turtlebot3_gateway_docker.sh
+
+# stop / inspect
+docker rm -f missionos-turtlebot3-gateway
+docker logs -f missionos-turtlebot3-gateway
+
+# chat pinned to the TurtleBot3 entrypoint (recreates the container)
+missionos chat --robot turtlebot3
+
+# regenerate the house map assets after a sim image update
+docker run --rm missionos-ros2-nav2-turtlebot3:local \
+  cat /opt/turtlebot3_ws/install/turtlebot3_gazebo/share/turtlebot3_gazebo/models/turtlebot3_house/model.sdf \
+  > /tmp/house_model.sdf
+python scripts/turtlebot3_house_map_from_sdf.py /tmp/house_model.sdf config/turtlebot3_house
+```
+
+Gateway and mission-planning code is imported at container start, so runtime
+changes require recreating the container; bridge scripts run as a subprocess
+per dispatch and take effect on the next `run`.
 
 ## CLI Entry
 
