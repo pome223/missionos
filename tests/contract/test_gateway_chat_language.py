@@ -1,9 +1,17 @@
 from __future__ import annotations
 
 import re
+from pathlib import Path
+import shlex
+import sys
 from typing import Any, Mapping
 
 import src.gateway.server as gateway_server
+from src.runtime.task_store import TaskStore
+from src.runtime.ros2_nav2_dispatch_bridge import (
+    ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV,
+    ROS2_NAV2_BRIDGE_COMMAND_ENV,
+)
 
 
 JAPANESE_TEXT = re.compile(r"[ぁ-んァ-ン一-龥]")
@@ -65,6 +73,76 @@ def _fake_approval_result(
     }
 
 
+def _write_turtlebot3_success_bridge(
+    path: Path,
+    *,
+    obstacle_avoidance_observed: bool = False,
+) -> None:
+    obstacle = "True" if obstacle_avoidance_observed else "False"
+    path.write_text(
+        "import json, sys\n"
+        "request = json.loads(sys.stdin.read())\n"
+        "payload = request.get('payload') or {}\n"
+        "assert request.get('physical_execution_invoked') is False\n"
+        "assert request.get('raw_velocity_allowed') is False\n"
+        "assert request.get('raw_ros_topic_publication_allowed') is False\n"
+        "print(json.dumps({\n"
+        "    'physical_execution_invoked': False,\n"
+        "    'raw_velocity_published': False,\n"
+        "    'raw_ros_topic_published': False,\n"
+        "    'cmd_vel_published_by_missionos': False,\n"
+        "    'ack_status': 'accepted',\n"
+        "    'ack_source': 'fixture_nav2_navigate_to_pose',\n"
+        "    'goal_x_m': payload.get('x_m'),\n"
+        "    'runtime_progress_observed': True,\n"
+        "    'completion_observed': True,\n"
+        "    'nav2_status': 'succeeded',\n"
+        "    'state_result': {\n"
+        "        'pose_observed': True,\n"
+        "        'robot_motion_observed': True,\n"
+        "        'odom_topic': '/odom',\n"
+        "        'odom_delta_m': 0.26,\n"
+        "        'costmap_obstacle_observed': "
+        + obstacle
+        + ",\n"
+        "        'obstacle_avoidance_observed': "
+        + obstacle
+        + ",\n"
+        "        'trajectory_result': {\n"
+        "            'trajectory_lateral_deviation_observed': "
+        + obstacle
+        + ",\n"
+        "            'max_lateral_deviation_m': 0.12 if "
+        + obstacle
+        + " else None,\n"
+        "            'trajectory_samples': [\n"
+        "                {'x_m': -2.0, 'y_m': -0.5, 'sample_index': 0},\n"
+        "                {'x_m': payload.get('x_m') / 2.0, 'y_m': payload.get('y_m') or 0.0, 'sample_index': 1},\n"
+        "                {'x_m': payload.get('x_m'), 'y_m': payload.get('y_m') or 0.0, 'sample_index': 2},\n"
+        "            ],\n"
+        "        },\n"
+        "    },\n"
+        "    'progress_result': {\n"
+        "        'runtime_progress_observed': True,\n"
+        "        'completion_observed': True,\n"
+        "        'robot_motion_observed': True,\n"
+        "        'nav2_status': 'succeeded',\n"
+        "        'costmap_obstacle_observed': "
+        + obstacle
+        + ",\n"
+        "        'obstacle_avoidance_observed': "
+        + obstacle
+        + ",\n"
+        "    },\n"
+        "}))\n",
+        encoding="utf-8",
+    )
+
+
+def _bridge_command(path: Path) -> str:
+    return f"{shlex.quote(sys.executable)} {shlex.quote(str(path))}"
+
+
 def test_chat_approve_and_prepare_messages_are_english(monkeypatch: Any) -> None:
     _install_quiet_conversation_dependencies(monkeypatch)
     monkeypatch.setattr(
@@ -122,6 +200,229 @@ def test_chat_approve_and_prepare_messages_are_english(monkeypatch: Any) -> None
     assert prepared["routed_action"] == "execute"
     assert "SITL execution request prepared" in prepared["message"]
     assert not JAPANESE_TEXT.search(prepared["message"])
+
+
+def test_chat_turtlebot3_home_mission_reaches_nav2_bridge_without_false_claims(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    _install_quiet_conversation_dependencies(monkeypatch)
+    task_store = TaskStore(str(tmp_path / "tasks.db"))
+    monkeypatch.setattr(gateway_server, "get_task_store", lambda: task_store)
+    bridge = tmp_path / "turtlebot3_bridge.py"
+    _write_turtlebot3_success_bridge(bridge)
+    monkeypatch.setenv(ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV, "1")
+    monkeypatch.setenv(ROS2_NAV2_BRIDGE_COMMAND_ENV, _bridge_command(bridge))
+
+    session_id = "chat-turtlebot3-session"
+    plan = gateway_server.run_missionos_autonomy_conversation(
+        {
+            "operator_instruction": "TurtleBot3で家の中を一周して",
+            "missionos_client_surface": "chat",
+            "session_id": session_id,
+        }
+    )
+
+    assert plan["routed_action"] == "mission_designer_plan"
+    assert "TurtleBot3 home mission proposal" in plan["message"]
+    plan_context = plan["mission_designer"]
+    assert plan_context["turtlebot3_home_mission_plan"]["mission_kind"] == (
+        "indoor_patrol_leg"
+    )
+    assert plan_context["summary"]["llm_recovery_proposals_allowed"] is True
+    assert plan_context["summary"]["proposal_first_classification"] is True
+    assert plan_context["summary"]["dispatch_request_sent"] is False
+    assert "cleaning_completion" in plan_context["summary"]["blocked_claims"]
+
+    approved = gateway_server.run_missionos_autonomy_conversation(
+        {
+            "operator_instruction": "approve",
+            "missionos_client_surface": "chat",
+            "session_id": session_id,
+            "mission_designer_context": plan_context,
+        }
+    )
+
+    assert approved["routed_action"] == "approve"
+    assert "Approval recorded for the TurtleBot3 home mission leg" in approved[
+        "message"
+    ]
+
+    executed = gateway_server.run_missionos_autonomy_conversation(
+        {
+            "operator_instruction": "run",
+            "missionos_client_surface": "chat",
+            "session_id": session_id,
+            "mission_designer_context": approved["mission_designer"],
+        }
+    )
+
+    summary = executed["operation_result"]["summary"]
+    execution = executed["operation_result"]["turtlebot3_home_mission_execution"]
+    task_id = summary["task_id"]
+    assert executed["routed_action"] == "execute"
+    assert summary["status"] == "completed"
+    assert task_id.startswith("task_")
+    assert summary["turtlebot3_home_mission_task_id"] == task_id
+    assert summary["dispatch_request_sent"] is True
+    assert summary["completion_claimed"] is True
+    assert summary["completion_scope"] == "sim_action"
+    assert summary["robot_motion_observed"] is True
+    assert summary["turtlebot3_indoor_map_model"]["map_kind"] == "indoor_local_xy"
+    assert summary["physical_execution_invoked"] is False
+    assert execution["whole_home_loop_completion_claimed"] is False
+    assert execution["cleaning_completion_claimed"] is False
+    assert execution["payload_delivery_completion_claimed"] is False
+    task = task_store.get(task_id)
+    assert task is not None
+    assert task["kind"] == "turtlebot3_home_mission_execution"
+    assert task["artifacts"]["turtlebot3_indoor_map_model"]["map_kind"] == (
+        "indoor_local_xy"
+    )
+
+
+def test_chat_turtlebot3_cleaning_request_plans_inspection_not_cleaning(
+    monkeypatch: Any,
+) -> None:
+    _install_quiet_conversation_dependencies(monkeypatch)
+
+    response = gateway_server.run_missionos_autonomy_conversation(
+        {
+            "operator_instruction": "家の中を掃除して",
+            "missionos_client_surface": "chat",
+            "session_id": "chat-turtlebot3-cleaning",
+        }
+    )
+
+    mission = response["mission_designer"]["turtlebot3_home_mission_plan"]
+    summary = response["mission_designer"]["summary"]
+    assert response["routed_action"] == "mission_designer_plan"
+    assert mission["mission_kind"] == "cleaning_inspection_leg"
+    assert "cleaning_completion" in mission["blocked_claims"]
+    assert "vacuum_or_brush_actuator_invoked" in mission["blocked_claims"]
+    assert summary["completion_claimed"] is False
+    assert summary["physical_execution_invoked"] is False
+
+
+def test_chat_turtlebot3_low_battery_blocks_dispatch(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    _install_quiet_conversation_dependencies(monkeypatch)
+    bridge = tmp_path / "bridge_should_not_run.py"
+    bridge.write_text("raise SystemExit('bridge should not run')\n", encoding="utf-8")
+    monkeypatch.setenv(ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV, "1")
+    monkeypatch.setenv(ROS2_NAV2_BRIDGE_COMMAND_ENV, _bridge_command(bridge))
+
+    session_id = "chat-turtlebot3-low-battery"
+    plan = gateway_server.run_missionos_autonomy_conversation(
+        {
+            "operator_instruction": "TurtleBot3で家の中を一周して。バッテリーが足りない",
+            "missionos_client_surface": "chat",
+            "session_id": session_id,
+        }
+    )
+    approved = gateway_server.run_missionos_autonomy_conversation(
+        {
+            "operator_instruction": "approve",
+            "missionos_client_surface": "chat",
+            "session_id": session_id,
+            "mission_designer_context": plan["mission_designer"],
+        }
+    )
+    executed = gateway_server.run_missionos_autonomy_conversation(
+        {
+            "operator_instruction": "run",
+            "missionos_client_surface": "chat",
+            "session_id": session_id,
+            "mission_designer_context": approved["mission_designer"],
+        }
+    )
+
+    summary = executed["operation_result"]["summary"]
+    assert summary["dispatch_request_sent"] is False
+    assert summary["completion_claimed"] is False
+    assert summary["recovery_action_suggested"] == "return_home"
+    assert summary["recovery_execution_permitted_by_envelope"] is True
+    assert summary["recovery_dispatch_request_sent"] is False
+    assert summary["recovery_proposal_classifications"][0]["proposal_allowed"] is True
+    assert summary["recovery_proposal_classifications"][0]["execution_class"] == (
+        "auto_executable"
+    )
+    assert "battery_below_minimum_required" in summary["blocking_reasons"]
+    assert summary["physical_execution_invoked"] is False
+
+
+def test_chat_turtlebot3_obstacle_mission_requires_avoidance_observation(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    _install_quiet_conversation_dependencies(monkeypatch)
+    bridge = tmp_path / "turtlebot3_bridge.py"
+    _write_turtlebot3_success_bridge(bridge, obstacle_avoidance_observed=False)
+    monkeypatch.setenv(ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV, "1")
+    monkeypatch.setenv(ROS2_NAV2_BRIDGE_COMMAND_ENV, _bridge_command(bridge))
+
+    session_id = "chat-turtlebot3-obstacle"
+    plan = gateway_server.run_missionos_autonomy_conversation(
+        {
+            "operator_instruction": "TurtleBot3で家の中の障害物を避けて",
+            "missionos_client_surface": "chat",
+            "session_id": session_id,
+        }
+    )
+    approved = gateway_server.run_missionos_autonomy_conversation(
+        {
+            "operator_instruction": "approve",
+            "missionos_client_surface": "chat",
+            "session_id": session_id,
+            "mission_designer_context": plan["mission_designer"],
+        }
+    )
+    executed = gateway_server.run_missionos_autonomy_conversation(
+        {
+            "operator_instruction": "run",
+            "missionos_client_surface": "chat",
+            "session_id": session_id,
+            "mission_designer_context": approved["mission_designer"],
+        }
+    )
+
+    summary = executed["operation_result"]["summary"]
+    assert summary["nav2_action_completion_claimed"] is True
+    assert summary["completion_claimed"] is False
+    assert summary["obstacle_challenge_required"] is True
+    assert summary["obstacle_avoidance_completion_claimed"] is False
+    assert "obstacle_avoidance_not_observed" in summary["blocking_reasons"]
+
+
+def test_chat_turtlebot3_followup_adds_obstacle_judgment_without_repeating_robot(
+    monkeypatch: Any,
+) -> None:
+    _install_quiet_conversation_dependencies(monkeypatch)
+
+    session_id = "chat-turtlebot3-followup"
+    plan = gateway_server.run_missionos_autonomy_conversation(
+        {
+            "operator_instruction": "TurtleBot3で家の中を一周して",
+            "missionos_client_surface": "chat",
+            "session_id": session_id,
+        }
+    )
+    revised = gateway_server.run_missionos_autonomy_conversation(
+        {
+            "operator_instruction": "障害物を登場させて避ける判断ポイントも入れて",
+            "missionos_client_surface": "chat",
+            "session_id": session_id,
+            "mission_designer_context": plan["mission_designer"],
+        }
+    )
+
+    summary = revised["mission_designer"]["summary"]
+    assert revised["routed_action"] == "mission_designer_plan"
+    assert summary["home_robot_mission_kind"] == "obstacle_avoidance_patrol_leg"
+    assert summary["obstacle_scenario"]["obstacle_challenge_requested"] is True
+    assert summary["ai_judgment_points"][1]["judgment_kind"] == "obstacle_avoidance"
 
 
 def test_chat_status_prompts_are_english(monkeypatch: Any) -> None:

@@ -269,6 +269,174 @@ def test_run_command_sends_execute_route_hint(monkeypatch: Any, tmp_path: Path) 
     assert "approved" not in client.requests[-1]["operator_instruction"].lower()
 
 
+def test_chat_robot_turtlebot3_dry_run_prints_sim_entrypoint(
+    monkeypatch: Any,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(missionos_cli, "_gateway_reachable", lambda _client: False)
+
+    result = CliRunner().invoke(
+        missionos_cli.missionos,
+        [
+            "--state-path",
+            str(tmp_path / "state.json"),
+            "chat",
+            "--robot",
+            "turtlebot3",
+            "--turtlebot3-dry-run",
+            "TurtleBot3で屋内配送ルートを走って",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "TurtleBot3 MissionOS Gateway" in result.output
+    assert "TurtleBot3で屋内配送ルートを走って" in result.output
+    assert "start_ros2_nav2_turtlebot3_ga" in result.output
+    assert "teway_docker.sh" in result.output
+    assert "surfaces=chat + operate + watch + map" in result.output
+    assert "claim_scope=sim_action" in result.output
+    assert "world_profile=house" in result.output
+
+
+def test_chat_robot_turtlebot3_dry_run_can_select_house_profile(
+    monkeypatch: Any,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(missionos_cli, "_gateway_reachable", lambda _client: False)
+    monkeypatch.setenv("MISSIONOS_TURTLEBOT3_WORLD_PROFILE", "house")
+
+    result = CliRunner().invoke(
+        missionos_cli.missionos,
+        [
+            "--state-path",
+            str(tmp_path / "state.json"),
+            "chat",
+            "--robot",
+            "turtlebot3",
+            "--turtlebot3-dry-run",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "TurtleBot3 MissionOS Gateway" in result.output
+    assert "world_profile=house" in result.output
+    assert "MISSIONOS_TURTLEBOT3_WORLD_PROFILE=house" in result.output
+
+
+def test_chat_robot_turtlebot3_mid_recovery_dry_run_sets_env(
+    monkeypatch: Any,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(missionos_cli, "_gateway_reachable", lambda _client: False)
+
+    result = CliRunner().invoke(
+        missionos_cli.missionos,
+        [
+            "--state-path",
+            str(tmp_path / "state.json"),
+            "chat",
+            "--robot",
+            "turtlebot3",
+            "--turtlebot3-mid-recovery",
+            "--turtlebot3-dry-run",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "start_ros2_nav2_turtlebot3_ga" in result.output
+    assert "teway_docker.sh" in result.output
+    assert "physical_execution_invoked=false" in result.output
+
+
+def test_chat_robot_turtlebot3_dry_run_retargets_default_busy_gateway(
+    monkeypatch: Any,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(missionos_cli, "_gateway_reachable", lambda _client: True)
+
+    result = CliRunner().invoke(
+        missionos_cli.missionos,
+        [
+            "--state-path",
+            str(tmp_path / "state.json"),
+            "chat",
+            "--robot",
+            "turtlebot3",
+            "--turtlebot3-dry-run",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "using TurtleBot3" in result.output
+    assert "Gateway URL http://127.0.0.1:18792" in result.output
+    assert "gateway_url=http://127.0.0.1:18792" in result.output
+
+
+def test_chat_robot_turtlebot3_smoke_dry_run_keeps_noninteractive_path(
+    tmp_path: Path,
+) -> None:
+    result = CliRunner().invoke(
+        missionos_cli.missionos,
+        [
+            "--state-path",
+            str(tmp_path / "state.json"),
+            "chat",
+            "--robot",
+            "turtlebot3",
+            "--turtlebot3-smoke",
+            "--turtlebot3-mid-recovery",
+            "--turtlebot3-dry-run",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "TurtleBot3 MissionOS Chat" in result.output
+    assert "MISSIONOS_CHAT_TURTLEBOT3_MID_RECOVERY_SMOKE=1" in result.output
+    assert "smoke_ros2_nav2_turtlebot3_ob" in result.output
+    assert "stacle_delivery_docker.sh" in result.output
+
+
+def test_turtlebot3_obstacle_delivery_text_is_mission_plan_not_recovery(
+    tmp_path: Path,
+) -> None:
+    client = RecordingMissionOSClient()
+    ctx = click.Context(missionos_cli.missionos)
+    ctx.obj = {
+        "missionos_client": client,
+        "missionos_gateway_url": "http://127.0.0.1:18792",
+        "missionos_json_output": False,
+        "missionos_state_path": tmp_path / "state.json",
+    }
+
+    handled = missionos_cli._handle_chat_input(
+        ctx,
+        client,
+        "TurtleBot3で屋内配送ルートを走って。障害物を避けて、目的地まで届けて。",
+        session_id="missionos-cli-turtlebot3",
+    )
+
+    assert handled is True
+    assert client.recovery_proposals == []
+    assert client.requests[-1]["missionos_route_hint"] == "mission_designer_plan"
+    assert client.requests[-1]["missionos_client_surface"] == "chat"
+
+
+def test_payload_task_id_reads_turtlebot3_home_mission_task_id() -> None:
+    assert (
+        missionos_cli._payload_task_id(
+            {
+                "mission_designer": {
+                    "summary": {
+                        "execution_target": "ros2_nav2_turtlebot3_sim",
+                        "turtlebot3_home_mission_task_id": "task_turtlebot3_delivery",
+                    }
+                }
+            }
+        )
+        == "task_turtlebot3_delivery"
+    )
+
+
 def test_chat_enter_prepare_sends_execute_route_hint(tmp_path: Path) -> None:
     client = RecordingMissionOSClient()
     ctx = click.Context(missionos_cli.missionos)

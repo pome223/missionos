@@ -156,6 +156,8 @@ async def _run() -> dict[str, Any]:
         artifacts = gateway.task_store.get(task["task_id"])["artifacts"]
 
     orchestration = artifacts["missionos_real_hardware_dispatch_orchestration"][0]
+    hardware_adapter_evidence = artifacts["missionos_hardware_adapter_evidence"][0]
+    hardware_adapter_preflight = artifacts["missionos_hardware_adapter_preflight"][0]
     summary = {
         "smoke": "missionos_real_hardware_arm_disarm_route",
         "ran": True,
@@ -175,6 +177,24 @@ async def _run() -> dict[str, Any]:
         "runtime_invocation_evidence_written": (
             "missionos_real_hardware_dispatch_runtime_invocations" in artifacts
         ),
+        "hardware_adapter_evidence_written": (
+            "missionos_hardware_adapter_evidence" in artifacts
+        ),
+        "hardware_adapter_preflight_status": hardware_adapter_preflight[
+            "preflight_status"
+        ],
+        "hardware_adapter_dispatch_status": hardware_adapter_evidence[
+            "dispatch_status"
+        ],
+        "hardware_adapter_completion_claimed": hardware_adapter_evidence[
+            "completion_claimed"
+        ],
+        "hardware_adapter_completion_scope": hardware_adapter_evidence[
+            "completion_scope"
+        ],
+        "hardware_adapter_physical_execution_invoked": hardware_adapter_evidence[
+            "physical_execution_invoked"
+        ],
     }
 
     assert summary["http_status"] == 200
@@ -188,6 +208,12 @@ async def _run() -> dict[str, Any]:
         == f"{MISSIONOS_REAL_HARDWARE_DISPATCH_RUNTIME_OPT_IN_ENV}_not_enabled"
     )
     assert summary["runtime_invocation_evidence_written"] is False
+    assert summary["hardware_adapter_evidence_written"] is True
+    assert summary["hardware_adapter_preflight_status"] == "blocked"
+    assert summary["hardware_adapter_dispatch_status"] == "blocked"
+    assert summary["hardware_adapter_completion_claimed"] is False
+    assert summary["hardware_adapter_completion_scope"] == "none"
+    assert summary["hardware_adapter_physical_execution_invoked"] is False
     return summary
 
 

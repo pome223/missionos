@@ -43,7 +43,9 @@ SITL_DISPATCH_TIMEOUT = 900.0
 SITL_EXECUTION_POLL_INTERVAL = 5.0
 SITL_EXECUTION_POLL_TIMELINE_LIMIT = 5
 ACTIVE_RUNNER_RECOVERY_OBSERVATION_TIMEOUT_SECONDS = 95.0
-TERMINAL_TASK_STATUSES = frozenset({"completed", "blocked", "failed", "cancelled", "canceled"})
+TERMINAL_TASK_STATUSES = frozenset(
+    {"completed", "recovered", "blocked", "failed", "cancelled", "canceled"}
+)
 TutorialOutcome = str | None
 
 DEFAULT_GATEWAY_URL = "http://127.0.0.1:18791"
@@ -843,7 +845,7 @@ def _remember_mission_designer_context(
     state = _load_state(ctx.obj["missionos_state_path"])
     state["session_id"] = session_id
     state["mission_designer_context"] = context
-    task_id = _mission_designer_sitl_task_id(payload)
+    task_id = _mission_designer_sitl_task_id(payload) or _payload_task_id(payload)
     if task_id:
         state["sitl_execution_task_id"] = task_id
     _save_state(ctx.obj["missionos_state_path"], state)

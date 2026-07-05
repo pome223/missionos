@@ -15,6 +15,12 @@ examples over simplified prose.
 7. `docs/agents/local-llm-backends.md`
 8. `docs/agents/publication-rules.md`
 9. `docs/agents/legacy-codename-rename-plan.md`
+10. `docs/agents/hardware-adapter-contract.md`
+11. `docs/agents/hardware-partner-integration-guide.md`
+12. `docs/agents/ros2-nav2-turtlebot3-sim.md`
+13. `docs/agents/ros2-nav2-turtlebot4-sim.md`
+14. `docs/agents/unitree-mujoco-environment.md`
+15. `docs/agents/unitree-go2-real-hardware.md`
 
 ## Working Rule
 
