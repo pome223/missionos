@@ -38,6 +38,10 @@ EXPECTED_RECOVERY_PROPOSAL_SOURCE_ENV = (
 DYNAMIC_OBSTACLE_RECOVERY_SMOKE_ENV = (
     "MISSIONOS_CHAT_TURTLEBOT3_DYNAMIC_OBSTACLE_RECOVERY_SMOKE"
 )
+DECISION_DEMO_SMOKE_ENV = "MISSIONOS_CHAT_TURTLEBOT3_DECISION_DEMO_SMOKE"
+HUMAN_APPROVAL_DEMO_SMOKE_ENV = (
+    "MISSIONOS_CHAT_TURTLEBOT3_HUMAN_APPROVAL_DEMO_SMOKE"
+)
 RECOVERY_GUARDRAIL_FALLBACK_SMOKE_ENV = (
     "MISSIONOS_CHAT_TURTLEBOT3_RECOVERY_GUARDRAIL_FALLBACK_SMOKE"
 )
@@ -58,6 +62,7 @@ _ADK_ENV_KEYS = (
     "MISSIONOS_LLM_REPAIR_PLANNER_ADK_ENABLED",
     "MISSIONOS_LLM_RESPONSE_PLANNER_ADK_ENABLED",
 )
+_LLM_OFF_VALUES = {"off", "none", "disabled", "deterministic"}
 
 
 def _truthy_env(name: str) -> bool:
@@ -87,7 +92,21 @@ def _localization_drift_fault_smoke_enabled() -> bool:
 
 
 def _dynamic_obstacle_recovery_smoke_enabled() -> bool:
-    return _truthy_env(DYNAMIC_OBSTACLE_RECOVERY_SMOKE_ENV)
+    return (
+        _truthy_env(DYNAMIC_OBSTACLE_RECOVERY_SMOKE_ENV)
+        or _truthy_env(DECISION_DEMO_SMOKE_ENV)
+        or _truthy_env(HUMAN_APPROVAL_DEMO_SMOKE_ENV)
+    )
+
+
+def _decision_demo_smoke_enabled() -> bool:
+    return _truthy_env(DECISION_DEMO_SMOKE_ENV) or _truthy_env(
+        HUMAN_APPROVAL_DEMO_SMOKE_ENV
+    )
+
+
+def _human_approval_demo_smoke_enabled() -> bool:
+    return _truthy_env(HUMAN_APPROVAL_DEMO_SMOKE_ENV)
 
 
 def _recovery_guardrail_fallback_smoke_enabled() -> bool:
@@ -106,9 +125,11 @@ def _gateway_env(
 ) -> dict[str, str]:
     env = os.environ.copy()
     env["MISSIONOS_GATEWAY_BACKEND"] = "production"
-    env.setdefault("MISSIONOS_LLM_BACKEND", "off")
+    env.setdefault("MISSIONOS_LLM_BACKEND", "gemini")
+    backend = env.get("MISSIONOS_LLM_BACKEND", "").strip().lower()
+    default_adk_enabled = "0" if backend in _LLM_OFF_VALUES else "1"
     for key in _ADK_ENV_KEYS:
-        env[key] = "0"
+        env.setdefault(key, default_adk_enabled)
     if not _truthy_env(WITH_BRIDGE_ENV):
         env.pop(ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV, None)
         env.pop(ROS2_NAV2_BRIDGE_COMMAND_ENV, None)
@@ -127,6 +148,20 @@ def _localization_drift_env_overrides() -> dict[str, str]:
         "ROS2_NAV2_INITIALPOSE_Y_M": os.environ.get(
             LOCALIZATION_DRIFT_INITIALPOSE_Y_ENV,
             "8.0",
+        ),
+    }
+
+
+def _human_approval_demo_env_overrides() -> dict[str, str]:
+    return {
+        "MISSIONOS_TURTLEBOT3_RECOVERY_AVOID_OBSTACLE_REQUIRES_APPROVAL": "1",
+        "MISSIONOS_TURTLEBOT3_RECOVERY_OPERATOR_APPROVAL_REF": os.environ.get(
+            "MISSIONOS_TURTLEBOT3_RECOVERY_OPERATOR_APPROVAL_REF",
+            "operator_approval:codex_e2e_recovery",
+        ),
+        "MISSIONOS_TURTLEBOT3_RECOVERY_OPERATOR_APPROVAL_ACTOR": os.environ.get(
+            "MISSIONOS_TURTLEBOT3_RECOVERY_OPERATOR_APPROVAL_ACTOR",
+            "codex_e2e_operator",
         ),
     }
 
@@ -267,6 +302,142 @@ def _approval_created_count(proposals: Any, planner_result: Any = None) -> int:
     return count
 
 
+def _first_recovery_classification(summary: dict[str, Any]) -> dict[str, Any]:
+    classifications = summary.get("recovery_proposal_classifications")
+    if not isinstance(classifications, list) or not classifications:
+        return {}
+    first = classifications[0]
+    return dict(first) if isinstance(first, dict) else {}
+
+
+def _first_recovery_input_observation_keys(proposals: Any) -> list[str]:
+    if not isinstance(proposals, list) or not proposals:
+        return []
+    first = proposals[0]
+    if not isinstance(first, dict):
+        return []
+    observations = first.get("input_observations")
+    if not isinstance(observations, dict):
+        return []
+    return sorted(str(key) for key in observations)
+
+
+def _guardrail_blocked_llm_output_count(planner_result: Any) -> int:
+    if not isinstance(planner_result, dict):
+        return 0
+    if planner_result.get("planner_status") != "guardrail_blocked":
+        return 0
+    guardrail = planner_result.get("guardrail")
+    if not isinstance(guardrail, dict):
+        return 0
+    return 1 if guardrail.get("guardrail_passed") is False else 0
+
+
+def _recovery_decision_demo_summary(
+    *,
+    scenario: str,
+    trigger: str,
+    approved: dict[str, Any],
+    executed: dict[str, Any],
+    summary: dict[str, Any],
+    proposals: list[dict[str, Any]],
+    planner_result: dict[str, Any],
+) -> dict[str, Any]:
+    classification = _first_recovery_classification(summary)
+    mission_operator_approval_count = 1 if approved.get("routed_action") == "approve" else 0
+    summary_fresh_approval_count = int(
+        summary.get("fresh_recovery_operator_approval_count") or 0
+    )
+    fresh_recovery_approval_count = _approval_created_count(
+        proposals,
+        planner_result,
+    ) + summary_fresh_approval_count
+    recovery_dispatch_request_sent = summary.get("recovery_dispatch_request_sent")
+    return {
+        "schema_version": "missionos_turtlebot3_recovery_decision_demo.v1",
+        "enabled": True,
+        "scenario": scenario,
+        "trigger": trigger,
+        "approve_route": approved.get("routed_action"),
+        "execute_route": executed.get("routed_action"),
+        "judgment_required": summary.get("runtime_recovery_triggered") is True,
+        "accepted_recovery_proposal_count": _proposal_count(proposals),
+        "llm_recovery_judgment_count": _proposal_count(proposals, source="llm"),
+        "deterministic_fallback_count": _proposal_count(
+            proposals,
+            source="deterministic_fallback",
+        ),
+        "guardrail_blocked_llm_output_count": _guardrail_blocked_llm_output_count(
+            planner_result
+        ),
+        "recovery_proposal_source": _first_recovery_proposal_source(proposals),
+        "source_backed_input_observation_keys": _first_recovery_input_observation_keys(
+            proposals
+        ),
+        "selected_action": summary.get("runtime_recovery_action_kind")
+        or summary.get("recovery_action_suggested"),
+        "rules_execution_class": classification.get("execution_class"),
+        "requires_new_human_approval": classification.get(
+            "requires_new_human_approval"
+        ),
+        "execution_permitted_by_envelope": classification.get(
+            "execution_permitted_by_envelope"
+        ),
+        "proposal_allowed": classification.get("proposal_allowed"),
+        "mission_operator_approval_count": mission_operator_approval_count,
+        "fresh_recovery_operator_approval_count": fresh_recovery_approval_count,
+        "fresh_recovery_operator_approvals": summary.get(
+            "fresh_recovery_operator_approvals"
+        )
+        or [],
+        "operator_approval_created_for_recovery": (
+            summary_fresh_approval_count > 0
+        ),
+        "operator_approval_reused_for_recovery": recovery_dispatch_request_sent is True
+        and mission_operator_approval_count == 1
+        and fresh_recovery_approval_count == 0,
+        "recovery_execution_permitted_by_operator_approval": summary.get(
+            "recovery_execution_permitted_by_operator_approval"
+        ),
+        "recovery_dispatch_authority_source": summary.get(
+            "recovery_dispatch_authority_source"
+        ),
+        "recovery_dispatch_request_sent": recovery_dispatch_request_sent,
+        "recovery_completion_claimed": summary.get("recovery_completion_claimed"),
+        "route_resumed_after_recovery": summary.get("route_resumed_after_recovery"),
+        "route_completed_after_recovery": summary.get("route_completed_after_recovery"),
+        "runtime_failure_recovery_triggered": summary.get(
+            "runtime_failure_recovery_triggered"
+        ),
+        "runtime_failure_context": summary.get("runtime_failure_context") or {},
+        "runtime_motion_context": summary.get("runtime_recovery_motion_context") or {},
+        "recovery_planner_status": summary.get("recovery_planner_status"),
+        "completion_scope": summary.get("completion_scope"),
+        "completion_claimed": summary.get("completion_claimed"),
+        "mission_delivery_completion_claimed": summary.get(
+            "mission_delivery_completion_claimed"
+        ),
+        "physical_execution_invoked": summary.get("physical_execution_invoked"),
+    }
+
+
+def _recovery_decision_trigger(
+    summary: dict[str, Any],
+    *,
+    fallback: str,
+) -> str:
+    if summary.get("runtime_failure_recovery_triggered") is True:
+        return "runtime_segment_failure"
+    return fallback
+
+
+def _disabled_recovery_decision_demo_summary() -> dict[str, Any]:
+    return {
+        "schema_version": "missionos_turtlebot3_recovery_decision_demo.v1",
+        "enabled": False,
+    }
+
+
 def _recovery_planner_blocking_reasons(summary: dict[str, Any]) -> list[str]:
     result = summary.get("recovery_planner_result")
     if not isinstance(result, dict):
@@ -284,6 +455,11 @@ def _recovery_planner_guardrail_checks(summary: dict[str, Any]) -> dict[str, Any
         return {}
     checks = guardrail.get("checks")
     return dict(checks) if isinstance(checks, dict) else {}
+
+
+def _task_recovery_decision_summary(operation: dict[str, Any]) -> dict[str, Any]:
+    summary = operation.get("turtlebot3_recovery_decision_summary")
+    return dict(summary) if isinstance(summary, dict) else {}
 
 
 def _run_chat_flow(
@@ -330,6 +506,9 @@ def main() -> int:
             _truthy_env(WITH_BRIDGE_ENV)
             and _dynamic_obstacle_recovery_smoke_enabled()
         )
+        human_approval_demo_enabled = (
+            _truthy_env(WITH_BRIDGE_ENV) and _human_approval_demo_smoke_enabled()
+        )
         localization_drift_fault_enabled = (
             mid_recovery_enabled and _localization_drift_fault_smoke_enabled()
         )
@@ -369,6 +548,11 @@ def main() -> int:
             )
 
         if dynamic_obstacle_recovery_enabled:
+            if human_approval_demo_enabled:
+                _stop_gateway(proc)
+                base_url, proc = _start_gateway(
+                    env_overrides=_human_approval_demo_env_overrides()
+                )
             (
                 dynamic_obstacle_plan,
                 dynamic_obstacle_approved,
@@ -411,6 +595,7 @@ def main() -> int:
         else {}
     )
     summary = operation.get("summary") if isinstance(operation.get("summary"), dict) else {}
+    task_decision_summary = _task_recovery_decision_summary(operation)
     low_battery_operation = (
         low_battery_executed.get("operation_result")
         if isinstance(low_battery_executed.get("operation_result"), dict)
@@ -440,6 +625,9 @@ def main() -> int:
         dynamic_obstacle_operation.get("summary")
         if isinstance(dynamic_obstacle_operation.get("summary"), dict)
         else {}
+    )
+    dynamic_obstacle_task_decision_summary = _task_recovery_decision_summary(
+        dynamic_obstacle_operation
     )
     indoor_map = summary.get("turtlebot3_indoor_map_model")
     indoor_map = indoor_map if isinstance(indoor_map, dict) else {}
@@ -494,6 +682,40 @@ def main() -> int:
         if isinstance(dynamic_obstacle_recovery_planner_result, dict)
         else {}
     )
+    decision_demo = _disabled_recovery_decision_demo_summary()
+    if dynamic_obstacle_recovery_enabled:
+        decision_demo = _recovery_decision_demo_summary(
+            scenario="dynamic_obstacle_recovery",
+            trigger=_recovery_decision_trigger(
+                dynamic_obstacle_summary,
+                fallback="runtime_obstacle",
+            ),
+            approved=dynamic_obstacle_approved,
+            executed=dynamic_obstacle_executed,
+            summary=dynamic_obstacle_summary,
+            proposals=dynamic_obstacle_recovery_proposals,
+            planner_result=dynamic_obstacle_recovery_planner_result,
+        )
+    elif localization_drift_fault_enabled:
+        decision_demo = _recovery_decision_demo_summary(
+            scenario="localization_drift_failure_recovery",
+            trigger="runtime_segment_failure",
+            approved=mid_recovery_approved,
+            executed=mid_recovery_executed,
+            summary=mid_recovery_summary,
+            proposals=mid_recovery_proposals,
+            planner_result=mid_recovery_planner_result,
+        )
+    elif mid_recovery_enabled:
+        decision_demo = _recovery_decision_demo_summary(
+            scenario="low_battery_return_home_recovery",
+            trigger="battery_envelope",
+            approved=mid_recovery_approved,
+            executed=mid_recovery_executed,
+            summary=mid_recovery_summary,
+            proposals=mid_recovery_proposals,
+            planner_result=mid_recovery_planner_result,
+        )
     result = {
         "smoke": "missionos_chat_turtlebot3_home_mission",
         "with_bridge": _truthy_env(WITH_BRIDGE_ENV),
@@ -504,9 +726,14 @@ def main() -> int:
         and _localization_drift_fault_smoke_enabled(),
         "dynamic_obstacle_recovery_enabled": _truthy_env(WITH_BRIDGE_ENV)
         and _dynamic_obstacle_recovery_smoke_enabled(),
+        "decision_demo_smoke_enabled": _truthy_env(WITH_BRIDGE_ENV)
+        and _decision_demo_smoke_enabled(),
+        "human_approval_demo_smoke_enabled": human_approval_demo_enabled,
         "recovery_guardrail_fallback_injection_enabled": _truthy_env(WITH_BRIDGE_ENV)
         and _dynamic_obstacle_recovery_smoke_enabled()
         and _recovery_guardrail_fallback_smoke_enabled(),
+        "decision_demo": decision_demo,
+        "task_recovery_decision_summary": task_decision_summary,
         "plan_route": plan.get("routed_action"),
         "approve_route": approved.get("routed_action"),
         "execute_route": executed.get("routed_action"),
@@ -841,6 +1068,22 @@ def main() -> int:
             "recovery_approval_created_count": _approval_created_count(
                 dynamic_obstacle_recovery_proposals,
                 dynamic_obstacle_recovery_planner_result,
+            )
+            + int(dynamic_obstacle_summary.get("fresh_recovery_operator_approval_count") or 0),
+            "fresh_recovery_operator_approval_count": dynamic_obstacle_summary.get(
+                "fresh_recovery_operator_approval_count"
+            ),
+            "fresh_recovery_operator_approvals": dynamic_obstacle_summary.get(
+                "fresh_recovery_operator_approvals"
+            )
+            or [],
+            "recovery_execution_permitted_by_operator_approval": (
+                dynamic_obstacle_summary.get(
+                    "recovery_execution_permitted_by_operator_approval"
+                )
+            ),
+            "recovery_dispatch_authority_source": dynamic_obstacle_summary.get(
+                "recovery_dispatch_authority_source"
             ),
             "recovery_planner_blocking_reasons": _recovery_planner_blocking_reasons(
                 dynamic_obstacle_summary
@@ -881,6 +1124,7 @@ def main() -> int:
                 "mission_episode_review_passed"
             ),
             "blocking_reasons": dynamic_obstacle_summary.get("blocking_reasons") or [],
+            "task_recovery_decision_summary": dynamic_obstacle_task_decision_summary,
         },
     }
     print(json.dumps(result, ensure_ascii=True, indent=2, sort_keys=True))
@@ -903,7 +1147,11 @@ def main() -> int:
         raise SystemExit("TurtleBot3 chat smoke claimed physical execution")
     if result["mission_delivery_completion_claimed"] is not False:
         raise SystemExit("TurtleBot3 chat smoke claimed mission delivery completion")
-    if _truthy_env(WITH_BRIDGE_ENV) and result["mission_episode_review_status"] != "passed":
+    if (
+        _truthy_env(WITH_BRIDGE_ENV)
+        and not result["decision_demo_smoke_enabled"]
+        and result["mission_episode_review_status"] != "passed"
+    ):
         raise SystemExit("TurtleBot3 chat smoke did not attach passing episode review")
     obstacle_requested = "障害物" in instruction or "obstacle" in instruction.lower()
     delivery_requested = "配送" in instruction or "deliver" in instruction.lower()
@@ -940,6 +1188,7 @@ def main() -> int:
         delivery_requested
         and _truthy_env(WITH_BRIDGE_ENV)
         and not result["recovery_guardrail_fallback_injection_enabled"]
+        and not result["decision_demo_smoke_enabled"]
     ):
         if result["indoor_delivery_route_completion_claimed"] is not True:
             raise SystemExit("delivery route did not claim simulated dropoff arrival")
@@ -971,6 +1220,19 @@ def main() -> int:
         if mid_recovery["execute_route"] != "execute":
             raise SystemExit("mid-mission recovery run did not route to execute")
         if result["localization_drift_fault_injection_enabled"] is True:
+            decision_demo = result["decision_demo"]
+            if decision_demo["enabled"] is not True:
+                raise SystemExit("localization drift fault did not emit decision demo")
+            if decision_demo["scenario"] != "localization_drift_failure_recovery":
+                raise SystemExit("localization drift fault emitted wrong decision scenario")
+            if decision_demo["mission_operator_approval_count"] != 1:
+                raise SystemExit("localization drift fault lost mission approval count")
+            if decision_demo["fresh_recovery_operator_approval_count"] != 0:
+                raise SystemExit(
+                    "localization drift fault created fresh recovery approval"
+                )
+            if decision_demo["physical_execution_invoked"] is not False:
+                raise SystemExit("localization drift decision demo claimed physical")
             if mid_recovery["status"] not in {"blocked", "recovered"}:
                 raise SystemExit(
                     "localization drift fault injection did not fail safe as blocked/recovered"
@@ -1051,20 +1313,106 @@ def main() -> int:
             raise SystemExit("mid-mission recovery did not attach passing episode review")
     if _truthy_env(WITH_BRIDGE_ENV) and _dynamic_obstacle_recovery_smoke_enabled():
         dynamic_obstacle = result["dynamic_obstacle_recovery"]
+        decision_demo = result["decision_demo"]
+        decision_demo_smoke = result["decision_demo_smoke_enabled"] is True
         expected_source = os.environ.get(EXPECTED_RECOVERY_PROPOSAL_SOURCE_ENV, "")
         expected_source = expected_source.strip()
         if dynamic_obstacle["execute_route"] != "execute":
             raise SystemExit("dynamic obstacle recovery run did not route to execute")
+        if decision_demo["enabled"] is not True:
+            raise SystemExit("dynamic obstacle recovery did not emit decision demo")
+        if decision_demo["scenario"] != "dynamic_obstacle_recovery":
+            raise SystemExit("dynamic obstacle recovery emitted wrong decision scenario")
+        if decision_demo["judgment_required"] is not True:
+            raise SystemExit("dynamic obstacle recovery did not require judgment")
+        if decision_demo["mission_operator_approval_count"] != 1:
+            raise SystemExit("dynamic obstacle recovery lost mission approval count")
+        task_decision_summary = dynamic_obstacle["task_recovery_decision_summary"]
+        if task_decision_summary.get("schema_version") != (
+            "missionos_turtlebot3_recovery_decision_summary.v1"
+        ):
+            raise SystemExit(
+                "dynamic obstacle recovery did not persist task decision summary"
+            )
+        if task_decision_summary.get("read_only") is not True:
+            raise SystemExit("task decision summary was not read-only")
+        if task_decision_summary.get("decision_summary_creates_dispatch_authority") is not False:
+            raise SystemExit("task decision summary created dispatch authority")
+        for key in (
+            "judgment_required",
+            "llm_recovery_judgment_count",
+            "fresh_recovery_operator_approval_count",
+            "rules_execution_class",
+            "requires_new_human_approval",
+            "recovery_dispatch_authority_source",
+        ):
+            if task_decision_summary.get(key) != decision_demo.get(key):
+                raise SystemExit(f"task decision summary mismatched {key}")
+        human_approval_demo = result["human_approval_demo_smoke_enabled"] is True
+        if human_approval_demo:
+            if decision_demo["fresh_recovery_operator_approval_count"] != 1:
+                raise SystemExit(
+                    "human approval demo did not create exactly one recovery approval"
+                )
+            if decision_demo["operator_approval_reused_for_recovery"] is not False:
+                raise SystemExit("human approval demo reused mission approval")
+            if decision_demo["operator_approval_created_for_recovery"] is not True:
+                raise SystemExit("human approval demo did not record fresh approval")
+        elif decision_demo["fresh_recovery_operator_approval_count"] != 0:
+            raise SystemExit("dynamic obstacle recovery created fresh recovery approval")
+        if decision_demo_smoke:
+            if decision_demo["selected_action"] not in {"avoid_obstacle", "return_home"}:
+                raise SystemExit(
+                    "decision demo selected an unexpected recovery action"
+                )
+        elif decision_demo["selected_action"] != "avoid_obstacle":
+            raise SystemExit("dynamic obstacle decision did not select avoid_obstacle")
+        if human_approval_demo:
+            if decision_demo["rules_execution_class"] != "requires_human_approval":
+                raise SystemExit("human approval demo did not require approval")
+            if decision_demo["requires_new_human_approval"] is not True:
+                raise SystemExit("human approval demo missing approval requirement")
+            if decision_demo["execution_permitted_by_envelope"] is not False:
+                raise SystemExit("human approval demo let envelope self-dispatch")
+            if (
+                decision_demo["recovery_execution_permitted_by_operator_approval"]
+                is not True
+            ):
+                raise SystemExit("human approval demo did not permit via operator")
+            if decision_demo["recovery_dispatch_authority_source"] != (
+                "fresh_operator_approval"
+            ):
+                raise SystemExit("human approval demo used wrong dispatch authority")
+        else:
+            if decision_demo["rules_execution_class"] != "auto_executable":
+                raise SystemExit("dynamic obstacle decision was not auto_executable")
+            if decision_demo["requires_new_human_approval"] is not False:
+                raise SystemExit("dynamic obstacle decision required unexpected approval")
+        if decision_demo["physical_execution_invoked"] is not False:
+            raise SystemExit("dynamic obstacle decision demo claimed physical execution")
+        if decision_demo["mission_delivery_completion_claimed"] is not False:
+            raise SystemExit("dynamic obstacle decision demo claimed payload delivery")
         if result["recovery_guardrail_fallback_injection_enabled"] is True:
             if dynamic_obstacle["status"] not in {"completed", "recovered"}:
                 raise SystemExit(
                     "dynamic obstacle fallback did not finish as completed/recovered"
                 )
+        elif decision_demo_smoke:
+            if dynamic_obstacle["status"] not in {"completed", "recovered", "blocked"}:
+                raise SystemExit("decision demo did not finish in a bounded state")
         elif dynamic_obstacle["status"] != "completed":
             raise SystemExit("dynamic obstacle recovery did not finish as completed")
         if dynamic_obstacle["runtime_recovery_triggered"] is not True:
             raise SystemExit("dynamic obstacle recovery trigger was not observed")
-        if dynamic_obstacle["runtime_recovery_action_kind"] != "avoid_obstacle":
+        if decision_demo_smoke:
+            if dynamic_obstacle["runtime_recovery_action_kind"] not in {
+                "avoid_obstacle",
+                "return_home",
+            }:
+                raise SystemExit(
+                    "decision demo selected an unexpected runtime recovery action"
+                )
+        elif dynamic_obstacle["runtime_recovery_action_kind"] != "avoid_obstacle":
             raise SystemExit("dynamic obstacle recovery did not select avoid_obstacle")
         if (
             expected_source
@@ -1075,7 +1423,17 @@ def main() -> int:
                 f"expected={expected_source} "
                 f"observed={dynamic_obstacle['recovery_proposal_source']}"
             )
+        if expected_source == "llm" and decision_demo["llm_recovery_judgment_count"] < 1:
+            raise SystemExit("dynamic obstacle recovery lacked accepted LLM judgment")
         if result["recovery_guardrail_fallback_injection_enabled"] is True:
+            if decision_demo["guardrail_blocked_llm_output_count"] < 1:
+                raise SystemExit(
+                    "dynamic obstacle fallback did not count blocked LLM output"
+                )
+            if decision_demo["deterministic_fallback_count"] < 1:
+                raise SystemExit(
+                    "dynamic obstacle fallback did not count deterministic fallback"
+                )
             if dynamic_obstacle["recovery_planner_status"] != "guardrail_blocked":
                 raise SystemExit(
                     "dynamic obstacle fallback smoke did not block injected LLM output"
@@ -1102,7 +1460,10 @@ def main() -> int:
             raise SystemExit("dynamic obstacle recovery did not resume the route")
         if dynamic_obstacle["recovery_dispatch_request_sent"] is not True:
             raise SystemExit("dynamic obstacle recovery did not dispatch recovery goal")
-        if dynamic_obstacle["recovery_completion_claimed"] is not True:
+        if (
+            dynamic_obstacle["recovery_completion_claimed"] is not True
+            and not decision_demo_smoke
+        ):
             raise SystemExit("dynamic obstacle recovery did not complete recovery goal")
         if dynamic_obstacle["obstacle_trajectory_clearance_observed"] is not True:
             raise SystemExit("dynamic obstacle recovery lacked trajectory clearance")
@@ -1128,17 +1489,55 @@ def main() -> int:
                 raise SystemExit(
                     "dynamic obstacle fallback claimed delivery after route block"
                 )
+        elif decision_demo_smoke:
+            if dynamic_obstacle["completion_claimed"] is not False:
+                raise SystemExit("decision demo claimed completion after route block")
+            if dynamic_obstacle["indoor_delivery_route_completion_claimed"] is not False:
+                raise SystemExit("decision demo claimed delivery after route block")
+            if dynamic_obstacle["mission_episode_review_status"] not in {
+                "blocked",
+                "passed",
+            }:
+                raise SystemExit("decision demo did not attach bounded episode review")
         else:
             raise SystemExit("dynamic obstacle recovery did not complete after resume")
         if dynamic_obstacle["mission_delivery_completion_claimed"] is not False:
             raise SystemExit("dynamic obstacle recovery claimed delivery completion")
         if dynamic_obstacle["physical_execution_invoked"] is not False:
             raise SystemExit("dynamic obstacle recovery claimed physical execution")
-        if dynamic_obstacle["mission_episode_review_status"] != "passed":
+        if (
+            dynamic_obstacle["mission_episode_review_status"] != "passed"
+            and not decision_demo_smoke
+        ):
             raise SystemExit(
                 "dynamic obstacle recovery did not attach passing episode review"
             )
     if _truthy_env(WITH_BRIDGE_ENV):
+        if result["decision_demo_smoke_enabled"]:
+            decision_demo = result["decision_demo"]
+            decision_demo_ok = (
+                decision_demo.get("enabled") is True
+                and decision_demo.get("judgment_required") is True
+                and int(decision_demo.get("llm_recovery_judgment_count") or 0) >= 1
+                and decision_demo.get("mission_delivery_completion_claimed") is False
+                and decision_demo.get("physical_execution_invoked") is False
+            )
+            if result["human_approval_demo_smoke_enabled"]:
+                decision_demo_ok = (
+                    decision_demo_ok
+                    and decision_demo.get("fresh_recovery_operator_approval_count") == 1
+                    and decision_demo.get("rules_execution_class")
+                    == "requires_human_approval"
+                    and decision_demo.get("requires_new_human_approval") is True
+                    and decision_demo.get("recovery_dispatch_authority_source")
+                    == "fresh_operator_approval"
+                )
+            else:
+                decision_demo_ok = (
+                    decision_demo_ok
+                    and decision_demo.get("fresh_recovery_operator_approval_count") == 0
+                )
+            return 0 if decision_demo_ok else 2
         return 0 if result["completion_claimed"] is True else 2
     return 0 if result["dispatch_request_sent"] is False else 2
 

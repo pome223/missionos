@@ -21,12 +21,14 @@ class _FixtureHealthClient:
 
 def test_live_sitl_gateway_env_selects_production_backend(monkeypatch, tmp_path) -> None:
     monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("MISSIONOS_LLM_BACKEND", raising=False)
+    monkeypatch.delenv("BOILED_CLAW_LLM_BACKEND", raising=False)
     env = missionos_cli._gateway_process_env(enable_live_sitl=True)
 
     assert env["MISSIONOS_GATEWAY_BACKEND"] == "production"
-    assert env["MISSIONOS_LLM_BACKEND"] == "off"
+    assert env["MISSIONOS_LLM_BACKEND"] == "gemini"
     for key in GATEWAY_LLM_ADK_ENV_KEYS:
-        assert env[key] == "0"
+        assert env[key] == "1"
     assert "GOOGLE_API_KEY" not in env
     assert env["RUN_MISSION_DESIGNER_PX4_GAZEBO_SITL_EXECUTION"] == "1"
     assert env["RUN_MISSION_DESIGNER_PX4_GAZEBO_SITL_LIVE_FLIGHT"] == "1"
@@ -35,11 +37,13 @@ def test_live_sitl_gateway_env_selects_production_backend(monkeypatch, tmp_path)
 
 def test_planning_gateway_env_keeps_fixture_backend(monkeypatch, tmp_path) -> None:
     monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("MISSIONOS_LLM_BACKEND", raising=False)
+    monkeypatch.delenv("BOILED_CLAW_LLM_BACKEND", raising=False)
     env = missionos_cli._gateway_process_env(enable_live_sitl=False)
 
-    assert env["MISSIONOS_LLM_BACKEND"] == "off"
+    assert env["MISSIONOS_LLM_BACKEND"] == "gemini"
     for key in GATEWAY_LLM_ADK_ENV_KEYS:
-        assert env[key] == "0"
+        assert env[key] == "1"
     assert "GOOGLE_API_KEY" not in env
     assert "MISSIONOS_GATEWAY_BACKEND" not in env
     assert "RUN_MISSION_DESIGNER_PX4_GAZEBO_SITL_EXECUTION" not in env
@@ -92,15 +96,15 @@ def test_gateway_env_can_disable_llm_backend(monkeypatch) -> None:
     assert "GOOGLE_API_KEY" not in env
 
 
-def test_default_model_backend_is_disabled(monkeypatch) -> None:
+def test_default_model_backend_uses_gemini(monkeypatch) -> None:
     from src.agents import model_config
 
     monkeypatch.delenv("MISSIONOS_LLM_BACKEND", raising=False)
     monkeypatch.delenv("BOILED_CLAW_LLM_BACKEND", raising=False)
 
-    assert model_config.llm_backend_disabled() is True
+    assert model_config.llm_backend_disabled() is False
     assert model_config.local_llm_backend_enabled() is False
-    assert model_config.google_llm_backend_enabled() is False
+    assert model_config.google_llm_backend_enabled() is True
 
 
 def test_gateway_env_ollama_backend_keeps_adk_but_removes_google_key(monkeypatch) -> None:

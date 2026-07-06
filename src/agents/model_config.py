@@ -70,7 +70,7 @@ def get_model_config(name: str = "default") -> GeminiModelConfig:
 # ---------------------------------------------------------------------------
 # ローカル LLM バックエンド切替（Gemini / Ollama / MLX）
 #
-# env で切り替える。既定は "ollama" なので未設定ならローカル優先。
+# env で切り替える。既定は "gemini" なので未設定なら hosted LLM 優先。
 #   MISSIONOS_LLM_BACKEND      gemini | ollama | mlx | off
 #   MISSIONOS_LOCAL_MODEL      ローカルモデル ID（LiteLlm 形式）
 #   MISSIONOS_LOCAL_API_BASE   ローカル推論サーバの base URL
@@ -113,7 +113,7 @@ def _llm_backend(agent_name: str | None = None) -> str:
         _agent_env(agent_name, "LLM_BACKEND")
         or os.environ.get("MISSIONOS_LLM_BACKEND")
         or os.environ.get("BOILED_CLAW_LLM_BACKEND")
-        or "off"
+        or "gemini"
     ).strip().lower()
     if backend in {"google", "google_adk"}:
         return "gemini"

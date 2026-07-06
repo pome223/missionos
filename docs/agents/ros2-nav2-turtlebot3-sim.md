@@ -350,17 +350,23 @@ which intentionally claims `dispatch_request_sent=true` and invents
 bounded `avoid_obstacle` recovery waypoint, and then either resume and complete
 the delivery route or stay recovered/blocked without claiming route completion.
 
-To let the real LLM generate the low-battery or dynamic-obstacle recovery
-proposal, enable the
-TurtleBot3 recovery planner before starting Gateway:
+The Docker TurtleBot3 Gateway and smoke wrappers default the Gateway and the
+TurtleBot3 recovery planner to hosted Gemini. Load `GOOGLE_API_KEY` from an
+external env file before running the LLM-backed path:
 
 ```bash
-# Hosted Gemini path
+# Hosted Gemini path (default for the Gateway and TurtleBot3 recovery planner)
 export MISSIONOS_LLM_BACKEND=gemini
+export MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_LLM_BACKEND=gemini
+export MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_MODEL_ID=gemini-3.1-flash-lite
 export MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_ADK_ENABLED=1
+export MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_TIMEOUT_SECONDS=180
+```
 
-# Or local Ollama/Gemma path
-export MISSIONOS_LLM_BACKEND=off
+Use this separate override when the run must stay on local Gemma/Ollama:
+
+```bash
+export MISSIONOS_LLM_BACKEND=ollama
 export MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_LLM_BACKEND=ollama
 export MISSIONOS_OLLAMA_MODEL=gemma4:26b
 export MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_ADK_ENABLED=1
@@ -371,9 +377,8 @@ When this path is configured, `recovery_proposals[0].proposal_source` becomes
 `llm` and the proposal carries `llm_invocation_evidence`. The same autonomy
 envelope still classifies execution after proposal recording; the LLM proposal
 does not approve, dispatch, count progress, or claim physical execution.
-The Docker smoke uses the agent-specific backend variable above so the
-production Gateway can stay on its normal backend while only the TurtleBot3
-Recovery Planner calls local Ollama.
+Set `MISSIONOS_LLM_BACKEND=off` only when intentionally validating deterministic
+fallbacks or claim boundaries without any LLM-backed ADK path.
 
 The obstacle judgment point does not mean MissionOS spawned an obstacle. The
 TurtleBot3 simulator world, map, or costmap must provide the obstacle, and the
@@ -533,7 +538,32 @@ dynamic_obstacle_recovery.obstacle_trajectory_intersects_obstacle=false
 dynamic_obstacle_recovery.indoor_delivery_route_completion_claimed=true
 dynamic_obstacle_recovery.mission_delivery_completion_claimed=false
 dynamic_obstacle_recovery.physical_execution_invoked=false
+decision_demo.enabled=true
+decision_demo.scenario=dynamic_obstacle_recovery
+decision_demo.judgment_required=true
+decision_demo.llm_recovery_judgment_count=1
+decision_demo.mission_operator_approval_count=1
+decision_demo.fresh_recovery_operator_approval_count=0
+decision_demo.rules_execution_class=auto_executable
+decision_demo.requires_new_human_approval=false
+decision_demo.physical_execution_invoked=false
+decision_demo.mission_delivery_completion_claimed=false
 ```
+
+The `decision_demo` block is the standard audit surface for "LLM participated in
+control." It counts only accepted, guardrail-passing LLM recovery proposals in
+`llm_recovery_judgment_count`. Rejected LLM output is counted separately as
+`guardrail_blocked_llm_output_count`, so a fallback run cannot be described as
+an accepted LLM judgment. The mission approval count is the original operator
+approval for the bounded envelope; `fresh_recovery_operator_approval_count=0`
+means the runtime recovery action did not mint a new human approval artifact.
+
+Use `MISSIONOS_CHAT_TURTLEBOT3_DECISION_DEMO_SMOKE=1` when the purpose of the
+run is to prove the recovery-decision loop rather than final delivery
+completion. In this mode a blocked result can still pass if the evidence shows a
+source-backed LLM proposal, autonomy-envelope classification, no fresh recovery
+approval artifact, no physical execution claim, and no mission-delivery
+completion claim.
 
 Use the paired guardrail-fallback run to prove a bad planner output is rejected
 and the deterministic floor remains executable:
@@ -599,7 +629,62 @@ mid_mission_recovery.nav2_log_diagnostics_status=ready
 mid_mission_recovery.blocking_reasons=["nav2_goal_result_not_succeeded"]
 mid_mission_recovery.nav2_log_observed_patterns=["costmap_clear_recovery_observed","follow_path_action_aborted","nav2_goal_received","nav2_timeout_signal_observed","spin_recovery_behavior_observed"]
 mid_mission_recovery.nav2_log_failure_hypotheses=["follow_path_action_aborted","nav2_goal_result_timeout_or_slow_recovery"]
+decision_demo.scenario=localization_drift_failure_recovery
+decision_demo.mission_operator_approval_count=1
+decision_demo.fresh_recovery_operator_approval_count=0
+decision_demo.physical_execution_invoked=false
 ```
+
+Runtime verification on 2026-07-06 used the process runner with hosted Gemini
+as the default recovery planner:
+
+```bash
+GOOGLE_API_KEY=<set> \
+RUN_MISSIONOS_TURTLEBOT3_SIM_PROCESS_RUNNER=1 \
+MISSIONOS_TURTLEBOT3_SIM_PROCESS_RUNNER_SCENARIO=localization_drift_fault \
+MISSIONOS_TURTLEBOT3_WORLD_PROFILE=house \
+MISSIONOS_TURTLEBOT3_SIM_PROCESS_RUNNER_FULL_OUTPUT=1 \
+MISSIONOS_CHAT_TURTLEBOT3_HOME_MISSION_MAP_MODEL_OUT=/work/missionos/output/turtlebot3_smoke/failure_path_indoor_map_model_20260706T041750Z_gemini.json \
+MISSIONOS_CHAT_TURTLEBOT3_HOME_MISSION_HTTP_TIMEOUT_SECONDS=900 \
+ROS2_NAV2_BRIDGE_TIMEOUT_S=540 \
+ROS2_NAV2_GOAL_RESULT_TIMEOUT_S=240 \
+python3 scripts/smoke_turtlebot3_sim_process_runner.py
+```
+
+Observed result:
+
+```text
+scenario_passed=true
+process_run_id=turtlebot3_sim_process_run_ff3bea3d5121
+exit_status=completed
+parsed_status=completed
+parsed_completion_scope=sim_action
+parsed_mid_recovery_status=blocked
+runtime_failure_recovery_triggered=true
+mid_mission_recovery.recovery_proposal_source=llm
+mid_mission_recovery.recovery_action_suggested=return_home
+mid_mission_recovery.recovery_dispatch_request_sent=true
+mid_mission_recovery.recovery_completion_claimed=false
+mid_mission_recovery.mission_delivery_completion_claimed=false
+mid_mission_recovery.physical_execution_invoked=false
+mid_mission_recovery.runtime_recovery_motion_context.odom_delta_m=2.8688396820142383
+mid_mission_recovery.runtime_recovery_motion_context.robot_motion_observed=true
+mid_mission_recovery.recovery_proposals[0].llm_invocation_evidence.provider=google_adk_gemini
+mid_mission_recovery.recovery_proposals[0].llm_invocation_evidence.model_id=gemini-3.1-flash-lite
+```
+
+![TurtleBot3 failure-path recovery map context](evidence/pr16-turtlebot3-failure-path-recovery-map-20260706T041750Z.png)
+
+This is a recovery-judgment verification, not a recovery-completion claim. The
+normal delivery phase may complete in the same smoke, but the injected
+localization-drift recovery leg is allowed to finish as `blocked` while proving
+that the LLM was convened with source-backed motion delta, the rules envelope
+classified the proposal, the recovery dispatch was attempted, and the verifier
+withheld recovery, delivery, and physical-execution completion claims. The image
+above is the same E2E run's read-only indoor map context for the completed
+normal delivery phase; the fault-injection recovery leg is represented by the
+`decision_demo` and `mid_mission_recovery` evidence fields above rather than by a
+separate map completion claim.
 
 The same run also reported the relay as a simulator shim:
 
@@ -727,6 +812,21 @@ run              -> opt-in ROS2/Nav2 bridge dispatch
 operate/watch/map -> read the resulting MissionOS task
 ```
 
+If a runtime recovery proposal is classified as
+`requires_new_human_approval=true`, chat can approve that specific pending
+proposal without turning the LLM proposal into authority:
+
+```text
+LLM proposes -> rules classify requires_new_human_approval -> operator types
+/approve-recovery <task_id> or "承認します" -> Gateway recovery-dispatch records
+explicit_recovery_dispatch_approval=true -> executor/verifier report the result
+```
+
+The command reads the task's source-backed recovery proposal and dispatches only
+through the existing operator-gated `recovery-dispatch` route. The
+`turtlebot3_recovery_decision_summary` remains read-only and
+`decision_summary_creates_dispatch_authority=false`.
+
 When the `run` step creates a TurtleBot3 task, chat opens the same companion
 surfaces used for PX4 (`missionos operate`, `missionos watch`, and
 `missionos map`) against that task id. The Docker Gateway is exposed on the
@@ -831,8 +931,14 @@ unproven_claims includes nav2_completion_without_robot_motion_not_claimed
 
 ## Relationship To TurtleBot4
 
+The human-facing rationale for keeping TurtleBot3 as the current indoor
+simulator baseline is documented in `docs/concepts/simulator-baseline.md`.
+
 The TurtleBot4 work remains useful diagnostic evidence, but it is not the current
-fast path. Its last verified blocker was below Nav2: diffdrive activation needed
-longer spawner timeouts, and even direct diagnostic velocity produced only about
-`0.0019 m` of `/odom` delta. TurtleBot3 is being used to avoid continuing that
-simulator-specific detour.
+fast path. Its latest verified blocker is below MissionOS and below Nav2:
+direct diagnostic velocity to the active Create3 diffdrive controller did not
+produce meaningful wheel or `/odom` motion, pure Create3 drive actions accepted
+goals and then timed out, and swapping the installed xacro plugin strings from
+`ign_ros2_control` to `gz_ros2_control` was not enough to make the robot move.
+TurtleBot3 is being used to avoid continuing that simulator-specific detour in
+the public baseline.

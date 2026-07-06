@@ -143,6 +143,34 @@ ros2 topic pub --once /initialpose geometry_msgs/msg/PoseWithCovarianceStamped \
   "{header: {frame_id: map}, pose: {pose: {position: {x: 0.0, y: 0.0, z: 0.0}, orientation: {w: 1.0}}}}"
 ```
 
+## MissionOS Chat Profile
+
+MissionOS can build the normal chat -> Gateway -> task-artifact proposal with a
+TurtleBot4/Nav2 profile:
+
+```bash
+missionos chat --robot turtlebot4
+```
+
+or by asking for `TurtleBot4` / `TB4` in the operator instruction. The proposal
+keeps the existing home-robot artifact keys for backward compatibility, but
+records:
+
+- `robot_profile=turtlebot4`
+- `robot_model=turtlebot4_lite`
+- `execution_target=ros2_nav2_turtlebot4_sim`
+
+The CLI `operate`, `watch`, and `map` surfaces must treat those artifacts as a
+TurtleBot4/Nav2 sim task while preserving the legacy `turtlebot3_*` artifact
+keys for compatibility with existing task readers.
+
+This is a profile selection, not a completion claim. Runtime completion still
+requires the external TurtleBot4 bridge to report Nav2 success and non-zero
+odometry motion, with `physical_execution_invoked=false`. If the bridge is not
+configured, or if the TurtleBot4 simulator remains blocked at TF, lifecycle, or
+controller motion, MissionOS must keep `completion_claimed=false` and surface
+the blocking reasons.
+
 ## MissionOS Smoke
 
 Run the smoke in the same ROS2 environment where the TurtleBot4 simulator and
@@ -254,6 +282,12 @@ It is deliberately not a MissionOS dispatch path: it reports
 `diagnostic_raw_velocity_published=true`, and `completion_claimed=false`. A
 successful probe proves only that the simulator controller and physics can move
 the robot; it does not prove Nav2 or MissionOS bounded dispatch completion.
+Set `ROS2_NAV2_CONTROLLER_MOTION_PROBE_COMMAND_RELIABILITY=best_effort` when
+isolating a simulator graph whose controller endpoint requests best-effort
+Twist messages. The probe result includes `target_command_sample_count`,
+`target_command_nonzero_count`, and the maximum observed command magnitudes so
+the diagnostic can distinguish "no command observed on the target topic" from
+"command observed but `/odom` did not move."
 
 ## Evidence Rules
 
@@ -327,6 +361,39 @@ Current external verification for this slice also reached:
   velocity directly to `/diffdrive_controller/cmd_vel_unstamped`; `/odom`
   before/after were observed, but `odom_delta_m` was still only about `0.0019`
   after an 8 second `-0.25 m/s` command, so `robot_motion_observed=false`
+- a 2026-07-06 runtime check with the normal MissionOS
+  `chat --robot turtlebot4` -> approval -> run path created a TurtleBot4 task
+  proposal and preserved `robot_profile=turtlebot4`,
+  `execution_target=ros2_nav2_turtlebot4_sim`,
+  `completion_claimed=false`, and `physical_execution_invoked=false`; without a
+  configured ROS2 bridge in the Gateway environment it correctly blocked with
+  bridge-command preflight reasons instead of claiming simulator completion
+- a 2026-07-06 Docker check with split TurtleBot4 spawn,
+  odometry-to-TF shim before localization/Nav2, bridge-side initial-pose
+  publication, lifecycle wait, and extended bridge timeout showed that TF can
+  become ready in this launch shape, but the startup remains flaky; retries can
+  still lose `map -> odom` or miss `/navigate_to_pose`, so this is not yet a
+  reproducible Nav2 completion path
+- a 2026-07-06 controller-motion probe against the stock TurtleBot4 spawn found
+  `joint_state_broadcaster=active` and `diffdrive_controller=active`; diagnostic
+  velocity reached both `/diffdrive_controller/cmd_vel_unstamped` and
+  `/cmd_vel`, but `/odom` changed by only about `5e-19 m` after an 8 second
+  `0.25 m/s` command, so `robot_motion_observed=false`
+- a 2026-07-06 temporary no-dock TurtleBot4 launch isolated the dock constraint:
+  the upstream diffdrive spawner left `diffdrive_controller=unconfigured`;
+  manually moving the controller through `inactive` then `active` succeeded, but
+  the same direct diagnostic velocity still produced only about `5e-19 m` of
+  `/odom` delta, so no-dock alone is not enough to reach TB3-equivalent motion
+- 2026-07-06 pure Create3 checks showed the `/drive_distance` and
+  `/rotate_angle` action servers accepting goals but timing out without wheel
+  joint or odometry motion; direct diagnostic velocity to the active
+  `diffdrive_controller` also left `/odom` effectively unchanged, so the current
+  blocker is below Nav2 and below the MissionOS bridge
+- 2026-07-06 replacing the installed Create3 xacro strings from
+  `ign_ros2_control` to `gz_ros2_control` made the modern plugin load cleanly
+  and claim the wheel velocity command interfaces, but direct velocity still
+  produced only about `1.6e-17 m` of `/odom` delta; plugin-name migration alone
+  is not enough to claim TB3-equivalent TurtleBot4 simulator motion
 
 They do not yet prove Nav2 completion or simulator robot motion. The latest
 Docker launch checks reached active diffdrive control, `/odom`, `/map`,

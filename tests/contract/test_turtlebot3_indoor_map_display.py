@@ -297,6 +297,7 @@ def test_turtlebot3_execution_artifact_feeds_indoor_watch_and_map(
     assert "table" in html
     assert "bookshelf" in html
     assert "furniture" in html
+    assert "furniture (sim pillars)" not in html
     assert "physical" in html
 
     console = Console(record=True, color_system=None, width=120)
@@ -315,6 +316,52 @@ def test_turtlebot3_execution_artifact_feeds_indoor_watch_and_map(
     assert "S/T/B/C" in rendered
     assert "observed_source=ros2_nav2_bridge_trajectory_samples" in rendered
     assert "physical_execution_invoked=false" in rendered
+
+
+def test_turtlebot4_indoor_map_model_uses_robot_profile_label() -> None:
+    task_payload = {
+        "task_id": "task_turtlebot4_indoor_map",
+        "status": "completed",
+        "artifacts": {
+            "turtlebot3_indoor_map_model": {
+                "schema_version": "missionos_turtlebot3_indoor_map.v1",
+                "execution_target": "ros2_nav2_turtlebot4_sim",
+                "robot_profile": "turtlebot4",
+                "planned_points": [
+                    {"label": "H home", "phase": "home", "x_m": -2.0, "y_m": -0.5},
+                    {
+                        "label": "D dropoff",
+                        "phase": "dropoff",
+                        "x_m": -1.4,
+                        "y_m": 2.42,
+                    },
+                ],
+                "observed_points": [
+                    {"phase": "home", "x_m": -2.0, "y_m": -0.5},
+                    {"phase": "dropoff", "x_m": -1.4, "y_m": 2.42},
+                ],
+                "room_boundary": {
+                    "min_x_m": -2.5,
+                    "max_x_m": 1.0,
+                    "min_y_m": -1.0,
+                    "max_y_m": 3.0,
+                },
+            }
+        },
+    }
+
+    model = missionos_cli._mission_map_model(
+        task_payload=task_payload,
+        provider="osm",
+        live_task_url=None,
+    )
+    html = missionos_cli._mission_map_html(model)
+
+    assert model["robot_profile"] == "turtlebot4"
+    assert model["robot_label"] == "TurtleBot4"
+    assert model["provider"]["attribution"] == "MissionOS TurtleBot4/Nav2 simulator evidence"
+    assert "TurtleBot4/Nav2 simulator local-XY evidence" in html
+    assert "MissionOS TurtleBot4 indoor map" in html
 
 
 def test_turtlebot3_indoor_map_display_aligns_odom_origin_to_planned_home(

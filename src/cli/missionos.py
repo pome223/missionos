@@ -372,7 +372,7 @@ def _llm_backend_from_env(env: dict[str, str]) -> str:
     backend = (
         env.get("MISSIONOS_LLM_BACKEND")
         or env.get("BOILED_CLAW_LLM_BACKEND")
-        or "off"
+        or "gemini"
     ).strip().lower()
     if backend in {"google", "google_adk"}:
         return "gemini"

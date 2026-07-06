@@ -279,6 +279,94 @@ def test_chat_turtlebot3_home_mission_reaches_nav2_bridge_without_false_claims(
     assert task["artifacts"]["turtlebot3_indoor_map_model"]["map_kind"] == (
         "indoor_local_xy"
     )
+    decision_summary = task["artifacts"]["turtlebot3_recovery_decision_summary"]
+    assert decision_summary["schema_version"] == (
+        "missionos_turtlebot3_recovery_decision_summary.v1"
+    )
+    assert decision_summary["read_only"] is True
+    assert decision_summary["judgment_required"] is False
+    assert decision_summary["llm_recovery_judgment_count"] == 0
+    assert decision_summary["fresh_recovery_operator_approval_count"] == 0
+    assert decision_summary["decision_summary_creates_dispatch_authority"] is False
+    assert decision_summary["physical_execution_invoked"] is False
+    assert task["artifacts"]["summary"]["turtlebot3_recovery_decision_summary_ref"] == (
+        decision_summary["decision_summary_ref"]
+    )
+
+
+def test_turtlebot3_recovery_decision_summary_records_fresh_operator_approval() -> None:
+    execution_result = {
+        "summary": {
+            "runtime_recovery_triggered": True,
+            "runtime_recovery_action_kind": "avoid_obstacle",
+            "recovery_dispatch_request_sent": True,
+            "recovery_completion_claimed": True,
+            "route_resumed_after_recovery": True,
+            "route_completed_after_recovery": True,
+            "runtime_recovery_motion_context": {"odom_delta_m": 1.2},
+            "recovery_planner_status": "proposal_guardrail_passed",
+            "completion_scope": "sim_action",
+            "completion_claimed": True,
+            "mission_delivery_completion_claimed": False,
+            "physical_execution_invoked": False,
+            "fresh_recovery_operator_approval_count": 1,
+            "fresh_recovery_operator_approvals": [
+                {
+                    "operator_approval_ref": "operator_approval:codex_e2e_recovery",
+                    "approval_actor": "codex_e2e_operator",
+                    "approved_action": "avoid_obstacle",
+                }
+            ],
+            "recovery_execution_permitted_by_operator_approval": True,
+            "recovery_dispatch_authority_source": "fresh_operator_approval",
+            "recovery_proposal_classifications": [
+                {
+                    "execution_class": "requires_human_approval",
+                    "requires_new_human_approval": True,
+                    "execution_permitted_by_envelope": False,
+                    "proposal_allowed": True,
+                }
+            ],
+            "recovery_proposals": [
+                {
+                    "proposal_source": "llm",
+                    "approval_created": False,
+                    "input_observations": {
+                        "runtime_obstacle_observed": True,
+                        "recommended_recovery_action": "avoid_obstacle",
+                        "odom_delta_m": 1.2,
+                    },
+                }
+            ],
+        }
+    }
+
+    result = gateway_server._missionos_attach_turtlebot3_recovery_decision_summary(
+        execution_result,
+        mission_operator_approval_count=1,
+    )
+
+    decision_summary = result["turtlebot3_recovery_decision_summary"]
+    assert decision_summary["judgment_required"] is True
+    assert decision_summary["trigger"] == "runtime_obstacle"
+    assert decision_summary["llm_recovery_judgment_count"] == 1
+    assert decision_summary["mission_operator_approval_count"] == 1
+    assert decision_summary["fresh_recovery_operator_approval_count"] == 1
+    assert decision_summary["operator_approval_created_for_recovery"] is True
+    assert decision_summary["operator_approval_reused_for_recovery"] is False
+    assert decision_summary["rules_execution_class"] == "requires_human_approval"
+    assert decision_summary["requires_new_human_approval"] is True
+    assert decision_summary["execution_permitted_by_envelope"] is False
+    assert decision_summary["recovery_execution_permitted_by_operator_approval"] is True
+    assert decision_summary["recovery_dispatch_authority_source"] == (
+        "fresh_operator_approval"
+    )
+    assert decision_summary["decision_summary_creates_dispatch_authority"] is False
+    assert decision_summary["mission_delivery_completion_claimed"] is False
+    assert decision_summary["physical_execution_invoked"] is False
+    assert result["summary"]["turtlebot3_recovery_decision_summary_ref"] == (
+        decision_summary["decision_summary_ref"]
+    )
 
 
 def test_chat_turtlebot3_cleaning_request_plans_inspection_not_cleaning(
@@ -301,6 +389,31 @@ def test_chat_turtlebot3_cleaning_request_plans_inspection_not_cleaning(
     assert "cleaning_completion" in mission["blocked_claims"]
     assert "vacuum_or_brush_actuator_invoked" in mission["blocked_claims"]
     assert summary["completion_claimed"] is False
+    assert summary["physical_execution_invoked"] is False
+
+
+def test_chat_turtlebot4_request_builds_turtlebot4_nav2_plan(
+    monkeypatch: Any,
+) -> None:
+    _install_quiet_conversation_dependencies(monkeypatch)
+
+    response = gateway_server.run_missionos_autonomy_conversation(
+        {
+            "operator_instruction": "TurtleBot4で家の中を一周して",
+            "missionos_client_surface": "chat",
+            "session_id": "chat-turtlebot4-plan",
+        }
+    )
+
+    mission = response["mission_designer"]["turtlebot3_home_mission_plan"]
+    summary = response["mission_designer"]["summary"]
+    assert response["routed_action"] == "mission_designer_plan"
+    assert mission["robot_profile"] == "turtlebot4"
+    assert mission["robot_model"] == "turtlebot4_lite"
+    assert mission["execution_target"] == "ros2_nav2_turtlebot4_sim"
+    assert summary["robot_profile"] == "turtlebot4"
+    assert "TurtleBot4" in response["message"]
+    assert summary["dispatch_request_sent"] is False
     assert summary["physical_execution_invoked"] is False
 
 
