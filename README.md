@@ -84,6 +84,14 @@ never claims physical execution or payload delivery.
 | --- | --- |
 | ![PX4 chat delivery across Tokyo with an approved obstacle-avoidance maneuver on the OpenStreetMap evidence map](docs/examples/assets/missionos-chat-obstacle-final-map.png) | ![TurtleBot3 chat delivery to the bedroom in turtlebot3_house, planned route and observed trail on the evidence map](docs/agents/evidence/pr7-turtlebot3-chat-e2e-map-task_d9ecedc8e7d5.png) |
 
+TurtleBot3 is used here because it is the current reproducible indoor
+ROS2/Nav2 simulator baseline, not because MissionOS prefers older hardware.
+TurtleBot4 support exists as an opt-in profile, but its current
+Create3/Gazebo simulator stack has not yet produced the same repeatable
+odometry-backed motion evidence. See
+[Simulator Baseline](docs/concepts/simulator-baseline.md) for the migration
+boundary.
+
 ## Chat Quickstart
 
 Install the repository and CLI packages (requires Python 3.11+):
@@ -95,8 +103,8 @@ python -m pip install -e . -e packages/missionos-gateway -e packages/missionos-c
 missionos --help
 ```
 
-Configure an LLM backend before running the intended MissionOS experience.
-Gemini is the fastest hosted path; Ollama/Gemma is a local no-spend path that
+Configure LLM credentials before running the intended MissionOS experience.
+Gemini is the default hosted path; Ollama/Gemma is a local no-spend path that
 can be slower and may need longer timeouts.
 
 ```bash

@@ -39,9 +39,10 @@ The Safety Critic may be invoked after the chosen specialist. It can review the
 proposal boundary, but it does not approve or execute.
 
 Model backend selection is separate from routing. By default, ADK model calls
-use the local Ollama/Gemma 4 backend. Gemini/API use requires explicit
-`MISSIONOS_LLM_BACKEND=gemini`. See
-`docs/agents/local-llm-backends.md` for global and per-agent model settings.
+use the hosted Gemini path. Set `MISSIONOS_LLM_BACKEND=ollama` for the local
+Gemma/Ollama path, or `MISSIONOS_LLM_BACKEND=off` only for deterministic
+boundary tests. See `docs/agents/local-llm-backends.md` for global and
+per-agent model settings.
 
 ## Capability Ownership
 

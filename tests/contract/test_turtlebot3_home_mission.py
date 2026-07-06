@@ -410,6 +410,8 @@ def _write_nav2_failure_process_logs(tmp_path: Path) -> dict[str, str]:
 
 def test_turtlebot3_home_mission_classifier_keeps_questions_non_dispatchable() -> None:
     assert instruction_requests_turtlebot3_home_mission("TurtleBot3で家を一周して")
+    assert instruction_requests_turtlebot3_home_mission("TurtleBot4で家を一周して")
+    assert instruction_requests_turtlebot3_home_mission("TB4で屋内配送して")
     assert instruction_requests_turtlebot3_home_mission("家の中を掃除して")
     assert instruction_requests_turtlebot3_home_mission("家の中で障害物を避けて")
     assert instruction_requests_turtlebot3_home_mission("家の中で屋内配送して")
@@ -427,6 +429,25 @@ def test_turtlebot3_home_mission_classifier_keeps_questions_non_dispatchable() -
         "payload_transport_rehearsal_leg"
     )
     assert not instruction_requests_turtlebot3_home_mission("今日の天気を教えて")
+
+
+def test_turtlebot4_plan_keeps_nav2_profile_without_physical_claims() -> None:
+    result = build_turtlebot3_home_mission_plan(
+        operator_instruction="TurtleBot4で家の中を一周して",
+    )
+
+    proposal = result["scenario_proposal"]
+    summary = result["summary"]
+
+    assert proposal["robot_profile"] == "turtlebot4"
+    assert proposal["robot_model"] == "turtlebot4_lite"
+    assert proposal["execution_target"] == "ros2_nav2_turtlebot4_sim"
+    assert proposal["proposal_id"].startswith("turtlebot4_home_")
+    assert "TurtleBot4 indoor patrol" in proposal["mission_objective"]
+    assert summary["robot_profile"] == "turtlebot4"
+    assert summary["dispatch_request_sent"] is False
+    assert summary["completion_claimed"] is False
+    assert summary["physical_execution_invoked"] is False
 
 
 def test_turtlebot3_plan_blocks_cleaning_payload_loop_and_physical_claims() -> None:
@@ -1142,6 +1163,88 @@ def test_turtlebot3_mid_mission_obstacle_recovery_resumes_delivery_with_llm_prop
     assert execution["recovery_segment_result"]["goal_pose"]["label"] == (
         "runtime_recovery_avoid_obstacle_waypoint"
     )
+
+
+def test_turtlebot3_obstacle_recovery_requires_fresh_operator_approval_when_configured(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    bridge = tmp_path / "bridge.py"
+    planner = tmp_path / "obstacle_recovery_planner.py"
+    _write_success_bridge(bridge, obstacle_avoidance_observed=True)
+    _write_obstacle_recovery_planner(planner)
+    monkeypatch.setenv(ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV, "1")
+    monkeypatch.setenv(ROS2_NAV2_BRIDGE_COMMAND_ENV, _bridge_command(bridge))
+    monkeypatch.setenv(TURTLEBOT3_RECOVERY_PLANNER_COMMAND_ENV, _bridge_command(planner))
+    monkeypatch.setenv(TURTLEBOT3_RECOVERY_PLANNER_ALLOW_OVERRIDE_ENV, "1")
+    monkeypatch.delenv(TURTLEBOT3_RECOVERY_PLANNER_ADK_ENABLED_ENV, raising=False)
+    monkeypatch.setenv(
+        "MISSIONOS_TURTLEBOT3_RECOVERY_AVOID_OBSTACLE_REQUIRES_APPROVAL",
+        "1",
+    )
+    monkeypatch.setenv(
+        "MISSIONOS_TURTLEBOT3_RECOVERY_OPERATOR_APPROVAL_REF",
+        "operator_approval:test_fresh_recovery",
+    )
+    monkeypatch.setenv(
+        "MISSIONOS_TURTLEBOT3_RECOVERY_OPERATOR_APPROVAL_ACTOR",
+        "codex_e2e_operator",
+    )
+    plan = build_turtlebot3_home_mission_plan(
+        operator_instruction=(
+            "TurtleBot3で屋内配送して。走行中に障害物が出たら"
+            "Recovery Agentが避ける提案をして、承認後に継続して"
+        ),
+    )
+    proposal = plan["scenario_proposal"]
+    approval = approve_turtlebot3_home_mission_plan(
+        proposal=proposal,
+        validation=plan["validation_result"],
+    )
+
+    result = run_turtlebot3_home_mission_dispatch(
+        proposal=proposal,
+        approval=approval["turtlebot3_home_mission_approval"],
+    )
+
+    summary = result["summary"]
+    execution = result["turtlebot3_home_mission_execution"]
+    assert proposal["autonomy_envelope"]["preapproved_recovery_actions"] == [
+        "return_home",
+        "hold",
+    ]
+    assert "avoid_obstacle" in proposal["autonomy_envelope"][
+        "requires_human_approval_for"
+    ]
+    assert summary["status"] == "completed"
+    assert summary["runtime_recovery_triggered"] is True
+    assert summary["recovery_action_suggested"] == "avoid_obstacle"
+    assert summary["recovery_proposal_classifications"][0]["execution_class"] == (
+        "requires_human_approval"
+    )
+    assert summary["recovery_proposal_classifications"][0][
+        "execution_permitted_by_envelope"
+    ] is False
+    assert summary["recovery_proposal_classifications"][0][
+        "requires_new_human_approval"
+    ] is True
+    assert summary["recovery_execution_permitted_by_operator_approval"] is True
+    assert summary["recovery_dispatch_authority_source"] == "fresh_operator_approval"
+    assert summary["fresh_recovery_operator_approval_count"] == 1
+    assert summary["fresh_recovery_operator_approvals"][0]["operator_approval_ref"] == (
+        "operator_approval:test_fresh_recovery"
+    )
+    assert summary["fresh_recovery_operator_approvals"][0]["approval_actor"] == (
+        "codex_e2e_operator"
+    )
+    assert summary["recovery_dispatch_request_sent"] is True
+    assert summary["recovery_completion_claimed"] is True
+    assert summary["route_completed_after_recovery"] is True
+    assert summary["mission_delivery_completion_claimed"] is False
+    assert summary["physical_execution_invoked"] is False
+    assert execution["recovery_segment_result"]["adapter_evidence"][
+        "operator_approval_ref"
+    ] == "operator_approval:test_fresh_recovery"
 
 
 def test_turtlebot3_mid_mission_obstacle_recovery_uses_fallback_when_llm_guardrail_blocks(

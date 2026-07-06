@@ -145,6 +145,71 @@ class RecordingMissionOSClient:
         return {"task": {"task_id": "task_chat_avoid", "status": "running", "artifacts": {}}}
 
 
+class PendingRecoveryApprovalClient(RecordingMissionOSClient):
+    def __init__(self) -> None:
+        super().__init__()
+        self.task_id = "task_pending_recovery"
+
+    def _task_payload(self) -> dict[str, Any]:
+        recovery_proposal = {
+            "proposal_source": "llm",
+            "selected_action": "avoid_obstacle",
+            "input_observations": {
+                "runtime_obstacle_observed": True,
+                "recommended_avoidance_target_x_m": -0.2,
+                "recommended_avoidance_target_y_m": -1.4,
+            },
+        }
+        recovery_classification = {
+            "execution_class": "requires_human_approval",
+            "requires_new_human_approval": True,
+            "execution_permitted_by_envelope": False,
+            "proposal_allowed": True,
+        }
+        decision_summary = {
+            "schema_version": "missionos_turtlebot3_recovery_decision_summary.v1",
+            "read_only": True,
+            "judgment_required": True,
+            "selected_action": "avoid_obstacle",
+            "recovery_proposal_source": "llm",
+            "rules_execution_class": "requires_human_approval",
+            "requires_new_human_approval": True,
+            "recovery_dispatch_request_sent": False,
+            "decision_summary_creates_dispatch_authority": False,
+            "physical_execution_invoked": False,
+        }
+        summary = {
+            "execution_target": "ros2_nav2_turtlebot3_sim",
+            "runtime_recovery_triggered": True,
+            "runtime_recovery_action_kind": "avoid_obstacle",
+            "recovery_dispatch_request_sent": False,
+            "recovery_proposals": [recovery_proposal],
+            "recovery_proposal_classifications": [recovery_classification],
+        }
+        artifacts = {
+            "summary": summary,
+            "turtlebot3_recovery_decision_summary": decision_summary,
+            "missionos_auto_mission_gui_dispatch_running_receipt": {
+                "operator_recovery_request_container_path": "/tmp/recovery_request.json"
+            },
+        }
+        return {
+            "task": {
+                "task_id": self.task_id,
+                "status": "running",
+                "artifacts": artifacts,
+            }
+        }
+
+    def get(self, path: str) -> dict[str, Any]:
+        if path.startswith("/tasks?page="):
+            task = self._task_payload()["task"]
+            return {"items": [task]}
+        if path.startswith(f"/tasks/{self.task_id}"):
+            return self._task_payload()
+        return super().get(path)
+
+
 class BackNavigationMissionOSClient:
     def __init__(self) -> None:
         self.requests: list[dict[str, Any]] = []
@@ -296,6 +361,33 @@ def test_chat_robot_turtlebot3_dry_run_prints_sim_entrypoint(
     assert "surfaces=chat + operate + watch + map" in result.output
     assert "claim_scope=sim_action" in result.output
     assert "world_profile=house" in result.output
+
+
+def test_chat_robot_turtlebot4_uses_turtlebot4_default_instruction(
+    monkeypatch: Any,
+    tmp_path: Path,
+) -> None:
+    client = RecordingMissionOSClient()
+    monkeypatch.setattr(missionos_cli, "make_client", lambda *_args, **_kwargs: client)
+    monkeypatch.setattr(missionos_cli, "_gateway_reachable", lambda _client: True)
+
+    result = CliRunner().invoke(
+        missionos_cli.missionos,
+        [
+            "--state-path",
+            str(tmp_path / "state.json"),
+            "chat",
+            "--robot",
+            "turtlebot4",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert client.requests[-1]["operator_instruction"] == (
+        missionos_cli.DEFAULT_TURTLEBOT4_CHAT_INSTRUCTION
+    )
+    assert client.requests[-1]["session_id"] == "missionos-cli-turtlebot4"
+    assert client.requests[-1]["missionos_client_surface"] == "chat"
 
 
 def test_chat_robot_turtlebot3_dry_run_can_select_house_profile(
@@ -457,6 +549,30 @@ def test_chat_enter_prepare_sends_execute_route_hint(tmp_path: Path) -> None:
     assert missionos_cli._chat_suggestion(ctx) == {"raw": "/start-sitl", "label": "start"}
 
 
+def test_chat_execute_turtlebot4_suggests_indoor_map(tmp_path: Path) -> None:
+    ctx = _chat_ctx(tmp_path)
+    missionos_cli._remember_sitl_task_id(ctx, "task_turtlebot4_delivery")
+
+    missionos_cli._update_chat_suggestion_from_conversation(
+        ctx,
+        {
+            "routed_action": "execute",
+            "operation_result": {
+                "summary": {
+                    "status": "completed",
+                    "execution_target": "ros2_nav2_turtlebot4_sim",
+                    "robot_profile": "turtlebot4",
+                }
+            },
+        },
+    )
+
+    assert missionos_cli._chat_suggestion(ctx) == {
+        "raw": "/map task_turtlebot4_delivery",
+        "label": "map",
+    }
+
+
 def test_chat_slash_avoid_dispatches_parameterized_recovery(tmp_path: Path) -> None:
     client = RecordingMissionOSClient()
     ctx = click.Context(missionos_cli.missionos)
@@ -491,6 +607,80 @@ def test_chat_slash_avoid_dispatches_parameterized_recovery(tmp_path: Path) -> N
         "raw": "/job-status task_chat_avoid",
         "label": "show status",
     }
+
+
+def test_chat_approve_recovery_dispatches_pending_human_approval_proposal(
+    tmp_path: Path,
+) -> None:
+    client = PendingRecoveryApprovalClient()
+    ctx = _chat_ctx(tmp_path)
+
+    assert (
+        missionos_cli._handle_chat_input(
+            ctx,
+            client,
+            "/approve-recovery task_pending_recovery",
+            session_id="chat-session",
+        )
+        is True
+    )
+
+    assert client.requests[-1] == {
+        "task_id": "task_pending_recovery",
+        "recovery_action": "avoid_obstacle",
+        "recovery_parameters": {
+            "target_x_m": -0.2,
+            "target_y_m": -1.4,
+        },
+    }
+    assert missionos_cli._chat_suggestion(ctx) == {
+        "raw": "/job-status task_pending_recovery",
+        "label": "show status",
+    }
+
+
+def test_chat_natural_language_approval_uses_pending_recovery_proposal(
+    tmp_path: Path,
+) -> None:
+    client = PendingRecoveryApprovalClient()
+    ctx = _chat_ctx(tmp_path)
+
+    assert (
+        missionos_cli._handle_chat_input(
+            ctx,
+            client,
+            "承認します",
+            session_id="chat-session",
+        )
+        is True
+    )
+
+    assert client.requests[-1]["task_id"] == "task_pending_recovery"
+    assert client.requests[-1]["recovery_action"] == "avoid_obstacle"
+    assert client.requests[-1]["recovery_parameters"] == {
+        "target_x_m": -0.2,
+        "target_y_m": -1.4,
+    }
+
+
+def test_chat_natural_language_approval_falls_back_to_plan_approval(
+    tmp_path: Path,
+) -> None:
+    client = RecordingMissionOSClient()
+    ctx = _chat_ctx(tmp_path)
+
+    assert (
+        missionos_cli._handle_chat_input(
+            ctx,
+            client,
+            "承認します",
+            session_id="chat-session",
+        )
+        is True
+    )
+
+    assert client.requests[-1]["missionos_route_hint"] == "approve"
+    assert client.requests[-1]["missionos_client_surface"] == "chat"
 
 
 def test_chat_natural_language_altitude_request_asks_recovery_agent_for_proposal(

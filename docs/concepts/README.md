@@ -34,6 +34,8 @@ was sent, what was observed, and what remains unproven.
 - Read `docs/concepts/boundaries.md` for the claim boundary in plain language.
 - Read `docs/concepts/agent-roles.md` for the plain-language map of Chief,
   Runtime Recovery, Repair, and Gateway responsibilities.
+- Read `docs/concepts/simulator-baseline.md` for why the current indoor ROS2/Nav2
+  simulator baseline uses TurtleBot3 while TurtleBot4 remains opt-in.
 - Read `docs/concepts/real-hardware-bridge.md` for the first contract-first
   hardware bridge slices and their limits.
 - Read `docs/examples/README.md` for planned scenario writeups and their

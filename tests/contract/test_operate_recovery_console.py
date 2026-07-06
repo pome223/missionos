@@ -245,6 +245,23 @@ def test_turtlebot3_operate_help_uses_ground_robot_commands() -> None:
     assert "speed 7" not in rendered
 
 
+def test_turtlebot4_operate_help_uses_ground_robot_commands() -> None:
+    panel = missionos_cli._operate_console_help_panel(
+        "task_turtlebot4",
+        robot="turtlebot4",
+    )
+    rendered = str(panel.renderable)
+
+    assert "latest TurtleBot4 sim state" in rendered
+    assert "avoid -0.85 -0.85" in rendered
+    assert "reroute 0.75 0.0" in rendered
+    assert "TurtleBot4 operate does not expose land/climb/speed/RTL flight controls" in rendered
+    assert "return-to-launch" not in rendered
+    assert "request land" not in rendered
+    assert "climb 45" not in rendered
+    assert "speed 7" not in rendered
+
+
 def test_turtlebot3_operate_console_avoids_flight_wording_when_completed() -> None:
     task_payload = {
         "artifacts": {
@@ -278,6 +295,41 @@ def test_turtlebot3_operate_console_avoids_flight_wording_when_completed() -> No
     assert "return-to-launch" not in rendered
 
 
+def test_turtlebot4_operate_console_avoids_flight_wording_when_completed() -> None:
+    task_payload = {
+        "artifacts": {
+            "summary": {
+                "execution_target": "ros2_nav2_turtlebot4_sim",
+                "robot_profile": "turtlebot4",
+            },
+            "turtlebot3_home_mission_execution": {
+                "execution_target": "ros2_nav2_turtlebot4_sim",
+                "robot_profile": "turtlebot4",
+            },
+        }
+    }
+
+    panel = missionos_cli._render_recovery_agent_console(
+        task_payload,
+        proposal=None,
+        show_proposal=False,
+        status="completed",
+        task_id="task_turtlebot4",
+    )
+    rendered = str(panel.renderable)
+
+    assert "TurtleBot4 recovery proposals appear only during an active sim route" in rendered
+    assert "TurtleBot4 local XY" in rendered
+    assert "avoid <x> <y>" in rendered
+    assert "reroute <x> <y>" in rendered
+    assert "only while flying" not in rendered
+    assert "land" not in rendered
+    assert "climb <m>" not in rendered
+    assert "speed <m/s>" not in rendered
+    assert "[bold]rtl" not in rendered.lower()
+    assert "return-to-launch" not in rendered
+
+
 def test_turtlebot3_operate_status_line_uses_indoor_map_evidence() -> None:
     artifacts = {
         "summary": {
@@ -299,6 +351,39 @@ def test_turtlebot3_operate_status_line_uses_indoor_map_evidence() -> None:
     ).plain
 
     assert "robot=TurtleBot3 sim" in rendered
+    assert "motion=True" in rendered
+    assert "odom=2.74m" in rendered
+    assert "map_points=2/2" in rendered
+    assert "full indoor map" in rendered
+    assert "battery=" not in rendered
+    assert "alt=" not in rendered
+    assert "wp=" not in rendered
+
+
+def test_turtlebot4_operate_status_line_uses_indoor_map_evidence() -> None:
+    artifacts = {
+        "summary": {
+            "execution_target": "ros2_nav2_turtlebot4_sim",
+            "robot_profile": "turtlebot4",
+            "robot_motion_observed": True,
+            "odom_delta_m": 2.74,
+        },
+        "turtlebot3_indoor_map_model": {
+            "execution_target": "ros2_nav2_turtlebot4_sim",
+            "robot_profile": "turtlebot4",
+            "observed_points": [{"x_m": -2.0}, {"x_m": 0.75}],
+            "planned_points": [{"x_m": -2.0}, {"x_m": 0.75}],
+        },
+    }
+
+    rendered = missionos_cli._render_operate_status_line(
+        {},
+        artifacts=artifacts,
+        status="completed",
+        task_id="task_turtlebot4",
+    ).plain
+
+    assert "robot=TurtleBot4 sim" in rendered
     assert "motion=True" in rendered
     assert "odom=2.74m" in rendered
     assert "map_points=2/2" in rendered

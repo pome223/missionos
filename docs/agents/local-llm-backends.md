@@ -1,8 +1,8 @@
 # Local LLM Backends
 
 MissionOS is designed around an LLM-in-the-loop chat path. LLM-backed ADK paths
-must be selected explicitly: Gemini for the fastest hosted API path, or
-Ollama/Gemma for a local no-spend path that is slower and role-dependent.
+default to Gemini for the fastest hosted API path. Ollama/Gemma is the local
+no-spend path, but it is slower and role-dependent.
 
 `MISSIONOS_LLM_BACKEND=off` is a development fallback for boundary tests. It is
 not the intended public product experience.
@@ -13,7 +13,7 @@ Global backend:
 
 ```bash
 MISSIONOS_LLM_BACKEND=off      # development fallback, no LLM-backed ADK paths
-MISSIONOS_LLM_BACKEND=gemini   # Google ADK/Gemini opt-in
+MISSIONOS_LLM_BACKEND=gemini   # Google ADK/Gemini path, also the default
 MISSIONOS_LLM_BACKEND=ollama   # local Ollama through ADK LiteLLM
 ```
 
@@ -32,10 +32,11 @@ When `MISSIONOS_LLM_BACKEND=ollama`, CLI-managed Gateway child processes do not
 receive `GOOGLE_API_KEY`, even when it is present in the parent environment or
 `.env`.
 
-If a deployment previously relied on `GOOGLE_API_KEY` being inherited by Gateway
-children, set `MISSIONOS_LLM_BACKEND=gemini` explicitly before restarting
-Gateway. Otherwise MissionOS intentionally keeps the Google key out of the child
-process and ADK paths either stay disabled or use the selected local backend.
+If a deployment previously disabled LLM-backed Gateway children by leaving the
+backend unset, set `MISSIONOS_LLM_BACKEND=off` explicitly before restarting
+Gateway. Otherwise the unset default is Gemini. MissionOS still keeps the Google
+key out of child processes when `MISSIONOS_LLM_BACKEND=ollama` or `off` is
+selected.
 
 `MISSIONOS_LLM_DIALOGUE_ROUTER_MODEL_ID` is a Gemini/API model id override. With
 the Ollama backend it is not the effective local selector. Use
@@ -74,6 +75,11 @@ MISSIONOS_AGENT_MISSIONOS_CHIEF_AGENT_OLLAMA_MODEL=gemma4:26b
 MISSIONOS_AGENT_MISSIONOS_RUNTIME_RECOVERY_AGENT_LLM_BACKEND=gemini
 MISSIONOS_AGENT_MISSIONOS_RUNTIME_RECOVERY_AGENT_MODEL_ID=gemini-3.1-flash-lite-preview
 
+# TurtleBot3 recovery planner defaults to hosted Gemini in the Docker demo.
+MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_LLM_BACKEND=gemini
+MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_MODEL_ID=gemini-3.1-flash-lite
+
+# Override to local Gemma/Ollama when an offline path is required.
 MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_LLM_BACKEND=ollama
 MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_OLLAMA_MODEL=gemma4:26b
 ```
