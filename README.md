@@ -151,6 +151,37 @@ dispatches, `missionos watch`, `missionos operate`, and a map screenshot. That
 run reached terminal completion through recovery/return evidence, but it still
 does not claim delivery completion or physical execution.
 
+## TurtleBot3 Simulator Quickstart
+
+TurtleBot3 is the current indoor ROS2/Nav2 simulator baseline. It uses Docker to
+start a local TurtleBot3/Gazebo/Nav2 Gateway, then enters the same MissionOS chat
+loop as the PX4 path:
+
+```bash
+# Print the Docker/Gazebo/Nav2 startup command without launching it.
+missionos chat --robot turtlebot3 --turtlebot3-dry-run
+
+# First run: build the simulator image, start the Gateway, and enter chat.
+MISSIONOS_LLM_BACKEND=gemini \
+missionos --timeout 300 chat \
+  --robot turtlebot3 \
+  --turtlebot3-build-image \
+  "TurtleBot3: run the indoor delivery route in the simulated house."
+```
+
+The TurtleBot3 path remains simulator-only:
+
+```text
+completion_scope=sim_action
+physical_execution_invoked=false
+mission_delivery_completion_claimed=false
+```
+
+Use `--turtlebot3-smoke` for the non-interactive Docker smoke instead of the
+operator chat loop. See
+[ROS2/Nav2 TurtleBot3 Simulator Bridge](docs/agents/ros2-nav2-turtlebot3-sim.md)
+for the full runtime contract and troubleshooting notes.
+
 ## Why MissionOS Exists
 
 Most current AI agent work stops at "the agent did something."
