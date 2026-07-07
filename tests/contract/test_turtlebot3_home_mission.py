@@ -16,6 +16,10 @@ from src.runtime.ros2_nav2_dispatch_bridge import (
     ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV,
     ROS2_NAV2_BRIDGE_COMMAND_ENV,
 )
+from src.runtime.nvblox_perception_evidence import (
+    NVBLOX_PERCEPTION_EVIDENCE_JSON_ENV,
+    NVBLOX_PERCEPTION_EVIDENCE_REQUIRED_ENV,
+)
 from src.runtime.turtlebot3_log_collector import TURTLEBOT3_LOG_BUNDLE_PATHS_ENV
 from src.runtime.turtlebot3_home_mission import (
     approve_turtlebot3_home_mission_plan,
@@ -641,6 +645,8 @@ def test_turtlebot3_plan_uses_ollama_recovery_planner_when_configured(
 def test_turtlebot3_execution_blocks_without_bridge_opt_in(monkeypatch) -> None:
     monkeypatch.delenv(ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV, raising=False)
     monkeypatch.delenv(ROS2_NAV2_BRIDGE_COMMAND_ENV, raising=False)
+    monkeypatch.setenv(NVBLOX_PERCEPTION_EVIDENCE_REQUIRED_ENV, "1")
+    monkeypatch.delenv(NVBLOX_PERCEPTION_EVIDENCE_JSON_ENV, raising=False)
     plan = build_turtlebot3_home_mission_plan(
         operator_instruction="TurtleBot3で家の中を一周して",
     )
@@ -663,6 +669,72 @@ def test_turtlebot3_execution_blocks_without_bridge_opt_in(monkeypatch) -> None:
     assert f"{ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV}_not_enabled" in summary[
         "blocking_reasons"
     ]
+    assert summary["nvblox_perception_evidence_status"] == "not_configured"
+    assert summary["nvblox_perception_evidence_available"] is False
+    assert "nvblox_perception_evidence_not_configured" in summary["blocking_reasons"]
+
+
+def test_nova_carter_plan_records_isaac_runtime_profile(monkeypatch) -> None:
+    monkeypatch.setenv("MISSIONOS_TURTLEBOT3_WORLD_PROFILE", "house")
+
+    plan = build_turtlebot3_home_mission_plan(
+        operator_instruction="Nova CarterでIsaac Sim内の短いNav2ルートを走って",
+    )
+
+    proposal = plan["scenario_proposal"]
+    summary = plan["summary"]
+    assert proposal["robot_profile"] == "nova_carter"
+    assert proposal["robot_label"] == "Nova Carter"
+    assert proposal["robot_model"] == "nova_carter"
+    assert proposal["execution_target"] == "isaac_ros_nav2_nova_carter_sim"
+    assert proposal["runtime_substrate"] == "NVIDIA Isaac Sim + Isaac ROS/Nav2"
+    assert proposal["mission_objective"] == (
+        "Nova Carter bounded waypoint move via Nav2 simulation"
+    )
+    assert summary["robot_profile"] == "nova_carter"
+    assert summary["execution_target"] == "isaac_ros_nav2_nova_carter_sim"
+    assert summary["physical_execution_invoked"] is False
+    assert summary["mission_delivery_completion_claimed"] is False
+
+
+def test_nova_carter_execution_blocks_when_isaac_runtime_is_not_configured(
+    monkeypatch,
+) -> None:
+    monkeypatch.delenv(ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV, raising=False)
+    monkeypatch.delenv(ROS2_NAV2_BRIDGE_COMMAND_ENV, raising=False)
+    plan = build_turtlebot3_home_mission_plan(
+        operator_instruction="Nova CarterでIsaac Sim内の短いNav2ルートを走って",
+        robot_profile="nova_carter",
+    )
+    approval = approve_turtlebot3_home_mission_plan(
+        proposal=plan["scenario_proposal"],
+        validation=plan["validation_result"],
+    )
+
+    result = run_turtlebot3_home_mission_dispatch(
+        proposal=plan["scenario_proposal"],
+        approval=approval["turtlebot3_home_mission_approval"],
+    )
+
+    summary = result["summary"]
+    execution = result["turtlebot3_home_mission_execution"]
+    indoor_map = result["turtlebot3_indoor_map_model"]
+    assert summary["status"] == "blocked"
+    assert summary["robot_profile"] == "nova_carter"
+    assert summary["execution_target"] == "isaac_ros_nav2_nova_carter_sim"
+    assert summary["runtime_configuration_status"] == "not_configured"
+    assert summary["dispatch_request_sent"] is False
+    assert summary["completion_claimed"] is False
+    assert summary["physical_execution_invoked"] is False
+    assert "isaac_sim_nova_carter_bridge_command_missing" in summary[
+        "blocking_reasons"
+    ]
+    assert "isaac_sim_nova_carter_runtime_not_enabled" in summary[
+        "blocking_reasons"
+    ]
+    assert execution["runtime_substrate"] == "NVIDIA Isaac Sim + Isaac ROS/Nav2"
+    assert indoor_map["robot_label"] == "Nova Carter"
+    assert indoor_map["physical_execution_invoked"] is False
 
 
 def test_turtlebot3_low_battery_judgment_blocks_before_bridge(
@@ -920,6 +992,75 @@ def test_turtlebot3_obstacle_mission_needs_avoidance_observation(
     assert summary["obstacle_challenge_required"] is True
     assert summary["obstacle_avoidance_completion_claimed"] is False
     assert "obstacle_avoidance_not_observed" in summary["blocking_reasons"]
+
+
+def test_turtlebot3_obstacle_mission_does_not_promote_nvblox_costmap_to_avoidance(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    bridge = tmp_path / "bridge.py"
+    nvblox = tmp_path / "nvblox_perception.json"
+    _write_success_bridge(bridge, obstacle_avoidance_observed=False)
+    nvblox.write_text(
+        json.dumps(
+            {
+                "perception_source": "isaac_ros_nvblox",
+                "depth_input_observed": True,
+                "pose_input_observed": True,
+                "scene_reconstruction_observed": True,
+                "nav2_costmap_updated_from_perception": True,
+                "dynamic_obstacle_observed": True,
+                "perception_artifact_refs": [
+                    "output/nvblox/perception_evidence.json",
+                    "output/nvblox/costmap.json",
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv(ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV, "1")
+    monkeypatch.setenv(ROS2_NAV2_BRIDGE_COMMAND_ENV, _bridge_command(bridge))
+    monkeypatch.setenv(NVBLOX_PERCEPTION_EVIDENCE_REQUIRED_ENV, "1")
+    monkeypatch.setenv(NVBLOX_PERCEPTION_EVIDENCE_JSON_ENV, str(nvblox))
+    plan = build_turtlebot3_home_mission_plan(
+        operator_instruction="TurtleBot3で家の中の障害物を避けて",
+    )
+    approval = approve_turtlebot3_home_mission_plan(
+        proposal=plan["scenario_proposal"],
+        validation=plan["validation_result"],
+    )
+
+    result = run_turtlebot3_home_mission_dispatch(
+        proposal=plan["scenario_proposal"],
+        approval=approval["turtlebot3_home_mission_approval"],
+    )
+
+    summary = result["summary"]
+    execution = result["turtlebot3_home_mission_execution"]
+    assert summary["nav2_action_completion_claimed"] is True
+    assert summary["completion_claimed"] is False
+    assert summary["completion_scope"] == "none"
+    assert summary["nvblox_perception_evidence_status"] == "available"
+    assert summary["nvblox_perception_evidence_available"] is True
+    assert summary["perception_source"] == "isaac_ros_nvblox"
+    assert summary["depth_input_observed"] is True
+    assert summary["pose_input_observed"] is True
+    assert summary["scene_reconstruction_observed"] is True
+    assert summary["nav2_costmap_updated_from_perception"] is True
+    assert summary["costmap_obstacle_observed"] is True
+    assert summary["bridge_obstacle_avoidance_observed"] is False
+    assert summary["obstacle_avoidance_observed"] is False
+    assert summary["obstacle_avoidance_completion_claimed"] is False
+    assert "obstacle_avoidance_not_observed" in summary["blocking_reasons"]
+    assert "cannot claim obstacle avoidance" in summary[
+        "nvblox_perception_claim_boundary"
+    ]
+    assert (
+        execution["nvblox_perception_evidence"][
+            "obstacle_avoidance_completion_claimed"
+        ]
+        is False
+    )
 
 
 def test_turtlebot3_obstacle_mission_claims_completion_with_avoidance_observation(

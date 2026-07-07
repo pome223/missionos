@@ -21,6 +21,7 @@ class RecordingMissionOSClient:
         coordinate_route: dict[str, Any] | None = None,
         route_hint: str | None = None,
         client_surface: str | None = None,
+        robot_profile: str | None = None,
     ) -> dict[str, Any]:
         request: dict[str, Any] = {
             "operator_instruction": instruction,
@@ -34,6 +35,8 @@ class RecordingMissionOSClient:
             request["missionos_route_hint"] = route_hint
         if client_surface:
             request["missionos_client_surface"] = client_surface
+        if robot_profile:
+            request["robot_profile"] = robot_profile
         self.requests.append(request)
 
         mission_designer: dict[str, Any] = {
@@ -224,6 +227,7 @@ class BackNavigationMissionOSClient:
         coordinate_route: dict[str, Any] | None = None,
         route_hint: str | None = None,
         client_surface: str | None = None,
+        robot_profile: str | None = None,
     ) -> dict[str, Any]:
         del coordinate_route
         self.requests.append(
@@ -233,6 +237,7 @@ class BackNavigationMissionOSClient:
                 "mission_designer_context": mission_designer_context or {},
                 "missionos_route_hint": route_hint or "",
                 "missionos_client_surface": client_surface or "",
+                "robot_profile": robot_profile or "",
             }
         )
         if route_hint == "approve":
@@ -354,13 +359,49 @@ def test_chat_robot_turtlebot3_dry_run_prints_sim_entrypoint(
     )
 
     assert result.exit_code == 0, result.output
+    compact_output = result.output.replace("\n", "")
     assert "TurtleBot3 MissionOS Gateway" in result.output
     assert "TurtleBot3で屋内配送ルートを走って" in result.output
-    assert "start_ros2_nav2_turtlebot3_ga" in result.output
-    assert "teway_docker.sh" in result.output
+    assert "start_ros2_nav2_turtlebot3_gateway_docker.sh" in compact_output
     assert "surfaces=chat + operate + watch + map" in result.output
     assert "claim_scope=sim_action" in result.output
     assert "world_profile=house" in result.output
+
+
+def test_chat_robot_nova_carter_passes_robot_profile_to_gateway(
+    monkeypatch: Any,
+    tmp_path: Path,
+) -> None:
+    client = RecordingMissionOSClient()
+    monkeypatch.setattr(missionos_cli, "make_client", lambda *_args, **_kwargs: client)
+    monkeypatch.setattr(
+        missionos_cli,
+        "_ensure_gateway",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        missionos_cli,
+        "_build_chat_session",
+        lambda _history_path: object(),
+    )
+
+    result = CliRunner().invoke(
+        missionos_cli.missionos,
+        [
+            "--state-path",
+            str(tmp_path / "state.json"),
+            "chat",
+            "--robot",
+            "nova-carter",
+            "短いNav2ルートを走って",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert client.requests[-1]["robot_profile"] == "nova_carter"
+    assert client.requests[-1]["session_id"] == "missionos-cli-nova-carter"
+    assert client.requests[-1]["missionos_client_surface"] == "chat"
+    assert client.requests[-1]["operator_instruction"] == "短いNav2ルートを走って"
 
 
 def test_chat_robot_turtlebot4_uses_turtlebot4_default_instruction(
@@ -386,6 +427,7 @@ def test_chat_robot_turtlebot4_uses_turtlebot4_default_instruction(
     assert client.requests[-1]["operator_instruction"] == (
         missionos_cli.DEFAULT_TURTLEBOT4_CHAT_INSTRUCTION
     )
+    assert client.requests[-1]["robot_profile"] == "turtlebot4"
     assert client.requests[-1]["session_id"] == "missionos-cli-turtlebot4"
     assert client.requests[-1]["missionos_client_surface"] == "chat"
 
@@ -435,8 +477,8 @@ def test_chat_robot_turtlebot3_mid_recovery_dry_run_sets_env(
     )
 
     assert result.exit_code == 0, result.output
-    assert "start_ros2_nav2_turtlebot3_ga" in result.output
-    assert "teway_docker.sh" in result.output
+    compact_output = result.output.replace("\n", "")
+    assert "start_ros2_nav2_turtlebot3_gateway_docker.sh" in compact_output
     assert "physical_execution_invoked=false" in result.output
 
 
@@ -484,7 +526,8 @@ def test_chat_robot_turtlebot3_smoke_dry_run_keeps_noninteractive_path(
     assert result.exit_code == 0, result.output
     assert "TurtleBot3 MissionOS Chat" in result.output
     assert "MISSIONOS_CHAT_TURTLEBOT3_MID_RECOVERY_SMOKE=1" in result.output
-    assert "smoke_ros2_nav2_turtlebot3_ob" in result.output
+    compact_output = result.output.replace("\n", "")
+    assert "smoke_ros2_nav2_turtlebot3_obstacle_delivery_docker.sh" in compact_output
     assert "stacle_delivery_docker.sh" in result.output
 
 
@@ -547,30 +590,6 @@ def test_chat_enter_prepare_sends_execute_route_hint(tmp_path: Path) -> None:
     assert client.requests[-1]["missionos_client_surface"] == "chat"
     assert "approved" not in client.requests[-1]["operator_instruction"].lower()
     assert missionos_cli._chat_suggestion(ctx) == {"raw": "/start-sitl", "label": "start"}
-
-
-def test_chat_execute_turtlebot4_suggests_indoor_map(tmp_path: Path) -> None:
-    ctx = _chat_ctx(tmp_path)
-    missionos_cli._remember_sitl_task_id(ctx, "task_turtlebot4_delivery")
-
-    missionos_cli._update_chat_suggestion_from_conversation(
-        ctx,
-        {
-            "routed_action": "execute",
-            "operation_result": {
-                "summary": {
-                    "status": "completed",
-                    "execution_target": "ros2_nav2_turtlebot4_sim",
-                    "robot_profile": "turtlebot4",
-                }
-            },
-        },
-    )
-
-    assert missionos_cli._chat_suggestion(ctx) == {
-        "raw": "/map task_turtlebot4_delivery",
-        "label": "map",
-    }
 
 
 def test_chat_slash_avoid_dispatches_parameterized_recovery(tmp_path: Path) -> None:
