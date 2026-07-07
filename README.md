@@ -54,6 +54,19 @@ MissionOS does not claim:
 - observed progress without evidence
 - general-purpose destination planning
 
+### Runtime Progress
+
+Status as of 2026-07-08. This table is evidence-bounded: simulator evidence
+does not imply physical execution, and ACK is not success.
+
+| Track | Progress | Currently blocked by |
+| --- | --- | --- |
+| PX4 / Gazebo SITL | Most mature execution path. `missionos chat` has exercised PX4/Gazebo SITL with human approval, Recovery Agent proposals, operator-approved `avoid_obstacle`, and `watch` / `operate` / `map` evidence. A terminal SITL `completed` task state exists. | Real hardware flight, delivery completion, and physical execution are still unproven. The next boundary is HITL, bench, or field evidence with an independent safety case. |
+| TurtleBot3 (TB3) / ROS2 Nav2 | Current reproducible indoor simulator baseline. Docker/Gazebo/Nav2, `turtlebot3_house`, normal chat -> Gateway -> task -> `operate` / `watch` / `map`, telemetry sidecar evidence, and obstacle-aware simulator evidence are in place. | Physical TB3 execution has not run. It still needs real actuator, E-stop, and floor-environment validation before `physical_execution_invoked=true`. |
+| TurtleBot4 (TB4) / ROS2 Nav2 | Opt-in profile, task artifact shape, bridge contract, documentation, and safe blocked-by-default behavior are in place. | The Create3/Gazebo stack currently does not produce meaningful `/odom` motion. The controller, diffdrive, dock, or startup layer below MissionOS must move before Nav2 completion can be claimed. |
+| Nova Carter / NVIDIA Isaac Sim | Opt-in `nova-carter` CLI/runtime profile, `execution_target=isaac_ros_nav2_nova_carter_sim`, live-proof scaffold, and manifest gates that reject ACK-only success are in place. | No live Isaac Sim evidence yet. It needs an RTX/GPU host with Isaac Sim, Isaac ROS, Nova Carter/Nav2, an operator-provided bridge command, and map/watch artifacts. |
+| Nvblox / Isaac ROS perception evidence | The v1 perception-evidence contract, env/bridge payload ingestion, required gate, tests, and docs are in place. Nvblox evidence is explicitly not approval, dispatch, or obstacle-avoidance completion by itself. | No live Nvblox data yet. It needs depth/pose -> reconstruction -> Nav2 costmap evidence paired with trajectory/verifier clearance evidence. |
+
 ## What MissionOS Does
 
 1. You ask MissionOS for a drone mission or recovery decision.
