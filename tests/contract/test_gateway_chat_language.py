@@ -392,6 +392,32 @@ def test_chat_turtlebot3_cleaning_request_plans_inspection_not_cleaning(
     assert summary["physical_execution_invoked"] is False
 
 
+def test_chat_nova_carter_profile_records_isaac_execution_target(
+    monkeypatch: Any,
+) -> None:
+    _install_quiet_conversation_dependencies(monkeypatch)
+
+    response = gateway_server.run_missionos_autonomy_conversation(
+        {
+            "operator_instruction": "短いNav2ルートを走って",
+            "robot_profile": "nova_carter",
+            "missionos_client_surface": "chat",
+            "session_id": "chat-nova-carter-profile",
+        }
+    )
+
+    mission = response["mission_designer"]["turtlebot3_home_mission_plan"]
+    summary = response["mission_designer"]["summary"]
+    assert response["routed_action"] == "mission_designer_plan"
+    assert "Nova Carter home mission proposal" in response["message"]
+    assert mission["robot_profile"] == "nova_carter"
+    assert mission["robot_label"] == "Nova Carter"
+    assert mission["execution_target"] == "isaac_ros_nav2_nova_carter_sim"
+    assert summary["runtime_substrate"] == "NVIDIA Isaac Sim + Isaac ROS/Nav2"
+    assert summary["completion_claimed"] is False
+    assert summary["physical_execution_invoked"] is False
+
+
 def test_chat_turtlebot4_request_builds_turtlebot4_nav2_plan(
     monkeypatch: Any,
 ) -> None:

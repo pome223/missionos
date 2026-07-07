@@ -1,6 +1,6 @@
-"""TurtleBot home-robot mission wrapper for bounded Nav2 simulator control.
+"""TurtleBot3 home-robot mission wrapper for bounded Nav2 simulator control.
 
-This module keeps the home-robot story at mission level. TurtleBot can prove a
+This module keeps the home-robot story at mission level. TurtleBot3 can prove a
 bounded Nav2 move in simulation when the external ROS2 bridge reports both Nav2
 completion and odom motion. It cannot prove cleaning, payload pickup, payload
 dropoff, whole-home coverage, or physical execution.
@@ -34,6 +34,9 @@ from src.runtime.mission_autonomy_envelope import (
     build_mission_autonomy_envelope,
     build_mission_autonomy_recovery_proposal,
     classify_mission_autonomy_recovery_proposal,
+)
+from src.runtime.nvblox_perception_evidence import (
+    build_nvblox_perception_evidence_from_env_or_responses,
 )
 from src.runtime.ros2_nav2_dispatch_bridge import (
     ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV,
@@ -70,6 +73,12 @@ TURTLEBOT3_HOME_MISSION_EXECUTION_SCHEMA = (
 )
 TURTLEBOT3_INDOOR_MAP_MODEL_SCHEMA = "missionos_turtlebot3_indoor_map_model.v1"
 
+TurtleBotNav2RobotProfile = Literal["turtlebot3", "turtlebot4", "nova_carter"]
+TurtleBotNav2ExecutionTarget = Literal[
+    "ros2_nav2_turtlebot3_sim",
+    "ros2_nav2_turtlebot4_sim",
+    "isaac_ros_nav2_nova_carter_sim",
+]
 TurtleBot3HomeMissionKind = Literal[
     "indoor_patrol_leg",
     "indoor_delivery_route_leg",
@@ -80,59 +89,47 @@ TurtleBot3HomeMissionKind = Literal[
 ]
 TurtleBot3JudgmentKind = Literal["battery_envelope", "obstacle_avoidance"]
 TurtleBot3JudgmentDecision = Literal["allow", "block", "observe_required"]
-TurtleBotHomeRobotProfile = Literal["turtlebot3", "turtlebot4"]
 
 _TRUE_VALUES = {"1", "true", "yes", "on"}
 TURTLEBOT_HOME_ROBOT_PROFILE_ENV = "MISSIONOS_TURTLEBOT_HOME_ROBOT_PROFILE"
-_TURTLEBOT_HOME_ROBOT_PROFILES = {"turtlebot3", "turtlebot4"}
-
-
-def _normalize_home_robot_profile(raw: Any) -> TurtleBotHomeRobotProfile | None:
-    value = str(raw or "").strip().lower().replace("-", "").replace("_", "")
-    if value in {"tb3", "turtlebot3"}:
-        return "turtlebot3"
-    if value in {"tb4", "turtlebot4"}:
-        return "turtlebot4"
-    return None
-
-
-def infer_turtlebot_home_robot_profile(text: str) -> TurtleBotHomeRobotProfile:
-    raw = str(text or "")
-    lower = raw.lower()
-    if any(token in lower for token in ("turtlebot4", "turtle bot 4", "tb4")):
-        return "turtlebot4"
-    if any(token in lower for token in ("turtlebot3", "turtle bot 3", "tb3")):
-        return "turtlebot3"
-    env_profile = _normalize_home_robot_profile(
-        os.environ.get(TURTLEBOT_HOME_ROBOT_PROFILE_ENV)
-    )
-    return env_profile or "turtlebot3"
-
-
-def _robot_label(robot_profile: TurtleBotHomeRobotProfile) -> str:
-    return "TurtleBot4" if robot_profile == "turtlebot4" else "TurtleBot3"
-
-
-def _robot_model(
-    robot_profile: TurtleBotHomeRobotProfile,
-) -> Literal["turtlebot3_burger", "turtlebot4_lite"]:
-    return "turtlebot4_lite" if robot_profile == "turtlebot4" else "turtlebot3_burger"
-
-
-def _execution_target(
-    robot_profile: TurtleBotHomeRobotProfile,
-) -> Literal["ros2_nav2_turtlebot3_sim", "ros2_nav2_turtlebot4_sim"]:
-    return (
-        "ros2_nav2_turtlebot4_sim"
-        if robot_profile == "turtlebot4"
-        else "ros2_nav2_turtlebot3_sim"
-    )
-
-
-def _home_pose_source(robot_profile: TurtleBotHomeRobotProfile) -> str:
-    return f"missionos_{robot_profile}_home_pose"
-
-
+_TURTLEBOT_NAV2_PROFILE_SPECS = {
+    "turtlebot3": {
+        "robot_label": "TurtleBot3",
+        "robot_model": "turtlebot3_burger",
+        "execution_target": "ros2_nav2_turtlebot3_sim",
+        "runtime_substrate": "Gazebo Classic + ROS2/Nav2",
+        "runtime_profile": "turtlebot3_gazebo_nav2",
+        "bridge_not_configured_reason": "ros2_nav2_bridge_command_missing",
+        "runtime_not_enabled_reason": (
+            f"{ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV}_not_enabled"
+        ),
+        "map_name": "TurtleBot3 indoor Nav2 simulator map",
+    },
+    "turtlebot4": {
+        "robot_label": "TurtleBot4",
+        "robot_model": "turtlebot4_lite",
+        "execution_target": "ros2_nav2_turtlebot4_sim",
+        "runtime_substrate": "Gazebo Classic + ROS2/Nav2",
+        "runtime_profile": "turtlebot4_gazebo_nav2",
+        "bridge_not_configured_reason": "ros2_nav2_bridge_command_missing",
+        "runtime_not_enabled_reason": (
+            f"{ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV}_not_enabled"
+        ),
+        "map_name": "TurtleBot4 indoor Nav2 simulator map",
+    },
+    "nova_carter": {
+        "robot_label": "Nova Carter",
+        "robot_model": "nova_carter",
+        "execution_target": "isaac_ros_nav2_nova_carter_sim",
+        "runtime_substrate": "NVIDIA Isaac Sim + Isaac ROS/Nav2",
+        "runtime_profile": "nvidia_isaac_sim_nova_carter_nav2",
+        "bridge_not_configured_reason": (
+            "isaac_sim_nova_carter_bridge_command_missing"
+        ),
+        "runtime_not_enabled_reason": "isaac_sim_nova_carter_runtime_not_enabled",
+        "map_name": "Nova Carter Isaac Sim Nav2 simulator map",
+    },
+}
 _TURTLEBOT3_GOAL = Nav2GoalPose(
     frame_id="map",
     # Midpoint of the free corridor between the centre and table pillars
@@ -961,7 +958,7 @@ class TurtleBot3MissionJudgmentPoint(BaseModel):
 
 
 class TurtleBot3HomeMissionPlan(BaseModel):
-    """Source-bound home mission proposal for bounded TurtleBot/Nav2 segments."""
+    """Source-bound home mission proposal for bounded TurtleBot3/Nav2 route segments."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -972,12 +969,16 @@ class TurtleBot3HomeMissionPlan(BaseModel):
     mission_kind: TurtleBot3HomeMissionKind
     mission_objective: str
     operator_instruction: str
-    robot_profile: TurtleBotHomeRobotProfile = "turtlebot3"
-    robot_model: Literal["turtlebot3_burger", "turtlebot4_lite"] = "turtlebot3_burger"
-    execution_target: Literal[
-        "ros2_nav2_turtlebot3_sim",
-        "ros2_nav2_turtlebot4_sim",
-    ] = "ros2_nav2_turtlebot3_sim"
+    robot_profile: TurtleBotNav2RobotProfile = "turtlebot3"
+    robot_label: str = "TurtleBot3"
+    robot_model: Literal[
+        "turtlebot3_burger",
+        "turtlebot4_lite",
+        "nova_carter",
+    ] = "turtlebot3_burger"
+    execution_target: TurtleBotNav2ExecutionTarget = "ros2_nav2_turtlebot3_sim"
+    runtime_substrate: str = "Gazebo Classic + ROS2/Nav2"
+    runtime_profile: str = "turtlebot3_gazebo_nav2"
     execution_mode: Literal["sim"] = "sim"
     nav2_goal_pose: Nav2GoalPose = Field(default=_TURTLEBOT3_GOAL)
     planned_segments: tuple[Nav2GoalPose, ...] = Field(default=(_TURTLEBOT3_GOAL,))
@@ -1012,12 +1013,87 @@ def _recovery_avoid_obstacle_requires_fresh_approval() -> bool:
 def _stable_proposal_id(
     text: str,
     mission_kind: str,
-    robot_profile: TurtleBotHomeRobotProfile,
+    robot_profile: TurtleBotNav2RobotProfile,
 ) -> str:
     digest = hashlib.sha256(
         f"{robot_profile}\n{mission_kind}\n{text}".encode("utf-8")
     ).hexdigest()
     return f"{robot_profile}_home_{mission_kind}_{digest[:10]}"
+
+
+def normalize_turtlebot_nav2_robot_profile(raw: Any) -> TurtleBotNav2RobotProfile:
+    profile = str(raw or "").strip().lower().replace("-", "_").replace(" ", "_")
+    if profile in {"turtlebot4", "tb4"}:
+        return "turtlebot4"
+    if profile in {"nova_carter", "novacarter", "carter", "isaac_carter"}:
+        return "nova_carter"
+    return "turtlebot3"
+
+
+def _normalize_home_robot_profile(raw: Any) -> TurtleBotNav2RobotProfile | None:
+    value = str(raw or "").strip()
+    if not value:
+        return None
+    return normalize_turtlebot_nav2_robot_profile(value)
+
+
+def infer_turtlebot_home_robot_profile(text: str) -> TurtleBotNav2RobotProfile:
+    raw = str(text or "")
+    lower = raw.lower()
+    if any(
+        token in lower
+        for token in ("nova carter", "nova-carter", "nova_carter", "isaac carter")
+    ):
+        return "nova_carter"
+    if any(token in lower for token in ("turtlebot4", "turtle bot 4", "tb4")):
+        return "turtlebot4"
+    if any(token in lower for token in ("turtlebot3", "turtle bot 3", "tb3")):
+        return "turtlebot3"
+    env_profile = _normalize_home_robot_profile(
+        os.environ.get(TURTLEBOT_HOME_ROBOT_PROFILE_ENV)
+    )
+    return env_profile or "turtlebot3"
+
+
+def _robot_profile_from_instruction(text: str) -> TurtleBotNav2RobotProfile:
+    lower = str(text or "").lower()
+    if any(
+        term in lower
+        for term in (
+            "nova carter",
+            "nova-carter",
+            "nova_carter",
+            "isaac carter",
+            "isaac-carter",
+            "nvidia carter",
+        )
+    ):
+        return "nova_carter"
+    if any(term in lower for term in ("turtlebot4", "turtle bot 4", "tb4")):
+        return "turtlebot4"
+    return "turtlebot3"
+
+
+def _robot_profile_spec(profile: Any) -> dict[str, str]:
+    return dict(_TURTLEBOT_NAV2_PROFILE_SPECS[normalize_turtlebot_nav2_robot_profile(profile)])
+
+
+def _robot_profile_from_proposal(
+    proposal: Mapping[str, Any],
+) -> TurtleBotNav2RobotProfile:
+    return normalize_turtlebot_nav2_robot_profile(proposal.get("robot_profile"))
+
+
+def _robot_label(robot_profile: TurtleBotNav2RobotProfile) -> str:
+    return _robot_profile_spec(robot_profile)["robot_label"]
+
+
+def _robot_model(robot_profile: TurtleBotNav2RobotProfile) -> str:
+    return _robot_profile_spec(robot_profile)["robot_model"]
+
+
+def _execution_target(robot_profile: TurtleBotNav2RobotProfile) -> str:
+    return _robot_profile_spec(robot_profile)["execution_target"]
 
 
 def instruction_requests_turtlebot3_home_mission(text: str) -> bool:
@@ -1031,6 +1107,11 @@ def instruction_requests_turtlebot3_home_mission(text: str) -> bool:
         "turtlebot",
         "tb3",
         "tb4",
+        "nova carter",
+        "nova-carter",
+        "nova_carter",
+        "isaac carter",
+        "nvidia carter",
         "nav2",
         "亀",
         "亀さん",
@@ -1056,6 +1137,8 @@ def instruction_requests_turtlebot3_home_mission(text: str) -> bool:
         "足りない",
         "不足",
         "移動",
+        "ルート",
+        "走って",
         "avoid",
         "obstacle",
         "battery",
@@ -1107,20 +1190,21 @@ def infer_turtlebot3_home_mission_kind(text: str) -> TurtleBot3HomeMissionKind:
 
 def _mission_objective(
     mission_kind: TurtleBot3HomeMissionKind,
-    robot_profile: TurtleBotHomeRobotProfile,
+    *,
+    robot_label: str = "TurtleBot3",
 ) -> str:
-    robot_label = _robot_label(robot_profile)
+    label = str(robot_label or "TurtleBot3")
     if mission_kind == "indoor_delivery_route_leg":
-        return f"{robot_label} indoor delivery route to a simulated dropoff via bounded Nav2 simulation"
+        return f"{label} indoor delivery route to a simulated dropoff via bounded Nav2 simulation"
     if mission_kind == "obstacle_avoidance_patrol_leg":
-        return f"{robot_label} obstacle-avoidance patrol leg via bounded Nav2 simulation"
+        return f"{label} obstacle-avoidance patrol leg via bounded Nav2 simulation"
     if mission_kind == "cleaning_inspection_leg":
-        return f"{robot_label} cleaning-inspection leg via bounded Nav2 simulation"
+        return f"{label} cleaning-inspection leg via bounded Nav2 simulation"
     if mission_kind == "payload_transport_rehearsal_leg":
-        return f"{robot_label} payload-transport route rehearsal via bounded Nav2 simulation"
+        return f"{label} payload-transport route rehearsal via bounded Nav2 simulation"
     if mission_kind == "bounded_go_to_waypoint":
-        return f"{robot_label} bounded waypoint move via Nav2 simulation"
-    return f"{robot_label} indoor patrol leg via bounded Nav2 simulation"
+        return f"{label} bounded waypoint move via Nav2 simulation"
+    return f"{label} indoor patrol leg via bounded Nav2 simulation"
 
 
 def _blocked_claims(mission_kind: TurtleBot3HomeMissionKind) -> tuple[str, ...]:
@@ -1768,7 +1852,7 @@ def _copy_turtlebot3_static_floor_plan() -> dict[str, Any]:
 
 
 def _turtlebot3_home_floor_plan(
-    robot_profile: TurtleBotHomeRobotProfile = "turtlebot3",
+    robot_profile: TurtleBotNav2RobotProfile = "turtlebot3",
 ) -> dict[str, Any]:
     if robot_profile == "turtlebot4":
         plan = _copy_turtlebot3_static_floor_plan()
@@ -1933,18 +2017,24 @@ def _build_ai_judgment_points(
 def build_turtlebot3_home_mission_plan(
     *,
     operator_instruction: str,
+    robot_profile: Any = "",
     now: datetime | None = None,
 ) -> dict[str, Any]:
-    """Build a planning-only TurtleBot home mission context."""
+    """Build a planning-only TurtleBot3 home mission context."""
 
     del now
-    robot_profile = infer_turtlebot_home_robot_profile(operator_instruction)
     mission_kind = infer_turtlebot3_home_mission_kind(operator_instruction)
+    selected_profile = (
+        normalize_turtlebot_nav2_robot_profile(robot_profile)
+        if str(robot_profile or "").strip()
+        else infer_turtlebot_home_robot_profile(operator_instruction)
+    )
     proposal_id = _stable_proposal_id(
         operator_instruction,
         mission_kind,
-        robot_profile,
+        selected_profile,
     )
+    profile_spec = _robot_profile_spec(selected_profile)
     obstacle_scenario = _build_obstacle_scenario(operator_instruction)
     destination_room = (
         house_destination_room_from_instruction(operator_instruction)
@@ -1991,11 +2081,17 @@ def build_turtlebot3_home_mission_plan(
     plan = TurtleBot3HomeMissionPlan(
         proposal_id=proposal_id,
         mission_kind=mission_kind,
-        mission_objective=_mission_objective(mission_kind, robot_profile),
+        mission_objective=_mission_objective(
+            mission_kind,
+            robot_label=profile_spec["robot_label"],
+        ),
         operator_instruction=operator_instruction,
-        robot_profile=robot_profile,
-        robot_model=_robot_model(robot_profile),
-        execution_target=_execution_target(robot_profile),
+        robot_profile=selected_profile,
+        robot_label=profile_spec["robot_label"],
+        robot_model=profile_spec["robot_model"],
+        execution_target=profile_spec["execution_target"],
+        runtime_substrate=profile_spec["runtime_substrate"],
+        runtime_profile=profile_spec["runtime_profile"],
         nav2_goal_pose=final_goal,
         planned_segments=planned_segments,
         planned_route_distance_m=planned_route_distance,
@@ -2047,6 +2143,11 @@ def build_turtlebot3_home_mission_plan(
         "validation_status": "accepted",
         "accepted_action": "nav2_goal_pose",
         "accepted_scope": "bounded_sim_nav2_route_segments",
+        "robot_profile": plan.robot_profile,
+        "robot_label": plan.robot_label,
+        "execution_target": plan.execution_target,
+        "runtime_substrate": plan.runtime_substrate,
+        "runtime_profile": plan.runtime_profile,
         "ai_judgment_points": [
             point.model_dump(mode="json") for point in ai_judgment_points
         ],
@@ -2075,8 +2176,11 @@ def build_turtlebot3_home_mission_plan(
             "mission_objective": plan.mission_objective,
             "home_robot_mission_kind": mission_kind,
             "robot_profile": plan.robot_profile,
+            "robot_label": plan.robot_label,
             "robot_model": plan.robot_model,
             "execution_target": plan.execution_target,
+            "runtime_substrate": plan.runtime_substrate,
+            "runtime_profile": plan.runtime_profile,
             "execution_mode": plan.execution_mode,
             "nav2_goal_pose": plan.nav2_goal_pose.model_dump(mode="json"),
             "planned_segments": [
@@ -2128,12 +2232,13 @@ def approve_turtlebot3_home_mission_plan(
     validation: Mapping[str, Any],
     now: datetime | None = None,
 ) -> dict[str, Any]:
-    """Record human approval for bounded TurtleBot route segments."""
+    """Record human approval for bounded TurtleBot3 route segments."""
 
     approved_at = now or datetime.now(timezone.utc)
-    robot_profile = _normalize_home_robot_profile(proposal.get("robot_profile")) or "turtlebot3"
+    robot_profile = _robot_profile_from_proposal(proposal)
+    profile_spec = _robot_profile_spec(robot_profile)
     if str(validation.get("validation_status") or "") != "accepted":
-        raise ValueError("TurtleBot mission approval requires accepted validation")
+        raise ValueError("TurtleBot3 mission approval requires accepted validation")
     approval_ref = f"approval_{proposal.get('proposal_id') or 'turtlebot3_home_mission'}"
     proposed_envelope = proposal.get("autonomy_envelope")
     if isinstance(proposed_envelope, Mapping):
@@ -2193,8 +2298,13 @@ def approve_turtlebot3_home_mission_plan(
             "schema_version": "missionos_turtlebot3_bounded_nav2_request.v1",
             "request_status": "approved_for_operator_requested_dispatch",
             "robot_profile": robot_profile,
-            "robot_model": str(proposal.get("robot_model") or _robot_model(robot_profile)),
-            "execution_target": _execution_target(robot_profile),
+            "robot_label": profile_spec["robot_label"],
+            "robot_model": str(
+                proposal.get("robot_model") or profile_spec["robot_model"]
+            ),
+            "execution_target": profile_spec["execution_target"],
+            "runtime_substrate": profile_spec["runtime_substrate"],
+            "runtime_profile": profile_spec["runtime_profile"],
             "execution_mode": "sim",
             "goal_pose": dict(proposal.get("nav2_goal_pose") or {}),
             "planned_segments": [
@@ -2214,8 +2324,13 @@ def approve_turtlebot3_home_mission_plan(
             "operator_approval_ref": approval_ref,
             "approved_scope": "bounded_sim_nav2_route_segments",
             "robot_profile": robot_profile,
-            "robot_model": str(proposal.get("robot_model") or _robot_model(robot_profile)),
-            "execution_target": _execution_target(robot_profile),
+            "robot_label": profile_spec["robot_label"],
+            "robot_model": str(
+                proposal.get("robot_model") or profile_spec["robot_model"]
+            ),
+            "execution_target": profile_spec["execution_target"],
+            "runtime_substrate": profile_spec["runtime_substrate"],
+            "runtime_profile": profile_spec["runtime_profile"],
             "autonomy_envelope": dict(autonomy_envelope),
             "recovery_proposal_classifications": list(
                 recovery_proposal_classifications
@@ -2240,19 +2355,39 @@ def _goal_from_payload(payload: Mapping[str, Any]) -> Nav2GoalPose:
     return Nav2GoalPose.model_validate(dict(payload))
 
 
-def _bridge_readiness_blocking_reasons() -> tuple[str, ...]:
+def _bridge_readiness_blocking_reasons(
+    robot_profile: Any = "turtlebot3",
+) -> tuple[str, ...]:
+    profile_spec = _robot_profile_spec(robot_profile)
     reasons: list[str] = []
     if not os.environ.get(ROS2_NAV2_BRIDGE_COMMAND_ENV, "").strip():
-        reasons.append("ros2_nav2_bridge_command_missing")
+        reasons.append(profile_spec["bridge_not_configured_reason"])
     if not _truthy_env(ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV):
-        reasons.append(f"{ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV}_not_enabled")
+        reasons.append(profile_spec["runtime_not_enabled_reason"])
     return tuple(reasons)
 
 
+def _runtime_configuration_status(blocking_reasons: list[str]) -> str:
+    not_configured = {
+        str(spec["bridge_not_configured_reason"])
+        for spec in _TURTLEBOT_NAV2_PROFILE_SPECS.values()
+    }
+    not_configured.update(
+        str(spec["runtime_not_enabled_reason"])
+        for spec in _TURTLEBOT_NAV2_PROFILE_SPECS.values()
+    )
+    not_configured.add("nvblox_perception_evidence_not_configured")
+    return (
+        "not_configured"
+        if any(reason in not_configured for reason in blocking_reasons)
+        else "configured"
+    )
+
+
 def _turtlebot3_raw_logs_ref_from_env(
-    robot_profile: TurtleBotHomeRobotProfile = "turtlebot3",
+    robot_profile: TurtleBotNav2RobotProfile = "turtlebot3",
 ) -> str | None:
-    if robot_profile == "turtlebot4":
+    if robot_profile != "turtlebot3":
         return None
     try:
         return turtlebot3_log_bundle_ref_from_env()
@@ -2261,14 +2396,14 @@ def _turtlebot3_raw_logs_ref_from_env(
 
 
 def _turtlebot3_log_bundle_artifacts(
-    robot_profile: TurtleBotHomeRobotProfile = "turtlebot3",
+    robot_profile: TurtleBotNav2RobotProfile = "turtlebot3",
 ) -> dict[str, Any]:
-    if robot_profile == "turtlebot4":
+    if robot_profile != "turtlebot3":
         return {}
     try:
         bundle = collect_turtlebot3_log_bundle_from_env()
     except TurtleBot3LogCollectorError as exc:
-        raw_logs_ref = _turtlebot3_raw_logs_ref_from_env()
+        raw_logs_ref = _turtlebot3_raw_logs_ref_from_env(robot_profile)
         return {
             "log_bundle_status": "blocked",
             "raw_logs_ref": raw_logs_ref,
@@ -2487,16 +2622,12 @@ def _indoor_map_point_from_goal(
     }
 
 
-def _planned_indoor_map_points(
-    goals: tuple[Nav2GoalPose, ...],
-    *,
-    robot_profile: TurtleBotHomeRobotProfile = "turtlebot3",
-) -> list[dict[str, Any]]:
+def _planned_indoor_map_points(goals: tuple[Nav2GoalPose, ...]) -> list[dict[str, Any]]:
     planned_points = [
         _indoor_map_point_from_goal(
             _profile_home_pose(),
             role="home",
-            source=_home_pose_source(robot_profile),
+            source="missionos_turtlebot3_home_pose",
             sequence=0,
         )
     ]
@@ -3110,8 +3241,6 @@ def _build_turtlebot3_indoor_map_model(
     runtime_recovery_triggered: bool,
     recovery_action_suggested: str | None,
 ) -> dict[str, Any]:
-    robot_profile = _normalize_home_robot_profile(proposal.get("robot_profile")) or "turtlebot3"
-    robot_label = _robot_label(robot_profile)
     indoor_route = proposal.get("indoor_delivery_route")
     destination_room_label = (
         str(indoor_route.get("destination_room_label") or "")
@@ -3122,7 +3251,7 @@ def _build_turtlebot3_indoor_map_model(
         _indoor_map_point_from_goal(
             _profile_home_pose(),
             role="home",
-            source=_home_pose_source(robot_profile),
+            source="missionos_turtlebot3_home_pose",
             sequence=0,
         )
     ]
@@ -3186,6 +3315,8 @@ def _build_turtlebot3_indoor_map_model(
             "source": "missionos_recovery_nav2_segment",
         }
 
+    robot_profile = _robot_profile_from_proposal(proposal)
+    profile_spec = _robot_profile_spec(robot_profile)
     obstacles = _turtlebot3_delivery_obstacle_markers(
         obstacle_required=obstacle_required,
         obstacle=obstacle,
@@ -3212,15 +3343,17 @@ def _build_turtlebot3_indoor_map_model(
     current_pose = observed_points[-1] if observed_points else None
     if current_pose is None and recovery_points:
         current_pose = recovery_points[-1]
-
     return {
         "schema_version": TURTLEBOT3_INDOOR_MAP_MODEL_SCHEMA,
         "map_kind": "indoor_local_xy",
-        "map_name": f"{robot_label} indoor Nav2 simulator map",
-        "execution_target": _execution_target(robot_profile),
-        "execution_mode": "sim",
+        "map_name": profile_spec["map_name"],
         "robot_profile": robot_profile,
-        "robot_model": str(proposal.get("robot_model") or "turtlebot3_burger"),
+        "robot_label": profile_spec["robot_label"],
+        "execution_target": profile_spec["execution_target"],
+        "runtime_substrate": profile_spec["runtime_substrate"],
+        "runtime_profile": profile_spec["runtime_profile"],
+        "execution_mode": "sim",
+        "robot_model": str(proposal.get("robot_model") or profile_spec["robot_model"]),
         "mission_kind": str(proposal.get("mission_kind") or ""),
         "mission_status": status,
         "frame_id": "map",
@@ -3284,7 +3417,6 @@ def _dispatch_nav2_goal(
     action_ref_suffix: str,
     publish_initialpose: bool,
 ) -> dict[str, Any]:
-    robot_profile = _normalize_home_robot_profile(proposal.get("robot_profile")) or "turtlebot3"
     config = Ros2Nav2HardwareAdapterConfig(
         missionos_action_ref=(
             f"{proposal.get('proposal_id') or 'turtlebot3_home_mission'}:"
@@ -3296,11 +3428,11 @@ def _dispatch_nav2_goal(
         approval_actor=str(approval.get("approval_actor") or "missionos_chat_operator"),
         approval_timestamp=dispatched_at,
         max_distance_m=goal.max_distance_m,
-        raw_logs_ref=_turtlebot3_raw_logs_ref_from_env(robot_profile),
+        raw_logs_ref=_turtlebot3_raw_logs_ref_from_env(
+            _robot_profile_from_proposal(proposal)
+        ),
     )
-    env_overrides = {"MISSIONOS_ROS2_NAV2_BRIDGE_PROFILE": robot_profile}
-    if not publish_initialpose:
-        env_overrides["ROS2_NAV2_INITIALPOSE_ENABLE"] = "0"
+    env_overrides = None if publish_initialpose else {"ROS2_NAV2_INITIALPOSE_ENABLE": "0"}
     client = Ros2Nav2BridgeCommandClient(env_overrides=env_overrides)
     adapter = Ros2Nav2HardwareAdapter(config=config, client=client)
     bridge_error = ""
@@ -3479,9 +3611,10 @@ def run_turtlebot3_home_mission_dispatch(
     """
 
     dispatched_at = now or datetime.now(timezone.utc)
-    robot_profile = _normalize_home_robot_profile(proposal.get("robot_profile")) or "turtlebot3"
     goals = _planned_segment_goals_from_proposal(proposal)
     goal = goals[-1]
+    robot_profile = _robot_profile_from_proposal(proposal)
+    profile_spec = _robot_profile_spec(robot_profile)
     approval_ref = str(approval.get("operator_approval_ref") or "").strip()
     autonomy_envelope = approval.get("autonomy_envelope")
     if not isinstance(autonomy_envelope, Mapping):
@@ -3533,7 +3666,7 @@ def run_turtlebot3_home_mission_dispatch(
     )
     fresh_recovery_operator_approvals: list[dict[str, Any]] = []
 
-    blocking_reasons = list(_bridge_readiness_blocking_reasons())
+    blocking_reasons = list(_bridge_readiness_blocking_reasons(robot_profile))
     blocking_reasons.extend(_pre_dispatch_judgment_blocking_reasons(proposal))
     if not approval_ref or approval.get("operator_approved") is not True:
         blocking_reasons.append("operator_approval_missing")
@@ -4049,15 +4182,32 @@ def run_turtlebot3_home_mission_dispatch(
         )
         else None,
     }
+    nvblox_evidence = build_nvblox_perception_evidence_from_env_or_responses(
+        bridge_responses
+    )
+    nvblox_evidence_payload = (
+        nvblox_evidence.model_dump(mode="json")
+        if nvblox_evidence.evidence_status != "not_requested"
+        else {}
+    )
+    nvblox_perception_supports_costmap = (
+        nvblox_evidence_payload.get("nav2_costmap_updated_from_perception") is True
+    )
+    if nvblox_perception_supports_costmap:
+        obstacle["obstacle_detected"] = True
+        obstacle["costmap_obstacle_observed"] = True
+        obstacle["avoidance_observation_source"] = (
+            obstacle["avoidance_observation_source"]
+            or "isaac_ros_nvblox_perception_evidence"
+        )
+    if nvblox_evidence_payload.get("dynamic_obstacle_observed") is True:
+        obstacle["obstacle_detected"] = True
     mission_kind = str(proposal.get("mission_kind") or "")
     obstacle_required = _obstacle_challenge_required(proposal)
     obstacle_geometry = _obstacle_trajectory_geometry(
         obstacle_required=obstacle_required,
         obstacle=obstacle,
-        planned_points=_planned_indoor_map_points(
-            goals,
-            robot_profile=robot_profile,
-        ),
+        planned_points=_planned_indoor_map_points(goals),
         observed_points=[
             point
             for result in segment_results
@@ -4090,6 +4240,10 @@ def run_turtlebot3_home_mission_dispatch(
         and telemetry_sidecar_motion_confirmed
     )
     mission_blocking_reasons = list(evidence_payload.get("blocking_reasons") or [])
+    mission_blocking_reasons.extend(
+        str(reason)
+        for reason in nvblox_evidence_payload.get("blocking_reasons") or []
+    )
     if (
         route_completion_candidate
         and obstacle_required
@@ -4112,6 +4266,9 @@ def run_turtlebot3_home_mission_dispatch(
         else "blocked"
         if mission_blocking_reasons or not main_dispatch_sent
         else "incomplete"
+    )
+    runtime_configuration_status = _runtime_configuration_status(
+        mission_blocking_reasons
     )
     indoor_delivery_route_completion_claimed = (
         mission_completion_claimed and delivery_route_requested
@@ -4138,8 +4295,12 @@ def run_turtlebot3_home_mission_dispatch(
         "status": status,
         "mission_kind": mission_kind,
         "robot_profile": robot_profile,
-        "robot_model": str(proposal.get("robot_model") or _robot_model(robot_profile)),
-        "execution_target": _execution_target(robot_profile),
+        "robot_label": profile_spec["robot_label"],
+        "robot_model": profile_spec["robot_model"],
+        "execution_target": profile_spec["execution_target"],
+        "runtime_substrate": profile_spec["runtime_substrate"],
+        "runtime_profile": profile_spec["runtime_profile"],
+        "runtime_configuration_status": runtime_configuration_status,
         "execution_mode": "sim",
         "nav2_goal_pose": goal.model_dump(mode="json"),
         "planned_segments": [item.model_dump(mode="json") for item in goals],
@@ -4162,6 +4323,15 @@ def run_turtlebot3_home_mission_dispatch(
         ),
         "telemetry_sidecar_blocking_reasons": list(
             telemetry_sidecar_blocking_reasons
+        ),
+        "nvblox_perception_evidence": dict(nvblox_evidence_payload),
+        "nvblox_perception_evidence_status": nvblox_evidence.evidence_status,
+        "nvblox_perception_evidence_available": (
+            nvblox_evidence.perception_evidence_available
+        ),
+        "nvblox_perception_supports_obstacle_claim_only_with_trajectory": (
+            nvblox_evidence
+            .supports_obstacle_aware_claim_when_paired_with_trajectory_evidence
         ),
         "autonomy_envelope": dict(autonomy_envelope),
         "home_distance_envelope": dict(home_distance_envelope),
@@ -4244,6 +4414,7 @@ def run_turtlebot3_home_mission_dispatch(
         "turtlebot3_indoor_map_model": dict(indoor_map_model),
         "log_bundle_artifacts": dict(log_bundle_artifacts),
         "telemetry_sidecar_artifacts": dict(telemetry_sidecar_artifacts),
+        "nvblox_perception_evidence": dict(nvblox_evidence_payload),
         "ros2_nav2_hardware_adapter_evidence": dict(evidence_payload),
         "ros2_nav2_hardware_adapter_evidence_segments": [
             dict(item.get("adapter_evidence") or {}) for item in segment_results
@@ -4252,8 +4423,12 @@ def run_turtlebot3_home_mission_dispatch(
             "status": status,
             "home_robot_mission_kind": mission_kind,
             "robot_profile": robot_profile,
-            "robot_model": str(proposal.get("robot_model") or _robot_model(robot_profile)),
-            "execution_target": _execution_target(robot_profile),
+            "robot_label": profile_spec["robot_label"],
+            "robot_model": profile_spec["robot_model"],
+            "execution_target": profile_spec["execution_target"],
+            "runtime_substrate": profile_spec["runtime_substrate"],
+            "runtime_profile": profile_spec["runtime_profile"],
+            "runtime_configuration_status": runtime_configuration_status,
             "execution_mode": "sim",
             "dispatch_request_sent": main_dispatch_sent,
             "completion_claimed": mission_completion_claimed,
@@ -4349,6 +4524,33 @@ def run_turtlebot3_home_mission_dispatch(
             "telemetry_sidecar_blocking_reasons": list(
                 telemetry_sidecar_blocking_reasons
             ),
+            "nvblox_perception_evidence": dict(nvblox_evidence_payload),
+            "nvblox_perception_evidence_status": nvblox_evidence.evidence_status,
+            "nvblox_perception_evidence_available": (
+                nvblox_evidence.perception_evidence_available
+            ),
+            "perception_source": (
+                nvblox_evidence.perception_source
+                if nvblox_evidence_payload
+                else None
+            ),
+            "depth_input_observed": nvblox_evidence.depth_input_observed,
+            "pose_input_observed": nvblox_evidence.pose_input_observed,
+            "scene_reconstruction_observed": (
+                nvblox_evidence.scene_reconstruction_observed
+            ),
+            "nav2_costmap_updated_from_perception": (
+                nvblox_evidence.nav2_costmap_updated_from_perception
+            ),
+            "dynamic_obstacle_observed": nvblox_evidence.dynamic_obstacle_observed,
+            "perception_artifact_refs": list(
+                nvblox_evidence.perception_artifact_refs
+            ),
+            "nvblox_perception_claim_boundary": nvblox_evidence.claim_boundary,
+            "nvblox_perception_supports_obstacle_claim_only_with_trajectory": (
+                nvblox_evidence
+                .supports_obstacle_aware_claim_when_paired_with_trajectory_evidence
+            ),
             "obstacle_challenge_required": obstacle_required,
             "obstacle_avoidance_completion_claimed": (
                 obstacle_avoidance_completion_claimed
@@ -4436,7 +4638,6 @@ __all__ = [
     "TURTLEBOT3_HOME_MISSION_EXECUTION_SCHEMA",
     "TURTLEBOT3_INDOOR_MAP_MODEL_SCHEMA",
     "TURTLEBOT3_HOME_MISSION_PLAN_SCHEMA",
-    "TURTLEBOT_HOME_ROBOT_PROFILE_ENV",
     "TurtleBot3MissionJudgmentPoint",
     "TurtleBot3HomeMissionPlan",
     "approve_turtlebot3_home_mission_plan",
@@ -4444,5 +4645,6 @@ __all__ = [
     "infer_turtlebot_home_robot_profile",
     "infer_turtlebot3_home_mission_kind",
     "instruction_requests_turtlebot3_home_mission",
+    "normalize_turtlebot_nav2_robot_profile",
     "run_turtlebot3_home_mission_dispatch",
 ]

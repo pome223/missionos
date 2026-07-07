@@ -361,44 +361,6 @@ def _missionos_turtlebot3_home_mission_plan(
     return dict(proposal) if isinstance(proposal, Mapping) else {}
 
 
-def _missionos_turtlebot_home_robot_profile(context: Mapping[str, Any]) -> str:
-    summary = context.get("summary") if isinstance(context.get("summary"), Mapping) else {}
-    proposal = _missionos_turtlebot3_home_mission_plan(context)
-    raw = str(
-        proposal.get("robot_profile")
-        or summary.get("robot_profile")
-        or ""
-    ).strip().lower()
-    if raw in {"turtlebot4", "tb4"}:
-        return "turtlebot4"
-    return "turtlebot3"
-
-
-def _missionos_turtlebot_home_robot_label(context: Mapping[str, Any]) -> str:
-    return (
-        "TurtleBot4"
-        if _missionos_turtlebot_home_robot_profile(context) == "turtlebot4"
-        else "TurtleBot3"
-    )
-
-
-def _missionos_turtlebot_home_execution_target(context: Mapping[str, Any]) -> str:
-    summary = context.get("summary") if isinstance(context.get("summary"), Mapping) else {}
-    proposal = _missionos_turtlebot3_home_mission_plan(context)
-    target = str(
-        proposal.get("execution_target")
-        or summary.get("execution_target")
-        or ""
-    ).strip()
-    if target:
-        return target
-    return (
-        "ros2_nav2_turtlebot4_sim"
-        if _missionos_turtlebot_home_robot_profile(context) == "turtlebot4"
-        else "ros2_nav2_turtlebot3_sim"
-    )
-
-
 def _missionos_instruction_requests_turtlebot3_home_mission(
     text: str,
     *,
@@ -408,9 +370,7 @@ def _missionos_instruction_requests_turtlebot3_home_mission(
         return True
     if not _missionos_turtlebot3_home_mission_has_proposal(context):
         return False
-    return instruction_requests_turtlebot3_home_mission(
-        f"{_missionos_turtlebot_home_robot_label(context)} {text}"
-    )
+    return instruction_requests_turtlebot3_home_mission(f"TurtleBot3 {text}")
 
 
 def _missionos_turtlebot3_recovery_proposal_count(
@@ -892,25 +852,28 @@ def _missionos_prepare_mission_designer_sitl_context(
 def _missionos_create_running_turtlebot3_home_mission_task(
     *,
     session_id: str,
-    proposal: Mapping[str, Any] | None = None,
+    proposal: Mapping[str, Any],
 ) -> dict[str, Any]:
     """Create the execution task before dispatch so live surfaces can poll it."""
 
-    proposal_context = {"scenario_proposal": dict(proposal or {})}
-    robot_label = _missionos_turtlebot_home_robot_label(proposal_context)
-    execution_target = _missionos_turtlebot_home_execution_target(proposal_context)
+    robot_label = str(proposal.get("robot_label") or "TurtleBot3")
+    execution_target = str(
+        proposal.get("execution_target") or "ros2_nav2_turtlebot3_sim"
+    )
     task = get_task_store().create(
         kind="turtlebot3_home_mission_execution",
-        title=f"{robot_label} indoor Nav2 simulator mission",
+        title=f"{robot_label} Nav2 simulator mission",
         status="running",
         owner_session_id=session_id or None,
         artifacts={
             "summary": {
                 "status": "running",
-                "robot_profile": _missionos_turtlebot_home_robot_profile(
-                    proposal_context
-                ),
+                "robot_profile": proposal.get("robot_profile") or "turtlebot3",
+                "robot_label": robot_label,
+                "robot_model": proposal.get("robot_model"),
                 "execution_target": execution_target,
+                "runtime_substrate": proposal.get("runtime_substrate"),
+                "runtime_profile": proposal.get("runtime_profile"),
                 "completion_claimed": False,
                 "completion_scope": "none",
                 "physical_execution_invoked": False,
@@ -919,6 +882,8 @@ def _missionos_create_running_turtlebot3_home_mission_task(
         },
         metadata={
             "source": "missionos_autonomy_conversation_execute",
+            "robot_profile": proposal.get("robot_profile") or "turtlebot3",
+            "robot_label": robot_label,
             "execution_target": execution_target,
             "execution_mode": "sim",
             "physical_execution_invoked": False,
@@ -947,9 +912,12 @@ def _missionos_create_turtlebot3_home_mission_task(
             artifacts=dict(execution_result),
             metadata={
                 "home_robot_mission_kind": summary.get("home_robot_mission_kind"),
-                "robot_profile": summary.get("robot_profile"),
-                "robot_model": summary.get("robot_model"),
-                "execution_target": summary.get("execution_target"),
+                "robot_profile": summary.get("robot_profile") or "turtlebot3",
+                "robot_label": summary.get("robot_label") or "TurtleBot3",
+                "execution_target": (
+                    summary.get("execution_target") or "ros2_nav2_turtlebot3_sim"
+                ),
+                "execution_mode": "sim",
                 "completion_claimed": summary.get("completion_claimed") is True,
                 "completion_scope": summary.get("completion_scope"),
                 "read_only_map_available": isinstance(
@@ -962,21 +930,19 @@ def _missionos_create_turtlebot3_home_mission_task(
             return dict(updated)
     task = get_task_store().create(
         kind="turtlebot3_home_mission_execution",
-        title=(
-            f"{'TurtleBot4' if summary.get('robot_profile') == 'turtlebot4' else 'TurtleBot3'} "
-            "indoor Nav2 simulator mission"
-        ),
+        title=f"{summary.get('robot_label') or 'TurtleBot3'} Nav2 simulator mission",
         status=status,
         owner_session_id=session_id or None,
         artifacts=dict(execution_result),
         metadata={
             "source": "missionos_autonomy_conversation_execute",
-            "execution_target": summary.get("execution_target")
-            or "ros2_nav2_turtlebot3_sim",
+            "robot_profile": summary.get("robot_profile") or "turtlebot3",
+            "robot_label": summary.get("robot_label") or "TurtleBot3",
+            "execution_target": (
+                summary.get("execution_target") or "ros2_nav2_turtlebot3_sim"
+            ),
             "execution_mode": "sim",
             "home_robot_mission_kind": summary.get("home_robot_mission_kind"),
-            "robot_profile": summary.get("robot_profile"),
-            "robot_model": summary.get("robot_model"),
             "completion_claimed": summary.get("completion_claimed") is True,
             "completion_scope": summary.get("completion_scope"),
             "physical_execution_invoked": False,
@@ -1229,12 +1195,12 @@ def _missionos_mission_designer_context_message(context: Mapping[str, Any]) -> s
     summary = context.get("summary") if isinstance(context.get("summary"), Mapping) else {}
     proposal = context.get("scenario_proposal") if isinstance(context.get("scenario_proposal"), Mapping) else {}
     if _missionos_turtlebot3_home_mission_has_proposal(context):
-        robot_label = _missionos_turtlebot_home_robot_label(context)
         turtlebot3_execution = context.get("turtlebot3_home_mission_execution")
+        robot_label = str(proposal.get("robot_label") or summary.get("robot_label") or "TurtleBot3")
         objective = str(
             proposal.get("mission_objective")
             or summary.get("mission_objective")
-            or f"the current {robot_label} home mission proposal"
+            or f"the current {robot_label} Nav2 mission proposal"
         )
         if isinstance(turtlebot3_execution, Mapping):
             status = str(turtlebot3_execution.get("status") or summary.get("status") or "")
@@ -1244,18 +1210,18 @@ def _missionos_mission_designer_context_message(context: Mapping[str, Any]) -> s
                 or "none"
             )
             return (
-                f"The current {robot_label} home mission has execution evidence: {objective}. "
+                f"The current {robot_label} Nav2 mission has execution evidence: {objective}. "
                 f"status={status or 'unknown'}, completion_scope={completion_scope}. "
                 "Cleaning, payload delivery, whole-home loop completion, and physical execution remain unclaimed."
             )
         if _missionos_turtlebot3_home_mission_approval(context):
             return (
-                f"The current {robot_label} home mission is approved for one bounded Nav2 simulator leg: {objective}. "
+                f"The current {robot_label} Nav2 mission is approved for one bounded Nav2 simulator leg: {objective}. "
                 "Type `run` to send the Nav2 goal through the opt-in ROS2 bridge. "
                 "I will still not claim cleaning, payload delivery, a whole-home loop, or physical execution."
             )
         return (
-            f"The current {robot_label} home mission proposal is waiting for human approval: {objective}. "
+            f"The current {robot_label} Nav2 mission proposal is waiting for human approval: {objective}. "
             "Type `approve` to approve one bounded Nav2 simulator leg, or ask me to revise it. "
             f"{robot_label} can prove motion for this leg only; cleaning and payload claims are blocked."
         )
@@ -2035,13 +2001,12 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
                 request_payload={"intent": intent, "operator_instruction": text},
             )
             if _missionos_turtlebot3_home_mission_has_proposal(mission_designer_context):
-                robot_label = _missionos_turtlebot_home_robot_label(
+                turtlebot_plan = _missionos_turtlebot3_home_mission_plan(
                     mission_designer_context
                 )
+                robot_label = str(turtlebot_plan.get("robot_label") or "TurtleBot3")
                 approval_result = approve_turtlebot3_home_mission_plan(
-                    proposal=_missionos_turtlebot3_home_mission_plan(
-                        mission_designer_context
-                    ),
+                    proposal=turtlebot_plan,
                     validation=mission_designer_context["validation_result"],
                     now=datetime.now(timezone.utc),
                 )
@@ -2159,13 +2124,14 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
                 )
                 message = "I asked the planner for a bounded plan from your instruction."
         elif intent == "execute":
-            robot_label = _missionos_turtlebot_home_robot_label(
-                mission_designer_context
-            )
             if isinstance(
                 mission_designer_context.get("turtlebot3_home_mission_execution"),
                 Mapping,
             ):
+                turtlebot_plan = _missionos_turtlebot3_home_mission_plan(
+                    mission_designer_context
+                )
+                robot_label = str(turtlebot_plan.get("robot_label") or "TurtleBot3")
                 result = mission_designer_context
                 message = (
                     f"The current {robot_label} home mission already has execution evidence. "
@@ -2177,12 +2143,12 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
                     mission_designer_context
                 )
             ):
-                proposal = _missionos_turtlebot3_home_mission_plan(
+                turtlebot_plan = _missionos_turtlebot3_home_mission_plan(
                     mission_designer_context
                 )
                 running_task = _missionos_create_running_turtlebot3_home_mission_task(
                     session_id=session_id,
-                    proposal=proposal,
+                    proposal=turtlebot_plan,
                 )
                 running_task_id = str(running_task.get("task_id") or "")
 
@@ -2198,7 +2164,7 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
                         pass
 
                 execution_result = run_turtlebot3_home_mission_dispatch(
-                    proposal=proposal,
+                    proposal=turtlebot_plan,
                     approval=_missionos_turtlebot3_home_mission_approval(
                         mission_designer_context
                     ),
@@ -2245,6 +2211,7 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
                     if isinstance(result.get("summary"), Mapping)
                     else {}
                 )
+                robot_label = str(summary.get("robot_label") or "TurtleBot3")
                 if summary.get("completion_claimed") is True:
                     message = (
                         f"I sent the approved {robot_label} bounded Nav2 goal through the ROS2 bridge. "
@@ -2266,6 +2233,10 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
             elif _missionos_turtlebot3_home_mission_has_proposal(
                 mission_designer_context
             ):
+                turtlebot_plan = _missionos_turtlebot3_home_mission_plan(
+                    mission_designer_context
+                )
+                robot_label = str(turtlebot_plan.get("robot_label") or "TurtleBot3")
                 message = (
                     f"This {robot_label} home mission can run only after explicit approval. "
                     "Type `approve` to approve one bounded Nav2 simulator leg."
@@ -2373,6 +2344,7 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
             if turtlebot3_designer_result:
                 designer_result = build_turtlebot3_home_mission_plan(
                     operator_instruction=designer_prompt,
+                    robot_profile=request.get("robot_profile") or "",
                     now=datetime.now(timezone.utc),
                 )
             else:
@@ -2498,7 +2470,6 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
                     if isinstance(result.get("summary"), Mapping)
                     else {}
                 )
-                robot_label = _missionos_turtlebot_home_robot_label(result)
                 judgment_points = [
                     point
                     for point in summary.get("ai_judgment_points") or []
@@ -2517,10 +2488,10 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
                 blocked_note = (
                     f" Blocked claims: {blocked_claims}." if blocked_claims else ""
                 )
+                robot_label = str(summary.get("robot_label") or "TurtleBot3")
                 message = (
                     f"I built a bounded {robot_label} home mission proposal for one Nav2 simulator leg. "
-                    f"{robot_label} can prove short indoor motion through Nav2 + odom when the configured bridge "
-                    "reports both Nav2 completion and robot motion; it cannot prove "
+                    f"{robot_label} can prove short indoor motion through Nav2 + odom; it cannot prove "
                     "cleaning, payload delivery, a whole-home loop, or physical execution in this slice."
                     f"{judgment_note}{blocked_note} "
                     "Approve this plan? Type `approve` to approve it, or describe what you want changed."

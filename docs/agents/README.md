@@ -19,8 +19,10 @@ examples over simplified prose.
 11. `docs/agents/hardware-partner-integration-guide.md`
 12. `docs/agents/ros2-nav2-turtlebot3-sim.md`
 13. `docs/agents/ros2-nav2-turtlebot4-sim.md`
-14. `docs/agents/unitree-mujoco-environment.md`
-15. `docs/agents/unitree-go2-real-hardware.md`
+14. `docs/agents/nvidia-isaac-nova-carter.md`
+15. `docs/agents/nvblox-perception-evidence.md`
+16. `docs/agents/unitree-mujoco-environment.md`
+17. `docs/agents/unitree-go2-real-hardware.md`
 
 ## Working Rule
 

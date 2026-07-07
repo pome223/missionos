@@ -67,6 +67,10 @@ DEFAULT_TURTLEBOT3_CHAT_INSTRUCTION = (
 DEFAULT_TURTLEBOT4_CHAT_INSTRUCTION = (
     "TurtleBot4で屋内配送ルートを走って。障害物を避けて、目的地まで届けて。"
 )
+DEFAULT_NOVA_CARTER_CHAT_INSTRUCTION = (
+    "Nova CarterでIsaac Sim内の短いNav2ルートを走って。"
+    "承認、dispatch、ACK、odom evidenceの境界を保って。"
+)
 TURTLEBOT3_CHAT_TIMEOUT = 600.0
 GATEWAY_PID_RECORD_SCHEMA_VERSION = "missionos_gateway_pidfile.v1"
 CHAT_COMPANION_TERMINAL_ROOT = Path("data/missionos_chat_companions")
@@ -280,6 +284,7 @@ class MissionOSGatewayClient:
         coordinate_route: dict[str, Any] | None = None,
         route_hint: str | None = None,
         client_surface: str | None = None,
+        robot_profile: str | None = None,
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "operator_instruction": instruction,
@@ -293,6 +298,8 @@ class MissionOSGatewayClient:
             payload["missionos_route_hint"] = route_hint
         if client_surface:
             payload["missionos_client_surface"] = client_surface
+        if robot_profile:
+            payload["robot_profile"] = robot_profile
         return self._request(
             "POST",
             CONVERSATION_ROUTE,
@@ -4926,9 +4933,11 @@ def _turtlebot3_indoor_map_model_from_artifacts(
 
 
 def _normalize_turtlebot_robot_profile(raw: Any) -> str:
-    profile = str(raw or "").strip().lower()
+    profile = str(raw or "").strip().lower().replace("-", "_").replace(" ", "_")
     if profile in {"turtlebot4", "tb4"}:
         return "turtlebot4"
+    if profile in {"nova_carter", "novacarter", "carter", "isaac_carter"}:
+        return "nova_carter"
     if profile in {"turtlebot3", "tb3"}:
         return "turtlebot3"
     return ""
@@ -4948,17 +4957,20 @@ def _turtlebot_robot_profile_from_artifacts(artifacts: dict[str, Any]) -> str:
         target = str(source.get("execution_target") or "").strip().lower()
         if target == "ros2_nav2_turtlebot4_sim":
             return "turtlebot4"
+        if target == "isaac_ros_nav2_nova_carter_sim":
+            return "nova_carter"
         if target == "ros2_nav2_turtlebot3_sim":
             return "turtlebot3"
     return "turtlebot3" if indoor_map else ""
 
 
 def _turtlebot_robot_label_from_profile(profile: str) -> str:
-    return (
-        "TurtleBot4"
-        if _normalize_turtlebot_robot_profile(profile) == "turtlebot4"
-        else "TurtleBot3"
-    )
+    normalized = _normalize_turtlebot_robot_profile(profile)
+    if normalized == "turtlebot4":
+        return "TurtleBot4"
+    if normalized == "nova_carter":
+        return "Nova Carter"
+    return "TurtleBot3"
 
 
 def _turtlebot_robot_label_from_artifacts(artifacts: dict[str, Any]) -> str:
@@ -5125,21 +5137,24 @@ def _mission_indoor_map_model(
     poll_interval: float,
 ) -> dict[str, Any]:
     task = _task_record(task_payload)
-    robot_profile = (
-        _normalize_turtlebot_robot_profile(indoor_map.get("robot_profile"))
-        or "turtlebot3"
+    artifacts = _task_artifacts(task_payload)
+    robot_profile = _normalize_turtlebot_robot_profile(
+        indoor_map.get("robot_profile")
+    ) or _turtlebot_robot_profile_from_artifacts(artifacts)
+    robot_label = _status_text(
+        indoor_map.get("robot_label"),
+        _turtlebot_robot_label_from_profile(robot_profile),
     )
-    robot_label = _turtlebot_robot_label_from_profile(robot_profile)
     return {
         **indoor_map,
         "schema_version": "missionos_cli_indoor_map.v1",
         "source_schema_version": indoor_map.get("schema_version"),
         "map_kind": "indoor_local_xy",
+        "robot_profile": robot_profile or indoor_map.get("robot_profile"),
+        "robot_label": robot_label,
         "task_id": _status_text(task.get("task_id")),
         "task_status": _task_status(task_payload),
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "robot_profile": robot_profile,
-        "robot_label": robot_label,
         "provider": {
             "label": "Indoor local XY",
             "url_template": "",
@@ -5321,11 +5336,7 @@ def _json_for_html_script(payload: dict[str, Any]) -> str:
 def _mission_indoor_map_html(model: dict[str, Any]) -> str:
     model_json = _json_for_html_script(model)
     escaped_title = html.escape(f"MissionOS Indoor Map · {model['task_id']}")
-    robot_label = html.escape(
-        _turtlebot_robot_label_from_profile(str(model.get("robot_profile") or ""))
-        if not model.get("robot_label")
-        else str(model["robot_label"])
-    )
+    robot_label = html.escape(_status_text(model.get("robot_label"), "TurtleBot3"))
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -5460,8 +5471,8 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
     let data = JSON.parse(document.getElementById("mission-map-data").textContent);
     const mapEl = document.getElementById("map");
     const factsEl = document.getElementById("facts");
-    const liveStatusEl = document.getElementById("liveStatus");
     const mapSubtitleEl = document.getElementById("mapSubtitle");
+    const liveStatusEl = document.getElementById("liveStatus");
     const terminalStatuses = new Set((data.live || {{}}).terminal_statuses || []);
 
     function statusText(value, fallback = "-") {{
@@ -5531,29 +5542,22 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
         || artifacts.summary?.turtlebot3_indoor_map_model
         || null;
       if (!indoor) return data;
-      const robotProfile = statusText(
-        indoor.robot_profile
-          || artifacts.summary?.robot_profile
-          || artifacts.turtlebot3_home_mission_execution?.robot_profile,
-        data.robot_profile,
-      );
-      const robotLabel = statusText(
-        indoor.robot_label,
-        robotProfile === "turtlebot4" ? "TurtleBot4" : "TurtleBot3",
-      );
       return {{
         ...data,
         ...indoor,
         task_id: statusText(payload.task_id || payload.task?.task_id, data.task_id),
         task_status: statusText(payload.status || payload.task?.status || payload.task?.task_status, data.task_status),
         generated_at: new Date().toISOString(),
-        robot_profile: robotProfile,
-        robot_label: robotLabel,
       }};
     }}
 
     function render() {{
-      const robotLabel = statusText(data.robot_label, data.robot_profile === "turtlebot4" ? "TurtleBot4" : "TurtleBot3");
+      const fallbackRobotLabel = data.robot_profile === "turtlebot4"
+        ? "TurtleBot4"
+        : data.robot_profile === "nova_carter"
+          ? "Nova Carter"
+          : "TurtleBot3";
+      const robotLabel = statusText(data.robot_label, fallbackRobotLabel);
       mapSubtitleEl.textContent = `${{robotLabel}}/Nav2 simulator local-XY evidence. This view is read-only and does not claim physical execution or payload delivery.`;
       mapEl.setAttribute("aria-label", `MissionOS ${{robotLabel}} indoor map`);
       const width = mapEl.clientWidth || 980;
@@ -5623,7 +5627,7 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
         ? `<polygon class="arena-wall" points="${{wallPolygon.map((point) => {{
             const p = project(point);
             return `${{p.x.toFixed(2)}},${{p.y.toFixed(2)}}`;
-          }}).join(" ")}}"><title>${{escapeHtml(statusText(floorPlan.source, robotLabel + " Nav2 map"))}}</title></polygon>`
+          }}).join(" ")}}"><title>turtlebot3_world wall (Nav2 SLAM map)</title></polygon>`
         : "";
       const wallRects = Array.isArray(floorPlan.walls) ? floorPlan.walls : [];
       const wallRectMarkup = wallRects.map((wall) => {{
@@ -5679,7 +5683,7 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
       const turtleMarker = (point) => {{
         if (!point) return "";
         const p = project(point);
-        return `<text class="marker-turtle" x="${{p.x.toFixed(2)}}" y="${{p.y.toFixed(2)}}">{TURTLEBOT3_MAP_ICON}</text><text class="label" x="${{(p.x + 18).toFixed(2)}}" y="${{(p.y + 16).toFixed(2)}}">${{escapeHtml(robotLabel)}}</text>`;
+        return `<text class="marker-turtle" x="${{p.x.toFixed(2)}}" y="${{p.y.toFixed(2)}}">{TURTLEBOT3_MAP_ICON}</text><text class="label" x="${{(p.x + 18).toFixed(2)}}" y="${{(p.y + 16).toFixed(2)}}">TurtleBot3</text>`;
       }};
       mapEl.innerHTML = `
         <svg viewBox="0 0 ${{width}} ${{height}}">
@@ -5701,7 +5705,7 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
         <div class="legend">
           <span style="color: var(--plan)">plan</span>
           <span style="color: var(--observed)">observed odom</span>
-          <span>{TURTLEBOT3_MAP_ICON} ${{escapeHtml(robotLabel)}}</span>
+          <span>{TURTLEBOT3_MAP_ICON} TurtleBot3</span>
           <span style="color: var(--furniture)">furniture</span>
           <span style="color: #334155">wall</span>
           <span style="color: var(--recovery)">recovery</span>
@@ -7224,24 +7228,25 @@ def _handle_chat_recovery_approval(
     return True
 
 
-def _is_turtlebot_task_artifacts(artifacts: dict[str, Any]) -> bool:
+def _is_home_robot_nav2_execution_target(value: Any) -> bool:
+    return str(value or "") in {
+        "ros2_nav2_turtlebot3_sim",
+        "ros2_nav2_turtlebot4_sim",
+        "isaac_ros_nav2_nova_carter_sim",
+    }
+
+
+def _is_turtlebot3_task_artifacts(artifacts: dict[str, Any]) -> bool:
     summary = artifacts.get("summary")
     summary = summary if isinstance(summary, dict) else {}
     execution = artifacts.get("turtlebot3_home_mission_execution")
     execution = execution if isinstance(execution, dict) else {}
-    execution_targets = {
-        "ros2_nav2_turtlebot3_sim",
-        "ros2_nav2_turtlebot4_sim",
-    }
+    indoor_map = artifacts.get("turtlebot3_indoor_map_model")
     return (
-        summary.get("execution_target") in execution_targets
-        or execution.get("execution_target") in execution_targets
-        or bool(_turtlebot3_indoor_map_model_from_artifacts(artifacts))
+        _is_home_robot_nav2_execution_target(summary.get("execution_target"))
+        or _is_home_robot_nav2_execution_target(execution.get("execution_target"))
+        or isinstance(indoor_map, dict)
     )
-
-
-def _is_turtlebot3_task_artifacts(artifacts: dict[str, Any]) -> bool:
-    return _is_turtlebot_task_artifacts(artifacts)
 
 
 def _is_real_mission_designer_sitl_task(task: dict[str, Any]) -> bool:
@@ -7538,9 +7543,8 @@ def _render_recovery_agent_console(
     Rendered at the top of `operate` so it is always visible (never scrolled off).
     """
     artifacts = _task_artifacts(task_payload)
-    turtlebot_profile = _turtlebot_robot_profile_from_artifacts(artifacts)
-    turtlebot_label = _turtlebot_robot_label_from_profile(turtlebot_profile)
-    is_turtlebot = bool(turtlebot_profile)
+    is_turtlebot3 = _is_turtlebot3_task_artifacts(artifacts)
+    robot_label = _turtlebot_robot_label_from_artifacts(artifacts)
     bridge = artifacts.get("missionos_runtime_recovery_agent_live_bridge")
     bridge = bridge if isinstance(bridge, dict) else {}
     telemetry = bridge.get("telemetry_snapshot")
@@ -7598,23 +7602,23 @@ def _render_recovery_agent_console(
     elif status == "running":
         lines.append("[dim]Recognition/proposal: waiting (live proposals appear here)[/dim]")
     else:
-        if is_turtlebot:
+        if is_turtlebot3:
             lines.append(
                 f"[dim]status={status} "
-                f"({turtlebot_label} recovery proposals appear only during an active sim route)[/dim]"
+                f"({robot_label} recovery proposals appear only during an active sim route)[/dim]"
             )
         else:
             lines.append(f"[dim]status={status} (proposals are shown only while flying)[/dim]")
 
     lines.append("")
     tid = task_id or "<task>"
-    if is_turtlebot:
+    if is_turtlebot3:
         lines.append(
             "[dim]Type here; bounded recovery dispatches still use standard y/N "
             "confirmation:[/dim] "
             f"[bold]status[/bold] / [bold]avoid <x> <y>[/bold] / "
             f"[bold]reroute <x> <y>[/bold]  "
-            f"[dim]({turtlebot_label} local XY, task={tid}) · exit: Ctrl-C[/dim]"
+            f"[dim]({robot_label} local XY, task={tid}) · exit: Ctrl-C[/dim]"
         )
     else:
         lines.append(
@@ -7697,8 +7701,9 @@ _OPERATE_PARAMETER_ALIASES = {
 
 
 def _operate_console_help_panel(task_id: str, *, robot: str = "px4") -> Panel:
-    if robot in {"turtlebot3", "turtlebot4"}:
-        robot_label = _turtlebot_robot_label_from_profile(robot)
+    robot_profile = _normalize_turtlebot_robot_profile(robot)
+    if robot_profile in {"turtlebot3", "turtlebot4", "nova_carter"}:
+        robot_label = _turtlebot_robot_label_from_profile(robot_profile)
         lines = [
             "[bold]Commands[/bold]",
             f"  status | refresh        show the latest {robot_label} sim state",
@@ -7934,7 +7939,7 @@ def _operate_status_group(
 def _operate_robot_for_task(client: MissionOSGatewayClient, task_id: str) -> str:
     task_payload, _ = _task_and_timeline(client, task_id, timeline_limit=0)
     artifacts = _task_artifacts(task_payload)
-    return _turtlebot_robot_profile_from_artifacts(artifacts) or "px4"
+    return "turtlebot3" if _is_turtlebot3_task_artifacts(artifacts) else "px4"
 
 
 def _handle_operate_console_command(
@@ -8702,6 +8707,11 @@ def _looks_like_mission_planning_request(raw: str) -> bool:
         "turtlebot",
         "tb3",
         "tb4",
+        "nova carter",
+        "nova-carter",
+        "nova_carter",
+        "isaac sim",
+        "nvidia",
         "亀",
         "かめ",
         "タートルボット",
@@ -9235,10 +9245,7 @@ def _maybe_open_turtlebot3_companion_terminals(
     operation = payload.get("operation_result")
     operation = operation if isinstance(operation, dict) else {}
     summary = operation.get("summary") if isinstance(operation.get("summary"), dict) else {}
-    if summary.get("execution_target") not in {
-        "ros2_nav2_turtlebot3_sim",
-        "ros2_nav2_turtlebot4_sim",
-    }:
+    if not _is_home_robot_nav2_execution_target(summary.get("execution_target")):
         return
     task_id = _payload_task_id(operation) or _payload_task_id(payload)
     if task_id:
@@ -9339,10 +9346,7 @@ def _update_chat_suggestion_from_conversation(
             if isinstance(operation.get("summary"), dict)
             else {}
         )
-        if summary.get("execution_target") in {
-            "ros2_nav2_turtlebot3_sim",
-            "ros2_nav2_turtlebot4_sim",
-        }:
+        if _is_home_robot_nav2_execution_target(summary.get("execution_target")):
             task_id = _stored_sitl_task_id(ctx)
             pending = _pending_recovery_approval_from_task(
                 {
@@ -9384,6 +9388,7 @@ def _handle_chat_input(
     session_id: str,
 ) -> bool:
     """Process one chat line. Return False to exit the loop."""
+    robot_profile = str(ctx.obj.get("missionos_chat_robot_profile") or "")
     raw = raw.strip()
     if not raw:
         suggestion = _chat_suggestion(ctx)
@@ -9722,6 +9727,7 @@ def _handle_chat_input(
                         ),
                         route_hint=INTENT_ROUTE_HINTS[intent],
                         client_surface="chat",
+                        robot_profile=robot_profile or None,
                 )
                 _remember_mission_designer_context(ctx, payload, session_id=session_id)
                 _maybe_open_turtlebot3_companion_terminals(ctx, payload)
@@ -9745,6 +9751,7 @@ def _handle_chat_input(
                 mission_designer_context=_stored_mission_designer_context(ctx, session_id),
                 route_hint=route_hint,
                 client_surface="chat",
+                robot_profile=robot_profile or None,
         )
         _remember_mission_designer_context(ctx, payload, session_id=session_id)
         _maybe_open_turtlebot3_companion_terminals(ctx, payload)
@@ -10024,7 +10031,10 @@ def _floor_turtlebot3_chat_timeout(ctx: click.Context) -> None:
 @click.argument("initial_instruction", nargs=-1, required=False)
 @click.option(
     "--robot",
-    type=click.Choice(["default", "turtlebot3", "turtlebot4"], case_sensitive=False),
+    type=click.Choice(
+        ["default", "turtlebot3", "turtlebot4", "nova-carter"],
+        case_sensitive=False,
+    ),
     default="default",
     show_default=True,
     help="Route chat through a robot-specific simulator entrypoint.",
@@ -10104,12 +10114,22 @@ def chat_command(
         autostart=autostart,
         enable_live_sitl=enable_live_sitl,
     )
-    robot_name = robot.lower()
-    if robot_name == "turtlebot4" and turtlebot3_smoke:
-        raise click.UsageError("--turtlebot3-smoke can only be used with --robot turtlebot3.")
-    if robot_name in {"turtlebot3", "turtlebot4"}:
+    robot_profile = robot.lower()
+    if robot_profile == "nova-carter":
+        ctx.obj["missionos_chat_robot_profile"] = "nova_carter"
+        if not initial_raw:
+            initial_raw = DEFAULT_NOVA_CARTER_CHAT_INSTRUCTION
+        if session_id == DEFAULT_SESSION_ID:
+            session_id = "missionos-cli-nova-carter"
         _floor_turtlebot3_chat_timeout(ctx)
-        if robot_name == "turtlebot3" and turtlebot3_smoke:
+    elif robot_profile in {"turtlebot3", "turtlebot4"}:
+        ctx.obj["missionos_chat_robot_profile"] = robot_profile
+        _floor_turtlebot3_chat_timeout(ctx)
+        if robot_profile == "turtlebot4" and turtlebot3_smoke:
+            raise click.UsageError(
+                "--turtlebot3-smoke can only be used with --robot turtlebot3."
+            )
+        if robot_profile == "turtlebot3" and turtlebot3_smoke:
             raise SystemExit(
                 _run_turtlebot3_chat_smoke(
                     instruction=initial_raw or DEFAULT_TURTLEBOT3_CHAT_INSTRUCTION,
@@ -10121,16 +10141,16 @@ def chat_command(
         if not initial_raw:
             initial_raw = (
                 DEFAULT_TURTLEBOT4_CHAT_INSTRUCTION
-                if robot_name == "turtlebot4"
+                if robot_profile == "turtlebot4"
                 else DEFAULT_TURTLEBOT3_CHAT_INSTRUCTION
             )
         if session_id == DEFAULT_SESSION_ID:
-            session_id = f"missionos-cli-{robot_name}"
-        if robot_name == "turtlebot4" and turtlebot3_dry_run:
+            session_id = f"missionos-cli-{robot_profile}"
+        if robot_profile == "turtlebot4" and turtlebot3_dry_run:
             raise click.UsageError(
                 "--turtlebot3-dry-run can only be used with --robot turtlebot3."
             )
-        if robot_name == "turtlebot3" and turtlebot3_dry_run:
+        if robot_profile == "turtlebot3" and turtlebot3_dry_run:
             _maybe_retarget_turtlebot3_gateway_url(ctx)
             _start_turtlebot3_gateway_container(
                 gateway_url=ctx.obj["missionos_gateway_url"],
@@ -10139,15 +10159,17 @@ def chat_command(
                 dry_run=True,
             )
             return
-        if robot_name == "turtlebot3":
+        if robot_profile == "turtlebot3":
             _maybe_retarget_turtlebot3_gateway_url(ctx)
+    else:
+        ctx.obj["missionos_chat_robot_profile"] = ""
     client: MissionOSGatewayClient = ctx.obj["missionos_client"]
     ctx.obj["missionos_chat_session_id"] = session_id
     ctx.obj["missionos_chat_companion_terminals_enabled"] = (
         companion_terminals and sys.stdin.isatty()
     )
     turtlebot3_container_started = False
-    if robot_name == "turtlebot3" and not _gateway_reachable(client):
+    if robot_profile == "turtlebot3" and not _gateway_reachable(client):
         turtlebot3_container_started = _start_turtlebot3_gateway_container(
             gateway_url=ctx.obj["missionos_gateway_url"],
             instruction=initial_raw,
@@ -10159,7 +10181,7 @@ def chat_command(
     gateway_proc = _ensure_gateway(
         client,
         ctx.obj["missionos_gateway_url"],
-        autostart=autostart and robot_name != "turtlebot3",
+        autostart=autostart and robot_profile != "turtlebot3",
         enable_live_sitl=enable_live_sitl,
     )
     console.print(_chat_help_panel())
