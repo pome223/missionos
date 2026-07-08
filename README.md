@@ -67,6 +67,16 @@ does not imply physical execution, and ACK is not success.
 | Nova Carter / NVIDIA Isaac Sim | Opt-in `nova-carter` CLI/runtime profile, `execution_target=isaac_ros_nav2_nova_carter_sim`, live-proof scaffold, and manifest gates that reject ACK-only success are in place. | No live Isaac Sim evidence yet. It needs an RTX/GPU host with Isaac Sim, Isaac ROS, Nova Carter/Nav2, an operator-provided bridge command, and map/watch artifacts. |
 | Nvblox / Isaac ROS perception evidence | The v1 perception-evidence contract, env/bridge payload ingestion, required gate, tests, and docs are in place. Nvblox evidence is explicitly not approval, dispatch, or obstacle-avoidance completion by itself. | No live Nvblox data yet. It needs depth/pose -> reconstruction -> Nav2 costmap evidence paired with trajectory/verifier clearance evidence. |
 
+## Try The Two Baselines
+
+MissionOS is easiest to understand by comparing the same governance loop across
+two different simulator substrates:
+
+| Path | Start here | What to look for | Still not claimed |
+| --- | --- | --- | --- |
+| PX4 / Gazebo SITL | Use the [Chat Quickstart](#chat-quickstart), then read the [obstacle recovery run](docs/examples/missionos-chat-obstacle-recovery.md). | LLM proposal, human approval, PX4/Gazebo dispatch, `watch` / `operate` / `map` evidence, and recovery evidence. | Physical flight, payload delivery, and delivery completion. |
+| TurtleBot3 / ROS2 Nav2 / Gazebo | Use the [TurtleBot3 Simulator Quickstart](#turtlebot3-simulator-quickstart), then read the [TurtleBot3 bridge contract](docs/agents/ros2-nav2-turtlebot3-sim.md). | The same chat -> Gateway -> approval -> dispatch -> observed-motion loop on an indoor ground robot. | Physical robot execution, real actuator/E-stop validation, and delivery completion. |
+
 ## What MissionOS Does
 
 1. You ask MissionOS for a drone mission or recovery decision.
@@ -137,9 +147,6 @@ Then start chat:
 MISSIONOS_GATEWAY_BACKEND=production missionos --timeout 240 chat --autostart
 ```
 
-`MISSIONOS_LLM_BACKEND=off` exists for development fallbacks and boundary tests.
-It is not the main MissionOS product experience.
-
 See [MissionOS Chat: Tokyo Station to Akihabara](docs/examples/missionos-chat-tokyo-akihabara.md)
 for an actual LLM-backed chat run. In that run, MissionOS proposed a bounded
 mission and asked for human approval; it did not approve, dispatch, observe
@@ -158,9 +165,6 @@ start a local TurtleBot3/Gazebo/Nav2 Gateway, then enters the same MissionOS cha
 loop as the PX4 path:
 
 ```bash
-# Print the Docker/Gazebo/Nav2 startup command without launching it.
-missionos chat --robot turtlebot3 --turtlebot3-dry-run
-
 # First run: build the simulator image, start the Gateway, and enter chat.
 MISSIONOS_LLM_BACKEND=gemini \
 missionos --timeout 300 chat \
@@ -228,6 +232,7 @@ Start with the concepts if you want the reasoning. Jump to the packages if you w
 
 **Concepts**
 
+- [docs/concepts/what-happens-in-a-run.md](docs/concepts/what-happens-in-a-run.md) — the clearest single flow
 - [docs/concepts/README.md](docs/concepts/README.md)
 - [docs/concepts/boundaries.md](docs/concepts/boundaries.md)
 
