@@ -44,8 +44,10 @@ boundary: crossing it creates a record, and not crossing it is also a record.
 - **Runtime progress observed**: Actual state change was measured (pose delta, Nav2 status, PX4 telemetry, etc.).
 
 - **Verification & Claim**: The verifier looks at the collected evidence and decides what can be claimed.
-  Possible claims are narrow: `completion_scope=sim_action`, `adapter_action`, etc.
-  `physical_execution_invoked` and `delivery_completion_claimed` are almost always false in public snapshots.
+  Claims stay narrow — for example, "a simulator action completed" rather than
+  "the mission was delivered." In public snapshots, physical execution and
+  delivery completion are almost always still marked as not claimed.
+  (The exact field names live in [claim semantics](../agents/claim-semantics.md).)
 
 ## Why the Separation Matters
 
