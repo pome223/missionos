@@ -4,25 +4,49 @@ This layer is for AI coding agents and maintainers. It is allowed to be detailed
 Prefer explicit field names, route boundaries, runtime checks, and negative
 examples over simplified prose.
 
-## Required Reading
+## Reading Map by Change Target
 
-1. `docs/agents/contracts.md`
-2. `docs/agents/agent-architecture.md`
-3. `docs/agents/claim-semantics.md`
-4. `docs/agents/artifact-taxonomy.md`
-5. `docs/agents/e2e-verification.md`
-6. `docs/agents/cli-parity-release-gate.md`
-7. `docs/agents/local-llm-backends.md`
-8. `docs/agents/publication-rules.md`
-9. `docs/agents/legacy-codename-rename-plan.md`
-10. `docs/agents/hardware-adapter-contract.md`
-11. `docs/agents/hardware-partner-integration-guide.md`
-12. `docs/agents/ros2-nav2-turtlebot3-sim.md`
-13. `docs/agents/ros2-nav2-turtlebot4-sim.md`
-14. `docs/agents/nvidia-isaac-nova-carter.md`
-15. `docs/agents/nvblox-perception-evidence.md`
-16. `docs/agents/unitree-mujoco-environment.md`
-17. `docs/agents/unitree-go2-real-hardware.md`
+Use this table to find the minimum you must read before touching code or public
+docs.
+
+| If you are changing... | Read these first (in order) |
+| --- | --- |
+| CLI commands, help text, or operator UX | `contracts.md`, `claim-semantics.md`, `e2e-verification.md`, `cli-parity-release-gate.md` |
+| Gateway routes, sessions, or audit | `contracts.md`, `artifact-taxonomy.md`, `publication-rules.md`, `e2e-verification.md` |
+| LLM planning, repair, or recovery logic | `claim-semantics.md`, `agent-architecture.md`, `contracts.md` |
+| Evidence, claims, completion, or verifier behavior | `claim-semantics.md`, `artifact-taxonomy.md`, `contracts.md` |
+| PX4 / Gazebo SITL or PX4 bench-adjacent runtime | `hardware-adapter-contract.md`, `claim-semantics.md`, `e2e-verification.md`, `publication-rules.md` |
+| TurtleBot3 / ROS2 Nav2 simulator adapter | `ros2-nav2-turtlebot3-sim.md`, `claim-semantics.md`, `hardware-adapter-contract.md` |
+| TurtleBot4 / other Nav2 simulator work | `ros2-nav2-turtlebot4-sim.md`, `claim-semantics.md`, `hardware-adapter-contract.md` |
+| NVIDIA Isaac Sim / Nova Carter work | `nvidia-isaac-nova-carter.md`, `claim-semantics.md`, `hardware-adapter-contract.md`, `publication-rules.md` |
+| Nvblox / perception evidence | `nvblox-perception-evidence.md`, `claim-semantics.md`, `artifact-taxonomy.md`, `publication-rules.md` |
+| Real hardware adapter or partner bridge | `hardware-adapter-contract.md`, `hardware-partner-integration-guide.md`, `publication-rules.md` |
+| Unitree / MuJoCo or other robot | `unitree-mujoco-environment.md`, `unitree-go2-real-hardware.md`, `hardware-adapter-contract.md` |
+| Public docs, README, examples, or screenshots | `publication-rules.md`, `contracts.md`, `claim-semantics.md`, and the human `docs/concepts/boundaries.md` |
+| Local LLM backends or model config | `local-llm-backends.md`, `contracts.md` |
+| Anything that ships to the public snapshot | `publication-rules.md`, `e2e-verification.md`, `claim-semantics.md` |
+
+## Full Reference
+
+When the map above is not enough, read the complete set:
+
+- `contracts.md`
+- `agent-architecture.md`
+- `claim-semantics.md`
+- `artifact-taxonomy.md`
+- `e2e-verification.md`
+- `cli-parity-release-gate.md`
+- `local-llm-backends.md`
+- `publication-rules.md`
+- `legacy-codename-rename-plan.md`
+- `hardware-adapter-contract.md`
+- `hardware-partner-integration-guide.md`
+- `ros2-nav2-turtlebot3-sim.md`
+- `ros2-nav2-turtlebot4-sim.md`
+- `nvidia-isaac-nova-carter.md`
+- `nvblox-perception-evidence.md`
+- `unitree-mujoco-environment.md`
+- `unitree-go2-real-hardware.md`
 
 ## Working Rule
 

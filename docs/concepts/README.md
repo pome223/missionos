@@ -31,6 +31,8 @@ was sent, what was observed, and what remains unproven.
 
 ## Where To Go Next
 
+- Read `docs/concepts/what-happens-in-a-run.md` for the single clearest picture of
+  proposal -> approval -> dispatch -> evidence -> claim.
 - Read `docs/concepts/boundaries.md` for the claim boundary in plain language.
 - Read `docs/concepts/agent-roles.md` for the plain-language map of Chief,
   Runtime Recovery, Repair, and Gateway responsibilities.
