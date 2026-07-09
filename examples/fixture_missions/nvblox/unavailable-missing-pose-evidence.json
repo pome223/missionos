@@ -1,0 +1,17 @@
+{
+  "schema_version": "missionos_nvblox_perception_evidence.v1",
+  "perception_source": "isaac_ros_nvblox",
+  "depth_input_observed": true,
+  "pose_input_observed": false,
+  "scene_reconstruction_observed": true,
+  "nav2_costmap_updated_from_perception": true,
+  "dynamic_obstacle_observed": true,
+  "perception_artifact_refs": [
+    "fixture://nvblox/perception_evidence.json",
+    "fixture://nvblox/nav2_costmap.json"
+  ],
+  "limitations": [
+    "Fixture evidence only; no live Isaac ROS Nvblox process was invoked.",
+    "Pose input is intentionally missing so the evidence must fail closed."
+  ]
+}

@@ -129,6 +129,23 @@ unavailable     A payload was present but required observations were missing.
 available       Required perception observations and costmap update were present.
 ```
 
+## Public Fixtures
+
+Public-safe fixture payloads live under:
+
+```text
+examples/fixture_missions/nvblox/
+```
+
+Use them for contract tests and documentation review when no RTX/GPU host is
+available. They are not live Isaac ROS Nvblox output and must not be published
+as runtime proof.
+
+- `available-perception-evidence.json` exercises a complete depth/pose ->
+  reconstruction -> Nav2 costmap evidence payload.
+- `unavailable-missing-pose-evidence.json` intentionally omits pose evidence and
+  must fail closed with `nvblox_pose_input_not_observed`.
+
 ## References
 
 - NVIDIA Isaac ROS Nvblox describes GPU-accelerated depth/pose scene
