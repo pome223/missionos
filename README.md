@@ -1,6 +1,8 @@
 # MissionOS
 
-![MissionOS icon](docs/assets/missionos-icon.png)
+<p align="center">
+  <img src="docs/assets/missionos-icon.png" alt="MissionOS icon" width="180">
+</p>
 
 **Give the AI a control tower, not a joystick.**
 
