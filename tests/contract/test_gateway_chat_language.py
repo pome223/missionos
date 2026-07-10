@@ -7,6 +7,7 @@ import sys
 from typing import Any, Mapping
 
 import src.gateway.server as gateway_server
+from scripts import smoke_missionos_chat_turtlebot3_home_mission as tb3_chat_smoke
 from src.runtime.task_store import TaskStore
 from src.runtime.ros2_nav2_dispatch_bridge import (
     ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV,
@@ -15,6 +16,34 @@ from src.runtime.ros2_nav2_dispatch_bridge import (
 
 
 JAPANESE_TEXT = re.compile(r"[ぁ-んァ-ン一-龥]")
+
+
+def test_turtlebot3_e2e_smoke_uses_explicit_authority_route_hints(
+    monkeypatch: Any,
+) -> None:
+    calls: list[dict[str, Any]] = []
+
+    def fake_post_conversation(**kwargs: Any) -> dict[str, Any]:
+        calls.append(kwargs)
+        return {"mission_designer": {"context_ref": len(calls)}}
+
+    monkeypatch.setattr(
+        tb3_chat_smoke,
+        "_post_conversation",
+        fake_post_conversation,
+    )
+
+    tb3_chat_smoke._run_chat_flow(
+        base_url="http://127.0.0.1:18791",
+        session_id="contract-e2e-route-hints",
+        instruction="TurtleBot3で家の中を一周して",
+    )
+
+    assert [call.get("route_hint") for call in calls] == [
+        None,
+        "approve",
+        "execute",
+    ]
 
 
 def _install_quiet_conversation_dependencies(monkeypatch: Any) -> None:
