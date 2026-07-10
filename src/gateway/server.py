@@ -35,6 +35,7 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from src.config.settings import get_settings
+from src.agents.model_config import llm_provider_label
 from src.agents.root_agent import root_agent
 from src.agents.sub_agents import SUB_AGENTS
 from src.control_loop.live_failure_taxonomy import classify_control_loop_failure
@@ -174,7 +175,16 @@ from src.runtime.turtlebot3_home_mission import (
 MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_ENV = (
     "MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_SECONDS"
 )
-MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_SECONDS = 12
+MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_DEFAULT_SECONDS = {
+    "gemini": 45,
+    "local": 180,
+    "disabled": 12,
+}
+MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_MAX_SECONDS = {
+    "gemini": 90,
+    "local": 300,
+    "disabled": 12,
+}
 _LOOPBACK_CLIENT_HOSTS = frozenset({"127.0.0.1", "::1", "localhost", "testclient"})
 _LEGACY_GENERAL_AGENT_ROUTE_PREFIXES = (
     "/agent",
@@ -207,14 +217,25 @@ def _missionos_client_surface(payload: Mapping[str, Any]) -> str:
 
 
 def _missionos_conversation_agent_timeout_seconds() -> int:
+    provider = llm_provider_label("missionos_chief_agent")
+    if provider.startswith("google_adk_litellm_"):
+        backend_class = "local"
+    elif provider == "disabled":
+        backend_class = "disabled"
+    else:
+        backend_class = "gemini"
+    default_seconds = MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_DEFAULT_SECONDS[
+        backend_class
+    ]
+    max_seconds = MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_MAX_SECONDS[
+        backend_class
+    ]
     value = os.environ.get(MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_ENV)
     try:
-        parsed = int(value) if value is not None else (
-            MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_SECONDS
-        )
+        parsed = int(value) if value is not None else default_seconds
     except ValueError:
-        return MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_SECONDS
-    return max(1, parsed)
+        return default_seconds
+    return min(max(1, parsed), max_seconds)
 
 
 _MISSIONOS_MISSION_DESIGNER_CONTEXTS: dict[str, dict[str, Any]] = {}

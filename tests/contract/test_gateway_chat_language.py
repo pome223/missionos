@@ -18,6 +18,54 @@ from src.runtime.ros2_nav2_dispatch_bridge import (
 JAPANESE_TEXT = re.compile(r"[ぁ-んァ-ン一-龥]")
 
 
+def test_conversation_agent_timeout_depends_on_chief_backend(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.delenv(
+        gateway_server.MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_ENV,
+        raising=False,
+    )
+    monkeypatch.delenv(
+        "MISSIONOS_AGENT_MISSIONOS_CHIEF_AGENT_LLM_BACKEND",
+        raising=False,
+    )
+
+    monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "gemini")
+    assert gateway_server._missionos_conversation_agent_timeout_seconds() == 45
+
+    monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "ollama")
+    assert gateway_server._missionos_conversation_agent_timeout_seconds() == 180
+
+    monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "mlx")
+    assert gateway_server._missionos_conversation_agent_timeout_seconds() == 180
+
+    monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "off")
+    assert gateway_server._missionos_conversation_agent_timeout_seconds() == 12
+
+
+def test_conversation_agent_timeout_uses_backend_cap_and_agent_override(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "gemini")
+    monkeypatch.setenv(
+        gateway_server.MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_ENV,
+        "999",
+    )
+    assert gateway_server._missionos_conversation_agent_timeout_seconds() == 90
+
+    monkeypatch.setenv(
+        "MISSIONOS_AGENT_MISSIONOS_CHIEF_AGENT_LLM_BACKEND",
+        "ollama",
+    )
+    assert gateway_server._missionos_conversation_agent_timeout_seconds() == 300
+
+    monkeypatch.setenv(
+        gateway_server.MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_ENV,
+        "invalid",
+    )
+    assert gateway_server._missionos_conversation_agent_timeout_seconds() == 180
+
+
 def test_turtlebot3_e2e_smoke_uses_explicit_authority_route_hints(
     monkeypatch: Any,
 ) -> None:
