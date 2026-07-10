@@ -45,7 +45,7 @@ MissionOS>
 │ -> 秋葉原駅(日比谷線), Kanda-Hirakawacho, Kanda-Sakumachō, Chiyoda, Tokyo,   │
 │ 101-0025, Japan, wind=1.306m/s, payload=0.5kg. I did not approve, prepare    │
 │ SITL, or dispatch.                                                           │
-│ Approve this plan? Type `approve` to approve it, or describe what you want   │
+│ Approve this plan? Type `/approve` to approve it, or describe what you want  │
 │ changed.                                                                     │
 │ route=mission_designer_plan;                                                 │
 │ source=llm_dialogue_router_keyword_sensitive_intent_corrected_mixed_execute_ │

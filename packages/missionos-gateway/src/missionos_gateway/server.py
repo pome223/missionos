@@ -26,10 +26,10 @@ def _fixture_task(task_id: str = FIXTURE_TASK_ID) -> dict[str, Any]:
             "task_id": task_id,
             "kind": "missionos_fixture_runtime",
             "title": "Fixture delivery mission",
-            "status": "completed",
+            "status": "fixture_only",
             "metadata": {
                 "missionos_fixture": True,
-                "missionos_auto_mission_gui_dispatch_status": "fixture_completed",
+                "missionos_auto_mission_gui_dispatch_status": "fixture_only",
                 "actual_sitl_flight_evidence_observed": False,
                 "physical_execution_invoked": False,
             },
@@ -75,7 +75,7 @@ def _fixture_task(task_id: str = FIXTURE_TASK_ID) -> dict[str, Any]:
                     ],
                 },
                 "missionos_auto_mission_gui_dispatch_running_receipt": {
-                    "dispatch_status": "fixture_completed",
+                    "dispatch_status": "fixture_only",
                     "artifact_root": "examples/fixture_missions",
                 },
             },
@@ -197,14 +197,38 @@ class MissionOSFixtureHandler(BaseHTTPRequestHandler):
                 }
             )
             return
+        if parsed.path == "/px4-gazebo/mission-scenarios/approve-sitl-execution":
+            task_id = payload.get("task_id") or FIXTURE_TASK_ID
+            self._send_json(
+                {
+                    "execution_operator_approval": {
+                        "schema_version": (
+                            "missionos_sitl_execution_operator_approval.fixture.v1"
+                        ),
+                        "approval_id": f"fixture_execution_approval_{task_id}",
+                        "task_id": task_id,
+                        "approval_status": "fixture_only_unconsumed",
+                        "operator_approved": False,
+                        "fixture_only": True,
+                    },
+                    "summary": {
+                        "task_id": task_id,
+                        "approval_status": "fixture_only_unconsumed",
+                        "live_execution_authorized": False,
+                    },
+                }
+            )
+            return
         if parsed.path == "/px4-gazebo/mission-scenarios/execute-sitl":
             self._send_json(
                 {
                     "summary": {
                         "task_id": payload.get("task_id") or FIXTURE_TASK_ID,
-                        "task_status": "completed",
-                        "upload_status": "fixture_uploaded",
-                        "live_flight_status": "fixture_completed_no_live_flight",
+                        "task_status": "fixture_only",
+                        "upload_status": "fixture_not_uploaded",
+                        "live_flight_status": "fixture_only_no_live_flight",
+                        "dispatch_request_sent": False,
+                        "command_ack_observed": False,
                         "dropoff_verified": False,
                         "delivery_completion_claimed": False,
                         "physical_execution_invoked": False,
@@ -272,12 +296,14 @@ class MissionOSFixtureHandler(BaseHTTPRequestHandler):
         if parsed.path == "/px4-gazebo/mission-scenarios/recovery-dispatch":
             self._send_json(
                 {
-                    "response_status": "fixture_dispatched",
+                    "response_status": "fixture_only",
                     "summary": {
-                        "dispatch_status": "fixture_dispatched",
+                        "dispatch_status": "fixture_only",
                         "recovery_action": payload.get("recovery_action"),
                         "recovery_parameters": payload.get("recovery_parameters") or {},
-                        "command_ack_result_name": "FIXTURE_ACCEPTED",
+                        "dispatch_request_sent": False,
+                        "command_ack_observed": False,
+                        "command_ack_result_name": "NOT_REQUESTED",
                         "delivery_completion_claimed": False,
                         "physical_execution_invoked": False,
                     },

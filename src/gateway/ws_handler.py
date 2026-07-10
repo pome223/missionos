@@ -31,10 +31,42 @@ def build_websocket_router(server: "GatewayServer") -> APIRouter:
         session_id: Optional[str] = Query(default=None),
         token: Optional[str] = Query(default=None),
     ):
+        if not server.settings.gateway_legacy_agent_routes_enabled:
+            await websocket.close(
+                code=4404,
+                reason="Legacy general-agent WebSocket is disabled",
+            )
+            return
+        allowed_origins = {
+            item.strip()
+            for item in server.settings.gateway_cors_allowed_origins.split(",")
+            if item.strip()
+        }
+        origin = str(websocket.headers.get("Origin") or "").strip()
+        if origin and origin not in allowed_origins:
+            await websocket.close(code=4403, reason="Browser origin is not allowed")
+            return
+        if origin and not server.settings.gateway_api_key:
+            await websocket.close(
+                code=4401,
+                reason="Gateway API key is required for browser requests",
+            )
+            return
         if server.settings.gateway_api_key:
             if token != server.settings.gateway_api_key:
                 await websocket.close(code=4401, reason="Unauthorized")
                 return
+        elif websocket.client is None or websocket.client.host not in {
+            "127.0.0.1",
+            "::1",
+            "localhost",
+            "testclient",
+        }:
+            await websocket.close(
+                code=4401,
+                reason="Gateway authentication is required for remote requests",
+            )
+            return
         try:
             user_id = server._resolve_websocket_user_id(
                 websocket,

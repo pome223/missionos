@@ -40,6 +40,7 @@ from src.runtime.runtime_claim_evidence import (
     RuntimeClaimValidationError,
     normalize_runtime_claims,
     runtime_claim_validation_summary,
+    validate_runtime_invocation_evidence,
 )
 from src.runtime.missionos_sitl_dispatch_runtime import (
     WIND_FEED_FORWARD_MPS_ENV,
@@ -1440,17 +1441,16 @@ def _form1_runtime_delta_payload(payload: Mapping[str, Any]) -> Mapping[str, Any
 
 
 def _runtime_evidence_complete(evidence: Mapping[str, Any]) -> bool:
+    try:
+        validated = validate_runtime_invocation_evidence(evidence)
+    except RuntimeClaimValidationError:
+        return False
     return bool(
-        evidence.get("schema_version") == "runtime_invocation_evidence.v1"
-        and evidence.get("invocation_kind") == "subprocess"
-        and evidence.get("invocation_target")
-        and isinstance(evidence.get("process_pid"), int)
-        and not isinstance(evidence.get("process_pid"), bool)
-        and evidence.get("invocation_exit_code") == 0
-        and isinstance(evidence.get("invocation_stdout_sha256"), str)
-        and len(str(evidence.get("invocation_stdout_sha256"))) == 64
-        and isinstance(evidence.get("invocation_stderr_sha256"), str)
-        and len(str(evidence.get("invocation_stderr_sha256"))) == 64
+        validated.get("invocation_kind") == "subprocess"
+        and isinstance(validated.get("process_pid"), int)
+        and not isinstance(validated.get("process_pid"), bool)
+        and validated.get("invocation_exit_code") == 0
+        and validated.get("invocation_output_hashes_verified") is True
         and evidence.get("runtime_summary_path")
     )
 

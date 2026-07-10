@@ -175,6 +175,23 @@ MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_ENV = (
     "MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_SECONDS"
 )
 MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_SECONDS = 12
+_LOOPBACK_CLIENT_HOSTS = frozenset({"127.0.0.1", "::1", "localhost", "testclient"})
+_LEGACY_GENERAL_AGENT_ROUTE_PREFIXES = (
+    "/agent",
+    "/control-loop",
+    "/tools",
+    "/skills",
+    "/runtime",
+    "/sessions",
+    "/transcript",
+    "/memory",
+    "/subagents",
+    "/cron",
+)
+
+
+def _route_matches_prefix(path: str, prefix: str) -> bool:
+    return path == prefix or path.startswith(prefix + "/")
 
 
 def _missionos_instruction_text(payload: Mapping[str, Any]) -> str:
@@ -1075,6 +1092,15 @@ def _missionos_instruction_has_route_expression(text: str) -> bool:
 
 
 def _missionos_instruction_intent(text: str) -> str:
+    """Classify non-authority conversation intents from free-form text.
+
+    Approval, rejection, and execution are deliberately excluded.  Those
+    authority-bearing intents are accepted only through an explicit operator
+    command route hint (for example the CLI's ``/approve`` and ``/run``
+    commands).  Natural-language keyword matching cannot reliably distinguish
+    commands from negation, questions, quotations, or policy discussion.
+    """
+
     lower = text.lower()
     if any(token in text for token in ("状況", "どういう", "なにが", "何が", "状態", "いま", "今")) or any(
         token in lower for token in ("status", "what happened", "explain")
@@ -1084,22 +1110,10 @@ def _missionos_instruction_intent(text: str) -> str:
         token in lower for token in ("can you", "can't", "cannot")
     ):
         return "status"
-    if any(token in text for token in ("承認", "進めていい", "進めて")) or any(
-        token in lower for token in ("approve", "approved")
-    ):
-        return "approve"
-    if any(token in text for token in ("拒否", "却下", "止め")) or any(
-        token in lower for token in ("reject", "deny", "stop")
-    ):
-        return "reject"
     if any(token in text for token in ("修正", "直して", "やり直")) or any(
         token in lower for token in ("revision", "revise", "change")
     ):
         return "revision"
-    if any(token in text for token in ("実行", "走らせ", "開始")) or any(
-        token in lower for token in ("run", "execute")
-    ):
-        return "execute"
     if any(token in text for token in ("修復", "診断", "原因")) or any(
         token in lower for token in ("repair", "diagnose", "debug")
     ):
@@ -1222,7 +1236,7 @@ def _missionos_mission_designer_context_message(context: Mapping[str, Any]) -> s
             )
         return (
             f"The current {robot_label} Nav2 mission proposal is waiting for human approval: {objective}. "
-            "Type `approve` to approve one bounded Nav2 simulator leg, or ask me to revise it. "
+            "Type `/approve` to approve one bounded Nav2 simulator leg, or ask me to revise it. "
             f"{robot_label} can prove motion for this leg only; cleaning and payload claims are blocked."
         )
     objective = str(
@@ -1238,13 +1252,13 @@ def _missionos_mission_designer_context_message(context: Mapping[str, Any]) -> s
     if isinstance(context.get("bounded_simulation_request"), Mapping):
         return (
             f"The current Flight Scenario Designer proposal is approved for a bounded simulation request: {objective}. "
-            "Type `prepare` in chat, or run `missionos run`, if you want me to prepare the SITL execution request. "
+            "Type `/run` to prepare the SITL execution request. "
             "I will still not run Gazebo, upload, dispatch, or count progress from that preparation step alone."
         )
     if _missionos_mission_designer_has_proposal(context):
         return (
             f"The current Flight Scenario Designer proposal is waiting for human approval: {objective}. "
-            "Type `approve` to approve this bounded simulation request, or ask me to revise it."
+            "Type `/approve` to approve this bounded simulation request, or ask me to revise it."
         )
     return ""
 
@@ -1784,7 +1798,13 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
     action = build_form2a_action_consumption_summary()
 
     missionos_state = _build_missionos_router_state(selection, review, action)
-    keyword_intent = _missionos_instruction_intent(text)
+    explicit_sensitive_intent = (
+        route_hint if route_hint in _SENSITIVE_INTENTS else ""
+    )
+    keyword_intent = (
+        explicit_sensitive_intent
+        or _missionos_instruction_intent(text)
+    )
     agent_runtime_result = run_missionos_agent_runtime(
         utterance=text,
         missionos_state=missionos_state,
@@ -1873,10 +1893,12 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
             enriched_instruction = text
             routing_source = "keyword_fallback"
 
-    if keyword_intent in _SENSITIVE_INTENTS and intent != keyword_intent:
-        intent = keyword_intent
+    if explicit_sensitive_intent and intent != explicit_sensitive_intent:
+        intent = explicit_sensitive_intent
         enriched_instruction = text
-        routing_source = f"{routing_source}_keyword_sensitive_intent_corrected"
+        routing_source = (
+            f"{routing_source}_explicit_operator_command_confirmed"
+        )
 
     if (
         keyword_intent == "execute"
@@ -1979,13 +2001,13 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
                 message = (
                     f"{context_message} "
                     f"I understood you may want to {llm_proposed}, but that wording was not explicit enough for a sensitive action. "
-                    "Please use explicit action words such as `approve`, `reject`, or `execute`."
+                    "Please use `/approve`, `/reject`, or `/run` for an authority-bearing action."
                 )
             else:
                 message = (
                     f"I understood you may want to {llm_proposed}, "
                     "but I need an explicit instruction to proceed with that action. "
-                    "Please use a direct phrase such as `approve`, `reject`, or `execute`."
+                    "Please use `/approve`, `/reject`, or `/run` for an authority-bearing action."
                 )
         elif intent == "status":
             context_message = _missionos_mission_designer_context_message(mission_designer_context)
@@ -2025,7 +2047,7 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
                 if client_surface == "chat":
                     message = (
                         f"Approval recorded for the {robot_label} home mission leg. "
-                        "I have not dispatched or counted progress. Type `run` to send the "
+                        "I have not dispatched or counted progress. Type `/run` to send the "
                         "bounded Nav2 goal through the opt-in ROS2 bridge."
                     )
             elif _missionos_mission_designer_has_proposal(mission_designer_context):
@@ -2048,7 +2070,7 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
                 if client_surface == "chat":
                     message = (
                         "Approval recorded. I have not prepared SITL, dispatched, or counted progress. "
-                        "Prepare the SITL execution request? Type `prepare` to continue."
+                        "Prepare the SITL execution request? Type `/run` to continue."
                     )
             elif selection.get("summary_status") == "form2a_response_selected":
                 result = run_form2a_operator_review_approve(
@@ -2239,7 +2261,7 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
                 robot_label = str(turtlebot_plan.get("robot_label") or "TurtleBot3")
                 message = (
                     f"This {robot_label} home mission can run only after explicit approval. "
-                    "Type `approve` to approve one bounded Nav2 simulator leg."
+                    "Type `/approve` to approve one bounded Nav2 simulator leg."
                 )
             elif mission_designer_context.get("sitl_execution_request"):
                 result = mission_designer_context
@@ -2264,12 +2286,12 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
             elif _missionos_mission_designer_has_proposal(mission_designer_context):
                 message = (
                     "I can prepare this Flight Scenario Designer proposal only after you explicitly approve it. "
-                    "Please say `approve` if you want to approve this bounded simulation request."
+                    "Please use `/approve` if you want to approve this bounded simulation request."
                 )
                 if client_surface == "chat":
                     message = (
                         "This proposal can become a SITL execution request only after explicit approval. "
-                        "Type `approve` to approve it."
+                        "Type `/approve` to approve it."
                     )
             elif _missionos_review_approved(review):
                 result = run_form2a_action_consumption()
@@ -2447,7 +2469,7 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
                     )
                 else:
                     next_step = (
-                        "Approve this plan? Type `approve` to approve it, or describe "
+                        "Approve this plan? Type `/approve` to approve it, or describe "
                         "what you want changed."
                         if client_surface == "chat"
                         else (
@@ -2494,7 +2516,7 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
                     f"{robot_label} can prove short indoor motion through Nav2 + odom; it cannot prove "
                     "cleaning, payload delivery, a whole-home loop, or physical execution in this slice."
                     f"{judgment_note}{blocked_note} "
-                    "Approve this plan? Type `approve` to approve it, or describe what you want changed."
+                    "Approve this plan? Type `/approve` to approve it, or describe what you want changed."
                 )
             elif _missionos_agent_invocation_present(
                 agent_runtime_result,
@@ -2608,6 +2630,7 @@ from src.runtime.px4_gazebo_mission_scenario_designer import (
     run_px4_gazebo_mission_scenario_designer,
 )
 from src.runtime.px4_gazebo_mission_designer_sitl_runner import (
+    MISSIONOS_SITL_EXECUTION_OPERATOR_APPROVAL_SCHEMA_VERSION,
     PX4GazeboMissionDesignerSITLRunnerError,
     mission_designer_sitl_execution_opted_in,
     run_px4_gazebo_mission_designer_sitl_execution,
@@ -3525,10 +3548,15 @@ class GatewayServer:
             lifespan=self._lifespan,
         )
 
+        allowed_cors_origins = [
+            item.strip()
+            for item in self.settings.gateway_cors_allowed_origins.split(",")
+            if item.strip()
+        ]
         self.app.add_middleware(
             CORSMiddleware,
-            allow_origins=["*"],
-            allow_credentials=True,
+            allow_origins=allowed_cors_origins,
+            allow_credentials=False,
             allow_methods=["*"],
             allow_headers=["*"],
         )
@@ -3536,15 +3564,40 @@ class GatewayServer:
         @self.app.middleware("http")
         async def auth_middleware(request: Request, call_next):
             api_key = self.settings.gateway_api_key
-            if not api_key:
+            path = request.url.path
+            origin = str(request.headers.get("Origin") or "").strip()
+            if origin:
+                if origin not in allowed_cors_origins:
+                    return JSONResponse(
+                        {"detail": "Browser origin is not allowed"},
+                        status_code=403,
+                    )
+                if not api_key:
+                    return JSONResponse(
+                        {"detail": "Gateway API key is required for browser requests"},
+                        status_code=401,
+                    )
+            if (
+                not self.settings.gateway_legacy_agent_routes_enabled
+                and any(
+                    _route_matches_prefix(path, prefix)
+                    for prefix in _LEGACY_GENERAL_AGENT_ROUTE_PREFIXES
+                )
+            ):
+                return JSONResponse({"detail": "Not Found"}, status_code=404)
+            if path in {"/", "/health", "/protocol"}:
                 return await call_next(request)
-            public_prefixes = ("/health", "/protocol")
-            if any(request.url.path.startswith(p) for p in public_prefixes) or request.url.path == "/":
+            if not api_key:
+                client_host = request.client.host if request.client is not None else ""
+                if client_host not in _LOOPBACK_CLIENT_HOSTS:
+                    return JSONResponse(
+                        {"detail": "Gateway authentication is required for remote requests"},
+                        status_code=401,
+                    )
                 return await call_next(request)
             token = (
                 request.headers.get("X-API-Key")
                 or request.headers.get("Authorization", "").removeprefix("Bearer ")
-                or request.query_params.get("token")
             )
             if token != api_key:
                 return JSONResponse({"detail": "Unauthorized"}, status_code=401)
@@ -5429,6 +5482,7 @@ class GatewayServer:
 
         @self.app.post("/missionos/real-hardware-arm-disarm-dispatch/run")
         async def missionos_real_hardware_arm_disarm_dispatch_run(
+            request: Request,
             payload: Dict[str, Any] | None = Body(default=None),
         ):
             body = payload or {}
@@ -5457,6 +5511,11 @@ class GatewayServer:
                 )
             except (PX4RealHardwareActuatorError, ValueError) as exc:
                 raise HTTPException(status_code=400, detail=str(exc)) from exc
+            approval_actor = self._resolve_http_user_id(
+                request,
+                None,
+                default_user_id="loopback_local_operator",
+            )
 
             def _run() -> Dict[str, Any]:
                 return run_real_hardware_arm_disarm_dispatch(
@@ -5472,6 +5531,7 @@ class GatewayServer:
                     ),
                     actuator_approval=actuator_approval,
                     operator_approved=body.get("operator_approved") is True,
+                    approval_actor=approval_actor,
                     bench_context=(
                         body.get("bench_context")
                         if isinstance(body.get("bench_context"), dict)
@@ -6429,8 +6489,11 @@ class GatewayServer:
                 },
             )
 
-        @self.app.post("/px4-gazebo/mission-scenarios/execute-sitl")
-        async def px4_gazebo_mission_scenario_execute_sitl(
+        @self.app.post(
+            "/px4-gazebo/mission-scenarios/approve-sitl-execution"
+        )
+        async def px4_gazebo_mission_scenario_approve_sitl_execution(
+            request: Request,
             payload: Dict[str, Any] | None = Body(default=None),
         ):
             body = payload or {}
@@ -6445,6 +6508,136 @@ class GatewayServer:
             task = self.task_store.get(task_id)
             if task is None:
                 raise HTTPException(status_code=404, detail="task not found")
+            if task.get("status") != "pending":
+                raise HTTPException(
+                    status_code=409,
+                    detail=(
+                        "SITL execution approval requires a pending prepared task"
+                    ),
+                )
+            artifacts = task.get("artifacts") or {}
+            artifacts = artifacts if isinstance(artifacts, dict) else {}
+            execution_request = artifacts.get(
+                "px4_gazebo_mission_designer_sitl_execution_request"
+            )
+            scenario_approval = artifacts.get(
+                "px4_gazebo_mission_scenario_approval"
+            )
+            if not isinstance(execution_request, Mapping):
+                raise HTTPException(
+                    status_code=409,
+                    detail="stored SITL execution request is required",
+                )
+            if not isinstance(scenario_approval, Mapping):
+                raise HTTPException(
+                    status_code=409,
+                    detail="stored scenario approval is required",
+                )
+            if scenario_approval.get("operator_approved") is not True:
+                raise HTTPException(
+                    status_code=409,
+                    detail="stored scenario approval is not operator-approved",
+                )
+            execution_request_id = str(
+                execution_request.get("execution_request_id") or ""
+            ).strip()
+            scenario_approval_id = str(
+                scenario_approval.get("approval_id") or ""
+            ).strip()
+            expected_scenario_approval_ref = (
+                "px4_gazebo_mission_scenario_approval:"
+                + scenario_approval_id
+            )
+            if (
+                not execution_request_id
+                or not scenario_approval_id
+                or execution_request.get("approval_ref")
+                != expected_scenario_approval_ref
+            ):
+                raise HTTPException(
+                    status_code=409,
+                    detail="stored execution request and scenario approval are not bound",
+                )
+            approval_id = (
+                "missionos_sitl_execution_operator_approval_"
+                + uuid.uuid4().hex[:12]
+            )
+            approval_actor = self._resolve_http_user_id(
+                request,
+                None,
+                default_user_id="loopback_local_operator",
+            )
+            execution_operator_approval = {
+                "schema_version": (
+                    MISSIONOS_SITL_EXECUTION_OPERATOR_APPROVAL_SCHEMA_VERSION
+                ),
+                "approval_id": approval_id,
+                "task_id": task_id,
+                "execution_request_ref": (
+                    "px4_gazebo_mission_designer_sitl_execution_request:"
+                    + execution_request_id
+                ),
+                "scenario_approval_ref": expected_scenario_approval_ref,
+                "approval_actor": approval_actor,
+                "approved_at": datetime.now(timezone.utc).isoformat(),
+                "operator_approved": True,
+                "approval_status": "issued_unconsumed",
+                "consumed_in_runtime": False,
+                "approval_source": "authenticated_gateway_request",
+            }
+            task = self.task_store.update(
+                task_id,
+                artifacts={
+                    "missionos_sitl_execution_operator_approvals": {
+                        approval_id: execution_operator_approval,
+                    }
+                },
+                metadata={
+                    "execution_operator_approval_recorded": True,
+                    "execution_operator_approval_id": approval_id,
+                },
+            )
+            if task is None:
+                raise HTTPException(
+                    status_code=409,
+                    detail="task disappeared while recording execution approval",
+                )
+            return {
+                "execution_operator_approval": execution_operator_approval,
+                "task": task,
+                "summary": {
+                    "task_id": task_id,
+                    "execution_approval_id": approval_id,
+                    "approval_status": "issued_unconsumed",
+                    "execution_invoked": False,
+                    "progress_counted": False,
+                },
+            }
+
+        @self.app.post("/px4-gazebo/mission-scenarios/execute-sitl")
+        async def px4_gazebo_mission_scenario_execute_sitl(
+            payload: Dict[str, Any] | None = Body(default=None),
+        ):
+            body = payload or {}
+            task_id = str(body.get("task_id") or "").strip()
+            if not task_id:
+                raise HTTPException(status_code=400, detail="task_id is required")
+            execution_approval_id = str(
+                body.get("execution_approval_id") or ""
+            ).strip()
+            if not execution_approval_id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="execution_approval_id is required",
+                )
+            task = self.task_store.get(task_id)
+            if task is None:
+                raise HTTPException(status_code=404, detail="task not found")
+            if task.get("status") != "pending":
+                raise HTTPException(
+                    status_code=409,
+                    detail="SITL execution requires a pending prepared task",
+                )
             artifacts = task.get("artifacts") or {}
             artifacts = artifacts if isinstance(artifacts, dict) else {}
             metadata = task.get("metadata") or {}
@@ -6824,6 +7017,7 @@ class GatewayServer:
                     run_px4_gazebo_mission_designer_sitl_execution,
                     task_id,
                     explicit_execution_approval=True,
+                    execution_operator_approval_id=execution_approval_id,
                     allow_sitl_execution=opted_in,
                 )
             except (PX4GazeboMissionDesignerSITLRunnerError, ValidationError) as exc:

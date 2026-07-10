@@ -76,6 +76,9 @@ CHAT_SLASH_COMMANDS = (
 CONVERSATION_ROUTE = "/missionos/autonomy-conversation/run"
 RECOVERY_DISPATCH_ROUTE = "/px4-gazebo/mission-scenarios/recovery-dispatch"
 SITL_START_ROUTE = "/px4-gazebo/mission-scenarios/start-sitl"
+SITL_EXECUTION_APPROVAL_ROUTE = (
+    "/px4-gazebo/mission-scenarios/approve-sitl-execution"
+)
 SITL_EXECUTION_ROUTE = "/px4-gazebo/mission-scenarios/execute-sitl"
 
 INTENT_INSTRUCTIONS = {
@@ -207,6 +210,7 @@ def _safe_get(payload: dict[str, Any], *keys: str) -> Any:
 class MissionOSGatewayClient:
     base_url: str
     timeout: float = 45.0
+    api_key: str | None = None
 
     def _request(
         self,
@@ -217,6 +221,14 @@ class MissionOSGatewayClient:
         ok_status_codes: set[int] | None = None,
         **kwargs: Any,
     ) -> dict[str, Any]:
+        headers = dict(kwargs.pop("headers", {}) or {})
+        if self.api_key and not any(
+            key.lower() in {"x-api-key", "authorization"}
+            for key in headers
+        ):
+            headers["X-API-Key"] = self.api_key
+        if headers:
+            kwargs["headers"] = headers
         try:
             with httpx.Client(timeout=timeout if timeout is not None else self.timeout) as client:
                 response = client.request(method, _join_url(self.base_url, path), **kwargs)
@@ -282,12 +294,31 @@ class MissionOSGatewayClient:
         )
 
     def execute_sitl(self, *, task_id: str, live_flight_mode: bool) -> dict[str, Any]:
+        approval = self._request(
+            "POST",
+            SITL_EXECUTION_APPROVAL_ROUTE,
+            json={
+                "task_id": task_id,
+                "explicit_execution_approval": True,
+            },
+        )
+        approval_artifact = approval.get("execution_operator_approval")
+        approval_artifact = (
+            approval_artifact if isinstance(approval_artifact, dict) else {}
+        )
+        execution_approval_id = str(
+            approval_artifact.get("approval_id") or ""
+        ).strip()
+        if not execution_approval_id:
+            raise click.ClickException(
+                "Gateway did not return a stored SITL execution approval id"
+            )
         return self._request(
             "POST",
             SITL_EXECUTION_ROUTE,
             json={
                 "task_id": task_id,
-                "explicit_execution_approval": True,
+                "execution_approval_id": execution_approval_id,
                 "live_flight_mode": live_flight_mode,
             },
             timeout=max(self.timeout, SITL_DISPATCH_TIMEOUT),
@@ -303,7 +334,13 @@ class MissionOSGatewayClient:
 
 
 def make_client(base_url: str, timeout: float) -> MissionOSGatewayClient:
-    return MissionOSGatewayClient(base_url=base_url, timeout=timeout)
+    dotenv_values = _dotenv_process_values()
+    api_key = os.getenv("GATEWAY_API_KEY") or dotenv_values.get("GATEWAY_API_KEY")
+    return MissionOSGatewayClient(
+        base_url=base_url,
+        timeout=timeout,
+        api_key=api_key or None,
+    )
 
 
 def _gateway_host_port(base_url: str) -> tuple[str, int]:

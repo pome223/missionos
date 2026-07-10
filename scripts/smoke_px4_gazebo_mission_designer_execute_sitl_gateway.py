@@ -128,11 +128,21 @@ async def _main() -> dict[str, Any]:
                         "explicit_execution_approval": False,
                     },
                 )
+                execution_approval = await _post_json(
+                    client,
+                    "/px4-gazebo/mission-scenarios/approve-sitl-execution",
+                    {
+                        "task_id": prepared["summary"]["task_id"],
+                        "explicit_execution_approval": True,
+                    },
+                )
                 blocked = await client.post(
                     "/px4-gazebo/mission-scenarios/execute-sitl",
                     json={
                         "task_id": prepared["summary"]["task_id"],
-                        "explicit_execution_approval": True,
+                        "execution_approval_id": execution_approval[
+                            "execution_operator_approval"
+                        ]["approval_id"],
                     },
                 )
                 if blocked.status_code != 409:
@@ -147,7 +157,7 @@ async def _main() -> dict[str, Any]:
                 stored = task_response.json()["task"]
 
             if missing_approval.status_code != 400:
-                raise RuntimeError("missing explicit approval was not rejected")
+                raise RuntimeError("missing stored execution approval was not rejected")
             summary = blocked_payload["summary"]
             receipt = blocked_payload["px4_gazebo_sitl_mission_upload_receipt"]
             execution_result = blocked_payload[
@@ -218,8 +228,8 @@ async def _main() -> dict[str, Any]:
                 "receipt_persisted": True,
                 "execution_result_persisted": True,
                 "existing_sitl_upload_receipt_builder_used": True,
-                "explicit_approval_required": True,
-                "missing_explicit_approval_rejected": True,
+                "stored_execution_approval_required": True,
+                "missing_stored_execution_approval_rejected": True,
                 "actual_sitl_mission_upload_observed": execution_result[
                     "actual_sitl_mission_upload_observed"
                 ],

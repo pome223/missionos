@@ -157,6 +157,7 @@ def test_chat_approve_and_prepare_messages_are_english(monkeypatch: Any) -> None
     approval = gateway_server.run_missionos_autonomy_conversation(
         {
             "operator_instruction": "approve",
+            "missionos_route_hint": "approve",
             "missionos_client_surface": "chat",
             "session_id": session_id,
             "mission_designer_context": plan_context,
@@ -191,6 +192,7 @@ def test_chat_approve_and_prepare_messages_are_english(monkeypatch: Any) -> None
     prepared = gateway_server.run_missionos_autonomy_conversation(
         {
             "operator_instruction": "execute",
+            "missionos_route_hint": "execute",
             "missionos_client_surface": "chat",
             "session_id": session_id,
             "mission_designer_context": approval["mission_designer"],
@@ -200,6 +202,57 @@ def test_chat_approve_and_prepare_messages_are_english(monkeypatch: Any) -> None
     assert prepared["routed_action"] == "execute"
     assert "SITL execution request prepared" in prepared["message"]
     assert not JAPANESE_TEXT.search(prepared["message"])
+
+
+def test_free_form_sensitive_words_cannot_create_authority(monkeypatch: Any) -> None:
+    monkeypatch.setattr(
+        gateway_server,
+        "run_missionos_agent_runtime",
+        lambda **kwargs: {
+            "runtime_status": "proposal_guardrail_passed",
+            "proposal": {
+                "intent": (
+                    "execute"
+                    if "実行" in str(kwargs.get("utterance") or "")
+                    else "approve"
+                ),
+                "operator_instruction": kwargs.get("utterance"),
+                "specialist_agent": "missionos_response_planner_agent",
+            },
+            "agent_invocations": [],
+            "monitoring_observations": [],
+        },
+    )
+    monkeypatch.setattr(gateway_server, "build_form2a_response_selection_summary", lambda: {})
+    monkeypatch.setattr(gateway_server, "build_form2a_operator_review_summary", lambda: {})
+    monkeypatch.setattr(gateway_server, "build_form2a_action_consumption_summary", lambda: {})
+    monkeypatch.setattr(gateway_server, "build_llm_repair_planner_summary", lambda: {})
+    monkeypatch.setattr(
+        gateway_server,
+        "approve_px4_gazebo_mission_scenario_for_bounded_simulation",
+        lambda **_kwargs: (_ for _ in ()).throw(
+            AssertionError("free-form text must not reach approval")
+        ),
+    )
+
+    plan_context = _registered_plan_context("negative-sensitive-intent")
+    for instruction in (
+        "まだ承認しないで",
+        "実行しないでください",
+        "please don't approve this",
+        "承認って何ですか？",
+    ):
+        response = gateway_server.run_missionos_autonomy_conversation(
+            {
+                "operator_instruction": instruction,
+                "missionos_client_surface": "chat",
+                "session_id": "negative-sensitive-intent",
+                "mission_designer_context": plan_context,
+            }
+        )
+
+        assert response["routed_action"] == "clarification"
+        assert response["progress_counted"] is False
 
 
 def test_chat_turtlebot3_home_mission_reaches_nav2_bridge_without_false_claims(
@@ -237,6 +290,7 @@ def test_chat_turtlebot3_home_mission_reaches_nav2_bridge_without_false_claims(
     approved = gateway_server.run_missionos_autonomy_conversation(
         {
             "operator_instruction": "approve",
+            "missionos_route_hint": "approve",
             "missionos_client_surface": "chat",
             "session_id": session_id,
             "mission_designer_context": plan_context,
@@ -251,6 +305,7 @@ def test_chat_turtlebot3_home_mission_reaches_nav2_bridge_without_false_claims(
     executed = gateway_server.run_missionos_autonomy_conversation(
         {
             "operator_instruction": "run",
+            "missionos_route_hint": "execute",
             "missionos_client_surface": "chat",
             "session_id": session_id,
             "mission_designer_context": approved["mission_designer"],
@@ -464,6 +519,7 @@ def test_chat_turtlebot3_low_battery_blocks_dispatch(
     approved = gateway_server.run_missionos_autonomy_conversation(
         {
             "operator_instruction": "approve",
+            "missionos_route_hint": "approve",
             "missionos_client_surface": "chat",
             "session_id": session_id,
             "mission_designer_context": plan["mission_designer"],
@@ -472,6 +528,7 @@ def test_chat_turtlebot3_low_battery_blocks_dispatch(
     executed = gateway_server.run_missionos_autonomy_conversation(
         {
             "operator_instruction": "run",
+            "missionos_route_hint": "execute",
             "missionos_client_surface": "chat",
             "session_id": session_id,
             "mission_designer_context": approved["mission_designer"],
@@ -513,6 +570,7 @@ def test_chat_turtlebot3_obstacle_mission_requires_avoidance_observation(
     approved = gateway_server.run_missionos_autonomy_conversation(
         {
             "operator_instruction": "approve",
+            "missionos_route_hint": "approve",
             "missionos_client_surface": "chat",
             "session_id": session_id,
             "mission_designer_context": plan["mission_designer"],
@@ -521,6 +579,7 @@ def test_chat_turtlebot3_obstacle_mission_requires_avoidance_observation(
     executed = gateway_server.run_missionos_autonomy_conversation(
         {
             "operator_instruction": "run",
+            "missionos_route_hint": "execute",
             "missionos_client_surface": "chat",
             "session_id": session_id,
             "mission_designer_context": approved["mission_designer"],
@@ -584,12 +643,13 @@ def test_chat_status_prompts_are_english(monkeypatch: Any) -> None:
         }
     )
 
-    assert "Type `approve`" in waiting_for_approval["message"]
+    assert "Type `/approve`" in waiting_for_approval["message"]
     assert not JAPANESE_TEXT.search(waiting_for_approval["message"])
 
     approved = gateway_server.run_missionos_autonomy_conversation(
         {
             "operator_instruction": "approve",
+            "missionos_route_hint": "approve",
             "missionos_client_surface": "chat",
             "session_id": session_id,
             "mission_designer_context": plan_context,
@@ -604,7 +664,7 @@ def test_chat_status_prompts_are_english(monkeypatch: Any) -> None:
         }
     )
 
-    assert "Type `prepare`" in waiting_for_prepare["message"]
+    assert "Type `/run`" in waiting_for_prepare["message"]
     assert not JAPANESE_TEXT.search(waiting_for_prepare["message"])
 
 

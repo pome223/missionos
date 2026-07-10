@@ -7,7 +7,7 @@ def test_fixture_job_status_does_not_claim_actual_sitl_flight() -> None:
 
     rendered = "\n".join(lines)
 
-    assert "Fixture Complete: no live SITL flight was invoked" in rendered
+    assert "Fixture Only: no dispatch or live SITL flight was invoked" in rendered
     assert "Route: [----------------------------] 0.0%" in rendered
     assert "Distance: 0 m" in rendered
     assert "actual_sitl_flight=False" in rendered

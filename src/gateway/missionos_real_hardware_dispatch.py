@@ -67,6 +67,7 @@ def run_real_hardware_arm_disarm_dispatch(
     authority_table_state_path: Path | str,
     actuator_approval: PX4RealHardwareActuatorApproval,
     operator_approved: bool,
+    approval_actor: str,
     bench_context: Mapping[str, Any] | None = None,
     operator_instruction: Mapping[str, Any] | None = None,
     serial_device: str | None = None,
@@ -133,6 +134,7 @@ def run_real_hardware_arm_disarm_dispatch(
         "approval_id": approval_id,
         "session_id": session_id,
         "operator_approved": bool(operator_approved),
+        "approval_actor": approval_actor,
         "automatic_dispatch_executed": False,
     }
     deterministic_gate_record = {
@@ -154,6 +156,7 @@ def run_real_hardware_arm_disarm_dispatch(
         task_id=task_id,
         subject_id=subject_id,
         approval=actuator_approval,
+        approval_actor=approval_actor,
         dispatch_validation=dispatch_validation,
         llm_response_proposal=proposal,
         serial_device=serial_device,
@@ -182,6 +185,7 @@ def run_real_hardware_arm_disarm_dispatch(
             "approval_id": approval_id,
             "gate_result_id": gate_result_id,
             "operator_approved": bool(operator_approved),
+            "approval_actor": approval_actor,
             "validation_status": dispatch_validation.get("validation_status"),
             "backend_target": dispatch_validation.get("backend_target"),
             "dispatch_replay_detected": dispatch_validation.get(
