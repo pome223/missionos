@@ -1,0 +1,71 @@
+name: MissionOS contract checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - develop
+      - main
+
+concurrency:
+  group: missionos-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install MissionOS and development dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]" \
+            -e packages/missionos-cli \
+            -e packages/missionos-gateway
+
+      - name: Lint maintained authority and Gateway boundaries
+        run: |
+          python -m ruff check \
+            packages/missionos-cli \
+            packages/missionos-gateway \
+            scripts/smoke_missionos_real_hardware_arm_disarm_route.py \
+            scripts/smoke_mission_designer_envelope_violation_advisory.py \
+            scripts/smoke_px4_gazebo_mission_designer_execute_sitl_gateway.py \
+            scripts/smoke_px4_gazebo_mission_designer_prompt_to_sitl_e2e.py \
+            scripts/smoke_px4_gazebo_mission_designer_sitl_delivery_epic_exit.py \
+            scripts/smoke_px4_gazebo_mission_designer_sitl_delivery_epic_exit_no_preexisting_summary.py \
+            scripts/smoke_px4_gazebo_mission_designer_sitl_dropoff_verification.py \
+            scripts/smoke_px4_gazebo_mission_designer_sitl_flight_evidence.py \
+            scripts/smoke_px4_gazebo_mission_designer_sitl_payload_release_observation.py \
+            src/cli/missionos.py \
+            src/config \
+            src/gateway \
+            src/runtime/runtime_claim_evidence.py \
+            src/runtime/task_store.py \
+            src/runtime/missionos_real_hardware_dispatch_runtime.py \
+            src/runtime/px4_gazebo_mission_designer_sitl_runner.py \
+            tests/contract/test_cli_fixture_job_status.py \
+            tests/contract/test_cli_intent_route_hints.py \
+            tests/contract/test_cli_live_sitl_timeout.py \
+            tests/contract/test_gateway_chat_language.py \
+            tests/contract/test_hardware_adapter_contract.py \
+            tests/contract/test_production_gateway_backend.py \
+            tests/contract/test_runtime_claim_evidence.py \
+            tests/contract/test_sitl_execution_operator_approval.py \
+            tests/contract/test_task_store_atomic_updates.py
+
+      - name: Run contract suite
+        env:
+          PYTHONPATH: .:packages/missionos-cli/src:packages/missionos-gateway/src
+        run: python -m pytest -q

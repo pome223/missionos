@@ -158,6 +158,9 @@ async def _run() -> dict[str, Any]:
     orchestration = artifacts["missionos_real_hardware_dispatch_orchestration"][0]
     hardware_adapter_evidence = artifacts["missionos_hardware_adapter_evidence"][0]
     hardware_adapter_preflight = artifacts["missionos_hardware_adapter_preflight"][0]
+    hardware_operator_approval = artifacts[
+        "missionos_hardware_operator_approvals"
+    ][0]
     summary = {
         "smoke": "missionos_real_hardware_arm_disarm_route",
         "ran": True,
@@ -174,6 +177,7 @@ async def _run() -> dict[str, Any]:
         "route_path": "/missionos/real-hardware-arm-disarm-dispatch/run",
         "agent_response_kind": orchestration["agent_proposed"]["response_kind"],
         "operator_approved": orchestration["human_approved"]["operator_approved"],
+        "approval_actor": hardware_operator_approval["approval_actor"],
         "runtime_invocation_evidence_written": (
             "missionos_real_hardware_dispatch_runtime_invocations" in artifacts
         ),
@@ -202,6 +206,7 @@ async def _run() -> dict[str, Any]:
     assert summary["planner_status"] == "proposal_guardrail_passed"
     assert summary["dispatch_validation_status"] == "valid"
     assert summary["backend_target"] == "px4_real_hardware"
+    assert summary["approval_actor"] == "loopback_local_operator"
     assert summary["runtime_invoked"] is False
     assert (
         summary["blocked_reason"]

@@ -7,7 +7,9 @@ runtime phases and by requiring invocation evidence for any runtime phase.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+import hashlib
+from pathlib import Path
 import re
 from typing import Any, Mapping, Sequence
 
@@ -33,6 +35,15 @@ DISPATCH_RUNTIME_INVOCATION_KINDS = frozenset(
     }
 )
 AUTHORITY_RUNTIME_CLAIM_KEYS: tuple[str, ...] = (
+    "approval_recorded",
+    "dispatch_request_sent",
+    "command_ack_observed",
+    "runtime_progress_observed",
+    "landing_observed",
+    "completion_claimed",
+    "physical_execution_invoked",
+    "mission_delivery_completion_claimed",
+    "payload_delivery_completion_claimed",
     "dispatch_executed",
     "outcome_observed",
     "verified_dispatch_execution",
@@ -49,6 +60,17 @@ AUTHORITY_RUNTIME_CLAIM_KEYS: tuple[str, ...] = (
     "delivery_completion_claimed",
     "llm_judgment_used_in_gate",
 )
+_SUCCESS_RUNTIME_CLAIM_KEYS = frozenset(
+    {
+        "completion_claimed",
+        "delivery_completion_claimed",
+        "mission_delivery_completion_claimed",
+        "payload_delivery_completion_claimed",
+        "verified_dispatch_execution",
+        "dispatch_executed",
+    }
+)
+_MAX_CLOCK_SKEW = timedelta(minutes=5)
 
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
@@ -61,18 +83,62 @@ def _as_mapping(value: Any) -> Mapping[str, Any]:
     return value if isinstance(value, Mapping) else {}
 
 
-def _parse_iso8601(value: Any, *, field: str) -> None:
+def _parse_iso8601(value: Any, *, field: str) -> datetime:
     if not isinstance(value, str) or not value:
         raise RuntimeClaimValidationError(f"{field}_required")
     try:
-        datetime.fromisoformat(value.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError as exc:
         raise RuntimeClaimValidationError(f"{field}_invalid_iso8601") from exc
+    if parsed.tzinfo is None:
+        raise RuntimeClaimValidationError(f"{field}_timezone_required")
+    return parsed.astimezone(timezone.utc)
 
 
 def _validate_sha256(value: Any, *, field: str) -> None:
     if not isinstance(value, str) or not _SHA256_RE.fullmatch(value):
         raise RuntimeClaimValidationError(f"{field}_invalid_sha256")
+
+
+def _stream_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _validate_stream_hash_binding(
+    payload: Mapping[str, Any],
+    *,
+    stream: str,
+) -> str:
+    expected = str(payload[f"invocation_{stream}_sha256"])
+    inline_key = f"invocation_{stream}_preimage"
+    inline_value = payload.get(inline_key)
+    if isinstance(inline_value, str):
+        observed = hashlib.sha256(inline_value.encode("utf-8")).hexdigest()
+        source = inline_key
+    else:
+        path_value = payload.get(f"{stream}_artifact_path") or payload.get(
+            f"invocation_{stream}_artifact_path"
+        )
+        if not isinstance(path_value, str) or not path_value.strip():
+            raise RuntimeClaimValidationError(
+                f"invocation_{stream}_sha256_preimage_required"
+            )
+        path = Path(path_value)
+        if not path.is_file():
+            raise RuntimeClaimValidationError(
+                f"invocation_{stream}_artifact_path_not_file"
+            )
+        observed = _stream_sha256(path)
+        source = f"{stream}_artifact_path"
+    if observed != expected:
+        raise RuntimeClaimValidationError(
+            f"invocation_{stream}_sha256_mismatch"
+        )
+    return source
 
 
 def validate_runtime_invocation_evidence(evidence: Any) -> dict[str, Any]:
@@ -88,8 +154,20 @@ def validate_runtime_invocation_evidence(evidence: Any) -> dict[str, Any]:
         raise RuntimeClaimValidationError("runtime_invocation_evidence_invocation_kind_invalid")
     if not isinstance(payload.get("invocation_target"), str) or not payload["invocation_target"]:
         raise RuntimeClaimValidationError("runtime_invocation_evidence_invocation_target_required")
-    _parse_iso8601(payload.get("invocation_started_at"), field="invocation_started_at")
-    _parse_iso8601(payload.get("invocation_completed_at"), field="invocation_completed_at")
+    started_at = _parse_iso8601(
+        payload.get("invocation_started_at"), field="invocation_started_at"
+    )
+    completed_at = _parse_iso8601(
+        payload.get("invocation_completed_at"), field="invocation_completed_at"
+    )
+    if completed_at < started_at:
+        raise RuntimeClaimValidationError(
+            "runtime_invocation_evidence_completed_before_started"
+        )
+    if completed_at > datetime.now(timezone.utc) + _MAX_CLOCK_SKEW:
+        raise RuntimeClaimValidationError(
+            "runtime_invocation_evidence_completed_at_in_future"
+        )
     _validate_sha256(
         payload.get("invocation_stdout_sha256"),
         field="invocation_stdout_sha256",
@@ -98,6 +176,13 @@ def validate_runtime_invocation_evidence(evidence: Any) -> dict[str, Any]:
         payload.get("invocation_stderr_sha256"),
         field="invocation_stderr_sha256",
     )
+    payload["invocation_stdout_hash_binding_source"] = (
+        _validate_stream_hash_binding(payload, stream="stdout")
+    )
+    payload["invocation_stderr_hash_binding_source"] = (
+        _validate_stream_hash_binding(payload, stream="stderr")
+    )
+    payload["invocation_output_hashes_verified"] = True
     exit_code = payload.get("invocation_exit_code")
     if isinstance(exit_code, bool) or not isinstance(exit_code, int):
         raise RuntimeClaimValidationError("runtime_invocation_evidence_invocation_exit_code_invalid")
@@ -142,6 +227,15 @@ def normalize_runtime_claims(
                 raise RuntimeClaimValidationError(
                     "dispatch_executed_in_runtime_requires_subprocess_docker_mavlink_or_gz_evidence"
                 )
+        if (
+            runtime_value
+            and key in _SUCCESS_RUNTIME_CLAIM_KEYS
+            and evidence is not None
+            and evidence.get("invocation_exit_code") != 0
+        ):
+            raise RuntimeClaimValidationError(
+                f"{runtime_key}_requires_zero_exit_runtime_invocation_evidence"
+            )
         normalized[artifact_key] = artifact_value
         normalized[runtime_key] = runtime_value if evidence is not None else False
         if normalized[artifact_key]:
@@ -152,7 +246,6 @@ def normalize_runtime_claims(
     if (
         validate_progress
         and normalized.get(progress_key) is True
-        and artifact_claims
         and not runtime_claims
     ):
         raise RuntimeClaimValidationError("artifact_only_runtime_claim_cannot_count_progress")
@@ -179,7 +272,7 @@ def runtime_claim_validation_summary(
     normalized = normalize_runtime_claims(
         payload,
         claim_keys=claim_keys,
-        validate_progress=False,
+        validate_progress=True,
     )
     validation = _as_mapping(normalized.get("runtime_claim_validation"))
     return {

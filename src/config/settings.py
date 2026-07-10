@@ -70,7 +70,27 @@ class Settings(BaseSettings):
     # Security settings
     audit_log_path: Path = Field(default=Path("data/audit.log"), description="Audit log path")
     shell_enabled: bool = Field(default=True, description="Enable shell execution")
-    gateway_api_key: Optional[str] = Field(default=None, description="API key for gateway auth (empty = auth disabled)")
+    gateway_api_key: Optional[str] = Field(
+        default=None,
+        description=(
+            "API key for Gateway auth. When empty, only non-browser loopback "
+            "requests are accepted."
+        ),
+    )
+    gateway_cors_allowed_origins: str = Field(
+        default="",
+        description=(
+            "Comma-separated browser origins allowed to call the Gateway. "
+            "Empty rejects all browser-origin requests."
+        ),
+    )
+    gateway_legacy_agent_routes_enabled: bool = Field(
+        default=False,
+        description=(
+            "Expose legacy general-agent, shell/tool approval, memory, cron, "
+            "and control-loop HTTP routes on the MissionOS Gateway."
+        ),
+    )
     gateway_auth_user_header: Optional[str] = Field(
         default=None,
         description=(

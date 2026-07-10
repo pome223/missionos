@@ -362,6 +362,7 @@ def test_real_hardware_dispatch_runtime_writes_adapter_evidence_from_executor_re
             task_id=task["task_id"],
             subject_id="pixhawk-loopback-contract-test",
             approval=approval,
+            approval_actor="operator-contract-test",
             dispatch_validation={
                 "validation_status": "valid",
                 "operator_approval_consumed": True,
@@ -394,6 +395,9 @@ def test_real_hardware_dispatch_runtime_writes_adapter_evidence_from_executor_re
     assert artifacts["missionos_hardware_operator_approvals"][0][
         "operator_approval_ref"
     ] == "operator_dispatch_approval:contract-test"
+    assert artifacts["missionos_hardware_operator_approvals"][0][
+        "approval_actor"
+    ] == "operator-contract-test"
 
     adapter_evidence = artifacts["missionos_hardware_adapter_evidence"][0]
     assert adapter_evidence == result["hardware_adapter_evidence"]
@@ -446,6 +450,7 @@ def test_real_hardware_dispatch_runtime_persists_blocked_preflight_evidence(
             task_id=task["task_id"],
             subject_id="pixhawk-blocked-contract-test",
             approval=approval,
+            approval_actor="operator-contract-test",
             dispatch_validation={
                 "validation_status": "valid",
                 "operator_approval_consumed": True,

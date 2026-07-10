@@ -73,6 +73,10 @@ MISSION_DESIGNER_SITL_EXECUTION_OPT_IN_ENV = (
 MISSION_DESIGNER_SITL_SAFE_ROUTE_MAX_DISTANCE_M = 20_000.0
 MISSION_DESIGNER_SITL_UPLOAD_GEOFENCE_RADIUS_M = 20_000.0
 MISSION_DESIGNER_SITL_TASK_KIND = "px4_gazebo_mission_designer_sitl_execution_request"
+MISSIONOS_SITL_EXECUTION_OPERATOR_APPROVAL_SCHEMA_VERSION = (
+    "missionos_sitl_execution_operator_approval.v1"
+)
+MISSIONOS_SITL_EXECUTION_APPROVAL_MAX_AGE = timedelta(minutes=10)
 PX4_GAZEBO_MISSION_DESIGNER_SITL_EXECUTION_RESULT_SCHEMA_VERSION = (
     "px4_gazebo_mission_designer_sitl_execution_result.v1"
 )
@@ -2108,6 +2112,97 @@ def _validated_task_artifacts(
     )
 
 
+def _validated_execution_operator_approval(
+    task: Mapping[str, Any],
+    *,
+    execution_operator_approval_id: str,
+    execution_request: PX4GazeboMissionDesignerSITLExecutionRequest,
+    scenario_approval: PX4GazeboMissionScenarioApproval,
+    now: datetime,
+) -> dict[str, Any]:
+    artifacts = task.get("artifacts")
+    artifacts = artifacts if isinstance(artifacts, Mapping) else {}
+    raw_approvals = artifacts.get("missionos_sitl_execution_operator_approvals")
+    if not isinstance(raw_approvals, Mapping) or not raw_approvals:
+        raise PX4GazeboMissionDesignerSITLRunnerError(
+            "stored SITL execution operator approval is required"
+        )
+    expected_execution_ref = _artifact_ref(
+        "px4_gazebo_mission_designer_sitl_execution_request",
+        execution_request.execution_request_id,
+    )
+    expected_scenario_approval_ref = _artifact_ref(
+        "px4_gazebo_mission_scenario_approval",
+        scenario_approval.approval_id,
+    )
+    raw_approval = raw_approvals.get(execution_operator_approval_id)
+    if not isinstance(raw_approval, Mapping):
+        raise PX4GazeboMissionDesignerSITLRunnerError(
+            "requested stored SITL execution approval was not found"
+        )
+    approval = dict(raw_approval)
+    if approval.get("approval_id") != execution_operator_approval_id:
+        raise PX4GazeboMissionDesignerSITLRunnerError(
+            "stored SITL execution approval id mismatch"
+        )
+    if approval.get("execution_request_ref") != expected_execution_ref:
+        raise PX4GazeboMissionDesignerSITLRunnerError(
+            "stored SITL execution approval request mismatch"
+        )
+    if approval.get("scenario_approval_ref") != expected_scenario_approval_ref:
+        raise PX4GazeboMissionDesignerSITLRunnerError(
+            "stored SITL execution approval scenario mismatch"
+        )
+    if approval.get("schema_version") != (
+        MISSIONOS_SITL_EXECUTION_OPERATOR_APPROVAL_SCHEMA_VERSION
+    ):
+        raise PX4GazeboMissionDesignerSITLRunnerError(
+            "stored SITL execution approval schema is invalid"
+        )
+    if approval.get("task_id") != task.get("task_id"):
+        raise PX4GazeboMissionDesignerSITLRunnerError(
+            "stored SITL execution approval task mismatch"
+        )
+    if approval.get("operator_approved") is not True:
+        raise PX4GazeboMissionDesignerSITLRunnerError(
+            "stored SITL execution approval is not approved"
+        )
+    if approval.get("approval_status") != "issued_unconsumed":
+        raise PX4GazeboMissionDesignerSITLRunnerError(
+            "stored SITL execution approval is not issued and unconsumed"
+        )
+    if approval.get("consumed_in_runtime") is True:
+        raise PX4GazeboMissionDesignerSITLRunnerError(
+            "stored SITL execution approval replay detected"
+        )
+    actor = str(approval.get("approval_actor") or "").strip()
+    if not actor:
+        raise PX4GazeboMissionDesignerSITLRunnerError(
+            "stored SITL execution approval actor is required"
+        )
+    try:
+        approved_at = datetime.fromisoformat(
+            str(approval.get("approved_at") or "").replace("Z", "+00:00")
+        )
+    except ValueError as exc:
+        raise PX4GazeboMissionDesignerSITLRunnerError(
+            "stored SITL execution approval timestamp is invalid"
+        ) from exc
+    if approved_at.tzinfo is None:
+        raise PX4GazeboMissionDesignerSITLRunnerError(
+            "stored SITL execution approval timestamp must be timezone-aware"
+        )
+    if approved_at > now + timedelta(seconds=5):
+        raise PX4GazeboMissionDesignerSITLRunnerError(
+            "stored SITL execution approval timestamp is in the future"
+        )
+    if now - approved_at > MISSIONOS_SITL_EXECUTION_APPROVAL_MAX_AGE:
+        raise PX4GazeboMissionDesignerSITLRunnerError(
+            "stored SITL execution approval expired"
+        )
+    return approval
+
+
 def build_px4_gazebo_mission_designer_sitl_execution_result(
     *,
     execution_request: PX4GazeboMissionDesignerSITLExecutionRequest,
@@ -3230,6 +3325,7 @@ def run_px4_gazebo_mission_designer_sitl_execution(
     task_id: str,
     *,
     explicit_execution_approval: bool,
+    execution_operator_approval_id: str,
     allow_sitl_execution: bool,
     uploader: PX4GazeboSITLMissionUploader | None = None,
     timeout_seconds: float = 5.0,
@@ -3265,6 +3361,29 @@ def run_px4_gazebo_mission_designer_sitl_execution(
         bounded_request,
     ) = _validated_task_artifacts(current)
     executed_at = _utc(now)
+    execution_operator_approval = _validated_execution_operator_approval(
+        current,
+        execution_operator_approval_id=execution_operator_approval_id,
+        execution_request=execution_request,
+        scenario_approval=approval,
+        now=executed_at,
+    )
+    claimed_task = store.claim_nested_artifact(
+        task_id,
+        collection_key="missionos_sitl_execution_operator_approvals",
+        artifact_id=execution_operator_approval_id,
+        expected=execution_operator_approval,
+        updates={
+            "approval_status": "consumed_before_runtime",
+            "consumed_in_runtime": True,
+            "consumed_at": executed_at.isoformat(),
+        },
+        expected_task_status="pending",
+    )
+    if claimed_task is None:
+        raise PX4GazeboMissionDesignerSITLRunnerError(
+            "stored SITL execution approval replay or concurrent consumption detected"
+        )
     current_artifacts = current.get("artifacts") or {}
     current_artifacts = (
         current_artifacts if isinstance(current_artifacts, Mapping) else {}
@@ -3324,6 +3443,14 @@ def run_px4_gazebo_mission_designer_sitl_execution(
     uploaded = receipt.upload_status is PX4GazeboSITLMissionUploadStatus.UPLOADED
     status = "completed" if uploaded else "blocked"
     artifacts = {
+        "missionos_sitl_execution_operator_approvals": {
+            str(execution_operator_approval["approval_id"]): {
+                **execution_operator_approval,
+                "approval_status": "consumed_in_runtime",
+                "consumed_in_runtime": True,
+                "consumed_at": executed_at.isoformat(),
+            }
+        },
         "delivery_mission_contract": contract.model_dump(mode="json"),
         "simulated_command_proposal": command_proposal.model_dump(mode="json"),
         "simulated_command_approval": command_approval.model_dump(mode="json"),
@@ -3339,6 +3466,8 @@ def run_px4_gazebo_mission_designer_sitl_execution(
         "sitl_execution_opt_in_env": MISSION_DESIGNER_SITL_EXECUTION_OPT_IN_ENV,
         "sitl_execution_opted_in": allow_sitl_execution,
         "explicit_execution_approval": explicit_execution_approval,
+        "execution_operator_approval_id": execution_operator_approval["approval_id"],
+        "execution_operator_approval_actor": execution_operator_approval["approval_actor"],
         "upload_status": receipt.upload_status.value,
         "blocked_reasons": list(receipt.blocked_reasons),
         "external_dispatch_performed": receipt.external_dispatch_performed,

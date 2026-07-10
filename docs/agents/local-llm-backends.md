@@ -47,9 +47,20 @@ the Ollama backend it is not the effective local selector. Use
 ## Local Timeout Settings
 
 Local models can be much slower than hosted Gemini, especially on the first
-request while Ollama loads the model. Increase the bounded ADK timeouts in
-`.env` before restarting Gateway only when intentionally validating an Ollama
-path:
+request while Ollama loads the model. The outer Chief Agent wait is selected
+from the effective `missionos_chief_agent` backend, including its per-agent
+override:
+
+| Backend | Default | Hard cap |
+| --- | ---: | ---: |
+| Gemini | 45 seconds | 90 seconds |
+| Ollama / MLX | 180 seconds | 300 seconds |
+| `off` | 12 seconds | 12 seconds |
+
+`MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_SECONDS` can override the
+default, but the backend-specific hard cap still applies. Component-level ADK
+calls have independent timeouts. Increase those in `.env` before restarting
+Gateway only when intentionally validating an Ollama path:
 
 ```bash
 MISSIONOS_LLM_DIALOGUE_ROUTER_TIMEOUT_SECONDS=180

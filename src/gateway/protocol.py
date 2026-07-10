@@ -527,14 +527,32 @@ HTTP_ROUTE_SCHEMAS: dict[str, dict[str, Any]] = {
             },
         },
     },
-    "POST /px4-gazebo/mission-scenarios/execute-sitl": {
-        "description": "Run a prepared Mission Designer SITL execution request through the existing PX4/Gazebo SITL mission upload machinery. Optional live_flight_mode additionally requires RUN_MISSION_DESIGNER_PX4_GAZEBO_SITL_EXECUTION=1 and RUN_MISSION_DESIGNER_PX4_GAZEBO_SITL_LIVE_FLIGHT=1, then persists a live flight artifact; without the relevant opt-ins the task receives a blocked receipt and no dispatch occurs.",
+    "POST /px4-gazebo/mission-scenarios/approve-sitl-execution": {
+        "description": "Record a short-lived, single-use operator approval artifact bound to one prepared SITL task and its stored scenario approval.",
         "request": {
             "type": "object",
             "required": ["task_id", "explicit_execution_approval"],
             "properties": {
                 "task_id": {"type": "string"},
                 "explicit_execution_approval": {"type": "boolean"},
+            },
+        },
+        "response": {
+            "type": "object",
+            "properties": {
+                "execution_operator_approval": {"type": "object"},
+                "summary": {"type": "object"},
+            },
+        },
+    },
+    "POST /px4-gazebo/mission-scenarios/execute-sitl": {
+        "description": "Consume a stored operator approval and run a prepared Mission Designer SITL execution request through the existing PX4/Gazebo SITL mission upload machinery. Optional live_flight_mode additionally requires RUN_MISSION_DESIGNER_PX4_GAZEBO_SITL_EXECUTION=1 and RUN_MISSION_DESIGNER_PX4_GAZEBO_SITL_LIVE_FLIGHT=1, then persists a live flight artifact; without the relevant opt-ins the task receives a blocked receipt and no dispatch occurs.",
+        "request": {
+            "type": "object",
+            "required": ["task_id", "execution_approval_id"],
+            "properties": {
+                "task_id": {"type": "string"},
+                "execution_approval_id": {"type": "string"},
                 "live_flight_mode": {"type": "boolean"},
             },
         },

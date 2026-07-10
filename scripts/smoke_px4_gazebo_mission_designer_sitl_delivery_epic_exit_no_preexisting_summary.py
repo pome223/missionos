@@ -85,12 +85,22 @@ def _prepare_and_execute_live_task(
             "owner_user_id": "operator",
         },
     )
+    execution_approval = _post_json(
+        client,
+        "/px4-gazebo/mission-scenarios/approve-sitl-execution",
+        {
+            "task_id": prepared["summary"]["task_id"],
+            "explicit_execution_approval": True,
+        },
+    )
     executed = _post_json(
         client,
         "/px4-gazebo/mission-scenarios/execute-sitl",
         {
             "task_id": prepared["summary"]["task_id"],
-            "explicit_execution_approval": True,
+            "execution_approval_id": execution_approval[
+                "execution_operator_approval"
+            ]["approval_id"],
             "live_flight_mode": True,
         },
     )
@@ -135,12 +145,22 @@ def _prepare_and_execute_upload_only_task(
             "owner_user_id": "operator",
         },
     )
+    execution_approval = _post_json(
+        client,
+        "/px4-gazebo/mission-scenarios/approve-sitl-execution",
+        {
+            "task_id": prepared["summary"]["task_id"],
+            "explicit_execution_approval": True,
+        },
+    )
     executed = _post_json(
         client,
         "/px4-gazebo/mission-scenarios/execute-sitl",
         {
             "task_id": prepared["summary"]["task_id"],
-            "explicit_execution_approval": True,
+            "execution_approval_id": execution_approval[
+                "execution_operator_approval"
+            ]["approval_id"],
         },
     )
     summary = executed["summary"]

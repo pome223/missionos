@@ -7,6 +7,7 @@ import sys
 from typing import Any, Mapping
 
 import src.gateway.server as gateway_server
+from scripts import smoke_missionos_chat_turtlebot3_home_mission as tb3_chat_smoke
 from src.runtime.task_store import TaskStore
 from src.runtime.ros2_nav2_dispatch_bridge import (
     ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV,
@@ -15,6 +16,82 @@ from src.runtime.ros2_nav2_dispatch_bridge import (
 
 
 JAPANESE_TEXT = re.compile(r"[ぁ-んァ-ン一-龥]")
+
+
+def test_conversation_agent_timeout_depends_on_chief_backend(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.delenv(
+        gateway_server.MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_ENV,
+        raising=False,
+    )
+    monkeypatch.delenv(
+        "MISSIONOS_AGENT_MISSIONOS_CHIEF_AGENT_LLM_BACKEND",
+        raising=False,
+    )
+
+    monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "gemini")
+    assert gateway_server._missionos_conversation_agent_timeout_seconds() == 45
+
+    monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "ollama")
+    assert gateway_server._missionos_conversation_agent_timeout_seconds() == 180
+
+    monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "mlx")
+    assert gateway_server._missionos_conversation_agent_timeout_seconds() == 180
+
+    monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "off")
+    assert gateway_server._missionos_conversation_agent_timeout_seconds() == 12
+
+
+def test_conversation_agent_timeout_uses_backend_cap_and_agent_override(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "gemini")
+    monkeypatch.setenv(
+        gateway_server.MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_ENV,
+        "999",
+    )
+    assert gateway_server._missionos_conversation_agent_timeout_seconds() == 90
+
+    monkeypatch.setenv(
+        "MISSIONOS_AGENT_MISSIONOS_CHIEF_AGENT_LLM_BACKEND",
+        "ollama",
+    )
+    assert gateway_server._missionos_conversation_agent_timeout_seconds() == 300
+
+    monkeypatch.setenv(
+        gateway_server.MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_ENV,
+        "invalid",
+    )
+    assert gateway_server._missionos_conversation_agent_timeout_seconds() == 180
+
+
+def test_turtlebot3_e2e_smoke_uses_explicit_authority_route_hints(
+    monkeypatch: Any,
+) -> None:
+    calls: list[dict[str, Any]] = []
+
+    def fake_post_conversation(**kwargs: Any) -> dict[str, Any]:
+        calls.append(kwargs)
+        return {"mission_designer": {"context_ref": len(calls)}}
+
+    monkeypatch.setattr(
+        tb3_chat_smoke,
+        "_post_conversation",
+        fake_post_conversation,
+    )
+
+    tb3_chat_smoke._run_chat_flow(
+        base_url="http://127.0.0.1:18791",
+        session_id="contract-e2e-route-hints",
+        instruction="TurtleBot3で家の中を一周して",
+    )
+
+    assert [call.get("route_hint") for call in calls] == [
+        None,
+        "approve",
+        "execute",
+    ]
 
 
 def _install_quiet_conversation_dependencies(monkeypatch: Any) -> None:
@@ -157,6 +234,7 @@ def test_chat_approve_and_prepare_messages_are_english(monkeypatch: Any) -> None
     approval = gateway_server.run_missionos_autonomy_conversation(
         {
             "operator_instruction": "approve",
+            "missionos_route_hint": "approve",
             "missionos_client_surface": "chat",
             "session_id": session_id,
             "mission_designer_context": plan_context,
@@ -191,6 +269,7 @@ def test_chat_approve_and_prepare_messages_are_english(monkeypatch: Any) -> None
     prepared = gateway_server.run_missionos_autonomy_conversation(
         {
             "operator_instruction": "execute",
+            "missionos_route_hint": "execute",
             "missionos_client_surface": "chat",
             "session_id": session_id,
             "mission_designer_context": approval["mission_designer"],
@@ -200,6 +279,57 @@ def test_chat_approve_and_prepare_messages_are_english(monkeypatch: Any) -> None
     assert prepared["routed_action"] == "execute"
     assert "SITL execution request prepared" in prepared["message"]
     assert not JAPANESE_TEXT.search(prepared["message"])
+
+
+def test_free_form_sensitive_words_cannot_create_authority(monkeypatch: Any) -> None:
+    monkeypatch.setattr(
+        gateway_server,
+        "run_missionos_agent_runtime",
+        lambda **kwargs: {
+            "runtime_status": "proposal_guardrail_passed",
+            "proposal": {
+                "intent": (
+                    "execute"
+                    if "実行" in str(kwargs.get("utterance") or "")
+                    else "approve"
+                ),
+                "operator_instruction": kwargs.get("utterance"),
+                "specialist_agent": "missionos_response_planner_agent",
+            },
+            "agent_invocations": [],
+            "monitoring_observations": [],
+        },
+    )
+    monkeypatch.setattr(gateway_server, "build_form2a_response_selection_summary", lambda: {})
+    monkeypatch.setattr(gateway_server, "build_form2a_operator_review_summary", lambda: {})
+    monkeypatch.setattr(gateway_server, "build_form2a_action_consumption_summary", lambda: {})
+    monkeypatch.setattr(gateway_server, "build_llm_repair_planner_summary", lambda: {})
+    monkeypatch.setattr(
+        gateway_server,
+        "approve_px4_gazebo_mission_scenario_for_bounded_simulation",
+        lambda **_kwargs: (_ for _ in ()).throw(
+            AssertionError("free-form text must not reach approval")
+        ),
+    )
+
+    plan_context = _registered_plan_context("negative-sensitive-intent")
+    for instruction in (
+        "まだ承認しないで",
+        "実行しないでください",
+        "please don't approve this",
+        "承認って何ですか？",
+    ):
+        response = gateway_server.run_missionos_autonomy_conversation(
+            {
+                "operator_instruction": instruction,
+                "missionos_client_surface": "chat",
+                "session_id": "negative-sensitive-intent",
+                "mission_designer_context": plan_context,
+            }
+        )
+
+        assert response["routed_action"] == "clarification"
+        assert response["progress_counted"] is False
 
 
 def test_chat_turtlebot3_home_mission_reaches_nav2_bridge_without_false_claims(
@@ -237,6 +367,7 @@ def test_chat_turtlebot3_home_mission_reaches_nav2_bridge_without_false_claims(
     approved = gateway_server.run_missionos_autonomy_conversation(
         {
             "operator_instruction": "approve",
+            "missionos_route_hint": "approve",
             "missionos_client_surface": "chat",
             "session_id": session_id,
             "mission_designer_context": plan_context,
@@ -251,6 +382,7 @@ def test_chat_turtlebot3_home_mission_reaches_nav2_bridge_without_false_claims(
     executed = gateway_server.run_missionos_autonomy_conversation(
         {
             "operator_instruction": "run",
+            "missionos_route_hint": "execute",
             "missionos_client_surface": "chat",
             "session_id": session_id,
             "mission_designer_context": approved["mission_designer"],
@@ -464,6 +596,7 @@ def test_chat_turtlebot3_low_battery_blocks_dispatch(
     approved = gateway_server.run_missionos_autonomy_conversation(
         {
             "operator_instruction": "approve",
+            "missionos_route_hint": "approve",
             "missionos_client_surface": "chat",
             "session_id": session_id,
             "mission_designer_context": plan["mission_designer"],
@@ -472,6 +605,7 @@ def test_chat_turtlebot3_low_battery_blocks_dispatch(
     executed = gateway_server.run_missionos_autonomy_conversation(
         {
             "operator_instruction": "run",
+            "missionos_route_hint": "execute",
             "missionos_client_surface": "chat",
             "session_id": session_id,
             "mission_designer_context": approved["mission_designer"],
@@ -513,6 +647,7 @@ def test_chat_turtlebot3_obstacle_mission_requires_avoidance_observation(
     approved = gateway_server.run_missionos_autonomy_conversation(
         {
             "operator_instruction": "approve",
+            "missionos_route_hint": "approve",
             "missionos_client_surface": "chat",
             "session_id": session_id,
             "mission_designer_context": plan["mission_designer"],
@@ -521,6 +656,7 @@ def test_chat_turtlebot3_obstacle_mission_requires_avoidance_observation(
     executed = gateway_server.run_missionos_autonomy_conversation(
         {
             "operator_instruction": "run",
+            "missionos_route_hint": "execute",
             "missionos_client_surface": "chat",
             "session_id": session_id,
             "mission_designer_context": approved["mission_designer"],
@@ -584,12 +720,13 @@ def test_chat_status_prompts_are_english(monkeypatch: Any) -> None:
         }
     )
 
-    assert "Type `approve`" in waiting_for_approval["message"]
+    assert "Type `/approve`" in waiting_for_approval["message"]
     assert not JAPANESE_TEXT.search(waiting_for_approval["message"])
 
     approved = gateway_server.run_missionos_autonomy_conversation(
         {
             "operator_instruction": "approve",
+            "missionos_route_hint": "approve",
             "missionos_client_surface": "chat",
             "session_id": session_id,
             "mission_designer_context": plan_context,
@@ -604,7 +741,7 @@ def test_chat_status_prompts_are_english(monkeypatch: Any) -> None:
         }
     )
 
-    assert "Type `prepare`" in waiting_for_prepare["message"]
+    assert "Type `/run`" in waiting_for_prepare["message"]
     assert not JAPANESE_TEXT.search(waiting_for_prepare["message"])
 
 

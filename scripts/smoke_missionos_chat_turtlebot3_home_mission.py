@@ -246,6 +246,7 @@ def _post_conversation(
     instruction: str,
     session_id: str,
     context: dict[str, Any] | None = None,
+    route_hint: str | None = None,
 ) -> dict[str, Any]:
     payload: dict[str, Any] = {
         "operator_instruction": instruction,
@@ -254,6 +255,8 @@ def _post_conversation(
     }
     if context:
         payload["mission_designer_context"] = context
+    if route_hint:
+        payload["missionos_route_hint"] = route_hint
     return _post_json(
         f"{base_url}/missionos/autonomy-conversation/run",
         payload,
@@ -478,6 +481,7 @@ def _run_chat_flow(
         instruction="approve",
         session_id=session_id,
         context=plan.get("mission_designer") if isinstance(plan, dict) else {},
+        route_hint="approve",
     )
     executed = _post_conversation(
         base_url=base_url,
@@ -486,6 +490,7 @@ def _run_chat_flow(
         context=approved.get("mission_designer")
         if isinstance(approved, dict)
         else {},
+        route_hint="execute",
     )
     return plan, approved, executed
 

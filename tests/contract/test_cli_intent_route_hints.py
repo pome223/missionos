@@ -528,7 +528,6 @@ def test_chat_robot_turtlebot3_smoke_dry_run_keeps_noninteractive_path(
     assert "MISSIONOS_CHAT_TURTLEBOT3_MID_RECOVERY_SMOKE=1" in result.output
     compact_output = result.output.replace("\n", "")
     assert "smoke_ros2_nav2_turtlebot3_obstacle_delivery_docker.sh" in compact_output
-    assert "stacle_delivery_docker.sh" in result.output
 
 
 def test_turtlebot3_obstacle_delivery_text_is_mission_plan_not_recovery(

@@ -1,3 +1,7 @@
+from collections.abc import Callable
+
+import pytest
+
 from missionos_cli import cli as missionos_cli
 
 GATEWAY_LLM_ADK_ENV_KEYS = (
@@ -17,6 +21,46 @@ class _FixtureHealthClient:
             "session_backend": "fixture",
             "version": "missionos-gateway-fixture.v1",
         }
+
+
+@pytest.fixture
+def isolated_gateway_factory(
+    monkeypatch,
+    tmp_path,
+) -> Callable[..., object]:
+    from src.config.settings import reset_settings
+    from src.runtime.task_store import reset_task_store
+    from src.security import audit
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("TASK_STORE_DB_PATH", str(tmp_path / "tasks.db"))
+    monkeypatch.setenv("MEMORY_DB_PATH", str(tmp_path / "memory.db"))
+    monkeypatch.setenv("AUDIT_LOG_PATH", str(tmp_path / "audit.log"))
+
+    def factory(
+        *,
+        api_key: str = "",
+        cors_origins: str = "",
+        legacy_agent_routes_enabled: bool = False,
+    ) -> object:
+        monkeypatch.setenv("GATEWAY_API_KEY", api_key)
+        monkeypatch.setenv("GATEWAY_CORS_ALLOWED_ORIGINS", cors_origins)
+        monkeypatch.setenv(
+            "GATEWAY_LEGACY_AGENT_ROUTES_ENABLED",
+            "1" if legacy_agent_routes_enabled else "0",
+        )
+        reset_settings()
+        reset_task_store()
+        audit._audit_logger = None
+
+        from src.gateway.server import create_gateway
+
+        return create_gateway()
+
+    yield factory
+    reset_task_store()
+    reset_settings()
+    audit._audit_logger = None
 
 
 def test_live_sitl_gateway_env_selects_production_backend(monkeypatch, tmp_path) -> None:
@@ -183,6 +227,151 @@ def test_production_gateway_does_not_serve_legacy_control_ui() -> None:
 
     assert client.get("/chat").status_code == 404
     assert client.get("/chat-static/index.html").status_code == 404
+
+
+def test_production_gateway_rejects_unlisted_browser_origin(
+    isolated_gateway_factory,
+) -> None:
+    from fastapi.testclient import TestClient
+
+    gateway = isolated_gateway_factory()
+    client = TestClient(gateway.app)
+
+    response = client.get(
+        "/missionos/current-milestone",
+        headers={"Origin": "https://untrusted.example"},
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Browser origin is not allowed"
+
+
+def test_production_gateway_requires_key_for_configured_browser_origin(
+    isolated_gateway_factory,
+) -> None:
+    from fastapi.testclient import TestClient
+
+    gateway = isolated_gateway_factory(cors_origins="https://operator.example")
+    client = TestClient(gateway.app)
+
+    response = client.get(
+        "/missionos/current-milestone",
+        headers={"Origin": "https://operator.example"},
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Gateway API key is required for browser requests"
+
+
+def test_production_gateway_accepts_configured_origin_with_api_key(
+    isolated_gateway_factory,
+) -> None:
+    from fastapi.testclient import TestClient
+
+    gateway = isolated_gateway_factory(
+        api_key="test-gateway-key",
+        cors_origins="https://operator.example",
+    )
+    client = TestClient(gateway.app)
+
+    response = client.get(
+        "/missionos/current-milestone",
+        headers={
+            "Origin": "https://operator.example",
+            "X-API-Key": "test-gateway-key",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "https://operator.example"
+
+
+def test_production_gateway_hides_legacy_general_agent_routes(
+    isolated_gateway_factory,
+) -> None:
+    from fastapi.testclient import TestClient
+
+    gateway = isolated_gateway_factory()
+    client = TestClient(gateway.app)
+
+    assert client.post("/agent/run", json={"text": "run shell"}).status_code == 404
+    assert client.get("/tools/policy").status_code == 404
+
+    from starlette.websockets import WebSocketDisconnect
+
+    with pytest.raises(WebSocketDisconnect) as exc_info:
+        with client.websocket_connect("/ws/operator"):
+            pass
+    assert exc_info.value.code == 4404
+
+
+def test_legacy_agent_websocket_requires_allowed_origin_and_key(
+    isolated_gateway_factory,
+) -> None:
+    from fastapi.testclient import TestClient
+    from starlette.websockets import WebSocketDisconnect
+
+    gateway = isolated_gateway_factory(
+        api_key="test-gateway-key",
+        cors_origins="https://operator.example",
+        legacy_agent_routes_enabled=True,
+    )
+    client = TestClient(gateway.app)
+
+    with pytest.raises(WebSocketDisconnect) as exc_info:
+        with client.websocket_connect(
+            "/ws/operator?token=test-gateway-key",
+            headers={"Origin": "https://untrusted.example"},
+        ):
+            pass
+    assert exc_info.value.code == 4403
+
+    with client.websocket_connect(
+        "/ws/operator?token=test-gateway-key",
+        headers={"Origin": "https://operator.example"},
+    ) as websocket:
+        connected = websocket.receive_json()
+
+    assert connected["event"] == "connected"
+
+
+def test_execute_sitl_boolean_cannot_replace_stored_authority(
+    isolated_gateway_factory,
+) -> None:
+    from fastapi.testclient import TestClient
+
+    gateway = isolated_gateway_factory()
+    gateway.task_store.create(
+        task_id="task_missing_execution_authority",
+        kind="px4_gazebo_mission_designer_sitl_execution",
+        title="Missing stored execution authority",
+        status="pending",
+    )
+    client = TestClient(gateway.app)
+
+    response = client.post(
+        "/px4-gazebo/mission-scenarios/execute-sitl",
+        json={
+            "task_id": "task_missing_execution_authority",
+            "explicit_execution_approval": True,
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "execution_approval_id is required"
+
+    approval_response = client.post(
+        "/px4-gazebo/mission-scenarios/approve-sitl-execution",
+        json={
+            "task_id": "task_missing_execution_authority",
+            "explicit_execution_approval": True,
+        },
+    )
+
+    assert approval_response.status_code == 409
+    assert approval_response.json()["detail"] == (
+        "stored SITL execution request is required"
+    )
 
 
 def test_form2a_operator_review_summary_handles_empty_public_repo(tmp_path) -> None:

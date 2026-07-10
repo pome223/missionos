@@ -112,8 +112,36 @@ is true while there are artifact claims and no runtime claims,
 
 ## Artifact Truth Versus Runtime Truth
 
-Stored artifacts prove that MissionOS wrote a record. They do not by themselves
-prove that runtime execution happened. Use runtime evidence — HTTP loopback
-calls, subprocess execution, simulator telemetry, MAVLink ACK/readback, or
-hardware readback — before claiming runtime execution, and attach it as
-`runtime_invocation_evidence` so the two-phase validator can promote the claim.
+Stored artifacts can prove that MissionOS wrote a record. They do not by
+themselves prove that runtime execution happened.
+
+Use runtime evidence, such as HTTP loopback calls, subprocess execution,
+simulator telemetry, MAVLink ACK/readback, or hardware readback, before claiming
+runtime execution.
+
+`runtime_invocation_evidence.v1` output hashes are accepted only when the
+validator can read an inline preimage or a referenced stdout/stderr artifact and
+recompute the digest. A 64-character hash without a verifiable preimage is not
+runtime evidence. Success claims additionally require a zero process exit code,
+and `progress_counted=true` requires at least one validated runtime claim.
+
+## Authority-Bearing Chat Commands
+
+Free-form language is advisory input. It must not create approval, rejection,
+or execution authority because keyword matching cannot reliably distinguish a
+command from negation, a question, a quotation, or policy discussion.
+
+The operator CLI supplies explicit route hints for `/approve`, `/reject`, and
+`/run`. The Gateway may act on those sensitive intents only when that explicit
+command hint is present. An LLM-routed sensitive intent without the hint must be
+returned as a clarification request.
+
+SITL execution uses two artifacts and two boundaries:
+
+1. the approval route records a short-lived operator approval bound to the
+   prepared task, execution request, scenario approval, and authenticated actor;
+2. the execution route names that approval id, and the runtime atomically marks
+   it consumed before attempting an external side effect.
+
+An `explicit_execution_approval=true` field on the execution request is not an
+approval artifact and cannot authorize execution.

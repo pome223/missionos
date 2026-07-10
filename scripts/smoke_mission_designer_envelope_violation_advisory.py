@@ -138,11 +138,21 @@ async def _main() -> dict[str, Any]:
                         "owner_user_id": "operator",
                     },
                 )
+                execution_approval = await _post_json(
+                    client,
+                    "/px4-gazebo/mission-scenarios/approve-sitl-execution",
+                    {
+                        "task_id": prepared["summary"]["task_id"],
+                        "explicit_execution_approval": True,
+                    },
+                )
                 blocked = await client.post(
                     "/px4-gazebo/mission-scenarios/execute-sitl",
                     json={
                         "task_id": prepared["summary"]["task_id"],
-                        "explicit_execution_approval": True,
+                        "execution_approval_id": execution_approval[
+                            "execution_operator_approval"
+                        ]["approval_id"],
                     },
                 )
                 if blocked.status_code != 409:

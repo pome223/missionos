@@ -98,6 +98,7 @@ def _persist_hardware_adapter_stage(
     task_id: str,
     missionos_action_ref: str,
     operator_approval_ref: str | None,
+    approval_actor: str,
     blocking_reasons: tuple[str, ...],
     execution_mode: HardwareExecutionMode,
 ) -> dict[str, Any]:
@@ -135,7 +136,7 @@ def _persist_hardware_adapter_stage(
     if operator_approval_ref:
         approval = build_px4_bench_hardware_operator_approval(
             operator_approval_ref=operator_approval_ref,
-            approval_actor="missionos_gateway_operator",
+            approval_actor=approval_actor,
             approval_timestamp=datetime.now(timezone.utc),
             missionos_action_ref=missionos_action_ref,
         )
@@ -161,6 +162,7 @@ def _persist_blocked_hardware_adapter_evidence(
     task_id: str,
     missionos_action_ref: str,
     operator_approval_ref: str | None,
+    approval_actor: str,
     blocking_reasons: tuple[str, ...],
     execution_mode: HardwareExecutionMode,
 ) -> dict[str, Any]:
@@ -169,6 +171,7 @@ def _persist_blocked_hardware_adapter_evidence(
         task_id=task_id,
         missionos_action_ref=missionos_action_ref,
         operator_approval_ref=operator_approval_ref,
+        approval_actor=approval_actor,
         blocking_reasons=blocking_reasons,
         execution_mode=execution_mode,
     )
@@ -194,6 +197,7 @@ def invoke_missionos_real_hardware_dispatch_runtime(
     task_id: str,
     subject_id: str,
     approval: PX4RealHardwareActuatorApproval,
+    approval_actor: str,
     dispatch_validation: Mapping[str, Any],
     llm_response_proposal: Mapping[str, Any],
     serial_device: str | None = None,
@@ -220,6 +224,8 @@ def invoke_missionos_real_hardware_dispatch_runtime(
         )
     if dispatch_validation.get("operator_approval_consumed") is not True:
         return _blocked("operator_approval_not_consumed")
+    if not approval_actor.strip():
+        return _blocked("authenticated_approval_actor_required")
     # The token must have been minted for THIS backend. Without this check a valid
     # px4_gazebo_sitl authorization could be replayed into the real-hardware
     # executor, since the rest of the validation shape is identical.
@@ -260,6 +266,7 @@ def invoke_missionos_real_hardware_dispatch_runtime(
                 task_id=task_id,
                 missionos_action_ref=missionos_action_ref,
                 operator_approval_ref=operator_approval_ref,
+                approval_actor=approval_actor,
                 blocking_reasons=(
                     f"{MISSIONOS_REAL_HARDWARE_DISPATCH_RUNTIME_OPT_IN_ENV}_not_enabled",
                 ),
@@ -275,6 +282,7 @@ def invoke_missionos_real_hardware_dispatch_runtime(
                 task_id=task_id,
                 missionos_action_ref=missionos_action_ref,
                 operator_approval_ref=operator_approval_ref,
+                approval_actor=approval_actor,
                 blocking_reasons=(
                     "real_serial_dispatch_requires_opt_in_and_serial_device",
                 ),
@@ -290,6 +298,7 @@ def invoke_missionos_real_hardware_dispatch_runtime(
         task_id=task_id,
         missionos_action_ref=missionos_action_ref,
         operator_approval_ref=operator_approval_ref,
+        approval_actor=approval_actor,
         blocking_reasons=(),
         execution_mode=execution_mode,
     )
@@ -323,6 +332,8 @@ def invoke_missionos_real_hardware_dispatch_runtime(
         "invocation_completed_at": completed_at,
         "invocation_stdout_sha256": _sha256_text(result_json),
         "invocation_stderr_sha256": _sha256_text(""),
+        "invocation_stdout_preimage": result_json,
+        "invocation_stderr_preimage": "",
         "invocation_exit_code": 0,
         "backend_target": REAL_HARDWARE_DISPATCH_BACKEND_TARGET,
         "link_kind": link_kind,
