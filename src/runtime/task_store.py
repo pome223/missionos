@@ -983,7 +983,12 @@ class TaskStore:
         metadata: dict[str, Any] | None = None,
         next_task_status: str | None = None,
     ) -> dict[str, Any] | None:
-        """Atomically transition a one-shot artifact and related task evidence."""
+        """Atomically transition a one-shot artifact and related task evidence.
+
+        ``expected_updated_at`` is an exact compare-and-swap token. Callers must
+        pass the float read directly from this TaskStore; values reserialized by
+        another JSON client are not a supported CAS token.
+        """
 
         replacement_artifacts = dict(replace_artifacts or {})
         if collection_key in replacement_artifacts:

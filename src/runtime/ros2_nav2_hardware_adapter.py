@@ -378,6 +378,12 @@ def build_ros2_nav2_hardware_adapter_evidence(
     if completion_claimed and config.execution_mode is HardwareExecutionMode.SIM:
         unproven_claims.append("sim_action_completion_not_physical")
     if (
+        completion_claimed
+        and str(progress_result.get("nav2_status") or "").lower()
+        == "position_tolerance_reached"
+    ):
+        unproven_claims.append("nav2_goal_status_succeeded_not_observed")
+    if (
         nav2_completion_reported
         and config.action_kind is HardwareActionKind.NAV2_GOAL_POSE
         and not robot_motion_observed

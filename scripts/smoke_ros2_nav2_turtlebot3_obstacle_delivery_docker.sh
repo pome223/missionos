@@ -32,9 +32,6 @@ docker run --rm -i --shm-size=1g \
   -e "MISSIONOS_CHAT_TURTLEBOT3_MID_RECOVERY_SMOKE=${MISSIONOS_CHAT_TURTLEBOT3_MID_RECOVERY_SMOKE:-0}" \
   -e "MISSIONOS_CHAT_TURTLEBOT3_DYNAMIC_OBSTACLE_RECOVERY_SMOKE=${MISSIONOS_CHAT_TURTLEBOT3_DYNAMIC_OBSTACLE_RECOVERY_SMOKE:-0}" \
   -e "MISSIONOS_CHAT_TURTLEBOT3_DECISION_DEMO_SMOKE=${MISSIONOS_CHAT_TURTLEBOT3_DECISION_DEMO_SMOKE:-0}" \
-  -e "MISSIONOS_CHAT_TURTLEBOT3_HUMAN_APPROVAL_DEMO_SMOKE=${MISSIONOS_CHAT_TURTLEBOT3_HUMAN_APPROVAL_DEMO_SMOKE:-0}" \
-  -e "MISSIONOS_TURTLEBOT3_RECOVERY_OPERATOR_APPROVAL_REF=${MISSIONOS_TURTLEBOT3_RECOVERY_OPERATOR_APPROVAL_REF:-}" \
-  -e "MISSIONOS_TURTLEBOT3_RECOVERY_OPERATOR_APPROVAL_ACTOR=${MISSIONOS_TURTLEBOT3_RECOVERY_OPERATOR_APPROVAL_ACTOR:-}" \
   -e "MISSIONOS_CHAT_TURTLEBOT3_RECOVERY_GUARDRAIL_FALLBACK_SMOKE=${MISSIONOS_CHAT_TURTLEBOT3_RECOVERY_GUARDRAIL_FALLBACK_SMOKE:-0}" \
   -e "MISSIONOS_CHAT_TURTLEBOT3_LOCALIZATION_DRIFT_FAULT_SMOKE=${MISSIONOS_CHAT_TURTLEBOT3_LOCALIZATION_DRIFT_FAULT_SMOKE:-0}" \
   -e "MISSIONOS_CHAT_TURTLEBOT3_LOCALIZATION_DRIFT_INITIALPOSE_X_M=${MISSIONOS_CHAT_TURTLEBOT3_LOCALIZATION_DRIFT_INITIALPOSE_X_M:-8.0}" \
@@ -181,9 +178,12 @@ relay_pid=$!
 sleep 5
 
 telemetry_sidecar_jsonl=/tmp/missionos_turtlebot3_telemetry_sidecar.jsonl
+telemetry_live_task_id_path=/tmp/missionos_turtlebot3_live_task_id
 rm -f "$telemetry_sidecar_jsonl"
+rm -f "$telemetry_live_task_id_path"
 python3 /work/missionos/scripts/ros2_nav2_turtlebot3_telemetry_sidecar.py \
   --output "$telemetry_sidecar_jsonl" \
+  --task-id-path "$telemetry_live_task_id_path" \
   --duration-s 600 \
   --max-samples 12000 \
   >/tmp/missionos_turtlebot3_telemetry_sidecar.log 2>&1 &
@@ -213,6 +213,7 @@ export ROS2_NAV2_RECOVERY_ORBIT_MIN_PATH_M="${ROS2_NAV2_RECOVERY_ORBIT_MIN_PATH_
 export ROS2_NAV2_GOAL_RESULT_TIMEOUT_S="${ROS2_NAV2_GOAL_RESULT_TIMEOUT_S:-180}"
 export ROS2_NAV2_POST_RESULT_SETTLE_S=3.0
 export MISSIONOS_TURTLEBOT3_TELEMETRY_SIDECAR_JSONL="$telemetry_sidecar_jsonl"
+export MISSIONOS_TURTLEBOT3_LIVE_TASK_ID_PATH="$telemetry_live_task_id_path"
 export MISSIONOS_TURTLEBOT3_LOG_BUNDLE_PATHS='{"gazebo":"/tmp/missionos_gazebo_delivery.log","nav2":"/tmp/missionos_nav2_delivery.log","relay":"/tmp/missionos_relay_delivery.log","telemetry_sidecar":"/tmp/missionos_turtlebot3_telemetry_sidecar.log","spawn_obstacle":"/tmp/missionos_spawn_obstacle.log"}'
 export RUN_MISSIONOS_CHAT_TURTLEBOT3_HOME_MISSION_SMOKE_WITH_BRIDGE=1
 case "${MISSIONOS_CHAT_TURTLEBOT3_RECOVERY_GUARDRAIL_FALLBACK_SMOKE:-0}" in

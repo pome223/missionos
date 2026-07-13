@@ -224,6 +224,25 @@ def _evaluate_recovery_candidates(payload: dict[str, Any]) -> dict[str, Any]:
         candidate_id = str(raw.get("candidate_id") or "").strip()
         if not candidate_id:
             continue
+        start_pose = raw.get("start_pose")
+        normalized_start_pose = None
+        if isinstance(start_pose, dict):
+            try:
+                start_x_m = float(start_pose["x_m"])
+                start_y_m = float(start_pose["y_m"])
+                start_yaw_rad = float(start_pose.get("yaw_rad") or 0.0)
+            except (KeyError, TypeError, ValueError):
+                continue
+            if not all(
+                math.isfinite(value)
+                for value in (start_x_m, start_y_m, start_yaw_rad)
+            ):
+                continue
+            normalized_start_pose = {
+                "x_m": start_x_m,
+                "y_m": start_y_m,
+                "yaw_rad": start_yaw_rad,
+            }
         candidates.append(
             {
                 **raw,
@@ -231,6 +250,11 @@ def _evaluate_recovery_candidates(payload: dict[str, Any]) -> dict[str, Any]:
                 "x_m": x_m,
                 "y_m": y_m,
                 "yaw_rad": yaw_rad,
+                **(
+                    {"start_pose": normalized_start_pose}
+                    if normalized_start_pose is not None
+                    else {}
+                ),
             }
         )
     if not candidates:
@@ -445,7 +469,27 @@ def _evaluate_recovery_candidates(payload: dict[str, Any]) -> dict[str, Any]:
             pose.pose.orientation.z = qz
             pose.pose.orientation.w = qw
             goal.goal = pose
-            goal.use_start = False
+            explicit_start = candidate.get("start_pose")
+            if isinstance(explicit_start, dict):
+                start = PoseStamped()
+                start.header.frame_id = frame_id
+                start.header.stamp.sec = 0
+                start.header.stamp.nanosec = 0
+                start.pose.position.x = float(explicit_start["x_m"])
+                start.pose.position.y = float(explicit_start["y_m"])
+                sqx, sqy, sqz, sqw = _yaw_to_quaternion(
+                    float(explicit_start.get("yaw_rad") or 0.0)
+                )
+                start.pose.orientation.x = sqx
+                start.pose.orientation.y = sqy
+                start.pose.orientation.z = sqz
+                start.pose.orientation.w = sqw
+                goal.start = start
+                goal.use_start = True
+                path_start_source = "explicit_candidate_start"
+            else:
+                goal.use_start = False
+                path_start_source = "current_robot_pose"
             goal.planner_id = ""
             send_future = planner_client.send_goal_async(goal)
             rclpy.spin_until_future_complete(
@@ -460,6 +504,7 @@ def _evaluate_recovery_candidates(payload: dict[str, Any]) -> dict[str, Any]:
                         **candidate,
                         "path_valid": False,
                         "planner_status": "goal_rejected",
+                        "path_start_source": path_start_source,
                         "blocking_reasons": ["nav2_compute_path_goal_rejected"],
                     }
                 )
@@ -479,6 +524,7 @@ def _evaluate_recovery_candidates(payload: dict[str, Any]) -> dict[str, Any]:
                         **candidate,
                         "path_valid": False,
                         "planner_status": "timeout",
+                        "path_start_source": path_start_source,
                         "blocking_reasons": ["nav2_compute_path_result_timeout"],
                     }
                 )
@@ -610,6 +656,7 @@ def _evaluate_recovery_candidates(payload: dict[str, Any]) -> dict[str, Any]:
                     "path_sha256": path_sha256,
                     "recommended_arrival_yaw_rad": round(arrival_yaw_rad, 6),
                     "arrival_heading_source": "compute_path_final_tangent",
+                    "path_start_source": path_start_source,
                     "blocking_reasons": evaluation_reasons,
                 }
             )
@@ -1670,6 +1717,13 @@ def _send_goal_pose(payload: dict[str, Any]) -> dict[str, Any]:
         completion_observed = (
             nav2_succeeded or position_tolerance_completion_observed
         ) and robot_motion_observed
+        completion_basis = (
+            "nav2_goal_succeeded"
+            if nav2_succeeded
+            else "position_tolerance_with_confirmed_cancel"
+            if position_tolerance_completion_observed
+            else "none"
+        )
         runtime_progress_observed = (
             feedback_count > 0 or robot_motion_observed or nav2_succeeded
         )
@@ -1730,6 +1784,8 @@ def _send_goal_pose(payload: dict[str, Any]) -> dict[str, Any]:
             )
             is True,
             "obstacle_avoidance_observed": obstacle_avoidance_observed,
+            "nav2_goal_succeeded": nav2_succeeded,
+            "completion_basis": completion_basis,
             "velocity_result": velocity_result,
             "obstacle_result": obstacle_result,
             "trajectory_result": trajectory_result,
@@ -1775,6 +1831,8 @@ def _send_goal_pose(payload: dict[str, Any]) -> dict[str, Any]:
             is True,
             "obstacle_avoidance_observed": obstacle_avoidance_observed,
             "nav2_status": nav2_status,
+            "nav2_goal_succeeded": nav2_succeeded,
+            "completion_basis": completion_basis,
             "feedback_count": feedback_count,
             "last_distance_remaining_m": last_distance_remaining_m,
             "velocity_result": velocity_result,
@@ -1802,6 +1860,8 @@ def _send_goal_pose(payload: dict[str, Any]) -> dict[str, Any]:
             runtime_progress_observed=runtime_progress_observed,
             completion_observed=completion_observed,
             nav2_status=nav2_status,
+            nav2_goal_succeeded=nav2_succeeded,
+            completion_basis=completion_basis,
             state_result=state_result,
             progress_result=progress_result,
             blocking_reasons=blocking_reasons,

@@ -39,9 +39,6 @@ DYNAMIC_OBSTACLE_RECOVERY_SMOKE_ENV = (
     "MISSIONOS_CHAT_TURTLEBOT3_DYNAMIC_OBSTACLE_RECOVERY_SMOKE"
 )
 DECISION_DEMO_SMOKE_ENV = "MISSIONOS_CHAT_TURTLEBOT3_DECISION_DEMO_SMOKE"
-HUMAN_APPROVAL_DEMO_SMOKE_ENV = (
-    "MISSIONOS_CHAT_TURTLEBOT3_HUMAN_APPROVAL_DEMO_SMOKE"
-)
 RECOVERY_GUARDRAIL_FALLBACK_SMOKE_ENV = (
     "MISSIONOS_CHAT_TURTLEBOT3_RECOVERY_GUARDRAIL_FALLBACK_SMOKE"
 )
@@ -95,18 +92,11 @@ def _dynamic_obstacle_recovery_smoke_enabled() -> bool:
     return (
         _truthy_env(DYNAMIC_OBSTACLE_RECOVERY_SMOKE_ENV)
         or _truthy_env(DECISION_DEMO_SMOKE_ENV)
-        or _truthy_env(HUMAN_APPROVAL_DEMO_SMOKE_ENV)
     )
 
 
 def _decision_demo_smoke_enabled() -> bool:
-    return _truthy_env(DECISION_DEMO_SMOKE_ENV) or _truthy_env(
-        HUMAN_APPROVAL_DEMO_SMOKE_ENV
-    )
-
-
-def _human_approval_demo_smoke_enabled() -> bool:
-    return _truthy_env(HUMAN_APPROVAL_DEMO_SMOKE_ENV)
+    return _truthy_env(DECISION_DEMO_SMOKE_ENV)
 
 
 def _recovery_guardrail_fallback_smoke_enabled() -> bool:
@@ -148,20 +138,6 @@ def _localization_drift_env_overrides() -> dict[str, str]:
         "ROS2_NAV2_INITIALPOSE_Y_M": os.environ.get(
             LOCALIZATION_DRIFT_INITIALPOSE_Y_ENV,
             "8.0",
-        ),
-    }
-
-
-def _human_approval_demo_env_overrides() -> dict[str, str]:
-    return {
-        "MISSIONOS_TURTLEBOT3_RECOVERY_AVOID_OBSTACLE_REQUIRES_APPROVAL": "1",
-        "MISSIONOS_TURTLEBOT3_RECOVERY_OPERATOR_APPROVAL_REF": os.environ.get(
-            "MISSIONOS_TURTLEBOT3_RECOVERY_OPERATOR_APPROVAL_REF",
-            "operator_approval:codex_e2e_recovery",
-        ),
-        "MISSIONOS_TURTLEBOT3_RECOVERY_OPERATOR_APPROVAL_ACTOR": os.environ.get(
-            "MISSIONOS_TURTLEBOT3_RECOVERY_OPERATOR_APPROVAL_ACTOR",
-            "codex_e2e_operator",
         ),
     }
 
@@ -511,9 +487,9 @@ def main() -> int:
             _truthy_env(WITH_BRIDGE_ENV)
             and _dynamic_obstacle_recovery_smoke_enabled()
         )
-        human_approval_demo_enabled = (
-            _truthy_env(WITH_BRIDGE_ENV) and _human_approval_demo_smoke_enabled()
-        )
+        # Recovery approval is exercised through the authenticated Gateway/CLI
+        # checkpoint endpoint. Environment variables are never approval authority.
+        human_approval_demo_enabled = False
         localization_drift_fault_enabled = (
             mid_recovery_enabled and _localization_drift_fault_smoke_enabled()
         )
@@ -553,11 +529,6 @@ def main() -> int:
             )
 
         if dynamic_obstacle_recovery_enabled:
-            if human_approval_demo_enabled:
-                _stop_gateway(proc)
-                base_url, proc = _start_gateway(
-                    env_overrides=_human_approval_demo_env_overrides()
-                )
             (
                 dynamic_obstacle_plan,
                 dynamic_obstacle_approved,

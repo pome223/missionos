@@ -179,6 +179,9 @@ from src.runtime.turtlebot3_home_mission import (
     instruction_requests_turtlebot3_home_mission,
     run_turtlebot3_home_mission_dispatch,
 )
+from src.runtime.turtlebot3_telemetry_sidecar import (
+    TURTLEBOT3_LIVE_TASK_ID_PATH_ENV,
+)
 
 MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_ENV = (
     "MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_SECONDS"
@@ -924,6 +927,25 @@ def _missionos_prepare_mission_designer_sitl_context(
     )
 
 
+def _bind_turtlebot3_live_telemetry_task(task_id: str) -> None:
+    """Atomically tell the read-only sidecar which task owns live display data."""
+
+    raw_path = os.environ.get(TURTLEBOT3_LIVE_TASK_ID_PATH_ENV, "").strip()
+    if not raw_path:
+        return
+    path = Path(raw_path)
+    temporary = path.with_name(f"{path.name}.tmp-{os.getpid()}")
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary.write_text(f"{task_id}\n", encoding="utf-8")
+        temporary.replace(path)
+    except OSError:
+        try:
+            temporary.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+
 def _missionos_create_running_turtlebot3_home_mission_task(
     *,
     session_id: str,
@@ -968,6 +990,7 @@ def _missionos_create_running_turtlebot3_home_mission_task(
             "mission_delivery_completion_claimed": False,
         },
     )
+    _bind_turtlebot3_live_telemetry_task(str(task["task_id"]))
     return dict(task)
 
 
@@ -1023,6 +1046,7 @@ def _missionos_create_turtlebot3_home_mission_task(
             },
         )
         if isinstance(updated, dict):
+            _bind_turtlebot3_live_telemetry_task(str(updated["task_id"]))
             return dict(updated)
     task = get_task_store().create(
         kind="turtlebot3_home_mission_execution",
@@ -1055,6 +1079,7 @@ def _missionos_create_turtlebot3_home_mission_task(
             ),
         },
     )
+    _bind_turtlebot3_live_telemetry_task(str(task["task_id"]))
     return dict(task)
 
 

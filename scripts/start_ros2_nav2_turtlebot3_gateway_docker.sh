@@ -162,9 +162,12 @@ relay_pid=$!
 sleep 5
 
 telemetry_sidecar_jsonl=/tmp/missionos_turtlebot3_telemetry_sidecar.jsonl
+telemetry_live_task_id_path=/tmp/missionos_turtlebot3_live_task_id
 rm -f "$telemetry_sidecar_jsonl"
+rm -f "$telemetry_live_task_id_path"
 python3 /work/missionos/scripts/ros2_nav2_turtlebot3_telemetry_sidecar.py \
   --output "$telemetry_sidecar_jsonl" \
+  --task-id-path "$telemetry_live_task_id_path" \
   --duration-s "${MISSIONOS_TB3_TELEMETRY_DURATION_S:-7200}" \
   --max-samples "${MISSIONOS_TB3_TELEMETRY_MAX_SAMPLES:-240000}" \
   >/tmp/missionos_turtlebot3_telemetry_sidecar.log 2>&1 &
@@ -193,6 +196,7 @@ export ROS2_NAV2_RECOVERY_ORBIT_MIN_PATH_M="${ROS2_NAV2_RECOVERY_ORBIT_MIN_PATH_
 export ROS2_NAV2_GOAL_RESULT_TIMEOUT_S="${ROS2_NAV2_GOAL_RESULT_TIMEOUT_S:-180}"
 export ROS2_NAV2_POST_RESULT_SETTLE_S=3.0
 export MISSIONOS_TURTLEBOT3_TELEMETRY_SIDECAR_JSONL="$telemetry_sidecar_jsonl"
+export MISSIONOS_TURTLEBOT3_LIVE_TASK_ID_PATH="$telemetry_live_task_id_path"
 export MISSIONOS_TURTLEBOT3_LOG_BUNDLE_PATHS="{\"gazebo\":\"/tmp/missionos_gazebo_delivery.log\",\"nav2\":\"/tmp/missionos_nav2_delivery.log\",\"relay\":\"/tmp/missionos_relay_delivery.log\",\"telemetry_sidecar\":\"/tmp/missionos_turtlebot3_telemetry_sidecar.log\",\"spawn_obstacle\":\"/tmp/missionos_spawn_obstacle.log\"}"
 export MISSIONOS_GATEWAY_BACKEND=production
 

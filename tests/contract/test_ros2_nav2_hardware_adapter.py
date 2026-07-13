@@ -172,6 +172,30 @@ def test_ros2_nav2_sim_dispatch_claims_only_sim_action() -> None:
     assert "sim_action_completion_not_physical" in evidence.unproven_claims
 
 
+def test_position_tolerance_completion_preserves_weaker_nav2_status() -> None:
+    client = RecordingNav2Client(
+        progress_result={
+            "runtime_progress_observed": True,
+            "completion_observed": True,
+            "robot_motion_observed": True,
+            "nav2_status": "position_tolerance_reached",
+            "nav2_goal_succeeded": False,
+            "completion_basis": "position_tolerance_with_confirmed_cancel",
+        },
+    )
+    adapter = Ros2Nav2HardwareAdapter(
+        config=_approved_config(execution_mode=HardwareExecutionMode.SIM),
+        client=client,
+    )
+
+    evidence = adapter.dispatch_approved_action()
+
+    assert evidence.completion_claimed is True
+    assert evidence.completion_scope == "sim_action"
+    assert "nav2_goal_status_succeeded_not_observed" in evidence.unproven_claims
+    assert evidence.physical_execution_invoked is False
+
+
 def test_ros2_nav2_ack_without_progress_is_not_completion() -> None:
     client = RecordingNav2Client(
         progress_result={

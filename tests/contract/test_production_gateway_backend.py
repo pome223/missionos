@@ -269,6 +269,7 @@ def test_task_get_exposes_read_only_turtlebot3_live_telemetry(
             {
                 "schema_version": "missionos_turtlebot3_telemetry_sample.v1",
                 "sample_kind": "odom",
+                "task_id": "task_turtlebot3_live_telemetry",
                 "captured_at": "2026-07-12T01:37:46+00:00",
                 "frame_id": "odom",
                 "child_frame_id": "base_footprint",
@@ -302,11 +303,54 @@ def test_task_get_exposes_read_only_turtlebot3_live_telemetry(
 
     assert response.status_code == 200
     live = response.json()["task"]["artifacts"]["turtlebot3_live_telemetry"]
+    assert live["task_id"] == "task_turtlebot3_live_telemetry"
     assert live["raw_odom_position"] == {"x_m": 0.75, "y_m": 1.25}
     assert live["twist"]["linear_x_mps"] == 0.12
     assert live["display_only"] is True
     assert live["dispatch_authority_created"] is False
     assert live["completion_claimed"] is False
+
+
+def test_task_get_does_not_attach_other_turtlebot3_task_telemetry(
+    isolated_gateway_factory,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    from fastapi.testclient import TestClient
+
+    telemetry_path = tmp_path / "turtlebot3-live-other-task.jsonl"
+    telemetry_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "missionos_turtlebot3_telemetry_sample.v1",
+                "sample_kind": "odom",
+                "task_id": "task_new_robot_run",
+                "captured_at": "2026-07-12T01:37:46+00:00",
+                "frame_id": "odom",
+                "position": {"x_m": 0.75, "y_m": 1.25},
+                "twist": {"linear_x_mps": 0.12},
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv(
+        "MISSIONOS_TURTLEBOT3_TELEMETRY_SIDECAR_JSONL",
+        str(telemetry_path),
+    )
+    gateway = isolated_gateway_factory()
+    gateway.task_store.create(
+        task_id="task_old_robot_run",
+        kind="turtlebot3_home_mission_execution",
+        title="Old TurtleBot3 task",
+        status="running",
+        artifacts={"summary": {"status": "running"}},
+    )
+
+    response = TestClient(gateway.app).get("/tasks/task_old_robot_run")
+
+    assert response.status_code == 200
+    assert "turtlebot3_live_telemetry" not in response.json()["task"]["artifacts"]
 
 
 def test_production_gateway_rejects_unlisted_browser_origin(

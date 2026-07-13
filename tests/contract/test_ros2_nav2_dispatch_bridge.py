@@ -13,6 +13,7 @@ from src.runtime.hardware_adapter_contract import HardwareExecutionMode
 from src.runtime.ros2_nav2_dispatch_bridge import (
     ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV,
     ROS2_NAV2_BRIDGE_COMMAND_ENV,
+    ROS2_NAV2_RECOVERY_EVALUATION_TIMEOUT_ENV,
     Ros2Nav2BridgeCommandClient,
     Ros2Nav2BridgeError,
 )
@@ -213,6 +214,33 @@ def test_ros2_nav2_bridge_evaluates_recovery_candidates_without_authority(
     assert response["physical_execution_invoked"] is False
 
 
+def test_ros2_nav2_recovery_evaluation_timeout_must_be_positive(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    bridge = tmp_path / "ros2_nav2_plan_only.py"
+    _write_bridge(bridge)
+    monkeypatch.setenv(ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV, "1")
+    monkeypatch.setenv(ROS2_NAV2_BRIDGE_COMMAND_ENV, _command(bridge))
+    monkeypatch.setenv(ROS2_NAV2_RECOVERY_EVALUATION_TIMEOUT_ENV, "0")
+
+    with pytest.raises(
+        Ros2Nav2BridgeError,
+        match="ROS2_NAV2_RECOVERY_EVALUATION_TIMEOUT_S must be positive",
+    ):
+        Ros2Nav2BridgeCommandClient().evaluate_recovery_candidates(
+            candidates=[
+                {
+                    "candidate_id": "south",
+                    "x_m": 0.2,
+                    "y_m": -2.1,
+                    "yaw_rad": 0.0,
+                }
+            ],
+            obstacle={"x_m": 0.2, "y_m": -1.2},
+        )
+
+
 def test_ros2_nav2_bridge_does_not_claim_completion_without_motion(
     tmp_path: Path,
     monkeypatch,
@@ -291,6 +319,8 @@ def test_ros2_nav2_bridge_cancels_in_flight_goal_after_result_timeout() -> None:
     assert "recovery_map_distance_to_goal_m" in source
     assert '"map_pose_confirmation_required": True' in source
     assert 'nav2_status = "position_tolerance_reached"' in source
+    assert '"position_tolerance_with_confirmed_cancel"' in source
+    assert '"nav2_goal_succeeded": nav2_succeeded' in source
     assert "nav2_recovery_position_tolerance_cancel_unconfirmed" in source
     assert "evaluate_recovery_candidates" in source
     assert "ComputePathToPose" in source

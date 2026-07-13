@@ -219,12 +219,18 @@ def _latest_turtlebot3_live_telemetry(task: Mapping[str, Any]) -> dict[str, Any]
             lines = handle.read().splitlines()
     except OSError:
         return {}
+    task_id = str(task.get("task_id") or "").strip()
+    if not task_id:
+        return {}
     for raw_line in reversed(lines):
         try:
             sample = json.loads(raw_line)
         except (json.JSONDecodeError, UnicodeDecodeError):
             continue
         if not isinstance(sample, Mapping) or str(sample.get("sample_kind") or "") != "odom":
+            continue
+        sample_task_id = str(sample.get("task_id") or "").strip()
+        if sample_task_id != task_id:
             continue
         position = sample.get("position")
         twist = sample.get("twist")
@@ -239,6 +245,7 @@ def _latest_turtlebot3_live_telemetry(task: Mapping[str, Any]) -> dict[str, Any]
             "telemetry_status": "observed",
             "captured_at": str(sample.get("captured_at") or ""),
             "sample_kind": "odom",
+            "task_id": sample_task_id,
             "frame_id": str(sample.get("frame_id") or "odom"),
             "child_frame_id": str(sample.get("child_frame_id") or ""),
             "raw_odom_position": {"x_m": x_m, "y_m": y_m},

@@ -101,6 +101,7 @@ dispatch, action, or command surface:
 ```bash
 python3 /work/missionos/scripts/ros2_nav2_turtlebot3_telemetry_sidecar.py \
   --output /tmp/missionos_turtlebot3_telemetry_sidecar.jsonl \
+  --task-id-path /tmp/missionos_turtlebot3_live_task_id \
   --duration-s 600 \
   --max-samples 12000
 ```
@@ -756,6 +757,12 @@ Displayed trails are AMCL-corrected map-frame samples (odom-frame fallbacks
 and unconfirmed single-sample jumps are dropped from display only; raw bridge
 samples stay in `bridge_responses`).
 
+The Gateway atomically writes the active MissionOS task id to the sidecar's
+`--task-id-path`. Each live sample carries that id, and `GET /tasks/<task_id>`
+attaches the preview only when the sample id exactly matches the requested
+task. A newer robot run therefore cannot leak its live odom into an older
+running or pending task.
+
 ### Runtime failure recovery
 
 An unplanned Nav2 segment failure convenes the same recovery machinery as the
@@ -769,6 +776,40 @@ mission approval is not reused. A source-bound checkpoint is persisted as
 operator reviews it and explicitly chooses `y` or uses
 `/approve-recovery <task_id>`. The failure context is recorded source-bound as
 `runtime_failure_context`.
+
+Environment variables are configuration, not human authority.
+`MISSIONOS_TURTLEBOT3_RECOVERY_OPERATOR_APPROVAL_REF` and its actor companion
+are not accepted or forwarded. Only the authenticated Gateway recovery route,
+after checkpoint id/hash review, can mint
+`missionos_turtlebot3_recovery_operator_approval.v1`.
+
+Live `avoid_obstacle` candidate evaluation reads both global and local
+costmaps. A multi-goal recovery is checked as a connected sequence: the first
+path starts at the current robot pose, and each downstream `ComputePathToPose`
+request sets `use_start=true` with the preceding recovery goal. The checkpoint
+binds those sequence paths and hashes; dispatch-time revalidation repeats the
+same connected check. `ROS2_NAV2_RECOVERY_EVALUATION_TIMEOUT_S` controls this
+plan-only call (90 seconds by default), while the general bridge timeout may
+still impose the operator-configured process limit.
+The 0.55 m geometry clamp is only a deterministic candidate-generation floor;
+dual-costmap path/controller-cost validation, not that clamp, is the dispatch
+safety decision.
+
+The recovery anti-orbit defaults require 25 seconds of execution, 18 seconds
+without improved Nav2 distance, and at least 1.0 m of additional map-frame
+path before cancellation. The combined gates avoid treating a short controller
+replan or localization wobble as an orbit; deployments with noisier AMCL should
+tune all three together and retain the source-backed cancellation evidence.
+
+For a recovery goal only, the bridge may record
+`nav2_status=position_tolerance_reached` when feedback and map-frame pose are
+both within the bounded tolerance and a controlled cancel is accepted and
+observed. This is not rewritten as Nav2 `SUCCEEDED`:
+`nav2_goal_succeeded=false`,
+`completion_basis=position_tolerance_with_confirmed_cancel`, and adapter
+evidence retains `nav2_goal_status_succeeded_not_observed` as an unproven
+claim. It can support bounded simulator pose completion with observed motion,
+but never a Nav2-success, delivery, or physical-execution claim.
 
 ### Gateway and chat commands
 
