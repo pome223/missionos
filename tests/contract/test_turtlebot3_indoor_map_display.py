@@ -289,7 +289,7 @@ def test_turtlebot3_execution_artifact_feeds_indoor_watch_and_map(
     html = missionos_cli._mission_map_html(model)
     assert "MissionOS Indoor Map" in html
     assert "TurtleBot3/Nav2 simulator local-XY evidence" in html
-    assert "observed odom" in html
+    assert "persisted observed trajectory" in html
     assert "🐢" in html
     assert "pathGroupsBySegment" in html
     assert "avoid obstacle" in html
@@ -299,6 +299,15 @@ def test_turtlebot3_execution_artifact_feeds_indoor_watch_and_map(
     assert "furniture" in html
     assert "furniture (sim pillars)" not in html
     assert "physical" in html
+    assert "live_display_points" in html
+    assert "live /odom preview — display-only, not evidence" in html
+    assert "live preview ended — not evidence" in html
+    assert "persisted observed trajectory (final evidence)" in html
+    assert "Green is not persisted and is never verifier input" in html
+    assert ".live-path-ended" in html
+    assert "stroke-dasharray: 7 8" in html
+    assert html.index("${liveMarkup}") < html.index("${observedMarkup}")
+    assert "recovery phase" in html
 
     console = Console(record=True, color_system=None, width=120)
     console.print(
@@ -318,50 +327,152 @@ def test_turtlebot3_execution_artifact_feeds_indoor_watch_and_map(
     assert "physical_execution_invoked=false" in rendered
 
 
-def test_turtlebot4_indoor_map_model_uses_robot_profile_label() -> None:
-    task_payload = {
-        "task_id": "task_turtlebot4_indoor_map",
-        "status": "completed",
-        "artifacts": {
-            "turtlebot3_indoor_map_model": {
-                "schema_version": "missionos_turtlebot3_indoor_map.v1",
-                "execution_target": "ros2_nav2_turtlebot4_sim",
-                "robot_profile": "turtlebot4",
-                "planned_points": [
-                    {"label": "H home", "phase": "home", "x_m": -2.0, "y_m": -0.5},
-                    {
-                        "label": "D dropoff",
-                        "phase": "dropoff",
-                        "x_m": -1.4,
-                        "y_m": 2.42,
-                    },
-                ],
-                "observed_points": [
-                    {"phase": "home", "x_m": -2.0, "y_m": -0.5},
-                    {"phase": "dropoff", "x_m": -1.4, "y_m": 2.42},
-                ],
-                "room_boundary": {
-                    "min_x_m": -2.5,
-                    "max_x_m": 1.0,
-                    "min_y_m": -1.0,
-                    "max_y_m": 3.0,
-                },
-            }
+def test_watch_overlays_live_odom_without_rewriting_observed_evidence() -> None:
+    indoor = {
+        "frame_id": "map",
+        "mission_kind": "indoor_delivery_route_leg",
+        "planned_points": [
+            {"x_m": -2.0, "y_m": -0.5, "role": "home"},
+            {"x_m": -1.4, "y_m": 2.42, "role": "dropoff"},
+        ],
+        "observed_points": [{"x_m": -1.0, "y_m": 0.5}],
+        "current_pose": {"x_m": -1.0, "y_m": 0.5},
+        "recovery": {"triggered": True},
+    }
+    artifacts = {
+        "summary": {
+            "runtime_recovery_triggered": True,
+            "route_completed_after_recovery": False,
+            "segment_completion_count": 3,
+            "planned_segment_count": 6,
+            "recovery_completion_claimed": False,
+            "route_resumed_after_recovery": False,
+        },
+        "turtlebot3_recovery_checkpoint": {
+            "checkpoint_status": "dispatching",
+            "selected_action": "avoid_obstacle",
+        },
+        "turtlebot3_live_telemetry": {
+            "telemetry_status": "observed",
+            "captured_at": "2026-07-12T01:00:00+00:00",
+            "frame_id": "odom",
+            "raw_odom_position": {"x_m": 0.2, "y_m": 0.3},
+            "twist": {"linear_x_mps": 0.1},
+            "display_only": True,
         },
     }
+    trail: list[dict] = []
+    alignment: dict = {}
 
-    model = missionos_cli._mission_map_model(
-        task_payload=task_payload,
-        provider="osm",
-        live_task_url=None,
+    first = missionos_cli._overlay_turtlebot3_live_telemetry(
+        indoor,
+        artifacts=artifacts,
+        trail=trail,
+        alignment_state=alignment,
     )
-    html = missionos_cli._mission_map_html(model)
+    artifacts["turtlebot3_live_telemetry"]["raw_odom_position"] = {
+        "x_m": 0.4,
+        "y_m": 0.6,
+    }
+    second = missionos_cli._overlay_turtlebot3_live_telemetry(
+        indoor,
+        artifacts=artifacts,
+        trail=trail,
+        alignment_state=alignment,
+    )
 
-    assert model["robot_profile"] == "turtlebot4"
-    assert model["robot_label"] == "TurtleBot4"
-    assert model["provider"]["attribution"] == "MissionOS TurtleBot4/Nav2 simulator evidence"
-    assert "TurtleBot4/Nav2 simulator local-XY evidence" in html
-    assert "MissionOS TurtleBot4 indoor map" in html
+    assert indoor["observed_points"] == [{"x_m": -1.0, "y_m": 0.5}]
+    assert first["live_display_points"][-1]["x_m"] == pytest.approx(-1.0)
+    assert second["live_display_points"][-1]["x_m"] == pytest.approx(-0.8)
+    assert second["live_display_points"][-1]["y_m"] == pytest.approx(0.8)
+    assert second["live_display_points"][-1]["raw_x_m"] == 0.4
+    assert second["live_display_points"][-1]["display_only"] is True
+    assert second["live_display_points"][-1]["evidence_status"] == "not_evidence"
+    assert second["live_telemetry"]["persistence"] == (
+        "process_local_response_overlay_only"
+    )
+    assert second["recovery"]["runtime_status"] == (
+        "approved_recovery_and_route_in_progress"
+    )
+
+    console = Console(record=True, color_system=None, width=120)
+    console.print(
+        missionos_cli._render_turtlebot3_indoor_map(
+            indoor_map=second,
+            status="running",
+            task_id="task_live_watch",
+        )
+    )
+    rendered = console.export_text()
+    assert "live_preview=observed (display-only, not evidence)" in rendered
+    assert "live_samples=2" in rendered
+    assert "recovery_phase=approved_recovery_and_route_in_progress" in rendered
+    assert "recovery_action=avoid_obstacle" in rendered
+    assert "route_segments=3/6" in rendered
+    assert "recovery_complete=False" in rendered
+
+
+def test_terminal_live_preview_freezes_only_in_current_process() -> None:
+    indoor = {
+        "observed_points": [
+            {"x_m": -1.0, "y_m": 0.5, "source": "ros2_nav2_bridge"},
+            {"x_m": -0.5, "y_m": 0.8, "source": "ros2_nav2_bridge"},
+        ],
+        "current_pose": {"x_m": -0.5, "y_m": 0.8},
+        "recovery": {
+            "observed_points": [{"x_m": -0.8, "y_m": 0.4}],
+            "target": {"x_m": -0.7, "y_m": 0.3},
+        },
+    }
+    terminal_artifacts = {"summary": {"completion_claimed": True}}
+    process_local_trail = [
+        {
+            "x_m": -0.9,
+            "y_m": 0.55,
+            "raw_x_m": 0.0,
+            "raw_y_m": 0.0,
+            "display_only": True,
+            "evidence_status": "not_evidence",
+        },
+        {
+            "x_m": -0.6,
+            "y_m": 0.75,
+            "raw_x_m": 0.4,
+            "raw_y_m": 0.2,
+            "display_only": True,
+            "evidence_status": "not_evidence",
+        },
+    ]
+
+    frozen = missionos_cli._overlay_turtlebot3_live_telemetry(
+        indoor,
+        artifacts=terminal_artifacts,
+        trail=process_local_trail,
+        alignment_state={},
+        freeze_live_preview=True,
+    )
+
+    assert frozen is not indoor
+    assert frozen["live_display_points"] == process_local_trail
+    assert frozen["live_telemetry"]["telemetry_status"] == "ended"
+    assert frozen["live_telemetry"]["evidence_status"] == "not_evidence"
+    assert frozen["live_telemetry"]["display_path_length_m"] == pytest.approx(
+        0.447214
+    )
+    assert "live_display_points" not in indoor
+    assert "live_telemetry" not in terminal_artifacts
+
+    reloaded = missionos_cli._overlay_turtlebot3_live_telemetry(
+        indoor,
+        artifacts=terminal_artifacts,
+        trail=[],
+        alignment_state={},
+        freeze_live_preview=True,
+    )
+    assert reloaded is indoor
+    assert "live_display_points" not in reloaded
+    assert reloaded["observed_points"] == indoor["observed_points"]
+    assert reloaded["recovery"] == indoor["recovery"]
 
 
 def test_turtlebot3_indoor_map_display_aligns_odom_origin_to_planned_home(
@@ -532,5 +643,9 @@ def test_trajectory_samples_filter_odom_when_map_frame_samples_are_present() -> 
             "source": "ros2_nav2_bridge.trajectory_samples",
             "sample_index": 1,
             "elapsed_s": None,
+            "trajectory_sample_collection": "trajectory_samples",
+            "trajectory_container_index": 0,
+            "observed_trajectory_evidence_eligible": True,
+            "observation_provenance": "bridge_observed_trajectory_sample",
         }
     ]

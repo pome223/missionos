@@ -147,6 +147,35 @@ class Ros2Nav2BridgeCommandClient:
         self._last_dispatch_response = response
         return response
 
+    def evaluate_recovery_candidates(
+        self,
+        *,
+        candidates: list[dict[str, Any]],
+        obstacle: Mapping[str, Any],
+        frame_id: str = "map",
+    ) -> dict[str, Any]:
+        """Evaluate recovery goals through a read-only Nav2 planning action."""
+
+        response = _run_bridge(
+            action="evaluate_recovery_candidates",
+            payload={
+                "candidates": [dict(item) for item in candidates],
+                "obstacle": dict(obstacle),
+                "frame_id": frame_id,
+            },
+            timeout_s=90.0,
+            env_overrides=self._env_overrides,
+        )
+        if (
+            response.get("dispatch_request_sent") is not False
+            or response.get("dispatch_authority_created") is not False
+            or response.get("command_ack_observed") is not False
+        ):
+            raise Ros2Nav2BridgeError(
+                "plan-only recovery evaluation returned authority-bearing evidence"
+            )
+        return self._record_response("evaluate_recovery_candidates", response)
+
     def cancel_goal(self) -> dict[str, Any]:
         action = "cancel_goal"
         response = self._record_response(

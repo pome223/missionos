@@ -977,8 +977,19 @@ class TaskStore:
         expected: dict[str, Any],
         updates: dict[str, Any],
         expected_task_status: str | None = None,
+        expected_updated_at: float | None = None,
+        artifacts: dict[str, Any] | None = None,
+        replace_artifacts: dict[str, Any] | None = None,
+        metadata: dict[str, Any] | None = None,
+        next_task_status: str | None = None,
     ) -> dict[str, Any] | None:
-        """Atomically claim a one-shot artifact if all expected fields match."""
+        """Atomically transition a one-shot artifact and related task evidence."""
+
+        replacement_artifacts = dict(replace_artifacts or {})
+        if collection_key in replacement_artifacts:
+            raise ValueError(
+                "replace_artifacts cannot replace the claimed artifact collection"
+            )
 
         with sqlite3.connect(self.db_path, timeout=30.0) as conn:
             cursor = conn.cursor()
@@ -1006,6 +1017,12 @@ class TaskStore:
             ):
                 conn.rollback()
                 return None
+            if (
+                expected_updated_at is not None
+                and current.get("updated_at") != expected_updated_at
+            ):
+                conn.rollback()
+                return None
             current_artifacts = current.get("artifacts")
             current_artifacts = (
                 current_artifacts if isinstance(current_artifacts, dict) else {}
@@ -1022,33 +1039,72 @@ class TaskStore:
                 return None
 
             claimed_artifact = _merge_json(artifact, updates)
-            artifacts_patch = {
-                collection_key: {artifact_id: claimed_artifact}
-            }
+            artifacts_patch = _merge_json(
+                artifacts or {},
+                {collection_key: {artifact_id: claimed_artifact}},
+            )
             next_artifacts = _merge_json(current_artifacts, artifacts_patch)
-            next_task = {**current, "artifacts": next_artifacts}
+            if replacement_artifacts:
+                next_artifacts = {
+                    **next_artifacts,
+                    **replacement_artifacts,
+                }
+                artifacts_patch = {
+                    **artifacts_patch,
+                    **replacement_artifacts,
+                }
+            current_metadata = current.get("metadata")
+            current_metadata = (
+                current_metadata if isinstance(current_metadata, dict) else {}
+            )
+            next_metadata = _merge_json(current_metadata, metadata or {})
+            now = time.time()
+            resolved_status = next_task_status or str(current.get("status") or "")
+            started_at = current.get("started_at")
+            if started_at is None and resolved_status in {
+                "accepted",
+                "running",
+                "idle",
+            }:
+                started_at = now
+            ended_at = current.get("ended_at")
+            if resolved_status in {"completed", "failed", "cancelled", "expired"}:
+                ended_at = ended_at or now
+            next_task = {
+                **current,
+                "status": resolved_status,
+                "artifacts": next_artifacts,
+                "metadata": next_metadata,
+            }
             (
                 artifacts_search_text,
                 metadata_search_text,
                 search_text,
             ) = self._task_search_document(next_task)
-            now = time.time()
             cursor.execute(
                 """
                 UPDATE tasks
-                SET artifacts_json = ?,
+                SET status = ?,
+                    artifacts_json = ?,
+                    metadata_json = ?,
                     artifacts_search_text = ?,
                     metadata_search_text = ?,
                     search_text = ?,
-                    updated_at = ?
+                    updated_at = ?,
+                    started_at = ?,
+                    ended_at = ?
                 WHERE task_id = ?
                 """,
                 (
+                    resolved_status,
                     json.dumps(next_artifacts, ensure_ascii=True),
+                    json.dumps(next_metadata, ensure_ascii=True),
                     artifacts_search_text,
                     metadata_search_text,
                     search_text,
                     now,
+                    started_at,
+                    ended_at,
                     task_id,
                 ),
             )
@@ -1057,12 +1113,18 @@ class TaskStore:
                 task_id=task_id,
                 search_text=search_text,
             )
-            updated_task = {**next_task, "updated_at": now}
+            updated_task = {
+                **next_task,
+                "updated_at": now,
+                "started_at": started_at,
+                "ended_at": ended_at,
+            }
             event_payload = self._append_task_event(
                 cursor,
                 current=updated_task,
                 previous=current,
                 artifacts_patch=artifacts_patch,
+                metadata_patch=metadata,
             )
             conn.commit()
         self._notify(event_payload)

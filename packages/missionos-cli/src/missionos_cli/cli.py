@@ -5,14 +5,17 @@ from __future__ import annotations
 from concurrent.futures import Future, ThreadPoolExecutor, TimeoutError as FutureTimeout
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 from urllib.parse import quote, urlparse
 import html
+import hashlib
 import json
 import math
 import os
 import re
+import secrets
 import signal
 import shlex
 import subprocess
@@ -33,6 +36,7 @@ from prompt_toolkit.keys import Keys
 from prompt_toolkit.patch_stdout import patch_stdout
 from rich.console import Console, Group
 from rich.live import Live
+from rich.markup import escape as rich_escape
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
@@ -45,6 +49,7 @@ SITL_DISPATCH_TIMEOUT = 3600.0
 SITL_EXECUTION_POLL_INTERVAL = 5.0
 SITL_EXECUTION_POLL_TIMELINE_LIMIT = 5
 ACTIVE_RUNNER_RECOVERY_OBSERVATION_TIMEOUT_SECONDS = 95.0
+TURTLEBOT3_CHAT_TASK_STATUS_POLL_INTERVAL = 1.0
 TERMINAL_TASK_STATUSES = frozenset(
     {"completed", "recovered", "blocked", "failed", "cancelled", "canceled"}
 )
@@ -63,9 +68,6 @@ DEFAULT_GATEWAY_PID_PATH = Path("data/missionos_gateway.pid")
 DEFAULT_GATEWAY_LOG_PATH = Path("data/missionos_gateway.log")
 DEFAULT_TURTLEBOT3_CHAT_INSTRUCTION = (
     "TurtleBot3で屋内配送ルートを走って。障害物を避けて、目的地まで届けて。"
-)
-DEFAULT_TURTLEBOT4_CHAT_INSTRUCTION = (
-    "TurtleBot4で屋内配送ルートを走って。障害物を避けて、目的地まで届けて。"
 )
 DEFAULT_NOVA_CARTER_CHAT_INSTRUCTION = (
     "Nova CarterでIsaac Sim内の短いNav2ルートを走って。"
@@ -88,6 +90,7 @@ CHAT_SLASH_COMMANDS = (
     "/map",
     "/land",
     "/rtl",
+    "/review-recovery",
     "/approve-recovery",
     "/climb",
     "/speed",
@@ -102,6 +105,9 @@ CHAT_SLASH_COMMANDS = (
 CONVERSATION_ROUTE = "/missionos/autonomy-conversation/run"
 RECOVERY_DISPATCH_ROUTE = "/px4-gazebo/mission-scenarios/recovery-dispatch"
 RECOVERY_AGENT_PROPOSAL_ROUTE = "/missionos/runtime-recovery-agent/propose-for-task"
+TURTLEBOT3_RECOVERY_REVISION_ROUTE = (
+    "/missionos/turtlebot3/recovery-agent/revise-for-task"
+)
 SITL_START_ROUTE = "/px4-gazebo/mission-scenarios/start-sitl"
 SITL_EXECUTION_APPROVAL_ROUTE = (
     "/px4-gazebo/mission-scenarios/approve-sitl-execution"
@@ -268,6 +274,12 @@ class MissionOSGatewayClient:
                 response = client.request(method, _join_url(self.base_url, path), **kwargs)
         except httpx.ConnectError as exc:
             raise click.ClickException(_gateway_unreachable_message(self.base_url)) from exc
+        except httpx.TimeoutException as exc:
+            raise click.ClickException(
+                f"{method} {path} timed out while the Gateway may still be working. "
+                "Do not repeat an approved dispatch until the durable task state "
+                "has been checked."
+            ) from exc
         try:
             payload = response.json()
         except ValueError:
@@ -324,17 +336,29 @@ class MissionOSGatewayClient:
         task_id: str,
         recovery_action: str,
         recovery_parameters: dict[str, Any] | None = None,
+        expected_recovery_checkpoint_id: str = "",
+        expected_recovery_checkpoint_hash: str = "",
     ) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "task_id": task_id,
+            "recovery_action": recovery_action,
+            "recovery_parameters": recovery_parameters or {},
+            "explicit_recovery_dispatch_approval": True,
+        }
+        if expected_recovery_checkpoint_id:
+            payload["expected_recovery_checkpoint_id"] = (
+                expected_recovery_checkpoint_id
+            )
+        if expected_recovery_checkpoint_hash:
+            payload["expected_recovery_checkpoint_hash"] = (
+                expected_recovery_checkpoint_hash
+            )
         return self._request(
             "POST",
             RECOVERY_DISPATCH_ROUTE,
+            timeout=max(self.timeout, SITL_DISPATCH_TIMEOUT),
             ok_status_codes={409},
-            json={
-                "task_id": task_id,
-                "recovery_action": recovery_action,
-                "recovery_parameters": recovery_parameters or {},
-                "explicit_recovery_dispatch_approval": True,
-            },
+            json=payload,
         )
 
     def recovery_agent_propose_for_task(
@@ -354,6 +378,30 @@ class MissionOSGatewayClient:
                 "operator_instruction": operator_instruction,
                 "requested_action": requested_action,
                 "requested_parameters": requested_parameters or {},
+            },
+        )
+
+    def turtlebot3_recovery_revision(
+        self,
+        *,
+        task_id: str,
+        operator_instruction: str,
+        expected_recovery_checkpoint_id: str,
+        expected_recovery_checkpoint_hash: str,
+    ) -> dict[str, Any]:
+        return self._request(
+            "POST",
+            TURTLEBOT3_RECOVERY_REVISION_ROUTE,
+            ok_status_codes={409},
+            json={
+                "task_id": task_id,
+                "operator_instruction": operator_instruction,
+                "expected_recovery_checkpoint_id": (
+                    expected_recovery_checkpoint_id
+                ),
+                "expected_recovery_checkpoint_hash": (
+                    expected_recovery_checkpoint_hash
+                ),
             },
         )
 
@@ -1395,6 +1443,15 @@ def _print_recovery_result(
         f"ACK={ack}; runner_abort={runner_abort}",
         "delivery/progress/physical claim=false",
     ]
+    if "recovery_completion_claimed" in summary:
+        lines[2] = (
+            "recovery_completion_claimed="
+            f"{summary.get('recovery_completion_claimed')}; "
+            "route_resumed_after_recovery="
+            f"{summary.get('route_resumed_after_recovery')}; "
+            "route_completed_after_recovery="
+            f"{summary.get('route_completed_after_recovery')}"
+        )
     recovery_parameters = summary.get("recovery_parameters")
     if isinstance(recovery_parameters, dict) and recovery_parameters:
         parameter_text = ", ".join(
@@ -4430,6 +4487,13 @@ def _render_turtlebot3_indoor_map(
     recovery_records = recovery_records if isinstance(recovery_records, list) else []
     recovery_target = recovery.get("target")
     recovery_target_records = [recovery_target] if isinstance(recovery_target, dict) else []
+    live_records = indoor_map.get("live_display_points")
+    live_records = live_records if isinstance(live_records, list) else []
+    live_telemetry = indoor_map.get("live_telemetry")
+    live_telemetry = live_telemetry if isinstance(live_telemetry, dict) else {}
+    live_preview_ended = live_telemetry.get("telemetry_status") == "ended"
+    current_pose = indoor_map.get("current_pose")
+    current_pose_records = [current_pose] if isinstance(current_pose, dict) else []
 
     planned_points = _indoor_xy_points(planned_records)
     observed_points = _indoor_xy_points(observed_records)
@@ -4437,6 +4501,8 @@ def _render_turtlebot3_indoor_map(
     furniture_points = _indoor_xy_points(furniture_records)
     recovery_points = _indoor_xy_points(recovery_records)
     recovery_target_points = _indoor_xy_points(recovery_target_records)
+    live_points = _indoor_xy_points(live_records)
+    current_pose_points = _indoor_xy_points(current_pose_records)
     obstacle_record = (
         obstacle_records[0]
         if obstacle_records and isinstance(obstacle_records[0], dict)
@@ -4449,6 +4515,8 @@ def _render_turtlebot3_indoor_map(
         *obstacle_points,
         *recovery_points,
         *recovery_target_points,
+        *live_points,
+        *current_pose_points,
     ]
     if not anchors:
         anchors = [(0.0, 0.0)]
@@ -4466,6 +4534,8 @@ def _render_turtlebot3_indoor_map(
         ("obstacles", obstacle_points),
         ("recovery", recovery_points),
         ("recovery_target", recovery_target_points),
+        ("live", live_points),
+        ("current_pose", current_pose_points),
     ):
         sections[name] = (cursor, cursor + len(points))
         cursor += len(points)
@@ -4500,12 +4570,26 @@ def _render_turtlebot3_indoor_map(
         grid[row][col] = ("O", "bold red")
     for row, col in section("recovery_target"):
         grid[row][col] = ("R", "bold magenta")
+    for row, col in section("live"):
+        grid[row][col] = (
+            "·",
+            "dim green" if live_preview_ended else "bright_green",
+        )
     if planned_points:
         home_row, home_col = section("planned")[0]
         grid[home_row][home_col] = ("H", "bold blue")
         drop_row, drop_col = section("planned")[-1]
         grid[drop_row][drop_col] = ("D", "bold yellow")
-    if observed_points:
+    if live_points and not live_preview_ended:
+        robot_row, robot_col = section("live")[-1]
+        grid[robot_row][robot_col] = (TURTLEBOT3_MAP_ICON, "bold bright_green")
+    elif current_pose_points:
+        robot_row, robot_col = section("current_pose")[-1]
+        grid[robot_row][robot_col] = (TURTLEBOT3_MAP_ICON, "bold green")
+    elif recovery_points:
+        robot_row, robot_col = section("recovery")[-1]
+        grid[robot_row][robot_col] = (TURTLEBOT3_MAP_ICON, "bold green")
+    elif observed_points:
         robot_row, robot_col = section("observed")[-1]
         grid[robot_row][robot_col] = (TURTLEBOT3_MAP_ICON, "bold green")
 
@@ -4523,13 +4607,32 @@ def _render_turtlebot3_indoor_map(
     room = room if isinstance(room, dict) else {}
     alignment = indoor_map.get("display_alignment")
     alignment = alignment if isinstance(alignment, dict) else {}
+    live_twist = live_telemetry.get("twist")
+    live_twist = live_twist if isinstance(live_twist, dict) else {}
+    recovery_phase = _status_text(recovery.get("runtime_status"))
     hud = Text.from_markup(
         f"[bold]task[/bold]={task_id}  [bold]status[/bold]={status}  "
         f"[bold]mission[/bold]={_status_text(indoor_map.get('mission_kind'))}\n"
         f"frame={_status_text(indoor_map.get('frame_id'), 'map')}  "
         f"planned={len(planned_points)}pts  observed={len(observed_points)}pts  "
+        f"recovery_observed={len(recovery_points)}pts  "
         f"obstacles={len(obstacle_points)}  furniture={len(furniture_points)}  "
         f"recovery={_status_text(recovery.get('triggered'))}\n"
+        f"recovery_phase={recovery_phase or '-'}  "
+        f"recovery_action={_status_text(recovery.get('selected_action')) or '-'}\n"
+        f"recovery_goal={_status_text(recovery.get('goal_status')) or '-'}  "
+        f"verification={_status_text(recovery.get('verification_status')) or '-'}  "
+        f"resume_status={_status_text(recovery.get('route_resume_status')) or '-'}\n"
+        f"route_segments={_status_text(recovery.get('route_segment_completion_count')) or '-'}/"
+        f"{_status_text(recovery.get('route_segment_planned_count')) or '-'}  "
+        f"recovery_complete={_status_text(recovery.get('recovery_completion_claimed')) or '-'}  "
+        f"route_resumed={_status_text(recovery.get('route_resumed_after_recovery')) or '-'}\n"
+        f"live_preview={_status_text(live_telemetry.get('telemetry_status')) or '-'} "
+        "(display-only, not evidence)  "
+        f"live_samples={len(live_points)}  "
+        f"live_path={_fmt_metres(live_telemetry.get('display_path_length_m'))}  "
+        f"linear_x={_status_text(live_twist.get('linear_x_mps')) or '-'}m/s  "
+        f"captured_at={_status_text(live_telemetry.get('captured_at')) or '-'}\n"
         f"motion={_status_text(motion.get('robot_motion_observed'))}  "
         f"odom={_fmt_metres(motion.get('odom_delta_m'))}  "
         f"observed_source={_status_text(indoor_map.get('observed_pose_source'))}\n"
@@ -4542,8 +4645,9 @@ def _render_turtlebot3_indoor_map(
         f"room={_status_text(room.get('source'))}; physical_execution_invoked=false\n"
         f"floor_plan={_status_text(floor_plan.get('floor_plan_id'))}; "
         "furniture is display-only unless separately spawned\n"
-        f"[blue]H[/blue]=home  [yellow]D[/yellow]=dropoff  [green]{TURTLEBOT3_MAP_ICON}[/green]=TurtleBot3  "
-        "[cyan]p[/cyan]=plan  [green]·[/green]=odom  "
+        f"[blue]H[/blue]=home  [yellow]D[/yellow]=dropoff  [bright_green]{TURTLEBOT3_MAP_ICON}[/bright_green]=live preview marker  "
+        "[cyan]p[/cyan]=plan  [green]·[/green]=persisted observed odom  "
+        "[dim green]·[/dim green]=live odom preview (not evidence)  "
         "[white]S/T/B/C[/white]=sofa/table/bookshelf/counter  "
         "[bright_magenta]r/R[/bright_magenta]=recovery path/target  [red]O[/red]=obstacle"
     )
@@ -4953,67 +5057,54 @@ def _mission_map_weather_model(artifacts: dict[str, Any]) -> dict[str, Any]:
 def _turtlebot3_indoor_map_model_from_artifacts(
     artifacts: dict[str, Any],
 ) -> dict[str, Any]:
-    direct = artifacts.get("turtlebot3_indoor_map_model")
-    if isinstance(direct, dict):
-        return _repair_turtlebot3_indoor_map_display_alignment(dict(direct))
+    # Progress callbacks update summary first while a synchronous Nav2 dispatch
+    # is still running. Prefer that newest copy; the top-level artifact remains
+    # the previous stable snapshot until finalization.
+    summary = artifacts.get("summary")
+    summary = summary if isinstance(summary, dict) else {}
+    summary_embedded = summary.get("turtlebot3_indoor_map_model")
+    if isinstance(summary_embedded, dict):
+        return _repair_turtlebot3_indoor_map_display_alignment(
+            dict(summary_embedded)
+        )
     execution = artifacts.get("turtlebot3_home_mission_execution")
     execution = execution if isinstance(execution, dict) else {}
     embedded = execution.get("turtlebot3_indoor_map_model")
     if isinstance(embedded, dict):
         return _repair_turtlebot3_indoor_map_display_alignment(dict(embedded))
-    summary = artifacts.get("summary")
-    summary = summary if isinstance(summary, dict) else {}
-    summary_embedded = summary.get("turtlebot3_indoor_map_model")
-    if isinstance(summary_embedded, dict):
-        return _repair_turtlebot3_indoor_map_display_alignment(dict(summary_embedded))
+    direct = artifacts.get("turtlebot3_indoor_map_model")
+    if isinstance(direct, dict):
+        return _repair_turtlebot3_indoor_map_display_alignment(dict(direct))
     return {}
 
 
-def _normalize_turtlebot_robot_profile(raw: Any) -> str:
-    profile = str(raw or "").strip().lower().replace("-", "_").replace(" ", "_")
-    if profile in {"turtlebot4", "tb4"}:
-        return "turtlebot4"
-    if profile in {"nova_carter", "novacarter", "carter", "isaac_carter"}:
-        return "nova_carter"
-    if profile in {"turtlebot3", "tb3"}:
-        return "turtlebot3"
-    return ""
+def _turtlebot3_recovery_candidate_resolution_from_artifacts(
+    artifacts: dict[str, Any],
+) -> dict[str, Any]:
+    """Return the candidate resolution bound to the newest task summary.
 
+    Recovery revisions update the summary/execution copies atomically while the
+    top-level copy may still describe the superseded checkpoint. Presence of an
+    empty current value is meaningful (for example, a return-home follow-up), so
+    it must suppress rather than fall through to an older direct artifact.
+    """
 
-def _turtlebot_robot_profile_from_artifacts(artifacts: dict[str, Any]) -> str:
     summary = artifacts.get("summary")
     summary = summary if isinstance(summary, dict) else {}
     execution = artifacts.get("turtlebot3_home_mission_execution")
     execution = execution if isinstance(execution, dict) else {}
-    indoor_map = _turtlebot3_indoor_map_model_from_artifacts(artifacts)
-    for source in (summary, execution, indoor_map):
-        profile = _normalize_turtlebot_robot_profile(source.get("robot_profile"))
-        if profile:
-            return profile
-    for source in (summary, execution, indoor_map):
-        target = str(source.get("execution_target") or "").strip().lower()
-        if target == "ros2_nav2_turtlebot4_sim":
-            return "turtlebot4"
-        if target == "isaac_ros_nav2_nova_carter_sim":
-            return "nova_carter"
-        if target == "ros2_nav2_turtlebot3_sim":
-            return "turtlebot3"
-    return "turtlebot3" if indoor_map else ""
-
-
-def _turtlebot_robot_label_from_profile(profile: str) -> str:
-    normalized = _normalize_turtlebot_robot_profile(profile)
-    if normalized == "turtlebot4":
-        return "TurtleBot4"
-    if normalized == "nova_carter":
-        return "Nova Carter"
-    return "TurtleBot3"
-
-
-def _turtlebot_robot_label_from_artifacts(artifacts: dict[str, Any]) -> str:
-    return _turtlebot_robot_label_from_profile(
-        _turtlebot_robot_profile_from_artifacts(artifacts)
+    checkpoint = artifacts.get("turtlebot3_recovery_checkpoint")
+    checkpoint = checkpoint if isinstance(checkpoint, dict) else {}
+    revision_geometry = checkpoint.get("recovery_revision_geometry")
+    revision_geometry = (
+        revision_geometry if isinstance(revision_geometry, dict) else {}
     )
+    for owner in (summary, execution, revision_geometry, artifacts):
+        if "recovery_candidate_resolution" not in owner:
+            continue
+        resolution = owner.get("recovery_candidate_resolution")
+        return dict(resolution) if isinstance(resolution, dict) else {}
+    return {}
 
 
 def _turtlebot3_xy(point: dict[str, Any], *, raw: bool = False) -> tuple[float, float] | None:
@@ -5166,6 +5257,208 @@ def _repair_turtlebot3_indoor_map_display_alignment(
     return repaired
 
 
+def _overlay_turtlebot3_live_telemetry(
+    indoor_map: dict[str, Any],
+    *,
+    artifacts: dict[str, Any],
+    trail: list[dict[str, Any]],
+    alignment_state: dict[str, Any],
+    freeze_live_preview: bool = False,
+) -> dict[str, Any]:
+    """Add a response-only live odom preview without changing artifact evidence.
+
+    ``trail`` belongs to the current watch/map process. A terminal response may
+    freeze that process-local trail for operator orientation, but the preview is
+    never written back to the task, final artifact, or verifier input. A new
+    process (including a page reload) starts with an empty trail and therefore
+    shows only persisted observed/recovery evidence.
+    """
+
+    telemetry = artifacts.get("turtlebot3_live_telemetry")
+    telemetry = telemetry if isinstance(telemetry, dict) else {}
+    raw_position = telemetry.get("raw_odom_position")
+    raw_position = raw_position if isinstance(raw_position, dict) else {}
+    raw_x = _as_float(raw_position.get("x_m"))
+    raw_y = _as_float(raw_position.get("y_m"))
+    if raw_x is None or raw_y is None:
+        if freeze_live_preview and trail:
+            frozen = dict(indoor_map)
+            frozen["live_display_points"] = [dict(item) for item in trail]
+            live_path_length_m = sum(
+                math.hypot(
+                    float(end.get("raw_x_m") or 0.0)
+                    - float(start.get("raw_x_m") or 0.0),
+                    float(end.get("raw_y_m") or 0.0)
+                    - float(start.get("raw_y_m") or 0.0),
+                )
+                for start, end in zip(trail, trail[1:])
+            )
+            frozen["live_telemetry"] = {
+                "telemetry_status": "ended",
+                "display_path_length_m": round(live_path_length_m, 6),
+                "display_path_length_only": True,
+                "display_only": True,
+                "evidence_status": "not_evidence",
+                "persistence": "process_local_response_overlay_only",
+            }
+            frozen["live_display_alignment"] = {
+                "method": "latest_artifact_pose_plus_live_odom_delta",
+                "display_only": True,
+                "evidence_status": "not_evidence",
+                "persistence": "process_local_response_overlay_only",
+                "claim_boundary": (
+                    "Live preview ended. This frozen process-local projection "
+                    "is not persisted, is not verifier input, and is not "
+                    "trajectory evidence."
+                ),
+            }
+            return frozen
+        return indoor_map
+    observed = indoor_map.get("observed_points")
+    observed = observed if isinstance(observed, list) else []
+    artifact_count = len(observed)
+    if (
+        alignment_state.get("artifact_observed_count") != artifact_count
+        or "raw_anchor_x_m" not in alignment_state
+    ):
+        anchor = indoor_map.get("current_pose")
+        anchor = anchor if isinstance(anchor, dict) else {}
+        if not anchor and observed and isinstance(observed[-1], dict):
+            anchor = observed[-1]
+        map_x = _as_float(anchor.get("x_m"))
+        map_y = _as_float(anchor.get("y_m"))
+        if map_x is None or map_y is None:
+            planned = indoor_map.get("planned_points")
+            planned = planned if isinstance(planned, list) else []
+            home = planned[0] if planned and isinstance(planned[0], dict) else {}
+            map_x = _as_float(home.get("x_m")) or 0.0
+            map_y = _as_float(home.get("y_m")) or 0.0
+        alignment_state.update(
+            {
+                "artifact_observed_count": artifact_count,
+                "raw_anchor_x_m": raw_x,
+                "raw_anchor_y_m": raw_y,
+                "map_anchor_x_m": map_x,
+                "map_anchor_y_m": map_y,
+            }
+        )
+    display_x = float(alignment_state["map_anchor_x_m"]) + raw_x - float(
+        alignment_state["raw_anchor_x_m"]
+    )
+    display_y = float(alignment_state["map_anchor_y_m"]) + raw_y - float(
+        alignment_state["raw_anchor_y_m"]
+    )
+    point = {
+        "x_m": display_x,
+        "y_m": display_y,
+        "raw_x_m": raw_x,
+        "raw_y_m": raw_y,
+        "raw_frame_id": str(telemetry.get("frame_id") or "odom"),
+        "frame_id": "map",
+        "captured_at": telemetry.get("captured_at"),
+        "source": "ros2_telemetry_sidecar_live_display",
+        "display_only": True,
+        "evidence_status": "not_evidence",
+        "persistence": "process_local_response_overlay_only",
+        "display_alignment_applied": True,
+        "display_alignment_method": "latest_artifact_pose_plus_live_odom_delta",
+    }
+    if not trail or (
+        trail[-1].get("raw_x_m"), trail[-1].get("raw_y_m")
+    ) != (raw_x, raw_y):
+        trail.append(point)
+        if len(trail) > _FLIGHT_MAP_TRAIL_LIMIT:
+            del trail[: len(trail) - _FLIGHT_MAP_TRAIL_LIMIT]
+    overlaid = dict(indoor_map)
+    overlaid["live_display_points"] = [dict(item) for item in trail]
+    live_path_length_m = sum(
+        math.hypot(
+            float(end.get("raw_x_m") or 0.0)
+            - float(start.get("raw_x_m") or 0.0),
+            float(end.get("raw_y_m") or 0.0)
+            - float(start.get("raw_y_m") or 0.0),
+        )
+        for start, end in zip(trail, trail[1:])
+    )
+    overlaid["live_telemetry"] = {
+        **dict(telemetry),
+        "telemetry_status": (
+            "ended" if freeze_live_preview else telemetry.get("telemetry_status")
+        ),
+        "display_path_length_m": round(live_path_length_m, 6),
+        "display_path_length_only": True,
+        "display_only": True,
+        "evidence_status": "not_evidence",
+        "persistence": "process_local_response_overlay_only",
+    }
+    overlaid["live_display_alignment"] = {
+        "method": "latest_artifact_pose_plus_live_odom_delta",
+        "display_only": True,
+        "evidence_status": "not_evidence",
+        "persistence": "process_local_response_overlay_only",
+        "claim_boundary": (
+            "Live odom preview is a process-local projection for operator "
+            "orientation. It is not persisted, is not verifier input, and does "
+            "not alter stored trajectory evidence or completion claims."
+        ),
+    }
+    checkpoint = artifacts.get("turtlebot3_recovery_checkpoint")
+    checkpoint = checkpoint if isinstance(checkpoint, dict) else {}
+    summary = artifacts.get("summary")
+    summary = summary if isinstance(summary, dict) else {}
+    recovery = overlaid.get("recovery")
+    recovery = dict(recovery) if isinstance(recovery, dict) else {}
+    checkpoint_status = str(checkpoint.get("checkpoint_status") or "")
+    candidate_resolution = (
+        _turtlebot3_recovery_candidate_resolution_from_artifacts(artifacts)
+    )
+    runtime_status = (
+        "awaiting_operator_approval"
+        if checkpoint_status == "awaiting_operator_approval"
+        else "approved_recovery_and_route_in_progress"
+        if checkpoint_status == "dispatching"
+        else "recovery_completed_and_route_completed"
+        if checkpoint_status == "consumed"
+        and summary.get("route_completed_after_recovery") is True
+        else "recovery_failed"
+        if checkpoint_status in {"failed", "dispatch_unknown"}
+        else "not_triggered"
+    )
+    recovery["runtime_status"] = runtime_status
+    recovery["selected_action"] = checkpoint.get("selected_action")
+    recovery["checkpoint_status"] = checkpoint_status or None
+    recovery["route_segment_completion_count"] = summary.get(
+        "segment_completion_count"
+    )
+    recovery["route_segment_planned_count"] = summary.get("planned_segment_count")
+    recovery["recovery_completion_claimed"] = summary.get(
+        "recovery_completion_claimed"
+    )
+    recovery["route_resumed_after_recovery"] = summary.get(
+        "route_resumed_after_recovery"
+    )
+    recovery["goal_status"] = summary.get("recovery_goal_status") or recovery.get(
+        "goal_status"
+    )
+    recovery["verification_status"] = summary.get(
+        "recovery_verification_status"
+    ) or recovery.get("verification_status")
+    recovery["route_resume_status"] = summary.get(
+        "route_resume_status"
+    ) or recovery.get("route_resume_status")
+    selected_candidate = candidate_resolution.get("selected_candidate")
+    selected_candidate = (
+        selected_candidate if isinstance(selected_candidate, dict) else {}
+    )
+    recovery["candidate_resolution_status"] = candidate_resolution.get(
+        "resolution_status"
+    )
+    recovery["candidate_id"] = selected_candidate.get("candidate_id")
+    recovery["candidate_path_length_m"] = selected_candidate.get("path_length_m")
+    overlaid["recovery"] = recovery
+    return overlaid
+
+
 def _mission_indoor_map_model(
     *,
     task_payload: dict[str, Any],
@@ -5174,21 +5467,12 @@ def _mission_indoor_map_model(
     poll_interval: float,
 ) -> dict[str, Any]:
     task = _task_record(task_payload)
-    artifacts = _task_artifacts(task_payload)
-    robot_profile = _normalize_turtlebot_robot_profile(
-        indoor_map.get("robot_profile")
-    ) or _turtlebot_robot_profile_from_artifacts(artifacts)
-    robot_label = _status_text(
-        indoor_map.get("robot_label"),
-        _turtlebot_robot_label_from_profile(robot_profile),
-    )
+    robot_label = _status_text(indoor_map.get("robot_label"), "TurtleBot3")
     return {
         **indoor_map,
         "schema_version": "missionos_cli_indoor_map.v1",
         "source_schema_version": indoor_map.get("schema_version"),
         "map_kind": "indoor_local_xy",
-        "robot_profile": robot_profile or indoor_map.get("robot_profile"),
-        "robot_label": robot_label,
         "task_id": _status_text(task.get("task_id")),
         "task_status": _task_status(task_payload),
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -5373,7 +5657,6 @@ def _json_for_html_script(payload: dict[str, Any]) -> str:
 def _mission_indoor_map_html(model: dict[str, Any]) -> str:
     model_json = _json_for_html_script(model)
     escaped_title = html.escape(f"MissionOS Indoor Map · {model['task_id']}")
-    robot_label = html.escape(_status_text(model.get("robot_label"), "TurtleBot3"))
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -5442,7 +5725,9 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
     .furniture-label {{ fill: #334155; font-size: 10px; font-weight: 800; text-anchor: middle; paint-order: stroke; stroke: white; stroke-width: 3; }}
     .path-shadow {{ fill: none; stroke: rgba(15, 23, 42, .16); stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }}
     .planned-path {{ fill: none; stroke: var(--plan); stroke-width: 2.5; stroke-dasharray: 8 7; stroke-linecap: round; stroke-linejoin: round; }}
-    .observed-path {{ fill: none; stroke: var(--observed); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }}
+    .observed-path {{ fill: none; stroke: var(--observed); stroke-width: 4.6; stroke-linecap: round; stroke-linejoin: round; }}
+    .live-path {{ fill: none; stroke: #16a34a; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; opacity: .62; }}
+    .live-path-ended {{ stroke-dasharray: 7 8; opacity: .28; }}
     .recovery-path {{ fill: none; stroke: var(--recovery); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }}
     .marker-home {{ fill: var(--home); stroke: white; stroke-width: 2; }}
     .marker-dropoff {{ fill: var(--dropoff); stroke: white; stroke-width: 2; }}
@@ -5473,6 +5758,14 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
       font-size: .72rem;
     }}
     .legend span {{ white-space: nowrap; }}
+    .evidence-note {{
+      margin-top: 5px;
+      max-width: 980px;
+      color: #475569;
+      font-size: .78rem;
+      line-height: 1.45;
+    }}
+    .preview-ended {{ color: #15803d; font-weight: 800; }}
     .facts {{
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
@@ -5495,12 +5788,13 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
     <header>
       <div>
         <h1>MissionOS Indoor Map</h1>
-        <div class="muted" id="mapSubtitle">{robot_label}/Nav2 simulator local-XY evidence. This view is read-only and does not claim physical execution or payload delivery.</div>
+        <div class="muted">TurtleBot3/Nav2 simulator local-XY evidence. This view is read-only and does not claim physical execution or payload delivery.</div>
+        <div class="evidence-note" id="trajectoryTruth">Blue is persisted Nav2-bridge observed trajectory and is the final observation evidence. Purple is persisted recovery evidence. Green, when present, is only a high-rate /odom preview projected onto the map for operator orientation; projection jitter can make it look serpentine. Green is not persisted and is never verifier input.</div>
         <div class="muted" id="liveStatus">Snapshot loaded.</div>
       </div>
       <div class="pill" id="providerPill">Indoor local XY</div>
     </header>
-    <section id="map" class="map" aria-label="MissionOS {robot_label} indoor map"></section>
+    <section id="map" class="map" aria-label="MissionOS TurtleBot3 indoor map"></section>
     <section class="facts" id="facts"></section>
   </main>
   <script id="mission-map-data" type="application/json">{model_json}</script>
@@ -5508,7 +5802,6 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
     let data = JSON.parse(document.getElementById("mission-map-data").textContent);
     const mapEl = document.getElementById("map");
     const factsEl = document.getElementById("facts");
-    const mapSubtitleEl = document.getElementById("mapSubtitle");
     const liveStatusEl = document.getElementById("liveStatus");
     const terminalStatuses = new Set((data.live || {{}}).terminal_statuses || []);
 
@@ -5557,11 +5850,11 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
       return groups;
     }}
 
-    function pathMarkup(records, cssClass, project) {{
+    function pathMarkup(records, cssClass, project, includeShadow = true) {{
       return pathGroupsBySegment(records).map((group) => {{
         const d = pathD(group, project);
         return d
-          ? `<path class="path-shadow" d="${{d}}"></path><path class="${{cssClass}}" d="${{d}}"></path>`
+          ? `${{includeShadow ? `<path class="path-shadow" d="${{d}}"></path>` : ""}}<path class="${{cssClass}}" d="${{d}}"></path>`
           : "";
       }}).join("");
     }}
@@ -5589,14 +5882,6 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
     }}
 
     function render() {{
-      const fallbackRobotLabel = data.robot_profile === "turtlebot4"
-        ? "TurtleBot4"
-        : data.robot_profile === "nova_carter"
-          ? "Nova Carter"
-          : "TurtleBot3";
-      const robotLabel = statusText(data.robot_label, fallbackRobotLabel);
-      mapSubtitleEl.textContent = `${{robotLabel}}/Nav2 simulator local-XY evidence. This view is read-only and does not claim physical execution or payload delivery.`;
-      mapEl.setAttribute("aria-label", `MissionOS ${{robotLabel}} indoor map`);
       const width = mapEl.clientWidth || 980;
       const height = mapEl.clientHeight || 560;
       const pad = 46;
@@ -5604,6 +5889,7 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
       const allPoints = [
         ...(data.planned_points || []),
         ...(data.observed_points || []),
+        ...(data.live_display_points || []),
         ...((data.recovery || {{}}).observed_points || []),
         ...((data.recovery || {{}}).target ? [(data.recovery || {{}}).target] : []),
         ...(data.obstacles || []),
@@ -5698,7 +5984,14 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
         ...(recovery.observed_points || []),
         ...(recovery.target ? [recovery.target] : []),
       ];
+      const liveEnded = (data.live_telemetry || {{}}).telemetry_status === "ended";
       const observedMarkup = pathMarkup(data.observed_points || [], "observed-path", project);
+      const liveMarkup = pathMarkup(
+        data.live_display_points || [],
+        liveEnded ? "live-path live-path-ended" : "live-path",
+        project,
+        false,
+      );
       const recoveryMarkup = pathMarkup(recoveryPoints, "recovery-path", project);
       const recoveryLabel = recovery.selected_action === "avoid_obstacle"
         ? "avoid obstacle"
@@ -5708,7 +6001,10 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
       const planned = points(data.planned_points || []);
       const home = planned.find((point) => point.role === "home") || planned[0];
       const dropoff = [...planned].reverse().find((point) => point.role === "dropoff") || planned[planned.length - 1];
-      const current = data.current_pose || points(data.observed_points || []).at(-1) || points(recovery.observed_points || []).at(-1);
+      const current = (!liveEnded ? points(data.live_display_points || []).at(-1) : null)
+        || data.current_pose
+        || points(data.observed_points || []).at(-1)
+        || points(recovery.observed_points || []).at(-1);
       const obstacleMarkup = points(data.obstacles || []).map((obstacle) => {{
         return rectFromCenter(obstacle, "obstacle", "obstacle-label", -7);
       }}).join("");
@@ -5731,8 +6027,9 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
           ${{pillarMarkup}}
           ${{furnitureMarkup}}
           ${{plannedD ? `<path class="path-shadow" d="${{plannedD}}"></path><path class="planned-path" d="${{plannedD}}"></path>` : ""}}
-          ${{observedMarkup}}
+          ${{liveMarkup}}
           ${{recoveryMarkup}}
+          ${{observedMarkup}}
           ${{obstacleMarkup}}
           ${{marker(home, "marker-home", "H home")}}
           ${{marker(dropoff, "marker-dropoff", dropoff && dropoff.room_label ? `D dropoff · ${{escapeHtml(statusText(dropoff.room_label))}}` : "D dropoff", 12, -18)}}
@@ -5741,11 +6038,12 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
         </svg>
         <div class="legend">
           <span style="color: var(--plan)">plan</span>
-          <span style="color: var(--observed)">observed odom</span>
+          <span style="color: var(--observed); font-weight: 800">blue: persisted observed trajectory (final evidence)</span>
+          ${{points(data.live_display_points || []).length ? `<span style="color: #16a34a">${{liveEnded ? "live preview ended — not evidence" : "green: live /odom preview — display-only, not evidence"}}</span>` : ""}}
           <span>{TURTLEBOT3_MAP_ICON} TurtleBot3</span>
           <span style="color: var(--furniture)">furniture</span>
           <span style="color: #334155">wall</span>
-          <span style="color: var(--recovery)">recovery</span>
+          <span style="color: var(--recovery)">purple: persisted recovery evidence</span>
           <span style="color: var(--obstacle)">obstacle</span>
         </div>
       `;
@@ -5762,6 +6060,9 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
         ["display decimation", `${{statusText((data.display_decimation || {{}}).method)}} · ${{statusText((data.display_decimation || {{}}).raw_point_count)}}→${{statusText((data.display_decimation || {{}}).display_point_count)}}pts`],
         ["obstacle clearance", `clear=${{statusText((data.obstacles || [])[0]?.trajectory_clearance_observed)}} · intersects=${{statusText((data.obstacles || [])[0]?.trajectory_intersects_obstacle)}}`],
         ["recovery", `triggered=${{statusText(recovery.triggered)}} · action=${{statusText(recovery.selected_action)}} · completion=${{statusText(recovery.completion_claimed)}}`],
+        ["recovery phase", `${{statusText(recovery.runtime_status)}} · segments=${{statusText(recovery.route_segment_completion_count)}}/${{statusText(recovery.route_segment_planned_count)}} · resumed=${{statusText(recovery.route_resumed_after_recovery)}}`],
+        ["recovery status", `goal=${{statusText(recovery.goal_status)}} · verification=${{statusText(recovery.verification_status)}} · route=${{statusText(recovery.route_resume_status)}}`],
+        ["live /odom preview (not evidence)", `${{statusText((data.live_telemetry || {{}}).telemetry_status)}} · process-local samples=${{points(data.live_display_points || []).length}} · display path=${{statusText((data.live_telemetry || {{}}).display_path_length_m)}}m · captured=${{statusText((data.live_telemetry || {{}}).captured_at)}}`],
         ["motion", `observed=${{statusText((data.motion || {{}}).robot_motion_observed)}} · odom=${{statusText((data.motion || {{}}).odom_delta_m)}}m`],
         ["display alignment", `${{statusText((data.display_alignment || {{}}).method)}} · applied=${{statusText((data.display_alignment || {{}}).applied)}} · dx=${{statusText((data.display_alignment || {{}}).dx_m)}}m · dy=${{statusText((data.display_alignment || {{}}).dy_m)}}m`],
         ["boundary", statusText((data.room_boundary || {{}}).claim_boundary)],
@@ -5778,7 +6079,11 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
         if (!response.ok) throw new Error(`HTTP ${{response.status}}`);
         data = modelFromTaskPayload(await response.json());
         render();
-        liveStatusEl.textContent = `Live: updated ${{new Date().toLocaleTimeString()}} · status=${{data.task_status || "-"}}`;
+        const previewEnded = (data.live_telemetry || {{}}).telemetry_status === "ended";
+        liveStatusEl.textContent = previewEnded
+          ? `Live preview ended — not evidence · final status=${{data.task_status || "-"}}`
+          : `Live: updated ${{new Date().toLocaleTimeString()}} · status=${{data.task_status || "-"}}`;
+        liveStatusEl.classList.toggle("preview-ended", previewEnded);
         if (terminalStatuses.has(data.task_status) && window.__missionIndoorTimer) {{
           window.clearInterval(window.__missionIndoorTimer);
           window.__missionIndoorTimer = null;
@@ -5795,7 +6100,12 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
       window.__missionIndoorTimer = window.setInterval(refreshLive, data.live.poll_interval_ms || 1000);
       refreshLive();
     }} else {{
-      liveStatusEl.textContent = "Snapshot: no live polling";
+      const previewEnded = (data.live_telemetry || {{}}).telemetry_status === "ended"
+        && points(data.live_display_points || []).length > 0;
+      liveStatusEl.textContent = previewEnded
+        ? "Live preview ended — not evidence"
+        : "Snapshot: persisted blue/purple evidence only; no live preview restored";
+      liveStatusEl.classList.toggle("preview-ended", previewEnded);
     }}
   </script>
 </body>
@@ -6782,6 +7092,8 @@ def _watch_flight_map(
     poll_interval: float,
 ) -> None:
     trail: list[tuple[float, float]] = []
+    turtlebot3_live_trail: list[dict[str, Any]] = []
+    turtlebot3_alignment_state: dict[str, Any] = {}
     with Live(console=console, refresh_per_second=8, screen=False) as live:
         while True:
             try:
@@ -6796,6 +7108,13 @@ def _watch_flight_map(
             indoor_map = _turtlebot3_indoor_map_model_from_artifacts(artifacts)
             status = _task_status(task_payload)
             if indoor_map:
+                indoor_map = _overlay_turtlebot3_live_telemetry(
+                    indoor_map,
+                    artifacts=artifacts,
+                    trail=turtlebot3_live_trail,
+                    alignment_state=turtlebot3_alignment_state,
+                    freeze_live_preview=status in TERMINAL_TASK_STATUSES,
+                )
                 live.update(
                     _render_turtlebot3_indoor_map(
                         indoor_map=indoor_map,
@@ -6867,6 +7186,143 @@ def watch_command(ctx: click.Context, task_id: str, poll_interval: float) -> Non
         console.print("[yellow](watch stopped)[/yellow]")
 
 
+def _serve_authenticated_live_mission_map(
+    *,
+    client: MissionOSGatewayClient,
+    task_id: str,
+    model: dict[str, Any],
+    no_open: bool,
+) -> None:
+    """Serve live map HTML and an authenticated task proxy on loopback."""
+
+    token = secrets.token_urlsafe(18)
+    page_path = f"/{token}/"
+    task_path = f"/{token}/task"
+    live_model = dict(model)
+    live_model["live"] = {
+        **dict(model.get("live") or {}),
+        "enabled": True,
+        "task_url": task_path,
+    }
+    html_bytes = _mission_map_html(live_model).encode("utf-8")
+    terminal_seen = threading.Event()
+    browser_live_trail: list[dict[str, Any]] = []
+    browser_alignment_state: dict[str, Any] = {}
+    overlay_lock = threading.Lock()
+
+    class LiveMapHandler(BaseHTTPRequestHandler):
+        def log_message(self, _format: str, *_args: Any) -> None:
+            return
+
+        def _send(self, status: int, content_type: str, payload: bytes) -> None:
+            self.send_response(status)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+
+        def do_GET(self) -> None:  # noqa: N802
+            if self.path == page_path:
+                self._send(200, "text/html; charset=utf-8", html_bytes)
+                return
+            if self.path == task_path:
+                try:
+                    payload = client.get(f"/tasks/{quote(task_id, safe='')}")
+                    task = payload.get("task")
+                    task = task if isinstance(task, dict) else {}
+                    artifacts = _task_artifacts(payload)
+                    task_status = str(task.get("status") or "")
+                    indoor_map = _turtlebot3_indoor_map_model_from_artifacts(
+                        artifacts
+                    )
+                    if indoor_map:
+                        with overlay_lock:
+                            overlaid = _overlay_turtlebot3_live_telemetry(
+                                indoor_map,
+                                artifacts=artifacts,
+                                trail=browser_live_trail,
+                                alignment_state=browser_alignment_state,
+                                freeze_live_preview=(
+                                    task_status in TERMINAL_TASK_STATUSES
+                                ),
+                            )
+                        next_task = dict(task)
+                        next_artifacts = dict(artifacts)
+                        next_artifacts["turtlebot3_indoor_map_model"] = overlaid
+                        next_task["artifacts"] = next_artifacts
+                        payload = {**payload, "task": next_task}
+                        task = next_task
+                    terminal_response = (
+                        str(task.get("status") or "") in TERMINAL_TASK_STATUSES
+                    )
+                    if terminal_response:
+                        terminal_seen.set()
+                    encoded = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+                    if terminal_response:
+                        # The terminal preview is a one-response operator aid.
+                        # A browser reload must reconstruct from persisted
+                        # blue/purple evidence and therefore starts without it.
+                        with overlay_lock:
+                            browser_live_trail.clear()
+                except click.ClickException as exc:
+                    encoded = json.dumps(
+                        {"detail": exc.message}, ensure_ascii=False
+                    ).encode("utf-8")
+                    self._send(502, "application/json; charset=utf-8", encoded)
+                    return
+                self._send(200, "application/json; charset=utf-8", encoded)
+                return
+            self._send(404, "text/plain; charset=utf-8", b"not found")
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), LiveMapHandler)
+    server.timeout = 0.5
+    host, port = server.server_address[:2]
+    url = f"http://{host}:{port}{page_path}"
+    opened = False if no_open else click.launch(url) == 0
+    console.print(
+        Panel(
+            "\n".join(
+                (
+                    f"task_id={task_id}",
+                    f"url={url}",
+                    f"opened={str(opened).lower()}",
+                    "live=true; authenticated_gateway_proxy=loopback",
+                    "boundary=read-only display proxy; no approval, dispatch, "
+                    "completion, or physical claim",
+                )
+            ),
+            title="MissionOS Live 2D Map",
+            border_style="cyan",
+        )
+    )
+    try:
+        next_status_poll = 0.0
+        while not terminal_seen.is_set():
+            server.handle_request()
+            if time.monotonic() >= next_status_poll:
+                try:
+                    latest = client.get(f"/tasks/{quote(task_id, safe='')}")
+                    latest_task = latest.get("task")
+                    latest_task = (
+                        latest_task if isinstance(latest_task, dict) else {}
+                    )
+                    if str(latest_task.get("status") or "") in TERMINAL_TASK_STATUSES:
+                        terminal_seen.set()
+                except click.ClickException:
+                    pass
+                next_status_poll = time.monotonic() + 1.0
+        # Keep the authenticated read-only snapshot available after terminal
+        # state. The companion lifecycle or Ctrl-C owns shutdown, so a browser
+        # reload can reconstruct only persisted blue/purple evidence.
+        while True:
+            server.handle_request()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()
+
+
 @missionos.command("map")
 @click.option(
     "--task-id",
@@ -6899,6 +7355,11 @@ def watch_command(ctx: click.Context, task_id: str, poll_interval: float) -> Non
     is_flag=True,
     help="Generate a static one-time map instead of a live-polling map.",
 )
+@click.option(
+    "--serve-live",
+    is_flag=True,
+    help="Serve an authenticated loopback live map until the task finishes.",
+)
 @click.option("--no-open", is_flag=True, help="Generate the HTML file without opening a browser.")
 @click.pass_context
 def map_command(
@@ -6908,18 +7369,53 @@ def map_command(
     output_path: Path | None,
     poll_interval: float,
     snapshot: bool,
+    serve_live: bool,
     no_open: bool,
 ) -> None:
     """Generate a source-backed 2D browser map for the selected MissionOS task."""
     client: MissionOSGatewayClient = ctx.obj["missionos_client"]
+    if client.api_key and not snapshot:
+        # An authenticated Gateway cannot be polled from a file:// document.
+        # Default to the loopback proxy so `missionos map` never presents a
+        # misleading frozen snapshot unless --snapshot was explicit.
+        serve_live = True
     resolved_task_id = _resolve_live_task_id(
         client,
         explicit_task_id=task_id,
         stored_task_id=_stored_sitl_task_id(ctx),
     )
     task_payload, _ = _task_and_timeline(client, resolved_task_id, timeline_limit=0)
+    task_record = _task_record(task_payload)
+    if (
+        serve_live
+        and task_record.get("kind") == "turtlebot3_home_mission_execution"
+        and not _turtlebot3_indoor_map_model_from_artifacts(
+            _task_artifacts(task_payload)
+        )
+    ):
+        # The companion can start as soon as the task record is created, a few
+        # seconds before the first progress payload contains the indoor model.
+        # Wait for that source-backed artifact instead of exiting into a stale
+        # generic-map fallback.
+        map_ready_deadline = time.monotonic() + 60.0
+        while time.monotonic() < map_ready_deadline:
+            time.sleep(0.5)
+            task_payload, _ = _task_and_timeline(
+                client,
+                resolved_task_id,
+                timeline_limit=0,
+            )
+            if _turtlebot3_indoor_map_model_from_artifacts(
+                _task_artifacts(task_payload)
+            ):
+                break
+            if str(_task_record(task_payload).get("status") or "") in (
+                TERMINAL_TASK_STATUSES
+            ):
+                break
     live_task_url = None
-    if not snapshot:
+    authenticated_file_snapshot = bool(client.api_key and not snapshot and not serve_live)
+    if not snapshot and not authenticated_file_snapshot:
         encoded_task_id = quote(resolved_task_id, safe="")
         live_task_url = _join_url(client.base_url, f"/tasks/{encoded_task_id}")
     model = _mission_map_model(
@@ -6928,6 +7424,14 @@ def map_command(
         live_task_url=live_task_url,
         poll_interval=poll_interval,
     )
+    if serve_live and not snapshot:
+        _serve_authenticated_live_mission_map(
+            client=client,
+            task_id=resolved_task_id,
+            model=model,
+            no_open=no_open,
+        )
+        return
     path = _write_mission_map_html(model=model, output_path=output_path)
     file_url = path.resolve().as_uri()
     if ctx.obj["missionos_json_output"]:
@@ -6956,6 +7460,12 @@ def map_command(
 	            }
 	        )
         return
+    if authenticated_file_snapshot:
+        console.print(
+            "[yellow]The Gateway requires authentication, so this file:// map is "
+            "a snapshot. Use the automatically opened map companion or "
+            "`missionos map --serve-live` for authenticated live updates.[/yellow]"
+        )
     opened = False
     if not no_open:
         opened = click.launch(file_url) == 0
@@ -7133,6 +7643,132 @@ def _pending_recovery_approval_from_task(
     artifacts = _task_artifacts(task_payload)
     summary = _turtlebot3_recovery_summary_from_artifacts(artifacts)
     decision = _turtlebot3_recovery_decision_summary_from_artifacts(artifacts, summary)
+    task = _task_record(task_payload)
+    task_id = str(task.get("task_id") or "").strip()
+    task_kind = str(task.get("kind") or "")
+    task_status = str(task.get("status") or "").strip().lower()
+    checkpoint = artifacts.get("turtlebot3_recovery_checkpoint")
+    if not isinstance(checkpoint, dict):
+        checkpoint = summary.get("turtlebot3_recovery_checkpoint")
+    checkpoint = checkpoint if isinstance(checkpoint, dict) else {}
+    is_turtlebot3_recovery = (
+        task_kind == "turtlebot3_home_mission_execution"
+        or _is_home_robot_nav2_execution_target(summary.get("execution_target"))
+        or bool(checkpoint)
+    )
+    if is_turtlebot3_recovery:
+        if (
+            task_status != "pending"
+            or checkpoint.get("schema_version")
+            != "turtlebot3_recovery_checkpoint.v1"
+            or checkpoint.get("checkpoint_status")
+            != "awaiting_operator_approval"
+        ):
+            return None
+        selected_action = str(checkpoint.get("selected_action") or "")
+        # TurtleBot3 checkpoint actions are native Nav2 recovery actions. In
+        # particular, return_home must not be rewritten to PX4's
+        # return_to_launch command.
+        dispatch_action = selected_action.strip().lower().replace("-", "_")
+        parameters = checkpoint.get("approved_parameters")
+        parameters = dict(parameters) if isinstance(parameters, dict) else {}
+        proposal_id = str(checkpoint.get("recovery_proposal_id") or "")
+        classification_id = str(
+            checkpoint.get("recovery_classification_id") or ""
+        )
+        proposals = summary.get("recovery_proposals")
+        proposals = proposals if isinstance(proposals, list) else []
+        proposal = next(
+            (
+                dict(item)
+                for item in proposals
+                if proposal_id
+                and isinstance(item, dict)
+                and str(item.get("proposal_id") or "") == proposal_id
+            ),
+            {},
+        )
+        classifications = summary.get("recovery_proposal_classifications")
+        classifications = (
+            classifications if isinstance(classifications, list) else []
+        )
+        classification = next(
+            (
+                dict(item)
+                for item in classifications
+                if classification_id
+                and isinstance(item, dict)
+                and str(item.get("classification_id") or "")
+                == classification_id
+            ),
+            {},
+        )
+        llm_evidence = proposal.get("llm_invocation_evidence")
+        llm_evidence = dict(llm_evidence) if isinstance(llm_evidence, dict) else {}
+        observations = proposal.get("input_observations")
+        observations = dict(observations) if isinstance(observations, dict) else {}
+        execution_target = str(
+            checkpoint.get("execution_target")
+            or summary.get("execution_target")
+            or ""
+        )
+        robot_profile = str(
+            checkpoint.get("robot_profile")
+            or summary.get("robot_profile")
+            or ""
+        )
+        plan = artifacts.get("turtlebot3_home_mission_plan")
+        plan = plan if isinstance(plan, Mapping) else {}
+        stored_checkpoint = artifacts.get("turtlebot3_recovery_checkpoint")
+        stored_checkpoint = (
+            stored_checkpoint if isinstance(stored_checkpoint, Mapping) else {}
+        )
+        strict_turtlebot3_scope = (
+            task_kind == "turtlebot3_home_mission_execution"
+            and all(
+                str(view.get("robot_profile") or "") == "turtlebot3"
+                and str(view.get("execution_target") or "")
+                == "ros2_nav2_turtlebot3_sim"
+                for view in (plan, stored_checkpoint, summary)
+            )
+        )
+        if not task_id or not dispatch_action:
+            return None
+        return {
+            "task_id": task_id,
+            "selected_action": selected_action,
+            "recovery_action": dispatch_action,
+            "recovery_parameters": parameters,
+            "proposal_source": str(proposal.get("proposal_source") or ""),
+            "rules_execution_class": str(
+                classification.get("execution_class") or ""
+            ),
+            "requires_new_human_approval": True,
+            "checkpoint_id": str(checkpoint.get("checkpoint_id") or ""),
+            "checkpoint_hash": str(checkpoint.get("checkpoint_hash") or ""),
+            "parent_checkpoint_id": str(
+                checkpoint.get("parent_checkpoint_id") or ""
+            ),
+            "parent_checkpoint_hash": str(
+                checkpoint.get("parent_checkpoint_hash") or ""
+            ),
+            "revision_id": str(checkpoint.get("revision_id") or ""),
+            "operator_instruction_sha256": str(
+                checkpoint.get("operator_instruction_sha256") or ""
+            ),
+            "robot_profile": robot_profile,
+            "execution_target": execution_target,
+            "checkpoint_approval_supported": strict_turtlebot3_scope,
+            "checkpoint_revision_supported": strict_turtlebot3_scope,
+            "recovery_proposal_id": proposal_id,
+            "recovery_classification_id": classification_id,
+            "proposal_reason": str(proposal.get("reason") or ""),
+            "input_observations": observations,
+            "llm_provider": str(llm_evidence.get("provider") or ""),
+            "llm_model_id": str(llm_evidence.get("model_id") or ""),
+            "dispatch_authority_created": False,
+            "physical_execution_invoked": False,
+        }
     if not summary and not decision:
         return None
     classification = _first_mapping_item(
@@ -7160,7 +7796,6 @@ def _pending_recovery_approval_from_task(
     dispatch_action = _recovery_dispatch_action_from_proposal_action(selected_action)
     if not dispatch_action:
         return None
-    task_id = str(_task_record(task_payload).get("task_id") or "").strip()
     parameters = _recovery_proposal_parameters(
         action=dispatch_action,
         summary=summary,
@@ -7176,6 +7811,18 @@ def _pending_recovery_approval_from_task(
         "rules_execution_class": decision.get("rules_execution_class")
         or classification.get("execution_class"),
         "requires_new_human_approval": True,
+        "checkpoint_id": "",
+        "checkpoint_hash": "",
+        "checkpoint_approval_supported": True,
+        "checkpoint_revision_supported": False,
+        "proposal_reason": str(proposal.get("reason") or ""),
+        "input_observations": dict(proposal.get("input_observations"))
+        if isinstance(proposal.get("input_observations"), dict)
+        else {},
+        "llm_provider": "",
+        "llm_model_id": "",
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
     }
 
 
@@ -7212,12 +7859,618 @@ def _lookup_pending_recovery_approval(
     return pending
 
 
+def _chat_recovery_revision_context(ctx: click.Context) -> dict[str, str]:
+    value = ctx.obj.get("missionos_chat_recovery_revision_context")
+    if not isinstance(value, dict):
+        return {}
+    context = {
+        "task_id": str(value.get("task_id") or "").strip(),
+        "checkpoint_id": str(value.get("checkpoint_id") or "").strip(),
+        "checkpoint_hash": str(value.get("checkpoint_hash") or "").strip(),
+    }
+    if not all(context.values()):
+        return {}
+    return context
+
+
+def _set_chat_recovery_revision_context(
+    ctx: click.Context,
+    *,
+    pending: Mapping[str, Any],
+) -> bool:
+    context = {
+        "task_id": str(pending.get("task_id") or "").strip(),
+        "checkpoint_id": str(pending.get("checkpoint_id") or "").strip(),
+        "checkpoint_hash": str(pending.get("checkpoint_hash") or "").strip(),
+    }
+    if not all(context.values()):
+        return False
+    ctx.obj["missionos_chat_recovery_revision_context"] = context
+    return True
+
+
+def _clear_chat_recovery_revision_context(ctx: click.Context) -> None:
+    ctx.obj.pop("missionos_chat_recovery_revision_context", None)
+
+
+def _turtlebot3_recovery_checkpoint_content_hash(
+    checkpoint: Mapping[str, Any],
+) -> str:
+    mutable_fields = {
+        "checkpoint_id",
+        "checkpoint_hash",
+        "checkpoint_status",
+        "claimed_at",
+        "claimed_by_approval_ref",
+        "consumed_at",
+        "consumed_by_approval_ref",
+        "failed_at",
+        "failure_reasons",
+    }
+    payload = {
+        str(key): value
+        for key, value in checkpoint.items()
+        if str(key) not in mutable_fields
+        and not str(key).startswith("superseded_")
+    }
+    serialized = json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    )
+    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
+
+
+def _refetched_turtlebot3_revision_state(
+    client: MissionOSGatewayClient,
+    *,
+    task_id: str,
+) -> tuple[dict[str, Any] | None, bool, bool, dict[str, str]]:
+    task_payload, _ = _task_and_timeline(client, task_id, timeline_limit=0)
+    task = _task_record(task_payload)
+    artifacts = _task_artifacts(task_payload)
+    summary = _turtlebot3_recovery_summary_from_artifacts(artifacts)
+    checkpoint = artifacts.get("turtlebot3_recovery_checkpoint")
+    checkpoint = checkpoint if isinstance(checkpoint, dict) else {}
+    receipt = artifacts.get("missionos_runtime_recovery_dispatch_receipt")
+    receipt = receipt if isinstance(receipt, dict) else {}
+    pending = _pending_recovery_approval_from_task(task_payload)
+    checkpoints = artifacts.get("turtlebot3_recovery_checkpoints")
+    checkpoints = checkpoints if isinstance(checkpoints, dict) else {}
+    parent_id = str(checkpoint.get("parent_checkpoint_id") or "")
+    parent_hash = str(checkpoint.get("parent_checkpoint_hash") or "")
+    checkpoint_id = str(checkpoint.get("checkpoint_id") or "")
+    checkpoint_hash = str(checkpoint.get("checkpoint_hash") or "")
+
+    def _binds_current_checkpoint(value: Any) -> bool:
+        if not isinstance(value, Mapping):
+            return False
+        return (
+            str(value.get("checkpoint_id") or "") == checkpoint_id
+            and str(value.get("checkpoint_hash") or "") == checkpoint_hash
+        )
+
+    operator_approval = artifacts.get("turtlebot3_recovery_operator_approval")
+    bounded_action = artifacts.get("turtlebot3_recovery_bounded_action")
+    receipt_approval = receipt.get("turtlebot3_recovery_operator_approval")
+    receipt_bounded_action = receipt.get("turtlebot3_recovery_bounded_action")
+    receipt_directly_binds_current = (
+        str(receipt.get("reviewed_recovery_checkpoint_id") or "")
+        == checkpoint_id
+        and str(receipt.get("reviewed_recovery_checkpoint_hash") or "")
+        == checkpoint_hash
+    )
+    receipt_has_current_authority = (
+        _binds_current_checkpoint(receipt_approval)
+        or _binds_current_checkpoint(receipt_bounded_action)
+        or (
+            receipt_directly_binds_current
+            and (
+                receipt.get("dispatch_authority_created") is True
+                or receipt.get("operator_approved") is True
+                or receipt.get("explicit_recovery_dispatch_approval") is True
+            )
+        )
+    )
+    durable_child = checkpoints.get(checkpoint_id)
+    durable_child = durable_child if isinstance(durable_child, dict) else {}
+    durable_parent = checkpoints.get(parent_id)
+    durable_parent = durable_parent if isinstance(durable_parent, dict) else {}
+    revision_id = str(checkpoint.get("revision_id") or "")
+    revision_records = artifacts.get("turtlebot3_recovery_revisions")
+    revision_records = (
+        revision_records if isinstance(revision_records, dict) else {}
+    )
+    current_revision_record = artifacts.get("turtlebot3_recovery_revision")
+    current_revision_record = (
+        current_revision_record
+        if isinstance(current_revision_record, dict)
+        else {}
+    )
+    durable_revision_record = revision_records.get(revision_id)
+    durable_revision_record = (
+        durable_revision_record
+        if isinstance(durable_revision_record, dict)
+        else {}
+    )
+    execution = artifacts.get("turtlebot3_home_mission_execution")
+    execution = execution if isinstance(execution, dict) else {}
+    embedded_checkpoint = execution.get("turtlebot3_recovery_checkpoint")
+    embedded_checkpoint = (
+        embedded_checkpoint if isinstance(embedded_checkpoint, dict) else {}
+    )
+    summary_checkpoint = summary.get("turtlebot3_recovery_checkpoint")
+    summary_checkpoint = (
+        summary_checkpoint if isinstance(summary_checkpoint, dict) else {}
+    )
+    execution_revision_lineage = execution.get("recovery_checkpoint_revision")
+    execution_revision_lineage = (
+        execution_revision_lineage
+        if isinstance(execution_revision_lineage, dict)
+        else {}
+    )
+    summary_revision_lineage = summary.get("recovery_checkpoint_revision")
+    summary_revision_lineage = (
+        summary_revision_lineage
+        if isinstance(summary_revision_lineage, dict)
+        else {}
+    )
+    computed_checkpoint_hash = _turtlebot3_recovery_checkpoint_content_hash(
+        checkpoint
+    )
+    current_checkpoint_integrity_valid = (
+        bool(checkpoint_hash)
+        and checkpoint_hash == computed_checkpoint_hash
+        and checkpoint_id
+        == f"turtlebot3_recovery_checkpoint_{computed_checkpoint_hash[:12]}"
+        and durable_child == checkpoint
+        and embedded_checkpoint == checkpoint
+        and summary_checkpoint == checkpoint
+    )
+    computed_parent_hash = _turtlebot3_recovery_checkpoint_content_hash(
+        durable_parent
+    )
+    durable_parent_integrity_valid = (
+        bool(parent_id and parent_hash)
+        and parent_hash == computed_parent_hash
+        and parent_id
+        == f"turtlebot3_recovery_checkpoint_{computed_parent_hash[:12]}"
+    )
+    durable_revision_lineage_valid = (
+        bool(revision_id)
+        and current_revision_record == durable_revision_record
+        and current_revision_record.get("schema_version")
+        == "missionos_turtlebot3_recovery_checkpoint_revision.v1"
+        and current_revision_record.get("revision_status") == "proposed"
+        and str(current_revision_record.get("revision_id") or "")
+        == revision_id
+        and str(current_revision_record.get("parent_checkpoint_id") or "")
+        == parent_id
+        and str(current_revision_record.get("parent_checkpoint_hash") or "")
+        == parent_hash
+        and current_revision_record.get("turtlebot3_recovery_checkpoint")
+        == checkpoint
+        and current_revision_record.get("superseded_checkpoint")
+        == durable_parent
+        and current_revision_record.get("turtlebot3_home_mission_execution")
+        == execution
+        and current_revision_record.get("summary") == summary
+        and execution_revision_lineage == summary_revision_lineage
+        and str(execution_revision_lineage.get("revision_id") or "")
+        == revision_id
+        and str(execution_revision_lineage.get("parent_checkpoint_id") or "")
+        == parent_id
+        and str(execution_revision_lineage.get("child_checkpoint_id") or "")
+        == checkpoint_id
+        and str(execution_revision_lineage.get("revision_intent") or "")
+        == str(checkpoint.get("revision_intent") or "")
+        and execution_revision_lineage.get("operator_approval_created") is False
+        and execution_revision_lineage.get("dispatch_authority_created") is False
+        and execution_revision_lineage.get("physical_execution_invoked") is False
+        and execution_revision_lineage.get("progress_counted") is False
+    )
+    lineage_valid = (
+        bool(parent_id and parent_hash and checkpoint_id)
+        and current_checkpoint_integrity_valid
+        and durable_parent_integrity_valid
+        and durable_revision_lineage_valid
+        and durable_parent.get("checkpoint_status") == "superseded"
+        and str(durable_parent.get("checkpoint_hash") or "") == parent_hash
+        and str(durable_parent.get("superseded_by_checkpoint_id") or "")
+        == checkpoint_id
+        and str(durable_parent.get("superseded_by_checkpoint_hash") or "")
+        == str(checkpoint.get("checkpoint_hash") or "")
+        and str(durable_parent.get("superseded_by_revision_id") or "")
+        == revision_id
+        and str(durable_parent.get("superseded_by_revision_ref") or "")
+        == revision_id
+    )
+    no_authority = (
+        str(task.get("status") or "").strip().lower() == "pending"
+        and checkpoint.get("checkpoint_status") == "awaiting_operator_approval"
+        and checkpoint.get("dispatch_authority_created") is False
+        and checkpoint.get("physical_execution_invoked") is False
+        and summary.get("recovery_dispatch_request_sent") is not True
+        and not _binds_current_checkpoint(operator_approval)
+        and not _binds_current_checkpoint(bounded_action)
+        and not receipt_has_current_authority
+    )
+    return (
+        pending,
+        no_authority,
+        lineage_valid,
+        {
+            "task_status": str(task.get("status") or "").strip().lower(),
+            "checkpoint_status": str(
+                checkpoint.get("checkpoint_status") or ""
+            ).strip(),
+            "checkpoint_id": checkpoint_id,
+            "checkpoint_hash": checkpoint_hash,
+        },
+    )
+
+
+def _pending_revision_is_child_of_context(
+    pending: Mapping[str, Any] | None,
+    context: Mapping[str, str],
+    *,
+    operator_instruction_sha256: str = "",
+) -> bool:
+    if not isinstance(pending, Mapping):
+        return False
+    child_matches = (
+        str(pending.get("checkpoint_id") or "") != context.get("checkpoint_id")
+        and str(pending.get("checkpoint_hash") or "")
+        != context.get("checkpoint_hash")
+        and str(pending.get("parent_checkpoint_id") or "")
+        == context.get("checkpoint_id")
+        and str(pending.get("parent_checkpoint_hash") or "")
+        == context.get("checkpoint_hash")
+    )
+    if not child_matches:
+        return False
+    if operator_instruction_sha256:
+        return (
+            str(pending.get("operator_instruction_sha256") or "")
+            == operator_instruction_sha256
+        )
+    return True
+
+
+def _show_concurrent_turtlebot3_recovery_revision(
+    ctx: click.Context,
+    *,
+    task_id: str,
+    pending: Mapping[str, Any],
+) -> None:
+    _clear_chat_recovery_revision_context(ctx)
+    console.print(
+        "[yellow]A different checkpoint-bound operator instruction replaced "
+        "the reviewed checkpoint first. Your instruction is not claimed as "
+        "accepted; no approval or dispatch was sent. Review the durable latest "
+        "proposal before deciding.[/yellow]"
+    )
+    console.print(_render_chat_recovery_review(dict(pending)))
+    _set_chat_suggestion(
+        ctx,
+        raw=f"/review-recovery {task_id}",
+        label="review latest recovery",
+    )
+
+
+def _reviewed_turtlebot3_revision_binding_is_active(
+    revision_state: Mapping[str, str],
+    context: Mapping[str, str],
+) -> bool:
+    return (
+        revision_state.get("task_status") == "pending"
+        and revision_state.get("checkpoint_status")
+        == "awaiting_operator_approval"
+        and revision_state.get("checkpoint_id") == context.get("checkpoint_id")
+        and revision_state.get("checkpoint_hash")
+        == context.get("checkpoint_hash")
+    )
+
+
+def _show_unaccepted_turtlebot3_recovery_revision(
+    ctx: click.Context,
+    *,
+    context: Mapping[str, str],
+    revision_state: Mapping[str, str],
+    latest_pending: Mapping[str, Any] | None,
+    reason: str,
+) -> None:
+    if _reviewed_turtlebot3_revision_binding_is_active(revision_state, context):
+        console.print(
+            "[yellow]No replacement recovery checkpoint was accepted; no "
+            "approval or dispatch was sent by this revision request. The reviewed "
+            "checkpoint was still pending at refetch, so its exact binding "
+            f"remains in revision mode. reason={rich_escape(reason)}[/yellow]"
+        )
+        return
+
+    _clear_chat_recovery_revision_context(ctx)
+    task_id = str(context.get("task_id") or "")
+    task_status = revision_state.get("task_status") or "unknown"
+    checkpoint_status = revision_state.get("checkpoint_status") or "unknown"
+    console.print(
+        "[yellow]The reviewed checkpoint binding is no longer active. Your "
+        "revision is not claimed as accepted; this revision request did not "
+        "send approval or dispatch. "
+        f"task_status={rich_escape(task_status)}; "
+        f"checkpoint_status={rich_escape(checkpoint_status)}; "
+        f"reason={rich_escape(reason)}[/yellow]"
+    )
+    if (
+        isinstance(latest_pending, Mapping)
+        and task_status == "pending"
+        and checkpoint_status == "awaiting_operator_approval"
+    ):
+        console.print(_render_chat_recovery_review(dict(latest_pending)))
+        _set_chat_suggestion(
+            ctx,
+            raw=f"/review-recovery {task_id}",
+            label="review latest recovery",
+        )
+        return
+    _set_chat_suggestion(
+        ctx,
+        raw=f"/job-status {task_id}",
+        label="check recovery task status",
+    )
+
+
+def _handle_chat_recovery_revision_instruction(
+    ctx: click.Context,
+    client: MissionOSGatewayClient,
+    *,
+    operator_instruction: str,
+) -> bool:
+    context = _chat_recovery_revision_context(ctx)
+    if not context:
+        return False
+    operator_instruction_sha256 = hashlib.sha256(
+        operator_instruction.encode("utf-8")
+    ).hexdigest()
+    _clear_chat_suggestion(ctx)
+    try:
+        with console.status(
+            "[cyan]Recovery Agent: revising the pending checkpoint…[/cyan]",
+            spinner="dots",
+        ):
+            payload = client.turtlebot3_recovery_revision(
+                task_id=context["task_id"],
+                operator_instruction=operator_instruction,
+                expected_recovery_checkpoint_id=context["checkpoint_id"],
+                expected_recovery_checkpoint_hash=context["checkpoint_hash"],
+            )
+            if not isinstance(payload, dict):
+                raise TypeError("recovery revision response must be an object")
+            (
+                pending,
+                no_refetched_authority,
+                refetched_lineage_valid,
+                refetched_revision_state,
+            ) = _refetched_turtlebot3_revision_state(
+                client,
+                task_id=context["task_id"],
+            )
+    except Exception as exc:
+        try:
+            (
+                recovered_pending,
+                recovered_no_authority,
+                recovered_lineage_valid,
+                recovered_revision_state,
+            ) = _refetched_turtlebot3_revision_state(
+                client,
+                task_id=context["task_id"],
+            )
+        except Exception:
+            recovered_pending = None
+            recovered_no_authority = False
+            recovered_lineage_valid = False
+            recovered_revision_state = {}
+        if (
+            recovered_no_authority
+            and recovered_lineage_valid
+            and _pending_revision_is_child_of_context(
+                recovered_pending,
+                context,
+            )
+        ):
+            if not _pending_revision_is_child_of_context(
+                recovered_pending,
+                context,
+                operator_instruction_sha256=operator_instruction_sha256,
+            ):
+                _show_concurrent_turtlebot3_recovery_revision(
+                    ctx,
+                    task_id=context["task_id"],
+                    pending=recovered_pending or {},
+                )
+                return True
+            _clear_chat_recovery_revision_context(ctx)
+            console.print(
+                "[green]The response was interrupted, but the durable task shows "
+                "one source-bound child checkpoint with no approval or dispatch. "
+                "Reviewing that child now.[/green]"
+            )
+            console.print(_render_chat_recovery_review(recovered_pending))
+            _set_chat_suggestion(
+                ctx,
+                raw=f"/review-recovery {context['task_id']}",
+                label="review revised recovery",
+            )
+            return True
+        if recovered_revision_state:
+            _show_unaccepted_turtlebot3_recovery_revision(
+                ctx,
+                context=context,
+                revision_state=recovered_revision_state,
+                latest_pending=(
+                    recovered_pending if recovered_lineage_valid else None
+                ),
+                reason=type(exc).__name__,
+            )
+            return True
+        console.print(
+            "[yellow]Recovery revision could not be verified; no approval or "
+            "dispatch was sent by this request. The client retains only its local "
+            "review binding because current task state could not be refetched. "
+            f"error={rich_escape(type(exc).__name__)}[/yellow]"
+        )
+        return True
+
+    durable_child_of_context = (
+        no_refetched_authority
+        and refetched_lineage_valid
+        and _pending_revision_is_child_of_context(pending, context)
+    )
+    if durable_child_of_context and not _pending_revision_is_child_of_context(
+        pending,
+        context,
+        operator_instruction_sha256=operator_instruction_sha256,
+    ):
+        _show_concurrent_turtlebot3_recovery_revision(
+            ctx,
+            task_id=context["task_id"],
+            pending=pending or {},
+        )
+        return True
+    if durable_child_of_context:
+        _clear_chat_recovery_revision_context(ctx)
+        console.print(
+            "[green]A new checkpoint-bound recovery proposal is ready for review. "
+            "No approval artifact or dispatch was created.[/green]"
+        )
+        console.print(_render_chat_recovery_review(pending))
+        _set_chat_suggestion(
+            ctx,
+            raw=f"/review-recovery {context['task_id']}",
+            label="review revised recovery",
+        )
+        return True
+
+    summary = payload.get("summary")
+    summary = summary if isinstance(summary, dict) else {}
+    blocked_reasons = [str(item) for item in summary.get("blocked_reasons") or []]
+    reason_text = ", ".join(blocked_reasons) or "revision_result_not_source_bound"
+    _show_unaccepted_turtlebot3_recovery_revision(
+        ctx,
+        context=context,
+        revision_state=refetched_revision_state,
+        latest_pending=pending if refetched_lineage_valid else None,
+        reason=reason_text,
+    )
+    return True
+
+
+def _has_bounded_recovery_xy(parameters: Mapping[str, Any]) -> bool:
+    def _finite_number(value: Any) -> bool:
+        number = _as_float(value)
+        return number is not None and math.isfinite(number)
+
+    if _finite_number(parameters.get("target_x_m")) and _finite_number(
+        parameters.get("target_y_m")
+    ):
+        return True
+    waypoints = parameters.get("recovery_waypoints")
+    return (
+        isinstance(waypoints, list)
+        and bool(waypoints)
+        and all(
+            isinstance(waypoint, dict)
+            and _finite_number(waypoint.get("target_x_m"))
+            and _finite_number(waypoint.get("target_y_m"))
+            for waypoint in waypoints
+        )
+    )
+
+
+def _render_chat_recovery_review(pending: dict[str, Any]) -> Panel:
+    parameters = pending.get("recovery_parameters")
+    parameters = parameters if isinstance(parameters, dict) else {}
+    parameter_text = (
+        ", ".join(
+            f"{key}={_recovery_command_number(value)}"
+            for key, value in sorted(parameters.items())
+        )
+        if parameters
+        else "-"
+    )
+    observations = pending.get("input_observations")
+    observations = observations if isinstance(observations, dict) else {}
+    evidence_keys = (
+        "runtime_obstacle_observed",
+        "costmap_obstacle_observed",
+        "robot_motion_observed",
+        "odom_delta_m",
+        "motion_observation_source",
+    )
+    evidence_text = ", ".join(
+        f"{key}={_status_text(observations.get(key))}"
+        for key in evidence_keys
+        if observations.get(key) is not None
+    ) or "exact referenced evidence unavailable"
+    provider = str(pending.get("llm_provider") or "")
+    model = str(pending.get("llm_model_id") or "")
+    planner_text = "/".join(value for value in (provider, model) if value) or str(
+        pending.get("proposal_source") or "-"
+    )
+    checkpoint_id = str(pending.get("checkpoint_id") or "")
+    checkpoint_hash = str(pending.get("checkpoint_hash") or "")
+    checkpoint_text = checkpoint_id or "not-applicable"
+    if checkpoint_hash:
+        checkpoint_text += f" hash={checkpoint_hash[:12]}"
+    reason = str(pending.get("proposal_reason") or "").strip() or "-"
+    approval_supported = pending.get("checkpoint_approval_supported") is True
+    revision_supported = pending.get("checkpoint_revision_supported") is True
+    if approval_supported and revision_supported:
+        decision_text = (
+            "[bold]y[/bold]=approve exact checkpoint  "
+            "[bold]d/Enter[/bold]=defer with no dispatch  "
+            "[bold]c[/bold]=change by natural-language proposal"
+        )
+    elif approval_supported:
+        decision_text = (
+            "[bold]y[/bold]=approve exact checkpoint  "
+            "[bold]d/Enter[/bold]=defer with no dispatch  "
+            "change unavailable for this robot profile"
+        )
+    else:
+        decision_text = (
+            "[bold]d/Enter[/bold]=defer with no dispatch  "
+            "approval/change unavailable for this robot scope"
+        )
+    lines = [
+        f"task_id={rich_escape(str(pending.get('task_id') or '-'))}",
+        f"action={rich_escape(str(pending.get('recovery_action') or '-'))}",
+        f"parameters={rich_escape(parameter_text)}",
+        f"reason={rich_escape(reason)}",
+        f"evidence={rich_escape(evidence_text)}",
+        f"planner={rich_escape(planner_text)}",
+        f"checkpoint={rich_escape(checkpoint_text)}",
+        "dispatch_authority=False · physical_execution_invoked=False",
+        "",
+        decision_text,
+    ]
+    return Panel(
+        "\n".join(lines),
+        title="Recovery Agent Proposal Review",
+        border_style="yellow",
+    )
+
+
 def _handle_chat_recovery_approval(
     ctx: click.Context,
     client: MissionOSGatewayClient,
     *,
     explicit_task_id: str,
     quiet_if_missing: bool = False,
+    expected_checkpoint_id: str = "",
+    expected_checkpoint_hash: str = "",
 ) -> bool:
     try:
         task_id = _resolve_operator_recovery_task_id(
@@ -7238,25 +8491,87 @@ def _handle_chat_recovery_approval(
             "[yellow]No pending Recovery Agent proposal requires new human approval.[/yellow]"
         )
         return True
+    if pending.get("checkpoint_approval_supported") is not True:
+        console.print(
+            "[yellow]Checkpoint approval is unavailable because the durable plan, "
+            "current checkpoint, and summary do not all identify TurtleBot3 on "
+            "ros2_nav2_turtlebot3_sim. No approval artifact or dispatch was "
+            "created.[/yellow]"
+        )
+        return True
+    current_checkpoint_id = str(pending.get("checkpoint_id") or "")
+    current_checkpoint_hash = str(pending.get("checkpoint_hash") or "")
+    if (
+        expected_checkpoint_id
+        and current_checkpoint_id != expected_checkpoint_id
+    ) or (
+        expected_checkpoint_hash
+        and current_checkpoint_hash != expected_checkpoint_hash
+    ):
+        console.print(
+            "[yellow]The pending recovery checkpoint changed after review; "
+            "no dispatch was sent. Review the latest proposal again.[/yellow]"
+        )
+        _set_chat_suggestion(
+            ctx,
+            raw=f"/review-recovery {pending.get('task_id') or task_id}",
+            label="review latest recovery",
+        )
+        return True
     action = str(pending.get("recovery_action") or "")
     parameters = pending.get("recovery_parameters")
     parameters = parameters if isinstance(parameters, dict) else {}
-    if action in {"avoid_obstacle", "reroute"} and (
-        parameters.get("target_x_m") is None or parameters.get("target_y_m") is None
+    if action in {"avoid_obstacle", "reroute"} and not _has_bounded_recovery_xy(
+        parameters
     ):
         console.print(
-            "[yellow]Pending recovery proposal is missing bounded target_x_m/target_y_m; no dispatch was sent.[/yellow]"
+            "[yellow]Pending recovery proposal is missing bounded recovery "
+            "coordinates; no dispatch was sent.[/yellow]"
         )
         return True
+    _clear_chat_recovery_revision_context(ctx)
     _clear_chat_back_stack(ctx)
     with console.status("[cyan]approving recovery proposal…[/cyan]", spinner="dots"):
         payload = client.recovery_dispatch(
             task_id=str(pending.get("task_id") or task_id),
             recovery_action=action,
             recovery_parameters=parameters,
+            expected_recovery_checkpoint_id=(
+                expected_checkpoint_id or current_checkpoint_id
+            ),
+            expected_recovery_checkpoint_hash=(
+                expected_checkpoint_hash or current_checkpoint_hash
+            ),
         )
-        task_payload = _wait_for_active_runner_recovery_observation(client, payload)
+        response_summary = payload.get("summary")
+        response_summary = (
+            response_summary if isinstance(response_summary, dict) else {}
+        )
+        blocked_reasons = [
+            str(item) for item in response_summary.get("blocked_reasons") or []
+        ]
+        reviewed_checkpoint_changed = any(
+            reason.startswith("reviewed_turtlebot3_recovery_checkpoint_")
+            or reason == "turtlebot3_recovery_checkpoint_claim_conflict"
+            for reason in blocked_reasons
+        )
+        task_payload = (
+            payload
+            if reviewed_checkpoint_changed and isinstance(payload.get("task"), dict)
+            else _wait_for_active_runner_recovery_observation(client, payload)
+        )
     _print_recovery_result(payload, task_payload=task_payload)
+    if reviewed_checkpoint_changed:
+        console.print(
+            "[yellow]The reviewed checkpoint was no longer current; no approval "
+            "authority or dispatch was created. Review the latest task state.[/yellow]"
+        )
+        _set_chat_suggestion(
+            ctx,
+            raw=f"/review-recovery {pending.get('task_id') or task_id}",
+            label="review latest recovery",
+        )
+        return True
     _set_chat_suggestion(
         ctx,
         raw=f"/job-status {pending.get('task_id') or task_id}",
@@ -7265,10 +8580,121 @@ def _handle_chat_recovery_approval(
     return True
 
 
+def _handle_chat_recovery_review(
+    ctx: click.Context,
+    client: MissionOSGatewayClient,
+    *,
+    explicit_task_id: str,
+) -> bool:
+    try:
+        task_id = _resolve_operator_recovery_task_id(
+            client,
+            explicit_task_id=explicit_task_id,
+            stored_task_id=_stored_sitl_task_id(ctx),
+        )
+        pending = _lookup_pending_recovery_approval(client, task_id=task_id)
+    except click.ClickException as exc:
+        console.print(f"[yellow]{exc.message}[/yellow]")
+        _clear_chat_suggestion(ctx)
+        return True
+    if not pending:
+        console.print(
+            "[yellow]No pending Recovery Agent proposal is available for review.[/yellow]"
+        )
+        _clear_chat_suggestion(ctx)
+        return True
+    _clear_chat_suggestion(ctx)
+    console.print(_render_chat_recovery_review(pending))
+    approval_supported = pending.get("checkpoint_approval_supported") is True
+    revision_supported = pending.get("checkpoint_revision_supported") is True
+    if approval_supported and revision_supported:
+        decision_prompt = "Recovery decision [y=approve, d/Enter=defer, c=change]"
+    elif approval_supported:
+        decision_prompt = "Recovery decision [y=approve, d/Enter=defer]"
+    else:
+        decision_prompt = "Recovery decision [d/Enter=defer]"
+    choice = str(
+        click.prompt(
+            decision_prompt,
+            default="d",
+            show_default=False,
+        )
+    ).strip()
+    normalized = choice.lower()
+    compact = normalized.replace(" ", "").replace("　", "")
+    if compact in {"y", "yes", "はい", "承認", "承認します"}:
+        if not approval_supported:
+            _clear_chat_recovery_revision_context(ctx)
+            console.print(
+                "[yellow]Approval is unavailable for this robot scope; no approval "
+                "artifact or dispatch was created. Choose d/Enter to defer.[/yellow]"
+            )
+            return True
+        _clear_chat_recovery_revision_context(ctx)
+        return _handle_chat_recovery_approval(
+            ctx,
+            client,
+            explicit_task_id=str(pending.get("task_id") or task_id),
+            expected_checkpoint_id=str(pending.get("checkpoint_id") or ""),
+            expected_checkpoint_hash=str(pending.get("checkpoint_hash") or ""),
+        )
+    if compact in {
+        "",
+        "d",
+        "defer",
+        "n",
+        "no",
+        "いいえ",
+        "保留",
+        "キャンセル",
+    }:
+        _clear_chat_recovery_revision_context(ctx)
+        console.print(
+            "[yellow]Deferred; no approval artifact or dispatch was created. "
+            "The checkpoint remains pending.[/yellow]"
+        )
+        return True
+    if compact in {"c", "change", "revise", "revision", "変更", "修正", "再提案"}:
+        if not revision_supported:
+            console.print(
+                "[yellow]Checkpoint-bound natural-language revision is only "
+                "verified for TurtleBot3 on ros2_nav2_turtlebot3_sim. No "
+                "approval artifact or dispatch was created.[/yellow]"
+            )
+            return True
+        if not _set_chat_recovery_revision_context(ctx, pending=pending):
+            console.print(
+                "[yellow]This proposal has no TurtleBot3 checkpoint binding, so "
+                "checkpoint-bound natural-language revision is unavailable. No "
+                "approval artifact or dispatch was created.[/yellow]"
+            )
+            return True
+        console.print(
+            "[yellow]Recovery revision mode is active for this exact checkpoint. "
+            "The robot remains stopped and the current checkpoint remains pending. "
+            "Type a natural-language alternative such as '左に大きく旋回してかわして' "
+            "or '出発地点へ引き返して'. No approval or dispatch occurs "
+            "until the revised checkpoint is reviewed and approved.[/yellow]"
+        )
+        return True
+    allowed_choices = (
+        "y, d/Enter, or c"
+        if approval_supported and revision_supported
+        else "y or d/Enter"
+        if approval_supported
+        else "d/Enter"
+    )
+    console.print(
+        "[yellow]Unknown recovery decision. Choose "
+        f"{allowed_choices}. No approval artifact or dispatch was created; the "
+        "checkpoint remains pending.[/yellow]"
+    )
+    return True
+
+
 def _is_home_robot_nav2_execution_target(value: Any) -> bool:
     return str(value or "") in {
         "ros2_nav2_turtlebot3_sim",
-        "ros2_nav2_turtlebot4_sim",
         "isaac_ros_nav2_nova_carter_sim",
     }
 
@@ -7389,6 +8815,27 @@ def _resolve_operator_recovery_task_id(
 ) -> str:
     if explicit_task_id:
         return explicit_task_id
+    if stored_task_id:
+        try:
+            payload = client.get(f"/tasks/{quote(stored_task_id, safe='')}")
+        except (click.ClickException, OSError):
+            payload = {}
+        task = payload.get("task") if isinstance(payload, dict) else None
+        artifacts = (
+            task.get("artifacts")
+            if isinstance(task, dict) and isinstance(task.get("artifacts"), dict)
+            else {}
+        )
+        checkpoint = artifacts.get("turtlebot3_recovery_checkpoint")
+        if (
+            isinstance(task, dict)
+            and task.get("kind") == "turtlebot3_home_mission_execution"
+            and str(task.get("status") or "").lower() == "pending"
+            and isinstance(checkpoint, dict)
+            and checkpoint.get("checkpoint_status")
+            == "awaiting_operator_approval"
+        ):
+            return stored_task_id
     running = _latest_running_sitl_task_id(
         client,
         prefer_active_runner=True,
@@ -7397,8 +8844,8 @@ def _resolve_operator_recovery_task_id(
     if running:
         return running
     raise click.ClickException(
-        "no active live SITL runner found for operator recovery; "
-        "start a fresh live flight after restarting the Gateway, or pass --task-id explicitly"
+        "no active live SITL runner or pending TurtleBot3 recovery checkpoint found; "
+        "start a fresh live mission, or pass --task-id explicitly"
     )
 
 
@@ -7581,7 +9028,8 @@ def _render_recovery_agent_console(
     """
     artifacts = _task_artifacts(task_payload)
     is_turtlebot3 = _is_turtlebot3_task_artifacts(artifacts)
-    robot_label = _turtlebot_robot_label_from_artifacts(artifacts)
+    summary = artifacts.get("summary")
+    summary = summary if isinstance(summary, dict) else {}
     bridge = artifacts.get("missionos_runtime_recovery_agent_live_bridge")
     bridge = bridge if isinstance(bridge, dict) else {}
     telemetry = bridge.get("telemetry_snapshot")
@@ -7591,9 +9039,79 @@ def _render_recovery_agent_console(
     endurance = endurance if isinstance(endurance, dict) else {}
     return_home = battery.get("return_home_projection")
     return_home = return_home if isinstance(return_home, dict) else {}
+    pending = _pending_recovery_approval_from_task(task_payload)
+    checkpoint = artifacts.get("turtlebot3_recovery_checkpoint")
+    checkpoint = checkpoint if isinstance(checkpoint, dict) else {}
+    checkpoint_status = str(checkpoint.get("checkpoint_status") or "")
+    candidate_resolution = (
+        _turtlebot3_recovery_candidate_resolution_from_artifacts(artifacts)
+    )
 
     lines: list[str] = []
-    if show_proposal and proposal:
+    if checkpoint_status == "dispatching":
+        action = str(checkpoint.get("selected_action") or "recovery action")
+        lines.extend(
+            [
+                "[bold cyan]Approved Recovery workflow is in progress[/bold cyan]",
+                f"Action: [bold]{rich_escape(action)}[/bold]",
+                "[green]A fresh operator approval is bound to this checkpoint.[/green]",
+                "[dim]Nav2 goal="
+                f"{rich_escape(_status_text(summary.get('recovery_goal_status')))}; "
+                "verification="
+                f"{rich_escape(_status_text(summary.get('recovery_verification_status')))}; "
+                "route="
+                f"{rich_escape(_status_text(summary.get('route_resume_status')))}[/dim]",
+                "[dim]MissionOS is executing the approved recovery and any remaining "
+                "route segments. The robot may pause while Nav2 replans or runs its "
+                "local recovery behaviors. Do not approve the same checkpoint again.[/dim]",
+            ]
+        )
+    elif pending:
+        action = str(pending.get("selected_action") or "recovery action")
+        observations = pending.get("input_observations")
+        observations = observations if isinstance(observations, dict) else {}
+        reason = str(
+            pending.get("proposal_reason")
+            or observations.get("runtime_failure_source")
+            or "runtime route failure"
+        )
+        selected_candidate = candidate_resolution.get("selected_candidate")
+        selected_candidate = (
+            selected_candidate if isinstance(selected_candidate, dict) else {}
+        )
+        planner = artifacts.get("recovery_planner_result")
+        planner = planner if isinstance(planner, dict) else {}
+        if not planner:
+            planner = summary.get("recovery_planner_result")
+            planner = planner if isinstance(planner, dict) else {}
+        is_repair = bool(checkpoint.get("parent_checkpoint_id"))
+        lines.extend(
+            [
+                "[bold yellow]Robot stopped — repair decision required[/bold yellow]"
+                if is_repair
+                else "[bold yellow]Robot stopped — recovery decision required[/bold yellow]",
+                f"Recovery Agent proposes: [bold]{rich_escape(action)}[/bold]",
+                f"[dim]Reason: {rich_escape(reason)}[/dim]",
+                "[dim]Proposal source: "
+                f"{rich_escape(_status_text(planner.get('proposal_source')))}; "
+                f"checkpoint={rich_escape(_status_text(checkpoint.get('checkpoint_id')))}; "
+                f"parent={rich_escape(_status_text(checkpoint.get('parent_checkpoint_id')))}[/dim]",
+                "[dim]Candidate validation: "
+                f"{rich_escape(_status_text(candidate_resolution.get('resolution_status')))}; "
+                f"candidate={rich_escape(_status_text(selected_candidate.get('candidate_id')))}; "
+                f"path={rich_escape(_status_text(selected_candidate.get('path_length_m')))}m; "
+                f"global_max_cost={rich_escape(_status_text(selected_candidate.get('maximum_path_cost')))}; "
+                f"local_max_cost={rich_escape(_status_text(selected_candidate.get('local_maximum_path_cost')))}; "
+                f"bounded_retreat={rich_escape(_status_text(candidate_resolution.get('bounded_retreat_required')))}[/dim]",
+                "[green]No recovery dispatch has been sent.[/green]",
+                "",
+                "[bold]Choose one:[/bold]",
+                "  [bold green]approve[/bold green]  execute this exact recovery (asks y/N)",
+                "  [bold]defer[/bold]    keep the robot stopped; create no authority",
+                "  type a change in plain language, e.g. [bold]左へ大きく迂回して[/bold]",
+            ]
+        )
+    elif show_proposal and proposal:
         lines.extend(_humanize_recovery_summary(proposal, endurance, return_home))
         suggested = _operator_recovery_console_command(
             proposal.get("action"),
@@ -7637,26 +9155,51 @@ def _render_recovery_agent_console(
         detail += "[/dim]"
         lines.append(detail)
     elif status == "running":
-        lines.append("[dim]Recognition/proposal: waiting (live proposals appear here)[/dim]")
+        lines.extend(
+            [
+                "[green]Mission running — no Recovery decision is pending.[/green]",
+                "[dim]MissionOS is waiting for the current Nav2 result. If the robot "
+                "stops and Recovery Agent creates a proposal, this panel will show "
+                "approve / defer / change choices.[/dim]",
+            ]
+        )
     else:
         if is_turtlebot3:
-            lines.append(
-                f"[dim]status={status} "
-                f"({robot_label} recovery proposals appear only during an active sim route)[/dim]"
-            )
+            if status == "completed":
+                if summary.get("runtime_recovery_triggered") is True:
+                    lines.extend(
+                        [
+                            "[green]Mission completed after approved Recovery.[/green]",
+                            "[dim]Recovery was proposed, explicitly approved, "
+                            "completed, and the remaining route finished.[/dim]",
+                        ]
+                    )
+                else:
+                    lines.extend(
+                        [
+                            "[green]Mission completed normally.[/green]",
+                            "[dim]No Recovery condition was triggered, so Recovery "
+                            "Agent created no proposal, approval request, or dispatch.[/dim]",
+                        ]
+                    )
+            else:
+                lines.append(
+                    f"[dim]status={status} "
+                    "(TurtleBot3 recovery proposals appear only during an active sim route)[/dim]"
+                )
         else:
             lines.append(f"[dim]status={status} (proposals are shown only while flying)[/dim]")
 
-    lines.append("")
+    if not pending and checkpoint_status != "dispatching":
+        lines.append("")
     tid = task_id or "<task>"
     if is_turtlebot3:
-        lines.append(
-            "[dim]Type here; bounded recovery dispatches still use standard y/N "
-            "confirmation:[/dim] "
-            f"[bold]status[/bold] / [bold]avoid <x> <y>[/bold] / "
-            f"[bold]reroute <x> <y>[/bold]  "
-            f"[dim]({robot_label} local XY, task={tid}) · exit: Ctrl-C[/dim]"
-        )
+        if not pending and checkpoint_status != "dispatching":
+            lines.append(
+                f"[bold]status[/bold] refreshes evidence. [dim]Recovery changes "
+                f"become available only after a proposal is displayed "
+                f"(task={tid}) · exit: Ctrl-C[/dim]"
+            )
     else:
         lines.append(
             "[dim]Type here; every dispatch still uses standard y/N confirmation:[/dim] "
@@ -7665,7 +9208,13 @@ def _render_recovery_agent_console(
             f"[bold]avoid <x> <y> (alt)[/bold]  "
             f"[dim](task={tid}) · exit: Ctrl-C[/dim]"
         )
-    border = "yellow" if (show_proposal and proposal) else "cyan"
+    border = (
+        "cyan"
+        if checkpoint_status == "dispatching"
+        else "yellow"
+        if (pending or (show_proposal and proposal))
+        else "cyan"
+    )
     return Panel(
         "\n".join(lines),
         title="Runtime Recovery Agent — operator console",
@@ -7686,6 +9235,8 @@ _OPERATE_CONSOLE_COMMANDS = (
     "refresh",
     "wait",
     "help",
+    "approve",
+    "defer",
     "rtl",
     "land",
     "climb",
@@ -7738,18 +9289,19 @@ _OPERATE_PARAMETER_ALIASES = {
 
 
 def _operate_console_help_panel(task_id: str, *, robot: str = "px4") -> Panel:
-    robot_profile = _normalize_turtlebot_robot_profile(robot)
-    if robot_profile in {"turtlebot3", "turtlebot4", "nova_carter"}:
-        robot_label = _turtlebot_robot_label_from_profile(robot_profile)
+    if robot == "turtlebot3":
         lines = [
-            "[bold]Commands[/bold]",
-            f"  status | refresh        show the latest {robot_label} sim state",
-            "  avoid -0.85 -0.85      request bounded local-XY obstacle recovery",
-            "  reroute 0.75 0.0       request bounded local-XY route adjustment",
+            "[bold]Operator controls[/bold]",
+            "  While running: status shows current Nav2 evidence",
+            "  When Recovery stops the robot:",
+            "    approve               approve the displayed recovery proposal",
+            "    defer                 keep stopped; create no dispatch authority",
+            "    or type a change: 左へ大きく迂回して / 障害物を避けて / 引き返して",
+            "  status                  show the latest TurtleBot3 sim state",
             "  quit                    exit operate",
             "",
             "[dim]Dispatches still go through recovery-dispatch and require human confirmation. "
-            f"{robot_label} operate does not expose land/climb/speed/RTL flight controls.[/dim]",
+            "TurtleBot3 operate does not expose land/climb/speed/RTL flight controls.[/dim]",
         ]
     else:
         lines = [
@@ -7887,7 +9439,11 @@ def _parse_operate_console_command(raw: str) -> OperateConsoleCommand:
         return OperateConsoleCommand(kind="quit")
     if command in {"?", "help"}:
         return OperateConsoleCommand(kind="help")
-    if command in {"status", "refresh", "wait", "sleep", "d", "back"}:
+    if command in {"approve", "y", "yes"}:
+        return OperateConsoleCommand(kind="approve_pending")
+    if command in {"defer", "d", "hold"}:
+        return OperateConsoleCommand(kind="defer_pending")
+    if command in {"status", "refresh", "wait", "sleep", "back"}:
         return OperateConsoleCommand(kind="refresh")
     if command == "recover":
         if len(tokens) < 2:
@@ -7913,7 +9469,6 @@ def _render_operate_status_line(
 ) -> Text:
     """One compact live-telemetry line for operate (full map is in `missionos watch`)."""
     if _is_turtlebot3_task_artifacts(artifacts):
-        robot_label = _turtlebot_robot_label_from_artifacts(artifacts)
         summary = artifacts.get("summary")
         summary = summary if isinstance(summary, dict) else {}
         motion = summary.get("motion_evidence")
@@ -7921,14 +9476,32 @@ def _render_operate_status_line(
         indoor_map = _turtlebot3_indoor_map_model_from_artifacts(artifacts)
         observed_points = indoor_map.get("observed_points")
         planned_points = indoor_map.get("planned_points")
+        dispatched = _as_int(summary.get("segment_dispatch_count")) or 0
+        completed = _as_int(summary.get("segment_completion_count")) or 0
+        planned = _as_int(summary.get("planned_segment_count")) or 0
+        checkpoint = artifacts.get("turtlebot3_recovery_checkpoint")
+        checkpoint = checkpoint if isinstance(checkpoint, dict) else {}
+        phase = (
+            "approved Recovery workflow in progress"
+            if checkpoint.get("checkpoint_status") == "dispatching"
+            else "waiting for Nav2 result"
+            if status == "running" and dispatched > completed
+            else "recovery decision required"
+            if status == "pending" and summary.get("runtime_recovery_triggered") is True
+            else status
+        )
         return Text.from_markup(
-            f"[dim]task={task_id} status={status} · "
-            f"robot={robot_label} sim · "
+            f"[dim]task={task_id} · {phase} · "
+            f"robot=TurtleBot3 sim · "
+            f"segments={completed}/{planned or '-'} · "
+            f"recovery_goal={_status_text(summary.get('recovery_goal_status'))} · "
+            f"verification={_status_text(summary.get('recovery_verification_status'))} · "
+            f"route={_status_text(summary.get('route_resume_status'))} · "
             f"motion={_status_text(motion.get('robot_motion_observed'))} · "
             f"odom={_status_text(motion.get('odom_delta_m'))}m · "
-            f"map_points={len(observed_points) if isinstance(observed_points, list) else 0}/"
-            f"{len(planned_points) if isinstance(planned_points, list) else 0} · "
-            "full indoor map in a separate pane: `missionos watch`[/dim]"
+            f"observed_samples={len(observed_points) if isinstance(observed_points, list) else 0} · "
+            f"planned_waypoints={len(planned_points) if isinstance(planned_points, list) else 0} · "
+            "map: `missionos watch`[/dim]"
         )
     reached = _status_text(_as_int(snapshot.get("mission_reached_seq")))
     total = _status_text(_as_int(snapshot.get("waypoint_total")))
@@ -7946,13 +9519,40 @@ def _render_operate_status_line(
 def _operate_status_group(
     client: MissionOSGatewayClient,
     task_id: str,
-) -> tuple[Group, str]:
+) -> tuple[Group, str, str]:
     task_payload, _ = _task_and_timeline(client, task_id, timeline_limit=0)
     artifacts = _task_artifacts(task_payload)
     snapshot = artifacts.get("missionos_auto_mission_runtime_snapshot")
     snapshot = snapshot if isinstance(snapshot, dict) else {}
     status = _task_status(task_payload)
     proposal = _agent_proposal_from_task(task_payload)
+    summary = artifacts.get("summary")
+    summary = summary if isinstance(summary, dict) else {}
+    checkpoint = artifacts.get("turtlebot3_recovery_checkpoint")
+    checkpoint = checkpoint if isinstance(checkpoint, dict) else {}
+    indoor_map = _turtlebot3_indoor_map_model_from_artifacts(artifacts)
+    observed_points = indoor_map.get("observed_points")
+    fingerprint = json.dumps(
+        {
+            "status": status,
+            "segment_dispatch_count": summary.get("segment_dispatch_count"),
+            "segment_completion_count": summary.get("segment_completion_count"),
+            "runtime_recovery_triggered": summary.get("runtime_recovery_triggered"),
+            "recovery_action_suggested": summary.get("recovery_action_suggested"),
+            "recovery_goal_status": summary.get("recovery_goal_status"),
+            "recovery_verification_status": summary.get(
+                "recovery_verification_status"
+            ),
+            "route_resume_status": summary.get("route_resume_status"),
+            "checkpoint_status": checkpoint.get("checkpoint_status"),
+            "checkpoint_hash": checkpoint.get("checkpoint_hash"),
+            "observed_point_count": (
+                len(observed_points) if isinstance(observed_points, list) else 0
+            ),
+        },
+        sort_keys=True,
+        default=str,
+    )
     return (
         Group(
             _render_recovery_agent_console(
@@ -7970,6 +9570,7 @@ def _operate_status_group(
             ),
         ),
         status,
+        fingerprint,
     )
 
 
@@ -7996,6 +9597,32 @@ def _handle_operate_console_command(
         return True
     if command.kind == "refresh":
         return True
+    if command.kind == "defer_pending":
+        console.print(
+            "[yellow]Deferred. The robot remains stopped; no approval or dispatch "
+            "was created.[/yellow]"
+        )
+        return True
+    if command.kind == "approve_pending":
+        task_payload, _ = _task_and_timeline(client, task_id, timeline_limit=0)
+        pending = _pending_recovery_approval_from_task(task_payload)
+        if not pending:
+            raise click.ClickException("no recovery proposal is awaiting approval")
+        action = str(pending.get("recovery_action") or "")
+        if not click.confirm(
+            f"Approve {action} for task {task_id}?", default=False
+        ):
+            console.print("[yellow]Deferred; no dispatch was sent.[/yellow]")
+            return True
+        payload = client.recovery_dispatch(
+            task_id=task_id,
+            recovery_action=action,
+            recovery_parameters=dict(pending.get("recovery_parameters") or {}),
+            expected_recovery_checkpoint_id=str(pending.get("checkpoint_id") or ""),
+            expected_recovery_checkpoint_hash=str(pending.get("checkpoint_hash") or ""),
+        )
+        _print_recovery_result(payload)
+        return True
     if command.kind != "dispatch":
         raise click.ClickException(f"unsupported operate command kind: {command.kind}")
     action = command.action
@@ -8012,6 +9639,32 @@ def _handle_operate_console_command(
     )
     task_payload = _wait_for_active_runner_recovery_observation(client, payload)
     _print_recovery_result(payload, task_payload=task_payload)
+    return True
+
+
+def _handle_turtlebot3_operate_instruction(
+    client: MissionOSGatewayClient,
+    task_id: str,
+    operator_instruction: str,
+) -> bool:
+    task_payload, _ = _task_and_timeline(client, task_id, timeline_limit=0)
+    pending = _pending_recovery_approval_from_task(task_payload)
+    if pending:
+        revision_ctx = click.Context(missionos)
+        revision_ctx.obj = {}
+        if not _set_chat_recovery_revision_context(revision_ctx, pending=pending):
+            return False
+        return _handle_chat_recovery_revision_instruction(
+            revision_ctx,
+            client,
+            operator_instruction=operator_instruction,
+        )
+    console.print(
+        "[yellow]No Recovery decision is pending. The current Nav2 action is still "
+        "running, so this console did not create a proposal, approval, or dispatch. "
+        "Wait for the robot to stop and for a Recovery proposal to appear before "
+        "requesting a route change.[/yellow]"
+    )
     return True
 
 
@@ -8039,12 +9692,18 @@ def _operate_live(
 
     render_lock = threading.Lock()
     stop_refresh = threading.Event()
+    last_fingerprint = ""
 
-    def _print_status() -> str:
+    def _print_status(*, force: bool = False) -> str:
+        nonlocal last_fingerprint
         with render_lock:
             try:
-                group, current_status = _operate_status_group(client, task_id)
-                console.print(group)
+                group, current_status, fingerprint = _operate_status_group(
+                    client, task_id
+                )
+                if force or fingerprint != last_fingerprint:
+                    console.print(group)
+                    last_fingerprint = fingerprint
                 return current_status
             except click.ClickException as exc:
                 console.print(
@@ -8068,7 +9727,7 @@ def _operate_live(
         )
         refresh_thread.start()
     while True:
-        status = _print_status()
+        status = _print_status(force=not last_fingerprint)
         if status in TERMINAL_TASK_STATUSES:
             break
         try:
@@ -8087,10 +9746,30 @@ def _operate_live(
             break
         try:
             command = _parse_operate_console_command(raw)
-            if not _handle_operate_console_command(client, task_id, command):
-                break
         except click.ClickException as exc:
-            console.print(f"[red]{exc.message}[/red]")
+            if (
+                _operate_robot_for_task(client, task_id) == "turtlebot3"
+                and raw.strip()
+                and _handle_turtlebot3_operate_instruction(client, task_id, raw)
+            ):
+                pass
+            else:
+                console.print(
+                    f"[red]{exc.message}[/red]\n"
+                    "[dim]You can also describe the change naturally, for example: "
+                    "左へ大きく迂回して[/dim]"
+                )
+        else:
+            try:
+                if not _handle_operate_console_command(client, task_id, command):
+                    break
+            except click.ClickException as exc:
+                console.print(
+                    f"[red]{exc.message}[/red]\n"
+                    "[yellow]The approved operation may still be running. This "
+                    "console will rely on the durable task state; do not approve "
+                    "the same checkpoint again.[/yellow]"
+                )
         if raw.strip() in {"wait", "sleep"}:
             time.sleep(max(0.2, poll_interval))
     stop_refresh.set()
@@ -8672,7 +10351,8 @@ CHAT_HELP_LINES = (
     "  /map [task_id]               — open the live source-backed route map",
     "  /land <task_id>              — operator-approved LAND dispatch",
     "  /rtl <task_id>               — operator-approved RTL dispatch",
-    "  /approve-recovery [task_id]  — approve the pending Recovery Agent proposal",
+    "  /review-recovery [task_id]   — review with y=approve, d=defer, c=change",
+    "  /approve-recovery [task_id]  — expert explicit approval fallback",
     "  /climb 45                    — operator-approved altitude adjustment",
     "  /speed 7                     — operator-approved speed adjustment",
     "  /reroute 120 -20 (45)        — operator-approved local reroute",
@@ -8681,7 +10361,7 @@ CHAT_HELP_LINES = (
     "  障害物を避けて迂回して        — ask Recovery Agent for an avoidance proposal",
     "  /back                        — return to the previous chat decision point",
     "  /help /clear /quit",
-    "Flow: press Enter to accept the suggested next action; type only to change course.",
+    "Flow: Enter opens the suggested step; recovery review requires y (default defer).",
     "Editing: ↑/↓ history, Ctrl+R search, Tab completes /commands,",
     "         Esc then Enter inserts a newline, Enter submits, Ctrl+D quits.",
 )
@@ -8740,10 +10420,7 @@ def _looks_like_mission_planning_request(raw: str) -> bool:
         return True
     home_robot_terms = (
         "turtlebot3",
-        "turtlebot4",
         "turtlebot",
-        "tb3",
-        "tb4",
         "nova carter",
         "nova-carter",
         "nova_carter",
@@ -8835,6 +10512,8 @@ def _natural_language_recovery_request(raw: str) -> dict[str, Any] | None:
 
 
 def _recovery_command_number(value: Any) -> str:
+    if isinstance(value, bool):
+        return "true" if value else "false"
     number = _as_float(value)
     if number is None:
         return str(value)
@@ -9082,6 +10761,9 @@ def _missionos_chat_companion_command_prefix(ctx: click.Context) -> str:
     gateway_url = str(ctx.obj.get("missionos_gateway_url") or "").strip()
     if gateway_url:
         parts.extend(["--gateway-url", gateway_url])
+    client = ctx.obj.get("missionos_client")
+    if isinstance(client, MissionOSGatewayClient):
+        parts.extend(["--timeout", str(client.timeout)])
     state_path = ctx.obj.get("missionos_state_path")
     if state_path:
         parts.extend(["--state-path", str(state_path)])
@@ -9093,16 +10775,23 @@ def _chat_companion_terminal_script(
     title: str,
     command: str,
     stop_path: Path,
+    gateway_api_key_path: Path | None,
     cwd: Path,
     hold_after_command: bool,
 ) -> str:
     hold = "1" if hold_after_command else "0"
+    api_key_path = str(gateway_api_key_path or "")
     return f"""#!/bin/sh
 set +e
 cd {shlex.quote(str(cwd))}
 STOP_PATH={shlex.quote(str(stop_path))}
+GATEWAY_API_KEY_PATH={shlex.quote(api_key_path)}
 TITLE={shlex.quote(title)}
 HOLD_AFTER_COMMAND={hold}
+if [ -n "$GATEWAY_API_KEY_PATH" ] && [ -f "$GATEWAY_API_KEY_PATH" ]; then
+  IFS= read -r GATEWAY_API_KEY < "$GATEWAY_API_KEY_PATH"
+  export GATEWAY_API_KEY
+fi
 printf '\\033]0;%s\\007' "$TITLE"
 echo "$TITLE"
 echo "This MissionOS companion terminal closes when missionos chat exits."
@@ -9206,6 +10895,9 @@ def _stop_chat_companion_terminals(ctx: click.Context) -> None:
         stop_path.parent.mkdir(parents=True, exist_ok=True)
         stop_path.touch()
     time.sleep(0.5)
+    api_key_path_raw = str(state.get("gateway_api_key_path") or "")
+    if api_key_path_raw:
+        Path(api_key_path_raw).unlink(missing_ok=True)
     titles = [str(title) for title in state.get("titles") or [] if str(title)]
     _close_macos_companion_terminal_titles(titles)
 
@@ -9229,11 +10921,24 @@ def _ensure_chat_companion_terminals(ctx: click.Context, task_id: str) -> None:
     ).resolve()
     root.mkdir(parents=True, exist_ok=True)
     stop_path = root / "stop"
+    client = ctx.obj.get("missionos_client")
+    gateway_api_key = (
+        str(client.api_key or "")
+        if isinstance(client, MissionOSGatewayClient)
+        else ""
+    )
+    gateway_api_key_path: Path | None = None
+    if gateway_api_key:
+        gateway_api_key_path = root / "gateway_api_key"
+        gateway_api_key_path.write_text(gateway_api_key, encoding="utf-8")
+        gateway_api_key_path.chmod(0o600)
     command_prefix = _missionos_chat_companion_command_prefix(ctx)
     commands = {
         "operate": f"{command_prefix} operate --task-id {shlex.quote(task_id)}",
         "watch": f"{command_prefix} watch --task-id {shlex.quote(task_id)}",
-        "map": f"{command_prefix} map --task-id {shlex.quote(task_id)}",
+        "map": (
+            f"{command_prefix} map --task-id {shlex.quote(task_id)} --serve-live"
+        ),
     }
     titles: list[str] = []
     launched: list[str] = []
@@ -9245,6 +10950,7 @@ def _ensure_chat_companion_terminals(ctx: click.Context, task_id: str) -> None:
                 title=title,
                 command=commands[surface],
                 stop_path=stop_path,
+                gateway_api_key_path=gateway_api_key_path,
                 cwd=Path.cwd(),
                 hold_after_command=surface == "map",
             ),
@@ -9260,6 +10966,7 @@ def _ensure_chat_companion_terminals(ctx: click.Context, task_id: str) -> None:
             "task_id": task_id,
             "root": str(root),
             "stop_path": str(stop_path),
+            "gateway_api_key_path": str(gateway_api_key_path or ""),
             "titles": titles,
             "launched": launched,
         }
@@ -9287,6 +10994,192 @@ def _maybe_open_turtlebot3_companion_terminals(
     task_id = _payload_task_id(operation) or _payload_task_id(payload)
     if task_id:
         _ensure_chat_companion_terminals(ctx, task_id)
+
+
+def _listed_home_robot_task_ids(client: MissionOSGatewayClient) -> set[str]:
+    try:
+        payload = client.get("/tasks?page=1&page_size=20")
+    except click.ClickException:
+        return set()
+    items = payload.get("items") or payload.get("tasks") or []
+    if not isinstance(items, list):
+        return set()
+    task_ids: set[str] = set()
+    for task in items:
+        if not isinstance(task, dict):
+            continue
+        artifacts = task.get("artifacts")
+        artifacts = artifacts if isinstance(artifacts, dict) else {}
+        task_id = str(task.get("task_id") or "").strip()
+        if task_id and _is_turtlebot3_task_artifacts(artifacts):
+            task_ids.add(task_id)
+    return task_ids
+
+
+def _run_turtlebot3_conversation_with_companion_monitor(
+    ctx: click.Context,
+    client: MissionOSGatewayClient,
+    operation: Callable[[], dict[str, Any]],
+) -> dict[str, Any]:
+    """Open operator surfaces as soon as a synchronous run creates its task."""
+
+    if not _chat_companion_terminals_enabled(ctx):
+        return operation()
+    existing_task_ids = _listed_home_robot_task_ids(client)
+    executor = ThreadPoolExecutor(max_workers=1)
+    future = executor.submit(operation)
+    try:
+        while True:
+            try:
+                return future.result(timeout=0.5)
+            except FutureTimeout:
+                new_task_ids = (
+                    _listed_home_robot_task_ids(client) - existing_task_ids
+                )
+                if new_task_ids:
+                    task_id = sorted(new_task_ids)[-1]
+                    _remember_sitl_task_id(ctx, task_id)
+                    _ensure_chat_companion_terminals(ctx, task_id)
+    finally:
+        executor.shutdown(wait=False, cancel_futures=False)
+
+
+def _print_turtlebot3_chat_task_terminal_update(
+    task_payload: dict[str, Any],
+) -> None:
+    """Append the durable terminal task truth to the main chat transcript."""
+
+    task = task_payload.get("task")
+    task = task if isinstance(task, dict) else {}
+    artifacts = _task_artifacts(task_payload)
+    summary = artifacts.get("summary")
+    summary = summary if isinstance(summary, dict) else {}
+    status = str(task.get("status") or summary.get("status") or "unknown")
+    completed = summary.get("segment_completion_count")
+    planned = summary.get("planned_segment_count")
+    lines = [
+        f"task_id={_status_text(task.get('task_id'))}",
+        f"operation_status={_status_text(status)}",
+        "recovery_goal="
+        f"{_status_text(summary.get('recovery_goal_status'))}; "
+        "verification="
+        f"{_status_text(summary.get('recovery_verification_status'))}; "
+        f"route={_status_text(summary.get('route_resume_status'))}",
+        f"segments={_status_text(completed)}/{_status_text(planned)}; "
+        f"completion_claimed={summary.get('completion_claimed') is True}",
+        "mission_delivery_completion_claimed="
+        f"{summary.get('mission_delivery_completion_claimed') is True}; "
+        "physical_execution_invoked="
+        f"{summary.get('physical_execution_invoked') is True}",
+    ]
+    blocking_reasons = [
+        str(reason)
+        for reason in summary.get("blocking_reasons") or []
+        if str(reason)
+    ]
+    if blocking_reasons:
+        lines.append("blocking_reasons=" + ", ".join(blocking_reasons))
+    console.print(
+        Panel(
+            Text("\n".join(lines)),
+            title="MissionOS task final update",
+            border_style="green" if status == "completed" else "yellow",
+        )
+    )
+
+
+def _stop_turtlebot3_chat_task_status_monitor(ctx: click.Context) -> None:
+    state = ctx.obj.pop("missionos_turtlebot3_chat_task_status_monitor", None)
+    if not isinstance(state, dict):
+        return
+    stop_event = state.get("stop_event")
+    if isinstance(stop_event, threading.Event):
+        stop_event.set()
+    thread = state.get("thread")
+    if (
+        isinstance(thread, threading.Thread)
+        and thread is not threading.current_thread()
+    ):
+        thread.join(timeout=1.0)
+
+
+def _start_turtlebot3_chat_task_status_monitor(
+    ctx: click.Context,
+    client: MissionOSGatewayClient,
+    *,
+    task_id: str,
+) -> None:
+    """Notify main chat when a companion-driven TurtleBot3 task terminates."""
+
+    if not task_id:
+        return
+    existing = ctx.obj.get("missionos_turtlebot3_chat_task_status_monitor")
+    if isinstance(existing, dict) and existing.get("task_id") == task_id:
+        thread = existing.get("thread")
+        if isinstance(thread, threading.Thread) and thread.is_alive():
+            return
+    _stop_turtlebot3_chat_task_status_monitor(ctx)
+    stop_event = threading.Event()
+
+    def monitor() -> None:
+        encoded_task_id = quote(task_id, safe="")
+        while not stop_event.is_set():
+            try:
+                task_payload = client.get(f"/tasks/{encoded_task_id}")
+            except click.ClickException:
+                if stop_event.wait(TURTLEBOT3_CHAT_TASK_STATUS_POLL_INTERVAL):
+                    return
+                continue
+            task = task_payload.get("task")
+            task = task if isinstance(task, dict) else {}
+            status = str(task.get("status") or "").strip().lower()
+            if status in TERMINAL_TASK_STATUSES:
+                _print_turtlebot3_chat_task_terminal_update(task_payload)
+                return
+            if stop_event.wait(TURTLEBOT3_CHAT_TASK_STATUS_POLL_INTERVAL):
+                return
+
+    thread = threading.Thread(
+        target=monitor,
+        name=f"missionos-chat-task-status-{task_id}",
+        daemon=True,
+    )
+    ctx.obj["missionos_turtlebot3_chat_task_status_monitor"] = {
+        "task_id": task_id,
+        "stop_event": stop_event,
+        "thread": thread,
+    }
+    thread.start()
+
+
+def _maybe_start_turtlebot3_chat_task_status_monitor(
+    ctx: click.Context,
+    client: MissionOSGatewayClient,
+    payload: dict[str, Any],
+) -> None:
+    operation = payload.get("operation_result")
+    operation = operation if isinstance(operation, dict) else {}
+    summary = operation.get("summary")
+    summary = summary if isinstance(summary, dict) else {}
+    status = str(
+        summary.get("status")
+        or operation.get("summary_status")
+        or operation.get("response_status")
+        or ""
+    ).strip().lower()
+    if status in TERMINAL_TASK_STATUSES:
+        return
+    task_id = (
+        _payload_task_id(operation)
+        or _payload_task_id(payload)
+        or _stored_sitl_task_id(ctx)
+    )
+    if task_id:
+        _start_turtlebot3_chat_task_status_monitor(
+            ctx,
+            client,
+            task_id=task_id,
+        )
 
 
 def _conversation_has_approvable_plan(payload: dict[str, Any]) -> bool:
@@ -9404,10 +11297,11 @@ def _update_chat_suggestion_from_conversation(
                 }
             )
             if pending:
+                console.print(_render_chat_recovery_review(pending))
                 _set_chat_suggestion(
                     ctx,
-                    raw=f"/approve-recovery {task_id}",
-                    label="approve recovery",
+                    raw=f"/review-recovery {task_id}",
+                    label="review recovery",
                 )
             else:
                 _set_chat_suggestion(ctx, raw=f"/map {task_id}", label="map")
@@ -9428,12 +11322,40 @@ def _handle_chat_input(
     robot_profile = str(ctx.obj.get("missionos_chat_robot_profile") or "")
     raw = raw.strip()
     if not raw:
+        revision_context = _chat_recovery_revision_context(ctx)
+        if revision_context:
+            console.print(
+                "[yellow]Recovery revision mode remains active; Enter does not "
+                "approve, dispatch, or alter the pending checkpoint. Type a "
+                "natural-language alternative.[/yellow]"
+            )
+            return True
         suggestion = _chat_suggestion(ctx)
         if not suggestion:
             return True
         raw = suggestion["raw"]
         console.print(f"[dim]Enter -> {suggestion['label']}[/dim]")
     else:
+        revision_context = _chat_recovery_revision_context(ctx)
+        if revision_context and raw == "/back":
+            _clear_chat_recovery_revision_context(ctx)
+            _set_chat_suggestion(
+                ctx,
+                raw=f"/review-recovery {revision_context['task_id']}",
+                label="review pending recovery",
+            )
+            console.print(
+                "[yellow]Exited recovery revision mode. No approval artifact or "
+                "dispatch was created; the checkpoint remains pending.[/yellow]"
+            )
+            return True
+        if revision_context and not raw.startswith("/"):
+            _clear_chat_suggestion(ctx)
+            return _handle_chat_recovery_revision_instruction(
+                ctx,
+                client,
+                operator_instruction=raw,
+            )
         if _is_chat_back_request(raw):
             raw = "/back"
         else:
@@ -9471,6 +11393,8 @@ def _handle_chat_input(
                     "[yellow]Inside MissionOS chat, use slash commands such as /approve or /run.[/yellow]"
                 )
                 return True
+    if raw in {"/quit", "/exit", "exit", "quit", "q"}:
+        return False
     if not raw.startswith("/"):
         stored_task_id = _stored_sitl_task_id(ctx)
         lower = raw.lower()
@@ -9502,8 +11426,6 @@ def _handle_chat_input(
             raw = "/approve"
         elif _is_chat_back_request(raw):
             raw = "/back"
-    if raw in {"/quit", "/exit", "exit", "quit", "q"}:
-        return False
     if raw == "/help":
         console.print(_chat_help_panel())
         return True
@@ -9533,6 +11455,17 @@ def _handle_chat_input(
         if raw == "/status":
             ctx.invoke(status_command)
             return True
+        if raw.startswith("/review-recovery"):
+            parts = shlex.split(raw)
+            if len(parts) > 2:
+                console.print("[yellow]Usage: /review-recovery [task_id][/yellow]")
+                return True
+            task_id = parts[1] if len(parts) == 2 else ""
+            return _handle_chat_recovery_review(
+                ctx,
+                client,
+                explicit_task_id=task_id,
+            )
         if raw.startswith("/approve-recovery"):
             parts = shlex.split(raw)
             if len(parts) > 2:
@@ -9590,6 +11523,18 @@ def _handle_chat_input(
                 console.print("[yellow]Usage: /map [task_id][/yellow]")
                 return True
             task_id = parts[1] if len(parts) == 2 else _stored_sitl_task_id(ctx)
+            if task_id and _chat_companion_terminals_enabled(ctx):
+                _ensure_chat_companion_terminals(ctx, task_id)
+                console.print(
+                    "[cyan]The authenticated live map is the map companion for "
+                    f"{task_id}. /map will not open a stale file:// snapshot.[/cyan]"
+                )
+                _set_chat_suggestion(
+                    ctx,
+                    raw=f"/job-status {task_id}",
+                    label="show status",
+                )
+                return True
             try:
                 ctx.invoke(
                     map_command,
@@ -9598,6 +11543,7 @@ def _handle_chat_input(
                     output_path=None,
                     poll_interval=MISSION_MAP_POLL_INTERVAL,
                     snapshot=False,
+                    serve_live=True,
                     no_open=False,
                 )
             except click.ClickException as exc:
@@ -9756,19 +11702,36 @@ def _handle_chat_input(
             if intent in INTENT_INSTRUCTIONS:
                 _push_chat_back_state(ctx)
                 with console.status(f"[cyan]MissionOS: {intent}…[/cyan]", spinner="dots"):
-                    payload = client.conversation(
-                        INTENT_INSTRUCTIONS[intent],
-                        session_id=session_id,
-                        mission_designer_context=_stored_mission_designer_context(
-                            ctx, session_id
-                        ),
-                        route_hint=INTENT_ROUTE_HINTS[intent],
-                        client_surface="chat",
-                        robot_profile=robot_profile or None,
-                )
+                    def conversation() -> dict[str, Any]:
+                        return client.conversation(
+                            INTENT_INSTRUCTIONS[intent],
+                            session_id=session_id,
+                            mission_designer_context=_stored_mission_designer_context(
+                                ctx, session_id
+                            ),
+                            route_hint=INTENT_ROUTE_HINTS[intent],
+                            client_surface="chat",
+                            robot_profile=robot_profile or None,
+                        )
+
+                    payload = (
+                        _run_turtlebot3_conversation_with_companion_monitor(
+                            ctx,
+                            client,
+                            conversation,
+                        )
+                        if robot_profile == "turtlebot3" and intent == "run"
+                        else conversation()
+                    )
                 _remember_mission_designer_context(ctx, payload, session_id=session_id)
                 _maybe_open_turtlebot3_companion_terminals(ctx, payload)
                 _print_conversation_result(payload)
+                if robot_profile == "turtlebot3" and intent == "run":
+                    _maybe_start_turtlebot3_chat_task_status_monitor(
+                        ctx,
+                        client,
+                        payload,
+                    )
                 _update_chat_suggestion_from_conversation(ctx, payload)
                 return True
             console.print(
@@ -9946,6 +11909,7 @@ def _start_turtlebot3_gateway_container(
     instruction: str,
     build_image: bool,
     dry_run: bool,
+    gateway_api_key: str = "",
 ) -> bool:
     repo_root = _find_repo_root_for_turtlebot3_smoke()
     script = _turtlebot3_gateway_start_script(repo_root)
@@ -9965,6 +11929,8 @@ def _start_turtlebot3_gateway_container(
         "missionos-ros2-nav2-turtlebot3:local",
     )
     env = os.environ.copy()
+    if gateway_api_key:
+        env["GATEWAY_API_KEY"] = gateway_api_key
     env["MISSIONOS_TB3_DOCKER_IMAGE"] = image
     env["MISSIONOS_TB3_GATEWAY_CONTAINER"] = _turtlebot3_gateway_container_name()
     env["MISSIONOS_TB3_GATEWAY_PORT"] = str(port)
@@ -10068,10 +12034,7 @@ def _floor_turtlebot3_chat_timeout(ctx: click.Context) -> None:
 @click.argument("initial_instruction", nargs=-1, required=False)
 @click.option(
     "--robot",
-    type=click.Choice(
-        ["default", "turtlebot3", "turtlebot4", "nova-carter"],
-        case_sensitive=False,
-    ),
+    type=click.Choice(["default", "turtlebot3", "nova-carter"], case_sensitive=False),
     default="default",
     show_default=True,
     help="Route chat through a robot-specific simulator entrypoint.",
@@ -10159,14 +12122,10 @@ def chat_command(
         if session_id == DEFAULT_SESSION_ID:
             session_id = "missionos-cli-nova-carter"
         _floor_turtlebot3_chat_timeout(ctx)
-    elif robot_profile in {"turtlebot3", "turtlebot4"}:
-        ctx.obj["missionos_chat_robot_profile"] = robot_profile
+    elif robot_profile == "turtlebot3":
+        ctx.obj["missionos_chat_robot_profile"] = "turtlebot3"
         _floor_turtlebot3_chat_timeout(ctx)
-        if robot_profile == "turtlebot4" and turtlebot3_smoke:
-            raise click.UsageError(
-                "--turtlebot3-smoke can only be used with --robot turtlebot3."
-            )
-        if robot_profile == "turtlebot3" and turtlebot3_smoke:
+        if turtlebot3_smoke:
             raise SystemExit(
                 _run_turtlebot3_chat_smoke(
                     instruction=initial_raw or DEFAULT_TURTLEBOT3_CHAT_INSTRUCTION,
@@ -10176,18 +12135,10 @@ def chat_command(
                 )
             )
         if not initial_raw:
-            initial_raw = (
-                DEFAULT_TURTLEBOT4_CHAT_INSTRUCTION
-                if robot_profile == "turtlebot4"
-                else DEFAULT_TURTLEBOT3_CHAT_INSTRUCTION
-            )
+            initial_raw = DEFAULT_TURTLEBOT3_CHAT_INSTRUCTION
         if session_id == DEFAULT_SESSION_ID:
-            session_id = f"missionos-cli-{robot_profile}"
-        if robot_profile == "turtlebot4" and turtlebot3_dry_run:
-            raise click.UsageError(
-                "--turtlebot3-dry-run can only be used with --robot turtlebot3."
-            )
-        if robot_profile == "turtlebot3" and turtlebot3_dry_run:
+            session_id = "missionos-cli-turtlebot3"
+        if turtlebot3_dry_run:
             _maybe_retarget_turtlebot3_gateway_url(ctx)
             _start_turtlebot3_gateway_container(
                 gateway_url=ctx.obj["missionos_gateway_url"],
@@ -10196,8 +12147,7 @@ def chat_command(
                 dry_run=True,
             )
             return
-        if robot_profile == "turtlebot3":
-            _maybe_retarget_turtlebot3_gateway_url(ctx)
+        _maybe_retarget_turtlebot3_gateway_url(ctx)
     else:
         ctx.obj["missionos_chat_robot_profile"] = ""
     client: MissionOSGatewayClient = ctx.obj["missionos_client"]
@@ -10207,11 +12157,14 @@ def chat_command(
     )
     turtlebot3_container_started = False
     if robot_profile == "turtlebot3" and not _gateway_reachable(client):
+        turtlebot3_gateway_api_key = client.api_key or secrets.token_urlsafe(32)
+        client.api_key = turtlebot3_gateway_api_key
         turtlebot3_container_started = _start_turtlebot3_gateway_container(
             gateway_url=ctx.obj["missionos_gateway_url"],
             instruction=initial_raw,
             build_image=turtlebot3_build_image,
             dry_run=turtlebot3_dry_run,
+            gateway_api_key=turtlebot3_gateway_api_key,
         )
         if turtlebot3_dry_run:
             return
@@ -10232,7 +12185,8 @@ def chat_command(
                 return
         while True:
             try:
-                raw = session.prompt(_chat_prompt_fragment(ctx))
+                with patch_stdout(raw=True):
+                    raw = session.prompt(_chat_prompt_fragment(ctx))
             except KeyboardInterrupt:
                 console.print("[yellow](Ctrl+C — type /quit or Ctrl+D to exit)[/yellow]")
                 continue
@@ -10241,6 +12195,7 @@ def chat_command(
             if not _handle_chat_input(ctx, client, raw, session_id=session_id):
                 break
     finally:
+        _stop_turtlebot3_chat_task_status_monitor(ctx)
         _stop_chat_companion_terminals(ctx)
         if turtlebot3_container_started:
             console.print("[blue]Stopping the TurtleBot3 Gateway container...[/blue]")

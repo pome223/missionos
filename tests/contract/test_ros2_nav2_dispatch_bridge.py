@@ -82,6 +82,30 @@ def _write_bridge(
         "            'nav2_status': 'succeeded',\n"
         "        },\n"
         "    })\n"
+        "elif action == 'evaluate_recovery_candidates':\n"
+        "    candidate = dict(payload.get('candidates')[0])\n"
+        "    candidate.update({\n"
+        "        'path_valid': True,\n"
+        "        'planner_status': 'succeeded',\n"
+        "        'target_cost': 10,\n"
+        "        'maximum_path_cost': 20,\n"
+        "        'local_current_cost': 0,\n"
+        "        'local_maximum_path_cost': 40,\n"
+        "        'path_length_m': 1.25,\n"
+        "        'path_sha256': 'fixture-path-hash',\n"
+        "    })\n"
+        "    response.update({\n"
+        "        'ack_status': 'not_requested',\n"
+        "        'evaluation_status': 'validated',\n"
+        "        'selected_candidate': candidate,\n"
+        "        'candidate_evaluations': [candidate],\n"
+        "        'costmap_snapshot_hash': 'fixture-costmap-hash',\n"
+        "        'global_costmap_snapshot_hash': 'fixture-global-costmap-hash',\n"
+        "        'local_costmap_snapshot_hash': 'fixture-local-costmap-hash',\n"
+        "        'dispatch_request_sent': False,\n"
+        "        'dispatch_authority_created': False,\n"
+        "        'command_ack_observed': False,\n"
+        "    })\n"
         "else:\n"
         "    response.update({'ack_status': 'accepted'})\n"
         "print(json.dumps(response))\n",
@@ -160,6 +184,35 @@ def test_ros2_nav2_bridge_rejects_raw_topic_claim(
         client.send_goal_pose(Nav2GoalPose(x_m=0.25, y_m=0.0))
 
 
+def test_ros2_nav2_bridge_evaluates_recovery_candidates_without_authority(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    bridge = tmp_path / "ros2_nav2_plan_only.py"
+    _write_bridge(bridge)
+    monkeypatch.setenv(ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV, "1")
+    monkeypatch.setenv(ROS2_NAV2_BRIDGE_COMMAND_ENV, _command(bridge))
+
+    response = Ros2Nav2BridgeCommandClient().evaluate_recovery_candidates(
+        candidates=[
+            {
+                "candidate_id": "south",
+                "x_m": 0.2,
+                "y_m": -2.1,
+                "yaw_rad": 0.0,
+            }
+        ],
+        obstacle={"x_m": 0.2, "y_m": -1.2},
+    )
+
+    assert response["evaluation_status"] == "validated"
+    assert response["selected_candidate"]["candidate_id"] == "south"
+    assert response["dispatch_request_sent"] is False
+    assert response["dispatch_authority_created"] is False
+    assert response["command_ack_observed"] is False
+    assert response["physical_execution_invoked"] is False
+
+
 def test_ros2_nav2_bridge_does_not_claim_completion_without_motion(
     tmp_path: Path,
     monkeypatch,
@@ -224,6 +277,29 @@ def test_ros2_nav2_turtlebot4_bridge_is_gate_controlled(monkeypatch) -> None:
     assert response["physical_execution_invoked"] is False
     assert response["raw_velocity_published"] is False
     assert response["raw_ros_topic_published"] is False
+
+
+def test_ros2_nav2_bridge_cancels_in_flight_goal_after_result_timeout() -> None:
+    source = Path("scripts/ros2_nav2_turtlebot4_bridge.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "goal_handle.cancel_goal_async()" in source
+    assert '"goal_cancel_requested": False' in source
+    assert "nav2_recovery_orbit_detected" in source
+    assert "recovery_position_tolerance_reached" in source
+    assert "recovery_map_distance_to_goal_m" in source
+    assert '"map_pose_confirmation_required": True' in source
+    assert 'nav2_status = "position_tolerance_reached"' in source
+    assert "nav2_recovery_position_tolerance_cancel_unconfirmed" in source
+    assert "evaluate_recovery_candidates" in source
+    assert "ComputePathToPose" in source
+    assert "GetCostmap" in source
+    assert '"recommended_arrival_yaw_rad"' in source
+    assert 'item.get("selection_priority", 100)' in source
+    assert '"goal_cancel_accepted": False' in source
+    assert "nav2_goal_cancel_unconfirmed_after_timeout" in source
+    assert "nav2_goal_cancel_result_not_observed" in source
 
 
 def test_ros2_nav2_turtlebot3_bridge_is_gate_controlled(monkeypatch) -> None:

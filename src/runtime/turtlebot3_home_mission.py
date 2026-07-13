@@ -30,6 +30,7 @@ from src.runtime.mission_episode_review import (
 )
 from src.runtime.mission_autonomy_envelope import (
     MissionAutonomyRecoveryProposal,
+    MissionAutonomyProposalClassification,
     approve_mission_autonomy_envelope,
     build_mission_autonomy_envelope,
     build_mission_autonomy_recovery_proposal,
@@ -72,6 +73,19 @@ TURTLEBOT3_HOME_MISSION_EXECUTION_SCHEMA = (
     "missionos_turtlebot3_home_mission_execution.v1"
 )
 TURTLEBOT3_INDOOR_MAP_MODEL_SCHEMA = "missionos_turtlebot3_indoor_map_model.v1"
+TURTLEBOT3_RECOVERY_CHECKPOINT_SCHEMA = "turtlebot3_recovery_checkpoint.v1"
+TURTLEBOT3_RECOVERY_CHECKPOINT_REVISION_SCHEMA = (
+    "missionos_turtlebot3_recovery_checkpoint_revision.v1"
+)
+TURTLEBOT3_RECOVERY_OPERATOR_APPROVAL_SCHEMA = (
+    "missionos_turtlebot3_recovery_operator_approval.v1"
+)
+TURTLEBOT3_RECOVERY_CANDIDATE_EVALUATION_ENV = (
+    "MISSIONOS_TURTLEBOT3_RECOVERY_CANDIDATE_EVALUATION"
+)
+TURTLEBOT3_RECOVERY_CANDIDATE_CLEARANCE_ENV = (
+    "MISSIONOS_TURTLEBOT3_RECOVERY_CANDIDATE_CLEARANCE_M"
+)
 
 TurtleBotNav2RobotProfile = Literal["turtlebot3", "turtlebot4", "nova_carter"]
 TurtleBotNav2ExecutionTarget = Literal[
@@ -91,7 +105,11 @@ TurtleBot3JudgmentKind = Literal["battery_envelope", "obstacle_avoidance"]
 TurtleBot3JudgmentDecision = Literal["allow", "block", "observe_required"]
 
 _TRUE_VALUES = {"1", "true", "yes", "on"}
-TURTLEBOT_HOME_ROBOT_PROFILE_ENV = "MISSIONOS_TURTLEBOT_HOME_ROBOT_PROFILE"
+_TURTLEBOT3_RECOVERY_REVISION_LONGITUDINAL_BUFFER_M = 0.25
+_TURTLEBOT3_RECOVERY_REVISION_WIDE_BBOX_CLEARANCE_M = 0.55
+_TURTLEBOT3_RECOVERY_REVISION_STATIC_WAYPOINT_CLEARANCE_M = 0.15
+_TURTLEBOT3_RECOVERY_REVISION_MAX_LATERAL_OFFSET_M = 1.0
+_TURTLEBOT3_RECOVERY_REVISION_MAX_DETOUR_DISTANCE_M = 3.5
 _TURTLEBOT_NAV2_PROFILE_SPECS = {
     "turtlebot3": {
         "robot_label": "TurtleBot3",
@@ -497,6 +515,9 @@ _TURTLEBOT3_DELIVERY_ROUTE_SEGMENTS = (
 TURTLEBOT3_WORLD_PROFILE_ENV = "MISSIONOS_TURTLEBOT3_WORLD_PROFILE"
 TURTLEBOT3_RECOVERY_AVOID_OBSTACLE_REQUIRES_APPROVAL_ENV = (
     "MISSIONOS_TURTLEBOT3_RECOVERY_AVOID_OBSTACLE_REQUIRES_APPROVAL"
+)
+TURTLEBOT3_RECOVERY_REQUIRES_APPROVAL_ENV = (
+    "MISSIONOS_TURTLEBOT3_RECOVERY_REQUIRES_APPROVAL"
 )
 TURTLEBOT3_RECOVERY_OPERATOR_APPROVAL_REF_ENV = (
     "MISSIONOS_TURTLEBOT3_RECOVERY_OPERATOR_APPROVAL_REF"
@@ -1010,15 +1031,13 @@ def _recovery_avoid_obstacle_requires_fresh_approval() -> bool:
     return _truthy_env(TURTLEBOT3_RECOVERY_AVOID_OBSTACLE_REQUIRES_APPROVAL_ENV)
 
 
-def _stable_proposal_id(
-    text: str,
-    mission_kind: str,
-    robot_profile: TurtleBotNav2RobotProfile,
-) -> str:
-    digest = hashlib.sha256(
-        f"{robot_profile}\n{mission_kind}\n{text}".encode("utf-8")
-    ).hexdigest()
-    return f"{robot_profile}_home_{mission_kind}_{digest[:10]}"
+def _recovery_requires_fresh_approval() -> bool:
+    return _truthy_env(TURTLEBOT3_RECOVERY_REQUIRES_APPROVAL_ENV)
+
+
+def _stable_proposal_id(text: str, mission_kind: str) -> str:
+    digest = hashlib.sha256(f"{mission_kind}\n{text}".encode("utf-8")).hexdigest()
+    return f"turtlebot3_home_{mission_kind}_{digest[:10]}"
 
 
 def normalize_turtlebot_nav2_robot_profile(raw: Any) -> TurtleBotNav2RobotProfile:
@@ -1028,31 +1047,6 @@ def normalize_turtlebot_nav2_robot_profile(raw: Any) -> TurtleBotNav2RobotProfil
     if profile in {"nova_carter", "novacarter", "carter", "isaac_carter"}:
         return "nova_carter"
     return "turtlebot3"
-
-
-def _normalize_home_robot_profile(raw: Any) -> TurtleBotNav2RobotProfile | None:
-    value = str(raw or "").strip()
-    if not value:
-        return None
-    return normalize_turtlebot_nav2_robot_profile(value)
-
-
-def infer_turtlebot_home_robot_profile(text: str) -> TurtleBotNav2RobotProfile:
-    raw = str(text or "")
-    lower = raw.lower()
-    if any(
-        token in lower
-        for token in ("nova carter", "nova-carter", "nova_carter", "isaac carter")
-    ):
-        return "nova_carter"
-    if any(token in lower for token in ("turtlebot4", "turtle bot 4", "tb4")):
-        return "turtlebot4"
-    if any(token in lower for token in ("turtlebot3", "turtle bot 3", "tb3")):
-        return "turtlebot3"
-    env_profile = _normalize_home_robot_profile(
-        os.environ.get(TURTLEBOT_HOME_ROBOT_PROFILE_ENV)
-    )
-    return env_profile or "turtlebot3"
 
 
 def _robot_profile_from_instruction(text: str) -> TurtleBotNav2RobotProfile:
@@ -1082,18 +1076,6 @@ def _robot_profile_from_proposal(
     proposal: Mapping[str, Any],
 ) -> TurtleBotNav2RobotProfile:
     return normalize_turtlebot_nav2_robot_profile(proposal.get("robot_profile"))
-
-
-def _robot_label(robot_profile: TurtleBotNav2RobotProfile) -> str:
-    return _robot_profile_spec(robot_profile)["robot_label"]
-
-
-def _robot_model(robot_profile: TurtleBotNav2RobotProfile) -> str:
-    return _robot_profile_spec(robot_profile)["robot_model"]
-
-
-def _execution_target(robot_profile: TurtleBotNav2RobotProfile) -> str:
-    return _robot_profile_spec(robot_profile)["execution_target"]
 
 
 def instruction_requests_turtlebot3_home_mission(text: str) -> bool:
@@ -1262,12 +1244,17 @@ def _instruction_requests_mid_mission_obstacle_recovery(text: str) -> bool:
         "配送中",
         "巡回中",
         "出たら",
+        "検出したら",
+        "検知したら",
+        "見つけたら",
         "出現",
         "現れ",
         "mid-mission",
         "during",
         "appears",
         "encounter",
+        "detects",
+        "detected",
     )
     return _instruction_requests_obstacle_challenge(raw) and (
         any(token in raw for token in mid_tokens)
@@ -1434,7 +1421,17 @@ def _build_autonomy_envelope(
 ) -> dict[str, Any]:
     preapproved_recovery_actions = ("return_home", "hold", "avoid_obstacle")
     requires_human_approval_for = ("reroute", "safe_stop", "ask_human")
-    if _recovery_avoid_obstacle_requires_fresh_approval():
+    if _recovery_requires_fresh_approval():
+        preapproved_recovery_actions = ()
+        requires_human_approval_for = (
+            "return_home",
+            "hold",
+            "avoid_obstacle",
+            "reroute",
+            "safe_stop",
+            "ask_human",
+        )
+    elif _recovery_avoid_obstacle_requires_fresh_approval():
         preapproved_recovery_actions = ("return_home", "hold")
         requires_human_approval_for = (
             "avoid_obstacle",
@@ -1650,16 +1647,28 @@ def _build_recovery_proposals(
         runtime_failure_context=failure_context,
         runtime_motion_context=motion_context,
     )
+    planner_result = {
+        **dict(planner_result),
+        "gemini_credential_status": os.environ.get(
+            "MISSIONOS_GEMINI_CREDENTIAL_STATUS",
+            "not_reported",
+        ),
+    }
     planner_proposal = planner_result.get("proposal")
     if (
         planner_result.get("planner_status") == "proposal_guardrail_passed"
         and isinstance(planner_proposal, Mapping)
         and planner_proposal
     ):
-        return (
-            MissionAutonomyRecoveryProposal.model_validate(dict(planner_proposal)),
-        ), dict(planner_result)
-    return (
+        accepted = MissionAutonomyRecoveryProposal.model_validate(
+            dict(planner_proposal)
+        )
+        return (accepted,), {
+            **dict(planner_result),
+            "proposal_source": accepted.proposal_source,
+            "deterministic_fallback_used": False,
+        }
+    fallback = (
         _deterministic_return_home_recovery_proposal(
             proposal_id=proposal_id,
             battery_envelope=battery_envelope,
@@ -1677,7 +1686,18 @@ def _build_recovery_proposals(
             proposal_id=proposal_id,
             obstacle_scenario=obstacle_scenario,
         ),
-    ), dict(planner_result)
+    )
+    return fallback, {
+        **dict(planner_result),
+        "proposal_source": "deterministic_fallback",
+        "deterministic_fallback_used": True,
+        "fallback_reason": (
+            "gemini_credentials_missing"
+            if planner_result.get("gemini_credential_status")
+            == "missing_deterministic_fallback"
+            else "planner_proposal_unavailable_or_guardrail_rejected"
+        ),
+    }
 
 
 def _classify_recovery_proposals(
@@ -1835,7 +1855,9 @@ def _build_indoor_delivery_route(
     }
 
 
-def _copy_turtlebot3_static_floor_plan() -> dict[str, Any]:
+def _turtlebot3_home_floor_plan() -> dict[str, Any]:
+    if _profile_is_house():
+        return _house_floor_plan()
     return {
         **_TURTLEBOT3_HOME_FLOOR_PLAN,
         "bounds": dict(_TURTLEBOT3_HOME_FLOOR_PLAN["bounds"]),
@@ -1849,36 +1871,6 @@ def _copy_turtlebot3_static_floor_plan() -> dict[str, Any]:
             dict(item) for item in _TURTLEBOT3_HOME_FLOOR_PLAN["furniture"]
         ],
     }
-
-
-def _turtlebot3_home_floor_plan(
-    robot_profile: TurtleBotNav2RobotProfile = "turtlebot3",
-) -> dict[str, Any]:
-    if robot_profile == "turtlebot4":
-        plan = _copy_turtlebot3_static_floor_plan()
-        plan.update(
-            {
-                "floor_plan_id": "missionos_turtlebot4_indoor_fixture.v1",
-                "source": "missionos_static_indoor_nav2_fixture",
-                "geometry_sources": {
-                    "wall_polygon": (
-                        "MissionOS static indoor local-XY display fixture; "
-                        "not extracted from TurtleBot4 simulator geometry"
-                    ),
-                    "pillars": "missionos_display_only_nav2_obstacle_markers",
-                    "rooms": "missionos_narrative_overlay_display_only",
-                },
-                "claim_boundary": (
-                    "This is a display-only indoor route fixture for "
-                    "TurtleBot4/Nav2 MissionOS artifacts. It does not claim "
-                    "the TurtleBot4 simulator world was parsed or physically run."
-                ),
-            }
-        )
-        return plan
-    if _profile_is_house():
-        return _house_floor_plan()
-    return _copy_turtlebot3_static_floor_plan()
 
 
 def _planned_segments_for_mission(
@@ -1932,11 +1924,81 @@ def _runtime_recovery_battery_envelope(
     }
 
 
+def _battery_return_decision(
+    *,
+    battery_envelope: Mapping[str, Any],
+    home_distance_envelope: Mapping[str, Any],
+) -> dict[str, Any]:
+    battery_pct = battery_envelope.get("battery_start_pct")
+    return_energy_pct = home_distance_envelope.get(
+        "projected_return_battery_required_pct"
+    )
+    reserve_pct = home_distance_envelope.get("projected_return_reserve_pct")
+    if not isinstance(battery_pct, (int, float)) or isinstance(battery_pct, bool):
+        return {}
+    if not isinstance(return_energy_pct, (int, float)) or isinstance(
+        return_energy_pct,
+        bool,
+    ):
+        return {}
+    if not isinstance(reserve_pct, (int, float)) or isinstance(reserve_pct, bool):
+        reserve_pct = 5.0
+    approval_and_replan_margin_pct = 3.0
+    return_trigger_pct = (
+        float(return_energy_pct)
+        + float(reserve_pct)
+        + approval_and_replan_margin_pct
+    )
+    margin_to_return_pct = float(battery_pct) - (
+        float(return_energy_pct) + float(reserve_pct)
+    )
+    critical_hold_pct = 10.0
+    policy_state = (
+        "critical_hold"
+        if float(battery_pct) <= critical_hold_pct
+        else "awaiting_return_approval"
+        if float(battery_pct) <= return_trigger_pct
+        else "normal"
+    )
+    return {
+        "schema_version": "missionos_turtlebot3_battery_return_decision.v1",
+        "battery_pct_observed": float(battery_pct),
+        "predicted_return_energy_pct": float(return_energy_pct),
+        "reserve_pct": float(reserve_pct),
+        "approval_and_replan_margin_pct": approval_and_replan_margin_pct,
+        "return_trigger_pct": round(return_trigger_pct, 3),
+        "margin_to_return_pct": round(margin_to_return_pct, 3),
+        "battery_policy_state": policy_state,
+        "return_home_proposal_required": policy_state
+        == "awaiting_return_approval",
+        "emergency_hold_required": policy_state == "critical_hold",
+        "continuous_monitoring_status": "fixture_snapshot_only",
+        "dispatch_authority_created": False,
+        "automatic_return_home_dispatched": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+        "claim_boundary": (
+            "This snapshot may trigger a return-home proposal or critical hold. "
+            "It does not approve or dispatch return_home."
+        ),
+    }
+
+
 def _runtime_recovery_obstacle_scenario(
     obstacle_scenario: Mapping[str, Any],
     *,
     segment_result: Mapping[str, Any],
 ) -> dict[str, Any]:
+    obstacle_x_m, obstacle_y_m = _profile_delivery_obstacle_xy()
+    scene_marker = next(
+        (
+            marker
+            for marker in _profile_layout_obstacles()
+            if math.isclose(float(marker.get("x_m") or 0.0), obstacle_x_m)
+            and math.isclose(float(marker.get("y_m") or 0.0), obstacle_y_m)
+        ),
+        {},
+    )
     obstacle_observed = (
         segment_result.get("obstacle_detected") is True
         or segment_result.get("costmap_obstacle_observed") is True
@@ -1954,8 +2016,14 @@ def _runtime_recovery_obstacle_scenario(
         "runtime_obstacle_source": "ros2_nav2_bridge_costmap"
         if segment_result.get("costmap_obstacle_observed") is True
         else "operator_requested_mid_mission_obstacle_fault",
-        "runtime_obstacle_x_m": _profile_delivery_obstacle_xy()[0],
-        "runtime_obstacle_y_m": _profile_delivery_obstacle_xy()[1],
+        "runtime_obstacle_x_m": obstacle_x_m,
+        "runtime_obstacle_y_m": obstacle_y_m,
+        "runtime_obstacle_size_x_m": scene_marker.get("size_x_m"),
+        "runtime_obstacle_size_y_m": scene_marker.get("size_y_m"),
+        "runtime_obstacle_scene_ref": scene_marker.get("name"),
+        "runtime_obstacle_geometry_source": (
+            "opt_in_turtlebot3_home_loop_obstacle_smoke_scene"
+        ),
         "recommended_recovery_action": "avoid_obstacle",
         "recommended_avoidance_target_x_m": (
             _profile_dynamic_obstacle_avoidance_goal().x_m
@@ -1967,6 +2035,394 @@ def _runtime_recovery_obstacle_scenario(
         "dispatch_authority_created": False,
         "physical_execution_invoked": False,
         "progress_counted": False,
+    }
+
+
+def _recovery_candidate_clearance_m() -> float:
+    raw = os.environ.get(TURTLEBOT3_RECOVERY_CANDIDATE_CLEARANCE_ENV, "").strip()
+    if raw:
+        try:
+            value = float(raw)
+        except ValueError:
+            value = 0.75
+    else:
+        value = 0.75
+    return min(max(value, 0.55), 1.5)
+
+
+def _deterministic_recovery_candidates(
+    obstacle_scenario: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    """Generate bounded candidates; live Nav2 evidence decides validity."""
+
+    obstacle_x = float(obstacle_scenario.get("runtime_obstacle_x_m") or 0.0)
+    obstacle_y = float(obstacle_scenario.get("runtime_obstacle_y_m") or 0.0)
+    size_x = float(obstacle_scenario.get("runtime_obstacle_size_x_m") or 0.32)
+    size_y = float(obstacle_scenario.get("runtime_obstacle_size_y_m") or 0.32)
+    clearance = _recovery_candidate_clearance_m()
+    x_offset = size_x / 2.0 + clearance
+    y_offset = size_y / 2.0 + clearance
+    return [
+        {
+            "candidate_id": "obstacle_bypass_south",
+            "side": "right",
+            "selection_role": "route_lateral_bypass",
+            "selection_priority": 0,
+            "x_m": obstacle_x,
+            "y_m": obstacle_y - y_offset,
+            "yaw_rad": 0.0,
+            "geometry_clearance_m": clearance,
+            "geometry_source": "obstacle_bbox_plus_clearance",
+        },
+        {
+            "candidate_id": "obstacle_bypass_north",
+            "side": "left",
+            "selection_role": "route_lateral_bypass",
+            "selection_priority": 0,
+            "x_m": obstacle_x,
+            "y_m": obstacle_y + y_offset,
+            "yaw_rad": 0.0,
+            "geometry_clearance_m": clearance,
+            "geometry_source": "obstacle_bbox_plus_clearance",
+        },
+        {
+            "candidate_id": "obstacle_bypass_west",
+            "side": "backtrack",
+            "selection_role": "retreat_fallback",
+            "selection_priority": 2,
+            "x_m": obstacle_x - x_offset,
+            "y_m": obstacle_y,
+            "yaw_rad": 0.0,
+            "geometry_clearance_m": clearance,
+            "geometry_source": "obstacle_bbox_plus_clearance",
+        },
+        {
+            "candidate_id": "obstacle_bypass_east",
+            "side": "forward",
+            "selection_role": "forward_fallback",
+            "selection_priority": 1,
+            "x_m": obstacle_x + x_offset,
+            "y_m": obstacle_y,
+            "yaw_rad": 0.0,
+            "geometry_clearance_m": clearance,
+            "geometry_source": "obstacle_bbox_plus_clearance",
+        },
+    ]
+
+
+def _observed_inbound_retreat_candidate(
+    segment_results: list[dict[str, Any]],
+    *,
+    retreat_distance_m: float = 0.45,
+) -> dict[str, Any] | None:
+    """Pick a bounded retreat point from bridge-observed map-frame motion."""
+
+    if not segment_results:
+        return None
+    samples: list[dict[str, Any]] = []
+    for response in segment_results[-1].get("bridge_responses") or []:
+        if isinstance(response, Mapping):
+            samples.extend(_trajectory_samples_from_response(response))
+    map_samples = [
+        sample
+        for sample in samples
+        if str(sample.get("frame_id") or "").lower() == "map"
+        and sample.get("observed_trajectory_evidence_eligible") is True
+    ]
+    if len(map_samples) < 2:
+        return None
+    current = map_samples[-1]
+    target = None
+    for sample in reversed(map_samples[:-1]):
+        if math.hypot(
+            float(current["x_m"]) - float(sample["x_m"]),
+            float(current["y_m"]) - float(sample["y_m"]),
+        ) >= retreat_distance_m:
+            target = sample
+            break
+    if target is None:
+        return None
+    yaw = math.atan2(
+        float(current["y_m"]) - float(target["y_m"]),
+        float(current["x_m"]) - float(target["x_m"]),
+    )
+    return {
+        "candidate_id": "observed_inbound_bounded_retreat",
+        "side": "backtrack",
+        "selection_role": "verified_inbound_retreat",
+        "selection_priority": -1,
+        "sequence_only": True,
+        "x_m": float(target["x_m"]),
+        "y_m": float(target["y_m"]),
+        "yaw_rad": yaw,
+        "retreat_distance_bound_m": retreat_distance_m,
+        "geometry_source": "bridge_observed_inbound_map_trajectory",
+    }
+
+
+def _resolve_recovery_candidate(
+    obstacle_scenario: Mapping[str, Any],
+    *,
+    segment_results: list[dict[str, Any]] | None = None,
+    excluded_candidate_ids: set[str] | None = None,
+) -> dict[str, Any]:
+    candidates = _deterministic_recovery_candidates(obstacle_scenario)
+    excluded = set(excluded_candidate_ids or ())
+    candidates = [
+        candidate
+        for candidate in candidates
+        if str(candidate.get("candidate_id") or "") not in excluded
+    ]
+    retreat = _observed_inbound_retreat_candidate(segment_results or [])
+    if retreat is not None:
+        candidates.append(retreat)
+    base = {
+        "schema_version": "missionos_nav2_recovery_candidate_resolution.v1",
+        "candidate_generation": "deterministic_obstacle_bbox_clearance.v1",
+        "candidate_count": len(candidates),
+        "candidates": candidates,
+        "dispatch_request_sent": False,
+        "dispatch_authority_created": False,
+        "command_ack_observed": False,
+        "completion_claimed": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }
+    if not _truthy_env(TURTLEBOT3_RECOVERY_CANDIDATE_EVALUATION_ENV):
+        selected = next(
+            (item for item in candidates if item.get("sequence_only") is not True),
+            candidates[0],
+        )
+        return {
+            **base,
+            "resolution_status": "fixture_geometry_only",
+            "selected_candidate": selected,
+            "live_costmap_validated": False,
+            "blocking_reasons": [],
+            "claim_boundary": (
+                "Geometry-only selection is for deterministic fixtures. Live "
+                "sim dispatch requires plan-only Nav2 validation."
+            ),
+        }
+    try:
+        evaluation = Ros2Nav2BridgeCommandClient().evaluate_recovery_candidates(
+            candidates=candidates,
+            obstacle=obstacle_scenario,
+            frame_id="map",
+        )
+    except Ros2Nav2BridgeError as exc:
+        return {
+            **base,
+            "resolution_status": "blocked",
+            "selected_candidate": None,
+            "live_costmap_validated": False,
+            "blocking_reasons": [
+                f"nav2_recovery_candidate_evaluation_failed:{type(exc).__name__}"
+            ],
+            "error": str(exc)[:400],
+        }
+    selected = evaluation.get("selected_candidate")
+    selected = dict(selected) if isinstance(selected, Mapping) else None
+    validated = (
+        evaluation.get("evaluation_status") == "validated"
+        and selected is not None
+        and selected.get("path_valid") is True
+    )
+    evaluations = [
+        dict(item)
+        for item in evaluation.get("candidate_evaluations") or []
+        if isinstance(item, Mapping)
+    ]
+    retreat_evaluation = next(
+        (
+            item
+            for item in evaluations
+            if item.get("candidate_id") == "observed_inbound_bounded_retreat"
+            and item.get("path_valid") is True
+        ),
+        None,
+    )
+    selected_sequence = (
+        [dict(retreat_evaluation), dict(selected)]
+        if validated and retreat_evaluation is not None
+        else [dict(selected)]
+        if validated
+        else []
+    )
+    return {
+        **base,
+        "resolution_status": "validated" if validated else "blocked",
+        "selected_candidate": selected if validated else None,
+        "live_costmap_validated": validated,
+        "dual_costmap_validated": validated
+        and bool(evaluation.get("global_costmap_snapshot_hash"))
+        and bool(evaluation.get("local_costmap_snapshot_hash")),
+        "selected_sequence": selected_sequence,
+        "bounded_retreat_required": len(selected_sequence) > 1,
+        "costmap_snapshot_hash": evaluation.get("costmap_snapshot_hash"),
+        "costmap_source": evaluation.get("costmap_source"),
+        "global_costmap_snapshot_hash": evaluation.get(
+            "global_costmap_snapshot_hash"
+        ),
+        "global_costmap_source": evaluation.get("global_costmap_source"),
+        "local_costmap_snapshot_hash": evaluation.get(
+            "local_costmap_snapshot_hash"
+        ),
+        "local_costmap_source": evaluation.get("local_costmap_source"),
+        "local_costmap_frame_id": evaluation.get("local_costmap_frame_id"),
+        "local_cost_threshold": evaluation.get("local_cost_threshold"),
+        "compute_path_action": evaluation.get("compute_path_action"),
+        "candidate_evaluations": evaluations,
+        "blocking_reasons": list(evaluation.get("blocking_reasons") or []),
+        "claim_boundary": (
+            "Plan-only Nav2 evaluation creates no dispatch authority. The selected "
+            "candidate still requires a fresh checkpoint-bound approval."
+        ),
+    }
+
+
+def _revalidate_approved_recovery_candidate(
+    *,
+    checkpoint: Mapping[str, Any],
+    obstacle_scenario: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Revalidate the exact approved target immediately before dispatch."""
+
+    if checkpoint.get("selected_action") != "avoid_obstacle":
+        return {
+            "schema_version": "missionos_nav2_recovery_candidate_revalidation.v1",
+            "revalidation_status": "not_required",
+            "dispatch_request_sent": False,
+            "dispatch_authority_created": False,
+            "physical_execution_invoked": False,
+        }
+    if not _truthy_env(TURTLEBOT3_RECOVERY_CANDIDATE_EVALUATION_ENV):
+        return {
+            "schema_version": "missionos_nav2_recovery_candidate_revalidation.v1",
+            "revalidation_status": "fixture_not_requested",
+            "dispatch_request_sent": False,
+            "dispatch_authority_created": False,
+            "physical_execution_invoked": False,
+        }
+    parameters = checkpoint.get("approved_parameters")
+    parameters = parameters if isinstance(parameters, Mapping) else {}
+    binding = checkpoint.get("recovery_candidate_binding")
+    binding = binding if isinstance(binding, Mapping) else {}
+    if (
+        binding.get("live_costmap_validated") is not True
+        or binding.get("dual_costmap_validated") is not True
+    ):
+        return {
+            "schema_version": "missionos_nav2_recovery_candidate_revalidation.v1",
+            "revalidation_status": "blocked",
+            "blocking_reasons": [
+                "checkpoint_recovery_candidate_not_dual_costmap_validated"
+            ],
+            "dispatch_request_sent": False,
+            "dispatch_authority_created": False,
+            "physical_execution_invoked": False,
+        }
+    raw_goals = checkpoint.get("recovery_goal_poses")
+    raw_goals = raw_goals if isinstance(raw_goals, list) else []
+    bound_ids = binding.get("candidate_ids")
+    bound_ids = bound_ids if isinstance(bound_ids, list) else []
+    try:
+        if raw_goals:
+            candidates = [
+                {
+                    "candidate_id": str(
+                        bound_ids[index]
+                        if index < len(bound_ids)
+                        else f"approved_recovery_target_{index + 1}"
+                    ),
+                    "x_m": float(goal["x_m"]),
+                    "y_m": float(goal["y_m"]),
+                    "yaw_rad": float(goal.get("yaw_rad") or 0.0),
+                    "geometry_source": "checkpoint_approved_goal_sequence",
+                }
+                for index, goal in enumerate(raw_goals)
+                if isinstance(goal, Mapping)
+            ]
+        else:
+            candidates = [
+                {
+                    "candidate_id": str(
+                        binding.get("candidate_id") or "approved_recovery_target"
+                    ),
+                    "x_m": float(parameters["target_x_m"]),
+                    "y_m": float(parameters["target_y_m"]),
+                    "yaw_rad": float(parameters.get("target_yaw_rad") or 0.0),
+                    "geometry_source": "checkpoint_approved_parameters",
+                }
+            ]
+    except (KeyError, TypeError, ValueError):
+        return {
+            "schema_version": "missionos_nav2_recovery_candidate_revalidation.v1",
+            "revalidation_status": "blocked",
+            "blocking_reasons": ["approved_recovery_candidate_invalid"],
+            "dispatch_request_sent": False,
+            "dispatch_authority_created": False,
+            "physical_execution_invoked": False,
+        }
+    try:
+        evaluation = Ros2Nav2BridgeCommandClient().evaluate_recovery_candidates(
+            candidates=candidates,
+            obstacle=obstacle_scenario,
+            frame_id="map",
+        )
+    except Ros2Nav2BridgeError as exc:
+        return {
+            "schema_version": "missionos_nav2_recovery_candidate_revalidation.v1",
+            "revalidation_status": "blocked",
+            "blocking_reasons": [
+                f"nav2_recovery_candidate_revalidation_failed:{type(exc).__name__}"
+            ],
+            "error": str(exc)[:400],
+            "dispatch_request_sent": False,
+            "dispatch_authority_created": False,
+            "physical_execution_invoked": False,
+        }
+    evaluated = [
+        item
+        for item in evaluation.get("candidate_evaluations") or []
+        if isinstance(item, Mapping)
+    ]
+    by_id = {str(item.get("candidate_id") or ""): item for item in evaluated}
+    validated = (
+        bool(candidates)
+        and bool(evaluation.get("global_costmap_snapshot_hash"))
+        and bool(evaluation.get("local_costmap_snapshot_hash"))
+        and all(
+            (item := by_id.get(candidate["candidate_id"])) is not None
+            and item.get("path_valid") is True
+            and math.isclose(float(item.get("x_m")), candidate["x_m"], abs_tol=1e-6)
+            and math.isclose(float(item.get("y_m")), candidate["y_m"], abs_tol=1e-6)
+            for candidate in candidates
+        )
+    )
+    return {
+        "schema_version": "missionos_nav2_recovery_candidate_revalidation.v1",
+        "revalidation_status": "validated" if validated else "blocked",
+        "approved_candidates": candidates,
+        "candidate_evaluations": [dict(item) for item in evaluated],
+        "costmap_snapshot_hash": evaluation.get("costmap_snapshot_hash"),
+        "global_costmap_snapshot_hash": evaluation.get(
+            "global_costmap_snapshot_hash"
+        ),
+        "local_costmap_snapshot_hash": evaluation.get(
+            "local_costmap_snapshot_hash"
+        ),
+        "original_costmap_snapshot_hash": binding.get("costmap_snapshot_hash"),
+        "path_sha256_sequence": [
+            by_id.get(candidate["candidate_id"], {}).get("path_sha256")
+            for candidate in candidates
+        ],
+        "original_path_sha256_sequence": binding.get("path_sha256_sequence"),
+        "blocking_reasons": [] if validated else ["approved_recovery_path_invalid"],
+        "dispatch_request_sent": False,
+        "dispatch_authority_created": False,
+        "command_ack_observed": False,
+        "physical_execution_invoked": False,
     }
 
 
@@ -2024,15 +2480,11 @@ def build_turtlebot3_home_mission_plan(
 
     del now
     mission_kind = infer_turtlebot3_home_mission_kind(operator_instruction)
+    proposal_id = _stable_proposal_id(operator_instruction, mission_kind)
     selected_profile = (
         normalize_turtlebot_nav2_robot_profile(robot_profile)
         if str(robot_profile or "").strip()
-        else infer_turtlebot_home_robot_profile(operator_instruction)
-    )
-    proposal_id = _stable_proposal_id(
-        operator_instruction,
-        mission_kind,
-        selected_profile,
+        else _robot_profile_from_instruction(operator_instruction)
     )
     profile_spec = _robot_profile_spec(selected_profile)
     obstacle_scenario = _build_obstacle_scenario(operator_instruction)
@@ -2235,8 +2687,6 @@ def approve_turtlebot3_home_mission_plan(
     """Record human approval for bounded TurtleBot3 route segments."""
 
     approved_at = now or datetime.now(timezone.utc)
-    robot_profile = _robot_profile_from_proposal(proposal)
-    profile_spec = _robot_profile_spec(robot_profile)
     if str(validation.get("validation_status") or "") != "accepted":
         raise ValueError("TurtleBot3 mission approval requires accepted validation")
     approval_ref = f"approval_{proposal.get('proposal_id') or 'turtlebot3_home_mission'}"
@@ -2297,14 +2747,6 @@ def approve_turtlebot3_home_mission_plan(
         "turtlebot3_bounded_nav2_request": {
             "schema_version": "missionos_turtlebot3_bounded_nav2_request.v1",
             "request_status": "approved_for_operator_requested_dispatch",
-            "robot_profile": robot_profile,
-            "robot_label": profile_spec["robot_label"],
-            "robot_model": str(
-                proposal.get("robot_model") or profile_spec["robot_model"]
-            ),
-            "execution_target": profile_spec["execution_target"],
-            "runtime_substrate": profile_spec["runtime_substrate"],
-            "runtime_profile": profile_spec["runtime_profile"],
             "execution_mode": "sim",
             "goal_pose": dict(proposal.get("nav2_goal_pose") or {}),
             "planned_segments": [
@@ -2323,14 +2765,6 @@ def approve_turtlebot3_home_mission_plan(
             "operator_approved": True,
             "operator_approval_ref": approval_ref,
             "approved_scope": "bounded_sim_nav2_route_segments",
-            "robot_profile": robot_profile,
-            "robot_label": profile_spec["robot_label"],
-            "robot_model": str(
-                proposal.get("robot_model") or profile_spec["robot_model"]
-            ),
-            "execution_target": profile_spec["execution_target"],
-            "runtime_substrate": profile_spec["runtime_substrate"],
-            "runtime_profile": profile_spec["runtime_profile"],
             "autonomy_envelope": dict(autonomy_envelope),
             "recovery_proposal_classifications": list(
                 recovery_proposal_classifications
@@ -2384,26 +2818,18 @@ def _runtime_configuration_status(blocking_reasons: list[str]) -> str:
     )
 
 
-def _turtlebot3_raw_logs_ref_from_env(
-    robot_profile: TurtleBotNav2RobotProfile = "turtlebot3",
-) -> str | None:
-    if robot_profile != "turtlebot3":
-        return None
+def _turtlebot3_raw_logs_ref_from_env() -> str | None:
     try:
         return turtlebot3_log_bundle_ref_from_env()
     except TurtleBot3LogCollectorError:
         return None
 
 
-def _turtlebot3_log_bundle_artifacts(
-    robot_profile: TurtleBotNav2RobotProfile = "turtlebot3",
-) -> dict[str, Any]:
-    if robot_profile != "turtlebot3":
-        return {}
+def _turtlebot3_log_bundle_artifacts() -> dict[str, Any]:
     try:
         bundle = collect_turtlebot3_log_bundle_from_env()
     except TurtleBot3LogCollectorError as exc:
-        raw_logs_ref = _turtlebot3_raw_logs_ref_from_env(robot_profile)
+        raw_logs_ref = _turtlebot3_raw_logs_ref_from_env()
         return {
             "log_bundle_status": "blocked",
             "raw_logs_ref": raw_logs_ref,
@@ -2651,6 +3077,8 @@ def _numeric_xy_sample(sample: Mapping[str, Any]) -> dict[str, Any] | None:
         return None
     if not isinstance(y_m, (int, float)) or isinstance(y_m, bool):
         return None
+    if not math.isfinite(float(x_m)) or not math.isfinite(float(y_m)):
+        return None
     return {
         "x_m": float(x_m),
         "y_m": float(y_m),
@@ -2668,7 +3096,7 @@ def _trajectory_samples_from_response(response: Mapping[str, Any]) -> list[dict[
         response.get("state_result"),
         response.get("progress_result"),
     ]
-    for container in sources:
+    for container_index, container in enumerate(sources):
         if not isinstance(container, Mapping):
             continue
         trajectory = container.get("trajectory_result")
@@ -2703,14 +3131,29 @@ def _trajectory_samples_from_response(response: Mapping[str, Any]) -> list[dict[
                     raw_sample.get("source")
                     or f"ros2_nav2_bridge.{key}"
                 )
+                sample["trajectory_sample_collection"] = key
+                sample["trajectory_container_index"] = container_index
+                sample["observed_trajectory_evidence_eligible"] = key in {
+                    "trajectory_samples",
+                    "pose_samples",
+                    "odom_samples",
+                    "position_samples",
+                }
+                sample["observation_provenance"] = (
+                    "bridge_observed_trajectory_sample"
+                    if sample["observed_trajectory_evidence_eligible"]
+                    else "ambiguous_bridge_path_sample"
+                )
                 samples.append(sample)
     deduped: list[dict[str, Any]] = []
-    seen: set[tuple[float, float, Any]] = set()
+    seen: set[tuple[float, float, Any, str, str]] = set()
     for index, sample in enumerate(samples):
         key = (
             round(float(sample["x_m"]), 4),
             round(float(sample["y_m"]), 4),
             sample.get("sample_index", index),
+            str(sample.get("frame_id") or ""),
+            str(sample.get("trajectory_sample_collection") or ""),
         )
         if key in seen:
             continue
@@ -2721,16 +3164,100 @@ def _trajectory_samples_from_response(response: Mapping[str, Any]) -> list[dict[
     return deduped
 
 
+def _raw_map_observed_trajectory_points(
+    points: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    def _finite_xy(point: Mapping[str, Any]) -> bool:
+        x_m = point.get("x_m")
+        y_m = point.get("y_m")
+        return (
+            isinstance(x_m, (int, float))
+            and not isinstance(x_m, bool)
+            and isinstance(y_m, (int, float))
+            and not isinstance(y_m, bool)
+            and math.isfinite(float(x_m))
+            and math.isfinite(float(y_m))
+        )
+
+    eligible = [
+        point
+        for point in points
+        if str(point.get("frame_id") or "").lower() == "map"
+        and point.get("observed_trajectory_evidence_eligible") is True
+        and point.get("display_alignment_applied") is not True
+        and _finite_xy(point)
+    ]
+    path_samples_excluded = sum(
+        1
+        for point in points
+        if str(point.get("frame_id") or "").lower() == "map"
+        and point.get("trajectory_sample_collection") == "path_samples"
+    )
+    ineligible_map_samples_excluded = sum(
+        1
+        for point in points
+        if str(point.get("frame_id") or "").lower() == "map"
+        and point.get("observed_trajectory_evidence_eligible") is not True
+    )
+    display_aligned_samples_excluded = sum(
+        1
+        for point in points
+        if point.get("display_alignment_applied") is True
+    )
+    non_map_samples_excluded = sum(
+        1
+        for point in points
+        if str(point.get("frame_id") or "").lower() != "map"
+    )
+    invalid_numeric_samples_excluded = sum(
+        1 for point in points if not _finite_xy(point)
+    )
+    return eligible, {
+        "input_sample_count": len(points),
+        "raw_map_frame_sample_count": len(eligible),
+        "non_map_frame_sample_count_excluded": non_map_samples_excluded,
+        "ineligible_map_frame_sample_count_excluded": (
+            ineligible_map_samples_excluded
+        ),
+        "path_sample_count_excluded": path_samples_excluded,
+        "display_aligned_sample_count_excluded": display_aligned_samples_excluded,
+        "invalid_numeric_sample_count_excluded": invalid_numeric_samples_excluded,
+    }
+
+
+def _observed_trajectory_group_key(
+    point: Mapping[str, Any],
+) -> tuple[str, str, str, str, str, str]:
+    return (
+        str(point.get("segment_ref") or "segment"),
+        str(point.get("bridge_response_index") or 0),
+        str(point.get("trajectory_container_index") or 0),
+        str(point.get("trajectory_sample_collection") or "unknown_collection"),
+        str(point.get("observation_provenance") or "unknown_provenance"),
+        str(point.get("source") or "unknown_source"),
+    )
+
+
+def _group_observed_trajectory_points(
+    points: list[dict[str, Any]],
+) -> list[tuple[tuple[str, str, str, str, str, str], list[dict[str, Any]]]]:
+    groups: dict[tuple[str, str, str, str, str, str], list[dict[str, Any]]] = {}
+    for point in points:
+        groups.setdefault(_observed_trajectory_group_key(point), []).append(point)
+    return list(groups.items())
+
+
 def _observed_points_from_action_result(result: Mapping[str, Any]) -> list[dict[str, Any]]:
     points: list[dict[str, Any]] = []
     segment_ref = str(result.get("segment_ref") or "segment")
-    for response in result.get("bridge_responses") or ():
+    for response_index, response in enumerate(result.get("bridge_responses") or ()):
         if not isinstance(response, Mapping):
             continue
         for sample in _trajectory_samples_from_response(response):
             points.append(
                 {
                     **sample,
+                    "bridge_response_index": response_index,
                     "segment_ref": segment_ref,
                     "role": "observed_pose",
                 }
@@ -3004,7 +3531,6 @@ def _obstacle_trajectory_geometry(
     *,
     obstacle_required: bool,
     obstacle: Mapping[str, Any],
-    planned_points: list[dict[str, Any]],
     observed_points: list[dict[str, Any]],
     recovery_points: list[dict[str, Any]],
 ) -> dict[str, Any]:
@@ -3020,27 +3546,38 @@ def _obstacle_trajectory_geometry(
             "obstacle_intersection_segment_count": 0,
             "obstacle_min_clearance_m": None,
             "obstacle_trajectory_geometry_source": "not_required",
+            "obstacle_trajectory_geometry_status": "not_required",
+            "obstacle_trajectory_geometry_frame_id": None,
+            "obstacle_trajectory_raw_map_frame_sample_count": 0,
+            "obstacle_trajectory_observed_stream_count": 0,
+            "obstacle_trajectory_observed_segment_count": 0,
+            "obstacle_trajectory_non_map_sample_count_excluded": 0,
+            "obstacle_trajectory_ineligible_map_sample_count_excluded": 0,
+            "obstacle_trajectory_path_sample_count_excluded": 0,
+            "obstacle_trajectory_display_aligned_sample_count_excluded": 0,
+            "obstacle_trajectory_invalid_numeric_sample_count_excluded": 0,
+            "obstacle_trajectory_display_alignment_used": False,
         }
-    display_alignment = _observed_display_alignment(
-        planned_points=planned_points,
-        observed_points=observed_points,
-        recovery_points=recovery_points,
-    )
-    aligned_points = _apply_observed_display_alignment(
-        [*observed_points, *recovery_points],
-        alignment=display_alignment,
+    raw_map_points, evidence_filter = _raw_map_observed_trajectory_points(
+        [*observed_points, *recovery_points]
     )
     xy_points: list[tuple[float, float]] = []
-    xy_points_by_segment: dict[str, list[tuple[float, float]]] = {}
-    for point in aligned_points:
-        x_m = _float_or_none(point.get("x_m"))
-        y_m = _float_or_none(point.get("y_m"))
-        if x_m is None or y_m is None:
-            continue
-        xy = (x_m, y_m)
-        xy_points.append(xy)
-        segment_ref = str(point.get("segment_ref") or "segment")
-        xy_points_by_segment.setdefault(segment_ref, []).append(xy)
+    xy_points_by_observed_stream: dict[
+        tuple[str, str, str, str, str, str], list[tuple[float, float]]
+    ] = {}
+    for group_key, group_points in _group_observed_trajectory_points(raw_map_points):
+        for point in group_points:
+            x_m = _float_or_none(point.get("x_m"))
+            y_m = _float_or_none(point.get("y_m"))
+            if x_m is None or y_m is None:
+                continue
+            xy = (x_m, y_m)
+            xy_points.append(xy)
+            xy_points_by_observed_stream.setdefault(group_key, []).append(xy)
+    observed_stream_segment_count = sum(
+        max(len(stream_points) - 1, 0)
+        for stream_points in xy_points_by_observed_stream.values()
+    )
     rects = [
         rect
         for marker in markers
@@ -3055,13 +3592,24 @@ def _obstacle_trajectory_geometry(
             min_clearance = clearance if min_clearance is None else min(min_clearance, clearance)
             if clearance < 0.0 or _point_inside_rect(point, rect):
                 point_intersections += 1
-        for segment_points in xy_points_by_segment.values():
+        for segment_points in xy_points_by_observed_stream.values():
             for start, end in zip(segment_points, segment_points[1:], strict=False):
                 if _segment_intersects_rect(start, end, rect):
                     segment_intersections += 1
     intersects = point_intersections > 0 or segment_intersections > 0
+    geometry_status = (
+        "raw_map_frame_trajectory_unavailable"
+        if not xy_points
+        else "raw_map_frame_trajectory_insufficient"
+        if observed_stream_segment_count == 0
+        else "obstacle_geometry_unavailable"
+        if not rects
+        else "observed"
+    )
     return {
-        "obstacle_trajectory_clearance_observed": bool(xy_points) and not intersects,
+        "obstacle_trajectory_clearance_observed": (
+            geometry_status == "observed" and not intersects
+        ),
         "obstacle_trajectory_intersects_obstacle": intersects,
         "obstacle_intersection_point_count": point_intersections,
         "obstacle_intersection_segment_count": segment_intersections,
@@ -3069,13 +3617,368 @@ def _obstacle_trajectory_geometry(
         if min_clearance is not None
         else None,
         "obstacle_trajectory_geometry_source": (
-            "display_aligned_bridge_trajectory_vs_obstacle_bbox"
+            "raw_ros2_nav2_bridge_map_frame_observed_trajectory_vs_obstacle_bbox"
         ),
+        "obstacle_trajectory_geometry_status": geometry_status,
+        "obstacle_trajectory_geometry_frame_id": "map" if xy_points else None,
+        "obstacle_trajectory_raw_map_frame_sample_count": evidence_filter[
+            "raw_map_frame_sample_count"
+        ],
+        "obstacle_trajectory_observed_stream_count": len(
+            xy_points_by_observed_stream
+        ),
+        "obstacle_trajectory_observed_segment_count": observed_stream_segment_count,
+        "obstacle_trajectory_non_map_sample_count_excluded": evidence_filter[
+            "non_map_frame_sample_count_excluded"
+        ],
+        "obstacle_trajectory_ineligible_map_sample_count_excluded": evidence_filter[
+            "ineligible_map_frame_sample_count_excluded"
+        ],
+        "obstacle_trajectory_path_sample_count_excluded": evidence_filter[
+            "path_sample_count_excluded"
+        ],
+        "obstacle_trajectory_display_aligned_sample_count_excluded": evidence_filter[
+            "display_aligned_sample_count_excluded"
+        ],
+        "obstacle_trajectory_invalid_numeric_sample_count_excluded": evidence_filter[
+            "invalid_numeric_sample_count_excluded"
+        ],
+        "obstacle_trajectory_display_alignment_used": False,
         "obstacle_trajectory_geometry_claim_boundary": (
             "Obstacle-avoidance completion requires the bridge observation plus "
-            "a display-aligned trajectory that does not intersect the obstacle "
-            "bbox. This is a simulator evidence check, not physical delivery."
+            "an explicitly observed raw map-frame trajectory that does not intersect "
+            "the obstacle bbox. Display alignment and ambiguous path_samples are "
+            "visualization-only and cannot support this simulator completion claim; "
+            "segments are formed only within one coherent collection, provenance, "
+            "and source stream."
         ),
+    }
+
+
+def _recovery_requested_side_observation(
+    *,
+    checkpoint: Mapping[str, Any],
+    approved_recovery_results: list[dict[str, Any]],
+) -> dict[str, Any]:
+    geometry = checkpoint.get("recovery_revision_geometry")
+    geometry = geometry if isinstance(geometry, Mapping) else {}
+    requested_direction = str(geometry.get("requested_direction") or "")
+    if requested_direction not in {"left", "right"}:
+        return {
+            "schema_version": (
+                "missionos_turtlebot3_recovery_requested_side_observation.v1"
+            ),
+            "observation_status": "not_required",
+            "requested_direction": requested_direction or None,
+            "requested_side_observed": False,
+            "raw_map_frame_sample_count": 0,
+            "non_map_frame_sample_count_excluded": 0,
+            "ineligible_map_frame_sample_count_excluded": 0,
+            "path_sample_count_excluded": 0,
+            "display_aligned_sample_count_excluded": 0,
+            "invalid_numeric_sample_count_excluded": 0,
+            "observed_trajectory_stream_count": 0,
+            "display_alignment_used": False,
+            "dispatch_authority_created": False,
+            "physical_execution_invoked": False,
+            "progress_counted": False,
+        }
+    left_normal = geometry.get("left_normal_unit")
+    route_direction = geometry.get("route_direction_unit")
+    obstacle = geometry.get("obstacle")
+    left_normal = left_normal if isinstance(left_normal, Mapping) else {}
+    route_direction = (
+        route_direction if isinstance(route_direction, Mapping) else {}
+    )
+    obstacle = obstacle if isinstance(obstacle, Mapping) else {}
+    normal_x = _revision_numeric(left_normal.get("x"))
+    normal_y = _revision_numeric(left_normal.get("y"))
+    direction_x = _revision_numeric(route_direction.get("x"))
+    direction_y = _revision_numeric(route_direction.get("y"))
+    obstacle_x = _revision_numeric(obstacle.get("x_m"))
+    obstacle_y = _revision_numeric(obstacle.get("y_m"))
+    size_x = _revision_numeric(obstacle.get("size_x_m"))
+    size_y = _revision_numeric(obstacle.get("size_y_m"))
+    if None in (
+        normal_x,
+        normal_y,
+        direction_x,
+        direction_y,
+        obstacle_x,
+        obstacle_y,
+        size_x,
+        size_y,
+    ):
+        return {
+            "schema_version": (
+                "missionos_turtlebot3_recovery_requested_side_observation.v1"
+            ),
+            "observation_status": "source_geometry_invalid",
+            "requested_direction": requested_direction,
+            "requested_side_observed": False,
+            "raw_map_frame_sample_count": 0,
+            "non_map_frame_sample_count_excluded": 0,
+            "ineligible_map_frame_sample_count_excluded": 0,
+            "path_sample_count_excluded": 0,
+            "display_aligned_sample_count_excluded": 0,
+            "invalid_numeric_sample_count_excluded": 0,
+            "observed_trajectory_stream_count": 0,
+            "display_alignment_used": False,
+            "dispatch_authority_created": False,
+            "physical_execution_invoked": False,
+            "progress_counted": False,
+        }
+    side_sign = 1.0 if requested_direction == "left" else -1.0
+    obstacle_perpendicular_support = (
+        abs(float(normal_x)) * float(size_x) / 2.0
+        + abs(float(normal_y)) * float(size_y) / 2.0
+    )
+    required_signed_offset = obstacle_perpendicular_support + float(
+        geometry.get("wide_bbox_clearance_m")
+        or _TURTLEBOT3_RECOVERY_REVISION_WIDE_BBOX_CLEARANCE_M
+    )
+    obstacle_parallel_support = (
+        abs(float(direction_x)) * float(size_x) / 2.0
+        + abs(float(direction_y)) * float(size_y) / 2.0
+    )
+    segment_observations: list[dict[str, Any]] = []
+    total_sample_count = 0
+    total_non_map_sample_count_excluded = 0
+    total_ineligible_map_sample_count_excluded = 0
+    total_path_sample_count_excluded = 0
+    total_display_aligned_sample_count_excluded = 0
+    total_invalid_numeric_sample_count_excluded = 0
+
+    def _stream_observation(
+        *,
+        result: Mapping[str, Any],
+        group_key: tuple[str, str, str, str, str, str],
+        raw_map_points: list[dict[str, Any]],
+        evidence_filter: Mapping[str, int],
+    ) -> dict[str, Any]:
+        def _longitudinal(point: Mapping[str, Any]) -> float:
+            return (
+                (float(point["x_m"]) - float(obstacle_x)) * float(direction_x)
+                + (float(point["y_m"]) - float(obstacle_y)) * float(direction_y)
+            )
+
+        def _requested_side_offset(point: Mapping[str, Any]) -> float:
+            return side_sign * (
+                (float(point["x_m"]) - float(obstacle_x)) * float(normal_x)
+                + (float(point["y_m"]) - float(obstacle_y)) * float(normal_y)
+            )
+
+        abreast_offsets = [
+            _requested_side_offset(point)
+            for point in raw_map_points
+            if abs(_longitudinal(point)) <= obstacle_parallel_support + 1e-9
+        ]
+        longitudinal_samples = [_longitudinal(point) for point in raw_map_points]
+        crossed_low_to_high = False
+        crossed_high_to_low = False
+        low_observed = False
+        high_observed = False
+        for longitudinal in longitudinal_samples:
+            if longitudinal <= -obstacle_parallel_support + 1e-9:
+                low_observed = True
+                if high_observed:
+                    crossed_high_to_low = True
+            if longitudinal >= obstacle_parallel_support - 1e-9:
+                high_observed = True
+                if low_observed:
+                    crossed_low_to_high = True
+        full_longitudinal_crossing_observed = (
+            crossed_low_to_high or crossed_high_to_low
+        )
+        for start, end in zip(
+            raw_map_points,
+            raw_map_points[1:],
+            strict=False,
+        ):
+            start_longitudinal = _longitudinal(start)
+            end_longitudinal = _longitudinal(end)
+            lower = max(
+                min(start_longitudinal, end_longitudinal),
+                -obstacle_parallel_support,
+            )
+            upper = min(
+                max(start_longitudinal, end_longitudinal),
+                obstacle_parallel_support,
+            )
+            if lower > upper + 1e-9:
+                continue
+            longitudinal_delta = end_longitudinal - start_longitudinal
+            if abs(longitudinal_delta) <= 1e-12:
+                continue
+            clipped_longitudinals = (
+                (lower,)
+                if math.isclose(lower, upper, abs_tol=1e-12)
+                else (lower, upper)
+            )
+            for clipped_longitudinal in clipped_longitudinals:
+                ratio = (
+                    clipped_longitudinal - start_longitudinal
+                ) / longitudinal_delta
+                interpolated = {
+                    "x_m": float(start["x_m"])
+                    + ratio * (float(end["x_m"]) - float(start["x_m"])),
+                    "y_m": float(start["y_m"])
+                    + ratio * (float(end["y_m"]) - float(start["y_m"])),
+                }
+                abreast_offsets.append(_requested_side_offset(interpolated))
+        maximum_requested_side_offset = max(abreast_offsets, default=None)
+        minimum_requested_side_offset = min(abreast_offsets, default=None)
+        return {
+            "segment_ref": group_key[0] or result.get("segment_ref"),
+            "bridge_response_index": group_key[1],
+            "trajectory_container_index": group_key[2],
+            "trajectory_sample_collection": group_key[3],
+            "observation_provenance": group_key[4],
+            "observation_source": group_key[5],
+            "raw_map_frame_sample_count": len(raw_map_points),
+            "non_map_frame_sample_count_excluded": evidence_filter[
+                "non_map_frame_sample_count_excluded"
+            ],
+            "ineligible_map_frame_sample_count_excluded": evidence_filter[
+                "ineligible_map_frame_sample_count_excluded"
+            ],
+            "path_sample_count_excluded": evidence_filter[
+                "path_sample_count_excluded"
+            ],
+            "display_aligned_sample_count_excluded": evidence_filter[
+                "display_aligned_sample_count_excluded"
+            ],
+            "invalid_numeric_sample_count_excluded": evidence_filter[
+                "invalid_numeric_sample_count_excluded"
+            ],
+            "obstacle_abreast_evidence_count": len(abreast_offsets),
+            "full_longitudinal_crossing_observed": (
+                full_longitudinal_crossing_observed
+            ),
+            "maximum_requested_side_offset_m": (
+                round(maximum_requested_side_offset, 6)
+                if maximum_requested_side_offset is not None
+                else None
+            ),
+            "minimum_requested_side_offset_m": (
+                round(minimum_requested_side_offset, 6)
+                if minimum_requested_side_offset is not None
+                else None
+            ),
+            "requested_side_observed": (
+                full_longitudinal_crossing_observed
+                and minimum_requested_side_offset is not None
+                and minimum_requested_side_offset + 1e-6
+                >= required_signed_offset
+            ),
+        }
+
+    for result in approved_recovery_results:
+        raw_map_points, evidence_filter = _raw_map_observed_trajectory_points(
+            _observed_points_from_action_result(result)
+        )
+        total_sample_count += len(raw_map_points)
+        total_non_map_sample_count_excluded += evidence_filter[
+            "non_map_frame_sample_count_excluded"
+        ]
+        total_ineligible_map_sample_count_excluded += evidence_filter[
+            "ineligible_map_frame_sample_count_excluded"
+        ]
+        total_path_sample_count_excluded += evidence_filter[
+            "path_sample_count_excluded"
+        ]
+        total_display_aligned_sample_count_excluded += evidence_filter[
+            "display_aligned_sample_count_excluded"
+        ]
+        total_invalid_numeric_sample_count_excluded += evidence_filter[
+            "invalid_numeric_sample_count_excluded"
+        ]
+        observed_streams = _group_observed_trajectory_points(raw_map_points)
+        if not observed_streams:
+            observed_streams = [
+                (
+                    (
+                        str(result.get("segment_ref") or "segment"),
+                        "unavailable",
+                        "unavailable",
+                        "unavailable",
+                        "unavailable",
+                        "unavailable",
+                    ),
+                    [],
+                )
+            ]
+        for group_key, stream_points in observed_streams:
+            segment_observations.append(
+                _stream_observation(
+                    result=result,
+                    group_key=group_key,
+                    raw_map_points=stream_points,
+                    evidence_filter=evidence_filter,
+                )
+            )
+    crossing_segment_observations = [
+        item
+        for item in segment_observations
+        if item["full_longitudinal_crossing_observed"] is True
+    ]
+    requested_side_observed = bool(crossing_segment_observations) and all(
+        item["requested_side_observed"] is True
+        for item in crossing_segment_observations
+    )
+    return {
+        "schema_version": (
+            "missionos_turtlebot3_recovery_requested_side_observation.v1"
+        ),
+        "observation_status": (
+            "observed"
+            if requested_side_observed
+            else "raw_map_frame_trajectory_unavailable"
+            if total_sample_count == 0
+            else "not_observed"
+        ),
+        "requested_direction": requested_direction,
+        "required_signed_offset_m": round(required_signed_offset, 6),
+        "obstacle_longitudinal_half_window_m": round(
+            obstacle_parallel_support,
+            6,
+        ),
+        "approved_recovery_segment_count": len(approved_recovery_results),
+        "segment_observations": segment_observations,
+        "raw_map_frame_sample_count": total_sample_count,
+        "non_map_frame_sample_count_excluded": (
+            total_non_map_sample_count_excluded
+        ),
+        "ineligible_map_frame_sample_count_excluded": (
+            total_ineligible_map_sample_count_excluded
+        ),
+        "path_sample_count_excluded": total_path_sample_count_excluded,
+        "display_aligned_sample_count_excluded": (
+            total_display_aligned_sample_count_excluded
+        ),
+        "invalid_numeric_sample_count_excluded": (
+            total_invalid_numeric_sample_count_excluded
+        ),
+        "observed_trajectory_stream_count": sum(
+            1
+            for item in segment_observations
+            if item["trajectory_sample_collection"] != "unavailable"
+        ),
+        "observation_source": (
+            "raw_ros2_nav2_bridge_map_frame_observed_trajectory_samples_"
+            "abreast_of_obstacle"
+        ),
+        "requested_side_observed": requested_side_observed,
+        "display_alignment_used": False,
+        "claim_boundary": (
+            "Only raw map-frame bridge samples may verify requested-side traversal; "
+            "display alignment, odom-frame fallback, and ambiguous path_samples "
+            "are excluded. Crossing interpolation is confined to one coherent "
+            "sample collection, provenance, and source stream."
+        ),
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
     }
 
 
@@ -3234,12 +4137,15 @@ def _build_turtlebot3_indoor_map_model(
     goals: tuple[Nav2GoalPose, ...],
     segment_results: list[dict[str, Any]],
     recovery_segment_result: Mapping[str, Any],
+    approved_recovery_segment_results: list[dict[str, Any]],
+    subsequent_recovery_segment_results: list[dict[str, Any]],
     status: str,
     obstacle_required: bool,
     obstacle: Mapping[str, Any],
     motion: Mapping[str, Any],
     runtime_recovery_triggered: bool,
     recovery_action_suggested: str | None,
+    route_resumed_after_recovery: bool,
 ) -> dict[str, Any]:
     indoor_route = proposal.get("indoor_delivery_route")
     destination_room_label = (
@@ -3270,11 +4176,25 @@ def _build_turtlebot3_indoor_map_model(
     observed_points: list[dict[str, Any]] = []
     for result in segment_results:
         observed_points.extend(_observed_points_from_action_result(result))
-    recovery_points = _observed_points_from_action_result(recovery_segment_result)
+    approved_recovery_results = (
+        approved_recovery_segment_results
+        if approved_recovery_segment_results
+        else ([dict(recovery_segment_result)] if recovery_segment_result else [])
+    )
+    recovery_points = [
+        point
+        for result in approved_recovery_results
+        for point in _observed_points_from_action_result(result)
+    ]
+    subsequent_recovery_points = [
+        point
+        for result in subsequent_recovery_segment_results
+        for point in _observed_points_from_action_result(result)
+    ]
     display_alignment = _observed_display_alignment(
         planned_points=planned_points,
         observed_points=observed_points,
-        recovery_points=recovery_points,
+        recovery_points=[*recovery_points, *subsequent_recovery_points],
     )
     observed_points = _apply_observed_display_alignment(
         observed_points,
@@ -3284,11 +4204,18 @@ def _build_turtlebot3_indoor_map_model(
         recovery_points,
         alignment=display_alignment,
     )
+    subsequent_recovery_points = _apply_observed_display_alignment(
+        subsequent_recovery_points,
+        alignment=display_alignment,
+    )
     observed_points, display_sanitize = _sanitize_observed_display_points(
         observed_points
     )
     recovery_points, _recovery_sanitize = _sanitize_observed_display_points(
         recovery_points
+    )
+    subsequent_recovery_points, _subsequent_recovery_sanitize = (
+        _sanitize_observed_display_points(subsequent_recovery_points)
     )
     observed_points, display_decimation = _decimate_observed_display_points(
         observed_points
@@ -3296,6 +4223,9 @@ def _build_turtlebot3_indoor_map_model(
     display_decimation = {**display_decimation, "sanitize": display_sanitize}
     recovery_points, _recovery_decimation = _decimate_observed_display_points(
         recovery_points
+    )
+    subsequent_recovery_points, _subsequent_recovery_decimation = (
+        _decimate_observed_display_points(subsequent_recovery_points)
     )
     recovery_goal = recovery_segment_result.get("goal_pose")
     recovery_target = None
@@ -3314,25 +4244,61 @@ def _build_turtlebot3_indoor_map_model(
             "role": recovery_role,
             "source": "missionos_recovery_nav2_segment",
         }
+    subsequent_recovery_targets = [
+        {
+            "x_m": goal.get("x_m"),
+            "y_m": goal.get("y_m"),
+            "yaw_rad": goal.get("yaw_rad"),
+            "frame_id": goal.get("frame_id"),
+            "label": goal.get("label"),
+            "role": "subsequent_recovery_target",
+            "source": "missionos_subsequent_recovery_nav2_segment",
+        }
+        for result in subsequent_recovery_segment_results
+        if isinstance((goal := result.get("goal_pose")), Mapping)
+    ]
+    approved_recovery_targets = [
+        {
+            "x_m": goal.get("x_m"),
+            "y_m": goal.get("y_m"),
+            "yaw_rad": goal.get("yaw_rad"),
+            "frame_id": goal.get("frame_id"),
+            "label": goal.get("label"),
+            "role": "approved_recovery_target",
+            "source": "missionos_approved_recovery_nav2_segment",
+        }
+        for result in approved_recovery_results
+        if isinstance((goal := result.get("goal_pose")), Mapping)
+    ]
 
-    robot_profile = _robot_profile_from_proposal(proposal)
-    profile_spec = _robot_profile_spec(robot_profile)
     obstacles = _turtlebot3_delivery_obstacle_markers(
         obstacle_required=obstacle_required,
         obstacle=obstacle,
     )
-    floor_plan = _turtlebot3_home_floor_plan(robot_profile)
+    floor_plan = _turtlebot3_home_floor_plan()
     floor_bounds = floor_plan["bounds"]
 
     all_x = [
         float(point["x_m"])
-        for point in [*planned_points, *observed_points, *recovery_points, *obstacles]
+        for point in [
+            *planned_points,
+            *observed_points,
+            *recovery_points,
+            *subsequent_recovery_points,
+            *obstacles,
+        ]
         if isinstance(point.get("x_m"), (int, float))
         and not isinstance(point.get("x_m"), bool)
     ]
     all_y = [
         float(point["y_m"])
-        for point in [*planned_points, *observed_points, *recovery_points, *obstacles]
+        for point in [
+            *planned_points,
+            *observed_points,
+            *recovery_points,
+            *subsequent_recovery_points,
+            *obstacles,
+        ]
         if isinstance(point.get("y_m"), (int, float))
         and not isinstance(point.get("y_m"), bool)
     ]
@@ -3340,9 +4306,18 @@ def _build_turtlebot3_indoor_map_model(
     max_x = max(float(floor_bounds["max_x_m"]), max(all_x, default=1.0))
     min_y = min(float(floor_bounds["min_y_m"]), min(all_y, default=-1.0))
     max_y = max(float(floor_bounds["max_y_m"]), max(all_y, default=1.0))
-    current_pose = observed_points[-1] if observed_points else None
+    current_pose = (
+        subsequent_recovery_points[-1] if subsequent_recovery_points else None
+    )
+    if current_pose is None and route_resumed_after_recovery and observed_points:
+        current_pose = observed_points[-1]
     if current_pose is None and recovery_points:
         current_pose = recovery_points[-1]
+    if current_pose is None and observed_points:
+        current_pose = observed_points[-1]
+    robot_profile = _robot_profile_from_proposal(proposal)
+    profile_spec = _robot_profile_spec(robot_profile)
+
     return {
         "schema_version": TURTLEBOT3_INDOOR_MAP_MODEL_SCHEMA,
         "map_kind": "indoor_local_xy",
@@ -3392,8 +4367,19 @@ def _build_turtlebot3_indoor_map_model(
             "triggered": runtime_recovery_triggered,
             "selected_action": recovery_action_suggested,
             "target": recovery_target,
+            "approved_targets": approved_recovery_targets,
             "observed_points": recovery_points,
-            "completion_claimed": recovery_segment_result.get("completion_claimed") is True,
+            "completion_claimed": bool(approved_recovery_results)
+            and all(
+                result.get("completion_claimed") is True
+                for result in approved_recovery_results
+            ),
+            "subsequent_targets": subsequent_recovery_targets,
+            "subsequent_observed_points": subsequent_recovery_points,
+            "subsequent_completion_claimed": any(
+                result.get("completion_claimed") is True
+                for result in subsequent_recovery_segment_results
+            ),
         },
         "motion": dict(motion),
         "claim_boundaries": [
@@ -3428,9 +4414,7 @@ def _dispatch_nav2_goal(
         approval_actor=str(approval.get("approval_actor") or "missionos_chat_operator"),
         approval_timestamp=dispatched_at,
         max_distance_m=goal.max_distance_m,
-        raw_logs_ref=_turtlebot3_raw_logs_ref_from_env(
-            _robot_profile_from_proposal(proposal)
-        ),
+        raw_logs_ref=_turtlebot3_raw_logs_ref_from_env(),
     )
     env_overrides = None if publish_initialpose else {"ROS2_NAV2_INITIALPOSE_ENABLE": "0"}
     client = Ros2Nav2BridgeCommandClient(env_overrides=env_overrides)
@@ -3596,12 +4580,1965 @@ def _max_numeric(values: list[Any]) -> float | None:
     return max(numbers)
 
 
+def _recovery_checkpoint_hash_payload(checkpoint: Mapping[str, Any]) -> dict[str, Any]:
+    """Return the immutable checkpoint fields covered by ``checkpoint_hash``."""
+
+    mutable_fields = {
+        "checkpoint_id",
+        "checkpoint_hash",
+        "checkpoint_status",
+        "claimed_at",
+        "claimed_by_approval_ref",
+        "consumed_at",
+        "consumed_by_approval_ref",
+        "failed_at",
+        "failure_reasons",
+        "superseded_at",
+        "superseded_by_checkpoint_id",
+        "superseded_by_revision_id",
+    }
+    return {
+        str(key): value
+        for key, value in checkpoint.items()
+        if str(key) not in mutable_fields
+        and not str(key).startswith("superseded_")
+    }
+
+
+def _recovery_checkpoint_hash(checkpoint: Mapping[str, Any]) -> str:
+    serialized = json.dumps(
+        _recovery_checkpoint_hash_payload(checkpoint),
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    )
+    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
+
+
+def _recovery_resume_state_hash(state: Mapping[str, Any]) -> str:
+    source_bound_state = {
+        key: state.get(key)
+        for key in (
+            "planned_segments",
+            "segment_results",
+            "recovery_proposals",
+            "recovery_proposal_classifications",
+            "recovery_planner_result",
+            "runtime_recovery_obstacle_scenario",
+            "runtime_recovery_motion_context",
+        )
+    }
+    serialized = json.dumps(
+        source_bound_state,
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    )
+    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
+
+
+def _planned_segments_sha256(goals: tuple[Nav2GoalPose, ...]) -> str:
+    serialized = json.dumps(
+        [goal.model_dump(mode="json") for goal in goals],
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
+
+
+def _recovery_approved_parameters(
+    *,
+    selected_action: str,
+    recovery_proposal: Mapping[str, Any],
+) -> dict[str, Any]:
+    if selected_action == "return_home":
+        home = _profile_home_pose()
+        return {
+            "target_x_m": home.x_m,
+            "target_y_m": home.y_m,
+            "return_home_required": True,
+        }
+    if selected_action != "avoid_obstacle":
+        return {}
+    observations = recovery_proposal.get("input_observations")
+    observations = observations if isinstance(observations, Mapping) else {}
+    target_x = observations.get("recommended_avoidance_target_x_m")
+    target_y = observations.get("recommended_avoidance_target_y_m")
+    if (
+        not isinstance(target_x, (int, float))
+        or isinstance(target_x, bool)
+        or not math.isfinite(float(target_x))
+        or not isinstance(target_y, (int, float))
+        or isinstance(target_y, bool)
+        or not math.isfinite(float(target_y))
+    ):
+        return {}
+    return {
+        "target_x_m": float(target_x),
+        "target_y_m": float(target_y),
+        "obstacle_avoidance_required": True,
+    }
+
+
+def _build_turtlebot3_recovery_checkpoint(
+    *,
+    proposal: Mapping[str, Any],
+    goals: tuple[Nav2GoalPose, ...],
+    segment_results: list[dict[str, Any]],
+    recovery_proposals: tuple[Mapping[str, Any], ...],
+    recovery_proposal_classifications: tuple[Mapping[str, Any], ...],
+    recovery_planner_result: Mapping[str, Any],
+    runtime_recovery_obstacle_scenario: Mapping[str, Any],
+    runtime_recovery_motion_context: Mapping[str, Any],
+    completed_segment_index: int,
+) -> dict[str, Any]:
+    recovery_proposal = recovery_proposals[0] if recovery_proposals else {}
+    classification = (
+        recovery_proposal_classifications[0]
+        if recovery_proposal_classifications
+        else {}
+    )
+    selected_action = str(recovery_proposal.get("selected_action") or "")
+    candidate_resolution = runtime_recovery_obstacle_scenario.get(
+        "recovery_candidate_resolution"
+    )
+    candidate_resolution = (
+        candidate_resolution if isinstance(candidate_resolution, Mapping) else {}
+    )
+    selected_candidate = candidate_resolution.get("selected_candidate")
+    selected_candidate = (
+        selected_candidate if isinstance(selected_candidate, Mapping) else {}
+    )
+    approved_parameters = _recovery_approved_parameters(
+        selected_action=selected_action,
+        recovery_proposal=recovery_proposal,
+    )
+    if selected_action == "avoid_obstacle" and selected_candidate:
+        target_yaw_rad = selected_candidate.get(
+            "recommended_arrival_yaw_rad",
+            selected_candidate.get("yaw_rad", 0.0),
+        )
+        approved_parameters = {
+            "target_x_m": float(selected_candidate["x_m"]),
+            "target_y_m": float(selected_candidate["y_m"]),
+            "target_yaw_rad": float(target_yaw_rad),
+            "obstacle_avoidance_required": True,
+        }
+    selected_sequence = [
+        dict(item)
+        for item in candidate_resolution.get("selected_sequence") or []
+        if isinstance(item, Mapping)
+    ]
+    if selected_action == "avoid_obstacle" and len(selected_sequence) == 2:
+        approved_parameters = {
+            "recovery_waypoints": [
+                {
+                    "target_x_m": float(item["x_m"]),
+                    "target_y_m": float(item["y_m"]),
+                }
+                for item in selected_sequence
+            ],
+            "obstacle_avoidance_required": True,
+        }
+    resume_state = {
+        "planned_segments": [goal.model_dump(mode="json") for goal in goals],
+        "segment_results": [dict(item) for item in segment_results],
+        "recovery_proposals": [dict(item) for item in recovery_proposals],
+        "recovery_proposal_classifications": [
+            dict(item) for item in recovery_proposal_classifications
+        ],
+        "recovery_planner_result": dict(recovery_planner_result),
+        "runtime_recovery_obstacle_scenario": dict(
+            runtime_recovery_obstacle_scenario
+        ),
+        "runtime_recovery_motion_context": dict(runtime_recovery_motion_context),
+    }
+    checkpoint: dict[str, Any] = {
+        "schema_version": TURTLEBOT3_RECOVERY_CHECKPOINT_SCHEMA,
+        "checkpoint_status": "awaiting_operator_approval",
+        "proposal_id": str(proposal.get("proposal_id") or ""),
+        "robot_profile": _robot_profile_from_proposal(proposal),
+        "execution_target": str(proposal.get("execution_target") or ""),
+        "recovery_proposal_id": str(recovery_proposal.get("proposal_id") or ""),
+        "recovery_classification_id": str(
+            classification.get("classification_id") or ""
+        ),
+        "selected_action": selected_action,
+        "approved_parameters": approved_parameters,
+        "completed_segment_count": len(segment_results),
+        "next_segment_index": completed_segment_index + 1,
+        "remaining_segment_count": max(len(goals) - completed_segment_index, 0),
+        "planned_segments_sha256": _planned_segments_sha256(goals),
+        "resume_state_hash": _recovery_resume_state_hash(resume_state),
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }
+    if selected_action == "return_home":
+        checkpoint["recovery_goal_poses"] = [
+            _profile_home_pose().model_dump(mode="json")
+        ]
+    elif selected_action == "avoid_obstacle":
+        sequence = selected_sequence or ([dict(selected_candidate)] if selected_candidate else [])
+        candidate_ids = [str(item.get("candidate_id") or "") for item in sequence]
+        if sequence and all(candidate_ids):
+            template = _profile_dynamic_obstacle_avoidance_goal()
+            if len(selected_sequence) == 2:
+                checkpoint["recovery_goal_poses"] = [
+                    template.model_copy(
+                        update={
+                            "x_m": float(item["x_m"]),
+                            "y_m": float(item["y_m"]),
+                            "yaw_rad": float(
+                                item.get(
+                                    "recommended_arrival_yaw_rad",
+                                    item.get("yaw_rad", 0.0),
+                                )
+                            ),
+                            "label": str(
+                                item.get("candidate_id") or template.label
+                            ),
+                        }
+                    ).model_dump(mode="json")
+                    for item in sequence
+                ]
+            checkpoint["recovery_candidate_binding"] = {
+                "candidate_id": candidate_ids[-1],
+                "path_sha256": sequence[-1].get("path_sha256"),
+                "costmap_snapshot_hash": candidate_resolution.get(
+                    "costmap_snapshot_hash"
+                ),
+                "recommended_arrival_yaw_rad": float(
+                    sequence[-1].get(
+                        "recommended_arrival_yaw_rad",
+                        sequence[-1].get("yaw_rad", 0.0),
+                    )
+                ),
+                "live_costmap_validated": candidate_resolution.get(
+                    "live_costmap_validated"
+                )
+                is True,
+                "dispatch_authority_created": False,
+                "physical_execution_invoked": False,
+            }
+            if candidate_resolution.get("dual_costmap_validated") is True:
+                checkpoint["recovery_candidate_binding"].update(
+                    {
+                        "candidate_ids": candidate_ids,
+                        "path_sha256_sequence": [
+                            item.get("path_sha256") for item in sequence
+                        ],
+                        "global_costmap_snapshot_hash": (
+                            candidate_resolution.get(
+                                "global_costmap_snapshot_hash"
+                            )
+                        ),
+                        "local_costmap_snapshot_hash": candidate_resolution.get(
+                            "local_costmap_snapshot_hash"
+                        ),
+                        "dual_costmap_validated": True,
+                        "bounded_retreat_required": len(sequence) > 1,
+                    }
+                )
+    checkpoint_hash = _recovery_checkpoint_hash(checkpoint)
+    checkpoint["checkpoint_hash"] = checkpoint_hash
+    checkpoint["checkpoint_id"] = f"turtlebot3_recovery_checkpoint_{checkpoint_hash[:12]}"
+    return checkpoint
+
+
+def _build_recovery_repair_child_checkpoint(
+    *,
+    parent_checkpoint: Mapping[str, Any],
+    proposal: Mapping[str, Any],
+    goals: tuple[Nav2GoalPose, ...],
+    segment_results: list[dict[str, Any]],
+    candidate_observation_results: list[dict[str, Any]],
+    recovery_proposals: tuple[Mapping[str, Any], ...],
+    recovery_proposal_classifications: tuple[Mapping[str, Any], ...],
+    recovery_planner_result: Mapping[str, Any],
+    obstacle_scenario: Mapping[str, Any],
+    motion_context: Mapping[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]] | None:
+    """Create a proposal-only repair child after a failed recovery dispatch."""
+
+    parent_attempt = int(parent_checkpoint.get("repair_attempt") or 0)
+    if parent_attempt >= 2:
+        return None
+    parent_binding = parent_checkpoint.get("recovery_candidate_binding")
+    parent_binding = parent_binding if isinstance(parent_binding, Mapping) else {}
+    excluded = {
+        str(candidate_id)
+        for candidate_id in (
+            parent_binding.get("candidate_ids")
+            or [parent_binding.get("candidate_id")]
+        )
+        if str(candidate_id or "")
+    }
+    resolution = _resolve_recovery_candidate(
+        obstacle_scenario,
+        segment_results=candidate_observation_results,
+        excluded_candidate_ids=excluded,
+    )
+    if resolution.get("resolution_status") != "validated":
+        return None
+    child_scenario = {
+        **dict(obstacle_scenario),
+        "recovery_candidate_resolution": dict(resolution),
+        "repair_parent_checkpoint_id": parent_checkpoint.get("checkpoint_id"),
+        "repair_parent_failure_reasons": list(
+            parent_checkpoint.get("failure_reasons") or []
+        ),
+    }
+    child_planner = {
+        **dict(recovery_planner_result),
+        "planner_status": "repair_proposed",
+        "proposal_source": "deterministic_repair_after_verified_failure",
+        "recovery_candidate_resolution": dict(resolution),
+        "dispatch_authority_created": False,
+        "automatic_redispatch_performed": False,
+    }
+    child = _build_turtlebot3_recovery_checkpoint(
+        proposal=proposal,
+        goals=goals,
+        segment_results=segment_results,
+        recovery_proposals=recovery_proposals,
+        recovery_proposal_classifications=recovery_proposal_classifications,
+        recovery_planner_result=child_planner,
+        runtime_recovery_obstacle_scenario=child_scenario,
+        runtime_recovery_motion_context=motion_context,
+        completed_segment_index=int(parent_checkpoint.get("next_segment_index") or 1)
+        - 1,
+    )
+    child = {
+        **child,
+        "parent_checkpoint_id": parent_checkpoint.get("checkpoint_id"),
+        "parent_checkpoint_hash": parent_checkpoint.get("checkpoint_hash"),
+        "repair_attempt": parent_attempt + 1,
+        "repair_trigger": "approved_recovery_verification_failed",
+        "excluded_failed_candidate_ids": sorted(excluded),
+        "requires_new_human_approval": True,
+        "automatic_redispatch_performed": False,
+    }
+    child_hash = _recovery_checkpoint_hash(child)
+    child["checkpoint_hash"] = child_hash
+    child["checkpoint_id"] = f"turtlebot3_recovery_checkpoint_{child_hash[:12]}"
+    return child, child_scenario, child_planner
+
+
+def _recovery_checkpoint_from_execution(
+    resume_execution: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    if not isinstance(resume_execution, Mapping):
+        return {}
+    if resume_execution.get("schema_version") == TURTLEBOT3_RECOVERY_CHECKPOINT_SCHEMA:
+        return dict(resume_execution)
+    checkpoint = resume_execution.get("turtlebot3_recovery_checkpoint")
+    if isinstance(checkpoint, Mapping):
+        return dict(checkpoint)
+    execution = resume_execution.get("turtlebot3_home_mission_execution")
+    if isinstance(execution, Mapping):
+        checkpoint = execution.get("turtlebot3_recovery_checkpoint")
+        if isinstance(checkpoint, Mapping):
+            return dict(checkpoint)
+    summary = resume_execution.get("summary")
+    if isinstance(summary, Mapping):
+        checkpoint = summary.get("turtlebot3_recovery_checkpoint")
+        if isinstance(checkpoint, Mapping):
+            return dict(checkpoint)
+    return {}
+
+
+def _recovery_resume_payload(
+    resume_execution: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    if not isinstance(resume_execution, Mapping):
+        return {}
+    execution = resume_execution.get("turtlebot3_home_mission_execution")
+    if isinstance(execution, Mapping):
+        return dict(execution)
+    return dict(resume_execution)
+
+
+def _turtlebot3_recovery_revision_intent(
+    operator_instruction: str,
+) -> tuple[str | None, list[str]]:
+    """Resolve a bounded operator constraint without treating text as authority."""
+
+    import re
+
+    text = str(operator_instruction or "").strip().lower()
+    compact = text.replace(" ", "").replace("　", "")
+    normalized_apostrophes = text.replace("’", "'")
+    # This parser sits before an authority-bearing recovery proposal. Treat it
+    # as a conservative command allowlist, not a general intent classifier:
+    # universal rejection tokens fail the whole instruction closed, and a
+    # positive action is accepted only when the full utterance ends in one of
+    # the supported imperative/request shapes below.
+    japanese_global_rejection = any(
+        token in compact
+        for token in (
+            "無し",
+            "なし",
+            "不可",
+            "不採用",
+            "拒否",
+            "却下",
+            "禁止",
+            "中止",
+            "不要",
+            "ダメ",
+            "駄目",
+            "やめ",
+        )
+    ) or re.search(r"(?<![a-z0-9])ng(?![a-z0-9])", compact)
+    english_global_rejection = re.search(
+        r"\b(?:absolutely\s+not|no\s+way|forbidden|prohibited|"
+        r"reject(?:ed|ing)?|cancel(?:ed|ing|led|ling)?|never)\b",
+        normalized_apostrophes,
+    )
+    if japanese_global_rejection or english_global_rejection:
+        return None, ["operator_recovery_revision_negated_intent_not_executable"]
+    japanese_negated_direction = re.search(
+        r"(?:左|右)(?:側|方向)?.{0,16}"
+        r"(?:ない|なく|ません|ぬ|ず|禁止|却下|やめ|以外|除い|抜き|なし)",
+        text,
+    )
+    japanese_avoided_direction = re.search(
+        r"(?:左|右)(?:側|方向)?(?:を|に|へ)?"
+        r"(?:通る|通って|進む|行く|曲がる|回る)"
+        r".{0,8}(?:避け|やめ|危険)",
+        text,
+    )
+    japanese_rejected_direction = re.search(
+        r"(?:左|右)(?:側|方向)?.{0,28}"
+        r"(?:不採用|拒否|却下|ダメ|駄目|中止)",
+        text,
+    )
+    japanese_dangerous_direction = re.search(
+        r"(?:左|右)(?:側|方向)?.{0,18}"
+        r"(?:曲が|旋回|回|迂回|進|行|通|避け|かわ).{0,10}危険",
+        text,
+    )
+    japanese_negated_return = re.search(
+        r"(?:引き返|帰還|ホーム.{0,8}戻|出発(?:地点|点)?.{0,8}戻)"
+        r".{0,12}(?:ない|ません|ぬ|ず|不要|禁止|却下|危険|避け|やめ)",
+        text,
+    )
+    english_negator = (
+        r"(?:do\s+not|don't|dont|never|must\s+not|should\s+not|shouldn't|"
+        r"cannot|can't)"
+    )
+    english_negated_direction_or_return = re.search(
+        english_negator
+        + r".{0,40}(?:left|right|return\s+home|return\s+to\s+home|"
+        r"turn\s+back|go\s+back|head\s+back|retreat)",
+        normalized_apostrophes,
+    )
+    english_excluded_direction = re.search(
+        r"(?:\bwithout\b.{0,40}|\b(?:except|excluding|other\s+than|"
+        r"anything\s+but|not|no)\s+(?:the\s+)?)\b(?:left|right)\b",
+        normalized_apostrophes,
+    )
+    english_avoided_return = re.search(
+        r"\bavoid(?:ing)?\b.{0,24}(?:return\s+home|return\s+to\s+home|"
+        r"turn\s+back|go\s+back|head\s+back|retreat)",
+        normalized_apostrophes,
+    )
+    english_excluded_return = re.search(
+        r"\b(?:anything\s+but|except|excluding|other\s+than)\s+"
+        r"(?:return\s+home|return\s+to\s+home|turn\s+back|go\s+back|"
+        r"head\s+back|retreat)\b",
+        normalized_apostrophes,
+    )
+    english_rejected_direction_or_return = re.search(
+        r"\b(?:left|right|return\s+home|return\s+to\s+home|turn\s+back|"
+        r"go\s+back|head\s+back|retreat)\b.{0,28}"
+        r"(?:actually\s+no|(?:is\s+)?(?:forbidden|prohibited|dangerous|unsafe|"
+        r"rejected|cancelled|canceled)|is\s+not\s+(?:needed|required|allowed))",
+        normalized_apostrophes,
+    )
+    english_rejected_direction_prefix = re.search(
+        r"\b(?:reject|cancel)(?:ed|ing|led|ling)?\b.{0,24}"
+        r"\b(?:turn(?:ing)?|go(?:ing)?|move|moving|head|heading|veer|veering)?"
+        r"\s*(?:left|right)\b",
+        normalized_apostrophes,
+    )
+    if (
+        japanese_negated_direction
+        or japanese_avoided_direction
+        or japanese_rejected_direction
+        or japanese_dangerous_direction
+        or japanese_negated_return
+        or english_negated_direction_or_return
+        or english_excluded_direction
+        or english_avoided_return
+        or english_excluded_return
+        or english_rejected_direction_or_return
+        or english_rejected_direction_prefix
+    ):
+        return None, ["operator_recovery_revision_negated_intent_not_executable"]
+    altitude_requested = any(
+        term in text
+        for term in (
+            "高度",
+            "上昇",
+            "上空",
+            "飛び越",
+            "climb",
+            "altitude",
+            "higher",
+            "above",
+            "go over",
+            "over it",
+        )
+    ) or any(term in compact for term in ("上を通", "上から越"))
+    japanese_motion_modifier = (
+        r"(?:(?:大きく|広く|大回りで?|ゆっくり|少し|一旦|急に|しっかり)){0,3}"
+    )
+    japanese_directed_command = (
+        r"(?:曲が(?:って|れ)|旋回(?:して|しろ|せよ)|"
+        r"回避(?:して|しろ|せよ)|回(?:って|れ)|"
+        r"迂回(?:して|しろ|せよ)|進(?:んで|め)|"
+        r"行(?:って|け)|通(?:って|れ)|避け(?:て|ろ)|"
+        r"かわ(?:して|せ))"
+    )
+    japanese_path_command = (
+        r"(?:曲が(?:って|れ)|旋回(?:して|しろ|せよ)|"
+        r"回(?:って|れ)|迂回(?:して|しろ|せよ)|"
+        r"進(?:んで|め)|通(?:って|れ)|かわ(?:して|せ))"
+    )
+    japanese_command_continuation = (
+        r"(?:(?:(?:障害物|それ|これ)を)?"
+        r"(?:避けて|かわして|通って|進んで))*"
+    )
+    japanese_polite_suffix = (
+        r"(?:ください|下さい|くれ|ほしい|欲しい|"
+        r"お願い(?:します)?)?"
+    )
+    japanese_command_text = compact.rstrip("。！!")
+    english_command_text = normalized_apostrophes.strip().rstrip(".!").strip()
+
+    def _japanese_positive_side_request(side: str) -> bool:
+        return bool(
+            re.fullmatch(
+                rf".*?{side}(?:側|方向)?(?:に|へ|から)"
+                rf"{japanese_motion_modifier}{japanese_directed_command}"
+                rf"{japanese_command_continuation}{japanese_polite_suffix}",
+                japanese_command_text,
+            )
+            or re.fullmatch(
+                rf".*?{side}(?:側)?を{japanese_motion_modifier}"
+                rf"{japanese_path_command}{japanese_command_continuation}"
+                rf"{japanese_polite_suffix}",
+                japanese_command_text,
+            )
+        )
+
+    def _english_positive_side_request(side: str) -> bool:
+        direct_motion = re.fullmatch(
+            rf"(?:please\s+)?(?:turn|veer|move|go|head|bear|keep|detour)"
+            rf"(?:\s+(?:sharply|widely|wide|hard|slightly))?\s+"
+            rf"(?:to\s+(?:the\s+)?)?{side}(?:\s+please)?",
+            english_command_text,
+        )
+        routed_motion = bool(
+            re.fullmatch(
+                rf"(?:please\s+)?take\b.{{0,24}}\bturn\b.{{0,32}}"
+                rf"\b(?:on|via)\s+(?:the\s+)?{side}(?:\s+side)?"
+                rf"(?:\s+please)?",
+                english_command_text,
+            )
+            or re.fullmatch(
+                rf"(?:please\s+)?(?:go|move|head|proceed|travel|detour|pass|navigate)"
+                rf"\b.{{0,24}}\b(?:around|past)\b.{{0,24}}\bvia\s+"
+                rf"(?:the\s+)?{side}(?:\s+side)?(?:\s+please)?",
+                english_command_text,
+            )
+        )
+        make_turn = re.fullmatch(
+            rf"(?:please\s+)?(?:make|take)\s+(?:a\s+)?(?:wide\s+)?"
+            rf"{side}\s+turn(?:\s+please)?",
+            english_command_text,
+        )
+        return bool(direct_motion or routed_motion or make_turn)
+
+    left_requested = _japanese_positive_side_request(
+        "左"
+    ) or _english_positive_side_request("left")
+    right_requested = _japanese_positive_side_request(
+        "右"
+    ) or _english_positive_side_request("right")
+    japanese_return_requested = re.fullmatch(
+        rf".*?(?:引き返(?:して|せ)|帰還(?:して|しろ|せよ)|"
+        rf"(?:出発地点|出発点|ホーム|家)(?:へ|に)?戻(?:って|れ))"
+        rf"{japanese_polite_suffix}",
+        japanese_command_text,
+    )
+    english_return_requested = re.fullmatch(
+        r"(?:please\s+)?(?:return\s+home|return\s+to\s+home|turn\s+back|"
+        r"go\s+back|head\s+back|retreat)(?:\s+(?:now|please))?",
+        english_command_text,
+    )
+    return_requested = bool(japanese_return_requested or english_return_requested)
+    if altitude_requested:
+        return None, ["operator_recovery_revision_unsupported_for_ground_robot"]
+    if left_requested and right_requested:
+        return None, ["operator_recovery_revision_direction_ambiguous"]
+    if return_requested and (left_requested or right_requested):
+        return None, ["operator_recovery_revision_action_ambiguous"]
+    if return_requested:
+        return "return_home", []
+    if left_requested:
+        return "avoid_left_wide", []
+    if right_requested:
+        return "avoid_right_wide", []
+    return None, ["operator_recovery_revision_intent_not_supported"]
+
+
+def _revision_numeric(value: Any) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    result = float(value)
+    return result if math.isfinite(result) else None
+
+
+def _revision_point_to_segment_distance_m(
+    point: tuple[float, float],
+    start: tuple[float, float],
+    end: tuple[float, float],
+) -> float:
+    dx = end[0] - start[0]
+    dy = end[1] - start[1]
+    length_squared = dx * dx + dy * dy
+    if length_squared <= 1e-12:
+        return math.hypot(point[0] - start[0], point[1] - start[1])
+    ratio = max(
+        0.0,
+        min(
+            1.0,
+            ((point[0] - start[0]) * dx + (point[1] - start[1]) * dy)
+            / length_squared,
+        ),
+    )
+    closest = (start[0] + ratio * dx, start[1] + ratio * dy)
+    return math.hypot(point[0] - closest[0], point[1] - closest[1])
+
+
+def _revision_point_in_polygon(
+    point: tuple[float, float],
+    polygon: list[tuple[float, float]],
+) -> bool:
+    if len(polygon) < 3:
+        return False
+    inside = False
+    previous = polygon[-1]
+    for current in polygon:
+        if (current[1] > point[1]) != (previous[1] > point[1]):
+            x_crossing = (previous[0] - current[0]) * (
+                point[1] - current[1]
+            ) / (previous[1] - current[1]) + current[0]
+            if point[0] < x_crossing:
+                inside = not inside
+        previous = current
+    return inside
+
+
+def _revision_oriented_rect_clearance_m(
+    point: tuple[float, float],
+    record: Mapping[str, Any],
+) -> float | None:
+    center_x = _revision_numeric(record.get("x_m"))
+    center_y = _revision_numeric(record.get("y_m"))
+    size_x = _revision_numeric(record.get("size_x_m"))
+    size_y = _revision_numeric(record.get("size_y_m"))
+    yaw = _revision_numeric(record.get("yaw_rad")) or 0.0
+    if (
+        center_x is None
+        or center_y is None
+        or size_x is None
+        or size_y is None
+        or size_x <= 0.0
+        or size_y <= 0.0
+    ):
+        return None
+    cos_yaw = math.cos(yaw)
+    sin_yaw = math.sin(yaw)
+    relative_x = point[0] - center_x
+    relative_y = point[1] - center_y
+    local = (
+        cos_yaw * relative_x + sin_yaw * relative_y,
+        -sin_yaw * relative_x + cos_yaw * relative_y,
+    )
+    return _point_rect_clearance_m(
+        local,
+        (-size_x / 2.0, size_x / 2.0, -size_y / 2.0, size_y / 2.0),
+    )
+
+
+def _revision_floor_plan_waypoint_clearance(
+    point: tuple[float, float],
+    floor_plan: Mapping[str, Any],
+) -> tuple[float | None, list[str]]:
+    reasons: list[str] = []
+    clearances: list[float] = []
+    bounds = floor_plan.get("bounds")
+    bounds = bounds if isinstance(bounds, Mapping) else {}
+    min_x = _revision_numeric(bounds.get("min_x_m"))
+    max_x = _revision_numeric(bounds.get("max_x_m"))
+    min_y = _revision_numeric(bounds.get("min_y_m"))
+    max_y = _revision_numeric(bounds.get("max_y_m"))
+    if None not in (min_x, max_x, min_y, max_y):
+        boundary_clearance = min(
+            point[0] - float(min_x),
+            float(max_x) - point[0],
+            point[1] - float(min_y),
+            float(max_y) - point[1],
+        )
+        clearances.append(boundary_clearance)
+        if boundary_clearance < _TURTLEBOT3_RECOVERY_REVISION_STATIC_WAYPOINT_CLEARANCE_M:
+            reasons.append("operator_recovery_revision_waypoint_outside_floor_bounds")
+
+    polygon = [
+        (float(x), float(y))
+        for item in floor_plan.get("wall_polygon") or ()
+        if isinstance(item, Mapping)
+        and (x := _revision_numeric(item.get("x_m"))) is not None
+        and (y := _revision_numeric(item.get("y_m"))) is not None
+    ]
+    if polygon:
+        if not _revision_point_in_polygon(point, polygon):
+            reasons.append("operator_recovery_revision_waypoint_outside_wall_polygon")
+        else:
+            polygon_clearance = min(
+                _revision_point_to_segment_distance_m(point, start, end)
+                for start, end in zip(polygon, [*polygon[1:], polygon[0]], strict=True)
+            )
+            clearances.append(polygon_clearance)
+            if (
+                polygon_clearance
+                < _TURTLEBOT3_RECOVERY_REVISION_STATIC_WAYPOINT_CLEARANCE_M
+            ):
+                reasons.append(
+                    "operator_recovery_revision_waypoint_wall_clearance_insufficient"
+                )
+
+    for collection_name in ("walls", "furniture"):
+        for record in floor_plan.get(collection_name) or ():
+            if not isinstance(record, Mapping):
+                continue
+            clearance = _revision_oriented_rect_clearance_m(point, record)
+            if clearance is None:
+                continue
+            clearances.append(clearance)
+            if (
+                clearance
+                < _TURTLEBOT3_RECOVERY_REVISION_STATIC_WAYPOINT_CLEARANCE_M
+            ):
+                reasons.append(
+                    "operator_recovery_revision_waypoint_static_collision_clearance_insufficient"
+                )
+
+    for record in floor_plan.get("pillars") or ():
+        if not isinstance(record, Mapping):
+            continue
+        center_x = _revision_numeric(record.get("x_m"))
+        center_y = _revision_numeric(record.get("y_m"))
+        radius = _revision_numeric(record.get("radius_m"))
+        if center_x is None or center_y is None or radius is None:
+            continue
+        clearance = math.hypot(point[0] - center_x, point[1] - center_y) - radius
+        clearances.append(clearance)
+        if clearance < _TURTLEBOT3_RECOVERY_REVISION_STATIC_WAYPOINT_CLEARANCE_M:
+            reasons.append(
+                "operator_recovery_revision_waypoint_static_collision_clearance_insufficient"
+            )
+    return (min(clearances) if clearances else None), list(dict.fromkeys(reasons))
+
+
+def _revision_floor_plan_from_execution(
+    execution: Mapping[str, Any],
+) -> dict[str, Any]:
+    map_model = execution.get("turtlebot3_indoor_map_model")
+    map_model = map_model if isinstance(map_model, Mapping) else {}
+    floor_plan = map_model.get("floor_plan")
+    return dict(floor_plan) if isinstance(floor_plan, Mapping) else {}
+
+
+def _revision_floor_plan_geometry_sha256(
+    floor_plan: Mapping[str, Any],
+) -> str:
+    if not floor_plan:
+        return ""
+    source_geometry = {
+        "floor_plan_id": floor_plan.get("floor_plan_id"),
+        "source": floor_plan.get("source"),
+        "bounds": floor_plan.get("bounds") or {},
+        "wall_polygon": floor_plan.get("wall_polygon") or [],
+        "walls": floor_plan.get("walls") or [],
+        "furniture": floor_plan.get("furniture") or [],
+        "pillars": floor_plan.get("pillars") or [],
+    }
+    return hashlib.sha256(
+        json.dumps(
+            source_geometry,
+            sort_keys=True,
+            separators=(",", ":"),
+            default=str,
+        ).encode("utf-8")
+    ).hexdigest()
+
+
+def _revision_source_obstacle(
+    execution: Mapping[str, Any],
+) -> tuple[dict[str, Any], list[str]]:
+    scenario = execution.get("runtime_recovery_obstacle_scenario")
+    scenario = scenario if isinstance(scenario, Mapping) else {}
+    map_model = execution.get("turtlebot3_indoor_map_model")
+    map_model = map_model if isinstance(map_model, Mapping) else {}
+    x_m = _revision_numeric(scenario.get("runtime_obstacle_x_m"))
+    y_m = _revision_numeric(scenario.get("runtime_obstacle_y_m"))
+    size_x_m = _revision_numeric(scenario.get("runtime_obstacle_size_x_m"))
+    size_y_m = _revision_numeric(scenario.get("runtime_obstacle_size_y_m"))
+    scene_ref = str(scenario.get("runtime_obstacle_scene_ref") or "")
+    for marker in map_model.get("obstacles") or ():
+        if not isinstance(marker, Mapping):
+            continue
+        marker_x = _revision_numeric(marker.get("x_m"))
+        marker_y = _revision_numeric(marker.get("y_m"))
+        marker_name = str(marker.get("name") or "")
+        matches = bool(scene_ref and marker_name == scene_ref) or (
+            x_m is not None
+            and y_m is not None
+            and marker_x is not None
+            and marker_y is not None
+            and math.isclose(marker_x, x_m, abs_tol=1e-6)
+            and math.isclose(marker_y, y_m, abs_tol=1e-6)
+        )
+        if not matches:
+            continue
+        size_x_m = size_x_m or _revision_numeric(marker.get("size_x_m"))
+        size_y_m = size_y_m or _revision_numeric(marker.get("size_y_m"))
+        scene_ref = scene_ref or marker_name
+        break
+    reasons: list[str] = []
+    if scenario.get("runtime_obstacle_observed") is not True:
+        reasons.append("operator_recovery_revision_source_obstacle_not_observed")
+    if None in (x_m, y_m, size_x_m, size_y_m) or float(size_x_m or 0.0) <= 0.0 or float(
+        size_y_m or 0.0
+    ) <= 0.0:
+        reasons.append("operator_recovery_revision_source_obstacle_geometry_missing")
+    if reasons:
+        return {}, reasons
+    return {
+        "x_m": float(x_m),
+        "y_m": float(y_m),
+        "size_x_m": float(size_x_m),
+        "size_y_m": float(size_y_m),
+        "scene_ref": scene_ref,
+        "observation_source": scenario.get("runtime_obstacle_source"),
+        "geometry_source": scenario.get("runtime_obstacle_geometry_source")
+        or "stored_turtlebot3_indoor_map_obstacle",
+    }, []
+
+
+def _turtlebot3_recovery_revision_source_geometry_reasons(
+    *,
+    checkpoint: Mapping[str, Any],
+    execution: Mapping[str, Any],
+) -> list[str]:
+    """Revalidate revision source geometry before supersede or dispatch."""
+
+    if not str(checkpoint.get("revision_id") or ""):
+        return []
+    geometry = checkpoint.get("recovery_revision_geometry")
+    geometry = geometry if isinstance(geometry, Mapping) else {}
+    selected_action = str(checkpoint.get("selected_action") or "")
+    reasons: list[str] = []
+    if not geometry:
+        return ["turtlebot3_recovery_revision_geometry_missing"]
+    if selected_action == "avoid_obstacle":
+        floor_plan = _revision_floor_plan_from_execution(execution)
+        current_floor_hash = _revision_floor_plan_geometry_sha256(floor_plan)
+        if (
+            not current_floor_hash
+            or str(geometry.get("floor_plan_geometry_sha256") or "")
+            != current_floor_hash
+            or str(geometry.get("floor_plan_id") or "")
+            != str(floor_plan.get("floor_plan_id") or "")
+            or str(geometry.get("floor_plan_geometry_source") or "")
+            != str(floor_plan.get("source") or "")
+        ):
+            reasons.append("turtlebot3_recovery_revision_floor_plan_geometry_changed")
+        source_obstacle, obstacle_reasons = _revision_source_obstacle(execution)
+        reasons.extend(obstacle_reasons)
+        bound_obstacle = geometry.get("obstacle")
+        bound_obstacle = (
+            bound_obstacle if isinstance(bound_obstacle, Mapping) else {}
+        )
+        for key in ("x_m", "y_m", "size_x_m", "size_y_m"):
+            if _revision_numeric(bound_obstacle.get(key)) != _revision_numeric(
+                source_obstacle.get(key)
+            ):
+                reasons.append(
+                    "turtlebot3_recovery_revision_obstacle_geometry_changed"
+                )
+                break
+        if str(bound_obstacle.get("scene_ref") or "") != str(
+            source_obstacle.get("scene_ref") or ""
+        ):
+            reasons.append("turtlebot3_recovery_revision_obstacle_geometry_changed")
+    elif selected_action == "return_home":
+        map_model = execution.get("turtlebot3_indoor_map_model")
+        map_model = map_model if isinstance(map_model, Mapping) else {}
+        current_home = next(
+            (
+                item
+                for item in map_model.get("planned_points") or ()
+                if isinstance(item, Mapping) and item.get("role") == "home"
+            ),
+            {},
+        )
+        goal_poses = checkpoint.get("recovery_goal_poses")
+        goal_poses = goal_poses if isinstance(goal_poses, list) else []
+        bound_home = (
+            goal_poses[0]
+            if len(goal_poses) == 1 and isinstance(goal_poses[0], Mapping)
+            else {}
+        )
+        if (
+            _revision_numeric(current_home.get("x_m"))
+            != _revision_numeric(bound_home.get("x_m"))
+            or _revision_numeric(current_home.get("y_m"))
+            != _revision_numeric(bound_home.get("y_m"))
+        ):
+            reasons.append("turtlebot3_recovery_revision_home_pose_changed")
+    else:
+        reasons.append("turtlebot3_recovery_revision_action_not_supported")
+    return list(dict.fromkeys(reasons))
+
+
+def _revision_goal_payload(
+    *,
+    template: Mapping[str, Any],
+    x_m: float,
+    y_m: float,
+    label: str,
+) -> dict[str, Any]:
+    return Nav2GoalPose.model_validate(
+        {
+            **dict(template),
+            "frame_id": "map",
+            "x_m": round(x_m, 6),
+            "y_m": round(y_m, 6),
+            "yaw_rad": 0.0,
+            "label": label,
+        }
+    ).model_dump(mode="json")
+
+
+def _build_directional_recovery_revision_geometry(
+    *,
+    direction: Literal["left", "right"],
+    proposal: Mapping[str, Any],
+    execution: Mapping[str, Any],
+    checkpoint: Mapping[str, Any],
+) -> tuple[dict[str, Any], list[str]]:
+    segment_results = execution.get("segment_results")
+    segment_results = segment_results if isinstance(segment_results, list) else []
+    if not segment_results or not isinstance(segment_results[-1], Mapping):
+        return {}, ["operator_recovery_revision_completed_segment_source_missing"]
+    completed_result = segment_results[-1]
+    if completed_result.get("completion_claimed") is not True:
+        return {}, ["operator_recovery_revision_completed_segment_not_verified"]
+    anchor_goal = completed_result.get("goal_pose")
+    anchor_goal = anchor_goal if isinstance(anchor_goal, Mapping) else {}
+    anchor_x = _revision_numeric(anchor_goal.get("x_m"))
+    anchor_y = _revision_numeric(anchor_goal.get("y_m"))
+    next_index = checkpoint.get("next_segment_index")
+    planned_segments = proposal.get("planned_segments")
+    planned_segments = planned_segments if isinstance(planned_segments, (list, tuple)) else ()
+    if (
+        anchor_x is None
+        or anchor_y is None
+        or not isinstance(next_index, int)
+        or isinstance(next_index, bool)
+        or next_index < 1
+        or next_index > len(planned_segments)
+        or not isinstance(planned_segments[next_index - 1], Mapping)
+    ):
+        return {}, ["operator_recovery_revision_route_geometry_source_missing"]
+    next_goal = planned_segments[next_index - 1]
+    next_x = _revision_numeric(next_goal.get("x_m"))
+    next_y = _revision_numeric(next_goal.get("y_m"))
+    if next_x is None or next_y is None:
+        return {}, ["operator_recovery_revision_route_geometry_source_missing"]
+    route_dx = next_x - anchor_x
+    route_dy = next_y - anchor_y
+    route_length = math.hypot(route_dx, route_dy)
+    if route_length <= 1e-6:
+        return {}, ["operator_recovery_revision_route_direction_degenerate"]
+    direction_unit = (route_dx / route_length, route_dy / route_length)
+    left_unit = (-direction_unit[1], direction_unit[0])
+    side_sign = 1.0 if direction == "left" else -1.0
+    obstacle, obstacle_reasons = _revision_source_obstacle(execution)
+    if obstacle_reasons:
+        return {}, obstacle_reasons
+    obstacle_from_anchor = (
+        obstacle["x_m"] - anchor_x,
+        obstacle["y_m"] - anchor_y,
+    )
+    obstacle_route_projection = (
+        obstacle_from_anchor[0] * direction_unit[0]
+        + obstacle_from_anchor[1] * direction_unit[1]
+    )
+    obstacle_route_lateral_offset = abs(
+        obstacle_from_anchor[0] * left_unit[0]
+        + obstacle_from_anchor[1] * left_unit[1]
+    )
+    if (
+        obstacle_route_projection
+        < -_TURTLEBOT3_RECOVERY_REVISION_LONGITUDINAL_BUFFER_M
+        or obstacle_route_projection
+        > route_length + _TURTLEBOT3_RECOVERY_REVISION_LONGITUDINAL_BUFFER_M
+        or obstacle_route_lateral_offset
+        > _TURTLEBOT3_RECOVERY_REVISION_MAX_LATERAL_OFFSET_M
+    ):
+        return {}, ["operator_recovery_revision_obstacle_not_bound_to_next_segment"]
+    half_x = obstacle["size_x_m"] / 2.0
+    half_y = obstacle["size_y_m"] / 2.0
+    parallel_support = abs(direction_unit[0]) * half_x + abs(direction_unit[1]) * half_y
+    perpendicular_support = abs(left_unit[0]) * half_x + abs(left_unit[1]) * half_y
+    lateral_offset = (
+        perpendicular_support + _TURTLEBOT3_RECOVERY_REVISION_WIDE_BBOX_CLEARANCE_M
+    )
+    if lateral_offset > _TURTLEBOT3_RECOVERY_REVISION_MAX_LATERAL_OFFSET_M:
+        return {}, ["operator_recovery_revision_lateral_offset_exceeds_bound"]
+    longitudinal_offset = (
+        parallel_support + _TURTLEBOT3_RECOVERY_REVISION_LONGITUDINAL_BUFFER_M
+    )
+    obstacle_center = (obstacle["x_m"], obstacle["y_m"])
+    entry = (
+        obstacle_center[0]
+        - direction_unit[0] * longitudinal_offset
+        + side_sign * left_unit[0] * lateral_offset,
+        obstacle_center[1]
+        - direction_unit[1] * longitudinal_offset
+        + side_sign * left_unit[1] * lateral_offset,
+    )
+    exit_point = (
+        obstacle_center[0]
+        + direction_unit[0] * longitudinal_offset
+        + side_sign * left_unit[0] * lateral_offset,
+        obstacle_center[1]
+        + direction_unit[1] * longitudinal_offset
+        + side_sign * left_unit[1] * lateral_offset,
+    )
+    floor_plan = _revision_floor_plan_from_execution(execution)
+    if not floor_plan:
+        return {}, ["operator_recovery_revision_floor_plan_source_missing"]
+    floor_plan_geometry_sha256 = _revision_floor_plan_geometry_sha256(floor_plan)
+    waypoint_clearances: list[float | None] = []
+    blocking_reasons: list[str] = []
+    obstacle_rect = (
+        obstacle_center[0] - half_x,
+        obstacle_center[0] + half_x,
+        obstacle_center[1] - half_y,
+        obstacle_center[1] + half_y,
+    )
+    for point in (entry, exit_point):
+        obstacle_clearance = _point_rect_clearance_m(point, obstacle_rect)
+        if (
+            obstacle_clearance + 1e-9
+            < _TURTLEBOT3_RECOVERY_REVISION_WIDE_BBOX_CLEARANCE_M
+        ):
+            blocking_reasons.append(
+                "operator_recovery_revision_obstacle_clearance_insufficient"
+            )
+        static_clearance, static_reasons = _revision_floor_plan_waypoint_clearance(
+            point,
+            floor_plan,
+        )
+        waypoint_clearances.append(static_clearance)
+        blocking_reasons.extend(static_reasons)
+    detour_distance = (
+        math.hypot(entry[0] - anchor_x, entry[1] - anchor_y)
+        + math.hypot(exit_point[0] - entry[0], exit_point[1] - entry[1])
+        + math.hypot(next_x - exit_point[0], next_y - exit_point[1])
+    )
+    if detour_distance > _TURTLEBOT3_RECOVERY_REVISION_MAX_DETOUR_DISTANCE_M:
+        blocking_reasons.append("operator_recovery_revision_detour_distance_exceeds_bound")
+    if blocking_reasons:
+        return {}, list(dict.fromkeys(blocking_reasons))
+    goal_poses = [
+        _revision_goal_payload(
+            template=next_goal,
+            x_m=entry[0],
+            y_m=entry[1],
+            label=f"operator_revision_{direction}_wide_avoidance_entry",
+        ),
+        _revision_goal_payload(
+            template=next_goal,
+            x_m=exit_point[0],
+            y_m=exit_point[1],
+            label=f"operator_revision_{direction}_wide_avoidance_exit",
+        ),
+    ]
+    geometry = {
+        "schema_version": "missionos_turtlebot3_recovery_revision_geometry.v1",
+        "geometry_status": "source_bound_candidate",
+        "direction_reference": "planned_travel_direction_a_to_b_in_map_frame",
+        "requested_direction": direction,
+        "clearance_profile": "wide",
+        "anchor_pose": {
+            "x_m": anchor_x,
+            "y_m": anchor_y,
+            "source": "last_completed_nav2_segment_goal",
+            "segment_ref": completed_result.get("segment_ref"),
+            "completion_claimed": True,
+        },
+        "next_route_goal": {
+            "x_m": next_x,
+            "y_m": next_y,
+            "source": "original_turtlebot3_planned_segment",
+            "segment_index": next_index,
+            "label": next_goal.get("label"),
+        },
+        "obstacle": dict(obstacle),
+        "floor_plan_id": floor_plan.get("floor_plan_id"),
+        "floor_plan_geometry_source": floor_plan.get("source"),
+        "floor_plan_geometry_sha256": floor_plan_geometry_sha256,
+        "route_direction_unit": {
+            "x": round(direction_unit[0], 9),
+            "y": round(direction_unit[1], 9),
+        },
+        "left_normal_unit": {
+            "x": round(left_unit[0], 9),
+            "y": round(left_unit[1], 9),
+        },
+        "obstacle_route_projection_m": round(obstacle_route_projection, 6),
+        "obstacle_route_lateral_offset_m": round(
+            obstacle_route_lateral_offset,
+            6,
+        ),
+        "longitudinal_buffer_m": (
+            _TURTLEBOT3_RECOVERY_REVISION_LONGITUDINAL_BUFFER_M
+        ),
+        "wide_bbox_clearance_m": (
+            _TURTLEBOT3_RECOVERY_REVISION_WIDE_BBOX_CLEARANCE_M
+        ),
+        "static_waypoint_clearance_policy_m": (
+            _TURTLEBOT3_RECOVERY_REVISION_STATIC_WAYPOINT_CLEARANCE_M
+        ),
+        "minimum_static_waypoint_clearance_m": (
+            round(min(value for value in waypoint_clearances if value is not None), 6)
+            if any(value is not None for value in waypoint_clearances)
+            else None
+        ),
+        "computed_detour_distance_m": round(detour_distance, 6),
+        "recovery_goal_poses": goal_poses,
+        "path_feasibility_claimed": False,
+        "claim_boundary": (
+            "Rules validate source-bound candidate waypoints against stored simulator "
+            "geometry. Nav2 still plans each path; requested-side traversal must be "
+            "verified from raw map-frame trajectory after dispatch."
+        ),
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }
+    return geometry, []
+
+
+def _build_return_home_recovery_revision_geometry(
+    *,
+    proposal: Mapping[str, Any],
+    execution: Mapping[str, Any],
+) -> tuple[dict[str, Any], list[str]]:
+    map_model = execution.get("turtlebot3_indoor_map_model")
+    map_model = map_model if isinstance(map_model, Mapping) else {}
+    home_point = next(
+        (
+            item
+            for item in map_model.get("planned_points") or ()
+            if isinstance(item, Mapping) and item.get("role") == "home"
+        ),
+        {},
+    )
+    home_x = _revision_numeric(home_point.get("x_m"))
+    home_y = _revision_numeric(home_point.get("y_m"))
+    planned_segments = proposal.get("planned_segments")
+    template = next(
+        (item for item in planned_segments or () if isinstance(item, Mapping)),
+        {},
+    )
+    if home_x is None or home_y is None or not template:
+        return {}, ["operator_recovery_revision_home_pose_source_missing"]
+    goal_pose = _revision_goal_payload(
+        template=template,
+        x_m=home_x,
+        y_m=home_y,
+        label=str(home_point.get("label") or "simulated_home_origin"),
+    )
+    return {
+        "schema_version": "missionos_turtlebot3_recovery_revision_geometry.v1",
+        "geometry_status": "source_bound_candidate",
+        "requested_direction": "return_home",
+        "home_pose_ref": home_point.get("label") or "map:simulated_home_origin",
+        "home_pose_source": "stored_turtlebot3_indoor_map_planned_home_point",
+        "recovery_goal_poses": [goal_pose],
+        "path_feasibility_claimed": False,
+        "claim_boundary": (
+            "The exact stored simulator home pose is bound into the checkpoint. "
+            "Nav2 completion proves only the bounded return action, not delivery."
+        ),
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }, []
+
+
+def _recovery_revision_blocked_response(
+    *,
+    status: Literal["unsupported", "blocked"],
+    checkpoint: Mapping[str, Any],
+    blocking_reasons: list[str],
+) -> dict[str, Any]:
+    return {
+        "schema_version": TURTLEBOT3_RECOVERY_CHECKPOINT_REVISION_SCHEMA,
+        "revision_status": status,
+        "blocking_reasons": list(dict.fromkeys(blocking_reasons)),
+        "parent_checkpoint_id": checkpoint.get("checkpoint_id"),
+        "parent_checkpoint_hash": checkpoint.get("checkpoint_hash"),
+        "superseded_checkpoint": {},
+        "turtlebot3_recovery_checkpoint": {},
+        "turtlebot3_home_mission_execution": {},
+        "summary": {},
+        "recovery_proposal": {},
+        "recovery_proposal_classification": {},
+        "recovery_planner_result": {},
+        "operator_approval_created": False,
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }
+
+
+def _validate_operator_revision_recovery_goals(
+    *,
+    recovery_goal_poses: list[Mapping[str, Any]],
+    obstacle_scenario: Mapping[str, Any],
+) -> tuple[dict[str, Any], list[str]]:
+    """Plan-only validate exact operator revision goals on both costmaps."""
+
+    if not _truthy_env(TURTLEBOT3_RECOVERY_CANDIDATE_EVALUATION_ENV):
+        return {}, []
+    candidates = [
+        {
+            "candidate_id": str(
+                goal.get("label") or f"operator_revision_waypoint_{index + 1}"
+            ),
+            "x_m": float(goal["x_m"]),
+            "y_m": float(goal["y_m"]),
+            "yaw_rad": float(goal.get("yaw_rad") or 0.0),
+            "selection_priority": index,
+            "geometry_source": "operator_revision_source_bound_geometry",
+        }
+        for index, goal in enumerate(recovery_goal_poses)
+    ]
+    try:
+        evaluation = Ros2Nav2BridgeCommandClient().evaluate_recovery_candidates(
+            candidates=candidates,
+            obstacle=obstacle_scenario,
+            frame_id="map",
+        )
+    except Ros2Nav2BridgeError as exc:
+        return {}, [
+            "operator_recovery_revision_dual_costmap_evaluation_failed:"
+            f"{type(exc).__name__}"
+        ]
+    evaluated = [
+        dict(item)
+        for item in evaluation.get("candidate_evaluations") or []
+        if isinstance(item, Mapping)
+    ]
+    by_id = {str(item.get("candidate_id") or ""): item for item in evaluated}
+    dual_validated = (
+        bool(candidates)
+        and bool(evaluation.get("global_costmap_snapshot_hash"))
+        and bool(evaluation.get("local_costmap_snapshot_hash"))
+        and all(
+            (item := by_id.get(candidate["candidate_id"])) is not None
+            and item.get("path_valid") is True
+            for candidate in candidates
+        )
+    )
+    if not dual_validated:
+        reasons = [
+            str(reason)
+            for item in evaluated
+            for reason in item.get("blocking_reasons") or []
+            if str(reason)
+        ]
+        return {}, list(
+            dict.fromkeys(
+                reasons
+                or ["operator_recovery_revision_not_dual_costmap_validated"]
+            )
+        )
+    sequence = [dict(by_id[candidate["candidate_id"]]) for candidate in candidates]
+    return {
+        "schema_version": "missionos_nav2_recovery_candidate_resolution.v1",
+        "resolution_status": "validated",
+        "candidate_generation": "operator_revision_source_bound_geometry.v1",
+        "candidates": candidates,
+        "candidate_evaluations": evaluated,
+        "selected_candidate": dict(sequence[-1]),
+        "selected_sequence": sequence,
+        "live_costmap_validated": True,
+        "dual_costmap_validated": True,
+        "bounded_retreat_required": False,
+        "costmap_snapshot_hash": evaluation.get("costmap_snapshot_hash"),
+        "global_costmap_snapshot_hash": evaluation.get(
+            "global_costmap_snapshot_hash"
+        ),
+        "local_costmap_snapshot_hash": evaluation.get(
+            "local_costmap_snapshot_hash"
+        ),
+        "global_costmap_source": evaluation.get("global_costmap_source"),
+        "local_costmap_source": evaluation.get("local_costmap_source"),
+        "compute_path_action": evaluation.get("compute_path_action"),
+        "dispatch_request_sent": False,
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+    }, []
+
+
+def build_turtlebot3_recovery_checkpoint_revision(
+    *,
+    operator_instruction: str,
+    proposal: Mapping[str, Any],
+    resume_execution: Mapping[str, Any],
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Build a checkpoint-bound natural-language recovery re-proposal.
+
+    This helper never approves or dispatches. Gateway persistence must atomically
+    supersede the parent checkpoint and publish the returned child checkpoint.
+    """
+
+    checkpoint = _recovery_checkpoint_from_execution(resume_execution)
+    execution = _recovery_resume_payload(resume_execution)
+    proposal_goals = _planned_segment_goals_from_proposal(proposal)
+    proposal_segments_sha256 = _planned_segments_sha256(proposal_goals)
+    parent_reasons: list[str] = []
+    if checkpoint.get("schema_version") != TURTLEBOT3_RECOVERY_CHECKPOINT_SCHEMA:
+        parent_reasons.append("operator_recovery_revision_parent_checkpoint_invalid")
+    if checkpoint.get("checkpoint_status") != "awaiting_operator_approval":
+        parent_reasons.append("operator_recovery_revision_parent_checkpoint_not_awaiting")
+    checkpoint_hash = str(checkpoint.get("checkpoint_hash") or "")
+    if not checkpoint_hash or checkpoint_hash != _recovery_checkpoint_hash(checkpoint):
+        parent_reasons.append("operator_recovery_revision_parent_checkpoint_hash_mismatch")
+    if str(checkpoint.get("proposal_id") or "") != str(proposal.get("proposal_id") or ""):
+        parent_reasons.append("operator_recovery_revision_parent_proposal_mismatch")
+    if str(checkpoint.get("planned_segments_sha256") or "") != (
+        proposal_segments_sha256
+    ):
+        parent_reasons.append(
+            "operator_recovery_revision_parent_planned_segments_mismatch"
+        )
+    if str(checkpoint.get("resume_state_hash") or "") != _recovery_resume_state_hash(
+        execution
+    ):
+        parent_reasons.append(
+            "operator_recovery_revision_parent_resume_state_hash_mismatch"
+        )
+    if parent_reasons:
+        return _recovery_revision_blocked_response(
+            status="blocked",
+            checkpoint=checkpoint,
+            blocking_reasons=parent_reasons,
+        )
+    revision_intent, intent_reasons = _turtlebot3_recovery_revision_intent(
+        operator_instruction
+    )
+    if intent_reasons:
+        return _recovery_revision_blocked_response(
+            status="unsupported",
+            checkpoint=checkpoint,
+            blocking_reasons=intent_reasons,
+        )
+    if revision_intent in {"avoid_left_wide", "avoid_right_wide"}:
+        geometry, geometry_reasons = _build_directional_recovery_revision_geometry(
+            direction="left" if revision_intent == "avoid_left_wide" else "right",
+            proposal=proposal,
+            execution=execution,
+            checkpoint=checkpoint,
+        )
+        selected_action = "avoid_obstacle"
+    else:
+        geometry, geometry_reasons = _build_return_home_recovery_revision_geometry(
+            proposal=proposal,
+            execution=execution,
+        )
+        selected_action = "return_home"
+    if geometry_reasons:
+        return _recovery_revision_blocked_response(
+            status="blocked",
+            checkpoint=checkpoint,
+            blocking_reasons=geometry_reasons,
+        )
+    recovery_goal_poses = list(geometry["recovery_goal_poses"])
+    revision_candidate_resolution: dict[str, Any] = {}
+    if selected_action == "avoid_obstacle":
+        revision_candidate_resolution, evaluation_reasons = (
+            _validate_operator_revision_recovery_goals(
+                recovery_goal_poses=recovery_goal_poses,
+                obstacle_scenario=(
+                    execution.get("runtime_recovery_obstacle_scenario")
+                    if isinstance(
+                        execution.get("runtime_recovery_obstacle_scenario"),
+                        Mapping,
+                    )
+                    else {}
+                ),
+            )
+        )
+        if evaluation_reasons:
+            return _recovery_revision_blocked_response(
+                status="blocked",
+                checkpoint=checkpoint,
+                blocking_reasons=evaluation_reasons,
+            )
+        if revision_candidate_resolution:
+            geometry = {
+                **geometry,
+                "path_feasibility_validated": True,
+                "recovery_candidate_resolution": dict(
+                    revision_candidate_resolution
+                ),
+            }
+
+    instruction_hash = hashlib.sha256(
+        str(operator_instruction or "").encode("utf-8")
+    ).hexdigest()
+    revision_seed = json.dumps(
+        {
+            "parent_checkpoint_hash": checkpoint_hash,
+            "operator_instruction_sha256": instruction_hash,
+            "revision_intent": revision_intent,
+            "geometry": geometry,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    revision_id = (
+        "turtlebot3_recovery_revision_"
+        + hashlib.sha256(revision_seed.encode("utf-8")).hexdigest()[:12]
+    )
+    if selected_action == "avoid_obstacle":
+        approved_parameters = {
+            "recovery_waypoints": [
+                {
+                    "target_x_m": goal_pose["x_m"],
+                    "target_y_m": goal_pose["y_m"],
+                }
+                for goal_pose in recovery_goal_poses
+            ],
+            "obstacle_avoidance_required": True,
+        }
+        reason = (
+            "Operator requested a source-bound wide "
+            f"{geometry['requested_direction']} avoidance; propose two bounded "
+            "Nav2 waypoints and require a fresh approval."
+        )
+    else:
+        home_goal = recovery_goal_poses[0]
+        approved_parameters = {
+            "target_x_m": home_goal["x_m"],
+            "target_y_m": home_goal["y_m"],
+            "return_home_required": True,
+        }
+        reason = (
+            "Operator requested a source-bound return to the stored home pose; "
+            "propose return_home and require a fresh approval."
+        )
+    recovery_proposal = build_mission_autonomy_recovery_proposal(
+        mission_ref=str(proposal.get("proposal_id") or "turtlebot3_home_mission"),
+        proposal_source="operator",
+        selected_action=selected_action,
+        reason=reason,
+        input_observations={
+            "revision_id": revision_id,
+            "revision_intent": revision_intent,
+            "operator_instruction_sha256": instruction_hash,
+            "parent_checkpoint_id": checkpoint.get("checkpoint_id"),
+            "parent_checkpoint_hash": checkpoint_hash,
+            "recovery_revision_geometry": geometry,
+        },
+    ).model_dump(mode="json")
+    classification_seed = (
+        f"{checkpoint_hash}\n{recovery_proposal['proposal_id']}\n"
+        "requires_human_approval"
+    )
+    classification = MissionAutonomyProposalClassification(
+        classification_id=(
+            "mission_autonomy_proposal_classification_"
+            + hashlib.sha256(classification_seed.encode("utf-8")).hexdigest()[:12]
+        ),
+        envelope_ref=str(
+            (execution.get("autonomy_envelope") or {}).get("envelope_id")
+            if isinstance(execution.get("autonomy_envelope"), Mapping)
+            else ""
+        )
+        or str(checkpoint.get("proposal_id") or ""),
+        proposal_ref=str(recovery_proposal["proposal_id"]),
+        selected_action=selected_action,
+        execution_class="requires_human_approval",
+        execution_permitted_by_envelope=False,
+        requires_new_human_approval=True,
+        blocked_reasons=(
+            "operator_requested_recovery_revision_requires_fresh_approval",
+        ),
+        classification_reason=(
+            "The operator constrained a replacement recovery proposal; only a "
+            "fresh approval bound to the child checkpoint may dispatch it."
+        ),
+    ).model_dump(mode="json")
+    planner_result = {
+        "schema_version": "missionos_turtlebot3_recovery_revision_planner_result.v1",
+        "planner_status": "proposed",
+        "planner_kind": "operator_constrained_deterministic_geometry",
+        "proposal_source": "operator",
+        "revision_id": revision_id,
+        "revision_intent": revision_intent,
+        "proposal": dict(recovery_proposal),
+        "guardrail": {
+            "guardrail_passed": True,
+            "geometry_status": geometry.get("geometry_status"),
+            "blocking_reasons": [],
+        },
+        "llm_invocation_evidence": {},
+        "approval_created": False,
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }
+    parent_recovery_context = {
+        "checkpoint_id": checkpoint.get("checkpoint_id"),
+        "checkpoint_hash": checkpoint_hash,
+        "recovery_proposals": [
+            dict(item)
+            for item in execution.get("recovery_proposals") or ()
+            if isinstance(item, Mapping)
+        ],
+        "recovery_proposal_classifications": [
+            dict(item)
+            for item in execution.get("recovery_proposal_classifications") or ()
+            if isinstance(item, Mapping)
+        ],
+        "recovery_planner_result": dict(execution.get("recovery_planner_result") or {})
+        if isinstance(execution.get("recovery_planner_result"), Mapping)
+        else {},
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }
+    superseded_contexts = [
+        dict(item)
+        for item in execution.get("superseded_recovery_contexts") or ()
+        if isinstance(item, Mapping)
+    ]
+    updated_execution = {
+        **execution,
+        "status": "incomplete",
+        "recovery_planner_result": planner_result,
+        "recovery_planner_status": "proposed",
+        "recovery_proposals": [dict(recovery_proposal)],
+        "recovery_proposal_classifications": [dict(classification)],
+        "recovery_action_suggested": selected_action,
+        "runtime_recovery_action_kind": selected_action,
+        "recovery_execution_permitted_by_envelope": False,
+        "recovery_execution_permitted_by_operator_approval": False,
+        "recovery_dispatch_authority_source": None,
+        "recovery_dispatch_request_sent": False,
+        "recovery_completion_claimed": False,
+        "route_resumed_after_recovery": False,
+        "route_completed_after_recovery": False,
+        "superseded_recovery_contexts": [
+            *superseded_contexts,
+            parent_recovery_context,
+        ],
+    }
+    if revision_candidate_resolution:
+        updated_execution["recovery_candidate_resolution"] = dict(
+            revision_candidate_resolution
+        )
+    resume_state_hash = _recovery_resume_state_hash(updated_execution)
+    new_checkpoint: dict[str, Any] = {
+        "schema_version": TURTLEBOT3_RECOVERY_CHECKPOINT_SCHEMA,
+        "checkpoint_status": "awaiting_operator_approval",
+        "proposal_id": str(checkpoint.get("proposal_id") or ""),
+        "robot_profile": str(checkpoint.get("robot_profile") or ""),
+        "execution_target": str(checkpoint.get("execution_target") or ""),
+        "recovery_proposal_id": str(recovery_proposal["proposal_id"]),
+        "recovery_classification_id": str(classification["classification_id"]),
+        "selected_action": selected_action,
+        "approved_parameters": approved_parameters,
+        "recovery_goal_poses": recovery_goal_poses,
+        "completed_segment_count": checkpoint.get("completed_segment_count"),
+        "next_segment_index": checkpoint.get("next_segment_index"),
+        "remaining_segment_count": checkpoint.get("remaining_segment_count"),
+        "planned_segments_sha256": proposal_segments_sha256,
+        "resume_state_hash": resume_state_hash,
+        "parent_checkpoint_id": checkpoint.get("checkpoint_id"),
+        "parent_checkpoint_hash": checkpoint_hash,
+        "parent_recovery_context": parent_recovery_context,
+        "revision_id": revision_id,
+        "revision_intent": revision_intent,
+        "operator_instruction_sha256": instruction_hash,
+        "recovery_revision_geometry": geometry,
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }
+    if revision_candidate_resolution:
+        sequence = revision_candidate_resolution["selected_sequence"]
+        new_checkpoint["recovery_candidate_binding"] = {
+            "candidate_id": sequence[-1]["candidate_id"],
+            "candidate_ids": [item["candidate_id"] for item in sequence],
+            "path_sha256": sequence[-1].get("path_sha256"),
+            "path_sha256_sequence": [
+                item.get("path_sha256") for item in sequence
+            ],
+            "costmap_snapshot_hash": revision_candidate_resolution.get(
+                "costmap_snapshot_hash"
+            ),
+            "global_costmap_snapshot_hash": revision_candidate_resolution.get(
+                "global_costmap_snapshot_hash"
+            ),
+            "local_costmap_snapshot_hash": revision_candidate_resolution.get(
+                "local_costmap_snapshot_hash"
+            ),
+            "live_costmap_validated": True,
+            "dual_costmap_validated": True,
+            "bounded_retreat_required": False,
+            "dispatch_authority_created": False,
+            "physical_execution_invoked": False,
+        }
+    new_checkpoint_hash = _recovery_checkpoint_hash(new_checkpoint)
+    new_checkpoint["checkpoint_hash"] = new_checkpoint_hash
+    new_checkpoint["checkpoint_id"] = (
+        f"turtlebot3_recovery_checkpoint_{new_checkpoint_hash[:12]}"
+    )
+    revised_at = (now or datetime.now(timezone.utc)).isoformat()
+    superseded_checkpoint = {
+        **checkpoint,
+        "checkpoint_status": "superseded",
+        "superseded_at": revised_at,
+        "superseded_by_checkpoint_id": new_checkpoint["checkpoint_id"],
+        "superseded_by_checkpoint_hash": new_checkpoint["checkpoint_hash"],
+        "superseded_by_revision_id": revision_id,
+        "superseded_by_revision_ref": revision_id,
+    }
+    updated_execution["turtlebot3_recovery_checkpoint"] = dict(new_checkpoint)
+    updated_execution["recovery_checkpoint_revision"] = {
+        "revision_id": revision_id,
+        "parent_checkpoint_id": checkpoint.get("checkpoint_id"),
+        "child_checkpoint_id": new_checkpoint["checkpoint_id"],
+        "revision_intent": revision_intent,
+        "operator_approval_created": False,
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }
+    summary = {
+        "status": "incomplete",
+        "recovery_planner_result": planner_result,
+        "recovery_planner_status": "proposed",
+        "recovery_proposals": [dict(recovery_proposal)],
+        "recovery_proposal_classifications": [dict(classification)],
+        "recovery_action_suggested": selected_action,
+        "runtime_recovery_action_kind": selected_action,
+        "turtlebot3_recovery_checkpoint": dict(new_checkpoint),
+        "recovery_checkpoint_revision": dict(
+            updated_execution["recovery_checkpoint_revision"]
+        ),
+        "recovery_execution_permitted_by_envelope": False,
+        "recovery_execution_permitted_by_operator_approval": False,
+        "recovery_dispatch_authority_source": None,
+        "recovery_dispatch_request_sent": False,
+        "recovery_completion_claimed": False,
+        "route_resumed_after_recovery": False,
+        "route_completed_after_recovery": False,
+        "mission_delivery_completion_claimed": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }
+    if revision_candidate_resolution:
+        summary["recovery_candidate_resolution"] = dict(
+            revision_candidate_resolution
+        )
+    return {
+        "schema_version": TURTLEBOT3_RECOVERY_CHECKPOINT_REVISION_SCHEMA,
+        "revision_status": "proposed",
+        "revision_id": revision_id,
+        "blocking_reasons": [],
+        "parent_checkpoint_id": checkpoint.get("checkpoint_id"),
+        "parent_checkpoint_hash": checkpoint_hash,
+        "parent_recovery_context": parent_recovery_context,
+        "superseded_checkpoint": superseded_checkpoint,
+        "turtlebot3_recovery_checkpoint": new_checkpoint,
+        "turtlebot3_home_mission_execution": updated_execution,
+        "summary": summary,
+        "recovery_proposal": recovery_proposal,
+        "recovery_proposal_classification": classification,
+        "recovery_planner_result": planner_result,
+        "operator_approval_created": False,
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }
+
+
+def _validate_turtlebot3_recovery_resume(
+    *,
+    checkpoint: Mapping[str, Any],
+    resume_state: Mapping[str, Any],
+    proposal: Mapping[str, Any],
+    goals: tuple[Nav2GoalPose, ...],
+    recovery_operator_approval: Mapping[str, Any] | None,
+) -> list[str]:
+    reasons: list[str] = []
+    if checkpoint.get("schema_version") != TURTLEBOT3_RECOVERY_CHECKPOINT_SCHEMA:
+        reasons.append("turtlebot3_recovery_checkpoint_schema_invalid")
+    if checkpoint.get("checkpoint_status") != "awaiting_operator_approval":
+        reasons.append("turtlebot3_recovery_checkpoint_not_awaiting_approval")
+    checkpoint_hash = str(checkpoint.get("checkpoint_hash") or "")
+    if not checkpoint_hash or checkpoint_hash != _recovery_checkpoint_hash(checkpoint):
+        reasons.append("turtlebot3_recovery_checkpoint_hash_mismatch")
+    expected_checkpoint_id = (
+        f"turtlebot3_recovery_checkpoint_{checkpoint_hash[:12]}"
+        if checkpoint_hash
+        else ""
+    )
+    if str(checkpoint.get("checkpoint_id") or "") != expected_checkpoint_id:
+        reasons.append("turtlebot3_recovery_checkpoint_id_mismatch")
+    if str(checkpoint.get("proposal_id") or "") != str(
+        proposal.get("proposal_id") or ""
+    ):
+        reasons.append("turtlebot3_recovery_checkpoint_proposal_mismatch")
+    if str(checkpoint.get("robot_profile") or "") != _robot_profile_from_proposal(
+        proposal
+    ):
+        reasons.append("turtlebot3_recovery_checkpoint_robot_profile_mismatch")
+    if str(checkpoint.get("execution_target") or "") != str(
+        proposal.get("execution_target") or ""
+    ):
+        reasons.append("turtlebot3_recovery_checkpoint_execution_target_mismatch")
+    if str(checkpoint.get("planned_segments_sha256") or "") != (
+        _planned_segments_sha256(goals)
+    ):
+        reasons.append("turtlebot3_recovery_checkpoint_planned_segments_mismatch")
+    completed_count = checkpoint.get("completed_segment_count")
+    next_index = checkpoint.get("next_segment_index")
+    remaining_count = checkpoint.get("remaining_segment_count")
+    if (
+        not isinstance(completed_count, int)
+        or isinstance(completed_count, bool)
+        or completed_count < 0
+        or completed_count > len(goals)
+        or not isinstance(next_index, int)
+        or isinstance(next_index, bool)
+        or next_index != completed_count + 1
+        or not isinstance(remaining_count, int)
+        or isinstance(remaining_count, bool)
+        or remaining_count != len(goals) - completed_count
+    ):
+        reasons.append("turtlebot3_recovery_checkpoint_segment_cursor_invalid")
+    if str(checkpoint.get("resume_state_hash") or "") != _recovery_resume_state_hash(
+        resume_state
+    ):
+        reasons.append("turtlebot3_recovery_checkpoint_resume_state_hash_mismatch")
+    stored_results = resume_state.get("segment_results")
+    if not isinstance(stored_results, list) or len(stored_results) != completed_count:
+        reasons.append("turtlebot3_recovery_checkpoint_segment_results_invalid")
+
+    approval_payload = (
+        recovery_operator_approval
+        if isinstance(recovery_operator_approval, Mapping)
+        else {}
+    )
+    if (
+        approval_payload.get("schema_version")
+        != TURTLEBOT3_RECOVERY_OPERATOR_APPROVAL_SCHEMA
+    ):
+        reasons.append("turtlebot3_recovery_operator_approval_schema_invalid")
+    if (
+        approval_payload.get("operator_approved") is not True
+        or approval_payload.get("explicit_recovery_dispatch_approval") is not True
+        or not str(approval_payload.get("operator_approval_ref") or "").strip()
+    ):
+        reasons.append("turtlebot3_recovery_operator_approval_missing")
+    bindings = (
+        ("checkpoint_id", "checkpoint_id"),
+        ("checkpoint_hash", "checkpoint_hash"),
+        ("recovery_proposal_id", "recovery_proposal_id"),
+        ("recovery_classification_id", "recovery_classification_id"),
+        ("approved_action", "selected_action"),
+    )
+    for approval_key, checkpoint_key in bindings:
+        if str(approval_payload.get(approval_key) or "") != str(
+            checkpoint.get(checkpoint_key) or ""
+        ):
+            reasons.append(
+                f"turtlebot3_recovery_operator_approval_{approval_key}_mismatch"
+            )
+    approved_parameters = approval_payload.get("approved_parameters")
+    if not isinstance(approved_parameters, Mapping) or dict(approved_parameters) != dict(
+        checkpoint.get("approved_parameters") or {}
+    ):
+        reasons.append("turtlebot3_recovery_operator_approval_parameters_mismatch")
+    selected_action = str(checkpoint.get("selected_action") or "")
+    approved_parameters = checkpoint.get("approved_parameters")
+    approved_parameters = (
+        approved_parameters if isinstance(approved_parameters, Mapping) else {}
+    )
+    recovery_goal_payloads = checkpoint.get("recovery_goal_poses")
+    recovery_goal_payloads = (
+        recovery_goal_payloads if isinstance(recovery_goal_payloads, list) else []
+    )
+    if selected_action == "avoid_obstacle":
+        if recovery_goal_payloads:
+            waypoints = approved_parameters.get("recovery_waypoints")
+            if (
+                len(recovery_goal_payloads) not in {1, 2}
+                or not isinstance(waypoints, list)
+                or len(waypoints) != len(recovery_goal_payloads)
+            ):
+                reasons.append(
+                    "turtlebot3_recovery_checkpoint_waypoint_parameters_invalid"
+                )
+            else:
+                for waypoint, goal_payload in zip(
+                    waypoints,
+                    recovery_goal_payloads,
+                    strict=True,
+                ):
+                    if not isinstance(waypoint, Mapping) or not isinstance(
+                        goal_payload, Mapping
+                    ):
+                        reasons.append(
+                            "turtlebot3_recovery_checkpoint_waypoint_parameters_invalid"
+                        )
+                        break
+                    if (
+                        _revision_numeric(waypoint.get("target_x_m"))
+                        != _revision_numeric(goal_payload.get("x_m"))
+                        or _revision_numeric(waypoint.get("target_y_m"))
+                        != _revision_numeric(goal_payload.get("y_m"))
+                    ):
+                        reasons.append(
+                            "turtlebot3_recovery_checkpoint_waypoint_parameters_mismatch"
+                        )
+                        break
+        elif not approved_parameters:
+            reasons.append("turtlebot3_recovery_checkpoint_action_not_supported")
+    elif selected_action == "return_home":
+        if (
+            len(recovery_goal_payloads) != 1
+            or approved_parameters.get("return_home_required") is not True
+        ):
+            reasons.append("turtlebot3_recovery_checkpoint_return_home_parameters_invalid")
+        elif isinstance(recovery_goal_payloads[0], Mapping):
+            home_goal = recovery_goal_payloads[0]
+            if (
+                _revision_numeric(approved_parameters.get("target_x_m"))
+                != _revision_numeric(home_goal.get("x_m"))
+                or _revision_numeric(approved_parameters.get("target_y_m"))
+                != _revision_numeric(home_goal.get("y_m"))
+            ):
+                reasons.append(
+                    "turtlebot3_recovery_checkpoint_return_home_parameters_mismatch"
+                )
+            map_model = resume_state.get("turtlebot3_indoor_map_model")
+            map_model = map_model if isinstance(map_model, Mapping) else {}
+            stored_home = next(
+                (
+                    item
+                    for item in map_model.get("planned_points") or ()
+                    if isinstance(item, Mapping) and item.get("role") == "home"
+                ),
+                {},
+            )
+            if (
+                _revision_numeric(stored_home.get("x_m"))
+                != _revision_numeric(home_goal.get("x_m"))
+                or _revision_numeric(stored_home.get("y_m"))
+                != _revision_numeric(home_goal.get("y_m"))
+            ):
+                reasons.append(
+                    "turtlebot3_recovery_checkpoint_return_home_pose_mismatch"
+                )
+    else:
+        reasons.append("turtlebot3_recovery_checkpoint_action_not_supported")
+    reasons.extend(
+        _turtlebot3_recovery_revision_source_geometry_reasons(
+            checkpoint=checkpoint,
+            execution=resume_state,
+        )
+    )
+    for goal_payload in recovery_goal_payloads:
+        if not isinstance(goal_payload, Mapping):
+            reasons.append("turtlebot3_recovery_checkpoint_goal_pose_invalid")
+            continue
+        try:
+            validated_goal = Nav2GoalPose.model_validate(dict(goal_payload))
+        except ValueError:
+            reasons.append("turtlebot3_recovery_checkpoint_goal_pose_invalid")
+            continue
+        if validated_goal.frame_id != "map":
+            reasons.append("turtlebot3_recovery_checkpoint_goal_frame_invalid")
+    return list(dict.fromkeys(reasons))
+
+
+def _recovery_goals_from_checkpoint(
+    checkpoint: Mapping[str, Any],
+) -> tuple[Nav2GoalPose, ...]:
+    payloads = checkpoint.get("recovery_goal_poses")
+    if isinstance(payloads, list) and payloads:
+        return tuple(
+            Nav2GoalPose.model_validate(dict(payload))
+            for payload in payloads
+            if isinstance(payload, Mapping)
+        )
+    parameters = checkpoint.get("approved_parameters")
+    parameters = parameters if isinstance(parameters, Mapping) else {}
+    template = _profile_dynamic_obstacle_avoidance_goal()
+    return (
+        template.model_copy(
+            update={
+                "x_m": float(parameters["target_x_m"]),
+                "y_m": float(parameters["target_y_m"]),
+                "yaw_rad": float(parameters.get("target_yaw_rad") or 0.0),
+            }
+        ),
+    )
+
+
+def _recovery_goal_from_checkpoint(checkpoint: Mapping[str, Any]) -> Nav2GoalPose:
+    """Compatibility accessor for callers that still expect one recovery goal."""
+
+    return _recovery_goals_from_checkpoint(checkpoint)[0]
+
+
 def run_turtlebot3_home_mission_dispatch(
     *,
     proposal: Mapping[str, Any],
     approval: Mapping[str, Any],
     now: datetime | None = None,
     progress_callback: Callable[[dict[str, Any]], None] | None = None,
+    resume_execution: Mapping[str, Any] | None = None,
+    recovery_operator_approval: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Execute an approved TurtleBot3 home mission through the Nav2 bridge.
 
@@ -3673,6 +6610,82 @@ def run_turtlebot3_home_mission_dispatch(
 
     segment_results: list[dict[str, Any]] = []
     recovery_segment_result: dict[str, Any] = {}
+    prior_recovery_segment_results: list[dict[str, Any]] = []
+    approved_recovery_segment_results: list[dict[str, Any]] = []
+    subsequent_recovery_segment_results: list[dict[str, Any]] = []
+    recovery_requested_side_observation: dict[str, Any] = {}
+    recovery_goal_sequence_completed = False
+    recovery_checkpoint = _recovery_checkpoint_from_execution(resume_execution)
+    recovery_repair_parent_checkpoint: dict[str, Any] = {}
+    recovery_followup_parent_checkpoint: dict[str, Any] = {}
+    recovery_resume_state = _recovery_resume_payload(resume_execution)
+    resume_requested = resume_execution is not None
+    start_segment_index = 1
+
+    def _recovery_runtime_status_projection() -> dict[str, Any]:
+        latest_recovery_result = (
+            approved_recovery_segment_results[-1]
+            if approved_recovery_segment_results
+            else recovery_segment_result
+        )
+        latest_recovery_result = (
+            latest_recovery_result
+            if isinstance(latest_recovery_result, Mapping)
+            else {}
+        )
+        latest_recovery_responses = latest_recovery_result.get("bridge_responses")
+        latest_recovery_responses = (
+            latest_recovery_responses
+            if isinstance(latest_recovery_responses, list)
+            else []
+        )
+        latest_recovery_response = (
+            latest_recovery_responses[-1]
+            if latest_recovery_responses
+            and isinstance(latest_recovery_responses[-1], Mapping)
+            else {}
+        )
+        goal_status = str(
+            latest_recovery_response.get("nav2_status")
+            or ("not_dispatched" if not latest_recovery_result else "unknown")
+        )
+        expected_recovery_goal_count = (
+            len(_recovery_goals_from_checkpoint(recovery_checkpoint))
+            if recovery_checkpoint
+            else 1
+        )
+        recovery_sequence_in_progress = (
+            bool(approved_recovery_segment_results)
+            and len(approved_recovery_segment_results)
+            < expected_recovery_goal_count
+            and all(
+                item.get("completion_claimed") is True
+                for item in approved_recovery_segment_results
+            )
+        )
+        if recovery_sequence_in_progress:
+            goal_status = "sequence_in_progress"
+        goal_succeeded = latest_recovery_result.get("completion_claimed") is True
+        verification_status = (
+            "verified"
+            if route_resumed_after_recovery
+            else "sequence_in_progress"
+            if recovery_sequence_in_progress
+            else "goal_succeeded_pending_route_resume"
+            if goal_succeeded
+            else "failed"
+            if latest_recovery_result
+            and latest_recovery_result.get("completion_claimed") is False
+            else "pending"
+        )
+        return {
+            "recovery_goal_status": goal_status,
+            "recovery_goal_succeeded_observed": goal_succeeded,
+            "recovery_verification_status": verification_status,
+            "route_resume_status": (
+                "resumed" if route_resumed_after_recovery else "not_resumed"
+            ),
+        }
 
     def _emit_progress(
         *,
@@ -3682,17 +6695,59 @@ def run_turtlebot3_home_mission_dispatch(
         if progress_callback is None:
             return
         try:
+            recovery_status = _recovery_runtime_status_projection()
+            partial_action_results = [
+                *segment_results,
+                *prior_recovery_segment_results,
+                *approved_recovery_segment_results,
+                *subsequent_recovery_segment_results,
+            ]
+            partial_recovery_dispatch_sent = any(
+                item.get("dispatch_request_sent") is True
+                for item in approved_recovery_segment_results
+            )
+            partial_recovery_verified = (
+                bool(approved_recovery_segment_results)
+                and all(
+                    item.get("completion_claimed") is True
+                    for item in approved_recovery_segment_results
+                )
+                and route_resumed_after_recovery
+            )
             partial_map = _build_turtlebot3_indoor_map_model(
                 proposal=proposal,
                 goals=goals,
                 segment_results=segment_results,
                 recovery_segment_result=recovery_segment_result,
+                approved_recovery_segment_results=(
+                    [
+                        *prior_recovery_segment_results,
+                        *approved_recovery_segment_results,
+                    ]
+                ),
+                subsequent_recovery_segment_results=(
+                    subsequent_recovery_segment_results
+                ),
                 status="running",
                 obstacle_required=_obstacle_challenge_required(proposal),
                 obstacle={},
                 motion={},
                 runtime_recovery_triggered=runtime_recovery_triggered,
                 recovery_action_suggested=recovery_action_suggested,
+                route_resumed_after_recovery=route_resumed_after_recovery,
+            )
+            partial_map["recovery"]["completion_claimed"] = False
+            partial_map["recovery"].update(
+                {
+                    "goal_status": recovery_status["recovery_goal_status"],
+                    "goal_succeeded_observed": recovery_status[
+                        "recovery_goal_succeeded_observed"
+                    ],
+                    "verification_status": recovery_status[
+                        "recovery_verification_status"
+                    ],
+                    "route_resume_status": recovery_status["route_resume_status"],
+                }
             )
             progress_callback(
                 {
@@ -3706,6 +6761,24 @@ def run_turtlebot3_home_mission_dispatch(
                             if item.get("completion_claimed") is True
                         ),
                         "runtime_recovery_triggered": runtime_recovery_triggered,
+                        **recovery_status,
+                        "recovery_dispatch_request_sent": (
+                            partial_recovery_dispatch_sent
+                        ),
+                        "recovery_completion_claimed": partial_recovery_verified,
+                        "route_resumed_after_recovery": (
+                            route_resumed_after_recovery
+                        ),
+                        "robot_motion_observed": any(
+                            item.get("robot_motion_observed") is True
+                            for item in partial_action_results
+                        ),
+                        "odom_delta_m": _sum_numeric(
+                            [
+                                item.get("odom_delta_m")
+                                for item in partial_action_results
+                            ]
+                        ),
                         "completion_claimed": False,
                         "completion_scope": "none",
                         "physical_execution_invoked": False,
@@ -3724,9 +6797,132 @@ def run_turtlebot3_home_mission_dispatch(
     runtime_recovery_home_distance_envelope: dict[str, Any] = {}
     runtime_recovery_obstacle_scenario: dict[str, Any] = {}
     runtime_recovery_motion_context: dict[str, Any] = {}
+    recovery_candidate_resolution: dict[str, Any] = {}
+    recovery_candidate_revalidation: dict[str, Any] = {}
     runtime_recovery_action_kind: str | None = None
     runtime_failure_context: dict[str, Any] = {}
     route_resumed_after_recovery = False
+    if resume_requested:
+        resume_blocking_reasons = _validate_turtlebot3_recovery_resume(
+            checkpoint=recovery_checkpoint,
+            resume_state=recovery_resume_state,
+            proposal=proposal,
+            goals=goals,
+            recovery_operator_approval=recovery_operator_approval,
+        )
+        stored_segment_results = recovery_resume_state.get("segment_results")
+        if isinstance(stored_segment_results, list):
+            segment_results = [
+                dict(item) for item in stored_segment_results if isinstance(item, Mapping)
+            ]
+        stored_recovery_history = recovery_resume_state.get(
+            "recovery_attempt_history"
+        )
+        if not isinstance(stored_recovery_history, list):
+            stored_recovery_history = recovery_resume_state.get(
+                "approved_recovery_segment_results"
+            )
+        if isinstance(stored_recovery_history, list):
+            prior_recovery_segment_results = [
+                dict(item)
+                for item in stored_recovery_history
+                if isinstance(item, Mapping)
+            ]
+        stored_proposals = recovery_resume_state.get("recovery_proposals")
+        recovery_proposals = (
+            tuple(
+                dict(item) for item in stored_proposals if isinstance(item, Mapping)
+            )
+            if isinstance(stored_proposals, list)
+            else ()
+        )
+        stored_classifications = recovery_resume_state.get(
+            "recovery_proposal_classifications"
+        )
+        recovery_proposal_classifications = (
+            tuple(
+                dict(item)
+                for item in stored_classifications
+                if isinstance(item, Mapping)
+            )
+            if isinstance(stored_classifications, list)
+            else ()
+        )
+        stored_planner_result = recovery_resume_state.get("recovery_planner_result")
+        recovery_planner_result = (
+            dict(stored_planner_result)
+            if isinstance(stored_planner_result, Mapping)
+            else {}
+        )
+        stored_obstacle = recovery_resume_state.get(
+            "runtime_recovery_obstacle_scenario"
+        )
+        runtime_recovery_obstacle_scenario = (
+            dict(stored_obstacle) if isinstance(stored_obstacle, Mapping) else {}
+        )
+        stored_candidate_resolution = runtime_recovery_obstacle_scenario.get(
+            "recovery_candidate_resolution"
+        )
+        recovery_candidate_resolution = (
+            dict(stored_candidate_resolution)
+            if isinstance(stored_candidate_resolution, Mapping)
+            else {}
+        )
+        stored_motion = recovery_resume_state.get("runtime_recovery_motion_context")
+        runtime_recovery_motion_context = (
+            dict(stored_motion) if isinstance(stored_motion, Mapping) else {}
+        )
+        recovery_action_suggested = str(
+            recovery_checkpoint.get("selected_action") or ""
+        ) or None
+        runtime_recovery_action_kind = recovery_action_suggested
+        runtime_recovery_triggered = True
+        recovery_execution_permitted_by_envelope = False
+        recovery_candidate_revalidation = (
+            _revalidate_approved_recovery_candidate(
+                checkpoint=recovery_checkpoint,
+                obstacle_scenario=runtime_recovery_obstacle_scenario,
+            )
+        )
+        if recovery_candidate_revalidation.get("revalidation_status") == "blocked":
+            resume_blocking_reasons.extend(
+                list(
+                    recovery_candidate_revalidation.get("blocking_reasons")
+                    or ["approved_recovery_candidate_revalidation_blocked"]
+                )
+            )
+        blocking_reasons.extend(resume_blocking_reasons)
+        if resume_blocking_reasons:
+            recovery_checkpoint = {
+                **recovery_checkpoint,
+                "checkpoint_status": "failed",
+                "failed_at": dispatched_at.isoformat(),
+                "failure_reasons": list(resume_blocking_reasons),
+            }
+        else:
+            start_segment_index = int(recovery_checkpoint["next_segment_index"])
+            approval_payload = dict(recovery_operator_approval or {})
+            approval_payload.setdefault("approval_status", "approved")
+            approval_payload.setdefault(
+                "approval_actor", "missionos_chat_operator"
+            )
+            approval_payload.setdefault("approved_at", dispatched_at.isoformat())
+            approval_payload.setdefault(
+                "proposal_ref", recovery_checkpoint.get("recovery_proposal_id")
+            )
+            approval_payload.setdefault(
+                "classification_ref",
+                recovery_checkpoint.get("recovery_classification_id"),
+            )
+            approval_payload["requires_new_human_approval_satisfied"] = True
+            approval_payload["dispatch_authority_created_by_operator_approval"] = True
+            approval_payload["proposal_dispatch_authority_created"] = False
+            approval_payload["physical_execution_invoked"] = False
+            approval_payload["mission_delivery_completion_claimed"] = False
+            approval_payload["progress_counted"] = False
+            fresh_recovery_operator_approvals.append(approval_payload)
+            recovery_execution_permitted_by_operator_approval = True
+            recovery_dispatch_authority_source = "fresh_operator_approval"
     if blocking_reasons:
         config = Ros2Nav2HardwareAdapterConfig(
             missionos_action_ref=str(
@@ -3738,7 +6934,7 @@ def run_turtlebot3_home_mission_dispatch(
             approval_actor=str(approval.get("approval_actor") or "missionos_chat_operator"),
             approval_timestamp=dispatched_at,
             max_distance_m=goal.max_distance_m,
-            raw_logs_ref=_turtlebot3_raw_logs_ref_from_env(robot_profile),
+            raw_logs_ref=_turtlebot3_raw_logs_ref_from_env(),
         )
         evidence = build_blocked_ros2_nav2_hardware_adapter_evidence(
             config=config,
@@ -3755,7 +6951,148 @@ def run_turtlebot3_home_mission_dispatch(
         obstacle_trigger_after = obstacle_scenario.get(
             "runtime_obstacle_recovery_trigger_after_segment_index"
         )
-        for index, segment_goal in enumerate(goals, start=1):
+        if resume_requested:
+            recovery_approval = fresh_recovery_operator_approvals[-1]
+            recovery_goals = _recovery_goals_from_checkpoint(recovery_checkpoint)
+            selected_recovery_action = str(
+                recovery_checkpoint.get("selected_action") or ""
+            )
+            for recovery_goal_index, recovery_goal in enumerate(
+                recovery_goals,
+                start=1,
+            ):
+                recovery_result = _dispatch_nav2_goal(
+                    proposal=proposal,
+                    approval=recovery_approval,
+                    goal=recovery_goal,
+                    approval_ref=str(recovery_approval["operator_approval_ref"]),
+                    dispatched_at=dispatched_at,
+                    action_ref_suffix=(
+                        "recovery_return_home"
+                        if selected_recovery_action == "return_home"
+                        else f"recovery_avoid_obstacle_waypoint_{recovery_goal_index}"
+                    ),
+                    publish_initialpose=False,
+                )
+                approved_recovery_segment_results.append(recovery_result)
+                recovery_segment_result = recovery_result
+                evidence = recovery_result["adapter_evidence"]
+                _emit_progress(
+                    runtime_recovery_triggered=True,
+                    recovery_action_suggested=selected_recovery_action,
+                )
+                if recovery_result.get("completion_claimed") is not True:
+                    break
+            recovery_goal_sequence_completed = bool(
+                approved_recovery_segment_results
+            ) and len(approved_recovery_segment_results) == len(recovery_goals) and all(
+                result.get("completion_claimed") is True
+                for result in approved_recovery_segment_results
+            )
+            recovery_requested_side_observation = (
+                _recovery_requested_side_observation(
+                    checkpoint=recovery_checkpoint,
+                    approved_recovery_results=approved_recovery_segment_results,
+                )
+            )
+            immediate_side_verification_required = (
+                recovery_requested_side_observation.get("observation_status")
+                != "not_required"
+            )
+            immediate_side_verification_satisfied = (
+                not immediate_side_verification_required
+                or recovery_requested_side_observation.get("requested_side_observed")
+                is True
+            )
+            recovery_action_completion_verified = (
+                recovery_goal_sequence_completed
+                and immediate_side_verification_satisfied
+            )
+            route_resumed_after_recovery = (
+                selected_recovery_action == "avoid_obstacle"
+                and recovery_action_completion_verified
+            )
+            recovery_goal_observed_at = datetime.now(timezone.utc).isoformat()
+            recovery_checkpoint = {
+                **recovery_checkpoint,
+                "claimed_at": str(
+                    recovery_approval.get("approved_at")
+                    or dispatched_at.isoformat()
+                ),
+                "claimed_by_approval_ref": recovery_approval[
+                    "operator_approval_ref"
+                ],
+                "checkpoint_status": (
+                    "consumed" if recovery_action_completion_verified else "failed"
+                ),
+                (
+                    "consumed_at" if recovery_action_completion_verified else "failed_at"
+                ): recovery_goal_observed_at,
+            }
+            if recovery_action_completion_verified:
+                recovery_checkpoint["consumed_by_approval_ref"] = (
+                    recovery_approval["operator_approval_ref"]
+                )
+            if not recovery_action_completion_verified:
+                recovery_failure_reasons = list(
+                    recovery_segment_result.get("blocking_reasons")
+                    or ["turtlebot3_recovery_goal_not_completed"]
+                )
+                if (
+                    recovery_goal_sequence_completed
+                    and immediate_side_verification_required
+                    and not immediate_side_verification_satisfied
+                ):
+                    recovery_failure_reasons = [
+                        "requested_recovery_side_not_observed_in_raw_map_frame"
+                    ]
+                recovery_checkpoint["failure_reasons"] = list(
+                    recovery_failure_reasons
+                )
+                repair = _build_recovery_repair_child_checkpoint(
+                    parent_checkpoint=recovery_checkpoint,
+                    proposal=proposal,
+                    goals=goals,
+                    segment_results=segment_results,
+                    candidate_observation_results=[
+                        *segment_results,
+                        *approved_recovery_segment_results,
+                    ],
+                    recovery_proposals=recovery_proposals,
+                    recovery_proposal_classifications=(
+                        recovery_proposal_classifications
+                    ),
+                    recovery_planner_result=recovery_planner_result,
+                    obstacle_scenario=runtime_recovery_obstacle_scenario,
+                    motion_context=runtime_recovery_motion_context,
+                )
+                if repair is not None:
+                    recovery_repair_parent_checkpoint = dict(
+                        recovery_checkpoint
+                    )
+                    (
+                        recovery_checkpoint,
+                        runtime_recovery_obstacle_scenario,
+                        recovery_planner_result,
+                    ) = repair
+                    recovery_candidate_resolution = dict(
+                        runtime_recovery_obstacle_scenario.get(
+                            "recovery_candidate_resolution"
+                        )
+                        or {}
+                    )
+        if (
+            not resume_requested
+            or (
+                recovery_checkpoint.get("selected_action") == "avoid_obstacle"
+                and route_resumed_after_recovery
+            )
+        ):
+            segment_indexes = range(start_segment_index, len(goals) + 1)
+        else:
+            segment_indexes = range(0)
+        for index in segment_indexes:
+            segment_goal = goals[index - 1]
             result = _dispatch_nav2_goal(
                 proposal=proposal,
                 approval=approval,
@@ -3856,6 +7193,11 @@ def run_turtlebot3_home_mission_dispatch(
                     else None
                 )
                 runtime_recovery_action_kind = recovery_action_suggested
+                if recovery_action_suggested == "return_home":
+                    # The prior obstacle candidate belongs to the consumed
+                    # checkpoint. A new return-home decision must not display
+                    # or bind that stale candidate as if it validated home.
+                    recovery_candidate_resolution = {}
                 recovery_execution_permitted_by_envelope = any(
                     classification.get("execution_permitted_by_envelope") is True
                     for classification in recovery_proposal_classifications
@@ -3864,7 +7206,7 @@ def run_turtlebot3_home_mission_dispatch(
                     recovery_action_suggested == "return_home"
                     and recovery_execution_permitted_by_envelope
                 ):
-                    recovery_segment_result = _dispatch_nav2_goal(
+                    followup_recovery_result = _dispatch_nav2_goal(
                         proposal=proposal,
                         approval=approval,
                         goal=_profile_home_pose(),
@@ -3873,7 +7215,74 @@ def run_turtlebot3_home_mission_dispatch(
                         action_ref_suffix="recovery_return_home_after_failure",
                         publish_initialpose=False,
                     )
-                    evidence = recovery_segment_result["adapter_evidence"]
+                    if resume_requested and recovery_segment_result:
+                        subsequent_recovery_segment_results.append(
+                            followup_recovery_result
+                        )
+                    else:
+                        recovery_segment_result = followup_recovery_result
+                    evidence = followup_recovery_result["adapter_evidence"]
+                elif (
+                    recovery_action_suggested == "return_home"
+                    and recovery_proposal_classifications
+                    and recovery_proposal_classifications[0].get(
+                        "execution_class"
+                    )
+                    == "requires_human_approval"
+                    and recovery_proposal_classifications[0].get(
+                        "requires_new_human_approval"
+                    )
+                    is True
+                ):
+                    followup_parent = (
+                        dict(recovery_checkpoint)
+                        if resume_requested
+                        and recovery_checkpoint.get("checkpoint_status")
+                        == "consumed"
+                        else {}
+                    )
+                    followup_checkpoint = _build_turtlebot3_recovery_checkpoint(
+                        proposal=proposal,
+                        goals=goals,
+                        segment_results=segment_results,
+                        recovery_proposals=recovery_proposals,
+                        recovery_proposal_classifications=(
+                            recovery_proposal_classifications
+                        ),
+                        recovery_planner_result=recovery_planner_result,
+                        runtime_recovery_obstacle_scenario=(
+                            runtime_recovery_obstacle_scenario
+                        ),
+                        runtime_recovery_motion_context=(
+                            runtime_recovery_motion_context
+                        ),
+                        completed_segment_index=index,
+                    )
+                    if followup_parent:
+                        recovery_followup_parent_checkpoint = followup_parent
+                        followup_checkpoint = {
+                            **followup_checkpoint,
+                            "parent_checkpoint_id": followup_parent.get(
+                                "checkpoint_id"
+                            ),
+                            "parent_checkpoint_hash": followup_parent.get(
+                                "checkpoint_hash"
+                            ),
+                            "followup_trigger": (
+                                "route_segment_failed_after_verified_recovery"
+                            ),
+                            "requires_new_human_approval": True,
+                            "automatic_redispatch_performed": False,
+                        }
+                        followup_hash = _recovery_checkpoint_hash(
+                            followup_checkpoint
+                        )
+                        followup_checkpoint["checkpoint_hash"] = followup_hash
+                        followup_checkpoint["checkpoint_id"] = (
+                            "turtlebot3_recovery_checkpoint_"
+                            f"{followup_hash[:12]}"
+                        )
+                    recovery_checkpoint = followup_checkpoint
                 _emit_progress(
                     runtime_recovery_triggered=True,
                     recovery_action_suggested=runtime_recovery_action_kind,
@@ -3949,7 +7358,7 @@ def run_turtlebot3_home_mission_dispatch(
                     recovery_action_suggested == "return_home"
                     and recovery_execution_permitted_by_envelope
                 ):
-                    recovery_segment_result = _dispatch_nav2_goal(
+                    followup_recovery_result = _dispatch_nav2_goal(
                         proposal=proposal,
                         approval=approval,
                         goal=_profile_home_pose(),
@@ -3958,10 +7367,45 @@ def run_turtlebot3_home_mission_dispatch(
                         action_ref_suffix="recovery_return_home",
                         publish_initialpose=False,
                     )
-                    evidence = recovery_segment_result["adapter_evidence"]
+                    if resume_requested and recovery_segment_result:
+                        subsequent_recovery_segment_results.append(
+                            followup_recovery_result
+                        )
+                    else:
+                        recovery_segment_result = followup_recovery_result
+                    evidence = followup_recovery_result["adapter_evidence"]
                     _emit_progress(
                         runtime_recovery_triggered=True,
                         recovery_action_suggested=runtime_recovery_action_kind,
+                    )
+                elif (
+                    recovery_action_suggested == "return_home"
+                    and recovery_proposal_classifications
+                    and recovery_proposal_classifications[0].get(
+                        "execution_class"
+                    )
+                    == "requires_human_approval"
+                    and recovery_proposal_classifications[0].get(
+                        "requires_new_human_approval"
+                    )
+                    is True
+                ):
+                    recovery_checkpoint = _build_turtlebot3_recovery_checkpoint(
+                        proposal=proposal,
+                        goals=goals,
+                        segment_results=segment_results,
+                        recovery_proposals=recovery_proposals,
+                        recovery_proposal_classifications=(
+                            recovery_proposal_classifications
+                        ),
+                        recovery_planner_result=recovery_planner_result,
+                        runtime_recovery_obstacle_scenario=(
+                            runtime_recovery_obstacle_scenario
+                        ),
+                        runtime_recovery_motion_context=(
+                            runtime_recovery_motion_context
+                        ),
+                        completed_segment_index=index,
                     )
                 break
             if (
@@ -4007,6 +7451,22 @@ def run_turtlebot3_home_mission_dispatch(
                     for item in runtime_recovery_proposals
                 )
                 recovery_planner_result = dict(runtime_recovery_planner_result)
+                recovery_candidate_resolution = _resolve_recovery_candidate(
+                    runtime_recovery_obstacle_scenario,
+                    segment_results=segment_results,
+                )
+                runtime_recovery_obstacle_scenario = {
+                    **runtime_recovery_obstacle_scenario,
+                    "recovery_candidate_resolution": dict(
+                        recovery_candidate_resolution
+                    ),
+                }
+                recovery_planner_result = {
+                    **recovery_planner_result,
+                    "recovery_candidate_resolution": dict(
+                        recovery_candidate_resolution
+                    ),
+                }
                 recovery_proposal_classifications = _classify_recovery_proposals(
                     autonomy_envelope=autonomy_envelope,
                     recovery_proposals=recovery_proposals,
@@ -4038,6 +7498,8 @@ def run_turtlebot3_home_mission_dispatch(
                 )
                 if (
                     recovery_action_suggested == "avoid_obstacle"
+                    and recovery_candidate_resolution.get("resolution_status")
+                    != "blocked"
                     and (
                         recovery_execution_permitted_by_envelope
                         or recovery_execution_permitted_by_operator_approval
@@ -4048,10 +7510,28 @@ def run_turtlebot3_home_mission_dispatch(
                         if recovery_execution_permitted_by_operator_approval
                         else approval_ref
                     )
+                    selected_candidate = recovery_candidate_resolution.get(
+                        "selected_candidate"
+                    )
+                    selected_candidate = (
+                        selected_candidate
+                        if isinstance(selected_candidate, Mapping)
+                        else {}
+                    )
+                    resolved_recovery_goal = (
+                        _profile_dynamic_obstacle_avoidance_goal().model_copy(
+                            update={
+                                "x_m": float(selected_candidate["x_m"]),
+                                "y_m": float(selected_candidate["y_m"]),
+                            }
+                        )
+                        if selected_candidate
+                        else _profile_dynamic_obstacle_avoidance_goal()
+                    )
                     recovery_segment_result = _dispatch_nav2_goal(
                         proposal=proposal,
                         approval=approval,
-                        goal=_profile_dynamic_obstacle_avoidance_goal(),
+                        goal=resolved_recovery_goal,
                         approval_ref=recovery_approval_ref,
                         dispatched_at=dispatched_at,
                         action_ref_suffix="recovery_avoid_obstacle",
@@ -4068,6 +7548,36 @@ def run_turtlebot3_home_mission_dispatch(
                     if not route_resumed_after_recovery:
                         break
                 else:
+                    classification = (
+                        recovery_proposal_classifications[0]
+                        if recovery_proposal_classifications
+                        else {}
+                    )
+                    if (
+                        recovery_action_suggested == "avoid_obstacle"
+                        and recovery_candidate_resolution.get("resolution_status")
+                        != "blocked"
+                        and classification.get("execution_class")
+                        == "requires_human_approval"
+                        and classification.get("requires_new_human_approval") is True
+                    ):
+                        recovery_checkpoint = _build_turtlebot3_recovery_checkpoint(
+                            proposal=proposal,
+                            goals=goals,
+                            segment_results=segment_results,
+                            recovery_proposals=recovery_proposals,
+                            recovery_proposal_classifications=(
+                                recovery_proposal_classifications
+                            ),
+                            recovery_planner_result=recovery_planner_result,
+                            runtime_recovery_obstacle_scenario=(
+                                runtime_recovery_obstacle_scenario
+                            ),
+                            runtime_recovery_motion_context=(
+                                runtime_recovery_motion_context
+                            ),
+                            completed_segment_index=index,
+                        )
                     break
         if evidence is None:
             config = Ros2Nav2HardwareAdapterConfig(
@@ -4082,21 +7592,55 @@ def run_turtlebot3_home_mission_dispatch(
                 ),
                 approval_timestamp=dispatched_at,
                 max_distance_m=goal.max_distance_m,
-                raw_logs_ref=_turtlebot3_raw_logs_ref_from_env(robot_profile),
+                raw_logs_ref=_turtlebot3_raw_logs_ref_from_env(),
             )
             evidence = build_blocked_ros2_nav2_hardware_adapter_evidence(
                 config=config,
                 blocking_reasons=("no_nav2_segments_to_dispatch",),
             )
 
+    if runtime_recovery_battery_envelope and runtime_recovery_home_distance_envelope:
+        runtime_recovery_battery_envelope = {
+            **runtime_recovery_battery_envelope,
+            "battery_return_decision": _battery_return_decision(
+                battery_envelope=runtime_recovery_battery_envelope,
+                home_distance_envelope=runtime_recovery_home_distance_envelope,
+            ),
+        }
+
     evidence_payload = (
         evidence.model_dump(mode="json")
         if hasattr(evidence, "model_dump")
         else dict(evidence)
     )
+    current_approved_recovery_results = (
+        approved_recovery_segment_results
+        if approved_recovery_segment_results
+        else ([recovery_segment_result] if recovery_segment_result else [])
+    )
+    recorded_approved_recovery_results = [
+        *prior_recovery_segment_results,
+        *current_approved_recovery_results,
+    ]
+    if not recovery_requested_side_observation:
+        recovery_requested_side_observation = (
+            _recovery_requested_side_observation(
+                checkpoint=recovery_checkpoint,
+                approved_recovery_results=current_approved_recovery_results,
+            )
+        )
+    requested_side_verification_required = (
+        recovery_requested_side_observation.get("observation_status")
+        != "not_required"
+    )
+    requested_side_verification_satisfied = (
+        not requested_side_verification_required
+        or recovery_requested_side_observation.get("requested_side_observed") is True
+    )
     all_action_results = [
         *segment_results,
-        *([recovery_segment_result] if recovery_segment_result else []),
+        *recorded_approved_recovery_results,
+        *subsequent_recovery_segment_results,
     ]
     bridge_responses = tuple(
         response
@@ -4125,11 +7669,29 @@ def run_turtlebot3_home_mission_dispatch(
         and runtime_recovery_action_kind == "avoid_obstacle"
         and route_resumed_after_recovery
     )
-    recovery_dispatch_request_sent = (
-        recovery_segment_result.get("dispatch_request_sent") is True
+    recovery_dispatch_request_sent = any(
+        result.get("dispatch_request_sent") is True
+        for result in current_approved_recovery_results
+    )
+    recovery_goal_sequence_completed = bool(current_approved_recovery_results) and all(
+        result.get("completion_claimed") is True
+        for result in current_approved_recovery_results
     )
     recovery_completion_claimed = (
-        recovery_segment_result.get("completion_claimed") is True
+        recovery_goal_sequence_completed and requested_side_verification_satisfied
+    )
+    subsequent_recovery_dispatch_request_sent = any(
+        result.get("dispatch_request_sent") is True
+        for result in subsequent_recovery_segment_results
+    )
+    subsequent_recovery_completion_claimed = any(
+        result.get("completion_claimed") is True
+        for result in subsequent_recovery_segment_results
+    )
+    recovery_outcome_completion_claimed = (
+        subsequent_recovery_completion_claimed
+        if subsequent_recovery_segment_results
+        else recovery_completion_claimed
     )
     motion = {
         "robot_motion_observed": any(
@@ -4207,17 +7769,26 @@ def run_turtlebot3_home_mission_dispatch(
     obstacle_geometry = _obstacle_trajectory_geometry(
         obstacle_required=obstacle_required,
         obstacle=obstacle,
-        planned_points=_planned_indoor_map_points(goals),
         observed_points=[
             point
             for result in segment_results
             for point in _observed_points_from_action_result(result)
         ],
-        recovery_points=_observed_points_from_action_result(recovery_segment_result),
+        recovery_points=[
+            point
+            for result in recorded_approved_recovery_results
+            for point in _observed_points_from_action_result(result)
+        ],
     )
     bridge_obstacle_avoidance_observed = obstacle["obstacle_avoidance_observed"]
     obstacle.update(obstacle_geometry)
     obstacle["bridge_obstacle_avoidance_observed"] = bridge_obstacle_avoidance_observed
+    obstacle["requested_side_verification_required"] = (
+        requested_side_verification_required
+    )
+    obstacle["requested_side_observed"] = (
+        recovery_requested_side_observation.get("requested_side_observed") is True
+    )
     if obstacle_required:
         obstacle["obstacle_avoidance_observed"] = (
             bridge_obstacle_avoidance_observed is True
@@ -4228,6 +7799,7 @@ def run_turtlebot3_home_mission_dispatch(
         (main_segments_completed or route_completed_after_recovery)
         and obstacle_required
         and obstacle["obstacle_avoidance_observed"] is True
+        and requested_side_verification_satisfied
     )
     telemetry_sidecar_motion_confirmed = (
         not telemetry_sidecar_required
@@ -4244,6 +7816,21 @@ def run_turtlebot3_home_mission_dispatch(
         str(reason)
         for reason in nvblox_evidence_payload.get("blocking_reasons") or []
     )
+    if recovery_candidate_resolution.get("resolution_status") == "blocked":
+        candidate_reasons = list(
+            recovery_candidate_resolution.get("blocking_reasons") or []
+        )
+        mission_blocking_reasons.extend(
+            candidate_reasons or ["nav2_recovery_candidate_validation_unavailable"]
+        )
+    if (
+        recovery_goal_sequence_completed
+        and requested_side_verification_required
+        and not requested_side_verification_satisfied
+    ):
+        mission_blocking_reasons.append(
+            "requested_recovery_side_not_observed_in_raw_map_frame"
+        )
     if (
         route_completion_candidate
         and obstacle_required
@@ -4252,6 +7839,20 @@ def run_turtlebot3_home_mission_dispatch(
         mission_blocking_reasons.append("obstacle_avoidance_not_observed")
         if obstacle.get("obstacle_trajectory_intersects_obstacle") is True:
             mission_blocking_reasons.append("obstacle_trajectory_intersects_obstacle")
+        if obstacle.get("obstacle_trajectory_geometry_status") in {
+            "raw_map_frame_trajectory_unavailable",
+            "raw_map_frame_trajectory_insufficient",
+        }:
+            mission_blocking_reasons.append(
+                "obstacle_trajectory_raw_map_frame_evidence_unavailable"
+            )
+        if (
+            requested_side_verification_required
+            and not requested_side_verification_satisfied
+        ):
+            mission_blocking_reasons.append(
+                "requested_recovery_side_not_observed_in_raw_map_frame"
+            )
     if route_completion_candidate and telemetry_sidecar_required:
         if not telemetry_sidecar_motion_confirmed:
             mission_blocking_reasons.append(
@@ -4261,8 +7862,19 @@ def run_turtlebot3_home_mission_dispatch(
     status = (
         "completed"
         if mission_completion_claimed
+        else "pending"
+        if (
+            recovery_checkpoint.get("checkpoint_status")
+            == "awaiting_operator_approval"
+            and (
+                not blocking_reasons
+                or bool(runtime_failure_context)
+                or bool(recovery_repair_parent_checkpoint)
+                or bool(recovery_followup_parent_checkpoint)
+            )
+        )
         else "recovered"
-        if runtime_recovery_triggered and recovery_completion_claimed
+        if runtime_recovery_triggered and recovery_outcome_completion_claimed
         else "blocked"
         if mission_blocking_reasons or not main_dispatch_sent
         else "incomplete"
@@ -4278,14 +7890,39 @@ def run_turtlebot3_home_mission_dispatch(
         goals=goals,
         segment_results=segment_results,
         recovery_segment_result=recovery_segment_result,
+        approved_recovery_segment_results=recorded_approved_recovery_results,
+        subsequent_recovery_segment_results=subsequent_recovery_segment_results,
         status=status,
         obstacle_required=obstacle_required,
         obstacle=obstacle,
         motion=motion,
         runtime_recovery_triggered=runtime_recovery_triggered,
         recovery_action_suggested=recovery_action_suggested,
+        route_resumed_after_recovery=route_resumed_after_recovery,
     )
-    log_bundle_artifacts = _turtlebot3_log_bundle_artifacts(robot_profile)
+    indoor_map_model["recovery"]["goal_sequence_completed"] = (
+        recovery_goal_sequence_completed
+    )
+    indoor_map_model["recovery"]["completion_claimed"] = (
+        recovery_completion_claimed
+    )
+    recovery_status = _recovery_runtime_status_projection()
+    indoor_map_model["recovery"].update(
+        {
+            "goal_status": recovery_status["recovery_goal_status"],
+            "goal_succeeded_observed": recovery_status[
+                "recovery_goal_succeeded_observed"
+            ],
+            "verification_status": recovery_status[
+                "recovery_verification_status"
+            ],
+            "route_resume_status": recovery_status["route_resume_status"],
+        }
+    )
+    indoor_map_model["recovery"]["requested_side_observation"] = dict(
+        recovery_requested_side_observation
+    )
+    log_bundle_artifacts = _turtlebot3_log_bundle_artifacts()
     raw_logs_ref = log_bundle_artifacts.get("raw_logs_ref") or motion.get(
         "telemetry_raw_logs_ref"
     )
@@ -4311,6 +7948,33 @@ def run_turtlebot3_home_mission_dispatch(
             dict(item.get("adapter_evidence") or {}) for item in segment_results
         ],
         "recovery_segment_result": dict(recovery_segment_result),
+        "approved_recovery_segment_results": [
+            dict(item) for item in recorded_approved_recovery_results
+        ],
+        "recovery_attempt_history": [
+            dict(item) for item in recorded_approved_recovery_results
+        ],
+        "subsequent_recovery_segment_results": [
+            dict(item) for item in subsequent_recovery_segment_results
+        ],
+        "recovery_adapter_evidence": dict(
+            recovery_segment_result.get("adapter_evidence") or {}
+        ),
+        "approved_recovery_adapter_evidence_segments": [
+            dict(item.get("adapter_evidence") or {})
+            for item in recorded_approved_recovery_results
+        ],
+        "subsequent_recovery_adapter_evidence_segments": [
+            dict(item.get("adapter_evidence") or {})
+            for item in subsequent_recovery_segment_results
+        ],
+        "latest_adapter_evidence_role": (
+            "subsequent_recovery"
+            if subsequent_recovery_segment_results
+            else "approved_recovery"
+            if recovery_segment_result
+            else "route_segment"
+        ),
         "bridge_responses": [dict(response) for response in bridge_responses],
         "bridge_error": bridge_error,
         "turtlebot3_indoor_map_model": dict(indoor_map_model),
@@ -4343,6 +8007,10 @@ def run_turtlebot3_home_mission_dispatch(
         "runtime_recovery_motion_context": dict(runtime_recovery_motion_context),
         "recovery_planner_result": dict(recovery_planner_result),
         "recovery_planner_status": recovery_planner_result.get("planner_status"),
+        "recovery_candidate_resolution": dict(recovery_candidate_resolution),
+        "recovery_candidate_revalidation": dict(
+            recovery_candidate_revalidation
+        ),
         "recovery_proposals": [dict(item) for item in recovery_proposals],
         "recovery_proposal_classifications": list(
             recovery_proposal_classifications
@@ -4354,6 +8022,9 @@ def run_turtlebot3_home_mission_dispatch(
             fresh_recovery_operator_approvals
         ),
         "recovery_action_suggested": recovery_action_suggested,
+        "recovery_requested_side_observation": dict(
+            recovery_requested_side_observation
+        ),
         "recovery_execution_permitted_by_envelope": (
             recovery_execution_permitted_by_envelope
         ),
@@ -4362,12 +8033,27 @@ def run_turtlebot3_home_mission_dispatch(
         ),
         "recovery_dispatch_authority_source": recovery_dispatch_authority_source,
         "runtime_recovery_triggered": runtime_recovery_triggered,
+        **recovery_status,
         "runtime_recovery_action_kind": runtime_recovery_action_kind,
+        "turtlebot3_recovery_checkpoint": dict(recovery_checkpoint),
+        "turtlebot3_recovery_repair_parent_checkpoint": dict(
+            recovery_repair_parent_checkpoint
+        ),
+        "turtlebot3_recovery_followup_parent_checkpoint": dict(
+            recovery_followup_parent_checkpoint
+        ),
         "runtime_failure_context": dict(runtime_failure_context),
         "runtime_failure_recovery_triggered": bool(runtime_failure_context),
         "route_resumed_after_recovery": route_resumed_after_recovery,
         "recovery_dispatch_request_sent": recovery_dispatch_request_sent,
+        "recovery_goal_sequence_completed": recovery_goal_sequence_completed,
         "recovery_completion_claimed": recovery_completion_claimed,
+        "subsequent_recovery_dispatch_request_sent": (
+            subsequent_recovery_dispatch_request_sent
+        ),
+        "subsequent_recovery_completion_claimed": (
+            subsequent_recovery_completion_claimed
+        ),
         "llm_recovery_proposals_allowed": bool(
             autonomy_envelope.get("llm_recovery_proposals_allowed", True)
         ),
@@ -4411,13 +8097,35 @@ def run_turtlebot3_home_mission_dispatch(
     }
     result = {
         "turtlebot3_home_mission_execution": execution,
+        "turtlebot3_recovery_checkpoint": dict(recovery_checkpoint),
+        "turtlebot3_recovery_repair_parent_checkpoint": dict(
+            recovery_repair_parent_checkpoint
+        ),
+        "turtlebot3_recovery_followup_parent_checkpoint": dict(
+            recovery_followup_parent_checkpoint
+        ),
         "turtlebot3_indoor_map_model": dict(indoor_map_model),
         "log_bundle_artifacts": dict(log_bundle_artifacts),
         "telemetry_sidecar_artifacts": dict(telemetry_sidecar_artifacts),
         "nvblox_perception_evidence": dict(nvblox_evidence_payload),
+        "recovery_candidate_resolution": dict(recovery_candidate_resolution),
+        "recovery_candidate_revalidation": dict(
+            recovery_candidate_revalidation
+        ),
         "ros2_nav2_hardware_adapter_evidence": dict(evidence_payload),
         "ros2_nav2_hardware_adapter_evidence_segments": [
             dict(item.get("adapter_evidence") or {}) for item in segment_results
+        ],
+        "ros2_nav2_recovery_adapter_evidence": dict(
+            recovery_segment_result.get("adapter_evidence") or {}
+        ),
+        "ros2_nav2_approved_recovery_adapter_evidence_segments": [
+            dict(item.get("adapter_evidence") or {})
+            for item in recorded_approved_recovery_results
+        ],
+        "ros2_nav2_subsequent_recovery_adapter_evidence_segments": [
+            dict(item.get("adapter_evidence") or {})
+            for item in subsequent_recovery_segment_results
         ],
         "summary": {
             "status": status,
@@ -4447,6 +8155,10 @@ def run_turtlebot3_home_mission_dispatch(
             "runtime_recovery_motion_context": dict(runtime_recovery_motion_context),
             "recovery_planner_result": dict(recovery_planner_result),
             "recovery_planner_status": recovery_planner_result.get("planner_status"),
+            "recovery_candidate_resolution": dict(recovery_candidate_resolution),
+            "recovery_candidate_revalidation": dict(
+                recovery_candidate_revalidation
+            ),
             "recovery_proposals": [dict(item) for item in recovery_proposals],
             "recovery_proposal_classifications": list(
                 recovery_proposal_classifications
@@ -4458,6 +8170,9 @@ def run_turtlebot3_home_mission_dispatch(
                 fresh_recovery_operator_approvals
             ),
             "recovery_action_suggested": recovery_action_suggested,
+            "recovery_requested_side_observation": dict(
+                recovery_requested_side_observation
+            ),
             "recovery_execution_permitted_by_envelope": (
                 recovery_execution_permitted_by_envelope
             ),
@@ -4466,12 +8181,27 @@ def run_turtlebot3_home_mission_dispatch(
             ),
             "recovery_dispatch_authority_source": recovery_dispatch_authority_source,
             "runtime_recovery_triggered": runtime_recovery_triggered,
+            **recovery_status,
             "runtime_recovery_action_kind": runtime_recovery_action_kind,
+            "turtlebot3_recovery_checkpoint": dict(recovery_checkpoint),
+            "turtlebot3_recovery_repair_parent_checkpoint": dict(
+                recovery_repair_parent_checkpoint
+            ),
+            "turtlebot3_recovery_followup_parent_checkpoint": dict(
+                recovery_followup_parent_checkpoint
+            ),
             "runtime_failure_context": dict(runtime_failure_context),
             "runtime_failure_recovery_triggered": bool(runtime_failure_context),
             "route_resumed_after_recovery": route_resumed_after_recovery,
             "recovery_dispatch_request_sent": recovery_dispatch_request_sent,
+            "recovery_goal_sequence_completed": recovery_goal_sequence_completed,
             "recovery_completion_claimed": recovery_completion_claimed,
+            "subsequent_recovery_dispatch_request_sent": (
+                subsequent_recovery_dispatch_request_sent
+            ),
+            "subsequent_recovery_completion_claimed": (
+                subsequent_recovery_completion_claimed
+            ),
             "llm_recovery_proposals_allowed": bool(
                 autonomy_envelope.get("llm_recovery_proposals_allowed", True)
             ),
@@ -4489,6 +8219,15 @@ def run_turtlebot3_home_mission_dispatch(
             "route_completed_after_recovery": route_completed_after_recovery,
             "segment_results": [dict(item) for item in segment_results],
             "recovery_segment_result": dict(recovery_segment_result),
+            "approved_recovery_segment_results": [
+                dict(item) for item in recorded_approved_recovery_results
+            ],
+            "recovery_attempt_history": [
+                dict(item) for item in recorded_approved_recovery_results
+            ],
+            "subsequent_recovery_segment_results": [
+                dict(item) for item in subsequent_recovery_segment_results
+            ],
             "turtlebot3_indoor_map_model": dict(indoor_map_model),
             "log_bundle_artifacts": dict(log_bundle_artifacts),
             "log_bundle_status": log_bundle_artifacts.get("log_bundle_status"),
@@ -4596,6 +8335,42 @@ def run_turtlebot3_home_mission_dispatch(
             "obstacle_trajectory_geometry_source": obstacle[
                 "obstacle_trajectory_geometry_source"
             ],
+            "obstacle_trajectory_geometry_status": obstacle[
+                "obstacle_trajectory_geometry_status"
+            ],
+            "obstacle_trajectory_geometry_frame_id": obstacle[
+                "obstacle_trajectory_geometry_frame_id"
+            ],
+            "obstacle_trajectory_raw_map_frame_sample_count": obstacle[
+                "obstacle_trajectory_raw_map_frame_sample_count"
+            ],
+            "obstacle_trajectory_observed_stream_count": obstacle[
+                "obstacle_trajectory_observed_stream_count"
+            ],
+            "obstacle_trajectory_observed_segment_count": obstacle[
+                "obstacle_trajectory_observed_segment_count"
+            ],
+            "obstacle_trajectory_non_map_sample_count_excluded": obstacle[
+                "obstacle_trajectory_non_map_sample_count_excluded"
+            ],
+            "obstacle_trajectory_ineligible_map_sample_count_excluded": obstacle[
+                "obstacle_trajectory_ineligible_map_sample_count_excluded"
+            ],
+            "obstacle_trajectory_path_sample_count_excluded": obstacle[
+                "obstacle_trajectory_path_sample_count_excluded"
+            ],
+            "obstacle_trajectory_display_aligned_sample_count_excluded": obstacle[
+                "obstacle_trajectory_display_aligned_sample_count_excluded"
+            ],
+            "obstacle_trajectory_invalid_numeric_sample_count_excluded": obstacle[
+                "obstacle_trajectory_invalid_numeric_sample_count_excluded"
+            ],
+            "obstacle_trajectory_display_alignment_used": obstacle[
+                "obstacle_trajectory_display_alignment_used"
+            ],
+            "obstacle_trajectory_geometry_claim_boundary": obstacle.get(
+                "obstacle_trajectory_geometry_claim_boundary"
+            ),
             "trajectory_lateral_deviation_observed": obstacle[
                 "trajectory_lateral_deviation_observed"
             ],
@@ -4638,11 +8413,14 @@ __all__ = [
     "TURTLEBOT3_HOME_MISSION_EXECUTION_SCHEMA",
     "TURTLEBOT3_INDOOR_MAP_MODEL_SCHEMA",
     "TURTLEBOT3_HOME_MISSION_PLAN_SCHEMA",
+    "TURTLEBOT3_RECOVERY_CHECKPOINT_SCHEMA",
+    "TURTLEBOT3_RECOVERY_CHECKPOINT_REVISION_SCHEMA",
+    "TURTLEBOT3_RECOVERY_OPERATOR_APPROVAL_SCHEMA",
     "TurtleBot3MissionJudgmentPoint",
     "TurtleBot3HomeMissionPlan",
     "approve_turtlebot3_home_mission_plan",
     "build_turtlebot3_home_mission_plan",
-    "infer_turtlebot_home_robot_profile",
+    "build_turtlebot3_recovery_checkpoint_revision",
     "infer_turtlebot3_home_mission_kind",
     "instruction_requests_turtlebot3_home_mission",
     "normalize_turtlebot_nav2_robot_profile",
