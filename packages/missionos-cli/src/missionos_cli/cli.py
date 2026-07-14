@@ -7798,6 +7798,14 @@ def _pending_recovery_approval_from_task(
                 for view in (plan, stored_checkpoint, summary)
             )
         )
+        operator_guidance_required = (
+            checkpoint.get("operator_guidance_required") is True
+            or dispatch_action in {"ask_human", "hold", "safe_stop"}
+        )
+        checkpoint_dispatch_supported = (
+            dispatch_action in {"avoid_obstacle", "return_home", "reroute"}
+            and not operator_guidance_required
+        )
         if not task_id or not dispatch_action:
             return None
         return {
@@ -7824,8 +7832,12 @@ def _pending_recovery_approval_from_task(
             ),
             "robot_profile": robot_profile,
             "execution_target": execution_target,
-            "checkpoint_approval_supported": strict_turtlebot3_scope,
+            "checkpoint_approval_supported": (
+                strict_turtlebot3_scope and checkpoint_dispatch_supported
+            ),
             "checkpoint_revision_supported": strict_turtlebot3_scope,
+            "checkpoint_dispatch_supported": checkpoint_dispatch_supported,
+            "operator_guidance_required": operator_guidance_required,
             "recovery_proposal_id": proposal_id,
             "recovery_classification_id": classification_id,
             "proposal_reason": str(proposal.get("reason") or ""),
@@ -8493,6 +8505,7 @@ def _render_chat_recovery_review(pending: dict[str, Any]) -> Panel:
     reason = str(pending.get("proposal_reason") or "").strip() or "-"
     approval_supported = pending.get("checkpoint_approval_supported") is True
     revision_supported = pending.get("checkpoint_revision_supported") is True
+    operator_guidance_required = pending.get("operator_guidance_required") is True
     if approval_supported and revision_supported:
         decision_text = (
             "[bold]y[/bold]=approve exact checkpoint  "
@@ -8504,6 +8517,12 @@ def _render_chat_recovery_review(pending: dict[str, Any]) -> Panel:
             "[bold]y[/bold]=approve exact checkpoint  "
             "[bold]d/Enter[/bold]=defer with no dispatch  "
             "change unavailable for this robot profile"
+        )
+    elif revision_supported and operator_guidance_required:
+        decision_text = (
+            "Gemini requested operator guidance; this checkpoint cannot dispatch.  "
+            "[bold]c[/bold]=give a bounded change in natural language  "
+            "[bold]d/Enter[/bold]=defer with no dispatch"
         )
     else:
         decision_text = (
@@ -8556,6 +8575,21 @@ def _handle_chat_recovery_approval(
         console.print(
             "[yellow]No pending Recovery Agent proposal requires new human approval.[/yellow]"
         )
+        return True
+    if pending.get("operator_guidance_required") is True:
+        if _set_chat_recovery_revision_context(ctx, pending=pending):
+            console.print(
+                "[yellow]Gemini requested operator guidance. This proposal-only "
+                "checkpoint cannot be approved or dispatched. Type a bounded "
+                "natural-language change such as '右へ大きく迂回して障害物を避けて'. "
+                "No approval artifact or dispatch was created.[/yellow]"
+            )
+        else:
+            console.print(
+                "[yellow]This proposal-only checkpoint cannot be approved or "
+                "dispatched, and its revision binding is incomplete. No approval "
+                "artifact or dispatch was created.[/yellow]"
+            )
         return True
     if pending.get("checkpoint_approval_supported") is not True:
         console.print(
@@ -8673,10 +8707,13 @@ def _handle_chat_recovery_review(
     console.print(_render_chat_recovery_review(pending))
     approval_supported = pending.get("checkpoint_approval_supported") is True
     revision_supported = pending.get("checkpoint_revision_supported") is True
+    operator_guidance_required = pending.get("operator_guidance_required") is True
     if approval_supported and revision_supported:
         decision_prompt = "Recovery decision [y=approve, d/Enter=defer, c=change]"
     elif approval_supported:
         decision_prompt = "Recovery decision [y=approve, d/Enter=defer]"
+    elif revision_supported and operator_guidance_required:
+        decision_prompt = "Recovery decision [c=bounded change, d/Enter=defer]"
     else:
         decision_prompt = "Recovery decision [d/Enter=defer]"
     choice = str(
@@ -8691,10 +8728,18 @@ def _handle_chat_recovery_review(
     if compact in {"y", "yes", "はい", "承認", "承認します"}:
         if not approval_supported:
             _clear_chat_recovery_revision_context(ctx)
-            console.print(
-                "[yellow]Approval is unavailable for this robot scope; no approval "
-                "artifact or dispatch was created. Choose d/Enter to defer.[/yellow]"
-            )
+            if operator_guidance_required and revision_supported:
+                _set_chat_recovery_revision_context(ctx, pending=pending)
+                console.print(
+                    "[yellow]This proposal-only checkpoint cannot be approved or "
+                    "dispatched. Type a bounded natural-language change. No approval "
+                    "artifact or dispatch was created.[/yellow]"
+                )
+            else:
+                console.print(
+                    "[yellow]Approval is unavailable for this robot scope; no approval "
+                    "artifact or dispatch was created. Choose d/Enter to defer.[/yellow]"
+                )
             return True
         _clear_chat_recovery_revision_context(ctx)
         return _handle_chat_recovery_approval(
@@ -8746,6 +8791,8 @@ def _handle_chat_recovery_review(
     allowed_choices = (
         "y, d/Enter, or c"
         if approval_supported and revision_supported
+        else "c or d/Enter"
+        if revision_supported and operator_guidance_required
         else "y or d/Enter"
         if approval_supported
         else "d/Enter"
@@ -9136,6 +9183,9 @@ def _render_recovery_agent_console(
         )
     elif pending:
         action = str(pending.get("selected_action") or "recovery action")
+        operator_guidance_required = (
+            pending.get("operator_guidance_required") is True
+        )
         observations = pending.get("input_observations")
         observations = observations if isinstance(observations, dict) else {}
         reason = str(
@@ -9172,13 +9222,33 @@ def _render_recovery_agent_console(
                 f"local_max_cost={rich_escape(_status_text(selected_candidate.get('local_maximum_path_cost')))}; "
                 f"bounded_retreat={rich_escape(_status_text(candidate_resolution.get('bounded_retreat_required')))}[/dim]",
                 "[green]No recovery dispatch has been sent.[/green]",
-                "",
-                "[bold]Choose one:[/bold]",
-                "  [bold green]approve[/bold green]  execute this exact recovery (asks y/N)",
-                "  [bold]defer[/bold]    keep the robot stopped; create no authority",
-                "  type a change in plain language, e.g. [bold]左へ大きく迂回して[/bold]",
             ]
         )
+        if operator_guidance_required:
+            lines.extend(
+                [
+                    "",
+                    "[bold yellow]Gemini requested operator guidance; this "
+                    "proposal-only checkpoint cannot dispatch.[/bold yellow]",
+                    "  [bold]defer[/bold]    keep the robot stopped; create no authority",
+                    "  type a bounded change in plain language, e.g. "
+                    "[bold]右へ大きく迂回して障害物を避けて[/bold]",
+                    "  [dim]approve is unavailable until that change creates a new "
+                    "dispatchable checkpoint.[/dim]",
+                ]
+            )
+        else:
+            lines.extend(
+                [
+                    "",
+                    "[bold]Choose one:[/bold]",
+                    "  [bold green]approve[/bold green]  execute this exact recovery "
+                    "(asks y/N)",
+                    "  [bold]defer[/bold]    keep the robot stopped; create no authority",
+                    "  type a change in plain language, e.g. "
+                    "[bold]左へ大きく迂回して[/bold]",
+                ]
+            )
     elif show_proposal and proposal:
         lines.extend(_humanize_recovery_summary(proposal, endurance, return_home))
         suggested = _operator_recovery_console_command(
@@ -9680,6 +9750,13 @@ def _handle_operate_console_command(
         pending = _pending_recovery_approval_from_task(task_payload)
         if not pending:
             raise click.ClickException("no recovery proposal is awaiting approval")
+        if pending.get("operator_guidance_required") is True:
+            console.print(
+                "[yellow]Gemini requested operator guidance. This proposal-only "
+                "checkpoint cannot be approved or dispatched. Type a bounded "
+                "natural-language change; no approval artifact was created.[/yellow]"
+            )
+            return True
         action = str(pending.get("recovery_action") or "")
         if not click.confirm(
             f"Approve {action} for task {task_id}?", default=False
@@ -10828,8 +10905,15 @@ def _chat_companion_terminals_enabled(ctx: click.Context) -> bool:
 
 def _missionos_chat_companion_command_prefix(ctx: click.Context) -> str:
     argv0 = Path(sys.argv[0]) if sys.argv and sys.argv[0] else Path("missionos")
-    executable = str(argv0.resolve()) if argv0.exists() else "missionos"
-    parts = [executable]
+    if argv0.exists() and argv0.is_file() and os.access(argv0, os.X_OK):
+        parts = [str(argv0.resolve())]
+    elif argv0.name == "__main__.py" and argv0.parent.name == "missionos_cli":
+        # `python -m missionos_cli` exposes the package's non-executable
+        # __main__.py as argv[0]. A companion must preserve module invocation;
+        # executing that file directly produces exit 126 on macOS.
+        parts = [sys.executable, "-m", "missionos_cli"]
+    else:
+        parts = ["missionos"]
     gateway_url = str(ctx.obj.get("missionos_gateway_url") or "").strip()
     if gateway_url:
         parts.extend(["--gateway-url", gateway_url])
@@ -11323,7 +11407,9 @@ def _conversation_should_advance_suggestion(payload: dict[str, Any]) -> bool:
 
 
 def _update_chat_suggestion_from_conversation(
-    ctx: click.Context, payload: dict[str, Any]
+    ctx: click.Context,
+    payload: dict[str, Any],
+    client: MissionOSGatewayClient | None = None,
 ) -> None:
     if not _conversation_should_advance_suggestion(payload):
         _clear_chat_suggestion(ctx)
@@ -11350,23 +11436,30 @@ def _update_chat_suggestion_from_conversation(
         )
         if _is_home_robot_nav2_execution_target(summary.get("execution_target")):
             task_id = _stored_sitl_task_id(ctx)
-            pending = _pending_recovery_approval_from_task(
-                {
-                    "task_id": task_id,
-                    "status": operation.get("task_status")
-                    or operation.get("summary_status")
-                    or "",
-                    "artifacts": {
-                        "summary": summary,
-                        "turtlebot3_recovery_decision_summary": summary.get(
-                            "turtlebot3_recovery_decision_summary"
-                        )
-                        if isinstance(
-                            summary.get("turtlebot3_recovery_decision_summary"), dict
-                        )
-                        else {},
-                    },
-                }
+            pending = (
+                _lookup_pending_recovery_approval(client, task_id=task_id)
+                if isinstance(client, MissionOSGatewayClient)
+                else _pending_recovery_approval_from_task(
+                    {
+                        "task_id": task_id,
+                        "status": operation.get("task_status")
+                        or operation.get("summary_status")
+                        or "",
+                        "artifacts": {
+                            "summary": summary,
+                            "turtlebot3_recovery_decision_summary": summary.get(
+                                "turtlebot3_recovery_decision_summary"
+                            )
+                            if isinstance(
+                                summary.get(
+                                    "turtlebot3_recovery_decision_summary"
+                                ),
+                                dict,
+                            )
+                            else {},
+                        },
+                    }
+                )
             )
             if pending:
                 console.print(_render_chat_recovery_review(pending))
@@ -11804,7 +11897,7 @@ def _handle_chat_input(
                         client,
                         payload,
                     )
-                _update_chat_suggestion_from_conversation(ctx, payload)
+                _update_chat_suggestion_from_conversation(ctx, payload, client)
                 return True
             console.print(
                 "[yellow]Unknown command. Type /help for the slash-command list.[/yellow]"
@@ -11828,7 +11921,7 @@ def _handle_chat_input(
         _remember_mission_designer_context(ctx, payload, session_id=session_id)
         _maybe_open_turtlebot3_companion_terminals(ctx, payload)
         _print_conversation_result(payload)
-        _update_chat_suggestion_from_conversation(ctx, payload)
+        _update_chat_suggestion_from_conversation(ctx, payload, client)
     except click.ClickException as exc:
         console.print(f"[red]{exc.message}[/red]")
     return True

@@ -355,9 +355,16 @@ def build_ros2_nav2_hardware_adapter_evidence(
     progress_observed = _progress_observed(progress_result)
     nav2_completion_reported = _completion_observed(progress_result)
     robot_motion_observed = _robot_motion_observed(state_result, progress_result)
+    goal_already_satisfied_observed = (
+        progress_result.get("goal_already_satisfied_observed") is True
+        and state_result.get("goal_already_satisfied_observed") is True
+        and progress_result.get("completion_basis") == "already_at_goal_pose"
+        and state_result.get("completion_basis") == "already_at_goal_pose"
+    )
     completion_observed = nav2_completion_reported and (
         config.action_kind is not HardwareActionKind.NAV2_GOAL_POSE
         or robot_motion_observed
+        or goal_already_satisfied_observed
     )
     completion_claimed = (
         ack_status is HardwareAckStatus.ACCEPTED
@@ -387,6 +394,7 @@ def build_ros2_nav2_hardware_adapter_evidence(
         nav2_completion_reported
         and config.action_kind is HardwareActionKind.NAV2_GOAL_POSE
         and not robot_motion_observed
+        and not goal_already_satisfied_observed
     ):
         unproven_claims.append("nav2_completion_without_robot_motion_not_claimed")
     unproven_claims.append("mission_delivery_completion_not_claimed")
@@ -396,6 +404,7 @@ def build_ros2_nav2_hardware_adapter_evidence(
         nav2_completion_reported
         and config.action_kind is HardwareActionKind.NAV2_GOAL_POSE
         and not robot_motion_observed
+        and not goal_already_satisfied_observed
     ):
         blocking_reasons.append("nav2_completion_without_robot_motion_observed")
 

@@ -276,6 +276,37 @@ class PendingRecoveryApprovalClient(RecordingMissionOSClient):
         return super().get(path)
 
 
+class AskHumanPendingRecoveryClient(PendingRecoveryApprovalClient):
+    def _task_payload(self) -> dict[str, Any]:
+        payload = super()._task_payload()
+        artifacts = payload["task"]["artifacts"]
+        checkpoint = copy.deepcopy(artifacts["turtlebot3_recovery_checkpoint"])
+        checkpoint.update(
+            {
+                "selected_action": "ask_human",
+                "approved_parameters": {},
+                "operator_guidance_required": True,
+            }
+        )
+        checkpoint_hash = missionos_cli._turtlebot3_recovery_checkpoint_content_hash(
+            checkpoint
+        )
+        checkpoint["checkpoint_hash"] = checkpoint_hash
+        checkpoint["checkpoint_id"] = (
+            f"turtlebot3_recovery_checkpoint_{checkpoint_hash[:12]}"
+        )
+        artifacts["turtlebot3_recovery_checkpoint"] = checkpoint
+        summary = artifacts["summary"]
+        summary["turtlebot3_recovery_checkpoint"] = copy.deepcopy(checkpoint)
+        proposal = summary["recovery_proposals"][0]
+        proposal["selected_action"] = "ask_human"
+        proposal["reason"] = "Request bounded operator guidance after re-observation."
+        artifacts["turtlebot3_recovery_decision_summary"][
+            "selected_action"
+        ] = "ask_human"
+        return payload
+
+
 class CheckpointRevisionClient(PendingRecoveryApprovalClient):
     def __init__(self, *, revision_mode: str = "success") -> None:
         super().__init__()
@@ -1094,6 +1125,43 @@ def test_chat_natural_language_approval_uses_pending_recovery_proposal(
         "target_y_m": -1.4,
         "obstacle_avoidance_required": True,
     }
+
+
+def test_chat_cannot_approve_ask_human_checkpoint_and_enters_revision_mode(
+    tmp_path: Path,
+    capsys: Any,
+) -> None:
+    client = AskHumanPendingRecoveryClient()
+    ctx = _chat_ctx(tmp_path)
+    missionos_cli._remember_sitl_task_id(ctx, client.task_id)
+
+    assert (
+        missionos_cli._handle_chat_input(
+            ctx,
+            client,
+            "承認します",
+            session_id="chat-session",
+        )
+        is True
+    )
+
+    assert client.requests == []
+    pending = missionos_cli._pending_recovery_approval_from_task(
+        client._task_payload()
+    )
+    assert pending is not None
+    assert pending["operator_guidance_required"] is True
+    assert pending["checkpoint_dispatch_supported"] is False
+    assert pending["checkpoint_approval_supported"] is False
+    assert missionos_cli._chat_recovery_revision_context(ctx) == {
+        "task_id": client.task_id,
+        "checkpoint_id": pending["checkpoint_id"],
+        "checkpoint_hash": pending["checkpoint_hash"],
+    }
+    rendered = capsys.readouterr().out
+    assert "cannot be" in rendered
+    assert "approved or dispatched" in rendered
+    assert "No approval artifact or dispatch was" in rendered
 
 
 def test_pending_turtlebot3_recovery_uses_authoritative_checkpoint_parameters() -> None:
@@ -2624,6 +2692,27 @@ def test_chat_companion_terminals_prepare_three_managed_scripts(
     assert stop_path.exists()
     assert not api_key_path.exists()
     assert "missionos_chat_companion_terminals" not in ctx.obj
+
+
+def test_chat_companion_prefix_preserves_python_module_invocation(
+    monkeypatch: Any,
+    tmp_path: Path,
+) -> None:
+    ctx = _chat_ctx(tmp_path)
+    module_entrypoint = (
+        Path(missionos_cli.__file__).resolve().parent / "__main__.py"
+    )
+    assert module_entrypoint.is_file()
+    assert not (module_entrypoint.stat().st_mode & 0o111)
+    monkeypatch.setattr(missionos_cli.sys, "argv", [str(module_entrypoint)])
+
+    prefix = missionos_cli._missionos_chat_companion_command_prefix(ctx)
+
+    assert prefix.startswith(
+        f"{missionos_cli.sys.executable} -m missionos_cli "
+    )
+    assert str(module_entrypoint) not in prefix
+    assert "--gateway-url http://127.0.0.1:18881" in prefix
 
 
 def test_turtlebot3_run_opens_companions_while_conversation_is_in_flight(

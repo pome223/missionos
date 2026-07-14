@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 import json
+import math
 from pathlib import Path
 import shlex
 import sys
@@ -312,6 +313,155 @@ def test_turtlebot3_recovery_candidate_resolver_uses_plan_only_evidence(
     assert resolved["dispatch_authority_created"] is False
 
 
+def test_turtlebot3_recovery_candidate_resolver_refreshes_transient_snapshot(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv(
+        turtlebot3_home_mission_runtime.TURTLEBOT3_RECOVERY_CANDIDATE_EVALUATION_ENV,
+        "1",
+    )
+    monkeypatch.setenv(
+        turtlebot3_home_mission_runtime.TURTLEBOT3_RECOVERY_PLAN_ONLY_RETRY_COUNT_ENV,
+        "2",
+    )
+    monkeypatch.setenv(
+        turtlebot3_home_mission_runtime.TURTLEBOT3_RECOVERY_PLAN_ONLY_RETRY_INTERVAL_ENV,
+        "0",
+    )
+    calls = 0
+
+    def _evaluate(self, *, candidates, obstacle, frame_id="map"):
+        nonlocal calls
+        del self, obstacle, frame_id
+        calls += 1
+        if calls == 1:
+            return {
+                "evaluation_status": "blocked",
+                "selected_candidate": None,
+                "candidate_evaluations": [
+                    {
+                        **candidates[0],
+                        "path_valid": False,
+                        "blocking_reasons": [
+                            "recovery_current_pose_outside_local_costmap"
+                        ],
+                    }
+                ],
+                "blocking_reasons": ["no_valid_recovery_candidate"],
+                "dispatch_request_sent": False,
+            }
+        selected = {
+            **candidates[0],
+            "path_valid": True,
+            "planner_status": "succeeded",
+            "maximum_path_cost": 20,
+            "local_current_cost": 30,
+            "local_maximum_path_cost": 40,
+            "path_length_m": 1.4,
+            "path_sha256": "refreshed-path-hash",
+        }
+        return {
+            "evaluation_status": "validated",
+            "selected_candidate": selected,
+            "candidate_evaluations": [selected],
+            "global_costmap_snapshot_hash": "fresh-global-hash",
+            "local_costmap_snapshot_hash": "fresh-local-hash",
+            "dispatch_request_sent": False,
+        }
+
+    monkeypatch.setattr(
+        turtlebot3_home_mission_runtime.Ros2Nav2BridgeCommandClient,
+        "evaluate_recovery_candidates",
+        _evaluate,
+    )
+
+    resolved = turtlebot3_home_mission_runtime._resolve_recovery_candidate(
+        {
+            "runtime_obstacle_x_m": -1.15,
+            "runtime_obstacle_y_m": -0.5,
+            "runtime_obstacle_size_x_m": 0.32,
+            "runtime_obstacle_size_y_m": 0.32,
+        }
+    )
+
+    assert calls == 2
+    assert resolved["resolution_status"] == "validated"
+    assert resolved["plan_only_evaluation_attempt_count"] == 2
+    assert resolved["plan_only_retry_performed"] is True
+    assert resolved["dispatch_request_sent"] is False
+    assert resolved["dispatch_authority_created"] is False
+
+
+def test_turtlebot3_recovery_candidate_resolver_uses_second_stable_snapshot(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv(
+        turtlebot3_home_mission_runtime.TURTLEBOT3_RECOVERY_CANDIDATE_EVALUATION_ENV,
+        "1",
+    )
+    monkeypatch.setenv(
+        turtlebot3_home_mission_runtime.TURTLEBOT3_RECOVERY_PLAN_ONLY_RETRY_COUNT_ENV,
+        "2",
+    )
+    monkeypatch.setenv(
+        turtlebot3_home_mission_runtime.TURTLEBOT3_RECOVERY_PLAN_ONLY_RETRY_INTERVAL_ENV,
+        "0",
+    )
+    monkeypatch.setenv(
+        turtlebot3_home_mission_runtime.TURTLEBOT3_RECOVERY_PLAN_ONLY_STABILITY_SNAPSHOT_COUNT_ENV,
+        "2",
+    )
+    calls = 0
+
+    def _evaluate(self, *, candidates, obstacle, frame_id="map"):
+        nonlocal calls
+        del self, obstacle, frame_id
+        selected_index = 0 if calls == 0 else 1
+        calls += 1
+        selected = {
+            **candidates[selected_index],
+            "path_valid": True,
+            "planner_status": "succeeded",
+            "maximum_path_cost": 20,
+            "local_current_cost": 30,
+            "local_maximum_path_cost": 40,
+            "path_length_m": 1.4,
+            "path_sha256": f"stable-path-{calls}",
+        }
+        return {
+            "evaluation_status": "validated",
+            "selected_candidate": selected,
+            "candidate_evaluations": [selected],
+            "global_costmap_snapshot_hash": f"global-{calls}",
+            "local_costmap_snapshot_hash": f"local-{calls}",
+            "dispatch_request_sent": False,
+        }
+
+    monkeypatch.setattr(
+        turtlebot3_home_mission_runtime.Ros2Nav2BridgeCommandClient,
+        "evaluate_recovery_candidates",
+        _evaluate,
+    )
+
+    resolved = turtlebot3_home_mission_runtime._resolve_recovery_candidate(
+        {
+            "runtime_obstacle_x_m": -1.15,
+            "runtime_obstacle_y_m": -0.5,
+            "runtime_obstacle_size_x_m": 0.32,
+            "runtime_obstacle_size_y_m": 0.32,
+        }
+    )
+
+    assert calls == 2
+    assert resolved["selected_candidate"]["candidate_id"] == (
+        "obstacle_bypass_north"
+    )
+    assert resolved["global_costmap_snapshot_hash"] == "global-2"
+    assert resolved["plan_only_evaluation_attempt_count"] == 2
+    assert resolved["plan_only_retry_performed"] is True
+    assert resolved["dispatch_authority_created"] is False
+
+
 def test_turtlebot3_recovery_candidates_prioritize_route_lateral_bypass() -> None:
     candidates = turtlebot3_home_mission_runtime._deterministic_recovery_candidates(
         {
@@ -329,7 +479,7 @@ def test_turtlebot3_recovery_candidates_prioritize_route_lateral_bypass() -> Non
     assert priorities["backtrack"] == 2
 
 
-def test_turtlebot3_recovery_resolution_binds_verified_retreat_then_bypass(
+def test_turtlebot3_recovery_resolution_prefers_direct_validated_bypass(
     monkeypatch,
 ) -> None:
     monkeypatch.setenv(
@@ -399,17 +549,110 @@ def test_turtlebot3_recovery_resolution_binds_verified_retreat_then_bypass(
     )
 
     assert resolved["dual_costmap_validated"] is True
+    assert resolved["bounded_retreat_required"] is False
+    assert [item["candidate_id"] for item in resolved["selected_sequence"]] == [
+        "obstacle_bypass_south",
+    ]
+    assert resolved["dispatch_request_sent"] is False
+    assert len(evaluation_calls) == 1
+
+
+def test_turtlebot3_recovery_resolution_rechecks_bypasses_after_retreat(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv(
+        turtlebot3_home_mission_runtime.TURTLEBOT3_RECOVERY_CANDIDATE_EVALUATION_ENV,
+        "1",
+    )
+
+    evaluation_calls: list[list[dict]] = []
+
+    def _evaluate(self, *, candidates, obstacle, frame_id="map"):
+        del self, obstacle, frame_id
+        requested = [dict(candidate) for candidate in candidates]
+        evaluation_calls.append(requested)
+        is_initial = len(requested) > 2
+        evaluated = []
+        for candidate in requested:
+            candidate_id = candidate["candidate_id"]
+            is_retreat = candidate_id == "observed_inbound_bounded_retreat"
+            is_safe_post_retreat = (
+                candidate_id == "obstacle_bypass_south"
+                and isinstance(candidate.get("start_pose"), dict)
+            )
+            path_valid = is_retreat or (not is_initial and is_safe_post_retreat)
+            evaluated.append(
+                {
+                    **candidate,
+                    "path_valid": path_valid,
+                    "planner_status": "succeeded",
+                    "maximum_path_cost": 20 if path_valid else 240,
+                    "local_current_cost": 227,
+                    "local_maximum_path_cost": 30 if path_valid else 227,
+                    "path_length_m": 0.4 if is_retreat else 1.0,
+                    "path_sha256": f"path-{candidate_id}",
+                }
+            )
+        selected = next(
+            (
+                item
+                for item in evaluated
+                if item.get("sequence_only") is not True
+                and item.get("path_valid") is True
+            ),
+            None,
+        )
+        return {
+            "evaluation_status": "validated" if selected else "blocked",
+            "selected_candidate": selected,
+            "candidate_evaluations": evaluated,
+            "costmap_snapshot_hash": "global-hash",
+            "global_costmap_snapshot_hash": "global-hash",
+            "local_costmap_snapshot_hash": "local-hash",
+            "blocking_reasons": [] if selected else ["no_valid_recovery_candidate"],
+            "dispatch_request_sent": False,
+        }
+
+    monkeypatch.setattr(
+        turtlebot3_home_mission_runtime.Ros2Nav2BridgeCommandClient,
+        "evaluate_recovery_candidates",
+        _evaluate,
+    )
+    segment_results = [
+        {
+            "bridge_responses": [
+                {
+                    "trajectory_result": {
+                        "trajectory_samples": [
+                            {"x_m": -1.4, "y_m": -0.5, "frame_id": "map"},
+                            {"x_m": -0.9, "y_m": -0.7, "frame_id": "map"},
+                        ]
+                    }
+                }
+            ]
+        }
+    ]
+
+    resolved = turtlebot3_home_mission_runtime._resolve_recovery_candidate(
+        {
+            "runtime_obstacle_x_m": -1.15,
+            "runtime_obstacle_y_m": -0.5,
+            "runtime_obstacle_size_x_m": 0.32,
+            "runtime_obstacle_size_y_m": 0.32,
+        },
+        segment_results=segment_results,
+    )
+
+    assert resolved["resolution_status"] == "validated"
     assert resolved["bounded_retreat_required"] is True
     assert [item["candidate_id"] for item in resolved["selected_sequence"]] == [
         "observed_inbound_bounded_retreat",
         "obstacle_bypass_south",
     ]
-    assert resolved["dispatch_request_sent"] is False
-    assert len(evaluation_calls) == 2
-    assert "start_pose" not in evaluation_calls[1][0]
+    assert len(evaluation_calls) == 6
     assert evaluation_calls[1][1]["start_pose"] == {
-        "x_m": -1.4,
-        "y_m": -0.5,
+        "x_m": pytest.approx(-1.3178145108983668),
+        "y_m": pytest.approx(-0.5328741956406533),
         "yaw_rad": pytest.approx(-0.3805063771123649),
     }
 
@@ -540,6 +783,55 @@ def _write_failure_recovery_planner(path: Path) -> None:
     )
 
 
+def _write_ask_human_failure_recovery_planner(path: Path) -> None:
+    path.write_text(
+        "import json, sys\n"
+        "prompt = json.loads(sys.stdin.read())\n"
+        "failure = prompt['runtime_failure_context']\n"
+        "assert prompt['role_contract']['llm_must_not_approve'] is True\n"
+        "assert prompt['role_contract']['llm_must_not_dispatch'] is True\n"
+        "assert failure['runtime_failure_observed'] is True\n"
+        "print(json.dumps({\n"
+        "    'selected_action': 'ask_human',\n"
+        "    'reason': 'The new Nav2 failure requires a fresh operator decision.',\n"
+        "    'input_observations': {\n"
+        "        'runtime_failure_observed': failure['runtime_failure_observed'],\n"
+        "        'failed_segment_index': failure['failed_segment_index'],\n"
+        "        'failed_segment_label': failure['failed_segment_label'],\n"
+        "        'runtime_failure_source': failure['runtime_failure_source'],\n"
+        "        'failed_segment_completion_claimed': failure['failed_segment_completion_claimed'],\n"
+        "        'failed_segment_blocking_reason_count': failure['failed_segment_blocking_reason_count'],\n"
+        "    },\n"
+        "}))\n",
+        encoding="utf-8",
+    )
+
+
+def _write_ask_human_approved_recovery_failure_planner(path: Path) -> None:
+    path.write_text(
+        "import json, sys\n"
+        "prompt = json.loads(sys.stdin.read())\n"
+        "failure = prompt['runtime_failure_context']\n"
+        "assert prompt['role_contract']['llm_must_not_approve'] is True\n"
+        "assert prompt['role_contract']['llm_must_not_dispatch'] is True\n"
+        "assert failure['schema_version'] == 'missionos_turtlebot3_approved_recovery_failure.v1'\n"
+        "assert failure['runtime_failure_observed'] is True\n"
+        "print(json.dumps({\n"
+        "    'selected_action': 'ask_human',\n"
+        "    'reason': 'The failed approved recovery requires bounded operator guidance.',\n"
+        "    'input_observations': {\n"
+        "        'runtime_failure_observed': failure['runtime_failure_observed'],\n"
+        "        'failed_recovery_checkpoint_id': failure['failed_recovery_checkpoint_id'],\n"
+        "        'failed_recovery_action': failure['failed_recovery_action'],\n"
+        "        'failed_recovery_result_count': failure['failed_recovery_result_count'],\n"
+        "        'runtime_failure_source': failure['runtime_failure_source'],\n"
+        "        'recommended_recovery_action': failure['recommended_recovery_action'],\n"
+        "    },\n"
+        "}))\n",
+        encoding="utf-8",
+    )
+
+
 def _write_obstacle_recovery_planner(path: Path) -> None:
     path.write_text(
         "import json, sys\n"
@@ -562,12 +854,16 @@ def _write_obstacle_recovery_planner(path: Path) -> None:
     )
 
 
-def _recovery_operator_approval(checkpoint: dict[str, object]) -> dict[str, object]:
+def _recovery_operator_approval(
+    checkpoint: dict[str, object],
+    *,
+    approval_ref: str = "operator_approval:test_interactive_recovery",
+) -> dict[str, object]:
     return {
         "schema_version": "missionos_turtlebot3_recovery_operator_approval.v1",
         "operator_approved": True,
         "explicit_recovery_dispatch_approval": True,
-        "operator_approval_ref": "operator_approval:test_interactive_recovery",
+        "operator_approval_ref": approval_ref,
         "approval_actor": "test_operator",
         "approved_action": checkpoint["selected_action"],
         "approved_parameters": checkpoint["approved_parameters"],
@@ -934,8 +1230,8 @@ def test_turtlebot3_plan_uses_ollama_recovery_planner_when_configured(
     assert recovery["proposal_source"] == "llm"
     assert recovery["llm_judgment_recorded"] is True
     assert recovery["selected_action"] == "return_home"
-    assert 7.6 < recovery["input_observations"]["planned_route_distance_m"] < 8.4
-    assert 14.0 < recovery["input_observations"]["estimated_consumption_pct"] < 17.0
+    assert 8.4 < recovery["input_observations"]["planned_route_distance_m"] < 9.0
+    assert 17.0 < recovery["input_observations"]["estimated_consumption_pct"] < 18.0
 
 
 def test_turtlebot4_plan_and_approval_keep_profile_identity() -> None:
@@ -1126,7 +1422,7 @@ def test_turtlebot3_execution_claims_only_sim_action_with_motion_receipt(
     execution = result["turtlebot3_home_mission_execution"]
     evidence = result["ros2_nav2_hardware_adapter_evidence"]
     review = result["mission_episode_review"]
-    assert summary["status"] == "completed"
+    assert summary["status"] == "completed", json.dumps(summary, indent=2)
     assert summary["dispatch_request_sent"] is True
     assert summary["completion_claimed"] is True
     assert summary["completion_scope"] == "sim_action"
@@ -1603,7 +1899,7 @@ def test_turtlebot3_delivery_route_claims_dropoff_arrival_not_payload_completion
     execution = result["turtlebot3_home_mission_execution"]
     assert proposal["mission_kind"] == "indoor_delivery_route_leg"
     assert len(proposal["planned_segments"]) == 10
-    assert 7.6 < proposal["planned_route_distance_m"] < 8.4
+    assert 8.4 < proposal["planned_route_distance_m"] < 9.0
     assert proposal["indoor_delivery_route"]["route_layout"] == (
         "simulated_home_loop_with_closed_door_person_and_pet_detours"
     )
@@ -1616,7 +1912,7 @@ def test_turtlebot3_delivery_route_claims_dropoff_arrival_not_payload_completion
     assert summary["status"] == "completed"
     assert summary["completion_claimed"] is True
     assert summary["planned_segment_count"] == 10
-    assert 7.6 < summary["planned_route_distance_m"] < 8.4
+    assert 8.4 < summary["planned_route_distance_m"] < 9.0
     assert summary["segment_dispatch_count"] == 10
     assert summary["segment_completion_count"] == 10
     assert summary["multi_segment_mission_claimed"] is True
@@ -1661,7 +1957,7 @@ def test_turtlebot3_mid_mission_low_battery_dispatches_return_home_recovery(
     assert summary["runtime_recovery_triggered"] is True
     assert summary["route_interrupted_for_recovery"] is True
     assert summary["planned_segment_count"] == 10
-    assert 7.6 < summary["planned_route_distance_m"] < 8.4
+    assert 8.4 < summary["planned_route_distance_m"] < 9.0
     assert summary["segment_dispatch_count"] == 1
     assert summary["segment_completion_count"] == 1
     assert summary["recovery_action_suggested"] == "return_home"
@@ -1712,8 +2008,17 @@ def test_turtlebot3_mid_mission_obstacle_recovery_resumes_delivery_with_llm_prop
     assert proposal["planned_segments"][0]["label"] == (
         "simulated_dynamic_obstacle_approach"
     )
+    assert proposal["planned_segments"][0]["x_m"] == pytest.approx(-1.60)
+    assert math.hypot(
+        proposal["planned_segments"][0]["x_m"]
+        - turtlebot3_home_mission_runtime._TURTLEBOT3_DELIVERY_OBSTACLE_X_M,
+        proposal["planned_segments"][0]["y_m"]
+        - turtlebot3_home_mission_runtime._TURTLEBOT3_DELIVERY_OBSTACLE_Y_M,
+    ) > 0.5
+    assert proposal["planned_segments"][1]["x_m"] == pytest.approx(-0.55)
+    assert proposal["planned_segments"][1]["y_m"] == pytest.approx(-1.55)
     assert len(proposal["planned_segments"]) == 10
-    assert 7.6 < proposal["planned_route_distance_m"] < 8.4
+    assert 8.4 < proposal["planned_route_distance_m"] < 9.0
     assert proposal["autonomy_envelope"]["preapproved_recovery_actions"] == [
         "return_home",
         "hold",
@@ -1734,7 +2039,7 @@ def test_turtlebot3_mid_mission_obstacle_recovery_resumes_delivery_with_llm_prop
     )
     assert summary["recovery_dispatch_request_sent"] is True
     assert summary["recovery_completion_claimed"] is True
-    assert 7.6 < summary["planned_route_distance_m"] < 8.4
+    assert 8.4 < summary["planned_route_distance_m"] < 9.0
     assert summary["segment_dispatch_count"] == summary["planned_segment_count"]
     assert summary["segment_completion_count"] == summary["planned_segment_count"]
     assert summary["obstacle_avoidance_completion_claimed"] is True
@@ -2021,15 +2326,69 @@ def test_failed_recovery_history_remains_visible_on_repair_child(
     assert result["summary"]["status"] == "pending"
 
 
+def test_failed_approved_recovery_gets_fresh_ask_human_checkpoint(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    proposal, approval, awaiting, _bridge = _build_awaiting_obstacle_recovery(
+        tmp_path,
+        monkeypatch,
+    )
+    parent = awaiting["turtlebot3_recovery_checkpoint"]
+    planner = tmp_path / "ask_human_after_recovery_failure.py"
+    _write_ask_human_approved_recovery_failure_planner(planner)
+    monkeypatch.setenv(
+        TURTLEBOT3_RECOVERY_PLANNER_COMMAND_ENV,
+        _bridge_command(planner),
+    )
+    original_dispatch = turtlebot3_home_mission_runtime._dispatch_nav2_goal
+
+    def fail_recovery(**kwargs):
+        result = original_dispatch(**kwargs)
+        if "recovery_avoid_obstacle" in kwargs["action_ref_suffix"]:
+            result["completion_claimed"] = False
+            result["blocking_reasons"] = ["nav2_goal_result_not_succeeded"]
+        return result
+
+    monkeypatch.setattr(
+        turtlebot3_home_mission_runtime,
+        "_dispatch_nav2_goal",
+        fail_recovery,
+    )
+
+    result = run_turtlebot3_home_mission_dispatch(
+        proposal=proposal,
+        approval=approval,
+        resume_execution=awaiting,
+        recovery_operator_approval=_recovery_operator_approval(parent),
+    )
+
+    child = result["turtlebot3_recovery_checkpoint"]
+    execution = result["turtlebot3_home_mission_execution"]
+    assert result["summary"]["status"] == "pending"
+    assert child["checkpoint_status"] == "awaiting_operator_approval"
+    assert child["checkpoint_id"] != parent["checkpoint_id"]
+    assert child["parent_checkpoint_id"] == parent["checkpoint_id"]
+    assert child["selected_action"] == "ask_human"
+    assert child["operator_guidance_required"] is True
+    assert child["requires_new_human_approval"] is True
+    assert child["automatic_redispatch_performed"] is False
+    assert execution["recovery_proposals"][0]["selected_action"] == "ask_human"
+    assert execution["recovery_planner_result"]["proposal_source"] == "llm"
+    assert execution["recovery_closed_loop_cycles"][0][
+        "reobservation_status"
+    ] == "failed"
+    assert execution["recovery_closed_loop_cycles"][0][
+        "checkpoint_id"
+    ] == parent["checkpoint_id"]
+
+
 @pytest.mark.parametrize(
     ("instruction", "direction"),
     [
-        ("左に大きく旋回してかわして", "left"),
-        ("左を回って", "left"),
         ("右に大きく回って障害物を避けて", "right"),
         ("右に回避して", "right"),
         ("Take a wide turn around it on the right", "right"),
-        ("Go around it via the left side", "left"),
     ],
 )
 def test_turtlebot3_recovery_revision_builds_source_bound_directional_waypoints(
@@ -2083,6 +2442,44 @@ def test_turtlebot3_recovery_revision_builds_source_bound_directional_waypoints(
     assert _recovery_checkpoint_hash(superseded) == parent["checkpoint_hash"]
     assert revision["summary"]["recovery_dispatch_request_sent"] is False
     assert revision["summary"]["physical_execution_invoked"] is False
+
+
+@pytest.mark.parametrize(
+    "instruction",
+    [
+        "左に大きく旋回してかわして",
+        "左を回って",
+        "Go around it via the left side",
+    ],
+)
+def test_turtlebot3_recovery_revision_blocks_direction_with_static_collision(
+    tmp_path: Path,
+    monkeypatch,
+    instruction: str,
+) -> None:
+    proposal, _approval, awaiting, _bridge = _build_awaiting_obstacle_recovery(
+        tmp_path,
+        monkeypatch,
+    )
+    parent = awaiting["turtlebot3_recovery_checkpoint"]
+
+    revision = build_turtlebot3_recovery_checkpoint_revision(
+        operator_instruction=instruction,
+        proposal=proposal,
+        resume_execution=awaiting,
+    )
+
+    assert revision["revision_status"] == "blocked"
+    assert len(revision["blocking_reasons"]) == 1
+    assert revision["blocking_reasons"][0] in {
+        "operator_recovery_revision_detour_distance_exceeds_bound",
+        "operator_recovery_revision_waypoint_static_collision_clearance_insufficient",
+    }
+    assert revision["parent_checkpoint_id"] == parent["checkpoint_id"]
+    assert revision["superseded_checkpoint"] == {}
+    assert revision["turtlebot3_recovery_checkpoint"] == {}
+    assert revision["operator_approval_created"] is False
+    assert revision["dispatch_authority_created"] is False
 
 
 def test_turtlebot3_recovery_revision_binds_dual_costmap_plan_evidence(
@@ -2153,6 +2550,76 @@ def test_turtlebot3_recovery_revision_binds_dual_costmap_plan_evidence(
     ] is True
     assert revision["recovery_planner_result"]["proposal_source"] == "operator"
     assert revision["dispatch_authority_created"] is False
+
+
+def test_turtlebot3_recovery_revision_uses_latest_reobservation_and_live_clearance(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    proposal, _approval, awaiting, _bridge = _build_awaiting_obstacle_recovery(
+        tmp_path,
+        monkeypatch,
+    )
+    execution = awaiting["turtlebot3_home_mission_execution"]
+    execution["approved_recovery_segment_results"] = [
+        {
+            "segment_ref": "recovery_avoid_obstacle_waypoint_2",
+            "completion_claimed": True,
+            "bridge_responses": [
+                {
+                    "trajectory_result": {
+                        "trajectory_samples": [
+                            {
+                                "x_m": -1.48,
+                                "y_m": 0.49,
+                                "frame_id": "map",
+                                "sample_index": 42,
+                            }
+                        ]
+                    }
+                }
+            ],
+        }
+    ]
+    monkeypatch.setenv(
+        turtlebot3_home_mission_runtime.TURTLEBOT3_RECOVERY_CANDIDATE_CLEARANCE_ENV,
+        "1.10",
+    )
+
+    geometry, reasons = (
+        turtlebot3_home_mission_runtime._build_directional_recovery_revision_geometry(
+            direction="left",
+            proposal=proposal,
+            execution=execution,
+            checkpoint=awaiting["turtlebot3_recovery_checkpoint"],
+        )
+    )
+
+    assert reasons == []
+    assert geometry["anchor_pose"] == {
+        "x_m": -1.48,
+        "y_m": 0.49,
+        "source": "latest_approved_recovery_raw_map_frame_observation",
+        "segment_ref": "recovery_avoid_obstacle_waypoint_2",
+        "sample_index": 42,
+        "frame_id": "map",
+        "completion_claimed": True,
+    }
+    assert geometry["route_anchor_pose"]["source"] == (
+        "last_completed_nav2_segment_goal"
+    )
+    assert geometry["geometry_strategy"] == (
+        "reobserved_anchor_via_side_shoulder_to_route_rejoin"
+    )
+    assert geometry["wide_bbox_clearance_m"] == 0.55
+    assert geometry["computed_detour_distance_m"] < 3.5
+    assert [
+        (item["x_m"], item["y_m"])
+        for item in geometry["recovery_goal_poses"]
+    ] == [
+        (-1.114466, 0.403995),
+        (0.178162, -0.457757),
+    ]
 
 
 @pytest.mark.parametrize(
@@ -2349,6 +2816,88 @@ def test_turtlebot3_recovery_revision_builds_fresh_approval_return_home_checkpoi
     assert revision["summary"]["mission_delivery_completion_claimed"] is False
 
 
+def test_turtlebot3_recovery_revision_can_explicitly_return_home_then_resume(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    proposal, _approval, awaiting, _bridge = _build_awaiting_obstacle_recovery(
+        tmp_path,
+        monkeypatch,
+    )
+    parent = awaiting["turtlebot3_recovery_checkpoint"]
+
+    revision = build_turtlebot3_recovery_checkpoint_revision(
+        operator_instruction="出発地点に一旦戻ってから配送を再開して",
+        proposal=proposal,
+        resume_execution=awaiting,
+    )
+
+    assert revision["revision_status"] == "proposed"
+    child = revision["turtlebot3_recovery_checkpoint"]
+    assert child["selected_action"] == "return_home"
+    assert child["revision_intent"] == "return_home_then_resume"
+    assert child["approved_parameters"] == {
+        "target_x_m": -2.0,
+        "target_y_m": -0.5,
+        "return_home_required": True,
+        "resume_route_after_recovery": True,
+    }
+    assert child["parent_checkpoint_id"] == parent["checkpoint_id"]
+    assert child["checkpoint_id"] != parent["checkpoint_id"]
+    assert revision["operator_approval_created"] is False
+    assert revision["dispatch_authority_created"] is False
+
+
+def test_turtlebot3_recovery_revision_can_retry_exact_failed_segment_once(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    proposal, _approval, awaiting, _bridge = _build_awaiting_obstacle_recovery(
+        tmp_path,
+        monkeypatch,
+    )
+    revised_source = json.loads(json.dumps(awaiting))
+    execution = revised_source["turtlebot3_home_mission_execution"]
+    failure = {
+        "segment_ref": "segment_2",
+        "completion_claimed": False,
+        "dispatch_request_sent": True,
+        "blocking_reasons": ["fixture_transient_cancel"],
+        "bridge_responses": [],
+    }
+    execution["route_failure_observation_results"] = [failure]
+    checkpoint = revised_source["turtlebot3_recovery_checkpoint"]
+    checkpoint["resume_state_hash"] = (
+        turtlebot3_home_mission_runtime._recovery_resume_state_hash(execution)
+    )
+    checkpoint["checkpoint_hash"] = _recovery_checkpoint_hash(checkpoint)
+    checkpoint["checkpoint_id"] = (
+        f"turtlebot3_recovery_checkpoint_{checkpoint['checkpoint_hash'][:12]}"
+    )
+    execution["turtlebot3_recovery_checkpoint"] = dict(checkpoint)
+
+    revision = build_turtlebot3_recovery_checkpoint_revision(
+        operator_instruction="停止を確認した。同じ配送区間を一度だけ再試行して",
+        proposal=proposal,
+        resume_execution=revised_source,
+    )
+
+    assert revision["revision_status"] == "proposed"
+    child = revision["turtlebot3_recovery_checkpoint"]
+    assert child["selected_action"] == "reroute"
+    assert child["revision_intent"] == "retry_failed_segment"
+    assert child["approved_parameters"] == {
+        "target_x_m": proposal["planned_segments"][1]["x_m"],
+        "target_y_m": proposal["planned_segments"][1]["y_m"],
+        "retry_failed_segment_required": True,
+        "retry_count": 1,
+    }
+    assert len(child["recovery_goal_poses"]) == 1
+    assert child["recovery_revision_geometry"]["failed_segment_ref"] == "segment_2"
+    assert revision["operator_approval_created"] is False
+    assert revision["dispatch_authority_created"] is False
+
+
 def test_turtlebot3_directional_recovery_revision_dispatches_both_waypoints_before_resume(
     tmp_path: Path,
     monkeypatch,
@@ -2489,6 +3038,65 @@ def test_turtlebot3_return_home_revision_consumes_checkpoint_without_resuming_ro
     assert current_pose["x_m"] == pytest.approx(-2.0)
     assert current_pose["y_m"] == pytest.approx(-0.5)
     assert current_pose["segment_ref"] == "recovery_return_home"
+
+
+def test_turtlebot3_explicit_return_home_then_resume_reaches_delivery_goal(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    proposal, approval, awaiting, bridge = _build_awaiting_obstacle_recovery(
+        tmp_path,
+        monkeypatch,
+    )
+    revision = build_turtlebot3_recovery_checkpoint_revision(
+        operator_instruction="出発地点に一旦戻ってから配送を再開して",
+        proposal=proposal,
+        resume_execution=awaiting,
+    )
+    checkpoint = revision["turtlebot3_recovery_checkpoint"]
+    original_geometry = (
+        turtlebot3_home_mission_runtime._obstacle_trajectory_geometry
+    )
+
+    def verified_post_return_route_geometry(**kwargs):
+        return {
+            **original_geometry(**kwargs),
+            "obstacle_trajectory_clearance_observed": True,
+            "obstacle_trajectory_intersects_obstacle": False,
+            "obstacle_intersection_point_count": 0,
+            "obstacle_intersection_segment_count": 0,
+        }
+
+    monkeypatch.setattr(
+        turtlebot3_home_mission_runtime,
+        "_obstacle_trajectory_geometry",
+        verified_post_return_route_geometry,
+    )
+
+    completed = run_turtlebot3_home_mission_dispatch(
+        proposal=proposal,
+        approval=approval,
+        resume_execution=revision["turtlebot3_home_mission_execution"],
+        recovery_operator_approval=_recovery_operator_approval(checkpoint),
+    )
+
+    calls = [
+        json.loads(line)
+        for line in bridge.with_suffix(".calls.jsonl").read_text().splitlines()
+    ]
+    assert calls[1]["label"] == "simulated_home_origin"
+    assert [call["label"] for call in calls[2:]] == [
+        segment["label"] for segment in proposal["planned_segments"][1:]
+    ]
+    summary = completed["summary"]
+    assert summary["status"] == "completed", json.dumps(summary, indent=2)
+    assert summary["route_resumed_after_recovery"] is True
+    assert summary["route_completed_after_recovery"] is True
+    assert summary["completion_claimed"] is True
+    assert summary["segment_completion_count"] == len(
+        proposal["planned_segments"]
+    )
+    assert summary["mission_delivery_completion_claimed"] is False
 
 
 def test_turtlebot3_requested_side_observation_requires_abreast_trajectory(
@@ -2663,7 +3271,7 @@ def test_turtlebot3_directional_revision_does_not_claim_mission_without_raw_side
     assert [call["label"] for call in calls[1:]] == [
         goal["label"] for goal in checkpoint["recovery_goal_poses"]
     ]
-    assert summary["status"] == "blocked"
+    assert summary["status"] == "pending"
     assert summary["recovery_goal_sequence_completed"] is True
     assert summary["recovery_completion_claimed"] is False
     assert summary["route_resumed_after_recovery"] is False
@@ -2671,7 +3279,10 @@ def test_turtlebot3_directional_revision_does_not_claim_mission_without_raw_side
     assert summary["obstacle_avoidance_completion_claimed"] is False
     assert summary["completion_claimed"] is False
     assert summary["mission_delivery_completion_claimed"] is False
-    failed_checkpoint = resumed["turtlebot3_recovery_checkpoint"]
+    followup_checkpoint = resumed["turtlebot3_recovery_checkpoint"]
+    assert followup_checkpoint["checkpoint_status"] == "awaiting_operator_approval"
+    assert followup_checkpoint["parent_checkpoint_id"] == checkpoint["checkpoint_id"]
+    failed_checkpoint = resumed["turtlebot3_recovery_repair_parent_checkpoint"]
     assert failed_checkpoint["checkpoint_status"] == "failed"
     assert failed_checkpoint["failure_reasons"] == [
         "requested_recovery_side_not_observed_in_raw_map_frame"
@@ -2679,10 +3290,7 @@ def test_turtlebot3_directional_revision_does_not_claim_mission_without_raw_side
     map_recovery = resumed["turtlebot3_indoor_map_model"]["recovery"]
     assert map_recovery["goal_sequence_completed"] is True
     assert map_recovery["completion_claimed"] is False
-    assert (
-        "requested_recovery_side_not_observed_in_raw_map_frame"
-        in summary["blocking_reasons"]
-    )
+    assert followup_checkpoint["automatic_redispatch_performed"] is False
 
 
 def test_turtlebot3_directional_revision_rejects_path_samples_as_runtime_evidence(
@@ -2726,9 +3334,14 @@ def test_turtlebot3_directional_revision_rejects_path_samples_as_runtime_evidenc
     assert summary["route_resumed_after_recovery"] is False
     assert summary["route_completed_after_recovery"] is False
     assert summary["completion_claimed"] is False
-    assert resumed["turtlebot3_recovery_checkpoint"]["checkpoint_status"] == (
-        "failed"
-    )
+    followup_checkpoint = resumed["turtlebot3_recovery_checkpoint"]
+    assert followup_checkpoint["checkpoint_status"] == "awaiting_operator_approval"
+    assert followup_checkpoint["parent_checkpoint_id"] == checkpoint["checkpoint_id"]
+    failed_checkpoint = resumed["turtlebot3_recovery_repair_parent_checkpoint"]
+    assert failed_checkpoint["checkpoint_status"] == "failed"
+    assert failed_checkpoint["failure_reasons"] == [
+        "requested_recovery_side_not_observed_in_raw_map_frame"
+    ]
 
 
 @pytest.mark.parametrize("splice_mode", ["collection", "response", "container"])
@@ -3341,6 +3954,155 @@ def test_turtlebot3_later_route_failure_proposes_fresh_followup_checkpoint(
     assert "claimed_at" not in child
     assert "claimed_by_approval_ref" not in child
     assert "recovery_candidate_binding" not in child
+
+
+def test_turtlebot3_two_recovery_cycles_retry_failed_segment_and_reach_goal(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    bridge = tmp_path / "bridge.py"
+    obstacle_planner = tmp_path / "obstacle_recovery_planner.py"
+    ask_human_planner = tmp_path / "ask_human_recovery_planner.py"
+    _write_success_bridge(bridge, obstacle_avoidance_observed=True)
+    _write_obstacle_recovery_planner(obstacle_planner)
+    _write_ask_human_failure_recovery_planner(ask_human_planner)
+    monkeypatch.setenv(ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV, "1")
+    monkeypatch.setenv(ROS2_NAV2_BRIDGE_COMMAND_ENV, _bridge_command(bridge))
+    monkeypatch.setenv(
+        TURTLEBOT3_RECOVERY_PLANNER_COMMAND_ENV,
+        _bridge_command(obstacle_planner),
+    )
+    monkeypatch.setenv(TURTLEBOT3_RECOVERY_PLANNER_ALLOW_OVERRIDE_ENV, "1")
+    monkeypatch.setenv("MISSIONOS_TURTLEBOT3_RECOVERY_REQUIRES_APPROVAL", "1")
+    plan = build_turtlebot3_home_mission_plan(
+        operator_instruction=(
+            "TurtleBot3で屋内配送して。障害物を検出したらRecovery Agentが"
+            "提案し、人間の承認後に回避して、再観測してから続けて"
+        ),
+    )
+    proposal = plan["scenario_proposal"]
+    approval = approve_turtlebot3_home_mission_plan(
+        proposal=proposal,
+        validation=plan["validation_result"],
+    )["turtlebot3_home_mission_approval"]
+    awaiting_first = run_turtlebot3_home_mission_dispatch(
+        proposal=proposal,
+        approval=approval,
+    )
+    first_checkpoint = awaiting_first["turtlebot3_recovery_checkpoint"]
+    failed_label = proposal["planned_segments"][1]["label"]
+    original_dispatch = turtlebot3_home_mission_runtime._dispatch_nav2_goal
+    failure_injected = False
+
+    def fail_first_attempt_at_second_segment(**kwargs):
+        nonlocal failure_injected
+        result = original_dispatch(**kwargs)
+        if kwargs["goal"].label == failed_label and not failure_injected:
+            failure_injected = True
+            return {
+                **result,
+                "completion_claimed": False,
+                "blocking_reasons": ["fixture_post_recovery_segment_failure"],
+                "adapter_evidence": {
+                    **result["adapter_evidence"],
+                    "completion_claimed": False,
+                    "blocking_reasons": [
+                        "fixture_post_recovery_segment_failure"
+                    ],
+                },
+            }
+        return result
+
+    monkeypatch.setattr(
+        turtlebot3_home_mission_runtime,
+        "_dispatch_nav2_goal",
+        fail_first_attempt_at_second_segment,
+    )
+    monkeypatch.setenv(
+        TURTLEBOT3_RECOVERY_PLANNER_COMMAND_ENV,
+        _bridge_command(ask_human_planner),
+    )
+    awaiting_second = run_turtlebot3_home_mission_dispatch(
+        proposal=proposal,
+        approval=approval,
+        resume_execution=awaiting_first,
+        recovery_operator_approval=_recovery_operator_approval(
+            first_checkpoint,
+            approval_ref="operator_approval:first_recovery",
+        ),
+    )
+
+    second_proposal_checkpoint = awaiting_second[
+        "turtlebot3_recovery_checkpoint"
+    ]
+    assert awaiting_second["summary"]["status"] == "pending"
+    assert second_proposal_checkpoint["selected_action"] == "ask_human"
+    assert second_proposal_checkpoint["operator_guidance_required"] is True
+    assert second_proposal_checkpoint["checkpoint_id"] != first_checkpoint[
+        "checkpoint_id"
+    ]
+    assert second_proposal_checkpoint["completed_segment_count"] == 1
+    assert second_proposal_checkpoint["next_segment_index"] == 2
+    assert len(
+        awaiting_second["turtlebot3_home_mission_execution"][
+            "route_failure_observation_results"
+        ]
+    ) == 1
+
+    revision = build_turtlebot3_recovery_checkpoint_revision(
+        operator_instruction="停止を確認した。同じ配送区間を一度だけ再試行して",
+        proposal=proposal,
+        resume_execution=awaiting_second,
+    )
+    assert revision["revision_status"] == "proposed"
+    second_checkpoint = revision["turtlebot3_recovery_checkpoint"]
+    assert second_checkpoint["selected_action"] == "reroute"
+    assert second_checkpoint["approved_parameters"] == {
+        "target_x_m": proposal["planned_segments"][1]["x_m"],
+        "target_y_m": proposal["planned_segments"][1]["y_m"],
+        "retry_failed_segment_required": True,
+        "retry_count": 1,
+    }
+    assert second_checkpoint["recovery_revision_geometry"][
+        "failed_segment_ref"
+    ] == "segment_2"
+    assert second_checkpoint["checkpoint_id"] not in {
+        first_checkpoint["checkpoint_id"],
+        second_proposal_checkpoint["checkpoint_id"],
+    }
+
+    completed = run_turtlebot3_home_mission_dispatch(
+        proposal=proposal,
+        approval=approval,
+        resume_execution=revision,
+        recovery_operator_approval=_recovery_operator_approval(
+            second_checkpoint,
+            approval_ref="operator_approval:second_recovery",
+        ),
+    )
+
+    summary = completed["summary"]
+    execution = completed["turtlebot3_home_mission_execution"]
+    assert failure_injected is True
+    assert summary["status"] == "completed", json.dumps(summary, indent=2)
+    assert summary["completion_claimed"] is True
+    assert summary["route_completed_after_recovery"] is True
+    assert summary["segment_completion_count"] == len(
+        proposal["planned_segments"]
+    )
+    assert len(execution["segment_results"]) == len(proposal["planned_segments"])
+    assert len(execution["route_failure_observation_results"]) == 1
+    assert summary["recovery_closed_loop_verified_cycle_count"] == 2
+    assert summary["form3_closed_loop_status"] == "verified"
+    assert summary["form3_closed_loop_claimed"] is True
+    cycles = summary["recovery_closed_loop_cycles"]
+    assert [cycle["checkpoint_id"] for cycle in cycles] == [
+        first_checkpoint["checkpoint_id"],
+        second_checkpoint["checkpoint_id"],
+    ]
+    assert len({cycle["operator_approval_ref"] for cycle in cycles}) == 2
+    assert all(cycle["reobservation_status"] == "verified" for cycle in cycles)
+    assert cycles[1]["selected_action"] == "reroute"
 
 
 def test_turtlebot3_mid_mission_obstacle_recovery_uses_fallback_when_llm_guardrail_blocks(

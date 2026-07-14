@@ -428,6 +428,73 @@ def test_turtlebot3_operate_renders_pending_recovery_as_a_clear_decision() -> No
     assert "左へ大きく迂回して" in rendered
 
 
+def test_turtlebot3_operate_renders_ask_human_as_revision_only() -> None:
+    checkpoint = {
+        "schema_version": "turtlebot3_recovery_checkpoint.v1",
+        "checkpoint_status": "awaiting_operator_approval",
+        "checkpoint_id": "checkpoint_ask_human",
+        "checkpoint_hash": "sha256-ask-human",
+        "recovery_proposal_id": "proposal_ask_human",
+        "recovery_classification_id": "classification_ask_human",
+        "selected_action": "ask_human",
+        "approved_parameters": {},
+        "operator_guidance_required": True,
+        "robot_profile": "turtlebot3",
+        "execution_target": "ros2_nav2_turtlebot3_sim",
+    }
+    task_payload = {
+        "task": {
+            "task_id": "task_ask_human",
+            "kind": "turtlebot3_home_mission_execution",
+            "status": "pending",
+            "artifacts": {
+                "turtlebot3_home_mission_plan": {
+                    "robot_profile": "turtlebot3",
+                    "execution_target": "ros2_nav2_turtlebot3_sim",
+                },
+                "turtlebot3_recovery_checkpoint": checkpoint,
+                "summary": {
+                    "robot_profile": "turtlebot3",
+                    "execution_target": "ros2_nav2_turtlebot3_sim",
+                    "turtlebot3_recovery_checkpoint": checkpoint,
+                    "recovery_proposals": [
+                        {
+                            "proposal_id": "proposal_ask_human",
+                            "selected_action": "ask_human",
+                            "reason": "Request bounded operator guidance.",
+                            "llm_invocation_evidence": {
+                                "provider": "google_adk_gemini",
+                                "model_id": "gemini-test",
+                            },
+                        }
+                    ],
+                    "recovery_proposal_classifications": [
+                        {
+                            "classification_id": "classification_ask_human",
+                            "execution_class": "requires_human_approval",
+                        }
+                    ],
+                },
+            },
+        }
+    }
+
+    panel = missionos_cli._render_recovery_agent_console(
+        task_payload,
+        proposal=None,
+        show_proposal=False,
+        status="pending",
+        task_id="task_ask_human",
+    )
+    rendered = str(panel.renderable)
+
+    assert "Gemini requested operator guidance" in rendered
+    assert "proposal-only checkpoint cannot dispatch" in rendered
+    assert "execute this exact recovery" not in rendered
+    assert "approve is unavailable" in rendered
+    assert "右へ大きく迂回して障害物を避けて" in rendered
+
+
 def test_turtlebot3_operate_prefers_revision_candidate_over_stale_direct_copy() -> None:
     checkpoint = {
         "schema_version": "turtlebot3_recovery_checkpoint.v1",

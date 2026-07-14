@@ -92,6 +92,11 @@ _ALLOWED_INPUT_OBSERVATION_KEYS = tuple(
             "failed_segment_completion_claimed",
             "failed_segment_index",
             "failed_segment_label",
+            "failed_recovery_action",
+            "failed_recovery_blocking_reason_count",
+            "failed_recovery_checkpoint_id",
+            "failed_recovery_completion_claimed",
+            "failed_recovery_result_count",
             "minimum_required_pct",
             "motion_observation_source",
             "motion_stall_threshold_m",
@@ -105,6 +110,7 @@ _ALLOWED_INPUT_OBSERVATION_KEYS = tuple(
             "recommended_avoidance_target_x_m",
             "recommended_avoidance_target_y_m",
             "recommended_recovery_action",
+            "requires_new_human_approval",
             "reserve_pct",
             "robot_motion_observed",
             "route_progress_delta_m",
@@ -156,6 +162,19 @@ def build_turtlebot3_recovery_planner_prompt(
 ) -> dict[str, Any]:
     """Build the source-bound JSON prompt for Gemini/Ollama."""
 
+    source_backed_input_observations = _source_observations_from_envelopes(
+        battery_envelope=battery_envelope,
+        home_distance_envelope=home_distance_envelope,
+        obstacle_scenario=obstacle_scenario,
+        runtime_failure_context=runtime_failure_context,
+        runtime_motion_context=runtime_motion_context,
+    )
+    source_backed_input_observations = {
+        key: value
+        for key, value in source_backed_input_observations.items()
+        if key in _ALLOWED_INPUT_OBSERVATION_KEYS
+        and isinstance(value, (str, int, float, bool))
+    }
     return {
         "schema_version": "missionos_turtlebot3_recovery_planner_prompt.v1",
         "task": "propose_turtlebot3_recovery_action",
@@ -191,6 +210,7 @@ def build_turtlebot3_recovery_planner_prompt(
         "runtime_failure_context": dict(runtime_failure_context or {}),
         "runtime_motion_context": dict(runtime_motion_context or {}),
         "allowed_input_observation_keys": list(_ALLOWED_INPUT_OBSERVATION_KEYS),
+        "source_backed_input_observations": source_backed_input_observations,
         "required_output_fields": [
             "selected_action",
             "reason",
@@ -208,10 +228,11 @@ def build_turtlebot3_recovery_planner_prompt(
             "near-complete progress. "
             "Use hold for critical stop/hold cases. You must not include approval, "
             "dispatch, gate, completion, progress, or physical execution fields. "
-            "Every input_observations key must be copied from battery_envelope "
-            "home_distance_envelope, obstacle_scenario, runtime_failure_context, "
-            "or runtime_motion_context. input_observations must be a flat JSON "
-            "object using only allowed_input_observation_keys; do not include "
+            "Every input_observations key and value must be copied exactly from "
+            "source_backed_input_observations. Do not use an allowed key that is "
+            "absent from source_backed_input_observations. input_observations must "
+            "be a flat JSON object using only allowed_input_observation_keys; do "
+            "not include "
             "battery_envelope, home_distance_envelope, obstacle_scenario, "
             "runtime_failure_context, runtime_motion_context, or any nested "
             "object as an input_observations key. "
@@ -318,10 +339,17 @@ def _source_observations_from_envelopes(
     for key in (
         "runtime_failure_observed",
         "failed_segment_completion_claimed",
+        "failed_recovery_completion_claimed",
+        "requires_new_human_approval",
     ):
         if key in failure:
             source[key] = failure[key]
-    for key in ("failed_segment_index", "failed_segment_blocking_reason_count"):
+    for key in (
+        "failed_segment_index",
+        "failed_segment_blocking_reason_count",
+        "failed_recovery_blocking_reason_count",
+        "failed_recovery_result_count",
+    ):
         if isinstance(failure.get(key), (int, float)) and not isinstance(
             failure.get(key),
             bool,
@@ -329,11 +357,17 @@ def _source_observations_from_envelopes(
             source[key] = failure[key]
     for key in (
         "failed_segment_label",
+        "failed_recovery_checkpoint_id",
+        "failed_recovery_action",
         "runtime_failure_source",
         "recommended_recovery_action",
     ):
         if key in failure:
             source[key] = failure[key]
+    if isinstance(failure.get("failed_recovery_blocking_reasons"), list):
+        source["failed_recovery_blocking_reasons"] = list(
+            failure["failed_recovery_blocking_reasons"]
+        )
     motion = (
         runtime_motion_context
         if isinstance(runtime_motion_context, Mapping)
@@ -761,8 +795,10 @@ async def _invoke_adk_response_text_async(*, prompt_text: str, model_id: str) ->
         "segment failure and motion-delta context, then propose selected_action, "
         "reason, and input_observations. input_observations must be a flat JSON "
         "object containing only scalar keys listed in the prompt's "
-        "allowed_input_observation_keys; never copy nested envelope/context "
-        "objects into input_observations. You must not approve, dispatch, claim "
+        "allowed_input_observation_keys. Copy keys and values exactly from the "
+        "prompt's source_backed_input_observations and never use an allowed key "
+        "that is absent there; never copy nested envelope/context objects into "
+        "input_observations. You must not approve, dispatch, claim "
         "gate passage, claim completion, count progress, or claim physical "
         "execution."
     )
