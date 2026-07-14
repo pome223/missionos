@@ -35,7 +35,7 @@ files:
 | File | Lines | Main maintenance risk |
 |---|---:|---|
 | `packages/missionos-cli/src/missionos_cli/cli.py` | 12,866 | CLI, chat, companion processes, maps, and HTML rendering share one module |
-| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 12,634 | one historical smoke contains a 2,106-line `main` function |
+| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 12,634 | a production dispatch backend is exposed through a 2,106-line `main` function |
 | `src/gateway/server.py` | 11,932 | route registration, orchestration, robot-specific handling, and recovery are coupled |
 | `src/runtime/digital_twin_mission_environment.py` | 9,961 | environment construction and PX4/Gazebo mechanics are coupled |
 | `src/runtime/turtlebot3_home_mission.py` | 9,808 | proposal, approval, resolver, execution, verification, UI evidence, and repair share one module |
@@ -78,6 +78,12 @@ stay. `historical_one_off` evidence belongs in release notes or a provenance
 record rather than indefinitely in the executable source tree. `superseded`
 scripts may be removed only after their replacement command and covered boundary
 are recorded.
+
+The largest script is an important counterexample to name-based deletion:
+`smoke_px4_gazebo_horizontal_route_delivery.py` is called by production runtime
+bindings and multiple audit runners. It is a production boundary whose current
+filename is misleading. It must be extracted or renamed before its executable
+surface can be reduced; it is not an unreferenced historical smoke.
 
 ### 2. Two CLI generations coexist
 
@@ -160,6 +166,22 @@ The executable smoke surface fell from 198 lines to one bounded shared runner.
 Five contract cases were added for profile preservation and no-opt-in
 fail-closed behavior. This is intentionally a small proof of the consolidation
 pattern, not evidence that every similarly named smoke has equivalent semantics.
+
+The first historical Gazebo cohort also retired two telemetry-only entrypoints.
+Both called `docker compose` without a compose file in the public repository, so
+neither was a reproducible public runtime boundary. Their reusable log-to-
+evidence contract was moved into fixture-backed contract tests before deletion:
+
+| Retired entrypoint | Preserved contract |
+|---|---|
+| `smoke_gz_sim_telemetry.py` | Gazebo Harmonic startup logs become read-only sanitized telemetry and HIL/gate artifacts without approval or execution authority |
+| `smoke_gz_sim_delivery_world.py` | delivery-world identity is preserved while the same no-authority evidence boundary is enforced |
+
+The fixtures do not claim that Gazebo was started. They preserve parser,
+sanitizer, task-store, and authority-boundary behavior only. A future public
+Gazebo runtime smoke must include its complete, publication-safe container
+configuration and must be verified as an external runtime boundary before being
+listed as maintained.
 
 ## Protected regression baseline
 
