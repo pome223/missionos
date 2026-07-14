@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import argparse
+import json
 from typing import Any
 
 from src.tools.tasks import append_task_event_record, create_task_record, update_task_record
@@ -96,3 +98,31 @@ def run_quickstart_smoke(
             "desktop_bridge": False,
         },
     }
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Run the deterministic quickstart task without the retired legacy CLI."""
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--gateway-url", default=DEFAULT_GATEWAY_URL)
+    parser.add_argument("--user-id", default=DEFAULT_USER_ID)
+    parser.add_argument("--session-id", default=DEFAULT_SESSION_ID)
+    parser.add_argument("--json", action="store_true", dest="json_output")
+    args = parser.parse_args(argv)
+    result = run_quickstart_smoke(
+        gateway_url=args.gateway_url,
+        user_id=args.user_id,
+        session_id=args.session_id,
+    )
+    if args.json_output:
+        print(json.dumps(result, ensure_ascii=True, sort_keys=True))
+    else:
+        print("Quickstart smoke completed.")
+        print(f"Task: {result['task_url']}")
+        print(f"Timeline: {result['timeline_url']}")
+        print("No model, browser extension, Host Bridge, or Desktop Bridge required.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

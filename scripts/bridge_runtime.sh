@@ -161,7 +161,7 @@ start_bridges_only() {
     "${HOST_LOG_FILE}" \
     "${HOST_BRIDGE_PORT}" \
     env BRIDGE_ALLOW_REMOTE_BIND="${BRIDGE_ALLOW_REMOTE_BIND}" \
-    "${ROOT_DIR}/.venv/bin/python" -m src.main bridge host \
+    "${ROOT_DIR}/.venv/bin/python" -m src.mcp_servers.host_bridge_server --sse \
     --host "${HOST_BRIDGE_BIND_HOST}" \
     --port "${HOST_BRIDGE_PORT}"
 
@@ -171,7 +171,7 @@ start_bridges_only() {
     "${DESKTOP_LOG_FILE}" \
     "${DESKTOP_BRIDGE_PORT}" \
     env BRIDGE_ALLOW_REMOTE_BIND="${BRIDGE_ALLOW_REMOTE_BIND}" \
-    "${ROOT_DIR}/.venv/bin/python" -m src.main bridge desktop \
+    "${ROOT_DIR}/.venv/bin/python" -m src.mcp_servers.desktop_bridge_server --sse \
     --host "${DESKTOP_BRIDGE_BIND_HOST}" \
     --port "${DESKTOP_BRIDGE_PORT}"
 

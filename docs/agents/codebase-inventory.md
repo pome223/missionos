@@ -88,11 +88,10 @@ reachable through `src/main.py`, which is 1,111 lines, and two shell entrypoints
 - `scripts/bridge_runtime.sh`
 - `scripts/quickstart.sh`
 
-This is a high-confidence consolidation target, but not an immediate deletion.
-First migrate the remaining bridge and quickstart commands to explicit packaged
-entrypoints and add runtime smoke tests for those commands. If no supported
-public command still requires `python -m src.main`, the old CLI and wrapper can
-then be removed together. Expected reduction: approximately 6,973 lines.
+This was a high-confidence consolidation target. The remaining bridge commands
+now call their dedicated MCP server modules, and quickstart calls the existing
+no-model smoke module directly. No supported public command requires
+`python -m src.main`, so the old CLI, REPL, and wrapper were removed together.
 
 ### 3. `src.runtime` is an oversized eager compatibility barrel
 
@@ -192,13 +191,13 @@ across chat/operate/watch/map, and no delivery or physical-execution claim.
 
 This PR is Form 0b maintenance work and does not claim capability progress.
 
-### PR 2: retire the legacy CLI path
+### PR 2: retire the legacy CLI path (completed on this branch)
 
-- migrate `bridge_runtime.sh` and `quickstart.sh` from `python -m src.main`
-- smoke the replacement commands through their real process boundaries
-- remove `src/cli/missionos.py` and `src/main.py` only after parity is proven
+- migrated `bridge_runtime.sh` and `quickstart.sh` from `python -m src.main`
+- retained dedicated Host Bridge, Desktop Bridge, and no-model quickstart modules
+- removed `src/cli/missionos.py`, `src/cli/repl.py`, and `src/main.py`
 
-Estimated reduction: about 7,000 lines.
+Reduction: about 7,000 lines.
 
 ### PR 3: slim the runtime package barrel
 

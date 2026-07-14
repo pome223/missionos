@@ -70,7 +70,7 @@ main() {
   local smoke_json
   smoke_json="$(
     docker compose exec -T "${GATEWAY_SERVICE}" \
-      python -m src.main quickstart-smoke \
+      python -m src.quickstart_smoke \
         --gateway-url "${GATEWAY_URL}" \
         --json
   )"

@@ -48,7 +48,6 @@ jobs:
             scripts/smoke_px4_gazebo_mission_designer_sitl_dropoff_verification.py \
             scripts/smoke_px4_gazebo_mission_designer_sitl_flight_evidence.py \
             scripts/smoke_px4_gazebo_mission_designer_sitl_payload_release_observation.py \
-            src/cli/missionos.py \
             src/config \
             src/gateway \
             src/runtime/runtime_claim_evidence.py \
