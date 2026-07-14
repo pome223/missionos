@@ -281,6 +281,15 @@ invariants were added to `test_gazebo_delivery_profiles.py`, including task
 preservation and no command/live/physical authority. The four manual scripts
 were removed after the automated replacements passed.
 
+The first full artifact-chain consolidation replaced six more manual scripts
+with one reusable `DeliveryArtifactChain` fixture and three contract tests. The
+fixture builds contract, sanitized telemetry, HIL review, policy review, gate,
+episode, Gazebo scenario, and progress review once. Tests then verify schema and
+safety invariants plus every TaskStore attach boundary, including that recovery
+produces recommendations but no approval, promotion, reuse, command, live, or
+physical authority. New delivery contracts can extend this fixture without
+adding another standalone smoke program.
+
 ## Protected regression baseline
 
 Every reduction PR must keep these facts separate and test them independently:
