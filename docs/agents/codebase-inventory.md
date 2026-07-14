@@ -22,11 +22,11 @@ live. No file is safe to delete solely because it has no static importer.
 
 As of `codex/codebase-inventory` after the fixed-point orphan audit:
 
-- tracked Python: 275,723 lines, down 21,086 lines from the baseline (7.10%)
-- `smoke_*.py`: 88 files / 41,693 lines, down from 135 files / 52,004 lines
-- automated verification: 594 passed, 5 warnings
+- tracked Python: 275,706 lines, down 21,103 lines from the baseline (7.11%)
+- `smoke_*.py`: 85 files / 41,481 lines, down from 135 files / 52,004 lines
+- automated verification: 597 passed, 5 warnings
 - runtime verification: `python -m src.quickstart_smoke --json` created and
-  completed fresh task `task_557a4115b037` in an isolated SQLite store without
+  completed fresh task `task_eb9c7c4402fb` in an isolated SQLite store without
   a model or bridge
 
 The line reduction is not a capability claim. The deleted Compose entrypoints
@@ -316,6 +316,15 @@ authority. Route recovery now uses a reusable loopback UDP fixture and asserts
 that bounded dispatch serialization sends datagrams before validating the
 16-case golden corpus, recovery approval/allowlist separation, hold behavior,
 and physical-execution boundaries. No simulator or hardware endpoint is used.
+
+Three more fixture-backed smokes were converted to contracts for operational
+envelope parameter transfer and Digital Twin vehicle energy. The tests keep
+Form 0b parameter knowledge separate from causal verification, require a new
+physical Form 1, reject consumption after a backend image change, and verify
+that no dispatch or physical authority is created. Vehicle, DEM, and weather
+inputs are injected fixtures with no network access. The separate smokes that
+use default external DEM or weather fetchers remain protected as source-bound
+runtime checks.
 
 ## Protected regression baseline
 
