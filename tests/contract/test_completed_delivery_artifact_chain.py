@@ -10,11 +10,9 @@ from src.runtime.delivery_episode_review import (
 )
 from src.runtime.delivery_recovery_decision import (
     DELIVERY_RECOVERY_DECISION_SCHEMA_VERSION,
-    attach_delivery_recovery_decision_from_episode_review,
 )
 from src.runtime.task_store import TaskStore
 from tests.fixtures.delivery_artifact_chain import (
-    NOW,
     build_completed_delivery_artifact_chain,
 )
 
@@ -56,21 +54,8 @@ def test_completed_delivery_review_and_recovery_decision_share_one_chain(
     assert DELIVERY_REVIEW_BUCKET_HIGH_ALTITUDE_RISK in review["warning_buckets"]
     assert DELIVERY_REVIEW_BUCKET_PAYLOAD_MARGIN_RISK in review["warning_buckets"]
 
-    decision_artifacts = attach_delivery_recovery_decision_from_episode_review(
-        task["task_id"],
-        delivery_mission_contract=chain.contract,
-        simulated_delivery_episode=chain.episode_artifacts[
-            "simulated_delivery_episode"
-        ],
-        delivery_scorecard=scorecard,
-        delivery_episode_review=review,
-        hil_telemetry_review=chain.run_artifacts["hil_telemetry_review"],
-        autonomy_gate_result=chain.run_artifacts["autonomy_gate_result"],
-        now=NOW,
-        task_store_factory=lambda: store,
-    )
     stored = store.get(task["task_id"])
-    decision = decision_artifacts["delivery_recovery_decision"]
+    decision = chain.decision_artifacts["delivery_recovery_decision"]
 
     assert stored is not None
     assert stored["status"] == "running"

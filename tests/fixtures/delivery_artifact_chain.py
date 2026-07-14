@@ -9,7 +9,13 @@ from src.runtime.delivery_mission_policy_review import (
     build_delivery_mission_policy_review,
 )
 from src.runtime.delivery_progress_review import build_delivery_progress_review
+from src.runtime.delivery_recovery_decision import (
+    attach_delivery_recovery_decision_from_episode_review,
+)
 from src.runtime.gazebo_delivery_scenario import build_gazebo_delivery_scenario
+from src.runtime.operator_minimal_delivery_simulation import (
+    attach_operator_minimal_delivery_simulation_status,
+)
 from src.runtime.px4_gazebo_bounded_simulation_runner import (
     run_px4_gazebo_bounded_simulation_request,
 )
@@ -58,6 +64,8 @@ class CompletedDeliveryArtifactChain:
     run_artifacts: dict[str, Any]
     episode_artifacts: dict[str, Any]
     review_artifacts: dict[str, Any]
+    decision_artifacts: dict[str, Any]
+    operator_artifacts: dict[str, Any]
 
 
 def build_delivery_contract() -> Any:
@@ -303,10 +311,37 @@ def build_completed_delivery_artifact_chain(
         now=NOW,
         task_store_factory=lambda: store,
     )
+    decision_artifacts = attach_delivery_recovery_decision_from_episode_review(
+        task_id,
+        delivery_mission_contract=contract,
+        simulated_delivery_episode=episode_artifacts["simulated_delivery_episode"],
+        delivery_scorecard=review_artifacts["delivery_scorecard"],
+        delivery_episode_review=review_artifacts["delivery_episode_review"],
+        hil_telemetry_review=run_artifacts["hil_telemetry_review"],
+        autonomy_gate_result=run_artifacts["autonomy_gate_result"],
+        now=NOW,
+        task_store_factory=lambda: store,
+    )
+    operator_artifacts = attach_operator_minimal_delivery_simulation_status(
+        task_id,
+        delivery_mission_contract=contract,
+        simulated_delivery_episode=episode_artifacts["simulated_delivery_episode"],
+        delivery_scorecard=review_artifacts["delivery_scorecard"],
+        delivery_episode_review=review_artifacts["delivery_episode_review"],
+        delivery_recovery_decision=decision_artifacts[
+            "delivery_recovery_decision"
+        ],
+        hil_telemetry_review=run_artifacts["hil_telemetry_review"],
+        autonomy_gate_result=run_artifacts["autonomy_gate_result"],
+        now=NOW,
+        task_store_factory=lambda: store,
+    )
     return CompletedDeliveryArtifactChain(
         contract=contract,
         bounded_request=bounded_request,
         run_artifacts=run_artifacts,
         episode_artifacts=episode_artifacts,
         review_artifacts=review_artifacts,
+        decision_artifacts=decision_artifacts,
+        operator_artifacts=operator_artifacts,
     )
