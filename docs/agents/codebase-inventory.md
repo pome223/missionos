@@ -22,11 +22,11 @@ live. No file is safe to delete solely because it has no static importer.
 
 As of `codex/codebase-inventory` after the fixed-point orphan audit:
 
-- tracked Python: 275,347 lines, down 21,462 lines from the baseline (7.23%)
-- `smoke_*.py`: 80 files / 40,591 lines, down from 135 files / 52,004 lines
-- automated verification: 603 passed, 5 warnings
+- tracked Python: 274,469 lines, down 22,340 lines from the baseline (7.53%)
+- `smoke_*.py`: 74 files / 39,252 lines, down from 135 files / 52,004 lines
+- automated verification: 608 passed, 5 warnings
 - runtime verification: `python -m src.quickstart_smoke --json` created and
-  completed fresh task `task_e4491156ae1a` in an isolated SQLite store without
+  completed fresh task `task_5a8ecf32a983` in an isolated SQLite store without
   a model or bridge
 
 The line reduction is not a capability claim. The deleted Compose entrypoints
@@ -335,6 +335,16 @@ memory remain judgement inputs only: they grant no command, dispatch, outcome,
 scorecard, success-proof, hardware, or physical-execution authority. The former
 smoke output for `proposal_uses_advisory_authority_for_judgement` was not an
 assertion; the maintained test now explicitly requires it to remain false.
+
+Six simulated-delivery scripts were then replaced by tests built on the shared
+completed-delivery chain. The fixture now reaches recovery decision and
+operator status once, while tests separately cover bounded episode evidence,
+operator-minimal status, simulator command proposal/approval/receipt,
+rehearsal/preflight, top-level runner timelines, PX4 artifact-stub dispatches,
+and phase-derived SITL observations. The simulator command approval is asserted
+to be scoped only to a dry-run receipt; no external dispatch, Gazebo mutation,
+MAVLink/ROS/actuator action, mission upload, hardware target, or physical
+execution is permitted. No external simulator process is started by this suite.
 
 ## Protected regression baseline
 
