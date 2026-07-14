@@ -18,6 +18,20 @@ reachability is advisory only: subprocess entrypoints, dynamic imports, public
 imports, and operator-run scripts can make an apparently unreferenced file
 live. No file is safe to delete solely because it has no static importer.
 
+## Current cleanup branch result
+
+As of `codex/codebase-inventory` after the fixed-point orphan audit:
+
+- tracked Python: 280,331 lines, down 16,478 lines from the baseline (5.55%)
+- `smoke_*.py`: 120 files / 47,391 lines, down from 135 files / 52,004 lines
+- automated verification: 568 passed, 5 warnings
+- runtime verification: `python -m src.quickstart_smoke --json` created and
+  completed a fresh task in an isolated SQLite store without a model or bridge
+
+The line reduction is not a capability claim. The deleted Compose entrypoints
+were not runnable from the public checkout, and fixture tests explicitly do not
+claim external Gazebo or PX4 execution.
+
 ## Size profile
 
 | Area | Files | Physical lines |
