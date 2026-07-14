@@ -197,6 +197,15 @@ unless a root Compose configuration is tracked. This is a publication-safety
 and reproducibility rule, not a claim that container-backed Gazebo or PX4 was
 executed by the fixture tests.
 
+After removing the launchers, static reachability was recalculated before any
+implementation deletion. Four modules had no remaining importer, script,
+documentation entrypoint, test, or Gateway/CLI binding: the Gazebo Classic log
+collector, the fake PX4/Gazebo SITL telemetry spike, the Docker mock-simulator
+service client, and its private HTTP server. Those 844 lines were removed as
+transitive dead code. The fixture-backed mock simulator adapter and current
+Gazebo/PX4 collectors remain; this deletion does not remove those contracts or
+claim that static reachability alone is sufficient for broader runtime cleanup.
+
 ## Protected regression baseline
 
 Every reduction PR must keep these facts separate and test them independently:
