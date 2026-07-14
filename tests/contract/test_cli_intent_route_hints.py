@@ -754,6 +754,93 @@ def test_chat_robot_nova_carter_passes_robot_profile_to_gateway(
     assert client.requests[-1]["operator_instruction"] == "短いNav2ルートを走って"
 
 
+def test_chat_robot_turtlebot4_uses_turtlebot4_default_instruction(
+    monkeypatch: Any,
+    tmp_path: Path,
+) -> None:
+    client = RecordingMissionOSClient()
+    monkeypatch.setattr(missionos_cli, "make_client", lambda *_args, **_kwargs: client)
+    monkeypatch.setattr(
+        missionos_cli,
+        "_ensure_gateway",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        missionos_cli,
+        "_build_chat_session",
+        lambda _history_path: object(),
+    )
+
+    result = CliRunner().invoke(
+        missionos_cli.missionos,
+        [
+            "--state-path",
+            str(tmp_path / "state.json"),
+            "chat",
+            "--robot",
+            "turtlebot4",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert client.requests[-1]["operator_instruction"] == (
+        missionos_cli.DEFAULT_TURTLEBOT4_CHAT_INSTRUCTION
+    )
+    assert client.requests[-1]["robot_profile"] == "turtlebot4"
+    assert client.requests[-1]["session_id"] == "missionos-cli-turtlebot4"
+    assert client.requests[-1]["missionos_client_surface"] == "chat"
+
+
+def test_chat_robot_turtlebot4_rejects_turtlebot3_only_runtime_flags(
+    tmp_path: Path,
+) -> None:
+    runner = CliRunner()
+    for option in ("--turtlebot3-smoke", "--turtlebot3-dry-run"):
+        result = runner.invoke(
+            missionos_cli.missionos,
+            [
+                "--state-path",
+                str(tmp_path / f"{option}.json"),
+                "chat",
+                "--robot",
+                "turtlebot4",
+                option,
+            ],
+        )
+
+        assert result.exit_code == 2, result.output
+        assert "can only be used with --robot turtlebot3" in result.output
+
+
+def test_turtlebot4_execution_opens_home_robot_companions(
+    monkeypatch: Any,
+    tmp_path: Path,
+) -> None:
+    ctx = _chat_ctx(tmp_path)
+    launched: list[str] = []
+    monkeypatch.setattr(
+        missionos_cli,
+        "_ensure_chat_companion_terminals",
+        lambda _ctx, task_id: launched.append(task_id),
+    )
+
+    missionos_cli._maybe_open_turtlebot3_companion_terminals(
+        ctx,
+        {
+            "operation_result": {
+                "task_id": "task_turtlebot4",
+                "summary": {
+                    "task_id": "task_turtlebot4",
+                    "execution_target": "ros2_nav2_turtlebot4_sim",
+                    "robot_profile": "turtlebot4",
+                },
+            }
+        },
+    )
+
+    assert launched == ["task_turtlebot4"]
+
+
 def test_chat_robot_turtlebot3_dry_run_can_select_house_profile(
     monkeypatch: Any,
     tmp_path: Path,
