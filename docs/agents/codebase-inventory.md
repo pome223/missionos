@@ -266,6 +266,14 @@ Gateway, and mission-play paths do not import them.
 One final dependency, `advisory_lesson_invariance.py` (166 lines), then became
 orphaned and was removed in the same fixed-point cleanup.
 
+The next zero-inbound candidate,
+`smoke_px4_gazebo_sensor_visible_actor.py`, contained its artifact schemas and
+Docker experiment entirely inside the script and imported no MissionOS module.
+Because no current runtime contract, verifier, documentation, or caller owned
+its result, the 503-line standalone prototype was classified as
+`historical_one_off` and removed rather than converted into a misleading
+product regression test.
+
 ## Protected regression baseline
 
 Every reduction PR must keep these facts separate and test them independently:
