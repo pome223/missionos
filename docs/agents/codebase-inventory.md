@@ -22,11 +22,12 @@ live. No file is safe to delete solely because it has no static importer.
 
 As of `codex/codebase-inventory` after the fixed-point orphan audit:
 
-- tracked Python: 276,219 lines, down 20,590 lines from the baseline (6.94%)
-- `smoke_*.py`: 97 files / 43,348 lines, down from 135 files / 52,004 lines
-- automated verification: 575 passed, 5 warnings
+- tracked Python: 275,784 lines, down 21,025 lines from the baseline (7.08%)
+- `smoke_*.py`: 90 files / 42,262 lines, down from 135 files / 52,004 lines
+- automated verification: 586 passed, 5 warnings
 - runtime verification: `python -m src.quickstart_smoke --json` created and
-  completed a fresh task in an isolated SQLite store without a model or bridge
+  completed fresh task `task_09365d67e34e` in an isolated SQLite store without
+  a model or bridge
 
 The line reduction is not a capability claim. The deleted Compose entrypoints
 were not runnable from the public checkout, and fixture tests explicitly do not
@@ -296,6 +297,16 @@ run evidence, verified dropoff, episode/replay, scorecard, and review. One
 contract test now proves both completion scoring and the resulting
 `completed_no_recovery_needed` recommendation while keeping every authority
 surface false. This replaced the two separate completed-delivery smoke scripts.
+
+Seven failure-handling scripts were then promoted into parameterized contract
+tests. A shared fixture now supplies invalid PX4 SIH, PX4/Gazebo log, classic
+Gazebo log, Gazebo Sim empty-world, and Gazebo Sim delivery-world inputs. The
+tests verify fail-closed rejection, unchanged task status and existing
+artifacts, absence of approval or execution authority, debug-only diagnostics,
+and command-like payload redaction. A loopback-only sidecar test preserves the
+HTTP client boundary, while delivery-observation tests preserve diagnostics and
+geofence-blocked runner behavior. These tests do not start PX4, Gazebo, Docker,
+or hardware and therefore do not replace the protected opt-in runtime smokes.
 
 ## Protected regression baseline
 
