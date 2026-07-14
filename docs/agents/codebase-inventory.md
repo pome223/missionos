@@ -274,6 +274,13 @@ its result, the 503-line standalone prototype was classified as
 `historical_one_off` and removed rather than converted into a misleading
 product regression test.
 
+Four small zero-inbound contract smokes were then promoted into the maintained
+pytest suite. Existing ROS2/Nav2 and Unitree adapter tests already covered their
+fail-closed cases. The Gazebo delivery-world fixture and PX4/Gazebo profile
+invariants were added to `test_gazebo_delivery_profiles.py`, including task
+preservation and no command/live/physical authority. The four manual scripts
+were removed after the automated replacements passed.
+
 ## Protected regression baseline
 
 Every reduction PR must keep these facts separate and test them independently:
