@@ -22,9 +22,9 @@ live. No file is safe to delete solely because it has no static importer.
 
 As of `codex/codebase-inventory` after the fixed-point orphan audit:
 
-- tracked Python: 277,099 lines, down 19,710 lines from the baseline (6.64%)
-- `smoke_*.py`: 105 files / 44,810 lines, down from 135 files / 52,004 lines
-- automated verification: 571 passed, 5 warnings
+- tracked Python: 276,424 lines, down 20,385 lines from the baseline (6.87%)
+- `smoke_*.py`: 99 files / 43,795 lines, down from 135 files / 52,004 lines
+- automated verification: 574 passed, 5 warnings
 - runtime verification: `python -m src.quickstart_smoke --json` created and
   completed a fresh task in an isolated SQLite store without a model or bridge
 
