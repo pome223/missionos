@@ -206,6 +206,14 @@ transitive dead code. The fixture-backed mock simulator adapter and current
 Gazebo/PX4 collectors remain; this deletion does not remove those contracts or
 claim that static reachability alone is sufficient for broader runtime cleanup.
 
+A second fixed-point scan found five pre-existing runtime modules with no
+inbound edge even before considering launcher reachability: an empty superseded
+approval placeholder, an unpublished mission-template registry, an unattached
+toy-grid persistence helper, the retired Compose command-driven delivery
+artifact path, and a historical tenth-stage checklist. None was exported by the
+supported package, invoked by the CLI/Gateway, documented, or covered as a
+public entrypoint. They were removed rather than retained as speculative APIs.
+
 ## Protected regression baseline
 
 Every reduction PR must keep these facts separate and test them independently:
