@@ -220,6 +220,11 @@ builder. A final fixed-point pass removed it as well. This does not change the
 current approval or live-SITL opt-in paths; neither imported the rehearsal
 module.
 
+That removal in turn exposed `limited_live_action_gate.py`, an explicitly
+unintegrated design/schema slice, as the final orphan in this dependency chain.
+It was removed and the fixed-point scan then found no zero-inbound Python module
+under `src/runtime` or `src/simulators`.
+
 ## Protected regression baseline
 
 Every reduction PR must keep these facts separate and test them independently:
