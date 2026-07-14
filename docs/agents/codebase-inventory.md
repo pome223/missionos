@@ -22,11 +22,11 @@ live. No file is safe to delete solely because it has no static importer.
 
 As of `codex/codebase-inventory` after the fixed-point orphan audit:
 
-- tracked Python: 275,784 lines, down 21,025 lines from the baseline (7.08%)
-- `smoke_*.py`: 90 files / 42,262 lines, down from 135 files / 52,004 lines
-- automated verification: 586 passed, 5 warnings
+- tracked Python: 275,723 lines, down 21,086 lines from the baseline (7.10%)
+- `smoke_*.py`: 88 files / 41,693 lines, down from 135 files / 52,004 lines
+- automated verification: 594 passed, 5 warnings
 - runtime verification: `python -m src.quickstart_smoke --json` created and
-  completed fresh task `task_09365d67e34e` in an isolated SQLite store without
+  completed fresh task `task_557a4115b037` in an isolated SQLite store without
   a model or bridge
 
 The line reduction is not a capability claim. The deleted Compose entrypoints
@@ -307,6 +307,15 @@ and command-like payload redaction. A loopback-only sidecar test preserves the
 HTTP client boundary, while delivery-observation tests preserve diagnostics and
 geofence-blocked runner behavior. These tests do not start PX4, Gazebo, Docker,
 or hardware and therefore do not replace the protected opt-in runtime smokes.
+
+Two additional opt-in scripts were found to be deterministic fixture checks,
+not external PX4/Gazebo executions. Coupled-command failure cases are now seven
+parameterized tests that require every timeout, rejection, target, endpoint,
+approval, and allowlist failure to terminate blocked without retry or stronger
+authority. Route recovery now uses a reusable loopback UDP fixture and asserts
+that bounded dispatch serialization sends datagrams before validating the
+16-case golden corpus, recovery approval/allowlist separation, hold behavior,
+and physical-execution boundaries. No simulator or hardware endpoint is used.
 
 ## Protected regression baseline
 
