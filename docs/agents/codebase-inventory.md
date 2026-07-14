@@ -99,11 +99,12 @@ no-model smoke module directly. No supported public command requires
 while re-exporting 876 names. Internal code does not import those names directly
 from `src.runtime`; three tests import runtime submodules through the package.
 
-This file increases import coupling and makes unrelated runtime modules look
-like one public surface. Before reducing it, add an explicit public-import
-contract. Then replace eager re-exports with documented module imports or a
-small lazy compatibility layer. Expected physical reduction: up to 1,800 lines,
-with a larger reduction in import-time coupling.
+This file increased import coupling and made unrelated runtime modules look
+like one public surface. No internal implementation or public documentation
+used its symbol re-exports, so the eager barrel was removed. The supported
+contract is now explicit import from the owning runtime module; Python's normal
+`from src.runtime import <submodule>` compatibility remains covered by a
+contract test.
 
 ### 4. The Gateway currently knows backend identities
 
@@ -199,13 +200,13 @@ This PR is Form 0b maintenance work and does not claim capability progress.
 
 Reduction: about 7,000 lines.
 
-### PR 3: slim the runtime package barrel
+### PR 3: slim the runtime package barrel (completed on this branch)
 
-- define the supported import contract
-- remove eager bulk re-exports or replace them with a bounded lazy layer
-- verify CLI, Gateway, TurtleBot3 bridge, and contract-suite imports
+- defined direct owning-module imports as the supported contract
+- removed eager bulk re-exports
+- retained and tested runtime submodule compatibility imports
 
-Estimated reduction: up to 1,800 lines plus lower import coupling.
+Reduction: approximately 1,880 lines plus lower import coupling.
 
 ### PR 4 onward: consolidate smoke and audit programs by cohort
 
