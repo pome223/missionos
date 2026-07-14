@@ -22,6 +22,9 @@ ROS2_NAV2_BRIDGE_TIMEOUT_ENV = "ROS2_NAV2_BRIDGE_TIMEOUT_S"
 ROS2_NAV2_RECOVERY_EVALUATION_TIMEOUT_ENV = (
     "ROS2_NAV2_RECOVERY_EVALUATION_TIMEOUT_S"
 )
+ROS2_NAV2_REQUEST_SIM_FAULT_CANCEL_AFTER_ACCEPT_ENV = (
+    "MISSIONOS_ROS2_NAV2_REQUEST_SIM_FAULT_CANCEL_AFTER_ACCEPT"
+)
 ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV = (
     "RUN_MISSIONOS_ROS2_NAV2_BOUNDED_DISPATCH_SMOKE"
 )
@@ -155,11 +158,19 @@ class Ros2Nav2BridgeCommandClient:
 
     def send_goal_pose(self, goal: Nav2GoalPose) -> dict[str, Any]:
         action = "send_goal_pose"
+        payload = goal.model_dump(mode="json")
+        if str(
+            self._env_overrides.get(
+                ROS2_NAV2_REQUEST_SIM_FAULT_CANCEL_AFTER_ACCEPT_ENV,
+                "",
+            )
+        ).strip().lower() in _TRUE_VALUES:
+            payload["sim_fault_cancel_after_accept"] = True
         response = self._record_response(
             action,
             _run_bridge(
                 action=action,
-                payload=goal.model_dump(mode="json"),
+                payload=payload,
                 timeout_s=45.0,
                 env_overrides=self._env_overrides,
             ),
@@ -235,6 +246,7 @@ __all__ = [
     "ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV",
     "ROS2_NAV2_BRIDGE_COMMAND_ENV",
     "ROS2_NAV2_BRIDGE_TIMEOUT_ENV",
+    "ROS2_NAV2_REQUEST_SIM_FAULT_CANCEL_AFTER_ACCEPT_ENV",
     "Ros2Nav2BridgeCommandClient",
     "Ros2Nav2BridgeError",
 ]

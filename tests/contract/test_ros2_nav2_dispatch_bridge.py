@@ -14,9 +14,11 @@ from src.runtime.ros2_nav2_dispatch_bridge import (
     ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV,
     ROS2_NAV2_BRIDGE_COMMAND_ENV,
     ROS2_NAV2_RECOVERY_EVALUATION_TIMEOUT_ENV,
+    ROS2_NAV2_REQUEST_SIM_FAULT_CANCEL_AFTER_ACCEPT_ENV,
     Ros2Nav2BridgeCommandClient,
     Ros2Nav2BridgeError,
 )
+from src.runtime import ros2_nav2_dispatch_bridge as dispatch_bridge_runtime
 from src.runtime.ros2_nav2_hardware_adapter import (
     Nav2GoalPose,
     Ros2Nav2HardwareAdapter,
@@ -330,6 +332,155 @@ def test_ros2_nav2_bridge_cancels_in_flight_goal_after_result_timeout() -> None:
     assert '"goal_cancel_accepted": False' in source
     assert "nav2_goal_cancel_unconfirmed_after_timeout" in source
     assert "nav2_goal_cancel_result_not_observed" in source
+    assert "bounded_inflation_escape_valid" in source
+    assert "ROS2_NAV2_RECOVERY_TARGET_COST_THRESHOLD" in source
+    assert "nav2_compute_path_did_not_reach_candidate_goal" in source
+    assert "path_goal_error_m <= path_goal_tolerance_m" in source
+    assert "opt_in_simulated_transient_nav2_cancel_after_accept" in source
+    assert "sim_fault_cancel_after_accept" in source
+
+
+def test_request_scoped_sim_fault_is_explicitly_added_to_goal_payload(
+    monkeypatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def _run_bridge(**kwargs):
+        captured.update(kwargs)
+        return {
+            "ack_status": "accepted",
+            "physical_execution_invoked": False,
+            "raw_velocity_published": False,
+            "raw_ros_topic_published": False,
+            "cmd_vel_published_by_missionos": False,
+        }
+
+    monkeypatch.setattr(dispatch_bridge_runtime, "_run_bridge", _run_bridge)
+    client = Ros2Nav2BridgeCommandClient(
+        env_overrides={
+            ROS2_NAV2_REQUEST_SIM_FAULT_CANCEL_AFTER_ACCEPT_ENV: "1"
+        }
+    )
+    client.send_goal_pose(
+        Nav2GoalPose(x_m=1.0, y_m=2.0, yaw_rad=0.0, label="fault-test")
+    )
+
+    assert captured["action"] == "send_goal_pose"
+    assert captured["payload"]["sim_fault_cancel_after_accept"] is True
+
+
+def test_recovery_target_cost_threshold_requires_margin_on_both_costmaps() -> None:
+    import importlib.util
+
+    path = Path("scripts/ros2_nav2_turtlebot4_bridge.py")
+    spec = importlib.util.spec_from_file_location("missionos_nav2_bridge", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    assert module._recovery_target_costs_safe(
+        target_cost=149,
+        local_target_cost=107,
+        target_cost_threshold=180,
+    )
+    assert not module._recovery_target_costs_safe(
+        target_cost=202,
+        local_target_cost=77,
+        target_cost_threshold=180,
+    )
+    assert module._bounded_inflation_escape_valid(
+        candidate={
+            "candidate_id": "obstacle_bypass_south",
+            "selection_role": "route_lateral_bypass",
+        },
+        path_length_m=0.9,
+        local_path_costs=[227, 210, 170, 90],
+        local_current_cost=227,
+        local_target_cost=90,
+        local_cost_threshold=220,
+        lethal_cost_threshold=253,
+    )
+    assert not module._bounded_inflation_escape_valid(
+        candidate={
+            "candidate_id": "obstacle_bypass_south",
+            "selection_role": "route_lateral_bypass",
+        },
+        path_length_m=0.9,
+        local_path_costs=[227, 240, 170, 90],
+        local_current_cost=227,
+        local_target_cost=90,
+        local_cost_threshold=220,
+        lethal_cost_threshold=253,
+    )
+    assert not module._recovery_target_costs_safe(
+        target_cost=149,
+        local_target_cost=202,
+        target_cost_threshold=180,
+    )
+
+
+def test_bounded_inflation_escape_only_allows_observed_short_retreat() -> None:
+    import importlib.util
+
+    path = Path("scripts/ros2_nav2_turtlebot4_bridge.py")
+    spec = importlib.util.spec_from_file_location("missionos_nav2_bridge", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    valid = module._bounded_inflation_escape_valid(
+        candidate={
+            "candidate_id": "observed_inbound_bounded_retreat",
+            "retreat_distance_bound_m": 0.45,
+        },
+        path_length_m=0.44,
+        local_path_costs=[227, 227, 210, 120],
+        local_current_cost=227,
+        local_target_cost=120,
+        local_cost_threshold=220,
+        lethal_cost_threshold=253,
+    )
+    arbitrary_bypass = module._bounded_inflation_escape_valid(
+        candidate={
+            "candidate_id": "obstacle_bypass_north",
+            "retreat_distance_bound_m": 0.45,
+        },
+        path_length_m=0.44,
+        local_path_costs=[227, 210, 120],
+        local_current_cost=227,
+        local_target_cost=120,
+        local_cost_threshold=220,
+        lethal_cost_threshold=253,
+    )
+    deeper_inflation = module._bounded_inflation_escape_valid(
+        candidate={
+            "candidate_id": "observed_inbound_bounded_retreat",
+            "retreat_distance_bound_m": 0.45,
+        },
+        path_length_m=0.44,
+        local_path_costs=[227, 240, 120],
+        local_current_cost=227,
+        local_target_cost=120,
+        local_cost_threshold=220,
+        lethal_cost_threshold=253,
+    )
+    excessive_detour = module._bounded_inflation_escape_valid(
+        candidate={
+            "candidate_id": "observed_inbound_bounded_retreat",
+            "retreat_distance_bound_m": 0.45,
+        },
+        path_length_m=0.61,
+        local_path_costs=[227, 210, 120],
+        local_current_cost=227,
+        local_target_cost=120,
+        local_cost_threshold=220,
+        lethal_cost_threshold=253,
+    )
+
+    assert valid is True
+    assert arbitrary_bypass is False
+    assert deeper_inflation is False
+    assert excessive_detour is False
 
 
 def test_ros2_nav2_turtlebot3_bridge_is_gate_controlled(monkeypatch) -> None:

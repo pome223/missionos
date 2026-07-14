@@ -196,6 +196,40 @@ def test_position_tolerance_completion_preserves_weaker_nav2_status() -> None:
     assert evidence.physical_execution_invoked is False
 
 
+def test_already_at_goal_pose_is_completion_without_motion_claim() -> None:
+    already_at_goal = {
+        "runtime_progress_observed": True,
+        "completion_observed": True,
+        "robot_motion_observed": False,
+        "nav2_status": "succeeded",
+        "completion_basis": "already_at_goal_pose",
+        "goal_already_satisfied_observed": True,
+    }
+    client = RecordingNav2Client(
+        state_result={
+            **already_at_goal,
+            "pose_observed": True,
+            "odom_delta_m": 0.0,
+        },
+        progress_result=already_at_goal,
+    )
+    adapter = Ros2Nav2HardwareAdapter(
+        config=_approved_config(execution_mode=HardwareExecutionMode.SIM),
+        client=client,
+    )
+
+    evidence = adapter.dispatch_approved_action()
+
+    assert evidence.completion_claimed is True
+    assert evidence.completion_scope == "sim_action"
+    assert "nav2_completion_without_robot_motion_observed" not in (
+        evidence.blocking_reasons
+    )
+    assert "nav2_completion_without_robot_motion_not_claimed" not in (
+        evidence.unproven_claims
+    )
+
+
 def test_ros2_nav2_ack_without_progress_is_not_completion() -> None:
     client = RecordingNav2Client(
         progress_result={

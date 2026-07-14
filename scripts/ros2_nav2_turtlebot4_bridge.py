@@ -68,6 +68,9 @@ ROS2_NAV2_RECOVERY_ORBIT_NO_PROGRESS_ENV = (
 ROS2_NAV2_RECOVERY_ORBIT_MIN_PATH_ENV = (
     "ROS2_NAV2_RECOVERY_ORBIT_MIN_PATH_M"
 )
+ROS2_NAV2_SIM_FAULT_CANCEL_AFTER_ACCEPT_ENV = (
+    "ROS2_NAV2_SIM_FAULT_CANCEL_AFTER_ACCEPT"
+)
 
 _TRUE_VALUES = {"1", "true", "yes", "on"}
 _ALLOWED_ACTIONS = {
@@ -95,6 +98,82 @@ def _int_env(name: str, default: int) -> int:
     if not raw:
         return default
     return int(raw)
+
+
+def _bounded_inflation_escape_valid(
+    *,
+    candidate: dict[str, Any],
+    path_length_m: float,
+    local_path_costs: list[int],
+    local_current_cost: int | None,
+    local_target_cost: int | None,
+    local_cost_threshold: int,
+    lethal_cost_threshold: int,
+) -> bool:
+    """Allow only a short, source-backed retreat out of an inflated start cell.
+
+    A recovery can be proposed while the robot is already inside a non-lethal
+    inflation gradient. Rejecting every path because its first cell exceeds the
+    controller threshold would make it impossible to leave that cell. This
+    exception is limited to the observed inbound retreat or a direct,
+    deterministic lateral candidate: the path must stay no worse than the
+    current cell, finish below the normal threshold, and remain bounded.
+    Lethal cells and arbitrary multi-step bypass paths remain blocked.
+    """
+
+    is_observed_retreat = (
+        candidate.get("candidate_id") == "observed_inbound_bounded_retreat"
+    )
+    is_direct_lateral_escape = (
+        candidate.get("selection_role") == "route_lateral_bypass"
+        and candidate.get("sequence_only") is not True
+    )
+    if not is_observed_retreat and not is_direct_lateral_escape:
+        return False
+    if is_observed_retreat:
+        try:
+            path_bound_m = float(candidate["retreat_distance_bound_m"]) + 0.15
+        except (KeyError, TypeError, ValueError):
+            return False
+    else:
+        # A deterministic lateral candidate may leave a non-lethal inflated
+        # start cell only when the full Nav2 path monotonically improves cost
+        # and remains bounded to one local maneuver.
+        path_bound_m = 1.5
+    if (
+        path_bound_m <= 0.0
+        # The target remains bounded to the observed 0.45 m inbound point.
+        # NavFn may add a short curved/discretized prefix, so bound the
+        # validated path separately instead of requiring path length to equal
+        # straight-line displacement.
+        or path_length_m > path_bound_m
+        or local_current_cost is None
+        or local_current_cost >= lethal_cost_threshold
+        or local_target_cost is None
+        or local_target_cost >= local_cost_threshold
+        or len(local_path_costs) < 2
+    ):
+        return False
+    return (
+        max(local_path_costs) <= local_current_cost
+        and local_path_costs[-1] < local_cost_threshold
+    )
+
+
+def _recovery_target_costs_safe(
+    *,
+    target_cost: int | None,
+    local_target_cost: int | None,
+    target_cost_threshold: int,
+) -> bool:
+    """Require a recovery endpoint to retain cost margin on both costmaps."""
+
+    return (
+        target_cost is not None
+        and target_cost < target_cost_threshold
+        and local_target_cost is not None
+        and local_target_cost < target_cost_threshold
+    )
 
 
 def _base_response(**values: Any) -> dict[str, Any]:
@@ -284,6 +363,17 @@ def _evaluate_recovery_candidates(payload: dict[str, Any]) -> dict[str, Any]:
     local_cost_threshold = _int_env(
         "ROS2_NAV2_RECOVERY_LOCAL_COST_THRESHOLD",
         220,
+    )
+    target_cost_threshold = min(
+        max(
+            _int_env("ROS2_NAV2_RECOVERY_TARGET_COST_THRESHOLD", 180),
+            1,
+        ),
+        lethal_cost_threshold,
+    )
+    path_goal_tolerance_m = max(
+        0.01,
+        _float_env("ROS2_NAV2_RECOVERY_PATH_GOAL_TOLERANCE_M", 0.10),
     )
 
     rclpy.init(args=None)
@@ -548,6 +638,24 @@ def _evaluate_recovery_candidates(payload: dict[str, Any]) -> dict[str, Any]:
                     path_points[1:],
                 )
             )
+            path_start_pose = (
+                {"x_m": path_points[0][0], "y_m": path_points[0][1]}
+                if path_points
+                else None
+            )
+            path_end_pose = (
+                {"x_m": path_points[-1][0], "y_m": path_points[-1][1]}
+                if path_points
+                else None
+            )
+            path_goal_error_m = (
+                math.hypot(
+                    path_points[-1][0] - candidate["x_m"],
+                    path_points[-1][1] - candidate["y_m"],
+                )
+                if path_points
+                else None
+            )
             arrival_yaw_rad = candidate["yaw_rad"]
             if len(path_points) >= 2:
                 end_x, end_y = path_points[-1]
@@ -591,6 +699,22 @@ def _evaluate_recovery_candidates(payload: dict[str, Any]) -> dict[str, Any]:
             local_maximum_path_cost = (
                 max(local_path_costs) if local_path_costs else None
             )
+            bounded_inflation_escape_valid = _bounded_inflation_escape_valid(
+                candidate=candidate,
+                path_length_m=path_length_m,
+                local_path_costs=local_path_costs,
+                local_current_cost=local_current_cost,
+                local_target_cost=local_target_cost,
+                local_cost_threshold=local_cost_threshold,
+                lethal_cost_threshold=lethal_cost_threshold,
+            )
+            local_path_traversable = (
+                local_maximum_path_cost is not None
+                and (
+                    local_maximum_path_cost < local_cost_threshold
+                    or bounded_inflation_escape_valid
+                )
+            )
             path_sha256 = hashlib.sha256(
                 json.dumps(
                     [[round(x_m, 6), round(y_m, 6)] for x_m, y_m in path_points],
@@ -600,25 +724,48 @@ def _evaluate_recovery_candidates(payload: dict[str, Any]) -> dict[str, Any]:
             path_valid = (
                 planner_status == "succeeded"
                 and bool(path_points)
-                and target_cost is not None
-                and target_cost < lethal_cost_threshold
+                and path_goal_error_m is not None
+                and path_goal_error_m <= path_goal_tolerance_m
+                and _recovery_target_costs_safe(
+                    target_cost=target_cost,
+                    local_target_cost=local_target_cost,
+                    target_cost_threshold=target_cost_threshold,
+                )
                 and maximum_path_cost is not None
                 and maximum_path_cost < lethal_cost_threshold
                 and local_current_cost is not None
                 and local_current_cost < lethal_cost_threshold
                 and len(local_path_costs) >= 2
-                and local_maximum_path_cost is not None
-                and local_maximum_path_cost < local_cost_threshold
+                and local_path_traversable
             )
             evaluation_reasons: list[str] = []
             if planner_status != "succeeded":
                 evaluation_reasons.append("nav2_compute_path_not_succeeded")
             if not path_points:
                 evaluation_reasons.append("nav2_compute_path_empty")
+            elif (
+                path_goal_error_m is None
+                or path_goal_error_m > path_goal_tolerance_m
+            ):
+                evaluation_reasons.append(
+                    "nav2_compute_path_did_not_reach_candidate_goal"
+                )
             if target_cost is None:
                 evaluation_reasons.append("recovery_target_outside_costmap")
             elif target_cost >= lethal_cost_threshold:
                 evaluation_reasons.append("recovery_target_cost_lethal")
+            elif target_cost >= target_cost_threshold:
+                evaluation_reasons.append(
+                    "recovery_target_cost_exceeds_goal_threshold"
+                )
+            if local_target_cost is None:
+                evaluation_reasons.append(
+                    "recovery_local_target_cost_unavailable"
+                )
+            elif local_target_cost >= target_cost_threshold:
+                evaluation_reasons.append(
+                    "recovery_local_target_cost_exceeds_goal_threshold"
+                )
             if maximum_path_cost is None:
                 evaluation_reasons.append("recovery_path_cost_unavailable")
             elif maximum_path_cost >= lethal_cost_threshold:
@@ -635,7 +782,10 @@ def _evaluate_recovery_candidates(payload: dict[str, Any]) -> dict[str, Any]:
                 evaluation_reasons.append(
                     "recovery_local_path_prefix_insufficient"
                 )
-            elif local_maximum_path_cost >= local_cost_threshold:
+            elif (
+                local_maximum_path_cost >= local_cost_threshold
+                and not bounded_inflation_escape_valid
+            ):
                 evaluation_reasons.append(
                     "recovery_local_path_exceeds_controller_cost_threshold"
                 )
@@ -649,10 +799,22 @@ def _evaluate_recovery_candidates(payload: dict[str, Any]) -> dict[str, Any]:
                     "local_current_cost": local_current_cost,
                     "local_target_cost": local_target_cost,
                     "local_maximum_path_cost": local_maximum_path_cost,
+                    "bounded_inflation_escape_valid": (
+                        bounded_inflation_escape_valid
+                    ),
                     "local_path_pose_count": len(local_path_costs),
                     "local_cost_threshold": local_cost_threshold,
+                    "target_cost_threshold": target_cost_threshold,
                     "path_pose_count": len(path_points),
                     "path_length_m": round(path_length_m, 6),
+                    "path_start_pose": path_start_pose,
+                    "path_end_pose": path_end_pose,
+                    "path_goal_error_m": (
+                        round(path_goal_error_m, 6)
+                        if path_goal_error_m is not None
+                        else None
+                    ),
+                    "path_goal_tolerance_m": path_goal_tolerance_m,
                     "path_sha256": path_sha256,
                     "recommended_arrival_yaw_rad": round(arrival_yaw_rad, 6),
                     "arrival_heading_source": "compute_path_final_tangent",
@@ -691,6 +853,8 @@ def _evaluate_recovery_candidates(payload: dict[str, Any]) -> dict[str, Any]:
             local_costmap_source=local_costmap_service_name,
             local_costmap_frame_id=local_costmap["frame_id"],
             local_cost_threshold=local_cost_threshold,
+            target_cost_threshold=target_cost_threshold,
+            path_goal_tolerance_m=path_goal_tolerance_m,
             compute_path_action=action_name,
             dispatch_request_sent=False,
             dispatch_authority_created=False,
@@ -1573,8 +1737,17 @@ def _send_goal_pose(payload: dict[str, Any]) -> dict[str, Any]:
             "goal_cancel_accepted": False,
             "goal_cancel_result_observed": False,
         }
+        sim_fault_cancel_after_accept = (
+            payload.get("sim_fault_cancel_after_accept") is True
+            and _truthy_env(ROS2_NAV2_SIM_FAULT_CANCEL_AFTER_ACCEPT_ENV)
+        )
         try:
-            while rclpy.ok() and not result_future.done() and time.monotonic() < deadline:
+            while (
+                rclpy.ok()
+                and not result_future.done()
+                and time.monotonic() < deadline
+                and not sim_fault_cancel_after_accept
+            ):
                 rclpy.spin_once(node, timeout_sec=0.1)
                 while trajectory_processed_count < len(trajectory_samples):
                     index = trajectory_processed_count
@@ -1620,11 +1793,13 @@ def _send_goal_pose(payload: dict[str, Any]) -> dict[str, Any]:
                 not result_future.done()
                 and not goal_orbit_detected
                 and not recovery_position_tolerance_reached
+                and not sim_fault_cancel_after_accept
             )
             if (
                 goal_result_timed_out
                 or goal_orbit_detected
                 or recovery_position_tolerance_reached
+                or sim_fault_cancel_after_accept
             ):
                 goal_cancel_result["goal_cancel_requested"] = True
                 cancel_future = goal_handle.cancel_goal_async()
@@ -1684,6 +1859,19 @@ def _send_goal_pose(payload: dict[str, Any]) -> dict[str, Any]:
             topic=odom_topic,
             timeout_s=odom_timeout_s,
         )
+        final_map_sample = next(
+            (
+                sample
+                for sample in reversed(trajectory_samples)
+                if sample.get("frame_id") == goal_frame_id
+            ),
+            None,
+        )
+        if final_map_sample is not None:
+            recovery_map_distance_to_goal_m = math.hypot(
+                float(final_map_sample["x_m"]) - float(payload["x_m"]),
+                float(final_map_sample["y_m"]) - float(payload["y_m"]),
+            )
         if trajectory_subscription is not None:
             trajectory_result = _finish_trajectory_observer(
                 node=node,
@@ -1701,6 +1889,12 @@ def _send_goal_pose(payload: dict[str, Any]) -> dict[str, Any]:
             odom_delta_m is not None and odom_delta_m >= motion_threshold_m
         )
         nav2_succeeded = status == GoalStatus.STATUS_SUCCEEDED
+        goal_already_satisfied_observed = (
+            nav2_succeeded
+            and not robot_motion_observed
+            and recovery_map_distance_to_goal_m is not None
+            and recovery_map_distance_to_goal_m <= recovery_position_tolerance_m
+        )
         position_tolerance_completion_observed = (
             recovery_position_tolerance_reached
             and goal_cancel_result["goal_cancel_accepted"] is True
@@ -1715,10 +1909,16 @@ def _send_goal_pose(payload: dict[str, Any]) -> dict[str, Any]:
             and trajectory_result.get("trajectory_lateral_deviation_observed") is True
         )
         completion_observed = (
-            nav2_succeeded or position_tolerance_completion_observed
-        ) and robot_motion_observed
+            (
+                nav2_succeeded
+                or position_tolerance_completion_observed
+            )
+            and (robot_motion_observed or goal_already_satisfied_observed)
+        )
         completion_basis = (
-            "nav2_goal_succeeded"
+            "already_at_goal_pose"
+            if goal_already_satisfied_observed
+            else "nav2_goal_succeeded"
             if nav2_succeeded
             else "position_tolerance_with_confirmed_cancel"
             if position_tolerance_completion_observed
@@ -1728,6 +1928,18 @@ def _send_goal_pose(payload: dict[str, Any]) -> dict[str, Any]:
             feedback_count > 0 or robot_motion_observed or nav2_succeeded
         )
         blocking_reasons: list[str] = []
+        if sim_fault_cancel_after_accept:
+            blocking_reasons.append(
+                "opt_in_simulated_transient_nav2_cancel_after_accept"
+            )
+            if goal_cancel_result["goal_cancel_accepted"] is not True:
+                blocking_reasons.append(
+                    "simulated_transient_nav2_cancel_unconfirmed"
+                )
+            elif goal_cancel_result["goal_cancel_result_observed"] is not True:
+                blocking_reasons.append(
+                    "simulated_transient_nav2_cancel_result_not_observed"
+                )
         if goal_result_timed_out:
             blocking_reasons.append("nav2_goal_result_timeout")
             if goal_cancel_result["goal_cancel_accepted"] is not True:
@@ -1744,7 +1956,11 @@ def _send_goal_pose(payload: dict[str, Any]) -> dict[str, Any]:
                 blocking_reasons.append(
                     "nav2_goal_cancel_result_not_observed_after_orbit_detection"
                 )
-        if nav2_succeeded and not robot_motion_observed:
+        if (
+            nav2_succeeded
+            and not robot_motion_observed
+            and not goal_already_satisfied_observed
+        ):
             blocking_reasons.append("nav2_succeeded_without_robot_motion_observed")
         if (
             not nav2_succeeded
@@ -1786,11 +2002,13 @@ def _send_goal_pose(payload: dict[str, Any]) -> dict[str, Any]:
             "obstacle_avoidance_observed": obstacle_avoidance_observed,
             "nav2_goal_succeeded": nav2_succeeded,
             "completion_basis": completion_basis,
+            "goal_already_satisfied_observed": goal_already_satisfied_observed,
             "velocity_result": velocity_result,
             "obstacle_result": obstacle_result,
             "trajectory_result": trajectory_result,
             "post_result_settle_s": post_result_settle_s,
             "goal_cancel_result": goal_cancel_result,
+            "simulated_transient_fault_injected": sim_fault_cancel_after_accept,
             "recovery_orbit_guard": {
                 "enabled": recovery_orbit_guard_enabled,
                 "orbit_detected": goal_orbit_detected,
@@ -1833,6 +2051,7 @@ def _send_goal_pose(payload: dict[str, Any]) -> dict[str, Any]:
             "nav2_status": nav2_status,
             "nav2_goal_succeeded": nav2_succeeded,
             "completion_basis": completion_basis,
+            "goal_already_satisfied_observed": goal_already_satisfied_observed,
             "feedback_count": feedback_count,
             "last_distance_remaining_m": last_distance_remaining_m,
             "velocity_result": velocity_result,
@@ -1840,6 +2059,7 @@ def _send_goal_pose(payload: dict[str, Any]) -> dict[str, Any]:
             "trajectory_result": trajectory_result,
             "post_result_settle_s": post_result_settle_s,
             "goal_cancel_result": goal_cancel_result,
+            "simulated_transient_fault_injected": sim_fault_cancel_after_accept,
             "recovery_orbit_guard": state_result["recovery_orbit_guard"],
             "recovery_position_tolerance": state_result[
                 "recovery_position_tolerance"
@@ -1862,6 +2082,7 @@ def _send_goal_pose(payload: dict[str, Any]) -> dict[str, Any]:
             nav2_status=nav2_status,
             nav2_goal_succeeded=nav2_succeeded,
             completion_basis=completion_basis,
+            goal_already_satisfied_observed=goal_already_satisfied_observed,
             state_result=state_result,
             progress_result=progress_result,
             blocking_reasons=blocking_reasons,
@@ -1875,6 +2096,12 @@ def _send_goal_pose(payload: dict[str, Any]) -> dict[str, Any]:
             velocity_result=velocity_result,
             post_result_settle_s=post_result_settle_s,
             goal_cancel_result=goal_cancel_result,
+            simulated_transient_fault_injected=sim_fault_cancel_after_accept,
+            simulated_transient_fault_source=(
+                "explicit_opt_in_nav2_cancel_after_accept"
+                if sim_fault_cancel_after_accept
+                else None
+            ),
             recovery_orbit_guard=state_result["recovery_orbit_guard"],
             recovery_position_tolerance=state_result[
                 "recovery_position_tolerance"

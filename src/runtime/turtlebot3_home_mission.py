@@ -15,6 +15,7 @@ import json
 import math
 import os
 from pathlib import Path
+import time
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -42,6 +43,7 @@ from src.runtime.nvblox_perception_evidence import (
 from src.runtime.ros2_nav2_dispatch_bridge import (
     ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV,
     ROS2_NAV2_BRIDGE_COMMAND_ENV,
+    ROS2_NAV2_REQUEST_SIM_FAULT_CANCEL_AFTER_ACCEPT_ENV,
     Ros2Nav2BridgeCommandClient,
     Ros2Nav2BridgeError,
 )
@@ -85,6 +87,18 @@ TURTLEBOT3_RECOVERY_CANDIDATE_EVALUATION_ENV = (
 )
 TURTLEBOT3_RECOVERY_CANDIDATE_CLEARANCE_ENV = (
     "MISSIONOS_TURTLEBOT3_RECOVERY_CANDIDATE_CLEARANCE_M"
+)
+TURTLEBOT3_RECOVERY_PLAN_ONLY_RETRY_COUNT_ENV = (
+    "MISSIONOS_TURTLEBOT3_RECOVERY_PLAN_ONLY_RETRY_COUNT"
+)
+TURTLEBOT3_RECOVERY_PLAN_ONLY_RETRY_INTERVAL_ENV = (
+    "MISSIONOS_TURTLEBOT3_RECOVERY_PLAN_ONLY_RETRY_INTERVAL_S"
+)
+TURTLEBOT3_RECOVERY_PLAN_ONLY_STABILITY_SNAPSHOT_COUNT_ENV = (
+    "MISSIONOS_TURTLEBOT3_RECOVERY_PLAN_ONLY_STABILITY_SNAPSHOT_COUNT"
+)
+TURTLEBOT3_SIMULATE_POST_RECOVERY_ROUTE_FAILURE_ONCE_ENV = (
+    "MISSIONOS_TURTLEBOT3_SIMULATE_POST_RECOVERY_ROUTE_FAILURE_ONCE"
 )
 
 TurtleBotNav2RobotProfile = Literal["turtlebot3", "turtlebot4", "nova_carter"]
@@ -378,7 +392,10 @@ _TURTLEBOT3_HOME_FLOOR_PLAN = {
 }
 _TURTLEBOT3_DYNAMIC_OBSTACLE_APPROACH_SEGMENT = Nav2GoalPose(
     frame_id="map",
-    x_m=-1.15,
+    # Stop before the obstacle's local-costmap lethal footprint. Recovery
+    # candidate evaluation must begin from an executable observation pose,
+    # rather than after the robot has already entered the blocked cell.
+    x_m=-1.60,
     y_m=-0.85,
     yaw_rad=0.0,
     tolerance_m=0.25,
@@ -399,7 +416,7 @@ _TURTLEBOT3_DYNAMIC_OBSTACLE_AVOIDANCE_GOAL = Nav2GoalPose(
 _TURTLEBOT3_DELIVERY_ROUTE_SEGMENTS = (
     Nav2GoalPose(
         frame_id="map",
-        x_m=-1.15,
+        x_m=-1.60,
         y_m=-0.85,
         yaw_rad=0.0,
         tolerance_m=0.25,
@@ -409,8 +426,12 @@ _TURTLEBOT3_DELIVERY_ROUTE_SEGMENTS = (
     ),
     Nav2GoalPose(
         frame_id="map",
-        x_m=-0.35,
-        y_m=-0.85,
+        # Keep the lower-corridor checkpoint centred between the world pillars
+        # at (-1.1, -1.1) and (0, -1.1). The old (-0.35, -0.85) target was
+        # locally lethal (cost 253), so a source-bound retry could never pass
+        # the same controller constraints used by execution.
+        x_m=-0.55,
+        y_m=-1.55,
         yaw_rad=0.0,
         tolerance_m=0.25,
         max_speed_mps=0.25,
@@ -2157,19 +2178,35 @@ def _observed_inbound_retreat_candidate(
     if len(map_samples) < 2:
         return None
     current = map_samples[-1]
-    target = None
+    current_x = float(current["x_m"])
+    current_y = float(current["y_m"])
+    prior_x = current_x
+    prior_y = current_y
+    traversed_m = 0.0
+    target_xy: tuple[float, float] | None = None
     for sample in reversed(map_samples[:-1]):
-        if math.hypot(
-            float(current["x_m"]) - float(sample["x_m"]),
-            float(current["y_m"]) - float(sample["y_m"]),
-        ) >= retreat_distance_m:
-            target = sample
+        sample_x = float(sample["x_m"])
+        sample_y = float(sample["y_m"])
+        segment_m = math.hypot(prior_x - sample_x, prior_y - sample_y)
+        if segment_m <= 1e-9:
+            continue
+        if traversed_m + segment_m >= retreat_distance_m:
+            remaining_m = retreat_distance_m - traversed_m
+            fraction = min(1.0, remaining_m / segment_m)
+            target_xy = (
+                prior_x + fraction * (sample_x - prior_x),
+                prior_y + fraction * (sample_y - prior_y),
+            )
             break
-    if target is None:
+        traversed_m += segment_m
+        prior_x = sample_x
+        prior_y = sample_y
+    if target_xy is None:
         return None
+    target_x, target_y = target_xy
     yaw = math.atan2(
-        float(current["y_m"]) - float(target["y_m"]),
-        float(current["x_m"]) - float(target["x_m"]),
+        current_y - target_y,
+        current_x - target_x,
     )
     return {
         "candidate_id": "observed_inbound_bounded_retreat",
@@ -2177,8 +2214,8 @@ def _observed_inbound_retreat_candidate(
         "selection_role": "verified_inbound_retreat",
         "selection_priority": -1,
         "sequence_only": True,
-        "x_m": float(target["x_m"]),
-        "y_m": float(target["y_m"]),
+        "x_m": target_x,
+        "y_m": target_y,
         "yaw_rad": yaw,
         "retreat_distance_bound_m": retreat_distance_m,
         "geometry_source": "bridge_observed_inbound_map_trajectory",
@@ -2202,6 +2239,121 @@ def _recovery_sequence_candidates(
             }
         chained.append(candidate)
     return chained
+
+
+def _plan_only_recovery_evaluation_retryable(
+    evaluation: Mapping[str, Any],
+) -> bool:
+    if evaluation.get("evaluation_status") == "validated":
+        return False
+    transient_reasons = {
+        "nav2_compute_path_not_succeeded",
+        "nav2_compute_path_empty",
+        "recovery_path_cost_unavailable",
+        "recovery_current_pose_outside_local_costmap",
+        "recovery_local_path_cost_unavailable",
+        "recovery_local_path_prefix_insufficient",
+    }
+    return any(
+        transient_reasons.intersection(item.get("blocking_reasons") or ())
+        for item in evaluation.get("candidate_evaluations") or ()
+        if isinstance(item, Mapping)
+    )
+
+
+def _evaluate_recovery_candidates_plan_only(
+    *,
+    candidates: list[dict[str, Any]],
+    obstacle: Mapping[str, Any],
+    frame_id: str = "map",
+) -> dict[str, Any]:
+    """Refresh transient Nav2 snapshots without creating dispatch authority."""
+
+    try:
+        retry_count = max(
+            0,
+            min(
+                4,
+                int(
+                    os.environ.get(
+                        TURTLEBOT3_RECOVERY_PLAN_ONLY_RETRY_COUNT_ENV,
+                        "2",
+                    )
+                ),
+            ),
+        )
+    except ValueError:
+        retry_count = 2
+    try:
+        retry_interval_s = max(
+            0.0,
+            min(
+                5.0,
+                float(
+                    os.environ.get(
+                        TURTLEBOT3_RECOVERY_PLAN_ONLY_RETRY_INTERVAL_ENV,
+                        "1.0",
+                    )
+                ),
+            ),
+        )
+    except ValueError:
+        retry_interval_s = 1.0
+    try:
+        stability_snapshot_count = max(
+            1,
+            min(
+                retry_count + 1,
+                int(
+                    os.environ.get(
+                        TURTLEBOT3_RECOVERY_PLAN_ONLY_STABILITY_SNAPSHOT_COUNT_ENV,
+                        "1",
+                    )
+                ),
+            ),
+        )
+    except ValueError:
+        stability_snapshot_count = 1
+    evaluation: dict[str, Any] = {}
+    last_error: Ros2Nav2BridgeError | None = None
+    for attempt_index in range(retry_count + 1):
+        try:
+            evaluation = (
+                Ros2Nav2BridgeCommandClient().evaluate_recovery_candidates(
+                    candidates=candidates,
+                    obstacle=obstacle,
+                    frame_id=frame_id,
+                )
+            )
+            last_error = None
+        except Ros2Nav2BridgeError as exc:
+            last_error = exc
+        should_retry = (
+            attempt_index < retry_count
+            and (
+                attempt_index + 1 < stability_snapshot_count
+                or
+                last_error is not None
+                or _plan_only_recovery_evaluation_retryable(evaluation)
+            )
+        )
+        if not should_retry:
+            break
+        if retry_interval_s:
+            time.sleep(retry_interval_s)
+    if last_error is not None:
+        raise last_error
+    return {
+        **evaluation,
+        "plan_only_evaluation_attempt_count": attempt_index + 1,
+        "plan_only_retry_performed": attempt_index > 0,
+        "plan_only_stability_snapshot_count_required": (
+            stability_snapshot_count
+        ),
+        "dispatch_request_sent": False,
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+    }
 
 
 def _resolve_recovery_candidate(
@@ -2249,7 +2401,7 @@ def _resolve_recovery_candidate(
             ),
         }
     try:
-        evaluation = Ros2Nav2BridgeCommandClient().evaluate_recovery_candidates(
+        evaluation = _evaluate_recovery_candidates_plan_only(
             candidates=candidates,
             obstacle=obstacle_scenario,
             frame_id="map",
@@ -2286,19 +2438,104 @@ def _resolve_recovery_candidate(
         ),
         None,
     )
-    selected_sequence = (
-        [dict(retreat_evaluation), dict(selected)]
-        if validated and retreat_evaluation is not None
-        else [dict(selected)]
-        if validated
-        else []
-    )
     initial_evaluations = list(evaluations)
+    # A bypass that was validated directly from the current robot pose needs
+    # no preliminary retreat. The retreat is a fallback only when direct
+    # candidates are invalid; forcing it here adds an unnecessary second goal
+    # whose cost can change before the final sequence recheck.
+    selected_sequence = [dict(selected)] if validated else []
+    # If every direct bypass starts inside the current local inflation cost,
+    # the bridge correctly rejects those paths while still validating the
+    # short observed inbound retreat. Evaluate each bypass again from the end
+    # of that retreat. Each pair is independent; chaining all bypasses in one
+    # request would incorrectly make candidate N start at candidate N-1.
+    if not validated and retreat_evaluation is not None:
+        retreat_candidate = next(
+            (
+                dict(item)
+                for item in candidates
+                if item.get("candidate_id")
+                == "observed_inbound_bounded_retreat"
+            ),
+            None,
+        )
+        sequence_attempts: list[
+            tuple[
+                dict[str, Any],
+                list[dict[str, Any]],
+                list[dict[str, Any]],
+            ]
+        ] = []
+        if retreat_candidate is not None:
+            for bypass_candidate in candidates:
+                if bypass_candidate.get("sequence_only") is True:
+                    continue
+                sequence_candidates = _recovery_sequence_candidates(
+                    [dict(retreat_candidate), dict(bypass_candidate)]
+                )
+                try:
+                    sequence_evaluation = (
+                        _evaluate_recovery_candidates_plan_only(
+                            candidates=sequence_candidates,
+                            obstacle=obstacle_scenario,
+                            frame_id="map",
+                        )
+                    )
+                except Ros2Nav2BridgeError:
+                    continue
+                sequence_evaluations = [
+                    dict(item)
+                    for item in sequence_evaluation.get("candidate_evaluations")
+                    or []
+                    if isinstance(item, Mapping)
+                ]
+                sequence_by_id = {
+                    str(item.get("candidate_id") or ""): item
+                    for item in sequence_evaluations
+                }
+                evaluated_sequence = [
+                    dict(
+                        sequence_by_id.get(
+                            str(candidate.get("candidate_id") or "")
+                        )
+                        or {}
+                    )
+                    for candidate in sequence_candidates
+                ]
+                if (
+                    sequence_evaluation.get("evaluation_status") == "validated"
+                    and all(
+                        candidate.get("path_valid") is True
+                        for candidate in evaluated_sequence
+                    )
+                ):
+                    sequence_attempts.append(
+                        (
+                            dict(sequence_evaluation),
+                            sequence_evaluations,
+                            evaluated_sequence,
+                        )
+                    )
+        if sequence_attempts:
+            sequence_attempts.sort(
+                key=lambda attempt: (
+                    int(
+                        attempt[2][-1].get("local_maximum_path_cost") or 0
+                    ),
+                    int(attempt[2][-1].get("selection_priority", 100)),
+                    int(attempt[2][-1].get("maximum_path_cost") or 0),
+                    float(attempt[2][-1].get("path_length_m") or math.inf),
+                    str(attempt[2][-1].get("candidate_id") or ""),
+                )
+            )
+            evaluation, evaluations, selected_sequence = sequence_attempts[0]
+            selected = dict(selected_sequence[-1])
+            validated = True
     if len(selected_sequence) > 1:
         sequence_candidates = _recovery_sequence_candidates(selected_sequence)
         try:
             sequence_evaluation = (
-                Ros2Nav2BridgeCommandClient().evaluate_recovery_candidates(
+                _evaluate_recovery_candidates_plan_only(
                     candidates=sequence_candidates,
                     obstacle=obstacle_scenario,
                     frame_id="map",
@@ -2366,6 +2603,14 @@ def _resolve_recovery_candidate(
         "local_costmap_frame_id": evaluation.get("local_costmap_frame_id"),
         "local_cost_threshold": evaluation.get("local_cost_threshold"),
         "compute_path_action": evaluation.get("compute_path_action"),
+        "plan_only_evaluation_attempt_count": evaluation.get(
+            "plan_only_evaluation_attempt_count",
+            1,
+        ),
+        "plan_only_retry_performed": evaluation.get(
+            "plan_only_retry_performed",
+            False,
+        ),
         "candidate_evaluations": evaluations,
         "initial_candidate_evaluations": initial_evaluations,
         "blocking_reasons": list(evaluation.get("blocking_reasons") or []),
@@ -2383,7 +2628,7 @@ def _revalidate_approved_recovery_candidate(
 ) -> dict[str, Any]:
     """Revalidate the exact approved target immediately before dispatch."""
 
-    if checkpoint.get("selected_action") != "avoid_obstacle":
+    if checkpoint.get("selected_action") not in {"avoid_obstacle", "reroute"}:
         return {
             "schema_version": "missionos_nav2_recovery_candidate_revalidation.v1",
             "revalidation_status": "not_required",
@@ -2423,21 +2668,32 @@ def _revalidate_approved_recovery_candidate(
     bound_ids = bound_ids if isinstance(bound_ids, list) else []
     try:
         if raw_goals:
-            candidates = _recovery_sequence_candidates([
-                {
-                    "candidate_id": str(
-                        bound_ids[index]
-                        if index < len(bound_ids)
-                        else f"approved_recovery_target_{index + 1}"
-                    ),
+            approved_candidates: list[dict[str, Any]] = []
+            for index, goal in enumerate(raw_goals):
+                if not isinstance(goal, Mapping):
+                    continue
+                candidate_id = str(
+                    bound_ids[index]
+                    if index < len(bound_ids)
+                    else f"approved_recovery_target_{index + 1}"
+                )
+                candidate = {
+                    "candidate_id": candidate_id,
                     "x_m": float(goal["x_m"]),
                     "y_m": float(goal["y_m"]),
                     "yaw_rad": float(goal.get("yaw_rad") or 0.0),
                     "geometry_source": "checkpoint_approved_goal_sequence",
                 }
-                for index, goal in enumerate(raw_goals)
-                if isinstance(goal, Mapping)
-            ])
+                if candidate_id == "observed_inbound_bounded_retreat":
+                    candidate.update(
+                        {
+                            "selection_role": "verified_inbound_retreat",
+                            "sequence_only": True,
+                            "retreat_distance_bound_m": 0.45,
+                        }
+                    )
+                approved_candidates.append(candidate)
+            candidates = _recovery_sequence_candidates(approved_candidates)
         else:
             candidates = [
                 {
@@ -2460,7 +2716,7 @@ def _revalidate_approved_recovery_candidate(
             "physical_execution_invoked": False,
         }
     try:
-        evaluation = Ros2Nav2BridgeCommandClient().evaluate_recovery_candidates(
+        evaluation = _evaluate_recovery_candidates_plan_only(
             candidates=candidates,
             obstacle=obstacle_scenario,
             frame_id="map",
@@ -4533,6 +4789,7 @@ def _dispatch_nav2_goal(
     dispatched_at: datetime,
     action_ref_suffix: str,
     publish_initialpose: bool,
+    simulate_cancel_after_accept: bool = False,
 ) -> dict[str, Any]:
     config = Ros2Nav2HardwareAdapterConfig(
         missionos_action_ref=(
@@ -4549,7 +4806,13 @@ def _dispatch_nav2_goal(
             _robot_profile_from_proposal(proposal)
         ),
     )
-    env_overrides = None if publish_initialpose else {"ROS2_NAV2_INITIALPOSE_ENABLE": "0"}
+    env_overrides: dict[str, str] = {}
+    if not publish_initialpose:
+        env_overrides["ROS2_NAV2_INITIALPOSE_ENABLE"] = "0"
+    if simulate_cancel_after_accept:
+        env_overrides[
+            ROS2_NAV2_REQUEST_SIM_FAULT_CANCEL_AFTER_ACCEPT_ENV
+        ] = "1"
     client = Ros2Nav2BridgeCommandClient(env_overrides=env_overrides)
     adapter = Ros2Nav2HardwareAdapter(config=config, client=client)
     bridge_error = ""
@@ -4572,6 +4835,7 @@ def _dispatch_nav2_goal(
         "segment_ref": action_ref_suffix,
         "goal_pose": goal.model_dump(mode="json"),
         "publish_initialpose": publish_initialpose,
+        "simulated_transient_fault_requested": simulate_cancel_after_accept,
         "adapter_evidence": evidence.model_dump(mode="json"),
         "bridge_responses": [dict(response) for response in bridge_responses],
         "bridge_error": bridge_error,
@@ -4750,10 +5014,15 @@ def _recovery_checkpoint_hash(checkpoint: Mapping[str, Any]) -> str:
 
 def _recovery_resume_state_hash(state: Mapping[str, Any]) -> str:
     source_bound_state = {
-        key: state.get(key)
+        key: (
+            state.get(key) or []
+            if key == "route_failure_observation_results"
+            else state.get(key)
+        )
         for key in (
             "planned_segments",
             "segment_results",
+            "route_failure_observation_results",
             "recovery_proposals",
             "recovery_proposal_classifications",
             "recovery_planner_result",
@@ -4824,6 +5093,7 @@ def _build_turtlebot3_recovery_checkpoint(
     runtime_recovery_obstacle_scenario: Mapping[str, Any],
     runtime_recovery_motion_context: Mapping[str, Any],
     completed_segment_index: int,
+    route_failure_observation_results: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     recovery_proposal = recovery_proposals[0] if recovery_proposals else {}
     classification = (
@@ -4876,6 +5146,9 @@ def _build_turtlebot3_recovery_checkpoint(
     resume_state = {
         "planned_segments": [goal.model_dump(mode="json") for goal in goals],
         "segment_results": [dict(item) for item in segment_results],
+        "route_failure_observation_results": [
+            dict(item) for item in (route_failure_observation_results or [])
+        ],
         "recovery_proposals": [dict(item) for item in recovery_proposals],
         "recovery_proposal_classifications": [
             dict(item) for item in recovery_proposal_classifications
@@ -5056,6 +5329,234 @@ def _build_recovery_repair_child_checkpoint(
     child["checkpoint_hash"] = child_hash
     child["checkpoint_id"] = f"turtlebot3_recovery_checkpoint_{child_hash[:12]}"
     return child, child_scenario, child_planner
+
+
+def _build_recovery_failure_followup_checkpoint(
+    *,
+    parent_checkpoint: Mapping[str, Any],
+    proposal: Mapping[str, Any],
+    goals: tuple[Nav2GoalPose, ...],
+    segment_results: list[dict[str, Any]],
+    approved_recovery_results: list[dict[str, Any]],
+    route_failure_observation_results: list[dict[str, Any]],
+    recovery_closed_loop_cycles: list[dict[str, Any]],
+    autonomy_envelope: Mapping[str, Any],
+    battery_envelope: Mapping[str, Any],
+    failure_source: str = "approved_recovery_bounded_action_reobservation",
+) -> tuple[
+    dict[str, Any],
+    dict[str, Any],
+    dict[str, Any],
+    tuple[dict[str, Any], ...],
+    tuple[dict[str, Any], ...],
+    dict[str, Any],
+]:
+    """Re-plan from a failed approved action without reusing its authority."""
+
+    action_result = approved_recovery_results[-1]
+    failure_reasons = list(
+        parent_checkpoint.get("failure_reasons")
+        or action_result.get("blocking_reasons")
+        or ["turtlebot3_recovery_goal_not_completed"]
+    )
+    failure_context = {
+        "schema_version": "missionos_turtlebot3_approved_recovery_failure.v1",
+        "runtime_failure_observed": True,
+        "failed_recovery_checkpoint_id": parent_checkpoint.get("checkpoint_id"),
+        "failed_recovery_action": parent_checkpoint.get("selected_action"),
+        "failed_recovery_blocking_reasons": failure_reasons,
+        "failed_recovery_blocking_reason_count": len(failure_reasons),
+        "failed_recovery_result_count": len(approved_recovery_results),
+        "failed_recovery_completion_claimed": False,
+        "source": failure_source,
+        "runtime_failure_source": failure_source,
+        "recommended_recovery_action": "ask_human",
+        "requires_new_human_approval": True,
+    }
+    completed_segment_index = int(
+        parent_checkpoint.get("next_segment_index") or 1
+    ) - 1
+    motion_context = _runtime_motion_context(
+        action_result=action_result,
+        goals=goals,
+        segment_index=max(completed_segment_index, 1),
+        completed_segment_count=sum(
+            1 for item in segment_results if item.get("completion_claimed") is True
+        ),
+    )
+    obstacle_scenario = _runtime_recovery_obstacle_scenario(
+        proposal.get("obstacle_scenario")
+        if isinstance(proposal.get("obstacle_scenario"), Mapping)
+        else {},
+        segment_result=action_result,
+    )
+    reference_goal = goals[max(min(completed_segment_index, len(goals) - 1), 0)]
+    home_distance_envelope = _build_home_distance_envelope("", reference_goal)
+    home_distance_envelope["distance_to_home_source"] = (
+        "approved_recovery_reobservation_projection"
+    )
+    home_distance_envelope["runtime_observed"] = False
+    proposal_models, planner_result = _build_recovery_proposals(
+        proposal_id=str(
+            proposal.get("proposal_id") or "turtlebot3_home_mission"
+        ),
+        operator_instruction=str(proposal.get("operator_instruction") or ""),
+        battery_envelope=_runtime_recovery_battery_envelope(battery_envelope),
+        home_distance_envelope=home_distance_envelope,
+        autonomy_envelope=autonomy_envelope,
+        obstacle_scenario=obstacle_scenario,
+        indoor_delivery_route=proposal.get("indoor_delivery_route")
+        if isinstance(proposal.get("indoor_delivery_route"), Mapping)
+        else {},
+        runtime_failure_context=failure_context,
+        runtime_motion_context=motion_context,
+        runtime_observation_phase=True,
+    )
+    recovery_proposals = tuple(
+        item.model_dump(mode="json") for item in proposal_models
+    )
+    planner = dict(planner_result)
+    classifications = _classify_recovery_proposals(
+        autonomy_envelope=autonomy_envelope,
+        recovery_proposals=recovery_proposals,
+    )
+    selected_action = (
+        str(recovery_proposals[0].get("selected_action"))
+        if recovery_proposals
+        else "ask_human"
+    )
+    repair = None
+    if selected_action == "avoid_obstacle":
+        repair = _build_recovery_repair_child_checkpoint(
+            parent_checkpoint=parent_checkpoint,
+            proposal=proposal,
+            goals=goals,
+            segment_results=segment_results,
+            candidate_observation_results=[
+                *segment_results,
+                *approved_recovery_results,
+            ],
+            recovery_proposals=recovery_proposals,
+            recovery_proposal_classifications=classifications,
+            recovery_planner_result=planner,
+            obstacle_scenario=obstacle_scenario,
+            motion_context=motion_context,
+        )
+    if repair is not None:
+        child, obstacle_scenario, planner = repair
+    else:
+        if selected_action == "avoid_obstacle":
+            original_proposal = (
+                dict(recovery_proposals[0]) if recovery_proposals else {}
+            )
+            constraint_material = {
+                "parent_checkpoint_id": parent_checkpoint.get("checkpoint_id"),
+                "original_proposal_id": original_proposal.get("proposal_id"),
+                "failure_reasons": failure_reasons,
+                "decision": "ask_human",
+            }
+            constraint_hash = hashlib.sha256(
+                json.dumps(
+                    constraint_material,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    default=str,
+                ).encode("utf-8")
+            ).hexdigest()
+            constrained_proposal = {
+                **original_proposal,
+                "proposal_id": (
+                    "mission_autonomy_recovery_proposal_"
+                    f"{constraint_hash[:12]}"
+                ),
+                "proposal_source": (
+                    "rules_constrained_after_candidate_resolution_failure"
+                ),
+                "selected_action": "ask_human",
+                "reason": (
+                    "The fresh planner proposal could not be bound to a new "
+                    "dual-costmap-validated candidate after the approved recovery "
+                    "failed. Request bounded operator guidance; do not redispatch "
+                    "automatically."
+                ),
+                "input_observations": {
+                    **dict(original_proposal.get("input_observations") or {}),
+                    **failure_context,
+                    "candidate_resolution_status": "not_validated",
+                },
+                "original_selected_action": "avoid_obstacle",
+                "approval_created": False,
+                "dispatch_authority_created": False,
+                "physical_execution_invoked": False,
+                "progress_counted": False,
+            }
+            recovery_proposals = (constrained_proposal, *recovery_proposals)
+            classifications = _classify_recovery_proposals(
+                autonomy_envelope=autonomy_envelope,
+                recovery_proposals=recovery_proposals,
+            )
+            selected_action = "ask_human"
+            planner = {
+                **planner,
+                "planner_status": (
+                    "candidate_resolution_requires_operator_guidance"
+                ),
+                "execution_proposal": dict(constrained_proposal),
+                "original_planner_proposal": original_proposal,
+                "automatic_redispatch_performed": False,
+            }
+            obstacle_scenario = {
+                key: value
+                for key, value in obstacle_scenario.items()
+                if key != "recovery_candidate_resolution"
+            }
+        child = _build_turtlebot3_recovery_checkpoint(
+            proposal=proposal,
+            goals=goals,
+            segment_results=segment_results,
+            recovery_proposals=recovery_proposals,
+            recovery_proposal_classifications=classifications,
+            recovery_planner_result=planner,
+            runtime_recovery_obstacle_scenario=obstacle_scenario,
+            runtime_recovery_motion_context=motion_context,
+            completed_segment_index=completed_segment_index,
+            route_failure_observation_results=route_failure_observation_results,
+        )
+        child = {
+            **child,
+            "parent_checkpoint_id": parent_checkpoint.get("checkpoint_id"),
+            "parent_checkpoint_hash": parent_checkpoint.get("checkpoint_hash"),
+            "repair_attempt": int(parent_checkpoint.get("repair_attempt") or 0) + 1,
+            "repair_trigger": "approved_recovery_reobservation_failed",
+            "operator_guidance_required": selected_action
+            in {"ask_human", "hold", "safe_stop"},
+            "requires_new_human_approval": True,
+            "automatic_redispatch_performed": False,
+        }
+    child = {
+        **child,
+        "prior_closed_loop_cycle_refs": [
+            {
+                "cycle_index": cycle.get("cycle_index"),
+                "checkpoint_id": cycle.get("checkpoint_id"),
+                "reobservation_sha256": cycle.get("reobservation_sha256"),
+            }
+            for cycle in recovery_closed_loop_cycles
+        ],
+        "requires_new_human_approval": True,
+        "automatic_redispatch_performed": False,
+    }
+    child_hash = _recovery_checkpoint_hash(child)
+    child["checkpoint_hash"] = child_hash
+    child["checkpoint_id"] = f"turtlebot3_recovery_checkpoint_{child_hash[:12]}"
+    return (
+        child,
+        obstacle_scenario,
+        planner,
+        recovery_proposals,
+        classifications,
+        motion_context,
+    )
 
 
 def _recovery_checkpoint_from_execution(
@@ -5301,6 +5802,25 @@ def _turtlebot3_recovery_revision_intent(
     right_requested = _japanese_positive_side_request(
         "右"
     ) or _english_positive_side_request("right")
+    japanese_return_then_resume_requested = re.fullmatch(
+        rf".*?(?:引き返(?:して|せ)|帰還(?:して|しろ|せよ)|"
+        rf"(?:出発地点|出発点|ホーム|家)(?:へ|に)?(?:一旦)?戻(?:って|れ))"
+        rf"(?:から|後(?:に)?|、|,)?(?:配送|走行|ルート|ミッション)(?:を)?"
+        rf"(?:再開(?:して|しろ|せよ)|続け(?:て|ろ))"
+        rf"{japanese_polite_suffix}",
+        japanese_command_text,
+    )
+    english_return_then_resume_requested = re.fullmatch(
+        r"(?:please\s+)?(?:return\s+home|return\s+to\s+home|turn\s+back|"
+        r"go\s+back|head\s+back|retreat)(?:,|\s+and|\s+then)*\s+"
+        r"(?:resume|continue)(?:\s+the)?\s+(?:delivery|route|mission)"
+        r"(?:\s+please)?",
+        english_command_text,
+    )
+    return_then_resume_requested = bool(
+        japanese_return_then_resume_requested
+        or english_return_then_resume_requested
+    )
     japanese_return_requested = re.fullmatch(
         rf".*?(?:引き返(?:して|せ)|帰還(?:して|しろ|せよ)|"
         rf"(?:出発地点|出発点|ホーム|家)(?:へ|に)?戻(?:って|れ))"
@@ -5313,12 +5833,31 @@ def _turtlebot3_recovery_revision_intent(
         english_command_text,
     )
     return_requested = bool(japanese_return_requested or english_return_requested)
+    retry_failed_segment_requested = bool(
+        re.fullmatch(
+            rf".*?(?:停止|失敗)(?:を)?確認(?:した|して)?[、,。 ]*"
+            rf"(?:同じ|直前の)?(?:配送)?(?:区間|ルート|セグメント)(?:を)?"
+            rf"(?:一度だけ)?再試行(?:して|しろ|せよ){japanese_polite_suffix}",
+            japanese_command_text,
+        )
+        or re.fullmatch(
+            r"(?:please\s+)?retry\s+(?:the\s+)?(?:failed|same|last)\s+"
+            r"(?:route\s+)?segment\s+once(?:\s+please)?",
+            english_command_text,
+        )
+    )
     if altitude_requested:
         return None, ["operator_recovery_revision_unsupported_for_ground_robot"]
     if left_requested and right_requested:
         return None, ["operator_recovery_revision_direction_ambiguous"]
-    if return_requested and (left_requested or right_requested):
+    if (return_requested or return_then_resume_requested) and (
+        left_requested or right_requested
+    ):
         return None, ["operator_recovery_revision_action_ambiguous"]
+    if return_then_resume_requested:
+        return "return_home_then_resume", []
+    if retry_failed_segment_requested:
+        return "retry_failed_segment", []
     if return_requested:
         return "return_home", []
     if left_requested:
@@ -5497,6 +6036,43 @@ def _revision_floor_plan_from_execution(
     return dict(floor_plan) if isinstance(floor_plan, Mapping) else {}
 
 
+def _revision_reobserved_anchor_pose(
+    execution: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Return the latest source-backed pose observed after a recovery action."""
+
+    for collection_name in (
+        "approved_recovery_segment_results",
+        "recovery_attempt_history",
+    ):
+        results = execution.get(collection_name)
+        if not isinstance(results, list):
+            continue
+        for result in reversed(results):
+            if not isinstance(result, Mapping):
+                continue
+            raw_points, _filter = _raw_map_observed_trajectory_points(
+                _observed_points_from_action_result(result)
+            )
+            if not raw_points:
+                continue
+            latest = raw_points[-1]
+            x_m = _revision_numeric(latest.get("x_m"))
+            y_m = _revision_numeric(latest.get("y_m"))
+            if x_m is None or y_m is None:
+                continue
+            return {
+                "x_m": x_m,
+                "y_m": y_m,
+                "source": "latest_approved_recovery_raw_map_frame_observation",
+                "segment_ref": result.get("segment_ref"),
+                "sample_index": latest.get("sample_index"),
+                "frame_id": "map",
+                "completion_claimed": result.get("completion_claimed") is True,
+            }
+    return {}
+
+
 def _revision_floor_plan_geometry_sha256(
     floor_plan: Mapping[str, Any],
 ) -> str:
@@ -5645,6 +6221,76 @@ def _turtlebot3_recovery_revision_source_geometry_reasons(
             != _revision_numeric(bound_home.get("y_m"))
         ):
             reasons.append("turtlebot3_recovery_revision_home_pose_changed")
+    elif selected_action == "reroute":
+        failures = execution.get("route_failure_observation_results")
+        failures = failures if isinstance(failures, list) else []
+        failed = (
+            failures[-1]
+            if failures and isinstance(failures[-1], Mapping)
+            else {}
+        )
+        failure_sha256 = (
+            hashlib.sha256(
+                json.dumps(
+                    failed,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    default=str,
+                ).encode("utf-8")
+            ).hexdigest()
+            if failed
+            else ""
+        )
+        if (
+            not failure_sha256
+            or geometry.get("failed_segment_observation_sha256")
+            != failure_sha256
+            or geometry.get("failed_segment_ref") != failed.get("segment_ref")
+        ):
+            reasons.append(
+                "turtlebot3_recovery_revision_failed_segment_observation_changed"
+            )
+        segment_ref = str(failed.get("segment_ref") or "")
+        try:
+            segment_index = int(segment_ref.removeprefix("segment_"))
+        except ValueError:
+            segment_index = 0
+        planned_segments = execution.get("planned_segments")
+        planned_segments = (
+            planned_segments if isinstance(planned_segments, list) else []
+        )
+        expected_goal = (
+            planned_segments[segment_index - 1]
+            if 0 < segment_index <= len(planned_segments)
+            and isinstance(planned_segments[segment_index - 1], Mapping)
+            else {}
+        )
+        goal_poses = checkpoint.get("recovery_goal_poses")
+        goal_poses = goal_poses if isinstance(goal_poses, list) else []
+        bound_goal = (
+            goal_poses[0]
+            if len(goal_poses) == 1 and isinstance(goal_poses[0], Mapping)
+            else {}
+        )
+        next_route_goal = geometry.get("next_route_goal")
+        next_route_goal = (
+            next_route_goal if isinstance(next_route_goal, Mapping) else {}
+        )
+        if (
+            not expected_goal
+            or next_route_goal.get("segment_index") != segment_index
+            or _revision_numeric(next_route_goal.get("x_m"))
+            != _revision_numeric(expected_goal.get("x_m"))
+            or _revision_numeric(next_route_goal.get("y_m"))
+            != _revision_numeric(expected_goal.get("y_m"))
+            or _revision_numeric(bound_goal.get("x_m"))
+            != _revision_numeric(expected_goal.get("x_m"))
+            or _revision_numeric(bound_goal.get("y_m"))
+            != _revision_numeric(expected_goal.get("y_m"))
+        ):
+            reasons.append(
+                "turtlebot3_recovery_revision_failed_segment_goal_changed"
+            )
     else:
         reasons.append("turtlebot3_recovery_revision_action_not_supported")
     return list(dict.fromkeys(reasons))
@@ -5685,14 +6331,14 @@ def _build_directional_recovery_revision_geometry(
         return {}, ["operator_recovery_revision_completed_segment_not_verified"]
     anchor_goal = completed_result.get("goal_pose")
     anchor_goal = anchor_goal if isinstance(anchor_goal, Mapping) else {}
-    anchor_x = _revision_numeric(anchor_goal.get("x_m"))
-    anchor_y = _revision_numeric(anchor_goal.get("y_m"))
+    route_anchor_x = _revision_numeric(anchor_goal.get("x_m"))
+    route_anchor_y = _revision_numeric(anchor_goal.get("y_m"))
     next_index = checkpoint.get("next_segment_index")
     planned_segments = proposal.get("planned_segments")
     planned_segments = planned_segments if isinstance(planned_segments, (list, tuple)) else ()
     if (
-        anchor_x is None
-        or anchor_y is None
+        route_anchor_x is None
+        or route_anchor_y is None
         or not isinstance(next_index, int)
         or isinstance(next_index, bool)
         or next_index < 1
@@ -5705,20 +6351,34 @@ def _build_directional_recovery_revision_geometry(
     next_y = _revision_numeric(next_goal.get("y_m"))
     if next_x is None or next_y is None:
         return {}, ["operator_recovery_revision_route_geometry_source_missing"]
-    route_dx = next_x - anchor_x
-    route_dy = next_y - anchor_y
+    route_dx = next_x - route_anchor_x
+    route_dy = next_y - route_anchor_y
     route_length = math.hypot(route_dx, route_dy)
     if route_length <= 1e-6:
         return {}, ["operator_recovery_revision_route_direction_degenerate"]
     direction_unit = (route_dx / route_length, route_dy / route_length)
     left_unit = (-direction_unit[1], direction_unit[0])
     side_sign = 1.0 if direction == "left" else -1.0
+    reobserved_anchor = _revision_reobserved_anchor_pose(execution)
+    anchor_x = _revision_numeric(reobserved_anchor.get("x_m"))
+    anchor_y = _revision_numeric(reobserved_anchor.get("y_m"))
+    if anchor_x is None or anchor_y is None:
+        anchor_x = route_anchor_x
+        anchor_y = route_anchor_y
+        reobserved_anchor = {
+            "x_m": anchor_x,
+            "y_m": anchor_y,
+            "source": "last_completed_nav2_segment_goal",
+            "segment_ref": completed_result.get("segment_ref"),
+            "completion_claimed": True,
+            "frame_id": "map",
+        }
     obstacle, obstacle_reasons = _revision_source_obstacle(execution)
     if obstacle_reasons:
         return {}, obstacle_reasons
     obstacle_from_anchor = (
-        obstacle["x_m"] - anchor_x,
-        obstacle["y_m"] - anchor_y,
+        obstacle["x_m"] - route_anchor_x,
+        obstacle["y_m"] - route_anchor_y,
     )
     obstacle_route_projection = (
         obstacle_from_anchor[0] * direction_unit[0]
@@ -5741,31 +6401,76 @@ def _build_directional_recovery_revision_geometry(
     half_y = obstacle["size_y_m"] / 2.0
     parallel_support = abs(direction_unit[0]) * half_x + abs(direction_unit[1]) * half_y
     perpendicular_support = abs(left_unit[0]) * half_x + abs(left_unit[1]) * half_y
-    lateral_offset = (
-        perpendicular_support + _TURTLEBOT3_RECOVERY_REVISION_WIDE_BBOX_CLEARANCE_M
-    )
+    wide_bbox_clearance = _TURTLEBOT3_RECOVERY_REVISION_WIDE_BBOX_CLEARANCE_M
+    lateral_offset = perpendicular_support + wide_bbox_clearance
     if lateral_offset > _TURTLEBOT3_RECOVERY_REVISION_MAX_LATERAL_OFFSET_M:
         return {}, ["operator_recovery_revision_lateral_offset_exceeds_bound"]
     longitudinal_offset = (
         parallel_support + _TURTLEBOT3_RECOVERY_REVISION_LONGITUDINAL_BUFFER_M
     )
     obstacle_center = (obstacle["x_m"], obstacle["y_m"])
-    entry = (
-        obstacle_center[0]
-        - direction_unit[0] * longitudinal_offset
-        + side_sign * left_unit[0] * lateral_offset,
-        obstacle_center[1]
-        - direction_unit[1] * longitudinal_offset
-        + side_sign * left_unit[1] * lateral_offset,
-    )
-    exit_point = (
-        obstacle_center[0]
-        + direction_unit[0] * longitudinal_offset
-        + side_sign * left_unit[0] * lateral_offset,
-        obstacle_center[1]
-        + direction_unit[1] * longitudinal_offset
-        + side_sign * left_unit[1] * lateral_offset,
-    )
+    if reobserved_anchor.get("source") == (
+        "latest_approved_recovery_raw_map_frame_observation"
+    ):
+        # The previous bounded action changed the robot's pose. Treat that
+        # re-observation as the new start and bind a route-rejoin shoulder on
+        # the requested side. Reusing the pre-recovery entry/exit pair here
+        # can force the robot back across the obstacle or another live cost.
+        anchor_from_route = (
+            anchor_x - route_anchor_x,
+            anchor_y - route_anchor_y,
+        )
+        anchor_route_projection = (
+            anchor_from_route[0] * direction_unit[0]
+            + anchor_from_route[1] * direction_unit[1]
+        )
+        entry_longitudinal = (
+            -longitudinal_offset
+            if anchor_route_projection <= obstacle_route_projection
+            else min(
+                max(
+                    anchor_route_projection - obstacle_route_projection,
+                    longitudinal_offset,
+                ),
+                route_length - obstacle_route_projection,
+            )
+        )
+        entry = (
+            obstacle_center[0]
+            + direction_unit[0] * entry_longitudinal
+            + side_sign * left_unit[0] * lateral_offset,
+            obstacle_center[1]
+            + direction_unit[1] * entry_longitudinal
+            + side_sign * left_unit[1] * lateral_offset,
+        )
+        exit_longitudinal = route_length - obstacle_route_projection
+        exit_point = (
+            obstacle_center[0]
+            + direction_unit[0] * exit_longitudinal
+            + side_sign * left_unit[0] * lateral_offset,
+            obstacle_center[1]
+            + direction_unit[1] * exit_longitudinal
+            + side_sign * left_unit[1] * lateral_offset,
+        )
+        geometry_strategy = "reobserved_anchor_via_side_shoulder_to_route_rejoin"
+    else:
+        entry = (
+            obstacle_center[0]
+            - direction_unit[0] * longitudinal_offset
+            + side_sign * left_unit[0] * lateral_offset,
+            obstacle_center[1]
+            - direction_unit[1] * longitudinal_offset
+            + side_sign * left_unit[1] * lateral_offset,
+        )
+        exit_point = (
+            obstacle_center[0]
+            + direction_unit[0] * longitudinal_offset
+            + side_sign * left_unit[0] * lateral_offset,
+            obstacle_center[1]
+            + direction_unit[1] * longitudinal_offset
+            + side_sign * left_unit[1] * lateral_offset,
+        )
+        geometry_strategy = "route_bound_entry_exit"
     floor_plan = _revision_floor_plan_from_execution(execution)
     if not floor_plan:
         return {}, ["operator_recovery_revision_floor_plan_source_missing"]
@@ -5782,7 +6487,7 @@ def _build_directional_recovery_revision_geometry(
         obstacle_clearance = _point_rect_clearance_m(point, obstacle_rect)
         if (
             obstacle_clearance + 1e-9
-            < _TURTLEBOT3_RECOVERY_REVISION_WIDE_BBOX_CLEARANCE_M
+            < wide_bbox_clearance
         ):
             blocking_reasons.append(
                 "operator_recovery_revision_obstacle_clearance_insufficient"
@@ -5819,12 +6524,14 @@ def _build_directional_recovery_revision_geometry(
     geometry = {
         "schema_version": "missionos_turtlebot3_recovery_revision_geometry.v1",
         "geometry_status": "source_bound_candidate",
+        "geometry_strategy": geometry_strategy,
         "direction_reference": "planned_travel_direction_a_to_b_in_map_frame",
         "requested_direction": direction,
         "clearance_profile": "wide",
-        "anchor_pose": {
-            "x_m": anchor_x,
-            "y_m": anchor_y,
+        "anchor_pose": dict(reobserved_anchor),
+        "route_anchor_pose": {
+            "x_m": route_anchor_x,
+            "y_m": route_anchor_y,
             "source": "last_completed_nav2_segment_goal",
             "segment_ref": completed_result.get("segment_ref"),
             "completion_claimed": True,
@@ -5856,9 +6563,7 @@ def _build_directional_recovery_revision_geometry(
         "longitudinal_buffer_m": (
             _TURTLEBOT3_RECOVERY_REVISION_LONGITUDINAL_BUFFER_M
         ),
-        "wide_bbox_clearance_m": (
-            _TURTLEBOT3_RECOVERY_REVISION_WIDE_BBOX_CLEARANCE_M
-        ),
+        "wide_bbox_clearance_m": wide_bbox_clearance,
         "static_waypoint_clearance_policy_m": (
             _TURTLEBOT3_RECOVERY_REVISION_STATIC_WAYPOINT_CLEARANCE_M
         ),
@@ -5930,6 +6635,81 @@ def _build_return_home_recovery_revision_geometry(
     }, []
 
 
+def _build_retry_failed_segment_recovery_revision_geometry(
+    *,
+    proposal: Mapping[str, Any],
+    execution: Mapping[str, Any],
+    checkpoint: Mapping[str, Any],
+) -> tuple[dict[str, Any], list[str]]:
+    """Bind one retry to the exact failed route segment and observation."""
+
+    failures = execution.get("route_failure_observation_results")
+    failures = failures if isinstance(failures, list) else []
+    failed = failures[-1] if failures and isinstance(failures[-1], Mapping) else {}
+    next_index = checkpoint.get("next_segment_index")
+    planned_segments = proposal.get("planned_segments")
+    planned_segments = (
+        planned_segments if isinstance(planned_segments, (list, tuple)) else ()
+    )
+    if (
+        not failed
+        or failed.get("completion_claimed") is not False
+        or not isinstance(next_index, int)
+        or isinstance(next_index, bool)
+        or next_index < 1
+        or next_index > len(planned_segments)
+        or not isinstance(planned_segments[next_index - 1], Mapping)
+    ):
+        return {}, ["operator_recovery_revision_failed_segment_source_missing"]
+    failed_segment_ref = str(failed.get("segment_ref") or "")
+    if failed_segment_ref != f"segment_{next_index}":
+        return {}, ["operator_recovery_revision_failed_segment_cursor_mismatch"]
+    target = planned_segments[next_index - 1]
+    target_x = _revision_numeric(target.get("x_m"))
+    target_y = _revision_numeric(target.get("y_m"))
+    if target_x is None or target_y is None:
+        return {}, ["operator_recovery_revision_failed_segment_goal_missing"]
+    goal_pose = _revision_goal_payload(
+        template=target,
+        x_m=target_x,
+        y_m=target_y,
+        label="operator_revision_retry_failed_segment_once",
+    )
+    failure_sha256 = hashlib.sha256(
+        json.dumps(
+            failed,
+            sort_keys=True,
+            separators=(",", ":"),
+            default=str,
+        ).encode("utf-8")
+    ).hexdigest()
+    return {
+        "schema_version": "missionos_turtlebot3_recovery_revision_geometry.v1",
+        "geometry_status": "source_bound_candidate",
+        "geometry_strategy": "retry_exact_failed_route_segment_once",
+        "requested_direction": "route_retry",
+        "failed_segment_ref": failed_segment_ref,
+        "failed_segment_observation_sha256": failure_sha256,
+        "next_route_goal": {
+            "x_m": target_x,
+            "y_m": target_y,
+            "segment_index": next_index,
+            "label": target.get("label"),
+            "source": "original_turtlebot3_planned_segment",
+        },
+        "recovery_goal_poses": [goal_pose],
+        "path_feasibility_claimed": False,
+        "claim_boundary": (
+            "This proposal retries only the exact failed route segment once. "
+            "It requires dual-costmap validation, a fresh approval, and a new "
+            "runtime observation before the route may continue."
+        ),
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }, []
+
+
 def _recovery_revision_blocked_response(
     *,
     status: Literal["unsupported", "blocked"],
@@ -5978,8 +6758,9 @@ def _validate_operator_revision_recovery_goals(
         }
         for index, goal in enumerate(recovery_goal_poses)
     ]
+    candidates = _recovery_sequence_candidates(candidates)
     try:
-        evaluation = Ros2Nav2BridgeCommandClient().evaluate_recovery_candidates(
+        evaluation = _evaluate_recovery_candidates_plan_only(
             candidates=candidates,
             obstacle=obstacle_scenario,
             frame_id="map",
@@ -6108,6 +6889,15 @@ def build_turtlebot3_recovery_checkpoint_revision(
             checkpoint=checkpoint,
         )
         selected_action = "avoid_obstacle"
+    elif revision_intent == "retry_failed_segment":
+        geometry, geometry_reasons = (
+            _build_retry_failed_segment_recovery_revision_geometry(
+                proposal=proposal,
+                execution=execution,
+                checkpoint=checkpoint,
+            )
+        )
+        selected_action = "reroute"
     else:
         geometry, geometry_reasons = _build_return_home_recovery_revision_geometry(
             proposal=proposal,
@@ -6122,7 +6912,7 @@ def build_turtlebot3_recovery_checkpoint_revision(
         )
     recovery_goal_poses = list(geometry["recovery_goal_poses"])
     revision_candidate_resolution: dict[str, Any] = {}
-    if selected_action == "avoid_obstacle":
+    if selected_action in {"avoid_obstacle", "reroute"}:
         revision_candidate_resolution, evaluation_reasons = (
             _validate_operator_revision_recovery_goals(
                 recovery_goal_poses=recovery_goal_poses,
@@ -6184,6 +6974,19 @@ def build_turtlebot3_recovery_checkpoint_revision(
             f"{geometry['requested_direction']} avoidance; propose two bounded "
             "Nav2 waypoints and require a fresh approval."
         )
+    elif selected_action == "reroute":
+        retry_goal = recovery_goal_poses[0]
+        approved_parameters = {
+            "target_x_m": retry_goal["x_m"],
+            "target_y_m": retry_goal["y_m"],
+            "retry_failed_segment_required": True,
+            "retry_count": 1,
+        }
+        reason = (
+            "Operator acknowledged the source-backed transient stop and requested "
+            "one bounded retry of the exact failed route segment; require a fresh "
+            "checkpoint-bound approval before dispatch."
+        )
     else:
         home_goal = recovery_goal_poses[0]
         approved_parameters = {
@@ -6191,10 +6994,19 @@ def build_turtlebot3_recovery_checkpoint_revision(
             "target_y_m": home_goal["y_m"],
             "return_home_required": True,
         }
-        reason = (
-            "Operator requested a source-bound return to the stored home pose; "
-            "propose return_home and require a fresh approval."
-        )
+        if revision_intent == "return_home_then_resume":
+            approved_parameters["resume_route_after_recovery"] = True
+            reason = (
+                "Operator explicitly requested a source-bound return to the stored "
+                "home pose followed by resumption of the already-approved delivery "
+                "route; propose only the bounded return_home action and require a "
+                "fresh approval before it is dispatched."
+            )
+        else:
+            reason = (
+                "Operator requested a source-bound return to the stored home pose; "
+                "propose return_home and require a fresh approval."
+            )
     recovery_proposal = build_mission_autonomy_recovery_proposal(
         mission_ref=str(proposal.get("proposal_id") or "turtlebot3_home_mission"),
         proposal_source="operator",
@@ -6576,10 +7388,33 @@ def _validate_turtlebot3_recovery_resume(
                         break
         elif not approved_parameters:
             reasons.append("turtlebot3_recovery_checkpoint_action_not_supported")
+    elif selected_action == "reroute":
+        if (
+            set(approved_parameters)
+            != {
+                "target_x_m",
+                "target_y_m",
+                "retry_failed_segment_required",
+                "retry_count",
+            }
+            or approved_parameters.get("retry_failed_segment_required") is not True
+            or approved_parameters.get("retry_count") != 1
+            or len(recovery_goal_payloads) != 1
+            or not isinstance(recovery_goal_payloads[0], Mapping)
+            or _revision_numeric(approved_parameters.get("target_x_m"))
+            != _revision_numeric(recovery_goal_payloads[0].get("x_m"))
+            or _revision_numeric(approved_parameters.get("target_y_m"))
+            != _revision_numeric(recovery_goal_payloads[0].get("y_m"))
+        ):
+            reasons.append("turtlebot3_recovery_checkpoint_reroute_parameters_invalid")
     elif selected_action == "return_home":
+        resume_route_after_recovery = approved_parameters.get(
+            "resume_route_after_recovery"
+        )
         if (
             len(recovery_goal_payloads) != 1
             or approved_parameters.get("return_home_required") is not True
+            or resume_route_after_recovery not in {None, True}
         ):
             reasons.append("turtlebot3_recovery_checkpoint_return_home_parameters_invalid")
         elif isinstance(recovery_goal_payloads[0], Mapping):
@@ -6646,6 +7481,8 @@ def _recovery_goals_from_checkpoint(
         )
     parameters = checkpoint.get("approved_parameters")
     parameters = parameters if isinstance(parameters, Mapping) else {}
+    if not {"target_x_m", "target_y_m"}.issubset(parameters):
+        return ()
     template = _profile_dynamic_obstacle_avoidance_goal()
     return (
         template.model_copy(
@@ -6742,10 +7579,12 @@ def run_turtlebot3_home_mission_dispatch(
         blocking_reasons.append("operator_approval_missing")
 
     segment_results: list[dict[str, Any]] = []
+    route_failure_observation_results: list[dict[str, Any]] = []
     recovery_segment_result: dict[str, Any] = {}
     prior_recovery_segment_results: list[dict[str, Any]] = []
     approved_recovery_segment_results: list[dict[str, Any]] = []
     subsequent_recovery_segment_results: list[dict[str, Any]] = []
+    recovery_closed_loop_cycles: list[dict[str, Any]] = []
     recovery_requested_side_observation: dict[str, Any] = {}
     recovery_goal_sequence_completed = False
     recovery_checkpoint = _recovery_checkpoint_from_execution(resume_execution)
@@ -6754,6 +7593,7 @@ def run_turtlebot3_home_mission_dispatch(
     recovery_resume_state = _recovery_resume_payload(resume_execution)
     resume_requested = resume_execution is not None
     start_segment_index = 1
+    pre_recovery_segment_result_count = 0
 
     def _recovery_runtime_status_projection() -> dict[str, Any]:
         latest_recovery_result = (
@@ -6783,7 +7623,7 @@ def run_turtlebot3_home_mission_dispatch(
             or ("not_dispatched" if not latest_recovery_result else "unknown")
         )
         expected_recovery_goal_count = (
-            len(_recovery_goals_from_checkpoint(recovery_checkpoint))
+            max(len(_recovery_goals_from_checkpoint(recovery_checkpoint)), 1)
             if recovery_checkpoint
             else 1
         )
@@ -6948,6 +7788,25 @@ def run_turtlebot3_home_mission_dispatch(
             segment_results = [
                 dict(item) for item in stored_segment_results if isinstance(item, Mapping)
             ]
+            pre_recovery_segment_result_count = len(segment_results)
+        stored_failure_observations = recovery_resume_state.get(
+            "route_failure_observation_results"
+        )
+        if isinstance(stored_failure_observations, list):
+            route_failure_observation_results = [
+                dict(item)
+                for item in stored_failure_observations
+                if isinstance(item, Mapping)
+            ]
+        stored_closed_loop_cycles = recovery_resume_state.get(
+            "recovery_closed_loop_cycles"
+        )
+        if isinstance(stored_closed_loop_cycles, list):
+            recovery_closed_loop_cycles = [
+                dict(item)
+                for item in stored_closed_loop_cycles
+                if isinstance(item, Mapping)
+            ]
         stored_recovery_history = recovery_resume_state.get(
             "recovery_attempt_history"
         )
@@ -7032,6 +7891,53 @@ def run_turtlebot3_home_mission_dispatch(
                 "failed_at": dispatched_at.isoformat(),
                 "failure_reasons": list(resume_blocking_reasons),
             }
+            if recovery_candidate_revalidation.get("revalidation_status") == "blocked":
+                recovery_repair_parent_checkpoint = dict(recovery_checkpoint)
+                predispatch_observation = {
+                    "segment_ref": "recovery_predispatch_revalidation",
+                    "completion_claimed": False,
+                    "dispatch_request_sent": False,
+                    "command_ack_observed": False,
+                    "robot_motion_observed": False,
+                    "odom_delta_m": 0.0,
+                    "costmap_obstacle_observed": True,
+                    "obstacle_detected": True,
+                    "blocking_reasons": list(resume_blocking_reasons),
+                    "bridge_responses": [],
+                }
+                (
+                    recovery_checkpoint,
+                    runtime_recovery_obstacle_scenario,
+                    recovery_planner_result,
+                    recovery_proposals,
+                    recovery_proposal_classifications,
+                    runtime_recovery_motion_context,
+                ) = _build_recovery_failure_followup_checkpoint(
+                    parent_checkpoint=recovery_repair_parent_checkpoint,
+                    proposal=proposal,
+                    goals=goals,
+                    segment_results=segment_results,
+                    approved_recovery_results=[predispatch_observation],
+                    route_failure_observation_results=(
+                        route_failure_observation_results
+                    ),
+                    recovery_closed_loop_cycles=recovery_closed_loop_cycles,
+                    autonomy_envelope=autonomy_envelope,
+                    battery_envelope=battery_envelope,
+                    failure_source=(
+                        "approved_recovery_predispatch_revalidation"
+                    ),
+                )
+                recovery_action_suggested = str(
+                    recovery_checkpoint.get("selected_action") or ""
+                )
+                runtime_recovery_action_kind = recovery_action_suggested
+                recovery_candidate_resolution = dict(
+                    runtime_recovery_obstacle_scenario.get(
+                        "recovery_candidate_resolution"
+                    )
+                    or {}
+                )
         else:
             start_segment_index = int(recovery_checkpoint["next_segment_index"])
             approval_payload = dict(recovery_operator_approval or {})
@@ -7103,6 +8009,8 @@ def run_turtlebot3_home_mission_dispatch(
                     action_ref_suffix=(
                         "recovery_return_home"
                         if selected_recovery_action == "return_home"
+                        else "recovery_reroute_failed_segment"
+                        if selected_recovery_action == "reroute"
                         else f"recovery_avoid_obstacle_waypoint_{recovery_goal_index}"
                     ),
                     publish_initialpose=False,
@@ -7137,15 +8045,168 @@ def run_turtlebot3_home_mission_dispatch(
                 or recovery_requested_side_observation.get("requested_side_observed")
                 is True
             )
+            immediate_clearance_verification_required = (
+                selected_recovery_action == "avoid_obstacle"
+                and _obstacle_challenge_required(proposal)
+            )
+            immediate_clearance_observation = (
+                _obstacle_trajectory_geometry(
+                    obstacle_required=True,
+                    obstacle={
+                        "costmap_obstacle_observed": any(
+                            item.get("costmap_obstacle_observed") is True
+                            for item in approved_recovery_segment_results
+                        ),
+                        "obstacle_avoidance_observed": any(
+                            item.get("obstacle_avoidance_observed") is True
+                            for item in approved_recovery_segment_results
+                        ),
+                    },
+                    observed_points=[],
+                    recovery_points=[
+                        point
+                        for item in approved_recovery_segment_results
+                        for point in _observed_points_from_action_result(item)
+                    ],
+                )
+                if immediate_clearance_verification_required
+                else {
+                    "obstacle_trajectory_clearance_observed": True,
+                    "obstacle_trajectory_intersects_obstacle": False,
+                    "obstacle_trajectory_geometry_status": "not_required",
+                }
+            )
+            immediate_clearance_verification_satisfied = (
+                not immediate_clearance_verification_required
+                or immediate_clearance_observation.get(
+                    "obstacle_trajectory_clearance_observed"
+                )
+                is True
+            )
             recovery_action_completion_verified = (
                 recovery_goal_sequence_completed
                 and immediate_side_verification_satisfied
+                and immediate_clearance_verification_satisfied
+            )
+            approved_recovery_parameters = recovery_checkpoint.get(
+                "approved_parameters"
+            )
+            approved_recovery_parameters = (
+                approved_recovery_parameters
+                if isinstance(approved_recovery_parameters, Mapping)
+                else {}
+            )
+            route_resume_explicitly_approved = (
+                selected_recovery_action in {"avoid_obstacle", "reroute"}
+                or (
+                    selected_recovery_action == "return_home"
+                    and approved_recovery_parameters.get(
+                        "resume_route_after_recovery"
+                    )
+                    is True
+                )
             )
             route_resumed_after_recovery = (
-                selected_recovery_action == "avoid_obstacle"
+                route_resume_explicitly_approved
                 and recovery_action_completion_verified
             )
             recovery_goal_observed_at = datetime.now(timezone.utc).isoformat()
+            recovery_observation_payload = {
+                "checkpoint_id": recovery_checkpoint.get("checkpoint_id"),
+                "selected_action": selected_recovery_action,
+                "results": [dict(item) for item in approved_recovery_segment_results],
+            }
+            recovery_observation_sha256 = hashlib.sha256(
+                json.dumps(
+                    recovery_observation_payload,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    default=str,
+                ).encode("utf-8")
+            ).hexdigest()
+            recovery_closed_loop_cycles.append(
+                {
+                    "schema_version": (
+                        "missionos_turtlebot3_recovery_closed_loop_cycle.v1"
+                    ),
+                    "cycle_index": len(recovery_closed_loop_cycles) + 1,
+                    "checkpoint_id": recovery_checkpoint.get("checkpoint_id"),
+                    "checkpoint_hash": recovery_checkpoint.get("checkpoint_hash"),
+                    "proposal_id": recovery_checkpoint.get("recovery_proposal_id"),
+                    "classification_id": recovery_checkpoint.get(
+                        "recovery_classification_id"
+                    ),
+                    "selected_action": selected_recovery_action,
+                    "operator_approval_ref": recovery_approval.get(
+                        "operator_approval_ref"
+                    ),
+                    "bounded_action_result_count": len(
+                        approved_recovery_segment_results
+                    ),
+                    "dispatch_request_sent": any(
+                        item.get("dispatch_request_sent") is True
+                        for item in approved_recovery_segment_results
+                    ),
+                    "action_materialized": any(
+                        (
+                            item.get("adapter_evidence")
+                            if isinstance(item.get("adapter_evidence"), Mapping)
+                            else {}
+                        ).get("command_ack_observed")
+                        is True
+                        for item in approved_recovery_segment_results
+                    ),
+                    "reobservation_status": (
+                        "verified"
+                        if recovery_action_completion_verified
+                        else "failed"
+                    ),
+                    "reobservation_sha256": recovery_observation_sha256,
+                    "behavior_delta": {
+                        "robot_motion_observed": any(
+                            item.get("robot_motion_observed") is True
+                            for item in approved_recovery_segment_results
+                        ),
+                        "odom_delta_m": _sum_numeric(
+                            [
+                                item.get("odom_delta_m")
+                                for item in approved_recovery_segment_results
+                            ]
+                        ),
+                        "route_resume_status": (
+                            "resumed"
+                            if route_resumed_after_recovery
+                            else "not_resumed"
+                        ),
+                        "obstacle_trajectory_clearance_observed": (
+                            immediate_clearance_observation.get(
+                                "obstacle_trajectory_clearance_observed"
+                            )
+                            is True
+                        ),
+                        "obstacle_trajectory_intersects_obstacle": (
+                            immediate_clearance_observation.get(
+                                "obstacle_trajectory_intersects_obstacle"
+                            )
+                            is True
+                        ),
+                        "obstacle_trajectory_geometry_status": (
+                            immediate_clearance_observation.get(
+                                "obstacle_trajectory_geometry_status"
+                            )
+                        ),
+                    },
+                    "response": (
+                        "bounded_action_observed"
+                        if recovery_action_completion_verified
+                        else "bounded_action_failed"
+                    ),
+                    "observed_at": recovery_goal_observed_at,
+                    "approval_created_by_proposal": False,
+                    "automatic_redispatch_performed": False,
+                    "physical_execution_invoked": False,
+                }
+            )
             recovery_checkpoint = {
                 **recovery_checkpoint,
                 "claimed_at": str(
@@ -7173,6 +8234,19 @@ def run_turtlebot3_home_mission_dispatch(
                 )
                 if (
                     recovery_goal_sequence_completed
+                    and immediate_clearance_verification_required
+                    and not immediate_clearance_verification_satisfied
+                ):
+                    recovery_failure_reasons = [
+                        "obstacle_trajectory_intersects_obstacle"
+                        if immediate_clearance_observation.get(
+                            "obstacle_trajectory_intersects_obstacle"
+                        )
+                        is True
+                        else "obstacle_trajectory_clearance_not_observed"
+                    ]
+                if (
+                    recovery_goal_sequence_completed
                     and immediate_side_verification_required
                     and not immediate_side_verification_satisfied
                 ):
@@ -7182,43 +8256,43 @@ def run_turtlebot3_home_mission_dispatch(
                 recovery_checkpoint["failure_reasons"] = list(
                     recovery_failure_reasons
                 )
-                repair = _build_recovery_repair_child_checkpoint(
+                recovery_repair_parent_checkpoint = dict(recovery_checkpoint)
+                (
+                    recovery_checkpoint,
+                    runtime_recovery_obstacle_scenario,
+                    recovery_planner_result,
+                    recovery_proposals,
+                    recovery_proposal_classifications,
+                    runtime_recovery_motion_context,
+                ) = _build_recovery_failure_followup_checkpoint(
                     parent_checkpoint=recovery_checkpoint,
                     proposal=proposal,
                     goals=goals,
                     segment_results=segment_results,
-                    candidate_observation_results=[
-                        *segment_results,
-                        *approved_recovery_segment_results,
-                    ],
-                    recovery_proposals=recovery_proposals,
-                    recovery_proposal_classifications=(
-                        recovery_proposal_classifications
+                    approved_recovery_results=(
+                        approved_recovery_segment_results
                     ),
-                    recovery_planner_result=recovery_planner_result,
-                    obstacle_scenario=runtime_recovery_obstacle_scenario,
-                    motion_context=runtime_recovery_motion_context,
+                    route_failure_observation_results=(
+                        route_failure_observation_results
+                    ),
+                    recovery_closed_loop_cycles=recovery_closed_loop_cycles,
+                    autonomy_envelope=autonomy_envelope,
+                    battery_envelope=battery_envelope,
                 )
-                if repair is not None:
-                    recovery_repair_parent_checkpoint = dict(
-                        recovery_checkpoint
+                recovery_action_suggested = str(
+                    recovery_checkpoint.get("selected_action") or ""
+                )
+                runtime_recovery_action_kind = recovery_action_suggested
+                recovery_candidate_resolution = dict(
+                    runtime_recovery_obstacle_scenario.get(
+                        "recovery_candidate_resolution"
                     )
-                    (
-                        recovery_checkpoint,
-                        runtime_recovery_obstacle_scenario,
-                        recovery_planner_result,
-                    ) = repair
-                    recovery_candidate_resolution = dict(
-                        runtime_recovery_obstacle_scenario.get(
-                            "recovery_candidate_resolution"
-                        )
-                        or {}
-                    )
+                    or {}
+                )
         if (
             not resume_requested
             or (
-                recovery_checkpoint.get("selected_action") == "avoid_obstacle"
-                and route_resumed_after_recovery
+                route_resumed_after_recovery
             )
         ):
             segment_indexes = range(start_segment_index, len(goals) + 1)
@@ -7226,6 +8300,15 @@ def run_turtlebot3_home_mission_dispatch(
             segment_indexes = range(0)
         for index in segment_indexes:
             segment_goal = goals[index - 1]
+            simulate_post_recovery_failure = (
+                _truthy_env(
+                    TURTLEBOT3_SIMULATE_POST_RECOVERY_ROUTE_FAILURE_ONCE_ENV
+                )
+                and resume_requested
+                and route_resumed_after_recovery
+                and not route_failure_observation_results
+                and index == start_segment_index
+            )
             result = _dispatch_nav2_goal(
                 proposal=proposal,
                 approval=approval,
@@ -7234,6 +8317,7 @@ def run_turtlebot3_home_mission_dispatch(
                 dispatched_at=dispatched_at,
                 action_ref_suffix=f"segment_{index}",
                 publish_initialpose=index == 1,
+                simulate_cancel_after_accept=simulate_post_recovery_failure,
             )
             segment_results.append(result)
             _emit_progress(
@@ -7326,11 +8410,64 @@ def run_turtlebot3_home_mission_dispatch(
                     else None
                 )
                 runtime_recovery_action_kind = recovery_action_suggested
-                if recovery_action_suggested == "return_home":
+                if recovery_action_suggested != "avoid_obstacle":
                     # The prior obstacle candidate belongs to the consumed
-                    # checkpoint. A new return-home decision must not display
-                    # or bind that stale candidate as if it validated home.
+                    # checkpoint. A new decision must not display or bind that
+                    # stale candidate as if it validated the fresh observation.
                     recovery_candidate_resolution = {}
+                    runtime_recovery_obstacle_scenario = {
+                        key: value
+                        for key, value in runtime_recovery_obstacle_scenario.items()
+                        if key != "recovery_candidate_resolution"
+                    }
+                elif (
+                    result.get("obstacle_detected") is True
+                    or result.get("costmap_obstacle_observed") is True
+                ):
+                    runtime_recovery_obstacle_scenario = (
+                        _runtime_recovery_obstacle_scenario(
+                            proposal.get("obstacle_scenario")
+                            if isinstance(proposal.get("obstacle_scenario"), Mapping)
+                            else {},
+                            segment_result=result,
+                        )
+                    )
+                    parent_binding = recovery_checkpoint.get(
+                        "recovery_candidate_binding"
+                    )
+                    parent_binding = (
+                        parent_binding
+                        if isinstance(parent_binding, Mapping)
+                        else {}
+                    )
+                    excluded_candidate_ids = {
+                        str(candidate_id)
+                        for candidate_id in (
+                            parent_binding.get("candidate_ids")
+                            or [parent_binding.get("candidate_id")]
+                        )
+                        if str(candidate_id or "")
+                    }
+                    recovery_candidate_resolution = _resolve_recovery_candidate(
+                        runtime_recovery_obstacle_scenario,
+                        segment_results=[
+                            *segment_results,
+                            *route_failure_observation_results,
+                        ],
+                        excluded_candidate_ids=excluded_candidate_ids,
+                    )
+                    runtime_recovery_obstacle_scenario = {
+                        **runtime_recovery_obstacle_scenario,
+                        "recovery_candidate_resolution": dict(
+                            recovery_candidate_resolution
+                        ),
+                    }
+                    recovery_planner_result = {
+                        **recovery_planner_result,
+                        "recovery_candidate_resolution": dict(
+                            recovery_candidate_resolution
+                        ),
+                    }
                 recovery_execution_permitted_by_envelope = any(
                     classification.get("execution_permitted_by_envelope") is True
                     for classification in recovery_proposal_classifications
@@ -7356,8 +8493,7 @@ def run_turtlebot3_home_mission_dispatch(
                         recovery_segment_result = followup_recovery_result
                     evidence = followup_recovery_result["adapter_evidence"]
                 elif (
-                    recovery_action_suggested == "return_home"
-                    and recovery_proposal_classifications
+                    recovery_proposal_classifications
                     and recovery_proposal_classifications[0].get(
                         "execution_class"
                     )
@@ -7374,6 +8510,10 @@ def run_turtlebot3_home_mission_dispatch(
                         == "consumed"
                         else {}
                     )
+                    failed_observation = dict(result)
+                    route_failure_observation_results.append(failed_observation)
+                    if segment_results and segment_results[-1] is result:
+                        segment_results.pop()
                     followup_checkpoint = _build_turtlebot3_recovery_checkpoint(
                         proposal=proposal,
                         goals=goals,
@@ -7389,8 +8529,42 @@ def run_turtlebot3_home_mission_dispatch(
                         runtime_recovery_motion_context=(
                             runtime_recovery_motion_context
                         ),
-                        completed_segment_index=index,
+                        completed_segment_index=index - 1,
+                        route_failure_observation_results=(
+                            route_failure_observation_results
+                        ),
                     )
+                    followup_checkpoint = {
+                        **followup_checkpoint,
+                        "followup_trigger": (
+                            "route_segment_failed_after_verified_recovery"
+                        ),
+                        "followup_failed_segment_index": index,
+                        "followup_failure_observation_sha256": hashlib.sha256(
+                            json.dumps(
+                                failed_observation,
+                                sort_keys=True,
+                                separators=(",", ":"),
+                                default=str,
+                            ).encode("utf-8")
+                        ).hexdigest(),
+                        "operator_guidance_required": (
+                            recovery_action_suggested
+                            in {"ask_human", "hold", "safe_stop"}
+                        ),
+                        "requires_new_human_approval": True,
+                        "automatic_redispatch_performed": False,
+                        "prior_closed_loop_cycle_refs": [
+                            {
+                                "cycle_index": cycle.get("cycle_index"),
+                                "checkpoint_id": cycle.get("checkpoint_id"),
+                                "reobservation_sha256": cycle.get(
+                                    "reobservation_sha256"
+                                ),
+                            }
+                            for cycle in recovery_closed_loop_cycles
+                        ],
+                    }
                     if followup_parent:
                         recovery_followup_parent_checkpoint = followup_parent
                         followup_checkpoint = {
@@ -7401,20 +8575,13 @@ def run_turtlebot3_home_mission_dispatch(
                             "parent_checkpoint_hash": followup_parent.get(
                                 "checkpoint_hash"
                             ),
-                            "followup_trigger": (
-                                "route_segment_failed_after_verified_recovery"
-                            ),
-                            "requires_new_human_approval": True,
-                            "automatic_redispatch_performed": False,
                         }
-                        followup_hash = _recovery_checkpoint_hash(
-                            followup_checkpoint
-                        )
-                        followup_checkpoint["checkpoint_hash"] = followup_hash
-                        followup_checkpoint["checkpoint_id"] = (
-                            "turtlebot3_recovery_checkpoint_"
-                            f"{followup_hash[:12]}"
-                        )
+                    followup_hash = _recovery_checkpoint_hash(followup_checkpoint)
+                    followup_checkpoint["checkpoint_hash"] = followup_hash
+                    followup_checkpoint["checkpoint_id"] = (
+                        "turtlebot3_recovery_checkpoint_"
+                        f"{followup_hash[:12]}"
+                    )
                     recovery_checkpoint = followup_checkpoint
                 _emit_progress(
                     runtime_recovery_triggered=True,
@@ -7763,6 +8930,7 @@ def run_turtlebot3_home_mission_dispatch(
     )
     all_action_results = [
         *segment_results,
+        *route_failure_observation_results,
         *recorded_approved_recovery_results,
         *subsequent_recovery_segment_results,
     ]
@@ -7777,7 +8945,13 @@ def run_turtlebot3_home_mission_dispatch(
         for result in all_action_results
         if result.get("bridge_error")
     )
-    main_dispatch_sent = any(result.get("dispatch_request_sent") is True for result in segment_results)
+    main_dispatch_sent = any(
+        result.get("dispatch_request_sent") is True
+        for result in [
+            *segment_results,
+            *route_failure_observation_results,
+        ]
+    )
     all_route_segments_completed = (
         bool(segment_results)
         and len(segment_results) == len(goals)
@@ -7790,7 +8964,6 @@ def run_turtlebot3_home_mission_dispatch(
     route_completed_after_recovery = (
         all_route_segments_completed
         and runtime_recovery_triggered
-        and runtime_recovery_action_kind == "avoid_obstacle"
         and route_resumed_after_recovery
     )
     recovery_dispatch_request_sent = any(
@@ -7895,12 +9068,15 @@ def run_turtlebot3_home_mission_dispatch(
         obstacle=obstacle,
         observed_points=[
             point
-            for result in segment_results
+            for result in [
+                *segment_results[pre_recovery_segment_result_count:],
+                *route_failure_observation_results,
+            ]
             for point in _observed_points_from_action_result(result)
         ],
         recovery_points=[
             point
-            for result in recorded_approved_recovery_results
+            for result in current_approved_recovery_results
             for point in _observed_points_from_action_result(result)
         ],
     )
@@ -7934,6 +9110,41 @@ def run_turtlebot3_home_mission_dispatch(
         route_completion_candidate
         and (not obstacle_required or obstacle_avoidance_completion_claimed)
         and telemetry_sidecar_motion_confirmed
+    )
+    verified_closed_loop_cycles = [
+        cycle
+        for cycle in recovery_closed_loop_cycles
+        if cycle.get("dispatch_request_sent") is True
+        and cycle.get("action_materialized") is True
+        and cycle.get("reobservation_status") == "verified"
+        and bool(cycle.get("reobservation_sha256"))
+    ]
+    observed_closed_loop_cycles = [
+        cycle
+        for cycle in recovery_closed_loop_cycles
+        if cycle.get("dispatch_request_sent") is True
+        and cycle.get("action_materialized") is True
+        and cycle.get("reobservation_status") in {"verified", "failed"}
+        and bool(cycle.get("reobservation_sha256"))
+    ]
+    distinct_cycle_checkpoint_ids = {
+        str(cycle.get("checkpoint_id") or "")
+        for cycle in observed_closed_loop_cycles
+        if str(cycle.get("checkpoint_id") or "")
+    }
+    distinct_cycle_approval_refs = {
+        str(cycle.get("operator_approval_ref") or "")
+        for cycle in observed_closed_loop_cycles
+        if str(cycle.get("operator_approval_ref") or "")
+    }
+    form3_closed_loop_claimed = (
+        mission_completion_claimed
+        and len(observed_closed_loop_cycles) >= 2
+        and len(distinct_cycle_checkpoint_ids) >= 2
+        and len(distinct_cycle_approval_refs) >= 2
+    )
+    form3_closed_loop_status = (
+        "verified" if form3_closed_loop_claimed else "not_verified"
     )
     mission_blocking_reasons = list(evidence_payload.get("blocking_reasons") or [])
     mission_blocking_reasons.extend(
@@ -8012,7 +9223,10 @@ def run_turtlebot3_home_mission_dispatch(
     indoor_map_model = _build_turtlebot3_indoor_map_model(
         proposal=proposal,
         goals=goals,
-        segment_results=segment_results,
+        segment_results=[
+            *segment_results,
+            *route_failure_observation_results,
+        ],
         recovery_segment_result=recovery_segment_result,
         approved_recovery_segment_results=recorded_approved_recovery_results,
         subsequent_recovery_segment_results=subsequent_recovery_segment_results,
@@ -8067,9 +9281,16 @@ def run_turtlebot3_home_mission_dispatch(
         "planned_segments": [item.model_dump(mode="json") for item in goals],
         "planned_route_distance_m": planned_route_distance,
         "segment_results": [dict(item) for item in segment_results],
+        "route_failure_observation_results": [
+            dict(item) for item in route_failure_observation_results
+        ],
         "adapter_evidence": dict(evidence_payload),
         "adapter_evidence_segments": [
             dict(item.get("adapter_evidence") or {}) for item in segment_results
+        ],
+        "route_failure_adapter_evidence_segments": [
+            dict(item.get("adapter_evidence") or {})
+            for item in route_failure_observation_results
         ],
         "recovery_segment_result": dict(recovery_segment_result),
         "approved_recovery_segment_results": [
@@ -8078,6 +9299,17 @@ def run_turtlebot3_home_mission_dispatch(
         "recovery_attempt_history": [
             dict(item) for item in recorded_approved_recovery_results
         ],
+        "recovery_closed_loop_cycles": [
+            dict(item) for item in recovery_closed_loop_cycles
+        ],
+        "recovery_closed_loop_verified_cycle_count": len(
+            verified_closed_loop_cycles
+        ),
+        "recovery_closed_loop_observed_cycle_count": len(
+            observed_closed_loop_cycles
+        ),
+        "form3_closed_loop_status": form3_closed_loop_status,
+        "form3_closed_loop_claimed": form3_closed_loop_claimed,
         "subsequent_recovery_segment_results": [
             dict(item) for item in subsequent_recovery_segment_results
         ],
@@ -8192,7 +9424,12 @@ def run_turtlebot3_home_mission_dispatch(
         "nav2_action_completion_claimed": route_completion_candidate,
         "planned_segment_count": len(goals),
         "segment_dispatch_count": sum(
-            1 for result in segment_results if result.get("dispatch_request_sent") is True
+            1
+            for result in [
+                *segment_results,
+                *route_failure_observation_results,
+            ]
+            if result.get("dispatch_request_sent") is True
         ),
         "segment_completion_count": sum(
             1 for result in segment_results if result.get("completion_claimed") is True
@@ -8239,6 +9476,10 @@ def run_turtlebot3_home_mission_dispatch(
         "ros2_nav2_hardware_adapter_evidence": dict(evidence_payload),
         "ros2_nav2_hardware_adapter_evidence_segments": [
             dict(item.get("adapter_evidence") or {}) for item in segment_results
+        ],
+        "ros2_nav2_route_failure_adapter_evidence_segments": [
+            dict(item.get("adapter_evidence") or {})
+            for item in route_failure_observation_results
         ],
         "ros2_nav2_recovery_adapter_evidence": dict(
             recovery_segment_result.get("adapter_evidence") or {}
@@ -8342,6 +9583,9 @@ def run_turtlebot3_home_mission_dispatch(
             "route_interrupted_for_recovery": runtime_recovery_triggered,
             "route_completed_after_recovery": route_completed_after_recovery,
             "segment_results": [dict(item) for item in segment_results],
+            "route_failure_observation_results": [
+                dict(item) for item in route_failure_observation_results
+            ],
             "recovery_segment_result": dict(recovery_segment_result),
             "approved_recovery_segment_results": [
                 dict(item) for item in recorded_approved_recovery_results
@@ -8349,6 +9593,17 @@ def run_turtlebot3_home_mission_dispatch(
             "recovery_attempt_history": [
                 dict(item) for item in recorded_approved_recovery_results
             ],
+            "recovery_closed_loop_cycles": [
+                dict(item) for item in recovery_closed_loop_cycles
+            ],
+            "recovery_closed_loop_verified_cycle_count": len(
+                verified_closed_loop_cycles
+            ),
+            "recovery_closed_loop_observed_cycle_count": len(
+                observed_closed_loop_cycles
+            ),
+            "form3_closed_loop_status": form3_closed_loop_status,
+            "form3_closed_loop_claimed": form3_closed_loop_claimed,
             "subsequent_recovery_segment_results": [
                 dict(item) for item in subsequent_recovery_segment_results
             ],

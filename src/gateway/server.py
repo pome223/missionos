@@ -2778,6 +2778,7 @@ MISSIONOS_RUNTIME_RECOVERY_ACTIONS = (
 )
 MISSIONOS_TURTLEBOT3_RUNTIME_RECOVERY_ACTIONS = {
     "avoid_obstacle",
+    "reroute",
     "return_home",
 }
 from src.runtime.px4_gazebo_sitl_execution_readiness import (
@@ -2980,16 +2981,21 @@ def _bounded_turtlebot3_operator_recovery_parameters(
         )
     parameters = dict(raw)
     if recovery_action == "return_home":
-        if set(parameters) != {
+        required_keys = {
             "target_x_m",
             "target_y_m",
             "return_home_required",
-        }:
+        }
+        allowed_keys = required_keys | {"resume_route_after_recovery"}
+        if not required_keys.issubset(parameters) or not set(parameters).issubset(
+            allowed_keys
+        ):
             raise HTTPException(
                 status_code=400,
                 detail=(
                     "TurtleBot3 return_home requires only target_x_m, "
-                    "target_y_m, and return_home_required"
+                    "target_y_m, return_home_required, and the optional "
+                    "resume_route_after_recovery flag"
                 ),
             )
         target_x = _bounded_recovery_float(
@@ -3008,6 +3014,7 @@ def _bounded_turtlebot3_operator_recovery_parameters(
             target_x is None
             or target_y is None
             or parameters.get("return_home_required") is not True
+            or parameters.get("resume_route_after_recovery") not in {None, True}
         ):
             raise HTTPException(
                 status_code=400,
@@ -3016,10 +3023,61 @@ def _bounded_turtlebot3_operator_recovery_parameters(
                     "return_home_required=true"
                 ),
             )
-        return {
+        normalized = {
             "target_x_m": target_x,
             "target_y_m": target_y,
             "return_home_required": True,
+        }
+        if parameters.get("resume_route_after_recovery") is True:
+            normalized["resume_route_after_recovery"] = True
+        return normalized
+    if recovery_action == "reroute":
+        required_keys = {
+            "target_x_m",
+            "target_y_m",
+            "retry_failed_segment_required",
+            "retry_count",
+        }
+        if set(parameters) != required_keys:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "TurtleBot3 reroute requires only target_x_m, target_y_m, "
+                    "retry_failed_segment_required, and retry_count"
+                ),
+            )
+        target_x = _bounded_recovery_float(
+            parameters,
+            "target_x_m",
+            minimum=-5000.0,
+            maximum=5000.0,
+        )
+        target_y = _bounded_recovery_float(
+            parameters,
+            "target_y_m",
+            minimum=-5000.0,
+            maximum=5000.0,
+        )
+        retry_count = parameters.get("retry_count")
+        if (
+            target_x is None
+            or target_y is None
+            or parameters.get("retry_failed_segment_required") is not True
+            or isinstance(retry_count, bool)
+            or retry_count != 1
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "TurtleBot3 reroute requires a source-bound failed segment "
+                    "target and retry_count=1"
+                ),
+            )
+        return {
+            "target_x_m": target_x,
+            "target_y_m": target_y,
+            "retry_failed_segment_required": True,
+            "retry_count": 1,
         }
     if recovery_action != "avoid_obstacle":
         return {}
@@ -3377,6 +3435,18 @@ def _turtlebot3_recovery_revision_response(
     }
 
 
+def _turtlebot3_recovery_revision_action_direction(
+    revision_intent: str,
+) -> tuple[str, str]:
+    return {
+        "avoid_left_wide": ("avoid_obstacle", "left"),
+        "avoid_right_wide": ("avoid_obstacle", "right"),
+        "return_home": ("return_home", "return_home"),
+        "return_home_then_resume": ("return_home", "return_home"),
+        "retry_failed_segment": ("reroute", "route_retry"),
+    }[revision_intent]
+
+
 def _turtlebot3_recovery_revision_validation_reasons(
     *,
     revision: Mapping[str, Any],
@@ -3502,16 +3572,9 @@ def _turtlebot3_recovery_revision_validation_reasons(
     if intent_reasons or expected_intent is None:
         reasons.append("turtlebot3_recovery_revision_operator_intent_invalid")
     else:
-        expected_action = (
-            "return_home"
-            if expected_intent == "return_home"
-            else "avoid_obstacle"
+        expected_action, expected_direction = (
+            _turtlebot3_recovery_revision_action_direction(expected_intent)
         )
-        expected_direction = {
-            "avoid_left_wide": "left",
-            "avoid_right_wide": "right",
-            "return_home": "return_home",
-        }[expected_intent]
         revision_geometry = next_checkpoint.get("recovery_revision_geometry")
         revision_geometry = (
             revision_geometry
@@ -3705,10 +3768,20 @@ def _turtlebot3_recovery_revision_validation_reasons(
                     reasons.append("turtlebot3_recovery_revision_waypoints_mismatch")
                     break
     elif selected_action == "return_home":
+        allowed_return_home_keys = {
+            "target_x_m",
+            "target_y_m",
+            "return_home_required",
+            "resume_route_after_recovery",
+        }
         if (
-            set(approved_parameters)
-            != {"target_x_m", "target_y_m", "return_home_required"}
+            not {"target_x_m", "target_y_m", "return_home_required"}.issubset(
+                approved_parameters
+            )
+            or not set(approved_parameters).issubset(allowed_return_home_keys)
             or approved_parameters.get("return_home_required") is not True
+            or approved_parameters.get("resume_route_after_recovery")
+            not in {None, True}
             or len(goal_poses) != 1
             or not isinstance(goal_poses[0], Mapping)
             or _recovery_float_or_none(approved_parameters.get("target_x_m"))
@@ -3718,6 +3791,26 @@ def _turtlebot3_recovery_revision_validation_reasons(
             or str(goal_poses[0].get("frame_id") or "") != "map"
         ):
             reasons.append("turtlebot3_recovery_revision_return_home_invalid")
+    elif selected_action == "reroute":
+        if (
+            set(approved_parameters)
+            != {
+                "target_x_m",
+                "target_y_m",
+                "retry_failed_segment_required",
+                "retry_count",
+            }
+            or approved_parameters.get("retry_failed_segment_required") is not True
+            or approved_parameters.get("retry_count") != 1
+            or len(goal_poses) != 1
+            or not isinstance(goal_poses[0], Mapping)
+            or _recovery_float_or_none(approved_parameters.get("target_x_m"))
+            != _recovery_float_or_none(goal_poses[0].get("x_m"))
+            or _recovery_float_or_none(approved_parameters.get("target_y_m"))
+            != _recovery_float_or_none(goal_poses[0].get("y_m"))
+            or str(goal_poses[0].get("frame_id") or "") != "map"
+        ):
+            reasons.append("turtlebot3_recovery_revision_reroute_invalid")
     else:
         reasons.append("turtlebot3_recovery_revision_action_not_supported")
 
@@ -7921,6 +8014,14 @@ class GatewayServer:
                         }
 
                     blocked_reasons = list(checkpoint_integrity_reasons)
+                    if (
+                        checkpoint.get("operator_guidance_required") is True
+                        or expected_action
+                        not in {"avoid_obstacle", "reroute", "return_home"}
+                    ):
+                        blocked_reasons.append(
+                            "turtlebot3_recovery_checkpoint_not_dispatchable"
+                        )
                     if reviewed_checkpoint_id and reviewed_checkpoint_id != str(
                         checkpoint.get("checkpoint_id") or ""
                     ):

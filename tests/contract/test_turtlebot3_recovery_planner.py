@@ -421,12 +421,47 @@ def test_turtlebot3_recovery_planner_prompt_carries_runtime_failure_context() ->
 
     assert prompt["runtime_failure_context"]["runtime_failure_observed"] is True
     assert prompt["runtime_motion_context"]["odom_delta_m"] == 0.0
+    assert prompt["source_backed_input_observations"][
+        "failed_segment_completion_claimed"
+    ] is False
+    assert "failed_recovery_completion_claimed" not in prompt[
+        "source_backed_input_observations"
+    ]
     assert "odom_delta_m" in prompt["allowed_input_observation_keys"]
     assert "runtime_motion_context" not in prompt["allowed_input_observation_keys"]
     assert "allowed_input_observation_keys" in prompt["strict_output_contract"]
     assert "runtime_failure_context" in prompt["strict_output_contract"]
     assert "runtime_motion_context" in prompt["strict_output_contract"]
     assert prompt["role_contract"]["llm_must_not_dispatch"] is True
+
+
+def test_turtlebot3_recovery_planner_prompt_distinguishes_failed_recovery() -> None:
+    prompt = build_turtlebot3_recovery_planner_prompt(
+        mission_ref="mission_test",
+        operator_instruction="再観測した失敗から別の回復案を提案して。",
+        battery_envelope=_battery_envelope(),
+        home_distance_envelope=_home_distance_envelope(),
+        autonomy_envelope=_autonomy_envelope(),
+        runtime_failure_context={
+            "runtime_failure_observed": True,
+            "failed_recovery_checkpoint_id": "checkpoint_first",
+            "failed_recovery_action": "avoid_obstacle",
+            "failed_recovery_blocking_reason_count": 1,
+            "failed_recovery_result_count": 2,
+            "failed_recovery_completion_claimed": False,
+            "runtime_failure_source": (
+                "approved_recovery_bounded_action_reobservation"
+            ),
+            "recommended_recovery_action": "ask_human",
+            "requires_new_human_approval": True,
+        },
+    )
+
+    observations = prompt["source_backed_input_observations"]
+    assert observations["failed_recovery_checkpoint_id"] == "checkpoint_first"
+    assert observations["failed_recovery_completion_claimed"] is False
+    assert observations["requires_new_human_approval"] is True
+    assert "failed_segment_completion_claimed" not in observations
 
 
 def test_turtlebot3_recovery_planner_ollama_base_url_prefers_agent_env(

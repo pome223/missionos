@@ -120,6 +120,37 @@ def test_turtlebot3_recovery_parameters_allow_bounded_arrival_yaw() -> None:
     }
 
 
+def test_turtlebot3_recovery_parameters_allow_one_source_bound_route_retry() -> None:
+    from src.gateway.server import (
+        MISSIONOS_TURTLEBOT3_RUNTIME_RECOVERY_ACTIONS,
+        _bounded_turtlebot3_operator_recovery_parameters,
+    )
+
+    bounded = _bounded_turtlebot3_operator_recovery_parameters(
+        recovery_action="reroute",
+        body={
+            "recovery_parameters": {
+                "target_x_m": -0.55,
+                "target_y_m": -1.55,
+                "retry_failed_segment_required": True,
+                "retry_count": 1,
+            }
+        },
+    )
+
+    assert bounded == {
+        "target_x_m": -0.55,
+        "target_y_m": -1.55,
+        "retry_failed_segment_required": True,
+        "retry_count": 1,
+    }
+    assert MISSIONOS_TURTLEBOT3_RUNTIME_RECOVERY_ACTIONS == {
+        "avoid_obstacle",
+        "reroute",
+        "return_home",
+    }
+
+
 def test_gateway_env_loads_dotenv_backend_without_export(monkeypatch, tmp_path) -> None:
     monkeypatch.chdir(tmp_path)
     (tmp_path / ".env").write_text(
@@ -1974,12 +2005,9 @@ def test_resumed_route_failure_persists_fresh_unapproved_followup_checkpoint(
         child.update(
             {
                 "checkpoint_status": "awaiting_operator_approval",
-                "selected_action": "return_home",
-                "approved_parameters": {
-                    "target_x_m": -2.0,
-                    "target_y_m": -0.5,
-                    "return_home_required": True,
-                },
+                "selected_action": "ask_human",
+                "approved_parameters": {},
+                "operator_guidance_required": True,
                 "parent_checkpoint_id": parent["checkpoint_id"],
                 "parent_checkpoint_hash": parent["checkpoint_hash"],
                 "followup_trigger": (
@@ -2044,6 +2072,9 @@ def test_resumed_route_failure_persists_fresh_unapproved_followup_checkpoint(
     current = stored["artifacts"]["turtlebot3_recovery_checkpoint"]
     assert current["checkpoint_status"] == "awaiting_operator_approval"
     assert current["checkpoint_id"] != parent["checkpoint_id"]
+    assert current["selected_action"] == "ask_human"
+    assert current["operator_guidance_required"] is True
+    assert current["approved_parameters"] == {}
     assert "claimed_at" not in current
     assert "recovery_candidate_binding" not in current
     collection = stored["artifacts"]["turtlebot3_recovery_checkpoints"]
@@ -2052,6 +2083,109 @@ def test_resumed_route_failure_persists_fresh_unapproved_followup_checkpoint(
     approval = stored["artifacts"]["turtlebot3_recovery_operator_approval"]
     assert approval["checkpoint_id"] == parent["checkpoint_id"]
     assert approval["checkpoint_id"] != current["checkpoint_id"]
+
+
+def test_ask_human_checkpoint_cannot_mint_approval_or_dispatch(
+    isolated_gateway_factory,
+) -> None:
+    from fastapi.testclient import TestClient
+
+    from src.gateway import server as gateway_server
+
+    gateway = isolated_gateway_factory()
+    task_id = "task_turtlebot3_ask_human_proposal_only"
+    artifacts = _pending_turtlebot3_recovery_task_artifacts()
+    checkpoint = {
+        key: value
+        for key, value in artifacts["turtlebot3_recovery_checkpoint"].items()
+        if key
+        not in {
+            "checkpoint_id",
+            "checkpoint_hash",
+            "recovery_candidate_binding",
+            "recovery_goal_poses",
+        }
+    }
+    checkpoint.update(
+        {
+            "selected_action": "ask_human",
+            "approved_parameters": {},
+            "operator_guidance_required": True,
+            "requires_new_human_approval": True,
+            "automatic_redispatch_performed": False,
+        }
+    )
+    checkpoint_hash = gateway_server._recovery_checkpoint_hash(checkpoint)
+    checkpoint["checkpoint_hash"] = checkpoint_hash
+    checkpoint["checkpoint_id"] = (
+        f"turtlebot3_recovery_checkpoint_{checkpoint_hash[:12]}"
+    )
+    artifacts["turtlebot3_recovery_checkpoint"] = checkpoint
+    artifacts["turtlebot3_recovery_checkpoints"] = {
+        checkpoint["checkpoint_id"]: checkpoint
+    }
+    artifacts["turtlebot3_home_mission_execution"] = {
+        **artifacts["turtlebot3_home_mission_execution"],
+        "turtlebot3_recovery_checkpoint": checkpoint,
+    }
+    artifacts["summary"] = {
+        **artifacts["summary"],
+        "turtlebot3_recovery_checkpoint": checkpoint,
+    }
+    artifacts.pop("turtlebot3_recovery_operator_approval", None)
+    artifacts.pop("turtlebot3_recovery_bounded_action", None)
+    gateway.task_store.create(
+        task_id=task_id,
+        kind="turtlebot3_home_mission_execution",
+        title="TurtleBot3 proposal-only ask human checkpoint",
+        status="pending",
+        artifacts=artifacts,
+    )
+
+    client = TestClient(gateway.app)
+    unsupported_response = client.post(
+        "/px4-gazebo/mission-scenarios/recovery-dispatch",
+        json={
+            "task_id": task_id,
+            "recovery_action": "ask_human",
+            "recovery_parameters": {},
+            "explicit_recovery_dispatch_approval": True,
+            "expected_recovery_checkpoint_id": checkpoint["checkpoint_id"],
+            "expected_recovery_checkpoint_hash": checkpoint["checkpoint_hash"],
+        },
+    )
+
+    assert unsupported_response.status_code == 400
+    assert "avoid_obstacle, reroute, return_home" in unsupported_response.json()[
+        "detail"
+    ]
+
+    response = client.post(
+        "/px4-gazebo/mission-scenarios/recovery-dispatch",
+        json={
+            "task_id": task_id,
+            "recovery_action": "avoid_obstacle",
+            "recovery_parameters": {
+                "target_x_m": -0.2,
+                "target_y_m": -1.4,
+                "obstacle_avoidance_required": True,
+            },
+            "explicit_recovery_dispatch_approval": True,
+            "expected_recovery_checkpoint_id": checkpoint["checkpoint_id"],
+            "expected_recovery_checkpoint_hash": checkpoint["checkpoint_hash"],
+        },
+    )
+
+    assert response.status_code == 409, response.json()
+    assert "turtlebot3_recovery_checkpoint_not_dispatchable" in response.json()[
+        "summary"
+    ]["blocked_reasons"]
+    stored = gateway.task_store.get(task_id)
+    assert stored is not None
+    assert stored["status"] == "pending"
+    assert stored["artifacts"]["turtlebot3_recovery_checkpoint"] == checkpoint
+    assert "turtlebot3_recovery_operator_approval" not in stored["artifacts"]
+    assert "turtlebot3_recovery_bounded_action" not in stored["artifacts"]
 
 
 def test_turtlebot3_recovery_finalization_conflict_is_durably_unknown(
@@ -2821,6 +2955,55 @@ def test_turtlebot3_recovery_return_home_uses_ground_action_without_route_resume
     assert payload["task"]["status"] == "recovered"
     assert payload["summary"]["physical_execution_invoked"] is False
     assert payload["summary"]["delivery_completion_claimed"] is False
+
+
+def test_turtlebot3_return_home_parameters_preserve_explicit_route_resume() -> None:
+    from src.gateway import server as gateway_server
+
+    parameters = gateway_server._bounded_turtlebot3_operator_recovery_parameters(
+        recovery_action="return_home",
+        body={
+            "recovery_parameters": {
+                "target_x_m": -2.0,
+                "target_y_m": -0.5,
+                "return_home_required": True,
+                "resume_route_after_recovery": True,
+            }
+        },
+    )
+
+    assert parameters == {
+        "target_x_m": -2.0,
+        "target_y_m": -0.5,
+        "return_home_required": True,
+        "resume_route_after_recovery": True,
+    }
+
+
+def test_turtlebot3_gateway_maps_return_home_then_resume_without_new_action() -> None:
+    from src.gateway import server as gateway_server
+
+    action, direction = (
+        gateway_server._turtlebot3_recovery_revision_action_direction(
+            "return_home_then_resume"
+        )
+    )
+
+    assert action == "return_home"
+    assert direction == "return_home"
+
+
+def test_turtlebot3_gateway_maps_failed_segment_retry_to_bounded_reroute() -> None:
+    from src.gateway import server as gateway_server
+
+    action, direction = (
+        gateway_server._turtlebot3_recovery_revision_action_direction(
+            "retry_failed_segment"
+        )
+    )
+
+    assert action == "reroute"
+    assert direction == "route_retry"
 
 
 def test_nova_carter_same_kind_cannot_enter_turtlebot3_dispatch_path(
