@@ -214,6 +214,12 @@ artifact path, and a historical tenth-stage checklist. None was exported by the
 supported package, invoked by the CLI/Gateway, documented, or covered as a
 public entrypoint. They were removed rather than retained as speculative APIs.
 
+Removing the historical tenth-stage checklist exposed its sole supporting
+module, `limited_live_action_rehearsal.py`, as another zero-inbound artifact
+builder. A final fixed-point pass removed it as well. This does not change the
+current approval or live-SITL opt-in paths; neither imported the rehearsal
+module.
+
 ## Protected regression baseline
 
 Every reduction PR must keep these facts separate and test them independently:
