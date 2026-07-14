@@ -183,6 +183,20 @@ Gazebo runtime smoke must include its complete, publication-safe container
 configuration and must be verified as an external runtime boundary before being
 listed as maintained.
 
+A follow-up scan found nine more standalone Python entrypoints that directly
+called `docker compose`, plus a command-driven script that imported Compose
+helpers from one of them. Together with the first two files, all 13 depended on
+profiles absent from the public repository and failed before reaching their
+claimed runtime boundary. The remaining 11 entrypoints were therefore retired
+as one cohort. Their underlying `src/runtime` implementations remain available
+for a separate reachability and contract audit; removing an unusable launcher
+does not establish that those implementation modules are dead.
+
+A repository contract now rejects Python scripts that invoke Docker Compose
+unless a root Compose configuration is tracked. This is a publication-safety
+and reproducibility rule, not a claim that container-backed Gazebo or PX4 was
+executed by the fixture tests.
+
 ## Protected regression baseline
 
 Every reduction PR must keep these facts separate and test them independently:
