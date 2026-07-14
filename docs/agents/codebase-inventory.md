@@ -290,6 +290,13 @@ produces recommendations but no approval, promotion, reuse, command, live, or
 physical authority. New delivery contracts can extend this fixture without
 adding another standalone smoke program.
 
+The same fixture was then extended with a completed bounded-delivery branch:
+scenario proposal, approval-scoped simulation request, fixture-backed Gazebo
+run evidence, verified dropoff, episode/replay, scorecard, and review. One
+contract test now proves both completion scoring and the resulting
+`completed_no_recovery_needed` recommendation while keeping every authority
+surface false. This replaced the two separate completed-delivery smoke scripts.
+
 ## Protected regression baseline
 
 Every reduction PR must keep these facts separate and test them independently:
