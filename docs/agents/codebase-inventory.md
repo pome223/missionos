@@ -239,6 +239,33 @@ unintegrated design/schema slice, as the final orphan in this dependency chain.
 It was removed and the fixed-point scan then found no zero-inbound Python module
 under `src/runtime` or `src/simulators`.
 
+## Smoke classification pass
+
+The second cleanup phase classifies a script from repository evidence rather
+than its `smoke_` prefix:
+
+1. `production_boundary`: invoked by `src/`, CI, or a maintained public
+   reproduction document
+2. `regression_candidate`: no maintained inbound entrypoint, but exercises a
+   contract owned by a current `src/runtime` module; preserve the invariant in
+   pytest before removing or replacing the script
+3. `historical_one_off`: its target or repository-local dependency is gone or
+   superseded, so the script is not a reproducible current check
+
+The first machine pass found ten zero-inbound scripts that imported test modules
+which no longer exist. These 1,777 lines were removed as
+`historical_one_off`. A contract test now statically resolves all `src.*`,
+`scripts.*`, and `tests.*` imports in public Python scripts so this broken state
+cannot silently recur.
+
+The resulting fixed-point scan exposed three advisory epic-exit/invariance
+modules, totaling 590 lines, whose only consumers were in that broken script
+cohort. They were removed after confirming the current TurtleBot3 recovery,
+Gateway, and mission-play paths do not import them.
+
+One final dependency, `advisory_lesson_invariance.py` (166 lines), then became
+orphaned and was removed in the same fixed-point cleanup.
+
 ## Protected regression baseline
 
 Every reduction PR must keep these facts separate and test them independently:
