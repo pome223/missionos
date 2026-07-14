@@ -101,6 +101,7 @@ dispatch, action, or command surface:
 ```bash
 python3 /work/missionos/scripts/ros2_nav2_turtlebot3_telemetry_sidecar.py \
   --output /tmp/missionos_turtlebot3_telemetry_sidecar.jsonl \
+  --task-id-path /tmp/missionos_turtlebot3_live_task_id \
   --duration-s 600 \
   --max-samples 12000
 ```
@@ -756,15 +757,59 @@ Displayed trails are AMCL-corrected map-frame samples (odom-frame fallbacks
 and unconfirmed single-sample jumps are dropped from display only; raw bridge
 samples stay in `bridge_responses`).
 
+The Gateway atomically writes the active MissionOS task id to the sidecar's
+`--task-id-path`. Each live sample carries that id, and `GET /tasks/<task_id>`
+attaches the preview only when the sample id exactly matches the requested
+task. A newer robot run therefore cannot leak its live odom into an older
+running or pending task.
+
 ### Runtime failure recovery
 
 An unplanned Nav2 segment failure convenes the same recovery machinery as the
 scripted battery/obstacle triggers: the recovery planner (LLM with
 source-binding guardrails, deterministic return-home floor as fallback)
-proposes, the autonomy envelope classifies, and only an envelope-permitted
-`return_home` is dispatched immediately under the existing mission approval.
-Any other proposal is attached to the blocked result for the operator. The
-failure context is recorded source-bound as `runtime_failure_context`.
+proposes and the autonomy envelope classifies. The interactive Docker Gateway
+sets `MISSIONOS_TURTLEBOT3_RECOVERY_REQUIRES_APPROVAL=1`, so `return_home`,
+`hold`, and `avoid_obstacle` all require a fresh recovery approval; the initial
+mission approval is not reused. A source-bound checkpoint is persisted as
+`awaiting_operator_approval`, and no recovery goal is dispatched until the
+operator reviews it and explicitly chooses `y` or uses
+`/approve-recovery <task_id>`. The failure context is recorded source-bound as
+`runtime_failure_context`.
+
+Environment variables are configuration, not human authority.
+`MISSIONOS_TURTLEBOT3_RECOVERY_OPERATOR_APPROVAL_REF` and its actor companion
+are not accepted or forwarded. Only the authenticated Gateway recovery route,
+after checkpoint id/hash review, can mint
+`missionos_turtlebot3_recovery_operator_approval.v1`.
+
+Live `avoid_obstacle` candidate evaluation reads both global and local
+costmaps. A multi-goal recovery is checked as a connected sequence: the first
+path starts at the current robot pose, and each downstream `ComputePathToPose`
+request sets `use_start=true` with the preceding recovery goal. The checkpoint
+binds those sequence paths and hashes; dispatch-time revalidation repeats the
+same connected check. `ROS2_NAV2_RECOVERY_EVALUATION_TIMEOUT_S` controls this
+plan-only call (90 seconds by default), while the general bridge timeout may
+still impose the operator-configured process limit.
+The 0.55 m geometry clamp is only a deterministic candidate-generation floor;
+dual-costmap path/controller-cost validation, not that clamp, is the dispatch
+safety decision.
+
+The recovery anti-orbit defaults require 25 seconds of execution, 18 seconds
+without improved Nav2 distance, and at least 1.0 m of additional map-frame
+path before cancellation. The combined gates avoid treating a short controller
+replan or localization wobble as an orbit; deployments with noisier AMCL should
+tune all three together and retain the source-backed cancellation evidence.
+
+For a recovery goal only, the bridge may record
+`nav2_status=position_tolerance_reached` when feedback and map-frame pose are
+both within the bounded tolerance and a controlled cancel is accepted and
+observed. This is not rewritten as Nav2 `SUCCEEDED`:
+`nav2_goal_succeeded=false`,
+`completion_basis=position_tolerance_with_confirmed_cancel`, and adapter
+evidence retains `nav2_goal_status_succeeded_not_observed` as an unproven
+claim. It can support bounded simulator pose completion with observed motion,
+but never a Nav2-success, delivery, or physical-execution claim.
 
 ### Gateway and chat commands
 
@@ -813,19 +858,86 @@ operate/watch/map -> read the resulting MissionOS task
 ```
 
 If a runtime recovery proposal is classified as
-`requires_new_human_approval=true`, chat can approve that specific pending
-proposal without turning the LLM proposal into authority:
+`requires_new_human_approval=true`, chat first opens a non-authoritative review
+step for that specific pending proposal:
 
 ```text
-LLM proposes -> rules classify requires_new_human_approval -> operator types
-/approve-recovery <task_id> or "承認します" -> Gateway recovery-dispatch records
-explicit_recovery_dispatch_approval=true -> executor/verifier report the result
+LLM proposes -> rules classify requires_new_human_approval
+-> chat renders exact checkpoint action/parameters/evidence
+-> Enter opens /review-recovery (still no authority)
+-> y approves; d/Enter defers; c enters checkpoint-bound revision mode
+-> a revision instruction produces a new proposal/checkpoint, not a dispatch
+-> Gateway recovery-dispatch records explicit_recovery_dispatch_approval=true
+-> executor/verifier report the result
 ```
 
-The command reads the task's source-backed recovery proposal and dispatches only
-through the existing operator-gated `recovery-dispatch` route. The
+The default is defer (`d`); pressing Enter once can only open review and cannot
+create an approval artifact. A `y` decision re-fetches the task and must match
+both the checkpoint id and hash shown to the operator. A changed checkpoint
+fails closed and must be reviewed again. `/approve-recovery <task_id>` remains
+an explicit expert fallback, not the default Enter suggestion.
+
+Choosing `c` binds revision mode to the exact task id, checkpoint id, and
+checkpoint hash shown on the card. The next non-slash line is sent only to the
+TurtleBot3 revision endpoint. It is not routed through the generic PX4 recovery
+planner or converted into `/avoid`, `/climb`, or dispatch authority. An empty
+line is inert and keeps revision mode active. `/back` exits revision mode
+without changing the pending checkpoint.
+
+This revision route is TurtleBot3-specific. The stored plan, current checkpoint,
+and summary must all identify `robot_profile=turtlebot3` and
+`execution_target=ros2_nav2_turtlebot3_sim`. If those durable views are missing
+or disagree, the review offers only `d/Enter`; approval and revision fail closed
+without sending a Gateway request.
+
+The bounded revision intents are wide left/right avoidance relative to the
+stored route direction, and return to the stored simulator home pose. Altitude,
+climb-over, ambiguous, negated, infeasible, or stale requests fail closed. A
+valid revision creates a complete child proposal/checkpoint and atomically
+marks the parent `superseded`; it creates no approval, bounded-action authority,
+dispatch receipt, execution, or progress claim.
+
+The command reads the task's source-backed recovery checkpoint and dispatches
+only through the operator-gated `recovery-dispatch` route. TurtleBot3 tasks use
+a task-kind-specific continuation path rather than PX4/AUTO active-runner or
+MAVLink authority. The
 `turtlebot3_recovery_decision_summary` remains read-only and
 `decision_summary_creates_dispatch_authority=false`.
+
+Deferring does not rewrite the checkpoint. A child revision binds its immutable
+parent id/hash, operator-instruction hash, exact Nav2 goals, policy
+classification, route cursor, planned-segments hash, and resume-state hash.
+The Gateway also binds the task generation in the atomic claim, so a concurrent
+artifact update cannot be overwritten by a revision built from stale state.
+
+Fresh-approval recovery is a durable two-phase lifecycle:
+
+```text
+Nav2 segment and runtime observation
+  -> guarded Recovery Agent proposal
+  -> turtlebot3_recovery_checkpoint.v1
+  -> task status=pending, lifecycle=awaiting_operator_approval
+  -> exact action/parameters approved by the operator
+  -> checkpoint atomically claimed as dispatching
+  -> bounded Nav2 recovery goal sequence
+  -> raw map-frame direction and obstacle clearance verified
+  -> checkpoint consumed only after recovery verification
+  -> avoid_obstacle resumes from next_segment_index
+  -> return_home stops at home without resuming delivery
+  -> verifier records later route completion or failure separately
+```
+
+The dispatch claim persists a unique attempt id and Gateway-process owner. A
+known runtime outcome atomically commits the final checkpoint, attempt, receipt,
+metadata, and task status. If the owning process dies while the outcome is
+unknown, the next exclusive owner changes the task to `blocked` and the attempt
+to `dispatch_unknown`; it never redispatches automatically.
+
+The fresh authority artifacts are
+`missionos_turtlebot3_recovery_operator_approval.v1` and
+`missionos_turtlebot3_recovery_bounded_action.v1`. They bind the checkpoint,
+proposal, classification, action, and parameters. The bounded action permits
+Nav2 goals only; raw velocity remains forbidden.
 
 When the `run` step creates a TurtleBot3 task, chat opens the same companion
 surfaces used for PX4 (`missionos operate`, `missionos watch`, and
@@ -839,6 +951,20 @@ the Nav2 `map` frame, so the map model records a `display_alignment` transform
 that translates observed points onto the planned home pose for visualization.
 This transform does not modify raw bridge responses, sidecar `/odom` evidence,
 completion claims, delivery claims, or physical-execution claims.
+
+Trajectory colors preserve a separate display/evidence boundary:
+
+- blue is persisted Nav2-bridge observed trajectory and is the final
+  observation evidence
+- purple is persisted recovery trajectory evidence
+- green is a process-local, high-rate `/odom` preview projected onto the map for
+  operator orientation; projection jitter can make it appear serpentine
+
+The green preview is `display_only`, is never verifier input, and is never
+written to the final task artifact. At terminal state the current browser may
+freeze its last green preview as a thin translucent dashed line labeled
+`live preview ended — not evidence`. Reloading the completed map reconstructs
+only the persisted blue and purple evidence.
 
 If the default Gateway at `http://127.0.0.1:18791` is already running, the
 TurtleBot3 chat entry automatically uses `http://127.0.0.1:18792` unless

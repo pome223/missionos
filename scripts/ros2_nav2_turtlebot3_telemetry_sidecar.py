@@ -65,6 +65,11 @@ def main() -> int:
     parser.add_argument("--odom-topic", default="/odom")
     parser.add_argument("--battery-topic", default="/battery_state")
     parser.add_argument("--scan-topic", default="/scan")
+    parser.add_argument(
+        "--task-id-path",
+        default="",
+        help="Gateway-owned file containing the active MissionOS task id",
+    )
     args = parser.parse_args()
 
     import rclpy
@@ -74,6 +79,16 @@ def main() -> int:
     rclpy.init()
     node = rclpy.create_node("missionos_turtlebot3_telemetry_sidecar")
     writer = JsonlWriter(Path(args.output))
+    task_id_path = Path(args.task_id_path) if args.task_id_path else None
+
+    def current_task_id() -> str:
+        if task_id_path is None:
+            return ""
+        try:
+            return task_id_path.read_text(encoding="utf-8").strip()
+        except OSError:
+            return ""
+
     started_at = _utc_now()
     print(
         json.dumps(
@@ -95,10 +110,12 @@ def main() -> int:
     )
 
     def write_odom(message: Any) -> None:
+        task_id = current_task_id()
         writer.write(
             {
                 "schema_version": SAMPLE_SCHEMA,
                 "sample_kind": "odom",
+                **({"task_id": task_id} if task_id else {}),
                 "captured_at": _utc_now(),
                 "topic": args.odom_topic,
                 "frame_id": str(message.header.frame_id or ""),
@@ -117,10 +134,12 @@ def main() -> int:
         )
 
     def write_battery(message: Any) -> None:
+        task_id = current_task_id()
         writer.write(
             {
                 "schema_version": SAMPLE_SCHEMA,
                 "sample_kind": "battery",
+                **({"task_id": task_id} if task_id else {}),
                 "captured_at": _utc_now(),
                 "topic": args.battery_topic,
                 "percentage": float(message.percentage),
@@ -132,10 +151,12 @@ def main() -> int:
 
     def write_scan(message: Any) -> None:
         ranges = _finite_ranges(message.ranges)
+        task_id = current_task_id()
         writer.write(
             {
                 "schema_version": SAMPLE_SCHEMA,
                 "sample_kind": "scan",
+                **({"task_id": task_id} if task_id else {}),
                 "captured_at": _utc_now(),
                 "topic": args.scan_topic,
                 "frame_id": str(message.header.frame_id or ""),

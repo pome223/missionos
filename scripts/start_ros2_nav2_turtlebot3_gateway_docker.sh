@@ -10,18 +10,58 @@ gateway_llm_backend="${MISSIONOS_LLM_BACKEND:-gemini}"
 planner_backend="${MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_LLM_BACKEND:-gemini}"
 planner_model_id="${MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_MODEL_ID:-${MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_MODEL_ID:-gemini-3.1-flash-lite}}"
 planner_adk_enabled="${MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_ADK_ENABLED:-1}"
+vertex_docker_args=()
+gemini_credential_status=not_required
+case "${GOOGLE_GENAI_USE_VERTEXAI:-false}" in
+1|true|TRUE|yes|YES|on|ON)
+  vertex_adc_path="${GOOGLE_APPLICATION_CREDENTIALS:-${HOME}/.config/gcloud/application_default_credentials.json}"
+  if [ ! -r "$vertex_adc_path" ]; then
+    printf 'Vertex ADC file is not readable. Set GOOGLE_APPLICATION_CREDENTIALS or run gcloud auth application-default login.\n' >&2
+    exit 2
+  fi
+  if [ -z "${GOOGLE_CLOUD_PROJECT:-}" ]; then
+    printf 'GOOGLE_CLOUD_PROJECT is required when GOOGLE_GENAI_USE_VERTEXAI=true.\n' >&2
+    exit 2
+  fi
+  vertex_docker_args+=(
+    -e "GOOGLE_APPLICATION_CREDENTIALS=/run/missionos-secrets/google_adc.json"
+    -e "GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}"
+    -e "GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION:-global}"
+    -v "${vertex_adc_path}:/run/missionos-secrets/google_adc.json:ro"
+  )
+  gemini_credential_status=vertex_adc_configured
+  ;;
+esac
+if { [ "$gateway_llm_backend" = gemini ] || [ "$planner_backend" = gemini ]; } \
+  && [ "$gemini_credential_status" = not_required ]; then
+  if [ -n "${GOOGLE_API_KEY:-}" ]; then
+    gemini_credential_status=google_api_key_configured
+  else
+    gemini_credential_status=missing_deterministic_fallback
+    printf '%s\n' \
+      'Gemini was selected but neither GOOGLE_API_KEY nor Vertex ADC is configured.' \
+      'Recovery judgment will be labeled deterministic fallback; no Gemini invocation will be implied.' >&2
+  fi
+fi
 
 docker rm -f "${container}" >/dev/null 2>&1 || true
 
-docker run --rm -d \
+# Keep a failed startup container available for `docker logs`. The next launch
+# removes it above, and the interactive CLI removes a successful container when
+# chat exits.
+docker run -d \
   --name "${container}" \
   --shm-size=1g \
   -p "127.0.0.1:${host_port}:${gateway_port}" \
   -e "MISSIONOS_TB3_GATEWAY_CONTAINER_PORT=${gateway_port}" \
+  -e "MISSIONOS_TB3_GAZEBO_WAIT_SECONDS=${MISSIONOS_TB3_GAZEBO_WAIT_SECONDS:-30}" \
+  -e "MISSIONOS_TB3_NAV2_WAIT_SECONDS=${MISSIONOS_TB3_NAV2_WAIT_SECONDS:-55}" \
   -e "MISSIONOS_TURTLEBOT3_WORLD_PROFILE=${MISSIONOS_TURTLEBOT3_WORLD_PROFILE:-house}" \
   -e "MISSIONOS_LLM_BACKEND=${gateway_llm_backend}" \
   -e "GOOGLE_API_KEY=${GOOGLE_API_KEY:-}" \
-  -e "GOOGLE_GENAI_USE_VERTEXAI=${GOOGLE_GENAI_USE_VERTEXAI:-}" \
+  -e "GOOGLE_GENAI_USE_VERTEXAI=${GOOGLE_GENAI_USE_VERTEXAI:-false}" \
+  -e "MISSIONOS_GEMINI_CREDENTIAL_STATUS=${gemini_credential_status}" \
+  -e "GATEWAY_API_KEY=${GATEWAY_API_KEY:-}" \
   -e "MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_LLM_BACKEND=${planner_backend}" \
   -e "MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_MODEL_ID=${planner_model_id}" \
   -e "MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_OLLAMA_MODEL=${MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_OLLAMA_MODEL:-}" \
@@ -31,8 +71,14 @@ docker run --rm -d \
   -e "MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_ADK_ENABLED=${planner_adk_enabled}" \
   -e "MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_MODEL_ID=${MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_MODEL_ID:-${planner_model_id}}" \
   -e "MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_TIMEOUT_SECONDS=${MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_TIMEOUT_SECONDS:-}" \
+  -e "MISSIONOS_TURTLEBOT3_RECOVERY_REQUIRES_APPROVAL=${MISSIONOS_TURTLEBOT3_RECOVERY_REQUIRES_APPROVAL:-1}" \
+  -e "MISSIONOS_TURTLEBOT3_RECOVERY_CANDIDATE_EVALUATION=${MISSIONOS_TURTLEBOT3_RECOVERY_CANDIDATE_EVALUATION:-1}" \
+  -e "MISSIONOS_TURTLEBOT3_RECOVERY_CANDIDATE_CLEARANCE_M=${MISSIONOS_TURTLEBOT3_RECOVERY_CANDIDATE_CLEARANCE_M:-1.10}" \
+  -e "ROS2_NAV2_RECOVERY_LOCAL_COST_THRESHOLD=${ROS2_NAV2_RECOVERY_LOCAL_COST_THRESHOLD:-220}" \
+  -e "MISSIONOS_TURTLEBOT3_RECOVERY_AVOID_OBSTACLE_REQUIRES_APPROVAL=${MISSIONOS_TURTLEBOT3_RECOVERY_AVOID_OBSTACLE_REQUIRES_APPROVAL:-}" \
   -e "ROS2_NAV2_BRIDGE_TIMEOUT_S=${ROS2_NAV2_BRIDGE_TIMEOUT_S:-420}" \
   -e "ROS2_NAV2_GOAL_RESULT_TIMEOUT_S=${ROS2_NAV2_GOAL_RESULT_TIMEOUT_S:-180}" \
+  "${vertex_docker_args[@]}" \
   -v "${repo_root}:/work/missionos" \
   -w /work/missionos \
   "${image}" \
@@ -116,9 +162,12 @@ relay_pid=$!
 sleep 5
 
 telemetry_sidecar_jsonl=/tmp/missionos_turtlebot3_telemetry_sidecar.jsonl
+telemetry_live_task_id_path=/tmp/missionos_turtlebot3_live_task_id
 rm -f "$telemetry_sidecar_jsonl"
+rm -f "$telemetry_live_task_id_path"
 python3 /work/missionos/scripts/ros2_nav2_turtlebot3_telemetry_sidecar.py \
   --output "$telemetry_sidecar_jsonl" \
+  --task-id-path "$telemetry_live_task_id_path" \
   --duration-s "${MISSIONOS_TB3_TELEMETRY_DURATION_S:-7200}" \
   --max-samples "${MISSIONOS_TB3_TELEMETRY_MAX_SAMPLES:-240000}" \
   >/tmp/missionos_turtlebot3_telemetry_sidecar.log 2>&1 &
@@ -140,13 +189,19 @@ export ROS2_NAV2_VELOCITY_OBSERVE_ENABLE=1
 export ROS2_NAV2_OBSTACLE_OBSERVE_ENABLE=1
 export ROS2_NAV2_TRAJECTORY_OBSERVE_ENABLE=1
 export ROS2_NAV2_TRAJECTORY_LATERAL_DEVIATION_THRESHOLD_M=0.03
+export ROS2_NAV2_RECOVERY_ORBIT_GUARD_ENABLE=1
+export ROS2_NAV2_RECOVERY_ORBIT_MIN_DURATION_S="${ROS2_NAV2_RECOVERY_ORBIT_MIN_DURATION_S:-25}"
+export ROS2_NAV2_RECOVERY_ORBIT_NO_PROGRESS_S="${ROS2_NAV2_RECOVERY_ORBIT_NO_PROGRESS_S:-18}"
+export ROS2_NAV2_RECOVERY_ORBIT_MIN_PATH_M="${ROS2_NAV2_RECOVERY_ORBIT_MIN_PATH_M:-1.0}"
 export ROS2_NAV2_GOAL_RESULT_TIMEOUT_S="${ROS2_NAV2_GOAL_RESULT_TIMEOUT_S:-180}"
 export ROS2_NAV2_POST_RESULT_SETTLE_S=3.0
 export MISSIONOS_TURTLEBOT3_TELEMETRY_SIDECAR_JSONL="$telemetry_sidecar_jsonl"
+export MISSIONOS_TURTLEBOT3_LIVE_TASK_ID_PATH="$telemetry_live_task_id_path"
 export MISSIONOS_TURTLEBOT3_LOG_BUNDLE_PATHS="{\"gazebo\":\"/tmp/missionos_gazebo_delivery.log\",\"nav2\":\"/tmp/missionos_nav2_delivery.log\",\"relay\":\"/tmp/missionos_relay_delivery.log\",\"telemetry_sidecar\":\"/tmp/missionos_turtlebot3_telemetry_sidecar.log\",\"spawn_obstacle\":\"/tmp/missionos_spawn_obstacle.log\"}"
 export MISSIONOS_GATEWAY_BACKEND=production
 
-python3 -m missionos_gateway web --host 0.0.0.0 --port "${MISSIONOS_TB3_GATEWAY_CONTAINER_PORT:-18791}" &
+python3 -c "import sys; sys.path[:0] = [\"/work/missionos\", \"/work/missionos/src\", \"/work/missionos/packages/missionos-gateway/src\"]; from missionos_gateway.__main__ import main; main()" \
+  web --host 0.0.0.0 --port "${MISSIONOS_TB3_GATEWAY_CONTAINER_PORT:-18791}" &
 gateway_pid=$!
 wait "$gateway_pid"
 '

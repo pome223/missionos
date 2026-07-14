@@ -4,6 +4,7 @@ from collections.abc import Mapping
 from copy import deepcopy
 import hashlib
 import json
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -31,6 +32,8 @@ if TYPE_CHECKING:
 
 
 _TERRAIN_HEIGHTMAP_PREVIEW_MAX_DIM = 33
+_TURTLEBOT3_LIVE_TELEMETRY_ENV = "MISSIONOS_TURTLEBOT3_TELEMETRY_SIDECAR_JSONL"
+_TURTLEBOT3_LIVE_TELEMETRY_TAIL_BYTES = 131_072
 
 
 def _coerce_float(value: object) -> float | None:
@@ -199,6 +202,79 @@ def _enrich_task_with_terrain_heightmap_preview(task: dict[str, Any]) -> dict[st
     return enriched_task
 
 
+def _latest_turtlebot3_live_telemetry(task: Mapping[str, Any]) -> dict[str, Any]:
+    if str(task.get("kind") or "") != "turtlebot3_home_mission_execution":
+        return {}
+    if str(task.get("status") or "") not in {"running", "pending"}:
+        return {}
+    source_path = os.environ.get(_TURTLEBOT3_LIVE_TELEMETRY_ENV, "").strip()
+    if not source_path:
+        return {}
+    try:
+        path = Path(source_path)
+        with path.open("rb") as handle:
+            handle.seek(0, 2)
+            size = handle.tell()
+            handle.seek(max(0, size - _TURTLEBOT3_LIVE_TELEMETRY_TAIL_BYTES))
+            lines = handle.read().splitlines()
+    except OSError:
+        return {}
+    task_id = str(task.get("task_id") or "").strip()
+    if not task_id:
+        return {}
+    for raw_line in reversed(lines):
+        try:
+            sample = json.loads(raw_line)
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            continue
+        if not isinstance(sample, Mapping) or str(sample.get("sample_kind") or "") != "odom":
+            continue
+        sample_task_id = str(sample.get("task_id") or "").strip()
+        if sample_task_id != task_id:
+            continue
+        position = sample.get("position")
+        twist = sample.get("twist")
+        position = position if isinstance(position, Mapping) else {}
+        twist = twist if isinstance(twist, Mapping) else {}
+        x_m = _coerce_float(position.get("x_m"))
+        y_m = _coerce_float(position.get("y_m"))
+        if x_m is None or y_m is None:
+            continue
+        return {
+            "schema_version": "missionos_turtlebot3_live_telemetry.v1",
+            "telemetry_status": "observed",
+            "captured_at": str(sample.get("captured_at") or ""),
+            "sample_kind": "odom",
+            "task_id": sample_task_id,
+            "frame_id": str(sample.get("frame_id") or "odom"),
+            "child_frame_id": str(sample.get("child_frame_id") or ""),
+            "raw_odom_position": {"x_m": x_m, "y_m": y_m},
+            "twist": {
+                "linear_x_mps": _coerce_float(twist.get("linear_x_mps")),
+                "linear_y_mps": _coerce_float(twist.get("linear_y_mps")),
+                "angular_z_radps": _coerce_float(twist.get("angular_z_radps")),
+            },
+            "source": "ros2_telemetry_sidecar_latest_sample",
+            "display_only": True,
+            "dispatch_authority_created": False,
+            "completion_claimed": False,
+            "physical_execution_invoked": False,
+        }
+    return {}
+
+
+def _enrich_task_with_turtlebot3_live_telemetry(task: dict[str, Any]) -> dict[str, Any]:
+    telemetry = _latest_turtlebot3_live_telemetry(task)
+    if not telemetry:
+        return task
+    enriched = deepcopy(task)
+    artifacts = enriched.get("artifacts")
+    artifacts = dict(artifacts) if isinstance(artifacts, Mapping) else {}
+    artifacts["turtlebot3_live_telemetry"] = telemetry
+    enriched["artifacts"] = artifacts
+    return enriched
+
+
 def build_task_router(server: "GatewayServer") -> APIRouter:
     router = APIRouter(tags=["tasks"])
 
@@ -248,7 +324,8 @@ def build_task_router(server: "GatewayServer") -> APIRouter:
         task = server.task_store.get(task_id)
         if task is None:
             raise HTTPException(status_code=404, detail=f"task not found: {task_id}")
-        return {"task": _enrich_task_with_terrain_heightmap_preview(task)}
+        enriched = _enrich_task_with_terrain_heightmap_preview(task)
+        return {"task": _enrich_task_with_turtlebot3_live_telemetry(enriched)}
 
     @router.get("/tasks/{task_id}/timeline", response_model=TaskTimelineResponse)
     async def task_timeline_endpoint(

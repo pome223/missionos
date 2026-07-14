@@ -15,6 +15,7 @@ import asyncio
 from collections.abc import AsyncIterator, Mapping
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
+import fcntl
 import hashlib
 import json
 import os
@@ -166,10 +167,20 @@ from src.runtime.missionos_payload_split_plan import (
     requested_payload_weight_from_route,
 )
 from src.runtime.turtlebot3_home_mission import (
+    _planned_segment_goals_from_proposal,
+    _planned_segments_sha256,
+    _recovery_checkpoint_hash,
+    _recovery_resume_state_hash,
+    _turtlebot3_recovery_revision_intent,
+    _turtlebot3_recovery_revision_source_geometry_reasons,
     approve_turtlebot3_home_mission_plan,
+    build_turtlebot3_recovery_checkpoint_revision,
     build_turtlebot3_home_mission_plan,
     instruction_requests_turtlebot3_home_mission,
     run_turtlebot3_home_mission_dispatch,
+)
+from src.runtime.turtlebot3_telemetry_sidecar import (
+    TURTLEBOT3_LIVE_TASK_ID_PATH_ENV,
 )
 
 MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_ENV = (
@@ -186,6 +197,9 @@ MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_MAX_SECONDS = {
     "disabled": 12,
 }
 _LOOPBACK_CLIENT_HOSTS = frozenset({"127.0.0.1", "::1", "localhost", "testclient"})
+_GATEWAY_PROCESS_OWNER_ID = (
+    f"missionos_gateway_process_{os.getpid()}_{uuid.uuid4().hex[:12]}"
+)
 _LEGACY_GENERAL_AGENT_ROUTE_PREFIXES = (
     "/agent",
     "/control-loop",
@@ -202,6 +216,32 @@ _LEGACY_GENERAL_AGENT_ROUTE_PREFIXES = (
 
 def _route_matches_prefix(path: str, prefix: str) -> bool:
     return path == prefix or path.startswith(prefix + "/")
+
+
+def _gateway_process_owner_pid(owner_id: str) -> int | None:
+    prefix = "missionos_gateway_process_"
+    if not owner_id.startswith(prefix):
+        return None
+    raw_pid, separator, _token = owner_id[len(prefix) :].partition("_")
+    if not separator:
+        return None
+    try:
+        pid = int(raw_pid)
+    except ValueError:
+        return None
+    return pid if pid > 0 else None
+
+
+def _process_id_is_alive(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return False
+    return True
 
 
 def _missionos_instruction_text(payload: Mapping[str, Any]) -> str:
@@ -887,10 +927,30 @@ def _missionos_prepare_mission_designer_sitl_context(
     )
 
 
+def _bind_turtlebot3_live_telemetry_task(task_id: str) -> None:
+    """Atomically tell the read-only sidecar which task owns live display data."""
+
+    raw_path = os.environ.get(TURTLEBOT3_LIVE_TASK_ID_PATH_ENV, "").strip()
+    if not raw_path:
+        return
+    path = Path(raw_path)
+    temporary = path.with_name(f"{path.name}.tmp-{os.getpid()}")
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary.write_text(f"{task_id}\n", encoding="utf-8")
+        temporary.replace(path)
+    except OSError:
+        try:
+            temporary.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+
 def _missionos_create_running_turtlebot3_home_mission_task(
     *,
     session_id: str,
     proposal: Mapping[str, Any],
+    approval: Mapping[str, Any],
 ) -> dict[str, Any]:
     """Create the execution task before dispatch so live surfaces can poll it."""
 
@@ -904,6 +964,8 @@ def _missionos_create_running_turtlebot3_home_mission_task(
         status="running",
         owner_session_id=session_id or None,
         artifacts={
+            "turtlebot3_home_mission_plan": dict(proposal),
+            "turtlebot3_home_mission_approval": dict(approval),
             "summary": {
                 "status": "running",
                 "robot_profile": proposal.get("robot_profile") or "turtlebot3",
@@ -928,6 +990,7 @@ def _missionos_create_running_turtlebot3_home_mission_task(
             "mission_delivery_completion_claimed": False,
         },
     )
+    _bind_turtlebot3_live_telemetry_task(str(task["task_id"]))
     return dict(task)
 
 
@@ -942,12 +1005,24 @@ def _missionos_create_turtlebot3_home_mission_task(
         if isinstance(execution_result.get("summary"), Mapping)
         else {}
     )
-    status = str(summary.get("status") or "completed")
+    result_status = str(summary.get("status") or "completed")
+    checkpoint = execution_result.get("turtlebot3_recovery_checkpoint")
+    checkpoint = checkpoint if isinstance(checkpoint, Mapping) else {}
+    awaiting_recovery_approval = (
+        checkpoint.get("checkpoint_status") == "awaiting_operator_approval"
+    )
+    status = "pending" if awaiting_recovery_approval else result_status
+    task_artifacts = dict(execution_result)
+    checkpoint_id = str(checkpoint.get("checkpoint_id") or "")
+    if checkpoint_id:
+        task_artifacts["turtlebot3_recovery_checkpoints"] = {
+            checkpoint_id: dict(checkpoint)
+        }
     if existing_task_id:
         updated = get_task_store().update(
             existing_task_id,
             status=status,
-            artifacts=dict(execution_result),
+            artifacts=task_artifacts,
             metadata={
                 "home_robot_mission_kind": summary.get("home_robot_mission_kind"),
                 "robot_profile": summary.get("robot_profile") or "turtlebot3",
@@ -958,6 +1033,12 @@ def _missionos_create_turtlebot3_home_mission_task(
                 "execution_mode": "sim",
                 "completion_claimed": summary.get("completion_claimed") is True,
                 "completion_scope": summary.get("completion_scope"),
+                "turtlebot3_recovery_lifecycle": (
+                    "awaiting_operator_approval"
+                    if awaiting_recovery_approval
+                    else checkpoint.get("checkpoint_status")
+                    or "not_pending"
+                ),
                 "read_only_map_available": isinstance(
                     summary.get("turtlebot3_indoor_map_model"),
                     Mapping,
@@ -965,13 +1046,14 @@ def _missionos_create_turtlebot3_home_mission_task(
             },
         )
         if isinstance(updated, dict):
+            _bind_turtlebot3_live_telemetry_task(str(updated["task_id"]))
             return dict(updated)
     task = get_task_store().create(
         kind="turtlebot3_home_mission_execution",
         title=f"{summary.get('robot_label') or 'TurtleBot3'} Nav2 simulator mission",
         status=status,
         owner_session_id=session_id or None,
-        artifacts=dict(execution_result),
+        artifacts=task_artifacts,
         metadata={
             "source": "missionos_autonomy_conversation_execute",
             "robot_profile": summary.get("robot_profile") or "turtlebot3",
@@ -983,6 +1065,12 @@ def _missionos_create_turtlebot3_home_mission_task(
             "home_robot_mission_kind": summary.get("home_robot_mission_kind"),
             "completion_claimed": summary.get("completion_claimed") is True,
             "completion_scope": summary.get("completion_scope"),
+            "turtlebot3_recovery_lifecycle": (
+                "awaiting_operator_approval"
+                if awaiting_recovery_approval
+                else checkpoint.get("checkpoint_status")
+                or "not_pending"
+            ),
             "physical_execution_invoked": False,
             "mission_delivery_completion_claimed": False,
             "read_only_map_available": isinstance(
@@ -991,6 +1079,7 @@ def _missionos_create_turtlebot3_home_mission_task(
             ),
         },
     )
+    _bind_turtlebot3_live_telemetry_task(str(task["task_id"]))
     return dict(task)
 
 
@@ -2189,9 +2278,13 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
                 turtlebot_plan = _missionos_turtlebot3_home_mission_plan(
                     mission_designer_context
                 )
+                turtlebot_approval = _missionos_turtlebot3_home_mission_approval(
+                    mission_designer_context
+                )
                 running_task = _missionos_create_running_turtlebot3_home_mission_task(
                     session_id=session_id,
                     proposal=turtlebot_plan,
+                    approval=turtlebot_approval,
                 )
                 running_task_id = str(running_task.get("task_id") or "")
 
@@ -2208,9 +2301,7 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
 
                 execution_result = run_turtlebot3_home_mission_dispatch(
                     proposal=turtlebot_plan,
-                    approval=_missionos_turtlebot3_home_mission_approval(
-                        mission_designer_context
-                    ),
+                    approval=turtlebot_approval,
                     now=datetime.now(timezone.utc),
                     progress_callback=_turtlebot3_live_progress,
                 )
@@ -2685,6 +2776,10 @@ MISSIONOS_RUNTIME_RECOVERY_ACTIONS = (
     MISSIONOS_RUNTIME_RECOVERY_EMERGENCY_ACTIONS
     | MISSIONOS_RUNTIME_RECOVERY_MANEUVER_ACTIONS
 )
+MISSIONOS_TURTLEBOT3_RUNTIME_RECOVERY_ACTIONS = {
+    "avoid_obstacle",
+    "return_home",
+}
 from src.runtime.px4_gazebo_sitl_execution_readiness import (
     build_px4_gazebo_sitl_execution_readiness,
 )
@@ -2868,6 +2963,188 @@ def _bounded_operator_recovery_parameters(
     return {}
 
 
+def _bounded_turtlebot3_operator_recovery_parameters(
+    *,
+    recovery_action: str,
+    body: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Normalize only the bounded ground-robot parameters supported by Nav2."""
+
+    raw = body.get("recovery_parameters") or body.get("parameters") or {}
+    if raw in (None, ""):
+        raw = {}
+    if not isinstance(raw, Mapping):
+        raise HTTPException(
+            status_code=400,
+            detail="recovery_parameters must be an object",
+        )
+    parameters = dict(raw)
+    if recovery_action == "return_home":
+        if set(parameters) != {
+            "target_x_m",
+            "target_y_m",
+            "return_home_required",
+        }:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "TurtleBot3 return_home requires only target_x_m, "
+                    "target_y_m, and return_home_required"
+                ),
+            )
+        target_x = _bounded_recovery_float(
+            parameters,
+            "target_x_m",
+            minimum=-5000.0,
+            maximum=5000.0,
+        )
+        target_y = _bounded_recovery_float(
+            parameters,
+            "target_y_m",
+            minimum=-5000.0,
+            maximum=5000.0,
+        )
+        if (
+            target_x is None
+            or target_y is None
+            or parameters.get("return_home_required") is not True
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "TurtleBot3 return_home requires a source-bound target and "
+                    "return_home_required=true"
+                ),
+            )
+        return {
+            "target_x_m": target_x,
+            "target_y_m": target_y,
+            "return_home_required": True,
+        }
+    if recovery_action != "avoid_obstacle":
+        return {}
+
+    if "recovery_waypoints" not in parameters:
+        allowed_keys = {
+            "target_x_m",
+            "target_y_m",
+            "target_yaw_rad",
+            "obstacle_avoidance_required",
+        }
+        required_keys = {"target_x_m", "target_y_m"}
+        if not required_keys.issubset(parameters) or not set(parameters).issubset(
+            allowed_keys
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "TurtleBot3 avoid_obstacle requires either exact recovery_waypoints "
+                    "or target_x_m/target_y_m; altitude and raw velocity are forbidden"
+                ),
+            )
+        target_x = _bounded_recovery_float(
+            parameters,
+            "target_x_m",
+            minimum=-5000.0,
+            maximum=5000.0,
+        )
+        target_y = _bounded_recovery_float(
+            parameters,
+            "target_y_m",
+            minimum=-5000.0,
+            maximum=5000.0,
+        )
+        target_yaw = _bounded_recovery_float(
+            parameters,
+            "target_yaw_rad",
+            minimum=-3.141593,
+            maximum=3.141593,
+        )
+        if (
+            target_x is None
+            or target_y is None
+            or (
+                "obstacle_avoidance_required" in parameters
+                and parameters.get("obstacle_avoidance_required") is not True
+            )
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "TurtleBot3 avoid_obstacle requires a bounded target and "
+                    "obstacle_avoidance_required=true"
+                ),
+            )
+        bounded = {
+            "target_x_m": target_x,
+            "target_y_m": target_y,
+            "obstacle_avoidance_required": True,
+        }
+        if target_yaw is not None:
+            bounded["target_yaw_rad"] = target_yaw
+        return bounded
+
+    if set(parameters) != {
+        "recovery_waypoints",
+        "obstacle_avoidance_required",
+    }:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "TurtleBot3 recovery_waypoints cannot include altitude, z, "
+                "raw velocity, or unbounded parameters"
+            ),
+        )
+    raw_waypoints = parameters.get("recovery_waypoints")
+    if (
+        not isinstance(raw_waypoints, list)
+        or len(raw_waypoints) != 2
+        or parameters.get("obstacle_avoidance_required") is not True
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "TurtleBot3 avoid_obstacle requires exactly two bounded "
+                "recovery_waypoints and obstacle_avoidance_required=true"
+            ),
+        )
+    waypoints: list[dict[str, float]] = []
+    for index, raw_waypoint in enumerate(raw_waypoints):
+        if not isinstance(raw_waypoint, Mapping) or set(raw_waypoint) != {
+            "target_x_m",
+            "target_y_m",
+        }:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"recovery_waypoints[{index}] must contain only "
+                    "target_x_m and target_y_m"
+                ),
+            )
+        target_x = _bounded_recovery_float(
+            raw_waypoint,
+            "target_x_m",
+            minimum=-5000.0,
+            maximum=5000.0,
+        )
+        target_y = _bounded_recovery_float(
+            raw_waypoint,
+            "target_y_m",
+            minimum=-5000.0,
+            maximum=5000.0,
+        )
+        if target_x is None or target_y is None:
+            raise HTTPException(
+                status_code=400,
+                detail=f"recovery_waypoints[{index}] requires finite x/y",
+            )
+        waypoints.append({"target_x_m": target_x, "target_y_m": target_y})
+    return {
+        "recovery_waypoints": waypoints,
+        "obstacle_avoidance_required": True,
+    }
+
+
 def _operator_recovery_approval_payload(
     *,
     recovery_action: str,
@@ -2938,6 +3215,538 @@ def _approval_json(value: Any) -> dict[str, Any]:
     if isinstance(value, Mapping):
         return dict(value)
     return {}
+
+
+def _turtlebot3_recovery_checkpoint_from_task(
+    task: Mapping[str, Any],
+) -> dict[str, Any]:
+    artifacts = task.get("artifacts")
+    artifacts = artifacts if isinstance(artifacts, Mapping) else {}
+    checkpoint = artifacts.get("turtlebot3_recovery_checkpoint")
+    return dict(checkpoint) if isinstance(checkpoint, Mapping) else {}
+
+
+def _is_strict_turtlebot3_recovery_task(task: Mapping[str, Any]) -> bool:
+    """Require every durable source view to identify the TurtleBot3 simulator."""
+
+    if task.get("kind") != "turtlebot3_home_mission_execution":
+        return False
+    artifacts = task.get("artifacts")
+    artifacts = artifacts if isinstance(artifacts, Mapping) else {}
+    proposal = artifacts.get("turtlebot3_home_mission_plan")
+    proposal = proposal if isinstance(proposal, Mapping) else {}
+    checkpoint = _turtlebot3_recovery_checkpoint_from_task(task)
+    summary = artifacts.get("summary")
+    summary = summary if isinstance(summary, Mapping) else {}
+    source_views = (proposal, checkpoint, summary)
+    return all(
+        str(view.get("robot_profile") or "") == "turtlebot3"
+        and str(view.get("execution_target") or "")
+        == "ros2_nav2_turtlebot3_sim"
+        for view in source_views
+    )
+
+
+def _turtlebot3_recovery_parameters_match(
+    *,
+    expected: Mapping[str, Any],
+    requested: Mapping[str, Any],
+) -> bool:
+    expected_keys = set(expected)
+    requested_keys = set(requested)
+    if expected_keys != requested_keys:
+        return False
+    for key in expected_keys:
+        expected_value = expected.get(key)
+        requested_value = requested.get(key)
+        if isinstance(expected_value, bool) or isinstance(requested_value, bool):
+            if expected_value is not requested_value:
+                return False
+            continue
+        try:
+            if float(expected_value) != float(requested_value):
+                return False
+        except (TypeError, ValueError):
+            if expected_value != requested_value:
+                return False
+    return True
+
+
+def _build_turtlebot3_recovery_operator_authority(
+    *,
+    task_id: str,
+    checkpoint: Mapping[str, Any],
+    recovery_action: str,
+    recovery_parameters: Mapping[str, Any],
+    now: datetime,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    bounded_action_id = f"turtlebot3_recovery_bounded_action_{uuid.uuid4().hex[:12]}"
+    bounded_action_ref = f"turtlebot3_recovery_bounded_action:{bounded_action_id}"
+    bounded_action = {
+        "schema_version": "missionos_turtlebot3_recovery_bounded_action.v1",
+        "bounded_action_id": bounded_action_id,
+        "bounded_action_ref": bounded_action_ref,
+        "task_id": task_id,
+        "checkpoint_id": checkpoint.get("checkpoint_id"),
+        "checkpoint_hash": checkpoint.get("checkpoint_hash"),
+        "recovery_proposal_id": checkpoint.get("recovery_proposal_id"),
+        "recovery_classification_id": checkpoint.get(
+            "recovery_classification_id"
+        ),
+        "recovery_action": recovery_action,
+        "recovery_parameters": dict(recovery_parameters),
+        "robot_profile": checkpoint.get("robot_profile"),
+        "execution_target": checkpoint.get("execution_target"),
+        "raw_velocity_allowed": False,
+        "physical_execution_invoked": False,
+        "mission_delivery_completion_claimed": False,
+        "created_at": now.isoformat(),
+    }
+    approval_id = f"turtlebot3_recovery_operator_approval_{uuid.uuid4().hex[:12]}"
+    approval = {
+        "schema_version": "missionos_turtlebot3_recovery_operator_approval.v1",
+        "approval_id": approval_id,
+        "approval_status": "approved",
+        "task_id": task_id,
+        "operator_approval_ref": f"turtlebot3_recovery_operator_approval:{approval_id}",
+        "operator_approved": True,
+        "explicit_recovery_dispatch_approval": True,
+        "approval_actor": "missionos_chat_operator",
+        "approved_at": now.isoformat(),
+        "approved_action": recovery_action,
+        "approved_parameters": dict(recovery_parameters),
+        "robot_profile": checkpoint.get("robot_profile"),
+        "execution_target": checkpoint.get("execution_target"),
+        "bounded_action_ref": bounded_action_ref,
+        "checkpoint_id": checkpoint.get("checkpoint_id"),
+        "checkpoint_hash": checkpoint.get("checkpoint_hash"),
+        "recovery_proposal_id": checkpoint.get("recovery_proposal_id"),
+        "recovery_classification_id": checkpoint.get(
+            "recovery_classification_id"
+        ),
+        "proposal_ref": checkpoint.get("recovery_proposal_id"),
+        "classification_ref": checkpoint.get("recovery_classification_id"),
+        "execution_class_before_approval": "requires_human_approval",
+        "requires_new_human_approval_satisfied": True,
+        "approval_source": "missionos_chat",
+        "dispatch_authority_created_by_operator_approval": True,
+        "proposal_dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+        "mission_delivery_completion_claimed": False,
+        "progress_counted": False,
+    }
+    return approval, bounded_action
+
+
+def _turtlebot3_recovery_revision_response(
+    *,
+    task: Mapping[str, Any],
+    revision: Mapping[str, Any],
+    revision_status: str,
+    previous_checkpoint_id: str,
+    previous_checkpoint_hash: str,
+    blocked_reasons: list[str] | tuple[str, ...] = (),
+    checkpoint_unchanged: bool,
+) -> dict[str, Any]:
+    current_checkpoint = _turtlebot3_recovery_checkpoint_from_task(task)
+    return {
+        "schema_version": "missionos_turtlebot3_recovery_revision_response.v1",
+        "task": dict(task),
+        "turtlebot3_recovery_revision": dict(revision),
+        "summary": {
+            "task_id": str(task.get("task_id") or ""),
+            "task_status": str(task.get("status") or ""),
+            "revision_status": revision_status,
+            "previous_checkpoint_id": previous_checkpoint_id,
+            "previous_checkpoint_hash": previous_checkpoint_hash,
+            "current_checkpoint_id": str(
+                current_checkpoint.get("checkpoint_id") or ""
+            ),
+            "current_checkpoint_hash": str(
+                current_checkpoint.get("checkpoint_hash") or ""
+            ),
+            "checkpoint_unchanged": checkpoint_unchanged,
+            "blocked_reasons": list(blocked_reasons),
+            "operator_approval_created": False,
+            "dispatch_authority_created": False,
+            "dispatch_request_sent": False,
+            "physical_execution_invoked": False,
+            "progress_counted": False,
+            "mission_delivery_completion_claimed": False,
+        },
+    }
+
+
+def _turtlebot3_recovery_revision_validation_reasons(
+    *,
+    revision: Mapping[str, Any],
+    checkpoint: Mapping[str, Any],
+    proposal: Mapping[str, Any],
+    operator_instruction: str,
+) -> list[str]:
+    """Validate a proposal-only revision before making it task-current."""
+
+    reasons: list[str] = []
+    if revision.get("schema_version") != (
+        "missionos_turtlebot3_recovery_checkpoint_revision.v1"
+    ):
+        reasons.append("turtlebot3_recovery_revision_schema_invalid")
+    if revision.get("revision_status") != "proposed":
+        reasons.extend(
+            str(item) for item in revision.get("blocking_reasons") or ()
+        )
+        if not reasons:
+            reasons.append("turtlebot3_recovery_revision_not_proposed")
+        return list(dict.fromkeys(reasons))
+    parent_id = str(revision.get("parent_checkpoint_id") or "")
+    parent_hash = str(revision.get("parent_checkpoint_hash") or "")
+    if parent_id != str(checkpoint.get("checkpoint_id") or ""):
+        reasons.append("turtlebot3_recovery_revision_parent_checkpoint_id_mismatch")
+    if parent_hash != str(checkpoint.get("checkpoint_hash") or ""):
+        reasons.append("turtlebot3_recovery_revision_parent_checkpoint_hash_mismatch")
+
+    superseded = revision.get("superseded_checkpoint")
+    superseded = superseded if isinstance(superseded, Mapping) else {}
+    next_checkpoint = revision.get("turtlebot3_recovery_checkpoint")
+    next_checkpoint = next_checkpoint if isinstance(next_checkpoint, Mapping) else {}
+    next_execution = revision.get("turtlebot3_home_mission_execution")
+    next_execution = next_execution if isinstance(next_execution, Mapping) else {}
+    next_summary = revision.get("summary")
+    next_summary = next_summary if isinstance(next_summary, Mapping) else {}
+    next_proposal = revision.get("recovery_proposal")
+    next_proposal = next_proposal if isinstance(next_proposal, Mapping) else {}
+    next_classification = revision.get("recovery_proposal_classification")
+    next_classification = (
+        next_classification if isinstance(next_classification, Mapping) else {}
+    )
+    next_planner_result = revision.get("recovery_planner_result")
+    next_planner_result = (
+        next_planner_result
+        if isinstance(next_planner_result, Mapping)
+        else {}
+    )
+    revision_id = str(revision.get("revision_id") or "")
+
+    if str(superseded.get("checkpoint_id") or "") != parent_id:
+        reasons.append("turtlebot3_recovery_superseded_checkpoint_id_mismatch")
+    if str(superseded.get("checkpoint_hash") or "") != parent_hash:
+        reasons.append("turtlebot3_recovery_superseded_checkpoint_hash_mismatch")
+    if superseded.get("checkpoint_status") != "superseded":
+        reasons.append("turtlebot3_recovery_superseded_checkpoint_status_invalid")
+    next_id = str(next_checkpoint.get("checkpoint_id") or "")
+    next_hash = str(next_checkpoint.get("checkpoint_hash") or "")
+    if (
+        next_checkpoint.get("schema_version")
+        != "turtlebot3_recovery_checkpoint.v1"
+        or next_checkpoint.get("checkpoint_status")
+        != "awaiting_operator_approval"
+        or not next_id
+        or not next_hash
+    ):
+        reasons.append("turtlebot3_recovery_revised_checkpoint_invalid")
+    computed_next_hash = _recovery_checkpoint_hash(next_checkpoint)
+    if next_hash != computed_next_hash:
+        reasons.append("turtlebot3_recovery_revised_checkpoint_hash_mismatch")
+    expected_next_id = (
+        f"turtlebot3_recovery_checkpoint_{computed_next_hash[:12]}"
+        if computed_next_hash
+        else ""
+    )
+    if next_id != expected_next_id:
+        reasons.append("turtlebot3_recovery_revised_checkpoint_id_mismatch")
+    if str(next_checkpoint.get("resume_state_hash") or "") != (
+        _recovery_resume_state_hash(next_execution)
+    ):
+        reasons.append("turtlebot3_recovery_revision_resume_state_hash_mismatch")
+    try:
+        expected_planned_segments_sha256 = _planned_segments_sha256(
+            _planned_segment_goals_from_proposal(proposal)
+        )
+    except (TypeError, ValueError):
+        expected_planned_segments_sha256 = ""
+        reasons.append("turtlebot3_recovery_revision_planned_segments_invalid")
+    if (
+        not expected_planned_segments_sha256
+        or str(next_checkpoint.get("planned_segments_sha256") or "")
+        != expected_planned_segments_sha256
+    ):
+        reasons.append(
+            "turtlebot3_recovery_revision_planned_segments_hash_mismatch"
+        )
+    reasons.extend(
+        _turtlebot3_recovery_revision_source_geometry_reasons(
+            checkpoint=next_checkpoint,
+            execution=next_execution,
+        )
+    )
+    if next_id == parent_id or next_hash == parent_hash:
+        reasons.append("turtlebot3_recovery_revision_did_not_replace_checkpoint")
+    if str(superseded.get("superseded_by_checkpoint_id") or "") != next_id:
+        reasons.append("turtlebot3_recovery_superseded_checkpoint_link_mismatch")
+    if str(next_checkpoint.get("parent_checkpoint_id") or "") != parent_id:
+        reasons.append("turtlebot3_recovery_revised_checkpoint_parent_id_mismatch")
+    if str(next_checkpoint.get("parent_checkpoint_hash") or "") != parent_hash:
+        reasons.append("turtlebot3_recovery_revised_checkpoint_parent_hash_mismatch")
+    expected_instruction_hash = hashlib.sha256(
+        operator_instruction.encode("utf-8")
+    ).hexdigest()
+    if str(next_checkpoint.get("operator_instruction_sha256") or "") != (
+        expected_instruction_hash
+    ):
+        reasons.append(
+            "turtlebot3_recovery_revision_operator_instruction_hash_mismatch"
+        )
+    expected_intent, intent_reasons = _turtlebot3_recovery_revision_intent(
+        operator_instruction
+    )
+    if intent_reasons or expected_intent is None:
+        reasons.append("turtlebot3_recovery_revision_operator_intent_invalid")
+    else:
+        expected_action = (
+            "return_home"
+            if expected_intent == "return_home"
+            else "avoid_obstacle"
+        )
+        expected_direction = {
+            "avoid_left_wide": "left",
+            "avoid_right_wide": "right",
+            "return_home": "return_home",
+        }[expected_intent]
+        revision_geometry = next_checkpoint.get("recovery_revision_geometry")
+        revision_geometry = (
+            revision_geometry
+            if isinstance(revision_geometry, Mapping)
+            else {}
+        )
+        if (
+            str(next_checkpoint.get("revision_intent") or "")
+            != expected_intent
+            or str(next_checkpoint.get("selected_action") or "")
+            != expected_action
+            or str(revision_geometry.get("requested_direction") or "")
+            != expected_direction
+        ):
+            reasons.append(
+                "turtlebot3_recovery_revision_operator_intent_mismatch"
+            )
+
+    proposal_observations = next_proposal.get("input_observations")
+    proposal_observations = (
+        proposal_observations
+        if isinstance(proposal_observations, Mapping)
+        else {}
+    )
+    checkpoint_geometry = next_checkpoint.get("recovery_revision_geometry")
+    checkpoint_geometry = (
+        checkpoint_geometry
+        if isinstance(checkpoint_geometry, Mapping)
+        else {}
+    )
+    expected_observation_bindings = {
+        "revision_id": revision_id,
+        "revision_intent": str(next_checkpoint.get("revision_intent") or ""),
+        "operator_instruction_sha256": expected_instruction_hash,
+        "parent_checkpoint_id": parent_id,
+        "parent_checkpoint_hash": parent_hash,
+    }
+    if any(
+        proposal_observations.get(key) != value
+        for key, value in expected_observation_bindings.items()
+    ) or dict(
+        proposal_observations.get("recovery_revision_geometry")
+        if isinstance(
+            proposal_observations.get("recovery_revision_geometry"),
+            Mapping,
+        )
+        else {}
+    ) != dict(checkpoint_geometry):
+        reasons.append(
+            "turtlebot3_recovery_revision_proposal_observations_mismatch"
+        )
+
+    embedded_checkpoint = next_execution.get("turtlebot3_recovery_checkpoint")
+    embedded_checkpoint = (
+        embedded_checkpoint if isinstance(embedded_checkpoint, Mapping) else {}
+    )
+    summary_checkpoint = next_summary.get("turtlebot3_recovery_checkpoint")
+    summary_checkpoint = (
+        summary_checkpoint if isinstance(summary_checkpoint, Mapping) else {}
+    )
+    if dict(embedded_checkpoint) != dict(next_checkpoint):
+        reasons.append("turtlebot3_recovery_revision_execution_checkpoint_mismatch")
+    if dict(summary_checkpoint) != dict(next_checkpoint):
+        reasons.append("turtlebot3_recovery_revision_summary_checkpoint_mismatch")
+    if str(next_checkpoint.get("recovery_proposal_id") or "") != str(
+        next_proposal.get("proposal_id") or ""
+    ):
+        reasons.append("turtlebot3_recovery_revision_proposal_mismatch")
+    if str(next_checkpoint.get("recovery_classification_id") or "") != str(
+        next_classification.get("classification_id") or ""
+    ):
+        reasons.append("turtlebot3_recovery_revision_classification_mismatch")
+    selected_action = str(next_checkpoint.get("selected_action") or "")
+    proposal_id = str(next_proposal.get("proposal_id") or "")
+    if (
+        not selected_action
+        or str(next_proposal.get("selected_action") or "") != selected_action
+        or str(next_classification.get("selected_action") or "")
+        != selected_action
+    ):
+        reasons.append("turtlebot3_recovery_revision_action_mismatch")
+    if str(next_classification.get("proposal_ref") or "") != proposal_id:
+        reasons.append(
+            "turtlebot3_recovery_revision_classification_proposal_ref_mismatch"
+        )
+    if (
+        next_classification.get("execution_class")
+        != "requires_human_approval"
+        or next_classification.get("requires_new_human_approval") is not True
+        or next_classification.get("execution_permitted_by_envelope") is not False
+        or next_classification.get("proposal_allowed") is not True
+        or next_classification.get("approval_created") is not False
+    ):
+        reasons.append(
+            "turtlebot3_recovery_revision_classification_authority_invalid"
+        )
+    if next_proposal.get("approval_created") is not False:
+        reasons.append("turtlebot3_recovery_revision_proposal_created_approval")
+
+    execution_proposals = next_execution.get("recovery_proposals")
+    summary_proposals = next_summary.get("recovery_proposals")
+    execution_classifications = next_execution.get(
+        "recovery_proposal_classifications"
+    )
+    summary_classifications = next_summary.get(
+        "recovery_proposal_classifications"
+    )
+    if execution_proposals != [dict(next_proposal)]:
+        reasons.append("turtlebot3_recovery_revision_execution_proposal_mismatch")
+    if summary_proposals != [dict(next_proposal)]:
+        reasons.append("turtlebot3_recovery_revision_summary_proposal_mismatch")
+    if execution_classifications != [dict(next_classification)]:
+        reasons.append(
+            "turtlebot3_recovery_revision_execution_classification_mismatch"
+        )
+    if summary_classifications != [dict(next_classification)]:
+        reasons.append(
+            "turtlebot3_recovery_revision_summary_classification_mismatch"
+        )
+    execution_planner_result = next_execution.get("recovery_planner_result")
+    summary_planner_result = next_summary.get("recovery_planner_result")
+    planner_proposal = next_planner_result.get("proposal")
+    if not isinstance(execution_planner_result, Mapping) or dict(
+        execution_planner_result
+    ) != dict(next_planner_result):
+        reasons.append("turtlebot3_recovery_revision_execution_planner_mismatch")
+    if not isinstance(summary_planner_result, Mapping) or dict(
+        summary_planner_result
+    ) != dict(next_planner_result):
+        reasons.append("turtlebot3_recovery_revision_summary_planner_mismatch")
+    if not isinstance(planner_proposal, Mapping) or dict(
+        planner_proposal
+    ) != dict(next_proposal):
+        reasons.append("turtlebot3_recovery_revision_planner_proposal_mismatch")
+    if (
+        str(next_planner_result.get("revision_id") or "") != revision_id
+        or str(next_planner_result.get("revision_intent") or "")
+        != str(next_checkpoint.get("revision_intent") or "")
+    ):
+        reasons.append("turtlebot3_recovery_revision_planner_lineage_mismatch")
+    if not revision_id:
+        reasons.append("turtlebot3_recovery_revision_id_missing")
+    if str(next_checkpoint.get("revision_id") or "") != revision_id:
+        reasons.append("turtlebot3_recovery_revised_checkpoint_revision_id_mismatch")
+    if str(superseded.get("superseded_by_revision_id") or "") != revision_id:
+        reasons.append("turtlebot3_recovery_superseded_revision_id_mismatch")
+    execution_revision = next_execution.get("recovery_checkpoint_revision")
+    execution_revision = (
+        execution_revision if isinstance(execution_revision, Mapping) else {}
+    )
+    summary_revision = next_summary.get("recovery_checkpoint_revision")
+    summary_revision = (
+        summary_revision if isinstance(summary_revision, Mapping) else {}
+    )
+    if str(execution_revision.get("revision_id") or "") != revision_id:
+        reasons.append("turtlebot3_recovery_execution_revision_id_mismatch")
+    if str(summary_revision.get("revision_id") or "") != revision_id:
+        reasons.append("turtlebot3_recovery_summary_revision_id_mismatch")
+
+    approved_parameters = next_checkpoint.get("approved_parameters")
+    approved_parameters = (
+        approved_parameters if isinstance(approved_parameters, Mapping) else {}
+    )
+    goal_poses = next_checkpoint.get("recovery_goal_poses")
+    goal_poses = goal_poses if isinstance(goal_poses, list) else []
+    if selected_action == "avoid_obstacle":
+        waypoints = approved_parameters.get("recovery_waypoints")
+        if (
+            set(approved_parameters)
+            != {"recovery_waypoints", "obstacle_avoidance_required"}
+            or approved_parameters.get("obstacle_avoidance_required") is not True
+            or not isinstance(waypoints, list)
+            or len(waypoints) != 2
+            or len(goal_poses) != 2
+        ):
+            reasons.append("turtlebot3_recovery_revision_waypoints_invalid")
+        else:
+            for waypoint, goal_pose in zip(waypoints, goal_poses, strict=True):
+                if not isinstance(waypoint, Mapping) or not isinstance(
+                    goal_pose, Mapping
+                ):
+                    reasons.append("turtlebot3_recovery_revision_waypoints_invalid")
+                    break
+                if (
+                    _recovery_float_or_none(waypoint.get("target_x_m"))
+                    != _recovery_float_or_none(goal_pose.get("x_m"))
+                    or _recovery_float_or_none(waypoint.get("target_y_m"))
+                    != _recovery_float_or_none(goal_pose.get("y_m"))
+                    or str(goal_pose.get("frame_id") or "") != "map"
+                ):
+                    reasons.append("turtlebot3_recovery_revision_waypoints_mismatch")
+                    break
+    elif selected_action == "return_home":
+        if (
+            set(approved_parameters)
+            != {"target_x_m", "target_y_m", "return_home_required"}
+            or approved_parameters.get("return_home_required") is not True
+            or len(goal_poses) != 1
+            or not isinstance(goal_poses[0], Mapping)
+            or _recovery_float_or_none(approved_parameters.get("target_x_m"))
+            != _recovery_float_or_none(goal_poses[0].get("x_m"))
+            or _recovery_float_or_none(approved_parameters.get("target_y_m"))
+            != _recovery_float_or_none(goal_poses[0].get("y_m"))
+            or str(goal_poses[0].get("frame_id") or "") != "map"
+        ):
+            reasons.append("turtlebot3_recovery_revision_return_home_invalid")
+    else:
+        reasons.append("turtlebot3_recovery_revision_action_not_supported")
+
+    proposal_only_payloads = (
+        revision,
+        next_checkpoint,
+        next_proposal,
+        next_classification,
+    )
+    if any(
+        payload.get("dispatch_authority_created") is not False
+        or payload.get("physical_execution_invoked") is not False
+        for payload in proposal_only_payloads
+    ):
+        reasons.append("turtlebot3_recovery_revision_created_execution_authority")
+    if revision.get("operator_approval_created") is not False:
+        reasons.append("turtlebot3_recovery_revision_created_operator_approval")
+    if (
+        revision.get("dispatch_request_sent") is True
+        or next_execution.get("recovery_dispatch_request_sent") is True
+        or next_summary.get("recovery_dispatch_request_sent") is True
+    ):
+        reasons.append("turtlebot3_recovery_revision_dispatched_during_proposal")
+    if (
+        next_execution.get("physical_execution_invoked") is True
+        or next_summary.get("physical_execution_invoked") is True
+    ):
+        reasons.append("turtlebot3_recovery_revision_physical_execution_invoked")
+    return list(dict.fromkeys(reasons))
 
 
 def _recovery_float_or_none(value: Any) -> float | None:
@@ -3558,6 +4367,10 @@ class GatewayServer:
         self.task_store = get_task_store()
         self.transcript = get_transcript_store()
         self.tool_policy = get_tool_policy_engine()
+        self._turtlebot3_recovery_locks: dict[str, asyncio.Lock] = {}
+        self._gateway_process_owner_id = _GATEWAY_PROCESS_OWNER_ID
+        self._gateway_process_lock_handle: Any | None = None
+        self._gateway_previous_lock_owner_id: str | None = None
         self.control_supervisor = ControlLoopSupervisor(
             run_control_loop_with_task=self._run_control_loop_with_task,
             emit_session_event=self._emit_session_event,
@@ -3736,14 +4549,64 @@ class GatewayServer:
 
     @asynccontextmanager
     async def _lifespan(self, _app: FastAPI) -> AsyncIterator[None]:
-        await self._startup_gateway()
+        self._acquire_gateway_process_lock()
         try:
-            yield
+            await self._startup_gateway()
+            try:
+                yield
+            finally:
+                await self._shutdown_gateway()
         finally:
-            await self._shutdown_gateway()
+            self._release_gateway_process_lock()
+
+    def _acquire_gateway_process_lock(self) -> None:
+        if self._gateway_process_lock_handle is not None:
+            return
+        lock_path = Path(self.task_store.db_path).with_suffix(
+            Path(self.task_store.db_path).suffix + ".gateway.lock"
+        )
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+        handle = lock_path.open("a+", encoding="utf-8")
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            handle.close()
+            raise RuntimeError(
+                "another MissionOS Gateway process owns the task-store lock"
+            ) from exc
+        try:
+            handle.seek(0)
+            previous_owner_id = handle.readline().strip() or None
+            handle.seek(0)
+            handle.truncate()
+            handle.write(self._gateway_process_owner_id + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        except BaseException:
+            try:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            finally:
+                handle.close()
+            raise
+        self._gateway_previous_lock_owner_id = previous_owner_id
+        self._gateway_process_lock_handle = handle
+
+    def _release_gateway_process_lock(self) -> None:
+        handle = self._gateway_process_lock_handle
+        self._gateway_process_lock_handle = None
+        self._gateway_previous_lock_owner_id = None
+        if handle is None:
+            return
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        finally:
+            handle.close()
 
     async def _startup_gateway(self) -> None:
         await ensure_skills_loaded()
+        await run_in_threadpool(
+            self._reconcile_abandoned_turtlebot3_recovery_dispatches
+        )
         set_subagent_notifier(self._subagent_notifier_fn)
         set_tool_event_notifier(self._send_tool_event)
         self.tool_policy.set_notifier(self._approval_notifier_fn)
@@ -3761,6 +4624,218 @@ class GatewayServer:
         running_supervisors = self._running_control_supervisor_tasks()
         self.control_supervisor.watchdog_running_supervisors(running_supervisors)
         await self.control_supervisor.resume_open_supervisors(running_supervisors)
+
+    def _reconcile_abandoned_turtlebot3_recovery_dispatches(
+        self,
+        *,
+        include_current_owner: bool = False,
+    ) -> int:
+        """Fail closed on dispatches owned by a previous Gateway process.
+
+        A recovery dispatch is synchronous, so a process death after its atomic
+        claim leaves the actuator outcome unknowable. Startup records that
+        uncertainty and never retries the Nav2 action automatically.
+        """
+
+        if self._gateway_process_lock_handle is None:
+            raise RuntimeError(
+                "TurtleBot3 dispatch reconciliation requires the exclusive "
+                "Gateway task-store process lock"
+            )
+
+        page = 1
+        candidates: list[dict[str, Any]] = []
+        while True:
+            result = self.task_store.query(
+                kind="turtlebot3_home_mission_execution",
+                status="running",
+                page=page,
+                page_size=100,
+            )
+            batch = [
+                dict(item)
+                for item in result.get("tasks") or ()
+                if isinstance(item, Mapping)
+            ]
+            candidates.extend(batch)
+            if len(batch) < 100:
+                break
+            page += 1
+
+        reconciled = 0
+        for task in candidates:
+            artifacts = task.get("artifacts")
+            artifacts = artifacts if isinstance(artifacts, Mapping) else {}
+            metadata = task.get("metadata")
+            metadata = metadata if isinstance(metadata, Mapping) else {}
+            checkpoint = _turtlebot3_recovery_checkpoint_from_task(task)
+            if (
+                checkpoint.get("schema_version")
+                != "turtlebot3_recovery_checkpoint.v1"
+                or checkpoint.get("checkpoint_status") != "dispatching"
+            ):
+                continue
+            dispatch_attempt = artifacts.get(
+                "turtlebot3_recovery_dispatch_attempt"
+            )
+            dispatch_attempt = (
+                dict(dispatch_attempt)
+                if isinstance(dispatch_attempt, Mapping)
+                else {}
+            )
+            previous_owner_id = str(
+                dispatch_attempt.get("gateway_process_owner_id")
+                or metadata.get("turtlebot3_recovery_dispatch_owner_id")
+                or ""
+            )
+            current_owner_shutdown = (
+                include_current_owner
+                and previous_owner_id == self._gateway_process_owner_id
+            )
+            if (
+                previous_owner_id == self._gateway_process_owner_id
+                and not current_owner_shutdown
+            ):
+                continue
+            owner_matches_released_lock = bool(previous_owner_id) and (
+                previous_owner_id == self._gateway_previous_lock_owner_id
+            )
+            if not owner_matches_released_lock and not current_owner_shutdown:
+                previous_owner_pid = _gateway_process_owner_pid(
+                    previous_owner_id
+                )
+                if (
+                    previous_owner_pid is None
+                    or _process_id_is_alive(previous_owner_pid)
+                ):
+                    # A legacy or differently scoped owner is not proven dead
+                    # by this lock file. Fail closed instead of changing a task
+                    # that may still have an active writer.
+                    continue
+
+            task_id = str(task.get("task_id") or "")
+            checkpoint_id = str(checkpoint.get("checkpoint_id") or "")
+            checkpoint_hash = str(checkpoint.get("checkpoint_hash") or "")
+            if not task_id or not checkpoint_id or not checkpoint_hash:
+                continue
+            reconciled_at = datetime.now(timezone.utc).isoformat()
+            failure_reason = (
+                "gateway_shutdown_with_unresolved_turtlebot3_recovery_dispatch"
+                if current_owner_shutdown
+                else "gateway_restarted_with_unresolved_turtlebot3_recovery_dispatch"
+            )
+            unknown_checkpoint = {
+                **checkpoint,
+                "checkpoint_status": "dispatch_unknown",
+                "failed_at": reconciled_at,
+                "failure_reasons": [failure_reason],
+            }
+            execution = artifacts.get("turtlebot3_home_mission_execution")
+            execution = dict(execution) if isinstance(execution, Mapping) else {}
+            summary = artifacts.get("summary")
+            summary = dict(summary) if isinstance(summary, Mapping) else {}
+            unknown_execution = {
+                **execution,
+                "status": "blocked",
+                "turtlebot3_recovery_checkpoint": unknown_checkpoint,
+            }
+            unknown_summary = {
+                **summary,
+                "status": "blocked",
+                "turtlebot3_recovery_checkpoint": unknown_checkpoint,
+                "recovery_dispatch_outcome_known": False,
+                "recovery_completion_claimed": False,
+                "mission_delivery_completion_claimed": False,
+                "progress_counted": False,
+                "physical_execution_invoked": False,
+            }
+            attempt_id = str(
+                dispatch_attempt.get("dispatch_attempt_id")
+                or metadata.get("turtlebot3_recovery_dispatch_attempt_id")
+                or ""
+            )
+            unknown_attempt = {
+                **dispatch_attempt,
+                "schema_version": (
+                    "missionos_turtlebot3_recovery_dispatch_attempt.v1"
+                ),
+                "dispatch_attempt_id": attempt_id or None,
+                "attempt_status": "dispatch_unknown",
+                "outcome_known": False,
+                "automatic_redispatch_performed": False,
+                "operator_approved": True,
+                "dispatch_authority_created": True,
+                "reconciliation_created_dispatch_authority": False,
+                "turtlebot3_continuation_invoked": None,
+                "previous_gateway_process_owner_id": previous_owner_id or None,
+                "reconciled_by_gateway_process_owner_id": (
+                    self._gateway_process_owner_id
+                ),
+                "reconciled_at": reconciled_at,
+                "failure_reasons": [failure_reason],
+            }
+            unknown_receipt = {
+                "schema_version": (
+                    "missionos_runtime_recovery_dispatch_receipt.v1"
+                ),
+                "task_id": task_id,
+                "dispatch_status": "dispatch_unknown",
+                "dispatch_attempt_id": attempt_id or None,
+                "checkpoint_id": checkpoint_id,
+                "checkpoint_hash": checkpoint_hash,
+                "outcome_known": False,
+                "recovery_dispatch_request_sent": None,
+                "recovery_completion_claimed": False,
+                "automatic_redispatch_performed": False,
+                "operator_approved": True,
+                "explicit_recovery_dispatch_approval": True,
+                "dispatch_authority_created": True,
+                "reconciliation_created_dispatch_authority": False,
+                "turtlebot3_continuation_invoked": None,
+                "active_runner_request_queued": False,
+                "blocked_reasons": [failure_reason],
+                "delivery_completion_claimed": False,
+                "progress_counted": False,
+                "physical_execution_invoked": False,
+                "observed_at": reconciled_at,
+            }
+            claimed = self.task_store.claim_nested_artifact(
+                task_id,
+                collection_key="turtlebot3_recovery_checkpoints",
+                artifact_id=checkpoint_id,
+                expected={
+                    "checkpoint_status": "dispatching",
+                    "checkpoint_hash": checkpoint_hash,
+                },
+                updates={
+                    "checkpoint_status": "dispatch_unknown",
+                    "failed_at": reconciled_at,
+                    "failure_reasons": [failure_reason],
+                },
+                expected_task_status="running",
+                expected_updated_at=task.get("updated_at"),
+                replace_artifacts={
+                    "turtlebot3_recovery_checkpoint": unknown_checkpoint,
+                    "turtlebot3_home_mission_execution": unknown_execution,
+                    "summary": unknown_summary,
+                    "turtlebot3_recovery_dispatch_attempt": unknown_attempt,
+                    "missionos_runtime_recovery_dispatch_receipt": (
+                        unknown_receipt
+                    ),
+                },
+                metadata={
+                    "turtlebot3_recovery_lifecycle": "dispatch_unknown",
+                    "turtlebot3_recovery_reconciled_by_owner_id": (
+                        self._gateway_process_owner_id
+                    ),
+                    "turtlebot3_recovery_reconciled_at": reconciled_at,
+                    "turtlebot3_recovery_outcome_known": False,
+                },
+                next_task_status="blocked",
+            )
+            if claimed is not None:
+                reconciled += 1
+        return reconciled
 
     def _running_control_supervisor_tasks(
         self,
@@ -3794,6 +4869,10 @@ class GatewayServer:
         return tasks
 
     async def _shutdown_gateway(self) -> None:
+        await run_in_threadpool(
+            self._reconcile_abandoned_turtlebot3_recovery_dispatches,
+            include_current_owner=True,
+        )
         await self.control_supervisor.shutdown()
         set_subagent_notifier(None)
         set_tool_event_notifier(None)
@@ -5349,6 +6428,339 @@ class GatewayServer:
                 ),
             )
 
+        @self.app.post(
+            "/missionos/turtlebot3/recovery-agent/revise-for-task"
+        )
+        async def missionos_turtlebot3_recovery_agent_revise_for_task(
+            payload: Dict[str, Any] | None = Body(default=None),
+        ):
+            body = payload or {}
+            task_id = str(body.get("task_id") or "").strip()
+            operator_instruction = str(
+                body.get("operator_instruction") or ""
+            ).strip()
+            reviewed_checkpoint_id = str(
+                body.get("expected_recovery_checkpoint_id") or ""
+            ).strip()
+            reviewed_checkpoint_hash = str(
+                body.get("expected_recovery_checkpoint_hash") or ""
+            ).strip()
+            if not task_id:
+                raise HTTPException(status_code=400, detail="task_id is required")
+            if not operator_instruction:
+                raise HTTPException(
+                    status_code=400,
+                    detail="operator_instruction is required",
+                )
+            if len(operator_instruction) > 2000:
+                raise HTTPException(
+                    status_code=400,
+                    detail="operator_instruction must be at most 2000 characters",
+                )
+            if not reviewed_checkpoint_id or not reviewed_checkpoint_hash:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        "expected_recovery_checkpoint_id and "
+                        "expected_recovery_checkpoint_hash are required"
+                    ),
+                )
+
+            task = self.task_store.get(task_id)
+            if task is None:
+                raise HTTPException(status_code=404, detail="task not found")
+            artifacts = task.get("artifacts")
+            artifacts = artifacts if isinstance(artifacts, Mapping) else {}
+            checkpoint = _turtlebot3_recovery_checkpoint_from_task(task)
+            checkpoint_id = str(checkpoint.get("checkpoint_id") or "")
+            checkpoint_hash = str(checkpoint.get("checkpoint_hash") or "")
+            blocked_reasons: list[str] = []
+            if task.get("kind") != "turtlebot3_home_mission_execution":
+                blocked_reasons.append(
+                    "turtlebot3_recovery_revision_task_kind_not_supported"
+                )
+            elif not _is_strict_turtlebot3_recovery_task(task):
+                blocked_reasons.append(
+                    "turtlebot3_recovery_revision_robot_scope_not_supported"
+                )
+            if task.get("status") != "pending":
+                blocked_reasons.append(
+                    "turtlebot3_recovery_revision_task_not_pending"
+                )
+            if checkpoint.get("schema_version") != (
+                "turtlebot3_recovery_checkpoint.v1"
+            ):
+                blocked_reasons.append(
+                    "turtlebot3_recovery_checkpoint_missing_or_invalid"
+                )
+            if checkpoint.get("checkpoint_status") != (
+                "awaiting_operator_approval"
+            ):
+                blocked_reasons.append(
+                    "turtlebot3_recovery_checkpoint_not_awaiting_approval"
+                )
+            computed_checkpoint_hash = _recovery_checkpoint_hash(checkpoint)
+            if checkpoint_hash != computed_checkpoint_hash:
+                blocked_reasons.append(
+                    "turtlebot3_recovery_checkpoint_hash_mismatch"
+                )
+            expected_checkpoint_id = (
+                "turtlebot3_recovery_checkpoint_"
+                f"{computed_checkpoint_hash[:12]}"
+            )
+            if checkpoint_id != expected_checkpoint_id:
+                blocked_reasons.append(
+                    "turtlebot3_recovery_checkpoint_id_mismatch"
+                )
+            if reviewed_checkpoint_id != checkpoint_id:
+                blocked_reasons.append(
+                    "reviewed_turtlebot3_recovery_checkpoint_id_changed"
+                )
+            if reviewed_checkpoint_hash != checkpoint_hash:
+                blocked_reasons.append(
+                    "reviewed_turtlebot3_recovery_checkpoint_hash_changed"
+                )
+            checkpoint_collection = artifacts.get(
+                "turtlebot3_recovery_checkpoints"
+            )
+            checkpoint_collection = (
+                checkpoint_collection
+                if isinstance(checkpoint_collection, Mapping)
+                else {}
+            )
+            durable_checkpoint = checkpoint_collection.get(checkpoint_id)
+            durable_checkpoint = (
+                durable_checkpoint
+                if isinstance(durable_checkpoint, Mapping)
+                else {}
+            )
+            if dict(durable_checkpoint) != dict(checkpoint):
+                blocked_reasons.append(
+                    "turtlebot3_recovery_checkpoint_collection_mismatch"
+                )
+            proposal = artifacts.get("turtlebot3_home_mission_plan")
+            previous_execution = artifacts.get(
+                "turtlebot3_home_mission_execution"
+            )
+            if not isinstance(proposal, Mapping):
+                blocked_reasons.append(
+                    "turtlebot3_recovery_original_plan_missing"
+                )
+            else:
+                try:
+                    current_planned_segments_sha256 = (
+                        _planned_segments_sha256(
+                            _planned_segment_goals_from_proposal(proposal)
+                        )
+                    )
+                except (TypeError, ValueError):
+                    current_planned_segments_sha256 = ""
+                if (
+                    not current_planned_segments_sha256
+                    or str(
+                        checkpoint.get("planned_segments_sha256") or ""
+                    )
+                    != current_planned_segments_sha256
+                ):
+                    blocked_reasons.append(
+                        "turtlebot3_recovery_checkpoint_planned_segments_hash_mismatch"
+                    )
+            if not isinstance(previous_execution, Mapping):
+                blocked_reasons.append(
+                    "turtlebot3_recovery_previous_execution_missing"
+                )
+            else:
+                embedded_checkpoint = previous_execution.get(
+                    "turtlebot3_recovery_checkpoint"
+                )
+                if not isinstance(embedded_checkpoint, Mapping) or dict(
+                    embedded_checkpoint
+                ) != dict(checkpoint):
+                    blocked_reasons.append(
+                        "turtlebot3_recovery_execution_checkpoint_mismatch"
+                    )
+            stored_summary = artifacts.get("summary")
+            stored_summary = (
+                stored_summary if isinstance(stored_summary, Mapping) else {}
+            )
+            summary_checkpoint = stored_summary.get(
+                "turtlebot3_recovery_checkpoint"
+            )
+            if not isinstance(summary_checkpoint, Mapping) or dict(
+                summary_checkpoint
+            ) != dict(checkpoint):
+                blocked_reasons.append(
+                    "turtlebot3_recovery_summary_checkpoint_mismatch"
+                )
+            if blocked_reasons:
+                blocked_revision = {
+                    "schema_version": (
+                        "missionos_turtlebot3_recovery_checkpoint_revision.v1"
+                    ),
+                    "revision_status": "blocked",
+                    "blocking_reasons": list(dict.fromkeys(blocked_reasons)),
+                    "parent_checkpoint_id": checkpoint_id,
+                    "parent_checkpoint_hash": checkpoint_hash,
+                    "dispatch_authority_created": False,
+                    "operator_approval_created": False,
+                    "physical_execution_invoked": False,
+                    "progress_counted": False,
+                }
+                response_payload = _turtlebot3_recovery_revision_response(
+                    task=task,
+                    revision=blocked_revision,
+                    revision_status="blocked",
+                    previous_checkpoint_id=reviewed_checkpoint_id,
+                    previous_checkpoint_hash=reviewed_checkpoint_hash,
+                    blocked_reasons=list(dict.fromkeys(blocked_reasons)),
+                    checkpoint_unchanged=True,
+                )
+                return JSONResponse(status_code=409, content=response_payload)
+
+            revision_now = datetime.now(timezone.utc)
+            revision = await run_in_threadpool(
+                build_turtlebot3_recovery_checkpoint_revision,
+                operator_instruction=operator_instruction,
+                proposal=dict(proposal),
+                resume_execution=dict(previous_execution),
+                now=revision_now,
+            )
+            revision = dict(revision) if isinstance(revision, Mapping) else {}
+            revision_reasons = _turtlebot3_recovery_revision_validation_reasons(
+                revision=revision,
+                checkpoint=checkpoint,
+                proposal=proposal,
+                operator_instruction=operator_instruction,
+            )
+            if revision_reasons:
+                response_payload = _turtlebot3_recovery_revision_response(
+                    task=task,
+                    revision=revision,
+                    revision_status="blocked",
+                    previous_checkpoint_id=checkpoint_id,
+                    previous_checkpoint_hash=checkpoint_hash,
+                    blocked_reasons=revision_reasons,
+                    checkpoint_unchanged=True,
+                )
+                return JSONResponse(status_code=409, content=response_payload)
+
+            superseded_checkpoint = dict(
+                revision["superseded_checkpoint"]
+            )
+            next_checkpoint = dict(
+                revision["turtlebot3_recovery_checkpoint"]
+            )
+            next_execution = dict(
+                revision["turtlebot3_home_mission_execution"]
+            )
+            stored_summary = artifacts.get("summary")
+            stored_summary = (
+                dict(stored_summary)
+                if isinstance(stored_summary, Mapping)
+                else {}
+            )
+            next_summary = {
+                **stored_summary,
+                **dict(revision["summary"]),
+            }
+            next_checkpoint_id = str(
+                next_checkpoint.get("checkpoint_id") or ""
+            )
+            decision_result = (
+                _missionos_attach_turtlebot3_recovery_decision_summary(
+                    {
+                        "turtlebot3_home_mission_execution": next_execution,
+                        "turtlebot3_recovery_checkpoint": next_checkpoint,
+                        "summary": next_summary,
+                    },
+                    mission_operator_approval_count=1,
+                )
+            )
+            next_summary = dict(decision_result.get("summary") or next_summary)
+            decision_summary = dict(
+                decision_result.get("turtlebot3_recovery_decision_summary")
+                or {}
+            )
+            revision_record = {
+                **revision,
+                "summary": next_summary,
+            }
+            revision_id = str(revision.get("revision_id") or "").strip()
+            if not revision_id:
+                revision_id = f"turtlebot3_recovery_revision_{next_checkpoint_id}"
+                revision_record["revision_id"] = revision_id
+            superseded_updates = {
+                key: value
+                for key, value in superseded_checkpoint.items()
+                if key == "checkpoint_status" or str(key).startswith("superseded_")
+            }
+            claimed_task = self.task_store.claim_nested_artifact(
+                task_id,
+                collection_key="turtlebot3_recovery_checkpoints",
+                artifact_id=checkpoint_id,
+                expected={
+                    "checkpoint_status": "awaiting_operator_approval",
+                    "checkpoint_hash": checkpoint_hash,
+                },
+                updates=superseded_updates,
+                expected_task_status="pending",
+                expected_updated_at=task.get("updated_at"),
+                artifacts={
+                    "turtlebot3_recovery_checkpoints": {
+                        next_checkpoint_id: next_checkpoint,
+                    },
+                    "turtlebot3_recovery_revisions": {
+                        revision_id: revision_record,
+                    },
+                },
+                replace_artifacts={
+                    "turtlebot3_recovery_checkpoint": next_checkpoint,
+                    "turtlebot3_home_mission_execution": next_execution,
+                    "summary": next_summary,
+                    "turtlebot3_recovery_revision": revision_record,
+                    "turtlebot3_recovery_decision_summary": decision_summary,
+                },
+                metadata={
+                    "turtlebot3_recovery_lifecycle": (
+                        "awaiting_operator_approval"
+                    ),
+                    "turtlebot3_recovery_revision_ref": revision_id,
+                },
+            )
+            if claimed_task is None:
+                latest_task = self.task_store.get(task_id) or task
+                conflict_reasons = [
+                    "turtlebot3_recovery_checkpoint_revision_conflict"
+                ]
+                conflict_payload = _turtlebot3_recovery_revision_response(
+                    task=latest_task,
+                    revision=revision_record,
+                    revision_status="blocked",
+                    previous_checkpoint_id=checkpoint_id,
+                    previous_checkpoint_hash=checkpoint_hash,
+                    blocked_reasons=conflict_reasons,
+                    checkpoint_unchanged=(
+                        str(
+                            _turtlebot3_recovery_checkpoint_from_task(
+                                latest_task
+                            ).get("checkpoint_id")
+                            or ""
+                        )
+                        == checkpoint_id
+                    ),
+                )
+                return JSONResponse(status_code=409, content=conflict_payload)
+
+            return _turtlebot3_recovery_revision_response(
+                task=claimed_task,
+                revision=revision_record,
+                revision_status="revised",
+                previous_checkpoint_id=checkpoint_id,
+                previous_checkpoint_hash=checkpoint_hash,
+                blocked_reasons=(),
+                checkpoint_unchanged=False,
+            )
+
         @self.app.post("/missionos/runtime-recovery-agent/propose-for-task")
         async def missionos_runtime_recovery_agent_propose_for_task(
             payload: Dict[str, Any] | None = Body(default=None),
@@ -6271,12 +7683,36 @@ class GatewayServer:
             recovery_action = str(body.get("recovery_action") or "").strip()
             if not task_id:
                 raise HTTPException(status_code=400, detail="task_id is required")
-            if recovery_action not in MISSIONOS_RUNTIME_RECOVERY_ACTIONS:
+            task = self.task_store.get(task_id)
+            if task is None:
+                raise HTTPException(status_code=404, detail="task not found")
+            home_robot_recovery_task = (
+                task.get("kind") == "turtlebot3_home_mission_execution"
+            )
+            turtlebot3_recovery_task = _is_strict_turtlebot3_recovery_task(
+                task
+            )
+            if home_robot_recovery_task and not turtlebot3_recovery_task:
+                raise HTTPException(
+                    status_code=409,
+                    detail=(
+                        "TurtleBot3 recovery dispatch requires robot_profile="
+                        "turtlebot3 and execution_target="
+                        "ros2_nav2_turtlebot3_sim in the source plan, "
+                        "checkpoint, and summary"
+                    ),
+                )
+            allowed_recovery_actions = (
+                MISSIONOS_TURTLEBOT3_RUNTIME_RECOVERY_ACTIONS
+                if turtlebot3_recovery_task
+                else MISSIONOS_RUNTIME_RECOVERY_ACTIONS
+            )
+            if recovery_action not in allowed_recovery_actions:
                 raise HTTPException(
                     status_code=400,
                     detail=(
                         "recovery_action must be one of "
-                        + ", ".join(sorted(MISSIONOS_RUNTIME_RECOVERY_ACTIONS))
+                        + ", ".join(sorted(allowed_recovery_actions))
                     ),
                 )
             if body.get("explicit_recovery_dispatch_approval") is not True:
@@ -6284,16 +7720,1169 @@ class GatewayServer:
                     status_code=400,
                     detail="explicit_recovery_dispatch_approval is required",
                 )
-            recovery_parameters = _bounded_operator_recovery_parameters(
-                recovery_action=recovery_action,
-                body=body,
+            recovery_parameters = (
+                _bounded_turtlebot3_operator_recovery_parameters(
+                    recovery_action=recovery_action,
+                    body=body,
+                )
+                if turtlebot3_recovery_task
+                else _bounded_operator_recovery_parameters(
+                    recovery_action=recovery_action,
+                    body=body,
+                )
             )
-            task = self.task_store.get(task_id)
-            if task is None:
-                raise HTTPException(status_code=404, detail="task not found")
             artifacts = (
                 task.get("artifacts") if isinstance(task.get("artifacts"), Mapping) else {}
             )
+            if turtlebot3_recovery_task:
+                lock = self._turtlebot3_recovery_locks.setdefault(
+                    task_id,
+                    asyncio.Lock(),
+                )
+                async with lock:
+                    task = self.task_store.get(task_id) or task
+                    artifacts = (
+                        task.get("artifacts")
+                        if isinstance(task.get("artifacts"), Mapping)
+                        else {}
+                    )
+                    checkpoint = _turtlebot3_recovery_checkpoint_from_task(task)
+                    existing_receipt = artifacts.get(
+                        "missionos_runtime_recovery_dispatch_receipt"
+                    )
+                    existing_receipt = (
+                        dict(existing_receipt)
+                        if isinstance(existing_receipt, Mapping)
+                        else {}
+                    )
+                    expected_action = str(
+                        checkpoint.get("selected_action") or ""
+                    )
+                    expected_parameters = checkpoint.get("approved_parameters")
+                    expected_parameters = (
+                        dict(expected_parameters)
+                        if isinstance(expected_parameters, Mapping)
+                        else {}
+                    )
+                    reviewed_checkpoint_id = str(
+                        body.get("expected_recovery_checkpoint_id") or ""
+                    ).strip()
+                    reviewed_checkpoint_hash = str(
+                        body.get("expected_recovery_checkpoint_hash") or ""
+                    ).strip()
+                    checkpoint_integrity_reasons: list[str] = []
+                    if checkpoint.get("schema_version") != (
+                        "turtlebot3_recovery_checkpoint.v1"
+                    ):
+                        checkpoint_integrity_reasons.append(
+                            "turtlebot3_recovery_checkpoint_missing_or_invalid"
+                        )
+                    computed_checkpoint_hash = _recovery_checkpoint_hash(
+                        checkpoint
+                    )
+                    if str(checkpoint.get("checkpoint_hash") or "") != (
+                        computed_checkpoint_hash
+                    ):
+                        checkpoint_integrity_reasons.append(
+                            "turtlebot3_recovery_checkpoint_hash_mismatch"
+                        )
+                    expected_checkpoint_id = (
+                        "turtlebot3_recovery_checkpoint_"
+                        f"{computed_checkpoint_hash[:12]}"
+                    )
+                    if str(checkpoint.get("checkpoint_id") or "") != (
+                        expected_checkpoint_id
+                    ):
+                        checkpoint_integrity_reasons.append(
+                            "turtlebot3_recovery_checkpoint_id_mismatch"
+                        )
+                    checkpoint_collection = artifacts.get(
+                        "turtlebot3_recovery_checkpoints"
+                    )
+                    checkpoint_collection = (
+                        checkpoint_collection
+                        if isinstance(checkpoint_collection, Mapping)
+                        else {}
+                    )
+                    durable_checkpoint = checkpoint_collection.get(
+                        str(checkpoint.get("checkpoint_id") or "")
+                    )
+                    if not isinstance(durable_checkpoint, Mapping) or dict(
+                        durable_checkpoint
+                    ) != dict(checkpoint):
+                        checkpoint_integrity_reasons.append(
+                            "turtlebot3_recovery_checkpoint_collection_mismatch"
+                        )
+                    previous_execution = artifacts.get(
+                        "turtlebot3_home_mission_execution"
+                    )
+                    if not isinstance(previous_execution, Mapping):
+                        checkpoint_integrity_reasons.append(
+                            "turtlebot3_recovery_previous_execution_missing"
+                        )
+                    else:
+                        embedded_checkpoint = previous_execution.get(
+                            "turtlebot3_recovery_checkpoint"
+                        )
+                        if not isinstance(
+                            embedded_checkpoint,
+                            Mapping,
+                        ) or dict(embedded_checkpoint) != dict(checkpoint):
+                            checkpoint_integrity_reasons.append(
+                                "turtlebot3_recovery_execution_checkpoint_mismatch"
+                            )
+                    stored_summary = artifacts.get("summary")
+                    stored_summary = (
+                        stored_summary
+                        if isinstance(stored_summary, Mapping)
+                        else {}
+                    )
+                    summary_checkpoint = stored_summary.get(
+                        "turtlebot3_recovery_checkpoint"
+                    )
+                    if not isinstance(summary_checkpoint, Mapping) or dict(
+                        summary_checkpoint
+                    ) != dict(checkpoint):
+                        checkpoint_integrity_reasons.append(
+                            "turtlebot3_recovery_summary_checkpoint_mismatch"
+                        )
+                    if checkpoint.get("checkpoint_status") == "consumed":
+                        replay_blocking_reasons = list(
+                            checkpoint_integrity_reasons
+                        )
+                        if reviewed_checkpoint_id and reviewed_checkpoint_id != str(
+                            checkpoint.get("checkpoint_id") or ""
+                        ):
+                            replay_blocking_reasons.append(
+                                "reviewed_turtlebot3_recovery_checkpoint_id_changed"
+                            )
+                        if reviewed_checkpoint_hash and reviewed_checkpoint_hash != str(
+                            checkpoint.get("checkpoint_hash") or ""
+                        ):
+                            replay_blocking_reasons.append(
+                                "reviewed_turtlebot3_recovery_checkpoint_hash_changed"
+                            )
+                        if recovery_action != expected_action:
+                            replay_blocking_reasons.append(
+                                "recovery_action_must_match_consumed_turtlebot3_checkpoint"
+                            )
+                        if not _turtlebot3_recovery_parameters_match(
+                            expected=expected_parameters,
+                            requested=recovery_parameters,
+                        ):
+                            replay_blocking_reasons.append(
+                                "recovery_parameters_must_match_consumed_turtlebot3_checkpoint"
+                            )
+                        if replay_blocking_reasons:
+                            return JSONResponse(
+                                status_code=409,
+                                content={
+                                    "task": task,
+                                    "missionos_runtime_recovery_dispatch_receipt": (
+                                        existing_receipt
+                                    ),
+                                    "summary": {
+                                        "task_id": task_id,
+                                        "task_status": task.get("status"),
+                                        "dispatch_status": "blocked",
+                                        "recovery_action": recovery_action,
+                                        "recovery_parameters": recovery_parameters,
+                                        "idempotent_replay": False,
+                                        "active_runner_request_queued": False,
+                                        "blocked_reasons": replay_blocking_reasons,
+                                        "delivery_completion_claimed": False,
+                                        "progress_counted": False,
+                                        "physical_execution_invoked": False,
+                                    },
+                                },
+                            )
+                        return {
+                            "task": task,
+                            "missionos_runtime_recovery_dispatch_receipt": (
+                                existing_receipt
+                            ),
+                            "summary": {
+                                "task_id": task_id,
+                                "task_status": task.get("status"),
+                                "dispatch_status": "already_consumed",
+                                "recovery_action": checkpoint.get(
+                                    "selected_action"
+                                ),
+                                "recovery_parameters": checkpoint.get(
+                                    "approved_parameters"
+                                )
+                                or {},
+                                "idempotent_replay": True,
+                                "active_runner_request_queued": False,
+                                "delivery_completion_claimed": False,
+                                "progress_counted": False,
+                                "physical_execution_invoked": False,
+                            },
+                        }
+
+                    blocked_reasons = list(checkpoint_integrity_reasons)
+                    if reviewed_checkpoint_id and reviewed_checkpoint_id != str(
+                        checkpoint.get("checkpoint_id") or ""
+                    ):
+                        blocked_reasons.append(
+                            "reviewed_turtlebot3_recovery_checkpoint_id_changed"
+                        )
+                    if reviewed_checkpoint_hash and reviewed_checkpoint_hash != str(
+                        checkpoint.get("checkpoint_hash") or ""
+                    ):
+                        blocked_reasons.append(
+                            "reviewed_turtlebot3_recovery_checkpoint_hash_changed"
+                        )
+                    if checkpoint.get("checkpoint_status") != (
+                        "awaiting_operator_approval"
+                    ):
+                        blocked_reasons.append(
+                            "turtlebot3_recovery_checkpoint_not_awaiting_approval"
+                        )
+                    if task.get("status") != "pending":
+                        blocked_reasons.append(
+                            "turtlebot3_recovery_task_not_pending_approval"
+                        )
+                    if recovery_action != expected_action:
+                        blocked_reasons.append(
+                            "recovery_action_must_match_turtlebot3_checkpoint"
+                        )
+                    if not _turtlebot3_recovery_parameters_match(
+                        expected=expected_parameters,
+                        requested=recovery_parameters,
+                    ):
+                        blocked_reasons.append(
+                            "recovery_parameters_must_match_turtlebot3_checkpoint"
+                        )
+                    proposal = artifacts.get("turtlebot3_home_mission_plan")
+                    mission_approval = artifacts.get(
+                        "turtlebot3_home_mission_approval"
+                    )
+                    if not isinstance(proposal, Mapping):
+                        blocked_reasons.append(
+                            "turtlebot3_recovery_original_plan_missing"
+                        )
+                    else:
+                        proposal_robot_profile = str(
+                            proposal.get("robot_profile") or "turtlebot3"
+                        )
+                        proposal_execution_target = str(
+                            proposal.get("execution_target")
+                            or "ros2_nav2_turtlebot3_sim"
+                        )
+                        if str(checkpoint.get("robot_profile") or "") != (
+                            proposal_robot_profile
+                        ):
+                            blocked_reasons.append(
+                                "recovery_robot_profile_must_match_turtlebot3_checkpoint"
+                            )
+                        if str(checkpoint.get("execution_target") or "") != (
+                            proposal_execution_target
+                        ):
+                            blocked_reasons.append(
+                                "recovery_execution_target_must_match_turtlebot3_checkpoint"
+                            )
+                        try:
+                            current_planned_segments_sha256 = (
+                                _planned_segments_sha256(
+                                    _planned_segment_goals_from_proposal(
+                                        proposal
+                                    )
+                                )
+                            )
+                        except (TypeError, ValueError):
+                            current_planned_segments_sha256 = ""
+                        if (
+                            not current_planned_segments_sha256
+                            or str(
+                                checkpoint.get("planned_segments_sha256")
+                                or ""
+                            )
+                            != current_planned_segments_sha256
+                        ):
+                            blocked_reasons.append(
+                                "turtlebot3_recovery_checkpoint_planned_segments_hash_mismatch"
+                            )
+                    if not isinstance(mission_approval, Mapping):
+                        blocked_reasons.append(
+                            "turtlebot3_recovery_mission_approval_missing"
+                        )
+
+                    now = datetime.now(timezone.utc)
+                    if blocked_reasons:
+                        receipt = {
+                            "schema_version": (
+                                "missionos_runtime_recovery_dispatch_receipt.v1"
+                            ),
+                            "task_id": task_id,
+                            "dispatch_status": "blocked",
+                            "recovery_action": recovery_action,
+                            "recovery_parameters": recovery_parameters,
+                            "operator_approval_attempted": True,
+                            "explicit_approval_received": True,
+                            "operator_approved": False,
+                            "operator_approved_for_current_checkpoint": False,
+                            "explicit_recovery_dispatch_approval": False,
+                            "reviewed_recovery_checkpoint_id": (
+                                reviewed_checkpoint_id or None
+                            ),
+                            "reviewed_recovery_checkpoint_hash": (
+                                reviewed_checkpoint_hash or None
+                            ),
+                            "turtlebot3_continuation_invoked": False,
+                            "active_runner_request_queued": False,
+                            "dispatch_authority_created": False,
+                            "blocked_reasons": blocked_reasons,
+                            "delivery_completion_claimed": False,
+                            "progress_counted": False,
+                            "physical_execution_invoked": False,
+                            "observed_at": now.isoformat(),
+                        }
+                        updated_task = self.task_store.update(
+                            task_id,
+                            artifacts={
+                                "missionos_runtime_recovery_dispatch_receipt": (
+                                    receipt
+                                )
+                            },
+                        )
+                        return JSONResponse(
+                            status_code=409,
+                            content={
+                                "task": updated_task or task,
+                                "missionos_runtime_recovery_dispatch_receipt": (
+                                    receipt
+                                ),
+                                "summary": {
+                                    "task_id": task_id,
+                                    "task_status": (updated_task or task).get(
+                                        "status"
+                                    ),
+                                    "dispatch_status": "blocked",
+                                    "recovery_action": recovery_action,
+                                    "recovery_parameters": recovery_parameters,
+                                    "active_runner_request_queued": False,
+                                    "blocked_reasons": blocked_reasons,
+                                    "delivery_completion_claimed": False,
+                                    "progress_counted": False,
+                                    "physical_execution_invoked": False,
+                                },
+                            },
+                        )
+
+                    dispatch_attempt_id = (
+                        "turtlebot3_recovery_dispatch_attempt_"
+                        f"{uuid.uuid4().hex[:12]}"
+                    )
+                    operator_approval, bounded_action = (
+                        _build_turtlebot3_recovery_operator_authority(
+                            task_id=task_id,
+                            checkpoint=checkpoint,
+                            recovery_action=recovery_action,
+                            recovery_parameters=recovery_parameters,
+                            now=now,
+                        )
+                    )
+                    operator_approval = {
+                        **operator_approval,
+                        "dispatch_attempt_id": dispatch_attempt_id,
+                        "gateway_process_owner_id": (
+                            self._gateway_process_owner_id
+                        ),
+                    }
+                    bounded_action = {
+                        **bounded_action,
+                        "dispatch_attempt_id": dispatch_attempt_id,
+                        "gateway_process_owner_id": (
+                            self._gateway_process_owner_id
+                        ),
+                    }
+                    dispatch_attempt = {
+                        "schema_version": (
+                            "missionos_turtlebot3_recovery_dispatch_attempt.v1"
+                        ),
+                        "dispatch_attempt_id": dispatch_attempt_id,
+                        "attempt_status": "dispatching",
+                        "task_id": task_id,
+                        "checkpoint_id": checkpoint.get("checkpoint_id"),
+                        "checkpoint_hash": checkpoint.get("checkpoint_hash"),
+                        "operator_approval_ref": operator_approval[
+                            "operator_approval_ref"
+                        ],
+                        "gateway_process_owner_id": (
+                            self._gateway_process_owner_id
+                        ),
+                        "outcome_known": False,
+                        "automatic_redispatch_performed": False,
+                        "started_at": now.isoformat(),
+                    }
+                    dispatching_checkpoint = {
+                        **checkpoint,
+                        "checkpoint_status": "dispatching",
+                        "claimed_at": now.isoformat(),
+                        "claimed_by_approval_ref": operator_approval[
+                            "operator_approval_ref"
+                        ],
+                    }
+                    dispatching_execution = {
+                        **dict(previous_execution),
+                        "turtlebot3_recovery_checkpoint": dispatching_checkpoint,
+                    }
+                    stored_summary = artifacts.get("summary")
+                    stored_summary = (
+                        dict(stored_summary)
+                        if isinstance(stored_summary, Mapping)
+                        else {}
+                    )
+                    dispatching_summary = {
+                        **stored_summary,
+                        "turtlebot3_recovery_checkpoint": dispatching_checkpoint,
+                    }
+                    checkpoint_id = str(checkpoint.get("checkpoint_id") or "")
+                    claimed_task = self.task_store.claim_nested_artifact(
+                        task_id,
+                        collection_key="turtlebot3_recovery_checkpoints",
+                        artifact_id=checkpoint_id,
+                        expected={
+                            "checkpoint_status": "awaiting_operator_approval",
+                            "checkpoint_hash": checkpoint.get("checkpoint_hash"),
+                        },
+                        updates={
+                            "checkpoint_status": "dispatching",
+                            "claimed_at": now.isoformat(),
+                            "claimed_by_approval_ref": operator_approval[
+                                "operator_approval_ref"
+                            ],
+                        },
+                        expected_task_status="pending",
+                        expected_updated_at=task.get("updated_at"),
+                        replace_artifacts={
+                            "turtlebot3_recovery_checkpoint": (
+                                dispatching_checkpoint
+                            ),
+                            "turtlebot3_home_mission_execution": (
+                                dispatching_execution
+                            ),
+                            "summary": dispatching_summary,
+                            "turtlebot3_recovery_operator_approval": (
+                                operator_approval
+                            ),
+                            "turtlebot3_recovery_bounded_action": bounded_action,
+                            "turtlebot3_recovery_dispatch_attempt": (
+                                dispatch_attempt
+                            ),
+                        },
+                        metadata={
+                            "turtlebot3_recovery_lifecycle": "dispatching",
+                            "turtlebot3_recovery_dispatch_attempt_id": (
+                                dispatch_attempt_id
+                            ),
+                            "turtlebot3_recovery_dispatch_owner_id": (
+                                self._gateway_process_owner_id
+                            ),
+                        },
+                        next_task_status="running",
+                    )
+                    if claimed_task is None:
+                        latest_task = self.task_store.get(task_id) or task
+                        return JSONResponse(
+                            status_code=409,
+                            content={
+                                "task": latest_task,
+                                "summary": {
+                                    "task_id": task_id,
+                                    "task_status": latest_task.get("status"),
+                                    "dispatch_status": "blocked",
+                                    "recovery_action": recovery_action,
+                                    "recovery_parameters": recovery_parameters,
+                                    "active_runner_request_queued": False,
+                                    "blocked_reasons": [
+                                        "turtlebot3_recovery_checkpoint_claim_conflict"
+                                    ],
+                                    "delivery_completion_claimed": False,
+                                    "progress_counted": False,
+                                    "physical_execution_invoked": False,
+                                },
+                            },
+                        )
+                    def _turtlebot3_recovery_progress(
+                        partial: dict[str, Any],
+                    ) -> None:
+                        try:
+                            self.task_store.update(
+                                task_id,
+                                artifacts=dict(partial),
+                            )
+                        except Exception:
+                            pass
+
+                    try:
+                        execution_result = await run_in_threadpool(
+                            run_turtlebot3_home_mission_dispatch,
+                            proposal=dict(proposal),
+                            approval=dict(mission_approval),
+                            now=now,
+                            progress_callback=_turtlebot3_recovery_progress,
+                            resume_execution=dict(previous_execution),
+                            recovery_operator_approval=operator_approval,
+                        )
+                    except BaseException as exc:
+                        failed_at = datetime.now(timezone.utc).isoformat()
+                        failed_checkpoint = {
+                            **dispatching_checkpoint,
+                            "checkpoint_status": "dispatch_unknown",
+                            "failed_at": failed_at,
+                            "failure_reasons": [
+                                f"{type(exc).__name__}: {exc}",
+                            ],
+                        }
+                        failed_execution = {
+                            **dispatching_execution,
+                            "turtlebot3_recovery_checkpoint": failed_checkpoint,
+                        }
+                        failed_summary = {
+                            **dispatching_summary,
+                            "turtlebot3_recovery_checkpoint": failed_checkpoint,
+                        }
+                        failed_attempt = {
+                            **dispatch_attempt,
+                            "attempt_status": "dispatch_unknown",
+                            "outcome_known": False,
+                            "automatic_redispatch_performed": False,
+                            "failed_at": failed_at,
+                            "failure_reasons": [
+                                "turtlebot3_recovery_dispatch_outcome_unknown"
+                            ],
+                        }
+                        receipt = {
+                            "schema_version": (
+                                "missionos_runtime_recovery_dispatch_receipt.v1"
+                            ),
+                            "task_id": task_id,
+                            "dispatch_status": "dispatch_unknown",
+                            "dispatch_attempt_id": dispatch_attempt_id,
+                            "outcome_known": False,
+                            "automatic_redispatch_performed": False,
+                            "recovery_action": recovery_action,
+                            "recovery_parameters": recovery_parameters,
+                            "operator_approved": True,
+                            "explicit_recovery_dispatch_approval": True,
+                            "dispatch_authority_created": True,
+                            "receipt_created_dispatch_authority": False,
+                            "recovery_dispatch_request_sent": None,
+                            "turtlebot3_recovery_operator_approval": (
+                                operator_approval
+                            ),
+                            "turtlebot3_recovery_bounded_action": bounded_action,
+                            "turtlebot3_continuation_invoked": None,
+                            "active_runner_request_queued": False,
+                            "blocked_reasons": [
+                                "turtlebot3_recovery_dispatch_outcome_unknown"
+                            ],
+                            "delivery_completion_claimed": False,
+                            "progress_counted": False,
+                            "physical_execution_invoked": False,
+                            "observed_at": failed_at,
+                        }
+                        updated_task = self.task_store.update(
+                            task_id,
+                            status="blocked",
+                            artifacts={
+                                "turtlebot3_recovery_checkpoint": (
+                                    failed_checkpoint
+                                ),
+                                "turtlebot3_recovery_checkpoints": {
+                                    checkpoint_id: failed_checkpoint
+                                },
+                                "turtlebot3_home_mission_execution": (
+                                    failed_execution
+                                ),
+                                "summary": failed_summary,
+                                "missionos_runtime_recovery_dispatch_receipt": (
+                                    receipt
+                                ),
+                                "turtlebot3_recovery_dispatch_attempt": (
+                                    failed_attempt
+                                ),
+                            },
+                            metadata={
+                                "turtlebot3_recovery_lifecycle": (
+                                    "dispatch_unknown"
+                                ),
+                            },
+                        )
+                        if not isinstance(exc, Exception):
+                            # Cancellation or process-level termination must not
+                            # be swallowed, but the durable outcome is already
+                            # marked unknown before control leaves this handler.
+                            raise
+                        return JSONResponse(
+                            status_code=409,
+                            content={
+                                "task": updated_task or task,
+                                "missionos_runtime_recovery_dispatch_receipt": (
+                                    receipt
+                                ),
+                                "summary": {
+                                    "task_id": task_id,
+                                    "task_status": "blocked",
+                                    "dispatch_status": "dispatch_unknown",
+                                    "outcome_known": False,
+                                    "recovery_dispatch_request_sent": None,
+                                    "turtlebot3_continuation_invoked": None,
+                                    "dispatch_authority_created": True,
+                                    "recovery_action": recovery_action,
+                                    "recovery_parameters": recovery_parameters,
+                                    "active_runner_request_queued": False,
+                                    "blocked_reasons": receipt[
+                                        "blocked_reasons"
+                                    ],
+                                    "delivery_completion_claimed": False,
+                                    "progress_counted": False,
+                                    "physical_execution_invoked": False,
+                                },
+                            },
+                        )
+
+                    execution_result = (
+                        _missionos_attach_turtlebot3_recovery_decision_summary(
+                            execution_result,
+                            mission_operator_approval_count=1,
+                        )
+                    )
+                    execution_summary = execution_result.get("summary")
+                    execution_summary = (
+                        {
+                            **dispatching_summary,
+                            **(
+                                dict(execution_summary)
+                                if isinstance(execution_summary, Mapping)
+                                else {}
+                            ),
+                        }
+                    )
+                    recovery_sent = (
+                        execution_summary.get("recovery_dispatch_request_sent")
+                        is True
+                    )
+                    recovery_completed = (
+                        execution_summary.get("recovery_completion_claimed")
+                        is True
+                    )
+                    dispatch_status = (
+                        "recovery_completed"
+                        if recovery_sent and recovery_completed
+                        else "recovery_incomplete"
+                        if recovery_sent
+                        else "blocked"
+                    )
+                    dispatch_observed_at = datetime.now(
+                        timezone.utc
+                    ).isoformat()
+                    observed_attempt = {
+                        **dispatch_attempt,
+                        "attempt_status": dispatch_status,
+                        "outcome_known": True,
+                        "automatic_redispatch_performed": False,
+                        "finished_at": dispatch_observed_at,
+                    }
+                    receipt = {
+                        "schema_version": (
+                            "missionos_runtime_recovery_dispatch_receipt.v1"
+                        ),
+                        "task_id": task_id,
+                        "dispatch_status": dispatch_status,
+                        "dispatch_attempt_id": dispatch_attempt_id,
+                        "outcome_known": True,
+                        "automatic_redispatch_performed": False,
+                        "recovery_action": recovery_action,
+                        "recovery_parameters": recovery_parameters,
+                        "operator_approved": True,
+                        "explicit_recovery_dispatch_approval": True,
+                        "dispatch_authority_created": True,
+                        "receipt_created_dispatch_authority": False,
+                        "turtlebot3_recovery_operator_approval": operator_approval,
+                        "turtlebot3_recovery_bounded_action": bounded_action,
+                        "turtlebot3_continuation_invoked": True,
+                        "recovery_dispatch_request_sent": recovery_sent,
+                        "recovery_completion_claimed": recovery_completed,
+                        "route_resumed_after_recovery": (
+                            execution_summary.get("route_resumed_after_recovery")
+                            is True
+                        ),
+                        "route_completed_after_recovery": (
+                            execution_summary.get("route_completed_after_recovery")
+                            is True
+                        ),
+                        "active_runner_request_queued": False,
+                        "blocked_reasons": list(
+                            execution_summary.get("blocking_reasons") or []
+                        ),
+                        "delivery_completion_claimed": False,
+                        "progress_counted": False,
+                        "physical_execution_invoked": False,
+                        "observed_at": dispatch_observed_at,
+                    }
+                    returned_checkpoint = execution_result.get(
+                        "turtlebot3_recovery_checkpoint"
+                    )
+                    repair_parent_checkpoint = execution_result.get(
+                        "turtlebot3_recovery_repair_parent_checkpoint"
+                    )
+                    followup_parent_checkpoint = execution_result.get(
+                        "turtlebot3_recovery_followup_parent_checkpoint"
+                    )
+                    repair_child_created = (
+                        isinstance(returned_checkpoint, Mapping)
+                        and returned_checkpoint.get("checkpoint_status")
+                        == "awaiting_operator_approval"
+                        and isinstance(repair_parent_checkpoint, Mapping)
+                        and repair_parent_checkpoint.get("checkpoint_status")
+                        == "failed"
+                    )
+                    followup_child_created = (
+                        isinstance(returned_checkpoint, Mapping)
+                        and returned_checkpoint.get("checkpoint_status")
+                        == "awaiting_operator_approval"
+                        and str(returned_checkpoint.get("checkpoint_id") or "")
+                        != checkpoint_id
+                        and isinstance(followup_parent_checkpoint, Mapping)
+                        and str(
+                            followup_parent_checkpoint.get("checkpoint_id") or ""
+                        )
+                        == checkpoint_id
+                        and followup_parent_checkpoint.get("checkpoint_status")
+                        == "consumed"
+                    )
+                    next_checkpoint_created = (
+                        repair_child_created or followup_child_created
+                    )
+                    if next_checkpoint_created:
+                        final_checkpoint = dict(returned_checkpoint)
+                        finalized_claimed_checkpoint = {
+                            **dispatching_checkpoint,
+                            **dict(
+                                repair_parent_checkpoint
+                                if repair_child_created
+                                else followup_parent_checkpoint
+                            ),
+                        }
+                    else:
+                        final_checkpoint = {
+                            **dispatching_checkpoint,
+                            **(
+                                dict(returned_checkpoint)
+                                if isinstance(returned_checkpoint, Mapping)
+                                else {}
+                            ),
+                        }
+                        finalized_claimed_checkpoint = final_checkpoint
+                    final_execution = execution_result.get(
+                        "turtlebot3_home_mission_execution"
+                    )
+                    final_execution = (
+                        {
+                            **dispatching_execution,
+                            **(
+                                dict(final_execution)
+                                if isinstance(final_execution, Mapping)
+                                else {}
+                            ),
+                        }
+                    )
+                    final_execution[
+                        "turtlebot3_recovery_checkpoint"
+                    ] = final_checkpoint
+                    execution_summary[
+                        "turtlebot3_recovery_checkpoint"
+                    ] = final_checkpoint
+                    final_task_status = str(
+                        execution_summary.get("status") or "blocked"
+                    )
+                    if next_checkpoint_created:
+                        final_task_status = "pending"
+                    final_artifacts = {
+                        str(key): value
+                        for key, value in dict(execution_result).items()
+                        if str(key) != "turtlebot3_recovery_checkpoints"
+                    }
+                    final_artifacts.update(
+                        {
+                            "turtlebot3_recovery_checkpoint": final_checkpoint,
+                            "turtlebot3_home_mission_execution": final_execution,
+                            "summary": execution_summary,
+                            "missionos_runtime_recovery_dispatch_receipt": (
+                                receipt
+                            ),
+                            "turtlebot3_recovery_dispatch_attempt": (
+                                observed_attempt
+                            ),
+                        }
+                    )
+                    final_metadata = {
+                        "home_robot_mission_kind": execution_summary.get(
+                            "home_robot_mission_kind"
+                        ),
+                        "robot_profile": execution_summary.get(
+                            "robot_profile"
+                        )
+                        or "turtlebot3",
+                        "robot_label": execution_summary.get("robot_label")
+                        or "TurtleBot3",
+                        "execution_target": execution_summary.get(
+                            "execution_target"
+                        )
+                        or "ros2_nav2_turtlebot3_sim",
+                        "execution_mode": "sim",
+                        "completion_claimed": execution_summary.get(
+                            "completion_claimed"
+                        )
+                        is True,
+                        "completion_scope": execution_summary.get(
+                            "completion_scope"
+                        ),
+                        "turtlebot3_recovery_lifecycle": (
+                            final_checkpoint.get("checkpoint_status")
+                            or "blocked"
+                        ),
+                        "turtlebot3_recovery_dispatch_attempt_status": (
+                            dispatch_status
+                        ),
+                        "turtlebot3_recovery_outcome_known": True,
+                        "read_only_map_available": isinstance(
+                            execution_summary.get(
+                                "turtlebot3_indoor_map_model"
+                            ),
+                            Mapping,
+                        ),
+                    }
+                    finalized_task: dict[str, Any] | None = None
+                    latest_dispatching_task = self.task_store.get(task_id)
+                    if latest_dispatching_task is not None:
+                        latest_checkpoint = (
+                            _turtlebot3_recovery_checkpoint_from_task(
+                                latest_dispatching_task
+                            )
+                        )
+                        if (
+                            latest_dispatching_task.get("status") == "running"
+                            and latest_checkpoint.get("checkpoint_status")
+                            == "dispatching"
+                            and str(
+                                latest_checkpoint.get("checkpoint_id") or ""
+                            )
+                            == checkpoint_id
+                            and str(
+                                latest_checkpoint.get("checkpoint_hash") or ""
+                            )
+                            == str(checkpoint.get("checkpoint_hash") or "")
+                        ):
+                            # The task/checkpoint predicate is the generation
+                            # guard. Progress telemetry may legitimately update
+                            # updated_at while the synchronous dispatch runs, so
+                            # including that timestamp would create a false CAS
+                            # conflict and strand a durable dispatching attempt.
+                            finalized_task = self.task_store.claim_nested_artifact(
+                                task_id,
+                                collection_key="turtlebot3_recovery_checkpoints",
+                                artifact_id=checkpoint_id,
+                                expected={
+                                    "checkpoint_status": "dispatching",
+                                    "checkpoint_hash": checkpoint.get(
+                                        "checkpoint_hash"
+                                    ),
+                                },
+                                updates=finalized_claimed_checkpoint,
+                                expected_task_status="running",
+                                artifacts=(
+                                    {
+                                        "turtlebot3_recovery_checkpoints": {
+                                            str(final_checkpoint["checkpoint_id"]): (
+                                                final_checkpoint
+                                            )
+                                        }
+                                    }
+                                    if next_checkpoint_created
+                                    else None
+                                ),
+                                replace_artifacts=final_artifacts,
+                                metadata=final_metadata,
+                                next_task_status=final_task_status,
+                            )
+                    if finalized_task is None:
+                        conflict_at = datetime.now(timezone.utc).isoformat()
+                        conflict_reason = (
+                            "turtlebot3_recovery_finalization_conflict"
+                        )
+                        latest_task = self.task_store.get(task_id) or task
+                        latest_checkpoint = (
+                            _turtlebot3_recovery_checkpoint_from_task(latest_task)
+                        )
+                        conflict_receipt: dict[str, Any] | None = None
+                        unknown_task: dict[str, Any] | None = None
+                        if (
+                            latest_task.get("status") == "running"
+                            and latest_checkpoint.get("checkpoint_status")
+                            == "dispatching"
+                            and str(
+                                latest_checkpoint.get("checkpoint_id") or ""
+                            )
+                            == checkpoint_id
+                            and str(
+                                latest_checkpoint.get("checkpoint_hash") or ""
+                            )
+                            == str(checkpoint.get("checkpoint_hash") or "")
+                        ):
+                            failure_reasons = list(
+                                latest_checkpoint.get("failure_reasons") or []
+                            )
+                            if conflict_reason not in failure_reasons:
+                                failure_reasons.append(conflict_reason)
+                            unknown_checkpoint = {
+                                **latest_checkpoint,
+                                "checkpoint_status": "dispatch_unknown",
+                                "failed_at": conflict_at,
+                                "failure_reasons": failure_reasons,
+                            }
+                            latest_artifacts = latest_task.get("artifacts")
+                            latest_artifacts = (
+                                latest_artifacts
+                                if isinstance(latest_artifacts, Mapping)
+                                else {}
+                            )
+                            latest_execution = latest_artifacts.get(
+                                "turtlebot3_home_mission_execution"
+                            )
+                            latest_execution = (
+                                dict(latest_execution)
+                                if isinstance(latest_execution, Mapping)
+                                else {}
+                            )
+                            latest_summary = latest_artifacts.get("summary")
+                            latest_summary = (
+                                dict(latest_summary)
+                                if isinstance(latest_summary, Mapping)
+                                else {}
+                            )
+                            unknown_execution = {
+                                **latest_execution,
+                                "status": "blocked",
+                                "turtlebot3_recovery_checkpoint": (
+                                    unknown_checkpoint
+                                ),
+                            }
+                            unknown_summary = {
+                                **latest_summary,
+                                "status": "blocked",
+                                "turtlebot3_recovery_checkpoint": (
+                                    unknown_checkpoint
+                                ),
+                                "recovery_dispatch_outcome_known": False,
+                                "recovery_completion_claimed": False,
+                                "mission_delivery_completion_claimed": False,
+                                "progress_counted": False,
+                                "physical_execution_invoked": False,
+                            }
+                            latest_attempt = latest_artifacts.get(
+                                "turtlebot3_recovery_dispatch_attempt"
+                            )
+                            latest_attempt = (
+                                dict(latest_attempt)
+                                if isinstance(latest_attempt, Mapping)
+                                else dispatch_attempt
+                            )
+                            unknown_attempt = {
+                                **latest_attempt,
+                                "attempt_status": "dispatch_unknown",
+                                "outcome_known": False,
+                                "automatic_redispatch_performed": False,
+                                "operator_approved": True,
+                                "dispatch_authority_created": True,
+                                "finalization_created_dispatch_authority": False,
+                                "turtlebot3_continuation_invoked": True,
+                                "runtime_result_observed": True,
+                                "runtime_result_atomically_committed": False,
+                                "failed_at": conflict_at,
+                                "failure_reasons": [conflict_reason],
+                            }
+                            conflict_receipt = {
+                                "schema_version": (
+                                    "missionos_runtime_recovery_dispatch_receipt.v1"
+                                ),
+                                "task_id": task_id,
+                                "dispatch_status": "dispatch_unknown",
+                                "dispatch_attempt_id": dispatch_attempt_id,
+                                "checkpoint_id": checkpoint_id,
+                                "checkpoint_hash": checkpoint.get(
+                                    "checkpoint_hash"
+                                ),
+                                "outcome_known": False,
+                                "automatic_redispatch_performed": False,
+                                "recovery_action": recovery_action,
+                                "recovery_parameters": recovery_parameters,
+                                "operator_approved": True,
+                                "explicit_recovery_dispatch_approval": True,
+                                "dispatch_authority_created": True,
+                                "receipt_created_dispatch_authority": False,
+                                "turtlebot3_continuation_invoked": True,
+                                "runtime_result_observed": True,
+                                "runtime_result_atomically_committed": False,
+                                "recovery_dispatch_request_sent": None,
+                                "recovery_completion_claimed": False,
+                                "active_runner_request_queued": False,
+                                "blocked_reasons": [conflict_reason],
+                                "delivery_completion_claimed": False,
+                                "progress_counted": False,
+                                "physical_execution_invoked": False,
+                                "observed_at": conflict_at,
+                            }
+                            unknown_task = (
+                                self.task_store.claim_nested_artifact(
+                                    task_id,
+                                    collection_key=(
+                                        "turtlebot3_recovery_checkpoints"
+                                    ),
+                                    artifact_id=checkpoint_id,
+                                    expected={
+                                        "checkpoint_status": "dispatching",
+                                        "checkpoint_hash": checkpoint.get(
+                                            "checkpoint_hash"
+                                        ),
+                                    },
+                                    updates={
+                                        "checkpoint_status": (
+                                            "dispatch_unknown"
+                                        ),
+                                        "failed_at": conflict_at,
+                                        "failure_reasons": failure_reasons,
+                                    },
+                                    expected_task_status="running",
+                                    replace_artifacts={
+                                        "turtlebot3_recovery_checkpoint": (
+                                            unknown_checkpoint
+                                        ),
+                                        "turtlebot3_home_mission_execution": (
+                                            unknown_execution
+                                        ),
+                                        "summary": unknown_summary,
+                                        "turtlebot3_recovery_dispatch_attempt": (
+                                            unknown_attempt
+                                        ),
+                                        "missionos_runtime_recovery_dispatch_receipt": (
+                                            conflict_receipt
+                                        ),
+                                    },
+                                    metadata={
+                                        "turtlebot3_recovery_lifecycle": (
+                                            "dispatch_unknown"
+                                        ),
+                                        "turtlebot3_recovery_dispatch_attempt_status": (
+                                            "dispatch_unknown"
+                                        ),
+                                        "turtlebot3_recovery_outcome_known": (
+                                            False
+                                        ),
+                                        "turtlebot3_recovery_finalization_conflicted_at": (
+                                            conflict_at
+                                        ),
+                                    },
+                                    next_task_status="blocked",
+                                )
+                            )
+                        latest_task = (
+                            unknown_task
+                            or self.task_store.get(task_id)
+                            or latest_task
+                        )
+                        if conflict_receipt is None:
+                            existing_conflict_receipt = (
+                                latest_task.get("artifacts") or {}
+                            ).get(
+                                "missionos_runtime_recovery_dispatch_receipt"
+                            )
+                            if isinstance(existing_conflict_receipt, Mapping):
+                                conflict_receipt = dict(
+                                    existing_conflict_receipt
+                                )
+                        conflict_payload = {
+                            "task": latest_task,
+                            "missionos_runtime_recovery_dispatch_receipt": (
+                                conflict_receipt
+                            ),
+                            "summary": {
+                                "task_id": task_id,
+                                "task_status": latest_task.get("status"),
+                                "dispatch_status": "dispatch_unknown",
+                                "outcome_known": False,
+                                "recovery_action": recovery_action,
+                                "recovery_parameters": recovery_parameters,
+                                "recovery_dispatch_request_sent": None,
+                                "recovery_completion_claimed": False,
+                                "active_runner_request_queued": False,
+                                "blocked_reasons": [
+                                    "turtlebot3_recovery_finalization_conflict"
+                                ],
+                                "delivery_completion_claimed": False,
+                                "progress_counted": False,
+                                "physical_execution_invoked": False,
+                            },
+                        }
+                        return JSONResponse(
+                            status_code=409,
+                            content=conflict_payload,
+                        )
+                    response_payload = {
+                        "task": finalized_task,
+                        "missionos_runtime_recovery_dispatch_receipt": receipt,
+                        "summary": {
+                            "task_id": task_id,
+                            "task_status": finalized_task.get("status"),
+                            "dispatch_status": dispatch_status,
+                            "recovery_action": recovery_action,
+                            "recovery_parameters": recovery_parameters,
+                            "recovery_dispatch_request_sent": recovery_sent,
+                            "recovery_completion_claimed": recovery_completed,
+                            "route_resumed_after_recovery": receipt[
+                                "route_resumed_after_recovery"
+                            ],
+                            "route_completed_after_recovery": receipt[
+                                "route_completed_after_recovery"
+                            ],
+                            "active_runner_request_queued": False,
+                            "blocked_reasons": receipt["blocked_reasons"],
+                            "delivery_completion_claimed": False,
+                            "progress_counted": False,
+                            "physical_execution_invoked": False,
+                        },
+                    }
+                    if repair_child_created:
+                        response_payload["summary"].update(
+                            {
+                                "dispatch_status": "repair_proposed",
+                                "next_recovery_checkpoint_id": (
+                                    final_checkpoint.get("checkpoint_id")
+                                ),
+                                "requires_new_human_approval": True,
+                                "automatic_redispatch_performed": False,
+                            }
+                        )
+                        return response_payload
+                    if followup_child_created:
+                        response_payload["summary"].update(
+                            {
+                                "dispatch_status": "followup_recovery_proposed",
+                                "next_recovery_checkpoint_id": (
+                                    final_checkpoint.get("checkpoint_id")
+                                ),
+                                "requires_new_human_approval": True,
+                                "automatic_redispatch_performed": False,
+                            }
+                        )
+                        return response_payload
+                    if recovery_sent and recovery_completed:
+                        return response_payload
+                    return JSONResponse(status_code=409, content=response_payload)
+
             running_receipt = artifacts.get(
                 "missionos_auto_mission_gui_dispatch_running_receipt"
             )

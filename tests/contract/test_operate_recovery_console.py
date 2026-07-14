@@ -236,8 +236,10 @@ def test_turtlebot3_operate_help_uses_ground_robot_commands() -> None:
     rendered = str(panel.renderable)
 
     assert "latest TurtleBot3 sim state" in rendered
-    assert "avoid -0.85 -0.85" in rendered
-    assert "reroute 0.75 0.0" in rendered
+    assert "左へ大きく迂回して" in rendered
+    assert "When Recovery stops the robot" in rendered
+    assert "approve the displayed recovery proposal" in rendered
+    assert "keep stopped; create no dispatch authority" in rendered
     assert "does not expose land/climb/speed/RTL flight controls" in rendered
     assert "return-to-launch" not in rendered
     assert "request land" not in rendered
@@ -253,9 +255,9 @@ def test_turtlebot4_operate_help_uses_ground_robot_commands() -> None:
     rendered = str(panel.renderable)
 
     assert "latest TurtleBot4 sim state" in rendered
-    assert "avoid -0.85 -0.85" in rendered
-    assert "reroute 0.75 0.0" in rendered
-    assert "TurtleBot4 operate does not expose land/climb/speed/RTL flight controls" in rendered
+    assert "左へ大きく迂回して" in rendered
+    assert "When Recovery stops the robot" in rendered
+    assert "TurtleBot4 operate does not expose land/climb/speed/RTL" in rendered
     assert "return-to-launch" not in rendered
     assert "request land" not in rendered
     assert "climb 45" not in rendered
@@ -283,10 +285,10 @@ def test_turtlebot3_operate_console_avoids_flight_wording_when_completed() -> No
     )
     rendered = str(panel.renderable)
 
-    assert "TurtleBot3 recovery proposals appear only during an active sim route" in rendered
-    assert "TurtleBot3 local XY" in rendered
-    assert "avoid <x> <y>" in rendered
-    assert "reroute <x> <y>" in rendered
+    assert "Mission completed normally" in rendered
+    assert "No Recovery condition was triggered" in rendered
+    assert "created no proposal, approval request, or dispatch" in rendered
+    assert "Recovery changes become available only after a proposal" in rendered
     assert "only while flying" not in rendered
     assert "land" not in rendered
     assert "climb <m>" not in rendered
@@ -318,46 +320,14 @@ def test_turtlebot4_operate_console_avoids_flight_wording_when_completed() -> No
     )
     rendered = str(panel.renderable)
 
-    assert "TurtleBot4 recovery proposals appear only during an active sim route" in rendered
-    assert "TurtleBot4 local XY" in rendered
-    assert "avoid <x> <y>" in rendered
-    assert "reroute <x> <y>" in rendered
+    assert "Mission completed normally" in rendered
+    assert "TurtleBot4 recovery proposals appear only" not in rendered
     assert "only while flying" not in rendered
     assert "land" not in rendered
     assert "climb <m>" not in rendered
     assert "speed <m/s>" not in rendered
     assert "[bold]rtl" not in rendered.lower()
     assert "return-to-launch" not in rendered
-
-
-def test_turtlebot3_operate_status_line_uses_indoor_map_evidence() -> None:
-    artifacts = {
-        "summary": {
-            "execution_target": "ros2_nav2_turtlebot3_sim",
-            "robot_motion_observed": True,
-            "odom_delta_m": 2.74,
-        },
-        "turtlebot3_indoor_map_model": {
-            "observed_points": [{"x_m": -2.0}, {"x_m": 0.75}],
-            "planned_points": [{"x_m": -2.0}, {"x_m": 0.75}],
-        },
-    }
-
-    rendered = missionos_cli._render_operate_status_line(
-        {},
-        artifacts=artifacts,
-        status="completed",
-        task_id="task_turtlebot3",
-    ).plain
-
-    assert "robot=TurtleBot3 sim" in rendered
-    assert "motion=True" in rendered
-    assert "odom=2.74m" in rendered
-    assert "map_points=2/2" in rendered
-    assert "full indoor map" in rendered
-    assert "battery=" not in rendered
-    assert "alt=" not in rendered
-    assert "wp=" not in rendered
 
 
 def test_turtlebot4_operate_status_line_uses_indoor_map_evidence() -> None:
@@ -386,11 +356,303 @@ def test_turtlebot4_operate_status_line_uses_indoor_map_evidence() -> None:
     assert "robot=TurtleBot4 sim" in rendered
     assert "motion=True" in rendered
     assert "odom=2.74m" in rendered
-    assert "map_points=2/2" in rendered
-    assert "full indoor map" in rendered
+    assert "observed_samples=2" in rendered
+    assert "planned_waypoints=2" in rendered
+    assert "battery=" not in rendered
+    assert "alt=" not in rendered
+
+
+def test_turtlebot3_operate_renders_pending_recovery_as_a_clear_decision() -> None:
+    checkpoint = {
+        "schema_version": "turtlebot3_recovery_checkpoint.v1",
+        "checkpoint_status": "awaiting_operator_approval",
+        "checkpoint_id": "checkpoint_return_home",
+        "checkpoint_hash": "sha256-return-home",
+        "recovery_proposal_id": "proposal_return_home",
+        "recovery_classification_id": "classification_return_home",
+        "selected_action": "return_home",
+        "approved_parameters": {"return_home_required": True},
+        "robot_profile": "turtlebot3",
+        "execution_target": "ros2_nav2_turtlebot3_sim",
+    }
+    task_payload = {
+        "task": {
+            "task_id": "task_pending_recovery",
+            "kind": "turtlebot3_home_mission_execution",
+            "status": "pending",
+            "artifacts": {
+                "turtlebot3_home_mission_plan": {
+                    "robot_profile": "turtlebot3",
+                    "execution_target": "ros2_nav2_turtlebot3_sim",
+                },
+                "turtlebot3_recovery_checkpoint": checkpoint,
+                "summary": {
+                    "robot_profile": "turtlebot3",
+                    "execution_target": "ros2_nav2_turtlebot3_sim",
+                    "turtlebot3_recovery_checkpoint": checkpoint,
+                    "recovery_proposals": [
+                        {
+                            "proposal_id": "proposal_return_home",
+                            "selected_action": "return_home",
+                            "input_observations": {
+                                "runtime_failure_source": "nav2_goal_timeout"
+                            },
+                        }
+                    ],
+                    "recovery_proposal_classifications": [
+                        {
+                            "classification_id": "classification_return_home",
+                            "execution_class": "requires_human_approval",
+                        }
+                    ],
+                },
+            },
+        }
+    }
+
+    panel = missionos_cli._render_recovery_agent_console(
+        task_payload,
+        proposal=None,
+        show_proposal=False,
+        status="pending",
+        task_id="task_pending_recovery",
+    )
+    rendered = str(panel.renderable)
+
+    assert "Robot stopped — recovery decision required" in rendered
+    assert "return_home" in rendered
+    assert "nav2_goal_timeout" in rendered
+    assert "No recovery dispatch has been sent" in rendered
+    assert "approve" in rendered
+    assert "defer" in rendered
+    assert "左へ大きく迂回して" in rendered
+
+
+def test_turtlebot3_operate_prefers_revision_candidate_over_stale_direct_copy() -> None:
+    checkpoint = {
+        "schema_version": "turtlebot3_recovery_checkpoint.v1",
+        "checkpoint_status": "awaiting_operator_approval",
+        "checkpoint_id": "checkpoint_revision_right",
+        "checkpoint_hash": "sha256-revision-right",
+        "parent_checkpoint_id": "checkpoint_original_west",
+        "recovery_proposal_id": "proposal_revision_right",
+        "recovery_classification_id": "classification_revision_right",
+        "selected_action": "avoid_obstacle",
+        "approved_parameters": {"obstacle_avoidance_required": True},
+        "robot_profile": "turtlebot3",
+        "execution_target": "ros2_nav2_turtlebot3_sim",
+    }
+    task_payload = {
+        "task": {
+            "task_id": "task_revision_right",
+            "kind": "turtlebot3_home_mission_execution",
+            "status": "pending",
+            "artifacts": {
+                "turtlebot3_home_mission_plan": {
+                    "robot_profile": "turtlebot3",
+                    "execution_target": "ros2_nav2_turtlebot3_sim",
+                },
+                "turtlebot3_recovery_checkpoint": checkpoint,
+                "recovery_candidate_resolution": {
+                    "resolution_status": "validated",
+                    "selected_candidate": {
+                        "candidate_id": "obstacle_bypass_west",
+                        "path_length_m": 0.45,
+                        "maximum_path_cost": 0,
+                        "local_maximum_path_cost": 54,
+                    },
+                },
+                "summary": {
+                    "robot_profile": "turtlebot3",
+                    "execution_target": "ros2_nav2_turtlebot3_sim",
+                    "turtlebot3_recovery_checkpoint": checkpoint,
+                    "recovery_candidate_resolution": {
+                        "resolution_status": "validated",
+                        "selected_candidate": {
+                            "candidate_id": (
+                                "operator_revision_right_wide_avoidance_exit"
+                            ),
+                            "path_length_m": 1.37,
+                            "maximum_path_cost": 0,
+                            "local_maximum_path_cost": 87,
+                        },
+                        "dual_costmap_validated": True,
+                        "bounded_retreat_required": False,
+                    },
+                    "recovery_proposals": [
+                        {
+                            "proposal_id": "proposal_revision_right",
+                            "selected_action": "avoid_obstacle",
+                            "proposal_reason": "Operator requested a wide right route.",
+                        }
+                    ],
+                    "recovery_proposal_classifications": [
+                        {
+                            "classification_id": "classification_revision_right",
+                            "execution_class": "requires_human_approval",
+                        }
+                    ],
+                },
+            },
+        }
+    }
+
+    panel = missionos_cli._render_recovery_agent_console(
+        task_payload,
+        proposal=None,
+        show_proposal=False,
+        status="pending",
+        task_id="task_revision_right",
+    )
+    rendered = str(panel.renderable)
+
+    assert "operator_revision_right_wide_avoidance_exit" in rendered
+    assert "local_max_cost=87" in rendered
+    assert "bounded_retreat=False" in rendered
+    assert "obstacle_bypass_west" not in rendered
+
+
+def test_empty_current_candidate_resolution_suppresses_stale_direct_copy() -> None:
+    selected = (
+        missionos_cli._turtlebot3_recovery_candidate_resolution_from_artifacts(
+            {
+                "recovery_candidate_resolution": {
+                    "selected_candidate": {
+                        "candidate_id": "obstacle_bypass_west"
+                    }
+                },
+                "summary": {"recovery_candidate_resolution": {}},
+            }
+        )
+    )
+
+    assert selected == {}
+
+
+def test_operate_console_parses_explicit_pending_recovery_decisions() -> None:
+    assert missionos_cli._parse_operate_console_command("approve").kind == (
+        "approve_pending"
+    )
+    assert missionos_cli._parse_operate_console_command("defer").kind == (
+        "defer_pending"
+    )
+
+
+def test_turtlebot3_operate_shows_approved_recovery_dispatching_state() -> None:
+    artifacts = {
+        "summary": {
+            "execution_target": "ros2_nav2_turtlebot3_sim",
+            "segment_dispatch_count": 4,
+            "segment_completion_count": 4,
+            "planned_segment_count": 6,
+        },
+        "turtlebot3_recovery_checkpoint": {
+            "checkpoint_status": "dispatching",
+            "selected_action": "avoid_obstacle",
+        },
+    }
+    task_payload = {
+        "task": {
+            "task_id": "task_dispatching_recovery",
+            "status": "running",
+            "artifacts": artifacts,
+        }
+    }
+
+    panel = missionos_cli._render_recovery_agent_console(
+        task_payload,
+        proposal=None,
+        show_proposal=False,
+        status="running",
+        task_id="task_dispatching_recovery",
+    )
+    rendered = str(panel.renderable)
+    status_line = missionos_cli._render_operate_status_line(
+        {},
+        artifacts=artifacts,
+        status="running",
+        task_id="task_dispatching_recovery",
+    ).plain
+
+    assert "Approved Recovery workflow is in progress" in rendered
+    assert "avoid_obstacle" in rendered
+    assert "fresh operator approval is bound" in rendered
+    assert "Do not approve the same checkpoint again" in rendered
+    assert "may pause while Nav2 replans" in rendered
+    assert "approved Recovery workflow in progress" in status_line
+
+
+def test_recovery_dispatch_uses_long_runtime_timeout(monkeypatch) -> None:
+    client = missionos_cli.MissionOSGatewayClient(
+        base_url="http://127.0.0.1:18792",
+        timeout=45.0,
+    )
+    recorded: dict[str, object] = {}
+
+    def fake_request(method: str, path: str, **kwargs):
+        recorded.update({"method": method, "path": path, **kwargs})
+        return {"summary": {"status": "running"}}
+
+    monkeypatch.setattr(client, "_request", fake_request)
+
+    client.recovery_dispatch(
+        task_id="task_recovery",
+        recovery_action="avoid_obstacle",
+    )
+
+    assert recorded["timeout"] == missionos_cli.SITL_DISPATCH_TIMEOUT
+
+
+def test_turtlebot3_operate_status_line_uses_indoor_map_evidence() -> None:
+    artifacts = {
+        "summary": {
+            "execution_target": "ros2_nav2_turtlebot3_sim",
+            "robot_motion_observed": True,
+            "odom_delta_m": 2.74,
+        },
+        "turtlebot3_indoor_map_model": {
+            "observed_points": [{"x_m": -2.0}, {"x_m": 0.75}],
+            "planned_points": [{"x_m": -2.0}, {"x_m": 0.75}],
+        },
+    }
+
+    rendered = missionos_cli._render_operate_status_line(
+        {},
+        artifacts=artifacts,
+        status="completed",
+        task_id="task_turtlebot3",
+    ).plain
+
+    assert "robot=TurtleBot3 sim" in rendered
+    assert "motion=True" in rendered
+    assert "odom=2.74m" in rendered
+    assert "observed_samples=2" in rendered
+    assert "planned_waypoints=2" in rendered
+    assert "map: `missionos watch`" in rendered
     assert "battery=" not in rendered
     assert "alt=" not in rendered
     assert "wp=" not in rendered
+
+
+def test_turtlebot3_operate_status_names_nav2_waiting_phase() -> None:
+    artifacts = {
+        "summary": {
+            "execution_target": "ros2_nav2_turtlebot3_sim",
+            "segment_dispatch_count": 2,
+            "segment_completion_count": 1,
+            "planned_segment_count": 6,
+        }
+    }
+
+    rendered = missionos_cli._render_operate_status_line(
+        {},
+        artifacts=artifacts,
+        status="running",
+        task_id="task_waiting_nav2",
+    ).plain
+
+    assert "waiting for Nav2 result" in rendered
+    assert "segments=1/6" in rendered
 
 
 def test_watch_profile_names_amsl_altitude_references() -> None:
@@ -431,3 +693,53 @@ def test_watch_profile_names_amsl_altitude_references() -> None:
     assert "▁=terrain AMSL" in rendered
     assert "·=target altitude" in rendered
     assert "◆=drone AMSL" in rendered
+
+
+def test_turtlebot3_watch_uses_recovery_current_pose_after_live_telemetry_stops() -> None:
+    rendered = missionos_cli._render_turtlebot3_indoor_map(
+        indoor_map={
+            "planned_points": [{"x_m": 0.0, "y_m": 0.0}],
+            "observed_points": [{"x_m": 1.0, "y_m": 0.0}],
+            "current_pose": {"x_m": 2.0, "y_m": 0.0},
+            "recovery": {
+                "triggered": True,
+                "observed_points": [{"x_m": 2.0, "y_m": 0.0}],
+            },
+            "floor_plan": {},
+            "obstacles": [],
+        },
+        status="blocked",
+        task_id="task_recovery_watch",
+    )
+
+    panel, hud = list(rendered.renderables)
+    map_rows = str(panel.renderable).splitlines()
+    robot_row = next(row for row in map_rows if "🐢" in row)
+    assert "·" in robot_row
+    assert robot_row.index("🐢") > robot_row.index("·")
+    assert "recovery_observed=1pts" in hud.plain
+
+
+def test_turtlebot3_watch_prefers_latest_partial_summary_map() -> None:
+    stale = {
+        "mission_status": "incomplete",
+        "observed_points": [{"x_m": 1.0, "y_m": 0.0}],
+        "recovery": {"observed_points": []},
+    }
+    latest = {
+        "mission_status": "running",
+        "observed_points": [{"x_m": 1.0, "y_m": 0.0}],
+        "recovery": {"observed_points": [{"x_m": 2.0, "y_m": 0.0}]},
+        "current_pose": {"x_m": 2.0, "y_m": 0.0},
+    }
+
+    selected = missionos_cli._turtlebot3_indoor_map_model_from_artifacts(
+        {
+            "turtlebot3_indoor_map_model": stale,
+            "summary": {"turtlebot3_indoor_map_model": latest},
+        }
+    )
+
+    assert selected["mission_status"] == "running"
+    assert selected["current_pose"] == {"x_m": 2.0, "y_m": 0.0}
+    assert len(selected["recovery"]["observed_points"]) == 1

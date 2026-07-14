@@ -10,6 +10,7 @@ claims physical execution.
 from __future__ import annotations
 
 import json
+import hashlib
 import math
 import os
 import sys
@@ -52,9 +53,30 @@ ROS2_NAV2_TRAJECTORY_OBSERVE_ENABLE_ENV = "ROS2_NAV2_TRAJECTORY_OBSERVE_ENABLE"
 ROS2_NAV2_TRAJECTORY_LATERAL_DEVIATION_THRESHOLD_ENV = (
     "ROS2_NAV2_TRAJECTORY_LATERAL_DEVIATION_THRESHOLD_M"
 )
+ROS2_NAV2_COMPUTE_PATH_ACTION_ENV = "ROS2_NAV2_COMPUTE_PATH_ACTION"
+ROS2_NAV2_GLOBAL_COSTMAP_SERVICE_ENV = "ROS2_NAV2_GLOBAL_COSTMAP_SERVICE"
+ROS2_NAV2_LOCAL_COSTMAP_SERVICE_ENV = "ROS2_NAV2_LOCAL_COSTMAP_SERVICE"
+ROS2_NAV2_RECOVERY_ORBIT_GUARD_ENABLE_ENV = (
+    "ROS2_NAV2_RECOVERY_ORBIT_GUARD_ENABLE"
+)
+ROS2_NAV2_RECOVERY_ORBIT_MIN_DURATION_ENV = (
+    "ROS2_NAV2_RECOVERY_ORBIT_MIN_DURATION_S"
+)
+ROS2_NAV2_RECOVERY_ORBIT_NO_PROGRESS_ENV = (
+    "ROS2_NAV2_RECOVERY_ORBIT_NO_PROGRESS_S"
+)
+ROS2_NAV2_RECOVERY_ORBIT_MIN_PATH_ENV = (
+    "ROS2_NAV2_RECOVERY_ORBIT_MIN_PATH_M"
+)
 
 _TRUE_VALUES = {"1", "true", "yes", "on"}
-_ALLOWED_ACTIONS = {"send_goal_pose", "cancel_goal", "read_state", "read_progress"}
+_ALLOWED_ACTIONS = {
+    "send_goal_pose",
+    "cancel_goal",
+    "read_state",
+    "read_progress",
+    "evaluate_recovery_candidates",
+}
 
 
 def _truthy_env(name: str) -> bool:
@@ -161,6 +183,527 @@ def _status_name(status: int, goal_status: Any) -> str:
 def _yaw_to_quaternion(yaw_rad: float) -> tuple[float, float, float, float]:
     half = yaw_rad / 2.0
     return (0.0, 0.0, math.sin(half), math.cos(half))
+
+
+def _evaluate_recovery_candidates(payload: dict[str, Any]) -> dict[str, Any]:
+    """Evaluate bounded recovery targets without creating motion authority."""
+
+    try:
+        import rclpy
+        from action_msgs.msg import GoalStatus
+        from geometry_msgs.msg import PoseStamped
+        from nav2_msgs.action import ComputePathToPose
+        from nav2_msgs.srv import GetCostmap
+        from rclpy.action import ActionClient
+        from rclpy.time import Time
+        from tf2_ros import Buffer, TransformListener
+    except Exception as exc:
+        return _blocked_response(
+            blocking_reasons=["ros2_nav2_planning_dependencies_missing"],
+        ) | {
+            "schema_version": "missionos_nav2_recovery_candidate_evaluation.v1",
+            "evaluation_status": "blocked",
+            "dispatch_request_sent": False,
+            "error": f"{type(exc).__name__}: {str(exc)[:240]}",
+        }
+
+    raw_candidates = payload.get("candidates")
+    raw_candidates = raw_candidates if isinstance(raw_candidates, list) else []
+    candidates: list[dict[str, Any]] = []
+    for raw in raw_candidates[:8]:
+        if not isinstance(raw, dict):
+            continue
+        try:
+            x_m = float(raw["x_m"])
+            y_m = float(raw["y_m"])
+            yaw_rad = float(raw.get("yaw_rad") or 0.0)
+        except (KeyError, TypeError, ValueError):
+            continue
+        if not all(math.isfinite(value) for value in (x_m, y_m, yaw_rad)):
+            continue
+        candidate_id = str(raw.get("candidate_id") or "").strip()
+        if not candidate_id:
+            continue
+        start_pose = raw.get("start_pose")
+        normalized_start_pose = None
+        if isinstance(start_pose, dict):
+            try:
+                start_x_m = float(start_pose["x_m"])
+                start_y_m = float(start_pose["y_m"])
+                start_yaw_rad = float(start_pose.get("yaw_rad") or 0.0)
+            except (KeyError, TypeError, ValueError):
+                continue
+            if not all(
+                math.isfinite(value)
+                for value in (start_x_m, start_y_m, start_yaw_rad)
+            ):
+                continue
+            normalized_start_pose = {
+                "x_m": start_x_m,
+                "y_m": start_y_m,
+                "yaw_rad": start_yaw_rad,
+            }
+        candidates.append(
+            {
+                **raw,
+                "candidate_id": candidate_id,
+                "x_m": x_m,
+                "y_m": y_m,
+                "yaw_rad": yaw_rad,
+                **(
+                    {"start_pose": normalized_start_pose}
+                    if normalized_start_pose is not None
+                    else {}
+                ),
+            }
+        )
+    if not candidates:
+        return _blocked_response(
+            blocking_reasons=["recovery_candidate_list_empty"],
+        ) | {
+            "schema_version": "missionos_nav2_recovery_candidate_evaluation.v1",
+            "evaluation_status": "blocked",
+            "dispatch_request_sent": False,
+        }
+
+    action_name = os.environ.get(
+        ROS2_NAV2_COMPUTE_PATH_ACTION_ENV,
+        "/compute_path_to_pose",
+    )
+    costmap_service_name = os.environ.get(
+        ROS2_NAV2_GLOBAL_COSTMAP_SERVICE_ENV,
+        "/global_costmap/get_costmap",
+    )
+    local_costmap_service_name = os.environ.get(
+        ROS2_NAV2_LOCAL_COSTMAP_SERVICE_ENV,
+        "/local_costmap/get_costmap",
+    )
+    server_timeout_s = _float_env(ROS2_NAV2_ACTION_SERVER_TIMEOUT_ENV, 10.0)
+    frame_id = str(payload.get("frame_id") or "map")
+    lethal_cost_threshold = _int_env("ROS2_NAV2_RECOVERY_LETHAL_COST_THRESHOLD", 253)
+    local_cost_threshold = _int_env(
+        "ROS2_NAV2_RECOVERY_LOCAL_COST_THRESHOLD",
+        220,
+    )
+
+    rclpy.init(args=None)
+    node = rclpy.create_node(
+        f"missionos_ros2_nav2_{_bridge_profile()}_recovery_resolver"
+    )
+    try:
+        def _read_costmap(service_name: str, label: str) -> dict[str, Any] | None:
+            client = node.create_client(GetCostmap, service_name)
+            if not client.wait_for_service(timeout_sec=server_timeout_s):
+                return None
+            future = client.call_async(GetCostmap.Request())
+            rclpy.spin_until_future_complete(
+                node,
+                future,
+                timeout_sec=server_timeout_s,
+            )
+            response = future.result() if future.done() else None
+            if response is None:
+                return None
+            costmap = response.map
+            metadata = costmap.metadata
+            width = int(metadata.size_x)
+            height = int(metadata.size_y)
+            resolution = float(metadata.resolution)
+            origin_x = float(metadata.origin.position.x)
+            origin_y = float(metadata.origin.position.y)
+            costs = bytes(int(value) & 0xFF for value in costmap.data)
+            header = {
+                "label": label,
+                "frame_id": str(costmap.header.frame_id),
+                "stamp_sec": int(costmap.header.stamp.sec),
+                "stamp_nanosec": int(costmap.header.stamp.nanosec),
+                "width": width,
+                "height": height,
+                "resolution": resolution,
+                "origin_x": origin_x,
+                "origin_y": origin_y,
+            }
+            snapshot_hash = hashlib.sha256(
+                json.dumps(
+                    header,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+                + b"\0"
+                + costs
+            ).hexdigest()
+
+            def _cost_at(x_m: float, y_m: float) -> int | None:
+                if resolution <= 0:
+                    return None
+                cell_x = math.floor((x_m - origin_x) / resolution)
+                cell_y = math.floor((y_m - origin_y) / resolution)
+                if (
+                    cell_x < 0
+                    or cell_y < 0
+                    or cell_x >= width
+                    or cell_y >= height
+                ):
+                    return None
+                index = cell_y * width + cell_x
+                return int(costs[index]) if 0 <= index < len(costs) else None
+
+            return {
+                **header,
+                "snapshot_hash": snapshot_hash,
+                "service": service_name,
+                "cost_at": _cost_at,
+            }
+
+        global_costmap = _read_costmap(costmap_service_name, "global")
+        if global_costmap is None:
+            return _blocked_response(
+                blocking_reasons=["nav2_global_costmap_unavailable"],
+            ) | {
+                "schema_version": (
+                    "missionos_nav2_recovery_candidate_evaluation.v1"
+                ),
+                "evaluation_status": "blocked",
+                "dispatch_request_sent": False,
+                "costmap_service": costmap_service_name,
+            }
+        local_costmap = _read_costmap(local_costmap_service_name, "local")
+        if local_costmap is None:
+            return _blocked_response(
+                blocking_reasons=["nav2_local_costmap_unavailable"],
+            ) | {
+                "schema_version": (
+                    "missionos_nav2_recovery_candidate_evaluation.v1"
+                ),
+                "evaluation_status": "blocked",
+                "dispatch_request_sent": False,
+                "global_costmap_snapshot_hash": global_costmap[
+                    "snapshot_hash"
+                ],
+                "local_costmap_service": local_costmap_service_name,
+            }
+        costmap_snapshot_hash = str(global_costmap["snapshot_hash"])
+        _cost_at = global_costmap["cost_at"]
+
+        local_tf_buffer = Buffer()
+        local_tf_listener = TransformListener(local_tf_buffer, node)  # noqa: F841
+        local_frame = str(local_costmap["frame_id"] or frame_id)
+        local_transform = None
+        if local_frame != frame_id:
+            transform_deadline = time.monotonic() + server_timeout_s
+            while time.monotonic() < transform_deadline:
+                try:
+                    local_transform = local_tf_buffer.lookup_transform(
+                        local_frame,
+                        frame_id,
+                        Time(),
+                    )
+                    break
+                except Exception:
+                    rclpy.spin_once(node, timeout_sec=0.1)
+            if local_transform is None:
+                return _blocked_response(
+                    blocking_reasons=[
+                        "nav2_local_costmap_frame_transform_unavailable"
+                    ],
+                ) | {
+                    "schema_version": (
+                        "missionos_nav2_recovery_candidate_evaluation.v1"
+                    ),
+                    "evaluation_status": "blocked",
+                    "dispatch_request_sent": False,
+                    "global_costmap_snapshot_hash": global_costmap[
+                        "snapshot_hash"
+                    ],
+                    "local_costmap_snapshot_hash": local_costmap[
+                        "snapshot_hash"
+                    ],
+                    "local_costmap_frame_id": local_frame,
+                }
+
+        def _to_local_frame(x_m: float, y_m: float) -> tuple[float, float] | None:
+            if local_frame == frame_id:
+                return (x_m, y_m)
+            if local_transform is None:
+                return None
+            transform = local_transform
+            translation = transform.transform.translation
+            rotation = transform.transform.rotation
+            yaw = math.atan2(
+                2.0 * (rotation.w * rotation.z + rotation.x * rotation.y),
+                1.0 - 2.0 * (rotation.y * rotation.y + rotation.z * rotation.z),
+            )
+            cos_yaw = math.cos(yaw)
+            sin_yaw = math.sin(yaw)
+            return (
+                float(translation.x) + x_m * cos_yaw - y_m * sin_yaw,
+                float(translation.y) + x_m * sin_yaw + y_m * cos_yaw,
+            )
+
+        planner_client = ActionClient(node, ComputePathToPose, action_name)
+        if not planner_client.wait_for_server(timeout_sec=server_timeout_s):
+            return _blocked_response(
+                blocking_reasons=["nav2_compute_path_action_server_unavailable"],
+            ) | {
+                "schema_version": (
+                    "missionos_nav2_recovery_candidate_evaluation.v1"
+                ),
+                "evaluation_status": "blocked",
+                "dispatch_request_sent": False,
+                "costmap_snapshot_hash": costmap_snapshot_hash,
+                "compute_path_action": action_name,
+            }
+
+        evaluations: list[dict[str, Any]] = []
+        for candidate in candidates:
+            goal = ComputePathToPose.Goal()
+            pose = PoseStamped()
+            pose.header.frame_id = frame_id
+            pose.header.stamp.sec = 0
+            pose.header.stamp.nanosec = 0
+            pose.pose.position.x = candidate["x_m"]
+            pose.pose.position.y = candidate["y_m"]
+            qx, qy, qz, qw = _yaw_to_quaternion(candidate["yaw_rad"])
+            pose.pose.orientation.x = qx
+            pose.pose.orientation.y = qy
+            pose.pose.orientation.z = qz
+            pose.pose.orientation.w = qw
+            goal.goal = pose
+            explicit_start = candidate.get("start_pose")
+            if isinstance(explicit_start, dict):
+                start = PoseStamped()
+                start.header.frame_id = frame_id
+                start.header.stamp.sec = 0
+                start.header.stamp.nanosec = 0
+                start.pose.position.x = float(explicit_start["x_m"])
+                start.pose.position.y = float(explicit_start["y_m"])
+                sqx, sqy, sqz, sqw = _yaw_to_quaternion(
+                    float(explicit_start.get("yaw_rad") or 0.0)
+                )
+                start.pose.orientation.x = sqx
+                start.pose.orientation.y = sqy
+                start.pose.orientation.z = sqz
+                start.pose.orientation.w = sqw
+                goal.start = start
+                goal.use_start = True
+                path_start_source = "explicit_candidate_start"
+            else:
+                goal.use_start = False
+                path_start_source = "current_robot_pose"
+            goal.planner_id = ""
+            send_future = planner_client.send_goal_async(goal)
+            rclpy.spin_until_future_complete(
+                node,
+                send_future,
+                timeout_sec=server_timeout_s,
+            )
+            goal_handle = send_future.result() if send_future.done() else None
+            if goal_handle is None or not goal_handle.accepted:
+                evaluations.append(
+                    {
+                        **candidate,
+                        "path_valid": False,
+                        "planner_status": "goal_rejected",
+                        "path_start_source": path_start_source,
+                        "blocking_reasons": ["nav2_compute_path_goal_rejected"],
+                    }
+                )
+                continue
+            result_future = goal_handle.get_result_async()
+            rclpy.spin_until_future_complete(
+                node,
+                result_future,
+                timeout_sec=server_timeout_s,
+            )
+            wrapped_result = (
+                result_future.result() if result_future.done() else None
+            )
+            if wrapped_result is None:
+                evaluations.append(
+                    {
+                        **candidate,
+                        "path_valid": False,
+                        "planner_status": "timeout",
+                        "path_start_source": path_start_source,
+                        "blocking_reasons": ["nav2_compute_path_result_timeout"],
+                    }
+                )
+                continue
+            planner_status = _status_name(
+                int(wrapped_result.status),
+                GoalStatus,
+            )
+            path = wrapped_result.result.path
+            path_points = [
+                (
+                    float(stamped.pose.position.x),
+                    float(stamped.pose.position.y),
+                )
+                for stamped in path.poses
+            ]
+            path_length_m = sum(
+                math.hypot(end_x - start_x, end_y - start_y)
+                for (start_x, start_y), (end_x, end_y) in zip(
+                    path_points,
+                    path_points[1:],
+                )
+            )
+            arrival_yaw_rad = candidate["yaw_rad"]
+            if len(path_points) >= 2:
+                end_x, end_y = path_points[-1]
+                for prior_x, prior_y in reversed(path_points[:-1]):
+                    delta_x = end_x - prior_x
+                    delta_y = end_y - prior_y
+                    if math.hypot(delta_x, delta_y) >= 0.05:
+                        arrival_yaw_rad = math.atan2(delta_y, delta_x)
+                        break
+            path_costs = [
+                cost
+                for point in path_points
+                if (cost := _cost_at(*point)) is not None
+            ]
+            target_cost = _cost_at(candidate["x_m"], candidate["y_m"])
+            maximum_path_cost = max(path_costs) if path_costs else None
+            local_path_points = [
+                local_point
+                for point in path_points
+                if (local_point := _to_local_frame(*point)) is not None
+            ]
+            local_path_costs = [
+                cost
+                for point in local_path_points
+                if (cost := local_costmap["cost_at"](*point)) is not None
+            ]
+            local_current_cost = (
+                local_costmap["cost_at"](*local_path_points[0])
+                if local_path_points
+                else None
+            )
+            local_target_point = _to_local_frame(
+                candidate["x_m"],
+                candidate["y_m"],
+            )
+            local_target_cost = (
+                local_costmap["cost_at"](*local_target_point)
+                if local_target_point is not None
+                else None
+            )
+            local_maximum_path_cost = (
+                max(local_path_costs) if local_path_costs else None
+            )
+            path_sha256 = hashlib.sha256(
+                json.dumps(
+                    [[round(x_m, 6), round(y_m, 6)] for x_m, y_m in path_points],
+                    separators=(",", ":"),
+                ).encode("utf-8")
+            ).hexdigest()
+            path_valid = (
+                planner_status == "succeeded"
+                and bool(path_points)
+                and target_cost is not None
+                and target_cost < lethal_cost_threshold
+                and maximum_path_cost is not None
+                and maximum_path_cost < lethal_cost_threshold
+                and local_current_cost is not None
+                and local_current_cost < lethal_cost_threshold
+                and len(local_path_costs) >= 2
+                and local_maximum_path_cost is not None
+                and local_maximum_path_cost < local_cost_threshold
+            )
+            evaluation_reasons: list[str] = []
+            if planner_status != "succeeded":
+                evaluation_reasons.append("nav2_compute_path_not_succeeded")
+            if not path_points:
+                evaluation_reasons.append("nav2_compute_path_empty")
+            if target_cost is None:
+                evaluation_reasons.append("recovery_target_outside_costmap")
+            elif target_cost >= lethal_cost_threshold:
+                evaluation_reasons.append("recovery_target_cost_lethal")
+            if maximum_path_cost is None:
+                evaluation_reasons.append("recovery_path_cost_unavailable")
+            elif maximum_path_cost >= lethal_cost_threshold:
+                evaluation_reasons.append("recovery_path_crosses_lethal_cost")
+            if local_current_cost is None:
+                evaluation_reasons.append(
+                    "recovery_current_pose_outside_local_costmap"
+                )
+            elif local_current_cost >= lethal_cost_threshold:
+                evaluation_reasons.append("recovery_current_pose_local_cost_lethal")
+            if local_maximum_path_cost is None:
+                evaluation_reasons.append("recovery_local_path_cost_unavailable")
+            elif len(local_path_costs) < 2:
+                evaluation_reasons.append(
+                    "recovery_local_path_prefix_insufficient"
+                )
+            elif local_maximum_path_cost >= local_cost_threshold:
+                evaluation_reasons.append(
+                    "recovery_local_path_exceeds_controller_cost_threshold"
+                )
+            evaluations.append(
+                {
+                    **candidate,
+                    "path_valid": path_valid,
+                    "planner_status": planner_status,
+                    "target_cost": target_cost,
+                    "maximum_path_cost": maximum_path_cost,
+                    "local_current_cost": local_current_cost,
+                    "local_target_cost": local_target_cost,
+                    "local_maximum_path_cost": local_maximum_path_cost,
+                    "local_path_pose_count": len(local_path_costs),
+                    "local_cost_threshold": local_cost_threshold,
+                    "path_pose_count": len(path_points),
+                    "path_length_m": round(path_length_m, 6),
+                    "path_sha256": path_sha256,
+                    "recommended_arrival_yaw_rad": round(arrival_yaw_rad, 6),
+                    "arrival_heading_source": "compute_path_final_tangent",
+                    "path_start_source": path_start_source,
+                    "blocking_reasons": evaluation_reasons,
+                }
+            )
+
+        valid = [
+            item
+            for item in evaluations
+            if item.get("path_valid") is True
+            and item.get("sequence_only") is not True
+        ]
+        valid.sort(
+            key=lambda item: (
+                int(item.get("local_maximum_path_cost") or 0),
+                int(item.get("selection_priority", 100)),
+                int(item.get("maximum_path_cost") or 0),
+                float(item.get("path_length_m") or math.inf),
+                str(item.get("candidate_id") or ""),
+            )
+        )
+        selected = valid[0] if valid else None
+        blocking_reasons = [] if selected else ["no_valid_recovery_candidate"]
+        return _base_response(
+            schema_version="missionos_nav2_recovery_candidate_evaluation.v1",
+            evaluation_status="validated" if selected else "blocked",
+            candidate_evaluations=evaluations,
+            selected_candidate=selected,
+            costmap_snapshot_hash=costmap_snapshot_hash,
+            costmap_source=costmap_service_name,
+            global_costmap_snapshot_hash=global_costmap["snapshot_hash"],
+            global_costmap_source=costmap_service_name,
+            local_costmap_snapshot_hash=local_costmap["snapshot_hash"],
+            local_costmap_source=local_costmap_service_name,
+            local_costmap_frame_id=local_costmap["frame_id"],
+            local_cost_threshold=local_cost_threshold,
+            compute_path_action=action_name,
+            dispatch_request_sent=False,
+            dispatch_authority_created=False,
+            command_ack_observed=False,
+            completion_claimed=False,
+            runtime_progress_observed=False,
+            completion_observed=False,
+            nav2_status="not_requested",
+            blocking_reasons=blocking_reasons,
+        )
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 def _publish_initial_pose(
@@ -877,12 +1420,29 @@ def _send_goal_pose(payload: dict[str, Any]) -> dict[str, Any]:
         pose.pose.orientation.w = qw
         goal.pose = pose
 
+        feedback_best_distance_m: float | None = None
+        feedback_last_improvement_at = time.monotonic()
+        path_length_at_last_improvement_m = 0.0
+        trajectory_path_length_m = 0.0
+
         def _feedback_handler(message: Any) -> None:
-            nonlocal feedback_count, last_distance_remaining_m
+            nonlocal feedback_best_distance_m
+            nonlocal feedback_count
+            nonlocal feedback_last_improvement_at
+            nonlocal last_distance_remaining_m
+            nonlocal path_length_at_last_improvement_m
             feedback_count += 1
             distance = getattr(message.feedback, "distance_remaining", None)
             if distance is not None:
                 last_distance_remaining_m = float(distance)
+                if (
+                    feedback_best_distance_m is None
+                    or last_distance_remaining_m
+                    <= feedback_best_distance_m - 0.1
+                ):
+                    feedback_best_distance_m = last_distance_remaining_m
+                    feedback_last_improvement_at = time.monotonic()
+                    path_length_at_last_improvement_m = trajectory_path_length_m
 
         send_future = client.send_goal_async(goal, feedback_callback=_feedback_handler)
         rclpy.spin_until_future_complete(node, send_future, timeout_sec=server_timeout_s)
@@ -981,9 +1541,117 @@ def _send_goal_pose(payload: dict[str, Any]) -> dict[str, Any]:
                 tf_buffer=trajectory_tf_buffer,
             )
         deadline = time.monotonic() + max(goal_timeout_s, 0.0)
+        goal_started_at = time.monotonic()
+        goal_result_timed_out = False
+        goal_orbit_detected = False
+        recovery_position_tolerance_reached = False
+        recovery_map_distance_to_goal_m: float | None = None
+        trajectory_processed_count = 0
+        recovery_orbit_guard_enabled = (
+            "recovery" in str(payload.get("label") or "").lower()
+            and _truthy_env(ROS2_NAV2_RECOVERY_ORBIT_GUARD_ENABLE_ENV)
+        )
+        orbit_min_duration_s = _float_env(
+            ROS2_NAV2_RECOVERY_ORBIT_MIN_DURATION_ENV,
+            25.0,
+        )
+        orbit_no_progress_s = _float_env(
+            ROS2_NAV2_RECOVERY_ORBIT_NO_PROGRESS_ENV,
+            18.0,
+        )
+        orbit_min_path_m = _float_env(
+            ROS2_NAV2_RECOVERY_ORBIT_MIN_PATH_ENV,
+            1.0,
+        )
+        recovery_position_tolerance_m = min(
+            max(float(payload.get("tolerance_m") or 0.25), 0.05),
+            0.5,
+        )
+        goal_cancel_result = {
+            "goal_cancel_requested": False,
+            "goal_cancel_response_received": False,
+            "goal_cancel_accepted": False,
+            "goal_cancel_result_observed": False,
+        }
         try:
             while rclpy.ok() and not result_future.done() and time.monotonic() < deadline:
                 rclpy.spin_once(node, timeout_sec=0.1)
+                while trajectory_processed_count < len(trajectory_samples):
+                    index = trajectory_processed_count
+                    trajectory_processed_count += 1
+                    if index == 0:
+                        continue
+                    previous = trajectory_samples[index - 1]
+                    current = trajectory_samples[index]
+                    if current.get("frame_id") == goal_frame_id:
+                        recovery_map_distance_to_goal_m = math.hypot(
+                            float(current["x_m"]) - float(payload["x_m"]),
+                            float(current["y_m"]) - float(payload["y_m"]),
+                        )
+                    if previous.get("frame_id") != current.get("frame_id"):
+                        continue
+                    trajectory_path_length_m += math.hypot(
+                        float(current["x_m"]) - float(previous["x_m"]),
+                        float(current["y_m"]) - float(previous["y_m"]),
+                    )
+                now_monotonic = time.monotonic()
+                if (
+                    recovery_orbit_guard_enabled
+                    and last_distance_remaining_m is not None
+                    and last_distance_remaining_m <= recovery_position_tolerance_m
+                    and recovery_map_distance_to_goal_m is not None
+                    and recovery_map_distance_to_goal_m
+                    <= recovery_position_tolerance_m
+                ):
+                    recovery_position_tolerance_reached = True
+                    break
+                if (
+                    recovery_orbit_guard_enabled
+                    and now_monotonic - goal_started_at >= orbit_min_duration_s
+                    and now_monotonic - feedback_last_improvement_at
+                    >= orbit_no_progress_s
+                    and trajectory_path_length_m
+                    - path_length_at_last_improvement_m
+                    >= orbit_min_path_m
+                ):
+                    goal_orbit_detected = True
+                    break
+            goal_result_timed_out = (
+                not result_future.done()
+                and not goal_orbit_detected
+                and not recovery_position_tolerance_reached
+            )
+            if (
+                goal_result_timed_out
+                or goal_orbit_detected
+                or recovery_position_tolerance_reached
+            ):
+                goal_cancel_result["goal_cancel_requested"] = True
+                cancel_future = goal_handle.cancel_goal_async()
+                rclpy.spin_until_future_complete(
+                    node,
+                    cancel_future,
+                    timeout_sec=server_timeout_s,
+                )
+                cancel_response = (
+                    cancel_future.result() if cancel_future.done() else None
+                )
+                goal_cancel_result["goal_cancel_response_received"] = (
+                    cancel_response is not None
+                )
+                goals_canceling = getattr(cancel_response, "goals_canceling", ())
+                goal_cancel_result["goal_cancel_accepted"] = bool(goals_canceling)
+                if goal_cancel_result["goal_cancel_accepted"]:
+                    cancel_deadline = time.monotonic() + max(server_timeout_s, 0.0)
+                    while (
+                        rclpy.ok()
+                        and not result_future.done()
+                        and time.monotonic() < cancel_deadline
+                    ):
+                        rclpy.spin_once(node, timeout_sec=0.1)
+                    goal_cancel_result["goal_cancel_result_observed"] = (
+                        result_future.done()
+                    )
             if result_future.done():
                 result = result_future.result()
                 status = int(result.status)
@@ -1033,23 +1701,65 @@ def _send_goal_pose(payload: dict[str, Any]) -> dict[str, Any]:
             odom_delta_m is not None and odom_delta_m >= motion_threshold_m
         )
         nav2_succeeded = status == GoalStatus.STATUS_SUCCEEDED
+        position_tolerance_completion_observed = (
+            recovery_position_tolerance_reached
+            and goal_cancel_result["goal_cancel_accepted"] is True
+            and goal_cancel_result["goal_cancel_result_observed"] is True
+        )
+        if position_tolerance_completion_observed:
+            nav2_status = "position_tolerance_reached"
         obstacle_avoidance_observed = (
-            nav2_succeeded
+            (nav2_succeeded or position_tolerance_completion_observed)
             and robot_motion_observed
             and obstacle_result.get("costmap_obstacle_observed") is True
             and trajectory_result.get("trajectory_lateral_deviation_observed") is True
         )
-        completion_observed = nav2_succeeded and robot_motion_observed
+        completion_observed = (
+            nav2_succeeded or position_tolerance_completion_observed
+        ) and robot_motion_observed
+        completion_basis = (
+            "nav2_goal_succeeded"
+            if nav2_succeeded
+            else "position_tolerance_with_confirmed_cancel"
+            if position_tolerance_completion_observed
+            else "none"
+        )
         runtime_progress_observed = (
             feedback_count > 0 or robot_motion_observed or nav2_succeeded
         )
         blocking_reasons: list[str] = []
-        if not result_future.done():
+        if goal_result_timed_out:
             blocking_reasons.append("nav2_goal_result_timeout")
+            if goal_cancel_result["goal_cancel_accepted"] is not True:
+                blocking_reasons.append("nav2_goal_cancel_unconfirmed_after_timeout")
+            elif goal_cancel_result["goal_cancel_result_observed"] is not True:
+                blocking_reasons.append("nav2_goal_cancel_result_not_observed")
+        if goal_orbit_detected:
+            blocking_reasons.append("nav2_recovery_orbit_detected")
+            if goal_cancel_result["goal_cancel_accepted"] is not True:
+                blocking_reasons.append(
+                    "nav2_goal_cancel_unconfirmed_after_orbit_detection"
+                )
+            elif goal_cancel_result["goal_cancel_result_observed"] is not True:
+                blocking_reasons.append(
+                    "nav2_goal_cancel_result_not_observed_after_orbit_detection"
+                )
         if nav2_succeeded and not robot_motion_observed:
             blocking_reasons.append("nav2_succeeded_without_robot_motion_observed")
-        if not nav2_succeeded and result_future.done():
+        if (
+            not nav2_succeeded
+            and not position_tolerance_completion_observed
+            and result_future.done()
+        ):
             blocking_reasons.append("nav2_goal_result_not_succeeded")
+        if (
+            recovery_position_tolerance_reached
+            and not position_tolerance_completion_observed
+            and not nav2_succeeded
+        ):
+            blocking_reasons.append(
+                "nav2_recovery_position_tolerance_cancel_unconfirmed"
+            )
         if (
             velocity_result.get("nonzero_velocity_observed") is False
             and result_future.done() is False
@@ -1074,10 +1784,36 @@ def _send_goal_pose(payload: dict[str, Any]) -> dict[str, Any]:
             )
             is True,
             "obstacle_avoidance_observed": obstacle_avoidance_observed,
+            "nav2_goal_succeeded": nav2_succeeded,
+            "completion_basis": completion_basis,
             "velocity_result": velocity_result,
             "obstacle_result": obstacle_result,
             "trajectory_result": trajectory_result,
             "post_result_settle_s": post_result_settle_s,
+            "goal_cancel_result": goal_cancel_result,
+            "recovery_orbit_guard": {
+                "enabled": recovery_orbit_guard_enabled,
+                "orbit_detected": goal_orbit_detected,
+                "trajectory_path_length_m": trajectory_path_length_m,
+                "path_since_last_goal_progress_m": (
+                    trajectory_path_length_m - path_length_at_last_improvement_m
+                ),
+                "best_distance_remaining_m": feedback_best_distance_m,
+                "no_progress_duration_s": max(
+                    time.monotonic() - feedback_last_improvement_at,
+                    0.0,
+                ),
+            },
+            "recovery_position_tolerance": {
+                "enabled": recovery_orbit_guard_enabled,
+                "tolerance_m": recovery_position_tolerance_m,
+                "position_tolerance_reached": recovery_position_tolerance_reached,
+                "map_distance_to_goal_m": recovery_map_distance_to_goal_m,
+                "map_pose_confirmation_required": True,
+                "controlled_cancel_observed": (
+                    position_tolerance_completion_observed
+                ),
+            },
             "readiness_result": {
                 **lifecycle_result,
                 **initialpose_result,
@@ -1095,12 +1831,19 @@ def _send_goal_pose(payload: dict[str, Any]) -> dict[str, Any]:
             is True,
             "obstacle_avoidance_observed": obstacle_avoidance_observed,
             "nav2_status": nav2_status,
+            "nav2_goal_succeeded": nav2_succeeded,
+            "completion_basis": completion_basis,
             "feedback_count": feedback_count,
             "last_distance_remaining_m": last_distance_remaining_m,
             "velocity_result": velocity_result,
             "obstacle_result": obstacle_result,
             "trajectory_result": trajectory_result,
             "post_result_settle_s": post_result_settle_s,
+            "goal_cancel_result": goal_cancel_result,
+            "recovery_orbit_guard": state_result["recovery_orbit_guard"],
+            "recovery_position_tolerance": state_result[
+                "recovery_position_tolerance"
+            ],
             "readiness_result": {
                 **lifecycle_result,
                 **initialpose_result,
@@ -1117,6 +1860,8 @@ def _send_goal_pose(payload: dict[str, Any]) -> dict[str, Any]:
             runtime_progress_observed=runtime_progress_observed,
             completion_observed=completion_observed,
             nav2_status=nav2_status,
+            nav2_goal_succeeded=nav2_succeeded,
+            completion_basis=completion_basis,
             state_result=state_result,
             progress_result=progress_result,
             blocking_reasons=blocking_reasons,
@@ -1129,6 +1874,11 @@ def _send_goal_pose(payload: dict[str, Any]) -> dict[str, Any]:
             trajectory_result=trajectory_result,
             velocity_result=velocity_result,
             post_result_settle_s=post_result_settle_s,
+            goal_cancel_result=goal_cancel_result,
+            recovery_orbit_guard=state_result["recovery_orbit_guard"],
+            recovery_position_tolerance=state_result[
+                "recovery_position_tolerance"
+            ],
             readiness_result={
                 **lifecycle_result,
                 **initialpose_result,
@@ -1176,6 +1926,8 @@ def handle_request(request: dict[str, Any]) -> dict[str, Any]:
     payload = request.get("payload") if isinstance(request.get("payload"), dict) else {}
     if action == "send_goal_pose":
         return _send_goal_pose(payload)
+    if action == "evaluate_recovery_candidates":
+        return _evaluate_recovery_candidates(payload)
     if action == "cancel_goal":
         return _blocked_response(blocking_reasons=["nav2_cancel_goal_not_implemented"])
     return _read_only_response(action)
