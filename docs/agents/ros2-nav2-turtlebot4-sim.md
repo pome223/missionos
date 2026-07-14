@@ -29,7 +29,7 @@ Do not use this path as evidence of physical execution or real robot operation.
 - `scripts/ros2_nav2_turtlebot4_bridge.py`
   - runs inside a ROS2 Humble environment and sends a Nav2 `NavigateToPose`
     action goal
-- `scripts/smoke_ros2_nav2_turtlebot4_bounded_dispatch.py`
+- `scripts/ros2_nav2_bounded_dispatch_smoke.py --robot-profile turtlebot4`
   - wires `Ros2Nav2HardwareAdapter` to the bridge command and produces adapter
     evidence
 
@@ -183,7 +183,8 @@ export PYTHONPATH=/work/missionos:${PYTHONPATH:-}
 export RUN_MISSIONOS_ROS2_NAV2_BOUNDED_DISPATCH_SMOKE=1
 export RUN_MISSIONOS_ROS2_NAV2_TURTLEBOT4_BRIDGE=1
 export ROS2_NAV2_BRIDGE_COMMAND="python3 /work/missionos/scripts/ros2_nav2_turtlebot4_bridge.py"
-python3 /work/missionos/scripts/smoke_ros2_nav2_turtlebot4_bounded_dispatch.py
+python3 /work/missionos/scripts/ros2_nav2_bounded_dispatch_smoke.py \
+  --robot-profile turtlebot4
 ```
 
 Optional knobs:

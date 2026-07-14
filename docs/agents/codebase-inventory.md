@@ -150,13 +150,13 @@ The first bounded pilot consolidated these two nearly identical programs:
 - `smoke_ros2_nav2_turtlebot3_bounded_dispatch.py`
 - `smoke_ros2_nav2_turtlebot4_bounded_dispatch.py`
 
-Their 198 lines became one 115-line shared runner and two 8-line compatibility
-entrypoints. The robot fixture contains only the differing default goal X
-coordinate; action, approval, label, and smoke identifiers are derived from the
-profile name. Existing documented commands and fail-closed output remain
-compatible.
+Their 198 lines became one shared runner selected with `--robot-profile`. The
+robot fixture contains only the differing default goal X coordinate; action,
+approval, label, and smoke identifiers are derived from the profile name. The
+two duplicated entrypoints were removed and the documented commands now call
+the shared runner directly.
 
-The executable smoke surface fell from 198 to 131 lines, a 67-line reduction.
+The executable smoke surface fell from 198 lines to one bounded shared runner.
 Five contract cases were added for profile preservation and no-opt-in
 fail-closed behavior. This is intentionally a small proof of the consolidation
 pattern, not evidence that every similarly named smoke has equivalent semantics.

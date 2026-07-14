@@ -3,9 +3,11 @@
 
 from __future__ import annotations
 
+import argparse
 from datetime import datetime, timezone
 import json
 import os
+from typing import Sequence
 
 from src.runtime.hardware_adapter_contract import HardwareExecutionMode
 from src.runtime.ros2_nav2_dispatch_bridge import (
@@ -113,3 +115,17 @@ def run_bounded_dispatch_smoke(robot_profile: str) -> int:
         robot_label = robot_profile.replace("turtlebot", "TurtleBot")
         raise SystemExit(f"Nav2 {robot_label} smoke used an invalid completion scope")
     return 0 if evidence.dispatch_request_sent and evidence.completion_claimed else 2
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--robot-profile",
+        choices=sorted(DEFAULT_GOAL_X_M),
+        required=True,
+    )
+    return run_bounded_dispatch_smoke(parser.parse_args(argv).robot_profile)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

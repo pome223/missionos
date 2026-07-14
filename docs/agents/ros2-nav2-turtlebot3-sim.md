@@ -178,7 +178,8 @@ export ROS2_NAV2_REQUIRE_LIFECYCLE_READY=1
 export ROS2_NAV2_VELOCITY_OBSERVE_ENABLE=1
 export ROS2_NAV2_GOAL_RESULT_TIMEOUT_S=90
 export ROS2_NAV2_POST_RESULT_SETTLE_S=2.0
-python3 /work/missionos/scripts/smoke_ros2_nav2_turtlebot3_bounded_dispatch.py
+python3 /work/missionos/scripts/ros2_nav2_bounded_dispatch_smoke.py \
+  --robot-profile turtlebot3
 ```
 
 The `initialpose_x=0.25` and `goal_x=0.75` coordinates are intentional: both
