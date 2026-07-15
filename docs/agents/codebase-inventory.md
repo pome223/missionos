@@ -20,12 +20,12 @@ live. No file is safe to delete solely because it has no static importer.
 
 ## Current cleanup branch result
 
-As of `codex/codebase-inventory` after the twenty-first PX4/Gazebo monolith
+As of `codex/codebase-inventory` after the twenty-second PX4/Gazebo monolith
 extraction:
 
-- tracked Python: 276,637 lines, down 20,172 lines from the baseline (6.80%)
-- `smoke_*.py`: 69 files / 34,548 lines, down from 135 files / 52,004 lines
-- automated verification: 738 passed, 5 warnings
+- tracked Python: 276,816 lines, down 19,993 lines from the baseline (6.74%)
+- `smoke_*.py`: 69 files / 34,506 lines, down from 135 files / 52,004 lines
+- automated verification: 743 passed, 5 warnings
 - runtime verification: `python -m src.quickstart_smoke --json` created and
   completed fresh task `task_e5e900c70d95` in an isolated SQLite store without
   a model or bridge
@@ -51,7 +51,7 @@ files:
 | File | Lines | Main maintenance risk |
 |---|---:|---|
 | `packages/missionos-cli/src/missionos_cli/cli.py` | 12,866 | CLI, chat, companion processes, maps, and HTML rendering share one module |
-| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 8,961 | a production dispatch backend is exposed through a 1,576-line `main` function |
+| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 8,919 | a production dispatch backend is exposed through a 1,534-line `main` function |
 | `src/gateway/server.py` | 11,932 | route registration, orchestration, robot-specific handling, and recovery are coupled |
 | `src/runtime/digital_twin_mission_environment.py` | 9,961 | environment construction and PX4/Gazebo mechanics are coupled |
 | `src/runtime/turtlebot3_home_mission.py` | 9,808 | proposal, approval, resolver, execution, verification, UI evidence, and repair share one module |
@@ -738,6 +738,26 @@ The full suite reached 738 passing tests. The entrypoint fell from 9,054 to
 8,961 lines and its `main` function from 1,673 to 1,576 lines. Total Python grew
 by 266 lines for the 184-line reporting boundary and maintained tests.
 
+The twenty-second extraction introduced
+`src/runtime/px4_gazebo_route/bootstrap.py`. Initial task creation now follows
+one authority-explicit boundary: validate the fixed route, require a fresh
+operator-approval fact, build approval-bound command allowlists, then persist
+only those planning and authority artifacts. Simulator opt-in is not treated as
+approval. Missing approval and invalid route configuration both fail before a
+partial task record can be created.
+
+The bootstrap does not send a dispatch request, observe progress, or create a
+completion artifact. Five contracts cover legacy entrypoint delegation, the
+fresh-approval gate, bounded artifact persistence, absence of execution and
+completion artifacts, and fail-closed invalid configuration. An isolated
+SQLite runtime fixture created and reread a real task with plan, approval, and
+both allowlists bound to matching identifiers. The real script invocation then
+reached the unchanged external-execution opt-in refusal with exit status 1; no
+PX4 or Gazebo process was launched. The full suite reached 743 passing tests.
+The entrypoint fell from 8,961 to 8,919 lines and its `main` function from 1,576
+to 1,534 lines. Total Python grew by 179 lines for the explicit 113-line
+bootstrap boundary and its maintained contracts.
+
 ## Protected regression baseline
 
 Every reduction PR must keep these facts separate and test them independently:
@@ -752,7 +772,7 @@ Every reduction PR must keep these facts separate and test them independently:
 - completion scope claimed
 - repair created a new observation and a fresh checkpoint
 
-The current public contract suite (`738 passed`) is the minimum automated gate.
+The current public contract suite (`743 passed`) is the minimum automated gate.
 Runtime-boundary changes also require the exact smoke or live E2E required by
 `AGENTS.md`. For TurtleBot3 recovery, preserve the public PR #15 scenario: two
 separately approved recovery cycles, route completion, common task identity
