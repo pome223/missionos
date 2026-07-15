@@ -55,6 +55,10 @@ from src.runtime.px4_gazebo_route.execution import (
     run_route_with_monitor as _execute_route_with_monitor,
     send_embedded_helper as _execute_embedded_helper,
 )
+from src.runtime.px4_gazebo_route.reporting import (
+    RouteSummaryInputs as _RouteSummaryInputs,
+    build_route_summary as _build_route_summary,
+)
 from src.runtime.px4_gazebo_route.observation import (
     battery_status_from_listener_output as _battery_status_from_listener_output,
     contact_topic_observation as _contact_topic_observation,
@@ -8869,143 +8873,46 @@ def main() -> int:
             landing_samples=landing_samples,
             route_terminal_progress_m=gate.horizontal_progress_m,
         )
-        summary = {
-            "artifact_dir": str(run_dir),
-            "recorded_at": recorded_at,
-            "frozen_for_test": False,
-            "task_status": updated["status"],
-            "existing_artifacts_retained": updated["artifacts"]["existing"]["kept"],
-            "route_plan_schema_version": route.schema_version,
-            "preupload_mission_performed": preupload_summary is not None,
-            "preupload_mission_ack_observed": (
-                preupload_summary["mission_ack_observed"] if preupload_summary else False
-            ),
-            "preupload_mission_ack_type": (
-                preupload_summary["mission_ack_type"] if preupload_summary else None
-            ),
-            "preupload_mission_request_sequences": (
-                preupload_summary["mission_request_sequences"] if preupload_summary else []
-            ),
-            "route_allowlist_schema_version": route_allowlist.schema_version,
-            "dispatch_schema_version": dispatch.schema_version,
-            "progress_schema_version": progress.schema_version,
-            "completion_gate_schema_version": gate.schema_version,
-            "runner_schema_version": runner["schema_version"],
-            "final_status": runner["final_status"],
-            "actual_px4_gazebo_horizontal_smoke_observed": (
-                gate.actual_px4_gazebo_horizontal_smoke_observed
-            ),
-            "pickup_pose_xy_m": [pickup_pose["x"], pickup_pose["y"]],
-            "route_pose_xy_m": [route_pose["x"], route_pose["y"]],
-            "completed_pose_xy_m": [completed_pose["x"], completed_pose["y"]],
-            "completed_pose_z_m": completed_pose["z"],
-            "horizontal_progress_m": gate.horizontal_progress_m,
-            "dropoff_region_reached": gate.dropoff_region_reached,
-            "delivery_completion_claimed": delivery_completion_claimed,
-            **terminal_pose_fields,
-            "route_geofence_violation": gate.route_geofence_violation,
-            "blocked_reasons": list(gate.blocked_reasons),
-            "pose_deviation_gate_active": True,
-            "pose_deviation_aborted": False,
-            "deviation_samples": list(progress.deviation_samples),
-            "route_monitor_sample_count": route_send["route_monitor_sample_count"],
-            "setpoint_frames_sent": dispatch.setpoint_frames_sent,
-            "setpoint_stream_duration_seconds": dispatch.setpoint_stream_duration_seconds,
-            "route_primitive": dispatch.route_primitive,
-            "route_target_x_m": dispatch.target_x_m,
-            "route_target_y_m": dispatch.target_y_m,
-            "route_target_z_m": dispatch.target_z_m,
-            "sent_route_target_x_m": sent_target_x,
-            "sent_route_target_y_m": sent_target_y,
-            "uncompensated_route_target_x_m": target_x,
-            "uncompensated_route_target_y_m": target_y,
-            "form2a_wind_compensation": form2a_wind_compensation,
-            "form2a_wind_compensation_applied": form2a_wind_compensation[
-                "route_geometry_compensation_applied"
-            ],
-            "form2a_wind_preemptive_offset_x_m": compensation_offset_x,
-            "form2a_wind_preemptive_offset_y_m": compensation_offset_y,
-            "form2a_wind_feed_forward_velocity_x_mps": route_send["feed_forward_velocity_x_mps"],
-            "form2a_wind_feed_forward_velocity_y_mps": route_send["feed_forward_velocity_y_mps"],
-            "form2a_wind_feed_forward_phase_schedule": route_send["feed_forward_phase_schedule"],
-            "form2a_wind_feed_forward_ramp_start_fraction": route_send[
-                "feed_forward_ramp_start_fraction"
-            ],
-            "form2a_wind_feed_forward_ramp_end_fraction": route_send[
-                "feed_forward_ramp_end_fraction"
-            ],
-            "form2a_wind_feed_forward_scale_min": route_send["feed_forward_scale_min"],
-            "form2a_wind_feed_forward_scale_max": route_send["feed_forward_scale_max"],
-            "form2a_wind_feed_forward_scale_sample_count": route_send[
-                "feed_forward_scale_sample_count"
-            ],
-            "bounded_setpoint_stream_allowed": dispatch.bounded_setpoint_stream_allowed,
-            "unbounded_setpoint_stream_allowed": dispatch.unbounded_setpoint_stream_allowed,
-            "offboard_mode_switch_allowed": dispatch.offboard_mode_switch_allowed,
-            "offboard_mode_switch_command_id": dispatch.offboard_mode_switch_command_id,
-            "offboard_mode_switch_frame_sent": dispatch.offboard_mode_switch_frame_sent,
-            "offboard_mode_switch_ack_required": (dispatch.offboard_mode_switch_ack_required),
-            "offboard_mode_switch_ack_command_id": (dispatch.offboard_mode_switch_ack_command_id),
-            "offboard_mode_switch_ack_timeout_seconds": (
-                dispatch.offboard_mode_switch_ack_timeout_seconds
-            ),
-            "offboard_mode_switch_ack_observed": dispatch.offboard_mode_switch_ack_observed,
-            "offboard_mode_switch_ack_result_code": (dispatch.offboard_mode_switch_ack_result_code),
-            "offboard_mode_switch_ack_result_name": (dispatch.offboard_mode_switch_ack_result_name),
-            "hardware_target_allowed": gate.hardware_target_allowed,
-            "physical_execution_invoked": gate.physical_execution_invoked,
-            "px4_mission_upload_allowed": gate.px4_mission_upload_allowed,
-            "climb_sample_count": len(climb_samples),
-            "landing_sample_count": len(landing_samples),
-            "payload_release_observed": bool(
-                PAYLOAD_RELEASE_SUMMARY and PAYLOAD_RELEASE_SUMMARY["payload_release_observed"]
-            ),
-            "payload_release_event_source": (
-                PAYLOAD_RELEASE_SUMMARY["payload_release_event_source"]
-                if PAYLOAD_RELEASE_SUMMARY
-                else ""
-            ),
-            "payload_release_observed_at": (
-                PAYLOAD_RELEASE_SUMMARY["payload_release_observed_at"]
-                if PAYLOAD_RELEASE_SUMMARY
-                else ""
-            ),
-            "payload_release_position_x_m": (
-                PAYLOAD_RELEASE_SUMMARY["payload_release_position_x_m"]
-                if PAYLOAD_RELEASE_SUMMARY
-                else None
-            ),
-            "payload_release_position_y_m": (
-                PAYLOAD_RELEASE_SUMMARY["payload_release_position_y_m"]
-                if PAYLOAD_RELEASE_SUMMARY
-                else None
-            ),
-            "payload_release_position_z_m": (
-                PAYLOAD_RELEASE_SUMMARY["payload_release_position_z_m"]
-                if PAYLOAD_RELEASE_SUMMARY
-                else None
-            ),
-            "payload_release_summary": PAYLOAD_RELEASE_SUMMARY or {},
-            "decision_loop_driver": (
-                "mission_os_supervisor"
-                if obstacle_supervisor_recovery_loop is not None
-                else "scripted_horizontal_route_smoke"
-            ),
-            "primary_trigger": (
-                "route_blocking_obstacle_verified"
-                if obstacle_supervisor_recovery_loop is not None
-                else None
-            ),
-            "supervisor_scope": (
-                "obstacle_form3_sitl_only"
-                if obstacle_supervisor_recovery_loop is not None
-                else None
-            ),
-            "full_gateway_runtime_loop": False,
-            "mission_os_supervisor_recovery_loop": obstacle_supervisor_recovery_loop,
-            **_wind_realism_summary_artifacts(cleanup_status="teardown_required_after_summary"),
-            **_vehicle_realism_summary_artifacts(),
-        }
+        summary = _build_route_summary(
+            _RouteSummaryInputs(
+                artifact_dir=run_dir,
+                recorded_at=recorded_at,
+                task_status=updated["status"],
+                existing_artifacts_retained=(
+                    updated["artifacts"]["existing"]["kept"]
+                ),
+                route_plan_schema_version=route.schema_version,
+                route_allowlist_schema_version=route_allowlist.schema_version,
+                dispatch=dispatch,
+                progress=progress,
+                gate=gate,
+                runner=runner,
+                pickup_pose=pickup_pose,
+                route_pose=route_pose,
+                completed_pose=completed_pose,
+                delivery_completion_claimed=delivery_completion_claimed,
+                terminal_pose_fields=terminal_pose_fields,
+                route_send=route_send,
+                sent_target_x_m=sent_target_x,
+                sent_target_y_m=sent_target_y,
+                uncompensated_target_x_m=target_x,
+                uncompensated_target_y_m=target_y,
+                form2a_wind_compensation=form2a_wind_compensation,
+                compensation_offset_x_m=compensation_offset_x,
+                compensation_offset_y_m=compensation_offset_y,
+                climb_sample_count=len(climb_samples),
+                landing_sample_count=len(landing_samples),
+                preupload_summary=preupload_summary,
+                payload_release_summary=PAYLOAD_RELEASE_SUMMARY,
+                obstacle_supervisor_recovery_loop=(
+                    obstacle_supervisor_recovery_loop
+                ),
+                wind_realism_artifacts=_wind_realism_summary_artifacts(
+                    cleanup_status="teardown_required_after_summary"
+                ),
+                vehicle_realism_artifacts=_vehicle_realism_summary_artifacts(),
+            )
+        )
         _write_json(run_dir / "summary.json", summary)
         _write_json(
             run_dir / "mission_artifacts.json",
