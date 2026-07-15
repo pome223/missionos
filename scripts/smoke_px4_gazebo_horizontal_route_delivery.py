@@ -22,8 +22,6 @@ from scripts import smoke_px4_gazebo_collision_contact_event as contact_event_sm
 from scripts import smoke_px4_gazebo_sitl_mission_upload as mission_upload_smoke
 from src.runtime.gz_sim_log_collector import parse_gz_sim_entity_pose
 from src.runtime.px4_gazebo_coupled_delivery import (
-    build_px4_gazebo_coupled_command_allowlist,
-    build_px4_gazebo_coupled_command_approval,
     validate_px4_gazebo_coupled_command_dispatch,
 )
 from src.runtime.px4_gazebo_emergency_dispatcher import (
@@ -36,14 +34,12 @@ from src.runtime.px4_gazebo_route_delivery import (
     run_px4_gazebo_route_delivery_task,
 )
 from src.runtime.px4_gazebo_route_dispatcher import (
-    build_px4_gazebo_route_command_allowlist,
     build_px4_gazebo_route_command_dispatch_result_from_observed_stream,
     build_px4_gazebo_route_deviation_abort,
     build_px4_gazebo_route_progress_evidence,
     build_px4_gazebo_route_recovery_completion,
     derive_px4_gazebo_route_target_ned,
 )
-from src.runtime.px4_gazebo_route_plan import build_px4_gazebo_pickup_dropoff_route_plan
 from src.runtime.px4_gazebo_route.embedded_mavlink import (
     MAVLINK_HEARTBEAT_OBSERVER_HELPER,
     MAVLINK_LINK_LOSS_APPLICATOR_HELPER,
@@ -81,6 +77,10 @@ from src.runtime.px4_gazebo_route.artifacts import (
 from src.runtime.px4_gazebo_route.audit import (
     RouteAuditExpectations as _RouteAuditExpectations,
     audit_route_summary as _audit_route_summary,
+)
+from src.runtime.px4_gazebo_route.bootstrap import (
+    RouteBootstrapResult as _RouteBootstrapResult,
+    bootstrap_route_task as _bootstrap_route_task,
 )
 from src.runtime.px4_gazebo_route.configuration import (
     PAYLOAD_FEASIBILITY_ADVISORY_REF_PREFIX,
@@ -7462,60 +7462,18 @@ def main() -> int:
         with TemporaryDirectory() as tmp:
             task_db_path = Path(tmp) / "tasks.db"
             store = TaskStore(str(task_db_path))
-            task = store.create(
-                kind="px4_gazebo_horizontal_route_delivery",
-                title="PX4/Gazebo horizontal route delivery smoke",
-                status="running",
-                artifacts={
-                    "existing": {
-                        "case_id": "actual-px4-gazebo-horizontal-route",
-                        "kept": True,
-                    }
-                },
-            )
-            route = build_px4_gazebo_pickup_dropoff_route_plan(
-                pickup_pad_ref="gazebo_pad:pickup",
-                dropoff_pad_ref="gazebo_pad:dropoff",
-                route_waypoint_refs=["gazebo_waypoint:mid"],
-                geofence_polygon=[
-                    (-2.0, -2.0),
-                    (5.75, -2.0),
-                    (5.75, 10.0),
-                    (-2.0, 10.0),
-                ],
-                altitude_min_m=1.0,
-                altitude_max_m=2.5,
-                min_battery_margin_pct=25.0,
-                route_completion_radius_m=0.8,
+            bootstrap: _RouteBootstrapResult = _bootstrap_route_task(
+                store=store,
                 max_pose_deviation_xy_m=args.max_pose_deviation_xy_m,
                 on_deviation_action=args.on_deviation_action,
-                now=NOW,
-            )
-            approval = build_px4_gazebo_coupled_command_approval(
                 operator_approval_performed=True,
                 now=NOW,
             )
-            coupled_allowlist = build_px4_gazebo_coupled_command_allowlist(
-                approval=approval,
-                now=NOW,
-            )
-            route_allowlist = build_px4_gazebo_route_command_allowlist(
-                route_plan=route,
-                approval=approval,
-                now=NOW,
-            )
-            persisted = store.update(
-                task["task_id"],
-                artifacts={
-                    "px4_gazebo_pickup_dropoff_route_plan": route.model_dump(mode="json"),
-                    "px4_gazebo_coupled_command_approval": approval.model_dump(mode="json"),
-                    "px4_gazebo_coupled_command_allowlist": coupled_allowlist.model_dump(
-                        mode="json"
-                    ),
-                    "px4_gazebo_route_command_allowlist": route_allowlist.model_dump(mode="json"),
-                },
-            )
-            assert persisted is not None
+            task = bootstrap.task
+            route = bootstrap.route
+            approval = bootstrap.approval
+            coupled_allowlist = bootstrap.coupled_allowlist
+            route_allowlist = bootstrap.route_allowlist
 
             preupload_summary = PREUPLOAD_SUMMARY
 
