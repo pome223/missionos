@@ -83,6 +83,13 @@ from src.runtime.px4_gazebo_route.observation import (
     terminal_pose_summary_fields as _terminal_pose_summary_fields,
     xy_pairs_match as _xy_pairs_match,
 )
+from src.runtime.px4_gazebo_route.verification import (
+    application_status_is_materialized as _application_status_is_materialized,
+    px4_param_set_applied as _px4_param_set_applied,
+    px4_param_value_matches as _px4_param_value_matches,
+    route_corridor_obstacle_application_source_check as _route_corridor_obstacle_application_source_check,
+    wind_readback_status as _wind_readback_status,
+)
 from src.runtime.px4_gazebo_route.world import (
     VISIBILITY_FOG_RENDER_COLOR,
     VISIBILITY_FOG_RENDER_DENSITY,
@@ -212,11 +219,6 @@ _LAST_BATTERY_STATUS_SAMPLE: dict[str, Any] = {
 PAYLOAD_MODEL_CONTAINER_PATH = "/tmp/boiled-claw-payload-release-models"
 PAYLOAD_DETACH_TOPIC = "/model/x500_0/delivery_payload/detach"
 COLLISION_OBSTACLE_CONTACT_TOPIC = "/mission_designer/collision_obstacle/contacts"
-MATERIALIZED_APPLICATION_STATUSES = {"applied", "applied_with_approximations"}
-
-
-def _application_status_is_materialized(status: Any) -> bool:
-    return status in MATERIALIZED_APPLICATION_STATUSES
 
 
 def _float_env(name: str, default: float = 0.0) -> float:
@@ -1148,55 +1150,6 @@ def _thermal_motor_derate_factor_from_temperature(
     return 1.0
 
 
-def _wind_readback_status(
-    output: str, *, expected_x: float, expected_y: float
-) -> dict[str, Any]:
-    publish_status_match = re.search(r"__BC_WIND_PUBLISH_STATUS=(\d+)", output)
-    readback_status_match = re.search(r"__BC_WIND_READBACK_STATUS=(\d+)", output)
-    wind_message = output.split("__BC_WIND_PUBLISH_STATUS=", 1)[0].strip()
-    vector_match = re.search(
-        r"linear_velocity\s*\{(?P<body>.*?)\}",
-        wind_message,
-        flags=re.DOTALL,
-    )
-    parsed_x = None
-    parsed_y = None
-    if vector_match:
-        body = vector_match.group("body")
-        x_match = re.search(r"\bx:\s*([-+0-9.eE]+)", body)
-        y_match = re.search(r"\by:\s*([-+0-9.eE]+)", body)
-        if x_match:
-            parsed_x = float(x_match.group(1))
-        if y_match:
-            parsed_y = float(y_match.group(1))
-        if parsed_x is None:
-            parsed_x = 0.0
-        if parsed_y is None:
-            parsed_y = 0.0
-    vector_matches = (
-        parsed_x is not None
-        and parsed_y is not None
-        and math.isclose(parsed_x, expected_x, rel_tol=1e-6, abs_tol=1e-6)
-        and math.isclose(parsed_y, expected_y, rel_tol=1e-6, abs_tol=1e-6)
-    )
-    return {
-        "readback_observed": vector_matches,
-        "readback_source": "gz_topic_echo",
-        "readback_publish_status": (
-            int(publish_status_match.group(1)) if publish_status_match else None
-        ),
-        "readback_status": (
-            int(readback_status_match.group(1)) if readback_status_match else None
-        ),
-        "readback_wind_vector_x_mps": parsed_x,
-        "readback_wind_vector_y_mps": parsed_y,
-        "readback_message_sha256": (
-            hashlib.sha256(wind_message.encode("utf-8")).hexdigest()
-            if wind_message
-            else None
-        ),
-    }
-
 
 def _wind_physics_world_readback(
     payload_model_root: Path | None,
@@ -1936,28 +1889,6 @@ def _px4_param_set(param_name: str, value: float) -> dict[str, Any]:
         "stderr_tail": result.stderr[-500:],
     }
 
-
-def _px4_param_set_applied(result: Mapping[str, Any]) -> bool:
-    output = (
-        f"{result.get('stdout_tail') or ''}\n{result.get('stderr_tail') or ''}".lower()
-    )
-    return result.get("returncode") == 0 and "not found" not in output
-
-
-def _px4_param_value_matches(
-    snapshot: Mapping[str, Any],
-    expected_value: float,
-    *,
-    abs_tol: float = 1e-4,
-) -> bool:
-    if snapshot.get("returncode") != 0:
-        return False
-    value = snapshot.get("value")
-    return value is not None and math.isclose(
-        float(value),
-        float(expected_value),
-        abs_tol=abs_tol,
-    )
 
 
 def _thermal_weather_realism() -> dict[str, Any]:
@@ -4218,35 +4149,6 @@ def _gazebo_route_corridor_obstacle_spawn_application_realism() -> dict[str, Any
         }
     }
 
-
-def _route_corridor_obstacle_application_source_check(
-    spawn_application: dict[str, Any],
-) -> tuple[bool, list[str]]:
-    observed = spawn_application.get("observed") or {}
-    reasons: list[str] = []
-    if (
-        spawn_application.get("schema_version")
-        != "gazebo_route_corridor_obstacle_spawn_application.v1"
-    ):
-        reasons.append("gazebo_route_corridor_obstacle_spawn_schema_missing")
-    if (
-        spawn_application.get("application_id")
-        != "gazebo_route_corridor_obstacle_spawn_application:mission_designer_collision_obstacle"
-    ):
-        reasons.append("gazebo_route_corridor_obstacle_spawn_ref_missing")
-    if spawn_application.get("application_status") != "applied":
-        reasons.append("gazebo_route_corridor_obstacle_spawn_not_applied")
-    if observed.get("observed") is not True:
-        reasons.append("gazebo_route_corridor_obstacle_spawn_not_observed")
-    if observed.get("world_sdf_hash_match") is not True:
-        reasons.append("gazebo_route_corridor_obstacle_world_sdf_hash_not_verified")
-    if observed.get("model_materialized") is not True:
-        reasons.append("gazebo_route_corridor_obstacle_model_not_materialized")
-    if observed.get("collision_geometry_materialized") is not True:
-        reasons.append("gazebo_route_corridor_obstacle_collision_not_materialized")
-    if observed.get("trajectory_follower_materialized") is not True:
-        reasons.append("gazebo_route_corridor_obstacle_motion_not_materialized")
-    return not reasons, reasons
 
 
 def _telemetry_observer_dropout_realism() -> dict[str, Any]:
