@@ -219,3 +219,162 @@ def test_entrypoint_wrapper_only_collects_current_summaries(
     assert assessment["wind"]["wind_speed_mps"] == 5.5
     assert assessment["obstacle"]["route_blocking_observed"] is True
     assert assessment["conflicting_risks"] == ["route_blocking_active"]
+
+
+def _obstacle_assessment(*, conflicts: bool = False) -> dict[str, object]:
+    return supervision.obstacle_supervisor_assessment_inputs(
+        selected_bounded_action="alternate_route",
+        route_blocking_verification_summary={
+            "route_blocking_verification": {
+                "observed": {"route_blocking_verified": True}
+            }
+        },
+        alternate_mission_upload_summary={
+            "alternate_route_execution_evidence": {
+                "alternate_route_execution_observed": True,
+                "alternate_waypoint_reached_observed": True,
+                "observed": {"final_distance_to_alternate_waypoint_m": 0.2},
+            }
+        },
+        battery_realism_summary=(
+            {
+                "observed_battery_condition_evidence": {
+                    "observed": {"observed_warning": 1}
+                }
+            }
+            if conflicts
+            else {}
+        ),
+        telemetry_realism_summary=(
+            {
+                "telemetry_freshness_report": {
+                    "freshness_status": "gap_observed",
+                    "gap_count": 1,
+                }
+            }
+            if conflicts
+            else {}
+        ),
+    )
+
+
+def _obstacle_cycle(
+    *,
+    cycle_index: int,
+    assessment: dict[str, object],
+    approval_ref: str | None,
+    outcome_observed: bool,
+) -> dict[str, object]:
+    dispatch_ref = (
+        "alternate_route_dispatch:1"
+        if cycle_index == 1
+        else "px4_gazebo_emergency_command_dispatch_result:2"
+    )
+    return supervision.build_obstacle_supervisor_cycle(
+        cycle_index=cycle_index,
+        observation_ref=f"obstacle-observation:{cycle_index}",
+        response_ref=f"obstacle-response:{cycle_index}",
+        selected_bounded_action=("alternate_route" if cycle_index == 1 else "land"),
+        assessment_inputs=assessment,
+        dispatch_ref=dispatch_ref if approval_ref else None,
+        dispatch_status="accepted" if approval_ref else None,
+        approval_ref=approval_ref,
+        outcome_ref=f"obstacle-outcome:{cycle_index}" if outcome_observed else None,
+        outcome_observed=outcome_observed,
+    )
+
+
+def test_obstacle_assessment_reports_battery_and_telemetry_conflicts() -> None:
+    assessment = _obstacle_assessment(conflicts=True)
+
+    assert assessment["obstacle"]["route_blocked"] is True
+    assert assessment["alternate_route"][
+        "final_distance_to_alternate_waypoint_m"
+    ] == 0.2
+    assert assessment["conflicting_risks"] == [
+        "battery_warning_active",
+        "telemetry_observer_dropout_active",
+    ]
+    assert assessment["route"]["delivery_completion_claimed"] is False
+    assert assessment["authority"]["automatic_dispatch_allowed"] is False
+
+
+def test_obstacle_cycle_requires_real_approval_reference() -> None:
+    cycle = _obstacle_cycle(
+        cycle_index=1,
+        assessment=_obstacle_assessment(),
+        approval_ref=None,
+        outcome_observed=False,
+    )
+
+    assert cycle["decision"]["operator_approved_dispatch_allowed"] is False
+    assert cycle["action_request"]["operator_approved"] is False
+    assert cycle["action_request"]["dispatch_authority_created"] is False
+    assert cycle["action_receipt"]["dispatch_observed"] is False
+
+
+def test_obstacle_loop_fails_closed_on_compound_risk() -> None:
+    nominal = _obstacle_assessment()
+    cycle1 = _obstacle_cycle(
+        cycle_index=1,
+        assessment=nominal,
+        approval_ref="approval:1",
+        outcome_observed=True,
+    )
+    cycle2 = _obstacle_cycle(
+        cycle_index=2,
+        assessment=nominal,
+        approval_ref="approval:2",
+        outcome_observed=True,
+    )
+    loop = supervision.build_obstacle_supervisor_loop(
+        cycle1=cycle1,
+        cycle2=cycle2,
+        cycle1_outcome_observed=True,
+        cycle2_outcome_observed=True,
+    )
+    assert loop["supervisor_loop_claim_supported"] is True
+    assert loop["cycle_count"] == 2
+    assert loop["authority_boundary"]["dispatch_authority_created"] is False
+
+    risky_cycle = _obstacle_cycle(
+        cycle_index=2,
+        assessment=_obstacle_assessment(conflicts=True),
+        approval_ref="approval:2",
+        outcome_observed=True,
+    )
+    risky_loop = supervision.build_obstacle_supervisor_loop(
+        cycle1=cycle1,
+        cycle2=risky_cycle,
+        cycle1_outcome_observed=True,
+        cycle2_outcome_observed=True,
+    )
+    assert risky_loop["supervisor_loop_claim_supported"] is False
+    assert risky_loop["cycle_count"] == 1
+    assert risky_loop["conflicting_risks"] == [
+        "battery_warning_active",
+        "telemetry_observer_dropout_active",
+    ]
+
+
+def test_entrypoint_obstacle_wrapper_collects_current_summaries(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        route_entrypoint,
+        "ROUTE_BLOCKING_VERIFICATION_SUMMARY",
+        {
+            "route_blocking_verification": {
+                "observed": {"route_blocking_verified": True}
+            }
+        },
+    )
+    monkeypatch.setattr(route_entrypoint, "ALTERNATE_MISSION_UPLOAD_SUMMARY", None)
+    monkeypatch.setattr(route_entrypoint, "BATTERY_REALISM_SUMMARY", None)
+    monkeypatch.setattr(route_entrypoint, "TELEMETRY_REALISM_SUMMARY", None)
+
+    assessment = route_entrypoint._obstacle_supervisor_assessment_inputs(
+        selected_bounded_action="alternate_route"
+    )
+    assert assessment["obstacle"]["route_blocked"] is True
+    assert assessment["conflicting_risks"] == []
