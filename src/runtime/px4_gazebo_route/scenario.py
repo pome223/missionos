@@ -11,6 +11,139 @@ import math
 from typing import Any, Mapping
 
 
+def build_wind_requested_profile(
+    *,
+    wind_mean_mps: float | None,
+    wind_direction_deg: float | None,
+    wind_gust_mps: float | None,
+    wind_variance: float | None,
+) -> dict[str, Any]:
+    requested = {
+        "wind_mean_mps": wind_mean_mps,
+        "wind_direction_deg": wind_direction_deg,
+        "wind_gust_mps": wind_gust_mps,
+        "wind_variance": wind_variance,
+    }
+    return {
+        "schema_version": "environment_condition_profile.v1",
+        "condition_id": "environment_condition_profile:mission_designer_wind_gust",
+        "condition_kind": "wind_gust",
+        "requested": requested,
+        "requested_present": any(value is not None for value in requested.values()),
+        "source": "mission_designer_coordinate_route",
+        "delivery_completion_claimed": False,
+        "hardware_target_allowed": False,
+        "physical_execution_invoked": False,
+    }
+
+
+def build_thermal_weather_requested_profile(
+    *,
+    temperature_c: float | None,
+    pressure_hpa: float | None,
+    thermal_battery_drain_factor: float | None,
+    thermal_motor_derate_factor: float | None,
+) -> dict[str, Any]:
+    if pressure_hpa is not None and (pressure_hpa < 500.0 or pressure_hpa > 1100.0):
+        pressure_hpa = None
+    if thermal_battery_drain_factor is not None:
+        thermal_battery_drain_factor = max(
+            0.1,
+            min(10.0, float(thermal_battery_drain_factor)),
+        )
+    if thermal_motor_derate_factor is not None:
+        thermal_motor_derate_factor = max(
+            0.1,
+            min(1.0, float(thermal_motor_derate_factor)),
+        )
+    requested = {
+        "temperature_c": temperature_c,
+        "pressure_hpa": pressure_hpa,
+        "thermal_battery_drain_factor": thermal_battery_drain_factor,
+        "thermal_motor_derate_factor": thermal_motor_derate_factor,
+    }
+    return {
+        "schema_version": "thermal_weather_condition_profile.v1",
+        "condition_id": "thermal_weather_condition_profile:mission_designer_temperature",
+        "condition_kind": "thermal_weather",
+        "requested": requested,
+        "requested_present": any(value is not None for value in requested.values()),
+        "source": "mission_designer_coordinate_route",
+        "thermal_air_physics_claimed": False,
+        "delivery_completion_claimed": False,
+        "hardware_target_allowed": False,
+        "physical_execution_invoked": False,
+    }
+
+
+def build_battery_requested_profile(
+    *,
+    battery_scenario: str | None,
+    requested_remaining_percent: float | None,
+) -> dict[str, Any]:
+    scenario = (battery_scenario or "").strip().lower()
+    remaining = requested_remaining_percent
+    if remaining is not None and (remaining < 0.0 or remaining > 100.0):
+        remaining = None
+    if not scenario and remaining is not None:
+        scenario = "battery_critical" if remaining <= 10.0 else "battery_low"
+    if scenario not in ("", "battery_low", "battery_critical"):
+        scenario = "unsupported"
+    return {
+        "schema_version": "battery_condition_profile.v1",
+        "condition_id": "battery_condition_profile:mission_designer_battery_threshold",
+        "condition_kind": "battery_threshold",
+        "requested": {
+            "battery_scenario": scenario or None,
+            "requested_remaining_percent": remaining,
+            "requested_warning_level": (
+                2
+                if scenario == "battery_critical"
+                else 1 if scenario == "battery_low" else None
+            ),
+        },
+        "requested_present": bool(scenario or remaining is not None),
+        "source": "mission_designer_coordinate_route",
+        "requested_remaining_does_not_spoof_px4_battery_status": True,
+        "delivery_completion_claimed": False,
+        "hardware_target_allowed": False,
+        "physical_execution_invoked": False,
+    }
+
+
+def build_sensor_failure_requested_profile(
+    *,
+    sensor_component: str | None,
+    failure_type: str | None,
+) -> dict[str, Any]:
+    component = (sensor_component or "").strip().lower()
+    failure = (failure_type or "").strip().lower()
+    if not component and failure:
+        component = "gps"
+    requested_present = bool(component or failure)
+    validation_reasons: list[str] = []
+    if component and component not in {"gps"}:
+        validation_reasons.append("sensor_component_not_in_this_vertical_slice")
+    if failure and failure not in {"off"}:
+        validation_reasons.append("sensor_failure_type_not_in_this_vertical_slice")
+    return {
+        "schema_version": "sensor_condition_profile.v1",
+        "condition_id": "sensor_condition_profile:mission_designer_sensor_failure",
+        "condition_kind": "sensor_failure",
+        "requested": {
+            "sensor_component": component or None,
+            "failure_type": failure or None,
+            "reset_failure_type": "ok" if component else None,
+        },
+        "requested_present": requested_present,
+        "validation_reasons": validation_reasons,
+        "source": "mission_designer_coordinate_route",
+        "delivery_completion_claimed": False,
+        "hardware_target_allowed": False,
+        "physical_execution_invoked": False,
+    }
+
+
 def build_wind_compensation_request(
     *,
     selected_response_kind: str,
@@ -206,6 +339,10 @@ def thermal_motor_derate_factor_from_temperature(
 
 
 __all__ = [
+    "build_battery_requested_profile",
+    "build_sensor_failure_requested_profile",
+    "build_thermal_weather_requested_profile",
+    "build_wind_requested_profile",
     "build_wind_compensation_request",
     "landing_z_threshold",
     "normalize_mavlink_link_degradation_mode",

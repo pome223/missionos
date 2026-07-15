@@ -47,6 +47,105 @@ def test_wind_compensation_request_is_bounded_and_has_no_authority() -> None:
     assert request["delivery_completion_claimed"] is False
 
 
+def test_requested_environment_profiles_never_create_execution_authority() -> None:
+    wind = scenario.build_wind_requested_profile(
+        wind_mean_mps=4.5,
+        wind_direction_deg=90.0,
+        wind_gust_mps=None,
+        wind_variance=None,
+    )
+    thermal = scenario.build_thermal_weather_requested_profile(
+        temperature_c=45.0,
+        pressure_hpa=1500.0,
+        thermal_battery_drain_factor=99.0,
+        thermal_motor_derate_factor=0.01,
+    )
+
+    assert wind["requested_present"] is True
+    assert wind["requested"]["wind_mean_mps"] == 4.5
+    assert thermal["requested"] == {
+        "temperature_c": 45.0,
+        "pressure_hpa": None,
+        "thermal_battery_drain_factor": 10.0,
+        "thermal_motor_derate_factor": 0.1,
+    }
+    for profile in (wind, thermal):
+        assert profile["physical_execution_invoked"] is False
+        assert profile["hardware_target_allowed"] is False
+        assert profile["delivery_completion_claimed"] is False
+
+
+@pytest.mark.parametrize(
+    ("battery_scenario", "remaining", "expected_scenario", "warning_level"),
+    [
+        (None, 9.0, "battery_critical", 2),
+        (None, 40.0, "battery_low", 1),
+        ("battery_low", 200.0, "battery_low", 1),
+        ("unexpected", 50.0, "unsupported", None),
+    ],
+)
+def test_battery_profile_normalizes_bounded_scenarios(
+    battery_scenario: str | None,
+    remaining: float | None,
+    expected_scenario: str,
+    warning_level: int | None,
+) -> None:
+    profile = scenario.build_battery_requested_profile(
+        battery_scenario=battery_scenario,
+        requested_remaining_percent=remaining,
+    )
+
+    assert profile["requested"]["battery_scenario"] == expected_scenario
+    assert profile["requested"]["requested_warning_level"] == warning_level
+    assert profile["requested_remaining_does_not_spoof_px4_battery_status"] is True
+    assert profile["physical_execution_invoked"] is False
+
+
+def test_sensor_profile_defaults_failure_to_gps_and_reports_unsupported_values() -> None:
+    gps = scenario.build_sensor_failure_requested_profile(
+        sensor_component=None,
+        failure_type="off",
+    )
+    unsupported = scenario.build_sensor_failure_requested_profile(
+        sensor_component="camera",
+        failure_type="stuck",
+    )
+
+    assert gps["requested"] == {
+        "sensor_component": "gps",
+        "failure_type": "off",
+        "reset_failure_type": "ok",
+    }
+    assert gps["validation_reasons"] == []
+    assert unsupported["validation_reasons"] == [
+        "sensor_component_not_in_this_vertical_slice",
+        "sensor_failure_type_not_in_this_vertical_slice",
+    ]
+    assert unsupported["physical_execution_invoked"] is False
+
+
+def test_entrypoint_profile_wrappers_read_environment_only_at_boundary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(route_entrypoint.WIND_MEAN_MPS_ENV, "3.25")
+    monkeypatch.setenv(route_entrypoint.TEMPERATURE_C_ENV, "42")
+    monkeypatch.setenv(route_entrypoint.BATTERY_REMAINING_PERCENT_ENV, "8")
+    monkeypatch.setenv(route_entrypoint.SENSOR_FAILURE_TYPE_ENV, "off")
+
+    assert route_entrypoint._wind_requested_profile()["requested"][
+        "wind_mean_mps"
+    ] == 3.25
+    assert route_entrypoint._thermal_weather_requested_profile()["requested"][
+        "temperature_c"
+    ] == 42.0
+    assert route_entrypoint._battery_requested_profile()["requested"][
+        "battery_scenario"
+    ] == "battery_critical"
+    assert route_entrypoint._sensor_failure_requested_profile()["requested"][
+        "sensor_component"
+    ] == "gps"
+
+
 def test_wind_geometry_uses_opposite_wind_vector() -> None:
     offset = scenario.wind_compensation_xy_offset(
         {

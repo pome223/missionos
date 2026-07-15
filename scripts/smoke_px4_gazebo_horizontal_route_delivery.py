@@ -84,7 +84,11 @@ from src.runtime.px4_gazebo_route.observation import (
     xy_pairs_match as _xy_pairs_match,
 )
 from src.runtime.px4_gazebo_route.scenario import (
+    build_battery_requested_profile as _build_battery_requested_profile,
+    build_sensor_failure_requested_profile as _build_sensor_failure_requested_profile,
+    build_thermal_weather_requested_profile as _build_thermal_weather_requested_profile,
     build_wind_compensation_request as _build_wind_compensation_request,
+    build_wind_requested_profile as _build_wind_requested_profile,
     landing_z_threshold as _scenario_landing_z_threshold,
     normalize_mavlink_link_degradation_mode as _normalize_mavlink_link_degradation_mode,
     normalize_telemetry_dropout_mode as _normalize_telemetry_dropout_mode,
@@ -986,62 +990,25 @@ def _reset_battery_status_cache() -> None:
 
 
 def _wind_requested_profile() -> dict[str, Any]:
-    requested = {
-        "wind_mean_mps": _optional_float_env(WIND_MEAN_MPS_ENV),
-        "wind_direction_deg": _optional_float_env(WIND_DIRECTION_DEG_ENV),
-        "wind_gust_mps": _optional_float_env(WIND_GUST_MPS_ENV),
-        "wind_variance": _optional_float_env(WIND_VARIANCE_ENV),
-    }
-    return {
-        "schema_version": "environment_condition_profile.v1",
-        "condition_id": "environment_condition_profile:mission_designer_wind_gust",
-        "condition_kind": "wind_gust",
-        "requested": requested,
-        "requested_present": any(value is not None for value in requested.values()),
-        "source": "mission_designer_coordinate_route",
-        "delivery_completion_claimed": False,
-        "hardware_target_allowed": False,
-        "physical_execution_invoked": False,
-    }
+    return _build_wind_requested_profile(
+        wind_mean_mps=_optional_float_env(WIND_MEAN_MPS_ENV),
+        wind_direction_deg=_optional_float_env(WIND_DIRECTION_DEG_ENV),
+        wind_gust_mps=_optional_float_env(WIND_GUST_MPS_ENV),
+        wind_variance=_optional_float_env(WIND_VARIANCE_ENV),
+    )
 
 
 def _thermal_weather_requested_profile() -> dict[str, Any]:
-    requested = {
-        "temperature_c": _optional_float_env(TEMPERATURE_C_ENV),
-        "pressure_hpa": _optional_float_env(PRESSURE_HPA_ENV),
-        "thermal_battery_drain_factor": _optional_float_env(
+    return _build_thermal_weather_requested_profile(
+        temperature_c=_optional_float_env(TEMPERATURE_C_ENV),
+        pressure_hpa=_optional_float_env(PRESSURE_HPA_ENV),
+        thermal_battery_drain_factor=_optional_float_env(
             THERMAL_BATTERY_DRAIN_FACTOR_ENV
         ),
-        "thermal_motor_derate_factor": _optional_float_env(
+        thermal_motor_derate_factor=_optional_float_env(
             THERMAL_MOTOR_DERATE_FACTOR_ENV
         ),
-    }
-    if requested["pressure_hpa"] is not None and (
-        requested["pressure_hpa"] < 500.0 or requested["pressure_hpa"] > 1100.0
-    ):
-        requested["pressure_hpa"] = None
-    if requested["thermal_battery_drain_factor"] is not None:
-        requested["thermal_battery_drain_factor"] = max(
-            0.1,
-            min(10.0, float(requested["thermal_battery_drain_factor"])),
-        )
-    if requested["thermal_motor_derate_factor"] is not None:
-        requested["thermal_motor_derate_factor"] = max(
-            0.1,
-            min(1.0, float(requested["thermal_motor_derate_factor"])),
-        )
-    return {
-        "schema_version": "thermal_weather_condition_profile.v1",
-        "condition_id": "thermal_weather_condition_profile:mission_designer_temperature",
-        "condition_kind": "thermal_weather",
-        "requested": requested,
-        "requested_present": any(value is not None for value in requested.values()),
-        "source": "mission_designer_coordinate_route",
-        "thermal_air_physics_claimed": False,
-        "delivery_completion_claimed": False,
-        "hardware_target_allowed": False,
-        "physical_execution_invoked": False,
-    }
+    )
 
 
 def _wind_physics_world_readback(
@@ -1698,36 +1665,12 @@ def _vehicle_payload_mass_realism(
 
 
 def _battery_requested_profile() -> dict[str, Any]:
-    scenario = (os.getenv(BATTERY_SCENARIO_ENV) or "").strip().lower()
-    requested_remaining = _optional_float_env(BATTERY_REMAINING_PERCENT_ENV)
-    if requested_remaining is not None and (
-        requested_remaining < 0.0 or requested_remaining > 100.0
-    ):
-        requested_remaining = None
-    if not scenario and requested_remaining is not None:
-        scenario = "battery_critical" if requested_remaining <= 10.0 else "battery_low"
-    if scenario not in ("", "battery_low", "battery_critical"):
-        scenario = "unsupported"
-    return {
-        "schema_version": "battery_condition_profile.v1",
-        "condition_id": "battery_condition_profile:mission_designer_battery_threshold",
-        "condition_kind": "battery_threshold",
-        "requested": {
-            "battery_scenario": scenario or None,
-            "requested_remaining_percent": requested_remaining,
-            "requested_warning_level": (
-                2
-                if scenario == "battery_critical"
-                else 1 if scenario == "battery_low" else None
-            ),
-        },
-        "requested_present": bool(scenario or requested_remaining is not None),
-        "source": "mission_designer_coordinate_route",
-        "requested_remaining_does_not_spoof_px4_battery_status": True,
-        "delivery_completion_claimed": False,
-        "hardware_target_allowed": False,
-        "physical_execution_invoked": False,
-    }
+    return _build_battery_requested_profile(
+        battery_scenario=os.getenv(BATTERY_SCENARIO_ENV),
+        requested_remaining_percent=_optional_float_env(
+            BATTERY_REMAINING_PERCENT_ENV
+        ),
+    )
 
 
 def _px4_param_show(param_name: str) -> dict[str, Any]:
@@ -2322,34 +2265,10 @@ def _refresh_battery_realism_observation_from_trace() -> None:
 
 
 def _sensor_failure_requested_profile() -> dict[str, Any]:
-    component = (os.getenv(SENSOR_FAILURE_COMPONENT_ENV) or "").strip().lower()
-    failure_type = (os.getenv(SENSOR_FAILURE_TYPE_ENV) or "").strip().lower()
-    if not component and failure_type:
-        component = "gps"
-    requested_present = bool(component or failure_type)
-    supported_components = {"gps"}
-    supported_failure_types = {"off"}
-    validation_reasons: list[str] = []
-    if component and component not in supported_components:
-        validation_reasons.append("sensor_component_not_in_this_vertical_slice")
-    if failure_type and failure_type not in supported_failure_types:
-        validation_reasons.append("sensor_failure_type_not_in_this_vertical_slice")
-    return {
-        "schema_version": "sensor_condition_profile.v1",
-        "condition_id": "sensor_condition_profile:mission_designer_sensor_failure",
-        "condition_kind": "sensor_failure",
-        "requested": {
-            "sensor_component": component or None,
-            "failure_type": failure_type or None,
-            "reset_failure_type": "ok" if component else None,
-        },
-        "requested_present": requested_present,
-        "validation_reasons": validation_reasons,
-        "source": "mission_designer_coordinate_route",
-        "delivery_completion_claimed": False,
-        "hardware_target_allowed": False,
-        "physical_execution_invoked": False,
-    }
+    return _build_sensor_failure_requested_profile(
+        sensor_component=os.getenv(SENSOR_FAILURE_COMPONENT_ENV),
+        failure_type=os.getenv(SENSOR_FAILURE_TYPE_ENV),
+    )
 
 
 def _sensor_gps_sample(*, timeout_seconds: int = 2) -> dict[str, Any]:
