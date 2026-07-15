@@ -66,6 +66,17 @@ from src.runtime.px4_gazebo_route.embedded_mavlink import (
     MAVLINK_LINK_LOSS_APPLICATOR_HELPER,
     MAVLINK_ROUTE_HELPER,
 )
+from src.runtime.px4_gazebo_route.observation import (
+    battery_status_from_listener_output as _battery_status_from_listener_output,
+    contact_topic_observation as _contact_topic_observation,
+    distance_to_segment_xy as _distance_to_segment_xy,
+    listener_field as _listener_field,
+    point_to_segment_distance_m as _point_to_segment_distance_m,
+    pose_rows as _pose_rows,
+    select_contact_topic as _select_contact_topic,
+    terminal_pose_summary_fields as _terminal_pose_summary_fields,
+    xy_pairs_match as _xy_pairs_match,
+)
 from src.runtime.px4_gazebo_route.world import (
     VISIBILITY_FOG_RENDER_COLOR,
     VISIBILITY_FOG_RENDER_DENSITY,
@@ -4773,16 +4784,6 @@ def _mavlink_link_degradation_realism() -> dict[str, Any]:
     }
 
 
-def _listener_field(output: str, field: str) -> float | None:
-    match = re.search(rf"\b{re.escape(field)}:\s*(-?\d+(?:\.\d+)?)", output)
-    return float(match.group(1)) if match else None
-
-
-def _listener_bool(output: str, field: str) -> bool | None:
-    match = re.search(rf"\b{re.escape(field)}:\s*(True|False)", output)
-    if not match:
-        return None
-    return match.group(1) == "True"
 
 
 def _battery_status_sample() -> dict[str, Any]:
@@ -4818,29 +4819,11 @@ def _battery_status_sample() -> dict[str, Any]:
         }
         return dict(_LAST_BATTERY_STATUS_SAMPLE)
     output = (result.stdout + result.stderr).strip()
-    remaining = _listener_field(output, "remaining")
-    warning = _listener_field(output, "warning")
-    observed = result.returncode == 0 and bool(output) and remaining is not None
     _LAST_BATTERY_STATUS_SAMPLE_AT = now
-    _LAST_BATTERY_STATUS_SAMPLE = {
-        "battery_status_observed": observed,
-        "battery_state_source": "px4-listener:battery_status",
-        "battery_remaining_percent": (
-            round(float(remaining) * 100.0, 3) if remaining is not None else None
-        ),
-        "battery_warning": int(warning) if warning is not None else None,
-        "battery_voltage_v": (
-            round(float(voltage), 3)
-            if (voltage := _listener_field(output, "voltage_v")) is not None
-            else None
-        ),
-        "battery_current_a": (
-            round(float(current), 3)
-            if (current := _listener_field(output, "current_a")) is not None
-            else None
-        ),
-        "battery_connected": _listener_bool(output, "connected"),
-    }
+    _LAST_BATTERY_STATUS_SAMPLE = _battery_status_from_listener_output(
+        output,
+        returncode=result.returncode,
+    )
     return dict(_LAST_BATTERY_STATUS_SAMPLE)
 
 
@@ -4919,101 +4902,6 @@ def _append_live_pose_row(
     with LIVE_POSE_TRACE_PATH.open("a") as handle:
         handle.write(json.dumps(row, sort_keys=True) + "\n")
 
-
-def _pose_rows(
-    *,
-    pickup_pose: dict[str, float],
-    climb_samples: list[dict[str, float]],
-    route_pose: dict[str, float],
-    completed_pose: dict[str, float],
-    landing_samples: list[dict[str, float]],
-) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = [{"phase": "pickup", "sample": pickup_pose}]
-    rows.extend(
-        {"phase": "climb", "sample_index": index, "sample": sample}
-        for index, sample in enumerate(climb_samples)
-    )
-    rows.append({"phase": "route", "sample": route_pose})
-    rows.extend(
-        {"phase": "landing", "sample_index": index, "sample": sample}
-        for index, sample in enumerate(landing_samples)
-    )
-    rows.append({"phase": "completed", "sample": completed_pose})
-    return rows
-
-
-def _pose_float(value: Any) -> float | None:
-    if value is None:
-        return None
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
-
-
-def _terminal_pose_record(
-    *,
-    phase: str,
-    pose: Mapping[str, Any] | None,
-    sample_index: int | None = None,
-    progress_m: float | None = None,
-    source: str = "gazebo_pose_sample",
-) -> dict[str, Any]:
-    observed = bool(pose)
-    pose_data = pose or {}
-    return {
-        "schema_version": "missionos_terminal_pose.v1",
-        "phase": phase,
-        "observed": observed,
-        "source": source if observed else "",
-        "sample_index": sample_index,
-        "x_m": _pose_float(
-            pose_data.get("x", pose_data.get("x_m", pose_data.get("local_x_m")))
-        ),
-        "y_m": _pose_float(
-            pose_data.get("y", pose_data.get("y_m", pose_data.get("local_y_m")))
-        ),
-        "z_m": _pose_float(
-            pose_data.get("z", pose_data.get("z_m", pose_data.get("local_z_m")))
-        ),
-        "progress_m": progress_m,
-    }
-
-
-def _terminal_pose_summary_fields(
-    *,
-    route_pose: Mapping[str, Any] | None,
-    completed_pose: Mapping[str, Any] | None,
-    landing_samples: list[dict[str, float]],
-    route_terminal_progress_m: float | None,
-    route_terminal_local_ned_pose: Mapping[str, Any] | None = None,
-) -> dict[str, Any]:
-    landing_pose = landing_samples[-1] if landing_samples else None
-    return {
-        "route_terminal_pose": _terminal_pose_record(
-            phase="route",
-            pose=route_pose,
-            progress_m=route_terminal_progress_m,
-        ),
-        "route_terminal_local_ned_pose": _terminal_pose_record(
-            phase="route",
-            pose=route_terminal_local_ned_pose,
-            progress_m=route_terminal_progress_m,
-            source="px4_local_position_ned",
-        ),
-        "route_terminal_progress_m": route_terminal_progress_m,
-        "landing_terminal_pose": _terminal_pose_record(
-            phase="landing",
-            pose=landing_pose,
-            sample_index=(len(landing_samples) - 1 if landing_samples else None),
-            progress_m=route_terminal_progress_m,
-        ),
-        "completed_terminal_pose": _terminal_pose_record(
-            phase="completed",
-            pose=completed_pose,
-            progress_m=route_terminal_progress_m,
-        ),
-    }
 
 
 def _wait_for_startup(timeout: float = 90.0) -> None:
@@ -5392,24 +5280,10 @@ def _collision_obstacle_contact_topic_observation() -> dict[str, Any]:
         check=False,
         timeout=10,
     ).stdout
-    topic_lines = [line.strip() for line in topic_list.splitlines() if line.strip()]
-    contact_topic_candidates = [
-        line
-        for line in topic_lines
-        if line == COLLISION_OBSTACLE_CONTACT_TOPIC
-        or ("mission_designer_collision_obstacle" in line and "contact" in line.lower())
-        or "collision_obstacle_contact_sensor" in line
-    ]
-    selected_topic = (
-        COLLISION_OBSTACLE_CONTACT_TOPIC
-        if COLLISION_OBSTACLE_CONTACT_TOPIC in contact_topic_candidates
-        else (
-            contact_topic_candidates[0]
-            if contact_topic_candidates
-            else COLLISION_OBSTACLE_CONTACT_TOPIC
-        )
+    selected_topic = _select_contact_topic(
+        topic_list,
+        configured_topic=COLLISION_OBSTACLE_CONTACT_TOPIC,
     )
-    topic_advertised = bool(contact_topic_candidates)
     sample_result = _run(
         [
             "docker",
@@ -5417,31 +5291,21 @@ def _collision_obstacle_contact_topic_observation() -> dict[str, Any]:
             CONTAINER_NAME,
             "sh",
             "-lc",
-            ("timeout 2 gz topic -e " f"-t {shlex.quote(selected_topic)} " "-n 1"),
+            (
+                "timeout 2 gz topic -e "
+                f"-t {shlex.quote(selected_topic)} "
+                "-n 1"
+            ),
         ],
         check=False,
         timeout=5,
     )
-    sample_text = sample_result.stdout.strip()
-    contact_event_observed = bool(sample_text)
-    return {
-        "source": "gz_topic_contact_sensor_read_only",
-        "topic": selected_topic,
-        "configured_topic": COLLISION_OBSTACLE_CONTACT_TOPIC,
-        "candidate_topics": contact_topic_candidates,
-        "topic_advertised": topic_advertised,
-        "contact_topic_observed": topic_advertised,
-        "contact_event_observed": contact_event_observed,
-        "contact_sample_observed": contact_event_observed,
-        "contact_sample_stdout_tail": sample_text[-500:],
-        "contact_sample_returncode": sample_result.returncode,
-        "read_only_observer": True,
-        "route_blocking_observed": False,
-        "incident_observed": False,
-        "traffic_conflict_verified": False,
-        "task_status_mutated": False,
-        "delivery_completion_claimed": False,
-    }
+    return _contact_topic_observation(
+        topic_list=topic_list,
+        sample_text=sample_result.stdout.strip(),
+        sample_returncode=sample_result.returncode,
+        configured_topic=COLLISION_OBSTACLE_CONTACT_TOPIC,
+    )
 
 
 def _moving_actor_pose_observation_realism() -> dict[str, Any]:
@@ -5582,18 +5446,6 @@ def _collision_obstacle_sdf_placement_readback(
     }
 
 
-def _xy_pairs_match(
-    first: list[float] | None,
-    second: list[float] | None,
-    *,
-    tolerance: float = 1e-6,
-) -> bool:
-    if first is None or second is None or len(first) != 2 or len(second) != 2:
-        return False
-    return all(
-        abs(float(first[index]) - float(second[index])) <= tolerance
-        for index in range(2)
-    )
 
 
 def _collision_obstacle_evidence_realism(
@@ -7852,24 +7704,6 @@ def _rth_behavior_execution_realism(
     }
 
 
-def _point_to_segment_distance_m(
-    point: tuple[float, float],
-    start: tuple[float, float],
-    end: tuple[float, float],
-) -> float:
-    px, py = point
-    sx, sy = start
-    ex, ey = end
-    dx = ex - sx
-    dy = ey - sy
-    length_squared = dx * dx + dy * dy
-    if length_squared <= 0.0:
-        return math.hypot(px - sx, py - sy)
-    t = max(0.0, min(1.0, ((px - sx) * dx + (py - sy) * dy) / length_squared))
-    closest_x = sx + t * dx
-    closest_y = sy + t * dy
-    return math.hypot(px - closest_x, py - closest_y)
-
 
 def _moving_actor_proximity_evidence_realism(
     *,
@@ -8162,25 +7996,6 @@ def _apply_bounded_mavlink_link_loss(
     payload["vehicle_failsafe_claimed"] = False
     return payload
 
-
-def _distance_to_segment_xy(
-    *,
-    point_xy: tuple[float, float],
-    start_xy: tuple[float, float],
-    end_xy: tuple[float, float],
-) -> float:
-    px, py = point_xy
-    sx, sy = start_xy
-    ex, ey = end_xy
-    dx = ex - sx
-    dy = ey - sy
-    length_squared = dx * dx + dy * dy
-    if length_squared == 0:
-        return math.hypot(px - sx, py - sy)
-    t = max(0.0, min(1.0, ((px - sx) * dx + (py - sy) * dy) / length_squared))
-    nearest_x = sx + t * dx
-    nearest_y = sy + t * dy
-    return math.hypot(px - nearest_x, py - nearest_y)
 
 
 def _send_route_with_monitor(
