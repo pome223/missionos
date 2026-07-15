@@ -20,12 +20,12 @@ live. No file is safe to delete solely because it has no static importer.
 
 ## Current cleanup branch result
 
-As of `codex/codebase-inventory` after the fifth PX4/Gazebo monolith
+As of `codex/codebase-inventory` after the sixth PX4/Gazebo monolith
 extraction:
 
-- tracked Python: 275,016 lines, down 21,793 lines from the baseline (7.34%)
-- `smoke_*.py`: 69 files / 37,012 lines, down from 135 files / 52,004 lines
-- automated verification: 646 passed, 5 warnings
+- tracked Python: 275,179 lines, down 21,630 lines from the baseline (7.29%)
+- `smoke_*.py`: 69 files / 36,914 lines, down from 135 files / 52,004 lines
+- automated verification: 651 passed, 5 warnings
 - runtime verification: `python -m src.quickstart_smoke --json` created and
   completed fresh task `task_e5e900c70d95` in an isolated SQLite store without
   a model or bridge
@@ -51,7 +51,7 @@ files:
 | File | Lines | Main maintenance risk |
 |---|---:|---|
 | `packages/missionos-cli/src/missionos_cli/cli.py` | 12,866 | CLI, chat, companion processes, maps, and HTML rendering share one module |
-| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 11,425 | a production dispatch backend is exposed through a 2,106-line `main` function |
+| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 11,327 | a production dispatch backend is exposed through a 2,106-line `main` function |
 | `src/gateway/server.py` | 11,932 | route registration, orchestration, robot-specific handling, and recovery are coupled |
 | `src/runtime/digital_twin_mission_environment.py` | 9,961 | environment construction and PX4/Gazebo mechanics are coupled |
 | `src/runtime/turtlebot3_home_mission.py` | 9,808 | proposal, approval, resolver, execution, verification, UI evidence, and repair share one module |
@@ -455,6 +455,22 @@ A fixture runtime used a real child process and observed five pose samples
 before `sent=true` with no deviation. The opt-in entrypoint remained
 fail-closed. It fell from 11,526 to 11,425 lines; total Python grew by 213 lines
 for the injected execution interface and its deterministic process tests.
+
+The sixth extraction added `src/runtime/px4_gazebo_route/verification.py` as the
+fifth package responsibility. Materialized-status allowlisting, Gazebo wind
+vector readback, PX4 parameter application/value checks, and route-corridor
+obstacle source verification now consume existing observations without
+dispatching, mutating task state, or inferring mission completion. Missing
+obstacle evidence returns every failed source fact instead of collapsing the
+result into a generic false value.
+
+Five contract tests preserve legacy delegation, the explicit status allowlist,
+wind vector/hash matching, PX4 parameter failure behavior, and all eight
+obstacle-evidence rejection reasons. A fixture runtime accepted matching wind
+readback and rejected an empty obstacle artifact with eight reasons while
+keeping dispatch and completion false. The opt-in entrypoint remained
+fail-closed. It fell from 11,425 to 11,327 lines; total Python grew by 163 lines
+for the verifier boundary and regression coverage.
 
 ## Protected regression baseline
 
