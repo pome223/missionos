@@ -20,12 +20,12 @@ live. No file is safe to delete solely because it has no static importer.
 
 ## Current cleanup branch result
 
-As of `codex/codebase-inventory` after the third PX4/Gazebo monolith
+As of `codex/codebase-inventory` after the fourth PX4/Gazebo monolith
 extraction:
 
-- tracked Python: 274,459 lines, down 22,350 lines from the baseline (7.53%)
-- `smoke_*.py`: 69 files / 37,209 lines, down from 135 files / 52,004 lines
-- automated verification: 635 passed, 5 warnings
+- tracked Python: 274,803 lines, down 22,006 lines from the baseline (7.41%)
+- `smoke_*.py`: 69 files / 37,113 lines, down from 135 files / 52,004 lines
+- automated verification: 643 passed, 5 warnings
 - runtime verification: `python -m src.quickstart_smoke --json` created and
   completed fresh task `task_e5e900c70d95` in an isolated SQLite store without
   a model or bridge
@@ -51,7 +51,7 @@ files:
 | File | Lines | Main maintenance risk |
 |---|---:|---|
 | `packages/missionos-cli/src/missionos_cli/cli.py` | 12,866 | CLI, chat, companion processes, maps, and HTML rendering share one module |
-| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 11,622 | a production dispatch backend is exposed through a 2,106-line `main` function |
+| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 11,526 | a production dispatch backend is exposed through a 2,106-line `main` function |
 | `src/gateway/server.py` | 11,932 | route registration, orchestration, robot-specific handling, and recovery are coupled |
 | `src/runtime/digital_twin_mission_environment.py` | 9,961 | environment construction and PX4/Gazebo mechanics are coupled |
 | `src/runtime/turtlebot3_home_mission.py` | 9,808 | proposal, approval, resolver, execution, verification, UI evidence, and repair share one module |
@@ -419,6 +419,26 @@ retaining `task_status_mutated=false` and `delivery_completion_claimed=false`.
 The entrypoint still stopped without its explicit opt-in. It fell from 11,807
 to 11,622 lines, while total Python grew by 240 lines for the package boundary
 and regression coverage.
+
+The fourth extraction introduced
+`src/runtime/px4_gazebo_route/execution.py` for low-level helper invocation,
+read-only heartbeat observation, and the bounded MAVLink endpoint-loss
+mechanic. Every function receives its process runner, container identity,
+helper source, and endpoint ports explicitly. The module does not create an
+approval, select a recovery action, widen an allowlist, or claim mission
+completion; those authority and verification responsibilities remain with the
+caller. Observer and link-loss outputs forcibly retain their read-only and
+unverified claim fields even if an untrusted helper payload says otherwise.
+
+Eight contract cases cover exact command construction, successful observer
+output, nonzero and malformed-output failure paths, explicit endpoint restart
+selection, false failsafe claims, and legacy-entrypoint delegation. A fixture
+runtime runner executed the packaged heartbeat observer in a separate host
+process and bound its UDP listener without Docker. It completed with
+`observer_sent_packets=false` and `packet_drop_performed=false`; the legacy
+entrypoint remained fail-closed without opt-in. The entrypoint fell from 11,622
+to 11,526 lines. Total Python grew by 344 lines because execution mechanics now
+have an explicit interface and maintained failure-path coverage.
 
 ## Protected regression baseline
 
