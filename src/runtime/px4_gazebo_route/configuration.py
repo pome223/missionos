@@ -9,7 +9,16 @@ from __future__ import annotations
 import argparse
 from collections.abc import Sequence
 
+from src.runtime.px4_gazebo_route_dispatcher import (
+    ROUTE_SETPOINT_STREAM_MAX_DURATION_SECONDS,
+    ROUTE_SETPOINT_STREAM_MAX_FRAMES,
+)
 from src.runtime.px4_gazebo_route_plan import ROUTE_ON_DEVIATION_ACTIONS
+
+
+PAYLOAD_FEASIBILITY_ADVISORY_REF_PREFIX = (
+    "payload_feasibility_advisory:mission_designer_payload_mass"
+)
 
 
 def parse_route_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -104,4 +113,50 @@ def parse_route_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-__all__ = ["parse_route_args"]
+def payload_advisory_recovery_requested(args: argparse.Namespace) -> bool:
+    return args.payload_advisory_recovery_action != "none"
+
+
+def validate_payload_advisory_recovery_args(args: argparse.Namespace) -> None:
+    if not payload_advisory_recovery_requested(args):
+        if args.mission_os_supervisor_payload_loop:
+            raise RuntimeError(
+                "payload supervisor loop requires "
+                "--payload-advisory-recovery-action rtl and "
+                "--post-recovery-action land"
+            )
+        return
+    if not args.payload_feasibility_advisory_ref.startswith(
+        PAYLOAD_FEASIBILITY_ADVISORY_REF_PREFIX
+    ):
+        raise RuntimeError(
+            "payload advisory recovery requires a source-bound "
+            "--payload-feasibility-advisory-ref starting with "
+            f"{PAYLOAD_FEASIBILITY_ADVISORY_REF_PREFIX}"
+        )
+    if args.mission_os_supervisor_payload_loop and (
+        args.payload_advisory_recovery_action != "rtl"
+        or args.post_recovery_action != "land"
+    ):
+        raise RuntimeError(
+            "payload supervisor Form 3 requires "
+            "--payload-advisory-recovery-action rtl and "
+            "--post-recovery-action land"
+        )
+
+
+def validate_planned_route_stream_budget(*, duration_seconds: float) -> None:
+    max_planned_frames = 40 + int(duration_seconds / 0.05) + 2
+    if duration_seconds > ROUTE_SETPOINT_STREAM_MAX_DURATION_SECONDS:
+        raise RuntimeError("planned route stream duration exceeds allowlist")
+    if max_planned_frames > ROUTE_SETPOINT_STREAM_MAX_FRAMES:
+        raise RuntimeError("planned route stream frames exceed allowlist")
+
+
+__all__ = [
+    "PAYLOAD_FEASIBILITY_ADVISORY_REF_PREFIX",
+    "parse_route_args",
+    "payload_advisory_recovery_requested",
+    "validate_payload_advisory_recovery_args",
+    "validate_planned_route_stream_budget",
+]

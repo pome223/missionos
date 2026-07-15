@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import argparse
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -37,8 +36,6 @@ from src.runtime.px4_gazebo_route_delivery import (
     run_px4_gazebo_route_delivery_task,
 )
 from src.runtime.px4_gazebo_route_dispatcher import (
-    ROUTE_SETPOINT_STREAM_MAX_DURATION_SECONDS,
-    ROUTE_SETPOINT_STREAM_MAX_FRAMES,
     build_px4_gazebo_route_command_allowlist,
     build_px4_gazebo_route_command_dispatch_result_from_observed_stream,
     build_px4_gazebo_route_deviation_abort,
@@ -82,7 +79,13 @@ from src.runtime.px4_gazebo_route.observation import (
 )
 from src.runtime.px4_gazebo_route import scenario as _route_scenario
 from src.runtime.px4_gazebo_route import supervision as _route_supervision
-from src.runtime.px4_gazebo_route.configuration import parse_route_args as _parse_args
+from src.runtime.px4_gazebo_route.configuration import (
+    PAYLOAD_FEASIBILITY_ADVISORY_REF_PREFIX,
+    parse_route_args as _parse_args,
+    payload_advisory_recovery_requested as _payload_advisory_recovery_requested,
+    validate_payload_advisory_recovery_args as _validate_payload_advisory_recovery_args,
+    validate_planned_route_stream_budget as _assert_planned_route_stream_budget,
+)
 from src.runtime.px4_gazebo_route.verification import (
     application_status_is_materialized as _application_status_is_materialized,
     px4_param_set_applied as _px4_param_set_applied,
@@ -174,9 +177,6 @@ TERRAIN_VERTICAL_REFERENCE_ENV = (
     "PX4_GAZEBO_HORIZONTAL_ROUTE_TERRAIN_VERTICAL_REFERENCE"
 )
 TERRAIN_COLLISION_MODE_ENV = "PX4_GAZEBO_HORIZONTAL_ROUTE_TERRAIN_COLLISION_MODE"
-PAYLOAD_FEASIBILITY_ADVISORY_REF_PREFIX = (
-    "payload_feasibility_advisory:mission_designer_payload_mass"
-)
 PAYLOAD_RECOVERY_ACTION_REF = "payload_recovery_action:mission_designer_payload_mass"
 CONTAINER_NAME = "boiled-claw-px4-gazebo-horizontal-route-smoke"
 ROUTE_MAVLINK_LOCAL_PORT = 14650
@@ -7987,46 +7987,6 @@ def _dispatch_alternate_landing_execution() -> Any:
 
 def _dispatch_rth_behavior_execution() -> Any:
     return _dispatch_emergency_recovery("rtl")
-
-
-def _payload_advisory_recovery_requested(args: argparse.Namespace) -> bool:
-    return args.payload_advisory_recovery_action != "none"
-
-
-def _validate_payload_advisory_recovery_args(args: argparse.Namespace) -> None:
-    if not _payload_advisory_recovery_requested(args):
-        if args.mission_os_supervisor_payload_loop:
-            raise RuntimeError(
-                "payload supervisor loop requires "
-                "--payload-advisory-recovery-action rtl and "
-                "--post-recovery-action land"
-            )
-        return
-    if not args.payload_feasibility_advisory_ref.startswith(
-        PAYLOAD_FEASIBILITY_ADVISORY_REF_PREFIX
-    ):
-        raise RuntimeError(
-            "payload advisory recovery requires a source-bound "
-            f"--payload-feasibility-advisory-ref starting with "
-            f"{PAYLOAD_FEASIBILITY_ADVISORY_REF_PREFIX}"
-        )
-    if args.mission_os_supervisor_payload_loop and (
-        args.payload_advisory_recovery_action != "rtl"
-        or args.post_recovery_action != "land"
-    ):
-        raise RuntimeError(
-            "payload supervisor Form 3 requires "
-            "--payload-advisory-recovery-action rtl and "
-            "--post-recovery-action land"
-        )
-
-
-def _assert_planned_route_stream_budget(*, duration_seconds: float) -> None:
-    max_planned_frames = 40 + int(duration_seconds / 0.05) + 2
-    if duration_seconds > ROUTE_SETPOINT_STREAM_MAX_DURATION_SECONDS:
-        raise RuntimeError("planned route stream duration exceeds allowlist")
-    if max_planned_frames > ROUTE_SETPOINT_STREAM_MAX_FRAMES:
-        raise RuntimeError("planned route stream frames exceed allowlist")
 
 
 def _send_until_z(
