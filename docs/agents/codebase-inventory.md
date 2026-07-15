@@ -20,12 +20,12 @@ live. No file is safe to delete solely because it has no static importer.
 
 ## Current cleanup branch result
 
-As of `codex/codebase-inventory` after the eighth PX4/Gazebo monolith
+As of `codex/codebase-inventory` after the ninth PX4/Gazebo monolith
 extraction:
 
-- tracked Python: 275,593 lines, down 21,216 lines from the baseline (7.15%)
-- `smoke_*.py`: 69 files / 36,726 lines, down from 135 files / 52,004 lines
-- automated verification: 672 passed, 5 warnings
+- tracked Python: 275,735 lines, down 21,074 lines from the baseline (7.10%)
+- `smoke_*.py`: 69 files / 36,727 lines, down from 135 files / 52,004 lines
+- automated verification: 683 passed, 5 warnings
 - runtime verification: `python -m src.quickstart_smoke --json` created and
   completed fresh task `task_e5e900c70d95` in an isolated SQLite store without
   a model or bridge
@@ -51,7 +51,7 @@ files:
 | File | Lines | Main maintenance risk |
 |---|---:|---|
 | `packages/missionos-cli/src/missionos_cli/cli.py` | 12,866 | CLI, chat, companion processes, maps, and HTML rendering share one module |
-| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 11,139 | a production dispatch backend is exposed through a 2,106-line `main` function |
+| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 11,140 | a production dispatch backend is exposed through a 2,106-line `main` function |
 | `src/gateway/server.py` | 11,932 | route registration, orchestration, robot-specific handling, and recovery are coupled |
 | `src/runtime/digital_twin_mission_environment.py` | 9,961 | environment construction and PX4/Gazebo mechanics are coupled |
 | `src/runtime/turtlebot3_home_mission.py` | 9,808 | proposal, approval, resolver, execution, verification, UI evidence, and repair share one module |
@@ -510,6 +510,24 @@ critical-battery scenario, rejected the invalid pressure, and retained
 The entrypoint still rejected external execution without opt-in. It fell from
 11,220 to 11,139 lines; total Python grew by 155 lines for the profile boundary
 and regression coverage.
+
+The ninth extraction moved the accepted vocabulary for landing-zone blocking,
+visibility, world markers, RTH behavior, moving obstacles, contact topics, and
+multi-drone probes into explicit scenario selectors. Each selector normalizes
+an explicit value and accepts only its documented aliases; unknown values stay
+false rather than becoming an execution request. The entrypoint wrappers now
+do only the environment read and delegate the decision.
+
+Eleven additional contract cases exercise every selector's accepted alias,
+generic true value, unknown value, empty value, visibility normalization, and
+the environment wrapper. A runtime invocation accepted blocked-landing, fog,
+and RTH inputs, rejected an unknown obstacle value, and retained false dispatch
+and physical-execution fields. The legacy entrypoint still stopped without
+explicit opt-in. The entrypoint grew by one line (11,139 to 11,140) because the
+explicit wrappers are formatted across lines; 97 lines of selector ownership
+nevertheless moved into the package. Total Python grew by 142 lines for that
+boundary and its regression coverage. This step improves reviewability rather
+than reducing total LOC.
 
 ## Protected regression baseline
 
