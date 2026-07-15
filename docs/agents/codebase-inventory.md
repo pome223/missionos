@@ -20,12 +20,12 @@ live. No file is safe to delete solely because it has no static importer.
 
 ## Current cleanup branch result
 
-As of `codex/codebase-inventory` after the Gazebo delivery contract
-consolidation:
+As of `codex/codebase-inventory` after the first PX4/Gazebo monolith
+extraction:
 
-- tracked Python: 273,919 lines, down 22,890 lines from the baseline (7.71%)
-- `smoke_*.py`: 69 files / 38,221 lines, down from 135 files / 52,004 lines
-- automated verification: 620 passed, 5 warnings
+- tracked Python: 274,058 lines, down 22,751 lines from the baseline (7.67%)
+- `smoke_*.py`: 69 files / 37,653 lines, down from 135 files / 52,004 lines
+- automated verification: 625 passed, 5 warnings
 - runtime verification: `python -m src.quickstart_smoke --json` created and
   completed fresh task `task_e5e900c70d95` in an isolated SQLite store without
   a model or bridge
@@ -51,7 +51,7 @@ files:
 | File | Lines | Main maintenance risk |
 |---|---:|---|
 | `packages/missionos-cli/src/missionos_cli/cli.py` | 12,866 | CLI, chat, companion processes, maps, and HTML rendering share one module |
-| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 12,634 | a production dispatch backend is exposed through a 2,106-line `main` function |
+| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 12,066 | a production dispatch backend is exposed through a 2,106-line `main` function |
 | `src/gateway/server.py` | 11,932 | route registration, orchestration, robot-specific handling, and recovery are coupled |
 | `src/runtime/digital_twin_mission_environment.py` | 9,961 | environment construction and PX4/Gazebo mechanics are coupled |
 | `src/runtime/turtlebot3_home_mission.py` | 9,808 | proposal, approval, resolver, execution, verification, UI evidence, and repair share one module |
@@ -358,6 +358,29 @@ fail-closed approval-missing, low-battery gate, contract-identity, and mission-
 identity failures. Blocked cases must skip the sidecar and runner. These tests
 do not start Gazebo, Docker, PX4, or hardware and make no external-runtime
 claim.
+
+## Monolith decomposition
+
+The first behavior-preserving extraction moved the three embedded MAVLink
+programs out of `smoke_px4_gazebo_horizontal_route_delivery.py` and into
+`src/runtime/px4_gazebo_route/embedded_mavlink.py`. The legacy executable still
+imports and sends the exact same source strings, so its public opt-in command
+and container behavior remain compatible. Its local size fell from 12,634 to
+12,066 lines; total Python grew by 139 lines because the extraction added a
+package boundary and five maintained contract tests. This step targets
+reviewability rather than deletion.
+
+The contract suite compiles all three embedded programs, verifies that the
+legacy entrypoint uses the packaged sources, and executes the route helper in a
+separate process against a loopback UDP peer. The peer returns an accepted ARM
+`COMMAND_ACK`; the helper must report the exact observed ACK rather than infer
+success from sending a frame. A runtime smoke also executed the packaged
+read-only heartbeat observer for 0.1 seconds and observed
+`observer_status=completed`, `observer_sent_packets=false`, and
+`packet_drop_performed=false`. Running the legacy route entrypoint without
+`RUN_PX4_GAZEBO_HORIZONTAL_ROUTE_SMOKE=1` still terminates fail-closed before
+starting PX4 or Gazebo. No external simulator, Docker container, or hardware
+was invoked by this extraction verification.
 
 ## Protected regression baseline
 
