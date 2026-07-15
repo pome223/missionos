@@ -210,42 +210,30 @@ def wind_supervisor_assessment_inputs(
     }
 
 
-def build_wind_supervisor_cycle(
+def _build_supervisor_cycle_artifact(
     *,
     cycle_index: int,
+    identity_suffix: str,
+    supervisor_scope: str,
+    primary_trigger: str,
     observation_ref: str,
     response_ref: str,
     selected_bounded_action: str,
     assessment_inputs: Mapping[str, Any],
     dispatch_ref: str | None,
     dispatch_status: str | None,
+    dispatch_observed: bool,
     approval_ref: str | None,
-    outcome_ref: str | None = None,
-    outcome_observed: bool = False,
-    recovery_state_label: str | None = None,
-    pose_z_m: float | None = None,
-    supervisor_scope: str = WIND_SUPERVISOR_SCOPE,
+    outcome_ref: str | None,
+    outcome_observed: bool,
+    outcome_state_label: str | None,
+    pose_z_m: float | None,
 ) -> dict[str, Any]:
-    decision_id = (
-        "mission_os_recovery_decision:wind_drift_supervisor_bounded_rtl"
-        if cycle_index == 1
-        else "mission_os_recovery_decision:wind_rtl_state_supervisor_bounded_land"
-    )
-    request_id = (
-        "mission_os_backend_action_request:wind_drift_supervisor_bounded_rtl"
-        if cycle_index == 1
-        else "mission_os_backend_action_request:wind_rtl_state_supervisor_bounded_land"
-    )
-    receipt_id = (
-        "mission_os_backend_action_receipt:wind_drift_supervisor_bounded_rtl"
-        if cycle_index == 1
-        else "mission_os_backend_action_receipt:wind_rtl_state_supervisor_bounded_land"
-    )
-    outcome_id = (
-        "mission_os_recovery_outcome_observation:wind_drift_supervisor_bounded_rtl"
-        if cycle_index == 1
-        else "mission_os_recovery_outcome_observation:wind_rtl_state_supervisor_bounded_land"
-    )
+    decision_id = f"mission_os_recovery_decision:{identity_suffix}"
+    request_id = f"mission_os_backend_action_request:{identity_suffix}"
+    receipt_id = f"mission_os_backend_action_receipt:{identity_suffix}"
+    outcome_id = f"mission_os_recovery_outcome_observation:{identity_suffix}"
+    operator_approved = approval_ref is not None
     return {
         "cycle_index": cycle_index,
         "decision_ref": decision_id,
@@ -261,7 +249,7 @@ def build_wind_supervisor_cycle(
             "full_gateway_runtime_loop": False,
             "source_observation_ref": observation_ref,
             "mission_response_candidate_ref": response_ref,
-            "primary_trigger": "wind_drift_exceeded_threshold",
+            "primary_trigger": primary_trigger,
             "assessment_inputs": dict(assessment_inputs),
             "mission_state_interpretation": assessment_inputs[
                 "mission_state_interpretation"
@@ -269,7 +257,7 @@ def build_wind_supervisor_cycle(
             "selected_bounded_action": selected_bounded_action,
             "operator_approval_required": True,
             "automatic_dispatch_allowed": False,
-            "operator_approved_dispatch_allowed": approval_ref is not None,
+            "operator_approved_dispatch_allowed": operator_approved,
             "ai_judgment_is_gate_verdict": False,
             "ai_judgment_created_dispatch_authority": False,
             "llm_gate_judge_used": False,
@@ -288,7 +276,7 @@ def build_wind_supervisor_cycle(
             "expected_dispatch_ref": dispatch_ref,
             "approval_ref": approval_ref,
             "allowlisted_action": True,
-            "operator_approved": approval_ref is not None,
+            "operator_approved": operator_approved,
             "automatic_dispatch_allowed": False,
             "dispatch_authority_created": False,
             "hardware_target_allowed": False,
@@ -301,9 +289,7 @@ def build_wind_supervisor_cycle(
             "action_request_ref": request_id,
             "dispatch_ref": dispatch_ref,
             "dispatch_status": dispatch_status,
-            "dispatch_observed": str(dispatch_ref or "").startswith(
-                "px4_gazebo_emergency_command_dispatch_result:"
-            ),
+            "dispatch_observed": dispatch_observed,
             "backend_target": "px4_gazebo_sitl",
             "hardware_target_allowed": False,
             "physical_execution_invoked": False,
@@ -315,7 +301,7 @@ def build_wind_supervisor_cycle(
             "action_receipt_ref": receipt_id,
             "outcome_observation_ref": outcome_ref,
             "outcome_observed": outcome_observed,
-            "state_label": recovery_state_label,
+            "state_label": outcome_state_label,
             "pose_z_m": pose_z_m,
             "delivery_completion_claimed": False,
             "hardware_target_allowed": False,
@@ -324,16 +310,19 @@ def build_wind_supervisor_cycle(
     }
 
 
-def build_wind_supervisor_loop(
+def _build_supervisor_loop_artifact(
     *,
+    supervisor_scope: str,
+    primary_trigger: str,
     cycle1: Mapping[str, Any],
     cycle2: Mapping[str, Any],
     cycle1_outcome_observed: bool,
     cycle2_outcome_observed: bool,
-    supervisor_scope: str = WIND_SUPERVISOR_SCOPE,
+    include_secondary_risks: bool = False,
+    include_observed_cycle_count: bool = False,
 ) -> dict[str, Any]:
     cycles = [dict(cycle1), dict(cycle2)]
-    loop_conflicting_risks = sorted(
+    conflicting_risks = sorted(
         {
             risk
             for cycle in cycles
@@ -346,35 +335,18 @@ def build_wind_supervisor_loop(
         }
     )
     supervisor_loop_claim_supported = bool(
-        cycle1_outcome_observed
-        and cycle2_outcome_observed
-        and not loop_conflicting_risks
+        cycle1_outcome_observed and cycle2_outcome_observed and not conflicting_risks
     )
-    return {
+    result = {
         "schema_version": "mission_os_supervisor_recovery_loop.v1",
         "decision_loop_driver": "mission_os_supervisor",
         "supervisor_scope": supervisor_scope,
         "full_gateway_runtime_loop": False,
-        "primary_trigger": "wind_drift_exceeded_threshold",
+        "primary_trigger": primary_trigger,
         "assessment_mode": "compound_mission_state_assessment",
-        "secondary_risks": sorted(
-            {
-                risk["condition"]
-                for cycle in cycles
-                for risk in (
-                    (cycle.get("decision") or {})
-                    .get("assessment_inputs", {})
-                    .get("secondary_risks", [])
-                )
-                if isinstance(risk, dict)
-            }
-        ),
         "cycle_count": 2 if supervisor_loop_claim_supported else 1,
-        "observed_cycle_count": (
-            2 if cycle1_outcome_observed and cycle2_outcome_observed else 1
-        ),
         "supervisor_loop_claim_supported": supervisor_loop_claim_supported,
-        "conflicting_risks": loop_conflicting_risks,
+        "conflicting_risks": conflicting_risks,
         "cycles": cycles,
         "cycle1_supervisor_decision_observed": True,
         "cycle1_backend_action_request_observed": True,
@@ -398,6 +370,87 @@ def build_wind_supervisor_loop(
             "physical_execution_invoked": False,
         },
     }
+    if include_secondary_risks:
+        result["secondary_risks"] = sorted(
+            {
+                risk["condition"]
+                for cycle in cycles
+                for risk in (
+                    (cycle.get("decision") or {})
+                    .get("assessment_inputs", {})
+                    .get("secondary_risks", [])
+                )
+                if isinstance(risk, dict)
+            }
+        )
+    if include_observed_cycle_count:
+        result["observed_cycle_count"] = (
+            2 if cycle1_outcome_observed and cycle2_outcome_observed else 1
+        )
+    return result
+
+
+def build_wind_supervisor_cycle(
+    *,
+    cycle_index: int,
+    observation_ref: str,
+    response_ref: str,
+    selected_bounded_action: str,
+    assessment_inputs: Mapping[str, Any],
+    dispatch_ref: str | None,
+    dispatch_status: str | None,
+    approval_ref: str | None,
+    outcome_ref: str | None = None,
+    outcome_observed: bool = False,
+    recovery_state_label: str | None = None,
+    pose_z_m: float | None = None,
+    supervisor_scope: str = WIND_SUPERVISOR_SCOPE,
+) -> dict[str, Any]:
+    identity_suffix = (
+        "wind_drift_supervisor_bounded_rtl"
+        if cycle_index == 1
+        else "wind_rtl_state_supervisor_bounded_land"
+    )
+    return _build_supervisor_cycle_artifact(
+        cycle_index=cycle_index,
+        identity_suffix=identity_suffix,
+        supervisor_scope=supervisor_scope,
+        primary_trigger="wind_drift_exceeded_threshold",
+        observation_ref=observation_ref,
+        response_ref=response_ref,
+        selected_bounded_action=selected_bounded_action,
+        assessment_inputs=assessment_inputs,
+        dispatch_ref=dispatch_ref,
+        dispatch_status=dispatch_status,
+        dispatch_observed=str(dispatch_ref or "").startswith(
+            "px4_gazebo_emergency_command_dispatch_result:"
+        ),
+        approval_ref=approval_ref,
+        outcome_ref=outcome_ref,
+        outcome_observed=outcome_observed,
+        outcome_state_label=recovery_state_label,
+        pose_z_m=pose_z_m,
+    )
+
+
+def build_wind_supervisor_loop(
+    *,
+    cycle1: Mapping[str, Any],
+    cycle2: Mapping[str, Any],
+    cycle1_outcome_observed: bool,
+    cycle2_outcome_observed: bool,
+    supervisor_scope: str = WIND_SUPERVISOR_SCOPE,
+) -> dict[str, Any]:
+    return _build_supervisor_loop_artifact(
+        supervisor_scope=supervisor_scope,
+        primary_trigger="wind_drift_exceeded_threshold",
+        cycle1=cycle1,
+        cycle2=cycle2,
+        cycle1_outcome_observed=cycle1_outcome_observed,
+        cycle2_outcome_observed=cycle2_outcome_observed,
+        include_secondary_risks=True,
+        include_observed_cycle_count=True,
+    )
 
 
 def obstacle_supervisor_assessment_inputs(
@@ -530,25 +583,10 @@ def build_obstacle_supervisor_cycle(
     cycle1_state_label: str | None = None,
     pose_z_m: float | None = None,
 ) -> dict[str, Any]:
-    decision_id = (
-        "mission_os_recovery_decision:obstacle_supervisor_alternate_route"
+    identity_suffix = (
+        "obstacle_supervisor_alternate_route"
         if cycle_index == 1
-        else "mission_os_recovery_decision:obstacle_alternate_waypoint_supervisor_bounded_land"
-    )
-    request_id = (
-        "mission_os_backend_action_request:obstacle_supervisor_alternate_route"
-        if cycle_index == 1
-        else "mission_os_backend_action_request:obstacle_alternate_waypoint_supervisor_bounded_land"
-    )
-    receipt_id = (
-        "mission_os_backend_action_receipt:obstacle_supervisor_alternate_route"
-        if cycle_index == 1
-        else "mission_os_backend_action_receipt:obstacle_alternate_waypoint_supervisor_bounded_land"
-    )
-    outcome_id = (
-        "mission_os_recovery_outcome_observation:obstacle_supervisor_alternate_route"
-        if cycle_index == 1
-        else "mission_os_recovery_outcome_observation:obstacle_alternate_waypoint_supervisor_bounded_land"
+        else "obstacle_alternate_waypoint_supervisor_bounded_land"
     )
     dispatch_observed = (
         bool(dispatch_ref)
@@ -557,80 +595,24 @@ def build_obstacle_supervisor_cycle(
             "px4_gazebo_emergency_command_dispatch_result:"
         )
     )
-    return {
-        "cycle_index": cycle_index,
-        "decision_ref": decision_id,
-        "action_request_ref": request_id,
-        "action_receipt_ref": receipt_id,
-        "outcome_observation_ref": outcome_id,
-        "decision": {
-            "schema_version": "mission_os_recovery_decision.v1",
-            "decision_id": decision_id,
-            "cycle_index": cycle_index,
-            "decision_loop_driver": "mission_os_supervisor",
-            "supervisor_scope": "obstacle_form3_sitl_only",
-            "full_gateway_runtime_loop": False,
-            "source_observation_ref": observation_ref,
-            "mission_response_candidate_ref": response_ref,
-            "primary_trigger": "route_blocking_obstacle_verified",
-            "assessment_inputs": dict(assessment_inputs),
-            "mission_state_interpretation": assessment_inputs[
-                "mission_state_interpretation"
-            ],
-            "selected_bounded_action": selected_bounded_action,
-            "operator_approval_required": True,
-            "automatic_dispatch_allowed": False,
-            "operator_approved_dispatch_allowed": approval_ref is not None,
-            "ai_judgment_is_gate_verdict": False,
-            "ai_judgment_created_dispatch_authority": False,
-            "llm_gate_judge_used": False,
-            "created_dispatch_authority": False,
-            "delivery_completion_claimed": False,
-            "hardware_target_allowed": False,
-            "physical_execution_invoked": False,
-        },
-        "action_request": {
-            "schema_version": "mission_os_backend_action_request.v1",
-            "request_id": request_id,
-            "cycle_index": cycle_index,
-            "decision_ref": decision_id,
-            "backend_target": "px4_gazebo_sitl",
-            "bounded_action": selected_bounded_action,
-            "expected_dispatch_ref": dispatch_ref,
-            "approval_ref": approval_ref,
-            "allowlisted_action": True,
-            "operator_approved": approval_ref is not None,
-            "automatic_dispatch_allowed": False,
-            "dispatch_authority_created": False,
-            "hardware_target_allowed": False,
-            "physical_execution_invoked": False,
-        },
-        "action_receipt": {
-            "schema_version": "mission_os_backend_action_receipt.v1",
-            "receipt_id": receipt_id,
-            "cycle_index": cycle_index,
-            "action_request_ref": request_id,
-            "dispatch_ref": dispatch_ref,
-            "dispatch_status": dispatch_status,
-            "dispatch_observed": dispatch_observed,
-            "backend_target": "px4_gazebo_sitl",
-            "hardware_target_allowed": False,
-            "physical_execution_invoked": False,
-        },
-        "outcome_observation": {
-            "schema_version": "mission_os_recovery_outcome_observation.v1",
-            "observation_id": outcome_id,
-            "cycle_index": cycle_index,
-            "action_receipt_ref": receipt_id,
-            "outcome_observation_ref": outcome_ref,
-            "outcome_observed": outcome_observed,
-            "state_label": cycle1_state_label,
-            "pose_z_m": pose_z_m,
-            "delivery_completion_claimed": False,
-            "hardware_target_allowed": False,
-            "physical_execution_invoked": False,
-        },
-    }
+    return _build_supervisor_cycle_artifact(
+        cycle_index=cycle_index,
+        identity_suffix=identity_suffix,
+        supervisor_scope="obstacle_form3_sitl_only",
+        primary_trigger="route_blocking_obstacle_verified",
+        observation_ref=observation_ref,
+        response_ref=response_ref,
+        selected_bounded_action=selected_bounded_action,
+        assessment_inputs=assessment_inputs,
+        dispatch_ref=dispatch_ref,
+        dispatch_status=dispatch_status,
+        dispatch_observed=dispatch_observed,
+        approval_ref=approval_ref,
+        outcome_ref=outcome_ref,
+        outcome_observed=outcome_observed,
+        outcome_state_label=cycle1_state_label,
+        pose_z_m=pose_z_m,
+    )
 
 
 def build_obstacle_supervisor_loop(
@@ -640,54 +622,14 @@ def build_obstacle_supervisor_loop(
     cycle1_outcome_observed: bool,
     cycle2_outcome_observed: bool,
 ) -> dict[str, Any]:
-    cycles = [dict(cycle1), dict(cycle2)]
-    conflicting_risks = sorted(
-        {
-            risk
-            for cycle in cycles
-            for risk in (
-                (cycle.get("decision") or {})
-                .get("assessment_inputs", {})
-                .get("conflicting_risks", [])
-            )
-        }
+    return _build_supervisor_loop_artifact(
+        supervisor_scope="obstacle_form3_sitl_only",
+        primary_trigger="route_blocking_obstacle_verified",
+        cycle1=cycle1,
+        cycle2=cycle2,
+        cycle1_outcome_observed=cycle1_outcome_observed,
+        cycle2_outcome_observed=cycle2_outcome_observed,
     )
-    supervisor_loop_claim_supported = bool(
-        cycle1_outcome_observed and cycle2_outcome_observed and not conflicting_risks
-    )
-    return {
-        "schema_version": "mission_os_supervisor_recovery_loop.v1",
-        "decision_loop_driver": "mission_os_supervisor",
-        "supervisor_scope": "obstacle_form3_sitl_only",
-        "full_gateway_runtime_loop": False,
-        "primary_trigger": "route_blocking_obstacle_verified",
-        "assessment_mode": "compound_mission_state_assessment",
-        "cycle_count": 2 if supervisor_loop_claim_supported else 1,
-        "supervisor_loop_claim_supported": supervisor_loop_claim_supported,
-        "conflicting_risks": conflicting_risks,
-        "cycles": cycles,
-        "cycle1_supervisor_decision_observed": True,
-        "cycle1_backend_action_request_observed": True,
-        "cycle1_backend_action_receipt_observed": bool(
-            cycle1.get("action_receipt", {}).get("dispatch_ref")
-        ),
-        "cycle1_outcome_observation_observed": cycle1_outcome_observed,
-        "cycle2_supervisor_decision_observed": True,
-        "cycle2_backend_action_request_observed": True,
-        "cycle2_backend_action_receipt_observed": bool(
-            cycle2.get("action_receipt", {}).get("dispatch_ref")
-        ),
-        "cycle2_outcome_observation_observed": cycle2_outcome_observed,
-        "authority_boundary": {
-            "ai_judgment_is_gate_verdict": False,
-            "ai_judgment_created_dispatch_authority": False,
-            "llm_gate_judge_used": False,
-            "dispatch_authority_created": False,
-            "delivery_completion_claimed": False,
-            "hardware_target_allowed": False,
-            "physical_execution_invoked": False,
-        },
-    }
 
 
 def payload_supervisor_assessment_inputs(
@@ -798,102 +740,31 @@ def build_payload_supervisor_cycle(
     outcome_state_label: str | None = None,
     pose_z_m: float | None = None,
 ) -> dict[str, Any]:
-    decision_id = (
-        "mission_os_recovery_decision:payload_advisory_supervisor_bounded_rtl"
+    identity_suffix = (
+        "payload_advisory_supervisor_bounded_rtl"
         if cycle_index == 1
-        else "mission_os_recovery_decision:payload_rtl_state_supervisor_bounded_land"
+        else "payload_rtl_state_supervisor_bounded_land"
     )
-    request_id = (
-        "mission_os_backend_action_request:payload_advisory_supervisor_bounded_rtl"
-        if cycle_index == 1
-        else "mission_os_backend_action_request:payload_rtl_state_supervisor_bounded_land"
+    return _build_supervisor_cycle_artifact(
+        cycle_index=cycle_index,
+        identity_suffix=identity_suffix,
+        supervisor_scope="payload_form3_sitl_only",
+        primary_trigger="payload_feasibility_advisory_operator_review_required",
+        observation_ref=observation_ref,
+        response_ref=response_ref,
+        selected_bounded_action=selected_bounded_action,
+        assessment_inputs=assessment_inputs,
+        dispatch_ref=dispatch_ref,
+        dispatch_status=dispatch_status,
+        dispatch_observed=str(dispatch_ref or "").startswith(
+            "px4_gazebo_emergency_command_dispatch_result:"
+        ),
+        approval_ref=approval_ref,
+        outcome_ref=outcome_ref,
+        outcome_observed=outcome_observed,
+        outcome_state_label=outcome_state_label,
+        pose_z_m=pose_z_m,
     )
-    receipt_id = (
-        "mission_os_backend_action_receipt:payload_advisory_supervisor_bounded_rtl"
-        if cycle_index == 1
-        else "mission_os_backend_action_receipt:payload_rtl_state_supervisor_bounded_land"
-    )
-    outcome_id = (
-        "mission_os_recovery_outcome_observation:payload_advisory_supervisor_bounded_rtl"
-        if cycle_index == 1
-        else "mission_os_recovery_outcome_observation:payload_rtl_state_supervisor_bounded_land"
-    )
-    return {
-        "cycle_index": cycle_index,
-        "decision_ref": decision_id,
-        "action_request_ref": request_id,
-        "action_receipt_ref": receipt_id,
-        "outcome_observation_ref": outcome_id,
-        "decision": {
-            "schema_version": "mission_os_recovery_decision.v1",
-            "decision_id": decision_id,
-            "cycle_index": cycle_index,
-            "decision_loop_driver": "mission_os_supervisor",
-            "supervisor_scope": "payload_form3_sitl_only",
-            "full_gateway_runtime_loop": False,
-            "source_observation_ref": observation_ref,
-            "mission_response_candidate_ref": response_ref,
-            "primary_trigger": "payload_feasibility_advisory_operator_review_required",
-            "assessment_inputs": dict(assessment_inputs),
-            "mission_state_interpretation": assessment_inputs[
-                "mission_state_interpretation"
-            ],
-            "selected_bounded_action": selected_bounded_action,
-            "operator_approval_required": True,
-            "automatic_dispatch_allowed": False,
-            "operator_approved_dispatch_allowed": approval_ref is not None,
-            "ai_judgment_is_gate_verdict": False,
-            "ai_judgment_created_dispatch_authority": False,
-            "llm_gate_judge_used": False,
-            "created_dispatch_authority": False,
-            "delivery_completion_claimed": False,
-            "hardware_target_allowed": False,
-            "physical_execution_invoked": False,
-        },
-        "action_request": {
-            "schema_version": "mission_os_backend_action_request.v1",
-            "request_id": request_id,
-            "cycle_index": cycle_index,
-            "decision_ref": decision_id,
-            "backend_target": "px4_gazebo_sitl",
-            "bounded_action": selected_bounded_action,
-            "expected_dispatch_ref": dispatch_ref,
-            "approval_ref": approval_ref,
-            "allowlisted_action": True,
-            "operator_approved": approval_ref is not None,
-            "automatic_dispatch_allowed": False,
-            "dispatch_authority_created": False,
-            "hardware_target_allowed": False,
-            "physical_execution_invoked": False,
-        },
-        "action_receipt": {
-            "schema_version": "mission_os_backend_action_receipt.v1",
-            "receipt_id": receipt_id,
-            "cycle_index": cycle_index,
-            "action_request_ref": request_id,
-            "dispatch_ref": dispatch_ref,
-            "dispatch_status": dispatch_status,
-            "dispatch_observed": str(dispatch_ref or "").startswith(
-                "px4_gazebo_emergency_command_dispatch_result:"
-            ),
-            "backend_target": "px4_gazebo_sitl",
-            "hardware_target_allowed": False,
-            "physical_execution_invoked": False,
-        },
-        "outcome_observation": {
-            "schema_version": "mission_os_recovery_outcome_observation.v1",
-            "observation_id": outcome_id,
-            "cycle_index": cycle_index,
-            "action_receipt_ref": receipt_id,
-            "outcome_observation_ref": outcome_ref,
-            "outcome_observed": outcome_observed,
-            "state_label": outcome_state_label,
-            "pose_z_m": pose_z_m,
-            "delivery_completion_claimed": False,
-            "hardware_target_allowed": False,
-            "physical_execution_invoked": False,
-        },
-    }
 
 
 def build_payload_supervisor_loop(
@@ -903,54 +774,14 @@ def build_payload_supervisor_loop(
     cycle1_outcome_observed: bool,
     cycle2_outcome_observed: bool,
 ) -> dict[str, Any]:
-    cycles = [dict(cycle1), dict(cycle2)]
-    conflicting_risks = sorted(
-        {
-            risk
-            for cycle in cycles
-            for risk in (
-                (cycle.get("decision") or {})
-                .get("assessment_inputs", {})
-                .get("conflicting_risks", [])
-            )
-        }
+    return _build_supervisor_loop_artifact(
+        supervisor_scope="payload_form3_sitl_only",
+        primary_trigger="payload_feasibility_advisory_operator_review_required",
+        cycle1=cycle1,
+        cycle2=cycle2,
+        cycle1_outcome_observed=cycle1_outcome_observed,
+        cycle2_outcome_observed=cycle2_outcome_observed,
     )
-    supervisor_loop_claim_supported = bool(
-        cycle1_outcome_observed and cycle2_outcome_observed and not conflicting_risks
-    )
-    return {
-        "schema_version": "mission_os_supervisor_recovery_loop.v1",
-        "decision_loop_driver": "mission_os_supervisor",
-        "supervisor_scope": "payload_form3_sitl_only",
-        "full_gateway_runtime_loop": False,
-        "primary_trigger": "payload_feasibility_advisory_operator_review_required",
-        "assessment_mode": "compound_mission_state_assessment",
-        "cycle_count": 2 if supervisor_loop_claim_supported else 1,
-        "supervisor_loop_claim_supported": supervisor_loop_claim_supported,
-        "conflicting_risks": conflicting_risks,
-        "cycles": cycles,
-        "cycle1_supervisor_decision_observed": True,
-        "cycle1_backend_action_request_observed": True,
-        "cycle1_backend_action_receipt_observed": bool(
-            cycle1.get("action_receipt", {}).get("dispatch_ref")
-        ),
-        "cycle1_outcome_observation_observed": cycle1_outcome_observed,
-        "cycle2_supervisor_decision_observed": True,
-        "cycle2_backend_action_request_observed": True,
-        "cycle2_backend_action_receipt_observed": bool(
-            cycle2.get("action_receipt", {}).get("dispatch_ref")
-        ),
-        "cycle2_outcome_observation_observed": cycle2_outcome_observed,
-        "authority_boundary": {
-            "ai_judgment_is_gate_verdict": False,
-            "ai_judgment_created_dispatch_authority": False,
-            "llm_gate_judge_used": False,
-            "dispatch_authority_created": False,
-            "delivery_completion_claimed": False,
-            "hardware_target_allowed": False,
-            "physical_execution_invoked": False,
-        },
-    }
 
 
 __all__ = [
