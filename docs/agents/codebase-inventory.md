@@ -20,12 +20,12 @@ live. No file is safe to delete solely because it has no static importer.
 
 ## Current cleanup branch result
 
-As of `codex/codebase-inventory` after the fourth PX4/Gazebo monolith
+As of `codex/codebase-inventory` after the fifth PX4/Gazebo monolith
 extraction:
 
-- tracked Python: 274,803 lines, down 22,006 lines from the baseline (7.41%)
-- `smoke_*.py`: 69 files / 37,113 lines, down from 135 files / 52,004 lines
-- automated verification: 643 passed, 5 warnings
+- tracked Python: 275,016 lines, down 21,793 lines from the baseline (7.34%)
+- `smoke_*.py`: 69 files / 37,012 lines, down from 135 files / 52,004 lines
+- automated verification: 646 passed, 5 warnings
 - runtime verification: `python -m src.quickstart_smoke --json` created and
   completed fresh task `task_e5e900c70d95` in an isolated SQLite store without
   a model or bridge
@@ -51,7 +51,7 @@ files:
 | File | Lines | Main maintenance risk |
 |---|---:|---|
 | `packages/missionos-cli/src/missionos_cli/cli.py` | 12,866 | CLI, chat, companion processes, maps, and HTML rendering share one module |
-| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 11,526 | a production dispatch backend is exposed through a 2,106-line `main` function |
+| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 11,425 | a production dispatch backend is exposed through a 2,106-line `main` function |
 | `src/gateway/server.py` | 11,932 | route registration, orchestration, robot-specific handling, and recovery are coupled |
 | `src/runtime/digital_twin_mission_environment.py` | 9,961 | environment construction and PX4/Gazebo mechanics are coupled |
 | `src/runtime/turtlebot3_home_mission.py` | 9,808 | proposal, approval, resolver, execution, verification, UI evidence, and repair share one module |
@@ -439,6 +439,22 @@ process and bound its UDP listener without Docker. It completed with
 entrypoint remained fail-closed without opt-in. The entrypoint fell from 11,622
 to 11,526 lines. Total Python grew by 344 lines because execution mechanics now
 have an explicit interface and maintained failure-path coverage.
+
+The fifth extraction moved route-process construction and pose-deviation
+monitoring into the same execution module. Process creation, clock, sleep,
+pose sampling, trace append, distance calculation, and the recovery callback
+are explicit dependencies. This makes the ordering reviewable: the route
+stream is terminated and reaped before a deviation callback can request a new
+bounded recovery. A timeout terminates the process before another pose sample,
+and normal completion only reports the helper payload after its process exits
+successfully.
+
+Three additional tests cover normal monitored completion, deviation abort and
+stream-stop-before-recovery ordering, and timeout without post-timeout sampling.
+A fixture runtime used a real child process and observed five pose samples
+before `sent=true` with no deviation. The opt-in entrypoint remained
+fail-closed. It fell from 11,526 to 11,425 lines; total Python grew by 213 lines
+for the injected execution interface and its deterministic process tests.
 
 ## Protected regression baseline
 
