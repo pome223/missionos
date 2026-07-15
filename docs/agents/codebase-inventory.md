@@ -20,10 +20,10 @@ live. No file is safe to delete solely because it has no static importer.
 
 ## Current cleanup branch result
 
-As of `codex/codebase-inventory` after the thirteenth PX4/Gazebo monolith
+As of `codex/codebase-inventory` after the fourteenth PX4/Gazebo monolith
 extraction:
 
-- tracked Python: 276,588 lines, down 20,221 lines from the baseline (6.81%)
+- tracked Python: 276,419 lines, down 20,390 lines from the baseline (6.87%)
 - `smoke_*.py`: 69 files / 35,931 lines, down from 135 files / 52,004 lines
 - automated verification: 700 passed, 5 warnings
 - runtime verification: `python -m src.quickstart_smoke --json` created and
@@ -602,6 +602,23 @@ cycle; authority, completion, and physical-execution fields remained false.
 The opt-in gate still stopped external execution. The entrypoint fell from
 10,540 to 10,344 lines. Total Python grew by 219 lines for the explicit package
 boundary and regression coverage.
+
+The fourteenth extraction consolidated the three now-packaged supervisor
+implementations. Wind, obstacle, and payload wrappers retain their own scope,
+trigger, identity suffix, and observation semantics, while one internal cycle
+builder owns the shared decision, action-request, receipt, outcome, approval,
+and false-authority fields. One loop builder owns two-cycle support,
+conflicting-risk aggregation, receipts, outcomes, and the common authority
+boundary. Wind-only secondary-risk and observed-cycle fields remain explicit
+options rather than copied implementations.
+
+The existing 14 supervisor contracts and the full 700-test suite passed without
+new compatibility fixtures. A runtime fixture created approved two-cycle loops
+and unapproved control cycles for all three supervisor kinds. Every approved
+loop retained false dispatch-authority and delivery-completion fields, and all
+unapproved controls remained unapproved. External execution remained gated.
+The supervision package fell from 968 to 799 lines, reducing tracked Python by
+169 lines without deleting a supervisor capability.
 
 ## Protected regression baseline
 
