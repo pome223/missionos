@@ -20,12 +20,12 @@ live. No file is safe to delete solely because it has no static importer.
 
 ## Current cleanup branch result
 
-As of `codex/codebase-inventory` after the tenth PX4/Gazebo monolith
+As of `codex/codebase-inventory` after the eleventh PX4/Gazebo monolith
 extraction:
 
-- tracked Python: 275,818 lines, down 20,991 lines from the baseline (7.07%)
-- `smoke_*.py`: 69 files / 36,658 lines, down from 135 files / 52,004 lines
-- automated verification: 686 passed, 5 warnings
+- tracked Python: 276,142 lines, down 20,667 lines from the baseline (6.96%)
+- `smoke_*.py`: 69 files / 36,352 lines, down from 135 files / 52,004 lines
+- automated verification: 692 passed, 5 warnings
 - runtime verification: `python -m src.quickstart_smoke --json` created and
   completed fresh task `task_e5e900c70d95` in an isolated SQLite store without
   a model or bridge
@@ -51,7 +51,7 @@ files:
 | File | Lines | Main maintenance risk |
 |---|---:|---|
 | `packages/missionos-cli/src/missionos_cli/cli.py` | 12,866 | CLI, chat, companion processes, maps, and HTML rendering share one module |
-| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 11,071 | a production dispatch backend is exposed through a 2,106-line `main` function |
+| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 10,765 | a production dispatch backend is exposed through a 2,106-line `main` function |
 | `src/gateway/server.py` | 11,932 | route registration, orchestration, robot-specific handling, and recovery are coupled |
 | `src/runtime/digital_twin_mission_environment.py` | 9,961 | environment construction and PX4/Gazebo mechanics are coupled |
 | `src/runtime/turtlebot3_home_mission.py` | 9,808 | proposal, approval, resolver, execution, verification, UI evidence, and repair share one module |
@@ -545,6 +545,27 @@ observed matching pose, waypoints, and contact topic with dispatch and physical
 execution false. The external entrypoint remained fail-closed without opt-in.
 It fell from 11,140 to 11,071 lines. Total Python grew by 83 lines because the
 new package boundary has focused regression coverage.
+
+The eleventh extraction introduced
+`src/runtime/px4_gazebo_route/supervision.py`. Wind assessment, recovery-cycle
+audit artifacts, and two-cycle loop aggregation now consume explicit profiles,
+observations, references, and outcome flags. The entrypoint only collects the
+current global summaries and forwards them. The package does not read process
+environment, mint approval or dispatch authority, execute an action, mutate a
+task, or claim delivery or physical execution.
+
+The extraction also corrected an existing truthful-status defect: a cycle with
+`approval_ref=None` previously emitted `operator_approved=true` and
+`operator_approved_dispatch_allowed=true`. Both fields now require an actual
+approval reference. Six contract cases cover nominal and four-risk compound
+assessment, unapproved and approved cycles, two-outcome loop support,
+conflict-driven fail-closed behavior, and entrypoint summary collection. A
+runtime fixture produced an unapproved cycle plus a separately approved
+two-cycle loop; the first stayed unapproved, while the loop retained false
+dispatch-authority, delivery-completion, and physical-execution fields. The
+external entrypoint remained fail-closed without opt-in. It fell from 11,071
+to 10,765 lines. Total Python grew by 324 lines because the 409-line package
+boundary and maintained tests replace implicit monolith behavior.
 
 ## Protected regression baseline
 
