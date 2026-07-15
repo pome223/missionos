@@ -11,6 +11,93 @@ import math
 from typing import Any, Mapping
 
 
+_BASE_REQUEST_ALIASES = {"1", "true", "yes", "on"}
+
+
+def _normalized_request(value: str | None) -> str:
+    return (value or "").strip().lower()
+
+
+def landing_zone_blocked_requested(value: str | None) -> bool:
+    return _normalized_request(value) in {*_BASE_REQUEST_ALIASES, "blocked"}
+
+
+def normalize_visibility_mode(value: str | None) -> str | None:
+    normalized = _normalized_request(value)
+    return normalized or None
+
+
+def no_fly_zone_marker_requested(value: str | None) -> bool:
+    return _normalized_request(value) in {
+        *_BASE_REQUEST_ALIASES,
+        "visual",
+        "marker",
+    }
+
+
+def traffic_conflict_marker_requested(value: str | None) -> bool:
+    return _normalized_request(value) in {
+        *_BASE_REQUEST_ALIASES,
+        "visual",
+        "marker",
+        "vehicle",
+    }
+
+
+def alternate_landing_marker_requested(value: str | None) -> bool:
+    return _normalized_request(value) in {
+        *_BASE_REQUEST_ALIASES,
+        "visual",
+        "marker",
+        "alternate",
+    }
+
+
+def rth_behavior_requested(value: str | None) -> bool:
+    return _normalized_request(value) in {
+        *_BASE_REQUEST_ALIASES,
+        "rtl",
+        "rth",
+        "return_to_launch",
+    }
+
+
+def moving_actor_marker_requested(value: str | None) -> bool:
+    return _normalized_request(value) in {
+        *_BASE_REQUEST_ALIASES,
+        "visual",
+        "marker",
+        "actor",
+    }
+
+
+def collision_obstacle_requested(value: str | None) -> bool:
+    return _normalized_request(value) in {
+        *_BASE_REQUEST_ALIASES,
+        "collision",
+        "obstacle",
+        "moving",
+    }
+
+
+def collision_obstacle_contact_topic_requested(value: str | None) -> bool:
+    return _normalized_request(value) in {
+        *_BASE_REQUEST_ALIASES,
+        "enabled",
+        "contact",
+        "topic",
+    }
+
+
+def multi_drone_conflict_probe_requested(value: str | None) -> bool:
+    return _normalized_request(value) in {
+        *_BASE_REQUEST_ALIASES,
+        "probe",
+        "multidrone",
+        "multi_drone",
+    }
+
+
 def build_wind_requested_profile(
     *,
     wind_mean_mps: float | None,
@@ -339,15 +426,25 @@ def thermal_motor_derate_factor_from_temperature(
 
 
 __all__ = [
+    "alternate_landing_marker_requested",
     "build_battery_requested_profile",
     "build_sensor_failure_requested_profile",
     "build_thermal_weather_requested_profile",
     "build_wind_requested_profile",
     "build_wind_compensation_request",
+    "collision_obstacle_contact_topic_requested",
+    "collision_obstacle_requested",
     "landing_z_threshold",
+    "landing_zone_blocked_requested",
+    "moving_actor_marker_requested",
+    "multi_drone_conflict_probe_requested",
+    "no_fly_zone_marker_requested",
     "normalize_mavlink_link_degradation_mode",
     "normalize_telemetry_dropout_mode",
+    "normalize_visibility_mode",
+    "rth_behavior_requested",
     "terrain_relative_xy_origin",
+    "traffic_conflict_marker_requested",
     "thermal_battery_drain_factor_from_temperature",
     "thermal_motor_derate_factor_from_temperature",
     "wind_compensation_xy_offset",

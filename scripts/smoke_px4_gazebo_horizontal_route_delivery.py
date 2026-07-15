@@ -83,22 +83,7 @@ from src.runtime.px4_gazebo_route.observation import (
     terminal_pose_summary_fields as _terminal_pose_summary_fields,
     xy_pairs_match as _xy_pairs_match,
 )
-from src.runtime.px4_gazebo_route.scenario import (
-    build_battery_requested_profile as _build_battery_requested_profile,
-    build_sensor_failure_requested_profile as _build_sensor_failure_requested_profile,
-    build_thermal_weather_requested_profile as _build_thermal_weather_requested_profile,
-    build_wind_compensation_request as _build_wind_compensation_request,
-    build_wind_requested_profile as _build_wind_requested_profile,
-    landing_z_threshold as _scenario_landing_z_threshold,
-    normalize_mavlink_link_degradation_mode as _normalize_mavlink_link_degradation_mode,
-    normalize_telemetry_dropout_mode as _normalize_telemetry_dropout_mode,
-    terrain_relative_xy_origin as _scenario_terrain_relative_xy_origin,
-    thermal_battery_drain_factor_from_temperature as _thermal_battery_drain_factor_from_temperature,
-    thermal_motor_derate_factor_from_temperature as _thermal_motor_derate_factor_from_temperature,
-    wind_compensation_xy_offset as _form2a_wind_compensation_xy_offset,
-    wind_feed_forward_xy_mps as _form2a_wind_feed_forward_xy_mps,
-    wind_vector as _wind_vector,
-)
+from src.runtime.px4_gazebo_route import scenario as _route_scenario
 from src.runtime.px4_gazebo_route.verification import (
     application_status_is_materialized as _application_status_is_materialized,
     px4_param_set_applied as _px4_param_set_applied,
@@ -127,6 +112,16 @@ from src.runtime.px4_gazebo_route.world import (
     wind_effects_world_sdf_patch as _wind_effects_world_sdf_patch,
 )
 from src.runtime.task_store import TaskStore
+
+_form2a_wind_compensation_xy_offset = _route_scenario.wind_compensation_xy_offset
+_form2a_wind_feed_forward_xy_mps = _route_scenario.wind_feed_forward_xy_mps
+_thermal_battery_drain_factor_from_temperature = (
+    _route_scenario.thermal_battery_drain_factor_from_temperature
+)
+_thermal_motor_derate_factor_from_temperature = (
+    _route_scenario.thermal_motor_derate_factor_from_temperature
+)
+_wind_vector = _route_scenario.wind_vector
 
 OPT_IN_ENV = "RUN_PX4_GAZEBO_HORIZONTAL_ROUTE_SMOKE"
 ARTIFACT_ROOT_ENV = "PX4_GAZEBO_HORIZONTAL_ROUTE_ARTIFACT_ROOT"
@@ -245,7 +240,7 @@ def _float_env(name: str, default: float = 0.0) -> float:
 
 
 def _form2a_wind_compensation_request() -> dict[str, Any]:
-    return _build_wind_compensation_request(
+    return _route_scenario.build_wind_compensation_request(
         selected_response_kind=os.getenv(
             MISSIONOS_FORM2A_SELECTED_RESPONSE_KIND_ENV,
             "",
@@ -413,63 +408,69 @@ def _payload_model_enabled() -> bool:
 
 
 def _landing_zone_blocked_requested() -> bool:
-    value = (os.getenv(LANDING_ZONE_BLOCKED_ENV) or "").strip().lower()
-    return value in ("1", "true", "yes", "on", "blocked")
+    return _route_scenario.landing_zone_blocked_requested(
+        os.getenv(LANDING_ZONE_BLOCKED_ENV)
+    )
 
 
 def _visibility_mode_request() -> str | None:
-    value = (os.getenv(VISIBILITY_MODE_ENV) or "").strip().lower()
-    if not value:
-        return None
-    return value
+    return _route_scenario.normalize_visibility_mode(os.getenv(VISIBILITY_MODE_ENV))
 
 
 def _no_fly_zone_marker_requested() -> bool:
-    value = (os.getenv(NO_FLY_ZONE_MARKER_ENV) or "").strip().lower()
-    return value in ("1", "true", "yes", "on", "visual", "marker")
+    return _route_scenario.no_fly_zone_marker_requested(
+        os.getenv(NO_FLY_ZONE_MARKER_ENV)
+    )
 
 
 def _traffic_conflict_marker_requested() -> bool:
-    value = (os.getenv(TRAFFIC_CONFLICT_MARKER_ENV) or "").strip().lower()
-    return value in ("1", "true", "yes", "on", "visual", "marker", "vehicle")
+    return _route_scenario.traffic_conflict_marker_requested(
+        os.getenv(TRAFFIC_CONFLICT_MARKER_ENV)
+    )
 
 
 def _alternate_landing_marker_requested() -> bool:
-    value = (os.getenv(ALTERNATE_LANDING_MARKER_ENV) or "").strip().lower()
-    return value in ("1", "true", "yes", "on", "visual", "marker", "alternate")
+    return _route_scenario.alternate_landing_marker_requested(
+        os.getenv(ALTERNATE_LANDING_MARKER_ENV)
+    )
 
 
 def _rth_behavior_requested() -> bool:
-    value = (os.getenv(RTH_BEHAVIOR_ENV) or "").strip().lower()
-    return value in ("1", "true", "yes", "on", "rtl", "rth", "return_to_launch")
+    return _route_scenario.rth_behavior_requested(os.getenv(RTH_BEHAVIOR_ENV))
 
 
 def _moving_actor_marker_requested() -> bool:
-    value = (os.getenv(MOVING_ACTOR_MARKER_ENV) or "").strip().lower()
-    return value in ("1", "true", "yes", "on", "visual", "marker", "actor")
+    return _route_scenario.moving_actor_marker_requested(
+        os.getenv(MOVING_ACTOR_MARKER_ENV)
+    )
 
 
 def _collision_obstacle_requested() -> bool:
-    value = (os.getenv(COLLISION_OBSTACLE_ENV) or "").strip().lower()
-    return value in ("1", "true", "yes", "on", "collision", "obstacle", "moving")
+    return _route_scenario.collision_obstacle_requested(
+        os.getenv(COLLISION_OBSTACLE_ENV)
+    )
 
 
 def _collision_obstacle_contact_topic_requested() -> bool:
-    value = (os.getenv(COLLISION_OBSTACLE_CONTACT_TOPIC_ENV) or "").strip().lower()
-    return value in ("1", "true", "yes", "on", "enabled", "contact", "topic")
+    return _route_scenario.collision_obstacle_contact_topic_requested(
+        os.getenv(COLLISION_OBSTACLE_CONTACT_TOPIC_ENV)
+    )
 
 
 def _multi_drone_conflict_probe_requested() -> bool:
-    value = (os.getenv(MULTI_DRONE_CONFLICT_PROBE_ENV) or "").strip().lower()
-    return value in ("1", "true", "yes", "on", "probe", "multidrone", "multi_drone")
+    return _route_scenario.multi_drone_conflict_probe_requested(
+        os.getenv(MULTI_DRONE_CONFLICT_PROBE_ENV)
+    )
 
 
 def _telemetry_dropout_mode_request() -> str:
-    return _normalize_telemetry_dropout_mode(os.getenv(TELEMETRY_DROPOUT_MODE_ENV))
+    return _route_scenario.normalize_telemetry_dropout_mode(
+        os.getenv(TELEMETRY_DROPOUT_MODE_ENV)
+    )
 
 
 def _mavlink_link_degradation_mode_request() -> str:
-    return _normalize_mavlink_link_degradation_mode(
+    return _route_scenario.normalize_mavlink_link_degradation_mode(
         os.getenv(MAVLINK_LINK_DEGRADATION_MODE_ENV)
     )
 
@@ -737,14 +738,14 @@ def _terrain_world_loaded_into_sitl() -> bool:
 
 
 def _terrain_relative_xy_origin(pickup_pose: dict[str, float]) -> tuple[float, float]:
-    return _scenario_terrain_relative_xy_origin(
+    return _route_scenario.terrain_relative_xy_origin(
         pickup_pose,
         terrain_world_loaded=_terrain_world_loaded_into_sitl(),
     )
 
 
 def _landing_z_threshold(pickup_pose: dict[str, float]) -> float:
-    return _scenario_landing_z_threshold(
+    return _route_scenario.landing_z_threshold(
         pickup_pose,
         terrain_world_loaded=_terrain_world_loaded_into_sitl(),
     )
@@ -990,7 +991,7 @@ def _reset_battery_status_cache() -> None:
 
 
 def _wind_requested_profile() -> dict[str, Any]:
-    return _build_wind_requested_profile(
+    return _route_scenario.build_wind_requested_profile(
         wind_mean_mps=_optional_float_env(WIND_MEAN_MPS_ENV),
         wind_direction_deg=_optional_float_env(WIND_DIRECTION_DEG_ENV),
         wind_gust_mps=_optional_float_env(WIND_GUST_MPS_ENV),
@@ -999,7 +1000,7 @@ def _wind_requested_profile() -> dict[str, Any]:
 
 
 def _thermal_weather_requested_profile() -> dict[str, Any]:
-    return _build_thermal_weather_requested_profile(
+    return _route_scenario.build_thermal_weather_requested_profile(
         temperature_c=_optional_float_env(TEMPERATURE_C_ENV),
         pressure_hpa=_optional_float_env(PRESSURE_HPA_ENV),
         thermal_battery_drain_factor=_optional_float_env(
@@ -1665,7 +1666,7 @@ def _vehicle_payload_mass_realism(
 
 
 def _battery_requested_profile() -> dict[str, Any]:
-    return _build_battery_requested_profile(
+    return _route_scenario.build_battery_requested_profile(
         battery_scenario=os.getenv(BATTERY_SCENARIO_ENV),
         requested_remaining_percent=_optional_float_env(
             BATTERY_REMAINING_PERCENT_ENV
@@ -2265,7 +2266,7 @@ def _refresh_battery_realism_observation_from_trace() -> None:
 
 
 def _sensor_failure_requested_profile() -> dict[str, Any]:
-    return _build_sensor_failure_requested_profile(
+    return _route_scenario.build_sensor_failure_requested_profile(
         sensor_component=os.getenv(SENSOR_FAILURE_COMPONENT_ENV),
         failure_type=os.getenv(SENSOR_FAILURE_TYPE_ENV),
     )

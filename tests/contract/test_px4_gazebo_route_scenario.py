@@ -146,6 +146,50 @@ def test_entrypoint_profile_wrappers_read_environment_only_at_boundary(
     ] == "gps"
 
 
+@pytest.mark.parametrize(
+    ("selector", "accepted"),
+    [
+        (scenario.landing_zone_blocked_requested, "blocked"),
+        (scenario.no_fly_zone_marker_requested, "visual"),
+        (scenario.traffic_conflict_marker_requested, "vehicle"),
+        (scenario.alternate_landing_marker_requested, "alternate"),
+        (scenario.rth_behavior_requested, "return_to_launch"),
+        (scenario.moving_actor_marker_requested, "actor"),
+        (scenario.collision_obstacle_requested, "obstacle"),
+        (scenario.collision_obstacle_contact_topic_requested, "contact"),
+        (scenario.multi_drone_conflict_probe_requested, "multi_drone"),
+    ],
+)
+def test_scenario_selectors_use_explicit_alias_allowlists(
+    selector: object,
+    accepted: str,
+) -> None:
+    assert callable(selector)
+    assert selector(f"  {accepted.upper()}  ") is True
+    assert selector("true") is True
+    assert selector("unexpected") is False
+    assert selector(None) is False
+
+
+def test_visibility_mode_normalization_is_value_only() -> None:
+    assert scenario.normalize_visibility_mode(None) is None
+    assert scenario.normalize_visibility_mode("  FOG  ") == "fog"
+
+
+def test_entrypoint_scenario_selector_wrappers_only_read_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(route_entrypoint.LANDING_ZONE_BLOCKED_ENV, "blocked")
+    monkeypatch.setenv(route_entrypoint.VISIBILITY_MODE_ENV, " fog ")
+    monkeypatch.setenv(route_entrypoint.RTH_BEHAVIOR_ENV, "rtl")
+    monkeypatch.setenv(route_entrypoint.COLLISION_OBSTACLE_ENV, "obstacle")
+
+    assert route_entrypoint._landing_zone_blocked_requested() is True
+    assert route_entrypoint._visibility_mode_request() == "fog"
+    assert route_entrypoint._rth_behavior_requested() is True
+    assert route_entrypoint._collision_obstacle_requested() is True
+
+
 def test_wind_geometry_uses_opposite_wind_vector() -> None:
     offset = scenario.wind_compensation_xy_offset(
         {
