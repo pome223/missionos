@@ -68,6 +68,12 @@ from src.runtime.px4_gazebo_route.observation import (
 )
 from src.runtime.px4_gazebo_route import scenario as _route_scenario
 from src.runtime.px4_gazebo_route import supervision as _route_supervision
+from src.runtime.px4_gazebo_route.artifacts import (
+    create_run_directory as _new_run_dir,
+    mark_cleanup_observed as _mark_cleanup_observed,
+    write_json as _write_json,
+    write_jsonl as _write_jsonl,
+)
 from src.runtime.px4_gazebo_route.configuration import (
     PAYLOAD_FEASIBILITY_ADVISORY_REF_PREFIX,
     parse_route_args as _parse_args,
@@ -139,7 +145,6 @@ _thermal_motor_derate_factor_from_temperature = (
 _wind_vector = _route_scenario.wind_vector
 
 OPT_IN_ENV = "RUN_PX4_GAZEBO_HORIZONTAL_ROUTE_SMOKE"
-ARTIFACT_ROOT_ENV = "PX4_GAZEBO_HORIZONTAL_ROUTE_ARTIFACT_ROOT"
 PREUPLOAD_MISSION_ENV = "PX4_GAZEBO_HORIZONTAL_ROUTE_PREUPLOAD_MISSION"
 SKIP_EMERGENCY_MAVLINK_ENV = "PX4_GAZEBO_HORIZONTAL_ROUTE_SKIP_EMERGENCY_MAVLINK"
 TERRAIN_WORLD_SDF_ENV = "PX4_GAZEBO_HORIZONTAL_ROUTE_TERRAIN_WORLD_SDF"
@@ -669,29 +674,6 @@ def _all_logs() -> str:
     return _run(["docker", "logs", CONTAINER_NAME], check=False).stdout
 
 
-def _artifact_root() -> Path:
-    return Path(os.getenv(ARTIFACT_ROOT_ENV, "output/px4_gazebo_route_runs"))
-
-
-def _new_run_dir() -> Path:
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    run_dir = _artifact_root() / f"horizontal_route_{stamp}"
-    suffix = 1
-    while run_dir.exists():
-        suffix += 1
-        run_dir = _artifact_root() / f"horizontal_route_{stamp}_{suffix}"
-    run_dir.mkdir(parents=True, exist_ok=False)
-    return run_dir
-
-
-def _write_json(path: Path, payload: Any) -> None:
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
-
-
-def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
-    path.write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in rows))
-
-
 def _reset_battery_status_cache() -> None:
     global _LAST_BATTERY_STATUS_SAMPLE_AT, _LAST_BATTERY_STATUS_SAMPLE
     _LAST_BATTERY_STATUS_SAMPLE_AT = 0.0
@@ -1150,20 +1132,6 @@ def _wind_realism_summary_artifacts(*, cleanup_status: str) -> dict[str, Any]:
             "physical_execution_invoked": False,
         },
     }
-
-
-def _mark_cleanup_observed(run_dir: Path) -> None:
-    summary_path = run_dir / "summary.json"
-    if not summary_path.exists():
-        return
-    summary = json.loads(summary_path.read_text())
-    cleanup = dict(summary.get("scenario_cleanup_receipt") or {})
-    if not cleanup:
-        return
-    cleanup["cleanup_status"] = "isolated_container_teardown_observed"
-    cleanup["observed_at"] = datetime.now(timezone.utc).isoformat()
-    summary["scenario_cleanup_receipt"] = cleanup
-    summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
 
 
 def _vehicle_payload_mass_realism(
