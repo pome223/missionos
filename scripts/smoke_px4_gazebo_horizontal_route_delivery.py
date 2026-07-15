@@ -29,14 +29,8 @@ from src.runtime.px4_gazebo_emergency_dispatcher import (
     build_px4_gazebo_emergency_command_approval,
     run_px4_gazebo_emergency_command_dispatch,
 )
-from src.runtime.px4_gazebo_route_delivery import (
-    build_px4_gazebo_route_delivery_completion_gate,
-    run_px4_gazebo_route_delivery_task,
-)
 from src.runtime.px4_gazebo_route_dispatcher import (
-    build_px4_gazebo_route_command_dispatch_result_from_observed_stream,
     build_px4_gazebo_route_deviation_abort,
-    build_px4_gazebo_route_progress_evidence,
     build_px4_gazebo_route_recovery_completion,
     derive_px4_gazebo_route_target_ned,
 )
@@ -50,6 +44,11 @@ from src.runtime.px4_gazebo_route.execution import (
     observe_mavlink_heartbeat_gap as _execute_mavlink_heartbeat_observer,
     run_route_with_monitor as _execute_route_with_monitor,
     send_embedded_helper as _execute_embedded_helper,
+)
+from src.runtime.px4_gazebo_route.finalization import (
+    RouteFinalizationInputs as _RouteFinalizationInputs,
+    RouteFinalizationResult as _RouteFinalizationResult,
+    finalize_route_observation as _finalize_route_observation,
 )
 from src.runtime.px4_gazebo_route.reporting import (
     RouteSummaryInputs as _RouteSummaryInputs,
@@ -8753,69 +8752,31 @@ def main() -> int:
                 rth_samples=rth_samples,
             )
             _refresh_horizontal_contact_topic_summary(run_dir)
-            dispatch = build_px4_gazebo_route_command_dispatch_result_from_observed_stream(
-                route_plan=route,
-                route_allowlist=route_allowlist,
-                approval=approval,
-                endpoint_port=ROUTE_MAVLINK_PX4_PORT,
-                target_x_m=route_delta_x,
-                target_y_m=route_delta_y,
-                target_z_m=target_z,
-                setpoint_frames_sent=int(route_send["setpoint_frames_sent"]),
-                setpoint_stream_duration_seconds=float(
-                    route_send["setpoint_stream_duration_seconds"]
-                ),
-                offboard_mode_switch_frame_sent=bool(route_send["offboard_mode_switch_frame_sent"]),
-                offboard_mode_switch_ack_observed=bool(
-                    route_send["offboard_mode_switch_ack_observed"]
-                ),
-                offboard_mode_switch_ack_result_code=route_send[
-                    "offboard_mode_switch_ack_result_code"
-                ],
-                offboard_mode_switch_ack_result_name=route_send[
-                    "offboard_mode_switch_ack_result_name"
-                ],
-                offboard_mode_switch_ack_timeout_seconds=float(
-                    route_send["offboard_mode_switch_ack_timeout_seconds"]
-                ),
-                now=NOW,
+            finalization: _RouteFinalizationResult = _finalize_route_observation(
+                _RouteFinalizationInputs(
+                    store=store,
+                    task_id=task["task_id"],
+                    route=route,
+                    route_allowlist=route_allowlist,
+                    approval=approval,
+                    endpoint_port=ROUTE_MAVLINK_PX4_PORT,
+                    target_x_m=route_delta_x,
+                    target_y_m=route_delta_y,
+                    target_z_m=target_z,
+                    route_stream=route_send,
+                    pickup_pose_xy_m=(pickup_pose["x"], pickup_pose["y"]),
+                    observed_pose_xy_m=(completed_pose["x"], completed_pose["y"]),
+                    horizontal_route_motion_observed=True,
+                    px4_telemetry_correlated=True,
+                    gazebo_pose_correlated=True,
+                    actual_px4_gazebo_horizontal_smoke_observed=True,
+                    now=NOW,
+                )
             )
-            progress = build_px4_gazebo_route_progress_evidence(
-                route_plan=route,
-                route_dispatch_result=dispatch,
-                pickup_pose_xy_m=(pickup_pose["x"], pickup_pose["y"]),
-                observed_pose_xy_m=(completed_pose["x"], completed_pose["y"]),
-                deviation_samples=route_send["deviation_samples"],
-                now=NOW,
-            )
-            store.update(
-                task["task_id"],
-                artifacts={
-                    "px4_gazebo_route_command_dispatch_result": dispatch.model_dump(mode="json"),
-                    "px4_gazebo_route_progress_evidence": progress.model_dump(mode="json"),
-                },
-            )
-            gate = build_px4_gazebo_route_delivery_completion_gate(
-                route_plan=route,
-                route_dispatch_result=dispatch,
-                route_progress_evidence=progress,
-                horizontal_route_motion_observed=True,
-                px4_telemetry_correlated=True,
-                gazebo_pose_correlated=True,
-                route_progress_age_seconds=0.0,
-                max_route_progress_age_seconds=5.0,
-                pose_observed=True,
-                expected_vehicle_ref="gazebo_vehicle:x500_0",
-                observed_vehicle_ref="gazebo_vehicle:x500_0",
-                actual_px4_gazebo_horizontal_smoke_observed=True,
-                now=NOW,
-            )
-            updated = run_px4_gazebo_route_delivery_task(
-                task["task_id"],
-                completion_gate=gate,
-                now=NOW,
-                task_store_factory=lambda: store,
-            )
+            dispatch = finalization.dispatch
+            progress = finalization.progress
+            gate = finalization.gate
+            updated = finalization.updated_task
             shutil.copy2(task_db_path, run_dir / "tasks.db")
 
         runner = updated["artifacts"]["px4_gazebo_route_delivery_runner_result"]
