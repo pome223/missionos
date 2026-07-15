@@ -20,13 +20,14 @@ live. No file is safe to delete solely because it has no static importer.
 
 ## Current cleanup branch result
 
-As of `codex/codebase-inventory` after the fixed-point orphan audit:
+As of `codex/codebase-inventory` after the Gazebo delivery contract
+consolidation:
 
-- tracked Python: 274,469 lines, down 22,340 lines from the baseline (7.53%)
-- `smoke_*.py`: 74 files / 39,252 lines, down from 135 files / 52,004 lines
-- automated verification: 608 passed, 5 warnings
+- tracked Python: 273,919 lines, down 22,890 lines from the baseline (7.71%)
+- `smoke_*.py`: 69 files / 38,221 lines, down from 135 files / 52,004 lines
+- automated verification: 620 passed, 5 warnings
 - runtime verification: `python -m src.quickstart_smoke --json` created and
-  completed fresh task `task_5a8ecf32a983` in an isolated SQLite store without
+  completed fresh task `task_e5e900c70d95` in an isolated SQLite store without
   a model or bridge
 
 The line reduction is not a capability claim. The deleted Compose entrypoints
@@ -345,6 +346,18 @@ and phase-derived SITL observations. The simulator command approval is asserted
 to be scoped only to a dry-run receipt; no external dispatch, Gazebo mutation,
 MAVLink/ROS/actuator action, mission upload, hardware target, or physical
 execution is permitted. No external simulator process is started by this suite.
+
+Five Gazebo delivery scenario, sidecar, and simulation-control scripts were
+then promoted into three contract modules. Tests now require deterministic and
+distinct scenario variants, task identity preservation, and no command, live,
+or physical authority. Sidecar coverage verifies the five-phase sequence,
+final `completed` phase, task-timeline status change, and attached evidence
+chain; the retired v0 script previously printed output without asserting these
+facts. Simulation-control cases separately cover a successful fixture run and
+fail-closed approval-missing, low-battery gate, contract-identity, and mission-
+identity failures. Blocked cases must skip the sidecar and runner. These tests
+do not start Gazebo, Docker, PX4, or hardware and make no external-runtime
+claim.
 
 ## Protected regression baseline
 
