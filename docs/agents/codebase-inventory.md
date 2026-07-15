@@ -20,12 +20,12 @@ live. No file is safe to delete solely because it has no static importer.
 
 ## Current cleanup branch result
 
-As of `codex/codebase-inventory` after the sixth PX4/Gazebo monolith
+As of `codex/codebase-inventory` after the seventh PX4/Gazebo monolith
 extraction:
 
-- tracked Python: 275,179 lines, down 21,630 lines from the baseline (7.29%)
-- `smoke_*.py`: 69 files / 36,914 lines, down from 135 files / 52,004 lines
-- automated verification: 651 passed, 5 warnings
+- tracked Python: 275,438 lines, down 21,371 lines from the baseline (7.20%)
+- `smoke_*.py`: 69 files / 36,807 lines, down from 135 files / 52,004 lines
+- automated verification: 665 passed, 5 warnings
 - runtime verification: `python -m src.quickstart_smoke --json` created and
   completed fresh task `task_e5e900c70d95` in an isolated SQLite store without
   a model or bridge
@@ -51,7 +51,7 @@ files:
 | File | Lines | Main maintenance risk |
 |---|---:|---|
 | `packages/missionos-cli/src/missionos_cli/cli.py` | 12,866 | CLI, chat, companion processes, maps, and HTML rendering share one module |
-| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 11,327 | a production dispatch backend is exposed through a 2,106-line `main` function |
+| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 11,220 | a production dispatch backend is exposed through a 2,106-line `main` function |
 | `src/gateway/server.py` | 11,932 | route registration, orchestration, robot-specific handling, and recovery are coupled |
 | `src/runtime/digital_twin_mission_environment.py` | 9,961 | environment construction and PX4/Gazebo mechanics are coupled |
 | `src/runtime/turtlebot3_home_mission.py` | 9,808 | proposal, approval, resolver, execution, verification, UI evidence, and repair share one module |
@@ -471,6 +471,26 @@ readback and rejected an empty obstacle artifact with eight reasons while
 keeping dispatch and completion false. The opt-in entrypoint remained
 fail-closed. It fell from 11,425 to 11,327 lines; total Python grew by 163 lines
 for the verifier boundary and regression coverage.
+
+The seventh extraction added `src/runtime/px4_gazebo_route/scenario.py` for
+explicit-value scenario decisions. Wind-compensation request construction,
+wind geometry, feed-forward ramping, telemetry and MAVLink degradation mode
+normalization, terrain-relative thresholds, wind vectors, and thermal factors
+now run without reading environment variables or touching runtime state. The
+entrypoint still owns every environment read and passes the resulting values
+into the pure helpers; this prevents scenario configuration from becoming an
+implicit approval or dispatch source.
+
+Fourteen contract cases cover legacy delegation, authority-free compensation
+artifacts, bounded ramp fractions, vector conventions, supported and unknown
+mode aliases, terrain materialization requirements, and thermal clamps. An
+entrypoint-level runtime command read real process environment values and
+created an enabled velocity-feed-forward request while retaining
+`automatic_dispatch_executed=false`, `physical_execution_invoked=false`,
+`hardware_target_allowed=false`, and `delivery_completion_claimed=false`. The
+external PX4/Gazebo entrypoint still exited before execution without explicit
+opt-in. It fell from 11,327 to 11,220 lines; total Python grew by 259 lines for
+the new boundary and its regression coverage.
 
 ## Protected regression baseline
 
