@@ -20,12 +20,12 @@ live. No file is safe to delete solely because it has no static importer.
 
 ## Current cleanup branch result
 
-As of `codex/codebase-inventory` after the twelfth PX4/Gazebo monolith
+As of `codex/codebase-inventory` after the thirteenth PX4/Gazebo monolith
 extraction:
 
-- tracked Python: 276,369 lines, down 20,440 lines from the baseline (6.89%)
-- `smoke_*.py`: 69 files / 36,127 lines, down from 135 files / 52,004 lines
-- automated verification: 696 passed, 5 warnings
+- tracked Python: 276,588 lines, down 20,221 lines from the baseline (6.81%)
+- `smoke_*.py`: 69 files / 35,931 lines, down from 135 files / 52,004 lines
+- automated verification: 700 passed, 5 warnings
 - runtime verification: `python -m src.quickstart_smoke --json` created and
   completed fresh task `task_e5e900c70d95` in an isolated SQLite store without
   a model or bridge
@@ -51,7 +51,7 @@ files:
 | File | Lines | Main maintenance risk |
 |---|---:|---|
 | `packages/missionos-cli/src/missionos_cli/cli.py` | 12,866 | CLI, chat, companion processes, maps, and HTML rendering share one module |
-| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 10,540 | a production dispatch backend is exposed through a 2,106-line `main` function |
+| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 10,344 | a production dispatch backend is exposed through a 2,106-line `main` function |
 | `src/gateway/server.py` | 11,932 | route registration, orchestration, robot-specific handling, and recovery are coupled |
 | `src/runtime/digital_twin_mission_environment.py` | 9,961 | environment construction and PX4/Gazebo mechanics are coupled |
 | `src/runtime/turtlebot3_home_mission.py` | 9,808 | proposal, approval, resolver, execution, verification, UI evidence, and repair share one module |
@@ -584,6 +584,24 @@ dispatch authority, delivery completion, and physical execution remained
 false. The external entrypoint still rejected execution without opt-in. It
 fell from 10,765 to 10,540 lines. Total Python grew by 227 lines for the
 explicit package boundary and regression coverage.
+
+The thirteenth extraction moved payload-advisory assessment, RTL and landing
+cycle artifacts, and payload-loop aggregation into the supervision package.
+The payload profile, battery observation, telemetry freshness, advisory ref,
+approval refs, and outcome observations are now explicit inputs. A payload
+advisory remains a risk input and never becomes evidence of dropoff or delivery
+completion.
+
+Payload cycles now use the same truthful approval rule as wind and obstacle
+cycles: without an approval reference, neither the decision nor action request
+claims operator approval. Four additional contract cases cover payload mass
+and advisory identity, compound risks, unapproved cycles, loop success and
+fail-closed behavior, and entrypoint summary collection. A runtime fixture
+produced a separately approved RTL and landing loop and an unapproved control
+cycle; authority, completion, and physical-execution fields remained false.
+The opt-in gate still stopped external execution. The entrypoint fell from
+10,540 to 10,344 lines. Total Python grew by 219 lines for the explicit package
+boundary and regression coverage.
 
 ## Protected regression baseline
 
