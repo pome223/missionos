@@ -20,12 +20,12 @@ live. No file is safe to delete solely because it has no static importer.
 
 ## Current cleanup branch result
 
-As of `codex/codebase-inventory` after the sixteenth PX4/Gazebo monolith
+As of `codex/codebase-inventory` after the seventeenth PX4/Gazebo monolith
 extraction:
 
-- tracked Python: 276,483 lines, down 20,326 lines from the baseline (6.85%)
-- `smoke_*.py`: 69 files / 35,837 lines, down from 135 files / 52,004 lines
-- automated verification: 704 passed, 5 warnings
+- tracked Python: 276,566 lines, down 20,243 lines from the baseline (6.82%)
+- `smoke_*.py`: 69 files / 35,797 lines, down from 135 files / 52,004 lines
+- automated verification: 709 passed, 5 warnings
 - runtime verification: `python -m src.quickstart_smoke --json` created and
   completed fresh task `task_e5e900c70d95` in an isolated SQLite store without
   a model or bridge
@@ -51,7 +51,7 @@ files:
 | File | Lines | Main maintenance risk |
 |---|---:|---|
 | `packages/missionos-cli/src/missionos_cli/cli.py` | 12,866 | CLI, chat, companion processes, maps, and HTML rendering share one module |
-| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 10,250 | a production dispatch backend is exposed through a 2,106-line `main` function |
+| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 10,210 | a production dispatch backend is exposed through a 2,106-line `main` function |
 | `src/gateway/server.py` | 11,932 | route registration, orchestration, robot-specific handling, and recovery are coupled |
 | `src/runtime/digital_twin_mission_environment.py` | 9,961 | environment construction and PX4/Gazebo mechanics are coupled |
 | `src/runtime/turtlebot3_home_mission.py` | 9,808 | proposal, approval, resolver, execution, verification, UI evidence, and repair share one module |
@@ -644,6 +644,24 @@ no-opt-in refusal, while an invalid action exited from `argparse` with status
 10,250 lines; total Python grew by 81 lines for the configuration boundary and
 its maintained regression tests.
 
+The seventeenth extraction moved payload-recovery configuration validation and
+planned route-stream budget validation into that same configuration owner. A
+payload supervisor loop must now pass one package-level gate that requires
+bounded RTL followed by LAND and a source-bound payload feasibility advisory
+reference. The stream duration and frame count remain constrained by the
+dispatcher's existing allowlist constants. These checks validate configuration;
+they do not mint approval or dispatch authority and do not satisfy the separate
+external-execution opt-in.
+
+Five additional contracts preserve legacy entrypoint delegation, the no-
+recovery path, fail-closed supervisor requirements, advisory-source binding,
+the valid bounded sequence, and the stream duration ceiling. A direct runtime
+fixture accepted the source-bound RTL/LAND sequence and the 30-second stream
+limit. The real script invocation then reached the existing no-opt-in refusal
+with exit status 1. The full suite reached 709 passing tests. The entrypoint
+fell from 10,250 to 10,210 lines; total Python grew by 83 lines for the explicit
+validation boundary and maintained tests.
+
 ## Protected regression baseline
 
 Every reduction PR must keep these facts separate and test them independently:
@@ -658,7 +676,7 @@ Every reduction PR must keep these facts separate and test them independently:
 - completion scope claimed
 - repair created a new observation and a fresh checkpoint
 
-The current public contract suite (`554 passed`) is the minimum automated gate.
+The current public contract suite (`709 passed`) is the minimum automated gate.
 Runtime-boundary changes also require the exact smoke or live E2E required by
 `AGENTS.md`. For TurtleBot3 recovery, preserve the public PR #15 scenario: two
 separately approved recovery cycles, route completion, common task identity
