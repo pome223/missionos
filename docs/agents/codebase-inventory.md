@@ -20,12 +20,12 @@ live. No file is safe to delete solely because it has no static importer.
 
 ## Current cleanup branch result
 
-As of `codex/codebase-inventory` after the fifteenth PX4/Gazebo monolith
+As of `codex/codebase-inventory` after the sixteenth PX4/Gazebo monolith
 extraction:
 
-- tracked Python: 276,402 lines, down 20,407 lines from the baseline (6.88%)
-- `smoke_*.py`: 69 files / 35,931 lines, down from 135 files / 52,004 lines
-- automated verification: 700 passed, 5 warnings
+- tracked Python: 276,483 lines, down 20,326 lines from the baseline (6.85%)
+- `smoke_*.py`: 69 files / 35,837 lines, down from 135 files / 52,004 lines
+- automated verification: 704 passed, 5 warnings
 - runtime verification: `python -m src.quickstart_smoke --json` created and
   completed fresh task `task_e5e900c70d95` in an isolated SQLite store without
   a model or bridge
@@ -51,7 +51,7 @@ files:
 | File | Lines | Main maintenance risk |
 |---|---:|---|
 | `packages/missionos-cli/src/missionos_cli/cli.py` | 12,866 | CLI, chat, companion processes, maps, and HTML rendering share one module |
-| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 10,344 | a production dispatch backend is exposed through a 2,106-line `main` function |
+| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 10,250 | a production dispatch backend is exposed through a 2,106-line `main` function |
 | `src/gateway/server.py` | 11,932 | route registration, orchestration, robot-specific handling, and recovery are coupled |
 | `src/runtime/digital_twin_mission_environment.py` | 9,961 | environment construction and PX4/Gazebo mechanics are coupled |
 | `src/runtime/turtlebot3_home_mission.py` | 9,808 | proposal, approval, resolver, execution, verification, UI evidence, and repair share one module |
@@ -628,6 +628,21 @@ suite remained green. A runtime fixture fed the same nonnumeric warning and
 telemetry gap into wind, obstacle, and payload assessments; all three produced
 the same two risks while automatic dispatch and physical execution remained
 false. The supervision package fell from 799 to 782 lines.
+
+The sixteenth extraction added
+`src/runtime/px4_gazebo_route/configuration.py` for the opt-in route program's
+argument parser. Scenario flags, bounded recovery choices, deviation behavior,
+and payload advisory references now have one configuration owner outside the
+execution entrypoint. Parsing a flag still does not satisfy the separate
+external-execution opt-in or create approval or dispatch authority.
+
+Four contract cases preserve legacy delegation, every default, all explicit
+scenario flags, and rejection of unlisted deviation and recovery actions. A
+real CLI invocation with valid supervisor arguments reached the existing
+no-opt-in refusal, while an invalid action exited from `argparse` with status
+2. The full suite reached 704 passing tests. The entrypoint fell from 10,344 to
+10,250 lines; total Python grew by 81 lines for the configuration boundary and
+its maintained regression tests.
 
 ## Protected regression baseline
 
