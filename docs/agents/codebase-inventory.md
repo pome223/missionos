@@ -20,10 +20,10 @@ live. No file is safe to delete solely because it has no static importer.
 
 ## Current cleanup branch result
 
-As of `codex/codebase-inventory` after the fourteenth PX4/Gazebo monolith
+As of `codex/codebase-inventory` after the fifteenth PX4/Gazebo monolith
 extraction:
 
-- tracked Python: 276,419 lines, down 20,390 lines from the baseline (6.87%)
+- tracked Python: 276,402 lines, down 20,407 lines from the baseline (6.88%)
 - `smoke_*.py`: 69 files / 35,931 lines, down from 135 files / 52,004 lines
 - automated verification: 700 passed, 5 warnings
 - runtime verification: `python -m src.quickstart_smoke --json` created and
@@ -619,6 +619,15 @@ loop retained false dispatch-authority and delivery-completion fields, and all
 unapproved controls remained unapproved. External execution remained gated.
 The supervision package fell from 968 to 799 lines, reducing tracked Python by
 169 lines without deleting a supervisor capability.
+
+The fifteenth extraction consolidated the repeated battery-warning and
+telemetry-freshness interpretation used by all three assessments. A single pair
+of helpers now defines how missing, numeric, and nonnumeric PX4 warning values
+and observed telemetry gaps become active conflict signals. The full 700-test
+suite remained green. A runtime fixture fed the same nonnumeric warning and
+telemetry gap into wind, obstacle, and payload assessments; all three produced
+the same two risks while automatic dispatch and physical execution remained
+false. The supervision package fell from 799 to 782 lines.
 
 ## Protected regression baseline
 
