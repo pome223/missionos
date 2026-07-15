@@ -16,7 +16,7 @@ import shutil
 import subprocess
 import time
 from tempfile import TemporaryDirectory
-from typing import Any, Callable, Mapping
+from typing import Any, Callable
 import xml.etree.ElementTree as ET
 
 from scripts import smoke_px4_gazebo_collision_contact_event as contact_event_smoke
@@ -82,6 +82,18 @@ from src.runtime.px4_gazebo_route.observation import (
     select_contact_topic as _select_contact_topic,
     terminal_pose_summary_fields as _terminal_pose_summary_fields,
     xy_pairs_match as _xy_pairs_match,
+)
+from src.runtime.px4_gazebo_route.scenario import (
+    build_wind_compensation_request as _build_wind_compensation_request,
+    landing_z_threshold as _scenario_landing_z_threshold,
+    normalize_mavlink_link_degradation_mode as _normalize_mavlink_link_degradation_mode,
+    normalize_telemetry_dropout_mode as _normalize_telemetry_dropout_mode,
+    terrain_relative_xy_origin as _scenario_terrain_relative_xy_origin,
+    thermal_battery_drain_factor_from_temperature as _thermal_battery_drain_factor_from_temperature,
+    thermal_motor_derate_factor_from_temperature as _thermal_motor_derate_factor_from_temperature,
+    wind_compensation_xy_offset as _form2a_wind_compensation_xy_offset,
+    wind_feed_forward_xy_mps as _form2a_wind_feed_forward_xy_mps,
+    wind_vector as _wind_vector,
 )
 from src.runtime.px4_gazebo_route.verification import (
     application_status_is_materialized as _application_status_is_materialized,
@@ -229,94 +241,32 @@ def _float_env(name: str, default: float = 0.0) -> float:
 
 
 def _form2a_wind_compensation_request() -> dict[str, Any]:
-    selected_response = os.getenv(MISSIONOS_FORM2A_SELECTED_RESPONSE_KIND_ENV, "")
-    compensated_route = os.getenv(WIND_COMPENSATED_ROUTE_ENV) == "1"
-    method = os.getenv(WIND_COMPENSATION_METHOD_ENV, "static_target_offset")
-    offset_m = _float_env(WIND_PREEMPTIVE_OFFSET_M_ENV, 0.0)
-    direction_deg = _float_env(WIND_PREEMPTIVE_OFFSET_DIRECTION_DEG_ENV, 90.0)
-    feed_forward_mps = _float_env(WIND_FEED_FORWARD_MPS_ENV, 0.0)
-    ramp_start_fraction = _float_env(WIND_FEED_FORWARD_RAMP_START_FRACTION_ENV, 0.65)
-    ramp_end_fraction = _float_env(WIND_FEED_FORWARD_RAMP_END_FRACTION_ENV, 0.9)
-    ramp_start_fraction = min(max(ramp_start_fraction, 0.0), 1.0)
-    ramp_end_fraction = min(max(ramp_end_fraction, ramp_start_fraction), 1.0)
-    offset_enabled = bool(
-        compensated_route and method == "static_target_offset" and offset_m > 0.0
+    return _build_wind_compensation_request(
+        selected_response_kind=os.getenv(
+            MISSIONOS_FORM2A_SELECTED_RESPONSE_KIND_ENV,
+            "",
+        ),
+        compensated_route_requested=os.getenv(WIND_COMPENSATED_ROUTE_ENV) == "1",
+        compensation_method=os.getenv(
+            WIND_COMPENSATION_METHOD_ENV,
+            "static_target_offset",
+        ),
+        preemptive_offset_m=_float_env(WIND_PREEMPTIVE_OFFSET_M_ENV, 0.0),
+        preemptive_offset_direction_deg=_float_env(
+            WIND_PREEMPTIVE_OFFSET_DIRECTION_DEG_ENV,
+            90.0,
+        ),
+        feed_forward_mps=_float_env(WIND_FEED_FORWARD_MPS_ENV, 0.0),
+        feed_forward_ramp_start_fraction=_float_env(
+            WIND_FEED_FORWARD_RAMP_START_FRACTION_ENV,
+            0.65,
+        ),
+        feed_forward_ramp_end_fraction=_float_env(
+            WIND_FEED_FORWARD_RAMP_END_FRACTION_ENV,
+            0.9,
+        ),
+        source_response_kind=os.getenv(WIND_COMPENSATION_SOURCE_RESPONSE_ENV, ""),
     )
-    feed_forward_enabled = bool(
-        compensated_route
-        and method == "mid_route_velocity_feed_forward"
-        and feed_forward_mps > 0.0
-    )
-    return {
-        "schema_version": "missionos_form2a_wind_compensation_request.v1",
-        "selected_response_kind": selected_response,
-        "compensation_method": method,
-        "compensated_route_requested": compensated_route,
-        "preemptive_offset_m": offset_m,
-        "preemptive_offset_direction_deg": direction_deg,
-        "preemptive_offset_direction_convention": "opposite_wind_vector_xy",
-        "feed_forward_mps": feed_forward_mps,
-        "feed_forward_direction_deg": direction_deg,
-        "feed_forward_direction_convention": "opposite_wind_vector_xy",
-        "feed_forward_phase_schedule": "full_then_linear_ramp_down",
-        "feed_forward_ramp_start_fraction": ramp_start_fraction,
-        "feed_forward_ramp_end_fraction": ramp_end_fraction,
-        "source_response_kind": os.getenv(WIND_COMPENSATION_SOURCE_RESPONSE_ENV, ""),
-        "route_geometry_compensation_applied": offset_enabled,
-        "velocity_feed_forward_applied": feed_forward_enabled,
-        "progress_counted": False,
-        "drone_physics_affected": False,
-        "automatic_dispatch_executed": False,
-        "physical_execution_invoked": False,
-        "hardware_target_allowed": False,
-        "delivery_completion_claimed": False,
-    }
-
-
-def _form2a_wind_compensation_xy_offset(
-    request: Mapping[str, Any],
-) -> tuple[float, float]:
-    if request.get("route_geometry_compensation_applied") is not True:
-        return (0.0, 0.0)
-    offset_m = float(request.get("preemptive_offset_m") or 0.0)
-    direction_rad = math.radians(float(request.get("preemptive_offset_direction_deg") or 0.0))
-    wind_unit_x = math.sin(direction_rad)
-    wind_unit_y = math.cos(direction_rad)
-    return (-offset_m * wind_unit_x, -offset_m * wind_unit_y)
-
-
-def _form2a_wind_feed_forward_xy_mps(
-    request: Mapping[str, Any],
-) -> tuple[float, float]:
-    if request.get("velocity_feed_forward_applied") is not True:
-        return (0.0, 0.0)
-    feed_forward_mps = float(request.get("feed_forward_mps") or 0.0)
-    direction_rad = math.radians(float(request.get("feed_forward_direction_deg") or 0.0))
-    wind_unit_x = math.sin(direction_rad)
-    wind_unit_y = math.cos(direction_rad)
-    return (-feed_forward_mps * wind_unit_x, -feed_forward_mps * wind_unit_y)
-
-
-def _form2a_wind_feed_forward_scale(
-    *,
-    elapsed_seconds: float,
-    duration_seconds: float,
-    ramp_start_fraction: float,
-    ramp_end_fraction: float,
-) -> float:
-    if duration_seconds <= 0.0:
-        return 0.0
-    progress = min(max(elapsed_seconds / duration_seconds, 0.0), 1.0)
-    ramp_start_fraction = min(max(ramp_start_fraction, 0.0), 1.0)
-    ramp_end_fraction = min(max(ramp_end_fraction, ramp_start_fraction), 1.0)
-    if progress <= ramp_start_fraction:
-        return 1.0
-    if progress >= ramp_end_fraction:
-        return 0.0
-    ramp_span = ramp_end_fraction - ramp_start_fraction
-    if ramp_span <= 0.0:
-        return 0.0
-    return 1.0 - ((progress - ramp_start_fraction) / ramp_span)
 
 
 
@@ -511,41 +461,13 @@ def _multi_drone_conflict_probe_requested() -> bool:
 
 
 def _telemetry_dropout_mode_request() -> str:
-    value = (os.getenv(TELEMETRY_DROPOUT_MODE_ENV) or "").strip().lower()
-    aliases = {
-        "": "",
-        "none": "",
-        "off": "",
-        "observer": "observer_sample_pause",
-        "observer_side_dropout": "observer_sample_pause",
-        "observer_pose_gap": "observer_sample_pause",
-        "pose_gap": "observer_sample_pause",
-        "observer_sample_pause": "observer_sample_pause",
-        "sample_pause": "observer_sample_pause",
-    }
-    return aliases.get(value, value)
+    return _normalize_telemetry_dropout_mode(os.getenv(TELEMETRY_DROPOUT_MODE_ENV))
 
 
 def _mavlink_link_degradation_mode_request() -> str:
-    value = (os.getenv(MAVLINK_LINK_DEGRADATION_MODE_ENV) or "").strip().lower()
-    aliases = {
-        "": "",
-        "none": "",
-        "off": "",
-        "heartbeat": "heartbeat_observer",
-        "heartbeat_observer": "heartbeat_observer",
-        "heartbeat_gap_observer": "heartbeat_observer",
-        "mavlink_heartbeat_observer": "heartbeat_observer",
-        "bounded_link_loss": "bounded_link_loss",
-        "bounded_mavlink_link_loss": "bounded_link_loss",
-        "link_loss": "bounded_link_loss",
-        "mavlink_link_loss": "bounded_link_loss",
-        "link_loss_applicator": "bounded_link_loss",
-        "mavlink_link_loss_applicator": "bounded_link_loss",
-        "mavlink_link_loss_probe": "link_loss_probe",
-        "link_loss_probe": "link_loss_probe",
-    }
-    return aliases.get(value, value)
+    return _normalize_mavlink_link_degradation_mode(
+        os.getenv(MAVLINK_LINK_DEGRADATION_MODE_ENV)
+    )
 
 
 def _prepare_payload_model_root(
@@ -811,15 +733,17 @@ def _terrain_world_loaded_into_sitl() -> bool:
 
 
 def _terrain_relative_xy_origin(pickup_pose: dict[str, float]) -> tuple[float, float]:
-    if not _terrain_world_loaded_into_sitl():
-        return (0.0, 0.0)
-    return (float(pickup_pose["x"]), float(pickup_pose["y"]))
+    return _scenario_terrain_relative_xy_origin(
+        pickup_pose,
+        terrain_world_loaded=_terrain_world_loaded_into_sitl(),
+    )
 
 
 def _landing_z_threshold(pickup_pose: dict[str, float]) -> float:
-    if not _terrain_world_loaded_into_sitl():
-        return 0.15
-    return float(pickup_pose["z"]) + 0.15
+    return _scenario_landing_z_threshold(
+        pickup_pose,
+        terrain_world_loaded=_terrain_world_loaded_into_sitl(),
+    )
 
 
 def _start_container(run_dir: Path) -> Path | None:
@@ -1081,14 +1005,6 @@ def _wind_requested_profile() -> dict[str, Any]:
     }
 
 
-def _wind_vector(*, mean_mps: float, direction_deg: float) -> tuple[float, float]:
-    radians = math.radians(direction_deg)
-    return (
-        round(mean_mps * math.sin(radians), 6),
-        round(mean_mps * math.cos(radians), 6),
-    )
-
-
 def _thermal_weather_requested_profile() -> dict[str, Any]:
     requested = {
         "temperature_c": _optional_float_env(TEMPERATURE_C_ENV),
@@ -1126,29 +1042,6 @@ def _thermal_weather_requested_profile() -> dict[str, Any]:
         "hardware_target_allowed": False,
         "physical_execution_invoked": False,
     }
-
-
-def _thermal_battery_drain_factor_from_temperature(
-    temperature_c: float | None,
-) -> float | None:
-    if temperature_c is None:
-        return None
-    if temperature_c >= 35.0:
-        return round(min(2.5, 1.0 + (temperature_c - 25.0) * 0.04), 3)
-    if temperature_c <= 0.0:
-        return round(min(2.2, 1.0 + abs(temperature_c) * 0.03), 3)
-    return 1.0
-
-
-def _thermal_motor_derate_factor_from_temperature(
-    temperature_c: float | None,
-) -> float | None:
-    if temperature_c is None:
-        return None
-    if temperature_c >= 40.0:
-        return round(max(0.55, 1.0 - (temperature_c - 35.0) * 0.015), 3)
-    return 1.0
-
 
 
 def _wind_physics_world_readback(
