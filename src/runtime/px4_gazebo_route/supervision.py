@@ -14,6 +14,34 @@ MULTI_CONDITION_SUPERVISOR_SCOPE = "wind_obstacle_payload_form3_sitl"
 WIND_SUPERVISOR_SCOPE = "wind_form3_sitl_only"
 
 
+def _battery_warning_evidence(
+    battery_realism_summary: Mapping[str, Any],
+) -> tuple[Mapping[str, Any], Any, bool]:
+    evidence = battery_realism_summary.get(
+        "observed_battery_condition_evidence",
+        {},
+    )
+    warning = (evidence.get("observed") or {}).get("observed_warning")
+    if warning is None:
+        return evidence, warning, False
+    try:
+        active = int(warning) > 0
+    except (TypeError, ValueError):
+        active = True
+    return evidence, warning, active
+
+
+def _telemetry_freshness_evidence(
+    telemetry_realism_summary: Mapping[str, Any],
+) -> tuple[Mapping[str, Any], int, bool]:
+    freshness = telemetry_realism_summary.get("telemetry_freshness_report", {})
+    gap_count = int(freshness.get("gap_count") or 0)
+    dropout_active = (
+        freshness.get("freshness_status") == "gap_observed" and gap_count > 0
+    )
+    return freshness, gap_count, dropout_active
+
+
 def wind_supervisor_assessment_inputs(
     *,
     selected_bounded_action: str,
@@ -51,26 +79,11 @@ def wind_supervisor_assessment_inputs(
         {},
     )
     payload_advisory_active = bool(payload_advisory)
-    battery_evidence = battery_realism_summary.get(
-        "observed_battery_condition_evidence",
-        {},
+    battery_evidence, battery_warning, battery_warning_active = (
+        _battery_warning_evidence(battery_realism_summary)
     )
-    battery_observed = battery_evidence.get("observed") or {}
-    battery_warning = battery_observed.get("observed_warning")
-    battery_warning_active = False
-    if battery_warning is not None:
-        try:
-            battery_warning_active = int(battery_warning) > 0
-        except (TypeError, ValueError):
-            battery_warning_active = True
-    telemetry_freshness = telemetry_realism_summary.get(
-        "telemetry_freshness_report",
-        {},
-    )
-    telemetry_gap_count = int(telemetry_freshness.get("gap_count") or 0)
-    observer_dropout_active = (
-        telemetry_freshness.get("freshness_status") == "gap_observed"
-        and telemetry_gap_count > 0
+    telemetry_freshness, telemetry_gap_count, observer_dropout_active = (
+        _telemetry_freshness_evidence(telemetry_realism_summary)
     )
     conflicting_risks = []
     if route_blocking_active:
@@ -472,26 +485,11 @@ def obstacle_supervisor_assessment_inputs(
         {},
     )
     alternate_route_observed = alternate_route.get("observed") or {}
-    battery_evidence = battery_realism_summary.get(
-        "observed_battery_condition_evidence",
-        {},
+    battery_evidence, battery_warning, battery_warning_active = (
+        _battery_warning_evidence(battery_realism_summary)
     )
-    battery_observed = battery_evidence.get("observed") or {}
-    battery_warning = battery_observed.get("observed_warning")
-    battery_warning_active = False
-    if battery_warning is not None:
-        try:
-            battery_warning_active = int(battery_warning) > 0
-        except (TypeError, ValueError):
-            battery_warning_active = True
-    telemetry_freshness = telemetry_realism_summary.get(
-        "telemetry_freshness_report",
-        {},
-    )
-    telemetry_gap_count = int(telemetry_freshness.get("gap_count") or 0)
-    observer_dropout_active = (
-        telemetry_freshness.get("freshness_status") == "gap_observed"
-        and telemetry_gap_count > 0
+    telemetry_freshness, telemetry_gap_count, observer_dropout_active = (
+        _telemetry_freshness_evidence(telemetry_realism_summary)
     )
     conflicting_risks = []
     if battery_warning_active:
@@ -643,26 +641,11 @@ def payload_supervisor_assessment_inputs(
 ) -> dict[str, Any]:
     payload_profile = vehicle_realism_summary.get("vehicle_condition_profile", {})
     payload_requested = payload_profile.get("requested") or {}
-    battery_evidence = battery_realism_summary.get(
-        "observed_battery_condition_evidence",
-        {},
+    battery_evidence, battery_warning, battery_warning_active = (
+        _battery_warning_evidence(battery_realism_summary)
     )
-    battery_observed = battery_evidence.get("observed") or {}
-    battery_warning = battery_observed.get("observed_warning")
-    battery_warning_active = False
-    if battery_warning is not None:
-        try:
-            battery_warning_active = int(battery_warning) > 0
-        except (TypeError, ValueError):
-            battery_warning_active = True
-    telemetry_freshness = telemetry_realism_summary.get(
-        "telemetry_freshness_report",
-        {},
-    )
-    telemetry_gap_count = int(telemetry_freshness.get("gap_count") or 0)
-    observer_dropout_active = (
-        telemetry_freshness.get("freshness_status") == "gap_observed"
-        and telemetry_gap_count > 0
+    telemetry_freshness, telemetry_gap_count, observer_dropout_active = (
+        _telemetry_freshness_evidence(telemetry_realism_summary)
     )
     conflicting_risks = []
     if battery_warning_active:
