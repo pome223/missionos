@@ -74,6 +74,10 @@ from src.runtime.px4_gazebo_route.artifacts import (
     write_json as _write_json,
     write_jsonl as _write_jsonl,
 )
+from src.runtime.px4_gazebo_route.audit import (
+    RouteAuditExpectations as _RouteAuditExpectations,
+    audit_route_summary as _audit_route_summary,
+)
 from src.runtime.px4_gazebo_route.configuration import (
     PAYLOAD_FEASIBILITY_ADVISORY_REF_PREFIX,
     parse_route_args as _parse_args,
@@ -9024,207 +9028,22 @@ def main() -> int:
             )
         (run_dir / "px4_docker.log").write_text(_all_logs())
         print(json.dumps(summary, indent=2, sort_keys=True))
-        assert Path(summary["artifact_dir"]).exists()
-        assert (Path(summary["artifact_dir"]) / "summary.json").exists()
-        assert (Path(summary["artifact_dir"]) / "tasks.db").exists()
-        assert (Path(summary["artifact_dir"]) / "px4_docker.log").exists()
-        assert (Path(summary["artifact_dir"]) / "pose_samples.jsonl").exists()
-        assert (Path(summary["artifact_dir"]) / "mission_artifacts.json").exists()
-        alternate_behavior = summary.get("alternate_landing_behavior_observation", {})
-        alternate_behavior_observed = (
-            alternate_behavior.get("alternate_landing_behavior_observed") is True
+        _audit_route_summary(
+            summary,
+            expectations=_RouteAuditExpectations(
+                route_target_x_m=route_delta_x,
+                route_target_y_m=route_delta_y,
+                route_target_z_m=target_z,
+                landing_z_threshold_m=_landing_z_threshold(pickup_pose),
+                preupload_requested=os.getenv(PREUPLOAD_MISSION_ENV) == "1",
+                payload_release_requested=(
+                    os.getenv(PAYLOAD_RELEASE_MODEL_ENV) == "1"
+                ),
+                contact_topic_requested=(
+                    _collision_obstacle_contact_topic_requested()
+                ),
+            ),
         )
-        rth_behavior = summary.get("rth_behavior_observation", {})
-        rth_behavior_observed = rth_behavior.get("return_to_home_behavior_observed") is True
-        route_blocking_observed = (
-            summary.get("route_blocking_verification", {})
-            .get("observed", {})
-            .get("route_blocking_verified")
-            is True
-        )
-        incident_route_blocking_observed = (
-            summary.get("horizontal_route_incident_informed_route_blocking_verification", {})
-            .get("observed", {})
-            .get("route_blocking_verified")
-            is True
-        )
-        assert summary["existing_artifacts_retained"] is True
-        if (
-            alternate_behavior_observed
-            or rth_behavior_observed
-            or route_blocking_observed
-            or incident_route_blocking_observed
-        ):
-            assert summary["task_status"] == "blocked"
-            assert summary["final_status"] == "blocked"
-            assert summary["dropoff_region_reached"] is False
-            assert "dropoff_region_not_reached" in summary["blocked_reasons"]
-        if alternate_behavior_observed:
-            assert (
-                summary["alternate_landing_execution_request"]["request_status"]
-                == "approved_for_sitl_alternate_landing"
-            )
-            assert (
-                summary["alternate_mission_upload_request"]["request_status"]
-                == "approved_for_sitl_alternate_mission_upload"
-            )
-            assert summary["alternate_mission_upload_request"]["contains_waypoint_item"] is True
-            assert summary["alternate_mission_upload_request"]["contains_land_item"] is True
-            assert summary["alternate_mission_upload_receipt"]["upload_status"] == "uploaded"
-            assert summary["alternate_mission_upload_receipt"]["mission_ack_observed"] is True
-            assert summary["alternate_mission_upload_receipt"]["mission_ack_type"] == 0
-            assert (
-                summary["alternate_route_behavior_observation"]["alternate_mission_uploaded"]
-                is True
-            )
-            assert (
-                summary["alternate_route_behavior_observation"][
-                    "alternate_landing_behavior_observed"
-                ]
-                is True
-            )
-            assert summary["alternate_route_behavior_observation"]["dropoff_verified"] is False
-            assert (
-                summary["alternate_route_behavior_observation"]["delivery_completion_claimed"]
-                is False
-            )
-            assert (
-                summary["alternate_landing_command_dispatch"]["mavlink_dispatch_performed"] is True
-            )
-            assert alternate_behavior["land_commanded"] is True
-            assert alternate_behavior["landing_observed"] is True
-            assert alternate_behavior["delivery_completion_claimed"] is False
-        elif rth_behavior_observed:
-            assert summary["rth_execution_request"]["request_status"] == "approved_for_sitl_rth"
-            assert summary["rth_command_dispatch"]["mavlink_dispatch_performed"] is True
-            assert rth_behavior["rth_commanded"] is True
-            assert rth_behavior["rth_state_observed"] is True
-            assert rth_behavior["delivery_completion_claimed"] is False
-        elif incident_route_blocking_observed:
-            assert (
-                summary["horizontal_route_incident_informed_route_blocking_verification"][
-                    "verification_status"
-                ]
-                == "route_blocking_verified"
-            )
-        elif route_blocking_observed:
-            assert (
-                summary["route_blocking_verification"]["verification_status"]
-                == "route_blocking_verified"
-            )
-            assert (
-                summary["gazebo_route_corridor_obstacle_spawn_application"]["application_status"]
-                == "applied"
-            )
-        else:
-            assert summary["task_status"] == "completed"
-            assert summary["final_status"] == "completed"
-            assert summary["dropoff_region_reached"] is True
-            assert summary["blocked_reasons"] == []
-        if os.getenv(PREUPLOAD_MISSION_ENV) == "1":
-            assert summary["preupload_mission_performed"] is True
-            assert summary["preupload_mission_ack_observed"] is True
-            assert summary["preupload_mission_ack_type"] == 0
-            assert summary["preupload_mission_request_sequences"] == [0, 1, 2, 3]
-        if os.getenv(PAYLOAD_RELEASE_MODEL_ENV) == "1" and not rth_behavior_observed:
-            assert summary["payload_release_observed"] is True
-            assert summary["payload_release_event_source"] == "gazebo_detachable_joint_detach_event"
-            assert summary["payload_release_position_x_m"] is not None
-            assert summary["payload_release_position_y_m"] is not None
-            assert summary["payload_release_position_z_m"] is not None
-        assert summary["actual_px4_gazebo_horizontal_smoke_observed"] is True
-        assert isinstance(summary["delivery_completion_claimed"], bool)
-        assert summary["route_terminal_pose"]["phase"] == "route"
-        assert summary["route_terminal_pose"]["observed"] is True
-        assert summary["landing_terminal_pose"]["phase"] == "landing"
-        assert summary["completed_terminal_pose"]["phase"] == "completed"
-        assert summary["route_terminal_progress_m"] == summary["horizontal_progress_m"]
-        if (
-            alternate_behavior_observed
-            or rth_behavior_observed
-            or route_blocking_observed
-            or incident_route_blocking_observed
-        ):
-            assert summary["horizontal_progress_m"] >= 0.0
-        else:
-            assert summary["horizontal_progress_m"] >= 5.0
-        if alternate_behavior_observed:
-            assert summary["route_geofence_violation"] in (False, True)
-            if summary["route_geofence_violation"] is True:
-                assert "route_geofence_violation" in summary["blocked_reasons"]
-                assert summary.get("delivery_completion_claimed") is not True
-                assert summary["dropoff_region_reached"] is False
-        else:
-            assert summary["route_geofence_violation"] is False
-        assert summary["pose_deviation_gate_active"] is True
-        assert summary["pose_deviation_aborted"] is False
-        assert summary["deviation_samples"] == []
-        if _collision_obstacle_contact_topic_requested():
-            contact_integration = summary["horizontal_route_contact_topic_integration"]
-            contact_observed = contact_integration["observed"]
-            contact_incident_verification = summary[
-                "horizontal_route_contact_incident_verification"
-            ]
-            contact_incident_verified = contact_incident_verification["observed"]
-            assert contact_integration["integration_status"] == "sidecar_contact_event_observed"
-            assert contact_observed["contact_event_observed"] is True
-            assert contact_observed["collision_names"] != []
-            assert contact_integration["horizontal_route_world_contact_sensor_injected"] is False
-            assert contact_integration["horizontal_route_px4_home_boundary_protected"] is True
-            assert contact_incident_verification["verification_status"] == "incident_verified"
-            assert contact_incident_verified["incident_verified"] is True
-            assert contact_incident_verified["route_blocking_verified"] is False
-            assert contact_incident_verified["traffic_conflict_verified"] is False
-            assert contact_incident_verified["auto_gate"] is False
-            incident_informed_traffic = summary[
-                "horizontal_route_incident_informed_traffic_conflict_verification"
-            ]
-            incident_informed_traffic_observed = incident_informed_traffic["observed"]
-            assert incident_informed_traffic["verification_status"] == "traffic_conflict_verified"
-            assert incident_informed_traffic_observed["incident_verified"] is True
-            assert incident_informed_traffic_observed["traffic_conflict_verified"] is True
-            assert incident_informed_traffic_observed["route_blocking_verified"] is False
-            assert incident_informed_traffic_observed["auto_gate"] is False
-            assert contact_observed["task_status_mutated"] is False
-            assert contact_observed["delivery_completion_claimed"] is False
-            assert contact_incident_verified["task_status_mutated"] is False
-            assert contact_incident_verified["delivery_completion_claimed"] is False
-            assert incident_informed_traffic_observed["task_status_mutated"] is False
-            assert incident_informed_traffic_observed["delivery_completion_claimed"] is False
-            incident_informed_route_blocking = summary[
-                "horizontal_route_incident_informed_route_blocking_verification"
-            ]
-            incident_route_observed = incident_informed_route_blocking["observed"]
-            assert (
-                incident_informed_route_blocking["verification_status"] == "route_blocking_verified"
-            )
-            assert incident_route_observed["traffic_conflict_verified"] is True
-            assert incident_route_observed["route_blocking_candidate"] is True
-            assert incident_route_observed["route_blocking_verified"] is True
-            assert incident_route_observed["auto_gate"] is False
-            assert incident_route_observed["task_status_mutated"] is False
-            assert incident_route_observed["gate_status_mutated"] is False
-            assert incident_route_observed["dropoff_verified"] is False
-            assert incident_route_observed["delivery_completion_claimed"] is False
-        assert summary["route_primitive"] == "bounded_position_setpoint_stream"
-        assert summary["bounded_setpoint_stream_allowed"] is True
-        assert summary["unbounded_setpoint_stream_allowed"] is False
-        assert summary["offboard_mode_switch_allowed"] is True
-        assert summary["offboard_mode_switch_command_id"] == 176
-        assert summary["offboard_mode_switch_frame_sent"] is True
-        assert summary["offboard_mode_switch_ack_required"] is True
-        assert summary["offboard_mode_switch_ack_command_id"] == 176
-        assert summary["offboard_mode_switch_ack_observed"] is True
-        assert summary["offboard_mode_switch_ack_result_code"] == 0
-        assert summary["offboard_mode_switch_ack_result_name"] == "ACCEPTED"
-        assert summary["route_target_x_m"] == route_delta_x
-        assert summary["route_target_y_m"] == route_delta_y
-        assert summary["route_target_z_m"] == target_z
-        assert summary["hardware_target_allowed"] is False
-        assert summary["physical_execution_invoked"] is False
-        assert summary["px4_mission_upload_allowed"] is False
-        if not rth_behavior_observed:
-            assert float(summary["completed_pose_z_m"]) <= (_landing_z_threshold(pickup_pose))
         return 0
     finally:
         _stop_container()
