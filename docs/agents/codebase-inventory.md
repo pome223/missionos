@@ -20,12 +20,12 @@ live. No file is safe to delete solely because it has no static importer.
 
 ## Current cleanup branch result
 
-As of `codex/codebase-inventory` after the second PX4/Gazebo monolith
+As of `codex/codebase-inventory` after the third PX4/Gazebo monolith
 extraction:
 
-- tracked Python: 274,219 lines, down 22,590 lines from the baseline (7.61%)
-- `smoke_*.py`: 69 files / 37,394 lines, down from 135 files / 52,004 lines
-- automated verification: 630 passed, 5 warnings
+- tracked Python: 274,459 lines, down 22,350 lines from the baseline (7.53%)
+- `smoke_*.py`: 69 files / 37,209 lines, down from 135 files / 52,004 lines
+- automated verification: 635 passed, 5 warnings
 - runtime verification: `python -m src.quickstart_smoke --json` created and
   completed fresh task `task_e5e900c70d95` in an isolated SQLite store without
   a model or bridge
@@ -51,7 +51,7 @@ files:
 | File | Lines | Main maintenance risk |
 |---|---:|---|
 | `packages/missionos-cli/src/missionos_cli/cli.py` | 12,866 | CLI, chat, companion processes, maps, and HTML rendering share one module |
-| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 11,807 | a production dispatch backend is exposed through a 2,106-line `main` function |
+| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 11,622 | a production dispatch backend is exposed through a 2,106-line `main` function |
 | `src/gateway/server.py` | 11,932 | route registration, orchestration, robot-specific handling, and recovery are coupled |
 | `src/runtime/digital_twin_mission_environment.py` | 9,961 | environment construction and PX4/Gazebo mechanics are coupled |
 | `src/runtime/turtlebot3_home_mission.py` | 9,808 | proposal, approval, resolver, execution, verification, UI evidence, and repair share one module |
@@ -401,6 +401,24 @@ and parsed a fogged world plus wind plugins with `dispatch_requested=false` and
 before external execution when its explicit environment gate was absent. The
 entrypoint fell from 12,066 to 11,807 lines. Total Python grew by 161 lines
 because this reviewability step added the module boundary and maintained tests.
+
+The third extraction separated read-only observation normalization into
+`src/runtime/px4_gazebo_route/observation.py`. PX4 listener fields and battery
+status, Gazebo contact-topic selection and evidence, pose phase rows, terminal
+pose summaries, XY matching, and point-to-route distance now transform inputs
+without invoking Docker, Gazebo, PX4, or a dispatch function. The orchestrator
+still owns every external read and passes the resulting text or mappings into
+the package. Contact-topic fallback precedence is preserved before the
+orchestrator runs its read-only sample command.
+
+Five contract tests cover successful, failed, and incomplete battery listener
+output; contact-topic priority and read-only claim fields; ordered pose phases;
+terminal Gazebo and PX4-local-NED sources; and shared distance geometry. A
+fixture runtime command observed battery, contact, and route pose facts while
+retaining `task_status_mutated=false` and `delivery_completion_claimed=false`.
+The entrypoint still stopped without its explicit opt-in. It fell from 11,807
+to 11,622 lines, while total Python grew by 240 lines for the package boundary
+and regression coverage.
 
 ## Protected regression baseline
 
