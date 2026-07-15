@@ -20,12 +20,12 @@ live. No file is safe to delete solely because it has no static importer.
 
 ## Current cleanup branch result
 
-As of `codex/codebase-inventory` after the ninth PX4/Gazebo monolith
+As of `codex/codebase-inventory` after the tenth PX4/Gazebo monolith
 extraction:
 
-- tracked Python: 275,735 lines, down 21,074 lines from the baseline (7.10%)
-- `smoke_*.py`: 69 files / 36,727 lines, down from 135 files / 52,004 lines
-- automated verification: 683 passed, 5 warnings
+- tracked Python: 275,818 lines, down 20,991 lines from the baseline (7.07%)
+- `smoke_*.py`: 69 files / 36,658 lines, down from 135 files / 52,004 lines
+- automated verification: 686 passed, 5 warnings
 - runtime verification: `python -m src.quickstart_smoke --json` created and
   completed fresh task `task_e5e900c70d95` in an isolated SQLite store without
   a model or bridge
@@ -51,7 +51,7 @@ files:
 | File | Lines | Main maintenance risk |
 |---|---:|---|
 | `packages/missionos-cli/src/missionos_cli/cli.py` | 12,866 | CLI, chat, companion processes, maps, and HTML rendering share one module |
-| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 11,140 | a production dispatch backend is exposed through a 2,106-line `main` function |
+| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 11,071 | a production dispatch backend is exposed through a 2,106-line `main` function |
 | `src/gateway/server.py` | 11,932 | route registration, orchestration, robot-specific handling, and recovery are coupled |
 | `src/runtime/digital_twin_mission_environment.py` | 9,961 | environment construction and PX4/Gazebo mechanics are coupled |
 | `src/runtime/turtlebot3_home_mission.py` | 9,808 | proposal, approval, resolver, execution, verification, UI evidence, and repair share one module |
@@ -528,6 +528,23 @@ explicit wrappers are formatted across lines; 97 lines of selector ownership
 nevertheless moved into the package. Total Python grew by 142 lines for that
 boundary and its regression coverage. This step improves reviewability rather
 than reducing total LOC.
+
+The tenth extraction separated the moving collision-obstacle definition across
+the existing scenario and world boundaries. The scenario builder receives four
+explicit coordinates and creates deterministic motion metadata. The world
+builder receives that metadata plus an explicit contact topic and creates the
+Gazebo SDF. Only the entrypoint reads bounded coordinate environment values;
+neither package function reads environment state, mutates files, starts Gazebo,
+or dispatches a command.
+
+Three additional contract cases preserve exact motion metadata, environment
+wrapper behavior, SDF pose and waypoint transfer, contact-topic identity, and
+the contact-disabled variant. A runtime invocation passed four coordinate
+environment values through the entrypoint, parsed the generated XML, and
+observed matching pose, waypoints, and contact topic with dispatch and physical
+execution false. The external entrypoint remained fail-closed without opt-in.
+It fell from 11,140 to 11,071 lines. Total Python grew by 83 lines because the
+new package boundary has focused regression coverage.
 
 ## Protected regression baseline
 
