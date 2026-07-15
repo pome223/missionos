@@ -20,12 +20,12 @@ live. No file is safe to delete solely because it has no static importer.
 
 ## Current cleanup branch result
 
-As of `codex/codebase-inventory` after the seventh PX4/Gazebo monolith
+As of `codex/codebase-inventory` after the eighth PX4/Gazebo monolith
 extraction:
 
-- tracked Python: 275,438 lines, down 21,371 lines from the baseline (7.20%)
-- `smoke_*.py`: 69 files / 36,807 lines, down from 135 files / 52,004 lines
-- automated verification: 665 passed, 5 warnings
+- tracked Python: 275,593 lines, down 21,216 lines from the baseline (7.15%)
+- `smoke_*.py`: 69 files / 36,726 lines, down from 135 files / 52,004 lines
+- automated verification: 672 passed, 5 warnings
 - runtime verification: `python -m src.quickstart_smoke --json` created and
   completed fresh task `task_e5e900c70d95` in an isolated SQLite store without
   a model or bridge
@@ -51,7 +51,7 @@ files:
 | File | Lines | Main maintenance risk |
 |---|---:|---|
 | `packages/missionos-cli/src/missionos_cli/cli.py` | 12,866 | CLI, chat, companion processes, maps, and HTML rendering share one module |
-| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 11,220 | a production dispatch backend is exposed through a 2,106-line `main` function |
+| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 11,139 | a production dispatch backend is exposed through a 2,106-line `main` function |
 | `src/gateway/server.py` | 11,932 | route registration, orchestration, robot-specific handling, and recovery are coupled |
 | `src/runtime/digital_twin_mission_environment.py` | 9,961 | environment construction and PX4/Gazebo mechanics are coupled |
 | `src/runtime/turtlebot3_home_mission.py` | 9,808 | proposal, approval, resolver, execution, verification, UI evidence, and repair share one module |
@@ -491,6 +491,25 @@ created an enabled velocity-feed-forward request while retaining
 external PX4/Gazebo entrypoint still exited before execution without explicit
 opt-in. It fell from 11,327 to 11,220 lines; total Python grew by 259 lines for
 the new boundary and its regression coverage.
+
+The eighth extraction moved wind, thermal-weather, battery, and sensor-failure
+requested-profile construction into the scenario module. Environment parsing
+remains in the entrypoint; profile builders now receive only explicit values.
+They preserve out-of-range rejection and clamps, derive supported battery
+warning scenarios, report unsupported sensor values, and retain false
+execution and completion fields. In particular, a requested battery percentage
+remains scenario input and cannot masquerade as observed PX4 battery status.
+
+Seven additional contract cases cover thermal and pressure bounds, battery
+scenario derivation, invalid remaining percentages, sensor defaults and
+unsupported values, and the environment-to-explicit-value wrapper boundary. A
+runtime invocation supplied wind, temperature, invalid pressure, low battery,
+and sensor-failure environment values through the entrypoint. It derived a
+critical-battery scenario, rejected the invalid pressure, and retained
+`physical_execution_invoked=false` and `delivery_completion_claimed=false`.
+The entrypoint still rejected external execution without opt-in. It fell from
+11,220 to 11,139 lines; total Python grew by 155 lines for the profile boundary
+and regression coverage.
 
 ## Protected regression baseline
 
