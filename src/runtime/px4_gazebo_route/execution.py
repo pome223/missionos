@@ -10,7 +10,8 @@ from __future__ import annotations
 
 import json
 import subprocess
-from typing import Any, Protocol
+import time
+from typing import Any, Callable, Protocol
 
 
 class CommandRunner(Protocol):
@@ -212,9 +213,163 @@ def apply_bounded_mavlink_link_loss(
     return payload
 
 
+def run_route_with_monitor(
+    *,
+    target_x: float,
+    target_y: float,
+    target_z: float,
+    expected_target_x: float,
+    expected_target_y: float,
+    pickup_pose: dict[str, float],
+    altitude_max_m: float,
+    max_pose_deviation_xy_m: float,
+    max_pose_deviation_z_m: float,
+    duration_seconds: float,
+    container_name: str,
+    helper_source: str,
+    pose_sampler: Callable[[], dict[str, float]],
+    append_pose_row: Callable[..., None],
+    distance_to_segment: Callable[..., float],
+    feed_forward_vx_mps: float = 0.0,
+    feed_forward_vy_mps: float = 0.0,
+    feed_forward_ramp_start_fraction: float = 0.65,
+    feed_forward_ramp_end_fraction: float = 0.9,
+    timeout: int = 45,
+    on_deviation: Callable[[], dict[str, Any]] | None = None,
+    popen_factory: Callable[..., Any] = subprocess.Popen,
+    monotonic: Callable[[], float] = time.monotonic,
+    sleep: Callable[[float], None] = time.sleep,
+) -> dict[str, Any]:
+    command = [
+        "docker",
+        "exec",
+        "-i",
+        container_name,
+        "python3",
+        "-",
+        "route",
+        str(target_x),
+        str(target_y),
+        str(target_z),
+        str(duration_seconds),
+        str(feed_forward_vx_mps),
+        str(feed_forward_vy_mps),
+        str(feed_forward_ramp_start_fraction),
+        str(feed_forward_ramp_end_fraction),
+    ]
+    process = popen_factory(
+        command,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    assert process.stdin is not None
+    process.stdin.write(helper_source)
+    process.stdin.close()
+    process.stdin = None
+    started_at = monotonic()
+    deviation_samples: list[dict[str, Any]] = []
+    monitor_sample_count = 0
+    pickup_xy = (float(pickup_pose["x"]), float(pickup_pose["y"]))
+    expected_target_xy = (expected_target_x, expected_target_y)
+    while process.poll() is None:
+        if monotonic() - started_at > timeout:
+            process.terminate()
+            raise RuntimeError("route helper timed out while monitoring pose")
+        sample = pose_sampler()
+        append_pose_row("route", sample, sample_index=monitor_sample_count)
+        monitor_sample_count += 1
+        deviation_xy = distance_to_segment(
+            point_xy=(float(sample["x"]), float(sample["y"])),
+            start_xy=pickup_xy,
+            end_xy=expected_target_xy,
+        )
+        deviation_z = abs(float(sample["z"]) - float(altitude_max_m))
+        if (
+            deviation_xy > max_pose_deviation_xy_m
+            or deviation_z > max_pose_deviation_z_m
+        ):
+            deviation_samples.append(
+                {
+                    "phase": "route",
+                    "sample": sample,
+                    "deviation_xy_m": deviation_xy,
+                    "deviation_z_m": deviation_z,
+                    "threshold_xy_m": max_pose_deviation_xy_m,
+                    "threshold_z_m": max_pose_deviation_z_m,
+                }
+            )
+            process.terminate()
+            route_stream_stop_reason = "pose_deviation"
+            route_stream_forced_kill = False
+            try:
+                _stdout, stderr = process.communicate(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                _stdout, stderr = process.communicate(timeout=5)
+                route_stream_stop_reason = "pose_deviation_forced_kill"
+                route_stream_forced_kill = True
+            recovery_payload = None
+            if on_deviation is not None:
+                recovery_payload = on_deviation()
+            return {
+                "mode": "route",
+                "sent": False,
+                "pose_deviation_aborted": True,
+                "deviation_samples": deviation_samples,
+                "route_monitor_sample_count": monitor_sample_count,
+                "route_stream_terminated_before_recovery_dispatch": True,
+                "route_stream_process_returncode": process.returncode,
+                "route_stream_stop_reason": route_stream_stop_reason,
+                "route_stream_forced_kill": route_stream_forced_kill,
+                "feed_forward_velocity_x_mps": feed_forward_vx_mps,
+                "feed_forward_velocity_y_mps": feed_forward_vy_mps,
+                "feed_forward_phase_schedule": "full_then_linear_ramp_down",
+                "feed_forward_ramp_start_fraction": feed_forward_ramp_start_fraction,
+                "feed_forward_ramp_end_fraction": feed_forward_ramp_end_fraction,
+                "feed_forward_scale_min": None,
+                "feed_forward_scale_max": None,
+                "feed_forward_scale_sample_count": 0,
+                "recovery_payload": recovery_payload,
+                "stderr": stderr,
+            }
+        sleep(1)
+    stdout, stderr = process.communicate(timeout=5)
+    if process.returncode != 0:
+        raise RuntimeError(f"route helper failed: {stderr}")
+    payload = json.loads(stdout.strip())
+    payload["pose_deviation_aborted"] = False
+    payload["deviation_samples"] = []
+    payload["route_monitor_sample_count"] = monitor_sample_count
+    payload["feed_forward_velocity_x_mps"] = float(
+        payload.get("feed_forward_velocity_x_mps", feed_forward_vx_mps)
+    )
+    payload["feed_forward_velocity_y_mps"] = float(
+        payload.get("feed_forward_velocity_y_mps", feed_forward_vy_mps)
+    )
+    payload["feed_forward_phase_schedule"] = payload.get(
+        "feed_forward_phase_schedule",
+        "full_then_linear_ramp_down",
+    )
+    payload["feed_forward_ramp_start_fraction"] = float(
+        payload.get("feed_forward_ramp_start_fraction", feed_forward_ramp_start_fraction)
+    )
+    payload["feed_forward_ramp_end_fraction"] = float(
+        payload.get("feed_forward_ramp_end_fraction", feed_forward_ramp_end_fraction)
+    )
+    payload["feed_forward_scale_min"] = payload.get("feed_forward_scale_min")
+    payload["feed_forward_scale_max"] = payload.get("feed_forward_scale_max")
+    payload["feed_forward_scale_sample_count"] = int(
+        payload.get("feed_forward_scale_sample_count") or 0
+    )
+    return payload
+
+
 __all__ = [
     "CommandRunner",
     "apply_bounded_mavlink_link_loss",
     "observe_mavlink_heartbeat_gap",
+    "run_route_with_monitor",
     "send_embedded_helper",
 ]

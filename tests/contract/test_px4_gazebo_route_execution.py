@@ -8,6 +8,7 @@ import pytest
 
 from scripts import smoke_px4_gazebo_horizontal_route_delivery as route_entrypoint
 from src.runtime.px4_gazebo_route import execution
+from src.runtime.px4_gazebo_route.observation import distance_to_segment_xy
 
 
 class FakeRunner:
@@ -32,6 +33,53 @@ class FakeRunner:
             }
         )
         return self.results.pop(0)
+
+
+class FakeStdin:
+    def __init__(self) -> None:
+        self.value = ""
+        self.closed = False
+
+    def write(self, value: str) -> None:
+        self.value += value
+
+    def close(self) -> None:
+        self.closed = True
+
+
+class FakeProcess:
+    def __init__(
+        self,
+        *,
+        polls: list[int | None],
+        stdout: str,
+        stderr: str = "",
+    ) -> None:
+        self._polls = list(polls)
+        self._stdout = stdout
+        self._stderr = stderr
+        self.stdin: FakeStdin | None = FakeStdin()
+        self.returncode: int | None = None
+        self.terminated = False
+        self.killed = False
+
+    def poll(self) -> int | None:
+        value = self._polls.pop(0) if self._polls else self.returncode
+        if value is not None:
+            self.returncode = value
+        return value
+
+    def terminate(self) -> None:
+        self.terminated = True
+        self.returncode = -15
+
+    def kill(self) -> None:
+        self.killed = True
+        self.returncode = -9
+
+    def communicate(self, *, timeout: int) -> tuple[str, str]:
+        assert timeout == 5
+        return self._stdout, self._stderr
 
 
 def _completed(
@@ -218,3 +266,114 @@ def test_legacy_send_helper_delegates_to_packaged_execution(monkeypatch: Any) ->
     assert runner.calls[0]["command"][3] == route_entrypoint.CONTAINER_NAME
     assert runner.calls[0]["input_text"] == route_entrypoint.MAVLINK_ROUTE_HELPER
     assert runner.calls[0]["timeout"] == 7
+
+
+def test_route_monitor_returns_helper_result_after_bounded_pose_sampling() -> None:
+    process = FakeProcess(
+        polls=[None, 0],
+        stdout=json.dumps({"mode": "route", "sent": True}),
+    )
+    popen_calls: list[dict[str, Any]] = []
+    observed_rows: list[tuple[str, dict[str, float], int]] = []
+
+    def popen_factory(command: list[str], **kwargs: Any) -> FakeProcess:
+        popen_calls.append({"command": command, **kwargs})
+        return process
+
+    result = execution.run_route_with_monitor(
+        target_x=2.0,
+        target_y=0.0,
+        target_z=-2.5,
+        expected_target_x=2.0,
+        expected_target_y=0.0,
+        pickup_pose={"x": 0.0, "y": 0.0, "z": 0.0},
+        altitude_max_m=-2.5,
+        max_pose_deviation_xy_m=1.0,
+        max_pose_deviation_z_m=1.0,
+        duration_seconds=0.2,
+        container_name="fixture-container",
+        helper_source="fixture route helper",
+        pose_sampler=lambda: {"x": 1.0, "y": 0.0, "z": -2.5},
+        append_pose_row=lambda phase, sample, *, sample_index: observed_rows.append(
+            (phase, sample, sample_index)
+        ),
+        distance_to_segment=distance_to_segment_xy,
+        popen_factory=popen_factory,
+        monotonic=lambda: 0.0,
+        sleep=lambda _seconds: None,
+    )
+
+    assert result["sent"] is True
+    assert result["pose_deviation_aborted"] is False
+    assert result["route_monitor_sample_count"] == 1
+    assert result["feed_forward_phase_schedule"] == "full_then_linear_ramp_down"
+    assert observed_rows == [
+        ("route", {"x": 1.0, "y": 0.0, "z": -2.5}, 0)
+    ]
+    assert popen_calls[0]["command"][3] == "fixture-container"
+    assert process.stdin is None
+
+
+def test_route_monitor_stops_stream_before_deviation_recovery() -> None:
+    process = FakeProcess(polls=[None], stdout="", stderr="terminated")
+    recovery_calls: list[str] = []
+
+    result = execution.run_route_with_monitor(
+        target_x=2.0,
+        target_y=0.0,
+        target_z=-2.5,
+        expected_target_x=2.0,
+        expected_target_y=0.0,
+        pickup_pose={"x": 0.0, "y": 0.0, "z": 0.0},
+        altitude_max_m=-2.5,
+        max_pose_deviation_xy_m=0.5,
+        max_pose_deviation_z_m=0.5,
+        duration_seconds=0.2,
+        container_name="fixture-container",
+        helper_source="fixture route helper",
+        pose_sampler=lambda: {"x": 0.5, "y": 2.0, "z": -2.5},
+        append_pose_row=lambda *_args, **_kwargs: None,
+        distance_to_segment=distance_to_segment_xy,
+        on_deviation=lambda: recovery_calls.append("called") or {"status": "held"},
+        popen_factory=lambda *_args, **_kwargs: process,
+        monotonic=lambda: 0.0,
+        sleep=lambda _seconds: None,
+    )
+
+    assert process.terminated is True
+    assert recovery_calls == ["called"]
+    assert result["sent"] is False
+    assert result["pose_deviation_aborted"] is True
+    assert result["route_stream_terminated_before_recovery_dispatch"] is True
+    assert result["route_stream_stop_reason"] == "pose_deviation"
+    assert result["recovery_payload"] == {"status": "held"}
+
+
+def test_route_monitor_timeout_terminates_without_sampling() -> None:
+    process = FakeProcess(polls=[None], stdout="")
+    clock = iter([0.0, 2.0])
+
+    with pytest.raises(RuntimeError, match="timed out while monitoring pose"):
+        execution.run_route_with_monitor(
+            target_x=2.0,
+            target_y=0.0,
+            target_z=-2.5,
+            expected_target_x=2.0,
+            expected_target_y=0.0,
+            pickup_pose={"x": 0.0, "y": 0.0, "z": 0.0},
+            altitude_max_m=-2.5,
+            max_pose_deviation_xy_m=1.0,
+            max_pose_deviation_z_m=1.0,
+            duration_seconds=0.2,
+            container_name="fixture-container",
+            helper_source="fixture route helper",
+            pose_sampler=lambda: pytest.fail("pose must not be sampled after timeout"),
+            append_pose_row=lambda *_args, **_kwargs: None,
+            distance_to_segment=distance_to_segment_xy,
+            timeout=1,
+            popen_factory=lambda *_args, **_kwargs: process,
+            monotonic=lambda: next(clock),
+            sleep=lambda _seconds: None,
+        )
+
+    assert process.terminated is True
