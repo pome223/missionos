@@ -66,6 +66,11 @@ from src.runtime.px4_gazebo_route.embedded_mavlink import (
     MAVLINK_LINK_LOSS_APPLICATOR_HELPER,
     MAVLINK_ROUTE_HELPER,
 )
+from src.runtime.px4_gazebo_route.execution import (
+    apply_bounded_mavlink_link_loss as _execute_bounded_mavlink_link_loss,
+    observe_mavlink_heartbeat_gap as _execute_mavlink_heartbeat_observer,
+    send_embedded_helper as _execute_embedded_helper,
+)
 from src.runtime.px4_gazebo_route.observation import (
     battery_status_from_listener_output as _battery_status_from_listener_output,
     contact_topic_observation as _contact_topic_observation,
@@ -7852,12 +7857,14 @@ def _trigger_payload_release() -> dict[str, Any] | None:
 
 
 def _send_helper(mode: str, *args: object, timeout: int = 30) -> dict[str, Any]:
-    result = _run(
-        ["docker", "exec", "-i", CONTAINER_NAME, "python3", "-", mode, *map(str, args)],
-        input_text=MAVLINK_ROUTE_HELPER,
+    return _execute_embedded_helper(
+        mode,
+        *args,
+        runner=_run,
+        container_name=CONTAINER_NAME,
+        helper_source=MAVLINK_ROUTE_HELPER,
         timeout=timeout,
     )
-    return json.loads(result.stdout.strip())
 
 
 def _observe_mavlink_heartbeat_gap(
@@ -7865,60 +7872,14 @@ def _observe_mavlink_heartbeat_gap(
     duration_seconds: float = 3.0,
     gap_threshold_seconds: float = 2.0,
 ) -> dict[str, Any]:
-    result = _run(
-        [
-            "docker",
-            "exec",
-            "-i",
-            CONTAINER_NAME,
-            "python3",
-            "-",
-            str(duration_seconds),
-            str(gap_threshold_seconds),
-        ],
-        input_text=MAVLINK_HEARTBEAT_OBSERVER_HELPER,
-        check=False,
-        timeout=int(duration_seconds) + 5,
+    return _execute_mavlink_heartbeat_observer(
+        runner=_run,
+        container_name=CONTAINER_NAME,
+        helper_source=MAVLINK_HEARTBEAT_OBSERVER_HELPER,
+        local_port=ROUTE_MAVLINK_LOCAL_PORT,
+        duration_seconds=duration_seconds,
+        gap_threshold_seconds=gap_threshold_seconds,
     )
-    if result.returncode != 0:
-        return {
-            "observer_status": "failed",
-            "source": "udp://127.0.0.1:14650",
-            "duration_seconds": duration_seconds,
-            "gap_threshold_seconds": gap_threshold_seconds,
-            "packet_count": 0,
-            "heartbeat_count": 0,
-            "heartbeat_intervals_seconds": [],
-            "max_heartbeat_interval_seconds": 0.0,
-            "heartbeat_gap_count": 0,
-            "heartbeat_gap_observed": False,
-            "observer_sent_packets": False,
-            "packet_drop_performed": False,
-            "stdout_tail": result.stdout[-500:],
-            "stderr_tail": result.stderr[-500:],
-        }
-    try:
-        payload = json.loads(result.stdout.strip())
-    except json.JSONDecodeError:
-        return {
-            "observer_status": "invalid_output",
-            "source": "udp://127.0.0.1:14650",
-            "duration_seconds": duration_seconds,
-            "gap_threshold_seconds": gap_threshold_seconds,
-            "packet_count": 0,
-            "heartbeat_count": 0,
-            "heartbeat_intervals_seconds": [],
-            "max_heartbeat_interval_seconds": 0.0,
-            "heartbeat_gap_count": 0,
-            "heartbeat_gap_observed": False,
-            "observer_sent_packets": False,
-            "packet_drop_performed": False,
-            "stdout_tail": result.stdout[-500:],
-            "stderr_tail": result.stderr[-500:],
-        }
-    payload["observer_sent_packets"] = False
-    payload["packet_drop_performed"] = False
-    return payload
 
 
 def _apply_bounded_mavlink_link_loss(
@@ -7926,75 +7887,18 @@ def _apply_bounded_mavlink_link_loss(
     duration_seconds: float = 2.5,
     gap_threshold_seconds: float = 2.0,
 ) -> dict[str, Any]:
-    result = _run(
-        [
-            "docker",
-            "exec",
-            "-i",
-            CONTAINER_NAME,
-            "python3",
-            "-",
-            str(duration_seconds),
-            str(gap_threshold_seconds),
-            str(ROUTE_MAVLINK_PX4_PORT),
-            str(ROUTE_MAVLINK_LOCAL_PORT),
-            str(EMERGENCY_MAVLINK_PX4_PORT),
-            str(EMERGENCY_MAVLINK_LOCAL_PORT),
-            "0" if os.getenv(SKIP_EMERGENCY_MAVLINK_ENV) == "1" else "1",
-        ],
-        input_text=MAVLINK_LINK_LOSS_APPLICATOR_HELPER,
-        check=False,
-        timeout=int(duration_seconds) + 20,
+    return _execute_bounded_mavlink_link_loss(
+        runner=_run,
+        container_name=CONTAINER_NAME,
+        helper_source=MAVLINK_LINK_LOSS_APPLICATOR_HELPER,
+        route_px4_port=ROUTE_MAVLINK_PX4_PORT,
+        route_local_port=ROUTE_MAVLINK_LOCAL_PORT,
+        emergency_px4_port=EMERGENCY_MAVLINK_PX4_PORT,
+        emergency_local_port=EMERGENCY_MAVLINK_LOCAL_PORT,
+        restart_emergency=os.getenv(SKIP_EMERGENCY_MAVLINK_ENV) != "1",
+        duration_seconds=duration_seconds,
+        gap_threshold_seconds=gap_threshold_seconds,
     )
-    if result.returncode != 0:
-        return {
-            "applicator_status": "failed",
-            "source": f"udp://127.0.0.1:{ROUTE_MAVLINK_LOCAL_PORT}",
-            "duration_seconds": duration_seconds,
-            "gap_threshold_seconds": gap_threshold_seconds,
-            "packet_count": 0,
-            "heartbeat_count": 0,
-            "heartbeat_intervals_seconds": [],
-            "max_heartbeat_interval_seconds": 0.0,
-            "heartbeat_gap_count": 0,
-            "heartbeat_gap_observed": False,
-            "endpoint_stop_performed": False,
-            "endpoint_restart_performed": False,
-            "observer_sent_packets": False,
-            "packet_drop_performed": False,
-            "rf_link_loss_claimed": False,
-            "vehicle_failsafe_claimed": False,
-            "stdout_tail": result.stdout[-500:],
-            "stderr_tail": result.stderr[-500:],
-        }
-    try:
-        payload = json.loads(result.stdout.strip())
-    except json.JSONDecodeError:
-        return {
-            "applicator_status": "invalid_output",
-            "source": f"udp://127.0.0.1:{ROUTE_MAVLINK_LOCAL_PORT}",
-            "duration_seconds": duration_seconds,
-            "gap_threshold_seconds": gap_threshold_seconds,
-            "packet_count": 0,
-            "heartbeat_count": 0,
-            "heartbeat_intervals_seconds": [],
-            "max_heartbeat_interval_seconds": 0.0,
-            "heartbeat_gap_count": 0,
-            "heartbeat_gap_observed": False,
-            "endpoint_stop_performed": False,
-            "endpoint_restart_performed": False,
-            "observer_sent_packets": False,
-            "packet_drop_performed": False,
-            "rf_link_loss_claimed": False,
-            "vehicle_failsafe_claimed": False,
-            "stdout_tail": result.stdout[-500:],
-            "stderr_tail": result.stderr[-500:],
-        }
-    payload["observer_sent_packets"] = False
-    payload["packet_drop_performed"] = False
-    payload["rf_link_loss_claimed"] = False
-    payload["vehicle_failsafe_claimed"] = False
-    return payload
 
 
 
