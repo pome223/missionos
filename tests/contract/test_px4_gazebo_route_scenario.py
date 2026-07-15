@@ -190,6 +190,38 @@ def test_entrypoint_scenario_selector_wrappers_only_read_environment(
     assert route_entrypoint._collision_obstacle_requested() is True
 
 
+def test_collision_obstacle_motion_spec_uses_explicit_coordinates() -> None:
+    motion = scenario.build_collision_obstacle_motion_spec(
+        start_x_m=1.25,
+        start_y_m=-2.5,
+        end_x_m=3.75,
+        end_y_m=4.5,
+        loop_seconds=8.0,
+    )
+
+    assert motion == {
+        "mode": "linear_waypoint_motion",
+        "obstacle_id": "mission_designer_collision_obstacle",
+        "frame": "gazebo_world_local",
+        "start_xy_m": [1.25, -2.5],
+        "end_xy_m": [3.75, 4.5],
+        "loop_seconds": 8.0,
+    }
+
+
+def test_entrypoint_collision_motion_wrapper_owns_environment_read(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(route_entrypoint.COLLISION_OBSTACLE_START_X_ENV, "1.5")
+    monkeypatch.setenv(route_entrypoint.COLLISION_OBSTACLE_START_Y_ENV, "-1.0")
+    monkeypatch.setenv(route_entrypoint.COLLISION_OBSTACLE_END_X_ENV, "4.0")
+    monkeypatch.setenv(route_entrypoint.COLLISION_OBSTACLE_END_Y_ENV, "2.5")
+
+    motion = route_entrypoint._collision_obstacle_motion_spec()
+    assert motion["start_xy_m"] == [1.5, -1.0]
+    assert motion["end_xy_m"] == [4.0, 2.5]
+
+
 def test_wind_geometry_uses_opposite_wind_vector() -> None:
     offset = scenario.wind_compensation_xy_offset(
         {

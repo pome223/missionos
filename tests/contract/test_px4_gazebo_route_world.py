@@ -54,6 +54,35 @@ def test_world_model_fragments_are_valid_xml_with_stable_identities() -> None:
     assert payload.findtext(".//mass") == "2.500000"
 
 
+def test_collision_obstacle_world_fragment_uses_explicit_motion_and_topic() -> None:
+    motion = {
+        "start_xy_m": [1.25, -2.5],
+        "end_xy_m": [3.75, 4.5],
+    }
+    fragment = world.collision_obstacle_world_sdf_patch(
+        motion=motion,
+        contact_topic="/fixture/collision/contacts",
+    )
+    root = _fragment_root(fragment)
+
+    model = root.find(".//model")
+    assert model is not None
+    assert model.get("name") == "mission_designer_collision_obstacle"
+    assert model.findtext("pose") == "1.25 -2.5 0.3 0 0 0"
+    assert model.findall(".//waypoint")[0].text == "1.25 -2.5"
+    assert model.findall(".//waypoint")[1].text == "3.75 4.5"
+    assert model.findtext(".//sensor/topic") == "/fixture/collision/contacts"
+
+    without_contact = world.collision_obstacle_world_sdf_patch(
+        motion=motion,
+        contact_topic="/fixture/collision/contacts",
+        contact_topic_enabled=False,
+    )
+    no_contact_root = _fragment_root(without_contact)
+    assert no_contact_root.find(".//sensor") is None
+    assert no_contact_root.find(".//plugin[@filename='gz-sim-contact-system']") is None
+
+
 def test_vehicle_plugin_and_wind_fragments_remain_valid_xml() -> None:
     payload_plugin = _fragment_root(world.payload_model_sdf_patch())
     detachable_joint = payload_plugin.find(".//plugin")

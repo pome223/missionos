@@ -98,6 +98,24 @@ def multi_drone_conflict_probe_requested(value: str | None) -> bool:
     }
 
 
+def build_collision_obstacle_motion_spec(
+    *,
+    start_x_m: float,
+    start_y_m: float,
+    end_x_m: float,
+    end_y_m: float,
+    loop_seconds: float = 6.0,
+) -> dict[str, Any]:
+    return {
+        "mode": "linear_waypoint_motion",
+        "obstacle_id": "mission_designer_collision_obstacle",
+        "frame": "gazebo_world_local",
+        "start_xy_m": [float(start_x_m), float(start_y_m)],
+        "end_xy_m": [float(end_x_m), float(end_y_m)],
+        "loop_seconds": float(loop_seconds),
+    }
+
+
 def build_wind_requested_profile(
     *,
     wind_mean_mps: float | None,
@@ -428,6 +446,7 @@ def thermal_motor_derate_factor_from_temperature(
 __all__ = [
     "alternate_landing_marker_requested",
     "build_battery_requested_profile",
+    "build_collision_obstacle_motion_spec",
     "build_sensor_failure_requested_profile",
     "build_thermal_weather_requested_profile",
     "build_wind_requested_profile",

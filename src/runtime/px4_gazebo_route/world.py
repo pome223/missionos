@@ -9,7 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-from typing import Any
+from typing import Any, Mapping
 import xml.etree.ElementTree as ET
 
 def payload_model_sdf_patch() -> str:
@@ -202,6 +202,77 @@ def moving_actor_world_sdf_patch() -> str:
 """
 
 
+def collision_obstacle_world_sdf_patch(
+    *,
+    motion: Mapping[str, Any],
+    contact_topic: str,
+    contact_topic_enabled: bool = True,
+) -> str:
+    start_x, start_y = motion["start_xy_m"]
+    end_x, end_y = motion["end_xy_m"]
+    contact_system = (
+        """
+    <plugin name="gz::sim::systems::Contact" filename="gz-sim-contact-system"/>
+    <plugin name="gz::sim::systems::Sensors" filename="gz-sim-sensors-system">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+"""
+        if contact_topic_enabled
+        else ""
+    )
+    contact_sensor = (
+        f"""
+        <sensor name="collision_obstacle_contact_sensor" type="contact">
+          <always_on>true</always_on>
+          <update_rate>20</update_rate>
+          <topic>{contact_topic}</topic>
+          <contact>
+            <collision>collision_obstacle_collision</collision>
+          </contact>
+        </sensor>
+"""
+        if contact_topic_enabled
+        else ""
+    )
+    return f"""
+{contact_system.rstrip()}
+    <model name="mission_designer_collision_obstacle">
+      <pose>{start_x} {start_y} 0.3 0 0 0</pose>
+      <link name="collision_obstacle_link">
+        <gravity>false</gravity>
+        <inertial>
+          <mass>3.0</mass>
+          <inertia>
+            <ixx>0.2</ixx>
+            <iyy>0.2</iyy>
+            <izz>0.2</izz>
+          </inertia>
+        </inertial>
+        <collision name="collision_obstacle_collision">
+          <geometry><box><size>0.8 0.8 0.6</size></box></geometry>
+        </collision>
+{contact_sensor.rstrip()}
+        <visual name="collision_obstacle_visual">
+          <geometry><box><size>0.8 0.8 0.6</size></box></geometry>
+          <material><diffuse>0.95 0.25 0.15 0.82</diffuse></material>
+          <transparency>0.18</transparency>
+        </visual>
+      </link>
+      <plugin filename="gz-sim-trajectory-follower-system"
+              name="gz::sim::systems::TrajectoryFollower">
+        <link_name>collision_obstacle_link</link_name>
+        <loop>true</loop>
+        <force>20</force>
+        <torque>20</torque>
+        <waypoints>
+          <waypoint>{start_x} {start_y}</waypoint>
+          <waypoint>{end_x} {end_y}</waypoint>
+        </waypoints>
+      </plugin>
+    </model>
+"""
+
+
 def moving_actor_waypoint_motion_spec() -> dict[str, Any]:
     start_xy = [1.2, -0.7]
     end_xy = [4.2, 3.2]
@@ -302,6 +373,7 @@ __all__ = [
     "VISIBILITY_FOG_RENDER_START_M",
     "VISIBILITY_FOG_RENDER_TYPE",
     "alternate_landing_world_sdf_patch",
+    "collision_obstacle_world_sdf_patch",
     "inject_visibility_fog_render_marker",
     "landing_zone_blocked_world_sdf_patch",
     "moving_actor_waypoint_motion_spec",
