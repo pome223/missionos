@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from scripts import smoke_px4_gazebo_horizontal_route_delivery as route_entrypoint
+from src.runtime.px4_gazebo_route import environment
 from src.runtime.px4_gazebo_route import supervision
 
 
@@ -10,9 +11,7 @@ def _nominal_assessment() -> dict[str, object]:
     return supervision.wind_supervisor_assessment_inputs(
         selected_bounded_action="rtl",
         deviation_samples=[{"deviation_xy_m": 1.25}],
-        wind_requested_profile={
-            "requested": {"wind_mean_mps": 6.0, "wind_direction_deg": 90.0}
-        },
+        wind_requested_profile={"requested": {"wind_mean_mps": 6.0, "wind_direction_deg": 90.0}},
         route_blocking_verification_summary={},
         vehicle_realism_summary={},
         battery_realism_summary={},
@@ -71,9 +70,7 @@ def test_multi_condition_assessment_reports_every_active_conflict() -> None:
             }
         },
         vehicle_realism_summary={
-            "payload_simulator_condition_application": {
-                "application_id": "payload-application:1"
-            },
+            "payload_simulator_condition_application": {"application_id": "payload-application:1"},
             "payload_feasibility_advisory": {"advisory_id": "payload:1"},
         },
         battery_realism_summary={
@@ -105,8 +102,7 @@ def test_multi_condition_assessment_reports_every_active_conflict() -> None:
         "telemetry_continuity",
     ]
     assert all(
-        risk["silent_continuation_allowed"] is False
-        for risk in assessment["secondary_risks"]
+        risk["silent_continuation_allowed"] is False for risk in assessment["secondary_risks"]
     )
 
 
@@ -195,7 +191,7 @@ def test_loop_support_requires_two_outcomes_and_no_conflicting_risks() -> None:
 def test_entrypoint_wrapper_only_collects_current_summaries(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv(route_entrypoint.WIND_MEAN_MPS_ENV, "5.5")
+    monkeypatch.setenv(environment.WIND_MEAN_MPS_ENV, "5.5")
     monkeypatch.setattr(
         route_entrypoint,
         "ROUTE_BLOCKING_VERIFICATION_SUMMARY",
@@ -225,9 +221,7 @@ def _obstacle_assessment(*, conflicts: bool = False) -> dict[str, object]:
     return supervision.obstacle_supervisor_assessment_inputs(
         selected_bounded_action="alternate_route",
         route_blocking_verification_summary={
-            "route_blocking_verification": {
-                "observed": {"route_blocking_verified": True}
-            }
+            "route_blocking_verification": {"observed": {"route_blocking_verified": True}}
         },
         alternate_mission_upload_summary={
             "alternate_route_execution_evidence": {
@@ -237,11 +231,7 @@ def _obstacle_assessment(*, conflicts: bool = False) -> dict[str, object]:
             }
         },
         battery_realism_summary=(
-            {
-                "observed_battery_condition_evidence": {
-                    "observed": {"observed_warning": 1}
-                }
-            }
+            {"observed_battery_condition_evidence": {"observed": {"observed_warning": 1}}}
             if conflicts
             else {}
         ),
@@ -288,9 +278,7 @@ def test_obstacle_assessment_reports_battery_and_telemetry_conflicts() -> None:
     assessment = _obstacle_assessment(conflicts=True)
 
     assert assessment["obstacle"]["route_blocked"] is True
-    assert assessment["alternate_route"][
-        "final_distance_to_alternate_waypoint_m"
-    ] == 0.2
+    assert assessment["alternate_route"]["final_distance_to_alternate_waypoint_m"] == 0.2
     assert assessment["conflicting_risks"] == [
         "battery_warning_active",
         "telemetry_observer_dropout_active",
@@ -363,11 +351,7 @@ def test_entrypoint_obstacle_wrapper_collects_current_summaries(
     monkeypatch.setattr(
         route_entrypoint,
         "ROUTE_BLOCKING_VERIFICATION_SUMMARY",
-        {
-            "route_blocking_verification": {
-                "observed": {"route_blocking_verified": True}
-            }
-        },
+        {"route_blocking_verification": {"observed": {"route_blocking_verified": True}}},
     )
     monkeypatch.setattr(route_entrypoint, "ALTERNATE_MISSION_UPLOAD_SUMMARY", None)
     monkeypatch.setattr(route_entrypoint, "BATTERY_REALISM_SUMMARY", None)
@@ -385,16 +369,10 @@ def _payload_assessment(*, conflicts: bool = False) -> dict[str, object]:
         selected_bounded_action="rtl",
         payload_feasibility_advisory_ref="payload-advisory:1",
         vehicle_realism_summary={
-            "vehicle_condition_profile": {
-                "requested": {"payload_mass_kg": 2.5}
-            }
+            "vehicle_condition_profile": {"requested": {"payload_mass_kg": 2.5}}
         },
         battery_realism_summary=(
-            {
-                "observed_battery_condition_evidence": {
-                    "observed": {"observed_warning": 2}
-                }
-            }
+            {"observed_battery_condition_evidence": {"observed": {"observed_warning": 2}}}
             if conflicts
             else {}
         ),
@@ -425,9 +403,7 @@ def _payload_cycle(
         selected_bounded_action="rtl" if cycle_index == 1 else "land",
         assessment_inputs=assessment,
         dispatch_ref=(
-            f"px4_gazebo_emergency_command_dispatch_result:{cycle_index}"
-            if approval_ref
-            else None
+            f"px4_gazebo_emergency_command_dispatch_result:{cycle_index}" if approval_ref else None
         ),
         dispatch_status="accepted" if approval_ref else None,
         approval_ref=approval_ref,
@@ -513,11 +489,7 @@ def test_entrypoint_payload_wrapper_collects_current_summaries(
     monkeypatch.setattr(
         route_entrypoint,
         "VEHICLE_REALISM_SUMMARY",
-        {
-            "vehicle_condition_profile": {
-                "requested": {"payload_mass_kg": 3.0}
-            }
-        },
+        {"vehicle_condition_profile": {"requested": {"payload_mass_kg": 3.0}}},
     )
     monkeypatch.setattr(route_entrypoint, "BATTERY_REALISM_SUMMARY", None)
     monkeypatch.setattr(route_entrypoint, "TELEMETRY_REALISM_SUMMARY", None)

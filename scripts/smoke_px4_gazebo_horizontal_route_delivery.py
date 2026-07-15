@@ -44,17 +44,6 @@ from src.runtime.px4_gazebo_route_dispatcher import (
     derive_px4_gazebo_route_target_ned,
 )
 from src.runtime.px4_gazebo_route_plan import build_px4_gazebo_pickup_dropoff_route_plan
-from src.runtime.missionos_sitl_dispatch_runtime import (
-    MISSIONOS_FORM2A_SELECTED_RESPONSE_KIND_ENV,
-    WIND_COMPENSATED_ROUTE_ENV,
-    WIND_COMPENSATION_METHOD_ENV,
-    WIND_COMPENSATION_SOURCE_RESPONSE_ENV,
-    WIND_FEED_FORWARD_MPS_ENV,
-    WIND_FEED_FORWARD_RAMP_END_FRACTION_ENV,
-    WIND_FEED_FORWARD_RAMP_START_FRACTION_ENV,
-    WIND_PREEMPTIVE_OFFSET_DIRECTION_DEG_ENV,
-    WIND_PREEMPTIVE_OFFSET_M_ENV,
-)
 from src.runtime.px4_gazebo_route.embedded_mavlink import (
     MAVLINK_HEARTBEAT_OBSERVER_HELPER,
     MAVLINK_LINK_LOSS_APPLICATOR_HELPER,
@@ -85,6 +74,29 @@ from src.runtime.px4_gazebo_route.configuration import (
     payload_advisory_recovery_requested as _payload_advisory_recovery_requested,
     validate_payload_advisory_recovery_args as _validate_payload_advisory_recovery_args,
     validate_planned_route_stream_budget as _assert_planned_route_stream_budget,
+)
+from src.runtime.px4_gazebo_route.environment import (
+    PAYLOAD_RELEASE_MODEL_ENV,
+    alternate_landing_marker_requested as _alternate_landing_marker_requested,
+    battery_requested_profile as _battery_requested_profile,
+    collision_obstacle_contact_topic_requested as _collision_obstacle_contact_topic_requested,
+    collision_obstacle_motion_spec as _collision_obstacle_motion_spec,
+    collision_obstacle_requested as _collision_obstacle_requested,
+    form2a_wind_compensation_request as _form2a_wind_compensation_request,
+    landing_zone_blocked_requested as _landing_zone_blocked_requested,
+    mavlink_link_degradation_mode_request as _mavlink_link_degradation_mode_request,
+    moving_actor_marker_requested as _moving_actor_marker_requested,
+    multi_drone_conflict_probe_requested as _multi_drone_conflict_probe_requested,
+    no_fly_zone_marker_requested as _no_fly_zone_marker_requested,
+    payload_mass_request as _payload_mass_request,
+    payload_model_enabled as _payload_model_enabled,
+    rth_behavior_requested as _rth_behavior_requested,
+    sensor_failure_requested_profile as _sensor_failure_requested_profile,
+    telemetry_dropout_mode_request as _telemetry_dropout_mode_request,
+    thermal_weather_requested_profile as _thermal_weather_requested_profile,
+    traffic_conflict_marker_requested as _traffic_conflict_marker_requested,
+    visibility_mode_request as _visibility_mode_request,
+    wind_requested_profile as _wind_requested_profile,
 )
 from src.runtime.px4_gazebo_route.verification import (
     application_status_is_materialized as _application_status_is_materialized,
@@ -130,52 +142,12 @@ OPT_IN_ENV = "RUN_PX4_GAZEBO_HORIZONTAL_ROUTE_SMOKE"
 ARTIFACT_ROOT_ENV = "PX4_GAZEBO_HORIZONTAL_ROUTE_ARTIFACT_ROOT"
 PREUPLOAD_MISSION_ENV = "PX4_GAZEBO_HORIZONTAL_ROUTE_PREUPLOAD_MISSION"
 SKIP_EMERGENCY_MAVLINK_ENV = "PX4_GAZEBO_HORIZONTAL_ROUTE_SKIP_EMERGENCY_MAVLINK"
-PAYLOAD_RELEASE_MODEL_ENV = "PX4_GAZEBO_HORIZONTAL_ROUTE_PAYLOAD_RELEASE_MODEL"
-WIND_MEAN_MPS_ENV = "MISSION_DESIGNER_REALISM_WIND_MEAN_MPS"
-WIND_DIRECTION_DEG_ENV = "MISSION_DESIGNER_REALISM_WIND_DIRECTION_DEG"
-WIND_GUST_MPS_ENV = "MISSION_DESIGNER_REALISM_WIND_GUST_MPS"
-WIND_VARIANCE_ENV = "MISSION_DESIGNER_REALISM_WIND_VARIANCE"
-TEMPERATURE_C_ENV = "MISSION_DESIGNER_REALISM_TEMPERATURE_C"
-PRESSURE_HPA_ENV = "MISSION_DESIGNER_REALISM_PRESSURE_HPA"
-THERMAL_BATTERY_DRAIN_FACTOR_ENV = (
-    "MISSION_DESIGNER_REALISM_THERMAL_BATTERY_DRAIN_FACTOR"
-)
-THERMAL_MOTOR_DERATE_FACTOR_ENV = (
-    "MISSION_DESIGNER_REALISM_THERMAL_MOTOR_DERATE_FACTOR"
-)
-PAYLOAD_MASS_KG_ENV = "MISSION_DESIGNER_REALISM_PAYLOAD_MASS_KG"
-BATTERY_SCENARIO_ENV = "MISSION_DESIGNER_REALISM_BATTERY_SCENARIO"
-BATTERY_REMAINING_PERCENT_ENV = "MISSION_DESIGNER_REALISM_BATTERY_REMAINING_PERCENT"
-SENSOR_FAILURE_COMPONENT_ENV = "MISSION_DESIGNER_REALISM_SENSOR_FAILURE_COMPONENT"
-SENSOR_FAILURE_TYPE_ENV = "MISSION_DESIGNER_REALISM_SENSOR_FAILURE_TYPE"
-LANDING_ZONE_BLOCKED_ENV = "MISSION_DESIGNER_REALISM_LANDING_ZONE_BLOCKED"
-VISIBILITY_MODE_ENV = "MISSION_DESIGNER_REALISM_VISIBILITY_MODE"
-NO_FLY_ZONE_MARKER_ENV = "MISSION_DESIGNER_REALISM_NO_FLY_ZONE_MARKER"
-TRAFFIC_CONFLICT_MARKER_ENV = "MISSION_DESIGNER_REALISM_TRAFFIC_CONFLICT_MARKER"
-ALTERNATE_LANDING_MARKER_ENV = "MISSION_DESIGNER_REALISM_ALTERNATE_LANDING_MARKER"
-RTH_BEHAVIOR_ENV = "MISSION_DESIGNER_REALISM_RTH_BEHAVIOR"
-MOVING_ACTOR_MARKER_ENV = "MISSION_DESIGNER_REALISM_MOVING_ACTOR_MARKER"
-COLLISION_OBSTACLE_ENV = "MISSION_DESIGNER_REALISM_COLLISION_OBSTACLE"
-COLLISION_OBSTACLE_CONTACT_TOPIC_ENV = (
-    "MISSION_DESIGNER_REALISM_COLLISION_OBSTACLE_CONTACT_TOPIC"
-)
-COLLISION_OBSTACLE_START_X_ENV = "MISSION_DESIGNER_REALISM_COLLISION_OBSTACLE_START_X_M"
-COLLISION_OBSTACLE_START_Y_ENV = "MISSION_DESIGNER_REALISM_COLLISION_OBSTACLE_START_Y_M"
-COLLISION_OBSTACLE_END_X_ENV = "MISSION_DESIGNER_REALISM_COLLISION_OBSTACLE_END_X_M"
-COLLISION_OBSTACLE_END_Y_ENV = "MISSION_DESIGNER_REALISM_COLLISION_OBSTACLE_END_Y_M"
-MULTI_DRONE_CONFLICT_PROBE_ENV = "MISSION_DESIGNER_REALISM_MULTI_DRONE_CONFLICT_PROBE"
-TELEMETRY_DROPOUT_MODE_ENV = "MISSION_DESIGNER_REALISM_TELEMETRY_DROPOUT_MODE"
-MAVLINK_LINK_DEGRADATION_MODE_ENV = (
-    "MISSION_DESIGNER_REALISM_MAVLINK_LINK_DEGRADATION_MODE"
-)
 TERRAIN_WORLD_SDF_ENV = "PX4_GAZEBO_HORIZONTAL_ROUTE_TERRAIN_WORLD_SDF"
 TERRAIN_WORLD_SHA256_ENV = "PX4_GAZEBO_HORIZONTAL_ROUTE_TERRAIN_WORLD_SHA256"
 TERRAIN_WORLD_SOURCE_REF_ENV = "PX4_GAZEBO_HORIZONTAL_ROUTE_TERRAIN_WORLD_SOURCE_REF"
 TERRAIN_PROVIDER_STATUS_ENV = "PX4_GAZEBO_HORIZONTAL_ROUTE_TERRAIN_PROVIDER_STATUS"
 TERRAIN_SAMPLING_MODE_ENV = "PX4_GAZEBO_HORIZONTAL_ROUTE_TERRAIN_SAMPLING_MODE"
-TERRAIN_VERTICAL_REFERENCE_ENV = (
-    "PX4_GAZEBO_HORIZONTAL_ROUTE_TERRAIN_VERTICAL_REFERENCE"
-)
+TERRAIN_VERTICAL_REFERENCE_ENV = "PX4_GAZEBO_HORIZONTAL_ROUTE_TERRAIN_VERTICAL_REFERENCE"
 TERRAIN_COLLISION_MODE_ENV = "PX4_GAZEBO_HORIZONTAL_ROUTE_TERRAIN_COLLISION_MODE"
 PAYLOAD_RECOVERY_ACTION_REF = "payload_recovery_action:mission_designer_payload_mass"
 CONTAINER_NAME = "boiled-claw-px4-gazebo-horizontal-route-smoke"
@@ -232,49 +204,9 @@ PAYLOAD_DETACH_TOPIC = "/model/x500_0/delivery_payload/detach"
 COLLISION_OBSTACLE_CONTACT_TOPIC = "/mission_designer/collision_obstacle/contacts"
 
 
-def _float_env(name: str, default: float = 0.0) -> float:
-    try:
-        return float(os.getenv(name, str(default)))
-    except ValueError:
-        return float(default)
-
-
-def _form2a_wind_compensation_request() -> dict[str, Any]:
-    return _route_scenario.build_wind_compensation_request(
-        selected_response_kind=os.getenv(
-            MISSIONOS_FORM2A_SELECTED_RESPONSE_KIND_ENV,
-            "",
-        ),
-        compensated_route_requested=os.getenv(WIND_COMPENSATED_ROUTE_ENV) == "1",
-        compensation_method=os.getenv(
-            WIND_COMPENSATION_METHOD_ENV,
-            "static_target_offset",
-        ),
-        preemptive_offset_m=_float_env(WIND_PREEMPTIVE_OFFSET_M_ENV, 0.0),
-        preemptive_offset_direction_deg=_float_env(
-            WIND_PREEMPTIVE_OFFSET_DIRECTION_DEG_ENV,
-            90.0,
-        ),
-        feed_forward_mps=_float_env(WIND_FEED_FORWARD_MPS_ENV, 0.0),
-        feed_forward_ramp_start_fraction=_float_env(
-            WIND_FEED_FORWARD_RAMP_START_FRACTION_ENV,
-            0.65,
-        ),
-        feed_forward_ramp_end_fraction=_float_env(
-            WIND_FEED_FORWARD_RAMP_END_FRACTION_ENV,
-            0.9,
-        ),
-        source_response_kind=os.getenv(WIND_COMPENSATION_SOURCE_RESPONSE_ENV, ""),
-    )
-
-
-
-
 def _require_opt_in() -> None:
     if os.getenv(OPT_IN_ENV) != "1":
-        raise SystemExit(
-            f"Set {OPT_IN_ENV}=1 to run the PX4/Gazebo horizontal route smoke."
-        )
+        raise SystemExit(f"Set {OPT_IN_ENV}=1 to run the PX4/Gazebo horizontal route smoke.")
 
 
 def _run(
@@ -294,15 +226,12 @@ def _run(
     )
 
 
-
 def _collision_obstacle_world_sdf_patch(*, contact_topic_enabled: bool = True) -> str:
     return _world_collision_obstacle_world_sdf_patch(
         motion=_collision_obstacle_motion_spec(),
         contact_topic=COLLISION_OBSTACLE_CONTACT_TOPIC,
         contact_topic_enabled=contact_topic_enabled,
     )
-
-
 
 
 def _enable_wind_on_x500_base(model_root: Path) -> dict[str, Any]:
@@ -330,90 +259,6 @@ def _enable_wind_on_x500_base(model_root: Path) -> dict[str, Any]:
         "wind_enabled_link_count": wind_enabled_link_count,
         "x500_base_sdf_path": str(x500_base_sdf_path),
     }
-
-
-def _payload_mass_request() -> float | None:
-    value = _optional_float_env(PAYLOAD_MASS_KG_ENV)
-    if value is None:
-        return None
-    if value < 0.0 or value > 100.0:
-        return None
-    return value
-
-
-def _payload_model_enabled() -> bool:
-    return (
-        os.getenv(PAYLOAD_RELEASE_MODEL_ENV) == "1"
-        or _payload_mass_request() is not None
-    )
-
-
-def _landing_zone_blocked_requested() -> bool:
-    return _route_scenario.landing_zone_blocked_requested(
-        os.getenv(LANDING_ZONE_BLOCKED_ENV)
-    )
-
-
-def _visibility_mode_request() -> str | None:
-    return _route_scenario.normalize_visibility_mode(os.getenv(VISIBILITY_MODE_ENV))
-
-
-def _no_fly_zone_marker_requested() -> bool:
-    return _route_scenario.no_fly_zone_marker_requested(
-        os.getenv(NO_FLY_ZONE_MARKER_ENV)
-    )
-
-
-def _traffic_conflict_marker_requested() -> bool:
-    return _route_scenario.traffic_conflict_marker_requested(
-        os.getenv(TRAFFIC_CONFLICT_MARKER_ENV)
-    )
-
-
-def _alternate_landing_marker_requested() -> bool:
-    return _route_scenario.alternate_landing_marker_requested(
-        os.getenv(ALTERNATE_LANDING_MARKER_ENV)
-    )
-
-
-def _rth_behavior_requested() -> bool:
-    return _route_scenario.rth_behavior_requested(os.getenv(RTH_BEHAVIOR_ENV))
-
-
-def _moving_actor_marker_requested() -> bool:
-    return _route_scenario.moving_actor_marker_requested(
-        os.getenv(MOVING_ACTOR_MARKER_ENV)
-    )
-
-
-def _collision_obstacle_requested() -> bool:
-    return _route_scenario.collision_obstacle_requested(
-        os.getenv(COLLISION_OBSTACLE_ENV)
-    )
-
-
-def _collision_obstacle_contact_topic_requested() -> bool:
-    return _route_scenario.collision_obstacle_contact_topic_requested(
-        os.getenv(COLLISION_OBSTACLE_CONTACT_TOPIC_ENV)
-    )
-
-
-def _multi_drone_conflict_probe_requested() -> bool:
-    return _route_scenario.multi_drone_conflict_probe_requested(
-        os.getenv(MULTI_DRONE_CONFLICT_PROBE_ENV)
-    )
-
-
-def _telemetry_dropout_mode_request() -> str:
-    return _route_scenario.normalize_telemetry_dropout_mode(
-        os.getenv(TELEMETRY_DROPOUT_MODE_ENV)
-    )
-
-
-def _mavlink_link_degradation_mode_request() -> str:
-    return _route_scenario.normalize_mavlink_link_degradation_mode(
-        os.getenv(MAVLINK_LINK_DEGRADATION_MODE_ENV)
-    )
 
 
 def _prepare_payload_model_root(
@@ -471,9 +316,9 @@ def _prepare_payload_model_root(
     world_text = world_path.read_text(encoding="utf-8")
     if terrain_source_hash:
         world_text = world_text.replace(
-            "<world name=\"default\">",
+            '<world name="default">',
             (
-                "<world name=\"default\">\n"
+                '<world name="default">\n'
                 "    <!-- mission_designer_terrain_source_sha256:"
                 f"{terrain_source_hash} -->"
             ),
@@ -498,8 +343,7 @@ def _prepare_payload_model_root(
     if payload_enabled and "delivery_payload" not in world_text:
         world_text = world_text.replace(
             "  </world>\n</sdf>",
-            _payload_world_sdf_patch(payload_mass_kg=payload_mass_kg)
-            + "  </world>\n</sdf>",
+            _payload_world_sdf_patch(payload_mass_kg=payload_mass_kg) + "  </world>\n</sdf>",
         )
     if wind_effects_enabled:
         wind_requested = _wind_requested_profile()["requested"]
@@ -516,10 +360,7 @@ def _prepare_payload_model_root(
                 + "  </world>\n</sdf>",
             )
         _enable_wind_on_x500_base(model_root)
-    if (
-        landing_zone_blocked
-        and "mission_designer_landing_zone_blocked_marker" not in world_text
-    ):
+    if landing_zone_blocked and "mission_designer_landing_zone_blocked_marker" not in world_text:
         world_text = world_text.replace(
             "  </world>\n</sdf>",
             _landing_zone_blocked_world_sdf_patch() + "  </world>\n</sdf>",
@@ -531,18 +372,12 @@ def _prepare_payload_model_root(
             "  </world>\n</sdf>",
             _no_fly_zone_world_sdf_patch() + "  </world>\n</sdf>",
         )
-    if (
-        traffic_conflict_marker
-        and "mission_designer_traffic_conflict_marker" not in world_text
-    ):
+    if traffic_conflict_marker and "mission_designer_traffic_conflict_marker" not in world_text:
         world_text = world_text.replace(
             "  </world>\n</sdf>",
             _traffic_conflict_world_sdf_patch() + "  </world>\n</sdf>",
         )
-    if (
-        alternate_landing_marker
-        and "mission_designer_alternate_landing_marker" not in world_text
-    ):
+    if alternate_landing_marker and "mission_designer_alternate_landing_marker" not in world_text:
         world_text = world_text.replace(
             "  </world>\n</sdf>",
             _alternate_landing_world_sdf_patch() + "  </world>\n</sdf>",
@@ -555,8 +390,7 @@ def _prepare_payload_model_root(
     if collision_obstacle and "mission_designer_collision_obstacle" not in world_text:
         world_text = world_text.replace(
             "  </world>\n</sdf>",
-            _collision_obstacle_world_sdf_patch(contact_topic_enabled=False)
-            + "  </world>\n</sdf>",
+            _collision_obstacle_world_sdf_patch(contact_topic_enabled=False) + "  </world>\n</sdf>",
         )
     world_path.write_text(world_text, encoding="utf-8")
     return model_root
@@ -633,9 +467,7 @@ def _terrain_world_readback(payload_model_root: Path | None) -> dict[str, Any]:
     observed_sha = hashlib.sha256(world_path.read_bytes()).hexdigest()
     expected_sha = os.getenv(TERRAIN_WORLD_SHA256_ENV, "").strip()
     requested_sha = (
-        hashlib.sha256(requested_path.read_bytes()).hexdigest()
-        if requested_path.exists()
-        else ""
+        hashlib.sha256(requested_path.read_bytes()).hexdigest() if requested_path.exists() else ""
     )
     result.update(
         {
@@ -643,14 +475,11 @@ def _terrain_world_readback(payload_model_root: Path | None) -> dict[str, Any]:
             "expected_world_sdf_sha256": expected_sha,
             "world_sdf_hash_match": bool(expected_sha and observed_sha == expected_sha),
             "source_world_sdf_sha256": requested_sha,
-            "source_world_sdf_hash_match": bool(
-                expected_sha and requested_sha == expected_sha
-            ),
+            "source_world_sdf_hash_match": bool(expected_sha and requested_sha == expected_sha),
             "terrain_model_present": "digital_twin_heightmap_terrain" in world_text,
             "terrain_collision_present": '<collision name="terrain_collision"' in world_text,
             "terrain_collision_removed_for_visual_only_runtime": (
-                "terrain_collision_removed_for_visual_only_horizontal_route"
-                in world_text
+                "terrain_collision_removed_for_visual_only_horizontal_route" in world_text
             ),
             "terrain_visual_present": "terrain_visual" in world_text,
             "heightmap_file_count": len(list((payload_model_root / "heightmaps").glob("*"))),
@@ -662,20 +491,14 @@ def _terrain_world_readback(payload_model_root: Path | None) -> dict[str, Any]:
         and result["terrain_visual_present"] is True
         and result["heightmap_file_count"] > 0
     )
-    result["terrain_world_loaded_into_sitl"] = (
-        result["terrain_artifact_used"] is True
-        and (
-            result["source_world_sdf_hash_match"] is True
-            or not expected_sha
-        )
+    result["terrain_world_loaded_into_sitl"] = result["terrain_artifact_used"] is True and (
+        result["source_world_sdf_hash_match"] is True or not expected_sha
     )
     return result
 
 
 def _terrain_world_loaded_into_sitl() -> bool:
-    return bool(
-        (TERRAIN_WORLD_REALISM_SUMMARY or {}).get("terrain_world_loaded_into_sitl")
-    )
+    return bool((TERRAIN_WORLD_REALISM_SUMMARY or {}).get("terrain_world_loaded_into_sitl"))
 
 
 def _terrain_relative_xy_origin(pickup_pose: dict[str, float]) -> tuple[float, float]:
@@ -869,48 +692,6 @@ def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
     path.write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in rows))
 
 
-def _optional_float_env(name: str) -> float | None:
-    raw = os.getenv(name)
-    if raw in (None, ""):
-        return None
-    try:
-        return float(raw)
-    except ValueError:
-        return None
-
-
-def _bounded_float_env(
-    name: str,
-    *,
-    default: float,
-    minimum: float = -10.0,
-    maximum: float = 10.0,
-) -> float:
-    raw = os.getenv(name)
-    if raw is None:
-        return default
-    if raw == "":
-        raise ValueError(f"{name} must be a finite float")
-    try:
-        value = float(raw)
-    except ValueError as exc:
-        raise ValueError(f"{name} must be a finite float") from exc
-    if not math.isfinite(value):
-        raise ValueError(f"{name} must be finite")
-    if value < minimum or value > maximum:
-        raise ValueError(f"{name} must be between {minimum} and {maximum}")
-    return value
-
-
-def _collision_obstacle_motion_spec() -> dict[str, Any]:
-    return _route_scenario.build_collision_obstacle_motion_spec(
-        start_x_m=_bounded_float_env(COLLISION_OBSTACLE_START_X_ENV, default=2.1),
-        start_y_m=_bounded_float_env(COLLISION_OBSTACLE_START_Y_ENV, default=2.1),
-        end_x_m=_bounded_float_env(COLLISION_OBSTACLE_END_X_ENV, default=3.7),
-        end_y_m=_bounded_float_env(COLLISION_OBSTACLE_END_Y_ENV, default=3.7),
-    )
-
-
 def _reset_battery_status_cache() -> None:
     global _LAST_BATTERY_STATUS_SAMPLE_AT, _LAST_BATTERY_STATUS_SAMPLE
     _LAST_BATTERY_STATUS_SAMPLE_AT = 0.0
@@ -918,28 +699,6 @@ def _reset_battery_status_cache() -> None:
         "battery_status_observed": False,
         "battery_state_source": "px4-listener:battery_status_not_observed",
     }
-
-
-def _wind_requested_profile() -> dict[str, Any]:
-    return _route_scenario.build_wind_requested_profile(
-        wind_mean_mps=_optional_float_env(WIND_MEAN_MPS_ENV),
-        wind_direction_deg=_optional_float_env(WIND_DIRECTION_DEG_ENV),
-        wind_gust_mps=_optional_float_env(WIND_GUST_MPS_ENV),
-        wind_variance=_optional_float_env(WIND_VARIANCE_ENV),
-    )
-
-
-def _thermal_weather_requested_profile() -> dict[str, Any]:
-    return _route_scenario.build_thermal_weather_requested_profile(
-        temperature_c=_optional_float_env(TEMPERATURE_C_ENV),
-        pressure_hpa=_optional_float_env(PRESSURE_HPA_ENV),
-        thermal_battery_drain_factor=_optional_float_env(
-            THERMAL_BATTERY_DRAIN_FACTOR_ENV
-        ),
-        thermal_motor_derate_factor=_optional_float_env(
-            THERMAL_MOTOR_DERATE_FACTOR_ENV
-        ),
-    )
 
 
 def _wind_physics_world_readback(
@@ -996,12 +755,8 @@ def _wind_physics_world_readback(
         )
     if x500_base_sdf_path.exists():
         x500_base_text = x500_base_sdf_path.read_text(encoding="utf-8")
-        result["x500_base_sdf_sha256"] = hashlib.sha256(
-            x500_base_sdf_path.read_bytes()
-        ).hexdigest()
-        result["wind_enabled_link_count"] = x500_base_text.count(
-            "<enable_wind>true</enable_wind>"
-        )
+        result["x500_base_sdf_sha256"] = hashlib.sha256(x500_base_sdf_path.read_bytes()).hexdigest()
+        result["wind_enabled_link_count"] = x500_base_text.count("<enable_wind>true</enable_wind>")
         result["wind_enabled_on_vehicle_links"] = result["wind_enabled_link_count"] > 0
     result["wind_effects_world_sdf_readback_observed"] = (
         result["wind_effects_plugin_materialized"] is True
@@ -1084,16 +839,11 @@ def _apply_wind_realism(payload_model_root: Path | None = None) -> dict[str, Any
         gust = float(requested["wind_gust_mps"] or mean)
         variance = float(requested["wind_variance"] or 0.0)
         wind_x, wind_y = _wind_vector(mean_mps=mean, direction_deg=direction)
-        if (
-            requested["wind_gust_mps"] is not None
-            or requested["wind_variance"] is not None
-        ):
+        if requested["wind_gust_mps"] is not None or requested["wind_variance"] is not None:
             approximation_reasons.append(
                 "gazebo_wind_message_applies_constant_linear_velocity_only"
             )
-        message = (
-            f"enable_wind: true linear_velocity {{ x: {wind_x} y: {wind_y} z: 0 }}"
-        )
+        message = f"enable_wind: true linear_velocity {{ x: {wind_x} y: {wind_y} z: 0 }}"
         message_sha256 = hashlib.sha256(message.encode("utf-8")).hexdigest()
         target_topic = "/world/default/wind"
         result = _run(
@@ -1152,45 +902,27 @@ def _apply_wind_realism(payload_model_root: Path | None = None) -> dict[str, Any
             if not physics_readback["wind_effects_world_sdf_readback_observed"]:
                 unsupported_reasons.append("gazebo_wind_terminal_physics_not_observed")
             if not runtime_readback["gazebo_runtime_world_model_readback_observed"]:
-                unsupported_reasons.append(
-                    "gazebo_wind_runtime_world_model_not_observed"
-                )
+                unsupported_reasons.append("gazebo_wind_runtime_world_model_not_observed")
             wind_mean_capability_status = (
                 "supported" if terminal_physics_observed else "unsupported"
             )
             wind_gust_capability_status = (
                 "unsupported"
-                if not terminal_physics_observed
-                and requested["wind_gust_mps"] is not None
-                else (
-                    "approximated"
-                    if requested["wind_gust_mps"] is not None
-                    else "not_requested"
-                )
+                if not terminal_physics_observed and requested["wind_gust_mps"] is not None
+                else ("approximated" if requested["wind_gust_mps"] is not None else "not_requested")
             )
             wind_variance_capability_status = (
                 "unsupported"
-                if not terminal_physics_observed
-                and requested["wind_variance"] is not None
-                else (
-                    "approximated"
-                    if requested["wind_variance"] is not None
-                    else "not_requested"
-                )
+                if not terminal_physics_observed and requested["wind_variance"] is not None
+                else ("approximated" if requested["wind_variance"] is not None else "not_requested")
             )
             application_status = (
                 "unsupported"
                 if not terminal_physics_observed
-                else (
-                    "applied_with_approximations"
-                    if approximation_reasons
-                    else "applied"
-                )
+                else ("applied_with_approximations" if approximation_reasons else "applied")
             )
             observation_status = (
-                "applied_config_observed"
-                if terminal_physics_observed
-                else "unsupported"
+                "applied_config_observed" if terminal_physics_observed else "unsupported"
             )
             applied = {
                 "method": "gz_topic_wind_message",
@@ -1230,9 +962,7 @@ def _apply_wind_realism(payload_model_root: Path | None = None) -> dict[str, Any
                 "wind_effects_plugin_materialized": physics_readback[
                     "wind_effects_plugin_materialized"
                 ],
-                "wind_enabled_on_vehicle_links": physics_readback[
-                    "wind_enabled_on_vehicle_links"
-                ],
+                "wind_enabled_on_vehicle_links": physics_readback["wind_enabled_on_vehicle_links"],
                 "wind_enabled_link_count": physics_readback["wind_enabled_link_count"],
                 "wind_world_linear_velocity_matches_requested": physics_readback[
                     "wind_world_linear_velocity_matches_requested"
@@ -1267,9 +997,7 @@ def _apply_wind_realism(payload_model_root: Path | None = None) -> dict[str, Any
                 "returncode": result.returncode,
                 "wind_topic_readback_observed": readback["readback_observed"],
                 "wind_topic_readback_status": readback["readback_status"],
-                "wind_topic_readback_publish_status": readback[
-                    "readback_publish_status"
-                ],
+                "wind_topic_readback_publish_status": readback["readback_publish_status"],
                 "wind_topic_publish_attempt_count": 6,
                 "wind_mean_mps": mean,
                 "wind_direction_deg": direction,
@@ -1290,9 +1018,7 @@ def _apply_wind_realism(payload_model_root: Path | None = None) -> dict[str, Any
                 "wind_world_linear_velocity_matches_requested": physics_readback[
                     "wind_world_linear_velocity_matches_requested"
                 ],
-                "wind_enabled_on_vehicle_links": physics_readback[
-                    "wind_enabled_on_vehicle_links"
-                ],
+                "wind_enabled_on_vehicle_links": physics_readback["wind_enabled_on_vehicle_links"],
                 "wind_enabled_link_count": physics_readback["wind_enabled_link_count"],
                 "world_sdf_sha256": physics_readback.get("world_sdf_sha256"),
                 "x500_base_sdf_sha256": physics_readback.get("x500_base_sdf_sha256"),
@@ -1311,9 +1037,7 @@ def _apply_wind_realism(payload_model_root: Path | None = None) -> dict[str, Any
                 "gazebo_runtime_vehicle_pose_observed": runtime_readback[
                     "gazebo_runtime_vehicle_pose_observed"
                 ],
-                "gazebo_runtime_vehicle_pose": runtime_readback.get(
-                    "gazebo_runtime_vehicle_pose"
-                ),
+                "gazebo_runtime_vehicle_pose": runtime_readback.get("gazebo_runtime_vehicle_pose"),
                 "gazebo_runtime_expected_world_path": runtime_readback.get(
                     "expected_runtime_world_path"
                 ),
@@ -1471,9 +1195,7 @@ def _vehicle_payload_mass_realism(
     observed: dict[str, Any] = {}
     if requested_present:
         world_path = (
-            None
-            if payload_model_root is None
-            else payload_model_root / "worlds" / "default.sdf"
+            None if payload_model_root is None else payload_model_root / "worlds" / "default.sdf"
         )
         if world_path is not None and world_path.exists():
             world_text = world_path.read_text(encoding="utf-8")
@@ -1523,11 +1245,11 @@ def _vehicle_payload_mass_realism(
                 ):
                     observation_status = "model_sdf_and_payload_release_observed"
                     observed["payload_release_observed"] = True
-                    observed["payload_release_event_source"] = (
-                        payload_release_summary.get("payload_release_event_source")
+                    observed["payload_release_event_source"] = payload_release_summary.get(
+                        "payload_release_event_source"
                     )
-                    observed["payload_release_observed_at"] = (
-                        payload_release_summary.get("payload_release_observed_at")
+                    observed["payload_release_observed_at"] = payload_release_summary.get(
+                        "payload_release_observed_at"
                     )
             else:
                 application_status = "unsupported"
@@ -1550,7 +1272,9 @@ def _vehicle_payload_mass_realism(
     capability_status = (
         "supported"
         if application_status == "applied"
-        else "unsupported" if unsupported_reasons else "not_requested"
+        else "unsupported"
+        if unsupported_reasons
+        else "not_requested"
     )
     capability = {
         "schema_version": "simulator_capability_matrix.v1",
@@ -1593,15 +1317,6 @@ def _vehicle_payload_mass_realism(
         "payload_simulator_condition_application": application,
         "observed_vehicle_condition_evidence": evidence,
     }
-
-
-def _battery_requested_profile() -> dict[str, Any]:
-    return _route_scenario.build_battery_requested_profile(
-        battery_scenario=os.getenv(BATTERY_SCENARIO_ENV),
-        requested_remaining_percent=_optional_float_env(
-            BATTERY_REMAINING_PERCENT_ENV
-        ),
-    )
 
 
 def _px4_param_show(param_name: str) -> dict[str, Any]:
@@ -1657,7 +1372,6 @@ def _px4_param_set(param_name: str, value: float) -> dict[str, Any]:
     }
 
 
-
 def _thermal_weather_realism() -> dict[str, Any]:
     profile = _thermal_weather_requested_profile()
     requested = profile["requested"]
@@ -1685,33 +1399,23 @@ def _thermal_weather_realism() -> dict[str, Any]:
             )
         )
         if pressure_hpa is not None:
-            approximation_reasons.append(
-                "pressure_hpa_recorded_for_context_not_air_physics"
-            )
+            approximation_reasons.append("pressure_hpa_recorded_for_context_not_air_physics")
         if not thermal_effect_requested:
             application_status = "unsupported"
             observation_status = "unsupported"
             thermal_capability_status = "unsupported"
-            unsupported_reasons.append(
-                "thermal_battery_or_motor_condition_not_requested"
-            )
+            unsupported_reasons.append("thermal_battery_or_motor_condition_not_requested")
             if pressure_hpa is not None:
-                unsupported_reasons.append(
-                    "pressure_physics_not_supported_by_bounded_sitl_model"
-                )
+                unsupported_reasons.append("pressure_physics_not_supported_by_bounded_sitl_model")
             capability = {
                 "schema_version": "simulator_capability_matrix.v1",
-                "capability_id": (
-                    "simulator_capability_matrix:mission_designer_thermal_weather"
-                ),
+                "capability_id": ("simulator_capability_matrix:mission_designer_thermal_weather"),
                 "thermal_weather": thermal_capability_status,
                 "battery_drain_temperature_effect": battery_drain_status,
                 "motor_derate_temperature_effect": motor_derate_status,
                 "air_temperature_physics": "not_claimed",
                 "pressure_physics": "not_claimed",
-                "support_detection_method": (
-                    "px4_param_set_readback_and_battery_status_listener"
-                ),
+                "support_detection_method": ("px4_param_set_readback_and_battery_status_listener"),
                 "unsupported_reasons": unsupported_reasons,
                 "approximation_reasons": approximation_reasons,
             }
@@ -1732,9 +1436,7 @@ def _thermal_weather_realism() -> dict[str, Any]:
             }
             evidence = {
                 "schema_version": "observed_environment_evidence.v1",
-                "evidence_id": (
-                    "observed_environment_evidence:mission_designer_thermal_weather"
-                ),
+                "evidence_id": ("observed_environment_evidence:mission_designer_thermal_weather"),
                 "condition_kind": "thermal_weather",
                 "observation_status": observation_status,
                 "requested_condition_ref": profile["condition_id"],
@@ -1792,9 +1494,7 @@ def _thermal_weather_realism() -> dict[str, Any]:
         ]
         if effective_motor_derate < 0.999:
             set_results.append(_px4_param_set("MPC_THR_MAX", effective_motor_derate))
-        applied_params = {
-            item["param"]: item["requested_value"] for item in set_results
-        }
+        applied_params = {item["param"]: item["requested_value"] for item in set_results}
         after_params = {
             "SIM_BAT_MIN_PCT": _px4_param_show("SIM_BAT_MIN_PCT"),
             "SIM_BAT_DRAIN": _px4_param_show("SIM_BAT_DRAIN"),
@@ -1855,8 +1555,7 @@ def _thermal_weather_realism() -> dict[str, Any]:
             "thermal_motor_derate_factor": effective_motor_derate,
             "thermal_air_physics_claimed": False,
             "battery_status": battery_sample,
-            "battery_status_observed": battery_sample.get("battery_status_observed")
-            is True,
+            "battery_status_observed": battery_sample.get("battery_status_observed") is True,
             "param_readback_matches_requested": param_readback,
         }
     capability = {
@@ -1944,9 +1643,7 @@ def _battery_realism() -> dict[str, Any]:
             set_results.append(_px4_param_set("BAT_LOW_THR", threshold))
             if scenario == "battery_critical":
                 set_results.append(_px4_param_set("BAT_CRIT_THR", threshold))
-            applied_params = {
-                item["param"]: item["requested_value"] for item in set_results
-            }
+            applied_params = {item["param"]: item["requested_value"] for item in set_results}
             after_params = {
                 "BAT_LOW_THR": _px4_param_show("BAT_LOW_THR"),
                 "BAT_CRIT_THR": _px4_param_show("BAT_CRIT_THR"),
@@ -2027,13 +1724,10 @@ def _battery_realism() -> dict[str, Any]:
                 observation_status = "battery_status_observed"
                 if expected_warning is not None and (
                     after_sample.get("battery_warning") is None
-                    or int(after_sample.get("battery_warning") or 0)
-                    < int(expected_warning)
+                    or int(after_sample.get("battery_warning") or 0) < int(expected_warning)
                 ):
                     observation_status = "battery_status_observed_warning_not_reached"
-                    unsupported_reasons.append(
-                        "px4_battery_warning_threshold_not_observed"
-                    )
+                    unsupported_reasons.append("px4_battery_warning_threshold_not_observed")
             elif _application_status_is_materialized(application_status):
                 observation_status = "battery_status_not_observed"
                 unsupported_reasons.append("px4_battery_status_not_observed")
@@ -2044,18 +1738,16 @@ def _battery_realism() -> dict[str, Any]:
         "battery_failsafe_behavior": (
             "not_requested"
             if scenario == "battery_low"
-            else "unsupported" if scenario == "battery_critical" else capability_status
+            else "unsupported"
+            if scenario == "battery_critical"
+            else capability_status
         ),
         "support_detection_method": (
-            "px4_param_set_and_battery_status_listener"
-            if requested_present
-            else "not_requested"
+            "px4_param_set_and_battery_status_listener" if requested_present else "not_requested"
         ),
         "unsupported_reasons": unsupported_reasons,
         "approximation_reasons": (
-            [
-                "requested_remaining_percent_is_warning_threshold_input_not_px4_remaining_target"
-            ]
+            ["requested_remaining_percent_is_warning_threshold_input_not_px4_remaining_target"]
             if requested_present and scenario in ("battery_low", "battery_critical")
             else []
         ),
@@ -2121,18 +1813,13 @@ def _refresh_battery_realism_observation_from_trace() -> None:
     latest = _latest_trace_battery_status()
     if not latest:
         return
-    application = (
-        BATTERY_REALISM_SUMMARY.get("battery_simulator_condition_application") or {}
-    )
+    application = BATTERY_REALISM_SUMMARY.get("battery_simulator_condition_application") or {}
     application_status = application.get("application_status")
     expected_warning = requested.get("requested_warning_level")
     observed_warning = latest.get("battery_warning")
     warning_reached = _application_status_is_materialized(application_status) and (
         expected_warning is None
-        or (
-            observed_warning is not None
-            and int(observed_warning) >= int(expected_warning)
-        )
+        or (observed_warning is not None and int(observed_warning) >= int(expected_warning))
     )
     evidence = BATTERY_REALISM_SUMMARY.get("observed_battery_condition_evidence") or {}
     observed = dict(evidence.get("observed") or {})
@@ -2176,9 +1863,7 @@ def _refresh_battery_realism_observation_from_trace() -> None:
             else "battery_status_observed_warning_not_reached"
         )
     else:
-        evidence["observation_status"] = (
-            evidence.get("observation_status") or "unsupported"
-        )
+        evidence["observation_status"] = evidence.get("observation_status") or "unsupported"
     evidence["observed_at"] = datetime.now(timezone.utc).isoformat()
     BATTERY_REALISM_SUMMARY["observed_battery_condition_evidence"] = evidence
     if warning_reached:
@@ -2193,13 +1878,6 @@ def _refresh_battery_realism_observation_from_trace() -> None:
                 if reason != "px4_battery_warning_threshold_not_observed"
             ]
             BATTERY_REALISM_SUMMARY[key] = record
-
-
-def _sensor_failure_requested_profile() -> dict[str, Any]:
-    return _route_scenario.build_sensor_failure_requested_profile(
-        sensor_component=os.getenv(SENSOR_FAILURE_COMPONENT_ENV),
-        failure_type=os.getenv(SENSOR_FAILURE_TYPE_ENV),
-    )
 
 
 def _sensor_gps_sample(*, timeout_seconds: int = 2) -> dict[str, Any]:
@@ -2421,9 +2099,7 @@ def _landing_zone_blocked_realism(
     observation_status = "not_requested"
     if requested:
         world_path = (
-            None
-            if payload_model_root is None
-            else payload_model_root / "worlds" / "default.sdf"
+            None if payload_model_root is None else payload_model_root / "worlds" / "default.sdf"
         )
         if world_path is None or not world_path.exists():
             application_status = "unsupported"
@@ -2436,20 +2112,13 @@ def _landing_zone_blocked_realism(
             marker_visual_present = False
             marker_collision_present = False
             for model in ET.fromstring(world_text).iter("model"):
-                if (
-                    model.attrib.get("name")
-                    != "mission_designer_landing_zone_blocked_marker"
-                ):
+                if model.attrib.get("name") != "mission_designer_landing_zone_blocked_marker":
                     continue
                 marker_present = True
                 marker_visual_present = model.find(".//visual") is not None
                 marker_collision_present = model.find(".//collision") is not None
                 break
-            if (
-                marker_present
-                and marker_visual_present
-                and not marker_collision_present
-            ):
+            if marker_present and marker_visual_present and not marker_collision_present:
                 application_status = "applied"
                 observation_status = "world_sdf_marker_observed"
                 approximation_reasons.append(
@@ -2476,9 +2145,7 @@ def _landing_zone_blocked_realism(
             else:
                 application_status = "unsupported"
                 observation_status = "unsupported"
-                unsupported_reasons.append(
-                    "landing_zone_blocked_marker_not_materialized"
-                )
+                unsupported_reasons.append("landing_zone_blocked_marker_not_materialized")
                 observed = {
                     "source": "gazebo_world_sdf",
                     "observed": False,
@@ -2487,7 +2154,9 @@ def _landing_zone_blocked_realism(
     capability_status = (
         "supported_visual_only"
         if application_status == "applied"
-        else "unsupported" if unsupported_reasons else "not_requested"
+        else "unsupported"
+        if unsupported_reasons
+        else "not_requested"
     )
     capability = {
         "schema_version": "gazebo_world_capability_matrix.v1",
@@ -2588,9 +2257,7 @@ def _visibility_realism(
     observation_status = "not_requested"
     if mode == "fog":
         world_path = (
-            None
-            if payload_model_root is None
-            else payload_model_root / "worlds" / "default.sdf"
+            None if payload_model_root is None else payload_model_root / "worlds" / "default.sdf"
         )
         if world_path is None or not world_path.exists():
             application_status = "unsupported"
@@ -2679,9 +2346,7 @@ def _visibility_realism(
             else:
                 application_status = "unsupported"
                 observation_status = "unsupported"
-                unsupported_reasons.append(
-                    "visibility_fog_render_marker_not_materialized"
-                )
+                unsupported_reasons.append("visibility_fog_render_marker_not_materialized")
                 observed = {
                     "source": "gazebo_world_sdf",
                     "observed": False,
@@ -2704,7 +2369,9 @@ def _visibility_realism(
     capability_status = (
         "supported_render_only"
         if application_status == "applied_with_approximations"
-        else "unsupported" if unsupported_reasons else "not_requested"
+        else "unsupported"
+        if unsupported_reasons
+        else "not_requested"
     )
     capability = {
         "schema_version": "visibility_capability_matrix.v1",
@@ -2713,9 +2380,7 @@ def _visibility_realism(
         "smoke_render_marker": "deferred_to_followup_pr",
         "visibility_meters_target": "not_materialized",
         "support_detection_method": (
-            "gazebo_world_sdf_scene_fog_presence"
-            if requested_present
-            else "not_requested"
+            "gazebo_world_sdf_scene_fog_presence" if requested_present else "not_requested"
         ),
         "unsupported_reasons": unsupported_reasons,
         "approximation_reasons": approximation_reasons,
@@ -2836,16 +2501,10 @@ def _operational_no_fly_zone_realism(
                             else (
                                 "operational_visual_markers"
                                 if (
-                                    (
-                                        traffic_conflict_requested
-                                        and no_fly_zone_requested
-                                    )
+                                    (traffic_conflict_requested and no_fly_zone_requested)
                                     or (
                                         alternate_landing_requested
-                                        and (
-                                            no_fly_zone_requested
-                                            or traffic_conflict_requested
-                                        )
+                                        and (no_fly_zone_requested or traffic_conflict_requested)
                                     )
                                     or rth_behavior_requested
                                     or (
@@ -2895,20 +2554,12 @@ def _operational_no_fly_zone_realism(
             "moving_actor_nominal_profile_velocity_mps": (
                 _moving_actor_waypoint_motion_spec()["nominal_profile_velocity_mps"]
             ),
-            "collision_obstacle_start_xy_m": _collision_obstacle_motion_spec()[
-                "start_xy_m"
-            ],
-            "collision_obstacle_end_xy_m": _collision_obstacle_motion_spec()[
-                "end_xy_m"
-            ],
-            "collision_obstacle_loop_seconds": _collision_obstacle_motion_spec()[
-                "loop_seconds"
-            ],
+            "collision_obstacle_start_xy_m": _collision_obstacle_motion_spec()["start_xy_m"],
+            "collision_obstacle_end_xy_m": _collision_obstacle_motion_spec()["end_xy_m"],
+            "collision_obstacle_loop_seconds": _collision_obstacle_motion_spec()["loop_seconds"],
             "enforcement_enabled": False,
             "traffic_motion_enabled": False,
-            "moving_actor_sdf_scripted_motion_enabled": (
-                True if moving_actor_requested else False
-            ),
+            "moving_actor_sdf_scripted_motion_enabled": (True if moving_actor_requested else False),
             "collision_enabled": False,
             "collision_obstacle_collision_enabled": collision_obstacle_requested,
             "collision_obstacle_contact_topic_enabled": (
@@ -2943,9 +2594,7 @@ def _operational_no_fly_zone_realism(
                 ]
             )
         world_path = (
-            None
-            if payload_model_root is None
-            else payload_model_root / "worlds" / "default.sdf"
+            None if payload_model_root is None else payload_model_root / "worlds" / "default.sdf"
         )
         if multi_drone_conflict_probe_requested and not visual_marker_requested:
             application_status = "unsupported"
@@ -2992,62 +2641,40 @@ def _operational_no_fly_zone_realism(
                 if model_name == "mission_designer_no_fly_zone_marker":
                     no_fly_marker_present = True
                     no_fly_marker_visual_present = model.find(".//visual") is not None
-                    no_fly_marker_collision_present = (
-                        model.find(".//collision") is not None
-                    )
+                    no_fly_marker_collision_present = model.find(".//collision") is not None
                 if model_name == "mission_designer_traffic_conflict_marker":
                     traffic_marker_present = True
                     traffic_marker_visual_present = model.find(".//visual") is not None
-                    traffic_marker_collision_present = (
-                        model.find(".//collision") is not None
-                    )
+                    traffic_marker_collision_present = model.find(".//collision") is not None
                 if model_name == "mission_designer_alternate_landing_marker":
                     alternate_marker_present = True
-                    alternate_marker_visual_present = (
-                        model.find(".//visual") is not None
-                    )
-                    alternate_marker_collision_present = (
-                        model.find(".//collision") is not None
-                    )
+                    alternate_marker_visual_present = model.find(".//visual") is not None
+                    alternate_marker_collision_present = model.find(".//collision") is not None
                 if model_name == "mission_designer_moving_actor_marker":
                     moving_actor_present = True
                     moving_actor_visual_present = model.find(".//visual") is not None
                     moving_actor_script_present = (
-                        model.find(
-                            ".//plugin[@name='gz::sim::systems::TrajectoryFollower']"
-                        )
+                        model.find(".//plugin[@name='gz::sim::systems::TrajectoryFollower']")
                         is not None
                     )
-                    moving_actor_collision_present = (
-                        model.find(".//collision") is not None
-                    )
+                    moving_actor_collision_present = model.find(".//collision") is not None
                 if model_name == "mission_designer_collision_obstacle":
                     collision_obstacle_present = True
-                    collision_obstacle_visual_present = (
-                        model.find(".//visual") is not None
-                    )
-                    collision_obstacle_collision_present = (
-                        model.find(".//collision") is not None
-                    )
+                    collision_obstacle_visual_present = model.find(".//visual") is not None
+                    collision_obstacle_collision_present = model.find(".//collision") is not None
                     collision_obstacle_contact_sensor_present = (
                         model.find(".//sensor[@type='contact']") is not None
                     )
                     collision_obstacle_script_present = (
-                        model.find(
-                            ".//plugin[@name='gz::sim::systems::TrajectoryFollower']"
-                        )
+                        model.find(".//plugin[@name='gz::sim::systems::TrajectoryFollower']")
                         is not None
                     )
             for actor in ET.fromstring(world_text).iter("actor"):
                 actor_name = actor.attrib.get("name")
                 if actor_name == "mission_designer_moving_actor_marker":
                     moving_actor_present = True
-                    moving_actor_script_present = (
-                        actor.find(".//script/trajectory") is not None
-                    )
-                    moving_actor_collision_present = (
-                        actor.find(".//collision") is not None
-                    )
+                    moving_actor_script_present = actor.find(".//script/trajectory") is not None
+                    moving_actor_collision_present = actor.find(".//collision") is not None
             no_fly_ok = not no_fly_zone_requested or (
                 no_fly_marker_present
                 and no_fly_marker_visual_present
@@ -3090,9 +2717,7 @@ def _operational_no_fly_zone_realism(
                 application_status = "applied_with_approximations"
                 observation_status = "world_sdf_operational_markers_observed"
                 if no_fly_zone_requested:
-                    approximation_reasons.append(
-                        "visual_only_marker_not_geofence_enforcement"
-                    )
+                    approximation_reasons.append("visual_only_marker_not_geofence_enforcement")
                 if traffic_conflict_requested:
                     approximation_reasons.append(
                         "visual_only_marker_not_dynamic_traffic_or_collision"
@@ -3113,11 +2738,7 @@ def _operational_no_fly_zone_realism(
                     "method": "gazebo_world_sdf_operational_visual_markers",
                     "world_sdf_path": str(world_path),
                     "model_names": [
-                        *(
-                            ["mission_designer_no_fly_zone_marker"]
-                            if no_fly_zone_requested
-                            else []
-                        ),
+                        *(["mission_designer_no_fly_zone_marker"] if no_fly_zone_requested else []),
                         *(
                             ["mission_designer_traffic_conflict_marker"]
                             if traffic_conflict_requested
@@ -3148,9 +2769,7 @@ def _operational_no_fly_zone_realism(
                     "moving_actor_loop_seconds": 6.0,
                     "moving_actor_mode": "linear_waypoint_motion",
                     "moving_actor_nominal_profile_velocity_mps": (
-                        _moving_actor_waypoint_motion_spec()[
-                            "nominal_profile_velocity_mps"
-                        ]
+                        _moving_actor_waypoint_motion_spec()["nominal_profile_velocity_mps"]
                     ),
                     "moving_actor_trajectory_definition_sha256": (
                         _moving_actor_waypoint_trajectory_definition_sha256()
@@ -3158,9 +2777,7 @@ def _operational_no_fly_zone_realism(
                     "collision_obstacle_start_xy_m": (
                         _collision_obstacle_motion_spec()["start_xy_m"]
                     ),
-                    "collision_obstacle_end_xy_m": (
-                        _collision_obstacle_motion_spec()["end_xy_m"]
-                    ),
+                    "collision_obstacle_end_xy_m": (_collision_obstacle_motion_spec()["end_xy_m"]),
                     "collision_obstacle_loop_seconds": (
                         _collision_obstacle_motion_spec()["loop_seconds"]
                     ),
@@ -3169,13 +2786,9 @@ def _operational_no_fly_zone_realism(
                     "moving_actor_scripted_motion_enabled": moving_actor_requested,
                     "collision_enabled": collision_obstacle_requested,
                     "collision_obstacle_enabled": collision_obstacle_requested,
-                    "collision_obstacle_contact_sensor_enabled": (
-                        collision_obstacle_requested
-                    ),
+                    "collision_obstacle_contact_sensor_enabled": (collision_obstacle_requested),
                     "collision_obstacle_contact_topic": (
-                        COLLISION_OBSTACLE_CONTACT_TOPIC
-                        if collision_obstacle_requested
-                        else ""
+                        COLLISION_OBSTACLE_CONTACT_TOPIC if collision_obstacle_requested else ""
                     ),
                     "sensor_visible_claimed": False,
                     "incident_claimed": False,
@@ -3192,9 +2805,7 @@ def _operational_no_fly_zone_realism(
                     "source": "gazebo_world_sdf",
                     "observed": True,
                     "no_fly_zone_model_name": (
-                        "mission_designer_no_fly_zone_marker"
-                        if no_fly_zone_requested
-                        else ""
+                        "mission_designer_no_fly_zone_marker" if no_fly_zone_requested else ""
                     ),
                     "traffic_conflict_model_name": (
                         "mission_designer_traffic_conflict_marker"
@@ -3207,9 +2818,7 @@ def _operational_no_fly_zone_realism(
                         else ""
                     ),
                     "moving_actor_name": (
-                        "mission_designer_moving_actor_marker"
-                        if moving_actor_requested
-                        else ""
+                        "mission_designer_moving_actor_marker" if moving_actor_requested else ""
                     ),
                     "collision_obstacle_name": (
                         "mission_designer_collision_obstacle"
@@ -3268,13 +2877,9 @@ def _operational_no_fly_zone_realism(
                 if not no_fly_ok:
                     unsupported_reasons.append("no_fly_zone_marker_not_materialized")
                 if not traffic_ok:
-                    unsupported_reasons.append(
-                        "traffic_conflict_marker_not_materialized"
-                    )
+                    unsupported_reasons.append("traffic_conflict_marker_not_materialized")
                 if not alternate_ok:
-                    unsupported_reasons.append(
-                        "alternate_landing_marker_not_materialized"
-                    )
+                    unsupported_reasons.append("alternate_landing_marker_not_materialized")
                 if not moving_actor_ok:
                     unsupported_reasons.append("moving_actor_marker_not_materialized")
                 if not collision_obstacle_ok:
@@ -3287,7 +2892,9 @@ def _operational_no_fly_zone_realism(
     capability_status = (
         "supported_visual_only"
         if application_status == "applied_with_approximations"
-        else "unsupported" if unsupported_reasons else "not_requested"
+        else "unsupported"
+        if unsupported_reasons
+        else "not_requested"
     )
     geofence = {
         "schema_version": "geofence_condition_profile.v1",
@@ -3363,9 +2970,7 @@ def _operational_no_fly_zone_realism(
                     "loop_seconds": 6.0,
                     "mode": "linear_waypoint_motion",
                     "nominal_profile_velocity_mps": (
-                        _moving_actor_waypoint_motion_spec()[
-                            "nominal_profile_velocity_mps"
-                        ]
+                        _moving_actor_waypoint_motion_spec()["nominal_profile_velocity_mps"]
                     ),
                     "trajectory_definition_sha256": (
                         _moving_actor_waypoint_trajectory_definition_sha256()
@@ -3447,23 +3052,20 @@ def _operational_no_fly_zone_realism(
     capability = {
         "schema_version": "operational_capability_matrix.v1",
         "capability_id": "operational_capability_matrix:mission_designer_operational_markers",
-        "no_fly_zone_marker": (
-            capability_status if no_fly_zone_requested else "not_requested"
-        ),
+        "no_fly_zone_marker": (capability_status if no_fly_zone_requested else "not_requested"),
         "traffic_conflict_marker": (
             capability_status if traffic_conflict_requested else "not_requested"
         ),
         "alternate_landing_marker": (
             capability_status if alternate_landing_requested else "not_requested"
         ),
-        "moving_actor_marker": (
-            capability_status if moving_actor_requested else "not_requested"
-        ),
+        "moving_actor_marker": (capability_status if moving_actor_requested else "not_requested"),
         "collision_obstacle": (
             "supported_collision_geometry"
+            if collision_obstacle_requested and application_status == "applied_with_approximations"
+            else "unsupported"
             if collision_obstacle_requested
-            and application_status == "applied_with_approximations"
-            else "unsupported" if collision_obstacle_requested else "not_requested"
+            else "not_requested"
         ),
         "geofence_enforcement": "unsupported",
         "dynamic_traffic_motion": "unsupported",
@@ -3481,9 +3083,7 @@ def _operational_no_fly_zone_realism(
             else (
                 "unsupported"
                 if collision_obstacle_requested and collision_contact_topic_requested
-                else (
-                    "not_requested" if collision_obstacle_requested else "not_requested"
-                )
+                else ("not_requested" if collision_obstacle_requested else "not_requested")
             )
         ),
         "collision_obstacle_route_blocking": "unsupported",
@@ -3569,18 +3169,18 @@ def _vehicle_realism_summary_artifacts() -> dict[str, Any]:
         "observed_battery_condition_evidence": (BATTERY_REALISM_SUMMARY or {}).get(
             "observed_battery_condition_evidence", {}
         ),
-        "thermal_weather_condition_profile": (
-            THERMAL_WEATHER_REALISM_SUMMARY or {}
-        ).get("thermal_weather_condition_profile", {}),
-        "thermal_weather_simulator_capability_matrix": (
-            THERMAL_WEATHER_REALISM_SUMMARY or {}
-        ).get("thermal_weather_simulator_capability_matrix", {}),
+        "thermal_weather_condition_profile": (THERMAL_WEATHER_REALISM_SUMMARY or {}).get(
+            "thermal_weather_condition_profile", {}
+        ),
+        "thermal_weather_simulator_capability_matrix": (THERMAL_WEATHER_REALISM_SUMMARY or {}).get(
+            "thermal_weather_simulator_capability_matrix", {}
+        ),
         "thermal_weather_simulator_condition_application": (
             THERMAL_WEATHER_REALISM_SUMMARY or {}
         ).get("thermal_weather_simulator_condition_application", {}),
-        "observed_thermal_weather_evidence": (
-            THERMAL_WEATHER_REALISM_SUMMARY or {}
-        ).get("observed_thermal_weather_evidence", {}),
+        "observed_thermal_weather_evidence": (THERMAL_WEATHER_REALISM_SUMMARY or {}).get(
+            "observed_thermal_weather_evidence", {}
+        ),
         "sensor_condition_profile": (SENSOR_REALISM_SUMMARY or {}).get(
             "sensor_condition_profile", {}
         ),
@@ -3615,9 +3215,9 @@ def _vehicle_realism_summary_artifacts() -> dict[str, Any]:
         "visibility_application": (VISIBILITY_REALISM_SUMMARY or {}).get(
             "visibility_application", {}
         ),
-        "observed_visibility_condition_evidence": (
-            VISIBILITY_REALISM_SUMMARY or {}
-        ).get("observed_visibility_condition_evidence", {}),
+        "observed_visibility_condition_evidence": (VISIBILITY_REALISM_SUMMARY or {}).get(
+            "observed_visibility_condition_evidence", {}
+        ),
         "operational_condition_profile": (OPERATIONAL_REALISM_SUMMARY or {}).get(
             "operational_condition_profile", {}
         ),
@@ -3645,21 +3245,21 @@ def _vehicle_realism_summary_artifacts() -> dict[str, Any]:
         "moving_actor_pose_observation": (MOVING_ACTOR_POSE_SUMMARY or {}).get(
             "moving_actor_pose_observation", {}
         ),
-        "moving_actor_waypoint_motion_application": (
-            MOVING_ACTOR_LINEAR_MOTION_SUMMARY or {}
-        ).get("moving_actor_waypoint_motion_application", {}),
+        "moving_actor_waypoint_motion_application": (MOVING_ACTOR_LINEAR_MOTION_SUMMARY or {}).get(
+            "moving_actor_waypoint_motion_application", {}
+        ),
         "moving_actor_proximity_evidence": (MOVING_ACTOR_PROXIMITY_SUMMARY or {}).get(
             "moving_actor_proximity_evidence", {}
         ),
         "collision_obstacle_evidence": (COLLISION_OBSTACLE_SUMMARY or {}).get(
             "collision_obstacle_evidence", {}
         ),
-        "route_blocking_candidate_evidence": (
-            ROUTE_BLOCKING_CANDIDATE_SUMMARY or {}
-        ).get("route_blocking_candidate_evidence", {}),
-        "horizontal_route_contact_topic_integration": (
-            HORIZONTAL_CONTACT_TOPIC_SUMMARY or {}
-        ).get("horizontal_route_contact_topic_integration", {}),
+        "route_blocking_candidate_evidence": (ROUTE_BLOCKING_CANDIDATE_SUMMARY or {}).get(
+            "route_blocking_candidate_evidence", {}
+        ),
+        "horizontal_route_contact_topic_integration": (HORIZONTAL_CONTACT_TOPIC_SUMMARY or {}).get(
+            "horizontal_route_contact_topic_integration", {}
+        ),
         "horizontal_route_contact_event_incident_evidence": (
             HORIZONTAL_CONTACT_TOPIC_SUMMARY or {}
         ).get("horizontal_route_contact_event_incident_evidence", {}),
@@ -3681,48 +3281,44 @@ def _vehicle_realism_summary_artifacts() -> dict[str, Any]:
         "operational_incident_report": (OPERATIONAL_INCIDENT_REPORT_SUMMARY or {}).get(
             "operational_incident_report", {}
         ),
-        "traffic_conflict_verification": (
-            TRAFFIC_CONFLICT_VERIFICATION_SUMMARY or {}
-        ).get("traffic_conflict_verification", {}),
+        "traffic_conflict_verification": (TRAFFIC_CONFLICT_VERIFICATION_SUMMARY or {}).get(
+            "traffic_conflict_verification", {}
+        ),
         "route_blocking_verification": (ROUTE_BLOCKING_VERIFICATION_SUMMARY or {}).get(
             "route_blocking_verification", {}
         ),
-        "alternate_landing_candidate_evidence": (
-            ALTERNATE_LANDING_CANDIDATE_SUMMARY or {}
-        ).get("alternate_landing_candidate_evidence", {}),
-        "alternate_landing_execution_request": (
-            ALTERNATE_LANDING_EXECUTION_SUMMARY or {}
-        ).get("alternate_landing_execution_request", {}),
-        "alternate_mission_upload_request": (
-            ALTERNATE_MISSION_UPLOAD_SUMMARY or {}
-        ).get("alternate_mission_upload_request", {}),
-        "alternate_mission_upload_receipt": (
-            ALTERNATE_MISSION_UPLOAD_SUMMARY or {}
-        ).get("alternate_mission_upload_receipt", {}),
-        "alternate_route_behavior_observation": (
-            ALTERNATE_MISSION_UPLOAD_SUMMARY or {}
-        ).get("alternate_route_behavior_observation", {}),
-        "alternate_route_command_dispatch": (
-            ALTERNATE_MISSION_UPLOAD_SUMMARY or {}
-        ).get("alternate_route_command_dispatch", {}),
-        "alternate_route_execution_evidence": (
-            ALTERNATE_MISSION_UPLOAD_SUMMARY or {}
-        ).get("alternate_route_execution_evidence", {}),
-        "alternate_landing_command_dispatch": (
-            ALTERNATE_LANDING_EXECUTION_SUMMARY or {}
-        ).get("alternate_landing_command_dispatch", {}),
-        "alternate_landing_behavior_observation": (
-            ALTERNATE_LANDING_EXECUTION_SUMMARY or {}
-        ).get("alternate_landing_behavior_observation", {}),
+        "alternate_landing_candidate_evidence": (ALTERNATE_LANDING_CANDIDATE_SUMMARY or {}).get(
+            "alternate_landing_candidate_evidence", {}
+        ),
+        "alternate_landing_execution_request": (ALTERNATE_LANDING_EXECUTION_SUMMARY or {}).get(
+            "alternate_landing_execution_request", {}
+        ),
+        "alternate_mission_upload_request": (ALTERNATE_MISSION_UPLOAD_SUMMARY or {}).get(
+            "alternate_mission_upload_request", {}
+        ),
+        "alternate_mission_upload_receipt": (ALTERNATE_MISSION_UPLOAD_SUMMARY or {}).get(
+            "alternate_mission_upload_receipt", {}
+        ),
+        "alternate_route_behavior_observation": (ALTERNATE_MISSION_UPLOAD_SUMMARY or {}).get(
+            "alternate_route_behavior_observation", {}
+        ),
+        "alternate_route_command_dispatch": (ALTERNATE_MISSION_UPLOAD_SUMMARY or {}).get(
+            "alternate_route_command_dispatch", {}
+        ),
+        "alternate_route_execution_evidence": (ALTERNATE_MISSION_UPLOAD_SUMMARY or {}).get(
+            "alternate_route_execution_evidence", {}
+        ),
+        "alternate_landing_command_dispatch": (ALTERNATE_LANDING_EXECUTION_SUMMARY or {}).get(
+            "alternate_landing_command_dispatch", {}
+        ),
+        "alternate_landing_behavior_observation": (ALTERNATE_LANDING_EXECUTION_SUMMARY or {}).get(
+            "alternate_landing_behavior_observation", {}
+        ),
         "alternate_landing_outcome": (ALTERNATE_LANDING_EXECUTION_SUMMARY or {}).get(
             "alternate_landing_outcome", {}
         ),
-        "rth_execution_request": (RTH_BEHAVIOR_SUMMARY or {}).get(
-            "rth_execution_request", {}
-        ),
-        "rth_command_dispatch": (RTH_BEHAVIOR_SUMMARY or {}).get(
-            "rth_command_dispatch", {}
-        ),
+        "rth_execution_request": (RTH_BEHAVIOR_SUMMARY or {}).get("rth_execution_request", {}),
+        "rth_command_dispatch": (RTH_BEHAVIOR_SUMMARY or {}).get("rth_command_dispatch", {}),
         "rth_behavior_observation": (RTH_BEHAVIOR_SUMMARY or {}).get(
             "rth_behavior_observation", {}
         ),
@@ -3733,9 +3329,9 @@ def _vehicle_realism_summary_artifacts() -> dict[str, Any]:
         "operational_application": (OPERATIONAL_REALISM_SUMMARY or {}).get(
             "operational_application", {}
         ),
-        "observed_operational_condition_evidence": (
-            OPERATIONAL_REALISM_SUMMARY or {}
-        ).get("observed_operational_condition_evidence", {}),
+        "observed_operational_condition_evidence": (OPERATIONAL_REALISM_SUMMARY or {}).get(
+            "observed_operational_condition_evidence", {}
+        ),
         "telemetry_degradation_profile": (TELEMETRY_REALISM_SUMMARY or {}).get(
             "telemetry_degradation_profile", {}
         ),
@@ -3751,12 +3347,12 @@ def _vehicle_realism_summary_artifacts() -> dict[str, Any]:
         "mavlink_link_degradation_profile": (MAVLINK_LINK_REALISM_SUMMARY or {}).get(
             "mavlink_link_degradation_profile", {}
         ),
-        "mavlink_link_degradation_capability_matrix": (
-            MAVLINK_LINK_REALISM_SUMMARY or {}
-        ).get("mavlink_link_degradation_capability_matrix", {}),
-        "mavlink_link_degradation_application": (
-            MAVLINK_LINK_REALISM_SUMMARY or {}
-        ).get("mavlink_link_degradation_application", {}),
+        "mavlink_link_degradation_capability_matrix": (MAVLINK_LINK_REALISM_SUMMARY or {}).get(
+            "mavlink_link_degradation_capability_matrix", {}
+        ),
+        "mavlink_link_degradation_application": (MAVLINK_LINK_REALISM_SUMMARY or {}).get(
+            "mavlink_link_degradation_application", {}
+        ),
         "observed_mavlink_gap_evidence": (MAVLINK_LINK_REALISM_SUMMARY or {}).get(
             "observed_mavlink_gap_evidence", {}
         ),
@@ -3773,9 +3369,7 @@ def _gazebo_route_corridor_obstacle_spawn_application_realism() -> dict[str, Any
     requested = _collision_obstacle_requested()
     profile_obstacles = profile.get("obstacles") if isinstance(profile, dict) else []
     obstacle = (
-        profile_obstacles[0]
-        if isinstance(profile_obstacles, list) and profile_obstacles
-        else {}
+        profile_obstacles[0] if isinstance(profile_obstacles, list) and profile_obstacles else {}
     )
     fallback_motion = _collision_obstacle_motion_spec()
     applied = application.get("applied") if isinstance(application, dict) else {}
@@ -3795,8 +3389,7 @@ def _gazebo_route_corridor_obstacle_spawn_application_realism() -> dict[str, Any
         and isinstance(model_names, list)
         and "mission_designer_collision_obstacle" in model_names
         and world_sdf_hash_match
-        and observed.get("collision_obstacle_name")
-        == "mission_designer_collision_obstacle"
+        and observed.get("collision_obstacle_name") == "mission_designer_collision_obstacle"
         and bool(observed.get("collision_obstacle_collision_present"))
         and bool(observed.get("collision_obstacle_trajectory_follower_present"))
     )
@@ -3827,8 +3420,7 @@ def _gazebo_route_corridor_obstacle_spawn_application_realism() -> dict[str, Any
                 "source": "mission_designer_coordinate_route",
                 "obstacle_id": "mission_designer_collision_obstacle",
                 "frame": "gazebo_world_local",
-                "start_xy_m": obstacle.get("start_xy_m")
-                or fallback_motion["start_xy_m"],
+                "start_xy_m": obstacle.get("start_xy_m") or fallback_motion["start_xy_m"],
                 "end_xy_m": obstacle.get("end_xy_m") or fallback_motion["end_xy_m"],
                 "collision_enabled": requested,
                 "trajectory_follower_requested": requested,
@@ -3841,12 +3433,8 @@ def _gazebo_route_corridor_obstacle_spawn_application_realism() -> dict[str, Any
                 ),
                 "world_sdf_path": applied_world_sdf_path,
                 "world_sdf_sha256": applied_world_sdf_sha256,
-                "model_name": (
-                    "mission_designer_collision_obstacle" if model_materialized else ""
-                ),
-                "collision_name": (
-                    "collision_obstacle_collision" if model_materialized else ""
-                ),
+                "model_name": ("mission_designer_collision_obstacle" if model_materialized else ""),
+                "collision_name": ("collision_obstacle_collision" if model_materialized else ""),
                 "trajectory_follower_plugin_enabled": bool(
                     observed.get("collision_obstacle_trajectory_follower_present")
                 ),
@@ -3860,8 +3448,7 @@ def _gazebo_route_corridor_obstacle_spawn_application_realism() -> dict[str, Any
                 "observed": model_materialized,
                 "world_sdf_hash_match": world_sdf_hash_match,
                 "model_materialized": bool(
-                    observed.get("collision_obstacle_name")
-                    == "mission_designer_collision_obstacle"
+                    observed.get("collision_obstacle_name") == "mission_designer_collision_obstacle"
                 ),
                 "collision_geometry_materialized": bool(
                     observed.get("collision_obstacle_collision_present")
@@ -3893,21 +3480,16 @@ def _gazebo_route_corridor_obstacle_spawn_application_realism() -> dict[str, Any
     }
 
 
-
 def _telemetry_observer_dropout_realism() -> dict[str, Any]:
     mode = _telemetry_dropout_mode_request()
     requested_present = bool(mode)
     supported = mode == "observer_sample_pause"
     unsupported_reasons = (
-        []
-        if (not requested_present or supported)
-        else ["telemetry_dropout_mode_not_supported"]
+        [] if (not requested_present or supported) else ["telemetry_dropout_mode_not_supported"]
     )
     gap_events = list(TELEMETRY_DROPOUT_EVENTS)
     sample_events = list(TELEMETRY_OBSERVER_SAMPLE_EVENTS)
-    gap_durations = [
-        float(event.get("gap_duration_seconds") or 0.0) for event in gap_events
-    ]
+    gap_durations = [float(event.get("gap_duration_seconds") or 0.0) for event in gap_events]
     max_gap_seconds = max(gap_durations) if gap_durations else 0.0
     gap_count = len(gap_events)
     first_pause_index = min(
@@ -3930,9 +3512,7 @@ def _telemetry_observer_dropout_realism() -> dict[str, Any]:
         and first_pause_index is not None
         and any(index < first_pause_index for index in observed_sample_indexes)
     )
-    observer_sample_pause_performed = (
-        requested_present and supported and bool(gap_events)
-    )
+    observer_sample_pause_performed = requested_present and supported and bool(gap_events)
     observer_sample_gap_observed = observer_sample_pause_performed and gap_count > 0
     post_pause_observer_sample_observed = (
         requested_present
@@ -3948,21 +3528,19 @@ def _telemetry_observer_dropout_realism() -> dict[str, Any]:
     )
     if requested_present and supported:
         if not baseline_observer_sample_observed:
-            unsupported_reasons.append(
-                "telemetry_observer_baseline_sample_not_observed"
-            )
+            unsupported_reasons.append("telemetry_observer_baseline_sample_not_observed")
         if not observer_sample_pause_performed:
             unsupported_reasons.append("telemetry_observer_sample_pause_not_performed")
         if not observer_sample_gap_observed:
             unsupported_reasons.append("telemetry_observer_sample_gap_not_observed")
         if not post_pause_observer_sample_observed:
-            unsupported_reasons.append(
-                "telemetry_observer_post_pause_sample_not_observed"
-            )
+            unsupported_reasons.append("telemetry_observer_post_pause_sample_not_observed")
     application_status = (
         "applied"
         if observer_sample_pause_observed
-        else "unsupported" if requested_present else "not_requested"
+        else "unsupported"
+        if requested_present
+        else "not_requested"
     )
     observation_status = (
         "observer_sample_pause_gap_observed"
@@ -3970,15 +3548,13 @@ def _telemetry_observer_dropout_realism() -> dict[str, Any]:
         else (
             "observer_sample_pause_gap_not_observed"
             if requested_present and supported
-            else "unsupported" if requested_present else "not_requested"
+            else "unsupported"
+            if requested_present
+            else "not_requested"
         )
     )
-    requested_condition_ref = (
-        "telemetry_degradation_profile:mission_designer_observer_dropout"
-    )
-    application_ref = (
-        "telemetry_degradation_application:mission_designer_observer_dropout"
-    )
+    requested_condition_ref = "telemetry_degradation_profile:mission_designer_observer_dropout"
+    application_ref = "telemetry_degradation_application:mission_designer_observer_dropout"
     profile = {
         "schema_version": "telemetry_degradation_profile.v1",
         "condition_id": requested_condition_ref,
@@ -4028,9 +3604,7 @@ def _telemetry_observer_dropout_realism() -> dict[str, Any]:
         ),
         "unsupported_reasons": unsupported_reasons,
         "approximation_reasons": (
-            ["observer_sample_pause_only_consumer_side"]
-            if requested_present and supported
-            else []
+            ["observer_sample_pause_only_consumer_side"] if requested_present and supported else []
         ),
         "observer_process_mutated": False,
         "publisher_state_mutated": False,
@@ -4083,7 +3657,9 @@ def _telemetry_observer_dropout_realism() -> dict[str, Any]:
             else (
                 "no_gap_observed"
                 if requested_present and supported
-                else "unsupported" if requested_present else "not_requested"
+                else "unsupported"
+                if requested_present
+                else "not_requested"
             )
         ),
         "max_gap_seconds": max_gap_seconds,
@@ -4138,8 +3714,7 @@ def _mavlink_link_degradation_realism() -> dict[str, Any]:
         and link_loss_application.get("baseline_heartbeat_observed") is True
     )
     bounded_gap_observed = (
-        mode == "bounded_link_loss"
-        and link_loss_application.get("heartbeat_gap_observed") is True
+        mode == "bounded_link_loss" and link_loss_application.get("heartbeat_gap_observed") is True
     )
     bounded_restart_observed = (
         mode == "bounded_link_loss"
@@ -4166,7 +3741,9 @@ def _mavlink_link_degradation_realism() -> dict[str, Any]:
         else (
             "supported_read_only_observer"
             if mode == "heartbeat_observer"
-            else "unsupported" if requested_present else "not_requested"
+            else "unsupported"
+            if requested_present
+            else "not_requested"
         )
     )
     application_status = (
@@ -4175,7 +3752,9 @@ def _mavlink_link_degradation_realism() -> dict[str, Any]:
         else (
             "unsupported"
             if mode == "bounded_link_loss"
-            else "observed" if mode == "heartbeat_observer" else capability_status
+            else "observed"
+            if mode == "heartbeat_observer"
+            else capability_status
         )
     )
     observation_status = (
@@ -4194,15 +3773,15 @@ def _mavlink_link_degradation_realism() -> dict[str, Any]:
                     else (
                         "heartbeat_not_observed"
                         if mode == "heartbeat_observer"
-                        else "unsupported" if requested_present else "not_requested"
+                        else "unsupported"
+                        if requested_present
+                        else "not_requested"
                     )
                 )
             )
         )
     )
-    requested_condition_ref = (
-        "mavlink_link_degradation_profile:mission_designer_link_probe"
-    )
+    requested_condition_ref = "mavlink_link_degradation_profile:mission_designer_link_probe"
     application_ref = "mavlink_link_degradation_application:mission_designer_link_probe"
     profile = {
         "schema_version": "mavlink_link_degradation_profile.v1",
@@ -4223,18 +3802,16 @@ def _mavlink_link_degradation_realism() -> dict[str, Any]:
     }
     capability = {
         "schema_version": "mavlink_link_degradation_capability_matrix.v1",
-        "capability_id": (
-            "mavlink_link_degradation_capability_matrix:mission_designer_link_probe"
-        ),
+        "capability_id": ("mavlink_link_degradation_capability_matrix:mission_designer_link_probe"),
         "mavlink_link_loss": (
             "supported_bounded_sitl_applicator"
             if mode == "bounded_link_loss" and bounded_endpoint_interruption_observed
-            else "unsupported" if requested_present else "not_requested"
+            else "unsupported"
+            if requested_present
+            else "not_requested"
         ),
         "heartbeat_gap_observer": (
-            "supported_read_only_observer"
-            if mode == "heartbeat_observer"
-            else "not_requested"
+            "supported_read_only_observer" if mode == "heartbeat_observer" else "not_requested"
         ),
         "support_detection_method": (
             "px4_mavlink_stop_restart_bounded_sitl"
@@ -4268,12 +3845,8 @@ def _mavlink_link_degradation_realism() -> dict[str, Any]:
                     "source", f"udp://127.0.0.1:{ROUTE_MAVLINK_LOCAL_PORT}"
                 ),
                 "duration_seconds": link_loss_application.get("duration_seconds", 0.0),
-                "gap_threshold_seconds": link_loss_application.get(
-                    "gap_threshold_seconds", 0.0
-                ),
-                "endpoint_stop_performed": link_loss_application.get(
-                    "endpoint_stop_performed"
-                )
+                "gap_threshold_seconds": link_loss_application.get("gap_threshold_seconds", 0.0),
+                "endpoint_stop_performed": link_loss_application.get("endpoint_stop_performed")
                 is True,
                 "endpoint_restart_performed": link_loss_application.get(
                     "endpoint_restart_performed"
@@ -4295,12 +3868,8 @@ def _mavlink_link_degradation_realism() -> dict[str, Any]:
             else (
                 {
                     "method": "read_only_udp_heartbeat_observer",
-                    "source": heartbeat_observation.get(
-                        "source", "udp://127.0.0.1:14650"
-                    ),
-                    "duration_seconds": heartbeat_observation.get(
-                        "duration_seconds", 0.0
-                    ),
+                    "source": heartbeat_observation.get("source", "udp://127.0.0.1:14650"),
+                    "duration_seconds": heartbeat_observation.get("duration_seconds", 0.0),
                     "gap_threshold_seconds": heartbeat_observation.get(
                         "gap_threshold_seconds", 0.0
                     ),
@@ -4354,16 +3923,12 @@ def _mavlink_link_degradation_realism() -> dict[str, Any]:
             ),
             "heartbeat_count": int(
                 (
-                    heartbeat_observation
-                    if mode == "heartbeat_observer"
-                    else link_loss_application
+                    heartbeat_observation if mode == "heartbeat_observer" else link_loss_application
                 ).get("heartbeat_count")
                 or 0
             ),
             "baseline_heartbeat_observed": bounded_baseline_observed,
-            "warmup_heartbeat_count": int(
-                link_loss_application.get("warmup_heartbeat_count") or 0
-            ),
+            "warmup_heartbeat_count": int(link_loss_application.get("warmup_heartbeat_count") or 0),
             "interruption_heartbeat_count": int(
                 link_loss_application.get("interruption_heartbeat_count") or 0
             ),
@@ -4372,42 +3937,29 @@ def _mavlink_link_degradation_realism() -> dict[str, Any]:
             ),
             "post_restart_heartbeat_observed": bounded_restart_observed,
             "heartbeat_gap_observed": (
-                heartbeat_observation
-                if mode == "heartbeat_observer"
-                else link_loss_application
+                heartbeat_observation if mode == "heartbeat_observer" else link_loss_application
             ).get("heartbeat_gap_observed")
             is True,
             "heartbeat_gap_count": int(
                 (
-                    heartbeat_observation
-                    if mode == "heartbeat_observer"
-                    else link_loss_application
+                    heartbeat_observation if mode == "heartbeat_observer" else link_loss_application
                 ).get("heartbeat_gap_count")
                 or 0
             ),
             "max_heartbeat_interval_seconds": float(
                 (
-                    heartbeat_observation
-                    if mode == "heartbeat_observer"
-                    else link_loss_application
+                    heartbeat_observation if mode == "heartbeat_observer" else link_loss_application
                 ).get("max_heartbeat_interval_seconds")
                 or 0.0
             ),
             "gap_threshold_seconds": float(
                 (
-                    heartbeat_observation
-                    if mode == "heartbeat_observer"
-                    else link_loss_application
+                    heartbeat_observation if mode == "heartbeat_observer" else link_loss_application
                 ).get("gap_threshold_seconds")
                 or 0.0
             ),
-            "endpoint_stop_performed": link_loss_application.get(
-                "endpoint_stop_performed"
-            )
-            is True,
-            "endpoint_restart_performed": link_loss_application.get(
-                "endpoint_restart_performed"
-            )
+            "endpoint_stop_performed": link_loss_application.get("endpoint_stop_performed") is True,
+            "endpoint_restart_performed": link_loss_application.get("endpoint_restart_performed")
             is True,
             "mission_upload_interruption_observed": False,
             "vehicle_failsafe_observed": False,
@@ -4435,8 +3987,6 @@ def _mavlink_link_degradation_realism() -> dict[str, Any]:
     }
 
 
-
-
 def _battery_status_sample() -> dict[str, Any]:
     global _LAST_BATTERY_STATUS_SAMPLE_AT
     global _LAST_BATTERY_STATUS_SAMPLE
@@ -4444,8 +3994,7 @@ def _battery_status_sample() -> dict[str, Any]:
     now = time.monotonic()
     if (
         _LAST_BATTERY_STATUS_SAMPLE_AT > 0
-        and now - _LAST_BATTERY_STATUS_SAMPLE_AT
-        < BATTERY_STATUS_SAMPLE_INTERVAL_SECONDS
+        and now - _LAST_BATTERY_STATUS_SAMPLE_AT < BATTERY_STATUS_SAMPLE_INTERVAL_SECONDS
     ):
         return dict(_LAST_BATTERY_STATUS_SAMPLE)
 
@@ -4554,7 +4103,6 @@ def _append_live_pose_row(
         handle.write(json.dumps(row, sort_keys=True) + "\n")
 
 
-
 def _wait_for_startup(timeout: float = 90.0) -> None:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -4645,13 +4193,8 @@ def _moving_actor_waypoint_motion_application_realism() -> dict[str, Any]:
     if requested:
         world_path_text = str(operational_applied.get("world_sdf_path") or "")
         world_path = Path(world_path_text) if world_path_text else None
-        if (
-            operational_application.get("application_status")
-            != "applied_with_approximations"
-        ):
-            unsupported_reasons.append(
-                "moving_actor_operational_application_not_applied"
-            )
+        if operational_application.get("application_status") != "applied_with_approximations":
+            unsupported_reasons.append("moving_actor_operational_application_not_applied")
         if world_path is None or not world_path.exists():
             unsupported_reasons.append("moving_actor_world_sdf_missing")
         if unsupported_reasons:
@@ -4678,9 +4221,7 @@ def _moving_actor_waypoint_motion_application_realism() -> dict[str, Any]:
             assert world_path is not None
             world_text = world_path.read_text(encoding="utf-8")
             world_sha256 = hashlib.sha256(world_text.encode("utf-8")).hexdigest()
-            expected_world_sha256 = str(
-                operational_applied.get("world_sdf_sha256") or ""
-            )
+            expected_world_sha256 = str(operational_applied.get("world_sdf_sha256") or "")
             world_sdf_hash_match = bool(
                 expected_world_sha256 and world_sha256 == expected_world_sha256
             )
@@ -4698,9 +4239,7 @@ def _moving_actor_waypoint_motion_application_realism() -> dict[str, Any]:
                     visual_present = model.find(".//visual") is not None
                     geometry_present = model.find(".//visual/geometry") is not None
                     trajectory_follower_present = (
-                        model.find(
-                            ".//plugin[@name='gz::sim::systems::TrajectoryFollower']"
-                        )
+                        model.find(".//plugin[@name='gz::sim::systems::TrajectoryFollower']")
                         is not None
                     )
                     for waypoint in model.findall(".//waypoints/waypoint"):
@@ -4770,13 +4309,9 @@ def _moving_actor_waypoint_motion_application_realism() -> dict[str, Any]:
                     nominal_velocity_mps = float(spec["nominal_profile_velocity_mps"])
                     motion_observed = displacement_xy_m >= 0.25
                     if not motion_observed:
-                        unsupported_reasons.append(
-                            "moving_actor_pose_stream_not_observed"
-                        )
+                        unsupported_reasons.append("moving_actor_pose_stream_not_observed")
                     application_status = (
-                        "applied_with_approximations"
-                        if motion_observed
-                        else "unsupported"
+                        "applied_with_approximations" if motion_observed else "unsupported"
                     )
                     applied = {
                         "method": "gazebo_world_sdf_waypoint_motion_actor",
@@ -4801,9 +4336,7 @@ def _moving_actor_waypoint_motion_application_realism() -> dict[str, Any]:
                         "observed": motion_observed,
                         "moving_actor_present": actor_present,
                         "moving_actor_trajectory_materialized": trajectory_materialized,
-                        "moving_actor_pose_stream_observed": bool(
-                            displacement_xy_m >= 0.25
-                        ),
+                        "moving_actor_pose_stream_observed": bool(displacement_xy_m >= 0.25),
                         "moving_actor_velocity_readback_observed": motion_observed,
                         "world_sdf_sha256": world_sha256,
                         "expected_world_sdf_sha256": expected_world_sha256,
@@ -4860,8 +4393,7 @@ def _moving_actor_waypoint_motion_application_realism() -> dict[str, Any]:
         "moving_actor_waypoint_motion_application": {
             "schema_version": "moving_actor_waypoint_motion_application.v1",
             "application_id": (
-                "moving_actor_waypoint_motion_application:"
-                "mission_designer_moving_actor_marker"
+                "moving_actor_waypoint_motion_application:mission_designer_moving_actor_marker"
             ),
             "condition_kind": "moving_actor_linear_waypoint_motion",
             "application_status": application_status,
@@ -4878,9 +4410,7 @@ def _moving_actor_waypoint_motion_application_realism() -> dict[str, Any]:
             "observed": observed,
             "unsupported_reasons": unsupported_reasons,
             "approximation_reasons": (
-                [
-                    "moving_actor_velocity_target_not_materialized_as_guaranteed_runtime_speed"
-                ]
+                ["moving_actor_velocity_target_not_materialized_as_guaranteed_runtime_speed"]
                 if application_status == "applied_with_approximations"
                 else []
             ),
@@ -4942,11 +4472,7 @@ def _collision_obstacle_contact_topic_observation() -> dict[str, Any]:
             CONTAINER_NAME,
             "sh",
             "-lc",
-            (
-                "timeout 2 gz topic -e "
-                f"-t {shlex.quote(selected_topic)} "
-                "-n 1"
-            ),
+            (f"timeout 2 gz topic -e -t {shlex.quote(selected_topic)} -n 1"),
         ],
         check=False,
         timeout=5,
@@ -4974,9 +4500,7 @@ def _moving_actor_pose_observation_realism() -> dict[str, Any]:
                 float(second["y"]) - float(first["y"]),
             )
             z_range_m = abs(float(second["z"]) - float(first["z"]))
-            marker_altitude_reasonable = (
-                max(abs(float(first["z"])), abs(float(second["z"]))) <= 5.0
-            )
+            marker_altitude_reasonable = max(abs(float(first["z"])), abs(float(second["z"]))) <= 5.0
             pose_motion_observed = displacement_xy_m >= 0.25
             observation_status = (
                 "pose_motion_observed"
@@ -5027,16 +4551,14 @@ def _moving_actor_pose_observation_realism() -> dict[str, Any]:
         "moving_actor_pose_observation": {
             "schema_version": "moving_actor_pose_observation.v1",
             "observation_id": (
-                "moving_actor_pose_observation:" "mission_designer_moving_visual_marker"
+                "moving_actor_pose_observation:mission_designer_moving_visual_marker"
             ),
             "condition_kind": "moving_visual_actor_marker",
             "observation_status": observation_status,
             "requested_condition_ref": (
-                "operational_condition_profile:" "mission_designer_operational_markers"
+                "operational_condition_profile:mission_designer_operational_markers"
             ),
-            "dynamic_actor_ref": (
-                "dynamic_actor_profile:mission_designer_moving_visual_marker"
-            ),
+            "dynamic_actor_ref": ("dynamic_actor_profile:mission_designer_moving_visual_marker"),
             "observed": observed,
             "unsupported_reasons": unsupported_reasons,
             "observer_only": True,
@@ -5097,8 +4619,6 @@ def _collision_obstacle_sdf_placement_readback(
     }
 
 
-
-
 def _collision_obstacle_evidence_realism(
     *,
     route_start_xy_m: tuple[float, float],
@@ -5111,8 +4631,7 @@ def _collision_obstacle_evidence_realism(
     )
     obstacle = (
         (obstacle_profile.get("obstacles") or [{}])[0]
-        if isinstance(obstacle_profile.get("obstacles"), list)
-        and obstacle_profile.get("obstacles")
+        if isinstance(obstacle_profile.get("obstacles"), list) and obstacle_profile.get("obstacles")
         else {}
     )
     spawn_application = _gazebo_route_corridor_obstacle_spawn_application_realism().get(
@@ -5172,9 +4691,7 @@ def _collision_obstacle_evidence_realism(
                 [float(second["x"]), float(second["y"])],
             ]
             fallback_motion = _collision_obstacle_motion_spec()
-            configured_start_xy = (
-                obstacle.get("start_xy_m") or fallback_motion["start_xy_m"]
-            )
+            configured_start_xy = obstacle.get("start_xy_m") or fallback_motion["start_xy_m"]
             configured_end_xy = obstacle.get("end_xy_m") or fallback_motion["end_xy_m"]
             configured_xy_samples = [
                 [
@@ -5272,22 +4789,12 @@ def _collision_obstacle_evidence_realism(
                 "min_distance_to_dropoff_m": min(dropoff_distances),
                 "contact_topic": COLLISION_OBSTACLE_CONTACT_TOPIC,
                 "contact_topic_runtime": contact_observation.get("topic"),
-                "contact_topic_candidates": contact_observation.get(
-                    "candidate_topics", []
-                ),
-                "contact_topic_observed": bool(
-                    contact_observation.get("contact_topic_observed")
-                ),
-                "contact_topic_advertised": bool(
-                    contact_observation.get("topic_advertised")
-                ),
-                "contact_event_observed": bool(
-                    contact_observation.get("contact_event_observed")
-                ),
+                "contact_topic_candidates": contact_observation.get("candidate_topics", []),
+                "contact_topic_observed": bool(contact_observation.get("contact_topic_observed")),
+                "contact_topic_advertised": bool(contact_observation.get("topic_advertised")),
+                "contact_event_observed": bool(contact_observation.get("contact_event_observed")),
                 "contact_observation_source": contact_observation.get("source"),
-                "contact_sample_returncode": contact_observation.get(
-                    "contact_sample_returncode"
-                ),
+                "contact_sample_returncode": contact_observation.get("contact_sample_returncode"),
                 "route_blocking_candidate": False,
                 "route_blocking_observed": False,
                 "incident_observed": False,
@@ -5321,13 +4828,12 @@ def _collision_obstacle_evidence_realism(
         "collision_obstacle_evidence": {
             "schema_version": "collision_obstacle_evidence.v1",
             "evidence_id": (
-                "collision_obstacle_evidence:"
-                "mission_designer_collision_enabled_obstacle"
+                "collision_obstacle_evidence:mission_designer_collision_enabled_obstacle"
             ),
             "condition_kind": "collision_enabled_moving_obstacle",
             "observation_status": observation_status,
             "collision_obstacle_ref": (
-                "collision_obstacle_profile:" "mission_designer_collision_obstacle"
+                "collision_obstacle_profile:mission_designer_collision_obstacle"
             ),
             "gazebo_route_corridor_obstacle_spawn_application_ref": (
                 spawn_application.get("application_id", "")
@@ -5367,10 +4873,7 @@ def _route_blocking_candidate_evidence_realism() -> dict[str, Any]:
     if not requested:
         observation_status = "not_requested"
         observed: dict[str, Any] = {}
-    elif (
-        collision_evidence.get("observation_status")
-        != "collision_obstacle_evidence_observed"
-    ):
+    elif collision_evidence.get("observation_status") != "collision_obstacle_evidence_observed":
         observation_status = "route_blocking_candidate_not_observed"
         unsupported_reasons.append("collision_obstacle_evidence_missing")
         observed = {
@@ -5389,9 +4892,7 @@ def _route_blocking_candidate_evidence_realism() -> dict[str, Any]:
         observed = {
             "source": "gazebo_route_corridor_obstacle_spawn_application",
             "observed": False,
-            "source_condition_application_ref": spawn_application.get(
-                "application_id", ""
-            ),
+            "source_condition_application_ref": spawn_application.get("application_id", ""),
             "source_condition_application_verified": False,
             "world_sdf_hash_match": bool(
                 (spawn_application.get("observed") or {}).get("world_sdf_hash_match")
@@ -5407,8 +4908,7 @@ def _route_blocking_candidate_evidence_realism() -> dict[str, Any]:
     else:
         min_distance = collision_observed.get("min_distance_to_route_m")
         route_blocking_candidate = (
-            isinstance(min_distance, (int, float))
-            and float(min_distance) <= candidate_threshold_m
+            isinstance(min_distance, (int, float)) and float(min_distance) <= candidate_threshold_m
         )
         observation_status = (
             "route_blocking_candidate_observed"
@@ -5418,13 +4918,9 @@ def _route_blocking_candidate_evidence_realism() -> dict[str, Any]:
         observed = {
             "source": "collision_obstacle_evidence",
             "gazebo_route_corridor_obstacle_spawn_application_ref": (
-                collision_evidence.get(
-                    "gazebo_route_corridor_obstacle_spawn_application_ref", ""
-                )
+                collision_evidence.get("gazebo_route_corridor_obstacle_spawn_application_ref", "")
             ),
-            "source_condition_application_ref": spawn_application.get(
-                "application_id", ""
-            ),
+            "source_condition_application_ref": spawn_application.get("application_id", ""),
             "source_condition_application_verified": True,
             "world_sdf_hash_match": bool(
                 (spawn_application.get("observed") or {}).get("world_sdf_hash_match")
@@ -5435,15 +4931,11 @@ def _route_blocking_candidate_evidence_realism() -> dict[str, Any]:
             "observed": True,
             "candidate_threshold_m": candidate_threshold_m,
             "min_distance_to_route_m": min_distance,
-            "min_distance_to_dropoff_m": collision_observed.get(
-                "min_distance_to_dropoff_m"
-            ),
+            "min_distance_to_dropoff_m": collision_observed.get("min_distance_to_dropoff_m"),
             "collision_geometry_observed": bool(
                 collision_observed.get("collision_geometry_observed")
             ),
-            "contact_topic_observed": bool(
-                collision_observed.get("contact_topic_observed")
-            ),
+            "contact_topic_observed": bool(collision_observed.get("contact_topic_observed")),
             "route_blocking_candidate": route_blocking_candidate,
             "route_blocking_verified": False,
             "operator_review_required": route_blocking_candidate,
@@ -5457,14 +4949,12 @@ def _route_blocking_candidate_evidence_realism() -> dict[str, Any]:
         "route_blocking_candidate_evidence": {
             "schema_version": "route_blocking_candidate_evidence.v1",
             "evidence_id": (
-                "route_blocking_candidate_evidence:"
-                "mission_designer_collision_obstacle"
+                "route_blocking_candidate_evidence:mission_designer_collision_obstacle"
             ),
             "condition_kind": "route_blocking_candidate_from_collision_obstacle",
             "observation_status": observation_status,
             "collision_obstacle_evidence_ref": (
-                "collision_obstacle_evidence:"
-                "mission_designer_collision_enabled_obstacle"
+                "collision_obstacle_evidence:mission_designer_collision_enabled_obstacle"
             ),
             "observed": observed,
             "unsupported_reasons": unsupported_reasons,
@@ -5512,23 +5002,15 @@ def _horizontal_route_contact_topic_integration_realism(
     contact_observed = contact_evidence.get("observed") or {}
     incident_evidence = artifacts.get("contact_event_incident_evidence") or {}
     incident_observed = incident_evidence.get("observed") or {}
-    sidecar_verifier_candidate = (
-        artifacts.get("contact_event_scoped_verifier_candidate") or {}
-    )
+    sidecar_verifier_candidate = artifacts.get("contact_event_scoped_verifier_candidate") or {}
     sidecar_verifier_observed = sidecar_verifier_candidate.get("observed") or {}
-    sidecar_incident_verification = (
-        artifacts.get("contact_event_incident_verification") or {}
-    )
-    sidecar_incident_verification_observed = (
-        sidecar_incident_verification.get("observed") or {}
-    )
+    sidecar_incident_verification = artifacts.get("contact_event_incident_verification") or {}
+    sidecar_incident_verification_observed = sidecar_incident_verification.get("observed") or {}
     sidecar_incident_verified = (
         sidecar_incident_verification.get("schema_version")
         == "contact_event_incident_verification.v1"
-        and sidecar_incident_verification.get("verification_scope")
-        == "contact_event_incident_only"
-        and sidecar_incident_verification.get("verification_status")
-        == "incident_verified"
+        and sidecar_incident_verification.get("verification_scope") == "contact_event_incident_only"
+        and sidecar_incident_verification.get("verification_status") == "incident_verified"
         and sidecar_incident_verification_observed.get("incident_verified") is True
     )
     report = artifacts.get("operational_incident_report") or {}
@@ -5541,8 +5023,7 @@ def _horizontal_route_contact_topic_integration_realism(
     horizontal_incident_evidence = {
         "schema_version": "horizontal_route_contact_event_incident_evidence.v1",
         "evidence_id": (
-            "horizontal_route_contact_event_incident_evidence:"
-            f"{sidecar_ref_hash[:16]}"
+            f"horizontal_route_contact_event_incident_evidence:{sidecar_ref_hash[:16]}"
         ),
         "condition_kind": "horizontal_route_contact_topic_incident_candidate",
         "observation_status": incident_evidence.get(
@@ -5554,22 +5035,16 @@ def _horizontal_route_contact_topic_integration_realism(
             ),
         ),
         "horizontal_route_contact_topic_integration_ref": (
-            "horizontal_route_contact_topic_integration:" f"{sidecar_ref_hash[:16]}"
+            f"horizontal_route_contact_topic_integration:{sidecar_ref_hash[:16]}"
         ),
-        "sidecar_contact_event_incident_evidence_ref": incident_evidence.get(
-            "evidence_id", ""
-        ),
-        "sidecar_collision_contact_event_evidence_ref": contact_evidence.get(
-            "evidence_id", ""
-        ),
+        "sidecar_contact_event_incident_evidence_ref": incident_evidence.get("evidence_id", ""),
+        "sidecar_collision_contact_event_evidence_ref": contact_evidence.get("evidence_id", ""),
         "sidecar_artifact_dir": sidecar_artifact_dir,
         "sidecar_artifact_dir_sha256": sidecar_ref_hash,
         "observed": {
             "source": "horizontal_route_contact_topic_integration",
             "observed": contact_event_observed,
-            "contact_topic_observed": bool(
-                contact_observed.get("contact_topic_observed")
-            ),
+            "contact_topic_observed": bool(contact_observed.get("contact_topic_observed")),
             "contact_event_observed": contact_event_observed,
             "contact_event_incident_candidate": bool(
                 incident_observed.get("contact_event_incident_candidate")
@@ -5604,8 +5079,7 @@ def _horizontal_route_contact_topic_integration_realism(
     horizontal_report = {
         "schema_version": "horizontal_route_contact_operational_incident_report.v1",
         "report_id": (
-            "horizontal_route_contact_operational_incident_report:"
-            f"{sidecar_ref_hash[:16]}"
+            f"horizontal_route_contact_operational_incident_report:{sidecar_ref_hash[:16]}"
         ),
         "condition_kind": "horizontal_route_contact_topic_incident_report",
         "report_status": report.get(
@@ -5627,9 +5101,9 @@ def _horizontal_route_contact_topic_integration_realism(
             "operator_review_required": horizontal_incident_evidence["observed"][
                 "operator_review_required"
             ],
-            "contact_event_incident_candidate": horizontal_incident_evidence[
-                "observed"
-            ]["contact_event_incident_candidate"],
+            "contact_event_incident_candidate": horizontal_incident_evidence["observed"][
+                "contact_event_incident_candidate"
+            ],
             "incident_verified": False,
             "route_blocking_verified": False,
             "traffic_conflict_verified": False,
@@ -5656,8 +5130,7 @@ def _horizontal_route_contact_topic_integration_realism(
     horizontal_verifier_candidate = {
         "schema_version": "horizontal_route_contact_scoped_verifier_candidate.v1",
         "candidate_id": (
-            "horizontal_route_contact_scoped_verifier_candidate:"
-            f"{sidecar_ref_hash[:16]}"
+            f"horizontal_route_contact_scoped_verifier_candidate:{sidecar_ref_hash[:16]}"
         ),
         "condition_kind": "horizontal_route_contact_operator_review_verifier_candidate",
         "candidate_status": (
@@ -5667,14 +5140,12 @@ def _horizontal_route_contact_topic_integration_realism(
             "operator_review_candidate" if contact_event_observed else "not_observed"
         ),
         "horizontal_route_contact_topic_integration_ref": (
-            "horizontal_route_contact_topic_integration:" f"{sidecar_ref_hash[:16]}"
+            f"horizontal_route_contact_topic_integration:{sidecar_ref_hash[:16]}"
         ),
         "horizontal_route_contact_event_incident_evidence_ref": (
             horizontal_incident_evidence["evidence_id"]
         ),
-        "sidecar_scoped_verifier_candidate_ref": sidecar_verifier_candidate.get(
-            "candidate_id", ""
-        ),
+        "sidecar_scoped_verifier_candidate_ref": sidecar_verifier_candidate.get("candidate_id", ""),
         "sidecar_artifact_dir": sidecar_artifact_dir,
         "observed": {
             "source": "horizontal_route_contact_event_incident_evidence",
@@ -5714,13 +5185,11 @@ def _horizontal_route_contact_topic_integration_realism(
     horizontal_incident_verification = {
         "schema_version": "horizontal_route_contact_incident_verification.v1",
         "verification_id": (
-            "horizontal_route_contact_incident_verification:" f"{sidecar_ref_hash[:16]}"
+            f"horizontal_route_contact_incident_verification:{sidecar_ref_hash[:16]}"
         ),
         "condition_kind": "horizontal_route_contact_scoped_incident_verifier",
         "verification_status": (
-            "incident_verified"
-            if sidecar_incident_verified
-            else "incident_not_verified"
+            "incident_verified" if sidecar_incident_verified else "incident_not_verified"
         ),
         "verification_scope": "contact_event_incident_only",
         "horizontal_route_contact_scoped_verifier_candidate_ref": (
@@ -5753,9 +5222,7 @@ def _horizontal_route_contact_topic_integration_realism(
             "gate_status_mutated": False,
             "delivery_completion_claimed": False,
         },
-        "source_sidecar_contact_event_incident_verification": (
-            sidecar_incident_verification
-        ),
+        "source_sidecar_contact_event_incident_verification": (sidecar_incident_verification),
         "source_verifier_fail_closed_reason": (
             ""
             if sidecar_incident_verified
@@ -5775,18 +5242,14 @@ def _horizontal_route_contact_topic_integration_realism(
         "delivery_completion_claimed": False,
         "observed_at": datetime.now(timezone.utc).isoformat(),
     }
-    horizontal_incident_verification_observed = horizontal_incident_verification[
-        "observed"
-    ]
+    horizontal_incident_verification_observed = horizontal_incident_verification["observed"]
     incident_informed_traffic_verified = bool(
         horizontal_incident_verification_observed["incident_verified"]
         and contact_event_observed
         and (contact_observed.get("collision_names") or [])
     )
     horizontal_incident_informed_traffic_conflict_verification = {
-        "schema_version": (
-            "horizontal_route_incident_informed_traffic_conflict_verification.v1"
-        ),
+        "schema_version": ("horizontal_route_incident_informed_traffic_conflict_verification.v1"),
         "verification_id": (
             "horizontal_route_incident_informed_traffic_conflict_verification:"
             f"{sidecar_ref_hash[:16]}"
@@ -5802,14 +5265,12 @@ def _horizontal_route_contact_topic_integration_realism(
             horizontal_incident_verification["verification_id"]
         ),
         "horizontal_route_contact_topic_integration_ref": (
-            "horizontal_route_contact_topic_integration:" f"{sidecar_ref_hash[:16]}"
+            f"horizontal_route_contact_topic_integration:{sidecar_ref_hash[:16]}"
         ),
         "observed": {
             "source": "horizontal_route_contact_incident_verification",
             "observed": incident_informed_traffic_verified,
-            "incident_verified": horizontal_incident_verification_observed[
-                "incident_verified"
-            ],
+            "incident_verified": horizontal_incident_verification_observed["incident_verified"],
             "contact_event_observed": contact_event_observed,
             "collision_names": contact_observed.get("collision_names") or [],
             "traffic_conflict_verified": incident_informed_traffic_verified,
@@ -5820,9 +5281,7 @@ def _horizontal_route_contact_topic_integration_realism(
             "dropoff_verified": False,
             "delivery_completion_claimed": False,
         },
-        "source_horizontal_route_contact_incident_verification": (
-            horizontal_incident_verification
-        ),
+        "source_horizontal_route_contact_incident_verification": (horizontal_incident_verification),
         "incident_verifier": False,
         "route_blocking_verifier": False,
         "traffic_conflict_verifier": True,
@@ -5842,54 +5301,40 @@ def _horizontal_route_contact_topic_integration_realism(
         {},
     )
     route_candidate_observed = route_candidate_evidence.get("observed") or {}
-    incident_traffic_observed = (
-        horizontal_incident_informed_traffic_conflict_verification["observed"]
-    )
+    incident_traffic_observed = horizontal_incident_informed_traffic_conflict_verification[
+        "observed"
+    ]
     incident_traffic_source_verified = (
         horizontal_incident_informed_traffic_conflict_verification.get("schema_version")
         == "horizontal_route_incident_informed_traffic_conflict_verification.v1"
-        and horizontal_incident_informed_traffic_conflict_verification.get(
-            "verification_scope"
-        )
+        and horizontal_incident_informed_traffic_conflict_verification.get("verification_scope")
         == "incident_informed_traffic_conflict_only"
-        and horizontal_incident_informed_traffic_conflict_verification.get(
-            "verification_status"
-        )
+        and horizontal_incident_informed_traffic_conflict_verification.get("verification_status")
         == "traffic_conflict_verified"
         and incident_traffic_observed.get("traffic_conflict_verified") is True
     )
     route_candidate_source_verified = (
-        route_candidate_evidence.get("schema_version")
-        == "route_blocking_candidate_evidence.v1"
+        route_candidate_evidence.get("schema_version") == "route_blocking_candidate_evidence.v1"
         and route_candidate_evidence.get("observation_status")
         == "route_blocking_candidate_observed"
         and route_candidate_observed.get("route_blocking_candidate") is True
-        and route_candidate_observed.get("source_condition_application_verified")
-        is True
+        and route_candidate_observed.get("source_condition_application_verified") is True
         and route_candidate_observed.get("world_sdf_hash_match") is True
-        and isinstance(
-            route_candidate_observed.get("min_distance_to_route_m"), (int, float)
-        )
-        and isinstance(
-            route_candidate_observed.get("candidate_threshold_m"), (int, float)
-        )
+        and isinstance(route_candidate_observed.get("min_distance_to_route_m"), (int, float))
+        and isinstance(route_candidate_observed.get("candidate_threshold_m"), (int, float))
     )
     incident_informed_route_blocking_verified = bool(
         incident_traffic_source_verified and route_candidate_source_verified
     )
     route_blocking_fail_closed_reasons: list[str] = []
     if not incident_traffic_source_verified:
-        route_blocking_fail_closed_reasons.append(
-            "incident_informed_traffic_conflict_not_verified"
-        )
+        route_blocking_fail_closed_reasons.append("incident_informed_traffic_conflict_not_verified")
     if not route_candidate_source_verified:
         route_blocking_fail_closed_reasons.append(
             "source_bound_route_blocking_candidate_evidence_not_verified"
         )
     horizontal_incident_informed_route_blocking_verification = {
-        "schema_version": (
-            "horizontal_route_incident_informed_route_blocking_verification.v1"
-        ),
+        "schema_version": ("horizontal_route_incident_informed_route_blocking_verification.v1"),
         "verification_id": (
             "horizontal_route_incident_informed_route_blocking_verification:"
             f"{sidecar_ref_hash[:16]}"
@@ -5902,22 +5347,16 @@ def _horizontal_route_contact_topic_integration_realism(
         ),
         "verification_scope": "incident_informed_route_obstruction_only",
         "horizontal_route_incident_informed_traffic_conflict_verification_ref": (
-            horizontal_incident_informed_traffic_conflict_verification[
-                "verification_id"
-            ]
+            horizontal_incident_informed_traffic_conflict_verification["verification_id"]
         ),
-        "route_blocking_candidate_evidence_ref": route_candidate_evidence.get(
-            "evidence_id", ""
-        ),
+        "route_blocking_candidate_evidence_ref": route_candidate_evidence.get("evidence_id", ""),
         "horizontal_route_contact_topic_integration_ref": (
-            "horizontal_route_contact_topic_integration:" f"{sidecar_ref_hash[:16]}"
+            f"horizontal_route_contact_topic_integration:{sidecar_ref_hash[:16]}"
         ),
         "observed": {
             "source": "horizontal_route_incident_informed_traffic_conflict_and_route_candidate",
             "observed": incident_informed_route_blocking_verified,
-            "traffic_conflict_verified": incident_traffic_observed.get(
-                "traffic_conflict_verified"
-            )
+            "traffic_conflict_verified": incident_traffic_observed.get("traffic_conflict_verified")
             is True,
             "route_blocking_candidate": bool(
                 route_candidate_observed.get("route_blocking_candidate")
@@ -5928,16 +5367,10 @@ def _horizontal_route_contact_topic_integration_realism(
             "source_condition_application_verified": bool(
                 route_candidate_observed.get("source_condition_application_verified")
             ),
-            "world_sdf_hash_match": bool(
-                route_candidate_observed.get("world_sdf_hash_match")
-            ),
+            "world_sdf_hash_match": bool(route_candidate_observed.get("world_sdf_hash_match")),
             "route_blocking_verified": incident_informed_route_blocking_verified,
-            "min_distance_to_route_m": route_candidate_observed.get(
-                "min_distance_to_route_m"
-            ),
-            "candidate_threshold_m": route_candidate_observed.get(
-                "candidate_threshold_m"
-            ),
+            "min_distance_to_route_m": route_candidate_observed.get("min_distance_to_route_m"),
+            "candidate_threshold_m": route_candidate_observed.get("candidate_threshold_m"),
             "collision_geometry_observed": bool(
                 route_candidate_observed.get("collision_geometry_observed")
             ),
@@ -5999,14 +5432,10 @@ def _horizontal_route_contact_topic_integration_realism(
                 horizontal_incident_verification["verification_id"]
             ),
             "horizontal_route_incident_informed_traffic_conflict_verification_ref": (
-                horizontal_incident_informed_traffic_conflict_verification[
-                    "verification_id"
-                ]
+                horizontal_incident_informed_traffic_conflict_verification["verification_id"]
             ),
             "horizontal_route_incident_informed_route_blocking_verification_ref": (
-                horizontal_incident_informed_route_blocking_verification[
-                    "verification_id"
-                ]
+                horizontal_incident_informed_route_blocking_verification["verification_id"]
             ),
             "horizontal_route_world_contact_sensor_injected": False,
             "horizontal_route_px4_home_boundary_protected": True,
@@ -6015,9 +5444,7 @@ def _horizontal_route_contact_topic_integration_realism(
             ),
             "observed": {
                 "source": "scoped_gazebo_contact_event_sidecar",
-                "contact_topic_observed": bool(
-                    contact_observed.get("contact_topic_observed")
-                ),
+                "contact_topic_observed": bool(contact_observed.get("contact_topic_observed")),
                 "contact_event_observed": contact_event_observed,
                 "collision_names": contact_observed.get("collision_names") or [],
                 "contact_event_incident_candidate": bool(
@@ -6032,14 +5459,14 @@ def _horizontal_route_contact_topic_integration_realism(
                     "incident_verified"
                 ],
                 "incident_informed_traffic_conflict_verified": (
-                    horizontal_incident_informed_traffic_conflict_verification[
-                        "observed"
-                    ]["traffic_conflict_verified"]
+                    horizontal_incident_informed_traffic_conflict_verification["observed"][
+                        "traffic_conflict_verified"
+                    ]
                 ),
                 "incident_informed_route_blocking_verified": (
-                    horizontal_incident_informed_route_blocking_verification[
-                        "observed"
-                    ]["route_blocking_verified"]
+                    horizontal_incident_informed_route_blocking_verification["observed"][
+                        "route_blocking_verified"
+                    ]
                 ),
                 "route_blocking_verified": False,
                 "traffic_conflict_verified": False,
@@ -6049,12 +5476,8 @@ def _horizontal_route_contact_topic_integration_realism(
             },
             "sidecar_collision_contact_event_evidence": contact_evidence,
             "sidecar_contact_event_incident_evidence": incident_evidence,
-            "sidecar_contact_event_scoped_verifier_candidate": (
-                sidecar_verifier_candidate
-            ),
-            "sidecar_contact_event_incident_verification": (
-                sidecar_incident_verification
-            ),
+            "sidecar_contact_event_scoped_verifier_candidate": (sidecar_verifier_candidate),
+            "sidecar_contact_event_incident_verification": (sidecar_incident_verification),
             "sidecar_operational_incident_report": report,
             "route_execution_mutated": False,
             "task_status_mutated": False,
@@ -6066,12 +5489,8 @@ def _horizontal_route_contact_topic_integration_realism(
         },
         "horizontal_route_contact_event_incident_evidence": horizontal_incident_evidence,
         "horizontal_route_contact_operational_incident_report": horizontal_report,
-        "horizontal_route_contact_scoped_verifier_candidate": (
-            horizontal_verifier_candidate
-        ),
-        "horizontal_route_contact_incident_verification": (
-            horizontal_incident_verification
-        ),
+        "horizontal_route_contact_scoped_verifier_candidate": (horizontal_verifier_candidate),
+        "horizontal_route_contact_incident_verification": (horizontal_incident_verification),
         "horizontal_route_incident_informed_traffic_conflict_verification": (
             horizontal_incident_informed_traffic_conflict_verification
         ),
@@ -6084,8 +5503,8 @@ def _horizontal_route_contact_topic_integration_realism(
 def _refresh_horizontal_contact_topic_summary(run_dir: Path) -> None:
     global HORIZONTAL_CONTACT_TOPIC_SUMMARY
     if HORIZONTAL_CONTACT_TOPIC_SUMMARY is None:
-        HORIZONTAL_CONTACT_TOPIC_SUMMARY = (
-            _horizontal_route_contact_topic_integration_realism(run_dir)
+        HORIZONTAL_CONTACT_TOPIC_SUMMARY = _horizontal_route_contact_topic_integration_realism(
+            run_dir
         )
 
 
@@ -6120,9 +5539,7 @@ def _operational_incident_report_realism() -> dict[str, Any]:
             "delivery_completion_claimed": False,
         }
     else:
-        route_blocking_candidate = bool(
-            candidate_observed.get("route_blocking_candidate")
-        )
+        route_blocking_candidate = bool(candidate_observed.get("route_blocking_candidate"))
         report_status = (
             "operator_review_required"
             if route_blocking_candidate
@@ -6133,12 +5550,8 @@ def _operational_incident_report_realism() -> dict[str, Any]:
             "observed": True,
             "route_blocking_candidate": route_blocking_candidate,
             "candidate_threshold_m": candidate_observed.get("candidate_threshold_m"),
-            "min_distance_to_route_m": candidate_observed.get(
-                "min_distance_to_route_m"
-            ),
-            "min_distance_to_dropoff_m": candidate_observed.get(
-                "min_distance_to_dropoff_m"
-            ),
+            "min_distance_to_route_m": candidate_observed.get("min_distance_to_route_m"),
+            "min_distance_to_dropoff_m": candidate_observed.get("min_distance_to_dropoff_m"),
             "collision_geometry_observed": bool(
                 candidate_observed.get("collision_geometry_observed")
             ),
@@ -6148,15 +5561,9 @@ def _operational_incident_report_realism() -> dict[str, Any]:
             "source_condition_application_verified": bool(
                 candidate_observed.get("source_condition_application_verified")
             ),
-            "world_sdf_hash_match": bool(
-                candidate_observed.get("world_sdf_hash_match")
-            ),
-            "contact_topic_observed": bool(
-                candidate_observed.get("contact_topic_observed")
-            ),
-            "collision_obstacle_pose_observed": bool(
-                collision_observed.get("pose_observed")
-            ),
+            "world_sdf_hash_match": bool(candidate_observed.get("world_sdf_hash_match")),
+            "contact_topic_observed": bool(candidate_observed.get("contact_topic_observed")),
+            "collision_obstacle_pose_observed": bool(collision_observed.get("pose_observed")),
             "operator_review_required": route_blocking_candidate,
             "auto_gate": False,
             "incident_verified": False,
@@ -6169,17 +5576,12 @@ def _operational_incident_report_realism() -> dict[str, Any]:
     return {
         "operational_incident_report": {
             "schema_version": "operational_incident_report.v1",
-            "report_id": (
-                "operational_incident_report:"
-                "mission_designer_route_blocking_candidate"
-            ),
+            "report_id": ("operational_incident_report:mission_designer_route_blocking_candidate"),
             "condition_kind": "operator_reviewed_route_blocking_candidate",
             "report_status": report_status,
             "input_evidence_refs": [
-                "collision_obstacle_evidence:"
-                "mission_designer_collision_enabled_obstacle",
-                "route_blocking_candidate_evidence:"
-                "mission_designer_collision_obstacle",
+                "collision_obstacle_evidence:mission_designer_collision_enabled_obstacle",
+                "route_blocking_candidate_evidence:mission_designer_collision_obstacle",
             ],
             "observed": observed,
             "unsupported_reasons": unsupported_reasons,
@@ -6237,9 +5639,7 @@ def _traffic_conflict_verification_realism() -> dict[str, Any]:
             "source": "operational_incident_report",
             "observed": True,
             "verification_scope": "operational_conflict_only",
-            "route_blocking_candidate": bool(
-                incident_observed.get("route_blocking_candidate")
-            ),
+            "route_blocking_candidate": bool(incident_observed.get("route_blocking_candidate")),
             "collision_geometry_observed": bool(
                 incident_observed.get("collision_geometry_observed")
             ),
@@ -6250,9 +5650,7 @@ def _traffic_conflict_verification_realism() -> dict[str, Any]:
                 incident_observed.get("source_condition_application_verified")
             ),
             "world_sdf_hash_match": bool(incident_observed.get("world_sdf_hash_match")),
-            "contact_topic_observed": bool(
-                incident_observed.get("contact_topic_observed")
-            ),
+            "contact_topic_observed": bool(incident_observed.get("contact_topic_observed")),
             "min_distance_to_route_m": incident_observed.get("min_distance_to_route_m"),
             "candidate_threshold_m": incident_observed.get("candidate_threshold_m"),
             "traffic_conflict_verified": traffic_conflict_verified,
@@ -6268,13 +5666,12 @@ def _traffic_conflict_verification_realism() -> dict[str, Any]:
         "traffic_conflict_verification": {
             "schema_version": "traffic_conflict_verification.v1",
             "verification_id": (
-                "traffic_conflict_verification:" "mission_designer_collision_obstacle"
+                "traffic_conflict_verification:mission_designer_collision_obstacle"
             ),
             "condition_kind": "scoped_operator_review_traffic_conflict",
             "verification_status": verification_status,
             "operational_incident_report_ref": (
-                "operational_incident_report:"
-                "mission_designer_route_blocking_candidate"
+                "operational_incident_report:mission_designer_route_blocking_candidate"
             ),
             "observed": observed,
             "unsupported_reasons": unsupported_reasons,
@@ -6322,21 +5719,15 @@ def _route_blocking_verification_realism() -> dict[str, Any]:
             and traffic_observed.get("world_sdf_hash_match")
         )
         verification_status = (
-            "route_blocking_verified"
-            if route_blocking_verified
-            else "route_blocking_not_verified"
+            "route_blocking_verified" if route_blocking_verified else "route_blocking_not_verified"
         )
         observed = {
             "source": "traffic_conflict_verification",
             "observed": True,
             "verification_scope": "operational_route_obstruction_only",
             "route_blocking_verified": route_blocking_verified,
-            "traffic_conflict_verified": bool(
-                traffic_observed.get("traffic_conflict_verified")
-            ),
-            "route_blocking_candidate": bool(
-                traffic_observed.get("route_blocking_candidate")
-            ),
+            "traffic_conflict_verified": bool(traffic_observed.get("traffic_conflict_verified")),
+            "route_blocking_candidate": bool(traffic_observed.get("route_blocking_candidate")),
             "source_condition_application_ref": traffic_observed.get(
                 "source_condition_application_ref", ""
             ),
@@ -6358,13 +5749,11 @@ def _route_blocking_verification_realism() -> dict[str, Any]:
     return {
         "route_blocking_verification": {
             "schema_version": "route_blocking_verification.v1",
-            "verification_id": (
-                "route_blocking_verification:" "mission_designer_collision_obstacle"
-            ),
+            "verification_id": ("route_blocking_verification:mission_designer_collision_obstacle"),
             "condition_kind": "scoped_operator_review_route_blocking",
             "verification_status": verification_status,
             "traffic_conflict_verification_ref": (
-                "traffic_conflict_verification:" "mission_designer_collision_obstacle"
+                "traffic_conflict_verification:mission_designer_collision_obstacle"
             ),
             "observed": observed,
             "unsupported_reasons": unsupported_reasons,
@@ -6393,17 +5782,12 @@ def _alternate_landing_candidate_evidence_realism() -> dict[str, Any]:
         "alternate_landing_profile",
         {},
     )
-    requested = (
-        _collision_obstacle_requested() and _alternate_landing_marker_requested()
-    )
+    requested = _collision_obstacle_requested() and _alternate_landing_marker_requested()
     unsupported_reasons: list[str] = []
     if not requested:
         observation_status = "not_requested"
         observed: dict[str, Any] = {}
-    elif (
-        route_blocking_verification.get("verification_status")
-        != "route_blocking_verified"
-    ):
+    elif route_blocking_verification.get("verification_status") != "route_blocking_verified":
         observation_status = "alternate_landing_candidate_not_observed"
         unsupported_reasons.append("route_blocking_verification_missing")
         observed = {
@@ -6417,9 +5801,7 @@ def _alternate_landing_candidate_evidence_realism() -> dict[str, Any]:
             "delivery_completion_claimed": False,
         }
     else:
-        alternate_landing_candidate = bool(
-            route_blocking_observed.get("route_blocking_verified")
-        )
+        alternate_landing_candidate = bool(route_blocking_observed.get("route_blocking_verified"))
         candidates = alternate_profile.get("candidates")
         candidate_id = None
         candidate_xy_m = None
@@ -6439,9 +5821,7 @@ def _alternate_landing_candidate_evidence_realism() -> dict[str, Any]:
             "alternate_landing_candidate": alternate_landing_candidate,
             "candidate_id": candidate_id,
             "candidate_xy_m": candidate_xy_m,
-            "route_blocking_verified": bool(
-                route_blocking_observed.get("route_blocking_verified")
-            ),
+            "route_blocking_verified": bool(route_blocking_observed.get("route_blocking_verified")),
             "traffic_conflict_verified": bool(
                 route_blocking_observed.get("traffic_conflict_verified")
             ),
@@ -6461,14 +5841,13 @@ def _alternate_landing_candidate_evidence_realism() -> dict[str, Any]:
         "alternate_landing_candidate_evidence": {
             "schema_version": "alternate_landing_candidate_evidence.v1",
             "candidate_evidence_id": (
-                "alternate_landing_candidate_evidence:"
-                "mission_designer_route_blocking"
+                "alternate_landing_candidate_evidence:mission_designer_route_blocking"
             ),
             "condition_kind": "alternate_landing_candidate_from_route_blocking",
             "observation_status": observation_status,
             "requested_present": requested,
             "route_blocking_verification_ref": (
-                "route_blocking_verification:" "mission_designer_collision_obstacle"
+                "route_blocking_verification:mission_designer_collision_obstacle"
             ),
             "observed": observed,
             "unsupported_reasons": unsupported_reasons,
@@ -6501,9 +5880,7 @@ def _alternate_landing_execution_realism(
     candidate_observed = candidate.get("observed") or {}
     requested = bool(candidate_observed.get("alternate_landing_candidate"))
     dispatch_dump = (
-        emergency_dispatch.model_dump(mode="json")
-        if emergency_dispatch is not None
-        else {}
+        emergency_dispatch.model_dump(mode="json") if emergency_dispatch is not None else {}
     )
     approval_ref = (
         f"px4_gazebo_emergency_command_approval:{emergency_approval.approval_id}"
@@ -6519,15 +5896,10 @@ def _alternate_landing_execution_realism(
     ack_observed = bool(dispatch_dump.get("command_ack_observed"))
     ack_result_code = dispatch_dump.get("command_ack_result_code")
     command_sent = bool(dispatch_dump.get("recovery_command_sent"))
-    landing_observed = (
-        completed_pose is not None and float(completed_pose.get("z", 99.0)) <= 0.15
-    )
+    landing_observed = completed_pose is not None and float(completed_pose.get("z", 99.0)) <= 0.15
     ack_complete = ack_observed and ack_result_code == 0
     state_observed_after_dispatch_timeout = (
-        command_sent
-        and dispatch_status == "timeout"
-        and not ack_observed
-        and landing_observed
+        command_sent and dispatch_status == "timeout" and not ack_observed and landing_observed
     )
     behavior_observed = bool(
         requested
@@ -6535,9 +5907,7 @@ def _alternate_landing_execution_realism(
         and (ack_complete or state_observed_after_dispatch_timeout)
         and landing_observed
     )
-    request_status = (
-        "approved_for_sitl_alternate_landing" if requested else "not_requested"
-    )
+    request_status = "approved_for_sitl_alternate_landing" if requested else "not_requested"
     dispatch_observation_status = (
         "alternate_landing_command_ack_observed"
         if command_sent and ack_complete
@@ -6554,20 +5924,19 @@ def _alternate_landing_execution_realism(
     behavior_status = (
         "alternate_landing_behavior_observed"
         if behavior_observed
-        else "alternate_landing_behavior_not_observed" if requested else "not_requested"
+        else "alternate_landing_behavior_not_observed"
+        if requested
+        else "not_requested"
     )
     final_pose = completed_pose or {}
     return {
         "alternate_landing_execution_request": {
             "schema_version": "alternate_landing_execution_request.v1",
-            "request_id": (
-                "alternate_landing_execution_request:" "mission_designer_route_blocking"
-            ),
+            "request_id": ("alternate_landing_execution_request:mission_designer_route_blocking"),
             "request_status": request_status,
             "requested_present": requested,
             "candidate_evidence_ref": (
-                "alternate_landing_candidate_evidence:"
-                "mission_designer_route_blocking"
+                "alternate_landing_candidate_evidence:mission_designer_route_blocking"
             ),
             "operator_approval_performed": bool(
                 emergency_approval is not None
@@ -6583,9 +5952,7 @@ def _alternate_landing_execution_realism(
         },
         "alternate_landing_command_dispatch": {
             "schema_version": "alternate_landing_command_dispatch.v1",
-            "dispatch_id": (
-                "alternate_landing_command_dispatch:" "mission_designer_route_blocking"
-            ),
+            "dispatch_id": ("alternate_landing_command_dispatch:mission_designer_route_blocking"),
             "dispatch_status": dispatch_status or "not_requested",
             "application_status": dispatch_observation_status,
             "approval_ref": approval_ref,
@@ -6627,8 +5994,7 @@ def _alternate_landing_execution_realism(
         "alternate_landing_behavior_observation": {
             "schema_version": "alternate_landing_behavior_observation.v1",
             "observation_id": (
-                "alternate_landing_behavior_observation:"
-                "mission_designer_route_blocking"
+                "alternate_landing_behavior_observation:mission_designer_route_blocking"
             ),
             "observation_status": behavior_status,
             "alternate_landing_behavior_observed": behavior_observed,
@@ -6690,9 +6056,7 @@ def _alternate_landing_execution_realism(
     }
 
 
-def _alternate_mission_upload_items() -> (
-    tuple[tuple[int, int, float, float, float, int, int], ...]
-):
+def _alternate_mission_upload_items() -> tuple[tuple[int, int, float, float, float, int, int], ...]:
     return (
         (0, 22, 35.681236, 139.767125, 15.0, 1, 6),
         (1, 16, 35.681208, 139.767166, 20.0, 0, 6),
@@ -6738,16 +6102,12 @@ def _execute_alternate_route_rewrite(
             "blocked_reasons": blocked_reasons,
             "dispatch_evidence": {
                 "schema_version": "alternate_route_command_dispatch.v1",
-                "dispatch_id": (
-                    "alternate_route_command_dispatch:"
-                    "mission_designer_route_blocking"
-                ),
+                "dispatch_id": ("alternate_route_command_dispatch:mission_designer_route_blocking"),
                 "dispatch_status": "blocked",
                 "approval_ref": approval_ref,
                 "allowlist_ref": allowlist_ref,
                 "candidate_evidence_ref": (
-                    "alternate_landing_candidate_evidence:"
-                    "mission_designer_route_blocking"
+                    "alternate_landing_candidate_evidence:mission_designer_route_blocking"
                 ),
                 "alternate_mission_ack_required": True,
                 "alternate_mission_ack_observed": uploaded,
@@ -6814,15 +6174,12 @@ def _execute_alternate_route_rewrite(
         "blocked_reasons": list(result.get("blocked_reasons", [])),
         "dispatch_evidence": {
             "schema_version": "alternate_route_command_dispatch.v1",
-            "dispatch_id": (
-                "alternate_route_command_dispatch:" "mission_designer_route_blocking"
-            ),
+            "dispatch_id": ("alternate_route_command_dispatch:mission_designer_route_blocking"),
             "dispatch_status": "sent" if result.get("sent") is True else "blocked",
             "approval_ref": approval_ref,
             "allowlist_ref": allowlist_ref,
             "candidate_evidence_ref": (
-                "alternate_landing_candidate_evidence:"
-                "mission_designer_route_blocking"
+                "alternate_landing_candidate_evidence:mission_designer_route_blocking"
             ),
             "candidate_id": candidate_id,
             "alternate_mission_ack_required": True,
@@ -6957,18 +6314,13 @@ def _alternate_mission_upload_realism(
     return {
         "alternate_mission_upload_request": {
             "schema_version": "alternate_mission_upload_request.v1",
-            "request_id": (
-                "alternate_mission_upload_request:" "mission_designer_route_blocking"
-            ),
+            "request_id": ("alternate_mission_upload_request:mission_designer_route_blocking"),
             "request_status": (
-                "approved_for_sitl_alternate_mission_upload"
-                if requested
-                else "not_requested"
+                "approved_for_sitl_alternate_mission_upload" if requested else "not_requested"
             ),
             "requested_present": requested,
             "candidate_evidence_ref": (
-                "alternate_landing_candidate_evidence:"
-                "mission_designer_route_blocking"
+                "alternate_landing_candidate_evidence:mission_designer_route_blocking"
             ),
             "operator_approval_performed": requested,
             "sitl_opt_in": True,
@@ -6987,28 +6339,24 @@ def _alternate_mission_upload_realism(
         },
         "alternate_mission_upload_receipt": {
             "schema_version": "alternate_mission_upload_receipt.v1",
-            "receipt_id": (
-                "alternate_mission_upload_receipt:" "mission_designer_route_blocking"
-            ),
+            "receipt_id": ("alternate_mission_upload_receipt:mission_designer_route_blocking"),
             "upload_status": (
                 "uploaded"
                 if uploaded
-                else "not_requested" if not requested else "failed_or_unconfirmed"
+                else "not_requested"
+                if not requested
+                else "failed_or_unconfirmed"
             ),
             "target_endpoint": f"udp://127.0.0.1:{ROUTE_MAVLINK_PX4_PORT}",
             "mission_items": mission_items,
             "mission_item_count": len(mission_items),
             "mission_request_sequences": (
-                list(upload_result.get("mission_request_sequences", []))
-                if upload_result
-                else []
+                list(upload_result.get("mission_request_sequences", [])) if upload_result else []
             ),
             "mission_ack_observed": bool(
                 upload_result and upload_result.get("mission_ack_observed") is True
             ),
-            "mission_ack_type": (
-                upload_result.get("mission_ack_type") if upload_result else None
-            ),
+            "mission_ack_type": (upload_result.get("mission_ack_type") if upload_result else None),
             "alternate_mission_uploaded": uploaded,
             "px4_mission_upload_performed": uploaded,
             "mavlink_dispatch_performed": uploaded,
@@ -7023,8 +6371,7 @@ def _alternate_mission_upload_realism(
         "alternate_route_behavior_observation": {
             "schema_version": "alternate_route_behavior_observation.v1",
             "observation_id": (
-                "alternate_route_behavior_observation:"
-                "mission_designer_route_blocking"
+                "alternate_route_behavior_observation:mission_designer_route_blocking"
             ),
             "observation_status": (
                 "alternate_mission_uploaded_and_landing_observed"
@@ -7033,9 +6380,7 @@ def _alternate_mission_upload_realism(
                     "alternate_mission_uploaded_behavior_pending"
                     if uploaded
                     else (
-                        "not_requested"
-                        if not requested
-                        else "alternate_mission_upload_unconfirmed"
+                        "not_requested" if not requested else "alternate_mission_upload_unconfirmed"
                     )
                 )
             ),
@@ -7043,7 +6388,7 @@ def _alternate_mission_upload_realism(
             "alternate_route_execution_observed": alternate_route_execution_observed,
             "alternate_waypoint_reached_observed": alternate_waypoint_reached_observed,
             "alternate_route_execution_ref": (
-                "alternate_route_execution_evidence:" "mission_designer_route_blocking"
+                "alternate_route_execution_evidence:mission_designer_route_blocking"
                 if alternate_route_execution_observed
                 else ""
             ),
@@ -7054,9 +6399,7 @@ def _alternate_mission_upload_realism(
             "mission_upload_ack_observed": bool(
                 upload_result and upload_result.get("mission_ack_observed") is True
             ),
-            "mission_ack_type": (
-                upload_result.get("mission_ack_type") if upload_result else None
-            ),
+            "mission_ack_type": (upload_result.get("mission_ack_type") if upload_result else None),
             "original_dropoff_verified": False,
             "dropoff_verified": False,
             "delivery_completion_claimed": False,
@@ -7068,9 +6411,7 @@ def _alternate_mission_upload_realism(
         },
         "alternate_route_command_dispatch": {
             "schema_version": "alternate_route_command_dispatch.v1",
-            "dispatch_id": (
-                "alternate_route_command_dispatch:" "mission_designer_route_blocking"
-            ),
+            "dispatch_id": ("alternate_route_command_dispatch:mission_designer_route_blocking"),
             **route_dispatch,
             "alternate_mission_uploaded": uploaded,
             "alternate_mission_ack_required": True,
@@ -7094,13 +6435,10 @@ def _alternate_mission_upload_realism(
         },
         "alternate_route_execution_evidence": {
             "schema_version": "alternate_route_execution_evidence.v1",
-            "evidence_id": (
-                "alternate_route_execution_evidence:" "mission_designer_route_blocking"
-            ),
+            "evidence_id": ("alternate_route_execution_evidence:mission_designer_route_blocking"),
             "observation_status": (
                 "alternate_route_waypoint_reached_observed"
-                if alternate_route_execution_observed
-                and alternate_waypoint_reached_observed
+                if alternate_route_execution_observed and alternate_waypoint_reached_observed
                 else (
                     "alternate_route_progress_observed_waypoint_pending"
                     if alternate_route_execution_observed
@@ -7117,9 +6455,7 @@ def _alternate_mission_upload_realism(
             "observed": {
                 "source": "px4_gazebo_local_pose_after_alternate_route_rewrite",
                 "sent_setpoint_xy_m": route_execution.get("sent_setpoint_xy_m", []),
-                "observed_waypoint_xy_m": route_execution.get(
-                    "observed_waypoint_xy_m", []
-                ),
+                "observed_waypoint_xy_m": route_execution.get("observed_waypoint_xy_m", []),
                 "target_z_m": route_execution.get("target_z_m"),
                 "start_pose_xyz_m": route_execution.get("start_pose_xyz_m", []),
                 "final_pose_xyz_m": route_execution.get("final_pose_xyz_m", []),
@@ -7139,8 +6475,7 @@ def _alternate_mission_upload_realism(
                     else ""
                 ),
                 "candidate_evidence_ref": (
-                    "alternate_landing_candidate_evidence:"
-                    "mission_designer_route_blocking"
+                    "alternate_landing_candidate_evidence:mission_designer_route_blocking"
                 ),
                 "candidate_id": route_dispatch.get("candidate_id", ""),
                 "route_helper_sent": bool(route_execution.get("sent") is True),
@@ -7185,13 +6520,10 @@ def _rth_behavior_execution_realism(
     )
     route_blocking_observed = route_blocking.get("observed") or {}
     requested = bool(
-        _rth_behavior_requested()
-        and route_blocking_observed.get("route_blocking_verified")
+        _rth_behavior_requested() and route_blocking_observed.get("route_blocking_verified")
     )
     dispatch_dump = (
-        emergency_dispatch.model_dump(mode="json")
-        if emergency_dispatch is not None
-        else {}
+        emergency_dispatch.model_dump(mode="json") if emergency_dispatch is not None else {}
     )
     approval_ref = (
         f"px4_gazebo_emergency_command_approval:{emergency_approval.approval_id}"
@@ -7209,10 +6541,7 @@ def _rth_behavior_execution_realism(
     command_sent = bool(dispatch_dump.get("recovery_command_sent"))
     ack_complete = ack_observed and ack_result_code == 0
     state_observed_after_dispatch_timeout = (
-        command_sent
-        and dispatch_status == "timeout"
-        and not ack_observed
-        and rth_state_observed
+        command_sent and dispatch_status == "timeout" and not ack_observed and rth_state_observed
     )
     behavior_observed = bool(
         requested
@@ -7226,17 +6555,15 @@ def _rth_behavior_execution_realism(
         else (
             "rth_state_observed_after_dispatch_timeout"
             if state_observed_after_dispatch_timeout
-            else (
-                "rth_command_not_dispatched"
-                if not requested
-                else "rth_command_unconfirmed"
-            )
+            else ("rth_command_not_dispatched" if not requested else "rth_command_unconfirmed")
         )
     )
     behavior_status = (
         "rth_behavior_observed"
         if behavior_observed
-        else "rth_behavior_not_observed" if requested else "not_requested"
+        else "rth_behavior_not_observed"
+        if requested
+        else "not_requested"
     )
     completion_basis = (
         "ack_observed_and_state_observed"
@@ -7244,11 +6571,7 @@ def _rth_behavior_execution_realism(
         else (
             "state_observed_after_dispatch_timeout"
             if state_observed_after_dispatch_timeout
-            else (
-                "state_not_observed_or_command_unconfirmed"
-                if requested
-                else "not_requested"
-            )
+            else ("state_not_observed_or_command_unconfirmed" if requested else "not_requested")
         )
     )
     final_pose = rth_pose or {}
@@ -7303,9 +6626,7 @@ def _rth_behavior_execution_realism(
         },
         "rth_behavior_observation": {
             "schema_version": "rth_behavior_observation.v1",
-            "observation_id": (
-                "rth_behavior_observation:mission_designer_route_blocking"
-            ),
+            "observation_id": ("rth_behavior_observation:mission_designer_route_blocking"),
             "observation_status": behavior_status,
             "return_to_home_behavior_observed": behavior_observed,
             "rth_commanded": command_sent,
@@ -7337,11 +6658,7 @@ def _rth_behavior_execution_realism(
             "outcome_status": (
                 "rth_behavior_observed"
                 if behavior_observed
-                else (
-                    "rth_behavior_pending_or_unconfirmed"
-                    if requested
-                    else "not_requested"
-                )
+                else ("rth_behavior_pending_or_unconfirmed" if requested else "not_requested")
             ),
             "return_to_home_behavior_observed": behavior_observed,
             "task_failed": False,
@@ -7353,7 +6670,6 @@ def _rth_behavior_execution_realism(
             "physical_execution_invoked": False,
         },
     }
-
 
 
 def _moving_actor_proximity_evidence_realism(
@@ -7444,13 +6760,12 @@ def _moving_actor_proximity_evidence_realism(
         "moving_actor_proximity_evidence": {
             "schema_version": "moving_actor_proximity_evidence.v1",
             "evidence_id": (
-                "moving_actor_proximity_evidence:"
-                "mission_designer_moving_visual_marker"
+                "moving_actor_proximity_evidence:mission_designer_moving_visual_marker"
             ),
             "condition_kind": "moving_visual_actor_marker",
             "observation_status": observation_status,
             "pose_observation_ref": (
-                "moving_actor_pose_observation:" "mission_designer_moving_visual_marker"
+                "moving_actor_pose_observation:mission_designer_moving_visual_marker"
             ),
             "observed": observed,
             "unsupported_reasons": unsupported_reasons,
@@ -7547,7 +6862,6 @@ def _apply_bounded_mavlink_link_loss(
     )
 
 
-
 def _send_route_with_monitor(
     *,
     target_x: float,
@@ -7591,6 +6905,7 @@ def _send_route_with_monitor(
         on_deviation=on_deviation,
     )
 
+
 def _send_command(
     command_name: str,
     *,
@@ -7608,13 +6923,9 @@ def _send_command(
         command_id=command_id,
     )
     result = _send_helper(command_name)
-    if (
-        result.get("command_ack_observed") is not True
-        or result.get("command_ack_result_code") != 0
-    ):
+    if result.get("command_ack_observed") is not True or result.get("command_ack_result_code") != 0:
         raise RuntimeError(
-            f"{command_name}_command_ack_not_accepted: "
-            f"{json.dumps(result, sort_keys=True)}"
+            f"{command_name}_command_ack_not_accepted: {json.dumps(result, sort_keys=True)}"
         )
 
 
@@ -7641,9 +6952,7 @@ def _dispatch_emergency_recovery(action: str) -> Any:
     return emergency_approval, emergency_allowlist, emergency_dispatch
 
 
-MULTI_CONDITION_SUPERVISOR_SCOPE = (
-    _route_supervision.MULTI_CONDITION_SUPERVISOR_SCOPE
-)
+MULTI_CONDITION_SUPERVISOR_SCOPE = _route_supervision.MULTI_CONDITION_SUPERVISOR_SCOPE
 WIND_SUPERVISOR_SCOPE = _route_supervision.WIND_SUPERVISOR_SCOPE
 
 
@@ -7660,9 +6969,7 @@ def _wind_supervisor_assessment_inputs(
         supervisor_scope=supervisor_scope,
         recovery_state_label=recovery_state_label,
         wind_requested_profile=_wind_requested_profile(),
-        route_blocking_verification_summary=(
-            ROUTE_BLOCKING_VERIFICATION_SUMMARY or {}
-        ),
+        route_blocking_verification_summary=(ROUTE_BLOCKING_VERIFICATION_SUMMARY or {}),
         vehicle_realism_summary=VEHICLE_REALISM_SUMMARY or {},
         battery_realism_summary=BATTERY_REALISM_SUMMARY or {},
         telemetry_realism_summary=TELEMETRY_REALISM_SUMMARY or {},
@@ -7771,9 +7078,7 @@ def _obstacle_supervisor_assessment_inputs(
     return _route_supervision.obstacle_supervisor_assessment_inputs(
         selected_bounded_action=selected_bounded_action,
         cycle1_state_label=cycle1_state_label,
-        route_blocking_verification_summary=(
-            ROUTE_BLOCKING_VERIFICATION_SUMMARY or {}
-        ),
+        route_blocking_verification_summary=(ROUTE_BLOCKING_VERIFICATION_SUMMARY or {}),
         alternate_mission_upload_summary=ALTERNATE_MISSION_UPLOAD_SUMMARY or {},
         battery_realism_summary=BATTERY_REALISM_SUMMARY or {},
         telemetry_realism_summary=TELEMETRY_REALISM_SUMMARY or {},
@@ -8099,7 +7404,35 @@ def _observe_recovery_state(
 
 
 def main() -> int:
-    global LIVE_POSE_TRACE_PATH, PAYLOAD_RELEASE_SUMMARY, WIND_REALISM_SUMMARY, THERMAL_WEATHER_REALISM_SUMMARY, VEHICLE_REALISM_SUMMARY, BATTERY_REALISM_SUMMARY, SENSOR_REALISM_SUMMARY, WORLD_REALISM_SUMMARY, VISIBILITY_REALISM_SUMMARY, OPERATIONAL_REALISM_SUMMARY, MOVING_ACTOR_LINEAR_MOTION_SUMMARY, MOVING_ACTOR_POSE_SUMMARY, MOVING_ACTOR_PROXIMITY_SUMMARY, COLLISION_OBSTACLE_SUMMARY, ROUTE_BLOCKING_CANDIDATE_SUMMARY, HORIZONTAL_CONTACT_TOPIC_SUMMARY, OPERATIONAL_INCIDENT_REPORT_SUMMARY, TRAFFIC_CONFLICT_VERIFICATION_SUMMARY, ROUTE_BLOCKING_VERIFICATION_SUMMARY, ALTERNATE_LANDING_CANDIDATE_SUMMARY, ALTERNATE_LANDING_EXECUTION_SUMMARY, ALTERNATE_MISSION_UPLOAD_SUMMARY, RTH_BEHAVIOR_SUMMARY, TELEMETRY_REALISM_SUMMARY, MAVLINK_LINK_REALISM_SUMMARY, TERRAIN_WORLD_REALISM_SUMMARY, TELEMETRY_DROPOUT_EVENTS, TELEMETRY_OBSERVER_SAMPLE_EVENTS
+    global \
+        LIVE_POSE_TRACE_PATH, \
+        PAYLOAD_RELEASE_SUMMARY, \
+        WIND_REALISM_SUMMARY, \
+        THERMAL_WEATHER_REALISM_SUMMARY, \
+        VEHICLE_REALISM_SUMMARY, \
+        BATTERY_REALISM_SUMMARY, \
+        SENSOR_REALISM_SUMMARY, \
+        WORLD_REALISM_SUMMARY, \
+        VISIBILITY_REALISM_SUMMARY, \
+        OPERATIONAL_REALISM_SUMMARY, \
+        MOVING_ACTOR_LINEAR_MOTION_SUMMARY, \
+        MOVING_ACTOR_POSE_SUMMARY, \
+        MOVING_ACTOR_PROXIMITY_SUMMARY, \
+        COLLISION_OBSTACLE_SUMMARY, \
+        ROUTE_BLOCKING_CANDIDATE_SUMMARY, \
+        HORIZONTAL_CONTACT_TOPIC_SUMMARY, \
+        OPERATIONAL_INCIDENT_REPORT_SUMMARY, \
+        TRAFFIC_CONFLICT_VERIFICATION_SUMMARY, \
+        ROUTE_BLOCKING_VERIFICATION_SUMMARY, \
+        ALTERNATE_LANDING_CANDIDATE_SUMMARY, \
+        ALTERNATE_LANDING_EXECUTION_SUMMARY, \
+        ALTERNATE_MISSION_UPLOAD_SUMMARY, \
+        RTH_BEHAVIOR_SUMMARY, \
+        TELEMETRY_REALISM_SUMMARY, \
+        MAVLINK_LINK_REALISM_SUMMARY, \
+        TERRAIN_WORLD_REALISM_SUMMARY, \
+        TELEMETRY_DROPOUT_EVENTS, \
+        TELEMETRY_OBSERVER_SAMPLE_EVENTS
     args = _parse_args()
     _require_opt_in()
     run_dir = _new_run_dir()
@@ -8144,12 +7477,8 @@ def main() -> int:
         )
         BATTERY_REALISM_SUMMARY = _battery_realism()
         SENSOR_REALISM_SUMMARY = _sensor_failure_realism()
-        WORLD_REALISM_SUMMARY = _landing_zone_blocked_realism(
-            payload_model_root=payload_model_root
-        )
-        VISIBILITY_REALISM_SUMMARY = _visibility_realism(
-            payload_model_root=payload_model_root
-        )
+        WORLD_REALISM_SUMMARY = _landing_zone_blocked_realism(payload_model_root=payload_model_root)
+        VISIBILITY_REALISM_SUMMARY = _visibility_realism(payload_model_root=payload_model_root)
         OPERATIONAL_REALISM_SUMMARY = _operational_no_fly_zone_realism(
             payload_model_root=payload_model_root
         )
@@ -8202,18 +7531,12 @@ def main() -> int:
             persisted = store.update(
                 task["task_id"],
                 artifacts={
-                    "px4_gazebo_pickup_dropoff_route_plan": route.model_dump(
-                        mode="json"
-                    ),
-                    "px4_gazebo_coupled_command_approval": approval.model_dump(
-                        mode="json"
-                    ),
+                    "px4_gazebo_pickup_dropoff_route_plan": route.model_dump(mode="json"),
+                    "px4_gazebo_coupled_command_approval": approval.model_dump(mode="json"),
                     "px4_gazebo_coupled_command_allowlist": coupled_allowlist.model_dump(
                         mode="json"
                     ),
-                    "px4_gazebo_route_command_allowlist": route_allowlist.model_dump(
-                        mode="json"
-                    ),
+                    "px4_gazebo_route_command_allowlist": route_allowlist.model_dump(mode="json"),
                 },
             )
             assert persisted is not None
@@ -8236,12 +7559,10 @@ def main() -> int:
                 payload_pre_recovery_distance_to_pickup_m = None
                 payload_route_progress_away_from_pickup_observed = False
                 if args.mission_os_supervisor_payload_loop:
-                    route_delta_x, route_delta_y, target_z = (
-                        derive_px4_gazebo_route_target_ned(route)
+                    route_delta_x, route_delta_y, target_z = derive_px4_gazebo_route_target_ned(
+                        route
                     )
-                    route_origin_x, route_origin_y = _terrain_relative_xy_origin(
-                        pickup_pose
-                    )
+                    route_origin_x, route_origin_y = _terrain_relative_xy_origin(pickup_pose)
                     target_x = route_origin_x + route_delta_x
                     target_y = route_origin_y + route_delta_y
                     _assert_planned_route_stream_budget(duration_seconds=12.0)
@@ -8259,9 +7580,7 @@ def main() -> int:
                         timeout=25,
                     )
                     payload_route_pose = _pose_sample()
-                    _append_live_pose_row(
-                        "payload_pre_recovery_route", payload_route_pose
-                    )
+                    _append_live_pose_row("payload_pre_recovery_route", payload_route_pose)
                     payload_pre_recovery_distance_to_pickup_m = math.hypot(
                         float(payload_route_pose["x"]) - float(pickup_pose["x"]),
                         float(payload_route_pose["y"]) - float(pickup_pose["y"]),
@@ -8299,8 +7618,7 @@ def main() -> int:
                     )
                 )
                 payload_recovery_approval_ref = (
-                    "px4_gazebo_emergency_command_approval:"
-                    f"{payload_recovery_approval.approval_id}"
+                    f"px4_gazebo_emergency_command_approval:{payload_recovery_approval.approval_id}"
                 )
                 payload_recovery_dispatch_ref = (
                     "px4_gazebo_emergency_command_dispatch_result:"
@@ -8348,15 +7666,12 @@ def main() -> int:
                         dispatch_frame_sent=post_recovery_dispatch.frame_sent is True,
                     )
                     post_recovery_completed = post_recovery_state_observed
-                    post_recovery_dispatch_status = (
-                        post_recovery_dispatch.dispatch_status
-                    )
+                    post_recovery_dispatch_status = post_recovery_dispatch.dispatch_status
                     post_recovery_pose_z_m = (
                         None if post_recovery_pose is None else post_recovery_pose["z"]
                     )
                     payload_supervisor_post_recovery_action_ref = (
-                        "payload_supervisor_post_recovery_action:"
-                        "mission_designer_payload_mass"
+                        "payload_supervisor_post_recovery_action:mission_designer_payload_mass"
                     )
                     payload_supervisor_post_recovery_action = {
                         "schema_version": "payload_supervisor_post_recovery_action.v1",
@@ -8371,9 +7686,7 @@ def main() -> int:
                         "supervisor_scope": "payload_form3_sitl_only",
                         "full_gateway_runtime_loop": False,
                         "source_cycle1_outcome_ref": payload_recovery_outcome_ref,
-                        "payload_feasibility_advisory_ref": (
-                            args.payload_feasibility_advisory_ref
-                        ),
+                        "payload_feasibility_advisory_ref": (args.payload_feasibility_advisory_ref),
                         "advisory_ref": args.payload_feasibility_advisory_ref,
                         "operator_approval_required": True,
                         "operator_approval_performed": True,
@@ -8385,12 +7698,8 @@ def main() -> int:
                         "bounded_action_ref": post_recovery_dispatch_ref,
                         "bounded_action_kind": args.post_recovery_action,
                         "dispatch_status": post_recovery_dispatch.dispatch_status,
-                        "command_ack_observed": (
-                            post_recovery_dispatch.command_ack_observed
-                        ),
-                        "command_ack_result_name": (
-                            post_recovery_dispatch.command_ack_result_name
-                        ),
+                        "command_ack_observed": (post_recovery_dispatch.command_ack_observed),
+                        "command_ack_result_name": (post_recovery_dispatch.command_ack_result_name),
                         "recovery_state_observed": post_recovery_state_observed,
                         "recovery_state_label": post_recovery_state_label,
                         "recovery_completed": post_recovery_completed,
@@ -8406,29 +7715,23 @@ def main() -> int:
                         "physical_execution_invoked": False,
                         "observed_at": datetime.now(timezone.utc).isoformat(),
                     }
-                    mission_os_supervisor_recovery_loop = (
-                        _build_payload_supervisor_loop(
-                            cycle1_dispatch_ref=payload_recovery_dispatch_ref,
-                            cycle1_dispatch_status=(
-                                payload_recovery_dispatch.dispatch_status
-                            ),
-                            cycle1_approval_ref=payload_recovery_approval_ref,
-                            cycle1_outcome_ref=payload_recovery_outcome_ref,
-                            cycle1_outcome_observed=payload_recovery_completed,
-                            cycle1_recovery_state_label=payload_recovery_state_label,
-                            cycle2_dispatch_ref=post_recovery_dispatch_ref,
-                            cycle2_dispatch_status=post_recovery_dispatch_status,
-                            cycle2_approval_ref=(
-                                "px4_gazebo_emergency_command_approval:"
-                                f"{post_recovery_approval.approval_id}"
-                            ),
-                            cycle2_outcome_ref=(
-                                payload_supervisor_post_recovery_action_ref
-                            ),
-                            cycle2_outcome_observed=post_recovery_completed,
-                            cycle2_state_label=post_recovery_state_label,
-                            cycle2_pose_z_m=post_recovery_pose_z_m,
-                        )
+                    mission_os_supervisor_recovery_loop = _build_payload_supervisor_loop(
+                        cycle1_dispatch_ref=payload_recovery_dispatch_ref,
+                        cycle1_dispatch_status=(payload_recovery_dispatch.dispatch_status),
+                        cycle1_approval_ref=payload_recovery_approval_ref,
+                        cycle1_outcome_ref=payload_recovery_outcome_ref,
+                        cycle1_outcome_observed=payload_recovery_completed,
+                        cycle1_recovery_state_label=payload_recovery_state_label,
+                        cycle2_dispatch_ref=post_recovery_dispatch_ref,
+                        cycle2_dispatch_status=post_recovery_dispatch_status,
+                        cycle2_approval_ref=(
+                            "px4_gazebo_emergency_command_approval:"
+                            f"{post_recovery_approval.approval_id}"
+                        ),
+                        cycle2_outcome_ref=(payload_supervisor_post_recovery_action_ref),
+                        cycle2_outcome_observed=post_recovery_completed,
+                        cycle2_state_label=post_recovery_state_label,
+                        cycle2_pose_z_m=post_recovery_pose_z_m,
                     )
                 final_status = (
                     "payload_supervisor_post_recovery_land_observed"
@@ -8461,9 +7764,7 @@ def main() -> int:
                     "form2_subtype": "Form 2a",
                     "trigger_level": "level_2_inferred",
                     "mission_response_kind": "action",
-                    "payload_feasibility_advisory_ref": (
-                        args.payload_feasibility_advisory_ref
-                    ),
+                    "payload_feasibility_advisory_ref": (args.payload_feasibility_advisory_ref),
                     "advisory_ref": args.payload_feasibility_advisory_ref,
                     "advisory_consumed_by_ref": PAYLOAD_RECOVERY_ACTION_REF,
                     "advisory_lifecycle_state": "reviewed_consumed_by_action_pr",
@@ -8475,16 +7776,12 @@ def main() -> int:
                     "bounded_action_kind": args.payload_advisory_recovery_action,
                     "dispatch_status": payload_recovery_dispatch.dispatch_status,
                     "command_ack_observed": payload_recovery_dispatch.command_ack_observed,
-                    "command_ack_result_name": (
-                        payload_recovery_dispatch.command_ack_result_name
-                    ),
+                    "command_ack_result_name": (payload_recovery_dispatch.command_ack_result_name),
                     "recovery_state_observed": payload_recovery_state_observed,
                     "recovery_state_label": payload_recovery_state_label,
                     "recovery_completed": payload_recovery_completed,
                     "recovery_pose_z_m": (
-                        None
-                        if payload_recovery_pose is None
-                        else payload_recovery_pose["z"]
+                        None if payload_recovery_pose is None else payload_recovery_pose["z"]
                     ),
                     "automatic_dispatch_suppressed": False,
                     "approval_free_recovery_dispatch_allowed": False,
@@ -8547,40 +7844,32 @@ def main() -> int:
                 summary = {
                     "artifact_dir": str(run_dir),
                     "task_status": updated_payload_recovery["status"],
-                    "existing_artifacts_retained": updated_payload_recovery[
-                        "artifacts"
-                    ]["existing"]["kept"],
+                    "existing_artifacts_retained": updated_payload_recovery["artifacts"][
+                        "existing"
+                    ]["kept"],
                     "final_status": final_status,
                     "actual_px4_gazebo_horizontal_smoke_observed": True,
                     "dropoff_region_reached": False,
                     "dropoff_verified": False,
                     "delivery_completion_claimed": False,
-                    "payload_feasibility_advisory_ref": (
-                        args.payload_feasibility_advisory_ref
-                    ),
+                    "payload_feasibility_advisory_ref": (args.payload_feasibility_advisory_ref),
                     "payload_recovery_action_ref": PAYLOAD_RECOVERY_ACTION_REF,
                     "payload_advisory_consumed_by_ref": PAYLOAD_RECOVERY_ACTION_REF,
                     "payload_recovery_action": args.payload_advisory_recovery_action,
                     "payload_recovery_approval_ref": payload_recovery_approval_ref,
                     "payload_recovery_dispatch_ref": payload_recovery_dispatch_ref,
-                    "payload_recovery_dispatch_status": (
-                        payload_recovery_dispatch.dispatch_status
-                    ),
+                    "payload_recovery_dispatch_status": (payload_recovery_dispatch.dispatch_status),
                     "payload_recovery_command_ack_observed": (
                         payload_recovery_dispatch.command_ack_observed
                     ),
                     "payload_recovery_command_ack_result_name": (
                         payload_recovery_dispatch.command_ack_result_name
                     ),
-                    "payload_recovery_state_observed": (
-                        payload_recovery_state_observed
-                    ),
+                    "payload_recovery_state_observed": (payload_recovery_state_observed),
                     "payload_recovery_state_label": payload_recovery_state_label,
                     "payload_recovery_completed": payload_recovery_completed,
                     "payload_recovery_pose_z_m": (
-                        None
-                        if payload_recovery_pose is None
-                        else payload_recovery_pose["z"]
+                        None if payload_recovery_pose is None else payload_recovery_pose["z"]
                     ),
                     "payload_route_progress_payload": payload_route_progress_payload,
                     "payload_route_progress_away_from_pickup_observed": (
@@ -8630,13 +7919,9 @@ def main() -> int:
                     "supervisor_loop_claim_supported": (
                         None
                         if mission_os_supervisor_recovery_loop is None
-                        else mission_os_supervisor_recovery_loop[
-                            "supervisor_loop_claim_supported"
-                        ]
+                        else mission_os_supervisor_recovery_loop["supervisor_loop_claim_supported"]
                     ),
-                    "mission_os_supervisor_recovery_loop": (
-                        mission_os_supervisor_recovery_loop
-                    ),
+                    "mission_os_supervisor_recovery_loop": (mission_os_supervisor_recovery_loop),
                     "setpoint_frames_sent": 0,
                     "hardware_target_allowed": False,
                     "physical_execution_invoked": False,
@@ -8703,9 +7988,7 @@ def main() -> int:
                 assert summary["payload_feasibility_advisory_ref"].startswith(
                     PAYLOAD_FEASIBILITY_ADVISORY_REF_PREFIX
                 )
-                assert summary["payload_advisory_consumed_by_ref"] == (
-                    PAYLOAD_RECOVERY_ACTION_REF
-                )
+                assert summary["payload_advisory_consumed_by_ref"] == (PAYLOAD_RECOVERY_ACTION_REF)
                 if args.payload_advisory_recovery_action == "land":
                     assert summary["payload_recovery_dispatch_status"] in (
                         "accepted",
@@ -8724,28 +8007,19 @@ def main() -> int:
                     assert summary["payload_recovery_completed"] is True
                     assert summary["payload_recovery_state_observed"] is True
                     assert (
-                        summary["payload_recovery_state_label"]
-                        == "return_to_launch_state_observed"
+                        summary["payload_recovery_state_label"] == "return_to_launch_state_observed"
                     )
                 if args.mission_os_supervisor_payload_loop:
                     assert summary["decision_loop_driver"] == "mission_os_supervisor"
                     assert summary["supervisor_scope"] == "payload_form3_sitl_only"
                     assert summary["full_gateway_runtime_loop"] is False
                     assert summary["supervisor_loop_claim_supported"] is True
-                    assert (
-                        summary["payload_route_progress_away_from_pickup_observed"]
-                        is True
+                    assert summary["payload_route_progress_away_from_pickup_observed"] is True
+                    assert float(summary["payload_pre_recovery_distance_to_pickup_m"]) >= 2.5
+                    assert float(summary["payload_recovery_distance_to_pickup_m"]) <= 2.0
+                    assert float(summary["payload_recovery_distance_to_pickup_m"]) < float(
+                        summary["payload_pre_recovery_distance_to_pickup_m"]
                     )
-                    assert (
-                        float(summary["payload_pre_recovery_distance_to_pickup_m"])
-                        >= 2.5
-                    )
-                    assert (
-                        float(summary["payload_recovery_distance_to_pickup_m"]) <= 2.0
-                    )
-                    assert float(
-                        summary["payload_recovery_distance_to_pickup_m"]
-                    ) < float(summary["payload_pre_recovery_distance_to_pickup_m"])
                     assert summary["post_recovery_action_taken"] == "land"
                     assert summary["post_recovery_dispatch_status"] in (
                         "accepted",
@@ -8758,25 +8032,19 @@ def main() -> int:
                     )
                 return 0
 
-            route_delta_x, route_delta_y, target_z = (
-                derive_px4_gazebo_route_target_ned(route)
-            )
+            route_delta_x, route_delta_y, target_z = derive_px4_gazebo_route_target_ned(route)
             route_origin_x, route_origin_y = _terrain_relative_xy_origin(pickup_pose)
             target_x = route_origin_x + route_delta_x
             target_y = route_origin_y + route_delta_y
             form2a_wind_compensation = _form2a_wind_compensation_request()
-            compensation_offset_x, compensation_offset_y = (
-                _form2a_wind_compensation_xy_offset(form2a_wind_compensation)
+            compensation_offset_x, compensation_offset_y = _form2a_wind_compensation_xy_offset(
+                form2a_wind_compensation
             )
-            feed_forward_vx_mps, feed_forward_vy_mps = (
-                _form2a_wind_feed_forward_xy_mps(form2a_wind_compensation)
+            feed_forward_vx_mps, feed_forward_vy_mps = _form2a_wind_feed_forward_xy_mps(
+                form2a_wind_compensation
             )
-            sent_target_x = (
-                target_x + float(args.inject_target_offset_m) + compensation_offset_x
-            )
-            sent_target_y = (
-                target_y + float(args.inject_target_offset_m) + compensation_offset_y
-            )
+            sent_target_x = target_x + float(args.inject_target_offset_m) + compensation_offset_x
+            sent_target_y = target_y + float(args.inject_target_offset_m) + compensation_offset_y
             route_duration_seconds = 25.0
             _assert_planned_route_stream_budget(duration_seconds=route_duration_seconds)
             recovery_approval = None
@@ -8795,12 +8063,8 @@ def main() -> int:
                 return {
                     "recovery_action_taken": route.on_deviation_action,
                     "recovery_dispatch_status": recovery_dispatch.dispatch_status,
-                    "recovery_command_ack_observed": (
-                        recovery_dispatch.command_ack_observed
-                    ),
-                    "recovery_command_ack_result_name": (
-                        recovery_dispatch.command_ack_result_name
-                    ),
+                    "recovery_command_ack_observed": (recovery_dispatch.command_ack_observed),
+                    "recovery_command_ack_result_name": (recovery_dispatch.command_ack_result_name),
                 }
 
             route_send = _send_route_with_monitor(
@@ -8810,9 +8074,7 @@ def main() -> int:
                 feed_forward_vx_mps=feed_forward_vx_mps,
                 feed_forward_vy_mps=feed_forward_vy_mps,
                 feed_forward_ramp_start_fraction=float(
-                    form2a_wind_compensation[
-                        "feed_forward_ramp_start_fraction"
-                    ]
+                    form2a_wind_compensation["feed_forward_ramp_start_fraction"]
                 ),
                 feed_forward_ramp_end_fraction=float(
                     form2a_wind_compensation["feed_forward_ramp_end_fraction"]
@@ -8832,9 +8094,7 @@ def main() -> int:
                     route_plan=route,
                     route_allowlist=route_allowlist,
                     deviation_samples=route_send["deviation_samples"],
-                    route_monitor_sample_count=int(
-                        route_send["route_monitor_sample_count"]
-                    ),
+                    route_monitor_sample_count=int(route_send["route_monitor_sample_count"]),
                     now=NOW,
                 )
                 recovery_pose = None
@@ -8876,8 +8136,7 @@ def main() -> int:
                         None
                         if recovery_approval is None
                         else (
-                            "px4_gazebo_emergency_command_approval:"
-                            f"{recovery_approval.approval_id}"
+                            f"px4_gazebo_emergency_command_approval:{recovery_approval.approval_id}"
                         )
                     )
                     recovery_ack_complete = (
@@ -8898,21 +8157,15 @@ def main() -> int:
                         deviation_abort=abort,
                         emergency_dispatch=recovery_dispatch,
                         recovery_state_observed=recovery_state_observed,
-                        recovery_pose_z_m=(
-                            None if recovery_pose is None else recovery_pose["z"]
-                        ),
+                        recovery_pose_z_m=(None if recovery_pose is None else recovery_pose["z"]),
                         recovery_state_label=recovery_state_label,
                         now=NOW,
                     )
                     final_status = recovery_completion.final_status
                     recovery_completed = recovery_completion.recovery_completed
-                    recovery_completion_basis = (
-                        recovery_completion.recovery_completion_basis.value
-                    )
+                    recovery_completion_basis = recovery_completion.recovery_completion_basis.value
                     recovery_ack_complete = recovery_completion.recovery_ack_complete
-                    recovery_state_observed = (
-                        recovery_completion.recovery_state_observed
-                    )
+                    recovery_state_observed = recovery_completion.recovery_state_observed
                     task_status = "completed" if recovery_completed else "blocked"
                     if recovery_completed and args.post_recovery_action != "none":
                         post_recovery_action_taken = args.post_recovery_action
@@ -8945,90 +8198,72 @@ def main() -> int:
                         ) = _observe_recovery_state(
                             action=args.post_recovery_action,
                             pickup_pose=pickup_pose,
-                            dispatch_frame_sent=(
-                                post_recovery_dispatch.frame_sent is True
-                            ),
+                            dispatch_frame_sent=(post_recovery_dispatch.frame_sent is True),
                         )
-                        post_recovery_completion = (
-                            build_px4_gazebo_route_recovery_completion(
-                                deviation_abort=abort,
-                                emergency_dispatch=post_recovery_dispatch,
-                                recovery_state_observed=(post_recovery_state_observed),
-                                recovery_pose_z_m=(
-                                    None
-                                    if post_recovery_pose is None
-                                    else post_recovery_pose["z"]
-                                ),
-                                recovery_state_label=post_recovery_state_label,
-                                now=NOW,
-                            )
+                        post_recovery_completion = build_px4_gazebo_route_recovery_completion(
+                            deviation_abort=abort,
+                            emergency_dispatch=post_recovery_dispatch,
+                            recovery_state_observed=(post_recovery_state_observed),
+                            recovery_pose_z_m=(
+                                None if post_recovery_pose is None else post_recovery_pose["z"]
+                            ),
+                            recovery_state_label=post_recovery_state_label,
+                            now=NOW,
                         )
                         post_recovery_completion_ref = (
                             "px4_gazebo_route_recovery_completion:"
                             f"{post_recovery_completion.recovery_completion_id}"
                         )
-                        post_recovery_completed = (
-                            post_recovery_completion.recovery_completed
-                        )
+                        post_recovery_completed = post_recovery_completion.recovery_completed
                         post_recovery_completion_basis = (
                             post_recovery_completion.recovery_completion_basis.value
                         )
-                        post_recovery_ack_complete = (
-                            post_recovery_completion.recovery_ack_complete
-                        )
+                        post_recovery_ack_complete = post_recovery_completion.recovery_ack_complete
                         post_recovery_state_observed = (
                             post_recovery_completion.recovery_state_observed
                         )
-                        final_status = (
-                            f"post_recovery_{post_recovery_completion.final_status}"
-                        )
-                        task_status = (
-                            "completed" if post_recovery_completed else "blocked"
-                        )
+                        final_status = f"post_recovery_{post_recovery_completion.final_status}"
+                        task_status = "completed" if post_recovery_completed else "blocked"
                     if (
                         args.mission_os_supervisor_recovery_loop
                         or args.mission_os_supervisor_multi_condition_loop
                     ):
-                        mission_os_supervisor_recovery_loop = (
-                            _build_wind_supervisor_loop(
-                                deviation_samples=route_send["deviation_samples"],
-                                cycle1_dispatch_ref=recovery_dispatch_ref,
-                                cycle1_dispatch_status=(
-                                    None
-                                    if recovery_dispatch is None
-                                    else recovery_dispatch.dispatch_status
-                                ),
-                                cycle1_approval_ref=recovery_approval_ref,
-                                cycle1_outcome_ref=(
-                                    None
-                                    if recovery_completion is None
-                                    else (
-                                        "px4_gazebo_route_recovery_completion:"
-                                        f"{recovery_completion.recovery_completion_id}"
-                                    )
-                                ),
-                                cycle1_outcome_observed=recovery_state_observed,
-                                cycle1_recovery_state_label=recovery_state_label,
-                                cycle2_dispatch_ref=post_recovery_dispatch_ref,
-                                cycle2_dispatch_status=(
-                                    None
-                                    if post_recovery_dispatch is None
-                                    else post_recovery_dispatch.dispatch_status
-                                ),
-                                cycle2_approval_ref=post_recovery_approval_ref,
-                                cycle2_outcome_ref=post_recovery_completion_ref,
-                                cycle2_outcome_observed=(post_recovery_state_observed),
-                                cycle2_pose_z_m=(
-                                    None
-                                    if post_recovery_pose is None
-                                    else post_recovery_pose["z"]
-                                ),
-                                supervisor_scope=(
-                                    MULTI_CONDITION_SUPERVISOR_SCOPE
-                                    if args.mission_os_supervisor_multi_condition_loop
-                                    else WIND_SUPERVISOR_SCOPE
-                                ),
-                            )
+                        mission_os_supervisor_recovery_loop = _build_wind_supervisor_loop(
+                            deviation_samples=route_send["deviation_samples"],
+                            cycle1_dispatch_ref=recovery_dispatch_ref,
+                            cycle1_dispatch_status=(
+                                None
+                                if recovery_dispatch is None
+                                else recovery_dispatch.dispatch_status
+                            ),
+                            cycle1_approval_ref=recovery_approval_ref,
+                            cycle1_outcome_ref=(
+                                None
+                                if recovery_completion is None
+                                else (
+                                    "px4_gazebo_route_recovery_completion:"
+                                    f"{recovery_completion.recovery_completion_id}"
+                                )
+                            ),
+                            cycle1_outcome_observed=recovery_state_observed,
+                            cycle1_recovery_state_label=recovery_state_label,
+                            cycle2_dispatch_ref=post_recovery_dispatch_ref,
+                            cycle2_dispatch_status=(
+                                None
+                                if post_recovery_dispatch is None
+                                else post_recovery_dispatch.dispatch_status
+                            ),
+                            cycle2_approval_ref=post_recovery_approval_ref,
+                            cycle2_outcome_ref=post_recovery_completion_ref,
+                            cycle2_outcome_observed=(post_recovery_state_observed),
+                            cycle2_pose_z_m=(
+                                None if post_recovery_pose is None else post_recovery_pose["z"]
+                            ),
+                            supervisor_scope=(
+                                MULTI_CONDITION_SUPERVISOR_SCOPE
+                                if args.mission_os_supervisor_multi_condition_loop
+                                else WIND_SUPERVISOR_SCOPE
+                            ),
                         )
                 updated_abort = store.update(
                     task["task_id"],
@@ -9036,9 +8271,7 @@ def main() -> int:
                     artifacts={
                         key: value
                         for key, value in {
-                            "px4_gazebo_route_deviation_abort": abort.model_dump(
-                                mode="json"
-                            ),
+                            "px4_gazebo_route_deviation_abort": abort.model_dump(mode="json"),
                             "px4_gazebo_emergency_command_approval": (
                                 None
                                 if recovery_approval is None
@@ -9089,100 +8322,77 @@ def main() -> int:
                     _moving_actor_waypoint_motion_application_realism()
                 )
                 MOVING_ACTOR_POSE_SUMMARY = _moving_actor_pose_observation_realism()
-                MOVING_ACTOR_PROXIMITY_SUMMARY = (
-                    _moving_actor_proximity_evidence_realism(
-                        route_start_xy_m=(pickup_pose["x"], pickup_pose["y"]),
-                        route_dropoff_xy_m=(target_x, target_y),
-                    )
+                MOVING_ACTOR_PROXIMITY_SUMMARY = _moving_actor_proximity_evidence_realism(
+                    route_start_xy_m=(pickup_pose["x"], pickup_pose["y"]),
+                    route_dropoff_xy_m=(target_x, target_y),
                 )
                 COLLISION_OBSTACLE_SUMMARY = _collision_obstacle_evidence_realism(
                     route_start_xy_m=(pickup_pose["x"], pickup_pose["y"]),
                     route_dropoff_xy_m=(target_x, target_y),
                 )
-                ROUTE_BLOCKING_CANDIDATE_SUMMARY = (
-                    _route_blocking_candidate_evidence_realism()
-                )
-                OPERATIONAL_INCIDENT_REPORT_SUMMARY = (
-                    _operational_incident_report_realism()
-                )
-                TRAFFIC_CONFLICT_VERIFICATION_SUMMARY = (
-                    _traffic_conflict_verification_realism()
-                )
-                ROUTE_BLOCKING_VERIFICATION_SUMMARY = (
-                    _route_blocking_verification_realism()
-                )
+                ROUTE_BLOCKING_CANDIDATE_SUMMARY = _route_blocking_candidate_evidence_realism()
+                OPERATIONAL_INCIDENT_REPORT_SUMMARY = _operational_incident_report_realism()
+                TRAFFIC_CONFLICT_VERIFICATION_SUMMARY = _traffic_conflict_verification_realism()
+                ROUTE_BLOCKING_VERIFICATION_SUMMARY = _route_blocking_verification_realism()
                 ALTERNATE_LANDING_CANDIDATE_SUMMARY = (
                     _alternate_landing_candidate_evidence_realism()
                 )
                 TELEMETRY_REALISM_SUMMARY = _telemetry_observer_dropout_realism()
                 _refresh_horizontal_contact_topic_summary(run_dir)
-                if (
-                    recovery_dispatch is not None
-                    and (
-                        args.mission_os_supervisor_recovery_loop
-                        or args.mission_os_supervisor_multi_condition_loop
-                    )
+                if recovery_dispatch is not None and (
+                    args.mission_os_supervisor_recovery_loop
+                    or args.mission_os_supervisor_multi_condition_loop
                 ):
-                    mission_os_supervisor_recovery_loop = (
-                        _build_wind_supervisor_loop(
-                            deviation_samples=route_send["deviation_samples"],
-                            cycle1_dispatch_ref=recovery_dispatch_ref,
-                            cycle1_dispatch_status=recovery_dispatch.dispatch_status,
-                            cycle1_approval_ref=recovery_approval_ref,
-                            cycle1_outcome_ref=(
-                                None
-                                if recovery_completion is None
-                                else (
-                                    "px4_gazebo_route_recovery_completion:"
-                                    f"{recovery_completion.recovery_completion_id}"
-                                )
-                            ),
-                            cycle1_outcome_observed=recovery_state_observed,
-                            cycle1_recovery_state_label=recovery_state_label,
-                            cycle2_dispatch_ref=post_recovery_dispatch_ref,
-                            cycle2_dispatch_status=(
-                                None
-                                if post_recovery_dispatch is None
-                                else post_recovery_dispatch.dispatch_status
-                            ),
-                            cycle2_approval_ref=post_recovery_approval_ref,
-                            cycle2_outcome_ref=post_recovery_completion_ref,
-                            cycle2_outcome_observed=(post_recovery_state_observed),
-                            cycle2_pose_z_m=(
-                                None
-                                if post_recovery_pose is None
-                                else post_recovery_pose["z"]
-                            ),
-                            supervisor_scope=(
-                                MULTI_CONDITION_SUPERVISOR_SCOPE
-                                if args.mission_os_supervisor_multi_condition_loop
-                                else WIND_SUPERVISOR_SCOPE
-                            ),
-                        )
+                    mission_os_supervisor_recovery_loop = _build_wind_supervisor_loop(
+                        deviation_samples=route_send["deviation_samples"],
+                        cycle1_dispatch_ref=recovery_dispatch_ref,
+                        cycle1_dispatch_status=recovery_dispatch.dispatch_status,
+                        cycle1_approval_ref=recovery_approval_ref,
+                        cycle1_outcome_ref=(
+                            None
+                            if recovery_completion is None
+                            else (
+                                "px4_gazebo_route_recovery_completion:"
+                                f"{recovery_completion.recovery_completion_id}"
+                            )
+                        ),
+                        cycle1_outcome_observed=recovery_state_observed,
+                        cycle1_recovery_state_label=recovery_state_label,
+                        cycle2_dispatch_ref=post_recovery_dispatch_ref,
+                        cycle2_dispatch_status=(
+                            None
+                            if post_recovery_dispatch is None
+                            else post_recovery_dispatch.dispatch_status
+                        ),
+                        cycle2_approval_ref=post_recovery_approval_ref,
+                        cycle2_outcome_ref=post_recovery_completion_ref,
+                        cycle2_outcome_observed=(post_recovery_state_observed),
+                        cycle2_pose_z_m=(
+                            None if post_recovery_pose is None else post_recovery_pose["z"]
+                        ),
+                        supervisor_scope=(
+                            MULTI_CONDITION_SUPERVISOR_SCOPE
+                            if args.mission_os_supervisor_multi_condition_loop
+                            else WIND_SUPERVISOR_SCOPE
+                        ),
                     )
                 summary = {
                     "artifact_dir": str(run_dir),
                     "task_status": updated_abort["status"],
-                    "existing_artifacts_retained": updated_abort["artifacts"][
-                        "existing"
-                    ]["kept"],
+                    "existing_artifacts_retained": updated_abort["artifacts"]["existing"]["kept"],
                     "final_status": final_status,
                     "actual_px4_gazebo_horizontal_smoke_observed": True,
                     "dropoff_region_reached": False,
                     "dropoff_verified": False,
                     "delivery_completion_claimed": False,
                     "deviation_abort_schema_version": abort.schema_version,
-                    "deviation_abort_ref": (
-                        f"px4_gazebo_route_deviation_abort:{abort.abort_id}"
-                    ),
+                    "deviation_abort_ref": (f"px4_gazebo_route_deviation_abort:{abort.abort_id}"),
                     "route_plan_schema_version": route.schema_version,
                     "on_deviation_action": route.on_deviation_action,
                     "pose_deviation_gate_active": True,
                     "pose_deviation_aborted": True,
                     "deviation_samples": route_send["deviation_samples"],
-                    "route_monitor_sample_count": route_send[
-                        "route_monitor_sample_count"
-                    ],
+                    "route_monitor_sample_count": route_send["route_monitor_sample_count"],
                     "route_stream_terminated_before_recovery_dispatch": route_send[
                         "route_stream_terminated_before_recovery_dispatch"
                     ],
@@ -9203,9 +8413,7 @@ def main() -> int:
                         )
                     ),
                     "recovery_completion_schema_version": (
-                        None
-                        if recovery_completion is None
-                        else recovery_completion.schema_version
+                        None if recovery_completion is None else recovery_completion.schema_version
                     ),
                     "recovery_completed": recovery_completed,
                     "recovery_completion_basis": recovery_completion_basis,
@@ -9213,9 +8421,7 @@ def main() -> int:
                     "recovery_state_observed": recovery_state_observed,
                     "recovery_state_label": recovery_state_label,
                     "recovery_dispatch_status": (
-                        None
-                        if recovery_dispatch is None
-                        else recovery_dispatch.dispatch_status
+                        None if recovery_dispatch is None else recovery_dispatch.dispatch_status
                     ),
                     "recovery_command_ack_observed": (
                         None
@@ -9227,9 +8433,7 @@ def main() -> int:
                         if recovery_dispatch is None
                         else recovery_dispatch.command_ack_result_name
                     ),
-                    "recovery_pose_z_m": (
-                        None if recovery_pose is None else recovery_pose["z"]
-                    ),
+                    "recovery_pose_z_m": (None if recovery_pose is None else recovery_pose["z"]),
                     "post_recovery_action_taken": post_recovery_action_taken,
                     "post_recovery_dispatch_ref": post_recovery_dispatch_ref,
                     "post_recovery_approval_ref": post_recovery_approval_ref,
@@ -9272,9 +8476,7 @@ def main() -> int:
                         else None
                     ),
                     "full_gateway_runtime_loop": False,
-                    "mission_os_supervisor_recovery_loop": (
-                        mission_os_supervisor_recovery_loop
-                    ),
+                    "mission_os_supervisor_recovery_loop": (mission_os_supervisor_recovery_loop),
                     **_wind_realism_summary_artifacts(
                         cleanup_status="teardown_required_after_summary"
                     ),
@@ -9298,9 +8500,7 @@ def main() -> int:
                     for index, sample in enumerate(recovery_samples)
                 ]
                 if recovery_pose is not None:
-                    recovery_rows.append(
-                        {"phase": "recovery_completed", "sample": recovery_pose}
-                    )
+                    recovery_rows.append({"phase": "recovery_completed", "sample": recovery_pose})
                 recovery_rows.extend(
                     {
                         "phase": f"post_recovery_{args.post_recovery_action}",
@@ -9351,9 +8551,7 @@ def main() -> int:
                     )
                 if route.on_deviation_action == "hold":
                     if summary["recovery_state_label"] == "hold_command_unsupported":
-                        assert (
-                            summary["final_status"] == "emergency_recovery_unconfirmed"
-                        )
+                        assert summary["final_status"] == "emergency_recovery_unconfirmed"
                         assert summary["task_status"] == "blocked"
                         assert summary["recovery_completed"] is False
                         assert summary["recovery_state_observed"] is False
@@ -9390,10 +8588,7 @@ def main() -> int:
                     assert summary["task_status"] == "completed"
                     assert summary["recovery_completed"] is True
                     assert summary["recovery_state_observed"] is True
-                    assert (
-                        summary["recovery_state_label"]
-                        == "return_to_launch_state_observed"
-                    )
+                    assert summary["recovery_state_label"] == "return_to_launch_state_observed"
                     if args.post_recovery_action == "land":
                         assert summary["post_recovery_dispatch_status"] in (
                             "accepted",
@@ -9425,28 +8620,18 @@ def main() -> int:
                     _moving_actor_waypoint_motion_application_realism()
                 )
                 MOVING_ACTOR_POSE_SUMMARY = _moving_actor_pose_observation_realism()
-                MOVING_ACTOR_PROXIMITY_SUMMARY = (
-                    _moving_actor_proximity_evidence_realism(
-                        route_start_xy_m=(pickup_pose["x"], pickup_pose["y"]),
-                        route_dropoff_xy_m=(target_x, target_y),
-                    )
+                MOVING_ACTOR_PROXIMITY_SUMMARY = _moving_actor_proximity_evidence_realism(
+                    route_start_xy_m=(pickup_pose["x"], pickup_pose["y"]),
+                    route_dropoff_xy_m=(target_x, target_y),
                 )
                 COLLISION_OBSTACLE_SUMMARY = _collision_obstacle_evidence_realism(
                     route_start_xy_m=(pickup_pose["x"], pickup_pose["y"]),
                     route_dropoff_xy_m=(target_x, target_y),
                 )
-                ROUTE_BLOCKING_CANDIDATE_SUMMARY = (
-                    _route_blocking_candidate_evidence_realism()
-                )
-                OPERATIONAL_INCIDENT_REPORT_SUMMARY = (
-                    _operational_incident_report_realism()
-                )
-                TRAFFIC_CONFLICT_VERIFICATION_SUMMARY = (
-                    _traffic_conflict_verification_realism()
-                )
-                ROUTE_BLOCKING_VERIFICATION_SUMMARY = (
-                    _route_blocking_verification_realism()
-                )
+                ROUTE_BLOCKING_CANDIDATE_SUMMARY = _route_blocking_candidate_evidence_realism()
+                OPERATIONAL_INCIDENT_REPORT_SUMMARY = _operational_incident_report_realism()
+                TRAFFIC_CONFLICT_VERIFICATION_SUMMARY = _traffic_conflict_verification_realism()
+                ROUTE_BLOCKING_VERIFICATION_SUMMARY = _route_blocking_verification_realism()
                 ALTERNATE_LANDING_CANDIDATE_SUMMARY = (
                     _alternate_landing_candidate_evidence_realism()
                 )
@@ -9472,25 +8657,15 @@ def main() -> int:
                 if alternate_landing_requested or rth_behavior_requested:
                     route_blocking_decision_summaries = {
                         "moving_actor_pose": MOVING_ACTOR_POSE_SUMMARY or {},
-                        "moving_actor_proximity": (
-                            MOVING_ACTOR_PROXIMITY_SUMMARY or {}
-                        ),
+                        "moving_actor_proximity": (MOVING_ACTOR_PROXIMITY_SUMMARY or {}),
                         "collision_obstacle": COLLISION_OBSTACLE_SUMMARY or {},
-                        "route_blocking_candidate": (
-                            ROUTE_BLOCKING_CANDIDATE_SUMMARY or {}
-                        ),
-                        "operational_incident_report": (
-                            OPERATIONAL_INCIDENT_REPORT_SUMMARY or {}
-                        ),
+                        "route_blocking_candidate": (ROUTE_BLOCKING_CANDIDATE_SUMMARY or {}),
+                        "operational_incident_report": (OPERATIONAL_INCIDENT_REPORT_SUMMARY or {}),
                         "traffic_conflict_verification": (
                             TRAFFIC_CONFLICT_VERIFICATION_SUMMARY or {}
                         ),
-                        "route_blocking_verification": (
-                            ROUTE_BLOCKING_VERIFICATION_SUMMARY or {}
-                        ),
-                        "alternate_landing_candidate": (
-                            ALTERNATE_LANDING_CANDIDATE_SUMMARY or {}
-                        ),
+                        "route_blocking_verification": (ROUTE_BLOCKING_VERIFICATION_SUMMARY or {}),
+                        "alternate_landing_candidate": (ALTERNATE_LANDING_CANDIDATE_SUMMARY or {}),
                     }
                     break
                 if observation_attempt < observation_attempts:
@@ -9549,9 +8724,7 @@ def main() -> int:
                 ) = _dispatch_alternate_landing_execution()
                 landing_phase = "alternate_landing"
             else:
-                _send_command(
-                    "land", approval=approval, coupled_allowlist=coupled_allowlist
-                )
+                _send_command("land", approval=approval, coupled_allowlist=coupled_allowlist)
             if not rth_behavior_requested:
                 landing_z_threshold = _landing_z_threshold(pickup_pose)
                 completed_pose, landing_samples = _wait_for_z(
@@ -9563,9 +8736,7 @@ def main() -> int:
                 "rth_completed" if rth_behavior_requested else "completed",
                 completed_pose,
             )
-            PAYLOAD_RELEASE_SUMMARY = (
-                None if rth_behavior_requested else _trigger_payload_release()
-            )
+            PAYLOAD_RELEASE_SUMMARY = None if rth_behavior_requested else _trigger_payload_release()
             VEHICLE_REALISM_SUMMARY = _vehicle_payload_mass_realism(
                 payload_model_root=payload_model_root,
                 payload_release_summary=PAYLOAD_RELEASE_SUMMARY,
@@ -9581,58 +8752,38 @@ def main() -> int:
                 COLLISION_OBSTACLE_SUMMARY = route_blocking_decision_summaries.get(
                     "collision_obstacle", {}
                 )
-                ROUTE_BLOCKING_CANDIDATE_SUMMARY = (
-                    route_blocking_decision_summaries.get(
-                        "route_blocking_candidate", {}
-                    )
+                ROUTE_BLOCKING_CANDIDATE_SUMMARY = route_blocking_decision_summaries.get(
+                    "route_blocking_candidate", {}
                 )
-                OPERATIONAL_INCIDENT_REPORT_SUMMARY = (
-                    route_blocking_decision_summaries.get(
-                        "operational_incident_report", {}
-                    )
+                OPERATIONAL_INCIDENT_REPORT_SUMMARY = route_blocking_decision_summaries.get(
+                    "operational_incident_report", {}
                 )
-                TRAFFIC_CONFLICT_VERIFICATION_SUMMARY = (
-                    route_blocking_decision_summaries.get(
-                        "traffic_conflict_verification", {}
-                    )
+                TRAFFIC_CONFLICT_VERIFICATION_SUMMARY = route_blocking_decision_summaries.get(
+                    "traffic_conflict_verification", {}
                 )
-                ROUTE_BLOCKING_VERIFICATION_SUMMARY = (
-                    route_blocking_decision_summaries.get(
-                        "route_blocking_verification", {}
-                    )
+                ROUTE_BLOCKING_VERIFICATION_SUMMARY = route_blocking_decision_summaries.get(
+                    "route_blocking_verification", {}
                 )
-                ALTERNATE_LANDING_CANDIDATE_SUMMARY = (
-                    route_blocking_decision_summaries.get(
-                        "alternate_landing_candidate", {}
-                    )
+                ALTERNATE_LANDING_CANDIDATE_SUMMARY = route_blocking_decision_summaries.get(
+                    "alternate_landing_candidate", {}
                 )
             else:
                 MOVING_ACTOR_LINEAR_MOTION_SUMMARY = (
                     _moving_actor_waypoint_motion_application_realism()
                 )
                 MOVING_ACTOR_POSE_SUMMARY = _moving_actor_pose_observation_realism()
-                MOVING_ACTOR_PROXIMITY_SUMMARY = (
-                    _moving_actor_proximity_evidence_realism(
-                        route_start_xy_m=(pickup_pose["x"], pickup_pose["y"]),
-                        route_dropoff_xy_m=(target_x, target_y),
-                    )
+                MOVING_ACTOR_PROXIMITY_SUMMARY = _moving_actor_proximity_evidence_realism(
+                    route_start_xy_m=(pickup_pose["x"], pickup_pose["y"]),
+                    route_dropoff_xy_m=(target_x, target_y),
                 )
                 COLLISION_OBSTACLE_SUMMARY = _collision_obstacle_evidence_realism(
                     route_start_xy_m=(pickup_pose["x"], pickup_pose["y"]),
                     route_dropoff_xy_m=(target_x, target_y),
                 )
-                ROUTE_BLOCKING_CANDIDATE_SUMMARY = (
-                    _route_blocking_candidate_evidence_realism()
-                )
-                OPERATIONAL_INCIDENT_REPORT_SUMMARY = (
-                    _operational_incident_report_realism()
-                )
-                TRAFFIC_CONFLICT_VERIFICATION_SUMMARY = (
-                    _traffic_conflict_verification_realism()
-                )
-                ROUTE_BLOCKING_VERIFICATION_SUMMARY = (
-                    _route_blocking_verification_realism()
-                )
+                ROUTE_BLOCKING_CANDIDATE_SUMMARY = _route_blocking_candidate_evidence_realism()
+                OPERATIONAL_INCIDENT_REPORT_SUMMARY = _operational_incident_report_realism()
+                TRAFFIC_CONFLICT_VERIFICATION_SUMMARY = _traffic_conflict_verification_realism()
+                ROUTE_BLOCKING_VERIFICATION_SUMMARY = _route_blocking_verification_realism()
                 ALTERNATE_LANDING_CANDIDATE_SUMMARY = (
                     _alternate_landing_candidate_evidence_realism()
                 )
@@ -9668,36 +8819,32 @@ def main() -> int:
                 rth_samples=rth_samples,
             )
             _refresh_horizontal_contact_topic_summary(run_dir)
-            dispatch = (
-                build_px4_gazebo_route_command_dispatch_result_from_observed_stream(
-                    route_plan=route,
-                    route_allowlist=route_allowlist,
-                    approval=approval,
-                    endpoint_port=ROUTE_MAVLINK_PX4_PORT,
-                    target_x_m=route_delta_x,
-                    target_y_m=route_delta_y,
-                    target_z_m=target_z,
-                    setpoint_frames_sent=int(route_send["setpoint_frames_sent"]),
-                    setpoint_stream_duration_seconds=float(
-                        route_send["setpoint_stream_duration_seconds"]
-                    ),
-                    offboard_mode_switch_frame_sent=bool(
-                        route_send["offboard_mode_switch_frame_sent"]
-                    ),
-                    offboard_mode_switch_ack_observed=bool(
-                        route_send["offboard_mode_switch_ack_observed"]
-                    ),
-                    offboard_mode_switch_ack_result_code=route_send[
-                        "offboard_mode_switch_ack_result_code"
-                    ],
-                    offboard_mode_switch_ack_result_name=route_send[
-                        "offboard_mode_switch_ack_result_name"
-                    ],
-                    offboard_mode_switch_ack_timeout_seconds=float(
-                        route_send["offboard_mode_switch_ack_timeout_seconds"]
-                    ),
-                    now=NOW,
-                )
+            dispatch = build_px4_gazebo_route_command_dispatch_result_from_observed_stream(
+                route_plan=route,
+                route_allowlist=route_allowlist,
+                approval=approval,
+                endpoint_port=ROUTE_MAVLINK_PX4_PORT,
+                target_x_m=route_delta_x,
+                target_y_m=route_delta_y,
+                target_z_m=target_z,
+                setpoint_frames_sent=int(route_send["setpoint_frames_sent"]),
+                setpoint_stream_duration_seconds=float(
+                    route_send["setpoint_stream_duration_seconds"]
+                ),
+                offboard_mode_switch_frame_sent=bool(route_send["offboard_mode_switch_frame_sent"]),
+                offboard_mode_switch_ack_observed=bool(
+                    route_send["offboard_mode_switch_ack_observed"]
+                ),
+                offboard_mode_switch_ack_result_code=route_send[
+                    "offboard_mode_switch_ack_result_code"
+                ],
+                offboard_mode_switch_ack_result_name=route_send[
+                    "offboard_mode_switch_ack_result_name"
+                ],
+                offboard_mode_switch_ack_timeout_seconds=float(
+                    route_send["offboard_mode_switch_ack_timeout_seconds"]
+                ),
+                now=NOW,
             )
             progress = build_px4_gazebo_route_progress_evidence(
                 route_plan=route,
@@ -9710,12 +8857,8 @@ def main() -> int:
             store.update(
                 task["task_id"],
                 artifacts={
-                    "px4_gazebo_route_command_dispatch_result": dispatch.model_dump(
-                        mode="json"
-                    ),
-                    "px4_gazebo_route_progress_evidence": progress.model_dump(
-                        mode="json"
-                    ),
+                    "px4_gazebo_route_command_dispatch_result": dispatch.model_dump(mode="json"),
+                    "px4_gazebo_route_progress_evidence": progress.model_dump(mode="json"),
                 },
             )
             gate = build_px4_gazebo_route_delivery_completion_gate(
@@ -9763,17 +8906,13 @@ def main() -> int:
             "route_plan_schema_version": route.schema_version,
             "preupload_mission_performed": preupload_summary is not None,
             "preupload_mission_ack_observed": (
-                preupload_summary["mission_ack_observed"]
-                if preupload_summary
-                else False
+                preupload_summary["mission_ack_observed"] if preupload_summary else False
             ),
             "preupload_mission_ack_type": (
                 preupload_summary["mission_ack_type"] if preupload_summary else None
             ),
             "preupload_mission_request_sequences": (
-                preupload_summary["mission_request_sequences"]
-                if preupload_summary
-                else []
+                preupload_summary["mission_request_sequences"] if preupload_summary else []
             ),
             "route_allowlist_schema_version": route_allowlist.schema_version,
             "dispatch_schema_version": dispatch.schema_version,
@@ -9814,27 +8953,17 @@ def main() -> int:
             ],
             "form2a_wind_preemptive_offset_x_m": compensation_offset_x,
             "form2a_wind_preemptive_offset_y_m": compensation_offset_y,
-            "form2a_wind_feed_forward_velocity_x_mps": route_send[
-                "feed_forward_velocity_x_mps"
-            ],
-            "form2a_wind_feed_forward_velocity_y_mps": route_send[
-                "feed_forward_velocity_y_mps"
-            ],
-            "form2a_wind_feed_forward_phase_schedule": route_send[
-                "feed_forward_phase_schedule"
-            ],
+            "form2a_wind_feed_forward_velocity_x_mps": route_send["feed_forward_velocity_x_mps"],
+            "form2a_wind_feed_forward_velocity_y_mps": route_send["feed_forward_velocity_y_mps"],
+            "form2a_wind_feed_forward_phase_schedule": route_send["feed_forward_phase_schedule"],
             "form2a_wind_feed_forward_ramp_start_fraction": route_send[
                 "feed_forward_ramp_start_fraction"
             ],
             "form2a_wind_feed_forward_ramp_end_fraction": route_send[
                 "feed_forward_ramp_end_fraction"
             ],
-            "form2a_wind_feed_forward_scale_min": route_send[
-                "feed_forward_scale_min"
-            ],
-            "form2a_wind_feed_forward_scale_max": route_send[
-                "feed_forward_scale_max"
-            ],
+            "form2a_wind_feed_forward_scale_min": route_send["feed_forward_scale_min"],
+            "form2a_wind_feed_forward_scale_max": route_send["feed_forward_scale_max"],
             "form2a_wind_feed_forward_scale_sample_count": route_send[
                 "feed_forward_scale_sample_count"
             ],
@@ -9843,30 +8972,21 @@ def main() -> int:
             "offboard_mode_switch_allowed": dispatch.offboard_mode_switch_allowed,
             "offboard_mode_switch_command_id": dispatch.offboard_mode_switch_command_id,
             "offboard_mode_switch_frame_sent": dispatch.offboard_mode_switch_frame_sent,
-            "offboard_mode_switch_ack_required": (
-                dispatch.offboard_mode_switch_ack_required
-            ),
-            "offboard_mode_switch_ack_command_id": (
-                dispatch.offboard_mode_switch_ack_command_id
-            ),
+            "offboard_mode_switch_ack_required": (dispatch.offboard_mode_switch_ack_required),
+            "offboard_mode_switch_ack_command_id": (dispatch.offboard_mode_switch_ack_command_id),
             "offboard_mode_switch_ack_timeout_seconds": (
                 dispatch.offboard_mode_switch_ack_timeout_seconds
             ),
             "offboard_mode_switch_ack_observed": dispatch.offboard_mode_switch_ack_observed,
-            "offboard_mode_switch_ack_result_code": (
-                dispatch.offboard_mode_switch_ack_result_code
-            ),
-            "offboard_mode_switch_ack_result_name": (
-                dispatch.offboard_mode_switch_ack_result_name
-            ),
+            "offboard_mode_switch_ack_result_code": (dispatch.offboard_mode_switch_ack_result_code),
+            "offboard_mode_switch_ack_result_name": (dispatch.offboard_mode_switch_ack_result_name),
             "hardware_target_allowed": gate.hardware_target_allowed,
             "physical_execution_invoked": gate.physical_execution_invoked,
             "px4_mission_upload_allowed": gate.px4_mission_upload_allowed,
             "climb_sample_count": len(climb_samples),
             "landing_sample_count": len(landing_samples),
             "payload_release_observed": bool(
-                PAYLOAD_RELEASE_SUMMARY
-                and PAYLOAD_RELEASE_SUMMARY["payload_release_observed"]
+                PAYLOAD_RELEASE_SUMMARY and PAYLOAD_RELEASE_SUMMARY["payload_release_observed"]
             ),
             "payload_release_event_source": (
                 PAYLOAD_RELEASE_SUMMARY["payload_release_event_source"]
@@ -9911,9 +9031,7 @@ def main() -> int:
             ),
             "full_gateway_runtime_loop": False,
             "mission_os_supervisor_recovery_loop": obstacle_supervisor_recovery_loop,
-            **_wind_realism_summary_artifacts(
-                cleanup_status="teardown_required_after_summary"
-            ),
+            **_wind_realism_summary_artifacts(cleanup_status="teardown_required_after_summary"),
             **_vehicle_realism_summary_artifacts(),
         }
         _write_json(run_dir / "summary.json", summary)
@@ -9949,9 +9067,7 @@ def main() -> int:
             alternate_behavior.get("alternate_landing_behavior_observed") is True
         )
         rth_behavior = summary.get("rth_behavior_observation", {})
-        rth_behavior_observed = (
-            rth_behavior.get("return_to_home_behavior_observed") is True
-        )
+        rth_behavior_observed = rth_behavior.get("return_to_home_behavior_observed") is True
         route_blocking_observed = (
             summary.get("route_blocking_verification", {})
             .get("observed", {})
@@ -9959,9 +9075,7 @@ def main() -> int:
             is True
         )
         incident_route_blocking_observed = (
-            summary.get(
-                "horizontal_route_incident_informed_route_blocking_verification", {}
-            )
+            summary.get("horizontal_route_incident_informed_route_blocking_verification", {})
             .get("observed", {})
             .get("route_blocking_verified")
             is True
@@ -9986,27 +9100,13 @@ def main() -> int:
                 summary["alternate_mission_upload_request"]["request_status"]
                 == "approved_for_sitl_alternate_mission_upload"
             )
-            assert (
-                summary["alternate_mission_upload_request"]["contains_waypoint_item"]
-                is True
-            )
-            assert (
-                summary["alternate_mission_upload_request"]["contains_land_item"]
-                is True
-            )
-            assert (
-                summary["alternate_mission_upload_receipt"]["upload_status"]
-                == "uploaded"
-            )
-            assert (
-                summary["alternate_mission_upload_receipt"]["mission_ack_observed"]
-                is True
-            )
+            assert summary["alternate_mission_upload_request"]["contains_waypoint_item"] is True
+            assert summary["alternate_mission_upload_request"]["contains_land_item"] is True
+            assert summary["alternate_mission_upload_receipt"]["upload_status"] == "uploaded"
+            assert summary["alternate_mission_upload_receipt"]["mission_ack_observed"] is True
             assert summary["alternate_mission_upload_receipt"]["mission_ack_type"] == 0
             assert (
-                summary["alternate_route_behavior_observation"][
-                    "alternate_mission_uploaded"
-                ]
+                summary["alternate_route_behavior_observation"]["alternate_mission_uploaded"]
                 is True
             )
             assert (
@@ -10015,39 +9115,28 @@ def main() -> int:
                 ]
                 is True
             )
+            assert summary["alternate_route_behavior_observation"]["dropoff_verified"] is False
             assert (
-                summary["alternate_route_behavior_observation"]["dropoff_verified"]
+                summary["alternate_route_behavior_observation"]["delivery_completion_claimed"]
                 is False
             )
             assert (
-                summary["alternate_route_behavior_observation"][
-                    "delivery_completion_claimed"
-                ]
-                is False
-            )
-            assert (
-                summary["alternate_landing_command_dispatch"][
-                    "mavlink_dispatch_performed"
-                ]
-                is True
+                summary["alternate_landing_command_dispatch"]["mavlink_dispatch_performed"] is True
             )
             assert alternate_behavior["land_commanded"] is True
             assert alternate_behavior["landing_observed"] is True
             assert alternate_behavior["delivery_completion_claimed"] is False
         elif rth_behavior_observed:
-            assert (
-                summary["rth_execution_request"]["request_status"]
-                == "approved_for_sitl_rth"
-            )
+            assert summary["rth_execution_request"]["request_status"] == "approved_for_sitl_rth"
             assert summary["rth_command_dispatch"]["mavlink_dispatch_performed"] is True
             assert rth_behavior["rth_commanded"] is True
             assert rth_behavior["rth_state_observed"] is True
             assert rth_behavior["delivery_completion_claimed"] is False
         elif incident_route_blocking_observed:
             assert (
-                summary[
-                    "horizontal_route_incident_informed_route_blocking_verification"
-                ]["verification_status"]
+                summary["horizontal_route_incident_informed_route_blocking_verification"][
+                    "verification_status"
+                ]
                 == "route_blocking_verified"
             )
         elif route_blocking_observed:
@@ -10056,9 +9145,7 @@ def main() -> int:
                 == "route_blocking_verified"
             )
             assert (
-                summary["gazebo_route_corridor_obstacle_spawn_application"][
-                    "application_status"
-                ]
+                summary["gazebo_route_corridor_obstacle_spawn_application"]["application_status"]
                 == "applied"
             )
         else:
@@ -10073,10 +9160,7 @@ def main() -> int:
             assert summary["preupload_mission_request_sequences"] == [0, 1, 2, 3]
         if os.getenv(PAYLOAD_RELEASE_MODEL_ENV) == "1" and not rth_behavior_observed:
             assert summary["payload_release_observed"] is True
-            assert (
-                summary["payload_release_event_source"]
-                == "gazebo_detachable_joint_detach_event"
-            )
+            assert summary["payload_release_event_source"] == "gazebo_detachable_joint_detach_event"
             assert summary["payload_release_position_x_m"] is not None
             assert summary["payload_release_position_y_m"] is not None
             assert summary["payload_release_position_z_m"] is not None
@@ -10086,9 +9170,7 @@ def main() -> int:
         assert summary["route_terminal_pose"]["observed"] is True
         assert summary["landing_terminal_pose"]["phase"] == "landing"
         assert summary["completed_terminal_pose"]["phase"] == "completed"
-        assert (
-            summary["route_terminal_progress_m"] == summary["horizontal_progress_m"]
-        )
+        assert summary["route_terminal_progress_m"] == summary["horizontal_progress_m"]
         if (
             alternate_behavior_observed
             or rth_behavior_observed
@@ -10116,24 +9198,12 @@ def main() -> int:
                 "horizontal_route_contact_incident_verification"
             ]
             contact_incident_verified = contact_incident_verification["observed"]
-            assert (
-                contact_integration["integration_status"]
-                == "sidecar_contact_event_observed"
-            )
+            assert contact_integration["integration_status"] == "sidecar_contact_event_observed"
             assert contact_observed["contact_event_observed"] is True
             assert contact_observed["collision_names"] != []
-            assert (
-                contact_integration["horizontal_route_world_contact_sensor_injected"]
-                is False
-            )
-            assert (
-                contact_integration["horizontal_route_px4_home_boundary_protected"]
-                is True
-            )
-            assert (
-                contact_incident_verification["verification_status"]
-                == "incident_verified"
-            )
+            assert contact_integration["horizontal_route_world_contact_sensor_injected"] is False
+            assert contact_integration["horizontal_route_px4_home_boundary_protected"] is True
+            assert contact_incident_verification["verification_status"] == "incident_verified"
             assert contact_incident_verified["incident_verified"] is True
             assert contact_incident_verified["route_blocking_verified"] is False
             assert contact_incident_verified["traffic_conflict_verified"] is False
@@ -10142,34 +9212,23 @@ def main() -> int:
                 "horizontal_route_incident_informed_traffic_conflict_verification"
             ]
             incident_informed_traffic_observed = incident_informed_traffic["observed"]
-            assert (
-                incident_informed_traffic["verification_status"]
-                == "traffic_conflict_verified"
-            )
+            assert incident_informed_traffic["verification_status"] == "traffic_conflict_verified"
             assert incident_informed_traffic_observed["incident_verified"] is True
-            assert (
-                incident_informed_traffic_observed["traffic_conflict_verified"] is True
-            )
-            assert (
-                incident_informed_traffic_observed["route_blocking_verified"] is False
-            )
+            assert incident_informed_traffic_observed["traffic_conflict_verified"] is True
+            assert incident_informed_traffic_observed["route_blocking_verified"] is False
             assert incident_informed_traffic_observed["auto_gate"] is False
             assert contact_observed["task_status_mutated"] is False
             assert contact_observed["delivery_completion_claimed"] is False
             assert contact_incident_verified["task_status_mutated"] is False
             assert contact_incident_verified["delivery_completion_claimed"] is False
             assert incident_informed_traffic_observed["task_status_mutated"] is False
-            assert (
-                incident_informed_traffic_observed["delivery_completion_claimed"]
-                is False
-            )
+            assert incident_informed_traffic_observed["delivery_completion_claimed"] is False
             incident_informed_route_blocking = summary[
                 "horizontal_route_incident_informed_route_blocking_verification"
             ]
             incident_route_observed = incident_informed_route_blocking["observed"]
             assert (
-                incident_informed_route_blocking["verification_status"]
-                == "route_blocking_verified"
+                incident_informed_route_blocking["verification_status"] == "route_blocking_verified"
             )
             assert incident_route_observed["traffic_conflict_verified"] is True
             assert incident_route_observed["route_blocking_candidate"] is True
@@ -10197,9 +9256,7 @@ def main() -> int:
         assert summary["physical_execution_invoked"] is False
         assert summary["px4_mission_upload_allowed"] is False
         if not rth_behavior_observed:
-            assert float(summary["completed_pose_z_m"]) <= (
-                _landing_z_threshold(pickup_pose)
-            )
+            assert float(summary["completed_pose_z_m"]) <= (_landing_z_threshold(pickup_pose))
         return 0
     finally:
         _stop_container()

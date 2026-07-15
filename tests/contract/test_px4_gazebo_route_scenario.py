@@ -5,6 +5,7 @@ import math
 import pytest
 
 from scripts import smoke_px4_gazebo_horizontal_route_delivery as route_entrypoint
+from src.runtime.px4_gazebo_route import environment
 from src.runtime.px4_gazebo_route import scenario
 
 
@@ -127,23 +128,23 @@ def test_sensor_profile_defaults_failure_to_gps_and_reports_unsupported_values()
 def test_entrypoint_profile_wrappers_read_environment_only_at_boundary(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv(route_entrypoint.WIND_MEAN_MPS_ENV, "3.25")
-    monkeypatch.setenv(route_entrypoint.TEMPERATURE_C_ENV, "42")
-    monkeypatch.setenv(route_entrypoint.BATTERY_REMAINING_PERCENT_ENV, "8")
-    monkeypatch.setenv(route_entrypoint.SENSOR_FAILURE_TYPE_ENV, "off")
+    monkeypatch.setenv(environment.WIND_MEAN_MPS_ENV, "3.25")
+    monkeypatch.setenv(environment.TEMPERATURE_C_ENV, "42")
+    monkeypatch.setenv(environment.BATTERY_REMAINING_PERCENT_ENV, "8")
+    monkeypatch.setenv(environment.SENSOR_FAILURE_TYPE_ENV, "off")
 
-    assert route_entrypoint._wind_requested_profile()["requested"][
-        "wind_mean_mps"
-    ] == 3.25
-    assert route_entrypoint._thermal_weather_requested_profile()["requested"][
-        "temperature_c"
-    ] == 42.0
-    assert route_entrypoint._battery_requested_profile()["requested"][
-        "battery_scenario"
-    ] == "battery_critical"
-    assert route_entrypoint._sensor_failure_requested_profile()["requested"][
-        "sensor_component"
-    ] == "gps"
+    assert route_entrypoint._wind_requested_profile()["requested"]["wind_mean_mps"] == 3.25
+    assert (
+        route_entrypoint._thermal_weather_requested_profile()["requested"]["temperature_c"] == 42.0
+    )
+    assert (
+        route_entrypoint._battery_requested_profile()["requested"]["battery_scenario"]
+        == "battery_critical"
+    )
+    assert (
+        route_entrypoint._sensor_failure_requested_profile()["requested"]["sensor_component"]
+        == "gps"
+    )
 
 
 @pytest.mark.parametrize(
@@ -179,10 +180,10 @@ def test_visibility_mode_normalization_is_value_only() -> None:
 def test_entrypoint_scenario_selector_wrappers_only_read_environment(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv(route_entrypoint.LANDING_ZONE_BLOCKED_ENV, "blocked")
-    monkeypatch.setenv(route_entrypoint.VISIBILITY_MODE_ENV, " fog ")
-    monkeypatch.setenv(route_entrypoint.RTH_BEHAVIOR_ENV, "rtl")
-    monkeypatch.setenv(route_entrypoint.COLLISION_OBSTACLE_ENV, "obstacle")
+    monkeypatch.setenv(environment.LANDING_ZONE_BLOCKED_ENV, "blocked")
+    monkeypatch.setenv(environment.VISIBILITY_MODE_ENV, " fog ")
+    monkeypatch.setenv(environment.RTH_BEHAVIOR_ENV, "rtl")
+    monkeypatch.setenv(environment.COLLISION_OBSTACLE_ENV, "obstacle")
 
     assert route_entrypoint._landing_zone_blocked_requested() is True
     assert route_entrypoint._visibility_mode_request() == "fog"
@@ -212,10 +213,10 @@ def test_collision_obstacle_motion_spec_uses_explicit_coordinates() -> None:
 def test_entrypoint_collision_motion_wrapper_owns_environment_read(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv(route_entrypoint.COLLISION_OBSTACLE_START_X_ENV, "1.5")
-    monkeypatch.setenv(route_entrypoint.COLLISION_OBSTACLE_START_Y_ENV, "-1.0")
-    monkeypatch.setenv(route_entrypoint.COLLISION_OBSTACLE_END_X_ENV, "4.0")
-    monkeypatch.setenv(route_entrypoint.COLLISION_OBSTACLE_END_Y_ENV, "2.5")
+    monkeypatch.setenv(environment.COLLISION_OBSTACLE_START_X_ENV, "1.5")
+    monkeypatch.setenv(environment.COLLISION_OBSTACLE_START_Y_ENV, "-1.0")
+    monkeypatch.setenv(environment.COLLISION_OBSTACLE_END_X_ENV, "4.0")
+    monkeypatch.setenv(environment.COLLISION_OBSTACLE_END_Y_ENV, "2.5")
 
     motion = route_entrypoint._collision_obstacle_motion_spec()
     assert motion["start_xy_m"] == [1.5, -1.0]
@@ -246,12 +247,15 @@ def test_wind_geometry_uses_opposite_wind_vector() -> None:
         ramp_start_fraction=0.5,
         ramp_end_fraction=1.0,
     ) == pytest.approx(0.5)
-    assert scenario.wind_feed_forward_scale(
-        elapsed_seconds=1.0,
-        duration_seconds=0.0,
-        ramp_start_fraction=0.5,
-        ramp_end_fraction=1.0,
-    ) == 0.0
+    assert (
+        scenario.wind_feed_forward_scale(
+            elapsed_seconds=1.0,
+            duration_seconds=0.0,
+            ramp_start_fraction=0.5,
+            ramp_end_fraction=1.0,
+        )
+        == 0.0
+    )
 
 
 @pytest.mark.parametrize(
@@ -294,18 +298,24 @@ def test_terrain_geometry_requires_materialized_world() -> None:
         pose,
         terrain_world_loaded=False,
     ) == (0.0, 0.0)
-    assert scenario.landing_z_threshold(
-        pose,
-        terrain_world_loaded=False,
-    ) == 0.15
+    assert (
+        scenario.landing_z_threshold(
+            pose,
+            terrain_world_loaded=False,
+        )
+        == 0.15
+    )
     assert scenario.terrain_relative_xy_origin(
         pose,
         terrain_world_loaded=True,
     ) == (3.5, -2.0)
-    assert scenario.landing_z_threshold(
-        pose,
-        terrain_world_loaded=True,
-    ) == 1.4
+    assert (
+        scenario.landing_z_threshold(
+            pose,
+            terrain_world_loaded=True,
+        )
+        == 1.4
+    )
 
 
 def test_wind_and_thermal_derivations_preserve_bounds() -> None:
