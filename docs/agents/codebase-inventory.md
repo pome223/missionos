@@ -20,12 +20,12 @@ live. No file is safe to delete solely because it has no static importer.
 
 ## Current cleanup branch result
 
-As of `codex/codebase-inventory` after the seventeenth PX4/Gazebo monolith
+As of `codex/codebase-inventory` after the eighteenth PX4/Gazebo monolith
 extraction:
 
-- tracked Python: 276,566 lines, down 20,243 lines from the baseline (6.82%)
-- `smoke_*.py`: 69 files / 35,797 lines, down from 135 files / 52,004 lines
-- automated verification: 709 passed, 5 warnings
+- tracked Python: 276,005 lines, down 20,804 lines from the baseline (7.01%)
+- `smoke_*.py`: 69 files / 34,854 lines, down from 135 files / 52,004 lines
+- automated verification: 719 passed, 5 warnings
 - runtime verification: `python -m src.quickstart_smoke --json` created and
   completed fresh task `task_e5e900c70d95` in an isolated SQLite store without
   a model or bridge
@@ -51,7 +51,7 @@ files:
 | File | Lines | Main maintenance risk |
 |---|---:|---|
 | `packages/missionos-cli/src/missionos_cli/cli.py` | 12,866 | CLI, chat, companion processes, maps, and HTML rendering share one module |
-| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 10,210 | a production dispatch backend is exposed through a 2,106-line `main` function |
+| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 9,267 | a production dispatch backend is exposed through a 1,858-line `main` function |
 | `src/gateway/server.py` | 11,932 | route registration, orchestration, robot-specific handling, and recovery are coupled |
 | `src/runtime/digital_twin_mission_environment.py` | 9,961 | environment construction and PX4/Gazebo mechanics are coupled |
 | `src/runtime/turtlebot3_home_mission.py` | 9,808 | proposal, approval, resolver, execution, verification, UI evidence, and repair share one module |
@@ -662,6 +662,31 @@ with exit status 1. The full suite reached 709 passing tests. The entrypoint
 fell from 10,250 to 10,210 lines; total Python grew by 83 lines for the explicit
 validation boundary and maintained tests.
 
+The eighteenth extraction introduced
+`src/runtime/px4_gazebo_route/environment.py`. Process-environment parsing,
+bounded numeric conversion, condition selectors, requested profiles, wind
+compensation input, and collision-obstacle motion input now share one explicit
+boundary. The existing `scenario.py` remains value-only and deterministic.
+Tests can pass an isolated mapping instead of mutating the process environment.
+Reading a scenario request still does not satisfy execution opt-in, approval,
+or dispatch authority, and every requested profile preserves false hardware,
+physical-execution, and delivery-completion fields.
+
+Ten new contract cases cover legacy entrypoint delegation, isolated wind input,
+finite bounded values, payload bounds, selector normalization, and false claim
+boundaries. A runtime fixture built wind and moving-obstacle inputs from an
+explicit mapping; the real script then reached the unchanged no-opt-in refusal
+with exit status 1. The full suite reached 719 passing tests.
+
+This extraction also applied the repository formatter to the touched legacy
+entrypoint and contracts. Consequently the entrypoint's physical line count
+fell from 10,210 to 9,267 and its `main` function from 2,106 to 1,858, but most
+of that physical-line change is layout normalization, not removed behavior.
+The actual architectural change is the removal of about 230 lines of
+environment parsing from the entrypoint into a 303-line package boundary with
+focused tests. The inventory does not count formatting compression as a
+capability reduction.
+
 ## Protected regression baseline
 
 Every reduction PR must keep these facts separate and test them independently:
@@ -676,7 +701,7 @@ Every reduction PR must keep these facts separate and test them independently:
 - completion scope claimed
 - repair created a new observation and a fresh checkpoint
 
-The current public contract suite (`709 passed`) is the minimum automated gate.
+The current public contract suite (`719 passed`) is the minimum automated gate.
 Runtime-boundary changes also require the exact smoke or live E2E required by
 `AGENTS.md`. For TurtleBot3 recovery, preserve the public PR #15 scenario: two
 separately approved recovery cycles, route completion, common task identity
