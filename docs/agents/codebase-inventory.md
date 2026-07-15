@@ -20,12 +20,12 @@ live. No file is safe to delete solely because it has no static importer.
 
 ## Current cleanup branch result
 
-As of `codex/codebase-inventory` after the first PX4/Gazebo monolith
+As of `codex/codebase-inventory` after the second PX4/Gazebo monolith
 extraction:
 
-- tracked Python: 274,058 lines, down 22,751 lines from the baseline (7.67%)
-- `smoke_*.py`: 69 files / 37,653 lines, down from 135 files / 52,004 lines
-- automated verification: 625 passed, 5 warnings
+- tracked Python: 274,219 lines, down 22,590 lines from the baseline (7.61%)
+- `smoke_*.py`: 69 files / 37,394 lines, down from 135 files / 52,004 lines
+- automated verification: 630 passed, 5 warnings
 - runtime verification: `python -m src.quickstart_smoke --json` created and
   completed fresh task `task_e5e900c70d95` in an isolated SQLite store without
   a model or bridge
@@ -51,7 +51,7 @@ files:
 | File | Lines | Main maintenance risk |
 |---|---:|---|
 | `packages/missionos-cli/src/missionos_cli/cli.py` | 12,866 | CLI, chat, companion processes, maps, and HTML rendering share one module |
-| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 12,066 | a production dispatch backend is exposed through a 2,106-line `main` function |
+| `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` | 11,807 | a production dispatch backend is exposed through a 2,106-line `main` function |
 | `src/gateway/server.py` | 11,932 | route registration, orchestration, robot-specific handling, and recovery are coupled |
 | `src/runtime/digital_twin_mission_environment.py` | 9,961 | environment construction and PX4/Gazebo mechanics are coupled |
 | `src/runtime/turtlebot3_home_mission.py` | 9,808 | proposal, approval, resolver, execution, verification, UI evidence, and repair share one module |
@@ -381,6 +381,26 @@ read-only heartbeat observer for 0.1 seconds and observed
 `RUN_PX4_GAZEBO_HORIZONTAL_ROUTE_SMOKE=1` still terminates fail-closed before
 starting PX4 or Gazebo. No external simulator, Docker container, or hardware
 was invoked by this extraction verification.
+
+The second extraction moved 13 pure Gazebo world builders and inspectors into
+`src/runtime/px4_gazebo_route/world.py`. Payload, landing marker, no-fly-zone,
+traffic-conflict, alternate-landing, moving-actor, fog, and wind fragments now
+have one owner outside the execution entrypoint. The module accepts values and
+returns text, XML elements, deterministic motion metadata, or a hash; it does
+not read environment authority, mutate files, start Docker/Gazebo, or dispatch
+commands. Environment-dependent collision-obstacle construction and all file
+mutation deliberately remain in the orchestrator until their inputs can be
+made explicit.
+
+Five new contract tests parse the generated XML, preserve model and plugin
+identities, verify payload mass and wind-vector transfer, require idempotent
+fog insertion, and pin the moving-actor trajectory hash. The legacy entrypoint
+uses the same packaged function objects. A fixture runtime command generated
+and parsed a fogged world plus wind plugins with `dispatch_requested=false` and
+`physical_execution_invoked=false`; the opt-in route entrypoint still stopped
+before external execution when its explicit environment gate was absent. The
+entrypoint fell from 12,066 to 11,807 lines. Total Python grew by 161 lines
+because this reviewability step added the module boundary and maintained tests.
 
 ## Protected regression baseline
 
