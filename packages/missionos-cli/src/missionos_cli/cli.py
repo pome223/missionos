@@ -16,7 +16,6 @@ import math
 import os
 import re
 import secrets
-import signal
 import shlex
 import subprocess
 import sys
@@ -43,12 +42,36 @@ from rich.text import Text
 
 from .battery_truth import battery_truth_model
 from .route_evidence_image import write_mission_route_evidence_artifacts
+from .gateway_client import (
+    SITL_DISPATCH_TIMEOUT as SITL_DISPATCH_TIMEOUT,
+    SITL_EXECUTION_APPROVAL_ROUTE as SITL_EXECUTION_APPROVAL_ROUTE,
+    MissionOSGatewayClient,
+    _gateway_host_port,
+    _gateway_unreachable_message,
+    _join_url,
+)
+from .gateway_process import (
+    GATEWAY_PID_RECORD_SCHEMA_VERSION as GATEWAY_PID_RECORD_SCHEMA_VERSION,
+    _apply_gateway_llm_env as _apply_gateway_llm_env,
+    _build_gateway_pid_record as _build_gateway_pid_record,
+    _dotenv_process_values as _dotenv_process_values,
+    _gateway_argv as _gateway_argv,
+    _gateway_command_signature as _gateway_command_signature,
+    _gateway_pid_record_matches_running_process as _gateway_pid_record_matches_running_process,
+    _gateway_process_env as _gateway_process_env,
+    _llm_backend_default_adk_enabled as _llm_backend_default_adk_enabled,
+    _llm_backend_from_env as _llm_backend_from_env,
+    _llm_backend_uses_google_credentials as _llm_backend_uses_google_credentials,
+    _process_command as _process_command,
+    _process_group_id as _process_group_id,
+    _process_running as _process_running,
+    _process_start_time as _process_start_time,
+    _read_gateway_pid as _read_gateway_pid,
+    _read_gateway_pid_record as _read_gateway_pid_record,
+    _stop_gateway_pid as _stop_gateway_pid,
+)
 
 
-# Live SITL start/dispatch (Gazebo flight) can run for 25+ minutes, well past
-# the 45s default. Floor the SITL calls at a long timeout so the live path does
-# not abandon a dispatch the Gateway is still running.
-SITL_DISPATCH_TIMEOUT = 3600.0
 SITL_EXECUTION_POLL_INTERVAL = 5.0
 SITL_EXECUTION_POLL_TIMELINE_LIMIT = 5
 ACTIVE_RUNNER_RECOVERY_OBSERVATION_TIMEOUT_SECONDS = 95.0
@@ -80,7 +103,6 @@ DEFAULT_NOVA_CARTER_CHAT_INSTRUCTION = (
     "承認、dispatch、ACK、odom evidenceの境界を保って。"
 )
 TURTLEBOT3_CHAT_TIMEOUT = 600.0
-GATEWAY_PID_RECORD_SCHEMA_VERSION = "missionos_gateway_pidfile.v1"
 CHAT_COMPANION_TERMINAL_ROOT = Path("data/missionos_chat_companions")
 CHAT_COMPANION_TERMINAL_SURFACES = ("operate", "watch", "map")
 CHAT_SLASH_COMMANDS = (
@@ -108,18 +130,6 @@ CHAT_SLASH_COMMANDS = (
     "/clear",
     "/quit",
 )
-CONVERSATION_ROUTE = "/missionos/autonomy-conversation/run"
-RECOVERY_DISPATCH_ROUTE = "/px4-gazebo/mission-scenarios/recovery-dispatch"
-RECOVERY_AGENT_PROPOSAL_ROUTE = "/missionos/runtime-recovery-agent/propose-for-task"
-TURTLEBOT3_RECOVERY_REVISION_ROUTE = (
-    "/missionos/turtlebot3/recovery-agent/revise-for-task"
-)
-SITL_START_ROUTE = "/px4-gazebo/mission-scenarios/start-sitl"
-SITL_EXECUTION_APPROVAL_ROUTE = (
-    "/px4-gazebo/mission-scenarios/approve-sitl-execution"
-)
-SITL_EXECUTION_ROUTE = "/px4-gazebo/mission-scenarios/execute-sitl"
-
 INTENT_INSTRUCTIONS = {
     "approve": "Approve the current MissionOS plan.",
     "reject": "Reject the current MissionOS plan.",
@@ -157,86 +167,6 @@ DEFAULT_TUTORIAL_SESSION_ID = "missionos-cli-tutorial"
 console = Console()
 
 
-def _join_url(base_url: str, path: str) -> str:
-    return f"{base_url.rstrip('/')}/{path.lstrip('/')}"
-
-
-def _format_http_error_detail(
-    method: str,
-    path: str,
-    status_code: int,
-    payload: Any,
-) -> str:
-    if (
-        path == SITL_EXECUTION_ROUTE
-        and status_code == 409
-        and isinstance(payload, dict)
-    ):
-        summary = payload.get("summary") if isinstance(payload.get("summary"), dict) else {}
-        reasons = summary.get("blocked_reasons")
-        if not isinstance(reasons, list):
-            receipt = payload.get("px4_gazebo_mission_designer_sitl_live_flight_blocked_receipt")
-            receipt = receipt if isinstance(receipt, dict) else {}
-            reasons = (
-                receipt.get("blocked_reasons")
-                if isinstance(receipt.get("blocked_reasons"), list)
-                else []
-            )
-        reason_text = ", ".join(str(item) for item in reasons) or "live SITL opt-in missing"
-        envelope_advisory = payload.get("envelope_violation_advisory")
-        envelope_advisory = envelope_advisory if isinstance(envelope_advisory, dict) else {}
-        violations = envelope_advisory.get("violations")
-        if isinstance(violations, list) and violations:
-            violation_details: list[str] = []
-            for item in violations:
-                if not isinstance(item, dict):
-                    continue
-                kind = str(item.get("violation_kind") or "contract_envelope_violation")
-                requested = item.get("requested_value")
-                limit = item.get("limit_value")
-                unit = str(item.get("unit") or "")
-                if requested is not None and limit is not None:
-                    violation_details.append(
-                        f"{kind} (requested={requested}{unit}, max={limit}{unit})"
-                    )
-                else:
-                    violation_details.append(kind)
-            if violation_details:
-                reason_text = "; ".join(violation_details)
-            return (
-                f"{method} {path} failed: HTTP 409: live SITL blocked by Mission Designer "
-                f"contract envelope: {reason_text}. Re-plan within the current envelope "
-                "or intentionally update the contract before live execution."
-            )
-        return (
-            f"{method} {path} failed: HTTP 409: live SITL blocked: {reason_text}. "
-            "Restart the Gateway with "
-            "RUN_MISSION_DESIGNER_PX4_GAZEBO_SITL_EXECUTION=1 and "
-            "RUN_MISSION_DESIGNER_PX4_GAZEBO_SITL_LIVE_FLIGHT=1, then rerun the tutorial."
-        )
-    if isinstance(payload, dict):
-        detail = payload.get("detail")
-        if isinstance(detail, str) and detail:
-            return f"{method} {path} failed: HTTP {status_code}: {detail}"
-        # Compact summary from common fields so we never dump the whole task
-        # (recovery-dispatch 409 etc. embed the full task + heightmap arrays).
-        summary = payload.get("summary") if isinstance(payload.get("summary"), dict) else {}
-        bits: list[str] = []
-        for key in ("response_status", "dispatch_status", "recovery_action", "task_status"):
-            value = summary.get(key) if summary.get(key) not in (None, "") else payload.get(key)
-            if value not in (None, ""):
-                bits.append(f"{key}={value}")
-        reasons = summary.get("blocked_reasons") or payload.get("blocked_reasons")
-        if isinstance(reasons, list) and reasons:
-            bits.append("blocked_reasons=" + ", ".join(str(item) for item in reasons))
-        if bits:
-            return f"{method} {path} failed: HTTP {status_code}: " + "; ".join(bits)
-    text = str(payload)
-    if len(text) > 300:
-        text = text[:300] + "…(truncated)"
-    return f"{method} {path} failed: HTTP {status_code}: {text}"
-
-
 def _status_text(value: Any, default: str = "-") -> str:
     if value is None or value == "":
         return default
@@ -252,205 +182,6 @@ def _safe_get(payload: dict[str, Any], *keys: str) -> Any:
     return current
 
 
-@dataclass
-class MissionOSGatewayClient:
-    base_url: str
-    timeout: float = 45.0
-    api_key: str | None = None
-
-    def _request(
-        self,
-        method: str,
-        path: str,
-        *,
-        timeout: float | None = None,
-        ok_status_codes: set[int] | None = None,
-        **kwargs: Any,
-    ) -> dict[str, Any]:
-        headers = dict(kwargs.pop("headers", {}) or {})
-        if self.api_key and not any(
-            key.lower() in {"x-api-key", "authorization"}
-            for key in headers
-        ):
-            headers["X-API-Key"] = self.api_key
-        if headers:
-            kwargs["headers"] = headers
-        try:
-            with httpx.Client(timeout=timeout if timeout is not None else self.timeout) as client:
-                response = client.request(method, _join_url(self.base_url, path), **kwargs)
-        except httpx.ConnectError as exc:
-            raise click.ClickException(_gateway_unreachable_message(self.base_url)) from exc
-        except httpx.TimeoutException as exc:
-            raise click.ClickException(
-                f"{method} {path} timed out while the Gateway may still be working. "
-                "Do not repeat an approved dispatch until the durable task state "
-                "has been checked."
-            ) from exc
-        try:
-            payload = response.json()
-        except ValueError:
-            payload = {"detail": response.text}
-        allowed_statuses = ok_status_codes or set()
-        if response.status_code >= 400 and response.status_code not in allowed_statuses:
-            raise click.ClickException(
-                _format_http_error_detail(method, path, response.status_code, payload)
-            )
-        if not isinstance(payload, dict):
-            return {"payload": payload}
-        return payload
-
-    def health(self) -> dict[str, Any]:
-        return self._request("GET", "/health")
-
-    def get(self, path: str) -> dict[str, Any]:
-        return self._request("GET", path)
-
-    def conversation(
-        self,
-        instruction: str,
-        *,
-        session_id: str,
-        mission_designer_context: dict[str, Any] | None = None,
-        coordinate_route: dict[str, Any] | None = None,
-        route_hint: str | None = None,
-        client_surface: str | None = None,
-        robot_profile: str | None = None,
-    ) -> dict[str, Any]:
-        payload: dict[str, Any] = {
-            "operator_instruction": instruction,
-            "session_id": session_id,
-        }
-        if mission_designer_context:
-            payload["mission_designer_context"] = mission_designer_context
-        if coordinate_route:
-            payload["coordinate_route"] = coordinate_route
-        if route_hint:
-            payload["missionos_route_hint"] = route_hint
-        if client_surface:
-            payload["missionos_client_surface"] = client_surface
-        if robot_profile:
-            payload["robot_profile"] = robot_profile
-        return self._request(
-            "POST",
-            CONVERSATION_ROUTE,
-            json=payload,
-        )
-
-    def recovery_dispatch(
-        self,
-        *,
-        task_id: str,
-        recovery_action: str,
-        recovery_parameters: dict[str, Any] | None = None,
-        expected_recovery_checkpoint_id: str = "",
-        expected_recovery_checkpoint_hash: str = "",
-    ) -> dict[str, Any]:
-        payload: dict[str, Any] = {
-            "task_id": task_id,
-            "recovery_action": recovery_action,
-            "recovery_parameters": recovery_parameters or {},
-            "explicit_recovery_dispatch_approval": True,
-        }
-        if expected_recovery_checkpoint_id:
-            payload["expected_recovery_checkpoint_id"] = (
-                expected_recovery_checkpoint_id
-            )
-        if expected_recovery_checkpoint_hash:
-            payload["expected_recovery_checkpoint_hash"] = (
-                expected_recovery_checkpoint_hash
-            )
-        return self._request(
-            "POST",
-            RECOVERY_DISPATCH_ROUTE,
-            timeout=max(self.timeout, SITL_DISPATCH_TIMEOUT),
-            ok_status_codes={409},
-            json=payload,
-        )
-
-    def recovery_agent_propose_for_task(
-        self,
-        *,
-        task_id: str,
-        operator_instruction: str,
-        requested_action: str,
-        requested_parameters: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        return self._request(
-            "POST",
-            RECOVERY_AGENT_PROPOSAL_ROUTE,
-            ok_status_codes={409},
-            json={
-                "task_id": task_id,
-                "operator_instruction": operator_instruction,
-                "requested_action": requested_action,
-                "requested_parameters": requested_parameters or {},
-            },
-        )
-
-    def turtlebot3_recovery_revision(
-        self,
-        *,
-        task_id: str,
-        operator_instruction: str,
-        expected_recovery_checkpoint_id: str,
-        expected_recovery_checkpoint_hash: str,
-    ) -> dict[str, Any]:
-        return self._request(
-            "POST",
-            TURTLEBOT3_RECOVERY_REVISION_ROUTE,
-            ok_status_codes={409},
-            json={
-                "task_id": task_id,
-                "operator_instruction": operator_instruction,
-                "expected_recovery_checkpoint_id": (
-                    expected_recovery_checkpoint_id
-                ),
-                "expected_recovery_checkpoint_hash": (
-                    expected_recovery_checkpoint_hash
-                ),
-            },
-        )
-
-    def execute_sitl(self, *, task_id: str, live_flight_mode: bool) -> dict[str, Any]:
-        approval = self._request(
-            "POST",
-            SITL_EXECUTION_APPROVAL_ROUTE,
-            json={
-                "task_id": task_id,
-                "explicit_execution_approval": True,
-            },
-        )
-        approval_artifact = approval.get("execution_operator_approval")
-        approval_artifact = (
-            approval_artifact if isinstance(approval_artifact, dict) else {}
-        )
-        execution_approval_id = str(
-            approval_artifact.get("approval_id") or ""
-        ).strip()
-        if not execution_approval_id:
-            raise click.ClickException(
-                "Gateway did not return a stored SITL execution approval id"
-            )
-        return self._request(
-            "POST",
-            SITL_EXECUTION_ROUTE,
-            json={
-                "task_id": task_id,
-                "execution_approval_id": execution_approval_id,
-                "live_flight_mode": live_flight_mode,
-            },
-            timeout=max(self.timeout, SITL_DISPATCH_TIMEOUT),
-        )
-
-    def start_sitl(self, *, task_id: str) -> dict[str, Any]:
-        return self._request(
-            "POST",
-            SITL_START_ROUTE,
-            json={"task_id": task_id},
-            timeout=max(self.timeout, SITL_DISPATCH_TIMEOUT),
-        )
-
-
 def make_client(base_url: str, timeout: float) -> MissionOSGatewayClient:
     dotenv_values = _dotenv_process_values()
     api_key = os.getenv("GATEWAY_API_KEY") or dotenv_values.get("GATEWAY_API_KEY")
@@ -459,140 +190,6 @@ def make_client(base_url: str, timeout: float) -> MissionOSGatewayClient:
         timeout=timeout,
         api_key=api_key or None,
     )
-
-
-def _gateway_host_port(base_url: str) -> tuple[str, int]:
-    parsed = urlparse(base_url)
-    return parsed.hostname or "127.0.0.1", parsed.port or 18791
-
-
-def _gateway_start_command(base_url: str) -> str:
-    """Render the `web` invocation whose host/port match this gateway URL."""
-    host, port = _gateway_host_port(base_url)
-    return f"python -m missionos_gateway web --host {host} --port {port}"
-
-
-def _gateway_unreachable_message(base_url: str) -> str:
-    return (
-        f"Could not connect to the Gateway: {base_url}\n"
-        f"You can start it from the MissionOS CLI:\n"
-        f"  missionos gateway start\n"
-        f"  missionos gateway start --enable-live-sitl  # SITL dispatch opt-in\n"
-        f"  # raw: {_gateway_start_command(base_url)}\n"
-        "For temporary chat sessions, use `missionos chat --autostart`. Add "
-        "`--enable-live-sitl` only when the session must reach opt-in live "
-        "SITL dispatch."
-    )
-
-
-_GATEWAY_LIVE_SITL_ENV = {
-    "RUN_MISSION_DESIGNER_PX4_GAZEBO_SITL_EXECUTION": "1",
-    "RUN_MISSION_DESIGNER_PX4_GAZEBO_SITL_LIVE_FLIGHT": "1",
-    "RUN_MISSIONOS_SITL_DISPATCH_RUNTIME": "1",
-    "RUN_MISSIONOS_AUTO_MISSION_GUI_DISPATCH": "1",
-    "RUN_MISSION_DESIGNER_PX4_GAZEBO_SITL_DOCKER_EXEC_UPLOADER": "1",
-    "MISSION_DESIGNER_PX4_GAZEBO_SITL_DOCKER_CONTAINER": (
-        "missionos-px4-gazebo-sitl-mission-upload-smoke"
-    ),
-}
-
-_GATEWAY_LLM_ADK_ENV_KEYS = (
-    "MISSIONOS_AGENT_RUNTIME_ADK_ENABLED",
-    "MISSIONOS_CHIEF_ROUTE_SEMANTIC_ADK_ENABLED",
-    "MISSIONOS_LLM_DIALOGUE_ROUTER_ADK_ENABLED",
-    "MISSIONOS_LLM_REPAIR_PLANNER_ADK_ENABLED",
-    "MISSIONOS_LLM_RESPONSE_PLANNER_ADK_ENABLED",
-    "MISSIONOS_REAL_HARDWARE_ARM_DISARM_PLANNER_ADK_ENABLED",
-)
-
-
-def _dotenv_process_values(path: Path = Path(".env")) -> dict[str, str]:
-    if not path.exists():
-        return {}
-    values: dict[str, str] = {}
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key):
-            continue
-        value = value.strip().strip("'\"")
-        values[key] = value
-    return values
-
-
-def _llm_backend_from_env(env: dict[str, str]) -> str:
-    backend = (
-        env.get("MISSIONOS_LLM_BACKEND")
-        or env.get("BOILED_CLAW_LLM_BACKEND")
-        or "gemini"
-    ).strip().lower()
-    if backend in {"google", "google_adk"}:
-        return "gemini"
-    return backend
-
-
-def _llm_backend_uses_google_credentials(env: dict[str, str]) -> bool:
-    return _llm_backend_from_env(env) == "gemini"
-
-
-def _llm_backend_default_adk_enabled(env: dict[str, str]) -> str:
-    backend = _llm_backend_from_env(env)
-    if backend in {"off", "none", "disabled", "deterministic"}:
-        return "0"
-    return "1"
-
-
-def _apply_gateway_llm_env(env: dict[str, str]) -> None:
-    env.setdefault("MISSIONOS_LLM_BACKEND", _llm_backend_from_env(env))
-    default_adk_enabled = _llm_backend_default_adk_enabled(env)
-    for key in _GATEWAY_LLM_ADK_ENV_KEYS:
-        if default_adk_enabled == "0":
-            env[key] = "0"
-        else:
-            env.setdefault(key, default_adk_enabled)
-
-    if not _llm_backend_uses_google_credentials(env):
-        env.pop("GOOGLE_API_KEY", None)
-
-
-def _gateway_process_env(*, enable_live_sitl: bool = False) -> dict[str, str]:
-    env = os.environ.copy()
-    for key, value in _dotenv_process_values().items():
-        env.setdefault(key, value)
-    _apply_gateway_llm_env(env)
-    if enable_live_sitl:
-        env["MISSIONOS_GATEWAY_BACKEND"] = "production"
-        env.update(_GATEWAY_LIVE_SITL_ENV)
-    path_parts = [
-        "/usr/local/bin",
-        "/opt/homebrew/bin",
-        "/Applications/Docker.app/Contents/Resources/bin",
-        env.get("PATH", ""),
-    ]
-    env["PATH"] = os.pathsep.join(part for part in path_parts if part)
-    return env
-
-
-def _gateway_argv(base_url: str) -> list[str]:
-    host, port = _gateway_host_port(base_url)
-    return [
-        sys.executable,
-        "-m",
-        "missionos_gateway",
-        "web",
-        "--host",
-        host,
-        "--port",
-        str(port),
-    ]
-
-
-def _gateway_command_signature(base_url: str) -> str:
-    argv = _gateway_argv(base_url)
-    return " ".join(shlex.quote(part) for part in argv)
 
 
 def _gateway_reachable(client: MissionOSGatewayClient) -> bool:
@@ -698,162 +295,6 @@ def _ensure_gateway(
         time.sleep(0.5)
     _terminate_gateway(proc)
     raise click.ClickException("Timed out waiting for the Gateway to start.")
-
-
-def _read_gateway_pid_record(pid_path: Path) -> dict[str, Any] | None:
-    try:
-        raw = pid_path.read_text(encoding="utf-8").strip()
-    except FileNotFoundError:
-        return None
-    if not raw:
-        return None
-    if raw.startswith("{"):
-        try:
-            payload = json.loads(raw)
-        except json.JSONDecodeError:
-            return None
-        if not isinstance(payload, dict):
-            return None
-        try:
-            payload["pid"] = int(payload.get("pid"))
-        except (TypeError, ValueError):
-            return None
-        return payload
-    try:
-        pid = int(raw)
-    except ValueError:
-        return None
-    return {"schema_version": "legacy_pidfile", "pid": pid}
-
-
-def _read_gateway_pid(pid_path: Path) -> int | None:
-    record = _read_gateway_pid_record(pid_path)
-    if record is None:
-        return None
-    try:
-        return int(record.get("pid"))
-    except (TypeError, ValueError):
-        return None
-
-
-def _process_running(pid: int) -> bool:
-    if pid <= 0:
-        return False
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        return True
-    return True
-
-
-def _process_group_id(pid: int) -> int | None:
-    try:
-        return os.getpgid(pid)
-    except (AttributeError, ProcessLookupError, PermissionError, OSError):
-        return None
-
-
-def _process_command(pid: int) -> str:
-    try:
-        result = subprocess.run(
-            ["ps", "-p", str(pid), "-o", "command="],
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=2,
-        )
-    except (OSError, subprocess.TimeoutExpired):
-        return ""
-    if result.returncode != 0:
-        return ""
-    return result.stdout.strip()
-
-
-def _process_start_time(pid: int) -> str:
-    try:
-        result = subprocess.run(
-            ["ps", "-p", str(pid), "-o", "lstart="],
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=2,
-        )
-    except (OSError, subprocess.TimeoutExpired):
-        return ""
-    if result.returncode != 0:
-        return ""
-    return result.stdout.strip()
-
-
-def _build_gateway_pid_record(
-    *,
-    pid: int,
-    base_url: str,
-    enable_live_sitl: bool,
-) -> dict[str, Any]:
-    host, port = _gateway_host_port(base_url)
-    return {
-        "schema_version": GATEWAY_PID_RECORD_SCHEMA_VERSION,
-        "pid": int(pid),
-        "pgid": _process_group_id(pid),
-        "argv": _gateway_argv(base_url),
-        "command_signature": _gateway_command_signature(base_url),
-        "cwd": str(Path.cwd()),
-        "base_url": base_url,
-        "host": host,
-        "port": int(port),
-        "backend": "production" if enable_live_sitl else "fixture",
-        "started_at": datetime.now(timezone.utc).isoformat(),
-        "process_start_time": _process_start_time(pid),
-        "enable_live_sitl": bool(enable_live_sitl),
-        "managed_by": "missionos_cli_gateway_start",
-    }
-
-
-def _gateway_pid_record_matches_running_process(record: dict[str, Any]) -> bool:
-    if record.get("schema_version") != GATEWAY_PID_RECORD_SCHEMA_VERSION:
-        return False
-    try:
-        pid = int(record.get("pid"))
-    except (TypeError, ValueError):
-        return False
-    if not _process_running(pid):
-        return True
-    expected_pgid = record.get("pgid")
-    current_pgid = _process_group_id(pid)
-    if expected_pgid is not None and current_pgid != expected_pgid:
-        return False
-    expected_start = str(record.get("process_start_time") or "").strip()
-    if expected_start:
-        current_start = _process_start_time(pid)
-        if not current_start or current_start != expected_start:
-            return False
-    command = _process_command(pid)
-    host = str(record.get("host") or "")
-    port = str(record.get("port") or "")
-    if not command or "-m missionos_gateway web" not in command:
-        return False
-    if host and f"--host {host}" not in command:
-        return False
-    if port and f"--port {port}" not in command:
-        return False
-    return True
-
-
-def _stop_gateway_pid(pid: int, *, timeout: float = 5.0) -> bool:
-    if not _process_running(pid):
-        return True
-    os.kill(pid, signal.SIGTERM)
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        if not _process_running(pid):
-            return True
-        time.sleep(0.1)
-    if _process_running(pid):
-        os.kill(pid, signal.SIGKILL)
-    return not _process_running(pid)
 
 
 def _start_managed_gateway(
