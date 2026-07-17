@@ -190,8 +190,8 @@ MISSION_DESIGNER_LIVE_SITL_TERRAIN_VERTICAL_REFERENCE_ENV = (
 MISSION_DESIGNER_LIVE_SITL_TERRAIN_COLLISION_MODE_ENV = (
     "PX4_GAZEBO_HORIZONTAL_ROUTE_TERRAIN_COLLISION_MODE"
 )
-MISSION_DESIGNER_LIVE_SITL_HORIZONTAL_ROUTE_SCRIPT = (
-    "scripts/smoke_px4_gazebo_horizontal_route_delivery.py"
+MISSION_DESIGNER_LIVE_SITL_HORIZONTAL_ROUTE_MODULE = (
+    "src.runtime.px4_gazebo_route.entrypoint"
 )
 MISSIONOS_AUTO_MISSION_GUI_DISPATCH_OPT_IN_ENV = (
     "RUN_MISSIONOS_AUTO_MISSION_GUI_DISPATCH"
@@ -2066,6 +2066,14 @@ def _attach_px4_reflex_watch(
     return watch
 
 
+def _horizontal_route_runtime_command() -> list[str]:
+    return [
+        sys.executable,
+        "-m",
+        MISSION_DESIGNER_LIVE_SITL_HORIZONTAL_ROUTE_MODULE,
+    ]
+
+
 def run_px4_gazebo_horizontal_route_live_summary(
     *,
     task_id: str,
@@ -2074,7 +2082,7 @@ def run_px4_gazebo_horizontal_route_live_summary(
     task_store_factory: Callable[[], TaskStore] | None = None,
     task: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Run the real horizontal-route smoke and return its observed summary."""
+    """Run the real horizontal-route runtime and return its observed summary."""
 
     root = _repo_root()
     resolved_artifact_root = (
@@ -2099,10 +2107,7 @@ def run_px4_gazebo_horizontal_route_live_summary(
         if not existing_pythonpath
         else os.pathsep.join([str(root), existing_pythonpath])
     )
-    command = [
-        sys.executable,
-        str(root / MISSION_DESIGNER_LIVE_SITL_HORIZONTAL_ROUTE_SCRIPT),
-    ]
+    command = _horizontal_route_runtime_command()
     stdout_log = resolved_artifact_root / f"{task_id}_horizontal_stdout.log"
     stderr_log = resolved_artifact_root / f"{task_id}_horizontal_stderr.log"
     with stdout_log.open("w") as stdout_file, stderr_log.open("w") as stderr_file:

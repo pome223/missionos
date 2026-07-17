@@ -6,8 +6,7 @@ from typing import Any
 
 import pytest
 
-from scripts import smoke_px4_gazebo_horizontal_route_delivery as route_entrypoint
-from src.runtime.px4_gazebo_route import reporting
+from src.runtime.px4_gazebo_route import normal_route_flow, reporting
 
 
 def _inputs(tmp_path: Path, **overrides: Any) -> reporting.RouteSummaryInputs:
@@ -95,9 +94,9 @@ def _inputs(tmp_path: Path, **overrides: Any) -> reporting.RouteSummaryInputs:
     return reporting.RouteSummaryInputs(**values)
 
 
-def test_legacy_entrypoint_delegates_summary_projection_to_package() -> None:
-    assert route_entrypoint._RouteSummaryInputs is reporting.RouteSummaryInputs
-    assert route_entrypoint._build_route_summary is reporting.build_route_summary
+def test_normal_route_coordinator_delegates_summary_projection_to_package() -> None:
+    assert normal_route_flow.RouteSummaryInputs is reporting.RouteSummaryInputs
+    assert normal_route_flow.build_route_summary is reporting.build_route_summary
 
 
 def test_summary_projection_keeps_caller_claim_and_authority_values(

@@ -1,4 +1,4 @@
-"""MissionOS bridge to the existing PX4/Gazebo horizontal route smoke."""
+"""MissionOS bridge to the formal PX4/Gazebo horizontal-route runtime."""
 
 from __future__ import annotations
 
@@ -101,7 +101,8 @@ def _latest_smoke_summary(smoke_root: Path) -> tuple[dict[str, Any], str]:
 def _default_command() -> list[str]:
     return [
         sys.executable,
-        str(REPO_ROOT / "scripts" / "smoke_px4_gazebo_horizontal_route_delivery.py"),
+        "-m",
+        "src.runtime.px4_gazebo_route.entrypoint",
     ]
 
 
@@ -291,7 +292,7 @@ def invoke_missionos_sitl_dispatch_runtime(
         "schema_version": RUNTIME_INVOCATION_EVIDENCE_SCHEMA_VERSION,
         "missionos_schema_version": "missionos_runtime_invocation_evidence.v1",
         "invocation_kind": "subprocess",
-        "invocation_target": "scripts/smoke_px4_gazebo_horizontal_route_delivery.py",
+        "invocation_target": "src.runtime.px4_gazebo_route.entrypoint",
         "invocation_started_at": started_at,
         "invocation_completed_at": completed_at,
         "invocation_stdout_sha256": _sha256_text(stdout),
