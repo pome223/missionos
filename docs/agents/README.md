@@ -16,7 +16,7 @@ docs.
 | LLM planning, repair, or recovery logic | `claim-semantics.md`, `agent-architecture.md`, `contracts.md` |
 | Recovery delegation (reflex/deliberation split, perception claims, shadow measurement, action promotion) | `recovery-delegation-authority.md`, `claim-semantics.md`, `hardware-adapter-contract.md` |
 | Evidence, claims, completion, or verifier behavior | `claim-semantics.md`, `artifact-taxonomy.md`, `contracts.md` |
-| PX4 / Gazebo SITL or PX4 bench-adjacent runtime | `hardware-adapter-contract.md`, `claim-semantics.md`, `e2e-verification.md`, `publication-rules.md` |
+| PX4 / Gazebo SITL or PX4 bench-adjacent runtime | `px4-gazebo-route-runtime.md`, `hardware-adapter-contract.md`, `claim-semantics.md`, `e2e-verification.md`, `publication-rules.md` |
 | TurtleBot3 / ROS2 Nav2 simulator adapter | `ros2-nav2-turtlebot3-sim.md`, `claim-semantics.md`, `hardware-adapter-contract.md` |
 | TurtleBot4 / other Nav2 simulator work | `ros2-nav2-turtlebot4-sim.md`, `claim-semantics.md`, `hardware-adapter-contract.md` |
 | NVIDIA Isaac Sim / Nova Carter work | `nvidia-isaac-nova-carter.md`, `claim-semantics.md`, `hardware-adapter-contract.md`, `publication-rules.md` |
@@ -42,6 +42,7 @@ When the map above is not enough, read the complete set:
 - `publication-rules.md`
 - `legacy-codename-rename-plan.md`
 - `hardware-adapter-contract.md`
+- `px4-gazebo-route-runtime.md`
 - `hardware-partner-integration-guide.md`
 - `ros2-nav2-turtlebot3-sim.md`
 - `ros2-nav2-turtlebot4-sim.md`
