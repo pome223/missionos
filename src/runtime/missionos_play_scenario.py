@@ -94,9 +94,9 @@ def _load_vehicle_limits(profile_path: Path | str | None = None) -> VehicleLimit
     )
 
 
-# Fuji-area trailhead → mountain hut delivery. Coordinates match the existing
-# source-backed smoke (scripts/smoke_vehicle_envelope_energy.py) so the route
-# stays within GSI DEM coverage when Phase 2 swaps in real per-leg sampling.
+# Fuji-area trailhead → mountain hut delivery. Coordinates match the fixture
+# contract in tests/fixtures/digital_twin_environment.py so the route stays
+# within GSI DEM coverage when Phase 2 swaps in real per-leg sampling.
 _FUJI_HUT = dict(
     key="fuji-hut",
     title="Fuji trailhead -> mountain hut delivery",
