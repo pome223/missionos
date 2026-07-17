@@ -49,6 +49,19 @@ MissionAutonomyExecutionClass = Literal[
     "emergency_harness",
 ]
 
+# Actions that fail toward safety: a wrong one costs mission time, not the
+# robot. Authority widening (issue #31) treats these asymmetrically — they can
+# be delegated on weaker evidence than progressive actions.
+CONSERVATIVE_RECOVERY_ACTIONS: frozenset[str] = frozenset(
+    {"hold", "safe_stop", "return_home", "ask_human"}
+)
+_DEFAULT_CONSERVATIVE_ACTIONS: tuple[MissionAutonomyRecoveryAction, ...] = (
+    "ask_human",
+    "hold",
+    "return_home",
+    "safe_stop",
+)
+
 
 class MissionAutonomyEnvelope(BaseModel):
     """Execution-authority envelope for mission-level recovery proposals."""
@@ -80,6 +93,13 @@ class MissionAutonomyEnvelope(BaseModel):
         "physical_execution",
         "payload_delivery_completion",
     )
+    conservative_recovery_actions: tuple[MissionAutonomyRecoveryAction, ...] = (
+        _DEFAULT_CONSERVATIVE_ACTIONS
+    )
+    # Application ids of operator-approved recovery-action promotions
+    # (recovery_action_promotion.py) that shaped this envelope's action sets;
+    # audit refs only, never authority by themselves.
+    applied_recovery_promotions: tuple[str, ...] = ()
     battery_policy: dict[str, Any] = Field(default_factory=dict)
     emergency_harness: dict[str, Any] = Field(default_factory=dict)
     claim_boundary: str = (
@@ -144,6 +164,7 @@ class MissionAutonomyProposalClassification(BaseModel):
     execution_class: MissionAutonomyExecutionClass
     execution_permitted_by_envelope: bool
     requires_new_human_approval: bool
+    selected_action_is_conservative: bool = False
     blocked_reasons: tuple[str, ...] = ()
     classification_reason: str
     proposal_first_classification: Literal[True] = True
@@ -203,6 +224,10 @@ def build_mission_autonomy_envelope(
         "physical_execution",
         "payload_delivery_completion",
     ),
+    conservative_recovery_actions: Sequence[MissionAutonomyRecoveryAction] = (
+        _DEFAULT_CONSERVATIVE_ACTIONS
+    ),
+    applied_recovery_promotions: Sequence[str] = (),
 ) -> MissionAutonomyEnvelope:
     """Build an autonomy envelope that classifies execution, not proposals."""
 
@@ -215,6 +240,8 @@ def build_mission_autonomy_envelope(
             tuple(preapproved_recovery_actions),
             tuple(requires_human_approval_for),
             tuple(blocked_actions),
+            tuple(conservative_recovery_actions),
+            tuple(applied_recovery_promotions),
         ),
     )
     return MissionAutonomyEnvelope(
@@ -225,6 +252,12 @@ def build_mission_autonomy_envelope(
         preapproved_recovery_actions=tuple(dict.fromkeys(preapproved_recovery_actions)),
         requires_human_approval_for=tuple(dict.fromkeys(requires_human_approval_for)),
         blocked_actions=tuple(dict.fromkeys(blocked_actions)),
+        conservative_recovery_actions=tuple(
+            dict.fromkeys(conservative_recovery_actions)
+        ),
+        applied_recovery_promotions=tuple(
+            dict.fromkeys(applied_recovery_promotions)
+        ),
         battery_policy=dict(battery_policy or {}),
         emergency_harness=dict(emergency_harness or {}),
     )
@@ -250,6 +283,13 @@ def approve_mission_autonomy_envelope(
             envelope.get("requires_human_approval_for") or ()
         ),
         blocked_actions=tuple(envelope.get("blocked_actions") or ()),
+        conservative_recovery_actions=tuple(
+            envelope.get("conservative_recovery_actions")
+            or _DEFAULT_CONSERVATIVE_ACTIONS
+        ),
+        applied_recovery_promotions=tuple(
+            envelope.get("applied_recovery_promotions") or ()
+        ),
     )
 
 
@@ -350,12 +390,16 @@ def classify_mission_autonomy_recovery_proposal(
         execution_class=execution_class,
         execution_permitted_by_envelope=permitted,
         requires_new_human_approval=requires_approval,
+        selected_action_is_conservative=(
+            action in envelope_model.conservative_recovery_actions
+        ),
         blocked_reasons=tuple(blocked_reasons),
         classification_reason=reason,
     )
 
 
 __all__ = [
+    "CONSERVATIVE_RECOVERY_ACTIONS",
     "MISSION_AUTONOMY_ENVELOPE_SCHEMA",
     "MISSION_AUTONOMY_PROPOSAL_CLASSIFICATION_SCHEMA",
     "MISSION_AUTONOMY_RECOVERY_PROPOSAL_SCHEMA",

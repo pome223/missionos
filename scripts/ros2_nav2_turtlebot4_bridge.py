@@ -13,6 +13,7 @@ import json
 import hashlib
 import math
 import os
+from pathlib import Path
 import sys
 import time
 from typing import Any
@@ -71,6 +72,10 @@ ROS2_NAV2_RECOVERY_ORBIT_MIN_PATH_ENV = (
 ROS2_NAV2_SIM_FAULT_CANCEL_AFTER_ACCEPT_ENV = (
     "ROS2_NAV2_SIM_FAULT_CANCEL_AFTER_ACCEPT"
 )
+ROS2_NAV2_CAMERA_TOPIC_ENV = "ROS2_NAV2_CAMERA_TOPIC"
+ROS2_NAV2_CAMERA_TIMEOUT_ENV = "ROS2_NAV2_CAMERA_TIMEOUT_S"
+ROS2_NAV2_CAMERA_OUTPUT_DIR_ENV = "ROS2_NAV2_CAMERA_OUTPUT_DIR"
+ROS2_NAV2_CANCEL_STOP_OBSERVE_ENV = "ROS2_NAV2_CANCEL_STOP_OBSERVE_S"
 
 _TRUE_VALUES = {"1", "true", "yes", "on"}
 _ALLOWED_ACTIONS = {
@@ -79,6 +84,7 @@ _ALLOWED_ACTIONS = {
     "read_state",
     "read_progress",
     "evaluate_recovery_candidates",
+    "capture_camera_frame",
 }
 
 
@@ -1050,6 +1056,195 @@ def _wait_for_lifecycle_nodes(
         "lifecycle_nodes": list(node_names),
         "lifecycle_states": states,
     }
+
+
+def _default_camera_frame_output_path() -> Path:
+    root = Path(
+        os.environ.get(ROS2_NAV2_CAMERA_OUTPUT_DIR_ENV)
+        or "output/turtlebot3_camera_frames"
+    )
+    root.mkdir(parents=True, exist_ok=True)
+    # Sub-second suffix so two captures within the same second cannot
+    # silently overwrite each other.
+    now = time.time()
+    stamp = time.strftime("%Y%m%dT%H%M%S", time.gmtime(now))
+    millis = int((now % 1) * 1000)
+    return root / f"frame_{stamp}_{millis:03d}Z.png"
+
+
+def _image_message_to_rgb_array(message: Any) -> Any:
+    """Reshape a sensor_msgs/Image into an (H, W, 3) uint8 RGB numpy array."""
+
+    import numpy as np
+
+    width = int(message.width)
+    height = int(message.height)
+    encoding = str(message.encoding or "").lower()
+    data = np.frombuffer(bytes(message.data), dtype=np.uint8)
+
+    if encoding in ("rgb8", "bgr8"):
+        array = data.reshape((height, width, 3))
+        if encoding == "bgr8":
+            array = array[:, :, ::-1]
+        return array
+    if encoding in ("rgba8", "bgra8"):
+        array = data.reshape((height, width, 4))
+        if encoding == "bgra8":
+            array = array[:, :, [2, 1, 0, 3]]
+        return array[:, :, :3]
+    if encoding in ("mono8", "8uc1"):
+        array = data.reshape((height, width))
+        return np.stack([array, array, array], axis=-1)
+    raise ValueError(f"unsupported camera image encoding: {message.encoding!r}")
+
+
+def _observe_camera_frame(
+    *,
+    node: Any,
+    image_type: Any,
+    topic: str,
+    timeout_s: float,
+) -> Any | None:
+    from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
+
+    observed: list[Any] = []
+
+    def _handler(message: Any) -> None:
+        observed.append(message)
+
+    # Camera topics conventionally use best-effort sensor-data QoS, unlike
+    # odom's reliable delivery — a dropped frame just means we wait for the
+    # next one within timeout_s.
+    qos = QoSProfile(depth=1)
+    qos.reliability = QoSReliabilityPolicy.BEST_EFFORT
+    qos.durability = QoSDurabilityPolicy.VOLATILE
+    subscription = node.create_subscription(image_type, topic, _handler, qos)
+    deadline = time.monotonic() + max(timeout_s, 0.0)
+    try:
+        while not observed and time.monotonic() < deadline:
+            import rclpy
+
+            rclpy.spin_once(node, timeout_sec=0.1)
+    finally:
+        node.destroy_subscription(subscription)
+    return observed[-1] if observed else None
+
+
+def _write_camera_frame_png(array: Any, output_path: Path) -> bytes:
+    """Write an (H, W, 3) uint8 RGB array to output_path as PNG; return bytes.
+
+    Pulled out of _capture_camera_frame so the disk-write path is testable
+    without a ROS2 environment — only PIL is required here, not rclpy.
+    """
+
+    from PIL import Image as PILImage
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    PILImage.fromarray(array, mode="RGB").save(output_path, format="PNG")
+    return output_path.read_bytes()
+
+
+def _camera_topic_from(payload: dict[str, Any]) -> str:
+    """Resolve the camera topic; empty strings count as unset.
+
+    Docker launch scripts forward optional env vars with the
+    ``-e VAR=${VAR:-}`` pattern, which sets them to empty strings in the
+    container — a live Gazebo/Nav2 run proved that ``os.environ.get`` with a
+    default then returns '' and rclpy rejects the empty topic name. Both the
+    payload value and the env var must therefore fall through to the default
+    when blank.
+    """
+
+    payload_topic = str(payload.get("camera_topic") or "").strip()
+    if payload_topic:
+        return payload_topic
+    env_topic = os.environ.get(ROS2_NAV2_CAMERA_TOPIC_ENV, "").strip()
+    return env_topic or "/camera/image_raw"
+
+
+def _capture_camera_frame(payload: dict[str, Any]) -> dict[str, Any]:
+    """Subscribe once to a camera topic and write the frame to disk as PNG.
+
+    Produces the image_path input turtlebot3_perception_sidecar.py consumes.
+    Never publishes anything and never classifies the frame itself — this
+    bridge only captures; the VLM sidecar is a separate opt-in step.
+    """
+
+    try:
+        import rclpy
+        from sensor_msgs.msg import Image
+    except Exception as exc:
+        return _blocked_response(
+            blocking_reasons=["ros2_nav2_python_dependencies_missing"],
+            ack_status="rejected",
+        ) | {"error": f"{type(exc).__name__}: {str(exc)[:240]}"}
+    import importlib.util
+
+    if importlib.util.find_spec("PIL") is None:
+        return _blocked_response(
+            blocking_reasons=["pillow_not_installed"],
+            ack_status="rejected",
+        )
+
+    camera_topic = _camera_topic_from(payload)
+    timeout_s = _float_env(ROS2_NAV2_CAMERA_TIMEOUT_ENV, 10.0)
+    output_path = Path(payload.get("output_path") or _default_camera_frame_output_path())
+
+    rclpy.init(args=None)
+    node = rclpy.create_node(f"missionos_ros2_nav2_{_bridge_profile()}_camera_capture")
+    try:
+        try:
+            message = _observe_camera_frame(
+                node=node,
+                image_type=Image,
+                topic=camera_topic,
+                timeout_s=timeout_s,
+            )
+        except Exception as exc:
+            # Capture is optional evidence: a subscription failure (invalid
+            # topic, type support issue) must come back as a blocked receipt,
+            # never crash the bridge process.
+            return _blocked_response(
+                blocking_reasons=["camera_subscription_failed"],
+            ) | {"error": f"{type(exc).__name__}: {str(exc)[:240]}"}
+        if message is None:
+            return _blocked_response(
+                blocking_reasons=["camera_frame_not_received_before_timeout"],
+                ack_status="timeout",
+            )
+        try:
+            array = _image_message_to_rgb_array(message)
+        except ValueError as exc:
+            return _blocked_response(
+                blocking_reasons=["camera_image_encoding_unsupported"],
+            ) | {"error": str(exc)}
+        frame_bytes = _write_camera_frame_png(array, output_path)
+        return _base_response(
+            ack_status="accepted",
+            ack_source=_bridge_source(),
+            runtime_progress_observed=False,
+            completion_observed=False,
+            nav2_status="not_applicable",
+            state_result={
+                "nav2_action_server_available": False,
+                "pose_observed": False,
+                "robot_motion_observed": False,
+            },
+            progress_result={
+                "runtime_progress_observed": False,
+                "completion_observed": False,
+                "robot_motion_observed": False,
+            },
+            camera_frame_captured=True,
+            camera_frame_path=str(output_path),
+            camera_frame_sha256=hashlib.sha256(frame_bytes).hexdigest(),
+            camera_frame_width=int(message.width),
+            camera_frame_height=int(message.height),
+            camera_topic=camera_topic,
+        )
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 def _observe_odom_pose(
@@ -2140,6 +2335,138 @@ def _read_only_response(action: str) -> dict[str, Any]:
     )
 
 
+def _observe_post_cancel_stop(
+    *,
+    node: Any,
+    odometry_type: Any,
+    odom_topic: str,
+    observe_window_s: float,
+    stop_threshold_m: float,
+) -> dict[str, Any]:
+    """Observe odom after a cancel and report whether the robot held still.
+
+    Review of the harness stop found the ACK alone was being treated as a
+    stop confirmation; this closes that gap by sampling odom over a settle
+    window and reporting the observed displacement.
+    """
+
+    import time as _time
+
+    start_pose = _observe_odom_pose(
+        node=node,
+        odometry_type=odometry_type,
+        topic=odom_topic,
+        timeout_s=max(observe_window_s / 2.0, 1.0),
+    )
+    _time.sleep(max(observe_window_s, 0.0))
+    end_pose = _observe_odom_pose(
+        node=node,
+        odometry_type=odometry_type,
+        topic=odom_topic,
+        timeout_s=max(observe_window_s / 2.0, 1.0),
+    )
+    delta = _motion_delta_m(start_pose, end_pose)
+    if delta is None:
+        return {
+            "stop_observed": False,
+            "post_cancel_odom_delta_m": None,
+            "stop_observation_window_s": observe_window_s,
+            "stop_observation_source": "odom_not_observed",
+        }
+    return {
+        "stop_observed": delta <= stop_threshold_m,
+        "post_cancel_odom_delta_m": round(delta, 4),
+        "stop_observation_window_s": observe_window_s,
+        "stop_observation_threshold_m": stop_threshold_m,
+        "stop_observation_source": f"odom:{odom_topic}",
+    }
+
+
+def _cancel_goal() -> dict[str, Any]:
+    """Cancel every active Nav2 goal, then observe whether the robot stopped.
+
+    Used by the MissionOS reflex layer to stabilize the robot before recovery
+    deliberation. Cancel halts goal pursuit through Nav2's own controller
+    shutdown; the bridge never publishes velocities itself. The response
+    separates cancel_accepted (Nav2 acknowledged the request) from
+    stop_observed (post-cancel odom displacement stayed under the motion
+    threshold for a settle window) — an ACK is not a stop.
+    """
+
+    try:
+        import rclpy
+        from action_msgs.srv import CancelGoal
+        from nav_msgs.msg import Odometry
+    except Exception as exc:
+        return _blocked_response(
+            blocking_reasons=["ros2_nav2_python_dependencies_missing"],
+            ack_status="rejected",
+        ) | {"error": f"{type(exc).__name__}: {str(exc)[:240]}"}
+
+    action_name = os.environ.get(ROS2_NAV2_ACTION_NAME_ENV, "/navigate_to_pose")
+    odom_topic = os.environ.get(ROS2_NAV2_ODOM_TOPIC_ENV, "").strip() or "/odom"
+    server_timeout_s = _float_env(ROS2_NAV2_ACTION_SERVER_TIMEOUT_ENV, 10.0)
+    stop_observe_window_s = _float_env(ROS2_NAV2_CANCEL_STOP_OBSERVE_ENV, 2.0)
+    stop_threshold_m = _float_env(ROS2_NAV2_MOTION_THRESHOLD_ENV, 0.03)
+    rclpy.init(args=None)
+    node = rclpy.create_node(f"missionos_ros2_nav2_{_bridge_profile()}_cancel")
+    try:
+        client = node.create_client(
+            CancelGoal, f"{action_name}/_action/cancel_goal"
+        )
+        if not client.wait_for_service(timeout_sec=server_timeout_s):
+            return _blocked_response(
+                blocking_reasons=["nav2_cancel_goal_service_unavailable"],
+                ack_status="timeout",
+            )
+        # A zeroed goal ID and stamp asks the action server to cancel all
+        # active goals; an idle server acknowledges with an empty list.
+        future = client.call_async(CancelGoal.Request())
+        rclpy.spin_until_future_complete(node, future, timeout_sec=server_timeout_s)
+        result = future.result()
+        if result is None:
+            return _blocked_response(
+                blocking_reasons=["nav2_cancel_goal_response_timeout"],
+                ack_status="timeout",
+            )
+        return_code = int(getattr(result, "return_code", 1))
+        goals_canceling_count = len(list(getattr(result, "goals_canceling", ())))
+        if return_code != 0:
+            return _blocked_response(
+                blocking_reasons=[f"nav2_cancel_goal_return_code_{return_code}"],
+            ) | {"goals_canceling_count": goals_canceling_count, "cancel_accepted": False}
+        stop_observation = _observe_post_cancel_stop(
+            node=node,
+            odometry_type=Odometry,
+            odom_topic=odom_topic,
+            observe_window_s=stop_observe_window_s,
+            stop_threshold_m=stop_threshold_m,
+        )
+        return _base_response(
+            ack_status="accepted",
+            ack_source=_bridge_source(),
+            runtime_progress_observed=False,
+            completion_observed=False,
+            nav2_status="canceled",
+            goals_canceling_count=goals_canceling_count,
+            cancel_accepted=True,
+            **stop_observation,
+            state_result={
+                "nav2_action_server_available": True,
+                "pose_observed": False,
+                "robot_motion_observed": False,
+            },
+            progress_result={
+                "runtime_progress_observed": False,
+                "completion_observed": False,
+                "robot_motion_observed": False,
+            },
+        )
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+
 def handle_request(request: dict[str, Any]) -> dict[str, Any]:
     invalid = _validate_request(request)
     if invalid is not None:
@@ -2156,7 +2483,9 @@ def handle_request(request: dict[str, Any]) -> dict[str, Any]:
     if action == "evaluate_recovery_candidates":
         return _evaluate_recovery_candidates(payload)
     if action == "cancel_goal":
-        return _blocked_response(blocking_reasons=["nav2_cancel_goal_not_implemented"])
+        return _cancel_goal()
+    if action == "capture_camera_frame":
+        return _capture_camera_frame(payload)
     return _read_only_response(action)
 
 

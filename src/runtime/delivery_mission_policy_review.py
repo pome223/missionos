@@ -3,18 +3,28 @@
 ``delivery_mission_policy_review.v1`` evaluates a
 ``delivery_mission_contract.v1`` against read-only telemetry/review artifacts.
 It only emits policy findings such as block, abort recommendation, return-home
-recommendation, or operator escalation. It never emits commands, dispatch
-payloads, MAVLink/ROS actions, Gazebo mutations, or actuator instructions.
+recommendation, or operator escalation.
+
+One narrow exception (issue #31): when battery drops to or below
+``reserve_landing_percent``, the reflex-authority deliberation budget
+(``px4_recovery_reflex.py``) is exhausted, and a caller supplies an optional
+``px4_reflex_dispatcher`` callback, this module invokes it with the reflex
+record and attaches whatever it returns under
+``px4_recovery_reflex["dispatch"]``. The dispatcher itself — not this
+module — decides whether to actually send a bounded MAVLink RTL command
+(see ``px4_recovery_reflex_dispatch.py``, which never claims operator
+approval). With no dispatcher supplied, the default, this module's
+behavior is unchanged: it emits findings only and dispatches nothing.
 """
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from datetime import datetime, timezone
 from enum import Enum
 from hashlib import sha256
 import json
-from typing import Any, Callable, Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -32,6 +42,7 @@ from src.runtime.px4_gazebo_telemetry import (
     PX4_GAZEBO_SANITIZED_TELEMETRY_SCHEMA_VERSION,
     Px4GazeboSanitizedTelemetry,
 )
+from src.runtime.px4_recovery_reflex import build_px4_recovery_reflex
 from src.runtime.task_store import TaskStore, get_task_store
 
 
@@ -90,6 +101,7 @@ class DeliveryMissionPolicyReview(BaseModel):
     findings: tuple[DeliveryMissionPolicyFinding, ...] = ()
     missing_telemetry_measurements: tuple[str, ...] = ()
     battery_percent: float | None = None
+    px4_recovery_reflex: dict[str, Any] = Field(default_factory=dict)
     operator_escalation_required: bool = False
     abort_recommended: bool = False
     return_to_home_recommended: bool = False
@@ -210,6 +222,9 @@ def build_delivery_mission_policy_review(
     hil_telemetry_review: HilTelemetryReview | Mapping[str, Any] | None = None,
     now: datetime | None = None,
     metadata: dict[str, Any] | None = None,
+    px4_reflex_dispatcher: (
+        Callable[[Mapping[str, Any]], Mapping[str, Any]] | None
+    ) = None,
 ) -> DeliveryMissionPolicyReview:
     """Evaluate delivery policy conditions from read-only artifacts.
 
@@ -279,6 +294,7 @@ def build_delivery_mission_policy_review(
             blocked.append(DELIVERY_POLICY_BUCKET_HIL_TELEMETRY_STALE)
 
     battery_percent = _battery_percent(telemetry)
+    px4_recovery_reflex: dict[str, Any] = {}
     if battery_percent is None:
         if "battery_percent" in contract.telemetry_requirements.required_measurements:
             operator_escalation_required = True
@@ -297,6 +313,16 @@ def build_delivery_mission_policy_review(
         blocked.append(DELIVERY_POLICY_BUCKET_BATTERY_ABORT_RECOMMENDED)
         abort_recommended = True
         operator_escalation_required = True
+        px4_recovery_reflex = build_px4_recovery_reflex(
+            trigger="battery_below_reserve_landing_threshold",
+            battery_percent=battery_percent,
+            reserve_landing_percent=contract.battery_policy.reserve_landing_percent,
+            now=evaluated_at,
+        ).model_dump(mode="json")
+        if px4_reflex_dispatcher is not None:
+            px4_recovery_reflex["dispatch"] = dict(
+                px4_reflex_dispatcher(px4_recovery_reflex)
+            )
     elif battery_percent <= contract.battery_policy.return_to_home_percent:
         findings.append(
             DeliveryMissionPolicyFinding(
@@ -311,6 +337,12 @@ def build_delivery_mission_policy_review(
         )
         warnings.append(DELIVERY_POLICY_BUCKET_BATTERY_RETURN_HOME_RECOMMENDED)
         return_to_home_recommended = True
+        px4_recovery_reflex = build_px4_recovery_reflex(
+            trigger="battery_below_return_to_home_threshold",
+            battery_percent=battery_percent,
+            reserve_landing_percent=contract.battery_policy.reserve_landing_percent,
+            now=evaluated_at,
+        ).model_dump(mode="json")
 
     route_geofence_violation = _bool_measurement(
         telemetry,
@@ -393,6 +425,7 @@ def build_delivery_mission_policy_review(
         findings=tuple(findings),
         missing_telemetry_measurements=missing,
         battery_percent=battery_percent,
+        px4_recovery_reflex=px4_recovery_reflex,
         operator_escalation_required=operator_escalation_required,
         abort_recommended=abort_recommended,
         return_to_home_recommended=return_to_home_recommended,

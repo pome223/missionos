@@ -130,3 +130,45 @@ def test_approved_envelope_requires_operator_approval_ref() -> None:
             mission_ref="mission_home_delivery",
             operator_approved=True,
         )
+
+
+def test_envelope_carries_conservative_action_split() -> None:
+    envelope = build_mission_autonomy_envelope(mission_ref="mission_home_delivery")
+    assert set(envelope.conservative_recovery_actions) == {
+        "ask_human",
+        "hold",
+        "return_home",
+        "safe_stop",
+    }
+
+
+def test_classification_marks_conservative_and_progressive_actions() -> None:
+    envelope = build_mission_autonomy_envelope(
+        mission_ref="mission_home_delivery",
+        operator_approved=True,
+        operator_approval_ref="approval_home_delivery",
+        preapproved_recovery_actions=("return_home", "hold", "avoid_obstacle"),
+        requires_human_approval_for=("reroute", "safe_stop", "ask_human"),
+    )
+    conservative = classify_mission_autonomy_recovery_proposal(
+        envelope=envelope,
+        proposal=build_mission_autonomy_recovery_proposal(
+            mission_ref="mission_home_delivery",
+            proposal_source="llm",
+            selected_action="hold",
+            reason="Holding while the obstruction is confirmed.",
+        ),
+    )
+    progressive = classify_mission_autonomy_recovery_proposal(
+        envelope=envelope,
+        proposal=build_mission_autonomy_recovery_proposal(
+            mission_ref="mission_home_delivery",
+            proposal_source="llm",
+            selected_action="avoid_obstacle",
+            reason="Corroborated obstacle; going around it.",
+        ),
+    )
+
+    assert conservative.selected_action_is_conservative is True
+    assert progressive.selected_action_is_conservative is False
+    assert progressive.execution_class == "auto_executable"

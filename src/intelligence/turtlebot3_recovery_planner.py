@@ -15,7 +15,7 @@ import json
 import os
 import shlex
 import subprocess
-from typing import Any, Mapping, cast
+from typing import Any, Mapping, Sequence, cast
 from urllib import request
 
 from src.runtime.mission_autonomy_envelope import (
@@ -23,6 +23,11 @@ from src.runtime.mission_autonomy_envelope import (
     build_mission_autonomy_recovery_proposal,
 )
 from src.runtime.missionos_llm_schemas import LLM_INVOCATION_EVIDENCE_SCHEMA_VERSION
+from src.runtime.perception_claim import (
+    CONSERVATIVE_RECOVERY_ACTIONS,
+    PerceptionClaim,
+    guard_perception_claim_support,
+)
 
 
 TURTLEBOT3_RECOVERY_PLANNER_RESULT_SCHEMA_VERSION = (
@@ -159,6 +164,7 @@ def build_turtlebot3_recovery_planner_prompt(
     indoor_delivery_route: Mapping[str, Any] | None = None,
     runtime_failure_context: Mapping[str, Any] | None = None,
     runtime_motion_context: Mapping[str, Any] | None = None,
+    perception_claims: Sequence[PerceptionClaim | Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Build the source-bound JSON prompt for Gemini/Ollama."""
 
@@ -175,6 +181,14 @@ def build_turtlebot3_recovery_planner_prompt(
         if key in _ALLOWED_INPUT_OBSERVATION_KEYS
         and isinstance(value, (str, int, float, bool))
     }
+    claim_payloads = [
+        (
+            claim
+            if isinstance(claim, PerceptionClaim)
+            else PerceptionClaim.model_validate(dict(claim))
+        ).model_dump(mode="json")
+        for claim in (perception_claims or ())
+    ]
     return {
         "schema_version": "missionos_turtlebot3_recovery_planner_prompt.v1",
         "task": "propose_turtlebot3_recovery_action",
@@ -209,6 +223,8 @@ def build_turtlebot3_recovery_planner_prompt(
         "indoor_delivery_route": dict(indoor_delivery_route or {}),
         "runtime_failure_context": dict(runtime_failure_context or {}),
         "runtime_motion_context": dict(runtime_motion_context or {}),
+        "perception_claims": claim_payloads,
+        "conservative_recovery_actions": sorted(CONSERVATIVE_RECOVERY_ACTIONS),
         "allowed_input_observation_keys": list(_ALLOWED_INPUT_OBSERVATION_KEYS),
         "source_backed_input_observations": source_backed_input_observations,
         "required_output_fields": [
@@ -237,7 +253,12 @@ def build_turtlebot3_recovery_planner_prompt(
             "runtime_failure_context, runtime_motion_context, or any nested "
             "object as an input_observations key. "
             "Do not invent distance_to_home_m; copy it only from "
-            "home_distance_envelope when you use it."
+            "home_distance_envelope when you use it. "
+            "If you rely on any perception_claims entry, list its claim_id in "
+            "an optional cited_perception_claim_ids array. A claim whose "
+            "corroborated_by is empty is camera-only evidence and may support "
+            "only conservative_recovery_actions; selecting any other action "
+            "based on an uncorroborated claim will be blocked."
         ),
     }
 
@@ -405,6 +426,7 @@ def guard_turtlebot3_recovery_planner_output(
     raw_output: Mapping[str, Any],
     *,
     source_observations: Mapping[str, Any] | None = None,
+    perception_claims: Sequence[PerceptionClaim | Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Validate output shape without replacing the LLM's recovery judgment."""
 
@@ -416,6 +438,9 @@ def guard_turtlebot3_recovery_planner_output(
         "reason_present": False,
         "input_observations_mapping": False,
         "input_observations_source_backed": False,
+        "cited_perception_claim_ids_list": True,
+        "cited_perception_claims_known": True,
+        "perception_claim_support_respected": True,
     }
     for key in sorted(_FORBIDDEN_AUTHORITY_KEYS):
         if key in raw_output:
@@ -442,12 +467,47 @@ def guard_turtlebot3_recovery_planner_output(
     checks["input_observations_source_backed"] = not source_reasons
     blocking_reasons.extend(source_reasons)
 
+    provided_claims = list(perception_claims or ())
+    raw_cited = raw_output.get("cited_perception_claim_ids")
+    cited_claim_ids: list[str] = []
+    if raw_cited is not None:
+        if isinstance(raw_cited, (list, tuple)) and all(
+            isinstance(item, str) for item in raw_cited
+        ):
+            cited_claim_ids = list(raw_cited)
+        else:
+            checks["cited_perception_claim_ids_list"] = False
+            blocking_reasons.append(
+                "cited_perception_claim_ids_must_be_string_list"
+            )
+    elif provided_claims:
+        # Citation is the model's explicit reliance record. When claims were
+        # in its context it must state what it relied on (an empty list is a
+        # valid statement of non-reliance); omitting the field entirely is
+        # not — review found omission could otherwise bypass the guard.
+        checks["cited_perception_claim_ids_list"] = False
+        blocking_reasons.append(
+            "cited_perception_claim_ids_required_when_claims_present"
+        )
+    perception_support: dict[str, Any] = {}
+    if checks["cited_perception_claim_ids_list"] and provided_claims:
+        # The support rule runs whenever claims exist in context — never
+        # gated on the model choosing to cite them.
+        perception_support = guard_perception_claim_support(
+            selected_action=selected_action,
+            cited_claim_ids=cited_claim_ids,
+            perception_claims=provided_claims,
+        )
+        checks.update(perception_support["checks"])
+        blocking_reasons.extend(perception_support["blocking_reasons"])
+
     validated = {
         "selected_action": selected_action,
         "reason": reason,
         "input_observations": dict(observations or {})
         if isinstance(observations, Mapping)
         else {},
+        "cited_perception_claim_ids": cited_claim_ids,
     }
     return {
         "schema_version": TURTLEBOT3_RECOVERY_PLANNER_GUARDRAIL_SCHEMA_VERSION,
@@ -455,6 +515,7 @@ def guard_turtlebot3_recovery_planner_output(
         "checks": checks,
         "blocking_reasons": blocking_reasons,
         "validated_proposal": validated if not blocking_reasons else {},
+        "perception_claim_support": perception_support,
         "progress_counted": False,
         "dispatch_authority_created": False,
         "physical_execution_invoked": False,
@@ -472,6 +533,7 @@ def run_turtlebot3_recovery_planner(
     indoor_delivery_route: Mapping[str, Any] | None = None,
     runtime_failure_context: Mapping[str, Any] | None = None,
     runtime_motion_context: Mapping[str, Any] | None = None,
+    perception_claims: Sequence[PerceptionClaim | Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Run the configured TurtleBot3 recovery planner."""
 
@@ -485,6 +547,7 @@ def run_turtlebot3_recovery_planner(
         indoor_delivery_route=indoor_delivery_route,
         runtime_failure_context=runtime_failure_context,
         runtime_motion_context=runtime_motion_context,
+        perception_claims=perception_claims,
     )
     prompt_text = json.dumps(prompt, sort_keys=True)
     source_observations = _source_observations_from_envelopes(
@@ -499,6 +562,7 @@ def run_turtlebot3_recovery_planner(
             prompt_text=prompt_text,
             mission_ref=mission_ref,
             source_observations=source_observations,
+            perception_claims=perception_claims,
         )
 
     command_text = os.environ.get(TURTLEBOT3_RECOVERY_PLANNER_COMMAND_ENV, "").strip()
@@ -515,6 +579,7 @@ def run_turtlebot3_recovery_planner(
             prompt_text=prompt_text,
             mission_ref=mission_ref,
             source_observations=source_observations,
+            perception_claims=perception_claims,
         )
 
     return _planner_result(
@@ -531,6 +596,7 @@ def _run_adk_planner(
     prompt_text: str,
     mission_ref: str,
     source_observations: Mapping[str, Any],
+    perception_claims: Sequence[PerceptionClaim | Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     from src.agents.model_config import llm_provider_label
 
@@ -586,6 +652,7 @@ def _run_adk_planner(
         mission_ref=mission_ref,
         invocation_evidence=invocation_evidence,
         source_observations=source_observations,
+        perception_claims=perception_claims,
     )
 
 
@@ -595,6 +662,7 @@ def _run_command_override_planner(
     prompt_text: str,
     mission_ref: str,
     source_observations: Mapping[str, Any],
+    perception_claims: Sequence[PerceptionClaim | Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     started_at = datetime.now(timezone.utc)
     command_argv = shlex.split(command_text)
@@ -655,6 +723,7 @@ def _run_command_override_planner(
         mission_ref=mission_ref,
         invocation_evidence=invocation_evidence,
         source_observations=source_observations,
+        perception_claims=perception_claims,
     )
 
 
@@ -664,10 +733,12 @@ def _guard_and_build_proposal(
     mission_ref: str,
     invocation_evidence: Mapping[str, Any],
     source_observations: Mapping[str, Any],
+    perception_claims: Sequence[PerceptionClaim | Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     guardrail = guard_turtlebot3_recovery_planner_output(
         raw_output,
         source_observations=source_observations,
+        perception_claims=perception_claims,
     )
     if guardrail.get("guardrail_passed") is not True:
         return _planner_result(
@@ -742,7 +813,7 @@ def _planner_model_id() -> str:
 
         fallback = str(get_settings().agent_model)
     except Exception:
-        fallback = "gemini-3.1-flash-lite-preview"
+        fallback = "gemini-3.1-flash-lite"
     return agent_model_label(env_model or fallback, agent_name=_AGENT_NAME)
 
 

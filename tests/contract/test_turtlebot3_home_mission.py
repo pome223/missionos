@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from hashlib import sha256
 import json
 import math
 from pathlib import Path
@@ -14,6 +15,11 @@ from src.intelligence.turtlebot3_recovery_planner import (
     TURTLEBOT3_RECOVERY_PLANNER_ALLOW_OVERRIDE_ENV,
     TURTLEBOT3_RECOVERY_PLANNER_COMMAND_ENV,
 )
+from src.intelligence.turtlebot3_perception_sidecar import (
+    TURTLEBOT3_PERCEPTION_SIDECAR_ADK_ENABLED_ENV,
+    TURTLEBOT3_PERCEPTION_SIDECAR_ALLOW_OVERRIDE_ENV,
+    TURTLEBOT3_PERCEPTION_SIDECAR_COMMAND_ENV,
+)
 from src.runtime.ros2_nav2_dispatch_bridge import (
     ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV,
     ROS2_NAV2_BRIDGE_COMMAND_ENV,
@@ -25,6 +31,10 @@ from src.runtime.nvblox_perception_evidence import (
 )
 from src.runtime.turtlebot3_log_collector import TURTLEBOT3_LOG_BUNDLE_PATHS_ENV
 from src.runtime.turtlebot3_home_mission import (
+    TURTLEBOT3_CAMERA_PERCEPTION_ENABLED_ENV,
+    TURTLEBOT3_CAMERA_PERCEPTION_PIPELINE_SCHEMA_VERSION,
+    TURTLEBOT3_RECOVERY_REFLEX_SCHEMA_VERSION,
+    TURTLEBOT3_RECOVERY_SHADOW_COMPARISON_SCHEMA_VERSION,
     _recovery_checkpoint_hash,
     approve_turtlebot3_home_mission_plan,
     build_turtlebot3_recovery_checkpoint_revision,
@@ -49,18 +59,95 @@ def _default_arena_world_profile(monkeypatch):
 
 
 
+_FIXTURE_CAMERA_FRAME_REF = "sha256:" + "c" * 64
+_FIXTURE_CAMERA_FRAME_BYTES = b"\x89PNG\r\n\x1a\nfixture-camera-frame"
+
+
 def _write_success_bridge(
     path: Path,
     *,
     obstacle_avoidance_observed: bool = False,
     trajectory_frame_id: str | None = "map",
     sample_collection: str = "trajectory_samples",
+    camera_observation: bool = False,
+    camera_capture_times_out: bool = False,
 ) -> None:
     obstacle = "True" if obstacle_avoidance_observed else "False"
+    camera_observation_block = (
+        (
+            "'camera_observation': {\n"
+            "            'claim_kind': 'corridor_blocked_by_object',\n"
+            f"            'source_frame_ref': '{_FIXTURE_CAMERA_FRAME_REF}',\n"
+            "            'confidence': 0.82,\n"
+            "        },\n"
+        )
+        if camera_observation
+        else ""
+    )
+    if camera_capture_times_out:
+        capture_branch = (
+            "if request.get('action') == 'capture_camera_frame':\n"
+            "    print(json.dumps({\n"
+            "        'physical_execution_invoked': False,\n"
+            "        'raw_velocity_published': False,\n"
+            "        'raw_ros_topic_published': False,\n"
+            "        'cmd_vel_published_by_missionos': False,\n"
+            "        'ack_status': 'timeout',\n"
+            "        'ack_source': 'fixture_nav2_camera',\n"
+            "        'nav2_status': 'blocked',\n"
+            "        'camera_frame_captured': False,\n"
+            "        'blocking_reasons': ['camera_frame_not_received_before_timeout'],\n"
+            "    }))\n"
+            "    raise SystemExit(0)\n"
+        )
+    else:
+        capture_branch = (
+            "if request.get('action') == 'capture_camera_frame':\n"
+            "    import hashlib\n"
+            "    capture_payload = request.get('payload') or {}\n"
+            "    frame_path = Path(\n"
+            "        capture_payload.get('output_path')\n"
+            "        or str(Path(__file__).with_suffix('')) + '_frame.png'\n"
+            "    )\n"
+            "    frame_bytes = " + repr(_FIXTURE_CAMERA_FRAME_BYTES) + "\n"
+            "    frame_path.parent.mkdir(parents=True, exist_ok=True)\n"
+            "    frame_path.write_bytes(frame_bytes)\n"
+            "    print(json.dumps({\n"
+            "        'physical_execution_invoked': False,\n"
+            "        'raw_velocity_published': False,\n"
+            "        'raw_ros_topic_published': False,\n"
+            "        'cmd_vel_published_by_missionos': False,\n"
+            "        'ack_status': 'accepted',\n"
+            "        'ack_source': 'fixture_nav2_camera',\n"
+            "        'nav2_status': 'not_applicable',\n"
+            "        'camera_frame_captured': True,\n"
+            "        'camera_frame_path': str(frame_path),\n"
+            "        'camera_frame_sha256': hashlib.sha256(frame_bytes).hexdigest(),\n"
+            "        'camera_topic': '/camera/image_raw',\n"
+            "    }))\n"
+            "    raise SystemExit(0)\n"
+        )
     path.write_text(
         "import json, math, sys\n"
         "from pathlib import Path\n"
         "request = json.loads(sys.stdin.read())\n"
+        + capture_branch +
+        "if request.get('action') == 'cancel_goal':\n"
+        "    print(json.dumps({\n"
+        "        'physical_execution_invoked': False,\n"
+        "        'raw_velocity_published': False,\n"
+        "        'raw_ros_topic_published': False,\n"
+        "        'cmd_vel_published_by_missionos': False,\n"
+        "        'ack_status': 'accepted',\n"
+        "        'ack_source': 'fixture_nav2_cancel',\n"
+        "        'nav2_status': 'canceled',\n"
+        "        'cancel_accepted': True,\n"
+        "        'stop_observed': True,\n"
+        "        'post_cancel_odom_delta_m': 0.0,\n"
+        "        'stop_observation_window_s': 2.0,\n"
+        "        'stop_observation_source': 'odom:/odom',\n"
+        "    }))\n"
+        "    raise SystemExit(0)\n"
         "payload = request.get('payload') or {}\n"
         "trajectory_frame_id = "
         + repr(trajectory_frame_id)
@@ -140,6 +227,7 @@ def _write_success_bridge(
         + obstacle
         + ",\n"
         "        'trajectory_result': trajectory,\n"
+        "        " + camera_observation_block +
         "    },\n"
         "    'progress_result': {\n"
         "        'runtime_progress_observed': True,\n"
@@ -164,6 +252,22 @@ def _write_nav2_failure_bridge(path: Path) -> None:
     path.write_text(
         "import json, sys\n"
         "request = json.loads(sys.stdin.read())\n"
+        "if request.get('action') == 'cancel_goal':\n"
+        "    print(json.dumps({\n"
+        "        'physical_execution_invoked': False,\n"
+        "        'raw_velocity_published': False,\n"
+        "        'raw_ros_topic_published': False,\n"
+        "        'cmd_vel_published_by_missionos': False,\n"
+        "        'ack_status': 'accepted',\n"
+        "        'ack_source': 'fixture_nav2_cancel',\n"
+        "        'nav2_status': 'canceled',\n"
+        "        'cancel_accepted': True,\n"
+        "        'stop_observed': True,\n"
+        "        'post_cancel_odom_delta_m': 0.0,\n"
+        "        'stop_observation_window_s': 2.0,\n"
+        "        'stop_observation_source': 'odom:/odom',\n"
+        "    }))\n"
+        "    raise SystemExit(0)\n"
         "payload = request.get('payload') or {}\n"
         "assert request.get('physical_execution_invoked') is False\n"
         "response = {\n"
@@ -202,6 +306,22 @@ def _write_intersecting_obstacle_bridge(path: Path) -> None:
     path.write_text(
         "import json, sys\n"
         "request = json.loads(sys.stdin.read())\n"
+        "if request.get('action') == 'cancel_goal':\n"
+        "    print(json.dumps({\n"
+        "        'physical_execution_invoked': False,\n"
+        "        'raw_velocity_published': False,\n"
+        "        'raw_ros_topic_published': False,\n"
+        "        'cmd_vel_published_by_missionos': False,\n"
+        "        'ack_status': 'accepted',\n"
+        "        'ack_source': 'fixture_nav2_cancel',\n"
+        "        'nav2_status': 'canceled',\n"
+        "        'cancel_accepted': True,\n"
+        "        'stop_observed': True,\n"
+        "        'post_cancel_odom_delta_m': 0.0,\n"
+        "        'stop_observation_window_s': 2.0,\n"
+        "        'stop_observation_source': 'odom:/odom',\n"
+        "    }))\n"
+        "    raise SystemExit(0)\n"
         "payload = request.get('payload') or {}\n"
         "trajectory = {\n"
         "    'trajectory_lateral_deviation_observed': True,\n"
@@ -2037,6 +2157,22 @@ def test_turtlebot3_mid_mission_obstacle_recovery_resumes_delivery_with_llm_prop
     assert summary["recovery_proposal_classifications"][0]["execution_class"] == (
         "auto_executable"
     )
+    reflex = summary["recovery_planner_result"]["recovery_reflex"]
+    assert reflex["trigger"] == "runtime_obstacle_observed"
+    assert reflex["robot_motion_state"] == "moving"
+    assert reflex["stop_dispatch_required"] is True
+    assert reflex["stop_dispatch_performed"] is True
+    stop_dispatch = summary["recovery_planner_result"]["harness_stop_dispatch"]
+    assert stop_dispatch["authority_source"] == "emergency_harness"
+    assert stop_dispatch["harness_action"] == "hold"
+    assert stop_dispatch["bridge_action"] == "cancel_goal"
+    assert stop_dispatch["recorded_reason"] == (
+        "reflex_first_recovery_entry:runtime_obstacle_observed"
+    )
+    assert stop_dispatch["stop_confirmed"] is True
+    assert stop_dispatch["bridge_receipt"]["ack_status"] == "accepted"
+    assert stop_dispatch["physical_execution_invoked"] is False
+    assert stop_dispatch["progress_counted"] is False
     assert summary["recovery_dispatch_request_sent"] is True
     assert summary["recovery_completion_claimed"] is True
     assert 8.4 < summary["planned_route_distance_m"] < 9.0
@@ -2054,6 +2190,400 @@ def test_turtlebot3_mid_mission_obstacle_recovery_resumes_delivery_with_llm_prop
     assert execution["recovery_segment_result"]["goal_pose"]["label"] == (
         "runtime_recovery_avoid_obstacle_waypoint"
     )
+
+
+def test_recovery_shadow_comparison_records_agreement_with_llm_proposal(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    planner = tmp_path / "recovery_planner.py"
+    _write_recovery_planner(planner)
+    monkeypatch.setenv(TURTLEBOT3_RECOVERY_PLANNER_COMMAND_ENV, _bridge_command(planner))
+    monkeypatch.setenv(TURTLEBOT3_RECOVERY_PLANNER_ALLOW_OVERRIDE_ENV, "1")
+    monkeypatch.delenv(TURTLEBOT3_RECOVERY_PLANNER_ADK_ENABLED_ENV, raising=False)
+
+    result = build_turtlebot3_home_mission_plan(
+        operator_instruction="TurtleBot3で家の中に配送して。バッテリーが足りない",
+    )
+
+    proposal = result["scenario_proposal"]
+    shadow = proposal["recovery_planner_result"]["shadow_comparison"]
+    assert shadow["schema_version"] == (
+        TURTLEBOT3_RECOVERY_SHADOW_COMPARISON_SCHEMA_VERSION
+    )
+    assert shadow["deterministic_action"] == "return_home"
+    assert shadow["deterministic_trigger"] == "battery_envelope_below_reserve"
+    assert shadow["llm_action"] == "return_home"
+    assert shadow["llm_proposal_available"] is True
+    assert shadow["agreement"] is True
+    assert shadow["measurement_only"] is True
+    assert shadow["approval_created"] is False
+    assert shadow["dispatch_authority_created"] is False
+    assert shadow["physical_execution_invoked"] is False
+    assert shadow["progress_counted"] is False
+
+
+def test_recovery_shadow_comparison_records_disagreement_without_authority(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    planner = tmp_path / "hold_recovery_planner.py"
+    planner.write_text(
+        "import json, sys\n"
+        "prompt = json.loads(sys.stdin.read())\n"
+        "print(json.dumps({\n"
+        "    'selected_action': 'hold',\n"
+        "    'reason': 'LLM prefers holding in place over returning home.',\n"
+        "    'input_observations': {\n"
+        "        'battery_start_pct': prompt['battery_envelope']['battery_start_pct'],\n"
+        "        'minimum_required_pct': prompt['battery_envelope']['minimum_required_pct'],\n"
+        "    },\n"
+        "}))\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv(TURTLEBOT3_RECOVERY_PLANNER_COMMAND_ENV, _bridge_command(planner))
+    monkeypatch.setenv(TURTLEBOT3_RECOVERY_PLANNER_ALLOW_OVERRIDE_ENV, "1")
+    monkeypatch.delenv(TURTLEBOT3_RECOVERY_PLANNER_ADK_ENABLED_ENV, raising=False)
+
+    result = build_turtlebot3_home_mission_plan(
+        operator_instruction="TurtleBot3で家の中に配送して。バッテリーが足りない",
+    )
+
+    proposal = result["scenario_proposal"]
+    shadow = proposal["recovery_planner_result"]["shadow_comparison"]
+    assert proposal["recovery_proposals"][0]["selected_action"] == "hold"
+    assert shadow["deterministic_action"] == "return_home"
+    assert shadow["llm_action"] == "hold"
+    assert shadow["llm_proposal_available"] is True
+    assert shadow["agreement"] is False
+    assert shadow["measurement_only"] is True
+    assert shadow["dispatch_authority_created"] is False
+
+
+def test_recovery_shadow_comparison_marks_llm_unavailable_on_fallback(
+    monkeypatch,
+) -> None:
+    monkeypatch.delenv(TURTLEBOT3_RECOVERY_PLANNER_COMMAND_ENV, raising=False)
+    monkeypatch.delenv(TURTLEBOT3_RECOVERY_PLANNER_ADK_ENABLED_ENV, raising=False)
+
+    result = build_turtlebot3_home_mission_plan(
+        operator_instruction="TurtleBot3で家の中を一周して。バッテリーが足りない",
+    )
+
+    proposal = result["scenario_proposal"]
+    shadow = proposal["recovery_planner_result"]["shadow_comparison"]
+    assert proposal["recovery_proposals"][0]["proposal_source"] == (
+        "deterministic_fallback"
+    )
+    assert shadow["deterministic_action"] == "return_home"
+    assert shadow["llm_action"] == ""
+    assert shadow["llm_proposal_available"] is False
+    assert shadow["agreement"] is None
+    assert shadow["planner_status"] == "not_configured"
+    assert shadow["measurement_only"] is True
+
+
+def test_recovery_entry_records_reflex_phase_before_deliberation(
+    monkeypatch,
+) -> None:
+    monkeypatch.delenv(TURTLEBOT3_RECOVERY_PLANNER_COMMAND_ENV, raising=False)
+    monkeypatch.delenv(TURTLEBOT3_RECOVERY_PLANNER_ADK_ENABLED_ENV, raising=False)
+
+    result = build_turtlebot3_home_mission_plan(
+        operator_instruction="TurtleBot3で家の中を一周して。バッテリーが足りない",
+    )
+
+    proposal = result["scenario_proposal"]
+    reflex = proposal["recovery_planner_result"]["recovery_reflex"]
+    assert reflex["schema_version"] == TURTLEBOT3_RECOVERY_REFLEX_SCHEMA_VERSION
+    assert reflex["trigger"] == "battery_envelope_below_reserve"
+    assert reflex["reflex_action"] == "hold"
+    assert reflex["robot_motion_state"] == "pre_dispatch"
+    assert reflex["stop_dispatch_required"] is False
+    assert reflex["stop_dispatch_performed"] is False
+    assert reflex["entered_deliberation"] is True
+    assert reflex["approval_created"] is False
+    assert reflex["dispatch_authority_created"] is False
+    assert reflex["physical_execution_invoked"] is False
+    harness = proposal["autonomy_envelope"]["emergency_harness"]
+    assert harness["reflex_first_recovery_entry"] is True
+
+
+def _write_perception_claim_citing_recovery_planner(path: Path) -> None:
+    path.write_text(
+        "import json, sys\n"
+        "prompt = json.loads(sys.stdin.read())\n"
+        "assert prompt['role_contract']['llm_must_not_dispatch'] is True\n"
+        "claims = prompt['perception_claims']\n"
+        "assert len(claims) == 1\n"
+        "claim = claims[0]\n"
+        "assert claim['claim_kind'] == 'corridor_blocked_by_object'\n"
+        "assert claim['corroborated_by'] == [\n"
+        "    'lidar_costmap:nav2_costmap_obstacle_observed'\n"
+        "]\n"
+        "print(json.dumps({\n"
+        "    'selected_action': 'avoid_obstacle',\n"
+        "    'reason': 'Camera claim is corroborated by the Nav2 costmap; going around it.',\n"
+        "    'input_observations': {\n"
+        "        'runtime_obstacle_observed': prompt['obstacle_scenario']['runtime_obstacle_observed'],\n"
+        "        'costmap_obstacle_observed': prompt['obstacle_scenario']['costmap_obstacle_observed'],\n"
+        "    },\n"
+        "    'cited_perception_claim_ids': [claim['claim_id']],\n"
+        "}))\n",
+        encoding="utf-8",
+    )
+
+
+def test_runtime_obstacle_recovery_wires_camera_perception_claim_into_planner(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    bridge = tmp_path / "bridge.py"
+    planner = tmp_path / "obstacle_recovery_planner.py"
+    _write_success_bridge(
+        bridge,
+        obstacle_avoidance_observed=True,
+        camera_observation=True,
+    )
+    _write_perception_claim_citing_recovery_planner(planner)
+    monkeypatch.setenv(ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV, "1")
+    monkeypatch.setenv(ROS2_NAV2_BRIDGE_COMMAND_ENV, _bridge_command(bridge))
+    monkeypatch.setenv(TURTLEBOT3_RECOVERY_PLANNER_COMMAND_ENV, _bridge_command(planner))
+    monkeypatch.setenv(TURTLEBOT3_RECOVERY_PLANNER_ALLOW_OVERRIDE_ENV, "1")
+    monkeypatch.delenv(TURTLEBOT3_RECOVERY_PLANNER_ADK_ENABLED_ENV, raising=False)
+    plan = build_turtlebot3_home_mission_plan(
+        operator_instruction=(
+            "TurtleBot3で屋内配送して。走行中に障害物が出たら"
+            "Recovery Agentが避ける提案をして、承認後に継続して"
+        ),
+    )
+    proposal = plan["scenario_proposal"]
+    approval = approve_turtlebot3_home_mission_plan(
+        proposal=proposal,
+        validation=plan["validation_result"],
+    )
+
+    result = run_turtlebot3_home_mission_dispatch(
+        proposal=proposal,
+        approval=approval["turtlebot3_home_mission_approval"],
+    )
+
+    summary = result["summary"]
+    assert summary["status"] == "completed"
+    assert summary["runtime_recovery_action_kind"] == "avoid_obstacle"
+    assert summary["recovery_proposals"][0]["proposal_source"] == "llm"
+    assert summary["recovery_proposal_classifications"][0]["execution_class"] == (
+        "auto_executable"
+    )
+    claims = summary["recovery_planner_result"]["perception_claims"]
+    assert len(claims) == 1
+    claim = claims[0]
+    assert claim["claim_kind"] == "corridor_blocked_by_object"
+    assert claim["source_frame_ref"] == _FIXTURE_CAMERA_FRAME_REF
+    assert claim["confidence"] == 0.82
+    assert claim["corroborated_by"] == ["lidar_costmap:nav2_costmap_obstacle_observed"]
+    assert claim["evidence_only"] is True
+    assert claim["dispatch_authority_created"] is False
+    validated_proposal = summary["recovery_planner_result"]["guardrail"][
+        "validated_proposal"
+    ]
+    assert validated_proposal["cited_perception_claim_ids"] == [claim["claim_id"]]
+    support = summary["recovery_planner_result"]["guardrail"][
+        "perception_claim_support"
+    ]
+    assert support["selected_action_is_conservative"] is False
+    assert support["checks"]["perception_claim_support_respected"] is True
+
+
+def _write_classifying_perception_sidecar(path: Path) -> None:
+    path.write_text(
+        "import json, sys\n"
+        "prompt = json.loads(sys.stdin.read())\n"
+        "assert prompt['task'] == "
+        "'classify_camera_frame_for_recovery_perception_claim'\n"
+        "assert 'image_base64' in prompt\n"
+        "print(json.dumps({\n"
+        "    'claim_kind': 'corridor_blocked_by_object',\n"
+        "    'confidence': 0.82,\n"
+        "}))\n",
+        encoding="utf-8",
+    )
+
+
+def test_camera_perception_pipeline_captures_classifies_and_feeds_planner(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """The full loop: bridge capture -> VLM sidecar -> claim -> LLM prompt.
+
+    All under pseudo data (fixture-written PNG, fake sidecar) since the
+    Gazebo world is headless; the pipeline artifacts still prove the wiring.
+    """
+
+    bridge = tmp_path / "bridge.py"
+    planner = tmp_path / "obstacle_recovery_planner.py"
+    sidecar = tmp_path / "perception_sidecar.py"
+    _write_success_bridge(bridge, obstacle_avoidance_observed=True)
+    _write_perception_claim_citing_recovery_planner(planner)
+    _write_classifying_perception_sidecar(sidecar)
+    monkeypatch.setenv(ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV, "1")
+    monkeypatch.setenv(ROS2_NAV2_BRIDGE_COMMAND_ENV, _bridge_command(bridge))
+    monkeypatch.setenv(TURTLEBOT3_RECOVERY_PLANNER_COMMAND_ENV, _bridge_command(planner))
+    monkeypatch.setenv(TURTLEBOT3_RECOVERY_PLANNER_ALLOW_OVERRIDE_ENV, "1")
+    monkeypatch.delenv(TURTLEBOT3_RECOVERY_PLANNER_ADK_ENABLED_ENV, raising=False)
+    monkeypatch.setenv(TURTLEBOT3_CAMERA_PERCEPTION_ENABLED_ENV, "1")
+    monkeypatch.setenv(
+        TURTLEBOT3_PERCEPTION_SIDECAR_COMMAND_ENV, _bridge_command(sidecar)
+    )
+    monkeypatch.setenv(TURTLEBOT3_PERCEPTION_SIDECAR_ALLOW_OVERRIDE_ENV, "1")
+    monkeypatch.delenv(TURTLEBOT3_PERCEPTION_SIDECAR_ADK_ENABLED_ENV, raising=False)
+    plan = build_turtlebot3_home_mission_plan(
+        operator_instruction=(
+            "TurtleBot3で屋内配送して。走行中に障害物が出たら"
+            "Recovery Agentが避ける提案をして、承認後に継続して"
+        ),
+    )
+    proposal = plan["scenario_proposal"]
+    approval = approve_turtlebot3_home_mission_plan(
+        proposal=proposal,
+        validation=plan["validation_result"],
+    )
+
+    result = run_turtlebot3_home_mission_dispatch(
+        proposal=proposal,
+        approval=approval["turtlebot3_home_mission_approval"],
+    )
+
+    summary = result["summary"]
+    execution = result["turtlebot3_home_mission_execution"]
+    assert summary["status"] == "completed"
+    assert summary["runtime_recovery_action_kind"] == "avoid_obstacle"
+
+    pipeline = execution["runtime_recovery_obstacle_scenario"][
+        "camera_perception_pipeline"
+    ]
+    assert pipeline["schema_version"] == (
+        TURTLEBOT3_CAMERA_PERCEPTION_PIPELINE_SCHEMA_VERSION
+    )
+    assert pipeline["pipeline_status"] == "classified"
+    assert pipeline["claim_produced"] is True
+    assert pipeline["capture"]["camera_frame_captured"] is True
+    expected_frame_sha = sha256(_FIXTURE_CAMERA_FRAME_BYTES).hexdigest()
+    assert pipeline["capture"]["camera_frame_sha256"] == expected_frame_sha
+    assert pipeline["sidecar_status"] == "classified"
+    assert pipeline["dispatch_authority_created"] is False
+    assert pipeline["physical_execution_invoked"] is False
+
+    claims = summary["recovery_planner_result"]["perception_claims"]
+    assert len(claims) == 1
+    claim = claims[0]
+    assert claim["claim_kind"] == "corridor_blocked_by_object"
+    assert claim["source_frame_ref"] == f"sha256:{expected_frame_sha}"
+    assert claim["corroborated_by"] == [
+        "lidar_costmap:nav2_costmap_obstacle_observed"
+    ]
+    validated_proposal = summary["recovery_planner_result"]["guardrail"][
+        "validated_proposal"
+    ]
+    assert validated_proposal["cited_perception_claim_ids"] == [claim["claim_id"]]
+
+
+def test_camera_perception_pipeline_disabled_by_default(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    bridge = tmp_path / "bridge.py"
+    planner = tmp_path / "obstacle_recovery_planner.py"
+    _write_success_bridge(bridge, obstacle_avoidance_observed=True)
+    _write_obstacle_recovery_planner(planner)
+    monkeypatch.setenv(ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV, "1")
+    monkeypatch.setenv(ROS2_NAV2_BRIDGE_COMMAND_ENV, _bridge_command(bridge))
+    monkeypatch.setenv(TURTLEBOT3_RECOVERY_PLANNER_COMMAND_ENV, _bridge_command(planner))
+    monkeypatch.setenv(TURTLEBOT3_RECOVERY_PLANNER_ALLOW_OVERRIDE_ENV, "1")
+    monkeypatch.delenv(TURTLEBOT3_RECOVERY_PLANNER_ADK_ENABLED_ENV, raising=False)
+    monkeypatch.delenv(TURTLEBOT3_CAMERA_PERCEPTION_ENABLED_ENV, raising=False)
+    plan = build_turtlebot3_home_mission_plan(
+        operator_instruction=(
+            "TurtleBot3で屋内配送して。走行中に障害物が出たら"
+            "Recovery Agentが避ける提案をして、承認後に継続して"
+        ),
+    )
+    proposal = plan["scenario_proposal"]
+    approval = approve_turtlebot3_home_mission_plan(
+        proposal=proposal,
+        validation=plan["validation_result"],
+    )
+
+    result = run_turtlebot3_home_mission_dispatch(
+        proposal=proposal,
+        approval=approval["turtlebot3_home_mission_approval"],
+    )
+
+    summary = result["summary"]
+    execution = result["turtlebot3_home_mission_execution"]
+    assert summary["status"] == "completed"
+    pipeline = execution["runtime_recovery_obstacle_scenario"][
+        "camera_perception_pipeline"
+    ]
+    assert pipeline["pipeline_status"] == "not_enabled"
+    assert pipeline["claim_produced"] is False
+    assert summary["recovery_planner_result"]["perception_claims"] == []
+
+
+def test_camera_perception_pipeline_fails_open_when_headless(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """A headless Gazebo world has no camera topic: capture times out and
+    recovery proceeds without perception claims, recorded honestly."""
+
+    bridge = tmp_path / "bridge.py"
+    planner = tmp_path / "obstacle_recovery_planner.py"
+    _write_success_bridge(
+        bridge,
+        obstacle_avoidance_observed=True,
+        camera_capture_times_out=True,
+    )
+    _write_obstacle_recovery_planner(planner)
+    monkeypatch.setenv(ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV, "1")
+    monkeypatch.setenv(ROS2_NAV2_BRIDGE_COMMAND_ENV, _bridge_command(bridge))
+    monkeypatch.setenv(TURTLEBOT3_RECOVERY_PLANNER_COMMAND_ENV, _bridge_command(planner))
+    monkeypatch.setenv(TURTLEBOT3_RECOVERY_PLANNER_ALLOW_OVERRIDE_ENV, "1")
+    monkeypatch.delenv(TURTLEBOT3_RECOVERY_PLANNER_ADK_ENABLED_ENV, raising=False)
+    monkeypatch.setenv(TURTLEBOT3_CAMERA_PERCEPTION_ENABLED_ENV, "1")
+    monkeypatch.delenv(TURTLEBOT3_PERCEPTION_SIDECAR_COMMAND_ENV, raising=False)
+    monkeypatch.delenv(TURTLEBOT3_PERCEPTION_SIDECAR_ADK_ENABLED_ENV, raising=False)
+    plan = build_turtlebot3_home_mission_plan(
+        operator_instruction=(
+            "TurtleBot3で屋内配送して。走行中に障害物が出たら"
+            "Recovery Agentが避ける提案をして、承認後に継続して"
+        ),
+    )
+    proposal = plan["scenario_proposal"]
+    approval = approve_turtlebot3_home_mission_plan(
+        proposal=proposal,
+        validation=plan["validation_result"],
+    )
+
+    result = run_turtlebot3_home_mission_dispatch(
+        proposal=proposal,
+        approval=approval["turtlebot3_home_mission_approval"],
+    )
+
+    summary = result["summary"]
+    execution = result["turtlebot3_home_mission_execution"]
+    assert summary["status"] == "completed"
+    assert summary["runtime_recovery_action_kind"] == "avoid_obstacle"
+    pipeline = execution["runtime_recovery_obstacle_scenario"][
+        "camera_perception_pipeline"
+    ]
+    assert pipeline["pipeline_status"] == "capture_blocked"
+    assert pipeline["claim_produced"] is False
+    assert pipeline["capture"]["camera_frame_captured"] is False
+    assert "camera_frame_not_received_before_timeout" in (
+        pipeline["capture"]["blocking_reasons"]
+    )
+    assert summary["recovery_planner_result"]["perception_claims"] == []
 
 
 def test_turtlebot3_obstacle_recovery_env_values_cannot_mint_approval(
@@ -4212,6 +4742,14 @@ def test_turtlebot3_mid_mission_nav2_failure_convenes_recovery_and_stays_blocked
     assert motion_context["odom_delta_m"] == 0.0
     assert motion_context["stalled_after_dispatch"] is True
     assert motion_context["motion_observation_source"] == "ros2_nav2_bridge_receipt"
+    reflex = summary["recovery_planner_result"]["recovery_reflex"]
+    assert reflex["trigger"] == "runtime_segment_failure"
+    assert reflex["robot_motion_state"] == "stationary"
+    assert reflex["motion_observation_source"] == "ros2_nav2_bridge_receipt"
+    assert reflex["stop_dispatch_required"] is False
+    assert reflex["stop_dispatch_performed"] is False
+    assert reflex["entered_deliberation"] is True
+    assert summary["recovery_planner_result"]["harness_stop_dispatch"] == {}
     assert summary["recovery_proposals"]
     assert summary["recovery_proposals"][0]["proposal_source"] == "llm"
     assert summary["recovery_proposals"][0]["llm_judgment_recorded"] is True
@@ -4520,3 +5058,37 @@ def test_turtlebot3_display_sanitize_drops_frame_leaks_and_spikes() -> None:
     ]
     kept_sustained, _ = _sanitize_observed_display_points(sustained)
     assert len(kept_sustained) == 3
+
+
+def test_harness_stop_ack_without_stop_observation_is_not_confirmed(
+    monkeypatch,
+) -> None:
+    """ACK is not a stop: cancel_accepted alone must not confirm the stop."""
+
+    class _AckOnlyClient:
+        def cancel_goal(self):
+            return {
+                "ack_status": "accepted",
+                "ack_source": "stub_bridge",
+                "nav2_status": "canceled",
+                "blocking_reasons": [],
+                "cancel_accepted": True,
+                "stop_observed": False,
+                "post_cancel_odom_delta_m": 0.41,
+                "stop_observation_window_s": 2.0,
+                "stop_observation_source": "odom:/odom",
+            }
+
+    monkeypatch.setattr(
+        turtlebot3_home_mission_runtime,
+        "Ros2Nav2BridgeCommandClient",
+        _AckOnlyClient,
+    )
+    record = turtlebot3_home_mission_runtime._dispatch_harness_stop(
+        reflex={"trigger": "runtime_obstacle_observed"},
+        proposal={},
+    )
+    assert record["cancel_accepted"] is True
+    assert record["stop_observed"] is False
+    assert record["stop_confirmed"] is False
+    assert record["bridge_receipt"]["post_cancel_odom_delta_m"] == 0.41
