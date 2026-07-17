@@ -2002,7 +2002,68 @@ def _persist_live_telemetry_snapshot(
             "mission_designer_live_telemetry_sample_count": len(profile),
         },
     )
+    battery_remaining = snapshot.get("battery_remaining_percent")
+    if isinstance(battery_remaining, (int, float)) and not isinstance(
+        battery_remaining, bool
+    ):
+        _attach_px4_reflex_watch(
+            task_id=task_id,
+            battery_remaining_percent=float(battery_remaining),
+            store=store,
+        )
     return len(profile)
+
+
+def _attach_px4_reflex_watch(
+    *,
+    task_id: str,
+    battery_remaining_percent: float,
+    store: TaskStore,
+    dispatcher_factory: Callable[[], Any] | None = None,
+) -> dict[str, Any]:
+    """Evaluate the reflex budget against live battery; dispatch RTL if due.
+
+    Called once per telemetry poll during a live SITL flight. Record-only
+    unless MISSIONOS_PX4_REFLEX_RTL_ENABLED=1 supplies the env-gated
+    dispatcher, and a run dispatches at most once — a prior dispatched watch
+    on the task makes later exhausted polls record already_dispatched.
+    """
+
+    from src.runtime.px4_recovery_reflex_dispatch import (
+        default_px4_reflex_dispatcher_from_env,
+        watch_px4_recovery_reflex_from_battery,
+    )
+
+    factory = dispatcher_factory or default_px4_reflex_dispatcher_from_env
+    existing_task = store.get(task_id) or {}
+    existing_artifacts = existing_task.get("artifacts")
+    existing_watch = (
+        existing_artifacts.get("px4_recovery_reflex_watch")
+        if isinstance(existing_artifacts, Mapping)
+        else None
+    )
+    already_dispatched = (
+        isinstance(existing_watch, Mapping)
+        and existing_watch.get("watch_status") == "dispatched"
+    )
+    watch = watch_px4_recovery_reflex_from_battery(
+        battery_remaining_percent=battery_remaining_percent,
+        dispatcher=factory(),
+        already_dispatched=already_dispatched,
+    )
+    if already_dispatched:
+        # Keep the dispatched record authoritative; only refresh the reflex
+        # assessment alongside it.
+        watch = {
+            **dict(existing_watch),
+            "latest_reflex": watch["reflex"],
+            "watch_status": "dispatched",
+        }
+    store.update(
+        task_id,
+        artifacts={"px4_recovery_reflex_watch": watch},
+    )
+    return watch
 
 
 def run_px4_gazebo_horizontal_route_live_summary(

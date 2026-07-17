@@ -651,3 +651,71 @@ def test_ros2_nav2_turtlebot3_motion_probe_is_gate_controlled(monkeypatch) -> No
     assert response["physical_execution_invoked"] is False
     assert response["diagnostic_raw_velocity_published"] is False
     assert response["target_control_topic_published"] is False
+
+
+def test_ros2_nav2_turtlebot4_bridge_capture_camera_frame_is_gate_controlled(
+    monkeypatch,
+) -> None:
+    monkeypatch.delenv("RUN_MISSIONOS_ROS2_NAV2_TURTLEBOT4_BRIDGE", raising=False)
+    request = {
+        "schema_version": "missionos_ros2_nav2_bridge_request.v1",
+        "action": "capture_camera_frame",
+        "payload": {},
+        "execution_mode": "sim",
+        "physical_execution_invoked": False,
+        "raw_velocity_allowed": False,
+        "raw_ros_topic_publication_allowed": False,
+    }
+
+    completed = subprocess.run(
+        (sys.executable, "scripts/ros2_nav2_turtlebot4_bridge.py"),
+        input=json.dumps(request, ensure_ascii=True, sort_keys=True),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    response = json.loads(completed.stdout)
+    assert response["ack_status"] == "rejected"
+    assert "ros2_nav2_turtlebot4_bridge_opt_in_not_enabled" in (
+        response["blocking_reasons"]
+    )
+    assert response["physical_execution_invoked"] is False
+
+
+def test_ros2_nav2_turtlebot4_bridge_capture_camera_frame_reports_missing_deps(
+    monkeypatch,
+) -> None:
+    """With the gate open but no ROS2 environment, capture blocks cleanly.
+
+    This dev machine has no rclpy/sensor_msgs installed, which exercises the
+    real dependency-missing path this bridge falls back to in that case —
+    the same path a CI runner without ROS2 would hit.
+    """
+
+    monkeypatch.setenv("RUN_MISSIONOS_ROS2_NAV2_TURTLEBOT4_BRIDGE", "1")
+    request = {
+        "schema_version": "missionos_ros2_nav2_bridge_request.v1",
+        "action": "capture_camera_frame",
+        "payload": {},
+        "execution_mode": "sim",
+        "physical_execution_invoked": False,
+        "raw_velocity_allowed": False,
+        "raw_ros_topic_publication_allowed": False,
+    }
+
+    completed = subprocess.run(
+        (sys.executable, "scripts/ros2_nav2_turtlebot4_bridge.py"),
+        input=json.dumps(request, ensure_ascii=True, sort_keys=True),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    response = json.loads(completed.stdout)
+    assert response["ack_status"] == "rejected"
+    assert "ros2_nav2_python_dependencies_missing" in response["blocking_reasons"]
+    assert response["physical_execution_invoked"] is False
+    assert response["raw_velocity_published"] is False

@@ -49,6 +49,13 @@ runtime observations, verifier evidence, and completion claims. A proposal,
 approval, ACK, simulator observation, or map display is not proof of safe
 physical execution or delivery completion.
 
+Recovery delegation (the opt-in reflex/deliberation recovery split,
+perception claims, shadow measurement, and action promotion described in
+`docs/concepts/recovery-delegation.md`) is experimental. It widens what the
+LLM may propose during a fault; it does not widen what may execute without
+a recorded human approval, with one narrowly-scoped exception documented in
+`docs/agents/recovery-delegation-authority.md`.
+
 ## What Happens in a Run
 
 1. You ask MissionOS for a mission or a recovery decision.

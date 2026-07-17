@@ -216,6 +216,27 @@ class Ros2Nav2BridgeCommandClient:
         self._last_dispatch_response = response
         return response
 
+    def capture_camera_frame(
+        self, payload: Mapping[str, Any] | None = None
+    ) -> dict[str, Any]:
+        """Ask the bridge to write one camera frame to disk as PNG.
+
+        Read-only observation: the bridge subscribes once and writes a file;
+        no goal, cancel, or velocity is involved, so this never updates
+        _last_dispatch_response.
+        """
+
+        action = "capture_camera_frame"
+        return self._record_response(
+            action,
+            _run_bridge(
+                action=action,
+                payload=dict(payload or {}),
+                timeout_s=45.0,
+                env_overrides=self._env_overrides,
+            ),
+        )
+
     def read_state(self) -> dict[str, Any]:
         if self._last_dispatch_response:
             state_result = self._last_dispatch_response.get("state_result")

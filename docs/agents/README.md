@@ -14,6 +14,7 @@ docs.
 | CLI commands, help text, or operator UX | `contracts.md`, `claim-semantics.md`, `e2e-verification.md`, `cli-parity-release-gate.md` |
 | Gateway routes, sessions, or audit | `contracts.md`, `artifact-taxonomy.md`, `publication-rules.md`, `e2e-verification.md` |
 | LLM planning, repair, or recovery logic | `claim-semantics.md`, `agent-architecture.md`, `contracts.md` |
+| Recovery delegation (reflex/deliberation split, perception claims, shadow measurement, action promotion) | `recovery-delegation-authority.md`, `claim-semantics.md`, `hardware-adapter-contract.md` |
 | Evidence, claims, completion, or verifier behavior | `claim-semantics.md`, `artifact-taxonomy.md`, `contracts.md` |
 | PX4 / Gazebo SITL or PX4 bench-adjacent runtime | `hardware-adapter-contract.md`, `claim-semantics.md`, `e2e-verification.md`, `publication-rules.md` |
 | TurtleBot3 / ROS2 Nav2 simulator adapter | `ros2-nav2-turtlebot3-sim.md`, `claim-semantics.md`, `hardware-adapter-contract.md` |
@@ -33,6 +34,7 @@ When the map above is not enough, read the complete set:
 - `contracts.md`
 - `agent-architecture.md`
 - `claim-semantics.md`
+- `recovery-delegation-authority.md`
 - `artifact-taxonomy.md`
 - `e2e-verification.md`
 - `cli-parity-release-gate.md`

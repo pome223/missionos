@@ -40,6 +40,9 @@ was sent, what was observed, and what remains unproven.
   simulator baseline uses TurtleBot3 while TurtleBot4 remains opt-in.
 - Read `docs/concepts/real-hardware-bridge.md` for the first contract-first
   hardware bridge slices and their limits.
+- Read `docs/concepts/recovery-delegation.md` for the opt-in two-phase
+  reflex/deliberation recovery model, perception claims, shadow
+  measurement, and action promotion.
 - Read `docs/examples/README.md` for planned scenario writeups and their
   verification requirements.
 - Read `docs/agents/README.md` if you are an AI agent or maintainer changing the

@@ -8,7 +8,7 @@ dropoff, whole-home coverage, or physical execution.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -39,6 +39,10 @@ from src.runtime.mission_autonomy_envelope import (
 )
 from src.runtime.nvblox_perception_evidence import (
     build_nvblox_perception_evidence_from_env_or_responses,
+)
+from src.runtime.perception_claim import (
+    PerceptionClaim,
+    build_perception_claims_from_env_or_responses,
 )
 from src.runtime.ros2_nav2_dispatch_bridge import (
     ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV,
@@ -75,6 +79,18 @@ TURTLEBOT3_HOME_MISSION_EXECUTION_SCHEMA = (
     "missionos_turtlebot3_home_mission_execution.v1"
 )
 TURTLEBOT3_INDOOR_MAP_MODEL_SCHEMA = "missionos_turtlebot3_indoor_map_model.v1"
+TURTLEBOT3_RECOVERY_SHADOW_COMPARISON_SCHEMA_VERSION = (
+    "missionos_turtlebot3_recovery_shadow_comparison.v1"
+)
+TURTLEBOT3_RECOVERY_REFLEX_SCHEMA_VERSION = (
+    "missionos_turtlebot3_recovery_reflex.v1"
+)
+TURTLEBOT3_CAMERA_PERCEPTION_PIPELINE_SCHEMA_VERSION = (
+    "missionos_turtlebot3_camera_perception_pipeline.v1"
+)
+TURTLEBOT3_HARNESS_STOP_DISPATCH_SCHEMA_VERSION = (
+    "missionos_turtlebot3_harness_stop_dispatch.v1"
+)
 TURTLEBOT3_RECOVERY_CHECKPOINT_SCHEMA = "turtlebot3_recovery_checkpoint.v1"
 TURTLEBOT3_RECOVERY_CHECKPOINT_REVISION_SCHEMA = (
     "missionos_turtlebot3_recovery_checkpoint_revision.v1"
@@ -540,6 +556,12 @@ TURTLEBOT3_RECOVERY_AVOID_OBSTACLE_REQUIRES_APPROVAL_ENV = (
 )
 TURTLEBOT3_RECOVERY_REQUIRES_APPROVAL_ENV = (
     "MISSIONOS_TURTLEBOT3_RECOVERY_REQUIRES_APPROVAL"
+)
+TURTLEBOT3_CAMERA_PERCEPTION_ENABLED_ENV = (
+    "MISSIONOS_TURTLEBOT3_CAMERA_PERCEPTION_ENABLED"
+)
+TURTLEBOT3_PROMOTED_ACTIONS_JSON_ENV = (
+    "MISSIONOS_TURTLEBOT3_PROMOTED_ACTIONS_JSON"
 )
 _TURTLEBOT3_HOUSE_FLOOR_PLAN_SOURCE = (
     Path(__file__).resolve().parents[2]
@@ -1464,12 +1486,51 @@ def _build_autonomy_emergency_harness() -> dict[str, Any]:
             "operator_estop",
         ),
         "allowed_harness_actions": ("hold", "safe_stop"),
+        "reflex_first_recovery_entry": True,
         "requires_recorded_skip_reason": True,
         "claim_boundary": (
             "The emergency harness may stop motion, but it must record why "
             "LLM recovery proposal generation was skipped."
         ),
     }
+
+
+def _load_applied_recovery_promotions() -> tuple[Any, ...]:
+    """Load operator-applied recovery-action promotions, fail-closed.
+
+    The env points at the applications file written by the promotion CLI
+    (scripts/turtlebot3_recovery_promotion_cli.py). Every entry must
+    validate as a full RecoveryActionPromotionApplication — which requires a
+    non-empty operator_approval_ref — or it is ignored. An unreadable or
+    malformed file widens nothing.
+    """
+
+    from src.runtime.recovery_action_promotion import (
+        RecoveryActionPromotionApplication,
+    )
+
+    path_value = os.environ.get(
+        TURTLEBOT3_PROMOTED_ACTIONS_JSON_ENV, ""
+    ).strip()
+    if not path_value:
+        return ()
+    try:
+        raw = json.loads(Path(path_value).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return ()
+    if not isinstance(raw, list):
+        return ()
+    applications = []
+    for entry in raw:
+        if not isinstance(entry, Mapping):
+            continue
+        try:
+            applications.append(
+                RecoveryActionPromotionApplication.model_validate(dict(entry))
+            )
+        except Exception:
+            continue
+    return tuple(applications)
 
 
 def _build_autonomy_envelope(
@@ -1480,6 +1541,7 @@ def _build_autonomy_envelope(
 ) -> dict[str, Any]:
     preapproved_recovery_actions = ("return_home", "hold", "avoid_obstacle")
     requires_human_approval_for = ("reroute", "safe_stop", "ask_human")
+    applied_promotion_refs: tuple[str, ...] = ()
     if _recovery_requires_fresh_approval():
         preapproved_recovery_actions = ()
         requires_human_approval_for = (
@@ -1498,6 +1560,32 @@ def _build_autonomy_envelope(
             "safe_stop",
             "ask_human",
         )
+    if not _recovery_requires_fresh_approval():
+        # Precedence: the master tighten env above is a safety switch and
+        # blocks all promotions. Below it, an operator-applied promotion
+        # (a later, evidence-backed, recorded decision) may return an
+        # action to preapproved — including one the avoid_obstacle tighten
+        # env demoted, which is exactly the demote -> accumulate evidence
+        # -> promote-back workflow.
+        promotable = {"avoid_obstacle", "reroute", "safe_stop", "ask_human"}
+        for application in _load_applied_recovery_promotions():
+            if (
+                application.action in promotable
+                and application.action in requires_human_approval_for
+            ):
+                preapproved_recovery_actions = (
+                    *preapproved_recovery_actions,
+                    application.action,
+                )
+                requires_human_approval_for = tuple(
+                    action
+                    for action in requires_human_approval_for
+                    if action != application.action
+                )
+                applied_promotion_refs = (
+                    *applied_promotion_refs,
+                    application.application_id,
+                )
     return build_mission_autonomy_envelope(
         mission_ref=proposal_id,
         operator_approved=operator_approved,
@@ -1512,6 +1600,7 @@ def _build_autonomy_envelope(
             "physical_execution",
             "payload_delivery_completion",
         ),
+        applied_recovery_promotions=applied_promotion_refs,
     ).model_dump(mode="json")
 
 
@@ -1658,6 +1747,86 @@ def _deterministic_return_home_after_failure_recovery_proposal(
     )
 
 
+def _recovery_reflex_record(
+    *,
+    trigger: str,
+    runtime_motion_context: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Record the reflex phase entered before LLM deliberation.
+
+    Two-phase recovery: the deterministic reflex layer assesses the safe
+    posture first, then deliberation runs against a stabilized robot. This
+    record documents the assessment; stop dispatch stays with the emergency
+    harness and is never performed by the record itself.
+    """
+
+    if not runtime_motion_context:
+        motion_state = "pre_dispatch"
+    elif runtime_motion_context.get("stalled_after_dispatch") is True:
+        motion_state = "stationary"
+    elif runtime_motion_context.get("robot_motion_observed") is True:
+        motion_state = "moving"
+    elif runtime_motion_context.get("robot_motion_observed") is False:
+        motion_state = "stationary"
+    else:
+        motion_state = "unknown"
+    return {
+        "schema_version": TURTLEBOT3_RECOVERY_REFLEX_SCHEMA_VERSION,
+        "trigger": trigger,
+        "reflex_action": "hold",
+        "robot_motion_state": motion_state,
+        "motion_observation_source": str(
+            runtime_motion_context.get("motion_observation_source") or ""
+        ),
+        "stop_dispatch_required": motion_state == "moving",
+        "stop_dispatch_performed": False,
+        "entered_deliberation": True,
+        "claim_boundary": (
+            "The reflex record assesses the safe posture before deliberation; "
+            "any actual stop is dispatched by the emergency harness and must "
+            "record its reason. robot_motion_state derives from the last "
+            "segment's bridge receipt, not a live reading — 'moving' means "
+            "motion cannot be ruled out, so the stop errs toward dispatching "
+            "a redundant cancel."
+        ),
+        "approval_created": False,
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }
+
+
+def _recovery_shadow_comparison(
+    *,
+    deterministic_candidate: MissionAutonomyRecoveryProposal,
+    deterministic_trigger: str,
+    planner_result: Mapping[str, Any],
+    llm_proposal: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    """Record LLM-vs-deterministic disagreement; measurement only, no authority."""
+
+    llm_action = str((llm_proposal or {}).get("selected_action") or "")
+    llm_proposal_available = bool(llm_action)
+    return {
+        "schema_version": TURTLEBOT3_RECOVERY_SHADOW_COMPARISON_SCHEMA_VERSION,
+        "deterministic_action": deterministic_candidate.selected_action,
+        "deterministic_trigger": deterministic_trigger,
+        "llm_action": llm_action,
+        "llm_proposal_available": llm_proposal_available,
+        "planner_status": str(planner_result.get("planner_status") or ""),
+        "agreement": (
+            llm_action == deterministic_candidate.selected_action
+            if llm_proposal_available
+            else None
+        ),
+        "measurement_only": True,
+        "approval_created": False,
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }
+
+
 def _build_recovery_proposals(
     *,
     proposal_id: str,
@@ -1670,6 +1839,10 @@ def _build_recovery_proposals(
     runtime_failure_context: Mapping[str, Any] | None = None,
     runtime_motion_context: Mapping[str, Any] | None = None,
     runtime_observation_phase: bool = False,
+    harness_stop_dispatcher: (
+        Callable[[Mapping[str, Any]], Mapping[str, Any]] | None
+    ) = None,
+    perception_claims: Sequence[PerceptionClaim] = (),
 ) -> tuple[tuple[MissionAutonomyRecoveryProposal, ...], dict[str, Any]]:
     battery_recovery_required = battery_envelope.get("dispatch_allowed") is False
     obstacle_recovery_required = (
@@ -1695,6 +1868,45 @@ def _build_recovery_proposals(
         and not failure_recovery_required
     ):
         return (), _planner_not_required_result()
+    if battery_recovery_required:
+        deterministic_trigger = "battery_envelope_below_reserve"
+        deterministic_candidate = _deterministic_return_home_recovery_proposal(
+            proposal_id=proposal_id,
+            battery_envelope=battery_envelope,
+            home_distance_envelope=home_distance_envelope,
+        )
+    elif failure_recovery_required:
+        deterministic_trigger = "runtime_segment_failure"
+        deterministic_candidate = (
+            _deterministic_return_home_after_failure_recovery_proposal(
+                proposal_id=proposal_id,
+                runtime_failure_context=failure_context,
+                runtime_motion_context=motion_context,
+                home_distance_envelope=home_distance_envelope,
+            )
+        )
+    else:
+        deterministic_trigger = "runtime_obstacle_observed"
+        deterministic_candidate = _deterministic_avoid_obstacle_recovery_proposal(
+            proposal_id=proposal_id,
+            obstacle_scenario=obstacle_scenario,
+        )
+    recovery_reflex = _recovery_reflex_record(
+        trigger=deterministic_trigger,
+        runtime_motion_context=motion_context,
+    )
+    harness_stop_dispatch: dict[str, Any] = {}
+    if (
+        recovery_reflex["stop_dispatch_required"]
+        and harness_stop_dispatcher is not None
+    ):
+        harness_stop_dispatch = dict(harness_stop_dispatcher(recovery_reflex))
+        recovery_reflex["stop_dispatch_performed"] = (
+            harness_stop_dispatch.get("cancel_accepted") is True
+        )
+        recovery_reflex["stop_confirmed"] = (
+            harness_stop_dispatch.get("stop_confirmed") is True
+        )
     planner_result = run_turtlebot3_recovery_planner(
         mission_ref=proposal_id,
         operator_instruction=operator_instruction,
@@ -1705,6 +1917,7 @@ def _build_recovery_proposals(
         indoor_delivery_route=indoor_delivery_route,
         runtime_failure_context=failure_context,
         runtime_motion_context=motion_context,
+        perception_claims=perception_claims,
     )
     planner_result = {
         **dict(planner_result),
@@ -1712,13 +1925,25 @@ def _build_recovery_proposals(
             "MISSIONOS_GEMINI_CREDENTIAL_STATUS",
             "not_reported",
         ),
+        "recovery_reflex": recovery_reflex,
+        "harness_stop_dispatch": harness_stop_dispatch,
+        "perception_claims": [
+            claim.model_dump(mode="json") for claim in perception_claims
+        ],
     }
     planner_proposal = planner_result.get("proposal")
-    if (
+    guardrail_passed = (
         planner_result.get("planner_status") == "proposal_guardrail_passed"
         and isinstance(planner_proposal, Mapping)
-        and planner_proposal
-    ):
+        and bool(planner_proposal)
+    )
+    planner_result["shadow_comparison"] = _recovery_shadow_comparison(
+        deterministic_candidate=deterministic_candidate,
+        deterministic_trigger=deterministic_trigger,
+        planner_result=planner_result,
+        llm_proposal=dict(planner_proposal) if guardrail_passed else None,
+    )
+    if guardrail_passed:
         accepted = MissionAutonomyRecoveryProposal.model_validate(
             dict(planner_proposal)
         )
@@ -1727,26 +1952,7 @@ def _build_recovery_proposals(
             "proposal_source": accepted.proposal_source,
             "deterministic_fallback_used": False,
         }
-    fallback = (
-        _deterministic_return_home_recovery_proposal(
-            proposal_id=proposal_id,
-            battery_envelope=battery_envelope,
-            home_distance_envelope=home_distance_envelope,
-        )
-        if battery_recovery_required
-        else _deterministic_return_home_after_failure_recovery_proposal(
-            proposal_id=proposal_id,
-            runtime_failure_context=failure_context,
-            runtime_motion_context=motion_context,
-            home_distance_envelope=home_distance_envelope,
-        )
-        if failure_recovery_required
-        else _deterministic_avoid_obstacle_recovery_proposal(
-            proposal_id=proposal_id,
-            obstacle_scenario=obstacle_scenario,
-        ),
-    )
-    return fallback, {
+    return (deterministic_candidate,), {
         **dict(planner_result),
         "proposal_source": "deterministic_fallback",
         "deterministic_fallback_used": True,
@@ -4780,6 +4986,142 @@ def _build_turtlebot3_indoor_map_model(
     }
 
 
+def _capture_camera_perception_observation() -> tuple[
+    dict[str, Any] | None, dict[str, Any]
+]:
+    """Capture one camera frame and classify it into a camera observation.
+
+    Returns ``(observation_payload | None, pipeline_record)``. Fail-open at
+    every stage: a headless Gazebo world has no camera topic, so capture
+    times out and recovery proceeds without perception claims — the pipeline
+    record states which stage stopped and why instead of pretending the
+    camera evidence existed.
+    """
+
+    record: dict[str, Any] = {
+        "schema_version": TURTLEBOT3_CAMERA_PERCEPTION_PIPELINE_SCHEMA_VERSION,
+        "pipeline_status": "not_enabled",
+        "capture": {},
+        "sidecar_status": "",
+        "sidecar_blocking_reasons": [],
+        "claim_produced": False,
+        "claim_boundary": (
+            "This record documents an observation pipeline only. Captured "
+            "frames and sidecar classifications are evidence for recovery "
+            "deliberation; they never create approval, dispatch, or "
+            "completion claims."
+        ),
+        "approval_created": False,
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }
+    if os.environ.get(TURTLEBOT3_CAMERA_PERCEPTION_ENABLED_ENV) != "1":
+        return None, record
+
+    client = Ros2Nav2BridgeCommandClient()
+    try:
+        response = client.capture_camera_frame()
+    except Ros2Nav2BridgeError as exc:
+        record["pipeline_status"] = "capture_blocked"
+        record["capture"] = {"bridge_error": str(exc)}
+        return None, record
+    record["capture"] = {
+        "camera_frame_captured": response.get("camera_frame_captured") is True,
+        "camera_frame_path": str(response.get("camera_frame_path") or ""),
+        "camera_frame_sha256": str(response.get("camera_frame_sha256") or ""),
+        "camera_topic": str(response.get("camera_topic") or ""),
+        "ack_status": str(response.get("ack_status") or ""),
+        "blocking_reasons": [
+            str(reason) for reason in (response.get("blocking_reasons") or ())
+        ],
+    }
+    if response.get("camera_frame_captured") is not True:
+        record["pipeline_status"] = "capture_blocked"
+        return None, record
+
+    from src.intelligence.turtlebot3_perception_sidecar import (
+        run_turtlebot3_perception_sidecar,
+    )
+
+    sidecar_result = run_turtlebot3_perception_sidecar(
+        image_path=record["capture"]["camera_frame_path"],
+    )
+    record["sidecar_status"] = str(sidecar_result.get("sidecar_status") or "")
+    record["sidecar_blocking_reasons"] = [
+        str(reason) for reason in (sidecar_result.get("blocking_reasons") or ())
+    ]
+    if record["sidecar_status"] != "classified":
+        record["pipeline_status"] = f"sidecar_{record['sidecar_status'] or 'blocked'}"
+        return None, record
+    observation = dict(sidecar_result.get("camera_observation") or {})
+    record["pipeline_status"] = "classified"
+    record["claim_produced"] = True
+    return observation, record
+
+
+def _dispatch_harness_stop(
+    *,
+    reflex: Mapping[str, Any],
+    proposal: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Dispatch a bounded stop (Nav2 goal cancel) under harness authority.
+
+    This is the reflex phase acting: the robot is stabilized before LLM
+    deliberation. The harness claim boundary requires a recorded reason, and
+    the record never claims physical execution or mission progress.
+
+    An ACK is not a stop: ``cancel_accepted`` records that Nav2 accepted the
+    cancel request, ``stop_observed`` records that the bridge saw post-cancel
+    odom displacement stay under the motion threshold for a settle window,
+    and ``stop_confirmed`` is true only when both hold.
+    """
+
+    trigger = str(reflex.get("trigger") or "")
+    record: dict[str, Any] = {
+        "schema_version": TURTLEBOT3_HARNESS_STOP_DISPATCH_SCHEMA_VERSION,
+        "harness_action": "hold",
+        "bridge_action": "cancel_goal",
+        "authority_source": "emergency_harness",
+        "trigger": trigger,
+        "recorded_reason": f"reflex_first_recovery_entry:{trigger}",
+        "mission_ref": str(proposal.get("proposal_id") or "turtlebot3_home_mission"),
+        "cancel_accepted": False,
+        "stop_observed": False,
+        "stop_confirmed": False,
+        "bridge_error": "",
+        "bridge_receipt": {},
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+        "mission_delivery_completion_claimed": False,
+    }
+    client = Ros2Nav2BridgeCommandClient()
+    try:
+        response = client.cancel_goal()
+    except Ros2Nav2BridgeError as exc:
+        record["bridge_error"] = str(exc)
+        return record
+    blocking_reasons = [
+        str(item) for item in (response.get("blocking_reasons") or ())
+    ]
+    ack_status = str(response.get("ack_status") or "")
+    record["bridge_receipt"] = {
+        "ack_status": ack_status,
+        "ack_source": str(response.get("ack_source") or ""),
+        "nav2_status": str(response.get("nav2_status") or ""),
+        "blocking_reasons": blocking_reasons,
+        "post_cancel_odom_delta_m": response.get("post_cancel_odom_delta_m"),
+        "stop_observation_window_s": response.get("stop_observation_window_s"),
+        "stop_observation_source": str(
+            response.get("stop_observation_source") or ""
+        ),
+    }
+    record["cancel_accepted"] = ack_status == "accepted" and not blocking_reasons
+    record["stop_observed"] = response.get("stop_observed") is True
+    record["stop_confirmed"] = record["cancel_accepted"] and record["stop_observed"]
+    return record
+
+
 def _dispatch_nav2_goal(
     *,
     proposal: Mapping[str, Any],
@@ -5396,6 +5738,17 @@ def _build_recovery_failure_followup_checkpoint(
         "approved_recovery_reobservation_projection"
     )
     home_distance_envelope["runtime_observed"] = False
+    followup_perception_claims = build_perception_claims_from_env_or_responses(
+        tuple(action_result.get("bridge_responses") or ()),
+        costmap_obstacle_observed=obstacle_scenario.get(
+            "costmap_obstacle_observed"
+        )
+        is True,
+        observed_at=None,
+    )
+    obstacle_scenario["perception_claims"] = [
+        claim.model_dump(mode="json") for claim in followup_perception_claims
+    ]
     proposal_models, planner_result = _build_recovery_proposals(
         proposal_id=str(
             proposal.get("proposal_id") or "turtlebot3_home_mission"
@@ -5411,6 +5764,11 @@ def _build_recovery_failure_followup_checkpoint(
         runtime_failure_context=failure_context,
         runtime_motion_context=motion_context,
         runtime_observation_phase=True,
+        harness_stop_dispatcher=lambda reflex: _dispatch_harness_stop(
+            reflex=reflex,
+            proposal=proposal,
+        ),
+        perception_claims=followup_perception_claims,
     )
     recovery_proposals = tuple(
         item.model_dump(mode="json") for item in proposal_models
@@ -8394,6 +8752,10 @@ def run_turtlebot3_home_mission_dispatch(
                     runtime_failure_context=runtime_failure_context,
                     runtime_motion_context=runtime_recovery_motion_context,
                     runtime_observation_phase=True,
+                    harness_stop_dispatcher=lambda reflex: _dispatch_harness_stop(
+                        reflex=reflex,
+                        proposal=proposal,
+                    ),
                 )
                 recovery_proposals = tuple(
                     item.model_dump(mode="json")
@@ -8635,6 +8997,10 @@ def run_turtlebot3_home_mission_dispatch(
                     if isinstance(proposal.get("indoor_delivery_route"), Mapping)
                     else {},
                     runtime_motion_context=runtime_recovery_motion_context,
+                    harness_stop_dispatcher=lambda reflex: _dispatch_harness_stop(
+                        reflex=reflex,
+                        proposal=proposal,
+                    ),
                 )
                 recovery_proposals = tuple(
                     item.model_dump(mode="json")
@@ -8729,6 +9095,37 @@ def run_turtlebot3_home_mission_dispatch(
                     ),
                 )
                 (
+                    camera_observation_payload,
+                    camera_perception_pipeline,
+                ) = _capture_camera_perception_observation()
+                perception_claim_responses = tuple(
+                    result.get("bridge_responses") or ()
+                )
+                if camera_observation_payload:
+                    perception_claim_responses = (
+                        *perception_claim_responses,
+                        {"camera_observation": camera_observation_payload},
+                    )
+                runtime_recovery_perception_claims = (
+                    build_perception_claims_from_env_or_responses(
+                        perception_claim_responses,
+                        costmap_obstacle_observed=(
+                            runtime_recovery_obstacle_scenario.get(
+                                "costmap_obstacle_observed"
+                            )
+                            is True
+                        ),
+                        observed_at=dispatched_at,
+                    )
+                )
+                runtime_recovery_obstacle_scenario["perception_claims"] = [
+                    claim.model_dump(mode="json")
+                    for claim in runtime_recovery_perception_claims
+                ]
+                runtime_recovery_obstacle_scenario[
+                    "camera_perception_pipeline"
+                ] = dict(camera_perception_pipeline)
+                (
                     runtime_recovery_proposals,
                     runtime_recovery_planner_result,
                 ) = _build_recovery_proposals(
@@ -8745,6 +9142,11 @@ def run_turtlebot3_home_mission_dispatch(
                     else {},
                     runtime_motion_context=runtime_recovery_motion_context,
                     runtime_observation_phase=True,
+                    harness_stop_dispatcher=lambda reflex: _dispatch_harness_stop(
+                        reflex=reflex,
+                        proposal=proposal,
+                    ),
+                    perception_claims=runtime_recovery_perception_claims,
                 )
                 recovery_proposals = tuple(
                     item.model_dump(mode="json")
