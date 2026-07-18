@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 
 from scripts import smoke_px4_gazebo_horizontal_route_delivery as route_entrypoint
-from src.runtime.px4_gazebo_route import observation
+from src.runtime.px4_gazebo_route import normal_route_flow, observation
 
 
 CONTACT_TOPIC = "/mission_designer/collision_obstacle/contacts"
@@ -18,13 +18,16 @@ def test_legacy_route_entrypoint_uses_packaged_observation_functions() -> None:
         "_distance_to_segment_xy": observation.distance_to_segment_xy,
         "_listener_field": observation.listener_field,
         "_point_to_segment_distance_m": observation.point_to_segment_distance_m,
-        "_pose_rows": observation.pose_rows,
         "_select_contact_topic": observation.select_contact_topic,
-        "_terminal_pose_summary_fields": observation.terminal_pose_summary_fields,
         "_xy_pairs_match": observation.xy_pairs_match,
     }
     for legacy_name, packaged_function in bindings.items():
         assert getattr(route_entrypoint, legacy_name) is packaged_function
+    assert normal_route_flow.pose_rows is observation.pose_rows
+    assert (
+        normal_route_flow.terminal_pose_summary_fields
+        is observation.terminal_pose_summary_fields
+    )
 
 
 def test_battery_listener_output_is_normalized_without_execution_claims() -> None:

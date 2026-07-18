@@ -7,8 +7,7 @@ from typing import Any
 
 import pytest
 
-from scripts import smoke_px4_gazebo_horizontal_route_delivery as route_entrypoint
-from src.runtime.px4_gazebo_route import bootstrap, finalization
+from src.runtime.px4_gazebo_route import bootstrap, finalization, normal_route_flow
 from src.runtime.px4_gazebo_route_dispatcher import (
     PX4GazeboRouteDispatcherError,
     derive_px4_gazebo_route_target_ned,
@@ -61,10 +60,10 @@ def _inputs(tmp_path: Path, **overrides: Any) -> finalization.RouteFinalizationI
     return finalization.RouteFinalizationInputs(**values)
 
 
-def test_legacy_entrypoint_delegates_route_finalization_to_package() -> None:
-    assert route_entrypoint._RouteFinalizationInputs is finalization.RouteFinalizationInputs
-    assert route_entrypoint._RouteFinalizationResult is finalization.RouteFinalizationResult
-    assert route_entrypoint._finalize_route_observation is finalization.finalize_route_observation
+def test_normal_route_coordinator_delegates_finalization_to_package() -> None:
+    assert normal_route_flow.RouteFinalizationInputs is finalization.RouteFinalizationInputs
+    assert normal_route_flow.RouteFinalizationResult is finalization.RouteFinalizationResult
+    assert normal_route_flow.finalize_route_observation is finalization.finalize_route_observation
 
 
 def test_finalization_persists_observed_chain_and_completes_with_all_evidence(

@@ -3,15 +3,15 @@
 This document describes the maintained horizontal-route runtime boundary and
 the contracts that must survive future refactors.
 
-The opt-in entrypoint remains:
+The formal opt-in entrypoint is:
 
 ```text
-scripts/smoke_px4_gazebo_horizontal_route_delivery.py
+python -m src.runtime.px4_gazebo_route.entrypoint
 ```
 
-Despite the historical filename, this program is a production runtime harness,
-not a disposable logic-only smoke. It delegates bounded responsibilities to
-`src/runtime/px4_gazebo_route/`.
+The historical `scripts/smoke_px4_gazebo_horizontal_route_delivery.py` module
+is a compatibility alias. Existing imports and monkeypatches receive the formal
+runtime module, but new production callers must use the module entrypoint.
 
 ## Authority Boundary
 
@@ -61,9 +61,10 @@ them behind a single coordinator.
 | Area | Modules |
 | --- | --- |
 | Configuration and environment | `configuration`, `environment`, `world`, `scenario`, `environmental_realism` |
-| Transport and execution | `embedded_mavlink`, `execution`, `alternate_route` |
+| Runtime boundary | `entrypoint`, `runtime_lifecycle` |
+| Transport and execution | `embedded_mavlink`, `execution`, `alternate_route`, `normal_route_flow` |
 | Observation and verification | `observation`, `verification`, `collision_observation`, `contact_integration`, `dynamic_observation` |
-| Recovery | `recovery_execution`, `recovery_outcomes`, `recovery_workflow`, `recovery_persistence`, `recovery_reporting` |
+| Recovery | `recovery_execution`, `recovery_outcomes`, `recovery_workflow`, `recovery_persistence`, `recovery_reporting`, `payload_recovery_flow`, `route_deviation_flow` |
 | Operational decisions | `operational_verification`, `operational_outcomes`, `route_decision`, `terminal_action` |
 | Persistence and audit | `artifacts`, `audit`, `reporting`, `finalization`, `bootstrap` |
 | Supervision | `supervision` |
@@ -109,11 +110,11 @@ Exercise the real entrypoint with execution authority absent:
 
 ```bash
 env -u RUN_PX4_GAZEBO_HORIZONTAL_ROUTE_SMOKE \
-  .venv/bin/python scripts/smoke_px4_gazebo_horizontal_route_delivery.py
+  .venv/bin/python -m src.runtime.px4_gazebo_route.entrypoint
 ```
 
-The command must exit closed before PX4 or Gazebo starts and identify the
-missing opt-in gate.
+The formal command and historical compatibility command must both exit closed
+before PX4 or Gazebo starts and identify the missing opt-in gate.
 
 Changes to simulator behavior, process lifecycle, transport, or observation
 require an opt-in PX4/Gazebo runtime check in addition to tests. Record the
