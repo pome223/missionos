@@ -172,6 +172,29 @@ proposal=avoid_obstacle (proposal_guardrail_passed; dispatch_authority=False)
 The important field is `dispatch_authority=False`: the agent proposed a
 bounded recovery action, but the operator still had to approve dispatch.
 
+## Recovery Agent Example
+
+This terminal route-evidence image shows the Recovery lifecycle from a later
+saved PX4/Gazebo SITL trace in one view:
+
+![MissionOS Recovery Agent example showing start, Recovery trigger, approved lateral bypass around a collision obstacle, route rejoin, dropoff, and return home](assets/missionos-e2e-route-evidence.png)
+
+The numbered markers should be read in order:
+
+1. the aircraft starts on the planned route
+2. the Recovery proposal reaches the separately approved execution boundary
+3. the approved lateral bypass is observed beyond the obstacle footprint
+4. saved telemetry rejoins the original route
+5. the route reaches the dropoff coordinate
+6. saved return telemetry ends at home
+
+The LLM proposal did not approve itself. The orange Recovery path represents a
+separately approved and observed bounded action. Solid blue/cyan paths are
+saved telemetry; the red rectangle is the collision obstacle footprint. The
+image is a display-only summary, not Verifier input, dispatch authority,
+delivery proof, or a physical-execution claim. Source task artifacts remain
+authoritative.
+
 ## Map Screenshot
 
 The map is a read-only evidence overlay. It does not dispatch commands, verify
