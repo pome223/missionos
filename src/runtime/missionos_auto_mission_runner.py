@@ -42,12 +42,8 @@ from src.runtime.px4_real_mavlink_transport import (
 )
 
 
-MISSIONOS_AUTO_MISSION_COMPILATION_SCHEMA_VERSION = (
-    "missionos_auto_mission_compilation.v1"
-)
-MISSIONOS_AUTO_MISSION_UPLOAD_SUMMARY_SCHEMA_VERSION = (
-    "missionos_auto_mission_upload_summary.v1"
-)
+MISSIONOS_AUTO_MISSION_COMPILATION_SCHEMA_VERSION = "missionos_auto_mission_compilation.v1"
+MISSIONOS_AUTO_MISSION_UPLOAD_SUMMARY_SCHEMA_VERSION = "missionos_auto_mission_upload_summary.v1"
 MISSIONOS_AUTO_MISSION_MODE_TRANSITION_SUMMARY_SCHEMA_VERSION = (
     "missionos_auto_mission_mode_transition_summary.v1"
 )
@@ -83,8 +79,7 @@ DEFAULT_TAKEOFF_ALLOWANCE_SECONDS = 45.0
 DEFAULT_DROPOFF_DWELL_SECONDS = 3.0
 DEFAULT_PAYLOAD_RELEASE_COMMAND_COMPLETION_MARGIN_SECONDS = 5.0
 DEFAULT_DROPOFF_LOITER_SECONDS = (
-    DEFAULT_DROPOFF_DWELL_SECONDS
-    + DEFAULT_PAYLOAD_RELEASE_COMMAND_COMPLETION_MARGIN_SECONDS
+    DEFAULT_DROPOFF_DWELL_SECONDS + DEFAULT_PAYLOAD_RELEASE_COMMAND_COMPLETION_MARGIN_SECONDS
 )
 DEFAULT_LANDING_ALLOWANCE_SECONDS = 60.0
 DEFAULT_TIMEOUT_SAFETY_FACTOR = 1.5
@@ -129,10 +124,10 @@ DEFAULT_PX4_TARGET_SYSTEM = 1
 DEFAULT_PX4_TARGET_COMPONENT = 1
 PHASE3B_ABORT_REASON = "phase3b_stop_after_auto_mission_mode_ack"
 AUTO_RUNTIME_ABORT_REASON = "phase3c3d_guarded_runtime_stop"
-AUTO_RUNTIME_PROBE_STOP_REASON_MONITOR_WINDOW_COMPLETE = (
-    "probe_monitor_window_elapsed"
-)
+AUTO_RUNTIME_PROBE_STOP_REASON_MONITOR_WINDOW_COMPLETE = "probe_monitor_window_elapsed"
 PX4_NAVIGATION_STATE_AUTO_MISSION = 3
+PX4_NAVIGATION_STATE_AUTO_LOITER = 4
+PX4_NAVIGATION_STATE_OFFBOARD = 14
 PX4_ARMING_STATE_ARMED = 2
 PX4_LANDED_STATE_IN_AIR = 2
 
@@ -206,12 +201,8 @@ class MissionOSAutoMissionCompilation(BaseModel):
     @model_validator(mode="after")
     def _validate_compilation(self) -> "MissionOSAutoMissionCompilation":
         if self.planned_waypoint_count != len(self.mission_items):
-            raise MissionOSAutoMissionRunnerError(
-                "planned_waypoint_count_mismatch"
-            )
-        if tuple(item.seq for item in self.mission_items) != tuple(
-            range(len(self.mission_items))
-        ):
+            raise MissionOSAutoMissionRunnerError("planned_waypoint_count_mismatch")
+        if tuple(item.seq for item in self.mission_items) != tuple(range(len(self.mission_items))):
             raise MissionOSAutoMissionRunnerError("mission_item_sequence_not_contiguous")
         if self.generated_route_waypoint_count > len(self.mission_items):
             raise MissionOSAutoMissionRunnerError("route_waypoint_count_invalid")
@@ -230,9 +221,7 @@ class MissionOSAutoMissionUploadSummary(BaseModel):
         "auto_mission_upload_wire_only"
     )
     auto_mission_upload_status: MissionOSAutoMissionUploadStatus
-    auto_mission_upload_protocol: Literal["mavlink_mission_item_int"] = (
-        "mavlink_mission_item_int"
-    )
+    auto_mission_upload_protocol: Literal["mavlink_mission_item_int"] = "mavlink_mission_item_int"
     mission_count_sent: int = Field(ge=0)
     mission_count_expected: int = Field(ge=0)
     mission_request_int_sequences: tuple[int, ...] = ()
@@ -282,9 +271,7 @@ class MissionOSAutoMissionUploadSummary(BaseModel):
                 raise MissionOSAutoMissionRunnerError(
                     "uploaded auto mission summary requires accepted ACK"
                 )
-            if self.mission_item_int_sequences_sent != tuple(
-                range(self.mission_count_sent)
-            ):
+            if self.mission_item_int_sequences_sent != tuple(range(self.mission_count_sent)):
                 raise MissionOSAutoMissionRunnerError(
                     "uploaded auto mission summary requires contiguous item upload"
                 )
@@ -327,9 +314,9 @@ class _PayloadReleaseTrace(BaseModel):
 class MissionOSAutoMissionModeTransitionSummary(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal[
+    schema_version: Literal[MISSIONOS_AUTO_MISSION_MODE_TRANSITION_SUMMARY_SCHEMA_VERSION] = (
         MISSIONOS_AUTO_MISSION_MODE_TRANSITION_SUMMARY_SCHEMA_VERSION
-    ] = MISSIONOS_AUTO_MISSION_MODE_TRANSITION_SUMMARY_SCHEMA_VERSION
+    )
     auto_mission_runner_invoked: Literal[True] = True
     auto_mission_runner_version: Literal["phase3b_mode_transition_wire_v1"] = (
         "phase3b_mode_transition_wire_v1"
@@ -343,9 +330,7 @@ class MissionOSAutoMissionModeTransitionSummary(BaseModel):
     mission_ack_observed: bool
     mission_ack_result: int | None = None
     heartbeats_sent_before_commands: int = Field(ge=0)
-    arm_command_id: Literal[MAV_CMD_COMPONENT_ARM_DISARM] = (
-        MAV_CMD_COMPONENT_ARM_DISARM
-    )
+    arm_command_id: Literal[MAV_CMD_COMPONENT_ARM_DISARM] = MAV_CMD_COMPONENT_ARM_DISARM
     arm_command_frame_sent: bool
     arm_command_ack_required: Literal[True] = True
     arm_command_ack_observed: bool
@@ -358,9 +343,9 @@ class MissionOSAutoMissionModeTransitionSummary(BaseModel):
     auto_mission_mode_custom_main_mode: Literal[PX4_CUSTOM_MAIN_MODE_AUTO] = (
         PX4_CUSTOM_MAIN_MODE_AUTO
     )
-    auto_mission_mode_custom_sub_mode: Literal[
+    auto_mission_mode_custom_sub_mode: Literal[PX4_CUSTOM_SUB_MODE_AUTO_MISSION] = (
         PX4_CUSTOM_SUB_MODE_AUTO_MISSION
-    ] = PX4_CUSTOM_SUB_MODE_AUTO_MISSION
+    )
     auto_mission_mode_command_frame_sent: bool
     auto_mission_mode_ack_required: Literal[True] = True
     auto_mission_mode_ack_observed: bool
@@ -435,13 +420,11 @@ class MissionOSAutoMissionModeTransitionSummary(BaseModel):
 class MissionOSAutoMissionPhase3BLiveBoundarySummary(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal[
+    schema_version: Literal[MISSIONOS_AUTO_MISSION_PHASE3B_LIVE_BOUNDARY_SUMMARY_SCHEMA_VERSION] = (
         MISSIONOS_AUTO_MISSION_PHASE3B_LIVE_BOUNDARY_SUMMARY_SCHEMA_VERSION
-    ] = MISSIONOS_AUTO_MISSION_PHASE3B_LIVE_BOUNDARY_SUMMARY_SCHEMA_VERSION
-    auto_mission_runner_invoked: Literal[True] = True
-    auto_mission_runner_version: Literal["phase3b_live_boundary_v1"] = (
-        "phase3b_live_boundary_v1"
     )
+    auto_mission_runner_invoked: Literal[True] = True
+    auto_mission_runner_version: Literal["phase3b_live_boundary_v1"] = "phase3b_live_boundary_v1"
     auto_mission_execution_mode: Literal["auto_mission_mode_probe_immediate_abort"] = (
         "auto_mission_mode_probe_immediate_abort"
     )
@@ -453,9 +436,7 @@ class MissionOSAutoMissionPhase3BLiveBoundarySummary(BaseModel):
     mission_count_sent: int = Field(ge=0)
     mission_ack_observed: bool
     mission_ack_result: int | None = None
-    arm_command_id: Literal[MAV_CMD_COMPONENT_ARM_DISARM] = (
-        MAV_CMD_COMPONENT_ARM_DISARM
-    )
+    arm_command_id: Literal[MAV_CMD_COMPONENT_ARM_DISARM] = MAV_CMD_COMPONENT_ARM_DISARM
     arm_command_ack_observed: bool
     arm_command_ack_result: int | None = None
     auto_mission_mode_command_id: Literal[MAV_CMD_DO_SET_MODE] = MAV_CMD_DO_SET_MODE
@@ -522,16 +503,14 @@ class MissionOSAutoMissionPhase3BLiveBoundarySummary(BaseModel):
 class MissionOSAutoMissionPayloadReleaseL0Summary(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal[
+    schema_version: Literal[MISSIONOS_AUTO_MISSION_PAYLOAD_RELEASE_L0_SUMMARY_SCHEMA_VERSION] = (
         MISSIONOS_AUTO_MISSION_PAYLOAD_RELEASE_L0_SUMMARY_SCHEMA_VERSION
-    ] = MISSIONOS_AUTO_MISSION_PAYLOAD_RELEASE_L0_SUMMARY_SCHEMA_VERSION
+    )
     release_model: Literal["hover_and_release"] = "hover_and_release"
     dropoff_verified: bool
     payload_release_command_id: Literal[MAV_CMD_DO_GRIPPER] = MAV_CMD_DO_GRIPPER
     payload_release_gripper_id: float = DEFAULT_PAYLOAD_RELEASE_GRIPPER_ID
-    payload_release_action: Literal[MAV_GRIPPER_ACTION_RELEASE] = (
-        MAV_GRIPPER_ACTION_RELEASE
-    )
+    payload_release_action: Literal[MAV_GRIPPER_ACTION_RELEASE] = MAV_GRIPPER_ACTION_RELEASE
     heartbeats_sent_before_payload_release: int = Field(ge=0)
     payload_release_command_frame_sent: bool
     payload_release_command_ack_required: Literal[True] = True
@@ -570,9 +549,7 @@ class MissionOSAutoMissionPayloadReleaseL0Summary(BaseModel):
                     "payload release ACK claim requires accepted COMMAND_ACK"
                 )
             if self.blocked_reasons:
-                raise MissionOSAutoMissionRunnerError(
-                    "payload release ACK claim cannot be blocked"
-                )
+                raise MissionOSAutoMissionRunnerError("payload release ACK claim cannot be blocked")
         else:
             if not self.blocked_reasons:
                 raise MissionOSAutoMissionRunnerError(
@@ -584,12 +561,17 @@ class MissionOSAutoMissionPayloadReleaseL0Summary(BaseModel):
 class MissionOSAutoMissionTelemetrySample(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal[
+    schema_version: Literal[MISSIONOS_AUTO_MISSION_TELEMETRY_SAMPLE_SCHEMA_VERSION] = (
         MISSIONOS_AUTO_MISSION_TELEMETRY_SAMPLE_SCHEMA_VERSION
-    ] = MISSIONOS_AUTO_MISSION_TELEMETRY_SAMPLE_SCHEMA_VERSION
+    )
     sample_index: int = Field(ge=0)
     elapsed_seconds: float = Field(ge=0)
     sample_source: Literal["px4_listener"] = "px4_listener"
+    nav_authority_context: Literal[
+        "auto_mission",
+        "preauthorized_safety_hold",
+        "approved_bounded_recovery",
+    ] = "auto_mission"
     nav_state: int | None = None
     arming_state: int | None = None
     landed_state: int | None = None
@@ -619,16 +601,16 @@ class MissionOSAutoMissionTelemetrySample(BaseModel):
 class MissionOSAutoMissionRuntimeMonitorSummary(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal[
+    schema_version: Literal[MISSIONOS_AUTO_MISSION_RUNTIME_MONITOR_SUMMARY_SCHEMA_VERSION] = (
         MISSIONOS_AUTO_MISSION_RUNTIME_MONITOR_SUMMARY_SCHEMA_VERSION
-    ] = MISSIONOS_AUTO_MISSION_RUNTIME_MONITOR_SUMMARY_SCHEMA_VERSION
+    )
     auto_mission_runner_invoked: Literal[True] = True
     auto_mission_runner_version: Literal["phase3c3d_runtime_monitor_v1"] = (
         "phase3c3d_runtime_monitor_v1"
     )
-    auto_mission_execution_mode: Literal[
+    auto_mission_execution_mode: Literal["auto_mission_runtime_monitor_with_guarded_abort"] = (
         "auto_mission_runtime_monitor_with_guarded_abort"
-    ] = "auto_mission_runtime_monitor_with_guarded_abort"
+    )
     simulation_only: Literal[True] = True
     loopback_sitl_only: Literal[True] = True
     hardware_target_allowed: Literal[False] = False
@@ -651,6 +633,8 @@ class MissionOSAutoMissionRuntimeMonitorSummary(BaseModel):
     telemetry_sample_count: int = Field(ge=0)
     auto_mission_nav_state_observed: bool
     auto_mission_nav_state_samples: tuple[int, ...] = ()
+    authorized_recovery_nav_state_samples: tuple[int, ...] = ()
+    authorized_recovery_nav_state_sample_count: int = Field(default=0, ge=0)
     heartbeat_samples: int = Field(ge=0)
     statustext_during_auto: tuple[str, ...] = ()
     local_ned_pose_samples_path: str | None = None
@@ -739,14 +723,24 @@ class MissionOSAutoMissionRuntimeMonitorSummary(BaseModel):
     sitl_delivery_claimed: Literal[False] = False
     delivery_completion_claimed: Literal[False] = False
     blocked_reasons: tuple[str, ...] = ()
+    summary_scope: Literal["phase3_runtime_observation_only"] = "phase3_runtime_observation_only"
+    terminal_gate_authority: Literal[False] = False
+    downstream_completion_gate_refs: tuple[str, ...] = (
+        "waypoint_gate",
+        "dropoff_gate",
+        "payload_release_sim_gate",
+        "sitl_delivery_gate",
+    )
 
     @field_validator(
         "auto_mission_nav_state_samples",
+        "authorized_recovery_nav_state_samples",
         "statustext_during_auto",
         "mission_current_samples",
         "mission_item_reached_events",
         "guard_failure_reasons",
         "blocked_reasons",
+        "downstream_completion_gate_refs",
         mode="before",
     )
     @classmethod
@@ -822,22 +816,32 @@ class MissionOSAutoMissionRuntimeMonitorSummary(BaseModel):
 class MissionOSAutoMissionWaypointGateSummary(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal[
+    schema_version: Literal[MISSIONOS_AUTO_MISSION_WAYPOINT_GATE_SUMMARY_SCHEMA_VERSION] = (
         MISSIONOS_AUTO_MISSION_WAYPOINT_GATE_SUMMARY_SCHEMA_VERSION
-    ] = MISSIONOS_AUTO_MISSION_WAYPOINT_GATE_SUMMARY_SCHEMA_VERSION
-    gate_name: Literal["phase4_waypoint_reach_minimal"] = (
-        "phase4_waypoint_reach_minimal"
     )
+    gate_name: Literal["phase4_waypoint_reach_minimal"] = "phase4_waypoint_reach_minimal"
     route_waypoint_seq_start: int = Field(ge=0)
     route_waypoint_seq_end: int = Field(ge=0)
     expected_route_waypoint_sequences: tuple[int, ...] = ()
     mission_item_reached_events: tuple[int, ...] = ()
     reached_route_waypoint_sequences: tuple[int, ...] = ()
+    unreached_route_waypoint_sequences: tuple[int, ...] = ()
+    recovery_superseded_waypoint_sequences: tuple[int, ...] = ()
+    recovery_supersession_verified: bool = False
+    route_requirement_satisfied_sequences: tuple[int, ...] = ()
     missing_route_waypoint_sequences: tuple[int, ...] = ()
     route_waypoint_reached_count: int = Field(ge=0)
     expected_route_waypoint_count: int = Field(ge=0)
     route_waypoint_reached_fraction: float = Field(ge=0, le=1)
     all_waypoints_reached: bool
+    route_requirement_satisfied_count: int = Field(ge=0)
+    route_requirement_satisfied_fraction: float = Field(ge=0, le=1)
+    all_route_requirements_satisfied: bool
+    route_completion_basis: Literal[
+        "all_planned_waypoints_observed",
+        "verified_recovery_supersession",
+        "incomplete",
+    ]
     route_completed_claimed: bool
     delivery_completion_claimed: Literal[False] = False
     blocked_reasons: tuple[str, ...] = ()
@@ -846,6 +850,9 @@ class MissionOSAutoMissionWaypointGateSummary(BaseModel):
         "expected_route_waypoint_sequences",
         "mission_item_reached_events",
         "reached_route_waypoint_sequences",
+        "unreached_route_waypoint_sequences",
+        "recovery_superseded_waypoint_sequences",
+        "route_requirement_satisfied_sequences",
         "missing_route_waypoint_sequences",
         "blocked_reasons",
         mode="before",
@@ -864,34 +871,66 @@ class MissionOSAutoMissionWaypointGateSummary(BaseModel):
         elif self.expected_route_waypoint_sequences != tuple(
             range(self.route_waypoint_seq_start, self.route_waypoint_seq_end + 1)
         ):
+            raise MissionOSAutoMissionRunnerError("waypoint gate expected route sequence mismatch")
+        if self.route_waypoint_reached_count != len(self.reached_route_waypoint_sequences):
+            raise MissionOSAutoMissionRunnerError("waypoint gate reached count mismatch")
+        if self.expected_route_waypoint_count != len(self.expected_route_waypoint_sequences):
+            raise MissionOSAutoMissionRunnerError("waypoint gate expected count mismatch")
+        expected = set(self.expected_route_waypoint_sequences)
+        reached = set(self.reached_route_waypoint_sequences)
+        unreached = set(self.unreached_route_waypoint_sequences)
+        superseded = set(self.recovery_superseded_waypoint_sequences)
+        satisfied = set(self.route_requirement_satisfied_sequences)
+        if unreached != expected - reached:
+            raise MissionOSAutoMissionRunnerError("waypoint gate unreached route sequence mismatch")
+        if superseded - unreached:
             raise MissionOSAutoMissionRunnerError(
-                "waypoint gate expected route sequence mismatch"
+                "waypoint gate supersession must reference unreached waypoints"
             )
-        if self.route_waypoint_reached_count != len(
-            self.reached_route_waypoint_sequences
+        if superseded and not self.recovery_supersession_verified:
+            raise MissionOSAutoMissionRunnerError(
+                "waypoint gate supersession requires verified recovery evidence"
+            )
+        if satisfied != reached | superseded:
+            raise MissionOSAutoMissionRunnerError("waypoint gate satisfied route sequence mismatch")
+        if set(self.missing_route_waypoint_sequences) != expected - satisfied:
+            raise MissionOSAutoMissionRunnerError("waypoint gate missing route sequence mismatch")
+        if self.route_requirement_satisfied_count != len(satisfied):
+            raise MissionOSAutoMissionRunnerError("waypoint gate satisfied count mismatch")
+        if self.all_waypoints_reached != (bool(expected) and not unreached):
+            raise MissionOSAutoMissionRunnerError("waypoint gate all-waypoints-reached mismatch")
+        if self.all_route_requirements_satisfied != (
+            bool(expected) and not self.missing_route_waypoint_sequences
         ):
             raise MissionOSAutoMissionRunnerError(
-                "waypoint gate reached count mismatch"
+                "waypoint gate all-route-requirements-satisfied mismatch"
             )
-        if self.expected_route_waypoint_count != len(
-            self.expected_route_waypoint_sequences
-        ):
-            raise MissionOSAutoMissionRunnerError(
-                "waypoint gate expected count mismatch"
-            )
-        if self.all_waypoints_reached:
+        if self.all_route_requirements_satisfied:
             if self.missing_route_waypoint_sequences:
                 raise MissionOSAutoMissionRunnerError(
-                    "waypoint gate cannot claim complete with missing route waypoints"
+                    "waypoint gate cannot satisfy route with missing requirements"
                 )
             if not self.route_completed_claimed:
                 raise MissionOSAutoMissionRunnerError(
-                    "waypoint gate all reached requires route completed claim"
+                    "waypoint gate satisfied route requires route completed claim"
+                )
+            expected_basis = (
+                "all_planned_waypoints_observed"
+                if self.all_waypoints_reached
+                else "verified_recovery_supersession"
+            )
+            if self.route_completion_basis != expected_basis:
+                raise MissionOSAutoMissionRunnerError(
+                    "waypoint gate route completion basis mismatch"
                 )
         else:
             if self.route_completed_claimed:
                 raise MissionOSAutoMissionRunnerError(
-                    "waypoint gate cannot claim route complete with missing waypoints"
+                    "waypoint gate cannot claim route complete with missing requirements"
+                )
+            if self.route_completion_basis != "incomplete":
+                raise MissionOSAutoMissionRunnerError(
+                    "waypoint gate incomplete route requires incomplete basis"
                 )
             if self.expected_route_waypoint_sequences and not self.blocked_reasons:
                 raise MissionOSAutoMissionRunnerError(
@@ -903,9 +942,9 @@ class MissionOSAutoMissionWaypointGateSummary(BaseModel):
 class MissionOSAutoMissionDropoffGateSummary(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal[
+    schema_version: Literal[MISSIONOS_AUTO_MISSION_DROPOFF_GATE_SUMMARY_SCHEMA_VERSION] = (
         MISSIONOS_AUTO_MISSION_DROPOFF_GATE_SUMMARY_SCHEMA_VERSION
-    ] = MISSIONOS_AUTO_MISSION_DROPOFF_GATE_SUMMARY_SCHEMA_VERSION
+    )
     gate_name: Literal["phase5_dropoff_hover_release_envelope"] = (
         "phase5_dropoff_hover_release_envelope"
     )
@@ -924,6 +963,8 @@ class MissionOSAutoMissionDropoffGateSummary(BaseModel):
     altitude_ok: bool
     dwell_ok: bool
     route_completed_claimed: bool
+    original_dropoff_available: bool = True
+    dropoff_obstacle_clearance_verified: bool = True
     dropoff_verified: bool
     payload_release_command_acked: Literal[False] = False
     payload_release_observed_sim: Literal[False] = False
@@ -951,6 +992,8 @@ class MissionOSAutoMissionDropoffGateSummary(BaseModel):
             and self.residual_xy_ok
             and self.altitude_ok
             and self.dwell_ok
+            and self.original_dropoff_available
+            and self.dropoff_obstacle_clearance_verified
         )
         if self.dropoff_verified != all_gate_inputs_passed:
             raise MissionOSAutoMissionRunnerError(
@@ -961,21 +1004,17 @@ class MissionOSAutoMissionDropoffGateSummary(BaseModel):
                 "verified dropoff gate cannot carry blocked reasons"
             )
         if not self.dropoff_verified and not self.blocked_reasons:
-            raise MissionOSAutoMissionRunnerError(
-                "false dropoff gate requires blocked reasons"
-            )
+            raise MissionOSAutoMissionRunnerError("false dropoff gate requires blocked reasons")
         return self
 
 
 class MissionOSAutoMissionSITLDeliveryGateSummary(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal[
+    schema_version: Literal[MISSIONOS_AUTO_MISSION_SITL_DELIVERY_GATE_SUMMARY_SCHEMA_VERSION] = (
         MISSIONOS_AUTO_MISSION_SITL_DELIVERY_GATE_SUMMARY_SCHEMA_VERSION
-    ] = MISSIONOS_AUTO_MISSION_SITL_DELIVERY_GATE_SUMMARY_SCHEMA_VERSION
-    gate_name: Literal["phase6_sitl_delivery_command_ack"] = (
-        "phase6_sitl_delivery_command_ack"
     )
+    gate_name: Literal["phase6_sitl_delivery_command_ack"] = "phase6_sitl_delivery_command_ack"
     claim_model: Literal["sitl_command_ack_only"] = "sitl_command_ack_only"
     route_completed_claimed: bool
     dropoff_verified: bool
@@ -1118,9 +1157,7 @@ class MissionOSAutoMissionLoopbackUploader:
                 if requested_seq is None:
                     continue
                 if requested_seq >= len(items):
-                    raise MissionOSAutoMissionRunnerError(
-                        "mission_request_seq_out_of_range"
-                    )
+                    raise MissionOSAutoMissionRunnerError("mission_request_seq_out_of_range")
                 requests.append(requested_seq)
                 sock.sendto(
                     encode_mavlink2_mission_item_int(
@@ -1334,9 +1371,7 @@ def compile_operator_coordinate_route_auto_mission(
         if terrain_samples
         else None
     )
-    terrain_clearance_enabled = bool(terrain_samples) and (
-        terrain_profile_blocked_reason is None
-    )
+    terrain_clearance_enabled = bool(terrain_samples) and (terrain_profile_blocked_reason is None)
     terrain_profile_source, terrain_profile_ref = _terrain_profile_source_ref(route)
     takeoff_terrain_elevation_m = _sample_terrain_elevation_m(
         terrain_samples,
@@ -1410,9 +1445,7 @@ def compile_operator_coordinate_route_auto_mission(
                 else 0.0,
                 "target_clearance_m": round(float(terrain_clearance_target_m), 3),
                 "mission_altitude_m": round(float(waypoint_altitude_m), 3),
-                "clearance_m": round(float(clearance_m), 3)
-                if clearance_m is not None
-                else 0.0,
+                "clearance_m": round(float(clearance_m), 3) if clearance_m is not None else 0.0,
                 "terrain_applied": terrain_applied,
             }
         )
@@ -1509,8 +1542,7 @@ def request_auto_mission_mode_transition_to_loopback_peer(
 ) -> MissionOSAutoMissionModeTransitionSummary:
     resolved_timeout = float(timeout_seconds)
     upload_accepted = (
-        upload_summary.auto_mission_upload_status
-        is MissionOSAutoMissionUploadStatus.UPLOADED
+        upload_summary.auto_mission_upload_status is MissionOSAutoMissionUploadStatus.UPLOADED
         and upload_summary.mission_ack_observed is True
         and upload_summary.mission_ack_result == MAV_MISSION_ACCEPTED
     )
@@ -1590,10 +1622,7 @@ def request_auto_mission_mode_transition_to_loopback_peer(
         reason = (
             "auto_mission_mode_ack_timeout"
             if trace.auto_mission_mode_command_ack.observed is not True
-            else (
-                "auto_mission_mode_ack_result_"
-                f"{trace.auto_mission_mode_command_ack.result_code}"
-            )
+            else (f"auto_mission_mode_ack_result_{trace.auto_mission_mode_command_ack.result_code}")
         )
         return _mode_transition_summary(
             upload_summary,
@@ -1611,8 +1640,7 @@ def request_auto_mission_mode_transition_to_loopback_peer(
             "auto_mission_abort_ack_timeout"
             if trace.auto_mission_abort_command_ack.observed is not True
             else (
-                "auto_mission_abort_ack_result_"
-                f"{trace.auto_mission_abort_command_ack.result_code}"
+                f"auto_mission_abort_ack_result_{trace.auto_mission_abort_command_ack.result_code}"
             )
         )
         return _mode_transition_summary(
@@ -1649,9 +1677,7 @@ def build_auto_mission_payload_release_l0_summary(
         and ack.result_code == MAV_RESULT_ACCEPTED
         and bool(dropoff_verified)
     )
-    resolved_reasons: list[str] = [
-        str(item) for item in blocked_reasons if str(item).strip()
-    ]
+    resolved_reasons: list[str] = [str(item) for item in blocked_reasons if str(item).strip()]
     if not dropoff_verified:
         resolved_reasons.append("dropoff_not_verified")
     if trace.payload_release_command_frame_sent and ack.observed is not True:
@@ -1775,9 +1801,7 @@ def build_auto_mission_runtime_monitor_summary(
     no_progress_grace_seconds: float = DEFAULT_AUTO_RUNTIME_NO_PROGRESS_GRACE_SECONDS,
     min_route_altitude_m: float = DEFAULT_AUTO_RUNTIME_MIN_ROUTE_ALTITUDE_M,
     altitude_grace_seconds: float = DEFAULT_AUTO_RUNTIME_ALTITUDE_GRACE_SECONDS,
-    min_battery_remaining_percent: float = (
-        DEFAULT_AUTO_RUNTIME_BATTERY_MIN_REMAINING_PERCENT
-    ),
+    min_battery_remaining_percent: float = (DEFAULT_AUTO_RUNTIME_BATTERY_MIN_REMAINING_PERCENT),
 ) -> MissionOSAutoMissionRuntimeMonitorSummary:
     parsed_samples = tuple(
         sample
@@ -1795,9 +1819,22 @@ def build_auto_mission_runtime_monitor_summary(
         )
     )
     nav_state_samples = tuple(
+        int(sample.nav_state) for sample in parsed_samples if sample.nav_state is not None
+    )
+    authorized_recovery_nav_state_samples = tuple(
         int(sample.nav_state)
         for sample in parsed_samples
         if sample.nav_state is not None
+        and (
+            (
+                sample.nav_state == PX4_NAVIGATION_STATE_AUTO_LOITER
+                and sample.nav_authority_context == "preauthorized_safety_hold"
+            )
+            or (
+                sample.nav_state == PX4_NAVIGATION_STATE_OFFBOARD
+                and sample.nav_authority_context == "approved_bounded_recovery"
+            )
+        )
     )
     mission_current_samples = tuple(
         int(sample.mission_current_seq)
@@ -1838,6 +1875,14 @@ def build_auto_mission_runtime_monitor_summary(
     if auto_nav_observed and any(
         sample.nav_state is not None
         and sample.nav_state != PX4_NAVIGATION_STATE_AUTO_MISSION
+        and not (
+            sample.nav_state == PX4_NAVIGATION_STATE_AUTO_LOITER
+            and sample.nav_authority_context == "preauthorized_safety_hold"
+        )
+        and not (
+            sample.nav_state == PX4_NAVIGATION_STATE_OFFBOARD
+            and sample.nav_authority_context == "approved_bounded_recovery"
+        )
         for sample in parsed_samples
     ):
         mode_loss_status = "blocked"
@@ -1847,21 +1892,15 @@ def build_auto_mission_runtime_monitor_summary(
         guard_failures.append("auto_mission_nav_state_not_observed")
 
     battery_guard_status = "ok"
-    battery_samples = [
-        sample for sample in parsed_samples if sample.battery_status_observed
-    ]
+    battery_samples = [sample for sample in parsed_samples if sample.battery_status_observed]
     if battery_samples:
         latest_battery = battery_samples[-1]
-        if (
-            latest_battery.battery_warning is not None
-            and latest_battery.battery_warning > 0
-        ):
+        if latest_battery.battery_warning is not None and latest_battery.battery_warning > 0:
             battery_guard_status = "blocked"
             guard_failures.append("auto_mission_battery_warning")
         if (
             latest_battery.battery_remaining_percent is not None
-            and latest_battery.battery_remaining_percent
-            < min_battery_remaining_percent
+            and latest_battery.battery_remaining_percent < min_battery_remaining_percent
         ):
             battery_guard_status = "blocked"
             guard_failures.append("auto_mission_battery_reserve_low")
@@ -1899,9 +1938,7 @@ def build_auto_mission_runtime_monitor_summary(
         and sample.altitude_above_home_m >= min_route_altitude_m
     )
     route_progress_guard_elapsed = (
-        (elapsed - route_progress_samples[0].elapsed_seconds)
-        if route_progress_samples
-        else 0.0
+        (elapsed - route_progress_samples[0].elapsed_seconds) if route_progress_samples else 0.0
     )
     if (
         route_progress_samples
@@ -1945,9 +1982,7 @@ def build_auto_mission_runtime_monitor_summary(
     )
     recovery_window = dict(recovery_agent_evidence_window or {})
     recovery_snapshot = recovery_window.get("telemetry_snapshot")
-    recovery_snapshot = (
-        dict(recovery_snapshot) if isinstance(recovery_snapshot, Mapping) else None
-    )
+    recovery_snapshot = dict(recovery_snapshot) if isinstance(recovery_snapshot, Mapping) else None
     recovery_return_started = bool(recovery_window.get("recovery_return_started"))
     recovery_return_progress_m = max(
         0.0,
@@ -1957,9 +1992,7 @@ def build_auto_mission_runtime_monitor_summary(
     recovery_heartbeat_observed_count = int(
         recovery_window.get("recovery_heartbeat_observed_count") or 0
     )
-    recovery_latest_heartbeat_observed = recovery_window.get(
-        "recovery_latest_heartbeat_observed"
-    )
+    recovery_latest_heartbeat_observed = recovery_window.get("recovery_latest_heartbeat_observed")
     recovery_observation_lost = bool(
         recovery_window.get("recovery_observation_lost")
         or (recovery_telemetry_stale and not final_landing_safe)
@@ -1996,9 +2029,7 @@ def build_auto_mission_runtime_monitor_summary(
         )
     )
     route_waypoint_events = tuple(
-        seq
-        for seq in reached_events
-        if route_waypoint_seq_start <= seq <= route_waypoint_seq_end
+        seq for seq in reached_events if route_waypoint_seq_start <= seq <= route_waypoint_seq_end
     )
     last_route_waypoint_seq = route_waypoint_events[-1] if route_waypoint_events else None
     last_route_waypoint_index = (
@@ -2013,8 +2044,7 @@ def build_auto_mission_runtime_monitor_summary(
     )
     probe_stop_reason = (
         str(probe_stop_reason_override).strip()
-        if probe_stop_reason_override is not None
-        and str(probe_stop_reason_override).strip()
+        if probe_stop_reason_override is not None and str(probe_stop_reason_override).strip()
         else (
             guard_failures[0]
             if guard_failures
@@ -2040,10 +2070,12 @@ def build_auto_mission_runtime_monitor_summary(
         telemetry_sample_count=len(parsed_samples),
         auto_mission_nav_state_observed=auto_nav_observed,
         auto_mission_nav_state_samples=nav_state_samples,
+        authorized_recovery_nav_state_samples=(authorized_recovery_nav_state_samples),
+        authorized_recovery_nav_state_sample_count=len(authorized_recovery_nav_state_samples),
         heartbeat_samples=int(heartbeat_samples),
-        statustext_during_auto=_unique_tuple(
-            tuple(str(item) for item in statustext_during_auto)
-        )[:20],
+        statustext_during_auto=_unique_tuple(tuple(str(item) for item in statustext_during_auto))[
+            :20
+        ],
         local_ned_pose_samples_path=local_ned_pose_samples_path,
         global_position_samples_path=global_position_samples_path,
         mavlink_event_log_path=mavlink_event_log_path,
@@ -2109,8 +2141,7 @@ def build_auto_mission_runtime_monitor_summary(
         recovery_telemetry_stale=recovery_telemetry_stale,
         recovery_telemetry_stale_after_sample=(
             int(recovery_window["recovery_telemetry_stale_after_sample"])
-            if recovery_window.get("recovery_telemetry_stale_after_sample")
-            is not None
+            if recovery_window.get("recovery_telemetry_stale_after_sample") is not None
             else None
         ),
         recovery_heartbeat_observed_count=recovery_heartbeat_observed_count,
@@ -2120,27 +2151,21 @@ def build_auto_mission_runtime_monitor_summary(
             else None
         ),
         recovery_observation_lost=recovery_observation_lost,
-        recovery_observation_loss_classification=(
-            recovery_observation_loss_classification
-        ),
+        recovery_observation_loss_classification=(recovery_observation_loss_classification),
         recovery_observation_lost_after_sample=(
             int(recovery_window["recovery_observation_lost_after_sample"])
-            if recovery_window.get("recovery_observation_lost_after_sample")
-            is not None
+            if recovery_window.get("recovery_observation_lost_after_sample") is not None
             else (
                 int(recovery_window["recovery_telemetry_stale_after_sample"])
                 if recovery_observation_lost
-                and recovery_window.get("recovery_telemetry_stale_after_sample")
-                is not None
+                and recovery_window.get("recovery_telemetry_stale_after_sample") is not None
                 else None
             )
         ),
         recovery_incomplete_reason=recovery_incomplete_reason,
         runtime_status=runtime_status,
         payload_release_command_frame_sent=bool(payload_release_command_frame_sent),
-        payload_release_command_ack_observed=bool(
-            payload_release_command_ack_observed
-        ),
+        payload_release_command_ack_observed=bool(payload_release_command_ack_observed),
         payload_release_command_ack_result=payload_release_command_ack_result,
         payload_release_command_ack_result_name=_mav_result_name(
             payload_release_command_ack_result
@@ -2155,6 +2180,8 @@ def build_auto_mission_waypoint_gate_summary(
     route_waypoint_seq_start: int,
     route_waypoint_seq_end: int,
     mission_item_reached_events: Sequence[int],
+    recovery_superseded_waypoint_sequences: Sequence[int] = (),
+    recovery_supersession_verified: bool = False,
 ) -> MissionOSAutoMissionWaypointGateSummary:
     start = int(route_waypoint_seq_start)
     end = int(route_waypoint_seq_end)
@@ -2162,31 +2189,59 @@ def build_auto_mission_waypoint_gate_summary(
     reached_events = _unique_int_tuple(mission_item_reached_events)
     reached_set = set(reached_events)
     reached_route = tuple(seq for seq in expected if seq in reached_set)
-    missing_route = tuple(seq for seq in expected if seq not in reached_set)
-    expected_count = len(expected)
-    reached_fraction = (
-        len(reached_route) / expected_count if expected_count > 0 else 0.0
+    unreached_route = tuple(seq for seq in expected if seq not in reached_set)
+    requested_superseded = set(_unique_int_tuple(recovery_superseded_waypoint_sequences))
+    superseded_route = tuple(
+        seq for seq in expected if seq in requested_superseded and seq not in reached_set
     )
-    all_reached = bool(expected) and not missing_route
-    blocked_reasons = () if all_reached else ("missing_route_waypoint_sequences",)
+    effective_superseded = superseded_route if recovery_supersession_verified else ()
+    satisfied_set = reached_set | set(effective_superseded)
+    satisfied_route = tuple(seq for seq in expected if seq in satisfied_set)
+    missing_route = tuple(seq for seq in expected if seq not in satisfied_set)
+    expected_count = len(expected)
+    reached_fraction = len(reached_route) / expected_count if expected_count > 0 else 0.0
+    satisfied_fraction = len(satisfied_route) / expected_count if expected_count > 0 else 0.0
+    all_reached = bool(expected) and not unreached_route
+    all_requirements_satisfied = bool(expected) and not missing_route
+    blocked_reasons = () if all_requirements_satisfied else ("missing_route_waypoint_sequences",)
+    completion_basis = (
+        "all_planned_waypoints_observed"
+        if all_reached
+        else "verified_recovery_supersession"
+        if all_requirements_satisfied and effective_superseded
+        else "incomplete"
+    )
     return MissionOSAutoMissionWaypointGateSummary(
         route_waypoint_seq_start=start,
         route_waypoint_seq_end=end,
         expected_route_waypoint_sequences=expected,
         mission_item_reached_events=reached_events,
         reached_route_waypoint_sequences=reached_route,
+        unreached_route_waypoint_sequences=unreached_route,
+        recovery_superseded_waypoint_sequences=effective_superseded,
+        recovery_supersession_verified=bool(
+            recovery_supersession_verified and effective_superseded
+        ),
+        route_requirement_satisfied_sequences=satisfied_route,
         missing_route_waypoint_sequences=missing_route,
         route_waypoint_reached_count=len(reached_route),
         expected_route_waypoint_count=expected_count,
         route_waypoint_reached_fraction=round(reached_fraction, 6),
         all_waypoints_reached=all_reached,
-        route_completed_claimed=all_reached,
+        route_requirement_satisfied_count=len(satisfied_route),
+        route_requirement_satisfied_fraction=round(satisfied_fraction, 6),
+        all_route_requirements_satisfied=all_requirements_satisfied,
+        route_completion_basis=completion_basis,
+        route_completed_claimed=all_requirements_satisfied,
         blocked_reasons=blocked_reasons,
     )
 
 
 def build_auto_mission_waypoint_gate_summary_from_runtime(
     summary: MissionOSAutoMissionRuntimeMonitorSummary | Mapping[str, Any],
+    *,
+    recovery_superseded_waypoint_sequences: Sequence[int] = (),
+    recovery_supersession_verified: bool = False,
 ) -> MissionOSAutoMissionWaypointGateSummary:
     parsed = (
         summary
@@ -2197,6 +2252,8 @@ def build_auto_mission_waypoint_gate_summary_from_runtime(
         route_waypoint_seq_start=parsed.route_waypoint_seq_start,
         route_waypoint_seq_end=parsed.route_waypoint_seq_end,
         mission_item_reached_events=parsed.mission_item_reached_events,
+        recovery_superseded_waypoint_sequences=(recovery_superseded_waypoint_sequences),
+        recovery_supersession_verified=recovery_supersession_verified,
     )
 
 
@@ -2210,6 +2267,8 @@ def build_auto_mission_dropoff_gate_summary(
     release_radius_m: float = DEFAULT_DROPOFF_RELEASE_RADIUS_M,
     release_altitude_tolerance_m: float = DEFAULT_DROPOFF_RELEASE_ALTITUDE_TOLERANCE_M,
     required_dwell_seconds: float = DEFAULT_DROPOFF_DWELL_SECONDS,
+    original_dropoff_available: bool = True,
+    dropoff_obstacle_clearance_verified: bool = True,
 ) -> MissionOSAutoMissionDropoffGateSummary:
     parsed_samples = tuple(
         sample
@@ -2222,10 +2281,7 @@ def build_auto_mission_dropoff_gate_summary(
     residuals: list[tuple[int, float]] = []
     qualifying: list[MissionOSAutoMissionTelemetrySample] = []
     for sample in parsed_samples:
-        if (
-            sample.global_latitude_deg is None
-            or sample.global_longitude_deg is None
-        ):
+        if sample.global_latitude_deg is None or sample.global_longitude_deg is None:
             continue
         residual_m = _haversine_distance_m(
             latitude_a=float(sample.global_latitude_deg),
@@ -2272,6 +2328,8 @@ def build_auto_mission_dropoff_gate_summary(
         and bool(residual_ok)
         and bool(altitude_ok)
         and bool(dwell_ok)
+        and bool(original_dropoff_available)
+        and bool(dropoff_obstacle_clearance_verified)
     )
     blocked_reasons: list[str] = []
     if not route_completed_claimed:
@@ -2282,6 +2340,10 @@ def build_auto_mission_dropoff_gate_summary(
         blocked_reasons.append("dropoff_release_altitude_outside_band")
     if not dwell_ok:
         blocked_reasons.append("dropoff_dwell_time_insufficient")
+    if not original_dropoff_available:
+        blocked_reasons.append("original_dropoff_collision_occupied")
+    if not dropoff_obstacle_clearance_verified:
+        blocked_reasons.append("dropoff_obstacle_clearance_not_verified")
 
     return MissionOSAutoMissionDropoffGateSummary(
         dropoff_latitude_deg=round(float(dropoff_latitude_deg), 7),
@@ -2291,15 +2353,15 @@ def build_auto_mission_dropoff_gate_summary(
         release_altitude_min_m=round(altitude_min, 3),
         release_altitude_max_m=round(altitude_max, 3),
         required_dwell_seconds=float(required_dwell_seconds),
-        observed_min_residual_xy_m=(
-            round(min_residual, 3) if min_residual is not None else None
-        ),
+        observed_min_residual_xy_m=(round(min_residual, 3) if min_residual is not None else None),
         observed_dwell_seconds=round(max_dwell_seconds, 3),
         qualifying_sample_indices=best_indices,
         residual_xy_ok=bool(residual_ok),
         altitude_ok=bool(altitude_ok),
         dwell_ok=bool(dwell_ok),
         route_completed_claimed=bool(route_completed_claimed),
+        original_dropoff_available=bool(original_dropoff_available),
+        dropoff_obstacle_clearance_verified=bool(dropoff_obstacle_clearance_verified),
         dropoff_verified=dropoff_verified,
         blocked_reasons=_unique_tuple(blocked_reasons),
     )
@@ -2479,8 +2541,8 @@ def _wait_command_ack(
         payload = decoded["payload"]
         if len(payload) < 10:
             continue
-        ack_command_id, result_code, _progress, _param2, _target_system, _target_component = struct.unpack(
-            "<HBBiBB", payload[:10]
+        ack_command_id, result_code, _progress, _param2, _target_system, _target_component = (
+            struct.unpack("<HBBiBB", payload[:10])
         )
         if int(ack_command_id) != int(command_id):
             continue
@@ -2509,8 +2571,7 @@ def _mode_transition_summary(
     return MissionOSAutoMissionModeTransitionSummary(
         mode_transition_status=status,
         mission_upload_accepted=(
-            upload_summary.auto_mission_upload_status
-            is MissionOSAutoMissionUploadStatus.UPLOADED
+            upload_summary.auto_mission_upload_status is MissionOSAutoMissionUploadStatus.UPLOADED
         ),
         mission_count_sent=upload_summary.mission_count_sent,
         mission_ack_observed=upload_summary.mission_ack_observed,
@@ -2520,30 +2581,14 @@ def _mode_transition_summary(
         arm_command_ack_observed=trace.arm_command_ack.observed,
         arm_command_ack_result=trace.arm_command_ack.result_code,
         arm_command_ack_result_name=trace.arm_command_ack.result_name,
-        auto_mission_mode_command_frame_sent=(
-            trace.auto_mission_mode_command_frame_sent
-        ),
-        auto_mission_mode_ack_observed=(
-            trace.auto_mission_mode_command_ack.observed
-        ),
-        auto_mission_mode_ack_result=(
-            trace.auto_mission_mode_command_ack.result_code
-        ),
-        auto_mission_mode_ack_result_name=(
-            trace.auto_mission_mode_command_ack.result_name
-        ),
-        auto_mission_abort_command_frame_sent=(
-            trace.auto_mission_abort_command_frame_sent
-        ),
-        auto_mission_abort_ack_observed=(
-            trace.auto_mission_abort_command_ack.observed
-        ),
-        auto_mission_abort_ack_result=(
-            trace.auto_mission_abort_command_ack.result_code
-        ),
-        auto_mission_abort_ack_result_name=(
-            trace.auto_mission_abort_command_ack.result_name
-        ),
+        auto_mission_mode_command_frame_sent=(trace.auto_mission_mode_command_frame_sent),
+        auto_mission_mode_ack_observed=(trace.auto_mission_mode_command_ack.observed),
+        auto_mission_mode_ack_result=(trace.auto_mission_mode_command_ack.result_code),
+        auto_mission_mode_ack_result_name=(trace.auto_mission_mode_command_ack.result_name),
+        auto_mission_abort_command_frame_sent=(trace.auto_mission_abort_command_frame_sent),
+        auto_mission_abort_ack_observed=(trace.auto_mission_abort_command_ack.observed),
+        auto_mission_abort_ack_result=(trace.auto_mission_abort_command_ack.result_code),
+        auto_mission_abort_ack_result_name=(trace.auto_mission_abort_command_ack.result_name),
         timeout_seconds=timeout_seconds,
         blocked_reasons=tuple(str(item) for item in blocked_reasons if str(item)),
     )
@@ -2558,9 +2603,7 @@ def upload_auto_mission_to_loopback_peer(
 ) -> MissionOSAutoMissionUploadSummary:
     resolved_timeout = float(timeout_seconds or compilation.timeout_seconds)
     try:
-        request_sequences, ack_type = (
-            uploader or MissionOSAutoMissionLoopbackUploader()
-        ).upload(
+        request_sequences, ack_type = (uploader or MissionOSAutoMissionLoopbackUploader()).upload(
             items=compilation.mission_items,
             target_endpoint=target_endpoint,
             timeout_seconds=resolved_timeout,
@@ -2729,10 +2772,14 @@ def _optional_positive_int(*values: Any) -> int | None:
         if value is None:
             continue
         if not isinstance(value, int | float):
-            raise MissionOSAutoMissionRunnerError("operator_route_malformed_auto_route_waypoint_count")
+            raise MissionOSAutoMissionRunnerError(
+                "operator_route_malformed_auto_route_waypoint_count"
+            )
         resolved = int(value)
         if float(value) != float(resolved) or resolved <= 0:
-            raise MissionOSAutoMissionRunnerError("operator_route_malformed_auto_route_waypoint_count")
+            raise MissionOSAutoMissionRunnerError(
+                "operator_route_malformed_auto_route_waypoint_count"
+            )
         return resolved
     return None
 
@@ -2798,9 +2845,7 @@ def _terrain_profile_samples(route: Mapping[str, Any]) -> tuple[dict[str, float]
         if distance_m is not None:
             sample["distance_m"] = max(0.0, float(distance_m))
         if "fraction" not in sample and "distance_m" not in sample:
-            sample["fraction"] = (
-                len(samples) / max(1.0, float(len(raw_profile) - 1))
-            )
+            sample["fraction"] = len(samples) / max(1.0, float(len(raw_profile) - 1))
         samples.append(sample)
     if not samples:
         return ()
@@ -2849,9 +2894,7 @@ def _terrain_profile_covers_route_endpoints(
             end_seen = end_seen or fraction >= 0.99
         if distance_m is not None:
             start_seen = start_seen or distance_m <= endpoint_distance_tolerance_m
-            end_seen = end_seen or distance_m >= (
-                planned_route_m - endpoint_distance_tolerance_m
-            )
+            end_seen = end_seen or distance_m >= (planned_route_m - endpoint_distance_tolerance_m)
     return start_seen and end_seen
 
 
@@ -2931,9 +2974,7 @@ def _terrain_relative_altitude_m(
     if terrain_elevation_m is None or takeoff_terrain_elevation_m is None:
         return fallback_altitude_m, None, False
     relative_altitude_m = (
-        float(terrain_elevation_m)
-        - float(takeoff_terrain_elevation_m)
-        + float(clearance_agl_m)
+        float(terrain_elevation_m) - float(takeoff_terrain_elevation_m) + float(clearance_agl_m)
     )
     return max(fallback_altitude_m, relative_altitude_m), clearance_agl_m, True
 

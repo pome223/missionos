@@ -1910,6 +1910,46 @@ def _coordinate_route_from_payload(value: Mapping[str, Any] | None) -> dict[str,
         if landing_zone_blocked_raw not in (None, "")
         else False
     )
+    obstacle_route_fraction = (
+        _coordinate_float(
+            value.get("obstacle_route_fraction"),
+            field_name="obstacle_route_fraction",
+            low=0.05,
+            high=0.95,
+        )
+        if value.get("obstacle_route_fraction") not in (None, "")
+        else None
+    )
+    obstacle_size_x_m = (
+        _coordinate_float(
+            value.get("obstacle_size_x_m"),
+            field_name="obstacle_size_x_m",
+            low=0.5,
+            high=200.0,
+        )
+        if value.get("obstacle_size_x_m") not in (None, "")
+        else None
+    )
+    obstacle_size_y_m = (
+        _coordinate_float(
+            value.get("obstacle_size_y_m"),
+            field_name="obstacle_size_y_m",
+            low=0.5,
+            high=200.0,
+        )
+        if value.get("obstacle_size_y_m") not in (None, "")
+        else None
+    )
+    obstacle_size_z_m = (
+        _coordinate_float(
+            value.get("obstacle_size_z_m"),
+            field_name="obstacle_size_z_m",
+            low=0.5,
+            high=500.0,
+        )
+        if value.get("obstacle_size_z_m") not in (None, "")
+        else None
+    )
     visibility_mode = str(value.get("visibility_mode") or "").strip().lower()
     if visibility_mode not in ("", "fog", "smoke"):
         raise ValueError("visibility_mode must be fog or smoke")
@@ -2029,6 +2069,34 @@ def _coordinate_route_from_payload(value: Mapping[str, Any] | None) -> dict[str,
         "sensor_failure_component": sensor_failure_component or None,
         "sensor_failure_type": sensor_failure_type or None,
         "landing_zone_blocked": landing_zone_blocked,
+        "building_risk_detected": bool(value.get("building_risk_detected")),
+        "gazebo_obstacle_model_spawn_requested": bool(
+            value.get("gazebo_obstacle_model_spawn_requested")
+        ),
+        "obstacle_route_fraction": (
+            round(obstacle_route_fraction, 3)
+            if obstacle_route_fraction is not None
+            else None
+        ),
+        "obstacle_size_x_m": (
+            round(obstacle_size_x_m, 3)
+            if obstacle_size_x_m is not None
+            else None
+        ),
+        "obstacle_size_y_m": (
+            round(obstacle_size_y_m, 3)
+            if obstacle_size_y_m is not None
+            else None
+        ),
+        "obstacle_size_z_m": (
+            round(obstacle_size_z_m, 3)
+            if obstacle_size_z_m is not None
+            else None
+        ),
+        "obstacle_scenario_source": str(
+            value.get("obstacle_scenario_source") or ""
+        )
+        or None,
         "visibility_mode": visibility_mode or None,
         "no_fly_zone_marker": no_fly_zone_marker,
         "traffic_conflict_marker": traffic_conflict_marker,

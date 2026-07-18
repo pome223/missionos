@@ -812,6 +812,7 @@ class TaskStore:
         status: Optional[str] = None,
         title: Optional[str] = None,
         artifacts: Optional[dict[str, Any]] = None,
+        replace_artifacts: Optional[dict[str, Any]] = None,
         metadata: Optional[dict[str, Any]] = None,
         error: Any = _UNSET,
         run_id: Optional[str] = None,
@@ -850,6 +851,13 @@ class TaskStore:
             next_artifacts = current["artifacts"]
             if artifacts:
                 next_artifacts = _merge_json(next_artifacts, artifacts)
+            if replace_artifacts:
+                # Current-state snapshots must replace their top-level value;
+                # recursively merging them retains stale nested fields.
+                next_artifacts = {
+                    **next_artifacts,
+                    **dict(replace_artifacts),
+                }
             next_metadata = current["metadata"]
             if metadata:
                 next_metadata = _merge_json(next_metadata, metadata)
@@ -961,7 +969,13 @@ class TaskStore:
                 cursor,
                 current=updated_task,
                 previous=current,
-                artifacts_patch=artifacts,
+                artifacts_patch=(
+                    {
+                        **dict(artifacts or {}),
+                        **dict(replace_artifacts or {}),
+                    }
+                    or None
+                ),
                 metadata_patch=metadata,
             )
             conn.commit()

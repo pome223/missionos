@@ -129,6 +129,43 @@ models through `/world/default/create`, but `gazebo_obstacle_model_spawned=true`
 requires pose readback from `/world/default/pose/info`; a service request alone
 is not enough to claim the model exists.
 
+For an immediate local route conflict, the deterministic safety layer first
+queues the preauthorized `safety_hold`. The hosted Runtime Recovery Agent is
+not invoked until two fresh telemetry snapshots confirm that HOLD. A proposal
+then remains immutable while human approval is pending, and an unchanged
+`decision_signature` must not trigger another hosted-model call. A material
+change may create a new decision epoch, but it invalidates the old proposal and
+requires a new checkpoint and approval.
+
+Terrain clearance inside an explicitly accepted grace envelope is not by
+itself a model-call trigger: only entry into the lower half of that envelope is
+the `terrain_clearance_near_minimum` soft signal. While a matching local-avoid
+proposal is held for approval, a transient telemetry gap blocks dispatch-time
+freshness verification but does not replace the immutable proposal. A verified
+successful Recovery also suppresses a second HOLD for the same still-visible
+obstacle; a materially new observation is required for another decision epoch.
+
+Every generated proposal records `missionos_runtime_recovery_proposal_origin.v1`.
+Hosted judgments preserve provider, model, invocation kind, prompt/response
+hashes, FunctionTool-call hash, and guarded FunctionTool-result hash without
+storing prompt or response text. When ADK ends the turn with
+`function_tool_result_skip_summarization`, the recorded hosted tool call is the
+LLM judgment and the guarded tool result is its deterministic compilation; the
+absence of a redundant final JSON message is not a fallback condition.
+Deterministic fallback and deterministic recompilation use distinct
+`origin_kind` values. The origin hash is revalidated before dispatch authority
+is minted and is copied through the active-runner request, dispatch receipt,
+attempt evidence, and final run artifact. Missing legacy provenance is
+observable; a present but mismatched hash is fail-closed.
+
+The AUTO runtime monitor is a Phase 3 observation summary, not the final
+completion authority. Its expected Phase 4/5/6 pending reasons are resolved by
+the separately named waypoint, dropoff, payload-release, and SITL-delivery
+gates. `final_verification_chain` records that relationship. Authorized
+Recovery transitions are not mode loss only when the telemetry sample binds
+AUTO.LOITER to `preauthorized_safety_hold` or OFFBOARD to
+`approved_bounded_recovery`; an unbound non-AUTO state remains a guard failure.
+
 ## Repair Planning
 
 The Repair Agent is a post-block, post-run, or next-run planning coordinator. It

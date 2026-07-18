@@ -9,7 +9,7 @@ mission items are bound to the Gateway upload receipt.
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 import json
 import math
@@ -24,6 +24,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from src.agents.model_config import agent_model_label, llm_provider_label
 from src.runtime.delivery_mission_contract import DeliveryMissionContract
 from src.runtime.px4_gazebo_mission_designer_sitl_runner import (
     PX4GazeboMissionDesignerSITLExecutionResult,
@@ -45,6 +46,9 @@ from src.runtime.px4_gazebo_route_plan import PX4GazeboPickupDropoffRoutePlan
 from src.runtime.missionos_auto_mission_runner import (
     MissionOSAutoMissionCompilation,
     compile_operator_coordinate_route_auto_mission,
+)
+from src.runtime.px4_active_runner_recovery_request import (
+    queue_px4_active_runner_recovery_request,
 )
 from src.runtime.recovery_window_summary import build_recovery_window_summary
 from src.runtime.px4_gazebo_sitl_mission_upload import (
@@ -235,7 +239,8 @@ MISSIONOS_AUTO_MISSION_GZ_COUPLER_PLUGIN_SO_DEFAULT = (
 MISSIONOS_AUTO_MISSION_FULL_RUNTIME_PROBE_SCRIPT = (
     "scripts/smoke_missionos_auto_mission_full_runtime_probe.py"
 )
-MISSIONOS_RUNTIME_RECOVERY_AGENT_TIMEOUT_SECONDS = 5.0
+MISSIONOS_RUNTIME_RECOVERY_AGENT_TIMEOUT_SECONDS = 45.0
+MISSIONOS_RUNTIME_RECOVERY_AGENT_TIMEOUT_MAX_SECONDS = 90.0
 MISSIONOS_RUNTIME_RECOVERY_AGENT_TIMEOUT_SECONDS_ENV = (
     "MISSIONOS_RUNTIME_RECOVERY_AGENT_TIMEOUT_SECONDS"
 )
@@ -255,7 +260,16 @@ MISSIONOS_RUNTIME_RECOVERY_AGENT_BUCKET_SECONDS = 5.0
 MISSIONOS_RUNTIME_RECOVERY_AGENT_BUCKET_SECONDS_ENV = (
     "MISSIONOS_RUNTIME_RECOVERY_AGENT_BUCKET_SECONDS"
 )
+MISSIONOS_RUNTIME_RECOVERY_PROPOSAL_MAX_AGE_SECONDS = 60.0
+MISSIONOS_RUNTIME_RECOVERY_PROPOSAL_MAX_AGE_SECONDS_ENV = (
+    "MISSIONOS_RUNTIME_RECOVERY_PROPOSAL_MAX_AGE_SECONDS"
+)
+MISSIONOS_RUNTIME_RECOVERY_PROPOSAL_MAX_ORIGIN_DRIFT_M = 30.0
+MISSIONOS_RUNTIME_RECOVERY_PROPOSAL_MAX_ORIGIN_DRIFT_M_ENV = (
+    "MISSIONOS_RUNTIME_RECOVERY_PROPOSAL_MAX_ORIGIN_DRIFT_M"
+)
 MISSIONOS_RUNTIME_RECOVERY_AGENT_MAX_WINDOW_SAMPLES = 256
+MISSIONOS_AUTO_MISSION_LIVE_TRAJECTORY_MAX_SAMPLES = 4000
 MISSION_DESIGNER_LIVE_SITL_DROPOFF_MISSION_ITEM_SEQ = 2
 MISSION_DESIGNER_LIVE_SITL_LAND_MISSION_ITEM_SEQ = 3
 
@@ -1873,6 +1887,28 @@ def _coordinate_route_realism_env(task: Mapping[str, Any]) -> dict[str, str]:
     return env
 
 
+def _coordinate_route_with_explicit_realism_env(
+    route: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Bind explicit runtime obstacle realism into the route artifact."""
+
+    resolved = dict(route)
+    raw = os.getenv(MISSION_DESIGNER_REALISM_LANDING_ZONE_BLOCKED_ENV)
+    if "landing_zone_blocked" in resolved or raw is None:
+        return resolved
+    normalized = raw.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        resolved["landing_zone_blocked"] = True
+    elif normalized in {"0", "false", "no", "off"}:
+        resolved["landing_zone_blocked"] = False
+    elif normalized:
+        raise PX4GazeboMissionDesignerSITLLiveFlightRunError(
+            f"{MISSION_DESIGNER_REALISM_LANDING_ZONE_BLOCKED_ENV} must be a "
+            "boolean opt-in value"
+        )
+    return resolved
+
+
 def _mission_designer_terrain_world_env(task: Mapping[str, Any]) -> dict[str, str]:
     artifacts = task.get("artifacts")
     artifacts = artifacts if isinstance(artifacts, Mapping) else {}
@@ -2541,11 +2577,25 @@ def _auto_runtime_battery_endurance_projection(
         }
     remaining_route_m = max(0.0, float(planned_route_m) - float(progress_m))
     consumed_percent = abs(float(battery_delta)) if battery_delta is not None else None
-    if consumed_percent is None or consumed_percent <= 0 or progress_m <= 0:
+    minimum_progress_m = min(
+        50.0,
+        max(10.0, float(planned_route_m) * 0.05),
+    )
+    if (
+        consumed_percent is None
+        or consumed_percent <= 0
+        or progress_m < minimum_progress_m
+    ):
         return {
             "projection_status": "insufficient_observation",
+            "projection_reason": (
+                "battery_burn_baseline_distance_insufficient"
+                if progress_m < minimum_progress_m
+                else "battery_consumption_not_observed"
+            ),
             "planned_route_m": round(float(planned_route_m), 3),
             "progress_m": round(float(progress_m), 3),
+            "minimum_progress_m": round(minimum_progress_m, 3),
             "remaining_route_m": round(remaining_route_m, 3),
             "battery_remaining_percent": round(float(battery_remaining), 3),
             "battery_reserve_required_percent": reserve_percent,
@@ -2787,19 +2837,169 @@ def _auto_runtime_obstacle_projection(
                 "building_risk_detected": True,
             }
     landing_zone_blocked = route.get("landing_zone_blocked") is True
-    detected = bool(obstacle_manifest) or landing_zone_blocked
+    configured = bool(obstacle_manifest) or landing_zone_blocked
+    # Route configuration is not runtime observation. Claim detection only
+    # after Gazebo reports that the collision model was spawned.
+    detected = configured and gazebo_obstacle_model_spawned
     return {
-        "projection_status": "source_backed" if detected else "not_configured",
+        "projection_status": (
+            "source_backed"
+            if detected
+            else "configured_unobserved"
+            if configured
+            else "not_configured"
+        ),
+        "obstacle_condition_requested": configured,
         "obstacle_detected": detected,
         "building_risk_detected": bool(
-            (obstacle_manifest.get("building_risk_detected") if obstacle_manifest else False)
-            or route.get("building_risk_detected")
-            or landing_zone_blocked
+            detected
+            and (
+                (
+                    obstacle_manifest.get("building_risk_detected")
+                    if obstacle_manifest
+                    else False
+                )
+                or route.get("building_risk_detected")
+                or landing_zone_blocked
+            )
         ),
         "landing_zone_blocked": landing_zone_blocked,
         "obstacle_manifest": dict(obstacle_manifest),
         "gazebo_obstacle_application": dict(obstacle_application),
         "gazebo_obstacle_model_spawned": gazebo_obstacle_model_spawned,
+    }
+
+
+def _auto_runtime_obstacle_conflict_projection(
+    *,
+    snapshot: Mapping[str, Any],
+    artifacts: Mapping[str, Any],
+    obstacle_projection: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Measure route intersection and time-to-conflict for local avoidance.
+
+    This projection does not select an action. It prevents a source-backed but
+    distant destination obstacle from being treated as an immediate local
+    avoidance condition while retaining the obstacle as visible route context.
+    """
+
+    if obstacle_projection.get("projection_status") != "source_backed":
+        return {
+            "assessment_status": "not_source_backed",
+            "local_avoidance_required": False,
+        }
+    current_x_m = _auto_snapshot_number(snapshot.get("local_x_m"))
+    current_y_m = _auto_snapshot_number(snapshot.get("local_y_m"))
+    if current_x_m is None or current_y_m is None:
+        return {
+            "assessment_status": "position_unavailable",
+            "local_avoidance_required": False,
+        }
+    drift = _auto_runtime_route_drift_projection(snapshot, artifacts=artifacts)
+    target_x_m = _auto_snapshot_number(drift.get("target_north_m"))
+    target_y_m = _auto_snapshot_number(drift.get("target_east_m"))
+    if target_x_m is None or target_y_m is None:
+        return {
+            "assessment_status": "route_unavailable",
+            "local_avoidance_required": False,
+        }
+    route_length_m = math.hypot(target_x_m, target_y_m)
+    if route_length_m <= 1e-6:
+        return {
+            "assessment_status": "route_unavailable",
+            "local_avoidance_required": False,
+        }
+    unit_x = target_x_m / route_length_m
+    unit_y = target_y_m / route_length_m
+    manifest = obstacle_projection.get("obstacle_manifest")
+    manifest = manifest if isinstance(manifest, Mapping) else {}
+    obstacles = manifest.get("obstacles")
+    obstacles = obstacles if isinstance(obstacles, list) else []
+    assessments: list[dict[str, Any]] = []
+    ground_speed_mps = None
+    velocity_x_mps = _auto_snapshot_number(snapshot.get("local_vx_mps"))
+    velocity_y_mps = _auto_snapshot_number(snapshot.get("local_vy_mps"))
+    if velocity_x_mps is not None and velocity_y_mps is not None:
+        ground_speed_mps = math.hypot(velocity_x_mps, velocity_y_mps)
+    if ground_speed_mps is None or ground_speed_mps <= 0.1:
+        ground_speed_mps = _auto_snapshot_number(snapshot.get("ground_speed_mps"))
+    lookahead_m = 150.0
+    time_limit_s = 30.0
+    for index, obstacle in enumerate(obstacles):
+        if not isinstance(obstacle, Mapping):
+            continue
+        obstacle_x_m = _auto_snapshot_number(
+            obstacle.get("x_m"), obstacle.get("local_x_m"), obstacle.get("x")
+        )
+        obstacle_y_m = _auto_snapshot_number(
+            obstacle.get("y_m"), obstacle.get("local_y_m"), obstacle.get("y")
+        )
+        if obstacle_x_m is None or obstacle_y_m is None:
+            continue
+        relative_x_m = obstacle_x_m - current_x_m
+        relative_y_m = obstacle_y_m - current_y_m
+        distance_m = math.hypot(relative_x_m, relative_y_m)
+        along_track_m = relative_x_m * unit_x + relative_y_m * unit_y
+        cross_track_m = abs(relative_x_m * unit_y - relative_y_m * unit_x)
+        obstacle_radius_m = max(
+            _auto_snapshot_number(obstacle.get("size_x_m")) or 0.0,
+            _auto_snapshot_number(obstacle.get("size_y_m")) or 0.0,
+        ) / 2.0
+        corridor_half_width_m = max(30.0, obstacle_radius_m + 20.0)
+        time_to_conflict_s = (
+            max(0.0, along_track_m - obstacle_radius_m) / ground_speed_mps
+            if ground_speed_mps is not None and ground_speed_mps > 0.1
+            else None
+        )
+        route_intersects = cross_track_m <= corridor_half_width_m
+        ahead = along_track_m >= -obstacle_radius_m
+        local_required = bool(
+            ahead
+            and route_intersects
+            and distance_m <= lookahead_m
+            and (time_to_conflict_s is None or time_to_conflict_s <= time_limit_s)
+        )
+        assessments.append(
+            {
+                "obstacle_name": str(obstacle.get("name") or f"obstacle_{index}"),
+                "distance_to_obstacle_m": round(distance_m, 3),
+                "along_track_to_obstacle_m": round(along_track_m, 3),
+                "cross_track_to_obstacle_m": round(cross_track_m, 3),
+                "route_corridor_intersects": route_intersects,
+                "obstacle_ahead": ahead,
+                "time_to_conflict_s": (
+                    round(time_to_conflict_s, 3)
+                    if time_to_conflict_s is not None
+                    else None
+                ),
+                "local_avoidance_required": local_required,
+            }
+        )
+    selected = min(
+        assessments,
+        key=lambda item: float(item.get("distance_to_obstacle_m") or math.inf),
+        default={},
+    )
+    local_required = any(
+        item.get("local_avoidance_required") is True for item in assessments
+    )
+    return {
+        "assessment_status": (
+            "computed" if assessments else "obstacle_position_unavailable"
+        ),
+        "local_avoidance_required": local_required,
+        "conflict_class": (
+            "local_route_conflict"
+            if local_required
+            else "distant_or_non_intersecting_obstacle"
+        ),
+        "lookahead_m": lookahead_m,
+        "time_to_conflict_limit_s": time_limit_s,
+        "ground_speed_mps": (
+            round(ground_speed_mps, 3) if ground_speed_mps is not None else None
+        ),
+        "nearest_obstacle": selected,
+        "obstacles": assessments,
     }
 
 
@@ -2823,7 +3023,65 @@ def _auto_runtime_recovery_agent_telemetry_snapshot(
         snapshot,
         artifacts=artifacts,
     )
+    sample_index = _auto_snapshot_number(snapshot.get("sample_index"))
+    altitude_above_home_m = _auto_snapshot_number(
+        snapshot.get("altitude_above_home_m")
+    )
+    progress_m = _auto_snapshot_number(snapshot.get("progress_m"))
+    elapsed_seconds = _auto_snapshot_number(snapshot.get("elapsed_seconds"))
+    request_observed = snapshot.get("operator_recovery_request_observed") is True
+    terrain_clearance_m = _auto_snapshot_number(
+        terrain_projection.get("terrain_clearance_m")
+    )
+    terrain_clearance_target_m = _auto_snapshot_number(
+        terrain_projection.get("terrain_clearance_target_m")
+    )
+    terrain_clearance_grace_m = _auto_snapshot_number(
+        terrain_projection.get("terrain_clearance_grace_m")
+    ) or 0.0
+    takeoff_clearance_not_established = bool(
+        terrain_clearance_target_m is not None
+        and (
+            terrain_clearance_m is None
+            or terrain_clearance_m
+            < terrain_clearance_target_m - terrain_clearance_grace_m
+        )
+    )
+    preflight_observation = bool(
+        not request_observed
+        and (
+            sample_index is None
+            or sample_index <= 0
+            or (
+                (progress_m is None or progress_m < 5.0)
+                and (
+                    elapsed_seconds is None
+                    or elapsed_seconds <= 30.0
+                    or altitude_above_home_m is None
+                    or altitude_above_home_m < 5.0
+                    or takeoff_clearance_not_established
+                )
+            )
+        )
+    )
+    if preflight_observation and terrain_projection.get("projection_status") == "computed":
+        # AGL while PX4 is still on the ground or climbing through the takeoff
+        # envelope is not a route-clearance failure. Keep the measurement, but
+        # prevent it from poisoning the rolling recovery window.
+        terrain_projection = {
+            **terrain_projection,
+            "terrain_clearance_below_minimum": False,
+            "terrain_clearance_evaluation_phase": "preflight_takeoff_grace",
+        }
     obstacle_projection = _auto_runtime_obstacle_projection(artifacts=artifacts)
+    obstacle_projection = {
+        **obstacle_projection,
+        "conflict_assessment": _auto_runtime_obstacle_conflict_projection(
+            snapshot=snapshot,
+            artifacts=artifacts,
+            obstacle_projection=obstacle_projection,
+        ),
+    }
     return {
         "source": "missionos_auto_mission_runtime_snapshot",
         "sample_index": snapshot.get("sample_index"),
@@ -2839,6 +3097,7 @@ def _auto_runtime_recovery_agent_telemetry_snapshot(
             "mission_reached_seq": snapshot.get("mission_reached_seq"),
             "waypoint_total": snapshot.get("waypoint_total"),
             "dropoff_dwell_candidate": snapshot.get("dropoff_dwell_candidate"),
+            "ground_speed_mps": snapshot.get("ground_speed_mps"),
         },
         "terrain": terrain_projection,
         "obstacle": obstacle_projection,
@@ -2868,12 +3127,47 @@ def _auto_runtime_recovery_agent_telemetry_snapshot(
             ),
         },
         "telemetry": {
-            "stale": snapshot.get("heartbeat_observed") is False,
+            # The takeoff listener can miss a heartbeat poll while position
+            # and altitude observations are already advancing. Do not let that
+            # transient preflight sample poison the next 30-second recovery
+            # window; retain the raw heartbeat fact separately.
+            "stale": (
+                False
+                if preflight_observation
+                else snapshot.get("heartbeat_observed") is False
+            ),
             "dropout": False,
+            "heartbeat_observed": snapshot.get("heartbeat_observed"),
+        },
+        "recovery": {
+            "request_observed": snapshot.get(
+                "operator_recovery_request_observed"
+            ),
+            "action": snapshot.get("operator_recovery_action"),
+            "parameters": snapshot.get("operator_recovery_parameters"),
+            "command_ack_observed": snapshot.get(
+                "operator_recovery_command_ack_observed"
+            ),
+            "command_ack_result": snapshot.get(
+                "operator_recovery_command_ack_result"
+            ),
+            "assist_attempted": snapshot.get(
+                "operator_recovery_assist_attempted"
+            ),
+            "assist_status": snapshot.get("operator_recovery_assist_status"),
+            "target_reached": snapshot.get("operator_recovery_target_reached"),
+            "resume_status": snapshot.get(
+                "operator_recovery_resume_auto_status"
+            ),
+            "resume_safety_verification": snapshot.get(
+                "operator_recovery_resume_safety_verification"
+            ),
+            "terminal": snapshot.get("operator_recovery_terminal"),
         },
         "nav_state": snapshot.get("nav_state"),
         "arming_state": snapshot.get("arming_state"),
         "landed": snapshot.get("landed"),
+        "preflight_observation": preflight_observation,
     }
 
 
@@ -2939,6 +3233,20 @@ def _runtime_recovery_agent_bucket_seconds() -> float:
     return _runtime_recovery_agent_env_seconds(
         MISSIONOS_RUNTIME_RECOVERY_AGENT_BUCKET_SECONDS_ENV,
         MISSIONOS_RUNTIME_RECOVERY_AGENT_BUCKET_SECONDS,
+    )
+
+
+def _runtime_recovery_proposal_max_age_seconds() -> float:
+    return _runtime_recovery_agent_env_seconds(
+        MISSIONOS_RUNTIME_RECOVERY_PROPOSAL_MAX_AGE_SECONDS_ENV,
+        MISSIONOS_RUNTIME_RECOVERY_PROPOSAL_MAX_AGE_SECONDS,
+    )
+
+
+def _runtime_recovery_proposal_max_origin_drift_m() -> float:
+    return _runtime_recovery_agent_env_seconds(
+        MISSIONOS_RUNTIME_RECOVERY_PROPOSAL_MAX_ORIGIN_DRIFT_M_ENV,
+        MISSIONOS_RUNTIME_RECOVERY_PROPOSAL_MAX_ORIGIN_DRIFT_M,
     )
 
 
@@ -3026,6 +3334,346 @@ def _recovery_window_summary_hash(summary: Mapping[str, Any]) -> str:
             "utf-8"
         )
     ).hexdigest()
+
+
+def _runtime_recovery_decision_signature(
+    summary: Mapping[str, Any],
+    *,
+    telemetry_snapshot: Mapping[str, Any],
+) -> str:
+    """Hash decision-changing facts, not continuously changing telemetry.
+
+    Numeric progress, battery, and clearance remain available as evidence, but
+    they must not cause a new hosted LLM invocation every refresh interval.
+    A new decision epoch begins when thresholded risk, navigation state, or
+    grounded state changes.
+    """
+
+    hard = summary.get("hard_breaches")
+    hard = hard if isinstance(hard, Mapping) else {}
+    soft = summary.get("soft_signals")
+    soft = soft if isinstance(soft, Mapping) else {}
+    material = {
+        "hard_breaches": {
+            key: value is True
+            for key, value in sorted(hard.items())
+            if key != "any"
+        },
+        "soft_signals": {
+            key: value is True
+            for key, value in sorted(soft.items())
+            if key != "any"
+        },
+        "nav_state": telemetry_snapshot.get("nav_state"),
+        "landed": telemetry_snapshot.get("landed") is True,
+        "recovery_observation_state": _runtime_recovery_observation_state(
+            telemetry_snapshot
+        ),
+    }
+    return _canonical_sha256(material)
+
+
+def _runtime_recovery_observation_state(
+    telemetry_snapshot: Mapping[str, Any],
+) -> str:
+    recovery = telemetry_snapshot.get("recovery")
+    recovery = recovery if isinstance(recovery, Mapping) else {}
+    assist_status = str(recovery.get("assist_status") or "").strip().lower()
+    resume_status = str(recovery.get("resume_status") or "").strip().lower()
+    if telemetry_snapshot.get("landed") is True:
+        return "landed"
+    if telemetry_snapshot.get("preflight_observation") is True:
+        # The first PX4 listener sample can precede the first trustworthy
+        # airborne/terrain observation. The whole takeoff envelope, not only
+        # sample zero, must not create a hosted-model proposal from transient
+        # negative AGL or missing heartbeat.
+        return "preflight"
+    if assist_status in {
+        "failed",
+        "aborted",
+        "canceled",
+        "cancelled",
+        "timeout",
+        "target_not_reached",
+    } or resume_status in {"failed", "not_resumed", "resume_failed"}:
+        return "failed"
+    if (
+        assist_status == "stream_window_complete"
+        and recovery.get("target_reached") is False
+    ):
+        # The bounded OFFBOARD window ended without reaching its approved
+        # target. AUTO must not resume; the failed action becomes a fresh
+        # observation/decision epoch for the safe terminal recovery path.
+        return "failed"
+    if resume_status in {
+        "held_remaining_route_or_dropoff_unsafe",
+        "hold_remaining_route_or_dropoff_unsafe_failed",
+    }:
+        # The bounded target was reached, but fresh deterministic verification
+        # rejected the original AUTO continuation.  This is a new observation
+        # epoch and must return to the Recovery Agent for a new proposal and a
+        # separately bound human approval.
+        return "failed"
+    if resume_status == "hold_at_alternate_dropoff_failed":
+        return "failed"
+    if resume_status == "held_at_alternate_dropoff_awaiting_operator_decision":
+        # Reaching an alternate hover point does not authorize payload release,
+        # landing, or resumption of the now-invalid original route.
+        return "held_at_alternate_dropoff"
+    if (
+        recovery.get("target_reached") is True
+        and resume_status == "resumed_auto_mission"
+    ):
+        return "succeeded"
+    if (
+        str(recovery.get("action") or "").strip().lower() == "safety_hold"
+        and assist_status == "safety_hold_observed"
+        and resume_status == "held_awaiting_operator_recovery_approval"
+    ):
+        return "held_awaiting_operator_approval"
+    if recovery.get("request_observed") is True and (
+        recovery.get("command_ack_observed") is True
+        or recovery.get("assist_attempted") is True
+    ):
+        return "in_progress"
+    return "none"
+
+
+def _runtime_recovery_safety_hold_stable(
+    *,
+    bridge: Mapping[str, Any],
+    telemetry_snapshot: Mapping[str, Any],
+) -> bool:
+    """Require two fresh HOLD observations before paying for an LLM judgment."""
+
+    if _runtime_recovery_observation_state(telemetry_snapshot) != (
+        "held_awaiting_operator_approval"
+    ):
+        return False
+    current_telemetry = telemetry_snapshot.get("telemetry")
+    current_telemetry = (
+        current_telemetry if isinstance(current_telemetry, Mapping) else {}
+    )
+    if current_telemetry.get("stale") is True:
+        return False
+    previous = bridge.get("telemetry_snapshot")
+    previous = previous if isinstance(previous, Mapping) else {}
+    if _runtime_recovery_observation_state(previous) != (
+        "held_awaiting_operator_approval"
+    ):
+        return False
+    previous_telemetry = previous.get("telemetry")
+    previous_telemetry = (
+        previous_telemetry if isinstance(previous_telemetry, Mapping) else {}
+    )
+    if previous_telemetry.get("stale") is True:
+        return False
+    current_elapsed = _auto_snapshot_number(
+        telemetry_snapshot.get("elapsed_seconds")
+    )
+    previous_elapsed = _auto_snapshot_number(previous.get("elapsed_seconds"))
+    return bool(
+        current_elapsed is not None
+        and previous_elapsed is not None
+        and current_elapsed > previous_elapsed
+    )
+
+
+def _runtime_recovery_attempt_evidence(
+    *,
+    task_id: str,
+    telemetry_snapshot: Mapping[str, Any],
+    observation_state: str,
+    receipt: Mapping[str, Any],
+    last_proposal: Mapping[str, Any],
+    observed_at: str,
+) -> dict[str, Any] | None:
+    """Build durable evidence for a completed bounded maneuver attempt.
+
+    Runtime snapshots are current-state views and can later be replaced by RTL
+    or LAND telemetry.  This collection record preserves only the authority,
+    executor observation, target result, and Verifier outcome for each maneuver;
+    it does not turn display telemetry into completion evidence.
+    """
+
+    recovery = telemetry_snapshot.get("recovery")
+    recovery = recovery if isinstance(recovery, Mapping) else {}
+    action = str(recovery.get("action") or "").strip().lower()
+    if action not in {
+        "adjust_altitude",
+        "adjust_speed",
+        "reroute",
+        "avoid_obstacle",
+    } or observation_state not in {
+        "failed",
+        "succeeded",
+        "held_at_alternate_dropoff",
+    }:
+        return None
+    parameters = recovery.get("parameters")
+    parameters = dict(parameters) if isinstance(parameters, Mapping) else {}
+    receipt_revalidation = receipt.get("proposal_revalidation")
+    receipt_revalidation = (
+        receipt_revalidation if isinstance(receipt_revalidation, Mapping) else {}
+    )
+    source_proposal_id = str(
+        receipt_revalidation.get("proposal_id")
+        or last_proposal.get("proposal_id")
+        or ""
+    )
+    proposal_origin = receipt_revalidation.get("proposal_origin")
+    if not isinstance(proposal_origin, Mapping):
+        proposal_origin = last_proposal.get("proposal_origin")
+    proposal_origin = (
+        dict(proposal_origin) if isinstance(proposal_origin, Mapping) else {}
+    )
+    attempt_id = _stable_id(
+        "runtime_recovery_attempt",
+        {
+            "task_id": task_id,
+            "source_proposal_id": source_proposal_id,
+            "action": action,
+            "parameters": parameters,
+        },
+    )
+    position = telemetry_snapshot.get("position")
+    position = dict(position) if isinstance(position, Mapping) else {}
+    resume_verification = recovery.get("resume_safety_verification")
+    resume_verification = (
+        dict(resume_verification)
+        if isinstance(resume_verification, Mapping)
+        else None
+    )
+    return {
+        "schema_version": "missionos_runtime_recovery_attempt_evidence.v1",
+        "attempt_id": attempt_id,
+        "task_id": task_id,
+        "source_proposal_id": source_proposal_id,
+        "proposal_origin": proposal_origin,
+        "proposal_origin_sha256": str(
+            receipt_revalidation.get("proposal_origin_sha256")
+            or last_proposal.get("proposal_origin_sha256")
+            or proposal_origin.get("origin_sha256")
+            or ""
+        ),
+        "observed_at": observed_at,
+        "sample_index": telemetry_snapshot.get("sample_index"),
+        "attempt_status": observation_state,
+        "recovery_action": action,
+        "recovery_parameters": parameters,
+        "position": position,
+        "command_ack_observed": recovery.get("command_ack_observed") is True,
+        "assist_attempted": recovery.get("assist_attempted") is True,
+        "assist_status": str(recovery.get("assist_status") or ""),
+        "target_reached": recovery.get("target_reached") is True,
+        "target_distance_m": recovery.get("target_distance_m"),
+        "resume_status": str(recovery.get("resume_status") or ""),
+        "resume_auto_attempted": recovery.get("resume_auto_attempted") is True,
+        "resume_safety_verification": resume_verification,
+        "dispatch_authority_created": (
+            receipt.get("dispatch_authority_created") is True
+        ),
+        "simulator_execution_observed": (
+            recovery.get("command_ack_observed") is True
+            and recovery.get("assist_attempted") is True
+        ),
+        "delivery_completion_claimed": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }
+
+
+def _runtime_recovery_pending_proposal_invalidation_reasons(
+    *,
+    proposal: Mapping[str, Any],
+    telemetry_snapshot: Mapping[str, Any],
+    now: datetime,
+) -> list[str]:
+    """Return reasons a pending proposal can no longer block a new epoch."""
+
+    reasons: list[str] = []
+    valid_until_raw = str(proposal.get("valid_until") or "").strip()
+    try:
+        valid_until = _utc(
+            datetime.fromisoformat(valid_until_raw.replace("Z", "+00:00"))
+        )
+    except ValueError:
+        valid_until = None
+    if valid_until is None:
+        reasons.append("runtime_recovery_proposal_valid_until_missing_or_invalid")
+    elif now > valid_until:
+        reasons.append("runtime_recovery_proposal_stale")
+
+    proposal_result = proposal.get("runtime_recovery_agent_result")
+    proposal_result = proposal_result if isinstance(proposal_result, Mapping) else {}
+    assessment = proposal_result.get("assessment")
+    assessment = assessment if isinstance(assessment, Mapping) else {}
+    candidate = assessment.get("recovery_planner_tool_candidate")
+    candidate = candidate if isinstance(candidate, Mapping) else {}
+    candidate_parameters = candidate.get("proposed_parameters")
+    candidate_parameters = (
+        candidate_parameters if isinstance(candidate_parameters, Mapping) else {}
+    )
+    manifest_bound_alternate = (
+        candidate.get("selected_bounded_action") == "reroute"
+        and candidate_parameters.get("alternate_dropoff") is True
+        and candidate_parameters.get("resume_original_route") is False
+    )
+    if manifest_bound_alternate:
+        obstacle = telemetry_snapshot.get("obstacle")
+        obstacle = obstacle if isinstance(obstacle, Mapping) else {}
+        manifest = obstacle.get("obstacle_manifest")
+        manifest = manifest if isinstance(manifest, Mapping) else {}
+        manifest_candidate = manifest.get("alternate_dropoff_candidate")
+        manifest_candidate = (
+            manifest_candidate if isinstance(manifest_candidate, Mapping) else {}
+        )
+        manifest_parameters = manifest_candidate.get("proposed_parameters")
+        manifest_parameters = (
+            manifest_parameters if isinstance(manifest_parameters, Mapping) else {}
+        )
+        source_obstacle_name = str(
+            candidate_parameters.get("source_obstacle_name") or ""
+        )
+        collision_obstacle_still_present = any(
+            isinstance(item, Mapping)
+            and str(item.get("name") or "") == source_obstacle_name
+            and item.get("collision_enabled") is True
+            for item in manifest.get("obstacles") or []
+        )
+        if (
+            manifest.get("original_dropoff_available") is not False
+            or dict(manifest_parameters) != dict(candidate_parameters)
+            or not collision_obstacle_still_present
+        ):
+            reasons.append(
+                "runtime_recovery_alternate_dropoff_manifest_binding_invalidated"
+            )
+
+    origin = proposal.get("origin_position")
+    origin = origin if isinstance(origin, Mapping) else {}
+    position = telemetry_snapshot.get("position")
+    position = position if isinstance(position, Mapping) else {}
+    origin_x = _auto_snapshot_number(origin.get("local_x_m"))
+    origin_y = _auto_snapshot_number(origin.get("local_y_m"))
+    current_x = _auto_snapshot_number(position.get("local_x_m"))
+    current_y = _auto_snapshot_number(position.get("local_y_m"))
+    max_origin_drift_m = _auto_snapshot_number(
+        proposal.get("max_origin_drift_m")
+    )
+    if (
+        not manifest_bound_alternate
+        and origin_x is not None
+        and origin_y is not None
+        and current_x is not None
+        and current_y is not None
+        and max_origin_drift_m is not None
+        and max_origin_drift_m > 0
+    ):
+        origin_drift_m = math.hypot(current_x - origin_x, current_y - origin_y)
+        if origin_drift_m > max_origin_drift_m:
+            reasons.append("runtime_recovery_proposal_origin_drift_exceeded")
+    return list(dict.fromkeys(reasons))
 
 
 def _runtime_recovery_agent_skipped_result(
@@ -3116,7 +3764,11 @@ def _runtime_recovery_agent_fallback_result(
         "agent_invocations": [
             {
                 "agent_name": "missionos_runtime_recovery_agent_fallback",
+                "provider": "deterministic",
+                "model_id": "",
+                "invocation_kind": "deterministic_guardrail_fallback",
                 "runtime_status": reason,
+                "fallback_reason": reason,
                 "detail": str(detail or "")[:500],
                 "function_tool_called": True,
                 "function_tool_results": [guarded],
@@ -3132,9 +3784,10 @@ def _runtime_recovery_agent_fallback_result(
 def _runtime_recovery_agent_timeout_seconds() -> float:
     """Resolve the runtime recovery agent timeout, env-overridable.
 
-    Defaults to ``MISSIONOS_RUNTIME_RECOVERY_AGENT_TIMEOUT_SECONDS`` (5s, tuned
-    for fast hosted models). Slower local backends (e.g. Ollama Gemma) need a
-    larger budget via ``MISSIONOS_RUNTIME_RECOVERY_AGENT_TIMEOUT_SECONDS``.
+    Gemini gets a 45 second default because live ADK function-tool calls can
+    legitimately exceed the old five-second budget.  The environment override
+    is capped at 90 seconds so a hosted judgment cannot stall the runtime
+    supervisor indefinitely.  Local backends can use the same bounded override.
     """
     raw = os.getenv(MISSIONOS_RUNTIME_RECOVERY_AGENT_TIMEOUT_SECONDS_ENV)
     if raw is not None and raw.strip():
@@ -3143,7 +3796,7 @@ def _runtime_recovery_agent_timeout_seconds() -> float:
         except ValueError:
             parsed = None
         if parsed is not None and parsed > 0:
-            return parsed
+            return min(parsed, MISSIONOS_RUNTIME_RECOVERY_AGENT_TIMEOUT_MAX_SECONDS)
     return MISSIONOS_RUNTIME_RECOVERY_AGENT_TIMEOUT_SECONDS
 
 
@@ -3159,6 +3812,58 @@ def _run_auto_runtime_recovery_agent_with_timeout(
         else timeout_seconds
     )
     result_queue: queue.Queue[tuple[str, Any]] = queue.Queue(maxsize=1)
+
+    def _fallback_with_hosted_attempt(
+        *,
+        reason: str,
+        detail: str,
+        outcome: str,
+        source_result: Mapping[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        fallback = _runtime_recovery_agent_fallback_result(
+            telemetry_snapshot=telemetry_snapshot,
+            task_id=task_id,
+            reason=reason,
+            detail=detail,
+        )
+        invocations = (
+            source_result.get("agent_invocations")
+            if isinstance(source_result, Mapping)
+            else []
+        )
+        invocation = next(
+            (dict(item) for item in invocations or [] if isinstance(item, Mapping)),
+            {},
+        )
+        fallback["hosted_model_attempt"] = {
+            "provider": str(
+                invocation.get("provider")
+                or llm_provider_label("missionos_runtime_recovery_agent")
+            ),
+            "model_id": str(
+                invocation.get("model_id")
+                or agent_model_label(
+                    None,
+                    agent_name="missionos_runtime_recovery_agent",
+                )
+            ),
+            "invocation_kind": str(invocation.get("invocation_kind") or ""),
+            "prompt_sha256": str(invocation.get("prompt_sha256") or ""),
+            "response_sha256": str(invocation.get("response_sha256") or ""),
+            "function_calls_sha256": str(
+                invocation.get("function_calls_sha256") or ""
+            ),
+            "function_tool_results_sha256": str(
+                invocation.get("function_tool_results_sha256") or ""
+            ),
+            "validated_output_source": str(
+                invocation.get("validated_output_source") or ""
+            ),
+            "outcome": outcome,
+            "timeout_seconds": timeout_seconds,
+            "contains_prompt_or_response_text": False,
+        }
+        return fallback
 
     def _invoke() -> None:
         try:
@@ -3186,35 +3891,177 @@ def _run_auto_runtime_recovery_agent_with_timeout(
     try:
         kind, value = result_queue.get(timeout=max(0.001, timeout_seconds))
     except queue.Empty:
-        return _runtime_recovery_agent_fallback_result(
-            telemetry_snapshot=telemetry_snapshot,
-            task_id=task_id,
+        return _fallback_with_hosted_attempt(
             reason="runtime_recovery_agent_timeout",
             detail=f"timeout_seconds={timeout_seconds}",
+            outcome="timeout",
         )
     if kind == "error":
-        return _runtime_recovery_agent_fallback_result(
-            telemetry_snapshot=telemetry_snapshot,
-            task_id=task_id,
+        return _fallback_with_hosted_attempt(
             reason="runtime_recovery_agent_error",
             detail=f"{type(value).__name__}: {value}",
+            outcome="error",
         )
     if isinstance(value, Mapping):
         result = dict(value)
         if result.get("runtime_status") == "not_configured":
-            return _runtime_recovery_agent_fallback_result(
-                telemetry_snapshot=telemetry_snapshot,
-                task_id=task_id,
+            return _fallback_with_hosted_attempt(
                 reason="runtime_recovery_agent_not_configured",
                 detail=";".join(str(item) for item in result.get("blocking_reasons") or ()),
+                outcome="not_configured",
+                source_result=result,
+            )
+        if result.get("runtime_status") == "guardrail_blocked":
+            return _fallback_with_hosted_attempt(
+                reason="runtime_recovery_agent_guardrail_blocked",
+                detail=";".join(
+                    str(item) for item in result.get("blocking_reasons") or ()
+                ),
+                outcome="guardrail_blocked",
+                source_result=result,
             )
         return result
-    return _runtime_recovery_agent_fallback_result(
-        telemetry_snapshot=telemetry_snapshot,
-        task_id=task_id,
+    return _fallback_with_hosted_attempt(
         reason="runtime_recovery_agent_invalid_result",
         detail=type(value).__name__,
+        outcome="invalid_result",
     )
+
+
+def _runtime_recovery_proposal_origin(
+    *,
+    result: Mapping[str, Any],
+    proposal_recompiled: bool,
+    source_proposal: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Return immutable, content-free provenance for a recovery proposal."""
+
+    source_origin = source_proposal.get("proposal_origin")
+    source_origin = (
+        dict(source_origin) if isinstance(source_origin, Mapping) else {}
+    )
+    invocations = [
+        dict(item)
+        for item in result.get("agent_invocations") or []
+        if isinstance(item, Mapping)
+    ]
+    hosted_invocation = next(
+        (
+            item
+            for item in invocations
+            if str(item.get("agent_name") or "")
+            == "missionos_runtime_recovery_agent"
+            and str(item.get("provider") or "") != "deterministic"
+        ),
+        None,
+    )
+    fallback_invocation = next(
+        (
+            item
+            for item in invocations
+            if str(item.get("invocation_kind") or "")
+            == "deterministic_guardrail_fallback"
+        ),
+        None,
+    )
+    hosted_attempt = result.get("hosted_model_attempt")
+    hosted_attempt = (
+        dict(hosted_attempt) if isinstance(hosted_attempt, Mapping) else {}
+    )
+    if proposal_recompiled:
+        origin_kind = "deterministic_recompile_of_prior_judgment"
+        provider = str(source_origin.get("provider") or "")
+        model_id = str(source_origin.get("model_id") or "")
+        invocation_kind = "deterministic_recompile"
+        prompt_sha256 = str(source_origin.get("prompt_sha256") or "")
+        response_sha256 = str(source_origin.get("response_sha256") or "")
+        function_calls_sha256 = str(
+            source_origin.get("function_calls_sha256") or ""
+        )
+        function_tool_results_sha256 = str(
+            source_origin.get("function_tool_results_sha256") or ""
+        )
+        validated_output_source = str(
+            source_origin.get("validated_output_source") or ""
+        )
+        fallback_reason = "runtime_recovery_proposal_deterministic_recompile"
+    elif hosted_invocation is not None:
+        origin_kind = "hosted_llm"
+        provider = str(hosted_invocation.get("provider") or "")
+        model_id = str(hosted_invocation.get("model_id") or "")
+        invocation_kind = str(hosted_invocation.get("invocation_kind") or "")
+        prompt_sha256 = str(hosted_invocation.get("prompt_sha256") or "")
+        response_sha256 = str(hosted_invocation.get("response_sha256") or "")
+        function_calls_sha256 = str(
+            hosted_invocation.get("function_calls_sha256") or ""
+        )
+        function_tool_results_sha256 = str(
+            hosted_invocation.get("function_tool_results_sha256") or ""
+        )
+        validated_output_source = str(
+            hosted_invocation.get("validated_output_source") or ""
+        )
+        fallback_reason = ""
+    elif fallback_invocation is not None:
+        origin_kind = "deterministic_guardrail_fallback"
+        provider = str(hosted_attempt.get("provider") or "deterministic")
+        model_id = str(hosted_attempt.get("model_id") or "")
+        invocation_kind = str(
+            fallback_invocation.get("invocation_kind")
+            or "deterministic_guardrail_fallback"
+        )
+        prompt_sha256 = str(hosted_attempt.get("prompt_sha256") or "")
+        response_sha256 = str(hosted_attempt.get("response_sha256") or "")
+        function_calls_sha256 = str(
+            hosted_attempt.get("function_calls_sha256") or ""
+        )
+        function_tool_results_sha256 = str(
+            hosted_attempt.get("function_tool_results_sha256") or ""
+        )
+        validated_output_source = str(
+            hosted_attempt.get("validated_output_source") or ""
+        )
+        fallback_reason = str(
+            fallback_invocation.get("fallback_reason")
+            or fallback_invocation.get("runtime_status")
+            or "runtime_recovery_agent_fallback"
+        )
+    else:
+        origin_kind = "runtime_recovery_agent_result_unattributed"
+        provider = ""
+        model_id = ""
+        invocation_kind = ""
+        prompt_sha256 = ""
+        response_sha256 = ""
+        function_calls_sha256 = ""
+        function_tool_results_sha256 = ""
+        validated_output_source = ""
+        fallback_reason = ""
+    origin = {
+        "schema_version": "missionos_runtime_recovery_proposal_origin.v1",
+        "origin_kind": origin_kind,
+        "provider": provider,
+        "model_id": model_id,
+        "invocation_kind": invocation_kind,
+        "prompt_sha256": prompt_sha256,
+        "response_sha256": response_sha256,
+        "function_calls_sha256": function_calls_sha256,
+        "function_tool_results_sha256": function_tool_results_sha256,
+        "validated_output_source": validated_output_source,
+        "fallback_reason": fallback_reason,
+        "source_proposal_id": (
+            str(source_proposal.get("proposal_id") or "")
+            if proposal_recompiled
+            else ""
+        ),
+        "contains_prompt_or_response_text": False,
+        "dispatch_authority_created": False,
+        "progress_counted": False,
+    }
+    return {
+        **origin,
+        "origin_sha256": _canonical_sha256(origin),
+    }
 
 
 def _attach_auto_runtime_recovery_agent_proposal(
@@ -3230,12 +4077,176 @@ def _attach_auto_runtime_recovery_agent_proposal(
     if not task or task.get("status") != "running":
         return
     artifacts = task.get("artifacts") if isinstance(task.get("artifacts"), Mapping) else {}
+    last_proposal = artifacts.get("missionos_runtime_recovery_last_proposal")
+    last_proposal = (
+        last_proposal if isinstance(last_proposal, Mapping) else {}
+    )
     bridge = artifacts.get("missionos_runtime_recovery_agent_live_bridge")
     bridge = bridge if isinstance(bridge, Mapping) else {}
     telemetry_snapshot = _auto_runtime_recovery_agent_telemetry_snapshot(
         snapshot,
         artifacts=artifacts,
     )
+    conflict_assessment = telemetry_snapshot.get("obstacle")
+    conflict_assessment = (
+        conflict_assessment.get("conflict_assessment")
+        if isinstance(conflict_assessment, Mapping)
+        else {}
+    )
+    conflict_assessment = (
+        conflict_assessment if isinstance(conflict_assessment, Mapping) else {}
+    )
+    safety_hold_receipt = artifacts.get(
+        "missionos_runtime_recovery_safety_hold_receipt"
+    )
+    safety_hold_receipt = (
+        safety_hold_receipt if isinstance(safety_hold_receipt, Mapping) else {}
+    )
+    current_recovery = telemetry_snapshot.get("recovery")
+    current_recovery = (
+        current_recovery if isinstance(current_recovery, Mapping) else {}
+    )
+    current_recovery_succeeded = bool(
+        str(current_recovery.get("assist_status") or "").strip().lower()
+        in {"target_reached", "succeeded", "completed"}
+        and current_recovery.get("target_reached") is True
+        and str(current_recovery.get("resume_status") or "").strip().lower()
+        == "resumed_auto_mission"
+    )
+    if (
+        safety_hold_receipt.get("request_status") == "queued"
+        and str(current_recovery.get("action") or "").strip().lower()
+        == "safety_hold"
+        and str(current_recovery.get("assist_status") or "").strip().lower()
+        == "safety_hold_observed"
+    ):
+        safety_hold_receipt = {
+            **dict(safety_hold_receipt),
+            "request_status": "observed",
+            "runner_observed": True,
+            "runner_ack_observed": (
+                current_recovery.get("command_ack_observed") is True
+            ),
+            "runner_assist_status": "safety_hold_observed",
+            "runner_resume_status": current_recovery.get("resume_status"),
+            "runner_observed_at": _utc().isoformat(),
+        }
+        try:
+            updated = store.update(
+                task_id,
+                replace_artifacts={
+                    "missionos_runtime_recovery_safety_hold_receipt": (
+                        safety_hold_receipt
+                    )
+                },
+                metadata={
+                    "missionos_runtime_recovery_safety_hold_status": "observed"
+                },
+            )
+        except Exception:
+            updated = None
+        if isinstance(updated, Mapping):
+            updated_artifacts = updated.get("artifacts")
+            if isinstance(updated_artifacts, Mapping):
+                artifacts = updated_artifacts
+    if (
+        conflict_assessment.get("local_avoidance_required") is True
+        and not current_recovery_succeeded
+        and safety_hold_receipt.get("request_status") not in {"queued", "observed"}
+    ):
+        running_receipt = artifacts.get(
+            "missionos_auto_mission_gui_dispatch_running_receipt"
+        )
+        running_receipt = (
+            running_receipt if isinstance(running_receipt, Mapping) else {}
+        )
+        request_path = str(
+            running_receipt.get("operator_recovery_request_container_path") or ""
+        )
+        hold_observed_at = _utc().isoformat()
+        hold_request = {
+            "schema_version": "missionos_auto_safety_hold_request.v1",
+            "task_id": task_id,
+            "request_status": "queued",
+            "recovery_action": "safety_hold",
+            "recovery_parameters": {},
+            "request_reason": "source_backed_local_route_conflict",
+            "preauthorized_safety_reflex": True,
+            "operator_approved": False,
+            "explicit_recovery_dispatch_approval": False,
+            "agent_created_dispatch_authority": False,
+            "delivery_completion_claimed": False,
+            "progress_counted": False,
+            "physical_execution_invoked": False,
+            "hardware_target_allowed": False,
+            "observed_at": hold_observed_at,
+        }
+        if not request_path:
+            hold_write: dict[str, Any] = {
+                "request_status": "blocked",
+                "blocked_reasons": [
+                    "active_runner_recovery_request_path_missing"
+                ],
+            }
+        else:
+            try:
+                hold_write = queue_px4_active_runner_recovery_request(
+                    container_path=request_path,
+                    request_payload=hold_request,
+                )
+            except (
+                OSError,
+                subprocess.CalledProcessError,
+                subprocess.TimeoutExpired,
+                ValueError,
+            ) as exc:
+                hold_write = {
+                    "request_status": "blocked",
+                    "blocked_reasons": [
+                        "safety_hold_request_queue_failed:" + str(exc)
+                    ],
+                }
+        safety_hold_receipt = {
+            "schema_version": "missionos_runtime_recovery_safety_hold_receipt.v1",
+            "task_id": task_id,
+            "request_status": hold_write.get("request_status"),
+            "preauthorized_safety_reflex": True,
+            "safety_action": "hold",
+            "trigger": "source_backed_local_route_conflict",
+            "conflict_assessment": dict(conflict_assessment),
+            "operator_approved": False,
+            "explicit_recovery_dispatch_approval": False,
+            "agent_created_dispatch_authority": False,
+            "safety_policy_created_dispatch_authority": (
+                hold_write.get("request_status") == "queued"
+            ),
+            "active_runner_request": hold_request,
+            "active_runner_request_write": hold_write,
+            "delivery_completion_claimed": False,
+            "progress_counted": False,
+            "physical_execution_invoked": False,
+            "observed_at": hold_observed_at,
+        }
+        try:
+            updated = store.update(
+                task_id,
+                replace_artifacts={
+                    "missionos_runtime_recovery_safety_hold_receipt": (
+                        safety_hold_receipt
+                    )
+                },
+                metadata={
+                    "missionos_runtime_recovery_safety_hold_status": (
+                        hold_write.get("request_status")
+                    )
+                },
+            )
+        except Exception:
+            updated = None
+        if isinstance(updated, Mapping):
+            updated_artifacts = updated.get("artifacts")
+            if isinstance(updated_artifacts, Mapping):
+                artifacts = updated_artifacts
     hard_refresh_seconds = _runtime_recovery_agent_refresh_seconds()
     soft_refresh_seconds = _runtime_recovery_agent_soft_refresh_seconds()
     window_s = _runtime_recovery_agent_window_seconds()
@@ -3276,6 +4287,199 @@ def _attach_auto_runtime_recovery_agent_proposal(
     prior_result = prior_result if isinstance(prior_result, Mapping) else {}
     prior_reasons = prior_result.get("blocking_reasons")
     prior_reasons = prior_reasons if isinstance(prior_reasons, list) else []
+    decision_signature = _runtime_recovery_decision_signature(
+        recovery_window_summary,
+        telemetry_snapshot=telemetry_snapshot,
+    )
+    prior_decision_signature = str(
+        bridge.get("last_recovery_decision_signature") or ""
+    )
+    observation_state = _runtime_recovery_observation_state(telemetry_snapshot)
+    receipt = artifacts.get("missionos_runtime_recovery_dispatch_receipt")
+    receipt = receipt if isinstance(receipt, Mapping) else {}
+    proposal_observed_at = str(bridge.get("proposal_observed_at") or "")
+    receipt_observed_at = str(receipt.get("observed_at") or "")
+    prior_assessment = prior_result.get("assessment")
+    prior_assessment = (
+        prior_assessment if isinstance(prior_assessment, Mapping) else {}
+    )
+    last_proposal_result = last_proposal.get("runtime_recovery_agent_result")
+    last_proposal_result = (
+        last_proposal_result
+        if isinstance(last_proposal_result, Mapping)
+        else {}
+    )
+    last_proposal_assessment = last_proposal_result.get("assessment")
+    last_proposal_assessment = (
+        last_proposal_assessment
+        if isinstance(last_proposal_assessment, Mapping)
+        else {}
+    )
+    proposal_selected_action = str(
+        prior_assessment.get("selected_bounded_action")
+        or last_proposal_assessment.get("selected_bounded_action")
+        or ""
+    ).strip()
+    prior_proposal_passed = (
+        last_proposal_result.get("runtime_status") == "proposal_guardrail_passed"
+        and last_proposal_assessment.get("assessment_status")
+        == "proposal_guardrail_passed"
+        and last_proposal.get("proposal_status") == "awaiting_operator_approval"
+    )
+    proposal_awaiting_approval = prior_proposal_passed and (
+        not receipt_observed_at
+        or not proposal_observed_at
+        or proposal_observed_at > receipt_observed_at
+    )
+    receipt_blocking_reasons = receipt.get("blocked_reasons")
+    receipt_blocking_reasons = (
+        receipt_blocking_reasons
+        if isinstance(receipt_blocking_reasons, Sequence)
+        and not isinstance(receipt_blocking_reasons, (str, bytes))
+        else []
+    )
+    receipt_invalidated_proposal = bool(
+        proposal_observed_at
+        and receipt_observed_at
+        and receipt_observed_at >= proposal_observed_at
+        and any(
+            str(reason).startswith("runtime_recovery_proposal_")
+            or str(reason) == "runtime_recovery_current_telemetry_stale"
+            for reason in receipt_blocking_reasons
+        )
+    )
+    observed_at_datetime = _utc()
+    receipt_revalidation = receipt.get("proposal_revalidation")
+    receipt_revalidation = (
+        receipt_revalidation
+        if isinstance(receipt_revalidation, Mapping)
+        else {}
+    )
+    receipt_datetime: datetime | None
+    try:
+        receipt_datetime = _utc(
+            datetime.fromisoformat(receipt_observed_at.replace("Z", "+00:00"))
+        )
+    except ValueError:
+        receipt_datetime = None
+    matching_dispatch_authority_recent = bool(
+        last_proposal.get("proposal_id")
+        and receipt_revalidation.get("proposal_id")
+        == last_proposal.get("proposal_id")
+        and receipt.get("dispatch_authority_created") is True
+        and receipt.get("active_runner_request_queued") is True
+        and receipt_datetime is not None
+        and (
+            observed_at_datetime - receipt_datetime
+        ).total_seconds()
+        <= _runtime_recovery_proposal_max_age_seconds()
+    )
+    proposal_lifecycle_reasons = (
+        _runtime_recovery_pending_proposal_invalidation_reasons(
+            proposal=last_proposal,
+            telemetry_snapshot=telemetry_snapshot,
+            now=observed_at_datetime,
+        )
+        if proposal_awaiting_approval
+        else []
+    )
+    prior_window_summary = bridge.get("recovery_window_summary")
+    prior_window_summary = (
+        prior_window_summary if isinstance(prior_window_summary, Mapping) else {}
+    )
+    prior_hard_breaches = prior_window_summary.get("hard_breaches")
+    prior_hard_breaches = (
+        prior_hard_breaches if isinstance(prior_hard_breaches, Mapping) else {}
+    )
+    bridge_telemetry = bridge.get("telemetry_snapshot")
+    bridge_telemetry = (
+        bridge_telemetry if isinstance(bridge_telemetry, Mapping) else {}
+    )
+    newly_observed_hard_breach_keys = {
+        key
+        for key, value in hard_breaches.items()
+        if key != "any"
+        and value is True
+        and prior_hard_breaches.get(key) is not True
+    }
+    nav_state_changed = bool(
+        bridge_telemetry
+        and bridge_telemetry.get("nav_state") != telemetry_snapshot.get("nav_state")
+    )
+    current_recovery = telemetry_snapshot.get("recovery")
+    current_recovery = (
+        current_recovery if isinstance(current_recovery, Mapping) else {}
+    )
+    current_conflict = telemetry_snapshot.get("obstacle")
+    current_conflict = (
+        current_conflict.get("conflict_assessment")
+        if isinstance(current_conflict, Mapping)
+        else {}
+    )
+    current_conflict = (
+        current_conflict if isinstance(current_conflict, Mapping) else {}
+    )
+    safety_hold_preserves_local_avoidance_proposal = bool(
+        proposal_selected_action == "avoid_obstacle"
+        and current_conflict.get("local_avoidance_required") is True
+        and str(current_recovery.get("action") or "").strip().lower()
+        == "safety_hold"
+        and str(current_recovery.get("assist_status") or "").strip().lower()
+        == "safety_hold_observed"
+        and str(current_recovery.get("resume_status") or "").strip().lower()
+        == "held_awaiting_operator_recovery_approval"
+    )
+    # A transient heartbeat gap while the aircraft is already in the bounded
+    # safety HOLD invalidates immediate dispatch, not the human-visible
+    # recovery judgment. Gateway revalidation still fails closed until fresh
+    # telemetry returns. Replacing the proposal here caused an endless chain
+    # of equivalent checkpoints during harmless two-poll gaps.
+    materially_new_hard_breach = any(
+        not (
+            safety_hold_preserves_local_avoidance_proposal
+            and key == "telemetry_lost"
+        )
+        for key in newly_observed_hard_breach_keys
+    )
+    local_conflict_requires_hold = bool(
+        current_conflict.get("local_avoidance_required") is True
+        and observation_state not in {"in_progress", "succeeded"}
+    )
+    safety_hold_observed = bool(
+        safety_hold_receipt.get("request_status") == "observed"
+        and observation_state == "held_awaiting_operator_approval"
+    )
+    safety_hold_stable = _runtime_recovery_safety_hold_stable(
+        bridge=bridge,
+        telemetry_snapshot=telemetry_snapshot,
+    )
+    proposal_materially_changed = bool(
+        proposal_awaiting_approval
+        and (
+            materially_new_hard_breach
+            or (
+                nav_state_changed
+                and not safety_hold_preserves_local_avoidance_proposal
+            )
+            or observation_state == "failed"
+        )
+    )
+    if proposal_materially_changed:
+        proposal_lifecycle_reasons.append(
+            "runtime_recovery_proposal_superseded_by_material_change"
+        )
+    proposal_lifecycle_reasons = list(dict.fromkeys(proposal_lifecycle_reasons))
+    proposal_invalidated = bool(
+        receipt_invalidated_proposal or proposal_lifecycle_reasons
+    )
+    proposal_invalidated_without_new_epoch = bool(
+        proposal_lifecycle_reasons
+        and not receipt_invalidated_proposal
+        and "runtime_recovery_proposal_superseded_by_material_change"
+        not in proposal_lifecycle_reasons
+    )
+    if proposal_invalidated:
+        proposal_awaiting_approval = False
     should_refresh = _should_refresh_auto_runtime_recovery_agent(
         bridge=bridge,
         telemetry_snapshot=telemetry_snapshot,
@@ -3285,31 +4489,157 @@ def _attach_auto_runtime_recovery_agent_proposal(
         should_refresh = True
     if has_hard_news and not prior_agent_hard_news:
         should_refresh = True
-    if not has_news:
+    next_decision_signature = decision_signature
+    proposal_recompiled = False
+    if observation_state == "preflight":
+        agent_invoked = False
+        result = _runtime_recovery_agent_skipped_result(
+            reason="runtime_recovery_preflight_telemetry_not_ready",
+            detail="wait_for_first_complete_airborne_observation",
+        )
+        refresh_status = "preflight"
+    elif observation_state == "landed":
+        agent_invoked = False
+        result = _runtime_recovery_agent_skipped_result(
+            reason="runtime_recovery_vehicle_landed",
+            detail="no_recovery_proposal_after_landing",
+        )
+        refresh_status = "landed"
+    elif local_conflict_requires_hold and not safety_hold_observed:
+        # Queue and observe the deterministic safety action before asking the
+        # hosted model to judge the stabilized situation.  The HOLD is not a
+        # proposal and creates no human dispatch authority.
+        agent_invoked = False
+        result = _runtime_recovery_agent_skipped_result(
+            reason="runtime_recovery_waiting_for_safety_hold",
+            detail=str(safety_hold_receipt.get("request_status") or "not_queued"),
+        )
+        refresh_status = "waiting_for_safety_hold"
+        next_decision_signature = prior_decision_signature
+    elif matching_dispatch_authority_recent:
+        # The operator has bound a fresh authority to this exact proposal and
+        # the request is queued for the active runner.  The runner executes the
+        # bounded maneuver synchronously, so there can be a short interval
+        # before a new telemetry snapshot reports in-progress/succeeded.  Do
+        # not pay for or surface a second proposal during that handoff.
+        agent_invoked = False
+        result = _runtime_recovery_agent_skipped_result(
+            reason="runtime_recovery_dispatch_pending_runner_observation",
+            detail=str(last_proposal.get("proposal_id") or ""),
+        )
+        refresh_status = "dispatch_pending_runner_observation"
+    elif (
+        local_conflict_requires_hold
+        and safety_hold_observed
+        and not safety_hold_stable
+        and not proposal_awaiting_approval
+    ):
+        # One fresh HOLD sample is not enough to distinguish a settled vehicle
+        # from the mode transition itself. Persist it, then judge the next
+        # fresh observation once.
+        agent_invoked = False
+        result = _runtime_recovery_agent_skipped_result(
+            reason="runtime_recovery_safety_hold_settling",
+            detail="waiting_for_second_fresh_hold_observation",
+        )
+        refresh_status = "safety_hold_settling"
+        next_decision_signature = prior_decision_signature
+    elif proposal_awaiting_approval:
+        # The prior proposal is an immutable decision awaiting the human. Do
+        # not ask the hosted model to propose the same action again while that
+        # authority boundary is unresolved.
+        agent_invoked = False
+        result = dict(prior_result)
+        refresh_status = "awaiting_operator_approval"
+        next_decision_signature = prior_decision_signature or decision_signature
+    elif (
+        safety_hold_preserves_local_avoidance_proposal
+        and (
+            proposal_invalidated_without_new_epoch
+            or (
+                observation_state == "held_awaiting_operator_approval"
+                and last_proposal.get("proposal_status")
+                in {"stale", "superseded"}
+            )
+        )
+    ):
+        # The human may take longer than the proposal's freshness window while
+        # the aircraft remains in the preauthorized safety HOLD. Recompile the
+        # already judged avoid intent against the newest observation without a
+        # second hosted-model call. This creates a fresh concrete proposal and
+        # still requires a new human approval.
+        agent_invoked = False
+        proposal_recompiled = True
+        result = _runtime_recovery_agent_fallback_result(
+            telemetry_snapshot=telemetry_snapshot,
+            task_id=task_id,
+            reason="runtime_recovery_proposal_deterministic_recompile",
+            detail=str(last_proposal.get("proposal_id") or ""),
+        )
+        refresh_status = "proposal_recompiled"
+    elif observation_state == "in_progress":
+        agent_invoked = False
+        result = _runtime_recovery_agent_skipped_result(
+            reason="runtime_recovery_action_in_progress",
+            detail="wait_for_executor_observation_before_new_proposal",
+        )
+        refresh_status = "recovery_in_progress"
+    elif observation_state == "succeeded":
+        agent_invoked = False
+        result = _runtime_recovery_agent_skipped_result(
+            reason="runtime_recovery_action_succeeded",
+            detail="wait_for_materially_new_runtime_risk",
+        )
+        refresh_status = "recovery_succeeded"
+    elif not has_news and observation_state != "failed":
         agent_invoked = False
         result = _runtime_recovery_agent_skipped_result(
             reason="runtime_recovery_window_no_news",
             detail="window_summary_has_no_hard_or_soft_signals",
         )
-    elif prior_summary_hash == recovery_window_summary_hash:
+        refresh_status = "no_news"
+    elif proposal_invalidated_without_new_epoch:
+        # Expiry or origin drift removes approval authority and releases the
+        # proposal slot, but neither is by itself a reason to pay for an
+        # identical hosted-model judgment. A new hard signal, operator refresh,
+        # or blocked dispatch creates the next decision epoch.
         agent_invoked = False
         result = _runtime_recovery_agent_skipped_result(
-            reason="runtime_recovery_window_debounce",
-            detail="window_summary_unchanged_since_last_agent_result",
+            reason=str(
+                proposal_lifecycle_reasons[0]
+                if proposal_lifecycle_reasons
+                else "runtime_recovery_proposal_stale"
+            ),
+            detail="invalidated_without_material_decision_change",
         )
-    elif not should_refresh:
+        refresh_status = "proposal_stale"
+        next_decision_signature = prior_decision_signature or decision_signature
+    elif prior_decision_signature == decision_signature and not proposal_invalidated:
+        agent_invoked = False
+        result = _runtime_recovery_agent_skipped_result(
+            reason="runtime_recovery_decision_unchanged",
+            detail="thresholded_risk_signature_unchanged",
+        )
+        refresh_status = "decision_unchanged"
+    elif not should_refresh and observation_state != "failed":
         agent_invoked = False
         result = _runtime_recovery_agent_skipped_result(
             reason="runtime_recovery_window_waiting",
             detail=f"refresh_seconds={active_refresh_seconds}",
         )
+        refresh_status = "waiting"
     else:
         agent_invoked = True
         result = _run_auto_runtime_recovery_agent_with_timeout(
             telemetry_snapshot=telemetry_snapshot,
             task_id=task_id,
         )
+        refresh_status = "agent_invoked"
     runtime_status = result.get("runtime_status")
+    proposal_created = bool(
+        (agent_invoked or proposal_recompiled)
+        and runtime_status == "proposal_guardrail_passed"
+    )
     last_agent_invoked_elapsed_seconds = bridge.get(
         "last_agent_invoked_elapsed_seconds"
     )
@@ -3321,6 +4651,40 @@ def _attach_auto_runtime_recovery_agent_proposal(
         last_agent_invoked_sample_index = telemetry_snapshot.get("sample_index")
         last_agent_summary_hash = recovery_window_summary_hash
         last_agent_hard_breach_any = has_hard_news
+    observed_at = observed_at_datetime.isoformat()
+    attempt_evidence = _runtime_recovery_attempt_evidence(
+        task_id=task_id,
+        telemetry_snapshot=telemetry_snapshot,
+        observation_state=observation_state,
+        receipt=receipt,
+        last_proposal=last_proposal,
+        observed_at=observed_at,
+    )
+    existing_attempts = artifacts.get("missionos_runtime_recovery_attempts")
+    existing_attempts = (
+        existing_attempts if isinstance(existing_attempts, Mapping) else {}
+    )
+    attempt_evidence_missing = bool(
+        attempt_evidence
+        and attempt_evidence.get("attempt_id") not in existing_attempts
+    )
+    if proposal_created:
+        proposal_observed_at = observed_at
+        proposal_sample_index = telemetry_snapshot.get("sample_index")
+    else:
+        proposal_sample_index = bridge.get("proposal_sample_index")
+    if (
+        not agent_invoked
+        and not proposal_created
+        and bridge.get("agent_refresh_status") == refresh_status
+        and bridge.get("recovery_observation_state") == observation_state
+        and bridge.get("recovery_decision_signature") == decision_signature
+        and not attempt_evidence_missing
+    ):
+        # The runtime snapshot is persisted independently. Avoid emitting a
+        # duplicate agent-current-state artifact (and task timeline event)
+        # when neither the decision nor recovery observation changed.
+        return
     bridge_payload = {
         "schema_version": "missionos_runtime_recovery_agent_live_bridge.v1",
         "bridge_status": (
@@ -3335,19 +4699,134 @@ def _attach_auto_runtime_recovery_agent_proposal(
         "recovery_window_summary_hash": recovery_window_summary_hash,
         "recovery_window_samples": window_samples,
         "active_refresh_seconds": active_refresh_seconds,
+        "agent_refresh_status": refresh_status,
+        "recovery_observation_state": observation_state,
+        "recovery_decision_signature": decision_signature,
+        "last_recovery_decision_signature": next_decision_signature,
         "last_agent_invoked_elapsed_seconds": last_agent_invoked_elapsed_seconds,
         "last_agent_invoked_sample_index": last_agent_invoked_sample_index,
         "last_agent_recovery_window_summary_hash": last_agent_summary_hash,
         "last_agent_hard_breach_any": last_agent_hard_breach_any,
+        "proposal_observed_at": proposal_observed_at or None,
+        "proposal_sample_index": proposal_sample_index,
+        "invalidated_proposal_id": (
+            last_proposal.get("proposal_id") if proposal_lifecycle_reasons else None
+        ),
+        "proposal_invalidation_reasons": proposal_lifecycle_reasons,
         "runtime_recovery_agent_result": result,
-        "observed_at": _utc().isoformat(),
+        "observed_at": observed_at,
         "dispatch_authority_created": False,
         "progress_counted": False,
     }
+    artifact_updates: dict[str, Any] = {}
+    replaced_artifacts: dict[str, Any] = {
+        "missionos_runtime_recovery_agent_live_bridge": bridge_payload
+    }
+    if attempt_evidence is not None:
+        attempt_id = str(attempt_evidence.get("attempt_id") or "")
+        if attempt_id:
+            artifact_updates["missionos_runtime_recovery_attempts"] = {
+                attempt_id: attempt_evidence
+            }
+            replaced_artifacts["missionos_runtime_recovery_last_attempt"] = (
+                attempt_evidence
+            )
+    if proposal_lifecycle_reasons and last_proposal:
+        invalidated_proposal = {
+            **dict(last_proposal),
+            "proposal_status": (
+                "superseded"
+                if "runtime_recovery_proposal_superseded_by_material_change"
+                in proposal_lifecycle_reasons
+                else "stale"
+            ),
+            "invalidated_at": observed_at,
+            "invalidation_reasons": proposal_lifecycle_reasons,
+            "dispatch_authority_created": False,
+            "progress_counted": False,
+        }
+        invalidated_proposal_id = str(
+            invalidated_proposal.get("proposal_id") or ""
+        )
+        if invalidated_proposal_id:
+            artifact_updates["missionos_runtime_recovery_proposals"] = {
+                invalidated_proposal_id: invalidated_proposal
+            }
+        replaced_artifacts["missionos_runtime_recovery_last_proposal"] = (
+            invalidated_proposal
+        )
+    if proposal_created:
+        proposal_origin_position = telemetry_snapshot.get("position")
+        proposal_origin_position = (
+            dict(proposal_origin_position)
+            if isinstance(proposal_origin_position, Mapping)
+            else {}
+        )
+        proposal_id = _stable_id(
+            "runtime_recovery_proposal",
+            {
+                "task_id": task_id,
+                "observed_at": observed_at,
+                "recovery_decision_signature": decision_signature,
+            },
+        )
+        proposal_origin = _runtime_recovery_proposal_origin(
+            result=result,
+            proposal_recompiled=proposal_recompiled,
+            source_proposal=last_proposal,
+        )
+        proposal_origin_kind = str(proposal_origin.get("origin_kind") or "")
+        proposal_evidence = {
+            "schema_version": "missionos_runtime_recovery_proposal_evidence.v1",
+            "proposal_id": proposal_id,
+            "task_id": task_id,
+            "proposal_status": "awaiting_operator_approval",
+            "observed_at": observed_at,
+            "valid_until": (
+                observed_at_datetime
+                + timedelta(seconds=_runtime_recovery_proposal_max_age_seconds())
+            ).isoformat(),
+            "origin_position": proposal_origin_position,
+            "max_origin_drift_m": (
+                _runtime_recovery_proposal_max_origin_drift_m()
+            ),
+            "sample_index": telemetry_snapshot.get("sample_index"),
+            "recovery_decision_signature": decision_signature,
+            "runtime_recovery_agent_result": result,
+            "proposal_origin": proposal_origin,
+            "proposal_origin_sha256": proposal_origin["origin_sha256"],
+            "proposal_source": (
+                "deterministic_recompile_of_prior_llm_judgment"
+                if proposal_recompiled
+                else "hosted_runtime_recovery_judgment"
+                if proposal_origin_kind == "hosted_llm"
+                else "deterministic_guardrail_fallback"
+                if proposal_origin_kind == "deterministic_guardrail_fallback"
+                else proposal_origin_kind
+            ),
+            "source_proposal_id": (
+                last_proposal.get("proposal_id") if proposal_recompiled else None
+            ),
+            "hosted_model_invoked_for_proposal": agent_invoked,
+            "hosted_model_judgment_used_for_proposal": (
+                proposal_origin_kind == "hosted_llm"
+            ),
+            "dispatch_authority_created": False,
+            "progress_counted": False,
+        }
+        proposal_updates = artifact_updates.setdefault(
+            "missionos_runtime_recovery_proposals",
+            {},
+        )
+        proposal_updates[proposal_id] = proposal_evidence
+        replaced_artifacts["missionos_runtime_recovery_last_proposal"] = (
+            proposal_evidence
+        )
     try:
         store.update(
             task_id,
-            artifacts={"missionos_runtime_recovery_agent_live_bridge": bridge_payload},
+            artifacts=artifact_updates or None,
+            replace_artifacts=replaced_artifacts,
             metadata={
                 "missionos_runtime_recovery_agent_last_sample_index": (
                     telemetry_snapshot.get("sample_index")
@@ -3357,6 +4836,105 @@ def _attach_auto_runtime_recovery_agent_proposal(
         )
     except Exception:
         return
+
+
+def _updated_auto_live_trajectory(
+    *,
+    existing: Mapping[str, Any] | None,
+    snapshot: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Append one source-backed display sample without inventing continuity."""
+
+    existing = existing if isinstance(existing, Mapping) else {}
+    prior_samples = existing.get("samples")
+    samples = [
+        dict(item)
+        for item in (prior_samples if isinstance(prior_samples, list) else [])
+        if isinstance(item, Mapping)
+    ]
+    sample_index = snapshot.get("sample_index")
+    elapsed_seconds = _auto_snapshot_number(snapshot.get("elapsed_seconds"))
+    local_x_m = _auto_snapshot_number(snapshot.get("local_x_m"))
+    local_y_m = _auto_snapshot_number(snapshot.get("local_y_m"))
+    if local_x_m is None or local_y_m is None:
+        return {
+            **dict(existing),
+            "schema_version": "missionos_auto_mission_live_trajectory.v1",
+            "trajectory_status": "waiting_for_position",
+            "read_only": True,
+            "dispatch_authority_created": False,
+            "progress_counted": False,
+        }
+    previous = samples[-1] if samples else {}
+    previous_index = previous.get("sample_index")
+    previous_index = (
+        int(previous_index) if isinstance(previous_index, (int, float)) else None
+    )
+    previous_elapsed = _auto_snapshot_number(previous.get("elapsed_seconds"))
+    segment_index = int(previous.get("segment_index") or 0) if previous else 0
+    break_reason = ""
+    if previous:
+        if previous_index is not None and isinstance(sample_index, (int, float)):
+            index_delta = int(sample_index) - previous_index
+            if index_delta <= 0:
+                break_reason = "sample_index_not_monotonic"
+            elif index_delta > 5:
+                break_reason = "sample_index_gap"
+        if (
+            not break_reason
+            and previous_elapsed is not None
+            and elapsed_seconds is not None
+        ):
+            elapsed_delta = elapsed_seconds - previous_elapsed
+            if elapsed_delta <= 0:
+                break_reason = "elapsed_time_not_monotonic"
+            elif elapsed_delta > 15.0:
+                break_reason = "elapsed_time_gap"
+        if break_reason:
+            segment_index += 1
+    sample = {
+        "sample_index": sample_index,
+        "elapsed_seconds": elapsed_seconds,
+        "segment_index": segment_index,
+        "segment_break_reason": break_reason or None,
+        "local_x_m": local_x_m,
+        "local_y_m": local_y_m,
+        "local_z_m": _auto_snapshot_number(snapshot.get("local_z_m")),
+        "altitude_above_home_m": _auto_snapshot_number(
+            snapshot.get("altitude_above_home_m")
+        ),
+        "phase": snapshot.get("phase") or snapshot.get("snapshot_status"),
+        "battery_remaining_percent": _auto_snapshot_number(
+            snapshot.get("battery_remaining_percent")
+        ),
+        "battery_state_source": snapshot.get("battery_state_source"),
+        "battery_sample_accepted": snapshot.get("battery_sample_accepted"),
+        "observed_at": snapshot.get("observed_at"),
+        "source": "missionos_auto_mission_runtime_snapshot",
+    }
+    samples.append(sample)
+    samples = samples[-MISSIONOS_AUTO_MISSION_LIVE_TRAJECTORY_MAX_SAMPLES:]
+    segment_count = len(
+        {
+            int(item.get("segment_index") or 0)
+            for item in samples
+            if isinstance(item, Mapping)
+        }
+    )
+    return {
+        "schema_version": "missionos_auto_mission_live_trajectory.v1",
+        "trajectory_status": "observed",
+        "task_ref": snapshot.get("task_ref"),
+        "sample_count": len(samples),
+        "segment_count": segment_count,
+        "latest_sample_index": sample_index,
+        "samples": samples,
+        "read_only": True,
+        "dispatch_authority_created": False,
+        "progress_counted": False,
+        "delivery_completion_claimed": False,
+        "physical_execution_invoked": False,
+    }
 
 
 def _persist_auto_live_telemetry_snapshot(
@@ -3399,6 +4977,12 @@ def _persist_auto_live_telemetry_snapshot(
         "running_snapshot_path": str(snapshot_path),
         "sample_index": sample_index,
         "elapsed_seconds": payload.get("elapsed_seconds"),
+        "monitor_effective_elapsed_seconds": payload.get(
+            "monitor_effective_elapsed_seconds"
+        ),
+        "monitor_excluded_recovery_seconds": payload.get(
+            "monitor_excluded_recovery_seconds"
+        ),
         "progress_m": payload.get("progress_m"),
         "mission_current_seq": payload.get("mission_current_seq"),
         "mission_reached_seq": payload.get("mission_reached_seq"),
@@ -3407,6 +4991,9 @@ def _persist_auto_live_telemetry_snapshot(
         "local_x_m": payload.get("local_x_m"),
         "local_y_m": payload.get("local_y_m"),
         "local_z_m": payload.get("local_z_m"),
+        "local_vx_mps": payload.get("local_vx_mps"),
+        "local_vy_mps": payload.get("local_vy_mps"),
+        "ground_speed_mps": payload.get("ground_speed_mps"),
         "distance_to_home_m": payload.get("distance_to_home_m"),
         "nav_state": payload.get("nav_state"),
         "battery_remaining_percent": payload.get("battery_remaining_percent"),
@@ -3544,6 +5131,9 @@ def _persist_auto_live_telemetry_snapshot(
         "operator_recovery_resume_auto_status": payload.get(
             "operator_recovery_resume_auto_status"
         ),
+        "operator_recovery_resume_safety_verification": payload.get(
+            "operator_recovery_resume_safety_verification"
+        ),
         "operator_recovery_assist_low_altitude_disarm_ack_observed": payload.get(
             "operator_recovery_assist_low_altitude_disarm_ack_observed"
         ),
@@ -3610,10 +5200,17 @@ def _persist_auto_live_telemetry_snapshot(
                 ),
             }
         )
+    live_trajectory = _updated_auto_live_trajectory(
+        existing=terrain_artifacts.get("missionos_auto_mission_live_trajectory"),
+        snapshot=snapshot,
+    )
     store = (task_store_factory or get_task_store)()
     store.update(
         task_id,
-        artifacts={"missionos_auto_mission_runtime_snapshot": snapshot},
+        replace_artifacts={
+            "missionos_auto_mission_runtime_snapshot": snapshot,
+            "missionos_auto_mission_live_trajectory": live_trajectory,
+        },
         metadata={
             "missionos_auto_mission_runtime_snapshot_attached": True,
             "missionos_auto_mission_runtime_sample_index": sample_index,
@@ -3656,7 +5253,9 @@ def run_missionos_auto_mission_gui_dispatch_execution(
             "MissionOS AUTO GUI dispatch requires pending prepared task"
         )
     root = _repo_root()
-    route = _missionos_auto_coordinate_route(current)
+    route = _coordinate_route_with_explicit_realism_env(
+        _missionos_auto_coordinate_route(current)
+    )
     route_compilation = compile_operator_coordinate_route_auto_mission(route)
     route_compilation_artifact = route_compilation.model_dump(mode="json")
     monitor_seconds = float(route_compilation.timeout_seconds)
@@ -3847,6 +5446,10 @@ def run_missionos_auto_mission_gui_dispatch_execution(
     sitl_delivery_gate = _auto_gate(payload, "sitl_delivery_gate")
     payload_release_sim_gate = _auto_gate(payload, "payload_release_sim_gate")
     payload_release_event = _auto_gate(payload, "payload_release_event")
+    final_verification_chain = _auto_gate(payload, "final_verification_chain")
+    runtime_recovery_provenance = _auto_gate(
+        payload, "runtime_recovery_provenance"
+    )
     upload_observed = _auto_gate(payload, "upload_observed")
     probe_observed = _auto_gate(payload, "probe_observed")
     compilation = _auto_gate(payload, "compilation")
@@ -3923,6 +5526,9 @@ def run_missionos_auto_mission_gui_dispatch_execution(
         ],
         "route_completed_claimed": waypoint_gate.get("route_completed_claimed", False),
         "dropoff_verified": dropoff_gate.get("dropoff_verified", False),
+        "dropoff_verification_basis": (
+            "phase5_monitor_telemetry_release_envelope"
+        ),
         "sitl_delivery_claimed": sitl_delivery_gate.get(
             "sitl_delivery_claimed", False
         ),
@@ -3942,6 +5548,21 @@ def run_missionos_auto_mission_gui_dispatch_execution(
         "external_dispatch_performed": False,
         "hardware_target_allowed": False,
         "physical_execution_invoked": False,
+        "final_verification_status": final_verification_chain.get(
+            "final_verification_status"
+        ),
+        "runtime_recovery_provenance_status": runtime_recovery_provenance.get(
+            "provenance_status"
+        ),
+        "runtime_recovery_proposal_origin_kind": (
+            runtime_recovery_provenance.get("proposal_origin", {}).get(
+                "origin_kind"
+            )
+            if isinstance(
+                runtime_recovery_provenance.get("proposal_origin"), Mapping
+            )
+            else None
+        ),
     }
     recovery_agent_telemetry_snapshot = runtime_summary.get(
         "recovery_agent_telemetry_snapshot"
@@ -3969,6 +5590,12 @@ def run_missionos_auto_mission_gui_dispatch_execution(
         "missionos_auto_mission_sitl_delivery_gate_summary": sitl_delivery_gate,
         "missionos_auto_mission_payload_release_sim_gate_summary": payload_release_sim_gate,
         "missionos_auto_mission_payload_release_event": payload_release_event,
+        "missionos_auto_mission_final_verification_chain": (
+            final_verification_chain
+        ),
+        "missionos_runtime_recovery_run_provenance": (
+            runtime_recovery_provenance
+        ),
         "missionos_auto_mission_upload_observed": upload_observed,
         "missionos_auto_mission_probe_observed": probe_observed,
         "missionos_auto_mission_compilation": compilation,
@@ -4101,6 +5728,9 @@ def run_missionos_auto_mission_gui_dispatch_execution(
             ],
             "route_completed_claimed": summary["route_completed_claimed"],
             "dropoff_verified": summary["dropoff_verified"],
+            "dropoff_verification_basis": summary[
+                "dropoff_verification_basis"
+            ],
             "sitl_delivery_claimed": summary["sitl_delivery_claimed"],
             "payload_release_observed_sim": summary["payload_release_observed_sim"],
             "missionos_auto_thermal_weather_application_status": (

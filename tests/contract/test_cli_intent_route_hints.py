@@ -1184,6 +1184,92 @@ def test_pending_turtlebot3_recovery_uses_authoritative_checkpoint_parameters() 
     assert pending["checkpoint_hash"] == REVIEWED_RECOVERY_CHECKPOINT_HASH
 
 
+def test_pending_px4_recovery_uses_current_runtime_proposal_parameters() -> None:
+    proposal = {
+        "schema_version": "missionos_runtime_recovery_proposal_evidence.v1",
+        "proposal_id": "runtime_recovery_proposal_current",
+        "proposal_status": "awaiting_operator_approval",
+        "proposal_source": "deterministic_recompile_of_prior_llm_judgment",
+        "runtime_recovery_agent_result": {
+            "runtime_status": "proposal_guardrail_passed",
+            "assessment": {
+                "assessment_status": "proposal_guardrail_passed",
+                "selected_bounded_action": "avoid_obstacle",
+                "proposed_parameters": {
+                    "target_x_m": -28.174,
+                    "target_y_m": 436.426,
+                    "target_altitude_m": 45.0,
+                },
+            },
+            "agent_output": {"rationale": "avoid the current local conflict"},
+            "agent_invocations": [],
+        },
+    }
+    payload = {
+        "task": {
+            "task_id": "task_px4_runtime_recovery",
+            "kind": "mission_designer_sitl_execution",
+            "status": "running",
+            "artifacts": {
+                "missionos_runtime_recovery_last_proposal": proposal,
+                "missionos_runtime_recovery_agent_live_bridge": {
+                    "telemetry_snapshot": {"sample_index": 117}
+                },
+            },
+        }
+    }
+
+    pending = missionos_cli._pending_recovery_approval_from_task(payload)
+
+    assert pending is not None
+    assert pending["recovery_action"] == "avoid_obstacle"
+    assert pending["recovery_parameters"] == {
+        "target_x_m": -28.174,
+        "target_y_m": 436.426,
+        "target_altitude_m": 45.0,
+    }
+    assert pending["recovery_proposal_id"] == (
+        "runtime_recovery_proposal_current"
+    )
+    assert pending["input_observations"] == {"sample_index": 117}
+
+
+def test_pending_px4_recovery_hides_proposal_after_matching_authority() -> None:
+    payload = {
+        "task": {
+            "task_id": "task_px4_runtime_recovery",
+            "kind": "mission_designer_sitl_execution",
+            "status": "running",
+            "artifacts": {
+                "missionos_runtime_recovery_last_proposal": {
+                    "schema_version": (
+                        "missionos_runtime_recovery_proposal_evidence.v1"
+                    ),
+                    "proposal_id": "runtime_recovery_proposal_approved",
+                    "proposal_status": "awaiting_operator_approval",
+                    "runtime_recovery_agent_result": {
+                        "assessment": {
+                            "selected_bounded_action": "avoid_obstacle",
+                            "proposed_parameters": {
+                                "target_x_m": -28.0,
+                                "target_y_m": 436.0,
+                            },
+                        }
+                    },
+                },
+                "missionos_runtime_recovery_dispatch_receipt": {
+                    "dispatch_authority_created": True,
+                    "proposal_revalidation": {
+                        "proposal_id": "runtime_recovery_proposal_approved"
+                    },
+                },
+            },
+        }
+    }
+
+    assert missionos_cli._pending_recovery_approval_from_task(payload) is None
+
+
 def test_pending_turtlebot3_recovery_never_borrows_unmatched_proposal_evidence(
     capsys: Any,
 ) -> None:

@@ -31,9 +31,7 @@ TERRAIN_ELEVATION_RESOLVER_TOOL_SCHEMA_VERSION = (
     "missionos_terrain_elevation_resolver_tool_result.v1"
 )
 SEMANTIC_ROUTE_REQUEST_SCHEMA_VERSION = "missionos_chief_semantic_route_request.v1"
-CHIEF_ROUTE_FUNCTION_TOOL_SCHEMA_VERSION = (
-    "missionos_chief_route_function_tool_invocation.v1"
-)
+CHIEF_ROUTE_FUNCTION_TOOL_SCHEMA_VERSION = "missionos_chief_route_function_tool_invocation.v1"
 CHIEF_ROUTE_FUNCTION_TOOL_NAME = "missionos_resolve_mission_designer_route"
 PLACE_GEOCODER_TOOL_SCHEMA_VERSION = "missionos_place_geocoder_tool_result.v1"
 COORDINATE_ROUTE_TOOL_SCHEMA_VERSION = "missionos_chief_coordinate_route.v1"
@@ -47,9 +45,7 @@ SOURCE_TOOL_USER_AGENT = "boiled-claw-missionos-designer-source-tools/1.0"
 OPEN_METEO_USER_AGENT = SOURCE_TOOL_USER_AGENT
 GSI_DEM_USER_AGENT = SOURCE_TOOL_USER_AGENT
 CHIEF_ROUTE_SEMANTIC_ADK_ENABLED_ENV = "MISSIONOS_CHIEF_ROUTE_SEMANTIC_ADK_ENABLED"
-CHIEF_ROUTE_SEMANTIC_TIMEOUT_SECONDS_ENV = (
-    "MISSIONOS_CHIEF_ROUTE_SEMANTIC_TIMEOUT_SECONDS"
-)
+CHIEF_ROUTE_SEMANTIC_TIMEOUT_SECONDS_ENV = "MISSIONOS_CHIEF_ROUTE_SEMANTIC_TIMEOUT_SECONDS"
 DEFAULT_ORIGIN_QUERY = "東京駅"
 DEFAULT_TERRAIN_CLEARANCE_AGL_M = 30.0
 DEFAULT_TERRAIN_PROFILE_SAMPLE_COUNT = 5
@@ -58,9 +54,17 @@ _FULLWIDTH_NUMBER_TRANSLATION = str.maketrans(
     "0123456789.,,",
 )
 _WIND_SPEED_PATTERNS = (
-    re.compile(r"風(?:速)?\s*(?:を)?\s*(?P<value>\d+(?:[.,]\d+)?)\s*(?:m/s|メートル|mps|ｍ|m)", re.IGNORECASE),
-    re.compile(r"風(?:速)?\s*(?:を)?\s*(?P<value>\d+(?:[.,]\d+)?)\s*(?:キロ|ｋｍ|km)(?!\s*/?\s*h)", re.IGNORECASE),
-    re.compile(r"wind\s*(?:speed)?\s*(?P<value>\d+(?:[.,]\d+)?)\s*(?:m/s|mps|meters?)", re.IGNORECASE),
+    re.compile(
+        r"風(?:速)?\s*(?:を)?\s*(?P<value>\d+(?:[.,]\d+)?)\s*(?:m/s|メートル|mps|ｍ|m)",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"風(?:速)?\s*(?:を)?\s*(?P<value>\d+(?:[.,]\d+)?)\s*(?:キロ|ｋｍ|km)(?!\s*/?\s*h)",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"wind\s*(?:speed)?\s*(?P<value>\d+(?:[.,]\d+)?)\s*(?:m/s|mps|meters?)", re.IGNORECASE
+    ),
 )
 _WIND_DIRECTION_ALIASES = {
     "北": 0.0,
@@ -101,7 +105,10 @@ _WIND_DIRECTION_PATTERNS = (
     re.compile(r"wind\s*direction\s*(?P<value>\d+(?:[.,]\d+)?)\s*(?:deg|degrees?)?", re.IGNORECASE),
 )
 _WIND_GUST_PATTERNS = (
-    re.compile(r"(?:突風|ガスト)\s*(?P<value>\d+(?:[.,]\d+)?)\s*(?:m/s|メートル|mps|キロ|km|ｍ|m)?", re.IGNORECASE),
+    re.compile(
+        r"(?:突風|ガスト)\s*(?P<value>\d+(?:[.,]\d+)?)\s*(?:m/s|メートル|mps|キロ|km|ｍ|m)?",
+        re.IGNORECASE,
+    ),
     re.compile(r"gust\s*(?P<value>\d+(?:[.,]\d+)?)\s*(?:m/s|mps|meters?)?", re.IGNORECASE),
 )
 _WIND_VARIANCE_PATTERNS = (
@@ -109,7 +116,9 @@ _WIND_VARIANCE_PATTERNS = (
     re.compile(r"(?:乱流|turbulence)\s*(?P<value>\d+(?:[.,]\d+)?)", re.IGNORECASE),
 )
 _TEMPERATURE_PATTERNS = (
-    re.compile(r"(?:気温|温度)\s*(?P<value>-?\d+(?:[.,]\d+)?)\s*(?:度|℃|c|celsius)?", re.IGNORECASE),
+    re.compile(
+        r"(?:気温|温度)\s*(?P<value>-?\d+(?:[.,]\d+)?)\s*(?:度|℃|c|celsius)?", re.IGNORECASE
+    ),
     re.compile(r"temperature\s*(?P<value>-?\d+(?:[.,]\d+)?)\s*(?:c|celsius)?", re.IGNORECASE),
 )
 _PRESSURE_PATTERNS = (
@@ -117,15 +126,29 @@ _PRESSURE_PATTERNS = (
     re.compile(r"pressure\s*(?P<value>\d+(?:[.,]\d+)?)\s*(?:hpa)?", re.IGNORECASE),
 )
 _THERMAL_BATTERY_DRAIN_FACTOR_PATTERNS = (
-    re.compile(r"(?:熱|温度|temperature|thermal).{0,16}(?:battery|バッテリー|電池).{0,16}(?:消費|drain|劣化).{0,8}(?P<value>\d+(?:[.,]\d+)?)\s*(?:倍|x|×)?", re.IGNORECASE),
-    re.compile(r"(?:battery|バッテリー|電池).{0,16}(?:drain|消費|劣化).{0,8}(?P<value>\d+(?:[.,]\d+)?)\s*(?:倍|x|×)", re.IGNORECASE),
+    re.compile(
+        r"(?:熱|温度|temperature|thermal).{0,16}(?:battery|バッテリー|電池).{0,16}(?:消費|drain|劣化).{0,8}(?P<value>\d+(?:[.,]\d+)?)\s*(?:倍|x|×)?",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?:battery|バッテリー|電池).{0,16}(?:drain|消費|劣化).{0,8}(?P<value>\d+(?:[.,]\d+)?)\s*(?:倍|x|×)",
+        re.IGNORECASE,
+    ),
 )
 _THERMAL_MOTOR_DERATE_FACTOR_PATTERNS = (
-    re.compile(r"(?:熱|温度|temperature|thermal).{0,16}(?:motor|モーター|推力).{0,16}(?:derate|制限|低下).{0,8}(?P<value>\d+(?:[.,]\d+)?)", re.IGNORECASE),
-    re.compile(r"(?:motor|モーター|推力).{0,16}(?:derate|制限|低下).{0,8}(?P<value>\d+(?:[.,]\d+)?)", re.IGNORECASE),
+    re.compile(
+        r"(?:熱|温度|temperature|thermal).{0,16}(?:motor|モーター|推力).{0,16}(?:derate|制限|低下).{0,8}(?P<value>\d+(?:[.,]\d+)?)",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?:motor|モーター|推力).{0,16}(?:derate|制限|低下).{0,8}(?P<value>\d+(?:[.,]\d+)?)",
+        re.IGNORECASE,
+    ),
 )
 _PAYLOAD_WEIGHT_PATTERNS = (
-    re.compile(r"(?P<value>\d+(?:[.,]\d+)?)\s*(?:kg|キロ|ｋｇ)\s*の?\s*(?:荷物|payload)", re.IGNORECASE),
+    re.compile(
+        r"(?P<value>\d+(?:[.,]\d+)?)\s*(?:kg|キロ|ｋｇ)\s*の?\s*(?:荷物|payload)", re.IGNORECASE
+    ),
     re.compile(r"(?:荷物|payload)\s*(?P<value>\d+(?:[.,]\d+)?)\s*(?:kg|キロ|ｋｇ)", re.IGNORECASE),
 )
 _OBSTACLE_REQUEST_PATTERN = re.compile(
@@ -136,9 +159,13 @@ _OBSTACLE_CLEAR_PATTERN = re.compile(
     r"(?:障害物\s*(?:なし|無し|ない|無い)|ビルリスク\s*(?:なし|無し|ない|無い)|no\s+obstacle|without\s+obstacle|landing\s*zone\s*clear)",
     re.IGNORECASE,
 )
-_POSTAL_CODE_PATTERN = re.compile(
-    r"(?:〒|郵便番号\s*)?(?P<code>\d{3})-?(?P<tail>\d{4})"
+_MID_ROUTE_OBSTACLE_PATTERN = re.compile(
+    r"(?:(?:飛行)?(?:経路|航路|ルート)(?:の)?(?:真ん中|中央|中間|途中|上|半分|50\s*%\s*(?:地点)?)|"
+    r"(?:mid(?:dle)?[-\s]?route|midway|middle\s+of\s+(?:the\s+)?route)|"
+    r"(?:obstacle|building).{0,24}(?:along|on|middle).{0,16}route)",
+    re.IGNORECASE,
 )
+_POSTAL_CODE_PATTERN = re.compile(r"(?:〒|郵便番号\s*)?(?P<code>\d{3})-?(?P<tail>\d{4})")
 _JAPANESE_TEXT_PATTERN = re.compile(r"[ぁ-んァ-ン一-龥]")
 _ROUTE_ARROW_PATTERN = re.compile(
     r"^\s*(?:plan\s+(?:a\s+)?(?:delivery|mission|route)\s+)?"
@@ -148,6 +175,10 @@ _ROUTE_ARROW_PATTERN = re.compile(
 _ROUTE_FROM_TO_PATTERN = re.compile(
     r"\bfrom\s+(?P<origin>.+?)\s+\bto\s+(?P<destination>.+?)\s*$",
     re.IGNORECASE,
+)
+_ROUTE_JAPANESE_FROM_TO_PATTERN = re.compile(
+    r"(?P<origin>[^\s、。！？!?]+?)から"
+    r"(?P<destination>[^\s、。！？!?]+?)まで",
 )
 _ROUTE_PLAIN_TO_PATTERN = re.compile(
     r"^\s*(?P<origin>[^,;]+?)\s+\bto\s+(?P<destination>[^,;]+?)\s*$",
@@ -294,11 +325,7 @@ def _normalize_semantic_route_request(raw: Mapping[str, Any]) -> dict[str, Any]:
     origin_query = str(request.get("origin_query") or "").strip()
     destination_query = str(request.get("destination_query") or "").strip()
     unknowns = request.get("unknowns")
-    unknown_list = (
-        [str(item)[:200] for item in unknowns]
-        if isinstance(unknowns, list)
-        else []
-    )
+    unknown_list = [str(item)[:200] for item in unknowns] if isinstance(unknowns, list) else []
     payload: dict[str, Any] = {
         "schema_version": SEMANTIC_ROUTE_REQUEST_SCHEMA_VERSION,
         "tool_name": "missionos_chief_semantic_route_request",
@@ -314,18 +341,12 @@ def _normalize_semantic_route_request(raw: Mapping[str, Any]) -> dict[str, Any]:
         "wind_variance": _float_field(request.get("wind_variance")),
         "temperature_c": _float_field(request.get("temperature_c")),
         "pressure_hpa": _float_field(request.get("pressure_hpa")),
-        "thermal_battery_drain_factor": _float_field(
-            request.get("thermal_battery_drain_factor")
-        ),
-        "thermal_motor_derate_factor": _float_field(
-            request.get("thermal_motor_derate_factor")
-        ),
-        "wind_speed_unit_interpretation": str(
-            request.get("wind_speed_unit_interpretation") or ""
-        )[:200],
-        "auto_route_waypoint_count": _int_field(
-            request.get("auto_route_waypoint_count")
-        ),
+        "thermal_battery_drain_factor": _float_field(request.get("thermal_battery_drain_factor")),
+        "thermal_motor_derate_factor": _float_field(request.get("thermal_motor_derate_factor")),
+        "wind_speed_unit_interpretation": str(request.get("wind_speed_unit_interpretation") or "")[
+            :200
+        ],
+        "auto_route_waypoint_count": _int_field(request.get("auto_route_waypoint_count")),
         "confidence": _float_field(request.get("confidence")),
         "unknowns": unknown_list[:10],
         "dispatch_authority_created": False,
@@ -432,9 +453,7 @@ def _attach_route_function_tool_metadata(
         "subagents_operator_facing": False,
         "adk_function_tool_called": True,
         "arguments": dict(arguments),
-        "agent_invocation_artifact_path": str(
-            invocation_evidence.get("artifact_path") or ""
-        ),
+        "agent_invocation_artifact_path": str(invocation_evidence.get("artifact_path") or ""),
         "dispatch_authority_created": False,
         "progress_counted": False,
     }
@@ -448,13 +467,9 @@ def _attach_route_function_tool_metadata(
     enriched["chief_route_function_tool_invocation"] = invocation_payload
     enriched["adk_function_tool_called"] = True
     enriched["adk_function_tool_name"] = CHIEF_ROUTE_FUNCTION_TOOL_NAME
-    enriched["chief_agent_invocation_ref"] = str(
-        invocation_evidence.get("artifact_path") or ""
-    )
+    enriched["chief_agent_invocation_ref"] = str(invocation_evidence.get("artifact_path") or "")
     enriched["chief_agent_invocation_kind"] = "google_adk_function_tool_call"
-    enriched["chief_agent_invocation_sha256"] = str(
-        invocation_evidence.get("sha256") or ""
-    )
+    enriched["chief_agent_invocation_sha256"] = str(invocation_evidence.get("sha256") or "")
     enriched.pop("planner_tools_hash", None)
     enriched.pop("sha256", None)
     result_hash = _content_hash(enriched)
@@ -526,15 +541,9 @@ async def _invoke_chief_route_function_tool_async(
             "wind_variance": _float_field(wind_variance),
             "temperature_c": _float_field(temperature_c),
             "pressure_hpa": _float_field(pressure_hpa),
-            "thermal_battery_drain_factor": _float_field(
-                thermal_battery_drain_factor
-            ),
-            "thermal_motor_derate_factor": _float_field(
-                thermal_motor_derate_factor
-            ),
-            "wind_speed_unit_interpretation": str(
-                wind_speed_unit_interpretation or ""
-            )[:200],
+            "thermal_battery_drain_factor": _float_field(thermal_battery_drain_factor),
+            "thermal_motor_derate_factor": _float_field(thermal_motor_derate_factor),
+            "wind_speed_unit_interpretation": str(wind_speed_unit_interpretation or "")[:200],
             "auto_route_waypoint_count": _int_field(auto_route_waypoint_count),
         }
         semantic_request = _normalize_semantic_route_request(
@@ -594,18 +603,20 @@ async def _invoke_chief_route_function_tool_async(
                 response_parts.append(text)
             function_call = getattr(part, "function_call", None)
             if function_call:
-                function_calls.append({
-                    "name": str(getattr(function_call, "name", "") or ""),
-                    "args": dict(getattr(function_call, "args", None) or {}),
-                })
+                function_calls.append(
+                    {
+                        "name": str(getattr(function_call, "name", "") or ""),
+                        "args": dict(getattr(function_call, "args", None) or {}),
+                    }
+                )
             function_response = getattr(part, "function_response", None)
             if function_response:
-                function_responses.append({
-                    "name": str(getattr(function_response, "name", "") or ""),
-                    "response_present": bool(
-                        getattr(function_response, "response", None)
-                    ),
-                })
+                function_responses.append(
+                    {
+                        "name": str(getattr(function_response, "name", "") or ""),
+                        "response_present": bool(getattr(function_response, "response", None)),
+                    }
+                )
 
     completed_at = _utc(datetime.now(timezone.utc))
     response_text = "".join(response_parts).strip()
@@ -629,8 +640,7 @@ async def _invoke_chief_route_function_tool_async(
         "function_tool_name": CHIEF_ROUTE_FUNCTION_TOOL_NAME,
         "function_calls": function_calls,
         "function_responses": function_responses,
-        "function_tool_called": isinstance(result, Mapping)
-        and isinstance(arguments, Mapping),
+        "function_tool_called": isinstance(result, Mapping) and isinstance(arguments, Mapping),
         "tool_arguments": dict(arguments) if isinstance(arguments, Mapping) else {},
         "progress_counted": False,
         "llm_judgment_in_gate": False,
@@ -638,9 +648,7 @@ async def _invoke_chief_route_function_tool_async(
     }
     evidence["sha256"] = _content_hash(evidence)
     try:
-        evidence["artifact_path"] = agent_runtime._persist_invocation_evidence(
-            evidence
-        )
+        evidence["artifact_path"] = agent_runtime._persist_invocation_evidence(evidence)
     except Exception:
         evidence["artifact_path"] = ""
 
@@ -765,9 +773,7 @@ def _resolve_chief_route_via_function_tool(
             "internal_tool_names": [CHIEF_ROUTE_FUNCTION_TOOL_NAME],
             "chief_route_function_tool_invocation": _route_function_tool_status(
                 "blocked_source_unavailable",
-                blocking_reasons=[
-                    f"chief_route_function_tool_failed:{type(exc).__name__}"
-                ],
+                blocking_reasons=[f"chief_route_function_tool_failed:{type(exc).__name__}"],
             ),
             "dispatch_authority_created": False,
             "progress_counted": False,
@@ -800,9 +806,7 @@ def resolve_chief_semantic_route_request(*, utterance: str) -> dict[str, Any]:
         return payload
     invocation = result.get("chief_route_function_tool_invocation")
     blocking_reasons = (
-        list(invocation.get("blocking_reasons") or [])
-        if isinstance(invocation, Mapping)
-        else []
+        list(invocation.get("blocking_reasons") or []) if isinstance(invocation, Mapping) else []
     )
     return {
         "schema_version": SEMANTIC_ROUTE_REQUEST_SCHEMA_VERSION,
@@ -835,43 +839,46 @@ def _stable_id(prefix: str, payload: Any) -> str:
 
 
 def _open_meteo_jma_url(latitude: float, longitude: float) -> str:
-    query = urlencode({
-        "latitude": f"{latitude:.6f}",
-        "longitude": f"{longitude:.6f}",
-        "current": ",".join(
-            (
-                "temperature_2m",
-                "precipitation",
-                "wind_speed_10m",
-                "wind_direction_10m",
-                "wind_gusts_10m",
-                "surface_pressure",
-            )
-        ),
-        "timezone": "UTC",
-    })
+    query = urlencode(
+        {
+            "latitude": f"{latitude:.6f}",
+            "longitude": f"{longitude:.6f}",
+            "current": ",".join(
+                (
+                    "temperature_2m",
+                    "precipitation",
+                    "wind_speed_10m",
+                    "wind_direction_10m",
+                    "wind_gusts_10m",
+                    "surface_pressure",
+                )
+            ),
+            "timezone": "UTC",
+        }
+    )
     return f"{OPEN_METEO_JMA_URL_PREFIX}?{query}"
 
 
 def _open_meteo_elevation_url(points: tuple[tuple[float, float], ...]) -> str:
-    query = urlencode({
-        "latitude": ",".join(f"{latitude:.6f}" for latitude, _longitude in points),
-        "longitude": ",".join(f"{longitude:.6f}" for _latitude, longitude in points),
-        "current": "temperature_2m",
-        "timezone": "UTC",
-        "forecast_days": "1",
-    })
+    query = urlencode(
+        {
+            "latitude": ",".join(f"{latitude:.6f}" for latitude, _longitude in points),
+            "longitude": ",".join(f"{longitude:.6f}" for _latitude, longitude in points),
+            "current": "temperature_2m",
+            "timezone": "UTC",
+            "forecast_days": "1",
+        }
+    )
     return f"{OPEN_METEO_FORECAST_URL_PREFIX}?{query}"
 
 
-def _gsi_dem_tile_point(latitude: float, longitude: float, *, zoom: int) -> tuple[int, int, int, int]:
+def _gsi_dem_tile_point(
+    latitude: float, longitude: float, *, zoom: int
+) -> tuple[int, int, int, int]:
     lat_rad = math.radians(latitude)
     n = 2.0**zoom
     x_float = (longitude + 180.0) / 360.0 * n
-    y_float = (
-        1.0
-        - math.asinh(math.tan(lat_rad)) / math.pi
-    ) / 2.0 * n
+    y_float = (1.0 - math.asinh(math.tan(lat_rad)) / math.pi) / 2.0 * n
     tile_x = int(math.floor(x_float))
     tile_y = int(math.floor(y_float))
     pixel_x = int((x_float - tile_x) * 256.0)
@@ -991,9 +998,7 @@ def _fetch_json_or_text_payload(
         return status, response.read().decode("utf-8")
 
 
-def _find_known_place(
-    text: str, *, after_index: int = 0
-) -> tuple[_KnownPlace, str, int] | None:
+def _find_known_place(text: str, *, after_index: int = 0) -> tuple[_KnownPlace, str, int] | None:
     lowered = text.lower()
     matches: list[tuple[int, _KnownPlace, str]] = []
     for place in _KNOWN_PLACES:
@@ -1024,8 +1029,10 @@ def _query_has_japan_context(query: str) -> bool:
     if not text:
         return False
     lowered = text.lower()
-    return bool(_JAPANESE_TEXT_PATTERN.search(text)) or "日本" in text or bool(
-        re.search(r"\b(?:japan|jp)\b", lowered)
+    return (
+        bool(_JAPANESE_TEXT_PATTERN.search(text))
+        or "日本" in text
+        or bool(re.search(r"\b(?:japan|jp)\b", lowered))
     )
 
 
@@ -1093,8 +1100,7 @@ def _resolve_postal_code_place(
     if not isinstance(first, Mapping):
         raise ValueError("postal result must be an object")
     address_parts = [
-        str(first.get(key) or "").strip()
-        for key in ("address1", "address2", "address3")
+        str(first.get(key) or "").strip() for key in ("address1", "address2", "address3")
     ]
     address = "".join(part for part in address_parts if part)
     if not address:
@@ -1332,7 +1338,11 @@ def _explicit_route_queries(text: str) -> tuple[str, str] | None:
     normalized = re.sub(r"\s+", " ", str(text or "")).strip()
     if not normalized:
         return None
-    for pattern in (_ROUTE_ARROW_PATTERN, _ROUTE_FROM_TO_PATTERN):
+    for pattern in (
+        _ROUTE_JAPANESE_FROM_TO_PATTERN,
+        _ROUTE_ARROW_PATTERN,
+        _ROUTE_FROM_TO_PATTERN,
+    ):
         match = pattern.search(normalized)
         if not match:
             continue
@@ -1365,9 +1375,7 @@ def _resolve_origin_destination(
 ) -> tuple[_PlaceResolution, str, _PlaceResolution, str] | None:
     if isinstance(semantic_route_request, Mapping):
         origin_query = str(semantic_route_request.get("origin_query") or "").strip()
-        destination_query = str(
-            semantic_route_request.get("destination_query") or ""
-        ).strip()
+        destination_query = str(semantic_route_request.get("destination_query") or "").strip()
         if origin_query or destination_query:
             origin_match = (
                 _resolve_route_place_query(
@@ -1442,9 +1450,8 @@ def _resolve_origin_destination(
         timeout_seconds=place_timeout_seconds,
     )
     if destination_match is None:
-        if (
-            origin.canonical_label != _DEFAULT_ORIGIN_PLACE.canonical_label
-            and any(word in text.lower() for word in ("まで", "へ", "to", "配送", "届け", "走らせ"))
+        if origin.canonical_label != _DEFAULT_ORIGIN_PLACE.canonical_label and any(
+            word in text.lower() for word in ("まで", "へ", "to", "配送", "届け", "走らせ")
         ):
             default_origin = _default_origin_resolution()
             return default_origin, default_origin.alias, origin, origin_alias
@@ -1598,6 +1605,17 @@ def _operator_requested_obstacle_flags(text: str) -> dict[str, Any]:
         }
     if not _OBSTACLE_REQUEST_PATTERN.search(normalized):
         return {}
+    if _MID_ROUTE_OBSTACLE_PATTERN.search(normalized):
+        return {
+            "landing_zone_blocked": False,
+            "building_risk_detected": True,
+            "obstacle_route_fraction": 0.5,
+            "obstacle_size_x_m": 18.0,
+            "obstacle_size_y_m": 18.0,
+            "obstacle_size_z_m": 20.0,
+            "obstacle_scenario_source": ("operator_instruction_mid_route_bounded_sitl_scenario"),
+            "gazebo_obstacle_model_spawn_requested": True,
+        }
     return {
         "landing_zone_blocked": True,
         "building_risk_detected": True,
@@ -1655,8 +1673,7 @@ def _route_sample_points(
                     7,
                 ),
                 "longitude": round(
-                    origin.longitude
-                    + (destination.longitude - origin.longitude) * fraction,
+                    origin.longitude + (destination.longitude - origin.longitude) * fraction,
                     7,
                 ),
             }
@@ -1804,10 +1821,7 @@ def _resolve_route_terrain_profile(
 ) -> tuple[dict[str, Any], tuple[dict[str, float], ...]]:
     samples = _route_sample_points(origin=origin, destination=destination)
     points = tuple((sample["latitude"], sample["longitude"]) for sample in samples)
-    source_url = "|".join(
-        _gsi_dem_tile_url(latitude, longitude)
-        for latitude, longitude in points
-    )
+    source_url = "|".join(_gsi_dem_tile_url(latitude, longitude) for latitude, longitude in points)
     status = "source_backed_terrain_captured"
     provider = "gsi_dem_elevation_tiles"
     provider_response_status = "not_requested"
@@ -1986,11 +2000,7 @@ def enrich_coordinate_route_with_terrain_profile(
         route["terrain_profile_ref"] = (
             f"missionos_terrain_elevation_resolver_tool_result:{terrain_tool['sha256'][:16]}"
         )
-        existing_refs = [
-            str(ref)
-            for ref in route.get("source_refs") or []
-            if str(ref).strip()
-        ]
+        existing_refs = [str(ref) for ref in route.get("source_refs") or [] if str(ref).strip()]
         terrain_ref = route["terrain_profile_ref"]
         route["source_refs"] = [
             *existing_refs,
@@ -2124,15 +2134,15 @@ def resolve_chief_planner_internal_tools(
         semantic_request.get("thermal_battery_drain_factor")
     )
     if requested_thermal_battery_drain_factor is None:
-        requested_thermal_battery_drain_factor = (
-            _operator_requested_thermal_battery_drain_factor(text)
+        requested_thermal_battery_drain_factor = _operator_requested_thermal_battery_drain_factor(
+            text
         )
     requested_thermal_motor_derate_factor = _float_field(
         semantic_request.get("thermal_motor_derate_factor")
     )
     if requested_thermal_motor_derate_factor is None:
-        requested_thermal_motor_derate_factor = (
-            _operator_requested_thermal_motor_derate_factor(text)
+        requested_thermal_motor_derate_factor = _operator_requested_thermal_motor_derate_factor(
+            text
         )
     requested_payload_weight_kg = _float_field(semantic_request.get("payload_weight_kg"))
     if requested_payload_weight_kg is None:
@@ -2159,12 +2169,8 @@ def resolve_chief_planner_internal_tools(
         "operator_requested_wind_variance": requested_wind_variance,
         "operator_requested_temperature_c": requested_temperature_c,
         "operator_requested_pressure_hpa": requested_pressure_hpa,
-        "operator_requested_thermal_battery_drain_factor": (
-            requested_thermal_battery_drain_factor
-        ),
-        "operator_requested_thermal_motor_derate_factor": (
-            requested_thermal_motor_derate_factor
-        ),
+        "operator_requested_thermal_battery_drain_factor": (requested_thermal_battery_drain_factor),
+        "operator_requested_thermal_motor_derate_factor": (requested_thermal_motor_derate_factor),
         "operator_requested_payload_weight_kg": requested_payload_weight_kg,
         "semantic_route_request_ref": (
             f"missionos_chief_semantic_route_request:{semantic_request['sha256'][:16]}"
@@ -2247,7 +2253,15 @@ def resolve_chief_planner_internal_tools(
         weather_values["wind_direction_deg"] = _optional_float(current.get("wind_direction_10m"))
         weather_values["temperature_c"] = _optional_float(current.get("temperature_2m"))
         weather_values["pressure_hpa"] = _optional_float(current.get("surface_pressure"))
-    except (HTTPError, URLError, TimeoutError, OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
+    except (
+        HTTPError,
+        URLError,
+        TimeoutError,
+        OSError,
+        ValueError,
+        TypeError,
+        json.JSONDecodeError,
+    ) as exc:
         weather_status = "blocked_source_unavailable"
         provider = "source_backed_weather_unavailable"
         provider_response_status = f"source_unavailable:{type(exc).__name__}"
@@ -2317,11 +2331,11 @@ def resolve_chief_planner_internal_tools(
         "dropoff_latitude": destination.latitude,
         "dropoff_longitude": destination.longitude,
         "dropoff_roof_height_agl_m": 30.0,
-        "payload_weight_kg": requested_payload_weight_kg if requested_payload_weight_kg is not None else 0.5,
+        "payload_weight_kg": requested_payload_weight_kg
+        if requested_payload_weight_kg is not None
+        else 0.5,
         "planned_route_m": round(route_distance_m, 3),
-        "auto_route_waypoint_count": _int_field(
-            semantic_request.get("auto_route_waypoint_count")
-        )
+        "auto_route_waypoint_count": _int_field(semantic_request.get("auto_route_waypoint_count"))
         or 20,
         "operator_facing_agent": "missionos_chief_agent",
         "subagents_operator_facing": False,
@@ -2418,19 +2432,11 @@ def resolve_chief_planner_internal_tools(
             )
             coordinate_route["rain_effect_source"] = "source_backed_weather"
     if requested_thermal_battery_drain_factor is not None:
-        coordinate_route["thermal_battery_drain_factor"] = (
-            requested_thermal_battery_drain_factor
-        )
-        coordinate_route["thermal_battery_drain_factor_source"] = (
-            "operator_instruction"
-        )
+        coordinate_route["thermal_battery_drain_factor"] = requested_thermal_battery_drain_factor
+        coordinate_route["thermal_battery_drain_factor_source"] = "operator_instruction"
     if requested_thermal_motor_derate_factor is not None:
-        coordinate_route["thermal_motor_derate_factor"] = (
-            requested_thermal_motor_derate_factor
-        )
-        coordinate_route["thermal_motor_derate_factor_source"] = (
-            "operator_instruction"
-        )
+        coordinate_route["thermal_motor_derate_factor"] = requested_thermal_motor_derate_factor
+        coordinate_route["thermal_motor_derate_factor_source"] = "operator_instruction"
 
     status = "resolved" if source_backed_weather else "partial"
     internal_tool_names = [
@@ -2444,16 +2450,18 @@ def resolve_chief_planner_internal_tools(
         internal_tool_names.insert(0, "missionos_place_geocoder_tool")
     if postal_payloads:
         internal_tool_names.insert(0, "missionos_postal_code_resolver_tool")
-    result_hash = _content_hash({
-        "semantic_route_request": semantic_request,
-        "route_tool": route_tool,
-        "weather_tool": weather_tool,
-        "terrain_tool": terrain_tool,
-        "postal_code_resolvers": postal_payloads,
-        "place_geocoder_resolvers": geocode_payloads,
-        "coordinate_route": coordinate_route,
-        "tool_status": status,
-    })
+    result_hash = _content_hash(
+        {
+            "semantic_route_request": semantic_request,
+            "route_tool": route_tool,
+            "weather_tool": weather_tool,
+            "terrain_tool": terrain_tool,
+            "postal_code_resolvers": postal_payloads,
+            "place_geocoder_resolvers": geocode_payloads,
+            "coordinate_route": coordinate_route,
+            "tool_status": status,
+        }
+    )
     return {
         "schema_version": CHIEF_PLANNER_INTERNAL_TOOLS_SCHEMA_VERSION,
         "tool_status": status,
