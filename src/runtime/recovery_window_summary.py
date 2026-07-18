@@ -106,7 +106,13 @@ def _obstacle_or_building_risk(sample: Mapping[str, Any]) -> bool:
             top_level_manifest.get("gazebo_obstacle_model_spawned"),
         )
     )
-    return source_backed and detected
+    conflict = obstacle.get("conflict_assessment")
+    conflict = conflict if isinstance(conflict, Mapping) else {}
+    # New runtime projections distinguish a real distant obstacle from an
+    # obstacle that needs local avoidance now. Preserve compatibility for
+    # older/fixture samples that do not yet carry the assessment.
+    local_avoidance_required = conflict.get("local_avoidance_required")
+    return source_backed and detected and local_avoidance_required is not False
 
 
 def _elapsed_seconds(sample: Mapping[str, Any], fallback: int) -> float | None:
@@ -155,6 +161,30 @@ def _terrain_margin(sample: Mapping[str, Any]) -> float | None:
         "terrain_clearance_margin_m",
         "clearance_margin_m",
     )
+
+
+def _terrain_below_minimum(sample: Mapping[str, Any]) -> bool | None:
+    terrain = sample.get("terrain")
+    if isinstance(terrain, Mapping):
+        value = terrain.get("terrain_clearance_below_minimum")
+        if isinstance(value, bool):
+            return value
+    value = sample.get("terrain_clearance_below_minimum")
+    return value if isinstance(value, bool) else None
+
+
+def _terrain_grace(sample: Mapping[str, Any]) -> float | None:
+    terrain = sample.get("terrain")
+    if isinstance(terrain, Mapping):
+        value = _first_number(terrain, "terrain_clearance_grace_m", "clearance_grace_m")
+        if value is not None:
+            return max(0.0, value)
+    value = _first_number(
+        sample,
+        "terrain_clearance_grace_m",
+        "clearance_grace_m",
+    )
+    return max(0.0, value) if value is not None else None
 
 
 def _battery_percent(sample: Mapping[str, Any]) -> float | None:
@@ -251,6 +281,8 @@ def _bucket_summary(
     clearances = [value for value in clearances if value is not None]
     margins = [_terrain_margin(sample) for sample in ordered]
     margins = [value for value in margins if value is not None]
+    terrain_graces = [_terrain_grace(sample) for sample in ordered]
+    terrain_graces = [value for value in terrain_graces if value is not None]
     batteries = [_battery_percent(sample) for sample in ordered]
     batteries = [value for value in batteries if value is not None]
     home_distances = [_distance_to_home(sample) for sample in ordered]
@@ -262,6 +294,11 @@ def _bucket_summary(
     nav_states = [_nav_state(sample) for sample in ordered]
     nav_states = [value for value in nav_states if value is not None]
     telemetry_stale_count = sum(1 for sample in ordered if _telemetry_stale(sample))
+    trailing_telemetry_stale_count = 0
+    for sample in reversed(ordered):
+        if not _telemetry_stale(sample):
+            break
+        trailing_telemetry_stale_count += 1
     obstacle_risk_count = sum(
         1 for sample in ordered if _obstacle_or_building_risk(sample)
     )
@@ -272,22 +309,50 @@ def _bucket_summary(
     battery_delta = _delta(batteries[0], batteries[-1]) if batteries else None
     clearance_min, clearance_max = _minmax(clearances)
     margin_min, margin_max = _minmax(margins)
+    terrain_grace_min, terrain_grace_max = _minmax(terrain_graces)
     battery_min, battery_max = _minmax(batteries)
     home_min, home_max = _minmax(home_distances)
     cross_min, cross_max = _minmax(cross_tracks)
     wind_min, wind_max = _minmax(wind_speeds)
-    terrain_breach = any(
-        _truthy(sample.get("terrain_clearance_below_minimum")) for sample in ordered
-    ) or (
-        clearance_min is not None
-        and float(clearance_min) < float(min_terrain_clearance_m)
+    explicit_terrain_breach_samples = [
+        value
+        for sample in ordered
+        if (value := _terrain_below_minimum(sample)) is not None
+    ]
+    # The runtime terrain projection applies the configured clearance grace and
+    # records the resulting boolean.  Preserve that source-backed judgment when
+    # it is present.  Falling back to the raw numeric threshold here used to
+    # turn an explicitly acceptable 29.9 m observation (30 m target, 1 m grace)
+    # into a hard breach and caused unnecessary hosted-model recovery calls.
+    terrain_breach = (
+        any(explicit_terrain_breach_samples)
+        if explicit_terrain_breach_samples
+        else (
+            clearance_min is not None
+            and float(clearance_min) < float(min_terrain_clearance_m)
+        )
     )
     battery_breach = (
         battery_min is not None and float(battery_min) <= float(battery_critical_percent)
     )
-    terrain_near_by_margin = (
-        margin_min is not None and 0 <= float(margin_min) <= float(terrain_soft_margin_m)
-    )
+    # When the projection supplies an explicit grace envelope, the nominal
+    # target itself is not a soft incident. Warn only after clearance enters
+    # the lower half of that accepted envelope. This keeps centimetre-scale
+    # controller noise around a 30 m target from paying for an LLM judgment,
+    # while a real trend toward the verified floor remains visible.
+    if margin_min is not None and terrain_grace_min is not None:
+        grace = abs(float(terrain_grace_min))
+        warning_band = min(abs(float(terrain_soft_margin_m)), grace * 0.5)
+        terrain_near_by_margin = (
+            -grace <= float(margin_min) <= (-grace + warning_band)
+        )
+    else:
+        terrain_near_by_margin = (
+            margin_min is not None
+            and -abs(float(terrain_soft_margin_m))
+            <= float(margin_min)
+            <= abs(float(terrain_soft_margin_m))
+        )
     terrain_near_by_clearance = (
         margin_min is None
         and clearance_min is not None
@@ -336,6 +401,8 @@ def _bucket_summary(
         "terrain_clearance_max_m": _round(clearance_max),
         "terrain_clearance_margin_min_m": _round(margin_min),
         "terrain_clearance_margin_max_m": _round(margin_max),
+        "terrain_clearance_grace_min_m": _round(terrain_grace_min),
+        "terrain_clearance_grace_max_m": _round(terrain_grace_max),
         "battery_min_percent": _round(battery_min),
         "battery_max_percent": _round(battery_max),
         "battery_delta_percent": _round(battery_delta),
@@ -347,11 +414,16 @@ def _bucket_summary(
         "wind_speed_max_mps": _round(wind_max),
         "nav_state_values": sorted(set(nav_states)),
         "telemetry_stale_count": telemetry_stale_count,
+        "trailing_telemetry_stale_count": trailing_telemetry_stale_count,
         "obstacle_or_building_risk_count": obstacle_risk_count,
         "hard_breaches": {
             "terrain_clearance_below_minimum": terrain_breach,
             "battery_critical": battery_breach,
-            "telemetry_lost": telemetry_stale_count > 0,
+            # One missed heartbeat poll amidst otherwise advancing telemetry
+            # is not evidence that telemetry was lost. Require two consecutive
+            # stale observations at the end of the window; the raw count and
+            # latest stale bit remain available to the LLM as facts.
+            "telemetry_lost": trailing_telemetry_stale_count >= 2,
             "obstacle_or_building_risk": obstacle_risk_count > 0,
         },
         "soft_signals": soft_signals,

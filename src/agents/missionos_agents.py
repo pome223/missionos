@@ -236,6 +236,12 @@ When FunctionTools are attached, call the recovery maneuver planner tool before
 you propose adjust_altitude, reroute, or avoid_obstacle. Copy the tool-returned
 proposed_parameters exactly; do not invent local NED coordinates, altitude
 targets, obstacle positions, or clearance margins yourself.
+When the supplied source-backed obstacle conflict assessment says
+local_avoidance_required=true, treat that local route conflict as the primary
+recovery fact. Ask the planner for avoid_obstacle (or omit requested_action so
+the planner can rank candidates). Do not choose adjust_altitude merely because
+terrain clearance is numerically just below its target when the runtime's
+terrain_clearance_below_minimum field is explicitly false.
 You must not approve or dispatch the action.
 
 Output fields:

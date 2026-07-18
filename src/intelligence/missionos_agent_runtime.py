@@ -42,39 +42,43 @@ MISSIONOS_AGENT_RUNTIME_TIMEOUT_ENV = "MISSIONOS_AGENT_RUNTIME_TIMEOUT_SECONDS"
 DEFAULT_TIMEOUT_SECONDS = 45
 ARTIFACT_ROOT = Path("output/mission_designer_behavior_delta_audits")
 
-MISSIONOS_AGENT_ALLOWED_INTENTS = frozenset({
-    "status",
-    "approve",
-    "reject",
-    "revision",
-    "execute",
-    "repair",
-    "plan",
-    "mission_designer_plan",
-    "runtime_recovery",
-})
+MISSIONOS_AGENT_ALLOWED_INTENTS = frozenset(
+    {
+        "status",
+        "approve",
+        "reject",
+        "revision",
+        "execute",
+        "repair",
+        "plan",
+        "mission_designer_plan",
+        "runtime_recovery",
+    }
+)
 
-MISSIONOS_AGENT_FORBIDDEN_KEYS = frozenset({
-    "approved",
-    "approval_granted",
-    "operator_approved",
-    "dispatch_authority_created",
-    "progress_counted",
-    "goal_640_progress_counted",
-    "ai_agent_progress_counted",
-    "dispatch_executed",
-    "dispatch_executed_in_runtime",
-    "automatic_dispatch_executed",
-    "physical_execution_invoked",
-    "delivery_completion_claimed",
-    "hardware_target_allowed",
-    "bypass_gate",
-    "llm_judgment_in_gate",
-    "gate_status_mutated",
-    "gate_passed",
-    "mission_upload_performed",
-    "px4_mission_upload_performed",
-})
+MISSIONOS_AGENT_FORBIDDEN_KEYS = frozenset(
+    {
+        "approved",
+        "approval_granted",
+        "operator_approved",
+        "dispatch_authority_created",
+        "progress_counted",
+        "goal_640_progress_counted",
+        "ai_agent_progress_counted",
+        "dispatch_executed",
+        "dispatch_executed_in_runtime",
+        "automatic_dispatch_executed",
+        "physical_execution_invoked",
+        "delivery_completion_claimed",
+        "hardware_target_allowed",
+        "bypass_gate",
+        "llm_judgment_in_gate",
+        "gate_status_mutated",
+        "gate_passed",
+        "mission_upload_performed",
+        "px4_mission_upload_performed",
+    }
+)
 
 # Stage A deterministic floor.  The Chief Agent proposes the intent, but this
 # map still chooses the specialist invocation while ADK transfer/workflow
@@ -89,51 +93,53 @@ _CHIEF_TO_SPECIALIST = {
 }
 
 MISSIONOS_SAFETY_CRITIC_AGENT_NAME = "missionos_safety_critic_agent"
-MISSIONOS_SAFETY_CRITIC_PASS_STATUSES = frozenset({
-    "safe",
-    "needs_human_approval",
-    "operator_review_required",
-})
-MISSIONOS_SAFETY_CRITIC_RECOGNIZED_STATUSES = (
-    MISSIONOS_SAFETY_CRITIC_PASS_STATUSES | frozenset({"blocked"})
+MISSIONOS_SAFETY_CRITIC_PASS_STATUSES = frozenset(
+    {
+        "safe",
+        "needs_human_approval",
+        "operator_review_required",
+    }
+)
+MISSIONOS_SAFETY_CRITIC_RECOGNIZED_STATUSES = MISSIONOS_SAFETY_CRITIC_PASS_STATUSES | frozenset(
+    {"blocked"}
 )
 
-MISSIONOS_MONITORING_OBSERVATION_SEVERITIES = frozenset({
-    "info",
-    "advisory",
-    "warning",
-    "critical",
-})
+MISSIONOS_MONITORING_OBSERVATION_SEVERITIES = frozenset(
+    {
+        "info",
+        "advisory",
+        "warning",
+        "critical",
+    }
+)
 
-MISSIONOS_RUNTIME_RECOVERY_RESULT_SCHEMA_VERSION = (
-    "missionos_runtime_recovery_agent_result.v1"
-)
-MISSIONOS_RUNTIME_RECOVERY_ASSESSMENT_SCHEMA_VERSION = (
-    "missionos_runtime_recovery_assessment.v1"
-)
+MISSIONOS_RUNTIME_RECOVERY_RESULT_SCHEMA_VERSION = "missionos_runtime_recovery_agent_result.v1"
+MISSIONOS_RUNTIME_RECOVERY_ASSESSMENT_SCHEMA_VERSION = "missionos_runtime_recovery_assessment.v1"
 MISSIONOS_RUNTIME_RECOVERY_PLANNER_TOOL_SCHEMA_VERSION = (
     "missionos_runtime_recovery_planner_tool_result.v1"
 )
-MISSIONOS_RUNTIME_RECOVERY_PLANNER_TOOL_NAME = (
-    "missionos_plan_bounded_recovery_maneuver"
+MISSIONOS_RUNTIME_RECOVERY_PLANNER_TOOL_NAME = "missionos_plan_bounded_recovery_maneuver"
+_PARAMETERIZED_RUNTIME_RECOVERY_ACTIONS = frozenset(
+    {
+        "adjust_altitude",
+        "reroute",
+        "avoid_obstacle",
+    }
 )
-_PARAMETERIZED_RUNTIME_RECOVERY_ACTIONS = frozenset({
-    "adjust_altitude",
-    "reroute",
-    "avoid_obstacle",
-})
 
-MISSIONOS_RUNTIME_RECOVERY_ACTIONS = frozenset({
-    "continue",
-    "hold",
-    "return_to_launch",
-    "land",
-    "adjust_altitude",
-    "adjust_speed",
-    "reroute",
-    "avoid_obstacle",
-    "operator_review",
-})
+MISSIONOS_RUNTIME_RECOVERY_ACTIONS = frozenset(
+    {
+        "continue",
+        "hold",
+        "return_to_launch",
+        "land",
+        "adjust_altitude",
+        "adjust_speed",
+        "reroute",
+        "avoid_obstacle",
+        "operator_review",
+    }
+)
 
 
 def _utc_now() -> datetime:
@@ -142,6 +148,17 @@ def _utc_now() -> datetime:
 
 def _sha256_text(value: str) -> str:
     return sha256(value.encode("utf-8")).hexdigest()
+
+
+def _sha256_json(value: Any) -> str:
+    return _sha256_text(
+        json.dumps(
+            value,
+            ensure_ascii=True,
+            sort_keys=True,
+            default=str,
+        )
+    )
 
 
 def _model_id(agent_name: str | None = None) -> str:
@@ -167,27 +184,29 @@ def _monitoring_observation_payloads(
             for ref in observation.get("evidence_refs") or []
             if isinstance(ref, str) and ref.strip()
         ][:10]
-        payloads.append({
-            "schema_version": MISSIONOS_MONITORING_OBSERVATION_SCHEMA_VERSION,
-            "observation_id": str(
-                observation.get("observation_id")
-                or observation.get("id")
-                or f"monitoring_observation:{index + 1}"
-            )[:200],
-            "source": str(observation.get("source") or "missionos_event_monitor")[:200],
-            "observed_at": str(observation.get("observed_at") or "")[:100],
-            "observation_type": str(
-                observation.get("observation_type") or "runtime_snapshot"
-            )[:200],
-            "severity": severity,
-            "summary": str(observation.get("summary") or "")[:2000],
-            "suggested_intent": suggested_intent,
-            "evidence_refs": evidence_refs,
-            "authority_status": "observation_only",
-            "approval_request_created": False,
-            "dispatch_authority_created": False,
-            "progress_counted": False,
-        })
+        payloads.append(
+            {
+                "schema_version": MISSIONOS_MONITORING_OBSERVATION_SCHEMA_VERSION,
+                "observation_id": str(
+                    observation.get("observation_id")
+                    or observation.get("id")
+                    or f"monitoring_observation:{index + 1}"
+                )[:200],
+                "source": str(observation.get("source") or "missionos_event_monitor")[:200],
+                "observed_at": str(observation.get("observed_at") or "")[:100],
+                "observation_type": str(observation.get("observation_type") or "runtime_snapshot")[
+                    :200
+                ],
+                "severity": severity,
+                "summary": str(observation.get("summary") or "")[:2000],
+                "suggested_intent": suggested_intent,
+                "evidence_refs": evidence_refs,
+                "authority_status": "observation_only",
+                "approval_request_created": False,
+                "dispatch_authority_created": False,
+                "progress_counted": False,
+            }
+        )
     return payloads[:5]
 
 
@@ -375,6 +394,77 @@ def _invoke_adk_agent_text(
     )
 
 
+def _runtime_recovery_agent_output_from_planner_result(
+    planner_result: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Build proposal-only agent output from a guarded planner result.
+
+    The Runtime Recovery Agent still judges which planner action to request.
+    Once the deterministic planner and shared guardrail have constrained that
+    request, this payload is suitable as the final ADK FunctionTool response.
+    It intentionally contains no approval, dispatch, execution, or verifier
+    authority.
+    """
+
+    candidate_value = planner_result.get("recommended_candidate")
+    candidate = candidate_value if isinstance(candidate_value, Mapping) else {}
+    assessment_value = planner_result.get("recovery_guardrail_assessment")
+    assessment = assessment_value if isinstance(assessment_value, Mapping) else {}
+    selected_action = str(candidate.get("selected_bounded_action") or "operator_review").strip()
+    proposed_parameters_value = candidate.get("proposed_parameters")
+    proposed_parameters = (
+        dict(proposed_parameters_value) if isinstance(proposed_parameters_value, Mapping) else {}
+    )
+    trigger_reasons = [
+        str(item)
+        for item in (
+            assessment.get("observed_risk_reasons")
+            or assessment.get("agent_trigger_reasons")
+            or ["runtime_recovery_planner_candidate"]
+        )
+        if str(item).strip()
+    ]
+    source_refs = [str(item) for item in candidate.get("source_refs") or [] if str(item).strip()]
+    rationale = str(candidate.get("rationale") or "").strip()
+    if not rationale:
+        rationale = (
+            "The bounded deterministic recovery candidate requires operator "
+            "review before any dispatch."
+        )
+    guardrail_passed = str(assessment.get("assessment_status") or "") == "proposal_guardrail_passed"
+    return {
+        "intent": "runtime_recovery",
+        "operator_instruction": (
+            f"Review the bounded {selected_action} recovery proposal before any dispatch."
+        ),
+        "selected_bounded_action": selected_action,
+        "proposed_parameters": proposed_parameters,
+        "trigger_level": str(assessment.get("trigger_level") or "advisory"),
+        "trigger_reasons": trigger_reasons,
+        "telemetry_assessment": {
+            "source": "runtime_recovery_planner_guardrail",
+            "observed_risk_reasons": trigger_reasons,
+            "source_refs": source_refs,
+        },
+        "rationale": rationale,
+        "expected_outcome": ("A human reviews the bounded proposal before executor dispatch."),
+        "requires_human_approval": True,
+        "uncertainty": ("" if guardrail_passed else "planner_guardrail_requires_operator_review"),
+    }
+
+
+def _finalize_runtime_recovery_tool_response(
+    *,
+    planner_result: Mapping[str, Any],
+    tool_context: Any,
+) -> dict[str, Any]:
+    """End the ADK turn after one guarded recovery FunctionTool call."""
+
+    if tool_context is not None:
+        tool_context.actions.skip_summarization = True
+    return _runtime_recovery_agent_output_from_planner_result(planner_result)
+
+
 async def _invoke_runtime_recovery_agent_text_with_tools_async(
     *,
     model_id: str,
@@ -440,6 +530,7 @@ async def _invoke_runtime_recovery_agent_text_with_tools_async(
     runner = Runner(agent=agent, app_name=app_name, session_service=session_service)
     content = types.Content(role="user", parts=[types.Part(text=prompt_text)])
     response_parts: list[str] = []
+    response_source = "llm_final_response"
     function_calls: list[dict[str, Any]] = []
     function_responses: list[dict[str, Any]] = []
     async for event in runner.run_async(
@@ -455,20 +546,29 @@ async def _invoke_runtime_recovery_agent_text_with_tools_async(
                 response_parts.append(text)
             function_call = getattr(part, "function_call", None)
             if function_call:
-                function_calls.append({
-                    "name": str(getattr(function_call, "name", "") or ""),
-                    "args": dict(getattr(function_call, "args", None) or {}),
-                })
+                function_calls.append(
+                    {
+                        "name": str(getattr(function_call, "name", "") or ""),
+                        "args": dict(getattr(function_call, "args", None) or {}),
+                    }
+                )
             function_response = getattr(part, "function_response", None)
             if function_response:
-                function_responses.append({
-                    "name": str(getattr(function_response, "name", "") or ""),
-                    "response_present": bool(
-                        getattr(function_response, "response", None)
-                    ),
-                })
+                function_response_payload = getattr(function_response, "response", None)
+                function_responses.append(
+                    {
+                        "name": str(getattr(function_response, "name", "") or ""),
+                        "response_present": bool(function_response_payload),
+                    }
+                )
+                if event.is_final_response() and isinstance(function_response_payload, Mapping):
+                    response_parts.append(
+                        json.dumps(dict(function_response_payload), ensure_ascii=False)
+                    )
+                    response_source = "function_tool_result_skip_summarization"
     return {
         "response_text": "".join(response_parts).strip(),
+        "response_source": response_source,
         "function_calls": function_calls,
         "function_responses": function_responses,
         "function_tool_called": bool(captured["tool_results"]),
@@ -541,8 +641,7 @@ def _run_agent_once(
     except Exception as exc:  # pragma: no cover - live service failure shape varies.
         response_text = ""
         invocation_error = (
-            f"{llm_provider_label(agent_name)}_agent_invocation_failed:"
-            f"{type(exc).__name__}"
+            f"{llm_provider_label(agent_name)}_agent_invocation_failed:{type(exc).__name__}"
         )
     completed_at = _utc_now()
     raw_output = _read_json_object(response_text) if response_text else None
@@ -610,10 +709,9 @@ def _run_runtime_recovery_agent_once(
             timeout_seconds=timeout_seconds or _timeout_seconds(),
         )
         response_text = str(invocation.get("response_text") or "")
+        response_source = str(invocation.get("response_source") or "llm_final_response")
         function_calls = [
-            dict(item)
-            for item in invocation.get("function_calls", [])
-            if isinstance(item, Mapping)
+            dict(item) for item in invocation.get("function_calls", []) if isinstance(item, Mapping)
         ]
         function_responses = [
             dict(item)
@@ -626,20 +724,25 @@ def _run_runtime_recovery_agent_once(
             if isinstance(item, Mapping)
         ]
         tool_arguments = [
-            dict(item)
-            for item in invocation.get("tool_arguments", [])
-            if isinstance(item, Mapping)
+            dict(item) for item in invocation.get("tool_arguments", []) if isinstance(item, Mapping)
         ]
         function_tool_called = bool(invocation.get("function_tool_called"))
         invocation_error = ""
     except Exception as exc:  # pragma: no cover - live service failure shape varies.
         response_text = ""
         invocation_error = (
-            f"{llm_provider_label(agent_name)}_agent_invocation_failed:"
-            f"{type(exc).__name__}"
+            f"{llm_provider_label(agent_name)}_agent_invocation_failed:{type(exc).__name__}"
         )
     completed_at = _utc_now()
-    raw_output = _read_json_object(response_text) if response_text else None
+    if response_source == "function_tool_result_skip_summarization" and function_tool_results:
+        # ADK intentionally emits no final prose/JSON after this FunctionTool
+        # asks to skip summarization. The hosted judgment is the recorded tool
+        # call; the concrete parameters are the guarded deterministic result.
+        raw_output = _runtime_recovery_agent_output_from_planner_result(function_tool_results[-1])
+        validated_output_source = "hosted_function_tool_call_and_guarded_result"
+    else:
+        raw_output = _read_json_object(response_text) if response_text else None
+        validated_output_source = "llm_final_response"
     guardrail = guard_missionos_agent_output(raw_output, validate_intent=False)
     if invocation_error:
         guardrail = {
@@ -666,6 +769,10 @@ def _run_runtime_recovery_agent_once(
         "model_id": model_id,
         "prompt_sha256": _sha256_text(prompt_text),
         "response_sha256": _sha256_text(response_text),
+        "function_calls_sha256": _sha256_json(function_calls),
+        "function_tool_results_sha256": _sha256_json(function_tool_results),
+        "response_source": response_source,
+        "validated_output_source": validated_output_source,
         "invocation_started_at": started_at.isoformat(),
         "invocation_completed_at": completed_at.isoformat(),
         "function_tool_name": MISSIONOS_RUNTIME_RECOVERY_PLANNER_TOOL_NAME,
@@ -701,9 +808,7 @@ def _root_prompt_payload(
         "role_contract": {
             "agent_layer": "missionos_intelligence",
             "operator_facing_agent": "missionos_chief_agent",
-            "coordination_pattern": (
-                "chief_intent_router_with_deterministic_specialist_floor"
-            ),
+            "coordination_pattern": ("chief_intent_router_with_deterministic_specialist_floor"),
             "operator_facing_route": MISSIONOS_OPERATOR_FACING_ROUTE,
             "internal_capabilities": all_capability_descriptors_for_prompt(),
             "deterministic_routing_floor": "_CHIEF_TO_SPECIALIST",
@@ -783,9 +888,7 @@ def _safety_critic_prompt_payload(
         "missionos_current_state": dict(missionos_state),
         "mission_designer_context": dict(mission_designer_context or {}),
         "coordinate_route": dict(coordinate_route or {}),
-        "monitoring_observations": _monitoring_observation_payloads(
-            monitoring_observations
-        ),
+        "monitoring_observations": _monitoring_observation_payloads(monitoring_observations),
     }
 
 
@@ -810,9 +913,7 @@ def _specialist_prompt_payload(
         "mission_designer_context": dict(mission_designer_context or {}),
         "coordinate_route": dict(coordinate_route or {}),
         "conversation_history": list(conversation_history or [])[-10:],
-        "monitoring_observations": _monitoring_observation_payloads(
-            monitoring_observations
-        ),
+        "monitoring_observations": _monitoring_observation_payloads(monitoring_observations),
         "human_utterance": utterance[:2000],
     }
 
@@ -854,6 +955,12 @@ def _runtime_recovery_prompt_payload(
                     "propose continue, hold, return_to_launch, land, "
                     "adjust_altitude, adjust_speed, reroute, avoid_obstacle, or "
                     "operator_review"
+                ),
+                (
+                    "prioritize a source-backed local route conflict when "
+                    "conflict_assessment.local_avoidance_required is true; do "
+                    "not replace it with a terrain action when the explicit "
+                    "terrain_clearance_below_minimum judgment is false"
                 ),
                 "explain uncertainty",
             ],
@@ -1026,26 +1133,30 @@ def _runtime_recovery_route_vector(
             leg = source.get(key)
             if not isinstance(leg, Mapping):
                 continue
-            to_point = _runtime_recovery_point_xy({
-                "x_m": leg.get("to_x_m"),
-                "local_x_m": leg.get("target_x_m"),
-                "north_m": leg.get("to_north_m"),
-                "n_m": leg.get("target_n_m"),
-                "y_m": leg.get("to_y_m"),
-                "local_y_m": leg.get("target_y_m"),
-                "east_m": leg.get("to_east_m"),
-                "e_m": leg.get("target_e_m"),
-            })
-            from_point = _runtime_recovery_point_xy({
-                "x_m": leg.get("from_x_m"),
-                "local_x_m": leg.get("source_x_m"),
-                "north_m": leg.get("from_north_m"),
-                "n_m": leg.get("source_n_m"),
-                "y_m": leg.get("from_y_m"),
-                "local_y_m": leg.get("source_y_m"),
-                "east_m": leg.get("from_east_m"),
-                "e_m": leg.get("source_e_m"),
-            })
+            to_point = _runtime_recovery_point_xy(
+                {
+                    "x_m": leg.get("to_x_m"),
+                    "local_x_m": leg.get("target_x_m"),
+                    "north_m": leg.get("to_north_m"),
+                    "n_m": leg.get("target_n_m"),
+                    "y_m": leg.get("to_y_m"),
+                    "local_y_m": leg.get("target_y_m"),
+                    "east_m": leg.get("to_east_m"),
+                    "e_m": leg.get("target_e_m"),
+                }
+            )
+            from_point = _runtime_recovery_point_xy(
+                {
+                    "x_m": leg.get("from_x_m"),
+                    "local_x_m": leg.get("source_x_m"),
+                    "north_m": leg.get("from_north_m"),
+                    "n_m": leg.get("source_n_m"),
+                    "y_m": leg.get("from_y_m"),
+                    "local_y_m": leg.get("source_y_m"),
+                    "east_m": leg.get("from_east_m"),
+                    "e_m": leg.get("source_e_m"),
+                }
+            )
             if to_point is None:
                 continue
             if from_point is not None:
@@ -1117,6 +1228,104 @@ def _runtime_recovery_route_vector(
     if fallback is None:
         return 1.0, 0.0, "fallback.default_forward_vector"
     return fallback[0], fallback[1], "fallback.current_position_to_obstacle"
+
+
+def _runtime_recovery_obstacle_conflict_assessment(
+    *,
+    telemetry_snapshot: Mapping[str, Any],
+    mission_context: Mapping[str, Any],
+    recovery_policy: Mapping[str, Any],
+    primary: Mapping[str, Any],
+    current_x_m: float,
+    current_y_m: float,
+) -> dict[str, Any]:
+    """Measure whether a source-backed obstacle needs local avoidance now.
+
+    A real obstacle at the destination may still be hundreds of metres away.
+    Presence alone must not compile into an immediate local detour. These are
+    deterministic geometry/time facts for the LLM and authority guard; they do
+    not choose a strategic action or create dispatch authority.
+    """
+
+    obstacle = telemetry_snapshot.get("obstacle")
+    obstacle = obstacle if isinstance(obstacle, Mapping) else {}
+    supplied = obstacle.get("conflict_assessment")
+    supplied = supplied if isinstance(supplied, Mapping) else {}
+    if isinstance(supplied.get("local_avoidance_required"), bool):
+        return dict(supplied)
+
+    obstacle_x_m = float(primary["x_m"])
+    obstacle_y_m = float(primary["y_m"])
+    unit_x, unit_y, route_source_ref = _runtime_recovery_route_vector(
+        telemetry_snapshot=telemetry_snapshot,
+        mission_context=mission_context,
+        current_x_m=current_x_m,
+        current_y_m=current_y_m,
+        obstacle_x_m=obstacle_x_m,
+        obstacle_y_m=obstacle_y_m,
+    )
+    relative_x_m = obstacle_x_m - current_x_m
+    relative_y_m = obstacle_y_m - current_y_m
+    distance_m = math.hypot(relative_x_m, relative_y_m)
+    along_track_m = relative_x_m * unit_x + relative_y_m * unit_y
+    cross_track_m = abs(relative_x_m * unit_y - relative_y_m * unit_x)
+    obstacle_radius_m = (
+        max(
+            _first_float(primary.get("size_x_m")) or 0.0,
+            _first_float(primary.get("size_y_m")) or 0.0,
+        )
+        / 2.0
+    )
+    buffer_m = _first_float(recovery_policy.get("obstacle_buffer_m")) or 20.0
+    corridor_half_width_m = max(
+        _first_float(recovery_policy.get("obstacle_route_corridor_half_width_m")) or 30.0,
+        obstacle_radius_m + buffer_m,
+    )
+    lookahead_m = _first_float(recovery_policy.get("obstacle_local_lookahead_m")) or 150.0
+    time_limit_s = _first_float(recovery_policy.get("obstacle_local_time_to_conflict_s")) or 30.0
+    route = telemetry_snapshot.get("route")
+    route = route if isinstance(route, Mapping) else {}
+    position = telemetry_snapshot.get("position")
+    position = position if isinstance(position, Mapping) else {}
+    ground_speed_mps = _first_float(
+        position.get("ground_speed_mps"),
+        route.get("ground_speed_mps"),
+        telemetry_snapshot.get("ground_speed_mps"),
+    )
+    time_to_conflict_s = (
+        max(0.0, along_track_m - obstacle_radius_m) / ground_speed_mps
+        if ground_speed_mps is not None and ground_speed_mps > 0.1
+        else None
+    )
+    ahead = along_track_m >= -obstacle_radius_m
+    route_intersects = cross_track_m <= corridor_half_width_m
+    local_avoidance_required = bool(
+        ahead
+        and route_intersects
+        and distance_m <= lookahead_m
+        and (time_to_conflict_s is None or time_to_conflict_s <= time_limit_s)
+    )
+    return {
+        "assessment_status": "computed",
+        "local_avoidance_required": local_avoidance_required,
+        "conflict_class": (
+            "local_route_conflict"
+            if local_avoidance_required
+            else "distant_or_non_intersecting_obstacle"
+        ),
+        "distance_to_obstacle_m": round(distance_m, 3),
+        "along_track_to_obstacle_m": round(along_track_m, 3),
+        "cross_track_to_obstacle_m": round(cross_track_m, 3),
+        "route_corridor_intersects": route_intersects,
+        "obstacle_ahead": ahead,
+        "lookahead_m": round(lookahead_m, 3),
+        "time_to_conflict_s": (
+            round(time_to_conflict_s, 3) if time_to_conflict_s is not None else None
+        ),
+        "time_to_conflict_limit_s": round(time_limit_s, 3),
+        "ground_speed_mps": (round(ground_speed_mps, 3) if ground_speed_mps is not None else None),
+        "route_vector_source_ref": route_source_ref,
+    }
 
 
 def _runtime_recovery_altitude_candidate(
@@ -1192,13 +1401,11 @@ def _runtime_recovery_altitude_candidate(
         operator_request.get("climb_m"),
         operator_request.get("step_m"),
     )
-    requested_step_m = (
-        requested_delta_m if requested_delta_m is not None else requested_climb_m
-    )
+    requested_step_m = requested_delta_m if requested_delta_m is not None else requested_climb_m
     if requested_step_m is None and operator_request.get("requested_action") == "adjust_altitude":
-        requested_step_m = _first_float(
-            recovery_policy.get("operator_requested_altitude_step_m")
-        ) or 10.0
+        requested_step_m = (
+            _first_float(recovery_policy.get("operator_requested_altitude_step_m")) or 10.0
+        )
     if requested_step_m is not None and current_altitude_m is not None:
         if requested_delta_m is not None:
             adjustment_m = requested_step_m
@@ -1273,13 +1480,9 @@ def _runtime_recovery_altitude_candidate(
         ],
         "basis": {
             "current_altitude_m": round(current_altitude_m, 3),
-            "terrain_clearance_m": round(clearance_m, 3)
-            if clearance_m is not None
-            else None,
+            "terrain_clearance_m": round(clearance_m, 3) if clearance_m is not None else None,
             "terrain_clearance_target_m": round(target_clearance_m, 3),
-            "terrain_clearance_margin_m": round(margin_m, 3)
-            if margin_m is not None
-            else None,
+            "terrain_clearance_margin_m": round(margin_m, 3) if margin_m is not None else None,
             "buffer_m": round(buffer_m, 3),
             "climb_m": round(climb_m, 3),
         },
@@ -1296,6 +1499,18 @@ def _runtime_recovery_avoidance_candidate(
     mission_context: Mapping[str, Any],
     recovery_policy: Mapping[str, Any],
 ) -> dict[str, Any] | None:
+    recovery = telemetry_snapshot.get("recovery")
+    recovery = recovery if isinstance(recovery, Mapping) else {}
+    resume_verification = recovery.get("resume_safety_verification")
+    resume_verification = resume_verification if isinstance(resume_verification, Mapping) else {}
+    if (
+        resume_verification.get("verification_status") == "failed"
+        and resume_verification.get("original_dropoff_available") is False
+    ):
+        # A short local avoid cannot repair an occupied terminal.  Keep the
+        # previous failed observation visible and let the alternate-dropoff
+        # reroute candidate become a fresh, separately approved proposal.
+        return None
     obstacle = telemetry_snapshot.get("obstacle")
     obstacle = obstacle if isinstance(obstacle, Mapping) else {}
     source_backed = _boolish(
@@ -1313,17 +1528,18 @@ def _runtime_recovery_avoidance_candidate(
     position = telemetry_snapshot.get("position")
     position = position if isinstance(position, Mapping) else {}
     current_x_m = (
-        _first_float(position.get("local_x_m"), telemetry_snapshot.get("local_x_m"))
-        or 0.0
+        _first_float(position.get("local_x_m"), telemetry_snapshot.get("local_x_m")) or 0.0
     )
     current_y_m = (
-        _first_float(position.get("local_y_m"), telemetry_snapshot.get("local_y_m"))
+        _first_float(position.get("local_y_m"), telemetry_snapshot.get("local_y_m")) or 0.0
+    )
+    current_altitude_m = (
+        _first_float(
+            position.get("altitude_above_home_m"),
+            telemetry_snapshot.get("altitude_above_home_m"),
+        )
         or 0.0
     )
-    current_altitude_m = _first_float(
-        position.get("altitude_above_home_m"),
-        telemetry_snapshot.get("altitude_above_home_m"),
-    ) or 0.0
     primary = obstacle_points[0]
     obstacle_x_m = float(primary["x_m"])
     obstacle_y_m = float(primary["y_m"])
@@ -1331,6 +1547,16 @@ def _runtime_recovery_avoidance_candidate(
         math.hypot(obstacle_x_m - current_x_m, obstacle_y_m - current_y_m),
         1e-6,
     )
+    conflict_assessment = _runtime_recovery_obstacle_conflict_assessment(
+        telemetry_snapshot=telemetry_snapshot,
+        mission_context=mission_context,
+        recovery_policy=recovery_policy,
+        primary=primary,
+        current_x_m=current_x_m,
+        current_y_m=current_y_m,
+    )
+    if conflict_assessment.get("local_avoidance_required") is not True:
+        return None
     unit_x, unit_y, route_source_ref = _runtime_recovery_route_vector(
         telemetry_snapshot=telemetry_snapshot,
         mission_context=mission_context,
@@ -1339,25 +1565,56 @@ def _runtime_recovery_avoidance_candidate(
         obstacle_x_m=obstacle_x_m,
         obstacle_y_m=obstacle_y_m,
     )
-    # Choose a deterministic left-hand lateral offset relative to the current
-    # route-to-obstacle vector. The operator still approves before execution.
+    # Compile the LLM's lateral-avoidance intent into one bounded point beyond
+    # the obstacle.  The old compiler placed the point a short distance ahead
+    # of the *current aircraft*, which made the vehicle leave the route far
+    # before the obstacle and then allowed AUTO to steer back through it.  A
+    # target beyond the obstacle makes the approved OFFBOARD leg pass along the
+    # side of the collision box; AUTO may rejoin only after that leg succeeds.
+    # The operator still approves the exact compiled target before execution.
     perp_x = -unit_y
     perp_y = unit_x
-    obstacle_radius_m = max(
-        _first_float(primary.get("size_x_m")) or 0.0,
-        _first_float(primary.get("size_y_m")) or 0.0,
-    ) / 2.0
-    lateral_clearance_m = max(
+    obstacle_half_x_m = (_first_float(primary.get("size_x_m")) or 0.0) / 2.0
+    obstacle_half_y_m = (_first_float(primary.get("size_y_m")) or 0.0) / 2.0
+    obstacle_half_along_route_m = abs(unit_x) * obstacle_half_x_m + abs(unit_y) * obstacle_half_y_m
+    obstacle_half_lateral_m = abs(perp_x) * obstacle_half_x_m + abs(perp_y) * obstacle_half_y_m
+    obstacle_buffer_m = _first_float(recovery_policy.get("obstacle_buffer_m")) or 20.0
+    required_lateral_clearance_m = max(
         _first_float(recovery_policy.get("obstacle_lateral_clearance_m")) or 30.0,
-        obstacle_radius_m + (_first_float(recovery_policy.get("obstacle_buffer_m")) or 20.0),
+        obstacle_half_lateral_m + obstacle_buffer_m,
     )
-    forward_m = _clamp(
-        distance_m * 0.2,
-        minimum=_first_float(recovery_policy.get("obstacle_min_forward_m")) or 30.0,
-        maximum=_first_float(recovery_policy.get("obstacle_max_forward_m")) or 120.0,
+    along_track_to_obstacle_m = (obstacle_x_m - current_x_m) * unit_x + (
+        obstacle_y_m - current_y_m
+    ) * unit_y
+    if along_track_to_obstacle_m <= 1.0:
+        return None
+    pass_distance_m = max(
+        obstacle_half_along_route_m + obstacle_buffer_m,
+        _first_float(recovery_policy.get("obstacle_min_pass_distance_m")) or 30.0,
     )
-    target_x_m = current_x_m + unit_x * forward_m + perp_x * lateral_clearance_m
-    target_y_m = current_y_m + unit_y * forward_m + perp_y * lateral_clearance_m
+    target_along_track_m = along_track_to_obstacle_m + pass_distance_m
+    expanded_half_along_route_m = obstacle_half_along_route_m + obstacle_buffer_m
+    clearance_entry_along_track_m = along_track_to_obstacle_m - expanded_half_along_route_m
+    if clearance_entry_along_track_m <= 1.0:
+        # A direct diagonal bypass cannot prove clearance when the aircraft is
+        # already inside the obstacle's expanded near face.  A separately
+        # proposed retreat/escape is required instead.
+        return None
+    clearance_entry_fraction_on_recovery_leg = _clamp(
+        clearance_entry_along_track_m / target_along_track_m,
+        minimum=0.01,
+        maximum=0.99,
+    )
+    # The lateral offset grows linearly along the direct OFFBOARD leg.  Scale
+    # the final offset so that, when the leg is abreast of the obstacle, it is
+    # already outside the expanded footprint at its *near face*.  Checking
+    # only at the obstacle centre lets the diagonal cut through a near corner.
+    # Two metres avoid a boundary-equality pass being treated as clearance.
+    target_lateral_offset_m = (
+        required_lateral_clearance_m + 2.0
+    ) / clearance_entry_fraction_on_recovery_leg
+    target_x_m = current_x_m + unit_x * target_along_track_m + perp_x * target_lateral_offset_m
+    target_y_m = current_y_m + unit_y * target_along_track_m + perp_y * target_lateral_offset_m
     max_abs_m = _first_float(recovery_policy.get("max_reroute_target_abs_m")) or 5000.0
     target_x_m = _clamp(target_x_m, minimum=-max_abs_m, maximum=max_abs_m)
     target_y_m = _clamp(target_y_m, minimum=-max_abs_m, maximum=max_abs_m)
@@ -1369,11 +1626,14 @@ def _runtime_recovery_avoidance_candidate(
     )
     terrain = telemetry_snapshot.get("terrain")
     terrain = terrain if isinstance(terrain, Mapping) else {}
-    target_clearance_m = _first_float(
-        terrain.get("terrain_clearance_target_m"),
-        terrain.get("target_clearance_m"),
-        recovery_policy.get("min_terrain_clearance_m"),
-    ) or 30.0
+    target_clearance_m = (
+        _first_float(
+            terrain.get("terrain_clearance_target_m"),
+            terrain.get("target_clearance_m"),
+            recovery_policy.get("min_terrain_clearance_m"),
+        )
+        or 30.0
+    )
     avoidance_climb_m = _first_float(recovery_policy.get("obstacle_avoidance_climb_m")) or 15.0
     max_altitude_m = _first_float(recovery_policy.get("max_adjust_altitude_m")) or 500.0
     altitude_m = max(
@@ -1407,14 +1667,102 @@ def _runtime_recovery_avoidance_candidate(
             "obstacle_y_m": round(obstacle_y_m, 3),
             "obstacle_name": primary.get("name"),
             "distance_to_obstacle_m": round(distance_m, 3),
-            "forward_m": round(forward_m, 3),
-            "lateral_clearance_m": round(lateral_clearance_m, 3),
+            "along_track_to_obstacle_m": round(along_track_to_obstacle_m, 3),
+            "obstacle_half_along_route_m": round(obstacle_half_along_route_m, 3),
+            "obstacle_half_lateral_m": round(obstacle_half_lateral_m, 3),
+            "obstacle_buffer_m": round(obstacle_buffer_m, 3),
+            "expanded_half_along_route_m": round(expanded_half_along_route_m, 3),
+            "clearance_entry_along_track_m": round(clearance_entry_along_track_m, 3),
+            "clearance_entry_fraction_on_recovery_leg": round(
+                clearance_entry_fraction_on_recovery_leg, 6
+            ),
+            "pass_distance_after_obstacle_m": round(pass_distance_m, 3),
+            "required_lateral_clearance_m": round(required_lateral_clearance_m, 3),
+            "target_lateral_offset_m": round(target_lateral_offset_m, 3),
+            "target_is_beyond_obstacle": True,
             "route_vector_source_ref": route_source_ref,
+            "conflict_assessment": conflict_assessment,
         },
         "rationale": (
-            "source-backed obstacle/building risk is present; offset laterally "
-            "from the current route-to-obstacle vector and climb to a bounded "
-            "avoidance altitude"
+            "source-backed local route conflict is present; pass beside the "
+            "expanded collision footprint, reach a bounded point beyond the "
+            "obstacle, and only then permit the original route to rejoin"
+        ),
+    }
+
+
+def _runtime_recovery_alternate_dropoff_candidate(
+    *,
+    telemetry_snapshot: Mapping[str, Any],
+    recovery_policy: Mapping[str, Any],
+) -> dict[str, Any] | None:
+    recovery = telemetry_snapshot.get("recovery")
+    recovery = recovery if isinstance(recovery, Mapping) else {}
+    resume_verification = recovery.get("resume_safety_verification")
+    resume_verification = resume_verification if isinstance(resume_verification, Mapping) else {}
+    obstacle = telemetry_snapshot.get("obstacle")
+    obstacle = obstacle if isinstance(obstacle, Mapping) else {}
+    manifest = obstacle.get("obstacle_manifest")
+    manifest = manifest if isinstance(manifest, Mapping) else {}
+    raw_candidate = resume_verification.get("alternate_dropoff_candidate")
+    source_ref = "telemetry_snapshot.recovery.resume_safety_verification"
+    if not isinstance(raw_candidate, Mapping):
+        raw_candidate = manifest.get("alternate_dropoff_candidate")
+        source_ref = "telemetry_snapshot.obstacle.obstacle_manifest"
+    if not isinstance(raw_candidate, Mapping):
+        return None
+    original_dropoff_available = resume_verification.get(
+        "original_dropoff_available",
+        manifest.get("original_dropoff_available"),
+    )
+    if original_dropoff_available is not False:
+        return None
+    action = str(raw_candidate.get("selected_bounded_action") or "").strip()
+    parameters = raw_candidate.get("proposed_parameters")
+    parameters = parameters if isinstance(parameters, Mapping) else {}
+    target_x_m = _first_float(parameters.get("target_x_m"))
+    target_y_m = _first_float(parameters.get("target_y_m"))
+    target_altitude_m = _first_float(parameters.get("target_altitude_m"))
+    if action != "reroute" or target_x_m is None or target_y_m is None:
+        return None
+    max_abs_m = _first_float(recovery_policy.get("max_reroute_target_abs_m")) or 5000.0
+    if abs(target_x_m) > max_abs_m or abs(target_y_m) > max_abs_m:
+        return None
+    proposed_parameters: dict[str, Any] = {
+        "target_x_m": round(target_x_m, 3),
+        "target_y_m": round(target_y_m, 3),
+        "alternate_dropoff": True,
+        "resume_original_route": False,
+    }
+    if target_altitude_m is not None:
+        max_altitude_m = _first_float(recovery_policy.get("max_adjust_altitude_m")) or 500.0
+        proposed_parameters["target_altitude_m"] = round(
+            _clamp(target_altitude_m, minimum=0.5, maximum=max_altitude_m),
+            3,
+        )
+    source_obstacle_name = str(parameters.get("source_obstacle_name") or "").strip()
+    if source_obstacle_name:
+        proposed_parameters["source_obstacle_name"] = source_obstacle_name
+    return {
+        "selected_bounded_action": "reroute",
+        "proposed_parameters": proposed_parameters,
+        "source_refs": [
+            source_ref,
+            "telemetry_snapshot.obstacle.obstacle_manifest",
+            "recovery_policy.max_reroute_target_abs_m",
+        ],
+        "basis": {
+            **dict(raw_candidate.get("basis") or {}),
+            "previous_resume_verification_status": resume_verification.get("verification_status"),
+            "original_dropoff_available": resume_verification.get(
+                "original_dropoff_available",
+                manifest.get("original_dropoff_available"),
+            ),
+        },
+        "rationale": (
+            "the collision-backed original dropoff is unavailable after the "
+            "previous bounded recovery; propose the manifest-bound alternate "
+            "hover point without resuming the original route"
         ),
     }
 
@@ -1521,6 +1869,10 @@ def plan_runtime_recovery_maneuver(
         recovery_policy=policy,
         operator_request=operator_request,
     )
+    alternate_dropoff_candidate = _runtime_recovery_alternate_dropoff_candidate(
+        telemetry_snapshot=telemetry_snapshot,
+        recovery_policy=policy,
+    )
     requested_reroute_candidate = _runtime_recovery_requested_reroute_candidate(
         telemetry_snapshot=telemetry_snapshot,
         recovery_policy=policy,
@@ -1531,6 +1883,8 @@ def plan_runtime_recovery_maneuver(
         mission_context=context,
         recovery_policy=policy,
     )
+    if alternate_dropoff_candidate is not None:
+        candidates.append(alternate_dropoff_candidate)
     if requested_reroute_candidate is not None:
         candidates.append(requested_reroute_candidate)
     if avoidance_candidate is not None:
@@ -1544,20 +1898,37 @@ def plan_runtime_recovery_maneuver(
             for candidate in candidates
             if candidate.get("selected_bounded_action") == requested
         ]
+        requested_action_matched = bool(ranked)
     else:
         ranked = candidates
+        requested_action_matched = not requested
     recommended = ranked[0] if ranked else None
+    if (
+        recommended is None
+        and requested in _PARAMETERIZED_RUNTIME_RECOVERY_ACTIONS
+        and not requested_action_matched
+    ):
+        selection_basis = "requested_action_not_compilable"
+    elif recommended is None:
+        selection_basis = "no_candidate"
+    elif requested in _PARAMETERIZED_RUNTIME_RECOVERY_ACTIONS:
+        selection_basis = (
+            "requested_action" if requested_action_matched else "requested_action_not_compilable"
+        )
+    else:
+        selection_basis = "best_available_candidate"
     return {
         "schema_version": MISSIONOS_RUNTIME_RECOVERY_PLANNER_TOOL_SCHEMA_VERSION,
         "tool_name": MISSIONOS_RUNTIME_RECOVERY_PLANNER_TOOL_NAME,
         "tool_status": "computed" if recommended else "insufficient_context",
         "requested_action": requested,
+        "requested_action_matched": requested_action_matched,
+        "selection_basis": selection_basis,
         "request_reason": str(request_reason or "")[:500],
         "recommended_candidate": dict(recommended) if recommended else {},
         "candidates": [dict(candidate) for candidate in candidates],
         "candidate_actions": [
-            str(candidate.get("selected_bounded_action") or "")
-            for candidate in candidates
+            str(candidate.get("selected_bounded_action") or "") for candidate in candidates
         ],
         "dispatch_authority_created": False,
         "operator_approval_required": True,
@@ -1573,6 +1944,11 @@ def _candidate_parameters_match(
     tolerance: float = 0.05,
 ) -> bool:
     for key, expected in candidate_parameters.items():
+        if isinstance(expected, bool):
+            # Boolean safety metadata belongs to the matched deterministic
+            # compiler output; it is restored below and is not a coordinate
+            # the LLM may invent or modify.
+            continue
         expected_number = _float_or_none(expected)
         if expected_number is None:
             continue
@@ -1654,17 +2030,19 @@ def _telemetry_risk_reasons(
         or battery.get("battery_remaining_percent")
         or telemetry_snapshot.get("battery_remaining_percent")
     )
-    battery_threshold = _float_or_none(
-        recovery_policy.get("battery_return_threshold_percent")
-    )
+    battery_threshold = _float_or_none(recovery_policy.get("battery_return_threshold_percent"))
     if battery_threshold is None:
         battery_threshold = 20.0
-    battery_warning = str(
-        battery.get("warning")
-        or battery.get("battery_warning")
-        or telemetry_snapshot.get("battery_warning")
-        or ""
-    ).strip().lower()
+    battery_warning = (
+        str(
+            battery.get("warning")
+            or battery.get("battery_warning")
+            or telemetry_snapshot.get("battery_warning")
+            or ""
+        )
+        .strip()
+        .lower()
+    )
     if battery_remaining is not None and battery_remaining <= battery_threshold:
         reasons.append("battery_insufficient")
     if battery_warning in {"low", "critical", "emergency", "failed"}:
@@ -1681,8 +2059,7 @@ def _telemetry_risk_reasons(
         reasons.append("battery_projected_insufficient_for_return_home")
 
     terrain_clearance = _float_or_none(
-        terrain.get("terrain_clearance_m")
-        or telemetry_snapshot.get("terrain_clearance_m")
+        terrain.get("terrain_clearance_m") or telemetry_snapshot.get("terrain_clearance_m")
     )
     terrain_clearance_target = _float_or_none(
         terrain.get("terrain_clearance_target_m")
@@ -1693,10 +2070,13 @@ def _telemetry_risk_reasons(
     # side and the projection side agree. Without grace a tiny terrain-following
     # error (e.g. 29.2 m vs a 30 m target) would be flagged as a hard breach even
     # though the projection reports it as within grace (below_minimum=false).
-    terrain_clearance_grace = _float_or_none(
-        terrain.get("terrain_clearance_grace_m")
-        or telemetry_snapshot.get("terrain_clearance_grace_m")
-    ) or 0.0
+    terrain_clearance_grace = (
+        _float_or_none(
+            terrain.get("terrain_clearance_grace_m")
+            or telemetry_snapshot.get("terrain_clearance_grace_m")
+        )
+        or 0.0
+    )
     if _boolish(
         terrain.get("terrain_clearance_below_minimum")
         or telemetry_snapshot.get("terrain_clearance_below_minimum")
@@ -1715,11 +2095,7 @@ def _telemetry_risk_reasons(
         or telemetry_snapshot.get("wind_speed_mps")
     )
     wind_limit = _float_or_none(recovery_policy.get("max_wind_speed_mps"))
-    if (
-        wind_limit is not None
-        and wind_speed is not None
-        and wind_speed > wind_limit
-    ):
+    if wind_limit is not None and wind_speed is not None and wind_speed > wind_limit:
         reasons.append("wind_above_recovery_limit")
 
     route_deviation = _float_or_none(
@@ -1728,11 +2104,7 @@ def _telemetry_risk_reasons(
         or telemetry_snapshot.get("route_deviation_xy_m")
     )
     route_limit = _float_or_none(recovery_policy.get("max_route_deviation_xy_m"))
-    if (
-        route_limit is not None
-        and route_deviation is not None
-        and route_deviation > route_limit
-    ):
+    if route_limit is not None and route_deviation is not None and route_deviation > route_limit:
         reasons.append("route_deviation_above_limit")
     route_emergency_limit = _float_or_none(
         recovery_policy.get("emergency_landing_route_deviation_xy_m")
@@ -1746,17 +2118,19 @@ def _telemetry_risk_reasons(
 
     if _boolish(telemetry.get("stale") or telemetry_snapshot.get("telemetry_stale")):
         reasons.append("telemetry_stale")
-    if _boolish(
-        telemetry.get("dropout") or telemetry_snapshot.get("telemetry_dropout")
-    ):
+    if _boolish(telemetry.get("dropout") or telemetry_snapshot.get("telemetry_dropout")):
         reasons.append("telemetry_dropout")
-    if _boolish(
+    obstacle_source_backed = _boolish(
         obstacle.get("obstacle_detected")
         or obstacle.get("building_risk_detected")
         or obstacle.get("landing_zone_blocked")
         or telemetry_snapshot.get("obstacle_detected")
         or telemetry_snapshot.get("building_risk_detected")
-    ):
+    )
+    conflict_assessment = obstacle.get("conflict_assessment")
+    conflict_assessment = conflict_assessment if isinstance(conflict_assessment, Mapping) else {}
+    local_avoidance_required = conflict_assessment.get("local_avoidance_required")
+    if obstacle_source_backed and local_avoidance_required is not False:
         reasons.append("obstacle_or_building_risk")
     if _boolish(
         recovery.get("telemetry_stale")
@@ -1806,14 +2180,10 @@ def _validate_runtime_recovery_output(
 ) -> dict[str, Any]:
     blocking_reasons: list[str] = []
     selected_action = str(
-        agent_output.get("selected_bounded_action")
-        or agent_output.get("response_kind")
-        or ""
+        agent_output.get("selected_bounded_action") or agent_output.get("response_kind") or ""
     ).strip()
     if selected_action not in MISSIONOS_RUNTIME_RECOVERY_ACTIONS:
-        blocking_reasons.append(
-            f"unsupported_recovery_action:{selected_action or '<missing>'}"
-        )
+        blocking_reasons.append(f"unsupported_recovery_action:{selected_action or '<missing>'}")
 
     trigger_level = str(agent_output.get("trigger_level") or "").strip()
     if trigger_level not in {"none", "advisory", "immediate"}:
@@ -1823,11 +2193,7 @@ def _validate_runtime_recovery_output(
     if isinstance(preauthorized_actions, str):
         preauthorized = {preauthorized_actions}
     else:
-        preauthorized = {
-            str(item)
-            for item in (preauthorized_actions or ())
-            if str(item).strip()
-        }
+        preauthorized = {str(item) for item in (preauthorized_actions or ()) if str(item).strip()}
     observed_reasons = _telemetry_risk_reasons(telemetry_snapshot, recovery_policy)
     high_impact = selected_action in {
         "return_to_launch",
@@ -1838,9 +2204,7 @@ def _validate_runtime_recovery_output(
         "avoid_obstacle",
     }
     action_preapproved = selected_action in preauthorized
-    operator_approval_required = bool(
-        agent_output.get("requires_human_approval", True)
-    )
+    operator_approval_required = bool(agent_output.get("requires_human_approval", True))
     proposed_parameters = agent_output.get("proposed_parameters")
     proposed_parameters = (
         dict(proposed_parameters) if isinstance(proposed_parameters, Mapping) else {}
@@ -1874,6 +2238,14 @@ def _validate_runtime_recovery_output(
                     "parameterized_recovery_parameters_must_match_runtime_recovery_"
                     "planner_tool_candidate"
                 )
+            elif matching_tool_candidate is not None:
+                compiled_parameters = matching_tool_candidate.get("proposed_parameters")
+                if isinstance(compiled_parameters, Mapping):
+                    # The tool is the deterministic compiler for the LLM's
+                    # selected intent.  Preserve all verifier-relevant flags
+                    # from the matched candidate instead of trusting the model
+                    # to repeat non-coordinate metadata verbatim.
+                    proposed_parameters = dict(compiled_parameters)
 
     if selected_action == "continue" and observed_reasons:
         blocking_reasons.append("continue_not_allowed_with_active_runtime_risk")
@@ -1884,28 +2256,45 @@ def _validate_runtime_recovery_output(
         blocking_reasons.append(
             "return_to_launch_not_allowed_when_projected_battery_insufficient_for_return_home"
         )
+    if selected_action == "avoid_obstacle" and "obstacle_or_building_risk" not in observed_reasons:
+        blocking_reasons.append("avoid_obstacle_requires_source_backed_obstacle_or_building_risk")
+    obstacle = telemetry_snapshot.get("obstacle")
+    obstacle = obstacle if isinstance(obstacle, Mapping) else {}
+    conflict = obstacle.get("conflict_assessment")
+    conflict = conflict if isinstance(conflict, Mapping) else {}
+    terrain = telemetry_snapshot.get("terrain")
+    terrain = terrain if isinstance(terrain, Mapping) else {}
     if (
-        selected_action == "avoid_obstacle"
-        and "obstacle_or_building_risk" not in observed_reasons
+        selected_action == "adjust_altitude"
+        and conflict.get("local_avoidance_required") is True
+        and terrain.get("terrain_clearance_below_minimum") is False
     ):
         blocking_reasons.append(
-            "avoid_obstacle_requires_source_backed_obstacle_or_building_risk"
+            "adjust_altitude_not_supported_for_local_route_conflict_without_"
+            "altitude_clearance_evidence"
         )
-    if selected_action == "adjust_altitude" and _float_or_none(
-        proposed_parameters.get("target_altitude_m")
-        if "target_altitude_m" in proposed_parameters
-        else proposed_parameters.get("altitude_m")
-    ) is None:
+    if (
+        selected_action == "adjust_altitude"
+        and _float_or_none(
+            proposed_parameters.get("target_altitude_m")
+            if "target_altitude_m" in proposed_parameters
+            else proposed_parameters.get("altitude_m")
+        )
+        is None
+    ):
         blocking_reasons.append("adjust_altitude_requires_target_altitude_m")
-    if selected_action == "adjust_speed" and _float_or_none(
-        proposed_parameters.get("target_speed_mps")
-        if "target_speed_mps" in proposed_parameters
-        else proposed_parameters.get("speed_mps")
-    ) is None:
+    if (
+        selected_action == "adjust_speed"
+        and _float_or_none(
+            proposed_parameters.get("target_speed_mps")
+            if "target_speed_mps" in proposed_parameters
+            else proposed_parameters.get("speed_mps")
+        )
+        is None
+    ):
         blocking_reasons.append("adjust_speed_requires_target_speed_mps")
     if selected_action in {"reroute", "avoid_obstacle"} and (
-        _first_float(proposed_parameters.get("target_x_m"), proposed_parameters.get("x_m"))
-        is None
+        _first_float(proposed_parameters.get("target_x_m"), proposed_parameters.get("x_m")) is None
         or _first_float(
             proposed_parameters.get("target_y_m"),
             proposed_parameters.get("y_m"),
@@ -1914,9 +2303,7 @@ def _validate_runtime_recovery_output(
     ):
         blocking_reasons.append(f"{selected_action}_requires_target_x_m_and_target_y_m")
     if high_impact and not (action_preapproved or operator_approval_required):
-        blocking_reasons.append(
-            "high_impact_recovery_requires_preapproval_or_human_review"
-        )
+        blocking_reasons.append("high_impact_recovery_requires_preapproval_or_human_review")
 
     if blocking_reasons:
         selected_action = "operator_review"
@@ -1924,9 +2311,7 @@ def _validate_runtime_recovery_output(
 
     return {
         "schema_version": MISSIONOS_RUNTIME_RECOVERY_ASSESSMENT_SCHEMA_VERSION,
-        "assessment_status": (
-            "blocked" if blocking_reasons else "proposal_guardrail_passed"
-        ),
+        "assessment_status": ("blocked" if blocking_reasons else "proposal_guardrail_passed"),
         "selected_bounded_action": selected_action,
         "proposed_parameters": proposed_parameters,
         "trigger_level": trigger_level or "advisory",
@@ -1942,9 +2327,7 @@ def _validate_runtime_recovery_output(
         ),
         "action_preapproved_by_policy": action_preapproved,
         "preauthorized_policy_ref": str(
-            recovery_policy.get("policy_ref")
-            or recovery_policy.get("recovery_policy_ref")
-            or ""
+            recovery_policy.get("policy_ref") or recovery_policy.get("recovery_policy_ref") or ""
         ),
         "backend_action_request_allowed": False,
         "dispatch_authority_created": False,
@@ -2155,11 +2538,7 @@ def run_missionos_agent_runtime(
     )
     invocations.append(chief_invocation)
     chief_guardrail_value = chief_invocation.get("guardrail_result")
-    chief_guardrail = (
-        chief_guardrail_value
-        if isinstance(chief_guardrail_value, Mapping)
-        else {}
-    )
+    chief_guardrail = chief_guardrail_value if isinstance(chief_guardrail_value, Mapping) else {}
     if chief_guardrail.get("guardrail_passed") is not True:
         return {
             "schema_version": MISSIONOS_AGENT_RUNTIME_RESULT_SCHEMA_VERSION,
@@ -2172,11 +2551,7 @@ def run_missionos_agent_runtime(
         }
 
     chief_output_value = chief_invocation.get("validated_output")
-    chief_output = (
-        chief_output_value
-        if isinstance(chief_output_value, Mapping)
-        else {}
-    )
+    chief_output = chief_output_value if isinstance(chief_output_value, Mapping) else {}
     intent = str(chief_output.get("intent") or "plan")
     specialist_name = _CHIEF_TO_SPECIALIST.get(intent)
     specialist_output: dict[str, Any] = {}
@@ -2261,9 +2636,7 @@ def run_missionos_agent_runtime(
         if isinstance(safety_critic_invocation.get("validated_output"), Mapping)
         else {}
     )
-    boundary_status = str(
-        safety_critic_output.get("boundary_status") or ""
-    ).strip()
+    boundary_status = str(safety_critic_output.get("boundary_status") or "").strip()
     if not boundary_status:
         return {
             "schema_version": MISSIONOS_AGENT_RUNTIME_RESULT_SCHEMA_VERSION,
@@ -2314,15 +2687,11 @@ def run_missionos_agent_runtime(
         # the Chief/coordinator pattern.
         "root_agent_output": dict(chief_output),
         "specialist_agent_output": dict(specialist_output),
-        "safety_critic_agent": (
-            MISSIONOS_SAFETY_CRITIC_AGENT_NAME if safety_critic_output else ""
-        ),
+        "safety_critic_agent": (MISSIONOS_SAFETY_CRITIC_AGENT_NAME if safety_critic_output else ""),
         "safety_critic_output": dict(safety_critic_output),
         "operator_facing_route": MISSIONOS_OPERATOR_FACING_ROUTE,
         "internal_capability_registry": build_missionos_capability_registry_summary(),
-        "coordination_pattern": (
-            "chief_intent_router_with_specialist_pipeline_and_safety_critic"
-        ),
+        "coordination_pattern": ("chief_intent_router_with_specialist_pipeline_and_safety_critic"),
         "routing_floor": "deterministic_chief_to_specialist_allowlist",
         "ambient_monitoring_model": "event_driven_chief_invocation",
         "monitoring_observations": monitoring_payloads,
@@ -2340,9 +2709,7 @@ def run_missionos_agent_runtime(
         "agent_invocations": invocations,
         "operator_facing_route": MISSIONOS_OPERATOR_FACING_ROUTE,
         "internal_capability_registry": build_missionos_capability_registry_summary(),
-        "coordination_pattern": (
-            "chief_intent_router_with_specialist_pipeline_and_safety_critic"
-        ),
+        "coordination_pattern": ("chief_intent_router_with_specialist_pipeline_and_safety_critic"),
         "monitoring_observations": monitoring_payloads,
         "progress_counted": False,
     }

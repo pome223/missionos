@@ -66,6 +66,8 @@ from src.runtime.px4_gazebo_sitl_mission_upload import (
 )
 
 MAV_CMD_DO_CHANGE_SPEED = 178
+MAVLINK_MSG_ID_MISSION_SET_CURRENT = 41
+MAVLINK_MSG_ID_MISSION_SET_CURRENT_CRC_EXTRA = 28
 
 
 OPT_IN_ENV = "RUN_MISSIONOS_AUTO_MISSION_FULL_RUNTIME_PROBE"
@@ -73,13 +75,9 @@ STRICT_ASSERTS_ENV = "MISSIONOS_AUTO_RUNTIME_STRICT_ASSERTS"
 L1_CARGO_ENV = "MISSIONOS_AUTO_RUNTIME_L1_GAZEBO_CARGO"
 OPERATOR_ROUTE_JSON_ENV = "MISSIONOS_AUTO_RUNTIME_OPERATOR_ROUTE_JSON"
 ARTIFACT_ROOT_ENV = "MISSIONOS_AUTO_RUNTIME_ARTIFACT_ROOT"
-OPERATOR_RECOVERY_REQUEST_PATH_ENV = (
-    "MISSIONOS_AUTO_RUNTIME_OPERATOR_RECOVERY_REQUEST_PATH"
-)
+OPERATOR_RECOVERY_REQUEST_PATH_ENV = "MISSIONOS_AUTO_RUNTIME_OPERATOR_RECOVERY_REQUEST_PATH"
 GAZEBO_OBSTACLE_MANIFEST_SCHEMA_VERSION = "missionos_gazebo_obstacle_manifest.v1"
-GAZEBO_OBSTACLE_APPLICATION_SCHEMA_VERSION = (
-    "missionos_gazebo_obstacle_application.v1"
-)
+GAZEBO_OBSTACLE_APPLICATION_SCHEMA_VERSION = "missionos_gazebo_obstacle_application.v1"
 GAZEBO_OBSTACLE_MODEL_PREFIX = "missionos_obstacle"
 ROOT_DIR = Path(__file__).resolve().parents[1]
 RUN_ROOT = ROOT_DIR / "output/missionos_auto_mission_runner/full_runtime_probe"
@@ -96,6 +94,8 @@ def _rel_to_root(path: Path) -> str:
         return str(path.relative_to(ROOT_DIR))
     except ValueError:
         return str(path)
+
+
 DEFAULT_POST_ABORT_WAIT_SECONDS = 120.0
 DEFAULT_LAND_POST_ABORT_WAIT_SECONDS = 300.0
 DEFAULT_RTL_RECOVERY_MIN_PROGRESS_M = 900.0
@@ -106,11 +106,13 @@ PX4_NAVIGATION_STATE_OFFBOARD = 14
 OPERATOR_RECOVERY_ASSIST_TRIGGER_SECONDS = 10.0
 OPERATOR_RECOVERY_ASSIST_LAND_FINALIZE_SECONDS = 20.0
 OPERATOR_RECOVERY_ASSIST_PRESTREAM_FRAMES = 20
-# Non-terminal maneuvers need enough time to move a stale-but-still-bounded
-# operator-approved setpoint, then hand control back to AUTO.MISSION.
-OPERATOR_RECOVERY_ASSIST_MAX_SECONDS = 36.0
+# A lateral bypass target is deliberately placed beyond the obstacle so the
+# observed OFFBOARD leg clears the collision footprint before AUTO resumes.
+# Allow enough time for that longer bounded leg plus the commanded climb.
+OPERATOR_RECOVERY_ASSIST_MAX_SECONDS = 75.0
 OPERATOR_RECOVERY_ASSIST_LAND_MAX_SECONDS = 60.0
 OPERATOR_RECOVERY_ASSIST_SETPOINT_INTERVAL_SECONDS = 0.05
+OPERATOR_RECOVERY_LATERAL_OBSTACLE_MARGIN_M = 20.0
 OPERATOR_RECOVERY_ASSIST_RTL_HOME_RADIUS_M = 3.0
 OPERATOR_RECOVERY_ASSIST_LAND_ALTITUDE_M = 0.75
 OPERATOR_RECOVERY_ASSIST_LAND_TARGET_Z_M = 0.5
@@ -173,16 +175,10 @@ PRESSURE_HPA_ENV = "MISSION_DESIGNER_REALISM_PRESSURE_HPA"
 PRECIPITATION_MM_PER_HOUR_ENV = "MISSION_DESIGNER_REALISM_PRECIPITATION_MM_PER_HOUR"
 RAIN_VISUAL_MODE_ENV = "MISSION_DESIGNER_REALISM_RAIN_VISUAL_MODE"
 RAIN_BATTERY_DRAIN_FACTOR_ENV = "MISSION_DESIGNER_REALISM_RAIN_BATTERY_DRAIN_FACTOR"
-RAIN_SENSOR_DEGRADATION_FACTOR_ENV = (
-    "MISSION_DESIGNER_REALISM_RAIN_SENSOR_DEGRADATION_FACTOR"
-)
+RAIN_SENSOR_DEGRADATION_FACTOR_ENV = "MISSION_DESIGNER_REALISM_RAIN_SENSOR_DEGRADATION_FACTOR"
 RAIN_LANDING_RISK_FACTOR_ENV = "MISSION_DESIGNER_REALISM_RAIN_LANDING_RISK_FACTOR"
-THERMAL_BATTERY_DRAIN_FACTOR_ENV = (
-    "MISSION_DESIGNER_REALISM_THERMAL_BATTERY_DRAIN_FACTOR"
-)
-THERMAL_MOTOR_DERATE_FACTOR_ENV = (
-    "MISSION_DESIGNER_REALISM_THERMAL_MOTOR_DERATE_FACTOR"
-)
+THERMAL_BATTERY_DRAIN_FACTOR_ENV = "MISSION_DESIGNER_REALISM_THERMAL_BATTERY_DRAIN_FACTOR"
+THERMAL_MOTOR_DERATE_FACTOR_ENV = "MISSION_DESIGNER_REALISM_THERMAL_MOTOR_DERATE_FACTOR"
 
 MT_FUJI_OPERATOR_ROUTE = {
     "schema_version": "mission_designer_coordinate_pair_route.v1",
@@ -303,9 +299,7 @@ def _operator_route() -> dict[str, Any]:
             f"{OPERATOR_ROUTE_JSON_ENV} missing required fields: {', '.join(missing)}"
         )
     normalized = {
-        "schema_version": route.get(
-            "schema_version", "mission_designer_coordinate_pair_route.v1"
-        ),
+        "schema_version": route.get("schema_version", "mission_designer_coordinate_pair_route.v1"),
         "route_id": route.get("route_id", "mission_designer_coordinate_pair_route_gui"),
         "takeoff_latitude": float(route["takeoff_latitude"]),
         "takeoff_longitude": float(route["takeoff_longitude"]),
@@ -338,8 +332,7 @@ def _operator_route() -> dict[str, Any]:
     ):
         value = route.get(key)
         if isinstance(value, int | float) and (
-            key in {"temperature_c", "wind_direction_deg", "wind_variance"}
-            or float(value) > 0
+            key in {"temperature_c", "wind_direction_deg", "wind_variance"} or float(value) > 0
         ):
             normalized[key] = float(value)
     rain_visual_mode = str(route.get("rain_visual_mode") or "").strip().lower()
@@ -348,6 +341,18 @@ def _operator_route() -> dict[str, Any]:
     for key in ("landing_zone_blocked", "building_risk_detected"):
         if route.get(key) is not None:
             normalized[key] = bool(route.get(key))
+    if route.get("gazebo_obstacle_model_spawn_requested") is not None:
+        normalized["gazebo_obstacle_model_spawn_requested"] = bool(
+            route.get("gazebo_obstacle_model_spawn_requested")
+        )
+    obstacle_route_fraction = route.get("obstacle_route_fraction")
+    if isinstance(obstacle_route_fraction, int | float) and math.isfinite(
+        float(obstacle_route_fraction)
+    ):
+        normalized["obstacle_route_fraction"] = float(obstacle_route_fraction)
+    obstacle_scenario_source = str(route.get("obstacle_scenario_source") or "").strip()
+    if obstacle_scenario_source:
+        normalized["obstacle_scenario_source"] = obstacle_scenario_source
     for key in (
         "obstacle_x_m",
         "obstacle_y_m",
@@ -364,9 +369,7 @@ def _operator_route() -> dict[str, Any]:
         normalized["obstacle_manifest"] = dict(obstacle_manifest)
     obstacles = route.get("obstacles")
     if isinstance(obstacles, list):
-        normalized["obstacles"] = [
-            dict(item) for item in obstacles if isinstance(item, dict)
-        ]
+        normalized["obstacles"] = [dict(item) for item in obstacles if isinstance(item, dict)]
     terrain_profile = route.get("terrain_profile")
     if isinstance(terrain_profile, list):
         normalized["terrain_profile"] = [
@@ -380,9 +383,7 @@ def _operator_route() -> dict[str, Any]:
     if isinstance(source_refs, str) and source_refs.strip():
         normalized["source_refs"] = [source_refs.strip()]
     elif isinstance(source_refs, list):
-        normalized["source_refs"] = [
-            str(ref).strip() for ref in source_refs if str(ref).strip()
-        ]
+        normalized["source_refs"] = [str(ref).strip() for ref in source_refs if str(ref).strip()]
     return normalized
 
 
@@ -392,6 +393,23 @@ def _coerce_finite_float(value: Any, default: float) -> float:
     except (TypeError, ValueError):
         return float(default)
     return parsed if math.isfinite(parsed) else float(default)
+
+
+def _optional_finite_float(value: Any) -> float | None:
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed if math.isfinite(parsed) else None
+
+
+def _optional_int(value: Any) -> int | None:
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError, OverflowError):
+        return None
 
 
 def _clamp_float(value: Any, *, default: float, minimum: float, maximum: float) -> float:
@@ -458,6 +476,26 @@ def _normalize_gazebo_obstacle(
     if not name:
         name = f"{GAZEBO_OBSTACLE_MODEL_PREFIX}_{index:02d}"
     kind = str(item.get("kind") or "building_box").strip() or "building_box"
+    min_x_m = x_m - size_x / 2.0
+    max_x_m = x_m + size_x / 2.0
+    min_y_m = y_m - size_y / 2.0
+    max_y_m = y_m + size_y / 2.0
+    min_z_m = z_m - size_z / 2.0
+    max_z_m = z_m + size_z / 2.0
+    raw_route_fraction = item.get("route_fraction")
+    route_fraction = (
+        round(
+            _clamp_float(
+                raw_route_fraction,
+                default=0.5,
+                minimum=0.0,
+                maximum=1.0,
+            ),
+            3,
+        )
+        if raw_route_fraction not in (None, "")
+        else None
+    )
     return {
         "name": name,
         "kind": kind,
@@ -468,6 +506,22 @@ def _normalize_gazebo_obstacle(
         "size_x_m": round(size_x, 3),
         "size_y_m": round(size_y, 3),
         "size_z_m": round(size_z, 3),
+        "route_fraction": route_fraction,
+        # This is the runtime EntityFactory obstacle, not the older
+        # visual-only world marker.  Keep its executable geometry explicit so
+        # planners, executors, maps, and verifiers cannot silently conflate the
+        # two representations.
+        "collision_enabled": True,
+        "visual_only": False,
+        "vertical_axis": "up",
+        "bounds_local_xyz_m": {
+            "min_x_m": round(min_x_m, 3),
+            "max_x_m": round(max_x_m, 3),
+            "min_y_m": round(min_y_m, 3),
+            "max_y_m": round(max_y_m, 3),
+            "min_z_m": round(min_z_m, 3),
+            "max_z_m": round(max_z_m, 3),
+        },
         "source": str(item.get("source") or source),
     }
 
@@ -483,27 +537,38 @@ def _gazebo_obstacle_manifest_from_route(route: Mapping[str, Any]) -> dict[str, 
         raw_obstacles = []
 
     explicit_route_obstacle = any(
-        key in route
+        route.get(key) not in (None, "")
         for key in (
+            "obstacle_route_fraction",
             "obstacle_x_m",
             "obstacle_y_m",
             "obstacle_z_m",
-            "obstacle_size_x_m",
-            "obstacle_size_y_m",
-            "obstacle_size_z_m",
         )
     )
     if explicit_route_obstacle:
+        obstacle_route_fraction = _clamp_float(
+            route.get("obstacle_route_fraction"),
+            default=0.5,
+            minimum=0.05,
+            maximum=0.95,
+        )
+        explicit_x_m = route.get("obstacle_x_m")
+        explicit_y_m = route.get("obstacle_y_m")
+        if explicit_x_m in (None, ""):
+            explicit_x_m = dropoff_x_m * obstacle_route_fraction
+        if explicit_y_m in (None, ""):
+            explicit_y_m = dropoff_y_m * obstacle_route_fraction
         raw_obstacles = [
             *raw_obstacles,
             {
                 "name": "missionos_route_obstacle",
-                "x_m": route.get("obstacle_x_m"),
-                "y_m": route.get("obstacle_y_m"),
+                "x_m": explicit_x_m,
+                "y_m": explicit_y_m,
                 "z_m": route.get("obstacle_z_m"),
                 "size_x_m": route.get("obstacle_size_x_m"),
                 "size_y_m": route.get("obstacle_size_y_m"),
                 "size_z_m": route.get("obstacle_size_z_m"),
+                "route_fraction": obstacle_route_fraction,
                 "source": "mission_designer_coordinate_route",
             },
         ]
@@ -532,6 +597,87 @@ def _gazebo_obstacle_manifest_from_route(route: Mapping[str, Any]) -> dict[str, 
         for index, item in enumerate(raw_obstacles, start=1)
         if isinstance(item, Mapping)
     ]
+    landing_zone_blocked = bool(
+        raw_manifest.get("landing_zone_blocked") or route.get("landing_zone_blocked")
+    )
+    alternate_dropoff_candidate: dict[str, Any] | None = None
+    if landing_zone_blocked and obstacles:
+        primary = obstacles[0]
+        route_length_m = max(math.hypot(dropoff_x_m, dropoff_y_m), 1e-6)
+        unit_x = dropoff_x_m / route_length_m
+        unit_y = dropoff_y_m / route_length_m
+        perpendicular_x = -unit_y
+        perpendicular_y = unit_x
+        obstacle_radius_m = (
+            max(
+                float(primary.get("size_x_m") or 0.0),
+                float(primary.get("size_y_m") or 0.0),
+            )
+            / 2.0
+        )
+        clearance_m = max(30.0, obstacle_radius_m + 20.0)
+        candidate_xy: tuple[float, float] | None = None
+        for direction in (1.0, -1.0):
+            candidate_x_m = dropoff_x_m + perpendicular_x * clearance_m * direction
+            candidate_y_m = dropoff_y_m + perpendicular_y * clearance_m * direction
+            collision_occupied = False
+            for obstacle in obstacles:
+                if obstacle.get("collision_enabled") is not True:
+                    continue
+                bounds = obstacle.get("bounds_local_xyz_m")
+                if not isinstance(bounds, Mapping):
+                    collision_occupied = True
+                    break
+                if (
+                    float(bounds["min_x_m"]) - 5.0
+                    <= candidate_x_m
+                    <= float(bounds["max_x_m"]) + 5.0
+                    and float(bounds["min_y_m"]) - 5.0
+                    <= candidate_y_m
+                    <= float(bounds["max_y_m"]) + 5.0
+                ):
+                    collision_occupied = True
+                    break
+            if not collision_occupied:
+                candidate_xy = (candidate_x_m, candidate_y_m)
+                break
+        if candidate_xy is not None:
+            alternate_dropoff_candidate = {
+                "selected_bounded_action": "reroute",
+                "proposed_parameters": {
+                    "target_x_m": round(candidate_xy[0], 3),
+                    "target_y_m": round(candidate_xy[1], 3),
+                    "target_altitude_m": round(
+                        _clamp_float(
+                            route.get("dropoff_roof_height_agl_m"),
+                            default=30.0,
+                            minimum=0.5,
+                            maximum=500.0,
+                        ),
+                        3,
+                    ),
+                    "alternate_dropoff": True,
+                    "resume_original_route": False,
+                    "source_obstacle_name": str(primary.get("name") or ""),
+                },
+                "basis": {
+                    "dropoff_x_m": dropoff_x_m,
+                    "dropoff_y_m": dropoff_y_m,
+                    "obstacle_name": primary.get("name"),
+                    "obstacle_bounds_local_xyz_m": primary.get("bounds_local_xyz_m"),
+                    "required_horizontal_clearance_m": round(clearance_m, 3),
+                    "candidate_horizontal_clearance_verified": True,
+                },
+                "source_refs": [
+                    "obstacle.obstacle_manifest",
+                    "obstacle.obstacle_manifest.alternate_dropoff_candidate",
+                ],
+                "rationale": (
+                    "the original dropoff is occupied by a collision-enabled "
+                    "obstacle; propose a bounded alternate hover point outside "
+                    "the obstacle footprint and require a fresh human approval"
+                ),
+            }
     manifest_status = "configured" if obstacles else "not_configured"
     return {
         "schema_version": GAZEBO_OBSTACLE_MANIFEST_SCHEMA_VERSION,
@@ -545,17 +691,77 @@ def _gazebo_obstacle_manifest_from_route(route: Mapping[str, Any]) -> dict[str, 
             or route.get("building_risk_detected")
             or obstacles
         ),
-        "landing_zone_blocked": bool(
-            raw_manifest.get("landing_zone_blocked") or route.get("landing_zone_blocked")
-        ),
+        "landing_zone_blocked": landing_zone_blocked,
+        "original_dropoff_available": not landing_zone_blocked,
         "dropoff_local_x_m": dropoff_x_m,
         "dropoff_local_y_m": dropoff_y_m,
+        "alternate_dropoff_candidate": alternate_dropoff_candidate,
         "obstacles": obstacles,
         "gazebo_obstacle_model_spawn_requested": bool(obstacles),
         "gazebo_obstacle_model_spawned": False,
         "physical_execution_invoked": False,
         "delivery_completion_claimed": False,
     }
+
+
+def _recovery_resume_mission_seq_after_obstacle(
+    *,
+    obstacle_manifest: Mapping[str, Any],
+    dropoff_dwell_mission_seq: int,
+    lateral_margin_m: float = OPERATOR_RECOVERY_LATERAL_OBSTACLE_MARGIN_M,
+) -> int | None:
+    """Choose the first original-route waypoint beyond expanded obstacles.
+
+    Returning to AUTO without advancing the mission index makes PX4 fly back
+    to the pre-HOLD waypoint, undoing the lateral bypass.  This calculation
+    only selects an already-approved mission item; it does not create a new
+    waypoint or dispatch authority.
+    """
+
+    dropoff_x_m = _optional_finite_float(obstacle_manifest.get("dropoff_local_x_m"))
+    dropoff_y_m = _optional_finite_float(obstacle_manifest.get("dropoff_local_y_m"))
+    route_length_m = (
+        math.hypot(dropoff_x_m, dropoff_y_m)
+        if dropoff_x_m is not None and dropoff_y_m is not None
+        else 0.0
+    )
+    final_route_waypoint_seq = int(dropoff_dwell_mission_seq) - 1
+    if route_length_m <= 1e-6 or final_route_waypoint_seq <= 0:
+        return None
+    unit_x = float(dropoff_x_m) / route_length_m
+    unit_y = float(dropoff_y_m) / route_length_m
+    farthest_along_m: float | None = None
+    obstacles = obstacle_manifest.get("obstacles")
+    obstacles = obstacles if isinstance(obstacles, list) else []
+    for obstacle in obstacles:
+        if not isinstance(obstacle, Mapping):
+            continue
+        if obstacle.get("collision_enabled") is not True:
+            continue
+        x_m = _optional_finite_float(obstacle.get("x_m"))
+        y_m = _optional_finite_float(obstacle.get("y_m"))
+        size_x_m = _optional_finite_float(obstacle.get("size_x_m"))
+        size_y_m = _optional_finite_float(obstacle.get("size_y_m"))
+        if None in (x_m, y_m, size_x_m, size_y_m):
+            return None
+        centre_along_m = float(x_m) * unit_x + float(y_m) * unit_y
+        half_along_m = abs(unit_x) * float(size_x_m) / 2.0 + abs(unit_y) * float(size_y_m) / 2.0
+        obstacle_far_face_m = centre_along_m + half_along_m + float(lateral_margin_m)
+        farthest_along_m = (
+            obstacle_far_face_m
+            if farthest_along_m is None
+            else max(farthest_along_m, obstacle_far_face_m)
+        )
+    if farthest_along_m is None:
+        return None
+    resume_fraction = _clamp_float(
+        farthest_along_m / route_length_m,
+        default=1.0,
+        minimum=0.0,
+        maximum=1.0,
+    )
+    resume_seq = int(math.ceil(resume_fraction * final_route_waypoint_seq))
+    return max(1, min(resume_seq, final_route_waypoint_seq))
 
 
 def _docker_logs() -> str:
@@ -576,10 +782,7 @@ def _gz_physical_battery_enabled() -> bool:
 
 def _gz_battery_motor_coupling_enabled() -> bool:
     # Motor-load coupling only makes sense when the physical battery is present.
-    return (
-        _gz_physical_battery_enabled()
-        and os.getenv(GZ_BATTERY_MOTOR_COUPLING_ENV) == "1"
-    )
+    return _gz_physical_battery_enabled() and os.getenv(GZ_BATTERY_MOTOR_COUPLING_ENV) == "1"
 
 
 def _optional_float_env(name: str) -> float | None:
@@ -616,9 +819,7 @@ def _wind_requested_profile() -> dict[str, Any]:
         "condition_kind": "wind_gust",
         "requested": requested,
         "requested_present": any(
-            value is not None
-            for key, value in requested.items()
-            if key != "wind_direction_deg"
+            value is not None for key, value in requested.items() if key != "wind_direction_deg"
         ),
         "source": "mission_designer_coordinate_route",
         "delivery_completion_claimed": False,
@@ -636,12 +837,9 @@ def _rain_weather_requested_profile() -> dict[str, Any]:
         visual_mode = ""
     requested = {
         "precipitation_mm_per_hour": precipitation,
-        "rain_visual_mode": visual_mode
-        or ("rain" if precipitation and precipitation > 0 else ""),
+        "rain_visual_mode": visual_mode or ("rain" if precipitation and precipitation > 0 else ""),
         "rain_battery_drain_factor": _optional_float_env(RAIN_BATTERY_DRAIN_FACTOR_ENV),
-        "rain_sensor_degradation_factor": _optional_float_env(
-            RAIN_SENSOR_DEGRADATION_FACTOR_ENV
-        ),
+        "rain_sensor_degradation_factor": _optional_float_env(RAIN_SENSOR_DEGRADATION_FACTOR_ENV),
         "rain_landing_risk_factor": _optional_float_env(RAIN_LANDING_RISK_FACTOR_ENV),
     }
     if requested["rain_battery_drain_factor"] is not None:
@@ -721,13 +919,9 @@ def _rain_weather_runtime_config(
         if battery_factor is None:
             battery_factor = _rain_battery_drain_factor_from_precipitation(precipitation)
         if sensor_factor is None:
-            sensor_factor = _rain_sensor_degradation_factor_from_precipitation(
-                precipitation
-            )
+            sensor_factor = _rain_sensor_degradation_factor_from_precipitation(precipitation)
         if landing_factor is None:
-            landing_factor = _rain_landing_risk_factor_from_precipitation(
-                precipitation
-            )
+            landing_factor = _rain_landing_risk_factor_from_precipitation(precipitation)
         if battery_factor is None:
             battery_factor = 1.0
         if sensor_factor is None:
@@ -746,8 +940,7 @@ def _rain_weather_runtime_config(
         max(
             60.0,
             round(
-                float(baseline_sim_bat_drain_seconds)
-                / max(float(battery_factor or 1.0), 0.1),
+                float(baseline_sim_bat_drain_seconds) / max(float(battery_factor or 1.0), 0.1),
                 3,
             ),
         )
@@ -771,12 +964,8 @@ def _thermal_weather_requested_profile() -> dict[str, Any]:
     requested = {
         "temperature_c": _optional_float_env(TEMPERATURE_C_ENV),
         "pressure_hpa": _optional_float_env(PRESSURE_HPA_ENV),
-        "thermal_battery_drain_factor": _optional_float_env(
-            THERMAL_BATTERY_DRAIN_FACTOR_ENV
-        ),
-        "thermal_motor_derate_factor": _optional_float_env(
-            THERMAL_MOTOR_DERATE_FACTOR_ENV
-        ),
+        "thermal_battery_drain_factor": _optional_float_env(THERMAL_BATTERY_DRAIN_FACTOR_ENV),
+        "thermal_motor_derate_factor": _optional_float_env(THERMAL_MOTOR_DERATE_FACTOR_ENV),
     }
     temperature = requested["temperature_c"]
     if temperature is not None and (temperature < -80.0 or temperature > 80.0):
@@ -877,17 +1066,14 @@ def _thermal_weather_runtime_config(
         effective_drain_seconds = max(
             60.0,
             round(
-                float(baseline_sim_bat_drain_seconds)
-                / max(float(battery_factor), 0.1),
+                float(baseline_sim_bat_drain_seconds) / max(float(battery_factor), 0.1),
                 3,
             ),
         )
     elif profile["requested_present"]:
         unsupported_reasons.append("thermal_battery_or_motor_condition_not_requested")
         if pressure_hpa is not None:
-            unsupported_reasons.append(
-                "pressure_physics_not_supported_by_bounded_sitl_model"
-            )
+            unsupported_reasons.append("pressure_physics_not_supported_by_bounded_sitl_model")
     return {
         "profile": profile,
         "baseline_sim_bat_drain_seconds": float(baseline_sim_bat_drain_seconds),
@@ -901,9 +1087,7 @@ def _thermal_weather_runtime_config(
 
 
 def _thermal_param_set_applied(result: Mapping[str, Any]) -> bool:
-    output = (
-        f"{result.get('stdout_tail') or ''}\n{result.get('stderr_tail') or ''}".lower()
-    )
+    output = f"{result.get('stdout_tail') or ''}\n{result.get('stderr_tail') or ''}".lower()
     return result.get("returncode") == 0 and "not found" not in output
 
 
@@ -919,9 +1103,7 @@ def _thermal_weather_runtime_artifacts(
     approximation_reasons = list(config.get("approximation_reasons") or ())
     unsupported_reasons = list(config.get("unsupported_reasons") or ())
     setup = list(probe_observed.get("battery_sim_setup") or ())
-    applied_param_names = {
-        str(item.get("param")) for item in setup if isinstance(item, Mapping)
-    }
+    applied_param_names = {str(item.get("param")) for item in setup if isinstance(item, Mapping)}
     params_set = all(_thermal_param_set_applied(item) for item in setup) if setup else False
     motor_materialized = "MPC_THR_MAX" in applied_param_names
     application_status = "not_requested"
@@ -953,15 +1135,9 @@ def _thermal_weather_runtime_artifacts(
         applied = {
             "method": "missionos_auto_px4_runtime_param_thermal_battery_motor_model",
             "target": "px4_runtime_params",
-            "baseline_sim_bat_drain_seconds": config.get(
-                "baseline_sim_bat_drain_seconds"
-            ),
-            "effective_sim_bat_drain_seconds": config.get(
-                "effective_sim_bat_drain_seconds"
-            ),
-            "thermal_battery_drain_factor": config.get(
-                "thermal_battery_drain_factor"
-            ),
+            "baseline_sim_bat_drain_seconds": config.get("baseline_sim_bat_drain_seconds"),
+            "effective_sim_bat_drain_seconds": config.get("effective_sim_bat_drain_seconds"),
+            "thermal_battery_drain_factor": config.get("thermal_battery_drain_factor"),
             "thermal_motor_derate_factor": config.get("thermal_motor_derate_factor"),
             "battery_sim_setup": setup,
             "thermal_air_physics_claimed": False,
@@ -972,12 +1148,8 @@ def _thermal_weather_runtime_artifacts(
             "source": "missionos-auto-probe-param-set-and-battery-status",
             "observed": params_set and thermal_effect_requested,
             "battery_remaining_percent": summary.get("battery_remaining_percent"),
-            "battery_remaining_delta_percent": summary.get(
-                "battery_remaining_delta_percent"
-            ),
-            "battery_remaining_sample_count": summary.get(
-                "battery_remaining_sample_count"
-            ),
+            "battery_remaining_delta_percent": summary.get("battery_remaining_delta_percent"),
+            "battery_remaining_sample_count": summary.get("battery_remaining_sample_count"),
             "battery_state_source": summary.get("battery_state_source"),
             "thermal_air_physics_claimed": False,
             "battery_sim_setup": setup,
@@ -1000,9 +1172,7 @@ def _thermal_weather_runtime_artifacts(
     }
     application = {
         "schema_version": "simulator_condition_application.v1",
-        "application_id": (
-            "simulator_condition_application:missionos_auto_thermal_weather"
-        ),
+        "application_id": ("simulator_condition_application:missionos_auto_thermal_weather"),
         "condition_kind": "thermal_weather",
         "application_status": application_status,
         "requested_condition_ref": profile.get("condition_id"),
@@ -1070,9 +1240,7 @@ def _auto_wind_gust_runtime_artifacts(
     )
     gust_window_materialized = (
         mean_wind_materialized
-        and {"gust_window_start", "gust_window_end_return_to_mean"}.issubset(
-            event_phases
-        )
+        and {"gust_window_start", "gust_window_end_return_to_mean"}.issubset(event_phases)
         and any_published
     )
     world_materialized = bool(readback.get("wind_effects_plugin_materialized"))
@@ -1214,9 +1382,7 @@ def _rain_weather_runtime_artifacts(
         for item in setup
         if isinstance(item, Mapping) and str(item.get("param")) == "SIM_BAT_DRAIN"
     ]
-    battery_param_set = any(
-        _thermal_param_set_applied(item) for item in sim_bat_drain_results
-    )
+    battery_param_set = any(_thermal_param_set_applied(item) for item in sim_bat_drain_results)
     readback = _condition_world_readback(run_dir)
     visual_requested = bool(requested.get("rain_visual_mode"))
     visual_materialized = bool(readback.get("rain_visual_marker_materialized"))
@@ -1269,9 +1435,7 @@ def _rain_weather_runtime_artifacts(
         "sensor_degradation_rain_effect": sensor_status,
         "landing_risk_rain_effect": landing_status,
         "support_detection_method": (
-            "sdf_marker_readback_and_px4_param_set_result"
-            if requested_present
-            else "not_requested"
+            "sdf_marker_readback_and_px4_param_set_result" if requested_present else "not_requested"
         ),
         "unsupported_reasons": unsupported_reasons,
         "approximation_reasons": approximation_reasons,
@@ -1284,16 +1448,10 @@ def _rain_weather_runtime_artifacts(
             "target": "gazebo_sdf_marker_and_px4_runtime_params",
             "precipitation_mm_per_hour": requested.get("precipitation_mm_per_hour"),
             "rain_visual_mode": requested.get("rain_visual_mode"),
-            "baseline_sim_bat_drain_seconds": config.get(
-                "baseline_sim_bat_drain_seconds"
-            ),
-            "effective_sim_bat_drain_seconds": config.get(
-                "effective_sim_bat_drain_seconds"
-            ),
+            "baseline_sim_bat_drain_seconds": config.get("baseline_sim_bat_drain_seconds"),
+            "effective_sim_bat_drain_seconds": config.get("effective_sim_bat_drain_seconds"),
             "rain_battery_drain_factor": config.get("rain_battery_drain_factor"),
-            "rain_sensor_degradation_factor": config.get(
-                "rain_sensor_degradation_factor"
-            ),
+            "rain_sensor_degradation_factor": config.get("rain_sensor_degradation_factor"),
             "rain_landing_risk_factor": config.get("rain_landing_risk_factor"),
             "battery_sim_setup": setup,
             "rain_visual_marker_materialized": visual_materialized,
@@ -1306,12 +1464,8 @@ def _rain_weather_runtime_artifacts(
             "source": "missionos-auto-probe-sdf-readback-param-set-and-battery-status",
             "observed": observation_status not in ("not_requested", "unsupported"),
             "battery_remaining_percent": summary.get("battery_remaining_percent"),
-            "battery_remaining_delta_percent": summary.get(
-                "battery_remaining_delta_percent"
-            ),
-            "battery_remaining_sample_count": summary.get(
-                "battery_remaining_sample_count"
-            ),
+            "battery_remaining_delta_percent": summary.get("battery_remaining_delta_percent"),
+            "battery_remaining_sample_count": summary.get("battery_remaining_sample_count"),
             "battery_state_source": summary.get("battery_state_source"),
             "rain_visual_marker_materialized": visual_materialized,
             "battery_param_set_observed": battery_param_set,
@@ -1381,9 +1535,7 @@ def _gz_motor_load_coupler_sdf_patch(
     path gz-sim simply logs that the system failed to load (self-revealing).
     """
 
-    rotor_lines = "\n".join(
-        f"      <rotor_joint>{name}</rotor_joint>" for name in rotor_joints
-    )
+    rotor_lines = "\n".join(f"      <rotor_joint>{name}</rotor_joint>" for name in rotor_joints)
     return f"""
     <plugin filename="MotorLoadBatteryCoupler"
             name="boiled_claw::MotorLoadBatteryCoupler">
@@ -1655,8 +1807,7 @@ def _prepare_l1_payload_model_root(
         if "gz::sim::systems::WindEffects" not in world_text:
             world_text = world_text.replace(
                 "  </world>\n</sdf>",
-                _wind_effects_world_sdf_patch()
-                + "  </world>\n</sdf>",
+                _wind_effects_world_sdf_patch() + "  </world>\n</sdf>",
             )
         _enable_wind_on_x500_base(model_root)
     rain_profile = dict(rain_config.get("profile") or {})
@@ -1669,9 +1820,7 @@ def _prepare_l1_payload_model_root(
         world_text = world_text.replace(
             "  </world>\n</sdf>",
             _rain_visual_world_sdf_patch(
-                precipitation_mm_per_hour=rain_requested.get(
-                    "precipitation_mm_per_hour"
-                )
+                precipitation_mm_per_hour=rain_requested.get("precipitation_mm_per_hour")
             )
             + "  </world>\n</sdf>",
         )
@@ -1897,6 +2046,7 @@ def _sample_from_observed(raw: dict[str, Any], index: int) -> MissionOSAutoMissi
     return MissionOSAutoMissionTelemetrySample(
         sample_index=index,
         elapsed_seconds=float(raw.get("elapsed_seconds") or 0.0),
+        nav_authority_context=str(raw.get("nav_authority_context") or "auto_mission"),
         nav_state=_parse_int(vehicle_status, "nav_state"),
         arming_state=_parse_int(vehicle_status, "arming_state"),
         landed_state=_parse_int(vehicle_status, "landed_state"),
@@ -1925,9 +2075,7 @@ def _post_abort_recovery_agent_evidence_window(
     post_abort_wait_seconds: float,
 ) -> dict[str, Any]:
     post_abort = dict(probe_observed.get("post_abort") or {})
-    samples = tuple(
-        raw for raw in (post_abort.get("samples") or ()) if isinstance(raw, dict)
-    )
+    samples = tuple(raw for raw in (post_abort.get("samples") or ()) if isinstance(raw, dict))
     metrics: list[dict[str, Any]] = []
     for index, raw in enumerate(samples):
         status = str(raw.get("vehicle_status") or "")
@@ -1939,9 +2087,7 @@ def _post_abort_recovery_agent_evidence_window(
         vx_mps = _parse_float(local, "vx")
         vy_mps = _parse_float(local, "vy")
         vz_mps = _parse_float(local, "vz")
-        distance_to_home_m = (
-            math.hypot(x_m, y_m) if x_m is not None and y_m is not None else None
-        )
+        distance_to_home_m = math.hypot(x_m, y_m) if x_m is not None and y_m is not None else None
         metrics.append(
             {
                 "sample_index": index,
@@ -1987,11 +2133,7 @@ def _post_abort_recovery_agent_evidence_window(
         for item in metrics
         if item.get("distance_to_home_m") is not None
     ]
-    z_values = [
-        float(item["local_z_m"])
-        for item in metrics
-        if item.get("local_z_m") is not None
-    ]
+    z_values = [float(item["local_z_m"]) for item in metrics if item.get("local_z_m") is not None]
     closing_steps = 0
     opening_steps = 0
     for previous, current in zip(distances, distances[1:]):
@@ -2014,15 +2156,9 @@ def _post_abort_recovery_agent_evidence_window(
         signature = (
             item.get("local_timestamp"),
             item.get("status_timestamp"),
-            round(float(item["local_x_m"]), 3)
-            if item.get("local_x_m") is not None
-            else None,
-            round(float(item["local_y_m"]), 3)
-            if item.get("local_y_m") is not None
-            else None,
-            round(float(item["local_z_m"]), 3)
-            if item.get("local_z_m") is not None
-            else None,
+            round(float(item["local_x_m"]), 3) if item.get("local_x_m") is not None else None,
+            round(float(item["local_y_m"]), 3) if item.get("local_y_m") is not None else None,
+            round(float(item["local_z_m"]), 3) if item.get("local_z_m") is not None else None,
         )
         if signature == last_signature:
             repeated_count += 1
@@ -2036,12 +2172,8 @@ def _post_abort_recovery_agent_evidence_window(
     distance_start = distances[0] if distances else None
     distance_end = distances[-1] if distances else None
     distance_min = min(distances) if distances else None
-    heartbeat_observed_count = sum(
-        1 for item in metrics if item.get("heartbeat_observed") is True
-    )
-    latest_heartbeat_observed = (
-        bool(metrics[-1].get("heartbeat_observed")) if metrics else None
-    )
+    heartbeat_observed_count = sum(1 for item in metrics if item.get("heartbeat_observed") is True)
+    latest_heartbeat_observed = bool(metrics[-1].get("heartbeat_observed")) if metrics else None
     return_progress = (
         max(0.0, distance_start - distance_min)
         if distance_start is not None and distance_min is not None
@@ -2051,8 +2183,7 @@ def _post_abort_recovery_agent_evidence_window(
     return_started = return_progress > 1.0 or closing_steps > 0
     latest = metrics[-1] if metrics else {}
     disarm_observed = any(
-        item.get("arming_state") is not None
-        and item.get("arming_state") != PX4_ARMING_STATE_ARMED
+        item.get("arming_state") is not None and item.get("arming_state") != PX4_ARMING_STATE_ARMED
         for item in metrics
     )
     latest_disarmed = bool(
@@ -2060,8 +2191,7 @@ def _post_abort_recovery_agent_evidence_window(
         and latest.get("arming_state") != PX4_ARMING_STATE_ARMED
     )
     ground_confirmation_observed = any(
-        item.get("landed") is True or item.get("maybe_landed") is True
-        for item in metrics
+        item.get("landed") is True or item.get("maybe_landed") is True for item in metrics
     )
     latest_ground_confirmed = bool(
         latest.get("landed") is True or latest.get("maybe_landed") is True
@@ -2130,9 +2260,7 @@ def _post_abort_recovery_agent_evidence_window(
         incomplete_reason = "recovery_final_landing_not_observed"
 
     recovery_command = dict(
-        probe_observed.get("recovery_command")
-        or probe_observed.get("land_abort_command")
-        or {}
+        probe_observed.get("recovery_command") or probe_observed.get("land_abort_command") or {}
     )
     telemetry_snapshot = {
         "telemetry": {"stale": telemetry_stale, "dropout": False},
@@ -2148,9 +2276,7 @@ def _post_abort_recovery_agent_evidence_window(
             "recovery_latest_disarmed": latest_disarmed,
             "recovery_ground_confirmation_observed": ground_confirmation_observed,
             "recovery_latest_ground_confirmed": latest_ground_confirmed,
-            "force_disarm_no_ground_confirmation": (
-                force_disarm_no_ground_confirmation
-            ),
+            "force_disarm_no_ground_confirmation": (force_disarm_no_ground_confirmation),
             "return_started": return_started,
             "landing_started": landing_started,
             "landing_in_progress": landing_in_progress,
@@ -2255,9 +2381,7 @@ def _post_abort_recovery_agent_evidence_window(
         "recovery_latest_heartbeat_observed": latest_heartbeat_observed,
         "recovery_observation_lost": observation_lost,
         "recovery_observation_loss_classification": observation_loss_classification,
-        "recovery_observation_lost_after_sample": stale_after_sample
-        if observation_lost
-        else None,
+        "recovery_observation_lost_after_sample": stale_after_sample if observation_lost else None,
         "recovery_incomplete_reason": incomplete_reason,
         "latest_recovery_sample": latest,
         "telemetry_snapshot": telemetry_snapshot,
@@ -2287,9 +2411,7 @@ def _rtl_recovery_wait_seconds(
     ):
         return base
     expected_return_seconds = float(return_distance_m) / float(cruise_speed_mps)
-    sized = expected_return_seconds * float(safety_factor) + float(
-        landing_allowance_seconds
-    )
+    sized = expected_return_seconds * float(safety_factor) + float(landing_allowance_seconds)
     return round(max(base, sized), 3)
 
 
@@ -2320,6 +2442,7 @@ def _inner_runtime_probe_script(
     gz_physical_battery_enabled: bool,
     gz_battery_motor_coupling_enabled: bool = False,
     obstacle_manifest: Mapping[str, Any] | None = None,
+    resume_mission_seq_after_obstacle: int | None = None,
 ) -> str:
     arm_params = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     disarm_params = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -2336,6 +2459,15 @@ def _inner_runtime_probe_script(
         float(MAV_MODE_FLAG_CUSTOM_MODE_ENABLED),
         float(PX4_CUSTOM_MAIN_MODE_AUTO),
         float(PX4_CUSTOM_SUB_MODE_AUTO_MISSION),
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+    ]
+    auto_loiter_params = [
+        float(MAV_MODE_FLAG_CUSTOM_MODE_ENABLED),
+        float(PX4_CUSTOM_MAIN_MODE_AUTO),
+        3.0,
         0.0,
         0.0,
         0.0,
@@ -2372,15 +2504,23 @@ def _inner_runtime_probe_script(
         from datetime import datetime, timezone
         MAVLINK2_MAGIC=0xFD
         MAVLINK_MSG_ID_HEARTBEAT=0
+        MAVLINK_MSG_ID_MISSION_SET_CURRENT={MAVLINK_MSG_ID_MISSION_SET_CURRENT}
         MAVLINK_MSG_ID_COMMAND_LONG=76
         MAVLINK_MSG_ID_COMMAND_ACK=77
         MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED=84
         MAV_CMD_DO_CHANGE_SPEED={MAV_CMD_DO_CHANGE_SPEED}
         MAV_FRAME_LOCAL_NED=1
-        CRC_EXTRA={{0:50,76:152,77:143,84:143}}
+        CRC_EXTRA={{
+            0:50,
+            MAVLINK_MSG_ID_MISSION_SET_CURRENT:{MAVLINK_MSG_ID_MISSION_SET_CURRENT_CRC_EXTRA},
+            76:152,
+            77:143,
+            84:143,
+        }}
         PX4_MAVLINK_PORT={upload_smoke.PX4_MAVLINK_PORT}
         GCS_MAVLINK_PORT={upload_smoke.GCS_MAVLINK_PORT}
         NAV_AUTO_MISSION={PX4_NAVIGATION_STATE_AUTO_MISSION}
+        NAV_AUTO_LOITER=4
         NAV_OFFBOARD={PX4_NAVIGATION_STATE_OFFBOARD}
         ARMING_ARMED={PX4_ARMING_STATE_ARMED}
         DROPOFF_DWELL_SEQ={int(dropoff_dwell_mission_seq)}
@@ -2405,6 +2545,7 @@ def _inner_runtime_probe_script(
         OPERATOR_RECOVERY_ASSIST_MAX_SECONDS={float(OPERATOR_RECOVERY_ASSIST_MAX_SECONDS)}
         OPERATOR_RECOVERY_ASSIST_LAND_MAX_SECONDS={float(OPERATOR_RECOVERY_ASSIST_LAND_MAX_SECONDS)}
         OPERATOR_RECOVERY_ASSIST_SETPOINT_INTERVAL_SECONDS={float(OPERATOR_RECOVERY_ASSIST_SETPOINT_INTERVAL_SECONDS)}
+        OPERATOR_RECOVERY_LATERAL_OBSTACLE_MARGIN_M={float(OPERATOR_RECOVERY_LATERAL_OBSTACLE_MARGIN_M)}
         OPERATOR_RECOVERY_ASSIST_RTL_HOME_RADIUS_M={float(OPERATOR_RECOVERY_ASSIST_RTL_HOME_RADIUS_M)}
         OPERATOR_RECOVERY_ASSIST_LAND_ALTITUDE_M={float(OPERATOR_RECOVERY_ASSIST_LAND_ALTITUDE_M)}
         OPERATOR_RECOVERY_ASSIST_LAND_TARGET_Z_M={float(OPERATOR_RECOVERY_ASSIST_LAND_TARGET_Z_M)}
@@ -2430,6 +2571,7 @@ def _inner_runtime_probe_script(
         PAYLOAD_DETACH_TOPIC={PAYLOAD_DETACH_TOPIC!r}
         PAYLOAD_RELEASE_MIN_Z_DROP_M={float(PAYLOAD_RELEASE_MIN_Z_DROP_M)}
         OBSTACLE_MANIFEST=json.loads({obstacle_manifest_json!r})
+        RESUME_MISSION_SEQ_AFTER_OBSTACLE={resume_mission_seq_after_obstacle!r}
         GAZEBO_OBSTACLE_APPLICATION_SCHEMA_VERSION={GAZEBO_OBSTACLE_APPLICATION_SCHEMA_VERSION!r}
 
         def crc_accumulate(byte, crc):
@@ -2448,6 +2590,13 @@ def _inner_runtime_probe_script(
 
         def heartbeat(seq):
             return frame(MAVLINK_MSG_ID_HEARTBEAT, struct.pack('<IBBBBB',0,6,8,0,4,3), seq)
+
+        def mission_set_current(mission_seq, seq):
+            # MISSION_SET_CURRENT is a MAVLink mission-protocol message, not a
+            # COMMAND_LONG command. PX4 rejects MAV_CMD_DO_SET_MISSION_CURRENT
+            # over COMMAND_LONG, so success must be observed from mission_result.
+            payload=struct.pack('<HBB', int(mission_seq), 1, 1)
+            return frame(MAVLINK_MSG_ID_MISSION_SET_CURRENT, payload, seq)
 
         def decode(data):
             if len(data)<12 or data[0]!=MAVLINK2_MAGIC: return None
@@ -2718,6 +2867,21 @@ def _inner_runtime_probe_script(
                     'size_x_m': round(sx, 3),
                     'size_y_m': round(sy, 3),
                     'size_z_m': round(sz, 3),
+                    'collision_enabled': item.get('collision_enabled') is True,
+                    'visual_only': item.get('visual_only') is True,
+                    'vertical_axis': str(item.get('vertical_axis') or 'up'),
+                    'bounds_local_xyz_m': (
+                        dict(item.get('bounds_local_xyz_m'))
+                        if isinstance(item.get('bounds_local_xyz_m'), dict)
+                        else {{
+                            'min_x_m': round(x-sx/2.0, 3),
+                            'max_x_m': round(x+sx/2.0, 3),
+                            'min_y_m': round(y-sy/2.0, 3),
+                            'max_y_m': round(y+sy/2.0, 3),
+                            'min_z_m': round(z-sz/2.0, 3),
+                            'max_z_m': round(z+sz/2.0, 3),
+                        }}
+                    ),
                     'source': str(item.get('source') or 'obstacle_manifest'),
                 }})
             return models
@@ -3475,6 +3639,249 @@ def _inner_runtime_probe_script(
                     return None
             return None
 
+        def recovery_flag(request, key, default=False):
+            parameters=request.get('recovery_parameters')
+            if not isinstance(parameters, dict):
+                parameters={{}}
+            value=parameters.get(key, default)
+            if isinstance(value, bool):
+                return value
+            if isinstance(value, str):
+                return value.strip().lower() in ('1', 'true', 'yes', 'on')
+            return bool(value)
+
+        def _point_inside_obstacle(x_m, y_m, altitude_m, obstacle, margin_m=5.0):
+            if obstacle.get('collision_enabled') is not True:
+                return False
+            bounds=obstacle.get('bounds_local_xyz_m')
+            if not isinstance(bounds, dict):
+                return True
+            try:
+                return (
+                    float(bounds['min_x_m'])-margin_m <= float(x_m) <= float(bounds['max_x_m'])+margin_m
+                    and float(bounds['min_y_m'])-margin_m <= float(y_m) <= float(bounds['max_y_m'])+margin_m
+                    and float(bounds['min_z_m'])-margin_m <= float(altitude_m) <= float(bounds['max_z_m'])+margin_m
+                )
+            except (KeyError, TypeError, ValueError):
+                # Collision geometry that cannot be interpreted is not safe
+                # evidence for resuming an autonomous route.
+                return True
+
+        def _segment_intersects_obstacle(start, end, obstacle, margin_m=5.0):
+            if obstacle.get('collision_enabled') is not True:
+                return False
+            bounds=obstacle.get('bounds_local_xyz_m')
+            if not isinstance(bounds, dict):
+                return True
+            try:
+                minimum=(
+                    float(bounds['min_x_m'])-margin_m,
+                    float(bounds['min_y_m'])-margin_m,
+                    float(bounds['min_z_m'])-margin_m,
+                )
+                maximum=(
+                    float(bounds['max_x_m'])+margin_m,
+                    float(bounds['max_y_m'])+margin_m,
+                    float(bounds['max_z_m'])+margin_m,
+                )
+                start_values=tuple(float(value) for value in start)
+                end_values=tuple(float(value) for value in end)
+            except (KeyError, TypeError, ValueError):
+                return True
+            # Slab intersection for a bounded 3D segment and an expanded
+            # collision AABB.  This is a verifier, not a route planner.
+            t_min=0.0
+            t_max=1.0
+            for axis in range(3):
+                delta=end_values[axis]-start_values[axis]
+                if abs(delta) < 1e-9:
+                    if start_values[axis] < minimum[axis] or start_values[axis] > maximum[axis]:
+                        return False
+                    continue
+                inverse=1.0/delta
+                first=(minimum[axis]-start_values[axis])*inverse
+                second=(maximum[axis]-start_values[axis])*inverse
+                if first > second:
+                    first,second=second,first
+                t_min=max(t_min, first)
+                t_max=min(t_max, second)
+                if t_min > t_max:
+                    return False
+            return True
+
+        def _segment_intersects_obstacle_xy(start, end, obstacle, margin_m):
+            if obstacle.get('collision_enabled') is not True:
+                return False
+            bounds=obstacle.get('bounds_local_xyz_m')
+            if not isinstance(bounds, dict):
+                return True
+            try:
+                minimum=(
+                    float(bounds['min_x_m'])-margin_m,
+                    float(bounds['min_y_m'])-margin_m,
+                )
+                maximum=(
+                    float(bounds['max_x_m'])+margin_m,
+                    float(bounds['max_y_m'])+margin_m,
+                )
+                start_values=(float(start[0]), float(start[1]))
+                end_values=(float(end[0]), float(end[1]))
+            except (KeyError, TypeError, ValueError):
+                return True
+            t_min=0.0
+            t_max=1.0
+            for axis in range(2):
+                delta=end_values[axis]-start_values[axis]
+                if abs(delta) < 1e-9:
+                    if start_values[axis] < minimum[axis] or start_values[axis] > maximum[axis]:
+                        return False
+                    continue
+                inverse=1.0/delta
+                first=(minimum[axis]-start_values[axis])*inverse
+                second=(maximum[axis]-start_values[axis])*inverse
+                if first > second:
+                    first,second=second,first
+                t_min=max(t_min, first)
+                t_max=min(t_max, second)
+                if t_min > t_max:
+                    return False
+            return True
+
+        def verify_recovery_resume(request, target, recovery_start_point):
+            manifest=OBSTACLE_MANIFEST if isinstance(OBSTACLE_MANIFEST, dict) else {{}}
+            obstacles=manifest.get('obstacles')
+            obstacles=obstacles if isinstance(obstacles, list) else []
+            recovery_action=str(request.get('recovery_action') or '')
+            lateral_bypass_required=recovery_action == 'avoid_obstacle'
+            alternate_dropoff=recovery_flag(request, 'alternate_dropoff', False)
+            resume_original_route=recovery_flag(
+                request,
+                'resume_original_route',
+                not alternate_dropoff,
+            )
+            target_point=(
+                float(target['target_x_m']),
+                float(target['target_y_m']),
+                abs(float(target['target_z_m'])),
+            )
+            target_conflicts=[]
+            recovery_leg_conflicts=[]
+            remaining_route_conflicts=[]
+            dropoff_x=manifest.get('dropoff_local_x_m')
+            dropoff_y=manifest.get('dropoff_local_y_m')
+            dropoff_point=None
+            try:
+                if dropoff_x is not None and dropoff_y is not None:
+                    dropoff_point=(
+                        float(dropoff_x),
+                        float(dropoff_y),
+                        float(RELEASE_ALTITUDE_TARGET_M),
+                    )
+            except (TypeError, ValueError):
+                dropoff_point=None
+            for obstacle in obstacles:
+                if not isinstance(obstacle, dict):
+                    continue
+                obstacle_name=str(obstacle.get('name') or 'unnamed_obstacle')
+                if _point_inside_obstacle(*target_point, obstacle):
+                    target_conflicts.append(obstacle_name)
+                if (
+                    lateral_bypass_required
+                    and recovery_start_point is not None
+                    and _segment_intersects_obstacle_xy(
+                        recovery_start_point,
+                        target_point,
+                        obstacle,
+                        OPERATOR_RECOVERY_LATERAL_OBSTACLE_MARGIN_M,
+                    )
+                ):
+                    recovery_leg_conflicts.append(obstacle_name)
+                if (
+                    resume_original_route
+                    and dropoff_point is not None
+                    and (
+                        _segment_intersects_obstacle_xy(
+                            target_point,
+                            dropoff_point,
+                            obstacle,
+                            OPERATOR_RECOVERY_LATERAL_OBSTACLE_MARGIN_M,
+                        )
+                        if lateral_bypass_required
+                        else _segment_intersects_obstacle(
+                            target_point,
+                            dropoff_point,
+                            obstacle,
+                        )
+                    )
+                ):
+                    remaining_route_conflicts.append(obstacle_name)
+            original_dropoff_available=(
+                manifest.get('original_dropoff_available') is not False
+                and manifest.get('landing_zone_blocked') is not True
+            )
+            blocked_reasons=[]
+            if target_conflicts:
+                blocked_reasons.append('recovery_target_intersects_collision_geometry')
+            if recovery_leg_conflicts:
+                blocked_reasons.append('recovery_leg_lateral_clearance_not_verified')
+            if resume_original_route and remaining_route_conflicts:
+                blocked_reasons.append('remaining_route_intersects_collision_geometry')
+            if resume_original_route and not original_dropoff_available:
+                blocked_reasons.append('original_dropoff_collision_occupied')
+            if resume_original_route and dropoff_point is None:
+                blocked_reasons.append('remaining_route_dropoff_geometry_unavailable')
+            if alternate_dropoff and resume_original_route:
+                blocked_reasons.append('alternate_dropoff_cannot_resume_original_route')
+            target_clearance_verified=not target_conflicts
+            recovery_leg_clearance_verified=(
+                not lateral_bypass_required
+                or (
+                    recovery_start_point is not None
+                    and not recovery_leg_conflicts
+                )
+            )
+            remaining_route_clearance_verified=(
+                not resume_original_route
+                or (
+                    not remaining_route_conflicts
+                    and original_dropoff_available
+                    and dropoff_point is not None
+                )
+            )
+            resume_auto_authorized=(
+                not alternate_dropoff
+                and resume_original_route
+                and target_clearance_verified
+                and recovery_leg_clearance_verified
+                and remaining_route_clearance_verified
+                and not blocked_reasons
+            )
+            return {{
+                'schema_version': 'missionos_px4_recovery_resume_safety_verification.v1',
+                'verification_status': 'verified' if not blocked_reasons else 'failed',
+                'resume_auto_authorized': resume_auto_authorized,
+                'alternate_dropoff': alternate_dropoff,
+                'resume_original_route_requested': resume_original_route,
+                'remaining_route_scope': 'recovery_target_to_original_dropoff_segment',
+                'target_clearance_verified': target_clearance_verified,
+                'lateral_bypass_required': lateral_bypass_required,
+                'lateral_clearance_margin_m': (
+                    OPERATOR_RECOVERY_LATERAL_OBSTACLE_MARGIN_M
+                    if lateral_bypass_required
+                    else None
+                ),
+                'recovery_leg_clearance_verified': recovery_leg_clearance_verified,
+                'remaining_route_clearance_verified': remaining_route_clearance_verified,
+                'original_dropoff_available': original_dropoff_available,
+                'target_collision_obstacles': target_conflicts,
+                'recovery_leg_collision_obstacles': recovery_leg_conflicts,
+                'remaining_route_collision_obstacles': remaining_route_conflicts,
+                'alternate_dropoff_candidate': manifest.get('alternate_dropoff_candidate'),
+                'blocked_reasons': blocked_reasons,
+                'dispatch_authority_created': False,
+                'physical_execution_invoked': False,
+            }}
+
         def operator_maneuver_target(request, local_x, local_y, local_z, altitude):
             action=str(request.get('recovery_action') or '')
             if action == 'adjust_altitude':
@@ -3702,6 +4109,45 @@ def _inner_runtime_probe_script(
                     next_observe_at=now+1.0
                 time.sleep(OPERATOR_RECOVERY_ASSIST_SETPOINT_INTERVAL_SECONDS)
             maneuver_status='target_reached' if target_reached else 'stream_window_complete'
+            resume_safety_verification=(
+                verify_recovery_resume(
+                    request,
+                    target,
+                    (
+                        first_x,
+                        first_y,
+                        first_altitude
+                        if first_altitude is not None
+                        else abs(float(target['target_z_m'])),
+                    ),
+                )
+                if target_reached
+                else {{
+                    'schema_version': 'missionos_px4_recovery_resume_safety_verification.v1',
+                    'verification_status': 'not_evaluated_target_not_reached',
+                    'resume_auto_authorized': False,
+                    'alternate_dropoff': recovery_flag(request, 'alternate_dropoff', False),
+                    'resume_original_route_requested': recovery_flag(request, 'resume_original_route', True),
+                    'remaining_route_scope': 'not_evaluated_target_not_reached',
+                    'target_clearance_verified': False,
+                    'lateral_bypass_required': action == 'avoid_obstacle',
+                    'lateral_clearance_margin_m': (
+                        OPERATOR_RECOVERY_LATERAL_OBSTACLE_MARGIN_M
+                        if action == 'avoid_obstacle'
+                        else None
+                    ),
+                    'recovery_leg_clearance_verified': False,
+                    'remaining_route_clearance_verified': False,
+                    'original_dropoff_available': None,
+                    'target_collision_obstacles': [],
+                    'recovery_leg_collision_obstacles': [],
+                    'remaining_route_collision_obstacles': [],
+                    'alternate_dropoff_candidate': None,
+                    'blocked_reasons': ['recovery_target_not_reached'],
+                    'dispatch_authority_created': False,
+                    'physical_execution_invoked': False,
+                }}
+            )
             resume_auto={{
                 'command_id': {MAV_CMD_DO_SET_MODE},
                 'attempted': False,
@@ -3712,10 +4158,76 @@ def _inner_runtime_probe_script(
             }}
             resume_nav_wait={{'observed': False, 'samples': [], 'next_seq': seq, 'status': ''}}
             resume_auto_status='not_attempted_target_not_reached'
-            should_resume_auto = target_reached or action in (
-                'adjust_altitude',
-                'reroute',
-                'avoid_obstacle',
+            resume_mission_seq_required=action == 'avoid_obstacle'
+            resume_mission_seq=RESUME_MISSION_SEQ_AFTER_OBSTACLE
+            resume_mission_current={{
+                'message_id': MAVLINK_MSG_ID_MISSION_SET_CURRENT,
+                'protocol': 'mavlink_mission_set_current',
+                'attempted': False,
+                'frame_sent': False,
+                # MISSION_SET_CURRENT has no COMMAND_ACK contract. Keep these
+                # compatibility fields null and trust only seq_current readback.
+                'ack_observed': None,
+                'ack_result': None,
+                'ack_result_history': [],
+                'next_seq': seq,
+            }}
+            resume_mission_current_wait={{
+                'observed': False,
+                'samples': [],
+                'next_seq': seq,
+                'mission_current_seq': None,
+            }}
+            # A bounded recovery attempt is not proof of recovery. AUTO may
+            # resume only after the requested recovery target is observed.
+            should_resume_auto = (
+                target_reached
+                and resume_safety_verification.get('resume_auto_authorized') is True
+            )
+            if should_resume_auto and resume_mission_seq_required:
+                if resume_mission_seq is None:
+                    resume_safety_verification['verification_status']='failed'
+                    resume_safety_verification['resume_auto_authorized']=False
+                    resume_safety_verification.setdefault('blocked_reasons', []).append(
+                        'resume_mission_sequence_after_obstacle_unavailable'
+                    )
+                    should_resume_auto=False
+                else:
+                    sock.sendto(mission_set_current(resume_mission_seq, seq), remote)
+                    seq+=1
+                    resume_mission_current.update({{
+                        'attempted': True,
+                        'frame_sent': True,
+                        'next_seq': seq,
+                    }})
+                    resume_mission_current_wait=wait_mission_current(
+                        sock,
+                        remote,
+                        seq,
+                        resume_mission_seq,
+                        5.0,
+                    )
+                    seq=resume_mission_current_wait.get('next_seq', seq)
+                    mission_sequence_advanced=(
+                        resume_mission_current.get('frame_sent') is True
+                        and resume_mission_current_wait.get('observed') is True
+                    )
+                    if not mission_sequence_advanced:
+                        resume_safety_verification['verification_status']='failed'
+                        resume_safety_verification['resume_auto_authorized']=False
+                        resume_safety_verification.setdefault('blocked_reasons', []).append(
+                            'resume_mission_sequence_after_obstacle_not_observed'
+                        )
+                        should_resume_auto=False
+            resume_safety_verification['resume_mission_seq_required']=(
+                resume_mission_seq_required
+            )
+            resume_safety_verification['resume_mission_seq_after_obstacle']=(
+                resume_mission_seq
+            )
+            resume_safety_verification['resume_mission_seq_advanced']=(
+                not resume_mission_seq_required
+                or resume_mission_current_wait.get('observed') is True
             )
             if should_resume_auto:
                 resume_auto=send_command(
@@ -3740,6 +4252,58 @@ def _inner_runtime_probe_script(
                     resume_auto_status='resume_auto_not_accepted'
                 else:
                     resume_auto_status='resume_auto_nav_state_not_observed'
+            hold_after_failure={{
+                'attempted': False,
+                'ack_observed': False,
+                'ack_result': None,
+                'next_seq': seq,
+            }}
+            hold_after_failure_observed=False
+            hold_required=target_reached is False or should_resume_auto is False
+            if hold_required:
+                # A failed bounded maneuver is a fresh observation. Never
+                # leave PX4 in an unstreamed OFFBOARD state and never resume
+                # AUTO without target evidence. Hold for a new proposal and a
+                # new human approval instead.
+                hold_after_failure=send_command(
+                    sock,
+                    remote,
+                    {MAV_CMD_DO_SET_MODE},
+                    {auto_loiter_params!r},
+                    seq,
+                    10.0,
+                )
+                seq=hold_after_failure.get('next_seq', seq)
+                hold_nav_wait=wait_nav_state(
+                    sock,
+                    remote,
+                    seq,
+                    NAV_AUTO_LOITER,
+                    5.0,
+                )
+                seq=hold_nav_wait.get('next_seq', seq)
+                hold_after_failure_observed=(
+                    hold_after_failure.get('ack_result') == {MAV_RESULT_ACCEPTED}
+                    and hold_nav_wait.get('observed') is True
+                )
+                if target_reached is False:
+                    resume_auto_status=(
+                        'held_after_recovery_target_not_reached'
+                        if hold_after_failure_observed
+                        else 'hold_after_recovery_target_not_reached_failed'
+                    )
+                elif resume_safety_verification.get('alternate_dropoff') is True:
+                    resume_auto_status=(
+                        'held_at_alternate_dropoff_awaiting_operator_decision'
+                        if hold_after_failure_observed
+                        else 'hold_at_alternate_dropoff_failed'
+                    )
+                else:
+                    resume_auto_status=(
+                        'held_remaining_route_or_dropoff_unsafe'
+                        if hold_after_failure_observed
+                        else 'hold_remaining_route_or_dropoff_unsafe_failed'
+                    )
             return {{
                 **offboard,
                 'status': maneuver_status,
@@ -3796,11 +4360,65 @@ def _inner_runtime_probe_script(
                     'nav_state',
                 ),
                 'resume_auto_status': resume_auto_status,
+                'resume_mission_seq_required': resume_mission_seq_required,
+                'resume_mission_seq_after_obstacle': resume_mission_seq,
+                'resume_mission_current_attempted': resume_mission_current.get('attempted'),
+                'resume_mission_current_protocol': resume_mission_current.get('protocol'),
+                'resume_mission_current_frame_sent': resume_mission_current.get('frame_sent'),
+                'resume_mission_current_ack_observed': resume_mission_current.get('ack_observed'),
+                'resume_mission_current_ack_result': resume_mission_current.get('ack_result'),
+                'resume_mission_current_seq_observed': resume_mission_current_wait.get('observed'),
+                'resume_mission_current_seq': resume_mission_current_wait.get('mission_current_seq'),
+                'resume_safety_verification': resume_safety_verification,
+                'hold_after_failure_command': hold_after_failure,
+                'hold_after_failure_observed': hold_after_failure_observed,
                 'maneuver_observation_samples': maneuver_samples[-5:],
             }}
 
         def execute_operator_recovery_request(sock, remote, seq, request, local_x=None, local_y=None, local_z=None, altitude=None):
             action=str(request.get('recovery_action') or '')
+            if action == 'safety_hold':
+                if request.get('preauthorized_safety_reflex') is not True:
+                    return {{
+                        'command_id': {MAV_CMD_DO_SET_MODE},
+                        'attempted': False,
+                        'ack_observed': False,
+                        'ack_result': None,
+                        'next_seq': seq,
+                        'status': 'blocked_missing_safety_reflex_authority',
+                        'blocked_reasons': ['preauthorized_safety_reflex_required'],
+                    }}, 'MAV_CMD_DO_SET_MODE:AUTO_LOITER', False
+                command=send_command(
+                    sock,
+                    remote,
+                    {MAV_CMD_DO_SET_MODE},
+                    {auto_loiter_params!r},
+                    seq,
+                    10.0,
+                )
+                seq=command.get('next_seq', seq)
+                nav_wait=wait_nav_state(sock, remote, seq, NAV_AUTO_LOITER, 5.0)
+                seq=nav_wait.get('next_seq', seq)
+                hold_observed=(
+                    command.get('ack_result') == {MAV_RESULT_ACCEPTED}
+                    and nav_wait.get('observed') is True
+                )
+                return {{
+                    **command,
+                    'next_seq': seq,
+                    'status': (
+                        'safety_hold_observed'
+                        if hold_observed
+                        else 'safety_hold_not_observed'
+                    ),
+                    'hold_observed': hold_observed,
+                    'hold_nav_state': NAV_AUTO_LOITER,
+                    'hold_nav_state_observed': nav_wait.get('observed'),
+                    'resume_auto_status': 'held_awaiting_operator_recovery_approval',
+                    'operator_approved': False,
+                    'preauthorized_safety_reflex': True,
+                    'target_reached': False,
+                }}, 'MAV_CMD_DO_SET_MODE:AUTO_LOITER', False
             if action == 'return_to_launch':
                 command=send_command(sock, remote, {MAV_CMD_NAV_RETURN_TO_LAUNCH}, {rtl_params!r}, seq, 15.0)
                 return command, 'MAV_CMD_NAV_RETURN_TO_LAUNCH', True
@@ -3852,6 +4470,39 @@ def _inner_runtime_probe_script(
                 time.sleep(0.25)
             return {{'observed': False, 'samples': samples, 'next_seq': seq, 'status': samples[-1] if samples else ''}}
 
+        def wait_mission_current(sock, remote, seq, expected_seq, timeout_seconds):
+            samples=[]
+            deadline=time.monotonic()+float(timeout_seconds)
+            while time.monotonic()<deadline:
+                sock.sendto(heartbeat(seq), remote); seq+=1
+                # MISSION_SET_CURRENT updates the persisted ``mission`` topic
+                # while the aircraft is in HOLD. ``mission_result.seq_current``
+                # remains on the previously executing item until AUTO resumes,
+                # so using it here creates a false negative and prevents the
+                # safe resume that this readback is meant to guard.
+                mission_state=listener('mission', 1)
+                current_seq=parse_int(mission_state, 'current_seq')
+                samples.append({{
+                    'mission_state': mission_state,
+                    'mission_current_seq': current_seq,
+                }})
+                if current_seq == int(expected_seq):
+                    return {{
+                        'observed': True,
+                        'samples': samples,
+                        'next_seq': seq,
+                        'mission_current_seq': current_seq,
+                    }}
+                time.sleep(0.25)
+            return {{
+                'observed': False,
+                'samples': samples,
+                'next_seq': seq,
+                'mission_current_seq': (
+                    samples[-1].get('mission_current_seq') if samples else None
+                ),
+            }}
+
         def clear_operator_recovery_request():
             if not OPERATOR_RECOVERY_REQUEST_PATH:
                 return
@@ -3885,6 +4536,7 @@ def _inner_runtime_probe_script(
                 }}
             action=str(payload.get('recovery_action') or '')
             supported_actions=(
+                'safety_hold',
                 'land',
                 'return_to_launch',
                 'adjust_altitude',
@@ -3964,8 +4616,24 @@ def _inner_runtime_probe_script(
                 'request': None,
                 'command': None,
             }}
+            safety_hold_active=False
             started=time.monotonic()
-            while time.monotonic() - started < MONITOR_SECONDS:
+            monitor_excluded_seconds=0.0
+            safety_hold_started_at=None
+
+            def monitor_effective_elapsed(now=None):
+                current=time.monotonic() if now is None else float(now)
+                active_hold_seconds=(
+                    current-safety_hold_started_at
+                    if safety_hold_started_at is not None
+                    else 0.0
+                )
+                return max(
+                    0.0,
+                    current-started-monitor_excluded_seconds-active_hold_seconds,
+                )
+
+            while monitor_effective_elapsed() < MONITOR_SECONDS:
                 elapsed=time.monotonic() - started
                 sock.sendto(heartbeat(seq), remote); seq+=1
                 heartbeat_instant_observed=observe_heartbeat(sock)
@@ -4092,6 +4760,24 @@ def _inner_runtime_probe_script(
                 dwell_seconds=(elapsed-dwell_started_at) if dwell_started_at is not None else 0.0
                 sample={{
                     'elapsed_seconds': round(elapsed, 3),
+                    'nav_authority_context': (
+                        'preauthorized_safety_hold'
+                        if safety_hold_active and nav == NAV_AUTO_LOITER
+                        else (
+                            'approved_bounded_recovery'
+                            if (
+                                nav == NAV_OFFBOARD
+                                and isinstance(operator_recovery.get('request'), dict)
+                                and (operator_recovery.get('request') or {{}}).get('operator_approved') is True
+                                and isinstance(operator_recovery.get('command'), dict)
+                                and (operator_recovery.get('command') or {{}}).get('attempted') is True
+                            )
+                            else 'auto_mission'
+                        )
+                    ),
+                    'monitor_effective_elapsed_seconds': round(
+                        monitor_effective_elapsed(), 3
+                    ),
                     'vehicle_status': status,
                     'vehicle_local_position': local,
                     'vehicle_global_position': global_position,
@@ -4140,6 +4826,18 @@ def _inner_runtime_probe_script(
                 snapshot_payload={{
                     'sample_index': len(samples)-1,
                     'elapsed_seconds': round(elapsed, 3),
+                    'monitor_effective_elapsed_seconds': round(
+                        monitor_effective_elapsed(), 3
+                    ),
+                    'monitor_excluded_recovery_seconds': round(
+                        monitor_excluded_seconds
+                        + (
+                            time.monotonic()-safety_hold_started_at
+                            if safety_hold_started_at is not None
+                            else 0.0
+                        ),
+                        3,
+                    ),
                     'progress_m': round(progress, 3),
                     'mission_current_seq': mission_current,
                     'mission_reached_seq': mission_reached,
@@ -4149,6 +4847,7 @@ def _inner_runtime_probe_script(
                     'local_z_m': z,
                     'distance_to_home_m': (round(math.hypot(_snap_x, _snap_y), 3) if _snap_x is not None and _snap_y is not None else None),
                     'nav_state': nav,
+                    'nav_authority_context': sample['nav_authority_context'],
                     'battery_remaining_percent': battery_remaining_last,
                     'battery_remaining_first_percent': battery_remaining_first,
                     'battery_remaining_latest_percent': battery_remaining_last,
@@ -4180,6 +4879,21 @@ def _inner_runtime_probe_script(
                     'gust_window_start_seconds': round(WIND_GUST_START_SECONDS, 3) if WIND_GUST_MPS is not None else None,
                     'gust_window_duration_seconds': round(WIND_GUST_DURATION_SECONDS, 3) if WIND_GUST_MPS is not None else None,
                     'operator_recovery_request_observed': bool(operator_recovery.get('request_observed')),
+                    'operator_recovery_proposal_id': (
+                        (operator_recovery.get('request') or {{}}).get('proposal_id')
+                        if isinstance(operator_recovery.get('request'), dict)
+                        else None
+                    ),
+                    'operator_recovery_proposal_origin': (
+                        (operator_recovery.get('request') or {{}}).get('proposal_origin')
+                        if isinstance(operator_recovery.get('request'), dict)
+                        else None
+                    ),
+                    'operator_recovery_proposal_origin_sha256': (
+                        (operator_recovery.get('request') or {{}}).get('proposal_origin_sha256')
+                        if isinstance(operator_recovery.get('request'), dict)
+                        else None
+                    ),
                     'operator_recovery_action': (
                         (operator_recovery.get('request') or {{}}).get('recovery_action')
                         if isinstance(operator_recovery.get('request'), dict)
@@ -4221,6 +4935,7 @@ def _inner_runtime_probe_script(
                     'operator_recovery_resume_auto_nav_state_observed': operator_recovery_command.get('resume_auto_nav_state_observed'),
                     'operator_recovery_resume_auto_nav_state': operator_recovery_command.get('resume_auto_nav_state'),
                     'operator_recovery_resume_auto_status': operator_recovery_command.get('resume_auto_status'),
+                    'operator_recovery_resume_safety_verification': operator_recovery_command.get('resume_safety_verification'),
                 }}
                 if gz_battery:
                     snapshot_payload.update(gz_battery)
@@ -4230,6 +4945,8 @@ def _inner_runtime_probe_script(
                 print(json.dumps({{'auto_running_snapshot': snapshot_payload}}, sort_keys=True), flush=True)
                 recovery_request=read_operator_recovery_request()
                 if recovery_request is not None:
+                    recovery_started_at=time.monotonic()
+                    was_safety_hold_active=safety_hold_active
                     operator_recovery['request_observed']=True
                     operator_recovery['request']=recovery_request
                     command,recovery_path,terminal_recovery=execute_operator_recovery_request(
@@ -4248,6 +4965,29 @@ def _inner_runtime_probe_script(
                     operator_recovery['terminal_recovery']=terminal_recovery
                     operator_recovery_command=command
                     mark_operator_recovery_request_consumed(recovery_request, command)
+                    if str(recovery_request.get('recovery_action') or '') == 'safety_hold':
+                        safety_hold_active=command.get('hold_observed') is True
+                        if safety_hold_active and safety_hold_started_at is None:
+                            safety_hold_started_at=recovery_started_at
+                    elif command.get('resume_auto_status') == 'resumed_auto_mission':
+                        safety_hold_active=False
+                        if safety_hold_started_at is not None:
+                            monitor_excluded_seconds+=(
+                                time.monotonic()-safety_hold_started_at
+                            )
+                            safety_hold_started_at=None
+                        elif not was_safety_hold_active:
+                            monitor_excluded_seconds+=(
+                                time.monotonic()-recovery_started_at
+                            )
+                    elif command.get('hold_after_failure_observed') is True:
+                        safety_hold_active=True
+                        if safety_hold_started_at is None:
+                            safety_hold_started_at=recovery_started_at
+                    elif not terminal_recovery and not was_safety_hold_active:
+                        monitor_excluded_seconds+=(
+                            time.monotonic()-recovery_started_at
+                        )
                     if terminal_recovery:
                         if command.get('ack_result') == {MAV_RESULT_ACCEPTED}:
                             monitor_stop_reason='operator_recovery_dispatch_acked'
@@ -4256,6 +4996,15 @@ def _inner_runtime_probe_script(
                         else:
                             monitor_stop_reason='operator_recovery_dispatch_not_accepted'
                         break
+                    # The command helpers synchronously observe HOLD/OFFBOARD
+                    # execution and, for a successful bounded maneuver, the
+                    # return to AUTO. ``nav`` above was sampled before that
+                    # command ran. Reusing it here would falsely classify the
+                    # pre-command AUTO_LOITER value as a post-command mode loss
+                    # and invoke the default LAND policy. Re-observe PX4 on the
+                    # next loop before applying any flight guard.
+                    time.sleep(1.0)
+                    continue
                 if (
                     not payload_release['attempted']
                     and altitude_in_release_band
@@ -4300,7 +5049,9 @@ def _inner_runtime_probe_script(
                         )
                     )
                     break
-                if nav is not None and nav != NAV_AUTO_MISSION:
+                if nav is not None and nav != NAV_AUTO_MISSION and not (
+                    safety_hold_active and nav == NAV_AUTO_LOITER
+                ):
                     guard_reason='auto_mission_mode_lost'
                     break
                 if remaining is not None and remaining < MIN_BATTERY_REMAINING_PERCENT:
@@ -4348,11 +5099,38 @@ def _inner_runtime_probe_script(
                     ),
                 }})
             if last_snapshot_payload is not None:
+                monitor_finished_at=time.monotonic()
+                monitor_active_hold_seconds=(
+                    monitor_finished_at-safety_hold_started_at
+                    if safety_hold_started_at is not None
+                    else 0.0
+                )
                 terminal_snapshot_payload=dict(last_snapshot_payload)
                 terminal_snapshot_payload['sample_index']=len(samples)
                 terminal_snapshot_payload['monitor_window_ended']=True
                 terminal_snapshot_payload['monitor_stop_reason']=monitor_stop_reason
+                terminal_snapshot_payload['monitor_effective_elapsed_seconds']=round(
+                    monitor_effective_elapsed(monitor_finished_at), 3
+                )
+                terminal_snapshot_payload['monitor_excluded_recovery_seconds']=round(
+                    monitor_excluded_seconds+monitor_active_hold_seconds, 3
+                )
                 terminal_snapshot_payload['operator_recovery_request_observed']=bool(operator_recovery.get('request_observed'))
+                terminal_snapshot_payload['operator_recovery_proposal_id']=(
+                    (operator_recovery.get('request') or {{}}).get('proposal_id')
+                    if isinstance(operator_recovery.get('request'), dict)
+                    else None
+                )
+                terminal_snapshot_payload['operator_recovery_proposal_origin']=(
+                    (operator_recovery.get('request') or {{}}).get('proposal_origin')
+                    if isinstance(operator_recovery.get('request'), dict)
+                    else None
+                )
+                terminal_snapshot_payload['operator_recovery_proposal_origin_sha256']=(
+                    (operator_recovery.get('request') or {{}}).get('proposal_origin_sha256')
+                    if isinstance(operator_recovery.get('request'), dict)
+                    else None
+                )
                 terminal_snapshot_payload['operator_recovery_action']=(
                     (operator_recovery.get('request') or {{}}).get('recovery_action')
                     if isinstance(operator_recovery.get('request'), dict)
@@ -4394,8 +5172,15 @@ def _inner_runtime_probe_script(
                 terminal_snapshot_payload['operator_recovery_resume_auto_nav_state_observed']=operator_recovery_command.get('resume_auto_nav_state_observed')
                 terminal_snapshot_payload['operator_recovery_resume_auto_nav_state']=operator_recovery_command.get('resume_auto_nav_state')
                 terminal_snapshot_payload['operator_recovery_resume_auto_status']=operator_recovery_command.get('resume_auto_status')
+                terminal_snapshot_payload['operator_recovery_resume_safety_verification']=operator_recovery_command.get('resume_safety_verification')
                 print(json.dumps({{'auto_running_snapshot': terminal_snapshot_payload}}, sort_keys=True), flush=True)
-            return {{'samples': samples, 'guard_reason': guard_reason, 'monitor_stop_reason': monitor_stop_reason, 'next_seq': seq, 'monitor_elapsed_seconds': round(time.monotonic()-started, 3), 'payload_release': payload_release, 'terminal_snapshot': terminal_snapshot_payload, 'wind_application_events': wind_application_events, 'operator_recovery': operator_recovery}}
+            monitor_finished_at=time.monotonic()
+            monitor_active_hold_seconds=(
+                monitor_finished_at-safety_hold_started_at
+                if safety_hold_started_at is not None
+                else 0.0
+            )
+            return {{'samples': samples, 'guard_reason': guard_reason, 'monitor_stop_reason': monitor_stop_reason, 'next_seq': seq, 'monitor_elapsed_seconds': round(monitor_finished_at-started, 3), 'monitor_effective_elapsed_seconds': round(monitor_effective_elapsed(monitor_finished_at), 3), 'monitor_excluded_recovery_seconds': round(monitor_excluded_seconds+monitor_active_hold_seconds, 3), 'payload_release': payload_release, 'terminal_snapshot': terminal_snapshot_payload, 'wind_application_events': wind_application_events, 'operator_recovery': operator_recovery}}
 
         def wait_land_or_disarm(sock, remote, seq, wait_seconds):
             samples=[]
@@ -4658,6 +5443,7 @@ def _inner_runtime_probe_script(
                     'operator_recovery_resume_auto_nav_state_observed': active_recovery_command.get('resume_auto_nav_state_observed'),
                     'operator_recovery_resume_auto_nav_state': active_recovery_command.get('resume_auto_nav_state'),
                     'operator_recovery_resume_auto_status': active_recovery_command.get('resume_auto_status'),
+                    'operator_recovery_resume_safety_verification': active_recovery_command.get('resume_safety_verification'),
                     'gazebo_obstacle_model_spawned': obstacle_application.get('gazebo_obstacle_model_spawned'),
                     'gazebo_obstacle_model_spawn_requested': obstacle_application.get('gazebo_obstacle_model_spawn_requested'),
                     'gazebo_obstacle_application_status': obstacle_application.get('application_status'),
@@ -4897,6 +5683,8 @@ def _build_running_snapshot(
         "sample_index": int(marker.get("sample_index") or 0),
         "waypoint_total": int(waypoint_total),
         "elapsed_seconds": marker.get("elapsed_seconds"),
+        "monitor_effective_elapsed_seconds": marker.get("monitor_effective_elapsed_seconds"),
+        "monitor_excluded_recovery_seconds": marker.get("monitor_excluded_recovery_seconds"),
         "progress_m": marker.get("progress_m"),
         "mission_current_seq": marker.get("mission_current_seq"),
         "mission_reached_seq": marker.get("mission_reached_seq"),
@@ -4906,6 +5694,7 @@ def _build_running_snapshot(
         "local_z_m": marker.get("local_z_m"),
         "distance_to_home_m": marker.get("distance_to_home_m"),
         "nav_state": marker.get("nav_state"),
+        "nav_authority_context": marker.get("nav_authority_context"),
         "battery_remaining_percent": marker.get("battery_remaining_percent"),
         "battery_remaining_first_percent": marker.get("battery_remaining_first_percent"),
         "battery_remaining_latest_percent": marker.get("battery_remaining_latest_percent"),
@@ -4920,13 +5709,9 @@ def _build_running_snapshot(
         "gz_battery_charge_ah": marker.get("gz_battery_charge_ah"),
         "gz_battery_state_source": marker.get("gz_battery_state_source"),
         "gz_battery_read_error": marker.get("gz_battery_read_error"),
-        "gz_battery_motor_coupling_requested": marker.get(
-            "gz_battery_motor_coupling_requested"
-        ),
+        "gz_battery_motor_coupling_requested": marker.get("gz_battery_motor_coupling_requested"),
         "battery_sample_accepted": marker.get("battery_sample_accepted"),
-        "battery_sample_rejected_reason": marker.get(
-            "battery_sample_rejected_reason"
-        ),
+        "battery_sample_rejected_reason": marker.get("battery_sample_rejected_reason"),
         "battery_warning": marker.get("battery_warning"),
         "heartbeat_observed": marker.get("heartbeat_observed"),
         "dropoff_dwell_candidate": marker.get("dropoff_dwell_candidate"),
@@ -4941,43 +5726,32 @@ def _build_running_snapshot(
         "wind_mean_application_elapsed_seconds": marker.get(
             "wind_mean_application_elapsed_seconds"
         ),
-        "wind_mean_application_altitude_m": marker.get(
-            "wind_mean_application_altitude_m"
-        ),
+        "wind_mean_application_altitude_m": marker.get("wind_mean_application_altitude_m"),
         "wind_gust_window_start_seconds": marker.get("gust_window_start_seconds"),
-        "wind_gust_window_duration_seconds": marker.get(
-            "gust_window_duration_seconds"
-        ),
-        "gazebo_obstacle_model_spawned": marker.get(
-            "gazebo_obstacle_model_spawned"
-        ),
+        "wind_gust_window_duration_seconds": marker.get("gust_window_duration_seconds"),
+        "gazebo_obstacle_model_spawned": marker.get("gazebo_obstacle_model_spawned"),
         "gazebo_obstacle_model_spawn_requested": marker.get(
             "gazebo_obstacle_model_spawn_requested"
         ),
-        "gazebo_obstacle_application_status": marker.get(
-            "gazebo_obstacle_application_status"
-        ),
+        "gazebo_obstacle_application_status": marker.get("gazebo_obstacle_application_status"),
         "obstacle_manifest": marker.get("obstacle_manifest"),
         "gazebo_obstacle_application": marker.get("gazebo_obstacle_application"),
-        "operator_recovery_request_observed": marker.get(
-            "operator_recovery_request_observed"
+        "operator_recovery_request_observed": marker.get("operator_recovery_request_observed"),
+        "operator_recovery_proposal_id": marker.get("operator_recovery_proposal_id"),
+        "operator_recovery_proposal_origin": marker.get("operator_recovery_proposal_origin"),
+        "operator_recovery_proposal_origin_sha256": marker.get(
+            "operator_recovery_proposal_origin_sha256"
         ),
         "operator_recovery_action": marker.get("operator_recovery_action"),
         "operator_recovery_parameters": marker.get("operator_recovery_parameters"),
         "operator_recovery_command_ack_observed": marker.get(
             "operator_recovery_command_ack_observed"
         ),
-        "operator_recovery_command_ack_result": marker.get(
-            "operator_recovery_command_ack_result"
-        ),
+        "operator_recovery_command_ack_result": marker.get("operator_recovery_command_ack_result"),
         "operator_recovery_path": marker.get("operator_recovery_path"),
         "operator_recovery_target": marker.get("operator_recovery_target"),
-        "operator_recovery_assist_attempted": marker.get(
-            "operator_recovery_assist_attempted"
-        ),
-        "operator_recovery_assist_status": marker.get(
-            "operator_recovery_assist_status"
-        ),
+        "operator_recovery_assist_attempted": marker.get("operator_recovery_assist_attempted"),
+        "operator_recovery_assist_status": marker.get("operator_recovery_assist_status"),
         "operator_recovery_assist_kind": marker.get("operator_recovery_assist_kind"),
         "operator_recovery_assist_offboard_ack_observed": marker.get(
             "operator_recovery_assist_offboard_ack_observed"
@@ -4997,27 +5771,13 @@ def _build_running_snapshot(
         "operator_recovery_assist_stream_duration_seconds": marker.get(
             "operator_recovery_assist_stream_duration_seconds"
         ),
-        "operator_recovery_target_reached": marker.get(
-            "operator_recovery_target_reached"
-        ),
-        "operator_recovery_target_distance_m": marker.get(
-            "operator_recovery_target_distance_m"
-        ),
-        "operator_recovery_target_altitude_m": marker.get(
-            "operator_recovery_target_altitude_m"
-        ),
-        "operator_recovery_altitude_error_m": marker.get(
-            "operator_recovery_altitude_error_m"
-        ),
-        "operator_recovery_local_delta_x_m": marker.get(
-            "operator_recovery_local_delta_x_m"
-        ),
-        "operator_recovery_local_delta_y_m": marker.get(
-            "operator_recovery_local_delta_y_m"
-        ),
-        "operator_recovery_altitude_delta_m": marker.get(
-            "operator_recovery_altitude_delta_m"
-        ),
+        "operator_recovery_target_reached": marker.get("operator_recovery_target_reached"),
+        "operator_recovery_target_distance_m": marker.get("operator_recovery_target_distance_m"),
+        "operator_recovery_target_altitude_m": marker.get("operator_recovery_target_altitude_m"),
+        "operator_recovery_altitude_error_m": marker.get("operator_recovery_altitude_error_m"),
+        "operator_recovery_local_delta_x_m": marker.get("operator_recovery_local_delta_x_m"),
+        "operator_recovery_local_delta_y_m": marker.get("operator_recovery_local_delta_y_m"),
+        "operator_recovery_altitude_delta_m": marker.get("operator_recovery_altitude_delta_m"),
         "operator_recovery_terminal": marker.get("operator_recovery_terminal"),
         "operator_recovery_resume_auto_attempted": marker.get(
             "operator_recovery_resume_auto_attempted"
@@ -5034,8 +5794,9 @@ def _build_running_snapshot(
         "operator_recovery_resume_auto_nav_state": marker.get(
             "operator_recovery_resume_auto_nav_state"
         ),
-        "operator_recovery_resume_auto_status": marker.get(
-            "operator_recovery_resume_auto_status"
+        "operator_recovery_resume_auto_status": marker.get("operator_recovery_resume_auto_status"),
+        "operator_recovery_resume_safety_verification": marker.get(
+            "operator_recovery_resume_safety_verification"
         ),
         "operator_recovery_assist_low_altitude_disarm_ack_observed": marker.get(
             "operator_recovery_assist_low_altitude_disarm_ack_observed"
@@ -5224,9 +5985,7 @@ def _stream_actual_runtime_probe(
             f"stderr_tail={stderr_text[-1500:]!r}"
         )
     if final_result is None:
-        raise RuntimeError(
-            "AUTO runtime probe produced no result line: " + stderr_text[-500:]
-        )
+        raise RuntimeError("AUTO runtime probe produced no result line: " + stderr_text[-500:])
     return final_result
 
 
@@ -5257,6 +6016,7 @@ def _actual_runtime_probe(
     gz_physical_battery_enabled: bool,
     gz_battery_motor_coupling_enabled: bool,
     obstacle_manifest: Mapping[str, Any] | None,
+    resume_mission_seq_after_obstacle: int | None,
     run_dir: Path,
     waypoint_total: int,
 ) -> dict[str, Any]:
@@ -5287,6 +6047,7 @@ def _actual_runtime_probe(
             gz_physical_battery_enabled=gz_physical_battery_enabled,
             gz_battery_motor_coupling_enabled=gz_battery_motor_coupling_enabled,
             obstacle_manifest=obstacle_manifest,
+            resume_mission_seq_after_obstacle=(resume_mission_seq_after_obstacle),
         ),
         timeout_seconds=int(
             max(
@@ -5411,6 +6172,169 @@ def _gazebo_obstacle_runtime_artifacts(
     }
 
 
+def _runtime_recovery_provenance_from_probe(
+    *,
+    probe_observed: Mapping[str, Any],
+) -> dict[str, Any]:
+    monitor = probe_observed.get("monitor")
+    monitor = monitor if isinstance(monitor, Mapping) else {}
+    operator_recovery = monitor.get("operator_recovery")
+    operator_recovery = operator_recovery if isinstance(operator_recovery, Mapping) else {}
+    request = operator_recovery.get("request")
+    request = dict(request) if isinstance(request, Mapping) else {}
+    command = operator_recovery.get("command")
+    command = dict(command) if isinstance(command, Mapping) else {}
+    origin = request.get("proposal_origin")
+    origin = dict(origin) if isinstance(origin, Mapping) else {}
+    recorded_sha256 = str(
+        request.get("proposal_origin_sha256") or origin.get("origin_sha256") or ""
+    )
+    unhashed_origin = {key: value for key, value in origin.items() if key != "origin_sha256"}
+    recomputed_sha256 = (
+        hashlib.sha256(
+            json.dumps(
+                unhashed_origin,
+                ensure_ascii=True,
+                sort_keys=True,
+                default=str,
+            ).encode("utf-8")
+        ).hexdigest()
+        if origin
+        else ""
+    )
+    return {
+        "schema_version": "missionos_runtime_recovery_run_provenance.v1",
+        "provenance_status": (
+            "verified"
+            if origin and recorded_sha256 and recorded_sha256 == recomputed_sha256
+            else "not_present"
+            if not origin
+            else "hash_mismatch"
+        ),
+        "proposal_id": str(request.get("proposal_id") or ""),
+        "proposal_origin": origin,
+        "proposal_origin_sha256": recorded_sha256,
+        "proposal_origin_sha256_recomputed": recomputed_sha256,
+        "approval_ref": str(request.get("approval_ref") or ""),
+        "recovery_action": str(request.get("recovery_action") or ""),
+        "recovery_parameters": dict(request.get("recovery_parameters") or {}),
+        "operator_approved": request.get("operator_approved") is True,
+        "dispatch_request_observed": operator_recovery.get("request_observed") is True,
+        "executor_attempted": command.get("attempted") is True,
+        "target_reached": command.get("target_reached") is True,
+        "resume_auto_status": str(command.get("resume_auto_status") or ""),
+        "contains_prompt_or_response_text": False,
+        "delivery_completion_claimed": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }
+
+
+def _verified_recovery_superseded_waypoint_sequences(
+    *,
+    runtime_summary: Mapping[str, Any],
+    probe_observed: Mapping[str, Any],
+) -> tuple[int, ...]:
+    """Return only a contiguous, evidence-backed route segment replacement.
+
+    A Recovery maneuver may deliberately bypass old mission items. Those items
+    are not claimed as reached. They satisfy the route gate only when an
+    explicitly approved avoid-obstacle request reached its target, passed the
+    horizontal-clearance verifier, advanced PX4's persisted mission cursor, and
+    then resumed AUTO. Any missing link keeps the original waypoints missing.
+    """
+
+    monitor = probe_observed.get("monitor")
+    monitor = monitor if isinstance(monitor, Mapping) else {}
+    operator_recovery = monitor.get("operator_recovery")
+    operator_recovery = operator_recovery if isinstance(operator_recovery, Mapping) else {}
+    request = operator_recovery.get("request")
+    request = request if isinstance(request, Mapping) else {}
+    command = operator_recovery.get("command")
+    command = command if isinstance(command, Mapping) else {}
+    safety = command.get("resume_safety_verification")
+    safety = safety if isinstance(safety, Mapping) else {}
+    resume_seq = _optional_int(command.get("resume_mission_current_seq"))
+    configured_resume_seq = _optional_int(command.get("resume_mission_seq_after_obstacle"))
+    verified = all(
+        (
+            request.get("operator_approved") is True,
+            request.get("explicit_recovery_dispatch_approval") is True,
+            str(request.get("recovery_action") or "") == "avoid_obstacle",
+            command.get("target_reached") is True,
+            command.get("resume_mission_current_frame_sent") is True,
+            command.get("resume_mission_current_seq_observed") is True,
+            resume_seq is not None,
+            resume_seq == configured_resume_seq,
+            command.get("resume_auto_status") == "resumed_auto_mission",
+            safety.get("verification_status") == "verified",
+            safety.get("resume_auto_authorized") is True,
+            safety.get("resume_mission_seq_advanced") is True,
+            not tuple(safety.get("blocked_reasons") or ()),
+        )
+    )
+    if not verified or resume_seq is None:
+        return ()
+    start = int(runtime_summary.get("route_waypoint_seq_start") or 0)
+    end = int(runtime_summary.get("route_waypoint_seq_end") or -1)
+    if start <= 0 or resume_seq <= start or resume_seq > end:
+        return ()
+    reached = {
+        int(seq)
+        for seq in runtime_summary.get("mission_item_reached_events") or ()
+        if _optional_int(seq) is not None
+    }
+    reached_before_resume = tuple(seq for seq in range(start, resume_seq) if seq in reached)
+    if not reached_before_resume:
+        return ()
+    last_observed_before_resume = max(reached_before_resume)
+    superseded = tuple(range(last_observed_before_resume + 1, resume_seq))
+    if not superseded:
+        return ()
+    # Do not use Recovery to hide an unrelated telemetry hole before the last
+    # observed pre-Recovery waypoint.
+    if any(seq not in reached for seq in range(start, last_observed_before_resume + 1)):
+        return ()
+    return superseded
+
+
+def _final_verification_chain(
+    *,
+    summary: Mapping[str, Any],
+    waypoint_gate: Mapping[str, Any],
+    dropoff_gate: Mapping[str, Any],
+    payload_release_sim_gate: Mapping[str, Any],
+    sitl_delivery_gate: Mapping[str, Any],
+) -> dict[str, Any]:
+    required_gate_results = {
+        "waypoint_gate": waypoint_gate.get("route_completed_claimed") is True,
+        "dropoff_gate": dropoff_gate.get("dropoff_verified") is True,
+        "sitl_delivery_gate": sitl_delivery_gate.get("sitl_delivery_claimed") is True,
+    }
+    supporting_gate_results = {
+        "payload_release_sim_gate": (
+            payload_release_sim_gate.get("payload_release_observed_sim") is True
+        ),
+    }
+    return {
+        "schema_version": "missionos_auto_mission_final_verification_chain.v1",
+        "runtime_monitor_summary_ref": "summary",
+        "runtime_monitor_summary_scope": summary.get("summary_scope"),
+        "runtime_monitor_status": summary.get("runtime_status"),
+        "runtime_monitor_guard_failure_reasons": list(summary.get("guard_failure_reasons") or []),
+        "relationship": "downstream_gates_complete_phase3_observation",
+        "downstream_gate_refs": list(summary.get("downstream_completion_gate_refs") or []),
+        "required_downstream_gate_results": required_gate_results,
+        "supporting_downstream_gate_results": supporting_gate_results,
+        "final_verification_status": (
+            "verified" if all(required_gate_results.values()) else "blocked"
+        ),
+        "delivery_completion_claimed": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }
+
+
 def _build_summary_payload(
     *,
     run_dir: Path,
@@ -5434,9 +6358,7 @@ def _build_summary_payload(
 ) -> dict[str, Any]:
     compilation = compile_operator_coordinate_route_auto_mission(route)
     raw_samples = list((probe_observed.get("monitor") or {}).get("samples") or [])
-    samples = tuple(
-        _sample_from_observed(raw, index) for index, raw in enumerate(raw_samples)
-    )
+    samples = tuple(_sample_from_observed(raw, index) for index, raw in enumerate(raw_samples))
     pose_path = run_dir / "auto_mission_pose_samples.jsonl"
     global_path = run_dir / "auto_mission_global_position_samples.jsonl"
     raw_path = run_dir / "auto_mission_raw_samples.jsonl"
@@ -5483,13 +6405,9 @@ def _build_summary_payload(
     arm = dict(probe_observed.get("arm_command") or {})
     mode = dict(probe_observed.get("auto_mission_mode_command") or {})
     recovery = dict(
-        probe_observed.get("recovery_command")
-        or probe_observed.get("land_abort_command")
-        or {}
+        probe_observed.get("recovery_command") or probe_observed.get("land_abort_command") or {}
     )
-    payload_release = dict(
-        (probe_observed.get("monitor") or {}).get("payload_release") or {}
-    )
+    payload_release = dict((probe_observed.get("monitor") or {}).get("payload_release") or {})
     post_abort = dict(probe_observed.get("post_abort") or {})
     effective_post_abort_wait_seconds = float(
         post_abort.get("configured_wait_seconds") or post_abort_wait_seconds
@@ -5510,8 +6428,7 @@ def _build_summary_payload(
     )
     summary = build_auto_mission_runtime_monitor_summary(
         compilation=compilation,
-        mission_upload_accepted=upload_observed.get("mission_ack_type")
-        == MAV_MISSION_ACCEPTED,
+        mission_upload_accepted=upload_observed.get("mission_ack_type") == MAV_MISSION_ACCEPTED,
         mission_ack_observed=bool(upload_observed.get("mission_ack_observed")),
         mission_ack_result=upload_observed.get("mission_ack_type"),
         arm_command_ack_observed=bool(arm.get("ack_observed")),
@@ -5535,15 +6452,11 @@ def _build_summary_payload(
         recovery_path_taken=str(probe_observed.get("recovery_path") or "MAV_CMD_NAV_LAND"),
         final_landing_safe=bool(recovery_agent_window.get("final_landing_safe")),
         recovery_agent_evidence_window=recovery_agent_window,
-        recovery_agent_evidence_window_path=str(
-            _rel_to_root(recovery_agent_window_path)
-        ),
+        recovery_agent_evidence_window_path=str(_rel_to_root(recovery_agent_window_path)),
         payload_release_command_frame_sent=bool(payload_release.get("attempted")),
         payload_release_command_ack_observed=bool(payload_release.get("ack_observed")),
         payload_release_command_ack_result=payload_release.get("ack_result"),
-        probe_stop_reason_override=(probe_observed.get("monitor") or {}).get(
-            "monitor_stop_reason"
-        ),
+        probe_stop_reason_override=(probe_observed.get("monitor") or {}).get("monitor_stop_reason"),
         abort_retry_count=0,
         min_progress_m=min_progress_m,
         no_progress_grace_seconds=no_progress_grace_seconds,
@@ -5551,13 +6464,36 @@ def _build_summary_payload(
         altitude_grace_seconds=altitude_grace_seconds,
         min_battery_remaining_percent=min_battery_remaining_percent,
     )
-    waypoint_gate = build_auto_mission_waypoint_gate_summary_from_runtime(summary)
+    runtime_summary_payload = summary.model_dump(mode="json")
+    recovery_superseded_sequences = _verified_recovery_superseded_waypoint_sequences(
+        runtime_summary=runtime_summary_payload,
+        probe_observed=probe_observed,
+    )
+    waypoint_gate = build_auto_mission_waypoint_gate_summary_from_runtime(
+        summary,
+        recovery_superseded_waypoint_sequences=recovery_superseded_sequences,
+        recovery_supersession_verified=bool(recovery_superseded_sequences),
+    )
+    obstacle_artifacts = _gazebo_obstacle_runtime_artifacts(
+        route=route,
+        probe_observed=probe_observed,
+    )
+    runtime_obstacle_manifest = obstacle_artifacts.get("obstacle_manifest")
+    runtime_obstacle_manifest = (
+        runtime_obstacle_manifest if isinstance(runtime_obstacle_manifest, Mapping) else {}
+    )
+    original_dropoff_available = bool(
+        runtime_obstacle_manifest.get("original_dropoff_available", True)
+        and runtime_obstacle_manifest.get("landing_zone_blocked") is not True
+    )
     dropoff_gate = build_auto_mission_dropoff_gate_summary(
         dropoff_latitude_deg=float(route["dropoff_latitude"]),
         dropoff_longitude_deg=float(route["dropoff_longitude"]),
         release_altitude_target_m=float(compilation.cruise_altitude_m),
         samples=samples,
         route_completed_claimed=waypoint_gate.route_completed_claimed,
+        original_dropoff_available=original_dropoff_available,
+        dropoff_obstacle_clearance_verified=original_dropoff_available,
     )
     sitl_delivery_gate = build_auto_mission_sitl_delivery_gate_summary(
         route_completed_claimed=waypoint_gate.route_completed_claimed,
@@ -5570,9 +6506,25 @@ def _build_summary_payload(
         payload_release_command_acked=summary.payload_release_command_acked,
         payload_release_event=payload_release_event,
     )
-    summary_payload = summary.model_dump(mode="json")
+    summary_payload = runtime_summary_payload
+    runtime_recovery_provenance = _runtime_recovery_provenance_from_probe(
+        probe_observed=probe_observed
+    )
+    runtime_recovery_provenance_path = run_dir / "runtime_recovery_provenance.json"
+    runtime_recovery_provenance_path.write_text(
+        json.dumps(runtime_recovery_provenance, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    final_verification_chain = _final_verification_chain(
+        summary=summary_payload,
+        waypoint_gate=waypoint_gate.model_dump(mode="json"),
+        dropoff_gate=dropoff_gate.model_dump(mode="json"),
+        payload_release_sim_gate=payload_release_sim_gate.model_dump(mode="json"),
+        sitl_delivery_gate=sitl_delivery_gate.model_dump(mode="json"),
+    )
     thermal_artifacts = _thermal_weather_runtime_artifacts(
-        config=thermal_weather_config or _thermal_weather_runtime_config(
+        config=thermal_weather_config
+        or _thermal_weather_runtime_config(
             baseline_sim_bat_drain_seconds=DEFAULT_AUTO_RUNTIME_SIM_BATTERY_DRAIN_SECONDS
         ),
         probe_observed=probe_observed,
@@ -5592,16 +6544,15 @@ def _build_summary_payload(
         probe_observed=probe_observed,
         run_dir=run_dir,
     )
-    obstacle_artifacts = _gazebo_obstacle_runtime_artifacts(
-        route=route,
-        probe_observed=probe_observed,
-    )
     return {
         "summary": summary_payload,
         "waypoint_gate": waypoint_gate.model_dump(mode="json"),
         "dropoff_gate": dropoff_gate.model_dump(mode="json"),
         "sitl_delivery_gate": sitl_delivery_gate.model_dump(mode="json"),
         "payload_release_sim_gate": payload_release_sim_gate.model_dump(mode="json"),
+        "final_verification_chain": final_verification_chain,
+        "runtime_recovery_provenance": runtime_recovery_provenance,
+        "runtime_recovery_provenance_path": _rel_to_root(runtime_recovery_provenance_path),
         **wind_artifacts,
         **thermal_artifacts,
         **rain_artifacts,
@@ -5690,15 +6641,11 @@ def main() -> int:
     thermal_weather_config = _thermal_weather_runtime_config(
         baseline_sim_bat_drain_seconds=sim_battery_drain_seconds
     )
-    sim_battery_drain_seconds = float(
-        thermal_weather_config["effective_sim_bat_drain_seconds"]
-    )
+    sim_battery_drain_seconds = float(thermal_weather_config["effective_sim_bat_drain_seconds"])
     rain_weather_config = _rain_weather_runtime_config(
         baseline_sim_bat_drain_seconds=sim_battery_drain_seconds
     )
-    sim_battery_drain_seconds = float(
-        rain_weather_config["effective_sim_bat_drain_seconds"]
-    )
+    sim_battery_drain_seconds = float(rain_weather_config["effective_sim_bat_drain_seconds"])
     post_abort_wait_seconds = float(
         os.getenv(
             "MISSIONOS_AUTO_RUNTIME_POST_ABORT_WAIT_SECONDS",
@@ -5729,6 +6676,14 @@ def main() -> int:
     )
     try:
         compilation = compile_operator_coordinate_route_auto_mission(route)
+        resume_mission_seq_after_obstacle = _recovery_resume_mission_seq_after_obstacle(
+            obstacle_manifest=obstacle_manifest,
+            dropoff_dwell_mission_seq=int(compilation.dropoff_dwell_mission_seq or 0),
+        )
+        obstacle_manifest = {
+            **obstacle_manifest,
+            "resume_mission_seq_after_obstacle": (resume_mission_seq_after_obstacle),
+        }
         rtl_post_abort_wait_seconds = _rtl_recovery_wait_seconds(
             base_wait_seconds=post_abort_wait_seconds,
             return_distance_m=float(compilation.planned_route_m),
@@ -5741,12 +6696,8 @@ def main() -> int:
                 compilation.land_mission_seq or len(compilation.mission_items) - 1
             ),
             release_altitude_target_m=float(compilation.cruise_altitude_m),
-            release_altitude_tolerance_m=(
-                DEFAULT_DROPOFF_RELEASE_ALTITUDE_TOLERANCE_M
-            ),
-            required_dwell_seconds=float(
-                compilation.dropoff_release_min_dwell_seconds
-            ),
+            release_altitude_tolerance_m=(DEFAULT_DROPOFF_RELEASE_ALTITUDE_TOLERANCE_M),
+            required_dwell_seconds=float(compilation.dropoff_release_min_dwell_seconds),
             monitor_seconds=monitor_seconds,
             min_progress_m=min_progress_m,
             no_progress_grace_seconds=no_progress_grace_seconds,
@@ -5759,18 +6710,15 @@ def main() -> int:
             rtl_recovery_min_progress_m=rtl_recovery_min_progress_m,
             sim_battery_min_remaining_percent=sim_battery_min_remaining_percent,
             sim_battery_drain_seconds=sim_battery_drain_seconds,
-            thermal_motor_derate_factor=thermal_weather_config.get(
-                "thermal_motor_derate_factor"
-            ),
+            thermal_motor_derate_factor=thermal_weather_config.get("thermal_motor_derate_factor"),
             wind_mean_mps=(wind_profile.get("requested") or {}).get("wind_mean_mps"),
-            wind_direction_deg=(wind_profile.get("requested") or {}).get(
-                "wind_direction_deg"
-            ),
+            wind_direction_deg=(wind_profile.get("requested") or {}).get("wind_direction_deg"),
             wind_gust_mps=(wind_profile.get("requested") or {}).get("wind_gust_mps"),
             wind_variance=(wind_profile.get("requested") or {}).get("wind_variance"),
             gz_physical_battery_enabled=_gz_physical_battery_enabled(),
             gz_battery_motor_coupling_enabled=_gz_battery_motor_coupling_enabled(),
             obstacle_manifest=obstacle_manifest,
+            resume_mission_seq_after_obstacle=(resume_mission_seq_after_obstacle),
             run_dir=run_dir,
             waypoint_total=len(compilation.mission_items),
         )
@@ -5850,9 +6798,7 @@ def main() -> int:
             + json.dumps(
                 {
                     "schema_version": "missionos_auto_runtime_smoke_validation.v1",
-                    "validation_status": "failed"
-                    if validation_failures
-                    else "passed",
+                    "validation_status": "failed" if validation_failures else "passed",
                     "strict_asserts_enabled": _strict_asserts_enabled(),
                     "failures": validation_failures,
                 },
@@ -5861,8 +6807,7 @@ def main() -> int:
         )
         if validation_failures and _strict_asserts_enabled():
             raise SystemExit(
-                "AUTO runtime strict validation failed: "
-                + ", ".join(validation_failures)
+                "AUTO runtime strict validation failed: " + ", ".join(validation_failures)
             )
         return 0
     finally:

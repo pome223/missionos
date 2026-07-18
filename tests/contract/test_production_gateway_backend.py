@@ -1,5 +1,6 @@
 import asyncio
 from collections.abc import Callable
+from datetime import datetime, timezone
 import hashlib
 import json
 import os
@@ -3091,6 +3092,307 @@ def test_px4_recovery_action_allowlist_does_not_accept_ground_return_home(
     assert existing_px4_action.json()["detail"] == (
         "explicit_recovery_dispatch_approval is required"
     )
+
+
+def test_px4_stale_agent_recovery_proposal_cannot_mint_or_queue_authority(
+    isolated_gateway_factory,
+    monkeypatch,
+) -> None:
+    from fastapi.testclient import TestClient
+
+    from src.gateway import server as gateway_server
+
+    gateway = isolated_gateway_factory()
+    task_id = "task_px4_stale_agent_recovery_proposal"
+    proposed_parameters = {
+        "target_x_m": 30.0,
+        "target_y_m": 40.0,
+        "target_altitude_m": 45.0,
+    }
+    gateway.task_store.create(
+        task_id=task_id,
+        kind="mission_designer_sitl_execution",
+        title="PX4 stale agent recovery proposal",
+        status="running",
+        artifacts={
+            "missionos_auto_mission_gui_dispatch_running_receipt": {
+                "operator_recovery_request_container_path": (
+                    "/tmp/missionos_auto_operator_recovery_request_stale.json"
+                ),
+            },
+            "missionos_runtime_recovery_last_proposal": {
+                "schema_version": "missionos_runtime_recovery_proposal_evidence.v1",
+                "proposal_id": "runtime_recovery_proposal_stale",
+                "proposal_status": "awaiting_operator_approval",
+                "observed_at": "2026-01-01T00:00:00+00:00",
+                "valid_until": "2026-01-01T00:01:00+00:00",
+                "origin_position": {"local_x_m": 0.0, "local_y_m": 0.0},
+                "max_origin_drift_m": 5.0,
+                "runtime_recovery_agent_result": {
+                    "assessment": {
+                        "recovery_planner_tool_candidate": {
+                            "selected_bounded_action": "avoid_obstacle",
+                            "proposed_parameters": proposed_parameters,
+                        }
+                    }
+                },
+                "dispatch_authority_created": False,
+            },
+            "missionos_auto_mission_runtime_snapshot": {
+                "sample_index": 22,
+                "elapsed_seconds": 132.0,
+                "local_x_m": 20.0,
+                "local_y_m": 0.0,
+                "local_z_m": -30.0,
+                "altitude_above_home_m": 30.0,
+                "heartbeat_observed": True,
+                "landed": False,
+            },
+        },
+    )
+    queue_calls: list[dict] = []
+
+    def should_not_queue(**kwargs):
+        queue_calls.append(kwargs)
+        raise AssertionError("stale proposal must fail before active-runner queue")
+
+    monkeypatch.setattr(
+        gateway_server,
+        "_write_missionos_auto_operator_recovery_request_to_container",
+        should_not_queue,
+    )
+    response = TestClient(gateway.app).post(
+        "/px4-gazebo/mission-scenarios/recovery-dispatch",
+        json={
+            "task_id": task_id,
+            "recovery_action": "avoid_obstacle",
+            "recovery_parameters": proposed_parameters,
+            "explicit_recovery_dispatch_approval": True,
+        },
+    )
+
+    assert response.status_code == 409, response.json()
+    payload = response.json()
+    reasons = payload["summary"]["blocked_reasons"]
+    assert "runtime_recovery_proposal_stale" in reasons
+    assert "runtime_recovery_proposal_origin_drift_exceeded" in reasons
+    assert queue_calls == []
+    receipt = payload["missionos_runtime_recovery_dispatch_receipt"]
+    assert receipt["operator_approved"] is False
+    assert receipt["dispatch_authority_created"] is False
+    assert receipt["maneuver_approval"] == {}
+    assert receipt["maneuver_allowlist"] == {}
+    assert receipt["active_runner_request_queued"] is False
+    assert receipt["proposal_revalidation"]["validation_status"] == "blocked"
+
+
+def test_px4_fresh_bound_agent_recovery_proposal_can_queue_after_approval(
+    isolated_gateway_factory,
+    monkeypatch,
+) -> None:
+    from fastapi.testclient import TestClient
+
+    from src.gateway import server as gateway_server
+
+    gateway = isolated_gateway_factory()
+    task_id = "task_px4_fresh_agent_recovery_proposal"
+    proposed_parameters = {
+        "target_x_m": 30.0,
+        "target_y_m": 40.0,
+        "target_altitude_m": 45.0,
+    }
+    proposal_origin_without_hash = {
+        "schema_version": "missionos_runtime_recovery_proposal_origin.v1",
+        "origin_kind": "hosted_llm",
+        "provider": "google_adk_gemini",
+        "model_id": "gemini-3.1-flash-lite",
+        "invocation_kind": "google_adk_function_tool_call",
+        "prompt_sha256": "a" * 64,
+        "response_sha256": "b" * 64,
+        "fallback_reason": "",
+        "source_proposal_id": "",
+        "contains_prompt_or_response_text": False,
+        "dispatch_authority_created": False,
+        "progress_counted": False,
+    }
+    proposal_origin_sha256 = hashlib.sha256(
+        json.dumps(
+            proposal_origin_without_hash,
+            ensure_ascii=True,
+            sort_keys=True,
+            default=str,
+        ).encode("utf-8")
+    ).hexdigest()
+    proposal_origin = {
+        **proposal_origin_without_hash,
+        "origin_sha256": proposal_origin_sha256,
+    }
+    gateway.task_store.create(
+        task_id=task_id,
+        kind="mission_designer_sitl_execution",
+        title="PX4 fresh agent recovery proposal",
+        status="running",
+        artifacts={
+            "missionos_auto_mission_gui_dispatch_running_receipt": {
+                "operator_recovery_request_container_path": (
+                    "/tmp/missionos_auto_operator_recovery_request_fresh.json"
+                ),
+            },
+            "missionos_runtime_recovery_last_proposal": {
+                "schema_version": "missionos_runtime_recovery_proposal_evidence.v1",
+                "proposal_id": "runtime_recovery_proposal_fresh",
+                "proposal_status": "awaiting_operator_approval",
+                "observed_at": "2026-07-16T00:00:00+00:00",
+                "valid_until": "9999-01-01T00:00:00+00:00",
+                "origin_position": {"local_x_m": 1.0, "local_y_m": 2.0},
+                "max_origin_drift_m": 5.0,
+                "proposal_origin": proposal_origin,
+                "proposal_origin_sha256": proposal_origin_sha256,
+                "runtime_recovery_agent_result": {
+                    "assessment": {
+                        "recovery_planner_tool_candidate": {
+                            "selected_bounded_action": "avoid_obstacle",
+                            "proposed_parameters": proposed_parameters,
+                        }
+                    }
+                },
+                "dispatch_authority_created": False,
+            },
+            "missionos_auto_mission_runtime_snapshot": {
+                "sample_index": 2,
+                "elapsed_seconds": 10.0,
+                "local_x_m": 1.5,
+                "local_y_m": 2.5,
+                "local_z_m": -30.0,
+                "altitude_above_home_m": 30.0,
+                # This low-level snapshot may not carry heartbeat evidence even
+                # while the task-correlated recovery bridge is live.
+                "heartbeat_observed": False,
+                "landed": False,
+            },
+            "missionos_runtime_recovery_agent_live_bridge": {
+                "schema_version": "missionos_runtime_recovery_agent_live_bridge.v1",
+                "bridge_status": "live",
+                "telemetry_snapshot": {
+                    "source": "missionos_auto_mission_runtime_snapshot",
+                    "sample_index": 2,
+                    "position": {
+                        "local_x_m": 1.5,
+                        "local_y_m": 2.5,
+                        "local_z_m": -30.0,
+                        "altitude_above_home_m": 30.0,
+                    },
+                    "telemetry": {"stale": False, "dropout": False},
+                },
+            },
+        },
+    )
+    queue_calls: list[dict] = []
+
+    def queue_request(**kwargs):
+        queue_calls.append(kwargs)
+        return {
+            "request_status": "queued",
+            "container_name": "missionos-px4-gazebo",
+            "container_path": kwargs["container_path"],
+            "bytes_written": 123,
+        }
+
+    monkeypatch.setattr(
+        gateway_server,
+        "_write_missionos_auto_operator_recovery_request_to_container",
+        queue_request,
+    )
+    response = TestClient(gateway.app).post(
+        "/px4-gazebo/mission-scenarios/recovery-dispatch",
+        json={
+            "task_id": task_id,
+            "recovery_action": "avoid_obstacle",
+            "recovery_parameters": proposed_parameters,
+            "explicit_recovery_dispatch_approval": True,
+        },
+    )
+
+    assert response.status_code == 200, response.json()
+    payload = response.json()
+    assert payload["summary"]["dispatch_status"] == "queued_for_active_runner"
+    assert payload["summary"]["dispatch_authority_created"] is True
+    assert payload["summary"]["proposal_revalidation"]["validation_status"] == "valid"
+    assert len(queue_calls) == 1
+    queued_request = queue_calls[0]["request_payload"]
+    assert queued_request["operator_approved"] is True
+    assert queued_request["proposal_origin"] == proposal_origin
+    assert queued_request["proposal_origin_sha256"] == proposal_origin_sha256
+    assert queued_request["recovery_parameters"] == {
+        **proposed_parameters,
+        "obstacle_avoidance_required": True,
+    }
+    stored = gateway.task_store.get(task_id)
+    assert stored is not None
+    stored_artifacts = stored["artifacts"]
+    bound_proposal = stored_artifacts[
+        "missionos_runtime_recovery_last_proposal"
+    ]
+    assert bound_proposal["proposal_status"] == "dispatch_authority_bound"
+    assert bound_proposal["dispatch_authority_created"] is True
+    assert bound_proposal["proposal_origin"] == proposal_origin
+    assert bound_proposal["claimed_by_approval_ref"]
+    assert stored_artifacts["missionos_runtime_recovery_proposals"][
+        bound_proposal["proposal_id"]
+    ] == bound_proposal
+
+
+def test_px4_recovery_proposal_origin_hash_mismatch_fails_closed() -> None:
+    from src.gateway import server as gateway_server
+
+    proposed_parameters = {
+        "target_x_m": 30.0,
+        "target_y_m": 40.0,
+        "target_altitude_m": 45.0,
+    }
+    evidence = gateway_server._runtime_recovery_proposal_revalidation(
+        artifacts={
+            "missionos_runtime_recovery_last_proposal": {
+                "proposal_id": "runtime_recovery_proposal_tampered_origin",
+                "proposal_status": "awaiting_operator_approval",
+                "observed_at": "2026-07-16T00:00:00+00:00",
+                "valid_until": "9999-01-01T00:00:00+00:00",
+                "origin_position": {"local_x_m": 1.0, "local_y_m": 2.0},
+                "max_origin_drift_m": 5.0,
+                "proposal_origin": {
+                    "schema_version": (
+                        "missionos_runtime_recovery_proposal_origin.v1"
+                    ),
+                    "origin_kind": "hosted_llm",
+                    "provider": "tampered_provider",
+                    "origin_sha256": "a" * 64,
+                },
+                "proposal_origin_sha256": "a" * 64,
+                "runtime_recovery_agent_result": {
+                    "assessment": {
+                        "recovery_planner_tool_candidate": {
+                            "selected_bounded_action": "avoid_obstacle",
+                            "proposed_parameters": proposed_parameters,
+                        }
+                    }
+                },
+            },
+            "missionos_auto_mission_runtime_snapshot": {
+                "sample_index": 3,
+                "elapsed_seconds": 11.0,
+                "local_x_m": 1.0,
+                "local_y_m": 2.0,
+                "heartbeat_observed": True,
+                "landed": False,
+            },
+        },
+        recovery_action="avoid_obstacle",
+        recovery_parameters=proposed_parameters,
+        now=datetime(2026, 7, 16, tzinfo=timezone.utc),
+    )
+
+    assert evidence["validation_status"] == "blocked"
+    assert "runtime_recovery_proposal_origin_hash_mismatch" in evidence["reasons"]
 
 
 def test_turtlebot3_recovery_approval_rejects_changed_coordinates(

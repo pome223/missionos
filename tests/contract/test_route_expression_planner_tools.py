@@ -7,6 +7,7 @@ from src.gateway.server import _missionos_instruction_requests_designer_plan
 from src.intelligence.missionos_chief_planner_tools import (
     resolve_chief_planner_internal_tools,
 )
+from src.runtime import px4_gazebo_mission_scenario_designer as scenario_designer
 
 
 def _geocode_fetcher(url: str) -> Any:
@@ -102,6 +103,66 @@ def test_obstacle_instruction_sets_bounded_sitl_obstacle_flags(monkeypatch: Any)
     assert route["progress_counted"] is False
 
 
+def test_japanese_route_expression_keeps_followup_recovery_sentence_out_of_place_query(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.delenv("MISSIONOS_AGENT_RUNTIME_ADK_ENABLED", raising=False)
+    monkeypatch.delenv("MISSIONOS_CHIEF_ROUTE_SEMANTIC_ADK_ENABLED", raising=False)
+
+    result = resolve_chief_planner_internal_tools(
+        utterance=(
+            "東京駅から日本橋まで、PX4/Gazeboのドローンで飛行するミッションを"
+            "計画してください。飛行経路上の障害物を検出した場合は、安全にHOLDして"
+            "Recovery Agentが回避案を提案してください。"
+        ),
+        weather_fetcher=_weather_fetcher,
+        terrain_fetcher=_terrain_fetcher,
+    )
+
+    route = result["coordinate_route"]
+    assert result["tool_status"] == "resolved"
+    assert route["takeoff_label"] == "Tokyo Station"
+    assert route["dropoff_label"].startswith("Nihonbashi")
+    assert route["landing_zone_blocked"] is False
+    assert route["obstacle_route_fraction"] == 0.5
+    assert route["gazebo_obstacle_model_spawn_requested"] is True
+    assert route["obstacle_scenario_source"] == (
+        "operator_instruction_mid_route_bounded_sitl_scenario"
+    )
+    compiled_route = scenario_designer._coordinate_route_from_payload(route)
+    assert compiled_route["landing_zone_blocked"] is False
+    assert compiled_route["obstacle_route_fraction"] == 0.5
+    assert compiled_route["obstacle_size_x_m"] == 18.0
+    assert compiled_route["obstacle_size_y_m"] == 18.0
+    assert compiled_route["obstacle_size_z_m"] == 20.0
+    assert compiled_route["obstacle_scenario_source"] == (
+        "operator_instruction_mid_route_bounded_sitl_scenario"
+    )
+
+
+def test_japanese_route_expression_treats_fifty_percent_as_mid_route_obstacle(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.delenv("MISSIONOS_AGENT_RUNTIME_ADK_ENABLED", raising=False)
+    monkeypatch.delenv("MISSIONOS_CHIEF_ROUTE_SEMANTIC_ADK_ENABLED", raising=False)
+
+    result = resolve_chief_planner_internal_tools(
+        utterance=(
+            "東京駅から日本橋まで飛行し、経路の50%地点に衝突判定付き障害物を"
+            "配置するPX4/Gazeboミッションを計画してください。"
+        ),
+        weather_fetcher=_weather_fetcher,
+        terrain_fetcher=_terrain_fetcher,
+    )
+
+    route = result["coordinate_route"]
+    assert route["landing_zone_blocked"] is False
+    assert route["obstacle_route_fraction"] == 0.5
+    assert route["obstacle_scenario_source"] == (
+        "operator_instruction_mid_route_bounded_sitl_scenario"
+    )
+
+
 def test_arrow_route_expression_is_mission_designer_intent() -> None:
     assert _missionos_instruction_requests_designer_plan(
         "New York Public Library -> Brooklyn Bridge"
@@ -109,12 +170,8 @@ def test_arrow_route_expression_is_mission_designer_intent() -> None:
     assert _missionos_instruction_requests_designer_plan(
         "from New York Public Library to Brooklyn Bridge"
     )
-    assert _missionos_instruction_requests_designer_plan(
-        "Tokyo Station to Kawasaki Station"
-    )
-    assert _missionos_instruction_requests_designer_plan(
-        "東京駅から秋葉原駅まで。障害物あり"
-    )
+    assert _missionos_instruction_requests_designer_plan("Tokyo Station to Kawasaki Station")
+    assert _missionos_instruction_requests_designer_plan("東京駅から秋葉原駅まで。障害物あり")
     assert not _missionos_instruction_requests_designer_plan("I want to fly")
     assert not _missionos_instruction_requests_designer_plan(
         "Can you fly from New York Public Library to Brooklyn Bridge?"
