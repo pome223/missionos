@@ -174,10 +174,10 @@ bounded recovery action, but the operator still had to approve dispatch.
 
 ## Recovery Agent Example
 
-This terminal route-evidence image shows the Recovery lifecycle from a later
+This corrected OpenStreetMap view shows the Recovery lifecycle from a later
 saved PX4/Gazebo SITL trace in one view:
 
-![MissionOS Recovery Agent example showing start, Recovery trigger, approved lateral bypass around a collision obstacle, route rejoin, dropoff, and return home](assets/missionos-e2e-route-evidence.png)
+![Corrected MissionOS Recovery Agent map showing saved outbound telemetry, an operator-approved lateral bypass beside the collision obstacle, route rejoin, dropoff, and return telemetry](assets/missionos-e2e-route-evidence.png)
 
 The numbered markers should be read in order:
 
@@ -190,10 +190,12 @@ The numbered markers should be read in order:
 
 The LLM proposal did not approve itself. The orange Recovery path represents a
 separately approved and observed bounded action. Solid blue/cyan paths are
-saved telemetry; the red rectangle is the collision obstacle footprint. The
-image is a display-only summary, not Verifier input, dispatch authority,
-delivery proof, or a physical-execution claim. Source task artifacts remain
-authoritative.
+saved telemetry; the red `18 x 18 x 20 m` footprint is the collision obstacle.
+The aircraft passes beside the footprint and rejoins the original route beyond
+it. A gray dashed connector marks missing main telemetry and is not an observed
+flight path. The image is a display-only summary, not Verifier input, dispatch
+authority, delivery proof, or a physical-execution claim. Source task
+artifacts remain authoritative.
 
 ## Map Screenshot
 

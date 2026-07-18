@@ -83,18 +83,20 @@ loop runs over two simulator substrates:
 | PX4 / Gazebo SITL               | Use the [Chat Quickstart](#chat-quickstart), then read the [obstacle recovery run](docs/examples/missionos-chat-obstacle-recovery.md). | LLM proposal, human approval, PX4/Gazebo dispatch, `watch` / `operate` / `map` evidence, and recovery evidence. | Physical flight, payload delivery, and delivery completion.                         |
 | TurtleBot3 / ROS2 Nav2 / Gazebo | Use the [TurtleBot3 Simulator Quickstart](#turtlebot3-simulator-quickstart), then read the [TurtleBot3 bridge contract](docs/agents/ros2-nav2-turtlebot3-sim.md). | The same chat -> Gateway -> approval -> dispatch -> observed-motion loop on an indoor ground robot.             | Physical robot execution, real actuator/E-stop validation, and delivery completion. |
 
-On the left, the terminal PX4/Gazebo SITL route-evidence image makes the
-observed sequence explicit: start, Recovery trigger, operator-approved lateral
-bypass, route rejoin, dropoff, and return home. Solid blue/cyan lines are saved
-telemetry, orange is the separately observed approved Recovery, and the red box
-is the collision obstacle footprint. On the right, a TurtleBot3 in the stock
+On the left, the corrected OpenStreetMap recovery view makes the observed
+sequence explicit: start, Recovery trigger, operator-approved lateral bypass,
+route rejoin, dropoff, and return home. Solid blue/cyan lines are saved
+telemetry, orange is the separately observed approved Recovery, and the red
+`18 x 18 x 20 m` footprint is the collision obstacle. A gray dashed connector
+marks missing telemetry and is not drawn as observed movement. On the right, a
+TurtleBot3 in the stock
 Gazebo `turtlebot3_house` world asked in chat to deliver to the bedroom: the
 approved plan (orange) and the AMCL-corrected observed trail (blue) pass through
 three real doorways from the front yard to the bedroom dropoff.
 
-| PX4 drone · terminal route evidence after an approved bypass | TurtleBot3 · house delivery to a named room |
-| ------------------------------------------------------------- | --------------------------------------------- |
-| ![PX4 terminal route evidence showing the saved outbound path, approved lateral bypass around a collision obstacle, route rejoin, dropoff, and return path](docs/examples/assets/missionos-e2e-route-evidence.png) | ![TurtleBot3 chat delivery to the bedroom in turtlebot3_house, planned route and observed trail on the evidence map](docs/agents/evidence/pr7-turtlebot3-chat-e2e-map-task_d9ecedc8e7d5.png) |
+| PX4 drone · corrected recovery map after an approved bypass | TurtleBot3 · house delivery to a named room |
+| ----------------------------------------------------------- | --------------------------------------------- |
+| ![Corrected PX4 recovery map showing saved outbound telemetry, an operator-approved lateral bypass beside the collision obstacle, route rejoin, dropoff, and return telemetry](docs/examples/assets/missionos-e2e-route-evidence.png) | ![TurtleBot3 chat delivery to the bedroom in turtlebot3_house, planned route and observed trail on the evidence map](docs/agents/evidence/pr7-turtlebot3-chat-e2e-map-task_d9ecedc8e7d5.png) |
 
 Both views are read-only evidence displays — radar screens, not cockpits. The
 PX4 image is a display-only summary; source task artifacts remain authoritative.
