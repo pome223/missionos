@@ -137,6 +137,48 @@ then remains immutable while human approval is pending, and an unchanged
 change may create a new decision epoch, but it invalidates the old proposal and
 requires a new checkpoint and approval.
 
+The active PX4/Gazebo decision signature is
+`missionos_runtime_recovery_decision_signature.v2`. The legacy thresholded
+signature is preserved beside it for shadow comparison, but is deliberately
+not nested inside the active v2 hash. The active signature combines stable
+categorical facts (for example navigation/recovery state and obstacle risk)
+with a versioned semantic numeric state machine for wind, cross-track error,
+terrain margin, battery return margin, progress stall, and telemetry
+staleness. This separation prevents transient v1 threshold jitter from
+reopening a hosted-model decision epoch. Bands are relative to the active
+policy limits rather than absolute vehicle-specific numbers.
+Every band transition uses asymmetric hysteresis and requires two observations
+separated by at least one telemetry bucket; severity jumps do not bypass this
+debounce. A sufficiently large worsening slope within an unchanged band can
+still open an epoch when the aggregate window shows a near-limit risk or an
+urgent (`within_30s` or `within_10s`) time to the policy limit. Progress stall
+and telemetry staleness use persistence bands instead of slope so that a short
+pause or one-sample dropout does not churn the signature. One observation
+window may change several dimensions, but it creates at most one decision epoch
+and one hosted-model invocation. The audit payload records the changed
+dimensions, old/new bands, trend, persistence, and time-to-limit estimate when
+available. Only a confirmed worsening band, a qualifying within-band trend, or
+worsening persistence after the risk is at the limit opens a new hosted-model
+epoch. Improvements are saved as evidence and adopted as the next baseline
+without another call. Historical stale samples remain auditable, but do not
+represent current telemetry loss after the latest sample is fresh.
+
+The live bridge retains a bounded set of v2 signatures already judged for the
+task. If an identical semantic/categorical decision recurs, it reuses that
+judgment instead of calling the hosted model again. A failed operator-approved
+dispatch is the exception because it adds new executor evidence. Polls that are
+only waiting for cadence or approval never replace the last judged baseline.
+
+`missionos_runtime_recovery_semantic_numeric_state.v1` and
+`missionos_runtime_recovery_semantic_numeric_delta.v1` are observation
+artifacts only. They must keep `proposal_created`, `approval_created`,
+`dispatch_authority_created`, `progress_counted`, and `completion_claimed`
+false. A semantic delta discovered while approval is pending or Recovery is in
+progress is retained for audit but must not mint another proposal or authority.
+The legacy and semantic signatures are emitted together during the migration;
+`signature_shadow_comparison.semantic_only_material_change=true` identifies a
+new epoch that the old threshold-only signature would have missed.
+
 Terrain clearance inside an explicitly accepted grace envelope is not by
 itself a model-call trigger: only entry into the lower half of that envelope is
 the `terrain_clearance_near_minimum` soft signal. While a matching local-avoid

@@ -2605,6 +2605,25 @@ def test_running_gazebo_obstacle_spawn_reaches_recovery_projection() -> None:
     assert projection["gazebo_obstacle_model_spawned"] is True
 
 
+def test_running_snapshot_preserves_effective_wind_for_recovery_decisions() -> None:
+    snapshot = auto_probe._build_running_snapshot(
+        {
+            "sample_index": 9,
+            "wind_mean_started": True,
+            "gust_active": True,
+            "gust_started": True,
+            "wind_speed_mps": 12.0,
+            "wind_direction_deg": 189.0,
+        },
+        waypoint_total=23,
+    )
+
+    assert snapshot["wind_speed_mps"] == 12.0
+    assert snapshot["wind_direction_deg"] == 189.0
+    assert snapshot["wind_gust_active"] is True
+    assert snapshot["wind_gust_started"] is True
+
+
 def test_obstacle_conflict_projection_waits_until_destination_obstacle_is_local() -> None:
     route = {
         "takeoff_latitude": 35.0,

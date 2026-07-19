@@ -4758,6 +4758,24 @@ def _inner_runtime_probe_script(
                 else:
                     dwell_started_at=None
                 dwell_seconds=(elapsed-dwell_started_at) if dwell_started_at is not None else 0.0
+                effective_wind_speed_mps=(
+                    float(WIND_GUST_MPS)
+                    if (
+                        wind_mean_started
+                        and WIND_GUST_MPS is not None
+                        and (gust_active or WIND_MEAN_MPS is None)
+                    )
+                    else (
+                        float(WIND_MEAN_MPS)
+                        if wind_mean_started and WIND_MEAN_MPS is not None
+                        else None
+                    )
+                )
+                effective_wind_direction_deg=(
+                    float(WIND_DIRECTION_DEG)
+                    if wind_mean_started and WIND_DIRECTION_DEG is not None
+                    else None
+                )
                 sample={{
                     'elapsed_seconds': round(elapsed, 3),
                     'nav_authority_context': (
@@ -4797,6 +4815,8 @@ def _inner_runtime_probe_script(
                     'gust_ended': bool(gust_ended),
                     'wind_mean_started': bool(wind_mean_started),
                     'wind_mean_pending_reason': wind_mean_pending_reason,
+                    'wind_speed_mps': effective_wind_speed_mps,
+                    'wind_direction_deg': effective_wind_direction_deg,
                     'wind_takeoff_clearance_min_altitude_m': wind_takeoff_clearance_min_altitude_m if wind_effect_requested else None,
                     'wind_mean_application_elapsed_seconds': wind_mean_application_elapsed_seconds,
                     'wind_mean_application_altitude_m': wind_mean_application_altitude_m,
@@ -4868,6 +4888,8 @@ def _inner_runtime_probe_script(
                     'gust_ended': bool(gust_ended),
                     'wind_mean_started': bool(wind_mean_started),
                     'wind_mean_pending_reason': wind_mean_pending_reason,
+                    'wind_speed_mps': effective_wind_speed_mps,
+                    'wind_direction_deg': effective_wind_direction_deg,
                     'wind_takeoff_clearance_min_altitude_m': wind_takeoff_clearance_min_altitude_m if wind_effect_requested else None,
                     'wind_mean_application_elapsed_seconds': wind_mean_application_elapsed_seconds,
                     'wind_mean_application_altitude_m': wind_mean_application_altitude_m,
@@ -5720,6 +5742,8 @@ def _build_running_snapshot(
         "wind_gust_ended": marker.get("gust_ended"),
         "wind_mean_started": marker.get("wind_mean_started"),
         "wind_mean_pending_reason": marker.get("wind_mean_pending_reason"),
+        "wind_speed_mps": marker.get("wind_speed_mps"),
+        "wind_direction_deg": marker.get("wind_direction_deg"),
         "wind_takeoff_clearance_min_altitude_m": marker.get(
             "wind_takeoff_clearance_min_altitude_m"
         ),
