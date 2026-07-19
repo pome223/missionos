@@ -116,6 +116,10 @@ from src.intelligence.missionos_agent_runtime import (
     run_missionos_agent_runtime,
     run_missionos_runtime_recovery_agent,
 )
+from src.runtime.px4_gazebo_route.recovery_intent_compiler import (
+    recovery_artifact_hash_matches,
+    verify_runtime_recovery_reachability,
+)
 from src.intelligence.missionos_chief_planner_tools import (
     enrich_coordinate_route_with_terrain_profile,
     extract_operator_requested_route_overrides,
@@ -3892,6 +3896,12 @@ def _operator_recovery_proposal_policy() -> dict[str, Any]:
         "max_adjust_altitude_m": 500.0,
         "max_adjust_speed_mps": 30.0,
         "max_reroute_target_abs_m": 5000.0,
+        "max_recovery_duration_s": 75.0,
+        "max_recovery_horizontal_speed_mps": 10.0,
+        "max_recovery_vertical_speed_mps": 3.0,
+        "reachability_duration_margin_factor": 1.25,
+        "reachability_setup_seconds": 5.0,
+        "wind_uncertainty_floor_mps": 1.0,
         "operator_reroute_forward_m": 80.0,
         "operator_reroute_lateral_m": 30.0,
         "obstacle_lateral_clearance_m": 30.0,
@@ -4175,6 +4185,90 @@ def _runtime_recovery_proposal_revalidation(
     if not parameters_match:
         reasons.append("runtime_recovery_proposal_parameters_mismatch")
 
+    proposal_v2 = (
+        proposal.get("schema_version")
+        == "missionos_runtime_recovery_proposal_evidence.v2"
+    )
+    evidence["intent_compiler_contract_required"] = proposal_v2
+    if proposal_v2:
+        recovery_intent = proposal.get("recovery_intent")
+        recovery_intent = (
+            dict(recovery_intent)
+            if isinstance(recovery_intent, Mapping)
+            else {}
+        )
+        intent_compilation = proposal.get("intent_compilation")
+        intent_compilation = (
+            dict(intent_compilation)
+            if isinstance(intent_compilation, Mapping)
+            else {}
+        )
+        stored_reachability = proposal.get("reachability_verification")
+        stored_reachability = (
+            dict(stored_reachability)
+            if isinstance(stored_reachability, Mapping)
+            else {}
+        )
+        evidence["recovery_intent_id"] = recovery_intent.get(
+            "recovery_intent_id"
+        )
+        evidence["recovery_compilation_id"] = intent_compilation.get(
+            "recovery_compilation_id"
+        )
+        evidence["stored_recovery_reachability_id"] = stored_reachability.get(
+            "recovery_reachability_id"
+        )
+        if not recovery_artifact_hash_matches(
+            recovery_intent,
+            id_prefix="recovery_intent",
+        ):
+            reasons.append("runtime_recovery_intent_hash_mismatch")
+        if not recovery_artifact_hash_matches(
+            intent_compilation,
+            id_prefix="recovery_compilation",
+        ):
+            reasons.append("runtime_recovery_compilation_hash_mismatch")
+        if not recovery_artifact_hash_matches(
+            stored_reachability,
+            id_prefix="recovery_reachability",
+        ):
+            reasons.append("runtime_recovery_reachability_hash_mismatch")
+        if (
+            intent_compilation.get("source_intent_id")
+            != recovery_intent.get("recovery_intent_id")
+            or intent_compilation.get("source_intent_sha256")
+            != recovery_intent.get("recovery_intent_sha256")
+        ):
+            reasons.append("runtime_recovery_intent_compilation_chain_mismatch")
+        if (
+            stored_reachability.get("source_compilation_id")
+            != intent_compilation.get("recovery_compilation_id")
+            or stored_reachability.get("source_compilation_sha256")
+            != intent_compilation.get("recovery_compilation_sha256")
+        ):
+            reasons.append("runtime_recovery_compilation_reachability_chain_mismatch")
+        if intent_compilation.get("compilation_status") != "compiled":
+            reasons.append("runtime_recovery_intent_not_compiled")
+        if intent_compilation.get("meaning_preserved") is not True:
+            reasons.append("runtime_recovery_compiler_meaning_not_preserved")
+        if intent_compilation.get("compiled_action") != recovery_action:
+            reasons.append("runtime_recovery_compiled_action_mismatch")
+        compiled_parameters = intent_compilation.get("compiled_parameters")
+        compiled_parameters = (
+            compiled_parameters
+            if isinstance(compiled_parameters, Mapping)
+            else {}
+        )
+        try:
+            canonical_compiled_parameters = _bounded_operator_recovery_parameters(
+                recovery_action=recovery_action,
+                body={"recovery_parameters": compiled_parameters},
+            )
+        except HTTPException:
+            canonical_compiled_parameters = {}
+        if canonical_compiled_parameters != dict(recovery_parameters):
+            reasons.append("runtime_recovery_compiled_parameters_mismatch")
+
     valid_until = _runtime_recovery_utc_datetime(proposal.get("valid_until"))
     if valid_until is None:
         reasons.append("runtime_recovery_proposal_valid_until_missing_or_invalid")
@@ -4191,6 +4285,27 @@ def _runtime_recovery_proposal_revalidation(
     evidence["telemetry_fresh"] = telemetry_fresh
     if not telemetry_fresh:
         reasons.append("runtime_recovery_current_telemetry_stale")
+    if proposal_v2:
+        policy_snapshot = intent_compilation.get("policy_snapshot")
+        policy_snapshot = (
+            dict(policy_snapshot)
+            if isinstance(policy_snapshot, Mapping)
+            else {}
+        )
+        dispatch_reachability = verify_runtime_recovery_reachability(
+            compilation=intent_compilation,
+            telemetry_snapshot=current_telemetry,
+            recovery_policy=policy_snapshot,
+        )
+        evidence["dispatch_reachability_verification"] = (
+            dispatch_reachability
+        )
+        if dispatch_reachability.get("verification_status") != "verified":
+            reasons.extend(
+                str(item)
+                for item in dispatch_reachability.get("blocking_reasons") or []
+            )
+            reasons.append("runtime_recovery_dispatch_reachability_unverified")
 
     manifest_bound_alternate = (
         candidate_action == "reroute"

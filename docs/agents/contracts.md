@@ -145,6 +145,12 @@ freshness verification but does not replace the immutable proposal. A verified
 successful Recovery also suppresses a second HOLD for the same still-visible
 obstacle; a materially new observation is required for another decision epoch.
 
+New PX4 Recovery proposals use the intent/compiler/verifier contract in
+`docs/agents/recovery-intent-compiler-verifier.md`. The hosted judgment,
+meaning-preserving compilation, conservative reachability support, human
+approval, dispatch-time revalidation, executor effect, and outcome verification
+are separate artifacts. None may be inferred from the existence of another.
+
 Every generated proposal records `missionos_runtime_recovery_proposal_origin.v1`.
 Hosted judgments preserve provider, model, invocation kind, prompt/response
 hashes, FunctionTool-call hash, and guarded FunctionTool-result hash without

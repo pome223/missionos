@@ -50,6 +50,9 @@ from src.runtime.missionos_auto_mission_runner import (
 from src.runtime.px4_active_runner_recovery_request import (
     queue_px4_active_runner_recovery_request,
 )
+from src.runtime.px4_gazebo_route.recovery_intent_compiler import (
+    verify_runtime_recovery_outcome,
+)
 from src.runtime.recovery_window_summary import build_recovery_window_summary
 from src.runtime.px4_gazebo_sitl_mission_upload import (
     MAV_CMD_NAV_LAND,
@@ -3544,6 +3547,13 @@ def _runtime_recovery_attempt_evidence(
         if isinstance(resume_verification, Mapping)
         else None
     )
+    outcome_verification = verify_runtime_recovery_outcome(
+        action=action,
+        recovery_observation=recovery,
+        dispatch_authority_created=(
+            receipt.get("dispatch_authority_created") is True
+        ),
+    )
     return {
         "schema_version": "missionos_runtime_recovery_attempt_evidence.v1",
         "attempt_id": attempt_id,
@@ -3570,6 +3580,13 @@ def _runtime_recovery_attempt_evidence(
         "resume_status": str(recovery.get("resume_status") or ""),
         "resume_auto_attempted": recovery.get("resume_auto_attempted") is True,
         "resume_safety_verification": resume_verification,
+        "outcome_verification": outcome_verification,
+        "outcome_verification_id": outcome_verification.get(
+            "recovery_outcome_verification_id"
+        ),
+        "outcome_verification_sha256": outcome_verification.get(
+            "recovery_outcome_verification_sha256"
+        ),
         "dispatch_authority_created": (
             receipt.get("dispatch_authority_created") is True
         ),
@@ -3715,6 +3732,12 @@ def _runtime_recovery_policy() -> dict[str, Any]:
         "max_adjust_altitude_m": 500,
         "max_adjust_speed_mps": 30,
         "max_reroute_target_abs_m": 5000,
+        "max_recovery_duration_s": 75,
+        "max_recovery_horizontal_speed_mps": 10,
+        "max_recovery_vertical_speed_mps": 3,
+        "reachability_duration_margin_factor": 1.25,
+        "reachability_setup_seconds": 5,
+        "wind_uncertainty_floor_mps": 1,
     }
 
 
@@ -4776,8 +4799,34 @@ def _attach_auto_runtime_recovery_agent_proposal(
             source_proposal=last_proposal,
         )
         proposal_origin_kind = str(proposal_origin.get("origin_kind") or "")
+        result_assessment = result.get("assessment")
+        result_assessment = (
+            dict(result_assessment)
+            if isinstance(result_assessment, Mapping)
+            else {}
+        )
+        recovery_intent = result_assessment.get("recovery_intent")
+        recovery_intent = (
+            dict(recovery_intent)
+            if isinstance(recovery_intent, Mapping)
+            else {}
+        )
+        intent_compilation = result_assessment.get("intent_compilation")
+        intent_compilation = (
+            dict(intent_compilation)
+            if isinstance(intent_compilation, Mapping)
+            else {}
+        )
+        reachability_verification = result_assessment.get(
+            "reachability_verification"
+        )
+        reachability_verification = (
+            dict(reachability_verification)
+            if isinstance(reachability_verification, Mapping)
+            else {}
+        )
         proposal_evidence = {
-            "schema_version": "missionos_runtime_recovery_proposal_evidence.v1",
+            "schema_version": "missionos_runtime_recovery_proposal_evidence.v2",
             "proposal_id": proposal_id,
             "task_id": task_id,
             "proposal_status": "awaiting_operator_approval",
@@ -4793,6 +4842,25 @@ def _attach_auto_runtime_recovery_agent_proposal(
             "sample_index": telemetry_snapshot.get("sample_index"),
             "recovery_decision_signature": decision_signature,
             "runtime_recovery_agent_result": result,
+            "recovery_intent": recovery_intent,
+            "recovery_intent_id": recovery_intent.get("recovery_intent_id"),
+            "recovery_intent_sha256": recovery_intent.get(
+                "recovery_intent_sha256"
+            ),
+            "intent_compilation": intent_compilation,
+            "recovery_compilation_id": intent_compilation.get(
+                "recovery_compilation_id"
+            ),
+            "recovery_compilation_sha256": intent_compilation.get(
+                "recovery_compilation_sha256"
+            ),
+            "reachability_verification": reachability_verification,
+            "recovery_reachability_id": reachability_verification.get(
+                "recovery_reachability_id"
+            ),
+            "recovery_reachability_sha256": reachability_verification.get(
+                "recovery_reachability_sha256"
+            ),
             "proposal_origin": proposal_origin,
             "proposal_origin_sha256": proposal_origin["origin_sha256"],
             "proposal_source": (
