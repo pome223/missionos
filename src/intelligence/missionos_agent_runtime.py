@@ -28,6 +28,11 @@ from src.gateway.missionos_capabilities import (
     all_capability_descriptors_for_prompt,
     build_missionos_capability_registry_summary,
 )
+from src.runtime.px4_gazebo_route.recovery_intent_compiler import (
+    build_runtime_recovery_intent,
+    compile_runtime_recovery_intent,
+    verify_runtime_recovery_reachability,
+)
 
 
 MISSIONOS_AGENT_RUNTIME_RESULT_SCHEMA_VERSION = "missionos_agent_runtime_result.v1"
@@ -410,6 +415,12 @@ def _runtime_recovery_agent_output_from_planner_result(
     candidate = candidate_value if isinstance(candidate_value, Mapping) else {}
     assessment_value = planner_result.get("recovery_guardrail_assessment")
     assessment = assessment_value if isinstance(assessment_value, Mapping) else {}
+    recovery_intent_value = assessment.get("recovery_intent")
+    recovery_intent = (
+        recovery_intent_value
+        if isinstance(recovery_intent_value, Mapping)
+        else {}
+    )
     selected_action = str(candidate.get("selected_bounded_action") or "operator_review").strip()
     proposed_parameters_value = candidate.get("proposed_parameters")
     proposed_parameters = (
@@ -439,6 +450,12 @@ def _runtime_recovery_agent_output_from_planner_result(
         ),
         "selected_bounded_action": selected_action,
         "proposed_parameters": proposed_parameters,
+        "strategy": str(recovery_intent.get("strategy") or ""),
+        "intent_constraints": dict(
+            recovery_intent.get("intent_constraints")
+            if isinstance(recovery_intent.get("intent_constraints"), Mapping)
+            else {}
+        ),
         "trigger_level": str(assessment.get("trigger_level") or "advisory"),
         "trigger_reasons": trigger_reasons,
         "telemetry_assessment": {
@@ -489,6 +506,15 @@ async def _invoke_runtime_recovery_agent_text_with_tools_async(
     def missionos_plan_bounded_recovery_maneuver(
         recovery_action: str = "",
         reason: str = "",
+        strategy: str = "",
+        avoidance_side: str = "",
+        minimum_clearance_m: float | None = None,
+        maximum_duration_s: float | None = None,
+        maximum_speed_mps: float | None = None,
+        destination_kind: str = "",
+        target_altitude_min_m: float | None = None,
+        target_altitude_max_m: float | None = None,
+        tool_context: Any = None,
     ) -> dict[str, Any]:
         """Compute bounded recovery proposal parameters without authority.
 
@@ -497,6 +523,15 @@ async def _invoke_runtime_recovery_agent_text_with_tools_async(
                 empty when asking for the best available bounded candidate.
             reason: Concise reason the Runtime Recovery Agent is considering the
                 maneuver.
+            strategy: Optional monitor, global_reroute, local_avoidance, hold,
+                or rtl_or_land strategy selected by the Runtime Recovery Agent.
+            avoidance_side: Optional left or right semantic constraint.
+            minimum_clearance_m: Optional minimum lateral clearance constraint.
+            maximum_duration_s: Optional maximum execution-duration envelope.
+            maximum_speed_mps: Optional maximum horizontal-speed envelope.
+            destination_kind: Optional original_route or alternate_dropoff intent.
+            target_altitude_min_m: Optional lower altitude-envelope bound.
+            target_altitude_max_m: Optional upper altitude-envelope bound.
 
         Returns:
             Bounded proposal-only target_altitude_m and/or local NED target_x_m
@@ -504,20 +539,45 @@ async def _invoke_runtime_recovery_agent_text_with_tools_async(
             executes, verifies, or counts progress.
         """
 
+        intent_constraints = {
+            key: value
+            for key, value in {
+                "avoidance_side": str(avoidance_side or "").strip(),
+                "minimum_clearance_m": minimum_clearance_m,
+                "maximum_duration_s": maximum_duration_s,
+                "maximum_speed_mps": maximum_speed_mps,
+                "destination_kind": str(destination_kind or "").strip(),
+                "target_altitude_min_m": target_altitude_min_m,
+                "target_altitude_max_m": target_altitude_max_m,
+            }.items()
+            if value not in {None, ""}
+        }
         arguments = {
             "recovery_action": str(recovery_action or ""),
             "reason": str(reason or "")[:500],
+            "strategy": str(strategy or "").strip(),
+            "intent_constraints": intent_constraints,
         }
-        result = plan_runtime_recovery_maneuver(
+        planner_result = plan_runtime_recovery_maneuver(
             telemetry_snapshot=telemetry_snapshot,
             mission_context=mission_context,
             recovery_policy=recovery_policy,
             requested_action=arguments["recovery_action"],
             request_reason=arguments["reason"],
         )
+        guarded_result = guard_runtime_recovery_planner_result(
+            planner_result=planner_result,
+            telemetry_snapshot=telemetry_snapshot,
+            recovery_policy=recovery_policy,
+            agent_intent={
+                "strategy": arguments["strategy"],
+                "intent_constraints": intent_constraints,
+                "rationale": arguments["reason"],
+            },
+        )
         captured["tool_arguments"].append(arguments)
-        captured["tool_results"].append(dict(result))
-        return dict(result)
+        captured["tool_results"].append(dict(guarded_result))
+        return dict(guarded_result)
 
     agent = build_missionos_runtime_recovery_agent(
         model_id=model_id,
@@ -957,6 +1017,15 @@ def _runtime_recovery_prompt_payload(
                     "operator_review"
                 ),
                 (
+                    "choose a mission strategy: monitor, global_reroute, "
+                    "local_avoidance, hold, or rtl_or_land"
+                ),
+                (
+                    "express optional intent_constraints for direction, minimum "
+                    "clearance, destination meaning, duration, speed, or altitude "
+                    "bounds; the compiler may not silently change them"
+                ),
+                (
                     "prioritize a source-backed local route conflict when "
                     "conflict_assessment.local_avoidance_required is true; do "
                     "not replace it with a terrain action when the explicit "
@@ -987,6 +1056,19 @@ def _runtime_recovery_prompt_payload(
                 "backend dispatch request and receipt",
                 "verifier outcome observation",
             ],
+            "compiler_contract": {
+                "compiler_may": [
+                    "convert intent and constraints into a bounded executor candidate",
+                    "add safety metadata already supported by source-backed facts",
+                ],
+                "compiler_must_not": [
+                    "change strategy",
+                    "change selected action",
+                    "change direction or destination meaning",
+                    "weaken minimum clearance or other intent constraints",
+                ],
+                "infeasible_constraints_return_to_agent": True,
+            },
             "agents_must_not_output": sorted(MISSIONOS_AGENT_FORBIDDEN_KEYS),
         },
         "telemetry_snapshot": dict(telemetry_snapshot),
@@ -1678,6 +1760,10 @@ def _runtime_recovery_avoidance_candidate(
             ),
             "pass_distance_after_obstacle_m": round(pass_distance_m, 3),
             "required_lateral_clearance_m": round(required_lateral_clearance_m, 3),
+            "minimum_lateral_clearance_m": round(
+                required_lateral_clearance_m + 2.0, 3
+            ),
+            "avoidance_side": "left",
             "target_lateral_offset_m": round(target_lateral_offset_m, 3),
             "target_is_beyond_obstacle": True,
             "route_vector_source_ref": route_source_ref,
@@ -2210,7 +2296,10 @@ def _validate_runtime_recovery_output(
         dict(proposed_parameters) if isinstance(proposed_parameters, Mapping) else {}
     )
     matching_tool_candidate: dict[str, Any] | None = None
-    if selected_action in _PARAMETERIZED_RUNTIME_RECOVERY_ACTIONS:
+    if (
+        selected_action in _PARAMETERIZED_RUNTIME_RECOVERY_ACTIONS
+        and require_parameter_tool_call
+    ):
         if require_parameter_tool_call and not parameter_tool_called:
             blocking_reasons.append(
                 "parameterized_recovery_requires_runtime_recovery_planner_tool_call"
@@ -2305,6 +2394,36 @@ def _validate_runtime_recovery_output(
     if high_impact and not (action_preapproved or operator_approval_required):
         blocking_reasons.append("high_impact_recovery_requires_preapproval_or_human_review")
 
+    recovery_intent = build_runtime_recovery_intent(agent_output=agent_output)
+    intent_compilation = compile_runtime_recovery_intent(
+        intent=recovery_intent,
+        candidate=matching_tool_candidate or {},
+        recovery_policy=recovery_policy,
+    )
+    reachability_verification = verify_runtime_recovery_reachability(
+        compilation=intent_compilation,
+        telemetry_snapshot=telemetry_snapshot,
+        recovery_policy=recovery_policy,
+    )
+    if (
+        selected_action in _PARAMETERIZED_RUNTIME_RECOVERY_ACTIONS
+        and require_parameter_tool_call
+    ):
+        if intent_compilation.get("compilation_status") != "compiled":
+            blocking_reasons.extend(
+                str(item)
+                for item in intent_compilation.get("blocking_reasons") or []
+            )
+            blocking_reasons.append("parameterized_recovery_intent_not_compilable")
+        if reachability_verification.get("verification_status") != "verified":
+            blocking_reasons.extend(
+                str(item)
+                for item in reachability_verification.get("blocking_reasons") or []
+            )
+            blocking_reasons.append("parameterized_recovery_reachability_unverified")
+
+    blocking_reasons = list(dict.fromkeys(blocking_reasons))
+
     if blocking_reasons:
         selected_action = "operator_review"
         trigger_level = "advisory"
@@ -2320,6 +2439,9 @@ def _validate_runtime_recovery_output(
         "blocking_reasons": blocking_reasons,
         "recovery_planner_tool_called": bool(parameter_tool_called),
         "recovery_planner_tool_candidate": dict(matching_tool_candidate or {}),
+        "recovery_intent": recovery_intent,
+        "intent_compilation": intent_compilation,
+        "reachability_verification": reachability_verification,
         "proposed_parameters_source": (
             "runtime_recovery_planner_function_tool"
             if matching_tool_candidate is not None
@@ -2344,6 +2466,7 @@ def guard_runtime_recovery_planner_result(
     planner_result: Mapping[str, Any],
     telemetry_snapshot: Mapping[str, Any],
     recovery_policy: Mapping[str, Any],
+    agent_intent: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Apply the runtime-recovery guardrail to a deterministic planner result.
 
@@ -2367,8 +2490,10 @@ def guard_runtime_recovery_planner_result(
         dict(proposed_parameters) if isinstance(proposed_parameters, Mapping) else {}
     )
     parameterized = selected_action in _PARAMETERIZED_RUNTIME_RECOVERY_ACTIONS
+    intent_fields = dict(agent_intent or {})
     assessment = _validate_runtime_recovery_output(
         agent_output={
+            **intent_fields,
             "selected_bounded_action": selected_action,
             "trigger_level": "advisory",
             "requires_human_approval": True,
@@ -2382,6 +2507,11 @@ def guard_runtime_recovery_planner_result(
         parameter_tool_called=parameterized,
     )
     guarded["recovery_guardrail_assessment"] = assessment
+    guarded["requested_recovery_intent"] = {
+        key: value
+        for key, value in intent_fields.items()
+        if key in {"strategy", "intent_constraints", "rationale"}
+    }
     guarded["guardrail_status"] = assessment["assessment_status"]
     if assessment["assessment_status"] != "proposal_guardrail_passed":
         guarded["unguarded_recommended_candidate"] = dict(candidate)

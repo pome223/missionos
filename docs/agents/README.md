@@ -50,6 +50,7 @@ When the map above is not enough, read the complete set:
 - `nvblox-perception-evidence.md`
 - `unitree-mujoco-environment.md`
 - `unitree-go2-real-hardware.md`
+- `recovery-intent-compiler-verifier.md`
 
 ## Working Rule
 

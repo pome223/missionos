@@ -38,6 +38,9 @@ was sent, what was observed, and what remains unproven.
   Runtime Recovery, Repair, and Gateway responsibilities.
 - Read `docs/concepts/simulator-baseline.md` for why the current indoor ROS2/Nav2
   simulator baseline uses TurtleBot3 while TurtleBot4 remains opt-in.
+- Read `docs/concepts/recovery-intent-compilation.md` for how Recovery judgment,
+  compilation, reachability, approval, execution, and outcome verification stay
+  separate.
 - Read `docs/concepts/real-hardware-bridge.md` for the first contract-first
   hardware bridge slices and their limits.
 - Read `docs/concepts/recovery-delegation.md` for the opt-in two-phase
