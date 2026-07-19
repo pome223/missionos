@@ -18,9 +18,16 @@ def _summary(
     wind_mps: float = 0.0,
     cross_track_m: float = 0.0,
     terrain_margin_m: float = 10.0,
+    terrain_grace_m: float | None = None,
     progress_stall_s: float = 0.0,
     telemetry_stale_count: int = 0,
 ) -> dict:
+    terrain_below_minimum = terrain_margin_m < -(terrain_grace_m or 0.0)
+    terrain_near_minimum = (
+        -terrain_grace_m <= terrain_margin_m <= -(terrain_grace_m * 0.5)
+        if terrain_grace_m is not None
+        else 0.0 <= terrain_margin_m <= 5.0
+    )
     if progress_stall_s > 0.0:
         bucket = {
             "elapsed_start_s": elapsed_s - progress_stall_s,
@@ -52,25 +59,26 @@ def _summary(
             "wind_speed_max_mps": wind_mps,
             "cross_track_max_m": cross_track_m,
             "terrain_clearance_margin_min_m": terrain_margin_m,
+            "terrain_clearance_grace_min_m": terrain_grace_m,
             "progress_delta_m": progress_delta_m,
             "trailing_telemetry_stale_count": telemetry_stale_count,
         },
         "hard_breaches": {
-            "terrain_clearance_below_minimum": terrain_margin_m < 0.0,
+            "terrain_clearance_below_minimum": terrain_below_minimum,
             "battery_critical": False,
             "telemetry_lost": telemetry_stale_count >= 2,
             "obstacle_or_building_risk": False,
-            "any": terrain_margin_m < 0.0 or telemetry_stale_count >= 2,
+            "any": terrain_below_minimum or telemetry_stale_count >= 2,
         },
         "soft_signals": {
-            "terrain_clearance_near_minimum": 0.0 <= terrain_margin_m <= 5.0,
+            "terrain_clearance_near_minimum": terrain_near_minimum,
             "cross_track_above_soft_limit": cross_track_m >= 25.0,
             "progress_non_positive": progress_stall_s > 0.0,
             "battery_drop_above_soft_limit": False,
             "nav_state_changed": False,
             "wind_speed_above_soft_limit": wind_mps >= 6.0,
             "any": (
-                0.0 <= terrain_margin_m <= 5.0
+                terrain_near_minimum
                 or cross_track_m >= 25.0
                 or progress_stall_s > 0.0
                 or wind_mps >= 6.0
@@ -365,6 +373,26 @@ def test_same_band_minor_change_keeps_direction_and_signature_stable() -> None:
     )
 
 
+def test_same_band_trend_recovery_is_audited_without_rejudgment() -> None:
+    initial = _state(_summary(elapsed_s=30.0, wind_mps=6.3))
+    worsening = _state(
+        _summary(elapsed_s=40.0, wind_mps=7.3),
+        prior=initial,
+    )
+    stable = _state(
+        _summary(elapsed_s=50.0, wind_mps=7.3),
+        prior=worsening,
+    )
+
+    assert worsening["dimensions"]["wind_margin_band"]["trend"] == "worsening"
+    assert stable["dimensions"]["wind_margin_band"]["trend"] == "stable"
+    delta = build_semantic_numeric_delta(worsening, stable)
+    assert delta["material_change"] is False
+    assert delta["observed_changed_dimensions"] == ["wind_margin_band"]
+    assert delta["changes"]["wind_margin_band"]["reasons"] == ["trend_improved"]
+    assert delta["changes"]["wind_margin_band"]["direction"] == "improving"
+
+
 def test_subthreshold_stall_persistence_does_not_change_decision_signature() -> None:
     moving = _state(_summary(elapsed_s=30.0, progress_stall_s=0.0))
     short_pause = _state(
@@ -388,6 +416,82 @@ def test_subthreshold_stall_persistence_does_not_change_decision_signature() -> 
         legacy_signature="short-pause",
         semantic_state=short_pause,
     )
+
+
+def test_single_sample_buckets_with_forward_progress_do_not_count_as_stall() -> None:
+    summary = _summary(elapsed_s=15.0)
+    summary["buckets"] = [
+        {
+            "elapsed_start_s": 0.0,
+            "elapsed_end_s": 5.0,
+            "sample_count": 1,
+            "progress_start_m": 5.0,
+            "progress_end_m": 5.0,
+            "progress_delta_m": 0.0,
+        },
+        {
+            "elapsed_start_s": 5.0,
+            "elapsed_end_s": 10.0,
+            "sample_count": 1,
+            "progress_start_m": 10.0,
+            "progress_end_m": 10.0,
+            "progress_delta_m": 0.0,
+        },
+        {
+            "elapsed_start_s": 10.0,
+            "elapsed_end_s": 15.0,
+            "sample_count": 1,
+            "progress_start_m": 15.0,
+            "progress_end_m": 15.0,
+            "progress_delta_m": 0.0,
+        },
+    ]
+
+    state = _state(summary)
+    progress = state["dimensions"]["progress_stall_band"]
+
+    assert progress["observed_value"] == 0.0
+    assert progress["band"] == "below_watch"
+    assert progress["breach_persistence_band"] == "none"
+
+
+def test_accepted_terrain_grace_only_opens_epoch_in_lower_half() -> None:
+    initial = _state(
+        _summary(elapsed_s=30.0, terrain_margin_m=0.0, terrain_grace_m=1.0)
+    )
+    upper_half = _state(
+        _summary(elapsed_s=35.0, terrain_margin_m=-0.1, terrain_grace_m=1.0),
+        prior=initial,
+    )
+    first_lower_half = _state(
+        _summary(elapsed_s=40.0, terrain_margin_m=-0.6, terrain_grace_m=1.0),
+        prior=upper_half,
+    )
+    confirmed_lower_half = _state(
+        _summary(elapsed_s=45.0, terrain_margin_m=-0.6, terrain_grace_m=1.0),
+        prior=first_lower_half,
+    )
+
+    upper = upper_half["dimensions"]["terrain_clearance_margin_band"]
+    assert upper["threshold_ref"] == (
+        "recovery_window_summary:terrain_clearance_grace_min_m"
+    )
+    assert upper["risk_ratio"] == 0.1
+    assert upper["band"] == "below_watch"
+    assert build_semantic_numeric_delta(initial, upper_half)[
+        "material_change"
+    ] is False
+
+    first_lower = first_lower_half["dimensions"]["terrain_clearance_margin_band"]
+    assert first_lower["band"] == "below_watch"
+    assert first_lower["pending_band"] == "near_limit"
+    confirmed_lower = confirmed_lower_half["dimensions"][
+        "terrain_clearance_margin_band"
+    ]
+    assert confirmed_lower["band"] == "near_limit"
+    assert build_semantic_numeric_delta(first_lower_half, confirmed_lower_half)[
+        "changed_dimensions"
+    ] == ["terrain_clearance_margin_band"]
 
 
 def _raw_snapshot(*, sample_index: int, elapsed_s: float, wind_mps: float) -> dict:
@@ -555,6 +659,7 @@ def test_same_band_directional_runtime_delta_invokes_once(
     assert bridge["agent_refresh_status"] in {
         "decision_already_judged",
         "decision_unchanged",
+        "semantic_change_not_material",
     }
     assert "missionos_runtime_recovery_last_proposal" not in artifacts
     assert "missionos_runtime_recovery_dispatch_receipt" not in artifacts

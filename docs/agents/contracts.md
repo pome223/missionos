@@ -181,7 +181,10 @@ new epoch that the old threshold-only signature would have missed.
 
 Terrain clearance inside an explicitly accepted grace envelope is not by
 itself a model-call trigger: only entry into the lower half of that envelope is
-the `terrain_clearance_near_minimum` soft signal. While a matching local-avoid
+the `terrain_clearance_near_minimum` soft signal. The semantic numeric state
+therefore measures the fraction of the accepted grace consumed when a
+source-backed grace is present; it does not reinterpret a small negative margin
+against the nominal target as a limit breach. While a matching local-avoid
 proposal is held for approval, a transient telemetry gap blocks dispatch-time
 freshness verification but does not replace the immutable proposal. A verified
 successful Recovery also suppresses a second HOLD for the same still-visible

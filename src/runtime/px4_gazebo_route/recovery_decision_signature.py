@@ -106,15 +106,41 @@ def _trailing_progress_stall_seconds(summary: Mapping[str, Any]) -> float | None
     buckets = summary.get("buckets")
     if not isinstance(buckets, Sequence) or isinstance(buckets, (str, bytes)):
         return None
+    normalized_buckets = [_mapping(raw_bucket) for raw_bucket in buckets]
     stalled_seconds = 0.0
     observed = False
-    for raw_bucket in reversed(buckets):
-        bucket = _mapping(raw_bucket)
-        if int(_number(bucket.get("sample_count")) or 0) <= 0:
+    for index in range(len(normalized_buckets) - 1, -1, -1):
+        bucket = normalized_buckets[index]
+        sample_count = int(_number(bucket.get("sample_count")) or 0)
+        if sample_count <= 0:
             if observed:
                 break
             continue
         progress_delta = _number(bucket.get("progress_delta_m"))
+        if sample_count < 2:
+            # One observation cannot prove a within-bucket stall: its start and
+            # end are necessarily the same value.  When the immediately prior
+            # bucket also has an observation, compare their endpoints instead.
+            # Otherwise the evidence is insufficient and must not accrue stall
+            # duration.
+            if index <= 0:
+                break
+            prior_bucket = normalized_buckets[index - 1]
+            if int(_number(prior_bucket.get("sample_count")) or 0) <= 0:
+                break
+            current_endpoint = _number(
+                bucket.get("progress_end_m")
+                if bucket.get("progress_end_m") is not None
+                else bucket.get("progress_start_m")
+            )
+            prior_endpoint = _number(
+                prior_bucket.get("progress_end_m")
+                if prior_bucket.get("progress_end_m") is not None
+                else prior_bucket.get("progress_start_m")
+            )
+            if current_endpoint is None or prior_endpoint is None:
+                break
+            progress_delta = current_endpoint - prior_endpoint
         if progress_delta is None or progress_delta > 0.0:
             break
         start = _number(bucket.get("elapsed_start_s"))
@@ -150,6 +176,13 @@ def _semantic_observations(
     cross_track_limit = _number(thresholds.get("cross_track_soft_limit_m"))
     terrain_soft_margin = _number(thresholds.get("terrain_soft_margin_m"))
     terrain_minimum = _number(thresholds.get("min_terrain_clearance_m"))
+    terrain_grace = _number(overall.get("terrain_clearance_grace_min_m"))
+    terrain_hard_breach = (
+        _mapping(summary.get("hard_breaches")).get(
+            "terrain_clearance_below_minimum"
+        )
+        is True
+    )
     battery_margin_reference = _number(recovery_policy.get("battery_return_threshold_percent"))
     bucket_s = max(1.0, _number(summary.get("bucket_s")) or 5.0)
     progress_stall_threshold_s = bucket_s * 2.0
@@ -184,6 +217,30 @@ def _semantic_observations(
             return None
         return max(0.0, 1.0 - (margin / threshold))
 
+    terrain_threshold = terrain_soft_margin
+    terrain_threshold_ref = "recovery_window_summary:terrain_soft_margin_m"
+    terrain_risk_ratio = _inverse_margin_ratio(
+        terrain_margin,
+        terrain_soft_margin,
+    )
+    if terrain_grace is not None and terrain_grace > 0.0:
+        # The runtime projection has already established that the interval
+        # [target - grace, target] is explicitly accepted.  Express risk as the
+        # fraction of that envelope consumed: the upper half stays below_watch,
+        # while entering the lower half becomes near_limit.  An explicit
+        # source-backed breach cannot be weakened by inconsistent numeric data.
+        terrain_threshold = terrain_grace
+        terrain_threshold_ref = (
+            "recovery_window_summary:terrain_clearance_grace_min_m"
+        )
+        terrain_risk_ratio = (
+            max(0.0, -terrain_margin / terrain_grace)
+            if terrain_margin is not None
+            else None
+        )
+        if terrain_hard_breach and terrain_risk_ratio is not None:
+            terrain_risk_ratio = max(1.0, terrain_risk_ratio)
+
     return {
         "wind_margin_band": {
             "observed_value": _number(overall.get("wind_speed_max_mps")),
@@ -202,9 +259,11 @@ def _semantic_observations(
         "terrain_clearance_margin_band": {
             "observed_value": terrain_margin,
             "observed_unit": "m_margin",
-            "threshold_value": terrain_soft_margin,
-            "threshold_ref": "recovery_window_summary:terrain_soft_margin_m",
-            "risk_ratio": _inverse_margin_ratio(terrain_margin, terrain_soft_margin),
+            "threshold_value": terrain_threshold,
+            "threshold_ref": terrain_threshold_ref,
+            "accepted_grace_m": terrain_grace,
+            "explicit_below_minimum": terrain_hard_breach,
+            "risk_ratio": terrain_risk_ratio,
         },
         "battery_return_margin_band": {
             "observed_value": return_margin,
@@ -521,6 +580,15 @@ def build_semantic_numeric_delta(
             )
             if trend_worsened:
                 reasons.append("trend_worsened")
+            trend_improved = bool(
+                prior.get("trend") == "worsening"
+                and current.get("trend") != "worsening"
+                and current.get("pending_band") in (None, "")
+                and prior_band_index == current_band_index
+                and name not in {"progress_stall_band", "telemetry_stale_band"}
+            )
+            if trend_improved:
+                reasons.append("trend_improved")
             prior_time_to_limit_index = _time_to_limit_band_index(
                 prior.get("time_to_limit_band")
             )
@@ -528,13 +596,24 @@ def build_semantic_numeric_delta(
                 current.get("time_to_limit_band")
             )
             time_to_limit_worsened = bool(
-                trend_worsened
+                current.get("trend") == "worsening"
+                and current.get("pending_band") in (None, "")
+                and prior_band_index == current_band_index
+                and name not in {"progress_stall_band", "telemetry_stale_band"}
                 and current.get("time_to_limit_band")
                 in {"within_10s", "within_30s"}
                 and current_time_to_limit_index > prior_time_to_limit_index
             )
             if time_to_limit_worsened:
                 reasons.append("time_to_limit_worsened")
+            time_to_limit_improved = bool(
+                prior.get("trend") == "worsening"
+                and current.get("pending_band") in (None, "")
+                and prior_band_index == current_band_index
+                and current_time_to_limit_index < prior_time_to_limit_index
+            )
+            if time_to_limit_improved:
+                reasons.append("time_to_limit_improved")
             if not reasons:
                 continue
             observed_changed_dimensions.append(name)
@@ -551,7 +630,7 @@ def build_semantic_numeric_delta(
                     "worsening"
                     if material_for_decision_epoch
                     else "improving"
-                    if band_changed
+                    if band_changed or trend_improved or time_to_limit_improved
                     else "stable"
                 ),
                 "material_for_decision_epoch": material_for_decision_epoch,

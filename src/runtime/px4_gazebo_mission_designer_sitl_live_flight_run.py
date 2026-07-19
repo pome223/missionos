@@ -4768,6 +4768,7 @@ def _attach_auto_runtime_recovery_agent_proposal(
         and semantic_observed_change
         and semantic_numeric_decision_delta.get("material_change") is not True
         and not categorical_decision_state_changed
+        and not receipt_invalidated_proposal
     ):
         # A risk improvement remains auditable and becomes the next baseline,
         # but does not spend a hosted-model call or mint authority.
