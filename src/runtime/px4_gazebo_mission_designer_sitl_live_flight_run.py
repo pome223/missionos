@@ -53,6 +53,13 @@ from src.runtime.px4_active_runner_recovery_request import (
 from src.runtime.px4_gazebo_route.recovery_intent_compiler import (
     verify_runtime_recovery_outcome,
 )
+from src.runtime.px4_gazebo_route.recovery_decision_signature import (
+    RECOVERY_DECISION_SIGNATURE_VERSION,
+    build_semantic_numeric_delta,
+    build_semantic_numeric_state,
+    build_semantic_recovery_decision_signature,
+    semantic_numeric_state_machine_hash,
+)
 from src.runtime.recovery_window_summary import build_recovery_window_summary
 from src.runtime.px4_gazebo_sitl_mission_upload import (
     MAV_CMD_NAV_LAND,
@@ -2529,6 +2536,20 @@ def _latest_auto_running_snapshot_path(artifact_root: Path) -> Path | None:
     return candidates[0] if candidates else None
 
 
+def _auto_running_snapshot_recovery_extension_seconds(artifact_root: Path) -> float:
+    """Mirror the probe's effective route clock at the Gateway boundary."""
+
+    path = _latest_auto_running_snapshot_path(artifact_root)
+    if path is None:
+        return 0.0
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        value = float(payload.get("monitor_excluded_recovery_seconds", 0.0))
+    except (json.JSONDecodeError, OSError, TypeError, ValueError):
+        return 0.0
+    return max(0.0, value)
+
+
 def _auto_snapshot_number(*values: Any) -> float | int | None:
     for value in values:
         if isinstance(value, bool) or value is None:
@@ -2964,7 +2985,10 @@ def _auto_runtime_obstacle_conflict_projection(
         )
         assessments.append(
             {
+                "obstacle_index": index,
                 "obstacle_name": str(obstacle.get("name") or f"obstacle_{index}"),
+                "obstacle_x_m": round(obstacle_x_m, 3),
+                "obstacle_y_m": round(obstacle_y_m, 3),
                 "distance_to_obstacle_m": round(distance_m, 3),
                 "along_track_to_obstacle_m": round(along_track_m, 3),
                 "cross_track_to_obstacle_m": round(cross_track_m, 3),
@@ -2978,8 +3002,11 @@ def _auto_runtime_obstacle_conflict_projection(
                 "local_avoidance_required": local_required,
             }
         )
+    local_assessments = [
+        item for item in assessments if item.get("local_avoidance_required") is True
+    ]
     selected = min(
-        assessments,
+        local_assessments or assessments,
         key=lambda item: float(item.get("distance_to_obstacle_m") or math.inf),
         default={},
     )
@@ -3374,6 +3401,49 @@ def _runtime_recovery_decision_signature(
         ),
     }
     return _canonical_sha256(material)
+
+
+def _runtime_recovery_categorical_decision_state(
+    summary: Mapping[str, Any],
+    *,
+    telemetry_snapshot: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Return discrete decision facts not represented by semantic bands.
+
+    Numeric threshold booleans are intentionally excluded. Their stable v2
+    representation lives in ``semantic_numeric_state``. Keeping the raw v1
+    booleans here would make heartbeat or progress jitter reopen a hosted-model
+    epoch even when no semantic risk band changed.
+    """
+
+    hard = summary.get("hard_breaches")
+    hard = hard if isinstance(hard, Mapping) else {}
+    soft = summary.get("soft_signals")
+    soft = soft if isinstance(soft, Mapping) else {}
+    obstacle = telemetry_snapshot.get("obstacle")
+    obstacle = obstacle if isinstance(obstacle, Mapping) else {}
+    conflict = obstacle.get("conflict_assessment")
+    conflict = conflict if isinstance(conflict, Mapping) else {}
+    nearest_obstacle = conflict.get("nearest_obstacle")
+    nearest_obstacle = nearest_obstacle if isinstance(nearest_obstacle, Mapping) else {}
+    active_obstacle_name = (
+        str(nearest_obstacle.get("obstacle_name") or "").strip()
+        if conflict.get("local_avoidance_required") is True
+        else ""
+    )
+    return {
+        "battery_critical": hard.get("battery_critical") is True,
+        "obstacle_or_building_risk": (hard.get("obstacle_or_building_risk") is True),
+        # Distinct source-backed obstacles are distinct decision epochs even
+        # when their risk bands happen to match. This permits one judgment per
+        # newly encountered obstacle without reopening an epoch for telemetry
+        # jitter around the same obstacle.
+        "active_obstacle_name": active_obstacle_name,
+        "battery_drop_above_soft_limit": (soft.get("battery_drop_above_soft_limit") is True),
+        "nav_state": telemetry_snapshot.get("nav_state"),
+        "landed": telemetry_snapshot.get("landed") is True,
+        "recovery_observation_state": _runtime_recovery_observation_state(telemetry_snapshot),
+    }
 
 
 def _runtime_recovery_observation_state(
@@ -4099,6 +4169,11 @@ def _attach_auto_runtime_recovery_agent_proposal(
         return
     if not task or task.get("status") != "running":
         return
+    if snapshot.get("post_abort_tracking") is True or snapshot.get("monitor_window_ended") is True:
+        # RTL/LAND and post-abort tracking are terminal executor/failsafe
+        # phases. Mission-level obstacle recovery must not interrupt that
+        # authority with another safety HOLD or hosted-model proposal.
+        return
     artifacts = task.get("artifacts") if isinstance(task.get("artifacts"), Mapping) else {}
     last_proposal = artifacts.get("missionos_runtime_recovery_last_proposal")
     last_proposal = (
@@ -4116,18 +4191,36 @@ def _attach_auto_runtime_recovery_agent_proposal(
         if isinstance(conflict_assessment, Mapping)
         else {}
     )
-    conflict_assessment = (
-        conflict_assessment if isinstance(conflict_assessment, Mapping) else {}
+    conflict_assessment = conflict_assessment if isinstance(conflict_assessment, Mapping) else {}
+    nearest_conflict_obstacle = conflict_assessment.get("nearest_obstacle")
+    nearest_conflict_obstacle = (
+        nearest_conflict_obstacle if isinstance(nearest_conflict_obstacle, Mapping) else {}
     )
-    safety_hold_receipt = artifacts.get(
-        "missionos_runtime_recovery_safety_hold_receipt"
+    active_obstacle_name = (
+        str(nearest_conflict_obstacle.get("obstacle_name") or "").strip()
+        if conflict_assessment.get("local_avoidance_required") is True
+        else ""
     )
-    safety_hold_receipt = (
-        safety_hold_receipt if isinstance(safety_hold_receipt, Mapping) else {}
-    )
+    safety_hold_receipt = artifacts.get("missionos_runtime_recovery_safety_hold_receipt")
+    safety_hold_receipt = safety_hold_receipt if isinstance(safety_hold_receipt, Mapping) else {}
     current_recovery = telemetry_snapshot.get("recovery")
-    current_recovery = (
-        current_recovery if isinstance(current_recovery, Mapping) else {}
+    current_recovery = current_recovery if isinstance(current_recovery, Mapping) else {}
+    current_recovery_parameters = current_recovery.get("parameters")
+    current_recovery_parameters = (
+        current_recovery_parameters if isinstance(current_recovery_parameters, Mapping) else {}
+    )
+    current_recovery_obstacle_name = str(
+        current_recovery_parameters.get("source_obstacle_name") or ""
+    ).strip()
+    receipt_conflict = safety_hold_receipt.get("conflict_assessment")
+    receipt_conflict = receipt_conflict if isinstance(receipt_conflict, Mapping) else {}
+    receipt_nearest = receipt_conflict.get("nearest_obstacle")
+    receipt_nearest = receipt_nearest if isinstance(receipt_nearest, Mapping) else {}
+    receipt_obstacle_name = str(receipt_nearest.get("obstacle_name") or "").strip()
+    safety_hold_receipt_applies = bool(
+        not active_obstacle_name
+        or not receipt_obstacle_name
+        or receipt_obstacle_name == active_obstacle_name
     )
     current_recovery_succeeded = bool(
         str(current_recovery.get("assist_status") or "").strip().lower()
@@ -4135,11 +4228,16 @@ def _attach_auto_runtime_recovery_agent_proposal(
         and current_recovery.get("target_reached") is True
         and str(current_recovery.get("resume_status") or "").strip().lower()
         == "resumed_auto_mission"
+        and (
+            not active_obstacle_name
+            or not current_recovery_obstacle_name
+            or current_recovery_obstacle_name == active_obstacle_name
+        )
     )
     if (
-        safety_hold_receipt.get("request_status") == "queued"
-        and str(current_recovery.get("action") or "").strip().lower()
-        == "safety_hold"
+        safety_hold_receipt_applies
+        and safety_hold_receipt.get("request_status") == "queued"
+        and str(current_recovery.get("action") or "").strip().lower() == "safety_hold"
         and str(current_recovery.get("assist_status") or "").strip().lower()
         == "safety_hold_observed"
     ):
@@ -4175,17 +4273,14 @@ def _attach_auto_runtime_recovery_agent_proposal(
     if (
         conflict_assessment.get("local_avoidance_required") is True
         and not current_recovery_succeeded
-        and safety_hold_receipt.get("request_status") not in {"queued", "observed"}
+        and (
+            not safety_hold_receipt_applies
+            or safety_hold_receipt.get("request_status") not in {"queued", "observed"}
+        )
     ):
-        running_receipt = artifacts.get(
-            "missionos_auto_mission_gui_dispatch_running_receipt"
-        )
-        running_receipt = (
-            running_receipt if isinstance(running_receipt, Mapping) else {}
-        )
-        request_path = str(
-            running_receipt.get("operator_recovery_request_container_path") or ""
-        )
+        running_receipt = artifacts.get("missionos_auto_mission_gui_dispatch_running_receipt")
+        running_receipt = running_receipt if isinstance(running_receipt, Mapping) else {}
+        request_path = str(running_receipt.get("operator_recovery_request_container_path") or "")
         hold_observed_at = _utc().isoformat()
         hold_request = {
             "schema_version": "missionos_auto_safety_hold_request.v1",
@@ -4310,12 +4405,86 @@ def _attach_auto_runtime_recovery_agent_proposal(
     prior_result = prior_result if isinstance(prior_result, Mapping) else {}
     prior_reasons = prior_result.get("blocking_reasons")
     prior_reasons = prior_reasons if isinstance(prior_reasons, list) else []
-    decision_signature = _runtime_recovery_decision_signature(
+    legacy_decision_signature = _runtime_recovery_decision_signature(
         recovery_window_summary,
         telemetry_snapshot=telemetry_snapshot,
     )
+    prior_semantic_numeric_state = bridge.get("semantic_numeric_state")
+    prior_semantic_numeric_state = (
+        prior_semantic_numeric_state
+        if isinstance(prior_semantic_numeric_state, Mapping)
+        else {}
+    )
+    semantic_numeric_state = build_semantic_numeric_state(
+        recovery_window_summary,
+        telemetry_snapshot=telemetry_snapshot,
+        recovery_policy=_runtime_recovery_policy(),
+        prior_state=prior_semantic_numeric_state,
+    )
+    semantic_numeric_delta = build_semantic_numeric_delta(
+        prior_semantic_numeric_state,
+        semantic_numeric_state,
+    )
+    stored_last_decision_semantic_numeric_state = bridge.get(
+        "last_decision_semantic_numeric_state"
+    )
+    proposal_semantic_numeric_state = last_proposal.get("semantic_numeric_state")
+    last_decision_semantic_numeric_state = (
+        stored_last_decision_semantic_numeric_state
+        if isinstance(stored_last_decision_semantic_numeric_state, Mapping)
+        and stored_last_decision_semantic_numeric_state.get("dimensions")
+        else proposal_semantic_numeric_state
+        if isinstance(proposal_semantic_numeric_state, Mapping)
+        and proposal_semantic_numeric_state.get("dimensions")
+        else prior_semantic_numeric_state
+        if prior_semantic_numeric_state.get("dimensions")
+        else semantic_numeric_state
+    )
+    semantic_numeric_decision_delta = build_semantic_numeric_delta(
+        last_decision_semantic_numeric_state,
+        semantic_numeric_state,
+    )
+    has_semantic_news = (
+        semantic_numeric_decision_delta.get("material_change") is True
+    )
+    has_news = has_news or has_semantic_news
+    semantic_state_machine_hash = semantic_numeric_state_machine_hash(
+        semantic_numeric_state
+    )
+    categorical_decision_state = _runtime_recovery_categorical_decision_state(
+        recovery_window_summary,
+        telemetry_snapshot=telemetry_snapshot,
+    )
+    decision_signature = build_semantic_recovery_decision_signature(
+        legacy_signature=legacy_decision_signature,
+        semantic_state=semantic_numeric_state,
+        categorical_state=categorical_decision_state,
+    )
     prior_decision_signature = str(
         bridge.get("last_recovery_decision_signature") or ""
+    )
+    judged_decision_signatures = [
+        str(value)
+        for value in bridge.get("judged_recovery_decision_signatures") or []
+        if str(value).strip()
+    ]
+    prior_legacy_decision_signature = str(
+        bridge.get("legacy_recovery_decision_signature") or ""
+    )
+    prior_categorical_decision_state = bridge.get(
+        "last_decision_categorical_state"
+    ) or bridge.get("categorical_decision_state")
+    prior_categorical_decision_state = (
+        prior_categorical_decision_state
+        if isinstance(prior_categorical_decision_state, Mapping)
+        else {}
+    )
+    categorical_decision_state_changed = bool(
+        prior_categorical_decision_state
+        and prior_categorical_decision_state != categorical_decision_state
+    )
+    semantic_observed_change = bool(
+        semantic_numeric_decision_delta.get("observed_changed_dimensions")
     )
     observation_state = _runtime_recovery_observation_state(telemetry_snapshot)
     receipt = artifacts.get("missionos_runtime_recovery_dispatch_receipt")
@@ -4407,46 +4576,58 @@ def _attach_auto_runtime_recovery_agent_proposal(
         else []
     )
     prior_window_summary = bridge.get("recovery_window_summary")
-    prior_window_summary = (
-        prior_window_summary if isinstance(prior_window_summary, Mapping) else {}
-    )
+    prior_window_summary = prior_window_summary if isinstance(prior_window_summary, Mapping) else {}
     prior_hard_breaches = prior_window_summary.get("hard_breaches")
-    prior_hard_breaches = (
-        prior_hard_breaches if isinstance(prior_hard_breaches, Mapping) else {}
-    )
+    prior_hard_breaches = prior_hard_breaches if isinstance(prior_hard_breaches, Mapping) else {}
     bridge_telemetry = bridge.get("telemetry_snapshot")
-    bridge_telemetry = (
-        bridge_telemetry if isinstance(bridge_telemetry, Mapping) else {}
-    )
+    bridge_telemetry = bridge_telemetry if isinstance(bridge_telemetry, Mapping) else {}
     newly_observed_hard_breach_keys = {
         key
         for key, value in hard_breaches.items()
-        if key != "any"
-        and value is True
-        and prior_hard_breaches.get(key) is not True
+        if key != "any" and value is True and prior_hard_breaches.get(key) is not True
     }
     nav_state_changed = bool(
         bridge_telemetry
         and bridge_telemetry.get("nav_state") != telemetry_snapshot.get("nav_state")
     )
     current_recovery = telemetry_snapshot.get("recovery")
-    current_recovery = (
-        current_recovery if isinstance(current_recovery, Mapping) else {}
-    )
+    current_recovery = current_recovery if isinstance(current_recovery, Mapping) else {}
     current_conflict = telemetry_snapshot.get("obstacle")
     current_conflict = (
-        current_conflict.get("conflict_assessment")
-        if isinstance(current_conflict, Mapping)
+        current_conflict.get("conflict_assessment") if isinstance(current_conflict, Mapping) else {}
+    )
+    current_conflict = current_conflict if isinstance(current_conflict, Mapping) else {}
+    active_conflict = current_conflict.get("nearest_obstacle")
+    active_conflict = active_conflict if isinstance(active_conflict, Mapping) else {}
+    active_conflict_obstacle_name = (
+        str(active_conflict.get("obstacle_name") or "").strip()
+        if current_conflict.get("local_avoidance_required") is True
+        else ""
+    )
+    last_compilation = last_proposal_assessment.get("intent_compilation")
+    last_compilation = last_compilation if isinstance(last_compilation, Mapping) else {}
+    last_compiled_parameters = last_compilation.get("compiled_parameters")
+    last_compiled_parameters = (
+        last_compiled_parameters
+        if isinstance(last_compiled_parameters, Mapping)
+        else last_proposal_assessment.get("proposed_parameters")
+        if isinstance(last_proposal_assessment.get("proposed_parameters"), Mapping)
         else {}
     )
-    current_conflict = (
-        current_conflict if isinstance(current_conflict, Mapping) else {}
-    )
+    last_proposal_obstacle_name = str(
+        last_compiled_parameters.get("source_obstacle_name") or ""
+    ).strip()
+    if (
+        matching_dispatch_authority_recent
+        and active_conflict_obstacle_name
+        and last_proposal_obstacle_name
+        and last_proposal_obstacle_name != active_conflict_obstacle_name
+    ):
+        matching_dispatch_authority_recent = False
     safety_hold_preserves_local_avoidance_proposal = bool(
         proposal_selected_action == "avoid_obstacle"
         and current_conflict.get("local_avoidance_required") is True
-        and str(current_recovery.get("action") or "").strip().lower()
-        == "safety_hold"
+        and str(current_recovery.get("action") or "").strip().lower() == "safety_hold"
         and str(current_recovery.get("assist_status") or "").strip().lower()
         == "safety_hold_observed"
         and str(current_recovery.get("resume_status") or "").strip().lower()
@@ -4510,9 +4691,15 @@ def _attach_auto_runtime_recovery_agent_proposal(
     )
     if has_news and "runtime_recovery_window_no_news" in prior_reasons:
         should_refresh = True
+    if has_semantic_news:
+        should_refresh = True
     if has_hard_news and not prior_agent_hard_news:
         should_refresh = True
-    next_decision_signature = decision_signature
+    # This is the last adopted judgment baseline, not merely the preceding
+    # telemetry poll. A waiting/transient state must not replace it: doing so
+    # made a later return to an already judged signature look new and caused
+    # repeated hosted-model calls.
+    next_decision_signature = prior_decision_signature or decision_signature
     proposal_recompiled = False
     if observation_state == "preflight":
         agent_invoked = False
@@ -4636,14 +4823,63 @@ def _attach_auto_runtime_recovery_agent_proposal(
             detail="invalidated_without_material_decision_change",
         )
         refresh_status = "proposal_stale"
-        next_decision_signature = prior_decision_signature or decision_signature
-    elif prior_decision_signature == decision_signature and not proposal_invalidated:
+        next_decision_signature = (
+            prior_decision_signature
+            if semantic_numeric_decision_delta.get("material_change") is True
+            or categorical_decision_state_changed
+            else decision_signature
+        )
+    elif (
+        prior_decision_signature
+        and prior_decision_signature != decision_signature
+        and semantic_observed_change
+        and semantic_numeric_decision_delta.get("material_change") is not True
+        and not categorical_decision_state_changed
+        and not receipt_invalidated_proposal
+    ):
+        # A risk improvement remains auditable and becomes the next baseline,
+        # but does not spend a hosted-model call or mint authority.
+        agent_invoked = False
+        result = _runtime_recovery_agent_skipped_result(
+            reason="runtime_recovery_semantic_change_not_material",
+            detail="non_escalating_semantic_change_recorded_without_rejudgment",
+        )
+        refresh_status = "semantic_change_not_material"
+        next_decision_signature = decision_signature
+    elif (
+        prior_decision_signature == decision_signature
+        and not receipt_invalidated_proposal
+    ):
+        # Proposal expiry, origin drift, or a legacy-v1 threshold transition
+        # can revoke the concrete approval target, but none of those facts
+        # creates a new hosted-model decision epoch when the active semantic
+        # v2 signature is unchanged.  The stale proposal remains revoked; a
+        # fresh proposal may be deterministically recompiled where that flow
+        # is explicitly supported, but Gemini is not asked to repeat the same
+        # judgment. A failed operator-approved dispatch is different: its
+        # receipt is a new executor observation and may reopen the epoch even
+        # when the pre-dispatch risk signature itself is unchanged.
         agent_invoked = False
         result = _runtime_recovery_agent_skipped_result(
             reason="runtime_recovery_decision_unchanged",
-            detail="thresholded_risk_signature_unchanged",
+            detail="thresholded_and_semantic_risk_signature_unchanged",
         )
         refresh_status = "decision_unchanged"
+    elif (
+        decision_signature in judged_decision_signatures
+        and not receipt_invalidated_proposal
+    ):
+        # A risk can improve and later recur during the same unresolved task.
+        # Reuse the prior hosted judgment for the exact v2 signature instead
+        # of paying for it again. A failed approved dispatch is the explicit
+        # exception because it adds new executor evidence to the epoch.
+        agent_invoked = False
+        result = _runtime_recovery_agent_skipped_result(
+            reason="runtime_recovery_decision_already_judged",
+            detail="semantic_v2_signature_already_judged_in_task",
+        )
+        refresh_status = "decision_already_judged"
+        next_decision_signature = decision_signature
     elif not should_refresh and observation_state != "failed":
         agent_invoked = False
         result = _runtime_recovery_agent_skipped_result(
@@ -4674,6 +4910,21 @@ def _attach_auto_runtime_recovery_agent_proposal(
         last_agent_invoked_sample_index = telemetry_snapshot.get("sample_index")
         last_agent_summary_hash = recovery_window_summary_hash
         last_agent_hard_breach_any = has_hard_news
+        if decision_signature not in judged_decision_signatures:
+            judged_decision_signatures.append(decision_signature)
+    if (
+        agent_invoked
+        or proposal_recompiled
+        or refresh_status == "semantic_change_not_material"
+        or refresh_status == "decision_already_judged"
+        or (
+            refresh_status == "proposal_stale"
+            and next_decision_signature == decision_signature
+        )
+    ):
+        last_decision_semantic_numeric_state = semantic_numeric_state
+        prior_categorical_decision_state = categorical_decision_state
+        next_decision_signature = decision_signature
     observed_at = observed_at_datetime.isoformat()
     attempt_evidence = _runtime_recovery_attempt_evidence(
         task_id=task_id,
@@ -4702,6 +4953,8 @@ def _attach_auto_runtime_recovery_agent_proposal(
         and bridge.get("agent_refresh_status") == refresh_status
         and bridge.get("recovery_observation_state") == observation_state
         and bridge.get("recovery_decision_signature") == decision_signature
+        and bridge.get("semantic_numeric_state_machine_hash")
+        == semantic_state_machine_hash
         and not attempt_evidence_missing
     ):
         # The runtime snapshot is persisted independently. Avoid emitting a
@@ -4724,8 +4977,44 @@ def _attach_auto_runtime_recovery_agent_proposal(
         "active_refresh_seconds": active_refresh_seconds,
         "agent_refresh_status": refresh_status,
         "recovery_observation_state": observation_state,
+        "decision_signature_version": RECOVERY_DECISION_SIGNATURE_VERSION,
         "recovery_decision_signature": decision_signature,
+        "legacy_recovery_decision_signature": legacy_decision_signature,
         "last_recovery_decision_signature": next_decision_signature,
+        "judged_recovery_decision_signatures": judged_decision_signatures[-64:],
+        "signature_shadow_comparison": {
+            "legacy_changed": bool(
+                prior_legacy_decision_signature
+                and prior_legacy_decision_signature
+                != legacy_decision_signature
+            ),
+            "semantic_v2_changed": bool(
+                prior_decision_signature
+                and prior_decision_signature != decision_signature
+            ),
+            "semantic_only_material_change": bool(
+                prior_legacy_decision_signature == legacy_decision_signature
+                and prior_decision_signature
+                and prior_decision_signature != decision_signature
+                and semantic_numeric_decision_delta.get("material_change") is True
+            ),
+        },
+        "semantic_numeric_state": semantic_numeric_state,
+        "last_decision_semantic_numeric_state": (
+            last_decision_semantic_numeric_state
+        ),
+        "last_decision_categorical_state": prior_categorical_decision_state,
+        "categorical_decision_state": categorical_decision_state,
+        "semantic_numeric_state_machine_hash": semantic_state_machine_hash,
+        "semantic_numeric_delta": semantic_numeric_delta,
+        "semantic_numeric_decision_delta": semantic_numeric_decision_delta,
+        "decision_epoch_reason": (
+            "semantic_numeric_material_change"
+            if semantic_numeric_decision_delta.get("material_change") is True
+            else "categorical_or_semantic_state_change"
+            if prior_decision_signature != decision_signature
+            else str(refresh_status)
+        ),
         "last_agent_invoked_elapsed_seconds": last_agent_invoked_elapsed_seconds,
         "last_agent_invoked_sample_index": last_agent_invoked_sample_index,
         "last_agent_recovery_window_summary_hash": last_agent_summary_hash,
@@ -4748,13 +5037,19 @@ def _attach_auto_runtime_recovery_agent_proposal(
     if attempt_evidence is not None:
         attempt_id = str(attempt_evidence.get("attempt_id") or "")
         if attempt_id:
-            artifact_updates["missionos_runtime_recovery_attempts"] = {
-                attempt_id: attempt_evidence
-            }
-            replaced_artifacts["missionos_runtime_recovery_last_attempt"] = (
-                attempt_evidence
+            artifact_updates["missionos_runtime_recovery_attempts"] = {attempt_id: attempt_evidence}
+            replaced_artifacts["missionos_runtime_recovery_last_attempt"] = attempt_evidence
+    if proposal_invalidated and last_proposal:
+        invalidation_reasons = list(
+            dict.fromkeys(
+                [
+                    *proposal_lifecycle_reasons,
+                    *(str(reason) for reason in receipt_blocking_reasons if str(reason).strip()),
+                ]
             )
-    if proposal_lifecycle_reasons and last_proposal:
+        )
+        if not invalidation_reasons:
+            invalidation_reasons = ["runtime_recovery_dispatch_revalidation_failed"]
         invalidated_proposal = {
             **dict(last_proposal),
             "proposal_status": (
@@ -4764,7 +5059,7 @@ def _attach_auto_runtime_recovery_agent_proposal(
                 else "stale"
             ),
             "invalidated_at": observed_at,
-            "invalidation_reasons": proposal_lifecycle_reasons,
+            "invalidation_reasons": invalidation_reasons,
             "dispatch_authority_created": False,
             "progress_counted": False,
         }
@@ -4840,7 +5135,13 @@ def _attach_auto_runtime_recovery_agent_proposal(
                 _runtime_recovery_proposal_max_origin_drift_m()
             ),
             "sample_index": telemetry_snapshot.get("sample_index"),
+            "decision_signature_version": RECOVERY_DECISION_SIGNATURE_VERSION,
             "recovery_decision_signature": decision_signature,
+            "legacy_recovery_decision_signature": legacy_decision_signature,
+            "semantic_numeric_state": semantic_numeric_state,
+            "categorical_decision_state": categorical_decision_state,
+            "semantic_numeric_delta": semantic_numeric_delta,
+            "semantic_numeric_decision_delta": semantic_numeric_decision_delta,
             "runtime_recovery_agent_result": result,
             "recovery_intent": recovery_intent,
             "recovery_intent_id": recovery_intent.get("recovery_intent_id"),
@@ -5101,6 +5402,8 @@ def _persist_auto_live_telemetry_snapshot(
         "dropoff_dwell_candidate": payload.get("dropoff_dwell_candidate"),
         "wind_mean_started": payload.get("wind_mean_started"),
         "wind_mean_pending_reason": payload.get("wind_mean_pending_reason"),
+        "wind_speed_mps": payload.get("wind_speed_mps"),
+        "wind_direction_deg": payload.get("wind_direction_deg"),
         "wind_takeoff_clearance_min_altitude_m": payload.get(
             "wind_takeoff_clearance_min_altitude_m"
         ),
@@ -5468,9 +5771,15 @@ def run_missionos_auto_mission_gui_dispatch_execution(
         # once per second so the GUI Runtime Recovery Agent view can render live
         # progress/position/battery instead of only the pending receipt. This is
         # the AUTO analogue of the horizontal route live-snapshot polling.
-        deadline = time.monotonic() + process_timeout_seconds
+        started_at = time.monotonic()
+        recovery_extension_seconds = 0.0
         last_sample_index = -1
         while process.poll() is None:
+            recovery_extension_seconds = max(
+                recovery_extension_seconds,
+                _auto_running_snapshot_recovery_extension_seconds(artifact_root),
+            )
+            deadline = started_at + process_timeout_seconds + recovery_extension_seconds
             if time.monotonic() > deadline:
                 process.kill()
                 process.wait(timeout=5)

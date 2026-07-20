@@ -165,6 +165,10 @@ _MID_ROUTE_OBSTACLE_PATTERN = re.compile(
     r"(?:obstacle|building).{0,24}(?:along|on|middle).{0,16}route)",
     re.IGNORECASE,
 )
+_ROUTE_OBSTACLE_PERCENT_PATTERN = re.compile(
+    r"(?P<value>\d{1,3}(?:[.]\d+)?)\s*%",
+    re.IGNORECASE,
+)
 _POSTAL_CODE_PATTERN = re.compile(r"(?:〒|郵便番号\s*)?(?P<code>\d{3})-?(?P<tail>\d{4})")
 _JAPANESE_TEXT_PATTERN = re.compile(r"[ぁ-んァ-ン一-龥]")
 _ROUTE_ARROW_PATTERN = re.compile(
@@ -1605,6 +1609,32 @@ def _operator_requested_obstacle_flags(text: str) -> dict[str, Any]:
         }
     if not _OBSTACLE_REQUEST_PATTERN.search(normalized):
         return {}
+    route_percentages: list[float] = []
+    if re.search(r"(?:経路|航路|ルート|route)", normalized, re.IGNORECASE):
+        for match in _ROUTE_OBSTACLE_PERCENT_PATTERN.finditer(normalized):
+            value = float(match.group("value"))
+            if 5.0 <= value <= 95.0 and value not in route_percentages:
+                route_percentages.append(value)
+    if len(route_percentages) > 1:
+        obstacles = [
+            {
+                "name": f"missionos_route_obstacle_{int(value):02d}pct",
+                "kind": "building_box",
+                "route_fraction": round(value / 100.0, 3),
+                "size_x_m": 18.0,
+                "size_y_m": 18.0,
+                "size_z_m": 20.0,
+                "source": "operator_instruction_multi_route_obstacle",
+            }
+            for value in sorted(route_percentages)
+        ]
+        return {
+            "landing_zone_blocked": False,
+            "building_risk_detected": True,
+            "obstacles": obstacles,
+            "obstacle_scenario_source": ("operator_instruction_multi_route_bounded_sitl_scenario"),
+            "gazebo_obstacle_model_spawn_requested": True,
+        }
     if _MID_ROUTE_OBSTACLE_PATTERN.search(normalized):
         return {
             "landing_zone_blocked": False,

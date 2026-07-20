@@ -18,6 +18,31 @@ from src.runtime.ros2_nav2_dispatch_bridge import (
 JAPANESE_TEXT = re.compile(r"[ぁ-んァ-ン一-龥]")
 
 
+def test_agent_invocation_presence_accepts_gemini_and_litellm_providers() -> None:
+    for provider in (
+        "google_adk_gemini",
+        "google_adk_litellm_deepseek",
+        "google_adk_litellm_ollama",
+    ):
+        assert gateway_server._missionos_agent_invocation_present(
+            {
+                "agent_invocations": [
+                    {"agent_name": "missionos_chief_agent", "provider": provider}
+                ]
+            },
+            "missionos_chief_agent",
+        ) is True
+
+    assert gateway_server._missionos_agent_invocation_present(
+        {
+            "agent_invocations": [
+                {"agent_name": "missionos_chief_agent", "provider": "command_override"}
+            ]
+        },
+        "missionos_chief_agent",
+    ) is False
+
+
 def test_conversation_agent_timeout_depends_on_chief_backend(
     monkeypatch: Any,
 ) -> None:
@@ -32,6 +57,9 @@ def test_conversation_agent_timeout_depends_on_chief_backend(
 
     monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "gemini")
     assert gateway_server._missionos_conversation_agent_timeout_seconds() == 45
+
+    monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "deepseek")
+    assert gateway_server._missionos_conversation_agent_timeout_seconds() == 60
 
     monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "ollama")
     assert gateway_server._missionos_conversation_agent_timeout_seconds() == 180
@@ -64,6 +92,16 @@ def test_conversation_agent_timeout_uses_backend_cap_and_agent_override(
         "invalid",
     )
     assert gateway_server._missionos_conversation_agent_timeout_seconds() == 180
+
+    monkeypatch.setenv(
+        "MISSIONOS_AGENT_MISSIONOS_CHIEF_AGENT_LLM_BACKEND",
+        "deepseek",
+    )
+    monkeypatch.setenv(
+        gateway_server.MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_ENV,
+        "999",
+    )
+    assert gateway_server._missionos_conversation_agent_timeout_seconds() == 120
 
 
 def test_turtlebot3_e2e_smoke_uses_explicit_authority_route_hints(

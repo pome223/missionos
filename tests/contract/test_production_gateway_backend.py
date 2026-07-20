@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import os
+import sys
+import types
 
 import pytest
 
@@ -224,6 +226,29 @@ def test_gateway_env_ollama_backend_keeps_adk_but_removes_google_key(monkeypatch
     assert "GOOGLE_API_KEY" not in env
 
 
+def test_gateway_env_deepseek_backend_keeps_only_deepseek_credentials(monkeypatch) -> None:
+    monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "deepseek")
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "deepseek-test-key")
+    monkeypatch.setenv("GOOGLE_API_KEY", "google-test-key-must-not-propagate")
+
+    env = missionos_cli._gateway_process_env(enable_live_sitl=False)
+
+    for key in GATEWAY_LLM_ADK_ENV_KEYS:
+        assert env[key] == "1"
+    assert env["MISSIONOS_LLM_BACKEND"] == "deepseek"
+    assert env["DEEPSEEK_API_KEY"] == "deepseek-test-key"
+    assert "GOOGLE_API_KEY" not in env
+
+
+def test_gateway_env_non_deepseek_backend_removes_deepseek_key(monkeypatch) -> None:
+    monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "off")
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "deepseek-test-key-must-not-propagate")
+
+    env = missionos_cli._gateway_process_env(enable_live_sitl=False)
+
+    assert "DEEPSEEK_API_KEY" not in env
+
+
 def test_ollama_backend_uses_local_model_label(monkeypatch) -> None:
     from src.agents import model_config
 
@@ -232,6 +257,51 @@ def test_ollama_backend_uses_local_model_label(monkeypatch) -> None:
 
     assert model_config.local_llm_backend_enabled() is True
     assert model_config.agent_model_label() == "ollama_chat/gemma4:26b"
+
+
+def test_deepseek_backend_uses_official_model_and_litellm_adapter(monkeypatch) -> None:
+    from src.agents import model_config
+
+    class FakeLiteLlm:
+        def __init__(self, model: str, **kwargs: object) -> None:
+            self.model = model
+            self._additional_args = kwargs
+
+    fake_module = types.ModuleType("google.adk.models.lite_llm")
+    fake_module.LiteLlm = FakeLiteLlm
+    monkeypatch.setitem(sys.modules, "google.adk.models.lite_llm", fake_module)
+
+    monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "deepseek")
+    monkeypatch.setenv("MISSIONOS_DEEPSEEK_MODEL", "deepseek-v4-flash")
+    monkeypatch.setenv("MISSIONOS_DEEPSEEK_API_BASE", "https://api.deepseek.com/")
+
+    resolved = model_config.resolve_agent_model()
+
+    assert model_config.local_llm_backend_enabled() is False
+    assert model_config.litellm_backend_enabled() is True
+    assert model_config.deepseek_llm_backend_enabled() is True
+    assert model_config.agent_model_label() == "deepseek-v4-flash"
+    assert model_config.llm_provider_label() == "google_adk_litellm_deepseek"
+    assert resolved.model == "deepseek/deepseek-v4-flash"
+    assert resolved._additional_args["api_base"] == "https://api.deepseek.com"
+    assert resolved._additional_args["thinking"] == {"type": "disabled"}
+
+
+def test_deepseek_backend_requires_its_own_key(monkeypatch) -> None:
+    from src.intelligence import missionos_agent_runtime
+
+    monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "deepseek")
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    monkeypatch.setenv("GOOGLE_API_KEY", "google-key-does-not-count")
+
+    assert missionos_agent_runtime._adk_llm_credentials_available() is False
+    assert (
+        missionos_agent_runtime._llm_credentials_blocking_reason()
+        == "DEEPSEEK_API_KEY_not_configured"
+    )
+
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "deepseek-test-key")
+    assert missionos_agent_runtime._adk_llm_credentials_available() is True
 
 
 def test_agent_specific_model_override(monkeypatch) -> None:

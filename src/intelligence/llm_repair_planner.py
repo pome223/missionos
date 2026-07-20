@@ -361,6 +361,7 @@ def _run_adk_gemini_repair_planner(
 
     agent_name = "missionos_repair_planner_agent"
     model_id = _repair_model_id()
+    provider = llm_provider_label(agent_name)
     started_at = datetime.now(timezone.utc)
     try:
         response_text = _invoke_adk_gemini_repair_text(
@@ -372,7 +373,7 @@ def _run_adk_gemini_repair_planner(
         return _planner_result(
             status="blocked",
             blocking_reasons=[
-                f"google_adk_gemini_repair_invocation_failed:{type(exc).__name__}"
+                f"{provider}_repair_invocation_failed:{type(exc).__name__}"
             ],
         )
     completed_at = datetime.now(timezone.utc)
@@ -380,12 +381,12 @@ def _run_adk_gemini_repair_planner(
     if raw_response is None:
         return _planner_result(
             status="blocked",
-            blocking_reasons=["google_adk_gemini_repair_response_not_json_object"],
+            blocking_reasons=[f"{provider}_repair_response_not_json_object"],
             stdout_sha256=_sha256_text(response_text),
         )
     invocation_evidence = _llm_invocation_evidence(
-        provider=llm_provider_label(agent_name),
-        invocation_kind=llm_provider_label(agent_name),
+        provider=provider,
+        invocation_kind=provider,
         model_id=model_id,
         prompt_text=prompt_text,
         response_text=response_text,

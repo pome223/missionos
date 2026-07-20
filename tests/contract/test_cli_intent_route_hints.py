@@ -7,6 +7,7 @@ from typing import Any
 import click
 from click.testing import CliRunner
 import pytest
+from rich.console import Console
 
 import missionos_cli.cli as missionos_cli
 
@@ -1232,6 +1233,91 @@ def test_pending_px4_recovery_uses_current_runtime_proposal_parameters() -> None
         "runtime_recovery_proposal_current"
     )
     assert pending["input_observations"] == {"sample_index": 117}
+
+
+def test_pending_px4_v2_recovery_requires_compiled_reachable_parameters() -> None:
+    proposal = {
+        "schema_version": "missionos_runtime_recovery_proposal_evidence.v2",
+        "proposal_id": "runtime_recovery_proposal_v2",
+        "proposal_status": "awaiting_operator_approval",
+        "runtime_recovery_agent_result": {
+            "assessment": {
+                "selected_bounded_action": "avoid_obstacle",
+                "proposed_parameters": {"target_x_m": 999.0, "target_y_m": 999.0},
+                "intent_compilation": {
+                    "compilation_status": "compiled",
+                    "compiled_action": "avoid_obstacle",
+                    "compiled_parameters": {
+                        "target_x_m": -49.0,
+                        "target_y_m": 299.0,
+                        "target_altitude_m": 45.0,
+                        "source_obstacle_name": "missionos_route_obstacle_50pct",
+                    },
+                },
+                "reachability_verification": {
+                    "verification_status": "verified",
+                    "reachability_verified": True,
+                },
+            }
+        },
+    }
+    payload = {
+        "task": {
+            "task_id": "task_px4_runtime_recovery_v2",
+            "kind": "px4_gazebo_mission_designer_sitl_execution_request",
+            "status": "running",
+            "artifacts": {"missionos_runtime_recovery_last_proposal": proposal},
+        }
+    }
+
+    pending = missionos_cli._pending_recovery_approval_from_task(payload)
+
+    assert pending is not None
+    assert pending["runtime_proposal_approval_supported"] is True
+    assert pending["recovery_parameters"] == {
+        "target_x_m": -49.0,
+        "target_y_m": 299.0,
+        "target_altitude_m": 45.0,
+        "source_obstacle_name": "missionos_route_obstacle_50pct",
+    }
+    console = Console(record=True, color_system=None, width=140)
+    console.print(missionos_cli._render_chat_recovery_review(pending))
+    rendered = console.export_text()
+    assert "approve exact proposal" in rendered
+    assert "proposal=runtime_recovery_proposal_v2" in rendered
+    assert "approve exact checkpoint" not in rendered
+
+
+def test_pending_px4_v2_recovery_hides_unverified_compilation() -> None:
+    proposal = {
+        "schema_version": "missionos_runtime_recovery_proposal_evidence.v2",
+        "proposal_id": "runtime_recovery_proposal_v2_unverified",
+        "proposal_status": "awaiting_operator_approval",
+        "runtime_recovery_agent_result": {
+            "assessment": {
+                "selected_bounded_action": "avoid_obstacle",
+                "intent_compilation": {
+                    "compilation_status": "compiled",
+                    "compiled_action": "avoid_obstacle",
+                    "compiled_parameters": {"target_x_m": -49.0, "target_y_m": 299.0},
+                },
+                "reachability_verification": {
+                    "verification_status": "blocked",
+                    "reachability_verified": False,
+                },
+            }
+        },
+    }
+    payload = {
+        "task": {
+            "task_id": "task_px4_runtime_recovery_v2",
+            "kind": "px4_gazebo_mission_designer_sitl_execution_request",
+            "status": "running",
+            "artifacts": {"missionos_runtime_recovery_last_proposal": proposal},
+        }
+    }
+
+    assert missionos_cli._pending_recovery_approval_from_task(payload) is None
 
 
 def test_pending_px4_recovery_hides_proposal_after_matching_authority() -> None:

@@ -197,6 +197,43 @@ def test_map_does_not_join_replay_to_later_return_observation() -> None:
     assert model["observed_segment_details"][1]["role"] == "return_to_home"
     assert model["observed_gaps"][0]["evidence_status"] == ("not_observed_between_endpoints")
     assert model["latest"]["lat"] == pytest.approx(35.0)
+    assert model["terminal_marker_label"] == "mission ended at home"
+
+
+def test_completed_job_status_uses_dropoff_replay_not_later_return_snapshot() -> None:
+    payload = _segmented_route_payload()
+    payload["artifacts"]["missionos_auto_mission_compilation"] = {"planned_route_m": 111.32}
+    replay = payload["artifacts"]["missionos_auto_mission_runtime_replay"]
+    replay.update(
+        {
+            "dropoff_verified": True,
+            "horizontal_progress_m": 111.32,
+            "latest_sample": {
+                "horizontal_progress_m": 111.32,
+                "elapsed_s": 42.0,
+                "seq_reached": 20,
+                "mission_current_seq": 21,
+            },
+        }
+    )
+    payload["artifacts"]["missionos_auto_mission_runtime_snapshot"].update(
+        {
+            "progress_m": 52.0,
+            "elapsed_seconds": 75.0,
+            "mission_reached_seq": 10,
+            "mission_current_seq": 11,
+            "waypoint_total": 23,
+            "post_abort_tracking": True,
+        }
+    )
+
+    rendered = "\n".join(missionos_cli._job_operator_summary(payload))
+
+    assert "Route: [############################] 100.0%" in rendered
+    assert "Distance: 111 m / 111 m" in rendered
+    assert "Waypoint: 20/23 reached  (current seq 21)" in rendered
+    assert "Elapsed: 42s" in rendered
+    assert "ETA:" not in rendered
 
 
 def _recovery_gap_route_payload() -> dict:
@@ -372,6 +409,107 @@ def test_map_prefers_complete_live_trace_and_marks_recovery_telemetry_gap() -> N
     assert 'class="obstacle-footprint"' in html
     assert 'id="terminalEvidence"' in html
     assert "source task artifacts—not this image—remain authoritative" in html
+
+
+def test_map_keeps_dispatch_start_and_marks_late_recovery_observation() -> None:
+    payload = _recovery_gap_route_payload()
+    command = payload["artifacts"]["missionos_auto_mission_probe_observed"]["monitor"][
+        "operator_recovery"
+    ]["command"]
+    command.update(
+        {
+            "first_local_x_m": 100.0,
+            "first_local_y_m": 0.0,
+            "first_altitude_above_home_m": 30.0,
+            "maneuver_observation_sample_count": 3,
+        }
+    )
+    command["maneuver_observation_samples"][0]["elapsed_seconds"] = 8.0
+
+    model = missionos_cli._mission_map_model(
+        task_payload=payload,
+        provider="osm",
+        live_task_url=None,
+    )
+
+    avoidance = model["avoidance"]
+    assert avoidance["start"]["x_m"] == 100.0
+    assert avoidance["start"]["source"] == "dispatch_current_position_observation"
+    assert avoidance["maneuver_observation_sample_count"] == 3
+    assert avoidance["observation_start_gap"]["reason"] == (
+        "recovery_observation_started_late"
+    )
+    assert avoidance["observation_start_gap"]["elapsed_gap_s"] == 8.0
+    assert any(
+        gap.get("source") == "recovery_observation_gap" for gap in model["display_gaps"]
+    )
+    svg = mission_route_evidence_svg(model)
+    assert "unobserved gap / 未観測" in svg
+    assert "not observed" in svg
+
+
+def test_map_labels_observed_return_overflight_clearance() -> None:
+    payload = _segmented_route_payload()
+    artifacts = payload["artifacts"]
+    artifacts["obstacle_manifest"]["obstacles"] = [
+        {
+            "name": "route_obstacle",
+            "x_m": 55.0,
+            "y_m": 0.0,
+            "z_m": 10.0,
+            "size_x_m": 18.0,
+            "size_y_m": 18.0,
+            "size_z_m": 20.0,
+            "collision_enabled": True,
+            "visual_only": False,
+            "gazebo_obstacle_model_spawned": True,
+        }
+    ]
+    artifacts["missionos_auto_mission_live_trajectory"]["samples"] = [
+        {
+            "sample_index": 0,
+            "segment_index": 0,
+            "local_x_m": 0.0,
+            "local_y_m": 0.0,
+            "altitude_above_home_m": 0.0,
+        },
+        {
+            "sample_index": 100,
+            "segment_index": 1,
+            "segment_break_reason": "sample_index_gap",
+            "local_x_m": 111.32,
+            "local_y_m": 0.0,
+            "altitude_above_home_m": 30.5,
+        },
+        {
+            "sample_index": 101,
+            "segment_index": 1,
+            "local_x_m": 55.0,
+            "local_y_m": 0.0,
+            "altitude_above_home_m": 30.5,
+        },
+        {
+            "sample_index": 102,
+            "segment_index": 1,
+            "local_x_m": 0.0,
+            "local_y_m": 0.0,
+            "altitude_above_home_m": 0.0,
+        },
+    ]
+
+    model = missionos_cli._mission_map_model(
+        task_payload=payload,
+        provider="osm",
+        live_task_url=None,
+    )
+
+    obstacle = model["obstacles"][0]
+    assert obstacle["collision_enabled"] is True
+    assert obstacle["return_overflight_status"] == "observed_above_obstacle"
+    assert obstacle["return_overflight_min_vertical_clearance_m"] == 10.5
+    html = missionos_cli._mission_map_html(model)
+    assert "over top" in html
+    assert "return overflight +10.5m" in mission_route_evidence_svg(model)
 
 
 def test_terminal_route_evidence_image_is_hash_bound_to_saved_observations(

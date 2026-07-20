@@ -19,6 +19,8 @@ from typing import Any, Mapping
 
 from src.agents.model_config import (
     agent_model_label,
+    configure_google_vertex_location,
+    deepseek_llm_backend_enabled,
     google_llm_backend_enabled,
     llm_provider_label,
     local_llm_backend_enabled,
@@ -239,11 +241,17 @@ def _configure_google_adk_environment(agent_name: str | None = None) -> None:
     if not os.environ.get("GOOGLE_GENAI_USE_VERTEXAI"):
         use_vertex = bool(getattr(settings, "google_genai_use_vertexai", False))
         os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "true" if use_vertex else "false"
+    configure_google_vertex_location(
+        _model_id(agent_name),
+        agent_name=agent_name,
+    )
 
 
-def _google_adk_credentials_available(agent_name: str | None = None) -> bool:
+def _adk_llm_credentials_available(agent_name: str | None = None) -> bool:
     if local_llm_backend_enabled(agent_name):
         return True
+    if deepseek_llm_backend_enabled(agent_name):
+        return bool(os.environ.get("DEEPSEEK_API_KEY", "").strip())
     if not google_llm_backend_enabled(agent_name):
         return False
     _configure_google_adk_environment(agent_name)
@@ -251,6 +259,19 @@ def _google_adk_credentials_available(agent_name: str | None = None) -> bool:
     if use_vertex in {"1", "true", "yes"}:
         return True
     return bool(os.environ.get("GOOGLE_API_KEY", "").strip())
+
+
+def _google_adk_credentials_available(agent_name: str | None = None) -> bool:
+    """Compatibility alias for the provider-neutral ADK credential check."""
+    return _adk_llm_credentials_available(agent_name)
+
+
+def _llm_credentials_blocking_reason(agent_name: str | None = None) -> str:
+    if deepseek_llm_backend_enabled(agent_name):
+        return "DEEPSEEK_API_KEY_not_configured"
+    if google_llm_backend_enabled(agent_name):
+        return "GOOGLE_API_KEY_not_configured"
+    return "llm_backend_credentials_not_configured"
 
 
 def _read_json_object(response_text: str) -> dict[str, Any] | None:
@@ -577,7 +598,10 @@ async def _invoke_runtime_recovery_agent_text_with_tools_async(
         )
         captured["tool_arguments"].append(arguments)
         captured["tool_results"].append(dict(guarded_result))
-        return dict(guarded_result)
+        return _finalize_runtime_recovery_tool_response(
+            planner_result=guarded_result,
+            tool_context=tool_context,
+        )
 
     agent = build_missionos_runtime_recovery_agent(
         model_id=model_id,
@@ -759,6 +783,7 @@ def _run_runtime_recovery_agent_once(
     function_tool_results: list[dict[str, Any]] = []
     tool_arguments: list[dict[str, Any]] = []
     function_tool_called = False
+    response_source = "llm_final_response"
     try:
         invocation = _invoke_runtime_recovery_agent_text_with_tools(
             model_id=model_id,
@@ -1157,6 +1182,29 @@ def _runtime_recovery_obstacle_points(
                 }
             )
     return records
+
+
+def _runtime_recovery_selected_obstacle_point(
+    telemetry_snapshot: Mapping[str, Any],
+    obstacle_points: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Bind the proposal to the active local conflict, not manifest order."""
+
+    obstacle = telemetry_snapshot.get("obstacle")
+    obstacle = obstacle if isinstance(obstacle, Mapping) else {}
+    conflict = obstacle.get("conflict_assessment")
+    conflict = conflict if isinstance(conflict, Mapping) else {}
+    selected = conflict.get("nearest_obstacle")
+    selected = selected if isinstance(selected, Mapping) else {}
+    selected_index = selected.get("obstacle_index")
+    if isinstance(selected_index, int) and 0 <= selected_index < len(obstacle_points):
+        return obstacle_points[selected_index]
+    selected_name = str(selected.get("obstacle_name") or "")
+    if selected_name:
+        for point in obstacle_points:
+            if str(point.get("name") or "") == selected_name:
+                return point
+    return obstacle_points[0]
 
 
 def _runtime_recovery_point_xy(record: Mapping[str, Any]) -> tuple[float, float] | None:
@@ -1622,7 +1670,10 @@ def _runtime_recovery_avoidance_candidate(
         )
         or 0.0
     )
-    primary = obstacle_points[0]
+    primary = _runtime_recovery_selected_obstacle_point(
+        telemetry_snapshot,
+        obstacle_points,
+    )
     obstacle_x_m = float(primary["x_m"])
     obstacle_y_m = float(primary["y_m"])
     distance_m = max(
@@ -1735,6 +1786,7 @@ def _runtime_recovery_avoidance_candidate(
             "target_x_m": round(target_x_m, 3),
             "target_y_m": round(target_y_m, 3),
             "target_altitude_m": round(altitude_m, 3),
+            "source_obstacle_name": str(primary.get("name") or ""),
         },
         "source_refs": [
             str(primary.get("source_ref") or "telemetry_snapshot.obstacle"),
@@ -2552,11 +2604,13 @@ def run_missionos_runtime_recovery_agent(
             "agent_invocations": [],
             "progress_counted": False,
         }
-    if not _google_adk_credentials_available("missionos_runtime_recovery_agent"):
+    if not _adk_llm_credentials_available("missionos_runtime_recovery_agent"):
         return {
             "schema_version": MISSIONOS_RUNTIME_RECOVERY_RESULT_SCHEMA_VERSION,
             "runtime_status": "not_configured",
-            "blocking_reasons": ["GOOGLE_API_KEY_not_configured"],
+            "blocking_reasons": [
+                _llm_credentials_blocking_reason("missionos_runtime_recovery_agent")
+            ],
             "assessment": {},
             "agent_invocations": [],
             "progress_counted": False,
@@ -2640,11 +2694,13 @@ def run_missionos_agent_runtime(
             "monitoring_observations": monitoring_payloads,
             "progress_counted": False,
         }
-    if not _google_adk_credentials_available("missionos_chief_agent"):
+    if not _adk_llm_credentials_available("missionos_chief_agent"):
         return {
             "schema_version": MISSIONOS_AGENT_RUNTIME_RESULT_SCHEMA_VERSION,
             "runtime_status": "not_configured",
-            "blocking_reasons": ["GOOGLE_API_KEY_not_configured"],
+            "blocking_reasons": [
+                _llm_credentials_blocking_reason("missionos_chief_agent")
+            ],
             "proposal": {},
             "agent_invocations": [],
             "monitoring_observations": monitoring_payloads,

@@ -586,6 +586,23 @@ def _gazebo_obstacle_manifest_from_route(route: Mapping[str, Any]) -> dict[str, 
             }
         ]
 
+    positioned_raw_obstacles: list[Mapping[str, Any]] = []
+    for item in raw_obstacles:
+        if not isinstance(item, Mapping):
+            continue
+        positioned = dict(item)
+        route_fraction = _optional_finite_float(positioned.get("route_fraction"))
+        if route_fraction is not None:
+            route_fraction = _clamp_float(
+                route_fraction,
+                default=0.5,
+                minimum=0.05,
+                maximum=0.95,
+            )
+            positioned.setdefault("x_m", dropoff_x_m * route_fraction)
+            positioned.setdefault("y_m", dropoff_y_m * route_fraction)
+        positioned_raw_obstacles.append(positioned)
+
     obstacles = [
         _normalize_gazebo_obstacle(
             item,
@@ -594,8 +611,7 @@ def _gazebo_obstacle_manifest_from_route(route: Mapping[str, Any]) -> dict[str, 
             fallback_y_m=dropoff_y_m,
             source="obstacle_manifest",
         )
-        for index, item in enumerate(raw_obstacles, start=1)
-        if isinstance(item, Mapping)
+        for index, item in enumerate(positioned_raw_obstacles, start=1)
     ]
     landing_zone_blocked = bool(
         raw_manifest.get("landing_zone_blocked") or route.get("landing_zone_blocked")
@@ -708,6 +724,7 @@ def _recovery_resume_mission_seq_after_obstacle(
     *,
     obstacle_manifest: Mapping[str, Any],
     dropoff_dwell_mission_seq: int,
+    source_obstacle_name: str | None = None,
     lateral_margin_m: float = OPERATOR_RECOVERY_LATERAL_OBSTACLE_MARGIN_M,
 ) -> int | None:
     """Choose the first original-route waypoint beyond expanded obstacles.
@@ -733,11 +750,24 @@ def _recovery_resume_mission_seq_after_obstacle(
     farthest_along_m: float | None = None
     obstacles = obstacle_manifest.get("obstacles")
     obstacles = obstacles if isinstance(obstacles, list) else []
-    for obstacle in obstacles:
-        if not isinstance(obstacle, Mapping):
-            continue
-        if obstacle.get("collision_enabled") is not True:
-            continue
+    collision_obstacles = [
+        obstacle
+        for obstacle in obstacles
+        if isinstance(obstacle, Mapping) and obstacle.get("collision_enabled") is True
+    ]
+    selected_name = str(source_obstacle_name or "").strip()
+    if selected_name:
+        collision_obstacles = [
+            obstacle
+            for obstacle in collision_obstacles
+            if str(obstacle.get("name") or "") == selected_name
+        ]
+    elif len(collision_obstacles) > 1:
+        # A multi-obstacle route must bind resume authority to the exact
+        # obstacle named by the approved recovery proposal. Never skip all
+        # remaining obstacles merely because they share one manifest.
+        return None
+    for obstacle in collision_obstacles:
         x_m = _optional_finite_float(obstacle.get("x_m"))
         y_m = _optional_finite_float(obstacle.get("y_m"))
         size_x_m = _optional_finite_float(obstacle.get("size_x_m"))
@@ -762,6 +792,30 @@ def _recovery_resume_mission_seq_after_obstacle(
     )
     resume_seq = int(math.ceil(resume_fraction * final_route_waypoint_seq))
     return max(1, min(resume_seq, final_route_waypoint_seq))
+
+
+def _recovery_resume_mission_seq_by_obstacle(
+    *,
+    obstacle_manifest: Mapping[str, Any],
+    dropoff_dwell_mission_seq: int,
+) -> dict[str, int]:
+    sequences: dict[str, int] = {}
+    obstacles = obstacle_manifest.get("obstacles")
+    obstacles = obstacles if isinstance(obstacles, list) else []
+    for obstacle in obstacles:
+        if not isinstance(obstacle, Mapping):
+            continue
+        name = str(obstacle.get("name") or "").strip()
+        if not name or obstacle.get("collision_enabled") is not True:
+            continue
+        sequence = _recovery_resume_mission_seq_after_obstacle(
+            obstacle_manifest=obstacle_manifest,
+            dropoff_dwell_mission_seq=dropoff_dwell_mission_seq,
+            source_obstacle_name=name,
+        )
+        if sequence is not None:
+            sequences[name] = sequence
+    return sequences
 
 
 def _docker_logs() -> str:
@@ -2443,6 +2497,7 @@ def _inner_runtime_probe_script(
     gz_battery_motor_coupling_enabled: bool = False,
     obstacle_manifest: Mapping[str, Any] | None = None,
     resume_mission_seq_after_obstacle: int | None = None,
+    resume_mission_seq_by_obstacle: Mapping[str, int] | None = None,
 ) -> str:
     arm_params = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     disarm_params = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -2495,6 +2550,11 @@ def _inner_runtime_probe_script(
     ]
     obstacle_manifest_json = json.dumps(
         dict(obstacle_manifest or {}),
+        ensure_ascii=True,
+        sort_keys=True,
+    )
+    resume_mission_seq_by_obstacle_json = json.dumps(
+        dict(resume_mission_seq_by_obstacle or {}),
         ensure_ascii=True,
         sort_keys=True,
     )
@@ -2572,6 +2632,7 @@ def _inner_runtime_probe_script(
         PAYLOAD_RELEASE_MIN_Z_DROP_M={float(PAYLOAD_RELEASE_MIN_Z_DROP_M)}
         OBSTACLE_MANIFEST=json.loads({obstacle_manifest_json!r})
         RESUME_MISSION_SEQ_AFTER_OBSTACLE={resume_mission_seq_after_obstacle!r}
+        RESUME_MISSION_SEQ_BY_OBSTACLE=json.loads({resume_mission_seq_by_obstacle_json!r})
         GAZEBO_OBSTACLE_APPLICATION_SCHEMA_VERSION={GAZEBO_OBSTACLE_APPLICATION_SCHEMA_VERSION!r}
 
         def crc_accumulate(byte, crc):
@@ -3751,6 +3812,14 @@ def _inner_runtime_probe_script(
             manifest=OBSTACLE_MANIFEST if isinstance(OBSTACLE_MANIFEST, dict) else {{}}
             obstacles=manifest.get('obstacles')
             obstacles=obstacles if isinstance(obstacles, list) else []
+            parameters=request.get('recovery_parameters')
+            parameters=parameters if isinstance(parameters, dict) else {{}}
+            source_obstacle_name=str(parameters.get('source_obstacle_name') or '')
+            current_resume_seq=(
+                RESUME_MISSION_SEQ_BY_OBSTACLE.get(source_obstacle_name)
+                if source_obstacle_name
+                else RESUME_MISSION_SEQ_AFTER_OBSTACLE
+            )
             recovery_action=str(request.get('recovery_action') or '')
             lateral_bypass_required=recovery_action == 'avoid_obstacle'
             alternate_dropoff=recovery_flag(request, 'alternate_dropoff', False)
@@ -3767,6 +3836,7 @@ def _inner_runtime_probe_script(
             target_conflicts=[]
             recovery_leg_conflicts=[]
             remaining_route_conflicts=[]
+            deferred_route_obstacles=[]
             dropoff_x=manifest.get('dropoff_local_x_m')
             dropoff_y=manifest.get('dropoff_local_y_m')
             dropoff_point=None
@@ -3796,7 +3866,7 @@ def _inner_runtime_probe_script(
                     )
                 ):
                     recovery_leg_conflicts.append(obstacle_name)
-                if (
+                remaining_route_intersects=(
                     resume_original_route
                     and dropoff_point is not None
                     and (
@@ -3813,8 +3883,20 @@ def _inner_runtime_probe_script(
                             obstacle,
                         )
                     )
-                ):
-                    remaining_route_conflicts.append(obstacle_name)
+                )
+                if remaining_route_intersects:
+                    later_resume_seq=RESUME_MISSION_SEQ_BY_OBSTACLE.get(obstacle_name)
+                    separately_guarded_later_obstacle=bool(
+                        source_obstacle_name
+                        and obstacle_name != source_obstacle_name
+                        and current_resume_seq is not None
+                        and later_resume_seq is not None
+                        and int(later_resume_seq) > int(current_resume_seq)
+                    )
+                    if separately_guarded_later_obstacle:
+                        deferred_route_obstacles.append(obstacle_name)
+                    else:
+                        remaining_route_conflicts.append(obstacle_name)
             original_dropoff_available=(
                 manifest.get('original_dropoff_available') is not False
                 and manifest.get('landing_zone_blocked') is not True
@@ -3856,13 +3938,18 @@ def _inner_runtime_probe_script(
                 and remaining_route_clearance_verified
                 and not blocked_reasons
             )
+            remaining_route_scope=(
+                'recovery_target_to_next_known_obstacle_guard_boundary'
+                if deferred_route_obstacles
+                else 'recovery_target_to_original_dropoff_segment'
+            )
             return {{
                 'schema_version': 'missionos_px4_recovery_resume_safety_verification.v1',
                 'verification_status': 'verified' if not blocked_reasons else 'failed',
                 'resume_auto_authorized': resume_auto_authorized,
                 'alternate_dropoff': alternate_dropoff,
                 'resume_original_route_requested': resume_original_route,
-                'remaining_route_scope': 'recovery_target_to_original_dropoff_segment',
+                'remaining_route_scope': remaining_route_scope,
                 'target_clearance_verified': target_clearance_verified,
                 'lateral_bypass_required': lateral_bypass_required,
                 'lateral_clearance_margin_m': (
@@ -3876,6 +3963,8 @@ def _inner_runtime_probe_script(
                 'target_collision_obstacles': target_conflicts,
                 'recovery_leg_collision_obstacles': recovery_leg_conflicts,
                 'remaining_route_collision_obstacles': remaining_route_conflicts,
+                'deferred_route_obstacles': deferred_route_obstacles,
+                'next_obstacle_recovery_guard_required': bool(deferred_route_obstacles),
                 'alternate_dropoff_candidate': manifest.get('alternate_dropoff_candidate'),
                 'blocked_reasons': blocked_reasons,
                 'dispatch_authority_created': False,
@@ -3926,6 +4015,8 @@ def _inner_runtime_probe_script(
 
         def run_operator_maneuver(sock, remote, seq, request, local_x, local_y, local_z, altitude):
             action=str(request.get('recovery_action') or '')
+            params=request.get('recovery_parameters')
+            params=params if isinstance(params, dict) else {{}}
             if action == 'adjust_speed':
                 target_speed=recovery_parameter(request, 'target_speed_mps', 'speed_mps')
                 if target_speed is None:
@@ -4159,7 +4250,12 @@ def _inner_runtime_probe_script(
             resume_nav_wait={{'observed': False, 'samples': [], 'next_seq': seq, 'status': ''}}
             resume_auto_status='not_attempted_target_not_reached'
             resume_mission_seq_required=action == 'avoid_obstacle'
-            resume_mission_seq=RESUME_MISSION_SEQ_AFTER_OBSTACLE
+            source_obstacle_name=str(params.get('source_obstacle_name') or '')
+            resume_mission_seq=(
+                RESUME_MISSION_SEQ_BY_OBSTACLE.get(source_obstacle_name)
+                if source_obstacle_name
+                else RESUME_MISSION_SEQ_AFTER_OBSTACLE
+            )
             resume_mission_current={{
                 'message_id': MAVLINK_MSG_ID_MISSION_SET_CURRENT,
                 'protocol': 'mavlink_mission_set_current',
@@ -4335,6 +4431,17 @@ def _inner_runtime_probe_script(
                     if first_altitude is not None
                     else None
                 ),
+                'recovery_start_position': {{
+                    'x_m': round(first_x, 3),
+                    'y_m': round(first_y, 3),
+                    'altitude_above_home_m': (
+                        round(first_altitude, 3)
+                        if first_altitude is not None
+                        else None
+                    ),
+                    'source': 'dispatch_current_position_observation',
+                    'observed': True,
+                }},
                 'last_local_x_m': round(last_x, 3),
                 'last_local_y_m': round(last_y, 3),
                 'last_altitude_above_home_m': (
@@ -4362,6 +4469,7 @@ def _inner_runtime_probe_script(
                 'resume_auto_status': resume_auto_status,
                 'resume_mission_seq_required': resume_mission_seq_required,
                 'resume_mission_seq_after_obstacle': resume_mission_seq,
+                'source_obstacle_name': source_obstacle_name or None,
                 'resume_mission_current_attempted': resume_mission_current.get('attempted'),
                 'resume_mission_current_protocol': resume_mission_current.get('protocol'),
                 'resume_mission_current_frame_sent': resume_mission_current.get('frame_sent'),
@@ -4372,7 +4480,13 @@ def _inner_runtime_probe_script(
                 'resume_safety_verification': resume_safety_verification,
                 'hold_after_failure_command': hold_after_failure,
                 'hold_after_failure_observed': hold_after_failure_observed,
-                'maneuver_observation_samples': maneuver_samples[-5:],
+                # The complete bounded maneuver is durable display evidence.
+                # Retaining only the tail made the Recovery line appear to
+                # start far away from the route and could not prove the path
+                # beside the obstacle.  This remains observation-only data;
+                # it creates no approval, dispatch, or completion authority.
+                'maneuver_observation_sample_count': len(maneuver_samples),
+                'maneuver_observation_samples': maneuver_samples,
             }}
 
         def execute_operator_recovery_request(sock, remote, seq, request, local_x=None, local_y=None, local_z=None, altitude=None):
@@ -4616,6 +4730,7 @@ def _inner_runtime_probe_script(
                 'request': None,
                 'command': None,
             }}
+            operator_recovery_attempts=[]
             safety_hold_active=False
             started=time.monotonic()
             monitor_excluded_seconds=0.0
@@ -4758,6 +4873,24 @@ def _inner_runtime_probe_script(
                 else:
                     dwell_started_at=None
                 dwell_seconds=(elapsed-dwell_started_at) if dwell_started_at is not None else 0.0
+                effective_wind_speed_mps=(
+                    float(WIND_GUST_MPS)
+                    if (
+                        wind_mean_started
+                        and WIND_GUST_MPS is not None
+                        and (gust_active or WIND_MEAN_MPS is None)
+                    )
+                    else (
+                        float(WIND_MEAN_MPS)
+                        if wind_mean_started and WIND_MEAN_MPS is not None
+                        else None
+                    )
+                )
+                effective_wind_direction_deg=(
+                    float(WIND_DIRECTION_DEG)
+                    if wind_mean_started and WIND_DIRECTION_DEG is not None
+                    else None
+                )
                 sample={{
                     'elapsed_seconds': round(elapsed, 3),
                     'nav_authority_context': (
@@ -4797,6 +4930,8 @@ def _inner_runtime_probe_script(
                     'gust_ended': bool(gust_ended),
                     'wind_mean_started': bool(wind_mean_started),
                     'wind_mean_pending_reason': wind_mean_pending_reason,
+                    'wind_speed_mps': effective_wind_speed_mps,
+                    'wind_direction_deg': effective_wind_direction_deg,
                     'wind_takeoff_clearance_min_altitude_m': wind_takeoff_clearance_min_altitude_m if wind_effect_requested else None,
                     'wind_mean_application_elapsed_seconds': wind_mean_application_elapsed_seconds,
                     'wind_mean_application_altitude_m': wind_mean_application_altitude_m,
@@ -4868,6 +5003,8 @@ def _inner_runtime_probe_script(
                     'gust_ended': bool(gust_ended),
                     'wind_mean_started': bool(wind_mean_started),
                     'wind_mean_pending_reason': wind_mean_pending_reason,
+                    'wind_speed_mps': effective_wind_speed_mps,
+                    'wind_direction_deg': effective_wind_direction_deg,
                     'wind_takeoff_clearance_min_altitude_m': wind_takeoff_clearance_min_altitude_m if wind_effect_requested else None,
                     'wind_mean_application_elapsed_seconds': wind_mean_application_elapsed_seconds,
                     'wind_mean_application_altitude_m': wind_mean_application_altitude_m,
@@ -4963,6 +5100,10 @@ def _inner_runtime_probe_script(
                     command={{**command, 'recovery_path': recovery_path, 'terminal_recovery': terminal_recovery}}
                     operator_recovery['command']=command
                     operator_recovery['terminal_recovery']=terminal_recovery
+                    operator_recovery_attempts.append({{
+                        'request': recovery_request,
+                        'command': command,
+                    }})
                     operator_recovery_command=command
                     mark_operator_recovery_request_consumed(recovery_request, command)
                     if str(recovery_request.get('recovery_action') or '') == 'safety_hold':
@@ -5180,7 +5321,7 @@ def _inner_runtime_probe_script(
                 if safety_hold_started_at is not None
                 else 0.0
             )
-            return {{'samples': samples, 'guard_reason': guard_reason, 'monitor_stop_reason': monitor_stop_reason, 'next_seq': seq, 'monitor_elapsed_seconds': round(monitor_finished_at-started, 3), 'monitor_effective_elapsed_seconds': round(monitor_effective_elapsed(monitor_finished_at), 3), 'monitor_excluded_recovery_seconds': round(monitor_excluded_seconds+monitor_active_hold_seconds, 3), 'payload_release': payload_release, 'terminal_snapshot': terminal_snapshot_payload, 'wind_application_events': wind_application_events, 'operator_recovery': operator_recovery}}
+            return {{'samples': samples, 'guard_reason': guard_reason, 'monitor_stop_reason': monitor_stop_reason, 'next_seq': seq, 'monitor_elapsed_seconds': round(monitor_finished_at-started, 3), 'monitor_effective_elapsed_seconds': round(monitor_effective_elapsed(monitor_finished_at), 3), 'monitor_excluded_recovery_seconds': round(monitor_excluded_seconds+monitor_active_hold_seconds, 3), 'payload_release': payload_release, 'terminal_snapshot': terminal_snapshot_payload, 'wind_application_events': wind_application_events, 'operator_recovery': operator_recovery, 'operator_recovery_attempts': operator_recovery_attempts}}
 
         def wait_land_or_disarm(sock, remote, seq, wait_seconds):
             samples=[]
@@ -5720,6 +5861,8 @@ def _build_running_snapshot(
         "wind_gust_ended": marker.get("gust_ended"),
         "wind_mean_started": marker.get("wind_mean_started"),
         "wind_mean_pending_reason": marker.get("wind_mean_pending_reason"),
+        "wind_speed_mps": marker.get("wind_speed_mps"),
+        "wind_direction_deg": marker.get("wind_direction_deg"),
         "wind_takeoff_clearance_min_altitude_m": marker.get(
             "wind_takeoff_clearance_min_altitude_m"
         ),
@@ -5857,6 +6000,29 @@ def _running_snapshot_failure_digest(run_dir: Path) -> str:
     return "last_snapshot={" + ", ".join(parts) + "}"
 
 
+def _running_snapshot_recovery_extension_seconds(run_dir: Path) -> float:
+    """Return only time explicitly excluded by the recovery lifecycle.
+
+    The in-container monitor pauses its effective route clock while the aircraft
+    is held for a Recovery Agent proposal and human approval. The host-side
+    streaming wrapper must use the same clock contract; otherwise a valid
+    multi-checkpoint mission is killed while the route monitor remains within
+    its bounded execution window.
+
+    Missing, malformed, or negative values add no time. A stale snapshot also
+    cannot extend the deadline because this value advances only when fresh
+    runtime markers are received and atomically written.
+    """
+
+    path = run_dir / "running_snapshot.json"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        value = float(payload.get("monitor_excluded_recovery_seconds", 0.0))
+    except (json.JSONDecodeError, OSError, TypeError, ValueError):
+        return 0.0
+    return max(0.0, value)
+
+
 def _route_inner_probe_stdout_line(
     line: str,
     *,
@@ -5941,8 +6107,14 @@ def _stream_actual_runtime_probe(
         )
         stderr_thread.start()
 
-    deadline = time.monotonic() + float(timeout_seconds)
+    started_at = time.monotonic()
+    recovery_extension_seconds = 0.0
     while streams:
+        recovery_extension_seconds = max(
+            recovery_extension_seconds,
+            _running_snapshot_recovery_extension_seconds(run_dir),
+        )
+        deadline = started_at + float(timeout_seconds) + recovery_extension_seconds
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             process.kill()
@@ -6017,6 +6189,7 @@ def _actual_runtime_probe(
     gz_battery_motor_coupling_enabled: bool,
     obstacle_manifest: Mapping[str, Any] | None,
     resume_mission_seq_after_obstacle: int | None,
+    resume_mission_seq_by_obstacle: Mapping[str, int] | None,
     run_dir: Path,
     waypoint_total: int,
 ) -> dict[str, Any]:
@@ -6048,6 +6221,7 @@ def _actual_runtime_probe(
             gz_battery_motor_coupling_enabled=gz_battery_motor_coupling_enabled,
             obstacle_manifest=obstacle_manifest,
             resume_mission_seq_after_obstacle=(resume_mission_seq_after_obstacle),
+            resume_mission_seq_by_obstacle=resume_mission_seq_by_obstacle,
         ),
         timeout_seconds=int(
             max(
@@ -6246,56 +6420,65 @@ def _verified_recovery_superseded_waypoint_sequences(
 
     monitor = probe_observed.get("monitor")
     monitor = monitor if isinstance(monitor, Mapping) else {}
-    operator_recovery = monitor.get("operator_recovery")
-    operator_recovery = operator_recovery if isinstance(operator_recovery, Mapping) else {}
-    request = operator_recovery.get("request")
-    request = request if isinstance(request, Mapping) else {}
-    command = operator_recovery.get("command")
-    command = command if isinstance(command, Mapping) else {}
-    safety = command.get("resume_safety_verification")
-    safety = safety if isinstance(safety, Mapping) else {}
-    resume_seq = _optional_int(command.get("resume_mission_current_seq"))
-    configured_resume_seq = _optional_int(command.get("resume_mission_seq_after_obstacle"))
-    verified = all(
-        (
-            request.get("operator_approved") is True,
-            request.get("explicit_recovery_dispatch_approval") is True,
-            str(request.get("recovery_action") or "") == "avoid_obstacle",
-            command.get("target_reached") is True,
-            command.get("resume_mission_current_frame_sent") is True,
-            command.get("resume_mission_current_seq_observed") is True,
-            resume_seq is not None,
-            resume_seq == configured_resume_seq,
-            command.get("resume_auto_status") == "resumed_auto_mission",
-            safety.get("verification_status") == "verified",
-            safety.get("resume_auto_authorized") is True,
-            safety.get("resume_mission_seq_advanced") is True,
-            not tuple(safety.get("blocked_reasons") or ()),
-        )
+    attempts = monitor.get("operator_recovery_attempts")
+    attempts = (
+        [item for item in attempts if isinstance(item, Mapping)]
+        if isinstance(attempts, list)
+        else []
     )
-    if not verified or resume_seq is None:
-        return ()
+    if not attempts:
+        operator_recovery = monitor.get("operator_recovery")
+        if isinstance(operator_recovery, Mapping):
+            attempts = [operator_recovery]
     start = int(runtime_summary.get("route_waypoint_seq_start") or 0)
     end = int(runtime_summary.get("route_waypoint_seq_end") or -1)
-    if start <= 0 or resume_seq <= start or resume_seq > end:
+    if start <= 0:
         return ()
     reached = {
         int(seq)
         for seq in runtime_summary.get("mission_item_reached_events") or ()
         if _optional_int(seq) is not None
     }
-    reached_before_resume = tuple(seq for seq in range(start, resume_seq) if seq in reached)
-    if not reached_before_resume:
-        return ()
-    last_observed_before_resume = max(reached_before_resume)
-    superseded = tuple(range(last_observed_before_resume + 1, resume_seq))
-    if not superseded:
-        return ()
-    # Do not use Recovery to hide an unrelated telemetry hole before the last
-    # observed pre-Recovery waypoint.
-    if any(seq not in reached for seq in range(start, last_observed_before_resume + 1)):
-        return ()
-    return superseded
+    superseded: set[int] = set()
+    for attempt in attempts:
+        request = attempt.get("request")
+        request = request if isinstance(request, Mapping) else {}
+        command = attempt.get("command")
+        command = command if isinstance(command, Mapping) else {}
+        safety = command.get("resume_safety_verification")
+        safety = safety if isinstance(safety, Mapping) else {}
+        resume_seq = _optional_int(command.get("resume_mission_current_seq"))
+        configured_resume_seq = _optional_int(command.get("resume_mission_seq_after_obstacle"))
+        verified = all(
+            (
+                request.get("operator_approved") is True,
+                request.get("explicit_recovery_dispatch_approval") is True,
+                str(request.get("recovery_action") or "") == "avoid_obstacle",
+                command.get("target_reached") is True,
+                command.get("resume_mission_current_frame_sent") is True,
+                command.get("resume_mission_current_seq_observed") is True,
+                resume_seq is not None,
+                resume_seq == configured_resume_seq,
+                command.get("resume_auto_status") == "resumed_auto_mission",
+                safety.get("verification_status") == "verified",
+                safety.get("resume_auto_authorized") is True,
+                safety.get("resume_mission_seq_advanced") is True,
+                not tuple(safety.get("blocked_reasons") or ()),
+            )
+        )
+        if not verified or resume_seq is None or resume_seq <= start or resume_seq > end:
+            continue
+        reached_before_resume = tuple(seq for seq in range(start, resume_seq) if seq in reached)
+        if not reached_before_resume:
+            continue
+        last_observed_before_resume = max(reached_before_resume)
+        if any(
+            seq not in reached and seq not in superseded
+            for seq in range(start, last_observed_before_resume + 1)
+        ):
+            continue
+        superseded.update(range(last_observed_before_resume + 1, resume_seq))
+    return tuple(sorted(superseded))
 
 
 def _final_verification_chain(
@@ -6680,9 +6863,14 @@ def main() -> int:
             obstacle_manifest=obstacle_manifest,
             dropoff_dwell_mission_seq=int(compilation.dropoff_dwell_mission_seq or 0),
         )
+        resume_mission_seq_by_obstacle = _recovery_resume_mission_seq_by_obstacle(
+            obstacle_manifest=obstacle_manifest,
+            dropoff_dwell_mission_seq=int(compilation.dropoff_dwell_mission_seq or 0),
+        )
         obstacle_manifest = {
             **obstacle_manifest,
             "resume_mission_seq_after_obstacle": (resume_mission_seq_after_obstacle),
+            "resume_mission_seq_by_obstacle": resume_mission_seq_by_obstacle,
         }
         rtl_post_abort_wait_seconds = _rtl_recovery_wait_seconds(
             base_wait_seconds=post_abort_wait_seconds,
@@ -6719,6 +6907,7 @@ def main() -> int:
             gz_battery_motor_coupling_enabled=_gz_battery_motor_coupling_enabled(),
             obstacle_manifest=obstacle_manifest,
             resume_mission_seq_after_obstacle=(resume_mission_seq_after_obstacle),
+            resume_mission_seq_by_obstacle=resume_mission_seq_by_obstacle,
             run_dir=run_dir,
             waypoint_total=len(compilation.mission_items),
         )

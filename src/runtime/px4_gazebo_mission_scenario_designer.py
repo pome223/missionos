@@ -1679,6 +1679,49 @@ def _bbox_for_coordinate_pair(
     )
 
 
+def _coordinate_obstacle_records(value: Any) -> list[dict[str, Any]]:
+    if value in (None, ""):
+        return []
+    if not isinstance(value, Sequence) or isinstance(value, str | bytes):
+        raise ValueError("obstacles must be a list of bounded obstacle objects")
+    records: list[dict[str, Any]] = []
+    for index, raw in enumerate(value):
+        if not isinstance(raw, Mapping):
+            raise ValueError(f"obstacles[{index}] must be an object")
+        record: dict[str, Any] = {
+            "name": str(raw.get("name") or f"missionos_route_obstacle_{index + 1:02d}"),
+            "kind": str(raw.get("kind") or "building_box"),
+            "source": str(raw.get("source") or "mission_designer_coordinate_route"),
+        }
+        numeric_fields = {
+            "route_fraction": (0.05, 0.95),
+            "x_m": (-10_000.0, 10_000.0),
+            "y_m": (-10_000.0, 10_000.0),
+            "z_m": (0.0, 1_000.0),
+            "size_x_m": (0.5, 200.0),
+            "size_y_m": (0.5, 200.0),
+            "size_z_m": (0.5, 500.0),
+        }
+        for field_name, (low, high) in numeric_fields.items():
+            if raw.get(field_name) in (None, ""):
+                continue
+            record[field_name] = round(
+                _coordinate_float(
+                    raw.get(field_name),
+                    field_name=f"obstacles[{index}].{field_name}",
+                    low=low,
+                    high=high,
+                ),
+                3,
+            )
+        if record.get("route_fraction") is None and (
+            record.get("x_m") is None or record.get("y_m") is None
+        ):
+            raise ValueError(f"obstacles[{index}] requires route_fraction or explicit x_m/y_m")
+        records.append(record)
+    return records
+
+
 def _coordinate_route_from_payload(value: Mapping[str, Any] | None) -> dict[str, Any] | None:
     if not value:
         return None
@@ -1950,6 +1993,11 @@ def _coordinate_route_from_payload(value: Mapping[str, Any] | None) -> dict[str,
         if value.get("obstacle_size_z_m") not in (None, "")
         else None
     )
+    obstacles = _coordinate_obstacle_records(value.get("obstacles"))
+    obstacle_manifest_raw = value.get("obstacle_manifest")
+    obstacle_manifest = (
+        dict(obstacle_manifest_raw) if isinstance(obstacle_manifest_raw, Mapping) else None
+    )
     visibility_mode = str(value.get("visibility_mode") or "").strip().lower()
     if visibility_mode not in ("", "fog", "smoke"):
         raise ValueError("visibility_mode must be fog or smoke")
@@ -2074,29 +2122,20 @@ def _coordinate_route_from_payload(value: Mapping[str, Any] | None) -> dict[str,
             value.get("gazebo_obstacle_model_spawn_requested")
         ),
         "obstacle_route_fraction": (
-            round(obstacle_route_fraction, 3)
-            if obstacle_route_fraction is not None
-            else None
+            round(obstacle_route_fraction, 3) if obstacle_route_fraction is not None else None
         ),
         "obstacle_size_x_m": (
-            round(obstacle_size_x_m, 3)
-            if obstacle_size_x_m is not None
-            else None
+            round(obstacle_size_x_m, 3) if obstacle_size_x_m is not None else None
         ),
         "obstacle_size_y_m": (
-            round(obstacle_size_y_m, 3)
-            if obstacle_size_y_m is not None
-            else None
+            round(obstacle_size_y_m, 3) if obstacle_size_y_m is not None else None
         ),
         "obstacle_size_z_m": (
-            round(obstacle_size_z_m, 3)
-            if obstacle_size_z_m is not None
-            else None
+            round(obstacle_size_z_m, 3) if obstacle_size_z_m is not None else None
         ),
-        "obstacle_scenario_source": str(
-            value.get("obstacle_scenario_source") or ""
-        )
-        or None,
+        "obstacles": obstacles,
+        "obstacle_manifest": obstacle_manifest,
+        "obstacle_scenario_source": str(value.get("obstacle_scenario_source") or "") or None,
         "visibility_mode": visibility_mode or None,
         "no_fly_zone_marker": no_fly_zone_marker,
         "traffic_conflict_marker": traffic_conflict_marker,

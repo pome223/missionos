@@ -192,11 +192,13 @@ MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_ENV = (
 )
 MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_DEFAULT_SECONDS = {
     "gemini": 45,
+    "deepseek": 60,
     "local": 180,
     "disabled": 12,
 }
 MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_MAX_SECONDS = {
     "gemini": 90,
+    "deepseek": 120,
     "local": 300,
     "disabled": 12,
 }
@@ -262,7 +264,9 @@ def _missionos_client_surface(payload: Mapping[str, Any]) -> str:
 
 def _missionos_conversation_agent_timeout_seconds() -> int:
     provider = llm_provider_label("missionos_chief_agent")
-    if provider.startswith("google_adk_litellm_"):
+    if provider == "google_adk_litellm_deepseek":
+        backend_class = "deepseek"
+    elif provider.startswith("google_adk_litellm_"):
         backend_class = "local"
     elif provider == "disabled":
         backend_class = "disabled"
@@ -1409,7 +1413,7 @@ def _missionos_agent_invocation_present(
     return any(
         isinstance(invocation, Mapping)
         and invocation.get("agent_name") == agent_name
-        and invocation.get("provider") == "google_adk_gemini"
+        and str(invocation.get("provider") or "").startswith("google_adk_")
         for invocation in invocations
     )
 
@@ -2956,6 +2960,14 @@ def _bounded_operator_recovery_parameters(
             out["target_altitude_m"] = altitude
         if recovery_action == "avoid_obstacle":
             out["obstacle_avoidance_required"] = True
+            source_obstacle_name = str(parameters.get("source_obstacle_name") or "").strip()
+            if source_obstacle_name:
+                if len(source_obstacle_name) > 200:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="source_obstacle_name must be at most 200 characters",
+                    )
+                out["source_obstacle_name"] = source_obstacle_name
         alternate_dropoff = _bounded_recovery_bool(
             parameters,
             "alternate_dropoff",
