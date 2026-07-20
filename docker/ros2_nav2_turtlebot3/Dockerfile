@@ -35,7 +35,7 @@ RUN apt-get update \
         'croniter>=1.3.0' \
         'ddgs>=0.1.0' \
         'fastapi>=0.110.0' \
-        'google-adk>=0.1.0' \
+        'google-adk[extensions]>=0.1.0' \
         'httpx>=0.27.0' \
         'mcp>=1.0.0' \
         'numpy>=1.24.0' \

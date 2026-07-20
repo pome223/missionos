@@ -10,6 +10,7 @@ import shlex
 import sys
 
 from src.runtime import turtlebot3_home_mission as turtlebot3_home_mission_runtime
+from src.runtime import turtlebot3_nav2_execution as turtlebot3_nav2_execution_runtime
 from src.intelligence.turtlebot3_recovery_planner import (
     TURTLEBOT3_RECOVERY_PLANNER_ADK_ENABLED_ENV,
     TURTLEBOT3_RECOVERY_PLANNER_ALLOW_OVERRIDE_ENV,
@@ -2723,6 +2724,10 @@ def test_turtlebot3_recovery_checkpoint_resumes_without_replaying_completed_segm
     assert checkpoint["next_segment_index"] == 2
     assert checkpoint["remaining_segment_count"] == 9
     assert checkpoint["dispatch_authority_created"] is False
+    contract_bundle = checkpoint["recovery_contract_bundle"]
+    assert contract_bundle["recovery_intent"]["strategy"] == "local_avoidance"
+    assert contract_bundle["intent_compilation"]["meaning_preserved"] is True
+    assert contract_bundle["dispatch_authority_created"] is False
     assert awaiting["summary"]["turtlebot3_recovery_checkpoint"] == checkpoint
     assert (
         awaiting["turtlebot3_home_mission_execution"][
@@ -2782,6 +2787,13 @@ def test_turtlebot3_recovery_checkpoint_resumes_without_replaying_completed_segm
     )
     assert consumed["consumed_at"] > consumed["claimed_at"]
     assert _recovery_checkpoint_hash(consumed) == consumed["checkpoint_hash"]
+    outcome_verification = resumed["turtlebot3_home_mission_execution"][
+        "recovery_closed_loop_cycles"
+    ][0]["outcome_verification"]
+    assert outcome_verification["verification_status"] == "verified"
+    assert outcome_verification["authority_bound"] is True
+    assert outcome_verification["recovery_success_verified"] is True
+    assert outcome_verification["delivery_completion_claimed"] is False
     assert calls[0]["label"] == first_segment_label
     assert calls[1]["label"] == "runtime_recovery_avoid_obstacle_waypoint"
     assert sum(call["label"] == first_segment_label for call in calls) == 1
@@ -5080,7 +5092,7 @@ def test_harness_stop_ack_without_stop_observation_is_not_confirmed(
             }
 
     monkeypatch.setattr(
-        turtlebot3_home_mission_runtime,
+        turtlebot3_nav2_execution_runtime,
         "Ros2Nav2BridgeCommandClient",
         _AckOnlyClient,
     )

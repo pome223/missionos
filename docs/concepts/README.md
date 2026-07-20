@@ -41,6 +41,8 @@ was sent, what was observed, and what remains unproven.
 - Read `docs/concepts/recovery-intent-compilation.md` for how Recovery judgment,
   compilation, reachability, approval, execution, and outcome verification stay
   separate.
+- Read `docs/concepts/turtlebot3-recovery-boundaries.md` for the same separation
+  in the TurtleBot3 Recovery loop.
 - Read `docs/concepts/real-hardware-bridge.md` for the first contract-first
   hardware bridge slices and their limits.
 - Read `docs/concepts/recovery-delegation.md` for the opt-in two-phase

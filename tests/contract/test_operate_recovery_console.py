@@ -488,7 +488,8 @@ def test_turtlebot3_operate_renders_ask_human_as_revision_only() -> None:
     )
     rendered = str(panel.renderable)
 
-    assert "Gemini requested operator guidance" in rendered
+    assert "Recovery Agent requested operator guidance" in rendered
+    assert "Gemini requested operator guidance" not in rendered
     assert "proposal-only checkpoint cannot dispatch" in rendered
     assert "execute this exact recovery" not in rendered
     assert "approve is unavailable" in rendered

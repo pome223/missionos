@@ -364,6 +364,20 @@ export MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_ADK_ENABLED=1
 export MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_TIMEOUT_SECONDS=180
 ```
 
+The same Docker boundary supports hosted DeepSeek through ADK LiteLLM. Keep the
+API key in an external `.env`; the wrapper passes it to the ephemeral container
+but never writes it into a task artifact or command log:
+
+```bash
+export MISSIONOS_LLM_BACKEND=deepseek
+export DEEPSEEK_API_KEY=...  # load from an untracked env file
+export MISSIONOS_DEEPSEEK_MODEL=deepseek-v4-flash
+export MISSIONOS_DEEPSEEK_API_BASE=https://api.deepseek.com
+export MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_LLM_BACKEND=deepseek
+export MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_MODEL_ID=deepseek-v4-flash
+export MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_ADK_ENABLED=1
+```
+
 Use this separate override when the run must stay on local Gemma/Ollama:
 
 ```bash

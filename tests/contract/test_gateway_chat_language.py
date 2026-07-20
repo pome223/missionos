@@ -7,7 +7,7 @@ import sys
 from typing import Any, Mapping
 
 import src.gateway.server as gateway_server
-from scripts import smoke_missionos_chat_turtlebot3_home_mission as tb3_chat_smoke
+from src.runtime import turtlebot3_chat_e2e_runner as tb3_chat_smoke
 from src.runtime.task_store import TaskStore
 from src.runtime.ros2_nav2_dispatch_bridge import (
     ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV,
