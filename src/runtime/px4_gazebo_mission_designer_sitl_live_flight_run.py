@@ -2536,6 +2536,20 @@ def _latest_auto_running_snapshot_path(artifact_root: Path) -> Path | None:
     return candidates[0] if candidates else None
 
 
+def _auto_running_snapshot_recovery_extension_seconds(artifact_root: Path) -> float:
+    """Mirror the probe's effective route clock at the Gateway boundary."""
+
+    path = _latest_auto_running_snapshot_path(artifact_root)
+    if path is None:
+        return 0.0
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        value = float(payload.get("monitor_excluded_recovery_seconds", 0.0))
+    except (json.JSONDecodeError, OSError, TypeError, ValueError):
+        return 0.0
+    return max(0.0, value)
+
+
 def _auto_snapshot_number(*values: Any) -> float | int | None:
     for value in values:
         if isinstance(value, bool) or value is None:
@@ -2971,7 +2985,10 @@ def _auto_runtime_obstacle_conflict_projection(
         )
         assessments.append(
             {
+                "obstacle_index": index,
                 "obstacle_name": str(obstacle.get("name") or f"obstacle_{index}"),
+                "obstacle_x_m": round(obstacle_x_m, 3),
+                "obstacle_y_m": round(obstacle_y_m, 3),
                 "distance_to_obstacle_m": round(distance_m, 3),
                 "along_track_to_obstacle_m": round(along_track_m, 3),
                 "cross_track_to_obstacle_m": round(cross_track_m, 3),
@@ -2985,8 +3002,11 @@ def _auto_runtime_obstacle_conflict_projection(
                 "local_avoidance_required": local_required,
             }
         )
+    local_assessments = [
+        item for item in assessments if item.get("local_avoidance_required") is True
+    ]
     selected = min(
-        assessments,
+        local_assessments or assessments,
         key=lambda item: float(item.get("distance_to_obstacle_m") or math.inf),
         default={},
     )
@@ -3400,19 +3420,29 @@ def _runtime_recovery_categorical_decision_state(
     hard = hard if isinstance(hard, Mapping) else {}
     soft = summary.get("soft_signals")
     soft = soft if isinstance(soft, Mapping) else {}
+    obstacle = telemetry_snapshot.get("obstacle")
+    obstacle = obstacle if isinstance(obstacle, Mapping) else {}
+    conflict = obstacle.get("conflict_assessment")
+    conflict = conflict if isinstance(conflict, Mapping) else {}
+    nearest_obstacle = conflict.get("nearest_obstacle")
+    nearest_obstacle = nearest_obstacle if isinstance(nearest_obstacle, Mapping) else {}
+    active_obstacle_name = (
+        str(nearest_obstacle.get("obstacle_name") or "").strip()
+        if conflict.get("local_avoidance_required") is True
+        else ""
+    )
     return {
         "battery_critical": hard.get("battery_critical") is True,
-        "obstacle_or_building_risk": (
-            hard.get("obstacle_or_building_risk") is True
-        ),
-        "battery_drop_above_soft_limit": (
-            soft.get("battery_drop_above_soft_limit") is True
-        ),
+        "obstacle_or_building_risk": (hard.get("obstacle_or_building_risk") is True),
+        # Distinct source-backed obstacles are distinct decision epochs even
+        # when their risk bands happen to match. This permits one judgment per
+        # newly encountered obstacle without reopening an epoch for telemetry
+        # jitter around the same obstacle.
+        "active_obstacle_name": active_obstacle_name,
+        "battery_drop_above_soft_limit": (soft.get("battery_drop_above_soft_limit") is True),
         "nav_state": telemetry_snapshot.get("nav_state"),
         "landed": telemetry_snapshot.get("landed") is True,
-        "recovery_observation_state": _runtime_recovery_observation_state(
-            telemetry_snapshot
-        ),
+        "recovery_observation_state": _runtime_recovery_observation_state(telemetry_snapshot),
     }
 
 
@@ -4139,6 +4169,11 @@ def _attach_auto_runtime_recovery_agent_proposal(
         return
     if not task or task.get("status") != "running":
         return
+    if snapshot.get("post_abort_tracking") is True or snapshot.get("monitor_window_ended") is True:
+        # RTL/LAND and post-abort tracking are terminal executor/failsafe
+        # phases. Mission-level obstacle recovery must not interrupt that
+        # authority with another safety HOLD or hosted-model proposal.
+        return
     artifacts = task.get("artifacts") if isinstance(task.get("artifacts"), Mapping) else {}
     last_proposal = artifacts.get("missionos_runtime_recovery_last_proposal")
     last_proposal = (
@@ -4156,18 +4191,36 @@ def _attach_auto_runtime_recovery_agent_proposal(
         if isinstance(conflict_assessment, Mapping)
         else {}
     )
-    conflict_assessment = (
-        conflict_assessment if isinstance(conflict_assessment, Mapping) else {}
+    conflict_assessment = conflict_assessment if isinstance(conflict_assessment, Mapping) else {}
+    nearest_conflict_obstacle = conflict_assessment.get("nearest_obstacle")
+    nearest_conflict_obstacle = (
+        nearest_conflict_obstacle if isinstance(nearest_conflict_obstacle, Mapping) else {}
     )
-    safety_hold_receipt = artifacts.get(
-        "missionos_runtime_recovery_safety_hold_receipt"
+    active_obstacle_name = (
+        str(nearest_conflict_obstacle.get("obstacle_name") or "").strip()
+        if conflict_assessment.get("local_avoidance_required") is True
+        else ""
     )
-    safety_hold_receipt = (
-        safety_hold_receipt if isinstance(safety_hold_receipt, Mapping) else {}
-    )
+    safety_hold_receipt = artifacts.get("missionos_runtime_recovery_safety_hold_receipt")
+    safety_hold_receipt = safety_hold_receipt if isinstance(safety_hold_receipt, Mapping) else {}
     current_recovery = telemetry_snapshot.get("recovery")
-    current_recovery = (
-        current_recovery if isinstance(current_recovery, Mapping) else {}
+    current_recovery = current_recovery if isinstance(current_recovery, Mapping) else {}
+    current_recovery_parameters = current_recovery.get("parameters")
+    current_recovery_parameters = (
+        current_recovery_parameters if isinstance(current_recovery_parameters, Mapping) else {}
+    )
+    current_recovery_obstacle_name = str(
+        current_recovery_parameters.get("source_obstacle_name") or ""
+    ).strip()
+    receipt_conflict = safety_hold_receipt.get("conflict_assessment")
+    receipt_conflict = receipt_conflict if isinstance(receipt_conflict, Mapping) else {}
+    receipt_nearest = receipt_conflict.get("nearest_obstacle")
+    receipt_nearest = receipt_nearest if isinstance(receipt_nearest, Mapping) else {}
+    receipt_obstacle_name = str(receipt_nearest.get("obstacle_name") or "").strip()
+    safety_hold_receipt_applies = bool(
+        not active_obstacle_name
+        or not receipt_obstacle_name
+        or receipt_obstacle_name == active_obstacle_name
     )
     current_recovery_succeeded = bool(
         str(current_recovery.get("assist_status") or "").strip().lower()
@@ -4175,11 +4228,16 @@ def _attach_auto_runtime_recovery_agent_proposal(
         and current_recovery.get("target_reached") is True
         and str(current_recovery.get("resume_status") or "").strip().lower()
         == "resumed_auto_mission"
+        and (
+            not active_obstacle_name
+            or not current_recovery_obstacle_name
+            or current_recovery_obstacle_name == active_obstacle_name
+        )
     )
     if (
-        safety_hold_receipt.get("request_status") == "queued"
-        and str(current_recovery.get("action") or "").strip().lower()
-        == "safety_hold"
+        safety_hold_receipt_applies
+        and safety_hold_receipt.get("request_status") == "queued"
+        and str(current_recovery.get("action") or "").strip().lower() == "safety_hold"
         and str(current_recovery.get("assist_status") or "").strip().lower()
         == "safety_hold_observed"
     ):
@@ -4215,17 +4273,14 @@ def _attach_auto_runtime_recovery_agent_proposal(
     if (
         conflict_assessment.get("local_avoidance_required") is True
         and not current_recovery_succeeded
-        and safety_hold_receipt.get("request_status") not in {"queued", "observed"}
+        and (
+            not safety_hold_receipt_applies
+            or safety_hold_receipt.get("request_status") not in {"queued", "observed"}
+        )
     ):
-        running_receipt = artifacts.get(
-            "missionos_auto_mission_gui_dispatch_running_receipt"
-        )
-        running_receipt = (
-            running_receipt if isinstance(running_receipt, Mapping) else {}
-        )
-        request_path = str(
-            running_receipt.get("operator_recovery_request_container_path") or ""
-        )
+        running_receipt = artifacts.get("missionos_auto_mission_gui_dispatch_running_receipt")
+        running_receipt = running_receipt if isinstance(running_receipt, Mapping) else {}
+        request_path = str(running_receipt.get("operator_recovery_request_container_path") or "")
         hold_observed_at = _utc().isoformat()
         hold_request = {
             "schema_version": "missionos_auto_safety_hold_request.v1",
@@ -4521,46 +4576,58 @@ def _attach_auto_runtime_recovery_agent_proposal(
         else []
     )
     prior_window_summary = bridge.get("recovery_window_summary")
-    prior_window_summary = (
-        prior_window_summary if isinstance(prior_window_summary, Mapping) else {}
-    )
+    prior_window_summary = prior_window_summary if isinstance(prior_window_summary, Mapping) else {}
     prior_hard_breaches = prior_window_summary.get("hard_breaches")
-    prior_hard_breaches = (
-        prior_hard_breaches if isinstance(prior_hard_breaches, Mapping) else {}
-    )
+    prior_hard_breaches = prior_hard_breaches if isinstance(prior_hard_breaches, Mapping) else {}
     bridge_telemetry = bridge.get("telemetry_snapshot")
-    bridge_telemetry = (
-        bridge_telemetry if isinstance(bridge_telemetry, Mapping) else {}
-    )
+    bridge_telemetry = bridge_telemetry if isinstance(bridge_telemetry, Mapping) else {}
     newly_observed_hard_breach_keys = {
         key
         for key, value in hard_breaches.items()
-        if key != "any"
-        and value is True
-        and prior_hard_breaches.get(key) is not True
+        if key != "any" and value is True and prior_hard_breaches.get(key) is not True
     }
     nav_state_changed = bool(
         bridge_telemetry
         and bridge_telemetry.get("nav_state") != telemetry_snapshot.get("nav_state")
     )
     current_recovery = telemetry_snapshot.get("recovery")
-    current_recovery = (
-        current_recovery if isinstance(current_recovery, Mapping) else {}
-    )
+    current_recovery = current_recovery if isinstance(current_recovery, Mapping) else {}
     current_conflict = telemetry_snapshot.get("obstacle")
     current_conflict = (
-        current_conflict.get("conflict_assessment")
-        if isinstance(current_conflict, Mapping)
+        current_conflict.get("conflict_assessment") if isinstance(current_conflict, Mapping) else {}
+    )
+    current_conflict = current_conflict if isinstance(current_conflict, Mapping) else {}
+    active_conflict = current_conflict.get("nearest_obstacle")
+    active_conflict = active_conflict if isinstance(active_conflict, Mapping) else {}
+    active_conflict_obstacle_name = (
+        str(active_conflict.get("obstacle_name") or "").strip()
+        if current_conflict.get("local_avoidance_required") is True
+        else ""
+    )
+    last_compilation = last_proposal_assessment.get("intent_compilation")
+    last_compilation = last_compilation if isinstance(last_compilation, Mapping) else {}
+    last_compiled_parameters = last_compilation.get("compiled_parameters")
+    last_compiled_parameters = (
+        last_compiled_parameters
+        if isinstance(last_compiled_parameters, Mapping)
+        else last_proposal_assessment.get("proposed_parameters")
+        if isinstance(last_proposal_assessment.get("proposed_parameters"), Mapping)
         else {}
     )
-    current_conflict = (
-        current_conflict if isinstance(current_conflict, Mapping) else {}
-    )
+    last_proposal_obstacle_name = str(
+        last_compiled_parameters.get("source_obstacle_name") or ""
+    ).strip()
+    if (
+        matching_dispatch_authority_recent
+        and active_conflict_obstacle_name
+        and last_proposal_obstacle_name
+        and last_proposal_obstacle_name != active_conflict_obstacle_name
+    ):
+        matching_dispatch_authority_recent = False
     safety_hold_preserves_local_avoidance_proposal = bool(
         proposal_selected_action == "avoid_obstacle"
         and current_conflict.get("local_avoidance_required") is True
-        and str(current_recovery.get("action") or "").strip().lower()
-        == "safety_hold"
+        and str(current_recovery.get("action") or "").strip().lower() == "safety_hold"
         and str(current_recovery.get("assist_status") or "").strip().lower()
         == "safety_hold_observed"
         and str(current_recovery.get("resume_status") or "").strip().lower()
@@ -4970,13 +5037,19 @@ def _attach_auto_runtime_recovery_agent_proposal(
     if attempt_evidence is not None:
         attempt_id = str(attempt_evidence.get("attempt_id") or "")
         if attempt_id:
-            artifact_updates["missionos_runtime_recovery_attempts"] = {
-                attempt_id: attempt_evidence
-            }
-            replaced_artifacts["missionos_runtime_recovery_last_attempt"] = (
-                attempt_evidence
+            artifact_updates["missionos_runtime_recovery_attempts"] = {attempt_id: attempt_evidence}
+            replaced_artifacts["missionos_runtime_recovery_last_attempt"] = attempt_evidence
+    if proposal_invalidated and last_proposal:
+        invalidation_reasons = list(
+            dict.fromkeys(
+                [
+                    *proposal_lifecycle_reasons,
+                    *(str(reason) for reason in receipt_blocking_reasons if str(reason).strip()),
+                ]
             )
-    if proposal_lifecycle_reasons and last_proposal:
+        )
+        if not invalidation_reasons:
+            invalidation_reasons = ["runtime_recovery_dispatch_revalidation_failed"]
         invalidated_proposal = {
             **dict(last_proposal),
             "proposal_status": (
@@ -4986,7 +5059,7 @@ def _attach_auto_runtime_recovery_agent_proposal(
                 else "stale"
             ),
             "invalidated_at": observed_at,
-            "invalidation_reasons": proposal_lifecycle_reasons,
+            "invalidation_reasons": invalidation_reasons,
             "dispatch_authority_created": False,
             "progress_counted": False,
         }
@@ -5698,9 +5771,15 @@ def run_missionos_auto_mission_gui_dispatch_execution(
         # once per second so the GUI Runtime Recovery Agent view can render live
         # progress/position/battery instead of only the pending receipt. This is
         # the AUTO analogue of the horizontal route live-snapshot polling.
-        deadline = time.monotonic() + process_timeout_seconds
+        started_at = time.monotonic()
+        recovery_extension_seconds = 0.0
         last_sample_index = -1
         while process.poll() is None:
+            recovery_extension_seconds = max(
+                recovery_extension_seconds,
+                _auto_running_snapshot_recovery_extension_seconds(artifact_root),
+            )
+            deadline = started_at + process_timeout_seconds + recovery_extension_seconds
             if time.monotonic() > deadline:
                 process.kill()
                 process.wait(timeout=5)

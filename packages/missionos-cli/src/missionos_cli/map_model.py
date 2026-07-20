@@ -8,6 +8,7 @@ import math
 
 import click
 
+from .battery_truth import battery_truth_model
 from .job_status import (
     _as_bool,
     _as_float,
@@ -373,32 +374,36 @@ def _mission_obstacle_records_from_artifacts(
     return records
 
 
-def _operator_recovery_local_maneuver_model(
+def _operator_recovery_local_maneuver_from_record(
     *,
-    artifacts: dict[str, Any],
+    operator_recovery: dict[str, Any],
     snapshot: dict[str, Any],
+    recovery_start: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    probe = artifacts.get("missionos_auto_mission_probe_observed")
-    probe = probe if isinstance(probe, dict) else {}
-    monitor = probe.get("monitor")
-    monitor = monitor if isinstance(monitor, dict) else {}
-    operator_recovery = monitor.get("operator_recovery")
-    operator_recovery = operator_recovery if isinstance(operator_recovery, dict) else {}
     command = operator_recovery.get("command")
     command = command if isinstance(command, dict) else {}
+    request = operator_recovery.get("request")
+    request = request if isinstance(request, dict) else {}
 
     recovery_path = _status_text(
         command.get("recovery_path") or snapshot.get("operator_recovery_path")
     )
-    action = _status_text(command.get("action") or snapshot.get("operator_recovery_action"))
+    action = _status_text(
+        command.get("action")
+        or request.get("recovery_action")
+        or snapshot.get("operator_recovery_action")
+    )
     if "avoid_obstacle" in recovery_path:
         action = "avoid_obstacle"
     target = command.get("target")
     target = target if isinstance(target, dict) else {}
     snapshot_target = snapshot.get("operator_recovery_target")
     snapshot_target = snapshot_target if isinstance(snapshot_target, dict) else {}
-    parameters = snapshot.get("operator_recovery_parameters")
+    parameters = request.get("recovery_parameters")
+    if not isinstance(parameters, dict):
+        parameters = snapshot.get("operator_recovery_parameters")
     parameters = parameters if isinstance(parameters, dict) else {}
+    recovery_start = recovery_start if isinstance(recovery_start, dict) else {}
 
     target_x = _first_numeric(
         target.get("target_x_m"),
@@ -464,12 +469,32 @@ def _operator_recovery_local_maneuver_model(
             "y_m": float(target_y),
             "altitude_m": float(target_altitude) if target_altitude is not None else None,
         }
+    start_x = _first_numeric(recovery_start.get("local_x_m"), recovery_start.get("x_m"))
+    start_y = _first_numeric(recovery_start.get("local_y_m"), recovery_start.get("y_m"))
+    start_point = None
+    if start_x is not None and start_y is not None:
+        start_point = {
+            "x_m": start_x,
+            "y_m": start_y,
+            "altitude_m": _as_float(recovery_start.get("altitude_above_home_m")),
+            "source": "dispatch_revalidation_current_position",
+        }
+    elif samples:
+        start_point = {
+            "x_m": samples[0]["x_m"],
+            "y_m": samples[0]["y_m"],
+            "altitude_m": samples[0].get("altitude_m"),
+            "source": "first_saved_recovery_observation",
+        }
     return {
+        "proposal_id": _status_text(request.get("proposal_id")),
+        "source_obstacle_name": _status_text(parameters.get("source_obstacle_name")),
         "action": action,
         "status": _status_text(
             command.get("status") or snapshot.get("operator_recovery_assist_status")
         ),
         "recovery_path": recovery_path,
+        "start": start_point,
         "target": target_point,
         "samples": samples,
         "target_reached": _as_bool(
@@ -489,6 +514,73 @@ def _operator_recovery_local_maneuver_model(
         if command
         else "missionos_auto_mission_runtime_snapshot",
     }
+
+
+def _operator_recovery_local_maneuver_model(
+    *,
+    artifacts: dict[str, Any],
+    snapshot: dict[str, Any],
+) -> dict[str, Any]:
+    probe = artifacts.get("missionos_auto_mission_probe_observed")
+    probe = probe if isinstance(probe, dict) else {}
+    monitor = probe.get("monitor")
+    monitor = monitor if isinstance(monitor, dict) else {}
+    operator_recovery = monitor.get("operator_recovery")
+    operator_recovery = operator_recovery if isinstance(operator_recovery, dict) else {}
+    proposal_revalidation = artifacts.get("missionos_runtime_recovery_proposal_revalidation")
+    proposal_revalidation = proposal_revalidation if isinstance(proposal_revalidation, dict) else {}
+    recovery_start = proposal_revalidation.get("current_position")
+    recovery_start = recovery_start if isinstance(recovery_start, dict) else {}
+    if not recovery_start:
+        last_proposal = artifacts.get("missionos_runtime_recovery_last_proposal")
+        last_proposal = last_proposal if isinstance(last_proposal, dict) else {}
+        recovery_start = last_proposal.get("origin_position")
+        recovery_start = recovery_start if isinstance(recovery_start, dict) else {}
+    return _operator_recovery_local_maneuver_from_record(
+        operator_recovery=operator_recovery,
+        snapshot=snapshot,
+        recovery_start=recovery_start,
+    )
+
+
+def _operator_recovery_local_maneuver_models(
+    *,
+    artifacts: dict[str, Any],
+    snapshot: dict[str, Any],
+) -> list[dict[str, Any]]:
+    """Return every persisted, observed recovery maneuver in execution order."""
+
+    probe = artifacts.get("missionos_auto_mission_probe_observed")
+    probe = probe if isinstance(probe, dict) else {}
+    monitor = probe.get("monitor")
+    monitor = monitor if isinstance(monitor, dict) else {}
+    attempts = monitor.get("operator_recovery_attempts")
+    maneuvers: list[dict[str, Any]] = []
+    if isinstance(attempts, list):
+        for attempt in attempts:
+            if not isinstance(attempt, dict):
+                continue
+            request = attempt.get("request")
+            request = request if isinstance(request, dict) else {}
+            if _status_text(request.get("recovery_action")) not in {
+                "avoid_obstacle",
+                "reroute",
+                "adjust_altitude",
+            }:
+                continue
+            maneuver = _operator_recovery_local_maneuver_from_record(
+                operator_recovery=attempt,
+                snapshot={},
+            )
+            if maneuver and maneuver.get("samples"):
+                maneuvers.append(maneuver)
+    if maneuvers:
+        return maneuvers
+    maneuver = _operator_recovery_local_maneuver_model(
+        artifacts=artifacts,
+        snapshot=snapshot,
+    )
+    return [maneuver] if maneuver else []
 
 
 def _mission_map_latlon_from_route(
@@ -576,11 +668,294 @@ def _mission_map_flight_samples(artifacts: dict[str, Any]) -> list[dict[str, Any
     return []
 
 
+def _mission_map_live_trajectory_samples(
+    artifacts: dict[str, Any],
+) -> list[dict[str, Any]]:
+    trajectory = artifacts.get("missionos_auto_mission_live_trajectory")
+    trajectory = trajectory if isinstance(trajectory, dict) else {}
+    samples = trajectory.get("samples")
+    if not isinstance(samples, list):
+        return []
+    return [dict(sample) for sample in samples if isinstance(sample, dict)]
+
+
+def _mission_map_observed_segments(
+    *,
+    artifacts: dict[str, Any],
+    takeoff_lat: float,
+    takeoff_lon: float,
+) -> list[list[dict[str, Any]]]:
+    """Build observed path segments without joining unobserved gaps."""
+
+    return [
+        list(segment.get("points") or [])
+        for segment in _mission_map_observed_trace(
+            artifacts=artifacts,
+            takeoff_lat=takeoff_lat,
+            takeoff_lon=takeoff_lon,
+        )["segments"]
+    ]
+
+
+def _mission_map_observed_trace(
+    *,
+    artifacts: dict[str, Any],
+    takeoff_lat: float,
+    takeoff_lon: float,
+) -> dict[str, Any]:
+    """Build source-backed trajectory segments and explicit observation gaps.
+
+    The bounded runtime replay can preserve a terminal point while omitting the
+    Recovery and rejoin interval before it.  When the durable live trajectory
+    covers the replay sample range and contains more observations, it is the
+    stronger display source.  Missing intervals are represented separately;
+    their endpoints must never become a solid observed path.
+    """
+
+    segments: list[dict[str, Any]] = []
+    gaps: list[dict[str, Any]] = []
+
+    def point(sample: dict[str, Any], index: int, source_prefix: str) -> dict[str, Any] | None:
+        latlon = _mission_map_sample_latlon(
+            sample,
+            takeoff_lat=takeoff_lat,
+            takeoff_lon=takeoff_lon,
+        )
+        if latlon is None:
+            return None
+        lat, lon, source = latlon
+        return {
+            "lat": lat,
+            "lon": lon,
+            "source": f"{source_prefix}:{source}",
+            "phase": _status_text(sample.get("phase"), f"sample_{index}"),
+            "alt_m": _as_float(
+                sample.get("relative_alt_m")
+                or sample.get("altitude_above_home_m")
+                or sample.get("local_z_m")
+                or sample.get("z_m")
+                or sample.get("z")
+            ),
+            "elapsed_s": sample.get("elapsed_s")
+            or sample.get("elapsed_seconds")
+            or sample.get("sample_time_s")
+            or sample.get("sample_index"),
+            "sample_index": sample.get("sample_index"),
+            "segment_index": sample.get("segment_index"),
+            "segment_break_reason": _status_text(sample.get("segment_break_reason"), ""),
+        }
+
+    replay_samples = _mission_map_flight_samples(artifacts)
+    live_samples = _mission_map_live_trajectory_samples(artifacts)
+
+    def numeric_indices(samples: list[dict[str, Any]]) -> list[int]:
+        return [
+            int(value)
+            for sample in samples
+            if isinstance((value := sample.get("sample_index")), (int, float))
+        ]
+
+    replay_indices = numeric_indices(replay_samples)
+    live_indices = numeric_indices(live_samples)
+    live_covers_replay = bool(
+        live_samples
+        and replay_samples
+        and len(live_samples) > len(replay_samples)
+        and live_indices
+        and replay_indices
+        and min(live_indices) <= min(replay_indices)
+        and max(live_indices) >= max(replay_indices)
+    )
+    streams: list[tuple[str, list[dict[str, Any]]]] = []
+    if live_covers_replay or (live_samples and not replay_samples):
+        streams.append(("live_trajectory", live_samples))
+        trace_source = "missionos_auto_mission_live_trajectory"
+    else:
+        if replay_samples:
+            streams.append(("runtime_replay", replay_samples))
+        max_replay_index = max(replay_indices) if replay_indices else None
+        later_live_samples = [
+            sample
+            for sample in live_samples
+            if max_replay_index is None
+            or not isinstance(sample.get("sample_index"), (int, float))
+            or int(sample["sample_index"]) > max_replay_index
+        ]
+        if later_live_samples:
+            streams.append(("live_trajectory", later_live_samples))
+        trace_source = "runtime_replay_with_later_live_segments" if streams else "unavailable"
+
+    def point_distance_m(left: dict[str, Any], right: dict[str, Any]) -> float:
+        north_m = (float(right["lat"]) - float(left["lat"])) * 111320.0
+        lon_scale = 111320.0 * math.cos(math.radians(takeoff_lat))
+        east_m = (float(right["lon"]) - float(left["lon"])) * lon_scale
+        return math.hypot(north_m, east_m)
+
+    def elapsed_gap_s(left: dict[str, Any], right: dict[str, Any]) -> float | None:
+        left_elapsed = _as_float(left.get("elapsed_s"))
+        right_elapsed = _as_float(right.get("elapsed_s"))
+        if left_elapsed is None or right_elapsed is None:
+            return None
+        return max(0.0, right_elapsed - left_elapsed)
+
+    previous_stream_last: dict[str, Any] | None = None
+    for source, samples in streams:
+        current_points: list[dict[str, Any]] = []
+        current_segment_index: int | None = None
+        current_break_reason = ""
+
+        def finish_segment() -> None:
+            nonlocal current_points, current_break_reason
+            if not current_points:
+                return
+            segments.append(
+                {
+                    "points": current_points,
+                    "source": source,
+                    "segment_index": current_segment_index,
+                    "break_reason": current_break_reason,
+                }
+            )
+            current_points = []
+            current_break_reason = ""
+
+        for index, sample in enumerate(samples):
+            mapped = point(sample, index, source)
+            if mapped is None:
+                continue
+            mapped_segment_index = (
+                int(sample["segment_index"])
+                if isinstance(sample.get("segment_index"), (int, float))
+                else None
+            )
+            previous = current_points[-1] if current_points else previous_stream_last
+            source_transition = bool(previous is not None and not current_points)
+            explicit_break = bool(sample.get("segment_break_reason")) or bool(
+                current_points
+                and mapped_segment_index is not None
+                and current_segment_index is not None
+                and mapped_segment_index != current_segment_index
+            )
+            distance_m = point_distance_m(previous, mapped) if previous else 0.0
+            gap_seconds = elapsed_gap_s(previous, mapped) if previous else None
+            inferred_gap = bool(
+                previous and gap_seconds is not None and gap_seconds > 5.0 and distance_m > 10.0
+            )
+            if explicit_break or inferred_gap or source_transition:
+                if current_points:
+                    finish_segment()
+                reason = _status_text(sample.get("segment_break_reason"), "")
+                if not reason:
+                    reason = (
+                        "source_transition_not_observed"
+                        if source_transition
+                        else "telemetry_time_and_distance_gap"
+                    )
+                current_break_reason = reason
+                if previous and (inferred_gap or distance_m > 10.0):
+                    gaps.append(
+                        {
+                            "from": previous,
+                            "to": mapped,
+                            "reason": reason,
+                            "distance_m": round(distance_m, 3),
+                            "elapsed_gap_s": (
+                                round(gap_seconds, 3) if gap_seconds is not None else None
+                            ),
+                            "from_sample_index": previous.get("sample_index"),
+                            "to_sample_index": mapped.get("sample_index"),
+                            "evidence_status": "not_observed_between_endpoints",
+                        }
+                    )
+            if not current_points:
+                current_segment_index = mapped_segment_index
+            current_points.append(mapped)
+        finish_segment()
+        if segments:
+            points = segments[-1].get("points") or []
+            if points:
+                previous_stream_last = points[-1]
+
+    return {
+        "segments": segments,
+        "gaps": gaps,
+        "source": trace_source,
+        "live_trajectory_preferred": live_covers_replay,
+    }
+
+
+def _mission_map_battery_model(
+    *,
+    snapshot: dict[str, Any],
+    artifacts: dict[str, Any],
+) -> dict[str, Any]:
+    """Return battery display truth with provenance and reset detection."""
+
+    return battery_truth_model(snapshot=snapshot, artifacts=artifacts)
+
+
+def _mission_map_recovery_provenance(
+    artifacts: dict[str, Any],
+) -> dict[str, Any]:
+    """Expose source-backed recovery provenance for read-only map evidence."""
+
+    proposal = artifacts.get("missionos_runtime_recovery_last_proposal")
+    proposal = proposal if isinstance(proposal, dict) else {}
+    origin = proposal.get("proposal_origin")
+    origin = origin if isinstance(origin, dict) else {}
+    dispatch = artifacts.get("missionos_runtime_recovery_dispatch_request")
+    dispatch = dispatch if isinstance(dispatch, dict) else {}
+    attempt = artifacts.get("missionos_runtime_recovery_last_attempt")
+    attempt = attempt if isinstance(attempt, dict) else {}
+    safety = attempt.get("resume_safety_verification")
+    safety = safety if isinstance(safety, dict) else {}
+    if not any((proposal, dispatch, attempt)):
+        return {}
+    return {
+        "proposal_id": proposal.get("proposal_id") or dispatch.get("proposal_id"),
+        "origin_kind": origin.get("origin_kind"),
+        "provider": origin.get("provider"),
+        "model_id": origin.get("model_id"),
+        "invocation_kind": origin.get("invocation_kind"),
+        "proposal_origin_sha256": proposal.get("proposal_origin_sha256")
+        or dispatch.get("proposal_origin_sha256"),
+        "operator_approved": _as_bool(dispatch.get("operator_approved")) is True,
+        "explicit_recovery_dispatch_approval": (
+            _as_bool(dispatch.get("explicit_recovery_dispatch_approval")) is True
+        ),
+        "approval_ref": dispatch.get("approval_ref"),
+        "recovery_action": attempt.get("recovery_action") or dispatch.get("recovery_action"),
+        "target_reached": _as_bool(attempt.get("target_reached")) is True,
+        "resume_status": attempt.get("resume_status"),
+        "resume_mission_current_seq": _as_int(safety.get("resume_mission_current_seq")),
+        "resume_mission_seq_after_obstacle": _as_int(
+            safety.get("resume_mission_seq_after_obstacle")
+        ),
+        "resume_mission_current_seq_observed": (
+            _as_bool(safety.get("resume_mission_current_seq_observed")) is True
+        ),
+        "simulator_execution_observed": (
+            _as_bool(attempt.get("simulator_execution_observed")) is True
+        ),
+        "source_refs": [
+            "missionos_runtime_recovery_last_proposal.proposal_origin",
+            "missionos_runtime_recovery_dispatch_request",
+            "missionos_runtime_recovery_last_attempt.resume_safety_verification",
+        ],
+        "claim_boundary": (
+            "Recovery provenance is display evidence only. Proposal, approval, "
+            "dispatch, execution, and verification remain distinct source facts."
+        ),
+    }
+
+
 def _mission_map_obstacles(
     artifacts: dict[str, Any],
     *,
     takeoff_lat: float,
     takeoff_lon: float,
+    dropoff_lat: float,
+    dropoff_lon: float,
 ) -> list[dict[str, Any]]:
     obstacles: list[dict[str, Any]] = []
     for record in _mission_obstacle_records_from_artifacts(artifacts):
@@ -594,28 +969,59 @@ def _mission_map_obstacles(
             north_m=x_m,
             east_m=y_m,
         )
+        half_x_m = (_as_float(record.get("size_x_m")) or 0.0) / 2.0
+        half_y_m = (_as_float(record.get("size_y_m")) or 0.0) / 2.0
+        footprint = []
+        if half_x_m > 0.0 and half_y_m > 0.0:
+            for corner_x_m, corner_y_m in (
+                (x_m - half_x_m, y_m - half_y_m),
+                (x_m - half_x_m, y_m + half_y_m),
+                (x_m + half_x_m, y_m + half_y_m),
+                (x_m + half_x_m, y_m - half_y_m),
+            ):
+                corner_lat, corner_lon = _mission_map_local_to_latlon(
+                    takeoff_lat=takeoff_lat,
+                    takeoff_lon=takeoff_lon,
+                    north_m=corner_x_m,
+                    east_m=corner_y_m,
+                )
+                footprint.append({"lat": corner_lat, "lon": corner_lon})
+        obstacle_z_m = _as_float(record.get("z_m"))
+        obstacle_height_m = _as_float(record.get("size_z_m"))
         obstacles.append(
             {
                 **record,
                 "lat": lat,
                 "lon": lon,
+                "footprint": footprint,
+                "top_altitude_m": (
+                    obstacle_z_m + obstacle_height_m / 2.0
+                    if obstacle_z_m is not None and obstacle_height_m is not None
+                    else obstacle_height_m
+                ),
                 "source": _status_text(record.get("source")),
+                "coincident_with_dropoff": (
+                    math.hypot(
+                        (lat - dropoff_lat) * 111320.0,
+                        (lon - dropoff_lon) * 111320.0 * math.cos(math.radians(takeoff_lat)),
+                    )
+                    <= max(
+                        3.0,
+                        (_as_float(record.get("size_x_m")) or 0.0) / 2.0,
+                        (_as_float(record.get("size_y_m")) or 0.0) / 2.0,
+                    )
+                ),
             }
         )
     return obstacles
 
 
-def _mission_map_maneuver(
+def _mission_map_maneuver_from_local(
     *,
-    artifacts: dict[str, Any],
-    snapshot: dict[str, Any],
+    maneuver: dict[str, Any],
     takeoff_lat: float,
     takeoff_lon: float,
 ) -> dict[str, Any]:
-    maneuver = _operator_recovery_local_maneuver_model(
-        artifacts=artifacts,
-        snapshot=snapshot,
-    )
     if not maneuver:
         return {}
     samples: list[dict[str, Any]] = []
@@ -644,11 +1050,64 @@ def _mission_map_maneuver(
                 east_m=y_m,
             )
             target_point = {**target, "lat": lat, "lon": lon}
+    start = maneuver.get("start")
+    start_point = None
+    if isinstance(start, dict):
+        x_m = _as_float(start.get("x_m"))
+        y_m = _as_float(start.get("y_m"))
+        if x_m is not None and y_m is not None:
+            lat, lon = _mission_map_local_to_latlon(
+                takeoff_lat=takeoff_lat,
+                takeoff_lon=takeoff_lon,
+                north_m=x_m,
+                east_m=y_m,
+            )
+            start_point = {**start, "lat": lat, "lon": lon}
     return {
         **maneuver,
+        "start": start_point,
         "target": target_point,
         "samples": samples,
     }
+
+
+def _mission_map_maneuvers(
+    *,
+    artifacts: dict[str, Any],
+    snapshot: dict[str, Any],
+    takeoff_lat: float,
+    takeoff_lon: float,
+) -> list[dict[str, Any]]:
+    return [
+        converted
+        for maneuver in _operator_recovery_local_maneuver_models(
+            artifacts=artifacts,
+            snapshot=snapshot,
+        )
+        if (
+            converted := _mission_map_maneuver_from_local(
+                maneuver=maneuver,
+                takeoff_lat=takeoff_lat,
+                takeoff_lon=takeoff_lon,
+            )
+        )
+    ]
+
+
+def _mission_map_maneuver(
+    *,
+    artifacts: dict[str, Any],
+    snapshot: dict[str, Any],
+    takeoff_lat: float,
+    takeoff_lon: float,
+) -> dict[str, Any]:
+    maneuvers = _mission_map_maneuvers(
+        artifacts=artifacts,
+        snapshot=snapshot,
+        takeoff_lat=takeoff_lat,
+        takeoff_lon=takeoff_lon,
+    )
+    return maneuvers[-1] if maneuvers else {}
 
 
 def _mission_map_telemetry_model(
@@ -1216,34 +1675,46 @@ def _mission_map_model(
         dropoff_lat=dropoff_lat,
         dropoff_lon=dropoff_lon,
     )
-    observed_points: list[dict[str, Any]] = []
-    for idx, sample in enumerate(_mission_map_flight_samples(artifacts)):
-        latlon = _mission_map_sample_latlon(
-            sample,
-            takeoff_lat=takeoff_lat,
-            takeoff_lon=takeoff_lon,
+    observed_trace = _mission_map_observed_trace(
+        artifacts=artifacts,
+        takeoff_lat=takeoff_lat,
+        takeoff_lon=takeoff_lon,
+    )
+    observed_segment_details = list(observed_trace["segments"])
+    observed_segments = [list(segment.get("points") or []) for segment in observed_segment_details]
+    lon_scale = 111320.0 * math.cos(math.radians(takeoff_lat))
+
+    def distance_to(point: dict[str, Any], *, lat: float, lon: float) -> float:
+        return math.hypot(
+            (float(point["lat"]) - lat) * 111320.0,
+            (float(point["lon"]) - lon) * lon_scale,
         )
-        if latlon is None:
+
+    for index, segment in enumerate(observed_segment_details):
+        points = segment.get("points") or []
+        if not points:
+            segment["role"] = "observed"
             continue
-        lat, lon, source = latlon
-        observed_points.append(
-            {
-                "lat": lat,
-                "lon": lon,
-                "source": source,
-                "phase": _status_text(sample.get("phase"), f"sample_{idx}"),
-                "alt_m": _as_float(
-                    sample.get("relative_alt_m")
-                    or sample.get("local_z_m")
-                    or sample.get("z_m")
-                    or sample.get("z")
-                ),
-                "elapsed_s": sample.get("elapsed_s")
-                or sample.get("elapsed_seconds")
-                or sample.get("sample_time_s")
-                or sample.get("sample_index"),
-            }
+        first = points[0]
+        last = points[-1]
+        is_return = (
+            index > 0
+            and distance_to(last, lat=takeoff_lat, lon=takeoff_lon)
+            < distance_to(last, lat=dropoff_lat, lon=dropoff_lon)
+            and (
+                (_as_int(segment.get("segment_index")) or 0) > 0
+                or distance_to(first, lat=dropoff_lat, lon=dropoff_lon)
+                < distance_to(first, lat=takeoff_lat, lon=takeoff_lon)
+            )
         )
+        segment["role"] = (
+            "return_to_home"
+            if is_return
+            else "outbound"
+            if index == 0
+            else "outbound_after_observation_gap"
+        )
+    observed_points = [point for segment in observed_segments for point in segment]
     snapshot = artifacts.get("missionos_auto_mission_runtime_snapshot")
     snapshot = snapshot if isinstance(snapshot, dict) else {}
     latest_snapshot_point = (
@@ -1272,11 +1743,13 @@ def _mission_map_model(
             or snapshot.get("elapsed_s")
             or snapshot.get("sample_index"),
         }
-        if not observed_points or (
-            abs(observed_points[-1]["lat"] - latest["lat"]) > 1e-8
-            or abs(observed_points[-1]["lon"] - latest["lon"]) > 1e-8
+        if observed_points and (
+            abs(observed_points[-1]["lat"] - latest["lat"]) <= 1e-8
+            and abs(observed_points[-1]["lon"] - latest["lon"]) <= 1e-8
         ):
-            observed_points.append(latest)
+            latest = observed_points[-1]
+    else:
+        latest = None
     compatibility_points = list(observed_points)
     if not compatibility_points:
         compatibility_points = [
@@ -1302,33 +1775,170 @@ def _mission_map_model(
         artifacts,
         takeoff_lat=takeoff_lat,
         takeoff_lon=takeoff_lon,
+        dropoff_lat=dropoff_lat,
+        dropoff_lon=dropoff_lon,
     )
-    avoidance = _mission_map_maneuver(
+    avoidances = _mission_map_maneuvers(
         artifacts=artifacts,
         snapshot=snapshot,
         takeoff_lat=takeoff_lat,
         takeoff_lon=takeoff_lon,
     )
+    avoidance = avoidances[-1] if avoidances else {}
+    route_north_m, route_east_m = _mission_map_latlon_to_local(
+        takeoff_lat=takeoff_lat,
+        takeoff_lon=takeoff_lon,
+        lat=dropoff_lat,
+        lon=dropoff_lon,
+    )
+    route_length_m = math.hypot(route_north_m, route_east_m)
+    if route_length_m > 1e-6:
+        route_unit_north = route_north_m / route_length_m
+        route_unit_east = route_east_m / route_length_m
+
+        def route_geometry(point: dict[str, Any]) -> tuple[float, float]:
+            north_m, east_m = _mission_map_latlon_to_local(
+                takeoff_lat=takeoff_lat,
+                takeoff_lon=takeoff_lon,
+                lat=float(point["lat"]),
+                lon=float(point["lon"]),
+            )
+            progress_m = north_m * route_unit_north + east_m * route_unit_east
+            cross_track_m = abs(north_m * route_unit_east - east_m * route_unit_north)
+            return progress_m, cross_track_m
+
+        outbound_points = [
+            point
+            for detail in observed_segment_details
+            if detail.get("role") != "return_to_home"
+            for point in detail.get("points") or []
+        ]
+        for avoidance in avoidances:
+            target = avoidance.get("target")
+            target = target if isinstance(target, dict) else None
+            source_obstacle_name = _status_text(avoidance.get("source_obstacle_name"))
+            obstacle = next(
+                (
+                    item
+                    for item in obstacles
+                    if source_obstacle_name
+                    and _status_text(item.get("name")) == source_obstacle_name
+                ),
+                None,
+            )
+            if obstacle is None:
+                obstacle = min(
+                    obstacles,
+                    key=lambda item: math.hypot(
+                        (_as_float(item.get("x_m")) or 0.0)
+                        - (_as_float((avoidance.get("start") or {}).get("x_m")) or 0.0),
+                        (_as_float(item.get("y_m")) or 0.0)
+                        - (_as_float((avoidance.get("start") or {}).get("y_m")) or 0.0),
+                    ),
+                    default=None,
+                )
+            target_progress_m = route_geometry(target)[0] if target else None
+            obstacle_progress_m = None
+            obstacle_half_along_m = 0.0
+            if obstacle is not None:
+                obstacle_progress_m = (_as_float(obstacle.get("x_m")) or 0.0) * route_unit_north + (
+                    _as_float(obstacle.get("y_m")) or 0.0
+                ) * route_unit_east
+                obstacle_half_along_m = abs(route_unit_north) * (
+                    (_as_float(obstacle.get("size_x_m")) or 0.0) / 2.0
+                ) + abs(route_unit_east) * ((_as_float(obstacle.get("size_y_m")) or 0.0) / 2.0)
+            target_beyond_obstacle = bool(
+                target_progress_m is not None
+                and obstacle_progress_m is not None
+                and target_progress_m > obstacle_progress_m + obstacle_half_along_m
+            )
+            rejoin_point = None
+            if target and outbound_points:
+                target_index = min(
+                    range(len(outbound_points)),
+                    key=lambda index: distance_to(
+                        outbound_points[index],
+                        lat=float(target["lat"]),
+                        lon=float(target["lon"]),
+                    ),
+                )
+                for point in outbound_points[target_index + 1 :]:
+                    progress_m, cross_track_m = route_geometry(point)
+                    if (
+                        target_progress_m is not None
+                        and progress_m >= target_progress_m
+                        and cross_track_m <= 12.0
+                    ):
+                        rejoin_point = {
+                            **point,
+                            "route_progress_m": round(progress_m, 3),
+                            "cross_track_m": round(cross_track_m, 3),
+                        }
+                        break
+            avoidance["route_rejoin"] = rejoin_point
+            avoidance["geometry_status"] = (
+                "lateral_bypass_target_beyond_obstacle"
+                if target_beyond_obstacle
+                else "legacy_target_before_obstacle"
+                if target and obstacle_progress_m is not None
+                else "geometry_unavailable"
+            )
+            avoidance["target_beyond_obstacle"] = target_beyond_obstacle
+            avoidance["target_route_progress_m"] = (
+                round(target_progress_m, 3) if target_progress_m is not None else None
+            )
+            avoidance["obstacle_route_progress_m"] = (
+                round(obstacle_progress_m, 3) if obstacle_progress_m is not None else None
+            )
+    task_status = _task_status(task_payload)
+    latest_point = latest or (observed_points[-1] if observed_points else None)
+    terminal_marker_label = "current"
+    if task_status in TERMINAL_TASK_STATUSES and latest_point is not None:
+        if distance_to(latest_point, lat=takeoff_lat, lon=takeoff_lon) <= 15.0:
+            terminal_marker_label = (
+                "landed at home"
+                if _as_bool(snapshot.get("landed")) is True
+                else "mission ended at home"
+            )
+        elif _as_bool(snapshot.get("post_abort_tracking")) is True:
+            terminal_marker_label = "last return observation"
+        else:
+            terminal_marker_label = "last saved observation"
     return {
         "schema_version": "missionos_cli_2d_map.v1",
         "task_id": _status_text(task.get("task_id")),
-        "task_status": _task_status(task_payload),
+        "task_status": task_status,
+        "task_updated_at": task.get("updated_at"),
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "provider": provider_config,
+        "provider": {**provider_config, "key": provider},
         "route": {
             "takeoff": {"lat": takeoff_lat, "lon": takeoff_lon, "label": "H"},
             "dropoff": {"lat": dropoff_lat, "lon": dropoff_lon, "label": "D"},
         },
         "planned_points": planned_points,
         "observed_points": observed_points,
+        "observed_segments": observed_segments,
+        "observed_segment_details": observed_segment_details,
+        "observed_gaps": list(observed_trace["gaps"]),
+        "observed_trace_source": observed_trace["source"],
         "points": compatibility_points,
-        "latest": observed_points[-1] if observed_points else None,
+        # Current pose is a marker, not permission to draw a line from the
+        # latest persisted trajectory point.  It may belong to a later return
+        # or post-run observation segment.
+        "latest": latest_point,
+        "terminal_marker_label": terminal_marker_label,
         "avoidance": avoidance,
+        "avoidances": avoidances,
         "obstacles": obstacles,
         "telemetry": _mission_map_telemetry_model(
             snapshot=snapshot,
             artifacts=artifacts,
         ),
+        "battery": _mission_map_battery_model(
+            snapshot=snapshot,
+            artifacts=artifacts,
+        ),
+        "recovery_provenance": _mission_map_recovery_provenance(artifacts),
         "weather": _mission_map_weather_model(artifacts),
         "live": {
             "enabled": bool(live_task_url),
@@ -1339,6 +1949,7 @@ def _mission_map_model(
         "boundaries": [
             "2D map uses real browser-fetched basemap tiles from the configured provider.",
             "MissionOS overlays source planned route, observed telemetry, operator-approved recovery maneuver traces, and source-backed obstacle markers.",
+            "Solid observed paths contain saved telemetry only; dashed gap connectors are display-only and are not observation evidence.",
             "Map display is read-only and is not a verifier, dispatch control, or delivery claim.",
         ],
     }

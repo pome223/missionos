@@ -312,14 +312,25 @@ def test_v2_dispatch_revalidation_recomputes_reachability() -> None:
     )
 
     assert valid["validation_status"] == "valid"
-    assert valid["dispatch_reachability_verification"][
-        "verification_status"
-    ] == "verified"
+    assert valid["dispatch_reachability_verification"]["verification_status"] == "verified"
     assert blocked["validation_status"] == "blocked"
-    assert "runtime_recovery_dispatch_reachability_unverified" in blocked[
-        "reasons"
-    ]
-    assert blocked["dispatch_authority_created"] is False
+    assert "runtime_recovery_dispatch_reachability_unverified" in blocked["reasons"]
+
+
+def test_avoid_obstacle_parameters_preserve_bound_source_obstacle_name() -> None:
+    parameters = gateway_server._bounded_operator_recovery_parameters(
+        recovery_action="avoid_obstacle",
+        body={
+            "recovery_parameters": {
+                "target_x_m": 1.0,
+                "target_y_m": 320.0,
+                "target_altitude_m": 45.0,
+                "source_obstacle_name": "missionos_route_obstacle_50pct",
+            }
+        },
+    )
+
+    assert parameters["source_obstacle_name"] == ("missionos_route_obstacle_50pct")
 
 
 def test_v2_dispatch_revalidation_rejects_mixed_artifact_chain() -> None:

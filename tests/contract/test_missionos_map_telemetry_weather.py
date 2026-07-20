@@ -197,6 +197,43 @@ def test_map_does_not_join_replay_to_later_return_observation() -> None:
     assert model["observed_segment_details"][1]["role"] == "return_to_home"
     assert model["observed_gaps"][0]["evidence_status"] == ("not_observed_between_endpoints")
     assert model["latest"]["lat"] == pytest.approx(35.0)
+    assert model["terminal_marker_label"] == "mission ended at home"
+
+
+def test_completed_job_status_uses_dropoff_replay_not_later_return_snapshot() -> None:
+    payload = _segmented_route_payload()
+    payload["artifacts"]["missionos_auto_mission_compilation"] = {"planned_route_m": 111.32}
+    replay = payload["artifacts"]["missionos_auto_mission_runtime_replay"]
+    replay.update(
+        {
+            "dropoff_verified": True,
+            "horizontal_progress_m": 111.32,
+            "latest_sample": {
+                "horizontal_progress_m": 111.32,
+                "elapsed_s": 42.0,
+                "seq_reached": 20,
+                "mission_current_seq": 21,
+            },
+        }
+    )
+    payload["artifacts"]["missionos_auto_mission_runtime_snapshot"].update(
+        {
+            "progress_m": 52.0,
+            "elapsed_seconds": 75.0,
+            "mission_reached_seq": 10,
+            "mission_current_seq": 11,
+            "waypoint_total": 23,
+            "post_abort_tracking": True,
+        }
+    )
+
+    rendered = "\n".join(missionos_cli._job_operator_summary(payload))
+
+    assert "Route: [############################] 100.0%" in rendered
+    assert "Distance: 111 m / 111 m" in rendered
+    assert "Waypoint: 20/23 reached  (current seq 21)" in rendered
+    assert "Elapsed: 42s" in rendered
+    assert "ETA:" not in rendered
 
 
 def _recovery_gap_route_payload() -> dict:

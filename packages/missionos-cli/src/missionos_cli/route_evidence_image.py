@@ -147,6 +147,7 @@ def _canonical_source_payload(model: dict[str, Any]) -> dict[str, Any]:
         "observed_gaps": model.get("observed_gaps"),
         "observed_trace_source": model.get("observed_trace_source"),
         "avoidance": model.get("avoidance"),
+        "avoidances": model.get("avoidances"),
         "obstacles": model.get("obstacles"),
         "battery": model.get("battery"),
         "recovery_provenance": model.get("recovery_provenance"),
@@ -203,21 +204,29 @@ def mission_route_evidence_svg(model: dict[str, Any]) -> str:
         for detail in segment_details
     ]
     projected_segments = [segment for segment in projected_segments if segment["points"]]
-    avoidance = _mapping(model.get("avoidance"))
-    recovery_source_points = [
-        *([avoidance.get("start")] if isinstance(avoidance.get("start"), dict) else []),
-        *(
-            [point for point in avoidance.get("samples") or [] if isinstance(point, dict)]
-            if isinstance(avoidance.get("samples"), list)
-            else []
-        ),
-        *([avoidance.get("target")] if isinstance(avoidance.get("target"), dict) else []),
-    ]
-    recovery_points = [
-        coordinates
-        for point in recovery_source_points
-        if (coordinates := project(point)) is not None
-    ]
+    raw_avoidances = model.get("avoidances")
+    avoidances = (
+        [_mapping(item) for item in raw_avoidances if isinstance(item, dict)]
+        if isinstance(raw_avoidances, list)
+        else []
+    )
+    if not avoidances and isinstance(model.get("avoidance"), dict):
+        avoidances = [_mapping(model.get("avoidance"))]
+    recovery_point_sets: list[list[tuple[float, float]]] = []
+    for item in avoidances:
+        source_points = [
+            *([item.get("start")] if isinstance(item.get("start"), dict) else []),
+            *(
+                [point for point in item.get("samples") or [] if isinstance(point, dict)]
+                if isinstance(item.get("samples"), list)
+                else []
+            ),
+            *([item.get("target")] if isinstance(item.get("target"), dict) else []),
+        ]
+        recovery_point_sets.append(
+            [coordinates for point in source_points if (coordinates := project(point)) is not None]
+        )
+    recovery_points = [point for point_set in recovery_point_sets for point in point_set]
     obstacles = [dict(item) for item in model.get("obstacles") or [] if isinstance(item, dict)]
     obstacle_polygons = [
         _projected_points(obstacle.get("footprint"), project) for obstacle in obstacles
@@ -227,13 +236,12 @@ def mission_route_evidence_svg(model: dict[str, Any]) -> str:
     dropoff = project(_mapping(model.get("route")).get("dropoff"))
     if takeoff is None or dropoff is None:
         raise ValueError("route evidence needs projectable route endpoints")
-    rejoin = project(avoidance.get("route_rejoin"))
+    rejoins = [project(item.get("route_rejoin")) for item in avoidances]
     all_points = [takeoff, dropoff]
     all_points.extend(point for segment in projected_segments for point in segment["points"])
     all_points.extend(recovery_points)
     all_points.extend(point for polygon in obstacle_polygons for point in polygon)
-    if rejoin is not None:
-        all_points.append(rejoin)
+    all_points.extend(rejoin for rejoin in rejoins if rejoin is not None)
     progresses = [point[0] for point in all_points]
     cross_tracks = [point[1] for point in all_points]
     progress_margin = max(12.0, route_length * 0.025)
@@ -263,17 +271,16 @@ def mission_route_evidence_svg(model: dict[str, Any]) -> str:
     battery = _mapping(model.get("battery"))
     battery_percent = _number(battery.get("display_percent"))
     model_id = str(provenance.get("model_id") or provenance.get("origin_kind") or "-")
-    recovery_status = str(
-        provenance.get("resume_status")
-        or avoidance.get("resume_auto_status")
-        or avoidance.get("status")
-        or "-"
-    )
+    recovery_status = " | ".join(
+        str(item.get("resume_auto_status") or item.get("status") or "-") for item in avoidances
+    ) or str(provenance.get("resume_status") or "-")
     resume_seq = provenance.get("resume_mission_current_seq")
     if resume_seq is None:
         resume_seq = provenance.get("resume_mission_seq_after_obstacle")
     resume_seq_text = f"waypoint {resume_seq}" if resume_seq is not None else "-"
-    geometry_status = str(avoidance.get("geometry_status") or "-")
+    geometry_status = (
+        " | ".join(str(item.get("geometry_status") or "-") for item in avoidances) or "-"
+    )
 
     svg: list[str] = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{_WIDTH}" height="{_HEIGHT}" viewBox="0 0 {_WIDTH} {_HEIGHT}">',
@@ -360,8 +367,10 @@ def mission_route_evidence_svg(model: dict[str, Any]) -> str:
         svg.append(
             f'<polyline points="{path}" fill="none" stroke="{color}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#{marker})"{dash}/>'
         )
-    if len(recovery_points) >= 2:
-        recovery_path = _path(recovery_points, sx, sy)
+    for recovery_points_for_attempt in recovery_point_sets:
+        if len(recovery_points_for_attempt) < 2:
+            continue
+        recovery_path = _path(recovery_points_for_attempt, sx, sy)
         svg.append(
             f'<polyline points="{recovery_path}" fill="none" stroke="#020617" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/>'
         )
@@ -371,23 +380,39 @@ def mission_route_evidence_svg(model: dict[str, Any]) -> str:
 
     markers: list[tuple[str, tuple[float, float] | None, str, float, float]] = [
         ("1 Start", takeoff, _COLORS["outbound"], 12.0, -18.0),
-        (
-            "2 Recovery",
-            recovery_points[0] if recovery_points else None,
-            _COLORS["recovery"],
-            12.0,
-            -18.0,
-        ),
-        (
-            "3 Bypass",
-            recovery_points[-1] if recovery_points else None,
-            _COLORS["recovery"],
-            12.0,
-            27.0,
-        ),
-        ("4 Rejoin", rejoin, _COLORS["rejoin"], 12.0, 27.0),
         ("5 Dropoff", dropoff, _COLORS["dropoff"], -120.0, -18.0),
     ]
+    for index, recovery_points_for_attempt in enumerate(recovery_point_sets, start=1):
+        if not recovery_points_for_attempt:
+            continue
+        recovery_label = "2 Recovery" if len(recovery_point_sets) == 1 else f"R{index} Recovery"
+        bypass_label = "3 Bypass" if len(recovery_point_sets) == 1 else f"R{index} Bypass"
+        rejoin_label = "4 Rejoin" if len(recovery_point_sets) == 1 else f"R{index} Rejoin"
+        markers.extend(
+            [
+                (
+                    recovery_label,
+                    recovery_points_for_attempt[0],
+                    _COLORS["recovery"],
+                    12.0,
+                    -18.0,
+                ),
+                (
+                    bypass_label,
+                    recovery_points_for_attempt[-1],
+                    _COLORS["recovery"],
+                    12.0,
+                    27.0,
+                ),
+                (
+                    rejoin_label,
+                    rejoins[index - 1],
+                    _COLORS["rejoin"],
+                    12.0,
+                    27.0,
+                ),
+            ]
+        )
     if terminal_label != "current":
         markers.append(("6 Home", takeoff, _COLORS["return"], 12.0, 30.0))
     for label, point, color, dx, dy in markers:
@@ -422,7 +447,7 @@ def mission_route_evidence_svg(model: dict[str, Any]) -> str:
         ("task", task_id),
         ("task status", task_status),
         ("Recovery model", model_id),
-        ("Recovery", recovery_status),
+        ("Recoveries", f"{len(avoidances)} · {recovery_status}"),
         ("route resume", resume_seq_text),
         ("battery", f"{battery_percent:.1f}%" if battery_percent is not None else "-"),
     ]

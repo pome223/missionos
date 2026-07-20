@@ -163,6 +163,39 @@ def test_japanese_route_expression_treats_fifty_percent_as_mid_route_obstacle(
     )
 
 
+def test_japanese_route_expression_preserves_two_route_obstacles(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.delenv("MISSIONOS_AGENT_RUNTIME_ADK_ENABLED", raising=False)
+    monkeypatch.delenv("MISSIONOS_CHIEF_ROUTE_SEMANTIC_ADK_ENABLED", raising=False)
+
+    result = resolve_chief_planner_internal_tools(
+        utterance=(
+            "東京駅から日本橋まで飛行し、経路の50%と75%進行時点に"
+            "衝突判定付き障害物を置いてください。"
+        ),
+        weather_fetcher=_weather_fetcher,
+        terrain_fetcher=_terrain_fetcher,
+    )
+
+    route = result["coordinate_route"]
+    assert route["landing_zone_blocked"] is False
+    assert [item["route_fraction"] for item in route["obstacles"]] == [0.5, 0.75]
+    assert route["obstacle_scenario_source"] == (
+        "operator_instruction_multi_route_bounded_sitl_scenario"
+    )
+    compiled_route = scenario_designer._coordinate_route_from_payload(route)
+    assert compiled_route is not None
+    assert [item["name"] for item in compiled_route["obstacles"]] == [
+        "missionos_route_obstacle_50pct",
+        "missionos_route_obstacle_75pct",
+    ]
+    assert [item["route_fraction"] for item in compiled_route["obstacles"]] == [
+        0.5,
+        0.75,
+    ]
+
+
 def test_arrow_route_expression_is_mission_designer_intent() -> None:
     assert _missionos_instruction_requests_designer_plan(
         "New York Public Library -> Brooklyn Bridge"

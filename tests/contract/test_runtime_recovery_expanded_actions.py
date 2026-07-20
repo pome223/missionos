@@ -194,6 +194,48 @@ def test_verified_recovery_supersedes_only_the_bypassed_route_segment() -> None:
     assert gate.route_completed_claimed is True
 
 
+def test_two_verified_recoveries_supersede_two_separate_route_segments() -> None:
+    reached = [1, 2, 3, 4, 12, 13, 14, *range(17, 21)]
+
+    def attempt(resume_seq: int) -> dict:
+        return {
+            "request": {
+                "operator_approved": True,
+                "explicit_recovery_dispatch_approval": True,
+                "recovery_action": "avoid_obstacle",
+            },
+            "command": {
+                "target_reached": True,
+                "resume_mission_current_frame_sent": True,
+                "resume_mission_current_seq_observed": True,
+                "resume_mission_current_seq": resume_seq,
+                "resume_mission_seq_after_obstacle": resume_seq,
+                "resume_auto_status": "resumed_auto_mission",
+                "resume_safety_verification": {
+                    "verification_status": "verified",
+                    "resume_auto_authorized": True,
+                    "resume_mission_seq_advanced": True,
+                    "blocked_reasons": [],
+                },
+            },
+        }
+
+    superseded = auto_probe._verified_recovery_superseded_waypoint_sequences(
+        runtime_summary={
+            "route_waypoint_seq_start": 1,
+            "route_waypoint_seq_end": 20,
+            "mission_item_reached_events": reached,
+        },
+        probe_observed={
+            "monitor": {
+                "operator_recovery_attempts": [attempt(12), attempt(17)],
+            }
+        },
+    )
+
+    assert superseded == (*range(5, 12), 15, 16)
+
+
 def test_unapproved_recovery_cannot_supersede_missing_waypoints() -> None:
     reached = [1, 2, 3, 4, *range(12, 21)]
     runtime_summary = {
@@ -403,6 +445,7 @@ def test_runtime_recovery_planner_tool_computes_altitude_and_obstacle_targets() 
         "target_x_m": 130.0,
         "target_y_m": 59.429,
         "target_altitude_m": 45.0,
+        "source_obstacle_name": "missionos_landing_zone_blocker",
     }
     assert avoid_candidate["basis"]["target_is_beyond_obstacle"] is True
     assert avoid_candidate["basis"]["pass_distance_after_obstacle_m"] == 30.0
@@ -1283,6 +1326,57 @@ def test_recovery_resume_sequence_skips_expanded_mid_route_obstacle() -> None:
     assert resume_seq == 12
 
 
+def test_two_route_obstacles_keep_separate_positions_and_resume_sequences() -> None:
+    route = {
+        "takeoff_latitude": 35.681236,
+        "takeoff_longitude": 139.767125,
+        "dropoff_latitude": 35.6812562,
+        "dropoff_longitude": 139.7730907,
+        "landing_zone_blocked": False,
+        "obstacles": [
+            {
+                "name": "missionos_route_obstacle_50pct",
+                "route_fraction": 0.5,
+                "size_x_m": 18.0,
+                "size_y_m": 18.0,
+                "size_z_m": 20.0,
+            },
+            {
+                "name": "missionos_route_obstacle_75pct",
+                "route_fraction": 0.75,
+                "size_x_m": 18.0,
+                "size_y_m": 18.0,
+                "size_z_m": 20.0,
+            },
+        ],
+    }
+
+    manifest = auto_probe._gazebo_obstacle_manifest_from_route(route)
+    obstacles = manifest["obstacles"]
+    assert [item["route_fraction"] for item in obstacles] == [0.5, 0.75]
+    assert obstacles[0]["y_m"] == pytest.approx(
+        manifest["dropoff_local_y_m"] * 0.5,
+        abs=0.001,
+    )
+    assert obstacles[1]["y_m"] == pytest.approx(
+        manifest["dropoff_local_y_m"] * 0.75,
+        abs=0.001,
+    )
+    assert (
+        auto_probe._recovery_resume_mission_seq_after_obstacle(
+            obstacle_manifest=manifest,
+            dropoff_dwell_mission_seq=21,
+        )
+        is None
+    )
+    sequences = auto_probe._recovery_resume_mission_seq_by_obstacle(
+        obstacle_manifest=manifest,
+        dropoff_dwell_mission_seq=21,
+    )
+    assert sequences["missionos_route_obstacle_50pct"] == 12
+    assert sequences["missionos_route_obstacle_75pct"] == 17
+
+
 def test_operator_route_preserves_source_bound_mid_route_obstacle(
     monkeypatch,
 ) -> None:
@@ -1400,6 +1494,43 @@ def test_requested_obstacle_is_not_detected_until_gazebo_pose_readback() -> None
     assert projection["gazebo_obstacle_model_spawned"] is False
     assert projection["obstacle_detected"] is False
     assert projection["building_risk_detected"] is False
+
+
+def test_terminal_return_tracking_does_not_start_mission_level_recovery(
+    tmp_path,
+) -> None:
+    store = TaskStore(str(tmp_path / "tasks.db"))
+    task = store.create(
+        task_id="task_terminal_return_no_recovery",
+        kind="contract_test",
+        title="Terminal return keeps executor authority",
+        status="running",
+        artifacts={},
+    )
+
+    live_run._attach_auto_runtime_recovery_agent_proposal(
+        store=store,
+        task_id=task["task_id"],
+        snapshot={
+            "sample_index": 100001,
+            "elapsed_seconds": 120.0,
+            "post_abort_tracking": True,
+            "monitor_window_ended": True,
+            "monitor_stop_reason": "operator_recovery_dispatch_acked",
+            "progress_m": 260.0,
+            "local_x_m": 1.0,
+            "local_y_m": 260.0,
+            "local_z_m": -30.0,
+            "heartbeat_observed": True,
+            "nav_state": 5,
+            "landed": False,
+        },
+    )
+
+    stored = store.get(task["task_id"])
+    assert stored is not None
+    assert "missionos_runtime_recovery_agent_live_bridge" not in stored["artifacts"]
+    assert "missionos_runtime_recovery_safety_hold_receipt" not in stored["artifacts"]
 
 
 def test_runtime_recovery_agent_waits_for_new_decision_epoch(
@@ -2226,6 +2357,93 @@ def test_expired_proposal_does_not_block_materially_new_decision_epoch(
     )
 
 
+def test_dispatch_revalidation_failure_marks_prior_proposal_stale(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    store = TaskStore(str(tmp_path / "tasks.db"))
+    task = store.create(
+        task_id="task_runtime_recovery_revalidation_stale",
+        kind="contract_test",
+        title="Failed dispatch revalidation closes prior proposal",
+        status="running",
+    )
+
+    def _proposal(**_kwargs) -> dict:
+        return {
+            "schema_version": "missionos_runtime_recovery_agent_result.v1",
+            "runtime_status": "proposal_guardrail_passed",
+            "blocking_reasons": [],
+            "assessment": {
+                "assessment_status": "proposal_guardrail_passed",
+                "selected_bounded_action": "adjust_altitude",
+                "requires_human_approval": True,
+                "proposed_parameters": {"target_altitude_m": 45.0},
+            },
+            "agent_output": {
+                "selected_bounded_action": "adjust_altitude",
+                "requires_human_approval": True,
+                "proposed_parameters": {"target_altitude_m": 45.0},
+            },
+            "agent_invocations": [{"function_tool_called": True}],
+            "dispatch_authority_created": False,
+            "progress_counted": False,
+        }
+
+    monkeypatch.setattr(
+        live_run,
+        "_run_auto_runtime_recovery_agent_with_timeout",
+        _proposal,
+    )
+    base_snapshot = {
+        "elapsed_seconds": 20.0,
+        "progress_m": 100.0,
+        "local_x_m": 10.0,
+        "local_y_m": 5.0,
+        "local_z_m": -30.0,
+        "altitude_above_home_m": 30.0,
+        "battery_remaining_percent": 10.0,
+        "heartbeat_observed": True,
+        "nav_state": 3,
+        "landed": False,
+    }
+    live_run._attach_auto_runtime_recovery_agent_proposal(
+        store=store,
+        task_id=task["task_id"],
+        snapshot={**base_snapshot, "sample_index": 1},
+    )
+    first = store.get(task["task_id"])
+    assert first is not None
+    first_proposal = first["artifacts"]["missionos_runtime_recovery_last_proposal"]
+    first_id = first_proposal["proposal_id"]
+    store.update(
+        task["task_id"],
+        replace_artifacts={
+            "missionos_runtime_recovery_dispatch_receipt": {
+                "dispatch_status": "blocked",
+                "observed_at": datetime.now(timezone.utc).isoformat(),
+                "blocked_reasons": ["runtime_recovery_current_telemetry_stale"],
+                "proposal_revalidation": {"proposal_id": first_id},
+                "dispatch_authority_created": False,
+            }
+        },
+    )
+
+    live_run._attach_auto_runtime_recovery_agent_proposal(
+        store=store,
+        task_id=task["task_id"],
+        snapshot={**base_snapshot, "sample_index": 2, "elapsed_seconds": 40.0},
+    )
+
+    refreshed = store.get(task["task_id"])
+    assert refreshed is not None
+    proposals = refreshed["artifacts"]["missionos_runtime_recovery_proposals"]
+    assert proposals[first_id]["proposal_status"] == "stale"
+    assert proposals[first_id]["invalidation_reasons"] == [
+        "runtime_recovery_current_telemetry_stale"
+    ]
+
+
 def test_new_hard_obstacle_supersedes_valid_pending_proposal(
     tmp_path,
     monkeypatch,
@@ -2468,6 +2686,12 @@ def test_runtime_probe_never_resumes_auto_before_recovery_target_is_reached() ->
     assert "mission_state=listener('mission', 1)" in script
     assert "current_seq=parse_int(mission_state, 'current_seq')" in script
     assert "RESUME_MISSION_SEQ_AFTER_OBSTACLE=1" in script
+    assert "params=request.get('recovery_parameters')" in script
+    assert "params=params if isinstance(params, dict) else {}" in script
+    assert "deferred_route_obstacles=[]" in script
+    assert "separately_guarded_later_obstacle=bool(" in script
+    assert "'recovery_target_to_next_known_obstacle_guard_boundary'" in script
+    assert "'next_obstacle_recovery_guard_required': bool(deferred_route_obstacles)" in script
     assert "resume_mission_sequence_after_obstacle_not_observed" in script
     assert "wait_mission_current(" in script
     assert "safety_hold_active and nav == NAV_AUTO_LOITER" in script
@@ -2477,6 +2701,112 @@ def test_runtime_probe_never_resumes_auto_before_recovery_target_is_reached() ->
     assert "Re-observe PX4 on the" in script
     assert "time.sleep(1.0)\n            continue" in script
     compile(script, "<missionos-auto-runtime-probe>", "exec")
+
+
+def test_next_bound_obstacle_queues_a_fresh_safety_hold(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    queued_holds: list[dict] = []
+
+    def _queue_hold(**kwargs) -> dict:
+        queued_holds.append(dict(kwargs))
+        return {
+            "request_status": "queued",
+            "container_name": "missionos-px4-gazebo-sitl",
+            "container_path": kwargs["container_path"],
+            "bytes_written": 100,
+        }
+
+    monkeypatch.setattr(
+        live_run,
+        "queue_px4_active_runner_recovery_request",
+        _queue_hold,
+    )
+    store = TaskStore(str(tmp_path / "tasks.db"))
+    task = store.create(
+        task_id="task_two_obstacle_hold_cycle",
+        kind="contract_test",
+        title="Two obstacle hold cycle",
+        status="running",
+        artifacts={
+            "missionos_auto_mission_gui_dispatch_running_receipt": {
+                "dispatch_status": "running",
+                "operator_recovery_request_container_path": "/tmp/two-obstacle.json",
+            },
+            "mission_designer_coordinate_pair_route": {
+                "takeoff_latitude": 35.0,
+                "takeoff_longitude": 139.0,
+                "dropoff_latitude": 35.0,
+                "dropoff_longitude": 139.00591,
+            },
+            "missionos_auto_mission_runtime_snapshot": {
+                "gazebo_obstacle_model_spawned": True,
+                "obstacle_manifest": {
+                    "building_risk_detected": True,
+                    "gazebo_obstacle_model_spawned": True,
+                    "obstacles": [
+                        {
+                            "name": "missionos_route_obstacle_50pct",
+                            "x_m": 0.0,
+                            "y_m": 269.0,
+                            "size_x_m": 18.0,
+                            "size_y_m": 18.0,
+                        },
+                        {
+                            "name": "missionos_route_obstacle_75pct",
+                            "x_m": 0.0,
+                            "y_m": 404.0,
+                            "size_x_m": 18.0,
+                            "size_y_m": 18.0,
+                        },
+                    ],
+                },
+            },
+            "missionos_runtime_recovery_safety_hold_receipt": {
+                "request_status": "observed",
+                "conflict_assessment": {
+                    "nearest_obstacle": {"obstacle_name": "missionos_route_obstacle_50pct"}
+                },
+            },
+        },
+    )
+
+    live_run._attach_auto_runtime_recovery_agent_proposal(
+        store=store,
+        task_id=task["task_id"],
+        snapshot={
+            "sample_index": 100,
+            "elapsed_seconds": 160.0,
+            "progress_m": 300.0,
+            "local_x_m": 0.0,
+            "local_y_m": 300.0,
+            "local_z_m": -45.0,
+            "altitude_above_home_m": 45.0,
+            "battery_remaining_percent": 80.0,
+            "heartbeat_observed": True,
+            "nav_state": 3,
+            "landed": False,
+            "operator_recovery_request_observed": True,
+            "operator_recovery_action": "avoid_obstacle",
+            "operator_recovery_parameters": {
+                "source_obstacle_name": "missionos_route_obstacle_50pct"
+            },
+            "operator_recovery_assist_status": "target_reached",
+            "operator_recovery_target_reached": True,
+            "operator_recovery_resume_auto_status": "resumed_auto_mission",
+        },
+    )
+
+    assert len(queued_holds) == 1
+    stored = store.get(task["task_id"])
+    assert stored is not None
+    receipt = stored["artifacts"]["missionos_runtime_recovery_safety_hold_receipt"]
+    assert receipt["request_status"] == "queued"
+    assert (
+        receipt["conflict_assessment"]["nearest_obstacle"]["obstacle_name"]
+        == "missionos_route_obstacle_75pct"
+    )
 
 
 def test_stream_window_without_target_is_a_failed_recovery_observation() -> None:
@@ -2672,6 +3002,51 @@ def test_obstacle_conflict_projection_waits_until_destination_obstacle_is_local(
     assert distant["nearest_obstacle"]["distance_to_obstacle_m"] == 396.0
     assert local["local_avoidance_required"] is True
     assert local["nearest_obstacle"]["time_to_conflict_s"] == 10.0
+
+
+def test_obstacle_conflict_projection_selects_next_local_conflict_not_passed_one() -> None:
+    artifacts = {
+        "mission_designer_coordinate_pair_route": {
+            "takeoff_latitude": 35.0,
+            "takeoff_longitude": 139.0,
+            "dropoff_latitude": 35.0,
+            "dropoff_longitude": 139.00591,
+        }
+    }
+    projection = live_run._auto_runtime_obstacle_conflict_projection(
+        snapshot={
+            "local_x_m": 0.0,
+            "local_y_m": 300.0,
+            "local_vx_mps": 0.0,
+            "local_vy_mps": 10.0,
+        },
+        artifacts=artifacts,
+        obstacle_projection={
+            "projection_status": "source_backed",
+            "obstacle_manifest": {
+                "obstacles": [
+                    {
+                        "name": "missionos_route_obstacle_50pct",
+                        "x_m": 0.0,
+                        "y_m": 269.5,
+                        "size_x_m": 18.0,
+                        "size_y_m": 18.0,
+                    },
+                    {
+                        "name": "missionos_route_obstacle_75pct",
+                        "x_m": 0.0,
+                        "y_m": 404.25,
+                        "size_x_m": 18.0,
+                        "size_y_m": 18.0,
+                    },
+                ]
+            },
+        },
+    )
+
+    assert projection["local_avoidance_required"] is True
+    assert projection["nearest_obstacle"]["obstacle_index"] == 1
+    assert projection["nearest_obstacle"]["obstacle_name"] == ("missionos_route_obstacle_75pct")
 
 
 def test_recovery_window_treats_source_backed_obstacle_as_hard_news() -> None:
@@ -2895,6 +3270,55 @@ def test_near_route_obstacle_compiles_local_avoidance_with_conflict_facts() -> N
     assert conflict["local_avoidance_required"] is True
     assert conflict["route_corridor_intersects"] is True
     assert conflict["time_to_conflict_s"] == 9.0
+
+
+def test_second_route_obstacle_becomes_the_next_bound_recovery_target() -> None:
+    telemetry = _planner_tool_telemetry()
+    telemetry["position"].update({"local_x_m": 300.0, "local_y_m": 0.0})
+    telemetry["route"]["active_leg"] = {
+        "from_x_m": 300.0,
+        "from_y_m": 0.0,
+        "to_x_m": 539.0,
+        "to_y_m": 0.0,
+    }
+    telemetry["route"]["ground_speed_mps"] = 10.0
+    telemetry["obstacle"]["obstacle_manifest"]["obstacles"] = [
+        {
+            "name": "missionos_route_obstacle_50pct",
+            "x_m": 269.5,
+            "y_m": 0.0,
+            "size_x_m": 18.0,
+            "size_y_m": 18.0,
+        },
+        {
+            "name": "missionos_route_obstacle_75pct",
+            "x_m": 404.25,
+            "y_m": 0.0,
+            "size_x_m": 18.0,
+            "size_y_m": 18.0,
+        },
+    ]
+    telemetry["obstacle"]["conflict_assessment"] = {
+        "assessment_status": "computed",
+        "local_avoidance_required": True,
+        "nearest_obstacle": {
+            "obstacle_index": 1,
+            "obstacle_name": "missionos_route_obstacle_75pct",
+            "local_avoidance_required": True,
+        },
+    }
+
+    planner = missionos_agent_runtime.plan_runtime_recovery_maneuver(
+        telemetry_snapshot=telemetry,
+        recovery_policy=_planner_policy(),
+        requested_action="avoid_obstacle",
+    )
+
+    candidate = planner["recommended_candidate"]
+    assert candidate["basis"]["obstacle_name"] == ("missionos_route_obstacle_75pct")
+    assert candidate["proposed_parameters"]["source_obstacle_name"] == (
+        "missionos_route_obstacle_75pct"
+    )
 
 
 def test_local_route_conflict_rejects_unproven_altitude_only_candidate() -> None:
@@ -3131,6 +3555,39 @@ def test_running_snapshot_preserves_operator_maneuver_observation() -> None:
     assert "kind=bounded_offboard_obstacle_avoidance_reroute" in assist_line
     assert "target=True" in assist_line
     assert "resume=resumed_auto_mission" in assist_line
+
+
+def test_runtime_probe_timeout_extends_only_by_observed_recovery_time(
+    tmp_path,
+) -> None:
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+
+    assert auto_probe._running_snapshot_recovery_extension_seconds(run_dir) == 0.0
+
+    (run_dir / "running_snapshot.json").write_text(
+        json.dumps({"monitor_excluded_recovery_seconds": 125.5}),
+        encoding="utf-8",
+    )
+    assert auto_probe._running_snapshot_recovery_extension_seconds(run_dir) == 125.5
+
+    (run_dir / "running_snapshot.json").write_text(
+        json.dumps({"monitor_excluded_recovery_seconds": -10}),
+        encoding="utf-8",
+    )
+    assert auto_probe._running_snapshot_recovery_extension_seconds(run_dir) == 0.0
+
+
+def test_gateway_timeout_extends_only_by_observed_recovery_time(tmp_path) -> None:
+    artifact_root = tmp_path / "artifacts"
+    snapshot_dir = artifact_root / "run"
+    snapshot_dir.mkdir(parents=True)
+    (snapshot_dir / "running_snapshot.json").write_text(
+        json.dumps({"monitor_excluded_recovery_seconds": 80.25}),
+        encoding="utf-8",
+    )
+
+    assert live_run._auto_running_snapshot_recovery_extension_seconds(artifact_root) == 80.25
 
 
 def test_live_trajectory_breaks_on_unobserved_sample_gap() -> None:
@@ -3497,6 +3954,94 @@ def test_mission_map_model_separates_plan_observed_avoidance_and_obstacles() -> 
     assert model["avoidance"]["resume_auto_status"] == "resumed_auto_mission"
 
 
+def test_mission_map_preserves_two_observed_recovery_attempts() -> None:
+    payload = json.loads(json.dumps(_obstacle_recovery_map_payload()))
+    monitor = payload["artifacts"]["missionos_auto_mission_probe_observed"]["monitor"]
+
+    def attempt(*, proposal_id: str, obstacle_name: str, x_m: float, y_m: float) -> dict:
+        return {
+            "request": {
+                "proposal_id": proposal_id,
+                "recovery_action": "avoid_obstacle",
+                "recovery_parameters": {
+                    "source_obstacle_name": obstacle_name,
+                    "target_x_m": x_m,
+                    "target_y_m": y_m,
+                    "target_altitude_m": 45.0,
+                },
+            },
+            "command": {
+                "status": "target_reached",
+                "recovery_path": "SET_POSITION_TARGET_LOCAL_NED:avoid_obstacle",
+                "target": {
+                    "target_x_m": x_m,
+                    "target_y_m": y_m,
+                    "target_z_m": -45.0,
+                },
+                "target_reached": True,
+                "resume_auto_status": "resumed_auto_mission",
+                "maneuver_observation_samples": [
+                    {"x_m": x_m - 12.0, "y_m": y_m - 18.0},
+                    {"x_m": x_m, "y_m": y_m},
+                ],
+            },
+        }
+
+    monitor["operator_recovery_attempts"] = [
+        attempt(
+            proposal_id="runtime_recovery_proposal_50",
+            obstacle_name="missionos_route_obstacle_50pct",
+            x_m=100.0,
+            y_m=45.0,
+        ),
+        attempt(
+            proposal_id="runtime_recovery_proposal_75",
+            obstacle_name="missionos_route_obstacle_75pct",
+            x_m=150.0,
+            y_m=55.0,
+        ),
+    ]
+    manifest = payload["artifacts"]["missionos_auto_mission_probe_observed"][
+        "gazebo_obstacle_application"
+    ]["obstacle_manifest"]
+    manifest["obstacles"] = [
+        {
+            "name": "missionos_route_obstacle_50pct",
+            "x_m": 92.0,
+            "y_m": 38.0,
+            "z_m": 10.0,
+            "size_x_m": 18.0,
+            "size_y_m": 18.0,
+            "size_z_m": 20.0,
+        },
+        {
+            "name": "missionos_route_obstacle_75pct",
+            "x_m": 142.0,
+            "y_m": 48.0,
+            "z_m": 10.0,
+            "size_x_m": 18.0,
+            "size_y_m": 18.0,
+            "size_z_m": 20.0,
+        },
+    ]
+
+    model = missionos_cli._mission_map_model(
+        task_payload=payload,
+        provider="osm",
+        live_task_url=None,
+    )
+    html = missionos_cli._mission_map_html(model)
+
+    assert len(model["avoidances"]) == 2
+    assert [item["proposal_id"] for item in model["avoidances"]] == [
+        "runtime_recovery_proposal_50",
+        "runtime_recovery_proposal_75",
+    ]
+    assert model["avoidance"] == model["avoidances"][-1]
+    assert "recoveryLabel" in html
+    assert "avoidancePointSets" in html
+
+
 def test_mission_map_html_and_watch_surface_obstacle_layers() -> None:
     payload = _obstacle_recovery_map_payload()
     artifacts = payload["artifacts"]
@@ -3515,7 +4060,7 @@ def test_mission_map_html_and_watch_surface_obstacle_layers() -> None:
     assert "outbound →" in html
     assert "Recovery bypass →" in html
     assert "collision footprint" in html
-    assert "3 Old target" in html
+    assert "Old target" in html
 
     console = Console(record=True, color_system=None, width=120)
     console.print(

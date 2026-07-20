@@ -201,6 +201,34 @@ def test_active_v2_signature_does_not_inherit_legacy_threshold_jitter() -> None:
     assert after_real_state_change != before
 
 
+def test_distinct_local_obstacles_create_distinct_categorical_epochs() -> None:
+    summary = _summary(elapsed_s=30.0)
+    summary["hard_breaches"]["obstacle_or_building_risk"] = True
+    summary["hard_breaches"]["any"] = True
+
+    def state(obstacle_name: str) -> dict:
+        return live_run._runtime_recovery_categorical_decision_state(
+            summary,
+            telemetry_snapshot={
+                "nav_state": 4,
+                "landed": False,
+                "obstacle": {
+                    "conflict_assessment": {
+                        "local_avoidance_required": True,
+                        "nearest_obstacle": {"obstacle_name": obstacle_name},
+                    }
+                },
+            },
+        )
+
+    first = state("missionos_route_obstacle_50pct")
+    second = state("missionos_route_obstacle_75pct")
+
+    assert first["active_obstacle_name"] == "missionos_route_obstacle_50pct"
+    assert second["active_obstacle_name"] == "missionos_route_obstacle_75pct"
+    assert first != second
+
+
 def test_wind_limit_jitter_is_absorbed_by_hysteresis() -> None:
     initial = _state(_summary(elapsed_s=30.0, wind_mps=5.9))
     just_above = _state(

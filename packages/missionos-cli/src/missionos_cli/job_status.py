@@ -9,6 +9,11 @@ import json
 import math
 
 
+_TERMINAL_TASK_STATUSES = frozenset(
+    {"completed", "recovered", "blocked", "failed", "cancelled", "canceled"}
+)
+
+
 def _status_text(value: Any, default: str = "-") -> str:
     if value is None or value == "":
         return default
@@ -854,6 +859,37 @@ def _job_operator_summary(task_payload: dict[str, Any]) -> list[str]:
     reached_seq = _as_int(snapshot.get("mission_reached_seq"))
     current_seq = _as_int(snapshot.get("mission_current_seq"))
     waypoint_total = _as_int(snapshot.get("waypoint_total"))
+    replay_latest = replay.get("latest_sample")
+    replay_latest = replay_latest if isinstance(replay_latest, dict) else {}
+    if task_status in _TERMINAL_TASK_STATUSES and _as_bool(replay.get("dropoff_verified")) is True:
+        # A later post-run return snapshot must not replace the terminal
+        # outbound/dropoff evidence in the mission progress line. Return and
+        # landing evidence are reported separately below.
+        progress_m = _first_numeric(
+            replay.get("horizontal_progress_m"),
+            replay_latest.get("horizontal_progress_m"),
+            progress_m,
+        )
+        elapsed_seconds = _first_numeric(
+            replay.get("elapsed_seconds"),
+            replay_latest.get("elapsed_s"),
+            elapsed_seconds,
+        )
+        reached_seq = (
+            _as_int(
+                _first_present(replay.get("mission_reached_seq"), replay_latest.get("seq_reached"))
+            )
+            or reached_seq
+        )
+        current_seq = (
+            _as_int(
+                _first_present(
+                    replay.get("mission_current_seq"),
+                    replay_latest.get("mission_current_seq"),
+                )
+            )
+            or current_seq
+        )
     progress_percent = _job_progress_percent(
         progress_m=progress_m,
         route_distance_m=route_distance_m,
@@ -866,6 +902,8 @@ def _job_operator_summary(task_payload: dict[str, Any]) -> list[str]:
         route_distance_m=route_distance_m,
         monitor_seconds=monitor_seconds,
     )
+    if task_status in _TERMINAL_TASK_STATUSES:
+        eta_seconds = None
     progress_text = (
         f"{_format_distance(progress_m)} / {_format_distance(route_distance_m)}"
         if route_distance_m is not None

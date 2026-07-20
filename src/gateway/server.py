@@ -2960,6 +2960,14 @@ def _bounded_operator_recovery_parameters(
             out["target_altitude_m"] = altitude
         if recovery_action == "avoid_obstacle":
             out["obstacle_avoidance_required"] = True
+            source_obstacle_name = str(parameters.get("source_obstacle_name") or "").strip()
+            if source_obstacle_name:
+                if len(source_obstacle_name) > 200:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="source_obstacle_name must be at most 200 characters",
+                    )
+                out["source_obstacle_name"] = source_obstacle_name
         alternate_dropoff = _bounded_recovery_bool(
             parameters,
             "alternate_dropoff",

@@ -3198,32 +3198,43 @@ def _pending_recovery_approval_from_task(
     task_kind = str(task.get("kind") or "")
     task_status = str(task.get("status") or "").strip().lower()
     runtime_proposal = artifacts.get("missionos_runtime_recovery_last_proposal")
-    runtime_proposal = (
-        runtime_proposal if isinstance(runtime_proposal, Mapping) else {}
-    )
+    runtime_proposal = runtime_proposal if isinstance(runtime_proposal, Mapping) else {}
+    runtime_proposal_schema = str(runtime_proposal.get("schema_version") or "")
     if (
         task_kind != "turtlebot3_home_mission_execution"
         and task_status == "running"
-        and runtime_proposal.get("schema_version")
-        == "missionos_runtime_recovery_proposal_evidence.v1"
-        and runtime_proposal.get("proposal_status")
-        == "awaiting_operator_approval"
+        and runtime_proposal_schema
+        in {
+            "missionos_runtime_recovery_proposal_evidence.v1",
+            "missionos_runtime_recovery_proposal_evidence.v2",
+        }
+        and runtime_proposal.get("proposal_status") == "awaiting_operator_approval"
     ):
         runtime_result = runtime_proposal.get("runtime_recovery_agent_result")
         runtime_result = (
             runtime_result if isinstance(runtime_result, Mapping) else {}
         )
         runtime_assessment = runtime_result.get("assessment")
-        runtime_assessment = (
-            runtime_assessment if isinstance(runtime_assessment, Mapping) else {}
-        )
+        runtime_assessment = runtime_assessment if isinstance(runtime_assessment, Mapping) else {}
+        compilation = runtime_assessment.get("intent_compilation")
+        compilation = compilation if isinstance(compilation, Mapping) else {}
+        reachability = runtime_assessment.get("reachability_verification")
+        reachability = reachability if isinstance(reachability, Mapping) else {}
+        if runtime_proposal_schema.endswith(".v2") and (
+            compilation.get("compilation_status") != "compiled"
+            or reachability.get("verification_status") != "verified"
+            or reachability.get("reachability_verified") is not True
+        ):
+            return None
         selected_action = str(
-            runtime_assessment.get("selected_bounded_action") or ""
+            compilation.get("compiled_action")
+            or runtime_assessment.get("selected_bounded_action")
+            or ""
         ).strip()
-        dispatch_action = _recovery_dispatch_action_from_proposal_action(
-            selected_action
+        dispatch_action = _recovery_dispatch_action_from_proposal_action(selected_action)
+        proposed_parameters = compilation.get("compiled_parameters") or runtime_assessment.get(
+            "proposed_parameters"
         )
-        proposed_parameters = runtime_assessment.get("proposed_parameters")
         proposed_parameters = (
             dict(proposed_parameters)
             if isinstance(proposed_parameters, Mapping)
@@ -3278,6 +3289,7 @@ def _pending_recovery_approval_from_task(
                 "checkpoint_id": "",
                 "checkpoint_hash": "",
                 "checkpoint_approval_supported": True,
+                "runtime_proposal_approval_supported": True,
                 "checkpoint_revision_supported": False,
                 "checkpoint_dispatch_supported": True,
                 "operator_guidance_required": False,
@@ -4080,9 +4092,16 @@ def _render_chat_recovery_review(pending: dict[str, Any]) -> Panel:
         checkpoint_text += f" hash={checkpoint_hash[:12]}"
     reason = str(pending.get("proposal_reason") or "").strip() or "-"
     approval_supported = pending.get("checkpoint_approval_supported") is True
+    runtime_proposal_approval = pending.get("runtime_proposal_approval_supported") is True
     revision_supported = pending.get("checkpoint_revision_supported") is True
     operator_guidance_required = pending.get("operator_guidance_required") is True
-    if approval_supported and revision_supported:
+    if runtime_proposal_approval:
+        decision_text = (
+            "[bold]y[/bold]=approve exact proposal  "
+            "[bold]d/Enter[/bold]=defer with no dispatch  "
+            "change unavailable for this robot profile"
+        )
+    elif approval_supported and revision_supported:
         decision_text = (
             "[bold]y[/bold]=approve exact checkpoint  "
             "[bold]d/Enter[/bold]=defer with no dispatch  "
@@ -4112,7 +4131,11 @@ def _render_chat_recovery_review(pending: dict[str, Any]) -> Panel:
         f"reason={rich_escape(reason)}",
         f"evidence={rich_escape(evidence_text)}",
         f"planner={rich_escape(planner_text)}",
-        f"checkpoint={rich_escape(checkpoint_text)}",
+        (
+            "proposal=" + rich_escape(str(pending.get("recovery_proposal_id") or "not-applicable"))
+            if runtime_proposal_approval
+            else f"checkpoint={rich_escape(checkpoint_text)}"
+        ),
         "dispatch_authority=False · physical_execution_invoked=False",
         "",
         decision_text,

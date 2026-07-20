@@ -37,6 +37,8 @@ def _mission_map_html(model: dict[str, Any]) -> str:
 	      --yellow: #facc15;
 	      --orange: #fb923c;
 	      --red: #f97373;
+	      --cyan: #22d3ee;
+	      --gap: #64748b;
 	    }}
     * {{ box-sizing: border-box; }}
     body {{
@@ -95,7 +97,7 @@ def _mission_map_html(model: dict[str, Any]) -> str:
 	      stroke: rgba(2, 6, 23, 0.46);
 	      stroke-linecap: round;
 	      stroke-linejoin: round;
-	      stroke-width: 12;
+	      stroke-width: 6;
 	    }}
 	    .planned-path {{
 	      fill: none;
@@ -110,7 +112,21 @@ def _mission_map_html(model: dict[str, Any]) -> str:
 	      stroke: var(--blue);
 	      stroke-linecap: round;
 	      stroke-linejoin: round;
-	      stroke-width: 4;
+	      stroke-width: 4.5;
+	    }}
+	    .observed-return-path {{
+	      fill: none;
+	      stroke: var(--cyan);
+	      stroke-linecap: round;
+	      stroke-linejoin: round;
+	      stroke-width: 4.5;
+	      stroke-dasharray: 10 7;
+	    }}
+	    .telemetry-gap {{
+	      fill: none;
+	      stroke: var(--gap);
+	      stroke-width: 3;
+	      stroke-dasharray: 7 7;
 	    }}
 	    .avoidance-path {{
 	      fill: none;
@@ -121,8 +137,12 @@ def _mission_map_html(model: dict[str, Any]) -> str:
 	    }}
 	    .marker-h {{ fill: var(--blue); stroke: white; stroke-width: 2; }}
 	    .marker-d {{ fill: var(--green); stroke: white; stroke-width: 2; }}
+	    .marker-d-blocked {{ fill: var(--green); stroke: #dc2626; stroke-width: 6; }}
+	    .marker-blocked-ring {{ fill: none; stroke: #dc2626; stroke-width: 4; stroke-dasharray: 5 3; }}
 	    .marker-current {{ fill: var(--red); stroke: white; stroke-width: 2; }}
 	    .marker-avoid {{ fill: var(--orange); stroke: white; stroke-width: 2; }}
+	    .marker-recovery-start {{ fill: #f59e0b; stroke: white; stroke-width: 2; }}
+	    .marker-rejoin {{ fill: #a78bfa; stroke: white; stroke-width: 2; }}
 	    .marker-obstacle {{ fill: #dc2626; stroke: white; stroke-width: 2; }}
 	    .obstacle-footprint {{ fill: rgba(220, 38, 38, 0.18); stroke: rgba(127, 29, 29, 0.78); stroke-width: 1.5; }}
 	    .label {{
@@ -162,7 +182,12 @@ def _mission_map_html(model: dict[str, Any]) -> str:
 	    .legend-swatch {{ width: 20px; height: 3px; border-radius: 999px; background: currentColor; }}
 	    .legend-planned {{ color: var(--yellow); }}
 	    .legend-observed {{ color: var(--blue); }}
+	    .legend-return {{ color: var(--cyan); }}
 	    .legend-avoidance {{ color: var(--orange); }}
+	    .legend-gap {{ color: var(--gap); }}
+	    .legend-gap .legend-swatch {{
+	      background: repeating-linear-gradient(90deg, currentColor 0 6px, transparent 6px 10px);
+	    }}
 	    .legend-obstacle {{ color: var(--red); }}
     .facts {{
       display: grid;
@@ -178,6 +203,23 @@ def _mission_map_html(model: dict[str, Any]) -> str:
     }}
     .fact span {{ display: block; color: var(--muted); font-size: 0.74rem; }}
     .fact strong {{ display: block; margin-top: 3px; overflow-wrap: anywhere; }}
+    .terminal-evidence {{
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      padding: 12px;
+    }}
+    .terminal-evidence[hidden] {{ display: none; }}
+    .terminal-evidence h2 {{ margin: 0 0 6px; font-size: 1rem; }}
+    .terminal-evidence img {{
+      display: block;
+      width: 100%;
+      height: auto;
+      margin-top: 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #07101f;
+    }}
     code {{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }}
   </style>
 </head>
@@ -186,11 +228,16 @@ def _mission_map_html(model: dict[str, Any]) -> str:
 	    <header>
 	      <div>
 	        <h1>MissionOS 2D Map</h1>
-	        <div class="muted">Real basemap tiles plus MissionOS planned route, observed trajectory, recovery maneuver, and obstacle overlays. This is read-only evidence display, not a verifier, dispatch control, or delivery claim.</div>
+	        <div class="muted">Follow the numbered markers: departure → Recovery → pass beside obstacle → route rejoin → dropoff → return home. Blue/cyan and orange lines are saved observations; gaps are never drawn as movement. This read-only map does not grant authority or claim delivery.</div>
         <div class="muted live-status" id="liveStatus">Snapshot loaded.</div>
       </div>
       <div class="pill" id="providerPill">provider</div>
     </header>
+    <section class="terminal-evidence" id="terminalEvidence" hidden>
+      <h2>Terminal E2E Route Evidence / 実行後の航跡証拠</h2>
+      <div class="muted">Generated from persisted observations for this task. The source task artifacts—not this image—remain authoritative for approval, dispatch, verification, completion, delivery, and physical-execution claims.</div>
+      <img id="terminalEvidenceImage" alt="MissionOS terminal E2E route evidence" />
+    </section>
     <section id="map" class="map" aria-label="MissionOS 2D map"></section>
     <section class="facts" id="facts"></section>
   </main>
@@ -202,6 +249,8 @@ def _mission_map_html(model: dict[str, Any]) -> str:
     const factsEl = document.getElementById("facts");
     const providerEl = document.getElementById("providerPill");
     const liveStatusEl = document.getElementById("liveStatus");
+    const terminalEvidenceEl = document.getElementById("terminalEvidence");
+    const terminalEvidenceImageEl = document.getElementById("terminalEvidenceImage");
     providerEl.textContent = data.provider.label;
     const liveConfig = data.live || {{ enabled: false }};
     const terminalStatuses = new Set(liveConfig.terminal_statuses || []);
@@ -658,6 +707,10 @@ def _mission_map_html(model: dict[str, Any]) -> str:
 	    }}
 
 	    function mapModelFromTaskPayload(payload) {{
+	      if (payload && payload.missionos_map_model
+	        && typeof payload.missionos_map_model === "object") {{
+	        return payload.missionos_map_model;
+	      }}
 	      const artifacts = taskArtifacts(payload);
 	      const route = routeFromArtifacts(artifacts);
 	      if (!route) throw new Error("task does not include source route coordinates");
@@ -806,8 +859,36 @@ def _mission_map_html(model: dict[str, Any]) -> str:
 	          ].join(" · ");
 	        }}
 
+	        function batterySummary(battery) {{
+	          if (!battery || typeof battery !== "object") return "-";
+	          const display = firstNumber(battery.display_percent);
+	          const reported = firstNumber(battery.reported_percent);
+	          const parts = [
+	            display === null ? "-" : `${{display.toFixed(1)}}%`,
+	            `source=${{statusText(battery.source, "unknown")}}`,
+	            `status=${{statusText(battery.status)}}`,
+	            `sample=${{statusText(battery.sample_index)}}`,
+	            `observed_at=${{statusText(battery.observed_at)}}`,
+	          ];
+	          if (battery.reset_detected === true) {{
+	            const delta = firstNumber(battery.reset_delta_percent);
+	            parts.push(`reported=${{reported === null ? "-" : `${{reported.toFixed(1)}}%`}} rejected_reset=${{delta === null ? "-" : `+${{delta.toFixed(1)}}pp`}}`);
+	          }}
+	          return parts.join(" · ");
+	        }}
+
 	    function render() {{
 	      mapEl.innerHTML = "";
+	      const status = statusText(data.task_status, "-").trim().toLowerCase();
+	      const evidenceUrl = statusText(
+	        ((data.live || {{}}).evidence_image_url || liveConfig.evidence_image_url),
+	        "",
+	      );
+	      const showTerminalEvidence = terminalStatuses.has(status) && Boolean(evidenceUrl);
+	      terminalEvidenceEl.hidden = !showTerminalEvidence;
+	      if (showTerminalEvidence && terminalEvidenceImageEl.getAttribute("src") !== evidenceUrl) {{
+	        terminalEvidenceImageEl.setAttribute("src", evidenceUrl);
+	      }}
 	      const width = mapEl.clientWidth || 980;
 	      const height = mapEl.clientHeight || 560;
 	      const plannedPoints = validPoints(
@@ -815,12 +896,41 @@ def _mission_map_html(model: dict[str, Any]) -> str:
 	          ? data.planned_points
 	          : [data.route.takeoff, data.route.dropoff],
 	      );
-	      const observedPoints = validPoints(data.observed_points || data.points || []);
-	      const avoidance = data.avoidance || {{}};
-	      const avoidancePoints = validPoints([
-	        ...(Array.isArray(avoidance.samples) ? avoidance.samples : []),
-	        ...(avoidance.target ? [avoidance.target] : []),
-	      ]);
+	      const observedSegmentDetails = Array.isArray(data.observed_segment_details)
+	        ? data.observed_segment_details.map((detail) => ({{
+	            ...detail,
+	            points: validPoints((detail || {{}}).points || []),
+	          }})).filter((detail) => detail.points.length)
+	        : Array.isArray(data.observed_segments)
+	          ? data.observed_segments.map((segment, index) => ({{
+	              points: validPoints(segment || []),
+	              role: index === 0 ? "outbound" : "observed",
+	            }})).filter((detail) => detail.points.length)
+	          : [{{
+	              points: validPoints(data.observed_points || data.points || []),
+	              role: "outbound",
+	            }}].filter((detail) => detail.points.length);
+	      const observedSegments = observedSegmentDetails.map((detail) => detail.points);
+	      const observedPoints = observedSegments.flat();
+	      const avoidances = (
+	        Array.isArray(data.avoidances) && data.avoidances.length
+	          ? data.avoidances
+	          : data.avoidance ? [data.avoidance] : []
+	      );
+	      const avoidance = avoidances.length ? avoidances[avoidances.length - 1] : {{}};
+	      const avoidancePointSets = avoidances.map((item) => validPoints([
+	        ...(item.start ? [item.start] : []),
+	        ...(Array.isArray(item.samples) ? item.samples : []),
+	        ...(item.target ? [item.target] : []),
+	      ]));
+	      const avoidancePoints = avoidancePointSets.flat();
+	      const observedGaps = (Array.isArray(data.observed_gaps) ? data.observed_gaps : [])
+	        .map((gap) => ({{
+	          ...gap,
+	          from: validPoints(gap && gap.from ? [gap.from] : [])[0] || null,
+	          to: validPoints(gap && gap.to ? [gap.to] : [])[0] || null,
+	        }}))
+	        .filter((gap) => gap.from && gap.to);
 	      const obstacles = validPoints(data.obstacles || []);
 	      const routePoints = validPoints([
 	        data.route.takeoff,
@@ -828,7 +938,9 @@ def _mission_map_html(model: dict[str, Any]) -> str:
 	        ...plannedPoints,
 	        ...observedPoints,
 	        ...avoidancePoints,
+	        ...observedGaps.flatMap((gap) => [gap.from, gap.to]),
 	        ...obstacles,
+	        ...obstacles.flatMap((obstacle) => validPoints(obstacle.footprint || [])),
 	      ]);
 	      const zoom = zoomFor(routePoints, width, height);
 	      const projected = routePoints.map((point) => mercator(point.lon, point.lat, zoom));
@@ -865,38 +977,103 @@ def _mission_map_html(model: dict[str, Any]) -> str:
 	        return {{ x: projectedPoint.x - left, y: projectedPoint.y - top }};
 	      }};
 	      const plannedD = pathD(plannedPoints, toOverlay);
-	      const observedD = pathD(observedPoints, toOverlay);
-	      const avoidanceD = pathD(avoidancePoints, toOverlay);
+	      const observedMarkup = observedSegmentDetails.map((detail) => {{
+	        const d = pathD(detail.points, toOverlay);
+	        const pathClass = detail.role === "return_to_home"
+	          ? "observed-return-path"
+	          : "observed-path";
+	        const arrow = detail.role === "return_to_home" ? "arrow-return" : "arrow-outbound";
+	        return d ? `<path class="${{pathClass}}" d="${{d}}" marker-end="url(#${{arrow}})"></path>` : "";
+	      }}).join("");
+	      const recoveryCoversGap = avoidancePointSets.some((points) => points.length >= 2);
+	      const gapMarkup = observedGaps.map((gap) => {{
+	        if (recoveryCoversGap) return "";
+	        const d = pathD([gap.from, gap.to], toOverlay);
+	        if (!d) return "";
+	        const from = toOverlay(gap.from);
+	        const to = toOverlay(gap.to);
+	        const labelX = Math.min(width - 210, Math.max(12, (from.x + to.x) / 2 + 8));
+	        const labelY = Math.min(height - 16, Math.max(22, (from.y + to.y) / 2 - 8));
+	        return `<path class="telemetry-gap" d="${{d}}"></path><text class="label" x="${{labelX.toFixed(2)}}" y="${{labelY.toFixed(2)}}">telemetry missing</text>`;
+	      }}).join("");
+	      const avoidanceMarkup = avoidancePointSets.map((points) => {{
+	        const d = pathD(points, toOverlay);
+	        return d ? `<path class="avoidance-path" d="${{d}}" marker-end="url(#arrow-recovery)"></path>` : "";
+	      }}).join("");
 	      const home = toOverlay(data.route.takeoff);
 	      const dropoff = toOverlay(data.route.dropoff);
 	      const latest = data.latest ? toOverlay(data.latest) : null;
-	      const avoidTargetPoint = validPoints(avoidance.target ? [avoidance.target] : [])[0] || null;
-	      const avoidTarget = avoidTargetPoint ? toOverlay(avoidTargetPoint) : null;
-	      const obstacleMarkup = obstacles.map((obstacle) => {{
+	      const terminalMarkerLabel = statusText(data.terminal_marker_label, "current");
+	      const terminalAtHome = ["landed at home", "mission ended at home"].includes(terminalMarkerLabel);
+	      const recoveryMarkers = avoidances.map((item, index) => {{
+	        const startPoint = validPoints(item.start ? [item.start] : [])[0] || null;
+	        const targetPoint = validPoints(item.target ? [item.target] : [])[0] || null;
+	        const rejoinPoint = validPoints(item.route_rejoin ? [item.route_rejoin] : [])[0] || null;
+	        return {{
+	          index: index + 1,
+	          item,
+	          recoveryLabel: avoidances.length === 1 ? "2 Recovery" : `R${{index + 1}} Recovery`,
+	          bypassLabel: avoidances.length === 1 ? "3 Bypass" : `R${{index + 1}} Bypass`,
+	          oldTargetLabel: avoidances.length === 1 ? "3 Old target" : `R${{index + 1}} Old target`,
+	          rejoinLabel: avoidances.length === 1 ? "4 Rejoin" : `R${{index + 1}} Rejoin`,
+	          start: startPoint ? toOverlay(startPoint) : null,
+	          target: targetPoint ? toOverlay(targetPoint) : null,
+	          rejoin: rejoinPoint ? toOverlay(rejoinPoint) : null,
+	        }};
+	      }});
+	      const recoveryMarkerMarkup = recoveryMarkers.map((marker) => `
+	        ${{marker.start ? `<circle class="marker-recovery-start" cx="${{marker.start.x.toFixed(2)}}" cy="${{marker.start.y.toFixed(2)}}" r="7"></circle><text class="label" x="${{Math.min(width - 150, marker.start.x + 12).toFixed(2)}}" y="${{Math.min(height - 18, marker.start.y + 22).toFixed(2)}}">${{marker.recoveryLabel}}</text>` : ""}}
+	        ${{marker.target ? `<circle class="marker-avoid" cx="${{marker.target.x.toFixed(2)}}" cy="${{marker.target.y.toFixed(2)}}" r="8"></circle><text class="label" x="${{Math.min(width - 160, marker.target.x + 12).toFixed(2)}}" y="${{Math.min(height - 18, marker.target.y + 22).toFixed(2)}}">${{marker.item.target_beyond_obstacle === true ? marker.bypassLabel : marker.oldTargetLabel}}</text>` : ""}}
+	        ${{marker.rejoin ? `<circle class="marker-rejoin" cx="${{marker.rejoin.x.toFixed(2)}}" cy="${{marker.rejoin.y.toFixed(2)}}" r="7"></circle><text class="label" x="${{Math.min(width - 150, marker.rejoin.x + 12).toFixed(2)}}" y="${{Math.max(22, marker.rejoin.y - 12).toFixed(2)}}">${{marker.rejoinLabel}}</text>` : ""}}
+	      `).join("");
+	      const blockedDropoff = obstacles.some((obstacle) => obstacle.coincident_with_dropoff === true);
+	      const obstacleMarkup = obstacles.filter((obstacle) => obstacle.coincident_with_dropoff !== true).map((obstacle) => {{
 	        const point = toOverlay(obstacle);
-	        const labelX = Math.min(width - 120, point.x + 13).toFixed(2);
+	        const footprint = validPoints(obstacle.footprint || []);
+	        const footprintD = footprint.length >= 3
+	          ? pathD([...footprint, footprint[0]], toOverlay)
+	          : "";
+	        const labelX = Math.min(width - 190, point.x + 13).toFixed(2);
 	        const labelY = Math.max(22, point.y - 12).toFixed(2);
+	        const widthM = firstNumber(obstacle.size_x_m);
+	        const depthM = firstNumber(obstacle.size_y_m);
+	        const heightM = firstNumber(obstacle.size_z_m);
+	        const dimensions = widthM !== null && depthM !== null
+	          ? `${{widthM.toFixed(0)}}×${{depthM.toFixed(0)}}m footprint${{heightM !== null ? ` · height ${{heightM.toFixed(0)}}m` : ""}}`
+	          : "size unavailable";
 	        return `
+	          ${{footprintD ? `<path class="obstacle-footprint" d="${{footprintD}}"></path>` : ""}}
 	          <path class="marker-obstacle" d="M ${{point.x.toFixed(2)}} ${{(point.y - 10).toFixed(2)}} L ${{(point.x + 10).toFixed(2)}} ${{point.y.toFixed(2)}} L ${{point.x.toFixed(2)}} ${{(point.y + 10).toFixed(2)}} L ${{(point.x - 10).toFixed(2)}} ${{point.y.toFixed(2)}} Z">
-	            <title>${{escapeHtml(`${{statusText(obstacle.name)}} · ${{statusText(obstacle.source)}}`)}}</title>
+	            <title>${{escapeHtml(`${{statusText(obstacle.name)}} · ${{dimensions}} · ${{statusText(obstacle.source)}}`)}}</title>
 	          </path>
-	          <text class="label" x="${{labelX}}" y="${{labelY}}">O obstacle</text>
+	          <text class="label" x="${{labelX}}" y="${{labelY}}">O ${{widthM !== null && depthM !== null && heightM !== null ? `${{widthM.toFixed(0)}}×${{depthM.toFixed(0)}}×${{heightM.toFixed(0)}}m` : "obstacle"}}</text>
 	        `;
 	      }}).join("");
+	      const blockedDropoffMarkup = blockedDropoff
+	        ? `<circle class="marker-blocked-ring" cx="${{dropoff.x.toFixed(2)}}" cy="${{dropoff.y.toFixed(2)}}" r="16"></circle><path class="marker-obstacle" d="M ${{dropoff.x.toFixed(2)}} ${{(dropoff.y - 11).toFixed(2)}} L ${{(dropoff.x + 11).toFixed(2)}} ${{dropoff.y.toFixed(2)}} L ${{dropoff.x.toFixed(2)}} ${{(dropoff.y + 11).toFixed(2)}} L ${{(dropoff.x - 11).toFixed(2)}} ${{dropoff.y.toFixed(2)}} Z"><title>Obstacle overlaps dropoff</title></path>`
+	        : "";
 	      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
 	      svg.setAttribute("class", "overlay");
 	      svg.setAttribute("viewBox", `0 0 ${{width}} ${{height}}`);
 	      svg.innerHTML = `
+	        <defs>
+	          <marker id="arrow-outbound" markerUnits="userSpaceOnUse" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#38bdf8"></path></marker>
+	          <marker id="arrow-return" markerUnits="userSpaceOnUse" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#22d3ee"></path></marker>
+	          <marker id="arrow-recovery" markerUnits="userSpaceOnUse" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#fb923c"></path></marker>
+	        </defs>
 	        ${{plannedD ? `<path class="path-shadow" d="${{plannedD}}"></path><path class="planned-path" d="${{plannedD}}"></path>` : ""}}
-	        ${{observedD ? `<path class="path-shadow" d="${{observedD}}"></path><path class="observed-path" d="${{observedD}}"></path>` : ""}}
-	        ${{avoidanceD ? `<path class="path-shadow" d="${{avoidanceD}}"></path><path class="avoidance-path" d="${{avoidanceD}}"></path>` : ""}}
+	        ${{observedMarkup}}
+	        ${{gapMarkup}}
+	        ${{avoidanceMarkup}}
 	        ${{obstacleMarkup}}
 	        <circle class="marker-h" cx="${{home.x.toFixed(2)}}" cy="${{home.y.toFixed(2)}}" r="7"></circle>
-	        <text class="label" x="${{Math.min(width - 70, home.x + 12).toFixed(2)}}" y="${{Math.max(22, home.y - 10).toFixed(2)}}">H home</text>
-	        <circle class="marker-d" cx="${{dropoff.x.toFixed(2)}}" cy="${{dropoff.y.toFixed(2)}}" r="9"></circle>
-	        <text class="label" x="${{Math.min(width - 90, dropoff.x + 12).toFixed(2)}}" y="${{Math.max(22, dropoff.y - 10).toFixed(2)}}">D dropoff</text>
-	        ${{avoidTarget ? `<circle class="marker-avoid" cx="${{avoidTarget.x.toFixed(2)}}" cy="${{avoidTarget.y.toFixed(2)}}" r="8"></circle><text class="label" x="${{Math.min(width - 130, avoidTarget.x + 12).toFixed(2)}}" y="${{Math.min(height - 18, avoidTarget.y + 22).toFixed(2)}}">avoid target</text>` : ""}}
-	        ${{latest ? `<circle class="marker-current" cx="${{latest.x.toFixed(2)}}" cy="${{latest.y.toFixed(2)}}" r="7"></circle><text class="label" x="${{Math.min(width - 110, latest.x + 12).toFixed(2)}}" y="${{Math.min(height - 18, latest.y + 22).toFixed(2)}}">current</text>` : ""}}
+	        <text class="label" x="${{Math.min(width - 150, home.x + 12).toFixed(2)}}" y="${{Math.max(22, home.y - 10).toFixed(2)}}">1 Start</text>
+	        <circle class="${{blockedDropoff ? "marker-d-blocked" : "marker-d"}}" cx="${{dropoff.x.toFixed(2)}}" cy="${{dropoff.y.toFixed(2)}}" r="9"></circle>
+	        ${{blockedDropoffMarkup}}
+	        <text class="label" x="${{Math.min(width - 150, dropoff.x + 12).toFixed(2)}}" y="${{Math.max(22, dropoff.y - 10).toFixed(2)}}">${{blockedDropoff ? "5 Blocked" : "5 Dropoff"}}</text>
+	        ${{recoveryMarkerMarkup}}
+	        ${{latest && !terminalAtHome ? `<circle class="marker-current" cx="${{latest.x.toFixed(2)}}" cy="${{latest.y.toFixed(2)}}" r="7"></circle><text class="label" x="${{Math.min(width - 200, latest.x + 12).toFixed(2)}}" y="${{Math.min(height - 18, latest.y + 22).toFixed(2)}}">${{escapeHtml(terminalMarkerLabel)}}</text>` : ""}}
+	        ${{terminalAtHome ? `<text class="label" x="${{Math.min(width - 150, home.x + 12).toFixed(2)}}" y="${{Math.min(height - 18, home.y + 24).toFixed(2)}}">6 Home</text>` : ""}}
 	      `;
 	      mapEl.appendChild(svg);
 	      const attribution = document.createElement("a");
@@ -909,10 +1086,12 @@ def _mission_map_html(model: dict[str, Any]) -> str:
 	      const legend = document.createElement("div");
 	      legend.className = "legend";
 	      legend.innerHTML = `
-	        <span class="legend-item legend-planned"><span class="legend-swatch"></span>initial plan</span>
-	        <span class="legend-item legend-observed"><span class="legend-swatch"></span>observed trajectory</span>
-	        <span class="legend-item legend-avoidance"><span class="legend-swatch"></span>avoidance maneuver</span>
-	        <span class="legend-item legend-obstacle"><span class="legend-swatch"></span>obstacle</span>
+	        <span class="legend-item legend-planned"><span class="legend-swatch"></span>planned route</span>
+	        <span class="legend-item legend-observed"><span class="legend-swatch"></span>outbound →</span>
+	        <span class="legend-item legend-avoidance"><span class="legend-swatch"></span>Recovery bypass →</span>
+	        <span class="legend-item legend-return"><span class="legend-swatch"></span>return home →</span>
+	        <span class="legend-item legend-gap"><span class="legend-swatch"></span>missing main telemetry</span>
+	        <span class="legend-item legend-obstacle"><span class="legend-swatch"></span>collision footprint</span>
 	      `;
 	      mapEl.appendChild(legend);
 	          const telemetry = data.telemetry || {{}};
@@ -924,10 +1103,13 @@ def _mission_map_html(model: dict[str, Any]) -> str:
             ["terrain", `terrain=${{fmtMetres(telemetry.terrain_elevation_amsl_m)}} AMSL · AGL status=${{statusText(telemetry.agl_status)}}`],
 	            ["weather", weatherSummary(weather)],
 	            ["wind", `speed=${{fmtMps(weather.wind_speed_mps)}} · gust=${{fmtMps(weather.wind_gust_mps)}} · dir=${{fmtDegrees(weather.wind_direction_deg)}}`],
+	            ["battery", batterySummary(data.battery || {{}})],
 	            ["provider", data.provider.label],
 	            ["planned", `${{plannedPoints.length}}pts`],
-	            ["observed", `${{observedPoints.length}}pts`],
-	            ["avoidance", avoidanceSummary(avoidance)],
+	            ["observed", `${{observedPoints.length}}pts · ${{observedSegments.length}} segment(s)`],
+	            ["continuity", `${{observedGaps.length}} unobserved gap(s) · source=${{statusText(data.observed_trace_source)}}`],
+	            ["recoveries", `${{avoidances.length}} observed · ${{avoidances.map((item) => avoidanceSummary(item)).join(" | ") || "-"}}`],
+	            ["recovery geometry", avoidances.map((item) => statusText(item.geometry_status)).join(" | ") || "-"],
 	            ["obstacles", obstacleSummary(data.obstacles || [])],
 	            ["latest source", data.latest ? data.latest.source : "-"],
 	        ["live", data.live && data.live.enabled ? "polling" : "snapshot"],
