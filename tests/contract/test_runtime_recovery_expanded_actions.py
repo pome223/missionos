@@ -2679,6 +2679,10 @@ def test_runtime_probe_never_resumes_auto_before_recovery_target_is_reached() ->
     assert "preauthorized_safety_reflex_required" in script
     assert "NAV_AUTO_LOITER=4" in script
     assert "held_after_recovery_target_not_reached" in script
+    assert "'source': 'dispatch_current_position_observation'" in script
+    assert "'maneuver_observation_sample_count': len(maneuver_samples)" in script
+    assert "'maneuver_observation_samples': maneuver_samples," in script
+    assert "maneuver_samples[-5:]" not in script
     assert "MAVLINK_MSG_ID_MISSION_SET_CURRENT=41" in script
     assert "def mission_set_current(mission_seq, seq):" in script
     assert "struct.pack('<HBB', int(mission_seq), 1, 1)" in script

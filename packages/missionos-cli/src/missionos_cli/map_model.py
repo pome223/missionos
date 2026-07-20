@@ -310,6 +310,8 @@ def _mission_obstacle_records_from_artifacts(
                     "size_y_m": _as_float(obstacle.get("size_y_m")),
                     "size_z_m": _as_float(obstacle.get("size_z_m")),
                     "spawned": spawned,
+                    "collision_enabled": _as_bool(obstacle.get("collision_enabled")),
+                    "visual_only": _as_bool(obstacle.get("visual_only")),
                 }
             )
 
@@ -348,6 +350,8 @@ def _mission_obstacle_records_from_artifacts(
                             model.get("spawn_performed"),
                         )
                     ),
+                    "collision_enabled": _as_bool(model.get("collision_enabled")),
+                    "visual_only": _as_bool(model.get("visual_only")),
                 }
             )
 
@@ -404,6 +408,8 @@ def _operator_recovery_local_maneuver_from_record(
         parameters = snapshot.get("operator_recovery_parameters")
     parameters = parameters if isinstance(parameters, dict) else {}
     recovery_start = recovery_start if isinstance(recovery_start, dict) else {}
+    command_start = command.get("recovery_start_position")
+    command_start = command_start if isinstance(command_start, dict) else {}
 
     target_x = _first_numeric(
         target.get("target_x_m"),
@@ -469,15 +475,37 @@ def _operator_recovery_local_maneuver_from_record(
             "y_m": float(target_y),
             "altitude_m": float(target_altitude) if target_altitude is not None else None,
         }
-    start_x = _first_numeric(recovery_start.get("local_x_m"), recovery_start.get("x_m"))
-    start_y = _first_numeric(recovery_start.get("local_y_m"), recovery_start.get("y_m"))
+    start_x = _first_numeric(
+        command_start.get("local_x_m"),
+        command_start.get("x_m"),
+        command.get("first_local_x_m"),
+        recovery_start.get("local_x_m"),
+        recovery_start.get("x_m"),
+    )
+    start_y = _first_numeric(
+        command_start.get("local_y_m"),
+        command_start.get("y_m"),
+        command.get("first_local_y_m"),
+        recovery_start.get("local_y_m"),
+        recovery_start.get("y_m"),
+    )
     start_point = None
     if start_x is not None and start_y is not None:
+        start_source = _status_text(command_start.get("source"), "")
+        if not start_source and command.get("first_local_x_m") is not None:
+            start_source = "dispatch_current_position_observation"
+        if not start_source:
+            start_source = "dispatch_revalidation_current_position"
         start_point = {
             "x_m": start_x,
             "y_m": start_y,
-            "altitude_m": _as_float(recovery_start.get("altitude_above_home_m")),
-            "source": "dispatch_revalidation_current_position",
+            "altitude_m": _first_numeric(
+                command_start.get("altitude_above_home_m"),
+                command.get("first_altitude_above_home_m"),
+                recovery_start.get("altitude_above_home_m"),
+            ),
+            "source": start_source,
+            "observed": _as_bool(command_start.get("observed")) is not False,
         }
     elif samples:
         start_point = {
@@ -486,6 +514,27 @@ def _operator_recovery_local_maneuver_from_record(
             "altitude_m": samples[0].get("altitude_m"),
             "source": "first_saved_recovery_observation",
         }
+    observation_start_gap = None
+    if start_point and samples:
+        first_sample = samples[0]
+        start_gap_distance_m = math.hypot(
+            float(first_sample["x_m"]) - float(start_point["x_m"]),
+            float(first_sample["y_m"]) - float(start_point["y_m"]),
+        )
+        first_observation_delay_s = _as_float(first_sample.get("elapsed_s"))
+        if (
+            start_gap_distance_m > 10.0
+            and first_observation_delay_s is not None
+            and first_observation_delay_s > 5.0
+        ):
+            observation_start_gap = {
+                "from": start_point,
+                "to": first_sample,
+                "reason": "recovery_observation_started_late",
+                "distance_m": round(start_gap_distance_m, 3),
+                "elapsed_gap_s": round(first_observation_delay_s, 3),
+                "evidence_status": "not_observed_between_endpoints",
+            }
     return {
         "proposal_id": _status_text(request.get("proposal_id")),
         "source_obstacle_name": _status_text(parameters.get("source_obstacle_name")),
@@ -497,6 +546,11 @@ def _operator_recovery_local_maneuver_from_record(
         "start": start_point,
         "target": target_point,
         "samples": samples,
+        "observation_start_gap": observation_start_gap,
+        "maneuver_observation_sample_count": _as_int(
+            command.get("maneuver_observation_sample_count")
+        )
+        or len(samples),
         "target_reached": _as_bool(
             _first_present(
                 command.get("target_reached"),
@@ -1063,11 +1117,41 @@ def _mission_map_maneuver_from_local(
                 east_m=y_m,
             )
             start_point = {**start, "lat": lat, "lon": lon}
+    observation_start_gap = maneuver.get("observation_start_gap")
+    converted_start_gap = None
+    if isinstance(observation_start_gap, dict):
+        gap_from = observation_start_gap.get("from")
+        gap_to = observation_start_gap.get("to")
+
+        def converted_gap_point(raw: Any) -> dict[str, Any] | None:
+            if not isinstance(raw, dict):
+                return None
+            x_m = _as_float(raw.get("x_m"))
+            y_m = _as_float(raw.get("y_m"))
+            if x_m is None or y_m is None:
+                return None
+            lat, lon = _mission_map_local_to_latlon(
+                takeoff_lat=takeoff_lat,
+                takeoff_lon=takeoff_lon,
+                north_m=x_m,
+                east_m=y_m,
+            )
+            return {**raw, "lat": lat, "lon": lon}
+
+        converted_from = converted_gap_point(gap_from)
+        converted_to = converted_gap_point(gap_to)
+        if converted_from and converted_to:
+            converted_start_gap = {
+                **observation_start_gap,
+                "from": converted_from,
+                "to": converted_to,
+            }
     return {
         **maneuver,
         "start": start_point,
         "target": target_point,
         "samples": samples,
+        "observation_start_gap": converted_start_gap,
     }
 
 
@@ -1813,7 +1897,7 @@ def _mission_map_model(
             if detail.get("role") != "return_to_home"
             for point in detail.get("points") or []
         ]
-        for avoidance in avoidances:
+        for avoidance_index, avoidance in enumerate(avoidances):
             target = avoidance.get("target")
             target = target if isinstance(target, dict) else None
             source_obstacle_name = _status_text(avoidance.get("source_obstacle_name"))
@@ -1838,6 +1922,16 @@ def _mission_map_model(
                     default=None,
                 )
             target_progress_m = route_geometry(target)[0] if target else None
+            next_recovery_start = (
+                avoidances[avoidance_index + 1].get("start")
+                if avoidance_index + 1 < len(avoidances)
+                else None
+            )
+            next_recovery_start_progress_m = (
+                route_geometry(next_recovery_start)[0]
+                if isinstance(next_recovery_start, dict)
+                else None
+            )
             obstacle_progress_m = None
             obstacle_half_along_m = 0.0
             if obstacle is not None:
@@ -1867,6 +1961,10 @@ def _mission_map_model(
                     if (
                         target_progress_m is not None
                         and progress_m >= target_progress_m
+                        and (
+                            next_recovery_start_progress_m is None
+                            or progress_m < next_recovery_start_progress_m
+                        )
                         and cross_track_m <= 12.0
                     ):
                         rejoin_point = {
@@ -1890,6 +1988,108 @@ def _mission_map_model(
             avoidance["obstacle_route_progress_m"] = (
                 round(obstacle_progress_m, 3) if obstacle_progress_m is not None else None
             )
+            avoidance["rejoin_observed"] = rejoin_point is not None
+
+    return_points = [
+        point
+        for detail in observed_segment_details
+        if detail.get("role") == "return_to_home"
+        for point in detail.get("points") or []
+    ]
+    for obstacle in obstacles:
+        obstacle_x_m = _as_float(obstacle.get("x_m"))
+        obstacle_y_m = _as_float(obstacle.get("y_m"))
+        half_x_m = (_as_float(obstacle.get("size_x_m")) or 0.0) / 2.0
+        half_y_m = (_as_float(obstacle.get("size_y_m")) or 0.0) / 2.0
+        obstacle_top_m = _as_float(obstacle.get("top_altitude_m"))
+        overflight_clearances: list[float] = []
+        if (
+            obstacle_x_m is not None
+            and obstacle_y_m is not None
+            and half_x_m > 0.0
+            and half_y_m > 0.0
+            and obstacle_top_m is not None
+        ):
+            for point in return_points:
+                altitude_m = _as_float(point.get("alt_m"))
+                if altitude_m is None:
+                    continue
+                point_x_m, point_y_m = _mission_map_latlon_to_local(
+                    takeoff_lat=takeoff_lat,
+                    takeoff_lon=takeoff_lon,
+                    lat=float(point["lat"]),
+                    lon=float(point["lon"]),
+                )
+                if (
+                    abs(point_x_m - obstacle_x_m) <= half_x_m
+                    and abs(point_y_m - obstacle_y_m) <= half_y_m
+                ):
+                    overflight_clearances.append(altitude_m - obstacle_top_m)
+        if overflight_clearances:
+            minimum_clearance_m = min(overflight_clearances)
+            obstacle["return_overflight_observed"] = True
+            obstacle["return_overflight_sample_count"] = len(overflight_clearances)
+            obstacle["return_overflight_min_vertical_clearance_m"] = round(
+                minimum_clearance_m, 3
+            )
+            obstacle["return_overflight_status"] = (
+                "observed_above_obstacle"
+                if minimum_clearance_m > 0.0
+                else "vertical_clearance_not_observed"
+            )
+
+    raw_observed_gaps = list(observed_trace["gaps"])
+    covered_observed_gap_indexes: set[int] = set()
+    display_gaps: list[dict[str, Any]] = []
+
+    def distance_between(left: dict[str, Any], right: dict[str, Any]) -> float:
+        return distance_to(left, lat=float(right["lat"]), lon=float(right["lon"]))
+
+    for avoidance in avoidances:
+        start = avoidance.get("start")
+        target = avoidance.get("target")
+        samples = avoidance.get("samples") or []
+        if not isinstance(start, dict) or not isinstance(target, dict):
+            continue
+        last_sample = samples[-1] if samples and isinstance(samples[-1], dict) else target
+        for gap_index, gap in enumerate(raw_observed_gaps):
+            gap_from = gap.get("from")
+            gap_to = gap.get("to")
+            if not isinstance(gap_from, dict) or not isinstance(gap_to, dict):
+                continue
+            if (
+                distance_between(gap_from, start) <= 15.0
+                and min(
+                    distance_between(gap_to, target),
+                    distance_between(gap_to, last_sample),
+                )
+                <= 15.0
+            ):
+                covered_observed_gap_indexes.add(gap_index)
+                start_gap = avoidance.get("observation_start_gap")
+                if isinstance(start_gap, dict):
+                    display_gaps.append(
+                        {**start_gap, "source": "recovery_observation_gap"}
+                    )
+                end_gap_distance_m = distance_between(last_sample, gap_to)
+                if end_gap_distance_m > 10.0:
+                    display_gaps.append(
+                        {
+                            "from": last_sample,
+                            "to": gap_to,
+                            "reason": "recovery_to_main_telemetry_gap",
+                            "distance_m": round(end_gap_distance_m, 3),
+                            "elapsed_gap_s": None,
+                            "evidence_status": "not_observed_between_endpoints",
+                            "source": "recovery_observation_gap",
+                        }
+                    )
+                break
+    display_gaps.extend(
+        gap
+        for gap_index, gap in enumerate(raw_observed_gaps)
+        if gap_index not in covered_observed_gap_indexes
+    )
     task_status = _task_status(task_payload)
     latest_point = latest or (observed_points[-1] if observed_points else None)
     terminal_marker_label = "current"
@@ -1919,7 +2119,8 @@ def _mission_map_model(
         "observed_points": observed_points,
         "observed_segments": observed_segments,
         "observed_segment_details": observed_segment_details,
-        "observed_gaps": list(observed_trace["gaps"]),
+        "observed_gaps": raw_observed_gaps,
+        "display_gaps": display_gaps,
         "observed_trace_source": observed_trace["source"],
         "points": compatibility_points,
         # Current pose is a marker, not permission to draw a line from the
@@ -1950,6 +2151,7 @@ def _mission_map_model(
             "2D map uses real browser-fetched basemap tiles from the configured provider.",
             "MissionOS overlays source planned route, observed telemetry, operator-approved recovery maneuver traces, and source-backed obstacle markers.",
             "Solid observed paths contain saved telemetry only; dashed gap connectors are display-only and are not observation evidence.",
+            "A return path crossing a 2D obstacle footprint is labeled as an overflight only when saved altitude observations prove positive clearance above the obstacle top.",
             "Map display is read-only and is not a verifier, dispatch control, or delivery claim.",
         ],
     }

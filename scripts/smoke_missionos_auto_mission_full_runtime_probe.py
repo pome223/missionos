@@ -4431,6 +4431,17 @@ def _inner_runtime_probe_script(
                     if first_altitude is not None
                     else None
                 ),
+                'recovery_start_position': {{
+                    'x_m': round(first_x, 3),
+                    'y_m': round(first_y, 3),
+                    'altitude_above_home_m': (
+                        round(first_altitude, 3)
+                        if first_altitude is not None
+                        else None
+                    ),
+                    'source': 'dispatch_current_position_observation',
+                    'observed': True,
+                }},
                 'last_local_x_m': round(last_x, 3),
                 'last_local_y_m': round(last_y, 3),
                 'last_altitude_above_home_m': (
@@ -4469,7 +4480,13 @@ def _inner_runtime_probe_script(
                 'resume_safety_verification': resume_safety_verification,
                 'hold_after_failure_command': hold_after_failure,
                 'hold_after_failure_observed': hold_after_failure_observed,
-                'maneuver_observation_samples': maneuver_samples[-5:],
+                # The complete bounded maneuver is durable display evidence.
+                # Retaining only the tail made the Recovery line appear to
+                # start far away from the route and could not prove the path
+                # beside the obstacle.  This remains observation-only data;
+                # it creates no approval, dispatch, or completion authority.
+                'maneuver_observation_sample_count': len(maneuver_samples),
+                'maneuver_observation_samples': maneuver_samples,
             }}
 
         def execute_operator_recovery_request(sock, remote, seq, request, local_x=None, local_y=None, local_z=None, altitude=None):

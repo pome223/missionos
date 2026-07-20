@@ -847,16 +847,24 @@ def _mission_map_html(model: dict[str, Any]) -> str:
 	          return `${{count}} · ${{spawnedStatus}}`;
 	        }}
 
-	        function avoidanceSummary(avoidance) {{
-	          if (!avoidance || !Object.keys(avoidance).length) return "-";
-	          const samples = Array.isArray(avoidance.samples) ? avoidance.samples.length : 0;
-	          return [
-	            `action=${{statusText(avoidance.action)}}`,
-	            `status=${{statusText(avoidance.status)}}`,
-	            `target=${{statusText(avoidance.target_reached)}}`,
-	            `resume=${{statusText(avoidance.resume_auto_status)}}`,
-	            `samples=${{samples}}`,
-	          ].join(" · ");
+	        function recoveriesSummary(avoidances) {{
+	          if (!Array.isArray(avoidances) || !avoidances.length) return "-";
+	          const targetReached = avoidances.every((item) => item.target_reached === true);
+	          const allResumed = avoidances.every(
+	            (item) => statusText(item.resume_auto_status) === "resumed_auto_mission"
+	          );
+	          const sampleCounts = avoidances.map(
+	            (item) => Array.isArray(item.samples) ? item.samples.length : 0
+	          ).join("+");
+	          return `${{avoidances.length}} observed · targets=${{targetReached ? "all reached" : "mixed"}} · resume=${{allResumed ? "all resumed" : "mixed"}} · samples=${{sampleCounts}}`;
+	        }}
+
+	        function recoveryGeometrySummary(avoidances) {{
+	          if (!Array.isArray(avoidances) || !avoidances.length) return "-";
+	          const values = avoidances.map((item) => statusText(item.geometry_status));
+	          return values.every((value) => value === values[0])
+	            ? `${{values.length}}× ${{values[0]}}`
+	            : values.join(" | ");
 	        }}
 
 	        function batterySummary(battery) {{
@@ -919,12 +927,13 @@ def _mission_map_html(model: dict[str, Any]) -> str:
 	      );
 	      const avoidance = avoidances.length ? avoidances[avoidances.length - 1] : {{}};
 	      const avoidancePointSets = avoidances.map((item) => validPoints([
-	        ...(item.start ? [item.start] : []),
+	        ...(item.start && !item.observation_start_gap ? [item.start] : []),
 	        ...(Array.isArray(item.samples) ? item.samples : []),
-	        ...(item.target ? [item.target] : []),
 	      ]));
 	      const avoidancePoints = avoidancePointSets.flat();
-	      const observedGaps = (Array.isArray(data.observed_gaps) ? data.observed_gaps : [])
+	      const observedGaps = (Array.isArray(data.display_gaps)
+	        ? data.display_gaps
+	        : Array.isArray(data.observed_gaps) ? data.observed_gaps : [])
 	        .map((gap) => ({{
 	          ...gap,
 	          from: validPoints(gap && gap.from ? [gap.from] : [])[0] || null,
@@ -985,16 +994,14 @@ def _mission_map_html(model: dict[str, Any]) -> str:
 	        const arrow = detail.role === "return_to_home" ? "arrow-return" : "arrow-outbound";
 	        return d ? `<path class="${{pathClass}}" d="${{d}}" marker-end="url(#${{arrow}})"></path>` : "";
 	      }}).join("");
-	      const recoveryCoversGap = avoidancePointSets.some((points) => points.length >= 2);
 	      const gapMarkup = observedGaps.map((gap) => {{
-	        if (recoveryCoversGap) return "";
 	        const d = pathD([gap.from, gap.to], toOverlay);
 	        if (!d) return "";
 	        const from = toOverlay(gap.from);
 	        const to = toOverlay(gap.to);
 	        const labelX = Math.min(width - 210, Math.max(12, (from.x + to.x) / 2 + 8));
 	        const labelY = Math.min(height - 16, Math.max(22, (from.y + to.y) / 2 - 8));
-	        return `<path class="telemetry-gap" d="${{d}}"></path><text class="label" x="${{labelX.toFixed(2)}}" y="${{labelY.toFixed(2)}}">telemetry missing</text>`;
+	        return `<path class="telemetry-gap" d="${{d}}"></path><text class="label" x="${{labelX.toFixed(2)}}" y="${{labelY.toFixed(2)}}">not observed</text>`;
 	      }}).join("");
 	      const avoidanceMarkup = avoidancePointSets.map((points) => {{
 	        const d = pathD(points, toOverlay);
@@ -1024,29 +1031,37 @@ def _mission_map_html(model: dict[str, Any]) -> str:
 	      const recoveryMarkerMarkup = recoveryMarkers.map((marker) => `
 	        ${{marker.start ? `<circle class="marker-recovery-start" cx="${{marker.start.x.toFixed(2)}}" cy="${{marker.start.y.toFixed(2)}}" r="7"></circle><text class="label" x="${{Math.min(width - 150, marker.start.x + 12).toFixed(2)}}" y="${{Math.min(height - 18, marker.start.y + 22).toFixed(2)}}">${{marker.recoveryLabel}}</text>` : ""}}
 	        ${{marker.target ? `<circle class="marker-avoid" cx="${{marker.target.x.toFixed(2)}}" cy="${{marker.target.y.toFixed(2)}}" r="8"></circle><text class="label" x="${{Math.min(width - 160, marker.target.x + 12).toFixed(2)}}" y="${{Math.min(height - 18, marker.target.y + 22).toFixed(2)}}">${{marker.item.target_beyond_obstacle === true ? marker.bypassLabel : marker.oldTargetLabel}}</text>` : ""}}
-	        ${{marker.rejoin ? `<circle class="marker-rejoin" cx="${{marker.rejoin.x.toFixed(2)}}" cy="${{marker.rejoin.y.toFixed(2)}}" r="7"></circle><text class="label" x="${{Math.min(width - 150, marker.rejoin.x + 12).toFixed(2)}}" y="${{Math.max(22, marker.rejoin.y - 12).toFixed(2)}}">${{marker.rejoinLabel}}</text>` : ""}}
+	        ${{marker.rejoin ? `<circle class="marker-rejoin" cx="${{marker.rejoin.x.toFixed(2)}}" cy="${{marker.rejoin.y.toFixed(2)}}" r="7"></circle><text class="label" x="${{Math.min(width - 150, marker.rejoin.x + 12).toFixed(2)}}" y="${{Math.max(22, marker.rejoin.y - 18).toFixed(2)}}">${{marker.rejoinLabel}}</text>` : ""}}
 	      `).join("");
 	      const blockedDropoff = obstacles.some((obstacle) => obstacle.coincident_with_dropoff === true);
-	      const obstacleMarkup = obstacles.filter((obstacle) => obstacle.coincident_with_dropoff !== true).map((obstacle) => {{
+	      const obstacleMarkup = obstacles.filter((obstacle) => obstacle.coincident_with_dropoff !== true).map((obstacle, obstacleIndex) => {{
 	        const point = toOverlay(obstacle);
 	        const footprint = validPoints(obstacle.footprint || []);
 	        const footprintD = footprint.length >= 3
 	          ? pathD([...footprint, footprint[0]], toOverlay)
 	          : "";
 	        const labelX = Math.min(width - 190, point.x + 13).toFixed(2);
-	        const labelY = Math.max(22, point.y - 12).toFixed(2);
+	        const labelY = Math.min(height - 34, Math.max(38, point.y - 34)).toFixed(2);
 	        const widthM = firstNumber(obstacle.size_x_m);
 	        const depthM = firstNumber(obstacle.size_y_m);
 	        const heightM = firstNumber(obstacle.size_z_m);
 	        const dimensions = widthM !== null && depthM !== null
 	          ? `${{widthM.toFixed(0)}}×${{depthM.toFixed(0)}}m footprint${{heightM !== null ? ` · height ${{heightM.toFixed(0)}}m` : ""}}`
 	          : "size unavailable";
+	        const overflightClearance = firstNumber(obstacle.return_overflight_min_vertical_clearance_m);
+	        const overflight = obstacle.return_overflight_status === "observed_above_obstacle"
+	          && overflightClearance !== null
+	          ? `return: +${{overflightClearance.toFixed(1)}}m over top`
+	          : "";
 	        return `
 	          ${{footprintD ? `<path class="obstacle-footprint" d="${{footprintD}}"></path>` : ""}}
 	          <path class="marker-obstacle" d="M ${{point.x.toFixed(2)}} ${{(point.y - 10).toFixed(2)}} L ${{(point.x + 10).toFixed(2)}} ${{point.y.toFixed(2)}} L ${{point.x.toFixed(2)}} ${{(point.y + 10).toFixed(2)}} L ${{(point.x - 10).toFixed(2)}} ${{point.y.toFixed(2)}} Z">
 	            <title>${{escapeHtml(`${{statusText(obstacle.name)}} · ${{dimensions}} · ${{statusText(obstacle.source)}}`)}}</title>
 	          </path>
-	          <text class="label" x="${{labelX}}" y="${{labelY}}">O ${{widthM !== null && depthM !== null && heightM !== null ? `${{widthM.toFixed(0)}}×${{depthM.toFixed(0)}}×${{heightM.toFixed(0)}}m` : "obstacle"}}</text>
+	          <text class="label" x="${{labelX}}" y="${{labelY}}">
+	            <tspan x="${{labelX}}">O${{obstacleIndex + 1}} ${{widthM !== null && depthM !== null && heightM !== null ? `${{widthM.toFixed(0)}}×${{depthM.toFixed(0)}}×${{heightM.toFixed(0)}}m` : "obstacle"}}</tspan>
+	            ${{overflight ? `<tspan x="${{labelX}}" dy="16">${{overflight}}</tspan>` : ""}}
+	          </text>
 	        `;
 	      }}).join("");
 	      const blockedDropoffMarkup = blockedDropoff
@@ -1090,7 +1105,7 @@ def _mission_map_html(model: dict[str, Any]) -> str:
 	        <span class="legend-item legend-observed"><span class="legend-swatch"></span>outbound →</span>
 	        <span class="legend-item legend-avoidance"><span class="legend-swatch"></span>Recovery bypass →</span>
 	        <span class="legend-item legend-return"><span class="legend-swatch"></span>return home →</span>
-	        <span class="legend-item legend-gap"><span class="legend-swatch"></span>missing main telemetry</span>
+	        <span class="legend-item legend-gap"><span class="legend-swatch"></span>not observed</span>
 	        <span class="legend-item legend-obstacle"><span class="legend-swatch"></span>collision footprint</span>
 	      `;
 	      mapEl.appendChild(legend);
@@ -1108,8 +1123,8 @@ def _mission_map_html(model: dict[str, Any]) -> str:
 	            ["planned", `${{plannedPoints.length}}pts`],
 	            ["observed", `${{observedPoints.length}}pts · ${{observedSegments.length}} segment(s)`],
 	            ["continuity", `${{observedGaps.length}} unobserved gap(s) · source=${{statusText(data.observed_trace_source)}}`],
-	            ["recoveries", `${{avoidances.length}} observed · ${{avoidances.map((item) => avoidanceSummary(item)).join(" | ") || "-"}}`],
-	            ["recovery geometry", avoidances.map((item) => statusText(item.geometry_status)).join(" | ") || "-"],
+	            ["recoveries", recoveriesSummary(avoidances)],
+	            ["recovery geometry", recoveryGeometrySummary(avoidances)],
 	            ["obstacles", obstacleSummary(data.obstacles || [])],
 	            ["latest source", data.latest ? data.latest.source : "-"],
 	        ["live", data.live && data.live.enabled ? "polling" : "snapshot"],
