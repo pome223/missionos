@@ -1,6 +1,6 @@
 """
 モデル設定管理
-Gemini の既定モデル設定を管理する
+Gemini と LiteLLM 経由バックエンドのモデル設定を管理する
 """
 
 import os
@@ -9,6 +9,13 @@ from typing import Optional, Dict, Any
 from dataclasses import dataclass
 
 from src.config.settings import get_settings
+
+
+DEFAULT_GEMINI_MODEL_ID = "gemini-3.1-flash-lite"
+DEFAULT_DEEPSEEK_MODEL_ID = "deepseek-v4-flash"
+DEFAULT_DEEPSEEK_API_BASE = "https://api.deepseek.com"
+DEFAULT_VERTEX_LOCATION = "global"
+_VERTEX_GLOBAL_ONLY_MODELS = frozenset({DEFAULT_GEMINI_MODEL_ID})
 
 
 @dataclass
@@ -68,10 +75,12 @@ def get_model_config(name: str = "default") -> GeminiModelConfig:
 
 
 # ---------------------------------------------------------------------------
-# ローカル LLM バックエンド切替（Gemini / Ollama / MLX）
+# LLM バックエンド切替（Gemini / DeepSeek / Ollama / MLX）
 #
 # env で切り替える。既定は "gemini" なので未設定なら hosted LLM 優先。
-#   MISSIONOS_LLM_BACKEND      gemini | ollama | mlx | off
+#   MISSIONOS_LLM_BACKEND      gemini | deepseek | ollama | mlx | off
+#   MISSIONOS_DEEPSEEK_MODEL   DeepSeek API model id
+#   MISSIONOS_DEEPSEEK_API_BASE DeepSeek OpenAI-compatible base URL
 #   MISSIONOS_LOCAL_MODEL      ローカルモデル ID（LiteLlm 形式）
 #   MISSIONOS_LOCAL_API_BASE   ローカル推論サーバの base URL
 #   MISSIONOS_OLLAMA_MODEL     Ollama モデルタグ（例: gemma4:26b）
@@ -85,6 +94,7 @@ def get_model_config(name: str = "default") -> GeminiModelConfig:
 # ---------------------------------------------------------------------------
 
 _LOCAL_BACKENDS = {"ollama", "mlx"}
+_LITELLM_BACKENDS = {*_LOCAL_BACKENDS, "deepseek"}
 _OFF_BACKENDS = {"off", "none", "disabled", "deterministic"}
 _DEFAULT_LOCAL_MODELS = {
     # Gemma 4 26B MoE（active 3.8B）を既定に。実際の Ollama タグに合わせて上書き可。
@@ -95,6 +105,7 @@ _DEFAULT_LOCAL_API_BASES = {
     "ollama": "http://localhost:11434",
     "mlx": "http://localhost:8080/v1",
 }
+_DEFAULT_DEEPSEEK_MODEL = DEFAULT_DEEPSEEK_MODEL_ID
 
 
 def _agent_env_suffix(agent_name: str | None) -> str:
@@ -128,6 +139,16 @@ def google_llm_backend_enabled(agent_name: str | None = None) -> bool:
 def local_llm_backend_enabled(agent_name: str | None = None) -> bool:
     """Return True when MissionOS should route ADK calls through a local backend."""
     return _llm_backend(agent_name) in _LOCAL_BACKENDS
+
+
+def litellm_backend_enabled(agent_name: str | None = None) -> bool:
+    """Return True when ADK should use its LiteLLM adapter."""
+    return _llm_backend(agent_name) in _LITELLM_BACKENDS
+
+
+def deepseek_llm_backend_enabled(agent_name: str | None = None) -> bool:
+    """Return True when the hosted DeepSeek backend is selected."""
+    return _llm_backend(agent_name) == "deepseek"
 
 
 def llm_backend_disabled(agent_name: str | None = None) -> bool:
@@ -177,6 +198,24 @@ def _local_api_base_for_backend(backend: str, agent_name: str | None = None) -> 
     ).strip()
 
 
+def _deepseek_model(agent_name: str | None = None) -> str:
+    return (
+        _agent_env(agent_name, "MODEL_ID")
+        or _agent_env(agent_name, "MODEL")
+        or os.environ.get("MISSIONOS_DEEPSEEK_MODEL")
+        or _DEFAULT_DEEPSEEK_MODEL
+    ).strip()
+
+
+def _deepseek_api_base(agent_name: str | None = None) -> str:
+    return (
+        _agent_env(agent_name, "DEEPSEEK_API_BASE")
+        or _agent_env(agent_name, "API_BASE")
+        or os.environ.get("MISSIONOS_DEEPSEEK_API_BASE")
+        or DEFAULT_DEEPSEEK_API_BASE
+    ).strip().rstrip("/")
+
+
 def _agent_model_override(agent_name: str | None) -> str:
     return _agent_env(agent_name, "MODEL_ID") or _agent_env(agent_name, "MODEL")
 
@@ -188,15 +227,46 @@ def agent_model_label(
 ) -> str:
     """表示・evidence 用のモデル識別子文字列を返す（オブジェクトではなく str）。"""
     backend = _llm_backend(agent_name)
+    if backend == "deepseek":
+        return _deepseek_model(agent_name)
     if backend in _LOCAL_BACKENDS:
         return _local_model_for_backend(backend, agent_name)
     return (_agent_model_override(agent_name) or model_id or DEFAULT_MODEL.name).strip()
 
 
+def configure_google_vertex_location(
+    model_id: Optional[str] = None,
+    *,
+    agent_name: str | None = None,
+) -> str | None:
+    """Normalize the Vertex location for the resolved hosted model.
+
+    ``gemini-3.1-flash-lite`` is served through the Vertex global endpoint in
+    the supported MissionOS configuration. A stale workstation default such as
+    ``us-central1`` must not silently turn a valid model id into a 404. Other
+    model ids keep an explicit operator-provided location; when none is set,
+    Vertex also defaults to ``global``.
+    """
+
+    if not google_llm_backend_enabled(agent_name):
+        return None
+    use_vertex = os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "").strip().lower()
+    if use_vertex not in {"1", "true", "yes", "on"}:
+        return None
+    resolved_model = agent_model_label(model_id, agent_name=agent_name)
+    configured_location = os.environ.get("GOOGLE_CLOUD_LOCATION", "").strip()
+    if resolved_model in _VERTEX_GLOBAL_ONLY_MODELS:
+        resolved_location = DEFAULT_VERTEX_LOCATION
+    else:
+        resolved_location = configured_location or DEFAULT_VERTEX_LOCATION
+    os.environ["GOOGLE_CLOUD_LOCATION"] = resolved_location
+    return resolved_location
+
+
 def llm_provider_label(agent_name: str | None = None) -> str:
     """Return the provider label recorded in invocation evidence."""
     backend = _llm_backend(agent_name)
-    if backend in _LOCAL_BACKENDS:
+    if backend in _LITELLM_BACKENDS:
         return f"google_adk_litellm_{backend}"
     if backend in _OFF_BACKENDS:
         return "disabled"
@@ -211,24 +281,39 @@ def resolve_agent_model(
     """ADK Agent の `model=` に渡す値を解決する。
 
     - backend=gemini（既定）: モデル名の文字列をそのまま返す（従来挙動）。
-    - backend=ollama/mlx: `LiteLlm` インスタンスを返す（要 google-adk[extensions]）。
+    - backend=deepseek/ollama/mlx: `LiteLlm` インスタンスを返す
+      （要 google-adk[extensions]）。
 
     ローカル時に Gemini モデル名 (`model_id`) は無視され、env のローカルモデルを使う。
     """
     backend = _llm_backend(agent_name)
-    if backend not in _LOCAL_BACKENDS:
+    if backend not in _LITELLM_BACKENDS:
         return _agent_model_override(agent_name) or model_id or DEFAULT_MODEL.name
 
-    local_model = _local_model_for_backend(backend, agent_name)
-    api_base = _local_api_base_for_backend(backend, agent_name)
+    if backend == "deepseek":
+        deepseek_model = _deepseek_model(agent_name)
+        resolved_model = (
+            deepseek_model
+            if deepseek_model.startswith("deepseek/")
+            else f"deepseek/{deepseek_model}"
+        )
+        api_base = _deepseek_api_base(agent_name)
+    else:
+        resolved_model = _local_model_for_backend(backend, agent_name)
+        api_base = _local_api_base_for_backend(backend, agent_name)
 
     try:
         from google.adk.models.lite_llm import LiteLlm
     except ImportError as exc:  # pragma: no cover - 環境依存
         raise RuntimeError(
-            "ローカル LLM バックエンド (MISSIONOS_LLM_BACKEND="
+            "LiteLLM バックエンド (MISSIONOS_LLM_BACKEND="
             f"{backend}) には google-adk[extensions] が必要です。"
             "`python -m pip install -e '.[local-llm]'` を実行してください。"
         ) from exc
 
-    return LiteLlm(model=local_model, api_base=api_base)
+    kwargs: dict[str, Any] = {"api_base": api_base}
+    if backend == "deepseek":
+        # V4 defaults to thinking mode. MissionOS uses the fast, bounded JSON/tool
+        # path here; authority and outcome verification remain outside the model.
+        kwargs["thinking"] = {"type": "disabled"}
+    return LiteLlm(model=resolved_model, **kwargs)

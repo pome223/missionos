@@ -1,8 +1,8 @@
-# Local LLM Backends
+# LLM Backends
 
 MissionOS is designed around an LLM-in-the-loop chat path. LLM-backed ADK paths
-default to Gemini for the fastest hosted API path. Ollama/Gemma is the local
-no-spend path, but it is slower and role-dependent.
+default to Gemini. DeepSeek is an alternate hosted path. Ollama/Gemma is the
+local no-spend path, but it is slower and role-dependent.
 
 `MISSIONOS_LLM_BACKEND=off` is a development fallback for boundary tests. It is
 not the intended public product experience.
@@ -14,8 +14,38 @@ Global backend:
 ```bash
 MISSIONOS_LLM_BACKEND=off      # development fallback, no LLM-backed ADK paths
 MISSIONOS_LLM_BACKEND=gemini   # Google ADK/Gemini path, also the default
+MISSIONOS_LLM_BACKEND=deepseek # DeepSeek OpenAI-compatible API through ADK LiteLLM
 MISSIONOS_LLM_BACKEND=ollama   # local Ollama through ADK LiteLLM
 ```
+
+Supported Vertex configuration for the default hosted model:
+
+```bash
+GOOGLE_GENAI_USE_VERTEXAI=true
+GOOGLE_CLOUD_PROJECT=your-project-id
+GOOGLE_CLOUD_LOCATION=global
+AGENT_MODEL=gemini-3.1-flash-lite
+```
+
+`gemini-3.1-flash-lite` is resolved through the Vertex global endpoint. At
+invocation time MissionOS normalizes a stale regional value such as
+`us-central1` to `global` for this model. Explicit locations for other model
+ids remain unchanged.
+
+Hosted DeepSeek configuration:
+
+```bash
+MISSIONOS_LLM_BACKEND=deepseek
+DEEPSEEK_API_KEY=your-deepseek-api-key
+MISSIONOS_DEEPSEEK_MODEL=deepseek-v4-flash
+MISSIONOS_DEEPSEEK_API_BASE=https://api.deepseek.com
+```
+
+`deepseek-v4-flash` is the official DeepSeek API model id. MissionOS invokes
+the OpenAI-compatible endpoint through ADK's in-process LiteLLM adapter, so a
+separate local LiteLLM proxy is not required. Install the adapter dependencies
+with `python -m pip install -e '.[local-llm]'`. MissionOS requests non-thinking
+mode for this bounded JSON/tool path; the model remains proposal-only.
 
 Default local model when `MISSIONOS_LLM_BACKEND=ollama` is selected:
 
@@ -28,9 +58,9 @@ When `MISSIONOS_LLM_BACKEND=off`, CLI-managed Gateway child processes disable
 LLM-backed ADK paths and use deterministic fallbacks where available. Use this
 for boundary tests, not as the main MissionOS chat experience.
 
-When `MISSIONOS_LLM_BACKEND=ollama`, CLI-managed Gateway child processes do not
-receive `GOOGLE_API_KEY`, even when it is present in the parent environment or
-`.env`.
+CLI-managed Gateway child processes receive only the credentials selected by
+the active backend. DeepSeek does not receive `GOOGLE_API_KEY`; Gemini,
+Ollama, MLX, and `off` do not receive `DEEPSEEK_API_KEY`.
 
 If a deployment previously disabled LLM-backed Gateway children by leaving the
 backend unset, set `MISSIONOS_LLM_BACKEND=off` explicitly before restarting
@@ -54,6 +84,7 @@ override:
 | Backend | Default | Hard cap |
 | --- | ---: | ---: |
 | Gemini | 45 seconds | 90 seconds |
+| DeepSeek | 60 seconds | 120 seconds |
 | Ollama / MLX | 180 seconds | 300 seconds |
 | `off` | 12 seconds | 12 seconds |
 
@@ -84,7 +115,7 @@ MISSIONOS_AGENT_MISSIONOS_CHIEF_AGENT_LLM_BACKEND=ollama
 MISSIONOS_AGENT_MISSIONOS_CHIEF_AGENT_OLLAMA_MODEL=gemma4:26b
 
 MISSIONOS_AGENT_MISSIONOS_RUNTIME_RECOVERY_AGENT_LLM_BACKEND=gemini
-MISSIONOS_AGENT_MISSIONOS_RUNTIME_RECOVERY_AGENT_MODEL_ID=gemini-3.1-flash-lite-preview
+MISSIONOS_AGENT_MISSIONOS_RUNTIME_RECOVERY_AGENT_MODEL_ID=gemini-3.1-flash-lite
 
 # TurtleBot3 recovery planner defaults to hosted Gemini in the Docker demo.
 MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_LLM_BACKEND=gemini
