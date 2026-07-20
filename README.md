@@ -83,23 +83,28 @@ loop runs over two simulator substrates:
 | PX4 / Gazebo SITL               | Use the [Chat Quickstart](#chat-quickstart), then read the [obstacle recovery run](docs/examples/missionos-chat-obstacle-recovery.md). | LLM proposal, human approval, PX4/Gazebo dispatch, `watch` / `operate` / `map` evidence, and recovery evidence. | Physical flight, payload delivery, and delivery completion.                         |
 | TurtleBot3 / ROS2 Nav2 / Gazebo | Use the [TurtleBot3 Simulator Quickstart](#turtlebot3-simulator-quickstart), then read the [TurtleBot3 bridge contract](docs/agents/ros2-nav2-turtlebot3-sim.md). | The same chat -> Gateway -> approval -> dispatch -> observed-motion loop on an indoor ground robot.             | Physical robot execution, real actuator/E-stop validation, and delivery completion. |
 
-On the left, the corrected OpenStreetMap recovery view makes the observed
-sequence explicit: start, Recovery trigger, operator-approved lateral bypass,
-route rejoin, dropoff, and return home. Solid blue/cyan lines are saved
-telemetry, orange is the separately observed approved Recovery, and the red
-`18 x 18 x 20 m` footprint is the collision obstacle. A gray dashed connector
-marks missing telemetry and is not drawn as observed movement. On the right, a
+On the left, the OpenStreetMap recovery view shows an opt-in PX4/Gazebo SITL
+route with two collision obstacles, placed near 50% and 75% route progress.
+Each obstacle produced a separate LLM proposal and a separate human approval.
+Solid blue/cyan lines are saved telemetry, orange lines are the separately
+observed approved Recovery maneuvers, and the two red `18 x 18 x 20 m`
+footprints are collision obstacles. The first Recovery proceeds into the next
+obstacle epoch before a strict centerline rejoin is observed; the second rejoin
+is observed. No gray connector is present because this saved display has no
+unobserved gap. On the right, a
 TurtleBot3 in the stock
 Gazebo `turtlebot3_house` world asked in chat to deliver to the bedroom: the
 approved plan (orange) and the AMCL-corrected observed trail (blue) pass through
 three real doorways from the front yard to the bedroom dropoff.
 
-| PX4 drone · corrected recovery map after an approved bypass | TurtleBot3 · house delivery to a named room |
-| ----------------------------------------------------------- | --------------------------------------------- |
-| ![Corrected PX4 recovery map showing saved outbound telemetry, an operator-approved lateral bypass beside the collision obstacle, route rejoin, dropoff, and return telemetry](docs/examples/assets/missionos-e2e-route-evidence.png) | ![TurtleBot3 chat delivery to the bedroom in turtlebot3_house, planned route and observed trail on the evidence map](docs/agents/evidence/pr7-turtlebot3-chat-e2e-map-task_d9ecedc8e7d5.png) |
+| PX4 drone · two separately approved obstacle recoveries | TurtleBot3 · house delivery to a named room |
+| -------------------------------------------------------- | --------------------------------------------- |
+| ![PX4 SITL map showing saved outbound telemetry, two operator-approved Recovery bypasses beside two collision obstacles, the second route rejoin, dropoff, and saved return telemetry](docs/examples/assets/missionos-two-obstacle-recovery-map.png) | ![TurtleBot3 chat delivery to the bedroom in turtlebot3_house, planned route and observed trail on the evidence map](docs/agents/evidence/pr7-turtlebot3-chat-e2e-map-task_d9ecedc8e7d5.png) |
 
 Both views are read-only evidence displays — radar screens, not cockpits. The
-PX4 image is a display-only summary; source task artifacts remain authoritative.
+PX4 image is a sanitized, display-only summary derived from a reviewed SITL
+run; raw task identifiers and runtime artifacts are intentionally not
+published, and source task artifacts remain authoritative.
 MissionOS claims only sim results and never claims physical execution or
 payload delivery.
 

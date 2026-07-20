@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
-from urllib.parse import quote, urlparse
+from urllib.parse import quote
 import hashlib
 import json
 import math
@@ -39,7 +39,6 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-from .battery_truth import battery_truth_model
 from .route_evidence_image import write_mission_route_evidence_artifacts
 from .flight_map_html import (
     _json_for_html_script as _json_for_html_script,
@@ -82,6 +81,7 @@ from .job_status import (
     _as_float as _as_float,
     _as_int as _as_int,
     _auto_process_status_text as _auto_process_status_text,
+    _battery_display_text as _battery_display_text,
     _first_numeric as _first_numeric,
     _first_present as _first_present,
     _fmt_metres as _fmt_metres,
@@ -133,6 +133,7 @@ from .map_model import (
     _mission_command_label as _mission_command_label,
     _mission_indoor_map_model as _mission_indoor_map_model,
     _mission_map_flight_samples as _mission_map_flight_samples,
+    _mission_map_battery_model as _mission_map_battery_model,
     _mission_map_latlon_from_route as _mission_map_latlon_from_route,
     _mission_map_latlon_to_local as _mission_map_latlon_to_local,
     _mission_map_local_to_latlon as _mission_map_local_to_latlon,

@@ -8,6 +8,8 @@ from typing import Any
 import json
 import math
 
+from .battery_truth import battery_truth_model
+
 
 _TERMINAL_TASK_STATUSES = frozenset(
     {"completed", "recovered", "blocked", "failed", "cancelled", "canceled"}
@@ -143,6 +145,28 @@ def _format_percent(value: Any) -> str:
     if number is None:
         return "-"
     return f"{number:.1f}%"
+
+
+def _battery_display_text(
+    *,
+    snapshot: dict[str, Any],
+    artifacts: dict[str, Any],
+    diagnostics: bool = True,
+) -> str:
+    model = battery_truth_model(snapshot=snapshot, artifacts=artifacts)
+    text = _format_percent(model.get("display_percent"))
+    if text == "-" or not diagnostics:
+        return text
+    if model.get("status") == "suspect_reset":
+        return (
+            f"{text} trusted (reported "
+            f"{_format_percent(model.get('reported_percent'))}; reset rejected)"
+        )
+    if model.get("status") == "sample_rejected":
+        return f"{text} trusted (latest sample rejected)"
+    if model.get("status") == "source_missing":
+        return f"{text} (source unverified)"
+    return text
 
 
 def _first_numeric(*values: Any) -> float | None:
@@ -915,7 +939,7 @@ def _job_operator_summary(task_payload: dict[str, Any]) -> list[str]:
         else _status_text(reached_seq)
     )
     current_text = f"current seq {_status_text(current_seq)}" if current_seq is not None else "-"
-    battery_text = _format_percent(snapshot.get("battery_remaining_percent"))
+    battery_text = _battery_display_text(snapshot=snapshot, artifacts=artifacts)
     terrain_clearance_m = _as_float(snapshot.get("terrain_clearance_m"))
     terrain_clearance_target_m = _as_float(snapshot.get("terrain_clearance_target_m"))
     terrain_clearance_margin_m = _as_float(snapshot.get("terrain_clearance_margin_m"))
