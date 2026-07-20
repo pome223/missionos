@@ -4,6 +4,10 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import os
+from pathlib import Path
+import subprocess
+import sys
+import types
 
 import pytest
 
@@ -259,6 +263,15 @@ def test_ollama_backend_uses_local_model_label(monkeypatch) -> None:
 
 def test_deepseek_backend_uses_official_model_and_litellm_adapter(monkeypatch) -> None:
     from src.agents import model_config
+
+    class FakeLiteLlm:
+        def __init__(self, model: str, **kwargs: object) -> None:
+            self.model = model
+            self._additional_args = kwargs
+
+    fake_module = types.ModuleType("google.adk.models.lite_llm")
+    fake_module.LiteLlm = FakeLiteLlm
+    monkeypatch.setitem(sys.modules, "google.adk.models.lite_llm", fake_module)
 
     monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "deepseek")
     monkeypatch.setenv("MISSIONOS_DEEPSEEK_MODEL", "deepseek-v4-flash")
