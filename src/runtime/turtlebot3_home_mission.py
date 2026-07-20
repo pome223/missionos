@@ -47,13 +47,11 @@ from src.runtime.perception_claim import (
 from src.runtime.ros2_nav2_dispatch_bridge import (
     ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV,
     ROS2_NAV2_BRIDGE_COMMAND_ENV,
-    ROS2_NAV2_REQUEST_SIM_FAULT_CANCEL_AFTER_ACCEPT_ENV,
     Ros2Nav2BridgeCommandClient,
     Ros2Nav2BridgeError,
 )
 from src.runtime.ros2_nav2_hardware_adapter import (
     Nav2GoalPose,
-    Ros2Nav2HardwareAdapter,
     Ros2Nav2HardwareAdapterConfig,
     build_blocked_ros2_nav2_hardware_adapter_evidence,
 )
@@ -63,11 +61,20 @@ from src.runtime.turtlebot3_log_collector import (
     collect_turtlebot3_log_bundle_from_env,
     turtlebot3_log_bundle_ref_from_env,
 )
-from src.runtime.turtlebot3_telemetry_sidecar import (
-    TURTLEBOT3_TELEMETRY_SIDECAR_JSONL_ENV,
-    TurtleBot3TelemetrySidecarError,
-    build_turtlebot3_state_correlation,
-    build_turtlebot3_telemetry_window_from_jsonl,
+from src.runtime.turtlebot3_nav2_execution import (
+    dispatch_harness_stop as _dispatch_nav2_harness_stop,
+    dispatch_nav2_goal as _dispatch_concrete_nav2_goal,
+    obstacle_observation_from_responses as _project_obstacle_observation,
+    robot_motion_from_responses as _project_robot_motion,
+    sidecar_motion_artifacts as _build_sidecar_motion_artifacts,
+)
+from src.runtime.turtlebot3_recovery_contracts import (
+    build_turtlebot3_recovery_contract_bundle,
+    planned_segments_sha256 as _planned_segments_sha256,
+    recovery_checkpoint_hash as _recovery_checkpoint_hash,
+    recovery_resume_state_hash as _recovery_resume_state_hash,
+    validate_turtlebot3_recovery_contract_bundle,
+    verify_turtlebot3_recovery_outcome,
 )
 
 
@@ -87,9 +94,6 @@ TURTLEBOT3_RECOVERY_REFLEX_SCHEMA_VERSION = (
 )
 TURTLEBOT3_CAMERA_PERCEPTION_PIPELINE_SCHEMA_VERSION = (
     "missionos_turtlebot3_camera_perception_pipeline.v1"
-)
-TURTLEBOT3_HARNESS_STOP_DISPATCH_SCHEMA_VERSION = (
-    "missionos_turtlebot3_harness_stop_dispatch.v1"
 )
 TURTLEBOT3_RECOVERY_CHECKPOINT_SCHEMA = "turtlebot3_recovery_checkpoint.v1"
 TURTLEBOT3_RECOVERY_CHECKPOINT_REVISION_SCHEMA = (
@@ -3471,138 +3475,26 @@ def _pre_dispatch_judgment_blocking_reasons(
 
 
 def _robot_motion_from_responses(responses: tuple[Mapping[str, Any], ...]) -> dict[str, Any]:
-    for response in responses:
-        state = response.get("state_result")
-        if isinstance(state, Mapping):
-            return {
-                "robot_motion_observed": state.get("robot_motion_observed") is True,
-                "odom_delta_m": state.get("odom_delta_m"),
-                "odom_topic": state.get("odom_topic"),
-                "robot_motion_observation_source": "ros2_nav2_bridge_receipt",
-            }
-    return {
-        "robot_motion_observed": False,
-        "odom_delta_m": None,
-        "odom_topic": None,
-        "robot_motion_observation_source": "not_available",
-    }
+    """Compatibility wrapper for the extracted execution boundary."""
+
+    return _project_robot_motion(responses)
 
 
 def _turtlebot3_sidecar_motion_artifacts(
     *,
     bridge_motion: Mapping[str, Any],
 ) -> tuple[dict[str, Any], dict[str, Any], list[str], bool]:
-    jsonl_path = os.environ.get(TURTLEBOT3_TELEMETRY_SIDECAR_JSONL_ENV, "").strip()
-    if not jsonl_path:
-        return {}, dict(bridge_motion), [], False
-    try:
-        window = build_turtlebot3_telemetry_window_from_jsonl(jsonl_path)
-        correlation = build_turtlebot3_state_correlation(
-            telemetry_window=window,
-            bridge_motion=bridge_motion,
-        )
-    except TurtleBot3TelemetrySidecarError as exc:
-        return (
-            {
-                "telemetry_sidecar_status": "blocked",
-                "telemetry_sidecar_jsonl_path": jsonl_path,
-                "telemetry_sidecar_error": str(exc),
-                "physical_execution_invoked": False,
-                "mission_delivery_completion_claimed": False,
-            },
-            {
-                "robot_motion_observed": False,
-                "odom_delta_m": None,
-                "odom_topic": None,
-                "robot_motion_observation_source": "telemetry_sidecar_error",
-            },
-            ["telemetry_sidecar_unreadable"],
-            True,
-        )
+    """Compatibility wrapper for source-backed sidecar re-observation."""
 
-    window_payload = window.model_dump(mode="json")
-    correlation_payload = correlation.model_dump(mode="json")
-    motion = {
-        "robot_motion_observed": window.odom_motion_observed,
-        "odom_delta_m": window.odom_delta_m,
-        "odom_topic": window.odom_topic,
-        "robot_motion_observation_source": "ros2_telemetry_sidecar_jsonl",
-        "telemetry_window_ref": correlation.telemetry_window_ref,
-        "telemetry_raw_logs_ref": window.raw_logs_ref,
-    }
-    blocking_reasons = (
-        list(correlation.blocked_reasons)
-        if correlation.correlation_status == "blocked"
-        else []
-    )
-    return (
-        {
-            "telemetry_sidecar_status": correlation.correlation_status,
-            "turtlebot3_telemetry_window": window_payload,
-            "turtlebot3_state_correlation": correlation_payload,
-            "telemetry_window_ref": correlation.telemetry_window_ref,
-            "raw_logs_ref": window.raw_logs_ref,
-            "physical_execution_invoked": False,
-            "mission_delivery_completion_claimed": False,
-        },
-        motion,
-        blocking_reasons,
-        True,
-    )
+    return _build_sidecar_motion_artifacts(bridge_motion=bridge_motion)
 
 
 def _obstacle_observation_from_responses(
     responses: tuple[Mapping[str, Any], ...],
 ) -> dict[str, Any]:
-    for response in responses:
-        state = response.get("state_result")
-        progress = response.get("progress_result")
-        state = state if isinstance(state, Mapping) else {}
-        progress = progress if isinstance(progress, Mapping) else {}
-        trajectory = response.get("trajectory_result")
-        if not isinstance(trajectory, Mapping):
-            trajectory = state.get("trajectory_result")
-        if not isinstance(trajectory, Mapping):
-            trajectory = progress.get("trajectory_result")
-        trajectory = trajectory if isinstance(trajectory, Mapping) else {}
-        obstacle_detected = (
-            response.get("obstacle_detected") is True
-            or response.get("costmap_obstacle_observed") is True
-            or state.get("obstacle_detected") is True
-            or state.get("costmap_obstacle_observed") is True
-            or progress.get("obstacle_detected") is True
-            or progress.get("costmap_obstacle_observed") is True
-        )
-        obstacle_avoidance_observed = (
-            response.get("obstacle_avoidance_observed") is True
-            or state.get("obstacle_avoidance_observed") is True
-            or progress.get("obstacle_avoidance_observed") is True
-        )
-        if obstacle_detected or obstacle_avoidance_observed:
-            return {
-                "obstacle_detected": obstacle_detected,
-                "costmap_obstacle_observed": (
-                    response.get("costmap_obstacle_observed") is True
-                    or state.get("costmap_obstacle_observed") is True
-                    or progress.get("costmap_obstacle_observed") is True
-                ),
-                "obstacle_avoidance_observed": obstacle_avoidance_observed,
-                "trajectory_lateral_deviation_observed": (
-                    trajectory.get("trajectory_lateral_deviation_observed") is True
-                ),
-                "max_lateral_deviation_m": trajectory.get("max_lateral_deviation_m"),
-                "avoidance_observation_source": str(
-                    response.get("ack_source") or response.get("action") or "bridge"
-                ),
-            }
-    return {
-        "obstacle_detected": False,
-        "costmap_obstacle_observed": False,
-        "obstacle_avoidance_observed": False,
-        "trajectory_lateral_deviation_observed": False,
-        "max_lateral_deviation_m": None,
-        "avoidance_observation_source": None,
-    }
+    """Compatibility wrapper for extracted obstacle re-observation."""
+
+    return _project_obstacle_observation(responses)
 
 
 def _obstacle_challenge_required(proposal: Mapping[str, Any]) -> bool:
@@ -5065,61 +4957,14 @@ def _dispatch_harness_stop(
     reflex: Mapping[str, Any],
     proposal: Mapping[str, Any],
 ) -> dict[str, Any]:
-    """Dispatch a bounded stop (Nav2 goal cancel) under harness authority.
+    """Compatibility wrapper around the extracted harness executor."""
 
-    This is the reflex phase acting: the robot is stabilized before LLM
-    deliberation. The harness claim boundary requires a recorded reason, and
-    the record never claims physical execution or mission progress.
-
-    An ACK is not a stop: ``cancel_accepted`` records that Nav2 accepted the
-    cancel request, ``stop_observed`` records that the bridge saw post-cancel
-    odom displacement stay under the motion threshold for a settle window,
-    and ``stop_confirmed`` is true only when both hold.
-    """
-
-    trigger = str(reflex.get("trigger") or "")
-    record: dict[str, Any] = {
-        "schema_version": TURTLEBOT3_HARNESS_STOP_DISPATCH_SCHEMA_VERSION,
-        "harness_action": "hold",
-        "bridge_action": "cancel_goal",
-        "authority_source": "emergency_harness",
-        "trigger": trigger,
-        "recorded_reason": f"reflex_first_recovery_entry:{trigger}",
-        "mission_ref": str(proposal.get("proposal_id") or "turtlebot3_home_mission"),
-        "cancel_accepted": False,
-        "stop_observed": False,
-        "stop_confirmed": False,
-        "bridge_error": "",
-        "bridge_receipt": {},
-        "physical_execution_invoked": False,
-        "progress_counted": False,
-        "mission_delivery_completion_claimed": False,
-    }
-    client = Ros2Nav2BridgeCommandClient()
-    try:
-        response = client.cancel_goal()
-    except Ros2Nav2BridgeError as exc:
-        record["bridge_error"] = str(exc)
-        return record
-    blocking_reasons = [
-        str(item) for item in (response.get("blocking_reasons") or ())
-    ]
-    ack_status = str(response.get("ack_status") or "")
-    record["bridge_receipt"] = {
-        "ack_status": ack_status,
-        "ack_source": str(response.get("ack_source") or ""),
-        "nav2_status": str(response.get("nav2_status") or ""),
-        "blocking_reasons": blocking_reasons,
-        "post_cancel_odom_delta_m": response.get("post_cancel_odom_delta_m"),
-        "stop_observation_window_s": response.get("stop_observation_window_s"),
-        "stop_observation_source": str(
-            response.get("stop_observation_source") or ""
+    return _dispatch_nav2_harness_stop(
+        reflex=reflex,
+        mission_ref=str(
+            proposal.get("proposal_id") or "turtlebot3_home_mission"
         ),
-    }
-    record["cancel_accepted"] = ack_status == "accepted" and not blocking_reasons
-    record["stop_observed"] = response.get("stop_observed") is True
-    record["stop_confirmed"] = record["cancel_accepted"] and record["stop_observed"]
-    return record
+    )
 
 
 def _dispatch_nav2_goal(
@@ -5133,64 +4978,25 @@ def _dispatch_nav2_goal(
     publish_initialpose: bool,
     simulate_cancel_after_accept: bool = False,
 ) -> dict[str, Any]:
-    config = Ros2Nav2HardwareAdapterConfig(
-        missionos_action_ref=(
-            f"{proposal.get('proposal_id') or 'turtlebot3_home_mission'}:"
-            f"{action_ref_suffix}"
+    """Compatibility wrapper around the extracted bounded executor."""
+
+    return _dispatch_concrete_nav2_goal(
+        proposal_id=str(
+            proposal.get("proposal_id") or "turtlebot3_home_mission"
         ),
-        goal_pose=goal,
-        execution_mode=HardwareExecutionMode.SIM,
-        operator_approval_ref=approval_ref or None,
-        approval_actor=str(approval.get("approval_actor") or "missionos_chat_operator"),
-        approval_timestamp=dispatched_at,
-        max_distance_m=goal.max_distance_m,
+        approval_actor=str(
+            approval.get("approval_actor") or "missionos_chat_operator"
+        ),
+        goal=goal,
+        approval_ref=approval_ref,
+        dispatched_at=dispatched_at,
+        action_ref_suffix=action_ref_suffix,
         raw_logs_ref=_turtlebot3_raw_logs_ref_from_env(
             _robot_profile_from_proposal(proposal)
         ),
+        publish_initialpose=publish_initialpose,
+        simulate_cancel_after_accept=simulate_cancel_after_accept,
     )
-    env_overrides: dict[str, str] = {}
-    if not publish_initialpose:
-        env_overrides["ROS2_NAV2_INITIALPOSE_ENABLE"] = "0"
-    if simulate_cancel_after_accept:
-        env_overrides[
-            ROS2_NAV2_REQUEST_SIM_FAULT_CANCEL_AFTER_ACCEPT_ENV
-        ] = "1"
-    client = Ros2Nav2BridgeCommandClient(env_overrides=env_overrides)
-    adapter = Ros2Nav2HardwareAdapter(config=config, client=client)
-    bridge_error = ""
-    try:
-        evidence = adapter.dispatch_approved_action()
-        bridge_responses = client.collect_responses()
-    except Ros2Nav2BridgeError as exc:
-        bridge_error = str(exc)
-        evidence = build_blocked_ros2_nav2_hardware_adapter_evidence(
-            config=config,
-            blocking_reasons=(
-                "ros2_nav2_bridge_receipt_unavailable",
-                "ros2_nav2_bridge_error",
-            ),
-        )
-        bridge_responses = ()
-    motion = _robot_motion_from_responses(bridge_responses)
-    obstacle = _obstacle_observation_from_responses(bridge_responses)
-    return {
-        "segment_ref": action_ref_suffix,
-        "goal_pose": goal.model_dump(mode="json"),
-        "publish_initialpose": publish_initialpose,
-        "simulated_transient_fault_requested": simulate_cancel_after_accept,
-        "adapter_evidence": evidence.model_dump(mode="json"),
-        "bridge_responses": [dict(response) for response in bridge_responses],
-        "bridge_error": bridge_error,
-        "dispatch_request_sent": evidence.dispatch_request_sent,
-        "completion_claimed": evidence.completion_claimed,
-        "completion_scope": evidence.completion_scope
-        if evidence.completion_claimed
-        else "none",
-        "blocking_reasons": list(evidence.blocking_reasons),
-        "unproven_claims": list(evidence.unproven_claims),
-        **motion,
-        **obstacle,
-    }
 
 
 def _sum_numeric(values: list[Any]) -> float | None:
@@ -5317,77 +5123,6 @@ def _max_numeric(values: list[Any]) -> float | None:
     if not numbers:
         return None
     return max(numbers)
-
-
-def _recovery_checkpoint_hash_payload(checkpoint: Mapping[str, Any]) -> dict[str, Any]:
-    """Return the immutable checkpoint fields covered by ``checkpoint_hash``."""
-
-    mutable_fields = {
-        "checkpoint_id",
-        "checkpoint_hash",
-        "checkpoint_status",
-        "claimed_at",
-        "claimed_by_approval_ref",
-        "consumed_at",
-        "consumed_by_approval_ref",
-        "failed_at",
-        "failure_reasons",
-        "superseded_at",
-        "superseded_by_checkpoint_id",
-        "superseded_by_revision_id",
-    }
-    return {
-        str(key): value
-        for key, value in checkpoint.items()
-        if str(key) not in mutable_fields
-        and not str(key).startswith("superseded_")
-    }
-
-
-def _recovery_checkpoint_hash(checkpoint: Mapping[str, Any]) -> str:
-    serialized = json.dumps(
-        _recovery_checkpoint_hash_payload(checkpoint),
-        sort_keys=True,
-        separators=(",", ":"),
-        default=str,
-    )
-    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
-
-
-def _recovery_resume_state_hash(state: Mapping[str, Any]) -> str:
-    source_bound_state = {
-        key: (
-            state.get(key) or []
-            if key == "route_failure_observation_results"
-            else state.get(key)
-        )
-        for key in (
-            "planned_segments",
-            "segment_results",
-            "route_failure_observation_results",
-            "recovery_proposals",
-            "recovery_proposal_classifications",
-            "recovery_planner_result",
-            "runtime_recovery_obstacle_scenario",
-            "runtime_recovery_motion_context",
-        )
-    }
-    serialized = json.dumps(
-        source_bound_state,
-        sort_keys=True,
-        separators=(",", ":"),
-        default=str,
-    )
-    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
-
-
-def _planned_segments_sha256(goals: tuple[Nav2GoalPose, ...]) -> str:
-    serialized = json.dumps(
-        [goal.model_dump(mode="json") for goal in goals],
-        sort_keys=True,
-        separators=(",", ":"),
-    )
-    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 
 def _recovery_approved_parameters(
@@ -5588,6 +5323,9 @@ def _build_turtlebot3_recovery_checkpoint(
                         "bounded_retreat_required": len(sequence) > 1,
                     }
                 )
+    checkpoint["recovery_contract_bundle"] = (
+        build_turtlebot3_recovery_contract_bundle(checkpoint)
+    )
     checkpoint_hash = _recovery_checkpoint_hash(checkpoint)
     checkpoint["checkpoint_hash"] = checkpoint_hash
     checkpoint["checkpoint_id"] = f"turtlebot3_recovery_checkpoint_{checkpoint_hash[:12]}"
@@ -7528,6 +7266,9 @@ def build_turtlebot3_recovery_checkpoint_revision(
             "dispatch_authority_created": False,
             "physical_execution_invoked": False,
         }
+    new_checkpoint["recovery_contract_bundle"] = (
+        build_turtlebot3_recovery_contract_bundle(new_checkpoint)
+    )
     new_checkpoint_hash = _recovery_checkpoint_hash(new_checkpoint)
     new_checkpoint["checkpoint_hash"] = new_checkpoint_hash
     new_checkpoint["checkpoint_id"] = (
@@ -7619,6 +7360,7 @@ def _validate_turtlebot3_recovery_resume(
     checkpoint_hash = str(checkpoint.get("checkpoint_hash") or "")
     if not checkpoint_hash or checkpoint_hash != _recovery_checkpoint_hash(checkpoint):
         reasons.append("turtlebot3_recovery_checkpoint_hash_mismatch")
+    reasons.extend(validate_turtlebot3_recovery_contract_bundle(checkpoint))
     expected_checkpoint_id = (
         f"turtlebot3_recovery_checkpoint_{checkpoint_hash[:12]}"
         if checkpoint_hash
@@ -8464,9 +8206,34 @@ def run_turtlebot3_home_mission_dispatch(
                     is True
                 )
             )
+            recovery_outcome_verification = verify_turtlebot3_recovery_outcome(
+                checkpoint=recovery_checkpoint,
+                operator_approval=recovery_approval,
+                action_results=approved_recovery_segment_results,
+                goal_sequence_completed=recovery_goal_sequence_completed,
+                requested_side_required=immediate_side_verification_required,
+                requested_side_observed=(
+                    recovery_requested_side_observation.get(
+                        "requested_side_observed"
+                    )
+                    is True
+                ),
+                obstacle_clearance_required=(
+                    immediate_clearance_verification_required
+                ),
+                obstacle_clearance_observed=(
+                    immediate_clearance_observation.get(
+                        "obstacle_trajectory_clearance_observed"
+                    )
+                    is True
+                ),
+                route_resume_explicitly_approved=(
+                    route_resume_explicitly_approved
+                ),
+            )
             route_resumed_after_recovery = (
-                route_resume_explicitly_approved
-                and recovery_action_completion_verified
+                recovery_outcome_verification.get("route_resume_authorized")
+                is True
             )
             recovery_goal_observed_at = datetime.now(timezone.utc).isoformat()
             recovery_observation_payload = {
@@ -8520,6 +8287,17 @@ def run_turtlebot3_home_mission_dispatch(
                         else "failed"
                     ),
                     "reobservation_sha256": recovery_observation_sha256,
+                    "outcome_verification": recovery_outcome_verification,
+                    "outcome_verification_id": (
+                        recovery_outcome_verification.get(
+                            "recovery_outcome_verification_id"
+                        )
+                    ),
+                    "outcome_verification_sha256": (
+                        recovery_outcome_verification.get(
+                            "recovery_outcome_verification_sha256"
+                        )
+                    ),
                     "behavior_delta": {
                         "robot_motion_observed": any(
                             item.get("robot_motion_observed") is True

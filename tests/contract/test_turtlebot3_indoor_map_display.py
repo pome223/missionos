@@ -20,6 +20,7 @@ from src.runtime.turtlebot3_home_mission import (
     run_turtlebot3_home_mission_dispatch,
 )
 
+
 @pytest.fixture(autouse=True)
 def _default_arena_world_profile(monkeypatch):
     """Pin the historical arena world for this module's regression corpus.
@@ -29,7 +30,6 @@ def _default_arena_world_profile(monkeypatch):
     """
 
     monkeypatch.setenv("MISSIONOS_TURTLEBOT3_WORLD_PROFILE", "arena")
-
 
 
 def _write_indoor_map_bridge(path: Path) -> None:
@@ -368,9 +368,7 @@ def test_turtlebot4_indoor_map_model_uses_robot_profile_label() -> None:
 
     assert model["robot_profile"] == "turtlebot4"
     assert model["robot_label"] == "TurtleBot4"
-    assert model["provider"]["attribution"] == (
-        "MissionOS TurtleBot4/Nav2 simulator evidence"
-    )
+    assert model["provider"]["attribution"] == ("MissionOS TurtleBot4/Nav2 simulator evidence")
     assert "TurtleBot4/Nav2 simulator local-XY evidence" in html
     assert "MissionOS TurtleBot4 indoor map" in html
 
@@ -436,12 +434,8 @@ def test_watch_overlays_live_odom_without_rewriting_observed_evidence() -> None:
     assert second["live_display_points"][-1]["raw_x_m"] == 0.4
     assert second["live_display_points"][-1]["display_only"] is True
     assert second["live_display_points"][-1]["evidence_status"] == "not_evidence"
-    assert second["live_telemetry"]["persistence"] == (
-        "process_local_response_overlay_only"
-    )
-    assert second["recovery"]["runtime_status"] == (
-        "approved_recovery_and_route_in_progress"
-    )
+    assert second["live_telemetry"]["persistence"] == ("process_local_response_overlay_only")
+    assert second["recovery"]["runtime_status"] == ("approved_recovery_and_route_in_progress")
 
     console = Console(record=True, color_system=None, width=120)
     console.print(
@@ -504,9 +498,7 @@ def test_terminal_live_preview_freezes_only_in_current_process() -> None:
     assert frozen["live_display_points"] == process_local_trail
     assert frozen["live_telemetry"]["telemetry_status"] == "ended"
     assert frozen["live_telemetry"]["evidence_status"] == "not_evidence"
-    assert frozen["live_telemetry"]["display_path_length_m"] == pytest.approx(
-        0.447214
-    )
+    assert frozen["live_telemetry"]["display_path_length_m"] == pytest.approx(0.447214)
     assert "live_display_points" not in indoor
     assert "live_telemetry" not in terminal_artifacts
 
@@ -521,6 +513,241 @@ def test_terminal_live_preview_freezes_only_in_current_process() -> None:
     assert "live_display_points" not in reloaded
     assert reloaded["observed_points"] == indoor["observed_points"]
     assert reloaded["recovery"] == indoor["recovery"]
+
+
+def test_terminal_surfaces_project_latest_recovery_summary_without_live_odom() -> None:
+    indoor = {
+        "schema_version": "missionos_turtlebot3_indoor_map_model.v1",
+        "map_kind": "indoor_local_xy",
+        "robot_label": "TurtleBot3",
+        "mission_status": "completed",
+        "frame_id": "map",
+        "planned_points": [
+            {"x_m": -2.0, "y_m": -0.5, "role": "home"},
+            {"x_m": -1.4, "y_m": 2.42, "role": "dropoff"},
+        ],
+        "observed_points": [
+            {"x_m": -2.0, "y_m": -0.5},
+            {"x_m": -1.4, "y_m": 2.42},
+        ],
+        "current_pose": {"x_m": -1.4, "y_m": 2.42},
+        "room_boundary": {
+            "min_x_m": -2.5,
+            "max_x_m": 1.0,
+            "min_y_m": -1.0,
+            "max_y_m": 3.0,
+        },
+        "obstacles": [{"x_m": -1.8, "y_m": 0.4, "size_x_m": 0.4, "size_y_m": 0.4}],
+        "obstacle_clearance_observed": True,
+        "observed_path_intersects_obstacle": False,
+        "recovery": {
+            "triggered": True,
+            "selected_action": "avoid_obstacle",
+            "goal_status": "position_tolerance_reached",
+            "verification_status": "verified",
+            "route_resume_status": "resumed",
+            "observed_points": [
+                {"x_m": -1.8 + index * 0.01, "y_m": 0.4 + index * 0.01} for index in range(24)
+            ],
+        },
+    }
+    summary = {
+        "status": "completed",
+        "robot_label": "TurtleBot3",
+        "completion_claimed": True,
+        "completion_scope": "sim_action",
+        "physical_execution_invoked": False,
+        "mission_delivery_completion_claimed": False,
+        "planned_segment_count": 6,
+        "segment_completion_count": 6,
+        "runtime_recovery_triggered": True,
+        "runtime_recovery_action_kind": "avoid_obstacle",
+        "recovery_goal_status": "position_tolerance_reached",
+        "recovery_verification_status": "verified",
+        "route_resume_status": "resumed",
+        "recovery_dispatch_request_sent": True,
+        "recovery_completion_claimed": True,
+        "route_resumed_after_recovery": True,
+        "route_completed_after_recovery": True,
+        "robot_motion_observed": True,
+        "odom_delta_m": 3.5777,
+        "turtlebot3_indoor_map_model": indoor,
+        "recovery_planner_result": {
+            "proposal_source": "llm",
+            "llm_invocation_evidence": {
+                "provider": "google_adk_litellm_deepseek",
+                "model_id": "deepseek-v4-flash",
+            },
+        },
+    }
+    payload = {
+        "task_id": "task_tb3_terminal_surface",
+        "kind": "turtlebot3_home_mission_execution",
+        "status": "completed",
+        "artifacts": {
+            "summary": summary,
+            "turtlebot3_recovery_checkpoint": {
+                "checkpoint_status": "consumed",
+                "selected_action": "avoid_obstacle",
+            },
+            "turtlebot3_recovery_decision_summary": {
+                "recovery_proposal_source": "llm",
+                "selected_action": "avoid_obstacle",
+                "route_completed_after_recovery": True,
+            },
+            "missionos_runtime_recovery_dispatch_receipt": {
+                "dispatch_status": "recovery_completed",
+                "recovery_action": "avoid_obstacle",
+                "recovery_dispatch_request_sent": True,
+                "explicit_recovery_dispatch_approval": True,
+                "recovery_completion_claimed": True,
+                "route_resumed_after_recovery": True,
+                "route_completed_after_recovery": True,
+            },
+        },
+    }
+
+    model = missionos_cli._mission_map_model(
+        task_payload=payload,
+        provider="osm",
+        live_task_url=None,
+    )
+    recovery = model["recovery"]
+
+    assert recovery["runtime_status"] == "recovery_completed_and_route_completed"
+    assert recovery["route_segment_completion_count"] == 6
+    assert recovery["route_segment_planned_count"] == 6
+    assert recovery["recovery_completion_claimed"] is True
+    assert recovery["route_resumed_after_recovery"] is True
+    assert missionos_cli._mission_map_avoidance_sample_count(model) == 24
+    assert (
+        missionos_cli._mission_map_avoidance_sample_count(
+            {
+                "map_kind": "wgs84_route_overlay",
+                "avoidance": {"samples": [{"x": 1}, {"x": 2}]},
+            }
+        )
+        == 2
+    )
+
+    console = Console(record=True, color_system=None, width=120)
+    console.print(
+        missionos_cli._render_turtlebot3_indoor_map(
+            indoor_map=model,
+            status="completed",
+            task_id=payload["task_id"],
+        )
+    )
+    rendered_watch = console.export_text()
+    assert "route_segments=6/6" in rendered_watch
+    assert "recovery_complete=True" in rendered_watch
+    assert "route_resumed=True" in rendered_watch
+
+    rendered_job = "\n".join(missionos_cli._job_operator_summary(payload))
+    assert "TurtleBot3/Nav2 simulated route finished after Recovery" in rendered_job
+    assert "segments=6/6" in rendered_job
+    assert "status=recovery_completed" in rendered_job
+    assert "goal=position_tolerance_reached" in rendered_job
+    assert "verification=verified" in rendered_job
+    assert "model=deepseek-v4-flash" in rendered_job
+    assert "saved_samples=2; recovery_samples=24" in rendered_job
+    assert "completion_scope=sim_action" in rendered_job
+    assert "delivery_completion=False" in rendered_job
+    assert "physical_execution=False" in rendered_job
+    assert "live SITL" not in rendered_job
+    assert "actual_sitl_flight" not in rendered_job
+    assert "dropoff_verified" not in rendered_job
+    assert "runner_observed=pending" not in rendered_job
+
+
+def test_job_status_separates_pending_repair_from_previous_recovery_attempt() -> None:
+    current_checkpoint_id = "checkpoint_current_ask_human"
+    current_checkpoint_hash = "sha256-current-ask-human"
+    previous_checkpoint_id = "checkpoint_previous_avoid"
+    previous_checkpoint_hash = "sha256-previous-avoid"
+    payload = {
+        "task_id": "task_tb3_pending_repair",
+        "kind": "turtlebot3_home_mission_execution",
+        "status": "pending",
+        "artifacts": {
+            "summary": {
+                "robot_label": "TurtleBot3",
+                "runtime_recovery_triggered": True,
+                "planned_segment_count": 6,
+                "segment_completion_count": 1,
+                "recovery_dispatch_request_sent": True,
+                "recovery_goal_status": "canceled",
+                "recovery_verification_status": "failed",
+                "route_resume_status": "not_resumed",
+                "recovery_completion_claimed": False,
+                "route_resumed_after_recovery": False,
+                "route_completed_after_recovery": False,
+                "completion_scope": "none",
+                "completion_claimed": False,
+                "physical_execution_invoked": False,
+                "mission_delivery_completion_claimed": False,
+                "recovery_planner_result": {
+                    "proposal_source": "llm",
+                    "llm_invocation_evidence": {
+                        "provider": "google_adk_litellm_deepseek",
+                        "model_id": "deepseek-v4-flash",
+                    },
+                },
+                "turtlebot3_indoor_map_model": {
+                    "map_kind": "indoor_local_xy",
+                    "robot_label": "TurtleBot3",
+                    "observed_points": [{"x_m": -1.0, "y_m": -0.5}],
+                    "obstacles": [],
+                    "recovery": {
+                        "triggered": True,
+                        "goal_status": "canceled",
+                        "verification_status": "failed",
+                        "route_resume_status": "not_resumed",
+                        "observed_points": [],
+                    },
+                },
+            },
+            "turtlebot3_recovery_checkpoint": {
+                "checkpoint_id": current_checkpoint_id,
+                "checkpoint_hash": current_checkpoint_hash,
+                "checkpoint_status": "awaiting_operator_approval",
+                "parent_checkpoint_id": previous_checkpoint_id,
+                "selected_action": "ask_human",
+                "dispatch_authority_created": False,
+            },
+            "turtlebot3_recovery_decision_summary": {
+                "recovery_proposal_source": "llm",
+                "selected_action": "ask_human",
+                "route_completed_after_recovery": False,
+            },
+            "missionos_runtime_recovery_dispatch_receipt": {
+                "dispatch_status": "recovery_incomplete",
+                "recovery_action": "avoid_obstacle",
+                "recovery_dispatch_request_sent": True,
+                "explicit_recovery_dispatch_approval": True,
+                "recovery_completion_claimed": False,
+                "route_resumed_after_recovery": False,
+                "route_completed_after_recovery": False,
+                "turtlebot3_recovery_operator_approval": {
+                    "approval_source": "missionos_chat",
+                    "checkpoint_id": previous_checkpoint_id,
+                    "checkpoint_hash": previous_checkpoint_hash,
+                },
+            },
+        },
+    }
+
+    rendered_job = "\n".join(missionos_cli._job_operator_summary(payload))
+
+    assert "Current Recovery Decision: status=awaiting_operator_approval" in rendered_job
+    assert "action=ask_human; checkpoint_approval=False" in rendered_job
+    assert "Previous Recovery Attempt: status=recovery_incomplete" in rendered_job
+    assert "action=avoid_obstacle; request_sent=True" in rendered_job
+    assert "Previous Recovery Outcome: goal=canceled; verification=failed" in rendered_job
+    assert "Current Recovery Judgment: source=llm" in rendered_job
+    assert "model=deepseek-v4-flash" in rendered_job
+    assert "status=recovery_incomplete; action=ask_human" not in rendered_job
+    assert "action=ask_human; request_sent=True" not in rendered_job
 
 
 def test_turtlebot3_indoor_map_display_aligns_odom_origin_to_planned_home(
@@ -643,9 +870,7 @@ def test_mission_map_recovers_saved_mixed_frame_display_from_raw_fields() -> Non
                     "dx_m": -2.0,
                     "dy_m": -0.5,
                 },
-                "claim_boundaries": [
-                    "Indoor map display is read-only and not runtime evidence."
-                ],
+                "claim_boundaries": ["Indoor map display is read-only and not runtime evidence."],
             }
         },
     }

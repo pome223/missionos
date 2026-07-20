@@ -1274,15 +1274,18 @@ def _turtlebot3_indoor_map_model_from_artifacts(
     summary = summary if isinstance(summary, dict) else {}
     summary_embedded = summary.get("turtlebot3_indoor_map_model")
     if isinstance(summary_embedded, dict):
-        return _repair_turtlebot3_indoor_map_display_alignment(dict(summary_embedded))
+        indoor_map = _repair_turtlebot3_indoor_map_display_alignment(dict(summary_embedded))
+        return _overlay_turtlebot3_recovery_summary(indoor_map, artifacts=artifacts)
     execution = artifacts.get("turtlebot3_home_mission_execution")
     execution = execution if isinstance(execution, dict) else {}
     embedded = execution.get("turtlebot3_indoor_map_model")
     if isinstance(embedded, dict):
-        return _repair_turtlebot3_indoor_map_display_alignment(dict(embedded))
+        indoor_map = _repair_turtlebot3_indoor_map_display_alignment(dict(embedded))
+        return _overlay_turtlebot3_recovery_summary(indoor_map, artifacts=artifacts)
     direct = artifacts.get("turtlebot3_indoor_map_model")
     if isinstance(direct, dict):
-        return _repair_turtlebot3_indoor_map_display_alignment(dict(direct))
+        indoor_map = _repair_turtlebot3_indoor_map_display_alignment(dict(direct))
+        return _overlay_turtlebot3_recovery_summary(indoor_map, artifacts=artifacts)
     return {}
 
 
@@ -1356,6 +1359,101 @@ def _turtlebot3_recovery_candidate_resolution_from_artifacts(
         resolution = owner.get("recovery_candidate_resolution")
         return dict(resolution) if isinstance(resolution, dict) else {}
     return {}
+
+
+def _overlay_turtlebot3_recovery_summary(
+    indoor_map: dict[str, Any],
+    *,
+    artifacts: dict[str, Any],
+) -> dict[str, Any]:
+    """Project the newest stored Recovery status onto a read-only map model.
+
+    The saved indoor-map artifact may predate the final route summary.  This
+    response-only overlay follows the same pattern as the PX4 status views: it
+    reads the newest authoritative task artifacts without rewriting trajectory
+    evidence or manufacturing approval, dispatch, or completion authority.
+    """
+
+    checkpoint = artifacts.get("turtlebot3_recovery_checkpoint")
+    checkpoint = checkpoint if isinstance(checkpoint, dict) else {}
+    summary = artifacts.get("summary")
+    summary = summary if isinstance(summary, dict) else {}
+    recovery_keys = (
+        "runtime_recovery_triggered",
+        "segment_completion_count",
+        "planned_segment_count",
+        "recovery_completion_claimed",
+        "route_resumed_after_recovery",
+        "route_completed_after_recovery",
+        "recovery_goal_status",
+        "recovery_verification_status",
+        "route_resume_status",
+    )
+    if not checkpoint and not any(key in summary for key in recovery_keys):
+        return indoor_map
+
+    overlaid = dict(indoor_map)
+    recovery = overlaid.get("recovery")
+    recovery = dict(recovery) if isinstance(recovery, dict) else {}
+    checkpoint_status = str(checkpoint.get("checkpoint_status") or "")
+    candidate_resolution = _turtlebot3_recovery_candidate_resolution_from_artifacts(artifacts)
+    runtime_status = (
+        "awaiting_operator_approval"
+        if checkpoint_status == "awaiting_operator_approval"
+        else "approved_recovery_and_route_in_progress"
+        if checkpoint_status == "dispatching"
+        else "recovery_completed_and_route_completed"
+        if checkpoint_status == "consumed" and summary.get("route_completed_after_recovery") is True
+        else "recovery_failed"
+        if checkpoint_status in {"failed", "dispatch_unknown"}
+        else recovery.get("runtime_status") or "not_triggered"
+    )
+    recovery["runtime_status"] = runtime_status
+    recovery["selected_action"] = (
+        checkpoint.get("selected_action")
+        or summary.get("runtime_recovery_action_kind")
+        or recovery.get("selected_action")
+    )
+    recovery["checkpoint_status"] = checkpoint_status or None
+    recovery["route_segment_completion_count"] = _first_present(
+        summary.get("segment_completion_count"),
+        recovery.get("route_segment_completion_count"),
+    )
+    recovery["route_segment_planned_count"] = _first_present(
+        summary.get("planned_segment_count"),
+        recovery.get("route_segment_planned_count"),
+    )
+    recovery["recovery_completion_claimed"] = _first_present(
+        summary.get("recovery_completion_claimed"),
+        recovery.get("recovery_completion_claimed"),
+    )
+    recovery["route_resumed_after_recovery"] = _first_present(
+        summary.get("route_resumed_after_recovery"),
+        recovery.get("route_resumed_after_recovery"),
+    )
+    recovery["goal_status"] = summary.get("recovery_goal_status") or recovery.get("goal_status")
+    recovery["verification_status"] = summary.get("recovery_verification_status") or recovery.get(
+        "verification_status"
+    )
+    recovery["route_resume_status"] = summary.get("route_resume_status") or recovery.get(
+        "route_resume_status"
+    )
+    selected_candidate = candidate_resolution.get("selected_candidate")
+    selected_candidate = selected_candidate if isinstance(selected_candidate, dict) else {}
+    recovery["candidate_resolution_status"] = _first_present(
+        candidate_resolution.get("resolution_status"),
+        recovery.get("candidate_resolution_status"),
+    )
+    recovery["candidate_id"] = _first_present(
+        selected_candidate.get("candidate_id"),
+        recovery.get("candidate_id"),
+    )
+    recovery["candidate_path_length_m"] = _first_present(
+        selected_candidate.get("path_length_m"),
+        recovery.get("candidate_path_length_m"),
+    )
+    overlaid["recovery"] = recovery
+    return overlaid
 
 
 def _turtlebot3_xy(point: dict[str, Any], *, raw: bool = False) -> tuple[float, float] | None:
@@ -1521,6 +1619,10 @@ def _overlay_turtlebot3_live_telemetry(
     shows only persisted observed/recovery evidence.
     """
 
+    indoor_map = _overlay_turtlebot3_recovery_summary(
+        indoor_map,
+        artifacts=artifacts,
+    )
     telemetry = artifacts.get("turtlebot3_live_telemetry")
     telemetry = telemetry if isinstance(telemetry, dict) else {}
     raw_position = telemetry.get("raw_odom_position")
@@ -1641,45 +1743,6 @@ def _overlay_turtlebot3_live_telemetry(
             "not alter stored trajectory evidence or completion claims."
         ),
     }
-    checkpoint = artifacts.get("turtlebot3_recovery_checkpoint")
-    checkpoint = checkpoint if isinstance(checkpoint, dict) else {}
-    summary = artifacts.get("summary")
-    summary = summary if isinstance(summary, dict) else {}
-    recovery = overlaid.get("recovery")
-    recovery = dict(recovery) if isinstance(recovery, dict) else {}
-    checkpoint_status = str(checkpoint.get("checkpoint_status") or "")
-    candidate_resolution = _turtlebot3_recovery_candidate_resolution_from_artifacts(artifacts)
-    runtime_status = (
-        "awaiting_operator_approval"
-        if checkpoint_status == "awaiting_operator_approval"
-        else "approved_recovery_and_route_in_progress"
-        if checkpoint_status == "dispatching"
-        else "recovery_completed_and_route_completed"
-        if checkpoint_status == "consumed" and summary.get("route_completed_after_recovery") is True
-        else "recovery_failed"
-        if checkpoint_status in {"failed", "dispatch_unknown"}
-        else "not_triggered"
-    )
-    recovery["runtime_status"] = runtime_status
-    recovery["selected_action"] = checkpoint.get("selected_action")
-    recovery["checkpoint_status"] = checkpoint_status or None
-    recovery["route_segment_completion_count"] = summary.get("segment_completion_count")
-    recovery["route_segment_planned_count"] = summary.get("planned_segment_count")
-    recovery["recovery_completion_claimed"] = summary.get("recovery_completion_claimed")
-    recovery["route_resumed_after_recovery"] = summary.get("route_resumed_after_recovery")
-    recovery["goal_status"] = summary.get("recovery_goal_status") or recovery.get("goal_status")
-    recovery["verification_status"] = summary.get("recovery_verification_status") or recovery.get(
-        "verification_status"
-    )
-    recovery["route_resume_status"] = summary.get("route_resume_status") or recovery.get(
-        "route_resume_status"
-    )
-    selected_candidate = candidate_resolution.get("selected_candidate")
-    selected_candidate = selected_candidate if isinstance(selected_candidate, dict) else {}
-    recovery["candidate_resolution_status"] = candidate_resolution.get("resolution_status")
-    recovery["candidate_id"] = selected_candidate.get("candidate_id")
-    recovery["candidate_path_length_m"] = selected_candidate.get("path_length_m")
-    overlaid["recovery"] = recovery
     return overlaid
 
 
@@ -2029,9 +2092,7 @@ def _mission_map_model(
             minimum_clearance_m = min(overflight_clearances)
             obstacle["return_overflight_observed"] = True
             obstacle["return_overflight_sample_count"] = len(overflight_clearances)
-            obstacle["return_overflight_min_vertical_clearance_m"] = round(
-                minimum_clearance_m, 3
-            )
+            obstacle["return_overflight_min_vertical_clearance_m"] = round(minimum_clearance_m, 3)
             obstacle["return_overflight_status"] = (
                 "observed_above_obstacle"
                 if minimum_clearance_m > 0.0
@@ -2068,9 +2129,7 @@ def _mission_map_model(
                 covered_observed_gap_indexes.add(gap_index)
                 start_gap = avoidance.get("observation_start_gap")
                 if isinstance(start_gap, dict):
-                    display_gaps.append(
-                        {**start_gap, "source": "recovery_observation_gap"}
-                    )
+                    display_gaps.append({**start_gap, "source": "recovery_observation_gap"})
                 end_gap_distance_m = distance_between(last_sample, gap_to)
                 if end_gap_distance_m > 10.0:
                     display_gaps.append(

@@ -229,6 +229,7 @@ def test_completed_job_status_uses_dropoff_replay_not_later_return_snapshot() ->
 
     rendered = "\n".join(missionos_cli._job_operator_summary(payload))
 
+    assert "Complete: Gateway recorded a terminal live SITL result" in rendered
     assert "Route: [############################] 100.0%" in rendered
     assert "Distance: 111 m / 111 m" in rendered
     assert "Waypoint: 20/23 reached  (current seq 21)" in rendered
@@ -436,13 +437,9 @@ def test_map_keeps_dispatch_start_and_marks_late_recovery_observation() -> None:
     assert avoidance["start"]["x_m"] == 100.0
     assert avoidance["start"]["source"] == "dispatch_current_position_observation"
     assert avoidance["maneuver_observation_sample_count"] == 3
-    assert avoidance["observation_start_gap"]["reason"] == (
-        "recovery_observation_started_late"
-    )
+    assert avoidance["observation_start_gap"]["reason"] == ("recovery_observation_started_late")
     assert avoidance["observation_start_gap"]["elapsed_gap_s"] == 8.0
-    assert any(
-        gap.get("source") == "recovery_observation_gap" for gap in model["display_gaps"]
-    )
+    assert any(gap.get("source") == "recovery_observation_gap" for gap in model["display_gaps"])
     svg = mission_route_evidence_svg(model)
     assert "unobserved gap / 未観測" in svg
     assert "not observed" in svg

@@ -859,6 +859,7 @@ def test_turtlebot4_execution_opens_home_robot_companions(
     missionos_cli._maybe_open_turtlebot3_companion_terminals(
         ctx,
         {
+            "task_id": "task_stale_parent_payload",
             "operation_result": {
                 "task_id": "task_turtlebot4",
                 "summary": {
@@ -1160,9 +1161,10 @@ def test_chat_cannot_approve_ask_human_checkpoint_and_enters_revision_mode(
         "checkpoint_hash": pending["checkpoint_hash"],
     }
     rendered = capsys.readouterr().out
-    assert "cannot be" in rendered
-    assert "approved or dispatched" in rendered
-    assert "No approval artifact or dispatch was" in rendered
+    normalized = " ".join(rendered.split())
+    assert "cannot be" in normalized
+    assert "approved or dispatched" in normalized
+    assert "No approval artifact or dispatch was" in normalized
 
 
 def test_pending_turtlebot3_recovery_uses_authoritative_checkpoint_parameters() -> None:
@@ -2942,6 +2944,258 @@ def test_turtlebot3_run_opens_companions_while_conversation_is_in_flight(
     assert missionos_cli._stored_sitl_task_id(ctx) == "task_turtlebot3_in_flight"
 
 
+def test_turtlebot3_run_does_not_rebind_an_existing_home_robot_task(
+    monkeypatch: Any,
+    tmp_path: Path,
+) -> None:
+    ctx = _chat_ctx(tmp_path)
+    ctx.obj["missionos_chat_companion_terminals_enabled"] = True
+    launched: list[str] = []
+
+    class ExistingTaskClient:
+        def get(self, _path: str) -> dict[str, Any]:
+            return {
+                "items": [
+                    {
+                        "task_id": "task_existing_turtlebot3",
+                        "status": "running",
+                        "artifacts": {
+                            "summary": {
+                                "execution_target": "ros2_nav2_turtlebot3_sim"
+                            }
+                        },
+                    }
+                ]
+            }
+
+    monkeypatch.setattr(
+        missionos_cli,
+        "_chat_companion_terminals_enabled",
+        lambda _ctx: True,
+    )
+    monkeypatch.setattr(
+        missionos_cli,
+        "_ensure_chat_companion_terminals",
+        lambda _ctx, task_id: launched.append(task_id),
+    )
+
+    def slow_conversation() -> dict[str, Any]:
+        time.sleep(0.7)
+        return {"operation_result": {}}
+
+    payload = missionos_cli._run_turtlebot3_conversation_with_companion_monitor(
+        ctx,
+        ExistingTaskClient(),  # type: ignore[arg-type]
+        slow_conversation,
+    )
+
+    assert payload == {"operation_result": {}}
+    assert launched == []
+    assert missionos_cli._stored_sitl_task_id(ctx) == ""
+
+
+def test_turtlebot3_run_does_not_guess_between_concurrent_new_tasks(
+    monkeypatch: Any,
+    tmp_path: Path,
+) -> None:
+    ctx = _chat_ctx(tmp_path)
+    ctx.obj["missionos_chat_companion_terminals_enabled"] = True
+    launched: list[str] = []
+
+    class ConcurrentTaskClient:
+        list_count = 0
+
+        def get(self, _path: str) -> dict[str, Any]:
+            self.list_count += 1
+            if self.list_count == 1:
+                return {"items": []}
+            return {
+                "items": [
+                    {
+                        "task_id": task_id,
+                        "status": "running",
+                        "artifacts": {
+                            "summary": {
+                                "execution_target": "ros2_nav2_turtlebot3_sim"
+                            }
+                        },
+                    }
+                    for task_id in ("task_concurrent_a", "task_concurrent_b")
+                ]
+            }
+
+    monkeypatch.setattr(
+        missionos_cli,
+        "_chat_companion_terminals_enabled",
+        lambda _ctx: True,
+    )
+    monkeypatch.setattr(
+        missionos_cli,
+        "_ensure_chat_companion_terminals",
+        lambda _ctx, task_id: launched.append(task_id),
+    )
+
+    def slow_conversation() -> dict[str, Any]:
+        time.sleep(0.7)
+        return {
+            "operation_result": {
+                "task_id": "task_concurrent_b",
+                "summary": {"status": "running"},
+            }
+        }
+
+    payload = missionos_cli._run_turtlebot3_conversation_with_companion_monitor(
+        ctx,
+        ConcurrentTaskClient(),  # type: ignore[arg-type]
+        slow_conversation,
+    )
+
+    assert payload["operation_result"]["task_id"] == "task_concurrent_b"
+    assert launched == []
+    assert missionos_cli._stored_sitl_task_id(ctx) == ""
+
+
+def test_turtlebot3_run_disables_early_binding_when_baseline_listing_fails(
+    monkeypatch: Any,
+    tmp_path: Path,
+) -> None:
+    ctx = _chat_ctx(tmp_path)
+    ctx.obj["missionos_chat_companion_terminals_enabled"] = True
+    launched: list[str] = []
+
+    class BaselineFailureClient:
+        list_count = 0
+
+        def get(self, _path: str) -> dict[str, Any]:
+            self.list_count += 1
+            if self.list_count == 1:
+                raise click.ClickException("temporary task listing failure")
+            return {
+                "items": [
+                    {
+                        "task_id": "task_preexisting",
+                        "status": "running",
+                        "artifacts": {
+                            "summary": {
+                                "execution_target": "ros2_nav2_turtlebot3_sim"
+                            }
+                        },
+                    }
+                ]
+            }
+
+    client = BaselineFailureClient()
+    monkeypatch.setattr(
+        missionos_cli,
+        "_chat_companion_terminals_enabled",
+        lambda _ctx: True,
+    )
+    monkeypatch.setattr(
+        missionos_cli,
+        "_ensure_chat_companion_terminals",
+        lambda _ctx, task_id: launched.append(task_id),
+    )
+
+    payload = missionos_cli._run_turtlebot3_conversation_with_companion_monitor(
+        ctx,
+        client,  # type: ignore[arg-type]
+        lambda: {
+            "operation_result": {
+                "task_id": "task_exact_response",
+                "summary": {
+                    "task_id": "task_exact_response",
+                    "status": "running",
+                    "execution_target": "ros2_nav2_turtlebot3_sim",
+                },
+            }
+        },
+    )
+
+    assert client.list_count == 1
+    assert launched == []
+    missionos_cli._maybe_open_turtlebot3_companion_terminals(ctx, payload)
+    assert launched == ["task_exact_response"]
+
+
+def test_home_robot_task_listing_distinguishes_invalid_payload_from_empty() -> None:
+    class InvalidListingClient:
+        def get(self, _path: str) -> dict[str, Any]:
+            return {}
+
+    class EmptyListingClient:
+        def get(self, _path: str) -> dict[str, Any]:
+            return {"items": []}
+
+    assert (
+        missionos_cli._listed_home_robot_task_ids(
+            InvalidListingClient(),  # type: ignore[arg-type]
+        )
+        is None
+    )
+    assert missionos_cli._listed_home_robot_task_ids(
+        EmptyListingClient(),  # type: ignore[arg-type]
+    ) == set()
+
+
+def test_turtlebot3_run_stops_listing_after_one_task_is_bound(
+    monkeypatch: Any,
+    tmp_path: Path,
+) -> None:
+    ctx = _chat_ctx(tmp_path)
+    ctx.obj["missionos_chat_companion_terminals_enabled"] = True
+    launched: list[str] = []
+
+    class ChangingTaskWindowClient:
+        list_count = 0
+
+        def get(self, _path: str) -> dict[str, Any]:
+            self.list_count += 1
+            if self.list_count == 1:
+                return {"items": []}
+            task_ids = ["task_bound"]
+            if self.list_count > 2:
+                task_ids = ["task_later_window_entry"]
+            return {
+                "items": [
+                    {
+                        "task_id": task_id,
+                        "status": "running",
+                        "artifacts": {
+                            "summary": {
+                                "execution_target": "ros2_nav2_turtlebot3_sim"
+                            }
+                        },
+                    }
+                    for task_id in task_ids
+                ]
+            }
+
+    client = ChangingTaskWindowClient()
+    monkeypatch.setattr(
+        missionos_cli,
+        "_chat_companion_terminals_enabled",
+        lambda _ctx: True,
+    )
+    monkeypatch.setattr(
+        missionos_cli,
+        "_ensure_chat_companion_terminals",
+        lambda _ctx, task_id: launched.append(task_id),
+    )
+
+    def slow_conversation() -> dict[str, Any]:
+        time.sleep(1.2)
+        return {"operation_result": {"task_id": "task_bound"}}
+
+    missionos_cli._run_turtlebot3_conversation_with_companion_monitor(
+        ctx,
+        client,  # type: ignore[arg-type]
+        slow_conversation,
+    )
+
+    assert client.list_count == 2
+    assert launched == ["task_bound"]
+
+
 def test_turtlebot3_chat_task_monitor_prints_durable_terminal_update(
     monkeypatch: Any,
     tmp_path: Path,
@@ -3052,6 +3306,34 @@ def test_pending_turtlebot3_conversation_starts_task_status_monitor(
     )
 
     assert started == ["task_chat_pending"]
+
+
+def test_terminal_turtlebot3_conversation_does_not_start_task_status_monitor(
+    monkeypatch: Any,
+    tmp_path: Path,
+) -> None:
+    ctx = _chat_ctx(tmp_path)
+    started: list[str] = []
+    monkeypatch.setattr(
+        missionos_cli,
+        "_start_turtlebot3_chat_task_status_monitor",
+        lambda _ctx, _client, *, task_id: started.append(task_id),
+    )
+
+    missionos_cli._maybe_start_turtlebot3_chat_task_status_monitor(
+        ctx,
+        RecordingMissionOSClient(),
+        {
+            "operation_result": {
+                "summary": {
+                    "status": "completed",
+                    "task_id": "task_chat_completed",
+                }
+            }
+        },
+    )
+
+    assert started == []
 
 
 def test_chat_plan_without_source_bound_context_does_not_offer_approval(tmp_path: Path) -> None:

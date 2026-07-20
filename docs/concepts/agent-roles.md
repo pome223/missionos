@@ -131,6 +131,11 @@ For desktop convenience, an interactive `missionos chat` live flight can open
 terminals are still just operator/evidence surfaces; closing chat stops the
 companion terminals it started.
 
+All three companion views are pinned to the exact task created by that chat
+operation. They do not switch to an older or merely nearby running task. The
+views may refresh evidence for that task, but opening or refreshing them does
+not approve a Recovery proposal or send a command.
+
 This distinction matters:
 
 - Runtime Recovery Agent: active mission, telemetry-driven, can propose recovery.

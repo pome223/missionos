@@ -1,9 +1,90 @@
-from scripts.smoke_missionos_chat_turtlebot3_home_mission import (
+from pathlib import Path
+import re
+
+from src.runtime.turtlebot3_chat_e2e_runner import (
     _ADK_ENV_KEYS,
+    _approve_turtlebot3_recovery_checkpoint,
     _disabled_recovery_decision_demo_summary,
     _gateway_env,
     _recovery_decision_demo_summary,
 )
+
+
+def test_turtlebot3_docker_smoke_forwards_deepseek_configuration() -> None:
+    script = (
+        Path(__file__).resolve().parents[2]
+        / "scripts"
+        / "smoke_ros2_nav2_turtlebot3_obstacle_delivery_docker.sh"
+    ).read_text(encoding="utf-8")
+
+    assert '-e "DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}"' in script
+    assert "MISSIONOS_DEEPSEEK_MODEL" in script
+    assert "MISSIONOS_DEEPSEEK_API_BASE" in script
+    assert "import litellm" in script
+    assert '"google-adk[extensions]>=0.1.0"' in script
+    assert re.search(r"\bsk-[A-Za-z0-9]{20,}\b", script) is None
+
+    dockerfile = (
+        Path(__file__).resolve().parents[2]
+        / "docker"
+        / "ros2_nav2_turtlebot3"
+        / "Dockerfile"
+    ).read_text(encoding="utf-8")
+    assert "'google-adk[extensions]>=0.1.0'" in dockerfile
+
+
+def test_recovery_smoke_approves_exact_pending_checkpoint(monkeypatch) -> None:
+    captured: dict = {}
+
+    def fake_post_json(url, payload, *, timeout_s):
+        captured.update({"url": url, "payload": payload, "timeout_s": timeout_s})
+        return {
+            "task": {
+                "artifacts": {
+                    "summary": {"task_id": "task_tb3_contract"},
+                    "turtlebot3_recovery_checkpoint": {
+                        "checkpoint_status": "consumed"
+                    },
+                }
+            }
+        }
+
+    monkeypatch.setattr(
+        "src.runtime.turtlebot3_chat_e2e_runner._post_json",
+        fake_post_json,
+    )
+    result = _approve_turtlebot3_recovery_checkpoint(
+        base_url="http://127.0.0.1:12345",
+        executed={
+            "routed_action": "execute",
+            "operation_result": {
+                "summary": {"task_id": "task_tb3_contract"},
+                "turtlebot3_recovery_checkpoint": {
+                    "checkpoint_status": "awaiting_operator_approval",
+                    "checkpoint_id": "checkpoint-1",
+                    "checkpoint_hash": "hash-1",
+                    "selected_action": "avoid_obstacle",
+                    "approved_parameters": {"target_x_m": 0.5},
+                },
+            },
+        },
+    )
+
+    assert captured["url"].endswith(
+        "/px4-gazebo/mission-scenarios/recovery-dispatch"
+    )
+    assert captured["payload"] == {
+        "task_id": "task_tb3_contract",
+        "recovery_action": "avoid_obstacle",
+        "recovery_parameters": {"target_x_m": 0.5},
+        "explicit_recovery_dispatch_approval": True,
+        "expected_recovery_checkpoint_id": "checkpoint-1",
+        "expected_recovery_checkpoint_hash": "hash-1",
+    }
+    assert result["routed_action"] == "execute"
+    assert result["operation_result"]["summary"]["task_id"] == (
+        "task_tb3_contract"
+    )
 
 
 def test_turtlebot3_chat_smoke_gateway_env_defaults_to_gemini(monkeypatch) -> None:

@@ -832,7 +832,293 @@ def _operator_recovery_dispatch_status_text(
     )
 
 
+def _turtlebot_indoor_map_from_artifacts(
+    artifacts: dict[str, Any],
+) -> dict[str, Any]:
+    """Return the newest saved indoor-map artifact without changing it."""
+
+    summary = artifacts.get("summary")
+    summary = summary if isinstance(summary, dict) else {}
+    embedded = summary.get("turtlebot3_indoor_map_model")
+    if isinstance(embedded, dict):
+        return embedded
+    execution = artifacts.get("turtlebot3_home_mission_execution")
+    execution = execution if isinstance(execution, dict) else {}
+    embedded = execution.get("turtlebot3_indoor_map_model")
+    if isinstance(embedded, dict):
+        return embedded
+    direct = artifacts.get("turtlebot3_indoor_map_model")
+    return direct if isinstance(direct, dict) else {}
+
+
+def _is_turtlebot_nav2_job(task_payload: dict[str, Any]) -> bool:
+    task = _task_record(task_payload)
+    if task.get("kind") == "turtlebot3_home_mission_execution":
+        return True
+    return bool(_turtlebot_indoor_map_from_artifacts(_task_artifacts(task_payload)))
+
+
+def _turtlebot_job_operator_summary(task_payload: dict[str, Any]) -> list[str]:
+    """Build a truthful TB3/TB4 status view from saved task artifacts.
+
+    This is a presentation-only projection.  It deliberately avoids PX4/SITL
+    vocabulary and never upgrades approval, dispatch, motion, or completion
+    claims beyond the values already present in the task artifacts.
+    """
+
+    task = _task_record(task_payload)
+    artifacts = _task_artifacts(task_payload)
+    summary = artifacts.get("summary")
+    summary = summary if isinstance(summary, dict) else {}
+    indoor_map = _turtlebot_indoor_map_from_artifacts(artifacts)
+    recovery = indoor_map.get("recovery")
+    recovery = recovery if isinstance(recovery, dict) else {}
+    checkpoint = artifacts.get("turtlebot3_recovery_checkpoint")
+    checkpoint = checkpoint if isinstance(checkpoint, dict) else {}
+    decision = artifacts.get("turtlebot3_recovery_decision_summary")
+    decision = decision if isinstance(decision, dict) else {}
+    receipt = artifacts.get("missionos_runtime_recovery_dispatch_receipt")
+    receipt = receipt if isinstance(receipt, dict) else {}
+    planner = summary.get("recovery_planner_result")
+    planner = planner if isinstance(planner, dict) else {}
+    invocation = planner.get("llm_invocation_evidence")
+    invocation = invocation if isinstance(invocation, dict) else {}
+
+    task_status = _status_text(task.get("status") or task.get("task_status"))
+    robot_label = _status_text(
+        indoor_map.get("robot_label") or summary.get("robot_label"),
+        default="TurtleBot3",
+    )
+    recovery_triggered = _first_present(
+        summary.get("runtime_recovery_triggered"), recovery.get("triggered")
+    )
+    route_completed = _first_present(
+        summary.get("route_completed_after_recovery"),
+        decision.get("route_completed_after_recovery"),
+        receipt.get("route_completed_after_recovery"),
+    )
+    checkpoint_status = checkpoint.get("checkpoint_status")
+    if task_status == "completed" and route_completed is True:
+        headline = f"Complete: {robot_label}/Nav2 simulated route finished after Recovery"
+    elif task_status == "completed":
+        headline = f"Complete: Gateway recorded a terminal {robot_label}/Nav2 simulator result"
+    elif task_status == "running":
+        headline = f"Running: {robot_label}/Nav2 simulator telemetry is updating"
+    elif task_status == "pending" and checkpoint_status == "awaiting_operator_approval":
+        headline = f"Waiting: {robot_label} is stopped for an operator Recovery decision"
+    elif task_status == "blocked":
+        headline = f"Blocked: {robot_label}/Nav2 stopped without verified completion"
+    else:
+        headline = f"Status: {task_status} ({robot_label}/Nav2 simulator)"
+
+    completed_segments = _first_present(
+        summary.get("segment_completion_count"),
+        recovery.get("route_segment_completion_count"),
+    )
+    planned_segments = _first_present(
+        summary.get("planned_segment_count"),
+        recovery.get("route_segment_planned_count"),
+    )
+    route_resumed = _first_present(
+        summary.get("route_resumed_after_recovery"),
+        receipt.get("route_resumed_after_recovery"),
+        recovery.get("route_resumed_after_recovery"),
+    )
+    recovery_complete = _first_present(
+        summary.get("recovery_completion_claimed"),
+        receipt.get("recovery_completion_claimed"),
+        recovery.get("recovery_completion_claimed"),
+    )
+    selected_action = _first_present(
+        checkpoint.get("selected_action"),
+        decision.get("selected_action"),
+        receipt.get("recovery_action"),
+        recovery.get("selected_action"),
+    )
+    receipt_action = _first_present(
+        receipt.get("recovery_action"),
+        recovery.get("selected_action"),
+    )
+    dispatch_sent = _first_present(
+        summary.get("recovery_dispatch_request_sent"),
+        receipt.get("recovery_dispatch_request_sent"),
+    )
+    operator_approved = _first_present(
+        receipt.get("explicit_recovery_dispatch_approval"),
+        receipt.get("operator_approved"),
+    )
+    approval = receipt.get("turtlebot3_recovery_operator_approval")
+    approval = approval if isinstance(approval, dict) else {}
+    approval_source = approval.get("approval_source")
+    checkpoint_id = str(checkpoint.get("checkpoint_id") or "")
+    checkpoint_hash = str(checkpoint.get("checkpoint_hash") or "")
+    approval_checkpoint_id = str(approval.get("checkpoint_id") or "")
+    approval_checkpoint_hash = str(approval.get("checkpoint_hash") or "")
+    approval_matches_current_checkpoint = bool(operator_approved) and (
+        not checkpoint_id
+        or (
+            approval_checkpoint_id == checkpoint_id
+            and (not checkpoint_hash or approval_checkpoint_hash == checkpoint_hash)
+        )
+    )
+    awaiting_new_recovery_decision = (
+        checkpoint_status == "awaiting_operator_approval"
+        and bool(checkpoint_id)
+        and not approval_matches_current_checkpoint
+    )
+    recovery_goal_status = _first_present(
+        summary.get("recovery_goal_status"), recovery.get("goal_status")
+    )
+    recovery_verification = _first_present(
+        summary.get("recovery_verification_status"),
+        recovery.get("verification_status"),
+    )
+    route_resume_status = _first_present(
+        summary.get("route_resume_status"), recovery.get("route_resume_status")
+    )
+    proposal_source = _first_present(
+        decision.get("recovery_proposal_source"), planner.get("proposal_source")
+    )
+    model_text = _status_text(invocation.get("model_id"))
+    provider_text = _status_text(invocation.get("provider"))
+    odom_delta_m = _first_numeric(summary.get("odom_delta_m"))
+    observed_points = indoor_map.get("observed_points")
+    observed_count = len(observed_points) if isinstance(observed_points, list) else 0
+    recovery_points = recovery.get("observed_points")
+    recovery_observed_count = len(recovery_points) if isinstance(recovery_points, list) else 0
+    obstacles = indoor_map.get("obstacles")
+    obstacle_count = len(obstacles) if isinstance(obstacles, list) else 0
+    obstacle_clearance_values = [
+        obstacle.get("trajectory_clearance_observed")
+        for obstacle in obstacles or []
+        if isinstance(obstacle, dict)
+        and isinstance(obstacle.get("trajectory_clearance_observed"), bool)
+    ]
+    obstacle_intersection_values = [
+        obstacle.get("trajectory_intersects_obstacle")
+        for obstacle in obstacles or []
+        if isinstance(obstacle, dict)
+        and isinstance(obstacle.get("trajectory_intersects_obstacle"), bool)
+    ]
+    obstacle_clearance = _first_present(
+        indoor_map.get("obstacle_clearance_observed"),
+        all(obstacle_clearance_values) if obstacle_clearance_values else None,
+    )
+    obstacle_intersects = _first_present(
+        indoor_map.get("observed_path_intersects_obstacle"),
+        any(obstacle_intersection_values) if obstacle_intersection_values else None,
+    )
+
+    recovery_lines: list[str]
+    if recovery_triggered is not True:
+        recovery_lines = [
+            "Recovery Dispatch: not triggered",
+            "Recovery Outcome: not applicable",
+            "Recovery Judgment: not requested",
+        ]
+    elif awaiting_new_recovery_decision:
+        recovery_lines = [
+            (
+                "Current Recovery Decision: "
+                f"status={_status_text(checkpoint_status)}; "
+                f"action={_status_text(selected_action)}; "
+                "checkpoint_approval=False; "
+                "dispatch_authority="
+                f"{_format_flag(checkpoint.get('dispatch_authority_created'), default='False')}"
+            ),
+            (
+                "Previous Recovery Attempt: "
+                f"status={_status_text(receipt.get('dispatch_status'))}; "
+                f"action={_status_text(receipt_action)}; "
+                f"request_sent={_format_flag(dispatch_sent)}; "
+                f"checkpoint_approval={_format_flag(operator_approved)}; "
+                f"approval_source={_status_text(approval_source)}"
+            ),
+            (
+                "Previous Recovery Outcome: "
+                f"goal={_status_text(recovery_goal_status)}; "
+                f"verification={_status_text(recovery_verification)}; "
+                f"resume={_status_text(route_resume_status)}; "
+                f"completion={_format_flag(recovery_complete)}"
+            ),
+            (
+                "Current Recovery Judgment: "
+                f"source={_status_text(proposal_source)}; "
+                f"provider={provider_text}; model={model_text}; "
+                "dispatch_authority=False"
+            ),
+        ]
+    else:
+        recovery_lines = [
+            (
+                "Recovery Dispatch: "
+                f"status={_status_text(receipt.get('dispatch_status'))}; "
+                f"action={_status_text(receipt_action or selected_action)}; "
+                f"request_sent={_format_flag(dispatch_sent)}; "
+                "checkpoint_approval="
+                f"{_format_flag(approval_matches_current_checkpoint)}; "
+                "approval_source="
+                f"{_status_text(approval_source if approval_matches_current_checkpoint else None)}"
+            ),
+            (
+                "Recovery Outcome: "
+                f"goal={_status_text(recovery_goal_status)}; "
+                f"verification={_status_text(recovery_verification)}; "
+                f"resume={_status_text(route_resume_status)}; "
+                f"completion={_format_flag(recovery_complete)}"
+            ),
+            (
+                "Recovery Judgment: "
+                f"source={_status_text(proposal_source)}; "
+                f"provider={provider_text}; model={model_text}; "
+                "dispatch_authority=False"
+            ),
+        ]
+
+    lines = [
+        headline,
+        f"Task: {task.get('task_id')}  ({task_status})",
+        f"Robot: {robot_label}/Nav2 simulator",
+        "",
+        (
+            "Route: "
+            f"segments={_status_text(completed_segments)}/{_status_text(planned_segments)}; "
+            f"resumed_after_recovery={_format_flag(route_resumed)}; "
+            f"completed_after_recovery={_format_flag(route_completed)}"
+        ),
+        *recovery_lines,
+        (
+            "Motion: "
+            f"observed={_format_flag(summary.get('robot_motion_observed'))}; "
+            f"odom={odom_delta_m:.2f} m; "
+            if odom_delta_m is not None
+            else "Motion: observed=-; odom=-; "
+        )
+        + f"saved_samples={observed_count}; recovery_samples={recovery_observed_count}",
+        (
+            "Obstacles: "
+            f"count={obstacle_count}; "
+            f"clearance={_format_flag(obstacle_clearance)}; "
+            f"intersects={_format_flag(obstacle_intersects)}"
+        ),
+        "Battery: not observed by this TurtleBot/Nav2 evidence path",
+        (
+            "Claims: "
+            f"completion_scope={_status_text(summary.get('completion_scope'))}; "
+            f"sim_action_completion={_format_flag(summary.get('completion_claimed'))}; "
+            "delivery_completion="
+            f"{_format_flag(summary.get('mission_delivery_completion_claimed'), default='False')}; "
+            "physical_execution="
+            f"{_format_flag(summary.get('physical_execution_invoked'), default='False')}"
+        ),
+    ]
+    return lines
+
+
 def _job_operator_summary(task_payload: dict[str, Any]) -> list[str]:
+    if _is_turtlebot_nav2_job(task_payload):
+        return _turtlebot_job_operator_summary(task_payload)
+
     task = _task_record(task_payload)
     artifacts = _task_artifacts(task_payload)
     snapshot = artifacts.get("missionos_auto_mission_runtime_snapshot")
@@ -863,6 +1149,8 @@ def _job_operator_summary(task_payload: dict[str, Any]) -> list[str]:
     startup = startup if isinstance(startup, dict) else {}
     readiness = startup.get("readiness") if isinstance(startup.get("readiness"), dict) else {}
     metadata = task.get("metadata") if isinstance(task.get("metadata"), dict) else {}
+    safety_hold = artifacts.get("missionos_runtime_recovery_safety_hold_receipt")
+    safety_hold = safety_hold if isinstance(safety_hold, dict) else {}
 
     task_status = _status_text(task.get("status") or task.get("task_status"))
     dispatch_status = (
@@ -1112,6 +1400,18 @@ def _job_operator_summary(task_payload: dict[str, Any]) -> list[str]:
     )
     if operator_dispatch_text:
         lines.insert(3 if process_status_text else 2, operator_dispatch_text)
+    if safety_hold:
+        hold_observed = safety_hold.get("request_status") == "observed" or (
+            snapshot.get("operator_recovery_action") == "safety_hold"
+            and snapshot.get("operator_recovery_assist_status") == "safety_hold_observed"
+        )
+        lines.insert(
+            3 if process_status_text else 2,
+            "Safety HOLD: "
+            f"status={'observed' if hold_observed else _status_text(safety_hold.get('request_status'))}; "
+            "source=preauthorized local-conflict policy; "
+            "operator_approved=false; Recovery dispatch=false",
+        )
     weather_condition = _job_weather_condition_text(artifacts)
     if weather_condition:
         sitl_index = next(

@@ -72,6 +72,12 @@ from .gateway_process import (
     _read_gateway_pid_record as _read_gateway_pid_record,
     _stop_gateway_pid as _stop_gateway_pid,
 )
+from .chat_companions import (
+    _listed_home_robot_task_ids as _listed_home_robot_task_ids_impl,
+    _maybe_open_home_robot_companion_terminals_impl,
+    _maybe_start_home_robot_chat_task_status_monitor_impl,
+    _run_home_robot_conversation_with_companion_monitor_impl,
+)
 from .indoor_map_html import (
     _mission_indoor_map_html as _mission_indoor_map_html,
 )
@@ -158,6 +164,10 @@ from .map_model import (
     _turtlebot_robot_label_from_artifacts as _turtlebot_robot_label_from_artifacts,
     _turtlebot_robot_label_from_profile as _turtlebot_robot_label_from_profile,
     _turtlebot_robot_profile_from_artifacts as _turtlebot_robot_profile_from_artifacts,
+)
+from .operate_view import (
+    _build_operate_status_group as _build_operate_status_group_view,
+    _operate_robot_from_task_payload,
 )
 
 
@@ -2991,13 +3001,11 @@ def map_command(
                 "planned_point_count": len(model.get("planned_points") or []),
                 "observed_point_count": len(model.get("observed_points") or []),
                 "obstacle_count": len(model.get("obstacles") or []),
-	                "avoidance_sample_count": len(
-	                    (model.get("avoidance") or {}).get("samples") or []
-	                ),
-	                "live": bool(model.get("live", {}).get("enabled")),
-	                "opened": False,
-	            }
-	        )
+                "avoidance_sample_count": _mission_map_avoidance_sample_count(model),
+                "live": bool(model.get("live", {}).get("enabled")),
+                "opened": False,
+            }
+        )
         return
     if authenticated_file_snapshot:
         console.print(
@@ -3030,8 +3038,7 @@ def map_command(
                     f"planned={len(model.get('planned_points') or [])}",
                     f"observed={len(model.get('observed_points') or [])}",
                     f"obstacles={len(model.get('obstacles') or [])}",
-	                    "avoidance_samples="
-	                    f"{len((model.get('avoidance') or {}).get('samples') or [])}",
+                    f"avoidance_samples={_mission_map_avoidance_sample_count(model)}",
                     f"html={path}",
                     "evidence_image="
                     + (
@@ -3055,6 +3062,20 @@ def map_command(
             border_style="cyan",
         )
     )
+
+
+def _mission_map_avoidance_sample_count(model: dict[str, Any]) -> int:
+    """Count the vehicle-specific saved Recovery observations shown on a map."""
+
+    if model.get("map_kind") == "indoor_local_xy":
+        recovery = model.get("recovery")
+        recovery = recovery if isinstance(recovery, dict) else {}
+        observed = recovery.get("observed_points")
+        return len(observed) if isinstance(observed, list) else 0
+    avoidance = model.get("avoidance")
+    avoidance = avoidance if isinstance(avoidance, dict) else {}
+    samples = avoidance.get("samples")
+    return len(samples) if isinstance(samples, list) else 0
 
 
 # ── Interactive operator view (`missionos operate`) ──────────────────────────
@@ -4116,7 +4137,7 @@ def _render_chat_recovery_review(pending: dict[str, Any]) -> Panel:
         )
     elif revision_supported and operator_guidance_required:
         decision_text = (
-            "Gemini requested operator guidance; this checkpoint cannot dispatch.  "
+            "Recovery Agent needs guidance; this checkpoint cannot dispatch.  "
             "[bold]c[/bold]=give a bounded change in natural language  "
             "[bold]d/Enter[/bold]=defer with no dispatch"
         )
@@ -4179,8 +4200,8 @@ def _handle_chat_recovery_approval(
     if pending.get("operator_guidance_required") is True:
         if _set_chat_recovery_revision_context(ctx, pending=pending):
             console.print(
-                "[yellow]Gemini requested operator guidance. This proposal-only "
-                "checkpoint cannot be approved or dispatched. Type a bounded "
+                "[yellow]Recovery Agent needs guidance. Proposal cannot be approved "
+                "or dispatched. Type a bounded "
                 "natural-language change such as '右へ大きく迂回して障害物を避けて'. "
                 "No approval artifact or dispatch was created.[/yellow]"
             )
@@ -4828,7 +4849,7 @@ def _render_recovery_agent_console(
             lines.extend(
                 [
                     "",
-                    "[bold yellow]Gemini requested operator guidance; this "
+                    "[bold yellow]Recovery Agent requested operator guidance; this "
                     "proposal-only checkpoint cannot dispatch.[/bold yellow]",
                     "  [bold]defer[/bold]    keep the robot stopped; create no authority",
                     "  type a bounded change in plain language, e.g. "
@@ -5263,63 +5284,22 @@ def _operate_status_group(
     task_id: str,
 ) -> tuple[Group, str, str]:
     task_payload, _ = _task_and_timeline(client, task_id, timeline_limit=0)
-    artifacts = _task_artifacts(task_payload)
-    snapshot = artifacts.get("missionos_auto_mission_runtime_snapshot")
-    snapshot = snapshot if isinstance(snapshot, dict) else {}
     status = _task_status(task_payload)
     proposal = _agent_proposal_from_task(task_payload)
-    summary = artifacts.get("summary")
-    summary = summary if isinstance(summary, dict) else {}
-    checkpoint = artifacts.get("turtlebot3_recovery_checkpoint")
-    checkpoint = checkpoint if isinstance(checkpoint, dict) else {}
-    indoor_map = _turtlebot3_indoor_map_model_from_artifacts(artifacts)
-    observed_points = indoor_map.get("observed_points")
-    fingerprint = json.dumps(
-        {
-            "status": status,
-            "segment_dispatch_count": summary.get("segment_dispatch_count"),
-            "segment_completion_count": summary.get("segment_completion_count"),
-            "runtime_recovery_triggered": summary.get("runtime_recovery_triggered"),
-            "recovery_action_suggested": summary.get("recovery_action_suggested"),
-            "recovery_goal_status": summary.get("recovery_goal_status"),
-            "recovery_verification_status": summary.get(
-                "recovery_verification_status"
-            ),
-            "route_resume_status": summary.get("route_resume_status"),
-            "checkpoint_status": checkpoint.get("checkpoint_status"),
-            "checkpoint_hash": checkpoint.get("checkpoint_hash"),
-            "observed_point_count": (
-                len(observed_points) if isinstance(observed_points, list) else 0
-            ),
-        },
-        sort_keys=True,
-        default=str,
+    pending = _pending_recovery_approval_from_task(task_payload)
+    group, fingerprint = _build_operate_status_group_view(
+        task_payload,
+        proposal=proposal,
+        pending=pending,
+        status=status,
+        task_id=task_id,
     )
-    return (
-        Group(
-            _render_recovery_agent_console(
-                task_payload,
-                proposal=proposal,
-                show_proposal=bool(proposal) and status == "running",
-                status=status,
-                task_id=task_id,
-            ),
-            _render_operate_status_line(
-                snapshot,
-                artifacts=artifacts,
-                status=status,
-                task_id=task_id,
-            ),
-        ),
-        status,
-        fingerprint,
-    )
+    return group, status, fingerprint
 
 
 def _operate_robot_for_task(client: MissionOSGatewayClient, task_id: str) -> str:
     task_payload, _ = _task_and_timeline(client, task_id, timeline_limit=0)
-    artifacts = _task_artifacts(task_payload)
-    return _turtlebot_robot_profile_from_artifacts(artifacts) or "px4"
+    return _operate_robot_from_task_payload(task_payload)
 
 
 def _handle_operate_console_command(
@@ -5352,8 +5332,8 @@ def _handle_operate_console_command(
             raise click.ClickException("no recovery proposal is awaiting approval")
         if pending.get("operator_guidance_required") is True:
             console.print(
-                "[yellow]Gemini requested operator guidance. This proposal-only "
-                "checkpoint cannot be approved or dispatched. Type a bounded "
+                "[yellow]Recovery Agent needs guidance. Proposal cannot be approved "
+                "or dispatched. Type a bounded "
                 "natural-language change; no approval artifact was created.[/yellow]"
             )
             return True
@@ -6742,34 +6722,22 @@ def _maybe_open_turtlebot3_companion_terminals(
     ctx: click.Context,
     payload: dict[str, Any],
 ) -> None:
-    operation = payload.get("operation_result")
-    operation = operation if isinstance(operation, dict) else {}
-    summary = operation.get("summary") if isinstance(operation.get("summary"), dict) else {}
-    if not _is_home_robot_nav2_execution_target(summary.get("execution_target")):
-        return
-    task_id = _payload_task_id(operation) or _payload_task_id(payload)
-    if task_id:
-        _ensure_chat_companion_terminals(ctx, task_id)
+    _maybe_open_home_robot_companion_terminals_impl(
+        ctx,
+        payload,
+        is_home_robot_execution_target=_is_home_robot_nav2_execution_target,
+        payload_task_id=_payload_task_id,
+        ensure_terminals=_ensure_chat_companion_terminals,
+    )
 
 
-def _listed_home_robot_task_ids(client: MissionOSGatewayClient) -> set[str]:
-    try:
-        payload = client.get("/tasks?page=1&page_size=20")
-    except click.ClickException:
-        return set()
-    items = payload.get("items") or payload.get("tasks") or []
-    if not isinstance(items, list):
-        return set()
-    task_ids: set[str] = set()
-    for task in items:
-        if not isinstance(task, dict):
-            continue
-        artifacts = task.get("artifacts")
-        artifacts = artifacts if isinstance(artifacts, dict) else {}
-        task_id = str(task.get("task_id") or "").strip()
-        if task_id and _is_turtlebot3_task_artifacts(artifacts):
-            task_ids.add(task_id)
-    return task_ids
+def _listed_home_robot_task_ids(
+    client: MissionOSGatewayClient,
+) -> set[str] | None:
+    return _listed_home_robot_task_ids_impl(
+        client,
+        is_home_robot_task_artifacts=_is_turtlebot3_task_artifacts,
+    )
 
 
 def _run_turtlebot3_conversation_with_companion_monitor(
@@ -6777,27 +6745,15 @@ def _run_turtlebot3_conversation_with_companion_monitor(
     client: MissionOSGatewayClient,
     operation: Callable[[], dict[str, Any]],
 ) -> dict[str, Any]:
-    """Open operator surfaces as soon as a synchronous run creates its task."""
-
-    if not _chat_companion_terminals_enabled(ctx):
-        return operation()
-    existing_task_ids = _listed_home_robot_task_ids(client)
-    executor = ThreadPoolExecutor(max_workers=1)
-    future = executor.submit(operation)
-    try:
-        while True:
-            try:
-                return future.result(timeout=0.5)
-            except FutureTimeout:
-                new_task_ids = (
-                    _listed_home_robot_task_ids(client) - existing_task_ids
-                )
-                if new_task_ids:
-                    task_id = sorted(new_task_ids)[-1]
-                    _remember_sitl_task_id(ctx, task_id)
-                    _ensure_chat_companion_terminals(ctx, task_id)
-    finally:
-        executor.shutdown(wait=False, cancel_futures=False)
+    return _run_home_robot_conversation_with_companion_monitor_impl(
+        ctx,
+        client,
+        operation,
+        terminals_enabled=_chat_companion_terminals_enabled,
+        is_home_robot_task_artifacts=_is_turtlebot3_task_artifacts,
+        remember_task_id=_remember_sitl_task_id,
+        ensure_terminals=_ensure_chat_companion_terminals,
+    )
 
 
 def _print_turtlebot3_chat_task_terminal_update(
@@ -6913,29 +6869,14 @@ def _maybe_start_turtlebot3_chat_task_status_monitor(
     client: MissionOSGatewayClient,
     payload: dict[str, Any],
 ) -> None:
-    operation = payload.get("operation_result")
-    operation = operation if isinstance(operation, dict) else {}
-    summary = operation.get("summary")
-    summary = summary if isinstance(summary, dict) else {}
-    status = str(
-        summary.get("status")
-        or operation.get("summary_status")
-        or operation.get("response_status")
-        or ""
-    ).strip().lower()
-    if status in TERMINAL_TASK_STATUSES:
-        return
-    task_id = (
-        _payload_task_id(operation)
-        or _payload_task_id(payload)
-        or _stored_sitl_task_id(ctx)
+    _maybe_start_home_robot_chat_task_status_monitor_impl(
+        ctx,
+        client,
+        payload,
+        payload_task_id=_payload_task_id,
+        stored_task_id=_stored_sitl_task_id,
+        start_monitor=_start_turtlebot3_chat_task_status_monitor,
     )
-    if task_id:
-        _start_turtlebot3_chat_task_status_monitor(
-            ctx,
-            client,
-            task_id=task_id,
-        )
 
 
 def _conversation_has_approvable_plan(payload: dict[str, Any]) -> bool:
