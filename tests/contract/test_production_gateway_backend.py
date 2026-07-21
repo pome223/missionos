@@ -212,6 +212,16 @@ def test_default_model_backend_uses_gemini(monkeypatch) -> None:
     assert model_config.google_llm_backend_enabled() is True
 
 
+def test_default_agent_model_uses_stable_gemini_id(monkeypatch) -> None:
+    from src.config.settings import Settings
+
+    monkeypatch.delenv("AGENT_MODEL", raising=False)
+
+    settings = Settings(_env_file=None)
+
+    assert settings.agent_model == "gemini-3.1-flash-lite"
+
+
 def test_gateway_env_ollama_backend_keeps_adk_but_removes_google_key(monkeypatch) -> None:
     monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "ollama")
     monkeypatch.setenv("MISSIONOS_OLLAMA_MODEL", "gemma4:26b")

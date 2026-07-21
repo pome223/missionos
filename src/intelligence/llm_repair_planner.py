@@ -612,7 +612,7 @@ def _repair_model_id() -> str:
 
         fallback = str(get_settings().agent_model)
     except Exception:
-        fallback = "gemini-3.1-flash-lite-preview"
+        fallback = "gemini-3.1-flash-lite"
     return agent_model_label(
         env_model or fallback,
         agent_name="missionos_repair_planner_agent",
