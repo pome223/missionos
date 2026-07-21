@@ -24,6 +24,7 @@ ALLOWED_RUNTIME_INVOCATION_KINDS = frozenset(
         "mavlink",
         "gz_topic",
         "http_loopback",
+        "llm_api",
     }
 )
 DISPATCH_RUNTIME_INVOCATION_KINDS = frozenset(
@@ -221,6 +222,14 @@ def normalize_runtime_claims(
         runtime_value = normalized.get(runtime_key) is True
         if runtime_value and evidence is None:
             raise RuntimeClaimValidationError(f"{runtime_key}_requires_runtime_invocation_evidence")
+        if (
+            runtime_value
+            and evidence is not None
+            and evidence.get("invocation_kind") == "llm_api"
+        ):
+            raise RuntimeClaimValidationError(
+                f"{runtime_key}_cannot_use_llm_api_invocation_evidence"
+            )
         if runtime_value and key == "dispatch_executed":
             invocation_kind = str(evidence.get("invocation_kind") if evidence else "")
             if invocation_kind not in DISPATCH_RUNTIME_INVOCATION_KINDS:

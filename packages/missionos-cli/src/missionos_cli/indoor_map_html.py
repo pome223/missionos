@@ -46,6 +46,8 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
       --home: #2563eb;
       --dropoff: #16a34a;
       --obstacle: #dc2626;
+      --visual-corroborated: #0d9488;
+      --visual-camera-only: #ca8a04;
     }}
     * {{ box-sizing: border-box; }}
     body {{
@@ -67,6 +69,22 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
       white-space: nowrap;
       font-size: 0.75rem;
       font-weight: 700;
+    }}
+    .pill-stack {{ display: flex; flex-wrap: wrap; gap: 8px; justify-content: end; }}
+    .clearance-pill[data-status="verified_clear"] {{
+      color: #166534;
+      border-color: #86efac;
+      background: #f0fdf4;
+    }}
+    .clearance-pill[data-status="collision_observed"] {{
+      color: #b91c1c;
+      border-color: #fca5a5;
+      background: #fef2f2;
+    }}
+    .clearance-pill[data-status="unavailable"] {{
+      color: #92400e;
+      border-color: #fcd34d;
+      background: #fffbeb;
     }}
     .map {{
       position: relative;
@@ -110,6 +128,8 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
     .marker-recovery {{ fill: var(--recovery); stroke: white; stroke-width: 2; }}
     .obstacle {{ fill: rgba(220, 38, 38, .22); stroke: var(--obstacle); stroke-width: 2; }}
     .obstacle-label {{ fill: var(--obstacle); font-size: 10px; font-weight: 800; text-anchor: middle; paint-order: stroke; stroke: white; stroke-width: 3; }}
+    .visual-corroborated {{ fill: rgba(13, 148, 136, .30); stroke: var(--visual-corroborated); stroke-width: 2.5; }}
+    .visual-label {{ fill: var(--visual-corroborated); font-size: 10px; font-weight: 800; paint-order: stroke; stroke: white; stroke-width: 3; }}
     .label {{ fill: #0f172a; font-size: 12px; font-weight: 800; paint-order: stroke; stroke: white; stroke-width: 4; }}
     .legend {{
       position: absolute;
@@ -159,7 +179,10 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
         <div class="evidence-note" id="trajectoryTruth">Blue is persisted Nav2-bridge observed trajectory and is the final observation evidence. Purple is persisted recovery evidence. Green, when present, is only a high-rate /odom preview projected onto the map for operator orientation; projection jitter can make it look serpentine. Green is not persisted and is never verifier input.</div>
         <div class="muted" id="liveStatus">Snapshot loaded.</div>
       </div>
-      <div class="pill" id="providerPill">Indoor local XY</div>
+      <div class="pill-stack">
+        <div class="pill" id="providerPill">Indoor local XY</div>
+        <div class="pill clearance-pill" id="clearance3dPill" data-status="unavailable">3D clearance unavailable</div>
+      </div>
     </header>
     <section id="map" class="map" aria-label="MissionOS {escaped_robot_label} indoor map"></section>
     <section class="facts" id="facts"></section>
@@ -170,6 +193,7 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
     const mapEl = document.getElementById("map");
     const factsEl = document.getElementById("facts");
     const liveStatusEl = document.getElementById("liveStatus");
+    const clearance3dPillEl = document.getElementById("clearance3dPill");
     const terminalStatuses = new Set((data.live || {{}}).terminal_statuses || []);
 
     function statusText(value, fallback = "-") {{
@@ -347,6 +371,17 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
         .join("");
       const plannedD = pathD(data.planned_points || [], project);
       const recovery = data.recovery || {{}};
+      const clearance3d = data.trajectory_clearance_3d || {{}};
+      const clearance3dStatus = statusText(clearance3d.status, "unavailable");
+      const clearance3dMinimum = firstNumber(clearance3d.minimum_surface_clearance_m);
+      const clearance3dCandidates = Array.isArray(clearance3d.candidate_results)
+        ? clearance3d.candidate_results
+        : [];
+      const clearance3dUnresolved = Array.isArray(clearance3d.unresolved_candidate_refs)
+        ? clearance3d.unresolved_candidate_refs
+        : [];
+      clearance3dPillEl.dataset.status = clearance3dStatus;
+      clearance3dPillEl.textContent = `3D ${{clearance3dStatus}} · candidates=${{clearance3dCandidates.length}}/${{clearance3dUnresolved.length}} unresolved · min=${{clearance3dMinimum === null ? "-" : clearance3dMinimum.toFixed(3) + "m"}}`;
       const recoveryPoints = [
         ...(recovery.observed_points || []),
         ...(recovery.target ? [recovery.target] : []),
@@ -375,6 +410,36 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
       const obstacleMarkup = points(data.obstacles || []).map((obstacle) => {{
         return rectFromCenter(obstacle, "obstacle", "obstacle-label", -7);
       }}).join("");
+      const visualObservations = Array.isArray(data.visual_observations)
+        ? data.visual_observations
+        : [];
+      const corroboratedObservations = visualObservations.filter((observation) => {{
+        const projection = observation && observation.map_projection;
+        return observation
+          && observation.display_status === "camera_lidar_corroborated"
+          && projection && projection.status === "projected"
+          && Number.isFinite(Number(projection.x_m))
+          && Number.isFinite(Number(projection.y_m));
+      }});
+      const cameraOnlyCount = visualObservations.length - corroboratedObservations.length;
+      const visualObservationMarkup = corroboratedObservations.map((observation) => {{
+        const projection = observation.map_projection;
+        const center = project({{ x_m: Number(projection.x_m), y_m: Number(projection.y_m) }});
+        const candidate = statusText(observation.semantic_candidate, "unknown_obstacle");
+        const confidence = Number(observation.camera_confidence);
+        const confidenceText = Number.isFinite(confidence) ? confidence.toFixed(2) : "-";
+        const rangeText = Number.isFinite(Number(projection.range_m))
+          ? `${{Number(projection.range_m).toFixed(2)}}m`
+          : "-";
+        const frameRef = statusText(observation.source_frame_ref).replace("sha256:", "").slice(0, 12);
+        const tooltip = [
+          `candidate: ${{candidate}} (${{confidenceText}})`,
+          `camera+LiDAR corroborated · range ${{rangeText}}`,
+          `frame ${{frameRef}} · binding ${{statusText(observation.binding_status)}}`,
+          "evidence only — no approval, dispatch, or delivery claim",
+        ].join(" · ");
+        return `<circle class="visual-corroborated" cx="${{center.x.toFixed(2)}}" cy="${{center.y.toFixed(2)}}" r="9"><title>${{escapeHtml(tooltip)}}</title></circle><text class="visual-label" x="${{(center.x + 12).toFixed(2)}}" y="${{(center.y - 10).toFixed(2)}}">${{escapeHtml(`${{candidate}} ${{confidenceText}}`)}}</text>`;
+      }}).join("");
       const marker = (point, cssClass, label, labelDx = 12, labelDy = -10) => {{
         if (!point) return "";
         const p = project(point);
@@ -398,6 +463,7 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
           ${{recoveryMarkup}}
           ${{observedMarkup}}
           ${{obstacleMarkup}}
+          ${{visualObservationMarkup}}
           ${{marker(home, "marker-home", "H home")}}
           ${{marker(dropoff, "marker-dropoff", dropoff && dropoff.room_label ? `D dropoff · ${{escapeHtml(statusText(dropoff.room_label))}}` : "D dropoff", 12, -18)}}
           ${{marker(recovery.target, "marker-recovery", recoveryLabel, 12, 18)}}
@@ -411,7 +477,8 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
           <span style="color: var(--furniture)">furniture</span>
           <span style="color: #334155">wall</span>
           <span style="color: var(--recovery)">purple: persisted recovery evidence</span>
-          <span style="color: var(--obstacle)">obstacle</span>
+          <span style="color: var(--obstacle)">gray/red: scene blocker (harness-placed)</span>
+          <span style="color: var(--visual-corroborated); font-weight: 800">teal: camera+LiDAR corroborated observation</span>
         </div>
       `;
       factsEl.innerHTML = [
@@ -422,10 +489,12 @@ def _mission_indoor_map_html(model: dict[str, Any]) -> str:
         ["planned", `${{points(data.planned_points || []).length}}pts`],
         ["observed", `${{points(data.observed_points || []).length}}pts · source=${{statusText(data.observed_pose_source)}}`],
         ["obstacles", `${{points(data.obstacles || []).length}} · observed=${{statusText((data.obstacles || [])[0]?.observed)}}`],
+        ["visual observations", `${{corroboratedObservations.length}} corroborated · ${{cameraOnlyCount}} camera-only (no map position) · evidence only`],
         ["floor plan", statusText((data.floor_plan || {{}}).floor_plan_id)],
         ["furniture", `${{Array.isArray((data.floor_plan || {{}}).furniture) ? data.floor_plan.furniture.length : 0}} · on_sim_pillars=${{Array.isArray((data.floor_plan || {{}}).pillars) && data.floor_plan.pillars.length > 0}}`],
         ["display decimation", `${{statusText((data.display_decimation || {{}}).method)}} · ${{statusText((data.display_decimation || {{}}).raw_point_count)}}→${{statusText((data.display_decimation || {{}}).display_point_count)}}pts`],
-        ["obstacle clearance", `clear=${{statusText((data.obstacles || [])[0]?.trajectory_clearance_observed)}} · intersects=${{statusText((data.obstacles || [])[0]?.trajectory_intersects_obstacle)}}`],
+        ["2D centerline clearance", `clear=${{statusText((data.obstacles || [])[0]?.trajectory_clearance_observed)}} · intersects=${{statusText((data.obstacles || [])[0]?.trajectory_intersects_obstacle)}}`],
+        ["3D swept-volume clearance", `status=${{clearance3dStatus}} · candidates=${{clearance3dCandidates.length}} · unresolved=${{clearance3dUnresolved.length}} · clear=${{statusText(clearance3d.clearance_observed)}} · collision=${{statusText(clearance3d.collision_observed)}} · minimum=${{clearance3dMinimum === null ? "-" : clearance3dMinimum.toFixed(3) + "m"}} · evidence only`],
         ["recovery", `triggered=${{statusText(recovery.triggered)}} · action=${{statusText(recovery.selected_action)}} · completion=${{statusText(recovery.completion_claimed)}}`],
         ["recovery phase", `${{statusText(recovery.runtime_status)}} · segments=${{statusText(recovery.route_segment_completion_count)}}/${{statusText(recovery.route_segment_planned_count)}} · resumed=${{statusText(recovery.route_resumed_after_recovery)}}`],
         ["recovery status", `goal=${{statusText(recovery.goal_status)}} · verification=${{statusText(recovery.verification_status)}} · route=${{statusText(recovery.route_resume_status)}}`],

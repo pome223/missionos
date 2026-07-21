@@ -2274,6 +2274,8 @@ def _render_turtlebot3_indoor_map(
     room = room if isinstance(room, dict) else {}
     alignment = indoor_map.get("display_alignment")
     alignment = alignment if isinstance(alignment, dict) else {}
+    clearance_3d = indoor_map.get("trajectory_clearance_3d")
+    clearance_3d = clearance_3d if isinstance(clearance_3d, dict) else {}
     live_twist = live_telemetry.get("twist")
     live_twist = live_twist if isinstance(live_twist, dict) else {}
     recovery_phase = _status_text(recovery.get("runtime_status"))
@@ -2303,8 +2305,12 @@ def _render_turtlebot3_indoor_map(
         f"motion={_status_text(motion.get('robot_motion_observed'))}  "
         f"odom={_fmt_metres(motion.get('odom_delta_m'))}  "
         f"observed_source={_status_text(indoor_map.get('observed_pose_source'))}\n"
-        f"obstacle_clearance={_status_text(obstacle_record.get('trajectory_clearance_observed'))}  "
-        f"intersects_obstacle={_status_text(obstacle_record.get('trajectory_intersects_obstacle'))}\n"
+        f"centerline_2d_clearance={_status_text(obstacle_record.get('trajectory_clearance_observed'))}  "
+        f"centerline_2d_intersects={_status_text(obstacle_record.get('trajectory_intersects_obstacle'))}\n"
+        f"clearance_3d_status={_status_text(clearance_3d.get('status'), 'unavailable')}  "
+        f"clearance_3d_clear={_status_text(clearance_3d.get('clearance_observed'))}  "
+        f"clearance_3d_collision={_status_text(clearance_3d.get('collision_observed'))}  "
+        f"clearance_3d_min={_fmt_metres(clearance_3d.get('minimum_surface_clearance_m'))}\n"
         f"display_alignment={_status_text(alignment.get('method'))}  "
         f"applied={_status_text(alignment.get('applied'))}  "
         f"dx={_fmt_metres(alignment.get('dx_m'))}  "

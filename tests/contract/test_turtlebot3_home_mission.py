@@ -113,6 +113,7 @@ def _write_success_bridge(
             "    frame_bytes = " + repr(_FIXTURE_CAMERA_FRAME_BYTES) + "\n"
             "    frame_path.parent.mkdir(parents=True, exist_ok=True)\n"
             "    frame_path.write_bytes(frame_bytes)\n"
+            "    now = datetime.now(timezone.utc).isoformat()\n"
             "    print(json.dumps({\n"
             "        'physical_execution_invoked': False,\n"
             "        'raw_velocity_published': False,\n"
@@ -125,11 +126,27 @@ def _write_success_bridge(
             "        'camera_frame_path': str(frame_path),\n"
             "        'camera_frame_sha256': hashlib.sha256(frame_bytes).hexdigest(),\n"
             "        'camera_topic': '/camera/image_raw',\n"
+            "        'camera_lidar_observation': {\n"
+            "            'camera_observed_at': now,\n"
+            "            'camera_received_at': now,\n"
+            "            'camera_frame_id': 'camera_rgb_optical_frame',\n"
+            "            'camera_width': 640,\n"
+            "            'camera_fx': 554.25,\n"
+            "            'camera_cx': 320.0,\n"
+            "            'lidar_observed_at': now,\n"
+            "            'lidar_frame_id': 'base_scan',\n"
+            "            'lidar_obstacle_observed': True,\n"
+            "            'lidar_horizontal_sector': 'center',\n"
+            "            'lidar_candidate_bearing_rad': 0.0,\n"
+            "            'target_candidate_id': 'lidar_candidate:fixture',\n"
+            "            'lidar_evidence_ref': 'laser_scan:fixture',\n"
+            "        },\n"
             "    }))\n"
             "    raise SystemExit(0)\n"
         )
     path.write_text(
         "import json, math, sys\n"
+        "from datetime import datetime, timezone\n"
         "from pathlib import Path\n"
         "request = json.loads(sys.stdin.read())\n"
         + capture_branch +
@@ -175,8 +192,9 @@ def _write_success_bridge(
         + " and payload.get('label') == 'turtlebot3_validated_home_patrol_leg':\n"
         "    samples = [\n"
         "        {'x_m': start_x, 'y_m': start_y},\n"
-        "        {'x_m': -1.15, 'y_m': -0.85},\n"
-        "        {'x_m': -0.35, 'y_m': -0.85},\n"
+        "        {'x_m': -1.60, 'y_m': -0.90},\n"
+        "        {'x_m': -1.15, 'y_m': -0.90},\n"
+        "        {'x_m': -0.35, 'y_m': -0.90},\n"
         "        {'x_m': 0.35, 'y_m': -0.55},\n"
         "        {'x_m': goal_x, 'y_m': goal_y},\n"
         "    ]\n"
@@ -1840,6 +1858,27 @@ def test_turtlebot3_obstacle_mission_claims_completion_with_avoidance_observatio
     assert summary["max_lateral_deviation_m"] == 0.12
     assert summary["obstacle_trajectory_clearance_observed"] is True
     assert summary["obstacle_trajectory_intersects_obstacle"] is False
+    assert summary["obstacle_trajectory_3d_clearance_status"] == "verified_clear"
+    assert summary["obstacle_trajectory_3d_clearance_observed"] is True
+    assert summary["obstacle_trajectory_3d_collision_observed"] is False
+    clearance_3d = summary["obstacle_trajectory_3d_clearance"]
+    assert clearance_3d["robot_collision_envelope"]["radius_m"] == 0.19
+    assert clearance_3d["trajectory_segment_count"] > 0
+    assert len(clearance_3d["candidate_results"]) == 3
+    assert {
+        candidate["semantic_candidate"]
+        for candidate in clearance_3d["candidate_results"]
+    } == {"closed door", "humanoid", "robot dog"}
+    assert all(
+        candidate["status"] == "verified_clear"
+        for candidate in clearance_3d["candidate_results"]
+    )
+    assert clearance_3d["approval_created"] is False
+    assert clearance_3d["dispatch_authority_created"] is False
+    assert clearance_3d["completion_claimed"] is False
+    assert result["turtlebot3_indoor_map_model"]["trajectory_clearance_3d"] == (
+        clearance_3d
+    )
 
 
 def test_turtlebot3_obstacle_mission_requires_raw_map_frame_trajectory(
@@ -1876,6 +1915,8 @@ def test_turtlebot3_obstacle_mission_requires_raw_map_frame_trajectory(
     assert summary["obstacle_trajectory_geometry_status"] == (
         "raw_map_frame_trajectory_unavailable"
     )
+    assert summary["obstacle_trajectory_3d_clearance_status"] == "unavailable"
+    assert summary["obstacle_trajectory_3d_clearance_observed"] is False
     assert summary["obstacle_trajectory_raw_map_frame_sample_count"] == 0
     assert summary["obstacle_trajectory_non_map_sample_count_excluded"] > 0
     assert summary["obstacle_trajectory_display_alignment_used"] is False
@@ -2022,12 +2063,12 @@ def test_turtlebot3_delivery_route_claims_dropoff_arrival_not_payload_completion
     assert len(proposal["planned_segments"]) == 10
     assert 8.4 < proposal["planned_route_distance_m"] < 9.0
     assert proposal["indoor_delivery_route"]["route_layout"] == (
-        "simulated_home_loop_with_closed_door_person_and_pet_detours"
+        "simulated_home_loop_with_closed_door_humanoid_and_robot_dog_detours"
     )
     assert [
         blocker["label"]
         for blocker in proposal["indoor_delivery_route"]["simulated_blockers"]
-    ] == ["closed door", "person", "dog"]
+    ] == ["closed door", "humanoid", "robot dog"]
     assert proposal["obstacle_scenario"]["obstacle_challenge_requested"] is True
     assert proposal["indoor_delivery_route"]["route_requested"] is True
     assert summary["status"] == "completed"
@@ -2319,9 +2360,8 @@ def _write_perception_claim_citing_recovery_planner(path: Path) -> None:
         "assert len(claims) == 1\n"
         "claim = claims[0]\n"
         "assert claim['claim_kind'] == 'corridor_blocked_by_object'\n"
-        "assert claim['corroborated_by'] == [\n"
-        "    'lidar_costmap:nav2_costmap_obstacle_observed'\n"
-        "]\n"
+        "assert claim['corroborated_by'][0] == "
+        "'lidar_costmap:nav2_costmap_obstacle_observed'\n"
         "print(json.dumps({\n"
         "    'selected_action': 'avoid_obstacle',\n"
         "    'reason': 'Camera claim is corroborated by the Nav2 costmap; going around it.',\n"
@@ -2372,7 +2412,9 @@ def test_runtime_obstacle_recovery_wires_camera_perception_claim_into_planner(
     summary = result["summary"]
     assert summary["status"] == "completed"
     assert summary["runtime_recovery_action_kind"] == "avoid_obstacle"
-    assert summary["recovery_proposals"][0]["proposal_source"] == "llm"
+    assert summary["recovery_proposals"][0]["proposal_source"] == (
+        "deterministic_fallback"
+    )
     assert summary["recovery_proposal_classifications"][0]["execution_class"] == (
         "auto_executable"
     )
@@ -2385,15 +2427,16 @@ def test_runtime_obstacle_recovery_wires_camera_perception_claim_into_planner(
     assert claim["corroborated_by"] == ["lidar_costmap:nav2_costmap_obstacle_observed"]
     assert claim["evidence_only"] is True
     assert claim["dispatch_authority_created"] is False
+    assert claim["corroboration_binding"]["progressive_action_supported"] is False
     validated_proposal = summary["recovery_planner_result"]["guardrail"][
         "validated_proposal"
     ]
-    assert validated_proposal["cited_perception_claim_ids"] == [claim["claim_id"]]
+    assert validated_proposal == {}
     support = summary["recovery_planner_result"]["guardrail"][
         "perception_claim_support"
     ]
     assert support["selected_action_is_conservative"] is False
-    assert support["checks"]["perception_claim_support_respected"] is True
+    assert support["checks"]["perception_claim_support_respected"] is False
 
 
 def _write_classifying_perception_sidecar(path: Path) -> None:
@@ -2406,6 +2449,8 @@ def _write_classifying_perception_sidecar(path: Path) -> None:
         "print(json.dumps({\n"
         "    'claim_kind': 'corridor_blocked_by_object',\n"
         "    'confidence': 0.82,\n"
+        "    'horizontal_sector': 'center',\n"
+        "    'target_center_x_normalized': 0.5,\n"
         "}))\n",
         encoding="utf-8",
     )
@@ -2417,8 +2462,8 @@ def test_camera_perception_pipeline_captures_classifies_and_feeds_planner(
 ) -> None:
     """The full loop: bridge capture -> VLM sidecar -> claim -> LLM prompt.
 
-    All under pseudo data (fixture-written PNG, fake sidecar) since the
-    Gazebo world is headless; the pipeline artifacts still prove the wiring.
+    All under pseudo data (fixture-written PNG, fake sidecar). This proves
+    regression wiring only; the fake sidecar cannot satisfy live-VLM binding.
     """
 
     bridge = tmp_path / "bridge.py"
@@ -2459,6 +2504,9 @@ def test_camera_perception_pipeline_captures_classifies_and_feeds_planner(
     execution = result["turtlebot3_home_mission_execution"]
     assert summary["status"] == "completed"
     assert summary["runtime_recovery_action_kind"] == "avoid_obstacle"
+    assert summary["recovery_proposals"][0]["proposal_source"] == (
+        "deterministic_fallback"
+    )
 
     pipeline = execution["runtime_recovery_obstacle_scenario"][
         "camera_perception_pipeline"
@@ -2481,12 +2529,20 @@ def test_camera_perception_pipeline_captures_classifies_and_feeds_planner(
     assert claim["claim_kind"] == "corridor_blocked_by_object"
     assert claim["source_frame_ref"] == f"sha256:{expected_frame_sha}"
     assert claim["corroborated_by"] == [
-        "lidar_costmap:nav2_costmap_obstacle_observed"
+        "lidar_costmap:nav2_costmap_obstacle_observed",
+        "range_sensor:ros2_laser_scan_angular_candidate",
     ]
+    binding = claim["corroboration_binding"]
+    assert binding["temporal_status"] == "bound"
+    assert binding["vlm_temporal_status"] == "bound"
+    assert binding["spatial_status"] == "bound"
+    assert binding["target_identity_status"] == "bound"
+    assert binding["live_vlm_invocation_observed"] is False
+    assert binding["progressive_action_supported"] is False
     validated_proposal = summary["recovery_planner_result"]["guardrail"][
         "validated_proposal"
     ]
-    assert validated_proposal["cited_perception_claim_ids"] == [claim["claim_id"]]
+    assert validated_proposal == {}
 
 
 def test_camera_perception_pipeline_disabled_by_default(
@@ -2531,12 +2587,11 @@ def test_camera_perception_pipeline_disabled_by_default(
     assert summary["recovery_planner_result"]["perception_claims"] == []
 
 
-def test_camera_perception_pipeline_fails_open_when_headless(
+def test_camera_perception_pipeline_fails_open_when_camera_topic_missing(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
-    """A headless Gazebo world has no camera topic: capture times out and
-    recovery proceeds without perception claims, recorded honestly."""
+    """A profile without a camera topic records timeout and proceeds safely."""
 
     bridge = tmp_path / "bridge.py"
     planner = tmp_path / "obstacle_recovery_planner.py"
@@ -4897,10 +4952,66 @@ def test_turtlebot3_house_profile_routes_through_front_door(monkeypatch) -> None
     proposal = result["scenario_proposal"]
     segments = proposal["planned_segments"]
     labels = [segment["label"] for segment in segments]
-    assert len(segments) == 6
+    assert len(segments) == 7
     assert "simulated_front_door_passage_checkpoint" in labels
     assert labels[-1] == "simulated_living_room_dropoff_waypoint"
-    assert 9.7 < proposal["planned_route_distance_m"] < 10.7
+    dropoff = segments[-1]
+    assert dropoff["x_m"] == pytest.approx(-4.0)
+    assert dropoff["y_m"] == pytest.approx(1.15)
+    planned_clearance_3d = (
+        turtlebot3_home_mission_runtime.assess_ground_robot_trajectory_clearance_3d(
+            trajectory_streams=[
+                [
+                    {
+                        "frame_id": "map",
+                        "x_m": -2.0,
+                        "y_m": -0.5,
+                    },
+                    *segments,
+                ]
+            ],
+            robot_collision_envelope=(
+                turtlebot3_home_mission_runtime._TURTLEBOT3_STOCK_COLLISION_ENVELOPE
+            ),
+            obstacle_volumes=(
+                turtlebot3_home_mission_runtime._turtlebot3_obstacle_collision_volumes(
+                    turtlebot3_home_mission_runtime._TURTLEBOT3_HOUSE_LAYOUT_OBSTACLES
+                )
+            ),
+        )
+    )
+    assert planned_clearance_3d.status == "verified_clear"
+    assert planned_clearance_3d.minimum_surface_clearance_m is not None
+    assert planned_clearance_3d.minimum_surface_clearance_m >= 0.19
+    assert len(planned_clearance_3d.candidate_results) == 3
+    assert all(
+        candidate.status == "verified_clear"
+        for candidate in planned_clearance_3d.candidate_results
+    )
+    dropoff_point = (dropoff["x_m"], dropoff["y_m"])
+    static_clearance, static_reasons = (
+        turtlebot3_home_mission_runtime._revision_floor_plan_waypoint_clearance(
+            dropoff_point,
+            turtlebot3_home_mission_runtime._turtlebot3_home_floor_plan(),
+        )
+    )
+    assert static_reasons == []
+    assert static_clearance is not None
+    assert static_clearance >= 1.05
+    for obstacle in turtlebot3_home_mission_runtime._TURTLEBOT3_HOUSE_LAYOUT_OBSTACLES:
+        half_x = obstacle["size_x_m"] / 2.0
+        half_y = obstacle["size_y_m"] / 2.0
+        obstacle_clearance = turtlebot3_home_mission_runtime._point_rect_clearance_m(
+            dropoff_point,
+            (
+                obstacle["x_m"] - half_x,
+                obstacle["x_m"] + half_x,
+                obstacle["y_m"] - half_y,
+                obstacle["y_m"] + half_y,
+            ),
+        )
+        assert obstacle_clearance >= 2.0
+    assert 11.5 < proposal["planned_route_distance_m"] < 11.8
     route = proposal["indoor_delivery_route"]
     assert route["planned_room_sequence"][0] == "home"
     assert "front door" in route["planned_room_sequence"]
@@ -4943,7 +5054,7 @@ def test_turtlebot3_world_profile_defaults_to_house_when_unset(monkeypatch) -> N
 
     proposal = result["scenario_proposal"]
     assert _turtlebot3_home_floor_plan()["floor_plan_id"] == "turtlebot3_house.v1"
-    assert len(proposal["planned_segments"]) == 6
+    assert len(proposal["planned_segments"]) == 7
 
 
 def test_turtlebot3_arena_profile_stays_available_via_env(monkeypatch) -> None:

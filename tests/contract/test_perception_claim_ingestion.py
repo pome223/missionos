@@ -219,7 +219,7 @@ def test_corroboration_carries_honest_binding_metadata() -> None:
         observed_at=NOW,
     )
     assert claim is not None
-    binding = claim.metadata["corroboration_binding"]
+    binding = claim.metadata["legacy_costmap_corroboration"]
     assert binding["temporal"] == "same_segment_bridge_receipt"
     assert binding["spatial"] == "unbound"
     assert binding["target_identity"] == "unbound"
@@ -234,4 +234,4 @@ def test_corroboration_carries_honest_binding_metadata() -> None:
         observed_at=NOW,
     )
     assert uncorroborated is not None
-    assert "corroboration_binding" not in uncorroborated.metadata
+    assert "legacy_costmap_corroboration" not in uncorroborated.metadata

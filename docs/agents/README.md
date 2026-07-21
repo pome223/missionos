@@ -18,6 +18,7 @@ docs.
 | Evidence, claims, completion, or verifier behavior | `claim-semantics.md`, `artifact-taxonomy.md`, `contracts.md` |
 | PX4 / Gazebo SITL or PX4 bench-adjacent runtime | `px4-gazebo-route-runtime.md`, `hardware-adapter-contract.md`, `claim-semantics.md`, `e2e-verification.md`, `publication-rules.md` |
 | TurtleBot3 / ROS2 Nav2 simulator adapter or CLI companions | `turtlebot3-recovery-contracts.md`, `turtlebot3-nav2-execution.md`, `turtlebot3-cli-companions.md`, `ros2-nav2-turtlebot3-sim.md`, `claim-semantics.md`, `hardware-adapter-contract.md` |
+| TurtleBot camera/LiDAR perception or 3D obstacle clearance | `perception-corroboration-binding.md`, `trajectory-clearance-3d.md`, `claim-semantics.md`, `publication-rules.md` |
 | TurtleBot4 / other Nav2 simulator work | `ros2-nav2-turtlebot4-sim.md`, `claim-semantics.md`, `hardware-adapter-contract.md` |
 | NVIDIA Isaac Sim / Nova Carter work | `nvidia-isaac-nova-carter.md`, `claim-semantics.md`, `hardware-adapter-contract.md`, `publication-rules.md` |
 | Nvblox / perception evidence | `nvblox-perception-evidence.md`, `claim-semantics.md`, `artifact-taxonomy.md`, `publication-rules.md` |
@@ -45,6 +46,8 @@ When the map above is not enough, read the complete set:
 - `px4-gazebo-route-runtime.md`
 - `hardware-partner-integration-guide.md`
 - `ros2-nav2-turtlebot3-sim.md`
+- `perception-corroboration-binding.md`
+- `trajectory-clearance-3d.md`
 - `turtlebot3-recovery-contracts.md`
 - `turtlebot3-nav2-execution.md`
 - `turtlebot3-cli-companions.md`

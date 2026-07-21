@@ -45,6 +45,8 @@ def _write_classifying_sidecar(path: Path, *, claim_kind: str, confidence: float
         "print(json.dumps({\n"
         f"    'claim_kind': {claim_kind!r},\n"
         f"    'confidence': {confidence},\n"
+        "    'horizontal_sector': 'center',\n"
+        "    'target_center_x_normalized': 0.5,\n"
         "}))\n",
         encoding="utf-8",
     )
@@ -57,6 +59,8 @@ def _write_self_corroborating_sidecar(path: Path) -> None:
         "print(json.dumps({\n"
         "    'claim_kind': 'corridor_blocked_by_object',\n"
         "    'confidence': 0.9,\n"
+        "    'horizontal_sector': 'center',\n"
+        "    'target_center_x_normalized': 0.5,\n"
         "    'corroborated_by': ['lidar_costmap:fabricated_by_sidecar'],\n"
         "}))\n",
         encoding="utf-8",
@@ -146,10 +150,13 @@ def test_command_override_classifies_frame_and_hashes_source(
     claim = result["camera_observation"]
     assert claim["claim_kind"] == "corridor_blocked_by_object"
     assert claim["confidence"] == 0.82
+    assert claim["horizontal_sector"] == "center"
+    assert claim["target_center_x_normalized"] == 0.5
     expected_ref = f"sha256:{sha256(_FAKE_PNG_BYTES).hexdigest()}"
     assert claim["source_frame_ref"] == expected_ref
     assert "corroborated_by" not in claim
     evidence = result["llm_invocation_evidence"]
+    assert evidence["schema_version"] == "runtime_invocation_evidence.v1"
     assert evidence["provider"] == "command_override"
     assert evidence["invocation_exit_code"] == 0
 
@@ -167,7 +174,13 @@ def test_self_reported_corroboration_is_stripped_not_trusted(
 
     assert result["sidecar_status"] == "classified"
     claim = result["camera_observation"]
-    assert set(claim.keys()) == {"claim_kind", "source_frame_ref", "confidence"}
+    assert set(claim.keys()) == {
+        "claim_kind",
+        "source_frame_ref",
+        "confidence",
+        "horizontal_sector",
+        "target_center_x_normalized",
+    }
     assert "corroborated_by" not in claim
 
 

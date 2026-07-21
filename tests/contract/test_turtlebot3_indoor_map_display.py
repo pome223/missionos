@@ -256,8 +256,8 @@ def test_turtlebot3_execution_artifact_feeds_indoor_watch_and_map(
     assert indoor["obstacles"][0]["observed"] is True
     assert [obstacle["label"] for obstacle in indoor["obstacles"]] == [
         "closed door",
-        "person",
-        "dog",
+        "humanoid",
+        "robot dog",
     ]
     assert indoor["floor_plan"]["floor_plan_id"] == "turtlebot3_simulated_home_loop.v1"
     assert [item["label"] for item in indoor["floor_plan"]["furniture"]] == [
@@ -308,6 +308,9 @@ def test_turtlebot3_execution_artifact_feeds_indoor_watch_and_map(
     assert "stroke-dasharray: 7 8" in html
     assert html.index("${liveMarkup}") < html.index("${observedMarkup}")
     assert "recovery phase" in html
+    assert "2D centerline clearance" in html
+    assert "3D swept-volume clearance" in html
+    assert 'id="clearance3dPill"' in html
 
     console = Console(record=True, color_system=None, width=120)
     console.print(
@@ -325,6 +328,7 @@ def test_turtlebot3_execution_artifact_feeds_indoor_watch_and_map(
     assert "S/T/B/C" in rendered
     assert "observed_source=ros2_nav2_bridge_trajectory_samples" in rendered
     assert "physical_execution_invoked=false" in rendered
+    assert "clearance_3d_status=" in rendered
 
 
 def test_turtlebot4_indoor_map_model_uses_robot_profile_label() -> None:

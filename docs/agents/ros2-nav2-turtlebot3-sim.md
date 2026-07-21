@@ -39,6 +39,12 @@ The image installs ROS2 Humble, Nav2, TurtleBot3 packages, Gazebo Sim/`ros_gz`
 support, and the `feature-gazebo-sim-migration` branch of
 `turtlebot3_simulations`.
 
+The default `burger` model publishes `/scan` but has no RGB camera. Opt-in
+camera perception uses the stock `waffle_pi` model, which publishes
+`/camera/image_raw`, `/camera/camera_info`, and `/scan` under the same headless
+Xvfb launch. See `docs/agents/perception-corroboration-binding.md` for the
+source-hash, temporal, angular, and target-candidate contract.
+
 ## Motion Probe
 
 Before attempting MissionOS or Nav2, verify that the TurtleBot3 simulator itself
@@ -250,12 +256,13 @@ when every planned route segment reports Nav2 success and `/odom` motion is
 observed. The route depends on the active world profile (see the next
 section). In the default `turtlebot3_house` world an indoor delivery runs from
 the front yard through the real front-door opening to the named destination
-room (six segments and about 10.2 m for the default living-room dropoff, ten
+room (seven segments and about 11.6 m for the default living-room dropoff, ten
 segments and about 17.4 m for the bedroom). In the opt-in pillar arena it uses
-the historical ten-segment local-XY loop of about 8.0 m. The Docker smoke
-scene places three small simulated blockers: a closed door, a person marker,
-and a dog marker. These markers are scenario objects spawned in the simulator,
-not discovered real home objects, people, or pets. It
+the ten-segment local-XY loop of about 8.7 m. The Docker smoke
+scene places three static simulated blockers: a closed door, a humanoid robot,
+and a quadruped robot dog. These are composed visual/collision SDF models
+spawned in the simulator, not discovered real home objects, people, pets, or
+vendor robots. It
 still does not claim:
 
 - whole-home loop completion

@@ -11,13 +11,18 @@ from src.runtime.runtime_claim_evidence import (
 )
 
 
-def _evidence(*, exit_code: int = 0, started_at: datetime | None = None) -> dict:
+def _evidence(
+    *,
+    exit_code: int = 0,
+    started_at: datetime | None = None,
+    invocation_kind: str = "subprocess",
+) -> dict:
     start = started_at or datetime.now(timezone.utc) - timedelta(seconds=2)
     stdout = "contract stdout"
     stderr = "contract stderr"
     return {
         "schema_version": "runtime_invocation_evidence.v1",
-        "invocation_kind": "subprocess",
+        "invocation_kind": invocation_kind,
         "invocation_target": "contract-test",
         "invocation_started_at": start.isoformat(),
         "invocation_completed_at": (start + timedelta(seconds=1)).isoformat(),
@@ -117,3 +122,19 @@ def test_valid_runtime_completion_can_count_progress() -> None:
     assert normalized["runtime_claim_validation"]["runtime_claims"] == [
         "completion_claimed"
     ]
+
+
+def test_llm_api_evidence_cannot_promote_authority_or_completion_claims() -> None:
+    with pytest.raises(
+        RuntimeClaimValidationError,
+        match="completion_claimed_in_runtime_cannot_use_llm_api",
+    ):
+        normalize_runtime_claims(
+            {
+                "completion_claimed_in_runtime": True,
+                "progress_counted": True,
+                "runtime_invocation_evidence": _evidence(
+                    invocation_kind="llm_api"
+                ),
+            }
+        )

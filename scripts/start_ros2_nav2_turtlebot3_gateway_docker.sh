@@ -57,6 +57,17 @@ docker run -d \
   -e "MISSIONOS_TB3_GAZEBO_WAIT_SECONDS=${MISSIONOS_TB3_GAZEBO_WAIT_SECONDS:-30}" \
   -e "MISSIONOS_TB3_NAV2_WAIT_SECONDS=${MISSIONOS_TB3_NAV2_WAIT_SECONDS:-55}" \
   -e "MISSIONOS_TURTLEBOT3_WORLD_PROFILE=${MISSIONOS_TURTLEBOT3_WORLD_PROFILE:-house}" \
+  -e "MISSIONOS_TURTLEBOT3_CAMERA_PERCEPTION_ENABLED=${MISSIONOS_TURTLEBOT3_CAMERA_PERCEPTION_ENABLED:-0}" \
+  -e "MISSIONOS_TURTLEBOT3_SIM_MODEL=${MISSIONOS_TURTLEBOT3_SIM_MODEL:-}" \
+  -e "ROS2_NAV2_CAMERA_TOPIC=${ROS2_NAV2_CAMERA_TOPIC:-}" \
+  -e "ROS2_NAV2_CAMERA_INFO_TOPIC=${ROS2_NAV2_CAMERA_INFO_TOPIC:-}" \
+  -e "ROS2_NAV2_LIDAR_TOPIC=${ROS2_NAV2_LIDAR_TOPIC:-}" \
+  -e "ROS2_NAV2_CAMERA_LIDAR_OBSTACLE_RANGE_M=${ROS2_NAV2_CAMERA_LIDAR_OBSTACLE_RANGE_M:-}" \
+  -e "ROS2_NAV2_CAMERA_TIMEOUT_S=${ROS2_NAV2_CAMERA_TIMEOUT_S:-}" \
+  -e "MISSIONOS_TURTLEBOT3_PERCEPTION_SIDECAR_ADK_ENABLED=${MISSIONOS_TURTLEBOT3_PERCEPTION_SIDECAR_ADK_ENABLED:-0}" \
+  -e "MISSIONOS_TURTLEBOT3_PERCEPTION_SIDECAR_MODEL_ID=${MISSIONOS_TURTLEBOT3_PERCEPTION_SIDECAR_MODEL_ID:-}" \
+  -e "MISSIONOS_TURTLEBOT3_PERCEPTION_SIDECAR_COMMAND=${MISSIONOS_TURTLEBOT3_PERCEPTION_SIDECAR_COMMAND:-}" \
+  -e "MISSIONOS_ALLOW_TURTLEBOT3_PERCEPTION_SIDECAR_COMMAND_OVERRIDE=${MISSIONOS_ALLOW_TURTLEBOT3_PERCEPTION_SIDECAR_COMMAND_OVERRIDE:-}" \
   -e "MISSIONOS_LLM_BACKEND=${gateway_llm_backend}" \
   -e "GOOGLE_API_KEY=${GOOGLE_API_KEY:-}" \
   -e "GOOGLE_GENAI_USE_VERTEXAI=${GOOGLE_GENAI_USE_VERTEXAI:-false}" \
@@ -94,7 +105,11 @@ set -eo pipefail
 source /opt/ros/humble/setup.bash
 source /opt/turtlebot3_ws/install/setup.bash
 export PYTHONPATH=/work/missionos:/work/missionos/src:/work/missionos/packages/missionos-gateway/src:${PYTHONPATH:-}
-export TURTLEBOT3_MODEL=burger
+if [ "${MISSIONOS_TURTLEBOT3_CAMERA_PERCEPTION_ENABLED:-0}" = "1" ]; then
+  export TURTLEBOT3_MODEL="${MISSIONOS_TURTLEBOT3_SIM_MODEL:-waffle_pi}"
+else
+  export TURTLEBOT3_MODEL="${MISSIONOS_TURTLEBOT3_SIM_MODEL:-burger}"
+fi
 
 cleanup() {
   kill ${gateway_pid:-} ${telemetry_sidecar_pid:-} ${relay_pid:-} ${nav2_pid:-} ${gz_pid:-} 2>/dev/null || true
@@ -123,33 +138,58 @@ xvfb-run -a ros2 launch $world_launch \
 gz_pid=$!
 sleep "${MISSIONOS_TB3_GAZEBO_WAIT_SECONDS:-30}"
 
+spawn_model() {
+  name="$1"
+  x_m="$2"
+  y_m="$3"
+  z_m="$4"
+  model_sdf="$5"
+  set +e
+  ros2 run ros_gz_sim create \
+    -world "$spawn_world" \
+    -string "$model_sdf" \
+    -name "$name" \
+    -x "$x_m" -y "$y_m" -z "$z_m" \
+    >>/tmp/missionos_spawn_obstacle.log 2>&1
+  status=$?
+  set -e
+  printf "%s spawn_status=%s\n" "$name" "$status" >>/tmp/missionos_spawn_obstacle.log
+}
+
 spawn_box() {
   name="$1"
   size_x="$2"
   size_y="$3"
   x_m="$4"
   y_m="$5"
-  box_sdf="<sdf version=\"1.7\"><model name=\"${name}\"><static>true</static><link name=\"link\"><collision name=\"collision\"><geometry><box><size>${size_x} ${size_y} 0.5</size></box></geometry></collision><visual name=\"visual\"><geometry><box><size>${size_x} ${size_y} 0.5</size></box></geometry></visual></link></model></sdf>"
-  set +e
-  ros2 run ros_gz_sim create \
-    -world "$spawn_world" \
-    -string "$box_sdf" \
-    -name "$name" \
-    -x "$x_m" -y "$y_m" -z 0.25 \
-    >>/tmp/missionos_spawn_obstacle.log 2>&1
-  status=$?
-  set -e
-  printf "%s spawn_status=%s\n" "$name" "$status" >>/tmp/missionos_spawn_obstacle.log
+  box_sdf="<sdf version=\"1.7\"><model name=\"${name}\"><static>true</static><link name=\"link\"><collision name=\"collision\"><geometry><box><size>${size_x} ${size_y} 0.5</size></box></geometry></collision><visual name=\"visual\"><geometry><box><size>${size_x} ${size_y} 0.5</size></box></geometry><material><ambient>0.35 0.18 0.05 1</ambient><diffuse>0.35 0.18 0.05 1</diffuse></material></visual></link></model></sdf>"
+  spawn_model "$name" "$x_m" "$y_m" 0.25 "$box_sdf"
+}
+
+spawn_humanoid() {
+  name="$1"
+  x_m="$2"
+  y_m="$3"
+  humanoid_sdf="<sdf version=\"1.7\"><model name=\"${name}\"><static>true</static><link name=\"base\"><pose>0 0 0.10 0 0 0</pose><collision name=\"collision\"><geometry><box><size>0.42 0.32 0.20</size></box></geometry></collision><visual name=\"visual\"><geometry><box><size>0.42 0.32 0.20</size></box></geometry><material><ambient>0.12 0.12 0.16 1</ambient><diffuse>0.12 0.12 0.16 1</diffuse></material></visual></link><link name=\"left_leg\"><pose>0 0.12 0.40 0 0 0</pose><collision name=\"collision\"><geometry><cylinder><radius>0.08</radius><length>0.60</length></cylinder></geometry></collision><visual name=\"visual\"><geometry><cylinder><radius>0.08</radius><length>0.60</length></cylinder></geometry><material><ambient>0.08 0.20 0.34 1</ambient><diffuse>0.08 0.20 0.34 1</diffuse></material></visual></link><link name=\"right_leg\"><pose>0 -0.12 0.40 0 0 0</pose><collision name=\"collision\"><geometry><cylinder><radius>0.08</radius><length>0.60</length></cylinder></geometry></collision><visual name=\"visual\"><geometry><cylinder><radius>0.08</radius><length>0.60</length></cylinder></geometry><material><ambient>0.08 0.20 0.34 1</ambient><diffuse>0.08 0.20 0.34 1</diffuse></material></visual></link><link name=\"torso\"><pose>0 0 1.08 0 0 0</pose><collision name=\"collision\"><geometry><box><size>0.42 0.28 0.58</size></box></geometry></collision><visual name=\"visual\"><geometry><box><size>0.42 0.28 0.58</size></box></geometry><material><ambient>0.75 0.80 0.86 1</ambient><diffuse>0.75 0.80 0.86 1</diffuse></material></visual></link><link name=\"left_arm\"><pose>0 0.25 1.10 0 0 0</pose><collision name=\"collision\"><geometry><box><size>0.12 0.12 0.54</size></box></geometry></collision><visual name=\"visual\"><geometry><box><size>0.12 0.12 0.54</size></box></geometry><material><ambient>0.12 0.38 0.75 1</ambient><diffuse>0.12 0.38 0.75 1</diffuse></material></visual></link><link name=\"right_arm\"><pose>0 -0.25 1.10 0 0 0</pose><collision name=\"collision\"><geometry><box><size>0.12 0.12 0.54</size></box></geometry></collision><visual name=\"visual\"><geometry><box><size>0.12 0.12 0.54</size></box></geometry><material><ambient>0.12 0.38 0.75 1</ambient><diffuse>0.12 0.38 0.75 1</diffuse></material></visual></link><link name=\"head\"><pose>0 0 1.60 0 0 0</pose><collision name=\"collision\"><geometry><sphere><radius>0.18</radius></sphere></geometry></collision><visual name=\"visual\"><geometry><sphere><radius>0.18</radius></sphere></geometry><material><ambient>0.88 0.90 0.94 1</ambient><diffuse>0.88 0.90 0.94 1</diffuse></material></visual></link></model></sdf>"
+  spawn_model "$name" "$x_m" "$y_m" 0 "$humanoid_sdf"
+}
+
+spawn_robot_dog() {
+  name="$1"
+  x_m="$2"
+  y_m="$3"
+  robot_dog_sdf="<sdf version=\"1.7\"><model name=\"${name}\"><static>true</static><link name=\"body\"><pose>0 0 0.44 0 0 0</pose><collision name=\"collision\"><geometry><box><size>0.70 0.38 0.26</size></box></geometry></collision><visual name=\"visual\"><geometry><box><size>0.70 0.38 0.26</size></box></geometry><material><ambient>0.10 0.34 0.78 1</ambient><diffuse>0.10 0.34 0.78 1</diffuse></material></visual></link><link name=\"head\"><pose>0.42 0 0.46 0 0 0</pose><collision name=\"collision\"><geometry><box><size>0.20 0.28 0.20</size></box></geometry></collision><visual name=\"visual\"><geometry><box><size>0.20 0.28 0.20</size></box></geometry><material><ambient>0.75 0.80 0.86 1</ambient><diffuse>0.75 0.80 0.86 1</diffuse></material></visual></link><link name=\"front_left_leg\"><pose>0.24 0.17 0.20 0 0 0</pose><collision name=\"collision\"><geometry><cylinder><radius>0.055</radius><length>0.40</length></cylinder></geometry></collision><visual name=\"visual\"><geometry><cylinder><radius>0.055</radius><length>0.40</length></cylinder></geometry><material><ambient>0.18 0.20 0.24 1</ambient><diffuse>0.18 0.20 0.24 1</diffuse></material></visual></link><link name=\"front_right_leg\"><pose>0.24 -0.17 0.20 0 0 0</pose><collision name=\"collision\"><geometry><cylinder><radius>0.055</radius><length>0.40</length></cylinder></geometry></collision><visual name=\"visual\"><geometry><cylinder><radius>0.055</radius><length>0.40</length></cylinder></geometry><material><ambient>0.18 0.20 0.24 1</ambient><diffuse>0.18 0.20 0.24 1</diffuse></material></visual></link><link name=\"rear_left_leg\"><pose>-0.24 0.17 0.20 0 0 0</pose><collision name=\"collision\"><geometry><cylinder><radius>0.055</radius><length>0.40</length></cylinder></geometry></collision><visual name=\"visual\"><geometry><cylinder><radius>0.055</radius><length>0.40</length></cylinder></geometry><material><ambient>0.18 0.20 0.24 1</ambient><diffuse>0.18 0.20 0.24 1</diffuse></material></visual></link><link name=\"rear_right_leg\"><pose>-0.24 -0.17 0.20 0 0 0</pose><collision name=\"collision\"><geometry><cylinder><radius>0.055</radius><length>0.40</length></cylinder></geometry></collision><visual name=\"visual\"><geometry><cylinder><radius>0.055</radius><length>0.40</length></cylinder></geometry><material><ambient>0.18 0.20 0.24 1</ambient><diffuse>0.18 0.20 0.24 1</diffuse></material></visual></link></model></sdf>"
+  spawn_model "$name" "$x_m" "$y_m" 0 "$robot_dog_sdf"
 }
 : >/tmp/missionos_spawn_obstacle.log
 if [ "$world_profile" = "house" ]; then
   spawn_box missionos_closed_door_blocker 0.32 0.32 0.2 -1.2
-  spawn_box missionos_human_blocker 0.24 0.24 -1.75 1.6
-  spawn_box missionos_dog_blocker 0.16 0.16 -0.7 2.6
+  spawn_humanoid missionos_humanoid_blocker -1.75 1.6
+  spawn_robot_dog missionos_robot_dog_blocker -0.7 2.6
 else
   spawn_box missionos_closed_door_blocker 0.32 0.32 -1.15 -0.5
-  spawn_box missionos_human_blocker 0.24 0.24 -1.00 0.55
-  spawn_box missionos_dog_blocker 0.16 0.16 0.70 0.55
+  spawn_humanoid missionos_humanoid_blocker -1.00 0.55
+  spawn_robot_dog missionos_robot_dog_blocker 0.70 0.55
 fi
 
 # shellcheck disable=SC2086

@@ -856,6 +856,20 @@ def main() -> int:
         "obstacle_avoidance_completion_claimed": summary.get(
             "obstacle_avoidance_completion_claimed"
         ),
+        "obstacle_trajectory_3d_clearance_status": summary.get(
+            "obstacle_trajectory_3d_clearance_status"
+        ),
+        "obstacle_trajectory_3d_clearance_observed": summary.get(
+            "obstacle_trajectory_3d_clearance_observed"
+        ),
+        "obstacle_trajectory_3d_collision_observed": summary.get(
+            "obstacle_trajectory_3d_collision_observed"
+        ),
+        "obstacle_trajectory_3d_minimum_surface_clearance_m": (
+            (summary.get("obstacle_trajectory_3d_clearance") or {}).get(
+                "minimum_surface_clearance_m"
+            )
+        ),
         "indoor_delivery_route_completion_claimed": summary.get(
             "indoor_delivery_route_completion_claimed"
         ),
@@ -1151,6 +1165,21 @@ def main() -> int:
             "obstacle_trajectory_intersects_obstacle": dynamic_obstacle_summary.get(
                 "obstacle_trajectory_intersects_obstacle"
             ),
+            "obstacle_trajectory_3d_clearance_status": (
+                dynamic_obstacle_summary.get(
+                    "obstacle_trajectory_3d_clearance_status"
+                )
+            ),
+            "obstacle_trajectory_3d_clearance_observed": (
+                dynamic_obstacle_summary.get(
+                    "obstacle_trajectory_3d_clearance_observed"
+                )
+            ),
+            "obstacle_trajectory_3d_collision_observed": (
+                dynamic_obstacle_summary.get(
+                    "obstacle_trajectory_3d_collision_observed"
+                )
+            ),
             "indoor_delivery_route_completion_claimed": dynamic_obstacle_summary.get(
                 "indoor_delivery_route_completion_claimed"
             ),
@@ -1205,6 +1234,12 @@ def main() -> int:
     ):
         if result["obstacle_avoidance_completion_claimed"] is not True:
             raise SystemExit("obstacle mission completed without avoidance observation")
+        if result["obstacle_trajectory_3d_clearance_status"] != "verified_clear":
+            raise SystemExit("obstacle mission lacks verified 3D swept-volume clearance")
+        if result["obstacle_trajectory_3d_clearance_observed"] is not True:
+            raise SystemExit("obstacle mission lacks 3D clearance observation")
+        if result["obstacle_trajectory_3d_collision_observed"] is not False:
+            raise SystemExit("obstacle mission observed a 3D swept-volume collision")
     if _truthy_env(WITH_BRIDGE_ENV) and os.environ.get(
         "MISSIONOS_TURTLEBOT3_TELEMETRY_SIDECAR_JSONL",
         "",
