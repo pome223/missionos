@@ -44,6 +44,10 @@ from src.runtime.perception_claim import (
     PerceptionClaim,
     build_perception_claims_from_env_or_responses,
 )
+from src.runtime.perception_visual_observation import (
+    build_visual_observations,
+    visual_observation_collision_candidates,
+)
 from src.runtime.ros2_nav2_dispatch_bridge import (
     ROS2_NAV2_BOUNDED_DISPATCH_SMOKE_ENV,
     ROS2_NAV2_BRIDGE_COMMAND_ENV,
@@ -54,6 +58,9 @@ from src.runtime.ros2_nav2_hardware_adapter import (
     Nav2GoalPose,
     Ros2Nav2HardwareAdapterConfig,
     build_blocked_ros2_nav2_hardware_adapter_evidence,
+)
+from src.runtime.trajectory_clearance_3d import (
+    assess_ground_robot_trajectory_clearance_3d,
 )
 from src.runtime.turtlebot3_log_collector import (
     TurtleBot3LogCollectorError,
@@ -210,6 +217,18 @@ _TURTLEBOT3_DELIVERY_OBSTACLE_X_M = -1.15
 _TURTLEBOT3_DELIVERY_OBSTACLE_Y_M = -0.5
 _TURTLEBOT3_DELIVERY_OBSTACLE_SIZE_X_M = 0.32
 _TURTLEBOT3_DELIVERY_OBSTACLE_SIZE_Y_M = 0.32
+_TURTLEBOT3_STOCK_COLLISION_ENVELOPE = {
+    # Conservative union of the collision shapes in the stock waffle_pi SDF,
+    # including the rear casters and LiDAR collision. The camera-enabled smoke
+    # selects waffle_pi; the envelope also contains the smaller burger body.
+    "radius_m": 0.19,
+    "z_min_m": -0.01,
+    "z_max_m": 0.14,
+    "frame_id": "base_footprint",
+    "geometry_source": (
+        "turtlebot3_waffle_pi_model_sdf_conservative_collision_envelope"
+    ),
+}
 _TURTLEBOT3_HOME_LAYOUT_OBSTACLES = (
     {
         "name": "missionos_closed_door_blocker",
@@ -218,27 +237,39 @@ _TURTLEBOT3_HOME_LAYOUT_OBSTACLES = (
         "y_m": _TURTLEBOT3_DELIVERY_OBSTACLE_Y_M,
         "size_x_m": _TURTLEBOT3_DELIVERY_OBSTACLE_SIZE_X_M,
         "size_y_m": _TURTLEBOT3_DELIVERY_OBSTACLE_SIZE_Y_M,
+        "collision_z_m": 0.25,
+        "collision_size_x_m": 0.32,
+        "collision_size_y_m": 0.32,
+        "collision_size_z_m": 0.5,
         "label": "closed door",
         "label_offset_y_px": -8,
     },
     {
-        "name": "missionos_human_blocker",
-        "kind": "simulated_human_blocker",
+        "name": "missionos_humanoid_blocker",
+        "kind": "simulated_humanoid_blocker",
         "x_m": -1.00,
         "y_m": 0.55,
         "size_x_m": 0.24,
         "size_y_m": 0.24,
-        "label": "person",
+        "collision_z_m": 0.89,
+        "collision_size_x_m": 0.42,
+        "collision_size_y_m": 0.62,
+        "collision_size_z_m": 1.78,
+        "label": "humanoid",
         "label_offset_y_px": 34,
     },
     {
-        "name": "missionos_dog_blocker",
-        "kind": "simulated_pet_blocker",
+        "name": "missionos_robot_dog_blocker",
+        "kind": "simulated_robot_dog_blocker",
         "x_m": 0.70,
         "y_m": 0.55,
         "size_x_m": 0.16,
         "size_y_m": 0.16,
-        "label": "dog",
+        "collision_z_m": 0.285,
+        "collision_size_x_m": 1.04,
+        "collision_size_y_m": 0.45,
+        "collision_size_z_m": 0.57,
+        "label": "robot dog",
         "label_offset_y_px": -8,
     },
 )
@@ -483,8 +514,10 @@ _TURTLEBOT3_DELIVERY_ROUTE_SEGMENTS = (
     ),
     Nav2GoalPose(
         frame_id="map",
-        x_m=1.15,
-        y_m=0.45,
+        # Stay south of the full robot-dog collision volume. Candidate labels
+        # do not affect this detour; it is derived from the source-backed AABB.
+        x_m=1.50,
+        y_m=-0.55,
         yaw_rad=0.0,
         tolerance_m=0.25,
         max_speed_mps=0.25,
@@ -493,8 +526,8 @@ _TURTLEBOT3_DELIVERY_ROUTE_SEGMENTS = (
     ),
     Nav2GoalPose(
         frame_id="map",
-        x_m=0.55,
-        y_m=0.80,
+        x_m=1.50,
+        y_m=-1.00,
         yaw_rad=0.0,
         tolerance_m=0.25,
         max_speed_mps=0.25,
@@ -503,8 +536,8 @@ _TURTLEBOT3_DELIVERY_ROUTE_SEGMENTS = (
     ),
     Nav2GoalPose(
         frame_id="map",
-        x_m=-0.20,
-        y_m=0.65,
+        x_m=1.10,
+        y_m=-1.50,
         yaw_rad=0.0,
         tolerance_m=0.25,
         max_speed_mps=0.25,
@@ -513,8 +546,8 @@ _TURTLEBOT3_DELIVERY_ROUTE_SEGMENTS = (
     ),
     Nav2GoalPose(
         frame_id="map",
-        x_m=-0.75,
-        y_m=0.25,
+        x_m=0.20,
+        y_m=-1.50,
         yaw_rad=0.0,
         tolerance_m=0.25,
         max_speed_mps=0.25,
@@ -594,15 +627,31 @@ def _house_goal_pose(x_m: float, y_m: float, label: str) -> Nav2GoalPose:
 _TURTLEBOT3_HOUSE_HOME_POSE = _house_goal_pose(
     -2.0, -0.5, "simulated_house_front_yard_origin"
 )
+# Keep the living-room dropoff outside the overlapping inflated-cost regions
+# around the table and simulated scene candidates.
+_TURTLEBOT3_HOUSE_LIVING_DROPOFF_X_M = -4.0
+_TURTLEBOT3_HOUSE_LIVING_DROPOFF_Y_M = 1.15
 _TURTLEBOT3_HOUSE_ROUTE_SEGMENTS = (
-    _house_goal_pose(-0.5, -0.8, "simulated_front_yard_checkpoint"),
-    _house_goal_pose(1.15, -0.9, "simulated_mailbox_approach_checkpoint"),
+    # Stay south of the closed-door challenge volume while crossing the open
+    # front yard.  The former -0.8 -> -0.9 leg left only ~1 cm between the
+    # 0.19 m robot envelope and the box; the north-side alternative approached
+    # the house wall and could stall Nav2 before the mailbox.  The south leg is
+    # source-backed by observed free-space traversal in the house smoke.
+    _house_goal_pose(-0.5, -1.75, "simulated_front_yard_checkpoint"),
+    _house_goal_pose(1.15, -1.75, "simulated_mailbox_approach_checkpoint"),
     _house_goal_pose(1.11, 0.45, "simulated_front_door_passage_checkpoint"),
     _house_goal_pose(-0.9, 0.4, "simulated_hallway_checkpoint"),
+    # Stay south-west of the full humanoid collision volume before turning
+    # through the living-room entrance.
+    _house_goal_pose(-2.5, 0.7, "simulated_living_room_south_detour_checkpoint"),
     _house_goal_pose(-2.66, 1.5, "simulated_living_room_entry_checkpoint"),
-    _house_goal_pose(-1.4, 2.42, "simulated_table_dropoff_waypoint"),
+    _house_goal_pose(
+        _TURTLEBOT3_HOUSE_LIVING_DROPOFF_X_M,
+        _TURTLEBOT3_HOUSE_LIVING_DROPOFF_Y_M,
+        "simulated_table_dropoff_waypoint",
+    ),
 )
-_TURTLEBOT3_HOUSE_ROUTE_PREFIX = _TURTLEBOT3_HOUSE_ROUTE_SEGMENTS[:4]
+_TURTLEBOT3_HOUSE_ROUTE_PREFIX = _TURTLEBOT3_HOUSE_ROUTE_SEGMENTS[:5]
 # Destination registry: branch waypoints continue from the hallway checkpoint
 # and pass only through real door openings extracted from the house SDF.
 _TURTLEBOT3_HOUSE_ROOM_DESTINATIONS = {
@@ -610,7 +659,11 @@ _TURTLEBOT3_HOUSE_ROOM_DESTINATIONS = {
         "label": "Living room",
         "terms": ("living", "リビング", "居間"),
         "via": ((-2.66, 1.5, "simulated_living_room_entry_checkpoint"),),
-        "dropoff": (-1.4, 2.42, "simulated_living_room_dropoff_waypoint"),
+        "dropoff": (
+            _TURTLEBOT3_HOUSE_LIVING_DROPOFF_X_M,
+            _TURTLEBOT3_HOUSE_LIVING_DROPOFF_Y_M,
+            "simulated_living_room_dropoff_waypoint",
+        ),
         "rooms": ("living room",),
     },
     "study": {
@@ -733,27 +786,39 @@ _TURTLEBOT3_HOUSE_LAYOUT_OBSTACLES = (
         "y_m": _TURTLEBOT3_HOUSE_DELIVERY_OBSTACLE_Y_M,
         "size_x_m": _TURTLEBOT3_DELIVERY_OBSTACLE_SIZE_X_M,
         "size_y_m": _TURTLEBOT3_DELIVERY_OBSTACLE_SIZE_Y_M,
+        "collision_z_m": 0.25,
+        "collision_size_x_m": 0.32,
+        "collision_size_y_m": 0.32,
+        "collision_size_z_m": 0.5,
         "label": "closed door",
         "label_offset_y_px": -8,
     },
     {
-        "name": "missionos_human_blocker",
-        "kind": "simulated_human_blocker",
+        "name": "missionos_humanoid_blocker",
+        "kind": "simulated_humanoid_blocker",
         "x_m": -1.75,
         "y_m": 1.6,
         "size_x_m": 0.24,
         "size_y_m": 0.24,
-        "label": "person",
+        "collision_z_m": 0.89,
+        "collision_size_x_m": 0.42,
+        "collision_size_y_m": 0.62,
+        "collision_size_z_m": 1.78,
+        "label": "humanoid",
         "label_offset_y_px": 34,
     },
     {
-        "name": "missionos_dog_blocker",
-        "kind": "simulated_pet_blocker",
+        "name": "missionos_robot_dog_blocker",
+        "kind": "simulated_robot_dog_blocker",
         "x_m": -0.7,
         "y_m": 2.6,
         "size_x_m": 0.16,
         "size_y_m": 0.16,
-        "label": "dog",
+        "collision_z_m": 0.285,
+        "collision_size_x_m": 1.04,
+        "collision_size_y_m": 0.45,
+        "collision_size_z_m": 0.57,
+        "label": "robot dog",
         "label_offset_y_px": -8,
     },
 )
@@ -2052,7 +2117,7 @@ def _build_indoor_delivery_route(
         ),
         "schema_version": "missionos_turtlebot3_indoor_delivery_route.v1",
         "route_requested": requested,
-        "route_layout": "simulated_home_loop_with_closed_door_person_and_pet_detours"
+        "route_layout": "simulated_home_loop_with_closed_door_humanoid_and_robot_dog_detours"
         if requested
         else None,
         "pickup_label": "simulated_home_pickup_zone" if requested else None,
@@ -3889,6 +3954,10 @@ def _turtlebot3_delivery_obstacle_markers(
                 "y_m": scene_marker["y_m"],
                 "size_x_m": scene_marker["size_x_m"],
                 "size_y_m": scene_marker["size_y_m"],
+                "collision_z_m": scene_marker.get("collision_z_m"),
+                "collision_size_x_m": scene_marker.get("collision_size_x_m"),
+                "collision_size_y_m": scene_marker.get("collision_size_y_m"),
+                "collision_size_z_m": scene_marker.get("collision_size_z_m"),
                 "label_offset_y_px": scene_marker.get("label_offset_y_px"),
                 "observed": obstacle.get("costmap_obstacle_observed") is True,
                 "avoidance_observed": (
@@ -3914,6 +3983,51 @@ def _turtlebot3_delivery_obstacle_markers(
             }
         )
     return markers
+
+
+def _turtlebot3_obstacle_collision_volumes(
+    markers: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """Return only complete SDF-backed obstacle AABBs in the map frame."""
+
+    volumes: list[dict[str, Any]] = []
+    for marker in markers:
+        values = {
+            "x_m": _float_or_none(marker.get("x_m")),
+            "y_m": _float_or_none(marker.get("y_m")),
+            "z_m": _float_or_none(marker.get("collision_z_m")),
+            "size_x_m": _float_or_none(marker.get("collision_size_x_m")),
+            "size_y_m": _float_or_none(marker.get("collision_size_y_m")),
+            "size_z_m": _float_or_none(marker.get("collision_size_z_m")),
+        }
+        if any(value is None for value in values.values()):
+            continue
+        if any(
+            float(values[key] or 0.0) <= 0.0
+            for key in ("size_x_m", "size_y_m", "size_z_m")
+        ):
+            continue
+        volumes.append(
+            {
+                "obstacle_ref": str(marker.get("name") or ""),
+                **values,
+                "frame_id": "map",
+                "geometry_source": (
+                    "opt_in_turtlebot3_gazebo_sdf_collision_volume"
+                ),
+                "semantic_candidate": str(marker.get("label") or "") or None,
+                "evidence_ref": str(marker.get("source") or "") or None,
+            }
+        )
+    return volumes
+
+
+def _collision_envelope_for_profile(
+    robot_profile: Any,
+) -> dict[str, Any] | None:
+    if normalize_turtlebot_nav2_robot_profile(robot_profile) != "turtlebot3":
+        return None
+    return dict(_TURTLEBOT3_STOCK_COLLISION_ENVELOPE)
 
 
 def _rect_from_obstacle_marker(
@@ -4018,6 +4132,8 @@ def _obstacle_trajectory_geometry(
     obstacle: Mapping[str, Any],
     observed_points: list[dict[str, Any]],
     recovery_points: list[dict[str, Any]],
+    visual_observations: Sequence[Mapping[str, Any]] = (),
+    robot_profile: Any = "turtlebot3",
 ) -> dict[str, Any]:
     markers = _turtlebot3_delivery_obstacle_markers(
         obstacle_required=obstacle_required,
@@ -4042,6 +4158,10 @@ def _obstacle_trajectory_geometry(
             "obstacle_trajectory_display_aligned_sample_count_excluded": 0,
             "obstacle_trajectory_invalid_numeric_sample_count_excluded": 0,
             "obstacle_trajectory_display_alignment_used": False,
+            "obstacle_trajectory_3d_clearance": {},
+            "obstacle_trajectory_3d_clearance_observed": False,
+            "obstacle_trajectory_3d_collision_observed": False,
+            "obstacle_trajectory_3d_clearance_status": "not_required",
         }
     raw_map_points, evidence_filter = _raw_map_observed_trajectory_points(
         [*observed_points, *recovery_points]
@@ -4050,7 +4170,8 @@ def _obstacle_trajectory_geometry(
     xy_points_by_observed_stream: dict[
         tuple[str, str, str, str, str, str], list[tuple[float, float]]
     ] = {}
-    for group_key, group_points in _group_observed_trajectory_points(raw_map_points):
+    grouped_points = list(_group_observed_trajectory_points(raw_map_points))
+    for group_key, group_points in grouped_points:
         for point in group_points:
             x_m = _float_or_none(point.get("x_m"))
             y_m = _float_or_none(point.get("y_m"))
@@ -4091,6 +4212,23 @@ def _obstacle_trajectory_geometry(
         if not rects
         else "observed"
     )
+    visual_volumes, unresolved_visual_refs = (
+        visual_observation_collision_candidates(visual_observations)
+    )
+    clearance_3d = assess_ground_robot_trajectory_clearance_3d(
+        trajectory_streams=[
+            group_points for _group_key, group_points in grouped_points
+        ],
+        robot_collision_envelope=_collision_envelope_for_profile(robot_profile),
+        # Every complete source-backed scene volume is a collision candidate.
+        # Semantic labels are display metadata and never decide inclusion.
+        obstacle_volumes=[
+            *_turtlebot3_obstacle_collision_volumes(markers),
+            *visual_volumes,
+        ],
+        unresolved_candidate_refs=unresolved_visual_refs,
+        base_z_m=0.0,
+    )
     return {
         "obstacle_trajectory_clearance_observed": (
             geometry_status == "observed" and not intersects
@@ -4129,6 +4267,14 @@ def _obstacle_trajectory_geometry(
             "invalid_numeric_sample_count_excluded"
         ],
         "obstacle_trajectory_display_alignment_used": False,
+        "obstacle_trajectory_3d_clearance": clearance_3d.model_dump(mode="json"),
+        "obstacle_trajectory_3d_clearance_observed": (
+            clearance_3d.clearance_observed
+        ),
+        "obstacle_trajectory_3d_collision_observed": (
+            clearance_3d.collision_observed
+        ),
+        "obstacle_trajectory_3d_clearance_status": clearance_3d.status,
         "obstacle_trajectory_geometry_claim_boundary": (
             "Obstacle-avoidance completion requires the bridge observation plus "
             "an explicitly observed raw map-frame trajectory that does not intersect "
@@ -4631,6 +4777,7 @@ def _build_turtlebot3_indoor_map_model(
     runtime_recovery_triggered: bool,
     recovery_action_suggested: str | None,
     route_resumed_after_recovery: bool,
+    visual_observations: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     indoor_route = proposal.get("indoor_delivery_route")
     destination_room_label = (
@@ -4760,6 +4907,22 @@ def _build_turtlebot3_indoor_map_model(
         obstacle_required=obstacle_required,
         obstacle=obstacle,
     )
+    visual_observation_records = [
+        dict(record)
+        for record in (visual_observations or [])
+        if isinstance(record, Mapping)
+    ]
+    projected_visual_points = [
+        {
+            "x_m": projection.get("x_m"),
+            "y_m": projection.get("y_m"),
+        }
+        for record in visual_observation_records
+        if isinstance((projection := record.get("map_projection")), Mapping)
+        and projection.get("status") == "projected"
+        and isinstance(projection.get("x_m"), (int, float))
+        and isinstance(projection.get("y_m"), (int, float))
+    ]
     robot_profile = _robot_profile_from_proposal(proposal)
     floor_plan = _turtlebot3_home_floor_plan(robot_profile)
     floor_bounds = floor_plan["bounds"]
@@ -4772,6 +4935,7 @@ def _build_turtlebot3_indoor_map_model(
             *recovery_points,
             *subsequent_recovery_points,
             *obstacles,
+            *projected_visual_points,
         ]
         if isinstance(point.get("x_m"), (int, float))
         and not isinstance(point.get("x_m"), bool)
@@ -4784,6 +4948,7 @@ def _build_turtlebot3_indoor_map_model(
             *recovery_points,
             *subsequent_recovery_points,
             *obstacles,
+            *projected_visual_points,
         ]
         if isinstance(point.get("y_m"), (int, float))
         and not isinstance(point.get("y_m"), bool)
@@ -4848,6 +5013,21 @@ def _build_turtlebot3_indoor_map_model(
         else "not_available",
         "current_pose": current_pose,
         "obstacles": obstacles,
+        "visual_observations": visual_observation_records,
+        "visual_observation_layer": {
+            "source": "missionos_camera_lidar_perception_binding",
+            "count": len(visual_observation_records),
+            "claim_boundary": (
+                "Camera+LiDAR observation evidence only. A corroborated marker "
+                "means the exact camera frame, a live VLM claim, and an "
+                "independent LiDAR candidate shared one decision epoch; it is "
+                "not scene ground truth and creates no approval, dispatch, or "
+                "delivery claim."
+            ),
+        },
+        "trajectory_clearance_3d": dict(
+            obstacle.get("obstacle_trajectory_3d_clearance") or {}
+        ),
         "recovery": {
             "triggered": runtime_recovery_triggered,
             "selected_action": recovery_action_suggested,
@@ -4878,21 +5058,24 @@ def _build_turtlebot3_indoor_map_model(
     }
 
 
-def _capture_camera_perception_observation() -> tuple[
+def _capture_camera_perception_observation(
+    *, decision_epoch_ref: str
+) -> tuple[
     dict[str, Any] | None, dict[str, Any]
 ]:
     """Capture one camera frame and classify it into a camera observation.
 
     Returns ``(observation_payload | None, pipeline_record)``. Fail-open at
-    every stage: a headless Gazebo world has no camera topic, so capture
-    times out and recovery proceeds without perception claims — the pipeline
-    record states which stage stopped and why instead of pretending the
-    camera evidence existed.
+    every stage: the default ``burger`` simulation profile has no camera,
+    while the opt-in ``waffle_pi`` profile publishes RGB and LaserScan topics
+    even under Xvfb. If either source is absent, recovery proceeds without
+    progressive camera support and the pipeline records the exact boundary.
     """
 
     record: dict[str, Any] = {
         "schema_version": TURTLEBOT3_CAMERA_PERCEPTION_PIPELINE_SCHEMA_VERSION,
         "pipeline_status": "not_enabled",
+        "decision_epoch_ref": decision_epoch_ref,
         "capture": {},
         "sidecar_status": "",
         "sidecar_blocking_reasons": [],
@@ -4927,6 +5110,9 @@ def _capture_camera_perception_observation() -> tuple[
         "blocking_reasons": [
             str(reason) for reason in (response.get("blocking_reasons") or ())
         ],
+        "camera_lidar_observation": dict(
+            response.get("camera_lidar_observation") or {}
+        ),
     }
     if response.get("camera_frame_captured") is not True:
         record["pipeline_status"] = "capture_blocked"
@@ -4943,6 +5129,9 @@ def _capture_camera_perception_observation() -> tuple[
     record["sidecar_blocking_reasons"] = [
         str(reason) for reason in (sidecar_result.get("blocking_reasons") or ())
     ]
+    record["llm_invocation_evidence"] = dict(
+        sidecar_result.get("llm_invocation_evidence") or {}
+    )
     if record["sidecar_status"] != "classified":
         record["pipeline_status"] = f"sidecar_{record['sidecar_status'] or 'blocked'}"
         return None, record
@@ -8168,6 +8357,7 @@ def run_turtlebot3_home_mission_dispatch(
                         for item in approved_recovery_segment_results
                         for point in _observed_points_from_action_result(item)
                     ],
+                    robot_profile=_robot_profile_from_proposal(proposal),
                 )
                 if immediate_clearance_verification_required
                 else {
@@ -8875,7 +9065,12 @@ def run_turtlebot3_home_mission_dispatch(
                 (
                     camera_observation_payload,
                     camera_perception_pipeline,
-                ) = _capture_camera_perception_observation()
+                ) = _capture_camera_perception_observation(
+                    decision_epoch_ref=(
+                        f"{proposal.get('proposal_id') or 'turtlebot3_home_mission'}:"
+                        f"segment:{index}:perception"
+                    )
+                )
                 perception_claim_responses = tuple(
                     result.get("bridge_responses") or ()
                 )
@@ -8893,7 +9088,8 @@ def run_turtlebot3_home_mission_dispatch(
                             )
                             is True
                         ),
-                        observed_at=dispatched_at,
+                        observed_at=None,
+                        runtime_context=camera_perception_pipeline,
                     )
                 )
                 runtime_recovery_obstacle_scenario["perception_claims"] = [
@@ -9243,6 +9439,25 @@ def run_turtlebot3_home_mission_dispatch(
         obstacle["obstacle_detected"] = True
     mission_kind = str(proposal.get("mission_kind") or "")
     obstacle_required = _obstacle_challenge_required(proposal)
+    _recovery_camera_pipeline = (
+        runtime_recovery_obstacle_scenario.get("camera_perception_pipeline")
+        if isinstance(
+            runtime_recovery_obstacle_scenario.get("camera_perception_pipeline"),
+            Mapping,
+        )
+        else {}
+    )
+    _recovery_sensor_observation = (
+        (_recovery_camera_pipeline.get("capture") or {}).get(
+            "camera_lidar_observation"
+        )
+        if isinstance(_recovery_camera_pipeline.get("capture"), Mapping)
+        else {}
+    )
+    visual_observations = build_visual_observations(
+        claims=runtime_recovery_obstacle_scenario.get("perception_claims") or (),
+        sensor_observation=_recovery_sensor_observation or {},
+    )
     obstacle_geometry = _obstacle_trajectory_geometry(
         obstacle_required=obstacle_required,
         obstacle=obstacle,
@@ -9259,6 +9474,8 @@ def run_turtlebot3_home_mission_dispatch(
             for result in current_approved_recovery_results
             for point in _observed_points_from_action_result(result)
         ],
+        visual_observations=visual_observations,
+        robot_profile=_robot_profile_from_proposal(proposal),
     )
     bridge_obstacle_avoidance_observed = obstacle["obstacle_avoidance_observed"]
     obstacle.update(obstacle_geometry)
@@ -9269,10 +9486,19 @@ def run_turtlebot3_home_mission_dispatch(
     obstacle["requested_side_observed"] = (
         recovery_requested_side_observation.get("requested_side_observed") is True
     )
+    robot_profile = _robot_profile_from_proposal(proposal)
+    footprint_3d_clearance_required = robot_profile == "turtlebot3"
     if obstacle_required:
         obstacle["obstacle_avoidance_observed"] = (
             bridge_obstacle_avoidance_observed is True
             and obstacle_geometry["obstacle_trajectory_clearance_observed"] is True
+            and (
+                not footprint_3d_clearance_required
+                or obstacle_geometry[
+                    "obstacle_trajectory_3d_clearance_observed"
+                ]
+                is True
+            )
         )
     delivery_route_requested = mission_kind == "indoor_delivery_route_leg"
     obstacle_avoidance_completion_claimed = (
@@ -9354,6 +9580,18 @@ def run_turtlebot3_home_mission_dispatch(
         mission_blocking_reasons.append("obstacle_avoidance_not_observed")
         if obstacle.get("obstacle_trajectory_intersects_obstacle") is True:
             mission_blocking_reasons.append("obstacle_trajectory_intersects_obstacle")
+        if obstacle.get("obstacle_trajectory_3d_collision_observed") is True:
+            mission_blocking_reasons.append(
+                "robot_collision_envelope_intersects_obstacle_volume"
+            )
+        elif (
+            footprint_3d_clearance_required
+            and obstacle.get("obstacle_trajectory_3d_clearance_status")
+            == "unavailable"
+        ):
+            mission_blocking_reasons.append(
+                "obstacle_trajectory_3d_clearance_evidence_unavailable"
+            )
         if obstacle.get("obstacle_trajectory_geometry_status") in {
             "raw_map_frame_trajectory_unavailable",
             "raw_map_frame_trajectory_insufficient",
@@ -9417,6 +9655,7 @@ def run_turtlebot3_home_mission_dispatch(
         runtime_recovery_triggered=runtime_recovery_triggered,
         recovery_action_suggested=recovery_action_suggested,
         route_resumed_after_recovery=route_resumed_after_recovery,
+        visual_observations=visual_observations,
     )
     indoor_map_model["recovery"]["goal_sequence_completed"] = (
         recovery_goal_sequence_completed
@@ -9927,6 +10166,20 @@ def run_turtlebot3_home_mission_dispatch(
             "obstacle_trajectory_display_alignment_used": obstacle[
                 "obstacle_trajectory_display_alignment_used"
             ],
+            "obstacle_trajectory_3d_clearance": obstacle.get(
+                "obstacle_trajectory_3d_clearance"
+            ),
+            "obstacle_trajectory_3d_clearance_observed": obstacle.get(
+                "obstacle_trajectory_3d_clearance_observed"
+            )
+            is True,
+            "obstacle_trajectory_3d_collision_observed": obstacle.get(
+                "obstacle_trajectory_3d_collision_observed"
+            )
+            is True,
+            "obstacle_trajectory_3d_clearance_status": obstacle.get(
+                "obstacle_trajectory_3d_clearance_status"
+            ),
             "obstacle_trajectory_geometry_claim_boundary": obstacle.get(
                 "obstacle_trajectory_geometry_claim_boundary"
             ),

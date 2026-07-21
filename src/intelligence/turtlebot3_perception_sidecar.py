@@ -2,14 +2,14 @@
 
 Takes a camera frame, hashes it, and asks Gemini (via ADK) or an operator-
 provided command to classify it into one of ``PerceptionClaimKind``. Output
-is exactly the ``{claim_kind, source_frame_ref, confidence}`` shape
+is a source-bound claim plus a normalized horizontal target center that
 ``build_perception_claim_from_camera_observation`` in
 ``src/runtime/perception_claim.py`` consumes.
 
 The sidecar never emits ``corroborated_by`` — even if a raw model response
 includes one, it is dropped before the result is returned. Corroboration is
-computed downstream from independently observed non-camera evidence (the
-Nav2/Nvblox costmap signal), never from anything a vision pipeline claims
+computed downstream from a same-window LaserScan candidate and source-bound
+runtime invocation evidence, never from anything a vision pipeline claims
 about itself; see ``perception_claim.py`` for why.
 
 Mirrors ``turtlebot3_recovery_planner.py``'s two backend paths so it shares
@@ -59,6 +59,7 @@ _AGENT_NAME = "missionos_turtlebot3_perception_sidecar_agent"
 # Derived from PerceptionClaimKind (perception_claim.py) so the sidecar's
 # allowed vocabulary can never drift from the schema that consumes it.
 _ALLOWED_CLAIM_KINDS = frozenset(get_args(PerceptionClaimKind))
+_ALLOWED_HORIZONTAL_SECTORS = frozenset({"left", "center", "right", "unknown"})
 
 
 def _sha256_bytes(value: bytes) -> str:
@@ -103,11 +104,19 @@ def build_turtlebot3_perception_sidecar_prompt(
         "image_sha256": image_sha256,
         "image_mime_type": "image/png",
         "allowed_claim_kinds": sorted(_ALLOWED_CLAIM_KINDS),
-        "required_output_fields": ["claim_kind", "confidence"],
+        "required_output_fields": [
+            "claim_kind",
+            "confidence",
+            "horizontal_sector",
+            "target_center_x_normalized",
+        ],
         "strict_output_contract": (
             "Return exactly one JSON object with claim_kind (one of "
-            "allowed_claim_kinds) and confidence (a float between 0.0 and "
-            "1.0). Do not include corroborated_by, source_frame_ref, "
+            "allowed_claim_kinds), confidence (a float between 0.0 and 1.0), "
+            "and horizontal_sector (left, center, right, or unknown), plus "
+            "target_center_x_normalized (0.0 at the left image edge, 1.0 at "
+            "the right edge, or null when no obstacle target is visible). Do not "
+            "include corroborated_by, source_frame_ref, "
             "approval, dispatch, or any execution-authority field — those "
             "are computed downstream by MissionOS, never by this sidecar."
         ),
@@ -151,9 +160,27 @@ def _validate_and_strip_claim(
         reasons.append("confidence_not_numeric")
     elif not (0.0 <= float(confidence) <= 1.0):
         reasons.append("confidence_out_of_range")
+    horizontal_sector = str(raw_output.get("horizontal_sector") or "unknown")
+    if horizontal_sector not in _ALLOWED_HORIZONTAL_SECTORS:
+        reasons.append("horizontal_sector_not_allowed")
+    raw_target_center = raw_output.get("target_center_x_normalized")
+    if raw_target_center is None:
+        target_center_x_normalized: float | None = None
+    elif isinstance(raw_target_center, bool) or not isinstance(
+        raw_target_center, (int, float)
+    ):
+        target_center_x_normalized = None
+        reasons.append("target_center_x_normalized_not_numeric_or_null")
+    elif not (0.0 <= float(raw_target_center) <= 1.0):
+        target_center_x_normalized = None
+        reasons.append("target_center_x_normalized_out_of_range")
+    else:
+        target_center_x_normalized = float(raw_target_center)
+    if claim_kind != "path_clear" and target_center_x_normalized is None:
+        reasons.append("obstacle_claim_target_center_required")
     if reasons:
         return None, reasons
-    # Only claim_kind, source_frame_ref, confidence pass through. A raw
+    # Only evidence fields pass through. A raw
     # response cannot inject corroborated_by or any other field — those
     # are computed downstream, never taken from the vision pipeline.
     return (
@@ -161,6 +188,8 @@ def _validate_and_strip_claim(
             "claim_kind": claim_kind,
             "source_frame_ref": source_frame_ref,
             "confidence": float(confidence),
+            "horizontal_sector": horizontal_sector,
+            "target_center_x_normalized": target_center_x_normalized,
         },
         [],
     )
@@ -236,6 +265,44 @@ def _sidecar_model_id() -> str:
     return agent_model_label(env_model or fallback, agent_name=_AGENT_NAME)
 
 
+def _runtime_invocation_evidence(
+    *,
+    invocation_kind: str,
+    invocation_target: str,
+    provider: str,
+    model_id: str,
+    image_sha256: str,
+    prompt_text: str,
+    stdout: str,
+    stderr: str,
+    started_at: datetime,
+    completed_at: datetime,
+    exit_code: int,
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "schema_version": "runtime_invocation_evidence.v1",
+        "invocation_kind": invocation_kind,
+        "invocation_target": invocation_target,
+        "provider": provider,
+        "model_id": model_id,
+        "input_image_sha256": image_sha256,
+        "prompt_sha256": _sha256_text(prompt_text),
+        "invocation_started_at": started_at.isoformat(),
+        "invocation_completed_at": completed_at.isoformat(),
+        "invocation_stdout_sha256": _sha256_text(stdout),
+        "invocation_stderr_sha256": _sha256_text(stderr),
+        "invocation_stdout_preimage": stdout,
+        "invocation_stderr_preimage": stderr,
+        "invocation_exit_code": exit_code,
+        "physical_execution_invoked": False,
+    }
+    payload.update(extra or {})
+    ref_payload = json.dumps(payload, ensure_ascii=True, sort_keys=True, default=str)
+    payload["invocation_ref"] = f"vlm_invocation:{_sha256_text(ref_payload)[:16]}"
+    return payload
+
+
 def _run_command_override_sidecar(
     *,
     command_text: str,
@@ -288,16 +355,20 @@ def _run_command_override_sidecar(
     claim, reasons = _validate_and_strip_claim(
         raw_output, source_frame_ref=source_frame_ref
     )
-    invocation_evidence = {
-        "provider": "command_override",
-        "invocation_kind": "subprocess",
-        "prompt_sha256": _sha256_text(prompt_text),
-        "response_sha256": _sha256_text(stdout),
-        "invocation_started_at": started_at.isoformat(),
-        "invocation_completed_at": completed_at.isoformat(),
-        "invocation_exit_code": exit_code,
-        "command_argv": list(command_argv),
-    }
+    invocation_evidence = _runtime_invocation_evidence(
+        invocation_kind="subprocess",
+        invocation_target="turtlebot3_perception_sidecar_command_override",
+        provider="command_override",
+        model_id="operator_provided_command",
+        image_sha256=image_sha256,
+        prompt_text=prompt_text,
+        stdout=stdout,
+        stderr=stderr,
+        started_at=started_at,
+        completed_at=completed_at,
+        exit_code=exit_code,
+        extra={"command_argv": list(command_argv)},
+    )
     if reasons:
         return _sidecar_result(
             status="blocked",
@@ -339,15 +410,23 @@ def _run_adk_sidecar(
         )
     completed_at = datetime.now(timezone.utc)
     raw_output = _read_json_object(response_text)
-    invocation_evidence = {
-        "provider": "google_adk",
-        "invocation_kind": "adk_multimodal",
-        "model_id": model_id,
-        "image_sha256": image_sha256,
-        "response_sha256": _sha256_text(response_text),
-        "invocation_started_at": started_at.isoformat(),
-        "invocation_completed_at": completed_at.isoformat(),
-    }
+    prompt_text = json.dumps(
+        build_turtlebot3_perception_sidecar_prompt(image_sha256=image_sha256),
+        sort_keys=True,
+    )
+    invocation_evidence = _runtime_invocation_evidence(
+        invocation_kind="llm_api",
+        invocation_target=f"google_adk:{model_id}",
+        provider="google_adk",
+        model_id=model_id,
+        image_sha256=image_sha256,
+        prompt_text=prompt_text,
+        stdout=response_text,
+        stderr="",
+        started_at=started_at,
+        completed_at=completed_at,
+        exit_code=0,
+    )
     if raw_output is None:
         return _sidecar_result(
             status="blocked",
@@ -381,6 +460,9 @@ async def _invoke_adk_perception_response_async(
     )
 
     _configure_google_adk_environment()
+    from src.agents.model_config import configure_google_vertex_location
+
+    configure_google_vertex_location(model_id, agent_name=_AGENT_NAME)
     from google.adk.agents import LlmAgent
     from google.adk.runners import Runner
     from google.genai import types
@@ -392,7 +474,10 @@ async def _invoke_adk_perception_response_async(
         "You are the MissionOS TurtleBot3 perception sidecar. You are shown "
         "one camera frame. Return exactly one JSON object and no markdown, "
         "with claim_kind (one of the values listed in the prompt's "
-        "allowed_claim_kinds) and confidence (0.0-1.0). Do not include "
+        "allowed_claim_kinds), confidence (0.0-1.0), horizontal_sector "
+        "(left, center, right, or unknown), and target_center_x_normalized "
+        "(0.0 at the left edge, 1.0 at the right edge, or null only when no "
+        "obstacle target is visible). Do not include "
         "corroborated_by, source_frame_ref, approval, dispatch, or any "
         "execution-authority field; those are computed downstream, never "
         "by you."

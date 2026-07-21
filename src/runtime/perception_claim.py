@@ -3,10 +3,11 @@
 A perception claim is what a vision model says about the environment, bound to
 the exact frame it saw (sha256 ref) and to the sensors that corroborate it.
 Claims are evidence for recovery deliberation, never commands. The support
-rule is asymmetric: a claim corroborated by a non-camera sensor may support
-any allowed recovery action, while an uncorroborated camera-only claim may
-support conservative (fail-safe) actions only — stopping on a false positive
-costs mission time, proceeding on one costs the robot.
+rule is asymmetric: only a live VLM claim bound to the exact frame and a
+spatiotemporally matching independent-sensor candidate may support a
+progressive proposal. Any weaker camera claim may support conservative
+(fail-safe) actions only — stopping on a false positive costs mission time,
+proceeding on one costs the robot.
 """
 
 from __future__ import annotations
@@ -23,6 +24,10 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from src.runtime.delivery_recovery_safety import raise_for_command_like_payload
 from src.runtime.mission_autonomy_envelope import CONSERVATIVE_RECOVERY_ACTIONS
+from src.runtime.perception_corroboration_binding import (
+    PerceptionCorroborationBinding,
+    build_perception_corroboration_binding,
+)
 
 __all__ = [
     "CONSERVATIVE_RECOVERY_ACTIONS",
@@ -78,6 +83,7 @@ class PerceptionClaim(BaseModel):
     source_frame_ref: str
     confidence: float = Field(ge=0.0, le=1.0)
     corroborated_by: tuple[str, ...] = ()
+    corroboration_binding: PerceptionCorroborationBinding | None = None
     observed_at: datetime
     evidence_only: Literal[True] = True
     approval_created: Literal[False] = False
@@ -114,6 +120,13 @@ class PerceptionClaim(BaseModel):
     def corroborated(self) -> bool:
         return bool(self.corroborated_by)
 
+    @property
+    def progressive_support_eligible(self) -> bool:
+        return bool(
+            self.corroboration_binding is not None
+            and self.corroboration_binding.progressive_action_supported
+        )
+
 
 def _utc(value: datetime | None) -> datetime:
     if value is None:
@@ -136,6 +149,7 @@ def build_perception_claim(
     source_frame_ref: str,
     confidence: float,
     corroborated_by: Sequence[str] | None = None,
+    corroboration_binding: PerceptionCorroborationBinding | None = None,
     observed_at: datetime | None = None,
     metadata: Mapping[str, Any] | None = None,
 ) -> PerceptionClaim:
@@ -154,6 +168,9 @@ def build_perception_claim(
             "source_frame_ref": source_frame_ref,
             "confidence": confidence,
             "corroborated_by": corroboration,
+            "corroboration_binding_id": (
+                corroboration_binding.binding_id if corroboration_binding else ""
+            ),
             "observed_at": observed.isoformat(),
         }
     )
@@ -163,6 +180,7 @@ def build_perception_claim(
         source_frame_ref=source_frame_ref,
         confidence=confidence,
         corroborated_by=corroboration,
+        corroboration_binding=corroboration_binding,
         observed_at=observed,
         metadata=metadata_payload,
     )
@@ -181,11 +199,11 @@ def guard_perception_claim_support(
     only on the claims the model chose to cite — review found the earlier
     citation-gated check could be bypassed by simply omitting the citation
     while still having seen the claim. Since reliance cannot be verified,
-    the rule fails closed: a progressive action is blocked while any
-    uncorroborated camera-only claim exists in context. Conservative
-    actions pass regardless. Citations remain required as an explicit
-    reliance record (checked by the planner guard), and unknown cited ids
-    still block.
+    the rule fails closed: a progressive action is blocked while any claim
+    without a core-owned live spatiotemporal binding exists in context.
+    Conservative actions pass regardless. Citations remain required as an
+    explicit reliance record (checked by the planner guard), and unknown
+    cited ids still block.
     """
 
     claims_by_id: dict[str, PerceptionClaim] = {}
@@ -203,15 +221,15 @@ def guard_perception_claim_support(
         blocking_reasons.append(f"cited_perception_claim_unknown:{cid}")
 
     action_is_conservative = selected_action in CONSERVATIVE_RECOVERY_ACTIONS
-    uncorroborated_in_context = [
+    progressive_support_missing = [
         claim_id
         for claim_id, model in claims_by_id.items()
-        if not model.corroborated
+        if not model.progressive_support_eligible
     ]
     if not action_is_conservative:
-        for cid in uncorroborated_in_context:
+        for cid in progressive_support_missing:
             blocking_reasons.append(
-                "uncorroborated_perception_claim_in_context_requires_"
+                "perception_claim_without_bound_live_corroboration_requires_"
                 f"conservative_action:{cid}"
             )
 
@@ -219,11 +237,14 @@ def guard_perception_claim_support(
         "checks": {
             "cited_perception_claims_known": not unknown_ids,
             "perception_claim_support_respected": (
-                action_is_conservative or not uncorroborated_in_context
+                action_is_conservative or not progressive_support_missing
             ),
         },
         "selected_action_is_conservative": action_is_conservative,
-        "uncorroborated_claim_ids_in_context": uncorroborated_in_context,
+        "uncorroborated_claim_ids_in_context": progressive_support_missing,
+        "progressive_support_missing_claim_ids_in_context": (
+            progressive_support_missing
+        ),
         "blocking_reasons": blocking_reasons,
     }
 
@@ -308,6 +329,7 @@ def build_perception_claim_from_camera_observation(
     *,
     costmap_obstacle_observed: bool,
     observed_at: datetime | None = None,
+    runtime_context: Mapping[str, Any] | None = None,
 ) -> PerceptionClaim | None:
     """Build a claim from a raw camera payload, or None if it is malformed.
 
@@ -326,6 +348,43 @@ def build_perception_claim_from_camera_observation(
         if costmap_obstacle_observed and claim_kind in _OBSTACLE_CLAIM_KINDS
         else ()
     )
+    binding = (
+        build_perception_corroboration_binding(
+            source_frame_ref=str(source_frame_ref),
+            claim_kind=str(claim_kind),
+            camera_horizontal_sector=str(
+                payload.get("horizontal_sector") or "unknown"
+            ),
+            target_center_x_normalized=payload.get(
+                "target_center_x_normalized"
+            ),
+            runtime_context=runtime_context,
+        )
+        if runtime_context is not None
+        else None
+    )
+    if (
+        binding is not None
+        and binding.temporal_status == "bound"
+        and binding.spatial_status == "bound"
+        and binding.target_identity_status == "bound"
+    ):
+        corroborated_by = tuple(
+            dict.fromkeys(
+                (
+                    *corroborated_by,
+                    "range_sensor:ros2_laser_scan_angular_candidate",
+                )
+            )
+        )
+    claim_observed_at = observed_at
+    if binding is not None and binding.camera_observed_at:
+        try:
+            claim_observed_at = datetime.fromisoformat(
+                binding.camera_observed_at.replace("Z", "+00:00")
+            )
+        except ValueError:
+            pass
     # The corroboration is honest about its own coarseness: the costmap
     # signal comes from the same segment's bridge receipt (same mission
     # moment, local costmap around the same robot pose) but is NOT bound to
@@ -335,13 +394,13 @@ def build_perception_claim_from_camera_observation(
     # exists.
     metadata = (
         {
-            "corroboration_binding": {
+            "legacy_costmap_corroboration": {
                 "temporal": "same_segment_bridge_receipt",
                 "spatial": "unbound",
                 "target_identity": "unbound",
             }
         }
-        if corroborated_by
+        if costmap_obstacle_observed and claim_kind in _OBSTACLE_CLAIM_KINDS
         else {}
     )
     try:
@@ -350,7 +409,8 @@ def build_perception_claim_from_camera_observation(
             source_frame_ref=str(source_frame_ref),
             confidence=float(confidence),
             corroborated_by=corroborated_by,
-            observed_at=observed_at,
+            corroboration_binding=binding,
+            observed_at=claim_observed_at,
             metadata=metadata,
         )
     except (ValueError, TypeError):
@@ -363,6 +423,7 @@ def build_perception_claims_from_env_or_responses(
     costmap_obstacle_observed: bool,
     environ: Mapping[str, str] | None = None,
     observed_at: datetime | None = None,
+    runtime_context: Mapping[str, Any] | None = None,
 ) -> tuple[PerceptionClaim, ...]:
     """Build whatever well-formed camera-derived claims are available.
 
@@ -384,6 +445,7 @@ def build_perception_claims_from_env_or_responses(
                 payload,
                 costmap_obstacle_observed=costmap_obstacle_observed,
                 observed_at=observed_at,
+                runtime_context=runtime_context,
             )
             for payload in payloads
         )

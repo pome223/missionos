@@ -9,6 +9,7 @@ claims physical execution.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 import json
 import hashlib
 import math
@@ -73,8 +74,16 @@ ROS2_NAV2_SIM_FAULT_CANCEL_AFTER_ACCEPT_ENV = (
     "ROS2_NAV2_SIM_FAULT_CANCEL_AFTER_ACCEPT"
 )
 ROS2_NAV2_CAMERA_TOPIC_ENV = "ROS2_NAV2_CAMERA_TOPIC"
+ROS2_NAV2_CAMERA_INFO_TOPIC_ENV = "ROS2_NAV2_CAMERA_INFO_TOPIC"
 ROS2_NAV2_CAMERA_TIMEOUT_ENV = "ROS2_NAV2_CAMERA_TIMEOUT_S"
 ROS2_NAV2_CAMERA_OUTPUT_DIR_ENV = "ROS2_NAV2_CAMERA_OUTPUT_DIR"
+ROS2_NAV2_LIDAR_TOPIC_ENV = "ROS2_NAV2_LIDAR_TOPIC"
+ROS2_NAV2_CAMERA_LIDAR_RANGE_ENV = "ROS2_NAV2_CAMERA_LIDAR_OBSTACLE_RANGE_M"
+ROS2_NAV2_CAMERA_LIDAR_SYNC_MAX_DELTA_MS_ENV = (
+    "ROS2_NAV2_CAMERA_LIDAR_SYNC_MAX_DELTA_MS"
+)
+ROS2_NAV2_USE_SIM_TIME_ENV = "ROS2_NAV2_USE_SIM_TIME"
+ROS2_NAV2_TF_LISTENER_WARMUP_ENV = "ROS2_NAV2_TF_LISTENER_WARMUP_S"
 ROS2_NAV2_CANCEL_STOP_OBSERVE_ENV = "ROS2_NAV2_CANCEL_STOP_OBSERVE_S"
 
 _TRUE_VALUES = {"1", "true", "yes", "on"}
@@ -1162,6 +1171,309 @@ def _camera_topic_from(payload: dict[str, Any]) -> str:
     return env_topic or "/camera/image_raw"
 
 
+def _sensor_message_observed_at(message: Any) -> str:
+    """Return a timezone-qualified source timestamp from a ROS header."""
+
+    stamp = getattr(getattr(message, "header", None), "stamp", None)
+    seconds = int(getattr(stamp, "sec", 0) or 0)
+    nanoseconds = int(getattr(stamp, "nanosec", 0) or 0)
+    if seconds or nanoseconds:
+        return datetime.fromtimestamp(
+            seconds + nanoseconds / 1_000_000_000,
+            tz=timezone.utc,
+        ).isoformat()
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _sensor_message_stamp_seconds(message: Any) -> float | None:
+    """Return a source-header timestamp suitable for camera/LiDAR pairing."""
+
+    stamp = getattr(getattr(message, "header", None), "stamp", None)
+    seconds = int(getattr(stamp, "sec", 0) or 0)
+    nanoseconds = int(getattr(stamp, "nanosec", 0) or 0)
+    if not seconds and not nanoseconds:
+        return None
+    return seconds + nanoseconds / 1_000_000_000
+
+
+def _closest_camera_lidar_pair(
+    *,
+    camera_messages: list[Any],
+    laser_scans: list[Any],
+    max_delta_ms: float,
+) -> tuple[Any, Any] | None:
+    """Return the nearest source-timestamped camera/LiDAR pair in one window."""
+
+    closest: tuple[float, Any, Any] | None = None
+    for camera_message in camera_messages:
+        camera_stamp = _sensor_message_stamp_seconds(camera_message)
+        if camera_stamp is None:
+            continue
+        for laser_scan in laser_scans:
+            lidar_stamp = _sensor_message_stamp_seconds(laser_scan)
+            if lidar_stamp is None:
+                continue
+            delta_ms = abs(camera_stamp - lidar_stamp) * 1000.0
+            if delta_ms > max_delta_ms:
+                continue
+            if closest is None or delta_ms < closest[0]:
+                closest = (delta_ms, camera_message, laser_scan)
+    return (closest[1], closest[2]) if closest is not None else None
+
+
+def _observe_camera_lidar_bundle(
+    *,
+    node: Any,
+    image_type: Any,
+    camera_info_type: Any,
+    laser_scan_type: Any,
+    camera_topic: str,
+    camera_info_topic: str,
+    lidar_topic: str,
+    timeout_s: float,
+    max_delta_ms: float,
+) -> tuple[Any | None, Any | None, Any | None]:
+    """Observe camera, intrinsics, and scan concurrently.
+
+    A sequential subscription can pair a frame with a LaserScan captured seconds
+    later.  This helper starts all subscriptions together and returns only a
+    source-timestamped camera/LiDAR pair within ``max_delta_ms``.  If such a
+    pair is unavailable, it preserves the optional-evidence posture by
+    returning the latest observations; the core binding will then fail closed.
+    """
+
+    from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
+
+    camera_messages: list[Any] = []
+    camera_infos: list[Any] = []
+    laser_scans: list[Any] = []
+
+    def _append_bounded(values: list[Any], message: Any) -> None:
+        values.append(message)
+        del values[:-8]
+
+    qos = QoSProfile(depth=8)
+    qos.reliability = QoSReliabilityPolicy.BEST_EFFORT
+    qos.durability = QoSDurabilityPolicy.VOLATILE
+    subscriptions = [
+        node.create_subscription(
+            image_type,
+            camera_topic,
+            lambda message: _append_bounded(camera_messages, message),
+            qos,
+        ),
+        node.create_subscription(
+            camera_info_type,
+            camera_info_topic,
+            lambda message: _append_bounded(camera_infos, message),
+            qos,
+        ),
+        node.create_subscription(
+            laser_scan_type,
+            lidar_topic,
+            lambda message: _append_bounded(laser_scans, message),
+            qos,
+        ),
+    ]
+    deadline = time.monotonic() + max(timeout_s, 0.0)
+    try:
+        while time.monotonic() < deadline:
+            import rclpy
+
+            rclpy.spin_once(node, timeout_sec=0.1)
+            pair = _closest_camera_lidar_pair(
+                camera_messages=camera_messages,
+                laser_scans=laser_scans,
+                max_delta_ms=max_delta_ms,
+            )
+            if pair is not None and camera_infos:
+                camera_message, laser_scan = pair
+                return (
+                    camera_message,
+                    camera_infos[-1],
+                    laser_scan,
+                )
+    finally:
+        for subscription in subscriptions:
+            node.destroy_subscription(subscription)
+    return (
+        camera_messages[-1] if camera_messages else None,
+        camera_infos[-1] if camera_infos else None,
+        laser_scans[-1] if laser_scans else None,
+    )
+
+
+def _laser_scan_candidate(
+    message: Any,
+    *,
+    max_range_m: float,
+    camera_half_fov_rad: float = 0.5236,
+) -> dict[str, Any]:
+    """Select the closest LiDAR cluster inside the RGB camera field of view."""
+
+    candidates: list[tuple[int, float, float]] = []
+    angle_min = float(message.angle_min)
+    angle_increment = float(message.angle_increment)
+    range_min = float(message.range_min)
+    range_max = min(float(message.range_max), max_range_m)
+    for index, raw_range in enumerate(message.ranges):
+        distance = float(raw_range)
+        angle = angle_min + index * angle_increment
+        if (
+            math.isfinite(distance)
+            and range_min <= distance <= range_max
+            and abs(angle) <= camera_half_fov_rad
+        ):
+            candidates.append((index, angle, distance))
+    observed_at = _sensor_message_observed_at(message)
+    frame_id = str(getattr(getattr(message, "header", None), "frame_id", "") or "")
+    if not candidates:
+        return {
+            "lidar_observed_at": observed_at,
+            "lidar_frame_id": frame_id,
+            "lidar_obstacle_observed": False,
+            "lidar_horizontal_sector": "unknown",
+            "lidar_candidate_bearing_rad": None,
+            "lidar_candidate_range_m": None,
+            "target_candidate_id": "",
+            "lidar_evidence_ref": "",
+        }
+
+    closest_index, _closest_angle, closest_range = min(
+        candidates, key=lambda item: item[2]
+    )
+    by_index = {item[0]: item for item in candidates}
+    cluster = [by_index[closest_index]]
+    for direction in (-1, 1):
+        current_index = closest_index
+        current_range = closest_range
+        while True:
+            next_index = current_index + direction
+            next_item = by_index.get(next_index)
+            if next_item is None:
+                break
+            next_range = next_item[2]
+            # Follow the contiguous surface until a depth discontinuity marks
+            # another object/background. The bound against the closest return
+            # prevents a gradual wall from absorbing the whole camera FOV.
+            if (
+                abs(next_range - current_range) > 0.12
+                or next_range - closest_range > 0.35
+            ):
+                break
+            cluster.append(next_item)
+            current_index = next_index
+            current_range = next_range
+    bearing_rad = sum(item[1] for item in cluster) / len(cluster)
+    range_m = sum(item[2] for item in cluster) / len(cluster)
+    if bearing_rad > 0.18:
+        sector = "left"
+    elif bearing_rad < -0.18:
+        sector = "right"
+    else:
+        sector = "center"
+    candidate_preimage = json.dumps(
+        {
+            "observed_at": observed_at,
+            "frame_id": frame_id,
+            "bearing_rad": round(bearing_rad, 4),
+            "range_m": round(range_m, 4),
+        },
+        sort_keys=True,
+    )
+    candidate_digest = hashlib.sha256(candidate_preimage.encode("utf-8")).hexdigest()
+    candidate_id = f"lidar_candidate:{candidate_digest[:16]}"
+    return {
+        "lidar_observed_at": observed_at,
+        "lidar_frame_id": frame_id,
+        "lidar_obstacle_observed": True,
+        "lidar_horizontal_sector": sector,
+        "lidar_candidate_bearing_rad": bearing_rad,
+        "lidar_candidate_range_m": range_m,
+        "target_candidate_id": candidate_id,
+        "lidar_evidence_ref": f"laser_scan:{candidate_digest}",
+    }
+
+
+def _observe_lidar_map_transform(
+    *,
+    node: Any,
+    tf_buffer: Any,
+    laser_scan: Any,
+    timeout_s: float = 2.0,
+) -> dict[str, Any]:
+    """Look up ``map <- lidar_frame`` at the LaserScan timestamp, or fail open.
+
+    Read-only TF lookup used to project a LiDAR candidate onto the map. The
+    transform is resolved at the scan's own header stamp (not latest time) and
+    for the scan's own frame_id, so the projected candidate reflects where the
+    LiDAR actually observed the obstacle rather than the latest robot pose. If
+    tf2, the frame, or the timestamped transform is unavailable, it returns
+    ``lidar_map_tf_observed: False`` with no coordinate so the map never places
+    a guessed marker.
+    """
+
+    source_frame = str(
+        getattr(getattr(laser_scan, "header", None), "frame_id", "") or ""
+    ).strip()
+    unavailable = {
+        "lidar_map_tf_observed": False,
+        "lidar_map_tf_x_m": None,
+        "lidar_map_tf_y_m": None,
+        "lidar_map_tf_yaw_rad": None,
+        "lidar_map_tf_source_frame_id": source_frame,
+        "lidar_map_tf_stamp": "",
+    }
+    if not source_frame or laser_scan is None or tf_buffer is None:
+        return unavailable
+    try:
+        import rclpy
+        from rclpy.clock import ClockType
+        from rclpy.time import Time
+    except Exception:
+        return unavailable
+    stamp = getattr(getattr(laser_scan, "header", None), "stamp", None)
+    scan_seconds = int(getattr(stamp, "sec", 0) or 0)
+    scan_nanoseconds = int(getattr(stamp, "nanosec", 0) or 0)
+    if scan_seconds or scan_nanoseconds:
+        # LaserScan header stamps are ROS time.  Passing the default
+        # SYSTEM_TIME here makes tf2 reject an otherwise available simulator
+        # transform as a mixed-clock lookup; ROS_TIME is also correct for a
+        # hardware ROS message whose wall-clock source is represented in the
+        # ROS time domain.
+        scan_time = Time(
+            seconds=scan_seconds,
+            nanoseconds=scan_nanoseconds,
+            clock_type=ClockType.ROS_TIME,
+        )
+        stamp_iso = _sensor_message_observed_at(laser_scan)
+    else:
+        # No usable scan stamp: refuse rather than silently substitute latest.
+        return unavailable
+    deadline = time.monotonic() + max(0.1, float(timeout_s))
+    while time.monotonic() < deadline:
+        rclpy.spin_once(node, timeout_sec=0.1)
+        try:
+            transform = tf_buffer.lookup_transform("map", source_frame, scan_time)
+        except Exception:
+            continue
+        translation = transform.transform.translation
+        rotation = transform.transform.rotation
+        yaw = math.atan2(
+            2.0 * (rotation.w * rotation.z + rotation.x * rotation.y),
+            1.0 - 2.0 * (rotation.y * rotation.y + rotation.z * rotation.z),
+        )
+        return {
+            "lidar_map_tf_observed": True,
+            "lidar_map_tf_x_m": float(translation.x),
+            "lidar_map_tf_y_m": float(translation.y),
+            "lidar_map_tf_yaw_rad": float(yaw),
+            "lidar_map_tf_source_frame_id": source_frame,
+            "lidar_map_tf_stamp": stamp_iso,
+        }
+    return unavailable
+
+
 def _capture_camera_frame(payload: dict[str, Any]) -> dict[str, Any]:
     """Subscribe once to a camera topic and write the frame to disk as PNG.
 
@@ -1172,7 +1484,7 @@ def _capture_camera_frame(payload: dict[str, Any]) -> dict[str, Any]:
 
     try:
         import rclpy
-        from sensor_msgs.msg import Image
+        from sensor_msgs.msg import CameraInfo, Image, LaserScan
     except Exception as exc:
         return _blocked_response(
             blocking_reasons=["ros2_nav2_python_dependencies_missing"],
@@ -1187,18 +1499,91 @@ def _capture_camera_frame(payload: dict[str, Any]) -> dict[str, Any]:
         )
 
     camera_topic = _camera_topic_from(payload)
+    camera_info_topic = (
+        str(payload.get("camera_info_topic") or "").strip()
+        or os.environ.get(ROS2_NAV2_CAMERA_INFO_TOPIC_ENV, "").strip()
+        or "/camera/camera_info"
+    )
+    lidar_topic = (
+        str(payload.get("lidar_topic") or "").strip()
+        or os.environ.get(ROS2_NAV2_LIDAR_TOPIC_ENV, "").strip()
+        or "/scan"
+    )
     timeout_s = _float_env(ROS2_NAV2_CAMERA_TIMEOUT_ENV, 10.0)
     output_path = Path(payload.get("output_path") or _default_camera_frame_output_path())
 
     rclpy.init(args=None)
     node = rclpy.create_node(f"missionos_ros2_nav2_{_bridge_profile()}_camera_capture")
+    tf_listener = None
     try:
+        if _truthy_env(ROS2_NAV2_USE_SIM_TIME_ENV):
+            # TF history is indexed by the simulator's /clock.  Without this,
+            # a headless Gazebo scan (epoch-relative time) is immediately
+            # expired against the host wall clock before its exact timestamped
+            # map<-lidar lookup can run.  Hardware remains wall-clock by
+            # default; simulation time is an explicit opt-in.
+            from rclpy.parameter import Parameter
+
+            node.set_parameters([Parameter("use_sim_time", value=True)])
         try:
-            message = _observe_camera_frame(
+            from tf2_ros import Buffer, TransformListener
+
+            tf_buffer = Buffer()
+            # Start listening before any sensor wait.  A timestamped lookup
+            # after receiving LaserScan otherwise has no dynamic TF history
+            # for that already-published scan.
+            tf_listener = TransformListener(tf_buffer, node)
+            # Give the listener a bounded chance to receive the current TF
+            # history before subscribing to a scan. Otherwise the first scan
+            # can predate the buffer's earliest dynamic map transform, making
+            # the exact source-time lookup correctly (but needlessly) fail.
+            warmup_deadline = time.monotonic() + max(
+                0.0,
+                _float_env(ROS2_NAV2_TF_LISTENER_WARMUP_ENV, 1.0),
+            )
+            while time.monotonic() < warmup_deadline:
+                rclpy.spin_once(node, timeout_sec=0.1)
+            if _truthy_env(ROS2_NAV2_USE_SIM_TIME_ENV):
+                # In Gazebo, wait until localization has actually supplied a
+                # current map<-scan chain before accepting a new scan. The
+                # listener cannot reconstruct dynamic TF published before it
+                # joined, and a fixed wall-clock sleep is not a substitute for
+                # checking that the source frame exists in its buffer.
+                from rclpy.clock import ClockType
+                from rclpy.time import Time
+
+                ready_source_frame = os.environ.get(
+                    ROS2_NAV2_TF_READY_SOURCE_FRAME_ENV,
+                    "base_scan",
+                ).strip() or "base_scan"
+                readiness_deadline = time.monotonic() + min(timeout_s, 5.0)
+                while time.monotonic() < readiness_deadline:
+                    rclpy.spin_once(node, timeout_sec=0.1)
+                    try:
+                        tf_buffer.lookup_transform(
+                            "map",
+                            ready_source_frame,
+                            Time(clock_type=ClockType.ROS_TIME),
+                        )
+                        break
+                    except Exception:
+                        continue
+        except Exception:
+            tf_buffer = None
+        try:
+            message, camera_info, laser_scan = _observe_camera_lidar_bundle(
                 node=node,
                 image_type=Image,
-                topic=camera_topic,
+                camera_info_type=CameraInfo,
+                laser_scan_type=LaserScan,
+                camera_topic=camera_topic,
+                camera_info_topic=camera_info_topic,
+                lidar_topic=lidar_topic,
                 timeout_s=timeout_s,
+                max_delta_ms=_float_env(
+                    ROS2_NAV2_CAMERA_LIDAR_SYNC_MAX_DELTA_MS_ENV,
+                    750.0,
+                ),
             )
         except Exception as exc:
             # Capture is optional evidence: a subscription failure (invalid
@@ -1212,6 +1597,25 @@ def _capture_camera_frame(payload: dict[str, Any]) -> dict[str, Any]:
                 blocking_reasons=["camera_frame_not_received_before_timeout"],
                 ack_status="timeout",
             )
+        camera_observed_at = _sensor_message_observed_at(message)
+        camera_received_at = datetime.now(timezone.utc).isoformat()
+        lidar_received_at = datetime.now(timezone.utc).isoformat()
+        try:
+            lidar_map_transform = _observe_lidar_map_transform(
+                node=node,
+                tf_buffer=tf_buffer,
+                laser_scan=laser_scan,
+                timeout_s=min(timeout_s, 2.0),
+            )
+        except Exception:
+            lidar_map_transform = {
+                "lidar_map_tf_observed": False,
+                "lidar_map_tf_x_m": None,
+                "lidar_map_tf_y_m": None,
+                "lidar_map_tf_yaw_rad": None,
+                "lidar_map_tf_source_frame_id": "",
+                "lidar_map_tf_stamp": "",
+            }
         try:
             array = _image_message_to_rgb_array(message)
         except ValueError as exc:
@@ -1219,6 +1623,33 @@ def _capture_camera_frame(payload: dict[str, Any]) -> dict[str, Any]:
                 blocking_reasons=["camera_image_encoding_unsupported"],
             ) | {"error": str(exc)}
         frame_bytes = _write_camera_frame_png(array, output_path)
+        camera_fx = (
+            float(camera_info.k[0])
+            if camera_info is not None and len(camera_info.k) >= 6
+            else None
+        )
+        camera_cx = (
+            float(camera_info.k[2])
+            if camera_info is not None and len(camera_info.k) >= 6
+            else None
+        )
+        lidar_evidence = (
+            _laser_scan_candidate(
+                laser_scan,
+                max_range_m=_float_env(ROS2_NAV2_CAMERA_LIDAR_RANGE_ENV, 2.5),
+            )
+            if laser_scan is not None
+            else {
+                "lidar_observed_at": "",
+                "lidar_frame_id": "",
+                "lidar_obstacle_observed": False,
+                "lidar_horizontal_sector": "unknown",
+                "lidar_candidate_bearing_rad": None,
+                "lidar_candidate_range_m": None,
+                "target_candidate_id": "",
+                "lidar_evidence_ref": "",
+            }
+        )
         return _base_response(
             ack_status="accepted",
             ack_source=_bridge_source(),
@@ -1241,8 +1672,29 @@ def _capture_camera_frame(payload: dict[str, Any]) -> dict[str, Any]:
             camera_frame_width=int(message.width),
             camera_frame_height=int(message.height),
             camera_topic=camera_topic,
+            camera_lidar_observation={
+                "schema_version": "missionos_camera_lidar_observation.v1",
+                "camera_observed_at": camera_observed_at,
+                "camera_received_at": camera_received_at,
+                "camera_frame_id": str(message.header.frame_id or ""),
+                "camera_width": int(message.width),
+                "camera_fx": camera_fx,
+                "camera_cx": camera_cx,
+                "camera_info_observed": camera_info is not None,
+                "camera_info_topic": camera_info_topic,
+                "lidar_topic": lidar_topic,
+                "lidar_received_at": lidar_received_at,
+                **lidar_evidence,
+                **lidar_map_transform,
+                "evidence_only": True,
+                "approval_created": False,
+                "dispatch_authority_created": False,
+                "physical_execution_invoked": False,
+                "completion_claimed": False,
+            },
         )
     finally:
+        del tf_listener
         node.destroy_node()
         rclpy.shutdown()
 

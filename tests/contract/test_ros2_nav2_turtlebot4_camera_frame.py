@@ -10,13 +10,16 @@ paths are covered in test_ros2_nav2_dispatch_bridge.py.
 from __future__ import annotations
 
 from hashlib import sha256
+import sys
 from types import SimpleNamespace
 
 import numpy as np
 import pytest
 
 from scripts.ros2_nav2_turtlebot4_bridge import (
+    _closest_camera_lidar_pair,
     _image_message_to_rgb_array,
+    _laser_scan_candidate,
     _write_camera_frame_png,
 )
 
@@ -77,6 +80,206 @@ def test_unsupported_encoding_raises_value_error() -> None:
     message = _fake_image(width=1, height=1, encoding="yuv422", data=b"\x00\x00")
     with pytest.raises(ValueError, match="unsupported camera image encoding"):
         _image_message_to_rgb_array(message)
+
+
+def test_laser_scan_candidate_is_limited_to_camera_fov_and_source_hashed() -> None:
+    scan = SimpleNamespace(
+        angle_min=-1.0,
+        angle_increment=0.1,
+        range_min=0.12,
+        range_max=3.5,
+        ranges=[float("inf")] * 21,
+        header=SimpleNamespace(
+            stamp=SimpleNamespace(sec=10, nanosec=100_000_000),
+            frame_id="base_scan",
+        ),
+    )
+    scan.ranges[9:12] = [0.82, 0.80, 0.83]
+
+    candidate = _laser_scan_candidate(scan, max_range_m=2.5)
+
+    assert candidate["lidar_obstacle_observed"] is True
+    assert candidate["lidar_horizontal_sector"] == "center"
+    assert abs(candidate["lidar_candidate_bearing_rad"]) < 0.1
+    assert candidate["target_candidate_id"].startswith("lidar_candidate:")
+    assert candidate["lidar_evidence_ref"].startswith("laser_scan:")
+
+
+def test_laser_scan_outside_camera_fov_does_not_create_candidate() -> None:
+    scan = SimpleNamespace(
+        angle_min=-1.0,
+        angle_increment=0.1,
+        range_min=0.12,
+        range_max=3.5,
+        ranges=[0.5] + [float("inf")] * 20,
+        header=SimpleNamespace(
+            stamp=SimpleNamespace(sec=10, nanosec=0),
+            frame_id="base_scan",
+        ),
+    )
+
+    candidate = _laser_scan_candidate(scan, max_range_m=2.5)
+
+    assert candidate["lidar_obstacle_observed"] is False
+    assert candidate["target_candidate_id"] == ""
+
+
+def test_laser_scan_candidate_uses_full_contiguous_object_not_one_corner() -> None:
+    ranges = [float("inf")] * 41
+    for index in range(14, 27):
+        ranges[index] = 0.60 + abs(index - 14) * 0.01
+    scan = SimpleNamespace(
+        angle_min=-1.0,
+        angle_increment=0.05,
+        range_min=0.12,
+        range_max=3.5,
+        ranges=ranges,
+        header=SimpleNamespace(
+            stamp=SimpleNamespace(sec=10, nanosec=0),
+            frame_id="base_scan",
+        ),
+    )
+
+    candidate = _laser_scan_candidate(scan, max_range_m=2.5)
+
+    assert candidate["lidar_horizontal_sector"] == "center"
+    assert abs(candidate["lidar_candidate_bearing_rad"]) < 0.05
+
+
+def test_closest_camera_lidar_pair_uses_nearest_source_timestamps() -> None:
+    camera_early = SimpleNamespace(
+        header=SimpleNamespace(stamp=SimpleNamespace(sec=10, nanosec=0))
+    )
+    camera_close = SimpleNamespace(
+        header=SimpleNamespace(stamp=SimpleNamespace(sec=10, nanosec=90_000_000))
+    )
+    scan = SimpleNamespace(
+        header=SimpleNamespace(stamp=SimpleNamespace(sec=10, nanosec=100_000_000))
+    )
+
+    pair = _closest_camera_lidar_pair(
+        camera_messages=[camera_early, camera_close],
+        laser_scans=[scan],
+        max_delta_ms=750.0,
+    )
+
+    assert pair == (camera_close, scan)
+
+
+def test_closest_camera_lidar_pair_rejects_stale_or_unstamped_messages() -> None:
+    camera = SimpleNamespace(
+        header=SimpleNamespace(stamp=SimpleNamespace(sec=10, nanosec=0))
+    )
+    stale_scan = SimpleNamespace(
+        header=SimpleNamespace(stamp=SimpleNamespace(sec=11, nanosec=0))
+    )
+    unstamped_scan = SimpleNamespace(
+        header=SimpleNamespace(stamp=SimpleNamespace(sec=0, nanosec=0))
+    )
+
+    assert (
+        _closest_camera_lidar_pair(
+            camera_messages=[camera],
+            laser_scans=[stale_scan, unstamped_scan],
+            max_delta_ms=750.0,
+        )
+        is None
+    )
+
+
+def test_timestamped_lidar_map_transform_uses_scan_frame_and_stamp(
+    monkeypatch,
+) -> None:
+    """Projection must query map<-laser at the exact LaserScan source time."""
+
+    import types
+
+    from scripts.ros2_nav2_turtlebot4_bridge import _observe_lidar_map_transform
+
+    calls: list[tuple[str, str, object]] = []
+
+    class FakeTime:
+        def __init__(
+            self,
+            *,
+            seconds: int,
+            nanoseconds: int,
+            clock_type: object,
+        ) -> None:
+            self.seconds = seconds
+            self.nanoseconds = nanoseconds
+            self.clock_type = clock_type
+
+    class FakeBuffer:
+        def lookup_transform(self, target: str, source: str, stamp: object):
+            calls.append((target, source, stamp))
+            return SimpleNamespace(
+                transform=SimpleNamespace(
+                    translation=SimpleNamespace(x=1.2, y=-0.4),
+                    rotation=SimpleNamespace(x=0.0, y=0.0, z=0.0, w=1.0),
+                )
+            )
+
+    fake_rclpy = types.ModuleType("rclpy")
+    fake_rclpy.spin_once = lambda *args, **kwargs: None
+    fake_rclpy_time = types.ModuleType("rclpy.time")
+    fake_rclpy_time.Time = FakeTime
+    fake_rclpy_clock = types.ModuleType("rclpy.clock")
+    fake_rclpy_clock.ClockType = SimpleNamespace(ROS_TIME="ros_time")
+    monkeypatch.setitem(sys.modules, "rclpy", fake_rclpy)
+    monkeypatch.setitem(sys.modules, "rclpy.time", fake_rclpy_time)
+    monkeypatch.setitem(sys.modules, "rclpy.clock", fake_rclpy_clock)
+
+    scan = SimpleNamespace(
+        header=SimpleNamespace(
+            stamp=SimpleNamespace(sec=10, nanosec=100_000_000),
+            frame_id="base_scan",
+        )
+    )
+    result = _observe_lidar_map_transform(
+        node=object(),
+        tf_buffer=FakeBuffer(),
+        laser_scan=scan,
+    )
+
+    assert result["lidar_map_tf_observed"] is True
+    assert result["lidar_map_tf_source_frame_id"] == "base_scan"
+    assert result["lidar_map_tf_stamp"] == "1970-01-01T00:00:10.100000+00:00"
+    assert calls[0][:2] == ("map", "base_scan")
+    assert calls[0][2].seconds == 10
+    assert calls[0][2].nanoseconds == 100_000_000
+    assert calls[0][2].clock_type == "ros_time"
+
+
+def test_timestamped_lidar_map_transform_refuses_missing_scan_stamp(monkeypatch) -> None:
+    import types
+
+    from scripts.ros2_nav2_turtlebot4_bridge import _observe_lidar_map_transform
+
+    fake_rclpy = types.ModuleType("rclpy")
+    fake_rclpy.spin_once = lambda *args, **kwargs: None
+    fake_rclpy_time = types.ModuleType("rclpy.time")
+    fake_rclpy_time.Time = object
+    fake_rclpy_clock = types.ModuleType("rclpy.clock")
+    fake_rclpy_clock.ClockType = SimpleNamespace(ROS_TIME="ros_time")
+    monkeypatch.setitem(sys.modules, "rclpy", fake_rclpy)
+    monkeypatch.setitem(sys.modules, "rclpy.time", fake_rclpy_time)
+    monkeypatch.setitem(sys.modules, "rclpy.clock", fake_rclpy_clock)
+
+    scan = SimpleNamespace(
+        header=SimpleNamespace(
+            stamp=SimpleNamespace(sec=0, nanosec=0),
+            frame_id="base_scan",
+        )
+    )
+    result = _observe_lidar_map_transform(
+        node=object(),
+        tf_buffer=object(),
+        laser_scan=scan,
+    )
+
+    assert result["lidar_map_tf_observed"] is False
+    assert result["lidar_map_tf_stamp"] == ""
 
 
 def test_write_camera_frame_png_round_trips_and_hashes(tmp_path) -> None:
