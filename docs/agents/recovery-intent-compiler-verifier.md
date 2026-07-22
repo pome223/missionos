@@ -97,6 +97,34 @@ from the current task telemetry. Any mismatch blocks authority minting.
 Legacy v1 proposals remain readable for stored-history compatibility. They do
 not retroactively acquire v2 compiler or reachability claims.
 
+## Compound wind and obstacle transition
+
+Wind and a source-backed obstacle may be observed at the same time. If wind is
+above the Recovery policy limit, the Runtime Recovery Agent must keep the
+aircraft in the already observed safety HOLD and emit `operator_review`; it must
+not compile or dispatch an obstacle maneuver through an unsafe wind envelope.
+
+A later obstacle rejudgment is allowed only when
+`missionos_runtime_recovery_wind_safe_window.v1` verifies all of the following:
+
+- the same source-backed obstacle still requires local avoidance
+- the safety HOLD is observed and stable
+- every sample in the configured window is fresh and contains wind telemetry
+- the window spans the configured minimum duration without an excessive gap
+- the maximum observed wind remains at or below the Recovery policy limit
+
+The default minimum window is 30 seconds. Missing, stale, sparse, or
+above-limit observations fail closed. Sustained above-limit wind therefore
+remains in HOLD/operator review.
+
+When the window verifies, the runtime records
+`missionos_runtime_recovery_compound_hazard_transition.v1`, supersedes or
+retains the stale history of the old wind-blocked proposal, and opens exactly
+one new hosted-model judgment epoch for the remaining obstacle. This transition
+does not create approval, dispatch authority, progress, or physical-execution
+evidence. Any resulting obstacle proposal still requires fresh human approval
+and dispatch-time revalidation.
+
 ## Required invariants
 
 - A proposal is not approval.

@@ -2619,8 +2619,14 @@ def _inner_runtime_probe_script(
         WIND_DIRECTION_DEG={wind_direction_deg!r}
         WIND_GUST_MPS={wind_gust_mps!r}
         WIND_VARIANCE={wind_variance!r}
-        WIND_GUST_START_SECONDS=max(5.0, MONITOR_SECONDS*0.35)
-        WIND_GUST_DURATION_SECONDS=max(8.0, min(30.0, MONITOR_SECONDS*0.15))
+        # Start the bounded gust early enough that route-conflict supervision
+        # can observe it together with mid-route obstacles.  The former 35%
+        # start plus 30 s cap routinely ended after the first obstacle HOLD was
+        # requested but before the recovery snapshot was judged, making two
+        # independently materialized conditions look mutually exclusive.
+        WIND_GUST_START_SECONDS=max(5.0, MONITOR_SECONDS*0.25)
+        WIND_GUST_DURATION_SECONDS=max(8.0, min(60.0, MONITOR_SECONDS*0.15))
+        WIND_GUST_OBSTACLE_TRIGGER_DISTANCE_M=140.0
         WIND_TARGET_TOPIC='/world/default/wind'
         GZ_PHYSICAL_BATTERY_ENABLED={bool(gz_physical_battery_enabled)!r}
         GZ_BATTERY_MOTOR_COUPLING_REQUESTED={bool(gz_battery_motor_coupling_enabled)!r}
@@ -2631,6 +2637,14 @@ def _inner_runtime_probe_script(
         PAYLOAD_DETACH_TOPIC={PAYLOAD_DETACH_TOPIC!r}
         PAYLOAD_RELEASE_MIN_Z_DROP_M={float(PAYLOAD_RELEASE_MIN_Z_DROP_M)}
         OBSTACLE_MANIFEST=json.loads({obstacle_manifest_json!r})
+        WIND_GUST_TRIGGER_ON_OBSTACLE=bool(
+            WIND_GUST_MPS is not None
+            and any(
+                isinstance(item, dict)
+                and item.get('collision_enabled') is True
+                for item in (OBSTACLE_MANIFEST.get('obstacles') or [])
+            )
+        )
         RESUME_MISSION_SEQ_AFTER_OBSTACLE={resume_mission_seq_after_obstacle!r}
         RESUME_MISSION_SEQ_BY_OBSTACLE=json.loads({resume_mission_seq_by_obstacle_json!r})
         GAZEBO_OBSTACLE_APPLICATION_SCHEMA_VERSION={GAZEBO_OBSTACLE_APPLICATION_SCHEMA_VERSION!r}
@@ -4797,6 +4811,34 @@ def _inner_runtime_probe_script(
                         battery_remaining_dynamic=abs(float(battery_remaining_delta)) > 0.001
                 mission_current=parse_int(mission_result, 'seq_current')
                 mission_reached=parse_int(mission_result, 'seq_reached')
+                wind_trigger_x=parse_float(local, 'x')
+                wind_trigger_y=parse_float(local, 'y')
+                wind_trigger_obstacle_distance_m=None
+                if wind_trigger_x is not None and wind_trigger_y is not None:
+                    for obstacle in OBSTACLE_MANIFEST.get('obstacles') or []:
+                        if not isinstance(obstacle, dict) or obstacle.get('collision_enabled') is not True:
+                            continue
+                        obstacle_x=obstacle.get('x_m')
+                        obstacle_y=obstacle.get('y_m')
+                        if not isinstance(obstacle_x, (int, float)) or not isinstance(obstacle_y, (int, float)):
+                            continue
+                        distance=math.hypot(
+                            float(obstacle_x)-float(wind_trigger_x),
+                            float(obstacle_y)-float(wind_trigger_y),
+                        )
+                        if wind_trigger_obstacle_distance_m is None or distance < wind_trigger_obstacle_distance_m:
+                            wind_trigger_obstacle_distance_m=distance
+                wind_gust_trigger_ready=(
+                    (
+                        WIND_GUST_TRIGGER_ON_OBSTACLE
+                        and wind_trigger_obstacle_distance_m is not None
+                        and wind_trigger_obstacle_distance_m <= WIND_GUST_OBSTACLE_TRIGGER_DISTANCE_M
+                    )
+                    or (
+                        not WIND_GUST_TRIGGER_ON_OBSTACLE
+                        and elapsed >= WIND_GUST_START_SECONDS
+                    )
+                )
                 if (
                     wind_effect_requested
                     and not wind_mean_started
@@ -4826,7 +4868,7 @@ def _inner_runtime_probe_script(
                     and wind_mean_started
                     and WIND_GUST_MPS is not None
                     and not gust_started
-                    and elapsed >= WIND_GUST_START_SECONDS
+                    and wind_gust_trigger_ready
                 ):
                     wind_application_events.append(
                         publish_gazebo_wind(WIND_GUST_MPS, 'gust_window_start')
@@ -4935,6 +4977,12 @@ def _inner_runtime_probe_script(
                     'wind_takeoff_clearance_min_altitude_m': wind_takeoff_clearance_min_altitude_m if wind_effect_requested else None,
                     'wind_mean_application_elapsed_seconds': wind_mean_application_elapsed_seconds,
                     'wind_mean_application_altitude_m': wind_mean_application_altitude_m,
+                    'wind_gust_trigger_on_obstacle': bool(WIND_GUST_TRIGGER_ON_OBSTACLE),
+                    'wind_gust_trigger_obstacle_distance_m': (
+                        round(wind_trigger_obstacle_distance_m, 3)
+                        if wind_trigger_obstacle_distance_m is not None
+                        else None
+                    ),
                     'gazebo_obstacle_model_spawned': obstacle_application.get('gazebo_obstacle_model_spawned'),
                     'gazebo_obstacle_model_spawn_requested': obstacle_application.get('gazebo_obstacle_model_spawn_requested'),
                     'gazebo_obstacle_application_status': obstacle_application.get('application_status'),
@@ -5008,6 +5056,12 @@ def _inner_runtime_probe_script(
                     'wind_takeoff_clearance_min_altitude_m': wind_takeoff_clearance_min_altitude_m if wind_effect_requested else None,
                     'wind_mean_application_elapsed_seconds': wind_mean_application_elapsed_seconds,
                     'wind_mean_application_altitude_m': wind_mean_application_altitude_m,
+                    'wind_gust_trigger_on_obstacle': bool(WIND_GUST_TRIGGER_ON_OBSTACLE),
+                    'wind_gust_trigger_obstacle_distance_m': (
+                        round(wind_trigger_obstacle_distance_m, 3)
+                        if wind_trigger_obstacle_distance_m is not None
+                        else None
+                    ),
                     'gazebo_obstacle_model_spawned': obstacle_application.get('gazebo_obstacle_model_spawned'),
                     'gazebo_obstacle_model_spawn_requested': obstacle_application.get('gazebo_obstacle_model_spawn_requested'),
                     'gazebo_obstacle_application_status': obstacle_application.get('application_status'),
@@ -5872,6 +5926,12 @@ def _build_running_snapshot(
         "wind_mean_application_altitude_m": marker.get("wind_mean_application_altitude_m"),
         "wind_gust_window_start_seconds": marker.get("gust_window_start_seconds"),
         "wind_gust_window_duration_seconds": marker.get("gust_window_duration_seconds"),
+        "wind_gust_trigger_on_obstacle": marker.get(
+            "wind_gust_trigger_on_obstacle"
+        ),
+        "wind_gust_trigger_obstacle_distance_m": marker.get(
+            "wind_gust_trigger_obstacle_distance_m"
+        ),
         "gazebo_obstacle_model_spawned": marker.get("gazebo_obstacle_model_spawned"),
         "gazebo_obstacle_model_spawn_requested": marker.get(
             "gazebo_obstacle_model_spawn_requested"

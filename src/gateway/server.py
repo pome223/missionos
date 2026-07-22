@@ -3879,12 +3879,21 @@ def _runtime_recovery_proposal_revalidation(
         )
     except HTTPException:
         canonical_candidate_parameters = {}
+    comparable_candidate_parameters = dict(canonical_candidate_parameters)
+    if (
+        recovery_action == "avoid_obstacle"
+        and "source_obstacle_name" not in recovery_parameters
+    ):
+        comparable_candidate_parameters.pop("source_obstacle_name", None)
     parameters_match = bool(candidate_parameters) and (
-        canonical_candidate_parameters == dict(recovery_parameters)
+        comparable_candidate_parameters == dict(recovery_parameters)
     )
     evidence["candidate_parameters"] = canonical_candidate_parameters
     evidence["requested_parameters"] = dict(recovery_parameters)
     evidence["parameters_match"] = parameters_match
+    evidence["bound_parameters"] = (
+        canonical_candidate_parameters if parameters_match else {}
+    )
     if not parameters_match:
         reasons.append("runtime_recovery_proposal_parameters_mismatch")
 
@@ -3969,7 +3978,13 @@ def _runtime_recovery_proposal_revalidation(
             )
         except HTTPException:
             canonical_compiled_parameters = {}
-        if canonical_compiled_parameters != dict(recovery_parameters):
+        comparable_compiled_parameters = dict(canonical_compiled_parameters)
+        if (
+            recovery_action == "avoid_obstacle"
+            and "source_obstacle_name" not in recovery_parameters
+        ):
+            comparable_compiled_parameters.pop("source_obstacle_name", None)
+        if comparable_compiled_parameters != dict(recovery_parameters):
             reasons.append("runtime_recovery_compiled_parameters_mismatch")
 
     valid_until = _runtime_recovery_utc_datetime(proposal.get("valid_until"))
@@ -9075,6 +9090,21 @@ class GatewayServer:
                 if isinstance(proposal_revalidation_reasons, list)
                 else []
             )
+            # ``source_obstacle_name`` is proposal-bound evidence rather than
+            # an operator-entered flight coordinate.  After action and all
+            # dispatchable parameters match the fresh hashed proposal, carry
+            # that binding into the runner request so the resume verifier can
+            # select the correct obstacle/mission sequence.  Never enrich a
+            # blocked or non-applicable proposal.
+            proposal_bound_parameters = proposal_revalidation.get(
+                "bound_parameters"
+            )
+            if (
+                proposal_revalidation.get("validation_status") == "valid"
+                and isinstance(proposal_bound_parameters, Mapping)
+                and proposal_bound_parameters
+            ):
+                recovery_parameters = dict(proposal_bound_parameters)
             if (
                 recovery_parameters.get("alternate_dropoff") is True
                 and proposal_revalidation.get("validation_status") != "valid"

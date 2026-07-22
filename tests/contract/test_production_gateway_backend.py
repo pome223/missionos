@@ -3579,6 +3579,95 @@ def test_px4_fresh_bound_agent_recovery_proposal_can_queue_after_approval(
     ] == receipt
 
 
+def test_px4_fresh_obstacle_proposal_binds_source_name_after_cli_coordinate_match(
+    isolated_gateway_factory,
+    monkeypatch,
+) -> None:
+    from fastapi.testclient import TestClient
+
+    from src.gateway import server as gateway_server
+
+    gateway = isolated_gateway_factory()
+    task_id = "task_px4_obstacle_source_binding"
+    requested = {
+        "target_x_m": 30.0,
+        "target_y_m": 40.0,
+        "target_altitude_m": 45.0,
+    }
+    proposed = {
+        **requested,
+        "obstacle_avoidance_required": True,
+        "source_obstacle_name": "missionos_route_obstacle_50pct",
+    }
+    gateway.task_store.create(
+        task_id=task_id,
+        kind="mission_designer_sitl_execution",
+        title="PX4 obstacle source binding",
+        status="running",
+        artifacts={
+            "missionos_auto_mission_gui_dispatch_running_receipt": {
+                "operator_recovery_request_container_path": "/tmp/recovery.json",
+            },
+            "missionos_runtime_recovery_last_proposal": {
+                "schema_version": "missionos_runtime_recovery_proposal_evidence.v1",
+                "proposal_id": "runtime_recovery_proposal_source_bound",
+                "proposal_status": "awaiting_operator_approval",
+                "observed_at": "2026-07-22T00:00:00+00:00",
+                "valid_until": "9999-01-01T00:00:00+00:00",
+                "origin_position": {"local_x_m": 1.0, "local_y_m": 2.0},
+                "max_origin_drift_m": 5.0,
+                "runtime_recovery_agent_result": {
+                    "assessment": {
+                        "recovery_planner_tool_candidate": {
+                            "selected_bounded_action": "avoid_obstacle",
+                            "proposed_parameters": proposed,
+                        }
+                    }
+                },
+                "dispatch_authority_created": False,
+            },
+            "missionos_runtime_recovery_agent_live_bridge": {
+                "telemetry_snapshot": {
+                    "sample_index": 2,
+                    "position": {"local_x_m": 1.5, "local_y_m": 2.5},
+                    "telemetry": {"stale": False, "dropout": False},
+                }
+            },
+        },
+    )
+    queued: list[dict] = []
+
+    def queue_request(**kwargs):
+        queued.append(kwargs["request_payload"])
+        return {
+            "request_status": "queued",
+            "container_name": "missionos-px4-gazebo",
+            "container_path": kwargs["container_path"],
+            "bytes_written": 123,
+        }
+
+    monkeypatch.setattr(
+        gateway_server,
+        "_write_missionos_auto_operator_recovery_request_to_container",
+        queue_request,
+    )
+    response = TestClient(gateway.app).post(
+        "/px4-gazebo/mission-scenarios/recovery-dispatch",
+        json={
+            "task_id": task_id,
+            "recovery_action": "avoid_obstacle",
+            "recovery_parameters": requested,
+            "explicit_recovery_dispatch_approval": True,
+        },
+    )
+
+    assert response.status_code == 200, response.json()
+    assert queued[0]["recovery_parameters"] == proposed
+    revalidation = response.json()["summary"]["proposal_revalidation"]
+    assert revalidation["parameters_match"] is True
+    assert revalidation["bound_parameters"] == proposed
+
+
 def test_px4_recovery_dispatch_preserves_receipt_history(
     isolated_gateway_factory,
 ) -> None:

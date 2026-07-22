@@ -50,6 +50,10 @@ from src.runtime.missionos_auto_mission_runner import (
 from src.runtime.px4_active_runner_recovery_request import (
     queue_px4_active_runner_recovery_request,
 )
+from src.runtime.px4_gazebo_route.compound_hazard_transition import (
+    build_wind_safe_window_evidence,
+    proposal_trigger_reasons,
+)
 from src.runtime.px4_gazebo_route.recovery_intent_compiler import (
     verify_runtime_recovery_outcome,
 )
@@ -269,6 +273,10 @@ MISSIONOS_RUNTIME_RECOVERY_AGENT_WINDOW_SECONDS_ENV = (
 MISSIONOS_RUNTIME_RECOVERY_AGENT_BUCKET_SECONDS = 5.0
 MISSIONOS_RUNTIME_RECOVERY_AGENT_BUCKET_SECONDS_ENV = (
     "MISSIONOS_RUNTIME_RECOVERY_AGENT_BUCKET_SECONDS"
+)
+MISSIONOS_RUNTIME_RECOVERY_WIND_SAFE_WINDOW_SECONDS = 30.0
+MISSIONOS_RUNTIME_RECOVERY_WIND_SAFE_WINDOW_SECONDS_ENV = (
+    "MISSIONOS_RUNTIME_RECOVERY_WIND_SAFE_WINDOW_SECONDS"
 )
 MISSIONOS_RUNTIME_RECOVERY_PROPOSAL_MAX_AGE_SECONDS = 60.0
 MISSIONOS_RUNTIME_RECOVERY_PROPOSAL_MAX_AGE_SECONDS_ENV = (
@@ -3319,7 +3327,15 @@ def _runtime_recovery_agent_window_samples(
     samples.sort(key=_elapsed)
     latest_elapsed = _elapsed(samples[-1]) if samples else 0.0
     keep_after = latest_elapsed - max(0.001, float(window_s))
-    trimmed = [sample for sample in samples if _elapsed(sample) >= keep_after]
+    retained = [sample for sample in samples if _elapsed(sample) >= keep_after]
+    predecessors = [sample for sample in samples if _elapsed(sample) < keep_after]
+    # Retain one sample that brackets the exact window start. Real PX4 polls
+    # rarely land on an exact 30.000 second boundary; dropping the predecessor
+    # would leave a perpetual 29.x second span and make a verified safe window
+    # impossible even under continuous fresh observations. Consumers still
+    # enforce their maximum allowed sample gap, and the normal window summary
+    # independently trims to its exact boundary.
+    trimmed = ([predecessors[-1]] if predecessors else []) + retained
     return trimmed[-MISSIONOS_RUNTIME_RECOVERY_AGENT_MAX_WINDOW_SAMPLES:]
 
 
@@ -3549,6 +3565,13 @@ def _runtime_recovery_safety_hold_stable(
         current_elapsed is not None
         and previous_elapsed is not None
         and current_elapsed > previous_elapsed
+    )
+
+
+def _runtime_recovery_wind_safe_window_seconds() -> float:
+    return _runtime_recovery_agent_env_seconds(
+        MISSIONOS_RUNTIME_RECOVERY_WIND_SAFE_WINDOW_SECONDS_ENV,
+        MISSIONOS_RUNTIME_RECOVERY_WIND_SAFE_WINDOW_SECONDS,
     )
 
 
@@ -4615,7 +4638,9 @@ def _attach_auto_runtime_recovery_agent_proposal(
         else {}
     )
     last_proposal_obstacle_name = str(
-        last_compiled_parameters.get("source_obstacle_name") or ""
+        last_compiled_parameters.get("source_obstacle_name")
+        or last_proposal.get("source_obstacle_name")
+        or ""
     ).strip()
     if (
         matching_dispatch_authority_recent
@@ -4657,6 +4682,69 @@ def _attach_auto_runtime_recovery_agent_proposal(
         bridge=bridge,
         telemetry_snapshot=telemetry_snapshot,
     )
+    wind_safe_window_evidence = build_wind_safe_window_evidence(
+        window_samples,
+        recovery_policy=_runtime_recovery_policy(),
+        minimum_window_s=_runtime_recovery_wind_safe_window_seconds(),
+        maximum_sample_gap_s=max(hard_refresh_seconds, bucket_s) * 1.5,
+    )
+    proposal_reasons = proposal_trigger_reasons(last_proposal)
+    last_proposal_status = str(last_proposal.get("proposal_status") or "")
+    last_proposal_is_wind_blocked_review = bool(
+        last_proposal_result.get("runtime_status")
+        == "proposal_guardrail_passed"
+        and last_proposal_assessment.get("assessment_status")
+        == "proposal_guardrail_passed"
+        and proposal_selected_action == "operator_review"
+        and "wind_above_recovery_limit" in proposal_reasons
+        and last_proposal_status
+        in {"awaiting_operator_approval", "stale", "superseded"}
+    )
+    prior_compound_transition = artifacts.get(
+        "missionos_runtime_recovery_compound_hazard_transition"
+    )
+    prior_compound_transition = (
+        prior_compound_transition
+        if isinstance(prior_compound_transition, Mapping)
+        else {}
+    )
+    compound_transition_already_observed = bool(
+        last_proposal.get("proposal_id")
+        and prior_compound_transition.get("source_proposal_id")
+        == last_proposal.get("proposal_id")
+        and prior_compound_transition.get("transition_status")
+        == "wind_safe_window_observed"
+    )
+    compound_hazard_rejudgment_required = bool(
+        last_proposal_is_wind_blocked_review
+        and not compound_transition_already_observed
+        and bool(last_proposal_obstacle_name)
+        and last_proposal_obstacle_name == active_conflict_obstacle_name
+        and current_conflict.get("local_avoidance_required") is True
+        and safety_hold_observed
+        and safety_hold_stable
+        and wind_safe_window_evidence.get("safe_window_observed") is True
+    )
+    current_wind = telemetry_snapshot.get("wind")
+    current_wind = current_wind if isinstance(current_wind, Mapping) else {}
+    current_wind_speed_mps = _auto_snapshot_number(current_wind.get("speed_mps"))
+    recovery_wind_limit_mps = _auto_snapshot_number(
+        _runtime_recovery_policy().get("max_wind_speed_mps")
+    )
+    current_telemetry = telemetry_snapshot.get("telemetry")
+    current_telemetry = (
+        current_telemetry if isinstance(current_telemetry, Mapping) else {}
+    )
+    wind_safe_window_tracking_active = bool(
+        last_proposal_is_wind_blocked_review
+        and not compound_transition_already_observed
+        and current_conflict.get("local_avoidance_required") is True
+        and safety_hold_observed
+        and current_telemetry.get("stale") is not True
+        and current_wind_speed_mps is not None
+        and recovery_wind_limit_mps is not None
+        and current_wind_speed_mps <= recovery_wind_limit_mps
+    )
     proposal_materially_changed = bool(
         proposal_awaiting_approval
         and (
@@ -4666,8 +4754,13 @@ def _attach_auto_runtime_recovery_agent_proposal(
                 and not safety_hold_preserves_local_avoidance_proposal
             )
             or observation_state == "failed"
+            or compound_hazard_rejudgment_required
         )
     )
+    if compound_hazard_rejudgment_required and proposal_awaiting_approval:
+        proposal_lifecycle_reasons.append(
+            "runtime_recovery_wind_safe_window_observed"
+        )
     if proposal_materially_changed:
         proposal_lifecycle_reasons.append(
             "runtime_recovery_proposal_superseded_by_material_change"
@@ -4754,6 +4847,18 @@ def _attach_auto_runtime_recovery_agent_proposal(
         )
         refresh_status = "safety_hold_settling"
         next_decision_signature = prior_decision_signature
+    elif compound_hazard_rejudgment_required:
+        # The prior operator-review proposal was correct while wind exceeded
+        # the Recovery envelope.  A complete fresh-telemetry window now shows
+        # wind at or below the limit while the same source-backed obstacle
+        # remains.  Open one new judgment epoch; this does not approve or
+        # dispatch the resulting obstacle maneuver.
+        agent_invoked = True
+        result = _run_auto_runtime_recovery_agent_with_timeout(
+            telemetry_snapshot=telemetry_snapshot,
+            task_id=task_id,
+        )
+        refresh_status = "wind_recovered_obstacle_rejudgment"
     elif proposal_awaiting_approval:
         # The prior proposal is an immutable decision awaiting the human. Do
         # not ask the hosted model to propose the same action again while that
@@ -4950,6 +5055,7 @@ def _attach_auto_runtime_recovery_agent_proposal(
     if (
         not agent_invoked
         and not proposal_created
+        and not wind_safe_window_tracking_active
         and bridge.get("agent_refresh_status") == refresh_status
         and bridge.get("recovery_observation_state") == observation_state
         and bridge.get("recovery_decision_signature") == decision_signature
@@ -5034,6 +5140,27 @@ def _attach_auto_runtime_recovery_agent_proposal(
     replaced_artifacts: dict[str, Any] = {
         "missionos_runtime_recovery_agent_live_bridge": bridge_payload
     }
+    if compound_hazard_rejudgment_required:
+        transition_evidence = {
+            "schema_version": (
+                "missionos_runtime_recovery_compound_hazard_transition.v1"
+            ),
+            "transition_status": "wind_safe_window_observed",
+            "from_judgment": "operator_review",
+            "to_judgment_epoch": "source_backed_obstacle_rejudgment",
+            "source_proposal_id": last_proposal.get("proposal_id"),
+            "source_obstacle_name": active_conflict_obstacle_name or None,
+            "wind_safe_window": wind_safe_window_evidence,
+            "safety_hold_observed": safety_hold_observed,
+            "safety_hold_stable": safety_hold_stable,
+            "observed_at": observed_at,
+            "dispatch_authority_created": False,
+            "progress_counted": False,
+            "physical_execution_invoked": False,
+        }
+        replaced_artifacts[
+            "missionos_runtime_recovery_compound_hazard_transition"
+        ] = transition_evidence
     if attempt_evidence is not None:
         attempt_id = str(attempt_evidence.get("attempt_id") or "")
         if attempt_id:
@@ -5135,6 +5262,7 @@ def _attach_auto_runtime_recovery_agent_proposal(
                 _runtime_recovery_proposal_max_origin_drift_m()
             ),
             "sample_index": telemetry_snapshot.get("sample_index"),
+            "source_obstacle_name": active_conflict_obstacle_name or None,
             "decision_signature_version": RECOVERY_DECISION_SIGNATURE_VERSION,
             "recovery_decision_signature": decision_signature,
             "legacy_recovery_decision_signature": legacy_decision_signature,
@@ -5412,6 +5540,21 @@ def _persist_auto_live_telemetry_snapshot(
         ),
         "wind_mean_application_altitude_m": payload.get(
             "wind_mean_application_altitude_m"
+        ),
+        "wind_gust_active": payload.get("wind_gust_active"),
+        "wind_gust_started": payload.get("wind_gust_started"),
+        "wind_gust_ended": payload.get("wind_gust_ended"),
+        "wind_gust_window_start_seconds": payload.get(
+            "wind_gust_window_start_seconds"
+        ),
+        "wind_gust_window_duration_seconds": payload.get(
+            "wind_gust_window_duration_seconds"
+        ),
+        "wind_gust_trigger_on_obstacle": payload.get(
+            "wind_gust_trigger_on_obstacle"
+        ),
+        "wind_gust_trigger_obstacle_distance_m": payload.get(
+            "wind_gust_trigger_obstacle_distance_m"
         ),
         "gazebo_obstacle_model_spawned": payload.get(
             "gazebo_obstacle_model_spawned"
