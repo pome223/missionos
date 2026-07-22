@@ -7,9 +7,14 @@ container="${MISSIONOS_TB3_GATEWAY_CONTAINER:-missionos-turtlebot3-gateway}"
 host_port="${MISSIONOS_TB3_GATEWAY_PORT:-18791}"
 gateway_port="${MISSIONOS_TB3_GATEWAY_CONTAINER_PORT:-18791}"
 gateway_llm_backend="${MISSIONOS_LLM_BACKEND:-gemini}"
+gateway_model_id="${AGENT_MODEL:-gemini-3.1-flash-lite}"
 planner_backend="${MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_LLM_BACKEND:-gemini}"
 planner_model_id="${MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_MODEL_ID:-${MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_MODEL_ID:-gemini-3.1-flash-lite}}"
 planner_adk_enabled="${MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_ADK_ENABLED:-1}"
+vertex_location="${GOOGLE_CLOUD_LOCATION:-global}"
+if [ "${gateway_model_id}" = "gemini-3.1-flash-lite" ] || [ "${planner_model_id}" = "gemini-3.1-flash-lite" ]; then
+  vertex_location=global
+fi
 vertex_docker_args=()
 gemini_credential_status=not_required
 case "${GOOGLE_GENAI_USE_VERTEXAI:-false}" in
@@ -26,7 +31,7 @@ case "${GOOGLE_GENAI_USE_VERTEXAI:-false}" in
   vertex_docker_args+=(
     -e "GOOGLE_APPLICATION_CREDENTIALS=/run/missionos-secrets/google_adc.json"
     -e "GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}"
-    -e "GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION:-global}"
+    -e "GOOGLE_CLOUD_LOCATION=${vertex_location}"
     -v "${vertex_adc_path}:/run/missionos-secrets/google_adc.json:ro"
   )
   gemini_credential_status=vertex_adc_configured
@@ -69,6 +74,7 @@ docker run -d \
   -e "MISSIONOS_TURTLEBOT3_PERCEPTION_SIDECAR_COMMAND=${MISSIONOS_TURTLEBOT3_PERCEPTION_SIDECAR_COMMAND:-}" \
   -e "MISSIONOS_ALLOW_TURTLEBOT3_PERCEPTION_SIDECAR_COMMAND_OVERRIDE=${MISSIONOS_ALLOW_TURTLEBOT3_PERCEPTION_SIDECAR_COMMAND_OVERRIDE:-}" \
   -e "MISSIONOS_LLM_BACKEND=${gateway_llm_backend}" \
+  -e "AGENT_MODEL=${gateway_model_id}" \
   -e "GOOGLE_API_KEY=${GOOGLE_API_KEY:-}" \
   -e "GOOGLE_GENAI_USE_VERTEXAI=${GOOGLE_GENAI_USE_VERTEXAI:-false}" \
   -e "MISSIONOS_GEMINI_CREDENTIAL_STATUS=${gemini_credential_status}" \

@@ -705,6 +705,9 @@ def test_turtlebot3_gateway_launcher_preserves_runtime_import_and_failure_eviden
     assert "docker run -d" in launcher
     assert "docker run --rm -d" not in launcher
     assert 'GOOGLE_GENAI_USE_VERTEXAI=${GOOGLE_GENAI_USE_VERTEXAI:-false}' in launcher
+    assert 'gateway_model_id="${AGENT_MODEL:-gemini-3.1-flash-lite}"' in launcher
+    assert "vertex_location=global" in launcher
+    assert '-e "AGENT_MODEL=${gateway_model_id}"' in launcher
     assert "missing_deterministic_fallback" in launcher
     assert "MISSIONOS_GEMINI_CREDENTIAL_STATUS" in launcher
     assert (
