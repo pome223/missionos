@@ -818,7 +818,10 @@ def _planner_model_id() -> str:
 
 
 def _configure_google_adk_environment() -> None:
-    from src.agents.model_config import google_llm_backend_enabled
+    from src.agents.model_config import (
+        configure_google_vertex_location,
+        google_llm_backend_enabled,
+    )
 
     if not google_llm_backend_enabled(_AGENT_NAME):
         return
@@ -834,6 +837,7 @@ def _configure_google_adk_environment() -> None:
     if not os.environ.get("GOOGLE_GENAI_USE_VERTEXAI"):
         use_vertex = bool(getattr(settings, "google_genai_use_vertexai", False))
         os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "true" if use_vertex else "false"
+    configure_google_vertex_location(_planner_model_id(), agent_name=_AGENT_NAME)
 
 
 def _invoke_adk_response_text(
