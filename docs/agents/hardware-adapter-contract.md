@@ -1,5 +1,8 @@
 # Hardware Adapter Contract
 
+The generic registry, Gateway lifecycle, shared conformance suite, and Core
+verifier are specified in `docs/agents/backend-neutral-adapter-runtime.md`.
+
 This page defines the first MissionOS Real Hardware Bridge v1 contract slices.
 It adds hardware-adapter evidence contracts, projects the existing PX4 bench
 executor result into those contracts, and adds a bounded ROS2/Nav2 ground-robot

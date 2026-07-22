@@ -159,6 +159,7 @@ from src.gateway.missionos_milestone import ARTIFACT_ROOT, _relative
 from src.gateway.missionos_real_hardware_dispatch import (
     run_real_hardware_arm_disarm_dispatch,
 )
+from src.gateway.hardware_adapter_routes import build_hardware_adapter_router
 from src.runtime.px4_real_hardware_actuator_backend import (
     PX4RealHardwareActuatorError,
     build_px4_real_hardware_actuator_approval,
@@ -6336,6 +6337,13 @@ class GatewayServer:
 
     def _setup_routes(self):
         # --- health / root / protocol ---
+
+        self.app.include_router(
+            build_hardware_adapter_router(
+                task_store=self.task_store,
+                resolve_http_user_id=self._resolve_http_user_id,
+            )
+        )
 
         @self.app.get("/")
         async def root():

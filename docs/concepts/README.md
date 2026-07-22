@@ -48,6 +48,8 @@ was sent, what was observed, and what remains unproven.
 - Read `docs/concepts/recovery-delegation.md` for the opt-in two-phase
   reflex/deliberation recovery model, perception claims, shadow
   measurement, and action promotion.
+- Read `docs/concepts/backend-neutral-adapters.md` for the shared approval,
+  dispatch, observation, and verification flow across robot backends.
 - Read `docs/examples/README.md` for planned scenario writeups and their
   verification requirements.
 - Read `docs/agents/README.md` if you are an AI agent or maintainer changing the
