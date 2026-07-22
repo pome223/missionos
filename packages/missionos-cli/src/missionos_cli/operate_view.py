@@ -28,24 +28,7 @@ from .map_model import (
     _turtlebot_robot_label_from_artifacts,
     _turtlebot_robot_profile_from_artifacts,
 )
-
-
-_RECOVERY_RISK_LABELS = {
-    "battery_projected_insufficient_for_route": "battery insufficient to complete route",
-    "battery_projected_insufficient_for_return_home": "battery insufficient to return home",
-    "terrain_clearance_below_minimum": "terrain clearance below minimum",
-    "route_deviation_above_limit": "route deviation above limit",
-    "telemetry_stale": "telemetry is stale",
-    "obstacle_or_building_risk": "obstacle or building risk",
-}
-
-
-def _humanize_risks(risks: list[str]) -> str:
-    """Render proposal risks without depending on command/dispatch code."""
-
-    if not risks:
-        return "none"
-    return ", ".join(_RECOVERY_RISK_LABELS.get(risk, risk) for risk in risks)
+from .operate_commands import _humanize_risks
 
 
 def _projection_computed(projection: dict[str, Any]) -> bool:
