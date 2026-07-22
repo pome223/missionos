@@ -22,8 +22,8 @@ docs.
 | TurtleBot4 / other Nav2 simulator work | `ros2-nav2-turtlebot4-sim.md`, `claim-semantics.md`, `hardware-adapter-contract.md` |
 | NVIDIA Isaac Sim / Nova Carter work | `nvidia-isaac-nova-carter.md`, `claim-semantics.md`, `hardware-adapter-contract.md`, `publication-rules.md` |
 | Nvblox / perception evidence | `nvblox-perception-evidence.md`, `claim-semantics.md`, `artifact-taxonomy.md`, `publication-rules.md` |
-| Real hardware adapter or partner bridge | `hardware-adapter-contract.md`, `hardware-partner-integration-guide.md`, `publication-rules.md` |
-| Unitree / MuJoCo or other robot | `unitree-mujoco-environment.md`, `unitree-go2-real-hardware.md`, `hardware-adapter-contract.md` |
+| Real hardware adapter or partner bridge | `backend-neutral-adapter-runtime.md`, `hardware-adapter-contract.md`, `hardware-partner-integration-guide.md`, `publication-rules.md` |
+| Unitree / MuJoCo or other robot | `backend-neutral-adapter-runtime.md`, `unitree-mujoco-environment.md`, `unitree-go2-real-hardware.md`, `hardware-adapter-contract.md` |
 | Public docs, README, examples, or screenshots | `publication-rules.md`, `contracts.md`, `claim-semantics.md`, and the human `docs/concepts/boundaries.md` |
 | Local LLM backends or model config | `local-llm-backends.md`, `contracts.md` |
 | Anything that ships to the public snapshot | `publication-rules.md`, `e2e-verification.md`, `claim-semantics.md` |
@@ -57,6 +57,7 @@ When the map above is not enough, read the complete set:
 - `unitree-mujoco-environment.md`
 - `unitree-go2-real-hardware.md`
 - `recovery-intent-compiler-verifier.md`
+- `backend-neutral-adapter-runtime.md`
 
 ## Working Rule
 

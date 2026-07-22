@@ -90,6 +90,8 @@ class Ros2Nav2HardwareAdapterConfig(BaseModel):
     goal_pose: Nav2GoalPose | None = None
     execution_mode: HardwareExecutionMode = HardwareExecutionMode.LOOPBACK
     operator_approval_ref: str | None = None
+    preparation_ref: str | None = None
+    preparation_sha256: str | None = None
     approval_actor: str | None = None
     approval_timestamp: datetime | None = None
     opt_in: bool = False
@@ -157,6 +159,18 @@ def _completion_observed(payload: Mapping[str, Any]) -> bool:
 
 def _robot_motion_observed(*payloads: Mapping[str, Any]) -> bool:
     return any(payload.get("robot_motion_observed") is True for payload in payloads)
+
+
+def _runtime_state_observed(payload: Mapping[str, Any]) -> bool:
+    return any(
+        payload.get(key) is True
+        for key in (
+            "state_observed",
+            "pose_observed",
+            "localization_observed",
+            "robot_motion_observed",
+        )
+    )
 
 
 def _goal_parameters(goal: Nav2GoalPose | None) -> dict[str, Any]:
@@ -291,6 +305,7 @@ def build_ros2_nav2_hardware_operator_approval(
         raise ValueError("Nav2 adapter approval requires ref, actor, and timestamp")
     return HardwareOperatorApproval(
         operator_approval_ref=config.operator_approval_ref,
+        approved_adapter_id=ROS2_NAV2_HARDWARE_ADAPTER_ID,
         approval_actor=config.approval_actor,
         approval_timestamp=config.approval_timestamp,
         approved_action_ref=config.missionos_action_ref,
@@ -434,6 +449,7 @@ def build_ros2_nav2_hardware_adapter_evidence(
             else None
         ),
         ack_status=ack_status,
+        runtime_state_observed=_runtime_state_observed(state_result),
         runtime_progress_observed=progress_observed,
         completion_claimed=completion_claimed,
         completion_scope=(
@@ -530,6 +546,19 @@ class Ros2Nav2HardwareAdapter:
     def require_operator_approval(self) -> HardwareOperatorApproval:
         return build_ros2_nav2_hardware_operator_approval(config=self._config)
 
+    def validate_operator_approval(
+        self,
+        approval: HardwareOperatorApproval,
+    ) -> tuple[str, ...]:
+        reasons: list[str] = []
+        if approval.approved_adapter_id != ROS2_NAV2_HARDWARE_ADAPTER_ID:
+            reasons.append("operator_approval_adapter_mismatch")
+        if approval.approved_action_ref != self._config.missionos_action_ref:
+            reasons.append("operator_approval_action_ref_mismatch")
+        if approval.approved_action_kind is not self._config.action_kind:
+            reasons.append("operator_approval_action_kind_mismatch")
+        return tuple(reasons)
+
     def dispatch_approved_action(self) -> HardwareAdapterEvidence:
         preflight = self.preflight_check()
         blocking_reasons = list(preflight.blocking_reasons)
@@ -597,6 +626,19 @@ class Ros2Nav2HardwareAdapter:
 
     def collect_evidence(self) -> tuple[HardwareAdapterEvidence, ...]:
         return tuple(self._evidence)
+
+    def collect_runtime_invocation_evidence(self) -> tuple[dict[str, Any], ...]:
+        supplier = getattr(self._client, "collect_runtime_invocation_evidence", None)
+        if not callable(supplier):
+            return ()
+        binding = {
+            "missionos_adapter_id": ROS2_NAV2_HARDWARE_ADAPTER_ID,
+            "missionos_action_ref": self._config.missionos_action_ref,
+            "missionos_preparation_ref": self._config.preparation_ref,
+            "missionos_preparation_sha256": self._config.preparation_sha256,
+            "operator_approval_ref": self._config.operator_approval_ref,
+        }
+        return tuple({**dict(item), **binding} for item in supplier())
 
 
 __all__ = [

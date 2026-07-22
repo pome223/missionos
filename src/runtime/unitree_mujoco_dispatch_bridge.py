@@ -12,6 +12,8 @@ import json
 import os
 import shlex
 import subprocess
+from datetime import datetime, timezone
+from hashlib import sha256
 from typing import Any
 
 from src.runtime.unitree_hardware_adapter import UnitreeBoundedLocalMove
@@ -66,7 +68,7 @@ def _run_bridge(
     action: str,
     payload: dict[str, Any] | None = None,
     timeout_s: float = 5.0,
-) -> dict[str, Any]:
+) -> tuple[dict[str, Any], dict[str, Any]]:
     if not _truthy_env(UNITREE_MUJOCO_BOUNDED_DISPATCH_SMOKE_ENV):
         raise UnitreeMujocoBridgeError(
             "RUN_MISSIONOS_UNITREE_MUJOCO_BOUNDED_DISPATCH_SMOKE is not enabled"
@@ -80,6 +82,7 @@ def _run_bridge(
         "raw_velocity_allowed": False,
         "special_motion_allowed": False,
     }
+    started_at = datetime.now(timezone.utc)
     try:
         completed = subprocess.run(
             _bridge_command(),
@@ -98,6 +101,7 @@ def _run_bridge(
             f"Unitree MuJoCo bridge exited {completed.returncode}: "
             f"{completed.stderr.strip()}"
         )
+    completed_at = datetime.now(timezone.utc)
     try:
         response = json.loads(completed.stdout)
     except json.JSONDecodeError as exc:
@@ -119,7 +123,25 @@ def _run_bridge(
             raise UnitreeMujocoBridgeError(
                 f"Unitree MuJoCo bridge may not claim {field}"
             )
-    return response
+    stdout = completed.stdout
+    stderr = completed.stderr
+    invocation = {
+        "schema_version": "runtime_invocation_evidence.v1",
+        "invocation_kind": "subprocess",
+        "invocation_target": f"unitree_mujoco_bridge_command:{action}",
+        "invocation_started_at": started_at.isoformat(),
+        "invocation_completed_at": completed_at.isoformat(),
+        "invocation_stdout_sha256": sha256(stdout.encode("utf-8")).hexdigest(),
+        "invocation_stderr_sha256": sha256(stderr.encode("utf-8")).hexdigest(),
+        "invocation_stdout_preimage": stdout,
+        "invocation_stderr_preimage": stderr,
+        "invocation_exit_code": completed.returncode,
+        "bridge_command_sha256": sha256(
+            json.dumps(_bridge_command(), sort_keys=True).encode("utf-8")
+        ).hexdigest(),
+        "physical_execution_invoked": False,
+    }
+    return response, invocation
 
 
 class UnitreeMujocoBridgeCommandClient:
@@ -127,39 +149,47 @@ class UnitreeMujocoBridgeCommandClient:
 
     def __init__(self) -> None:
         self._responses: list[dict[str, Any]] = []
+        self._runtime_invocations: list[dict[str, Any]] = []
 
-    def _record_response(self, action: str, response: dict[str, Any]) -> dict[str, Any]:
+    def _invoke(
+        self,
+        *,
+        action: str,
+        payload: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        response, invocation = _run_bridge(action=action, payload=payload)
         self._responses.append({"action": action, **response})
+        self._runtime_invocations.append(invocation)
         return response
 
     def send_bounded_local_move(self, move: UnitreeBoundedLocalMove) -> dict[str, Any]:
         action = "bounded_local_move"
-        return self._record_response(
-            action,
-            _run_bridge(
-                action=action,
-                payload=move.model_dump(mode="json"),
-            ),
+        return self._invoke(
+            action=action,
+            payload=move.model_dump(mode="json"),
         )
 
     def hold(self) -> dict[str, Any]:
         action = "hold"
-        return self._record_response(action, _run_bridge(action=action))
+        return self._invoke(action=action)
 
     def safe_stop(self) -> dict[str, Any]:
         action = "safe_stop"
-        return self._record_response(action, _run_bridge(action=action))
+        return self._invoke(action=action)
 
     def read_state(self) -> dict[str, Any]:
         action = "read_state"
-        return self._record_response(action, _run_bridge(action=action))
+        return self._invoke(action=action)
 
     def read_progress(self) -> dict[str, Any]:
         action = "read_progress"
-        return self._record_response(action, _run_bridge(action=action))
+        return self._invoke(action=action)
 
     def collect_responses(self) -> tuple[dict[str, Any], ...]:
         return tuple(dict(response) for response in self._responses)
+
+    def collect_runtime_invocation_evidence(self) -> tuple[dict[str, Any], ...]:
+        return tuple(dict(item) for item in self._runtime_invocations)
 
 
 __all__ = [

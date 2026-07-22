@@ -108,7 +108,9 @@ class HardwareAdapter(Protocol):
 
     def propose_dispatch(self) -> HardwareDispatchCandidate: ...
 
-    def require_operator_approval(self) -> HardwareOperatorApproval: ...
+    def validate_operator_approval(
+        self, approval: HardwareOperatorApproval
+    ) -> tuple[str, ...]: ...
 
     def dispatch_approved_action(self) -> HardwareAdapterEvidence: ...
 
@@ -226,8 +228,12 @@ class HardwareOperatorApproval(BaseModel):
         HARDWARE_ADAPTER_OPERATOR_APPROVAL_SCHEMA_VERSION
     )
     operator_approval_ref: str
+    approved_adapter_id: str | None = None
+    approved_preparation_ref: str | None = None
+    approved_preparation_sha256: str | None = None
     approval_actor: str
     approval_timestamp: datetime
+    approval_expires_at: datetime | None = None
     approved_action_ref: str
     approved_action_kind: HardwareActionKind
     operator_approved: Literal[True] = True
@@ -254,6 +260,7 @@ class HardwareAdapterEvidence(BaseModel):
     command_ack_observed: bool
     ack_source: str | None = None
     ack_status: HardwareAckStatus = HardwareAckStatus.NOT_REQUESTED
+    runtime_state_observed: bool = False
     runtime_progress_observed: bool = False
     completion_claimed: bool = False
     completion_scope: Literal[
@@ -498,6 +505,7 @@ def build_px4_bench_hardware_operator_approval(
 
     return HardwareOperatorApproval(
         operator_approval_ref=operator_approval_ref,
+        approved_adapter_id=PX4_BENCH_HARDWARE_ADAPTER_ID,
         approval_actor=approval_actor,
         approval_timestamp=approval_timestamp,
         approved_action_ref=missionos_action_ref,
