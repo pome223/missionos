@@ -6,14 +6,30 @@ image="${MISSIONOS_TB3_DOCKER_IMAGE:-missionos-ros2-nav2-turtlebot3:local}"
 container="${MISSIONOS_TB3_GATEWAY_CONTAINER:-missionos-turtlebot3-gateway}"
 host_port="${MISSIONOS_TB3_GATEWAY_PORT:-18791}"
 gateway_port="${MISSIONOS_TB3_GATEWAY_CONTAINER_PORT:-18791}"
-gateway_llm_backend="${MISSIONOS_LLM_BACKEND:-gemini}"
-gateway_model_id="${AGENT_MODEL:-gemini-3.1-flash-lite}"
-planner_backend="${MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_LLM_BACKEND:-gemini}"
-planner_model_id="${MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_MODEL_ID:-${MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_MODEL_ID:-gemini-3.1-flash-lite}}"
+gateway_llm_backend="${MISSIONOS_LLM_BACKEND:-deepseek}"
+planner_backend="${MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_LLM_BACKEND:-deepseek}"
+if [ "$gateway_llm_backend" = deepseek ]; then
+  gateway_default_model_id=deepseek-v4-flash
+else
+  gateway_default_model_id=gemini-3.1-flash-lite
+fi
+if [ "$planner_backend" = deepseek ]; then
+  planner_default_model_id=deepseek-v4-flash
+else
+  planner_default_model_id=gemini-3.1-flash-lite
+fi
+gateway_model_id="${AGENT_MODEL:-${gateway_default_model_id}}"
+planner_model_id="${MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_MODEL_ID:-${MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_MODEL_ID:-${planner_default_model_id}}}"
 planner_adk_enabled="${MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_ADK_ENABLED:-1}"
 vertex_location="${GOOGLE_CLOUD_LOCATION:-global}"
 if [ "${gateway_model_id}" = "gemini-3.1-flash-lite" ] || [ "${planner_model_id}" = "gemini-3.1-flash-lite" ]; then
   vertex_location=global
+fi
+if { [ "$gateway_llm_backend" = deepseek ] || [ "$planner_backend" = deepseek ]; } \
+  && [ -z "${DEEPSEEK_API_KEY:-}" ]; then
+  printf '%s\n' \
+    'DeepSeek was selected but DEEPSEEK_API_KEY is not configured.' \
+    'LLM judgment will fail closed or use an explicitly labeled deterministic fallback; no DeepSeek invocation will be implied.' >&2
 fi
 vertex_docker_args=()
 gemini_credential_status=not_required
@@ -75,6 +91,9 @@ docker run -d \
   -e "MISSIONOS_ALLOW_TURTLEBOT3_PERCEPTION_SIDECAR_COMMAND_OVERRIDE=${MISSIONOS_ALLOW_TURTLEBOT3_PERCEPTION_SIDECAR_COMMAND_OVERRIDE:-}" \
   -e "MISSIONOS_LLM_BACKEND=${gateway_llm_backend}" \
   -e "AGENT_MODEL=${gateway_model_id}" \
+  -e DEEPSEEK_API_KEY \
+  -e "MISSIONOS_DEEPSEEK_MODEL=${MISSIONOS_DEEPSEEK_MODEL:-deepseek-v4-flash}" \
+  -e "MISSIONOS_DEEPSEEK_API_BASE=${MISSIONOS_DEEPSEEK_API_BASE:-https://api.deepseek.com}" \
   -e "GOOGLE_API_KEY=${GOOGLE_API_KEY:-}" \
   -e "GOOGLE_GENAI_USE_VERTEXAI=${GOOGLE_GENAI_USE_VERTEXAI:-false}" \
   -e "MISSIONOS_GEMINI_CREDENTIAL_STATUS=${gemini_credential_status}" \

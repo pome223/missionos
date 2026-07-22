@@ -125,7 +125,7 @@ def _gateway_env(
 ) -> dict[str, str]:
     env = os.environ.copy()
     env["MISSIONOS_GATEWAY_BACKEND"] = "production"
-    env.setdefault("MISSIONOS_LLM_BACKEND", "gemini")
+    env.setdefault("MISSIONOS_LLM_BACKEND", "deepseek")
     backend = env.get("MISSIONOS_LLM_BACKEND", "").strip().lower()
     default_adk_enabled = "0" if backend in _LLM_OFF_VALUES else "1"
     for key in _ADK_ENV_KEYS:

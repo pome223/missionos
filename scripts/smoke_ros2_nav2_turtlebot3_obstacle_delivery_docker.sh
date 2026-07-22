@@ -4,9 +4,14 @@ set -eo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 image="${MISSIONOS_TB3_DOCKER_IMAGE:-missionos-ros2-nav2-turtlebot3:local}"
 instruction="${MISSIONOS_CHAT_TURTLEBOT3_HOME_MISSION_INSTRUCTION:-TurtleBot3 indoor delivery route with obstacle avoidance}"
-gateway_llm_backend="${MISSIONOS_LLM_BACKEND:-gemini}"
-planner_backend="${MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_LLM_BACKEND:-gemini}"
-planner_model_id="${MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_MODEL_ID:-${MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_MODEL_ID:-gemini-3.1-flash-lite}}"
+gateway_llm_backend="${MISSIONOS_LLM_BACKEND:-deepseek}"
+planner_backend="${MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_LLM_BACKEND:-deepseek}"
+if [ "$planner_backend" = deepseek ]; then
+  planner_default_model_id=deepseek-v4-flash
+else
+  planner_default_model_id=gemini-3.1-flash-lite
+fi
+planner_model_id="${MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_MODEL_ID:-${MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_MODEL_ID:-${planner_default_model_id}}}"
 planner_adk_enabled="${MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_ADK_ENABLED:-1}"
 
 docker run --rm -i --shm-size=1g \

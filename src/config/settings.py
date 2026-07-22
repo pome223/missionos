@@ -25,7 +25,7 @@ class Settings(BaseSettings):
 
     # Agent settings
     agent_name: str = Field(default="boiled-claw", description="Agent name")
-    agent_model: str = Field(default="gemini-3.1-flash-lite", description="Default model")
+    agent_model: str = Field(default="deepseek-v4-flash", description="Default model")
 
     # Gateway settings
     gateway_host: str = Field(default="127.0.0.1", description="Gateway host")

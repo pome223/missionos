@@ -359,29 +359,28 @@ bounded `avoid_obstacle` recovery waypoint, and then either resume and complete
 the delivery route or stay recovered/blocked without claiming route completion.
 
 The Docker TurtleBot3 Gateway and smoke wrappers default the Gateway and the
-TurtleBot3 recovery planner to hosted Gemini. Load `GOOGLE_API_KEY` from an
-external env file before running the LLM-backed path:
+TurtleBot3 recovery planner to hosted DeepSeek V4. Load `DEEPSEEK_API_KEY` from
+an external env file before running the LLM-backed path:
 
 ```bash
-# Hosted Gemini path (default for the Gateway and TurtleBot3 recovery planner)
-export MISSIONOS_LLM_BACKEND=gemini
-export MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_LLM_BACKEND=gemini
-export MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_MODEL_ID=gemini-3.1-flash-lite
-export MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_ADK_ENABLED=1
-export MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_TIMEOUT_SECONDS=180
-```
-
-The same Docker boundary supports hosted DeepSeek through ADK LiteLLM. Keep the
-API key in an external `.env`; the wrapper passes it to the ephemeral container
-but never writes it into a task artifact or command log:
-
-```bash
+# Primary hosted DeepSeek path (default for Gateway and recovery planner)
 export MISSIONOS_LLM_BACKEND=deepseek
 export DEEPSEEK_API_KEY=...  # load from an untracked env file
 export MISSIONOS_DEEPSEEK_MODEL=deepseek-v4-flash
 export MISSIONOS_DEEPSEEK_API_BASE=https://api.deepseek.com
 export MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_LLM_BACKEND=deepseek
 export MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_MODEL_ID=deepseek-v4-flash
+export MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_ADK_ENABLED=1
+export MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_TIMEOUT_SECONDS=180
+```
+
+The same Docker boundary supports hosted Gemini explicitly:
+
+```bash
+export MISSIONOS_LLM_BACKEND=gemini
+export GOOGLE_CLOUD_LOCATION=global  # required for gemini-3.1-flash-lite on Vertex
+export MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_LLM_BACKEND=gemini
+export MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_MODEL_ID=gemini-3.1-flash-lite
 export MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_ADK_ENABLED=1
 ```
 

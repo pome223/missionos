@@ -166,12 +166,18 @@ missionos --help
 ```
 
 Configure LLM credentials before running the intended MissionOS experience.
-Gemini is the default hosted path; Ollama/Gemma is a local no-spend path that
-can be slower and may need longer timeouts.
+DeepSeek V4 is the primary hosted path and the default when the backend is
+unset. Gemini remains supported; Ollama/Gemma is a local no-spend path that can
+be slower and may need longer timeouts.
 
 ```
 cp .env.example .env
-# For the intended chat path, edit .env:
+# Primary hosted DeepSeek path through ADK LiteLLM:
+# MISSIONOS_LLM_BACKEND=deepseek
+# DEEPSEEK_API_KEY=...
+# MISSIONOS_DEEPSEEK_MODEL=deepseek-v4-flash
+#
+# Or hosted Gemini:
 # MISSIONOS_LLM_BACKEND=gemini
 # GOOGLE_API_KEY=...
 #
