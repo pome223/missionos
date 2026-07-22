@@ -3543,6 +3543,62 @@ def test_px4_fresh_bound_agent_recovery_proposal_can_queue_after_approval(
     assert stored_artifacts["missionos_runtime_recovery_proposals"][
         bound_proposal["proposal_id"]
     ] == bound_proposal
+    receipt = stored_artifacts["missionos_runtime_recovery_dispatch_receipt"]
+    assert receipt["dispatch_receipt_id"].startswith(
+        "runtime_recovery_dispatch_receipt_"
+    )
+    assert len(receipt["dispatch_receipt_sha256"]) == 64
+    assert stored_artifacts["missionos_runtime_recovery_dispatch_receipts"][
+        receipt["dispatch_receipt_id"]
+    ] == receipt
+
+
+def test_px4_recovery_dispatch_preserves_receipt_history(
+    isolated_gateway_factory,
+) -> None:
+    from fastapi.testclient import TestClient
+
+    gateway = isolated_gateway_factory()
+    task_id = "task_px4_recovery_receipt_history"
+    gateway.task_store.create(
+        task_id=task_id,
+        kind="mission_designer_sitl_execution",
+        title="PX4 recovery receipt history",
+        status="running",
+        artifacts={},
+    )
+    client = TestClient(gateway.app)
+
+    receipt_ids: list[str] = []
+    for recovery_action in ("land", "return_to_launch"):
+        response = client.post(
+            "/px4-gazebo/mission-scenarios/recovery-dispatch",
+            json={
+                "task_id": task_id,
+                "recovery_action": recovery_action,
+                "explicit_recovery_dispatch_approval": True,
+            },
+        )
+
+        assert response.status_code == 409, response.json()
+        receipt = response.json()[
+            "missionos_runtime_recovery_dispatch_receipt"
+        ]
+        assert receipt["dispatch_status"] == "blocked"
+        receipt_ids.append(receipt["dispatch_receipt_id"])
+
+    stored = gateway.task_store.get(task_id)
+    assert stored is not None
+    stored_artifacts = stored["artifacts"]
+    receipts = stored_artifacts[
+        "missionos_runtime_recovery_dispatch_receipts"
+    ]
+    assert len(receipts) == 2
+    assert set(receipts) == set(receipt_ids)
+    assert (
+        stored_artifacts["missionos_runtime_recovery_dispatch_receipt"]
+        == receipts[receipt_ids[-1]]
+    )
 
 
 def test_px4_recovery_proposal_origin_hash_mismatch_fails_closed() -> None:

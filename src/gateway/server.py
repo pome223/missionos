@@ -9182,7 +9182,7 @@ class GatewayServer:
                     else "blocked"
                 )
             runner_abort_observed = False
-            receipt = {
+            receipt_payload = {
                 "schema_version": "missionos_runtime_recovery_dispatch_receipt.v1",
                 "task_id": task_id,
                 "dispatch_status": dispatch_status,
@@ -9233,6 +9233,22 @@ class GatewayServer:
                 "hardware_target_allowed": False,
                 "observed_at": now.isoformat(),
             }
+            receipt_sha256 = hashlib.sha256(
+                json.dumps(
+                    receipt_payload,
+                    ensure_ascii=True,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    default=str,
+                ).encode("utf-8")
+            ).hexdigest()
+            receipt = {
+                **receipt_payload,
+                "dispatch_receipt_sha256": receipt_sha256,
+                "dispatch_receipt_id": (
+                    f"runtime_recovery_dispatch_receipt_{receipt_sha256[:12]}"
+                ),
+            }
             replaced_artifacts: dict[str, Any] = {
                 "missionos_runtime_recovery_dispatch_receipt": receipt,
                 "missionos_runtime_recovery_proposal_revalidation": (
@@ -9244,7 +9260,11 @@ class GatewayServer:
                     else {}
                 ),
             }
-            proposal_updates: dict[str, Any] = {}
+            artifact_updates: dict[str, Any] = {
+                "missionos_runtime_recovery_dispatch_receipts": {
+                    receipt["dispatch_receipt_id"]: receipt,
+                }
+            }
             if (
                 dispatch_status == "queued_for_active_runner"
                 and recovery_action in MISSIONOS_RUNTIME_RECOVERY_MANEUVER_ACTIONS
@@ -9276,7 +9296,7 @@ class GatewayServer:
                         "physical_execution_invoked": False,
                         "progress_counted": False,
                     }
-                    proposal_updates[
+                    artifact_updates[
                         "missionos_runtime_recovery_proposals"
                     ] = {active_proposal_id: bound_proposal}
                     replaced_artifacts[
@@ -9284,7 +9304,7 @@ class GatewayServer:
                     ] = bound_proposal
             updated_task = self.task_store.update(
                 task_id,
-                artifacts=proposal_updates or None,
+                artifacts=artifact_updates,
                 replace_artifacts=replaced_artifacts,
                 metadata={
                     "missionos_runtime_recovery_dispatch_status": dispatch_status,
