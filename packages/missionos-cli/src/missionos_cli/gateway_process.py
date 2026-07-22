@@ -59,7 +59,7 @@ def _dotenv_process_values(path: Path = Path(".env")) -> dict[str, str]:
 
 def _llm_backend_from_env(env: dict[str, str]) -> str:
     backend = (
-        (env.get("MISSIONOS_LLM_BACKEND") or env.get("BOILED_CLAW_LLM_BACKEND") or "gemini")
+        (env.get("MISSIONOS_LLM_BACKEND") or env.get("BOILED_CLAW_LLM_BACKEND") or "deepseek")
         .strip()
         .lower()
     )

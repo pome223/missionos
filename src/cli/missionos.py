@@ -409,7 +409,7 @@ def _llm_backend_from_env(env: dict[str, str]) -> str:
     backend = (
         env.get("MISSIONOS_LLM_BACKEND")
         or env.get("BOILED_CLAW_LLM_BACKEND")
-        or "gemini"
+        or "deepseek"
     ).strip().lower()
     if backend in {"google", "google_adk"}:
         return "gemini"
@@ -418,6 +418,10 @@ def _llm_backend_from_env(env: dict[str, str]) -> str:
 
 def _llm_backend_uses_google_credentials(env: dict[str, str]) -> bool:
     return _llm_backend_from_env(env) == "gemini"
+
+
+def _llm_backend_uses_deepseek_credentials(env: dict[str, str]) -> bool:
+    return _llm_backend_from_env(env) == "deepseek"
 
 
 def _llm_backend_default_adk_enabled(env: dict[str, str]) -> str:
@@ -438,6 +442,8 @@ def _apply_gateway_llm_env(env: dict[str, str]) -> None:
 
     if not _llm_backend_uses_google_credentials(env):
         env.pop("GOOGLE_API_KEY", None)
+    if not _llm_backend_uses_deepseek_credentials(env):
+        env.pop("DEEPSEEK_API_KEY", None)
 
 
 def _gateway_process_env(*, enable_live_sitl: bool = False) -> dict[str, str]:

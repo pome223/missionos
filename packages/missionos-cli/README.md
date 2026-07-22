@@ -27,5 +27,5 @@ python -m pip install -e packages/missionos-gateway -e packages/missionos-cli
 missionos --help
 ```
 
-Use `missionos chat --autostart` with `MISSIONOS_LLM_BACKEND=gemini` or
-`MISSIONOS_LLM_BACKEND=ollama` for the intended MissionOS chat path.
+Use `missionos chat --autostart` with the default DeepSeek V4 backend. Gemini
+and local Ollama remain explicit alternatives.

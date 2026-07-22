@@ -77,7 +77,7 @@ def get_model_config(name: str = "default") -> GeminiModelConfig:
 # ---------------------------------------------------------------------------
 # LLM バックエンド切替（Gemini / DeepSeek / Ollama / MLX）
 #
-# env で切り替える。既定は "gemini" なので未設定なら hosted LLM 優先。
+# env で切り替える。既定は "deepseek" なので未設定なら DeepSeek V4 優先。
 #   MISSIONOS_LLM_BACKEND      gemini | deepseek | ollama | mlx | off
 #   MISSIONOS_DEEPSEEK_MODEL   DeepSeek API model id
 #   MISSIONOS_DEEPSEEK_API_BASE DeepSeek OpenAI-compatible base URL
@@ -124,7 +124,7 @@ def _llm_backend(agent_name: str | None = None) -> str:
         _agent_env(agent_name, "LLM_BACKEND")
         or os.environ.get("MISSIONOS_LLM_BACKEND")
         or os.environ.get("BOILED_CLAW_LLM_BACKEND")
-        or "gemini"
+        or "deepseek"
     ).strip().lower()
     if backend in {"google", "google_adk"}:
         return "gemini"
@@ -220,6 +220,13 @@ def _agent_model_override(agent_name: str | None) -> str:
     return _agent_env(agent_name, "MODEL_ID") or _agent_env(agent_name, "MODEL")
 
 
+def _default_gemini_model_id() -> str:
+    configured = str(DEFAULT_MODEL.name or "").strip()
+    if not configured or configured == DEFAULT_DEEPSEEK_MODEL_ID:
+        return DEFAULT_GEMINI_MODEL_ID
+    return configured
+
+
 def agent_model_label(
     model_id: Optional[str] = None,
     *,
@@ -231,6 +238,12 @@ def agent_model_label(
         return _deepseek_model(agent_name)
     if backend in _LOCAL_BACKENDS:
         return _local_model_for_backend(backend, agent_name)
+    if backend == "gemini":
+        return (
+            _agent_model_override(agent_name)
+            or model_id
+            or _default_gemini_model_id()
+        ).strip()
     return (_agent_model_override(agent_name) or model_id or DEFAULT_MODEL.name).strip()
 
 
@@ -280,15 +293,15 @@ def resolve_agent_model(
 ) -> Any:
     """ADK Agent の `model=` に渡す値を解決する。
 
-    - backend=gemini（既定）: モデル名の文字列をそのまま返す（従来挙動）。
-    - backend=deepseek/ollama/mlx: `LiteLlm` インスタンスを返す
-      （要 google-adk[extensions]）。
+    - backend=deepseek（既定）/ollama/mlx: `LiteLlm` インスタンスを返す
+      （標準依存の google-adk[extensions] を使用）。
+    - backend=gemini: モデル名の文字列をそのまま返す。
 
     ローカル時に Gemini モデル名 (`model_id`) は無視され、env のローカルモデルを使う。
     """
     backend = _llm_backend(agent_name)
     if backend not in _LITELLM_BACKENDS:
-        return _agent_model_override(agent_name) or model_id or DEFAULT_MODEL.name
+        return agent_model_label(model_id, agent_name=agent_name)
 
     if backend == "deepseek":
         deepseek_model = _deepseek_model(agent_name)
@@ -308,7 +321,7 @@ def resolve_agent_model(
         raise RuntimeError(
             "LiteLLM バックエンド (MISSIONOS_LLM_BACKEND="
             f"{backend}) には google-adk[extensions] が必要です。"
-            "`python -m pip install -e '.[local-llm]'` を実行してください。"
+            "`python -m pip install -e .` で標準依存を再インストールしてください。"
         ) from exc
 
     kwargs: dict[str, Any] = {"api_base": api_base}

@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import tomllib
 import types
 
 import pytest
@@ -89,7 +90,7 @@ def test_live_sitl_gateway_env_selects_production_backend(monkeypatch, tmp_path)
     env = missionos_cli._gateway_process_env(enable_live_sitl=True)
 
     assert env["MISSIONOS_GATEWAY_BACKEND"] == "production"
-    assert env["MISSIONOS_LLM_BACKEND"] == "gemini"
+    assert env["MISSIONOS_LLM_BACKEND"] == "deepseek"
     for key in GATEWAY_LLM_ADK_ENV_KEYS:
         assert env[key] == "1"
     assert "GOOGLE_API_KEY" not in env
@@ -104,7 +105,7 @@ def test_planning_gateway_env_keeps_fixture_backend(monkeypatch, tmp_path) -> No
     monkeypatch.delenv("BOILED_CLAW_LLM_BACKEND", raising=False)
     env = missionos_cli._gateway_process_env(enable_live_sitl=False)
 
-    assert env["MISSIONOS_LLM_BACKEND"] == "gemini"
+    assert env["MISSIONOS_LLM_BACKEND"] == "deepseek"
     for key in GATEWAY_LLM_ADK_ENV_KEYS:
         assert env[key] == "1"
     assert "GOOGLE_API_KEY" not in env
@@ -213,7 +214,20 @@ def test_gateway_env_can_disable_llm_backend(monkeypatch) -> None:
     assert "GOOGLE_API_KEY" not in env
 
 
-def test_default_model_backend_uses_gemini(monkeypatch) -> None:
+def test_primary_deepseek_adapter_is_a_standard_dependency() -> None:
+    root = Path(__file__).resolve().parents[2]
+    project = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))[
+        "project"
+    ]
+
+    assert any(
+        dependency.startswith("google-adk[extensions]")
+        for dependency in project["dependencies"]
+    )
+    assert "local-llm" in project["optional-dependencies"]
+
+
+def test_default_model_backend_uses_deepseek(monkeypatch) -> None:
     from src.agents import model_config
 
     monkeypatch.delenv("MISSIONOS_LLM_BACKEND", raising=False)
@@ -221,17 +235,29 @@ def test_default_model_backend_uses_gemini(monkeypatch) -> None:
 
     assert model_config.llm_backend_disabled() is False
     assert model_config.local_llm_backend_enabled() is False
-    assert model_config.google_llm_backend_enabled() is True
+    assert model_config.google_llm_backend_enabled() is False
+    assert model_config.deepseek_llm_backend_enabled() is True
+    assert model_config.agent_model_label() == "deepseek-v4-flash"
 
 
-def test_default_agent_model_uses_stable_gemini_id(monkeypatch) -> None:
+def test_default_agent_model_uses_deepseek_id(monkeypatch) -> None:
     from src.config.settings import Settings
 
     monkeypatch.delenv("AGENT_MODEL", raising=False)
 
     settings = Settings(_env_file=None)
 
-    assert settings.agent_model == "gemini-3.1-flash-lite"
+    assert settings.agent_model == "deepseek-v4-flash"
+
+
+def test_explicit_gemini_backend_keeps_gemini_model_default(monkeypatch) -> None:
+    from src.agents import model_config
+
+    monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "gemini")
+    monkeypatch.delenv("MISSIONOS_DEEPSEEK_MODEL", raising=False)
+
+    assert model_config.agent_model_label() == "gemini-3.1-flash-lite"
+    assert model_config.resolve_agent_model() == "gemini-3.1-flash-lite"
 
 
 def test_stable_gemini_planners_normalize_vertex_location(monkeypatch) -> None:

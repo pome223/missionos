@@ -32,6 +32,24 @@ def test_turtlebot3_docker_smoke_forwards_deepseek_configuration() -> None:
     ).read_text(encoding="utf-8")
     assert "'google-adk[extensions]>=0.1.0'" in dockerfile
 
+    gateway_script = (
+        Path(__file__).resolve().parents[2]
+        / "scripts"
+        / "start_ros2_nav2_turtlebot3_gateway_docker.sh"
+    ).read_text(encoding="utf-8")
+    assert 'gateway_llm_backend="${MISSIONOS_LLM_BACKEND:-deepseek}"' in gateway_script
+    assert (
+        'planner_backend="${MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_'
+        'PLANNER_AGENT_LLM_BACKEND:-deepseek}"' in gateway_script
+    )
+    assert "-e DEEPSEEK_API_KEY" in gateway_script
+    assert '-e "DEEPSEEK_API_KEY=' not in gateway_script
+    assert "MISSIONOS_DEEPSEEK_MODEL" in gateway_script
+    assert "MISSIONOS_DEEPSEEK_API_BASE" in gateway_script
+    assert "gateway_default_model_id=gemini-3.1-flash-lite" in gateway_script
+    assert "planner_default_model_id=gemini-3.1-flash-lite" in gateway_script
+    assert re.search(r"\bsk-[A-Za-z0-9]{20,}\b", gateway_script) is None
+
 
 def test_recovery_smoke_approves_exact_pending_checkpoint(monkeypatch) -> None:
     captured: dict = {}
@@ -87,7 +105,7 @@ def test_recovery_smoke_approves_exact_pending_checkpoint(monkeypatch) -> None:
     )
 
 
-def test_turtlebot3_chat_smoke_gateway_env_defaults_to_gemini(monkeypatch) -> None:
+def test_turtlebot3_chat_smoke_gateway_env_defaults_to_deepseek(monkeypatch) -> None:
     monkeypatch.delenv("MISSIONOS_LLM_BACKEND", raising=False)
     for key in _ADK_ENV_KEYS:
         monkeypatch.delenv(key, raising=False)
@@ -95,7 +113,7 @@ def test_turtlebot3_chat_smoke_gateway_env_defaults_to_gemini(monkeypatch) -> No
     env = _gateway_env()
 
     assert env["MISSIONOS_GATEWAY_BACKEND"] == "production"
-    assert env["MISSIONOS_LLM_BACKEND"] == "gemini"
+    assert env["MISSIONOS_LLM_BACKEND"] == "deepseek"
     for key in _ADK_ENV_KEYS:
         assert env[key] == "1"
 

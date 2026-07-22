@@ -16,7 +16,7 @@ class ChannelConfig(BaseModel):
 
 class ModelConfig(BaseModel):
     """モデル設定"""
-    name: str = Field(..., description="Model name (e.g., gemini-3.1-flash-lite)")
+    name: str = Field(..., description="Model name (e.g., deepseek-v4-flash)")
     temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="Temperature")
     max_tokens: Optional[int] = Field(default=None, description="Max output tokens")
     top_p: Optional[float] = Field(default=None, ge=0.0, le=1.0, description="Top-p sampling")
@@ -50,6 +50,6 @@ class SecurityConfig(BaseModel):
 class AppConfig(BaseModel):
     """アプリケーション全体の設定"""
     channels: List[ChannelConfig] = Field(default_factory=list, description="Channel configs")
-    model: ModelConfig = Field(default_factory=lambda: ModelConfig(name="gemini-3.1-flash-lite"))
+    model: ModelConfig = Field(default_factory=lambda: ModelConfig(name="deepseek-v4-flash"))
     session: SessionConfig = Field(default_factory=SessionConfig)
     security: SecurityConfig = Field(default_factory=SecurityConfig)
