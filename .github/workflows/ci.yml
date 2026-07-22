@@ -69,3 +69,6 @@ jobs:
         env:
           PYTHONPATH: .:packages/missionos-cli/src:packages/missionos-gateway/src
         run: python -m pytest -q
+
+      - name: Verify smoke inventory coverage
+        run: python scripts/check_smoke_inventory.py --pretty

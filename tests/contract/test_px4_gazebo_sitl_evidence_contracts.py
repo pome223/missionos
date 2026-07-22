@@ -1,15 +1,14 @@
-#!/usr/bin/env python3
-"""Runtime smoke for SITL flight-fact dropoff verification (#411)."""
-
-from __future__ import annotations
+"""SITL evidence contracts migrated from standalone in-process wrappers."""
 
 from datetime import datetime, timezone
-import json
 from tempfile import TemporaryDirectory
 
 from src.runtime.delivery_mission_contract import build_delivery_mission_contract
 from src.runtime.px4_gazebo_bounded_simulation_runner import (
     build_px4_gazebo_bounded_simulation_run,
+)
+from src.runtime.px4_gazebo_delivery_world_profile import (
+    build_px4_gazebo_delivery_world_profile,
 )
 from src.runtime.px4_gazebo_mission_scenario_designer import (
     approve_px4_gazebo_mission_scenario_for_bounded_simulation,
@@ -23,21 +22,39 @@ from src.runtime.px4_gazebo_sitl_dropoff_verification import (
     build_px4_gazebo_sitl_payload_release_event,
     dropoff_evidence_from_sitl_verification,
 )
+from src.runtime.px4_gazebo_state_correlation import (
+    DEFAULT_GAZEBO_DELIVERY_ENTITY_NAME,
+    attach_px4_gazebo_delivery_state_readiness_artifacts,
+)
 from src.runtime.px4_gazebo_telemetry import (
     build_px4_gazebo_hil_review_gate_smoke,
     sanitize_px4_gazebo_telemetry_sample,
+)
+from src.runtime.px4_sitl_delivery_observation import (
+    build_px4_sitl_delivery_observation_from_logs,
 )
 from src.runtime.simulated_delivery_episode import (
     build_simulated_delivery_episode_from_bounded_gazebo_run,
 )
 from src.runtime.task_store import TaskStore
 
+
 NOW = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
+PX4_SITL_LOGS = "\n".join(
+    (
+        "INFO  [px4] startup script: /bin/sh etc/init.d-posix/rcS 0",
+        "INFO  [init] found model autostart file as SYS_AUTOSTART=10040",
+        "INFO  [init] SIH simulator",
+        "INFO  [simulator_sih] Simulation loop with 250 Hz",
+        "INFO  [logger] logger started (mode=all)",
+        "INFO  [px4] Startup script returned successfully",
+    )
+)
 
 
-def _contract():
+def _delivery_contract():
     return build_delivery_mission_contract(
-        mission_id="sitl-dropoff-verification-smoke",
+        mission_id="sitl-dropoff-verification-contract",
         pickup_location={
             "location_id": "pickup-pad-a",
             "latitude": 35.681236,
@@ -94,10 +111,10 @@ def _bounded_artifacts():
     request = approved["bounded_simulation_request"]
     telemetry = sanitize_px4_gazebo_telemetry_sample(
         {
-            "sample_id": "sitl-dropoff-verification-smoke",
+            "sample_id": "sitl-dropoff-verification-contract",
             "source": {
                 "source_kind": "gz_sim_harmonic_stdout_log",
-                "source_id": "sitl-dropoff-verification-smoke",
+                "source_id": "sitl-dropoff-verification-contract",
                 "vehicle_id": "x500_0",
             },
             "captured_at": "2026-01-01T12:00:00Z",
@@ -115,9 +132,6 @@ def _bounded_artifacts():
         freshness_threshold_seconds=60.0,
         now=NOW,
     )
-    telemetry_ref = f"px4_gazebo_sanitized_telemetry:{telemetry.telemetry_id}"
-    hil_ref = f"hil_telemetry_review:{hil_gate['hil_telemetry_review']['review_id']}"
-    gate_ref = f"autonomy_gate_result:{hil_gate['autonomy_gate_result']['gate_id']}"
     run = build_px4_gazebo_bounded_simulation_run(
         request=request,
         started_at=NOW,
@@ -128,9 +142,15 @@ def _bounded_artifacts():
         telemetry_captured_at=NOW,
         max_telemetry_age_seconds=300,
         telemetry_age_seconds=0.0,
-        telemetry_refs=(telemetry_ref,),
-        gate_ref=gate_ref,
-        hil_review_ref=hil_ref,
+        telemetry_refs=(f"px4_gazebo_sanitized_telemetry:{telemetry.telemetry_id}",),
+        gate_ref=(
+            "autonomy_gate_result:"
+            f"{hil_gate['autonomy_gate_result']['gate_id']}"
+        ),
+        hil_review_ref=(
+            "hil_telemetry_review:"
+            f"{hil_gate['hil_telemetry_review']['review_id']}"
+        ),
         provenance={
             "world_name": "empty",
             "world_ref": "/tmp/empty.sdf",
@@ -144,7 +164,9 @@ def _bounded_artifacts():
     return request, telemetry, hil_gate, run
 
 
-def _release_and_fact():
+def test_dropoff_flight_fact_verifies_without_granting_execution() -> None:
+    contract = _delivery_contract()
+    request, telemetry, hil_gate, run = _bounded_artifacts()
     release = build_px4_gazebo_sitl_payload_release_event(
         event_source="gazebo_gripper_detach_event",
         payload_id="pkg-sitl-dropoff",
@@ -166,26 +188,19 @@ def _release_and_fact():
         mission_item_reached_seq=2,
         mission_item_reached_at=NOW,
         payload_release_event=release,
-        telemetry_ref="px4_gazebo_sitl_telemetry_sample:dropoff-smoke",
+        telemetry_ref="px4_gazebo_sitl_telemetry_sample:dropoff-contract",
         sitl_mission_upload_receipt_ref=(
-            "px4_gazebo_sitl_mission_upload_receipt:smoke"
+            "px4_gazebo_sitl_mission_upload_receipt:contract"
         ),
         observed_at=NOW,
     )
-    return release, fact
-
-
-def main() -> int:
-    contract = _contract()
-    request, telemetry, hil_gate, run = _bounded_artifacts()
-    release, fact = _release_and_fact()
     verification = build_px4_gazebo_sitl_dropoff_verification(
         delivery_mission_contract=contract,
         dropoff_flight_fact=fact,
         payload_release_event=release,
         now=NOW,
     )
-    episode_artifacts = build_simulated_delivery_episode_from_bounded_gazebo_run(
+    episode = build_simulated_delivery_episode_from_bounded_gazebo_run(
         delivery_mission_contract=contract,
         bounded_simulation_request=request,
         bounded_simulation_run=run,
@@ -194,17 +209,17 @@ def main() -> int:
         autonomy_gate_result=hil_gate["autonomy_gate_result"],
         dropoff_evidence=dropoff_evidence_from_sitl_verification(verification),
         now=NOW,
-    )
-    episode = episode_artifacts["simulated_delivery_episode"]
+    )["simulated_delivery_episode"]
+
     with TemporaryDirectory() as tmp:
         store = TaskStore(f"{tmp}/tasks.db")
         task = store.create(
             kind="control_supervisor",
-            title="SITL dropoff verification smoke",
+            title="SITL dropoff verification contract",
             status="running",
             artifacts={"existing": {"kept": True}},
         )
-        attached = attach_px4_gazebo_sitl_dropoff_verification(
+        attach_px4_gazebo_sitl_dropoff_verification(
             task_id=task["task_id"],
             delivery_mission_contract=contract,
             dropoff_flight_fact=fact,
@@ -213,64 +228,58 @@ def main() -> int:
             task_store_factory=lambda: store,
         )
         stored = store.get(task["task_id"])
-    summary = {
-        "schema_version": verification.schema_version,
-        "verification_status": verification.status.value,
-        "dropoff_verified": verification.dropoff_verified,
-        "pose_within_dropoff_zone": verification.pose_within_dropoff_zone,
-        "altitude_within_tolerance": verification.altitude_within_tolerance,
-        "mission_item_reached": verification.mission_item_reached,
-        "payload_release_observed": verification.payload_release_observed,
-        "release_position_within_dropoff_zone": (
-            verification.release_position_within_dropoff_zone
-        ),
-        "release_altitude_within_tolerance": (
-            verification.release_altitude_within_tolerance
-        ),
-        "release_within_mission_item_time_window": (
-            verification.release_within_mission_item_time_window
-        ),
-        "payload_release_observed_at": (
-            verification.payload_release_observed_at.isoformat()
-            if verification.payload_release_observed_at
-            else None
-        ),
-        "episode_dropoff_verified": episode.dropoff_verified,
-        "episode_phase_history": [phase.value for phase in episode.phase_history],
-        "physical_execution_invoked": verification.physical_execution_invoked,
-        "hardware_target_allowed": verification.hardware_target_allowed,
-        "gazebo_entity_mutation_performed": (
-            verification.gazebo_entity_mutation_performed
-        ),
-        "task_status": stored["status"] if stored else None,
-        "existing_artifact_kept": bool(
-            stored and stored["artifacts"]["existing"]["kept"]
-        ),
-        "attached_schema_version": attached["px4_gazebo_sitl_dropoff_verification"][
-            "schema_version"
-        ],
-    }
-    print(json.dumps(summary, indent=2, sort_keys=True))
-    print("SMOKE_SUMMARY_JSON " + json.dumps(summary, sort_keys=True))
-    assert (
-        summary["schema_version"] == PX4_GAZEBO_SITL_DROPOFF_VERIFICATION_SCHEMA_VERSION
+
+    assert verification.schema_version == PX4_GAZEBO_SITL_DROPOFF_VERIFICATION_SCHEMA_VERSION
+    assert verification.status.value == "verified"
+    assert verification.dropoff_verified is True
+    assert verification.payload_release_observed is True
+    assert verification.release_position_within_dropoff_zone is True
+    assert verification.release_altitude_within_tolerance is True
+    assert verification.release_within_mission_item_time_window is True
+    assert episode.dropoff_verified is True
+    assert "dropoff_verified" in {phase.value for phase in episode.phase_history}
+    assert verification.physical_execution_invoked is False
+    assert verification.hardware_target_allowed is False
+    assert verification.gazebo_entity_mutation_performed is False
+    assert stored is not None and stored["status"] == "running"
+    assert stored["artifacts"]["existing"] == {"kept": True}
+
+
+def test_state_correlation_readiness_is_read_only_and_preserves_task() -> None:
+    profile = build_px4_gazebo_delivery_world_profile(now=NOW)
+    observation = build_px4_sitl_delivery_observation_from_logs(
+        PX4_SITL_LOGS,
+        captured_at=NOW,
+        profile=profile,
     )
-    assert summary["verification_status"] == "verified"
-    assert summary["dropoff_verified"] is True
-    assert summary["episode_dropoff_verified"] is True
-    assert "dropoff_verified" in summary["episode_phase_history"]
-    assert summary["payload_release_observed"] is True
-    assert summary["release_position_within_dropoff_zone"] is True
-    assert summary["release_altitude_within_tolerance"] is True
-    assert summary["release_within_mission_item_time_window"] is True
-    assert summary["payload_release_observed_at"] == NOW.isoformat()
-    assert summary["physical_execution_invoked"] is False
-    assert summary["hardware_target_allowed"] is False
-    assert summary["gazebo_entity_mutation_performed"] is False
-    assert summary["task_status"] == "running"
-    assert summary["existing_artifact_kept"] is True
-    return 0
+    with TemporaryDirectory() as tmp:
+        store = TaskStore(f"{tmp}/tasks.db")
+        task = store.create(
+            kind="px4_gazebo_delivery_state_readiness",
+            title="state correlation contract",
+            status="running",
+        )
+        artifacts = attach_px4_gazebo_delivery_state_readiness_artifacts(
+            task["task_id"],
+            profile=profile,
+            observation=observation,
+            gazebo_pose={
+                "entity_name": DEFAULT_GAZEBO_DELIVERY_ENTITY_NAME,
+                "x": -10.0,
+                "y": 0.0,
+                "z": 0.05,
+            },
+            checked_at=NOW,
+            task_store_factory=lambda: store,
+        )
+        stored = store.get(task["task_id"])
 
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+    correlation = artifacts["px4_gazebo_delivery_state_correlation"]
+    readiness = artifacts["px4_sitl_delivery_readiness_diagnostics"]
+    assert stored is not None and stored["status"] == "running"
+    assert correlation["state_correlation_status"] == "ready"
+    assert readiness["readiness_status"] == "ready"
+    assert correlation["mavlink_dispatch_allowed"] is False
+    assert readiness["ros_dispatch_allowed"] is False
+    assert readiness["hardware_target_allowed"] is False
+    assert readiness["physical_execution_invoked"] is False

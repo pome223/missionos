@@ -1,0 +1,102 @@
+schema_version = "missionos.smoke_inventory.v1"
+
+[categories.production_runtime_harness]
+action = "retain_then_rename_or_move"
+files = [
+  "smoke_missionos_auto_mission_full_runtime_probe.py",
+  "smoke_missionos_chat_turtlebot3_home_mission.py",
+  "smoke_px4_gazebo_horizontal_route_delivery.py",
+  "smoke_px4_gazebo_mission_scenario_designer.py",
+  "smoke_turtlebot3_sim_process_runner.py",
+]
+
+[categories.ci_runtime_contract]
+action = "retain_as_canonical_ci_boundary"
+files = [
+  "smoke_backend_neutral_unitree_gateway.py",
+  "smoke_mission_designer_envelope_violation_advisory.py",
+  "smoke_missionos_real_hardware_arm_disarm_route.py",
+  "smoke_px4_gazebo_mission_designer_execute_sitl_gateway.py",
+  "smoke_px4_gazebo_mission_designer_prompt_to_sitl_e2e.py",
+  "smoke_px4_gazebo_mission_designer_sitl_delivery_epic_exit.py",
+  "smoke_px4_gazebo_mission_designer_sitl_delivery_epic_exit_no_preexisting_summary.py",
+  "smoke_px4_gazebo_mission_designer_sitl_dropoff_verification.py",
+  "smoke_px4_gazebo_mission_designer_sitl_flight_evidence.py",
+  "smoke_px4_gazebo_mission_designer_sitl_payload_release_observation.py",
+]
+
+[categories.artifact_contract_candidate]
+action = "migrate_to_shared_pytest_before_removal"
+files = []
+
+[categories.environment_readiness_probe]
+action = "retain_until_adapter_or_environment_is_retired"
+files = [
+  "smoke_flight_readiness_package.py",
+  "smoke_px4_real_hardware_readonly_observation.py",
+  "smoke_ros2_nav2_turtlebot3_bounded_dispatch.py",
+  "smoke_ros2_nav2_turtlebot4_bounded_dispatch.py",
+  "smoke_unitree_go2_real_hardware_readiness.py",
+  "smoke_unitree_mujoco_bounded_dispatch.py",
+  "smoke_unitree_mujoco_environment_readiness.py",
+  "smoke_unitree_mujoco_process_launch.py",
+  "smoke_unitree_mujoco_scene_observation.py",
+  "smoke_unitree_mujoco_sdk2_bridge_observation.py",
+  "smoke_unitree_mujoco_sport_client_probe.py",
+  "smoke_unitree_sdk2_import_readiness.py",
+]
+
+[categories.opt_in_live_integration]
+action = "retain_opt_in_and_never_run_by_default"
+files = [
+  "smoke_advisory_mission_memory_epic_exit.py",
+  "smoke_delivery_recovery_battery_low_real_sitl.py",
+  "smoke_delivery_recovery_payload_release_retry_real_sitl.py",
+  "smoke_digital_twin_arm_takeoff_observed.py",
+  "smoke_digital_twin_gazebo_world_launch.py",
+  "smoke_digital_twin_px4_mission_upload.py",
+  "smoke_digital_twin_waypoint_reach_observed.py",
+  "smoke_digital_twin_world_bound_sitl_e2e.py",
+  "smoke_gazebo_delivery_simulation.py",
+  "smoke_gazebo_entity_state_delivery.py",
+  "smoke_gazebo_in_loop_delivery.py",
+  "smoke_gazebo_telemetry.py",
+  "smoke_gz_sim_delivery_world.py",
+  "smoke_gz_sim_telemetry.py",
+  "smoke_headless_gazebo_telemetry.py",
+  "smoke_mission_designer_control_ui.py",
+  "smoke_mission_designer_sitl_evidence_chain_control_ui.py",
+  "smoke_missionos_auto_mission_phase3b_live_boundary.py",
+  "smoke_missionos_chat_nova_carter_live_proof.py",
+  "smoke_mock_simulator_docker.py",
+  "smoke_px4_gazebo_actual_emergency_dispatch.py",
+  "smoke_px4_gazebo_bounded_simulation_runner.py",
+  "smoke_px4_gazebo_collision_contact_event.py",
+  "smoke_px4_gazebo_command_driven_phase.py",
+  "smoke_px4_gazebo_coupled_delivery.py",
+  "smoke_px4_gazebo_emergency_ack_transport.py",
+  "smoke_px4_gazebo_emergency_dispatch.py",
+  "smoke_px4_gazebo_mission_designer_prepare_sitl_gateway.py",
+  "smoke_px4_gazebo_multi_drone_materialization.py",
+  "smoke_px4_gazebo_multi_waypoint_delivery.py",
+  "smoke_px4_gazebo_route_delivery_completion.py",
+  "smoke_px4_gazebo_route_dispatcher.py",
+  "smoke_px4_gazebo_sensor_visible_actor.py",
+  "smoke_px4_gazebo_sitl_e2e_delivery.py",
+  "smoke_px4_gazebo_sitl_mission_upload.py",
+  "smoke_px4_gazebo_sitl_telemetry.py",
+  "smoke_px4_gazebo_sitl_telemetry_run.py",
+  "smoke_px4_gazebo_telemetry_docker.py",
+  "smoke_px4_live_mavlink_dispatcher.py",
+  "smoke_px4_mavlink_ack_state_route.py",
+  "smoke_px4_real_hardware_actuator_arm_disarm.py",
+  "smoke_px4_real_hardware_serial_observation.py",
+  "smoke_px4_real_mavlink_transport.py",
+  "smoke_px4_sitl_mavlink_status.py",
+  "smoke_px4_sitl_telemetry.py",
+  "smoke_ros_gazebo_topic_observation.py",
+  "smoke_source_backed_target_dem.py",
+  "smoke_source_backed_weather.py",
+  "smoke_source_backed_world_bound_sitl_e2e.py",
+  "smoke_turtlebot3_live_perception_binding.py",
+]

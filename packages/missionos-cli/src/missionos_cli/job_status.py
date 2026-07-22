@@ -1227,7 +1227,10 @@ def _job_operator_summary(task_payload: dict[str, Any]) -> list[str]:
         else _status_text(reached_seq)
     )
     current_text = f"current seq {_status_text(current_seq)}" if current_seq is not None else "-"
-    battery_text = _battery_display_text(snapshot=snapshot, artifacts=artifacts)
+    battery_text = _battery_display_text(
+        snapshot=snapshot,
+        artifacts=artifacts,
+    )
     terrain_clearance_m = _as_float(snapshot.get("terrain_clearance_m"))
     terrain_clearance_target_m = _as_float(snapshot.get("terrain_clearance_target_m"))
     terrain_clearance_margin_m = _as_float(snapshot.get("terrain_clearance_margin_m"))
@@ -1240,10 +1243,10 @@ def _job_operator_summary(task_payload: dict[str, Any]) -> list[str]:
         replay.get("actual_sitl_flight_evidence_observed"),
     )
     dropoff_verified = _first_present(
-        metadata.get("dropoff_verified"),
+        dropoff_gate.get("dropoff_verified"),
         sitl_delivery_gate.get("dropoff_verified"),
         replay.get("dropoff_verified"),
-        dropoff_gate.get("dropoff_verified"),
+        metadata.get("dropoff_verified"),
     )
     sitl_delivery = _first_present(
         metadata.get("sitl_delivery_claimed"),
@@ -1360,7 +1363,9 @@ def _job_operator_summary(task_payload: dict[str, Any]) -> list[str]:
     evidence_line = (
         "Evidence: "
         f"actual_sitl_flight={_format_flag(actual_sitl_evidence, default='pending')}; "
-        f"dropoff_verified={_format_flag(dropoff_verified, default='pending')}; "
+        "dropoff_verified="
+        f"{_format_flag(dropoff_verified, default='pending')}"
+        " (phase5 monitor-telemetry gate); "
         f"sitl_delivery={_format_flag(sitl_delivery, default='pending')}"
     )
     lines = [
@@ -1630,7 +1635,7 @@ def _timeline_detail_text(event: dict[str, Any]) -> str:
             f"{_format_duration(snapshot.get('elapsed_seconds'))}; "
             f"{_format_distance(snapshot.get('progress_m'))}; "
             f"wp {_status_text(reached)}/{_status_text(total)}; "
-            f"battery {_format_percent(snapshot.get('battery_remaining_percent'))}"
+            f"battery {_battery_display_text(snapshot=snapshot, artifacts=artifacts)}"
         )
     failed = artifacts.get("missionos_auto_mission_gui_dispatch_failed_receipt")
     if isinstance(failed, dict):
