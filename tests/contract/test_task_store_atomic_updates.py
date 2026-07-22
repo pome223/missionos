@@ -35,6 +35,51 @@ def test_concurrent_artifact_updates_do_not_erase_each_other(tmp_path) -> None:
         assert final["artifacts"][f"writer_{index}"] == {"observed": True}
 
 
+def test_update_can_replace_one_current_state_artifact_without_stale_merge(
+    tmp_path,
+) -> None:
+    store = TaskStore(str(tmp_path / "tasks.db"))
+    task = store.create(
+        task_id="task_replace_current_state_artifact",
+        kind="contract_test",
+        title="Replace current-state artifact",
+        artifacts={
+            "sibling_evidence": {"preserved": True},
+            "live_bridge": {
+                "bridge_status": "proposal_attached",
+                "runtime_result": {
+                    "runtime_status": "proposal_guardrail_passed",
+                    "assessment": {"selected_bounded_action": "adjust_altitude"},
+                },
+            },
+        },
+    )
+
+    store.update(
+        task["task_id"],
+        replace_artifacts={
+            "live_bridge": {
+                "bridge_status": "proposal_skipped",
+                "runtime_result": {
+                    "runtime_status": "proposal_skipped",
+                    "assessment": {},
+                },
+            }
+        },
+    )
+
+    final = store.get(task["task_id"])
+    assert final is not None
+    assert final["artifacts"]["sibling_evidence"] == {"preserved": True}
+    assert final["artifacts"]["live_bridge"] == {
+        "bridge_status": "proposal_skipped",
+        "runtime_result": {
+            "runtime_status": "proposal_skipped",
+            "assessment": {},
+        },
+    }
+
+
 def test_one_shot_artifact_claim_has_exactly_one_winner(tmp_path) -> None:
     store = TaskStore(str(tmp_path / "tasks.db"))
     task = store.create(
