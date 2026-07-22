@@ -278,6 +278,7 @@ MISSIONOS_RUNTIME_RECOVERY_WIND_SAFE_WINDOW_SECONDS = 30.0
 MISSIONOS_RUNTIME_RECOVERY_WIND_SAFE_WINDOW_SECONDS_ENV = (
     "MISSIONOS_RUNTIME_RECOVERY_WIND_SAFE_WINDOW_SECONDS"
 )
+MISSIONOS_RUNTIME_RECOVERY_REJUDGMENT_RETRY_BACKOFF_SECONDS = 5.0
 MISSIONOS_RUNTIME_RECOVERY_PROPOSAL_MAX_AGE_SECONDS = 60.0
 MISSIONOS_RUNTIME_RECOVERY_PROPOSAL_MAX_AGE_SECONDS_ENV = (
     "MISSIONOS_RUNTIME_RECOVERY_PROPOSAL_MAX_AGE_SECONDS"
@@ -4715,9 +4716,52 @@ def _attach_auto_runtime_recovery_agent_proposal(
         and prior_compound_transition.get("transition_status")
         == "wind_safe_window_observed"
     )
+    current_elapsed_seconds = _auto_snapshot_number(
+        telemetry_snapshot.get("elapsed_seconds")
+    )
+    retry_after_elapsed_seconds = _auto_snapshot_number(
+        prior_compound_transition.get("retry_after_elapsed_seconds")
+    )
+    try:
+        prior_transition_observed_at = _utc(
+            datetime.fromisoformat(
+                str(prior_compound_transition.get("observed_at") or "").replace(
+                    "Z", "+00:00"
+                )
+            )
+        )
+    except ValueError:
+        prior_transition_observed_at = None
+    retry_backoff_seconds = _auto_snapshot_number(
+        prior_compound_transition.get("retry_backoff_seconds")
+    )
+    retry_backoff_seconds = (
+        retry_backoff_seconds
+        if retry_backoff_seconds is not None
+        else MISSIONOS_RUNTIME_RECOVERY_REJUDGMENT_RETRY_BACKOFF_SECONDS
+    )
+    compound_rejudgment_retry_ready = bool(
+        prior_compound_transition.get("transition_status")
+        != "rejudgment_failed_retryable"
+        or prior_compound_transition.get("source_proposal_id")
+        != last_proposal.get("proposal_id")
+        or (
+            current_elapsed_seconds is not None
+            and retry_after_elapsed_seconds is not None
+            and current_elapsed_seconds >= retry_after_elapsed_seconds
+        )
+        or (
+            prior_transition_observed_at is not None
+            and (
+                observed_at_datetime - prior_transition_observed_at
+            ).total_seconds()
+            >= retry_backoff_seconds
+        )
+    )
     compound_hazard_rejudgment_required = bool(
         last_proposal_is_wind_blocked_review
         and not compound_transition_already_observed
+        and compound_rejudgment_retry_ready
         and bool(last_proposal_obstacle_name)
         and last_proposal_obstacle_name == active_conflict_obstacle_name
         and current_conflict.get("local_avoidance_required") is True
@@ -4754,13 +4798,8 @@ def _attach_auto_runtime_recovery_agent_proposal(
                 and not safety_hold_preserves_local_avoidance_proposal
             )
             or observation_state == "failed"
-            or compound_hazard_rejudgment_required
         )
     )
-    if compound_hazard_rejudgment_required and proposal_awaiting_approval:
-        proposal_lifecycle_reasons.append(
-            "runtime_recovery_wind_safe_window_observed"
-        )
     if proposal_materially_changed:
         proposal_lifecycle_reasons.append(
             "runtime_recovery_proposal_superseded_by_material_change"
@@ -5004,6 +5043,22 @@ def _attach_auto_runtime_recovery_agent_proposal(
         (agent_invoked or proposal_recompiled)
         and runtime_status == "proposal_guardrail_passed"
     )
+    if (
+        compound_hazard_rejudgment_required
+        and proposal_created
+        and proposal_awaiting_approval
+    ):
+        proposal_lifecycle_reasons.extend(
+            [
+                "runtime_recovery_wind_safe_window_observed",
+                "runtime_recovery_proposal_superseded_by_material_change",
+            ]
+        )
+        proposal_lifecycle_reasons = list(
+            dict.fromkeys(proposal_lifecycle_reasons)
+        )
+        proposal_invalidated = True
+        proposal_awaiting_approval = False
     last_agent_invoked_elapsed_seconds = bridge.get(
         "last_agent_invoked_elapsed_seconds"
     )
@@ -5140,7 +5195,7 @@ def _attach_auto_runtime_recovery_agent_proposal(
     replaced_artifacts: dict[str, Any] = {
         "missionos_runtime_recovery_agent_live_bridge": bridge_payload
     }
-    if compound_hazard_rejudgment_required:
+    if compound_hazard_rejudgment_required and proposal_created:
         transition_evidence = {
             "schema_version": (
                 "missionos_runtime_recovery_compound_hazard_transition.v1"
@@ -5153,6 +5208,43 @@ def _attach_auto_runtime_recovery_agent_proposal(
             "wind_safe_window": wind_safe_window_evidence,
             "safety_hold_observed": safety_hold_observed,
             "safety_hold_stable": safety_hold_stable,
+            "observed_at": observed_at,
+            "dispatch_authority_created": False,
+            "progress_counted": False,
+            "physical_execution_invoked": False,
+        }
+        replaced_artifacts[
+            "missionos_runtime_recovery_compound_hazard_transition"
+        ] = transition_evidence
+    elif compound_hazard_rejudgment_required:
+        transition_evidence = {
+            "schema_version": (
+                "missionos_runtime_recovery_compound_hazard_transition.v1"
+            ),
+            "transition_status": "rejudgment_failed_retryable",
+            "from_judgment": "operator_review",
+            "to_judgment_epoch": "source_backed_obstacle_rejudgment",
+            "source_proposal_id": last_proposal.get("proposal_id"),
+            "source_obstacle_name": active_conflict_obstacle_name or None,
+            "wind_safe_window": wind_safe_window_evidence,
+            "rejudgment_runtime_status": runtime_status,
+            "retry_backoff_seconds": (
+                MISSIONOS_RUNTIME_RECOVERY_REJUDGMENT_RETRY_BACKOFF_SECONDS
+            ),
+            "retry_after_elapsed_seconds": (
+                current_elapsed_seconds
+                + MISSIONOS_RUNTIME_RECOVERY_REJUDGMENT_RETRY_BACKOFF_SECONDS
+                if current_elapsed_seconds is not None
+                else None
+            ),
+            "retry_after": (
+                observed_at_datetime
+                + timedelta(
+                    seconds=(
+                        MISSIONOS_RUNTIME_RECOVERY_REJUDGMENT_RETRY_BACKOFF_SECONDS
+                    )
+                )
+            ).isoformat(),
             "observed_at": observed_at,
             "dispatch_authority_created": False,
             "progress_counted": False,
@@ -5263,6 +5355,21 @@ def _attach_auto_runtime_recovery_agent_proposal(
             ),
             "sample_index": telemetry_snapshot.get("sample_index"),
             "source_obstacle_name": active_conflict_obstacle_name or None,
+            "compound_hazard_transition": (
+                {
+                    "schema_version": (
+                        "missionos_runtime_recovery_compound_hazard_transition.v1"
+                    ),
+                    "transition_status": "wind_safe_window_observed",
+                    "source_proposal_id": last_proposal.get("proposal_id"),
+                    "source_obstacle_name": (
+                        active_conflict_obstacle_name or None
+                    ),
+                    "wind_safe_window": wind_safe_window_evidence,
+                }
+                if compound_hazard_rejudgment_required
+                else None
+            ),
             "decision_signature_version": RECOVERY_DECISION_SIGNATURE_VERSION,
             "recovery_decision_signature": decision_signature,
             "legacy_recovery_decision_signature": legacy_decision_signature,

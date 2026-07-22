@@ -98,6 +98,9 @@ from src.runtime.px4_gazebo_route.recovery_intent_compiler import (
     recovery_artifact_hash_matches,
     verify_runtime_recovery_reachability,
 )
+from src.runtime.px4_gazebo_route.compound_hazard_transition import (
+    build_wind_safe_window_evidence,
+)
 from src.intelligence.missionos_chief_planner_tools import (
     enrich_coordinate_route_with_terrain_profile,
     extract_operator_requested_route_overrides,
@@ -4010,6 +4013,154 @@ def _runtime_recovery_proposal_revalidation(
             if isinstance(policy_snapshot, Mapping)
             else {}
         )
+        if recovery_action == "avoid_obstacle":
+            wind_limit_mps = _recovery_float_or_none(
+                policy_snapshot.get("max_wind_speed_mps")
+            )
+            current_wind = current_telemetry.get("wind")
+            current_wind = (
+                current_wind if isinstance(current_wind, Mapping) else {}
+            )
+            current_wind_speed_mps = _recovery_float_or_none(
+                current_wind.get("speed_mps")
+            )
+            if current_wind_speed_mps is None:
+                current_wind_speed_mps = _recovery_float_or_none(
+                    current_wind.get("observed_speed_mps")
+                )
+            if current_wind_speed_mps is None:
+                current_wind_speed_mps = _recovery_float_or_none(
+                    current_telemetry.get("wind_speed_mps")
+                )
+            evidence["dispatch_wind_limit_mps"] = wind_limit_mps
+            evidence["dispatch_current_wind_speed_mps"] = (
+                current_wind_speed_mps
+            )
+            if wind_limit_mps is None:
+                reasons.append("runtime_recovery_dispatch_wind_limit_missing")
+            if current_wind_speed_mps is None:
+                reasons.append(
+                    "runtime_recovery_dispatch_current_wind_observation_missing"
+                )
+            elif (
+                wind_limit_mps is not None
+                and current_wind_speed_mps > wind_limit_mps
+            ):
+                reasons.append(
+                    "runtime_recovery_dispatch_current_wind_above_limit"
+                )
+
+            compound_transition = proposal.get("compound_hazard_transition")
+            compound_transition = (
+                dict(compound_transition)
+                if isinstance(compound_transition, Mapping)
+                else {}
+            )
+            evidence["compound_hazard_transition_required"] = bool(
+                compound_transition
+            )
+            if compound_transition:
+                stored_safe_window = compound_transition.get("wind_safe_window")
+                stored_safe_window = (
+                    dict(stored_safe_window)
+                    if isinstance(stored_safe_window, Mapping)
+                    else {}
+                )
+                bridge = artifacts.get(
+                    "missionos_runtime_recovery_agent_live_bridge"
+                )
+                bridge = bridge if isinstance(bridge, Mapping) else {}
+                window_samples = bridge.get("recovery_window_samples")
+                window_samples = (
+                    list(window_samples)
+                    if isinstance(window_samples, list)
+                    else []
+                )
+                minimum_window_s = _recovery_float_or_none(
+                    stored_safe_window.get("minimum_window_s")
+                )
+                maximum_sample_gap_s = _recovery_float_or_none(
+                    stored_safe_window.get("maximum_sample_gap_s")
+                )
+                if (
+                    compound_transition.get("transition_status")
+                    != "wind_safe_window_observed"
+                    or stored_safe_window.get("safe_window_observed") is not True
+                    or minimum_window_s is None
+                    or maximum_sample_gap_s is None
+                ):
+                    reasons.append(
+                        "runtime_recovery_dispatch_safe_window_evidence_invalid"
+                    )
+                else:
+                    dispatch_safe_window = build_wind_safe_window_evidence(
+                        window_samples,
+                        recovery_policy=policy_snapshot,
+                        minimum_window_s=minimum_window_s,
+                        maximum_sample_gap_s=maximum_sample_gap_s,
+                    )
+                    evidence["dispatch_safe_window_revalidation"] = (
+                        dispatch_safe_window
+                    )
+                    if dispatch_safe_window.get("safe_window_observed") is not True:
+                        reasons.extend(
+                            str(item)
+                            for item in dispatch_safe_window.get(
+                                "blocking_reasons"
+                            )
+                            or []
+                        )
+                        reasons.append(
+                            "runtime_recovery_dispatch_safe_window_unverified"
+                        )
+
+            obstacle = current_telemetry.get("obstacle")
+            obstacle = obstacle if isinstance(obstacle, Mapping) else {}
+            conflict = obstacle.get("conflict_assessment")
+            conflict = conflict if isinstance(conflict, Mapping) else {}
+            nearest_obstacle = conflict.get("nearest_obstacle")
+            nearest_obstacle = (
+                nearest_obstacle
+                if isinstance(nearest_obstacle, Mapping)
+                else {}
+            )
+            candidate_source = str(
+                canonical_candidate_parameters.get("source_obstacle_name")
+                or ""
+            ).strip()
+            compiled_source = str(
+                canonical_compiled_parameters.get("source_obstacle_name")
+                or ""
+            ).strip()
+            proposal_source = str(
+                proposal.get("source_obstacle_name") or ""
+            ).strip()
+            current_source = str(
+                nearest_obstacle.get("obstacle_name") or ""
+            ).strip()
+            source_bindings = {
+                "candidate": candidate_source,
+                "compiled": compiled_source,
+                "proposal": proposal_source,
+                "current_nearest_obstacle": current_source,
+            }
+            evidence["dispatch_obstacle_source_bindings"] = source_bindings
+            evidence["dispatch_local_avoidance_required"] = (
+                conflict.get("local_avoidance_required") is True
+            )
+            if conflict.get("local_avoidance_required") is not True:
+                reasons.append(
+                    "runtime_recovery_dispatch_local_avoidance_not_required"
+                )
+            if not all(source_bindings.values()):
+                reasons.append(
+                    "runtime_recovery_dispatch_obstacle_source_missing"
+                )
+            elif len(set(source_bindings.values())) != 1:
+                reasons.append(
+                    "runtime_recovery_dispatch_obstacle_source_mismatch"
+                )
+
         dispatch_reachability = verify_runtime_recovery_reachability(
             compilation=intent_compilation,
             telemetry_snapshot=current_telemetry,

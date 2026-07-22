@@ -3668,6 +3668,159 @@ def test_px4_fresh_obstacle_proposal_binds_source_name_after_cli_coordinate_matc
     assert revalidation["bound_parameters"] == proposed
 
 
+def test_px4_v2_dispatch_rejects_changed_nearest_obstacle(
+    isolated_gateway_factory,
+    monkeypatch,
+) -> None:
+    from fastapi.testclient import TestClient
+
+    from src.gateway import server as gateway_server
+    from src.runtime.px4_gazebo_route.recovery_intent_compiler import (
+        build_runtime_recovery_intent,
+        compile_runtime_recovery_intent,
+        verify_runtime_recovery_reachability,
+    )
+
+    gateway = isolated_gateway_factory()
+    task_id = "task_px4_changed_obstacle_dispatch"
+    source_a = "missionos_route_obstacle_50pct"
+    source_b = "missionos_route_obstacle_75pct"
+    requested = {
+        "target_x_m": 30.0,
+        "target_y_m": 40.0,
+        "target_altitude_m": 45.0,
+    }
+    proposed = {**requested, "source_obstacle_name": source_a}
+    policy = {
+        "policy_ref": "gateway_dispatch_obstacle_binding_test",
+        "max_recovery_duration_s": 75.0,
+        "max_recovery_horizontal_speed_mps": 10.0,
+        "max_recovery_vertical_speed_mps": 3.0,
+        "max_reroute_target_abs_m": 5000.0,
+        "reachability_duration_margin_factor": 1.25,
+        "reachability_setup_seconds": 5.0,
+        "max_wind_speed_mps": 6.0,
+        "wind_uncertainty_floor_mps": 1.0,
+    }
+    intent = build_runtime_recovery_intent(
+        agent_output={
+            "strategy": "local_avoidance",
+            "selected_bounded_action": "avoid_obstacle",
+            "proposed_parameters": proposed,
+            "intent_constraints": {
+                "avoidance_side": "left",
+                "minimum_clearance_m": 30.0,
+                "maximum_duration_s": 75.0,
+            },
+            "requires_human_approval": True,
+        }
+    )
+    compilation = compile_runtime_recovery_intent(
+        intent=intent,
+        candidate={
+            "selected_bounded_action": "avoid_obstacle",
+            "proposed_parameters": proposed,
+            "basis": {
+                "avoidance_side": "left",
+                "minimum_lateral_clearance_m": 32.0,
+            },
+        },
+        recovery_policy=policy,
+    )
+    telemetry = {
+        "position": {
+            "local_x_m": 1.5,
+            "local_y_m": 2.5,
+            "altitude_above_home_m": 30.0,
+        },
+        "wind": {"speed_mps": 5.0},
+        "telemetry": {"stale": False, "dropout": False},
+        "battery": {
+            "endurance_projection": {
+                "projected_insufficient_for_route": False,
+            }
+        },
+        "obstacle": {
+            "conflict_assessment": {
+                "local_avoidance_required": True,
+                "nearest_obstacle": {"obstacle_name": source_b},
+            }
+        },
+    }
+    reachability = verify_runtime_recovery_reachability(
+        compilation=compilation,
+        telemetry_snapshot=telemetry,
+        recovery_policy=policy,
+    )
+    gateway.task_store.create(
+        task_id=task_id,
+        kind="mission_designer_sitl_execution",
+        title="PX4 changed obstacle dispatch rejection",
+        status="running",
+        artifacts={
+            "missionos_auto_mission_gui_dispatch_running_receipt": {
+                "operator_recovery_request_container_path": "/tmp/recovery.json",
+            },
+            "missionos_runtime_recovery_last_proposal": {
+                "schema_version": (
+                    "missionos_runtime_recovery_proposal_evidence.v2"
+                ),
+                "proposal_id": "runtime_recovery_proposal_source_a",
+                "proposal_status": "awaiting_operator_approval",
+                "source_obstacle_name": source_a,
+                "observed_at": "2026-07-22T00:00:00+00:00",
+                "valid_until": "9999-01-01T00:00:00+00:00",
+                "origin_position": {"local_x_m": 1.0, "local_y_m": 2.0},
+                "max_origin_drift_m": 5.0,
+                "recovery_intent": intent,
+                "intent_compilation": compilation,
+                "reachability_verification": reachability,
+                "runtime_recovery_agent_result": {
+                    "assessment": {
+                        "recovery_planner_tool_candidate": {
+                            "selected_bounded_action": "avoid_obstacle",
+                            "proposed_parameters": proposed,
+                        }
+                    }
+                },
+                "dispatch_authority_created": False,
+            },
+            "missionos_runtime_recovery_agent_live_bridge": {
+                "telemetry_snapshot": telemetry,
+            },
+        },
+    )
+    queued: list[dict] = []
+
+    def queue_request(**kwargs):
+        queued.append(kwargs)
+        raise AssertionError("changed obstacle must not reach the runner")
+
+    monkeypatch.setattr(
+        gateway_server,
+        "_write_missionos_auto_operator_recovery_request_to_container",
+        queue_request,
+    )
+    response = TestClient(gateway.app).post(
+        "/px4-gazebo/mission-scenarios/recovery-dispatch",
+        json={
+            "task_id": task_id,
+            "recovery_action": "avoid_obstacle",
+            "recovery_parameters": requested,
+            "explicit_recovery_dispatch_approval": True,
+        },
+    )
+
+    assert response.status_code == 409, response.json()
+    revalidation = response.json()["summary"]["proposal_revalidation"]
+    assert revalidation["validation_status"] == "blocked"
+    assert "runtime_recovery_dispatch_obstacle_source_mismatch" in (
+        revalidation["reasons"]
+    )
+    assert revalidation["dispatch_authority_created"] is False
+    assert queued == []
+
+
 def test_px4_recovery_dispatch_preserves_receipt_history(
     isolated_gateway_factory,
 ) -> None:

@@ -2246,11 +2246,16 @@ def test_successful_recovery_does_not_queue_a_second_hold(
 
 
 @pytest.mark.parametrize(
-    ("expire_before_safe_window", "final_obstacle_name"),
+    (
+        "expire_before_safe_window",
+        "final_obstacle_name",
+        "fail_first_rejudgment",
+    ),
     [
-        (False, "missionos_route_obstacle_50pct"),
-        (True, "missionos_route_obstacle_50pct"),
-        (False, "missionos_route_obstacle_75pct"),
+        (False, "missionos_route_obstacle_50pct", False),
+        (True, "missionos_route_obstacle_50pct", False),
+        (False, "missionos_route_obstacle_75pct", False),
+        (False, "missionos_route_obstacle_50pct", True),
     ],
 )
 def test_strong_gust_hold_rejudges_obstacle_after_verified_wind_safe_window(
@@ -2258,6 +2263,7 @@ def test_strong_gust_hold_rejudges_obstacle_after_verified_wind_safe_window(
     monkeypatch,
     expire_before_safe_window: bool,
     final_obstacle_name: str,
+    fail_first_rejudgment: bool,
 ) -> None:
     store = TaskStore(str(tmp_path / "tasks.db"))
     queued_holds: list[dict] = []
@@ -2313,13 +2319,30 @@ def test_strong_gust_hold_rejudges_obstacle_after_verified_wind_safe_window(
         },
     )
     invocations: list[tuple[int, float]] = []
+    rejudgment_failures_remaining = 1 if fail_first_rejudgment else 0
 
     def _proposal(**kwargs) -> dict:
+        nonlocal rejudgment_failures_remaining
         telemetry = kwargs["telemetry_snapshot"]
         wind_speed = float(telemetry["wind"]["speed_mps"])
         sample_index = int(telemetry["sample_index"])
         invocations.append((sample_index, wind_speed))
         wind_blocked = wind_speed > 6.0
+        if not wind_blocked and rejudgment_failures_remaining:
+            rejudgment_failures_remaining -= 1
+            return {
+                "schema_version": (
+                    "missionos_runtime_recovery_agent_result.v1"
+                ),
+                "runtime_status": "proposal_skipped",
+                "blocking_reasons": ["fixture_retryable_rejudgment_failure"],
+                "assessment": {
+                    "assessment_status": "proposal_skipped",
+                    "selected_bounded_action": "operator_review",
+                },
+                "dispatch_authority_created": False,
+                "progress_counted": False,
+            }
         action = "operator_review" if wind_blocked else "avoid_obstacle"
         parameters = (
             {}
@@ -2521,11 +2544,50 @@ def test_strong_gust_hold_rejudges_obstacle_after_verified_wind_safe_window(
             not in changed_obstacle["artifacts"]
         )
         return
+    if fail_first_rejudgment:
+        retryable = store.get(task["task_id"])
+        assert retryable is not None
+        retryable_artifacts = retryable["artifacts"]
+        assert retryable_artifacts[
+            "missionos_runtime_recovery_last_proposal"
+        ]["proposal_id"] == wind_blocked_proposal_id
+        retryable_transition = retryable_artifacts[
+            "missionos_runtime_recovery_compound_hazard_transition"
+        ]
+        assert retryable_transition["transition_status"] == (
+            "rejudgment_failed_retryable"
+        )
+        assert retryable_transition["retry_after_elapsed_seconds"] == 167.0
+        live_run._attach_auto_runtime_recovery_agent_proposal(
+            store=store,
+            task_id=task["task_id"],
+            snapshot={
+                **held_snapshot,
+                "sample_index": 164,
+                "elapsed_seconds": 164.0,
+                "wind_speed_mps": 5.0,
+            },
+        )
+        assert invocations == [(82, 12.0), (162, 5.0)]
+        live_run._attach_auto_runtime_recovery_agent_proposal(
+            store=store,
+            task_id=task["task_id"],
+            snapshot={
+                **held_snapshot,
+                "sample_index": 167,
+                "elapsed_seconds": 167.0,
+                "wind_speed_mps": 5.0,
+            },
+        )
     rejudged = store.get(task["task_id"])
     assert rejudged is not None
     artifacts = rejudged["artifacts"]
     current = artifacts["missionos_runtime_recovery_last_proposal"]
-    assert invocations == [(82, 12.0), (162, 5.0)]
+    assert invocations == (
+        [(82, 12.0), (162, 5.0), (167, 5.0)]
+        if fail_first_rejudgment
+        else [(82, 12.0), (162, 5.0)]
+    )
     assert current["proposal_id"] != wind_blocked_proposal_id
     assert current["proposal_status"] == "awaiting_operator_approval"
     assert (
@@ -2558,6 +2620,9 @@ def test_strong_gust_hold_rejudges_obstacle_after_verified_wind_safe_window(
     assert transition["wind_safe_window"]["safe_window_observed"] is True
     assert transition["wind_safe_window"]["observed_window_s"] == 30.0
     assert transition["wind_safe_window"]["wind_speed_max_mps"] == 5.0
+    assert current["compound_hazard_transition"]["transition_status"] == (
+        "wind_safe_window_observed"
+    )
     assert transition["dispatch_authority_created"] is False
     assert transition["physical_execution_invoked"] is False
 

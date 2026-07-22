@@ -293,6 +293,7 @@ def compile_runtime_recovery_intent(
                 "max_reroute_target_abs_m",
                 "reachability_duration_margin_factor",
                 "reachability_setup_seconds",
+                "max_wind_speed_mps",
                 "wind_uncertainty_floor_mps",
             )
             if recovery_policy.get(key) is not None
