@@ -23,9 +23,7 @@ from src.gateway.api_schema import (
     TaskTimelineResponse,
 )
 from src.gateway.task_analytics import compute_analytics
-from src.gateway.control_supervisor import SupervisorStartResult
 from src.gateway.route_utils import normalize_constraints
-from src.gateway.task_replay import build_partial_replay_seed, build_task_compare_payload
 
 if TYPE_CHECKING:
     from src.gateway.server import GatewayServer
@@ -275,7 +273,11 @@ def _enrich_task_with_turtlebot3_live_telemetry(task: dict[str, Any]) -> dict[st
     return enriched
 
 
-def build_task_router(server: "GatewayServer") -> APIRouter:
+def build_task_router(
+    server: "GatewayServer",
+    *,
+    include_control_routes: bool = True,
+) -> APIRouter:
     router = APIRouter(tags=["tasks"])
 
     @router.get("/tasks", response_model=TaskQueryResponse)
@@ -377,6 +379,8 @@ def build_task_router(server: "GatewayServer") -> APIRouter:
         replay_mode = "tail" if replay_from_step else "full"
         initial_state = None
         if replay_from_step:
+            from src.gateway.task_replay import build_partial_replay_seed
+
             initial_state = build_partial_replay_seed(
                 task,
                 from_step=replay_from_step,
@@ -443,6 +447,8 @@ def build_task_router(server: "GatewayServer") -> APIRouter:
         right_task = server.task_store.get(candidate_task_id)
         if right_task is None:
             raise HTTPException(status_code=404, detail=f"comparison task not found: {candidate_task_id}")
+        from src.gateway.task_replay import build_task_compare_payload
+
         return build_task_compare_payload(
             left_task,
             right_task,
@@ -476,7 +482,7 @@ def build_task_router(server: "GatewayServer") -> APIRouter:
                 status_code=400,
                 detail="goal or mission_contract.objective is required",
             )
-        result: SupervisorStartResult = await server.control_supervisor.start(
+        result = await server.control_supervisor.start(
             user_id=user_id,
             owner_session_id=session.id,
             objective=objective,
@@ -525,5 +531,17 @@ def build_task_router(server: "GatewayServer") -> APIRouter:
             "task": updated,
             "message": "Graceful stop requested; the supervisor will stop after the current iteration.",
         }
+
+    if not include_control_routes:
+        excluded_paths = {
+            "/tasks/{task_id}/replay",
+            "/tasks/supervisors/control-loop",
+            "/tasks/{task_id}/cancel",
+        }
+        router.routes[:] = [
+            route
+            for route in router.routes
+            if getattr(route, "path", None) not in excluded_paths
+        ]
 
     return router

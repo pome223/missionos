@@ -238,7 +238,7 @@ async def _run_cli(
 def web(ctx, host, port, model, dry_run):
     """Start the WebSocket Gateway server."""
     from src.config.settings import get_settings
-    from src.gateway.server import create_gateway
+    from src.gateway.server import create_legacy_agent_gateway
 
     settings = get_settings()
     if model:
@@ -271,7 +271,7 @@ def web(ctx, host, port, model, dry_run):
         )
     )
 
-    gateway = create_gateway()
+    gateway = create_legacy_agent_gateway()
     gateway.run(host=host, port=port)
 
 
