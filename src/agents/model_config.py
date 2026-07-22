@@ -294,8 +294,8 @@ def resolve_agent_model(
     """ADK Agent の `model=` に渡す値を解決する。
 
     - backend=deepseek（既定）/ollama/mlx: `LiteLlm` インスタンスを返す
-    - backend=gemini: モデル名の文字列をそのまま返す
-      （要 google-adk[extensions]）。
+      （標準依存の google-adk[extensions] を使用）。
+    - backend=gemini: モデル名の文字列をそのまま返す。
 
     ローカル時に Gemini モデル名 (`model_id`) は無視され、env のローカルモデルを使う。
     """
@@ -321,7 +321,7 @@ def resolve_agent_model(
         raise RuntimeError(
             "LiteLLM バックエンド (MISSIONOS_LLM_BACKEND="
             f"{backend}) には google-adk[extensions] が必要です。"
-            "`python -m pip install -e '.[local-llm]'` を実行してください。"
+            "`python -m pip install -e .` で標準依存を再インストールしてください。"
         ) from exc
 
     kwargs: dict[str, Any] = {"api_base": api_base}

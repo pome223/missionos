@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import tomllib
 import types
 
 import pytest
@@ -211,6 +212,19 @@ def test_gateway_env_can_disable_llm_backend(monkeypatch) -> None:
     for key in GATEWAY_LLM_ADK_ENV_KEYS:
         assert env[key] == "0"
     assert "GOOGLE_API_KEY" not in env
+
+
+def test_primary_deepseek_adapter_is_a_standard_dependency() -> None:
+    root = Path(__file__).resolve().parents[2]
+    project = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))[
+        "project"
+    ]
+
+    assert any(
+        dependency.startswith("google-adk[extensions]")
+        for dependency in project["dependencies"]
+    )
+    assert "local-llm" in project["optional-dependencies"]
 
 
 def test_default_model_backend_uses_deepseek(monkeypatch) -> None:

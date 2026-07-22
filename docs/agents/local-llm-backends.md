@@ -44,8 +44,10 @@ MISSIONOS_DEEPSEEK_API_BASE=https://api.deepseek.com
 `deepseek-v4-flash` is the official DeepSeek API model id. MissionOS invokes
 the OpenAI-compatible endpoint through ADK's in-process LiteLLM adapter, so a
 separate local LiteLLM proxy is not required. Install the adapter dependencies
-with `python -m pip install -e '.[local-llm]'`. MissionOS requests non-thinking
-mode for this bounded JSON/tool path; the model remains proposal-only.
+with the standard `python -m pip install -e .` command. The historical
+`.[local-llm]` extra remains a compatibility alias. MissionOS requests
+non-thinking mode for this bounded JSON/tool path; the model remains
+proposal-only.
 
 Default local model when `MISSIONOS_LLM_BACKEND=ollama` is selected:
 
