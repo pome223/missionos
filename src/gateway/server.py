@@ -99,7 +99,9 @@ from src.runtime.px4_gazebo_route.recovery_intent_compiler import (
     verify_runtime_recovery_reachability,
 )
 from src.runtime.px4_gazebo_route.compound_hazard_transition import (
+    arbitrate_latest_telemetry,
     build_wind_safe_window_evidence,
+    safe_window_tail_matches_telemetry,
 )
 from src.intelligence.missionos_chief_planner_tools import (
     enrich_coordinate_route_with_terrain_profile,
@@ -3682,16 +3684,9 @@ def _runtime_recovery_obstacle_from_task_artifacts(
     }
 
 
-def _runtime_recovery_telemetry_from_task_artifacts(
+def _runtime_recovery_telemetry_from_runtime_snapshot(
     artifacts: Mapping[str, Any],
-    *,
-    prefer_live_bridge: bool = True,
 ) -> dict[str, Any]:
-    bridge = artifacts.get("missionos_runtime_recovery_agent_live_bridge")
-    bridge = bridge if isinstance(bridge, Mapping) else {}
-    telemetry = bridge.get("telemetry_snapshot")
-    if prefer_live_bridge and isinstance(telemetry, Mapping) and telemetry:
-        return dict(telemetry)
     snapshot = artifacts.get("missionos_auto_mission_runtime_snapshot")
     snapshot = snapshot if isinstance(snapshot, Mapping) else {}
     if not snapshot:
@@ -3772,6 +3767,45 @@ def _runtime_recovery_telemetry_from_task_artifacts(
         "nav_state": snapshot.get("nav_state"),
         "arming_state": snapshot.get("arming_state"),
         "landed": snapshot.get("landed"),
+    }
+
+
+def _runtime_recovery_telemetry_from_task_artifacts(
+    artifacts: Mapping[str, Any],
+    *,
+    prefer_live_bridge: bool = True,
+) -> dict[str, Any]:
+    runtime_telemetry = _runtime_recovery_telemetry_from_runtime_snapshot(
+        artifacts
+    )
+    if not prefer_live_bridge:
+        return runtime_telemetry
+    bridge = artifacts.get("missionos_runtime_recovery_agent_live_bridge")
+    bridge = bridge if isinstance(bridge, Mapping) else {}
+    bridge_telemetry = bridge.get("telemetry_snapshot")
+    bridge_telemetry = (
+        dict(bridge_telemetry)
+        if isinstance(bridge_telemetry, Mapping)
+        else {}
+    )
+    arbitration = arbitrate_latest_telemetry(
+        bridge_telemetry=bridge_telemetry,
+        runtime_telemetry=runtime_telemetry,
+    )
+    selected = arbitration.get("selected_telemetry")
+    if not isinstance(selected, Mapping) or not selected:
+        # Preserve legacy-v1 read behavior while exposing an unverified
+        # arbitration result. V2 dispatch explicitly rejects that result.
+        selected = bridge_telemetry or runtime_telemetry
+    if not selected:
+        return {}
+    return {
+        **dict(selected),
+        "telemetry_arbitration": {
+            key: value
+            for key, value in arbitration.items()
+            if key != "selected_telemetry"
+        },
     }
 
 
@@ -4000,6 +4034,19 @@ def _runtime_recovery_proposal_revalidation(
         artifacts,
         prefer_live_bridge=True,
     )
+    telemetry_arbitration = current_telemetry.get("telemetry_arbitration")
+    telemetry_arbitration = (
+        dict(telemetry_arbitration)
+        if isinstance(telemetry_arbitration, Mapping)
+        else {}
+    )
+    evidence["telemetry_arbitration"] = telemetry_arbitration
+    if proposal_v2 and telemetry_arbitration.get("arbitration_status") != "verified":
+        reasons.extend(
+            str(item)
+            for item in telemetry_arbitration.get("blocking_reasons") or []
+        )
+        reasons.append("runtime_recovery_telemetry_arbitration_unverified")
     telemetry_state = current_telemetry.get("telemetry")
     telemetry_state = telemetry_state if isinstance(telemetry_state, Mapping) else {}
     telemetry_fresh = bool(current_telemetry) and telemetry_state.get("stale") is not True
@@ -4066,16 +4113,44 @@ def _runtime_recovery_proposal_revalidation(
                     if isinstance(stored_safe_window, Mapping)
                     else {}
                 )
+                hazard_state = artifacts.get(
+                    "missionos_runtime_recovery_compound_hazard_state"
+                )
+                hazard_state = (
+                    hazard_state if isinstance(hazard_state, Mapping) else {}
+                )
                 bridge = artifacts.get(
                     "missionos_runtime_recovery_agent_live_bridge"
                 )
                 bridge = bridge if isinstance(bridge, Mapping) else {}
-                window_samples = bridge.get("recovery_window_samples")
+                window_source = hazard_state or bridge
+                window_samples = window_source.get("recovery_window_samples")
                 window_samples = (
                     list(window_samples)
                     if isinstance(window_samples, list)
                     else []
                 )
+                safe_window_tail_match = safe_window_tail_matches_telemetry(
+                    window_samples,
+                    current_telemetry,
+                )
+                evidence["dispatch_safe_window_tail_match"] = (
+                    safe_window_tail_match
+                )
+                if safe_window_tail_match.get("matched") is not True:
+                    reasons.append(
+                        "runtime_recovery_dispatch_safe_window_tail_mismatch"
+                    )
+                source_hazard_state_id = str(
+                    compound_transition.get("source_hazard_state_id") or ""
+                )
+                if source_hazard_state_id and (
+                    hazard_state.get("hazard_state_id")
+                    != source_hazard_state_id
+                ):
+                    reasons.append(
+                        "runtime_recovery_dispatch_hazard_state_mismatch"
+                    )
                 minimum_window_s = _recovery_float_or_none(
                     stored_safe_window.get("minimum_window_s")
                 )

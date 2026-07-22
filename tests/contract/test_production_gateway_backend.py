@@ -3728,6 +3728,8 @@ def test_px4_v2_dispatch_rejects_changed_nearest_obstacle(
         recovery_policy=policy,
     )
     telemetry = {
+        "sample_index": 200,
+        "elapsed_seconds": 200.0,
         "position": {
             "local_x_m": 1.5,
             "local_y_m": 2.5,
@@ -3788,6 +3790,16 @@ def test_px4_v2_dispatch_rejects_changed_nearest_obstacle(
             "missionos_runtime_recovery_agent_live_bridge": {
                 "telemetry_snapshot": telemetry,
             },
+            "missionos_auto_mission_runtime_snapshot": {
+                "sample_index": 200,
+                "elapsed_seconds": 200.0,
+                "local_x_m": 1.5,
+                "local_y_m": 2.5,
+                "altitude_above_home_m": 30.0,
+                "wind_speed_mps": 5.0,
+                "heartbeat_observed": True,
+                "landed": False,
+            },
         },
     )
     queued: list[dict] = []
@@ -3818,6 +3830,44 @@ def test_px4_v2_dispatch_rejects_changed_nearest_obstacle(
         revalidation["reasons"]
     )
     assert revalidation["dispatch_authority_created"] is False
+    assert queued == []
+
+    gateway.task_store.update(
+        task_id,
+        replace_artifacts={
+            "missionos_auto_mission_runtime_snapshot": {
+                "sample_index": 210,
+                "elapsed_seconds": 210.0,
+                "local_x_m": 1.5,
+                "local_y_m": 2.5,
+                "altitude_above_home_m": 30.0,
+                "wind_speed_mps": 7.0,
+                "heartbeat_observed": True,
+                "landed": False,
+            }
+        },
+    )
+    newer_runtime_response = TestClient(gateway.app).post(
+        "/px4-gazebo/mission-scenarios/recovery-dispatch",
+        json={
+            "task_id": task_id,
+            "recovery_action": "avoid_obstacle",
+            "recovery_parameters": requested,
+            "explicit_recovery_dispatch_approval": True,
+        },
+    )
+
+    assert newer_runtime_response.status_code == 409
+    newer_revalidation = newer_runtime_response.json()["summary"][
+        "proposal_revalidation"
+    ]
+    assert newer_revalidation["telemetry_arbitration"][
+        "selected_source"
+    ] == "missionos_auto_mission_runtime_snapshot"
+    assert "runtime_recovery_dispatch_current_wind_above_limit" in (
+        newer_revalidation["reasons"]
+    )
+    assert newer_revalidation["dispatch_authority_created"] is False
     assert queued == []
 
 

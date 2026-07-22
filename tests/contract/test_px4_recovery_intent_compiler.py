@@ -32,8 +32,15 @@ def _policy() -> dict:
     }
 
 
-def _telemetry(*, wind_mps: float = 1.0) -> dict:
+def _telemetry(
+    *,
+    wind_mps: float = 1.0,
+    sample_index: int = 30,
+    elapsed_seconds: float = 30.0,
+) -> dict:
     return {
+        "sample_index": sample_index,
+        "elapsed_seconds": elapsed_seconds,
         "position": {
             "local_x_m": 0.0,
             "local_y_m": 0.0,
@@ -54,6 +61,40 @@ def _telemetry(*, wind_mps: float = 1.0) -> dict:
                 "projected_insufficient_for_route": False,
             }
         },
+    }
+
+
+def _runtime_snapshot(telemetry: dict) -> dict:
+    position = telemetry.get("position") or {}
+    wind = telemetry.get("wind") or {}
+    state = telemetry.get("telemetry") or {}
+    return {
+        "sample_index": telemetry.get("sample_index"),
+        "elapsed_seconds": telemetry.get("elapsed_seconds"),
+        "local_x_m": position.get("local_x_m"),
+        "local_y_m": position.get("local_y_m"),
+        "altitude_above_home_m": position.get("altitude_above_home_m"),
+        "wind_speed_mps": wind.get("speed_mps"),
+        "heartbeat_observed": state.get("stale") is not True,
+        "landed": False,
+    }
+
+
+def _dispatch_artifacts(
+    proposal: dict,
+    telemetry: dict,
+    *,
+    window_samples: list[dict] | None = None,
+) -> dict:
+    bridge = {"telemetry_snapshot": telemetry}
+    if window_samples is not None:
+        bridge["recovery_window_samples"] = window_samples
+    return {
+        "missionos_runtime_recovery_last_proposal": proposal,
+        "missionos_auto_mission_runtime_snapshot": _runtime_snapshot(
+            telemetry
+        ),
+        "missionos_runtime_recovery_agent_live_bridge": bridge,
     }
 
 
@@ -301,21 +342,56 @@ def test_v2_dispatch_revalidation_recomputes_reachability() -> None:
         },
     }
     valid = gateway_server._runtime_recovery_proposal_revalidation(
+        artifacts=_dispatch_artifacts(
+            proposal,
+            _telemetry(wind_mps=1.0),
+        ),
+        recovery_action="avoid_obstacle",
+        recovery_parameters=parameters,
+        now=now,
+    )
+    blocked = gateway_server._runtime_recovery_proposal_revalidation(
+        artifacts=_dispatch_artifacts(
+            proposal,
+            _telemetry(wind_mps=7.0),
+        ),
+        recovery_action="avoid_obstacle",
+        recovery_parameters=parameters,
+        now=now,
+    )
+    stale_bridge = _telemetry(
+        wind_mps=5.0,
+        sample_index=190,
+        elapsed_seconds=190.0,
+    )
+    newer_runtime = _runtime_snapshot(
+        _telemetry(
+            wind_mps=7.0,
+            sample_index=200,
+            elapsed_seconds=200.0,
+        )
+    )
+    newer_runtime_result = gateway_server._runtime_recovery_proposal_revalidation(
         artifacts={
             "missionos_runtime_recovery_last_proposal": proposal,
+            "missionos_auto_mission_runtime_snapshot": newer_runtime,
             "missionos_runtime_recovery_agent_live_bridge": {
-                "telemetry_snapshot": _telemetry(wind_mps=1.0)
+                "telemetry_snapshot": stale_bridge,
             },
         },
         recovery_action="avoid_obstacle",
         recovery_parameters=parameters,
         now=now,
     )
-    blocked = gateway_server._runtime_recovery_proposal_revalidation(
+    regressed_cursor_result = gateway_server._runtime_recovery_proposal_revalidation(
         artifacts={
             "missionos_runtime_recovery_last_proposal": proposal,
+            "missionos_auto_mission_runtime_snapshot": {
+                **newer_runtime,
+                "elapsed_seconds": 180.0,
+            },
             "missionos_runtime_recovery_agent_live_bridge": {
-                "telemetry_snapshot": _telemetry(wind_mps=7.0)
+                "telemetry_snapshot": stale_bridge,
             },
         },
         recovery_action="avoid_obstacle",
@@ -332,6 +408,20 @@ def test_v2_dispatch_revalidation_recomputes_reachability() -> None:
     assert "runtime_recovery_dispatch_current_wind_above_limit" in blocked[
         "reasons"
     ]
+    assert newer_runtime_result["validation_status"] == "blocked"
+    assert newer_runtime_result["telemetry_arbitration"][
+        "selected_source"
+    ] == "missionos_auto_mission_runtime_snapshot"
+    assert "runtime_recovery_dispatch_current_wind_above_limit" in (
+        newer_runtime_result["reasons"]
+    )
+    assert regressed_cursor_result["validation_status"] == "blocked"
+    assert "telemetry_arbitration_cursor_regression" in (
+        regressed_cursor_result["reasons"]
+    )
+    assert "runtime_recovery_telemetry_arbitration_unverified" in (
+        regressed_cursor_result["reasons"]
+    )
 
 
 def test_compound_dispatch_revalidates_latest_safe_window() -> None:
@@ -383,26 +473,33 @@ def test_compound_dispatch_revalidates_latest_safe_window() -> None:
 
     safe_samples = [_sample(value, 5.0) for value in (0.0, 10.0, 20.0, 30.0)]
     valid = gateway_server._runtime_recovery_proposal_revalidation(
-        artifacts={
-            "missionos_runtime_recovery_last_proposal": proposal,
-            "missionos_runtime_recovery_agent_live_bridge": {
-                "telemetry_snapshot": safe_samples[-1],
-                "recovery_window_samples": safe_samples,
-            },
-        },
+        artifacts=_dispatch_artifacts(
+            proposal,
+            safe_samples[-1],
+            window_samples=safe_samples,
+        ),
         recovery_action="avoid_obstacle",
         recovery_parameters=parameters,
         now=now,
     )
     raised_samples = [*safe_samples, _sample(31.0, 7.0)]
     blocked = gateway_server._runtime_recovery_proposal_revalidation(
-        artifacts={
-            "missionos_runtime_recovery_last_proposal": proposal,
-            "missionos_runtime_recovery_agent_live_bridge": {
-                "telemetry_snapshot": raised_samples[-1],
-                "recovery_window_samples": raised_samples,
-            },
-        },
+        artifacts=_dispatch_artifacts(
+            proposal,
+            raised_samples[-1],
+            window_samples=raised_samples,
+        ),
+        recovery_action="avoid_obstacle",
+        recovery_parameters=parameters,
+        now=now,
+    )
+    tail_mismatch_telemetry = _sample(31.0, 5.0)
+    tail_mismatch = gateway_server._runtime_recovery_proposal_revalidation(
+        artifacts=_dispatch_artifacts(
+            proposal,
+            tail_mismatch_telemetry,
+            window_samples=safe_samples,
+        ),
         recovery_action="avoid_obstacle",
         recovery_parameters=parameters,
         now=now,
@@ -417,6 +514,10 @@ def test_compound_dispatch_revalidates_latest_safe_window() -> None:
     assert "runtime_recovery_dispatch_safe_window_unverified" in blocked[
         "reasons"
     ]
+    assert tail_mismatch["validation_status"] == "blocked"
+    assert "runtime_recovery_dispatch_safe_window_tail_mismatch" in (
+        tail_mismatch["reasons"]
+    )
 
 
 def test_dispatch_rejects_changed_or_inactive_obstacle_binding() -> None:
@@ -452,12 +553,7 @@ def test_dispatch_rejects_changed_or_inactive_obstacle_binding() -> None:
         "obstacle_name"
     ] = "missionos_route_obstacle_75pct"
     changed_result = gateway_server._runtime_recovery_proposal_revalidation(
-        artifacts={
-            "missionos_runtime_recovery_last_proposal": proposal,
-            "missionos_runtime_recovery_agent_live_bridge": {
-                "telemetry_snapshot": changed
-            },
-        },
+        artifacts=_dispatch_artifacts(proposal, changed),
         recovery_action="avoid_obstacle",
         recovery_parameters=parameters,
         now=now,
@@ -467,12 +563,7 @@ def test_dispatch_rejects_changed_or_inactive_obstacle_binding() -> None:
         "local_avoidance_required"
     ] = False
     inactive_result = gateway_server._runtime_recovery_proposal_revalidation(
-        artifacts={
-            "missionos_runtime_recovery_last_proposal": proposal,
-            "missionos_runtime_recovery_agent_live_bridge": {
-                "telemetry_snapshot": inactive
-            },
-        },
+        artifacts=_dispatch_artifacts(proposal, inactive),
         recovery_action="avoid_obstacle",
         recovery_parameters=parameters,
         now=now,
@@ -541,12 +632,7 @@ def test_v2_dispatch_revalidation_rejects_mixed_artifact_chain() -> None:
         },
     }
     result = gateway_server._runtime_recovery_proposal_revalidation(
-        artifacts={
-            "missionos_runtime_recovery_last_proposal": proposal,
-            "missionos_runtime_recovery_agent_live_bridge": {
-                "telemetry_snapshot": _telemetry()
-            },
-        },
+        artifacts=_dispatch_artifacts(proposal, _telemetry()),
         recovery_action="avoid_obstacle",
         recovery_parameters=parameters,
         now=now,

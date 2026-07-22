@@ -51,8 +51,8 @@ from src.runtime.px4_active_runner_recovery_request import (
     queue_px4_active_runner_recovery_request,
 )
 from src.runtime.px4_gazebo_route.compound_hazard_transition import (
+    build_compound_hazard_state,
     build_wind_safe_window_evidence,
-    proposal_trigger_reasons,
 )
 from src.runtime.px4_gazebo_route.recovery_intent_compiler import (
     verify_runtime_recovery_outcome,
@@ -4689,17 +4689,36 @@ def _attach_auto_runtime_recovery_agent_proposal(
         minimum_window_s=_runtime_recovery_wind_safe_window_seconds(),
         maximum_sample_gap_s=max(hard_refresh_seconds, bucket_s) * 1.5,
     )
-    proposal_reasons = proposal_trigger_reasons(last_proposal)
-    last_proposal_status = str(last_proposal.get("proposal_status") or "")
-    last_proposal_is_wind_blocked_review = bool(
-        last_proposal_result.get("runtime_status")
-        == "proposal_guardrail_passed"
-        and last_proposal_assessment.get("assessment_status")
-        == "proposal_guardrail_passed"
-        and proposal_selected_action == "operator_review"
-        and "wind_above_recovery_limit" in proposal_reasons
-        and last_proposal_status
-        in {"awaiting_operator_approval", "stale", "superseded"}
+    prior_compound_hazard_state = artifacts.get(
+        "missionos_runtime_recovery_compound_hazard_state"
+    )
+    prior_compound_hazard_state = (
+        prior_compound_hazard_state
+        if isinstance(prior_compound_hazard_state, Mapping)
+        else {}
+    )
+    compound_hazard_state = build_compound_hazard_state(
+        task_id=task_id,
+        prior_state=prior_compound_hazard_state,
+        telemetry=telemetry_snapshot,
+        recovery_window_samples=window_samples,
+        recovery_policy=_runtime_recovery_policy(),
+        wind_safe_window=wind_safe_window_evidence,
+        safety_hold_observed=safety_hold_observed,
+        safety_hold_stable=safety_hold_stable,
+        observed_at=observed_at_datetime.isoformat(),
+    )
+    hazard_state_id = str(
+        compound_hazard_state.get("hazard_state_id") or ""
+    )
+    hazard_obstacle_name = str(
+        compound_hazard_state.get("source_obstacle_name") or ""
+    )
+    hazard_judgment_epoch = compound_hazard_state.get("judgment_epoch")
+    hazard_judgment_epoch = (
+        dict(hazard_judgment_epoch)
+        if isinstance(hazard_judgment_epoch, Mapping)
+        else {}
     )
     prior_compound_transition = artifacts.get(
         "missionos_runtime_recovery_compound_hazard_transition"
@@ -4710,12 +4729,12 @@ def _attach_auto_runtime_recovery_agent_proposal(
         else {}
     )
     compound_transition_already_observed = bool(
-        last_proposal.get("proposal_id")
-        and prior_compound_transition.get("source_proposal_id")
-        == last_proposal.get("proposal_id")
+        hazard_state_id
+        and prior_compound_transition.get("source_hazard_state_id")
+        == hazard_state_id
         and prior_compound_transition.get("transition_status")
         == "wind_safe_window_observed"
-    )
+    ) or hazard_judgment_epoch.get("epoch_status") == "proposal_created"
     current_elapsed_seconds = _auto_snapshot_number(
         telemetry_snapshot.get("elapsed_seconds")
     )
@@ -4743,8 +4762,8 @@ def _attach_auto_runtime_recovery_agent_proposal(
     compound_rejudgment_retry_ready = bool(
         prior_compound_transition.get("transition_status")
         != "rejudgment_failed_retryable"
-        or prior_compound_transition.get("source_proposal_id")
-        != last_proposal.get("proposal_id")
+        or prior_compound_transition.get("source_hazard_state_id")
+        != hazard_state_id
         or (
             current_elapsed_seconds is not None
             and retry_after_elapsed_seconds is not None
@@ -4759,35 +4778,22 @@ def _attach_auto_runtime_recovery_agent_proposal(
         )
     )
     compound_hazard_rejudgment_required = bool(
-        last_proposal_is_wind_blocked_review
+        hazard_state_id
+        and compound_hazard_state.get("hazard_status") == "rejudgment_ready"
         and not compound_transition_already_observed
         and compound_rejudgment_retry_ready
-        and bool(last_proposal_obstacle_name)
-        and last_proposal_obstacle_name == active_conflict_obstacle_name
+        and hazard_obstacle_name == active_conflict_obstacle_name
         and current_conflict.get("local_avoidance_required") is True
-        and safety_hold_observed
-        and safety_hold_stable
-        and wind_safe_window_evidence.get("safe_window_observed") is True
-    )
-    current_wind = telemetry_snapshot.get("wind")
-    current_wind = current_wind if isinstance(current_wind, Mapping) else {}
-    current_wind_speed_mps = _auto_snapshot_number(current_wind.get("speed_mps"))
-    recovery_wind_limit_mps = _auto_snapshot_number(
-        _runtime_recovery_policy().get("max_wind_speed_mps")
-    )
-    current_telemetry = telemetry_snapshot.get("telemetry")
-    current_telemetry = (
-        current_telemetry if isinstance(current_telemetry, Mapping) else {}
     )
     wind_safe_window_tracking_active = bool(
-        last_proposal_is_wind_blocked_review
+        hazard_state_id
         and not compound_transition_already_observed
-        and current_conflict.get("local_avoidance_required") is True
-        and safety_hold_observed
-        and current_telemetry.get("stale") is not True
-        and current_wind_speed_mps is not None
-        and recovery_wind_limit_mps is not None
-        and current_wind_speed_mps <= recovery_wind_limit_mps
+        and compound_hazard_state.get("hazard_status")
+        in {
+            "wind_above_limit_observed",
+            "wind_safe_window_tracking",
+            "rejudgment_ready",
+        }
     )
     proposal_materially_changed = bool(
         proposal_awaiting_approval
@@ -4887,11 +4893,11 @@ def _attach_auto_runtime_recovery_agent_proposal(
         refresh_status = "safety_hold_settling"
         next_decision_signature = prior_decision_signature
     elif compound_hazard_rejudgment_required:
-        # The prior operator-review proposal was correct while wind exceeded
-        # the Recovery envelope.  A complete fresh-telemetry window now shows
-        # wind at or below the limit while the same source-backed obstacle
-        # remains.  Open one new judgment epoch; this does not approve or
-        # dispatch the resulting obstacle maneuver.
+        # The source-backed hazard state is independent of whether the earlier
+        # LLM output became a durable proposal. A complete fresh-telemetry
+        # window now shows wind at or below the limit while the same obstacle
+        # remains, so open one new judgment epoch. This does not approve or
+        # dispatch the resulting maneuver.
         agent_invoked = True
         result = _run_auto_runtime_recovery_agent_with_timeout(
             telemetry_snapshot=telemetry_snapshot,
@@ -5043,9 +5049,54 @@ def _attach_auto_runtime_recovery_agent_proposal(
         (agent_invoked or proposal_recompiled)
         and runtime_status == "proposal_guardrail_passed"
     )
-    if (
+    result_assessment_for_transition = result.get("assessment")
+    result_assessment_for_transition = (
+        result_assessment_for_transition
+        if isinstance(result_assessment_for_transition, Mapping)
+        else {}
+    )
+    result_compilation_for_transition = result_assessment_for_transition.get(
+        "intent_compilation"
+    )
+    result_compilation_for_transition = (
+        result_compilation_for_transition
+        if isinstance(result_compilation_for_transition, Mapping)
+        else {}
+    )
+    result_parameters_for_transition = result_compilation_for_transition.get(
+        "compiled_parameters"
+    )
+    result_parameters_for_transition = (
+        result_parameters_for_transition
+        if isinstance(result_parameters_for_transition, Mapping)
+        else result_assessment_for_transition.get("proposed_parameters")
+        if isinstance(
+            result_assessment_for_transition.get("proposed_parameters"),
+            Mapping,
+        )
+        else {}
+    )
+    compound_proposal_created = bool(
         compound_hazard_rejudgment_required
         and proposal_created
+        and str(
+            result_assessment_for_transition.get("selected_bounded_action")
+            or ""
+        ).strip()
+        == "avoid_obstacle"
+        and str(
+            result_parameters_for_transition.get("source_obstacle_name")
+            or ""
+        ).strip()
+        == hazard_obstacle_name
+    )
+    if compound_hazard_rejudgment_required and not compound_proposal_created:
+        # A different or unbound action does not complete this judgment epoch,
+        # even if its generic guardrail happened to pass.
+        proposal_created = False
+    if (
+        compound_hazard_rejudgment_required
+        and compound_proposal_created
         and proposal_awaiting_approval
     ):
         proposal_lifecycle_reasons.extend(
@@ -5121,6 +5172,18 @@ def _attach_auto_runtime_recovery_agent_proposal(
         # The runtime snapshot is persisted independently. Avoid emitting a
         # duplicate agent-current-state artifact (and task timeline event)
         # when neither the decision nor recovery observation changed.
+        if compound_hazard_state:
+            try:
+                store.update(
+                    task_id,
+                    replace_artifacts={
+                        "missionos_runtime_recovery_compound_hazard_state": (
+                            compound_hazard_state
+                        )
+                    },
+                )
+            except Exception:
+                pass
         return
     bridge_payload = {
         "schema_version": "missionos_runtime_recovery_agent_live_bridge.v1",
@@ -5195,15 +5258,39 @@ def _attach_auto_runtime_recovery_agent_proposal(
     replaced_artifacts: dict[str, Any] = {
         "missionos_runtime_recovery_agent_live_bridge": bridge_payload
     }
-    if compound_hazard_rejudgment_required and proposal_created:
+    if compound_hazard_state:
+        replaced_artifacts[
+            "missionos_runtime_recovery_compound_hazard_state"
+        ] = compound_hazard_state
+    if compound_hazard_rejudgment_required and compound_proposal_created:
+        completed_epoch = {
+            **hazard_judgment_epoch,
+            "epoch_status": "proposal_created",
+            "attempt_count": int(
+                hazard_judgment_epoch.get("attempt_count") or 0
+            )
+            + 1,
+            "completed_at": observed_at,
+        }
+        compound_hazard_state = {
+            **compound_hazard_state,
+            "hazard_status": "proposal_created",
+            "judgment_epoch": completed_epoch,
+            "observed_at": observed_at,
+        }
+        replaced_artifacts[
+            "missionos_runtime_recovery_compound_hazard_state"
+        ] = compound_hazard_state
         transition_evidence = {
             "schema_version": (
                 "missionos_runtime_recovery_compound_hazard_transition.v1"
             ),
             "transition_status": "wind_safe_window_observed",
-            "from_judgment": "operator_review",
+            "from_judgment": "source_backed_compound_hazard",
             "to_judgment_epoch": "source_backed_obstacle_rejudgment",
             "source_proposal_id": last_proposal.get("proposal_id"),
+            "source_hazard_state_id": hazard_state_id,
+            "judgment_epoch_id": hazard_judgment_epoch.get("epoch_id"),
             "source_obstacle_name": active_conflict_obstacle_name or None,
             "wind_safe_window": wind_safe_window_evidence,
             "safety_hold_observed": safety_hold_observed,
@@ -5217,34 +5304,58 @@ def _attach_auto_runtime_recovery_agent_proposal(
             "missionos_runtime_recovery_compound_hazard_transition"
         ] = transition_evidence
     elif compound_hazard_rejudgment_required:
+        retry_after_elapsed = (
+            current_elapsed_seconds
+            + MISSIONOS_RUNTIME_RECOVERY_REJUDGMENT_RETRY_BACKOFF_SECONDS
+            if current_elapsed_seconds is not None
+            else None
+        )
+        retry_after_datetime = (
+            observed_at_datetime
+            + timedelta(
+                seconds=(
+                    MISSIONOS_RUNTIME_RECOVERY_REJUDGMENT_RETRY_BACKOFF_SECONDS
+                )
+            )
+        ).isoformat()
+        retryable_epoch = {
+            **hazard_judgment_epoch,
+            "epoch_status": "rejudgment_failed_retryable",
+            "attempt_count": int(
+                hazard_judgment_epoch.get("attempt_count") or 0
+            )
+            + 1,
+            "retry_after_elapsed_seconds": retry_after_elapsed,
+            "retry_after": retry_after_datetime,
+            "last_attempt_at": observed_at,
+        }
+        compound_hazard_state = {
+            **compound_hazard_state,
+            "hazard_status": "rejudgment_ready",
+            "judgment_epoch": retryable_epoch,
+            "observed_at": observed_at,
+        }
+        replaced_artifacts[
+            "missionos_runtime_recovery_compound_hazard_state"
+        ] = compound_hazard_state
         transition_evidence = {
             "schema_version": (
                 "missionos_runtime_recovery_compound_hazard_transition.v1"
             ),
             "transition_status": "rejudgment_failed_retryable",
-            "from_judgment": "operator_review",
+            "from_judgment": "source_backed_compound_hazard",
             "to_judgment_epoch": "source_backed_obstacle_rejudgment",
             "source_proposal_id": last_proposal.get("proposal_id"),
+            "source_hazard_state_id": hazard_state_id,
+            "judgment_epoch_id": hazard_judgment_epoch.get("epoch_id"),
             "source_obstacle_name": active_conflict_obstacle_name or None,
             "wind_safe_window": wind_safe_window_evidence,
             "rejudgment_runtime_status": runtime_status,
             "retry_backoff_seconds": (
                 MISSIONOS_RUNTIME_RECOVERY_REJUDGMENT_RETRY_BACKOFF_SECONDS
             ),
-            "retry_after_elapsed_seconds": (
-                current_elapsed_seconds
-                + MISSIONOS_RUNTIME_RECOVERY_REJUDGMENT_RETRY_BACKOFF_SECONDS
-                if current_elapsed_seconds is not None
-                else None
-            ),
-            "retry_after": (
-                observed_at_datetime
-                + timedelta(
-                    seconds=(
-                        MISSIONOS_RUNTIME_RECOVERY_REJUDGMENT_RETRY_BACKOFF_SECONDS
-                    )
-                )
-            ).isoformat(),
+            "retry_after_elapsed_seconds": retry_after_elapsed,
+            "retry_after": retry_after_datetime,
             "observed_at": observed_at,
             "dispatch_authority_created": False,
             "progress_counted": False,
@@ -5307,6 +5418,23 @@ def _attach_auto_runtime_recovery_agent_proposal(
                 "recovery_decision_signature": decision_signature,
             },
         )
+        if compound_proposal_created and compound_hazard_state:
+            completed_epoch = compound_hazard_state.get("judgment_epoch")
+            completed_epoch = (
+                dict(completed_epoch)
+                if isinstance(completed_epoch, Mapping)
+                else {}
+            )
+            compound_hazard_state = {
+                **compound_hazard_state,
+                "judgment_epoch": {
+                    **completed_epoch,
+                    "proposal_id": proposal_id,
+                },
+            }
+            replaced_artifacts[
+                "missionos_runtime_recovery_compound_hazard_state"
+            ] = compound_hazard_state
         proposal_origin = _runtime_recovery_proposal_origin(
             result=result,
             proposal_recompiled=proposal_recompiled,
@@ -5362,6 +5490,10 @@ def _attach_auto_runtime_recovery_agent_proposal(
                     ),
                     "transition_status": "wind_safe_window_observed",
                     "source_proposal_id": last_proposal.get("proposal_id"),
+                    "source_hazard_state_id": hazard_state_id,
+                    "judgment_epoch_id": hazard_judgment_epoch.get(
+                        "epoch_id"
+                    ),
                     "source_obstacle_name": (
                         active_conflict_obstacle_name or None
                     ),

@@ -14,7 +14,9 @@ from src.intelligence import missionos_agent_runtime
 from src.runtime import missionos_auto_mission_runner as auto_runner
 from src.runtime import px4_gazebo_mission_designer_sitl_live_flight_run as live_run
 from src.runtime.px4_gazebo_route.compound_hazard_transition import (
+    arbitrate_latest_telemetry,
     build_wind_safe_window_evidence,
+    safe_window_tail_matches_telemetry,
 )
 from src.runtime.recovery_window_summary import build_recovery_window_summary
 from src.runtime.task_store import TaskStore
@@ -2250,12 +2252,14 @@ def test_successful_recovery_does_not_queue_a_second_hold(
         "expire_before_safe_window",
         "final_obstacle_name",
         "fail_first_rejudgment",
+        "initial_guardrail_blocked",
     ),
     [
-        (False, "missionos_route_obstacle_50pct", False),
-        (True, "missionos_route_obstacle_50pct", False),
-        (False, "missionos_route_obstacle_75pct", False),
-        (False, "missionos_route_obstacle_50pct", True),
+        (False, "missionos_route_obstacle_50pct", False, False),
+        (True, "missionos_route_obstacle_50pct", False, False),
+        (False, "missionos_route_obstacle_75pct", False, False),
+        (False, "missionos_route_obstacle_50pct", True, False),
+        (False, "missionos_route_obstacle_50pct", False, True),
     ],
 )
 def test_strong_gust_hold_rejudges_obstacle_after_verified_wind_safe_window(
@@ -2264,6 +2268,7 @@ def test_strong_gust_hold_rejudges_obstacle_after_verified_wind_safe_window(
     expire_before_safe_window: bool,
     final_obstacle_name: str,
     fail_first_rejudgment: bool,
+    initial_guardrail_blocked: bool,
 ) -> None:
     store = TaskStore(str(tmp_path / "tasks.db"))
     queued_holds: list[dict] = []
@@ -2328,6 +2333,22 @@ def test_strong_gust_hold_rejudges_obstacle_after_verified_wind_safe_window(
         sample_index = int(telemetry["sample_index"])
         invocations.append((sample_index, wind_speed))
         wind_blocked = wind_speed > 6.0
+        if wind_blocked and initial_guardrail_blocked:
+            return {
+                "schema_version": (
+                    "missionos_runtime_recovery_agent_result.v1"
+                ),
+                "runtime_status": "proposal_guardrail_blocked",
+                "blocking_reasons": [
+                    "fixture_compound_hazard_requires_operator_review"
+                ],
+                "assessment": {
+                    "assessment_status": "proposal_guardrail_blocked",
+                    "selected_bounded_action": "operator_review",
+                },
+                "dispatch_authority_created": False,
+                "progress_counted": False,
+            }
         if not wind_blocked and rejudgment_failures_remaining:
             rejudgment_failures_remaining -= 1
             return {
@@ -2439,20 +2460,34 @@ def test_strong_gust_hold_rejudges_obstacle_after_verified_wind_safe_window(
     wind_blocked = store.get(task["task_id"])
     assert wind_blocked is not None
     wind_blocked_artifacts = wind_blocked["artifacts"]
-    wind_blocked_proposal = wind_blocked_artifacts[
-        "missionos_runtime_recovery_last_proposal"
-    ]
-    wind_blocked_proposal_id = wind_blocked_proposal["proposal_id"]
-    assert wind_blocked_proposal["source_obstacle_name"] == (
-        "missionos_route_obstacle_50pct"
+    wind_blocked_proposal = wind_blocked_artifacts.get(
+        "missionos_runtime_recovery_last_proposal",
+        {},
+    )
+    wind_blocked_proposal_id = str(
+        wind_blocked_proposal.get("proposal_id") or ""
     )
     assert invocations == [(82, 12.0)]
-    assert (
-        wind_blocked_proposal["runtime_recovery_agent_result"]["assessment"][
-            "selected_bounded_action"
-        ]
-        == "operator_review"
+    hazard_state = wind_blocked_artifacts[
+        "missionos_runtime_recovery_compound_hazard_state"
+    ]
+    assert hazard_state["source_backed"] is True
+    assert hazard_state["source_obstacle_name"] == (
+        "missionos_route_obstacle_50pct"
     )
+    assert hazard_state["hazard_status"] == "wind_above_limit_observed"
+    if initial_guardrail_blocked:
+        assert wind_blocked_proposal == {}
+    else:
+        assert wind_blocked_proposal["source_obstacle_name"] == (
+            "missionos_route_obstacle_50pct"
+        )
+        assert (
+            wind_blocked_proposal["runtime_recovery_agent_result"][
+                "assessment"
+            ]["selected_bounded_action"]
+            == "operator_review"
+        )
     if expire_before_safe_window:
         expired = {
             **wind_blocked_proposal,
@@ -2588,7 +2623,8 @@ def test_strong_gust_hold_rejudges_obstacle_after_verified_wind_safe_window(
         if fail_first_rejudgment
         else [(82, 12.0), (162, 5.0)]
     )
-    assert current["proposal_id"] != wind_blocked_proposal_id
+    if wind_blocked_proposal_id:
+        assert current["proposal_id"] != wind_blocked_proposal_id
     assert current["proposal_status"] == "awaiting_operator_approval"
     assert (
         current["runtime_recovery_agent_result"]["assessment"][
@@ -2596,20 +2632,21 @@ def test_strong_gust_hold_rejudges_obstacle_after_verified_wind_safe_window(
         ]
         == "avoid_obstacle"
     )
-    superseded = artifacts["missionos_runtime_recovery_proposals"][
-        wind_blocked_proposal_id
-    ]
-    assert superseded["proposal_status"] == (
-        "stale" if expire_before_safe_window else "superseded"
-    )
-    if expire_before_safe_window:
-        assert "runtime_recovery_proposal_stale" in superseded[
-            "invalidation_reasons"
+    if wind_blocked_proposal_id:
+        superseded = artifacts["missionos_runtime_recovery_proposals"][
+            wind_blocked_proposal_id
         ]
-    else:
-        assert "runtime_recovery_wind_safe_window_observed" in superseded[
-            "invalidation_reasons"
-        ]
+        assert superseded["proposal_status"] == (
+            "stale" if expire_before_safe_window else "superseded"
+        )
+        if expire_before_safe_window:
+            assert "runtime_recovery_proposal_stale" in superseded[
+                "invalidation_reasons"
+            ]
+        else:
+            assert "runtime_recovery_wind_safe_window_observed" in superseded[
+                "invalidation_reasons"
+            ]
     transition = artifacts[
         "missionos_runtime_recovery_compound_hazard_transition"
     ]
@@ -2617,6 +2654,9 @@ def test_strong_gust_hold_rejudges_obstacle_after_verified_wind_safe_window(
     assert transition["source_obstacle_name"] == (
         "missionos_route_obstacle_50pct"
     )
+    assert transition["source_hazard_state_id"] == hazard_state[
+        "hazard_state_id"
+    ]
     assert transition["wind_safe_window"]["safe_window_observed"] is True
     assert transition["wind_safe_window"]["observed_window_s"] == 30.0
     assert transition["wind_safe_window"]["wind_speed_max_mps"] == 5.0
@@ -2625,6 +2665,68 @@ def test_strong_gust_hold_rejudges_obstacle_after_verified_wind_safe_window(
     )
     assert transition["dispatch_authority_created"] is False
     assert transition["physical_execution_invoked"] is False
+
+
+def test_telemetry_arbitration_selects_newer_consistent_cursor() -> None:
+    result = arbitrate_latest_telemetry(
+        bridge_telemetry={"sample_index": 190, "elapsed_seconds": 190.0},
+        runtime_telemetry={"sample_index": 200, "elapsed_seconds": 200.0},
+    )
+
+    assert result["arbitration_status"] == "verified"
+    assert result["selected_source"] == (
+        "missionos_auto_mission_runtime_snapshot"
+    )
+    assert result["selected_telemetry"]["sample_index"] == 200
+
+
+@pytest.mark.parametrize(
+    ("runtime_cursor", "reason"),
+    [
+        (
+            {"sample_index": 200},
+            "telemetry_arbitration_runtime_cursor_incomplete",
+        ),
+        (
+            {"sample_index": 200, "elapsed_seconds": 180.0},
+            "telemetry_arbitration_cursor_regression",
+        ),
+        (
+            {"sample_index": 220, "elapsed_seconds": 220.0},
+            "telemetry_arbitration_elapsed_delta_exceeded",
+        ),
+    ],
+)
+def test_telemetry_arbitration_fails_closed_for_untrustworthy_cursors(
+    runtime_cursor: dict,
+    reason: str,
+) -> None:
+    result = arbitrate_latest_telemetry(
+        bridge_telemetry={"sample_index": 190, "elapsed_seconds": 190.0},
+        runtime_telemetry=runtime_cursor,
+    )
+
+    assert result["arbitration_status"] == "unverified"
+    assert reason in result["blocking_reasons"]
+    assert result["dispatch_authority_created"] is False
+
+
+def test_safe_window_tail_must_match_selected_latest_telemetry() -> None:
+    samples = [
+        {"sample_index": 199, "elapsed_seconds": 199.0},
+        {"sample_index": 200, "elapsed_seconds": 200.0},
+    ]
+    matched = safe_window_tail_matches_telemetry(
+        samples,
+        {"sample_index": 200, "elapsed_seconds": 200.0},
+    )
+    mismatched = safe_window_tail_matches_telemetry(
+        samples,
+        {"sample_index": 201, "elapsed_seconds": 201.0},
+    )
+
+    assert matched["matched"] is True
+    assert mismatched["matched"] is False
 
 
 def test_wind_safe_window_evidence_fails_closed() -> None:
@@ -2667,8 +2769,20 @@ def test_wind_safe_window_evidence_fails_closed() -> None:
         minimum_window_s=30.0,
         maximum_sample_gap_s=15.0,
     )
-    stale = build_wind_safe_window_evidence(
-        [_sample(0.0, 5.0), _sample(10.0, 5.0), _sample(20.0, 5.0, stale=True), _sample(30.0, 5.0)],
+    transient_stale = build_wind_safe_window_evidence(
+        [
+            _sample(0.0, 5.0),
+            _sample(10.0, 5.0),
+            _sample(20.0, 5.0, stale=True),
+            _sample(21.0, 5.0),
+            _sample(30.0, 5.0),
+        ],
+        recovery_policy=policy,
+        minimum_window_s=30.0,
+        maximum_sample_gap_s=15.0,
+    )
+    stale_tail = build_wind_safe_window_evidence(
+        [_sample(0.0, 5.0), _sample(10.0, 5.0), _sample(20.0, 5.0), _sample(30.0, 5.0, stale=True)],
         recovery_policy=policy,
         minimum_window_s=30.0,
         maximum_sample_gap_s=15.0,
@@ -2691,7 +2805,9 @@ def test_wind_safe_window_evidence_fails_closed() -> None:
         "blocking_reasons"
     ]
     assert "wind_safe_window_limit_exceeded" in gust_present["blocking_reasons"]
-    assert "wind_safe_window_telemetry_stale" in stale["blocking_reasons"]
+    assert transient_stale["verification_status"] == "verified_safe"
+    assert transient_stale["telemetry_stale_count"] == 1
+    assert "wind_safe_window_telemetry_stale" in stale_tail["blocking_reasons"]
     assert "wind_safe_window_observation_missing" in missing["blocking_reasons"]
 
 
