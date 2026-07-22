@@ -222,6 +222,31 @@ def test_default_agent_model_uses_stable_gemini_id(monkeypatch) -> None:
     assert settings.agent_model == "gemini-3.1-flash-lite"
 
 
+def test_stable_gemini_planners_normalize_vertex_location(monkeypatch) -> None:
+    from src.config.settings import reset_settings
+    from src.intelligence import (
+        llm_repair_planner,
+        llm_response_planner,
+        real_hardware_arm_disarm_planner,
+    )
+
+    monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "gemini")
+    monkeypatch.setenv("AGENT_MODEL", "gemini-3.1-flash-lite")
+    monkeypatch.setenv("GOOGLE_GENAI_USE_VERTEXAI", "true")
+
+    for planner in (
+        llm_repair_planner,
+        llm_response_planner,
+        real_hardware_arm_disarm_planner,
+    ):
+        monkeypatch.setenv("GOOGLE_CLOUD_LOCATION", "us-central1")
+        reset_settings()
+
+        planner._configure_google_adk_environment()
+
+        assert os.environ["GOOGLE_CLOUD_LOCATION"] == "global"
+
+
 def test_gateway_env_ollama_backend_keeps_adk_but_removes_google_key(monkeypatch) -> None:
     monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "ollama")
     monkeypatch.setenv("MISSIONOS_OLLAMA_MODEL", "gemma4:26b")
