@@ -25,11 +25,12 @@ Three structural guarantees, none of them flag-based
    the device check, so this path can only ever observe the bench in front of
    the operator.
 
-3. **Physical attestation that cannot lie.** Opening the link requires a
+3. **Physical attestation that fails closed.** Opening the link requires a
    :class:`PX4RealHardwarePhysicalAttestation` whose safety fields are
-   ``Literal[True]`` — you cannot construct one that says the propellers are
-   still on. No attestation, or a stale one, means no connection. The backend
-   itself never fabricates this; a human supplies it at the bench.
+    ``Literal[True]`` — propellers removed, operator present, vehicle secured,
+    physical E-stop available, and immediate power disconnect available. No
+    complete fresh attestation means no connection. The backend never
+    fabricates this; a named human supplies it at the bench.
 
 pymavlink is **lazy-imported**: nothing here imports it at module load, and the
 import happens only *after* every validation passes inside
@@ -120,16 +121,18 @@ class PX4RealHardwarePhysicalAttestation(BaseModel):
     """Operator's physical-safety attestation for a real-bench session.
 
     The safety fields are ``Literal[True]``: Pydantic refuses to construct an
-    attestation that claims anything *other* than propellers-removed and an
-    operator physically present. There is no way to express "propellers still
-    on" — so the open path simply cannot run without the physically safe state
-    having been asserted by a named human at a known time.
+    attestation unless the props-removed, operator-presence, restraint, E-stop,
+    and power-disconnect conditions are all affirmatively asserted by a named
+    human at a known time.
     """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     propellers_removed: Literal[True]
     operator_physically_present: Literal[True]
+    vehicle_physically_secured: Literal[True]
+    physical_estop_available: Literal[True]
+    power_disconnect_available: Literal[True]
     attesting_operator_id: str
     attested_at: datetime
     bench_photo_evidence_ref: str | None = None

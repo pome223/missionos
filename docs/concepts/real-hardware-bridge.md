@@ -36,3 +36,9 @@ as simulation evidence, not physical execution.
 This is not a release promise for outdoor flight or autonomous hardware
 operation. Real adapters must be added one boundary at a time, with their own
 operator controls, safety case, runtime smoke, and evidence limits.
+
+For PX4, “props removed” is necessary but not sufficient. The bench path also
+requires the vehicle to be physically secured, a tested physical stop control
+and an immediate power disconnect to be within reach, and a fresh named human
+attestation. Those conditions authorize only the bounded bench action. They do
+not authorize takeoff, flight, payload release, or mission completion.

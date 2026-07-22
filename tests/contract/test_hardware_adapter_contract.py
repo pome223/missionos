@@ -221,6 +221,36 @@ def test_stale_telemetry_preflight_and_blocked_evidence_fail_closed() -> None:
     assert "dispatch_not_sent" in evidence.unproven_claims
 
 
+def test_px4_bench_preflight_requires_physical_stop_and_restraint_controls() -> None:
+    preflight = build_px4_bench_hardware_adapter_preflight()
+
+    assert preflight.preflight_status is HardwarePreflightStatus.BLOCKED
+    assert preflight.physical_estop_available is False
+    assert preflight.vehicle_physically_secured is False
+    assert preflight.power_disconnect_available is False
+    assert set(preflight.blocking_reasons) == {
+        "physical_estop_missing",
+        "vehicle_not_physically_secured",
+        "power_disconnect_missing",
+    }
+
+
+def test_px4_bench_approval_rejects_incomplete_physical_attestation() -> None:
+    now = datetime(2026, 6, 28, tzinfo=timezone.utc)
+
+    with pytest.raises(ValidationError):
+        build_px4_real_hardware_actuator_approval(
+            approved_operations=("arm", "disarm"),
+            physical_attestation={
+                "propellers_removed": True,
+                "operator_physically_present": True,
+                "attesting_operator_id": "operator-contract-test",
+                "attested_at": now.isoformat(),
+            },
+            now=now,
+        )
+
+
 def test_heartbeat_loss_requests_safe_stop_without_command_dispatch() -> None:
     evidence = build_px4_bench_safe_stop_hardware_adapter_evidence(
         missionos_action_ref="operator_gated_real_hardware_arm_disarm",
@@ -352,6 +382,9 @@ def test_real_hardware_dispatch_runtime_writes_adapter_evidence_from_executor_re
             physical_attestation={
                 "propellers_removed": True,
                 "operator_physically_present": True,
+                "vehicle_physically_secured": True,
+                "physical_estop_available": True,
+                "power_disconnect_available": True,
                 "attesting_operator_id": "operator-contract-test",
                 "attested_at": now.isoformat(),
             },
@@ -440,6 +473,9 @@ def test_real_hardware_dispatch_runtime_persists_blocked_preflight_evidence(
             physical_attestation={
                 "propellers_removed": True,
                 "operator_physically_present": True,
+                "vehicle_physically_secured": True,
+                "physical_estop_available": True,
+                "power_disconnect_available": True,
                 "attesting_operator_id": "operator-contract-test",
                 "attested_at": now.isoformat(),
             },

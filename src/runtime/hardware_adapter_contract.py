@@ -167,6 +167,9 @@ class HardwareAdapterPreflightResult(BaseModel):
     heartbeat_alive: bool
     geofence_satisfied: bool
     operating_volume_satisfied: bool
+    physical_estop_available: bool | None = None
+    vehicle_physically_secured: bool | None = None
+    power_disconnect_available: bool | None = None
     dispatch_authority_created: Literal[False] = False
     physical_execution_invoked: Literal[False] = False
 
@@ -448,22 +451,36 @@ def build_px4_bench_hardware_adapter_preflight(
     telemetry_fresh: bool = True,
     heartbeat_alive: bool = True,
     operating_volume_satisfied: bool = True,
+    physical_estop_available: bool = False,
+    vehicle_physically_secured: bool = False,
+    power_disconnect_available: bool = False,
 ) -> HardwareAdapterPreflightResult:
     """Build a preflight artifact for the existing PX4 bench boundary."""
 
+    reasons = list(blocking_reasons)
+    if not physical_estop_available:
+        reasons.append("physical_estop_missing")
+    if not vehicle_physically_secured:
+        reasons.append("vehicle_not_physically_secured")
+    if not power_disconnect_available:
+        reasons.append("power_disconnect_missing")
+    normalized_reasons = tuple(dict.fromkeys(reasons))
     return HardwareAdapterPreflightResult(
         adapter_id=PX4_BENCH_HARDWARE_ADAPTER_ID,
         adapter_action_kind=HardwareActionKind.PX4_ARM_DISARM_BENCH,
         preflight_status=(
             HardwarePreflightStatus.BLOCKED
-            if blocking_reasons
+            if normalized_reasons
             else HardwarePreflightStatus.PASSED
         ),
-        blocking_reasons=blocking_reasons,
+        blocking_reasons=normalized_reasons,
         telemetry_fresh=telemetry_fresh,
         heartbeat_alive=heartbeat_alive,
         geofence_satisfied=True,
         operating_volume_satisfied=operating_volume_satisfied,
+        physical_estop_available=physical_estop_available,
+        vehicle_physically_secured=vehicle_physically_secured,
+        power_disconnect_available=power_disconnect_available,
     )
 
 
@@ -484,6 +501,9 @@ def build_px4_bench_hardware_dispatch_candidate(
             "operator_approval_required",
             "props_removed_attestation_required",
             "operator_present_attestation_required",
+            "vehicle_secured_attestation_required",
+            "physical_estop_required",
+            "power_disconnect_required",
             "flight_execution_forbidden",
             "takeoff_forbidden",
             "mission_start_forbidden",

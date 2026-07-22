@@ -125,6 +125,20 @@ async def _run() -> dict[str, Any]:
         try:
             await _wait_for_health(base_url)
             async with httpx.AsyncClient(base_url=base_url, timeout=15.0) as client:
+                incomplete_response = await client.post(
+                    "/missionos/real-hardware-arm-disarm-dispatch/run",
+                    json={
+                        "task_id": task["task_id"],
+                        "subject_id": "pixhawk-loopback-smoke",
+                        "operator_approved": True,
+                        "physical_attestation": {
+                            "propellers_removed": True,
+                            "operator_physically_present": True,
+                            "attesting_operator_id": "operator-loopback-smoke",
+                            "attested_at": datetime.now(timezone.utc).isoformat(),
+                        },
+                    },
+                )
                 response = await client.post(
                     "/missionos/real-hardware-arm-disarm-dispatch/run",
                     json={
@@ -134,6 +148,9 @@ async def _run() -> dict[str, Any]:
                         "physical_attestation": {
                             "propellers_removed": True,
                             "operator_physically_present": True,
+                            "vehicle_physically_secured": True,
+                            "physical_estop_available": True,
+                            "power_disconnect_available": True,
                             "attesting_operator_id": "operator-loopback-smoke",
                             "attested_at": datetime.now(timezone.utc).isoformat(),
                         },
@@ -165,6 +182,7 @@ async def _run() -> dict[str, Any]:
         "smoke": "missionos_real_hardware_arm_disarm_route",
         "ran": True,
         "http_status": response.status_code,
+        "incomplete_attestation_http_status": incomplete_response.status_code,
         "task_id": task["task_id"],
         "orchestration_status": payload["orchestration_status"],
         "planner_status": payload["planner_result"]["planner_status"],
@@ -202,6 +220,7 @@ async def _run() -> dict[str, Any]:
     }
 
     assert summary["http_status"] == 200
+    assert summary["incomplete_attestation_http_status"] == 400
     assert summary["orchestration_status"] == "blocked_at_executor"
     assert summary["planner_status"] == "proposal_guardrail_passed"
     assert summary["dispatch_validation_status"] == "valid"
