@@ -16,6 +16,9 @@ Each example should include commands, observed evidence, and limitations.
   shows an actual obstacle-context `missionos chat --autostart
   --enable-live-sitl` run. It includes human-approved recovery dispatches,
   `watch`, `operate`, a map screenshot, and the terminal limitations.
+- [PX4 Recovery Replay Bundle](recovery-replay-bundle.md) exercises sanitized
+  two-Recovery export and verification with a deterministic fixture. It is a
+  contract smoke, not evidence of a new simulator or physical run.
 
 ## Example Checklist
 
