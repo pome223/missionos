@@ -360,6 +360,9 @@ def run_web(*, host: str = "127.0.0.1", port: int = 18791) -> None:
     if backend in {"production", "backend", "full"}:
         run_production_web(host=host, port=port)
         return
+    if backend in {"legacy", "legacy-agent", "legacy_agent"}:
+        run_legacy_agent_web(host=host, port=port)
+        return
     server = ThreadingHTTPServer((host, port), MissionOSFixtureHandler)
     print(f"MissionOS fixture Gateway listening on http://{host}:{port}", flush=True)
     try:
@@ -371,12 +374,28 @@ def run_web(*, host: str = "127.0.0.1", port: int = 18791) -> None:
 
 def run_production_web(*, host: str = "127.0.0.1", port: int = 18791) -> None:
     try:
-        from src.gateway.server import create_gateway
+        from src.gateway.server import create_missionos_gateway
     except Exception as exc:  # pragma: no cover - exercised by runtime smoke.
         raise RuntimeError(
             "MissionOS production Gateway backend could not be imported. "
             "Run `pip install -e .` from the repository root and retry."
         ) from exc
-    gateway = create_gateway()
+    gateway = create_missionos_gateway()
     print(f"MissionOS production Gateway listening on http://{host}:{port}", flush=True)
+    gateway.run(host=host, port=port)
+
+
+def run_legacy_agent_web(*, host: str = "127.0.0.1", port: int = 18791) -> None:
+    try:
+        from src.gateway.server import create_legacy_agent_gateway
+    except Exception as exc:  # pragma: no cover - exercised by runtime smoke.
+        raise RuntimeError(
+            "MissionOS legacy agent Gateway backend could not be imported. "
+            "Run `pip install -e .` from the repository root and retry."
+        ) from exc
+    gateway = create_legacy_agent_gateway()
+    print(
+        f"MissionOS legacy agent Gateway listening on http://{host}:{port}",
+        flush=True,
+    )
     gateway.run(host=host, port=port)

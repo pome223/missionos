@@ -3,11 +3,15 @@
 HTTP and WebSocket Gateway package.
 
 The package exposes the `missionos-gateway` entrypoint used by the CLI. It has
-two backend modes:
+three backend modes:
 
 - `fixture` (default): deterministic public-safe loopback routes.
-- `production`: copied MissionOS backend from `src.gateway.server`, enabled by
-  `MISSIONOS_GATEWAY_BACKEND=production`.
+- `production`: the MissionOS-only backend from `src.gateway.server`, enabled
+  by `MISSIONOS_GATEWAY_BACKEND=production`. Legacy general-agent, memory,
+  cron, skills, runtime-tool, and tool-approval routes are absent from its
+  FastAPI route table.
+- `legacy-agent`: the explicitly selected general-agent backend, enabled by
+  `MISSIONOS_GATEWAY_BACKEND=legacy-agent` for old internal callers only.
 
 The CLI sets `MISSIONOS_GATEWAY_BACKEND=production` when started with
 `--enable-live-sitl`.

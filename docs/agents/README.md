@@ -12,7 +12,7 @@ docs.
 | If you are changing... | Read these first (in order) |
 | --- | --- |
 | CLI commands, help text, or operator UX | `contracts.md`, `claim-semantics.md`, `e2e-verification.md`, `cli-parity-release-gate.md` |
-| Gateway routes, sessions, or audit | `contracts.md`, `artifact-taxonomy.md`, `publication-rules.md`, `e2e-verification.md` |
+| Gateway routes, sessions, or audit | `gateway-profiles.md`, `contracts.md`, `artifact-taxonomy.md`, `publication-rules.md`, `e2e-verification.md` |
 | LLM planning, repair, or recovery logic | `claim-semantics.md`, `agent-architecture.md`, `contracts.md` |
 | Recovery delegation (reflex/deliberation split, perception claims, shadow measurement, action promotion) | `recovery-delegation-authority.md`, `claim-semantics.md`, `hardware-adapter-contract.md` |
 | Evidence, claims, completion, or verifier behavior | `claim-semantics.md`, `artifact-taxonomy.md`, `contracts.md` |
@@ -38,6 +38,7 @@ When the map above is not enough, read the complete set:
 - `recovery-delegation-authority.md`
 - `artifact-taxonomy.md`
 - `e2e-verification.md`
+- `gateway-profiles.md`
 - `cli-parity-release-gate.md`
 - `local-llm-backends.md`
 - `publication-rules.md`

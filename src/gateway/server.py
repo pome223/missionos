@@ -9,6 +9,8 @@ Typed Gateway Protocol v1:
                     tools.approval_request / control.approval_request
 """
 
+from __future__ import annotations
+
 # ruff: noqa: E402
 
 import asyncio
@@ -29,35 +31,12 @@ from fastapi import Body, FastAPI, HTTPException, Query, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
-from google.adk.events.event import Event
-from google.adk.runners import Runner
-from google.genai import types
 from pathlib import Path
 from pydantic import ValidationError
 
 from src.config.settings import get_settings
 from src.agents.model_config import llm_provider_label
-from src.agents.root_agent import root_agent
-from src.agents.sub_agents import SUB_AGENTS
-from src.control_loop.live_failure_taxonomy import classify_control_loop_failure
-from src.control_loop.root_workflow import ControlLoop, ExecutionResult
-from src.gateway.routing_agent import routing_agent
-from src.memory_lifecycle.adk_memory_service import get_promoted_memory_service
 from src.security.audit import get_audit_logger, AuditEventType
-from src.security.tool_policy import APPROVAL_EXPIRY_REASONS, get_tool_policy_engine
-from src.tools.finance import is_direct_stock_price_query, stock_price
-from src.tools.web_search import web_search
-from src.skills.runtime import ensure_skills_loaded, get_skills_report
-from src.tools.skills import (
-    capability_invoke as tool_capability_invoke,
-    capability_list as tool_capability_list,
-    resource_list as tool_resource_list,
-    resource_read as tool_resource_read,
-    skill_execute as tool_skill_execute,
-    skill_list as tool_skill_list,
-)
-from src.tools.memory import memory_search, memory_stats, memory_delete
-from src.tools.subagents import get_subagent_manager, set_subagent_notifier
 from src.gateway.protocol import (
     EVENT_SCHEMAS,
     HTTP_ROUTE_SCHEMAS,
@@ -78,7 +57,6 @@ from src.gateway.routing import (
 from src.gateway.task_replay import (
     persist_control_loop_step_events,
 )
-from src.gateway.control_supervisor import ControlLoopSupervisor
 from src.gateway.live_runtime_boundary import (
     GATEWAY_OBSERVATION_PROCESS_PROBE_KIND,
     GATEWAY_ROUTE_INVOCATION_BOUNDARY_PATH,
@@ -155,15 +133,8 @@ from src.gateway.missionos_operations import (
     get_missionos_operations_registry,
     run_missionos_operation,
 )
-from src.gateway.missionos_milestone import ARTIFACT_ROOT, _relative
-from src.gateway.missionos_real_hardware_dispatch import (
-    run_real_hardware_arm_disarm_dispatch,
-)
+from src.gateway.real_hardware_routes import build_real_hardware_router
 from src.gateway.hardware_adapter_routes import build_hardware_adapter_router
-from src.runtime.px4_real_hardware_actuator_backend import (
-    PX4RealHardwareActuatorError,
-    build_px4_real_hardware_actuator_approval,
-)
 from src.runtime.missionos_payload_split_plan import (
     MISSIONOS_PAYLOAD_SPLIT_DEFAULT_RESERVE_FRACTION,
     MISSIONOS_PAYLOAD_SPLIT_TOOL_NAME,
@@ -225,10 +196,113 @@ _LEGACY_GENERAL_AGENT_ROUTE_PREFIXES = (
     "/subagents",
     "/cron",
 )
+MISSIONOS_GATEWAY_PROFILE = "missionos"
+LEGACY_AGENT_GATEWAY_PROFILE = "legacy_agent"
+_GATEWAY_PROFILES = frozenset(
+    {MISSIONOS_GATEWAY_PROFILE, LEGACY_AGENT_GATEWAY_PROFILE}
+)
 
 
 def _route_matches_prefix(path: str, prefix: str) -> bool:
     return path == prefix or path.startswith(prefix + "/")
+
+
+def _describe_gateway_session_backend(settings: Any) -> dict[str, Any]:
+    redis_url = getattr(settings, "redis_url", None)
+    if redis_url:
+        return {
+            "backend": "redis",
+            "namespace": getattr(
+                settings,
+                "redis_session_namespace",
+                "boiled-claw:sessions",
+            ),
+        }
+    return {"backend": "memory", "namespace": None}
+
+
+def _load_legacy_agent_dependencies() -> None:
+    """Import general-agent dependencies only for the explicit legacy profile."""
+
+    global APPROVAL_EXPIRY_REASONS
+    global ControlLoop
+    global ControlLoopSupervisor
+    global Event
+    global ExecutionResult
+    global Runner
+    global SPREADSHEET_KEYWORDS
+    global StateKeys
+    global SUB_AGENTS
+    global build_websocket_router
+    global classify_control_loop_failure
+    global create_session_service
+    global create_task_record
+    global ensure_skills_loaded
+    global get_promoted_memory_service
+    global get_scheduler
+    global get_skills_report
+    global get_subagent_manager
+    global get_tool_policy_engine
+    global get_transcript_store
+    global is_direct_stock_price_query
+    global memory_delete
+    global memory_search
+    global memory_stats
+    global prefers_isolated_browser_for_goal
+    global root_agent
+    global routing_agent
+    global set_subagent_notifier
+    global set_tool_event_notifier
+    global stock_price
+    global tool_capability_invoke
+    global tool_capability_list
+    global tool_resource_list
+    global tool_resource_read
+    global tool_skill_execute
+    global tool_skill_list
+    global types
+    global update_task_record
+    global web_search
+
+    from google.adk.events.event import Event
+    from google.adk.runners import Runner
+    from google.genai import types
+
+    from src.agents.root_agent import root_agent
+    from src.agents.sub_agents import SUB_AGENTS
+    from src.control_loop.live_failure_taxonomy import classify_control_loop_failure
+    from src.control_loop.root_workflow import ControlLoop, ExecutionResult
+    from src.cron.scheduler import get_scheduler
+    from src.gateway.control_supervisor import ControlLoopSupervisor
+    from src.gateway.routing_agent import routing_agent
+    from src.gateway.transcript import get_transcript_store
+    from src.gateway.ws_handler import build_websocket_router
+    from src.memory_lifecycle.adk_memory_service import get_promoted_memory_service
+    from src.runtime.session_service import create_session_service
+    from src.runtime.state_keys import StateKeys
+    from src.runtime.task_keywords import (
+        SPREADSHEET_KEYWORDS,
+        prefers_isolated_browser_for_goal,
+    )
+    from src.runtime.tool_events import set_tool_event_notifier
+    from src.security.tool_policy import (
+        APPROVAL_EXPIRY_REASONS,
+        get_tool_policy_engine,
+    )
+    from src.skills.runtime import ensure_skills_loaded, get_skills_report
+    from src.tools.finance import is_direct_stock_price_query, stock_price
+    from src.tools.memory import memory_delete, memory_search, memory_stats
+    from src.tools.skills import (
+        capability_invoke as tool_capability_invoke,
+        capability_list as tool_capability_list,
+        resource_list as tool_resource_list,
+        resource_read as tool_resource_read,
+        skill_execute as tool_skill_execute,
+        skill_list as tool_skill_list,
+    )
+    from src.tools.subagents import get_subagent_manager, set_subagent_notifier
+    from src.tools.tasks import create_task_record, update_task_record
+    from src.tools.web_search import web_search
 
 
 def _gateway_process_owner_pid(owner_id: str) -> int | None:
@@ -2359,15 +2433,7 @@ from src.gateway.task_routes import (
     enrich_terrain_heightmap_preview_fields,
 )
 from src.gateway.audit_routes import build_audit_router
-from src.gateway.ws_handler import build_websocket_router
-from src.runtime.tool_events import set_tool_event_notifier
-from src.runtime.session_service import create_session_service, describe_session_backend
-from src.runtime.state_keys import StateKeys
-from src.runtime.task_keywords import SPREADSHEET_KEYWORDS, prefers_isolated_browser_for_goal
-from src.gateway.transcript import get_transcript_store
-from src.cron.scheduler import get_scheduler
 from src.runtime.task_store import get_task_store
-from src.tools.tasks import create_task_record, update_task_record
 from src.runtime.px4_gazebo_mission_scenario_designer import (
     PX4GazeboMissionScenarioDesignerError,
     approve_px4_gazebo_mission_scenario_for_bounded_simulation,
@@ -4418,54 +4484,84 @@ class ConnectionManager:
 class GatewayServer:
     """Gateway server with typed protocol, transcript, cron platform, and tool security."""
 
-    def __init__(self):
+    def __init__(self, *, gateway_profile: str | None = None):
         self.settings = get_settings()
-        self.session_backend = describe_session_backend(self.settings)
+        resolved_gateway_profile = gateway_profile
+        if resolved_gateway_profile is None:
+            resolved_gateway_profile = (
+                LEGACY_AGENT_GATEWAY_PROFILE
+                if self.settings.gateway_legacy_agent_routes_enabled
+                else MISSIONOS_GATEWAY_PROFILE
+            )
+        if resolved_gateway_profile not in _GATEWAY_PROFILES:
+            raise ValueError(
+                f"unsupported Gateway profile: {resolved_gateway_profile}"
+            )
+        self.gateway_profile = resolved_gateway_profile
+        self.session_backend = _describe_gateway_session_backend(self.settings)
         self.manager = ConnectionManager()
-        self.session_service = create_session_service(self.settings)
-        self.memory_service = get_promoted_memory_service()
-        self.subagent_manager = get_subagent_manager()
-        self.runner = Runner(
-            agent=root_agent,
-            app_name="boiled-claw",
-            session_service=self.session_service,
-            memory_service=self.memory_service,
-        )
-        self.routing_session_service = create_session_service(self.settings)
-        self.routing_runner = Runner(
-            agent=routing_agent,
-            app_name="boiled-claw-router",
-            session_service=self.routing_session_service,
-            memory_service=self.memory_service,
-        )
-        self.specialist_runners = {
-            agent.name: Runner(
-                agent=agent,
+        self.session_service = None
+        self.memory_service = None
+        self.subagent_manager = None
+        self.runner = None
+        self.routing_session_service = None
+        self.routing_runner = None
+        self.specialist_runners: dict[str, Any] = {}
+        self.control_loop = None
+        self.control_supervisor = None
+        self.transcript = None
+        self.tool_policy = None
+        if self.gateway_profile == LEGACY_AGENT_GATEWAY_PROFILE:
+            _load_legacy_agent_dependencies()
+            self.session_service = create_session_service(self.settings)
+            self.memory_service = get_promoted_memory_service()
+            self.subagent_manager = get_subagent_manager()
+            self.runner = Runner(
+                agent=root_agent,
                 app_name="boiled-claw",
                 session_service=self.session_service,
                 memory_service=self.memory_service,
             )
-            for agent in SUB_AGENTS
-        }
-        self.control_loop = ControlLoop(
-            session_service=self.session_service,
-            memory_service=self.memory_service,
-        )
+            self.routing_session_service = create_session_service(self.settings)
+            self.routing_runner = Runner(
+                agent=routing_agent,
+                app_name="boiled-claw-router",
+                session_service=self.routing_session_service,
+                memory_service=self.memory_service,
+            )
+            self.specialist_runners = {
+                agent.name: Runner(
+                    agent=agent,
+                    app_name="boiled-claw",
+                    session_service=self.session_service,
+                    memory_service=self.memory_service,
+                )
+                for agent in SUB_AGENTS
+            }
+            self.control_loop = ControlLoop(
+                session_service=self.session_service,
+                memory_service=self.memory_service,
+            )
+            self.transcript = get_transcript_store()
+            self.tool_policy = get_tool_policy_engine()
+            self.control_supervisor = ControlLoopSupervisor(
+                run_control_loop_with_task=self._run_control_loop_with_task,
+                emit_session_event=self._emit_session_event,
+            )
         self.audit_logger = get_audit_logger()
         self.task_store = get_task_store()
-        self.transcript = get_transcript_store()
-        self.tool_policy = get_tool_policy_engine()
         self._turtlebot3_recovery_locks: dict[str, asyncio.Lock] = {}
         self._gateway_process_owner_id = _GATEWAY_PROCESS_OWNER_ID
         self._gateway_process_lock_handle: Any | None = None
         self._gateway_previous_lock_owner_id: str | None = None
-        self.control_supervisor = ControlLoopSupervisor(
-            run_control_loop_with_task=self._run_control_loop_with_task,
-            emit_session_event=self._emit_session_event,
-        )
         self._heartbeat_task: Optional[asyncio.Task] = None
+        app_title = (
+            "MissionOS Gateway"
+            if self.gateway_profile == MISSIONOS_GATEWAY_PROFILE
+            else "boiled-claw Legacy Agent Gateway"
+        )
         self.app = FastAPI(
-            title="boiled-claw Gateway",
+            title=app_title,
             version="0.3.0",
             lifespan=self._lifespan,
         )
@@ -4499,14 +4595,6 @@ class GatewayServer:
                         {"detail": "Gateway API key is required for browser requests"},
                         status_code=401,
                     )
-            if (
-                not self.settings.gateway_legacy_agent_routes_enabled
-                and any(
-                    _route_matches_prefix(path, prefix)
-                    for prefix in _LEGACY_GENERAL_AGENT_ROUTE_PREFIXES
-                )
-            ):
-                return JSONResponse({"detail": "Not Found"}, status_code=404)
             if path in {"/", "/health", "/protocol"}:
                 return await call_next(request)
             if not api_key:
@@ -4634,6 +4722,29 @@ class GatewayServer:
 
         self._audit_notifier_fn = _audit_notifier
         self._setup_routes()
+        if self.gateway_profile == MISSIONOS_GATEWAY_PROFILE:
+            self._remove_legacy_agent_routes()
+
+    def _remove_legacy_agent_routes(self) -> None:
+        """Remove legacy general-agent HTTP routes from the production route table.
+
+        This is intentionally structural. Production requests reach FastAPI's
+        normal 404 handling because the routes do not exist; an auth middleware
+        does not merely conceal registered handlers.
+        """
+
+        self.app.router.routes[:] = [
+            route
+            for route in self.app.router.routes
+            if not (
+                isinstance(getattr(route, "path", None), str)
+                and any(
+                    _route_matches_prefix(route.path, prefix)
+                    for prefix in _LEGACY_GENERAL_AGENT_ROUTE_PREFIXES
+                )
+            )
+        ]
+        self.app.openapi_schema = None
 
     @asynccontextmanager
     async def _lifespan(self, _app: FastAPI) -> AsyncIterator[None]:
@@ -4691,27 +4802,32 @@ class GatewayServer:
             handle.close()
 
     async def _startup_gateway(self) -> None:
-        await ensure_skills_loaded()
         await run_in_threadpool(
             self._reconcile_abandoned_turtlebot3_recovery_dispatches
         )
-        set_subagent_notifier(self._subagent_notifier_fn)
-        set_tool_event_notifier(self._send_tool_event)
-        self.tool_policy.set_notifier(self._approval_notifier_fn)
         self.task_store.set_notifier(self._task_notifier_fn)
         self.audit_logger.set_notifier(self._audit_notifier_fn)
-        if self._heartbeat_task is None or self._heartbeat_task.done():
-            self._heartbeat_task = asyncio.create_task(
-                self._heartbeat_loop(), name="heartbeat"
+        if self.gateway_profile == LEGACY_AGENT_GATEWAY_PROFILE:
+            await ensure_skills_loaded()
+            set_subagent_notifier(self._subagent_notifier_fn)
+            set_tool_event_notifier(self._send_tool_event)
+            self.tool_policy.set_notifier(self._approval_notifier_fn)
+            if self._heartbeat_task is None or self._heartbeat_task.done():
+                self._heartbeat_task = asyncio.create_task(
+                    self._heartbeat_loop(), name="heartbeat"
+                )
+            scheduler = get_scheduler()
+            scheduler.set_spawn_fn(self._spawn_cron_target)
+            scheduler.set_notifier(self._cron_notifier_fn)
+            scheduler.start()
+            await scheduler.fire_system_event("startup")
+            running_supervisors = self._running_control_supervisor_tasks()
+            self.control_supervisor.watchdog_running_supervisors(
+                running_supervisors
             )
-        scheduler = get_scheduler()
-        scheduler.set_spawn_fn(self._spawn_cron_target)
-        scheduler.set_notifier(self._cron_notifier_fn)
-        scheduler.start()
-        await scheduler.fire_system_event("startup")
-        running_supervisors = self._running_control_supervisor_tasks()
-        self.control_supervisor.watchdog_running_supervisors(running_supervisors)
-        await self.control_supervisor.resume_open_supervisors(running_supervisors)
+            await self.control_supervisor.resume_open_supervisors(
+                running_supervisors
+            )
 
     def _reconcile_abandoned_turtlebot3_recovery_dispatches(
         self,
@@ -4961,16 +5077,17 @@ class GatewayServer:
             self._reconcile_abandoned_turtlebot3_recovery_dispatches,
             include_current_owner=True,
         )
-        await self.control_supervisor.shutdown()
-        set_subagent_notifier(None)
-        set_tool_event_notifier(None)
-        self.tool_policy.set_notifier(None)
         self.task_store.set_notifier(None)
         self.audit_logger.set_notifier(None)
-        if self._heartbeat_task and not self._heartbeat_task.done():
-            self._heartbeat_task.cancel()
-        self._heartbeat_task = None
-        await get_scheduler().shutdown()
+        if self.gateway_profile == LEGACY_AGENT_GATEWAY_PROFILE:
+            await self.control_supervisor.shutdown()
+            set_subagent_notifier(None)
+            set_tool_event_notifier(None)
+            self.tool_policy.set_notifier(None)
+            if self._heartbeat_task and not self._heartbeat_task.done():
+                self._heartbeat_task.cancel()
+            self._heartbeat_task = None
+            await get_scheduler().shutdown()
 
     def _should_force_web_research(self, message: str) -> bool:
         normalized = (message or "").strip().lower()
@@ -6339,6 +6456,12 @@ class GatewayServer:
         # --- health / root / protocol ---
 
         self.app.include_router(
+            build_real_hardware_router(
+                task_store=self.task_store,
+                resolve_http_user_id=self._resolve_http_user_id,
+            )
+        )
+        self.app.include_router(
             build_hardware_adapter_router(
                 task_store=self.task_store,
                 resolve_http_user_id=self._resolve_http_user_id,
@@ -6347,22 +6470,33 @@ class GatewayServer:
 
         @self.app.get("/")
         async def root():
+            skills_report = (
+                get_skills_report()
+                if self.gateway_profile == LEGACY_AGENT_GATEWAY_PROFILE
+                else {}
+            )
             return {
-                "name": "boiled-claw Gateway",
+                "name": (
+                    "MissionOS Gateway"
+                    if self.gateway_profile == MISSIONOS_GATEWAY_PROFILE
+                    else "boiled-claw Legacy Agent Gateway"
+                ),
                 "version": "0.3.0",
                 "protocol_version": PROTOCOL_VERSION,
+                "gateway_profile": self.gateway_profile,
                 "status": "running",
                 "session_backend": self.session_backend["backend"],
                 "session_namespace": self.session_backend["namespace"],
                 "active_sessions": len(self.manager.active_connections),
-                "skills_loaded": get_skills_report().get("loaded", False),
-                "skills_count": get_skills_report().get("count", 0),
+                "skills_loaded": skills_report.get("loaded", False),
+                "skills_count": skills_report.get("count", 0),
             }
 
         @self.app.get("/health")
         async def health():
             return {
                 "status": "healthy",
+                "gateway_profile": self.gateway_profile,
                 "session_backend": self.session_backend["backend"],
                 "session_namespace": self.session_backend["namespace"],
             }
@@ -7007,78 +7141,6 @@ class GatewayServer:
         @self.app.post("/missionos/sitl-dispatch-execution/run")
         async def missionos_sitl_dispatch_execution_run():
             return await run_in_threadpool(run_sitl_bounded_dispatch_execution)
-
-        @self.app.post("/missionos/real-hardware-arm-disarm-dispatch/run")
-        async def missionos_real_hardware_arm_disarm_dispatch_run(
-            request: Request,
-            payload: Dict[str, Any] | None = Body(default=None),
-        ):
-            body = payload or {}
-            task_id = str(body.get("task_id") or "").strip()
-            if not task_id:
-                raise HTTPException(status_code=400, detail="task_id is required")
-            if self.task_store.get(task_id) is None:
-                raise HTTPException(status_code=404, detail="task not found")
-            subject_id = str(body.get("subject_id") or "").strip()
-            if not subject_id:
-                raise HTTPException(status_code=400, detail="subject_id is required")
-            attestation = body.get("physical_attestation")
-            if not isinstance(attestation, dict):
-                raise HTTPException(
-                    status_code=400,
-                    detail="physical_attestation object is required",
-                )
-            # The operator's physical attestation and approval are Gateway-collected
-            # inputs; the orchestration never self-approves. Real serial actuation
-            # additionally requires the executor opt-in env gate, which is off here
-            # by default, so without it the chain stops honestly at the executor.
-            try:
-                actuator_approval = build_px4_real_hardware_actuator_approval(
-                    approved_operations=("arm", "disarm"),
-                    physical_attestation=attestation,
-                )
-            except (PX4RealHardwareActuatorError, ValueError) as exc:
-                raise HTTPException(status_code=400, detail=str(exc)) from exc
-            approval_actor = self._resolve_http_user_id(
-                request,
-                None,
-                default_user_id="loopback_local_operator",
-            )
-
-            def _run() -> Dict[str, Any]:
-                return run_real_hardware_arm_disarm_dispatch(
-                    store=self.task_store,
-                    task_id=task_id,
-                    subject_id=subject_id,
-                    artifact_root=ARTIFACT_ROOT,
-                    artifact_relative=_relative,
-                    authority_table_state_path=(
-                        Path(ARTIFACT_ROOT)
-                        / "missionos_real_hardware_dispatch_authority"
-                        / "authority_table_state.json"
-                    ),
-                    actuator_approval=actuator_approval,
-                    operator_approved=body.get("operator_approved") is True,
-                    approval_actor=approval_actor,
-                    bench_context=(
-                        body.get("bench_context")
-                        if isinstance(body.get("bench_context"), dict)
-                        else None
-                    ),
-                    operator_instruction=(
-                        body.get("operator_instruction")
-                        if isinstance(body.get("operator_instruction"), dict)
-                        else None
-                    ),
-                    serial_device=(
-                        str(body["serial_device"])
-                        if body.get("serial_device")
-                        else None
-                    ),
-                    opt_in=body.get("opt_in") is True,
-                )
-
-            return await run_in_threadpool(_run)
 
         @self.app.get("/missionos/scoped-form3-closed-loop")
         async def missionos_scoped_form3_closed_loop():
@@ -10387,7 +10449,14 @@ class GatewayServer:
         async def subagents_list_endpoint(session_id: str):
             return await self.subagent_manager.list_runs(requester_session_id=session_id)
 
-        self.app.include_router(build_task_router(self))
+        self.app.include_router(
+            build_task_router(
+                self,
+                include_control_routes=(
+                    self.gateway_profile == LEGACY_AGENT_GATEWAY_PROFILE
+                ),
+            )
+        )
         self.app.include_router(build_audit_router(self))
 
         @self.app.post("/subagents/{run_id}/steer")
@@ -10587,7 +10656,8 @@ class GatewayServer:
                 "results": results,
             }
 
-        self.app.include_router(build_websocket_router(self))
+        if self.gateway_profile == LEGACY_AGENT_GATEWAY_PROFILE:
+            self.app.include_router(build_websocket_router(self))
 
     # ------------------------------------------------------------------
     # agent execution
@@ -12015,5 +12085,26 @@ class GatewayServer:
             host=host or self.settings.gateway_host,
             port=port or self.settings.gateway_port,
         )
+
+
+def create_missionos_gateway() -> GatewayServer:
+    """Create the production MissionOS surface without general-agent routes."""
+
+    return GatewayServer(gateway_profile=MISSIONOS_GATEWAY_PROFILE)
+
+
+def create_legacy_agent_gateway() -> GatewayServer:
+    """Create the explicitly opted-in legacy general-agent surface."""
+
+    return GatewayServer(gateway_profile=LEGACY_AGENT_GATEWAY_PROFILE)
+
+
 def create_gateway() -> GatewayServer:
+    """Backward-compatible factory selected by the legacy-route setting.
+
+    New production entrypoints must call :func:`create_missionos_gateway`
+    directly. The compatibility factory remains for internal legacy callers and
+    tests while the old general-agent application is retired.
+    """
+
     return GatewayServer()

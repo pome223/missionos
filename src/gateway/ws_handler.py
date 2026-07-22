@@ -31,12 +31,6 @@ def build_websocket_router(server: "GatewayServer") -> APIRouter:
         session_id: Optional[str] = Query(default=None),
         token: Optional[str] = Query(default=None),
     ):
-        if not server.settings.gateway_legacy_agent_routes_enabled:
-            await websocket.close(
-                code=4404,
-                reason="Legacy general-agent WebSocket is disabled",
-            )
-            return
         allowed_origins = {
             item.strip()
             for item in server.settings.gateway_cors_allowed_origins.split(",")

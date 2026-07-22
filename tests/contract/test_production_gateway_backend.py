@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import os
+from pathlib import Path
+import subprocess
 import sys
 import types
 
@@ -49,6 +51,7 @@ def isolated_gateway_factory(
         api_key: str = "",
         cors_origins: str = "",
         legacy_agent_routes_enabled: bool = False,
+        gateway_profile: str | None = None,
     ) -> object:
         monkeypatch.setenv("GATEWAY_API_KEY", api_key)
         monkeypatch.setenv("GATEWAY_CORS_ALLOWED_ORIGINS", cors_origins)
@@ -60,9 +63,18 @@ def isolated_gateway_factory(
         reset_task_store()
         audit._audit_logger = None
 
-        from src.gateway.server import create_gateway
+        from src.gateway.server import (
+            create_legacy_agent_gateway,
+            create_missionos_gateway,
+        )
 
-        return create_gateway()
+        if gateway_profile == "missionos":
+            return create_missionos_gateway()
+        if gateway_profile == "legacy_agent":
+            return create_legacy_agent_gateway()
+        if legacy_agent_routes_enabled:
+            return create_legacy_agent_gateway()
+        return create_missionos_gateway()
 
     yield factory
     reset_task_store()
@@ -378,19 +390,62 @@ def test_local_llm_backend_does_not_require_google_api_key(monkeypatch) -> None:
 
 
 def test_copied_production_gateway_imports() -> None:
-    from src.gateway.server import create_gateway
+    from src.gateway.server import create_missionos_gateway
 
-    gateway = create_gateway()
+    gateway = create_missionos_gateway()
 
     assert gateway.app is not None
+    assert gateway.gateway_profile == "missionos"
+
+
+def test_production_gateway_does_not_import_legacy_agent_modules(tmp_path) -> None:
+    repo_root = Path(__file__).resolve().parents[2]
+    env = os.environ.copy()
+    env["PYTHONPATH"] = os.pathsep.join(
+        [
+            str(repo_root),
+            str(repo_root / "packages" / "missionos-gateway" / "src"),
+            str(repo_root / "packages" / "missionos-cli" / "src"),
+        ]
+    )
+    env["TASK_STORE_DB_PATH"] = str(tmp_path / "tasks.db")
+    env["MEMORY_DB_PATH"] = str(tmp_path / "memory.db")
+    env["AUDIT_LOG_PATH"] = str(tmp_path / "audit.log")
+    script = """
+import sys
+from src.gateway.server import create_missionos_gateway
+create_missionos_gateway()
+forbidden = {
+    'src.agents.root_agent',
+    'src.agents.sub_agents',
+    'src.control_loop.root_workflow',
+    'src.cron.scheduler',
+    'src.gateway.ws_handler',
+    'src.tools.browser',
+    'src.tools.memory',
+    'src.tools.shell',
+}
+loaded = sorted(forbidden.intersection(sys.modules))
+if loaded:
+    raise SystemExit('legacy modules imported: ' + ', '.join(loaded))
+"""
+
+    subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=repo_root,
+        env=env,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
 
 
 def test_production_gateway_does_not_serve_legacy_control_ui() -> None:
     from fastapi.testclient import TestClient
 
-    from src.gateway.server import create_gateway
+    from src.gateway.server import create_missionos_gateway
 
-    gateway = create_gateway()
+    gateway = create_missionos_gateway()
     client = TestClient(gateway.app)
 
     assert client.get("/chat").status_code == 404
@@ -551,23 +606,62 @@ def test_production_gateway_accepts_configured_origin_with_api_key(
     assert response.headers["access-control-allow-origin"] == "https://operator.example"
 
 
-def test_production_gateway_hides_legacy_general_agent_routes(
+def test_production_gateway_omits_legacy_general_agent_routes(
     isolated_gateway_factory,
 ) -> None:
     from fastapi.testclient import TestClient
 
     gateway = isolated_gateway_factory()
     client = TestClient(gateway.app)
+    registered_paths = {
+        route.path
+        for route in gateway.app.routes
+        if isinstance(getattr(route, "path", None), str)
+    }
 
+    assert "/agent/run" not in registered_paths
+    assert "/tools/policy" not in registered_paths
+    assert "/ws/{user_id}" not in registered_paths
+    assert "/agent/run" not in gateway.app.openapi()["paths"]
+    assert "/tools/policy" not in gateway.app.openapi()["paths"]
+    assert "/tasks/supervisors/control-loop" not in gateway.app.openapi()["paths"]
+    assert "/tasks/{task_id}/replay" not in gateway.app.openapi()["paths"]
+    assert "/tasks/{task_id}/cancel" not in gateway.app.openapi()["paths"]
     assert client.post("/agent/run", json={"text": "run shell"}).status_code == 404
     assert client.get("/tools/policy").status_code == 404
 
-    from starlette.websockets import WebSocketDisconnect
 
-    with pytest.raises(WebSocketDisconnect) as exc_info:
-        with client.websocket_connect("/ws/operator"):
-            pass
-    assert exc_info.value.code == 4404
+def test_explicit_legacy_agent_gateway_registers_legacy_routes(
+    isolated_gateway_factory,
+) -> None:
+    gateway = isolated_gateway_factory(legacy_agent_routes_enabled=True)
+    registered_paths = {
+        route.path
+        for route in gateway.app.routes
+        if isinstance(getattr(route, "path", None), str)
+    }
+
+    assert gateway.gateway_profile == "legacy_agent"
+    assert "/agent/run" in registered_paths
+    assert "/tools/policy" in registered_paths
+    assert "/agent/run" in gateway.app.openapi()["paths"]
+    assert "/tools/policy" in gateway.app.openapi()["paths"]
+    assert "/tasks/supervisors/control-loop" in gateway.app.openapi()["paths"]
+    assert "/tasks/{task_id}/replay" in gateway.app.openapi()["paths"]
+    assert "/tasks/{task_id}/cancel" in gateway.app.openapi()["paths"]
+
+
+def test_named_missionos_gateway_cannot_be_widened_by_legacy_setting(
+    isolated_gateway_factory,
+) -> None:
+    gateway = isolated_gateway_factory(
+        legacy_agent_routes_enabled=True,
+        gateway_profile="missionos",
+    )
+
+    assert gateway.gateway_profile == "missionos"
+    assert "/agent/run" not in gateway.app.openapi()["paths"]
+    assert "/tools/policy" not in gateway.app.openapi()["paths"]
 
 
 def test_legacy_agent_websocket_requires_allowed_origin_and_key(
