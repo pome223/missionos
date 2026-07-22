@@ -225,9 +225,11 @@ def test_default_agent_model_uses_stable_gemini_id(monkeypatch) -> None:
 def test_stable_gemini_planners_normalize_vertex_location(monkeypatch) -> None:
     from src.config.settings import reset_settings
     from src.intelligence import (
+        llm_dialogue_router,
         llm_repair_planner,
         llm_response_planner,
         real_hardware_arm_disarm_planner,
+        turtlebot3_recovery_planner,
     )
 
     monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "gemini")
@@ -235,9 +237,11 @@ def test_stable_gemini_planners_normalize_vertex_location(monkeypatch) -> None:
     monkeypatch.setenv("GOOGLE_GENAI_USE_VERTEXAI", "true")
 
     for planner in (
+        llm_dialogue_router,
         llm_repair_planner,
         llm_response_planner,
         real_hardware_arm_disarm_planner,
+        turtlebot3_recovery_planner,
     ):
         monkeypatch.setenv("GOOGLE_CLOUD_LOCATION", "us-central1")
         reset_settings()
