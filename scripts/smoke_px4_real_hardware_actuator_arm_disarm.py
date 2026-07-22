@@ -18,6 +18,8 @@ Run at the bench only::
       PX4_SERIAL_DEVICE=/dev/tty.usbmodem1234 \
       PX4_ATTESTING_OPERATOR_ID=operator-001 \
       PX4_PROPELLERS_REMOVED=1 PX4_OPERATOR_PRESENT=1 \
+      PX4_VEHICLE_SECURED=1 PX4_PHYSICAL_ESTOP_AVAILABLE=1 \
+      PX4_POWER_DISCONNECT_AVAILABLE=1 \
       PYTHONPATH=. .venv/bin/python \
       scripts/smoke_px4_real_hardware_actuator_arm_disarm.py
 """
@@ -83,17 +85,30 @@ def main() -> int:
     baudrate = int(os.environ.get("PX4_BAUDRATE", "57600"))
     subject_id = os.environ.get("PX4_SUBJECT_ID", "pixhawk-bench-real-001")
 
-    if not (_bool_env("PX4_PROPELLERS_REMOVED") and _bool_env("PX4_OPERATOR_PRESENT")):
+    if not all(
+        _bool_env(name)
+        for name in (
+            "PX4_PROPELLERS_REMOVED",
+            "PX4_OPERATOR_PRESENT",
+            "PX4_VEHICLE_SECURED",
+            "PX4_PHYSICAL_ESTOP_AVAILABLE",
+            "PX4_POWER_DISCONNECT_AVAILABLE",
+        )
+    ):
         raise SystemExit(
             "refusing actuator smoke without explicit physical-safety attestation: "
-            "set PX4_PROPELLERS_REMOVED=1 and PX4_OPERATOR_PRESENT=1 only when "
-            "propellers are physically removed and you are at the bench"
+            "set PX4_PROPELLERS_REMOVED=1, PX4_OPERATOR_PRESENT=1, "
+            "PX4_VEHICLE_SECURED=1, PX4_PHYSICAL_ESTOP_AVAILABLE=1, and "
+            "PX4_POWER_DISCONNECT_AVAILABLE=1 only after inspecting the bench"
         )
 
     now = datetime.now(timezone.utc)
     attestation = PX4RealHardwarePhysicalAttestation(
         propellers_removed=True,
         operator_physically_present=True,
+        vehicle_physically_secured=True,
+        physical_estop_available=True,
+        power_disconnect_available=True,
         attesting_operator_id=operator_id,
         attested_at=now,
         bench_photo_evidence_ref=os.environ.get("PX4_BENCH_PHOTO_REF") or None,

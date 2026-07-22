@@ -330,6 +330,24 @@ the existing approval-gated bench executor. The action may claim
 `completion_scope=adapter_action` only after a real serial bench run with ACK and
 state readback. Loopback may claim only `completion_scope=loopback_action`.
 
+The PX4 physical attestation is fail-closed and must contain these literal true
+values before either the read-only serial observation path or actuator bench
+path may open a real link:
+
+- `propellers_removed`
+- `operator_physically_present`
+- `vehicle_physically_secured`
+- `physical_estop_available`
+- `power_disconnect_available`
+
+The attestation is time-bounded and names the attesting operator. Adapter
+preflight persists the latter three controls explicitly; declaring
+`requires_physical_estop=true` in capabilities is not sufficient by itself.
+Loopback exercises the same artifact boundary but keeps
+`physical_execution_invoked=false`. SITL evidence and an
+`operational_envelope.v1` may inform parameters, but neither can satisfy this
+physical attestation or prove physical Form 1.
+
 ## Partner Checklist
 
 Before any partner adapter is added, require:

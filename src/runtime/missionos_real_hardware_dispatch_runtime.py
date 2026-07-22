@@ -101,12 +101,18 @@ def _persist_hardware_adapter_stage(
     approval_actor: str,
     blocking_reasons: tuple[str, ...],
     execution_mode: HardwareExecutionMode,
+    physical_estop_available: bool,
+    vehicle_physically_secured: bool,
+    power_disconnect_available: bool,
 ) -> dict[str, Any]:
     capabilities = build_px4_bench_hardware_adapter_capabilities(
         execution_mode=execution_mode
     )
     preflight = build_px4_bench_hardware_adapter_preflight(
-        blocking_reasons=blocking_reasons
+        blocking_reasons=blocking_reasons,
+        physical_estop_available=physical_estop_available,
+        vehicle_physically_secured=vehicle_physically_secured,
+        power_disconnect_available=power_disconnect_available,
     )
     candidate = build_px4_bench_hardware_dispatch_candidate(
         missionos_action_ref=missionos_action_ref,
@@ -165,6 +171,9 @@ def _persist_blocked_hardware_adapter_evidence(
     approval_actor: str,
     blocking_reasons: tuple[str, ...],
     execution_mode: HardwareExecutionMode,
+    physical_estop_available: bool,
+    vehicle_physically_secured: bool,
+    power_disconnect_available: bool,
 ) -> dict[str, Any]:
     stage = _persist_hardware_adapter_stage(
         store=store,
@@ -174,6 +183,9 @@ def _persist_blocked_hardware_adapter_evidence(
         approval_actor=approval_actor,
         blocking_reasons=blocking_reasons,
         execution_mode=execution_mode,
+        physical_estop_available=physical_estop_available,
+        vehicle_physically_secured=vehicle_physically_secured,
+        power_disconnect_available=power_disconnect_available,
     )
     evidence = build_blocked_px4_bench_hardware_adapter_evidence(
         missionos_action_ref=missionos_action_ref,
@@ -258,6 +270,12 @@ def invoke_missionos_real_hardware_dispatch_runtime(
         if dispatch_validation.get("operator_approval_id")
         else None
     )
+    physical_attestation = approval.physical_attestation
+    bench_safety = {
+        "physical_estop_available": physical_attestation.physical_estop_available,
+        "vehicle_physically_secured": physical_attestation.vehicle_physically_secured,
+        "power_disconnect_available": physical_attestation.power_disconnect_available,
+    }
 
     if connection_factory is None:
         if not _opt_in_enabled():
@@ -271,6 +289,7 @@ def invoke_missionos_real_hardware_dispatch_runtime(
                     f"{MISSIONOS_REAL_HARDWARE_DISPATCH_RUNTIME_OPT_IN_ENV}_not_enabled",
                 ),
                 execution_mode=execution_mode,
+                **bench_safety,
             )
             return _blocked(
                 f"{MISSIONOS_REAL_HARDWARE_DISPATCH_RUNTIME_OPT_IN_ENV}_not_enabled",
@@ -287,6 +306,7 @@ def invoke_missionos_real_hardware_dispatch_runtime(
                     "real_serial_dispatch_requires_opt_in_and_serial_device",
                 ),
                 execution_mode=execution_mode,
+                **bench_safety,
             )
             return _blocked(
                 "real_serial_dispatch_requires_opt_in_and_serial_device",
@@ -301,6 +321,7 @@ def invoke_missionos_real_hardware_dispatch_runtime(
         approval_actor=approval_actor,
         blocking_reasons=(),
         execution_mode=execution_mode,
+        **bench_safety,
     )
 
     started_at = _utc_now()
