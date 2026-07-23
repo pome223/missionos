@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import json
+import threading
+import time
 
 import pytest
 import click
@@ -13,6 +15,11 @@ from src.gateway import server as gateway_server
 from src.intelligence import missionos_agent_runtime
 from src.runtime import missionos_auto_mission_runner as auto_runner
 from src.runtime import px4_gazebo_mission_designer_sitl_live_flight_run as live_run
+from src.runtime.px4_gazebo_route.compound_hazard_transition import (
+    arbitrate_latest_telemetry,
+    build_wind_safe_window_evidence,
+    safe_window_tail_matches_telemetry,
+)
 from src.runtime.recovery_window_summary import build_recovery_window_summary
 from src.runtime.task_store import TaskStore
 
@@ -1651,11 +1658,22 @@ def test_runtime_recovery_agent_waits_for_new_decision_epoch(
         awaiting_bridge["runtime_recovery_agent_result"]["assessment"]["selected_bounded_action"]
         == "adjust_altitude"
     )
+    live_run._attach_auto_runtime_recovery_agent_proposal(
+        store=store,
+        task_id=task["task_id"],
+        snapshot=_snapshot(3),
+    )
+    awaiting_refreshed = store.get(task["task_id"])
+    assert awaiting_refreshed is not None
+    assert invocations == [1]
+    assert awaiting_refreshed["artifacts"][
+        "missionos_runtime_recovery_agent_live_bridge"
+    ]["telemetry_snapshot"]["sample_index"] == 3
 
     live_run._attach_auto_runtime_recovery_agent_proposal(
         store=store,
         task_id=task["task_id"],
-        snapshot=_snapshot(3, local_x_m=50.0),
+        snapshot=_snapshot(4, local_x_m=50.0),
     )
     drifted = store.get(task["task_id"])
     assert drifted is not None
@@ -1683,12 +1701,12 @@ def test_runtime_recovery_agent_waits_for_new_decision_epoch(
     live_run._attach_auto_runtime_recovery_agent_proposal(
         store=store,
         task_id=task["task_id"],
-        snapshot=_snapshot(4),
+        snapshot=_snapshot(5),
     )
     refreshed = store.get(task["task_id"])
     assert refreshed is not None
     refreshed_proposal = refreshed["artifacts"]["missionos_runtime_recovery_last_proposal"]
-    assert invocations == [1, 4]
+    assert invocations == [1, 5]
     assert refreshed_proposal["proposal_id"] != proposal_id
 
     store.update(
@@ -1705,7 +1723,7 @@ def test_runtime_recovery_agent_waits_for_new_decision_epoch(
         store=store,
         task_id=task["task_id"],
         snapshot=_snapshot(
-            5,
+            6,
             operator_recovery_request_observed=True,
             operator_recovery_command_ack_observed=True,
             operator_recovery_command_ack_result=0,
@@ -1716,7 +1734,7 @@ def test_runtime_recovery_agent_waits_for_new_decision_epoch(
     in_progress = store.get(task["task_id"])
     assert in_progress is not None
     in_progress_bridge = in_progress["artifacts"]["missionos_runtime_recovery_agent_live_bridge"]
-    assert invocations == [1, 4]
+    assert invocations == [1, 5]
     assert in_progress_bridge["agent_refresh_status"] == "recovery_in_progress"
     assert in_progress_bridge["runtime_recovery_agent_result"]["assessment"] == {}
     assert in_progress_bridge["runtime_recovery_agent_result"]["blocking_reasons"] == [
@@ -1727,7 +1745,7 @@ def test_runtime_recovery_agent_waits_for_new_decision_epoch(
         store=store,
         task_id=task["task_id"],
         snapshot=_snapshot(
-            6,
+            7,
             operator_recovery_request_observed=True,
             operator_recovery_command_ack_observed=True,
             operator_recovery_assist_attempted=True,
@@ -1739,14 +1757,14 @@ def test_runtime_recovery_agent_waits_for_new_decision_epoch(
     succeeded = store.get(task["task_id"])
     assert succeeded is not None
     succeeded_bridge = succeeded["artifacts"]["missionos_runtime_recovery_agent_live_bridge"]
-    assert invocations == [1, 4]
+    assert invocations == [1, 5]
     assert succeeded_bridge["agent_refresh_status"] == "recovery_succeeded"
 
     live_run._attach_auto_runtime_recovery_agent_proposal(
         store=store,
         task_id=task["task_id"],
         snapshot=_snapshot(
-            7,
+            8,
             nav_state=4,
             operator_recovery_request_observed=True,
             operator_recovery_command_ack_observed=True,
@@ -1756,7 +1774,7 @@ def test_runtime_recovery_agent_waits_for_new_decision_epoch(
             operator_recovery_resume_auto_status="not_resumed",
         ),
     )
-    assert invocations == [1, 4, 7]
+    assert invocations == [1, 5, 8]
 
 
 def test_runtime_recovery_skips_unstable_preflight_sample(
@@ -2242,6 +2260,570 @@ def test_successful_recovery_does_not_queue_a_second_hold(
     assert "missionos_runtime_recovery_last_proposal" not in stored["artifacts"]
 
 
+@pytest.mark.parametrize(
+    (
+        "expire_before_safe_window",
+        "final_obstacle_name",
+        "fail_first_rejudgment",
+        "initial_guardrail_blocked",
+    ),
+    [
+        (False, "missionos_route_obstacle_50pct", False, False),
+        (True, "missionos_route_obstacle_50pct", False, False),
+        (False, "missionos_route_obstacle_75pct", False, False),
+        (False, "missionos_route_obstacle_50pct", True, False),
+        (False, "missionos_route_obstacle_50pct", False, True),
+    ],
+)
+def test_strong_gust_hold_rejudges_obstacle_after_verified_wind_safe_window(
+    tmp_path,
+    monkeypatch,
+    expire_before_safe_window: bool,
+    final_obstacle_name: str,
+    fail_first_rejudgment: bool,
+    initial_guardrail_blocked: bool,
+) -> None:
+    store = TaskStore(str(tmp_path / "tasks.db"))
+    queued_holds: list[dict] = []
+
+    def _queue_hold(**kwargs) -> dict:
+        queued_holds.append(dict(kwargs))
+        return {
+            "request_status": "queued",
+            "container_name": "missionos-px4-gazebo-sitl",
+            "container_path": kwargs["container_path"],
+            "bytes_written": 100,
+        }
+
+    monkeypatch.setattr(
+        live_run,
+        "queue_px4_active_runner_recovery_request",
+        _queue_hold,
+    )
+    task = store.create(
+        task_id="task_compound_wind_obstacle_rejudgment",
+        kind="contract_test",
+        title="Strong gust then obstacle rejudgment",
+        status="running",
+        artifacts={
+            "missionos_auto_mission_gui_dispatch_running_receipt": {
+                "dispatch_status": "running",
+                "operator_recovery_request_container_path": (
+                    "/tmp/task_compound_wind_obstacle_rejudgment.json"
+                ),
+            },
+            "mission_designer_coordinate_pair_route": {
+                "takeoff_latitude": 35.0,
+                "takeoff_longitude": 139.0,
+                "dropoff_latitude": 35.0,
+                "dropoff_longitude": 139.00591,
+            },
+            "missionos_auto_mission_runtime_snapshot": {
+                "gazebo_obstacle_model_spawned": True,
+                "obstacle_manifest": {
+                    "building_risk_detected": True,
+                    "gazebo_obstacle_model_spawned": True,
+                    "obstacles": [
+                        {
+                            "name": "missionos_route_obstacle_50pct",
+                            "x_m": 0.0,
+                            "y_m": 350.0,
+                            "size_x_m": 18.0,
+                            "size_y_m": 18.0,
+                        }
+                    ],
+                },
+            },
+        },
+    )
+    invocations: list[tuple[int, float]] = []
+    rejudgment_failures_remaining = 1 if fail_first_rejudgment else 0
+
+    def _proposal(**kwargs) -> dict:
+        nonlocal rejudgment_failures_remaining
+        telemetry = kwargs["telemetry_snapshot"]
+        wind_speed = float(telemetry["wind"]["speed_mps"])
+        sample_index = int(telemetry["sample_index"])
+        invocations.append((sample_index, wind_speed))
+        wind_blocked = wind_speed > 6.0
+        if wind_blocked and initial_guardrail_blocked:
+            return {
+                "schema_version": (
+                    "missionos_runtime_recovery_agent_result.v1"
+                ),
+                "runtime_status": "proposal_guardrail_blocked",
+                "blocking_reasons": [
+                    "fixture_compound_hazard_requires_operator_review"
+                ],
+                "assessment": {
+                    "assessment_status": "proposal_guardrail_blocked",
+                    "selected_bounded_action": "operator_review",
+                },
+                "dispatch_authority_created": False,
+                "progress_counted": False,
+            }
+        if not wind_blocked and rejudgment_failures_remaining:
+            rejudgment_failures_remaining -= 1
+            return {
+                "schema_version": (
+                    "missionos_runtime_recovery_agent_result.v1"
+                ),
+                "runtime_status": "proposal_skipped",
+                "blocking_reasons": ["fixture_retryable_rejudgment_failure"],
+                "assessment": {
+                    "assessment_status": "proposal_skipped",
+                    "selected_bounded_action": "operator_review",
+                },
+                "dispatch_authority_created": False,
+                "progress_counted": False,
+            }
+        action = "operator_review" if wind_blocked else "avoid_obstacle"
+        parameters = (
+            {}
+            if wind_blocked
+            else {
+                "target_x_m": -30.0,
+                "target_y_m": 290.0,
+                "target_altitude_m": 30.0,
+                "source_obstacle_name": "missionos_route_obstacle_50pct",
+            }
+        )
+        trigger_reasons = [
+            *(["wind_above_recovery_limit"] if wind_blocked else []),
+            "obstacle_or_building_risk",
+        ]
+        return {
+            "schema_version": "missionos_runtime_recovery_agent_result.v1",
+            "runtime_status": "proposal_guardrail_passed",
+            "blocking_reasons": [],
+            "assessment": {
+                "assessment_status": "proposal_guardrail_passed",
+                "selected_bounded_action": action,
+                "requires_human_approval": True,
+                "proposed_parameters": parameters,
+                "observed_risk_reasons": trigger_reasons,
+            },
+            "agent_output": {
+                "selected_bounded_action": action,
+                "requires_human_approval": True,
+                "proposed_parameters": parameters,
+                "trigger_reasons": trigger_reasons,
+            },
+            "agent_invocations": [{"function_tool_called": True}],
+            "dispatch_authority_created": False,
+            "progress_counted": False,
+        }
+
+    monkeypatch.setattr(
+        live_run,
+        "_run_auto_runtime_recovery_agent_with_timeout",
+        _proposal,
+    )
+    base_snapshot = {
+        "progress_m": 250.0,
+        "local_x_m": 0.0,
+        "local_y_m": 250.0,
+        "local_z_m": -30.0,
+        "local_vx_mps": 0.0,
+        "local_vy_mps": 10.0,
+        "altitude_above_home_m": 30.0,
+        "battery_remaining_percent": 80.0,
+        "heartbeat_observed": True,
+        "nav_state": 3,
+        "landed": False,
+    }
+    live_run._attach_auto_runtime_recovery_agent_proposal(
+        store=store,
+        task_id=task["task_id"],
+        snapshot={
+            **base_snapshot,
+            "sample_index": 80,
+            "elapsed_seconds": 80.0,
+            "wind_speed_mps": 12.0,
+        },
+    )
+    assert len(queued_holds) == 1
+    assert invocations == []
+
+    held_snapshot = {
+        **base_snapshot,
+        "nav_state": 4,
+        "local_vy_mps": 0.0,
+        "operator_recovery_request_observed": True,
+        "operator_recovery_action": "safety_hold",
+        "operator_recovery_command_ack_observed": True,
+        "operator_recovery_assist_attempted": True,
+        "operator_recovery_assist_status": "safety_hold_observed",
+        "operator_recovery_target_reached": False,
+        "operator_recovery_resume_auto_status": (
+            "held_awaiting_operator_recovery_approval"
+        ),
+    }
+    for sample_index in (81, 82):
+        live_run._attach_auto_runtime_recovery_agent_proposal(
+            store=store,
+            task_id=task["task_id"],
+            snapshot={
+                **held_snapshot,
+                "sample_index": sample_index,
+                "elapsed_seconds": float(sample_index),
+                "wind_speed_mps": 12.0,
+            },
+        )
+    wind_blocked = store.get(task["task_id"])
+    assert wind_blocked is not None
+    wind_blocked_artifacts = wind_blocked["artifacts"]
+    wind_blocked_proposal = wind_blocked_artifacts.get(
+        "missionos_runtime_recovery_last_proposal",
+        {},
+    )
+    wind_blocked_proposal_id = str(
+        wind_blocked_proposal.get("proposal_id") or ""
+    )
+    assert invocations == [(82, 12.0)]
+    hazard_state = wind_blocked_artifacts[
+        "missionos_runtime_recovery_compound_hazard_state"
+    ]
+    assert hazard_state["source_backed"] is True
+    assert hazard_state["source_obstacle_name"] == (
+        "missionos_route_obstacle_50pct"
+    )
+    assert hazard_state["hazard_status"] == "wind_above_limit_observed"
+    if initial_guardrail_blocked:
+        assert wind_blocked_proposal == {}
+    else:
+        assert wind_blocked_proposal["source_obstacle_name"] == (
+            "missionos_route_obstacle_50pct"
+        )
+        assert (
+            wind_blocked_proposal["runtime_recovery_agent_result"][
+                "assessment"
+            ]["selected_bounded_action"]
+            == "operator_review"
+        )
+    if expire_before_safe_window:
+        expired = {
+            **wind_blocked_proposal,
+            "valid_until": "2000-01-01T00:00:00+00:00",
+        }
+        store.update(
+            task["task_id"],
+            artifacts={
+                "missionos_runtime_recovery_proposals": {
+                    wind_blocked_proposal_id: expired
+                }
+            },
+            replace_artifacts={
+                "missionos_runtime_recovery_last_proposal": expired
+            },
+        )
+
+    for sample_index in (89, 99, 109, 119):
+        live_run._attach_auto_runtime_recovery_agent_proposal(
+            store=store,
+            task_id=task["task_id"],
+            snapshot={
+                **held_snapshot,
+                "sample_index": sample_index,
+                "elapsed_seconds": float(sample_index),
+                "wind_speed_mps": 7.0,
+            },
+        )
+        assert invocations == [(82, 12.0)]
+
+    sustained_wind = store.get(task["task_id"])
+    assert sustained_wind is not None
+    assert (
+        "missionos_runtime_recovery_compound_hazard_transition"
+        not in sustained_wind["artifacts"]
+    )
+
+    for sample_index in (129, 140, 151):
+        live_run._attach_auto_runtime_recovery_agent_proposal(
+            store=store,
+            task_id=task["task_id"],
+            snapshot={
+                **held_snapshot,
+                "sample_index": sample_index,
+                "elapsed_seconds": float(sample_index),
+                "wind_speed_mps": 5.0,
+            },
+        )
+        assert invocations == [(82, 12.0)]
+
+    if final_obstacle_name != "missionos_route_obstacle_50pct":
+        store.update(
+            task["task_id"],
+            replace_artifacts={
+                "missionos_auto_mission_runtime_snapshot": {
+                    "gazebo_obstacle_model_spawned": True,
+                    "obstacle_manifest": {
+                        "building_risk_detected": True,
+                        "gazebo_obstacle_model_spawned": True,
+                        "obstacles": [
+                            {
+                                "name": final_obstacle_name,
+                                "x_m": 0.0,
+                                "y_m": 350.0,
+                                "size_x_m": 18.0,
+                                "size_y_m": 18.0,
+                            }
+                        ],
+                    },
+                }
+            },
+        )
+    live_run._attach_auto_runtime_recovery_agent_proposal(
+        store=store,
+        task_id=task["task_id"],
+        snapshot={
+            **held_snapshot,
+            "sample_index": 162,
+            "elapsed_seconds": 162.0,
+            "wind_speed_mps": 5.0,
+        },
+    )
+    if final_obstacle_name != "missionos_route_obstacle_50pct":
+        changed_obstacle = store.get(task["task_id"])
+        assert changed_obstacle is not None
+        assert invocations == [(82, 12.0)]
+        assert (
+            "missionos_runtime_recovery_compound_hazard_transition"
+            not in changed_obstacle["artifacts"]
+        )
+        return
+    if fail_first_rejudgment:
+        retryable = store.get(task["task_id"])
+        assert retryable is not None
+        retryable_artifacts = retryable["artifacts"]
+        assert retryable_artifacts[
+            "missionos_runtime_recovery_last_proposal"
+        ]["proposal_id"] == wind_blocked_proposal_id
+        retryable_transition = retryable_artifacts[
+            "missionos_runtime_recovery_compound_hazard_transition"
+        ]
+        assert retryable_transition["transition_status"] == (
+            "rejudgment_failed_retryable"
+        )
+        assert retryable_transition["retry_after_elapsed_seconds"] == 167.0
+        live_run._attach_auto_runtime_recovery_agent_proposal(
+            store=store,
+            task_id=task["task_id"],
+            snapshot={
+                **held_snapshot,
+                "sample_index": 164,
+                "elapsed_seconds": 164.0,
+                "wind_speed_mps": 5.0,
+            },
+        )
+        assert invocations == [(82, 12.0), (162, 5.0)]
+        live_run._attach_auto_runtime_recovery_agent_proposal(
+            store=store,
+            task_id=task["task_id"],
+            snapshot={
+                **held_snapshot,
+                "sample_index": 167,
+                "elapsed_seconds": 167.0,
+                "wind_speed_mps": 5.0,
+            },
+        )
+    rejudged = store.get(task["task_id"])
+    assert rejudged is not None
+    artifacts = rejudged["artifacts"]
+    current = artifacts["missionos_runtime_recovery_last_proposal"]
+    assert invocations == (
+        [(82, 12.0), (162, 5.0), (167, 5.0)]
+        if fail_first_rejudgment
+        else [(82, 12.0), (162, 5.0)]
+    )
+    if wind_blocked_proposal_id:
+        assert current["proposal_id"] != wind_blocked_proposal_id
+    assert current["proposal_status"] == "awaiting_operator_approval"
+    assert (
+        current["runtime_recovery_agent_result"]["assessment"][
+            "selected_bounded_action"
+        ]
+        == "avoid_obstacle"
+    )
+    if wind_blocked_proposal_id:
+        superseded = artifacts["missionos_runtime_recovery_proposals"][
+            wind_blocked_proposal_id
+        ]
+        assert superseded["proposal_status"] == (
+            "stale" if expire_before_safe_window else "superseded"
+        )
+        if expire_before_safe_window:
+            assert "runtime_recovery_proposal_stale" in superseded[
+                "invalidation_reasons"
+            ]
+        else:
+            assert "runtime_recovery_wind_safe_window_observed" in superseded[
+                "invalidation_reasons"
+            ]
+    transition = artifacts[
+        "missionos_runtime_recovery_compound_hazard_transition"
+    ]
+    assert transition["transition_status"] == "wind_safe_window_observed"
+    assert transition["source_obstacle_name"] == (
+        "missionos_route_obstacle_50pct"
+    )
+    assert transition["source_hazard_state_id"] == hazard_state[
+        "hazard_state_id"
+    ]
+    assert transition["wind_safe_window"]["safe_window_observed"] is True
+    assert transition["wind_safe_window"]["observed_window_s"] == 30.0
+    assert transition["wind_safe_window"]["wind_speed_max_mps"] == 5.0
+    assert current["compound_hazard_transition"]["transition_status"] == (
+        "wind_safe_window_observed"
+    )
+    assert transition["dispatch_authority_created"] is False
+    assert transition["physical_execution_invoked"] is False
+
+
+def test_telemetry_arbitration_selects_newer_consistent_cursor() -> None:
+    result = arbitrate_latest_telemetry(
+        bridge_telemetry={"sample_index": 190, "elapsed_seconds": 190.0},
+        runtime_telemetry={"sample_index": 200, "elapsed_seconds": 200.0},
+    )
+
+    assert result["arbitration_status"] == "verified"
+    assert result["selected_source"] == (
+        "missionos_auto_mission_runtime_snapshot"
+    )
+    assert result["selected_telemetry"]["sample_index"] == 200
+
+
+@pytest.mark.parametrize(
+    ("runtime_cursor", "reason"),
+    [
+        (
+            {"sample_index": 200},
+            "telemetry_arbitration_runtime_cursor_incomplete",
+        ),
+        (
+            {"sample_index": 200, "elapsed_seconds": 180.0},
+            "telemetry_arbitration_cursor_regression",
+        ),
+        (
+            {"sample_index": 220, "elapsed_seconds": 220.0},
+            "telemetry_arbitration_elapsed_delta_exceeded",
+        ),
+    ],
+)
+def test_telemetry_arbitration_fails_closed_for_untrustworthy_cursors(
+    runtime_cursor: dict,
+    reason: str,
+) -> None:
+    result = arbitrate_latest_telemetry(
+        bridge_telemetry={"sample_index": 190, "elapsed_seconds": 190.0},
+        runtime_telemetry=runtime_cursor,
+    )
+
+    assert result["arbitration_status"] == "unverified"
+    assert reason in result["blocking_reasons"]
+    assert result["dispatch_authority_created"] is False
+
+
+def test_safe_window_tail_must_match_selected_latest_telemetry() -> None:
+    samples = [
+        {"sample_index": 199, "elapsed_seconds": 199.0},
+        {"sample_index": 200, "elapsed_seconds": 200.0},
+    ]
+    matched = safe_window_tail_matches_telemetry(
+        samples,
+        {"sample_index": 200, "elapsed_seconds": 200.0},
+    )
+    mismatched = safe_window_tail_matches_telemetry(
+        samples,
+        {"sample_index": 201, "elapsed_seconds": 201.0},
+    )
+
+    assert matched["matched"] is True
+    assert mismatched["matched"] is False
+
+
+def test_wind_safe_window_evidence_fails_closed() -> None:
+    policy = {"max_wind_speed_mps": 6.0}
+
+    def _sample(elapsed_s: float, wind_mps: float | None, *, stale: bool = False):
+        return {
+            "elapsed_seconds": elapsed_s,
+            "wind": {"speed_mps": wind_mps},
+            "telemetry": {"stale": stale},
+        }
+
+    verified = build_wind_safe_window_evidence(
+        [_sample(0.0, 5.0), _sample(10.0, 5.5), _sample(20.0, 5.0), _sample(30.0, 5.0)],
+        recovery_policy=policy,
+        minimum_window_s=30.0,
+        maximum_sample_gap_s=15.0,
+    )
+    irregular_cadence = build_wind_safe_window_evidence(
+        [_sample(0.0, 5.0), _sample(11.0, 5.0), _sample(22.0, 5.0), _sample(33.0, 5.0)],
+        recovery_policy=policy,
+        minimum_window_s=30.0,
+        maximum_sample_gap_s=15.0,
+    )
+    too_short = build_wind_safe_window_evidence(
+        [_sample(20.0, 5.0), _sample(30.0, 5.0)],
+        recovery_policy=policy,
+        minimum_window_s=30.0,
+        maximum_sample_gap_s=15.0,
+    )
+    too_sparse = build_wind_safe_window_evidence(
+        [_sample(0.0, 5.0), _sample(30.0, 5.0)],
+        recovery_policy=policy,
+        minimum_window_s=30.0,
+        maximum_sample_gap_s=15.0,
+    )
+    gust_present = build_wind_safe_window_evidence(
+        [_sample(0.0, 5.0), _sample(10.0, 12.0), _sample(20.0, 5.0), _sample(30.0, 5.0)],
+        recovery_policy=policy,
+        minimum_window_s=30.0,
+        maximum_sample_gap_s=15.0,
+    )
+    transient_stale = build_wind_safe_window_evidence(
+        [
+            _sample(0.0, 5.0),
+            _sample(10.0, 5.0),
+            _sample(20.0, 5.0, stale=True),
+            _sample(21.0, 5.0),
+            _sample(30.0, 5.0),
+        ],
+        recovery_policy=policy,
+        minimum_window_s=30.0,
+        maximum_sample_gap_s=15.0,
+    )
+    stale_tail = build_wind_safe_window_evidence(
+        [_sample(0.0, 5.0), _sample(10.0, 5.0), _sample(20.0, 5.0), _sample(30.0, 5.0, stale=True)],
+        recovery_policy=policy,
+        minimum_window_s=30.0,
+        maximum_sample_gap_s=15.0,
+    )
+    missing = build_wind_safe_window_evidence(
+        [_sample(0.0, 5.0), _sample(10.0, None), _sample(20.0, 5.0), _sample(30.0, 5.0)],
+        recovery_policy=policy,
+        minimum_window_s=30.0,
+        maximum_sample_gap_s=15.0,
+    )
+
+    assert verified["verification_status"] == "verified_safe"
+    assert verified["safe_window_observed"] is True
+    assert irregular_cadence["verification_status"] == "verified_safe"
+    assert irregular_cadence["observed_window_s"] == 30.0
+    assert too_short["blocking_reasons"] == [
+        "wind_safe_window_duration_insufficient"
+    ]
+    assert "wind_safe_window_sample_gap_exceeded" in too_sparse[
+        "blocking_reasons"
+    ]
+    assert "wind_safe_window_limit_exceeded" in gust_present["blocking_reasons"]
+    assert transient_stale["verification_status"] == "verified_safe"
+    assert transient_stale["telemetry_stale_count"] == 1
+    assert "wind_safe_window_telemetry_stale" in stale_tail["blocking_reasons"]
+    assert "wind_safe_window_observation_missing" in missing["blocking_reasons"]
+
+
 def test_expired_proposal_does_not_block_materially_new_decision_epoch(
     tmp_path,
     monkeypatch,
@@ -2638,6 +3220,250 @@ def test_new_hard_obstacle_supersedes_valid_pending_proposal(
     assert stabilized_proposal["proposal_status"] == "awaiting_operator_approval"
 
 
+def test_ninety_second_agent_delay_does_not_block_obstacle_hold_or_adopt_stale_result(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    """A hosted judgment never pauses telemetry safety or gains authority stale."""
+
+    store = TaskStore(str(tmp_path / "tasks.db"))
+    task_id = "task_runtime_recovery_async_safety_hold"
+    live_run._discard_runtime_recovery_agent_inference(task_id)
+    worker_started = threading.Event()
+    release_worker = threading.Event()
+    queued_holds: list[dict] = []
+    resolved_timeouts: list[float] = []
+
+    def _delayed_agent(**kwargs) -> dict:
+        resolved_timeouts.append(
+            float(kwargs.get("timeout_seconds"))
+            if kwargs.get("timeout_seconds") is not None
+            else live_run._runtime_recovery_agent_timeout_seconds()
+        )
+        worker_started.set()
+        assert release_worker.wait(timeout=5.0)
+        return {
+            "schema_version": "missionos_runtime_recovery_agent_result.v1",
+            "runtime_status": "proposal_guardrail_passed",
+            "blocking_reasons": [],
+            "assessment": {
+                "assessment_status": "proposal_guardrail_passed",
+                "selected_bounded_action": "adjust_altitude",
+                "requires_human_approval": True,
+                "proposed_parameters": {"target_altitude_m": 45.0},
+            },
+            "agent_output": {
+                "selected_bounded_action": "adjust_altitude",
+                "requires_human_approval": True,
+                "proposed_parameters": {"target_altitude_m": 45.0},
+            },
+            "agent_invocations": [{"function_tool_called": True}],
+            "dispatch_authority_created": False,
+            "physical_execution_invoked": False,
+            "progress_counted": False,
+        }
+
+    def _queue_hold(**kwargs) -> dict:
+        queued_holds.append(dict(kwargs))
+        return {
+            "request_status": "queued",
+            "container_name": "missionos-px4-gazebo-sitl",
+            "container_path": kwargs["container_path"],
+            "bytes_written": 100,
+        }
+
+    monkeypatch.setenv("MISSIONOS_RUNTIME_RECOVERY_AGENT_TIMEOUT_SECONDS", "90")
+    monkeypatch.setattr(
+        live_run,
+        "_execute_auto_runtime_recovery_agent_with_timeout",
+        _delayed_agent,
+    )
+    monkeypatch.setattr(
+        live_run,
+        "queue_px4_active_runner_recovery_request",
+        _queue_hold,
+    )
+    store.create(
+        task_id=task_id,
+        kind="contract_test",
+        title="Async inference preserves deterministic safety",
+        status="running",
+        artifacts={
+            "missionos_auto_mission_gui_dispatch_running_receipt": {
+                "dispatch_status": "running",
+                "operator_recovery_request_container_path": (
+                    f"/tmp/{task_id}.json"
+                ),
+            },
+            "mission_designer_coordinate_pair_route": {
+                "takeoff_latitude": 35.0,
+                "takeoff_longitude": 139.0,
+                "dropoff_latitude": 35.0,
+                "dropoff_longitude": 139.00591,
+            },
+        },
+    )
+    initial_snapshot = {
+        "sample_index": 1,
+        "elapsed_seconds": 20.0,
+        "progress_m": 100.0,
+        "local_x_m": 0.0,
+        "local_y_m": 100.0,
+        "local_z_m": -30.0,
+        "altitude_above_home_m": 30.0,
+        "battery_remaining_percent": 10.0,
+        "heartbeat_observed": True,
+        "nav_state": 3,
+        "landed": False,
+    }
+    started_at = time.monotonic()
+    live_run._attach_auto_runtime_recovery_agent_proposal(
+        store=store,
+        task_id=task_id,
+        snapshot=initial_snapshot,
+    )
+    assert time.monotonic() - started_at < 0.5
+    assert worker_started.wait(timeout=1.0)
+    assert resolved_timeouts == [90.0]
+    pending = store.get(task_id)
+    assert pending is not None
+    pending_bridge = pending["artifacts"][
+        "missionos_runtime_recovery_agent_live_bridge"
+    ]
+    assert pending_bridge["agent_refresh_status"] == "agent_inference_pending"
+    assert "missionos_runtime_recovery_last_proposal" not in pending["artifacts"]
+
+    store.update(
+        task_id,
+        replace_artifacts={
+            "missionos_auto_mission_runtime_snapshot": {
+                "gazebo_obstacle_model_spawned": True,
+                "obstacle_manifest": {
+                    "building_risk_detected": True,
+                    "gazebo_obstacle_model_spawned": True,
+                    "obstacles": [
+                        {
+                            "name": "new_obstacle_during_agent_inference",
+                            "x_m": 0.0,
+                            "y_m": 539.0,
+                            "size_x_m": 18.0,
+                            "size_y_m": 18.0,
+                        }
+                    ],
+                },
+            }
+        },
+    )
+    conflict_snapshot = {
+        **initial_snapshot,
+        "sample_index": 2,
+        "elapsed_seconds": 40.0,
+        "local_y_m": 430.0,
+        "local_vx_mps": 0.0,
+        "local_vy_mps": 10.0,
+    }
+    live_run._attach_auto_runtime_recovery_agent_proposal(
+        store=store,
+        task_id=task_id,
+        snapshot=conflict_snapshot,
+    )
+    assert len(queued_holds) == 1
+    assert queued_holds[0]["request_payload"]["recovery_action"] == "safety_hold"
+    assert queued_holds[0]["request_payload"]["operator_approved"] is False
+
+    release_worker.set()
+    deadline = time.monotonic() + 1.0
+    while live_run._runtime_recovery_agent_inference_pending(task_id):
+        if time.monotonic() >= deadline:
+            pytest.fail("delayed recovery worker did not complete")
+        time.sleep(0.01)
+        # The registry intentionally retains a completed result until the
+        # telemetry loop polls and revalidates it.
+        with live_run._AUTO_RUNTIME_RECOVERY_INFERENCE_LOCK:
+            job = live_run._AUTO_RUNTIME_RECOVERY_INFERENCE_JOBS.get(task_id)
+            if job is not None and not job["result_queue"].empty():
+                break
+
+    held_snapshot = {
+        **conflict_snapshot,
+        "sample_index": 3,
+        "elapsed_seconds": 41.0,
+        "nav_state": 4,
+        "local_vy_mps": 0.0,
+        "operator_recovery_request_observed": True,
+        "operator_recovery_action": "safety_hold",
+        "operator_recovery_command_ack_observed": True,
+        "operator_recovery_assist_attempted": True,
+        "operator_recovery_assist_status": "safety_hold_observed",
+        "operator_recovery_target_reached": False,
+        "operator_recovery_resume_auto_status": (
+            "held_awaiting_operator_recovery_approval"
+        ),
+    }
+    # First fresh HOLD observation proves the deterministic effect; the next
+    # poll may consume the model result.
+    live_run._attach_auto_runtime_recovery_agent_proposal(
+        store=store,
+        task_id=task_id,
+        snapshot=held_snapshot,
+    )
+    live_run._attach_auto_runtime_recovery_agent_proposal(
+        store=store,
+        task_id=task_id,
+        snapshot={
+            **held_snapshot,
+            "sample_index": 4,
+            "elapsed_seconds": 42.0,
+        },
+    )
+    final = store.get(task_id)
+    assert final is not None
+    final_artifacts = final["artifacts"]
+    bridge = final_artifacts["missionos_runtime_recovery_agent_live_bridge"]
+    result = bridge["runtime_recovery_agent_result"]
+    assert bridge["agent_refresh_status"] == "agent_result_superseded_retryable"
+    assert result["runtime_status"] == "superseded_retryable"
+    assert result["assessment"] == {}
+    assert result["dispatch_authority_created"] is False
+    assert result["physical_execution_invoked"] is False
+    assert any(
+        reason
+        in {
+            "runtime_recovery_inference_source_obstacle_name_changed",
+            "runtime_recovery_inference_origin_drift_exceeded",
+        }
+        for reason in result["blocking_reasons"]
+    )
+    assert "missionos_runtime_recovery_last_proposal" not in final_artifacts
+    assert final_artifacts[
+        "missionos_runtime_recovery_safety_hold_receipt"
+    ]["request_status"] == "observed"
+
+    # A new hosted call that is still pending when the vehicle lands must be
+    # forgotten. Its eventual result cannot become a post-landing proposal or
+    # remain as a task-local registry entry.
+    release_worker.clear()
+    pending_after_recovery = live_run._run_auto_runtime_recovery_agent_with_timeout(
+        telemetry_snapshot=held_snapshot,
+        task_id=task_id,
+        inference_context={"request_reason": "terminal_cleanup_contract"},
+    )
+    assert pending_after_recovery["runtime_status"] == "inference_pending"
+    assert live_run._runtime_recovery_agent_inference_pending(task_id) is True
+    live_run._attach_auto_runtime_recovery_agent_proposal(
+        store=store,
+        task_id=task_id,
+        snapshot={
+            **held_snapshot,
+            "sample_index": 5,
+            "elapsed_seconds": 43.0,
+            "landed": True,
+        },
+    )
+    assert live_run._runtime_recovery_agent_inference_pending(task_id) is False
+    release_worker.set()
+
+
 def test_runtime_probe_never_resumes_auto_before_recovery_target_is_reached() -> None:
     script = auto_probe._inner_runtime_probe_script(
         dropoff_dwell_mission_seq=2,
@@ -2948,6 +3774,8 @@ def test_running_snapshot_preserves_effective_wind_for_recovery_decisions() -> N
             "gust_started": True,
             "wind_speed_mps": 12.0,
             "wind_direction_deg": 189.0,
+            "wind_gust_trigger_on_obstacle": True,
+            "wind_gust_trigger_obstacle_distance_m": 139.5,
         },
         waypoint_total=23,
     )
@@ -2956,6 +3784,51 @@ def test_running_snapshot_preserves_effective_wind_for_recovery_decisions() -> N
     assert snapshot["wind_direction_deg"] == 189.0
     assert snapshot["wind_gust_active"] is True
     assert snapshot["wind_gust_started"] is True
+    assert snapshot["wind_gust_trigger_on_obstacle"] is True
+    assert snapshot["wind_gust_trigger_obstacle_distance_m"] == 139.5
+
+
+def test_runtime_probe_triggers_gust_from_source_backed_obstacle_approach() -> None:
+    script = auto_probe._inner_runtime_probe_script(
+        dropoff_dwell_mission_seq=2,
+        land_mission_seq=3,
+        release_altitude_target_m=30.0,
+        release_altitude_tolerance_m=2.0,
+        required_dwell_seconds=2.0,
+        monitor_seconds=60.0,
+        min_progress_m=1.0,
+        no_progress_grace_seconds=10.0,
+        min_route_altitude_m=20.0,
+        altitude_grace_seconds=10.0,
+        min_battery_remaining_percent=20.0,
+        post_abort_wait_seconds=10.0,
+        land_post_abort_wait_seconds=10.0,
+        rtl_post_abort_wait_seconds=10.0,
+        rtl_recovery_min_progress_m=5.0,
+        sim_battery_min_remaining_percent=15.0,
+        sim_battery_drain_seconds=600.0,
+        thermal_motor_derate_factor=None,
+        wind_mean_mps=5.0,
+        wind_direction_deg=270.0,
+        wind_gust_mps=12.0,
+        wind_variance=2.0,
+        gz_physical_battery_enabled=False,
+        obstacle_manifest={
+            "obstacles": [
+                {
+                    "name": "prompt_defined_obstacle",
+                    "collision_enabled": True,
+                    "x_m": 100.0,
+                    "y_m": 20.0,
+                }
+            ]
+        },
+    )
+
+    assert "WIND_GUST_TRIGGER_ON_OBSTACLE=bool(" in script
+    assert "WIND_GUST_OBSTACLE_TRIGGER_DISTANCE_M=140.0" in script
+    assert "and wind_gust_trigger_ready" in script
+    assert "wind_gust_trigger_obstacle_distance_m" in script
 
 
 def test_obstacle_conflict_projection_waits_until_destination_obstacle_is_local() -> None:

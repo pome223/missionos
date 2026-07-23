@@ -98,6 +98,11 @@ from src.runtime.px4_gazebo_route.recovery_intent_compiler import (
     recovery_artifact_hash_matches,
     verify_runtime_recovery_reachability,
 )
+from src.runtime.px4_gazebo_route.compound_hazard_transition import (
+    arbitrate_latest_telemetry,
+    build_wind_safe_window_evidence,
+    safe_window_tail_matches_telemetry,
+)
 from src.intelligence.missionos_chief_planner_tools import (
     enrich_coordinate_route_with_terrain_profile,
     extract_operator_requested_route_overrides,
@@ -3679,16 +3684,9 @@ def _runtime_recovery_obstacle_from_task_artifacts(
     }
 
 
-def _runtime_recovery_telemetry_from_task_artifacts(
+def _runtime_recovery_telemetry_from_runtime_snapshot(
     artifacts: Mapping[str, Any],
-    *,
-    prefer_live_bridge: bool = True,
 ) -> dict[str, Any]:
-    bridge = artifacts.get("missionos_runtime_recovery_agent_live_bridge")
-    bridge = bridge if isinstance(bridge, Mapping) else {}
-    telemetry = bridge.get("telemetry_snapshot")
-    if prefer_live_bridge and isinstance(telemetry, Mapping) and telemetry:
-        return dict(telemetry)
     snapshot = artifacts.get("missionos_auto_mission_runtime_snapshot")
     snapshot = snapshot if isinstance(snapshot, Mapping) else {}
     if not snapshot:
@@ -3769,6 +3767,45 @@ def _runtime_recovery_telemetry_from_task_artifacts(
         "nav_state": snapshot.get("nav_state"),
         "arming_state": snapshot.get("arming_state"),
         "landed": snapshot.get("landed"),
+    }
+
+
+def _runtime_recovery_telemetry_from_task_artifacts(
+    artifacts: Mapping[str, Any],
+    *,
+    prefer_live_bridge: bool = True,
+) -> dict[str, Any]:
+    runtime_telemetry = _runtime_recovery_telemetry_from_runtime_snapshot(
+        artifacts
+    )
+    if not prefer_live_bridge:
+        return runtime_telemetry
+    bridge = artifacts.get("missionos_runtime_recovery_agent_live_bridge")
+    bridge = bridge if isinstance(bridge, Mapping) else {}
+    bridge_telemetry = bridge.get("telemetry_snapshot")
+    bridge_telemetry = (
+        dict(bridge_telemetry)
+        if isinstance(bridge_telemetry, Mapping)
+        else {}
+    )
+    arbitration = arbitrate_latest_telemetry(
+        bridge_telemetry=bridge_telemetry,
+        runtime_telemetry=runtime_telemetry,
+    )
+    selected = arbitration.get("selected_telemetry")
+    if not isinstance(selected, Mapping) or not selected:
+        # Preserve legacy-v1 read behavior while exposing an unverified
+        # arbitration result. V2 dispatch explicitly rejects that result.
+        selected = bridge_telemetry or runtime_telemetry
+    if not selected:
+        return {}
+    return {
+        **dict(selected),
+        "telemetry_arbitration": {
+            key: value
+            for key, value in arbitration.items()
+            if key != "selected_telemetry"
+        },
     }
 
 
@@ -3879,12 +3916,21 @@ def _runtime_recovery_proposal_revalidation(
         )
     except HTTPException:
         canonical_candidate_parameters = {}
+    comparable_candidate_parameters = dict(canonical_candidate_parameters)
+    if (
+        recovery_action == "avoid_obstacle"
+        and "source_obstacle_name" not in recovery_parameters
+    ):
+        comparable_candidate_parameters.pop("source_obstacle_name", None)
     parameters_match = bool(candidate_parameters) and (
-        canonical_candidate_parameters == dict(recovery_parameters)
+        comparable_candidate_parameters == dict(recovery_parameters)
     )
     evidence["candidate_parameters"] = canonical_candidate_parameters
     evidence["requested_parameters"] = dict(recovery_parameters)
     evidence["parameters_match"] = parameters_match
+    evidence["bound_parameters"] = (
+        canonical_candidate_parameters if parameters_match else {}
+    )
     if not parameters_match:
         reasons.append("runtime_recovery_proposal_parameters_mismatch")
 
@@ -3969,7 +4015,13 @@ def _runtime_recovery_proposal_revalidation(
             )
         except HTTPException:
             canonical_compiled_parameters = {}
-        if canonical_compiled_parameters != dict(recovery_parameters):
+        comparable_compiled_parameters = dict(canonical_compiled_parameters)
+        if (
+            recovery_action == "avoid_obstacle"
+            and "source_obstacle_name" not in recovery_parameters
+        ):
+            comparable_compiled_parameters.pop("source_obstacle_name", None)
+        if comparable_compiled_parameters != dict(recovery_parameters):
             reasons.append("runtime_recovery_compiled_parameters_mismatch")
 
     valid_until = _runtime_recovery_utc_datetime(proposal.get("valid_until"))
@@ -3982,6 +4034,19 @@ def _runtime_recovery_proposal_revalidation(
         artifacts,
         prefer_live_bridge=True,
     )
+    telemetry_arbitration = current_telemetry.get("telemetry_arbitration")
+    telemetry_arbitration = (
+        dict(telemetry_arbitration)
+        if isinstance(telemetry_arbitration, Mapping)
+        else {}
+    )
+    evidence["telemetry_arbitration"] = telemetry_arbitration
+    if proposal_v2 and telemetry_arbitration.get("arbitration_status") != "verified":
+        reasons.extend(
+            str(item)
+            for item in telemetry_arbitration.get("blocking_reasons") or []
+        )
+        reasons.append("runtime_recovery_telemetry_arbitration_unverified")
     telemetry_state = current_telemetry.get("telemetry")
     telemetry_state = telemetry_state if isinstance(telemetry_state, Mapping) else {}
     telemetry_fresh = bool(current_telemetry) and telemetry_state.get("stale") is not True
@@ -3995,6 +4060,182 @@ def _runtime_recovery_proposal_revalidation(
             if isinstance(policy_snapshot, Mapping)
             else {}
         )
+        if recovery_action == "avoid_obstacle":
+            wind_limit_mps = _recovery_float_or_none(
+                policy_snapshot.get("max_wind_speed_mps")
+            )
+            current_wind = current_telemetry.get("wind")
+            current_wind = (
+                current_wind if isinstance(current_wind, Mapping) else {}
+            )
+            current_wind_speed_mps = _recovery_float_or_none(
+                current_wind.get("speed_mps")
+            )
+            if current_wind_speed_mps is None:
+                current_wind_speed_mps = _recovery_float_or_none(
+                    current_wind.get("observed_speed_mps")
+                )
+            if current_wind_speed_mps is None:
+                current_wind_speed_mps = _recovery_float_or_none(
+                    current_telemetry.get("wind_speed_mps")
+                )
+            evidence["dispatch_wind_limit_mps"] = wind_limit_mps
+            evidence["dispatch_current_wind_speed_mps"] = (
+                current_wind_speed_mps
+            )
+            if wind_limit_mps is None:
+                reasons.append("runtime_recovery_dispatch_wind_limit_missing")
+            if current_wind_speed_mps is None:
+                reasons.append(
+                    "runtime_recovery_dispatch_current_wind_observation_missing"
+                )
+            elif (
+                wind_limit_mps is not None
+                and current_wind_speed_mps > wind_limit_mps
+            ):
+                reasons.append(
+                    "runtime_recovery_dispatch_current_wind_above_limit"
+                )
+
+            compound_transition = proposal.get("compound_hazard_transition")
+            compound_transition = (
+                dict(compound_transition)
+                if isinstance(compound_transition, Mapping)
+                else {}
+            )
+            evidence["compound_hazard_transition_required"] = bool(
+                compound_transition
+            )
+            if compound_transition:
+                stored_safe_window = compound_transition.get("wind_safe_window")
+                stored_safe_window = (
+                    dict(stored_safe_window)
+                    if isinstance(stored_safe_window, Mapping)
+                    else {}
+                )
+                hazard_state = artifacts.get(
+                    "missionos_runtime_recovery_compound_hazard_state"
+                )
+                hazard_state = (
+                    hazard_state if isinstance(hazard_state, Mapping) else {}
+                )
+                bridge = artifacts.get(
+                    "missionos_runtime_recovery_agent_live_bridge"
+                )
+                bridge = bridge if isinstance(bridge, Mapping) else {}
+                window_source = hazard_state or bridge
+                window_samples = window_source.get("recovery_window_samples")
+                window_samples = (
+                    list(window_samples)
+                    if isinstance(window_samples, list)
+                    else []
+                )
+                safe_window_tail_match = safe_window_tail_matches_telemetry(
+                    window_samples,
+                    current_telemetry,
+                )
+                evidence["dispatch_safe_window_tail_match"] = (
+                    safe_window_tail_match
+                )
+                if safe_window_tail_match.get("matched") is not True:
+                    reasons.append(
+                        "runtime_recovery_dispatch_safe_window_tail_mismatch"
+                    )
+                source_hazard_state_id = str(
+                    compound_transition.get("source_hazard_state_id") or ""
+                )
+                if source_hazard_state_id and (
+                    hazard_state.get("hazard_state_id")
+                    != source_hazard_state_id
+                ):
+                    reasons.append(
+                        "runtime_recovery_dispatch_hazard_state_mismatch"
+                    )
+                minimum_window_s = _recovery_float_or_none(
+                    stored_safe_window.get("minimum_window_s")
+                )
+                maximum_sample_gap_s = _recovery_float_or_none(
+                    stored_safe_window.get("maximum_sample_gap_s")
+                )
+                if (
+                    compound_transition.get("transition_status")
+                    != "wind_safe_window_observed"
+                    or stored_safe_window.get("safe_window_observed") is not True
+                    or minimum_window_s is None
+                    or maximum_sample_gap_s is None
+                ):
+                    reasons.append(
+                        "runtime_recovery_dispatch_safe_window_evidence_invalid"
+                    )
+                else:
+                    dispatch_safe_window = build_wind_safe_window_evidence(
+                        window_samples,
+                        recovery_policy=policy_snapshot,
+                        minimum_window_s=minimum_window_s,
+                        maximum_sample_gap_s=maximum_sample_gap_s,
+                    )
+                    evidence["dispatch_safe_window_revalidation"] = (
+                        dispatch_safe_window
+                    )
+                    if dispatch_safe_window.get("safe_window_observed") is not True:
+                        reasons.extend(
+                            str(item)
+                            for item in dispatch_safe_window.get(
+                                "blocking_reasons"
+                            )
+                            or []
+                        )
+                        reasons.append(
+                            "runtime_recovery_dispatch_safe_window_unverified"
+                        )
+
+            obstacle = current_telemetry.get("obstacle")
+            obstacle = obstacle if isinstance(obstacle, Mapping) else {}
+            conflict = obstacle.get("conflict_assessment")
+            conflict = conflict if isinstance(conflict, Mapping) else {}
+            nearest_obstacle = conflict.get("nearest_obstacle")
+            nearest_obstacle = (
+                nearest_obstacle
+                if isinstance(nearest_obstacle, Mapping)
+                else {}
+            )
+            candidate_source = str(
+                canonical_candidate_parameters.get("source_obstacle_name")
+                or ""
+            ).strip()
+            compiled_source = str(
+                canonical_compiled_parameters.get("source_obstacle_name")
+                or ""
+            ).strip()
+            proposal_source = str(
+                proposal.get("source_obstacle_name") or ""
+            ).strip()
+            current_source = str(
+                nearest_obstacle.get("obstacle_name") or ""
+            ).strip()
+            source_bindings = {
+                "candidate": candidate_source,
+                "compiled": compiled_source,
+                "proposal": proposal_source,
+                "current_nearest_obstacle": current_source,
+            }
+            evidence["dispatch_obstacle_source_bindings"] = source_bindings
+            evidence["dispatch_local_avoidance_required"] = (
+                conflict.get("local_avoidance_required") is True
+            )
+            if conflict.get("local_avoidance_required") is not True:
+                reasons.append(
+                    "runtime_recovery_dispatch_local_avoidance_not_required"
+                )
+            if not all(source_bindings.values()):
+                reasons.append(
+                    "runtime_recovery_dispatch_obstacle_source_missing"
+                )
+            elif len(set(source_bindings.values())) != 1:
+                reasons.append(
+                    "runtime_recovery_dispatch_obstacle_source_mismatch"
+                )
+
         dispatch_reachability = verify_runtime_recovery_reachability(
             compilation=intent_compilation,
             telemetry_snapshot=current_telemetry,
@@ -9075,6 +9316,21 @@ class GatewayServer:
                 if isinstance(proposal_revalidation_reasons, list)
                 else []
             )
+            # ``source_obstacle_name`` is proposal-bound evidence rather than
+            # an operator-entered flight coordinate.  After action and all
+            # dispatchable parameters match the fresh hashed proposal, carry
+            # that binding into the runner request so the resume verifier can
+            # select the correct obstacle/mission sequence.  Never enrich a
+            # blocked or non-applicable proposal.
+            proposal_bound_parameters = proposal_revalidation.get(
+                "bound_parameters"
+            )
+            if (
+                proposal_revalidation.get("validation_status") == "valid"
+                and isinstance(proposal_bound_parameters, Mapping)
+                and proposal_bound_parameters
+            ):
+                recovery_parameters = dict(proposal_bound_parameters)
             if (
                 recovery_parameters.get("alternate_dropoff") is True
                 and proposal_revalidation.get("validation_status") != "valid"

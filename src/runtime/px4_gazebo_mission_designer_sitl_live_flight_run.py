@@ -50,6 +50,10 @@ from src.runtime.missionos_auto_mission_runner import (
 from src.runtime.px4_active_runner_recovery_request import (
     queue_px4_active_runner_recovery_request,
 )
+from src.runtime.px4_gazebo_route.compound_hazard_transition import (
+    build_compound_hazard_state,
+    build_wind_safe_window_evidence,
+)
 from src.runtime.px4_gazebo_route.recovery_intent_compiler import (
     verify_runtime_recovery_outcome,
 )
@@ -270,6 +274,11 @@ MISSIONOS_RUNTIME_RECOVERY_AGENT_BUCKET_SECONDS = 5.0
 MISSIONOS_RUNTIME_RECOVERY_AGENT_BUCKET_SECONDS_ENV = (
     "MISSIONOS_RUNTIME_RECOVERY_AGENT_BUCKET_SECONDS"
 )
+MISSIONOS_RUNTIME_RECOVERY_WIND_SAFE_WINDOW_SECONDS = 30.0
+MISSIONOS_RUNTIME_RECOVERY_WIND_SAFE_WINDOW_SECONDS_ENV = (
+    "MISSIONOS_RUNTIME_RECOVERY_WIND_SAFE_WINDOW_SECONDS"
+)
+MISSIONOS_RUNTIME_RECOVERY_REJUDGMENT_RETRY_BACKOFF_SECONDS = 5.0
 MISSIONOS_RUNTIME_RECOVERY_PROPOSAL_MAX_AGE_SECONDS = 60.0
 MISSIONOS_RUNTIME_RECOVERY_PROPOSAL_MAX_AGE_SECONDS_ENV = (
     "MISSIONOS_RUNTIME_RECOVERY_PROPOSAL_MAX_AGE_SECONDS"
@@ -3319,7 +3328,15 @@ def _runtime_recovery_agent_window_samples(
     samples.sort(key=_elapsed)
     latest_elapsed = _elapsed(samples[-1]) if samples else 0.0
     keep_after = latest_elapsed - max(0.001, float(window_s))
-    trimmed = [sample for sample in samples if _elapsed(sample) >= keep_after]
+    retained = [sample for sample in samples if _elapsed(sample) >= keep_after]
+    predecessors = [sample for sample in samples if _elapsed(sample) < keep_after]
+    # Retain one sample that brackets the exact window start. Real PX4 polls
+    # rarely land on an exact 30.000 second boundary; dropping the predecessor
+    # would leave a perpetual 29.x second span and make a verified safe window
+    # impossible even under continuous fresh observations. Consumers still
+    # enforce their maximum allowed sample gap, and the normal window summary
+    # independently trims to its exact boundary.
+    trimmed = ([predecessors[-1]] if predecessors else []) + retained
     return trimmed[-MISSIONOS_RUNTIME_RECOVERY_AGENT_MAX_WINDOW_SAMPLES:]
 
 
@@ -3549,6 +3566,13 @@ def _runtime_recovery_safety_hold_stable(
         current_elapsed is not None
         and previous_elapsed is not None
         and current_elapsed > previous_elapsed
+    )
+
+
+def _runtime_recovery_wind_safe_window_seconds() -> float:
+    return _runtime_recovery_agent_env_seconds(
+        MISSIONOS_RUNTIME_RECOVERY_WIND_SAFE_WINDOW_SECONDS_ENV,
+        MISSIONOS_RUNTIME_RECOVERY_WIND_SAFE_WINDOW_SECONDS,
     )
 
 
@@ -3893,7 +3917,7 @@ def _runtime_recovery_agent_timeout_seconds() -> float:
     return MISSIONOS_RUNTIME_RECOVERY_AGENT_TIMEOUT_SECONDS
 
 
-def _run_auto_runtime_recovery_agent_with_timeout(
+def _execute_auto_runtime_recovery_agent_with_timeout(
     *,
     telemetry_snapshot: Mapping[str, Any],
     task_id: str,
@@ -4018,6 +4042,274 @@ def _run_auto_runtime_recovery_agent_with_timeout(
         reason="runtime_recovery_agent_invalid_result",
         detail=type(value).__name__,
         outcome="invalid_result",
+    )
+
+
+_AUTO_RUNTIME_RECOVERY_INFERENCE_LOCK = threading.Lock()
+_AUTO_RUNTIME_RECOVERY_INFERENCE_JOBS: dict[str, dict[str, Any]] = {}
+_AUTO_RUNTIME_RECOVERY_INFERENCE_MAX_TASKS = 8
+
+
+def _runtime_recovery_agent_inference_pending(task_id: str) -> bool:
+    with _AUTO_RUNTIME_RECOVERY_INFERENCE_LOCK:
+        return task_id in _AUTO_RUNTIME_RECOVERY_INFERENCE_JOBS
+
+
+def _discard_runtime_recovery_agent_inference(task_id: str) -> None:
+    """Forget a task-local inference without granting authority to its result."""
+
+    with _AUTO_RUNTIME_RECOVERY_INFERENCE_LOCK:
+        _AUTO_RUNTIME_RECOVERY_INFERENCE_JOBS.pop(task_id, None)
+
+
+def _runtime_recovery_inference_pending_result(
+    *,
+    context: Mapping[str, Any],
+    started_now: bool,
+) -> dict[str, Any]:
+    return {
+        "schema_version": MISSIONOS_RUNTIME_RECOVERY_RESULT_SCHEMA_VERSION,
+        "runtime_status": "inference_pending",
+        "blocking_reasons": [],
+        "assessment": {},
+        "agent_output": {},
+        "agent_invocations": [],
+        "async_inference": {
+            "inference_status": "pending",
+            "started_now": started_now,
+            "source_context": dict(context),
+            "dispatch_authority_created": False,
+            "physical_execution_invoked": False,
+            "progress_counted": False,
+        },
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }
+
+
+def _run_auto_runtime_recovery_agent_with_timeout(
+    *,
+    telemetry_snapshot: Mapping[str, Any],
+    task_id: str,
+    timeout_seconds: float | None = None,
+    inference_context: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Start or poll hosted inference without blocking the telemetry caller."""
+
+    context = dict(inference_context or {})
+    with _AUTO_RUNTIME_RECOVERY_INFERENCE_LOCK:
+        pending = _AUTO_RUNTIME_RECOVERY_INFERENCE_JOBS.get(task_id)
+        if pending is not None:
+            result_queue = pending["result_queue"]
+            try:
+                kind, value = result_queue.get_nowait()
+            except queue.Empty:
+                return _runtime_recovery_inference_pending_result(
+                    context=pending["context"],
+                    started_now=False,
+                )
+            _AUTO_RUNTIME_RECOVERY_INFERENCE_JOBS.pop(task_id, None)
+            completed_context = dict(pending["context"])
+            started_monotonic = float(pending["started_monotonic"])
+        else:
+            if len(_AUTO_RUNTIME_RECOVERY_INFERENCE_JOBS) >= (
+                _AUTO_RUNTIME_RECOVERY_INFERENCE_MAX_TASKS
+            ):
+                return {
+                    **_runtime_recovery_agent_skipped_result(
+                        reason="runtime_recovery_agent_capacity_exhausted",
+                        detail="retryable_without_dispatch_authority",
+                    ),
+                    "runtime_status": "superseded_retryable",
+                    "async_inference": {
+                        "inference_status": "capacity_exhausted",
+                        "started_now": False,
+                        "source_context": context,
+                        "dispatch_authority_created": False,
+                        "physical_execution_invoked": False,
+                        "progress_counted": False,
+                    },
+                }
+            result_queue = queue.Queue(maxsize=1)
+            started_monotonic = time.monotonic()
+            job = {
+                "context": context,
+                "result_queue": result_queue,
+                "started_monotonic": started_monotonic,
+            }
+            _AUTO_RUNTIME_RECOVERY_INFERENCE_JOBS[task_id] = job
+
+            captured_snapshot = dict(telemetry_snapshot)
+
+            def _invoke_async() -> None:
+                try:
+                    value = _execute_auto_runtime_recovery_agent_with_timeout(
+                        telemetry_snapshot=captured_snapshot,
+                        task_id=task_id,
+                        timeout_seconds=timeout_seconds,
+                    )
+                except Exception as exc:  # pragma: no cover - defensive boundary.
+                    result_queue.put(("error", exc))
+                    return
+                result_queue.put(("result", value))
+
+            threading.Thread(
+                target=_invoke_async,
+                name=f"missionos-recovery-inference-{task_id}",
+                daemon=True,
+            ).start()
+            return _runtime_recovery_inference_pending_result(
+                context=context,
+                started_now=True,
+            )
+
+    if kind == "error":
+        value = _runtime_recovery_agent_fallback_result(
+            telemetry_snapshot=telemetry_snapshot,
+            task_id=task_id,
+            reason="runtime_recovery_agent_async_worker_error",
+            detail=f"{type(value).__name__}: {value}",
+        )
+    result = dict(value) if isinstance(value, Mapping) else {}
+    result["async_inference"] = {
+        "inference_status": "completed",
+        "started_now": False,
+        "source_context": completed_context,
+        "wall_duration_seconds": max(0.0, time.monotonic() - started_monotonic),
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }
+    return result
+
+
+def _runtime_recovery_inference_context(
+    *,
+    task_id: str,
+    telemetry_snapshot: Mapping[str, Any],
+    decision_signature: str,
+    semantic_state_machine_hash: str,
+    hazard_state_id: str,
+    source_obstacle_name: str,
+    request_reason: str,
+) -> dict[str, Any]:
+    position = telemetry_snapshot.get("position")
+    position = dict(position) if isinstance(position, Mapping) else {}
+    telemetry = telemetry_snapshot.get("telemetry")
+    telemetry = dict(telemetry) if isinstance(telemetry, Mapping) else {}
+    return {
+        "task_id": task_id,
+        "request_reason": request_reason,
+        "sample_index": telemetry_snapshot.get("sample_index"),
+        "elapsed_seconds": telemetry_snapshot.get("elapsed_seconds"),
+        "decision_signature": decision_signature,
+        "semantic_state_machine_hash": semantic_state_machine_hash,
+        "hazard_state_id": hazard_state_id or None,
+        "source_obstacle_name": source_obstacle_name or None,
+        "position": position,
+        "telemetry_stale": telemetry.get("stale") is True,
+        "telemetry_dropout": telemetry.get("dropout") is True,
+    }
+
+
+def _runtime_recovery_inference_position_drift_m(
+    source_context: Mapping[str, Any],
+    current_context: Mapping[str, Any],
+) -> float | None:
+    source = source_context.get("position")
+    source = source if isinstance(source, Mapping) else {}
+    current = current_context.get("position")
+    current = current if isinstance(current, Mapping) else {}
+    source_x = _auto_snapshot_number(source.get("local_x_m"))
+    source_y = _auto_snapshot_number(source.get("local_y_m"))
+    current_x = _auto_snapshot_number(current.get("local_x_m"))
+    current_y = _auto_snapshot_number(current.get("local_y_m"))
+    if None in {source_x, source_y, current_x, current_y}:
+        return None
+    return math.hypot(float(current_x) - float(source_x), float(current_y) - float(source_y))
+
+
+def _revalidate_completed_runtime_recovery_inference(
+    *,
+    result: Mapping[str, Any],
+    current_context: Mapping[str, Any],
+) -> tuple[dict[str, Any], tuple[str, ...]]:
+    """Reject a completed hosted judgment when its observed world changed."""
+
+    normalized = dict(result)
+    async_inference = normalized.get("async_inference")
+    async_inference = (
+        dict(async_inference) if isinstance(async_inference, Mapping) else {}
+    )
+    if async_inference.get("inference_status") != "completed":
+        return normalized, ()
+    source_context = async_inference.get("source_context")
+    source_context = (
+        dict(source_context) if isinstance(source_context, Mapping) else {}
+    )
+    reasons: list[str] = []
+    source_index = _auto_snapshot_number(source_context.get("sample_index"))
+    current_index = _auto_snapshot_number(current_context.get("sample_index"))
+    source_elapsed = _auto_snapshot_number(source_context.get("elapsed_seconds"))
+    current_elapsed = _auto_snapshot_number(current_context.get("elapsed_seconds"))
+    if source_index is None or current_index is None:
+        reasons.append("runtime_recovery_inference_telemetry_cursor_incomplete")
+    elif current_index < source_index:
+        reasons.append("runtime_recovery_inference_telemetry_cursor_regressed")
+    if source_elapsed is None or current_elapsed is None:
+        reasons.append("runtime_recovery_inference_elapsed_cursor_incomplete")
+    elif current_elapsed < source_elapsed:
+        reasons.append("runtime_recovery_inference_elapsed_cursor_regressed")
+    for field in (
+        "decision_signature",
+        "semantic_state_machine_hash",
+        "hazard_state_id",
+        "source_obstacle_name",
+    ):
+        if source_context.get(field) != current_context.get(field):
+            reasons.append(f"runtime_recovery_inference_{field}_changed")
+    if current_context.get("telemetry_stale") is True:
+        reasons.append("runtime_recovery_inference_current_telemetry_stale")
+    if current_context.get("telemetry_dropout") is True:
+        reasons.append("runtime_recovery_inference_current_telemetry_dropout")
+    position_drift_m = _runtime_recovery_inference_position_drift_m(
+        source_context,
+        current_context,
+    )
+    maximum_origin_drift_m = _runtime_recovery_proposal_max_origin_drift_m()
+    if position_drift_m is None:
+        reasons.append("runtime_recovery_inference_position_unverified")
+    elif position_drift_m > maximum_origin_drift_m:
+        reasons.append("runtime_recovery_inference_origin_drift_exceeded")
+    reasons = list(dict.fromkeys(reasons))
+    revalidation = {
+        "schema_version": "missionos_runtime_recovery_inference_revalidation.v1",
+        "validation_status": "superseded" if reasons else "valid",
+        "source_context": source_context,
+        "current_context": dict(current_context),
+        "position_drift_m": position_drift_m,
+        "maximum_origin_drift_m": maximum_origin_drift_m,
+        "blocking_reasons": reasons,
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }
+    async_inference["completion_revalidation"] = revalidation
+    normalized["async_inference"] = async_inference
+    if not reasons:
+        return normalized, ()
+    return (
+        {
+            **normalized,
+            "runtime_status": "superseded_retryable",
+            "blocking_reasons": reasons,
+            "assessment": {},
+            "dispatch_authority_created": False,
+            "physical_execution_invoked": False,
+            "progress_counted": False,
+        },
+        tuple(reasons),
     )
 
 
@@ -4168,11 +4460,13 @@ def _attach_auto_runtime_recovery_agent_proposal(
     except Exception:
         return
     if not task or task.get("status") != "running":
+        _discard_runtime_recovery_agent_inference(task_id)
         return
     if snapshot.get("post_abort_tracking") is True or snapshot.get("monitor_window_ended") is True:
         # RTL/LAND and post-abort tracking are terminal executor/failsafe
         # phases. Mission-level obstacle recovery must not interrupt that
         # authority with another safety HOLD or hosted-model proposal.
+        _discard_runtime_recovery_agent_inference(task_id)
         return
     artifacts = task.get("artifacts") if isinstance(task.get("artifacts"), Mapping) else {}
     last_proposal = artifacts.get("missionos_runtime_recovery_last_proposal")
@@ -4615,7 +4909,9 @@ def _attach_auto_runtime_recovery_agent_proposal(
         else {}
     )
     last_proposal_obstacle_name = str(
-        last_compiled_parameters.get("source_obstacle_name") or ""
+        last_compiled_parameters.get("source_obstacle_name")
+        or last_proposal.get("source_obstacle_name")
+        or ""
     ).strip()
     if (
         matching_dispatch_authority_recent
@@ -4656,6 +4952,118 @@ def _attach_auto_runtime_recovery_agent_proposal(
     safety_hold_stable = _runtime_recovery_safety_hold_stable(
         bridge=bridge,
         telemetry_snapshot=telemetry_snapshot,
+    )
+    wind_safe_window_evidence = build_wind_safe_window_evidence(
+        window_samples,
+        recovery_policy=_runtime_recovery_policy(),
+        minimum_window_s=_runtime_recovery_wind_safe_window_seconds(),
+        maximum_sample_gap_s=max(hard_refresh_seconds, bucket_s) * 1.5,
+    )
+    prior_compound_hazard_state = artifacts.get(
+        "missionos_runtime_recovery_compound_hazard_state"
+    )
+    prior_compound_hazard_state = (
+        prior_compound_hazard_state
+        if isinstance(prior_compound_hazard_state, Mapping)
+        else {}
+    )
+    compound_hazard_state = build_compound_hazard_state(
+        task_id=task_id,
+        prior_state=prior_compound_hazard_state,
+        telemetry=telemetry_snapshot,
+        recovery_window_samples=window_samples,
+        recovery_policy=_runtime_recovery_policy(),
+        wind_safe_window=wind_safe_window_evidence,
+        safety_hold_observed=safety_hold_observed,
+        safety_hold_stable=safety_hold_stable,
+        observed_at=observed_at_datetime.isoformat(),
+    )
+    hazard_state_id = str(
+        compound_hazard_state.get("hazard_state_id") or ""
+    )
+    hazard_obstacle_name = str(
+        compound_hazard_state.get("source_obstacle_name") or ""
+    )
+    hazard_judgment_epoch = compound_hazard_state.get("judgment_epoch")
+    hazard_judgment_epoch = (
+        dict(hazard_judgment_epoch)
+        if isinstance(hazard_judgment_epoch, Mapping)
+        else {}
+    )
+    prior_compound_transition = artifacts.get(
+        "missionos_runtime_recovery_compound_hazard_transition"
+    )
+    prior_compound_transition = (
+        prior_compound_transition
+        if isinstance(prior_compound_transition, Mapping)
+        else {}
+    )
+    compound_transition_already_observed = bool(
+        hazard_state_id
+        and prior_compound_transition.get("source_hazard_state_id")
+        == hazard_state_id
+        and prior_compound_transition.get("transition_status")
+        == "wind_safe_window_observed"
+    ) or hazard_judgment_epoch.get("epoch_status") == "proposal_created"
+    current_elapsed_seconds = _auto_snapshot_number(
+        telemetry_snapshot.get("elapsed_seconds")
+    )
+    retry_after_elapsed_seconds = _auto_snapshot_number(
+        prior_compound_transition.get("retry_after_elapsed_seconds")
+    )
+    try:
+        prior_transition_observed_at = _utc(
+            datetime.fromisoformat(
+                str(prior_compound_transition.get("observed_at") or "").replace(
+                    "Z", "+00:00"
+                )
+            )
+        )
+    except ValueError:
+        prior_transition_observed_at = None
+    retry_backoff_seconds = _auto_snapshot_number(
+        prior_compound_transition.get("retry_backoff_seconds")
+    )
+    retry_backoff_seconds = (
+        retry_backoff_seconds
+        if retry_backoff_seconds is not None
+        else MISSIONOS_RUNTIME_RECOVERY_REJUDGMENT_RETRY_BACKOFF_SECONDS
+    )
+    compound_rejudgment_retry_ready = bool(
+        prior_compound_transition.get("transition_status")
+        != "rejudgment_failed_retryable"
+        or prior_compound_transition.get("source_hazard_state_id")
+        != hazard_state_id
+        or (
+            current_elapsed_seconds is not None
+            and retry_after_elapsed_seconds is not None
+            and current_elapsed_seconds >= retry_after_elapsed_seconds
+        )
+        or (
+            prior_transition_observed_at is not None
+            and (
+                observed_at_datetime - prior_transition_observed_at
+            ).total_seconds()
+            >= retry_backoff_seconds
+        )
+    )
+    compound_hazard_rejudgment_required = bool(
+        hazard_state_id
+        and compound_hazard_state.get("hazard_status") == "rejudgment_ready"
+        and not compound_transition_already_observed
+        and compound_rejudgment_retry_ready
+        and hazard_obstacle_name == active_conflict_obstacle_name
+        and current_conflict.get("local_avoidance_required") is True
+    )
+    wind_safe_window_tracking_active = bool(
+        hazard_state_id
+        and not compound_transition_already_observed
+        and compound_hazard_state.get("hazard_status")
+        in {
+            "wind_above_limit_observed",
+            "wind_safe_window_tracking",
+            "rejudgment_ready",
+        }
     )
     proposal_materially_changed = bool(
         proposal_awaiting_approval
@@ -4701,6 +5109,17 @@ def _attach_auto_runtime_recovery_agent_proposal(
     # repeated hosted-model calls.
     next_decision_signature = prior_decision_signature or decision_signature
     proposal_recompiled = False
+    agent_started = False
+    agent_result_retryable = False
+    current_inference_context = _runtime_recovery_inference_context(
+        task_id=task_id,
+        telemetry_snapshot=telemetry_snapshot,
+        decision_signature=decision_signature,
+        semantic_state_machine_hash=semantic_state_machine_hash,
+        hazard_state_id=hazard_state_id,
+        source_obstacle_name=active_conflict_obstacle_name,
+        request_reason="poll_pending_inference",
+    )
     if observation_state == "preflight":
         agent_invoked = False
         result = _runtime_recovery_agent_skipped_result(
@@ -4709,6 +5128,11 @@ def _attach_auto_runtime_recovery_agent_proposal(
         )
         refresh_status = "preflight"
     elif observation_state == "landed":
+        # A hosted judgment that finishes after landing is no longer relevant
+        # to mission-level recovery. Forget the task-local worker result so a
+        # terminal observation can never adopt it or leave a stale registry
+        # entry behind.
+        _discard_runtime_recovery_agent_inference(task_id)
         agent_invoked = False
         result = _runtime_recovery_agent_skipped_result(
             reason="runtime_recovery_vehicle_landed",
@@ -4754,6 +5178,76 @@ def _attach_auto_runtime_recovery_agent_proposal(
         )
         refresh_status = "safety_hold_settling"
         next_decision_signature = prior_decision_signature
+    elif _runtime_recovery_agent_inference_pending(task_id):
+        # Poll the worker only after deterministic safety handling has run for
+        # this telemetry sample. A completed judgment is inert until its
+        # source observation is revalidated against the current world.
+        result = _run_auto_runtime_recovery_agent_with_timeout(
+            telemetry_snapshot=telemetry_snapshot,
+            task_id=task_id,
+            inference_context=current_inference_context,
+        )
+        async_inference = result.get("async_inference")
+        async_inference = (
+            async_inference if isinstance(async_inference, Mapping) else {}
+        )
+        if async_inference.get("inference_status") == "completed":
+            result, retryable_reasons = (
+                _revalidate_completed_runtime_recovery_inference(
+                    result=result,
+                    current_context=current_inference_context,
+                )
+            )
+            agent_invoked = not retryable_reasons
+            agent_result_retryable = bool(retryable_reasons)
+            refresh_status = (
+                "agent_result_superseded_retryable"
+                if retryable_reasons
+                else str(
+                    async_inference.get("source_context", {}).get(
+                        "request_reason"
+                    )
+                    or "agent_completed"
+                )
+            )
+        else:
+            agent_invoked = False
+            refresh_status = "agent_inference_pending"
+            next_decision_signature = prior_decision_signature
+    elif compound_hazard_rejudgment_required:
+        # The source-backed hazard state is independent of whether the earlier
+        # LLM output became a durable proposal. A complete fresh-telemetry
+        # window now shows wind at or below the limit while the same obstacle
+        # remains, so open one new judgment epoch. This does not approve or
+        # dispatch the resulting maneuver.
+        inference_context = {
+            **current_inference_context,
+            "request_reason": "wind_recovered_obstacle_rejudgment",
+        }
+        result = _run_auto_runtime_recovery_agent_with_timeout(
+            telemetry_snapshot=telemetry_snapshot,
+            task_id=task_id,
+            inference_context=inference_context,
+        )
+        async_inference = result.get("async_inference")
+        async_inference = (
+            async_inference if isinstance(async_inference, Mapping) else {}
+        )
+        if async_inference:
+            agent_started = async_inference.get("started_now") is True
+            agent_invoked = (
+                async_inference.get("inference_status") == "completed"
+            )
+            refresh_status = (
+                "wind_recovered_obstacle_rejudgment"
+                if agent_invoked
+                else "agent_inference_pending"
+            )
+        else:
+            # Contract tests may inject an immediate deterministic result.
+            agent_started = True
+            agent_invoked = True
+            refresh_status = "wind_recovered_obstacle_rejudgment"
     elif proposal_awaiting_approval:
         # The prior proposal is an immutable decision awaiting the human. Do
         # not ask the hosted model to propose the same action again while that
@@ -4888,32 +5382,116 @@ def _attach_auto_runtime_recovery_agent_proposal(
         )
         refresh_status = "waiting"
     else:
-        agent_invoked = True
+        inference_context = {
+            **current_inference_context,
+            "request_reason": "agent_invoked",
+        }
         result = _run_auto_runtime_recovery_agent_with_timeout(
             telemetry_snapshot=telemetry_snapshot,
             task_id=task_id,
+            inference_context=inference_context,
         )
-        refresh_status = "agent_invoked"
+        async_inference = result.get("async_inference")
+        async_inference = (
+            async_inference if isinstance(async_inference, Mapping) else {}
+        )
+        if async_inference:
+            agent_started = async_inference.get("started_now") is True
+            agent_invoked = (
+                async_inference.get("inference_status") == "completed"
+            )
+            refresh_status = (
+                "agent_invoked"
+                if agent_invoked
+                else "agent_inference_pending"
+            )
+        else:
+            # Contract tests may inject an immediate deterministic result.
+            agent_started = True
+            agent_invoked = True
+            refresh_status = "agent_invoked"
     runtime_status = result.get("runtime_status")
     proposal_created = bool(
         (agent_invoked or proposal_recompiled)
         and runtime_status == "proposal_guardrail_passed"
     )
+    result_assessment_for_transition = result.get("assessment")
+    result_assessment_for_transition = (
+        result_assessment_for_transition
+        if isinstance(result_assessment_for_transition, Mapping)
+        else {}
+    )
+    result_compilation_for_transition = result_assessment_for_transition.get(
+        "intent_compilation"
+    )
+    result_compilation_for_transition = (
+        result_compilation_for_transition
+        if isinstance(result_compilation_for_transition, Mapping)
+        else {}
+    )
+    result_parameters_for_transition = result_compilation_for_transition.get(
+        "compiled_parameters"
+    )
+    result_parameters_for_transition = (
+        result_parameters_for_transition
+        if isinstance(result_parameters_for_transition, Mapping)
+        else result_assessment_for_transition.get("proposed_parameters")
+        if isinstance(
+            result_assessment_for_transition.get("proposed_parameters"),
+            Mapping,
+        )
+        else {}
+    )
+    compound_proposal_created = bool(
+        compound_hazard_rejudgment_required
+        and proposal_created
+        and str(
+            result_assessment_for_transition.get("selected_bounded_action")
+            or ""
+        ).strip()
+        == "avoid_obstacle"
+        and str(
+            result_parameters_for_transition.get("source_obstacle_name")
+            or ""
+        ).strip()
+        == hazard_obstacle_name
+    )
+    if compound_hazard_rejudgment_required and not compound_proposal_created:
+        # A different or unbound action does not complete this judgment epoch,
+        # even if its generic guardrail happened to pass.
+        proposal_created = False
+    if (
+        compound_hazard_rejudgment_required
+        and compound_proposal_created
+        and proposal_awaiting_approval
+    ):
+        proposal_lifecycle_reasons.extend(
+            [
+                "runtime_recovery_wind_safe_window_observed",
+                "runtime_recovery_proposal_superseded_by_material_change",
+            ]
+        )
+        proposal_lifecycle_reasons = list(
+            dict.fromkeys(proposal_lifecycle_reasons)
+        )
+        proposal_invalidated = True
+        proposal_awaiting_approval = False
     last_agent_invoked_elapsed_seconds = bridge.get(
         "last_agent_invoked_elapsed_seconds"
     )
     last_agent_invoked_sample_index = bridge.get("last_agent_invoked_sample_index")
     last_agent_summary_hash = bridge.get("last_agent_recovery_window_summary_hash")
     last_agent_hard_breach_any = bridge.get("last_agent_hard_breach_any")
-    if agent_invoked:
+    if agent_started or agent_invoked:
         last_agent_invoked_elapsed_seconds = telemetry_snapshot.get("elapsed_seconds")
         last_agent_invoked_sample_index = telemetry_snapshot.get("sample_index")
         last_agent_summary_hash = recovery_window_summary_hash
         last_agent_hard_breach_any = has_hard_news
+    if agent_invoked and not agent_result_retryable:
         if decision_signature not in judged_decision_signatures:
             judged_decision_signatures.append(decision_signature)
     if (
-        agent_invoked
+        (agent_invoked and not agent_result_retryable)
         or proposal_recompiled
         or refresh_status == "semantic_change_not_material"
         or refresh_status == "decision_already_judged"
@@ -4950,6 +5528,9 @@ def _attach_auto_runtime_recovery_agent_proposal(
     if (
         not agent_invoked
         and not proposal_created
+        and not wind_safe_window_tracking_active
+        and runtime_status != "inference_pending"
+        and not proposal_awaiting_approval
         and bridge.get("agent_refresh_status") == refresh_status
         and bridge.get("recovery_observation_state") == observation_state
         and bridge.get("recovery_decision_signature") == decision_signature
@@ -4960,12 +5541,28 @@ def _attach_auto_runtime_recovery_agent_proposal(
         # The runtime snapshot is persisted independently. Avoid emitting a
         # duplicate agent-current-state artifact (and task timeline event)
         # when neither the decision nor recovery observation changed.
+        if compound_hazard_state:
+            try:
+                store.update(
+                    task_id,
+                    replace_artifacts={
+                        "missionos_runtime_recovery_compound_hazard_state": (
+                            compound_hazard_state
+                        )
+                    },
+                )
+            except Exception:
+                pass
         return
     bridge_payload = {
         "schema_version": "missionos_runtime_recovery_agent_live_bridge.v1",
         "bridge_status": (
             "agent_not_configured"
             if runtime_status == "not_configured"
+            else "agent_inference_pending"
+            if runtime_status == "inference_pending"
+            else "agent_result_superseded_retryable"
+            if runtime_status == "superseded_retryable"
             else "proposal_skipped"
             if runtime_status == "proposal_skipped"
             else "proposal_attached"
@@ -5034,6 +5631,115 @@ def _attach_auto_runtime_recovery_agent_proposal(
     replaced_artifacts: dict[str, Any] = {
         "missionos_runtime_recovery_agent_live_bridge": bridge_payload
     }
+    if compound_hazard_state:
+        replaced_artifacts[
+            "missionos_runtime_recovery_compound_hazard_state"
+        ] = compound_hazard_state
+    if compound_hazard_rejudgment_required and compound_proposal_created:
+        completed_epoch = {
+            **hazard_judgment_epoch,
+            "epoch_status": "proposal_created",
+            "attempt_count": int(
+                hazard_judgment_epoch.get("attempt_count") or 0
+            )
+            + 1,
+            "completed_at": observed_at,
+        }
+        compound_hazard_state = {
+            **compound_hazard_state,
+            "hazard_status": "proposal_created",
+            "judgment_epoch": completed_epoch,
+            "observed_at": observed_at,
+        }
+        replaced_artifacts[
+            "missionos_runtime_recovery_compound_hazard_state"
+        ] = compound_hazard_state
+        transition_evidence = {
+            "schema_version": (
+                "missionos_runtime_recovery_compound_hazard_transition.v1"
+            ),
+            "transition_status": "wind_safe_window_observed",
+            "from_judgment": "source_backed_compound_hazard",
+            "to_judgment_epoch": "source_backed_obstacle_rejudgment",
+            "source_proposal_id": last_proposal.get("proposal_id"),
+            "source_hazard_state_id": hazard_state_id,
+            "judgment_epoch_id": hazard_judgment_epoch.get("epoch_id"),
+            "source_obstacle_name": active_conflict_obstacle_name or None,
+            "wind_safe_window": wind_safe_window_evidence,
+            "safety_hold_observed": safety_hold_observed,
+            "safety_hold_stable": safety_hold_stable,
+            "observed_at": observed_at,
+            "dispatch_authority_created": False,
+            "progress_counted": False,
+            "physical_execution_invoked": False,
+        }
+        replaced_artifacts[
+            "missionos_runtime_recovery_compound_hazard_transition"
+        ] = transition_evidence
+    elif (
+        compound_hazard_rejudgment_required
+        and runtime_status != "inference_pending"
+    ):
+        retry_after_elapsed = (
+            current_elapsed_seconds
+            + MISSIONOS_RUNTIME_RECOVERY_REJUDGMENT_RETRY_BACKOFF_SECONDS
+            if current_elapsed_seconds is not None
+            else None
+        )
+        retry_after_datetime = (
+            observed_at_datetime
+            + timedelta(
+                seconds=(
+                    MISSIONOS_RUNTIME_RECOVERY_REJUDGMENT_RETRY_BACKOFF_SECONDS
+                )
+            )
+        ).isoformat()
+        retryable_epoch = {
+            **hazard_judgment_epoch,
+            "epoch_status": "rejudgment_failed_retryable",
+            "attempt_count": int(
+                hazard_judgment_epoch.get("attempt_count") or 0
+            )
+            + 1,
+            "retry_after_elapsed_seconds": retry_after_elapsed,
+            "retry_after": retry_after_datetime,
+            "last_attempt_at": observed_at,
+        }
+        compound_hazard_state = {
+            **compound_hazard_state,
+            "hazard_status": "rejudgment_ready",
+            "judgment_epoch": retryable_epoch,
+            "observed_at": observed_at,
+        }
+        replaced_artifacts[
+            "missionos_runtime_recovery_compound_hazard_state"
+        ] = compound_hazard_state
+        transition_evidence = {
+            "schema_version": (
+                "missionos_runtime_recovery_compound_hazard_transition.v1"
+            ),
+            "transition_status": "rejudgment_failed_retryable",
+            "from_judgment": "source_backed_compound_hazard",
+            "to_judgment_epoch": "source_backed_obstacle_rejudgment",
+            "source_proposal_id": last_proposal.get("proposal_id"),
+            "source_hazard_state_id": hazard_state_id,
+            "judgment_epoch_id": hazard_judgment_epoch.get("epoch_id"),
+            "source_obstacle_name": active_conflict_obstacle_name or None,
+            "wind_safe_window": wind_safe_window_evidence,
+            "rejudgment_runtime_status": runtime_status,
+            "retry_backoff_seconds": (
+                MISSIONOS_RUNTIME_RECOVERY_REJUDGMENT_RETRY_BACKOFF_SECONDS
+            ),
+            "retry_after_elapsed_seconds": retry_after_elapsed,
+            "retry_after": retry_after_datetime,
+            "observed_at": observed_at,
+            "dispatch_authority_created": False,
+            "progress_counted": False,
+            "physical_execution_invoked": False,
+        }
+        replaced_artifacts[
+            "missionos_runtime_recovery_compound_hazard_transition"
+        ] = transition_evidence
     if attempt_evidence is not None:
         attempt_id = str(attempt_evidence.get("attempt_id") or "")
         if attempt_id:
@@ -5088,6 +5794,23 @@ def _attach_auto_runtime_recovery_agent_proposal(
                 "recovery_decision_signature": decision_signature,
             },
         )
+        if compound_proposal_created and compound_hazard_state:
+            completed_epoch = compound_hazard_state.get("judgment_epoch")
+            completed_epoch = (
+                dict(completed_epoch)
+                if isinstance(completed_epoch, Mapping)
+                else {}
+            )
+            compound_hazard_state = {
+                **compound_hazard_state,
+                "judgment_epoch": {
+                    **completed_epoch,
+                    "proposal_id": proposal_id,
+                },
+            }
+            replaced_artifacts[
+                "missionos_runtime_recovery_compound_hazard_state"
+            ] = compound_hazard_state
         proposal_origin = _runtime_recovery_proposal_origin(
             result=result,
             proposal_recompiled=proposal_recompiled,
@@ -5135,6 +5858,26 @@ def _attach_auto_runtime_recovery_agent_proposal(
                 _runtime_recovery_proposal_max_origin_drift_m()
             ),
             "sample_index": telemetry_snapshot.get("sample_index"),
+            "source_obstacle_name": active_conflict_obstacle_name or None,
+            "compound_hazard_transition": (
+                {
+                    "schema_version": (
+                        "missionos_runtime_recovery_compound_hazard_transition.v1"
+                    ),
+                    "transition_status": "wind_safe_window_observed",
+                    "source_proposal_id": last_proposal.get("proposal_id"),
+                    "source_hazard_state_id": hazard_state_id,
+                    "judgment_epoch_id": hazard_judgment_epoch.get(
+                        "epoch_id"
+                    ),
+                    "source_obstacle_name": (
+                        active_conflict_obstacle_name or None
+                    ),
+                    "wind_safe_window": wind_safe_window_evidence,
+                }
+                if compound_hazard_rejudgment_required
+                else None
+            ),
             "decision_signature_version": RECOVERY_DECISION_SIGNATURE_VERSION,
             "recovery_decision_signature": decision_signature,
             "legacy_recovery_decision_signature": legacy_decision_signature,
@@ -5412,6 +6155,21 @@ def _persist_auto_live_telemetry_snapshot(
         ),
         "wind_mean_application_altitude_m": payload.get(
             "wind_mean_application_altitude_m"
+        ),
+        "wind_gust_active": payload.get("wind_gust_active"),
+        "wind_gust_started": payload.get("wind_gust_started"),
+        "wind_gust_ended": payload.get("wind_gust_ended"),
+        "wind_gust_window_start_seconds": payload.get(
+            "wind_gust_window_start_seconds"
+        ),
+        "wind_gust_window_duration_seconds": payload.get(
+            "wind_gust_window_duration_seconds"
+        ),
+        "wind_gust_trigger_on_obstacle": payload.get(
+            "wind_gust_trigger_on_obstacle"
+        ),
+        "wind_gust_trigger_obstacle_distance_m": payload.get(
+            "wind_gust_trigger_obstacle_distance_m"
         ),
         "gazebo_obstacle_model_spawned": payload.get(
             "gazebo_obstacle_model_spawned"

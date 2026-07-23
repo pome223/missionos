@@ -11,6 +11,11 @@ MissionOS keeps four different questions separate during Recovery:
 The Runtime Recovery Agent answers the first question. It may choose to
 monitor, reroute, avoid locally, hold, or return/land, and may state constraints
 such as direction, clearance, destination, duration, speed, or altitude.
+Its hosted-model call runs beside the live telemetry loop rather than inside
+it. MissionOS therefore keeps observing the vehicle and can apply an immediate
+rules-based Safety HOLD while the model is thinking. If the world changes
+before the answer arrives, that answer is discarded and a fresh judgment is
+requested instead of being treated as current authority.
 
 The compiler answers the second question. It may turn those constraints into
 concrete setpoints, but it may not silently change the action, direction,
