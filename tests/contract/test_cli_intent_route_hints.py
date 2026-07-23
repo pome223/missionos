@@ -1328,6 +1328,157 @@ def test_pending_px4_v2_recovery_hides_unverified_compilation() -> None:
     assert missionos_cli._pending_recovery_approval_from_task(payload) is None
 
 
+def test_pending_px4_v3_recovery_requires_verified_hazard_and_feasibility() -> None:
+    proposal = {
+        "schema_version": "missionos_runtime_recovery_proposal_evidence.v3",
+        "proposal_id": "runtime_recovery_proposal_v3",
+        "proposal_status": "awaiting_operator_approval",
+        "proposal_source": "deterministic_recompile_of_prior_llm_judgment",
+        "proposal_origin": {
+            "origin_kind": "deterministic_recompile_of_prior_judgment",
+            "provider": "google_adk_litellm_deepseek",
+            "model_id": "deepseek-v4-flash",
+            "source_proposal_id": "runtime_recovery_proposal_llm",
+        },
+        "source_obstacle_name": "missionos_route_obstacle_50pct",
+        "runtime_recovery_agent_result": {
+            "assessment": {
+                "selected_bounded_action": "avoid_obstacle",
+                "intent_compilation": {
+                    "compilation_status": "compiled",
+                    "compiled_action": "avoid_obstacle",
+                    "compiled_parameters": {
+                        "target_x_m": -49.0,
+                        "target_y_m": 299.0,
+                        "target_altitude_m": 45.0,
+                        "source_obstacle_name": "missionos_route_obstacle_50pct",
+                    },
+                },
+                "reachability_verification": {
+                    "verification_status": "verified",
+                    "reachability_verified": True,
+                },
+                "hazard_state": {"hazard_state_status": "verified"},
+                "action_feasibility": {
+                    "feasibility_status": "verified_feasible",
+                    "obstacle_clearance_verification": {
+                        "verification_status": "verified",
+                        "minimum_clearance_m": 34.7,
+                        "required_clearance_m": 20.0,
+                    },
+                    "maneuver_duration_model": {
+                        "performance_envelope_status": "verified",
+                    },
+                    "blocking_reasons": [],
+                },
+            }
+        },
+    }
+    payload = {
+        "task": {
+            "task_id": "task_px4_runtime_recovery_v3",
+            "kind": "px4_gazebo_mission_designer_sitl_execution_request",
+            "status": "running",
+            "artifacts": {
+                "missionos_runtime_recovery_last_proposal": proposal,
+                "missionos_runtime_recovery_safety_hold_receipt": {
+                    "hold_status": "observed"
+                },
+                "missionos_auto_mission_runtime_snapshot": {
+                    "operator_recovery_action": "safety_hold",
+                    "operator_recovery_assist_status": "safety_hold_observed",
+                },
+            },
+        }
+    }
+
+    pending = missionos_cli._pending_recovery_approval_from_task(payload)
+
+    assert pending is not None
+    assert pending["runtime_proposal_approval_supported"] is True
+    assert pending["recovery_parameters"]["source_obstacle_name"] == (
+        "missionos_route_obstacle_50pct"
+    )
+    assert pending["llm_provider"] == "google_adk_litellm_deepseek"
+    assert pending["llm_model_id"] == "deepseek-v4-flash"
+    assert pending["source_obstacle_name"] == "missionos_route_obstacle_50pct"
+    assert pending["action_feasibility"]["feasibility_status"] == (
+        "verified_feasible"
+    )
+
+    panel = missionos_cli._render_recovery_agent_console(
+        payload,
+        proposal=None,
+        show_proposal=False,
+        status="running",
+        task_id="task_px4_runtime_recovery_v3",
+    )
+    rendered = str(panel.renderable)
+    assert "Proposal evidence:" in rendered
+    assert "Aircraft held — recovery decision required" in rendered
+    assert "google_adk_litellm_deepseek/deepseek-v4-flash" in rendered
+    assert "source_proposal=runtime_recovery_proposal_llm" in rendered
+    assert "obstacle=missionos_route_obstacle_50pct" in rendered
+    assert "Action feasibility: verified_feasible" in rendered
+    assert "clearance=verified (min=34.7m, required=20.0m)" in rendered
+    assert "performance=verified" in rendered
+    assert "not LLM approval" in rendered
+    assert "not Gemini approval" not in rendered
+    assert "Candidate validation: -" not in rendered
+    assert "type a change in plain language" not in rendered
+
+
+@pytest.mark.parametrize(
+    ("hazard_status", "feasibility_status"),
+    [
+        ("unverified", "verified_feasible"),
+        ("verified", "unverified"),
+        ("verified", "blocked"),
+    ],
+)
+def test_pending_px4_v3_recovery_hides_unverified_candidates(
+    hazard_status: str,
+    feasibility_status: str,
+) -> None:
+    proposal = {
+        "schema_version": "missionos_runtime_recovery_proposal_evidence.v3",
+        "proposal_id": "runtime_recovery_proposal_v3_unverified",
+        "proposal_status": "awaiting_operator_approval",
+        "runtime_recovery_agent_result": {
+            "assessment": {
+                "selected_bounded_action": "avoid_obstacle",
+                "intent_compilation": {
+                    "compilation_status": "compiled",
+                    "compiled_action": "avoid_obstacle",
+                    "compiled_parameters": {
+                        "target_x_m": -49.0,
+                        "target_y_m": 299.0,
+                        "source_obstacle_name": "missionos_route_obstacle_50pct",
+                    },
+                },
+                "reachability_verification": {
+                    "verification_status": "verified",
+                    "reachability_verified": True,
+                },
+                "hazard_state": {"hazard_state_status": hazard_status},
+                "action_feasibility": {
+                    "feasibility_status": feasibility_status,
+                },
+            }
+        },
+    }
+    payload = {
+        "task": {
+            "task_id": "task_px4_runtime_recovery_v3",
+            "kind": "px4_gazebo_mission_designer_sitl_execution_request",
+            "status": "running",
+            "artifacts": {"missionos_runtime_recovery_last_proposal": proposal},
+        }
+    }
+
+    assert missionos_cli._pending_recovery_approval_from_task(payload) is None
+
+
 def test_pending_px4_recovery_hides_proposal_after_matching_authority() -> None:
     payload = {
         "task": {

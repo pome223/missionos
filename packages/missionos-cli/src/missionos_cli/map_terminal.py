@@ -260,7 +260,9 @@ def _watch_overlay_status_text(
         parts.append(f"obstacles={len(obstacle_records)}({spawn_status})")
     if maneuver:
         samples = maneuver.get("samples")
-        samples_count = len(samples) if isinstance(samples, list) else 0
+        samples_count = _as_int(maneuver.get("maneuver_observation_sample_count"))
+        if samples_count is None:
+            samples_count = len(samples) if isinstance(samples, list) else 0
         parts.append(
             "avoid="
             f"{_status_text(maneuver.get('status'))}"

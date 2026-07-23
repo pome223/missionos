@@ -161,7 +161,7 @@ def _render_recovery_agent_console(
                 else "[bold yellow]Aircraft safety HOLD queued — awaiting PX4 "
                 "observation[/bold yellow]",
                 "[dim]The HOLD came from the preauthorized local-conflict safety "
-                "policy. It is not Gemini approval, human approval, Recovery "
+                "policy. It is not LLM approval, human approval, Recovery "
                 "success, or mission progress.[/dim]",
                 "",
             ]
@@ -205,28 +205,85 @@ def _render_recovery_agent_console(
         if not planner:
             planner = summary.get("recovery_planner_result")
             planner = planner if isinstance(planner, dict) else {}
+        runtime_proposal_approval = (
+            pending.get("runtime_proposal_approval_supported") is True
+        )
         is_repair = bool(checkpoint.get("parent_checkpoint_id"))
         lines.extend(
             [
-                "[bold yellow]Robot stopped — repair decision required[/bold yellow]"
+                "[bold yellow]Aircraft held — recovery decision required[/bold yellow]"
+                if runtime_proposal_approval
+                else "[bold yellow]Robot stopped — repair decision required[/bold yellow]"
                 if is_repair
                 else "[bold yellow]Robot stopped — recovery decision required[/bold yellow]",
                 f"Recovery Agent proposes: [bold]{rich_escape(action)}[/bold]",
                 f"[dim]Reason: {rich_escape(reason)}[/dim]",
-                "[dim]Proposal source: "
-                f"{rich_escape(_status_text(planner.get('proposal_source')))}; "
-                f"checkpoint={rich_escape(_status_text(checkpoint.get('checkpoint_id')))}; "
-                f"parent={rich_escape(_status_text(checkpoint.get('parent_checkpoint_id')))}[/dim]",
-                "[dim]Candidate validation: "
-                f"{rich_escape(_status_text(candidate_resolution.get('resolution_status')))}; "
-                f"candidate={rich_escape(_status_text(selected_candidate.get('candidate_id')))}; "
-                f"path={rich_escape(_status_text(selected_candidate.get('path_length_m')))}m; "
-                f"global_max_cost={rich_escape(_status_text(selected_candidate.get('maximum_path_cost')))}; "
-                f"local_max_cost={rich_escape(_status_text(selected_candidate.get('local_maximum_path_cost')))}; "
-                f"bounded_retreat={rich_escape(_status_text(candidate_resolution.get('bounded_retreat_required')))}[/dim]",
-                "[green]No recovery dispatch has been sent.[/green]",
             ]
         )
+        if runtime_proposal_approval:
+            proposal_origin = pending.get("proposal_origin")
+            proposal_origin = (
+                proposal_origin if isinstance(proposal_origin, dict) else {}
+            )
+            provider_model = "/".join(
+                value
+                for value in (
+                    str(pending.get("llm_provider") or ""),
+                    str(pending.get("llm_model_id") or ""),
+                )
+                if value
+            )
+            lines.append(
+                "[dim]Proposal evidence: "
+                f"source={rich_escape(_status_text(pending.get('proposal_source')))}; "
+                f"origin={rich_escape(_status_text(proposal_origin.get('origin_kind')))}; "
+                f"provider={rich_escape(provider_model or '-')}; "
+                "source_proposal="
+                f"{rich_escape(_status_text(proposal_origin.get('source_proposal_id')))}; "
+                "obstacle="
+                f"{rich_escape(_status_text(pending.get('source_obstacle_name')))}[/dim]"
+            )
+            feasibility = pending.get("action_feasibility")
+            feasibility = feasibility if isinstance(feasibility, dict) else {}
+            clearance = feasibility.get("obstacle_clearance_verification")
+            clearance = clearance if isinstance(clearance, dict) else {}
+            duration_model = feasibility.get("maneuver_duration_model")
+            duration_model = duration_model if isinstance(duration_model, dict) else {}
+            minimum_clearance_m = _as_float(clearance.get("minimum_clearance_m"))
+            required_clearance_m = _as_float(clearance.get("required_clearance_m"))
+            minimum_clearance_text = (
+                f"{minimum_clearance_m:.1f}" if minimum_clearance_m is not None else "-"
+            )
+            required_clearance_text = (
+                f"{required_clearance_m:.1f}" if required_clearance_m is not None else "-"
+            )
+            lines.append(
+                "[dim]Action feasibility: "
+                f"{rich_escape(_status_text(feasibility.get('feasibility_status')))}; "
+                f"clearance={rich_escape(_status_text(clearance.get('verification_status')))} "
+                f"(min={minimum_clearance_text}m, "
+                f"required={required_clearance_text}m); "
+                "performance="
+                f"{rich_escape(_status_text(duration_model.get('performance_envelope_status')))}"
+                "[/dim]"
+            )
+        else:
+            lines.extend(
+                [
+                    "[dim]Proposal source: "
+                    f"{rich_escape(_status_text(planner.get('proposal_source')))}; "
+                    f"checkpoint={rich_escape(_status_text(checkpoint.get('checkpoint_id')))}; "
+                    f"parent={rich_escape(_status_text(checkpoint.get('parent_checkpoint_id')))}[/dim]",
+                    "[dim]Candidate validation: "
+                    f"{rich_escape(_status_text(candidate_resolution.get('resolution_status')))}; "
+                    f"candidate={rich_escape(_status_text(selected_candidate.get('candidate_id')))}; "
+                    f"path={rich_escape(_status_text(selected_candidate.get('path_length_m')))}m; "
+                    f"global_max_cost={rich_escape(_status_text(selected_candidate.get('maximum_path_cost')))}; "
+                    f"local_max_cost={rich_escape(_status_text(selected_candidate.get('local_maximum_path_cost')))}; "
+                    f"bounded_retreat={rich_escape(_status_text(candidate_resolution.get('bounded_retreat_required')))}[/dim]",
+                ]
+            )
+        lines.append("[green]No recovery dispatch has been sent.[/green]")
         if operator_guidance_required:
             lines.extend(
                 [
@@ -241,17 +298,23 @@ def _render_recovery_agent_console(
                 ]
             )
         else:
-            lines.extend(
-                [
-                    "",
-                    "[bold]Choose one:[/bold]",
-                    "  [bold green]approve[/bold green]  execute this exact recovery "
-                    "(asks y/N)",
-                    "  [bold]defer[/bold]    keep the robot stopped; create no authority",
-                    "  type a change in plain language, e.g. "
-                    "[bold]左へ大きく迂回して[/bold]",
-                ]
+            lines.extend(["", "[bold]Choose one:[/bold]"])
+            lines.append(
+                "  [bold green]approve[/bold green]  execute this exact recovery "
+                "(asks y/N)"
             )
+            lines.append(
+                "  [bold]defer[/bold]    keep the aircraft held; create no authority"
+                if runtime_proposal_approval
+                else "  [bold]defer[/bold]    keep the robot stopped; create no authority"
+            )
+            if not runtime_proposal_approval:
+                lines.extend(
+                    [
+                        "  type a change in plain language, e.g. "
+                        "[bold]左へ大きく迂回して[/bold]",
+                    ]
+                )
     elif show_proposal and proposal:
         lines.extend(_humanize_recovery_summary(proposal, endurance, return_home))
         suggested = _operator_recovery_console_command(

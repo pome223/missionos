@@ -20,6 +20,12 @@ from src.runtime.px4_gazebo_route.compound_hazard_transition import (
     build_wind_safe_window_evidence,
     safe_window_tail_matches_telemetry,
 )
+from src.runtime.px4_gazebo_route.hazard_state import (
+    build_runtime_recovery_hazard_state,
+)
+from src.runtime.px4_gazebo_route.recovery_policy import (
+    live_sitl_recovery_policy,
+)
 from src.runtime.recovery_window_summary import build_recovery_window_summary
 from src.runtime.task_store import TaskStore
 
@@ -360,16 +366,36 @@ def _assessment(
 
 def _planner_tool_telemetry() -> dict:
     return {
+        "source": "fixture_runtime_recovery_telemetry",
+        "sample_index": 30,
+        "elapsed_seconds": 60.0,
+        "telemetry": {
+            "stale": False,
+            "dropout": False,
+        },
         "position": {
             "local_x_m": 0.0,
             "local_y_m": 0.0,
             "altitude_above_home_m": 25.0,
+            "distance_to_home_m": 0.0,
+            "frame_id": "local_ned_xy_altitude_up",
+            "source_refs": ["fixture.position"],
+        },
+        "battery": {
+            "remaining_percent": 80.0,
+            "source_refs": ["fixture.battery"],
+        },
+        "wind": {
+            "speed_mps": 1.0,
+            "gust_mps": 1.0,
+            "source_refs": ["fixture.wind"],
         },
         "terrain": {
             "terrain_clearance_m": 18.0,
             "terrain_clearance_target_m": 30.0,
             "terrain_clearance_margin_m": -12.0,
             "terrain_clearance_below_minimum": True,
+            "source_refs": ["fixture.terrain"],
         },
         "route": {
             "active_leg": {
@@ -382,6 +408,7 @@ def _planner_tool_telemetry() -> dict:
         "obstacle": {
             "obstacle_detected": True,
             "building_risk_detected": True,
+            "frame_id": "local_ned_xy_altitude_up",
             "obstacle_manifest": {
                 "obstacles": [
                     {
@@ -392,11 +419,48 @@ def _planner_tool_telemetry() -> dict:
                         "y_m": 0.0,
                         "size_x_m": 20.0,
                         "size_y_m": 20.0,
+                        "size_z_m": 20.0,
+                        "bounds_local_xyz_m": {
+                            "min_x_m": 90.0,
+                            "max_x_m": 110.0,
+                            "min_y_m": -10.0,
+                            "max_y_m": 10.0,
+                            "min_z_m": 0.0,
+                            "max_z_m": 20.0,
+                        },
                     }
                 ]
             },
         },
+        "landing_zone": {
+            "safe": True,
+            "source_refs": ["fixture.landing_zone"],
+        },
     }
+
+
+def _planner_tool_feasibility_telemetry() -> dict:
+    telemetry = _planner_tool_telemetry()
+    telemetry["recovery"] = {
+        "performance_observation": {
+            "action": "avoid_obstacle",
+            "sample_count": 12,
+            "duration_seconds": 20.0,
+            "horizontal_distance_m": 60.0,
+            "observed_horizontal_speed_mps": 6.0,
+            "source_refs": ["fixture.prior_bounded_offboard_maneuver"],
+        }
+    }
+    telemetry["obstacle"]["conflict_assessment"] = {
+        "local_avoidance_required": True,
+        "source_refs": ["fixture.obstacle_conflict"],
+        "nearest_obstacle": {
+            "obstacle_name": "missionos_landing_zone_blocker",
+            "time_to_conflict_s": 60.0,
+            "source_refs": ["fixture.obstacle_manifest"],
+        },
+    }
+    return telemetry
 
 
 def _planner_policy() -> dict:
@@ -428,6 +492,36 @@ def test_runtime_recovery_prompt_advertises_planner_function_tool() -> None:
         "avoid_obstacle",
     ]
     assert tool["copy_tool_proposed_parameters_exactly"] is True
+    judgment = payload["action_judgment_context"]
+    assert judgment["llm_may_explain_unverified_candidates"] is True
+    assert judgment["llm_may_upgrade_feasibility"] is False
+    assert judgment["approval_created"] is False
+    assert judgment["dispatch_authority_created"] is False
+
+
+def test_unverified_offboard_candidate_is_visible_to_judge_but_not_selectable() -> None:
+    telemetry = _planner_tool_feasibility_telemetry()
+    telemetry.pop("recovery")
+    planner = missionos_agent_runtime.plan_runtime_recovery_maneuver(
+        telemetry_snapshot=telemetry,
+        recovery_policy=live_run._runtime_recovery_policy(),
+        requested_action="avoid_obstacle",
+    )
+
+    assert planner["recommended_candidate"] == {}
+    assert planner["candidates"] == []
+    avoided = [
+        item
+        for item in planner["judgment_candidates"]
+        if item["candidate"]["selected_bounded_action"] == "avoid_obstacle"
+    ]
+    assert len(avoided) == 1
+    assert avoided[0]["feasibility_status"] == "unverified"
+    assert avoided[0]["eligible_for_selection"] is False
+    assert (
+        "action_feasibility_offboard_performance_envelope_unverified"
+        in avoided[0]["unverified_reasons"]
+    )
 
 
 def test_runtime_recovery_planner_tool_computes_altitude_and_obstacle_targets() -> None:
@@ -449,18 +543,18 @@ def test_runtime_recovery_planner_tool_computes_altitude_and_obstacle_targets() 
     avoid_candidate = avoid_result["recommended_candidate"]
     assert avoid_candidate["selected_bounded_action"] == "avoid_obstacle"
     assert avoid_candidate["proposed_parameters"] == {
-        "target_x_m": 130.0,
-        "target_y_m": 59.429,
+        "target_x_m": 132.0,
+        "target_y_m": 60.343,
         "target_altitude_m": 45.0,
         "source_obstacle_name": "missionos_landing_zone_blocker",
     }
     assert avoid_candidate["basis"]["target_is_beyond_obstacle"] is True
-    assert avoid_candidate["basis"]["pass_distance_after_obstacle_m"] == 30.0
+    assert avoid_candidate["basis"]["pass_distance_after_obstacle_m"] == 32.0
     assert avoid_candidate["basis"]["required_lateral_clearance_m"] == 30.0
     assert avoid_candidate["basis"]["expanded_half_along_route_m"] == 30.0
     assert avoid_candidate["basis"]["clearance_entry_along_track_m"] == 70.0
     lateral_at_expanded_near_face = (
-        avoid_candidate["proposed_parameters"]["target_y_m"] * 70.0 / 130.0
+        avoid_candidate["proposed_parameters"]["target_y_m"] * 70.0 / 132.0
     )
     assert lateral_at_expanded_near_face > 30.0
     assert (
@@ -1634,6 +1728,7 @@ def test_runtime_recovery_agent_waits_for_new_decision_epoch(
         "local_z_m": -30.0,
         "altitude_above_home_m": 30.0,
         "distance_to_home_m": None,
+        "frame_id": "local_ned_xy_altitude_up",
     }
     assert datetime.fromisoformat(first_proposal["valid_until"]) > datetime.fromisoformat(
         first_proposal["observed_at"]
@@ -1864,6 +1959,25 @@ def test_safety_hold_preserves_matching_local_avoidance_proposal(
                 "takeoff_longitude": 139.0,
                 "dropoff_latitude": 35.0,
                 "dropoff_longitude": 139.00591,
+                "planned_route_m": 539.0,
+            },
+            "missionos_auto_mission_compilation": {
+                "planned_route_m": 539.0,
+                "terrain_clearance_target_m": 30.0,
+                "terrain_clearance_profile": [
+                    {
+                        "fraction": 0.0,
+                        "terrain_elevation_m": 0.0,
+                        "target_clearance_m": 30.0,
+                        "mission_altitude_m": 30.0,
+                    },
+                    {
+                        "fraction": 1.0,
+                        "terrain_elevation_m": 0.0,
+                        "target_clearance_m": 30.0,
+                        "mission_altitude_m": 30.0,
+                    },
+                ],
             },
             "missionos_auto_mission_runtime_snapshot": {
                 "gazebo_obstacle_model_spawned": True,
@@ -1877,6 +1991,15 @@ def test_safety_hold_preserves_matching_local_avoidance_proposal(
                             "y_m": 539.0,
                             "size_x_m": 18.0,
                             "size_y_m": 18.0,
+                            "size_z_m": 20.0,
+                            "bounds_local_xyz_m": {
+                                "min_x_m": -9.0,
+                                "max_x_m": 9.0,
+                                "min_y_m": 530.0,
+                                "max_y_m": 548.0,
+                                "min_z_m": 0.0,
+                                "max_z_m": 20.0,
+                            },
                         }
                     ],
                 },
@@ -1887,30 +2010,48 @@ def test_safety_hold_preserves_matching_local_avoidance_proposal(
 
     def _proposal(**kwargs) -> dict:
         invocations.append(int(kwargs["telemetry_snapshot"]["sample_index"]))
+        telemetry_snapshot = kwargs["telemetry_snapshot"]
+        recovery_policy = live_run._runtime_recovery_policy()
+        planner_result = (
+            missionos_agent_runtime.plan_runtime_recovery_maneuver(
+                telemetry_snapshot=telemetry_snapshot,
+                mission_context={"task_id": kwargs["task_id"]},
+                recovery_policy=recovery_policy,
+                requested_action="avoid_obstacle",
+            )
+        )
+        candidate = planner_result["recommended_candidate"]
+        agent_output = {
+            "selected_bounded_action": "avoid_obstacle",
+            "trigger_level": "advisory",
+            "requires_human_approval": True,
+            "proposed_parameters": candidate["proposed_parameters"],
+        }
+        assessment = (
+            missionos_agent_runtime._validate_runtime_recovery_output(
+                agent_output=agent_output,
+                telemetry_snapshot=telemetry_snapshot,
+                recovery_policy=recovery_policy,
+                planner_tool_results=[planner_result],
+                require_parameter_tool_call=True,
+                parameter_tool_called=True,
+            )
+        )
         return {
             "schema_version": "missionos_runtime_recovery_agent_result.v1",
-            "runtime_status": "proposal_guardrail_passed",
-            "blocking_reasons": [],
-            "assessment": {
-                "assessment_status": "proposal_guardrail_passed",
-                "selected_bounded_action": "avoid_obstacle",
-                "requires_human_approval": True,
-                "proposed_parameters": {
-                    "target_x_m": -30.0,
-                    "target_y_m": 460.0,
-                    "target_altitude_m": 45.0,
-                },
-            },
-            "agent_output": {
-                "selected_bounded_action": "avoid_obstacle",
-                "requires_human_approval": True,
-                "proposed_parameters": {
-                    "target_x_m": -30.0,
-                    "target_y_m": 460.0,
-                    "target_altitude_m": 45.0,
-                },
-            },
-            "agent_invocations": [{"function_tool_called": True}],
+            "runtime_status": assessment["assessment_status"],
+            "blocking_reasons": assessment["blocking_reasons"],
+            "assessment": assessment,
+            "agent_output": agent_output,
+            "agent_invocations": [
+                {
+                    "agent_name": "missionos_runtime_recovery_agent",
+                    "provider": "fixture_hosted_model",
+                    "model_id": "fixture-model",
+                    "invocation_kind": "fixture_llm_api",
+                    "function_tool_called": True,
+                }
+            ],
             "dispatch_authority_created": False,
             "progress_counted": False,
         }
@@ -1929,9 +2070,21 @@ def test_safety_hold_preserves_matching_local_avoidance_proposal(
         "local_z_m": -30.0,
         "altitude_above_home_m": 30.0,
         "battery_remaining_percent": 80.0,
+        "wind_speed_mps": 1.0,
+        "ground_speed_mps": 3.5,
+        "distance_to_home_m": 430.0,
         "heartbeat_observed": True,
         "nav_state": 3,
         "landed": False,
+            "operator_recovery_performance_observation": {
+                "action": "avoid_obstacle",
+                "target_reached": True,
+                "sample_count": 12,
+            "duration_seconds": 20.0,
+            "horizontal_distance_m": 60.0,
+            "observed_horizontal_speed_mps": 6.0,
+            "source_refs": ["fixture.prior_bounded_offboard_maneuver"],
+        },
     }
     live_run._attach_auto_runtime_recovery_agent_proposal(
         store=store,
@@ -2243,6 +2396,9 @@ def test_successful_recovery_does_not_queue_a_second_hold(
             "landed": False,
             "operator_recovery_request_observed": True,
             "operator_recovery_action": "avoid_obstacle",
+            "operator_recovery_parameters": {
+                "source_obstacle_name": "route_obstacle",
+            },
             "operator_recovery_command_ack_observed": True,
             "operator_recovery_assist_attempted": True,
             "operator_recovery_assist_status": "target_reached",
@@ -2258,6 +2414,135 @@ def test_successful_recovery_does_not_queue_a_second_hold(
     assert bridge["recovery_observation_state"] == "succeeded"
     assert bridge["agent_refresh_status"] == "recovery_succeeded"
     assert "missionos_runtime_recovery_last_proposal" not in stored["artifacts"]
+
+
+def test_successful_calibration_does_not_suppress_new_obstacle_hold(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    store = TaskStore(str(tmp_path / "tasks.db"))
+    queued_holds: list[dict] = []
+
+    def _queue_hold(**kwargs) -> dict:
+        queued_holds.append(dict(kwargs))
+        return {"request_status": "queued"}
+
+    def _unexpected_proposal(**_kwargs) -> dict:
+        raise AssertionError("new conflict must queue HOLD before hosted judgment")
+
+    monkeypatch.setattr(
+        live_run,
+        "queue_px4_active_runner_recovery_request",
+        _queue_hold,
+    )
+    monkeypatch.setattr(
+        live_run,
+        "_run_auto_runtime_recovery_agent_with_timeout",
+        _unexpected_proposal,
+    )
+    task = store.create(
+        task_id="task_calibration_then_new_obstacle",
+        kind="contract_test",
+        title="Calibration does not consume obstacle epoch",
+        status="running",
+        artifacts={
+            "missionos_auto_mission_gui_dispatch_running_receipt": {
+                "dispatch_status": "running",
+                "operator_recovery_request_container_path": (
+                    "/tmp/missionos_auto_operator_recovery_request_"
+                    "task_calibration_then_new_obstacle.json"
+                ),
+            },
+            "mission_designer_coordinate_pair_route": {
+                "takeoff_latitude": 35.0,
+                "takeoff_longitude": 139.0,
+                "dropoff_latitude": 35.0,
+                "dropoff_longitude": 139.00591,
+            },
+            "missionos_auto_mission_runtime_snapshot": {
+                "gazebo_obstacle_model_spawned": True,
+                "obstacle_manifest": {
+                    "building_risk_detected": True,
+                    "gazebo_obstacle_model_spawned": True,
+                    "obstacles": [
+                        {
+                            "name": "route_obstacle",
+                            "x_m": 0.0,
+                            "y_m": 269.0,
+                            "size_x_m": 18.0,
+                            "size_y_m": 18.0,
+                        }
+                    ],
+                },
+            },
+        },
+    )
+
+    live_run._attach_auto_runtime_recovery_agent_proposal(
+        store=store,
+        task_id=task["task_id"],
+        snapshot={
+            "sample_index": 60,
+            "elapsed_seconds": 100.0,
+            "progress_m": 165.0,
+            "local_x_m": 0.0,
+            "local_y_m": 165.0,
+            "local_z_m": -45.0,
+            "altitude_above_home_m": 45.0,
+            "battery_remaining_percent": 80.0,
+            "heartbeat_observed": True,
+            "nav_state": 3,
+            "landed": False,
+            "operator_recovery_request_observed": True,
+            "operator_recovery_action": "calibrate_offboard",
+            "operator_recovery_parameters": {
+                "calibration_only": True,
+                "resume_original_route": True,
+            },
+            "operator_recovery_command_ack_observed": True,
+            "operator_recovery_assist_attempted": True,
+            "operator_recovery_assist_status": "target_reached",
+            "operator_recovery_target_reached": True,
+            "operator_recovery_performance_observation": {
+                "schema_version": (
+                    "missionos_px4_bounded_offboard_performance_observation.v1"
+                ),
+                "action": "calibrate_offboard",
+                "target_reached": True,
+                "sample_count": 6,
+                "duration_seconds": 5.0,
+                "horizontal_distance_m": 13.0,
+                "observed_horizontal_speed_mps": 2.6,
+                "source_refs": ["vehicle_local_position:x,y"],
+                "approval_created": False,
+                "dispatch_authority_created": False,
+                "physical_execution_invoked": False,
+                "completion_claimed": False,
+            },
+            "operator_recovery_resume_auto_status": "resumed_auto_mission",
+        },
+    )
+
+    stored = store.get(task["task_id"])
+    assert stored is not None
+    assert len(queued_holds) == 1
+    assert queued_holds[0]["request_payload"]["recovery_action"] == "safety_hold"
+    receipt = stored["artifacts"][
+        "missionos_runtime_recovery_safety_hold_receipt"
+    ]
+    assert receipt["request_status"] == "queued"
+    assert receipt["conflict_assessment"]["local_avoidance_required"] is True
+    evidence = stored["artifacts"][
+        "missionos_runtime_recovery_performance_evidence"
+    ]
+    assert evidence["observation"]["action"] == "calibrate_offboard"
+    bridge = stored["artifacts"]["missionos_runtime_recovery_agent_live_bridge"]
+    assert (
+        bridge["telemetry_snapshot"]["recovery"]["performance_observation"][
+            "sample_count"
+        ]
+        == 6
+    )
 
 
 @pytest.mark.parametrize(
@@ -3506,6 +3791,18 @@ def test_runtime_probe_never_resumes_auto_before_recovery_target_is_reached() ->
     assert "NAV_AUTO_LOITER=4" in script
     assert "held_after_recovery_target_not_reached" in script
     assert "'source': 'dispatch_current_position_observation'" in script
+    assert "'performance_observation': performance_observation" in script
+    assert "missionos_px4_bounded_offboard_performance_observation.v1" in script
+    assert "'calibrate_offboard'" in script
+    assert "bounded_offboard_performance_calibration" in script
+    assert "if action == 'calibrate_offboard'" in script
+    assert "horizontal_tolerance_m" in script
+    assert "last_distance_to_target <= horizontal_tolerance_m" in script
+    assert (
+        "OPERATOR_RECOVERY_ASSIST_OBSTACLE_AVOIDANCE_MAX_SECONDS=150.0"
+        in script
+    )
+    assert "if action == 'avoid_obstacle'" in script
     assert "'maneuver_observation_sample_count': len(maneuver_samples)" in script
     assert "'maneuver_observation_samples': maneuver_samples," in script
     assert "maneuver_samples[-5:]" not in script
@@ -3786,6 +4083,198 @@ def test_running_snapshot_preserves_effective_wind_for_recovery_decisions() -> N
     assert snapshot["wind_gust_started"] is True
     assert snapshot["wind_gust_trigger_on_obstacle"] is True
     assert snapshot["wind_gust_trigger_obstacle_distance_m"] == 139.5
+
+
+def test_runtime_snapshot_carries_applied_thermal_and_payload_facts() -> None:
+    snapshot = auto_probe._build_running_snapshot(
+        {
+            "sample_index": 9,
+            "elapsed_seconds": 21.0,
+            "battery_sim_setup": [
+                {
+                    "param": "SIM_BAT_MIN_PCT",
+                    "requested_value": 0.0,
+                    "returncode": 0,
+                    "readback": {"param": "SIM_BAT_MIN_PCT", "returncode": 0, "value": 0.0},
+                },
+                {
+                    "param": "SIM_BAT_DRAIN",
+                    "requested_value": 1800.0,
+                    "returncode": 0,
+                    "readback": {"param": "SIM_BAT_DRAIN", "returncode": 0, "value": 1800.0},
+                },
+                {
+                    "param": "MPC_THR_MAX",
+                    "requested_value": 0.9,
+                    "returncode": 0,
+                    "readback": {"param": "MPC_THR_MAX", "returncode": 0, "value": 0.9},
+                },
+            ],
+            "sim_battery_drain_seconds": 1800.0,
+            "thermal_motor_derate_factor": 0.9,
+            "payload_application": {
+                "mass_kg": 1.5,
+                "observation_status": "configured_applied",
+                "source_refs": ["fixture.payload_sdf_readback"],
+            },
+        },
+        waypoint_total=23,
+    )
+    telemetry = live_run._auto_runtime_recovery_agent_telemetry_snapshot(
+        snapshot,
+        artifacts={
+            "mission_designer_coordinate_pair_route": {
+                "temperature_c": 38.0,
+                "payload_weight_kg": 1.5,
+            }
+        },
+    )
+    hazard_state = build_runtime_recovery_hazard_state(
+        telemetry_snapshot=telemetry,
+        recovery_policy=live_sitl_recovery_policy(),
+    )
+
+    assert telemetry["temperature"]["temperature_c"] == 38.0
+    assert telemetry["temperature"]["motor_thrust_factor"] == 0.9
+    assert telemetry["payload"]["mass_kg"] == 1.5
+    assert telemetry["payload"]["requested_mass_kg"] == 1.5
+    assert hazard_state["observed_facts"]["temperature_c"]["fact_status"] == "observed"
+    assert (
+        hazard_state["observed_facts"]["payload_mass_kg"]["fact_status"]
+        == "configured_applied"
+    )
+    assert (
+        hazard_state["observed_facts"]["payload_requested_mass_kg"]["value"]
+        == 1.5
+    )
+    assert hazard_state["temperature_model"]["model_status"] == "verified"
+
+
+def test_runtime_snapshot_fails_closed_when_thermal_readback_is_missing() -> None:
+    telemetry = live_run._auto_runtime_recovery_agent_telemetry_snapshot(
+        {"sample_index": 9, "elapsed_seconds": 21.0},
+        artifacts={
+            "mission_designer_coordinate_pair_route": {"temperature_c": 38.0}
+        },
+    )
+    hazard_state = build_runtime_recovery_hazard_state(
+        telemetry_snapshot=telemetry,
+        recovery_policy=live_sitl_recovery_policy(),
+    )
+
+    assert telemetry["temperature"]["temperature_c"] == 38.0
+    assert telemetry["temperature"]["model"]["source_refs"] == []
+    assert hazard_state["temperature_model"]["model_status"] == "unverified"
+    assert "temperature_motor_thrust_factor_missing" in hazard_state[
+        "temperature_model"
+    ]["blocking_reasons"]
+
+
+def test_runtime_snapshot_rejects_param_set_without_get_readback_and_unapplied_payload() -> None:
+    telemetry = live_run._auto_runtime_recovery_agent_telemetry_snapshot(
+        {
+            "sample_index": 9,
+            "elapsed_seconds": 21.0,
+            "sim_battery_drain_seconds": 1800.0,
+            "thermal_motor_derate_factor": 0.9,
+            "battery_sim_setup": [
+                {"param": "SIM_BAT_DRAIN", "requested_value": 1800.0, "returncode": 0},
+                {"param": "MPC_THR_MAX", "requested_value": 0.9, "returncode": 0},
+            ],
+            "payload_application": {
+                "observation_status": "configured_unverified",
+            },
+        },
+        artifacts={
+            "mission_designer_coordinate_pair_route": {
+                "temperature_c": 38.0,
+                "payload_weight_kg": 1.5,
+            }
+        },
+    )
+    hazard_state = build_runtime_recovery_hazard_state(
+        telemetry_snapshot=telemetry,
+        recovery_policy=live_sitl_recovery_policy(),
+    )
+
+    assert telemetry["temperature"]["observation_status"] == "configured_unverified"
+    assert telemetry["payload"]["observation_status"] == "configured_unverified"
+    assert hazard_state["temperature_model"]["model_status"] == "unverified"
+    assert (
+        hazard_state["observed_facts"]["payload_mass_kg"]["fact_status"]
+        == "missing"
+    )
+    assert (
+        hazard_state["observed_facts"]["payload_requested_mass_kg"]["value"]
+        == 1.5
+    )
+
+
+def test_runtime_snapshot_downgrades_mismatched_payload_application() -> None:
+    telemetry = live_run._auto_runtime_recovery_agent_telemetry_snapshot(
+        {
+            "sample_index": 9,
+            "elapsed_seconds": 21.0,
+            "payload_application": {
+                "mass_kg": 0.05,
+                "observation_status": "configured_applied",
+                "source_refs": ["fixture.payload_sdf_readback"],
+            },
+        },
+        artifacts={
+            "mission_designer_coordinate_pair_route": {
+                "payload_weight_kg": 1.5,
+            }
+        },
+    )
+    hazard_state = build_runtime_recovery_hazard_state(
+        telemetry_snapshot=telemetry,
+        recovery_policy=live_sitl_recovery_policy(),
+    )
+
+    assert telemetry["payload"]["requested_mass_kg"] == 1.5
+    assert telemetry["payload"]["mass_kg"] == 0.05
+    assert telemetry["payload"]["observation_status"] == "configured_unverified"
+    assert (
+        hazard_state["observed_facts"]["payload_mass_kg"]["fact_status"]
+        == "configured_unverified"
+    )
+
+
+def test_runtime_probe_uses_px4_get_readback_and_materializes_requested_payload_mass() -> None:
+    script = auto_probe._inner_runtime_probe_script(
+        dropoff_dwell_mission_seq=2,
+        land_mission_seq=3,
+        release_altitude_target_m=30.0,
+        release_altitude_tolerance_m=2.0,
+        required_dwell_seconds=2.0,
+        monitor_seconds=60.0,
+        min_progress_m=1.0,
+        no_progress_grace_seconds=10.0,
+        min_route_altitude_m=20.0,
+        altitude_grace_seconds=10.0,
+        min_battery_remaining_percent=20.0,
+        post_abort_wait_seconds=10.0,
+        land_post_abort_wait_seconds=10.0,
+        rtl_post_abort_wait_seconds=10.0,
+        rtl_recovery_min_progress_m=5.0,
+        sim_battery_min_remaining_percent=15.0,
+        sim_battery_drain_seconds=600.0,
+        thermal_motor_derate_factor=0.9,
+        wind_mean_mps=None,
+        wind_direction_deg=None,
+        wind_gust_mps=None,
+        wind_variance=None,
+        gz_physical_battery_enabled=False,
+        payload_application={"mass_kg": 1.5, "observation_status": "configured_applied"},
+    )
+
+    assert "'set', str(name), repr(float(value)), 'fail'" in script
+    assert "'show', '-q', str(name)" in script
+    assert "'payload_application': PAYLOAD_APPLICATION" in script
+    assert auto_probe._payload_sdf_mass_readback(
+        auto_probe._payload_world_sdf_patch(payload_mass_kg=1.5)
+    ) == 1.5
 
 
 def test_runtime_probe_triggers_gust_from_source_backed_obstacle_approach() -> None:
@@ -4218,17 +4707,21 @@ def test_local_route_conflict_rejects_unproven_altitude_only_candidate() -> None
         recovery_policy=_planner_policy(),
     )
 
-    assessment = guarded["recovery_guardrail_assessment"]
-    assert assessment["assessment_status"] == "blocked"
-    assert (
-        "adjust_altitude_not_supported_for_local_route_conflict_without_"
-        "altitude_clearance_evidence" in assessment["blocking_reasons"]
+    assert planner["recommended_candidate"] == {}
+    assert [
+        candidate["selected_bounded_action"]
+        for candidate in planner["candidates"]
+    ] == ["avoid_obstacle"]
+    assert guarded["guardrail_status"] == "skipped_no_candidate"
+    assert any(
+        item["candidate"]["selected_bounded_action"] == "adjust_altitude"
+        for item in planner["judgment_candidates"]
     )
 
 
 def test_live_recovery_agent_timeout_falls_back_to_guarded_planner() -> None:
     result = live_run._runtime_recovery_agent_fallback_result(
-        telemetry_snapshot=_planner_tool_telemetry(),
+        telemetry_snapshot=_planner_tool_feasibility_telemetry(),
         task_id="task_timeout_fallback",
         reason="runtime_recovery_agent_timeout",
         detail="timeout_seconds=0.001",
@@ -4261,7 +4754,7 @@ def test_runtime_recovery_agent_timeout_uses_gemini_budget_and_bounded_cap(
 
 def test_fallback_proposal_origin_is_not_labeled_as_hosted_judgment() -> None:
     result = live_run._runtime_recovery_agent_fallback_result(
-        telemetry_snapshot=_planner_tool_telemetry(),
+        telemetry_snapshot=_planner_tool_feasibility_telemetry(),
         task_id="task_fallback_origin",
         reason="runtime_recovery_agent_timeout",
         detail="timeout_seconds=45",
@@ -4819,6 +5312,7 @@ def _obstacle_recovery_map_payload() -> dict:
                             "target_reached": True,
                             "target_distance_m": 0.7,
                             "resume_auto_status": "resumed_auto_mission",
+                            "maneuver_observation_sample_count": 3,
                             "maneuver_observation_samples": [
                                 {
                                     "x_m": 30.0,
@@ -4982,4 +5476,5 @@ def test_mission_map_html_and_watch_surface_obstacle_layers() -> None:
     assert "p=initial plan" in rendered
     assert "O=obstacle" in rendered
     assert "avoid=target_reached" in rendered
+    assert "samples=3" in rendered
     assert "obstacles=1(spawned)" in rendered

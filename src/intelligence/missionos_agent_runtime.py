@@ -30,6 +30,14 @@ from src.gateway.missionos_capabilities import (
     all_capability_descriptors_for_prompt,
     build_missionos_capability_registry_summary,
 )
+from src.runtime.px4_gazebo_route.action_feasibility import (
+    SUPPORTED_FEASIBILITY_ACTIONS,
+    verify_runtime_recovery_action_candidates,
+    verify_runtime_recovery_action_feasibility,
+)
+from src.runtime.px4_gazebo_route.hazard_state import (
+    build_runtime_recovery_hazard_state,
+)
 from src.runtime.px4_gazebo_route.recovery_intent_compiler import (
     build_runtime_recovery_intent,
     compile_runtime_recovery_intent,
@@ -1009,6 +1017,15 @@ def _runtime_recovery_prompt_payload(
     mission_context: Mapping[str, Any] | None,
     recovery_policy: Mapping[str, Any] | None,
 ) -> dict[str, Any]:
+    policy = dict(recovery_policy or {})
+    context = dict(mission_context or {})
+    planner_preview = plan_runtime_recovery_maneuver(
+        telemetry_snapshot=telemetry_snapshot,
+        mission_context=context,
+        recovery_policy=policy,
+        requested_action="",
+        request_reason="pre_llm_compound_judgment_preview",
+    )
     return {
         "schema_version": "missionos_runtime_recovery_agent_prompt.v1",
         "role_contract": {
@@ -1019,6 +1036,11 @@ def _runtime_recovery_prompt_payload(
                 (
                     "compare battery consumption rate against remaining route "
                     "distance and reserve margin"
+                ),
+                (
+                    "compare every action_judgment_context candidate and its "
+                    "blocking or unverified reasons; never treat LLM reasoning "
+                    "as a feasibility upgrade"
                 ),
                 "compare terrain clearance against the planned source-backed terrain profile",
                 "compare route cross-track deviation against wind-drift recovery limits",
@@ -1097,8 +1119,26 @@ def _runtime_recovery_prompt_payload(
             "agents_must_not_output": sorted(MISSIONOS_AGENT_FORBIDDEN_KEYS),
         },
         "telemetry_snapshot": dict(telemetry_snapshot),
-        "mission_context": dict(mission_context or {}),
-        "recovery_policy": dict(recovery_policy or {}),
+        "mission_context": context,
+        "recovery_policy": policy,
+        "action_judgment_context": {
+            "judgment_candidates": list(
+                planner_preview.get("judgment_candidates") or []
+            ),
+            "verified_selectable_candidates": list(
+                planner_preview.get("candidates") or []
+            ),
+            "hazard_state": dict(
+                planner_preview.get("hazard_state") or {}
+            ),
+            "action_feasibility": dict(
+                planner_preview.get("action_feasibility") or {}
+            ),
+            "llm_may_explain_unverified_candidates": True,
+            "llm_may_upgrade_feasibility": False,
+            "approval_created": False,
+            "dispatch_authority_created": False,
+        },
     }
 
 
@@ -1722,7 +1762,15 @@ def _runtime_recovery_avoidance_candidate(
     if along_track_to_obstacle_m <= 1.0:
         return None
     pass_distance_m = max(
-        obstacle_half_along_route_m + obstacle_buffer_m,
+        obstacle_half_along_route_m
+        + max(
+            obstacle_buffer_m,
+            _first_float(
+                recovery_policy.get("obstacle_minimum_clearance_m")
+            )
+            or 0.0,
+        )
+        + 2.0,
         _first_float(recovery_policy.get("obstacle_min_pass_distance_m")) or 30.0,
     )
     target_along_track_m = along_track_to_obstacle_m + pass_distance_m
@@ -1794,6 +1842,21 @@ def _runtime_recovery_avoidance_candidate(
             route_source_ref,
             "recovery_policy.max_reroute_target_abs_m",
         ],
+        "recovery_path": {
+            "frame_id": "local_ned_xy_altitude_up",
+            "waypoints": [
+                {
+                    "x_m": round(target_x_m, 3),
+                    "y_m": round(target_y_m, 3),
+                    "z_m": round(altitude_m, 3),
+                }
+            ],
+            "source_refs": [
+                "telemetry_snapshot.position",
+                str(primary.get("source_ref") or "telemetry_snapshot.obstacle"),
+                "recovery_policy.obstacle_minimum_clearance_m",
+            ],
+        },
         "basis": {
             "current_x_m": round(current_x_m, 3),
             "current_y_m": round(current_y_m, 3),
@@ -2030,6 +2093,85 @@ def plan_runtime_recovery_maneuver(
     if altitude_candidate is not None:
         candidates.append(altitude_candidate)
 
+    hazard_state = build_runtime_recovery_hazard_state(
+        telemetry_snapshot=telemetry_snapshot,
+        recovery_policy=policy,
+        observed_at=str(telemetry_snapshot.get("observed_at") or ""),
+    )
+    action_feasibility = verify_runtime_recovery_action_candidates(
+        candidates=candidates,
+        hazard_state=hazard_state,
+        recovery_policy=policy,
+    )
+    unfiltered_candidates = [dict(candidate) for candidate in candidates]
+    feasibility_evaluations = [
+        dict(item)
+        for item in action_feasibility.get("evaluations") or []
+        if isinstance(item, Mapping)
+    ]
+    judgment_candidates = [
+        {
+            "candidate": dict(candidate),
+            "feasibility_status": (
+                feasibility_evaluations[index].get("feasibility_status")
+                if index < len(feasibility_evaluations)
+                else "unverified"
+            ),
+            "blocking_reasons": (
+                list(
+                    feasibility_evaluations[index].get(
+                        "blocking_reasons"
+                    )
+                    or []
+                )
+                if index < len(feasibility_evaluations)
+                else ["action_feasibility_evaluation_missing"]
+            ),
+            "unverified_reasons": (
+                list(
+                    feasibility_evaluations[index].get(
+                        "unverified_reasons"
+                    )
+                    or []
+                )
+                if index < len(feasibility_evaluations)
+                else ["action_feasibility_evaluation_missing"]
+            ),
+            "eligible_for_selection": bool(
+                index < len(feasibility_evaluations)
+                and feasibility_evaluations[index].get(
+                    "feasibility_status"
+                )
+                == "verified_feasible"
+            ),
+            "dispatch_authority_created": False,
+        }
+        for index, candidate in enumerate(unfiltered_candidates)
+    ]
+    if policy.get("action_feasibility_required") is True:
+        candidates = [
+            dict(candidate)
+            for candidate in action_feasibility.get(
+                "verified_feasible_candidates"
+            )
+            or []
+            if isinstance(candidate, Mapping)
+        ]
+    obstacle = telemetry_snapshot.get("obstacle")
+    obstacle = obstacle if isinstance(obstacle, Mapping) else {}
+    conflict = obstacle.get("conflict_assessment")
+    conflict = conflict if isinstance(conflict, Mapping) else {}
+    if conflict.get("local_avoidance_required") is True:
+        # A local collision does not become an altitude/reroute proposal merely
+        # because the actual avoidance candidate is unverified.  Keep all
+        # candidates in judgment_candidates for the LLM explanation, while the
+        # deterministic selectable set remains scoped to the primary hazard.
+        candidates = [
+            candidate
+            for candidate in candidates
+            if candidate.get("selected_bounded_action") == "avoid_obstacle"
+        ]
+
     if requested in _PARAMETERIZED_RUNTIME_RECOVERY_ACTIONS:
         ranked = [
             candidate
@@ -2065,6 +2207,13 @@ def plan_runtime_recovery_maneuver(
         "request_reason": str(request_reason or "")[:500],
         "recommended_candidate": dict(recommended) if recommended else {},
         "candidates": [dict(candidate) for candidate in candidates],
+        "unfiltered_candidates": unfiltered_candidates,
+        # The hosted judge sees every deterministic candidate and why it is
+        # blocked or unverified.  Only ``candidates`` above is selectable;
+        # explanatory LLM reasoning cannot upgrade an unverified envelope.
+        "judgment_candidates": judgment_candidates,
+        "hazard_state": hazard_state,
+        "action_feasibility": action_feasibility,
         "candidate_actions": [
             str(candidate.get("selected_bounded_action") or "") for candidate in candidates
         ],
@@ -2457,6 +2606,47 @@ def _validate_runtime_recovery_output(
         telemetry_snapshot=telemetry_snapshot,
         recovery_policy=recovery_policy,
     )
+    hazard_state = build_runtime_recovery_hazard_state(
+        telemetry_snapshot=telemetry_snapshot,
+        recovery_policy=recovery_policy,
+        observed_at=str(telemetry_snapshot.get("observed_at") or ""),
+    )
+    selected_action_feasibility: dict[str, Any] = {}
+    if selected_action in SUPPORTED_FEASIBILITY_ACTIONS:
+        selected_action_feasibility = (
+            verify_runtime_recovery_action_feasibility(
+                candidate=matching_tool_candidate
+                or {
+                    "selected_bounded_action": selected_action,
+                    "proposed_parameters": proposed_parameters,
+                    "source_refs": ["runtime_recovery_agent_output"],
+                },
+                hazard_state=hazard_state,
+                recovery_policy=recovery_policy,
+            )
+        )
+        if (
+            recovery_policy.get("action_feasibility_required") is True
+            and selected_action_feasibility.get("feasibility_status")
+            != "verified_feasible"
+        ):
+            blocking_reasons.extend(
+                str(item)
+                for item in selected_action_feasibility.get(
+                    "blocking_reasons"
+                )
+                or []
+            )
+            blocking_reasons.extend(
+                str(item)
+                for item in selected_action_feasibility.get(
+                    "unverified_reasons"
+                )
+                or []
+            )
+            blocking_reasons.append(
+                "runtime_recovery_action_not_verified_feasible"
+            )
     if (
         selected_action in _PARAMETERIZED_RUNTIME_RECOVERY_ACTIONS
         and require_parameter_tool_call
@@ -2494,6 +2684,8 @@ def _validate_runtime_recovery_output(
         "recovery_intent": recovery_intent,
         "intent_compilation": intent_compilation,
         "reachability_verification": reachability_verification,
+        "hazard_state": hazard_state,
+        "action_feasibility": selected_action_feasibility,
         "proposed_parameters_source": (
             "runtime_recovery_planner_function_tool"
             if matching_tool_candidate is not None

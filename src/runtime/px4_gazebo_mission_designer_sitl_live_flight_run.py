@@ -64,6 +64,9 @@ from src.runtime.px4_gazebo_route.recovery_decision_signature import (
     build_semantic_recovery_decision_signature,
     semantic_numeric_state_machine_hash,
 )
+from src.runtime.px4_gazebo_route.recovery_policy import (
+    live_sitl_recovery_policy,
+)
 from src.runtime.recovery_window_summary import build_recovery_window_summary
 from src.runtime.px4_gazebo_sitl_mission_upload import (
     MAV_CMD_NAV_LAND,
@@ -2875,6 +2878,7 @@ def _auto_runtime_obstacle_projection(
     # after Gazebo reports that the collision model was spawned.
     detected = configured and gazebo_obstacle_model_spawned
     return {
+        "frame_id": "local_ned_xy_altitude_up",
         "projection_status": (
             "source_backed"
             if detected
@@ -3048,6 +3052,35 @@ def _auto_runtime_recovery_agent_telemetry_snapshot(
     artifacts: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     artifacts = artifacts if isinstance(artifacts, Mapping) else {}
+    current_performance_observation = snapshot.get(
+        "operator_recovery_performance_observation"
+    )
+    current_performance_observation = (
+        dict(current_performance_observation)
+        if isinstance(current_performance_observation, Mapping)
+        and current_performance_observation.get("target_reached") is True
+        else {}
+    )
+    durable_performance_evidence = artifacts.get(
+        "missionos_runtime_recovery_performance_evidence"
+    )
+    durable_performance_evidence = (
+        durable_performance_evidence
+        if isinstance(durable_performance_evidence, Mapping)
+        else {}
+    )
+    durable_performance_observation = durable_performance_evidence.get(
+        "observation"
+    )
+    durable_performance_observation = (
+        dict(durable_performance_observation)
+        if isinstance(durable_performance_observation, Mapping)
+        and durable_performance_observation.get("target_reached") is True
+        else {}
+    )
+    performance_observation = (
+        current_performance_observation or durable_performance_observation
+    )
     planned_route_m = _auto_runtime_planned_route_m(artifacts)
     battery_projection = _auto_runtime_battery_endurance_projection(
         snapshot,
@@ -3121,6 +3154,103 @@ def _auto_runtime_recovery_agent_telemetry_snapshot(
             obstacle_projection=obstacle_projection,
         ),
     }
+    route = artifacts.get("mission_designer_coordinate_pair_route")
+    route = route if isinstance(route, Mapping) else {}
+    temperature_c = _auto_snapshot_number(route.get("temperature_c"))
+    payload_requested_mass_kg = _auto_snapshot_number(route.get("payload_weight_kg"))
+    payload_application = snapshot.get("payload_application")
+    payload_application = (
+        payload_application if isinstance(payload_application, Mapping) else {}
+    )
+    payload_mass_kg = _auto_snapshot_number(payload_application.get("mass_kg"))
+    payload_application_status = str(
+        payload_application.get("observation_status")
+        or "configured_unverified"
+    )
+    payload_mass_matches_request = (
+        payload_requested_mass_kg is not None
+        and payload_mass_kg is not None
+        and math.isclose(
+            payload_requested_mass_kg,
+            payload_mass_kg,
+            rel_tol=1e-9,
+            abs_tol=1e-6,
+        )
+    )
+    payload_observation_status = (
+        "configured_applied"
+        if payload_application_status == "configured_applied"
+        and payload_mass_matches_request
+        else "configured_unverified"
+    )
+    thermal_setup = snapshot.get("battery_sim_setup")
+    thermal_setup = thermal_setup if isinstance(thermal_setup, list) else []
+    motor_factor = _auto_snapshot_number(snapshot.get("thermal_motor_derate_factor"))
+    thermal_requested = temperature_c is not None
+    expected_thermal_params = {
+        "SIM_BAT_DRAIN": _auto_snapshot_number(snapshot.get("sim_battery_drain_seconds")),
+    }
+    if motor_factor is not None and motor_factor < 0.999:
+        expected_thermal_params["MPC_THR_MAX"] = motor_factor
+
+    def thermal_readback_matches(item: Any, expected: float | int | None) -> bool:
+        if not isinstance(item, Mapping) or expected is None:
+            return False
+        readback = item.get("readback")
+        readback = readback if isinstance(readback, Mapping) else {}
+        requested = _auto_snapshot_number(
+            item.get("requested_value"), item.get("value")
+        )
+        observed = _auto_snapshot_number(readback.get("value"))
+        return bool(
+            item.get("returncode") == 0
+            and readback.get("returncode") == 0
+            and str(readback.get("param") or "") == str(item.get("param") or "")
+            and requested is not None
+            and observed is not None
+            and math.isclose(float(expected), float(requested), rel_tol=1e-6, abs_tol=1e-6)
+            and math.isclose(float(expected), float(observed), rel_tol=1e-6, abs_tol=1e-6)
+        )
+
+    thermal_setup_applied = all(
+        any(
+            str(item.get("param") or "") == name
+            and thermal_readback_matches(item, expected)
+            for item in thermal_setup
+            if isinstance(item, Mapping)
+        )
+        for name, expected in expected_thermal_params.items()
+    )
+    # An explicit empty model would fall back to the policy defaults during
+    # Hazard State normalization.  Carry an intentionally incomplete model
+    # while the PX4 PARAM_SET readback is absent, so configured thermal
+    # conditions cannot silently pass as the policy's nominal factors.
+    thermal_model: dict[str, Any] = (
+        {
+            "model_id": "missionos_bounded_sitl_temperature_derating.v1",
+            "model_version": "1.0.0",
+            "source_refs": [],
+        }
+        if thermal_requested
+        else {}
+    )
+    if thermal_requested and thermal_setup_applied and motor_factor is not None:
+        # The bounded SITL drain is represented by the observed battery slope,
+        # not by inventing a capacity conversion from its drain-rate knob.
+        # The thrust factor is the PX4 parameter value whose successful write
+        # is carried in ``battery_sim_setup`` above.
+        thermal_model = {
+            "model_id": "missionos_bounded_sitl_temperature_derating.v1",
+            "model_version": "1.0.0",
+            "source_refs": [
+                "missionos_auto_mission_runtime_snapshot.battery_sim_setup",
+                "mission_designer_coordinate_pair_route",
+            ],
+            "uncertainty_percent": 10.0,
+            "battery_capacity_factor": 1.0,
+            "motor_thrust_factor": motor_factor,
+            "calibration_status": "simulation_only_not_physical_calibration",
+        }
     return {
         "source": "missionos_auto_mission_runtime_snapshot",
         "sample_index": snapshot.get("sample_index"),
@@ -3146,6 +3276,7 @@ def _auto_runtime_recovery_agent_telemetry_snapshot(
             "local_z_m": snapshot.get("local_z_m"),
             "altitude_above_home_m": snapshot.get("altitude_above_home_m"),
             "distance_to_home_m": snapshot.get("distance_to_home_m"),
+            "frame_id": "local_ned_xy_altitude_up",
         },
         "battery": {
             "remaining_percent": _auto_snapshot_number(
@@ -3165,6 +3296,41 @@ def _auto_runtime_recovery_agent_telemetry_snapshot(
                 snapshot.get("weather_wind_speed_mps"),
             ),
         },
+        "temperature": {
+            "temperature_c": temperature_c,
+            "observation_status": (
+                "observed" if thermal_setup_applied else "configured_unverified"
+            ) if thermal_requested else "",
+            "battery_capacity_factor": thermal_model.get("battery_capacity_factor"),
+            "motor_thrust_factor": thermal_model.get("motor_thrust_factor"),
+            "model": thermal_model,
+            "source_refs": [
+                "mission_designer_coordinate_pair_route",
+                "missionos_auto_mission_runtime_snapshot.battery_sim_setup",
+            ]
+            if thermal_requested
+            else [],
+        },
+        "payload": {
+            "mass_kg": payload_mass_kg,
+            "requested_mass_kg": payload_requested_mass_kg,
+            "observation_status": payload_observation_status,
+            "source_refs": list(
+                dict.fromkeys(
+                    [
+                        "mission_designer_coordinate_pair_route.payload_weight_kg",
+                        *[
+                            str(item)
+                            for item in payload_application.get("source_refs")
+                            or []
+                            if str(item).strip()
+                        ],
+                    ]
+                )
+            ),
+        }
+        if payload_requested_mass_kg is not None
+        else {},
         "telemetry": {
             # The takeoff listener can miss a heartbeat poll while position
             # and altitude observations are already advancing. Do not let that
@@ -3195,6 +3361,7 @@ def _auto_runtime_recovery_agent_telemetry_snapshot(
             ),
             "assist_status": snapshot.get("operator_recovery_assist_status"),
             "target_reached": snapshot.get("operator_recovery_target_reached"),
+            "performance_observation": performance_observation or None,
             "resume_status": snapshot.get(
                 "operator_recovery_resume_auto_status"
             ),
@@ -3808,31 +3975,7 @@ def _runtime_recovery_agent_skipped_result(
 
 
 def _runtime_recovery_policy() -> dict[str, Any]:
-    return {
-        "policy_ref": "operator_approved_live_sitl_intervention_policy",
-        "preauthorized_actions": [
-            "return_to_launch",
-            "land",
-            "adjust_altitude",
-            "adjust_speed",
-            "reroute",
-            "avoid_obstacle",
-        ],
-        "battery_return_threshold_percent": 20,
-        "max_route_deviation_xy_m": 100,
-        "emergency_landing_route_deviation_xy_m": 250,
-        "min_terrain_clearance_m": 30,
-        "max_wind_speed_mps": 6,
-        "max_adjust_altitude_m": 500,
-        "max_adjust_speed_mps": 30,
-        "max_reroute_target_abs_m": 5000,
-        "max_recovery_duration_s": 75,
-        "max_recovery_horizontal_speed_mps": 10,
-        "max_recovery_vertical_speed_mps": 3,
-        "reachability_duration_margin_factor": 1.25,
-        "reachability_setup_seconds": 5,
-        "wind_uncertainty_floor_mps": 1,
-    }
+    return live_sitl_recovery_policy()
 
 
 def _runtime_recovery_agent_fallback_result(
@@ -4469,6 +4612,60 @@ def _attach_auto_runtime_recovery_agent_proposal(
         _discard_runtime_recovery_agent_inference(task_id)
         return
     artifacts = task.get("artifacts") if isinstance(task.get("artifacts"), Mapping) else {}
+    performance_observation = snapshot.get(
+        "operator_recovery_performance_observation"
+    )
+    performance_observation = (
+        dict(performance_observation)
+        if isinstance(performance_observation, Mapping)
+        and performance_observation.get("target_reached") is True
+        else {}
+    )
+    stored_performance_evidence = artifacts.get(
+        "missionos_runtime_recovery_performance_evidence"
+    )
+    stored_performance_evidence = (
+        stored_performance_evidence
+        if isinstance(stored_performance_evidence, Mapping)
+        else {}
+    )
+    if (
+        performance_observation
+        and stored_performance_evidence.get("observation")
+        != performance_observation
+    ):
+        performance_evidence = {
+            "schema_version": (
+                "missionos_runtime_recovery_performance_evidence.v1"
+            ),
+            "task_id": task_id,
+            "observation": performance_observation,
+            "telemetry_cursor": {
+                "sample_index": snapshot.get("sample_index"),
+                "elapsed_seconds": snapshot.get("elapsed_seconds"),
+            },
+            "observed_at": _utc().isoformat(),
+            "approval_created": False,
+            "dispatch_authority_created": False,
+            "physical_execution_invoked": False,
+            "completion_claimed": False,
+            "progress_counted": False,
+        }
+        try:
+            updated = store.update(
+                task_id,
+                replace_artifacts={
+                    "missionos_runtime_recovery_performance_evidence": (
+                        performance_evidence
+                    )
+                },
+            )
+        except Exception:
+            updated = None
+        if isinstance(updated, Mapping):
+            updated_artifacts = updated.get("artifacts")
+            if isinstance(updated_artifacts, Mapping):
+                artifacts = updated_artifacts
     last_proposal = artifacts.get("missionos_runtime_recovery_last_proposal")
     last_proposal = (
         last_proposal if isinstance(last_proposal, Mapping) else {}
@@ -4524,8 +4721,10 @@ def _attach_auto_runtime_recovery_agent_proposal(
         == "resumed_auto_mission"
         and (
             not active_obstacle_name
-            or not current_recovery_obstacle_name
-            or current_recovery_obstacle_name == active_obstacle_name
+            or (
+                bool(current_recovery_obstacle_name)
+                and current_recovery_obstacle_name == active_obstacle_name
+            )
         )
     )
     if (
@@ -5411,15 +5610,15 @@ def _attach_auto_runtime_recovery_agent_proposal(
             agent_invoked = True
             refresh_status = "agent_invoked"
     runtime_status = result.get("runtime_status")
-    proposal_created = bool(
-        (agent_invoked or proposal_recompiled)
-        and runtime_status == "proposal_guardrail_passed"
-    )
     result_assessment_for_transition = result.get("assessment")
     result_assessment_for_transition = (
         result_assessment_for_transition
         if isinstance(result_assessment_for_transition, Mapping)
         else {}
+    )
+    proposal_created = bool(
+        (agent_invoked or proposal_recompiled)
+        and runtime_status == "proposal_guardrail_passed"
     )
     result_compilation_for_transition = result_assessment_for_transition.get(
         "intent_compilation"
@@ -5538,21 +5737,36 @@ def _attach_auto_runtime_recovery_agent_proposal(
         == semantic_state_machine_hash
         and not attempt_evidence_missing
     ):
-        # The runtime snapshot is persisted independently. Avoid emitting a
-        # duplicate agent-current-state artifact (and task timeline event)
-        # when neither the decision nor recovery observation changed.
+        # Decision-event deduplication must not freeze the telemetry source
+        # used by dispatch-time arbitration. Refresh the current snapshot and
+        # rolling window without claiming a new judgment, proposal, approval,
+        # or dispatch event.
+        refreshed_bridge = {
+            **dict(bridge),
+            "telemetry_snapshot": telemetry_snapshot,
+            "recovery_window_summary": recovery_window_summary,
+            "recovery_window_summary_hash": recovery_window_summary_hash,
+            "recovery_window_samples": window_samples,
+            "observed_at": observed_at_datetime.isoformat(),
+            "dispatch_authority_created": False,
+            "progress_counted": False,
+        }
+        refreshed_artifacts: dict[str, Any] = {
+            "missionos_runtime_recovery_agent_live_bridge": (
+                refreshed_bridge
+            )
+        }
         if compound_hazard_state:
-            try:
-                store.update(
-                    task_id,
-                    replace_artifacts={
-                        "missionos_runtime_recovery_compound_hazard_state": (
-                            compound_hazard_state
-                        )
-                    },
-                )
-            except Exception:
-                pass
+            refreshed_artifacts[
+                "missionos_runtime_recovery_compound_hazard_state"
+            ] = compound_hazard_state
+        try:
+            store.update(
+                task_id,
+                replace_artifacts=refreshed_artifacts,
+            )
+        except Exception:
+            pass
         return
     bridge_payload = {
         "schema_version": "missionos_runtime_recovery_agent_live_bridge.v1",
@@ -5843,8 +6057,27 @@ def _attach_auto_runtime_recovery_agent_proposal(
             if isinstance(reachability_verification, Mapping)
             else {}
         )
+        hazard_state = result_assessment.get("hazard_state")
+        hazard_state = (
+            dict(hazard_state)
+            if isinstance(hazard_state, Mapping)
+            else {}
+        )
+        action_feasibility = result_assessment.get("action_feasibility")
+        action_feasibility = (
+            dict(action_feasibility)
+            if isinstance(action_feasibility, Mapping)
+            else {}
+        )
+        proposal_schema_version = (
+            "missionos_runtime_recovery_proposal_evidence.v3"
+            if hazard_state.get("hazard_state_status") == "verified"
+            and action_feasibility.get("feasibility_status")
+            == "verified_feasible"
+            else "missionos_runtime_recovery_proposal_evidence.v2"
+        )
         proposal_evidence = {
-            "schema_version": "missionos_runtime_recovery_proposal_evidence.v2",
+            "schema_version": proposal_schema_version,
             "proposal_id": proposal_id,
             "task_id": task_id,
             "proposal_status": "awaiting_operator_approval",
@@ -5904,6 +6137,16 @@ def _attach_auto_runtime_recovery_agent_proposal(
             ),
             "recovery_reachability_sha256": reachability_verification.get(
                 "recovery_reachability_sha256"
+            ),
+            "hazard_state": hazard_state,
+            "hazard_state_id": hazard_state.get("hazard_state_id"),
+            "hazard_state_sha256": hazard_state.get("hazard_state_sha256"),
+            "action_feasibility": action_feasibility,
+            "action_feasibility_id": action_feasibility.get(
+                "action_feasibility_id"
+            ),
+            "action_feasibility_sha256": action_feasibility.get(
+                "action_feasibility_sha256"
             ),
             "proposal_origin": proposal_origin,
             "proposal_origin_sha256": proposal_origin["origin_sha256"],
@@ -6128,6 +6371,10 @@ def _persist_auto_live_telemetry_snapshot(
             "battery_sample_rejected_reason"
         ),
         "battery_warning": payload.get("battery_warning"),
+        "battery_sim_setup": payload.get("battery_sim_setup"),
+        "sim_battery_drain_seconds": payload.get("sim_battery_drain_seconds"),
+        "thermal_motor_derate_factor": payload.get("thermal_motor_derate_factor"),
+        "payload_application": payload.get("payload_application"),
         # Gazebo physical-battery observed signal (segment C). Kept separate
         # from the PX4 battery_status fields; both are SITL-simulated, not real
         # power-module endurance evidence.
@@ -6240,6 +6487,9 @@ def _persist_auto_live_telemetry_snapshot(
         ),
         "operator_recovery_altitude_delta_m": payload.get(
             "operator_recovery_altitude_delta_m"
+        ),
+        "operator_recovery_performance_observation": payload.get(
+            "operator_recovery_performance_observation"
         ),
         "operator_recovery_terminal": payload.get("operator_recovery_terminal"),
         "operator_recovery_resume_auto_attempted": payload.get(
