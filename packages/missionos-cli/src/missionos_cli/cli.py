@@ -428,7 +428,13 @@ def _wait_for_active_runner_recovery_observation(
     deadline = time.monotonic() + max(0.0, timeout_seconds)
     last_payload: dict[str, Any] | None = None
     recovery_action = str(summary.get("recovery_action") or "").strip().lower()
-    maneuver_actions = {"adjust_altitude", "adjust_speed", "reroute", "avoid_obstacle"}
+    maneuver_actions = {
+        "adjust_altitude",
+        "adjust_speed",
+        "reroute",
+        "avoid_obstacle",
+        "calibrate_offboard",
+    }
     expected_parameters = (
         summary.get("recovery_parameters")
         if isinstance(summary.get("recovery_parameters"), dict)
@@ -1617,6 +1623,7 @@ def _pending_recovery_approval_from_task(
         in {
             "missionos_runtime_recovery_proposal_evidence.v1",
             "missionos_runtime_recovery_proposal_evidence.v2",
+            "missionos_runtime_recovery_proposal_evidence.v3",
         }
         and runtime_proposal.get("proposal_status") == "awaiting_operator_approval"
     ):
@@ -1634,6 +1641,21 @@ def _pending_recovery_approval_from_task(
             or reachability.get("reachability_verified") is not True
         ):
             return None
+        if runtime_proposal_schema.endswith(".v3"):
+            hazard_state = runtime_assessment.get("hazard_state")
+            hazard_state = hazard_state if isinstance(hazard_state, Mapping) else {}
+            action_feasibility = runtime_assessment.get("action_feasibility")
+            action_feasibility = (
+                action_feasibility if isinstance(action_feasibility, Mapping) else {}
+            )
+            if (
+                compilation.get("compilation_status") != "compiled"
+                or reachability.get("verification_status") != "verified"
+                or reachability.get("reachability_verified") is not True
+                or hazard_state.get("hazard_state_status") != "verified"
+                or action_feasibility.get("feasibility_status") != "verified_feasible"
+            ):
+                return None
         selected_action = str(
             compilation.get("compiled_action")
             or runtime_assessment.get("selected_bounded_action")
@@ -1671,6 +1693,10 @@ def _pending_recovery_approval_from_task(
                 (dict(item) for item in invocations if isinstance(item, Mapping)),
                 {},
             )
+            proposal_origin = runtime_proposal.get("proposal_origin")
+            proposal_origin = (
+                dict(proposal_origin) if isinstance(proposal_origin, Mapping) else {}
+            )
             bridge = artifacts.get("missionos_runtime_recovery_agent_live_bridge")
             bridge = bridge if isinstance(bridge, Mapping) else {}
             observations = bridge.get("telemetry_snapshot")
@@ -1693,8 +1719,23 @@ def _pending_recovery_approval_from_task(
                 "recovery_proposal_id": proposal_id,
                 "proposal_reason": str(agent_output.get("rationale") or ""),
                 "input_observations": observations,
-                "llm_provider": str(invocation.get("provider") or ""),
-                "llm_model_id": str(invocation.get("model_id") or ""),
+                "llm_provider": str(
+                    proposal_origin.get("provider") or invocation.get("provider") or ""
+                ),
+                "llm_model_id": str(
+                    proposal_origin.get("model_id") or invocation.get("model_id") or ""
+                ),
+                "proposal_origin": proposal_origin,
+                "source_obstacle_name": str(
+                    runtime_proposal.get("source_obstacle_name")
+                    or proposed_parameters.get("source_obstacle_name")
+                    or ""
+                ),
+                "action_feasibility": (
+                    dict(action_feasibility)
+                    if runtime_proposal_schema.endswith(".v3")
+                    else {}
+                ),
                 "dispatch_authority_created": False,
                 "physical_execution_invoked": False,
             }
@@ -3039,6 +3080,59 @@ def reroute_command(
         action="reroute",
         assume_yes=yes,
         recovery_parameters=params,
+    )
+
+
+@missionos.command("calibrate-offboard")
+@click.option(
+    "--task-id",
+    default="",
+    help="Target live SITL task. Defaults to auto-detecting a running task.",
+)
+@click.option(
+    "--target-x-m",
+    required=True,
+    type=float,
+    help="Short local NED north calibration target in metres.",
+)
+@click.option(
+    "--target-y-m",
+    required=True,
+    type=float,
+    help="Short local NED east calibration target in metres.",
+)
+@click.option(
+    "--altitude-m",
+    required=True,
+    type=float,
+    help="Target altitude above home in metres.",
+)
+@click.option(
+    "--yes",
+    is_flag=True,
+    help="Skip y/N confirmation and send the explicitly approved calibration.",
+)
+@click.pass_context
+def calibrate_offboard_command(
+    ctx: click.Context,
+    task_id: str,
+    target_x_m: float,
+    target_y_m: float,
+    altitude_m: float,
+    yes: bool,
+) -> None:
+    """Run one SITL-only bounded OFFBOARD performance calibration."""
+
+    _operator_recovery_command(
+        ctx,
+        task_id=task_id,
+        action="calibrate_offboard",
+        assume_yes=yes,
+        recovery_parameters={
+            "target_x_m": target_x_m,
+            "target_y_m": target_y_m,
+            "target_altitude_m": altitude_m,
+        },
     )
 
 

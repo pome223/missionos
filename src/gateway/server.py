@@ -94,6 +94,19 @@ from src.intelligence.missionos_agent_runtime import (
     run_missionos_agent_runtime,
     run_missionos_runtime_recovery_agent,
 )
+from src.runtime.px4_gazebo_route.action_feasibility import (
+    action_feasibility_hash_matches,
+    verify_runtime_recovery_action_feasibility,
+)
+from src.runtime.px4_gazebo_route.hazard_state import (
+    build_runtime_recovery_hazard_state,
+    hazard_state_hash_matches,
+    recovery_policy_sha256,
+)
+from src.runtime.px4_gazebo_route.recovery_policy import (
+    LIVE_SITL_RECOVERY_POLICY_REF,
+    live_sitl_recovery_policy,
+)
 from src.runtime.px4_gazebo_route.recovery_intent_compiler import (
     recovery_artifact_hash_matches,
     verify_runtime_recovery_reachability,
@@ -2478,6 +2491,7 @@ MISSIONOS_RUNTIME_RECOVERY_MANEUVER_ACTIONS = {
     "adjust_speed",
     "reroute",
     "avoid_obstacle",
+    "calibrate_offboard",
 }
 MISSIONOS_RUNTIME_RECOVERY_ACTIONS = (
     MISSIONOS_RUNTIME_RECOVERY_EMERGENCY_ACTIONS
@@ -2701,6 +2715,43 @@ def _bounded_operator_recovery_parameters(
                 )
             out["source_obstacle_name"] = source_obstacle_name
         return out
+    if recovery_action == "calibrate_offboard":
+        target_x = _bounded_recovery_float(
+            parameters,
+            "target_x_m",
+            "x_m",
+            minimum=-5000.0,
+            maximum=5000.0,
+        )
+        target_y = _bounded_recovery_float(
+            parameters,
+            "target_y_m",
+            "y_m",
+            minimum=-5000.0,
+            maximum=5000.0,
+        )
+        altitude = _bounded_recovery_float(
+            parameters,
+            "target_altitude_m",
+            "altitude_m",
+            minimum=0.5,
+            maximum=500.0,
+        )
+        if target_x is None or target_y is None or altitude is None:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "calibrate_offboard requires target_x_m, target_y_m, "
+                    "and target_altitude_m"
+                ),
+            )
+        return {
+            "target_x_m": target_x,
+            "target_y_m": target_y,
+            "target_altitude_m": altitude,
+            "calibration_only": True,
+            "resume_original_route": True,
+        }
     return {}
 
 
@@ -3594,6 +3645,7 @@ def _recovery_float_or_none(value: Any) -> float | None:
 def _operator_recovery_proposal_policy() -> dict[str, Any]:
     return {
         "policy_ref": "operator_requested_runtime_recovery_proposal_policy.v1",
+        "action_feasibility_required": True,
         "preauthorized_actions": sorted(MISSIONOS_RUNTIME_RECOVERY_ACTIONS),
         "battery_return_threshold_percent": 20.0,
         "max_route_deviation_xy_m": 100.0,
@@ -3605,17 +3657,64 @@ def _operator_recovery_proposal_policy() -> dict[str, Any]:
         "max_adjust_speed_mps": 30.0,
         "max_reroute_target_abs_m": 5000.0,
         "max_recovery_duration_s": 75.0,
+        "max_obstacle_avoidance_duration_s": 150.0,
         "max_recovery_horizontal_speed_mps": 10.0,
         "max_recovery_vertical_speed_mps": 3.0,
         "reachability_duration_margin_factor": 1.25,
         "reachability_setup_seconds": 5.0,
+        "offboard_performance_envelope_required": True,
+        "offboard_performance_min_samples": 5,
+        "offboard_performance_uncertainty_fraction": 0.25,
+        "offboard_performance_calibration_enabled": True,
+        "offboard_performance_calibration_max_distance_m": 15.0,
+        "offboard_performance_calibration_max_altitude_delta_m": 2.0,
+        "offboard_performance_calibration_speed_mps": 2.0,
         "wind_uncertainty_floor_mps": 1.0,
+        "max_wind_speed_mps": 6.0,
+        "minimum_motor_thrust_factor": 0.6,
+        "obstacle_minimum_clearance_m": 20.0,
+        "temperature_derating_model": {
+            "model_id": "missionos_bounded_sitl_temperature_derating.v1",
+            "model_version": "1.0.0",
+            "source_refs": [
+                "missionos_auto_thermal_weather_simulator_condition_application"
+            ],
+            "uncertainty_percent": 10.0,
+            "battery_capacity_factor": 1.0,
+            "motor_thrust_factor": 1.0,
+            "calibration_status": "simulation_only_not_physical_calibration",
+        },
+        "battery_action_energy_model": {
+            "model_id": "missionos_bounded_sitl_action_energy.v1",
+            "model_version": "1.0.0",
+            "source_refs": [
+                "missionos_auto_mission_runtime_snapshot",
+                "missionos_auto_environment_condition_profile",
+            ],
+            "uncertainty_percent": 20.0,
+            "percent_per_meter_horizontal": 0.02,
+            "percent_per_meter_climb": 0.08,
+            "headwind_multiplier_per_mps": 0.01,
+            "payload_energy_multiplier_per_kg": 0.05,
+            "calibration_status": "simulation_only_not_physical_calibration",
+        },
         "operator_reroute_forward_m": 80.0,
         "operator_reroute_lateral_m": 30.0,
         "obstacle_lateral_clearance_m": 30.0,
         "obstacle_buffer_m": 20.0,
         "obstacle_avoidance_climb_m": 15.0,
     }
+
+
+def _current_recovery_policy_for_ref(policy_ref: str) -> dict[str, Any]:
+    """Resolve current policy material without trusting proposal artifacts."""
+
+    if policy_ref == LIVE_SITL_RECOVERY_POLICY_REF:
+        return live_sitl_recovery_policy()
+    operator_policy = _operator_recovery_proposal_policy()
+    if policy_ref == operator_policy.get("policy_ref"):
+        return operator_policy
+    return {}
 
 
 def _runtime_recovery_obstacle_from_task_artifacts(
@@ -3822,6 +3921,144 @@ def _runtime_recovery_utc_datetime(value: Any) -> datetime | None:
     return parsed.astimezone(timezone.utc)
 
 
+def _runtime_recovery_calibration_revalidation(
+    *,
+    artifacts: Mapping[str, Any],
+    recovery_parameters: Mapping[str, Any],
+    now: datetime,
+) -> dict[str, Any]:
+    """Validate one explicitly approved, SITL-only OFFBOARD calibration."""
+
+    evidence: dict[str, Any] = {
+        "schema_version": (
+            "missionos_runtime_recovery_calibration_revalidation.v1"
+        ),
+        "validation_kind": "offboard_performance_calibration",
+        "validation_status": "blocked",
+        "proposal_id": "",
+        "reasons": [],
+        "dispatch_authority_created": False,
+        "observed_at": now.isoformat(),
+    }
+    reasons: list[str] = []
+    running_receipt = artifacts.get(
+        "missionos_auto_mission_gui_dispatch_running_receipt"
+    )
+    running_receipt = (
+        dict(running_receipt)
+        if isinstance(running_receipt, Mapping)
+        else {}
+    )
+    if not running_receipt:
+        reasons.append(
+            "runtime_recovery_calibration_active_sitl_runner_missing"
+        )
+    if running_receipt.get("hardware_target_allowed") is not False:
+        reasons.append(
+            "runtime_recovery_calibration_hardware_boundary_unverified"
+        )
+    if running_receipt.get("physical_execution_invoked") is not False:
+        reasons.append(
+            "runtime_recovery_calibration_physical_execution_boundary_invalid"
+        )
+
+    current_telemetry = _runtime_recovery_telemetry_from_task_artifacts(
+        artifacts,
+        prefer_live_bridge=True,
+    )
+    arbitration = current_telemetry.get("telemetry_arbitration")
+    arbitration = (
+        dict(arbitration) if isinstance(arbitration, Mapping) else {}
+    )
+    evidence["telemetry_arbitration"] = arbitration
+    if arbitration.get("arbitration_status") != "verified":
+        reasons.extend(
+            str(item)
+            for item in arbitration.get("blocking_reasons") or []
+        )
+        reasons.append(
+            "runtime_recovery_calibration_telemetry_arbitration_unverified"
+        )
+    telemetry_state = current_telemetry.get("telemetry")
+    telemetry_state = (
+        dict(telemetry_state)
+        if isinstance(telemetry_state, Mapping)
+        else {}
+    )
+    if not current_telemetry or telemetry_state.get("stale") is True:
+        reasons.append(
+            "runtime_recovery_calibration_current_telemetry_stale"
+        )
+
+    policy = live_sitl_recovery_policy()
+    hazard_state = build_runtime_recovery_hazard_state(
+        telemetry_snapshot=current_telemetry,
+        recovery_policy=policy,
+        observed_at=now.isoformat(),
+    )
+    position = current_telemetry.get("position")
+    position = position if isinstance(position, Mapping) else {}
+    target_altitude = _recovery_float_or_none(
+        recovery_parameters.get("target_altitude_m")
+    )
+    candidate = {
+        "selected_bounded_action": "calibrate_offboard",
+        "proposed_parameters": dict(recovery_parameters),
+        "source_refs": [
+            "explicit_operator_offboard_calibration_request",
+            "missionos_auto_mission_runtime_snapshot",
+        ],
+        "recovery_path": {
+            "frame_id": "local_ned_xy_altitude_up",
+            "waypoints": [
+                {
+                    "x_m": recovery_parameters.get("target_x_m"),
+                    "y_m": recovery_parameters.get("target_y_m"),
+                    "z_m": target_altitude,
+                }
+            ],
+        },
+        "intent_constraints": {
+            "maximum_duration_s": policy.get(
+                "max_recovery_duration_s"
+            ),
+        },
+    }
+    feasibility = verify_runtime_recovery_action_feasibility(
+        candidate=candidate,
+        hazard_state=hazard_state,
+        recovery_policy=policy,
+    )
+    evidence["current_position"] = {
+        "local_x_m": position.get("local_x_m"),
+        "local_y_m": position.get("local_y_m"),
+        "altitude_above_home_m": position.get(
+            "altitude_above_home_m"
+        ),
+    }
+    evidence["calibration_candidate"] = candidate
+    evidence["dispatch_hazard_state"] = hazard_state
+    evidence["dispatch_action_feasibility"] = feasibility
+    if feasibility.get("feasibility_status") != "verified_feasible":
+        reasons.extend(
+            str(item)
+            for item in feasibility.get("blocking_reasons") or []
+        )
+        reasons.extend(
+            str(item)
+            for item in feasibility.get("unverified_reasons") or []
+        )
+        reasons.append(
+            "runtime_recovery_calibration_not_verified_feasible"
+        )
+    evidence["reasons"] = list(dict.fromkeys(reasons))
+    evidence["validation_status"] = "blocked" if reasons else "valid"
+    evidence["bound_parameters"] = (
+        dict(recovery_parameters) if not reasons else {}
+    )
+    return evidence
+
+
 def _runtime_recovery_proposal_revalidation(
     *,
     artifacts: Mapping[str, Any],
@@ -3847,6 +4084,12 @@ def _runtime_recovery_proposal_revalidation(
     }
     if recovery_action not in MISSIONOS_RUNTIME_RECOVERY_MANEUVER_ACTIONS:
         return evidence
+    if recovery_action == "calibrate_offboard":
+        return _runtime_recovery_calibration_revalidation(
+            artifacts=artifacts,
+            recovery_parameters=recovery_parameters,
+            now=now,
+        )
     proposal = artifacts.get("missionos_runtime_recovery_last_proposal")
     if not isinstance(proposal, Mapping) or not proposal:
         return evidence
@@ -3934,9 +4177,14 @@ def _runtime_recovery_proposal_revalidation(
     if not parameters_match:
         reasons.append("runtime_recovery_proposal_parameters_mismatch")
 
-    proposal_v2 = (
-        proposal.get("schema_version")
-        == "missionos_runtime_recovery_proposal_evidence.v2"
+    proposal_schema_version = str(proposal.get("schema_version") or "")
+    proposal_v2 = proposal_schema_version in {
+        "missionos_runtime_recovery_proposal_evidence.v2",
+        "missionos_runtime_recovery_proposal_evidence.v3",
+    }
+    proposal_v3 = (
+        proposal_schema_version
+        == "missionos_runtime_recovery_proposal_evidence.v3"
     )
     evidence["intent_compiler_contract_required"] = proposal_v2
     if proposal_v2:
@@ -4023,6 +4271,61 @@ def _runtime_recovery_proposal_revalidation(
             comparable_compiled_parameters.pop("source_obstacle_name", None)
         if comparable_compiled_parameters != dict(recovery_parameters):
             reasons.append("runtime_recovery_compiled_parameters_mismatch")
+        stored_policy_snapshot = intent_compilation.get("policy_snapshot")
+        stored_policy_snapshot = (
+            dict(stored_policy_snapshot)
+            if isinstance(stored_policy_snapshot, Mapping)
+            else {}
+        )
+        stored_policy_ref = str(
+            intent_compilation.get("policy_ref")
+            or (
+                proposal.get("hazard_state", {}).get("policy_ref")
+                if isinstance(proposal.get("hazard_state"), Mapping)
+                else ""
+            )
+            or ""
+        ).strip()
+        current_policy = _current_recovery_policy_for_ref(stored_policy_ref)
+        evidence["stored_policy_ref"] = stored_policy_ref or None
+        evidence["current_policy_ref"] = current_policy.get("policy_ref")
+        if not current_policy:
+            reasons.append("runtime_recovery_active_policy_unresolvable")
+        if (
+            proposal_schema_version
+            == "missionos_runtime_recovery_proposal_evidence.v2"
+            and current_policy.get("action_feasibility_required") is True
+        ):
+            reasons.append(
+                "runtime_recovery_v2_proposal_invalidated_by_action_feasibility_policy"
+            )
+        for key, stored_value in stored_policy_snapshot.items():
+            if current_policy and current_policy.get(key) != stored_value:
+                reasons.append("runtime_recovery_active_policy_drift")
+                break
+        if proposal_v3:
+            stored_hazard_for_policy = proposal.get("hazard_state")
+            stored_hazard_for_policy = (
+                stored_hazard_for_policy
+                if isinstance(stored_hazard_for_policy, Mapping)
+                else {}
+            )
+            stored_policy_sha256 = str(
+                stored_hazard_for_policy.get("policy_sha256") or ""
+            )
+            current_policy_sha256 = (
+                recovery_policy_sha256(current_policy)
+                if current_policy
+                else ""
+            )
+            evidence["stored_policy_sha256"] = stored_policy_sha256 or None
+            evidence["current_policy_sha256"] = current_policy_sha256 or None
+            if (
+                not stored_policy_sha256
+                or not current_policy_sha256
+                or stored_policy_sha256 != current_policy_sha256
+            ):
+                reasons.append("runtime_recovery_active_policy_drift")
 
     valid_until = _runtime_recovery_utc_datetime(proposal.get("valid_until"))
     if valid_until is None:
@@ -4054,12 +4357,7 @@ def _runtime_recovery_proposal_revalidation(
     if not telemetry_fresh:
         reasons.append("runtime_recovery_current_telemetry_stale")
     if proposal_v2:
-        policy_snapshot = intent_compilation.get("policy_snapshot")
-        policy_snapshot = (
-            dict(policy_snapshot)
-            if isinstance(policy_snapshot, Mapping)
-            else {}
-        )
+        policy_snapshot = current_policy
         if recovery_action == "avoid_obstacle":
             wind_limit_mps = _recovery_float_or_none(
                 policy_snapshot.get("max_wind_speed_mps")
@@ -4250,6 +4548,116 @@ def _runtime_recovery_proposal_revalidation(
                 for item in dispatch_reachability.get("blocking_reasons") or []
             )
             reasons.append("runtime_recovery_dispatch_reachability_unverified")
+        if proposal_v3:
+            stored_hazard_state = proposal.get("hazard_state")
+            stored_hazard_state = (
+                dict(stored_hazard_state)
+                if isinstance(stored_hazard_state, Mapping)
+                else {}
+            )
+            stored_action_feasibility = proposal.get("action_feasibility")
+            stored_action_feasibility = (
+                dict(stored_action_feasibility)
+                if isinstance(stored_action_feasibility, Mapping)
+                else {}
+            )
+            evidence["stored_hazard_state_id"] = stored_hazard_state.get(
+                "hazard_state_id"
+            )
+            evidence["stored_action_feasibility_id"] = (
+                stored_action_feasibility.get("action_feasibility_id")
+            )
+            if not hazard_state_hash_matches(stored_hazard_state):
+                reasons.append("runtime_recovery_hazard_state_hash_mismatch")
+            if not action_feasibility_hash_matches(
+                stored_action_feasibility
+            ):
+                reasons.append(
+                    "runtime_recovery_action_feasibility_hash_mismatch"
+                )
+            if (
+                stored_action_feasibility.get("source_hazard_state_id")
+                != stored_hazard_state.get("hazard_state_id")
+                or stored_action_feasibility.get(
+                    "source_hazard_state_sha256"
+                )
+                != stored_hazard_state.get("hazard_state_sha256")
+            ):
+                reasons.append(
+                    "runtime_recovery_hazard_feasibility_chain_mismatch"
+                )
+            if (
+                stored_action_feasibility.get("feasibility_status")
+                != "verified_feasible"
+            ):
+                reasons.append(
+                    "runtime_recovery_stored_action_not_verified_feasible"
+                )
+            feasibility_policy = stored_hazard_state.get("policy_snapshot")
+            feasibility_policy = current_policy
+            dispatch_hazard_state = build_runtime_recovery_hazard_state(
+                telemetry_snapshot=current_telemetry,
+                recovery_policy=feasibility_policy,
+                observed_at=now.isoformat(),
+                prior_telemetry_cursor=stored_hazard_state.get(
+                    "telemetry_cursor"
+                )
+                if isinstance(
+                    stored_hazard_state.get("telemetry_cursor"),
+                    Mapping,
+                )
+                else {},
+                expected_policy_sha256=str(
+                    stored_hazard_state.get("policy_sha256") or ""
+                ),
+            )
+            dispatch_action_feasibility = (
+                verify_runtime_recovery_action_feasibility(
+                    candidate={
+                        "selected_bounded_action": recovery_action,
+                        "proposed_parameters": (
+                            canonical_candidate_parameters
+                        ),
+                        "source_refs": (
+                            candidate.get("source_refs")
+                            if isinstance(candidate, Mapping)
+                            else []
+                        ),
+                        "recovery_path": (
+                            candidate.get("recovery_path")
+                            if isinstance(candidate, Mapping)
+                            else {}
+                        ),
+                    },
+                    hazard_state=dispatch_hazard_state,
+                    recovery_policy=feasibility_policy,
+                )
+            )
+            evidence["dispatch_hazard_state"] = dispatch_hazard_state
+            evidence["dispatch_action_feasibility"] = (
+                dispatch_action_feasibility
+            )
+            if (
+                dispatch_action_feasibility.get("feasibility_status")
+                != "verified_feasible"
+            ):
+                reasons.extend(
+                    str(item)
+                    for item in dispatch_action_feasibility.get(
+                        "blocking_reasons"
+                    )
+                    or []
+                )
+                reasons.extend(
+                    str(item)
+                    for item in dispatch_action_feasibility.get(
+                        "unverified_reasons"
+                    )
+                    or []
+                )
+                reasons.append(
+                    "runtime_recovery_dispatch_action_not_verified_feasible"
+                )
 
     manifest_bound_alternate = (
         candidate_action == "reroute"
@@ -8111,6 +8519,21 @@ class GatewayServer:
                     detail=(
                         "recovery_action must be one of "
                         + ", ".join(sorted(allowed_recovery_actions))
+                    ),
+                )
+            if (
+                recovery_action == "calibrate_offboard"
+                and task.get("kind")
+                not in {
+                    "mission_designer_sitl_execution",
+                    "px4_gazebo_mission_designer_sitl_execution_request",
+                }
+            ):
+                raise HTTPException(
+                    status_code=409,
+                    detail=(
+                        "calibrate_offboard is available only for an active "
+                        "PX4/Gazebo Mission Designer SITL task"
                     ),
                 )
             if body.get("explicit_recovery_dispatch_approval") is not True:

@@ -20,7 +20,7 @@ pytestmark = pytest.mark.contract
 
 def _policy() -> dict:
     return {
-        "policy_ref": "test_intent_compiler_policy",
+        "policy_ref": "operator_requested_runtime_recovery_proposal_policy.v1",
         "max_recovery_duration_s": 75.0,
         "max_recovery_horizontal_speed_mps": 10.0,
         "max_recovery_vertical_speed_mps": 3.0,
@@ -311,7 +311,7 @@ def test_outcome_verifier_requires_target_and_verified_auto_resume() -> None:
     assert verification["delivery_completion_claimed"] is False
 
 
-def test_v2_dispatch_revalidation_recomputes_reachability() -> None:
+def test_v2_dispatch_revalidation_recomputes_reachability_but_invalidates_migration() -> None:
     now = datetime.now(timezone.utc)
     intent, compilation, reachability = _intent_and_compilation()
     parameters = gateway_server._bounded_operator_recovery_parameters(
@@ -399,7 +399,11 @@ def test_v2_dispatch_revalidation_recomputes_reachability() -> None:
         now=now,
     )
 
-    assert valid["validation_status"] == "valid"
+    assert valid["validation_status"] == "blocked"
+    assert (
+        "runtime_recovery_v2_proposal_invalidated_by_action_feasibility_policy"
+        in valid["reasons"]
+    )
     assert valid["dispatch_reachability_verification"]["verification_status"] == "verified"
     assert blocked["validation_status"] == "blocked"
     assert blocked["dispatch_reachability_verification"]["verification_status"] == (
@@ -505,7 +509,11 @@ def test_compound_dispatch_revalidates_latest_safe_window() -> None:
         now=now,
     )
 
-    assert valid["validation_status"] == "valid"
+    assert valid["validation_status"] == "blocked"
+    assert (
+        "runtime_recovery_v2_proposal_invalidated_by_action_feasibility_policy"
+        in valid["reasons"]
+    )
     assert valid["dispatch_safe_window_revalidation"]["safe_window_observed"] is True
     assert blocked["validation_status"] == "blocked"
     assert "runtime_recovery_dispatch_current_wind_above_limit" in blocked[

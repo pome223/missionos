@@ -230,6 +230,11 @@ recommend continue, hold, return_to_launch, land, adjust_altitude,
 adjust_speed, reroute, avoid_obstacle, or operator_review. Only propose
 adjust_altitude, adjust_speed, reroute, or avoid_obstacle when the supplied
 telemetry and policy provide bounded parameters; otherwise use operator_review.
+The prompt includes action_judgment_context. Compare all candidates and their
+blocking_reasons or unverified_reasons, but never upgrade feasibility yourself.
+Only verified_selectable_candidates may be requested from the planner. When a
+needed maneuver is unverified, prefer hold, land, return_to_launch, or
+operator_review according to the remaining verified facts.
 If mission_context includes an operator recovery request, treat it as a
 proposal request only and still require bounded planner-derived parameters.
 When FunctionTools are attached, call the recovery maneuver planner tool before

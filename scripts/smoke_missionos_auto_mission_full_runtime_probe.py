@@ -110,6 +110,7 @@ OPERATOR_RECOVERY_ASSIST_PRESTREAM_FRAMES = 20
 # observed OFFBOARD leg clears the collision footprint before AUTO resumes.
 # Allow enough time for that longer bounded leg plus the commanded climb.
 OPERATOR_RECOVERY_ASSIST_MAX_SECONDS = 75.0
+OPERATOR_RECOVERY_ASSIST_OBSTACLE_AVOIDANCE_MAX_SECONDS = 150.0
 OPERATOR_RECOVERY_ASSIST_LAND_MAX_SECONDS = 60.0
 OPERATOR_RECOVERY_ASSIST_SETPOINT_INTERVAL_SECONDS = 0.05
 OPERATOR_RECOVERY_LATERAL_OBSTACLE_MARGIN_M = 20.0
@@ -329,6 +330,7 @@ def _operator_route() -> dict[str, Any]:
         "rain_battery_drain_factor",
         "rain_sensor_degradation_factor",
         "rain_landing_risk_factor",
+        "payload_weight_kg",
     ):
         value = route.get(key)
         if isinstance(value, int | float) and (
@@ -1145,6 +1147,24 @@ def _thermal_param_set_applied(result: Mapping[str, Any]) -> bool:
     return result.get("returncode") == 0 and "not found" not in output
 
 
+def _thermal_param_readback_matches(result: Mapping[str, Any]) -> bool:
+    """Require PX4 GET/readback, not merely successful PARAM_SET transport."""
+
+    if not _thermal_param_set_applied(result):
+        return False
+    readback = result.get("readback")
+    readback = readback if isinstance(readback, Mapping) else {}
+    requested = _optional_finite_float(result.get("requested_value", result.get("value")))
+    observed = _optional_finite_float(readback.get("value"))
+    return bool(
+        requested is not None
+        and observed is not None
+        and readback.get("returncode") == 0
+        and str(readback.get("param") or "") == str(result.get("param") or "")
+        and math.isclose(requested, observed, rel_tol=1e-6, abs_tol=1e-6)
+    )
+
+
 def _thermal_weather_runtime_artifacts(
     *,
     config: Mapping[str, Any],
@@ -1158,7 +1178,9 @@ def _thermal_weather_runtime_artifacts(
     unsupported_reasons = list(config.get("unsupported_reasons") or ())
     setup = list(probe_observed.get("battery_sim_setup") or ())
     applied_param_names = {str(item.get("param")) for item in setup if isinstance(item, Mapping)}
-    params_set = all(_thermal_param_set_applied(item) for item in setup) if setup else False
+    params_readback_verified = (
+        all(_thermal_param_readback_matches(item) for item in setup) if setup else False
+    )
     motor_materialized = "MPC_THR_MAX" in applied_param_names
     application_status = "not_requested"
     observation_status = "not_requested"
@@ -1166,9 +1188,9 @@ def _thermal_weather_runtime_artifacts(
     battery_drain_status = "not_requested"
     motor_derate_status = "not_requested"
     if requested_present and thermal_effect_requested:
-        if params_set:
+        if params_readback_verified:
             application_status = "applied_with_approximations"
-            observation_status = "thermal_condition_param_set_observed"
+            observation_status = "thermal_condition_param_readback_observed"
             thermal_capability_status = "supported"
             battery_drain_status = "supported"
             motor_derate_status = "supported" if motor_materialized else "not_materialized"
@@ -1178,7 +1200,7 @@ def _thermal_weather_runtime_artifacts(
             thermal_capability_status = "unsupported"
             battery_drain_status = "unsupported"
             motor_derate_status = "unsupported" if motor_materialized else "not_materialized"
-            unsupported_reasons.append("px4_thermal_param_set_failed")
+            unsupported_reasons.append("px4_thermal_param_readback_missing_or_mismatched")
     elif requested_present:
         application_status = "unsupported"
         observation_status = "unsupported"
@@ -1199,8 +1221,8 @@ def _thermal_weather_runtime_artifacts(
             "applied_at": datetime.now(timezone.utc).isoformat(),
         }
         observed = {
-            "source": "missionos-auto-probe-param-set-and-battery-status",
-            "observed": params_set and thermal_effect_requested,
+            "source": "missionos-auto-probe-param-set-get-and-battery-status",
+            "observed": params_readback_verified and thermal_effect_requested,
             "battery_remaining_percent": summary.get("battery_remaining_percent"),
             "battery_remaining_delta_percent": summary.get("battery_remaining_delta_percent"),
             "battery_remaining_sample_count": summary.get("battery_remaining_sample_count"),
@@ -1217,7 +1239,7 @@ def _thermal_weather_runtime_artifacts(
         "air_temperature_physics": "not_claimed",
         "pressure_physics": "not_claimed",
         "support_detection_method": (
-            "px4_param_set_result_and_battery_status_listener"
+            "px4_param_set_get_readback_and_battery_status_listener"
             if requested_present
             else "not_requested"
         ),
@@ -1796,10 +1818,57 @@ def _rain_visual_world_sdf_patch(*, precipitation_mm_per_hour: float | None) -> 
 """
 
 
+def _payload_sdf_mass_readback(world_text: str) -> float | None:
+    match = re.search(
+        r'<model name="delivery_payload">.*?<mass>\s*([0-9]+(?:\.[0-9]+)?)\s*</mass>',
+        world_text,
+        flags=re.DOTALL,
+    )
+    return _optional_finite_float(match.group(1)) if match else None
+
+
+def _requested_payload_sdf_mass_kg(route: Mapping[str, Any]) -> float:
+    requested = _optional_finite_float(route.get("payload_weight_kg"))
+    return requested if requested is not None and requested > 0 else 0.05
+
+
+def _payload_application_from_world_readback(
+    *,
+    route: Mapping[str, Any],
+    run_dir: Path,
+) -> dict[str, Any]:
+    """Carry the applied SDF mass, never the route request alone, in telemetry."""
+
+    requested = _optional_finite_float(route.get("payload_weight_kg"))
+    if requested is None:
+        return {}
+    readback = _condition_world_readback(run_dir)
+    applied = _optional_finite_float(readback.get("payload_sdf_mass_kg"))
+    materialized = bool(readback.get("payload_sdf_materialized"))
+    matched = bool(
+        materialized
+        and applied is not None
+        and math.isclose(requested, applied, rel_tol=1e-6, abs_tol=1e-6)
+    )
+    return {
+        "requested_mass_kg": requested,
+        "mass_kg": applied if applied is not None else requested,
+        "observation_status": (
+            "configured_applied" if matched else "configured_unverified"
+        ),
+        "sdf_materialized": materialized,
+        "sdf_mass_kg": applied,
+        "source_refs": [
+            "missionos_auto_condition_world_readback.payload_sdf_mass_kg"
+        ],
+    }
+
+
 def _prepare_l1_payload_model_root(
     run_dir: Path,
     *,
     payload_enabled: bool,
+    payload_mass_kg: float,
     wind_profile: Mapping[str, Any],
     rain_config: Mapping[str, Any],
 ) -> Path:
@@ -1855,7 +1924,7 @@ def _prepare_l1_payload_model_root(
     if payload_enabled and "delivery_payload" not in world_text:
         world_text = world_text.replace(
             "  </world>\n</sdf>",
-            _payload_world_sdf_patch() + "  </world>\n</sdf>",
+            _payload_world_sdf_patch(payload_mass_kg=payload_mass_kg) + "  </world>\n</sdf>",
         )
     if wind_profile.get("requested_present"):
         if "gz::sim::systems::WindEffects" not in world_text:
@@ -1895,6 +1964,13 @@ def _prepare_l1_payload_model_root(
         in world_path.read_text(encoding="utf-8"),
         "wind_enabled_on_vehicle_links": "<enable_wind>true</enable_wind>"
         in (model_root / "x500_base" / "model.sdf").read_text(encoding="utf-8"),
+        "payload_sdf_materialized": bool(
+            payload_enabled and "delivery_payload" in world_path.read_text(encoding="utf-8")
+        ),
+        "payload_requested_mass_kg": payload_mass_kg if payload_enabled else None,
+        "payload_sdf_mass_kg": _payload_sdf_mass_readback(
+            world_path.read_text(encoding="utf-8")
+        ) if payload_enabled else None,
     }
     (run_dir / "auto_condition_world_readback.json").write_text(
         json.dumps(condition_readback, indent=2, sort_keys=True),
@@ -1919,6 +1995,7 @@ def _custom_condition_world_requested(
 def _start_container(
     run_dir: Path,
     *,
+    payload_mass_kg: float = 0.05,
     wind_profile: Mapping[str, Any] | None = None,
     rain_config: Mapping[str, Any] | None = None,
 ) -> Path | None:
@@ -1936,6 +2013,7 @@ def _start_container(
     payload_model_root = _prepare_l1_payload_model_root(
         run_dir,
         payload_enabled=_l1_cargo_enabled(),
+        payload_mass_kg=payload_mass_kg,
         wind_profile=wind_profile,
         rain_config=rain_config,
     )
@@ -2495,6 +2573,7 @@ def _inner_runtime_probe_script(
     wind_variance: float | None,
     gz_physical_battery_enabled: bool,
     gz_battery_motor_coupling_enabled: bool = False,
+    payload_application: Mapping[str, Any] | None = None,
     obstacle_manifest: Mapping[str, Any] | None = None,
     resume_mission_seq_after_obstacle: int | None = None,
     resume_mission_seq_by_obstacle: Mapping[str, int] | None = None,
@@ -2603,6 +2682,7 @@ def _inner_runtime_probe_script(
         OPERATOR_RECOVERY_ASSIST_LAND_FINALIZE_SECONDS={float(OPERATOR_RECOVERY_ASSIST_LAND_FINALIZE_SECONDS)}
         OPERATOR_RECOVERY_ASSIST_PRESTREAM_FRAMES={int(OPERATOR_RECOVERY_ASSIST_PRESTREAM_FRAMES)}
         OPERATOR_RECOVERY_ASSIST_MAX_SECONDS={float(OPERATOR_RECOVERY_ASSIST_MAX_SECONDS)}
+        OPERATOR_RECOVERY_ASSIST_OBSTACLE_AVOIDANCE_MAX_SECONDS={float(OPERATOR_RECOVERY_ASSIST_OBSTACLE_AVOIDANCE_MAX_SECONDS)}
         OPERATOR_RECOVERY_ASSIST_LAND_MAX_SECONDS={float(OPERATOR_RECOVERY_ASSIST_LAND_MAX_SECONDS)}
         OPERATOR_RECOVERY_ASSIST_SETPOINT_INTERVAL_SECONDS={float(OPERATOR_RECOVERY_ASSIST_SETPOINT_INTERVAL_SECONDS)}
         OPERATOR_RECOVERY_LATERAL_OBSTACLE_MARGIN_M={float(OPERATOR_RECOVERY_LATERAL_OBSTACLE_MARGIN_M)}
@@ -2615,6 +2695,7 @@ def _inner_runtime_probe_script(
         SIM_BATTERY_MIN_REMAINING_PERCENT={float(sim_battery_min_remaining_percent)}
         SIM_BATTERY_DRAIN_SECONDS={float(sim_battery_drain_seconds)}
         THERMAL_MOTOR_DERATE_FACTOR={thermal_motor_derate_factor!r}
+        PAYLOAD_APPLICATION=json.loads({json.dumps(dict(payload_application or {}), sort_keys=True)!r})
         WIND_MEAN_MPS={wind_mean_mps!r}
         WIND_DIRECTION_DEG={wind_direction_deg!r}
         WIND_GUST_MPS={wind_gust_mps!r}
@@ -2714,17 +2795,36 @@ def _inner_runtime_probe_script(
 
         def param_set(name, value):
             result=subprocess.run(
-                ['/opt/px4-gazebo/bin/px4-param', 'set', str(name), repr(float(value))],
+                ['/opt/px4-gazebo/bin/px4-param', 'set', str(name), repr(float(value)), 'fail'],
                 text=True,
                 capture_output=True,
                 timeout=20,
                 check=False,
             )
+            readback=subprocess.run(
+                ['/opt/px4-gazebo/bin/px4-param', 'show', '-q', str(name)],
+                text=True,
+                capture_output=True,
+                timeout=20,
+                check=False,
+            )
+            readback_text=(readback.stdout or '').strip()
+            try:
+                readback_value=float(readback_text)
+            except (TypeError, ValueError):
+                readback_value=None
             return {{'param': str(name),
-                'value': float(value),
+                'requested_value': float(value),
                 'returncode': int(result.returncode),
                 'stdout_tail': (result.stdout or '')[-200:],
-                'stderr_tail': (result.stderr or '')[-200:]}}
+                'stderr_tail': (result.stderr or '')[-200:],
+                'readback': {{
+                    'param': str(name),
+                    'returncode': int(readback.returncode),
+                    'value': readback_value,
+                    'stdout_tail': (readback.stdout or '')[-200:],
+                    'stderr_tail': (readback.stderr or '')[-200:],
+                }}}}
 
         def parse_int(text, field):
             import re
@@ -4000,7 +4100,7 @@ def _inner_runtime_probe_script(
                     'feed_forward_vy_mps': 0.0,
                     'feed_forward_vz_mps': 0.0,
                 }}, None
-            if action in ('reroute', 'avoid_obstacle'):
+            if action in ('reroute', 'avoid_obstacle', 'calibrate_offboard'):
                 target_x=recovery_parameter(request, 'target_x_m', 'x_m')
                 target_y=recovery_parameter(request, 'target_y_m', 'y_m')
                 if target_x is None or target_y is None:
@@ -4016,6 +4116,8 @@ def _inner_runtime_probe_script(
                     'assist_kind': (
                         'bounded_offboard_obstacle_avoidance_reroute'
                         if action == 'avoid_obstacle'
+                        else 'bounded_offboard_performance_calibration'
+                        if action == 'calibrate_offboard'
                         else 'bounded_offboard_reroute'
                     ),
                     'target_x_m': float(target_x),
@@ -4139,7 +4241,12 @@ def _inner_runtime_probe_script(
             last_distance_to_target=None
             last_altitude_error=None
             maneuver_samples=[]
-            while (time.monotonic()-stream_started) < OPERATOR_RECOVERY_ASSIST_MAX_SECONDS:
+            assist_max_seconds=(
+                OPERATOR_RECOVERY_ASSIST_OBSTACLE_AVOIDANCE_MAX_SECONDS
+                if action == 'avoid_obstacle'
+                else OPERATOR_RECOVERY_ASSIST_MAX_SECONDS
+            )
+            while (time.monotonic()-stream_started) < assist_max_seconds:
                 sock.sendto(heartbeat(seq), remote); seq+=1
                 sock.sendto(
                     setpoint_local_ned(
@@ -4201,9 +4308,14 @@ def _inner_runtime_probe_script(
                             and last_altitude_error <= 1.5
                         )
                     else:
+                        horizontal_tolerance_m=(
+                            2.0
+                            if action == 'calibrate_offboard'
+                            else 5.0
+                        )
                         target_reached=(
                             last_distance_to_target is not None
-                            and last_distance_to_target <= 5.0
+                            and last_distance_to_target <= horizontal_tolerance_m
                             and (
                                 last_altitude_error is None
                                 or last_altitude_error <= 2.0
@@ -4414,6 +4526,42 @@ def _inner_runtime_probe_script(
                         if hold_after_failure_observed
                         else 'hold_remaining_route_or_dropoff_unsafe_failed'
                     )
+            performance_duration_seconds=max(
+                0.0,
+                time.monotonic()-stream_started,
+            )
+            performance_horizontal_distance_m=math.hypot(
+                last_x-first_x,
+                last_y-first_y,
+            )
+            performance_observation={{
+                'schema_version': 'missionos_px4_bounded_offboard_performance_observation.v1',
+                'action': action,
+                'sample_count': len(maneuver_samples),
+                'duration_seconds': round(performance_duration_seconds, 3),
+                'horizontal_distance_m': round(
+                    performance_horizontal_distance_m,
+                    3,
+                ),
+                'observed_horizontal_speed_mps': (
+                    round(
+                        performance_horizontal_distance_m
+                        / performance_duration_seconds,
+                        6,
+                    )
+                    if performance_duration_seconds > 0
+                    and performance_horizontal_distance_m > 0
+                    else None
+                ),
+                'target_reached': target_reached,
+                'source_refs': [
+                    'operator_recovery_command.maneuver_observation_samples',
+                    'vehicle_local_position:x,y',
+                ],
+                'approval_created': False,
+                'dispatch_authority_created': False,
+                'completion_claimed': False,
+            }}
             return {{
                 **offboard,
                 'status': maneuver_status,
@@ -4501,6 +4649,7 @@ def _inner_runtime_probe_script(
                 # it creates no approval, dispatch, or completion authority.
                 'maneuver_observation_sample_count': len(maneuver_samples),
                 'maneuver_observation_samples': maneuver_samples,
+                'performance_observation': performance_observation,
             }}
 
         def execute_operator_recovery_request(sock, remote, seq, request, local_x=None, local_y=None, local_z=None, altitude=None):
@@ -4553,7 +4702,13 @@ def _inner_runtime_probe_script(
             if action == 'land':
                 command=send_command(sock, remote, {MAV_CMD_NAV_LAND}, {land_params!r}, seq, 15.0)
                 return command, 'MAV_CMD_NAV_LAND', True
-            if action in ('adjust_altitude', 'adjust_speed', 'reroute', 'avoid_obstacle'):
+            if action in (
+                'adjust_altitude',
+                'adjust_speed',
+                'reroute',
+                'avoid_obstacle',
+                'calibrate_offboard',
+            ):
                 command=run_operator_maneuver(
                     sock,
                     remote,
@@ -5041,6 +5196,15 @@ def _inner_runtime_probe_script(
                     'battery_sample_accepted': battery_sample_accepted,
                     'battery_sample_rejected_reason': battery_sample_rejected_reason,
                     'battery_warning': battery_warning_last,
+                    # These are direct PX4 PARAM_SET responses captured before
+                    # AUTO starts.  Keep them on each in-flight marker so a
+                    # recovery decision can distinguish an applied bounded
+                    # thermal model from an operator request that merely
+                    # exists in the route artifact.
+                    'battery_sim_setup': battery_sim_setup,
+                    'sim_battery_drain_seconds': SIM_BATTERY_DRAIN_SECONDS,
+                    'thermal_motor_derate_factor': THERMAL_MOTOR_DERATE_FACTOR,
+                    'payload_application': PAYLOAD_APPLICATION,
                     'heartbeat_observed': heartbeat_observed,
                     'heartbeat_instant_observed': heartbeat_instant_observed,
                     'heartbeat_liveness_window_seconds': HEARTBEAT_LIVENESS_WINDOW_SECONDS,
@@ -5119,6 +5283,7 @@ def _inner_runtime_probe_script(
                     'operator_recovery_local_delta_x_m': operator_recovery_command.get('local_delta_x_m'),
                     'operator_recovery_local_delta_y_m': operator_recovery_command.get('local_delta_y_m'),
                     'operator_recovery_altitude_delta_m': operator_recovery_command.get('altitude_delta_m'),
+                    'operator_recovery_performance_observation': operator_recovery_command.get('performance_observation'),
                     'operator_recovery_terminal': operator_recovery_command.get('terminal_recovery'),
                     'operator_recovery_resume_auto_attempted': operator_recovery_command.get('resume_auto_attempted'),
                     'operator_recovery_resume_auto_ack_observed': operator_recovery_command.get('resume_auto_ack_observed'),
@@ -5360,6 +5525,7 @@ def _inner_runtime_probe_script(
                 terminal_snapshot_payload['operator_recovery_local_delta_x_m']=operator_recovery_command.get('local_delta_x_m')
                 terminal_snapshot_payload['operator_recovery_local_delta_y_m']=operator_recovery_command.get('local_delta_y_m')
                 terminal_snapshot_payload['operator_recovery_altitude_delta_m']=operator_recovery_command.get('altitude_delta_m')
+                terminal_snapshot_payload['operator_recovery_performance_observation']=operator_recovery_command.get('performance_observation')
                 terminal_snapshot_payload['operator_recovery_terminal']=operator_recovery_command.get('terminal_recovery')
                 terminal_snapshot_payload['operator_recovery_resume_auto_attempted']=operator_recovery_command.get('resume_auto_attempted')
                 terminal_snapshot_payload['operator_recovery_resume_auto_ack_observed']=operator_recovery_command.get('resume_auto_ack_observed')
@@ -5631,6 +5797,7 @@ def _inner_runtime_probe_script(
                     'operator_recovery_local_delta_x_m': active_recovery_command.get('local_delta_x_m'),
                     'operator_recovery_local_delta_y_m': active_recovery_command.get('local_delta_y_m'),
                     'operator_recovery_altitude_delta_m': active_recovery_command.get('altitude_delta_m'),
+                    'operator_recovery_performance_observation': active_recovery_command.get('performance_observation'),
                     'operator_recovery_terminal': active_recovery_command.get('terminal_recovery'),
                     'operator_recovery_resume_auto_attempted': active_recovery_command.get('resume_auto_attempted'),
                     'operator_recovery_resume_auto_ack_observed': active_recovery_command.get('resume_auto_ack_observed'),
@@ -5908,6 +6075,10 @@ def _build_running_snapshot(
         "battery_sample_accepted": marker.get("battery_sample_accepted"),
         "battery_sample_rejected_reason": marker.get("battery_sample_rejected_reason"),
         "battery_warning": marker.get("battery_warning"),
+        "battery_sim_setup": marker.get("battery_sim_setup"),
+        "sim_battery_drain_seconds": marker.get("sim_battery_drain_seconds"),
+        "thermal_motor_derate_factor": marker.get("thermal_motor_derate_factor"),
+        "payload_application": marker.get("payload_application"),
         "heartbeat_observed": marker.get("heartbeat_observed"),
         "dropoff_dwell_candidate": marker.get("dropoff_dwell_candidate"),
         "wind_gust_active": marker.get("gust_active"),
@@ -5981,6 +6152,9 @@ def _build_running_snapshot(
         "operator_recovery_local_delta_x_m": marker.get("operator_recovery_local_delta_x_m"),
         "operator_recovery_local_delta_y_m": marker.get("operator_recovery_local_delta_y_m"),
         "operator_recovery_altitude_delta_m": marker.get("operator_recovery_altitude_delta_m"),
+        "operator_recovery_performance_observation": marker.get(
+            "operator_recovery_performance_observation"
+        ),
         "operator_recovery_terminal": marker.get("operator_recovery_terminal"),
         "operator_recovery_resume_auto_attempted": marker.get(
             "operator_recovery_resume_auto_attempted"
@@ -6241,6 +6415,7 @@ def _actual_runtime_probe(
     sim_battery_min_remaining_percent: float,
     sim_battery_drain_seconds: float,
     thermal_motor_derate_factor: float | None,
+    payload_application: Mapping[str, Any] | None,
     wind_mean_mps: float | None,
     wind_direction_deg: float | None,
     wind_gust_mps: float | None,
@@ -6273,6 +6448,7 @@ def _actual_runtime_probe(
             sim_battery_min_remaining_percent=sim_battery_min_remaining_percent,
             sim_battery_drain_seconds=sim_battery_drain_seconds,
             thermal_motor_derate_factor=thermal_motor_derate_factor,
+            payload_application=payload_application,
             wind_mean_mps=wind_mean_mps,
             wind_direction_deg=wind_direction_deg,
             wind_gust_mps=wind_gust_mps,
@@ -6914,8 +7090,13 @@ def main() -> int:
     wind_profile = _wind_requested_profile()
     payload_model_root = _start_container(
         run_dir,
+        payload_mass_kg=_requested_payload_sdf_mass_kg(route),
         wind_profile=wind_profile,
         rain_config=rain_weather_config,
+    )
+    payload_application = _payload_application_from_world_readback(
+        route=route,
+        run_dir=run_dir,
     )
     try:
         compilation = compile_operator_coordinate_route_auto_mission(route)
@@ -6959,6 +7140,7 @@ def main() -> int:
             sim_battery_min_remaining_percent=sim_battery_min_remaining_percent,
             sim_battery_drain_seconds=sim_battery_drain_seconds,
             thermal_motor_derate_factor=thermal_weather_config.get("thermal_motor_derate_factor"),
+            payload_application=payload_application,
             wind_mean_mps=(wind_profile.get("requested") or {}).get("wind_mean_mps"),
             wind_direction_deg=(wind_profile.get("requested") or {}).get("wind_direction_deg"),
             wind_gust_mps=(wind_profile.get("requested") or {}).get("wind_gust_mps"),

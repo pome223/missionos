@@ -3864,7 +3864,7 @@ def test_px4_v2_dispatch_rejects_changed_nearest_obstacle(
     assert newer_revalidation["telemetry_arbitration"][
         "selected_source"
     ] == "missionos_auto_mission_runtime_snapshot"
-    assert "runtime_recovery_dispatch_current_wind_above_limit" in (
+    assert "runtime_recovery_active_policy_unresolvable" in (
         newer_revalidation["reasons"]
     )
     assert newer_revalidation["dispatch_authority_created"] is False

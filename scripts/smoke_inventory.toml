@@ -23,6 +23,7 @@ files = [
   "smoke_px4_gazebo_mission_designer_sitl_dropoff_verification.py",
   "smoke_px4_gazebo_mission_designer_sitl_flight_evidence.py",
   "smoke_px4_gazebo_mission_designer_sitl_payload_release_observation.py",
+  "smoke_runtime_recovery_action_feasibility_gateway.py",
 ]
 
 [categories.artifact_contract_candidate]
