@@ -448,6 +448,9 @@ def test_map_prefers_complete_live_trace_and_marks_recovery_telemetry_gap() -> N
     assert 'class="obstacle-footprint"' in html
     assert 'id="terminalEvidence"' in html
     assert "source task artifacts—not this image—remain authoritative" in html
+    assert "const tileCache = new Map()" in html
+    assert "mapEl.replaceChildren(tileLayer)" in html
+    assert 'img.loading = "eager"' in html
 
 
 def test_map_keeps_dispatch_start_and_marks_late_recovery_observation() -> None:

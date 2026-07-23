@@ -85,6 +85,12 @@ def _mission_map_html(model: dict[str, Any]) -> str:
       max-width: none;
       user-select: none;
     }}
+    .tile-layer {{
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }}
     svg.overlay {{
       position: absolute;
       inset: 0;
@@ -251,6 +257,13 @@ def _mission_map_html(model: dict[str, Any]) -> str:
     const liveStatusEl = document.getElementById("liveStatus");
     const terminalEvidenceEl = document.getElementById("terminalEvidence");
     const terminalEvidenceImageEl = document.getElementById("terminalEvidenceImage");
+    // Keep downloaded basemap tiles mounted while live telemetry refreshes.  The
+    // overlay is intentionally rebuilt from the latest saved observations, but
+    // replacing tiles at every poll makes a correct route look like it flickers
+    // or disappears while the browser refetches OpenStreetMap imagery.
+    const tileLayer = document.createElement("div");
+    tileLayer.className = "tile-layer";
+    const tileCache = new Map();
     providerEl.textContent = data.provider.label;
     const liveConfig = data.live || {{ enabled: false }};
     const terminalStatuses = new Set(liveConfig.terminal_statuses || []);
@@ -886,7 +899,8 @@ def _mission_map_html(model: dict[str, Any]) -> str:
 	        }}
 
 	    function render() {{
-	      mapEl.innerHTML = "";
+	      // Retain the tile layer and replace only display-only overlays.
+	      mapEl.replaceChildren(tileLayer);
 	      const status = statusText(data.task_status, "-").trim().toLowerCase();
 	      const evidenceUrl = statusText(
 	        ((data.live || {{}}).evidence_image_url || liveConfig.evidence_image_url),
@@ -964,21 +978,36 @@ def _mission_map_html(model: dict[str, Any]) -> str:
       const maxTileX = Math.floor((left + width) / TILE_SIZE);
       const minTileY = Math.floor(top / TILE_SIZE);
       const maxTileY = Math.floor((top + height) / TILE_SIZE);
+      const activeTileKeys = new Set();
       for (let y = minTileY; y <= maxTileY; y += 1) {{
         if (y < 0 || y >= tileCount) continue;
         for (let x = minTileX; x <= maxTileX; x += 1) {{
           const wrappedX = ((x % tileCount) + tileCount) % tileCount;
-          const img = document.createElement("img");
-          img.className = "tile";
-          img.alt = "";
-          img.loading = "lazy";
-          img.src = data.provider.url_template
+          const source = data.provider.url_template
             .replace("{{z}}", zoom)
             .replace("{{x}}", wrappedX)
             .replace("{{y}}", y);
+          const key = `${{zoom}}/${{wrappedX}}/${{y}}/${{source}}`;
+          activeTileKeys.add(key);
+          let img = tileCache.get(key);
+          if (!img) {{
+            img = document.createElement("img");
+            img.className = "tile";
+            img.alt = "";
+            img.loading = "eager";
+            img.decoding = "async";
+            img.src = source;
+            tileCache.set(key, img);
+          }}
           img.style.left = `${{(x * TILE_SIZE - left).toFixed(2)}}px`;
           img.style.top = `${{(y * TILE_SIZE - top).toFixed(2)}}px`;
-          mapEl.appendChild(img);
+          tileLayer.appendChild(img);
+        }}
+      }}
+      for (const [key, img] of tileCache) {{
+        if (!activeTileKeys.has(key)) {{
+          img.remove();
+          tileCache.delete(key);
         }}
       }}
 	      const toOverlay = (point) => {{
