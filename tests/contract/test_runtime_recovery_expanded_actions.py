@@ -4757,6 +4757,35 @@ def _obstacle_recovery_map_payload() -> dict:
                     },
                 ],
             },
+            # A running map must consume the append-only live trajectory. The
+            # terminal replay above is intentionally duplicated here so this
+            # fixture also represents the in-flight source of truth.
+            "missionos_auto_mission_live_trajectory": {
+                "schema_version": "missionos_auto_mission_live_trajectory.v1",
+                "samples": [
+                    {
+                        "sample_index": 0,
+                        "phase": "prepared",
+                        "local_x_m": 0.0,
+                        "local_y_m": 0.0,
+                        "relative_alt_m": 0.0,
+                    },
+                    {
+                        "sample_index": 1,
+                        "phase": "operator_recovery",
+                        "local_x_m": 40.0,
+                        "local_y_m": 20.0,
+                        "relative_alt_m": 45.0,
+                    },
+                    {
+                        "sample_index": 2,
+                        "phase": "auto_mission_resumed",
+                        "local_x_m": 80.0,
+                        "local_y_m": 40.0,
+                        "relative_alt_m": 45.0,
+                    },
+                ],
+            },
             "missionos_auto_mission_probe_observed": {
                 "gazebo_obstacle_application": {
                     "gazebo_obstacle_model_spawned": True,
