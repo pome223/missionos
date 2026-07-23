@@ -5128,6 +5128,11 @@ def _attach_auto_runtime_recovery_agent_proposal(
         )
         refresh_status = "preflight"
     elif observation_state == "landed":
+        # A hosted judgment that finishes after landing is no longer relevant
+        # to mission-level recovery. Forget the task-local worker result so a
+        # terminal observation can never adopt it or leave a stale registry
+        # entry behind.
+        _discard_runtime_recovery_agent_inference(task_id)
         agent_invoked = False
         result = _runtime_recovery_agent_skipped_result(
             reason="runtime_recovery_vehicle_landed",

@@ -3438,7 +3438,30 @@ def test_ninety_second_agent_delay_does_not_block_obstacle_hold_or_adopt_stale_r
     assert final_artifacts[
         "missionos_runtime_recovery_safety_hold_receipt"
     ]["request_status"] == "observed"
-    live_run._discard_runtime_recovery_agent_inference(task_id)
+
+    # A new hosted call that is still pending when the vehicle lands must be
+    # forgotten. Its eventual result cannot become a post-landing proposal or
+    # remain as a task-local registry entry.
+    release_worker.clear()
+    pending_after_recovery = live_run._run_auto_runtime_recovery_agent_with_timeout(
+        telemetry_snapshot=held_snapshot,
+        task_id=task_id,
+        inference_context={"request_reason": "terminal_cleanup_contract"},
+    )
+    assert pending_after_recovery["runtime_status"] == "inference_pending"
+    assert live_run._runtime_recovery_agent_inference_pending(task_id) is True
+    live_run._attach_auto_runtime_recovery_agent_proposal(
+        store=store,
+        task_id=task_id,
+        snapshot={
+            **held_snapshot,
+            "sample_index": 5,
+            "elapsed_seconds": 43.0,
+            "landed": True,
+        },
+    )
+    assert live_run._runtime_recovery_agent_inference_pending(task_id) is False
+    release_worker.set()
 
 
 def test_runtime_probe_never_resumes_auto_before_recovery_target_is_reached() -> None:
