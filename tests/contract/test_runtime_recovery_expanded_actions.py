@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import json
+import threading
+import time
 
 import pytest
 import click
@@ -3205,6 +3207,227 @@ def test_new_hard_obstacle_supersedes_valid_pending_proposal(
     assert invocations == [1, 4]
     assert stabilized_proposal["proposal_id"] != first_id
     assert stabilized_proposal["proposal_status"] == "awaiting_operator_approval"
+
+
+def test_ninety_second_agent_delay_does_not_block_obstacle_hold_or_adopt_stale_result(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    """A hosted judgment never pauses telemetry safety or gains authority stale."""
+
+    store = TaskStore(str(tmp_path / "tasks.db"))
+    task_id = "task_runtime_recovery_async_safety_hold"
+    live_run._discard_runtime_recovery_agent_inference(task_id)
+    worker_started = threading.Event()
+    release_worker = threading.Event()
+    queued_holds: list[dict] = []
+    resolved_timeouts: list[float] = []
+
+    def _delayed_agent(**kwargs) -> dict:
+        resolved_timeouts.append(
+            float(kwargs.get("timeout_seconds"))
+            if kwargs.get("timeout_seconds") is not None
+            else live_run._runtime_recovery_agent_timeout_seconds()
+        )
+        worker_started.set()
+        assert release_worker.wait(timeout=5.0)
+        return {
+            "schema_version": "missionos_runtime_recovery_agent_result.v1",
+            "runtime_status": "proposal_guardrail_passed",
+            "blocking_reasons": [],
+            "assessment": {
+                "assessment_status": "proposal_guardrail_passed",
+                "selected_bounded_action": "adjust_altitude",
+                "requires_human_approval": True,
+                "proposed_parameters": {"target_altitude_m": 45.0},
+            },
+            "agent_output": {
+                "selected_bounded_action": "adjust_altitude",
+                "requires_human_approval": True,
+                "proposed_parameters": {"target_altitude_m": 45.0},
+            },
+            "agent_invocations": [{"function_tool_called": True}],
+            "dispatch_authority_created": False,
+            "physical_execution_invoked": False,
+            "progress_counted": False,
+        }
+
+    def _queue_hold(**kwargs) -> dict:
+        queued_holds.append(dict(kwargs))
+        return {
+            "request_status": "queued",
+            "container_name": "missionos-px4-gazebo-sitl",
+            "container_path": kwargs["container_path"],
+            "bytes_written": 100,
+        }
+
+    monkeypatch.setenv("MISSIONOS_RUNTIME_RECOVERY_AGENT_TIMEOUT_SECONDS", "90")
+    monkeypatch.setattr(
+        live_run,
+        "_execute_auto_runtime_recovery_agent_with_timeout",
+        _delayed_agent,
+    )
+    monkeypatch.setattr(
+        live_run,
+        "queue_px4_active_runner_recovery_request",
+        _queue_hold,
+    )
+    store.create(
+        task_id=task_id,
+        kind="contract_test",
+        title="Async inference preserves deterministic safety",
+        status="running",
+        artifacts={
+            "missionos_auto_mission_gui_dispatch_running_receipt": {
+                "dispatch_status": "running",
+                "operator_recovery_request_container_path": (
+                    f"/tmp/{task_id}.json"
+                ),
+            },
+            "mission_designer_coordinate_pair_route": {
+                "takeoff_latitude": 35.0,
+                "takeoff_longitude": 139.0,
+                "dropoff_latitude": 35.0,
+                "dropoff_longitude": 139.00591,
+            },
+        },
+    )
+    initial_snapshot = {
+        "sample_index": 1,
+        "elapsed_seconds": 20.0,
+        "progress_m": 100.0,
+        "local_x_m": 0.0,
+        "local_y_m": 100.0,
+        "local_z_m": -30.0,
+        "altitude_above_home_m": 30.0,
+        "battery_remaining_percent": 10.0,
+        "heartbeat_observed": True,
+        "nav_state": 3,
+        "landed": False,
+    }
+    started_at = time.monotonic()
+    live_run._attach_auto_runtime_recovery_agent_proposal(
+        store=store,
+        task_id=task_id,
+        snapshot=initial_snapshot,
+    )
+    assert time.monotonic() - started_at < 0.5
+    assert worker_started.wait(timeout=1.0)
+    assert resolved_timeouts == [90.0]
+    pending = store.get(task_id)
+    assert pending is not None
+    pending_bridge = pending["artifacts"][
+        "missionos_runtime_recovery_agent_live_bridge"
+    ]
+    assert pending_bridge["agent_refresh_status"] == "agent_inference_pending"
+    assert "missionos_runtime_recovery_last_proposal" not in pending["artifacts"]
+
+    store.update(
+        task_id,
+        replace_artifacts={
+            "missionos_auto_mission_runtime_snapshot": {
+                "gazebo_obstacle_model_spawned": True,
+                "obstacle_manifest": {
+                    "building_risk_detected": True,
+                    "gazebo_obstacle_model_spawned": True,
+                    "obstacles": [
+                        {
+                            "name": "new_obstacle_during_agent_inference",
+                            "x_m": 0.0,
+                            "y_m": 539.0,
+                            "size_x_m": 18.0,
+                            "size_y_m": 18.0,
+                        }
+                    ],
+                },
+            }
+        },
+    )
+    conflict_snapshot = {
+        **initial_snapshot,
+        "sample_index": 2,
+        "elapsed_seconds": 40.0,
+        "local_y_m": 430.0,
+        "local_vx_mps": 0.0,
+        "local_vy_mps": 10.0,
+    }
+    live_run._attach_auto_runtime_recovery_agent_proposal(
+        store=store,
+        task_id=task_id,
+        snapshot=conflict_snapshot,
+    )
+    assert len(queued_holds) == 1
+    assert queued_holds[0]["request_payload"]["recovery_action"] == "safety_hold"
+    assert queued_holds[0]["request_payload"]["operator_approved"] is False
+
+    release_worker.set()
+    deadline = time.monotonic() + 1.0
+    while live_run._runtime_recovery_agent_inference_pending(task_id):
+        if time.monotonic() >= deadline:
+            pytest.fail("delayed recovery worker did not complete")
+        time.sleep(0.01)
+        # The registry intentionally retains a completed result until the
+        # telemetry loop polls and revalidates it.
+        with live_run._AUTO_RUNTIME_RECOVERY_INFERENCE_LOCK:
+            job = live_run._AUTO_RUNTIME_RECOVERY_INFERENCE_JOBS.get(task_id)
+            if job is not None and not job["result_queue"].empty():
+                break
+
+    held_snapshot = {
+        **conflict_snapshot,
+        "sample_index": 3,
+        "elapsed_seconds": 41.0,
+        "nav_state": 4,
+        "local_vy_mps": 0.0,
+        "operator_recovery_request_observed": True,
+        "operator_recovery_action": "safety_hold",
+        "operator_recovery_command_ack_observed": True,
+        "operator_recovery_assist_attempted": True,
+        "operator_recovery_assist_status": "safety_hold_observed",
+        "operator_recovery_target_reached": False,
+        "operator_recovery_resume_auto_status": (
+            "held_awaiting_operator_recovery_approval"
+        ),
+    }
+    # First fresh HOLD observation proves the deterministic effect; the next
+    # poll may consume the model result.
+    live_run._attach_auto_runtime_recovery_agent_proposal(
+        store=store,
+        task_id=task_id,
+        snapshot=held_snapshot,
+    )
+    live_run._attach_auto_runtime_recovery_agent_proposal(
+        store=store,
+        task_id=task_id,
+        snapshot={
+            **held_snapshot,
+            "sample_index": 4,
+            "elapsed_seconds": 42.0,
+        },
+    )
+    final = store.get(task_id)
+    assert final is not None
+    final_artifacts = final["artifacts"]
+    bridge = final_artifacts["missionos_runtime_recovery_agent_live_bridge"]
+    result = bridge["runtime_recovery_agent_result"]
+    assert bridge["agent_refresh_status"] == "agent_result_superseded_retryable"
+    assert result["runtime_status"] == "superseded_retryable"
+    assert result["assessment"] == {}
+    assert result["dispatch_authority_created"] is False
+    assert result["physical_execution_invoked"] is False
+    assert any(
+        reason
+        in {
+            "runtime_recovery_inference_source_obstacle_name_changed",
+            "runtime_recovery_inference_origin_drift_exceeded",
+        }
+        for reason in result["blocking_reasons"]
+    )
+    assert "missionos_runtime_recovery_last_proposal" not in final_artifacts
+    assert final_artifacts[
+        "missionos_runtime_recovery_safety_hold_receipt"
+    ]["request_status"] == "observed"
+    live_run._discard_runtime_recovery_agent_inference(task_id)
 
 
 def test_runtime_probe_never_resumes_auto_before_recovery_target_is_reached() -> None:
