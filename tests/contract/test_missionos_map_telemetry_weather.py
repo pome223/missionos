@@ -200,6 +200,44 @@ def test_map_does_not_join_replay_to_later_return_observation() -> None:
     assert model["terminal_marker_label"] == "mission ended at home"
 
 
+def test_running_map_does_not_render_terminal_replay_ahead_of_live_telemetry() -> None:
+    payload = _segmented_route_payload()
+    payload["task_id"] = "task_running_map_cursor"
+    payload["status"] = "running"
+    payload["artifacts"]["missionos_auto_mission_runtime_replay"][
+        "flight_path_profile"
+    ] = [
+        {"sample_index": 0, "local_x_m": 0.0, "local_y_m": 0.0},
+        {"sample_index": 1, "local_x_m": 50.0, "local_y_m": 0.0},
+        {"sample_index": 2, "local_x_m": 100.0, "local_y_m": 0.0},
+    ]
+    payload["artifacts"]["missionos_auto_mission_live_trajectory"]["samples"] = [
+        {
+            "sample_index": 0,
+            "segment_index": 0,
+            "local_x_m": 0.0,
+            "local_y_m": 0.0,
+        },
+        {
+            "sample_index": 1,
+            "segment_index": 0,
+            "local_x_m": 25.0,
+            "local_y_m": 0.0,
+        },
+    ]
+
+    model = missionos_cli._mission_map_model(
+        task_payload=payload,
+        provider="osm",
+        live_task_url="/task",
+    )
+
+    assert model["observed_trace_source"] == "missionos_auto_mission_live_trajectory"
+    assert len(model["observed_points"]) == 2
+    assert model["observed_points"][-1]["lat"] == pytest.approx(35.0 + 25.0 / 111320.0)
+    assert model["task_status"] == "running"
+
+
 def test_completed_job_status_uses_dropoff_replay_not_later_return_snapshot() -> None:
     payload = _segmented_route_payload()
     payload["artifacts"]["missionos_auto_mission_compilation"] = {"planned_route_m": 111.32}

@@ -738,6 +738,7 @@ def _mission_map_observed_segments(
     artifacts: dict[str, Any],
     takeoff_lat: float,
     takeoff_lon: float,
+    include_replay: bool = True,
 ) -> list[list[dict[str, Any]]]:
     """Build observed path segments without joining unobserved gaps."""
 
@@ -747,6 +748,7 @@ def _mission_map_observed_segments(
             artifacts=artifacts,
             takeoff_lat=takeoff_lat,
             takeoff_lon=takeoff_lon,
+            include_replay=include_replay,
         )["segments"]
     ]
 
@@ -756,6 +758,7 @@ def _mission_map_observed_trace(
     artifacts: dict[str, Any],
     takeoff_lat: float,
     takeoff_lon: float,
+    include_replay: bool = True,
 ) -> dict[str, Any]:
     """Build source-backed trajectory segments and explicit observation gaps.
 
@@ -799,7 +802,12 @@ def _mission_map_observed_trace(
             "segment_break_reason": _status_text(sample.get("segment_break_reason"), ""),
         }
 
-    replay_samples = _mission_map_flight_samples(artifacts)
+    # Runtime replay is assembled for terminal evidence and can contain the
+    # complete route even while the task record is still ``running``. Showing
+    # it during execution makes the map draw future motion before it has been
+    # observed. Live pages must therefore use the append-only live trajectory;
+    # the replay becomes eligible only after the task reaches a terminal state.
+    replay_samples = _mission_map_flight_samples(artifacts) if include_replay else []
     live_samples = _mission_map_live_trajectory_samples(artifacts)
 
     def numeric_indices(samples: list[dict[str, Any]]) -> list[int]:
@@ -1822,10 +1830,12 @@ def _mission_map_model(
         dropoff_lat=dropoff_lat,
         dropoff_lon=dropoff_lon,
     )
+    task_status = _task_status(task_payload)
     observed_trace = _mission_map_observed_trace(
         artifacts=artifacts,
         takeoff_lat=takeoff_lat,
         takeoff_lon=takeoff_lon,
+        include_replay=task_status in TERMINAL_TASK_STATUSES,
     )
     observed_segment_details = list(observed_trace["segments"])
     observed_segments = [list(segment.get("points") or []) for segment in observed_segment_details]
@@ -2149,7 +2159,6 @@ def _mission_map_model(
         for gap_index, gap in enumerate(raw_observed_gaps)
         if gap_index not in covered_observed_gap_indexes
     )
-    task_status = _task_status(task_payload)
     latest_point = latest or (observed_points[-1] if observed_points else None)
     terminal_marker_label = "current"
     if task_status in TERMINAL_TASK_STATUSES and latest_point is not None:
