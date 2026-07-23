@@ -1658,11 +1658,22 @@ def test_runtime_recovery_agent_waits_for_new_decision_epoch(
         awaiting_bridge["runtime_recovery_agent_result"]["assessment"]["selected_bounded_action"]
         == "adjust_altitude"
     )
+    live_run._attach_auto_runtime_recovery_agent_proposal(
+        store=store,
+        task_id=task["task_id"],
+        snapshot=_snapshot(3),
+    )
+    awaiting_refreshed = store.get(task["task_id"])
+    assert awaiting_refreshed is not None
+    assert invocations == [1]
+    assert awaiting_refreshed["artifacts"][
+        "missionos_runtime_recovery_agent_live_bridge"
+    ]["telemetry_snapshot"]["sample_index"] == 3
 
     live_run._attach_auto_runtime_recovery_agent_proposal(
         store=store,
         task_id=task["task_id"],
-        snapshot=_snapshot(3, local_x_m=50.0),
+        snapshot=_snapshot(4, local_x_m=50.0),
     )
     drifted = store.get(task["task_id"])
     assert drifted is not None
@@ -1690,12 +1701,12 @@ def test_runtime_recovery_agent_waits_for_new_decision_epoch(
     live_run._attach_auto_runtime_recovery_agent_proposal(
         store=store,
         task_id=task["task_id"],
-        snapshot=_snapshot(4),
+        snapshot=_snapshot(5),
     )
     refreshed = store.get(task["task_id"])
     assert refreshed is not None
     refreshed_proposal = refreshed["artifacts"]["missionos_runtime_recovery_last_proposal"]
-    assert invocations == [1, 4]
+    assert invocations == [1, 5]
     assert refreshed_proposal["proposal_id"] != proposal_id
 
     store.update(
@@ -1712,7 +1723,7 @@ def test_runtime_recovery_agent_waits_for_new_decision_epoch(
         store=store,
         task_id=task["task_id"],
         snapshot=_snapshot(
-            5,
+            6,
             operator_recovery_request_observed=True,
             operator_recovery_command_ack_observed=True,
             operator_recovery_command_ack_result=0,
@@ -1723,7 +1734,7 @@ def test_runtime_recovery_agent_waits_for_new_decision_epoch(
     in_progress = store.get(task["task_id"])
     assert in_progress is not None
     in_progress_bridge = in_progress["artifacts"]["missionos_runtime_recovery_agent_live_bridge"]
-    assert invocations == [1, 4]
+    assert invocations == [1, 5]
     assert in_progress_bridge["agent_refresh_status"] == "recovery_in_progress"
     assert in_progress_bridge["runtime_recovery_agent_result"]["assessment"] == {}
     assert in_progress_bridge["runtime_recovery_agent_result"]["blocking_reasons"] == [
@@ -1734,7 +1745,7 @@ def test_runtime_recovery_agent_waits_for_new_decision_epoch(
         store=store,
         task_id=task["task_id"],
         snapshot=_snapshot(
-            6,
+            7,
             operator_recovery_request_observed=True,
             operator_recovery_command_ack_observed=True,
             operator_recovery_assist_attempted=True,
@@ -1746,14 +1757,14 @@ def test_runtime_recovery_agent_waits_for_new_decision_epoch(
     succeeded = store.get(task["task_id"])
     assert succeeded is not None
     succeeded_bridge = succeeded["artifacts"]["missionos_runtime_recovery_agent_live_bridge"]
-    assert invocations == [1, 4]
+    assert invocations == [1, 5]
     assert succeeded_bridge["agent_refresh_status"] == "recovery_succeeded"
 
     live_run._attach_auto_runtime_recovery_agent_proposal(
         store=store,
         task_id=task["task_id"],
         snapshot=_snapshot(
-            7,
+            8,
             nav_state=4,
             operator_recovery_request_observed=True,
             operator_recovery_command_ack_observed=True,
@@ -1763,7 +1774,7 @@ def test_runtime_recovery_agent_waits_for_new_decision_epoch(
             operator_recovery_resume_auto_status="not_resumed",
         ),
     )
-    assert invocations == [1, 4, 7]
+    assert invocations == [1, 5, 8]
 
 
 def test_runtime_recovery_skips_unstable_preflight_sample(

@@ -5524,6 +5524,8 @@ def _attach_auto_runtime_recovery_agent_proposal(
         not agent_invoked
         and not proposal_created
         and not wind_safe_window_tracking_active
+        and runtime_status != "inference_pending"
+        and not proposal_awaiting_approval
         and bridge.get("agent_refresh_status") == refresh_status
         and bridge.get("recovery_observation_state") == observation_state
         and bridge.get("recovery_decision_signature") == decision_signature
