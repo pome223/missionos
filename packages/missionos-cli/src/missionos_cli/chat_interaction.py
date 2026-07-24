@@ -272,6 +272,20 @@ def _print_recovery_agent_request_proposal(payload: dict[str, Any]) -> None:
         "dispatch_authority=False · operator_approval_required=True",
         "physical_execution_invoked=False · progress_counted=False",
     ]
+    proposal_id = str(
+        payload.get("proposal_id") or summary.get("proposal_id") or ""
+    )
+    checkpoint_status = str(
+        payload.get("checkpoint_status")
+        or summary.get("checkpoint_status")
+        or ""
+    )
+    if proposal_id:
+        lines.insert(
+            1,
+            f"proposal_id={proposal_id} · checkpoint_status="
+            f"{checkpoint_status or 'awaiting_operator_approval'}",
+        )
     if status != "computed":
         lines.append(
             "No bounded maneuver was available from the current telemetry/context."

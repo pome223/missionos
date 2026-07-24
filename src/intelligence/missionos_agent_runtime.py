@@ -1054,6 +1054,11 @@ def _runtime_recovery_prompt_payload(
                     "proposing adjust_altitude, reroute, or avoid_obstacle"
                 ),
                 (
+                    "when mission_context.operator_recovery_request.requested_action "
+                    "matches a verified_selectable_candidate, call the planner for "
+                    "that action and preserve it as a proposal-only judgment"
+                ),
+                (
                     "propose adjust_altitude, adjust_speed, reroute, or "
                     "avoid_obstacle only when supplied telemetry, policy, or tool "
                     "output include enough bounded parameters"

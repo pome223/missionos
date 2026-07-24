@@ -363,14 +363,22 @@ def _render_recovery_agent_console(
         detail += "[/dim]"
         lines.append(detail)
     elif status == "running":
-        lines.extend(
-            [
-                "[green]Mission running — no Recovery decision is pending.[/green]",
+        lines.append(
+            "[green]Mission running — no Recovery decision is pending.[/green]"
+        )
+        if is_home_robot:
+            lines.append(
                 "[dim]MissionOS is waiting for the current Nav2 result. If the robot "
                 "stops and Recovery Agent creates a proposal, this panel will show "
-                "approve / defer / change choices.[/dim]",
-            ]
-        )
+                "approve / defer / change choices.[/dim]"
+            )
+        else:
+            lines.append(
+                "[dim]MissionOS is waiting for current PX4/SITL telemetry. A "
+                "natural-language change creates a proposal only; the operator must "
+                "review and separately confirm the concrete maneuver before "
+                "dispatch.[/dim]"
+            )
     else:
         if is_home_robot:
             if status == "completed":
@@ -415,7 +423,8 @@ def _render_recovery_agent_console(
             )
     else:
         lines.append(
-            "[dim]Type here; every dispatch still uses standard y/N confirmation:[/dim] "
+            "[dim]Type here: describe a recovery change or enter a concrete "
+            "command; every dispatch still uses standard y/N confirmation:[/dim] "
             f"[bold]rtl[/bold] / [bold]land[/bold] / [bold]climb <m>[/bold] / "
             f"[bold]speed <m/s>[/bold] / [bold]reroute <x> <y> (alt)[/bold] / "
             f"[bold]avoid <x> <y> (alt)[/bold]  "

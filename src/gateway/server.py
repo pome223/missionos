@@ -23,7 +23,7 @@ import json
 import os
 import re
 import subprocess
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import uuid
 from typing import Any, Dict, Optional
 
@@ -89,8 +89,6 @@ from src.gateway.missionos_capabilities import (
 )
 from src.intelligence.llm_dialogue_router import run_llm_dialogue_router
 from src.intelligence.missionos_agent_runtime import (
-    guard_runtime_recovery_planner_result,
-    plan_runtime_recovery_maneuver,
     run_missionos_agent_runtime,
     run_missionos_runtime_recovery_agent,
 )
@@ -1634,6 +1632,36 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
     selection = build_form2a_response_selection_summary()
     review = build_form2a_operator_review_summary()
     action = build_form2a_action_consumption_summary()
+
+    if chief_planner_tools.get("tool_status") in {
+        "blocked_source_unavailable",
+        "not_applicable",
+    } and not mission_designer_context:
+        return {
+            "schema_version": "missionos_autonomy_conversation_response.v1",
+            "operator_instruction": {
+                "text": text,
+                "source": "missionos_autonomy_monitor",
+            },
+            "routed_action": "clarification_required",
+            "routing_source": "missionos_chief_semantic_route_request",
+            "message": (
+                "MissionOS could not safely structure all requested mission "
+                "conditions with the configured Planner LLM. I did not replace "
+                "them with live weather or a default obstacle, and I did not "
+                "approve, dispatch, or count progress. Check the configured LLM "
+                "credentials or revise the instruction."
+            ),
+            "operation_result": {
+                "missionos_chief_planner_internal_tools": chief_planner_tools,
+            },
+            "selection": selection,
+            "review": review,
+            "action": action,
+            "repair": build_llm_repair_planner_summary(),
+            "progress_counted": False,
+            "conversation_route_bypassed_guardrails": False,
+        }
 
     missionos_state = _build_missionos_router_state(selection, review, action)
     explicit_sensitive_intent = (
@@ -4801,6 +4829,275 @@ def _runtime_recovery_operator_proposal_response(
     }
 
 
+def _runtime_recovery_operator_agent_proposal_response(
+    *,
+    task_id: str,
+    operator_instruction: str,
+    requested_action: str,
+    requested_parameters: Mapping[str, Any],
+    telemetry_snapshot: Mapping[str, Any],
+    recovery_policy: Mapping[str, Any],
+    agent_result: Mapping[str, Any],
+    proposal_evidence: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Expose one hosted Recovery judgment without granting authority."""
+
+    assessment = agent_result.get("assessment")
+    assessment = assessment if isinstance(assessment, Mapping) else {}
+    candidate = assessment.get("recovery_planner_tool_candidate")
+    candidate = candidate if isinstance(candidate, Mapping) else {}
+    passed = (
+        agent_result.get("runtime_status") == "proposal_guardrail_passed"
+        and assessment.get("assessment_status") == "proposal_guardrail_passed"
+        and candidate
+    )
+    selected_action = str(
+        candidate.get("selected_bounded_action")
+        or assessment.get("selected_bounded_action")
+        or "operator_review"
+    )
+    proposed_parameters = candidate.get("proposed_parameters")
+    proposed_parameters = (
+        dict(proposed_parameters)
+        if isinstance(proposed_parameters, Mapping)
+        else {}
+    )
+    if not passed:
+        selected_action = "operator_review"
+        proposed_parameters = {}
+    proposal_status = "computed" if passed else str(
+        agent_result.get("runtime_status") or "insufficient_context"
+    )
+    evidence = dict(proposal_evidence or {})
+    summary = {
+        "task_id": task_id,
+        "proposal_status": proposal_status,
+        "selected_bounded_action": selected_action,
+        "proposed_parameters": proposed_parameters,
+        "blocking_reasons": list(
+            assessment.get("blocking_reasons")
+            or agent_result.get("blocking_reasons")
+            or []
+        ),
+        "proposal_id": evidence.get("proposal_id"),
+        "checkpoint_status": evidence.get("proposal_status"),
+        "dispatch_authority_created": False,
+        "operator_approval_required": True,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }
+    return {
+        "schema_version": (
+            "missionos_runtime_recovery_operator_request_proposal.v2"
+        ),
+        "task_id": task_id,
+        "operator_instruction": operator_instruction,
+        "requested_action": requested_action,
+        "requested_parameters": dict(requested_parameters),
+        "proposal_status": proposal_status,
+        "selected_bounded_action": selected_action,
+        "proposed_parameters": proposed_parameters,
+        "recommended_candidate": dict(candidate) if passed else {},
+        "runtime_recovery_agent_result": dict(agent_result),
+        "recovery_guardrail_assessment": dict(assessment),
+        "telemetry_snapshot": dict(telemetry_snapshot),
+        "recovery_policy": dict(recovery_policy),
+        "proposal_id": evidence.get("proposal_id"),
+        "checkpoint_status": evidence.get("proposal_status"),
+        "durable_proposal_created": bool(evidence),
+        "dispatch_authority_created": False,
+        "operator_approval_required": True,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+        "summary": summary,
+    }
+
+
+def _runtime_recovery_operator_proposal_origin(
+    result: Mapping[str, Any],
+) -> dict[str, Any]:
+    invocations = [
+        dict(item)
+        for item in result.get("agent_invocations") or []
+        if isinstance(item, Mapping)
+    ]
+    invocation = next(
+        (
+            item
+            for item in invocations
+            if str(item.get("agent_name") or "")
+            == "missionos_runtime_recovery_agent"
+            and str(item.get("provider") or "")
+            not in {"", "deterministic"}
+        ),
+        {},
+    )
+    hosted = bool(invocation)
+    origin = {
+        "schema_version": "missionos_runtime_recovery_proposal_origin.v1",
+        "origin_kind": (
+            "hosted_llm"
+            if hosted
+            else "runtime_recovery_agent_result_unattributed"
+        ),
+        "provider": str(invocation.get("provider") or ""),
+        "model_id": str(invocation.get("model_id") or ""),
+        "invocation_kind": str(invocation.get("invocation_kind") or ""),
+        "prompt_sha256": str(invocation.get("prompt_sha256") or ""),
+        "response_sha256": str(invocation.get("response_sha256") or ""),
+        "function_calls_sha256": str(
+            invocation.get("function_calls_sha256") or ""
+        ),
+        "function_tool_results_sha256": str(
+            invocation.get("function_tool_results_sha256") or ""
+        ),
+        "validated_output_source": str(
+            invocation.get("validated_output_source") or ""
+        ),
+        "fallback_reason": "",
+        "source_proposal_id": "",
+        "contains_prompt_or_response_text": False,
+        "dispatch_authority_created": False,
+        "progress_counted": False,
+    }
+    origin_sha256 = hashlib.sha256(
+        json.dumps(
+            origin,
+            ensure_ascii=True,
+            sort_keys=True,
+            default=str,
+        ).encode("utf-8")
+    ).hexdigest()
+    return {**origin, "origin_sha256": origin_sha256}
+
+
+def _runtime_recovery_operator_durable_proposal(
+    *,
+    task_id: str,
+    telemetry_snapshot: Mapping[str, Any],
+    agent_result: Mapping[str, Any],
+    observed_at: datetime,
+) -> dict[str, Any] | None:
+    assessment = agent_result.get("assessment")
+    assessment = assessment if isinstance(assessment, Mapping) else {}
+    hazard_state = assessment.get("hazard_state")
+    hazard_state = hazard_state if isinstance(hazard_state, Mapping) else {}
+    action_feasibility = assessment.get("action_feasibility")
+    action_feasibility = (
+        action_feasibility
+        if isinstance(action_feasibility, Mapping)
+        else {}
+    )
+    candidate = assessment.get("recovery_planner_tool_candidate")
+    candidate = candidate if isinstance(candidate, Mapping) else {}
+    if (
+        agent_result.get("runtime_status") != "proposal_guardrail_passed"
+        or assessment.get("assessment_status")
+        != "proposal_guardrail_passed"
+        or hazard_state.get("hazard_state_status") != "verified"
+        or action_feasibility.get("feasibility_status")
+        != "verified_feasible"
+        or not candidate
+    ):
+        return None
+    recovery_intent = assessment.get("recovery_intent")
+    recovery_intent = (
+        dict(recovery_intent)
+        if isinstance(recovery_intent, Mapping)
+        else {}
+    )
+    intent_compilation = assessment.get("intent_compilation")
+    intent_compilation = (
+        dict(intent_compilation)
+        if isinstance(intent_compilation, Mapping)
+        else {}
+    )
+    reachability = assessment.get("reachability_verification")
+    reachability = (
+        dict(reachability)
+        if isinstance(reachability, Mapping)
+        else {}
+    )
+    position = telemetry_snapshot.get("position")
+    position = dict(position) if isinstance(position, Mapping) else {}
+    obstacle = telemetry_snapshot.get("obstacle")
+    obstacle = obstacle if isinstance(obstacle, Mapping) else {}
+    conflict = obstacle.get("conflict_assessment")
+    conflict = conflict if isinstance(conflict, Mapping) else {}
+    nearest = conflict.get("nearest_obstacle")
+    nearest = nearest if isinstance(nearest, Mapping) else {}
+    origin = _runtime_recovery_operator_proposal_origin(agent_result)
+    if origin.get("origin_kind") != "hosted_llm":
+        return None
+    proposal_seed = {
+        "task_id": task_id,
+        "observed_at": observed_at.isoformat(),
+        "sample_index": telemetry_snapshot.get("sample_index"),
+        "candidate": candidate,
+        "origin_sha256": origin["origin_sha256"],
+    }
+    proposal_sha256 = hashlib.sha256(
+        json.dumps(
+            proposal_seed,
+            ensure_ascii=True,
+            sort_keys=True,
+            default=str,
+        ).encode("utf-8")
+    ).hexdigest()
+    return {
+        "schema_version": "missionos_runtime_recovery_proposal_evidence.v3",
+        "proposal_id": f"runtime_recovery_proposal_{proposal_sha256[:12]}",
+        "task_id": task_id,
+        "proposal_status": "awaiting_operator_approval",
+        "observed_at": observed_at.isoformat(),
+        "valid_until": (observed_at + timedelta(seconds=60.0)).isoformat(),
+        "origin_position": position,
+        "max_origin_drift_m": 30.0,
+        "sample_index": telemetry_snapshot.get("sample_index"),
+        "source_obstacle_name": (
+            str(nearest.get("obstacle_name") or "") or None
+        ),
+        "runtime_recovery_agent_result": dict(agent_result),
+        "recovery_intent": recovery_intent,
+        "recovery_intent_id": recovery_intent.get("recovery_intent_id"),
+        "recovery_intent_sha256": recovery_intent.get(
+            "recovery_intent_sha256"
+        ),
+        "intent_compilation": intent_compilation,
+        "recovery_compilation_id": intent_compilation.get(
+            "recovery_compilation_id"
+        ),
+        "recovery_compilation_sha256": intent_compilation.get(
+            "recovery_compilation_sha256"
+        ),
+        "reachability_verification": reachability,
+        "recovery_reachability_id": reachability.get(
+            "recovery_reachability_id"
+        ),
+        "recovery_reachability_sha256": reachability.get(
+            "recovery_reachability_sha256"
+        ),
+        "hazard_state": dict(hazard_state),
+        "hazard_state_id": hazard_state.get("hazard_state_id"),
+        "hazard_state_sha256": hazard_state.get("hazard_state_sha256"),
+        "action_feasibility": dict(action_feasibility),
+        "action_feasibility_id": action_feasibility.get(
+            "action_feasibility_id"
+        ),
+        "action_feasibility_sha256": action_feasibility.get(
+            "action_feasibility_sha256"
+        ),
+        "proposal_origin": origin,
+        "proposal_origin_sha256": origin["origin_sha256"],
+        "proposal_source": "hosted_operator_recovery_judgment",
+        "hosted_model_invoked_for_proposal": True,
+        "hosted_model_judgment_used_for_proposal": True,
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }
+
+
 _MISSION_DESIGNER_FULLWIDTH_TRANSLATION = str.maketrans(
     "０１２３４５６７８９．，、",
     "0123456789.,,",
@@ -7705,27 +8002,84 @@ class GatewayServer:
                 },
                 "authority_status": "proposal_only",
             }
-            planner_result = await run_in_threadpool(
-                plan_runtime_recovery_maneuver,
+            agent_result = await run_in_threadpool(
+                run_missionos_runtime_recovery_agent,
                 telemetry_snapshot=telemetry_snapshot,
                 mission_context=mission_context,
                 recovery_policy=recovery_policy,
-                requested_action=requested_action,
-                request_reason=operator_instruction,
             )
-            planner_result = guard_runtime_recovery_planner_result(
-                planner_result=planner_result,
+            observed_at = datetime.now(timezone.utc)
+            durable_proposal = _runtime_recovery_operator_durable_proposal(
+                task_id=task_id,
                 telemetry_snapshot=telemetry_snapshot,
-                recovery_policy=recovery_policy,
+                agent_result=agent_result,
+                observed_at=observed_at,
             )
-            return _runtime_recovery_operator_proposal_response(
+            if durable_proposal is not None:
+                proposal_id = str(durable_proposal["proposal_id"])
+                previous = artifacts.get(
+                    "missionos_runtime_recovery_last_proposal"
+                )
+                previous = (
+                    dict(previous)
+                    if isinstance(previous, Mapping)
+                    else {}
+                )
+                proposal_updates: dict[str, Any] = {
+                    proposal_id: durable_proposal
+                }
+                previous_id = str(previous.get("proposal_id") or "")
+                if (
+                    previous_id
+                    and previous_id != proposal_id
+                    and previous.get("proposal_status")
+                    == "awaiting_operator_approval"
+                ):
+                    proposal_updates[previous_id] = {
+                        **previous,
+                        "proposal_status": "superseded",
+                        "invalidated_at": observed_at.isoformat(),
+                        "invalidation_reasons": [
+                            "superseded_by_operator_recovery_judgment"
+                        ],
+                        "dispatch_authority_created": False,
+                        "progress_counted": False,
+                    }
+                self.task_store.update(
+                    task_id,
+                    artifacts={
+                        "missionos_runtime_recovery_proposals": (
+                            proposal_updates
+                        ),
+                    },
+                    replace_artifacts={
+                        "missionos_runtime_recovery_last_proposal": (
+                            durable_proposal
+                        ),
+                    },
+                    metadata={
+                        "missionos_runtime_recovery_agent_status": (
+                            agent_result.get("runtime_status")
+                        ),
+                        "missionos_runtime_recovery_operator_proposal_id": (
+                            proposal_id
+                        ),
+                        "missionos_runtime_recovery_dispatch_authority_created": (
+                            False
+                        ),
+                        "delivery_completion_claimed": False,
+                        "physical_execution_invoked": False,
+                    },
+                )
+            return _runtime_recovery_operator_agent_proposal_response(
                 task_id=task_id,
                 operator_instruction=operator_instruction,
                 requested_action=requested_action,
                 requested_parameters=requested_parameters,
                 telemetry_snapshot=telemetry_snapshot,
                 recovery_policy=recovery_policy,
-                planner_result=planner_result,
+                agent_result=agent_result,
+                proposal_evidence=durable_proposal,
             )
 
         @self.app.post("/missionos/llm-repair-planner/run-for-task")

@@ -237,6 +237,11 @@ needed maneuver is unverified, prefer hold, land, return_to_launch, or
 operator_review according to the remaining verified facts.
 If mission_context includes an operator recovery request, treat it as a
 proposal request only and still require bounded planner-derived parameters.
+When its requested_action matches a verified_selectable_candidate, call the
+planner for that requested action and return the verified candidate as the
+proposal. Do not replace a feasible requested maneuver with operator_review
+merely because the request came from the operator; operator_review remains the
+fail-closed result when the requested maneuver is blocked or unverified.
 When FunctionTools are attached, call the recovery maneuver planner tool before
 you propose adjust_altitude, reroute, or avoid_obstacle. Copy the tool-returned
 proposed_parameters exactly; do not invent local NED coordinates, altitude

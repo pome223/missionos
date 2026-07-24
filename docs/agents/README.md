@@ -11,8 +11,8 @@ docs.
 
 | If you are changing... | Read these first (in order) |
 | --- | --- |
-| CLI commands, help text, or operator UX | `contracts.md`, `claim-semantics.md`, `e2e-verification.md`, `cli-parity-release-gate.md` |
-| Gateway routes, sessions, or audit | `gateway-profiles.md`, `contracts.md`, `artifact-taxonomy.md`, `publication-rules.md`, `e2e-verification.md` |
+| CLI commands, help text, or operator UX | `contracts.md`, `claim-semantics.md`, `e2e-verification.md`, `missionos-chat-pr-merge-e2e-checklist.md`, `cli-parity-release-gate.md` |
+| Gateway routes, sessions, or audit | `gateway-profiles.md`, `contracts.md`, `artifact-taxonomy.md`, `publication-rules.md`, `e2e-verification.md`, `missionos-chat-pr-merge-e2e-checklist.md` |
 | LLM planning, repair, or recovery logic | `claim-semantics.md`, `agent-architecture.md`, `contracts.md` |
 | Recovery delegation (reflex/deliberation split, perception claims, shadow measurement, action promotion) | `recovery-delegation-authority.md`, `claim-semantics.md`, `hardware-adapter-contract.md` |
 | Evidence, claims, completion, or verifier behavior | `claim-semantics.md`, `artifact-taxonomy.md`, `contracts.md` |
@@ -27,7 +27,7 @@ docs.
 | Unitree / MuJoCo or other robot | `backend-neutral-adapter-runtime.md`, `unitree-mujoco-environment.md`, `unitree-go2-real-hardware.md`, `hardware-adapter-contract.md` |
 | Public docs, README, examples, or screenshots | `publication-rules.md`, `contracts.md`, `claim-semantics.md`, and the human `docs/concepts/boundaries.md` |
 | Local LLM backends or model config | `local-llm-backends.md`, `contracts.md` |
-| Anything that ships to the public snapshot | `publication-rules.md`, `e2e-verification.md`, `claim-semantics.md` |
+| Anything that ships to the public snapshot | `publication-rules.md`, `e2e-verification.md`, `missionos-chat-pr-merge-e2e-checklist.md`, `claim-semantics.md` |
 
 ## Full Reference
 
@@ -39,6 +39,7 @@ When the map above is not enough, read the complete set:
 - `recovery-delegation-authority.md`
 - `artifact-taxonomy.md`
 - `e2e-verification.md`
+- `missionos-chat-pr-merge-e2e-checklist.md`
 - `gateway-profiles.md`
 - `cli-parity-release-gate.md`
 - `local-llm-backends.md`
