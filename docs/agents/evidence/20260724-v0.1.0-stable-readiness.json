@@ -1,0 +1,56 @@
+{
+  "backends": {
+    "nav2": {
+      "core_status": "verified_feasible",
+      "delivery_completion_claimed": false,
+      "dispatch_authority_created_after_revalidation": true,
+      "dispatch_revalidation": "validated",
+      "explicit_human_approval": true,
+      "model_judgment_source": "deepseek",
+      "operator_surfaces": [
+        "chat",
+        "job-status",
+        "operate",
+        "watch",
+        "map"
+      ],
+      "physical_execution_invoked": false,
+      "route_resumed": true,
+      "runner_ack_separate_from_observed_effect": true,
+      "runtime_boundary": "opt_in_live_simulator",
+      "source_evidence_ref": "docs/agents/evidence/20260724-nav2-core-live-e2e-public-summary.md",
+      "task_id_sha256": "2aac676bc5bc86eb0b19c650f477940b48ced2ba58ced5a30feaf6dbd4b616c4",
+      "target_reached": true,
+      "terminal_sim_observation": true
+    },
+    "px4": {
+      "core_status": "verified_feasible",
+      "delivery_completion_claimed": false,
+      "dispatch_authority_created_after_revalidation": true,
+      "dispatch_revalidation": "valid",
+      "explicit_human_approval": true,
+      "model_judgment_source": "deepseek",
+      "operator_surfaces": [
+        "chat",
+        "job-status",
+        "operate",
+        "watch",
+        "map"
+      ],
+      "physical_execution_invoked": false,
+      "route_resumed": true,
+      "runner_ack_separate_from_observed_effect": true,
+      "runtime_boundary": "opt_in_live_simulator",
+      "source_evidence_ref": "docs/agents/evidence/20260724-px4-core-live-e2e-public-summary.md",
+      "task_id_sha256": "25d49fce7037a47245d6f217ad48317d12308f7a826718194b7b69cd37ac0f41",
+      "target_reached": true,
+      "terminal_sim_observation": true
+    }
+  },
+  "claim_boundary": {
+    "corpus_replay_invokes_runtime": false,
+    "live_evidence_is_physical_hardware": false,
+    "stable_gate_creates_authority": false
+  },
+  "schema_version": "missionos_stable_readiness.v1"
+}

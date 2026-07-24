@@ -64,6 +64,108 @@ _FIXTURE_CAMERA_FRAME_REF = "sha256:" + "c" * 64
 _FIXTURE_CAMERA_FRAME_BYTES = b"\x89PNG\r\n\x1a\nfixture-camera-frame"
 
 
+def _source_backed_recovery_obstacle(
+    *,
+    x_m: float = -1.15,
+    y_m: float = -0.5,
+) -> dict[str, object]:
+    return {
+        "runtime_obstacle_x_m": x_m,
+        "runtime_obstacle_y_m": y_m,
+        "runtime_obstacle_size_x_m": 0.32,
+        "runtime_obstacle_size_y_m": 0.32,
+        "runtime_obstacle_z_m": 0.25,
+        "runtime_obstacle_collision_size_x_m": 0.32,
+        "runtime_obstacle_collision_size_y_m": 0.32,
+        "runtime_obstacle_size_z_m": 0.5,
+        "runtime_obstacle_frame_id": "map",
+        "runtime_obstacle_scene_ref": "fixture_obstacle",
+        "runtime_obstacle_geometry_source": "fixture_sdf_collision",
+        "runtime_obstacle_source": "fixture_costmap",
+    }
+
+
+def _core_ready_candidate(
+    candidate: dict,
+    obstacle: dict,
+    *,
+    path_valid: bool = True,
+    maximum_path_cost: int = 20,
+    local_current_cost: int = 0,
+    local_maximum_path_cost: int = 40,
+) -> dict:
+    target_x = float(candidate["x_m"])
+    target_y = float(candidate["y_m"])
+    obstacle_x = float(obstacle["runtime_obstacle_x_m"])
+    obstacle_y = float(obstacle["runtime_obstacle_y_m"])
+    dx = target_x - obstacle_x
+    dy = target_y - obstacle_y
+    magnitude = math.hypot(dx, dy) or 1.0
+    unit_x = dx / magnitude
+    unit_y = dy / magnitude
+    start_x = target_x + unit_x * 0.10
+    start_y = target_y + unit_y * 0.10
+    path_points = [
+        {"x_m": round(start_x, 6), "y_m": round(start_y, 6), "frame_id": "map"},
+        {"x_m": round(target_x, 6), "y_m": round(target_y, 6), "frame_id": "map"},
+    ]
+    path_material = [
+        [point["x_m"], point["y_m"]] for point in path_points
+    ]
+    path_length_m = math.hypot(target_x - start_x, target_y - start_y)
+    return {
+        **candidate,
+        "path_valid": path_valid,
+        "planner_status": "succeeded",
+        "target_cost": 4,
+        "maximum_path_cost": maximum_path_cost,
+        "local_current_cost": local_current_cost,
+        "local_maximum_path_cost": local_maximum_path_cost,
+        "path_length_m": round(path_length_m, 6),
+        "path_points": path_points,
+        "path_frame_id": "map",
+        "path_goal_error_m": 0.0,
+        "path_goal_tolerance_m": 0.1,
+        "path_sha256": sha256(
+            json.dumps(path_material, separators=(",", ":")).encode()
+        ).hexdigest(),
+    }
+
+
+def _core_ready_evaluation(
+    *,
+    evaluated: list[dict],
+    selected: dict | None,
+    stamp_ns: int = 1_000_000_000,
+    global_hash: str = "global-costmap-hash",
+    local_hash: str = "local-costmap-hash",
+) -> dict:
+    return {
+        "evaluation_status": "validated" if selected else "blocked",
+        "selected_candidate": selected,
+        "candidate_evaluations": evaluated,
+        "costmap_snapshot_hash": global_hash,
+        "costmap_source": "/global_costmap/get_costmap",
+        "global_costmap_snapshot_hash": global_hash,
+        "global_costmap_source": "/global_costmap/get_costmap",
+        "global_costmap_frame_id": "map",
+        "global_costmap_stamp_ns": stamp_ns,
+        "global_costmap_age_s": 0.1,
+        "local_costmap_snapshot_hash": local_hash,
+        "local_costmap_source": "/local_costmap/get_costmap",
+        "local_costmap_frame_id": "odom",
+        "local_costmap_stamp_ns": stamp_ns,
+        "local_costmap_age_s": 0.1,
+        "local_frame_transform_verified": True,
+        "compute_path_action": "/compute_path_to_pose",
+        "blocking_reasons": [] if selected else ["no_valid_recovery_candidate"],
+        "dispatch_request_sent": False,
+        "dispatch_authority_created": False,
+        "command_ack_observed": False,
+        "observation_captured_at": "2026-07-24T03:00:00+00:00",
+    }
+
+
 def _write_success_bridge(
     path: Path,
     *,
@@ -398,33 +500,13 @@ def test_turtlebot3_recovery_candidate_resolver_uses_plan_only_evidence(
     )
 
     def _evaluate(self, *, candidates, obstacle, frame_id="map"):
-        del self, obstacle, frame_id
-        selected = {
-            **candidates[1],
-            "path_valid": True,
-            "planner_status": "succeeded",
-            "target_cost": 4,
-            "maximum_path_cost": 20,
-            "local_current_cost": 0,
-            "local_maximum_path_cost": 40,
-            "path_length_m": 1.4,
-            "path_sha256": "path-hash",
-        }
-        return {
-            "evaluation_status": "validated",
-            "selected_candidate": selected,
-            "candidate_evaluations": [selected],
-            "costmap_snapshot_hash": "costmap-hash",
-            "costmap_source": "/global_costmap/get_costmap",
-            "global_costmap_snapshot_hash": "global-costmap-hash",
-            "global_costmap_source": "/global_costmap/get_costmap",
-            "local_costmap_snapshot_hash": "local-costmap-hash",
-            "local_costmap_source": "/local_costmap/get_costmap",
-            "compute_path_action": "/compute_path_to_pose",
-            "dispatch_request_sent": False,
-            "dispatch_authority_created": False,
-            "command_ack_observed": False,
-        }
+        del self, frame_id
+        selected = _core_ready_candidate(candidates[1], obstacle)
+        return _core_ready_evaluation(
+            evaluated=[selected],
+            selected=selected,
+            global_hash="costmap-hash",
+        )
 
     monkeypatch.setattr(
         turtlebot3_home_mission_runtime.Ros2Nav2BridgeCommandClient,
@@ -432,12 +514,7 @@ def test_turtlebot3_recovery_candidate_resolver_uses_plan_only_evidence(
         _evaluate,
     )
     resolved = turtlebot3_home_mission_runtime._resolve_recovery_candidate(
-        {
-            "runtime_obstacle_x_m": -1.15,
-            "runtime_obstacle_y_m": -0.5,
-            "runtime_obstacle_size_x_m": 0.32,
-            "runtime_obstacle_size_y_m": 0.32,
-        }
+        _source_backed_recovery_obstacle()
     )
 
     assert resolved["resolution_status"] == "validated"
@@ -471,42 +548,33 @@ def test_turtlebot3_recovery_candidate_resolver_refreshes_transient_snapshot(
 
     def _evaluate(self, *, candidates, obstacle, frame_id="map"):
         nonlocal calls
-        del self, obstacle, frame_id
+        del self, frame_id
         calls += 1
         if calls == 1:
-            return {
-                "evaluation_status": "blocked",
-                "selected_candidate": None,
-                "candidate_evaluations": [
-                    {
-                        **candidates[0],
-                        "path_valid": False,
-                        "blocking_reasons": [
-                            "recovery_current_pose_outside_local_costmap"
-                        ],
-                    }
-                ],
-                "blocking_reasons": ["no_valid_recovery_candidate"],
-                "dispatch_request_sent": False,
-            }
-        selected = {
-            **candidates[0],
-            "path_valid": True,
-            "planner_status": "succeeded",
-            "maximum_path_cost": 20,
-            "local_current_cost": 30,
-            "local_maximum_path_cost": 40,
-            "path_length_m": 1.4,
-            "path_sha256": "refreshed-path-hash",
-        }
-        return {
-            "evaluation_status": "validated",
-            "selected_candidate": selected,
-            "candidate_evaluations": [selected],
-            "global_costmap_snapshot_hash": "fresh-global-hash",
-            "local_costmap_snapshot_hash": "fresh-local-hash",
-            "dispatch_request_sent": False,
-        }
+            failed = _core_ready_candidate(
+                candidates[0],
+                obstacle,
+                path_valid=False,
+            )
+            failed["blocking_reasons"] = [
+                "recovery_current_pose_outside_local_costmap"
+            ]
+            return _core_ready_evaluation(
+                evaluated=[failed],
+                selected=None,
+            )
+        selected = _core_ready_candidate(
+            candidates[0],
+            obstacle,
+            local_current_cost=30,
+        )
+        return _core_ready_evaluation(
+            evaluated=[selected],
+            selected=selected,
+            global_hash="fresh-global-hash",
+            local_hash="fresh-local-hash",
+            stamp_ns=2_000_000_000,
+        )
 
     monkeypatch.setattr(
         turtlebot3_home_mission_runtime.Ros2Nav2BridgeCommandClient,
@@ -515,12 +583,7 @@ def test_turtlebot3_recovery_candidate_resolver_refreshes_transient_snapshot(
     )
 
     resolved = turtlebot3_home_mission_runtime._resolve_recovery_candidate(
-        {
-            "runtime_obstacle_x_m": -1.15,
-            "runtime_obstacle_y_m": -0.5,
-            "runtime_obstacle_size_x_m": 0.32,
-            "runtime_obstacle_size_y_m": 0.32,
-        }
+        _source_backed_recovery_obstacle()
     )
 
     assert calls == 2
@@ -554,27 +617,21 @@ def test_turtlebot3_recovery_candidate_resolver_uses_second_stable_snapshot(
 
     def _evaluate(self, *, candidates, obstacle, frame_id="map"):
         nonlocal calls
-        del self, obstacle, frame_id
+        del self, frame_id
         selected_index = 0 if calls == 0 else 1
         calls += 1
-        selected = {
-            **candidates[selected_index],
-            "path_valid": True,
-            "planner_status": "succeeded",
-            "maximum_path_cost": 20,
-            "local_current_cost": 30,
-            "local_maximum_path_cost": 40,
-            "path_length_m": 1.4,
-            "path_sha256": f"stable-path-{calls}",
-        }
-        return {
-            "evaluation_status": "validated",
-            "selected_candidate": selected,
-            "candidate_evaluations": [selected],
-            "global_costmap_snapshot_hash": f"global-{calls}",
-            "local_costmap_snapshot_hash": f"local-{calls}",
-            "dispatch_request_sent": False,
-        }
+        selected = _core_ready_candidate(
+            candidates[selected_index],
+            obstacle,
+            local_current_cost=30,
+        )
+        return _core_ready_evaluation(
+            evaluated=[selected],
+            selected=selected,
+            global_hash=f"global-{calls}",
+            local_hash=f"local-{calls}",
+            stamp_ns=calls * 1_000_000_000,
+        )
 
     monkeypatch.setattr(
         turtlebot3_home_mission_runtime.Ros2Nav2BridgeCommandClient,
@@ -583,12 +640,7 @@ def test_turtlebot3_recovery_candidate_resolver_uses_second_stable_snapshot(
     )
 
     resolved = turtlebot3_home_mission_runtime._resolve_recovery_candidate(
-        {
-            "runtime_obstacle_x_m": -1.15,
-            "runtime_obstacle_y_m": -0.5,
-            "runtime_obstacle_size_x_m": 0.32,
-            "runtime_obstacle_size_y_m": 0.32,
-        }
+        _source_backed_recovery_obstacle()
     )
 
     assert calls == 2
@@ -629,33 +681,25 @@ def test_turtlebot3_recovery_resolution_prefers_direct_validated_bypass(
     evaluation_calls: list[list[dict]] = []
 
     def _evaluate(self, *, candidates, obstacle, frame_id="map"):
-        del self, obstacle, frame_id
+        del self, frame_id
         evaluation_calls.append([dict(candidate) for candidate in candidates])
         evaluated = [
-            {
-                **candidate,
-                "path_valid": True,
-                "planner_status": "succeeded",
-                "maximum_path_cost": 20,
-                "local_current_cost": 0,
-                "local_maximum_path_cost": 30,
-                "path_length_m": 1.0,
-                "path_sha256": f"path-{candidate['candidate_id']}",
-            }
+            _core_ready_candidate(
+                candidate,
+                obstacle,
+                local_maximum_path_cost=30,
+            )
             for candidate in candidates
         ]
         selected = next(
             item for item in evaluated if item.get("sequence_only") is not True
         )
-        return {
-            "evaluation_status": "validated",
-            "selected_candidate": selected,
-            "candidate_evaluations": evaluated,
-            "costmap_snapshot_hash": "global-hash",
-            "global_costmap_snapshot_hash": "global-hash",
-            "local_costmap_snapshot_hash": "local-hash",
-            "dispatch_request_sent": False,
-        }
+        return _core_ready_evaluation(
+            evaluated=evaluated,
+            selected=selected,
+            global_hash="global-hash",
+            local_hash="local-hash",
+        )
 
     monkeypatch.setattr(
         turtlebot3_home_mission_runtime.Ros2Nav2BridgeCommandClient,
@@ -678,12 +722,7 @@ def test_turtlebot3_recovery_resolution_prefers_direct_validated_bypass(
     ]
 
     resolved = turtlebot3_home_mission_runtime._resolve_recovery_candidate(
-        {
-            "runtime_obstacle_x_m": 0.2,
-            "runtime_obstacle_y_m": -1.2,
-            "runtime_obstacle_size_x_m": 0.32,
-            "runtime_obstacle_size_y_m": 0.32,
-        },
+        _source_backed_recovery_obstacle(x_m=0.2, y_m=-1.2),
         segment_results=segment_results,
     )
 
@@ -707,7 +746,7 @@ def test_turtlebot3_recovery_resolution_rechecks_bypasses_after_retreat(
     evaluation_calls: list[list[dict]] = []
 
     def _evaluate(self, *, candidates, obstacle, frame_id="map"):
-        del self, obstacle, frame_id
+        del self, frame_id
         requested = [dict(candidate) for candidate in candidates]
         evaluation_calls.append(requested)
         is_initial = len(requested) > 2
@@ -720,18 +759,15 @@ def test_turtlebot3_recovery_resolution_rechecks_bypasses_after_retreat(
                 and isinstance(candidate.get("start_pose"), dict)
             )
             path_valid = is_retreat or (not is_initial and is_safe_post_retreat)
-            evaluated.append(
-                {
-                    **candidate,
-                    "path_valid": path_valid,
-                    "planner_status": "succeeded",
-                    "maximum_path_cost": 20 if path_valid else 240,
-                    "local_current_cost": 227,
-                    "local_maximum_path_cost": 30 if path_valid else 227,
-                    "path_length_m": 0.4 if is_retreat else 1.0,
-                    "path_sha256": f"path-{candidate_id}",
-                }
+            evaluated_candidate = _core_ready_candidate(
+                candidate,
+                obstacle,
+                path_valid=path_valid,
+                maximum_path_cost=20 if path_valid else 240,
+                local_current_cost=227,
+                local_maximum_path_cost=30 if path_valid else 227,
             )
+            evaluated.append(evaluated_candidate)
         selected = next(
             (
                 item
@@ -741,16 +777,12 @@ def test_turtlebot3_recovery_resolution_rechecks_bypasses_after_retreat(
             ),
             None,
         )
-        return {
-            "evaluation_status": "validated" if selected else "blocked",
-            "selected_candidate": selected,
-            "candidate_evaluations": evaluated,
-            "costmap_snapshot_hash": "global-hash",
-            "global_costmap_snapshot_hash": "global-hash",
-            "local_costmap_snapshot_hash": "local-hash",
-            "blocking_reasons": [] if selected else ["no_valid_recovery_candidate"],
-            "dispatch_request_sent": False,
-        }
+        return _core_ready_evaluation(
+            evaluated=evaluated,
+            selected=selected,
+            global_hash="global-hash",
+            local_hash="local-hash",
+        )
 
     monkeypatch.setattr(
         turtlebot3_home_mission_runtime.Ros2Nav2BridgeCommandClient,
@@ -763,8 +795,8 @@ def test_turtlebot3_recovery_resolution_rechecks_bypasses_after_retreat(
                 {
                     "trajectory_result": {
                         "trajectory_samples": [
-                            {"x_m": -1.4, "y_m": -0.5, "frame_id": "map"},
-                            {"x_m": -0.9, "y_m": -0.7, "frame_id": "map"},
+                            {"x_m": -0.8, "y_m": -0.8, "frame_id": "map"},
+                            {"x_m": 0.0, "y_m": -0.8, "frame_id": "map"},
                         ]
                     }
                 }
@@ -773,12 +805,7 @@ def test_turtlebot3_recovery_resolution_rechecks_bypasses_after_retreat(
     ]
 
     resolved = turtlebot3_home_mission_runtime._resolve_recovery_candidate(
-        {
-            "runtime_obstacle_x_m": -1.15,
-            "runtime_obstacle_y_m": -0.5,
-            "runtime_obstacle_size_x_m": 0.32,
-            "runtime_obstacle_size_y_m": 0.32,
-        },
+        _source_backed_recovery_obstacle(),
         segment_results=segment_results,
     )
 
@@ -790,9 +817,9 @@ def test_turtlebot3_recovery_resolution_rechecks_bypasses_after_retreat(
     ]
     assert len(evaluation_calls) == 6
     assert evaluation_calls[1][1]["start_pose"] == {
-        "x_m": pytest.approx(-1.3178145108983668),
-        "y_m": pytest.approx(-0.5328741956406533),
-        "yaw_rad": pytest.approx(-0.3805063771123649),
+        "x_m": pytest.approx(-0.45),
+        "y_m": pytest.approx(-0.8),
+        "yaw_rad": pytest.approx(0.0),
     }
 
 

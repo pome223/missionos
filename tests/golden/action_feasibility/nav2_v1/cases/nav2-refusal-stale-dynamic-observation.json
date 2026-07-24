@@ -1,0 +1,199 @@
+{
+  "active_policy": {
+    "maximum_costmap_age_s": 2.0,
+    "maximum_path_duration_s": 30.0,
+    "maximum_speed_mps": 0.26,
+    "minimum_surface_clearance_m": 0.15,
+    "policy_id": "missionos.nav2.recovery_policy",
+    "policy_sha256": "3e0776b1aa638200c3ca5b62a491a35f3785bfdec0b6162bf5a15fd0591bdae3",
+    "policy_version": "1",
+    "require_3d_collision_envelope": true,
+    "require_dual_costmap": true
+  },
+  "authority_chain": {
+    "completion": {
+      "artifact_ref": "completion:nav2-refusal",
+      "delivery_completion_claimed": false,
+      "mission_completion_claimed": false,
+      "physical_execution_invoked": false,
+      "sim_route_terminal_observed": false
+    },
+    "dispatch_authority": {
+      "artifact_ref": "authority:nav2-refusal",
+      "created": false
+    },
+    "dispatch_revalidation": {
+      "artifact_ref": "revalidation:nav2-refusal",
+      "status": "blocked"
+    },
+    "human_approval": {
+      "artifact_ref": "approval:nav2-refusal",
+      "human_approval_performed": false,
+      "status": "not_created"
+    },
+    "observed_effect": {
+      "artifact_ref": "effect:nav2-refusal",
+      "resume_status": "not_attempted",
+      "target_reached": false
+    },
+    "proposal": {
+      "approval_created": false,
+      "artifact_ref": "proposal:nav2-refusal",
+      "dispatch_authority_created": false,
+      "status": "rejected_before_proposal"
+    },
+    "runner_ack": {
+      "ack_is_execution_effect": false,
+      "artifact_ref": "ack:nav2-refusal",
+      "observed": false
+    }
+  },
+  "candidate": {
+    "action": "avoid_obstacle",
+    "candidate_id": "nav2-verified-bypass",
+    "local_current_cost": 0,
+    "local_maximum_path_cost": 40,
+    "local_target_cost": 0,
+    "max_speed_mps": 0.2,
+    "maximum_path_cost": 20,
+    "path_frame_id": "map",
+    "path_goal_error_m": 0.0,
+    "path_goal_tolerance_m": 0.1,
+    "path_length_m": 2.0,
+    "path_points": [
+      {
+        "frame_id": "map",
+        "x_m": -1.0,
+        "y_m": 1.0
+      },
+      {
+        "frame_id": "map",
+        "x_m": 1.0,
+        "y_m": 1.0
+      }
+    ],
+    "path_sha256": "b1a7b5eee81090122b1b728f223645f719ce31549a1c348c7da5691f4dcd4a25",
+    "path_valid": true,
+    "planner_status": "succeeded",
+    "target_cost": 0,
+    "x_m": 1.0,
+    "y_m": 1.0,
+    "yaw_rad": 0.0
+  },
+  "case_id": "nav2-refusal-stale-dynamic-observation",
+  "case_sha256": "8d1a27d7825e95816633024c2d7db359ff61e40f01aa67dfc15da320886a16e4",
+  "evaluated_at": "2026-07-24T03:00:00+00:00",
+  "evaluation": {
+    "candidate_evaluations": [
+      {
+        "action": "avoid_obstacle",
+        "candidate_id": "nav2-verified-bypass",
+        "local_current_cost": 0,
+        "local_maximum_path_cost": 40,
+        "local_target_cost": 0,
+        "max_speed_mps": 0.2,
+        "maximum_path_cost": 20,
+        "path_frame_id": "map",
+        "path_goal_error_m": 0.0,
+        "path_goal_tolerance_m": 0.1,
+        "path_length_m": 2.0,
+        "path_points": [
+          {
+            "frame_id": "map",
+            "x_m": -1.0,
+            "y_m": 1.0
+          },
+          {
+            "frame_id": "map",
+            "x_m": 1.0,
+            "y_m": 1.0
+          }
+        ],
+        "path_sha256": "b1a7b5eee81090122b1b728f223645f719ce31549a1c348c7da5691f4dcd4a25",
+        "path_valid": true,
+        "planner_status": "succeeded",
+        "target_cost": 0,
+        "x_m": 1.0,
+        "y_m": 1.0,
+        "yaw_rad": 0.0
+      }
+    ],
+    "command_ack_observed": false,
+    "dispatch_authority_created": false,
+    "dispatch_request_sent": false,
+    "evaluation_status": "validated",
+    "global_costmap_age_s": 4.0,
+    "global_costmap_frame_id": "map",
+    "global_costmap_snapshot_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "global_costmap_stamp_ns": 2000000000,
+    "local_costmap_age_s": 4.0,
+    "local_costmap_frame_id": "odom",
+    "local_costmap_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "local_costmap_stamp_ns": 2000000000,
+    "local_frame_transform_verified": true,
+    "observation_captured_at": "2026-07-24T03:00:00+00:00",
+    "schema_version": "missionos_nav2_recovery_candidate_evaluation.v1",
+    "selected_candidate": {
+      "action": "avoid_obstacle",
+      "candidate_id": "nav2-verified-bypass",
+      "local_current_cost": 0,
+      "local_maximum_path_cost": 40,
+      "local_target_cost": 0,
+      "max_speed_mps": 0.2,
+      "maximum_path_cost": 20,
+      "path_frame_id": "map",
+      "path_goal_error_m": 0.0,
+      "path_goal_tolerance_m": 0.1,
+      "path_length_m": 2.0,
+      "path_points": [
+        {
+          "frame_id": "map",
+          "x_m": -1.0,
+          "y_m": 1.0
+        },
+        {
+          "frame_id": "map",
+          "x_m": 1.0,
+          "y_m": 1.0
+        }
+      ],
+      "path_sha256": "b1a7b5eee81090122b1b728f223645f719ce31549a1c348c7da5691f4dcd4a25",
+      "path_valid": true,
+      "planner_status": "succeeded",
+      "target_cost": 0,
+      "x_m": 1.0,
+      "y_m": 1.0,
+      "yaw_rad": 0.0
+    }
+  },
+  "expected": {
+    "required_reason": "nav2_dynamic_observation_stale",
+    "status": "unverified"
+  },
+  "obstacle": {
+    "runtime_obstacle_collision_size_x_m": 0.4,
+    "runtime_obstacle_collision_size_y_m": 0.4,
+    "runtime_obstacle_frame_id": "map",
+    "runtime_obstacle_geometry_source": "sealed_fixture_sdf_collision",
+    "runtime_obstacle_scene_ref": "sealed_fixture_box",
+    "runtime_obstacle_size_z_m": 0.5,
+    "runtime_obstacle_source": "sealed_fixture_costmap",
+    "runtime_obstacle_x_m": 0.0,
+    "runtime_obstacle_y_m": 0.0,
+    "runtime_obstacle_z_m": 0.25
+  },
+  "robot_collision_envelope": {
+    "frame_id": "base_footprint",
+    "geometry_source": "sealed_fixture_robot_collision_envelope",
+    "radius_m": 0.19,
+    "z_max_m": 0.14,
+    "z_min_m": -0.01
+  },
+  "scenario_class": "refusal",
+  "schema_version": "missionos_nav2_action_feasibility_case.v1",
+  "truth_boundary": {
+    "case_is_replay_fixture": true,
+    "runtime_invoked_by_this_replay": false,
+    "source_contract_evidence_available": true
+  }
+}

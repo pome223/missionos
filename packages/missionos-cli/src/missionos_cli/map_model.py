@@ -1369,6 +1369,51 @@ def _turtlebot3_recovery_candidate_resolution_from_artifacts(
     return {}
 
 
+def _turtlebot3_core_feasibility_from_artifacts(
+    artifacts: dict[str, Any],
+) -> dict[str, Any]:
+    """Project saved Core feasibility facts without creating new authority."""
+
+    candidate_resolution = (
+        _turtlebot3_recovery_candidate_resolution_from_artifacts(artifacts)
+    )
+    selected_candidate = candidate_resolution.get("selected_candidate")
+    selected_candidate = (
+        selected_candidate if isinstance(selected_candidate, dict) else {}
+    )
+    revalidation = artifacts.get("turtlebot3_recovery_predispatch_revalidation")
+    revalidation = revalidation if isinstance(revalidation, dict) else {}
+    return {
+        "adapter_id": (
+            candidate_resolution.get("core_adapter_id")
+            or revalidation.get("core_adapter_id")
+        ),
+        "candidate_status": selected_candidate.get(
+            "core_action_feasibility_status"
+        ),
+        "predispatch_revalidation_status": revalidation.get(
+            "revalidation_status"
+        ),
+        "policy_sha256": (
+            (candidate_resolution.get("core_policy_binding") or {}).get(
+                "policy_sha256"
+            )
+            if isinstance(
+                candidate_resolution.get("core_policy_binding"),
+                dict,
+            )
+            else None
+        )
+        or (
+            (revalidation.get("core_policy_binding") or {}).get(
+                "policy_sha256"
+            )
+            if isinstance(revalidation.get("core_policy_binding"), dict)
+            else None
+        ),
+    }
+
+
 def _overlay_turtlebot3_recovery_summary(
     indoor_map: dict[str, Any],
     *,
@@ -1405,6 +1450,7 @@ def _overlay_turtlebot3_recovery_summary(
     recovery = dict(recovery) if isinstance(recovery, dict) else {}
     checkpoint_status = str(checkpoint.get("checkpoint_status") or "")
     candidate_resolution = _turtlebot3_recovery_candidate_resolution_from_artifacts(artifacts)
+    core_feasibility = _turtlebot3_core_feasibility_from_artifacts(artifacts)
     runtime_status = (
         "awaiting_operator_approval"
         if checkpoint_status == "awaiting_operator_approval"
@@ -1459,6 +1505,22 @@ def _overlay_turtlebot3_recovery_summary(
     recovery["candidate_path_length_m"] = _first_present(
         selected_candidate.get("path_length_m"),
         recovery.get("candidate_path_length_m"),
+    )
+    recovery["core_adapter_id"] = _first_present(
+        core_feasibility.get("adapter_id"),
+        recovery.get("core_adapter_id"),
+    )
+    recovery["core_action_feasibility_status"] = _first_present(
+        core_feasibility.get("candidate_status"),
+        recovery.get("core_action_feasibility_status"),
+    )
+    recovery["core_predispatch_revalidation_status"] = _first_present(
+        core_feasibility.get("predispatch_revalidation_status"),
+        recovery.get("core_predispatch_revalidation_status"),
+    )
+    recovery["core_policy_sha256"] = _first_present(
+        core_feasibility.get("policy_sha256"),
+        recovery.get("core_policy_sha256"),
     )
     overlaid["recovery"] = recovery
     return overlaid

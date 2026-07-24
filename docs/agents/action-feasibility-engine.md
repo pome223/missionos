@@ -16,6 +16,53 @@ Repair loops.
 The engine only constrains a proposed action. It never creates approval,
 dispatch authority, physical execution, progress, or completion.
 
+## Core contract and migration
+
+`missionos-core` publishes the backend-neutral v1 API:
+
+- `missionos_core_hazard_state.v1`
+- `missionos_core_action_candidate.v1`
+- `missionos_core_action_feasibility.v1`
+- `missionos_core_action_revalidation.v1`
+
+Core owns observed-versus-derived fact semantics, source references and
+freshness, opaque observation cursors, policy/model binding, uncertainty,
+tri-state aggregation, and authority-free revalidation artifacts. A cursor's
+payload is intentionally opaque. A backend adapter must implement a named
+comparison contract and return `before`, `equal`, `after`, or `incomparable`;
+Core never assumes that a field named `sample_index` is globally ordered.
+
+Geometry, terrain, energy, and vehicle-performance calculations implement the
+`FeasibilityVerifierExtension` protocol. An extension returns measurements,
+assumptions, and blocked/unverified reasons. It cannot upgrade missing Core
+evidence or create approval, dispatch, execution, progress, or completion.
+
+The existing runtime v1 schemas below remain readable during migration. They
+are not aliases for the Core schemas, and conversion must be explicit in a
+backend adapter. Schema versions are additive within one major version.
+Removing or changing field meaning requires a new major schema, a converter,
+and corpus coverage for both the last supported input and the new output.
+Unknown major versions fail closed as `unverified`.
+
+The #100 corpus now runs through the Core conformance runner while retaining
+the existing backend calculation as its adapter. That proves the common
+invariants are executable; it does not yet prove the production recovery path
+uses Core. Production migration and removal of the shadow path belong to #102.
+
+The PX4 production Agent and Gateway use
+`core_action_feasibility_adapter.py`. The adapter projects runtime evidence
+into the Core public types, delegates geometry/performance calculations to the
+existing deterministic extension, and requires Core and extension status to
+match. The compatibility artifact hash binds the serialized Core Hazard State.
+A pending legacy Hazard State without that projection is `unverified` and must
+be regenerated; it is not silently upgraded at dispatch.
+
+Some runtime sources use an adapter cursor rather than a wall-clock timestamp.
+For those sources, `adapter_cursor_verified` is an explicit freshness proof
+bound to the Core observation cursor. Missing or unknown freshness proof remains
+`unverified`; the label does not allow an adapter to omit its existing
+stale/dropout/cursor checks.
+
 ## Hazard State
 
 `missionos_runtime_recovery_hazard_state.v1` normalizes source-backed facts from

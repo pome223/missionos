@@ -337,6 +337,15 @@ def test_turtlebot4_operate_status_line_uses_indoor_map_evidence() -> None:
             "robot_profile": "turtlebot4",
             "robot_motion_observed": True,
             "odom_delta_m": 2.74,
+            "recovery_candidate_resolution": {
+                "core_adapter_id": "missionos.nav2.action_feasibility.v1",
+                "selected_candidate": {
+                    "core_action_feasibility_status": "verified_feasible",
+                },
+            },
+        },
+        "turtlebot3_recovery_predispatch_revalidation": {
+            "revalidation_status": "validated",
         },
         "turtlebot3_indoor_map_model": {
             "execution_target": "ros2_nav2_turtlebot4_sim",
@@ -358,6 +367,8 @@ def test_turtlebot4_operate_status_line_uses_indoor_map_evidence() -> None:
     assert "odom=2.74m" in rendered
     assert "observed_samples=2" in rendered
     assert "planned_waypoints=2" in rendered
+    assert "core=verified_feasible" in rendered
+    assert "revalidation=validated" in rendered
     assert "battery=" not in rendered
     assert "alt=" not in rendered
 

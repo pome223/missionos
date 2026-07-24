@@ -23,6 +23,7 @@ from .job_status import (
     _task_artifacts,
 )
 from .map_model import (
+    _turtlebot3_core_feasibility_from_artifacts,
     _turtlebot3_indoor_map_model_from_artifacts,
     _turtlebot3_recovery_candidate_resolution_from_artifacts,
     _turtlebot_robot_label_from_artifacts,
@@ -141,6 +142,7 @@ def _render_recovery_agent_console(
     candidate_resolution = (
         _turtlebot3_recovery_candidate_resolution_from_artifacts(artifacts)
     )
+    core_feasibility = _turtlebot3_core_feasibility_from_artifacts(artifacts)
 
     lines: list[str] = []
     safety_hold = artifacts.get("missionos_runtime_recovery_safety_hold_receipt")
@@ -280,7 +282,9 @@ def _render_recovery_agent_console(
                     f"path={rich_escape(_status_text(selected_candidate.get('path_length_m')))}m; "
                     f"global_max_cost={rich_escape(_status_text(selected_candidate.get('maximum_path_cost')))}; "
                     f"local_max_cost={rich_escape(_status_text(selected_candidate.get('local_maximum_path_cost')))}; "
-                    f"bounded_retreat={rich_escape(_status_text(candidate_resolution.get('bounded_retreat_required')))}[/dim]",
+                    f"bounded_retreat={rich_escape(_status_text(candidate_resolution.get('bounded_retreat_required')))}; "
+                    "core="
+                    f"{rich_escape(_status_text(core_feasibility.get('candidate_status')))}[/dim]",
                 ]
             )
         lines.append("[green]No recovery dispatch has been sent.[/green]")
@@ -376,6 +380,10 @@ def _render_recovery_agent_console(
                             "[green]Mission completed after approved Recovery.[/green]",
                             "[dim]Recovery was proposed, explicitly approved, "
                             "completed, and the remaining route finished.[/dim]",
+                            "[dim]Core feasibility="
+                            f"{rich_escape(_status_text(core_feasibility.get('candidate_status')))}; "
+                            "predispatch revalidation="
+                            f"{rich_escape(_status_text(core_feasibility.get('predispatch_revalidation_status')))}[/dim]",
                         ]
                     )
                 else:
@@ -444,6 +452,16 @@ def _render_operate_status_line(
         planned = _as_int(summary.get("planned_segment_count")) or 0
         checkpoint = artifacts.get("turtlebot3_recovery_checkpoint")
         checkpoint = checkpoint if isinstance(checkpoint, dict) else {}
+        core_feasibility = _turtlebot3_core_feasibility_from_artifacts(artifacts)
+        core_status = _status_text(core_feasibility.get("candidate_status"))
+        revalidation_status = _status_text(
+            core_feasibility.get("predispatch_revalidation_status")
+        )
+        core_text = (
+            f"core={core_status} · revalidation={revalidation_status} · "
+            if core_status != "-" or revalidation_status != "-"
+            else ""
+        )
         phase = (
             "approved Recovery workflow in progress"
             if checkpoint.get("checkpoint_status") == "dispatching"
@@ -461,6 +479,7 @@ def _render_operate_status_line(
             f"recovery_goal={_status_text(summary.get('recovery_goal_status'))} · "
             f"verification={_status_text(summary.get('recovery_verification_status'))} · "
             f"route={_status_text(summary.get('route_resume_status'))} · "
+            f"{core_text}"
             f"motion={_status_text(motion.get('robot_motion_observed'))} · "
             f"odom={_status_text(motion.get('odom_delta_m'))}m · "
             f"observed_samples={len(observed_points) if isinstance(observed_points, list) else 0} · "

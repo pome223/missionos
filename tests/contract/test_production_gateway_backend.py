@@ -429,8 +429,9 @@ def test_production_gateway_does_not_import_legacy_agent_modules(tmp_path) -> No
     env = os.environ.copy()
     env["PYTHONPATH"] = os.pathsep.join(
         [
-            str(repo_root),
-            str(repo_root / "packages" / "missionos-gateway" / "src"),
+                str(repo_root),
+                str(repo_root / "packages" / "missionos-core" / "src"),
+                str(repo_root / "packages" / "missionos-gateway" / "src"),
             str(repo_root / "packages" / "missionos-cli" / "src"),
         ]
     )
@@ -2093,6 +2094,112 @@ def test_turtlebot3_recovery_approval_resumes_without_px4_runner_receipt(
         "recovery_parameters_must_match_consumed_turtlebot3_checkpoint"
     ]
     assert len(calls) == 1
+
+
+def test_turtlebot3_core_revalidation_blocks_before_dispatch_authority(
+    isolated_gateway_factory,
+    monkeypatch,
+) -> None:
+    from fastapi.testclient import TestClient
+
+    from src.gateway import server as gateway_server
+
+    gateway = isolated_gateway_factory()
+    task_id = "task_turtlebot3_core_revalidation_blocked"
+    artifacts = _pending_turtlebot3_recovery_task_artifacts()
+    checkpoint = artifacts["turtlebot3_recovery_checkpoint"]
+    checkpoint["recovery_candidate_binding"] = {
+        "core_action_feasibility_required": True,
+        "core_hazard_state": {"state_id": "approved-state"},
+    }
+    checkpoint["checkpoint_hash"] = gateway_server._recovery_checkpoint_hash(
+        checkpoint
+    )
+    checkpoint["checkpoint_id"] = (
+        "turtlebot3_recovery_checkpoint_"
+        f"{checkpoint['checkpoint_hash'][:12]}"
+    )
+    artifacts["turtlebot3_recovery_checkpoints"] = {
+        checkpoint["checkpoint_id"]: checkpoint
+    }
+    artifacts["turtlebot3_home_mission_execution"][
+        "turtlebot3_recovery_checkpoint"
+    ] = checkpoint
+    artifacts["turtlebot3_home_mission_execution"][
+        "runtime_recovery_obstacle_scenario"
+    ] = {"runtime_obstacle_scene_ref": "fixture_obstacle"}
+    artifacts["summary"]["turtlebot3_recovery_checkpoint"] = checkpoint
+    gateway.task_store.create(
+        task_id=task_id,
+        kind="turtlebot3_home_mission_execution",
+        title="TurtleBot3 Core revalidation blocked",
+        status="pending",
+        artifacts=artifacts,
+    )
+    runner_calls = 0
+
+    def blocked_revalidation(**_kwargs):
+        return {
+            "schema_version": (
+                "missionos_nav2_recovery_candidate_revalidation.v1"
+            ),
+            "revalidation_status": "blocked",
+            "blocking_reasons": ["nav2_dynamic_observation_stale"],
+            "dispatch_request_sent": False,
+            "dispatch_authority_created": False,
+            "physical_execution_invoked": False,
+        }
+
+    def unexpected_runner(**_kwargs):
+        nonlocal runner_calls
+        runner_calls += 1
+        raise AssertionError("runner must not be called")
+
+    monkeypatch.setattr(
+        gateway_server,
+        "_revalidate_approved_recovery_candidate",
+        blocked_revalidation,
+    )
+    monkeypatch.setattr(
+        gateway_server,
+        "run_turtlebot3_home_mission_dispatch",
+        unexpected_runner,
+    )
+
+    response = TestClient(gateway.app).post(
+        "/px4-gazebo/mission-scenarios/recovery-dispatch",
+        json={
+            "task_id": task_id,
+            "recovery_action": "avoid_obstacle",
+            "recovery_parameters": {
+                "target_x_m": -0.2,
+                "target_y_m": -1.4,
+            },
+            "explicit_recovery_dispatch_approval": True,
+            "expected_recovery_checkpoint_id": checkpoint["checkpoint_id"],
+            "expected_recovery_checkpoint_hash": checkpoint[
+                "checkpoint_hash"
+            ],
+        },
+    )
+
+    assert response.status_code == 409
+    payload = response.json()
+    assert payload["summary"]["dispatch_status"] == "blocked"
+    assert "nav2_dynamic_observation_stale" in payload["summary"][
+        "blocked_reasons"
+    ]
+    receipt = payload["missionos_runtime_recovery_dispatch_receipt"]
+    assert receipt["dispatch_authority_created"] is False
+    assert receipt["turtlebot3_recovery_predispatch_revalidation"][
+        "revalidation_status"
+    ] == "blocked"
+    assert runner_calls == 0
+    stored = gateway.task_store.get(task_id)
+    assert stored is not None
+    assert "turtlebot3_recovery_operator_approval" not in stored["artifacts"]
+    assert "turtlebot3_recovery_bounded_action" not in stored["artifacts"]
+    assert stored["status"] == "pending"
 
 
 def test_failed_turtlebot3_recovery_persists_fresh_unapproved_repair_child(

@@ -1,0 +1,968 @@
+{
+  "authority_chain": {
+    "completion": {
+      "artifact_ref": "completion:px4-refusal-stale-telemetry",
+      "delivery_completion_claimed": false,
+      "disarmed": false,
+      "landed": false,
+      "mission_completion_claimed": false,
+      "physical_execution_invoked": false
+    },
+    "dispatch_authority": {
+      "artifact_ref": "dispatch:px4-refusal-stale-telemetry",
+      "created": false
+    },
+    "dispatch_revalidation": {
+      "artifact_ref": "revalidation:px4-refusal-stale-telemetry",
+      "status": "not_authorized"
+    },
+    "human_approval": {
+      "artifact_ref": "approval:px4-refusal-stale-telemetry",
+      "human_approval_performed": false,
+      "status": "not_created"
+    },
+    "observed_effect": {
+      "artifact_ref": "effect:px4-refusal-stale-telemetry",
+      "resume_status": "not_attempted",
+      "target_reached": false
+    },
+    "proposal": {
+      "approval_created": false,
+      "artifact_ref": "proposal:px4-refusal-stale-telemetry",
+      "dispatch_authority_created": false,
+      "llm_judgment_observed": true,
+      "physical_execution_invoked": false,
+      "status": "rejected_before_proposal"
+    },
+    "runner_ack": {
+      "ack_is_execution_effect": false,
+      "artifact_ref": "runner_ack:px4-refusal-stale-telemetry",
+      "observed": false
+    }
+  },
+  "candidate": {
+    "intent_constraints": {
+      "maximum_duration_s": 120.0
+    },
+    "proposed_parameters": {
+      "source_obstacle_name": "route_obstacle",
+      "target_altitude_m": 45.0,
+      "target_x_m": 60.0,
+      "target_y_m": 120.0
+    },
+    "recovery_path": {
+      "frame_id": "local_ned_xy_altitude_up",
+      "source_refs": [
+        "planner.bounded_avoidance_path"
+      ],
+      "waypoints": [
+        {
+          "x_m": 60.0,
+          "y_m": 120.0,
+          "z_m": 45.0
+        }
+      ]
+    },
+    "selected_bounded_action": "avoid_obstacle",
+    "source_refs": [
+      "candidate_compiler.local_avoidance"
+    ]
+  },
+  "case_id": "px4-refusal-stale-telemetry",
+  "case_sha256": "34e8c5753ebd4bfa57b9b0aeaee478bc9f0f925a007ba87b19086e9011db497e",
+  "expected": {
+    "blocking_reasons": [],
+    "feasibility_status": "unverified",
+    "required_assumptions": [
+      "headwind_cost_uses_the_source_backed_policy_model",
+      "verification_does_not_claim_future_maneuver_success",
+      "normal_recovery_action"
+    ],
+    "unverified_reasons": [
+      "hazard_state_telemetry_stale",
+      "action_feasibility_hazard_state_unverified"
+    ]
+  },
+  "hazard_state": {
+    "approval_created": false,
+    "completion_claimed": false,
+    "core_adapter_id": "missionos.px4.action_feasibility.v1",
+    "core_hazard_state": {
+      "assumptions": [
+        "temperature_derating_applies_only_when_source_backed_model_is_complete",
+        "missing_or_incomparable_evidence_is_not_treated_as_safe",
+        "auto_cruise_speed_is_not_offboard_recovery_performance"
+      ],
+      "collected_at": "2026-07-23T12:00:00+00:00",
+      "cursor": {
+        "adapter_id": "missionos.px4.action_feasibility.v1",
+        "comparison_contract": "missionos.px4.telemetry_cursor.v1",
+        "value": {
+          "cursor_status": "complete",
+          "elapsed_seconds": 163.207,
+          "sample_index": 140
+        }
+      },
+      "derived_facts": [
+        {
+          "derivation_id": "px4_sitl_temperature_derating.v1",
+          "model_binding": null,
+          "name": "battery_return_margin_percent",
+          "source_refs": [
+            "hazard:hazard_state_65fd526cd85d"
+          ],
+          "status": "derived",
+          "uncertainty": {
+            "legacy_runtime_fact_status": "derived"
+          },
+          "unit": "percentage_points",
+          "value": 67.21
+        },
+        {
+          "derivation_id": "conservative_worst_observed_wind.v1",
+          "model_binding": null,
+          "name": "wind_control_margin_mps",
+          "source_refs": [
+            "hazard:hazard_state_65fd526cd85d"
+          ],
+          "status": "derived",
+          "uncertainty": {
+            "legacy_runtime_fact_status": "derived"
+          },
+          "unit": "m/s",
+          "value": 5.2
+        },
+        {
+          "derivation_id": "clearance_minus_policy_minimum.v1",
+          "model_binding": null,
+          "name": "terrain_clearance_margin_m",
+          "source_refs": [
+            "hazard:hazard_state_65fd526cd85d"
+          ],
+          "status": "derived",
+          "uncertainty": {
+            "legacy_runtime_fact_status": "derived"
+          },
+          "unit": "m",
+          "value": 20.0
+        },
+        {
+          "derivation_id": "missionos.px4.action_feasibility.v1.obstacle_time_to_conflict_s",
+          "model_binding": null,
+          "name": "obstacle_time_to_conflict_s",
+          "source_refs": [
+            "hazard:hazard_state_65fd526cd85d"
+          ],
+          "status": "derived",
+          "uncertainty": {
+            "legacy_runtime_fact_status": "derived"
+          },
+          "unit": "s",
+          "value": 60.0
+        },
+        {
+          "derivation_id": "px4_sitl_temperature_derating.v1",
+          "model_binding": null,
+          "name": "effective_battery_remaining_percent",
+          "source_refs": [
+            "hazard:hazard_state_65fd526cd85d"
+          ],
+          "status": "derived",
+          "uncertainty": {
+            "legacy_runtime_fact_status": "derived"
+          },
+          "unit": "percent",
+          "value": 87.21
+        },
+        {
+          "derivation_id": "px4_sitl_temperature_derating.v1",
+          "model_binding": null,
+          "name": "motor_thrust_factor",
+          "source_refs": [
+            "hazard:hazard_state_65fd526cd85d"
+          ],
+          "status": "derived",
+          "uncertainty": {
+            "legacy_runtime_fact_status": "derived"
+          },
+          "unit": "ratio",
+          "value": 0.9
+        }
+      ],
+      "observed_facts": [
+        {
+          "frame": null,
+          "name": "battery_remaining_percent",
+          "source": {
+            "content_sha256": "65fd526cd85d0540b9e2bfa80824ce91f45d0f56376203595190d863eaed50d9",
+            "evidence_kind": "runtime_hazard_state",
+            "freshness_deadline": null,
+            "freshness_proof": "unverified",
+            "observed_at": "2026-07-23T12:00:00+00:00",
+            "source_id": "hazard:hazard_state_65fd526cd85d"
+          },
+          "status": "observed",
+          "unit": "percent",
+          "value": 91.8
+        },
+        {
+          "frame": null,
+          "name": "wind_speed_mps",
+          "source": {
+            "content_sha256": "65fd526cd85d0540b9e2bfa80824ce91f45d0f56376203595190d863eaed50d9",
+            "evidence_kind": "runtime_hazard_state",
+            "freshness_deadline": null,
+            "freshness_proof": "unverified",
+            "observed_at": "2026-07-23T12:00:00+00:00",
+            "source_id": "hazard:hazard_state_65fd526cd85d"
+          },
+          "status": "observed",
+          "unit": "m/s",
+          "value": 4.0
+        },
+        {
+          "frame": null,
+          "name": "wind_gust_mps",
+          "source": {
+            "content_sha256": "65fd526cd85d0540b9e2bfa80824ce91f45d0f56376203595190d863eaed50d9",
+            "evidence_kind": "runtime_hazard_state",
+            "freshness_deadline": null,
+            "freshness_proof": "unverified",
+            "observed_at": "2026-07-23T12:00:00+00:00",
+            "source_id": "hazard:hazard_state_65fd526cd85d"
+          },
+          "status": "observed",
+          "unit": "m/s",
+          "value": 4.8
+        },
+        {
+          "frame": "amsl",
+          "name": "terrain_clearance_m",
+          "source": {
+            "content_sha256": "65fd526cd85d0540b9e2bfa80824ce91f45d0f56376203595190d863eaed50d9",
+            "evidence_kind": "runtime_hazard_state",
+            "freshness_deadline": null,
+            "freshness_proof": "unverified",
+            "observed_at": "2026-07-23T12:00:00+00:00",
+            "source_id": "hazard:hazard_state_65fd526cd85d"
+          },
+          "status": "observed",
+          "unit": "m",
+          "value": 50.0
+        },
+        {
+          "frame": "local_ned_xy_altitude_up",
+          "name": "local_avoidance_required",
+          "source": {
+            "content_sha256": "65fd526cd85d0540b9e2bfa80824ce91f45d0f56376203595190d863eaed50d9",
+            "evidence_kind": "runtime_hazard_state",
+            "freshness_deadline": null,
+            "freshness_proof": "unverified",
+            "observed_at": "2026-07-23T12:00:00+00:00",
+            "source_id": "hazard:hazard_state_65fd526cd85d"
+          },
+          "status": "observed",
+          "unit": "boolean",
+          "value": true
+        },
+        {
+          "frame": "local_ned_xy_altitude_up",
+          "name": "nearest_obstacle_name",
+          "source": {
+            "content_sha256": "65fd526cd85d0540b9e2bfa80824ce91f45d0f56376203595190d863eaed50d9",
+            "evidence_kind": "runtime_hazard_state",
+            "freshness_deadline": null,
+            "freshness_proof": "unverified",
+            "observed_at": "2026-07-23T12:00:00+00:00",
+            "source_id": "hazard:hazard_state_65fd526cd85d"
+          },
+          "status": "observed",
+          "unit": "identifier",
+          "value": "route_obstacle"
+        },
+        {
+          "frame": null,
+          "name": "obstacle_time_to_conflict_s",
+          "source": {
+            "content_sha256": "65fd526cd85d0540b9e2bfa80824ce91f45d0f56376203595190d863eaed50d9",
+            "evidence_kind": "runtime_hazard_state",
+            "freshness_deadline": null,
+            "freshness_proof": "unverified",
+            "observed_at": "2026-07-23T12:00:00+00:00",
+            "source_id": "hazard:hazard_state_65fd526cd85d"
+          },
+          "status": "observed",
+          "unit": "s",
+          "value": 60.0
+        },
+        {
+          "frame": null,
+          "name": "safety_hold_observed",
+          "source": {
+            "content_sha256": "65fd526cd85d0540b9e2bfa80824ce91f45d0f56376203595190d863eaed50d9",
+            "evidence_kind": "runtime_hazard_state",
+            "freshness_deadline": null,
+            "freshness_proof": "unverified",
+            "observed_at": "2026-07-23T12:00:00+00:00",
+            "source_id": "hazard:hazard_state_65fd526cd85d"
+          },
+          "status": "observed",
+          "unit": "boolean",
+          "value": true
+        },
+        {
+          "frame": null,
+          "name": "temperature_c",
+          "source": {
+            "content_sha256": "65fd526cd85d0540b9e2bfa80824ce91f45d0f56376203595190d863eaed50d9",
+            "evidence_kind": "runtime_hazard_state",
+            "freshness_deadline": null,
+            "freshness_proof": "unverified",
+            "observed_at": "2026-07-23T12:00:00+00:00",
+            "source_id": "hazard:hazard_state_65fd526cd85d"
+          },
+          "status": "observed",
+          "unit": "degC",
+          "value": 38.0
+        },
+        {
+          "frame": null,
+          "name": "payload_mass_kg",
+          "source": {
+            "content_sha256": "65fd526cd85d0540b9e2bfa80824ce91f45d0f56376203595190d863eaed50d9",
+            "evidence_kind": "runtime_hazard_state",
+            "freshness_deadline": null,
+            "freshness_proof": "unverified",
+            "observed_at": "2026-07-23T12:00:00+00:00",
+            "source_id": "hazard:hazard_state_65fd526cd85d"
+          },
+          "status": "observed",
+          "unit": "kg",
+          "value": 0.5
+        },
+        {
+          "frame": null,
+          "name": "payload_requested_mass_kg",
+          "source": {
+            "content_sha256": "65fd526cd85d0540b9e2bfa80824ce91f45d0f56376203595190d863eaed50d9",
+            "evidence_kind": "runtime_hazard_state",
+            "freshness_deadline": null,
+            "freshness_proof": "unverified",
+            "observed_at": "2026-07-23T12:00:00+00:00",
+            "source_id": "hazard:hazard_state_65fd526cd85d"
+          },
+          "status": "observed",
+          "unit": "kg",
+          "value": 0.5
+        },
+        {
+          "frame": null,
+          "name": "distance_to_home_m",
+          "source": {
+            "content_sha256": "65fd526cd85d0540b9e2bfa80824ce91f45d0f56376203595190d863eaed50d9",
+            "evidence_kind": "runtime_hazard_state",
+            "freshness_deadline": null,
+            "freshness_proof": "unverified",
+            "observed_at": "2026-07-23T12:00:00+00:00",
+            "source_id": "hazard:hazard_state_65fd526cd85d"
+          },
+          "status": "observed",
+          "unit": "m",
+          "value": 128.0
+        },
+        {
+          "frame": "local_ned_xy_altitude_up",
+          "name": "local_x_m",
+          "source": {
+            "content_sha256": "65fd526cd85d0540b9e2bfa80824ce91f45d0f56376203595190d863eaed50d9",
+            "evidence_kind": "runtime_hazard_state",
+            "freshness_deadline": null,
+            "freshness_proof": "unverified",
+            "observed_at": "2026-07-23T12:00:00+00:00",
+            "source_id": "hazard:hazard_state_65fd526cd85d"
+          },
+          "status": "observed",
+          "unit": "m",
+          "value": 0.0
+        },
+        {
+          "frame": "local_ned_xy_altitude_up",
+          "name": "local_y_m",
+          "source": {
+            "content_sha256": "65fd526cd85d0540b9e2bfa80824ce91f45d0f56376203595190d863eaed50d9",
+            "evidence_kind": "runtime_hazard_state",
+            "freshness_deadline": null,
+            "freshness_proof": "unverified",
+            "observed_at": "2026-07-23T12:00:00+00:00",
+            "source_id": "hazard:hazard_state_65fd526cd85d"
+          },
+          "status": "observed",
+          "unit": "m",
+          "value": 0.0
+        },
+        {
+          "frame": "local_ned_xy_altitude_up",
+          "name": "altitude_above_home_m",
+          "source": {
+            "content_sha256": "65fd526cd85d0540b9e2bfa80824ce91f45d0f56376203595190d863eaed50d9",
+            "evidence_kind": "runtime_hazard_state",
+            "freshness_deadline": null,
+            "freshness_proof": "unverified",
+            "observed_at": "2026-07-23T12:00:00+00:00",
+            "source_id": "hazard:hazard_state_65fd526cd85d"
+          },
+          "status": "observed",
+          "unit": "m",
+          "value": 30.0
+        },
+        {
+          "frame": null,
+          "name": "landing_zone_safe",
+          "source": {
+            "content_sha256": "65fd526cd85d0540b9e2bfa80824ce91f45d0f56376203595190d863eaed50d9",
+            "evidence_kind": "runtime_hazard_state",
+            "freshness_deadline": null,
+            "freshness_proof": "unverified",
+            "observed_at": "2026-07-23T12:00:00+00:00",
+            "source_id": "hazard:hazard_state_65fd526cd85d"
+          },
+          "status": "observed",
+          "unit": "boolean",
+          "value": true
+        }
+      ],
+      "policy_binding": {
+        "policy_id": "px4_action_feasibility_conformance_policy.v1",
+        "policy_sha256": "04224dd5e8341a88a94b7ba16ca6163fb575d968f83194723f1d273a7c3cbad4",
+        "policy_version": "runtime.v1"
+      },
+      "schema_version": "missionos_core_hazard_state.v1",
+      "state_id": "hazard_state_65fd526cd85d"
+    },
+    "core_hazard_state_sha256": "c69815071146ca73ae7dad87d9f53321ae310278c379cdaad9eeca08001445ac",
+    "derived_facts": {
+      "battery_return_margin_percent": {
+        "fact_status": "derived",
+        "model_ref": "px4_sitl_temperature_derating.v1",
+        "source_refs": [
+          "observed_facts.battery_remaining_percent",
+          "temperature_model.battery_capacity_factor",
+          "policy_snapshot.battery_return_threshold_percent"
+        ],
+        "unit": "percentage_points",
+        "value": 67.21
+      },
+      "effective_battery_remaining_percent": {
+        "fact_status": "derived",
+        "model_ref": "px4_sitl_temperature_derating.v1",
+        "source_refs": [
+          "observed_facts.battery_remaining_percent",
+          "temperature_model.battery_capacity_factor"
+        ],
+        "unit": "percent",
+        "value": 87.21
+      },
+      "motor_thrust_factor": {
+        "fact_status": "derived",
+        "model_ref": "px4_sitl_temperature_derating.v1",
+        "source_refs": [
+          "runtime_readback.px4_param_get",
+          "runtime_readback.route_temperature"
+        ],
+        "unit": "ratio",
+        "value": 0.9
+      },
+      "obstacle_time_to_conflict_s": {
+        "fact_status": "derived",
+        "model_ref": null,
+        "source_refs": [
+          "observed_facts.obstacle_time_to_conflict_s"
+        ],
+        "unit": "s",
+        "value": 60.0
+      },
+      "terrain_clearance_margin_m": {
+        "fact_status": "derived",
+        "model_ref": "clearance_minus_policy_minimum.v1",
+        "source_refs": [
+          "observed_facts.terrain_clearance_m",
+          "policy_snapshot.min_terrain_clearance_m"
+        ],
+        "unit": "m",
+        "value": 20.0
+      },
+      "wind_control_margin_mps": {
+        "fact_status": "derived",
+        "model_ref": "conservative_worst_observed_wind.v1",
+        "source_refs": [
+          "observed_facts.wind_speed_mps",
+          "observed_facts.wind_gust_mps",
+          "policy_snapshot.max_recovery_horizontal_speed_mps"
+        ],
+        "unit": "m/s",
+        "value": 5.2
+      }
+    },
+    "dispatch_authority_created": false,
+    "freshness": {
+      "blocking_reasons": [
+        "hazard_state_telemetry_stale"
+      ],
+      "freshness_status": "unverified"
+    },
+    "hazard_state_id": "hazard_state_0d5308aeddc2",
+    "hazard_state_sha256": "0d5308aeddc21e308f472757d1e11bc35e71c472a368419a37497e830386e5ba",
+    "hazard_state_status": "unverified",
+    "model_assumptions": [
+      "temperature_derating_applies_only_when_source_backed_model_is_complete",
+      "missing_or_incomparable_evidence_is_not_treated_as_safe",
+      "auto_cruise_speed_is_not_offboard_recovery_performance"
+    ],
+    "observed_at": "2026-07-23T12:00:00+00:00",
+    "observed_facts": {
+      "altitude_above_home_m": {
+        "fact_name": "altitude_above_home_m",
+        "fact_status": "observed",
+        "frame": "local_ned_xy_altitude_up",
+        "observed_at": "2026-07-23T12:00:00+00:00",
+        "source_refs": [
+          "runtime_readback.local_position"
+        ],
+        "telemetry_cursor": {
+          "cursor_status": "complete",
+          "elapsed_seconds": 163.207,
+          "sample_index": 140
+        },
+        "unit": "m",
+        "value": 30.0
+      },
+      "battery_remaining_percent": {
+        "fact_name": "battery_remaining_percent",
+        "fact_status": "observed",
+        "frame": null,
+        "observed_at": "2026-07-23T12:00:00+00:00",
+        "source_refs": [
+          "runtime_readback.battery_status"
+        ],
+        "telemetry_cursor": {
+          "cursor_status": "complete",
+          "elapsed_seconds": 163.207,
+          "sample_index": 140
+        },
+        "unit": "percent",
+        "value": 91.8
+      },
+      "distance_to_home_m": {
+        "fact_name": "distance_to_home_m",
+        "fact_status": "observed",
+        "frame": null,
+        "observed_at": "2026-07-23T12:00:00+00:00",
+        "source_refs": [
+          "runtime_readback.local_position"
+        ],
+        "telemetry_cursor": {
+          "cursor_status": "complete",
+          "elapsed_seconds": 163.207,
+          "sample_index": 140
+        },
+        "unit": "m",
+        "value": 128.0
+      },
+      "landing_zone_safe": {
+        "fact_name": "landing_zone_safe",
+        "fact_status": "observed",
+        "frame": null,
+        "observed_at": "2026-07-23T12:00:00+00:00",
+        "source_refs": [
+          "runtime_readback.landing_zone"
+        ],
+        "telemetry_cursor": {
+          "cursor_status": "complete",
+          "elapsed_seconds": 163.207,
+          "sample_index": 140
+        },
+        "unit": "boolean",
+        "value": true
+      },
+      "local_avoidance_required": {
+        "fact_name": "local_avoidance_required",
+        "fact_status": "observed",
+        "frame": "local_ned_xy_altitude_up",
+        "observed_at": "2026-07-23T12:00:00+00:00",
+        "source_refs": [
+          "runtime_readback.local_conflict"
+        ],
+        "telemetry_cursor": {
+          "cursor_status": "complete",
+          "elapsed_seconds": 163.207,
+          "sample_index": 140
+        },
+        "unit": "boolean",
+        "value": true
+      },
+      "local_x_m": {
+        "fact_name": "local_x_m",
+        "fact_status": "observed",
+        "frame": "local_ned_xy_altitude_up",
+        "observed_at": "2026-07-23T12:00:00+00:00",
+        "source_refs": [
+          "runtime_readback.local_position"
+        ],
+        "telemetry_cursor": {
+          "cursor_status": "complete",
+          "elapsed_seconds": 163.207,
+          "sample_index": 140
+        },
+        "unit": "m",
+        "value": 0.0
+      },
+      "local_y_m": {
+        "fact_name": "local_y_m",
+        "fact_status": "observed",
+        "frame": "local_ned_xy_altitude_up",
+        "observed_at": "2026-07-23T12:00:00+00:00",
+        "source_refs": [
+          "runtime_readback.local_position"
+        ],
+        "telemetry_cursor": {
+          "cursor_status": "complete",
+          "elapsed_seconds": 163.207,
+          "sample_index": 140
+        },
+        "unit": "m",
+        "value": 0.0
+      },
+      "nearest_obstacle_name": {
+        "fact_name": "nearest_obstacle_name",
+        "fact_status": "observed",
+        "frame": "local_ned_xy_altitude_up",
+        "observed_at": "2026-07-23T12:00:00+00:00",
+        "source_refs": [
+          "runtime_readback.obstacle_pose_and_bounds"
+        ],
+        "telemetry_cursor": {
+          "cursor_status": "complete",
+          "elapsed_seconds": 163.207,
+          "sample_index": 140
+        },
+        "unit": "identifier",
+        "value": "route_obstacle"
+      },
+      "obstacle_time_to_conflict_s": {
+        "fact_name": "obstacle_time_to_conflict_s",
+        "fact_status": "observed",
+        "frame": null,
+        "observed_at": "2026-07-23T12:00:00+00:00",
+        "source_refs": [
+          "runtime_readback.obstacle_pose_and_bounds"
+        ],
+        "telemetry_cursor": {
+          "cursor_status": "complete",
+          "elapsed_seconds": 163.207,
+          "sample_index": 140
+        },
+        "unit": "s",
+        "value": 60.0
+      },
+      "payload_mass_kg": {
+        "fact_name": "payload_mass_kg",
+        "fact_status": "configured_applied",
+        "frame": null,
+        "observed_at": "2026-07-23T12:00:00+00:00",
+        "source_refs": [
+          "runtime_readback.payload_sdf_mass"
+        ],
+        "telemetry_cursor": {
+          "cursor_status": "complete",
+          "elapsed_seconds": 163.207,
+          "sample_index": 140
+        },
+        "unit": "kg",
+        "value": 0.5
+      },
+      "payload_requested_mass_kg": {
+        "fact_name": "payload_requested_mass_kg",
+        "fact_status": "configured_applied",
+        "frame": null,
+        "observed_at": "2026-07-23T12:00:00+00:00",
+        "source_refs": [
+          "runtime_readback.payload_sdf_mass"
+        ],
+        "telemetry_cursor": {
+          "cursor_status": "complete",
+          "elapsed_seconds": 163.207,
+          "sample_index": 140
+        },
+        "unit": "kg",
+        "value": 0.5
+      },
+      "safety_hold_observed": {
+        "fact_name": "safety_hold_observed",
+        "fact_status": "observed",
+        "frame": null,
+        "observed_at": "2026-07-23T12:00:00+00:00",
+        "source_refs": [
+          "runtime_readback.safety_hold"
+        ],
+        "telemetry_cursor": {
+          "cursor_status": "complete",
+          "elapsed_seconds": 163.207,
+          "sample_index": 140
+        },
+        "unit": "boolean",
+        "value": true
+      },
+      "temperature_c": {
+        "fact_name": "temperature_c",
+        "fact_status": "observed",
+        "frame": null,
+        "observed_at": "2026-07-23T12:00:00+00:00",
+        "source_refs": [
+          "runtime_readback.px4_param_get",
+          "runtime_readback.route_temperature"
+        ],
+        "telemetry_cursor": {
+          "cursor_status": "complete",
+          "elapsed_seconds": 163.207,
+          "sample_index": 140
+        },
+        "unit": "degC",
+        "value": 38.0
+      },
+      "terrain_clearance_m": {
+        "fact_name": "terrain_clearance_m",
+        "fact_status": "observed",
+        "frame": "amsl",
+        "observed_at": "2026-07-23T12:00:00+00:00",
+        "source_refs": [
+          "runtime_readback.terrain_clearance"
+        ],
+        "telemetry_cursor": {
+          "cursor_status": "complete",
+          "elapsed_seconds": 163.207,
+          "sample_index": 140
+        },
+        "unit": "m",
+        "value": 50.0
+      },
+      "wind_gust_mps": {
+        "fact_name": "wind_gust_mps",
+        "fact_status": "observed",
+        "frame": null,
+        "observed_at": "2026-07-23T12:00:00+00:00",
+        "source_refs": [
+          "runtime_readback.wind_window"
+        ],
+        "telemetry_cursor": {
+          "cursor_status": "complete",
+          "elapsed_seconds": 163.207,
+          "sample_index": 140
+        },
+        "unit": "m/s",
+        "value": 4.8
+      },
+      "wind_speed_mps": {
+        "fact_name": "wind_speed_mps",
+        "fact_status": "observed",
+        "frame": null,
+        "observed_at": "2026-07-23T12:00:00+00:00",
+        "source_refs": [
+          "runtime_readback.wind_window"
+        ],
+        "telemetry_cursor": {
+          "cursor_status": "complete",
+          "elapsed_seconds": 163.207,
+          "sample_index": 140
+        },
+        "unit": "m/s",
+        "value": 4.0
+      }
+    },
+    "obstacle_geometry": {
+      "blocking_reasons": [],
+      "bounds_local_xyz_m": {
+        "max_x_m": 32.0,
+        "max_y_m": 9.0,
+        "max_z_m": 20.0,
+        "min_x_m": 28.0,
+        "min_y_m": -9.0,
+        "min_z_m": 0.0
+      },
+      "frame_id": "local_ned_xy_altitude_up",
+      "geometry_status": "verified",
+      "obstacle_name": "route_obstacle",
+      "required_clearance_m": 20.0,
+      "source_refs": [
+        "telemetry_snapshot.obstacle.obstacle_manifest",
+        "runtime_readback.obstacle_pose_and_bounds"
+      ]
+    },
+    "performance_envelope": {
+      "action": "avoid_obstacle",
+      "approval_created": false,
+      "blocking_reasons": [],
+      "completion_claimed": false,
+      "conservative_horizontal_speed_mps": 2.263247,
+      "dispatch_authority_created": false,
+      "duration_seconds": 4.386,
+      "envelope_status": "verified",
+      "evidence_kind": "same_task_bounded_offboard_maneuver",
+      "horizontal_distance_m": 13.237,
+      "minimum_sample_count": 5,
+      "observed_horizontal_speed_mps": 3.017663,
+      "physical_execution_invoked": false,
+      "sample_count": 5,
+      "schema_version": "missionos_runtime_recovery_performance_envelope.v1",
+      "source_refs": [
+        "runtime_readback.same_task_offboard_calibration"
+      ],
+      "uncertainty_fraction": 0.25
+    },
+    "physical_execution_invoked": false,
+    "policy_ref": "px4_action_feasibility_conformance_policy.v1",
+    "policy_sha256": "04224dd5e8341a88a94b7ba16ca6163fb575d968f83194723f1d273a7c3cbad4",
+    "policy_snapshot": {
+      "battery_action_energy_model": {
+        "headwind_multiplier_per_mps": 0.01,
+        "model_id": "px4_sitl_action_energy.v1",
+        "model_version": "1.0.0",
+        "payload_energy_multiplier_per_kg": 0.05,
+        "percent_per_meter_climb": 0.08,
+        "percent_per_meter_horizontal": 0.02,
+        "source_refs": [
+          "policy.action_energy_model"
+        ],
+        "uncertainty_percent": 5.0
+      },
+      "battery_return_threshold_percent": 20.0,
+      "max_obstacle_avoidance_duration_s": 120.0,
+      "max_recovery_duration_s": 75.0,
+      "max_recovery_horizontal_speed_mps": 10.0,
+      "max_recovery_vertical_speed_mps": 3.0,
+      "max_wind_speed_mps": 6.0,
+      "min_terrain_clearance_m": 30.0,
+      "minimum_motor_thrust_factor": 0.6,
+      "obstacle_minimum_clearance_m": 20.0,
+      "offboard_performance_envelope_required": true,
+      "offboard_performance_min_samples": 5,
+      "offboard_performance_uncertainty_fraction": 0.25,
+      "policy_ref": "px4_action_feasibility_conformance_policy.v1",
+      "reachability_duration_margin_factor": 1.25,
+      "reachability_setup_seconds": 5.0,
+      "temperature_derating_model": {
+        "battery_capacity_factor": 0.95,
+        "model_id": "px4_sitl_temperature_derating.v1",
+        "model_version": "1.0.0",
+        "motor_thrust_factor": 0.9,
+        "source_refs": [
+          "policy.temperature_derating_model"
+        ],
+        "uncertainty_percent": 5.0
+      }
+    },
+    "progress_counted": false,
+    "schema_version": "missionos_runtime_recovery_hazard_state.v1",
+    "source": "anonymized_px4_sitl_observation",
+    "telemetry_cursor": {
+      "cursor_status": "complete",
+      "elapsed_seconds": 163.207,
+      "sample_index": 140
+    },
+    "temperature_model": {
+      "battery_capacity_factor": 0.95,
+      "blocking_reasons": [],
+      "model_id": "px4_sitl_temperature_derating.v1",
+      "model_status": "verified",
+      "model_version": "1.0.0",
+      "motor_thrust_factor": 0.9,
+      "schema_version": "missionos_runtime_recovery_temperature_model.v1",
+      "source_refs": [
+        "runtime_readback.px4_param_get",
+        "runtime_readback.route_temperature"
+      ],
+      "uncertainty": 5.0
+    }
+  },
+  "recovery_policy": {
+    "battery_action_energy_model": {
+      "headwind_multiplier_per_mps": 0.01,
+      "model_id": "px4_sitl_action_energy.v1",
+      "model_version": "1.0.0",
+      "payload_energy_multiplier_per_kg": 0.05,
+      "percent_per_meter_climb": 0.08,
+      "percent_per_meter_horizontal": 0.02,
+      "source_refs": [
+        "policy.action_energy_model"
+      ],
+      "uncertainty_percent": 5.0
+    },
+    "battery_return_threshold_percent": 20.0,
+    "max_obstacle_avoidance_duration_s": 120.0,
+    "max_recovery_duration_s": 75.0,
+    "max_recovery_horizontal_speed_mps": 10.0,
+    "max_recovery_vertical_speed_mps": 3.0,
+    "max_wind_speed_mps": 6.0,
+    "min_terrain_clearance_m": 30.0,
+    "minimum_motor_thrust_factor": 0.6,
+    "obstacle_minimum_clearance_m": 20.0,
+    "offboard_performance_envelope_required": true,
+    "offboard_performance_min_samples": 5,
+    "offboard_performance_uncertainty_fraction": 0.25,
+    "policy_ref": "px4_action_feasibility_conformance_policy.v1",
+    "reachability_duration_margin_factor": 1.25,
+    "reachability_setup_seconds": 5.0,
+    "temperature_derating_model": {
+      "battery_capacity_factor": 0.95,
+      "model_id": "px4_sitl_temperature_derating.v1",
+      "model_version": "1.0.0",
+      "motor_thrust_factor": 0.9,
+      "source_refs": [
+        "policy.temperature_derating_model"
+      ],
+      "uncertainty_percent": 5.0
+    }
+  },
+  "replay_boundary": {
+    "approval_created": false,
+    "completion_claimed": false,
+    "dispatch_authority_created": false,
+    "gazebo_required": false,
+    "llm_required": false,
+    "network_required": false,
+    "physical_execution_invoked": false,
+    "progress_counted": false,
+    "px4_required": false,
+    "read_only": true
+  },
+  "scenario_class": "refusal",
+  "schema_version": "missionos_action_feasibility_conformance_case.v1",
+  "source_evidence_refs": [
+    "maintainer_evidence:px4_action_feasibility_composite_deepseek_e2e",
+    "release_validation:public_v0.1.0-rc.4"
+  ],
+  "truth_boundary": {
+    "artifact_truth": {
+      "case_is_replay_fixture": true,
+      "extracted_observations": [
+        "stale_dispatch_telemetry_fails_closed",
+        "no_dispatch_authority_created"
+      ],
+      "source_values_are_anonymized_semantic_extracts": true
+    },
+    "runtime_truth": {
+      "llm_invoked_by_this_replay": false,
+      "runtime_invoked_by_this_replay": false,
+      "simulator_invoked_by_this_replay": false,
+      "source_contract_evidence_available": true,
+      "source_contract_evidence_refs": [
+        "contract_evidence:action_feasibility_fail_closed",
+        "gateway_smoke:action_feasibility_fail_closed"
+      ],
+      "source_runtime_evidence_available": true,
+      "source_runtime_evidence_refs": [
+        "maintainer_evidence:px4_action_feasibility_composite_deepseek_e2e",
+        "release_validation:public_v0.1.0-rc.4"
+      ]
+    }
+  }
+}

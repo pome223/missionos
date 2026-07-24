@@ -161,7 +161,10 @@ Install the repository and CLI packages (requires Python 3.11+):
 ```
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e . -e packages/missionos-gateway -e packages/missionos-cli
+python -m pip install -e . \
+  -e packages/missionos-core \
+  -e packages/missionos-gateway \
+  -e packages/missionos-cli
 missionos --help
 ```
 

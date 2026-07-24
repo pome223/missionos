@@ -32,11 +32,11 @@ from src.gateway.missionos_capabilities import (
 )
 from src.runtime.px4_gazebo_route.action_feasibility import (
     SUPPORTED_FEASIBILITY_ACTIONS,
+)
+from src.runtime.px4_gazebo_route.core_action_feasibility_adapter import (
+    build_runtime_recovery_hazard_state,
     verify_runtime_recovery_action_candidates,
     verify_runtime_recovery_action_feasibility,
-)
-from src.runtime.px4_gazebo_route.hazard_state import (
-    build_runtime_recovery_hazard_state,
 )
 from src.runtime.px4_gazebo_route.recovery_intent_compiler import (
     build_runtime_recovery_intent,

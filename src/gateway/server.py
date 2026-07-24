@@ -96,10 +96,12 @@ from src.intelligence.missionos_agent_runtime import (
 )
 from src.runtime.px4_gazebo_route.action_feasibility import (
     action_feasibility_hash_matches,
+)
+from src.runtime.px4_gazebo_route.core_action_feasibility_adapter import (
+    build_runtime_recovery_hazard_state,
     verify_runtime_recovery_action_feasibility,
 )
 from src.runtime.px4_gazebo_route.hazard_state import (
-    build_runtime_recovery_hazard_state,
     hazard_state_hash_matches,
     recovery_policy_sha256,
 )
@@ -165,6 +167,7 @@ from src.runtime.turtlebot3_home_mission import (
     _planned_segments_sha256,
     _recovery_checkpoint_hash,
     _recovery_resume_state_hash,
+    _revalidate_approved_recovery_candidate,
     _turtlebot3_recovery_revision_intent,
     _turtlebot3_recovery_revision_source_geometry_reasons,
     approve_turtlebot3_home_mission_plan,
@@ -8837,6 +8840,56 @@ class GatewayServer:
                             "turtlebot3_recovery_mission_approval_missing"
                         )
 
+                    predispatch_revalidation: dict[str, Any] = {}
+                    candidate_binding = checkpoint.get(
+                        "recovery_candidate_binding"
+                    )
+                    candidate_binding = (
+                        candidate_binding
+                        if isinstance(candidate_binding, Mapping)
+                        else {}
+                    )
+                    if (
+                        not blocked_reasons
+                        and candidate_binding.get(
+                            "core_action_feasibility_required"
+                        )
+                        is True
+                    ):
+                        obstacle_scenario = (
+                            previous_execution.get(
+                                "runtime_recovery_obstacle_scenario"
+                            )
+                            if isinstance(previous_execution, Mapping)
+                            else {}
+                        )
+                        obstacle_scenario = (
+                            dict(obstacle_scenario)
+                            if isinstance(obstacle_scenario, Mapping)
+                            else {}
+                        )
+                        predispatch_revalidation = await run_in_threadpool(
+                            _revalidate_approved_recovery_candidate,
+                            checkpoint=checkpoint,
+                            obstacle_scenario=obstacle_scenario,
+                        )
+                        if (
+                            predispatch_revalidation.get(
+                                "revalidation_status"
+                            )
+                            != "validated"
+                        ):
+                            blocked_reasons.extend(
+                                list(
+                                    predispatch_revalidation.get(
+                                        "blocking_reasons"
+                                    )
+                                    or [
+                                        "turtlebot3_core_action_feasibility_revalidation_failed"
+                                    ]
+                                )
+                            )
+
                     now = datetime.now(timezone.utc)
                     if blocked_reasons:
                         receipt = {
@@ -8861,6 +8914,9 @@ class GatewayServer:
                             "turtlebot3_continuation_invoked": False,
                             "active_runner_request_queued": False,
                             "dispatch_authority_created": False,
+                            "turtlebot3_recovery_predispatch_revalidation": (
+                                predispatch_revalidation
+                            ),
                             "blocked_reasons": blocked_reasons,
                             "delivery_completion_claimed": False,
                             "progress_counted": False,
@@ -8872,7 +8928,10 @@ class GatewayServer:
                             artifacts={
                                 "missionos_runtime_recovery_dispatch_receipt": (
                                     receipt
-                                )
+                                ),
+                                "turtlebot3_recovery_predispatch_revalidation": (
+                                    predispatch_revalidation
+                                ),
                             },
                         )
                         return JSONResponse(
@@ -8918,12 +8977,29 @@ class GatewayServer:
                         "gateway_process_owner_id": (
                             self._gateway_process_owner_id
                         ),
+                        "predispatch_revalidation_status": (
+                            predispatch_revalidation.get(
+                                "revalidation_status"
+                            )
+                            or "not_required"
+                        ),
+                        "predispatch_core_hazard_state_sha256": (
+                            predispatch_revalidation.get(
+                                "core_hazard_state_sha256"
+                            )
+                        ),
+                        "dispatch_authority_created_after_revalidation": True,
                     }
                     bounded_action = {
                         **bounded_action,
                         "dispatch_attempt_id": dispatch_attempt_id,
                         "gateway_process_owner_id": (
                             self._gateway_process_owner_id
+                        ),
+                        "predispatch_core_hazard_state_sha256": (
+                            predispatch_revalidation.get(
+                                "core_hazard_state_sha256"
+                            )
                         ),
                     }
                     dispatch_attempt = {
@@ -8997,6 +9073,9 @@ class GatewayServer:
                                 operator_approval
                             ),
                             "turtlebot3_recovery_bounded_action": bounded_action,
+                            "turtlebot3_recovery_predispatch_revalidation": (
+                                predispatch_revalidation
+                            ),
                             "turtlebot3_recovery_dispatch_attempt": (
                                 dispatch_attempt
                             ),

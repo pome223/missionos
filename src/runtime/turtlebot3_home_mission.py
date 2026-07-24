@@ -37,6 +37,10 @@ from src.runtime.mission_autonomy_envelope import (
     build_mission_autonomy_recovery_proposal,
     classify_mission_autonomy_recovery_proposal,
 )
+from src.runtime.nav2_core_action_feasibility_adapter import (
+    evaluate_nav2_recovery_candidates_through_core,
+    nav2_recovery_policy,
+)
 from src.runtime.nvblox_perception_evidence import (
     build_nvblox_perception_evidence_from_env_or_responses,
 )
@@ -2341,6 +2345,15 @@ def _runtime_recovery_obstacle_scenario(
         "runtime_obstacle_y_m": obstacle_y_m,
         "runtime_obstacle_size_x_m": scene_marker.get("size_x_m"),
         "runtime_obstacle_size_y_m": scene_marker.get("size_y_m"),
+        "runtime_obstacle_z_m": scene_marker.get("collision_z_m"),
+        "runtime_obstacle_collision_size_x_m": scene_marker.get(
+            "collision_size_x_m"
+        ),
+        "runtime_obstacle_collision_size_y_m": scene_marker.get(
+            "collision_size_y_m"
+        ),
+        "runtime_obstacle_size_z_m": scene_marker.get("collision_size_z_m"),
+        "runtime_obstacle_frame_id": "map",
         "runtime_obstacle_scene_ref": scene_marker.get("name"),
         "runtime_obstacle_geometry_source": (
             "opt_in_turtlebot3_home_loop_obstacle_smoke_scene"
@@ -2383,6 +2396,7 @@ def _deterministic_recovery_candidates(
     clearance = _recovery_candidate_clearance_m()
     x_offset = size_x / 2.0 + clearance
     y_offset = size_y / 2.0 + clearance
+    max_speed_mps = _profile_dynamic_obstacle_avoidance_goal().max_speed_mps
     return [
         {
             "candidate_id": "obstacle_bypass_south",
@@ -2392,6 +2406,7 @@ def _deterministic_recovery_candidates(
             "x_m": obstacle_x,
             "y_m": obstacle_y - y_offset,
             "yaw_rad": 0.0,
+            "max_speed_mps": max_speed_mps,
             "geometry_clearance_m": clearance,
             "geometry_source": "obstacle_bbox_plus_clearance",
         },
@@ -2403,6 +2418,7 @@ def _deterministic_recovery_candidates(
             "x_m": obstacle_x,
             "y_m": obstacle_y + y_offset,
             "yaw_rad": 0.0,
+            "max_speed_mps": max_speed_mps,
             "geometry_clearance_m": clearance,
             "geometry_source": "obstacle_bbox_plus_clearance",
         },
@@ -2414,6 +2430,7 @@ def _deterministic_recovery_candidates(
             "x_m": obstacle_x - x_offset,
             "y_m": obstacle_y,
             "yaw_rad": 0.0,
+            "max_speed_mps": max_speed_mps,
             "geometry_clearance_m": clearance,
             "geometry_source": "obstacle_bbox_plus_clearance",
         },
@@ -2425,6 +2442,7 @@ def _deterministic_recovery_candidates(
             "x_m": obstacle_x + x_offset,
             "y_m": obstacle_y,
             "yaw_rad": 0.0,
+            "max_speed_mps": max_speed_mps,
             "geometry_clearance_m": clearance,
             "geometry_source": "obstacle_bbox_plus_clearance",
         },
@@ -2492,6 +2510,7 @@ def _observed_inbound_retreat_candidate(
         "x_m": target_x,
         "y_m": target_y,
         "yaw_rad": yaw,
+        "max_speed_mps": _profile_dynamic_obstacle_avoidance_goal().max_speed_mps,
         "retreat_distance_bound_m": retreat_distance_m,
         "geometry_source": "bridge_observed_inbound_map_trajectory",
     }
@@ -2541,6 +2560,7 @@ def _evaluate_recovery_candidates_plan_only(
     candidates: list[dict[str, Any]],
     obstacle: Mapping[str, Any],
     frame_id: str = "map",
+    previous_hazard_state: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Refresh transient Nav2 snapshots without creating dispatch authority."""
 
@@ -2618,7 +2638,11 @@ def _evaluate_recovery_candidates_plan_only(
             time.sleep(retry_interval_s)
     if last_error is not None:
         raise last_error
-    return {
+    observed_at = str(
+        evaluation.get("observation_captured_at")
+        or datetime.now(timezone.utc).isoformat()
+    )
+    raw_evaluation = {
         **evaluation,
         "plan_only_evaluation_attempt_count": attempt_index + 1,
         "plan_only_retry_performed": attempt_index > 0,
@@ -2629,6 +2653,14 @@ def _evaluate_recovery_candidates_plan_only(
         "dispatch_authority_created": False,
         "physical_execution_invoked": False,
     }
+    return evaluate_nav2_recovery_candidates_through_core(
+        evaluation=raw_evaluation,
+        obstacle=obstacle,
+        robot_collision_envelope=_TURTLEBOT3_STOCK_COLLISION_ENVELOPE,
+        active_policy=nav2_recovery_policy(),
+        evaluated_at=observed_at,
+        previous_hazard_state=previous_hazard_state,
+    )
 
 
 def _resolve_recovery_candidate(
@@ -2698,6 +2730,8 @@ def _resolve_recovery_candidate(
         evaluation.get("evaluation_status") == "validated"
         and selected is not None
         and selected.get("path_valid") is True
+        and selected.get("core_action_feasibility_status")
+        == "verified_feasible"
     )
     evaluations = [
         dict(item)
@@ -2710,6 +2744,8 @@ def _resolve_recovery_candidate(
             for item in evaluations
             if item.get("candidate_id") == "observed_inbound_bounded_retreat"
             and item.get("path_valid") is True
+            and item.get("core_action_feasibility_status")
+            == "verified_feasible"
         ),
         None,
     )
@@ -2781,6 +2817,8 @@ def _resolve_recovery_candidate(
                     sequence_evaluation.get("evaluation_status") == "validated"
                     and all(
                         candidate.get("path_valid") is True
+                        and candidate.get("core_action_feasibility_status")
+                        == "verified_feasible"
                         for candidate in evaluated_sequence
                     )
                 ):
@@ -2847,6 +2885,8 @@ def _resolve_recovery_candidate(
             sequence_evaluation.get("evaluation_status") == "validated"
             and all(
                 candidate.get("path_valid") is True
+                and candidate.get("core_action_feasibility_status")
+                == "verified_feasible"
                 for candidate in selected_sequence
             )
         )
@@ -2876,6 +2916,12 @@ def _resolve_recovery_candidate(
         ),
         "local_costmap_source": evaluation.get("local_costmap_source"),
         "local_costmap_frame_id": evaluation.get("local_costmap_frame_id"),
+        "core_adapter_id": evaluation.get("core_adapter_id"),
+        "core_hazard_state": evaluation.get("core_hazard_state"),
+        "core_hazard_state_sha256": evaluation.get(
+            "core_hazard_state_sha256"
+        ),
+        "core_policy_binding": evaluation.get("core_policy_binding"),
         "local_cost_threshold": evaluation.get("local_cost_threshold"),
         "compute_path_action": evaluation.get("compute_path_action"),
         "plan_only_evaluation_attempt_count": evaluation.get(
@@ -2926,12 +2972,16 @@ def _revalidate_approved_recovery_candidate(
     if (
         binding.get("live_costmap_validated") is not True
         or binding.get("dual_costmap_validated") is not True
+        or (
+            binding.get("core_action_feasibility_required") is True
+            and not isinstance(binding.get("core_hazard_state"), Mapping)
+        )
     ):
         return {
             "schema_version": "missionos_nav2_recovery_candidate_revalidation.v1",
             "revalidation_status": "blocked",
             "blocking_reasons": [
-                "checkpoint_recovery_candidate_not_dual_costmap_validated"
+                "checkpoint_recovery_candidate_not_fully_verified"
             ],
             "dispatch_request_sent": False,
             "dispatch_authority_created": False,
@@ -2957,6 +3007,10 @@ def _revalidate_approved_recovery_candidate(
                     "x_m": float(goal["x_m"]),
                     "y_m": float(goal["y_m"]),
                     "yaw_rad": float(goal.get("yaw_rad") or 0.0),
+                    "max_speed_mps": float(
+                        goal.get("max_speed_mps")
+                        or _profile_dynamic_obstacle_avoidance_goal().max_speed_mps
+                    ),
                     "geometry_source": "checkpoint_approved_goal_sequence",
                 }
                 if candidate_id == "observed_inbound_bounded_retreat":
@@ -2978,6 +3032,9 @@ def _revalidate_approved_recovery_candidate(
                     "x_m": float(parameters["target_x_m"]),
                     "y_m": float(parameters["target_y_m"]),
                     "yaw_rad": float(parameters.get("target_yaw_rad") or 0.0),
+                    "max_speed_mps": (
+                        _profile_dynamic_obstacle_avoidance_goal().max_speed_mps
+                    ),
                     "geometry_source": "checkpoint_approved_parameters",
                 }
             ]
@@ -2995,6 +3052,14 @@ def _revalidate_approved_recovery_candidate(
             candidates=candidates,
             obstacle=obstacle_scenario,
             frame_id="map",
+            previous_hazard_state=(
+                dict(binding["core_hazard_state"])
+                if isinstance(
+                    binding.get("core_hazard_state"),
+                    Mapping,
+                )
+                else None
+            ),
         )
     except Ros2Nav2BridgeError as exc:
         return {
@@ -3021,6 +3086,8 @@ def _revalidate_approved_recovery_candidate(
         and all(
             (item := by_id.get(candidate["candidate_id"])) is not None
             and item.get("path_valid") is True
+            and item.get("core_action_feasibility_status")
+            == "verified_feasible"
             and math.isclose(float(item.get("x_m")), candidate["x_m"], abs_tol=1e-6)
             and math.isclose(float(item.get("y_m")), candidate["y_m"], abs_tol=1e-6)
             for candidate in candidates
@@ -3038,6 +3105,18 @@ def _revalidate_approved_recovery_candidate(
         "local_costmap_snapshot_hash": evaluation.get(
             "local_costmap_snapshot_hash"
         ),
+        "core_adapter_id": evaluation.get("core_adapter_id"),
+        "core_hazard_state": evaluation.get("core_hazard_state"),
+        "core_hazard_state_sha256": evaluation.get(
+            "core_hazard_state_sha256"
+        ),
+        "core_policy_binding": evaluation.get("core_policy_binding"),
+        "core_action_feasibility_statuses": [
+            by_id.get(candidate["candidate_id"], {}).get(
+                "core_action_feasibility_status"
+            )
+            for candidate in candidates
+        ],
         "original_costmap_snapshot_hash": binding.get("costmap_snapshot_hash"),
         "path_sha256_sequence": [
             by_id.get(candidate["candidate_id"], {}).get("path_sha256")
@@ -5493,6 +5572,38 @@ def _build_turtlebot3_recovery_checkpoint(
                 "dispatch_authority_created": False,
                 "physical_execution_invoked": False,
             }
+            if candidate_resolution.get("core_adapter_id"):
+                checkpoint["recovery_candidate_binding"].update(
+                    {
+                        "core_action_feasibility_required": True,
+                        "core_adapter_id": candidate_resolution.get(
+                            "core_adapter_id"
+                        ),
+                        "core_hazard_state": candidate_resolution.get(
+                            "core_hazard_state"
+                        ),
+                        "core_hazard_state_sha256": candidate_resolution.get(
+                            "core_hazard_state_sha256"
+                        ),
+                        "core_policy_binding": candidate_resolution.get(
+                            "core_policy_binding"
+                        ),
+                        "core_action_feasibility_statuses": [
+                            item.get("core_action_feasibility_status")
+                            for item in sequence
+                        ],
+                        "core_action_feasibility_artifact_ids": [
+                            item["core_action_feasibility"].get(
+                                "artifact_id"
+                            )
+                            for item in sequence
+                            if isinstance(
+                                item.get("core_action_feasibility"),
+                                Mapping,
+                            )
+                        ],
+                    }
+                )
             if candidate_resolution.get("dual_costmap_validated") is True:
                 checkpoint["recovery_candidate_binding"].update(
                     {
@@ -5512,6 +5623,17 @@ def _build_turtlebot3_recovery_checkpoint(
                         "bounded_retreat_required": len(sequence) > 1,
                     }
                 )
+    if (
+        selected_action == "avoid_obstacle"
+        and _truthy_env(TURTLEBOT3_RECOVERY_CANDIDATE_EVALUATION_ENV)
+        and candidate_resolution.get("resolution_status") != "validated"
+    ):
+        checkpoint["operator_guidance_required"] = True
+        checkpoint["action_feasibility_status"] = "unverified"
+        checkpoint["action_feasibility_blocking_reasons"] = list(
+            candidate_resolution.get("blocking_reasons")
+            or ["no_core_verified_recovery_candidate"]
+        )
     checkpoint["recovery_contract_bundle"] = (
         build_turtlebot3_recovery_contract_bundle(checkpoint)
     )

@@ -8,12 +8,19 @@ import pytest
 from src.gateway import server as gateway_server
 from src.intelligence import missionos_agent_runtime
 from src.runtime.px4_gazebo_route.action_feasibility import (
+    action_feasibility_hash_matches,
     SUPPORTED_FEASIBILITY_ACTIONS,
     verify_runtime_recovery_action_candidates,
     verify_runtime_recovery_action_feasibility,
 )
+from src.runtime.px4_gazebo_route.core_action_feasibility_adapter import (
+    PX4_CORE_ADAPTER_ID,
+    attach_core_hazard_state,
+    verify_runtime_recovery_action_feasibility as verify_core_backed_feasibility,
+)
 from src.runtime.px4_gazebo_route.hazard_state import (
     build_runtime_recovery_hazard_state,
+    hazard_state_hash_matches,
 )
 from src.runtime.px4_gazebo_route.recovery_intent_compiler import (
     build_runtime_recovery_intent,
@@ -219,6 +226,49 @@ def test_hazard_state_separates_observed_and_derived_facts() -> None:
     assert state["dispatch_authority_created"] is False
     assert state["physical_execution_invoked"] is False
     assert state["completion_claimed"] is False
+
+
+def test_core_adapter_preserves_verified_result_and_authority_boundary() -> None:
+    result = verify_core_backed_feasibility(
+        candidate=_candidates()[0],
+        hazard_state=attach_core_hazard_state(_state()),
+        recovery_policy=_policy(),
+    )
+
+    assert result["feasibility_status"] == "verified_feasible"
+    assert result["core_contract"]["adapter_id"] == PX4_CORE_ADAPTER_ID
+    assert result["core_contract"]["status"] == "verified_feasible"
+    assert result["core_contract"]["approval_created"] is False
+    assert result["core_contract"]["dispatch_authority_created"] is False
+    assert result["core_contract"]["execution_invoked"] is False
+    assert result["core_contract"]["progress_claimed"] is False
+    assert result["core_contract"]["completion_claimed"] is False
+    assert action_feasibility_hash_matches(result)
+
+
+def test_pending_legacy_hazard_cannot_bypass_core_adapter() -> None:
+    result = verify_core_backed_feasibility(
+        candidate=_candidates()[0],
+        hazard_state=_state(),
+        recovery_policy=_policy(),
+    )
+
+    assert result["feasibility_status"] == "unverified"
+    assert "action_feasibility_core_hazard_state_missing" in result[
+        "unverified_reasons"
+    ]
+    assert result["core_contract"]["approval_created"] is False
+    assert result["core_contract"]["dispatch_authority_created"] is False
+    assert action_feasibility_hash_matches(result)
+
+
+def test_core_hazard_projection_is_hash_bound() -> None:
+    state = attach_core_hazard_state(_state())
+    assert hazard_state_hash_matches(state)
+
+    state["core_hazard_state"]["assumptions"] = ("tampered",)
+
+    assert not hazard_state_hash_matches(state)
 
 
 def test_all_required_actions_share_verified_feasibility_contract() -> None:

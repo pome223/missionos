@@ -64,6 +64,7 @@ docker run --rm -i --shm-size=1g \
   -e "ROS2_NAV2_GOAL_RESULT_TIMEOUT_S=${ROS2_NAV2_GOAL_RESULT_TIMEOUT_S:-180}" \
   -e "MISSIONOS_TURTLEBOT3_RECOVERY_CANDIDATE_EVALUATION=${MISSIONOS_TURTLEBOT3_RECOVERY_CANDIDATE_EVALUATION:-1}" \
   -e "MISSIONOS_TURTLEBOT3_RECOVERY_CANDIDATE_CLEARANCE_M=${MISSIONOS_TURTLEBOT3_RECOVERY_CANDIDATE_CLEARANCE_M:-0.75}" \
+  -e "ROS2_NAV2_USE_SIM_TIME=${ROS2_NAV2_USE_SIM_TIME:-1}" \
   -v "${repo_root}:/work/missionos" \
   -w /work/missionos \
   "${image}" \
@@ -97,7 +98,7 @@ fi
 
 source /opt/ros/humble/setup.bash
 source /opt/turtlebot3_ws/install/setup.bash
-export PYTHONPATH=/work/missionos:/work/missionos/src:/work/missionos/packages/missionos-gateway/src:${PYTHONPATH:-}
+export PYTHONPATH=/work/missionos:/work/missionos/src:/work/missionos/packages/missionos-core/src:/work/missionos/packages/missionos-gateway/src:${PYTHONPATH:-}
 if [ "${MISSIONOS_TURTLEBOT3_CAMERA_PERCEPTION_ENABLED:-0}" = "1" ]; then
   export TURTLEBOT3_MODEL="${MISSIONOS_TURTLEBOT3_SIM_MODEL:-waffle_pi}"
 else
@@ -246,6 +247,7 @@ export RUN_MISSIONOS_ROS2_NAV2_BOUNDED_DISPATCH_SMOKE=1
 export RUN_MISSIONOS_ROS2_NAV2_TURTLEBOT3_BRIDGE=1
 export ROS2_NAV2_BRIDGE_COMMAND="python3 /work/missionos/scripts/ros2_nav2_turtlebot3_bridge.py"
 export ROS2_NAV2_BRIDGE_TIMEOUT_S="${ROS2_NAV2_BRIDGE_TIMEOUT_S:-420}"
+export ROS2_NAV2_USE_SIM_TIME="${ROS2_NAV2_USE_SIM_TIME:-1}"
 export ROS2_NAV2_INITIALPOSE_ENABLE=1
 export ROS2_NAV2_INITIALPOSE_X_M=-2.0
 export ROS2_NAV2_INITIALPOSE_Y_M=-0.5

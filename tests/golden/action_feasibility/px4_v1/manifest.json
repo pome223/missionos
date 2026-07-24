@@ -1,0 +1,78 @@
+{
+  "case_count": 8,
+  "cases": [
+    {
+      "case_id": "px4-positive-verified-avoidance",
+      "expected_feasibility_status": "verified_feasible",
+      "path": "cases/px4-positive-verified-avoidance.json",
+      "scenario_class": "positive",
+      "sha256": "0e8d0d090847515eb852ff07942f39dde9b24c4d51845c0796f03281d4a4045e"
+    },
+    {
+      "case_id": "px4-refusal-missing-obstacle-geometry",
+      "expected_feasibility_status": "unverified",
+      "path": "cases/px4-refusal-missing-obstacle-geometry.json",
+      "scenario_class": "refusal",
+      "sha256": "42c42080b1050ee4c4f3c9ba3e5b7744a0d26a8ae827d35f47579f47ca40fbb3"
+    },
+    {
+      "case_id": "px4-refusal-missing-thermal-readback",
+      "expected_feasibility_status": "unverified",
+      "path": "cases/px4-refusal-missing-thermal-readback.json",
+      "scenario_class": "refusal",
+      "sha256": "52fc8d4bca6a383f00c4e8691a57b1bc72e88e82617b21a36bb72a9a7bf3d53c"
+    },
+    {
+      "case_id": "px4-refusal-missing-performance-envelope",
+      "expected_feasibility_status": "unverified",
+      "path": "cases/px4-refusal-missing-performance-envelope.json",
+      "scenario_class": "refusal",
+      "sha256": "cbe047f642af1246f3fb3aebe919817cf107b768c8c8e726ec48a88f32a77f1a"
+    },
+    {
+      "case_id": "px4-refusal-stale-telemetry",
+      "expected_feasibility_status": "unverified",
+      "path": "cases/px4-refusal-stale-telemetry.json",
+      "scenario_class": "refusal",
+      "sha256": "f95ab25fa5e60112ff55cd81ad906e1ccf0632595c654b5a686cbe8ce1f628f1"
+    },
+    {
+      "case_id": "px4-refusal-cursor-regression",
+      "expected_feasibility_status": "unverified",
+      "path": "cases/px4-refusal-cursor-regression.json",
+      "scenario_class": "refusal",
+      "sha256": "7dc3b283cc1b503b319f5bdc1283c8b591f8b27f1f182123f43ce4fc1b89823b"
+    },
+    {
+      "case_id": "px4-refusal-policy-drift",
+      "expected_feasibility_status": "unverified",
+      "path": "cases/px4-refusal-policy-drift.json",
+      "scenario_class": "refusal",
+      "sha256": "a7714904be47df7a32958c701f05042ae5725c6a13a060110404a10c66746bb7"
+    },
+    {
+      "case_id": "px4-refusal-negative-wind-control-margin",
+      "expected_feasibility_status": "blocked",
+      "path": "cases/px4-refusal-negative-wind-control-margin.json",
+      "scenario_class": "refusal",
+      "sha256": "6858134c9b5a26a7072e94b36f420cd2addc1f8e55503f69bdc88b2873bcce45"
+    }
+  ],
+  "corpus_id": "px4-action-feasibility-v1",
+  "manifest_sha256": "62082e85db9934fecefecc8c1afb3c01f8f6e28ab6272860f63c245b1f137b70",
+  "publication_boundary": {
+    "absolute_local_paths_included": false,
+    "credentials_included": false,
+    "private_task_ids_included": false,
+    "private_task_store_included": false
+  },
+  "schema_version": "missionos_action_feasibility_conformance_corpus.v1",
+  "source_evidence_refs": [
+    "maintainer_evidence:px4_action_feasibility_composite_deepseek_e2e",
+    "release_validation:public_v0.1.0-rc.4"
+  ],
+  "truth_boundary": {
+    "artifact_truth": "deterministic_anonymized_replay_fixture",
+    "runtime_truth": "referenced_source_evidence_not_reexecuted"
+  }
+}
