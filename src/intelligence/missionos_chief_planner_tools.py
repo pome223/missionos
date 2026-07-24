@@ -151,6 +151,18 @@ _PAYLOAD_WEIGHT_PATTERNS = (
     ),
     re.compile(r"(?:荷物|payload)\s*(?P<value>\d+(?:[.,]\d+)?)\s*(?:kg|キロ|ｋｇ)", re.IGNORECASE),
 )
+_ALTITUDE_TARGET_PATTERNS = (
+    re.compile(
+        r"(?:飛行高度|高度|altitude|cruise\s*altitude)\s*(?:を|は|at|to|=|:)?\s*"
+        r"(?P<value>\d+(?:[.,]\d+)?)\s*(?:m|meters?|metres?|メートル|ｍ)",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?P<value>\d+(?:[.,]\d+)?)\s*(?:m|meters?|metres?|メートル|ｍ)\s*"
+        r"(?:の)?(?:飛行高度|高度|altitude)",
+        re.IGNORECASE,
+    ),
+)
 _OBSTACLE_REQUEST_PATTERN = re.compile(
     r"(?:障害物|障害|ビル|建物|高層|回避|landing\s*zone\s*blocked|blocked\s*landing|obstacle|building\s*risk|avoid\s*obstacle)",
     re.IGNORECASE,
@@ -357,6 +369,7 @@ def _normalize_semantic_route_request(raw: Mapping[str, Any]) -> dict[str, Any]:
         "origin_query": origin_query,
         "destination_query": destination_query,
         "payload_weight_kg": _float_field(request.get("payload_weight_kg")),
+        "altitude_target_m": _float_field(request.get("altitude_target_m")),
         "wind_speed_mps": _float_field(request.get("wind_speed_mps")),
         "wind_direction_deg": _float_field(request.get("wind_direction_deg")),
         "wind_gust_mps": _float_field(request.get("wind_gust_mps")),
@@ -396,6 +409,7 @@ def _chief_route_function_tool_prompt_payload(utterance: str) -> dict[str, Any]:
                 "interpret colloquial Japanese and English phrasing",
                 "pass origin and destination as natural place queries",
                 "normalize payload weight to kg when clearly stated",
+                "pass a requested flight altitude in meters when clearly stated",
                 "normalize wind speed to m/s when clearly stated",
                 "normalize wind direction to degrees when clearly stated",
                 "pass wind gust and wind variance when clearly stated",
@@ -537,6 +551,7 @@ async def _invoke_chief_route_function_tool_async(
         origin_query: str = "",
         destination_query: str = "",
         payload_weight_kg: float | None = None,
+        altitude_target_m: float | None = None,
         wind_speed_mps: float | None = None,
         wind_direction_deg: float | None = None,
         wind_gust_mps: float | None = None,
@@ -562,6 +577,7 @@ async def _invoke_chief_route_function_tool_async(
             "origin_query": str(origin_query or "").strip(),
             "destination_query": str(destination_query or "").strip(),
             "payload_weight_kg": _float_field(payload_weight_kg),
+            "altitude_target_m": _float_field(altitude_target_m),
             "wind_speed_mps": _float_field(wind_speed_mps),
             "wind_direction_deg": _float_field(wind_direction_deg),
             "wind_gust_mps": _float_field(wind_gust_mps),
@@ -1629,6 +1645,15 @@ def _operator_requested_payload_weight_kg(text: str) -> float | None:
     return None
 
 
+def _operator_requested_altitude_target_m(text: str) -> float | None:
+    return _operator_requested_pattern_float(
+        text,
+        _ALTITUDE_TARGET_PATTERNS,
+        low=1.0,
+        high=500.0,
+    )
+
+
 def _operator_requested_obstacle_flags(text: str) -> dict[str, Any]:
     normalized = str(text or "").translate(_FULLWIDTH_NUMBER_TRANSLATION)
     if _OBSTACLE_CLEAR_PATTERN.search(normalized):
@@ -2258,6 +2283,9 @@ def resolve_chief_planner_internal_tools(
     requested_payload_weight_kg = _float_field(semantic_request.get("payload_weight_kg"))
     if requested_payload_weight_kg is None:
         requested_payload_weight_kg = _operator_requested_payload_weight_kg(text)
+    requested_altitude_target_m = _float_field(semantic_request.get("altitude_target_m"))
+    if requested_altitude_target_m is None:
+        requested_altitude_target_m = _operator_requested_altitude_target_m(text)
     route_distance_m = _haversine_m(
         from_latitude=origin.latitude,
         from_longitude=origin.longitude,
@@ -2283,6 +2311,7 @@ def resolve_chief_planner_internal_tools(
         "operator_requested_thermal_battery_drain_factor": (requested_thermal_battery_drain_factor),
         "operator_requested_thermal_motor_derate_factor": (requested_thermal_motor_derate_factor),
         "operator_requested_payload_weight_kg": requested_payload_weight_kg,
+        "operator_requested_altitude_target_m": requested_altitude_target_m,
         "semantic_route_request_ref": (
             f"missionos_chief_semantic_route_request:{semantic_request['sha256'][:16]}"
             if semantic_request.get("sha256")
@@ -2441,7 +2470,7 @@ def resolve_chief_planner_internal_tools(
         "takeoff_longitude": origin.longitude,
         "dropoff_latitude": destination.latitude,
         "dropoff_longitude": destination.longitude,
-        "dropoff_roof_height_agl_m": 30.0,
+        "dropoff_roof_height_agl_m": requested_altitude_target_m or 30.0,
         "payload_weight_kg": requested_payload_weight_kg
         if requested_payload_weight_kg is not None
         else 0.5,
@@ -2475,7 +2504,9 @@ def resolve_chief_planner_internal_tools(
     }
     if terrain_profile:
         coordinate_route["terrain_profile"] = [dict(sample) for sample in terrain_profile]
-        coordinate_route["terrain_clearance_agl_m"] = DEFAULT_TERRAIN_CLEARANCE_AGL_M
+        coordinate_route["terrain_clearance_agl_m"] = (
+            requested_altitude_target_m or DEFAULT_TERRAIN_CLEARANCE_AGL_M
+        )
         coordinate_route["terrain_profile_source"] = terrain_tool["provider"]
         terrain_ref = (
             f"missionos_terrain_elevation_resolver_tool_result:{terrain_tool['sha256'][:16]}"
@@ -2497,6 +2528,9 @@ def resolve_chief_planner_internal_tools(
     elif weather_tool.get("wind_speed_mps") is not None:
         coordinate_route["wind_speed_mps"] = weather_tool["wind_speed_mps"]
         coordinate_route["wind_speed_source"] = "source_backed_weather"
+    if requested_altitude_target_m is not None:
+        coordinate_route["altitude_target_m"] = requested_altitude_target_m
+        coordinate_route["altitude_source"] = "operator_instruction"
     if weather_tool.get("source_backed_weather") and weather_tool.get("valid_at"):
         coordinate_route["source_weather_valid_at"] = weather_tool.get("valid_at")
     if requested_wind_direction_deg is not None:
@@ -2612,6 +2646,12 @@ def extract_operator_requested_route_overrides(utterance: str) -> dict[str, Any]
         overrides["payload_weight_kg"] = requested_payload_weight_kg
         overrides["payload_weight_kg_operator_requested"] = requested_payload_weight_kg
         overrides["payload_weight_source"] = "operator_followup_instruction"
+    requested_altitude_target_m = _operator_requested_altitude_target_m(text)
+    if requested_altitude_target_m is not None:
+        overrides["dropoff_roof_height_agl_m"] = requested_altitude_target_m
+        overrides["terrain_clearance_agl_m"] = requested_altitude_target_m
+        overrides["altitude_target_m"] = requested_altitude_target_m
+        overrides["altitude_source"] = "operator_followup_instruction"
     obstacle_flags = _operator_requested_obstacle_flags(text)
     if obstacle_flags:
         overrides.update(obstacle_flags)

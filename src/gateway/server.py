@@ -2289,8 +2289,16 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
                 repair_prompt_evidence
             )
             if chief_planner_tools.get("tool_status") in {"resolved", "partial"}:
+                # Mission Designer binds explicit prompt constraints (such as
+                # altitude) onto its route.  That is the route the operator is
+                # about to approve, so prefer it over the earlier Chief-tool
+                # payload in the chat summary.
                 route = (
-                    chief_planner_tools.get("coordinate_route")
+                    result.get("mission_designer_coordinate_pair_route")
+                    if isinstance(
+                        result.get("mission_designer_coordinate_pair_route"), Mapping
+                    )
+                    else chief_planner_tools.get("coordinate_route")
                     if isinstance(chief_planner_tools.get("coordinate_route"), Mapping)
                     else {}
                 )
@@ -2302,6 +2310,14 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
                     )
                     if route.get("wind_speed_mps") is not None:
                         route_summary += f", wind={route.get('wind_speed_mps')}m/s"
+                    if route.get("altitude_target_m") is not None:
+                        route_summary += f", altitude={route.get('altitude_target_m')}m"
+                    elif route.get("terrain_clearance_agl_m") is not None:
+                        route_summary += (
+                            f", altitude={route.get('terrain_clearance_agl_m')}m"
+                        )
+                    if route.get("temperature_c") is not None:
+                        route_summary += f", temperature={route.get('temperature_c')}C"
                     if route.get("payload_weight_kg") is not None:
                         requested_total_payload = route.get("requested_total_payload_weight_kg")
                         if requested_total_payload is not None:
@@ -2311,6 +2327,9 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
                             )
                         else:
                             route_summary += f", payload={route.get('payload_weight_kg')}kg"
+                    obstacle_fraction = route.get("obstacle_route_fraction")
+                    if isinstance(obstacle_fraction, (int, float)):
+                        route_summary += f", obstacle={round(obstacle_fraction * 100)}% route"
                 warning = ""
                 wind_speed = route.get("wind_speed_mps") if route else None
                 if (

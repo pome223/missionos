@@ -70,6 +70,30 @@ def test_stage1_epic_exit_is_planning_only_and_weather_blocked() -> None:
     assert result.epic_exit_hash == result.sha256
 
 
+def test_prompt_altitude_does_not_misread_wind_speed_and_binds_coordinate_route() -> None:
+    designed = run_px4_gazebo_mission_scenario_designer(
+        prompt="東京駅から神田駅まで、高度45mで飛行し、風速3m/sにしてください。",
+        coordinate_route={
+            "takeoff_latitude": 35.681236,
+            "takeoff_longitude": 139.767125,
+            "dropoff_latitude": 35.6944731,
+            "dropoff_longitude": 139.7706981,
+            "dropoff_roof_height_agl_m": 30.0,
+            "terrain_clearance_agl_m": 30.0,
+        },
+        now=NOW,
+    )
+
+    proposal = designed["scenario_proposal"]
+    route = designed["mission_designer_coordinate_pair_route"]
+    assert proposal["altitude_target_m"] == 45
+    assert proposal["altitude_target_m"] != 3
+    assert route["altitude_target_m"] == 45.0
+    assert route["altitude_source"] == "operator_instruction"
+    assert route["dropoff_roof_height_agl_m"] == 45.0
+    assert route["terrain_clearance_agl_m"] == 45.0
+
+
 def test_sitl_execution_request_prepares_but_does_not_execute(
     prepared_scenario: tuple[dict, dict],
 ) -> None:

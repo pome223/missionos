@@ -113,6 +113,52 @@ def test_chief_semantic_llm_failure_does_not_silently_replace_conditions(
     ]["tool_status"] == "blocked_source_unavailable"
 
 
+def test_chat_plan_summary_shows_bound_altitude_weather_and_obstacle(
+    monkeypatch: Any,
+) -> None:
+    _install_quiet_conversation_dependencies(monkeypatch)
+    monkeypatch.setattr(
+        gateway_server,
+        "resolve_chief_planner_internal_tools",
+        lambda **_kwargs: {
+            "tool_status": "resolved",
+            "coordinate_route": {
+                "takeoff_label": "Tokyo Station",
+                "dropoff_label": "Kanda Station",
+                "takeoff_latitude": 35.681236,
+                "takeoff_longitude": 139.767125,
+                "dropoff_latitude": 35.6944731,
+                "dropoff_longitude": 139.7706981,
+                "dropoff_roof_height_agl_m": 30.0,
+                "terrain_clearance_agl_m": 30.0,
+                "wind_speed_mps": 3.0,
+                "temperature_c": 5.0,
+                "payload_weight_kg": 0.5,
+                "obstacle_route_fraction": 0.5,
+            },
+        },
+    )
+
+    response = gateway_server.run_missionos_autonomy_conversation(
+        {
+            "operator_instruction": (
+                "東京駅から神田駅まで高度45mで飛行し、風速3m/s、気温5度、"
+                "0.5kg、経路の50%地点に障害物を置いてください。"
+            ),
+            "missionos_route_hint": "mission_designer_plan",
+            "missionos_client_surface": "chat",
+            "session_id": "chat-bound-conditions",
+        }
+    )
+
+    assert response["routed_action"] == "mission_designer_plan"
+    assert "altitude=45.0m" in response["message"]
+    assert "wind=3.0m/s" in response["message"]
+    assert "temperature=5.0C" in response["message"]
+    assert "payload=0.5kg" in response["message"]
+    assert "obstacle=50% route" in response["message"]
+
+
 def test_conversation_agent_timeout_depends_on_chief_backend(
     monkeypatch: Any,
 ) -> None:
