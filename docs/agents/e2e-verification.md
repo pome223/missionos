@@ -3,6 +3,11 @@
 Runtime changes require runtime verification. Unit tests are useful, but they do
 not replace a smoke test against the affected production boundary.
 
+For pull-request merge decisions that affect the operator workflow, use
+`missionos-chat-pr-merge-e2e-checklist.md`. It expands this minimum policy into
+the required `missionos chat` path, cross-surface checks, positive and
+fail-closed scenarios, screenshots, and release acceptance gate.
+
 ## Minimum Examples
 
 - CLI: run the command entrypoint with a fixture or real loopback Gateway.

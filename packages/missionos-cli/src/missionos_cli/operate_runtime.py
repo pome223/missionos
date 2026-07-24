@@ -92,18 +92,10 @@ def run_operate_console(
         try:
             command = parse_command(raw)
         except click.ClickException as exc:
-            if (
-                robot_for_task(client, task_id) == "turtlebot3"
-                and raw.strip()
-                and handle_natural_language(client, task_id, raw)
-            ):
+            if raw.strip() and handle_natural_language(client, task_id, raw):
                 pass
             else:
-                console.print(
-                    f"[red]{exc.message}[/red]\n"
-                    "[dim]You can also describe the change naturally, for example: "
-                    "左へ大きく迂回して[/dim]"
-                )
+                console.print(f"[red]{exc.message}[/red]")
         else:
             try:
                 if not handle_command(client, task_id, command):

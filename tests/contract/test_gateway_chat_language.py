@@ -43,6 +43,76 @@ def test_agent_invocation_presence_accepts_gemini_and_litellm_providers() -> Non
     ) is False
 
 
+def test_operator_recovery_durable_proposal_requires_hosted_invocation() -> None:
+    result = {
+        "runtime_status": "proposal_guardrail_passed",
+        "assessment": {
+            "assessment_status": "proposal_guardrail_passed",
+            "recovery_planner_tool_candidate": {
+                "selected_bounded_action": "avoid_obstacle",
+                "proposed_parameters": {
+                    "target_x_m": 10.0,
+                    "target_y_m": 5.0,
+                },
+            },
+            "hazard_state": {"hazard_state_status": "verified"},
+            "action_feasibility": {
+                "feasibility_status": "verified_feasible"
+            },
+        },
+        "agent_invocations": [],
+    }
+
+    assert (
+        gateway_server._runtime_recovery_operator_durable_proposal(
+            task_id="task_missing_hosted_origin",
+            telemetry_snapshot={},
+            agent_result=result,
+            observed_at=gateway_server.datetime.now(
+                gateway_server.timezone.utc
+            ),
+        )
+        is None
+    )
+
+
+def test_chief_semantic_llm_failure_does_not_silently_replace_conditions(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(
+        gateway_server,
+        "resolve_chief_planner_internal_tools",
+        lambda **_kwargs: {
+            "schema_version": "missionos_chief_planner_internal_tools.v1",
+            "tool_status": "blocked_source_unavailable",
+            "blocking_reasons": [
+                "google_adk_litellm_deepseek_agent_invocation_failed"
+            ],
+            "dispatch_authority_created": False,
+            "progress_counted": False,
+        },
+    )
+
+    response = gateway_server.run_missionos_autonomy_conversation(
+        {
+            "operator_instruction": (
+                "東京から秋葉原まで0.5キロの荷物を送って、50%に障害物を"
+                "置いて。風は3mで気温は5度で"
+            ),
+            "missionos_route_hint": "mission_designer_plan",
+            "missionos_client_surface": "chat",
+        }
+    )
+
+    assert response["routed_action"] == "clarification_required"
+    assert response["routing_source"] == "missionos_chief_semantic_route_request"
+    assert "did not replace" in response["message"]
+    assert response["progress_counted"] is False
+    assert response["operation_result"][
+        "missionos_chief_planner_internal_tools"
+    ]["tool_status"] == "blocked_source_unavailable"
+
+
 def test_conversation_agent_timeout_depends_on_chief_backend(
     monkeypatch: Any,
 ) -> None:

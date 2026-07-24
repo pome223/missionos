@@ -2860,11 +2860,54 @@ def _handle_operate_console_command(
     return True
 
 
-def _handle_turtlebot3_operate_instruction(
+def _handle_operate_natural_language_instruction(
     client: MissionOSGatewayClient,
     task_id: str,
     operator_instruction: str,
 ) -> bool:
+    robot = _operate_robot_for_task(client, task_id)
+    if robot == "px4":
+        recovery_request = _natural_language_recovery_request(
+            operator_instruction
+        )
+        if recovery_request is None:
+            return False
+        with console.status(
+            "[cyan]Recovery Agent: interpreting and verifying proposal…[/cyan]",
+            spinner="dots",
+        ):
+            payload = client.recovery_agent_propose_for_task(
+                task_id=task_id,
+                operator_instruction=operator_instruction,
+                requested_action=str(
+                    recovery_request.get("requested_action") or ""
+                ),
+                requested_parameters=(
+                    recovery_request.get("requested_parameters")
+                    if isinstance(
+                        recovery_request.get("requested_parameters"), dict
+                    )
+                    else {}
+                ),
+            )
+        _print_recovery_agent_request_proposal(payload)
+        command_raw = _recovery_proposal_command(payload)
+        if command_raw:
+            operate_command = command_raw.lstrip("/")
+            console.print(
+                "[yellow]Proposal only; nothing was approved or dispatched. "
+                "Review the concrete maneuver above, then type "
+                f"[bold]{rich_escape(operate_command)}[/bold] to start a separate "
+                "y/N approval step.[/yellow]"
+            )
+        else:
+            console.print(
+                "[yellow]No verified bounded maneuver is available from the current "
+                "telemetry. No approval artifact or dispatch was created.[/yellow]"
+            )
+        return True
+    if robot != "turtlebot3":
+        return False
     task_payload, _ = _task_and_timeline(client, task_id, timeline_limit=0)
     pending = _pending_recovery_approval_from_task(task_payload)
     if pending:
@@ -2906,7 +2949,7 @@ def _operate_live(
         status_group=_operate_status_group,
         parse_command=_parse_operate_console_command,
         handle_command=_handle_operate_console_command,
-        handle_natural_language=_handle_turtlebot3_operate_instruction,
+        handle_natural_language=_handle_operate_natural_language_instruction,
         terminal_task_statuses=TERMINAL_TASK_STATUSES,
     )
 

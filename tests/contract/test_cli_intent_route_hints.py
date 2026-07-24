@@ -2763,6 +2763,34 @@ def test_chat_natural_language_obstacle_request_gets_avoidance_suggestion(
     }
 
 
+def test_px4_operate_natural_language_creates_proposal_without_dispatch(
+    monkeypatch: Any,
+) -> None:
+    client = RecordingMissionOSClient()
+    monkeypatch.setattr(
+        missionos_cli,
+        "_operate_robot_for_task",
+        lambda _client, _task_id: "px4",
+    )
+
+    assert (
+        missionos_cli._handle_operate_natural_language_instruction(
+            client,
+            "task_px4_operate",
+            "大きく右へ迂回して障害物を避けて",
+        )
+        is True
+    )
+
+    assert client.recovery_proposals[-1] == {
+        "task_id": "task_px4_operate",
+        "operator_instruction": "大きく右へ迂回して障害物を避けて",
+        "requested_action": "avoid_obstacle",
+        "requested_parameters": {},
+    }
+    assert client.requests == []
+
+
 def test_chat_route_plan_with_obstacle_stays_with_mission_designer(
     tmp_path: Path,
 ) -> None:

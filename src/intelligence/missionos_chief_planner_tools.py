@@ -322,6 +322,24 @@ def _int_field(value: Any) -> int | None:
     return parsed if parsed > 0 else None
 
 
+def _route_fraction_list(value: Any) -> list[float]:
+    if not isinstance(value, list):
+        return []
+    fractions: list[float] = []
+    for item in value:
+        fraction = _float_field(item)
+        if fraction is None:
+            continue
+        if 5.0 <= fraction <= 95.0:
+            fraction /= 100.0
+        if not 0.05 <= fraction <= 0.95:
+            continue
+        rounded = round(fraction, 3)
+        if rounded not in fractions:
+            fractions.append(rounded)
+    return sorted(fractions)
+
+
 def _normalize_semantic_route_request(raw: Mapping[str, Any]) -> dict[str, Any]:
     request = raw.get("mission_designer_request")
     if not isinstance(request, Mapping):
@@ -347,6 +365,9 @@ def _normalize_semantic_route_request(raw: Mapping[str, Any]) -> dict[str, Any]:
         "pressure_hpa": _float_field(request.get("pressure_hpa")),
         "thermal_battery_drain_factor": _float_field(request.get("thermal_battery_drain_factor")),
         "thermal_motor_derate_factor": _float_field(request.get("thermal_motor_derate_factor")),
+        "obstacle_route_fractions": _route_fraction_list(
+            request.get("obstacle_route_fractions")
+        ),
         "wind_speed_unit_interpretation": str(request.get("wind_speed_unit_interpretation") or "")[
             :200
         ],
@@ -380,6 +401,7 @@ def _chief_route_function_tool_prompt_payload(utterance: str) -> dict[str, Any]:
                 "pass wind gust and wind variance when clearly stated",
                 "pass temperature in Celsius and pressure in hPa when clearly stated",
                 "pass thermal battery drain and motor derate factors when explicitly requested",
+                "pass each route-relative obstacle location as a number from 0.05 to 0.95 in obstacle_route_fractions",
                 "treat Japanese operator shorthand like 風速9キロ, 風速10キロ, or 風速Nキロ as N m/s in this MissionOS drone-ops context unless km/h is explicitly written",
                 "convert wind speed from km/h only when the utterance explicitly says km/h or kilometers per hour",
                 "leave optional arguments null or omitted when ambiguous",
@@ -523,6 +545,7 @@ async def _invoke_chief_route_function_tool_async(
         pressure_hpa: float | None = None,
         thermal_battery_drain_factor: float | None = None,
         thermal_motor_derate_factor: float | None = None,
+        obstacle_route_fractions: list[float] | None = None,
         wind_speed_unit_interpretation: str = "",
         auto_route_waypoint_count: int | None = None,
     ) -> dict[str, Any]:
@@ -547,6 +570,9 @@ async def _invoke_chief_route_function_tool_async(
             "pressure_hpa": _float_field(pressure_hpa),
             "thermal_battery_drain_factor": _float_field(thermal_battery_drain_factor),
             "thermal_motor_derate_factor": _float_field(thermal_motor_derate_factor),
+            "obstacle_route_fractions": _route_fraction_list(
+                obstacle_route_fractions
+            ),
             "wind_speed_unit_interpretation": str(wind_speed_unit_interpretation or "")[:200],
             "auto_route_waypoint_count": _int_field(auto_route_waypoint_count),
         }
@@ -577,7 +603,7 @@ async def _invoke_chief_route_function_tool_async(
             "You are the operator-facing MissionOS Chief Agent. For the given "
             "operator route request, call the "
             f"`{CHIEF_ROUTE_FUNCTION_TOOL_NAME}` ADK function tool exactly once "
-            "with the natural route, payload, wind, weather, thermal, and waypoint "
+            "with the natural route, payload, wind, weather, thermal, obstacle, and waypoint "
             "arguments you understand. Do not invent coordinates, weather, or terrain. Do "
             "not approve, dispatch, execute, or claim progress. After the tool "
             "returns, summarize only that this is planning evidence."
@@ -750,7 +776,11 @@ def _resolve_chief_route_via_function_tool(
             "internal_tool_names": [CHIEF_ROUTE_FUNCTION_TOOL_NAME],
             "chief_route_function_tool_invocation": _route_function_tool_status(
                 "not_configured",
-                blocking_reasons=["GOOGLE_API_KEY_not_configured"],
+                blocking_reasons=[
+                    agent_runtime._llm_credentials_blocking_reason(
+                        "missionos_chief_agent"
+                    )
+                ],
             ),
             "dispatch_authority_created": False,
             "progress_counted": False,
@@ -1654,11 +1684,57 @@ def _operator_requested_obstacle_flags(text: str) -> dict[str, Any]:
     }
 
 
+def _semantic_obstacle_flags(route_fractions: list[float]) -> dict[str, Any]:
+    if not route_fractions:
+        return {}
+    if len(route_fractions) == 1:
+        fraction = route_fractions[0]
+        return {
+            "landing_zone_blocked": False,
+            "building_risk_detected": True,
+            "obstacle_route_fraction": fraction,
+            "obstacle_size_x_m": 18.0,
+            "obstacle_size_y_m": 18.0,
+            "obstacle_size_z_m": 20.0,
+            "obstacle_scenario_source": "chief_semantic_route_request",
+            "gazebo_obstacle_model_spawn_requested": True,
+        }
+    return {
+        "landing_zone_blocked": False,
+        "building_risk_detected": True,
+        "obstacles": [
+            {
+                "name": f"missionos_route_obstacle_{int(round(fraction * 100)):02d}pct",
+                "kind": "building_box",
+                "route_fraction": fraction,
+                "size_x_m": 18.0,
+                "size_y_m": 18.0,
+                "size_z_m": 20.0,
+                "source": "chief_semantic_route_request",
+            }
+            for fraction in route_fractions
+        ],
+        "obstacle_scenario_source": "chief_semantic_route_request",
+        "gazebo_obstacle_model_spawn_requested": True,
+    }
+
+
 def _apply_operator_requested_obstacle_flags(
     route: dict[str, Any],
     text: str,
+    *,
+    semantic_route_request: Mapping[str, Any] | None = None,
 ) -> None:
-    flags = _operator_requested_obstacle_flags(text)
+    semantic_route_request = (
+        semantic_route_request
+        if isinstance(semantic_route_request, Mapping)
+        else {}
+    )
+    flags = _semantic_obstacle_flags(
+        _route_fraction_list(semantic_route_request.get("obstacle_route_fractions"))
+    )
+    if not flags:
+        flags = _operator_requested_obstacle_flags(text)
     if not flags:
         return
     route.update(flags)
@@ -2069,6 +2145,11 @@ def resolve_chief_planner_internal_tools(
         )
         if function_tool_result.get("tool_status") in {"resolved", "partial"}:
             return function_tool_result
+        if function_tool_result.get("tool_status") in {
+            "blocked_source_unavailable",
+            "not_applicable",
+        }:
+            return function_tool_result
 
     semantic_request = (
         dict(semantic_route_request)
@@ -2404,7 +2485,11 @@ def resolve_chief_planner_internal_tools(
             *coordinate_route["source_refs"],
             *([] if terrain_ref in coordinate_route["source_refs"] else [terrain_ref]),
         ]
-    _apply_operator_requested_obstacle_flags(coordinate_route, text)
+    _apply_operator_requested_obstacle_flags(
+        coordinate_route,
+        text,
+        semantic_route_request=semantic_request,
+    )
     if requested_wind_speed_mps is not None:
         coordinate_route["wind_speed_mps"] = requested_wind_speed_mps
         coordinate_route["wind_speed_mps_operator_requested"] = requested_wind_speed_mps

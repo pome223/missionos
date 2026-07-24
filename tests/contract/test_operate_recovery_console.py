@@ -255,13 +255,49 @@ def test_turtlebot4_operate_help_uses_ground_robot_commands() -> None:
     rendered = str(panel.renderable)
 
     assert "latest TurtleBot4 sim state" in rendered
-    assert "左へ大きく迂回して" in rendered
+    assert "左へ大きく迂回して" not in rendered
+    assert "Natural-language checkpoint revision is not verified" in rendered
     assert "When Recovery stops the robot" in rendered
     assert "TurtleBot4 operate does not expose land/climb/speed/RTL" in rendered
     assert "return-to-launch" not in rendered
     assert "request land" not in rendered
     assert "climb 45" not in rendered
     assert "speed 7" not in rendered
+
+
+def test_px4_operate_help_advertises_proposal_only_natural_language() -> None:
+    panel = missionos_cli._operate_console_help_panel(
+        "task_px4",
+        robot="px4",
+    )
+    rendered = str(panel.renderable)
+
+    assert "ask Recovery Agent for a bounded proposal" in rendered
+    assert "大きく右へ迂回して障害物を避けて" in rendered
+    assert "Natural language creates a proposal only" in rendered
+    assert "separately confirmed before dispatch" in rendered
+
+
+def test_px4_running_console_does_not_claim_nav2() -> None:
+    panel = missionos_cli._render_recovery_agent_console(
+        {
+            "task": {
+                "task_id": "task_px4",
+                "kind": "px4_gazebo_mission_designer_sitl_execution_request",
+                "status": "running",
+                "artifacts": {},
+            }
+        },
+        proposal=None,
+        show_proposal=False,
+        status="running",
+        task_id="task_px4",
+    )
+    rendered = str(panel.renderable)
+
+    assert "PX4/SITL telemetry" in rendered
+    assert "Nav2" not in rendered
+    assert "natural-language change creates a proposal only" in rendered
 
 
 def test_turtlebot3_operate_console_avoids_flight_wording_when_completed() -> None:

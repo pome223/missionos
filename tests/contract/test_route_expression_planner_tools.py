@@ -4,7 +4,9 @@ from typing import Any
 from urllib.parse import unquote_plus
 
 from src.gateway.server import _missionos_instruction_requests_designer_plan
+from src.intelligence import missionos_chief_planner_tools as chief_planner_tools
 from src.intelligence.missionos_chief_planner_tools import (
+    _normalize_semantic_route_request,
     resolve_chief_planner_internal_tools,
 )
 from src.runtime import px4_gazebo_mission_scenario_designer as scenario_designer
@@ -59,6 +61,33 @@ def _terrain_fetcher(url: str) -> Any:
             {"elevation": 12.0},
         ]
     return "fixture_gsi_unavailable", []
+
+
+def test_chief_semantic_missing_deepseek_key_names_deepseek(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setenv("MISSIONOS_AGENT_RUNTIME_ADK_ENABLED", "1")
+    monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "deepseek")
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+
+    result = chief_planner_tools._resolve_chief_route_via_function_tool(
+        utterance="Tokyo Station to Akihabara",
+        now=None,
+        weather_fetcher=None,
+        postal_fetcher=None,
+        geocode_fetcher=None,
+        terrain_fetcher=None,
+        weather_timeout_seconds=1.0,
+        place_timeout_seconds=1.0,
+        terrain_timeout_seconds=1.0,
+    )
+
+    invocation = result["chief_route_function_tool_invocation"]
+    assert result["tool_status"] == "not_configured"
+    assert invocation["blocking_reasons"] == [
+        "DEEPSEEK_API_KEY_not_configured"
+    ]
 
 
 def test_arrow_route_expression_uses_source_geocoder(monkeypatch: Any) -> None:
@@ -161,6 +190,59 @@ def test_japanese_route_expression_treats_fifty_percent_as_mid_route_obstacle(
     assert route["obstacle_scenario_source"] == (
         "operator_instruction_mid_route_bounded_sitl_scenario"
     )
+
+
+def test_chief_semantic_request_applies_colloquial_multi_hazard_values(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.delenv("MISSIONOS_AGENT_RUNTIME_ADK_ENABLED", raising=False)
+    monkeypatch.delenv("MISSIONOS_CHIEF_ROUTE_SEMANTIC_ADK_ENABLED", raising=False)
+    semantic_request = _normalize_semantic_route_request(
+        {
+            "mission_designer_request": {
+                "origin_query": "New York Public Library",
+                "destination_query": "Brooklyn Bridge",
+                "payload_weight_kg": 0.5,
+                "wind_speed_mps": 3.0,
+                "temperature_c": 5.0,
+                "obstacle_route_fractions": [0.5],
+            }
+        }
+    )
+
+    result = resolve_chief_planner_internal_tools(
+        utterance=(
+            "Send a half-kilo package to Brooklyn Bridge. The wind is three "
+            "meters per second, it is five degrees, and put an obstacle at halfway."
+        ),
+        semantic_route_request=semantic_request,
+        geocode_fetcher=_geocode_fetcher,
+        weather_fetcher=_weather_fetcher,
+        terrain_fetcher=_terrain_fetcher,
+    )
+
+    route = result["coordinate_route"]
+    assert route["wind_speed_mps"] == 3.0
+    assert route["wind_speed_source"] == "operator_instruction"
+    assert route["temperature_c"] == 5.0
+    assert route["temperature_source"] == "operator_instruction"
+    assert route["landing_zone_blocked"] is False
+    assert route["obstacle_route_fraction"] == 0.5
+    assert route["obstacle_scenario_source"] == "chief_semantic_route_request"
+
+
+def test_chief_semantic_request_normalizes_percentage_obstacle_values() -> None:
+    semantic_request = _normalize_semantic_route_request(
+        {
+            "mission_designer_request": {
+                "origin_query": "Tokyo",
+                "destination_query": "Akihabara",
+                "obstacle_route_fractions": [50, 75, 101, "invalid"],
+            }
+        }
+    )
+
+    assert semantic_request["obstacle_route_fractions"] == [0.5, 0.75]
 
 
 def test_compound_route_keeps_explicit_thermal_factors_separate_from_nearby_numbers(

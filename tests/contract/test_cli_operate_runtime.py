@@ -21,6 +21,7 @@ def _run_console(
     monkeypatch: Any,
     *,
     input_text: str,
+    robot: str = "turtlebot3",
     status: str = "running",
     parse_command: Any = lambda raw: raw,
     handle_command: Any = lambda _client, _task_id, _command: False,
@@ -41,7 +42,7 @@ def _run_console(
         help_panel=lambda task_id, *, robot: Panel(
             f"task={task_id} robot={robot}", title="Operate"
         ),
-        robot_for_task=lambda _client, _task_id: "turtlebot3",
+        robot_for_task=lambda _client, _task_id: robot,
         status_group=lambda _client, _task_id: (
             Group(Text(f"status={status}")),
             status,
@@ -93,6 +94,45 @@ def test_turtlebot_natural_language_fallback_keeps_authority_in_callback(
 
     assert revisions == ["左へ大きく迂回して"]
     assert "unknown command" not in output
+
+
+def test_px4_natural_language_fallback_uses_same_authority_callback(
+    monkeypatch: Any,
+) -> None:
+    proposals: list[str] = []
+
+    def reject_command(_raw: str) -> None:
+        raise click.ClickException("unknown command")
+
+    output = _run_console(
+        monkeypatch,
+        input_text="大きく右へ迂回して\n",
+        robot="px4",
+        parse_command=reject_command,
+        handle_natural_language=lambda _client, _task_id, raw: (
+            proposals.append(raw) or True
+        ),
+    )
+
+    assert proposals == ["大きく右へ迂回して"]
+    assert "unknown command" not in output
+
+
+def test_unsupported_natural_language_is_not_advertised(
+    monkeypatch: Any,
+) -> None:
+    def reject_command(_raw: str) -> None:
+        raise click.ClickException("unknown command")
+
+    output = _run_console(
+        monkeypatch,
+        input_text="自然文\n",
+        robot="nova_carter",
+        parse_command=reject_command,
+    )
+
+    assert "unknown command" in output
+    assert "You can also describe the change naturally" not in output
 
 
 def test_terminal_task_exits_before_reading_a_command(monkeypatch: Any) -> None:

@@ -199,7 +199,7 @@ _OPERATE_PARAMETER_ALIASES = {
 
 def _operate_console_help_panel(task_id: str, *, robot: str = "px4") -> Panel:
     robot_profile = _normalize_turtlebot_robot_profile(robot)
-    if robot_profile in {"turtlebot3", "turtlebot4", "nova_carter"}:
+    if robot_profile == "turtlebot3":
         robot_label = _turtlebot_robot_label_from_profile(robot_profile)
         lines = [
             "[bold]Operator controls[/bold]",
@@ -214,10 +214,28 @@ def _operate_console_help_panel(task_id: str, *, robot: str = "px4") -> Panel:
             "[dim]Dispatches still go through recovery-dispatch and require human confirmation. "
             f"{robot_label} operate does not expose land/climb/speed/RTL flight controls.[/dim]",
         ]
+    elif robot_profile in {"turtlebot4", "nova_carter"}:
+        robot_label = _turtlebot_robot_label_from_profile(robot_profile)
+        lines = [
+            "[bold]Operator controls[/bold]",
+            "  While running: status shows current Nav2 evidence",
+            "  When Recovery stops the robot:",
+            "    approve               approve the displayed recovery proposal",
+            "    defer                 keep stopped; create no dispatch authority",
+            f"  status                  show the latest {robot_label} sim state",
+            "  quit                    exit operate",
+            "",
+            "[dim]Natural-language checkpoint revision is not verified for this "
+            "robot profile. Dispatches still require human confirmation. "
+            f"{robot_label} operate does not expose land/climb/speed/RTL flight "
+            "controls.[/dim]",
+        ]
     else:
         lines = [
             "[bold]Commands[/bold]",
             "  status | refresh        show the latest recovery/telemetry state",
+            "  describe a change       ask Recovery Agent for a bounded proposal",
+            "                            e.g. 大きく右へ迂回して障害物を避けて",
             "  rtl                     request return-to-launch",
             "  land                    request land",
             "  climb 45                request altitude adjustment to 45 m above home",
@@ -226,7 +244,8 @@ def _operate_console_help_panel(task_id: str, *, robot: str = "px4") -> Panel:
             "  avoid 40 20 (45)        request obstacle-avoidance target",
             "  quit                    exit operate",
             "",
-            "[dim]Dispatches still go through recovery-dispatch and require human confirmation.[/dim]",
+            "[dim]Natural language creates a proposal only. The proposed concrete "
+            "command must be reviewed and separately confirmed before dispatch.[/dim]",
         ]
     return Panel(
         "\n".join(lines),
