@@ -114,7 +114,11 @@ _FULLWIDTH_NUMBER_TRANSLATION = str.maketrans(
 )
 _ALTITUDE_PATTERNS = (
     re.compile(
-        r"(?P<value>\d+(?:[.,]\d+)?)\s*(?:m|meter|meters|metre|metres|メートル|ｍ)",
+        # A wind value such as ``3m/s`` is not an altitude.  Keep the broad
+        # unit form for existing phrases (for example ``3000mの山頂``), but
+        # exclude speed units before considering the next numeric candidate.
+        r"(?P<value>\d+(?:[.,]\d+)?)\s*(?:m|meter|meters|metre|metres|メートル|ｍ)"
+        r"(?!\s*(?:/|／)\s*(?:s|sec|second|秒)\b)",
         re.IGNORECASE,
     ),
 )
@@ -1755,6 +1759,16 @@ def _coordinate_route_from_payload(value: Mapping[str, Any] | None) -> dict[str,
         low=0.0,
         high=500.0,
     )
+    altitude_target_m = (
+        _coordinate_float(
+            value.get("altitude_target_m"),
+            field_name="altitude_target_m",
+            low=0.0,
+            high=500.0,
+        )
+        if value.get("altitude_target_m") not in (None, "")
+        else None
+    )
     payload_weight_kg = (
         _coordinate_float(
             value.get("payload_weight_kg"),
@@ -2154,10 +2168,13 @@ def _coordinate_route_from_payload(value: Mapping[str, Any] | None) -> dict[str,
         "hardware_target_allowed": False,
         "physical_execution_invoked": False,
     }
+    if altitude_target_m is not None:
+        route["altitude_target_m"] = round(altitude_target_m, 3)
     for label_field in (
         "takeoff_label",
         "dropoff_label",
         "route_source",
+        "altitude_source",
         "payload_weight_source",
         "payload_split_plan_ref",
         "payload_split_sortie_id",
@@ -2334,7 +2351,8 @@ def _coordinate_route_with_prompt_payload(
             updated["payload_weight_kg_operator_requested_total"] = prompt_payload_weight_kg
         return updated
     payload_weight_kg = _extract_payload_weight_kg(prompt)
-    if payload_weight_kg is None:
+    altitude_target_m = _extract_altitude_target_m(prompt)
+    if payload_weight_kg is None and altitude_target_m is None:
         return dict(route)
     current_payload = route.get("payload_weight_kg")
     try:
@@ -2345,17 +2363,38 @@ def _coordinate_route_with_prompt_payload(
         )
     except (TypeError, ValueError):
         current_payload_float = None
-    if (
+    current_altitude_m = route.get("terrain_clearance_agl_m")
+    try:
+        current_altitude_float = (
+            float(current_altitude_m)
+            if current_altitude_m not in (None, "")
+            else None
+        )
+    except (TypeError, ValueError):
+        current_altitude_float = None
+    payload_matches = payload_weight_kg is None or (
         current_payload_float is not None
         and abs(current_payload_float - payload_weight_kg) <= 1e-9
-    ):
-        return dict(route)
-    updated = _coordinate_route_from_payload(
-        {
-            **dict(route),
-            "payload_weight_kg": payload_weight_kg,
-        }
     )
+    altitude_matches = altitude_target_m is None or (
+        current_altitude_float is not None
+        and abs(current_altitude_float - altitude_target_m) <= 1e-9
+    )
+    if payload_matches and altitude_matches:
+        return dict(route)
+    updated_payload = dict(route)
+    if payload_weight_kg is not None:
+        updated_payload["payload_weight_kg"] = payload_weight_kg
+    if altitude_target_m is not None:
+        # The bounded auto-mission runner uses both fields: roof AGL establishes
+        # the base cruise altitude and terrain clearance sets the route-wide
+        # minimum.  A prompt altitude must bind both rather than becoming a
+        # planning-only label.
+        updated_payload["dropoff_roof_height_agl_m"] = altitude_target_m
+        updated_payload["terrain_clearance_agl_m"] = altitude_target_m
+        updated_payload["altitude_target_m"] = altitude_target_m
+        updated_payload["altitude_source"] = "operator_instruction"
+    updated = _coordinate_route_from_payload(updated_payload)
     # Preserve the operator's structured route payload alongside the
     # chat-effective value. The hard envelope gate evaluates against the larger
     # of the two so a chat-mentioned weight can never silently lower a payload

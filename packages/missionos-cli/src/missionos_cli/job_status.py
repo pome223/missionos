@@ -1235,6 +1235,14 @@ def _job_operator_summary(task_payload: dict[str, Any]) -> list[str]:
     terrain_clearance_target_m = _as_float(snapshot.get("terrain_clearance_target_m"))
     terrain_clearance_margin_m = _as_float(snapshot.get("terrain_clearance_margin_m"))
     terrain_clearance_status = _status_text(snapshot.get("terrain_clearance_status"))
+    terrain_display_landed = (
+        snapshot.get("landed") is True or snapshot.get("maybe_landed") is True
+    )
+    if terrain_display_landed:
+        # Minimum AGL is a flight-envelope predicate.  Once ground contact is
+        # observed, showing the touchdown AGL as a live minimum-clearance
+        # breach makes a safe terminal state look unsafe.
+        terrain_clearance_status = "landed_not_applicable"
     monitor_stop = _status_text(snapshot.get("monitor_stop_reason"))
     readiness_text = _status_text(readiness.get("readiness_status"))
     missionos_fixture = metadata.get("missionos_fixture") is True
@@ -1415,7 +1423,8 @@ def _job_operator_summary(task_payload: dict[str, Any]) -> list[str]:
             "Safety HOLD: "
             f"status={'observed' if hold_observed else _status_text(safety_hold.get('request_status'))}; "
             "source=preauthorized local-conflict policy; "
-            "operator_approved=false; Recovery dispatch=false",
+            "at_hold_operator_approved=false; at_hold_recovery_dispatch=false; "
+            "later dispatch is reported separately",
         )
     weather_condition = _job_weather_condition_text(artifacts)
     if weather_condition:

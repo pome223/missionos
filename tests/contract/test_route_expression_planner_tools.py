@@ -231,6 +231,29 @@ def test_chief_semantic_request_applies_colloquial_multi_hazard_values(
     assert route["obstacle_scenario_source"] == "chief_semantic_route_request"
 
 
+def test_chief_route_binds_japanese_altitude_without_confusing_wind_speed(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.delenv("MISSIONOS_AGENT_RUNTIME_ADK_ENABLED", raising=False)
+    monkeypatch.delenv("MISSIONOS_CHIEF_ROUTE_SEMANTIC_ADK_ENABLED", raising=False)
+
+    result = resolve_chief_planner_internal_tools(
+        utterance=(
+            "東京駅から日本橋まで高度45mで飛行し、風速3m/s、気温5度、"
+            "0.5kgの荷物、経路の50%地点に障害物を置いてください。"
+        ),
+        weather_fetcher=_weather_fetcher,
+        terrain_fetcher=_terrain_fetcher,
+    )
+
+    route = result["coordinate_route"]
+    assert route["altitude_target_m"] == 45.0
+    assert route["altitude_source"] == "operator_instruction"
+    assert route["dropoff_roof_height_agl_m"] == 45.0
+    assert route["terrain_clearance_agl_m"] == 45.0
+    assert route["wind_speed_mps"] == 3.0
+
+
 def test_chief_semantic_request_normalizes_percentage_obstacle_values() -> None:
     semantic_request = _normalize_semantic_route_request(
         {
