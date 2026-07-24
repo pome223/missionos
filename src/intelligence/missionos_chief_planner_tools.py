@@ -127,21 +127,21 @@ _PRESSURE_PATTERNS = (
 )
 _THERMAL_BATTERY_DRAIN_FACTOR_PATTERNS = (
     re.compile(
-        r"(?:熱|温度|temperature|thermal).{0,16}(?:battery|バッテリー|電池).{0,16}(?:消費|drain|劣化).{0,8}(?P<value>\d+(?:[.,]\d+)?)\s*(?:倍|x|×)?",
+        r"(?:熱|温度|temperature|thermal).{0,16}?(?:battery|バッテリー|電池).{0,16}?(?:消費|drain|劣化)\s*(?:factor|係数|率)?\s*[:：=は、,]?\s*(?P<value>\d+(?:[.,]\d+)?)\s*(?:倍|x|×)?",
         re.IGNORECASE,
     ),
     re.compile(
-        r"(?:battery|バッテリー|電池).{0,16}(?:drain|消費|劣化).{0,8}(?P<value>\d+(?:[.,]\d+)?)\s*(?:倍|x|×)",
+        r"(?:battery|バッテリー|電池).{0,16}?(?:drain|消費|劣化)\s*(?:factor|係数|率)?\s*[:：=は、,]?\s*(?P<value>\d+(?:[.,]\d+)?)\s*(?:倍|x|×)",
         re.IGNORECASE,
     ),
 )
 _THERMAL_MOTOR_DERATE_FACTOR_PATTERNS = (
     re.compile(
-        r"(?:熱|温度|temperature|thermal).{0,16}(?:motor|モーター|推力).{0,16}(?:derate|制限|低下).{0,8}(?P<value>\d+(?:[.,]\d+)?)",
+        r"(?:熱|温度|temperature|thermal).{0,16}?(?:motor|モーター|推力).{0,16}?(?:derate|制限|低下)\s*(?:factor|係数|率)?\s*[:：=は、,]?\s*(?P<value>\d+(?:[.,]\d+)?)",
         re.IGNORECASE,
     ),
     re.compile(
-        r"(?:motor|モーター|推力).{0,16}(?:derate|制限|低下).{0,8}(?P<value>\d+(?:[.,]\d+)?)",
+        r"(?:motor|モーター|推力).{0,16}?(?:derate|制限|低下)\s*(?:factor|係数|率)?\s*[:：=は、,]?\s*(?P<value>\d+(?:[.,]\d+)?)",
         re.IGNORECASE,
     ),
 )
