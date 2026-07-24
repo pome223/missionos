@@ -113,6 +113,7 @@ docker run -d \
   -e "MISSIONOS_TURTLEBOT3_RECOVERY_PLAN_ONLY_RETRY_INTERVAL_S=${MISSIONOS_TURTLEBOT3_RECOVERY_PLAN_ONLY_RETRY_INTERVAL_S:-1}" \
   -e "MISSIONOS_TURTLEBOT3_RECOVERY_PLAN_ONLY_STABILITY_SNAPSHOT_COUNT=${MISSIONOS_TURTLEBOT3_RECOVERY_PLAN_ONLY_STABILITY_SNAPSHOT_COUNT:-2}" \
   -e "MISSIONOS_TURTLEBOT3_RECOVERY_CANDIDATE_CLEARANCE_M=${MISSIONOS_TURTLEBOT3_RECOVERY_CANDIDATE_CLEARANCE_M:-1.10}" \
+  -e "ROS2_NAV2_USE_SIM_TIME=${ROS2_NAV2_USE_SIM_TIME:-1}" \
   -e "ROS2_NAV2_RECOVERY_LOCAL_COST_THRESHOLD=${ROS2_NAV2_RECOVERY_LOCAL_COST_THRESHOLD:-220}" \
   -e "ROS2_NAV2_RECOVERY_TARGET_COST_THRESHOLD=${ROS2_NAV2_RECOVERY_TARGET_COST_THRESHOLD:-180}" \
   -e "ROS2_NAV2_SIM_FAULT_CANCEL_AFTER_ACCEPT=${ROS2_NAV2_SIM_FAULT_CANCEL_AFTER_ACCEPT:-}" \
@@ -129,7 +130,7 @@ set -eo pipefail
 
 source /opt/ros/humble/setup.bash
 source /opt/turtlebot3_ws/install/setup.bash
-export PYTHONPATH=/work/missionos:/work/missionos/src:/work/missionos/packages/missionos-gateway/src:${PYTHONPATH:-}
+export PYTHONPATH=/work/missionos:/work/missionos/src:/work/missionos/packages/missionos-core/src:/work/missionos/packages/missionos-gateway/src:${PYTHONPATH:-}
 if [ "${MISSIONOS_TURTLEBOT3_CAMERA_PERCEPTION_ENABLED:-0}" = "1" ]; then
   export TURTLEBOT3_MODEL="${MISSIONOS_TURTLEBOT3_SIM_MODEL:-waffle_pi}"
 else
@@ -248,6 +249,7 @@ export RUN_MISSIONOS_ROS2_NAV2_BOUNDED_DISPATCH_SMOKE=1
 export RUN_MISSIONOS_ROS2_NAV2_TURTLEBOT3_BRIDGE=1
 export ROS2_NAV2_BRIDGE_COMMAND="python3 /work/missionos/scripts/ros2_nav2_turtlebot3_bridge.py"
 export ROS2_NAV2_BRIDGE_TIMEOUT_S="${ROS2_NAV2_BRIDGE_TIMEOUT_S:-420}"
+export ROS2_NAV2_USE_SIM_TIME="${ROS2_NAV2_USE_SIM_TIME:-1}"
 export ROS2_NAV2_INITIALPOSE_ENABLE=1
 export ROS2_NAV2_INITIALPOSE_X_M=-2.0
 export ROS2_NAV2_INITIALPOSE_Y_M=-0.5
@@ -271,7 +273,7 @@ export MISSIONOS_TURTLEBOT3_LIVE_TASK_ID_PATH="$telemetry_live_task_id_path"
 export MISSIONOS_TURTLEBOT3_LOG_BUNDLE_PATHS="{\"gazebo\":\"/tmp/missionos_gazebo_delivery.log\",\"nav2\":\"/tmp/missionos_nav2_delivery.log\",\"relay\":\"/tmp/missionos_relay_delivery.log\",\"telemetry_sidecar\":\"/tmp/missionos_turtlebot3_telemetry_sidecar.log\",\"spawn_obstacle\":\"/tmp/missionos_spawn_obstacle.log\"}"
 export MISSIONOS_GATEWAY_BACKEND=production
 
-python3 -c "import sys; sys.path[:0] = [\"/work/missionos\", \"/work/missionos/src\", \"/work/missionos/packages/missionos-gateway/src\"]; from missionos_gateway.__main__ import main; main()" \
+python3 -c "import sys; sys.path[:0] = [\"/work/missionos\", \"/work/missionos/src\", \"/work/missionos/packages/missionos-core/src\", \"/work/missionos/packages/missionos-gateway/src\"]; from missionos_gateway.__main__ import main; main()" \
   web --host 0.0.0.0 --port "${MISSIONOS_TB3_GATEWAY_CONTAINER_PORT:-18791}" &
 gateway_pid=$!
 wait "$gateway_pid"

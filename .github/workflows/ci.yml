@@ -31,6 +31,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]" \
+            -e packages/missionos-core \
             -e packages/missionos-cli \
             -e packages/missionos-gateway
 
@@ -69,6 +70,11 @@ jobs:
         env:
           PYTHONPATH: .:packages/missionos-cli/src:packages/missionos-gateway/src
         run: python -m pytest -q
+
+      - name: Enforce v0.1.0 two-backend stable gate
+        env:
+          PYTHONPATH: .:packages/missionos-cli/src:packages/missionos-gateway/src
+        run: python scripts/check_v0_1_0_stable_gate.py --pretty
 
       - name: Verify smoke inventory coverage
         run: python scripts/check_smoke_inventory.py --pretty

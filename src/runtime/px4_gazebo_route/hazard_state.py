@@ -89,6 +89,12 @@ def hazard_state_hash_matches(hazard_state: Mapping[str, Any]) -> bool:
             hazard_state.get("performance_envelope")
         ),
     }
+    if hazard_state.get("core_hazard_state_sha256"):
+        core_digest = str(hazard_state.get("core_hazard_state_sha256") or "")
+        core_state = _mapping(hazard_state.get("core_hazard_state"))
+        if not core_state or core_digest != _canonical_sha256(core_state):
+            return False
+        material["core_hazard_state_sha256"] = core_digest
     return bool(expected and expected == _canonical_sha256(material))
 
 

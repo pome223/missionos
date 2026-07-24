@@ -3422,7 +3422,20 @@ def test_turtlebot3_chat_terminal_update_replaces_pending_truth_in_transcript(
                         "route_resume_status": "resumed",
                         "physical_execution_invoked": False,
                         "mission_delivery_completion_claimed": False,
-                    }
+                        "recovery_candidate_resolution": {
+                            "core_adapter_id": (
+                                "missionos.nav2.action_feasibility.v1"
+                            ),
+                            "selected_candidate": {
+                                "core_action_feasibility_status": (
+                                    "verified_feasible"
+                                ),
+                            },
+                        },
+                    },
+                    "turtlebot3_recovery_predispatch_revalidation": {
+                        "revalidation_status": "validated",
+                    },
                 },
             }
         }
@@ -3434,6 +3447,8 @@ def test_turtlebot3_chat_terminal_update_replaces_pending_truth_in_transcript(
     assert "operation_status=completed" in rendered
     assert "recovery_goal=succeeded; verification=verified; route=resumed" in rendered
     assert "segments=6/6; completion_claimed=True" in rendered
+    assert "core_feasibility=verified_feasible" in rendered
+    assert "predispatch_revalidation=validated" in rendered
     assert "physical_execution_invoked=False" in rendered
 
 

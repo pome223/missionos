@@ -113,6 +113,44 @@ def test_contract_bundle_records_unverified_candidate_without_authority() -> Non
     assert verification["dispatch_authority_created"] is False
 
 
+def test_contract_bundle_requires_core_verdict_when_nav2_binding_opts_in() -> None:
+    checkpoint = _checkpoint()
+    binding = checkpoint["recovery_candidate_binding"]
+    binding["core_action_feasibility_required"] = True
+    checkpoint["recovery_contract_bundle"] = (
+        build_turtlebot3_recovery_contract_bundle(checkpoint)
+    )
+
+    missing = checkpoint["recovery_contract_bundle"][
+        "predispatch_verification"
+    ]
+
+    assert missing["verification_status"] == "unverified"
+    assert missing["core_action_feasibility_required"] is True
+    assert missing["core_action_feasibility_verified"] is False
+    assert missing["dispatch_authority_created"] is False
+
+    binding.update(
+        {
+            "core_adapter_id": "missionos.nav2.action_feasibility.v1",
+            "core_hazard_state": {"state_id": "source-backed-state"},
+            "core_hazard_state_sha256": "a" * 64,
+            "core_policy_binding": {"policy_sha256": "b" * 64},
+            "core_action_feasibility_statuses": ["verified_feasible"],
+        }
+    )
+    checkpoint["recovery_contract_bundle"] = (
+        build_turtlebot3_recovery_contract_bundle(checkpoint)
+    )
+    verified = checkpoint["recovery_contract_bundle"][
+        "predispatch_verification"
+    ]
+
+    assert verified["verification_status"] == "verified"
+    assert verified["core_action_feasibility_verified"] is True
+    assert verified["dispatch_authority_created"] is False
+
+
 def test_legacy_checkpoint_without_bundle_remains_readable() -> None:
     checkpoint = _checkpoint()
     checkpoint.pop("recovery_contract_bundle")

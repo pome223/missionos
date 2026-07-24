@@ -38,6 +38,12 @@ FLIGHT_MAP_WIDTH = 64
 FLIGHT_MAP_HEIGHT = 24
 FLIGHT_PROFILE_HEIGHT = 9
 
+
+def _fmt_indoor_metres(value: Any) -> str:
+    metres = _as_float(value)
+    return "-" if metres is None else f"{metres:.3f}m"
+
+
 def _watch_altitude_status(snapshot: dict[str, Any]) -> str:
     """Summarize altitude without implying terrain data exists when it does not."""
     alt_home = _as_float(snapshot.get("altitude_above_home_m"))
@@ -485,6 +491,9 @@ def _render_turtlebot3_indoor_map(
         f"recovery_goal={_status_text(recovery.get('goal_status')) or '-'}  "
         f"verification={_status_text(recovery.get('verification_status')) or '-'}  "
         f"resume_status={_status_text(recovery.get('route_resume_status')) or '-'}\n"
+        f"core_feasibility={_status_text(recovery.get('core_action_feasibility_status')) or '-'}  "
+        "predispatch_revalidation="
+        f"{_status_text(recovery.get('core_predispatch_revalidation_status')) or '-'}\n"
         f"route_segments={_status_text(recovery.get('route_segment_completion_count')) or '-'}/"
         f"{_status_text(recovery.get('route_segment_planned_count')) or '-'}  "
         f"recovery_complete={_status_text(recovery.get('recovery_completion_claimed')) or '-'}  "
@@ -496,14 +505,15 @@ def _render_turtlebot3_indoor_map(
         f"linear_x={_status_text(live_twist.get('linear_x_mps')) or '-'}m/s  "
         f"captured_at={_status_text(live_telemetry.get('captured_at')) or '-'}\n"
         f"motion={_status_text(motion.get('robot_motion_observed'))}  "
-        f"odom={_fmt_metres(motion.get('odom_delta_m'))}  "
+        f"odom={_fmt_indoor_metres(motion.get('odom_delta_m'))}  "
         f"observed_source={_status_text(indoor_map.get('observed_pose_source'))}\n"
         f"centerline_2d_clearance={_status_text(obstacle_record.get('trajectory_clearance_observed'))}  "
         f"centerline_2d_intersects={_status_text(obstacle_record.get('trajectory_intersects_obstacle'))}\n"
         f"clearance_3d_status={_status_text(clearance_3d.get('status'), 'unavailable')}  "
         f"clearance_3d_clear={_status_text(clearance_3d.get('clearance_observed'))}  "
         f"clearance_3d_collision={_status_text(clearance_3d.get('collision_observed'))}  "
-        f"clearance_3d_min={_fmt_metres(clearance_3d.get('minimum_surface_clearance_m'))}\n"
+        "clearance_3d_min="
+        f"{_fmt_indoor_metres(clearance_3d.get('minimum_surface_clearance_m'))}\n"
         f"display_alignment={_status_text(alignment.get('method'))}  "
         f"applied={_status_text(alignment.get('applied'))}  "
         f"dx={_fmt_metres(alignment.get('dx_m'))}  "

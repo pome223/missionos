@@ -1,5 +1,57 @@
-"""Shared MissionOS contracts and claim semantics."""
+"""Shared backend-neutral MissionOS contracts and claim semantics."""
 
+from .action_feasibility import (
+    ACTION_CANDIDATE_SCHEMA_VERSION,
+    ACTION_FEASIBILITY_SCHEMA_VERSION,
+    HAZARD_STATE_SCHEMA_VERSION,
+    REVALIDATION_SCHEMA_VERSION,
+    ActionCandidate,
+    ActionFeasibilityResult,
+    CursorOrder,
+    DerivedFact,
+    EvidenceSourceRef,
+    ExtensionVerdict,
+    FactStatus,
+    FeasibilityStatus,
+    FeasibilityVerifierExtension,
+    HazardState,
+    ModelBinding,
+    ObservationCursor,
+    ObservationCursorComparator,
+    ObservedFact,
+    PolicyBinding,
+    RevalidationArtifact,
+    canonical_sha256,
+    verify_action_candidate,
+)
 from .claim_semantics import AUTHORITY_SPLIT, CLAIM_BOUNDARY_ORDER
+from .conformance import CONFORMANCE_RUN_SCHEMA_VERSION, run_conformance_corpus
 
-__all__ = ["AUTHORITY_SPLIT", "CLAIM_BOUNDARY_ORDER"]
+__all__ = [
+    "ACTION_CANDIDATE_SCHEMA_VERSION",
+    "ACTION_FEASIBILITY_SCHEMA_VERSION",
+    "AUTHORITY_SPLIT",
+    "CLAIM_BOUNDARY_ORDER",
+    "CONFORMANCE_RUN_SCHEMA_VERSION",
+    "HAZARD_STATE_SCHEMA_VERSION",
+    "REVALIDATION_SCHEMA_VERSION",
+    "ActionCandidate",
+    "ActionFeasibilityResult",
+    "CursorOrder",
+    "DerivedFact",
+    "EvidenceSourceRef",
+    "ExtensionVerdict",
+    "FactStatus",
+    "FeasibilityStatus",
+    "FeasibilityVerifierExtension",
+    "HazardState",
+    "ModelBinding",
+    "ObservationCursor",
+    "ObservationCursorComparator",
+    "ObservedFact",
+    "PolicyBinding",
+    "RevalidationArtifact",
+    "canonical_sha256",
+    "run_conformance_corpus",
+    "verify_action_candidate",
+]

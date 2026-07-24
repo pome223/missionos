@@ -544,6 +544,16 @@ def test_terminal_surfaces_project_latest_recovery_summary_without_live_odom() -
         "obstacles": [{"x_m": -1.8, "y_m": 0.4, "size_x_m": 0.4, "size_y_m": 0.4}],
         "obstacle_clearance_observed": True,
         "observed_path_intersects_obstacle": False,
+        "trajectory_clearance_3d": {
+            "status": "verified_clear",
+            "clearance_observed": True,
+            "collision_observed": False,
+            "minimum_surface_clearance_m": 0.357089,
+        },
+        "motion": {
+            "robot_motion_observed": True,
+            "odom_delta_m": 3.5777,
+        },
         "recovery": {
             "triggered": True,
             "selected_action": "avoid_obstacle",
@@ -583,6 +593,15 @@ def test_terminal_surfaces_project_latest_recovery_summary_without_live_odom() -
                 "model_id": "deepseek-v4-flash",
             },
         },
+        "recovery_candidate_resolution": {
+            "core_adapter_id": "missionos.nav2.action_feasibility.v1",
+            "core_policy_binding": {
+                "policy_sha256": "a" * 64,
+            },
+            "selected_candidate": {
+                "core_action_feasibility_status": "verified_feasible",
+            },
+        },
     }
     payload = {
         "task_id": "task_tb3_terminal_surface",
@@ -608,6 +627,10 @@ def test_terminal_surfaces_project_latest_recovery_summary_without_live_odom() -
                 "route_resumed_after_recovery": True,
                 "route_completed_after_recovery": True,
             },
+            "turtlebot3_recovery_predispatch_revalidation": {
+                "core_adapter_id": "missionos.nav2.action_feasibility.v1",
+                "revalidation_status": "validated",
+            },
         },
     }
 
@@ -623,6 +646,9 @@ def test_terminal_surfaces_project_latest_recovery_summary_without_live_odom() -
     assert recovery["route_segment_planned_count"] == 6
     assert recovery["recovery_completion_claimed"] is True
     assert recovery["route_resumed_after_recovery"] is True
+    assert recovery["core_action_feasibility_status"] == "verified_feasible"
+    assert recovery["core_predispatch_revalidation_status"] == "validated"
+    assert recovery["core_adapter_id"] == "missionos.nav2.action_feasibility.v1"
     assert missionos_cli._mission_map_avoidance_sample_count(model) == 24
     assert (
         missionos_cli._mission_map_avoidance_sample_count(
@@ -646,6 +672,14 @@ def test_terminal_surfaces_project_latest_recovery_summary_without_live_odom() -
     assert "route_segments=6/6" in rendered_watch
     assert "recovery_complete=True" in rendered_watch
     assert "route_resumed=True" in rendered_watch
+    assert "core_feasibility=verified_feasible" in rendered_watch
+    assert "predispatch_revalidation=validated" in rendered_watch
+    assert "odom=3.578m" in rendered_watch
+    assert "clearance_3d_min=0.357m" in rendered_watch
+
+    rendered_html = missionos_cli._mission_indoor_map_html(model)
+    assert "Core feasibility" in rendered_html
+    assert "core_action_feasibility_status" in rendered_html
 
     rendered_job = "\n".join(missionos_cli._job_operator_summary(payload))
     assert "TurtleBot3/Nav2 simulated route finished after Recovery" in rendered_job

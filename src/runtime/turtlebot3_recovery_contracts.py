@@ -217,15 +217,43 @@ def build_turtlebot3_recovery_contract_bundle(
         id_key="recovery_compilation_id",
         sha_key="recovery_compilation_sha256",
     )
+    core_required = False
+    core_verified = True
     if selected_action != "avoid_obstacle":
         candidate_verification_status = "not_required"
         candidate_binding_verified = True
     elif candidate_binding.get("dual_costmap_validated") is True:
+        core_required = (
+            candidate_binding.get("core_action_feasibility_required") is True
+        )
+        core_statuses = candidate_binding.get(
+            "core_action_feasibility_statuses"
+        )
+        core_statuses = (
+            list(core_statuses)
+            if isinstance(core_statuses, Sequence)
+            and not isinstance(core_statuses, (str, bytes, bytearray))
+            else []
+        )
+        core_verified = (
+            not core_required
+            or (
+                bool(candidate_binding.get("core_adapter_id"))
+                and bool(candidate_binding.get("core_hazard_state"))
+                and bool(candidate_binding.get("core_hazard_state_sha256"))
+                and bool(candidate_binding.get("core_policy_binding"))
+                and bool(core_statuses)
+                and all(
+                    status == "verified_feasible" for status in core_statuses
+                )
+            )
+        )
         candidate_binding_verified = bool(
             candidate_binding.get("candidate_ids")
             and candidate_binding.get("path_sha256_sequence")
             and candidate_binding.get("global_costmap_snapshot_hash")
             and candidate_binding.get("local_costmap_snapshot_hash")
+            and core_verified
         )
         candidate_verification_status = (
             "verified" if candidate_binding_verified else "unverified"
@@ -257,6 +285,8 @@ def build_turtlebot3_recovery_contract_bundle(
             "candidate_binding_status": candidate_verification_status,
             "candidate_binding_verified": candidate_binding_verified,
             "candidate_binding_sha256": candidate_binding_sha256,
+            "core_action_feasibility_required": core_required,
+            "core_action_feasibility_verified": core_verified,
             "verification_scope": (
                 "checkpoint_structure_and_existing_nav2_plan_only_evidence"
             ),

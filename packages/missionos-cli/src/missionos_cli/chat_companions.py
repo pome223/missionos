@@ -23,6 +23,7 @@ from rich.text import Text
 
 from .gateway_client import MissionOSGatewayClient
 from .job_status import _task_artifacts
+from .map_model import _turtlebot3_core_feasibility_from_artifacts
 
 
 TURTLEBOT3_CHAT_TASK_STATUS_POLL_INTERVAL = 1.0
@@ -452,6 +453,7 @@ def _print_turtlebot3_chat_task_terminal_update(task_payload: dict[str, Any]) ->
     status = str(task.get("status") or summary.get("status") or "unknown")
     completed = summary.get("segment_completion_count")
     planned = summary.get("planned_segment_count")
+    core_feasibility = _turtlebot3_core_feasibility_from_artifacts(artifacts)
     lines = [
         f"task_id={_status_text(task.get('task_id'))}",
         f"operation_status={_status_text(status)}",
@@ -462,6 +464,10 @@ def _print_turtlebot3_chat_task_terminal_update(task_payload: dict[str, Any]) ->
         f"route={_status_text(summary.get('route_resume_status'))}",
         f"segments={_status_text(completed)}/{_status_text(planned)}; "
         f"completion_claimed={summary.get('completion_claimed') is True}",
+        "core_feasibility="
+        f"{_status_text(core_feasibility.get('candidate_status'))}; "
+        "predispatch_revalidation="
+        f"{_status_text(core_feasibility.get('predispatch_revalidation_status'))}",
         "mission_delivery_completion_claimed="
         f"{summary.get('mission_delivery_completion_claimed') is True}; "
         "physical_execution_invoked="

@@ -52,6 +52,8 @@ was sent, what was observed, and what remains unproven.
   measurement, and action promotion.
 - Read `docs/concepts/backend-neutral-adapters.md` for the shared approval,
   dispatch, observation, and verification flow across robot backends.
+- Read `docs/concepts/action-feasibility.md` for how common evidence and
+  robot-specific calculations produce a tri-state result without authority.
 - Read `docs/examples/README.md` for planned scenario writeups and their
   verification requirements.
 - Read `docs/agents/README.md` if you are an AI agent or maintainer changing the

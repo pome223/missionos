@@ -367,6 +367,7 @@ def _assessment(
 def _planner_tool_telemetry() -> dict:
     return {
         "source": "fixture_runtime_recovery_telemetry",
+        "observed_at": "2026-07-24T03:00:00+00:00",
         "sample_index": 30,
         "elapsed_seconds": 60.0,
         "telemetry": {
@@ -2062,6 +2063,7 @@ def test_safety_hold_preserves_matching_local_avoidance_proposal(
         _proposal,
     )
     base_snapshot = {
+        "observed_at": "2026-07-24T03:00:00+00:00",
         "sample_index": 40,
         "elapsed_seconds": 80.0,
         "progress_m": 430.0,

@@ -1,0 +1,29 @@
+{
+  "case_count": 5,
+  "cases": [
+    {
+      "path": "cases/nav2-positive-verified-bypass.json",
+      "sha256": "44b3bba68d0b5f1001917a4028995feed6cbb175af7edf9f7fe5b796314c29a6"
+    },
+    {
+      "path": "cases/nav2-refusal-collision-path.json",
+      "sha256": "bb0a0c998158983f2e5b55fbe2a349ed7369e5d0fbe5f595b5246480c4b898ca"
+    },
+    {
+      "path": "cases/nav2-refusal-missing-obstacle-geometry.json",
+      "sha256": "39b3b31fdcfbde9ca6f788c5d66bd3cc0ec203554ca52a9f940e9c2d573a9346"
+    },
+    {
+      "path": "cases/nav2-refusal-frame-mismatch.json",
+      "sha256": "0f89db25c68d8fbab562704932bb98caaeea44d9ef3a00a90c4ff8d9aa18132a"
+    },
+    {
+      "path": "cases/nav2-refusal-stale-dynamic-observation.json",
+      "sha256": "63c3e4537cd1fdbca060dc2925af174557913c80bedf143215a738ebfe039e5b"
+    }
+  ],
+  "claim_boundary": "Replay verifies artifact contracts only; it does not invoke Nav2, a simulator, an LLM, approval, dispatch, or execution.",
+  "corpus_id": "nav2_v1",
+  "manifest_sha256": "c5f7740c72d2cfad1eaae633339b6a33da2bd0c60558bdb80cabbeffe60901a2",
+  "schema_version": "missionos_nav2_action_feasibility_corpus.v1"
+}

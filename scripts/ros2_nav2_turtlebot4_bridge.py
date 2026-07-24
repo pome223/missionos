@@ -396,6 +396,14 @@ def _evaluate_recovery_candidates(payload: dict[str, Any]) -> dict[str, Any]:
         f"missionos_ros2_nav2_{_bridge_profile()}_recovery_resolver"
     )
     try:
+        if _truthy_env(ROS2_NAV2_USE_SIM_TIME_ENV):
+            # Costmap header stamps use the simulator clock.  Read-only
+            # freshness evidence must use the same clock or it would compare
+            # Gazebo epoch-relative stamps with the host wall clock.
+            from rclpy.parameter import Parameter
+
+            node.set_parameters([Parameter("use_sim_time", value=True)])
+
         def _read_costmap(service_name: str, label: str) -> dict[str, Any] | None:
             client = node.create_client(GetCostmap, service_name)
             if not client.wait_for_service(timeout_sec=server_timeout_s):
@@ -422,6 +430,10 @@ def _evaluate_recovery_candidates(payload: dict[str, Any]) -> dict[str, Any]:
                 "frame_id": str(costmap.header.frame_id),
                 "stamp_sec": int(costmap.header.stamp.sec),
                 "stamp_nanosec": int(costmap.header.stamp.nanosec),
+                "stamp_ns": (
+                    int(costmap.header.stamp.sec) * 1_000_000_000
+                    + int(costmap.header.stamp.nanosec)
+                ),
                 "width": width,
                 "height": height,
                 "resolution": resolution,
@@ -489,6 +501,13 @@ def _evaluate_recovery_candidates(payload: dict[str, Any]) -> dict[str, Any]:
             }
         costmap_snapshot_hash = str(global_costmap["snapshot_hash"])
         _cost_at = global_costmap["cost_at"]
+        observed_clock_ns = int(node.get_clock().now().nanoseconds)
+
+        def _costmap_age_s(costmap: dict[str, Any]) -> float | None:
+            stamp_ns = int(costmap.get("stamp_ns") or 0)
+            if stamp_ns <= 0 or observed_clock_ns <= 0 or observed_clock_ns < stamp_ns:
+                return None
+            return round((observed_clock_ns - stamp_ns) / 1_000_000_000, 6)
 
         local_tf_buffer = Buffer()
         local_tf_listener = TransformListener(local_tf_buffer, node)  # noqa: F841
@@ -639,6 +658,7 @@ def _evaluate_recovery_candidates(payload: dict[str, Any]) -> dict[str, Any]:
                 GoalStatus,
             )
             path = wrapped_result.result.path
+            path_frame_id = str(path.header.frame_id or frame_id)
             path_points = [
                 (
                     float(stamped.pose.position.x),
@@ -821,6 +841,15 @@ def _evaluate_recovery_candidates(payload: dict[str, Any]) -> dict[str, Any]:
                     "local_cost_threshold": local_cost_threshold,
                     "target_cost_threshold": target_cost_threshold,
                     "path_pose_count": len(path_points),
+                    "path_points": [
+                        {
+                            "x_m": round(x_m, 6),
+                            "y_m": round(y_m, 6),
+                            "frame_id": path_frame_id,
+                        }
+                        for x_m, y_m in path_points
+                    ],
+                    "path_frame_id": path_frame_id,
                     "path_length_m": round(path_length_m, 6),
                     "path_start_pose": path_start_pose,
                     "path_end_pose": path_end_pose,
@@ -864,9 +893,19 @@ def _evaluate_recovery_candidates(payload: dict[str, Any]) -> dict[str, Any]:
             costmap_source=costmap_service_name,
             global_costmap_snapshot_hash=global_costmap["snapshot_hash"],
             global_costmap_source=costmap_service_name,
+            global_costmap_frame_id=global_costmap["frame_id"],
+            global_costmap_stamp_ns=global_costmap["stamp_ns"],
+            global_costmap_age_s=_costmap_age_s(global_costmap),
             local_costmap_snapshot_hash=local_costmap["snapshot_hash"],
             local_costmap_source=local_costmap_service_name,
             local_costmap_frame_id=local_costmap["frame_id"],
+            local_costmap_stamp_ns=local_costmap["stamp_ns"],
+            local_costmap_age_s=_costmap_age_s(local_costmap),
+            local_frame_transform_verified=(
+                local_frame == frame_id or local_transform is not None
+            ),
+            observation_clock_ns=observed_clock_ns,
+            observation_captured_at=datetime.now(timezone.utc).isoformat(),
             local_cost_threshold=local_cost_threshold,
             target_cost_threshold=target_cost_threshold,
             path_goal_tolerance_m=path_goal_tolerance_m,
