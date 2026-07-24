@@ -33,6 +33,7 @@ EVIDENCE_PATH = (
     / "evidence"
     / "20260724-v0.1.0-stable-readiness.json"
 )
+RELEASE_NOTE_PATH = ROOT / "docs" / "releases" / "v0.1.0.md"
 EXPECTED_STATUSES = {"verified_feasible", "blocked", "unverified"}
 EXPECTED_SURFACES = {"chat", "job-status", "operate", "watch", "map"}
 AUTHORITY_STAGES = {
@@ -236,6 +237,8 @@ def evaluate_stable_gate(
     """Evaluate all release requirements without creating authority."""
 
     reasons: list[str] = []
+    if not RELEASE_NOTE_PATH.is_file():
+        reasons.append("stable_release_note_missing")
     backend_results: dict[str, Any] = {}
     definitions = {
         "px4": (
