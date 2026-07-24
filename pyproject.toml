@@ -1,6 +1,6 @@
 [project]
 name = "missionos-monorepo"
-version = "0.1.0"
+version = "0.1.1"
 description = "MissionOS monorepo with CLI, Gateway, and opt-in PX4/Gazebo SITL backend."
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
