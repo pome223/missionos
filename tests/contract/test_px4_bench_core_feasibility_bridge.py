@@ -21,6 +21,10 @@ from src.runtime.hardware_adapter_contract import (
 from src.runtime.px4_bench_action_feasibility_corpus import (
     verify_px4_bench_corpus_case,
 )
+from src.runtime.px4_real_hardware_actuator_backend import (
+    LINK_KIND_INJECTED_FAKE,
+    LINK_KIND_REAL_SERIAL_PYMAVLINK,
+)
 from src.runtime.px4_bench_core_feasibility_bridge import (
     UNPUBLISHABLE_RUNTIME_FIELDS,
     build_bench_action_candidate,
@@ -106,6 +110,7 @@ def _candidate(preflight: dict) -> dict:
 
 def _verify(
     *,
+    link_kind: str | None = LINK_KIND_REAL_SERIAL_PYMAVLINK,
     execution_mode=HardwareExecutionMode.BENCH,
     attestation: dict | None = None,
     preflight_kwargs: dict | None = None,
@@ -116,6 +121,7 @@ def _verify(
     return verify_bench_dispatch_feasibility(
         preflight=preflight,
         candidate=candidate,
+        link_kind=link_kind,
         execution_mode=execution_mode,
         active_policy=_policy(),
         observed_at=OBSERVED_AT,
@@ -187,15 +193,18 @@ def test_absent_attestation_is_unverified_not_blocked() -> None:
     assert "bench_props_attestation_unverified" in unverified
 
 
-def test_loopback_execution_mode_cannot_reach_a_bench_verdict() -> None:
-    """An injected fake connection must not pass as bench evidence.
+def test_injected_fake_connection_cannot_reach_a_bench_verdict() -> None:
+    """A test double must not be promoted into hardware evidence.
 
-    `missionos_real_hardware_dispatch_runtime` records LOOPBACK whenever a
-    connection factory is injected. That is the exact path by which a test
-    double could otherwise be promoted into hardware evidence.
+    The connection's own label is the authority: `mark_connection_real_serial`
+    is applied only by the real serial opener and is not exported, so an
+    injected fake stays `injected_fake` no matter what the caller declares.
     """
 
-    result = _verify(execution_mode=HardwareExecutionMode.LOOPBACK)
+    result = _verify(
+        link_kind=LINK_KIND_INJECTED_FAKE,
+        execution_mode=HardwareExecutionMode.LOOPBACK,
+    )
 
     assert _status(result) == "unverified"
     assert "bench_link_not_physical" in result["action_feasibility"][
@@ -206,13 +215,52 @@ def test_loopback_execution_mode_cannot_reach_a_bench_verdict() -> None:
     )["status"]
 
 
-def test_sim_execution_mode_cannot_reach_a_bench_verdict() -> None:
-    result = _verify(execution_mode=HardwareExecutionMode.SIM)
+def test_declared_bench_over_a_fake_connection_is_blocked() -> None:
+    """The attack this rewire closes.
+
+    Deriving the link class from `execution_mode` would let a caller pass BENCH
+    while running an injected fake and reach a bench verdict. execution_mode is
+    caller-supplied and decided before any connection is opened, so it can only
+    corroborate the label — and a disagreement is an observed contradiction.
+    """
+
+    result = _verify(
+        link_kind=LINK_KIND_INJECTED_FAKE,
+        execution_mode=HardwareExecutionMode.BENCH,
+    )
+
+    assert _status(result) == "blocked"
+    assert "bench_link_declaration_contradicted" in result[
+        "action_feasibility"
+    ]["blocked_reasons"]
+    assert _status(result) == verify_px4_bench_corpus_case(
+        _corpus_case("px4-bench-refusal-link-declaration-contradicted")
+    )["status"]
+
+
+def test_unlabeled_connection_is_unverified() -> None:
+    """Unlabeled means not real, and it must not resolve to any class."""
+
+    result = _verify(link_kind=None)
 
     assert _status(result) == "unverified"
-    assert "bench_link_not_physical" in result["action_feasibility"][
+    assert "bench_link_kind_unverified" in result["action_feasibility"][
         "unverified_reasons"
     ]
+
+
+def test_execution_mode_alone_cannot_establish_a_physical_link() -> None:
+    """Even a field-mode declaration establishes nothing without the label."""
+
+    for mode in (
+        HardwareExecutionMode.BENCH,
+        HardwareExecutionMode.CAGE,
+        HardwareExecutionMode.FIELD,
+        HardwareExecutionMode.HITL,
+    ):
+        result = _verify(link_kind=None, execution_mode=mode)
+
+        assert _status(result) != "verified_feasible"
 
 
 def test_non_allowlisted_action_is_blocked_through_the_bridge() -> None:
@@ -256,6 +304,7 @@ def test_candidate_does_not_forward_adapter_parameters() -> None:
     candidate["adapter_parameters"] = {"serial_device": "/dev/ttyACM0"}
     hazard_state = build_bench_hazard_state(
         preflight=preflight,
+        link_kind=LINK_KIND_REAL_SERIAL_PYMAVLINK,
         execution_mode=HardwareExecutionMode.BENCH,
         policy_binding=_policy(),
         observed_at=OBSERVED_AT,
@@ -306,6 +355,7 @@ def test_preflight_false_is_unestablished_not_observed_unsafe() -> None:
     result = verify_bench_dispatch_feasibility(
         preflight=default_preflight,
         candidate=_candidate(_preflight()),
+        link_kind=LINK_KIND_REAL_SERIAL_PYMAVLINK,
         execution_mode=HardwareExecutionMode.BENCH,
         active_policy=_policy(),
         observed_at=OBSERVED_AT,
@@ -332,6 +382,7 @@ def test_a_blocked_preflight_never_becomes_verified_feasible() -> None:
                 mode="json"
             ),
             candidate=_candidate(_preflight()),
+            link_kind=LINK_KIND_REAL_SERIAL_PYMAVLINK,
             execution_mode=HardwareExecutionMode.BENCH,
             active_policy=_policy(),
             observed_at=OBSERVED_AT,

@@ -184,9 +184,12 @@ physical attestation を Core の `HazardState` / `ActionCandidate` に翻訳す
 
 橋渡しで守った境界:
 
-- **loopback 昇格の遮断** — ランタイムは connection factory 注入時に `LOOPBACK` を
-  記録する。テストダブルが実機証拠になりうる正確な経路なので、`execution_mode` を
-  link class の情報源とし、`loopback` / `sim` を `unverified` で止める
+- **loopback 昇格の遮断** — 情報源は**接続自身のラベル** `link_kind`。
+  `mark_connection_real_serial()` は実シリアル opener からのみ呼ばれ、意図的に
+  非エクスポートなので、呼び出し側が fake を real と偽れない。actuator backend は
+  `physical_execution_invoked == (link_kind == real_serial_pymavlink)` を
+  モデル不変条件として強制しており、bridge はその権威を継承する。
+  ラベル無し（unlabeled）はどのクラスにも解決せず `unverified`
 - **公開境界** — serial device、`attesting_operator_id`、`bench_photo_evidence_ref` は
   hazard state に入れない。`adapter_parameters` も転送しない（不透明な mapping は
   デバイスパスが将来紛れ込む経路）
@@ -259,14 +262,38 @@ Windows 絶対パスも弾くようになった（既存 5 ケースに衝突な
 併せて置いた。bench corpus は link の**クラス**を記録するので、ここが通らないと
 設計そのものが成立しない。
 
-## 8. 未解決・要判断
+## 8. 操作者申告への依存（解決済み・2026-07-25）
+
+各ケースは `verifier_assumptions` ブロックを持ち、観測事実を 2 つに分類する。
+
+| 分類 | 事実 |
+|------|------|
+| `machine_observed_facts` | `link_kind`, `link_declaration_consistent`, `heartbeat_alive` |
+| `operator_declared_facts` | `physical_estop_available`, `vehicle_physically_secured`, `power_disconnect_available`, `operator_physically_present`, `props_removed_attested` |
+
+**下段の 5 つは、コードが一切検証しない。** 物理 E-stop が存在するか、それが試験
+済みか、機体が本当に固定されているか、プロペラが本当に外れているかを確認する機械的
+手段は無い。これらは名前付きの操作者がそう言ったから成立している。
+
+この分類は散文ではなく**検査対象**である。`verify_px4_bench_corpus_case` は
+分類漏れの事実を `bench_corpus_fact_unclassified` で fail-closed に落とす。
+新しい attestation 由来の事実が、黙って測定値の重みを獲得することを防ぐため。
+`operator_declared_facts_are_machine_verified` は常に `false` で、`true` を
+主張すると `bench_corpus_operator_declaration_overclaimed` で落ちる。
+
+`notes` に記録した運用上の落とし穴:
+
+- **PX4 の Safety Switch は物理 E-stop ではない。** 前者は arming 許可の操作、
+  後者はソフトウェアが失敗しても止められる独立手段。混同した操作者は、bench slice が
+  前提するより弱いものに対して「正直に」申告してしまう
+- **USB 給電中はバッテリ回路を開いても機体は de-energize されない。**
+  `power_disconnect_available` はオートパイロットに実際に給電しているレールを指す
+
+### 残る未解決
 
 1. **live E2E の物理準備の正本をどこに置くか。** プロペラ非装着・固定・E-stop 配線の
    チェックリストはコード契約ではない。`hardware-partner-integration-guide.md` の
    拡張か、独立の bench 運用手順書か。
-3. **`refusal-props-attached` の入力源。** 現状これは操作者申告に依存する。
-   申告を機械的観測に置き換える手段がない点を、ケースの
-   `verifier_assumptions` に明示的に書き残す必要がある。
 
 ---
 
@@ -279,3 +306,4 @@ Windows 絶対パスも弾くようになった（既存 5 ケースに衝突な
 | 2026-07-25 | #105 完了。サニタイザ共有モジュール化 + `px4_bench_v1` 8 ケース凍結。`packages/missionos-core/` への変更 0 行。全スイート 1397 passed。実機 E2E は依然未実行 |
 | 2026-07-25 | attestation 拒否 3 件を `blocked` → `unverified` に retarget。`Literal[True]` により「観測された危険」が表現不可能なため |
 | 2026-07-25 | #106 完了。実機ランタイム → Core の橋渡しと parity 証明。preflight の `False` = 未確立問題を同時に修正。全スイート 1414 passed。実機 E2E は依然未実行 |
+| 2026-07-25 | link 判定の権威を `execution_mode`（呼び出し側申告）から `link_kind`（接続自身のラベル）へ移管。「BENCH と申告しつつ fake connection」を `blocked` として検出する 9 番目のケースを追加。実機 E2E 前に必要な修正 |

@@ -30,22 +30,41 @@ from src.runtime.px4_bench_core_action_feasibility_adapter import (
     PX4_BENCH_ADAPTER_ID,
     verify_px4_bench_core_action_candidate,
 )
+from src.runtime.px4_real_hardware_actuator_backend import (
+    LINK_KIND_INJECTED_FAKE,
+    LINK_KIND_REAL_SERIAL_PYMAVLINK,
+)
 
 
 BENCH_CURSOR_CONTRACT = "missionos.px4_bench.monotonic_boot_us.v1"
 
-# Execution mode is the runtime's own record of how it is connected, so it is
-# the honest source for the link class. A fake injected connection is loopback;
-# only a real serial bench link may support a bench claim.
-_EXECUTION_MODE_LINK_KIND = {
-    HardwareExecutionMode.BENCH: "serial",
-    HardwareExecutionMode.CAGE: "serial",
-    HardwareExecutionMode.FIELD: "serial",
-    HardwareExecutionMode.HITL: "serial",
-    HardwareExecutionMode.LOOPBACK: "loopback",
-    HardwareExecutionMode.SIM: "sim",
-    HardwareExecutionMode.SCHEMA_EXAMPLE_ONLY: "sim",
+# The connection's own label is the authority for the link class.
+#
+# `mark_connection_real_serial` is applied only by the real serial opener and is
+# deliberately not exported, so a caller cannot label a fake as real. The
+# actuator backend enforces `physical_execution_invoked == (link_kind is
+# real_serial_pymavlink)` as a model invariant. This bridge inherits that
+# authority rather than re-deriving it.
+#
+# `execution_mode` is NOT that authority: it is a caller-supplied parameter,
+# decided before any connection is opened. Deriving the link class from it would
+# let `execution_mode=BENCH` plus an injected fake connection reach a bench
+# verdict — precisely the promotion this slice exists to prevent.
+_LINK_KIND_CLASS = {
+    LINK_KIND_REAL_SERIAL_PYMAVLINK: "serial",
+    LINK_KIND_INJECTED_FAKE: "loopback",
 }
+
+# Execution modes whose *declaration* implies a physical link. Used only to
+# detect a contradiction against the connection label, never to establish one.
+_PHYSICAL_EXECUTION_MODES = frozenset(
+    {
+        HardwareExecutionMode.BENCH,
+        HardwareExecutionMode.CAGE,
+        HardwareExecutionMode.FIELD,
+        HardwareExecutionMode.HITL,
+    }
+)
 
 _ACTION_KIND_TO_CORE_ACTION = {
     HardwareActionKind.PX4_ARM_DISARM_BENCH: "px4_arm_disarm_bench",
@@ -64,15 +83,30 @@ UNPUBLISHABLE_RUNTIME_FIELDS = frozenset(
 )
 
 
-def _link_kind(execution_mode: HardwareExecutionMode | str) -> str | None:
-    if isinstance(execution_mode, HardwareExecutionMode):
-        return _EXECUTION_MODE_LINK_KIND.get(execution_mode)
-    try:
-        return _EXECUTION_MODE_LINK_KIND.get(
-            HardwareExecutionMode(str(execution_mode))
-        )
-    except ValueError:
+def _link_class(link_kind: str | None) -> str | None:
+    """Map a connection label to a publishable link class.
+
+    An unlabeled connection returns None. Unlabeled means not real, so it must
+    not resolve to any class — the verifier then reports `unverified` rather
+    than assuming either a real or a fake link.
+    """
+
+    if not link_kind:
         return None
+    return _LINK_KIND_CLASS.get(str(link_kind))
+
+
+def _declares_physical_link(
+    execution_mode: HardwareExecutionMode | str | None,
+) -> bool:
+    if execution_mode is None:
+        return False
+    if isinstance(execution_mode, HardwareExecutionMode):
+        return execution_mode in _PHYSICAL_EXECUTION_MODES
+    try:
+        return HardwareExecutionMode(str(execution_mode)) in _PHYSICAL_EXECUTION_MODES
+    except ValueError:
+        return False
 
 
 def _core_action(action_kind: HardwareActionKind | str) -> str:
@@ -104,15 +138,20 @@ def _source(
 def build_bench_hazard_state(
     *,
     preflight: Mapping[str, Any],
-    execution_mode: HardwareExecutionMode | str,
     policy_binding: Mapping[str, Any],
     observed_at: str,
     boot_us: int,
+    link_kind: str | None = None,
+    execution_mode: HardwareExecutionMode | str | None = None,
     physical_attestation: Mapping[str, Any] | None = None,
     freshness_deadline: str | None = None,
     state_id: str = "bench_hazard_state",
 ) -> dict[str, Any]:
     """Translate runtime preflight and attestation into a Core hazard state.
+
+    `link_kind` is the connection's own label from the actuator backend and is
+    the only thing that can establish a physical link. `execution_mode` is the
+    caller's declaration; it can contradict the label but never create one.
 
     A fact is emitted only when the runtime actually observed it. A missing
     attestation yields missing facts, which the verifier reports as
@@ -122,9 +161,16 @@ def build_bench_hazard_state(
 
     facts: dict[str, Any] = {}
 
-    link_kind = _link_kind(execution_mode)
-    if link_kind is not None:
-        facts["link_kind"] = link_kind
+    link_class = _link_class(link_kind)
+    if link_class is not None:
+        facts["link_kind"] = link_class
+        # Corroboration only. A caller declaring a physical mode over a
+        # connection that is not labeled real is an observed contradiction, and
+        # the verifier blocks it.
+        if execution_mode is not None:
+            facts["link_declaration_consistent"] = not (
+                _declares_physical_link(execution_mode) and link_class != "serial"
+            )
 
     for name in ("heartbeat_alive",):
         if preflight.get(name) is not None:
@@ -220,11 +266,12 @@ def verify_bench_dispatch_feasibility(
     *,
     preflight: Mapping[str, Any],
     candidate: Mapping[str, Any],
-    execution_mode: HardwareExecutionMode | str,
     active_policy: Mapping[str, Any],
     observed_at: str,
     evaluated_at: str,
     boot_us: int,
+    link_kind: str | None = None,
+    execution_mode: HardwareExecutionMode | str | None = None,
     physical_attestation: Mapping[str, Any] | None = None,
     freshness_deadline: str | None = None,
 ) -> dict[str, Any]:
@@ -237,6 +284,7 @@ def verify_bench_dispatch_feasibility(
 
     hazard_state = build_bench_hazard_state(
         preflight=preflight,
+        link_kind=link_kind,
         execution_mode=execution_mode,
         policy_binding=active_policy,
         observed_at=observed_at,

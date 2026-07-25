@@ -56,6 +56,7 @@ CONTRACT_EVIDENCE_REFS = [
 # is about, so a refusal differs from the positive case in exactly one respect.
 SAFE_FACTS: dict[str, Any] = {
     "link_kind": "serial",
+    "link_declaration_consistent": True,
     "heartbeat_alive": True,
     "physical_estop_available": True,
     "vehicle_physically_secured": True,
@@ -63,6 +64,41 @@ SAFE_FACTS: dict[str, Any] = {
     "operator_physically_present": True,
     "props_removed_attested": True,
 }
+
+# Which facts a machine observed, and which a human asserted.
+#
+# This distinction is not cosmetic. Nothing in the codebase verifies that a
+# physical E-stop exists, that it was tested, that the airframe is actually
+# restrained, or that the propellers are actually off. Those facts enter the
+# system because a named operator said so. PX4's own safety switch is not the
+# same thing as an independent physical stop, and an operator who conflates them
+# will attest truthfully to something weaker than the bench slice assumes.
+#
+# Every observed fact must appear in exactly one list. The verifier fails closed
+# on an unclassified fact, so a new attestation-derived fact cannot silently be
+# treated as a machine observation.
+MACHINE_OBSERVED_FACTS = (
+    "link_kind",
+    "link_declaration_consistent",
+    "heartbeat_alive",
+)
+OPERATOR_DECLARED_FACTS = (
+    "physical_estop_available",
+    "vehicle_physically_secured",
+    "power_disconnect_available",
+    "operator_physically_present",
+    "props_removed_attested",
+)
+
+VERIFIER_ASSUMPTION_NOTES = (
+    "A physical E-stop is an independent stop that works when software fails; "
+    "the PX4 safety switch is an arming permission and does not satisfy it.",
+    "A vehicle powered over USB is not de-energized by opening the battery "
+    "circuit, so power_disconnect_available refers to the rail actually "
+    "supplying the autopilot.",
+    "No machine check confirms any operator-declared fact. Their evidentiary "
+    "weight is the attestation and nothing more.",
+)
 
 
 def _source_ref(source_id: str, *, stale: bool = False) -> dict[str, Any]:
@@ -249,6 +285,12 @@ def _case(
                 "status": expected_status,
                 "required_reason": required_reason,
             },
+            "verifier_assumptions": {
+                "machine_observed_facts": list(MACHINE_OBSERVED_FACTS),
+                "operator_declared_facts": list(OPERATOR_DECLARED_FACTS),
+                "operator_declared_facts_are_machine_verified": False,
+                "notes": list(VERIFIER_ASSUMPTION_NOTES),
+            },
             "truth_boundary": _truth_boundary(case_id=case_id),
             "authority_chain": _authority_chain(
                 case_id=case_id, scenario_class=scenario_class
@@ -312,6 +354,22 @@ def build_cases() -> list[dict[str, Any]]:
             expected_status="unverified",
             required_reason="bench_link_not_physical",
             fact_overrides={"link_kind": "loopback"},
+        ),
+        _case(
+            case_id="px4-bench-refusal-link-declaration-contradicted",
+            scenario_class="refusal",
+            summary=(
+                "The caller declared a physical execution mode over a "
+                "connection that is not labeled a real serial link. A "
+                "contradiction is observed, so it blocks rather than merely "
+                "failing to verify."
+            ),
+            expected_status="blocked",
+            required_reason="bench_link_declaration_contradicted",
+            fact_overrides={
+                "link_kind": "loopback",
+                "link_declaration_consistent": False,
+            },
         ),
         _case(
             case_id="px4-bench-refusal-stale-telemetry",

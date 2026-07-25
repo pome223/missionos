@@ -7,44 +7,44 @@
   "authority_chain": {
     "adapter_ack": {
       "ack_is_execution_effect": false,
-      "artifact_ref": "ack:px4-bench-refusal-loopback-link-kind",
+      "artifact_ref": "ack:px4-bench-refusal-link-declaration-contradicted",
       "observed": false
     },
     "completion": {
-      "artifact_ref": "completion:px4-bench-refusal-loopback-link-kind",
+      "artifact_ref": "completion:px4-bench-refusal-link-declaration-contradicted",
       "completion_scope": "none",
       "delivery_completion_claimed": false,
       "flight_claimed": false,
       "mission_completion_claimed": false
     },
     "dispatch_authority": {
-      "artifact_ref": "authority:px4-bench-refusal-loopback-link-kind",
+      "artifact_ref": "authority:px4-bench-refusal-link-declaration-contradicted",
       "created": false
     },
     "dispatch_revalidation": {
-      "artifact_ref": "revalidation:px4-bench-refusal-loopback-link-kind",
+      "artifact_ref": "revalidation:px4-bench-refusal-link-declaration-contradicted",
       "status": "not_attempted"
     },
     "human_approval": {
-      "artifact_ref": "approval:px4-bench-refusal-loopback-link-kind",
+      "artifact_ref": "approval:px4-bench-refusal-link-declaration-contradicted",
       "human_approval_performed": false,
       "status": "not_requested"
     },
     "observed_effect": {
       "armed_state_readback_observed": false,
-      "artifact_ref": "effect:px4-bench-refusal-loopback-link-kind",
+      "artifact_ref": "effect:px4-bench-refusal-link-declaration-contradicted",
       "disarm_observed": false
     },
     "proposal": {
       "approval_created": false,
-      "artifact_ref": "proposal:px4-bench-refusal-loopback-link-kind",
+      "artifact_ref": "proposal:px4-bench-refusal-link-declaration-contradicted",
       "dispatch_authority_created": false,
       "status": "rejected_before_proposal"
     }
   },
   "candidate": {
     "action": "px4_arm_disarm_bench",
-    "candidate_id": "candidate:px4-bench-refusal-loopback-link-kind",
+    "candidate_id": "candidate:px4-bench-refusal-link-declaration-contradicted",
     "evidence_refs": [
       "bench_link_kind",
       "bench_link_declaration_consistent",
@@ -58,12 +58,12 @@
     "extension_inputs": {},
     "parameters": {}
   },
-  "case_id": "px4-bench-refusal-loopback-link-kind",
-  "case_sha256": "283e9ea6f9a644cc2fcd918041b7c7dbc9ef569fdd2e3156f11296765d07b39a",
+  "case_id": "px4-bench-refusal-link-declaration-contradicted",
+  "case_sha256": "a74e57c912cfe43c02c800cb38817adf924638cd01fec83ad212aaae006a502b",
   "evaluated_at": "2026-07-25T00:00:00+00:00",
   "expected": {
-    "required_reason": "bench_link_not_physical",
-    "status": "unverified"
+    "required_reason": "bench_link_declaration_contradicted",
+    "status": "blocked"
   },
   "hazard_state": {
     "assumptions": [
@@ -107,7 +107,7 @@
         },
         "status": "observed",
         "unit": null,
-        "value": true
+        "value": false
       },
       {
         "frame": null,
@@ -205,14 +205,14 @@
       "policy_sha256": "428c0a5fc6779cec6ee75c8433f4b9f8b6eaa16dd15a3385a37f317959099900",
       "policy_version": "1"
     },
-    "state_id": "hazard:px4-bench-refusal-loopback-link-kind"
+    "state_id": "hazard:px4-bench-refusal-link-declaration-contradicted"
   },
   "scenario_class": "refusal",
   "schema_version": "missionos_px4_bench_action_feasibility_case.v1",
-  "summary": "A loopback link cannot back a bench claim. This guards the grade of the evidence, not the airframe.",
+  "summary": "The caller declared a physical execution mode over a connection that is not labeled a real serial link. A contradiction is observed, so it blocks rather than merely failing to verify.",
   "truth_boundary": {
     "artifact_truth": {
-      "case_id": "px4-bench-refusal-loopback-link-kind",
+      "case_id": "px4-bench-refusal-link-declaration-contradicted",
       "deterministic": true,
       "fixture_kind": "contract_derived_bench_case"
     },

@@ -47,6 +47,7 @@
     "candidate_id": "candidate:px4-bench-refusal-stale-telemetry",
     "evidence_refs": [
       "bench_link_kind",
+      "bench_link_declaration_consistent",
       "bench_heartbeat_alive",
       "bench_physical_estop_available",
       "bench_vehicle_physically_secured",
@@ -58,7 +59,7 @@
     "parameters": {}
   },
   "case_id": "px4-bench-refusal-stale-telemetry",
-  "case_sha256": "2fb900bfe3c4f0d20220dda39b96eae470ff82c5d70c33928464e7f7a3d52bf9",
+  "case_sha256": "3c1271388e7c5df61335fce50df10deeed3755fdcb3423a4fd2c89ba7672a455",
   "evaluated_at": "2026-07-25T00:00:00+00:00",
   "expected": {
     "required_reason": "evidence_stale",
@@ -92,6 +93,21 @@
         "status": "observed",
         "unit": null,
         "value": "serial"
+      },
+      {
+        "frame": null,
+        "name": "link_declaration_consistent",
+        "source": {
+          "content_sha256": "84364b2b9ca236a8495050d6f193a000fe2681836dff12d03301e802a5debe46",
+          "evidence_kind": "bench_preflight_observation",
+          "freshness_deadline": "2026-07-25T00:00:05+00:00",
+          "freshness_proof": "timestamp",
+          "observed_at": "2026-07-25T00:00:00+00:00",
+          "source_id": "bench_link_declaration_consistent"
+        },
+        "status": "observed",
+        "unit": null,
+        "value": true
       },
       {
         "frame": null,
@@ -215,5 +231,25 @@
       "source_runtime_evidence_refs": [],
       "source_runtime_reexecuted": false
     }
+  },
+  "verifier_assumptions": {
+    "machine_observed_facts": [
+      "link_kind",
+      "link_declaration_consistent",
+      "heartbeat_alive"
+    ],
+    "notes": [
+      "A physical E-stop is an independent stop that works when software fails; the PX4 safety switch is an arming permission and does not satisfy it.",
+      "A vehicle powered over USB is not de-energized by opening the battery circuit, so power_disconnect_available refers to the rail actually supplying the autopilot.",
+      "No machine check confirms any operator-declared fact. Their evidentiary weight is the attestation and nothing more."
+    ],
+    "operator_declared_facts": [
+      "physical_estop_available",
+      "vehicle_physically_secured",
+      "power_disconnect_available",
+      "operator_physically_present",
+      "props_removed_attested"
+    ],
+    "operator_declared_facts_are_machine_verified": false
   }
 }
