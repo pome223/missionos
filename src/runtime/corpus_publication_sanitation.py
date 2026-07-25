@@ -56,9 +56,12 @@ FORBIDDEN_KEYS = frozenset(
         "token",
         # operator and session identity
         "approval_actor",
+        "attesting_operator_id",
         "operator_name",
         "owner_session_id",
         "owner_user_id",
+        # bench session evidence that depicts one physical workstation
+        "bench_photo_evidence_ref",
         # model interaction text
         "prompt",
         "prompt_text",

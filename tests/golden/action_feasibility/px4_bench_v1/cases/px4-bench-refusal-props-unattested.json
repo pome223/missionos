@@ -7,61 +7,61 @@
   "authority_chain": {
     "adapter_ack": {
       "ack_is_execution_effect": false,
-      "artifact_ref": "ack:px4-bench-refusal-props-attached",
+      "artifact_ref": "ack:px4-bench-refusal-props-unattested",
       "observed": false
     },
     "completion": {
-      "artifact_ref": "completion:px4-bench-refusal-props-attached",
+      "artifact_ref": "completion:px4-bench-refusal-props-unattested",
       "completion_scope": "none",
       "delivery_completion_claimed": false,
       "flight_claimed": false,
       "mission_completion_claimed": false
     },
     "dispatch_authority": {
-      "artifact_ref": "authority:px4-bench-refusal-props-attached",
+      "artifact_ref": "authority:px4-bench-refusal-props-unattested",
       "created": false
     },
     "dispatch_revalidation": {
-      "artifact_ref": "revalidation:px4-bench-refusal-props-attached",
+      "artifact_ref": "revalidation:px4-bench-refusal-props-unattested",
       "status": "not_attempted"
     },
     "human_approval": {
-      "artifact_ref": "approval:px4-bench-refusal-props-attached",
+      "artifact_ref": "approval:px4-bench-refusal-props-unattested",
       "human_approval_performed": false,
       "status": "not_requested"
     },
     "observed_effect": {
       "armed_state_readback_observed": false,
-      "artifact_ref": "effect:px4-bench-refusal-props-attached",
+      "artifact_ref": "effect:px4-bench-refusal-props-unattested",
       "disarm_observed": false
     },
     "proposal": {
       "approval_created": false,
-      "artifact_ref": "proposal:px4-bench-refusal-props-attached",
+      "artifact_ref": "proposal:px4-bench-refusal-props-unattested",
       "dispatch_authority_created": false,
       "status": "rejected_before_proposal"
     }
   },
   "candidate": {
     "action": "px4_arm_disarm_bench",
-    "candidate_id": "candidate:px4-bench-refusal-props-attached",
+    "candidate_id": "candidate:px4-bench-refusal-props-unattested",
     "evidence_refs": [
       "bench_link_kind",
       "bench_heartbeat_alive",
       "bench_physical_estop_available",
       "bench_vehicle_physically_secured",
       "bench_power_disconnect_available",
-      "bench_props_removed_attested"
+      "bench_operator_physically_present"
     ],
     "extension_inputs": {},
     "parameters": {}
   },
-  "case_id": "px4-bench-refusal-props-attached",
-  "case_sha256": "ddcc6a213f7aa7e1825a2bbf7089a393c5105ec74f6ac46048741739ae2cfe2f",
+  "case_id": "px4-bench-refusal-props-unattested",
+  "case_sha256": "c4096f6c66312ead2b46ddee90837433ab1c9940e1985e98b9c14b89fde1c0e7",
   "evaluated_at": "2026-07-25T00:00:00+00:00",
   "expected": {
-    "required_reason": "bench_props_attached",
-    "status": "blocked"
+    "required_reason": "bench_props_attestation_unverified",
+    "status": "unverified"
   },
   "hazard_state": {
     "assumptions": [
@@ -154,18 +154,18 @@
       },
       {
         "frame": null,
-        "name": "props_removed_attested",
+        "name": "operator_physically_present",
         "source": {
-          "content_sha256": "0dd022da88bd96dece7e014b14a14507418631a707d4e59d4996a1f33ad3c910",
+          "content_sha256": "9937717601125ab9f53c124f0585a8f6d6f9de330729517aab57318556f189ff",
           "evidence_kind": "bench_preflight_observation",
           "freshness_deadline": "2026-07-25T00:00:05+00:00",
           "freshness_proof": "timestamp",
           "observed_at": "2026-07-25T00:00:00+00:00",
-          "source_id": "bench_props_removed_attested"
+          "source_id": "bench_operator_physically_present"
         },
         "status": "observed",
         "unit": null,
-        "value": false
+        "value": true
       }
     ],
     "policy_binding": {
@@ -173,14 +173,14 @@
       "policy_sha256": "428c0a5fc6779cec6ee75c8433f4b9f8b6eaa16dd15a3385a37f317959099900",
       "policy_version": "1"
     },
-    "state_id": "hazard:px4-bench-refusal-props-attached"
+    "state_id": "hazard:px4-bench-refusal-props-unattested"
   },
   "scenario_class": "refusal",
   "schema_version": "missionos_px4_bench_action_feasibility_case.v1",
-  "summary": "Propellers are attested as attached.",
+  "summary": "No props-removed attestation is present. Silence is not an observation that the propellers are attached.",
   "truth_boundary": {
     "artifact_truth": {
-      "case_id": "px4-bench-refusal-props-attached",
+      "case_id": "px4-bench-refusal-props-unattested",
       "deterministic": true,
       "fixture_kind": "contract_derived_bench_case"
     },

@@ -85,12 +85,19 @@ class Px4BenchPhysicalSafetyExtension:
         elif str(link_kind) not in PX4_BENCH_PHYSICAL_LINK_KINDS:
             unverified.append("bench_link_not_physical")
 
-        # Physical safety preconditions. These mirror the bench preflight in
-        # `hardware_adapter_contract.py`.
+        # Physical safety preconditions, mirroring the operator attestation in
+        # `PX4RealHardwarePhysicalAttestation`.
+        #
+        # That model types every safety field as `Literal[True]`, so today an
+        # unsafe bench reaches us as a *missing* fact, which is `unverified`.
+        # The False branches below are the semantics for an explicit
+        # operator-declared-unsafe channel; they are exercised by contract test,
+        # not by the corpus, because the current runtime cannot produce a False.
         for fact_name, blocked_reason in (
             ("physical_estop_available", "bench_physical_estop_missing"),
             ("vehicle_physically_secured", "bench_vehicle_not_secured"),
             ("power_disconnect_available", "bench_power_disconnect_missing"),
+            ("operator_physically_present", "bench_operator_not_present"),
         ):
             value = facts.get(fact_name)
             measurements[fact_name] = value

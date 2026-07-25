@@ -7,61 +7,61 @@
   "authority_chain": {
     "adapter_ack": {
       "ack_is_execution_effect": false,
-      "artifact_ref": "ack:px4-bench-refusal-vehicle-not-secured",
+      "artifact_ref": "ack:px4-bench-refusal-estop-unattested",
       "observed": false
     },
     "completion": {
-      "artifact_ref": "completion:px4-bench-refusal-vehicle-not-secured",
+      "artifact_ref": "completion:px4-bench-refusal-estop-unattested",
       "completion_scope": "none",
       "delivery_completion_claimed": false,
       "flight_claimed": false,
       "mission_completion_claimed": false
     },
     "dispatch_authority": {
-      "artifact_ref": "authority:px4-bench-refusal-vehicle-not-secured",
+      "artifact_ref": "authority:px4-bench-refusal-estop-unattested",
       "created": false
     },
     "dispatch_revalidation": {
-      "artifact_ref": "revalidation:px4-bench-refusal-vehicle-not-secured",
+      "artifact_ref": "revalidation:px4-bench-refusal-estop-unattested",
       "status": "not_attempted"
     },
     "human_approval": {
-      "artifact_ref": "approval:px4-bench-refusal-vehicle-not-secured",
+      "artifact_ref": "approval:px4-bench-refusal-estop-unattested",
       "human_approval_performed": false,
       "status": "not_requested"
     },
     "observed_effect": {
       "armed_state_readback_observed": false,
-      "artifact_ref": "effect:px4-bench-refusal-vehicle-not-secured",
+      "artifact_ref": "effect:px4-bench-refusal-estop-unattested",
       "disarm_observed": false
     },
     "proposal": {
       "approval_created": false,
-      "artifact_ref": "proposal:px4-bench-refusal-vehicle-not-secured",
+      "artifact_ref": "proposal:px4-bench-refusal-estop-unattested",
       "dispatch_authority_created": false,
       "status": "rejected_before_proposal"
     }
   },
   "candidate": {
     "action": "px4_arm_disarm_bench",
-    "candidate_id": "candidate:px4-bench-refusal-vehicle-not-secured",
+    "candidate_id": "candidate:px4-bench-refusal-estop-unattested",
     "evidence_refs": [
       "bench_link_kind",
       "bench_heartbeat_alive",
-      "bench_physical_estop_available",
       "bench_vehicle_physically_secured",
       "bench_power_disconnect_available",
+      "bench_operator_physically_present",
       "bench_props_removed_attested"
     ],
     "extension_inputs": {},
     "parameters": {}
   },
-  "case_id": "px4-bench-refusal-vehicle-not-secured",
-  "case_sha256": "134e0c1d68c30303968b58f364e35a3149f15657d4fa2d364e7b13cf11b42891",
+  "case_id": "px4-bench-refusal-estop-unattested",
+  "case_sha256": "13cc7f185fb69c4c7d6aa62905dcf8975c7d772ce8d829c76565b31fe3c5aa93",
   "evaluated_at": "2026-07-25T00:00:00+00:00",
   "expected": {
-    "required_reason": "bench_vehicle_not_secured",
-    "status": "blocked"
+    "required_reason": "physical_estop_available_unverified",
+    "status": "unverified"
   },
   "hazard_state": {
     "assumptions": [
@@ -109,21 +109,6 @@
       },
       {
         "frame": null,
-        "name": "physical_estop_available",
-        "source": {
-          "content_sha256": "9e14987f248c5878536b8342408a6557da72e4972b6a3543c01cfb615673bfa4",
-          "evidence_kind": "bench_preflight_observation",
-          "freshness_deadline": "2026-07-25T00:00:05+00:00",
-          "freshness_proof": "timestamp",
-          "observed_at": "2026-07-25T00:00:00+00:00",
-          "source_id": "bench_physical_estop_available"
-        },
-        "status": "observed",
-        "unit": null,
-        "value": true
-      },
-      {
-        "frame": null,
         "name": "vehicle_physically_secured",
         "source": {
           "content_sha256": "868b62ab986f4a82497d22ae9962d9302a3925ba0eef9325f6d8c5c213e585a0",
@@ -135,7 +120,7 @@
         },
         "status": "observed",
         "unit": null,
-        "value": false
+        "value": true
       },
       {
         "frame": null,
@@ -147,6 +132,21 @@
           "freshness_proof": "timestamp",
           "observed_at": "2026-07-25T00:00:00+00:00",
           "source_id": "bench_power_disconnect_available"
+        },
+        "status": "observed",
+        "unit": null,
+        "value": true
+      },
+      {
+        "frame": null,
+        "name": "operator_physically_present",
+        "source": {
+          "content_sha256": "9937717601125ab9f53c124f0585a8f6d6f9de330729517aab57318556f189ff",
+          "evidence_kind": "bench_preflight_observation",
+          "freshness_deadline": "2026-07-25T00:00:05+00:00",
+          "freshness_proof": "timestamp",
+          "observed_at": "2026-07-25T00:00:00+00:00",
+          "source_id": "bench_operator_physically_present"
         },
         "status": "observed",
         "unit": null,
@@ -173,14 +173,14 @@
       "policy_sha256": "428c0a5fc6779cec6ee75c8433f4b9f8b6eaa16dd15a3385a37f317959099900",
       "policy_version": "1"
     },
-    "state_id": "hazard:px4-bench-refusal-vehicle-not-secured"
+    "state_id": "hazard:px4-bench-refusal-estop-unattested"
   },
   "scenario_class": "refusal",
   "schema_version": "missionos_px4_bench_action_feasibility_case.v1",
-  "summary": "The airframe is not attested as physically secured.",
+  "summary": "No E-stop attestation is present for this bench session.",
   "truth_boundary": {
     "artifact_truth": {
-      "case_id": "px4-bench-refusal-vehicle-not-secured",
+      "case_id": "px4-bench-refusal-estop-unattested",
       "deterministic": true,
       "fixture_kind": "contract_derived_bench_case"
     },

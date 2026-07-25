@@ -60,6 +60,7 @@ SAFE_FACTS: dict[str, Any] = {
     "physical_estop_available": True,
     "vehicle_physically_secured": True,
     "power_disconnect_available": True,
+    "operator_physically_present": True,
     "props_removed_attested": True,
 }
 
@@ -268,29 +269,38 @@ def build_cases() -> list[dict[str, Any]]:
             expected_status="verified_feasible",
             required_reason=None,
         ),
+        # The three attestation refusals below are `unverified`, not `blocked`.
+        # `PX4RealHardwarePhysicalAttestation` types every safety field as
+        # `Literal[True]`, so the runtime cannot emit a False. An unsafe bench
+        # appears as a *missing* attestation, which is an unobserved condition,
+        # not an observed unsafe one. Freezing these as `blocked` would claim an
+        # observation the system never makes.
         _case(
-            case_id="px4-bench-refusal-estop-unavailable",
+            case_id="px4-bench-refusal-estop-unattested",
             scenario_class="refusal",
-            summary="No physical E-stop is available.",
-            expected_status="blocked",
-            required_reason="bench_physical_estop_missing",
-            fact_overrides={"physical_estop_available": False},
+            summary="No E-stop attestation is present for this bench session.",
+            expected_status="unverified",
+            required_reason="physical_estop_available_unverified",
+            drop_facts=frozenset({"physical_estop_available"}),
         ),
         _case(
-            case_id="px4-bench-refusal-vehicle-not-secured",
+            case_id="px4-bench-refusal-vehicle-secured-unattested",
             scenario_class="refusal",
-            summary="The airframe is not attested as physically secured.",
-            expected_status="blocked",
-            required_reason="bench_vehicle_not_secured",
-            fact_overrides={"vehicle_physically_secured": False},
+            summary="No restraint attestation is present for this session.",
+            expected_status="unverified",
+            required_reason="vehicle_physically_secured_unverified",
+            drop_facts=frozenset({"vehicle_physically_secured"}),
         ),
         _case(
-            case_id="px4-bench-refusal-props-attached",
+            case_id="px4-bench-refusal-props-unattested",
             scenario_class="refusal",
-            summary="Propellers are attested as attached.",
-            expected_status="blocked",
-            required_reason="bench_props_attached",
-            fact_overrides={"props_removed_attested": False},
+            summary=(
+                "No props-removed attestation is present. Silence is not an "
+                "observation that the propellers are attached."
+            ),
+            expected_status="unverified",
+            required_reason="bench_props_attestation_unverified",
+            drop_facts=frozenset({"props_removed_attested"}),
         ),
         _case(
             case_id="px4-bench-refusal-loopback-link-kind",

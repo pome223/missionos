@@ -51,13 +51,14 @@
       "bench_physical_estop_available",
       "bench_vehicle_physically_secured",
       "bench_power_disconnect_available",
+      "bench_operator_physically_present",
       "bench_props_removed_attested"
     ],
     "extension_inputs": {},
     "parameters": {}
   },
   "case_id": "px4-bench-refusal-stale-telemetry",
-  "case_sha256": "a5d20a18113fb25c887cad4931adb0c632ce4324f0af900ed1cd83210ae74c0a",
+  "case_sha256": "2fb900bfe3c4f0d20220dda39b96eae470ff82c5d70c33928464e7f7a3d52bf9",
   "evaluated_at": "2026-07-25T00:00:00+00:00",
   "expected": {
     "required_reason": "evidence_stale",
@@ -147,6 +148,21 @@
           "freshness_proof": "timestamp",
           "observed_at": "2026-07-25T00:00:00+00:00",
           "source_id": "bench_power_disconnect_available"
+        },
+        "status": "observed",
+        "unit": null,
+        "value": true
+      },
+      {
+        "frame": null,
+        "name": "operator_physically_present",
+        "source": {
+          "content_sha256": "9937717601125ab9f53c124f0585a8f6d6f9de330729517aab57318556f189ff",
+          "evidence_kind": "bench_preflight_observation",
+          "freshness_deadline": "2026-07-25T00:00:05+00:00",
+          "freshness_proof": "timestamp",
+          "observed_at": "2026-07-25T00:00:00+00:00",
+          "source_id": "bench_operator_physically_present"
         },
         "status": "observed",
         "unit": null,

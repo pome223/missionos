@@ -51,13 +51,14 @@
       "bench_physical_estop_available",
       "bench_vehicle_physically_secured",
       "bench_power_disconnect_available",
+      "bench_operator_physically_present",
       "bench_props_removed_attested"
     ],
     "extension_inputs": {},
     "parameters": {}
   },
   "case_id": "px4-bench-positive-verified-arm-disarm",
-  "case_sha256": "2fefee16fd98b5e619b112c0c3f1a15fabb897b8a1d9d0cbc469197c7a4d16e6",
+  "case_sha256": "5d9e5a7e621b9d2b411ec8837bcf24d0eeb3a2e16fcd84b7e06b9c540425a2a3",
   "evaluated_at": "2026-07-25T00:00:00+00:00",
   "expected": {
     "required_reason": null,
@@ -147,6 +148,21 @@
           "freshness_proof": "timestamp",
           "observed_at": "2026-07-25T00:00:00+00:00",
           "source_id": "bench_power_disconnect_available"
+        },
+        "status": "observed",
+        "unit": null,
+        "value": true
+      },
+      {
+        "frame": null,
+        "name": "operator_physically_present",
+        "source": {
+          "content_sha256": "9937717601125ab9f53c124f0585a8f6d6f9de330729517aab57318556f189ff",
+          "evidence_kind": "bench_preflight_observation",
+          "freshness_deadline": "2026-07-25T00:00:05+00:00",
+          "freshness_proof": "timestamp",
+          "observed_at": "2026-07-25T00:00:00+00:00",
+          "source_id": "bench_operator_physically_present"
         },
         "status": "observed",
         "unit": null,

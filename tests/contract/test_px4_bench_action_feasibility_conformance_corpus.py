@@ -27,15 +27,20 @@ MANIFEST_PATH = CORPUS_ROOT / "manifest.json"
 
 EXPECTED_CASES = {
     "px4-bench-positive-verified-arm-disarm": ("verified_feasible", None),
-    "px4-bench-refusal-estop-unavailable": (
-        "blocked",
-        "bench_physical_estop_missing",
+    # Attestation refusals are `unverified`: the runtime types every safety
+    # field as Literal[True], so an unsafe bench arrives as a missing fact.
+    "px4-bench-refusal-estop-unattested": (
+        "unverified",
+        "physical_estop_available_unverified",
     ),
-    "px4-bench-refusal-vehicle-not-secured": (
-        "blocked",
-        "bench_vehicle_not_secured",
+    "px4-bench-refusal-vehicle-secured-unattested": (
+        "unverified",
+        "vehicle_physically_secured_unverified",
     ),
-    "px4-bench-refusal-props-attached": ("blocked", "bench_props_attached"),
+    "px4-bench-refusal-props-unattested": (
+        "unverified",
+        "bench_props_attestation_unverified",
+    ),
     "px4-bench-refusal-loopback-link-kind": (
         "unverified",
         "bench_link_not_physical",
@@ -193,6 +198,10 @@ def test_loopback_refusal_differs_from_positive_only_by_link_kind() -> None:
         {"autopilot_uid": "000200000000383832343437511800230026"},
         {"board_serial": "26003b000a51383236343437"},
         {"approval_actor": "an-operator-real-name"},
+        # Fields the existing real-hardware attestation actually carries.
+        {"attesting_operator_id": "an-operator-real-name"},
+        {"bench_photo_evidence_ref": "bench-photo-001.jpg"},
+        {"serial_device": "ttyACM0"},
     ],
 )
 def test_bench_publication_sanitizer_rejects_private_material(
@@ -208,11 +217,27 @@ def test_bench_publication_sanitizer_rejects_private_material(
     assert "bench_corpus_publication_boundary_violated" in verdict["reasons"]
 
 
+def _restore_props_attestation(case: dict) -> dict:
+    """Re-add the props fact that the unattested case deliberately drops."""
+
+    template = copy.deepcopy(
+        next(
+            item
+            for item in _case("px4-bench-positive-verified-arm-disarm")[
+                "hazard_state"
+            ]["observed_facts"]
+            if item["name"] == "props_removed_attested"
+        )
+    )
+    case["hazard_state"]["observed_facts"].append(template)
+    case["candidate"]["evidence_refs"].append("bench_props_removed_attested")
+    return case
+
+
 def test_case_integrity_rejects_semantic_tampering() -> None:
-    tampered = copy.deepcopy(_case("px4-bench-refusal-props-attached"))
-    for item in tampered["hazard_state"]["observed_facts"]:
-        if item["name"] == "props_removed_attested":
-            item["value"] = True
+    tampered = _restore_props_attestation(
+        copy.deepcopy(_case("px4-bench-refusal-props-unattested"))
+    )
 
     verdict = verify_px4_bench_corpus_case(tampered)
 
@@ -223,11 +248,11 @@ def test_case_integrity_rejects_semantic_tampering() -> None:
 def test_resealed_tampering_is_still_caught_by_the_frozen_expectation() -> None:
     """Resealing repairs the hash, so the expectation must be the real guard."""
 
-    tampered = copy.deepcopy(_case("px4-bench-refusal-props-attached"))
-    for item in tampered["hazard_state"]["observed_facts"]:
-        if item["name"] == "props_removed_attested":
-            item["value"] = True
-    tampered = seal_px4_bench_corpus_case(tampered)
+    tampered = seal_px4_bench_corpus_case(
+        _restore_props_attestation(
+            copy.deepcopy(_case("px4-bench-refusal-props-unattested"))
+        )
+    )
 
     verdict = verify_px4_bench_corpus_case(tampered)
 
@@ -235,3 +260,52 @@ def test_resealed_tampering_is_still_caught_by_the_frozen_expectation() -> None:
     assert "bench_corpus_case_hash_mismatch" not in verdict["reasons"]
     assert "bench_corpus_status_changed" in verdict["reasons"]
     assert "bench_corpus_refusal_became_feasible" in verdict["reasons"]
+
+
+def test_missing_attestation_is_unverified_never_blocked() -> None:
+    """Silence about the bench is not an observation that it is unsafe.
+
+    `PX4RealHardwarePhysicalAttestation` types every safety field as
+    `Literal[True]`, so an unsafe bench reaches the verifier as a missing fact.
+    Reporting that as `blocked` would claim an observation nobody made.
+    """
+
+    for case_id in (
+        "px4-bench-refusal-estop-unattested",
+        "px4-bench-refusal-vehicle-secured-unattested",
+        "px4-bench-refusal-props-unattested",
+    ):
+        verdict = verify_px4_bench_corpus_case(_case(case_id))
+
+        assert verdict["status"] == "unverified"
+        assert verdict["blocked_reasons"] == []
+
+
+def test_explicit_unsafe_declaration_would_block() -> None:
+    """Reserved semantics for an operator-declared-unsafe channel.
+
+    No current runtime can emit these values, so the corpus cannot cover them.
+    This pins the intended behavior so the branch is not silently dead: if an
+    explicit unsafe declaration is ever added, it blocks rather than merely
+    failing to verify.
+    """
+
+    from missionos_core import FeasibilityStatus, HazardState
+    from missionos_core import ActionCandidate
+    from src.runtime.px4_bench_core_action_feasibility_adapter import (
+        Px4BenchPhysicalSafetyExtension,
+    )
+
+    case = _case("px4-bench-positive-verified-arm-disarm")
+    hazard = copy.deepcopy(case["hazard_state"])
+    for item in hazard["observed_facts"]:
+        if item["name"] == "props_removed_attested":
+            item["value"] = False
+
+    verdict = Px4BenchPhysicalSafetyExtension().verify(
+        hazard_state=HazardState.from_dict(hazard),
+        candidate=ActionCandidate.from_dict(case["candidate"]),
+    )
+
+    assert verdict.status is FeasibilityStatus.BLOCKED
+    assert "bench_props_attached" in verdict.blocked_reasons

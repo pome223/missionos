@@ -51,13 +51,14 @@
       "bench_physical_estop_available",
       "bench_vehicle_physically_secured",
       "bench_power_disconnect_available",
+      "bench_operator_physically_present",
       "bench_props_removed_attested"
     ],
     "extension_inputs": {},
     "parameters": {}
   },
   "case_id": "px4-bench-refusal-heartbeat-loss",
-  "case_sha256": "587f2d37234feb77c0f60dbe2aef09c85fe28725e073419b6b31e2c39fa3fd22",
+  "case_sha256": "78ffbc9471e9d4b69a1e8b6bd1ce0219836db53be487e11f690c2febcba2977c",
   "evaluated_at": "2026-07-25T00:00:00+00:00",
   "expected": {
     "required_reason": "bench_heartbeat_lost",
@@ -147,6 +148,21 @@
           "freshness_proof": "timestamp",
           "observed_at": "2026-07-25T00:00:00+00:00",
           "source_id": "bench_power_disconnect_available"
+        },
+        "status": "observed",
+        "unit": null,
+        "value": true
+      },
+      {
+        "frame": null,
+        "name": "operator_physically_present",
+        "source": {
+          "content_sha256": "9937717601125ab9f53c124f0585a8f6d6f9de330729517aab57318556f189ff",
+          "evidence_kind": "bench_preflight_observation",
+          "freshness_deadline": "2026-07-25T00:00:05+00:00",
+          "freshness_proof": "timestamp",
+          "observed_at": "2026-07-25T00:00:00+00:00",
+          "source_id": "bench_operator_physically_present"
         },
         "status": "observed",
         "unit": null,

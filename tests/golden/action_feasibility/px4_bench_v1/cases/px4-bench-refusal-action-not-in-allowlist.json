@@ -51,13 +51,14 @@
       "bench_physical_estop_available",
       "bench_vehicle_physically_secured",
       "bench_power_disconnect_available",
+      "bench_operator_physically_present",
       "bench_props_removed_attested"
     ],
     "extension_inputs": {},
     "parameters": {}
   },
   "case_id": "px4-bench-refusal-action-not-in-allowlist",
-  "case_sha256": "97b01bdb3ef386ce6d8b703e301f49795a0d27221779b49e86b87144c588ddbb",
+  "case_sha256": "54ceb40726ff1d82e9d006936eedda14eb4a31e0dc4facc841433b5d1569539c",
   "evaluated_at": "2026-07-25T00:00:00+00:00",
   "expected": {
     "required_reason": "bench_action_not_in_allowlist",
@@ -147,6 +148,21 @@
           "freshness_proof": "timestamp",
           "observed_at": "2026-07-25T00:00:00+00:00",
           "source_id": "bench_power_disconnect_available"
+        },
+        "status": "observed",
+        "unit": null,
+        "value": true
+      },
+      {
+        "frame": null,
+        "name": "operator_physically_present",
+        "source": {
+          "content_sha256": "9937717601125ab9f53c124f0585a8f6d6f9de330729517aab57318556f189ff",
+          "evidence_kind": "bench_preflight_observation",
+          "freshness_deadline": "2026-07-25T00:00:05+00:00",
+          "freshness_proof": "timestamp",
+          "observed_at": "2026-07-25T00:00:00+00:00",
+          "source_id": "bench_operator_physically_present"
         },
         "status": "observed",
         "unit": null,
