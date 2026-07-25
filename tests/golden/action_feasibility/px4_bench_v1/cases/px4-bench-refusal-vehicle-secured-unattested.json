@@ -47,6 +47,7 @@
     "candidate_id": "candidate:px4-bench-refusal-vehicle-secured-unattested",
     "evidence_refs": [
       "bench_link_kind",
+      "bench_link_declaration_consistent",
       "bench_heartbeat_alive",
       "bench_physical_estop_available",
       "bench_power_disconnect_available",
@@ -57,7 +58,7 @@
     "parameters": {}
   },
   "case_id": "px4-bench-refusal-vehicle-secured-unattested",
-  "case_sha256": "fc0d6a29a972f76c2b7099518b019312c8741414cf2f4f50042c3b298893a7af",
+  "case_sha256": "e545f615f097b6dcbf9fd9dfbba08885aa7d4de215d726cbdce4fc4f49990755",
   "evaluated_at": "2026-07-25T00:00:00+00:00",
   "expected": {
     "required_reason": "vehicle_physically_secured_unverified",
@@ -91,6 +92,21 @@
         "status": "observed",
         "unit": null,
         "value": "serial"
+      },
+      {
+        "frame": null,
+        "name": "link_declaration_consistent",
+        "source": {
+          "content_sha256": "84364b2b9ca236a8495050d6f193a000fe2681836dff12d03301e802a5debe46",
+          "evidence_kind": "bench_preflight_observation",
+          "freshness_deadline": "2026-07-25T00:00:05+00:00",
+          "freshness_proof": "timestamp",
+          "observed_at": "2026-07-25T00:00:00+00:00",
+          "source_id": "bench_link_declaration_consistent"
+        },
+        "status": "observed",
+        "unit": null,
+        "value": true
       },
       {
         "frame": null,

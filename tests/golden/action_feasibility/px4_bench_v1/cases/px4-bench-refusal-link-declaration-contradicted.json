@@ -7,44 +7,44 @@
   "authority_chain": {
     "adapter_ack": {
       "ack_is_execution_effect": false,
-      "artifact_ref": "ack:px4-bench-positive-verified-arm-disarm",
-      "observed": true
+      "artifact_ref": "ack:px4-bench-refusal-link-declaration-contradicted",
+      "observed": false
     },
     "completion": {
-      "artifact_ref": "completion:px4-bench-positive-verified-arm-disarm",
-      "completion_scope": "adapter_action",
+      "artifact_ref": "completion:px4-bench-refusal-link-declaration-contradicted",
+      "completion_scope": "none",
       "delivery_completion_claimed": false,
       "flight_claimed": false,
       "mission_completion_claimed": false
     },
     "dispatch_authority": {
-      "artifact_ref": "authority:px4-bench-positive-verified-arm-disarm",
-      "created": true
+      "artifact_ref": "authority:px4-bench-refusal-link-declaration-contradicted",
+      "created": false
     },
     "dispatch_revalidation": {
-      "artifact_ref": "revalidation:px4-bench-positive-verified-arm-disarm",
-      "status": "valid"
+      "artifact_ref": "revalidation:px4-bench-refusal-link-declaration-contradicted",
+      "status": "not_attempted"
     },
     "human_approval": {
-      "artifact_ref": "approval:px4-bench-positive-verified-arm-disarm",
-      "human_approval_performed": true,
-      "status": "approved"
+      "artifact_ref": "approval:px4-bench-refusal-link-declaration-contradicted",
+      "human_approval_performed": false,
+      "status": "not_requested"
     },
     "observed_effect": {
-      "armed_state_readback_observed": true,
-      "artifact_ref": "effect:px4-bench-positive-verified-arm-disarm",
-      "disarm_observed": true
+      "armed_state_readback_observed": false,
+      "artifact_ref": "effect:px4-bench-refusal-link-declaration-contradicted",
+      "disarm_observed": false
     },
     "proposal": {
       "approval_created": false,
-      "artifact_ref": "proposal:px4-bench-positive-verified-arm-disarm",
+      "artifact_ref": "proposal:px4-bench-refusal-link-declaration-contradicted",
       "dispatch_authority_created": false,
-      "status": "created"
+      "status": "rejected_before_proposal"
     }
   },
   "candidate": {
     "action": "px4_arm_disarm_bench",
-    "candidate_id": "candidate:px4-bench-positive-verified-arm-disarm",
+    "candidate_id": "candidate:px4-bench-refusal-link-declaration-contradicted",
     "evidence_refs": [
       "bench_link_kind",
       "bench_link_declaration_consistent",
@@ -58,12 +58,12 @@
     "extension_inputs": {},
     "parameters": {}
   },
-  "case_id": "px4-bench-positive-verified-arm-disarm",
-  "case_sha256": "879bb9da93f00d647c5f6835a57ca6632f6e817ba7984d235a7b5e128f6a09b7",
+  "case_id": "px4-bench-refusal-link-declaration-contradicted",
+  "case_sha256": "c4b6da23ea1d1c4ba2567ba6d3ee1aa1d63df60f127f94e21dd7db8ba9647449",
   "evaluated_at": "2026-07-25T00:00:00+00:00",
   "expected": {
-    "required_reason": null,
-    "status": "verified_feasible"
+    "required_reason": "bench_link_declaration_contradicted",
+    "status": "blocked"
   },
   "hazard_state": {
     "assumptions": [
@@ -92,7 +92,7 @@
         },
         "status": "observed",
         "unit": null,
-        "value": "serial"
+        "value": "loopback"
       },
       {
         "frame": null,
@@ -107,7 +107,7 @@
         },
         "status": "observed",
         "unit": null,
-        "value": true
+        "value": false
       },
       {
         "frame": null,
@@ -205,14 +205,14 @@
       "policy_sha256": "428c0a5fc6779cec6ee75c8433f4b9f8b6eaa16dd15a3385a37f317959099900",
       "policy_version": "1"
     },
-    "state_id": "hazard:px4-bench-positive-verified-arm-disarm"
+    "state_id": "hazard:px4-bench-refusal-link-declaration-contradicted"
   },
-  "scenario_class": "positive",
+  "scenario_class": "refusal",
   "schema_version": "missionos_px4_bench_action_feasibility_case.v1",
-  "summary": "Secured, props-removed airframe on a real serial link; arm/disarm is feasible. Feasible is not permission.",
+  "summary": "The caller declared a physical execution mode over a connection that is not labeled a real serial link. A contradiction is observed, so it blocks rather than merely failing to verify.",
   "truth_boundary": {
     "artifact_truth": {
-      "case_id": "px4-bench-positive-verified-arm-disarm",
+      "case_id": "px4-bench-refusal-link-declaration-contradicted",
       "deterministic": true,
       "fixture_kind": "contract_derived_bench_case"
     },

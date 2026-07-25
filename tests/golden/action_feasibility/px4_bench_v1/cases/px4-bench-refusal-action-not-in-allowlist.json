@@ -47,6 +47,7 @@
     "candidate_id": "candidate:px4-bench-refusal-action-not-in-allowlist",
     "evidence_refs": [
       "bench_link_kind",
+      "bench_link_declaration_consistent",
       "bench_heartbeat_alive",
       "bench_physical_estop_available",
       "bench_vehicle_physically_secured",
@@ -58,7 +59,7 @@
     "parameters": {}
   },
   "case_id": "px4-bench-refusal-action-not-in-allowlist",
-  "case_sha256": "54ceb40726ff1d82e9d006936eedda14eb4a31e0dc4facc841433b5d1569539c",
+  "case_sha256": "adf6683701105e08a7a281ac297cb13865c31072e0377d182508048dc88718fc",
   "evaluated_at": "2026-07-25T00:00:00+00:00",
   "expected": {
     "required_reason": "bench_action_not_in_allowlist",
@@ -92,6 +93,21 @@
         "status": "observed",
         "unit": null,
         "value": "serial"
+      },
+      {
+        "frame": null,
+        "name": "link_declaration_consistent",
+        "source": {
+          "content_sha256": "84364b2b9ca236a8495050d6f193a000fe2681836dff12d03301e802a5debe46",
+          "evidence_kind": "bench_preflight_observation",
+          "freshness_deadline": "2026-07-25T00:00:05+00:00",
+          "freshness_proof": "timestamp",
+          "observed_at": "2026-07-25T00:00:00+00:00",
+          "source_id": "bench_link_declaration_consistent"
+        },
+        "status": "observed",
+        "unit": null,
+        "value": true
       },
       {
         "frame": null,

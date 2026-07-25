@@ -85,6 +85,15 @@ class Px4BenchPhysicalSafetyExtension:
         elif str(link_kind) not in PX4_BENCH_PHYSICAL_LINK_KINDS:
             unverified.append("bench_link_not_physical")
 
+        # A caller declaring a physical execution mode over a connection that is
+        # not labeled real is an observed contradiction, not an absence, so it
+        # blocks. This is the case where someone would otherwise present an
+        # injected fake as bench evidence.
+        declaration_consistent = facts.get("link_declaration_consistent")
+        measurements["link_declaration_consistent"] = declaration_consistent
+        if declaration_consistent is False:
+            blocked.append("bench_link_declaration_contradicted")
+
         # Physical safety preconditions, mirroring the operator attestation in
         # `PX4RealHardwarePhysicalAttestation`.
         #

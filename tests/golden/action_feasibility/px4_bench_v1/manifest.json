@@ -4,46 +4,51 @@
     {
       "case_id": "px4-bench-positive-verified-arm-disarm",
       "path": "cases/px4-bench-positive-verified-arm-disarm.json",
-      "sha256": "0b73331c147107a8d02ba2e9e4d9cb51c34f025d67f90f1c206f1fc830159743"
+      "sha256": "092ed6abf527758525ff7b4a54a33cca76c8d5aeac76a4cdeb80329c6245d623"
     },
     {
       "case_id": "px4-bench-refusal-estop-unattested",
       "path": "cases/px4-bench-refusal-estop-unattested.json",
-      "sha256": "13d22318d7e3cde3183bb3a5c08f42c4b38ce79b6298a2956adade33adf7b80c"
+      "sha256": "2372d11219826d2af95f1702db1ae0b2acf4a965d14748275337cf476bc80bf0"
     },
     {
       "case_id": "px4-bench-refusal-vehicle-secured-unattested",
       "path": "cases/px4-bench-refusal-vehicle-secured-unattested.json",
-      "sha256": "3dcd156d8ad039d54a27f64125753d31607f2f327a77236128889b5bda797558"
+      "sha256": "5c6724fc8f5ee4cafec2436eba526cae9c2db056cb19dfa7d0aaeec12a9ccb1b"
     },
     {
       "case_id": "px4-bench-refusal-props-unattested",
       "path": "cases/px4-bench-refusal-props-unattested.json",
-      "sha256": "bebb0334687bf8c0b5e990196cde57e7f70072d39fb9b34dc43479afb169a467"
+      "sha256": "ffb48dbf11f31d3703f31e8b84096dbe0763a160aebf8cf7f4ed4630ffc62962"
     },
     {
       "case_id": "px4-bench-refusal-loopback-link-kind",
       "path": "cases/px4-bench-refusal-loopback-link-kind.json",
-      "sha256": "42b4c149305413f7edbf13414aac1fd97ff4e5a706247b7c2e9e583a093434d3"
+      "sha256": "149d65c5cae55fddb6b7a07de0578c1978fcbe0ad833568e260745a581a074e1"
+    },
+    {
+      "case_id": "px4-bench-refusal-link-declaration-contradicted",
+      "path": "cases/px4-bench-refusal-link-declaration-contradicted.json",
+      "sha256": "650ccc55f97b1fb7e2f101fadd22f557ba16101390da33ded29a3c2078cc1edd"
     },
     {
       "case_id": "px4-bench-refusal-stale-telemetry",
       "path": "cases/px4-bench-refusal-stale-telemetry.json",
-      "sha256": "031e2282269d1b942533910fbabe7dfc73c7c2caed64527a7a2ca6a8418faa93"
+      "sha256": "513ece636f836b6e8318ddbb3c55df1028df2614fa1a87db4028d1afa73f2f6b"
     },
     {
       "case_id": "px4-bench-refusal-heartbeat-loss",
       "path": "cases/px4-bench-refusal-heartbeat-loss.json",
-      "sha256": "54afe25f3b7db171ec22ffde000a92f4f05aabcdb2c454d0ecdb3558bd0a0635"
+      "sha256": "12afdb73a588ba61386276610a59212287ab2c5fe3b839baf54c929005b85062"
     },
     {
       "case_id": "px4-bench-refusal-action-not-in-allowlist",
       "path": "cases/px4-bench-refusal-action-not-in-allowlist.json",
-      "sha256": "c51da1f64e075d75d66057f582b78ed58d7290a06871da0fb0ab618ebffc6457"
+      "sha256": "61eb3f05619368ba4cc5e4e11ac487212e9b8b2bfa8b0c4f176c1f47d7b4d6a3"
     }
   ],
   "corpus_id": "px4_bench_v1",
   "description": "PX4 bench arm/disarm Action Feasibility boundary. Contract derived. Replay invokes no hardware and claims no physical execution.",
-  "manifest_sha256": "f3c456231da8bf5da7d1463c51af8ed6d1ceb0e2a716f20221080e8eb4f9ca99",
+  "manifest_sha256": "94fc8db52f5fda4c6c1497870f5ba5f130f2409a8c4249afb1b32c9b1cbe9966",
   "schema_version": "missionos_px4_bench_action_feasibility_corpus.v1"
 }

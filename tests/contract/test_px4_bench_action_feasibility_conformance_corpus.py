@@ -54,6 +54,12 @@ EXPECTED_CASES = {
         "blocked",
         "bench_action_not_in_allowlist",
     ),
+    # A declared physical mode over a connection that is not labeled real is an
+    # observed contradiction, so it blocks rather than failing to verify.
+    "px4-bench-refusal-link-declaration-contradicted": (
+        "blocked",
+        "bench_link_declaration_contradicted",
+    ),
 }
 
 
@@ -67,9 +73,9 @@ def test_bench_manifest_replays_offline_through_core() -> None:
     verdict = verify_px4_bench_corpus(MANIFEST_PATH)
 
     assert verdict["status"] == "verified"
-    assert verdict["case_count"] == 8
+    assert verdict["case_count"] == 9
     assert verdict["positive_case_count"] == 1
-    assert verdict["refusal_case_count"] == 7
+    assert verdict["refusal_case_count"] == 8
     assert verdict["reasons"] == []
 
 

@@ -47,6 +47,7 @@
     "candidate_id": "candidate:px4-bench-refusal-props-unattested",
     "evidence_refs": [
       "bench_link_kind",
+      "bench_link_declaration_consistent",
       "bench_heartbeat_alive",
       "bench_physical_estop_available",
       "bench_vehicle_physically_secured",
@@ -57,7 +58,7 @@
     "parameters": {}
   },
   "case_id": "px4-bench-refusal-props-unattested",
-  "case_sha256": "c4096f6c66312ead2b46ddee90837433ab1c9940e1985e98b9c14b89fde1c0e7",
+  "case_sha256": "81ab263e7d96ec32186090a63a913ff013036938fcc7705337e5c63716d34e72",
   "evaluated_at": "2026-07-25T00:00:00+00:00",
   "expected": {
     "required_reason": "bench_props_attestation_unverified",
@@ -91,6 +92,21 @@
         "status": "observed",
         "unit": null,
         "value": "serial"
+      },
+      {
+        "frame": null,
+        "name": "link_declaration_consistent",
+        "source": {
+          "content_sha256": "84364b2b9ca236a8495050d6f193a000fe2681836dff12d03301e802a5debe46",
+          "evidence_kind": "bench_preflight_observation",
+          "freshness_deadline": "2026-07-25T00:00:05+00:00",
+          "freshness_proof": "timestamp",
+          "observed_at": "2026-07-25T00:00:00+00:00",
+          "source_id": "bench_link_declaration_consistent"
+        },
+        "status": "observed",
+        "unit": null,
+        "value": true
       },
       {
         "frame": null,

@@ -56,6 +56,7 @@ CONTRACT_EVIDENCE_REFS = [
 # is about, so a refusal differs from the positive case in exactly one respect.
 SAFE_FACTS: dict[str, Any] = {
     "link_kind": "serial",
+    "link_declaration_consistent": True,
     "heartbeat_alive": True,
     "physical_estop_available": True,
     "vehicle_physically_secured": True,
@@ -312,6 +313,22 @@ def build_cases() -> list[dict[str, Any]]:
             expected_status="unverified",
             required_reason="bench_link_not_physical",
             fact_overrides={"link_kind": "loopback"},
+        ),
+        _case(
+            case_id="px4-bench-refusal-link-declaration-contradicted",
+            scenario_class="refusal",
+            summary=(
+                "The caller declared a physical execution mode over a "
+                "connection that is not labeled a real serial link. A "
+                "contradiction is observed, so it blocks rather than merely "
+                "failing to verify."
+            ),
+            expected_status="blocked",
+            required_reason="bench_link_declaration_contradicted",
+            fact_overrides={
+                "link_kind": "loopback",
+                "link_declaration_consistent": False,
+            },
         ),
         _case(
             case_id="px4-bench-refusal-stale-telemetry",
