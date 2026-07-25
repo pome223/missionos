@@ -159,11 +159,38 @@ live bench 実行前は正方向ケースも `source_runtime_evidence_available=
 | issue | 完了条件 |
 |---|---|
 | #105 | **完了（2026-07-25）**。§7 のサニタイザ 3 規則を先に追加し、8 ケースが `run_conformance_corpus` で `verified`。実機・ネットワーク・LLM 不要 |
-| #106 | `missionos.px4_bench.action_feasibility.v1` が Core 経由で 8 ケース通過。`packages/missionos-core/` への backend 固有変更が **0 行** |
+| #106 | **完了（2026-07-25）**。`missionos.px4_bench.action_feasibility.v1` が Core 経由で 8 ケース通過。既存実機ランタイム由来の判定が corpus と一致（parity）。`packages/missionos-core/` への変更 **0 行** |
 | #107 | 実シリアル 1 往復。`physical_execution_invoked=true`、`completion_scope=adapter_action`。flight/delivery/mission completion は false のまま |
 | #108 | stable-readiness JSON に 3 つ目の backend。CI が 3 corpus 全部を回し、1 つでも落ちれば stable を塞ぐ |
 
 #105 と #106 は**実機なしで完了できる**。ここまでを先に出すのが安全かつ速い。
+
+### #106 の実装メモ（2026-07-25）
+
+橋渡しは `src/runtime/px4_bench_core_feasibility_bridge.py`。
+`missionos_real_hardware_dispatch_runtime` が**すでに出している** preflight と
+physical attestation を Core の `HazardState` / `ActionCandidate` に翻訳する。
+新しい preflight は実装していない。
+
+実装中に「未確立を観測済みと誤読する」罠が**一段下でも再発**した。
+
+| 層 | 罠 | 対応 |
+|----|----|------|
+| attestation | `Literal[True]` のため危険が「事実の欠落」として現れる | 3 ケースを `unverified` に retarget（§4.2 参照） |
+| preflight builder | 安全 3 フィールドの**デフォルトが `False`**。意味は「未確立」であって「観測された危険」ではない | `False` を転送せず落とし、`unverified` に着地させる |
+
+どちらも「沈黙を観測として報告しない」という同一原則である。新しい層を足すたびに
+同じ確認をすること。
+
+橋渡しで守った境界:
+
+- **loopback 昇格の遮断** — ランタイムは connection factory 注入時に `LOOPBACK` を
+  記録する。テストダブルが実機証拠になりうる正確な経路なので、`execution_mode` を
+  link class の情報源とし、`loopback` / `sim` を `unverified` で止める
+- **公開境界** — serial device、`attesting_operator_id`、`bench_photo_evidence_ref` は
+  hazard state に入れない。`adapter_parameters` も転送しない（不透明な mapping は
+  デバイスパスが将来紛れ込む経路）
+- **ドリフト防止** — ランタイム側と corpus 側の観測事実名の集合一致を契約テストで要求
 
 ---
 
@@ -250,3 +277,5 @@ Windows 絶対パスも弾くようになった（既存 5 ケースに衝突な
 | 2026-07-25 | 初版。#105 相当の corpus 設計案。実装・実機 E2E とも未着手 |
 | 2026-07-25 | 公開判断を追記。`px4_bench_v1` は public 前提。ただしシリアルデバイスパス・autopilot UID・`approval_actor` の 3 経路を #105 の先頭で塞ぐことを条件とする |
 | 2026-07-25 | #105 完了。サニタイザ共有モジュール化 + `px4_bench_v1` 8 ケース凍結。`packages/missionos-core/` への変更 0 行。全スイート 1397 passed。実機 E2E は依然未実行 |
+| 2026-07-25 | attestation 拒否 3 件を `blocked` → `unverified` に retarget。`Literal[True]` により「観測された危険」が表現不可能なため |
+| 2026-07-25 | #106 完了。実機ランタイム → Core の橋渡しと parity 証明。preflight の `False` = 未確立問題を同時に修正。全スイート 1414 passed。実機 E2E は依然未実行 |
