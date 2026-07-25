@@ -10,13 +10,16 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
 from missionos_core import run_conformance_corpus
 
+from src.runtime.corpus_publication_sanitation import (
+    CASE_ID_PATTERN as _CASE_ID_PATTERN,
+    publication_findings as _publication_findings,
+)
 from src.runtime.px4_gazebo_route.action_feasibility import (
     action_feasibility_hash_matches,
 )
@@ -37,36 +40,6 @@ CORPUS_VERDICT_SCHEMA_VERSION = (
     "missionos_action_feasibility_conformance_verdict.v1"
 )
 
-_CASE_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._-]{2,95}$")
-_PRIVATE_TASK_ID_PATTERN = re.compile(r"\btask_[0-9a-f]{8,}\b", re.IGNORECASE)
-_SECRET_PATTERN = re.compile(
-    r"(?:sk-[A-Za-z0-9_-]{12,}|"
-    r"(?:api[_-]?key|authorization|credential|secret|token)\s*[:=]\s*\S+)",
-    re.IGNORECASE,
-)
-_ABSOLUTE_PATH_PATTERN = re.compile(
-    r"(?:file://|/(?:Users|private|tmp|home|var/folders)/|[A-Za-z]:\\\\)",
-    re.IGNORECASE,
-)
-_FORBIDDEN_KEYS = frozenset(
-    {
-        "api_key",
-        "artifact_dir",
-        "artifact_path",
-        "authorization",
-        "credential",
-        "database_path",
-        "db_path",
-        "owner_session_id",
-        "owner_user_id",
-        "prompt",
-        "prompt_text",
-        "response_text",
-        "secret",
-        "task_id",
-        "token",
-    }
-)
 _AUTHORITY_STAGES = (
     "proposal",
     "human_approval",
@@ -113,29 +86,6 @@ def seal_action_feasibility_corpus_case(
         if key != "case_sha256"
     }
     return {**material, "case_sha256": _canonical_sha256(material)}
-
-
-def _publication_findings(value: Any, *, path: str = "$") -> list[str]:
-    findings: list[str] = []
-    if isinstance(value, Mapping):
-        for key, item in value.items():
-            next_path = f"{path}.{key}"
-            if str(key).lower() in _FORBIDDEN_KEYS:
-                findings.append(next_path)
-            findings.extend(_publication_findings(item, path=next_path))
-    elif isinstance(value, list):
-        for index, item in enumerate(value):
-            findings.extend(
-                _publication_findings(item, path=f"{path}[{index}]")
-            )
-    elif isinstance(value, str):
-        if (
-            _PRIVATE_TASK_ID_PATTERN.search(value)
-            or _SECRET_PATTERN.search(value)
-            or _ABSOLUTE_PATH_PATTERN.search(value)
-        ):
-            findings.append(path)
-    return findings
 
 
 def _authority_chain_reasons(

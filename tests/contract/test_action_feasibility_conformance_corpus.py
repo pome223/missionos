@@ -203,6 +203,21 @@ def test_contract_only_refusal_does_not_overclaim_live_runtime_evidence() -> Non
         {"artifact_path": "/Users/operator/private/evidence.json"},
         {"database_path": "/tmp/private-task-store.sqlite3"},
         {"credential": "sk-private-example-not-for-publication"},
+        # Bench-era rules. A hardware corpus must not carry the serial endpoint
+        # that identifies one workstation, the identifier of one board, or the
+        # name of the human who approved.
+        {"link_endpoint": "/dev/tty.usbmodem14201"},
+        {"link_endpoint": "/dev/ttyACM0"},
+        {"link_endpoint": "COM3"},
+        {"link_endpoint": "\\\\.\\COM17"},
+        {"autopilot_uid": "000200000000383832343437511800230026"},
+        {"board_serial": "26003b000a51383236343437"},
+        {"hardware_uid": "0x1f2e3d4c5b6a7988"},
+        {"serial_number": "FT9K3PZQ"},
+        {"serial_port": "usb-modem-endpoint"},
+        {"device_path": "relative/looking/but/still/an/endpoint"},
+        {"approval_actor": "an-operator-real-name"},
+        {"operator_name": "an-operator-real-name"},
     ],
 )
 def test_publication_sanitizer_rejects_private_material(
@@ -217,6 +232,33 @@ def test_publication_sanitizer_rejects_private_material(
 
     assert verdict["verification_status"] == "failed"
     assert "corpus_case_publication_boundary_violated" in verdict[
+        "blocking_reasons"
+    ]
+
+
+@pytest.mark.parametrize(
+    "safe_value",
+    [
+        # The bench corpus records the link *class*, which must stay publishable.
+        {"link_kind": "serial"},
+        {"link_kind": "loopback"},
+        # The device patterns must not fire on ordinary prose or status words.
+        {"note": "COMPLETED without a device endpoint"},
+        {"note": "the operator used a serial link class, not a port"},
+        {"raw_logs_ref": "evidence/20260725-bench-arm-disarm.json"},
+    ],
+)
+def test_publication_sanitizer_accepts_publishable_bench_values(
+    safe_value: dict,
+) -> None:
+    case = _case("px4-positive-verified-avoidance")
+    safe = copy.deepcopy(case)
+    safe["bench_probe"] = safe_value
+    safe = seal_action_feasibility_corpus_case(safe)
+
+    verdict = verify_action_feasibility_corpus_case(safe)
+
+    assert "corpus_case_publication_boundary_violated" not in verdict[
         "blocking_reasons"
     ]
 

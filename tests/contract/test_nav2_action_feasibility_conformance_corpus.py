@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from src.runtime.nav2_action_feasibility_corpus import (
+    seal_nav2_corpus_case,
     verify_nav2_corpus,
     verify_nav2_corpus_case,
     verify_nav2_corpus_through_core,
@@ -115,3 +116,27 @@ def test_nav2_cases_preserve_exact_tri_state_semantics(
         assert case["expected"]["required_reason"] == required_reason
     assert verdict["source_runtime_reexecuted"] is False
     assert all(flag is False for flag in verdict["output_flags"].values())
+
+
+@pytest.mark.parametrize(
+    "private_value",
+    [
+        {"task_id": "task_deadbeefcafebabe"},
+        {"artifact_path": "/Users/operator/private/evidence.json"},
+        {"credential": "sk-private-example-not-for-publication"},
+        {"link_endpoint": "/dev/ttyACM0"},
+        {"autopilot_uid": "000200000000383832343437511800230026"},
+        {"approval_actor": "an-operator-real-name"},
+    ],
+)
+def test_nav2_publication_sanitizer_rejects_private_material(
+    private_value: dict,
+) -> None:
+    unsafe = _case("nav2-positive-verified-bypass")
+    unsafe["unsafe"] = private_value
+    unsafe = seal_nav2_corpus_case(unsafe)
+
+    verdict = verify_nav2_corpus_case(unsafe)
+
+    assert verdict["passed"] is False
+    assert "nav2_corpus_publication_boundary_violated" in verdict["reasons"]

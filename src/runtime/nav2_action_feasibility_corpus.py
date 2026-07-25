@@ -16,6 +16,7 @@ from typing import Any
 
 from missionos_core import run_conformance_corpus
 
+from src.runtime.corpus_publication_sanitation import publication_findings
 from src.runtime.nav2_core_action_feasibility_adapter import (
     verify_nav2_core_action_candidate,
 )
@@ -25,12 +26,6 @@ NAV2_CORPUS_SCHEMA = "missionos_nav2_action_feasibility_corpus.v1"
 NAV2_CORPUS_CASE_SCHEMA = "missionos_nav2_action_feasibility_case.v1"
 NAV2_CORPUS_VERDICT_SCHEMA = "missionos_nav2_action_feasibility_verdict.v1"
 _CASE_ID = re.compile(r"^[a-z0-9][a-z0-9._-]{2,95}$")
-_PRIVATE_VALUE = re.compile(
-    r"(?:sk-[A-Za-z0-9_-]{12,}|"
-    r"\btask_[0-9a-f]{8,}\b|"
-    r"/(?:Users|private|tmp|home|var/folders)/)",
-    re.IGNORECASE,
-)
 _AUTHORITY_FLAGS = {
     "llm_invoked": False,
     "approval_created": False,
@@ -80,28 +75,7 @@ def seal_nav2_corpus_case(
 
 
 def _publication_safe(value: Any) -> bool:
-    if isinstance(value, Mapping):
-        return all(
-            str(key).lower()
-            not in {
-                "api_key",
-                "authorization",
-                "credential",
-                "database_path",
-                "prompt",
-                "response_text",
-                "secret",
-                "task_id",
-                "token",
-            }
-            and _publication_safe(item)
-            for key, item in value.items()
-        )
-    if isinstance(value, list):
-        return all(_publication_safe(item) for item in value)
-    return not (
-        isinstance(value, str) and _PRIVATE_VALUE.search(value)
-    )
+    return not publication_findings(value)
 
 
 def _authority_chain_valid(
