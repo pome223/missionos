@@ -1,0 +1,49 @@
+{
+  "adapter_id": "missionos.px4_bench.action_feasibility.v1",
+  "cases": [
+    {
+      "case_id": "px4-bench-positive-verified-arm-disarm",
+      "path": "cases/px4-bench-positive-verified-arm-disarm.json",
+      "sha256": "0b73331c147107a8d02ba2e9e4d9cb51c34f025d67f90f1c206f1fc830159743"
+    },
+    {
+      "case_id": "px4-bench-refusal-estop-unattested",
+      "path": "cases/px4-bench-refusal-estop-unattested.json",
+      "sha256": "13d22318d7e3cde3183bb3a5c08f42c4b38ce79b6298a2956adade33adf7b80c"
+    },
+    {
+      "case_id": "px4-bench-refusal-vehicle-secured-unattested",
+      "path": "cases/px4-bench-refusal-vehicle-secured-unattested.json",
+      "sha256": "3dcd156d8ad039d54a27f64125753d31607f2f327a77236128889b5bda797558"
+    },
+    {
+      "case_id": "px4-bench-refusal-props-unattested",
+      "path": "cases/px4-bench-refusal-props-unattested.json",
+      "sha256": "bebb0334687bf8c0b5e990196cde57e7f70072d39fb9b34dc43479afb169a467"
+    },
+    {
+      "case_id": "px4-bench-refusal-loopback-link-kind",
+      "path": "cases/px4-bench-refusal-loopback-link-kind.json",
+      "sha256": "42b4c149305413f7edbf13414aac1fd97ff4e5a706247b7c2e9e583a093434d3"
+    },
+    {
+      "case_id": "px4-bench-refusal-stale-telemetry",
+      "path": "cases/px4-bench-refusal-stale-telemetry.json",
+      "sha256": "031e2282269d1b942533910fbabe7dfc73c7c2caed64527a7a2ca6a8418faa93"
+    },
+    {
+      "case_id": "px4-bench-refusal-heartbeat-loss",
+      "path": "cases/px4-bench-refusal-heartbeat-loss.json",
+      "sha256": "54afe25f3b7db171ec22ffde000a92f4f05aabcdb2c454d0ecdb3558bd0a0635"
+    },
+    {
+      "case_id": "px4-bench-refusal-action-not-in-allowlist",
+      "path": "cases/px4-bench-refusal-action-not-in-allowlist.json",
+      "sha256": "c51da1f64e075d75d66057f582b78ed58d7290a06871da0fb0ab618ebffc6457"
+    }
+  ],
+  "corpus_id": "px4_bench_v1",
+  "description": "PX4 bench arm/disarm Action Feasibility boundary. Contract derived. Replay invokes no hardware and claims no physical execution.",
+  "manifest_sha256": "f3c456231da8bf5da7d1463c51af8ed6d1ceb0e2a716f20221080e8eb4f9ca99",
+  "schema_version": "missionos_px4_bench_action_feasibility_corpus.v1"
+}
