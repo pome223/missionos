@@ -9,10 +9,13 @@ opt-in live smokes with real credentials.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from hashlib import sha256
 from pathlib import Path
 import shlex
 import sys
+
+import pytest
 
 from src.intelligence.turtlebot3_perception_sidecar import (
     TURTLEBOT3_PERCEPTION_SIDECAR_ADK_ENABLED_ENV,
@@ -21,6 +24,10 @@ from src.intelligence.turtlebot3_perception_sidecar import (
     build_turtlebot3_perception_sidecar_prompt,
     run_turtlebot3_perception_sidecar,
 )
+from src.runtime.perception_corroboration_binding import (
+    build_perception_corroboration_binding,
+)
+from src.runtime.runtime_claim_evidence import validate_runtime_invocation_evidence
 
 _FAKE_PNG_BYTES = b"\x89PNG\r\n\x1a\nfake-frame-for-tests"
 
@@ -159,6 +166,80 @@ def test_command_override_classifies_frame_and_hashes_source(
     assert evidence["schema_version"] == "runtime_invocation_evidence.v1"
     assert evidence["provider"] == "command_override"
     assert evidence["invocation_exit_code"] == 0
+
+
+@pytest.mark.parametrize(
+    ("backend", "expected_provider"),
+    [
+        ("deepseek", "google_adk_litellm_deepseek"),
+        ("gemini", "google_adk_gemini"),
+    ],
+)
+def test_adk_sidecar_evidence_tracks_provider_and_binds_live_vlm(
+    monkeypatch, tmp_path, backend, expected_provider
+) -> None:
+    from src.intelligence import turtlebot3_perception_sidecar as sidecar
+
+    async def fake_adk_response(**_kwargs) -> str:
+        return (
+            '{"claim_kind":"corridor_blocked_by_object","confidence":0.75,'
+            '"horizontal_sector":"center","target_center_x_normalized":0.5}'
+        )
+
+    monkeypatch.setenv("MISSIONOS_LLM_BACKEND", backend)
+    monkeypatch.delenv(
+        "MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_PERCEPTION_SIDECAR_AGENT_LLM_BACKEND",
+        raising=False,
+    )
+    monkeypatch.delenv(TURTLEBOT3_PERCEPTION_SIDECAR_COMMAND_ENV, raising=False)
+    monkeypatch.delenv(TURTLEBOT3_PERCEPTION_SIDECAR_ALLOW_OVERRIDE_ENV, raising=False)
+    monkeypatch.setenv(TURTLEBOT3_PERCEPTION_SIDECAR_ADK_ENABLED_ENV, "1")
+    monkeypatch.setattr(
+        sidecar, "_invoke_adk_perception_response_async", fake_adk_response
+    )
+
+    frame = _write_frame(tmp_path)
+    result = run_turtlebot3_perception_sidecar(image_path=frame)
+
+    assert result["sidecar_status"] == "classified"
+    evidence = result["llm_invocation_evidence"]
+    assert evidence["provider"] == expected_provider
+    assert evidence["invocation_kind"] == "llm_api"
+    assert str(evidence["invocation_target"]).startswith("google_adk:")
+    assert validate_runtime_invocation_evidence(evidence)["provider"] == expected_provider
+
+    now = datetime.now(timezone.utc)
+    claim = result["camera_observation"]
+    frame_sha256 = sha256(frame.read_bytes()).hexdigest()
+    binding = build_perception_corroboration_binding(
+        source_frame_ref=str(claim["source_frame_ref"]),
+        claim_kind=str(claim["claim_kind"]),
+        camera_horizontal_sector=str(claim["horizontal_sector"]),
+        target_center_x_normalized=claim["target_center_x_normalized"],
+        runtime_context={
+            "decision_epoch_ref": "proposal:test:perception",
+            "capture": {
+                "camera_frame_sha256": frame_sha256,
+                "camera_lidar_observation": {
+                    "camera_observed_at": now.isoformat(),
+                    "camera_received_at": now.isoformat(),
+                    "camera_width": 640,
+                    "camera_fx": 554.25,
+                    "camera_cx": 320.0,
+                    "lidar_observed_at": now.isoformat(),
+                    "lidar_obstacle_observed": True,
+                    "lidar_horizontal_sector": "center",
+                    "lidar_candidate_bearing_rad": 0.0,
+                    "target_candidate_id": "lidar_candidate:fixture",
+                    "lidar_evidence_ref": "laser_scan:fixture",
+                },
+            },
+            "llm_invocation_evidence": evidence,
+        },
+    )
+
+    assert binding.runtime_invocation_evidence_valid is True
+    assert binding.live_vlm_invocation_observed is True
 
 
 def test_self_reported_corroboration_is_stripped_not_trusted(

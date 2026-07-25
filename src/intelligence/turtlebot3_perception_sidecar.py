@@ -1,8 +1,9 @@
-"""Gemini-backed VLM sidecar producing perception claim payloads (issue #31).
+"""Backend-neutral VLM sidecar producing perception claim payloads (issue #31).
 
-Takes a camera frame, hashes it, and asks Gemini (via ADK) or an operator-
-provided command to classify it into one of ``PerceptionClaimKind``. Output
-is a source-bound claim plus a normalized horizontal target center that
+Takes a camera frame, hashes it, and asks the configured ADK model backend or
+an operator-provided command to classify it into one of
+``PerceptionClaimKind``. Output is a source-bound claim plus a normalized
+horizontal target center that
 ``build_perception_claim_from_camera_observation`` in
 ``src/runtime/perception_claim.py`` consumes.
 
@@ -12,11 +13,11 @@ computed downstream from a same-window LaserScan candidate and source-bound
 runtime invocation evidence, never from anything a vision pipeline claims
 about itself; see ``perception_claim.py`` for why.
 
-Mirrors ``turtlebot3_recovery_planner.py``'s two backend paths so it shares
-the same tested, opt-in posture: ADK/Gemini (live, uncovered by the fast
-test suite — same as every other Gemini-backed capability here) and an
-operator-provided command override (subprocess, base64-encoded image on
-stdin, exercised by the fast test suite via a fixture script).
+Uses the same configured ADK model resolution and provider-labeling contract
+as the other LLM paths. The live ADK path is opt-in and uncovered by the fast
+test suite; the operator-provided command override (subprocess,
+base64-encoded image on stdin) is exercised by the fast test suite via a
+fixture script.
 """
 
 from __future__ import annotations
@@ -388,7 +389,10 @@ def _run_adk_sidecar(
     image_sha256: str,
     source_frame_ref: str,
 ) -> dict[str, Any]:
+    from src.agents.model_config import llm_provider_label
+
     model_id = _sidecar_model_id()
+    provider = llm_provider_label(_AGENT_NAME)
     started_at = datetime.now(timezone.utc)
     try:
         response_text = asyncio.run(
@@ -417,7 +421,7 @@ def _run_adk_sidecar(
     invocation_evidence = _runtime_invocation_evidence(
         invocation_kind="llm_api",
         invocation_target=f"google_adk:{model_id}",
-        provider="google_adk",
+        provider=provider,
         model_id=model_id,
         image_sha256=image_sha256,
         prompt_text=prompt_text,
