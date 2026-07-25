@@ -59,7 +59,7 @@
     "parameters": {}
   },
   "case_id": "px4-bench-refusal-link-declaration-contradicted",
-  "case_sha256": "c4b6da23ea1d1c4ba2567ba6d3ee1aa1d63df60f127f94e21dd7db8ba9647449",
+  "case_sha256": "a74e57c912cfe43c02c800cb38817adf924638cd01fec83ad212aaae006a502b",
   "evaluated_at": "2026-07-25T00:00:00+00:00",
   "expected": {
     "required_reason": "bench_link_declaration_contradicted",
@@ -231,5 +231,25 @@
       "source_runtime_evidence_refs": [],
       "source_runtime_reexecuted": false
     }
+  },
+  "verifier_assumptions": {
+    "machine_observed_facts": [
+      "link_kind",
+      "link_declaration_consistent",
+      "heartbeat_alive"
+    ],
+    "notes": [
+      "A physical E-stop is an independent stop that works when software fails; the PX4 safety switch is an arming permission and does not satisfy it.",
+      "A vehicle powered over USB is not de-energized by opening the battery circuit, so power_disconnect_available refers to the rail actually supplying the autopilot.",
+      "No machine check confirms any operator-declared fact. Their evidentiary weight is the attestation and nothing more."
+    ],
+    "operator_declared_facts": [
+      "physical_estop_available",
+      "vehicle_physically_secured",
+      "power_disconnect_available",
+      "operator_physically_present",
+      "props_removed_attested"
+    ],
+    "operator_declared_facts_are_machine_verified": false
   }
 }

@@ -127,6 +127,43 @@ def _truth_boundary_reasons(case: Mapping[str, Any]) -> list[str]:
     return reasons
 
 
+def _verifier_assumption_reasons(case: Mapping[str, Any]) -> list[str]:
+    """Every observed fact must be classified as machine- or operator-sourced.
+
+    Nothing verifies that a physical E-stop exists, that the airframe is
+    restrained, or that the propellers are off. Those facts hold because a named
+    operator asserted them. Leaving that implicit is how an attestation quietly
+    acquires the weight of a measurement, so the classification is required and
+    checked rather than written in prose.
+    """
+
+    reasons: list[str] = []
+    assumptions = _mapping(case.get("verifier_assumptions"))
+    if not assumptions:
+        return ["bench_corpus_verifier_assumptions_missing"]
+    machine = [str(name) for name in _sequence(assumptions.get("machine_observed_facts"))]
+    operator = [
+        str(name) for name in _sequence(assumptions.get("operator_declared_facts"))
+    ]
+    if not operator:
+        reasons.append("bench_corpus_operator_declared_facts_missing")
+    if assumptions.get("operator_declared_facts_are_machine_verified") is not False:
+        reasons.append("bench_corpus_operator_declaration_overclaimed")
+    overlap = set(machine) & set(operator)
+    if overlap:
+        reasons.append("bench_corpus_fact_classified_twice")
+
+    classified = set(machine) | set(operator)
+    observed = {
+        str(fact.get("name"))
+        for fact in _sequence(_mapping(case.get("hazard_state")).get("observed_facts"))
+        if isinstance(fact, Mapping)
+    }
+    if observed - classified:
+        reasons.append("bench_corpus_fact_unclassified")
+    return reasons
+
+
 def _authority_chain_reasons(
     authority_chain: Mapping[str, Any],
     *,
@@ -244,6 +281,7 @@ def verify_px4_bench_corpus_case(
     if scenario_class not in {"positive", "refusal"}:
         reasons.append("bench_corpus_scenario_class_invalid")
     reasons.extend(_truth_boundary_reasons(case))
+    reasons.extend(_verifier_assumption_reasons(case))
 
     artifact = verify_px4_bench_core_action_candidate(
         hazard_state=_mapping(case.get("hazard_state")),

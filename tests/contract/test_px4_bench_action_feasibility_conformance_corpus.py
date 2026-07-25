@@ -315,3 +315,65 @@ def test_explicit_unsafe_declaration_would_block() -> None:
 
     assert verdict.status is FeasibilityStatus.BLOCKED
     assert "bench_props_attached" in verdict.blocked_reasons
+
+
+def test_every_observed_fact_is_classified_as_machine_or_operator_sourced() -> None:
+    """Which facts rest on a human's word must be explicit, not implied."""
+
+    for case_id in EXPECTED_CASES:
+        case = _case(case_id)
+        assumptions = case["verifier_assumptions"]
+        machine = set(assumptions["machine_observed_facts"])
+        operator = set(assumptions["operator_declared_facts"])
+        observed = {
+            fact["name"] for fact in case["hazard_state"]["observed_facts"]
+        }
+
+        assert not (machine & operator)
+        assert observed <= (machine | operator)
+        assert assumptions["operator_declared_facts_are_machine_verified"] is False
+
+
+def test_the_physical_safety_facts_are_recorded_as_operator_declared() -> None:
+    """No machine check confirms any of these; the attestation is all there is."""
+
+    assumptions = _case("px4-bench-positive-verified-arm-disarm")[
+        "verifier_assumptions"
+    ]
+
+    assert set(assumptions["operator_declared_facts"]) == {
+        "physical_estop_available",
+        "vehicle_physically_secured",
+        "power_disconnect_available",
+        "operator_physically_present",
+        "props_removed_attested",
+    }
+    assert "link_kind" in assumptions["machine_observed_facts"]
+
+
+def test_an_unclassified_fact_fails_closed() -> None:
+    """A new attestation-derived fact must not slip in as a measurement."""
+
+    case = copy.deepcopy(_case("px4-bench-positive-verified-arm-disarm"))
+    template = copy.deepcopy(case["hazard_state"]["observed_facts"][0])
+    template["name"] = "bench_door_closed_attested"
+    case["hazard_state"]["observed_facts"].append(template)
+    case = seal_px4_bench_corpus_case(case)
+
+    verdict = verify_px4_bench_corpus_case(case)
+
+    assert verdict["passed"] is False
+    assert "bench_corpus_fact_unclassified" in verdict["reasons"]
+
+
+def test_claiming_operator_declarations_are_machine_verified_fails() -> None:
+    case = copy.deepcopy(_case("px4-bench-positive-verified-arm-disarm"))
+    case["verifier_assumptions"][
+        "operator_declared_facts_are_machine_verified"
+    ] = True
+    case = seal_px4_bench_corpus_case(case)
+
+    verdict = verify_px4_bench_corpus_case(case)
+
+    assert verdict["passed"] is False
+    assert "bench_corpus_operator_declaration_overclaimed" in verdict["reasons"]

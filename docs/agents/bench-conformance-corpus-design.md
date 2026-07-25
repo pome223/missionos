@@ -262,14 +262,38 @@ Windows 絶対パスも弾くようになった（既存 5 ケースに衝突な
 併せて置いた。bench corpus は link の**クラス**を記録するので、ここが通らないと
 設計そのものが成立しない。
 
-## 8. 未解決・要判断
+## 8. 操作者申告への依存（解決済み・2026-07-25）
+
+各ケースは `verifier_assumptions` ブロックを持ち、観測事実を 2 つに分類する。
+
+| 分類 | 事実 |
+|------|------|
+| `machine_observed_facts` | `link_kind`, `link_declaration_consistent`, `heartbeat_alive` |
+| `operator_declared_facts` | `physical_estop_available`, `vehicle_physically_secured`, `power_disconnect_available`, `operator_physically_present`, `props_removed_attested` |
+
+**下段の 5 つは、コードが一切検証しない。** 物理 E-stop が存在するか、それが試験
+済みか、機体が本当に固定されているか、プロペラが本当に外れているかを確認する機械的
+手段は無い。これらは名前付きの操作者がそう言ったから成立している。
+
+この分類は散文ではなく**検査対象**である。`verify_px4_bench_corpus_case` は
+分類漏れの事実を `bench_corpus_fact_unclassified` で fail-closed に落とす。
+新しい attestation 由来の事実が、黙って測定値の重みを獲得することを防ぐため。
+`operator_declared_facts_are_machine_verified` は常に `false` で、`true` を
+主張すると `bench_corpus_operator_declaration_overclaimed` で落ちる。
+
+`notes` に記録した運用上の落とし穴:
+
+- **PX4 の Safety Switch は物理 E-stop ではない。** 前者は arming 許可の操作、
+  後者はソフトウェアが失敗しても止められる独立手段。混同した操作者は、bench slice が
+  前提するより弱いものに対して「正直に」申告してしまう
+- **USB 給電中はバッテリ回路を開いても機体は de-energize されない。**
+  `power_disconnect_available` はオートパイロットに実際に給電しているレールを指す
+
+### 残る未解決
 
 1. **live E2E の物理準備の正本をどこに置くか。** プロペラ非装着・固定・E-stop 配線の
    チェックリストはコード契約ではない。`hardware-partner-integration-guide.md` の
    拡張か、独立の bench 運用手順書か。
-3. **`refusal-props-attached` の入力源。** 現状これは操作者申告に依存する。
-   申告を機械的観測に置き換える手段がない点を、ケースの
-   `verifier_assumptions` に明示的に書き残す必要がある。
 
 ---
 
