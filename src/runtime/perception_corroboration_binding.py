@@ -176,7 +176,12 @@ def build_perception_corroboration_binding(
     live_vlm_invocation = bool(
         invocation_valid
         and invocation.get("invocation_kind") == "llm_api"
-        and invocation.get("provider") == "google_adk"
+        and (
+            invocation.get("provider") in {"google_adk", "google_adk_gemini"}
+            or str(invocation.get("provider") or "").startswith(
+                "google_adk_litellm_"
+            )
+        )
         and str(invocation.get("invocation_target") or "").startswith("google_adk:")
         and str(invocation.get("model_id") or "").strip()
         and invocation.get("invocation_exit_code") == 0
