@@ -1,0 +1,73 @@
+{
+  "schema_version": "missionos_public_representative_evidence.v1",
+  "evidence_id": "v0.2.0-parent-three-stage-live-positive",
+  "evidence_role": "current_live_positive",
+  "version_status": "current",
+  "source_record": {
+    "internal_evidence_id": "20260801-goal-a-three-live-stages",
+    "sha256": "8fd2d6c4f9697659feb7c38337f340c182910ca32c98df4c590723919bcece88",
+    "source_record_included": false,
+    "recorded_at": "2026-08-01T03:14:20.571161+00:00",
+    "binding_basis": "runtime_package_digests_plus_post_run_source_material_audit"
+  },
+  "component_bindings": [
+    {
+      "component_id": "px4_gazebo_delivery_predicate_package",
+      "version": "1",
+      "material_sha256": "ac6bf52b91c662147303a3ab3141cf531f8c4576da91f31695713b58961b9e05",
+      "binding_observed_at_runtime": true
+    },
+    {
+      "component_id": "nav2_turtlebot3_predicate_package",
+      "version": "1",
+      "material_sha256": "dd7b4eb8305cd9265c757f1889ecca128298665a41f13cca39f9aaa3b9624d2d",
+      "binding_observed_at_runtime": true
+    },
+    {
+      "component_id": "libero_panda_predicate_package",
+      "version": "2",
+      "material_sha256": "7949e9f2db452a1e1f751ff186aa0accc3b4915a4c79dda8a5b30a9c225e186d",
+      "binding_observed_at_runtime": true
+    },
+    {
+      "component_id": "parent_mission_coordinator",
+      "version": "1",
+      "material_sha256": "b89778333701cdd168e6184576a30ac4f687b88d34db01ee44a68bd13fee7851",
+      "binding_observed_at_runtime": false
+    },
+    {
+      "component_id": "libero_panda_official_runner_instrumentation",
+      "version": "1",
+      "material_sha256": "26f5f1b53df39ec5c6b2e5cf4e45cbe1dd5bc071cbaeb29f7339eb65f7b2c826",
+      "binding_observed_at_runtime": false
+    }
+  ],
+  "observed_result": {
+    "runtime_boundary": "manual_live_px4_nav2_groot_libero_parent_mission",
+    "stage_count": 3,
+    "stages_satisfied": 3,
+    "parent_coordinator_in_live_loop": true,
+    "model_inference_invoked": true,
+    "libero_episode_count": 1,
+    "success_rate_claimed": false
+  },
+  "claim_boundary": {
+    "stage_predicates_satisfied": true,
+    "parent_mission_completion_claimed": false,
+    "mission_completion_status": "unverified",
+    "identity_continuity_claimed": false,
+    "shared_world_claimed": false,
+    "physical_execution_invoked": false,
+    "physical_safety_claimed": false
+  },
+  "publication_boundary": {
+    "raw_task_id_included": false,
+    "local_path_included": false,
+    "credential_included": false,
+    "raw_log_included": false,
+    "raw_action_included": false,
+    "raw_observation_included": false,
+    "vendor_source_vendored": false,
+    "checkpoint_vendored": false
+  }
+}

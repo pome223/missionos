@@ -54,15 +54,15 @@ from src.runtime.px4_gazebo_route.compound_hazard_transition import (
     build_compound_hazard_state,
     build_wind_safe_window_evidence,
 )
-from src.runtime.px4_gazebo_route.recovery_intent_compiler import (
-    verify_runtime_recovery_outcome,
-)
 from src.runtime.px4_gazebo_route.recovery_decision_signature import (
     RECOVERY_DECISION_SIGNATURE_VERSION,
     build_semantic_numeric_delta,
     build_semantic_numeric_state,
     build_semantic_recovery_decision_signature,
     semantic_numeric_state_machine_hash,
+)
+from src.runtime.px4_gazebo_route.recovery_intent_compiler import (
+    verify_runtime_recovery_outcome,
 )
 from src.runtime.px4_gazebo_route.recovery_policy import (
     live_sitl_recovery_policy,
@@ -286,6 +286,8 @@ MISSIONOS_RUNTIME_RECOVERY_PROPOSAL_MAX_AGE_SECONDS = 60.0
 MISSIONOS_RUNTIME_RECOVERY_PROPOSAL_MAX_AGE_SECONDS_ENV = (
     "MISSIONOS_RUNTIME_RECOVERY_PROPOSAL_MAX_AGE_SECONDS"
 )
+# Allow a human a few seconds to review a proposal while a cruise leg is still
+# moving. Time freshness remains independently bounded to 60 seconds.
 MISSIONOS_RUNTIME_RECOVERY_PROPOSAL_MAX_ORIGIN_DRIFT_M = 30.0
 MISSIONOS_RUNTIME_RECOVERY_PROPOSAL_MAX_ORIGIN_DRIFT_M_ENV = (
     "MISSIONOS_RUNTIME_RECOVERY_PROPOSAL_MAX_ORIGIN_DRIFT_M"
@@ -1912,7 +1914,14 @@ def _coordinate_route_realism_env(task: Mapping[str, Any]) -> dict[str, str]:
 def _coordinate_route_with_explicit_realism_env(
     route: Mapping[str, Any],
 ) -> dict[str, Any]:
-    """Bind explicit runtime obstacle realism into the route artifact."""
+    """Bind explicit runtime realism requests into the runner route.
+
+    The AUTO probe materializes obstacles from its route JSON, not from loose
+    process environment. Preserve an already source-bound route value, but
+    copy an explicit landing-zone-blocked opt-in into the route when the route
+    did not carry that field. This makes the later manifest/spawn/readback
+    evidence chain observable instead of silently reporting not_configured.
+    """
 
     resolved = dict(route)
     raw = os.getenv(MISSION_DESIGNER_REALISM_LANDING_ZONE_BLOCKED_ENV)
@@ -2874,8 +2883,10 @@ def _auto_runtime_obstacle_projection(
             }
     landing_zone_blocked = route.get("landing_zone_blocked") is True
     configured = bool(obstacle_manifest) or landing_zone_blocked
-    # Route configuration is not runtime observation. Claim detection only
-    # after Gazebo reports that the collision model was spawned.
+    # A route-level obstacle request is planning/configuration evidence. In the
+    # Gazebo runtime, claim detection only after the spawned model has been
+    # observed back from the simulator. This prevents an unmaterialized route
+    # flag from becoming source-backed runtime risk.
     detected = configured and gazebo_obstacle_model_spawned
     return {
         "frame_id": "local_ned_xy_altitude_up",
@@ -4890,9 +4901,6 @@ def _attach_auto_runtime_recovery_agent_proposal(
         hard_refresh_seconds if has_hard_news else soft_refresh_seconds
     )
     recovery_window_summary["cadence_s"] = float(active_refresh_seconds)
-    prior_summary_hash = bridge.get("last_agent_recovery_window_summary_hash")
-    if prior_summary_hash is None:
-        prior_summary_hash = bridge.get("recovery_window_summary_hash")
     prior_agent_hard_news = bridge.get("last_agent_hard_breach_any") is True
     prior_result = bridge.get("runtime_recovery_agent_result")
     prior_result = prior_result if isinstance(prior_result, Mapping) else {}

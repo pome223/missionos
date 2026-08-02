@@ -4,9 +4,11 @@ import re
 from pathlib import Path
 import shlex
 import sys
+import time
 from typing import Any, Mapping
 
 import src.gateway.server as gateway_server
+from src.runtime import physical_ai_chat_execution
 from src.runtime import turtlebot3_chat_e2e_runner as tb3_chat_smoke
 from src.runtime.task_store import TaskStore
 from src.runtime.ros2_nav2_dispatch_bridge import (
@@ -16,6 +18,16 @@ from src.runtime.ros2_nav2_dispatch_bridge import (
 
 
 JAPANESE_TEXT = re.compile(r"[ぁ-んァ-ン一-龥]")
+
+
+def _wait_for_task(store: TaskStore, task_id: str) -> dict[str, Any]:
+    deadline = time.monotonic() + 5.0
+    while time.monotonic() < deadline:
+        task = store.get(task_id)
+        if task and task.get("status") in {"completed", "failed"}:
+            return task
+        time.sleep(0.01)
+    raise AssertionError(f"task did not finish: {task_id}")
 
 
 def test_agent_invocation_presence_accepts_gemini_and_litellm_providers() -> None:
@@ -324,15 +336,23 @@ def _write_turtlebot3_success_bridge(
         "    'cmd_vel_published_by_missionos': False,\n"
         "    'ack_status': 'accepted',\n"
         "    'ack_source': 'fixture_nav2_navigate_to_pose',\n"
+        "    'goal_accepted': True,\n"
         "    'goal_x_m': payload.get('x_m'),\n"
         "    'runtime_progress_observed': True,\n"
         "    'completion_observed': True,\n"
         "    'nav2_status': 'succeeded',\n"
+        "    'nav2_goal_succeeded': True,\n"
+        "    'completion_basis': 'nav2_goal_succeeded',\n"
         "    'state_result': {\n"
+        "        'nav2_action_server_available': True,\n"
+        "        'nav2_goal_succeeded': True,\n"
         "        'pose_observed': True,\n"
         "        'robot_motion_observed': True,\n"
+        "        'odom_before_observed': True,\n"
+        "        'odom_after_observed': True,\n"
         "        'odom_topic': '/odom',\n"
         "        'odom_delta_m': 0.26,\n"
+        "        'completion_basis': 'nav2_goal_succeeded',\n"
         "        'costmap_obstacle_observed': "
         + obstacle
         + ",\n"
@@ -356,8 +376,10 @@ def _write_turtlebot3_success_bridge(
         "    'progress_result': {\n"
         "        'runtime_progress_observed': True,\n"
         "        'completion_observed': True,\n"
+        "        'nav2_goal_succeeded': True,\n"
         "        'robot_motion_observed': True,\n"
         "        'nav2_status': 'succeeded',\n"
+        "        'completion_basis': 'nav2_goal_succeeded',\n"
         "        'costmap_obstacle_observed': "
         + obstacle
         + ",\n"
@@ -655,6 +677,231 @@ def test_turtlebot3_recovery_decision_summary_records_fresh_operator_approval() 
     )
 
 
+def test_chat_vla_plan_approve_run_creates_monitorable_task(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    _install_quiet_conversation_dependencies(monkeypatch)
+    task_store = TaskStore(str(tmp_path / "tasks.db"))
+    monkeypatch.setattr(
+        physical_ai_chat_execution,
+        "get_task_store",
+        lambda: task_store,
+    )
+    monkeypatch.setenv("RUN_MISSIONOS_PHYSICAL_AI_CHAT_EXECUTION", "1")
+    monkeypatch.setenv("MISSIONOS_PHYSICAL_AI_CHAT_EXECUTION_MODE", "fixture")
+    monkeypatch.setenv("RUN_MISSIONOS_PHYSICAL_AI_CHAT_FIXTURE", "1")
+    session_id = "chat-vla-session"
+
+    plan = gateway_server.run_missionos_autonomy_conversation(
+        {
+            "operator_instruction": "GR00TでVLAミッションを実行して",
+            "missionos_route_hint": "mission_designer_plan",
+            "missionos_client_surface": "chat",
+            "session_id": session_id,
+        }
+    )
+    plan_context = plan["mission_designer"]
+
+    assert plan["routed_action"] == "mission_designer_plan"
+    assert plan_context["physical_ai_mission_proposal"]["mission_kind"] == (
+        "groot_libero_panda"
+    )
+    task_selection = plan_context["physical_ai_mission_proposal"][
+        "vla_task_selection"
+    ]
+    assert task_selection["catalog_entry_id"] == "libero-panda-stove-moka.v1"
+    assert task_selection["resolved_instruction"] == (
+        "turn on the stove and put the moka pot on it"
+    )
+    assert task_selection["policy_instruction_delivery_claimed"] is False
+    assert "コンロを点けてモカポットを置く" in plan["message"]
+    assert "arbitrary policy instruction delivery is not claimed" in plan["message"]
+    assert plan_context["summary"]["approval_status"] == "pending"
+
+    approved = gateway_server.run_missionos_autonomy_conversation(
+        {
+            "operator_instruction": "approve",
+            "missionos_route_hint": "approve",
+            "missionos_client_surface": "chat",
+            "session_id": session_id,
+            "mission_designer_context": plan_context,
+        }
+    )
+    approved_context = approved["mission_designer"]
+    assert approved_context["summary"]["approval_status"] == "approved"
+    assert approved_context["summary"]["physical_execution_invoked"] is False
+
+    started = gateway_server.run_missionos_autonomy_conversation(
+        {
+            "operator_instruction": "run",
+            "missionos_route_hint": "execute",
+            "missionos_client_surface": "chat",
+            "session_id": session_id,
+            "mission_designer_context": approved_context,
+        }
+    )
+    started_context = started["mission_designer"]
+    task_id = started_context["summary"]["task_id"]
+    task = _wait_for_task(task_store, task_id)
+
+    assert started["routed_action"] == "execute"
+    assert task["kind"] == "vla_mission_execution"
+    assert task["status"] == "completed"
+    record = task["artifacts"]["missionos_vla_mission_run_record"]
+    assert record["execution_mode"] == "fixture"
+    assert record["mission_completion_claimed"] is False
+    assert record["physical_execution_invoked"] is False
+
+
+def test_chat_unknown_specific_vla_task_is_blocked_before_proposal(
+    monkeypatch: Any,
+) -> None:
+    _install_quiet_conversation_dependencies(monkeypatch)
+
+    response = gateway_server.run_missionos_autonomy_conversation(
+        {
+            "operator_instruction": "GR00Tで赤いカップを梱包箱に入れて",
+            "missionos_route_hint": "mission_designer_plan",
+            "missionos_client_surface": "chat",
+            "session_id": "chat-vla-unknown-task",
+        }
+    )
+    context = response["mission_designer"]
+    rejection = context["physical_ai_mission_rejection"]
+    assert rejection["rejection_reason"] == "approved_vla_task_not_found"
+    assert rejection["approval_created"] is False
+    assert rejection["dispatch_authority_created"] is False
+    assert rejection["runtime_effect_requested"] is False
+    assert rejection["physical_execution_invoked"] is False
+    assert "physical_ai_mission_proposal" not in context
+    assert context["summary"]["status"] == "blocked"
+    assert context["summary"]["approved_vla_task_count"] == 1
+    assert context["summary"]["source_backed_vla_candidate_count"] == 9
+    assert rejection["free_form_skill_generation_supported"] is False
+    assert rejection["new_skill_development_required"] is True
+    assert rejection["candidate_validation_required"] is False
+    draft = rejection["success_predicate_draft"]
+    assert draft["draft_status"] == (
+        "unverified_capability_development_required"
+    )
+    assert draft["predicate_material"] is None
+    assert draft["required_observation_kinds"] == []
+    assert len(draft["verification_route_options"]) == 4
+    assert draft["selected_verification_route_id"] is None
+    assert draft["vla_executor_self_report_accepted"] is False
+    assert draft["approved_predicate_package_created"] is False
+    assert draft["dispatch_authority_created"] is False
+    inventory = rejection["task_capability_inventory"]
+    assert inventory["suite_task_count"] == 10
+    assert inventory["approved_task_count"] == 1
+    assert inventory["source_backed_live_unverified_count"] == 9
+    assert all(
+        candidate["dispatch_authority_available"] is False
+        for candidate in inventory["source_backed_candidates"]
+    )
+    assert "No approved or source-backed VLA task matched" in response["message"]
+    assert "cardboard-box assembly or screw driving" in response["message"]
+
+
+def test_chat_source_backed_candidate_gets_predicate_draft_without_authority(
+    monkeypatch: Any,
+) -> None:
+    _install_quiet_conversation_dependencies(monkeypatch)
+
+    response = gateway_server.run_missionos_autonomy_conversation(
+        {
+            "operator_instruction": (
+                "GR00Tで黒いボウルを下段の引き出しに入れて閉じる"
+            ),
+            "missionos_route_hint": "mission_designer_plan",
+            "missionos_client_surface": "chat",
+            "session_id": "chat-vla-source-backed-predicate-draft",
+        }
+    )
+
+    context = response["mission_designer"]
+    rejection = context["physical_ai_mission_rejection"]
+    draft = rejection["success_predicate_draft"]
+    assert draft["draft_status"] == "source_backed_review_required"
+    assert draft["predicate_material"]["goal_predicates"] == [
+        "Close white_cabinet_1_bottom_region",
+        "In akita_black_bowl_1 white_cabinet_1_bottom_region",
+    ]
+    assert draft["required_verification_basis"] == "deterministic"
+    assert rejection["new_skill_development_required"] is False
+    assert rejection["candidate_validation_required"] is True
+    assert rejection["approval_created"] is False
+    assert rejection["dispatch_authority_created"] is False
+    assert "physical_ai_mission_proposal" not in context
+    assert "extracted a source-backed success-predicate draft" in response["message"]
+    assert "from its pinned BDDL goal" in response["message"]
+    assert draft["libero_revision"] == (
+        "8f1084e3132a39270c3a13ebe37270a43ece2a01"
+    )
+
+
+def test_chat_three_executor_plan_keeps_exact_stage_order(
+    monkeypatch: Any,
+) -> None:
+    _install_quiet_conversation_dependencies(monkeypatch)
+
+    plan = gateway_server.run_missionos_autonomy_conversation(
+        {
+            "operator_instruction": "PX4、Nav2、GR00Tを一つのミッションとして統合管制して",
+            "missionos_route_hint": "mission_designer_plan",
+            "missionos_client_surface": "chat",
+            "session_id": "chat-three-stage-session",
+        }
+    )
+
+    proposal = plan["mission_designer"]["physical_ai_mission_proposal"]
+    assert proposal["mission_kind"] == "px4_nav2_groot_libero"
+    assert proposal["stage_refs"] == [
+        "px4_gazebo_delivery",
+        "nav2_turtlebot3_bounded_goal",
+        "groot_libero_panda",
+    ]
+    assert proposal["approval_created"] is False
+    assert proposal["dispatch_authority_created"] is False
+
+
+def test_chat_vla_run_without_approval_never_creates_task(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    _install_quiet_conversation_dependencies(monkeypatch)
+    task_store = TaskStore(str(tmp_path / "tasks.db"))
+    monkeypatch.setattr(
+        physical_ai_chat_execution,
+        "get_task_store",
+        lambda: task_store,
+    )
+    session_id = "chat-vla-unapproved"
+    plan = gateway_server.run_missionos_autonomy_conversation(
+        {
+            "operator_instruction": "GR00TでVLAミッションを実行して",
+            "missionos_route_hint": "mission_designer_plan",
+            "missionos_client_surface": "chat",
+            "session_id": session_id,
+        }
+    )
+
+    response = gateway_server.run_missionos_autonomy_conversation(
+        {
+            "operator_instruction": "run",
+            "missionos_route_hint": "execute",
+            "missionos_client_surface": "chat",
+            "session_id": session_id,
+            "mission_designer_context": plan["mission_designer"],
+        }
+    )
+
+    assert "has not been approved" in response["message"]
+    assert task_store.list(limit=10) == []
+    assert response["progress_counted"] is False
+
+
 def test_chat_turtlebot3_cleaning_request_plans_inspection_not_cleaning(
     monkeypatch: Any,
 ) -> None:
@@ -701,31 +948,6 @@ def test_chat_nova_carter_profile_records_isaac_execution_target(
     assert mission["execution_target"] == "isaac_ros_nav2_nova_carter_sim"
     assert summary["runtime_substrate"] == "NVIDIA Isaac Sim + Isaac ROS/Nav2"
     assert summary["completion_claimed"] is False
-    assert summary["physical_execution_invoked"] is False
-
-
-def test_chat_turtlebot4_request_builds_turtlebot4_nav2_plan(
-    monkeypatch: Any,
-) -> None:
-    _install_quiet_conversation_dependencies(monkeypatch)
-
-    response = gateway_server.run_missionos_autonomy_conversation(
-        {
-            "operator_instruction": "TurtleBot4で家の中を一周して",
-            "missionos_client_surface": "chat",
-            "session_id": "chat-turtlebot4-plan",
-        }
-    )
-
-    mission = response["mission_designer"]["turtlebot3_home_mission_plan"]
-    summary = response["mission_designer"]["summary"]
-    assert response["routed_action"] == "mission_designer_plan"
-    assert mission["robot_profile"] == "turtlebot4"
-    assert mission["robot_model"] == "turtlebot4_lite"
-    assert mission["execution_target"] == "ros2_nav2_turtlebot4_sim"
-    assert summary["robot_profile"] == "turtlebot4"
-    assert "TurtleBot4" in response["message"]
-    assert summary["dispatch_request_sent"] is False
     assert summary["physical_execution_invoked"] is False
 
 

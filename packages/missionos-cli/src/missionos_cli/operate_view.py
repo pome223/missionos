@@ -30,6 +30,7 @@ from .map_model import (
     _turtlebot_robot_profile_from_artifacts,
 )
 from .operate_commands import _humanize_risks
+from .vla_operator import _is_vla_operator_task, _render_vla_operator_panel
 
 
 def _projection_computed(projection: dict[str, Any]) -> bool:
@@ -424,7 +425,8 @@ def _render_recovery_agent_console(
     else:
         lines.append(
             "[dim]Type here: describe a recovery change or enter a concrete "
-            "command; every dispatch still uses standard y/N confirmation:[/dim] "
+            "command; every "
+            "dispatch still uses standard y/N confirmation:[/dim] "
             f"[bold]rtl[/bold] / [bold]land[/bold] / [bold]climb <m>[/bold] / "
             f"[bold]speed <m/s>[/bold] / [bold]reroute <x> <y> (alt)[/bold] / "
             f"[bold]avoid <x> <y> (alt)[/bold]  "
@@ -524,6 +526,28 @@ def _build_operate_status_group(
     authority.
     """
 
+    if _is_vla_operator_task(task_payload):
+        artifacts = _task_artifacts(task_payload)
+        fingerprint = json.dumps(
+            {
+                "status": status,
+                "vla_record": artifacts.get("missionos_vla_mission_run_record"),
+                "recovery": artifacts.get("missionos_vla_recovery_state"),
+                "failure": artifacts.get("physical_ai_execution_failure"),
+            },
+            sort_keys=True,
+            default=str,
+        )
+        return (
+            Group(
+                _render_vla_operator_panel(
+                    task_payload,
+                    title=f"MissionOS Operate · governed VLA · task={task_id}",
+                )
+            ),
+            fingerprint,
+        )
+
     artifacts = _task_artifacts(task_payload)
     snapshot = artifacts.get("missionos_auto_mission_runtime_snapshot")
     snapshot = snapshot if isinstance(snapshot, dict) else {}
@@ -578,5 +602,7 @@ def _build_operate_status_group(
 def _operate_robot_from_task_payload(task_payload: dict[str, Any]) -> str:
     """Return the operate help profile derived from this exact task."""
 
+    if _is_vla_operator_task(task_payload):
+        return "vla"
     artifacts = _task_artifacts(task_payload)
     return _turtlebot_robot_profile_from_artifacts(artifacts) or "px4"

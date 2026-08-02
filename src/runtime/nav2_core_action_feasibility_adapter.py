@@ -28,6 +28,9 @@ from missionos_core import (
     ObservationCursor,
     ObservedFact,
     PolicyBinding,
+    VerificationBasis,
+    VerificationItem,
+    VerificationItemStatus,
     canonical_sha256,
     verify_action_candidate,
 )
@@ -460,6 +463,33 @@ def _fact_value(
     return {}
 
 
+def _verification_item(
+    *,
+    item_id: str,
+    predicate: str,
+    candidate: ActionCandidate,
+    blocked: Sequence[str],
+    unverified: Sequence[str],
+) -> VerificationItem:
+    return VerificationItem(
+        item_id=item_id,
+        predicate=predicate,
+        status=(
+            VerificationItemStatus.BLOCKED
+            if blocked
+            else VerificationItemStatus.PENDING
+            if unverified
+            else VerificationItemStatus.PASS
+        ),
+        verification_basis=(
+            VerificationBasis.UNVERIFIED
+            if unverified
+            else VerificationBasis.DETERMINISTIC
+        ),
+        evidence_refs=tuple(candidate.evidence_refs),
+    )
+
+
 class Nav2FeasibilityVerifierExtension:
     """Deterministically verify Nav2 path evidence and swept clearance."""
 
@@ -542,6 +572,7 @@ class Nav2FeasibilityVerifierExtension:
         if candidate.action == "hold":
             blocked = list(dict.fromkeys(blocked))
             unverified = list(dict.fromkeys(unverified))
+            item_id = "nav2_hold_feasibility"
             return ExtensionVerdict(
                 extension_id=self.extension_id,
                 status=(
@@ -555,6 +586,19 @@ class Nav2FeasibilityVerifierExtension:
                 unverified_reasons=tuple(unverified),
                 measurements={"motion_command_required": False},
                 assumptions=("hold_creates_no_nav2_motion_candidate",),
+                verification_items=(
+                    _verification_item(
+                        item_id=item_id,
+                        predicate=(
+                            "the hold candidate requires no Nav2 motion and "
+                            "satisfies current costmap constraints"
+                        ),
+                        candidate=candidate,
+                        blocked=blocked,
+                        unverified=unverified,
+                    ),
+                ),
+                required_verification_item_ids=(item_id,),
             )
 
         required_obstacle_values = (
@@ -741,6 +785,7 @@ class Nav2FeasibilityVerifierExtension:
             if unverified
             else FeasibilityStatus.VERIFIED_FEASIBLE
         )
+        item_id = "nav2_path_feasibility"
         return ExtensionVerdict(
             extension_id=self.extension_id,
             status=status,
@@ -748,6 +793,19 @@ class Nav2FeasibilityVerifierExtension:
             unverified_reasons=tuple(unverified),
             measurements=measurements,
             assumptions=("planar_base_z_from_robot_runtime_profile",),
+            verification_items=(
+                _verification_item(
+                    item_id=item_id,
+                    predicate=(
+                        "the bounded Nav2 path satisfies path, policy, "
+                        "costmap, frame, and 3D-clearance constraints"
+                    ),
+                    candidate=candidate,
+                    blocked=blocked,
+                    unverified=unverified,
+                ),
+            ),
+            required_verification_item_ids=(item_id,),
         )
 
 

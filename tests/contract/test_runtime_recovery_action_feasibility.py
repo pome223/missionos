@@ -238,6 +238,10 @@ def test_core_adapter_preserves_verified_result_and_authority_boundary() -> None
     assert result["feasibility_status"] == "verified_feasible"
     assert result["core_contract"]["adapter_id"] == PX4_CORE_ADAPTER_ID
     assert result["core_contract"]["status"] == "verified_feasible"
+    assert result["core_contract"]["verification_basis"] == "deterministic"
+    assert result["core_contract"]["verification_items"][0][
+        "item_id"
+    ] == "px4_bounded_recovery_feasibility"
     assert result["core_contract"]["approval_created"] is False
     assert result["core_contract"]["dispatch_authority_created"] is False
     assert result["core_contract"]["execution_invoked"] is False

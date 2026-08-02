@@ -75,13 +75,15 @@ not an escape hatch from governance; it goes through the same tower.
 
 ## The Same Tower Over Different Vehicles
 
-The control loop does not care what the vehicle is. Today the same governance
-loop runs over two simulator substrates:
+The control loop does not care what the vehicle is. The same contract and
+authority mechanism has now been exercised over three bounded simulator
+paths:
 
 | Path                            | Start here                                                                                                           | What to look for                                                                                                | Still not claimed                                                                   |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | PX4 / Gazebo SITL               | Use the [Chat Quickstart](#chat-quickstart), then read the [obstacle recovery run](docs/examples/missionos-chat-obstacle-recovery.md). | LLM proposal, human approval, PX4/Gazebo dispatch, `watch` / `operate` / `map` evidence, and recovery evidence. | Physical flight, payload delivery, and delivery completion.                         |
 | TurtleBot3 / ROS2 Nav2 / Gazebo | Use the [TurtleBot3 Simulator Quickstart](#turtlebot3-simulator-quickstart), then read the [TurtleBot3 bridge contract](docs/agents/ros2-nav2-turtlebot3-sim.md). | The same chat -> Gateway -> approval -> dispatch -> observed-motion loop on an indoor ground robot.             | Physical robot execution, real actuator/E-stop validation, and delivery completion. |
+| GR00T N1.7 / LIBERO Panda       | Read the [v0.2.0 release boundary](docs/releases/v0.2.0.md) and the [parent-mission concept](docs/concepts/parent-mission-control.md). | Approved catalog selection, frozen contract, action lineage, exact simulator predicate, and post-episode operator review. | Free-form instruction delivery, independent controller ACK, in-episode external stop, real Panda execution, and physical safety. |
 
 On the left, the OpenStreetMap recovery view shows an opt-in PX4/Gazebo SITL
 route with two collision obstacles, placed near 50% and 75% route progress.
@@ -143,10 +145,10 @@ reporting follows the same discipline. MissionOS does not claim:
 
 ### Runtime Progress
 
-Status as of 2026-07-25. This table is evidence-bounded: the v0.1.0 stable
-gate records PX4/Gazebo and TurtleBot3/Nav2 as independently
-`verified_feasible` through the same Core contract. That simulator evidence
-does not imply physical execution, and ACK is not success.
+Status as of 2026-08-02. This table is evidence-bounded: the v0.2.0 stable gate
+keeps fixture status, reviewed live evidence, and implementation binding as
+separate dimensions. Simulator evidence does not imply physical execution,
+and ACK is not success.
 
 | Track                                  | Progress                                                                                                                                                                                                 | Currently blocked by                                                                                                                                                                              |
 | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -155,6 +157,8 @@ does not imply physical execution, and ACK is not success.
 | TurtleBot4 (TB4) / ROS2 Nav2           | Opt-in profile, task artifact shape, bridge contract, documentation, and safe blocked-by-default behavior are in place.                                                                                  | The Create3/Gazebo stack currently does not produce meaningful `/odom` motion. The controller, diffdrive, dock, or startup layer below MissionOS must move before Nav2 completion can be claimed. |
 | Nova Carter / NVIDIA Isaac Sim         | Opt-in `nova-carter` CLI/runtime profile, `execution_target=isaac_ros_nav2_nova_carter_sim`, live-proof scaffold, and manifest gates that reject ACK-only success are in place.                          | No live Isaac Sim evidence yet. It needs an RTX/GPU host with Isaac Sim, Isaac ROS, Nova Carter/Nav2, an operator-provided bridge command, and map/watch artifacts.                               |
 | Nvblox / Isaac ROS perception evidence | The v1 perception-evidence contract, env/bridge payload ingestion, required gate, tests, and docs are in place. Nvblox evidence is explicitly not approval, dispatch, or obstacle-avoidance completion by itself. | No live Nvblox data yet. It needs depth/pose -> reconstruction -> Nav2 costmap evidence paired with trajectory/verifier clearance evidence.                                                       |
+| Parent Mission / three executors        | PX4, Nav2, and GR00T/LIBERO concrete predicate packages fit one parent contract without backend branches in `missionos-core`. A reviewed manual run records all three bounded simulator stages under one parent identity. | Three satisfied stages are not projected into parent mission completion, shared-world identity, delivery completion, or physical execution. |
+| GR00T N1.7 / LIBERO Panda VLA           | One reviewed bounded episode records policy responses, simulator step inputs and returns, exact official predicate observations, and content-bound lineage. Chat, approval, run, status, `operate`, `watch`, `map`, and one-shot post-episode repair have reviewed simulator evidence. | The public CI replays fixtures and checks evidence compatibility; it does not start an NVIDIA GPU. Independent controller ACK, instruction delivery into the policy, in-episode external stop, physical Panda execution, and real-world safety remain unverified. |
 
 ## Chat Quickstart
 

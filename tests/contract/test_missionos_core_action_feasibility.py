@@ -20,6 +20,10 @@ from missionos_core import (
     ObservationCursor,
     ObservedFact,
     PolicyBinding,
+    VerificationBasis,
+    VerificationItem,
+    VerificationItemStatus,
+    aggregate_verification_items,
     canonical_sha256,
     verify_action_candidate,
 )
@@ -56,11 +60,32 @@ class PassingExtension:
     extension_id = "test.geometry.v1"
 
     def verify(self, *, hazard_state, candidate) -> ExtensionVerdict:
+        item_id = "minimum_clearance"
         return ExtensionVerdict(
             extension_id=self.extension_id,
             status=FeasibilityStatus.VERIFIED_FEASIBLE,
             measurements={"minimum_clearance_m": 2.5},
             assumptions=("bounded_path",),
+            verification_items=(
+                VerificationItem(
+                    item_id=item_id,
+                    predicate="minimum clearance exceeds policy threshold",
+                    status=VerificationItemStatus.PASS,
+                    verification_basis=VerificationBasis.DETERMINISTIC,
+                    evidence_refs=tuple(candidate.evidence_refs),
+                ),
+            ),
+            required_verification_item_ids=(item_id,),
+        )
+
+
+class LegacyPassingExtension:
+    extension_id = "test.legacy.v1"
+
+    def verify(self, *, hazard_state, candidate) -> ExtensionVerdict:
+        return ExtensionVerdict(
+            extension_id=self.extension_id,
+            status=FeasibilityStatus.VERIFIED_FEASIBLE,
         )
 
 
@@ -149,6 +174,8 @@ def test_verified_result_serializes_without_creating_authority() -> None:
     assert decoded == result
     assert result.blocked_reasons == ()
     assert result.unverified_reasons == ()
+    assert result.verification_basis is VerificationBasis.DETERMINISTIC
+    assert encoded["verification_basis"] == "deterministic"
     assert encoded["status"] == "verified_feasible"
     assert encoded["approval_created"] is False
     assert encoded["dispatch_authority_created"] is False
@@ -157,6 +184,145 @@ def test_verified_result_serializes_without_creating_authority() -> None:
     assert encoded["completion_claimed"] is False
     assert encoded["delivery_completion_claimed"] is False
     assert encoded["physical_execution_invoked"] is False
+
+
+def test_verification_items_round_trip_with_status_separate_from_basis() -> None:
+    item = VerificationItem(
+        item_id="semantic_goal",
+        predicate="the task-semantic goal was achieved",
+        status=VerificationItemStatus.PASS,
+        verification_basis=VerificationBasis.MODEL_INFERRED,
+        evidence_refs=("telemetry:current",),
+    )
+
+    decoded = VerificationItem.from_dict(
+        json.loads(json.dumps(item.to_dict()))
+    )
+
+    assert decoded == item
+    assert decoded.status is VerificationItemStatus.PASS
+    assert decoded.verification_basis is VerificationBasis.MODEL_INFERRED
+
+
+def test_unknown_or_missing_basis_fails_closed_to_unverified() -> None:
+    unknown = VerificationItem.from_dict(
+        {
+            "item_id": "unknown",
+            "predicate": "unknown verifier basis",
+            "status": "pass",
+            "verification_basis": "future_basis",
+            "evidence_refs": ["telemetry:current"],
+        }
+    )
+    missing = VerificationItem.from_dict(
+        {
+            "item_id": "missing",
+            "predicate": "missing verifier basis",
+            "status": "pass",
+            "evidence_refs": ["telemetry:current"],
+        }
+    )
+
+    aggregate = aggregate_verification_items(
+        items=(unknown, missing),
+        required_item_ids=("unknown", "missing"),
+    )
+
+    assert aggregate.positive is False
+    assert aggregate.verification_basis is VerificationBasis.UNVERIFIED
+    assert "verification_item_basis_unverified:unknown" in (
+        aggregate.unverified_reasons
+    )
+    assert "verification_item_basis_unverified:missing" in (
+        aggregate.unverified_reasons
+    )
+
+
+def test_weakest_required_basis_is_reported_without_mixed_value() -> None:
+    aggregate = aggregate_verification_items(
+        items=(
+            VerificationItem(
+                item_id="policy_gate",
+                predicate="the deterministic policy gate passed",
+                status=VerificationItemStatus.PASS,
+                verification_basis=VerificationBasis.DETERMINISTIC,
+                evidence_refs=("telemetry:current",),
+            ),
+            VerificationItem(
+                item_id="semantic_goal",
+                predicate="the model inferred task success",
+                status=VerificationItemStatus.PASS,
+                verification_basis=VerificationBasis.MODEL_INFERRED,
+                evidence_refs=("telemetry:current",),
+            ),
+        ),
+        required_item_ids=("policy_gate", "semantic_goal"),
+    )
+
+    assert aggregate.positive is True
+    assert aggregate.verification_basis is VerificationBasis.MODEL_INFERRED
+
+
+def test_missing_required_item_blocks_positive_composition() -> None:
+    aggregate = aggregate_verification_items(
+        items=(
+            VerificationItem(
+                item_id="policy_gate",
+                predicate="the deterministic policy gate passed",
+                status=VerificationItemStatus.PASS,
+                verification_basis=VerificationBasis.DETERMINISTIC,
+                evidence_refs=("telemetry:current",),
+            ),
+        ),
+        required_item_ids=("policy_gate", "semantic_goal"),
+    )
+
+    assert aggregate.positive is False
+    assert aggregate.verification_basis is VerificationBasis.UNVERIFIED
+    assert "required_verification_item_missing:semantic_goal" in (
+        aggregate.unverified_reasons
+    )
+
+
+def test_legacy_result_remains_readable_without_basis_promotion() -> None:
+    result = _verify()
+    encoded = json.loads(json.dumps(result.to_dict()))
+    encoded.pop("verification_basis")
+    for verdict in encoded["extension_verdicts"]:
+        verdict.pop("verification_items")
+        verdict.pop("required_verification_item_ids")
+
+    decoded = ActionFeasibilityResult.from_dict(encoded)
+
+    assert decoded.status is FeasibilityStatus.VERIFIED_FEASIBLE
+    assert decoded.verification_basis is VerificationBasis.UNVERIFIED
+    assert decoded.extension_verdicts[0].verification_items == ()
+    assert decoded.approval_created is False
+    assert decoded.dispatch_authority_created is False
+    assert decoded.execution_invoked is False
+    assert decoded.completion_claimed is False
+
+
+def test_extension_without_typed_required_items_cannot_become_positive() -> None:
+    policy, _source, model, state, candidate = _fixtures()
+
+    result = verify_action_candidate(
+        hazard_state=state,
+        candidate=candidate,
+        active_policy=policy,
+        evaluated_at=EVALUATED_AT,
+        extensions=(LegacyPassingExtension(),),
+        active_model_digests={model.model_id: model.digest},
+    )
+
+    assert result.status is FeasibilityStatus.UNVERIFIED
+    assert result.verification_basis is VerificationBasis.UNVERIFIED
+    assert "required_verification_items_missing" in result.unverified_reasons
+    assert result.approval_created is False
+    assert result.dispatch_authority_created is False
+    assert result.execution_invoked is False
+    assert result.progress_claimed is False
+    assert result.completion_claimed is False
 
 
 def test_hazard_state_and_candidate_round_trip() -> None:

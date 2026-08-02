@@ -150,3 +150,8 @@ def test_dispatch_binds_existing_approval_and_keeps_ack_separate_from_completion
     assert result["completion_claimed"] is False
     assert result["completion_scope"] == "none"
     assert "nav2_goal_result_not_succeeded" in result["blocking_reasons"]
+    dispatch_started_at = datetime.fromisoformat(result["dispatch_started_at"])
+    result_observed_at = datetime.fromisoformat(result["result_observed_at"])
+    assert dispatch_started_at.tzinfo is not None
+    assert result_observed_at.tzinfo is not None
+    assert dispatch_started_at <= result_observed_at

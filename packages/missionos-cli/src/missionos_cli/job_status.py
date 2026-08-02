@@ -851,11 +851,780 @@ def _turtlebot_indoor_map_from_artifacts(
     return direct if isinstance(direct, dict) else {}
 
 
+def _parent_mission_record_from_artifacts(
+    artifacts: dict[str, Any],
+) -> dict[str, Any]:
+    """Return an explicitly stored parent-mission record without inventing one."""
+
+    for key in (
+        "missionos_parent_mission_run_record",
+        "parent_mission_run_record",
+    ):
+        record = artifacts.get(key)
+        if isinstance(record, dict):
+            return record
+    return {}
+
+
+def _artifact_mapping(
+    artifacts: dict[str, Any],
+    *keys: str,
+) -> dict[str, Any]:
+    """Return the first explicitly stored mapping for the requested keys."""
+
+    for key in keys:
+        value = artifacts.get(key)
+        if isinstance(value, dict):
+            return value
+    return {}
+
+
+def _artifact_mapping_present(
+    artifacts: dict[str, Any],
+    *keys: str,
+) -> bool:
+    """Return whether any requested artifact key stores a mapping, even empty."""
+
+    return any(isinstance(artifacts.get(key), dict) for key in keys)
+
+
+def _stored_list_text(
+    value: dict[str, Any],
+    key: str,
+    *,
+    limit: int = 4,
+) -> str:
+    """Distinguish an explicitly empty stored list from a missing field."""
+
+    stored = value.get(key)
+    if not isinstance(stored, list):
+        return "unknown"
+    return _compact_values([str(item) for item in stored], limit=limit)
+
+
+def _physical_ai_control_tower_lines(
+    artifacts: dict[str, Any],
+    *,
+    parent_record: dict[str, Any],
+    coordinator: dict[str, Any],
+) -> list[str]:
+    """Project stored cross-layer facts without inventing missing evidence."""
+
+    receipt = _artifact_mapping(
+        artifacts,
+        "virtual_to_real_promotion_receipt",
+        "v2r_promotion_receipt",
+    )
+    receipt_present = _artifact_mapping_present(
+        artifacts,
+        "virtual_to_real_promotion_receipt",
+        "v2r_promotion_receipt",
+    )
+    promotion = _artifact_mapping(
+        artifacts,
+        "virtual_to_real_promotion_validation",
+        "v2r_promotion_validation",
+    )
+    safe_stop = _artifact_mapping(
+        artifacts,
+        "safe_stop_receipt_validation",
+    )
+    # No parent-mission repair or operator-intervention artifact is standardized
+    # yet.  Keep those facts unknown instead of projecting backend-local shapes.
+    repair: dict[str, Any] = {}
+    intervention: dict[str, Any] = {}
+    if not any((parent_record, receipt, promotion, safe_stop, repair, intervention)):
+        return []
+
+    raw_gaps = receipt.get("gaps")
+    gaps_recorded = isinstance(raw_gaps, list) and all(
+        isinstance(gap, dict) for gap in raw_gaps
+    )
+    gaps = list(raw_gaps) if gaps_recorded else []
+    resolved_gaps = (
+        str(sum(gap.get("status") == "resolved" for gap in gaps))
+        if gaps_recorded
+        else "unknown"
+    )
+    unresolved_gap_ids = [
+        str(gap.get("gap_id") or "unknown") for gap in gaps if gap.get("status") != "resolved"
+    ]
+    unresolved_gap_text = (
+        _compact_values(unresolved_gap_ids) if gaps_recorded else "unknown"
+    )
+    gap_denominator = str(len(gaps)) if gaps_recorded else "unknown"
+    promotion_reasons = promotion.get("reasons")
+    promotion_reasons_text = (
+        _compact_values([str(reason) for reason in promotion_reasons], limit=4)
+        if isinstance(promotion_reasons, list)
+        else "unknown"
+    )
+
+    physical_execution = _first_present(
+        coordinator.get("physical_execution_invoked"),
+        parent_record.get("physical_execution_invoked"),
+        promotion.get("physical_execution_invoked"),
+    )
+    physical_safety = _first_present(
+        promotion.get("physical_safety_claimed"),
+        parent_record.get("physical_safety_claimed"),
+    )
+    operational_closure = _first_present(
+        intervention.get("operational_closure_created"),
+        coordinator.get("operational_closure_created"),
+        parent_record.get("operational_closure_created"),
+    )
+
+    return [
+        "",
+        "Physical AI Control Tower:",
+        (
+            "  Current: "
+            "stage="
+            f"{_status_text(_first_present(coordinator.get('current_stage_ref'), parent_record.get('current_stage_ref')), default='unknown')}"
+        ),
+        (
+            "  Promotion: "
+            f"receipt={'present' if receipt_present else 'absent'}; "
+            f"status={_status_text(promotion.get('status'), default='unknown')}; "
+            "prerequisite="
+            f"{_format_flag(promotion.get('promotion_prerequisite_satisfied'), default='unknown')}; "
+            f"source={_status_text(receipt.get('source_scope'), default='unknown')}; "
+            f"target={_status_text(receipt.get('target_scope'), default='unknown')}; "
+            "executor="
+            f"{_short_digest(receipt.get('target_executor_profile_sha256'))}; "
+            "controller="
+            f"{_short_digest(receipt.get('target_controller_profile_sha256'))}"
+        ),
+        (
+            "  Promotion approval: "
+            f"source={_status_text(receipt.get('approval_artifact_ref'), default='unknown')}; "
+            f"approver={_status_text(receipt.get('approved_by'), default='unknown')}; "
+            f"expires={_status_text(receipt.get('expires_at'), default='unknown')}; "
+            "deployment_authority="
+            f"{_format_flag(promotion.get('physical_deployment_authority_present'), default='unknown')}"
+        ),
+        (
+            "  Promotion gaps: "
+            f"resolved={resolved_gaps}/{gap_denominator}; "
+            f"unresolved={unresolved_gap_text}; "
+            f"rollback={_stored_list_text(receipt, 'rollback_condition_ids')}; "
+            f"disable={_stored_list_text(receipt, 'disable_condition_ids')}"
+        ),
+        (
+            "  Safe stop: "
+            f"request={_format_flag(safe_stop.get('request_observed'), default='unknown')}; "
+            f"ack={_format_flag(safe_stop.get('ack_observed'), default='unknown')}; "
+            f"effect={_format_flag(safe_stop.get('effect_observed'), default='unknown')}; "
+            f"status={_status_text(safe_stop.get('status'), default='unknown')}"
+        ),
+        (
+            "  Repair: "
+            f"requested={_format_flag(repair.get('requested'), default='unknown')}; "
+            f"approved={_format_flag(repair.get('approved'), default='unknown')}; "
+            f"result={_status_text(repair.get('result'), default='unknown')}"
+        ),
+        (
+            "  Operator: "
+            "intervention="
+            f"{_format_flag(intervention.get('intervention_observed'), default='unknown')}; "
+            "operational_closure="
+            f"{_format_flag(operational_closure, default='unknown')}; "
+            f"reason={_status_text(intervention.get('closure_reason'), default='unknown')}"
+        ),
+        (
+            "  Physical: "
+            "deployment_authority="
+            f"{_format_flag(promotion.get('physical_deployment_authority_present'), default='unknown')}; "
+            f"execution={_format_flag(physical_execution, default='unknown')}; "
+            f"safety={_format_flag(physical_safety, default='unknown')}"
+        ),
+        (
+            "  Control boundary: "
+            "parent_completion="
+            f"{_format_flag(_first_present(coordinator.get('mission_completion_claimed'), parent_record.get('mission_completion_claimed')), default='unknown')}; "
+            f"promotion_reasons={promotion_reasons_text}"
+        ),
+    ]
+
+
+def _is_parent_mission_job(task_payload: dict[str, Any]) -> bool:
+    task = _task_record(task_payload)
+    if task.get("kind") == "parent_mission_execution":
+        return True
+    return bool(_parent_mission_record_from_artifacts(_task_artifacts(task_payload)))
+
+
+def _is_vla_mission_job(task_payload: dict[str, Any]) -> bool:
+    task = _task_record(task_payload)
+    artifacts = _task_artifacts(task_payload)
+    return task.get("kind") == "vla_mission_execution" or isinstance(
+        artifacts.get("missionos_vla_mission_run_record"), dict
+    )
+
+
+def _vla_mission_job_operator_summary(
+    task_payload: dict[str, Any],
+) -> list[str]:
+    """Show the exact VLA stage facts without promoting simulator success."""
+
+    task = _task_record(task_payload)
+    artifacts = _task_artifacts(task_payload)
+    record = artifacts.get("missionos_vla_mission_run_record")
+    record = record if isinstance(record, dict) else {}
+    proposal = artifacts.get("physical_ai_mission_proposal")
+    proposal = proposal if isinstance(proposal, dict) else {}
+    approval = artifacts.get("physical_ai_mission_approval")
+    approval = approval if isinstance(approval, dict) else {}
+    evaluation = record.get("predicate_evaluation")
+    evaluation = evaluation if isinstance(evaluation, dict) else {}
+    recovery = artifacts.get("missionos_vla_recovery_state")
+    recovery = recovery if isinstance(recovery, dict) else {}
+    execution_mode = _status_text(
+        record.get("execution_mode"),
+        default="unknown",
+    )
+    headline_label = "VLA Fixture" if execution_mode == "fixture" else "VLA Mission"
+    headline_suffix = (
+        "; live execution not observed" if execution_mode == "fixture" else ""
+    )
+    return [
+        (
+            f"{headline_label}: "
+            f"task={task.get('task_id')}; status="
+            f"{_status_text(task.get('status'), default='unknown')}"
+            f"{headline_suffix}"
+        ),
+        (
+            "  Frozen: "
+            f"kind={_status_text(proposal.get('mission_kind'), default='unknown')}; "
+            f"run={_status_text(record.get('run_identity') or proposal.get('parent_run_identity'), default='unknown')}; "
+            f"episode={_status_text(record.get('episode_identity') or proposal.get('episode_identity'), default='unknown')}; "
+            f"contract={_short_digest(record.get('contract_sha256'))}; "
+            f"approval={_short_digest(approval.get('approval_sha256'))}"
+        ),
+        (
+            "  Observed: "
+            f"mode={execution_mode}; "
+            "readiness="
+            f"{_status_text(evaluation.get('evidence_readiness'), default='unknown')}; "
+            f"content={_short_digest(evaluation.get('observation_content_sha256'))}"
+        ),
+        (
+            "  Completion predicate: "
+            f"package={_status_text(evaluation.get('predicate_package_id'), default='unknown')}@"
+            f"{_status_text(evaluation.get('predicate_package_version'), default='unknown')}; "
+            f"status={_status_text(evaluation.get('status'), default='unknown')}; "
+            f"basis={_status_text(evaluation.get('actual_verification_basis'), default='unknown')}"
+        ),
+        (
+            "  Bounded outcome: "
+            f"claimed={_format_flag(record.get('bounded_outcome_claimed'), default='unknown')}; "
+            f"scope={_status_text(evaluation.get('outcome_claim_scope'), default='unknown')}"
+        ),
+        (
+            "  Recovery: "
+            f"status={_status_text(recovery.get('recovery_status'), default='unknown')}; "
+            f"action={_status_text(recovery.get('repair_action'), default='unknown')}; "
+            f"proposal={_status_text(recovery.get('proposal_status'), default='unknown')}; "
+            f"retry_task={_status_text(recovery.get('retry_task_id'), default='unknown')}"
+        ),
+        (
+            "  Recovery boundary: "
+            "in_episode="
+            f"{_format_flag(recovery.get('in_episode_intervention_available'), default='unknown')}; "
+            "post_episode="
+            f"{_format_flag(recovery.get('post_episode_repair_implemented'), default='unknown')}; "
+            "automatic_retry="
+            f"{_format_flag(recovery.get('automatic_retry_allowed'), default='unknown')}; "
+            "dispatch_authority="
+            f"{_format_flag(recovery.get('dispatch_authority_created'), default='unknown')}"
+        ),
+        (
+            "  Unconfirmed: "
+            "controller_ack="
+            f"{_format_flag(record.get('controller_ack_observed'), default='unknown')}; "
+            "parent_completion="
+            f"{_format_flag(record.get('mission_completion_claimed'), default='unknown')}; "
+            "physical_execution="
+            f"{_format_flag(record.get('physical_execution_invoked'), default='unknown')}"
+        ),
+    ]
+
+
 def _is_turtlebot_nav2_job(task_payload: dict[str, Any]) -> bool:
     task = _task_record(task_payload)
     if task.get("kind") == "turtlebot3_home_mission_execution":
         return True
     return bool(_turtlebot_indoor_map_from_artifacts(_task_artifacts(task_payload)))
+
+
+def _short_digest(value: Any) -> str:
+    text = str(value or "").strip()
+    return f"{text[:12]}..." if len(text) > 12 else (text or "-")
+
+
+def _compact_values(values: list[str], *, limit: int = 4) -> str:
+    unique = list(dict.fromkeys(value for value in values if value))
+    if not unique:
+        return "-"
+    visible = unique[:limit]
+    suffix = f",+{len(unique) - limit}" if len(unique) > limit else ""
+    return ",".join(visible) + suffix
+
+
+def _mission_contract_job_status_lines(artifacts: dict[str, Any]) -> list[str]:
+    """Project stored Mission Contract facts without creating stronger claims."""
+
+    execution = artifacts.get("turtlebot3_home_mission_execution")
+    execution = execution if isinstance(execution, dict) else {}
+    stored_segments = execution.get("segment_results")
+    segments = (
+        [item for item in stored_segments if isinstance(item, dict)]
+        if isinstance(stored_segments, list)
+        else []
+    )
+    if not segments:
+        return []
+
+    summary = artifacts.get("summary")
+    summary = summary if isinstance(summary, dict) else {}
+    route_authority = execution.get("route_authority")
+    route_authority = route_authority if isinstance(route_authority, dict) else {}
+    predicates = [
+        evaluation
+        for segment in segments
+        if isinstance(
+            evaluation := segment.get("mission_contract_predicate_evaluation"),
+            dict,
+        )
+    ]
+    contracts = [
+        contract
+        for segment in segments
+        if isinstance(contract := segment.get("mission_contract"), dict)
+    ]
+    stored_transitions = execution.get("segment_transition_authority_records")
+    transitions = (
+        [item for item in stored_transitions if isinstance(item, dict)]
+        if isinstance(stored_transitions, list)
+        else []
+    )
+
+    contract_ids = [str(contract.get("contract_id") or "") for contract in contracts]
+    observed_results = sum(bool(segment.get("result_observed_at")) for segment in segments)
+    observed_sources: list[str] = []
+    if any(
+        isinstance(segment.get("bridge_responses"), list) and bool(segment.get("bridge_responses"))
+        for segment in segments
+    ):
+        observed_sources.append("nav2_bridge_response")
+    if any(
+        isinstance(segment.get("adapter_evidence"), dict) and bool(segment.get("adapter_evidence"))
+        for segment in segments
+    ):
+        observed_sources.append("adapter_evidence")
+    content_bound_results = sum(
+        1 for predicate in predicates if predicate.get("observation_content_sha256")
+    )
+    evidence_origins = [
+        str(origin)
+        for predicate in predicates
+        for origin in (
+            predicate.get("evidence_origins")
+            if isinstance(predicate.get("evidence_origins"), list)
+            else []
+        )
+    ]
+    predicate_packages = [
+        (f"{predicate.get('predicate_package_id')}@{predicate.get('predicate_package_version')}")
+        for predicate in predicates
+        if predicate.get("predicate_package_id")
+    ]
+    evaluated_predicates = sum(
+        predicate.get("predicate_package_evaluated") is True for predicate in predicates
+    )
+    satisfied_predicates = sum(
+        predicate.get("evaluated_outcome_claim") is True for predicate in predicates
+    )
+    alternatives = [str(predicate.get("satisfied_alternative") or "") for predicate in predicates]
+    verification_bases = [
+        str(predicate.get("actual_verification_basis") or "") for predicate in predicates
+    ]
+
+    completion_claimed = _first_present(
+        summary.get("completion_claimed"),
+        execution.get("completion_claimed"),
+    )
+    completion_scope = _first_present(
+        summary.get("completion_scope"),
+        execution.get("completion_scope"),
+    )
+    stored_planned_segment_count = route_authority.get("planned_segment_count")
+    expected_transition_count = (
+        stored_planned_segment_count
+        if isinstance(stored_planned_segment_count, int)
+        and not isinstance(stored_planned_segment_count, bool)
+        and stored_planned_segment_count > 0
+        else len(segments)
+    )
+    authorized_transitions = sum(
+        transition.get("transition_status") == "authorized" for transition in transitions
+    )
+    authority_sources = [
+        str(transition.get("dispatch_authority_source") or "") for transition in transitions
+    ]
+    approval_refs = [
+        str(transition.get("operator_approval_ref") or "") for transition in transitions
+    ]
+
+    stored_blocking_reasons = summary.get("blocking_reasons")
+    blocking_reasons = (
+        [str(reason) for reason in stored_blocking_reasons]
+        if isinstance(stored_blocking_reasons, list)
+        else []
+    )
+    for predicate in predicates:
+        if predicate.get("evaluated_outcome_claim") is True:
+            continue
+        predicate_reasons = predicate.get("reasons")
+        if isinstance(predicate_reasons, list):
+            blocking_reasons.extend(str(reason) for reason in predicate_reasons)
+    stored_unproven_claims = summary.get("unproven_claims")
+    unconfirmed = (
+        [str(claim) for claim in stored_unproven_claims]
+        if isinstance(stored_unproven_claims, list)
+        else []
+    )
+    for field, label in (
+        ("physical_execution_invoked", "physical_execution"),
+        ("mission_delivery_completion_claimed", "mission_delivery_completion"),
+        ("payload_delivery_completion_claimed", "payload_delivery_completion"),
+        ("cleaning_completion_claimed", "cleaning_completion"),
+        ("whole_home_loop_completion_claimed", "whole_home_loop_completion"),
+    ):
+        if field in summary:
+            claim_value = summary.get(field)
+        elif field in execution:
+            claim_value = execution.get(field)
+        else:
+            claim_value = None
+        if claim_value is False:
+            unconfirmed.append(label)
+        elif claim_value is not True:
+            unconfirmed.append(f"{label}:unknown")
+
+    return [
+        "",
+        "Mission Contract:",
+        (
+            "  Frozen: "
+            f"contracts={len(contracts)}; "
+            f"contract_ids={_compact_values(contract_ids, limit=2)}; "
+            "route_segments="
+            f"{_status_text(route_authority.get('planned_segment_count'))}; "
+            "route_authority="
+            f"{_short_digest(route_authority.get('route_authority_sha256'))}"
+        ),
+        (
+            "  Observed: "
+            f"runtime_results={observed_results}/{len(segments)}; "
+            f"sources={_compact_values(observed_sources)}; "
+            f"content_bound={content_bound_results}/{len(segments)}; "
+            f"origins={_compact_values(evidence_origins)}"
+        ),
+        (
+            "  Completion predicate: "
+            f"packages={_compact_values(predicate_packages, limit=2)}; "
+            f"evaluated={evaluated_predicates}/{len(segments)}; "
+            f"satisfied={satisfied_predicates}/{len(segments)}; "
+            f"alternatives={_compact_values(alternatives)}"
+        ),
+        (
+            "  Bounded outcome: "
+            f"claimed={_format_flag(completion_claimed, default='pending')}; "
+            f"scope={_status_text(completion_scope)}; "
+            f"basis={_compact_values(verification_bases)}"
+        ),
+        (
+            "  Transition authority: "
+            f"authorized={authorized_transitions}/{expected_transition_count}; "
+            f"source={_compact_values(authority_sources)}; "
+            f"approval={_compact_values(approval_refs, limit=2)}; "
+            "route_authority="
+            f"{_short_digest(route_authority.get('route_authority_sha256'))}"
+        ),
+        (
+            "  Unconfirmed: "
+            f"claims={_compact_values(unconfirmed, limit=6)}; "
+            f"reasons={_compact_values(blocking_reasons, limit=4)}"
+        ),
+    ]
+
+
+def _parent_mission_job_operator_summary(
+    task_payload: dict[str, Any],
+) -> list[str]:
+    """Show stored parent-stage facts without synthesizing a parent outcome."""
+
+    task = _task_record(task_payload)
+    artifacts = _task_artifacts(task_payload)
+    stored_record = _parent_mission_record_from_artifacts(artifacts)
+    coordinator = stored_record.get("coordinator_record")
+    if not isinstance(coordinator, dict):
+        coordinator = (
+            stored_record
+            if stored_record.get("schema_version") == "missionos_parent_mission_run_record.v1"
+            else {}
+        )
+
+    task_status = _status_text(task.get("status") or task.get("task_status"))
+    coordinator_status = _status_text(
+        coordinator.get("coordinator_status"),
+        default="unknown",
+    )
+    raw_stage_records = coordinator.get("stage_records")
+    stage_records = (
+        [record for record in raw_stage_records if isinstance(record, dict)]
+        if isinstance(raw_stage_records, list)
+        else []
+    )
+    raw_stage_count = coordinator.get("stage_count")
+    stage_count = (
+        raw_stage_count
+        if isinstance(raw_stage_count, int)
+        and not isinstance(raw_stage_count, bool)
+        and raw_stage_count > 0
+        else None
+    )
+    stage_count_text = str(stage_count) if stage_count is not None else "unknown"
+    satisfied_count = sum(
+        isinstance(record.get("stage_result"), dict)
+        and record["stage_result"].get("predicate_satisfied") is True
+        for record in stage_records
+    )
+    execution_mode = _status_text(
+        stored_record.get("execution_mode"),
+        default="unknown",
+    )
+
+    if (
+        coordinator_status == "stages_satisfied"
+        and stage_count is not None
+        and satisfied_count == stage_count
+    ):
+        if execution_mode == "fixture":
+            headline = (
+                f"Fixture Stages Satisfied: {satisfied_count}/{stage_count_text}; "
+                "live execution not observed; parent mission completion "
+                "remains unverified"
+            )
+        else:
+            headline = (
+                f"Stages Satisfied: {satisfied_count}/{stage_count_text}; "
+                "parent mission completion remains unverified"
+            )
+    elif coordinator_status == "blocked":
+        headline = (
+            f"Blocked: parent mission stopped after "
+            f"{satisfied_count}/{stage_count_text} satisfied stages"
+        )
+    else:
+        headline = (
+            f"Parent Mission: coordinator={coordinator_status}; "
+            f"stages={satisfied_count}/{stage_count_text}"
+        )
+
+    parent_mission_id = _first_present(
+        coordinator.get("parent_mission_id"),
+        stored_record.get("parent_mission_id"),
+    )
+    parent_mission_sha256 = _first_present(
+        coordinator.get("parent_mission_sha256"),
+        stored_record.get("parent_mission_sha256"),
+    )
+    approval_binding_sha256 = _first_present(
+        coordinator.get("approval_binding_sha256"),
+        stored_record.get("approval_binding_sha256"),
+    )
+    shared_target_descriptor_sha256 = stored_record.get("shared_target_descriptor_sha256")
+    frozen_at = stored_record.get("parent_contract_frozen_at")
+    lines = [
+        headline,
+        f"Task: {task.get('task_id')}  ({task_status})",
+        "",
+        "Parent Mission:",
+        (
+            "  Frozen: "
+            f"id={_status_text(parent_mission_id, default='unknown')}; "
+            f"contract={_short_digest(parent_mission_sha256)}; "
+            f"approval={_short_digest(approval_binding_sha256)}; "
+            f"target={_short_digest(shared_target_descriptor_sha256)}; "
+            f"frozen_at={_status_text(frozen_at, default='unknown')}; "
+            f"mode={execution_mode}; "
+            f"stages={stage_count_text}"
+        ),
+    ]
+
+    records_by_index = {
+        index: record
+        for record in stage_records
+        if isinstance(index := record.get("stage_index"), int)
+        and not isinstance(index, bool)
+        and index > 0
+    }
+    display_indices = (
+        list(range(1, stage_count + 1)) if stage_count is not None else sorted(records_by_index)
+    )
+    for stage_index in display_indices:
+        record = records_by_index.get(stage_index)
+        stage_denominator = stage_count_text
+        if not isinstance(record, dict):
+            lines.extend(
+                [
+                    (
+                        f"  Stage {stage_index}/{stage_denominator}: "
+                        "ref=unknown; executor=unknown; record=missing"
+                    ),
+                    ("    Observed: readiness=unknown; content_bound=unknown"),
+                    (
+                        "    Completion predicate: package=unknown; "
+                        "status=unknown; scope=unknown; basis=unknown"
+                    ),
+                    (
+                        "    Transition authority: status=unknown; "
+                        "source=unknown; prerequisite=unknown"
+                    ),
+                ]
+            )
+            continue
+
+        evaluation = record.get("predicate_evaluation")
+        evaluation = evaluation if isinstance(evaluation, dict) else {}
+        stage_result = record.get("stage_result")
+        stage_result = stage_result if isinstance(stage_result, dict) else {}
+        stored_transition = record.get("transition_authority")
+        transition = stored_transition if isinstance(stored_transition, dict) else {}
+        package_id = evaluation.get("predicate_package_id")
+        package_version = evaluation.get("predicate_package_version")
+        package = (
+            f"{package_id}@{package_version}"
+            if package_id and package_version
+            else str(package_id or "unknown")
+        )
+        content_bound = True if evaluation.get("observation_content_sha256") else None
+        stored_origins = evaluation.get("evidence_origins")
+        evidence_origins = (
+            [str(origin) for origin in stored_origins] if isinstance(stored_origins, list) else []
+        )
+        if (
+            stage_index == 1
+            and "prerequisite_stage_ref" in transition
+            and transition.get("prerequisite_stage_ref") is None
+        ):
+            prerequisite = "not_applicable"
+        else:
+            prerequisite = _format_flag(
+                transition.get("prerequisite_predicate_satisfied"),
+                default="unknown",
+            )
+        lines.extend(
+            [
+                (
+                    f"  Stage {stage_index}/{stage_denominator}: "
+                    f"ref={_status_text(record.get('stage_ref'), default='unknown')}; "
+                    "executor="
+                    f"{_status_text(record.get('executor_ref'), default='unknown')}; "
+                    "controller="
+                    f"{_status_text(record.get('controller_ref'), default='unknown')}; "
+                    "contract="
+                    f"{_short_digest(stage_result.get('child_contract_sha256'))}"
+                ),
+                (
+                    "    Observed: "
+                    "readiness="
+                    f"{_status_text(evaluation.get('evidence_readiness'), default='unknown')}; "
+                    "content_bound="
+                    f"{_format_flag(content_bound, default='unknown')}; "
+                    "content="
+                    f"{_short_digest(evaluation.get('observation_content_sha256'))}; "
+                    "origins="
+                    f"{_compact_values(evidence_origins)}"
+                ),
+                (
+                    "    Completion predicate: "
+                    f"package={package}; "
+                    "status="
+                    f"{_status_text(stage_result.get('predicate_status'), default='unknown')}; "
+                    "scope="
+                    f"{_status_text(evaluation.get('outcome_claim_scope'), default='unknown')}; "
+                    "basis="
+                    f"{_status_text(stage_result.get('actual_verification_basis'), default='unknown')}"
+                ),
+                (
+                    "    Transition authority: "
+                    "status="
+                    f"{_status_text(transition.get('transition_status'), default='unknown')}; "
+                    "present="
+                    f"{_format_flag(transition.get('dispatch_authority_present'), default='unknown')}; "
+                    "source="
+                    f"{_status_text(transition.get('dispatch_authority_source'), default='unknown')}; "
+                    f"prerequisite={prerequisite}"
+                ),
+            ]
+        )
+
+    mission_completion_claimed = _first_present(
+        coordinator.get("mission_completion_claimed"),
+        stored_record.get("mission_completion_claimed"),
+    )
+    mission_completion_status = coordinator.get("mission_completion_status")
+    blocking_reasons = coordinator.get("blocking_reasons")
+    blocking_reasons = (
+        [str(reason) for reason in blocking_reasons] if isinstance(blocking_reasons, list) else []
+    )
+    unconfirmed: list[str] = []
+    for field, label in (
+        ("identity_continuity_claimed", "identity_continuity"),
+        ("shared_world_claimed", "shared_world"),
+        ("physical_execution_invoked", "physical_execution"),
+    ):
+        if field in coordinator:
+            value = coordinator.get(field)
+        elif field in stored_record:
+            value = stored_record.get(field)
+        else:
+            value = None
+        if value is False:
+            unconfirmed.append(label)
+        elif value is not True:
+            unconfirmed.append(f"{label}:unknown")
+
+    lines.extend(
+        [
+            (
+                "  Parent outcome: "
+                f"stages_satisfied={satisfied_count}/{stage_count_text}; "
+                "claimed="
+                f"{_format_flag(mission_completion_claimed, default='unknown')}; "
+                "status="
+                f"{_status_text(mission_completion_status, default='unknown')}"
+            ),
+            (
+                "  Unconfirmed: "
+                f"claims={_compact_values(unconfirmed, limit=6)}; "
+                f"reasons={_compact_values(blocking_reasons, limit=4)}"
+            ),
+        ]
+    )
+    lines.extend(
+        _physical_ai_control_tower_lines(
+            artifacts,
+            parent_record=stored_record,
+            coordinator=coordinator,
+        )
+    )
+    return lines
 
 
 def _turtlebot_job_operator_summary(task_payload: dict[str, Any]) -> list[str]:
@@ -1102,6 +1871,7 @@ def _turtlebot_job_operator_summary(task_payload: dict[str, Any]) -> list[str]:
             f"intersects={_format_flag(obstacle_intersects)}"
         ),
         "Battery: not observed by this TurtleBot/Nav2 evidence path",
+        *_mission_contract_job_status_lines(artifacts),
         (
             "Claims: "
             f"completion_scope={_status_text(summary.get('completion_scope'))}; "
@@ -1116,6 +1886,10 @@ def _turtlebot_job_operator_summary(task_payload: dict[str, Any]) -> list[str]:
 
 
 def _job_operator_summary(task_payload: dict[str, Any]) -> list[str]:
+    if _is_parent_mission_job(task_payload):
+        return _parent_mission_job_operator_summary(task_payload)
+    if _is_vla_mission_job(task_payload):
+        return _vla_mission_job_operator_summary(task_payload)
     if _is_turtlebot_nav2_job(task_payload):
         return _turtlebot_job_operator_summary(task_payload)
 
@@ -1235,9 +2009,7 @@ def _job_operator_summary(task_payload: dict[str, Any]) -> list[str]:
     terrain_clearance_target_m = _as_float(snapshot.get("terrain_clearance_target_m"))
     terrain_clearance_margin_m = _as_float(snapshot.get("terrain_clearance_margin_m"))
     terrain_clearance_status = _status_text(snapshot.get("terrain_clearance_status"))
-    terrain_display_landed = (
-        snapshot.get("landed") is True or snapshot.get("maybe_landed") is True
-    )
+    terrain_display_landed = snapshot.get("landed") is True or snapshot.get("maybe_landed") is True
     if terrain_display_landed:
         # Minimum AGL is a flight-envelope predicate.  Once ground contact is
         # observed, showing the touchdown AGL as a live minimum-clearance

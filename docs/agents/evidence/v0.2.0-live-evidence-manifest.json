@@ -1,0 +1,118 @@
+{
+  "schema_version": "missionos_versioned_live_evidence_manifest.v2",
+  "release": "v0.2.0",
+  "current_components": {
+    "px4_gazebo_delivery_predicate_package": {
+      "version": "1",
+      "material_sha256": "ac6bf52b91c662147303a3ab3141cf531f8c4576da91f31695713b58961b9e05",
+      "required_live_evidence": true
+    },
+    "nav2_turtlebot3_predicate_package": {
+      "version": "1",
+      "material_sha256": "dd7b4eb8305cd9265c757f1889ecca128298665a41f13cca39f9aaa3b9624d2d",
+      "required_live_evidence": true
+    },
+    "libero_panda_predicate_package": {
+      "version": "2",
+      "material_sha256": "7949e9f2db452a1e1f751ff186aa0accc3b4915a4c79dda8a5b30a9c225e186d",
+      "required_live_evidence": true
+    },
+    "parent_mission_coordinator": {
+      "version": "1",
+      "material_sha256": "b89778333701cdd168e6184576a30ac4f687b88d34db01ee44a68bd13fee7851",
+      "required_live_evidence": true
+    },
+    "libero_panda_official_runner_instrumentation": {
+      "version": "1",
+      "material_sha256": "26f5f1b53df39ec5c6b2e5cf4e45cbe1dd5bc071cbaeb29f7339eb65f7b2c826",
+      "required_live_evidence": true
+    },
+    "groot_sim_freshness_policy": {
+      "version": "2026-07-28",
+      "material_sha256": "15052d2c16d63b180ee7567f91dd6213f723408e8e00e52f32b4f464bd3bbb64",
+      "required_live_evidence": false
+    }
+  },
+  "evidence_records": [
+    {
+      "evidence_id": "v0.2.0-parent-three-stage-live-positive",
+      "path": "docs/agents/evidence/20260802-v0.2.0-parent-three-stage-representative.json",
+      "sha256": "cd40d50babe359c2e9f9f6ed0068ed8ef3c016cedff0309a7cb1577c1f05bf67",
+      "version_status": "current",
+      "satisfies_current_live_evidence_requirement": true
+    },
+    {
+      "evidence_id": "v0.2.0-vla-groot-libero-live-positive",
+      "path": "docs/agents/evidence/20260802-v0.2.0-vla-live-representative.json",
+      "sha256": "022b25183e9bc84a4b23780a0e9fbfec6daf0226fd725bad4d4deaf18e2729db",
+      "version_status": "current",
+      "satisfies_current_live_evidence_requirement": true
+    },
+    {
+      "evidence_id": "v0.2.0-historical-groot-freshness-negative",
+      "path": "docs/agents/evidence/20260802-v0.2.0-freshness-negative-representative.json",
+      "sha256": "651f5d654b0029c3d99407bcc4b68d6644c5e5631eee655787743384f13f5bf9",
+      "version_status": "superseded",
+      "satisfies_current_live_evidence_requirement": false
+    }
+  ],
+  "verification_matrix": {
+    "px4_nav2": {
+      "required": true,
+      "fixture_checks": [
+        "px4_core_conformance",
+        "nav2_core_conformance"
+      ],
+      "current_live_evidence_ids": [
+        "v0.2.0-parent-three-stage-live-positive"
+      ],
+      "required_component_ids": [
+        "px4_gazebo_delivery_predicate_package",
+        "nav2_turtlebot3_predicate_package"
+      ]
+    },
+    "parent_three_stage": {
+      "required": true,
+      "fixture_checks": [
+        "parent_three_stage_fixture"
+      ],
+      "current_live_evidence_ids": [
+        "v0.2.0-parent-three-stage-live-positive"
+      ],
+      "required_component_ids": [
+        "px4_gazebo_delivery_predicate_package",
+        "nav2_turtlebot3_predicate_package",
+        "libero_panda_predicate_package",
+        "parent_mission_coordinator",
+        "libero_panda_official_runner_instrumentation"
+      ]
+    },
+    "vla_groot_libero": {
+      "required": true,
+      "fixture_checks": [
+        "libero_predicate_fixture",
+        "libero_instrumentation_fixture"
+      ],
+      "current_live_evidence_ids": [
+        "v0.2.0-vla-groot-libero-live-positive"
+      ],
+      "required_component_ids": [
+        "libero_panda_predicate_package",
+        "libero_panda_official_runner_instrumentation"
+      ]
+    },
+    "physical": {
+      "required": false,
+      "fixture_checks": [],
+      "current_live_evidence_ids": [],
+      "required_component_ids": []
+    }
+  },
+  "claim_boundary": {
+    "ci_invokes_nvidia_gpu": false,
+    "ci_invokes_live_simulator": false,
+    "fixture_success_is_live_runtime_success": false,
+    "evidence_compatibility_is_runtime_reexecution": false,
+    "physical_execution_invoked": false
+  }
+}

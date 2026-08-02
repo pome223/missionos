@@ -1868,6 +1868,10 @@ def _mission_map_model(
     live_task_url: str | None = None,
     poll_interval: float = MISSION_MAP_POLL_INTERVAL,
 ) -> dict[str, Any]:
+    from .vla_operator import _is_vla_operator_task, _vla_evidence_model
+
+    if _is_vla_operator_task(task_payload):
+        return _vla_evidence_model(task_payload)
     artifacts = _task_artifacts(task_payload)
     task = _task_record(task_payload)
     indoor_map = _turtlebot3_indoor_map_model_from_artifacts(artifacts)

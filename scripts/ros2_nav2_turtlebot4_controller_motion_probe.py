@@ -33,9 +33,6 @@ ROS2_NAV2_CONTROLLER_MOTION_PROBE_DURATION_ENV = (
     "ROS2_NAV2_CONTROLLER_MOTION_PROBE_DURATION_S"
 )
 ROS2_NAV2_CONTROLLER_MOTION_PROBE_RATE_ENV = "ROS2_NAV2_CONTROLLER_MOTION_PROBE_RATE_HZ"
-ROS2_NAV2_CONTROLLER_MOTION_PROBE_COMMAND_RELIABILITY_ENV = (
-    "ROS2_NAV2_CONTROLLER_MOTION_PROBE_COMMAND_RELIABILITY"
-)
 ROS2_NAV2_CONTROLLER_MOTION_PROBE_ODOM_TIMEOUT_ENV = (
     "ROS2_NAV2_CONTROLLER_MOTION_PROBE_ODOM_TIMEOUT_S"
 )
@@ -70,15 +67,6 @@ def _int_env(name: str, default: int) -> int:
     return int(raw)
 
 
-def _reliability_env(name: str, default: str) -> str:
-    raw = os.environ.get(name, "").strip().lower()
-    if raw in {"best_effort", "besteffort", "best-effort"}:
-        return "best_effort"
-    if raw in {"reliable", ""}:
-        return default
-    return default
-
-
 def _base_summary(**values: Any) -> dict[str, Any]:
     summary = {
         "probe": "ros2_nav2_turtlebot4_controller_motion_probe",
@@ -98,10 +86,6 @@ def _base_summary(**values: Any) -> dict[str, Any]:
 def _odom_xy(message: Any) -> tuple[float, float]:
     pose = message.pose.pose
     return (float(pose.position.x), float(pose.position.y))
-
-
-def _twist_velocity(message: Any) -> tuple[float, float]:
-    return (float(message.linear.x), float(message.angular.z))
 
 
 def _delta_m(before: tuple[float, float] | None, after: tuple[float, float] | None) -> float | None:
@@ -134,10 +118,6 @@ def run_probe() -> dict[str, Any]:
     angular_z_radps = _float_env(ROS2_NAV2_CONTROLLER_MOTION_PROBE_ANGULAR_Z_ENV, 0.0)
     duration_s = _float_env(ROS2_NAV2_CONTROLLER_MOTION_PROBE_DURATION_ENV, 2.5)
     rate_hz = max(_float_env(ROS2_NAV2_CONTROLLER_MOTION_PROBE_RATE_ENV, 20.0), 0.1)
-    command_reliability = _reliability_env(
-        ROS2_NAV2_CONTROLLER_MOTION_PROBE_COMMAND_RELIABILITY_ENV,
-        "reliable",
-    )
     odom_timeout_s = _float_env(ROS2_NAV2_CONTROLLER_MOTION_PROBE_ODOM_TIMEOUT_ENV, 5.0)
     settle_s = _float_env(ROS2_NAV2_CONTROLLER_MOTION_PROBE_SETTLE_ENV, 1.0)
     motion_threshold_m = _float_env(
@@ -151,10 +131,6 @@ def run_probe() -> dict[str, Any]:
     stop_requested = False
     latest_odom: tuple[float, float] | None = None
     odom_sample_count = 0
-    target_command_sample_count = 0
-    target_command_nonzero_count = 0
-    target_command_max_abs_linear_x = 0.0
-    target_command_max_abs_angular_z = 0.0
 
     def _stop(_signum: int, _frame: Any) -> None:
         nonlocal stop_requested
@@ -165,20 +141,6 @@ def run_probe() -> dict[str, Any]:
         latest_odom = _odom_xy(message)
         odom_sample_count += 1
 
-    def _target_command_handler(message: Any) -> None:
-        nonlocal target_command_sample_count
-        nonlocal target_command_nonzero_count
-        nonlocal target_command_max_abs_linear_x
-        nonlocal target_command_max_abs_angular_z
-        linear_x, angular_z = _twist_velocity(message)
-        abs_linear_x = abs(linear_x)
-        abs_angular_z = abs(angular_z)
-        target_command_sample_count += 1
-        if abs_linear_x > 0.0 or abs_angular_z > 0.0:
-            target_command_nonzero_count += 1
-        target_command_max_abs_linear_x = max(target_command_max_abs_linear_x, abs_linear_x)
-        target_command_max_abs_angular_z = max(target_command_max_abs_angular_z, abs_angular_z)
-
     rclpy.init(args=None)
     signal.signal(signal.SIGTERM, _stop)
     signal.signal(signal.SIGINT, _stop)
@@ -187,23 +149,10 @@ def run_probe() -> dict[str, Any]:
     odom_qos.reliability = QoSReliabilityPolicy.RELIABLE
     odom_qos.durability = QoSDurabilityPolicy.TRANSIENT_LOCAL
     command_qos = QoSProfile(depth=20)
-    if command_reliability == "best_effort":
-        command_qos.reliability = QoSReliabilityPolicy.BEST_EFFORT
-    else:
-        command_qos.reliability = QoSReliabilityPolicy.RELIABLE
+    command_qos.reliability = QoSReliabilityPolicy.RELIABLE
     command_qos.durability = QoSDurabilityPolicy.VOLATILE
     subscription = node.create_subscription(Odometry, odom_topic, _odom_handler, odom_qos)
-    target_observe_qos = QoSProfile(depth=50)
-    target_observe_qos.reliability = command_qos.reliability
-    target_observe_qos.durability = QoSDurabilityPolicy.VOLATILE
-    target_subscription = node.create_subscription(
-        Twist,
-        target_topic,
-        _target_command_handler,
-        target_observe_qos,
-    )
     publisher = node.create_publisher(Twist, target_topic, command_qos)
-    target_subscription_count_before = publisher.get_subscription_count()
     command = Twist()
     command.linear.x = linear_x_mps
     command.angular.z = angular_z_radps
@@ -228,7 +177,6 @@ def run_probe() -> dict[str, Any]:
                 angular_z_radps=angular_z_radps,
                 duration_s=duration_s,
                 rate_hz=rate_hz,
-                command_reliability=command_reliability,
                 settle_s=settle_s,
                 motion_threshold_m=motion_threshold_m,
                 odom_before_observed=False,
@@ -236,12 +184,6 @@ def run_probe() -> dict[str, Any]:
                 odom_delta_m=None,
                 robot_motion_observed=False,
                 odom_sample_count=odom_sample_count,
-                target_command_sample_count=target_command_sample_count,
-                target_command_nonzero_count=target_command_nonzero_count,
-                target_command_max_abs_linear_x=target_command_max_abs_linear_x,
-                target_command_max_abs_angular_z=target_command_max_abs_angular_z,
-                target_subscription_count_before=target_subscription_count_before,
-                target_subscription_count_after=publisher.get_subscription_count(),
                 blocking_reasons=["diagnostic_odom_before_not_observed"],
             )
 
@@ -265,7 +207,6 @@ def run_probe() -> dict[str, Any]:
         odom_after = latest_odom
     finally:
         node.destroy_subscription(subscription)
-        node.destroy_subscription(target_subscription)
         node.destroy_publisher(publisher)
         node.destroy_node()
         rclpy.shutdown()
@@ -286,7 +227,6 @@ def run_probe() -> dict[str, Any]:
         angular_z_radps=angular_z_radps,
         duration_s=duration_s,
         rate_hz=rate_hz,
-        command_reliability=command_reliability,
         settle_s=settle_s,
         publish_count=publish_count,
         stop_publish_count=stop_publish_count,
@@ -298,12 +238,6 @@ def run_probe() -> dict[str, Any]:
         motion_threshold_m=motion_threshold_m,
         robot_motion_observed=robot_motion_observed,
         odom_sample_count=odom_sample_count,
-        target_command_sample_count=target_command_sample_count,
-        target_command_nonzero_count=target_command_nonzero_count,
-        target_command_max_abs_linear_x=target_command_max_abs_linear_x,
-        target_command_max_abs_angular_z=target_command_max_abs_angular_z,
-        target_subscription_count_before=target_subscription_count_before,
-        target_subscription_count_after=publisher.get_subscription_count(),
         blocking_reasons=blocking_reasons,
     )
 

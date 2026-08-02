@@ -1,0 +1,63 @@
+{
+  "action_fields": {
+    "action.left_arm": {"dtype": "float32", "shape": [16, 7]},
+    "action.left_hand": {"dtype": "float32", "shape": [16, 6]},
+    "action.right_arm": {"dtype": "float32", "shape": [16, 7]},
+    "action.right_hand": {"dtype": "float32", "shape": [16, 6]}
+  },
+  "authority_boundary": {
+    "approval_created": false,
+    "completion_claimed": false,
+    "dispatch_authority_created": false,
+    "dispatch_request_sent": false,
+    "execution_claimed": false,
+    "physical_execution_invoked": false,
+    "progress_claimed": false,
+    "safe_stop_claimed": false,
+    "verification_basis": "model_inferred"
+  },
+  "execution_scope": "loopback",
+  "fixture_kind": "schema_example_only",
+  "negative_cases": [
+    "empty_instruction",
+    "malformed_response_field",
+    "missing_request_field",
+    "missing_response_field",
+    "non_finite_action_output",
+    "non_finite_state",
+    "transport_timeout",
+    "unknown_policy_revision",
+    "unknown_schema_revision",
+    "wrong_image_dtype",
+    "wrong_image_shape"
+  ],
+  "observation_fields": {
+    "annotation.human.action.task_description": {"dtype": "string", "shape": [1]},
+    "state.left_arm": {"dtype": "float64", "shape": [1, 7]},
+    "state.left_hand": {"dtype": "float64", "shape": [1, 6]},
+    "state.right_arm": {"dtype": "float64", "shape": [1, 7]},
+    "state.right_hand": {"dtype": "float64", "shape": [1, 6]},
+    "video.ego_view": {"dtype": "uint8", "shape": [1, 256, 256, 3]}
+  },
+  "publication_boundary": {
+    "captured_input_images_included": false,
+    "credentials_included": false,
+    "model_generated_action_values_included": false,
+    "model_weights_included": false,
+    "nvidia_source_included": false,
+    "raw_cloud_evidence_included": false
+  },
+  "schema_version": "missionos_groot_policy_conformance_corpus.v1",
+  "source_contract": {
+    "action_horizon_samples": 16,
+    "model_snapshot": "869830fc749c35f34771aa5209f923ac57e4564e",
+    "motion_observed": false,
+    "physical_execution_invoked": false,
+    "repository_revision": "4af2b622892f7dcb5aae5a3fb70bcb02dc217b96",
+    "request_schema": "missionos_groot_n1_5_policy_request.v1",
+    "response_schema": "missionos_groot_n1_5_policy_response.v1",
+    "robot_dispatch_observed": false,
+    "source_runtime_reexecuted": false
+  },
+  "manifest_sha256": "656ed7ebd75858a35ff431326a32101fa8addacf1458e23ab51965071a166616"
+}

@@ -66,6 +66,20 @@ FORBIDDEN_KEYS = frozenset(
         "prompt",
         "prompt_text",
         "response_text",
+        # raw third-party/model artifacts; corpora retain derived facts only
+        "captured_image",
+        "checkpoint",
+        "input_image",
+        "model_action_array",
+        "model_checkpoint",
+        "model_weights",
+        "nvidia_source",
+        "raw_action",
+        "raw_action_array",
+        "raw_cloud_evidence",
+        "source_code",
+        "source_file",
+        "source_path",
         # hardware individual identity and serial endpoints
         "autopilot_uid",
         "board_id",
@@ -93,6 +107,8 @@ def publication_findings(value: Any, *, path: str = "$") -> list[str]:
     elif isinstance(value, list):
         for index, item in enumerate(value):
             findings.extend(publication_findings(item, path=f"{path}[{index}]"))
+    elif isinstance(value, (bytes, bytearray, memoryview)):
+        findings.append(path)
     elif isinstance(value, str):
         if (
             PRIVATE_TASK_ID_PATTERN.search(value)

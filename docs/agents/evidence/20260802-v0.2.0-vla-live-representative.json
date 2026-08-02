@@ -1,0 +1,60 @@
+{
+  "schema_version": "missionos_public_representative_evidence.v1",
+  "evidence_id": "v0.2.0-vla-groot-libero-live-positive",
+  "evidence_role": "current_live_positive",
+  "version_status": "current",
+  "source_record": {
+    "internal_evidence_id": "20260802-missionos-chat-vla-only-live",
+    "sha256": "dd2625d8be1790149725b053dee09808f51db331fd5dd1c912fc88d8850992ae",
+    "source_record_included": false,
+    "recorded_at": "2026-08-01T21:47:38.916051+00:00",
+    "binding_basis": "runtime_package_digest_plus_post_run_source_material_audit"
+  },
+  "component_bindings": [
+    {
+      "component_id": "libero_panda_predicate_package",
+      "version": "2",
+      "material_sha256": "7949e9f2db452a1e1f751ff186aa0accc3b4915a4c79dda8a5b30a9c225e186d",
+      "binding_observed_at_runtime": true
+    },
+    {
+      "component_id": "libero_panda_official_runner_instrumentation",
+      "version": "1",
+      "material_sha256": "26f5f1b53df39ec5c6b2e5cf4e45cbe1dd5bc071cbaeb29f7339eb65f7b2c826",
+      "binding_observed_at_runtime": false
+    }
+  ],
+  "observed_result": {
+    "runtime_boundary": "missionos_chat_to_live_groot_libero_episode",
+    "execution_mode": "live",
+    "gpu": "NVIDIA L4",
+    "episode_count": 1,
+    "predicate_status": "satisfied",
+    "actual_verification_basis": "deterministic",
+    "outcome_claim_scope": "exact_groot_n17_libero_panda_simulator_episode",
+    "success_rate_claimed": false,
+    "benchmark_result_claimed": false
+  },
+  "claim_boundary": {
+    "chat_to_live_vla_operator_flow_observed": true,
+    "bounded_simulator_outcome_claimed": true,
+    "policy_instruction_delivery_proven": false,
+    "independent_controller_ack_proven": false,
+    "safe_stop_effect_proven": false,
+    "parent_mission_completion_proven": false,
+    "physical_execution_invoked": false,
+    "real_world_safety_proven": false
+  },
+  "publication_boundary": {
+    "raw_task_id_included": false,
+    "local_path_included": false,
+    "credential_included": false,
+    "raw_log_included": false,
+    "raw_action_included": false,
+    "raw_observation_included": false,
+    "rendered_frame_included": false,
+    "video_included": false,
+    "vendor_source_vendored": false,
+    "checkpoint_vendored": false
+  }
+}

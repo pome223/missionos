@@ -22,6 +22,9 @@ from missionos_core import (
     ObservationCursor,
     ObservedFact,
     PolicyBinding,
+    VerificationBasis,
+    VerificationItem,
+    VerificationItemStatus,
     verify_action_candidate,
 )
 from src.runtime.px4_gazebo_route.action_feasibility import (
@@ -178,6 +181,7 @@ class _RuntimeVerifierExtension:
         status = FeasibilityStatus(
             str(self._result.get("feasibility_status") or "unverified")
         )
+        item_id = "px4_bounded_recovery_feasibility"
         return ExtensionVerdict(
             extension_id=self.extension_id,
             status=status,
@@ -197,6 +201,29 @@ class _RuntimeVerifierExtension:
                 ),
             },
             assumptions=tuple(self._result.get("assumptions") or ()),
+            verification_items=(
+                VerificationItem(
+                    item_id=item_id,
+                    predicate=(
+                        "the bounded PX4 recovery action satisfies the "
+                        "declared runtime hazard and policy constraints"
+                    ),
+                    status=(
+                        VerificationItemStatus.BLOCKED
+                        if status is FeasibilityStatus.BLOCKED
+                        else VerificationItemStatus.PENDING
+                        if status is FeasibilityStatus.UNVERIFIED
+                        else VerificationItemStatus.PASS
+                    ),
+                    verification_basis=(
+                        VerificationBasis.UNVERIFIED
+                        if status is FeasibilityStatus.UNVERIFIED
+                        else VerificationBasis.DETERMINISTIC
+                    ),
+                    evidence_refs=tuple(candidate.evidence_refs),
+                ),
+            ),
+            required_verification_item_ids=(item_id,),
         )
 
 
@@ -303,6 +330,12 @@ def verify_runtime_recovery_action_feasibility(
         "hazard_state_schema_version": core_state.schema_version,
         "candidate_schema_version": core_candidate.schema_version,
         "status": core_result.status.value,
+        "verification_basis": core_result.verification_basis.value,
+        "verification_items": [
+            item.to_dict()
+            for verdict in core_result.extension_verdicts
+            for item in verdict.verification_items
+        ],
         "approval_created": core_result.approval_created,
         "dispatch_authority_created": core_result.dispatch_authority_created,
         "execution_invoked": core_result.execution_invoked,

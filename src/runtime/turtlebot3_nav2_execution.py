@@ -9,7 +9,7 @@ minting authority or deciding whether a route may resume.
 from __future__ import annotations
 
 from collections.abc import Mapping
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 from typing import Any
 
@@ -249,6 +249,7 @@ def dispatch_nav2_goal(
 ) -> dict[str, Any]:
     """Dispatch one already approved goal and return claim-safe observations."""
 
+    dispatch_started_at = datetime.now(timezone.utc)
     config = Ros2Nav2HardwareAdapterConfig(
         missionos_action_ref=f"{proposal_id}:{action_ref_suffix}",
         goal_pose=goal,
@@ -280,10 +281,13 @@ def dispatch_nav2_goal(
             ),
         )
         bridge_responses = ()
+    result_observed_at = datetime.now(timezone.utc)
     motion = robot_motion_from_responses(bridge_responses)
     obstacle = obstacle_observation_from_responses(bridge_responses)
     return {
         "segment_ref": action_ref_suffix,
+        "dispatch_started_at": dispatch_started_at.isoformat(),
+        "result_observed_at": result_observed_at.isoformat(),
         "goal_pose": goal.model_dump(mode="json"),
         "publish_initialpose": publish_initialpose,
         "simulated_transient_fault_requested": simulate_cancel_after_accept,

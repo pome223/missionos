@@ -248,7 +248,7 @@ def build_fixture_task() -> dict:
         "status": "completed",
         "artifacts": {
             "private_debug": {
-                "artifact_dir": "/private/operator/evidence",
+                "artifact_dir": "/Users/private/operator/evidence",
                 "api_key": "sk-never-publish-fixture",
             },
             "missionos_runtime_recovery_proposals": {
@@ -266,7 +266,7 @@ def build_fixture_task() -> dict:
             },
             "missionos_auto_mission_runtime_replay": {
                 "schema_version": "missionos_auto_mission_runtime_replay.v1",
-                "flight_path_trace_path": "/private/operator/pose.jsonl",
+                "flight_path_trace_path": "/Users/private/operator/pose.jsonl",
                 "raw_sample_count": 4,
                 "flight_path_profile": [
                     {

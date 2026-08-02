@@ -41,6 +41,10 @@ from src.runtime.nav2_core_action_feasibility_adapter import (
     evaluate_nav2_recovery_candidates_through_core,
     nav2_recovery_policy,
 )
+from src.runtime.nav2_turtlebot3_mission_contract_runtime import (
+    build_nav2_turtlebot3_runtime_contract,
+    evaluate_nav2_turtlebot3_runtime_result,
+)
 from src.runtime.nvblox_perception_evidence import (
     build_nvblox_perception_evidence_from_env_or_responses,
 )
@@ -87,11 +91,16 @@ from src.runtime.turtlebot3_recovery_contracts import (
     validate_turtlebot3_recovery_contract_bundle,
     verify_turtlebot3_recovery_outcome,
 )
+from src.runtime.turtlebot3_route_transition_authority import (
+    build_turtlebot3_route_authority_binding,
+    evaluate_turtlebot3_segment_transition_authority,
+    validate_turtlebot3_route_authority_binding,
+)
 
 
 TURTLEBOT3_HOME_MISSION_PLAN_SCHEMA = "missionos_turtlebot3_home_mission_plan.v1"
 TURTLEBOT3_HOME_MISSION_APPROVAL_SCHEMA = (
-    "missionos_turtlebot3_home_mission_approval.v1"
+    "missionos_turtlebot3_home_mission_approval.v2"
 )
 TURTLEBOT3_HOME_MISSION_EXECUTION_SCHEMA = (
     "missionos_turtlebot3_home_mission_execution.v1"
@@ -631,8 +640,12 @@ def _house_goal_pose(x_m: float, y_m: float, label: str) -> Nav2GoalPose:
 _TURTLEBOT3_HOUSE_HOME_POSE = _house_goal_pose(
     -2.0, -0.5, "simulated_house_front_yard_origin"
 )
-# Keep the living-room dropoff outside the overlapping inflated-cost regions
-# around the table and simulated scene candidates.
+# Keep the default living-room dropoff outside the overlapping inflated-cost
+# regions around the table, simulated person, and simulated pet.  The former
+# (-1.4, 2.42) target was geometrically open at the robot centre but left the
+# local controller boxed into three nearby inflated obstacles.  This point is
+# just inside the living-room entrance and preserves at least ~1.07 m static
+# clearance in the checked-in house floor plan, plus >2 m to dynamic blockers.
 _TURTLEBOT3_HOUSE_LIVING_DROPOFF_X_M = -4.0
 _TURTLEBOT3_HOUSE_LIVING_DROPOFF_Y_M = 1.15
 _TURTLEBOT3_HOUSE_ROUTE_SEGMENTS = (
@@ -3450,6 +3463,19 @@ def approve_turtlebot3_home_mission_plan(
         "runtime_substrate": profile_spec["runtime_substrate"],
         "runtime_profile": profile_spec["runtime_profile"],
         "autonomy_envelope": dict(autonomy_envelope),
+        "route_authority": build_turtlebot3_route_authority_binding(
+            proposal_id=str(
+                proposal.get("proposal_id") or "turtlebot3_home_mission"
+            ),
+            operator_approval_ref=approval_ref,
+            approved_scope="bounded_sim_nav2_route_segments",
+            planned_segments=[
+                dict(segment)
+                for segment in proposal.get("planned_segments") or ()
+                if isinstance(segment, Mapping)
+            ],
+            autonomy_envelope=autonomy_envelope,
+        ),
         "recovery_proposal_classifications": list(
             recovery_proposal_classifications
         ),
@@ -5248,7 +5274,20 @@ def _dispatch_nav2_goal(
 ) -> dict[str, Any]:
     """Compatibility wrapper around the extracted bounded executor."""
 
-    return _dispatch_concrete_nav2_goal(
+    mission_contract = None
+    if (
+        _robot_profile_from_proposal(proposal) == "turtlebot3"
+        and action_ref_suffix.startswith("segment_")
+    ):
+        mission_contract = build_nav2_turtlebot3_runtime_contract(
+            proposal_id=str(
+                proposal.get("proposal_id") or "turtlebot3_home_mission"
+            ),
+            action_ref_suffix=action_ref_suffix,
+            goal=goal,
+        )
+
+    result = _dispatch_concrete_nav2_goal(
         proposal_id=str(
             proposal.get("proposal_id") or "turtlebot3_home_mission"
         ),
@@ -5265,6 +5304,53 @@ def _dispatch_nav2_goal(
         publish_initialpose=publish_initialpose,
         simulate_cancel_after_accept=simulate_cancel_after_accept,
     )
+    if mission_contract is None:
+        return result
+
+    predicate_evaluation = evaluate_nav2_turtlebot3_runtime_result(
+        contract=mission_contract,
+        goal=goal,
+        action_result=result,
+        evaluated_at=datetime.now(timezone.utc),
+    )
+    predicate_completion_claimed = (
+        predicate_evaluation.get("completion_claimed") is True
+    )
+    blocking_reasons = list(result.get("blocking_reasons") or ())
+    if (
+        result.get("completion_claimed") is True
+        and not predicate_completion_claimed
+    ):
+        blocking_reasons.append(
+            "mission_contract_predicate_not_satisfied"
+        )
+        blocking_reasons.extend(
+            str(reason)
+            for reason in predicate_evaluation.get("reasons") or ()
+        )
+    return {
+        **result,
+        "adapter_completion_claimed": (
+            result.get("completion_claimed") is True
+        ),
+        "adapter_completion_scope": (
+            str(result.get("completion_scope") or "none")
+        ),
+        "mission_contract": json.loads(
+            json.dumps(
+                mission_contract.to_material(),
+                ensure_ascii=True,
+                sort_keys=True,
+            )
+        ),
+        "mission_contract_sha256": mission_contract.contract_sha256,
+        "mission_contract_predicate_evaluation": predicate_evaluation,
+        "completion_claimed": predicate_completion_claimed,
+        "completion_scope": (
+            "sim_action" if predicate_completion_claimed else "none"
+        ),
+        "blocking_reasons": list(dict.fromkeys(blocking_reasons)),
+    }
 
 
 def _sum_numeric(values: list[Any]) -> float | None:
@@ -7988,8 +8074,25 @@ def run_turtlebot3_home_mission_dispatch(
     blocking_reasons.extend(_pre_dispatch_judgment_blocking_reasons(proposal))
     if not approval_ref or approval.get("operator_approved") is not True:
         blocking_reasons.append("operator_approval_missing")
+    route_authority = approval.get("route_authority")
+    route_authority = (
+        dict(route_authority) if isinstance(route_authority, Mapping) else None
+    )
+    blocking_reasons.extend(
+        validate_turtlebot3_route_authority_binding(
+            binding=route_authority,
+            proposal_id=str(
+                proposal.get("proposal_id") or "turtlebot3_home_mission"
+            ),
+            operator_approval_ref=approval_ref,
+            approved_scope=str(approval.get("approved_scope") or ""),
+            planned_segments=goals,
+            autonomy_envelope=autonomy_envelope,
+        )
+    )
 
     segment_results: list[dict[str, Any]] = []
+    segment_transition_authority_records: list[dict[str, Any]] = []
     route_failure_observation_results: list[dict[str, Any]] = []
     recovery_segment_result: dict[str, Any] = {}
     prior_recovery_segment_results: list[dict[str, Any]] = []
@@ -8748,6 +8851,69 @@ def run_turtlebot3_home_mission_dispatch(
             segment_indexes = range(0)
         for index in segment_indexes:
             segment_goal = goals[index - 1]
+            previous_predicate_evaluation = (
+                segment_results[-1].get(
+                    "mission_contract_predicate_evaluation"
+                )
+                if index > 1 and segment_results
+                else None
+            )
+            transition_authority = (
+                evaluate_turtlebot3_segment_transition_authority(
+                    binding=route_authority,
+                    proposal_id=str(
+                        proposal.get("proposal_id")
+                        or "turtlebot3_home_mission"
+                    ),
+                    operator_approval_ref=approval_ref,
+                    approved_scope=str(approval.get("approved_scope") or ""),
+                    planned_segments=goals,
+                    autonomy_envelope=autonomy_envelope,
+                    segment_index=index,
+                    segment_ref=f"segment_{index}",
+                    goal=segment_goal,
+                    previous_predicate_evaluation=(
+                        previous_predicate_evaluation
+                        if isinstance(
+                            previous_predicate_evaluation,
+                            Mapping,
+                        )
+                        else None
+                    ),
+                )
+            )
+            segment_transition_authority_records.append(
+                transition_authority
+            )
+            if transition_authority["transition_status"] != "authorized":
+                blocking_reasons.extend(
+                    transition_authority["blocking_reasons"]
+                )
+                config = Ros2Nav2HardwareAdapterConfig(
+                    missionos_action_ref=(
+                        f"{proposal.get('proposal_id') or 'turtlebot3_home_mission'}:"
+                        f"segment_{index}"
+                    ),
+                    goal_pose=segment_goal,
+                    execution_mode=HardwareExecutionMode.SIM,
+                    operator_approval_ref=approval_ref or None,
+                    approval_actor=str(
+                        approval.get("approval_actor")
+                        or "missionos_chat_operator"
+                    ),
+                    approval_timestamp=dispatched_at,
+                    max_distance_m=segment_goal.max_distance_m,
+                    raw_logs_ref=_turtlebot3_raw_logs_ref_from_env(
+                        robot_profile
+                    ),
+                )
+                evidence = build_blocked_ros2_nav2_hardware_adapter_evidence(
+                    config=config,
+                    blocking_reasons=tuple(
+                        transition_authority["blocking_reasons"]
+                    ),
+                )
+                break
             simulate_post_recovery_failure = (
                 _truthy_env(
                     TURTLEBOT3_SIMULATE_POST_RECOVERY_ROUTE_FAILURE_ONCE_ENV
@@ -8766,6 +8932,9 @@ def run_turtlebot3_home_mission_dispatch(
                 action_ref_suffix=f"segment_{index}",
                 publish_initialpose=index == 1,
                 simulate_cancel_after_accept=simulate_post_recovery_failure,
+            )
+            result["segment_transition_authority"] = dict(
+                transition_authority
             )
             segment_results.append(result)
             _emit_progress(
@@ -9822,6 +9991,10 @@ def run_turtlebot3_home_mission_dispatch(
         "planned_segments": [item.model_dump(mode="json") for item in goals],
         "planned_route_distance_m": planned_route_distance,
         "segment_results": [dict(item) for item in segment_results],
+        "route_authority": dict(route_authority or {}),
+        "segment_transition_authority_records": [
+            dict(item) for item in segment_transition_authority_records
+        ],
         "route_failure_observation_results": [
             dict(item) for item in route_failure_observation_results
         ],
@@ -9975,6 +10148,14 @@ def run_turtlebot3_home_mission_dispatch(
         "segment_completion_count": sum(
             1 for result in segment_results if result.get("completion_claimed") is True
         ),
+        "segment_transition_authority_count": len(
+            segment_transition_authority_records
+        ),
+        "segment_transition_authorized_count": sum(
+            1
+            for item in segment_transition_authority_records
+            if item.get("transition_status") == "authorized"
+        ),
         "multi_segment_mission_claimed": len(goals) > 1 and mission_completion_claimed,
         "route_interrupted_for_recovery": runtime_recovery_triggered,
         "route_completed_after_recovery": route_completed_after_recovery,
@@ -10124,6 +10305,17 @@ def run_turtlebot3_home_mission_dispatch(
             "route_interrupted_for_recovery": runtime_recovery_triggered,
             "route_completed_after_recovery": route_completed_after_recovery,
             "segment_results": [dict(item) for item in segment_results],
+            "route_authority": dict(route_authority or {}),
+            "segment_transition_authority_records": [
+                dict(item)
+                for item in segment_transition_authority_records
+            ],
+            "segment_transition_authority_count": execution[
+                "segment_transition_authority_count"
+            ],
+            "segment_transition_authorized_count": execution[
+                "segment_transition_authorized_count"
+            ],
             "route_failure_observation_results": [
                 dict(item) for item in route_failure_observation_results
             ],
