@@ -198,6 +198,24 @@ _OPERATE_PARAMETER_ALIASES = {
 
 
 def _operate_console_help_panel(task_id: str, *, robot: str = "px4") -> Panel:
+    if robot == "vla":
+        return Panel(
+            "\n".join(
+                [
+                    "[bold]Governed VLA controls[/bold]",
+                    "  status | refresh        show frozen authority and latest evidence",
+                    "  approve                 approve one exact post-episode retry proposal",
+                    "  defer                  leave a failure proposal for operator review",
+                    "  quit                   exit operate",
+                    "",
+                    "[dim]The official LIBERO runner exposes no external mid-episode "
+                    "stop or recovery callback. Post-episode retry still requires "
+                    "a recorded failure, an exact proposal, and separate human approval.[/dim]",
+                ]
+            ),
+            title=f"Operate Commands · task={task_id}",
+            border_style="magenta",
+        )
     robot_profile = _normalize_turtlebot_robot_profile(robot)
     if robot_profile == "turtlebot3":
         robot_label = _turtlebot_robot_label_from_profile(robot_profile)

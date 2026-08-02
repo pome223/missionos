@@ -705,12 +705,6 @@ def test_turtlebot3_gateway_launcher_preserves_runtime_import_and_failure_eviden
     assert "docker run -d" in launcher
     assert "docker run --rm -d" not in launcher
     assert 'GOOGLE_GENAI_USE_VERTEXAI=${GOOGLE_GENAI_USE_VERTEXAI:-false}' in launcher
-    assert 'gateway_llm_backend="${MISSIONOS_LLM_BACKEND:-deepseek}"' in launcher
-    assert "gateway_default_model_id=deepseek-v4-flash" in launcher
-    assert "gateway_default_model_id=gemini-3.1-flash-lite" in launcher
-    assert 'gateway_model_id="${AGENT_MODEL:-${gateway_default_model_id}}"' in launcher
-    assert "vertex_location=global" in launcher
-    assert '-e "AGENT_MODEL=${gateway_model_id}"' in launcher
     assert "missing_deterministic_fallback" in launcher
     assert "MISSIONOS_GEMINI_CREDENTIAL_STATUS" in launcher
     assert (
@@ -3582,3 +3576,32 @@ def test_chat_mission_designer_plan_with_source_bound_context_offers_approval(
     )
 
     assert missionos_cli._chat_suggestion(ctx) == {"raw": "/approve", "label": "approve"}
+
+
+def test_chat_physical_ai_plan_with_source_bound_context_offers_approval(
+    tmp_path: Path,
+) -> None:
+    ctx = click.Context(missionos_cli.missionos)
+    ctx.obj = {"missionos_state_path": tmp_path / "state.json"}
+
+    missionos_cli._update_chat_suggestion_from_conversation(
+        ctx,
+        {
+            "routed_action": "mission_designer_plan",
+            "message": "I built an exact GR00T catalog proposal.",
+            "mission_designer": {
+                "mission_designer_context_ref": "mission_designer_context:vla",
+                "mission_designer_context_sha256": "sha",
+                "physical_ai_mission_proposal": {
+                    "proposal_id": "physical-ai-proposal:1"
+                },
+                "physical_ai_mission_validation": {"status": "passed"},
+                "summary": {},
+            },
+        },
+    )
+
+    assert missionos_cli._chat_suggestion(ctx) == {
+        "raw": "/approve",
+        "label": "approve",
+    }

@@ -1,0 +1,46 @@
+{
+  "schema_version": "missionos_v0_2_0_stable_readiness_matrix.v1",
+  "recorded_at": "2026-08-02",
+  "release": "v0.2.0",
+  "manifest_sha256": "bb3955fcd1bd67d406cef660f98890f4cd18a598fa559ba01f373aef22537fca",
+  "verification_matrix": {
+    "px4_nav2": {
+      "fixture": "pass",
+      "live_evidence": "present",
+      "implementation_bound": "matched",
+      "representative_evidence_id": "v0.2.0-parent-three-stage-live-positive"
+    },
+    "parent_three_stage": {
+      "fixture": "pass",
+      "live_evidence": "present",
+      "implementation_bound": "matched_post_run_source_audit",
+      "representative_evidence_id": "v0.2.0-parent-three-stage-live-positive"
+    },
+    "vla_groot_libero": {
+      "fixture": "pass",
+      "live_evidence": "present",
+      "implementation_bound": "matched_post_run_source_audit",
+      "representative_evidence_id": "v0.2.0-vla-groot-libero-live-positive"
+    },
+    "physical": {
+      "fixture": "not_applicable",
+      "live_evidence": "absent",
+      "implementation_bound": "not_applicable",
+      "representative_evidence_id": null
+    }
+  },
+  "historical_evidence": {
+    "representative_evidence_id": "v0.2.0-historical-groot-freshness-negative",
+    "version_status": "superseded",
+    "satisfies_current_live_evidence_requirement": false
+  },
+  "claim_boundary": {
+    "ci_fixture_passed": true,
+    "manual_live_evidence_compatible": true,
+    "manual_live_evidence_reexecuted_by_ci": false,
+    "nvidia_gpu_invoked_by_ci": false,
+    "live_simulator_invoked_by_ci": false,
+    "physical_execution_invoked": false,
+    "single_health_score_created": false
+  }
+}

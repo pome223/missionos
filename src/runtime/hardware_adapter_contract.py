@@ -13,6 +13,8 @@ from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from missionos_core import HardwareExecutionMode
+
 
 HARDWARE_ADAPTER_CONTRACT_SCHEMA_VERSION = "missionos_hardware_adapter_contract.v1"
 HARDWARE_ADAPTER_PREFLIGHT_SCHEMA_VERSION = "missionos_hardware_adapter_preflight.v1"
@@ -39,16 +41,6 @@ class HardwareAdapterKind(str, Enum):
     PX4_MAVSDK = "px4_mavsdk"
     UNITREE_SDK2 = "unitree_sdk2"
     VENDOR_SPECIFIC = "vendor_specific"
-
-
-class HardwareExecutionMode(str, Enum):
-    SCHEMA_EXAMPLE_ONLY = "schema_example_only"
-    LOOPBACK = "loopback"
-    SIM = "sim"
-    HITL = "hitl"
-    BENCH = "bench"
-    CAGE = "cage"
-    FIELD = "field"
 
 
 class HardwareVehicleClass(str, Enum):

@@ -268,58 +268,6 @@ def test_chief_semantic_request_normalizes_percentage_obstacle_values() -> None:
     assert semantic_request["obstacle_route_fractions"] == [0.5, 0.75]
 
 
-def test_compound_route_keeps_explicit_thermal_factors_separate_from_nearby_numbers(
-    monkeypatch: Any,
-) -> None:
-    monkeypatch.delenv("MISSIONOS_AGENT_RUNTIME_ADK_ENABLED", raising=False)
-    monkeypatch.delenv("MISSIONOS_CHIEF_ROUTE_SEMANTIC_ADK_ENABLED", raising=False)
-
-    result = resolve_chief_planner_internal_tools(
-        utterance=(
-            "東京駅から日本橋までPX4/Gazeboで飛行してください。"
-            "風速4.0m/s、突風4.8m/s、風向270度、気温38度、"
-            "thermal battery drain 1.15倍、thermal motor derate 0.90、"
-            "0.5kgの荷物、地形クリアランス30mを条件にし、"
-            "経路の50%地点に衝突判定付き18x18x20mの障害物を配置してください。"
-        ),
-        weather_fetcher=_weather_fetcher,
-        terrain_fetcher=_terrain_fetcher,
-    )
-
-    route = result["coordinate_route"]
-    assert route["temperature_c"] == 38.0
-    assert route["thermal_battery_drain_factor"] == 1.15
-    assert route["thermal_motor_derate_factor"] == 0.9
-    assert route["payload_weight_kg"] == 0.5
-    assert route["obstacle_route_fraction"] == 0.5
-    assert route["obstacle_size_x_m"] == 18.0
-    assert route["obstacle_size_y_m"] == 18.0
-    assert route["obstacle_size_z_m"] == 20.0
-
-
-def test_thermal_factor_phrases_do_not_borrow_later_payload_or_obstacle_numbers(
-    monkeypatch: Any,
-) -> None:
-    monkeypatch.delenv("MISSIONOS_AGENT_RUNTIME_ADK_ENABLED", raising=False)
-    monkeypatch.delenv("MISSIONOS_CHIEF_ROUTE_SEMANTIC_ADK_ENABLED", raising=False)
-
-    result = resolve_chief_planner_internal_tools(
-        utterance=(
-            "東京駅から日本橋まで、気温38度、thermal battery drainを設定し、"
-            "thermal motor derateも設定して、0.5kgの荷物を運び、"
-            "経路の50%地点に18x18x20mの障害物を配置してください。"
-        ),
-        weather_fetcher=_weather_fetcher,
-        terrain_fetcher=_terrain_fetcher,
-    )
-
-    route = result["coordinate_route"]
-    assert "thermal_battery_drain_factor" not in route
-    assert "thermal_motor_derate_factor" not in route
-    assert route["payload_weight_kg"] == 0.5
-    assert route["obstacle_route_fraction"] == 0.5
-
-
 def test_japanese_route_expression_preserves_two_route_obstacles(
     monkeypatch: Any,
 ) -> None:

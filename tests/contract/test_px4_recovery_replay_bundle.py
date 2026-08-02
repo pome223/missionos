@@ -26,7 +26,7 @@ def test_bundle_preserves_two_recovery_cycles_without_private_source_data() -> N
     assert bundle["telemetry"]["frame"] == "local_ned"
     assert "task_private_fixture_source" not in serialized
     assert "private-session-not-for-publication" not in serialized
-    assert "/private/operator" not in serialized
+    assert "/users/private" not in serialized
     assert "sk-never-publish" not in serialized
     assert "latitude_deg" not in serialized
     assert "longitude_deg" not in serialized
@@ -70,7 +70,7 @@ def test_bundle_verifier_rejects_task_id_and_local_path() -> None:
     )
     bundle["private"] = {
         "task_id": "task_should_not_be_public",
-        "artifact_path": "/private/evidence.json",
+        "artifact_path": "/Users/private/evidence.json",
     }
 
     verdict = verify_anonymized_recovery_replay_bundle(bundle)

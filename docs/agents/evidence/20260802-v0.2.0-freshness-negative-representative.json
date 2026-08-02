@@ -1,0 +1,55 @@
+{
+  "schema_version": "missionos_public_representative_evidence.v1",
+  "evidence_id": "v0.2.0-historical-groot-freshness-negative",
+  "evidence_role": "historical_live_negative",
+  "version_status": "superseded",
+  "source_record": {
+    "internal_evidence_id": "20260728-groot-live-policy-freshness-rejection",
+    "sha256": "e4e4750418b9fa08b5fb88b0d2da5d1920d7c5feb3977ae89f4084c620895955",
+    "source_record_included": false,
+    "recorded_at": "2026-07-27T15:20:51.088718+00:00",
+    "binding_basis": "runtime_freshness_policy_digest"
+  },
+  "component_bindings": [
+    {
+      "component_id": "groot_sim_freshness_policy",
+      "version": "2026-07-27",
+      "material_sha256": "3b48051a485ade2d05c72cef7ee5edfe91ab4ea732c7c43465b6fb3465ed0db4",
+      "binding_observed_at_runtime": true
+    }
+  ],
+  "supersession": {
+    "superseded_by_version": "2026-07-28",
+    "superseded_by_material_sha256": "15052d2c16d63b180ee7567f91dd6213f723408e8e00e52f32b4f464bd3bbb64",
+    "historical_record_rewritten": false,
+    "satisfies_current_live_evidence_requirement": false
+  },
+  "observed_result": {
+    "runtime_boundary": "groot_service_response_to_pre_dispatch_freshness_gate",
+    "service_response_received": true,
+    "response_schema_valid": true,
+    "maximum_observation_age_seconds": 2.0,
+    "temporal_freshness_valid": false,
+    "pre_dispatch_status": "blocked",
+    "controller_request_sent": false
+  },
+  "claim_boundary": {
+    "live_model_inference_observed": true,
+    "schema_valid_action_chunk_observed": true,
+    "freshness_rejection_observed": true,
+    "controller_application_observed": false,
+    "task_completion_claimed": false,
+    "physical_execution_invoked": false,
+    "whole_body_safety_claimed": false
+  },
+  "publication_boundary": {
+    "raw_task_id_included": false,
+    "local_path_included": false,
+    "credential_included": false,
+    "raw_log_included": false,
+    "raw_action_included": false,
+    "raw_observation_included": false,
+    "vendor_source_vendored": false,
+    "checkpoint_vendored": false
+  }
+}

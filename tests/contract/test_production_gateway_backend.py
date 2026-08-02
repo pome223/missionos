@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import time
 import tomllib
 import types
 
@@ -240,14 +241,21 @@ def test_default_model_backend_uses_deepseek(monkeypatch) -> None:
     assert model_config.agent_model_label() == "deepseek-v4-flash"
 
 
-def test_default_agent_model_uses_deepseek_id(monkeypatch) -> None:
-    from src.config.settings import Settings
+def test_default_gemini_model_normalizes_vertex_location_to_global(
+    monkeypatch,
+) -> None:
+    from src.agents import model_config
 
-    monkeypatch.delenv("AGENT_MODEL", raising=False)
+    monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "gemini")
+    monkeypatch.setenv("GOOGLE_GENAI_USE_VERTEXAI", "true")
+    monkeypatch.setenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 
-    settings = Settings(_env_file=None)
+    location = model_config.configure_google_vertex_location(
+        "gemini-3.1-flash-lite"
+    )
 
-    assert settings.agent_model == "deepseek-v4-flash"
+    assert location == "global"
+    assert os.environ["GOOGLE_CLOUD_LOCATION"] == "global"
 
 
 def test_explicit_gemini_backend_keeps_gemini_model_default(monkeypatch) -> None:
@@ -260,33 +268,17 @@ def test_explicit_gemini_backend_keeps_gemini_model_default(monkeypatch) -> None
     assert model_config.resolve_agent_model() == "gemini-3.1-flash-lite"
 
 
-def test_stable_gemini_planners_normalize_vertex_location(monkeypatch) -> None:
-    from src.config.settings import reset_settings
-    from src.intelligence import (
-        llm_dialogue_router,
-        llm_repair_planner,
-        llm_response_planner,
-        real_hardware_arm_disarm_planner,
-        turtlebot3_recovery_planner,
-    )
+def test_non_default_vertex_model_preserves_explicit_location(monkeypatch) -> None:
+    from src.agents import model_config
 
     monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "gemini")
-    monkeypatch.setenv("AGENT_MODEL", "gemini-3.1-flash-lite")
     monkeypatch.setenv("GOOGLE_GENAI_USE_VERTEXAI", "true")
+    monkeypatch.setenv("GOOGLE_CLOUD_LOCATION", "europe-west4")
 
-    for planner in (
-        llm_dialogue_router,
-        llm_repair_planner,
-        llm_response_planner,
-        real_hardware_arm_disarm_planner,
-        turtlebot3_recovery_planner,
-    ):
-        monkeypatch.setenv("GOOGLE_CLOUD_LOCATION", "us-central1")
-        reset_settings()
+    location = model_config.configure_google_vertex_location("gemini-other")
 
-        planner._configure_google_adk_environment()
-
-        assert os.environ["GOOGLE_CLOUD_LOCATION"] == "global"
+    assert location == "europe-west4"
+    assert os.environ["GOOGLE_CLOUD_LOCATION"] == "europe-west4"
 
 
 def test_gateway_env_ollama_backend_keeps_adk_but_removes_google_key(monkeypatch) -> None:
@@ -4025,7 +4017,6 @@ def test_px4_recovery_dispatch_preserves_receipt_history(
         == receipts[receipt_ids[-1]]
     )
 
-
 def test_px4_recovery_proposal_origin_hash_mismatch_fails_closed() -> None:
     from src.gateway import server as gateway_server
 
@@ -4274,3 +4265,125 @@ def test_live_sitl_autostart_refuses_existing_fixture_backend() -> None:
         assert "gateway restart --enable-live-sitl" in str(exc)
     else:
         raise AssertionError("fixture backend was reused for live SITL")
+
+
+def test_vla_post_episode_repair_requires_approval_and_creates_new_episode(
+    isolated_gateway_factory,
+    monkeypatch,
+) -> None:
+    from fastapi.testclient import TestClient
+
+    from src.runtime.physical_ai_chat_execution import (
+        run_physical_ai_chat_execution,
+    )
+    from src.runtime.physical_ai_mission_catalog import (
+        VLA_ONLY_MISSION_KIND,
+        build_physical_ai_approval,
+        build_physical_ai_proposal,
+    )
+
+    monkeypatch.setenv("RUN_MISSIONOS_PHYSICAL_AI_CHAT_EXECUTION", "1")
+    monkeypatch.setenv("MISSIONOS_PHYSICAL_AI_CHAT_EXECUTION_MODE", "live")
+    gateway = isolated_gateway_factory()
+    proposal = build_physical_ai_proposal(
+        operator_instruction="GR00TでVLAミッションを実行して",
+        mission_kind=VLA_ONLY_MISSION_KIND,
+    )
+    approval = build_physical_ai_approval(
+        proposal=proposal,
+        operator_approval_ref="operator:original",
+    )
+    source_task = gateway.task_store.create(
+        kind="vla_mission_execution",
+        title="failed governed VLA episode",
+        status="running",
+        artifacts={
+            "physical_ai_mission_proposal": proposal,
+            "physical_ai_mission_approval": approval,
+        },
+    )
+
+    def fail_runner(**_kwargs):
+        raise RuntimeError("bounded_fixture_failure")
+
+    monkeypatch.setattr(
+        "scripts.smoke_parent_mission_px4_nav2_libero_live._run_libero_child",
+        fail_runner,
+    )
+    with pytest.raises(RuntimeError, match="bounded_fixture_failure"):
+        run_physical_ai_chat_execution(
+            proposal=proposal,
+            approval=approval,
+            execution_mode="live",
+            task_store=gateway.task_store,
+            task_id=source_task["task_id"],
+        )
+
+    failed = gateway.task_store.get(source_task["task_id"])
+    assert failed is not None
+    repair = failed["artifacts"][
+        "missionos_vla_post_episode_repair_last_proposal"
+    ]
+    assert repair["proposal_status"] == "awaiting_operator_approval"
+    assert repair["dispatch_authority_created"] is False
+
+    client = TestClient(gateway.app)
+    rejected = client.post(
+        "/missionos/vla/post-episode-repair/approve-and-run",
+        json={
+            "task_id": source_task["task_id"],
+            "repair_proposal_id": repair["proposal_id"],
+            "expected_repair_proposal_sha256": repair["proposal_sha256"],
+            "explicit_human_repair_approval": False,
+        },
+    )
+    assert rejected.status_code == 400
+
+    monkeypatch.setenv("MISSIONOS_PHYSICAL_AI_CHAT_EXECUTION_MODE", "fixture")
+    monkeypatch.setenv("RUN_MISSIONOS_PHYSICAL_AI_CHAT_FIXTURE", "1")
+    response = client.post(
+        "/missionos/vla/post-episode-repair/approve-and-run",
+        json={
+            "task_id": source_task["task_id"],
+            "repair_proposal_id": repair["proposal_id"],
+            "expected_repair_proposal_sha256": repair["proposal_sha256"],
+            "explicit_human_repair_approval": True,
+            "session_id": "session:repair-test",
+        },
+    )
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    retry_task_id = payload["summary"]["retry_task_id"]
+    assert payload["summary"]["attempt_index"] == 1
+    assert payload["summary"]["automatic_retry_performed"] is False
+    assert payload["summary"]["physical_execution_invoked"] is False
+
+    retry = None
+    for _ in range(100):
+        retry = gateway.task_store.get(retry_task_id)
+        if retry and retry.get("status") != "running":
+            break
+        time.sleep(0.01)
+    assert retry is not None
+    assert retry["status"] == "completed"
+    retry_artifacts = retry["artifacts"]
+    retry_proposal = retry_artifacts["physical_ai_mission_proposal"]
+    lineage = retry_artifacts["missionos_vla_post_episode_repair_lineage"]
+    assert retry_proposal["parent_run_identity"] != proposal["parent_run_identity"]
+    assert retry_proposal["episode_identity"] != proposal["episode_identity"]
+    assert lineage["source_task_id"] == source_task["task_id"]
+    assert lineage["repair_proposal_sha256"] == repair["proposal_sha256"]
+    assert lineage["human_operator_approval_recorded"] is True
+    assert lineage["automatic_retry_performed"] is False
+    assert retry["metadata"]["vla_post_episode_repair_attempt_index"] == 1
+
+    replay = client.post(
+        "/missionos/vla/post-episode-repair/approve-and-run",
+        json={
+            "task_id": source_task["task_id"],
+            "repair_proposal_id": repair["proposal_id"],
+            "expected_repair_proposal_sha256": repair["proposal_sha256"],
+            "explicit_human_repair_approval": True,
+        },
+    )
+    assert replay.status_code == 409

@@ -331,16 +331,23 @@ def _write_success_bridge(
         "    'cmd_vel_published_by_missionos': False,\n"
         "    'ack_status': 'accepted',\n"
         "    'ack_source': 'fixture_nav2_navigate_to_pose',\n"
+        "    'goal_accepted': True,\n"
         "    'goal_x_m': goal_x,\n"
         "    'runtime_progress_observed': True,\n"
         "    'completion_observed': True,\n"
         "    'nav2_status': 'succeeded',\n"
+        "    'nav2_goal_succeeded': True,\n"
+        "    'completion_basis': 'nav2_goal_succeeded',\n"
         "    'state_result': {\n"
         "        'nav2_action_server_available': True,\n"
+        "        'nav2_goal_succeeded': True,\n"
         "        'pose_observed': True,\n"
         "        'robot_motion_observed': True,\n"
+        "        'odom_before_observed': True,\n"
+        "        'odom_after_observed': True,\n"
         "        'odom_topic': '/odom',\n"
         "        'odom_delta_m': odom_delta_m,\n"
+        "        'completion_basis': 'nav2_goal_succeeded',\n"
         "        'costmap_obstacle_observed': "
         + obstacle
         + ",\n"
@@ -353,8 +360,10 @@ def _write_success_bridge(
         "    'progress_result': {\n"
         "        'runtime_progress_observed': True,\n"
         "        'completion_observed': True,\n"
+        "        'nav2_goal_succeeded': True,\n"
         "        'robot_motion_observed': True,\n"
         "        'nav2_status': 'succeeded',\n"
+        "        'completion_basis': 'nav2_goal_succeeded',\n"
         "        'costmap_obstacle_observed': "
         + obstacle
         + ",\n"
@@ -460,15 +469,22 @@ def _write_intersecting_obstacle_bridge(path: Path) -> None:
         "    'cmd_vel_published_by_missionos': False,\n"
         "    'ack_status': 'accepted',\n"
         "    'ack_source': 'fixture_nav2_navigate_to_pose',\n"
+        "    'goal_accepted': True,\n"
         "    'runtime_progress_observed': True,\n"
         "    'completion_observed': True,\n"
         "    'nav2_status': 'succeeded',\n"
+        "    'nav2_goal_succeeded': True,\n"
+        "    'completion_basis': 'nav2_goal_succeeded',\n"
         "    'state_result': {\n"
         "        'nav2_action_server_available': True,\n"
+        "        'nav2_goal_succeeded': True,\n"
         "        'pose_observed': True,\n"
         "        'robot_motion_observed': True,\n"
+        "        'odom_before_observed': True,\n"
+        "        'odom_after_observed': True,\n"
         "        'odom_topic': '/odom',\n"
         "        'odom_delta_m': 0.26,\n"
+        "        'completion_basis': 'nav2_goal_succeeded',\n"
         "        'costmap_obstacle_observed': True,\n"
         "        'obstacle_avoidance_observed': True,\n"
         "        'trajectory_result': trajectory,\n"
@@ -476,8 +492,10 @@ def _write_intersecting_obstacle_bridge(path: Path) -> None:
         "    'progress_result': {\n"
         "        'runtime_progress_observed': True,\n"
         "        'completion_observed': True,\n"
+        "        'nav2_goal_succeeded': True,\n"
         "        'robot_motion_observed': True,\n"
         "        'nav2_status': 'succeeded',\n"
+        "        'completion_basis': 'nav2_goal_succeeded',\n"
         "        'costmap_obstacle_observed': True,\n"
         "        'obstacle_avoidance_observed': True,\n"
         "        'trajectory_result': trajectory,\n"
@@ -1588,6 +1606,8 @@ def test_turtlebot3_execution_claims_only_sim_action_with_motion_receipt(
     execution = result["turtlebot3_home_mission_execution"]
     evidence = result["ros2_nav2_hardware_adapter_evidence"]
     review = result["mission_episode_review"]
+    segment = execution["segment_results"][0]
+    predicate = segment["mission_contract_predicate_evaluation"]
     assert summary["status"] == "completed", json.dumps(summary, indent=2)
     assert summary["dispatch_request_sent"] is True
     assert summary["completion_claimed"] is True
@@ -1609,6 +1629,16 @@ def test_turtlebot3_execution_claims_only_sim_action_with_motion_receipt(
     assert execution["payload_delivery_completion_claimed"] is False
     assert evidence["completion_scope"] == "sim_action"
     assert "sim_action_completion_not_physical" in evidence["unproven_claims"]
+    assert "mission_contract_frozen_before_dispatch" not in segment
+    assert segment["dispatch_started_at"]
+    assert segment["result_observed_at"]
+    assert segment["adapter_completion_claimed"] is True
+    assert predicate["status"] == "satisfied"
+    assert predicate["evaluated_outcome_claim"] is True
+    assert predicate["dispatch_authority_created"] is False
+    assert predicate["runtime_effect_requested"] is False
+    assert predicate["operational_closure_created"] is False
+    assert predicate["physical_execution_invoked"] is False
 
 
 def test_turtlebot3_execution_attaches_process_log_bundle_ref(
@@ -5168,6 +5198,34 @@ def test_turtlebot3_dispatch_emits_claim_safe_live_progress(
     ]
     assert dispatch_counts == sorted(dispatch_counts)
     assert dispatch_counts[-1] == segment_count
+    transition_records = result["summary"][
+        "segment_transition_authority_records"
+    ]
+    assert len(transition_records) == segment_count
+    assert result["summary"]["segment_transition_authority_count"] == (
+        segment_count
+    )
+    assert result["summary"]["segment_transition_authorized_count"] == (
+        segment_count
+    )
+    assert [
+        record["segment_ref"] for record in transition_records
+    ] == [f"segment_{index}" for index in range(1, segment_count + 1)]
+    assert all(
+        record["transition_status"] == "authorized"
+        and record["dispatch_authority_source"]
+        == "preexisting_route_approval"
+        and record["approval_created"] is False
+        and record["dispatch_authority_created"] is False
+        and record["runtime_effect_requested"] is False
+        for record in transition_records
+    )
+    assert transition_records[0]["previous_segment_ref"] is None
+    assert transition_records[0]["previous_predicate_satisfied"] is None
+    assert all(
+        record["previous_predicate_satisfied"] is True
+        for record in transition_records[1:]
+    )
     for partial in partials:
         summary = partial["summary"]
         assert summary["status"] == "running"

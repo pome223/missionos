@@ -17,6 +17,9 @@ SITL_DISPATCH_TIMEOUT = 3600.0
 
 CONVERSATION_ROUTE = "/missionos/autonomy-conversation/run"
 RECOVERY_DISPATCH_ROUTE = "/px4-gazebo/mission-scenarios/recovery-dispatch"
+VLA_POST_EPISODE_REPAIR_ROUTE = (
+    "/missionos/vla/post-episode-repair/approve-and-run"
+)
 RECOVERY_AGENT_PROPOSAL_ROUTE = "/missionos/runtime-recovery-agent/propose-for-task"
 TURTLEBOT3_RECOVERY_REVISION_ROUTE = "/missionos/turtlebot3/recovery-agent/revise-for-task"
 SITL_START_ROUTE = "/px4-gazebo/mission-scenarios/start-sitl"
@@ -228,6 +231,29 @@ class MissionOSGatewayClient:
             timeout=max(self.timeout, SITL_DISPATCH_TIMEOUT),
             ok_status_codes={409},
             json=payload,
+        )
+
+    def vla_post_episode_repair_approve_and_run(
+        self,
+        *,
+        task_id: str,
+        repair_proposal_id: str,
+        expected_repair_proposal_sha256: str,
+        session_id: str = "",
+    ) -> dict[str, Any]:
+        return self._request(
+            "POST",
+            VLA_POST_EPISODE_REPAIR_ROUTE,
+            ok_status_codes={409},
+            json={
+                "task_id": task_id,
+                "repair_proposal_id": repair_proposal_id,
+                "expected_repair_proposal_sha256": (
+                    expected_repair_proposal_sha256
+                ),
+                "explicit_human_repair_approval": True,
+                "session_id": session_id,
+            },
         )
 
     def recovery_agent_propose_for_task(

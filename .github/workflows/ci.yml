@@ -76,5 +76,10 @@ jobs:
           PYTHONPATH: .:packages/missionos-cli/src:packages/missionos-gateway/src
         run: python scripts/check_v0_1_0_stable_gate.py --pretty
 
+      - name: Enforce v0.2.0 versioned evidence gate
+        env:
+          PYTHONPATH: .:packages/missionos-cli/src:packages/missionos-gateway/src
+        run: python scripts/check_v0_2_0_stable_gate.py --pretty
+
       - name: Verify smoke inventory coverage
         run: python scripts/check_smoke_inventory.py --pretty

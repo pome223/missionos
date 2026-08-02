@@ -144,8 +144,15 @@ def test_verified_nav2_candidate_uses_core_without_creating_authority() -> None:
 
     assert artifact["adapter_id"] == NAV2_CORE_ADAPTER_ID
     assert result["status"] == "verified_feasible"
+    assert result["verification_basis"] == "deterministic"
     assert result["blocked_reasons"] == ()
     assert result["unverified_reasons"] == ()
+    assert result["extension_verdicts"][0]["verification_items"][0][
+        "item_id"
+    ] == "nav2_path_feasibility"
+    assert result["extension_verdicts"][0]["verification_items"][0][
+        "verification_basis"
+    ] == "deterministic"
     assert artifact["llm_invoked"] is False
     assert artifact["approval_created"] is False
     assert artifact["dispatch_authority_created"] is False

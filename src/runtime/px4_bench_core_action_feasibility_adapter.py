@@ -20,6 +20,9 @@ from missionos_core import (
     FeasibilityStatus,
     HazardState,
     PolicyBinding,
+    VerificationBasis,
+    VerificationItem,
+    VerificationItemStatus,
     verify_action_candidate,
 )
 
@@ -139,6 +142,14 @@ class Px4BenchPhysicalSafetyExtension:
             status = FeasibilityStatus.UNVERIFIED
         else:
             status = FeasibilityStatus.VERIFIED_FEASIBLE
+        item_status = (
+            VerificationItemStatus.BLOCKED
+            if blocked
+            else VerificationItemStatus.PENDING
+            if unverified
+            else VerificationItemStatus.PASS
+        )
+        item_id = "bench_physical_safety_constraints"
         return ExtensionVerdict(
             extension_id=self.extension_id,
             status=status,
@@ -149,6 +160,23 @@ class Px4BenchPhysicalSafetyExtension:
                 "props_removed and vehicle_secured are operator attestations, "
                 "not machine observations",
             ),
+            verification_items=(
+                VerificationItem(
+                    item_id=item_id,
+                    predicate=(
+                        "the bounded bench action satisfies the declared "
+                        "physical-safety and link constraints"
+                    ),
+                    status=item_status,
+                    verification_basis=(
+                        VerificationBasis.UNVERIFIED
+                        if unverified
+                        else VerificationBasis.DETERMINISTIC
+                    ),
+                    evidence_refs=tuple(candidate.evidence_refs),
+                ),
+            ),
+            required_verification_item_ids=(item_id,),
         )
 
 
@@ -187,6 +215,12 @@ def verify_px4_bench_core_action_candidate(
             "assumptions": list(result.assumptions),
             "policy_sha256": result.policy_sha256,
             "evaluated_at": result.evaluated_at,
+            "verification_basis": result.verification_basis,
+            "verification_items": [
+                item.to_dict()
+                for verdict in result.extension_verdicts
+                for item in verdict.verification_items
+            ],
         },
         # Authority outputs are constant. The adapter cannot set them.
         "approval_created": False,

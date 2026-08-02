@@ -1,6 +1,6 @@
 [project]
 name = "missionos-monorepo"
-version = "0.1.1"
+version = "0.2.0"
 description = "MissionOS monorepo with CLI, Gateway, and opt-in PX4/Gazebo SITL backend."
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
@@ -38,6 +38,11 @@ dev = [
   "pytest-asyncio>=0.23.0",
   "ruff>=0.4.0,<0.16.0",
   "black>=24.0.0",
+  "pillow>=10.0.0",
+]
+vla = [
+  "msgpack>=1.0.8",
+  "pyzmq>=26.0.0",
 ]
 
 [build-system]

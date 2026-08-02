@@ -638,6 +638,29 @@ def main() -> int:
         else {}
     )
     summary = operation.get("summary") if isinstance(operation.get("summary"), dict) else {}
+    execution = operation.get("turtlebot3_home_mission_execution")
+    execution = execution if isinstance(execution, dict) else {}
+    segment_results = execution.get("segment_results")
+    segment_results = segment_results if isinstance(segment_results, list) else []
+    mission_contract_predicate_evaluations = [
+        dict(evaluation)
+        for segment in segment_results
+        if isinstance(segment, dict)
+        and isinstance(
+            evaluation := segment.get(
+                "mission_contract_predicate_evaluation"
+            ),
+            dict,
+        )
+    ]
+    transition_authority_records = execution.get(
+        "segment_transition_authority_records"
+    )
+    transition_authority_records = (
+        transition_authority_records
+        if isinstance(transition_authority_records, list)
+        else []
+    )
     task_decision_summary = _task_recovery_decision_summary(operation)
     low_battery_operation = (
         low_battery_executed.get("operation_result")
@@ -791,6 +814,53 @@ def main() -> int:
         "planned_route_distance_m": summary.get("planned_route_distance_m"),
         "segment_dispatch_count": summary.get("segment_dispatch_count"),
         "segment_completion_count": summary.get("segment_completion_count"),
+        "mission_contract_segment_count": len(
+            mission_contract_predicate_evaluations
+        ),
+        "mission_contract_predicate_satisfied_count": sum(
+            1
+            for evaluation in mission_contract_predicate_evaluations
+            if evaluation.get("evaluated_outcome_claim") is True
+        ),
+        "mission_contract_contract_sha256s": [
+            str(evaluation.get("contract_sha256") or "")
+            for evaluation in mission_contract_predicate_evaluations
+        ],
+        "mission_contract_created_authority_or_effect": any(
+            evaluation.get("approval_created") is not False
+            or evaluation.get("dispatch_authority_created") is not False
+            or evaluation.get("runtime_effect_requested") is not False
+            or evaluation.get("operational_closure_created") is not False
+            or evaluation.get("physical_execution_invoked") is not False
+            for evaluation in mission_contract_predicate_evaluations
+        ),
+        "segment_transition_authority_count": len(
+            transition_authority_records
+        ),
+        "segment_transition_authorized_count": sum(
+            1
+            for record in transition_authority_records
+            if isinstance(record, dict)
+            and record.get("transition_status") == "authorized"
+        ),
+        "segment_transition_route_authority_sha256s": [
+            str(record.get("route_authority_sha256") or "")
+            for record in transition_authority_records
+            if isinstance(record, dict)
+        ],
+        "segment_transition_operator_approval_refs": [
+            str(record.get("operator_approval_ref") or "")
+            for record in transition_authority_records
+            if isinstance(record, dict)
+        ],
+        "segment_transition_created_authority_or_effect": any(
+            not isinstance(record, dict)
+            or record.get("approval_created") is not False
+            or record.get("dispatch_authority_created") is not False
+            or record.get("runtime_effect_requested") is not False
+            or record.get("physical_execution_invoked") is not False
+            for record in transition_authority_records
+        ),
         "multi_segment_mission_claimed": summary.get("multi_segment_mission_claimed"),
         "llm_recovery_proposals_allowed": summary.get(
             "llm_recovery_proposals_allowed"
@@ -1600,6 +1670,68 @@ def main() -> int:
                 "dynamic obstacle recovery did not attach passing episode review"
             )
     if _truthy_env(WITH_BRIDGE_ENV):
+        if (
+            not result["decision_demo_smoke_enabled"]
+            and result["completion_claimed"] is True
+        ):
+            if (
+                result["mission_contract_segment_count"]
+                != result["planned_segment_count"]
+            ):
+                raise SystemExit(
+                    "completed TurtleBot3 route lacked one Mission Contract "
+                    "evaluation per segment"
+                )
+            if (
+                result["mission_contract_predicate_satisfied_count"]
+                != result["planned_segment_count"]
+            ):
+                raise SystemExit(
+                    "completed TurtleBot3 route bypassed the frozen predicate "
+                    "package"
+                )
+            if result["mission_contract_created_authority_or_effect"] is not False:
+                raise SystemExit(
+                    "Mission Contract evaluation created authority or a "
+                    "runtime effect"
+                )
+            if (
+                result["segment_transition_authority_count"]
+                != result["planned_segment_count"]
+                or result["segment_transition_authorized_count"]
+                != result["planned_segment_count"]
+            ):
+                raise SystemExit(
+                    "completed TurtleBot3 route lacked one authorized "
+                    "transition record per segment"
+                )
+            route_authority_sha256s = {
+                value
+                for value in result[
+                    "segment_transition_route_authority_sha256s"
+                ]
+                if value
+            }
+            approval_refs = {
+                value
+                for value in result[
+                    "segment_transition_operator_approval_refs"
+                ]
+                if value
+            }
+            if len(route_authority_sha256s) != 1 or len(approval_refs) != 1:
+                raise SystemExit(
+                    "completed TurtleBot3 route did not preserve one "
+                    "content-bound pre-existing approval"
+                )
+            if (
+                result["segment_transition_created_authority_or_effect"]
+                is not False
+            ):
+                raise SystemExit(
+                    "segment transition evaluation created authority or a "
+                    "runtime effect"
+                )
         if result["decision_demo_smoke_enabled"]:
             decision_demo = result["decision_demo"]
             decision_demo_ok = (

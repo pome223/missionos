@@ -145,8 +145,12 @@ def test_runtime_artifacts_reach_the_corpus_positive_verdict() -> None:
     result = _verify()
 
     assert _status(result) == "verified_feasible"
+    assert result["action_feasibility"]["verification_basis"] == "deterministic"
     assert result["action_feasibility"]["blocked_reasons"] == []
     assert result["action_feasibility"]["unverified_reasons"] == []
+    assert result["action_feasibility"]["verification_items"][0][
+        "item_id"
+    ] == "bench_physical_safety_constraints"
     assert (
         _status(result)
         == verify_px4_bench_corpus_case(

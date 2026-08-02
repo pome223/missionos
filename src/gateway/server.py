@@ -435,6 +435,9 @@ def _missionos_context_ref(context: Mapping[str, Any], sha256: str) -> str:
     proposal_id = ""
     if isinstance(proposal, Mapping):
         proposal_id = str(proposal.get("proposal_id") or "").strip()
+    physical_ai_proposal = context.get("physical_ai_mission_proposal")
+    if not proposal_id and isinstance(physical_ai_proposal, Mapping):
+        proposal_id = str(physical_ai_proposal.get("proposal_id") or "").strip()
     return f"mission_designer_context:{proposal_id or sha256[:16]}"
 
 
@@ -504,7 +507,16 @@ def _missionos_mission_designer_context(payload: Mapping[str, Any]) -> dict[str,
                 "mission_designer_context_error": "mission_designer_context_ref_or_sha256_not_source_bound",
             },
         }
-    if any(key in context for key in ("scenario_proposal", "scenario_approval", "bounded_simulation_request")):
+    if any(
+        key in context
+        for key in (
+            "scenario_proposal",
+            "scenario_approval",
+            "bounded_simulation_request",
+            "physical_ai_mission_proposal",
+            "physical_ai_mission_approval",
+        )
+    ):
         return {
             "mission_designer_context_error": "mission_designer_context_missing_server_ref",
             "summary": {
@@ -519,6 +531,26 @@ def _missionos_mission_designer_has_proposal(context: Mapping[str, Any]) -> bool
     proposal = context.get("scenario_proposal")
     validation = context.get("validation_result")
     return isinstance(proposal, Mapping) and isinstance(validation, Mapping)
+
+
+def _missionos_physical_ai_proposal(
+    context: Mapping[str, Any],
+) -> dict[str, Any]:
+    proposal = context.get("physical_ai_mission_proposal")
+    return dict(proposal) if isinstance(proposal, Mapping) else {}
+
+
+def _missionos_physical_ai_approval(
+    context: Mapping[str, Any],
+) -> dict[str, Any]:
+    approval = context.get("physical_ai_mission_approval")
+    return dict(approval) if isinstance(approval, Mapping) else {}
+
+
+def _missionos_physical_ai_has_proposal(context: Mapping[str, Any]) -> bool:
+    proposal = _missionos_physical_ai_proposal(context)
+    validation = context.get("physical_ai_mission_validation")
+    return bool(proposal) and isinstance(validation, Mapping)
 
 
 def _missionos_mission_designer_context_error(context: Mapping[str, Any]) -> str:
@@ -825,6 +857,8 @@ def _missionos_instruction_requests_designer_plan(text: str) -> bool:
         return False
     if instruction_requests_turtlebot3_home_mission(text):
         return True
+    if resolve_physical_ai_request(text).requested:
+        return True
     if _missionos_instruction_has_route_expression(text):
         return True
     planning_tokens = (
@@ -1044,6 +1078,34 @@ def _missionos_conversation_status_message(
 def _missionos_mission_designer_context_message(context: Mapping[str, Any]) -> str:
     summary = context.get("summary") if isinstance(context.get("summary"), Mapping) else {}
     proposal = context.get("scenario_proposal") if isinstance(context.get("scenario_proposal"), Mapping) else {}
+    if _missionos_physical_ai_has_proposal(context):
+        physical_proposal = _missionos_physical_ai_proposal(context)
+        physical_approval = _missionos_physical_ai_approval(context)
+        execution = context.get("physical_ai_mission_execution")
+        execution = execution if isinstance(execution, Mapping) else {}
+        mission_kind = str(
+            physical_proposal.get("mission_kind") or "physical_ai"
+        )
+        stage_count = len(physical_proposal.get("stage_refs") or [])
+        if execution:
+            return (
+                f"The approved {mission_kind} mission is tracked as task "
+                f"{execution.get('task_id') or 'unknown'} with status="
+                f"{execution.get('task_status') or 'unknown'}. "
+                "Use `missionos job-status` for stage evidence. Parent mission "
+                "completion and physical execution remain unclaimed."
+            )
+        if physical_approval:
+            return (
+                f"The {mission_kind} proposal is approved for {stage_count} "
+                "bounded simulator stage(s). Type `/run` to start the opt-in "
+                "executor path. No dispatch or progress has occurred yet."
+            )
+        return (
+            f"The {mission_kind} proposal contains {stage_count} approved-catalog "
+            "stage(s) and is waiting for human approval. Type `/approve` to "
+            "approve this exact frozen proposal."
+        )
     if _missionos_turtlebot3_home_mission_has_proposal(context):
         turtlebot3_execution = context.get("turtlebot3_home_mission_execution")
         robot_label = str(proposal.get("robot_label") or summary.get("robot_label") or "TurtleBot3")
@@ -1496,6 +1558,9 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
     text = _missionos_instruction_text(request)
     client_surface = _missionos_client_surface(request)
     session_id = _missionos_request_session_id(request)
+    physical_ai_resolution = resolve_physical_ai_request(text)
+    physical_ai_kind = physical_ai_resolution.mission_kind
+    physical_ai_rejection_reason = physical_ai_resolution.rejection_reason
     mission_designer_context = _missionos_mission_designer_context(request)
     coordinate_route = request.get("coordinate_route") if isinstance(request.get("coordinate_route"), Mapping) else None
     turtlebot3_home_mission_requested = (
@@ -1509,6 +1574,7 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
         coordinate_route is None
         and _missionos_instruction_requests_designer_plan(text)
         and not turtlebot3_home_mission_requested
+        and not physical_ai_resolution.requested
     ):
         chief_planner_tools = resolve_chief_planner_internal_tools(
             utterance=text,
@@ -1767,6 +1833,15 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
         )
 
     if (
+        physical_ai_resolution.requested
+        and intent not in _SENSITIVE_INTENTS
+        and keyword_intent not in _SENSITIVE_INTENTS
+    ):
+        intent = "mission_designer_plan"
+        enriched_instruction = text
+        routing_source = f"{routing_source}_physical_ai_catalog_selection"
+
+    if (
         keyword_intent == "execute"
         and _missionos_instruction_requests_designer_plan(text)
         and (
@@ -1888,7 +1963,31 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
                 agent_runtime_result=agent_runtime_result,
                 request_payload={"intent": intent, "operator_instruction": text},
             )
-            if _missionos_turtlebot3_home_mission_has_proposal(mission_designer_context):
+            if _missionos_physical_ai_has_proposal(mission_designer_context):
+                physical_proposal = _missionos_physical_ai_proposal(
+                    mission_designer_context
+                )
+                physical_approval = build_physical_ai_approval(
+                    proposal=physical_proposal,
+                    operator_approval_ref=(
+                        f"missionos-chat:{session_id or 'anonymous'}:"
+                        f"{uuid.uuid4()}"
+                    ),
+                    approved_at=datetime.now(timezone.utc),
+                )
+                result = _missionos_register_mission_designer_context(
+                    build_physical_ai_context(
+                        proposal=physical_proposal,
+                        approval=physical_approval,
+                    ),
+                    session_id=session_id,
+                )
+                message = (
+                    "Approval recorded against the exact frozen Physical AI "
+                    "catalog package. I have not started an executor or counted "
+                    "progress. Type `/run` to start the opt-in simulator path."
+                )
+            elif _missionos_turtlebot3_home_mission_has_proposal(mission_designer_context):
                 turtlebot_plan = _missionos_turtlebot3_home_mission_plan(
                     mission_designer_context
                 )
@@ -1951,7 +2050,43 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
                 agent_runtime_result=agent_runtime_result,
                 request_payload={"intent": intent, "operator_instruction": text},
             )
-            if _missionos_mission_designer_has_proposal(mission_designer_context):
+            if _missionos_physical_ai_has_proposal(mission_designer_context):
+                physical_proposal = _missionos_physical_ai_proposal(
+                    mission_designer_context
+                )
+                result = _missionos_register_mission_designer_context(
+                    _missionos_merge_mission_designer_context(
+                        mission_designer_context,
+                        {
+                            "physical_ai_mission_rejection": {
+                                "schema_version": (
+                                    "missionos_physical_ai_chat_rejection.v1"
+                                ),
+                                "proposal_sha256": physical_proposal.get(
+                                    "proposal_sha256"
+                                ),
+                                "operator_rejected": True,
+                                "rejected_at": datetime.now(
+                                    timezone.utc
+                                ).isoformat(),
+                                "dispatch_authority_created": False,
+                                "physical_execution_invoked": False,
+                            },
+                            "summary": {
+                                "status": "rejected",
+                                "approval_status": "rejected",
+                                "mission_completion_claimed": False,
+                                "physical_execution_invoked": False,
+                            },
+                        },
+                    ),
+                    session_id=session_id,
+                )
+                message = (
+                    "I recorded your rejection against the current Physical AI "
+                    "proposal. No executor was started and no progress was counted."
+                )
+            elif _missionos_mission_designer_has_proposal(mission_designer_context):
                 result = _missionos_register_mission_designer_context(
                     _missionos_merge_mission_designer_context(
                         mission_designer_context,
@@ -2012,7 +2147,42 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
                 )
                 message = "I asked the planner for a bounded plan from your instruction."
         elif intent == "execute":
-            if isinstance(
+            if (
+                _missionos_physical_ai_has_proposal(mission_designer_context)
+                and _missionos_physical_ai_approval(mission_designer_context)
+            ):
+                physical_proposal = _missionos_physical_ai_proposal(
+                    mission_designer_context
+                )
+                physical_approval = _missionos_physical_ai_approval(
+                    mission_designer_context
+                )
+                physical_execution = start_physical_ai_chat_execution(
+                    proposal=physical_proposal,
+                    approval=physical_approval,
+                    session_id=session_id,
+                )
+                result = _missionos_register_mission_designer_context(
+                    build_physical_ai_context(
+                        proposal=physical_proposal,
+                        approval=physical_approval,
+                        execution=physical_execution,
+                    ),
+                    session_id=session_id,
+                )
+                message = (
+                    "The approved Physical AI task has started under its frozen "
+                    "contract. Use `missionos job-status "
+                    f"{physical_execution['task_id']}` to monitor stage evidence. "
+                    "Starting the task is not a parent-completion or physical-execution claim."
+                )
+            elif _missionos_physical_ai_has_proposal(mission_designer_context):
+                result = mission_designer_context
+                message = (
+                    "This Physical AI proposal has not been approved. Type "
+                    "`/approve` before `/run`; no executor was started."
+                )
+            elif isinstance(
                 mission_designer_context.get("turtlebot3_home_mission_execution"),
                 Mapping,
             ):
@@ -2225,29 +2395,149 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
                 message = f"{message} {' '.join(repair_followup_warnings)}"
         elif intent == "mission_designer_plan":
             designer_prompt = text if coordinate_route else (enriched_instruction or text)
-            turtlebot3_designer_result = (
+            if physical_ai_rejection_reason:
+                capability_inventory = vla_task_capability_inventory()
+                predicate_draft = build_vla_success_predicate_draft(
+                    operator_instruction=designer_prompt,
+                )
+                source_backed_draft = (
+                    predicate_draft["draft_status"]
+                    == "source_backed_review_required"
+                )
+                catalog_entries = [
+                    {
+                        "catalog_entry_id": entry["catalog_entry_id"],
+                        "display_name": entry["display_name"],
+                        "display_name_ja": entry["display_name_ja"],
+                        "resolved_instruction": entry["resolved_instruction"],
+                        "environment": entry["environment"],
+                        "claim_scope": entry["claim_scope"],
+                        "content_sha256": entry["content_sha256"],
+                    }
+                    for entry in approved_vla_task_catalog()
+                ]
+                result = _missionos_register_mission_designer_context(
+                    {
+                        "physical_ai_mission_rejection": {
+                            "schema_version": (
+                                "missionos_physical_ai_chat_rejection.v1"
+                            ),
+                            "rejection_reason": physical_ai_rejection_reason,
+                            "operator_instruction": designer_prompt,
+                            "approved_catalog_entries": catalog_entries,
+                            "task_capability_inventory": capability_inventory,
+                            "success_predicate_draft": predicate_draft,
+                            "free_form_skill_generation_supported": False,
+                            "new_skill_development_required": (
+                                not source_backed_draft
+                            ),
+                            "candidate_validation_required": source_backed_draft,
+                            "approval_created": False,
+                            "dispatch_authority_created": False,
+                            "runtime_effect_requested": False,
+                            "physical_execution_invoked": False,
+                        },
+                        "summary": {
+                            "status": "blocked",
+                            "approval_status": "unavailable",
+                            "blocking_reasons": [physical_ai_rejection_reason],
+                            "approved_vla_task_count": len(catalog_entries),
+                            "source_backed_vla_candidate_count": (
+                                capability_inventory[
+                                    "source_backed_live_unverified_count"
+                                ]
+                            ),
+                            "mission_completion_claimed": False,
+                            "physical_execution_invoked": False,
+                        },
+                    },
+                    session_id=session_id,
+                )
+                available = ", ".join(
+                    str(entry["display_name_ja"])
+                    for entry in catalog_entries
+                )
+                if source_backed_draft:
+                    message = (
+                        "I found an exact pinned LIBERO task and extracted a "
+                        "source-backed success-predicate draft from its pinned "
+                        "BDDL goal for human review. "
+                        "It is not an approved predicate package and created no "
+                        "proposal, approval, dispatch authority, or runtime effect. "
+                        f"Draft outcome: {predicate_draft['outcome_claim_spec']['statement']}"
+                    )
+                else:
+                    message = (
+                        "No approved or source-backed VLA task matched that "
+                        "instruction. I recorded only an unverified capability-"
+                        "development draft with candidate observation routes; I did "
+                        "not create a proposal, approval, "
+                        "or dispatch authority. "
+                        f"Available catalog task: {available}. The pinned libero_10 "
+                        "checkpoint has 9 additional source-backed candidates. "
+                        "A new task such as cardboard-box assembly or screw driving "
+                        "requires compatible hardware, task data/post-training, an "
+                        "environment, and a bounded success predicate; changing the "
+                        "instruction text alone cannot create that robot skill."
+                    )
+                designer_result = None
+                turtlebot3_designer_result = False
+            elif physical_ai_kind is not None:
+                physical_proposal = build_physical_ai_proposal(
+                    operator_instruction=designer_prompt,
+                    mission_kind=physical_ai_kind,
+                    now=datetime.now(timezone.utc),
+                )
+                result = _missionos_register_mission_designer_context(
+                    build_physical_ai_context(proposal=physical_proposal),
+                    session_id=session_id,
+                )
+                stage_label = (
+                    "PX4 → Nav2 → GR00T/LIBERO"
+                    if physical_ai_kind == THREE_STAGE_MISSION_KIND
+                    else "GR00T N1.7 / LIBERO Panda"
+                )
+                message = (
+                    f"I built an exact {stage_label} catalog proposal. Selected "
+                    "VLA task: "
+                    f"{physical_proposal['vla_task_selection']['display_name_ja']}. "
+                    "GR00T instruction: "
+                    f"{physical_proposal['vla_task_selection']['resolved_instruction']}. "
+                    "The task is environment-bound; arbitrary policy instruction "
+                    "delivery is not claimed. Natural language did not create the "
+                    "predicate, stage order, approval, or dispatch authority. "
+                    "Type `/approve` to approve this frozen proposal."
+                )
+                designer_result = None
+                turtlebot3_designer_result = False
+            else:
+                turtlebot3_designer_result = (
                 _missionos_instruction_requests_turtlebot3_home_mission(
                     designer_prompt,
                     context=mission_designer_context,
                 )
-            )
-            if turtlebot3_designer_result:
-                designer_result = build_turtlebot3_home_mission_plan(
-                    operator_instruction=designer_prompt,
-                    robot_profile=request.get("robot_profile") or "",
-                    now=datetime.now(timezone.utc),
                 )
-            else:
-                designer_result = run_px4_gazebo_mission_scenario_designer(
-                    prompt=designer_prompt,
-                    coordinate_route=coordinate_route,
-                    now=datetime.now(timezone.utc),
-                )
-                designer_result = _missionos_attach_payload_split_plan_to_result(
-                    designer_result,
-                    payload_split_plan,
-                )
-            if chief_planner_tools.get("tool_status") in {"resolved", "partial"}:
+                if turtlebot3_designer_result:
+                    designer_result = build_turtlebot3_home_mission_plan(
+                        operator_instruction=designer_prompt,
+                        robot_profile=request.get("robot_profile") or "",
+                        now=datetime.now(timezone.utc),
+                    )
+                else:
+                    designer_result = run_px4_gazebo_mission_scenario_designer(
+                        prompt=designer_prompt,
+                        coordinate_route=coordinate_route,
+                        now=datetime.now(timezone.utc),
+                    )
+                    designer_result = _missionos_attach_payload_split_plan_to_result(
+                        designer_result,
+                        payload_split_plan,
+                    )
+            if (
+                not physical_ai_resolution.requested
+                and chief_planner_tools.get("tool_status")
+                in {"resolved", "partial"}
+            ):
                 designer_result = {
                     **designer_result,
                     "missionos_chief_planner_internal_tools": chief_planner_tools,
@@ -2277,10 +2567,11 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
                         "subagents_operator_facing": False,
                     },
                 }
-            result = _missionos_register_mission_designer_context(
-                enrich_terrain_heightmap_preview_fields(designer_result),
-                session_id=session_id,
-            )
+            if not physical_ai_resolution.requested:
+                result = _missionos_register_mission_designer_context(
+                    enrich_terrain_heightmap_preview_fields(designer_result),
+                    session_id=session_id,
+                )
             repair_prompt_evidence = _missionos_repair_evidence_from_mission_designer_context(
                 result,
                 operator_instruction=enriched_instruction or text,
@@ -2288,7 +2579,9 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
             missionos_repair_prompt = _missionos_repair_prompt_from_evidence(
                 repair_prompt_evidence
             )
-            if chief_planner_tools.get("tool_status") in {"resolved", "partial"}:
+            if physical_ai_resolution.requested:
+                pass
+            elif chief_planner_tools.get("tool_status") in {"resolved", "partial"}:
                 # Mission Designer binds explicit prompt constraints (such as
                 # altitude) onto its route.  That is the route the operator is
                 # about to approve, so prefer it over the earlier Chief-tool
@@ -2455,6 +2748,9 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
                 "scenario_proposal" in result
                 or "validation_result" in result
                 or "sitl_execution_request" in result
+                or "physical_ai_mission_proposal" in result
+                or "physical_ai_mission_execution" in result
+                or "physical_ai_mission_rejection" in result
                 or "mission_designer_context_error" in result
             )
             else {}
@@ -2502,6 +2798,31 @@ from src.gateway.task_routes import (
 )
 from src.gateway.audit_routes import build_audit_router
 from src.runtime.task_store import get_task_store
+from src.runtime.physical_ai_chat_execution import (
+    build_vla_recovery_state,
+    physical_ai_chat_execution_mode,
+    start_physical_ai_chat_execution,
+)
+from src.runtime.physical_ai_mission_catalog import (
+    THREE_STAGE_MISSION_KIND,
+    VLA_ONLY_MISSION_KIND,
+    approved_vla_task_catalog,
+    build_libero_contract,
+    build_physical_ai_approval,
+    build_physical_ai_context,
+    build_physical_ai_proposal,
+    resolve_physical_ai_request,
+)
+from src.runtime.vla_post_episode_repair import (
+    VLA_POST_EPISODE_REPAIR_ACTION,
+    build_vla_post_episode_repair_approval,
+    validate_vla_post_episode_repair_approval,
+    validate_vla_post_episode_repair_proposal,
+)
+from src.runtime.physical_ai_vla_capability_inventory import (
+    build_vla_success_predicate_draft,
+    vla_task_capability_inventory,
+)
 from src.runtime.px4_gazebo_mission_scenario_designer import (
     PX4GazeboMissionScenarioDesignerError,
     approve_px4_gazebo_mission_scenario_for_bounded_simulation,
@@ -8852,6 +9173,284 @@ class GatewayServer:
                     "mission_upload_performed": False,
                     "live_flight_runner_invoked": False,
                     "hardware_target_allowed": False,
+                    "physical_execution_invoked": False,
+                },
+            }
+
+        @self.app.post(
+            "/missionos/vla/post-episode-repair/approve-and-run"
+        )
+        async def vla_post_episode_repair_approve_and_run(
+            payload: Dict[str, Any] | None = Body(default=None),
+        ):
+            body = payload or {}
+            task_id = str(body.get("task_id") or "").strip()
+            proposal_id = str(body.get("repair_proposal_id") or "").strip()
+            expected_digest = str(
+                body.get("expected_repair_proposal_sha256") or ""
+            ).strip()
+            if not task_id or not proposal_id or not expected_digest:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        "task_id, repair_proposal_id, and "
+                        "expected_repair_proposal_sha256 are required"
+                    ),
+                )
+            if body.get("explicit_human_repair_approval") is not True:
+                raise HTTPException(
+                    status_code=400,
+                    detail="explicit_human_repair_approval is required",
+                )
+            if physical_ai_chat_execution_mode() not in {"fixture", "live"}:
+                raise HTTPException(
+                    status_code=409,
+                    detail="physical AI chat execution is not opted in",
+                )
+            source_task = self.task_store.get(task_id)
+            if source_task is None:
+                raise HTTPException(status_code=404, detail="task not found")
+            if (
+                source_task.get("kind") != "vla_mission_execution"
+                or source_task.get("status") != "failed"
+            ):
+                raise HTTPException(
+                    status_code=409,
+                    detail="post-episode repair requires a failed VLA task",
+                )
+            artifacts = source_task.get("artifacts")
+            artifacts = artifacts if isinstance(artifacts, Mapping) else {}
+            source_proposal = artifacts.get("physical_ai_mission_proposal")
+            source_approval = artifacts.get("physical_ai_mission_approval")
+            proposals = artifacts.get(
+                "missionos_vla_post_episode_repair_proposals"
+            )
+            repair_proposal = (
+                proposals.get(proposal_id)
+                if isinstance(proposals, Mapping)
+                else None
+            )
+            if not all(
+                isinstance(value, Mapping)
+                for value in (source_proposal, source_approval, repair_proposal)
+            ):
+                raise HTTPException(
+                    status_code=409,
+                    detail="source-bound post-episode repair proposal is missing",
+                )
+            failure_evidence = artifacts.get(
+                "missionos_vla_mission_run_record"
+            )
+            if not isinstance(failure_evidence, Mapping):
+                failure_evidence = artifacts.get("physical_ai_execution_failure")
+            if not isinstance(failure_evidence, Mapping):
+                raise HTTPException(
+                    status_code=409,
+                    detail="source failure evidence is missing",
+                )
+            if repair_proposal.get("proposal_sha256") != expected_digest:
+                raise HTTPException(
+                    status_code=409,
+                    detail="reviewed repair proposal changed",
+                )
+            validation_reasons = validate_vla_post_episode_repair_proposal(
+                repair_proposal,
+                source_task=source_task,
+                source_proposal=source_proposal,
+                source_approval=source_approval,
+                failure_evidence=failure_evidence,
+            )
+            if validation_reasons:
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "message": "post-episode repair proposal is invalid",
+                        "blocked_reasons": list(validation_reasons),
+                    },
+                )
+            operator_approval_ref = (
+                f"missionos-vla-post-episode-repair:"
+                f"{body.get('session_id') or 'anonymous'}:{uuid.uuid4()}"
+            )
+            repair_approval = build_vla_post_episode_repair_approval(
+                repair_proposal=repair_proposal,
+                operator_approval_ref=operator_approval_ref,
+            )
+            approval_reasons = validate_vla_post_episode_repair_approval(
+                repair_approval,
+                repair_proposal=repair_proposal,
+            )
+            if approval_reasons:  # pragma: no cover - constructed above
+                raise HTTPException(
+                    status_code=409,
+                    detail={"blocked_reasons": list(approval_reasons)},
+                )
+            retry_proposal = build_physical_ai_proposal(
+                operator_instruction=str(
+                    source_proposal.get("operator_instruction") or ""
+                ),
+                mission_kind=VLA_ONLY_MISSION_KIND,
+            )
+            retry_approval = build_physical_ai_approval(
+                proposal=retry_proposal,
+                operator_approval_ref=operator_approval_ref,
+            )
+            consumed_at = datetime.now(timezone.utc).isoformat()
+            claimed_task = self.task_store.claim_nested_artifact(
+                task_id,
+                collection_key=(
+                    "missionos_vla_post_episode_repair_proposals"
+                ),
+                artifact_id=proposal_id,
+                expected={
+                    "proposal_status": "awaiting_operator_approval",
+                    "proposal_sha256": expected_digest,
+                },
+                updates={
+                    "proposal_status": "approved_consumed",
+                    "repair_approval_id": repair_approval["approval_id"],
+                    "repair_approval_sha256": repair_approval[
+                        "approval_sha256"
+                    ],
+                    "consumed_at": consumed_at,
+                },
+                expected_task_status="failed",
+                expected_updated_at=source_task.get("updated_at"),
+                artifacts={
+                    "missionos_vla_post_episode_repair_approvals": {
+                        str(repair_approval["approval_id"]): repair_approval,
+                    },
+                },
+                metadata={
+                    "vla_post_episode_repair_lifecycle": "approved_consumed",
+                },
+            )
+            if claimed_task is None:
+                raise HTTPException(
+                    status_code=409,
+                    detail="repair proposal was already consumed or changed",
+                )
+            repair_lineage = {
+                "schema_version": (
+                    "missionos_vla_post_episode_repair_lineage.v1"
+                ),
+                "source_task_id": task_id,
+                "source_proposal_sha256": source_proposal["proposal_sha256"],
+                "source_approval_sha256": source_approval["approval_sha256"],
+                "source_failure_evidence_sha256": repair_proposal[
+                    "source_failure_evidence_sha256"
+                ],
+                "repair_proposal_id": proposal_id,
+                "repair_proposal_sha256": expected_digest,
+                "repair_approval_id": repair_approval["approval_id"],
+                "repair_approval_sha256": repair_approval["approval_sha256"],
+                "repair_action": VLA_POST_EPISODE_REPAIR_ACTION,
+                "attempt_index": repair_proposal["attempt_index"],
+                "new_run_identity": retry_proposal["parent_run_identity"],
+                "new_episode_identity": retry_proposal["episode_identity"],
+                "new_contract_sha256": (
+                    build_libero_contract(
+                        parent_run_identity=str(
+                            retry_proposal["parent_run_identity"]
+                        ),
+                        episode_identity=str(retry_proposal["episode_identity"]),
+                    ).contract_sha256
+                ),
+                "historical_failure_rewritten": False,
+                "automatic_retry_performed": False,
+                "human_operator_approval_recorded": True,
+                "physical_execution_invoked": False,
+            }
+            try:
+                retry_execution = start_physical_ai_chat_execution(
+                    proposal=retry_proposal,
+                    approval=retry_approval,
+                    session_id=str(body.get("session_id") or ""),
+                    task_store=self.task_store,
+                    repair_lineage=repair_lineage,
+                )
+            except Exception as error:
+                failure_state = {
+                    **build_vla_recovery_state(
+                        "retry_dispatch_failed",
+                        repair_proposal={
+                            **dict(repair_proposal),
+                            "proposal_status": "approved_consumed",
+                        },
+                    ),
+                    "proposal_status": "approved_consumed",
+                    "approval_created": True,
+                    "dispatch_authority_created": True,
+                    "runtime_effect_requested": False,
+                    "physical_execution_invoked": False,
+                    "retry_dispatch_failure_type": type(error).__name__,
+                    "raw_error_included": False,
+                }
+                self.task_store.update(
+                    task_id,
+                    replace_artifacts={
+                        "missionos_vla_recovery_state": failure_state,
+                    },
+                    metadata={
+                        "vla_post_episode_repair_lifecycle": (
+                            "retry_dispatch_failed"
+                        ),
+                    },
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="approved retry could not create a new task",
+                ) from error
+            retry_task_id = str(retry_execution["task_id"])
+            approved_record = {
+                **dict(repair_proposal),
+                "proposal_status": "approved_consumed",
+                "repair_approval_id": repair_approval["approval_id"],
+                "repair_approval_sha256": repair_approval["approval_sha256"],
+                "retry_task_id": retry_task_id,
+                "consumed_at": consumed_at,
+            }
+            recovery_state = {
+                **build_vla_recovery_state(
+                    "retry_dispatched",
+                    repair_proposal=approved_record,
+                ),
+                "retry_task_id": retry_task_id,
+                "proposal_status": "approved_consumed",
+                "repair_approval_id": repair_approval["approval_id"],
+                "repair_approval_sha256": repair_approval["approval_sha256"],
+                "approval_created": True,
+                "dispatch_authority_created": True,
+                "runtime_effect_requested": True,
+                "physical_execution_invoked": False,
+            }
+            source_task = self.task_store.update(
+                task_id,
+                replace_artifacts={
+                    "missionos_vla_post_episode_repair_last_proposal": (
+                        approved_record
+                    ),
+                    "missionos_vla_recovery_state": recovery_state,
+                },
+                metadata={
+                    "vla_post_episode_repair_retry_task_id": retry_task_id,
+                },
+            )
+            return {
+                "source_task": source_task,
+                "retry_task": self.task_store.get(retry_task_id),
+                "repair_approval": repair_approval,
+                "repair_lineage": repair_lineage,
+                "summary": {
+                    "source_task_id": task_id,
+                    "retry_task_id": retry_task_id,
+                    "repair_action": VLA_POST_EPISODE_REPAIR_ACTION,
+                    "attempt_index": repair_proposal["attempt_index"],
+                    "human_operator_approval_recorded": True,
+                    "automatic_retry_performed": False,
+                    "dispatch_authority_created": True,
+                    "runtime_effect_requested": True,
+                    "mission_completion_claimed": False,
                     "physical_execution_invoked": False,
                 },
             }

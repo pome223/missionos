@@ -852,8 +852,11 @@ class TaskStore:
             if artifacts:
                 next_artifacts = _merge_json(next_artifacts, artifacts)
             if replace_artifacts:
-                # Current-state snapshots must replace their top-level value;
-                # recursively merging them retains stale nested fields.
+                # Some artifacts are current-state snapshots rather than
+                # append-only evidence. Replacing only their top-level keys
+                # prevents recursive JSON merge from retaining stale nested
+                # fields while preserving concurrently written sibling
+                # artifacts in the same transaction.
                 next_artifacts = {
                     **next_artifacts,
                     **dict(replace_artifacts),

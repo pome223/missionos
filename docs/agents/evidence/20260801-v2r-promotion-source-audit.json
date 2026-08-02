@@ -1,0 +1,104 @@
+{
+  "cases": [
+    {
+      "case_id": "px4_gazebo_sim_delivery",
+      "component_status": {
+        "controller_profile_digest": "not_provided",
+        "model_checkpoint_revision": "not_applicable",
+        "robot_description_digest": "not_provided",
+        "simulator_environment_revision": "not_provided"
+      },
+      "promotion_readiness": "unverified",
+      "source_binding": {
+        "contract_sha256": "cd478d345ae47b7513d3de5a34741b40ab1b1a9f428587634797f496d56c511c",
+        "evidence_content_sha256": "9bc0c84e2a6f5c8080272b30a53fadd4eaf9d30ddab197fec6d114dfca823828",
+        "evidence_origin": "stored_artifact",
+        "execution_scope": "sim",
+        "outcome_claim_scope": "px4_gazebo_simulator_delivery",
+        "predicate_package_id": "px4_gazebo_sim_delivery_contract_satisfied",
+        "predicate_package_sha256": "ac6bf52b91c662147303a3ab3141cf531f8c4576da91f31695713b58961b9e05",
+        "predicate_package_version": "1",
+        "predicate_status": "satisfied"
+      },
+      "target_status": {
+        "controller_enforcement_evidence": "not_provided",
+        "executor_controller_profile": "not_provided",
+        "hardware_attestation": "not_provided",
+        "physical_execution_scope": "not_provided",
+        "safe_stop_receipt": "not_provided"
+      }
+    },
+    {
+      "case_id": "nav2_turtlebot3_sim_action",
+      "component_status": {
+        "controller_profile_digest": "not_provided",
+        "model_checkpoint_revision": "not_applicable",
+        "robot_description_digest": "not_provided",
+        "simulator_environment_revision": "not_provided"
+      },
+      "promotion_readiness": "unverified",
+      "source_binding": {
+        "contract_sha256": "957b8851b6bdd9037b11f8f0559cf762c3d608f774f679f50a300d8b6e1c0a44",
+        "evidence_content_sha256": "47063913879240c04d840581d9d54fc571ae8a64dca26a1f72d105efeea404be",
+        "evidence_origin": "stored_artifact",
+        "execution_scope": "sim",
+        "outcome_claim_scope": "nav2_turtlebot3_sim_action",
+        "predicate_package_id": "nav2_sim_action_completed",
+        "predicate_package_sha256": "dd7b4eb8305cd9265c757f1889ecca128298665a41f13cca39f9aaa3b9624d2d",
+        "predicate_package_version": "1",
+        "predicate_status": "satisfied"
+      },
+      "target_status": {
+        "controller_enforcement_evidence": "not_provided",
+        "executor_controller_profile": "not_provided",
+        "hardware_attestation": "not_provided",
+        "physical_execution_scope": "not_provided",
+        "safe_stop_receipt": "not_provided"
+      }
+    },
+    {
+      "case_id": "groot_n17_libero_panda_sim_episode",
+      "component_status": {
+        "controller_profile_digest": "source_available",
+        "model_checkpoint_revision": "source_available",
+        "robot_description_digest": "not_provided",
+        "simulator_environment_revision": "source_available"
+      },
+      "promotion_readiness": "unverified",
+      "source_binding": {
+        "contract_sha256": "1bcbf3c14263ff9f9778b73f46a6d271397d9c79bc501913768e391f8a2ed9f5",
+        "evidence_content_sha256": "030a4736f5bed59e56e290c53222844a9998b9b795a685e2c6b38259acecdfdb",
+        "evidence_origin": "stored_artifact",
+        "execution_scope": "sim",
+        "outcome_claim_scope": "exact_groot_n17_libero_panda_simulator_episode",
+        "predicate_package_id": "groot_n17_libero_panda_official_sim_task_satisfied",
+        "predicate_package_sha256": "7949e9f2db452a1e1f751ff186aa0accc3b4915a4c79dda8a5b30a9c225e186d",
+        "predicate_package_version": "2",
+        "predicate_status": "satisfied"
+      },
+      "target_status": {
+        "controller_enforcement_evidence": "unverified",
+        "executor_controller_profile": "not_provided",
+        "hardware_attestation": "not_provided",
+        "independent_controller_ack": "unverified",
+        "physical_execution_scope": "not_provided",
+        "safe_stop_receipt": "not_provided"
+      }
+    }
+  ],
+  "claim_boundary": {
+    "dispatch_authority_created": false,
+    "physical_execution_invoked": false,
+    "physical_safety_claimed": false,
+    "promotion_receipt_created": false,
+    "sim_to_real_equivalence_claimed": false
+  },
+  "inspected_sources": [
+    "docs/agents/evidence/20260729-px4-mission-contract-predicate-live-replay.md",
+    "docs/agents/evidence/20260729-nav2-turtlebot3-mission-contract-live-replay.md",
+    "docs/agents/evidence/20260801-groot-n17-libero-panda-live-positive.json"
+  ],
+  "recorded_at": "2026-08-01T10:02:18+09:00",
+  "result": "no_tracked_source_is_ready_for_physical_promotion",
+  "schema_version": "missionos_v2r_promotion_source_audit.v1"
+}

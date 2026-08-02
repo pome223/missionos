@@ -16,6 +16,7 @@ synthetic release event is passed to the dropoff verifier.
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from hashlib import sha256
 import json
 import os
 from pathlib import Path
@@ -23,7 +24,18 @@ import subprocess
 import sys
 from typing import Any
 
-from src.runtime.delivery_mission_contract import build_delivery_mission_contract
+from src.runtime.delivery_mission_contract import (
+    DeliveryMissionContract,
+    build_delivery_mission_contract,
+)
+from src.runtime.px4_gazebo_delivery_predicate_package import (
+    PX4GazeboDeliveryPredicateEvaluation,
+    PX4GazeboDeliveryPredicateContent,
+    PX4GazeboDeliveryEvidenceBindings,
+    build_px4_gazebo_delivery_replay_contract,
+    build_px4_gazebo_delivery_replay_input,
+    evaluate_px4_gazebo_delivery_predicate,
+)
 from src.runtime.px4_gazebo_sitl_dropoff_verification import (
     build_px4_gazebo_sitl_dropoff_flight_fact,
     build_px4_gazebo_sitl_dropoff_verification,
@@ -31,6 +43,7 @@ from src.runtime.px4_gazebo_sitl_dropoff_verification import (
 )
 from src.runtime.px4_gazebo_sitl_e2e_delivery_smoke import (
     PX4_GAZEBO_SITL_E2E_DELIVERY_EPIC_EXIT_RESULT_SCHEMA_VERSION,
+    PX4GazeboSITLE2EDeliveryEpicExitResult,
     build_px4_gazebo_sitl_e2e_delivery_epic_exit_result,
 )
 
@@ -80,6 +93,14 @@ def _write_json(path: Path, payload: Any) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
 
 
+def _sha256_path(path: Path) -> str:
+    digest = sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def _run_horizontal_flight_smoke(run_dir: Path) -> dict[str, Any]:
     horizontal_root = run_dir / "horizontal_route"
     horizontal_root.mkdir(parents=True, exist_ok=True)
@@ -119,7 +140,9 @@ def _run_horizontal_flight_smoke(run_dir: Path) -> dict[str, Any]:
     return summary
 
 
-def _contract():
+def build_px4_gazebo_sitl_e2e_delivery_contract() -> DeliveryMissionContract:
+    """Build the exact delivery contract used by the opt-in SITL smoke."""
+
     return build_delivery_mission_contract(
         mission_id="sitl-e2e-delivery-epic-exit",
         pickup_location={
@@ -164,7 +187,11 @@ def _contract():
     )
 
 
-def _dropoff_verification_from_horizontal(horizontal: dict[str, Any]):
+def _dropoff_verification_from_horizontal(
+    horizontal: dict[str, Any],
+    *,
+    delivery_contract: DeliveryMissionContract,
+):
     release_observed_at = datetime.fromisoformat(
         horizontal["payload_release_observed_at"].replace("Z", "+00:00")
     )
@@ -202,7 +229,7 @@ def _dropoff_verification_from_horizontal(horizontal: dict[str, Any]):
         metadata={"source": "same_session_horizontal_route_smoke"},
     )
     verification = build_px4_gazebo_sitl_dropoff_verification(
-        delivery_mission_contract=_contract(),
+        delivery_mission_contract=delivery_contract,
         dropoff_flight_fact=fact,
         payload_release_event=release,
         dropoff_zone_radius_m=1.0,
@@ -214,14 +241,87 @@ def _dropoff_verification_from_horizontal(horizontal: dict[str, Any]):
     return release, fact, verification
 
 
+def build_px4_gazebo_sitl_e2e_mission_contract(
+    delivery_contract: DeliveryMissionContract,
+):
+    """Build the exact frozen Mission Contract used by the opt-in SITL smoke."""
+
+    return build_px4_gazebo_delivery_replay_contract(
+        contract_id="px4-gazebo-sitl-e2e-delivery",
+        contract_version="2026-07-30",
+        approved_drop_zone=delivery_contract.dropoff_location.model_dump(
+            mode="json"
+        ),
+        approved_payload_release_rule={
+            "event_source": "gazebo_detachable_joint_detach_event",
+            "dropoff_zone_radius_m": 1.0,
+            "altitude_tolerance_m": 0.5,
+            "release_time_window_seconds": 5.0,
+            "expected_mission_item_seq": 2,
+        },
+        approved_same_session_rule={
+            "mission_upload_and_release_same_session": True,
+            "mission_request_sequences": [0, 1, 2, 3],
+        },
+        maximum_observation_age_seconds=30.0,
+    )
+
+
+def _completion_projection(
+    *,
+    legacy_epic_exit_complete: bool,
+    predicate_evaluation: PX4GazeboDeliveryPredicateEvaluation,
+) -> dict[str, Any]:
+    completion_claimed = predicate_evaluation.evaluated_outcome_claim is True
+    return {
+        "legacy_epic_exit_complete": legacy_epic_exit_complete,
+        "completion_claimed": completion_claimed,
+        "completion_scope": (
+            "px4_gazebo_simulator_delivery"
+            if completion_claimed
+            else "none"
+        ),
+    }
+
+
+def _with_completion_projection(
+    summary: dict[str, Any],
+    *,
+    legacy_epic_exit_complete: bool,
+    predicate_evaluation: PX4GazeboDeliveryPredicateEvaluation,
+) -> dict[str, Any]:
+    conflicting_keys = {
+        "legacy_epic_exit_complete",
+        "completion_claimed",
+        "completion_scope",
+    }.intersection(summary)
+    if conflicting_keys:
+        raise ValueError(
+            "completion projection keys already present: "
+            + ",".join(sorted(conflicting_keys))
+        )
+    return {
+        **summary,
+        **_completion_projection(
+            legacy_epic_exit_complete=legacy_epic_exit_complete,
+            predicate_evaluation=predicate_evaluation,
+        ),
+    }
+
+
 def main() -> int:
     if os.getenv(OPT_IN_ENV) != "1":
         raise SystemExit(f"Set {OPT_IN_ENV}=1 to run the SITL E2E delivery smoke.")
     run_dir = _new_run_dir()
 
+    delivery_contract = build_px4_gazebo_sitl_e2e_delivery_contract()
+    mission_contract = build_px4_gazebo_sitl_e2e_mission_contract(
+        delivery_contract
+    )
     horizontal = _run_horizontal_flight_smoke(run_dir)
     release, flight_fact, verification = _dropoff_verification_from_horizontal(
-        horizontal
+        horizontal,
+        delivery_contract=delivery_contract,
     )
     artifact_manifest = {
         "run_dir": str(run_dir),
@@ -254,6 +354,46 @@ def main() -> int:
         ),
         artifact_manifest=artifact_manifest,
     )
+    result_path = run_dir / "e2e_epic_exit_result.json"
+    _write_json(result_path, result.model_dump(mode="json"))
+    release_path = run_dir / "payload_release_event.json"
+    verification_path = run_dir / "dropoff_verification.json"
+    flight_fact_path = run_dir / "dropoff_flight_fact.json"
+    horizontal_summary_path = run_dir / "horizontal_flight_summary.json"
+    _write_json(release_path, release.model_dump(mode="json"))
+    _write_json(verification_path, verification.model_dump(mode="json"))
+    _write_json(flight_fact_path, flight_fact.model_dump(mode="json"))
+    _write_json(horizontal_summary_path, horizontal)
+    replayed_result = PX4GazeboSITLE2EDeliveryEpicExitResult.model_validate_json(
+        result_path.read_text(encoding="utf-8")
+    )
+    predicate_content = (
+        PX4GazeboDeliveryPredicateContent.from_epic_exit_result(
+            replayed_result,
+            evidence_bindings=PX4GazeboDeliveryEvidenceBindings(
+                payload_release_event_sha256=_sha256_path(release_path),
+                dropoff_verification_sha256=_sha256_path(verification_path),
+                sitl_telemetry_log_sha256=_sha256_path(
+                    Path(artifact_manifest["sitl_telemetry_log_path"])
+                ),
+                gazebo_pose_trace_sha256=_sha256_path(
+                    Path(artifact_manifest["gazebo_pose_trace_path"])
+                ),
+                mission_artifacts_sha256=_sha256_path(
+                    Path(horizontal["mission_artifacts_path"])
+                ),
+            ),
+        )
+    )
+    replay = build_px4_gazebo_delivery_replay_input(
+        contract=mission_contract,
+        content=predicate_content,
+    )
+    predicate_evaluation = evaluate_px4_gazebo_delivery_predicate(
+        contract=mission_contract,
+        replay=replay,
+        evaluated_at=datetime.now(timezone.utc).isoformat(),
+    )
     summary = {
         "schema_version": result.schema_version,
         "result_id": result.result_id,
@@ -261,6 +401,7 @@ def main() -> int:
         "epic_issue": "#407",
         "exit_issue": "#413",
         "payload_release_issue": "#423",
+        "mission_contract_sha256": mission_contract.contract_sha256,
         "result_status": result.result_status,
         "artifact_manifest": artifact_manifest,
         "actual_sitl_mission_upload_observed": result.mission_upload_observed,
@@ -318,18 +459,28 @@ def main() -> int:
             "from the Gazebo detachable-joint payload model and verified by the "
             "SITL dropoff verifier"
         ),
+        "mission_contract_predicate_evaluation": (
+            predicate_evaluation.to_dict()
+        ),
     }
+    summary = _with_completion_projection(
+        summary,
+        legacy_epic_exit_complete=result.epic_exit_complete,
+        predicate_evaluation=predicate_evaluation,
+    )
     _write_json(run_dir / "summary.json", summary)
-    _write_json(run_dir / "e2e_epic_exit_result.json", result.model_dump(mode="json"))
-    _write_json(run_dir / "payload_release_event.json", release.model_dump(mode="json"))
     _write_json(
-        run_dir / "dropoff_flight_fact.json", flight_fact.model_dump(mode="json")
+        run_dir / "mission_contract.json",
+        mission_contract.to_material(),
     )
     _write_json(
-        run_dir / "dropoff_verification.json", verification.model_dump(mode="json")
+        run_dir / "mission_contract_predicate_evaluation.json",
+        predicate_evaluation.to_dict(),
     )
-    _write_json(run_dir / "horizontal_flight_summary.json", horizontal)
-
+    _write_json(
+        run_dir / "mission_contract_predicate_content.json",
+        predicate_content.to_material(),
+    )
     print(json.dumps(summary, indent=2, sort_keys=True, ensure_ascii=True))
     print("SMOKE_SUMMARY_JSON " + json.dumps(summary, sort_keys=True))
 
@@ -356,6 +507,18 @@ def main() -> int:
     assert summary["release_altitude_within_tolerance"] is True
     assert summary["release_within_mission_item_time_window"] is True
     assert summary["epic_exit_complete"] is True
+    assert summary["legacy_epic_exit_complete"] is True
+    assert summary["completion_claimed"] is True
+    assert summary["completion_scope"] == "px4_gazebo_simulator_delivery"
+    assert predicate_evaluation.evaluated_outcome_claim is True
+    assert (
+        predicate_evaluation.actual_verification_basis.value
+        == "deterministic"
+    )
+    assert predicate_evaluation.dispatch_authority_created is False
+    assert predicate_evaluation.runtime_effect_requested is False
+    assert predicate_evaluation.operational_closure_created is False
+    assert predicate_evaluation.physical_execution_invoked is False
     assert summary["blocked_reasons"] == []
     assert summary["invariants"]["external_dispatch_performed"] is True
     assert (

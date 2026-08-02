@@ -97,6 +97,32 @@ def _looks_like_mission_planning_request(raw: str) -> bool:
         return True
     if re.search(r"\bfrom\s+.+\bto\s+.+", text):
         return True
+    physical_ai_terms = (
+        "vla",
+        "gr00t",
+        "groot",
+        "libero",
+        "panda",
+        "physical ai",
+        "フィジカルai",
+        "vlaミッション",
+    )
+    physical_ai_mission_terms = (
+        "ミッション",
+        "依頼",
+        "実行",
+        "動か",
+        "管制",
+        "監視",
+        "mission",
+        "run",
+        "control",
+        "monitor",
+    )
+    if any(term in text for term in physical_ai_terms) and any(
+        term in text for term in physical_ai_mission_terms
+    ):
+        return True
     home_robot_terms = (
         "turtlebot3",
         "turtlebot",

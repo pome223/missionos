@@ -1430,6 +1430,9 @@ def map_command(
         model.get("points") or model.get("observed_points") or model.get("planned_points") or []
     )
     boundary_text = (
+        "boundary=non-spatial VLA authority/evidence timeline; no world geometry, live recovery control, controller ACK, parent completion, or physical-execution claim"
+        if model.get("map_kind") == "vla_evidence_timeline"
+        else
         "boundary=indoor local-XY MissionOS/Nav2 evidence display; read-only, not verifier/dispatch/delivery/physical claim"
         if model.get("map_kind") == "indoor_local_xy"
         else "boundary=real basemap tiles + MissionOS route/telemetry overlay; read-only, not verifier/dispatch/delivery claim"
@@ -1607,12 +1610,65 @@ def _pending_recovery_approval_from_task(
     task_payload: dict[str, Any],
 ) -> dict[str, Any] | None:
     artifacts = _task_artifacts(task_payload)
-    summary = _turtlebot3_recovery_summary_from_artifacts(artifacts)
-    decision = _turtlebot3_recovery_decision_summary_from_artifacts(artifacts, summary)
     task = _task_record(task_payload)
     task_id = str(task.get("task_id") or "").strip()
     task_kind = str(task.get("kind") or "")
     task_status = str(task.get("status") or "").strip().lower()
+    vla_repair = artifacts.get("missionos_vla_post_episode_repair_last_proposal")
+    vla_repair = vla_repair if isinstance(vla_repair, Mapping) else {}
+    if (
+        task_kind == "vla_mission_execution"
+        and task_status == "failed"
+        and vla_repair.get("schema_version")
+        == "missionos_vla_post_episode_repair_proposal.v1"
+        and vla_repair.get("proposal_status")
+        == "awaiting_operator_approval"
+    ):
+        failure = artifacts.get("physical_ai_execution_failure")
+        if not isinstance(failure, Mapping):
+            failure = artifacts.get("missionos_vla_mission_run_record")
+        failure = failure if isinstance(failure, Mapping) else {}
+        return {
+            "task_id": task_id,
+            "selected_action": str(vla_repair.get("repair_action") or ""),
+            "recovery_action": str(vla_repair.get("repair_action") or ""),
+            "recovery_parameters": {},
+            "proposal_source": str(vla_repair.get("proposal_source") or ""),
+            "proposal_reason": (
+                "The bounded simulator episode failed. A new episode with the "
+                "same frozen catalog task may be attempted once after review."
+            ),
+            "input_observations": {
+                "source_failure_evidence_sha256": vla_repair.get(
+                    "source_failure_evidence_sha256"
+                ),
+                "source_failure_type": failure.get("failure_type"),
+                "source_bounded_outcome_claimed": failure.get(
+                    "bounded_outcome_claimed"
+                ),
+            },
+            "requires_new_human_approval": True,
+            "checkpoint_id": str(vla_repair.get("proposal_id") or ""),
+            "checkpoint_hash": str(vla_repair.get("proposal_sha256") or ""),
+            "checkpoint_approval_supported": True,
+            "checkpoint_revision_supported": False,
+            "runtime_proposal_approval_supported": True,
+            "operator_guidance_required": False,
+            "vla_post_episode_repair_supported": True,
+            "recovery_proposal_id": str(vla_repair.get("proposal_id") or ""),
+            "recovery_proposal_sha256": str(
+                vla_repair.get("proposal_sha256") or ""
+            ),
+            "attempt_index": vla_repair.get("attempt_index"),
+            "maximum_retry_attempts": vla_repair.get(
+                "maximum_retry_attempts"
+            ),
+            "automatic_retry_allowed": False,
+            "dispatch_authority_created": False,
+            "physical_execution_invoked": False,
+        }
+    summary = _turtlebot3_recovery_summary_from_artifacts(artifacts)
+    decision = _turtlebot3_recovery_decision_summary_from_artifacts(artifacts, summary)
     runtime_proposal = artifacts.get("missionos_runtime_recovery_last_proposal")
     runtime_proposal = runtime_proposal if isinstance(runtime_proposal, Mapping) else {}
     runtime_proposal_schema = str(runtime_proposal.get("schema_version") or "")
@@ -2577,6 +2633,46 @@ def _handle_chat_recovery_approval(
     action = str(pending.get("recovery_action") or "")
     parameters = pending.get("recovery_parameters")
     parameters = parameters if isinstance(parameters, dict) else {}
+    if pending.get("vla_post_episode_repair_supported") is True:
+        _clear_chat_recovery_revision_context(ctx)
+        _clear_chat_back_stack(ctx)
+        with console.status(
+            "[cyan]approving one bounded post-episode retry…[/cyan]",
+            spinner="dots",
+        ):
+            payload = client.vla_post_episode_repair_approve_and_run(
+                task_id=str(pending.get("task_id") or task_id),
+                repair_proposal_id=str(
+                    pending.get("recovery_proposal_id") or ""
+                ),
+                expected_repair_proposal_sha256=str(
+                    pending.get("recovery_proposal_sha256") or ""
+                ),
+                session_id=str(
+                    (ctx.obj or {}).get("missionos_chat_session_id") or ""
+                ),
+            )
+        summary = payload.get("summary")
+        summary = summary if isinstance(summary, Mapping) else {}
+        retry_task_id = str(summary.get("retry_task_id") or "")
+        if not retry_task_id:
+            console.print(
+                "[yellow]The reviewed repair proposal was not dispatched. "
+                "No second retry or physical execution was created.[/yellow]"
+            )
+            return True
+        console.print(
+            "[green]Approved one new episode for the same frozen VLA task.[/green] "
+            f"retry_task_id={retry_task_id} attempt="
+            f"{summary.get('attempt_index')}. This does not claim completion, "
+            "controller ACK, safe-stop effect, or physical execution."
+        )
+        _set_chat_suggestion(
+            ctx,
+            raw=f"/job-status {retry_task_id}",
+            label="show retry status",
+        )
+        return True
     if action in {"avoid_obstacle", "reroute"} and not _has_bounded_recovery_xy(parameters):
         console.print(
             "[yellow]Pending recovery proposal is missing bounded recovery "
@@ -2778,14 +2874,20 @@ def _operate_status_group(
     task_payload, _ = _task_and_timeline(client, task_id, timeline_limit=0)
     status = _task_status(task_payload)
     proposal = _agent_proposal_from_task(task_payload)
+    pending = _pending_recovery_approval_from_task(task_payload)
     group, fingerprint = _build_operate_status_group_view(
         task_payload,
         proposal=proposal,
-        pending=_pending_recovery_approval_from_task(task_payload),
+        pending=pending,
         status=status,
         task_id=task_id,
     )
-    return group, status, fingerprint
+    console_status = (
+        "awaiting_recovery_approval"
+        if status in TERMINAL_TASK_STATUSES and pending is not None
+        else status
+    )
+    return group, console_status, fingerprint
 
 
 def _operate_robot_for_task(client: MissionOSGatewayClient, task_id: str) -> str:
@@ -2798,17 +2900,73 @@ def _handle_operate_console_command(
     task_id: str,
     command: OperateConsoleCommand,
 ) -> bool:
+    robot = _operate_robot_for_task(client, task_id)
     if command.kind == "quit":
         return False
     if command.kind == "help":
         console.print(
             _operate_console_help_panel(
                 task_id,
-                robot=_operate_robot_for_task(client, task_id),
+                robot=robot,
             )
         )
         return True
     if command.kind == "refresh":
+        return True
+    if robot == "vla":
+        if command.kind == "defer_pending":
+            console.print(
+                "[yellow]Review deferred. No retry, approval, dispatch authority, "
+                "runtime effect, or physical execution was created.[/yellow]"
+            )
+            return True
+        if command.kind == "approve_pending":
+            task_payload, _ = _task_and_timeline(
+                client, task_id, timeline_limit=0
+            )
+            pending = _pending_recovery_approval_from_task(task_payload)
+            if not pending or pending.get(
+                "vla_post_episode_repair_supported"
+            ) is not True:
+                raise click.ClickException(
+                    "no VLA post-episode repair proposal is awaiting approval"
+                )
+            if not click.confirm(
+                "Approve one new episode for the same frozen VLA task?",
+                default=False,
+            ):
+                console.print(
+                    "[yellow]Deferred; no approval or retry was created.[/yellow]"
+                )
+                return True
+            payload = client.vla_post_episode_repair_approve_and_run(
+                task_id=task_id,
+                repair_proposal_id=str(
+                    pending.get("recovery_proposal_id") or ""
+                ),
+                expected_repair_proposal_sha256=str(
+                    pending.get("recovery_proposal_sha256") or ""
+                ),
+            )
+            summary = payload.get("summary")
+            summary = summary if isinstance(summary, Mapping) else {}
+            retry_task_id = str(summary.get("retry_task_id") or "")
+            if not retry_task_id:
+                raise click.ClickException(
+                    "reviewed VLA repair proposal was not dispatched"
+                )
+            console.print(
+                "[green]One post-episode retry was approved.[/green] "
+                f"retry_task_id={retry_task_id}. No physical execution or "
+                "safe-stop effect is claimed."
+            )
+            return True
+        console.print(
+            "[yellow]The governed VLA runner has no verified in-episode "
+            "recovery/stop callback. Only an exact post-episode retry proposal "
+            "may be approved after failure review; this command was not "
+            "dispatched.[/yellow]"
+        )
         return True
     if command.kind == "defer_pending":
         console.print(
@@ -2866,6 +3024,14 @@ def _handle_operate_natural_language_instruction(
     operator_instruction: str,
 ) -> bool:
     robot = _operate_robot_for_task(client, task_id)
+    if robot == "vla":
+        console.print(
+            "[yellow]VLA recovery is operator-review only. The official runner "
+            "does not expose a verified mid-episode recovery or stop callback, so "
+            "this text created no proposal execution, approval, dispatch authority, "
+            "automatic retry, or physical effect.[/yellow]"
+        )
+        return True
     if robot == "px4":
         recovery_request = _natural_language_recovery_request(
             operator_instruction
@@ -3519,6 +3685,15 @@ def _conversation_has_approvable_plan(payload: dict[str, Any]) -> bool:
     if (
         isinstance(mission_designer.get("scenario_proposal"), dict)
         and isinstance(mission_designer.get("validation_result"), dict)
+        and mission_context_ref
+        and mission_context_sha
+    ):
+        return True
+    if (
+        isinstance(mission_designer.get("physical_ai_mission_proposal"), dict)
+        and isinstance(
+            mission_designer.get("physical_ai_mission_validation"), dict
+        )
         and mission_context_ref
         and mission_context_sha
     ):

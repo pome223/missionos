@@ -16,11 +16,17 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Protocol
 
+from .execution_scope import (
+    HardwareExecutionMode,
+    parse_hardware_execution_mode,
+)
+
 
 HAZARD_STATE_SCHEMA_VERSION = "missionos_core_hazard_state.v1"
 ACTION_CANDIDATE_SCHEMA_VERSION = "missionos_core_action_candidate.v1"
 ACTION_FEASIBILITY_SCHEMA_VERSION = "missionos_core_action_feasibility.v1"
 REVALIDATION_SCHEMA_VERSION = "missionos_core_action_revalidation.v1"
+VERIFICATION_ITEM_SCHEMA_VERSION = "missionos_core_verification_item.v1"
 
 
 def canonical_sha256(value: Mapping[str, Any]) -> str:
@@ -58,12 +64,40 @@ class FactStatus(str, Enum):
     UNVERIFIED = "unverified"
 
 
+class EvidenceOrigin(str, Enum):
+    """Where an evidence source came from, separate from verification basis."""
+
+    MACHINE_OBSERVED = "machine_observed"
+    OPERATOR_DECLARED = "operator_declared"
+    MODEL_INFERRED = "model_inferred"
+    AUTHORITY_ARTIFACT = "authority_artifact"
+    STORED_ARTIFACT = "stored_artifact"
+    UNVERIFIED = "unverified"
+
+
 class FeasibilityStatus(str, Enum):
     """Only the deterministic verifier may produce these states."""
 
     VERIFIED_FEASIBLE = "verified_feasible"
     BLOCKED = "blocked"
     UNVERIFIED = "unverified"
+
+
+class VerificationBasis(str, Enum):
+    """How one verification predicate reached its conclusion."""
+
+    DETERMINISTIC = "deterministic"
+    MODEL_INFERRED = "model_inferred"
+    UNVERIFIED = "unverified"
+
+
+class VerificationItemStatus(str, Enum):
+    """Predicate result, kept separate from its verification basis."""
+
+    PASS = "pass"
+    FAIL = "fail"
+    BLOCKED = "blocked"
+    PENDING = "pending"
 
 
 class CursorOrder(str, Enum):
@@ -85,6 +119,41 @@ class EvidenceSourceRef:
     freshness_deadline: str | None = None
     content_sha256: str | None = None
     freshness_proof: str = "timestamp"
+    execution_scope: HardwareExecutionMode | None = None
+    origin: EvidenceOrigin | None = None
+
+    @classmethod
+    def from_dict(cls, value: Mapping[str, Any]) -> EvidenceSourceRef:
+        return cls(
+            source_id=str(value.get("source_id") or ""),
+            evidence_kind=str(value.get("evidence_kind") or ""),
+            observed_at=(
+                str(value["observed_at"])
+                if value.get("observed_at") is not None
+                else None
+            ),
+            freshness_deadline=(
+                str(value["freshness_deadline"])
+                if value.get("freshness_deadline") is not None
+                else None
+            ),
+            content_sha256=(
+                str(value["content_sha256"])
+                if value.get("content_sha256") is not None
+                else None
+            ),
+            freshness_proof=str(
+                value.get("freshness_proof") or "timestamp"
+            ),
+            execution_scope=parse_hardware_execution_mode(
+                value.get("execution_scope")
+            ),
+            origin=(
+                EvidenceOrigin(value["origin"])
+                if value.get("origin") in {item.value for item in EvidenceOrigin}
+                else None
+            ),
+        )
 
     def freshness_reason(self, *, evaluated_at: str) -> str | None:
         if self.freshness_proof == "adapter_cursor_verified":
@@ -193,7 +262,7 @@ class HazardState:
                 name=str(item["name"]),
                 value=item.get("value"),
                 unit=item.get("unit"),
-                source=EvidenceSourceRef(**dict(item["source"])),
+                source=EvidenceSourceRef.from_dict(dict(item["source"])),
                 frame=item.get("frame"),
                 status=FactStatus(item.get("status", FactStatus.OBSERVED)),
             )
@@ -265,6 +334,194 @@ class ActionCandidate:
         )
 
 
+def _verification_basis(value: Any) -> VerificationBasis:
+    try:
+        return VerificationBasis(value)
+    except (TypeError, ValueError):
+        return VerificationBasis.UNVERIFIED
+
+
+def _verification_item_status(value: Any) -> VerificationItemStatus:
+    try:
+        return VerificationItemStatus(value)
+    except (TypeError, ValueError):
+        return VerificationItemStatus.PENDING
+
+
+@dataclass(frozen=True)
+class VerificationItem:
+    """One auditable predicate emitted by a verifier extension."""
+
+    item_id: str
+    predicate: str
+    status: VerificationItemStatus
+    verification_basis: VerificationBasis
+    evidence_refs: tuple[str, ...]
+    schema_version: str = VERIFICATION_ITEM_SCHEMA_VERSION
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, value: Mapping[str, Any]) -> VerificationItem:
+        return cls(
+            item_id=str(value.get("item_id") or ""),
+            predicate=str(value.get("predicate") or ""),
+            status=_verification_item_status(value.get("status")),
+            verification_basis=_verification_basis(
+                value.get("verification_basis")
+            ),
+            evidence_refs=tuple(
+                str(ref)
+                for ref in value.get("evidence_refs", ())
+                if str(ref)
+            ),
+            schema_version=str(
+                value.get(
+                    "schema_version",
+                    VERIFICATION_ITEM_SCHEMA_VERSION,
+                )
+            ),
+        )
+
+
+@dataclass(frozen=True)
+class VerificationItemAggregate:
+    """Fail-closed composition of explicitly required verification items."""
+
+    positive: bool
+    verification_basis: VerificationBasis
+    required_item_ids: tuple[str, ...]
+    blocked_reasons: tuple[str, ...]
+    unverified_reasons: tuple[str, ...]
+
+
+def aggregate_verification_items(
+    *,
+    items: Sequence[VerificationItem],
+    required_item_ids: Sequence[str],
+    evidence_sources: Mapping[str, EvidenceSourceRef] | None = None,
+    expected_execution_scope: HardwareExecutionMode | str | None = None,
+) -> VerificationItemAggregate:
+    """Validate typed items and report the weakest required basis.
+
+    The required set is explicit so an adapter cannot make a missing predicate
+    disappear by omitting its item. Unknown status or basis values fail closed.
+    """
+
+    blocked: list[str] = []
+    unverified: list[str] = []
+    normalized_required = tuple(str(item_id) for item_id in required_item_ids)
+    if not normalized_required:
+        unverified.append("required_verification_items_missing")
+    if any(not item_id for item_id in normalized_required):
+        unverified.append("required_verification_item_id_invalid")
+    if len(set(normalized_required)) != len(normalized_required):
+        unverified.append("required_verification_item_id_duplicate")
+
+    by_id: dict[str, VerificationItem] = {}
+    expected_scope = (
+        parse_hardware_execution_mode(expected_execution_scope)
+        if expected_execution_scope is not None
+        else None
+    )
+    if expected_execution_scope is not None and expected_scope is None:
+        unverified.append("expected_execution_scope_unverified")
+    for item in items:
+        item_id = str(item.item_id or "")
+        if not item_id:
+            unverified.append("verification_item_id_invalid")
+            continue
+        if item_id in by_id:
+            unverified.append(f"verification_item_duplicate:{item_id}")
+            continue
+        by_id[item_id] = item
+        if item.schema_version != VERIFICATION_ITEM_SCHEMA_VERSION:
+            unverified.append(f"verification_item_schema_not_supported:{item_id}")
+        if not str(item.predicate or "").strip():
+            unverified.append(f"verification_item_predicate_missing:{item_id}")
+        if not item.evidence_refs:
+            unverified.append(f"verification_item_evidence_refs_missing:{item_id}")
+        resolved_scopes: set[HardwareExecutionMode] = set()
+        if evidence_sources is not None:
+            for evidence_ref in item.evidence_refs:
+                source = evidence_sources.get(evidence_ref)
+                if source is None:
+                    unverified.append(
+                        f"verification_item_evidence_source_missing:{item_id}"
+                    )
+                    continue
+                if expected_execution_scope is None:
+                    continue
+                source_scope = parse_hardware_execution_mode(
+                    source.execution_scope
+                )
+                if source_scope is None:
+                    unverified.append(
+                        f"verification_item_evidence_scope_unverified:{item_id}"
+                    )
+                    continue
+                resolved_scopes.add(source_scope)
+                if expected_scope is not None and source_scope is not expected_scope:
+                    unverified.append(
+                        f"verification_item_evidence_scope_mismatch:{item_id}"
+                    )
+            if len(resolved_scopes) > 1:
+                unverified.append(
+                    f"verification_item_evidence_scope_mixed:{item_id}"
+                )
+        if _verification_basis(item.verification_basis) is VerificationBasis.UNVERIFIED:
+            unverified.append(f"verification_item_basis_unverified:{item_id}")
+        if not isinstance(item.verification_basis, VerificationBasis):
+            try:
+                VerificationBasis(item.verification_basis)
+            except (TypeError, ValueError):
+                unverified.append(f"verification_item_basis_unknown:{item_id}")
+        if not isinstance(item.status, VerificationItemStatus):
+            try:
+                VerificationItemStatus(item.status)
+            except (TypeError, ValueError):
+                unverified.append(f"verification_item_status_unknown:{item_id}")
+
+    required_bases: list[VerificationBasis] = []
+    for item_id in normalized_required:
+        item = by_id.get(item_id)
+        if item is None:
+            unverified.append(f"required_verification_item_missing:{item_id}")
+            required_bases.append(VerificationBasis.UNVERIFIED)
+            continue
+        basis = _verification_basis(item.verification_basis)
+        status = _verification_item_status(item.status)
+        required_bases.append(basis)
+        if status in {
+            VerificationItemStatus.FAIL,
+            VerificationItemStatus.BLOCKED,
+        }:
+            blocked.append(f"verification_item_not_passed:{item_id}")
+        elif status is not VerificationItemStatus.PASS:
+            unverified.append(f"verification_item_pending:{item_id}")
+
+    basis_order = {
+        VerificationBasis.UNVERIFIED: 0,
+        VerificationBasis.MODEL_INFERRED: 1,
+        VerificationBasis.DETERMINISTIC: 2,
+    }
+    weakest = (
+        min(required_bases, key=basis_order.__getitem__)
+        if required_bases
+        else VerificationBasis.UNVERIFIED
+    )
+    blocked = list(dict.fromkeys(blocked))
+    unverified = list(dict.fromkeys(unverified))
+    return VerificationItemAggregate(
+        positive=not blocked and not unverified,
+        verification_basis=weakest,
+        required_item_ids=tuple(dict.fromkeys(normalized_required)),
+        blocked_reasons=tuple(blocked),
+        unverified_reasons=tuple(unverified),
+    )
+
+
 @dataclass(frozen=True)
 class ExtensionVerdict:
     """Backend calculation returned without authority-bearing side effects."""
@@ -275,6 +532,34 @@ class ExtensionVerdict:
     unverified_reasons: tuple[str, ...] = ()
     measurements: Mapping[str, Any] = field(default_factory=dict)
     assumptions: tuple[str, ...] = ()
+    verification_items: tuple[VerificationItem, ...] = ()
+    required_verification_item_ids: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, value: Mapping[str, Any]) -> ExtensionVerdict:
+        return cls(
+            extension_id=str(value["extension_id"]),
+            status=FeasibilityStatus(value["status"]),
+            blocked_reasons=tuple(value.get("blocked_reasons", ())),
+            unverified_reasons=tuple(value.get("unverified_reasons", ())),
+            measurements=dict(value.get("measurements", {})),
+            assumptions=tuple(value.get("assumptions", ())),
+            verification_items=tuple(
+                VerificationItem.from_dict(item)
+                for item in value.get("verification_items", ())
+                if isinstance(item, Mapping)
+            ),
+            required_verification_item_ids=tuple(
+                str(item_id)
+                for item_id in value.get(
+                    "required_verification_item_ids",
+                    (),
+                )
+            ),
+        )
 
 
 class FeasibilityVerifierExtension(Protocol):
@@ -301,6 +586,7 @@ class ActionFeasibilityResult:
     extension_verdicts: tuple[ExtensionVerdict, ...]
     policy_sha256: str
     evaluated_at: str
+    verification_basis: VerificationBasis = VerificationBasis.UNVERIFIED
     approval_created: bool = False
     dispatch_authority_created: bool = False
     execution_invoked: bool = False
@@ -319,14 +605,7 @@ class ActionFeasibilityResult:
         value: Mapping[str, Any],
     ) -> ActionFeasibilityResult:
         verdicts = tuple(
-            ExtensionVerdict(
-                extension_id=str(item["extension_id"]),
-                status=FeasibilityStatus(item["status"]),
-                blocked_reasons=tuple(item.get("blocked_reasons", ())),
-                unverified_reasons=tuple(item.get("unverified_reasons", ())),
-                measurements=dict(item.get("measurements", {})),
-                assumptions=tuple(item.get("assumptions", ())),
-            )
+            ExtensionVerdict.from_dict(item)
             for item in value.get("extension_verdicts", ())
         )
         return cls(
@@ -339,6 +618,9 @@ class ActionFeasibilityResult:
             extension_verdicts=verdicts,
             policy_sha256=str(value["policy_sha256"]),
             evaluated_at=str(value["evaluated_at"]),
+            verification_basis=_verification_basis(
+                value.get("verification_basis")
+            ),
             approval_created=bool(value.get("approval_created", False)),
             dispatch_authority_created=bool(
                 value.get("dispatch_authority_created", False)
@@ -425,6 +707,7 @@ def verify_action_candidate(
                 blocked.append("cursor_regression")
 
     extension_verdicts: list[ExtensionVerdict] = []
+    extension_bases: list[VerificationBasis] = []
     if not extensions:
         unverified.append("verifier_extension_missing")
     for extension in extensions:
@@ -433,6 +716,31 @@ def verify_action_candidate(
         assumptions.extend(verdict.assumptions)
         blocked.extend(verdict.blocked_reasons)
         unverified.extend(verdict.unverified_reasons)
+        item_aggregate = aggregate_verification_items(
+            items=verdict.verification_items,
+            required_item_ids=verdict.required_verification_item_ids,
+            evidence_sources=sources,
+        )
+        extension_bases.append(item_aggregate.verification_basis)
+        item_blocked_reasons = item_aggregate.blocked_reasons
+        if verdict.blocked_reasons:
+            item_blocked_reasons = tuple(
+                reason
+                for reason in item_blocked_reasons
+                if not reason.startswith("verification_item_not_passed:")
+            )
+        item_unverified_reasons = item_aggregate.unverified_reasons
+        if verdict.unverified_reasons:
+            item_unverified_reasons = tuple(
+                reason
+                for reason in item_unverified_reasons
+                if not (
+                    reason.startswith("verification_item_basis_unverified:")
+                    or reason.startswith("verification_item_pending:")
+                )
+            )
+        blocked.extend(item_blocked_reasons)
+        unverified.extend(item_unverified_reasons)
         if verdict.status is FeasibilityStatus.BLOCKED and not verdict.blocked_reasons:
             blocked.append("extension_blocked")
         if (
@@ -449,6 +757,16 @@ def verify_action_candidate(
         status = FeasibilityStatus.UNVERIFIED
     else:
         status = FeasibilityStatus.VERIFIED_FEASIBLE
+    basis_order = {
+        VerificationBasis.UNVERIFIED: 0,
+        VerificationBasis.MODEL_INFERRED: 1,
+        VerificationBasis.DETERMINISTIC: 2,
+    }
+    verification_basis = (
+        min(extension_bases, key=basis_order.__getitem__)
+        if extension_bases
+        else VerificationBasis.UNVERIFIED
+    )
     return ActionFeasibilityResult(
         candidate_id=candidate.candidate_id,
         hazard_state_id=hazard_state.state_id,
@@ -459,6 +777,7 @@ def verify_action_candidate(
         extension_verdicts=tuple(extension_verdicts),
         policy_sha256=hazard_state.policy_binding.policy_sha256,
         evaluated_at=evaluated_at,
+        verification_basis=verification_basis,
     )
 
 

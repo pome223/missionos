@@ -29,6 +29,7 @@ from .map_model import (
 )
 from .map_terminal import _render_flight_map, _render_turtlebot3_indoor_map
 from .route_evidence_image import write_mission_route_evidence_artifacts
+from .vla_operator import _is_vla_operator_task, _render_vla_operator_panel
 
 
 FLIGHT_MAP_POLL_INTERVAL = 1.0
@@ -73,7 +74,7 @@ def _write_terminal_route_evidence(
 ) -> dict[str, Any] | None:
     """Write source-backed terminal route evidence for supported flight maps."""
 
-    if model.get("map_kind") == "indoor_local_xy":
+    if model.get("map_kind") in {"indoor_local_xy", "vla_evidence_timeline"}:
         return None
     if str(model.get("task_status") or "").strip().lower() not in (TERMINAL_TASK_STATUSES):
         return None
@@ -102,6 +103,18 @@ def _watch_flight_map(
                 time.sleep(max(0.05, poll_interval))
                 continue
             artifacts = _task_artifacts(task_payload)
+            if _is_vla_operator_task(task_payload):
+                live.update(
+                    _render_vla_operator_panel(
+                        task_payload,
+                        title="MissionOS Watch · governed VLA evidence",
+                    )
+                )
+                status = _task_status(task_payload)
+                if status in TERMINAL_TASK_STATUSES:
+                    break
+                time.sleep(max(0.05, poll_interval))
+                continue
             indoor_map = _turtlebot3_indoor_map_model_from_artifacts(artifacts)
             status = _task_status(task_payload)
             if indoor_map:
