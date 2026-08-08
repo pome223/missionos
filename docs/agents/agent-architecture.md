@@ -136,6 +136,28 @@ This slice changes the ControlLoop only. Gateway conversation orchestration and
 proposal-primary promotion remain separate steps. The exact contract is in
 `docs/agents/adk-v2-control-loop.md`.
 
+## ADK v2 Legacy Gateway Conversation Workflow
+
+The explicit `legacy_agent` Gateway profile now runs route selection,
+optional specialist prepass, and optional root synthesis through one ADK v2
+dynamic Workflow. Router and specialist Agents use isolated single-turn
+sub-branches. The root Agent uses chat mode on the main branch so its
+conversation history and supported collaboration behavior remain available.
+
+The Workflow returns `control_loop` and `dynamic_agent` as decisions only.
+Gateway performs those handoffs after the graph returns, so route selection or
+node completion creates no approval, dispatch authority, execution, observed
+effect, verifier passage, or progress. Browser and GUI infrastructure failure
+continues to fail closed before root synthesis.
+
+The former root Runner, routing Runner, and per-specialist Runner map have
+been removed from `GatewayServer`. Cron-only route selection also invokes the
+routing Agent as a child of a small v2 Workflow. Routing judgment reruns on
+resume, while completed specialist and root nodes do not replay their possible
+tool side effects. The full branch, history,
+failure, authority, and loopback-smoke contract is in
+`docs/agents/adk-v2-legacy-gateway.md`.
+
 ## ADK v2 Canonical Approval HITL
 
 An independent opt-in workflow may pause on a Form 2A selection and resume

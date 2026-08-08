@@ -82,3 +82,4 @@ the same change.
 - `docs/agents/adk-v2-guarded-execution.md`
 - `docs/agents/adk-v2-bounded-recovery.md`
 - `docs/agents/adk-v2-control-loop.md`
+- `docs/agents/adk-v2-legacy-gateway.md`
