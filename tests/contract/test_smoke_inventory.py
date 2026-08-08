@@ -18,8 +18,8 @@ def test_every_python_smoke_has_exactly_one_disposition() -> None:
     result = _checker_module().verify_inventory()
 
     assert result["ok"] is True
-    assert result["actual_count"] == 94
-    assert result["classified_count"] == 94
+    assert result["actual_count"] == 95
+    assert result["classified_count"] == 95
     assert result["duplicates"] == []
     assert result["missing"] == []
     assert result["absent"] == []
