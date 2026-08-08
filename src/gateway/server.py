@@ -97,6 +97,10 @@ from src.intelligence.missionos_adk_v2_hitl import (
     resume_missionos_canonical_approval_hitl,
     start_missionos_canonical_approval_hitl,
 )
+from src.intelligence.missionos_adk_v2_guarded_execution import (
+    MISSIONOS_ADK_V2_GUARDED_EXECUTION_ENV,
+    build_form2a_guarded_execution_handler,
+)
 from src.runtime.session_service import (
     create_session_service as create_runtime_session_service,
 )
@@ -234,6 +238,13 @@ _GATEWAY_PROFILES = frozenset(
 
 def _missionos_adk_v2_hitl_enabled() -> bool:
     return os.environ.get(MISSIONOS_ADK_V2_HITL_ENV, "").strip() == "1"
+
+
+def _missionos_adk_v2_guarded_execution_enabled() -> bool:
+    return (
+        os.environ.get(MISSIONOS_ADK_V2_GUARDED_EXECUTION_ENV, "").strip()
+        == "1"
+    )
 
 
 async def _close_missionos_hitl_session_service(session_service: Any) -> None:
@@ -8032,20 +8043,26 @@ class GatewayServer:
                     },
                 )
             try:
+                guarded_execution_handler = (
+                    build_form2a_guarded_execution_handler()
+                    if _missionos_adk_v2_guarded_execution_enabled()
+                    else None
+                )
                 result = await resume_missionos_canonical_approval_hitl(
                     session_service=session_service,
                     operator_session_id=operator_session_id,
                     adk_session_id=adk_session_id,
                     human_response={"approval_ref": body.get("approval_ref")},
                     approval_validator=validate_form2a_canonical_approval,
+                    guarded_execution_handler=guarded_execution_handler,
                 )
             finally:
                 await _close_missionos_hitl_session_service(session_service)
-            status_code = (
-                200
-                if result.get("hitl_status") == "canonical_approval_validated"
-                else 409
-            )
+            status_code = 200 if result.get("hitl_status") in {
+                "canonical_approval_validated",
+                "guarded_execution_completed",
+                "guarded_execution_receipt_replayed",
+            } else 409
             return JSONResponse(status_code=status_code, content=result)
 
         @self.app.get("/missionos/form2a-action-consumption")

@@ -114,13 +114,12 @@ This proof does not invoke an external transport or physical executor. It also
 does not prove cross-host, independent-container-volume, unverified
 network-filesystem, or regional failover exclusion.
 
-## ADK v2 Migration Gate
+## ADK v2 Promotion Gate
 
-The public runtime must wire this ledger into its future guarded execution node
-before an ADK v2 workflow can approach a sender. That later node must also
-require restart-safe resume, canonical human approval, fresh dispatch-time
-revalidation, and same-task audit correlation. Adding this ledger alone does
-not authorize dispatch and does not mean that ADK v2 migration is complete.
+The idempotency ledger is used by the opt-in ADK v2 guarded execution node only
+after Redis-backed restart/resume, canonical human approval, fresh
+dispatch-time revalidation, and same-task audit correlation. The complete
+promotion contract is `docs/agents/adk-v2-guarded-execution.md`.
 
 ADK automatic retry remains disabled for dispatch and hardware-affecting
 writes. A checkpoint or completed node must not be reported as a send, ACK,
