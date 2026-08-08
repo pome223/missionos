@@ -238,6 +238,13 @@ LEGACY_AGENT_GATEWAY_PROFILE = "legacy_agent"
 _GATEWAY_PROFILES = frozenset(
     {MISSIONOS_GATEWAY_PROFILE, LEGACY_AGENT_GATEWAY_PROFILE}
 )
+_ADK_V2_GATEWAY_ROUTER_WORKFLOW_NAME = "missionos_legacy_gateway_router_v2"
+_ADK_V2_GATEWAY_CONVERSATION_WORKFLOW_NAME = (
+    "missionos_legacy_gateway_conversation_v2"
+)
+_ADK_V2_GATEWAY_CONVERSATION_RESULT_SCHEMA_VERSION = (
+    "missionos_adk_v2_gateway_conversation_result.v1"
+)
 
 
 def _missionos_adk_v2_hitl_enabled() -> bool:
@@ -5724,6 +5731,25 @@ class SpecialistPrepassResult:
         return any(item.tool_name in _BROWSER_TOOL_NAMES for item in self.tool_failures)
 
 
+@dataclass
+class GatewayConversationWorkflowResult:
+    decision: RoutingDecision
+    workflow_name: str = _ADK_V2_GATEWAY_CONVERSATION_WORKFLOW_NAME
+    workflow_engine: str = "v2_dynamic"
+    response_kind: str = ""
+    response_text: str = ""
+    ok: bool = False
+    specialist_prepass: SpecialistPrepassResult = field(
+        default_factory=SpecialistPrepassResult
+    )
+    node_paths: list[str] = field(default_factory=list)
+    approval_created: bool = False
+    dispatch_authority_created: bool = False
+    external_execution_invoked: bool = False
+    physical_execution_invoked: bool = False
+    node_completion_counts_progress: bool = False
+
+
 class ConnectionManager:
     """WebSocket connection + running task management"""
 
@@ -5832,10 +5858,10 @@ class GatewayServer:
         self.session_service = None
         self.memory_service = None
         self.subagent_manager = None
-        self.runner = None
         self.routing_session_service = None
-        self.routing_runner = None
-        self.specialist_runners: dict[str, Any] = {}
+        self.gateway_root_agent = None
+        self.gateway_routing_agent = None
+        self.gateway_specialist_agents: dict[str, Any] = {}
         self.control_loop = None
         self.control_supervisor = None
         self.transcript = None
@@ -5845,27 +5871,11 @@ class GatewayServer:
             self.session_service = create_session_service(self.settings)
             self.memory_service = get_promoted_memory_service()
             self.subagent_manager = get_subagent_manager()
-            self.runner = Runner(
-                agent=root_agent,
-                app_name="boiled-claw",
-                session_service=self.session_service,
-                memory_service=self.memory_service,
-            )
             self.routing_session_service = create_session_service(self.settings)
-            self.routing_runner = Runner(
-                agent=routing_agent,
-                app_name="boiled-claw-router",
-                session_service=self.routing_session_service,
-                memory_service=self.memory_service,
-            )
-            self.specialist_runners = {
-                agent.name: Runner(
-                    agent=agent,
-                    app_name="boiled-claw",
-                    session_service=self.session_service,
-                    memory_service=self.memory_service,
-                )
-                for agent in SUB_AGENTS
+            self.gateway_root_agent = root_agent
+            self.gateway_routing_agent = routing_agent
+            self.gateway_specialist_agents = {
+                agent.name: agent for agent in SUB_AGENTS
             }
             self.control_loop = ControlLoop(
                 session_service=self.session_service,
@@ -6772,80 +6782,6 @@ class GatewayServer:
         lines.extend(["", "[Original user request]", original_message])
         return "\n".join(lines)
 
-    async def _run_specialist_prepass(
-        self,
-        *,
-        session_id: str,
-        user_id: str,
-        message: str,
-        specialist_name: str,
-        request_id: str | None = None,
-    ) -> SpecialistPrepassResult:
-        runner = self.specialist_runners.get(specialist_name)
-        if runner is None:
-            return SpecialistPrepassResult()
-
-        full_message = message
-        if specialist_name == "web_researcher":
-            full_message = await self._compose_grounded_agent_message(
-                session_id,
-                user_id,
-                message,
-                research_message=message,
-                agent_name=specialist_name,
-                request_id=request_id,
-                emit_tool_events=True,
-                allow_forced_research=True,
-            )
-        content = types.Content(role="user", parts=[types.Part(text=full_message)])
-        partial = ""
-        result = SpecialistPrepassResult()
-        if specialist_name == "web_researcher":
-            grounding = self._extract_grounding_block(full_message)
-            if grounding:
-                result.evidence_blocks.append(grounding)
-        async for event in runner.run_async(
-            user_id=user_id,
-            session_id=session_id,
-            new_message=content,
-        ):
-            await self._emit_runner_tool_events(
-                session_id,
-                event,
-                fallback_request_id=request_id,
-            )
-            for function_call in event.get_function_calls():
-                if function_call.name:
-                    result.used_tools.add(function_call.name)
-            for function_response in event.get_function_responses():
-                if function_response.name:
-                    result.used_tools.add(function_response.name)
-                if function_response.name == "web_search":
-                    response = function_response.response or {}
-                    query = str(response.get("query") or message).strip()
-                    grounding = self._format_web_grounding(query, response)
-                    if grounding and grounding not in result.evidence_blocks:
-                        result.evidence_blocks.append(grounding)
-                error = self._tool_response_error(function_response.response or {})
-                if not error:
-                    continue
-                result.tool_failures.append(
-                    SpecialistToolFailure(
-                        tool_name=function_response.name or "unknown_tool",
-                        error=error,
-                        infrastructure=self._is_browser_infrastructure_error(
-                            function_response.name or "",
-                            error,
-                        ),
-                    )
-                )
-            if event.is_final_response() and event.content and event.content.parts:
-                for part in event.content.parts:
-                    if part.text:
-                        partial += part.text
-        result.text = partial.strip()
-        return result
-
     def _routing_history_block(self, session_id: str, limit: int = 8) -> str:
         lines: list[str] = []
         for entry in self.transcript.get_history(session_id, limit=limit):
@@ -6897,6 +6833,543 @@ class GatewayServer:
         except json.JSONDecodeError:
             return None
 
+    @staticmethod
+    def _routing_decision_payload(decision: RoutingDecision) -> dict[str, Any]:
+        return {
+            "target": decision.target,
+            "specialist": decision.specialist,
+            "handoff_mode": decision.handoff_mode,
+            "reason": decision.reason,
+            "confidence": decision.confidence,
+            "dynamic_agent": {
+                "instruction": decision.dynamic_agent.instruction,
+                "mcp_servers": list(decision.dynamic_agent.mcp_servers),
+                "mode": decision.dynamic_agent.mode,
+            },
+        }
+
+    @staticmethod
+    def _specialist_prepass_payload(
+        result: SpecialistPrepassResult,
+    ) -> dict[str, Any]:
+        return {
+            "text": result.text,
+            "tool_failures": [
+                {
+                    "tool_name": item.tool_name,
+                    "error": item.error,
+                    "infrastructure": item.infrastructure,
+                }
+                for item in result.tool_failures
+            ],
+            "used_tools": sorted(result.used_tools),
+            "evidence_blocks": list(result.evidence_blocks),
+        }
+
+    @staticmethod
+    def _specialist_prepass_from_payload(
+        payload: Any,
+    ) -> SpecialistPrepassResult:
+        value = payload if isinstance(payload, Mapping) else {}
+        failures: list[SpecialistToolFailure] = []
+        for item in value.get("tool_failures") or []:
+            if not isinstance(item, Mapping):
+                continue
+            failures.append(
+                SpecialistToolFailure(
+                    tool_name=str(item.get("tool_name") or "unknown_tool"),
+                    error=str(item.get("error") or ""),
+                    infrastructure=bool(item.get("infrastructure")),
+                )
+            )
+        return SpecialistPrepassResult(
+            text=str(value.get("text") or ""),
+            tool_failures=failures,
+            used_tools={str(item) for item in value.get("used_tools") or []},
+            evidence_blocks=[
+                str(item) for item in value.get("evidence_blocks") or [] if str(item)
+            ],
+        )
+
+    @staticmethod
+    def _append_agent_callback(existing: Any, callback: Any) -> list[Any]:
+        if existing is None:
+            return [callback]
+        if isinstance(existing, list):
+            return [*existing, callback]
+        return [existing, callback]
+
+    def _resolve_routing_agent_text(
+        self,
+        raw_response: str,
+        *,
+        message: str,
+    ) -> RoutingDecision:
+        payload = self._extract_json_payload(raw_response)
+        if payload is None:
+            raise ValueError("routing_agent returned non-JSON output")
+        decision = decision_from_payload(payload, fallback_message=message)
+        if decision.confidence < 0.35:
+            raise ValueError("routing_agent confidence too low")
+        return decision
+
+    def _record_routing_fallback(
+        self,
+        *,
+        user_id: str,
+        session_id: str,
+        message: str,
+        error: Exception,
+    ) -> RoutingDecision:
+        fallback = heuristic_decision(message)
+        self.audit_logger.log(
+            event_type=AuditEventType.AGENT_MESSAGE,
+            user_id=user_id,
+            session_id=session_id,
+            action="routing_fallback",
+            resource="routing_agent",
+            result="fallback",
+            metadata={
+                "error": str(error),
+                "fallback_target": fallback.route_label,
+            },
+        )
+        return fallback
+
+    def _gateway_router_node(self, *, output_key: str):
+        return self.gateway_routing_agent.model_copy(
+            update={
+                "mode": "single_turn",
+                "output_key": output_key,
+                # Routing is judgment only and must use current context on resume.
+                "rerun_on_resume": True,
+                "timeout": 20.0,
+            }
+        )
+
+    def _gateway_specialist_node(
+        self,
+        *,
+        specialist_name: str,
+        output_key: str,
+        result: SpecialistPrepassResult,
+        message: str,
+    ):
+        specialist = self.gateway_specialist_agents.get(specialist_name)
+        if specialist is None:
+            return None
+
+        async def collect_tool_start(
+            tool: Any,
+            args: dict[str, Any],
+            tool_context: Any,
+        ) -> None:
+            del args, tool_context
+            result.used_tools.add(
+                str(getattr(tool, "name", "") or "unknown_tool")
+            )
+            return None
+
+        async def collect_tool_result(
+            tool: Any,
+            args: dict[str, Any],
+            tool_context: Any,
+            tool_response: dict[str, Any],
+        ) -> None:
+            del tool_context
+            tool_name = str(getattr(tool, "name", "") or "unknown_tool")
+            result.used_tools.add(tool_name)
+            response = tool_response if isinstance(tool_response, dict) else {}
+            if tool_name == "web_search":
+                query = str(response.get("query") or args.get("query") or message).strip()
+                grounding = self._format_web_grounding(query, response)
+                if grounding and grounding not in result.evidence_blocks:
+                    result.evidence_blocks.append(grounding)
+            error = self._tool_response_error(response)
+            if error:
+                result.tool_failures.append(
+                    SpecialistToolFailure(
+                        tool_name=tool_name,
+                        error=error,
+                        infrastructure=self._is_browser_infrastructure_error(
+                            tool_name,
+                            error,
+                        ),
+                    )
+                )
+            return None
+
+        async def collect_tool_error(
+            tool: Any,
+            args: dict[str, Any],
+            tool_context: Any,
+            error: Exception,
+        ) -> None:
+            del args, tool_context
+            tool_name = str(getattr(tool, "name", "") or "unknown_tool")
+            error_text = str(error)
+            result.used_tools.add(tool_name)
+            result.tool_failures.append(
+                SpecialistToolFailure(
+                    tool_name=tool_name,
+                    error=error_text,
+                    infrastructure=self._is_browser_infrastructure_error(
+                        tool_name,
+                        error_text,
+                    ),
+                )
+            )
+            return None
+
+        return specialist.model_copy(
+            update={
+                "mode": "single_turn",
+                "output_key": output_key,
+                # Completed specialists may have invoked tools; do not replay them.
+                "rerun_on_resume": False,
+                "timeout": float(_AGENT_TIMEOUT),
+                "before_tool_callback": self._append_agent_callback(
+                    specialist.before_tool_callback,
+                    collect_tool_start,
+                ),
+                "after_tool_callback": self._append_agent_callback(
+                    specialist.after_tool_callback,
+                    collect_tool_result,
+                ),
+                "on_tool_error_callback": self._append_agent_callback(
+                    specialist.on_tool_error_callback,
+                    collect_tool_error,
+                ),
+            }
+        )
+
+    def _gateway_root_node(
+        self,
+        *,
+        output_key: str,
+        runtime_context: str,
+    ):
+        instruction = self.gateway_root_agent.instruction
+        if not isinstance(instruction, str):
+            raise TypeError("gateway root Agent instruction must be static text")
+        return self.gateway_root_agent.model_copy(
+            update={
+                "mode": "chat",
+                "instruction": (
+                    f"{instruction}\n\n"
+                    "[Gateway runtime context for this turn]\n"
+                    f"{runtime_context}"
+                ),
+                "output_key": output_key,
+                # A completed root turn may include tool calls and must not replay.
+                "rerun_on_resume": False,
+                "timeout": float(_AGENT_TIMEOUT),
+            }
+        )
+
+    async def _run_gateway_conversation_workflow(
+        self,
+        *,
+        session_id: str,
+        user_id: str,
+        message: str,
+        route_message: str,
+        source: str,
+        request_id: str | None = None,
+        emit_grounding_tool_events: bool,
+    ) -> GatewayConversationWorkflowResult:
+        from google.adk import Workflow
+        from google.adk.workflow import node
+
+        workflow_run_id = request_id or f"gw_{uuid.uuid4().hex[:12]}"
+        safe_run_id = re.sub(r"[^0-9A-Za-z_-]+", "-", workflow_run_id)
+        router_output_key = f"temp:gateway_router_output:{safe_run_id}"
+        specialist_output_key = f"temp:gateway_specialist_output:{safe_run_id}"
+        root_output_key = f"temp:gateway_root_output:{safe_run_id}"
+        specialist_result = SpecialistPrepassResult()
+
+        @node(name="orchestrate_gateway_conversation", rerun_on_resume=True)
+        async def orchestrate_gateway_conversation(ctx: Any, node_input: Any):
+            del node_input
+            routing_prompt = self._build_routing_request(
+                session_id=session_id,
+                source=source,
+                message=route_message,
+            )
+            router_node = self._gateway_router_node(output_key=router_output_key)
+            try:
+                raw_route = await ctx.run_node(
+                    router_node,
+                    types.Content(
+                        role="user",
+                        parts=[types.Part(text=routing_prompt)],
+                    ),
+                    run_id="routing-agent",
+                    use_sub_branch=True,
+                )
+                decision = self._resolve_routing_agent_text(
+                    str(raw_route or ctx.state.get(router_output_key) or ""),
+                    message=route_message,
+                )
+            except Exception as exc:
+                decision = self._record_routing_fallback(
+                    user_id=user_id,
+                    session_id=session_id,
+                    message=route_message,
+                    error=exc,
+                )
+
+            result: dict[str, Any] = {
+                "schema_version": _ADK_V2_GATEWAY_CONVERSATION_RESULT_SCHEMA_VERSION,
+                "workflow_name": _ADK_V2_GATEWAY_CONVERSATION_WORKFLOW_NAME,
+                "workflow_engine": "v2_dynamic",
+                "decision": self._routing_decision_payload(decision),
+                "response_kind": decision.target,
+                "response_text": "",
+                "ok": True,
+                "specialist_prepass": {},
+                "approval_created": False,
+                "dispatch_authority_created": False,
+                "external_execution_invoked": False,
+                "physical_execution_invoked": False,
+                "node_completion_counts_progress": False,
+            }
+            if decision.target in {"control_loop", "dynamic_agent"}:
+                return result
+
+            routed_message = message
+            if decision.target == "specialist" and decision.specialist:
+                await self._emit_routing_event(
+                    session_id,
+                    status="selected",
+                    message=(
+                        f"Router selected {decision.specialist} "
+                        f"({decision.reason or 'specialized task'})."
+                    ),
+                    user_id=user_id,
+                    agent_name=decision.specialist,
+                )
+                full_specialist_message = message
+                if decision.specialist == "web_researcher":
+                    full_specialist_message = await self._compose_grounded_agent_message(
+                        session_id,
+                        user_id,
+                        message,
+                        research_message=message,
+                        agent_name=decision.specialist,
+                        request_id=request_id,
+                        emit_tool_events=emit_grounding_tool_events,
+                        allow_forced_research=True,
+                    )
+                    grounding = self._extract_grounding_block(full_specialist_message)
+                    if grounding and grounding not in specialist_result.evidence_blocks:
+                        specialist_result.evidence_blocks.append(grounding)
+
+                specialist_node = self._gateway_specialist_node(
+                    specialist_name=decision.specialist,
+                    output_key=specialist_output_key,
+                    result=specialist_result,
+                    message=message,
+                )
+                try:
+                    if specialist_node is not None:
+                        specialist_output = await ctx.run_node(
+                            specialist_node,
+                            types.Content(
+                                role="user",
+                                parts=[types.Part(text=full_specialist_message)],
+                            ),
+                            run_id="specialist-agent",
+                            use_sub_branch=True,
+                        )
+                        specialist_result.text = str(
+                            specialist_output
+                            or ctx.state.get(specialist_output_key)
+                            or ""
+                        ).strip()
+                except Exception as exc:
+                    if not decision.preflight_specialist:
+                        raise
+                    await self._emit_routing_event(
+                        session_id,
+                        status="fallback",
+                        message=(
+                            f"{decision.specialist} prepass failed; "
+                            f"falling back to root_agent ({exc})."
+                        ),
+                        user_id=user_id,
+                        agent_name="root_agent",
+                    )
+
+                result["specialist_prepass"] = self._specialist_prepass_payload(
+                    specialist_result
+                )
+                if specialist_result.infrastructure_blocked:
+                    result.update(
+                        {
+                            "response_kind": "error",
+                            "response_text": self._format_specialist_runtime_failure(
+                                decision.specialist,
+                                specialist_result,
+                            ),
+                            "ok": False,
+                        }
+                    )
+                    if decision.preflight_specialist:
+                        await self._emit_routing_event(
+                            session_id,
+                            status="blocked",
+                            message=(
+                                f"{decision.specialist} runtime unavailable; "
+                                "not forwarding browser context to root_agent."
+                            ),
+                            user_id=user_id,
+                            agent_name=decision.specialist,
+                        )
+                    return result
+
+                if not decision.preflight_specialist:
+                    result.update(
+                        {
+                            "response_kind": "specialist",
+                            "response_text": (
+                                specialist_result.text
+                                or "Specialist did not return a response."
+                            ),
+                            "ok": True,
+                        }
+                    )
+                    return result
+
+                routed_message = self._format_root_routing_message(
+                    message,
+                    decision,
+                    specialist_output=specialist_result.text,
+                    specialist_evidence=specialist_result.evidence_blocks,
+                )
+                await self._emit_routing_event(
+                    session_id,
+                    status="forwarded",
+                    message=(
+                        f"Routing context from {decision.specialist} "
+                        "forwarded to root_agent."
+                    ),
+                    user_id=user_id,
+                    agent_name="root_agent",
+                )
+
+            full_root_context = await self._compose_grounded_agent_message(
+                session_id,
+                user_id,
+                routed_message,
+                research_message=message,
+                agent_name=self.gateway_root_agent.name,
+                request_id=request_id,
+                emit_tool_events=emit_grounding_tool_events,
+                allow_forced_research=not (
+                    decision.target == "specialist"
+                    and decision.specialist == "web_researcher"
+                    and decision.preflight_specialist
+                ),
+            )
+            root_node = self._gateway_root_node(
+                output_key=root_output_key,
+                runtime_context=full_root_context,
+            )
+            await ctx.run_node(
+                root_node,
+                None,
+                run_id="root-agent",
+            )
+            response_text = str(ctx.state.get(root_output_key) or "").strip()
+            result.update(
+                {
+                    "response_kind": "agent_message",
+                    "response_text": response_text
+                    or (
+                        "MissionOS could not generate a response. "
+                        "Try again or make the request more specific."
+                    ),
+                    "ok": True,
+                }
+            )
+            return result
+
+        workflow = Workflow(
+            name=_ADK_V2_GATEWAY_CONVERSATION_WORKFLOW_NAME,
+            description=(
+                "Legacy Gateway route, specialist prepass, and root synthesis "
+                "as ADK v2 child nodes. Gateway retains every authority boundary."
+            ),
+            rerun_on_resume=True,
+            edges=[("START", orchestrate_gateway_conversation)],
+        )
+        runner = Runner(
+            agent=workflow,
+            app_name="boiled-claw",
+            session_service=self.session_service,
+            memory_service=self.memory_service,
+        )
+        workflow_input = types.Content(
+            role="user",
+            parts=[types.Part(text=self._compose_agent_message(session_id, message))],
+        )
+        final_output: dict[str, Any] = {}
+        node_paths: list[str] = []
+        async for event in runner.run_async(
+            user_id=user_id,
+            session_id=session_id,
+            new_message=workflow_input,
+        ):
+            await self._emit_runner_tool_events(
+                session_id,
+                event,
+                fallback_request_id=request_id,
+            )
+            node_path = str(
+                getattr(getattr(event, "node_info", None), "path", "") or ""
+            )
+            if node_path and node_path not in node_paths:
+                node_paths.append(node_path)
+            if isinstance(event.output, Mapping):
+                candidate = dict(event.output)
+                if (
+                    candidate.get("schema_version")
+                    == _ADK_V2_GATEWAY_CONVERSATION_RESULT_SCHEMA_VERSION
+                ):
+                    final_output = candidate
+        if not final_output:
+            raise RuntimeError("adk_v2_gateway_conversation_final_output_missing")
+        decision = decision_from_payload(
+            dict(final_output.get("decision") or {}),
+            fallback_message=route_message,
+        )
+        return GatewayConversationWorkflowResult(
+            decision=decision,
+            workflow_name=str(final_output.get("workflow_name") or ""),
+            workflow_engine=str(final_output.get("workflow_engine") or ""),
+            response_kind=str(final_output.get("response_kind") or ""),
+            response_text=str(final_output.get("response_text") or ""),
+            ok=bool(final_output.get("ok")),
+            specialist_prepass=self._specialist_prepass_from_payload(
+                final_output.get("specialist_prepass")
+            ),
+            node_paths=node_paths,
+            approval_created=bool(final_output.get("approval_created")),
+            dispatch_authority_created=bool(
+                final_output.get("dispatch_authority_created")
+            ),
+            external_execution_invoked=bool(
+                final_output.get("external_execution_invoked")
+            ),
+            physical_execution_invoked=bool(
+                final_output.get("physical_execution_invoked")
+            ),
+            node_completion_counts_progress=bool(
+                final_output.get("node_completion_counts_progress")
+            ),
+        )
+
     async def _select_route_for_message(
         self,
         *,
@@ -6906,55 +7379,77 @@ class GatewayServer:
         source: str,
         explicit_target: str | None = None,
     ) -> RoutingDecision:
+        from google.adk import Workflow
+        from google.adk.workflow import node
+
         prompt = self._build_routing_request(
             session_id=session_id,
             source=source,
             message=message,
             explicit_target=explicit_target,
         )
+        route_run_id = f"route_{uuid.uuid4().hex[:12]}"
+        output_key = f"temp:gateway_route_only_output:{route_run_id}"
+        router_node = self._gateway_router_node(output_key=output_key)
+
+        @node(name="orchestrate_gateway_route", rerun_on_resume=True)
+        async def orchestrate_gateway_route(ctx: Any, node_input: Any):
+            del node_input
+            raw_response = await ctx.run_node(
+                router_node,
+                types.Content(role="user", parts=[types.Part(text=prompt)]),
+                run_id="routing-agent",
+                use_sub_branch=True,
+            )
+            return {
+                "schema_version": "missionos_adk_v2_gateway_route_result.v1",
+                "raw_response": str(
+                    raw_response or ctx.state.get(output_key) or ""
+                ),
+            }
+
+        workflow = Workflow(
+            name=_ADK_V2_GATEWAY_ROUTER_WORKFLOW_NAME,
+            description="Legacy Gateway route selection as an ADK v2 child node.",
+            rerun_on_resume=True,
+            edges=[("START", orchestrate_gateway_route)],
+        )
         routing_session = await self.routing_session_service.create_session(
             app_name="boiled-claw-router",
             user_id=user_id,
-            session_id=f"route_{uuid.uuid4().hex[:12]}",
+            session_id=route_run_id,
         )
-        content = types.Content(role="user", parts=[types.Part(text=prompt)])
+        runner = Runner(
+            agent=workflow,
+            app_name="boiled-claw-router",
+            session_service=self.routing_session_service,
+            memory_service=self.memory_service,
+        )
         raw_response = ""
-
         try:
-            async with asyncio.timeout(20):
-                async for event in self.routing_runner.run_async(
-                    user_id=user_id,
-                    session_id=routing_session.id,
-                    new_message=content,
-                ):
-                    if event.is_final_response() and event.content and event.content.parts:
-                        for part in event.content.parts:
-                            if part.text:
-                                raw_response += part.text
-
-            payload = self._extract_json_payload(raw_response)
-            if payload is None:
-                raise ValueError("routing_agent returned non-JSON output")
-
-            decision = decision_from_payload(payload, fallback_message=message)
-            if decision.confidence < 0.35:
-                raise ValueError("routing_agent confidence too low")
-            return decision
+            async for event in runner.run_async(
+                user_id=user_id,
+                session_id=routing_session.id,
+                new_message=types.Content(
+                    role="user",
+                    parts=[types.Part(text=prompt)],
+                ),
+            ):
+                if isinstance(event.output, Mapping):
+                    candidate = dict(event.output)
+                    if (
+                        candidate.get("schema_version")
+                        == "missionos_adk_v2_gateway_route_result.v1"
+                    ):
+                        raw_response = str(candidate.get("raw_response") or "")
+            return self._resolve_routing_agent_text(raw_response, message=message)
         except Exception as exc:
-            fallback = heuristic_decision(message)
-            self.audit_logger.log(
-                event_type=AuditEventType.AGENT_MESSAGE,
+            return self._record_routing_fallback(
                 user_id=user_id,
                 session_id=session_id,
-                action="routing_fallback",
-                resource="routing_agent",
-                result="fallback",
-                metadata={
-                    "error": str(exc),
-                    "fallback_target": fallback.route_label,
-                },
+                message=message,
+                error=exc,
             )
-            return fallback
 
     @staticmethod
     def _default_dynamic_instruction(message: str) -> str:
@@ -12705,12 +13200,16 @@ class GatewayServer:
                 session_id=session_id,
                 goal=message,
             )
-            decision = await self._select_route_for_message(
+            workflow_result = await self._run_gateway_conversation_workflow(
                 session_id=session_id,
                 user_id=user_id,
-                message=effective_message,
+                message=message,
+                route_message=effective_message,
                 source="chat",
+                request_id=request_id,
+                emit_grounding_tool_events=True,
             )
+            decision = workflow_result.decision
             if decision.target == "control_loop":
                 await self._emit_routing_event(
                     session_id,
@@ -12765,157 +13264,24 @@ class GatewayServer:
                 )
                 return
 
-            routed_message = message
-            if decision.target == "specialist" and decision.specialist:
-                await self._emit_routing_event(
-                    session_id,
-                    status="selected",
-                    message=(
-                        f"Router selected {decision.specialist} "
-                        f"({decision.reason or 'specialized task'})."
-                    ),
-                    user_id=user_id,
-                    agent_name=decision.specialist,
-                )
-                if not decision.preflight_specialist:
-                    prepass = await self._run_specialist_prepass(
-                        session_id=session_id,
-                        user_id=user_id,
-                        message=message,
-                        specialist_name=decision.specialist,
-                        request_id=request_id,
-                    )
-                    if prepass.infrastructure_blocked:
-                        partial = self._format_specialist_runtime_failure(
-                            decision.specialist,
-                            prepass,
-                        )
-                    else:
-                        partial = prepass.text
-                    if not partial.strip():
-                        partial = "Specialist did not return a response."
-                    self.transcript.append(
-                        session_id, "assistant", partial,
-                        user_id=user_id,
-                        request_id=request_id,
-                    )
-                    await self.manager.send_json(
-                        session_id,
-                        ev_chat_done(partial, request_id, aborted=False),
-                    )
-                    return
+            partial = workflow_result.response_text
 
-                prepass = SpecialistPrepassResult()
-                try:
-                    prepass = await self._run_specialist_prepass(
-                        session_id=session_id,
-                        user_id=user_id,
-                        message=message,
-                        specialist_name=decision.specialist,
-                        request_id=request_id,
-                    )
-                except Exception as exc:
-                    await self._emit_routing_event(
-                        session_id,
-                        status="fallback",
-                        message=(
-                            f"{decision.specialist} prepass failed; "
-                            f"falling back to root_agent ({exc})."
-                        ),
-                        user_id=user_id,
-                        agent_name="root_agent",
-                    )
-                    prepass = SpecialistPrepassResult()
-                if prepass.infrastructure_blocked:
-                    partial = self._format_specialist_runtime_failure(
-                        decision.specialist,
-                        prepass,
-                    )
-                    await self._emit_routing_event(
-                        session_id,
-                        status="blocked",
-                        message=(
-                            f"{decision.specialist} runtime unavailable; "
-                            "not forwarding browser context to root_agent."
-                        ),
-                        user_id=user_id,
-                        agent_name=decision.specialist,
-                    )
-                    self.transcript.append(
-                        session_id,
-                        "assistant",
-                        partial,
-                        user_id=user_id,
-                        request_id=request_id,
-                        metadata={"type": "specialist_runtime_error"},
-                    )
-                    await self.manager.send_json(
-                        session_id,
-                        ev_chat_done(partial, request_id, aborted=False),
-                    )
-                    return
-                routed_message = self._format_root_routing_message(
-                    message,
-                    decision,
-                    specialist_output=prepass.text,
-                    specialist_evidence=prepass.evidence_blocks,
-                )
-                await self._emit_routing_event(
-                    session_id,
-                    status="forwarded",
-                    message=(
-                        f"Routing context from {decision.specialist} forwarded to root_agent."
-                    ),
-                    user_id=user_id,
+            if workflow_result.response_kind == "agent_message":
+                self.audit_logger.log_agent_message(
                     agent_name="root_agent",
-                )
-
-            full_msg = await self._compose_grounded_agent_message(
-                session_id,
-                user_id,
-                routed_message,
-                research_message=message,
-                agent_name=root_agent.name,
-                request_id=request_id,
-                emit_tool_events=True,
-                allow_forced_research=not (
-                    decision.target == "specialist"
-                    and decision.specialist == "web_researcher"
-                    and decision.preflight_specialist
-                ),
-            )
-            content = types.Content(role="user", parts=[types.Part(text=full_msg)])
-
-            async with asyncio.timeout(_AGENT_TIMEOUT):
-                async for event in self.runner.run_async(
+                    message=partial,
                     user_id=user_id,
                     session_id=session_id,
-                    new_message=content,
-                ):
-                    await self._emit_runner_tool_events(
-                        session_id,
-                        event,
-                        fallback_request_id=request_id,
-                    )
-                    if event.is_final_response() and event.content and event.content.parts:
-                        for part in event.content.parts:
-                            if part.text:
-                                partial += part.text
-
-            if not partial.strip():
-                partial = "MissionOS could not generate a response. Try again or make the request more specific."
-
-            self.audit_logger.log_agent_message(
-                agent_name="root_agent",
-                message=partial,
-                user_id=user_id,
-                session_id=session_id,
-            )
+                )
             # Persist to transcript
+            transcript_metadata = None
+            if workflow_result.response_kind == "error":
+                transcript_metadata = {"type": "specialist_runtime_error"}
             self.transcript.append(
                 session_id, "assistant", partial,
                 user_id=user_id,
                 request_id=request_id,
+                metadata=transcript_metadata,
             )
             await self.manager.send_json(session_id, ev_chat_done(partial, request_id, aborted=False))
 
@@ -13177,12 +13543,34 @@ class GatewayServer:
             session_id=session_id,
             goal=message,
         )
-        decision = await self._select_route_for_message(
-            session_id=session_id,
-            user_id=user_id,
-            message=effective_message,
-            source="http",
-        )
+        try:
+            workflow_result = await self._run_gateway_conversation_workflow(
+                session_id=session_id,
+                user_id=user_id,
+                message=message,
+                route_message=effective_message,
+                source="http",
+                emit_grounding_tool_events=False,
+            )
+        except TimeoutError:
+            msg = f"Agent timed out after {_AGENT_TIMEOUT} seconds."
+            self.audit_logger.log_error(
+                error=msg,
+                user_id=user_id,
+                session_id=session_id,
+                context={"message": message, "reason": "timeout"},
+            )
+            return {"type": "error", "message": msg, "ok": False}
+        except Exception as exc:
+            self.audit_logger.log_error(
+                error=str(exc),
+                user_id=user_id,
+                session_id=session_id,
+                context={"message": message},
+            )
+            return {"type": "error", "message": f"Error: {exc}", "ok": False}
+
+        decision = workflow_result.decision
         if decision.target == "control_loop":
             await self._emit_routing_event(
                 session_id,
@@ -13244,160 +13632,18 @@ class GatewayServer:
                 "ok": False,
             }
 
-        routed_message = message
-        if decision.target == "specialist" and decision.specialist:
-            await self._emit_routing_event(
-                session_id,
-                status="selected",
-                message=(
-                    f"Router selected {decision.specialist} "
-                    f"({decision.reason or 'specialized task'})."
-                ),
-                user_id=user_id,
-                agent_name=decision.specialist,
-            )
-            if not decision.preflight_specialist:
-                prepass = await self._run_specialist_prepass(
-                    session_id=session_id,
-                    user_id=user_id,
-                    message=message,
-                    specialist_name=decision.specialist,
-                )
-                if prepass.infrastructure_blocked:
-                    response_text = self._format_specialist_runtime_failure(
-                        decision.specialist,
-                        prepass,
-                    )
-                    return {
-                        "type": "error",
-                        "message": response_text,
-                        "ok": False,
-                    }
-                response_text = prepass.text
-                if not response_text.strip():
-                    response_text = "Specialist did not return a response."
-                return {
-                    "type": "specialist",
-                    "message": response_text,
-                    "ok": True,
-                }
-
-            prepass = SpecialistPrepassResult()
-            try:
-                prepass = await self._run_specialist_prepass(
-                    session_id=session_id,
-                    user_id=user_id,
-                    message=message,
-                    specialist_name=decision.specialist,
-                )
-            except Exception as exc:
-                await self._emit_routing_event(
-                    session_id,
-                    status="fallback",
-                    message=(
-                        f"{decision.specialist} prepass failed; "
-                        f"falling back to root_agent ({exc})."
-                    ),
-                    user_id=user_id,
-                    agent_name="root_agent",
-                )
-                prepass = SpecialistPrepassResult()
-            if prepass.infrastructure_blocked:
-                await self._emit_routing_event(
-                    session_id,
-                    status="blocked",
-                    message=(
-                        f"{decision.specialist} runtime unavailable; "
-                        "not forwarding browser context to root_agent."
-                    ),
-                    user_id=user_id,
-                    agent_name=decision.specialist,
-                )
-                return {
-                    "type": "error",
-                    "message": self._format_specialist_runtime_failure(
-                        decision.specialist,
-                        prepass,
-                    ),
-                    "ok": False,
-                }
-            routed_message = self._format_root_routing_message(
-                message,
-                decision,
-                specialist_output=prepass.text,
-                specialist_evidence=prepass.evidence_blocks,
-            )
-            await self._emit_routing_event(
-                session_id,
-                status="forwarded",
-                message=(
-                    f"Routing context from {decision.specialist} forwarded to root_agent."
-                ),
-                user_id=user_id,
-                agent_name="root_agent",
-            )
-
-        full_msg = await self._compose_grounded_agent_message(
-            session_id,
-            user_id,
-            routed_message,
-            research_message=message,
-            agent_name=root_agent.name,
-            emit_tool_events=False,
-            allow_forced_research=not (
-                decision.target == "specialist"
-                and decision.specialist == "web_researcher"
-                and decision.preflight_specialist
-            ),
-        )
-        content = types.Content(role="user", parts=[types.Part(text=full_msg)])
-
-        try:
-            response_text = ""
-            async with asyncio.timeout(_AGENT_TIMEOUT):
-                async for event in self.runner.run_async(
-                    user_id=user_id,
-                    session_id=session_id,
-                    new_message=content,
-                ):
-                    await self._emit_runner_tool_events(
-                        session_id,
-                        event,
-                    )
-                    if event.is_final_response() and event.content and event.content.parts:
-                        for part in event.content.parts:
-                            if part.text:
-                                response_text += part.text
-
-            if not response_text.strip():
-                response_text = "MissionOS could not generate a response. Try again or make the request more specific."
-
+        if workflow_result.response_kind == "agent_message":
             self.audit_logger.log_agent_message(
                 agent_name="root_agent",
-                message=response_text,
+                message=workflow_result.response_text,
                 user_id=user_id,
                 session_id=session_id,
             )
-            return {"type": "agent_message", "message": response_text, "ok": True}
-
-        except TimeoutError:
-            msg = f"Agent timed out after {_AGENT_TIMEOUT} seconds."
-            self.audit_logger.log_error(
-                error=msg,
-                user_id=user_id,
-                session_id=session_id,
-                context={"message": message, "reason": "timeout"},
-            )
-            return {"type": "error", "message": msg, "ok": False}
-
-        except Exception as exc:
-            self.audit_logger.log_error(
-                error=str(exc),
-                user_id=user_id,
-                session_id=session_id,
-                context={"message": message},
-            )
-            return {"type": "error", "message": f"Error: {exc}", "ok": False}
+        return {
+            "type": workflow_result.response_kind,
+            "message": workflow_result.response_text,
+            "ok": workflow_result.ok,
+        }
 
     async def _run_control_loop_with_task(
         self,
