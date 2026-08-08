@@ -101,6 +101,10 @@ from src.intelligence.missionos_adk_v2_guarded_execution import (
     MISSIONOS_ADK_V2_GUARDED_EXECUTION_ENV,
     build_form2a_guarded_execution_handler,
 )
+from src.intelligence.missionos_adk_v2_recovery import (
+    MISSIONOS_ADK_V2_RECOVERY_ENV,
+    create_bounded_recovery_proposal,
+)
 from src.runtime.session_service import (
     create_session_service as create_runtime_session_service,
 )
@@ -245,6 +249,10 @@ def _missionos_adk_v2_guarded_execution_enabled() -> bool:
         os.environ.get(MISSIONOS_ADK_V2_GUARDED_EXECUTION_ENV, "").strip()
         == "1"
     )
+
+
+def _missionos_adk_v2_recovery_enabled() -> bool:
+    return os.environ.get(MISSIONOS_ADK_V2_RECOVERY_ENV, "").strip() == "1"
 
 
 async def _close_missionos_hitl_session_service(session_service: Any) -> None:
@@ -8048,6 +8056,12 @@ class GatewayServer:
                     if _missionos_adk_v2_guarded_execution_enabled()
                     else None
                 )
+                recovery_proposal_handler = (
+                    create_bounded_recovery_proposal
+                    if guarded_execution_handler is not None
+                    and _missionos_adk_v2_recovery_enabled()
+                    else None
+                )
                 result = await resume_missionos_canonical_approval_hitl(
                     session_service=session_service,
                     operator_session_id=operator_session_id,
@@ -8055,6 +8069,7 @@ class GatewayServer:
                     human_response={"approval_ref": body.get("approval_ref")},
                     approval_validator=validate_form2a_canonical_approval,
                     guarded_execution_handler=guarded_execution_handler,
+                    recovery_proposal_handler=recovery_proposal_handler,
                 )
             finally:
                 await _close_missionos_hitl_session_service(session_service)
@@ -8062,6 +8077,7 @@ class GatewayServer:
                 "canonical_approval_validated",
                 "guarded_execution_completed",
                 "guarded_execution_receipt_replayed",
+                "recovery_approval_pending",
             } else 409
             return JSONResponse(status_code=status_code, content=result)
 
