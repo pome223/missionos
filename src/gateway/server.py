@@ -91,6 +91,7 @@ from src.intelligence.llm_dialogue_router import run_llm_dialogue_router
 from src.intelligence.missionos_agent_runtime import (
     run_missionos_agent_runtime,
     run_missionos_runtime_recovery_agent,
+    validate_adk_v2_graph_rollout_env,
 )
 from src.intelligence.missionos_adk_v2_hitl import (
     MISSIONOS_ADK_V2_HITL_ENV,
@@ -5840,6 +5841,9 @@ class GatewayServer:
     """Gateway server with typed protocol, transcript, cron platform, and tool security."""
 
     def __init__(self, *, gateway_profile: str | None = None):
+        # Rollout controls are operator safety inputs. Reject typos before the
+        # Gateway begins serving requests instead of silently choosing a mode.
+        validate_adk_v2_graph_rollout_env()
         self.settings = get_settings()
         resolved_gateway_profile = gateway_profile
         if resolved_gateway_profile is None:

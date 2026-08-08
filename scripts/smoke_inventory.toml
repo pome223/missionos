@@ -15,6 +15,7 @@ action = "retain_as_canonical_ci_boundary"
 files = [
   "smoke_action_feasibility_conformance_corpus.py",
   "smoke_adk_v2_control_loop.py",
+  "smoke_adk_v2_default_proposal.py",
   "smoke_adk_v2_legacy_gateway.py",
   "smoke_adk_v2_shadow_graph.py",
   "smoke_atomic_dispatch.py",
@@ -66,6 +67,7 @@ action = "retain_opt_in_and_never_run_by_default"
 files = [
   "smoke_adk_v2_guarded_execution_gateway.py",
   "smoke_adk_v2_hitl_gateway.py",
+  "smoke_adk_v2_primary_gateway.py",
   "smoke_adk_v2_recovery_gateway.py",
   "smoke_advisory_mission_memory_epic_exit.py",
   "smoke_delivery_recovery_battery_low_real_sitl.py",
