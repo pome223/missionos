@@ -117,6 +117,29 @@ verification, and post-resume fresh-state rules are defined in
 `docs/agents/adk-v2-session-persistence.md`. Restored session data remains
 orchestration state and does not replace canonical MissionOS artifacts.
 
+## ADK v2 Canonical Approval HITL
+
+An independent opt-in workflow may pause on a Form 2A selection and resume
+only with its exact canonical `approval_ref`. It requires Redis and is exposed
+through:
+
+```text
+POST /missionos/adk-v2/hitl/form2a-approval/start
+POST /missionos/adk-v2/hitl/form2a-approval/resume
+```
+
+The operator still creates approval through the existing MissionOS Form 2A
+operator-review route. ADK `RequestInput` is only the pause/resume transport.
+The post-resume node reruns and reloads the current approval artifact, proposal
+hash, token expiry, bounded action, and dispatch reference. A plain `yes`
+response is rejected before the workflow is resumed.
+
+Successful validation reports an existing human approval; it does not create
+approval, consume the token, grant dispatch authority, invoke an executor,
+observe an effect, pass a verifier, or count progress. The full contract and
+Redis process-restart verification command live in
+`docs/agents/adk-v2-canonical-approval-hitl.md`.
+
 Implementation and comparison contracts live in
 `src/intelligence/missionos_adk_v2_shadow_graph.py`. The production wrapper in
 `src/intelligence/missionos_agent_runtime.py` attaches
@@ -226,9 +249,11 @@ This keeps the MissionOS claim split intact even when LLM behavior changes.
 ## Future Direction
 
 The ADK v2 shadow graph provides proposal-path traceability without authority.
-Promotion beyond shadow mode requires separate proof for Redis process-restart
-restoration and `dispatch_ref` idempotency. HITL, resume, retry, and execution
-must not be added merely because the graph API supports them.
+Redis process-restart restoration, `dispatch_ref` idempotency, and
+canonical-approval HITL now have separate contracts and evidence. Guarded
+execution, receipt reconciliation, verification, and recovery remain separate
+promotion gates and must not be inferred merely because the graph API supports
+resume or retry.
 
 The durable target is:
 

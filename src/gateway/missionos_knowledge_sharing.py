@@ -77,6 +77,9 @@ FORM2A_RESPONSE_SELECTION_SCHEMA_VERSION = "missionos_form2a_response_selection.
 FORM2A_OPERATOR_APPROVAL_TOKEN_SCHEMA_VERSION = "missionos_form2a_operator_approval_token.v1"
 FORM2A_HUMAN_OPERATOR_REVIEW_SCHEMA_VERSION = "missionos_form2a_human_operator_review.v1"
 FORM2A_HUMAN_OPERATOR_REVIEW_SUMMARY_SCHEMA_VERSION = "missionos_form2a_human_operator_review_gui_summary.v1"
+FORM2A_CANONICAL_APPROVAL_VALIDATION_SCHEMA_VERSION = (
+    "missionos_form2a_canonical_approval_validation.v1"
+)
 FORM2A_RESPONSE_SELECTION_SUMMARY_SCHEMA_VERSION = "missionos_form2a_response_selection_gui_summary.v1"
 FORM2A_ACTION_CONSUMMATION_SCHEMA_VERSION = "missionos_form2a_action_consumption.v1"
 FORM2A_ACTION_CONSUMMATION_SUMMARY_SCHEMA_VERSION = "missionos_form2a_action_consumption_gui_summary.v1"
@@ -2774,6 +2777,152 @@ def _parse_timestamp(value: Any) -> datetime | None:
     except ValueError:
         return None
     return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
+
+
+def build_form2a_canonical_approval_binding(
+    *,
+    artifact_root: Path | str = ARTIFACT_ROOT,
+) -> dict[str, Any]:
+    """Build the immutable binding that an ADK HITL checkpoint may wait on."""
+
+    root = Path(artifact_root)
+    summary = build_form2a_response_selection_summary(artifact_root=root)
+    chain = _latest_form2a_response_selection_chain(root)
+    selection_path, selection = chain["selection"]
+    token_path, token = chain["token"]
+    selection_abs = (
+        _resolve_artifact_path(root, selection_path) if selection_path else Path("")
+    )
+    expires_at = _parse_timestamp(token.get("expires_at"))
+    now = datetime.now(timezone.utc)
+    approval_ref = str(selection.get("approval_ref") or "")
+    mission_response_candidate_ref = (
+        f"missionos_form2a_response_selection:{selection.get('response_selection_id')}"
+        if selection.get("response_selection_id")
+        else ""
+    )
+    binding = {
+        "approval_ref": approval_ref,
+        "mission_response_candidate_ref": mission_response_candidate_ref,
+        "proposal_sha256": (
+            _sha256_file(selection_abs) if selection_abs.is_file() else ""
+        ),
+        "bounded_action_ref": str(selection.get("bounded_action_ref") or ""),
+        "dispatch_ref": str(selection.get("dispatch_ref") or ""),
+        "expires_at": token.get("expires_at"),
+        "proposal_artifact_path": selection_path,
+        "approval_artifact_path": token_path,
+    }
+    blocking_reasons: list[str] = []
+    if summary.get("summary_status") != "form2a_response_selected":
+        blocking_reasons.append("form2a_response_selection_not_ready")
+    if not selection_abs.is_file():
+        blocking_reasons.append("form2a_response_selection_artifact_missing")
+    if token.get("approval_ref") != approval_ref:
+        blocking_reasons.append("form2a_approval_ref_mismatch")
+    if token.get("bounded_action_ref") != binding["bounded_action_ref"]:
+        blocking_reasons.append("form2a_bounded_action_ref_mismatch")
+    if token.get("dispatch_ref") != binding["dispatch_ref"]:
+        blocking_reasons.append("form2a_dispatch_ref_mismatch")
+    if token.get("approval_token_status") != "issued_unconsumed":
+        blocking_reasons.append("form2a_approval_token_not_issued_unconsumed")
+    if token.get("operator_approval_token_consumed_in_runtime") is True:
+        blocking_reasons.append("form2a_approval_token_already_consumed")
+    if expires_at is None:
+        blocking_reasons.append("form2a_approval_token_expiry_missing_or_invalid")
+    elif expires_at <= now:
+        blocking_reasons.append("form2a_approval_token_expired")
+    for field in (
+        "approval_ref",
+        "mission_response_candidate_ref",
+        "proposal_sha256",
+        "bounded_action_ref",
+        "dispatch_ref",
+    ):
+        if not str(binding.get(field) or ""):
+            blocking_reasons.append(f"form2a_canonical_binding_missing:{field}")
+    return {
+        "schema_version": FORM2A_CANONICAL_APPROVAL_VALIDATION_SCHEMA_VERSION,
+        "binding_status": "ready" if not blocking_reasons else "blocked",
+        "blocking_reasons": blocking_reasons,
+        **binding,
+        "approval_created": False,
+        "dispatch_authority_created": False,
+        "executor_invoked": False,
+        "physical_execution_invoked": False,
+        "outcome_observed": False,
+        "progress_counted": False,
+    }
+
+
+def validate_form2a_canonical_approval(
+    approval_ref: str,
+    expected_binding: Mapping[str, Any],
+    *,
+    artifact_root: Path | str = ARTIFACT_ROOT,
+) -> dict[str, Any]:
+    """Reload and verify the canonical human review without consuming it."""
+
+    root = Path(artifact_root)
+    current = build_form2a_canonical_approval_binding(artifact_root=root)
+    review = build_form2a_operator_review_summary(artifact_root=root)
+    reasons = list(current.get("blocking_reasons") or [])
+    if current.get("binding_status") != "ready" and not reasons:
+        reasons.append("form2a_canonical_approval_binding_not_ready")
+    if not approval_ref:
+        reasons.append("canonical_approval_ref_required")
+    elif approval_ref != str(expected_binding.get("approval_ref") or ""):
+        reasons.append("canonical_approval_ref_not_checkpoint_bound")
+    for field in (
+        "approval_ref",
+        "mission_response_candidate_ref",
+        "proposal_sha256",
+        "bounded_action_ref",
+        "dispatch_ref",
+    ):
+        if current.get(field) != expected_binding.get(field):
+            reasons.append(f"canonical_approval_binding_changed:{field}")
+    review_authority = _as_mapping(review.get("authority_boundary"))
+    review_source = _as_mapping(review.get("source_selection"))
+    review_token = _as_mapping(review.get("operator_approval_token"))
+    if review.get("summary_status") != "approved":
+        reasons.append("form2a_human_operator_review_not_approved")
+    if (
+        review_authority.get("human_operator_approval_verified_for_token_consumption")
+        is not True
+    ):
+        reasons.append("form2a_human_operator_approval_not_verified")
+    if review_token.get("approval_ref") != approval_ref:
+        reasons.append("form2a_human_operator_review_approval_ref_mismatch")
+    if review_source.get("response_selection_ref") != expected_binding.get(
+        "mission_response_candidate_ref"
+    ):
+        reasons.append("form2a_human_operator_review_candidate_ref_mismatch")
+    return {
+        "schema_version": FORM2A_CANONICAL_APPROVAL_VALIDATION_SCHEMA_VERSION,
+        "validation_status": "approved" if not reasons else "blocked",
+        "blocking_reasons": reasons,
+        "approval_ref": approval_ref,
+        "canonical_approval_validated": not reasons,
+        "human_operator_approval_granted_in_artifact": (
+            review_authority.get("human_operator_approval_granted_in_artifact")
+            is True
+        ),
+        "mission_response_candidate_ref": current.get(
+            "mission_response_candidate_ref"
+        ),
+        "proposal_sha256": current.get("proposal_sha256"),
+        "bounded_action_ref": current.get("bounded_action_ref"),
+        "dispatch_ref": current.get("dispatch_ref"),
+        "expires_at": current.get("expires_at"),
+        "approval_created": False,
+        "approval_consumed": False,
+        "dispatch_authority_created": False,
+        "executor_invoked": False,
+        "physical_execution_invoked": False,
+        "outcome_observed": False,
+        "progress_counted": False,
+    }
 
 
 def _consume_form2a_operator_token(
