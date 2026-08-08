@@ -92,6 +92,14 @@ from src.intelligence.missionos_agent_runtime import (
     run_missionos_agent_runtime,
     run_missionos_runtime_recovery_agent,
 )
+from src.intelligence.missionos_adk_v2_hitl import (
+    MISSIONOS_ADK_V2_HITL_ENV,
+    resume_missionos_canonical_approval_hitl,
+    start_missionos_canonical_approval_hitl,
+)
+from src.runtime.session_service import (
+    create_session_service as create_runtime_session_service,
+)
 from src.runtime.px4_gazebo_route.action_feasibility import (
     action_feasibility_hash_matches,
 )
@@ -123,6 +131,7 @@ from src.intelligence.missionos_chief_planner_tools import (
 )
 from src.gateway.missionos_knowledge_sharing import (
     FORM2A_TRAJECTORY_REOBSERVATION_OPT_IN_ENV,
+    build_form2a_canonical_approval_binding,
     build_form2a_action_consumption_summary,
     build_form2a_operator_review_summary,
     build_form2a_response_selection_summary,
@@ -143,6 +152,7 @@ from src.gateway.missionos_knowledge_sharing import (
     run_sitl_bounded_dispatch_execution,
     run_knowledge_curator_dry_run,
     run_knowledge_curator_production_publish,
+    validate_form2a_canonical_approval,
 )
 from src.gateway.missionos_operations import (
     get_missionos_operation_last,
@@ -220,6 +230,17 @@ LEGACY_AGENT_GATEWAY_PROFILE = "legacy_agent"
 _GATEWAY_PROFILES = frozenset(
     {MISSIONOS_GATEWAY_PROFILE, LEGACY_AGENT_GATEWAY_PROFILE}
 )
+
+
+def _missionos_adk_v2_hitl_enabled() -> bool:
+    return os.environ.get(MISSIONOS_ADK_V2_HITL_ENV, "").strip() == "1"
+
+
+async def _close_missionos_hitl_session_service(session_service: Any) -> None:
+    client = getattr(session_service, "_client", None)
+    close = getattr(client, "aclose", None)
+    if callable(close):
+        await close()
 
 
 def _route_matches_prefix(path: str, prefix: str) -> bool:
@@ -7895,6 +7916,137 @@ class GatewayServer:
         @self.app.post("/missionos/form2a-operator-review/request-revision")
         async def missionos_form2a_operator_review_request_revision():
             return await run_in_threadpool(run_form2a_operator_review_request_revision)
+
+        @self.app.post("/missionos/adk-v2/hitl/form2a-approval/start")
+        async def missionos_adk_v2_form2a_approval_hitl_start(
+            payload: Dict[str, Any] | None = Body(default=None),
+        ):
+            if not _missionos_adk_v2_hitl_enabled():
+                return JSONResponse(
+                    status_code=409,
+                    content={
+                        "schema_version": "missionos_adk_v2_hitl_result.v1",
+                        "hitl_status": "not_configured",
+                        "blocking_reasons": [f"{MISSIONOS_ADK_V2_HITL_ENV}_not_enabled"],
+                        "approval_created": False,
+                        "dispatch_authority_created": False,
+                        "executor_invoked": False,
+                        "physical_execution_invoked": False,
+                        "outcome_observed": False,
+                        "progress_counted": False,
+                    },
+                )
+            body = payload or {}
+            operator_session_id = str(body.get("operator_session_id") or "").strip()
+            if not operator_session_id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="operator_session_id is required",
+                )
+            binding = await run_in_threadpool(build_form2a_canonical_approval_binding)
+            if binding.get("binding_status") != "ready":
+                return JSONResponse(status_code=409, content=binding)
+            try:
+                session_service = create_runtime_session_service(
+                    self.settings,
+                    require_redis=True,
+                )
+            except RuntimeError as exc:
+                return JSONResponse(
+                    status_code=503,
+                    content={
+                        "schema_version": "missionos_adk_v2_hitl_result.v1",
+                        "hitl_status": "not_configured",
+                        "blocking_reasons": [str(exc)],
+                        "approval_created": False,
+                        "dispatch_authority_created": False,
+                        "executor_invoked": False,
+                        "physical_execution_invoked": False,
+                        "outcome_observed": False,
+                        "progress_counted": False,
+                    },
+                )
+            try:
+                result = await start_missionos_canonical_approval_hitl(
+                    session_service=session_service,
+                    operator_session_id=operator_session_id,
+                    approval_binding=binding,
+                    approval_validator=validate_form2a_canonical_approval,
+                )
+            finally:
+                await _close_missionos_hitl_session_service(session_service)
+            status_code = (
+                200
+                if result.get("hitl_status") == "awaiting_canonical_approval"
+                else 409
+            )
+            return JSONResponse(status_code=status_code, content=result)
+
+        @self.app.post("/missionos/adk-v2/hitl/form2a-approval/resume")
+        async def missionos_adk_v2_form2a_approval_hitl_resume(
+            payload: Dict[str, Any] | None = Body(default=None),
+        ):
+            if not _missionos_adk_v2_hitl_enabled():
+                return JSONResponse(
+                    status_code=409,
+                    content={
+                        "schema_version": "missionos_adk_v2_hitl_result.v1",
+                        "hitl_status": "not_configured",
+                        "blocking_reasons": [f"{MISSIONOS_ADK_V2_HITL_ENV}_not_enabled"],
+                        "approval_created": False,
+                        "dispatch_authority_created": False,
+                        "executor_invoked": False,
+                        "physical_execution_invoked": False,
+                        "outcome_observed": False,
+                        "progress_counted": False,
+                    },
+                )
+            body = payload or {}
+            operator_session_id = str(body.get("operator_session_id") or "").strip()
+            adk_session_id = str(body.get("adk_session_id") or "").strip()
+            if not operator_session_id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="operator_session_id is required",
+                )
+            if not adk_session_id:
+                raise HTTPException(status_code=400, detail="adk_session_id is required")
+            try:
+                session_service = create_runtime_session_service(
+                    self.settings,
+                    require_redis=True,
+                )
+            except RuntimeError as exc:
+                return JSONResponse(
+                    status_code=503,
+                    content={
+                        "schema_version": "missionos_adk_v2_hitl_result.v1",
+                        "hitl_status": "not_configured",
+                        "blocking_reasons": [str(exc)],
+                        "approval_created": False,
+                        "dispatch_authority_created": False,
+                        "executor_invoked": False,
+                        "physical_execution_invoked": False,
+                        "outcome_observed": False,
+                        "progress_counted": False,
+                    },
+                )
+            try:
+                result = await resume_missionos_canonical_approval_hitl(
+                    session_service=session_service,
+                    operator_session_id=operator_session_id,
+                    adk_session_id=adk_session_id,
+                    human_response={"approval_ref": body.get("approval_ref")},
+                    approval_validator=validate_form2a_canonical_approval,
+                )
+            finally:
+                await _close_missionos_hitl_session_service(session_service)
+            status_code = (
+                200
+                if result.get("hitl_status") == "canonical_approval_validated"
+                else 409
+            )
+            return JSONResponse(status_code=status_code, content=result)
 
         @self.app.get("/missionos/form2a-action-consumption")
         async def missionos_form2a_action_consumption():

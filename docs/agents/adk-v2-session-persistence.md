@@ -98,5 +98,9 @@ verifier passage, completion, physical execution, or mission progress.
 - The current verification stores proposal-only fixture output and invokes no
   simulator, hardware, or external executor.
 - Dispatch and hardware-affecting writes remain outside ADK automatic retry.
-- Production resume remains disabled until canonical HITL approval and fresh
-  dispatch-time revalidation are implemented.
+- Canonical Form 2A approval pause/resume is available only through the
+  opt-in, Redis-required contract in
+  `docs/agents/adk-v2-canonical-approval-hitl.md`.
+- That resume validates approval artifacts only. Dispatch-time telemetry,
+  policy, backend, envelope, ledger, receipt, and verifier checks remain
+  outside this graph and must be revalidated before guarded execution.
