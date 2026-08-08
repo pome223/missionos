@@ -442,3 +442,100 @@ def test_async_agent_invocation_marks_graph_execution_mode(monkeypatch) -> None:
     assert evidence["workflow_execution_mode"] == "adk_v2_graph_shadow"
     assert evidence["adk_v2_graph_invoked"] is True
     assert evidence["progress_counted"] is False
+
+
+@pytest.mark.parametrize(
+    ("response_text", "expected_passed", "expected_blocking_reasons"),
+    [
+        (
+            (
+                '{"intent":"status","operator_instruction":"Check status",'
+                '"requires_human_approval":false}'
+            ),
+            True,
+            [],
+        ),
+        (
+            (
+                '{"intent":"status","operator_instruction":"Check status",'
+                '"requires_human_approval":false,"approved":true}'
+            ),
+            False,
+            ["forbidden_key_present:approved"],
+        ),
+    ],
+    ids=["guardrail_passed", "forbidden_authority_key"],
+)
+def test_standalone_and_workflow_child_invocations_share_guardrail_contract(
+    monkeypatch,
+    response_text: str,
+    expected_passed: bool,
+    expected_blocking_reasons: list[str],
+) -> None:
+    calls: list[tuple[str, dict[str, Any]]] = []
+
+    async def fake_standalone_invoke(**kwargs: Any) -> str:
+        calls.append(("standalone_runner", kwargs))
+        return response_text
+
+    async def fake_workflow_child_invoke(**kwargs: Any) -> str:
+        calls.append(("ctx.run_node", kwargs))
+        return response_text
+
+    monkeypatch.setattr(
+        agent_runtime,
+        "_invoke_adk_agent_text_async",
+        fake_standalone_invoke,
+    )
+    monkeypatch.setattr(
+        agent_runtime,
+        "_invoke_adk_agent_text_node_async",
+        fake_workflow_child_invoke,
+    )
+    monkeypatch.setattr(
+        agent_runtime,
+        "_persist_invocation_evidence",
+        lambda _evidence: "fixture/invocation.json",
+    )
+    common_kwargs = {
+        "agent_name": "missionos_chief_agent",
+        "agent_role": "MissionOS chief coordinator agent",
+        "prompt_payload": {"human_utterance": "status"},
+    }
+
+    standalone = asyncio.run(
+        agent_runtime._run_agent_once_async(
+            **common_kwargs,
+            workflow_execution_mode="sequential_runner",
+        )
+    )
+    workflow_child = asyncio.run(
+        agent_runtime._run_agent_once_async(
+            **common_kwargs,
+            workflow_execution_mode="adk_v2_graph_primary",
+            workflow_ctx=object(),
+            workflow_run_id="chief-agent",
+        )
+    )
+
+    assert standalone["guardrail_result"] == workflow_child["guardrail_result"]
+    assert standalone["guardrail_result"]["guardrail_passed"] is expected_passed
+    assert standalone["guardrail_result"]["blocking_reasons"] == (
+        expected_blocking_reasons
+    )
+    assert standalone["validated_output"] == workflow_child["validated_output"]
+    assert standalone["prompt_sha256"] == workflow_child["prompt_sha256"]
+    assert standalone["response_sha256"] == workflow_child["response_sha256"]
+    assert standalone["provider"] == workflow_child["provider"]
+    assert standalone["agent_node_execution"] == "standalone_runner"
+    assert standalone["standalone_runner_invoked"] is True
+    assert standalone["workflow_child_node"] is False
+    assert workflow_child["agent_node_execution"] == "ctx.run_node"
+    assert workflow_child["standalone_runner_invoked"] is False
+    assert workflow_child["workflow_child_node"] is True
+    assert [kind for kind, _kwargs in calls] == [
+        "standalone_runner",
+        "ctx.run_node",
+    ]
+    assert calls[0][1]["prompt_text"] == calls[1][1]["prompt_text"]
+    assert calls[0][1]["model_id"] == calls[1][1]["model_id"]
