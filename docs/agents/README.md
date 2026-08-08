@@ -83,3 +83,4 @@ the same change.
 - `docs/agents/adk-v2-bounded-recovery.md`
 - `docs/agents/adk-v2-control-loop.md`
 - `docs/agents/adk-v2-legacy-gateway.md`
+- `docs/agents/adk-v2-runtime-inventory.md`

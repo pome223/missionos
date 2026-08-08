@@ -1,8 +1,9 @@
-"""ADK v2 shadow graph for the MissionOS conversation/proposal path.
+"""ADK v2 graph for the MissionOS conversation/proposal path.
 
-This graph is measurement-only. It may invoke proposal agents and persist their
-invocation evidence, but it cannot approve, create dispatch authority, invoke
-an executor, claim an observed effect, or count mission progress.
+The same proposal-only graph can run as a measurement-only shadow or as the
+primary proposal generator. Neither mode can approve, create dispatch
+authority, invoke an executor, claim an observed effect, or count mission
+progress.
 """
 
 from __future__ import annotations
@@ -10,15 +11,57 @@ from __future__ import annotations
 import asyncio
 from hashlib import sha256
 import json
+import os
 from typing import Any, Mapping
 
 
 MISSIONOS_ADK_V2_GRAPH_SHADOW_ENV = "MISSIONOS_ADK_V2_GRAPH_SHADOW"
+MISSIONOS_ADK_V2_GRAPH_PRIMARY_ENV = "MISSIONOS_ADK_V2_GRAPH_PRIMARY"
+MISSIONOS_ADK_V2_GRAPH_ROLLBACK_ENV = "MISSIONOS_ADK_V2_GRAPH_ROLLBACK"
 MISSIONOS_ADK_V2_SHADOW_RESULT_SCHEMA_VERSION = "missionos_adk_v2_conversation_shadow_result.v1"
+MISSIONOS_ADK_V2_PROPOSAL_RESULT_SCHEMA_VERSION = (
+    "missionos_adk_v2_conversation_proposal_graph_result.v1"
+)
 MISSIONOS_ADK_V2_SHADOW_COMPARISON_SCHEMA_VERSION = (
     "missionos_adk_v2_conversation_shadow_comparison.v1"
 )
 MISSIONOS_ADK_V2_SHADOW_WORKFLOW_NAME = "missionos_conversation_proposal_shadow_v2"
+MISSIONOS_ADK_V2_PRIMARY_WORKFLOW_NAME = "missionos_conversation_proposal_primary_v2"
+_ENV_SWITCH_TRUE_VALUES = frozenset({"1", "true", "yes", "on"})
+_ENV_SWITCH_FALSE_VALUES = frozenset({"0", "false", "no", "off"})
+
+
+def adk_v2_graph_switch_enabled(env_name: str, *, default: bool) -> bool:
+    """Parse one rollout switch without silently accepting operator typos."""
+
+    raw_value = os.environ.get(env_name)
+    if raw_value is None or not raw_value.strip():
+        return default
+    normalized = raw_value.strip().lower()
+    if normalized in _ENV_SWITCH_TRUE_VALUES:
+        return True
+    if normalized in _ENV_SWITCH_FALSE_VALUES:
+        return False
+    raise RuntimeError(f"invalid_adk_v2_graph_switch:{env_name}:{raw_value!r}")
+
+
+def validate_adk_v2_graph_rollout_env() -> dict[str, bool]:
+    """Validate every proposal-graph rollout control during Gateway startup."""
+
+    return {
+        "primary": adk_v2_graph_switch_enabled(
+            MISSIONOS_ADK_V2_GRAPH_PRIMARY_ENV,
+            default=True,
+        ),
+        "rollback": adk_v2_graph_switch_enabled(
+            MISSIONOS_ADK_V2_GRAPH_ROLLBACK_ENV,
+            default=False,
+        ),
+        "shadow": adk_v2_graph_switch_enabled(
+            MISSIONOS_ADK_V2_GRAPH_SHADOW_ENV,
+            default=False,
+        ),
+    }
 
 
 def _json_sha256(value: Any) -> str:
@@ -59,9 +102,10 @@ def _blocked_state(
     return blocked
 
 
-def _authority_floor() -> dict[str, bool]:
+def _authority_floor(*, measurement_only: bool = True) -> dict[str, bool]:
     return {
-        "measurement_only": True,
+        "proposal_only": True,
+        "measurement_only": measurement_only,
         "approval_created": False,
         "dispatch_authority_created": False,
         "executor_invoked": False,
@@ -71,7 +115,7 @@ def _authority_floor() -> dict[str, bool]:
     }
 
 
-async def run_missionos_conversation_shadow_graph_async(
+async def _run_missionos_conversation_graph_async(
     *,
     utterance: str,
     missionos_state: Mapping[str, Any],
@@ -81,8 +125,42 @@ async def run_missionos_conversation_shadow_graph_async(
     monitoring_observations: list[Mapping[str, Any]] | None = None,
     route_hint: str = "",
     timeout_seconds: int | None = None,
+    execution_mode: str,
 ) -> dict[str, Any]:
-    """Run one independent, proposal-only ADK v2 graph shadow evaluation."""
+    """Run one proposal-only ADK v2 graph evaluation."""
+
+    if execution_mode not in {"primary", "shadow"}:
+        raise ValueError(f"unsupported_adk_v2_graph_execution_mode:{execution_mode}")
+    is_shadow = execution_mode == "shadow"
+    workflow_execution_mode = (
+        "adk_v2_graph_shadow" if is_shadow else "adk_v2_graph_primary"
+    )
+    result_schema_version = (
+        MISSIONOS_ADK_V2_SHADOW_RESULT_SCHEMA_VERSION
+        if is_shadow
+        else MISSIONOS_ADK_V2_PROPOSAL_RESULT_SCHEMA_VERSION
+    )
+    workflow_name = (
+        MISSIONOS_ADK_V2_SHADOW_WORKFLOW_NAME
+        if is_shadow
+        else MISSIONOS_ADK_V2_PRIMARY_WORKFLOW_NAME
+    )
+    session_backend = "in_memory_shadow_only" if is_shadow else "in_memory_proposal_only"
+    node_names = {
+        "normalize": "normalize_shadow_input" if is_shadow else "normalize_proposal_input",
+        "chief": "invoke_shadow_chief" if is_shadow else "invoke_proposal_chief",
+        "specialist": (
+            "invoke_shadow_specialist" if is_shadow else "invoke_proposal_specialist"
+        ),
+        "safety_critic": (
+            "invoke_shadow_safety_critic"
+            if is_shadow
+            else "invoke_proposal_safety_critic"
+        ),
+        "finalize": (
+            "finalize_shadow_proposal" if is_shadow else "finalize_primary_proposal"
+        ),
+    }
 
     from google.adk import Workflow
     from google.adk.runners import Runner
@@ -92,7 +170,7 @@ async def run_missionos_conversation_shadow_graph_async(
 
     from src.intelligence import missionos_agent_runtime as runtime
 
-    @node(name="normalize_shadow_input", rerun_on_resume=False)
+    @node(name=node_names["normalize"], rerun_on_resume=False)
     async def normalize_shadow_input(node_input: Any) -> dict[str, Any]:
         try:
             payload = json.loads(_content_text(node_input))
@@ -105,10 +183,10 @@ async def run_missionos_conversation_shadow_graph_async(
             "blocking_reasons": [],
             "input": payload,
             "agent_invocations": [],
-            "graph_node_sequence": ["normalize_shadow_input"],
+            "graph_node_sequence": [node_names["normalize"]],
         }
 
-    @node(name="invoke_shadow_chief", rerun_on_resume=True)
+    @node(name=node_names["chief"], rerun_on_resume=True)
     async def invoke_shadow_chief(
         ctx: Any,
         node_input: Mapping[str, Any],
@@ -149,7 +227,7 @@ async def run_missionos_conversation_shadow_graph_async(
                 route_hint=str(payload.get("route_hint") or ""),
             ),
             timeout_seconds=timeout_seconds,
-            workflow_execution_mode="adk_v2_graph_shadow",
+            workflow_execution_mode=workflow_execution_mode,
             workflow_ctx=ctx,
             workflow_run_id="chief-agent",
         )
@@ -157,7 +235,7 @@ async def run_missionos_conversation_shadow_graph_async(
         state["chief_output"] = dict(_validated_output(invocation))
         state["graph_node_sequence"] = [
             *list(state.get("graph_node_sequence") or []),
-            "invoke_shadow_chief",
+            node_names["chief"],
         ]
         guardrail = _guardrail(invocation)
         if guardrail.get("guardrail_passed") is not True:
@@ -167,7 +245,7 @@ async def run_missionos_conversation_shadow_graph_async(
             )
         return state
 
-    @node(name="invoke_shadow_specialist", rerun_on_resume=True)
+    @node(name=node_names["specialist"], rerun_on_resume=True)
     async def invoke_shadow_specialist(
         ctx: Any,
         node_input: Mapping[str, Any],
@@ -175,7 +253,7 @@ async def run_missionos_conversation_shadow_graph_async(
         state = dict(node_input)
         state["graph_node_sequence"] = [
             *list(state.get("graph_node_sequence") or []),
-            "invoke_shadow_specialist",
+            node_names["specialist"],
         ]
         if state.get("graph_runtime_status") != "running":
             return state
@@ -225,7 +303,7 @@ async def run_missionos_conversation_shadow_graph_async(
                 route_hint=str(payload.get("route_hint") or ""),
             ),
             timeout_seconds=timeout_seconds,
-            workflow_execution_mode="adk_v2_graph_shadow",
+            workflow_execution_mode=workflow_execution_mode,
             workflow_ctx=ctx,
             workflow_run_id="specialist-agent",
         )
@@ -242,7 +320,7 @@ async def run_missionos_conversation_shadow_graph_async(
             )
         return state
 
-    @node(name="invoke_shadow_safety_critic", rerun_on_resume=True)
+    @node(name=node_names["safety_critic"], rerun_on_resume=True)
     async def invoke_shadow_safety_critic(
         ctx: Any,
         node_input: Mapping[str, Any],
@@ -250,7 +328,7 @@ async def run_missionos_conversation_shadow_graph_async(
         state = dict(node_input)
         state["graph_node_sequence"] = [
             *list(state.get("graph_node_sequence") or []),
-            "invoke_shadow_safety_critic",
+            node_names["safety_critic"],
         ]
         if state.get("graph_runtime_status") != "running":
             return state
@@ -296,7 +374,7 @@ async def run_missionos_conversation_shadow_graph_async(
                 route_hint=str(payload.get("route_hint") or ""),
             ),
             timeout_seconds=timeout_seconds,
-            workflow_execution_mode="adk_v2_graph_shadow",
+            workflow_execution_mode=workflow_execution_mode,
             workflow_ctx=ctx,
             workflow_run_id="safety-critic-agent",
         )
@@ -324,16 +402,16 @@ async def run_missionos_conversation_shadow_graph_async(
             )
         return state
 
-    @node(name="finalize_shadow_proposal", rerun_on_resume=False)
+    @node(name=node_names["finalize"], rerun_on_resume=False)
     async def finalize_shadow_proposal(node_input: Mapping[str, Any]) -> dict[str, Any]:
         state = dict(node_input)
         node_sequence = [
             *list(state.get("graph_node_sequence") or []),
-            "finalize_shadow_proposal",
+            node_names["finalize"],
         ]
         if state.get("graph_runtime_status") != "running":
             return {
-                "schema_version": MISSIONOS_ADK_V2_SHADOW_RESULT_SCHEMA_VERSION,
+                "schema_version": result_schema_version,
                 "graph_runtime_status": str(
                     state.get("graph_runtime_status") or "guardrail_blocked"
                 ),
@@ -341,10 +419,11 @@ async def run_missionos_conversation_shadow_graph_async(
                 "proposal": {},
                 "agent_invocations": list(state.get("agent_invocations") or []),
                 "graph_node_sequence": node_sequence,
-                "workflow_name": MISSIONOS_ADK_V2_SHADOW_WORKFLOW_NAME,
-                "session_backend": "in_memory_shadow_only",
+                "workflow_name": workflow_name,
+                "workflow_execution_mode": workflow_execution_mode,
+                "session_backend": session_backend,
                 "retry_policy": "disabled",
-                **_authority_floor(),
+                **_authority_floor(measurement_only=is_shadow),
             }
         payload = state.get("input") if isinstance(state.get("input"), Mapping) else {}
         chief_output = (
@@ -384,8 +463,14 @@ async def run_missionos_conversation_shadow_graph_async(
             ),
             "safety_critic_output": dict(safety_critic_output),
             "operator_facing_route": runtime.MISSIONOS_OPERATOR_FACING_ROUTE,
-            "coordination_pattern": "adk_v2_graph_shadow_chief_specialist_safety_critic",
+            "internal_capability_registry": (
+                runtime.build_missionos_capability_registry_summary()
+            ),
+            "coordination_pattern": (
+                f"{workflow_execution_mode}_chief_specialist_safety_critic"
+            ),
             "routing_floor": "deterministic_chief_to_specialist_allowlist",
+            "ambient_monitoring_model": "event_driven_chief_invocation",
             "monitoring_observations": monitoring_payloads,
             "requires_human_approval": bool(
                 specialist_output.get("requires_human_approval")
@@ -394,21 +479,25 @@ async def run_missionos_conversation_shadow_graph_async(
             ),
         }
         return {
-            "schema_version": MISSIONOS_ADK_V2_SHADOW_RESULT_SCHEMA_VERSION,
+            "schema_version": result_schema_version,
             "graph_runtime_status": "proposal_guardrail_passed",
             "blocking_reasons": [],
             "proposal": proposal,
             "agent_invocations": list(state.get("agent_invocations") or []),
             "graph_node_sequence": node_sequence,
-            "workflow_name": MISSIONOS_ADK_V2_SHADOW_WORKFLOW_NAME,
-            "session_backend": "in_memory_shadow_only",
+            "workflow_name": workflow_name,
+            "workflow_execution_mode": workflow_execution_mode,
+            "session_backend": session_backend,
             "retry_policy": "disabled",
-            **_authority_floor(),
+            **_authority_floor(measurement_only=is_shadow),
         }
 
     workflow = Workflow(
-        name=MISSIONOS_ADK_V2_SHADOW_WORKFLOW_NAME,
-        description=("Measurement-only ADK v2 graph for MissionOS conversation proposals."),
+        name=workflow_name,
+        description=(
+            "Proposal-only ADK v2 graph for MissionOS conversation decisions; "
+            f"execution mode is {execution_mode}."
+        ),
         # The graph parent and judgment nodes are re-enterable because the
         # latter schedule LlmAgent children through ctx.run_node(). Pure
         # normalize/finalize nodes remain reusable.
@@ -436,8 +525,8 @@ async def run_missionos_conversation_shadow_graph_async(
         "route_hint": route_hint,
     }
     session_service = InMemorySessionService()
-    app_name = "missionos_adk_v2_shadow"
-    user_id = "missionos_shadow_operator"
+    app_name = f"missionos_adk_v2_{execution_mode}"
+    user_id = f"missionos_{execution_mode}_operator"
     session = await session_service.create_session(app_name=app_name, user_id=user_id)
     runner = Runner(agent=workflow, app_name=app_name, session_service=session_service)
     content = types.Content(
@@ -466,14 +555,32 @@ async def run_missionos_conversation_shadow_graph_async(
             workflow_node_paths.append(node_path)
         if isinstance(event.output, Mapping):
             final_output = dict(event.output)
-    if final_output.get("schema_version") != MISSIONOS_ADK_V2_SHADOW_RESULT_SCHEMA_VERSION:
-        raise RuntimeError("adk_v2_shadow_graph_final_output_missing")
+    if final_output.get("schema_version") != result_schema_version:
+        raise RuntimeError(f"adk_v2_{execution_mode}_graph_final_output_missing")
     final_output["workflow_node_paths"] = workflow_node_paths
     return final_output
 
 
+async def run_missionos_conversation_shadow_graph_async(**kwargs: Any) -> dict[str, Any]:
+    return await _run_missionos_conversation_graph_async(
+        execution_mode="shadow",
+        **kwargs,
+    )
+
+
 def run_missionos_conversation_shadow_graph(**kwargs: Any) -> dict[str, Any]:
     return asyncio.run(run_missionos_conversation_shadow_graph_async(**kwargs))
+
+
+async def run_missionos_conversation_proposal_graph_async(**kwargs: Any) -> dict[str, Any]:
+    return await _run_missionos_conversation_graph_async(
+        execution_mode="primary",
+        **kwargs,
+    )
+
+
+def run_missionos_conversation_proposal_graph(**kwargs: Any) -> dict[str, Any]:
+    return asyncio.run(run_missionos_conversation_proposal_graph_async(**kwargs))
 
 
 def build_missionos_conversation_shadow_comparison(
@@ -558,11 +665,19 @@ def build_shadow_runtime_error_comparison(exc: BaseException) -> dict[str, Any]:
 
 
 __all__ = [
+    "MISSIONOS_ADK_V2_GRAPH_PRIMARY_ENV",
+    "MISSIONOS_ADK_V2_GRAPH_ROLLBACK_ENV",
     "MISSIONOS_ADK_V2_GRAPH_SHADOW_ENV",
+    "MISSIONOS_ADK_V2_PRIMARY_WORKFLOW_NAME",
+    "MISSIONOS_ADK_V2_PROPOSAL_RESULT_SCHEMA_VERSION",
     "MISSIONOS_ADK_V2_SHADOW_COMPARISON_SCHEMA_VERSION",
     "MISSIONOS_ADK_V2_SHADOW_RESULT_SCHEMA_VERSION",
+    "adk_v2_graph_switch_enabled",
     "build_missionos_conversation_shadow_comparison",
     "build_shadow_runtime_error_comparison",
+    "run_missionos_conversation_proposal_graph",
+    "run_missionos_conversation_proposal_graph_async",
     "run_missionos_conversation_shadow_graph",
     "run_missionos_conversation_shadow_graph_async",
+    "validate_adk_v2_graph_rollout_env",
 ]

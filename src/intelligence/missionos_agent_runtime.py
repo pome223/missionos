@@ -26,7 +26,10 @@ from src.agents.model_config import (
     local_llm_backend_enabled,
 )
 from src.intelligence.missionos_adk_v2_shadow_graph import (
+    MISSIONOS_ADK_V2_GRAPH_PRIMARY_ENV,
+    MISSIONOS_ADK_V2_GRAPH_ROLLBACK_ENV,
     MISSIONOS_ADK_V2_GRAPH_SHADOW_ENV,
+    validate_adk_v2_graph_rollout_env,
 )
 from src.gateway.missionos_capabilities import (
     MISSIONOS_OPERATOR_FACING_ROUTE,
@@ -2932,18 +2935,10 @@ def run_missionos_runtime_recovery_agent(
     }
 
 
-def _run_missionos_agent_runtime_sequential(
+def _missionos_agent_runtime_configuration_failure(
     *,
-    utterance: str,
-    missionos_state: Mapping[str, Any],
-    mission_designer_context: Mapping[str, Any] | None = None,
-    coordinate_route: Mapping[str, Any] | None = None,
-    conversation_history: list[dict[str, str]] | None = None,
-    monitoring_observations: list[Mapping[str, Any]] | None = None,
-    route_hint: str = "",
-    timeout_seconds: int | None = None,
-) -> dict[str, Any]:
-    monitoring_payloads = _monitoring_observation_payloads(monitoring_observations)
+    monitoring_payloads: list[dict[str, Any]],
+) -> dict[str, Any] | None:
     if os.environ.get(MISSIONOS_AGENT_RUNTIME_ADK_ENABLED_ENV, "").strip() != "1":
         return {
             "schema_version": MISSIONOS_AGENT_RUNTIME_RESULT_SCHEMA_VERSION,
@@ -2966,6 +2961,26 @@ def _run_missionos_agent_runtime_sequential(
             "monitoring_observations": monitoring_payloads,
             "progress_counted": False,
         }
+    return None
+
+
+def _run_missionos_agent_runtime_sequential(
+    *,
+    utterance: str,
+    missionos_state: Mapping[str, Any],
+    mission_designer_context: Mapping[str, Any] | None = None,
+    coordinate_route: Mapping[str, Any] | None = None,
+    conversation_history: list[dict[str, str]] | None = None,
+    monitoring_observations: list[Mapping[str, Any]] | None = None,
+    route_hint: str = "",
+    timeout_seconds: int | None = None,
+) -> dict[str, Any]:
+    monitoring_payloads = _monitoring_observation_payloads(monitoring_observations)
+    configuration_failure = _missionos_agent_runtime_configuration_failure(
+        monitoring_payloads=monitoring_payloads,
+    )
+    if configuration_failure is not None:
+        return configuration_failure
 
     invocations: list[dict[str, Any]] = []
     chief_invocation = _run_agent_once(
@@ -3161,6 +3176,119 @@ def _run_missionos_agent_runtime_sequential(
     }
 
 
+def _missionos_adk_v2_primary_runtime_error(
+    exc: BaseException,
+    *,
+    monitoring_payloads: list[dict[str, Any]],
+) -> dict[str, Any]:
+    return {
+        "schema_version": MISSIONOS_AGENT_RUNTIME_RESULT_SCHEMA_VERSION,
+        "runtime_status": "guardrail_blocked",
+        "blocking_reasons": [f"adk_v2_primary_graph_failed:{type(exc).__name__}"],
+        "proposal": {},
+        "agent_invocations": [],
+        "monitoring_observations": monitoring_payloads,
+        "workflow_execution_mode": "adk_v2_graph_primary",
+        "adk_v2_graph_primary": True,
+        "adk_v2_graph_result": {},
+        "proposal_only": True,
+        "approval_created": False,
+        "dispatch_authority_created": False,
+        "executor_invoked": False,
+        "physical_execution_invoked": False,
+        "outcome_observed": False,
+        "progress_counted": False,
+    }
+
+
+def _missionos_adk_v2_primary_runtime_result(
+    graph_result: Mapping[str, Any],
+    *,
+    monitoring_payloads: list[dict[str, Any]],
+) -> dict[str, Any]:
+    graph_status = str(graph_result.get("graph_runtime_status") or "")
+    if graph_status not in {"proposal_guardrail_passed", "guardrail_blocked"}:
+        graph_status = "guardrail_blocked"
+        blocking_reasons = ["adk_v2_primary_graph_runtime_status_invalid"]
+        proposal: dict[str, Any] = {}
+    else:
+        blocking_reasons = list(graph_result.get("blocking_reasons") or [])
+        proposal_value = graph_result.get("proposal")
+        proposal = dict(proposal_value) if isinstance(proposal_value, Mapping) else {}
+        if graph_status != "proposal_guardrail_passed":
+            proposal = {}
+    invocations = [
+        dict(item)
+        for item in graph_result.get("agent_invocations") or []
+        if isinstance(item, Mapping)
+    ]
+    return {
+        "schema_version": MISSIONOS_AGENT_RUNTIME_RESULT_SCHEMA_VERSION,
+        "runtime_status": graph_status,
+        "blocking_reasons": blocking_reasons,
+        "proposal": proposal,
+        "agent_invocations": invocations,
+        "operator_facing_route": MISSIONOS_OPERATOR_FACING_ROUTE,
+        "internal_capability_registry": build_missionos_capability_registry_summary(),
+        "coordination_pattern": "adk_v2_graph_primary_chief_specialist_safety_critic",
+        "monitoring_observations": monitoring_payloads,
+        "workflow_execution_mode": "adk_v2_graph_primary",
+        "adk_v2_graph_primary": True,
+        "adk_v2_graph_result": dict(graph_result),
+        "proposal_only": True,
+        "approval_created": False,
+        "dispatch_authority_created": False,
+        "executor_invoked": False,
+        "physical_execution_invoked": False,
+        "outcome_observed": False,
+        "progress_counted": False,
+    }
+
+
+def _run_missionos_agent_runtime_adk_v2_primary(
+    *,
+    utterance: str,
+    missionos_state: Mapping[str, Any],
+    mission_designer_context: Mapping[str, Any] | None = None,
+    coordinate_route: Mapping[str, Any] | None = None,
+    conversation_history: list[dict[str, str]] | None = None,
+    monitoring_observations: list[Mapping[str, Any]] | None = None,
+    route_hint: str = "",
+    timeout_seconds: int | None = None,
+) -> dict[str, Any]:
+    monitoring_payloads = _monitoring_observation_payloads(monitoring_observations)
+    configuration_failure = _missionos_agent_runtime_configuration_failure(
+        monitoring_payloads=monitoring_payloads,
+    )
+    if configuration_failure is not None:
+        return configuration_failure
+
+    from src.intelligence.missionos_adk_v2_shadow_graph import (
+        run_missionos_conversation_proposal_graph,
+    )
+
+    try:
+        graph_result = run_missionos_conversation_proposal_graph(
+            utterance=utterance,
+            missionos_state=missionos_state,
+            mission_designer_context=mission_designer_context,
+            coordinate_route=coordinate_route,
+            conversation_history=conversation_history,
+            monitoring_observations=monitoring_observations,
+            route_hint=route_hint,
+            timeout_seconds=timeout_seconds,
+        )
+    except Exception as exc:  # pragma: no cover - live model/runtime failures vary.
+        return _missionos_adk_v2_primary_runtime_error(
+            exc,
+            monitoring_payloads=monitoring_payloads,
+        )
+    return _missionos_adk_v2_primary_runtime_result(
+        graph_result,
+        monitoring_payloads=monitoring_payloads,
+    )
+
+
 def run_missionos_agent_runtime(
     *,
     utterance: str,
@@ -3172,24 +3300,39 @@ def run_missionos_agent_runtime(
     route_hint: str = "",
     timeout_seconds: int | None = None,
 ) -> dict[str, Any]:
-    """Run the production proposal path and an optional ADK v2 shadow graph.
+    """Run the configured MissionOS conversation proposal path.
 
-    The sequential result remains authoritative for Gateway routing. The graph
-    result is attached as measurement-only evidence and cannot alter the
-    production proposal, approval state, dispatch boundary, or progress.
+    The proposal-only ADK v2 graph is the default engine. Setting
+    ``MISSIONOS_ADK_V2_GRAPH_PRIMARY=0`` explicitly retains the sequential
+    engine for bounded shadow comparisons only.
+    ``MISSIONOS_ADK_V2_GRAPH_ROLLBACK=1`` always restores the sequential path
+    and suppresses both primary and shadow graph execution.
     """
 
-    primary_result = _run_missionos_agent_runtime_sequential(
-        utterance=utterance,
-        missionos_state=missionos_state,
-        mission_designer_context=mission_designer_context,
-        coordinate_route=coordinate_route,
-        conversation_history=conversation_history,
-        monitoring_observations=monitoring_observations,
-        route_hint=route_hint,
-        timeout_seconds=timeout_seconds,
-    )
-    if os.environ.get(MISSIONOS_ADK_V2_GRAPH_SHADOW_ENV, "").strip() != "1":
+    call_kwargs = {
+        "utterance": utterance,
+        "missionos_state": missionos_state,
+        "mission_designer_context": mission_designer_context,
+        "coordinate_route": coordinate_route,
+        "conversation_history": conversation_history,
+        "monitoring_observations": monitoring_observations,
+        "route_hint": route_hint,
+        "timeout_seconds": timeout_seconds,
+    }
+    rollout = validate_adk_v2_graph_rollout_env()
+    if rollout["rollback"]:
+        rollback_result = _run_missionos_agent_runtime_sequential(**call_kwargs)
+        rollback_evidence = dict(rollback_result)
+        rollback_evidence["workflow_execution_mode"] = "sequential_rollback"
+        rollback_evidence["adk_v2_graph_primary"] = False
+        rollback_evidence["adk_v2_graph_rollback"] = True
+        return rollback_evidence
+
+    if rollout["primary"]:
+        return _run_missionos_agent_runtime_adk_v2_primary(**call_kwargs)
+
+    primary_result = _run_missionos_agent_runtime_sequential(**call_kwargs)
+    if not rollout["shadow"]:
         return primary_result
     if primary_result.get("runtime_status") == "not_configured":
         return primary_result
@@ -3242,6 +3385,8 @@ def run_missionos_agent_runtime(
 
 
 __all__ = [
+    "MISSIONOS_ADK_V2_GRAPH_PRIMARY_ENV",
+    "MISSIONOS_ADK_V2_GRAPH_ROLLBACK_ENV",
     "MISSIONOS_ADK_V2_GRAPH_SHADOW_ENV",
     "MISSIONOS_AGENT_RUNTIME_ADK_ENABLED_ENV",
     "MISSIONOS_AGENT_RUNTIME_MODEL_ENV",

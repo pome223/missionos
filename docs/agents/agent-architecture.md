@@ -38,31 +38,45 @@ The routing map lives in `src/intelligence/missionos_agent_runtime.py` as
 The Safety Critic may be invoked after the chosen specialist. It can review the
 proposal boundary, but it does not approve or execute.
 
-## ADK v2 Conversation Shadow Graph
+## ADK v2 Conversation Proposal Graph
 
-MissionOS has an opt-in ADK v2 graph pilot for the conversation/proposal path.
-Enable it with:
-
-```text
-MISSIONOS_ADK_V2_GRAPH_SHADOW=1
-```
-
-The production sequential path still runs first and remains authoritative for
-Gateway routing. The graph then independently evaluates the same bounded input
-through these workflow nodes:
+MissionOS uses the ADK v2 graph as the default primary conversation/proposal
+generator. No promotion flag is required:
 
 ```text
-normalize_shadow_input
--> invoke_shadow_chief
--> invoke_shadow_specialist
--> invoke_shadow_safety_critic
--> finalize_shadow_proposal
+MISSIONOS_ADK_V2_GRAPH_ROLLBACK=0
 ```
+
+The graph evaluates the bounded input through these workflow nodes and adapts
+the result to the existing `missionos_agent_runtime_result.v1` Gateway
+contract:
+
+```text
+normalize_proposal_input
+-> invoke_proposal_chief
+-> invoke_proposal_specialist
+-> invoke_proposal_safety_critic
+-> finalize_primary_proposal
+```
+
+Shadow mode retains the corresponding `*_shadow_*` node names so stored
+comparison evidence remains distinguishable from primary proposal evidence.
 
 The graph uses the existing deterministic `_CHIEF_TO_SPECIALIST` allowlist. It
 does not use ADK transfer tools and does not include the legacy `ControlLoop`,
 human approval, Gateway dispatch, an executor, a backend adapter, or an outcome
-verifier.
+verifier. Primary mode fixes `proposal_only=true`, `measurement_only=false`,
+and all approval, dispatch, execution, effect, and progress facts to false.
+
+Set `MISSIONOS_ADK_V2_GRAPH_ROLLBACK=1` to restore the previous sequential
+proposal path. Rollback wins over every other graph flag and suppresses graph
+invocation entirely. A primary graph failure is fail-closed as a blocked
+proposal; it never silently falls back to a second execution engine.
+
+For a bounded comparison run, set `MISSIONOS_ADK_V2_GRAPH_PRIMARY=0` and
+`MISSIONOS_ADK_V2_GRAPH_SHADOW=1`. The sequential path then remains
+authoritative and the graph independently evaluates the same input as
+measurement-only evidence.
 
 The comparison artifact is scoped explicitly as
 `conversation_proposal_path_only`. It reports Chief, specialist, and Safety
@@ -77,9 +91,10 @@ fixes the following authority facts:
 - `outcome_observed=false`
 - `progress_counted=false`
 
-The pilot intentionally has these operational limits:
+The graph currently has these operational limits:
 
-- it makes a second set of model calls and is disabled by default
+- primary mode makes one three-stage graph call sequence; shadow mode makes a
+  second sequence after the sequential proposal path
 - the shadow runs synchronously after the three-stage primary path; enabling it
   approximately doubles model-call count and can approximately double normal
   proposal latency
@@ -89,7 +104,7 @@ The pilot intentionally has these operational limits:
   paths unless that additional budget is intentional
 - a graph failure is fail-open only for the shadow measurement; it cannot
   replace or block the production sequential result
-- the graph uses a one-shot `InMemorySessionService`
+- both primary and shadow modes use a one-shot `InMemorySessionService`
 - graph resume, Redis restoration, HITL, retry, and execution are not enabled
 - Chief, specialist, and Safety Critic run as `ctx.run_node()` children and use
   `rerun_on_resume=true`; pure normalize/finalize nodes remain reusable
@@ -97,9 +112,13 @@ The pilot intentionally has these operational limits:
 - agent invocation evidence may be persisted, but node completion is not
   approval, dispatch, execution, observation, or progress
 
-The graph is still one-shot, but its judgment nodes follow the fresh-on-resume
-rule required by persistent workflows. Before connecting this graph directly
-to Redis resume, approval, or dispatch:
+All production `Runner` call sites and the distinction between multi-stage
+Workflow roots and valid standalone Agent roots are enumerated in
+`docs/agents/adk-v2-runtime-inventory.md`.
+
+The proposal graph is still one-shot, but its judgment nodes follow the
+fresh-on-resume rule required by persistent workflows. Before connecting this
+graph directly to Redis resume, approval, or dispatch:
 
 - Chief, specialist, Safety Critic, and any other judgment node that reads
   telemetry must use fresh, checkpoint-bound input and rerun after resume
@@ -109,9 +128,10 @@ to Redis resume, approval, or dispatch:
 - fresh post-resume rules and dispatch-time verification remain mandatory;
   graph resume and node completion create no approval or dispatch authority
 
-These resume rules are a promotion gate. They must be implemented and tested,
-along with `dispatch_ref` idempotency and a real Redis restart test, before the
-graph can include approval, dispatch, execution, or recovery side effects.
+These resume rules remain a promotion gate before the graph can include
+approval, dispatch, execution, or recovery side effects. `dispatch_ref`
+idempotency and real Redis restart restoration are already separate proven
+prerequisites; neither grants authority to this proposal graph.
 
 The Redis backend requirement, ADK v2 event-field round trip, process-restart
 verification, and post-resume fresh-state rules are defined in
@@ -214,9 +234,10 @@ Duplicate resume cannot recreate the proposal. See
 
 Implementation and comparison contracts live in
 `src/intelligence/missionos_adk_v2_shadow_graph.py`. The production wrapper in
-`src/intelligence/missionos_agent_runtime.py` attaches
+`src/intelligence/missionos_agent_runtime.py` either adapts the primary graph
+result, runs the explicit sequential rollback, or attaches
 `adk_v2_shadow_result` and `adk_v2_shadow_comparison` without changing the
-primary `runtime_status` or `proposal`.
+sequential `runtime_status` or `proposal`.
 
 Model backend selection is separate from routing. By default, ADK model calls
 use the hosted DeepSeek V4 path. Set `MISSIONOS_LLM_BACKEND=gemini` for the

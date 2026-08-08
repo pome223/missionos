@@ -44,6 +44,10 @@ and proposes which specialist should think next. The Gateway still keeps the
 authority boundary: it validates, records artifacts, asks for human approval,
 and prevents unapproved execution.
 
+Chief, specialist, and safety-review judgments are coordinated by an ADK v2
+workflow by default. That changes how the judgments are orchestrated; it does
+not give the workflow approval or execution authority.
+
 ## Mission Planning
 
 Mission planning is the normal `missionos chat` flow.

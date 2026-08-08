@@ -15,6 +15,7 @@ action = "retain_as_canonical_ci_boundary"
 files = [
   "smoke_action_feasibility_conformance_corpus.py",
   "smoke_adk_v2_control_loop.py",
+  "smoke_adk_v2_default_proposal.py",
   "smoke_adk_v2_legacy_gateway.py",
   "smoke_adk_v2_shadow_graph.py",
   "smoke_atomic_dispatch.py",

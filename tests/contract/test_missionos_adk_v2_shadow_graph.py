@@ -32,6 +32,13 @@ class StaticGraphLlm(BaseLlm):
         )
 
 
+@pytest.fixture(autouse=True)
+def _clear_graph_rollout_flags(monkeypatch) -> None:
+    monkeypatch.delenv(shadow_graph.MISSIONOS_ADK_V2_GRAPH_PRIMARY_ENV, raising=False)
+    monkeypatch.delenv(shadow_graph.MISSIONOS_ADK_V2_GRAPH_ROLLBACK_ENV, raising=False)
+    monkeypatch.delenv(shadow_graph.MISSIONOS_ADK_V2_GRAPH_SHADOW_ENV, raising=False)
+
+
 def _invocation(
     agent_name: str,
     output: dict[str, Any],
@@ -103,6 +110,21 @@ def _shadow_result() -> dict[str, Any]:
         "outcome_observed": False,
         "progress_counted": False,
     }
+
+
+def _primary_graph_result() -> dict[str, Any]:
+    result = _shadow_result()
+    result.update(
+        {
+            "schema_version": shadow_graph.MISSIONOS_ADK_V2_PROPOSAL_RESULT_SCHEMA_VERSION,
+            "workflow_name": shadow_graph.MISSIONOS_ADK_V2_PRIMARY_WORKFLOW_NAME,
+            "workflow_execution_mode": "adk_v2_graph_primary",
+            "session_backend": "in_memory_proposal_only",
+            "measurement_only": False,
+            "proposal_only": True,
+        }
+    )
+    return result
 
 
 def test_adk_v2_shadow_graph_runs_chief_specialist_and_critic_without_authority(
@@ -249,6 +271,66 @@ def test_adk_v2_shadow_agents_are_dynamic_children_without_nested_runners(
     assert result["dispatch_authority_created"] is False
 
 
+def test_adk_v2_primary_graph_runs_same_proposal_nodes_without_authority(
+    monkeypatch,
+) -> None:
+    outputs = {
+        "missionos_chief_agent": {
+            "intent": "status",
+            "operator_instruction": "Check current mission status.",
+            "requires_human_approval": False,
+        },
+        "missionos_situation_judge_agent": {
+            "intent": "status",
+            "operator_instruction": "Hold for operator review.",
+            "requires_human_approval": True,
+        },
+        "missionos_safety_critic_agent": {
+            "intent": "status",
+            "boundary_status": "needs_human_approval",
+            "requires_human_approval": True,
+        },
+    }
+    calls: list[dict[str, Any]] = []
+
+    async def fake_run_agent_once_async(**kwargs: Any) -> dict[str, Any]:
+        calls.append(kwargs)
+        name = kwargs["agent_name"]
+        return _invocation(name, outputs[name])
+
+    monkeypatch.setattr(agent_runtime, "_run_agent_once_async", fake_run_agent_once_async)
+
+    result = shadow_graph.run_missionos_conversation_proposal_graph(
+        utterance="What is the mission status?",
+        missionos_state={"task_id": "task_primary_fixture"},
+    )
+
+    assert result["schema_version"] == (
+        shadow_graph.MISSIONOS_ADK_V2_PROPOSAL_RESULT_SCHEMA_VERSION
+    )
+    assert result["workflow_name"] == shadow_graph.MISSIONOS_ADK_V2_PRIMARY_WORKFLOW_NAME
+    assert result["workflow_execution_mode"] == "adk_v2_graph_primary"
+    assert result["graph_runtime_status"] == "proposal_guardrail_passed"
+    assert result["proposal"]["intent"] == "status"
+    assert result["graph_node_sequence"] == [
+        "normalize_proposal_input",
+        "invoke_proposal_chief",
+        "invoke_proposal_specialist",
+        "invoke_proposal_safety_critic",
+        "finalize_primary_proposal",
+    ]
+    assert result["session_backend"] == "in_memory_proposal_only"
+    assert result["proposal_only"] is True
+    assert result["measurement_only"] is False
+    assert result["approval_created"] is False
+    assert result["dispatch_authority_created"] is False
+    assert result["executor_invoked"] is False
+    assert result["physical_execution_invoked"] is False
+    assert result["outcome_observed"] is False
+    assert result["progress_counted"] is False
+    assert all(call["workflow_execution_mode"] == "adk_v2_graph_primary" for call in calls)
+
+
 def test_adk_v2_shadow_graph_stops_agent_calls_after_specialist_guardrail_block(
     monkeypatch,
 ) -> None:
@@ -319,24 +401,59 @@ def test_shadow_comparison_is_narrow_and_measurement_only() -> None:
     assert comparison["progress_counted"] is False
 
 
-def test_runtime_does_not_invoke_shadow_graph_without_explicit_flag(
+def test_runtime_uses_primary_graph_by_default_without_sequential_invocation(
     monkeypatch,
 ) -> None:
-    primary = _primary_result()
+    graph_result = _primary_graph_result()
+    monkeypatch.setenv(agent_runtime.MISSIONOS_AGENT_RUNTIME_ADK_ENABLED_ENV, "1")
     monkeypatch.delenv(shadow_graph.MISSIONOS_ADK_V2_GRAPH_SHADOW_ENV, raising=False)
+    monkeypatch.setattr(agent_runtime, "_adk_llm_credentials_available", lambda _name: True)
+
+    def fail_sequential(**_kwargs: Any) -> dict[str, Any]:
+        raise AssertionError("default runtime must not call the sequential engine")
+
+    monkeypatch.setattr(
+        agent_runtime,
+        "_run_missionos_agent_runtime_sequential",
+        fail_sequential,
+    )
+    monkeypatch.setattr(
+        shadow_graph,
+        "run_missionos_conversation_proposal_graph",
+        lambda **_kwargs: graph_result,
+    )
+
+    result = agent_runtime.run_missionos_agent_runtime(
+        utterance="status",
+        missionos_state={},
+    )
+
+    assert result["proposal"] == graph_result["proposal"]
+    assert result["workflow_execution_mode"] == "adk_v2_graph_primary"
+    assert result["adk_v2_graph_primary"] is True
+    assert "adk_v2_shadow_comparison" not in result
+
+
+@pytest.mark.parametrize("primary_value", ["0", "false", "FALSE", "no", "off"])
+def test_runtime_primary_false_retains_sequential_engine_without_shadow(
+    monkeypatch,
+    primary_value: str,
+) -> None:
+    primary = _primary_result()
+    monkeypatch.setenv(shadow_graph.MISSIONOS_ADK_V2_GRAPH_PRIMARY_ENV, primary_value)
     monkeypatch.setattr(
         agent_runtime,
         "_run_missionos_agent_runtime_sequential",
         lambda **_kwargs: primary,
     )
 
-    def fail_if_called(**_kwargs: Any) -> dict[str, Any]:
-        raise AssertionError("shadow graph must be opt-in")
+    def fail_graph(**_kwargs: Any) -> dict[str, Any]:
+        raise AssertionError("explicit primary opt-out must retain sequential mode")
 
     monkeypatch.setattr(
         shadow_graph,
-        "run_missionos_conversation_shadow_graph",
-        fail_if_called,
+        "run_missionos_conversation_proposal_graph",
+        fail_graph,
     )
 
     result = agent_runtime.run_missionos_agent_runtime(
@@ -353,6 +470,7 @@ def test_runtime_attaches_shadow_measurement_without_changing_primary_proposal(
 ) -> None:
     primary = _primary_result()
     shadow = _shadow_result()
+    monkeypatch.setenv(shadow_graph.MISSIONOS_ADK_V2_GRAPH_PRIMARY_ENV, "0")
     monkeypatch.setenv(shadow_graph.MISSIONOS_ADK_V2_GRAPH_SHADOW_ENV, "1")
     monkeypatch.setattr(
         agent_runtime,
@@ -383,6 +501,7 @@ def test_runtime_attaches_shadow_measurement_without_changing_primary_proposal(
 
 def test_runtime_shadow_failure_is_fail_open_for_primary_path(monkeypatch) -> None:
     primary = _primary_result()
+    monkeypatch.setenv(shadow_graph.MISSIONOS_ADK_V2_GRAPH_PRIMARY_ENV, "0")
     monkeypatch.setenv(shadow_graph.MISSIONOS_ADK_V2_GRAPH_SHADOW_ENV, "1")
     monkeypatch.setattr(
         agent_runtime,
@@ -413,6 +532,155 @@ def test_runtime_shadow_failure_is_fail_open_for_primary_path(monkeypatch) -> No
     assert comparison["agreement"] is None
     assert comparison["dispatch_authority_created"] is False
     assert comparison["executor_invoked"] is False
+
+
+def test_runtime_primary_flag_promotes_graph_without_sequential_invocation(
+    monkeypatch,
+) -> None:
+    graph_result = _primary_graph_result()
+    monkeypatch.setenv(agent_runtime.MISSIONOS_AGENT_RUNTIME_ADK_ENABLED_ENV, "1")
+    monkeypatch.setenv(shadow_graph.MISSIONOS_ADK_V2_GRAPH_PRIMARY_ENV, "1")
+    monkeypatch.setenv(shadow_graph.MISSIONOS_ADK_V2_GRAPH_SHADOW_ENV, "1")
+    monkeypatch.setattr(agent_runtime, "_adk_llm_credentials_available", lambda _name: True)
+
+    def fail_sequential(**_kwargs: Any) -> dict[str, Any]:
+        raise AssertionError("primary graph must not call the sequential runtime")
+
+    monkeypatch.setattr(
+        agent_runtime,
+        "_run_missionos_agent_runtime_sequential",
+        fail_sequential,
+    )
+    monkeypatch.setattr(
+        shadow_graph,
+        "run_missionos_conversation_proposal_graph",
+        lambda **_kwargs: graph_result,
+    )
+
+    result = agent_runtime.run_missionos_agent_runtime(
+        utterance="status",
+        missionos_state={"task_id": "task_primary_fixture"},
+    )
+
+    assert result["runtime_status"] == "proposal_guardrail_passed"
+    assert result["proposal"] == graph_result["proposal"]
+    assert result["workflow_execution_mode"] == "adk_v2_graph_primary"
+    assert result["adk_v2_graph_primary"] is True
+    assert result["adk_v2_graph_result"] == graph_result
+    assert result["proposal_only"] is True
+    assert result["approval_created"] is False
+    assert result["dispatch_authority_created"] is False
+    assert result["executor_invoked"] is False
+    assert result["physical_execution_invoked"] is False
+    assert result["outcome_observed"] is False
+    assert result["progress_counted"] is False
+    assert "adk_v2_shadow_result" not in result
+
+
+def test_runtime_primary_graph_failure_is_fail_closed_without_sequential_fallback(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv(agent_runtime.MISSIONOS_AGENT_RUNTIME_ADK_ENABLED_ENV, "1")
+    monkeypatch.setenv(shadow_graph.MISSIONOS_ADK_V2_GRAPH_PRIMARY_ENV, "1")
+    monkeypatch.setattr(agent_runtime, "_adk_llm_credentials_available", lambda _name: True)
+
+    def fail_sequential(**_kwargs: Any) -> dict[str, Any]:
+        raise AssertionError("graph failure must not silently change execution engines")
+
+    def fail_graph(**_kwargs: Any) -> dict[str, Any]:
+        raise RuntimeError("fixture primary graph failure")
+
+    monkeypatch.setattr(
+        agent_runtime,
+        "_run_missionos_agent_runtime_sequential",
+        fail_sequential,
+    )
+    monkeypatch.setattr(
+        shadow_graph,
+        "run_missionos_conversation_proposal_graph",
+        fail_graph,
+    )
+
+    result = agent_runtime.run_missionos_agent_runtime(
+        utterance="status",
+        missionos_state={},
+    )
+
+    assert result["runtime_status"] == "guardrail_blocked"
+    assert result["blocking_reasons"] == ["adk_v2_primary_graph_failed:RuntimeError"]
+    assert result["proposal"] == {}
+    assert result["adk_v2_graph_result"] == {}
+    assert result["approval_created"] is False
+    assert result["dispatch_authority_created"] is False
+    assert result["executor_invoked"] is False
+    assert result["progress_counted"] is False
+
+
+@pytest.mark.parametrize("rollback_value", ["1", "true", "TRUE", "yes", "on"])
+def test_runtime_rollback_flag_wins_over_primary_and_shadow(
+    monkeypatch,
+    rollback_value: str,
+) -> None:
+    sequential_result = _primary_result()
+    monkeypatch.setenv(shadow_graph.MISSIONOS_ADK_V2_GRAPH_PRIMARY_ENV, "1")
+    monkeypatch.setenv(shadow_graph.MISSIONOS_ADK_V2_GRAPH_SHADOW_ENV, "1")
+    monkeypatch.setenv(
+        shadow_graph.MISSIONOS_ADK_V2_GRAPH_ROLLBACK_ENV,
+        rollback_value,
+    )
+    monkeypatch.setattr(
+        agent_runtime,
+        "_run_missionos_agent_runtime_sequential",
+        lambda **_kwargs: sequential_result,
+    )
+
+    def fail_graph(**_kwargs: Any) -> dict[str, Any]:
+        raise AssertionError("rollback must suppress every graph invocation")
+
+    monkeypatch.setattr(
+        shadow_graph,
+        "run_missionos_conversation_proposal_graph",
+        fail_graph,
+    )
+    monkeypatch.setattr(
+        shadow_graph,
+        "run_missionos_conversation_shadow_graph",
+        fail_graph,
+    )
+
+    result = agent_runtime.run_missionos_agent_runtime(
+        utterance="status",
+        missionos_state={},
+    )
+
+    assert result["proposal"] == sequential_result["proposal"]
+    assert result["workflow_execution_mode"] == "sequential_rollback"
+    assert result["adk_v2_graph_primary"] is False
+    assert result["adk_v2_graph_rollback"] is True
+    assert "adk_v2_shadow_result" not in result
+
+
+@pytest.mark.parametrize(
+    "env_name",
+    [
+        shadow_graph.MISSIONOS_ADK_V2_GRAPH_PRIMARY_ENV,
+        shadow_graph.MISSIONOS_ADK_V2_GRAPH_ROLLBACK_ENV,
+        shadow_graph.MISSIONOS_ADK_V2_GRAPH_SHADOW_ENV,
+    ],
+)
+def test_gateway_startup_rejects_invalid_graph_rollout_switch(
+    monkeypatch,
+    env_name: str,
+) -> None:
+    from src.gateway.server import create_missionos_gateway
+
+    monkeypatch.setenv(env_name, "enable-maybe")
+
+    with pytest.raises(
+        RuntimeError,
+        match=rf"invalid_adk_v2_graph_switch:{env_name}",
+    ):
+        create_missionos_gateway()
 
 
 def test_async_agent_invocation_marks_graph_execution_mode(monkeypatch) -> None:
