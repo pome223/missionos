@@ -81,3 +81,25 @@ automatically dispatch or re-execute.
 
 The complete production Runner classification is maintained in
 `docs/agents/adk-v2-runtime-inventory.md`.
+
+## Runtime Verification
+
+Run the default-primary production boundary through a real loopback Gateway
+with an explicitly configured model backend:
+
+```text
+RUN_MISSIONOS_ADK_V2_PRIMARY_GATEWAY_SMOKE=1 \
+MISSIONOS_LLM_BACKEND=<configured-backend> \
+PYTHONPATH=packages/missionos-cli/src:. \
+python scripts/smoke_adk_v2_primary_gateway.py
+```
+
+The smoke unsets all three graph rollout controls before Gateway startup. It
+requires an HTTP 200 proposal response, `workflow_execution_mode` equal to
+`adk_v2_graph_primary`, and three dynamic Agent children executed through
+`ctx.run_node`. It fails if approval, dispatch, executor, physical execution,
+observed effect, or progress authority appears in the response.
+
+This is a hosted/local-model Gateway boundary check. It is not PX4, Nav2,
+RoboCasa, hardware, or physical-execution evidence; those environments retain
+their own opt-in runtime smokes and claim limits.
