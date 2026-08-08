@@ -9,6 +9,7 @@ claims physical execution.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime, timezone
 import json
 import hashlib
@@ -99,6 +100,42 @@ _ALLOWED_ACTIONS = {
 
 def _truthy_env(name: str) -> bool:
     return os.environ.get(name, "").strip().lower() in _TRUE_VALUES
+
+
+def _wait_for_clock_at_or_after_snapshot(
+    *,
+    read_clock_ns: Callable[[], int],
+    spin_once: Callable[[float], None],
+    maximum_snapshot_stamp_ns: int,
+    timeout_s: float,
+) -> int:
+    """Wait boundedly for a ROS clock sample comparable to snapshot stamps."""
+
+    observed_clock_ns = int(read_clock_ns())
+    deadline = time.monotonic() + max(0.0, float(timeout_s))
+    while (
+        maximum_snapshot_stamp_ns > 0
+        and observed_clock_ns < maximum_snapshot_stamp_ns
+        and time.monotonic() < deadline
+    ):
+        remaining_s = max(0.0, deadline - time.monotonic())
+        spin_once(min(0.05, remaining_s))
+        observed_clock_ns = int(read_clock_ns())
+    return observed_clock_ns
+
+
+def _costmap_age_seconds(
+    *,
+    observed_clock_ns: int,
+    snapshot_stamp_ns: int,
+) -> float | None:
+    if (
+        snapshot_stamp_ns <= 0
+        or observed_clock_ns <= 0
+        or observed_clock_ns < snapshot_stamp_ns
+    ):
+        return None
+    return round((observed_clock_ns - snapshot_stamp_ns) / 1_000_000_000, 6)
 
 
 def _float_env(name: str, default: float) -> float:
@@ -501,13 +538,26 @@ def _evaluate_recovery_candidates(payload: dict[str, Any]) -> dict[str, Any]:
             }
         costmap_snapshot_hash = str(global_costmap["snapshot_hash"])
         _cost_at = global_costmap["cost_at"]
-        observed_clock_ns = int(node.get_clock().now().nanoseconds)
+        maximum_snapshot_stamp_ns = max(
+            int(global_costmap.get("stamp_ns") or 0),
+            int(local_costmap.get("stamp_ns") or 0),
+        )
+        observed_clock_ns = _wait_for_clock_at_or_after_snapshot(
+            read_clock_ns=lambda: int(node.get_clock().now().nanoseconds),
+            spin_once=lambda timeout_s: rclpy.spin_once(
+                node,
+                timeout_sec=timeout_s,
+            ),
+            maximum_snapshot_stamp_ns=maximum_snapshot_stamp_ns,
+            timeout_s=min(server_timeout_s, 2.0),
+        )
 
         def _costmap_age_s(costmap: dict[str, Any]) -> float | None:
             stamp_ns = int(costmap.get("stamp_ns") or 0)
-            if stamp_ns <= 0 or observed_clock_ns <= 0 or observed_clock_ns < stamp_ns:
-                return None
-            return round((observed_clock_ns - stamp_ns) / 1_000_000_000, 6)
+            return _costmap_age_seconds(
+                observed_clock_ns=observed_clock_ns,
+                snapshot_stamp_ns=stamp_ns,
+            )
 
         local_tf_buffer = Buffer()
         local_tf_listener = TransformListener(local_tf_buffer, node)  # noqa: F841

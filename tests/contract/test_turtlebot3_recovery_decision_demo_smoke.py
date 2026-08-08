@@ -17,12 +17,20 @@ def test_turtlebot3_docker_smoke_forwards_deepseek_configuration() -> None:
         / "smoke_ros2_nav2_turtlebot3_obstacle_delivery_docker.sh"
     ).read_text(encoding="utf-8")
 
-    assert '-e "DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}"' in script
+    assert "-e DEEPSEEK_API_KEY" in script
+    assert '-e "DEEPSEEK_API_KEY=' not in script
+    assert "-e GOOGLE_API_KEY" in script
+    assert '-e "GOOGLE_API_KEY=' not in script
     assert "MISSIONOS_DEEPSEEK_MODEL" in script
     assert "MISSIONOS_DEEPSEEK_API_BASE" in script
     assert "import litellm" in script
-    assert '"google-adk[extensions]>=0.1.0"' in script
+    assert '"google-adk[extensions]>=2.5.0,<3.0.0"' in script
     assert re.search(r"\bsk-[A-Za-z0-9]{20,}\b", script) is None
+
+    pyproject = (
+        Path(__file__).resolve().parents[2] / "pyproject.toml"
+    ).read_text(encoding="utf-8")
+    assert '"google-adk[extensions]>=2.5.0,<3.0.0"' in pyproject
 
     dockerfile = (
         Path(__file__).resolve().parents[2]
@@ -30,7 +38,7 @@ def test_turtlebot3_docker_smoke_forwards_deepseek_configuration() -> None:
         / "ros2_nav2_turtlebot3"
         / "Dockerfile"
     ).read_text(encoding="utf-8")
-    assert "'google-adk[extensions]>=0.1.0'" in dockerfile
+    assert "'google-adk[extensions]>=2.5.0,<3.0.0'" in dockerfile
 
     gateway_script = (
         Path(__file__).resolve().parents[2]
@@ -44,6 +52,10 @@ def test_turtlebot3_docker_smoke_forwards_deepseek_configuration() -> None:
     )
     assert "-e DEEPSEEK_API_KEY" in gateway_script
     assert '-e "DEEPSEEK_API_KEY=' not in gateway_script
+    assert "-e GOOGLE_API_KEY" in gateway_script
+    assert '-e "GOOGLE_API_KEY=' not in gateway_script
+    assert "-e GATEWAY_API_KEY" in gateway_script
+    assert '-e "GATEWAY_API_KEY=' not in gateway_script
     assert "MISSIONOS_DEEPSEEK_MODEL" in gateway_script
     assert "MISSIONOS_DEEPSEEK_API_BASE" in gateway_script
     assert "gateway_default_model_id=gemini-3.1-flash-lite" in gateway_script
