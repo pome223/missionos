@@ -20,10 +20,10 @@ docker run --rm -i --shm-size=1g \
   -e "MISSIONOS_CHAT_TURTLEBOT3_HOME_MISSION_HTTP_TIMEOUT_SECONDS=${MISSIONOS_CHAT_TURTLEBOT3_HOME_MISSION_HTTP_TIMEOUT_SECONDS:-600}" \
   -e "MISSIONOS_TB3_SKIP_GATEWAY_DEP_INSTALL=${MISSIONOS_TB3_SKIP_GATEWAY_DEP_INSTALL:-0}" \
   -e "MISSIONOS_LLM_BACKEND=${gateway_llm_backend}" \
-  -e "DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}" \
+  -e DEEPSEEK_API_KEY \
   -e "MISSIONOS_DEEPSEEK_MODEL=${MISSIONOS_DEEPSEEK_MODEL:-deepseek-v4-flash}" \
   -e "MISSIONOS_DEEPSEEK_API_BASE=${MISSIONOS_DEEPSEEK_API_BASE:-https://api.deepseek.com}" \
-  -e "GOOGLE_API_KEY=${GOOGLE_API_KEY:-}" \
+  -e GOOGLE_API_KEY \
   -e "GOOGLE_GENAI_USE_VERTEXAI=${GOOGLE_GENAI_USE_VERTEXAI:-false}" \
   -e "MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_LLM_BACKEND=${planner_backend}" \
   -e "MISSIONOS_AGENT_MISSIONOS_TURTLEBOT3_RECOVERY_PLANNER_AGENT_MODEL_ID=${planner_model_id}" \
@@ -86,7 +86,7 @@ PY
       "pyyaml>=6.0.0" \
       "click>=8.0.0" \
       "rich>=13.0.0" \
-      "google-adk[extensions]>=0.1.0" \
+      "google-adk[extensions]>=2.5.0,<3.0.0" \
       "websockets>=12.0" \
       "httpx>=0.27.0" \
       "ddgs>=0.1.0" \

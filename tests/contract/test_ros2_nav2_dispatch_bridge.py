@@ -419,6 +419,53 @@ def test_recovery_target_cost_threshold_requires_margin_on_both_costmaps() -> No
     )
 
 
+def test_recovery_costmap_freshness_waits_for_ros_sim_clock() -> None:
+    import importlib.util
+
+    path = Path("scripts/ros2_nav2_turtlebot4_bridge.py")
+    spec = importlib.util.spec_from_file_location("missionos_nav2_bridge", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    clock_samples = iter((0, 1_950_000_000, 2_010_000_000))
+    current_clock_ns = 0
+    spin_timeouts: list[float] = []
+
+    def _read_clock_ns() -> int:
+        nonlocal current_clock_ns
+        current_clock_ns = next(clock_samples)
+        return current_clock_ns
+
+    observed_clock_ns = module._wait_for_clock_at_or_after_snapshot(
+        read_clock_ns=_read_clock_ns,
+        spin_once=spin_timeouts.append,
+        maximum_snapshot_stamp_ns=2_000_000_000,
+        timeout_s=0.5,
+    )
+
+    assert observed_clock_ns == 2_010_000_000
+    assert len(spin_timeouts) == 2
+    assert module._costmap_age_seconds(
+        observed_clock_ns=observed_clock_ns,
+        snapshot_stamp_ns=2_000_000_000,
+    ) == 0.01
+
+
+def test_recovery_costmap_freshness_remains_unverified_for_future_stamp() -> None:
+    import importlib.util
+
+    path = Path("scripts/ros2_nav2_turtlebot4_bridge.py")
+    spec = importlib.util.spec_from_file_location("missionos_nav2_bridge", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    assert module._costmap_age_seconds(
+        observed_clock_ns=1_999_999_999,
+        snapshot_stamp_ns=2_000_000_000,
+    ) is None
+
+
 def test_bounded_inflation_escape_only_allows_observed_short_retreat() -> None:
     import importlib.util
 

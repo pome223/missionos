@@ -5,7 +5,7 @@ description = "MissionOS monorepo with CLI, Gateway, and opt-in PX4/Gazebo SITL 
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
 dependencies = [
-  "google-adk[extensions]>=0.1.0",
+  "google-adk[extensions]>=2.5.0,<3.0.0",
   "python-dotenv>=1.0.0",
   "pydantic>=2.0.0",
   "pydantic-settings>=2.0.0",
