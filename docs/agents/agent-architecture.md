@@ -159,6 +159,18 @@ approval, candidate, hash, bounded-action, and dispatch refs. This correlation
 does not turn ADK event IDs or node completion into execution evidence. See
 `docs/agents/adk-v2-guarded-execution.md`.
 
+## ADK v2 Bounded Recovery
+
+`MISSIONOS_ADK_V2_RECOVERY_ENABLED=1` enables a conditional post-verifier node.
+Only an explicit `verifier_status=failed` creates one new proposal. The router
+changes the bounded-action and dispatch refs, marks the prior approval
+non-reusable, creates a new approval request, and stops before approval,
+dispatch authority, or Recovery execution.
+
+Missing, unverified, or not-run verifier evidence does not trigger recovery.
+Duplicate resume cannot recreate the proposal. See
+`docs/agents/adk-v2-bounded-recovery.md`.
+
 Implementation and comparison contracts live in
 `src/intelligence/missionos_adk_v2_shadow_graph.py`. The production wrapper in
 `src/intelligence/missionos_agent_runtime.py` attaches

@@ -69,6 +69,12 @@ def test_guarded_dispatch_records_receipt_and_replays_without_second_send(
 ) -> None:
     table = DispatchAuthorityTable(tmp_path / "dispatch-state.json")
     send_calls: list[str] = []
+    preflight_available = True
+
+    def provider(_payload: Mapping[str, Any]) -> dict[str, Any]:
+        if not preflight_available:
+            raise RuntimeError("fresh state unavailable after receipt")
+        return _preflight()
 
     def sender(request: Mapping[str, Any]) -> dict[str, Any]:
         send_calls.append(str(request["dispatch_ref"]))
@@ -87,13 +93,15 @@ def test_guarded_dispatch_records_receipt_and_replays_without_second_send(
         first = await guarded.execute_guarded_dispatch_once(
             _validated_approval(),
             dispatch_table=table,
-            fresh_preflight_provider=lambda _payload: _preflight(),
+            fresh_preflight_provider=provider,
             execution_boundary=sender,
         )
+        nonlocal preflight_available
+        preflight_available = False
         replay = await guarded.execute_guarded_dispatch_once(
             _validated_approval(),
             dispatch_table=table,
-            fresh_preflight_provider=lambda _payload: _preflight(),
+            fresh_preflight_provider=provider,
             execution_boundary=sender,
         )
         return first, replay

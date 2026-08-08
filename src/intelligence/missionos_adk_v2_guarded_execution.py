@@ -28,6 +28,9 @@ MISSIONOS_ADK_V2_GUARDED_EXECUTION_ENV = (
 MISSIONOS_ADK_V2_GUARDED_EXECUTION_FIXTURE_ENV = (
     "MISSIONOS_ADK_V2_GUARDED_EXECUTION_FIXTURE"
 )
+MISSIONOS_ADK_V2_GUARDED_EXECUTION_FIXTURE_VERIFIER_ENV = (
+    "MISSIONOS_ADK_V2_GUARDED_EXECUTION_FIXTURE_VERIFIER"
+)
 MISSIONOS_ADK_V2_DISPATCH_SNAPSHOT_MAX_AGE_SECONDS_ENV = (
     "MISSIONOS_ADK_V2_DISPATCH_SNAPSHOT_MAX_AGE_SECONDS"
 )
@@ -48,7 +51,6 @@ ExecutionBoundary = Callable[
     [Mapping[str, Any]],
     Mapping[str, Any] | Awaitable[Mapping[str, Any]],
 ]
-
 
 def _sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -284,6 +286,12 @@ def _form2a_execution_boundary(
         == "1"
     )
     if fixture_backend:
+        verifier_status = os.environ.get(
+            MISSIONOS_ADK_V2_GUARDED_EXECUTION_FIXTURE_VERIFIER_ENV,
+            "not_run",
+        ).strip()
+        if verifier_status not in {"not_run", "passed", "failed"}:
+            verifier_status = "not_run"
         return {
             "schema_version": "missionos_adk_v2_fixture_execution_receipt.v1",
             "dispatch_ref": dispatch_ref,
@@ -291,7 +299,13 @@ def _form2a_execution_boundary(
             "external_sender_invoked": False,
             "ack_observed": False,
             "effect_observed": False,
-            "verifier_passed": False,
+            "verifier_status": verifier_status,
+            "verifier_reasons": (
+                ["fixture_verifier_failed"]
+                if verifier_status == "failed"
+                else []
+            ),
+            "verifier_passed": verifier_status == "passed",
             "completion_claimed": False,
             "physical_execution_invoked": False,
             "progress_counted": False,
@@ -308,6 +322,12 @@ def _form2a_execution_boundary(
         ),
         "ack_observed": authority.get("command_ack_observed") is True,
         "effect_observed": authority.get("outcome_observed_in_runtime") is True,
+        "verifier_status": (
+            "passed"
+            if authority.get("verified_dispatch_execution_in_runtime") is True
+            else "unverified"
+        ),
+        "verifier_reasons": list(authority.get("blocking_reasons") or []),
         "verifier_passed": (
             authority.get("verified_dispatch_execution_in_runtime") is True
         ),
@@ -334,6 +354,98 @@ async def execute_guarded_dispatch_once(
         )
     if not dispatch_ref:
         return _blocked_result(["guarded_execution_dispatch_ref_missing"])
+    existing_record = dispatch_table.lookup_dispatch_ref(dispatch_ref)
+    if existing_record:
+        correlation_value = existing_record.get("correlation")
+        correlation = (
+            correlation_value if isinstance(correlation_value, Mapping) else {}
+        )
+        correlation_fields = (
+            "approval_ref",
+            "mission_response_candidate_ref",
+            "proposal_sha256",
+            "bounded_action_ref",
+        )
+        if any(
+            correlation.get(field) != validated_approval.get(field)
+            for field in correlation_fields
+        ):
+            return _blocked_result(
+                ["dispatch_ref_canonical_correlation_mismatch"],
+                dispatch_ref=dispatch_ref,
+                idempotency=existing_record,
+            )
+        existing_receipt_value = existing_record.get("receipt")
+        existing_receipt = (
+            existing_receipt_value
+            if isinstance(existing_receipt_value, Mapping)
+            else {}
+        )
+        if existing_receipt:
+            receipt_value = existing_receipt.get("receipt")
+            receipt = receipt_value if isinstance(receipt_value, Mapping) else {}
+            return {
+                "schema_version": MISSIONOS_ADK_V2_GUARDED_EXECUTION_SCHEMA_VERSION,
+                "guarded_execution_status": "receipt_replayed",
+                "blocking_reasons": [],
+                "dispatch_ref": dispatch_ref,
+                "fresh_dispatch_preflight": {},
+                "dispatch_idempotency": existing_record,
+                "canonical_approval_validated": True,
+                "dispatch_authority_created": False,
+                "dispatch_claimed": False,
+                "send_started": False,
+                "executor_invoked": False,
+                "external_sender_invoked": False,
+                "external_sender_invocation_status": "not_invoked",
+                "prior_executor_invoked": True,
+                "prior_external_sender_invoked": (
+                    receipt.get("external_sender_invoked") is True
+                ),
+                "send_outcome_known": True,
+                "ack_observed": existing_receipt.get("ack_observed") is True,
+                "outcome_observed": (
+                    existing_receipt.get("effect_observed") is True
+                ),
+                "verifier_passed": (
+                    existing_receipt.get("verifier_passed") is True
+                ),
+                "verifier_status": str(
+                    receipt.get("verifier_status") or "unverified"
+                ),
+                "verifier_reasons": list(
+                    receipt.get("verifier_reasons") or []
+                ),
+                "completion_claimed": (
+                    existing_receipt.get("completion_claimed") is True
+                ),
+                "physical_execution_invoked": (
+                    existing_receipt.get("physical_execution_invoked") is True
+                ),
+                "progress_counted": receipt.get("progress_counted") is True,
+                "automatic_redispatch_performed": False,
+            }
+        attempts_value = existing_record.get("attempts")
+        attempts = attempts_value if isinstance(attempts_value, Mapping) else {}
+        current_attempt = attempts.get(existing_record.get("current_attempt_id"))
+        current_attempt = (
+            current_attempt if isinstance(current_attempt, Mapping) else {}
+        )
+        if current_attempt.get("attempt_status") != "cancelled_before_send":
+            blocked = _blocked_result(
+                ["dispatch_outcome_unknown_do_not_retry"],
+                dispatch_ref=dispatch_ref,
+                idempotency=existing_record,
+                dispatch_claimed=True,
+                send_started=current_attempt.get("send_started") is True,
+                send_outcome_known=False,
+            )
+            blocked["prior_executor_invocation_status"] = (
+                "unknown"
+                if current_attempt.get("send_started") is True
+                else "not_observed"
+            )
+            return blocked
     first_preflight = await _resolve(fresh_preflight_provider, validated_approval)
     if first_preflight.get("preflight_status") != "passed":
         return _blocked_result(
@@ -540,6 +652,8 @@ async def execute_guarded_dispatch_once(
         "ack_observed": receipt.get("ack_observed") is True,
         "outcome_observed": receipt.get("effect_observed") is True,
         "verifier_passed": receipt.get("verifier_passed") is True,
+        "verifier_status": str(receipt.get("verifier_status") or "unverified"),
+        "verifier_reasons": list(receipt.get("verifier_reasons") or []),
         "completion_claimed": receipt.get("completion_claimed") is True,
         "physical_execution_invoked": (
             receipt.get("physical_execution_invoked") is True
@@ -580,6 +694,7 @@ __all__ = [
     "MISSIONOS_ADK_V2_DISPATCH_SNAPSHOT_MAX_AGE_SECONDS_ENV",
     "MISSIONOS_ADK_V2_GUARDED_EXECUTION_ENV",
     "MISSIONOS_ADK_V2_GUARDED_EXECUTION_FIXTURE_ENV",
+    "MISSIONOS_ADK_V2_GUARDED_EXECUTION_FIXTURE_VERIFIER_ENV",
     "MISSIONOS_ADK_V2_GUARDED_EXECUTION_SCHEMA_VERSION",
     "build_form2a_fresh_dispatch_preflight",
     "build_form2a_guarded_execution_handler",

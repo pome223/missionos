@@ -28,7 +28,10 @@ GuardedExecutionHandler = Callable[
     [Mapping[str, Any]],
     Mapping[str, Any] | Awaitable[Mapping[str, Any]],
 ]
-
+RecoveryProposalHandler = Callable[
+    [Mapping[str, Any]],
+    Mapping[str, Any] | Awaitable[Mapping[str, Any]],
+]
 
 def _authority_floor() -> dict[str, bool]:
     return {
@@ -89,6 +92,7 @@ def build_missionos_canonical_approval_hitl_workflow(
     *,
     approval_validator: CanonicalApprovalValidator,
     guarded_execution_handler: GuardedExecutionHandler | None = None,
+    recovery_proposal_handler: RecoveryProposalHandler | None = None,
 ) -> Any:
     """Build a fresh workflow whose validator reloads MissionOS authority."""
 
@@ -279,6 +283,70 @@ def build_missionos_canonical_approval_hitl_workflow(
             merged[field] = guarded_result.get(field) is True
         return merged
 
+    @node(name="route_verifier_failure_to_recovery", rerun_on_resume=True)
+    async def route_verifier_failure_to_recovery(
+        node_input: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        guarded_value = node_input.get("guarded_execution")
+        guarded = guarded_value if isinstance(guarded_value, Mapping) else {}
+        if (
+            recovery_proposal_handler is None
+            or guarded.get("verifier_status") != "failed"
+        ):
+            return dict(node_input)
+        try:
+            recovery = recovery_proposal_handler(node_input)
+            if hasattr(recovery, "__await__"):
+                recovery = await recovery  # type: ignore[misc]
+            proposal = dict(recovery) if isinstance(recovery, Mapping) else {}
+        except Exception as exc:  # pragma: no cover - artifact failures vary.
+            proposal = {
+                "recovery_status": "blocked",
+                "blocking_reasons": [
+                    f"recovery_proposal_creation_failed:{type(exc).__name__}"
+                ],
+                "approval_request_created": False,
+                "approval_created": False,
+                "dispatch_authority_created": False,
+                "executor_invoked": False,
+                "physical_execution_invoked": False,
+                "progress_counted": False,
+            }
+        prior_bounded_action_ref = str(node_input.get("bounded_action_ref") or "")
+        prior_dispatch_ref = str(node_input.get("dispatch_ref") or "")
+        changed_refs = bool(
+            proposal.get("bounded_action_ref")
+            and proposal.get("dispatch_ref")
+            and proposal.get("bounded_action_ref") != prior_bounded_action_ref
+            and proposal.get("dispatch_ref") != prior_dispatch_ref
+        )
+        approval_pending = bool(
+            proposal.get("recovery_status") == "approval_pending"
+            and proposal.get("approval_request_created") is True
+            and proposal.get("new_human_approval_required") is True
+            and proposal.get("approval_created") is False
+            and changed_refs
+        )
+        merged = dict(node_input)
+        merged["recovery_proposal"] = proposal
+        merged["recovery_proposal_created"] = approval_pending
+        merged["recovery_approval_request_created"] = approval_pending
+        merged["recovery_human_approval_created"] = False
+        merged["recovery_dispatch_authority_created"] = False
+        merged["recovery_executor_invoked"] = False
+        merged["automatic_recovery_executed"] = False
+        merged["hitl_status"] = (
+            "recovery_approval_pending"
+            if approval_pending
+            else "recovery_proposal_blocked"
+        )
+        if not approval_pending:
+            merged["blocking_reasons"] = list(
+                proposal.get("blocking_reasons")
+                or ["recovery_proposal_not_fresh_approval_pending"]
+            )
+        return merged
+
     @node(name="finalize_canonical_approval_resume", rerun_on_resume=True)
     def finalize_canonical_approval_resume(node_input: Mapping[str, Any]) -> dict[str, Any]:
         if node_input.get("schema_version") == MISSIONOS_ADK_V2_HITL_RESULT_SCHEMA_VERSION:
@@ -301,6 +369,7 @@ def build_missionos_canonical_approval_hitl_workflow(
                 await_canonical_missionos_approval,
                 validate_canonical_missionos_approval,
                 invoke_guarded_missionos_execution_boundary,
+                route_verifier_failure_to_recovery,
                 finalize_canonical_approval_resume,
             )
         ],
@@ -397,6 +466,7 @@ async def start_missionos_canonical_approval_hitl(
     approval_binding: Mapping[str, Any],
     approval_validator: CanonicalApprovalValidator,
     guarded_execution_handler: GuardedExecutionHandler | None = None,
+    recovery_proposal_handler: RecoveryProposalHandler | None = None,
     adk_session_id: str = "",
 ) -> dict[str, Any]:
     """Start the graph and return its RequestInput pause contract."""
@@ -422,6 +492,7 @@ async def start_missionos_canonical_approval_hitl(
     workflow = build_missionos_canonical_approval_hitl_workflow(
         approval_validator=approval_validator,
         guarded_execution_handler=guarded_execution_handler,
+        recovery_proposal_handler=recovery_proposal_handler,
     )
     runner = Runner(
         agent=workflow,
@@ -471,6 +542,7 @@ async def resume_missionos_canonical_approval_hitl(
     human_response: Mapping[str, Any],
     approval_validator: CanonicalApprovalValidator,
     guarded_execution_handler: GuardedExecutionHandler | None = None,
+    recovery_proposal_handler: RecoveryProposalHandler | None = None,
 ) -> dict[str, Any]:
     """Resume only when the response contains the expected canonical ref."""
 
@@ -575,6 +647,7 @@ async def resume_missionos_canonical_approval_hitl(
     workflow = build_missionos_canonical_approval_hitl_workflow(
         approval_validator=approval_validator,
         guarded_execution_handler=guarded_execution_handler,
+        recovery_proposal_handler=recovery_proposal_handler,
     )
     runner = Runner(
         agent=workflow,

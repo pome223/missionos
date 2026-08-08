@@ -110,3 +110,7 @@ without reinvocation, a five-node same-task trace, and Redis cleanup.
 Limitations: the Form 2A artifacts and executor are fixtures. No external
 sender, simulator, hardware, ACK, observed effect, verifier pass, completion,
 physical execution, or mission progress is claimed.
+
+An explicit failed verifier may route to the separately enabled bounded
+Recovery proposal contract in `docs/agents/adk-v2-bounded-recovery.md`.
+Missing or unverified outcome evidence does not trigger that route.
