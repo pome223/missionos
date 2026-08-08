@@ -43,6 +43,7 @@ RUN apt-get update \
         'pydantic-settings>=2,<3' \
         'python-dotenv>=1.0.0' \
         'pyyaml>=6.0.0' \
+        'redis>=5.0.0,<7.0.0' \
         'rich>=13.0.0' \
         'uvicorn[standard]>=0.29.0' \
         'websockets>=12.0' \

@@ -36,7 +36,7 @@ class RedisLike(Protocol):
 
 def describe_session_backend(settings: Optional[Settings] = None) -> dict[str, Any]:
     resolved_settings = settings or get_settings()
-    redis_url = getattr(resolved_settings, "redis_url", None)
+    redis_url = str(getattr(resolved_settings, "redis_url", None) or "").strip()
     if redis_url:
         return {
             "backend": "redis",
@@ -63,7 +63,7 @@ def _create_redis_client(redis_url: str) -> RedisLike:
     except ImportError as exc:  # pragma: no cover - exercised via factory tests
         raise RuntimeError(
             "REDIS_URL is set but the redis extra is not installed. "
-            "Install with `pip install \"boiled-claw[redis]\"`."
+            "Install MissionOS with its declared Redis dependency."
         ) from exc
     return redis_async.from_url(redis_url, decode_responses=True)
 
@@ -240,9 +240,14 @@ def create_session_service(
     settings: Optional[Settings] = None,
     *,
     client: Optional[RedisLike] = None,
+    require_redis: bool = False,
 ) -> BaseSessionService:
     resolved_settings = settings or get_settings()
-    redis_url = getattr(resolved_settings, "redis_url", None)
+    redis_url = str(getattr(resolved_settings, "redis_url", None) or "").strip()
+    if require_redis and not redis_url:
+        raise RuntimeError(
+            "redis_session_backend_required:REDIS_URL_not_configured"
+        )
     if redis_url:
         return RedisSessionService(
             redis_url=redis_url,
