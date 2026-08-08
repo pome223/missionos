@@ -138,11 +138,14 @@ def test_dialogue_router_reports_unparseable_json_without_jsondecodeerror(monkey
 
 
 def test_agent_runtime_error_label_uses_configured_provider(monkeypatch) -> None:
+    async def fake_invoke_adk_agent_text_async(**_kwargs) -> str:
+        raise TimeoutError
+
     monkeypatch.setenv("MISSIONOS_LLM_BACKEND", "ollama")
     monkeypatch.setattr(
         missionos_agent_runtime,
-        "_invoke_adk_agent_text",
-        lambda **_kwargs: (_ for _ in ()).throw(TimeoutError()),
+        "_invoke_adk_agent_text_async",
+        fake_invoke_adk_agent_text_async,
     )
 
     evidence = missionos_agent_runtime._run_agent_once(
