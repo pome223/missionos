@@ -112,6 +112,11 @@ These resume rules are a promotion gate. They must be implemented and tested,
 along with `dispatch_ref` idempotency and a real Redis restart test, before the
 graph can include approval, dispatch, execution, or recovery side effects.
 
+The Redis backend requirement, ADK v2 event-field round trip, process-restart
+verification, and post-resume fresh-state rules are defined in
+`docs/agents/adk-v2-session-persistence.md`. Restored session data remains
+orchestration state and does not replace canonical MissionOS artifacts.
+
 Implementation and comparison contracts live in
 `src/intelligence/missionos_adk_v2_shadow_graph.py`. The production wrapper in
 `src/intelligence/missionos_agent_runtime.py` attaches

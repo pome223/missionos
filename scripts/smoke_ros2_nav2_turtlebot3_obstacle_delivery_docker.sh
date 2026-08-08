@@ -76,6 +76,7 @@ if [ "${MISSIONOS_TB3_SKIP_GATEWAY_DEP_INSTALL:-0}" != "1" ]; then
 import fastapi
 import google.adk
 import litellm
+import redis
 import uvicorn
 PY
   then
@@ -87,6 +88,7 @@ PY
       "click>=8.0.0" \
       "rich>=13.0.0" \
       "google-adk[extensions]>=2.5.0,<3.0.0" \
+      "redis>=5.0.0,<7.0.0" \
       "websockets>=12.0" \
       "httpx>=0.27.0" \
       "ddgs>=0.1.0" \

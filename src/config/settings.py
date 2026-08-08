@@ -104,7 +104,9 @@ class Settings(BaseSettings):
         description="Comma-separated allowed file paths. Empty = blocklist only (no whitelist).",
     )
 
-    # Redis settings (for future session store)
+    # Redis settings for optional ADK session persistence. Promotion tests that
+    # exercise resume must require this backend explicitly instead of accepting
+    # the normal in-memory fallback.
     redis_url: Optional[str] = Field(default=None, description="Redis URL")
     redis_session_namespace: str = Field(
         default="boiled-claw:sessions",

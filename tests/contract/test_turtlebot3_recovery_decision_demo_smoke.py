@@ -24,13 +24,16 @@ def test_turtlebot3_docker_smoke_forwards_deepseek_configuration() -> None:
     assert "MISSIONOS_DEEPSEEK_MODEL" in script
     assert "MISSIONOS_DEEPSEEK_API_BASE" in script
     assert "import litellm" in script
+    assert "import redis" in script
     assert '"google-adk[extensions]>=2.5.0,<3.0.0"' in script
+    assert '"redis>=5.0.0,<7.0.0"' in script
     assert re.search(r"\bsk-[A-Za-z0-9]{20,}\b", script) is None
 
     pyproject = (
         Path(__file__).resolve().parents[2] / "pyproject.toml"
     ).read_text(encoding="utf-8")
     assert '"google-adk[extensions]>=2.5.0,<3.0.0"' in pyproject
+    assert '"redis>=5.0.0,<7.0.0"' in pyproject
 
     dockerfile = (
         Path(__file__).resolve().parents[2]
@@ -39,6 +42,7 @@ def test_turtlebot3_docker_smoke_forwards_deepseek_configuration() -> None:
         / "Dockerfile"
     ).read_text(encoding="utf-8")
     assert "'google-adk[extensions]>=2.5.0,<3.0.0'" in dockerfile
+    assert "'redis>=5.0.0,<7.0.0'" in dockerfile
 
     gateway_script = (
         Path(__file__).resolve().parents[2]
