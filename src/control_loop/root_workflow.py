@@ -1,26 +1,27 @@
 """
-Root Workflow — boiled-claw v2
+Root Workflow — MissionOS ADK v2 dynamic control loop.
 
-ADK Runner を中心に置き、
 Planner → PolicyJudge (callback) → Executor → Verifier → Repair (callback)
-のループを Runner.run_async() で回す。
+is orchestrated by an ADK v2 ``Workflow`` dynamic node. Each agent is a
+workflow child executed with ``ctx.run_node()``; the control loop no longer
+creates a nested ``Runner`` for every agent invocation.
 
-Runner が session.state / event history / output_key の保存を管理する。
-Session への直接書き込みは行わない。
+ADK graph completion is orchestration state only. MissionOS approval, dispatch,
+execution, verification, and recovery authority remain separate session and
+receipt facts.
 """
 
 from __future__ import annotations
 
 import json
 import logging
-import math
 import re
 import struct
 import uuid
 import zlib
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 from google.adk.agents import LlmAgent
 from google.adk.agents.callback_context import CallbackContext
@@ -94,6 +95,8 @@ _MAX_REPAIR_ATTEMPTS = DEFAULT_MAX_REPAIR_ATTEMPTS
 _APPROVED_STATUSES = {"policy_approved", "human_approved", "auto_approved"}
 _TERMINAL_VERIFY_STATUSES = {"pass", "fail", "partial_pass", "error"}
 _CONTROL_LOOP_AUTHOR = "control_loop"
+_CONTROL_LOOP_WORKFLOW_NAME = "missionos_control_loop_v2"
+_CONTROL_LOOP_RESULT_SCHEMA_VERSION = "missionos_adk_v2_control_loop_result.v1"
 _PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 _PLAYBACK_SCREENSHOT_DIFF_RATIO_THRESHOLD = 0.002
 _PLAYBACK_SCREENSHOT_DELTA_THRESHOLD = 0.0005
@@ -195,10 +198,12 @@ _CURRENT_TAB_EXTRACT_TEXT_RESPONSE_NAMES = frozenset(
 
 # ── Callback helpers ───────────────────────────────────────────────────────
 
+
 def _chain_after_callbacks(
     *cbs: Callable[[CallbackContext], None],
 ) -> Callable[[CallbackContext], None]:
     """複数の after_agent_callback を順番に呼ぶ合成関数を返す。"""
+
     def chained(
         ctx: CallbackContext | None = None,
         *,
@@ -210,6 +215,7 @@ def _chain_after_callbacks(
         for cb in cbs:
             cb(resolved_ctx)
         return
+
     return chained
 
 
@@ -499,6 +505,8 @@ planner_with_policy = LlmAgent(
     output_key=StateKeys.TEMP_PLANNER_DRAFT,
     after_agent_callback=policy_judge_callback,
     description="Produces a structured plan, then auto-evaluates via policy_judge_callback.",
+    # A resumed workflow must re-evaluate judgment against current state.
+    rerun_on_resume=True,
 )
 
 # Verifier + Repair + Curator (chained after callbacks)
@@ -512,6 +520,8 @@ verifier_with_hooks = LlmAgent(
         "Evaluates execution results, then triggers repair or memory curation "
         "via chained after_agent_callbacks."
     ),
+    # Verification must be fresh after a workflow resume.
+    rerun_on_resume=True,
 )
 
 # Executor (with guarded tools, no callbacks)
@@ -551,10 +561,13 @@ executor_with_tools = LlmAgent(
     ],
     output_key=StateKeys.TEMP_EXECUTOR_OUTPUTS,
     description="Executes the approved plan using policy-gated tools.",
+    # A completed tool-bearing node must not repeat side effects on resume.
+    rerun_on_resume=False,
 )
 
 
 # ── Execution result ───────────────────────────────────────────────────────
+
 
 @dataclass
 class ExecutionResult:
@@ -574,9 +587,10 @@ class ExecutionResult:
 
 # ── Control Loop ───────────────────────────────────────────────────────────
 
+
 class ControlLoop:
     """
-    ADK Runner を使って Planner → Executor → Verifier のループを実行する。
+    ADK v2 Workflow で Planner → Executor → Verifier のループを実行する。
 
     session_service: 外部から注入可能（デフォルトは configured session service）。
     """
@@ -633,274 +647,344 @@ class ControlLoop:
         )
         session_id = session.id
 
-        result = ExecutionResult(
-            request_id=request_id,
-            session_id=session_id,
-            user_id=user_id,
-            final_text="",
-        )
-        result.metadata["session_created"] = created
-
-        for attempt in range(self._max_repair + 1):
-            logger.info(
-                "ControlLoop: attempt=%d, session=%s", attempt, session_id
-            )
-
-            state = await self._get_state(user_id, session_id)
-            approval = state.get(StateKeys.APPROVAL_STATUS, "")
-            has_approved_plan = bool(state.get(StateKeys.PLAN_APPROVED))
-            replay_context = _parse_replay_context(state.get(StateKeys.REPLAY_CONTEXT))
-            approved_plan = _parse_json(state.get(StateKeys.PLAN_APPROVED)) or {}
-            repair_patch = _parse_json(state.get(StateKeys.TEMP_REPAIR_PATCH)) or {}
-            resume_existing_plan = _should_resume_existing_plan(
-                attempt=attempt,
-                has_approved_plan=has_approved_plan,
-                approval=approval,
-                replay_context=replay_context,
-                repair_patch=repair_patch,
-            )
-
-            if not resume_existing_plan:
-                # ── Step 1: Planner + PolicyJudge callback ─────────────────
-                plan_message = (
-                    goal
-                    if attempt == 0
-                    else f"[repair attempt {attempt}] {goal}"
-                )
-                await self._run_agent(
-                    planner_with_policy,
-                    session_id=session_id,
-                    user_id=user_id,
-                    message=plan_message,
-                )
-
-                # approval:status を確認
-                state = await self._get_state(user_id, session_id)
-                approval = state.get(StateKeys.APPROVAL_STATUS, "")
-                approved_plan = _parse_json(state.get(StateKeys.PLAN_APPROVED)) or {}
-            else:
-                logger.info(
-                    "ControlLoop: resuming approved plan for session=%s", session_id
-                )
-
-            if approval == "denied":
-                result.final_text = "Plan was denied by policy judge."
-                result.success = False
-                result.plan_id = _extract_plan_id(state, approved_plan)
-                if approved_plan:
-                    result.metadata["approved_plan"] = approved_plan
-                break
-
-            if approval == "needs_human":
-                result.final_text = (
-                    "Plan requires human approval. "
-                    "Please review plan:approved in session state."
-                )
-                result.success = False
-                result.plan_id = _extract_plan_id(state, approved_plan)
-                result.metadata["needs_human"] = True
-                result.metadata["approval_request"] = state.get(
-                    StateKeys.APPROVAL_REQUEST
-                )
-                if approved_plan:
-                    result.metadata["approved_plan"] = approved_plan
-                break
-
-            # ── Step 2: Executor ───────────────────────────────────────────
-            executor_message = _build_executor_message(
-                approved_plan=approved_plan,
-                replay_context=replay_context,
-            )
-            await self._run_agent(
-                executor_with_tools,
-                session_id=session_id,
-                user_id=user_id,
-                message=executor_message,
-            )
-            verification_inputs = await self._prepare_verification_state(
-                user_id=user_id,
-                session_id=session_id,
-            )
-
-            # ── Step 3: Verifier + Repair/Curator callbacks ────────────────
-            verification_message = "Verify execution results."
-            if verification_inputs:
-                verification_message = (
-                    "Verify execution results.\n\n"
-                    "Structured verification inputs:\n"
-                    f"{json.dumps(verification_inputs, ensure_ascii=False, indent=2)}"
-                )
-            # Attach screenshots so the verifier can visually inspect results.
-            screenshot_paths: list[str] = []
-            if verification_inputs:
-                desktop_vi = verification_inputs.get("desktop") or {}
-                raw_paths = desktop_vi.get("screenshot_paths") or []
-                screenshot_paths = [
-                    path
-                    for path in raw_paths
-                    if isinstance(path, str) and Path(path).is_file()
-                ]
-            await self._run_agent(
-                verifier_with_hooks,
-                session_id=session_id,
-                user_id=user_id,
-                message=verification_message,
-                image_paths=screenshot_paths or None,
-            )
-
-            # verify:last_report を確認
-            state = await self._get_state(user_id, session_id)
-            raw_report = state.get(StateKeys.VERIFY_LAST_REPORT)
-            report = _parse_json(raw_report) or {}
-            promoted_report = await self._maybe_promote_visual_playback_report(
-                user_id=user_id,
-                session_id=session_id,
-                state=state,
-                report=report,
-            )
-            if promoted_report is not None:
-                report = promoted_report
-                state = await self._get_state(user_id, session_id)
-            if _should_demote_browser_text_entry_report(
-                report=report,
-                verification_inputs=verification_inputs or {},
-            ):
-                report = _demote_browser_text_entry_report(
-                    report=report,
-                    verification_inputs=verification_inputs or {},
-                )
-            elif _should_retarget_browser_text_entry_repair(
-                report=report,
-                verification_inputs=verification_inputs or {},
-            ):
-                report = _retarget_browser_text_entry_repair(
-                    report=report,
-                    verification_inputs=verification_inputs or {},
-                )
-            verify_status = report.get("status", "error")
-
-            result.repair_count = state.get(StateKeys.REPAIR_COUNT, 0)
-            approved_plan = _parse_json(state.get(StateKeys.PLAN_APPROVED)) or {}
-            result.plan_id = _extract_plan_id(state, approved_plan)
-            result.verification_report_id = report.get("report_id")
-            if approved_plan:
-                result.metadata["approved_plan"] = approved_plan
-            result.metadata["verification_status"] = verify_status
-            result.metadata["verification_report"] = report
-            executor_outputs = _parse_json(state.get(StateKeys.TEMP_EXECUTOR_OUTPUTS)) or {}
-            if executor_outputs:
-                result.metadata["executor_outputs"] = executor_outputs
-            if verification_inputs:
-                result.metadata["verification_inputs"] = verification_inputs
-                artifact_refs = verification_inputs.get("artifact_refs")
-                if isinstance(artifact_refs, list):
-                    result.metadata["artifact_refs"] = [
-                        str(ref) for ref in artifact_refs if str(ref).strip()
-                    ]
-                output_location = _output_location_from_verification_inputs(
-                    verification_inputs
-                )
-                if output_location:
-                    result.metadata["output_location"] = output_location
-                current_tab_inputs = verification_inputs.get("current_tab")
-                if isinstance(current_tab_inputs, dict):
-                    result.metadata["current_tab"] = current_tab_inputs
-            candidate_ids = state.get(StateKeys.MEMORY_LAST_CANDIDATE_IDS, [])
-            if candidate_ids:
-                result.metadata["memory_candidate_ids"] = candidate_ids
-            step_trace = _build_step_trace(
-                plan=approved_plan,
-                executor_outputs=executor_outputs,
-                report=report,
-                replay_context=replay_context,
-            )
-            if step_trace:
-                result.metadata["step_trace"] = step_trace
-                tail_replay_from_step = _infer_tail_replay_from_step(
-                    step_trace=step_trace,
-                    report=report,
-                )
-                if tail_replay_from_step:
-                    result.metadata["tail_replay_from_step_id"] = tail_replay_from_step
-
-            normalized_state_delta: dict[str, Any] = {}
-            if report != (_parse_json(raw_report) or {}):
-                normalized_state_delta[StateKeys.VERIFY_LAST_REPORT] = report
-                normalized_state_delta[StateKeys.TEMP_REPAIR_PATCH] = _build_repair_patch_from_report(
-                    report=report,
-                    state=state,
-                )
-            tail_replay_from_step = str(
-                result.metadata.get("tail_replay_from_step_id") or ""
-            ).strip()
-            if verify_status != "pass" and tail_replay_from_step and step_trace:
-                normalized_state_delta[StateKeys.REPLAY_SOURCE_TASK_ID] = request_id
-                normalized_state_delta[StateKeys.REPLAY_FROM_STEP] = tail_replay_from_step
-                normalized_state_delta[StateKeys.REPLAY_CONTEXT] = _build_replay_context_payload(
-                    source_task_id=request_id,
-                    from_step=tail_replay_from_step,
-                    report=report,
-                    step_trace=step_trace,
-                )
-            elif verify_status == "pass":
-                normalized_state_delta[StateKeys.REPLAY_SOURCE_TASK_ID] = None
-                normalized_state_delta[StateKeys.REPLAY_FROM_STEP] = None
-                normalized_state_delta[StateKeys.REPLAY_CONTEXT] = None
-
-            if normalized_state_delta:
-                session = await self._get_session(user_id, session_id)
-                if session is not None:
-                    await self._append_state_delta(
-                        session=session,
-                        author=_CONTROL_LOOP_AUTHOR,
-                        invocation_prefix="repair_normalization",
-                        state_delta=normalized_state_delta,
-                    )
-                    state = await self._get_state(user_id, session_id)
-
-            if verify_status == "pass":
-                result.promoted_memory_ids = await self._promote_memories(
-                    user_id=user_id,
-                    session_id=session_id,
-                )
-                result.success = True
-                result.final_text = _build_final_text(state, report)
-                break
-
-            # fail / partial_pass → repair_callback が repair:count を更新済み
-            repair_patch = state.get(StateKeys.TEMP_REPAIR_PATCH)
-            if not repair_patch or result.repair_count >= self._max_repair:
-                result.success = False
-                result.final_text = (
-                    f"Verification failed after {result.repair_count} repair attempt(s). "
-                    f"Status: {verify_status}."
-                )
-                break
-
-            logger.info(
-                "ControlLoop: repair triggered (attempt=%d)", result.repair_count
-            )
-
-        return result
-
-    async def _run_agent(
-        self,
-        agent: LlmAgent,
-        *,
-        session_id: str,
-        user_id: str,
-        message: str,
-        image_paths: list[str] | None = None,
-    ) -> None:
-        """指定 agent を Runner 経由で一度実行する。
-        image_paths が指定された場合、PNG 画像を inline_data Part として添付する。
-        """
+        workflow = self._build_v2_workflow()
         runner = Runner(
-            agent=agent,
+            agent=workflow,
             app_name=_APP_NAME,
             session_service=self._session_service,
             memory_service=self._memory_service,
         )
+        workflow_input = Content(
+            role="user",
+            parts=[
+                Part(
+                    text=json.dumps(
+                        {
+                            "request_id": request_id,
+                            "goal": goal,
+                            "session_created": created,
+                        },
+                        ensure_ascii=False,
+                        sort_keys=True,
+                    )
+                )
+            ],
+        )
+        final_output: dict[str, Any] = {}
+        async for event in runner.run_async(
+            user_id=user_id,
+            session_id=session_id,
+            new_message=workflow_input,
+        ):
+            if isinstance(event.output, dict):
+                candidate = dict(event.output)
+                if candidate.get("schema_version") == _CONTROL_LOOP_RESULT_SCHEMA_VERSION:
+                    final_output = candidate
+        if not final_output:
+            raise RuntimeError("adk_v2_control_loop_final_output_missing")
+        return self._execution_result_from_v2_output(final_output)
+
+    def _build_v2_workflow(self):
+        """Build the ADK v2 dynamic workflow for one ControlLoop invocation."""
+
+        from google.adk import Workflow
+        from google.adk.workflow import node
+
+        @node(name="prepare_control_loop_verification", rerun_on_resume=True)
+        async def prepare_control_loop_verification(ctx: Any, node_input: Any):
+            payload = node_input if isinstance(node_input, dict) else {}
+            return await self._prepare_verification_state(
+                user_id=str(payload.get("user_id") or ctx.session.user_id),
+                session_id=str(payload.get("session_id") or ctx.session.id),
+                workflow_ctx=ctx,
+            )
+
+        @node(name="promote_control_loop_memories", rerun_on_resume=False)
+        async def promote_control_loop_memories(ctx: Any, node_input: Any):
+            payload = node_input if isinstance(node_input, dict) else {}
+            return await self._promote_memories(
+                user_id=str(payload.get("user_id") or ctx.session.user_id),
+                session_id=str(payload.get("session_id") or ctx.session.id),
+                workflow_ctx=ctx,
+            )
+
+        @node(name="orchestrate_control_loop", rerun_on_resume=True)
+        async def orchestrate_control_loop(ctx: Any, node_input: Any):
+            payload = _control_loop_workflow_payload(node_input)
+            request_id = str(payload.get("request_id") or f"req_{uuid.uuid4().hex[:12]}")
+            goal = str(payload.get("goal") or ctx.state.get(StateKeys.TASK_GOAL) or "")
+            session_id = ctx.session.id
+            user_id = ctx.session.user_id
+            result = ExecutionResult(
+                request_id=request_id,
+                session_id=session_id,
+                user_id=user_id,
+                final_text="",
+            )
+            result.metadata["session_created"] = bool(payload.get("session_created"))
+            node_sequence: list[str] = ["orchestrate_control_loop"]
+
+            for attempt in range(self._max_repair + 1):
+                logger.info("ControlLoop v2: attempt=%d, session=%s", attempt, session_id)
+                state = ctx.state.to_dict()
+                approval = state.get(StateKeys.APPROVAL_STATUS, "")
+                has_approved_plan = bool(state.get(StateKeys.PLAN_APPROVED))
+                replay_context = _parse_replay_context(state.get(StateKeys.REPLAY_CONTEXT))
+                approved_plan = _parse_json(state.get(StateKeys.PLAN_APPROVED)) or {}
+                repair_patch = _parse_json(state.get(StateKeys.TEMP_REPAIR_PATCH)) or {}
+                resume_existing_plan = _should_resume_existing_plan(
+                    attempt=attempt,
+                    has_approved_plan=has_approved_plan,
+                    approval=approval,
+                    replay_context=replay_context,
+                    repair_patch=repair_patch,
+                )
+
+                if not resume_existing_plan:
+                    plan_message = goal if attempt == 0 else f"[repair attempt {attempt}] {goal}"
+                    await ctx.run_node(
+                        planner_with_policy,
+                        self._agent_content(plan_message),
+                        run_id=f"planner-attempt-{attempt}",
+                    )
+                    node_sequence.append(f"planner[{attempt}]")
+                    state = ctx.state.to_dict()
+                    approval = state.get(StateKeys.APPROVAL_STATUS, "")
+                    approved_plan = _parse_json(state.get(StateKeys.PLAN_APPROVED)) or {}
+                else:
+                    logger.info(
+                        "ControlLoop v2: resuming approved plan for session=%s",
+                        session_id,
+                    )
+
+                if approval == "denied":
+                    result.final_text = "Plan was denied by policy judge."
+                    result.plan_id = _extract_plan_id(state, approved_plan)
+                    if approved_plan:
+                        result.metadata["approved_plan"] = approved_plan
+                    break
+
+                if approval == "needs_human":
+                    result.final_text = (
+                        "Plan requires human approval. "
+                        "Please review plan:approved in session state."
+                    )
+                    result.plan_id = _extract_plan_id(state, approved_plan)
+                    result.metadata["needs_human"] = True
+                    result.metadata["approval_request"] = state.get(StateKeys.APPROVAL_REQUEST)
+                    if approved_plan:
+                        result.metadata["approved_plan"] = approved_plan
+                    break
+
+                executor_message = _build_executor_message(
+                    approved_plan=approved_plan,
+                    replay_context=replay_context,
+                )
+                await ctx.run_node(
+                    executor_with_tools,
+                    self._agent_content(executor_message),
+                    run_id=f"executor-attempt-{attempt}",
+                )
+                node_sequence.append(f"executor[{attempt}]")
+                verification_inputs = await ctx.run_node(
+                    prepare_control_loop_verification,
+                    {"user_id": user_id, "session_id": session_id},
+                    run_id=f"verification-prep-attempt-{attempt}",
+                )
+                if not isinstance(verification_inputs, dict):
+                    verification_inputs = None
+                node_sequence.append(f"verification_prep[{attempt}]")
+
+                verification_message = "Verify execution results."
+                if verification_inputs:
+                    verification_message = (
+                        "Verify execution results.\n\n"
+                        "Structured verification inputs:\n"
+                        f"{json.dumps(verification_inputs, ensure_ascii=False, indent=2)}"
+                    )
+                screenshot_paths: list[str] = []
+                if verification_inputs:
+                    desktop_vi = verification_inputs.get("desktop") or {}
+                    raw_paths = desktop_vi.get("screenshot_paths") or []
+                    screenshot_paths = [
+                        path for path in raw_paths if isinstance(path, str) and Path(path).is_file()
+                    ]
+                await ctx.run_node(
+                    verifier_with_hooks,
+                    self._agent_content(
+                        verification_message,
+                        image_paths=screenshot_paths,
+                    ),
+                    run_id=f"verifier-attempt-{attempt}",
+                )
+                node_sequence.append(f"verifier[{attempt}]")
+
+                state = ctx.state.to_dict()
+                raw_report = state.get(StateKeys.VERIFY_LAST_REPORT)
+                report = _parse_json(raw_report) or {}
+                promoted_report = await self._maybe_promote_visual_playback_report(
+                    user_id=user_id,
+                    session_id=session_id,
+                    state=state,
+                    report=report,
+                    workflow_ctx=ctx,
+                )
+                if promoted_report is not None:
+                    report = promoted_report
+                    state = ctx.state.to_dict()
+                if _should_demote_browser_text_entry_report(
+                    report=report,
+                    verification_inputs=verification_inputs or {},
+                ):
+                    report = _demote_browser_text_entry_report(
+                        report=report,
+                        verification_inputs=verification_inputs or {},
+                    )
+                elif _should_retarget_browser_text_entry_repair(
+                    report=report,
+                    verification_inputs=verification_inputs or {},
+                ):
+                    report = _retarget_browser_text_entry_repair(
+                        report=report,
+                        verification_inputs=verification_inputs or {},
+                    )
+                verify_status = report.get("status", "error")
+
+                result.repair_count = int(state.get(StateKeys.REPAIR_COUNT, 0) or 0)
+                approved_plan = _parse_json(state.get(StateKeys.PLAN_APPROVED)) or {}
+                result.plan_id = _extract_plan_id(state, approved_plan)
+                result.verification_report_id = report.get("report_id")
+                if approved_plan:
+                    result.metadata["approved_plan"] = approved_plan
+                result.metadata["verification_status"] = verify_status
+                result.metadata["verification_report"] = report
+                executor_outputs = _parse_json(state.get(StateKeys.TEMP_EXECUTOR_OUTPUTS)) or {}
+                if executor_outputs:
+                    result.metadata["executor_outputs"] = executor_outputs
+                if verification_inputs:
+                    result.metadata["verification_inputs"] = verification_inputs
+                    artifact_refs = verification_inputs.get("artifact_refs")
+                    if isinstance(artifact_refs, list):
+                        result.metadata["artifact_refs"] = [
+                            str(ref) for ref in artifact_refs if str(ref).strip()
+                        ]
+                    output_location = _output_location_from_verification_inputs(verification_inputs)
+                    if output_location:
+                        result.metadata["output_location"] = output_location
+                    current_tab_inputs = verification_inputs.get("current_tab")
+                    if isinstance(current_tab_inputs, dict):
+                        result.metadata["current_tab"] = current_tab_inputs
+                candidate_ids = state.get(StateKeys.MEMORY_LAST_CANDIDATE_IDS, [])
+                if candidate_ids:
+                    result.metadata["memory_candidate_ids"] = candidate_ids
+                step_trace = _build_step_trace(
+                    plan=approved_plan,
+                    executor_outputs=executor_outputs,
+                    report=report,
+                    replay_context=replay_context,
+                )
+                if step_trace:
+                    result.metadata["step_trace"] = step_trace
+                    tail_replay_from_step = _infer_tail_replay_from_step(
+                        step_trace=step_trace,
+                        report=report,
+                    )
+                    if tail_replay_from_step:
+                        result.metadata["tail_replay_from_step_id"] = tail_replay_from_step
+
+                normalized_state_delta: dict[str, Any] = {}
+                if report != (_parse_json(raw_report) or {}):
+                    normalized_state_delta[StateKeys.VERIFY_LAST_REPORT] = report
+                    normalized_state_delta[StateKeys.TEMP_REPAIR_PATCH] = (
+                        _build_repair_patch_from_report(report=report, state=state)
+                    )
+                tail_replay_from_step = str(
+                    result.metadata.get("tail_replay_from_step_id") or ""
+                ).strip()
+                if verify_status != "pass" and tail_replay_from_step and step_trace:
+                    normalized_state_delta[StateKeys.REPLAY_SOURCE_TASK_ID] = request_id
+                    normalized_state_delta[StateKeys.REPLAY_FROM_STEP] = tail_replay_from_step
+                    normalized_state_delta[StateKeys.REPLAY_CONTEXT] = (
+                        _build_replay_context_payload(
+                            source_task_id=request_id,
+                            from_step=tail_replay_from_step,
+                            report=report,
+                            step_trace=step_trace,
+                        )
+                    )
+                elif verify_status == "pass":
+                    normalized_state_delta[StateKeys.REPLAY_SOURCE_TASK_ID] = None
+                    normalized_state_delta[StateKeys.REPLAY_FROM_STEP] = None
+                    normalized_state_delta[StateKeys.REPLAY_CONTEXT] = None
+                if normalized_state_delta:
+                    ctx.state.update(normalized_state_delta)
+                    state = ctx.state.to_dict()
+
+                if verify_status == "pass":
+                    promoted_ids = await ctx.run_node(
+                        promote_control_loop_memories,
+                        {"user_id": user_id, "session_id": session_id},
+                        run_id="memory-promotion-final",
+                    )
+                    node_sequence.append("memory_promotion")
+                    result.promoted_memory_ids = (
+                        list(promoted_ids) if isinstance(promoted_ids, list) else []
+                    )
+                    result.success = True
+                    result.final_text = _build_final_text(state, report)
+                    break
+
+                repair_patch = state.get(StateKeys.TEMP_REPAIR_PATCH)
+                if not repair_patch or result.repair_count >= self._max_repair:
+                    result.final_text = (
+                        f"Verification failed after {result.repair_count} repair attempt(s). "
+                        f"Status: {verify_status}."
+                    )
+                    break
+                logger.info(
+                    "ControlLoop v2: repair triggered (attempt=%d)",
+                    result.repair_count,
+                )
+
+            result.metadata.update(
+                {
+                    "adk_workflow_name": _CONTROL_LOOP_WORKFLOW_NAME,
+                    "adk_workflow_engine": "v2_dynamic",
+                    "adk_workflow_node_sequence": node_sequence,
+                    "node_completion_is_external_execution": False,
+                    "node_completion_counts_progress": False,
+                }
+            )
+            return {
+                "schema_version": _CONTROL_LOOP_RESULT_SCHEMA_VERSION,
+                "request_id": result.request_id,
+                "session_id": result.session_id,
+                "user_id": result.user_id,
+                "final_text": result.final_text,
+                "plan_id": result.plan_id,
+                "verification_report_id": result.verification_report_id,
+                "promoted_memory_ids": result.promoted_memory_ids,
+                "success": result.success,
+                "repair_count": result.repair_count,
+                "metadata": result.metadata,
+            }
+
+        return Workflow(
+            name=_CONTROL_LOOP_WORKFLOW_NAME,
+            description=(
+                "MissionOS Planner to Executor to Verifier to Repair dynamic "
+                "workflow. MissionOS state and receipts retain all authority."
+            ),
+            rerun_on_resume=True,
+            edges=[("START", orchestrate_control_loop)],
+        )
+
+    @staticmethod
+    def _agent_content(
+        message: str,
+        *,
+        image_paths: list[str] | None = None,
+    ) -> Content:
         parts: list[Part] = [Part(text=message)]
         for image_path in image_paths or []:
             try:
@@ -916,13 +1000,27 @@ class ControlLoop:
                     }
                 )
             )
-        user_content = Content(role="user", parts=parts)
-        async for _event in runner.run_async(
-            user_id=user_id,
-            session_id=session_id,
-            new_message=user_content,
-        ):
-            pass  # 結果は session.state の output_key 経由で取得
+        return Content(role="user", parts=parts)
+
+    @staticmethod
+    def _execution_result_from_v2_output(output: dict[str, Any]) -> ExecutionResult:
+        metadata = output.get("metadata")
+        return ExecutionResult(
+            request_id=str(output.get("request_id") or ""),
+            session_id=str(output.get("session_id") or ""),
+            user_id=str(output.get("user_id") or ""),
+            final_text=str(output.get("final_text") or ""),
+            plan_id=(str(output["plan_id"]) if output.get("plan_id") else None),
+            verification_report_id=(
+                str(output["verification_report_id"])
+                if output.get("verification_report_id")
+                else None
+            ),
+            promoted_memory_ids=[str(value) for value in output.get("promoted_memory_ids") or []],
+            success=bool(output.get("success")),
+            repair_count=int(output.get("repair_count") or 0),
+            metadata=dict(metadata) if isinstance(metadata, dict) else {},
+        )
 
     async def resolve_human_approval(
         self,
@@ -1054,12 +1152,21 @@ class ControlLoop:
         *,
         user_id: str,
         session_id: str,
+        workflow_ctx: Any | None = None,
     ) -> dict[str, Any] | None:
-        session = await self._get_session(user_id, session_id)
+        session = (
+            workflow_ctx.session
+            if workflow_ctx is not None
+            else await self._get_session(user_id, session_id)
+        )
         if session is None:
             return None
 
-        state = session.state if isinstance(session.state, dict) else {}
+        state = (
+            workflow_ctx.state.to_dict()
+            if workflow_ctx is not None
+            else (session.state if isinstance(session.state, dict) else {})
+        )
         executor_outputs = _parse_json(state.get(StateKeys.TEMP_EXECUTOR_OUTPUTS))
         executor_invocation_id: str | None = None
         if executor_outputs is None:
@@ -1106,12 +1213,15 @@ class ControlLoop:
         if not state_delta:
             return verification_inputs or None
 
-        await self._append_state_delta(
-            session=session,
-            author=_CONTROL_LOOP_AUTHOR,
-            invocation_prefix="verification_prep",
-            state_delta=state_delta,
-        )
+        if workflow_ctx is not None:
+            workflow_ctx.state.update(state_delta)
+        else:
+            await self._append_state_delta(
+                session=session,
+                author=_CONTROL_LOOP_AUTHOR,
+                invocation_prefix="verification_prep",
+                state_delta=state_delta,
+            )
         return verification_inputs or None
 
     async def _maybe_promote_visual_playback_report(
@@ -1121,6 +1231,7 @@ class ControlLoop:
         session_id: str,
         state: dict[str, Any],
         report: dict[str, Any],
+        workflow_ctx: Any | None = None,
     ) -> dict[str, Any] | None:
         verification_inputs = _parse_json(
             state.get(StateKeys.TEMP_VERIFICATION_INPUTS)
@@ -1139,6 +1250,15 @@ class ControlLoop:
             report=report,
             verification_inputs=verification_inputs,
         )
+        if workflow_ctx is not None:
+            workflow_ctx.state.update(
+                {
+                    StateKeys.VERIFY_LAST_REPORT: promoted_report,
+                    StateKeys.REPAIR_COUNT: 0,
+                    StateKeys.TEMP_REPAIR_PATCH: None,
+                }
+            )
+            return promoted_report
         session = await self._get_session(user_id, session_id)
         if session is None:
             return promoted_report
@@ -1159,6 +1279,7 @@ class ControlLoop:
         *,
         user_id: str,
         session_id: str,
+        workflow_ctx: Any | None = None,
     ) -> list[str]:
         """Curate session candidates and sync promoted memories to ADK memory."""
         from src.memory_lifecycle.candidate_store import get_candidate_store
@@ -1187,8 +1308,12 @@ class ControlLoop:
                 memories=curation.persisted_memories,
             )
 
-        session = await self._get_session(user_id, session_id)
-        if session is not None:
+        if workflow_ctx is not None:
+            workflow_ctx.state[StateKeys.MEMORY_LAST_PROMOTED_IDS] = promoted_ids
+        else:
+            session = await self._get_session(user_id, session_id)
+            if session is None:
+                return promoted_ids
             await self._append_state_delta(
                 session=session,
                 author=_CONTROL_LOOP_AUTHOR,
@@ -1215,6 +1340,26 @@ class ControlLoop:
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
+
+def _control_loop_workflow_payload(node_input: Any) -> dict[str, Any]:
+    if isinstance(node_input, dict):
+        return dict(node_input)
+    text = ""
+    if isinstance(node_input, Content):
+        text = "".join(
+            part.text or ""
+            for part in node_input.parts or []
+            if getattr(part, "text", None) is not None
+        )
+    elif isinstance(node_input, str):
+        text = node_input
+    try:
+        payload = json.loads(text)
+    except (json.JSONDecodeError, TypeError):
+        return {}
+    return dict(payload) if isinstance(payload, dict) else {}
+
+
 def _parse_json(raw: Any) -> dict | None:
     if raw is None:
         return None
@@ -1228,7 +1373,7 @@ def _parse_json(raw: Any) -> dict | None:
 
 def _latest_agent_invocation_id(events: list[Event], agent_name: str) -> str | None:
     for event in reversed(events or []):
-        if getattr(event, "author", None) != agent_name:
+        if not _event_matches_node(event, agent_name):
             continue
         invocation_id = getattr(event, "invocation_id", None)
         if invocation_id:
@@ -1241,7 +1386,7 @@ def _extract_latest_agent_json_output(
     agent_name: str,
 ) -> tuple[dict[str, Any] | None, str | None]:
     for event in reversed(events or []):
-        if getattr(event, "author", None) != agent_name:
+        if not _event_matches_node(event, agent_name):
             continue
         content = getattr(event, "content", None)
         if content is None:
@@ -1268,7 +1413,7 @@ def _collect_agent_function_responses(
     responses: list[dict[str, Any]] = []
     for event in events or []:
         if (
-            getattr(event, "author", None) != agent_name
+            not _event_matches_node(event, agent_name)
             or str(getattr(event, "invocation_id", "") or "") != invocation_id
         ):
             continue
@@ -1286,6 +1431,18 @@ def _collect_agent_function_responses(
                 }
             )
     return responses
+
+
+def _event_matches_node(event: Event, node_name: str) -> bool:
+    """Match both legacy agent authors and ADK v2 workflow node paths."""
+    if str(getattr(event, "author", "") or "") == node_name:
+        return True
+    node_info = getattr(event, "node_info", None)
+    node_path = str(getattr(node_info, "path", "") or "")
+    return any(
+        segment == node_name or segment.startswith(f"{node_name}@")
+        for segment in node_path.split("/")
+    )
 
 
 def _count_ax_nodes(node: Any) -> int:

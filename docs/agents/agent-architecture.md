@@ -91,14 +91,15 @@ The pilot intentionally has these operational limits:
   replace or block the production sequential result
 - the graph uses a one-shot `InMemorySessionService`
 - graph resume, Redis restoration, HITL, retry, and execution are not enabled
-- ADK requires the graph parent to be re-enterable, but all child nodes have
-  `rerun_on_resume=false` and no retry configuration
+- Chief, specialist, and Safety Critic run as `ctx.run_node()` children and use
+  `rerun_on_resume=true`; pure normalize/finalize nodes remain reusable
+- no proposal node has automatic retry configuration
 - agent invocation evidence may be persisted, but node completion is not
   approval, dispatch, execution, observation, or progress
 
-The current `rerun_on_resume=false` child-node policy is valid only for this
-one-shot, measurement-only shadow. It is not a reusable default for a future
-resume, approval, or dispatch graph. Before enabling Redis resume or HITL:
+The graph is still one-shot, but its judgment nodes follow the fresh-on-resume
+rule required by persistent workflows. Before connecting this graph directly
+to Redis resume, approval, or dispatch:
 
 - Chief, specialist, Safety Critic, and any other judgment node that reads
   telemetry must use fresh, checkpoint-bound input and rerun after resume
@@ -116,6 +117,24 @@ The Redis backend requirement, ADK v2 event-field round trip, process-restart
 verification, and post-resume fresh-state rules are defined in
 `docs/agents/adk-v2-session-persistence.md`. Restored session data remains
 orchestration state and does not replace canonical MissionOS artifacts.
+
+## ADK v2 Dynamic ControlLoop
+
+The `ControlLoop` used by the legacy-agent Gateway profile now runs as one ADK
+v2 dynamic Workflow. Its orchestrator invokes Planner, Executor, verification
+preparation, Verifier, and memory promotion with `ctx.run_node()`. The bounded
+repair loop remains ordinary Python control flow inside the dynamic node.
+
+Planner and Verifier rerun after ADK resume so their judgments use current
+state. A completed Executor or memory-promotion node does not rerun, preventing
+resume from replaying tool or publication side effects. Human approval still
+comes from MissionOS session state and `resolve_human_approval()`; a
+`needs_human` result stops before Executor. Workflow completion is not approval,
+external execution, observed effect, or progress.
+
+This slice changes the ControlLoop only. Gateway conversation orchestration and
+proposal-primary promotion remain separate steps. The exact contract is in
+`docs/agents/adk-v2-control-loop.md`.
 
 ## ADK v2 Canonical Approval HITL
 
@@ -279,12 +298,13 @@ This keeps the MissionOS claim split intact even when LLM behavior changes.
 
 ## Future Direction
 
-The ADK v2 shadow graph provides proposal-path traceability without authority.
-Redis process-restart restoration, `dispatch_ref` idempotency,
-canonical-approval HITL, and opt-in guarded execution now have separate
-contracts and evidence. Receipt reconciliation, positive outcome verification,
-and bounded recovery remain separate promotion gates and must not be inferred
-merely because the graph API supports resume or retry.
+The ADK v2 shadow graph provides proposal-path traceability without authority,
+and the legacy-profile ControlLoop now uses an ADK v2 dynamic Workflow. Redis
+process-restart restoration, `dispatch_ref` idempotency, canonical-approval
+HITL, guarded execution, and bounded Recovery have separate contracts and
+evidence. Positive outcome verification and Recovery execution remain separate
+facts and must not be inferred merely because the graph API supports resume or
+retry.
 
 The durable target is:
 

@@ -108,8 +108,11 @@ async def run_missionos_conversation_shadow_graph_async(
             "graph_node_sequence": ["normalize_shadow_input"],
         }
 
-    @node(name="invoke_shadow_chief", rerun_on_resume=False)
-    async def invoke_shadow_chief(node_input: Mapping[str, Any]) -> dict[str, Any]:
+    @node(name="invoke_shadow_chief", rerun_on_resume=True)
+    async def invoke_shadow_chief(
+        ctx: Any,
+        node_input: Mapping[str, Any],
+    ) -> dict[str, Any]:
         state = dict(node_input)
         payload = state.get("input") if isinstance(state.get("input"), Mapping) else {}
         monitoring_payloads = runtime._monitoring_observation_payloads(
@@ -147,6 +150,8 @@ async def run_missionos_conversation_shadow_graph_async(
             ),
             timeout_seconds=timeout_seconds,
             workflow_execution_mode="adk_v2_graph_shadow",
+            workflow_ctx=ctx,
+            workflow_run_id="chief-agent",
         )
         state["agent_invocations"] = [invocation]
         state["chief_output"] = dict(_validated_output(invocation))
@@ -162,8 +167,11 @@ async def run_missionos_conversation_shadow_graph_async(
             )
         return state
 
-    @node(name="invoke_shadow_specialist", rerun_on_resume=False)
-    async def invoke_shadow_specialist(node_input: Mapping[str, Any]) -> dict[str, Any]:
+    @node(name="invoke_shadow_specialist", rerun_on_resume=True)
+    async def invoke_shadow_specialist(
+        ctx: Any,
+        node_input: Mapping[str, Any],
+    ) -> dict[str, Any]:
         state = dict(node_input)
         state["graph_node_sequence"] = [
             *list(state.get("graph_node_sequence") or []),
@@ -218,6 +226,8 @@ async def run_missionos_conversation_shadow_graph_async(
             ),
             timeout_seconds=timeout_seconds,
             workflow_execution_mode="adk_v2_graph_shadow",
+            workflow_ctx=ctx,
+            workflow_run_id="specialist-agent",
         )
         state["agent_invocations"] = [
             *list(state.get("agent_invocations") or []),
@@ -232,8 +242,11 @@ async def run_missionos_conversation_shadow_graph_async(
             )
         return state
 
-    @node(name="invoke_shadow_safety_critic", rerun_on_resume=False)
-    async def invoke_shadow_safety_critic(node_input: Mapping[str, Any]) -> dict[str, Any]:
+    @node(name="invoke_shadow_safety_critic", rerun_on_resume=True)
+    async def invoke_shadow_safety_critic(
+        ctx: Any,
+        node_input: Mapping[str, Any],
+    ) -> dict[str, Any]:
         state = dict(node_input)
         state["graph_node_sequence"] = [
             *list(state.get("graph_node_sequence") or []),
@@ -284,6 +297,8 @@ async def run_missionos_conversation_shadow_graph_async(
             ),
             timeout_seconds=timeout_seconds,
             workflow_execution_mode="adk_v2_graph_shadow",
+            workflow_ctx=ctx,
+            workflow_run_id="safety-critic-agent",
         )
         state["agent_invocations"] = [
             *list(state.get("agent_invocations") or []),
@@ -394,9 +409,9 @@ async def run_missionos_conversation_shadow_graph_async(
     workflow = Workflow(
         name=MISSIONOS_ADK_V2_SHADOW_WORKFLOW_NAME,
         description=("Measurement-only ADK v2 graph for MissionOS conversation proposals."),
-        # ADK requires a graph parent to be re-enterable because it schedules
-        # child nodes. This pilot still uses a one-shot in-memory session and
-        # every side-effect-free child node has rerun_on_resume=False.
+        # The graph parent and judgment nodes are re-enterable because the
+        # latter schedule LlmAgent children through ctx.run_node(). Pure
+        # normalize/finalize nodes remain reusable.
         rerun_on_resume=True,
         edges=[
             (
@@ -439,15 +454,21 @@ async def run_missionos_conversation_shadow_graph_async(
         ],
     )
     final_output: dict[str, Any] = {}
+    workflow_node_paths: list[str] = []
     async for event in runner.run_async(
         user_id=user_id,
         session_id=session.id,
         new_message=content,
     ):
+        node_info = getattr(event, "node_info", None)
+        node_path = str(getattr(node_info, "path", "") or "")
+        if node_path and node_path not in workflow_node_paths:
+            workflow_node_paths.append(node_path)
         if isinstance(event.output, Mapping):
             final_output = dict(event.output)
     if final_output.get("schema_version") != MISSIONOS_ADK_V2_SHADOW_RESULT_SCHEMA_VERSION:
         raise RuntimeError("adk_v2_shadow_graph_final_output_missing")
+    final_output["workflow_node_paths"] = workflow_node_paths
     return final_output
 
 

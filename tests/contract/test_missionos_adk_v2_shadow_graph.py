@@ -1,11 +1,35 @@
 from __future__ import annotations
 
 import asyncio
+import json
+from collections.abc import AsyncGenerator
 from typing import Any
+
+import pytest
+from google.adk.agents import LlmAgent
+from google.adk.models import BaseLlm, LlmRequest, LlmResponse
+from google.genai import types
 
 
 from src.intelligence import missionos_adk_v2_shadow_graph as shadow_graph
 from src.intelligence import missionos_agent_runtime as agent_runtime
+
+
+class StaticGraphLlm(BaseLlm):
+    response_text: str
+
+    async def generate_content_async(
+        self,
+        llm_request: LlmRequest,
+        stream: bool = False,
+    ) -> AsyncGenerator[LlmResponse, None]:
+        yield LlmResponse(
+            content=types.Content(
+                role="model",
+                parts=[types.Part(text=self.response_text)],
+            ),
+            partial=False,
+        )
 
 
 def _invocation(
@@ -145,6 +169,84 @@ def test_adk_v2_shadow_graph_runs_chief_specialist_and_critic_without_authority(
         "missionos_safety_critic_agent",
     ]
     assert all(call["workflow_execution_mode"] == "adk_v2_graph_shadow" for call in calls)
+
+
+def test_adk_v2_shadow_agents_are_dynamic_children_without_nested_runners(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.agents import missionos_agents
+
+    responses = {
+        "missionos_chief_agent": {
+            "intent": "status",
+            "operator_instruction": "Inspect current status.",
+            "requires_human_approval": False,
+        },
+        "missionos_situation_judge_agent": {
+            "intent": "status",
+            "operator_instruction": "Current evidence is advisory only.",
+            "requires_human_approval": False,
+        },
+        "missionos_safety_critic_agent": {
+            "boundary_status": "safe",
+            "operator_instruction": "No authority is created.",
+            "requires_human_approval": False,
+        },
+    }
+
+    def build_fixture_agent(
+        agent_name: str,
+        *,
+        model_id: str | None = None,
+    ) -> LlmAgent:
+        return LlmAgent(
+            name=agent_name,
+            model=StaticGraphLlm(
+                model=f"static-{agent_name}",
+                response_text=json.dumps(responses[agent_name]),
+            ),
+            instruction="Return the configured JSON object.",
+        )
+
+    async def fail_standalone_runner(**kwargs: Any) -> str:
+        raise AssertionError("shadow graph invoked the standalone nested Runner")
+
+    monkeypatch.setattr(missionos_agents, "build_missionos_agent", build_fixture_agent)
+    monkeypatch.setattr(
+        agent_runtime,
+        "_invoke_adk_agent_text_async",
+        fail_standalone_runner,
+    )
+    monkeypatch.setattr(
+        agent_runtime,
+        "_persist_invocation_evidence",
+        lambda evidence: f"fixture/{evidence['agent_name']}.json",
+    )
+
+    result = shadow_graph.run_missionos_conversation_shadow_graph(
+        utterance="What is the mission status?",
+        missionos_state={},
+    )
+
+    assert result["graph_runtime_status"] == "proposal_guardrail_passed"
+    assert len(result["agent_invocations"]) == 3
+    assert all(
+        invocation["agent_node_execution"] == "ctx.run_node"
+        and invocation["workflow_child_node"] is True
+        and invocation["standalone_runner_invoked"] is False
+        and invocation["nested_runner_invoked"] is False
+        for invocation in result["agent_invocations"]
+    )
+    paths = result["workflow_node_paths"]
+    assert any("/missionos_chief_agent@chief-agent" in path for path in paths)
+    assert any(
+        "/missionos_situation_judge_agent@specialist-agent" in path for path in paths
+    )
+    assert any(
+        "/missionos_safety_critic_agent@safety-critic-agent" in path for path in paths
+    )
+    assert result["approval_created"] is False
+    assert result["dispatch_authority_created"] is False
 
 
 def test_adk_v2_shadow_graph_stops_agent_calls_after_specialist_guardrail_block(
