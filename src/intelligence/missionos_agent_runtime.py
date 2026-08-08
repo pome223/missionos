@@ -25,6 +25,9 @@ from src.agents.model_config import (
     llm_provider_label,
     local_llm_backend_enabled,
 )
+from src.intelligence.missionos_adk_v2_shadow_graph import (
+    MISSIONOS_ADK_V2_GRAPH_SHADOW_ENV,
+)
 from src.gateway.missionos_capabilities import (
     MISSIONOS_OPERATOR_FACING_ROUTE,
     all_capability_descriptors_for_prompt,
@@ -409,25 +412,6 @@ async def _invoke_adk_agent_text_async(
     return "".join(response_parts).strip()
 
 
-def _invoke_adk_agent_text(
-    *,
-    agent_name: str,
-    model_id: str,
-    prompt_text: str,
-    timeout_seconds: int,
-) -> str:
-    return asyncio.run(
-        asyncio.wait_for(
-            _invoke_adk_agent_text_async(
-                agent_name=agent_name,
-                model_id=model_id,
-                prompt_text=prompt_text,
-            ),
-            timeout=timeout_seconds,
-        )
-    )
-
-
 def _runtime_recovery_agent_output_from_planner_result(
     planner_result: Mapping[str, Any],
 ) -> dict[str, Any]:
@@ -711,23 +695,26 @@ def _persist_invocation_evidence(evidence: Mapping[str, Any]) -> str:
     return _artifact_relative(path)
 
 
-def _run_agent_once(
+async def _run_agent_once_async(
     *,
     agent_name: str,
     agent_role: str,
     prompt_payload: Mapping[str, Any],
     validate_intent: bool = True,
     timeout_seconds: int | None = None,
+    workflow_execution_mode: str = "sequential_runner",
 ) -> dict[str, Any]:
     model_id = _model_id(agent_name)
     prompt_text = json.dumps(dict(prompt_payload), ensure_ascii=False, sort_keys=True)
     started_at = _utc_now()
     try:
-        response_text = _invoke_adk_agent_text(
-            agent_name=agent_name,
-            model_id=model_id,
-            prompt_text=prompt_text,
-            timeout_seconds=timeout_seconds or _timeout_seconds(),
+        response_text = await asyncio.wait_for(
+            _invoke_adk_agent_text_async(
+                agent_name=agent_name,
+                model_id=model_id,
+                prompt_text=prompt_text,
+            ),
+            timeout=timeout_seconds or _timeout_seconds(),
         )
         invocation_error = ""
     except Exception as exc:  # pragma: no cover - live service failure shape varies.
@@ -765,6 +752,8 @@ def _run_agent_once(
         "response_sha256": _sha256_text(response_text),
         "invocation_started_at": started_at.isoformat(),
         "invocation_completed_at": completed_at.isoformat(),
+        "workflow_execution_mode": workflow_execution_mode,
+        "adk_v2_graph_invoked": workflow_execution_mode == "adk_v2_graph_shadow",
         "validated_output": guardrail.get("validated_output") or {},
         "guardrail_result": guardrail,
         "progress_counted": False,
@@ -772,6 +761,27 @@ def _run_agent_once(
     }
     evidence["artifact_path"] = _persist_invocation_evidence(evidence)
     return evidence
+
+
+def _run_agent_once(
+    *,
+    agent_name: str,
+    agent_role: str,
+    prompt_payload: Mapping[str, Any],
+    validate_intent: bool = True,
+    timeout_seconds: int | None = None,
+    workflow_execution_mode: str = "sequential_runner",
+) -> dict[str, Any]:
+    return asyncio.run(
+        _run_agent_once_async(
+            agent_name=agent_name,
+            agent_role=agent_role,
+            prompt_payload=prompt_payload,
+            validate_intent=validate_intent,
+            timeout_seconds=timeout_seconds,
+            workflow_execution_mode=workflow_execution_mode,
+        )
+    )
 
 
 def _run_runtime_recovery_agent_once(
@@ -2869,7 +2879,7 @@ def run_missionos_runtime_recovery_agent(
     }
 
 
-def run_missionos_agent_runtime(
+def _run_missionos_agent_runtime_sequential(
     *,
     utterance: str,
     missionos_state: Mapping[str, Any],
@@ -3098,7 +3108,88 @@ def run_missionos_agent_runtime(
     }
 
 
+def run_missionos_agent_runtime(
+    *,
+    utterance: str,
+    missionos_state: Mapping[str, Any],
+    mission_designer_context: Mapping[str, Any] | None = None,
+    coordinate_route: Mapping[str, Any] | None = None,
+    conversation_history: list[dict[str, str]] | None = None,
+    monitoring_observations: list[Mapping[str, Any]] | None = None,
+    route_hint: str = "",
+    timeout_seconds: int | None = None,
+) -> dict[str, Any]:
+    """Run the production proposal path and an optional ADK v2 shadow graph.
+
+    The sequential result remains authoritative for Gateway routing. The graph
+    result is attached as measurement-only evidence and cannot alter the
+    production proposal, approval state, dispatch boundary, or progress.
+    """
+
+    primary_result = _run_missionos_agent_runtime_sequential(
+        utterance=utterance,
+        missionos_state=missionos_state,
+        mission_designer_context=mission_designer_context,
+        coordinate_route=coordinate_route,
+        conversation_history=conversation_history,
+        monitoring_observations=monitoring_observations,
+        route_hint=route_hint,
+        timeout_seconds=timeout_seconds,
+    )
+    if os.environ.get(MISSIONOS_ADK_V2_GRAPH_SHADOW_ENV, "").strip() != "1":
+        return primary_result
+    if primary_result.get("runtime_status") == "not_configured":
+        return primary_result
+
+    from src.intelligence.missionos_adk_v2_shadow_graph import (
+        build_missionos_conversation_shadow_comparison,
+        build_shadow_runtime_error_comparison,
+        run_missionos_conversation_shadow_graph,
+    )
+
+    shadow_input = {
+        "utterance": utterance,
+        "missionos_state": dict(missionos_state),
+        "mission_designer_context": dict(mission_designer_context or {}),
+        "coordinate_route": dict(coordinate_route or {}),
+        "conversation_history": list(conversation_history or [])[-10:],
+        "monitoring_observations": [
+            dict(item)
+            for item in (monitoring_observations or [])
+            if isinstance(item, Mapping)
+        ],
+        "route_hint": route_hint,
+    }
+    enriched_result = dict(primary_result)
+    try:
+        shadow_result = run_missionos_conversation_shadow_graph(
+            utterance=utterance,
+            missionos_state=missionos_state,
+            mission_designer_context=mission_designer_context,
+            coordinate_route=coordinate_route,
+            conversation_history=conversation_history,
+            monitoring_observations=monitoring_observations,
+            route_hint=route_hint,
+            timeout_seconds=timeout_seconds,
+        )
+        enriched_result["adk_v2_shadow_result"] = shadow_result
+        enriched_result["adk_v2_shadow_comparison"] = (
+            build_missionos_conversation_shadow_comparison(
+                primary_result=primary_result,
+                shadow_result=shadow_result,
+                input_payload=shadow_input,
+            )
+        )
+    except Exception as exc:  # pragma: no cover - live model/runtime failures vary.
+        enriched_result["adk_v2_shadow_result"] = {}
+        enriched_result["adk_v2_shadow_comparison"] = (
+            build_shadow_runtime_error_comparison(exc)
+        )
+    return enriched_result
+
+
 __all__ = [
+    "MISSIONOS_ADK_V2_GRAPH_SHADOW_ENV",
     "MISSIONOS_AGENT_RUNTIME_ADK_ENABLED_ENV",
     "MISSIONOS_AGENT_RUNTIME_MODEL_ENV",
     "MISSIONOS_AGENT_RUNTIME_RESULT_SCHEMA_VERSION",

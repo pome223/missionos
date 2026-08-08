@@ -38,6 +38,86 @@ The routing map lives in `src/intelligence/missionos_agent_runtime.py` as
 The Safety Critic may be invoked after the chosen specialist. It can review the
 proposal boundary, but it does not approve or execute.
 
+## ADK v2 Conversation Shadow Graph
+
+MissionOS has an opt-in ADK v2 graph pilot for the conversation/proposal path.
+Enable it with:
+
+```text
+MISSIONOS_ADK_V2_GRAPH_SHADOW=1
+```
+
+The production sequential path still runs first and remains authoritative for
+Gateway routing. The graph then independently evaluates the same bounded input
+through these workflow nodes:
+
+```text
+normalize_shadow_input
+-> invoke_shadow_chief
+-> invoke_shadow_specialist
+-> invoke_shadow_safety_critic
+-> finalize_shadow_proposal
+```
+
+The graph uses the existing deterministic `_CHIEF_TO_SPECIALIST` allowlist. It
+does not use ADK transfer tools and does not include the legacy `ControlLoop`,
+human approval, Gateway dispatch, an executor, a backend adapter, or an outcome
+verifier.
+
+The comparison artifact is scoped explicitly as
+`conversation_proposal_path_only`. It reports Chief, specialist, and Safety
+Critic field agreement, while fixing `control_loop_compared=false`. It also
+fixes the following authority facts:
+
+- `measurement_only=true`
+- `approval_created=false`
+- `dispatch_authority_created=false`
+- `executor_invoked=false`
+- `physical_execution_invoked=false`
+- `outcome_observed=false`
+- `progress_counted=false`
+
+The pilot intentionally has these operational limits:
+
+- it makes a second set of model calls and is disabled by default
+- the shadow runs synchronously after the three-stage primary path; enabling it
+  approximately doubles model-call count and can approximately double normal
+  proposal latency
+- `timeout_seconds` applies to each agent invocation, not the whole request, so
+  a timeout-heavy request can approach the sum of the primary and shadow
+  three-stage pipelines; the flag must remain off on latency-sensitive live
+  paths unless that additional budget is intentional
+- a graph failure is fail-open only for the shadow measurement; it cannot
+  replace or block the production sequential result
+- the graph uses a one-shot `InMemorySessionService`
+- graph resume, Redis restoration, HITL, retry, and execution are not enabled
+- ADK requires the graph parent to be re-enterable, but all child nodes have
+  `rerun_on_resume=false` and no retry configuration
+- agent invocation evidence may be persisted, but node completion is not
+  approval, dispatch, execution, observation, or progress
+
+The current `rerun_on_resume=false` child-node policy is valid only for this
+one-shot, measurement-only shadow. It is not a reusable default for a future
+resume, approval, or dispatch graph. Before enabling Redis resume or HITL:
+
+- Chief, specialist, Safety Critic, and any other judgment node that reads
+  telemetry must use fresh, checkpoint-bound input and rerun after resume
+- cached pre-pause LLM output must not be treated as dispatch-time truth
+- a deterministic pure node may reuse output only when its complete input is
+  cryptographically bound to the resumed checkpoint
+- fresh post-resume rules and dispatch-time verification remain mandatory;
+  graph resume and node completion create no approval or dispatch authority
+
+These resume rules are a promotion gate. They must be implemented and tested,
+along with `dispatch_ref` idempotency and a real Redis restart test, before the
+graph can include approval, dispatch, execution, or recovery side effects.
+
+Implementation and comparison contracts live in
+`src/intelligence/missionos_adk_v2_shadow_graph.py`. The production wrapper in
+`src/intelligence/missionos_agent_runtime.py` attaches
+`adk_v2_shadow_result` and `adk_v2_shadow_comparison` without changing the
+primary `runtime_status` or `proposal`.
+
 Model backend selection is separate from routing. By default, ADK model calls
 use the hosted DeepSeek V4 path. Set `MISSIONOS_LLM_BACKEND=gemini` for the
 supported Gemini path, `MISSIONOS_LLM_BACKEND=ollama` for local Gemma/Ollama,
@@ -140,9 +220,10 @@ This keeps the MissionOS claim split intact even when LLM behavior changes.
 
 ## Future Direction
 
-A future ADK Custom Agent or Workflow wrapper may be useful for traceability,
-session state propagation, or composability. That should not move approval,
-dispatch, execution, or verifier truth into LLM transfer delegation.
+The ADK v2 shadow graph provides proposal-path traceability without authority.
+Promotion beyond shadow mode requires separate proof for Redis process-restart
+restoration and `dispatch_ref` idempotency. HITL, resume, retry, and execution
+must not be added merely because the graph API supports them.
 
 The durable target is:
 
