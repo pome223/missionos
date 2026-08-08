@@ -24,6 +24,10 @@ CanonicalApprovalValidator = Callable[
     [str, Mapping[str, Any]],
     Mapping[str, Any] | Awaitable[Mapping[str, Any]],
 ]
+GuardedExecutionHandler = Callable[
+    [Mapping[str, Any]],
+    Mapping[str, Any] | Awaitable[Mapping[str, Any]],
+]
 
 
 def _authority_floor() -> dict[str, bool]:
@@ -84,6 +88,7 @@ async def _resolve_validation(
 def build_missionos_canonical_approval_hitl_workflow(
     *,
     approval_validator: CanonicalApprovalValidator,
+    guarded_execution_handler: GuardedExecutionHandler | None = None,
 ) -> Any:
     """Build a fresh workflow whose validator reloads MissionOS authority."""
 
@@ -102,6 +107,7 @@ def build_missionos_canonical_approval_hitl_workflow(
         required_fields = (
             "interrupt_id",
             "operator_session_id",
+            "task_id",
             "approval_ref",
             "mission_response_candidate_ref",
             "proposal_sha256",
@@ -133,6 +139,7 @@ def build_missionos_canonical_approval_hitl_workflow(
                 "its exact approval_ref. A yes/no response is not approval."
             ),
             payload={
+                "task_id": node_input["task_id"],
                 "approval_ref": node_input["approval_ref"],
                 "mission_response_candidate_ref": node_input[
                     "mission_response_candidate_ref"
@@ -204,6 +211,7 @@ def build_missionos_canonical_approval_hitl_workflow(
             "hitl_status": "canonical_approval_validated",
             "blocking_reasons": [],
             "approval_ref": approval_ref,
+            "task_id": expected.get("task_id"),
             "canonical_approval_validated": True,
             "canonical_approval_validation": validation,
             "mission_response_candidate_ref": expected.get(
@@ -218,6 +226,59 @@ def build_missionos_canonical_approval_hitl_workflow(
             **_authority_floor(),
         }
 
+    @node(name="invoke_guarded_missionos_execution_boundary", rerun_on_resume=True)
+    async def invoke_guarded_missionos_execution_boundary(
+        node_input: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        if (
+            guarded_execution_handler is None
+            or node_input.get("canonical_approval_validated") is not True
+        ):
+            return dict(node_input)
+        try:
+            guarded = guarded_execution_handler(node_input)
+            if hasattr(guarded, "__await__"):
+                guarded = await guarded  # type: ignore[misc]
+            guarded_result = dict(guarded) if isinstance(guarded, Mapping) else {}
+        except Exception as exc:  # pragma: no cover - boundary failures vary.
+            guarded_result = {
+                "guarded_execution_status": "blocked",
+                "blocking_reasons": [
+                    f"guarded_execution_boundary_failed:{type(exc).__name__}"
+                ],
+                "dispatch_authority_created": False,
+                "executor_invoked": False,
+                "physical_execution_invoked": False,
+                "outcome_observed": False,
+                "progress_counted": False,
+            }
+        merged = dict(node_input)
+        merged["guarded_execution"] = guarded_result
+        guarded_status = str(guarded_result.get("guarded_execution_status") or "")
+        merged["hitl_status"] = (
+            "guarded_execution_completed"
+            if guarded_status == "execution_boundary_returned"
+            else "guarded_execution_receipt_replayed"
+            if guarded_status == "receipt_replayed"
+            else "guarded_execution_blocked"
+        )
+        merged["blocking_reasons"] = list(
+            guarded_result.get("blocking_reasons") or []
+        )
+        for field in (
+            "dispatch_authority_created",
+            "executor_invoked",
+            "physical_execution_invoked",
+            "outcome_observed",
+            "progress_counted",
+            "ack_observed",
+            "verifier_passed",
+            "completion_claimed",
+            "automatic_redispatch_performed",
+        ):
+            merged[field] = guarded_result.get(field) is True
+        return merged
+
     @node(name="finalize_canonical_approval_resume", rerun_on_resume=True)
     def finalize_canonical_approval_resume(node_input: Mapping[str, Any]) -> dict[str, Any]:
         if node_input.get("schema_version") == MISSIONOS_ADK_V2_HITL_RESULT_SCHEMA_VERSION:
@@ -230,7 +291,7 @@ def build_missionos_canonical_approval_hitl_workflow(
         name=MISSIONOS_ADK_V2_HITL_WORKFLOW_NAME,
         description=(
             "Pause for a canonical MissionOS approval reference and revalidate "
-            "the artifact without creating dispatch authority."
+            "the artifact before an optional MissionOS-owned guarded boundary."
         ),
         rerun_on_resume=True,
         edges=[
@@ -239,6 +300,7 @@ def build_missionos_canonical_approval_hitl_workflow(
                 bind_canonical_approval_request,
                 await_canonical_missionos_approval,
                 validate_canonical_missionos_approval,
+                invoke_guarded_missionos_execution_boundary,
                 finalize_canonical_approval_resume,
             )
         ],
@@ -272,12 +334,69 @@ def _pending_request_input(events: list[Any]) -> dict[str, Any]:
     return {}
 
 
+def _node_audit_trace(
+    events: list[Any],
+    *,
+    task_id: str,
+    binding: Mapping[str, Any],
+) -> dict[str, Any]:
+    refs = {
+        field: binding.get(field)
+        for field in (
+            "approval_ref",
+            "mission_response_candidate_ref",
+            "proposal_sha256",
+            "bounded_action_ref",
+            "dispatch_ref",
+        )
+    }
+    nodes: list[dict[str, Any]] = []
+    for event in events:
+        node_info = getattr(event, "node_info", None)
+        node_path = str(getattr(node_info, "path", "") or "")
+        if not node_path:
+            continue
+        output = getattr(event, "output", None)
+        output = output if isinstance(output, Mapping) else {}
+        nodes.append(
+            {
+                "event_id": str(getattr(event, "id", "") or ""),
+                "invocation_id": str(
+                    getattr(event, "invocation_id", "") or ""
+                ),
+                "author": str(getattr(event, "author", "") or ""),
+                "node_path": node_path,
+                "output_for": str(getattr(node_info, "output_for", "") or ""),
+                "task_id": task_id,
+                "artifact_refs": dict(refs),
+                "node_output_refs": {
+                    field: output.get(field)
+                    for field in refs
+                    if field in output
+                },
+                "node_completion_is_external_execution": False,
+                "node_completion_counts_progress": False,
+            }
+        )
+    return {
+        "schema_version": "missionos_adk_v2_same_task_audit_trace.v1",
+        "task_id": task_id,
+        "artifact_refs": refs,
+        "nodes": nodes,
+        "node_count": len(nodes),
+        "adk_event_ids_are_correlation_only": True,
+        "node_completion_is_external_execution": False,
+        "node_completion_counts_progress": False,
+    }
+
+
 async def start_missionos_canonical_approval_hitl(
     *,
     session_service: Any,
     operator_session_id: str,
     approval_binding: Mapping[str, Any],
     approval_validator: CanonicalApprovalValidator,
+    guarded_execution_handler: GuardedExecutionHandler | None = None,
     adk_session_id: str = "",
 ) -> dict[str, Any]:
     """Start the graph and return its RequestInput pause contract."""
@@ -302,6 +421,7 @@ async def start_missionos_canonical_approval_hitl(
     )
     workflow = build_missionos_canonical_approval_hitl_workflow(
         approval_validator=approval_validator,
+        guarded_execution_handler=guarded_execution_handler,
     )
     runner = Runner(
         agent=workflow,
@@ -333,6 +453,7 @@ async def start_missionos_canonical_approval_hitl(
         "request_input_message": args.get("message"),
         "request_input_payload": dict(args.get("payload") or {}),
         "approval_ref": binding.get("approval_ref"),
+        "task_id": binding.get("task_id"),
         "canonical_approval_validated": False,
         "human_input_received": False,
         "human_input_created_authority": False,
@@ -349,6 +470,7 @@ async def resume_missionos_canonical_approval_hitl(
     adk_session_id: str,
     human_response: Mapping[str, Any],
     approval_validator: CanonicalApprovalValidator,
+    guarded_execution_handler: GuardedExecutionHandler | None = None,
 ) -> dict[str, Any]:
     """Resume only when the response contains the expected canonical ref."""
 
@@ -452,6 +574,7 @@ async def resume_missionos_canonical_approval_hitl(
         return blocked
     workflow = build_missionos_canonical_approval_hitl_workflow(
         approval_validator=approval_validator,
+        guarded_execution_handler=guarded_execution_handler,
     )
     runner = Runner(
         agent=workflow,
@@ -494,6 +617,18 @@ async def resume_missionos_canonical_approval_hitl(
             "session_backend": _session_backend_name(session_service),
         }
     )
+    restored = await session_service.get_session(
+        app_name=MISSIONOS_ADK_V2_HITL_APP_NAME,
+        user_id=operator_session_id,
+        session_id=adk_session_id,
+    )
+    if restored is not None:
+        binding = dict(pending_payload)
+        final_output["same_task_audit_trace"] = _node_audit_trace(
+            list(restored.events),
+            task_id=str(binding.get("task_id") or ""),
+            binding=binding,
+        )
     return final_output
 
 

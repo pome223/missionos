@@ -18,6 +18,7 @@ from src.intelligence import missionos_adk_v2_hitl as hitl
 
 def _binding() -> dict[str, Any]:
     return {
+        "task_id": "missionos_form2a_task:fixture",
         "binding_status": "ready",
         "blocking_reasons": [],
         "approval_ref": "approval:fixture",

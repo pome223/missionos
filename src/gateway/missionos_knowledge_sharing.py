@@ -2801,7 +2801,11 @@ def build_form2a_canonical_approval_binding(
         if selection.get("response_selection_id")
         else ""
     )
+    task_id = str(selection.get("task_id") or "").strip()
+    if not task_id and selection.get("response_selection_id"):
+        task_id = f"missionos_form2a_task:{selection['response_selection_id']}"
     binding = {
+        "task_id": task_id,
         "approval_ref": approval_ref,
         "mission_response_candidate_ref": mission_response_candidate_ref,
         "proposal_sha256": (
@@ -2833,6 +2837,7 @@ def build_form2a_canonical_approval_binding(
     elif expires_at <= now:
         blocking_reasons.append("form2a_approval_token_expired")
     for field in (
+        "task_id",
         "approval_ref",
         "mission_response_candidate_ref",
         "proposal_sha256",
@@ -2874,6 +2879,7 @@ def validate_form2a_canonical_approval(
     elif approval_ref != str(expected_binding.get("approval_ref") or ""):
         reasons.append("canonical_approval_ref_not_checkpoint_bound")
     for field in (
+        "task_id",
         "approval_ref",
         "mission_response_candidate_ref",
         "proposal_sha256",
@@ -2903,6 +2909,7 @@ def validate_form2a_canonical_approval(
         "validation_status": "approved" if not reasons else "blocked",
         "blocking_reasons": reasons,
         "approval_ref": approval_ref,
+        "task_id": current.get("task_id"),
         "canonical_approval_validated": not reasons,
         "human_operator_approval_granted_in_artifact": (
             review_authority.get("human_operator_approval_granted_in_artifact")

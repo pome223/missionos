@@ -140,6 +140,25 @@ observe an effect, pass a verifier, or count progress. The full contract and
 Redis process-restart verification command live in
 `docs/agents/adk-v2-canonical-approval-hitl.md`.
 
+## ADK v2 Guarded Execution
+
+`MISSIONOS_ADK_V2_GUARDED_EXECUTION_ENABLED=1` adds one post-validation graph
+node. It does not give ADK direct executor tools. The node calls a
+MissionOS-owned handler that reruns canonical approval and source-snapshot
+checks, enforces snapshot freshness and backend opt-in, creates deterministic
+dispatch authority, claims the stable `dispatch_ref`, persists send-start, and
+then invokes the existing execution boundary once.
+
+Duplicate resume cannot re-enter the graph. Receipt replay cannot reinvoke the
+executor. Ambiguous sender failure remains an unknown outcome and disables
+automatic retry. The fixture adapter is separately marked, invokes no external
+sender, and must never be enabled in production.
+
+Every resumed node is projected into a same-task audit trace with the canonical
+approval, candidate, hash, bounded-action, and dispatch refs. This correlation
+does not turn ADK event IDs or node completion into execution evidence. See
+`docs/agents/adk-v2-guarded-execution.md`.
+
 Implementation and comparison contracts live in
 `src/intelligence/missionos_adk_v2_shadow_graph.py`. The production wrapper in
 `src/intelligence/missionos_agent_runtime.py` attaches
@@ -249,11 +268,11 @@ This keeps the MissionOS claim split intact even when LLM behavior changes.
 ## Future Direction
 
 The ADK v2 shadow graph provides proposal-path traceability without authority.
-Redis process-restart restoration, `dispatch_ref` idempotency, and
-canonical-approval HITL now have separate contracts and evidence. Guarded
-execution, receipt reconciliation, verification, and recovery remain separate
-promotion gates and must not be inferred merely because the graph API supports
-resume or retry.
+Redis process-restart restoration, `dispatch_ref` idempotency,
+canonical-approval HITL, and opt-in guarded execution now have separate
+contracts and evidence. Receipt reconciliation, positive outcome verification,
+and bounded recovery remain separate promotion gates and must not be inferred
+merely because the graph API supports resume or retry.
 
 The durable target is:
 

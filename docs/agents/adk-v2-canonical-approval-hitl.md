@@ -77,6 +77,11 @@ establishes them:
 `canonical_approval_validated=true` means only that a currently valid,
 human-created MissionOS approval was revalidated. It is not dispatch authority.
 
+When the separate guarded-execution flag is enabled, the next graph node uses
+the contract in `docs/agents/adk-v2-guarded-execution.md`. Canonical validation
+alone still cannot skip its fresh preflight, dispatch-authority, idempotency,
+send-start, and receipt boundaries.
+
 ## Runtime Verification
 
 Run the maintained Redis checkpoint test with a disposable Redis instance:

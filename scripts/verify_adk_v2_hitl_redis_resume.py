@@ -58,6 +58,7 @@ async def _close_service(service: RedisSessionService) -> None:
 
 def _binding(task_id: str) -> dict[str, Any]:
     return {
+        "task_id": task_id,
         "binding_status": "ready",
         "blocking_reasons": [],
         "approval_ref": f"missionos_fixture_approval:{task_id}",
