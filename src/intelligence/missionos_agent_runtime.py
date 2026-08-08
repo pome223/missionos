@@ -412,6 +412,40 @@ async def _invoke_adk_agent_text_async(
     return "".join(response_parts).strip()
 
 
+async def _invoke_adk_agent_text_node_async(
+    *,
+    workflow_ctx: Any,
+    agent_name: str,
+    model_id: str,
+    prompt_text: str,
+    run_id: str,
+    timeout_seconds: int,
+) -> str:
+    """Invoke a MissionOS Agent as an ADK v2 dynamic workflow child."""
+
+    _configure_google_adk_environment(agent_name)
+    from google.genai import types
+
+    from src.agents.missionos_agents import build_missionos_agent
+
+    safe_run_id = re.sub(r"[^0-9A-Za-z_-]+", "-", run_id).strip("-")
+    output_key = f"temp:adk_v2_agent_output:{safe_run_id or agent_name}"
+    agent = build_missionos_agent(agent_name, model_id=model_id).model_copy(
+        update={
+            "output_key": output_key,
+            "rerun_on_resume": True,
+            "timeout": float(timeout_seconds),
+        }
+    )
+    content = types.Content(role="user", parts=[types.Part(text=prompt_text)])
+    await workflow_ctx.run_node(
+        agent,
+        content,
+        run_id=run_id,
+    )
+    return str(workflow_ctx.state.get(output_key) or "").strip()
+
+
 def _runtime_recovery_agent_output_from_planner_result(
     planner_result: Mapping[str, Any],
 ) -> dict[str, Any]:
@@ -703,19 +737,32 @@ async def _run_agent_once_async(
     validate_intent: bool = True,
     timeout_seconds: int | None = None,
     workflow_execution_mode: str = "sequential_runner",
+    workflow_ctx: Any | None = None,
+    workflow_run_id: str = "",
 ) -> dict[str, Any]:
     model_id = _model_id(agent_name)
     prompt_text = json.dumps(dict(prompt_payload), ensure_ascii=False, sort_keys=True)
     started_at = _utc_now()
     try:
-        response_text = await asyncio.wait_for(
-            _invoke_adk_agent_text_async(
+        resolved_timeout = timeout_seconds or _timeout_seconds()
+        if workflow_ctx is not None:
+            response_text = await _invoke_adk_agent_text_node_async(
+                workflow_ctx=workflow_ctx,
                 agent_name=agent_name,
                 model_id=model_id,
                 prompt_text=prompt_text,
-            ),
-            timeout=timeout_seconds or _timeout_seconds(),
-        )
+                run_id=workflow_run_id or f"{agent_name}-node",
+                timeout_seconds=resolved_timeout,
+            )
+        else:
+            response_text = await asyncio.wait_for(
+                _invoke_adk_agent_text_async(
+                    agent_name=agent_name,
+                    model_id=model_id,
+                    prompt_text=prompt_text,
+                ),
+                timeout=resolved_timeout,
+            )
         invocation_error = ""
     except Exception as exc:  # pragma: no cover - live service failure shape varies.
         response_text = ""
@@ -753,7 +800,13 @@ async def _run_agent_once_async(
         "invocation_started_at": started_at.isoformat(),
         "invocation_completed_at": completed_at.isoformat(),
         "workflow_execution_mode": workflow_execution_mode,
-        "adk_v2_graph_invoked": workflow_execution_mode == "adk_v2_graph_shadow",
+        "adk_v2_graph_invoked": workflow_execution_mode.startswith("adk_v2_graph_"),
+        "agent_node_execution": (
+            "ctx.run_node" if workflow_ctx is not None else "standalone_runner"
+        ),
+        "workflow_child_node": workflow_ctx is not None,
+        "standalone_runner_invoked": workflow_ctx is None,
+        "nested_runner_invoked": False,
         "validated_output": guardrail.get("validated_output") or {},
         "guardrail_result": guardrail,
         "progress_counted": False,

@@ -73,3 +73,12 @@ When the map above is not enough, read the complete set:
 When a change touches CLI, Gateway, runtime adapters, task state, evidence, or
 public-facing docs, update the relevant human-facing and agent-facing docs in
 the same change.
+
+## ADK v2 Migration Contracts
+
+- `docs/agents/adk-v2-primary-promotion.md`
+- `docs/agents/adk-v2-session-persistence.md`
+- `docs/agents/adk-v2-canonical-approval-hitl.md`
+- `docs/agents/adk-v2-guarded-execution.md`
+- `docs/agents/adk-v2-bounded-recovery.md`
+- `docs/agents/adk-v2-control-loop.md`
