@@ -15,6 +15,7 @@ docs.
 | Gateway routes, sessions, or audit | `gateway-profiles.md`, `contracts.md`, `artifact-taxonomy.md`, `publication-rules.md`, `e2e-verification.md`, `missionos-chat-pr-merge-e2e-checklist.md` |
 | LLM planning, repair, or recovery logic | `claim-semantics.md`, `agent-architecture.md`, `contracts.md` |
 | Recovery delegation (reflex/deliberation split, perception claims, shadow measurement, action promotion) | `recovery-delegation-authority.md`, `claim-semantics.md`, `hardware-adapter-contract.md` |
+| Nav2 Core Recovery candidate divergence | `nav2-core-recovery-divergence.md` |
 | Evidence, claims, completion, or verifier behavior | `claim-semantics.md`, `artifact-taxonomy.md`, `contracts.md` |
 | Anonymized recovery replay publication or verification | `replay-bundle-contract.md`, `publication-rules.md`, `claim-semantics.md` |
 | PX4 / Gazebo SITL or PX4 bench-adjacent runtime | `px4-gazebo-route-runtime.md`, `px4-sim-to-hardware-portability.md`, `hardware-adapter-contract.md`, `claim-semantics.md`, `e2e-verification.md`, `publication-rules.md` |
