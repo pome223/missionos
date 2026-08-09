@@ -143,6 +143,21 @@ reporting follows the same discipline. MissionOS does not claim:
 - observed progress without evidence
 - general-purpose destination planning
 
+### Agent Orchestration
+
+The public Gateway now coordinates Chief, specialist, and safety-review
+judgments through a Google ADK v2 workflow by default. This is proposal
+orchestration only: workflow completion does not create human approval,
+dispatch authority, executor invocation, observed progress, mission
+completion, or physical-execution evidence. Those remain separate MissionOS
+facts under the authority split described in
+[MissionOS Agent Roles](docs/concepts/agent-roles.md).
+
+Operators can set `MISSIONOS_ADK_V2_GRAPH_ROLLBACK=1` to select the previous
+sequential proposal pipeline during an incident. The exact primary, rollback,
+HITL/resume, dispatch-idempotency, guarded-execution, and Recovery contracts
+are maintained in [the agent documentation](docs/agents/README.md).
+
 ### Runtime Progress
 
 Status as of 2026-08-02. This table is evidence-bounded: the v0.2.0 stable gate
