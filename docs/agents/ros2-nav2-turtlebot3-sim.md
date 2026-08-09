@@ -35,9 +35,25 @@ docker build \
   .
 ```
 
+On arm64, use an explicit platform to keep the portability check visible:
+
+```bash
+docker buildx build --platform linux/arm64 --load \
+  -f docker/ros2_nav2_turtlebot3/Dockerfile \
+  -t missionos-ros2-nav2-turtlebot3:arm64 \
+  .
+```
+
 The image installs ROS2 Humble, Nav2, TurtleBot3 packages, Gazebo Sim/`ros_gz`
-support, and the `feature-gazebo-sim-migration` branch of
-`turtlebot3_simulations`.
+support, and pinned public commits from the ROS-Gazebo Humble branch and the
+TurtleBot3 `feature-gazebo-sim-migration` branch. Humble's arm64 binary index
+contains `ros_gz_bridge`, `ros_gz_image`, and `ros_gz_interfaces`, but not the
+`ros_gz` or `ros_gz_sim` meta/runtime packages. The image therefore builds only
+`ros_gz_sim` from the matching official Humble source commit while retaining
+binary packages for the remaining bridge components. ROS/colcon remains on the
+system Python, while MissionOS and ADK use `/opt/missionos-venv`; this keeps
+their incompatible setuptools requirements in separate interpreter
+environments.
 
 The default `burger` model publishes `/scan` but has no RGB camera. Opt-in
 camera perception uses the stock `waffle_pi` model, which publishes
