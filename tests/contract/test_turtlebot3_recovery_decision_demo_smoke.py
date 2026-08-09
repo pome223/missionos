@@ -43,6 +43,19 @@ def test_turtlebot3_docker_smoke_forwards_deepseek_configuration() -> None:
     ).read_text(encoding="utf-8")
     assert "'google-adk[extensions]>=2.5.0,<3.0.0'" in dockerfile
     assert "'redis>=5.0.0,<7.0.0'" in dockerfile
+    assert "python3 -m venv --without-pip /opt/missionos-venv" in dockerfile
+    assert "PYTHONPATH=/usr/lib/python3/dist-packages" in dockerfile
+    assert "/opt/missionos-venv/bin/pip install" in dockerfile
+    assert "ENV PATH=/opt/missionos-venv/bin:$PATH" in dockerfile
+    assert "ARG ROS_GZ_HUMBLE_COMMIT=" in dockerfile
+    assert "ARG TURTLEBOT3_SIMULATIONS_COMMIT=" in dockerfile
+    assert "libgz-sim7-dev" in dockerfile
+    assert "ros-humble-ros-gz-bridge" in dockerfile
+    assert "ros-humble-ros-gz-image" in dockerfile
+    assert "ros-humble-ros-gz-interfaces" in dockerfile
+    assert "ros-humble-ros-gz-sim" not in dockerfile
+    assert "ros-humble-ros-gz \\" not in dockerfile
+    assert "sparse-checkout set ros_gz_sim" in dockerfile
 
     gateway_script = (
         Path(__file__).resolve().parents[2]
