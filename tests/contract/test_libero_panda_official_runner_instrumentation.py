@@ -77,11 +77,7 @@ class _FakeUnderlyingTaskEnvironment:
             )
         if self.numpy_scalar_step_return:
             return (
-                OrderedDict(
-                    (
-                        ("raw_state", np.asarray(vector, dtype=np.float32)),
-                    )
-                ),
+                OrderedDict((("raw_state", np.asarray(vector, dtype=np.float32)),)),
                 np.float32(0.0),
                 np.bool_(self.success),
                 {"underlying": np.int64(1)},
@@ -95,6 +91,12 @@ class _FakeUnderlyingTaskEnvironment:
 
     def check_success(self) -> bool:
         return self.success
+
+    def missionos_goal_predicate_observations(
+        self,
+        expected: tuple[tuple[str, ...], ...],
+    ) -> tuple[bool, ...]:
+        return tuple(self.success for _ in expected)
 
     def close(self) -> None:
         return None
@@ -132,14 +134,9 @@ class _FakeLiberoEnvironment:
         self,
         action: dict[str, list[float]],
     ) -> tuple[dict[str, list[float]], float, bool, bool, dict[str, Any]]:
-        vector = [
-            float(action[field_name][0])
-            for field_name in LIBERO_ACTION_FIELDS
-        ]
+        vector = [float(action[field_name][0]) for field_name in LIBERO_ACTION_FIELDS]
         vector[-1] = 2.0 * vector[-1] - 1.0
-        vector[-1] = (
-            1.0 if vector[-1] > 0 else -1.0 if vector[-1] < 0 else 0.0
-        )
+        vector[-1] = 1.0 if vector[-1] > 0 else -1.0 if vector[-1] < 0 else 0.0
         vector[-1] *= -1.0
         if self._env.action_dim == 4:
             vector = [*vector[:3], vector[-1]]
@@ -207,8 +204,7 @@ class _UnnamespacedPolicy(_FakePolicy):
     ) -> tuple[dict[str, list[list[float]]], dict[str, str]]:
         action, info = super().get_action(observations)
         return {
-            field_name.removeprefix("action."): values
-            for field_name, values in action.items()
+            field_name.removeprefix("action."): values for field_name, values in action.items()
         }, info
 
 
@@ -218,10 +214,7 @@ class _ExecutionHorizonOnlyPolicy(_FakePolicy):
         observations: dict[str, list[list[float]]],
     ) -> tuple[dict[str, list[list[float]]], dict[str, str]]:
         action, info = super().get_action(observations)
-        return {
-            field_name: values[:8]
-            for field_name, values in action.items()
-        }, info
+        return {field_name: values[:8] for field_name, values in action.items()}, info
 
 
 class _FakeOfficialRolloutModule:
@@ -241,9 +234,7 @@ class _FakeOfficialRolloutModule:
         self.action_dim = action_dim
         self.success = success
         self.mutate_step_input = mutate_step_input
-        self.runner_success = (
-            success if runner_success is None else runner_success
-        )
+        self.runner_success = success if runner_success is None else runner_success
         self.raise_after_reset = raise_after_reset
         self.typed_failure_after_reset = typed_failure_after_reset
         self.gym_wrapped = gym_wrapped
@@ -287,17 +278,9 @@ class _FakeOfficialRolloutModule:
         if self.raise_after_reset:
             raise RuntimeError("fixture runner failure")
         policy.reset()
-        actions, _ = policy.get_action(
-            {
-                key: [value]
-                for key, value in observation.items()
-            }
-        )
+        actions, _ = policy.get_action({key: [value] for key, value in observation.items()})
         for chunk_step_index in range(8):
-            step_action = {
-                key: [values[chunk_step_index][0]]
-                for key, values in actions.items()
-            }
+            step_action = {key: [values[chunk_step_index][0]] for key, values in actions.items()}
             if self.mutate_step_input and chunk_step_index == 0:
                 step_action["action.x"] = [0.9]
             _, _, terminated, truncated, info = env.step(step_action)
@@ -350,9 +333,7 @@ def test_parent_can_freeze_exact_live_identities_before_reset() -> None:
     )
 
     assert prepared.run_identity == "parent-run:goal-a:1"
-    assert prepared.episode_identity == (
-        "parent-run:goal-a:1:libero-episode-1"
-    )
+    assert prepared.episode_identity == ("parent-run:goal-a:1:libero-episode-1")
     assert prepared.contract.to_material()["reference_inputs"][3][
         "content_sha256"
     ] == canonical_sha256({"run_identity": "parent-run:goal-a:1"})
@@ -377,9 +358,7 @@ def _controller_probe(
         assert isinstance(env, _FakeLiberoEnvironment)
         assert env._env.action_dim == configuration.action_dim
         return LIBEROPandaControllerRuntimeBinding(
-            controller_configuration_sha256=(
-                configuration.controller_configuration_sha256
-            ),
+            controller_configuration_sha256=(configuration.controller_configuration_sha256),
             action_dim=env._env.action_dim,
         )
 
@@ -398,9 +377,7 @@ def test_official_runner_is_instrumented_without_replacing_its_loop() -> None:
         policy=policy,
         wrapper_configs=SimpleNamespace(),
         prepared=prepared,
-        controller_probe=_controller_probe(
-            prepared.runner_configuration
-        ),
+        controller_probe=_controller_probe(prepared.runner_configuration),
     )
 
     assert module.run_rollout_gymnasium_policy == original_runner
@@ -409,12 +386,8 @@ def test_official_runner_is_instrumented_without_replacing_its_loop() -> None:
     assert policy.reset_calls == 1
     assert len(module.environments) == 1
     assert module.environments[0].reset_calls == 2
-    assert module.environments[0]._env.step_calls == [
-        (0.1, 0.1, 0.1, 0.1, 0.1, 0.1, -1.0)
-    ]
-    assert result.predicate_evaluation.status is (
-        LIBEROPandaPredicateStatus.SATISFIED
-    )
+    assert module.environments[0]._env.step_calls == [(0.1, 0.1, 0.1, 0.1, 0.1, 0.1, -1.0)]
+    assert result.predicate_evaluation.status is (LIBEROPandaPredicateStatus.SATISFIED)
     assert result.predicate_evaluation.evaluated_outcome_claim is True
     assert result.content.official_runner_episode_success is True
     assert result.content.runtime_action_dim == 7
@@ -441,9 +414,7 @@ def test_official_runner_is_instrumented_without_replacing_its_loop() -> None:
     assert "step_applications" not in serialized
     observed_at = datetime.fromisoformat(result.content.observed_at)
     received_at = datetime.fromisoformat(result.content.received_at)
-    evaluated_at = datetime.fromisoformat(
-        result.predicate_evaluation.evaluated_at
-    )
+    evaluated_at = datetime.fromisoformat(result.predicate_evaluation.evaluated_at)
     assert observed_at < received_at < evaluated_at
 
 
@@ -456,15 +427,14 @@ def test_pinned_policy_client_tuple_and_namespaced_fields_are_accepted() -> None
         policy=_FakePolicy(),
         wrapper_configs=SimpleNamespace(),
         prepared=prepared,
-        controller_probe=_controller_probe(
-            prepared.runner_configuration
-        ),
+        controller_probe=_controller_probe(prepared.runner_configuration),
     )
 
     assert result.content.action_chunks[0].fields
-    assert tuple(
-        field.field_name for field in result.content.action_chunks[0].fields
-    ) == LIBERO_ACTION_FIELDS
+    assert (
+        tuple(field.field_name for field in result.content.action_chunks[0].fields)
+        == LIBERO_ACTION_FIELDS
+    )
     assert all(
         len(field.values) == LIBERO_POLICY_ACTION_HORIZON
         for field in result.content.action_chunks[0].fields
@@ -480,18 +450,11 @@ def test_real_libero_numpy_scalar_step_return_is_content_bound() -> None:
         policy=_FakePolicy(),
         wrapper_configs=SimpleNamespace(),
         prepared=prepared,
-        controller_probe=_controller_probe(
-            prepared.runner_configuration
-        ),
+        controller_probe=_controller_probe(prepared.runner_configuration),
     )
 
-    assert (
-        LIBEROPandaInstrumentationEvent.SIMULATOR_STEP_RETURN_OBSERVED
-        in result.event_sequence
-    )
-    assert result.predicate_evaluation.status is (
-        LIBEROPandaPredicateStatus.SATISFIED
-    )
+    assert LIBEROPandaInstrumentationEvent.SIMULATOR_STEP_RETURN_OBSERVED in result.event_sequence
+    assert result.predicate_evaluation.status is (LIBEROPandaPredicateStatus.SATISFIED)
 
 
 def test_numpy_array_digest_binds_dtype_shape_and_content() -> None:
@@ -504,14 +467,8 @@ def test_numpy_array_digest_binds_dtype_shape_and_content() -> None:
 
     assert _digest_material("observation", same) == original_digest
     assert _digest_material("observation", changed) != original_digest
-    assert (
-        _digest_material("observation", original.astype(np.float64))
-        != original_digest
-    )
-    assert (
-        _digest_material("observation", original.reshape(4, 3, 2))
-        != original_digest
-    )
+    assert _digest_material("observation", original.astype(np.float64)) != original_digest
+    assert _digest_material("observation", original.reshape(4, 3, 2)) != original_digest
 
 
 def test_object_array_is_refused_instead_of_hashing_pointer_bytes() -> None:
@@ -535,14 +492,11 @@ def test_invalid_simulator_step_return_has_typed_reason() -> None:
             policy=_FakePolicy(),
             wrapper_configs=SimpleNamespace(),
             prepared=prepared,
-            controller_probe=_controller_probe(
-                prepared.runner_configuration
-            ),
+            controller_probe=_controller_probe(prepared.runner_configuration),
         )
 
     assert caught.value.rejection_reason is (
-        LIBEROPandaInstrumentationRejectionReason
-        .SIMULATOR_STEP_RETURN_INVALID
+        LIBEROPandaInstrumentationRejectionReason.SIMULATOR_STEP_RETURN_INVALID
     )
     assert prepared.recorder.event_sequence[-1] is (
         LIBEROPandaInstrumentationEvent.SIMULATOR_STEP_INPUT_OBSERVED
@@ -554,18 +508,15 @@ def test_invalid_simulator_step_return_has_typed_reason() -> None:
     (
         (
             _MappingOnlyPolicy(),
-            LIBEROPandaInstrumentationRejectionReason
-            .POLICY_RESPONSE_SHAPE_INVALID,
+            LIBEROPandaInstrumentationRejectionReason.POLICY_RESPONSE_SHAPE_INVALID,
         ),
         (
             _UnnamespacedPolicy(),
-            LIBEROPandaInstrumentationRejectionReason
-            .POLICY_RESPONSE_ACTION_FIELDS_MISSING,
+            LIBEROPandaInstrumentationRejectionReason.POLICY_RESPONSE_ACTION_FIELDS_MISSING,
         ),
         (
             _ExecutionHorizonOnlyPolicy(),
-            LIBEROPandaInstrumentationRejectionReason
-            .POLICY_RESPONSE_ACTION_HORIZON_INVALID,
+            LIBEROPandaInstrumentationRejectionReason.POLICY_RESPONSE_ACTION_HORIZON_INVALID,
         ),
     ),
 )
@@ -582,9 +533,7 @@ def test_policy_response_shape_rejections_are_typed(
             policy=policy,
             wrapper_configs=SimpleNamespace(),
             prepared=prepared,
-            controller_probe=_controller_probe(
-                prepared.runner_configuration
-            ),
+            controller_probe=_controller_probe(prepared.runner_configuration),
         )
 
     assert caught.value.rejection_reason is expected_reason
@@ -600,22 +549,14 @@ def test_runtime_four_dimensional_projection_is_observed_and_bound() -> None:
         policy=_FakePolicy(),
         wrapper_configs=SimpleNamespace(),
         prepared=prepared,
-        controller_probe=_controller_probe(
-            prepared.runner_configuration
-        ),
+        controller_probe=_controller_probe(prepared.runner_configuration),
     )
 
-    assert module.environments[0]._env.step_calls == [
-        (0.1, 0.1, 0.1, -1.0)
-    ]
+    assert module.environments[0]._env.step_calls == [(0.1, 0.1, 0.1, -1.0)]
     step = result.content.step_applications[0]
-    assert step.transformation_names[-1] == (
-        "project_osc_position_to_xyz_gripper"
-    )
+    assert step.transformation_names[-1] == ("project_osc_position_to_xyz_gripper")
     assert result.content.runtime_action_dim == 4
-    assert result.predicate_evaluation.status is (
-        LIBEROPandaPredicateStatus.SATISFIED
-    )
+    assert result.predicate_evaluation.status is (LIBEROPandaPredicateStatus.SATISFIED)
 
 
 def test_official_runner_aggregate_cannot_disagree_with_exact_predicate() -> None:
@@ -630,18 +571,12 @@ def test_official_runner_aggregate_cannot_disagree_with_exact_predicate() -> Non
         policy=_FakePolicy(),
         wrapper_configs=SimpleNamespace(),
         prepared=prepared,
-        controller_probe=_controller_probe(
-            prepared.runner_configuration
-        ),
+        controller_probe=_controller_probe(prepared.runner_configuration),
     )
 
-    assert result.predicate_evaluation.status is (
-        LIBEROPandaPredicateStatus.BLOCKED
-    )
+    assert result.predicate_evaluation.status is (LIBEROPandaPredicateStatus.BLOCKED)
     assert result.predicate_evaluation.evaluated_outcome_claim is False
-    assert "official_runner_episode_success_mismatch" in (
-        result.predicate_evaluation.reasons
-    )
+    assert "official_runner_episode_success_mismatch" in (result.predicate_evaluation.reasons)
 
 
 def test_unsatisfied_episode_can_finalize_after_wrapper_level_reset() -> None:
@@ -656,16 +591,12 @@ def test_unsatisfied_episode_can_finalize_after_wrapper_level_reset() -> None:
         policy=_FakePolicy(),
         wrapper_configs=SimpleNamespace(),
         prepared=prepared,
-        controller_probe=_controller_probe(
-            prepared.runner_configuration
-        ),
+        controller_probe=_controller_probe(prepared.runner_configuration),
     )
 
     assert len(result.content.step_applications) == 8
     assert result.content.official_runner_episode_success is False
-    assert result.predicate_evaluation.status is (
-        LIBEROPandaPredicateStatus.NOT_SATISFIED
-    )
+    assert result.predicate_evaluation.status is (LIBEROPandaPredicateStatus.NOT_SATISFIED)
     assert result.predicate_evaluation.evaluated_outcome_claim is False
 
 
@@ -682,9 +613,7 @@ def test_multistep_slice_mutation_is_blocked_before_underlying_step() -> None:
             policy=_FakePolicy(),
             wrapper_configs=SimpleNamespace(),
             prepared=prepared,
-            controller_probe=_controller_probe(
-                prepared.runner_configuration
-            ),
+            controller_probe=_controller_probe(prepared.runner_configuration),
         )
 
     assert module.environments[0]._env.step_calls == []
@@ -703,11 +632,9 @@ def test_controller_binding_mismatch_is_blocked_before_reset() -> None:
             policy=_FakePolicy(),
             wrapper_configs=SimpleNamespace(),
             prepared=prepared,
-            controller_probe=lambda env: (
-                LIBEROPandaControllerRuntimeBinding(
-                    controller_configuration_sha256="f" * 64,
-                    action_dim=env._env.action_dim,
-                )
+            controller_probe=lambda env: LIBEROPandaControllerRuntimeBinding(
+                controller_configuration_sha256="f" * 64,
+                action_dim=env._env.action_dim,
             ),
         )
 
@@ -725,9 +652,7 @@ def test_official_factory_is_restored_when_runner_raises() -> None:
             policy=_FakePolicy(),
             wrapper_configs=SimpleNamespace(),
             prepared=prepared,
-            controller_probe=_controller_probe(
-                prepared.runner_configuration
-            ),
+            controller_probe=_controller_probe(prepared.runner_configuration),
         )
 
     assert module.get_gym_env == original_factory
@@ -739,10 +664,7 @@ def test_official_factory_is_restored_when_runner_raises() -> None:
 def test_rollout_deadline_reason_passes_through_official_runner_wrapper() -> None:
     deadline_error = LIBEROPandaInstrumentationError(
         "bounded diagnostic rollout exceeded its elapsed-time limit",
-        rejection_reason=(
-            LIBEROPandaInstrumentationRejectionReason
-            .ROLLOUT_DEADLINE_EXCEEDED
-        ),
+        rejection_reason=(LIBEROPandaInstrumentationRejectionReason.ROLLOUT_DEADLINE_EXCEEDED),
     )
     module = _FakeOfficialRolloutModule(
         typed_failure_after_reset=deadline_error,
@@ -756,16 +678,13 @@ def test_rollout_deadline_reason_passes_through_official_runner_wrapper() -> Non
             policy=_FakePolicy(),
             wrapper_configs=SimpleNamespace(),
             prepared=prepared,
-            controller_probe=_controller_probe(
-                prepared.runner_configuration
-            ),
+            controller_probe=_controller_probe(prepared.runner_configuration),
         )
 
     assert module.get_gym_env == original_factory
     assert caught.value is deadline_error
     assert caught.value.rejection_reason is (
-        LIBEROPandaInstrumentationRejectionReason
-        .ROLLOUT_DEADLINE_EXCEEDED
+        LIBEROPandaInstrumentationRejectionReason.ROLLOUT_DEADLINE_EXCEEDED
     )
 
 
@@ -789,14 +708,11 @@ def test_environment_creation_failure_is_typed_before_reset() -> None:
             policy=_FakePolicy(),
             wrapper_configs=SimpleNamespace(),
             prepared=prepared,
-            controller_probe=_controller_probe(
-                prepared.runner_configuration
-            ),
+            controller_probe=_controller_probe(prepared.runner_configuration),
         )
 
     assert caught.value.rejection_reason is (
-        LIBEROPandaInstrumentationRejectionReason
-        .OFFICIAL_ENVIRONMENT_CREATION_FAILED
+        LIBEROPandaInstrumentationRejectionReason.OFFICIAL_ENVIRONMENT_CREATION_FAILED
     )
     assert isinstance(caught.value.__cause__, AttributeError)
     assert prepared.recorder.event_sequence == (
@@ -822,8 +738,7 @@ def test_controller_probe_failure_is_typed_before_reset() -> None:
         )
 
     assert caught.value.rejection_reason is (
-        LIBEROPandaInstrumentationRejectionReason
-        .CONTROLLER_RUNTIME_PROBE_FAILED
+        LIBEROPandaInstrumentationRejectionReason.CONTROLLER_RUNTIME_PROBE_FAILED
     )
     assert prepared.recorder.event_sequence == (
         LIBEROPandaInstrumentationEvent.PREPARED_BEFORE_RESET,
@@ -858,9 +773,7 @@ def test_environment_reset_failure_is_typed_after_controller_binding() -> None:
             policy=_FakePolicy(),
             wrapper_configs=SimpleNamespace(),
             prepared=prepared,
-            controller_probe=_controller_probe(
-                prepared.runner_configuration
-            ),
+            controller_probe=_controller_probe(prepared.runner_configuration),
         )
 
     assert caught.value.rejection_reason is (

@@ -22,6 +22,8 @@ files = [
   "smoke_backend_neutral_unitree_gateway.py",
   "smoke_execution_envelope.py",
   "smoke_groot_arm_controller_bridge.py",
+  "smoke_groot_lerobot_live_session.py",
+  "smoke_groot_libero_same_world_repair.py",
   "smoke_libero_panda_official_runner_instrumentation.py",
   "smoke_libero_panda_predicate_package.py",
   "smoke_mission_designer_envelope_violation_advisory.py",
