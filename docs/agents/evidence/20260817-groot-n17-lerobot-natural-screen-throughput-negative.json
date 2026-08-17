@@ -1,0 +1,47 @@
+{
+  "schema_version": "missionos.groot_lerobot_natural_screen_throughput_negative.v1",
+  "observed_at": "2026-08-17T04:41:04Z",
+  "source_revision": {
+    "missionos_commit": "b4a1df738023e49cc521426911a6afc50acde321",
+    "lerobot_commit": "6adf51511b7625090eade8d82d9f61a1846ebe56"
+  },
+  "run": {
+    "requested_init_state_indices": [0, 1, 2, 3, 4],
+    "source_step_budget": 520,
+    "maximum_repair_chunks": 45,
+    "process_exit_code": 143,
+    "operator_stopped_before_cost_cap": true,
+    "final_result_artifact_written": false
+  },
+  "observed_bottleneck": {
+    "profiler": "py-spy",
+    "active_stack": [
+      "json.dumps",
+      "canonical_sha256",
+      "digest_runtime_material",
+      "select_action",
+      "apply_action_chunk"
+    ],
+    "diagnosis": "full_processed_observation_was_canonical_json_hashed_before_every_policy_select_call_including_queued_actions",
+    "queued_action_created_new_model_request": false
+  },
+  "corrective_boundary": {
+    "policy_request_digest_only_when_model_forward_observed": true,
+    "policy_response_digest_only_when_model_forward_observed": true,
+    "queued_action_request_or_response_digest_forbidden": true,
+    "completed_screen_episode_progress_written_atomically": true
+  },
+  "external_archive": {
+    "repository_contains_raw_runtime_evidence": false,
+    "archive_sha256": "13c290a56124f21fb0c3cf1a40939f6ed6f4a036c583f4b517a3fbd753fbe66a"
+  },
+  "claim_boundary": {
+    "model_load_completion_claimed": false,
+    "natural_asymmetric_failure_established": false,
+    "repair_executed": false,
+    "semantic_repair_established": false,
+    "task_completion_claimed": false,
+    "physical_execution_invoked": false,
+    "gpu_vm_and_temporary_boot_disk_deleted": true
+  }
+}

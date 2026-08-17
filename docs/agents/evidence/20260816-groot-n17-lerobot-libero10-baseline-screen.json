@@ -1,0 +1,143 @@
+{
+  "schema_version": "missionos.groot_lerobot_libero10_baseline_screen.v1",
+  "recorded_at": "2026-08-16T09:58:10Z",
+  "sources": {
+    "lerobot_revision": "6adf51511b7625090eade8d82d9f61a1846ebe56",
+    "policy_repository": "nvidia/gr00t17-lerobot-libero_10-640",
+    "policy_revision": "5ee08ab09fac5c5ef2388a14c882ea825ac861db",
+    "base_model_repository": "nvidia/GR00T-N1.7-3B",
+    "base_model_revision": "2fc962b973bccdd5d8ce4f67cc63b264d6886495",
+    "cosmos_repository": "nvidia/Cosmos-Reason2-2B",
+    "cosmos_revision": "9ce19a195e423419c349abfc86fd07178b230561"
+  },
+  "preflight": {
+    "checkpoint_accessible_at_pinned_revision": true,
+    "cosmos_accessible_at_pinned_revision": true,
+    "secret_value_recorded": false,
+    "gate_passed": true
+  },
+  "runtime": {
+    "accelerator": "NVIDIA L4",
+    "driver_version": "610.43.02",
+    "gpu_memory_mib": 23034,
+    "machine_type": "g2-standard-4",
+    "task_suite": "libero_10",
+    "task_id": 8,
+    "maximum_episode_steps": 520,
+    "action_chunk_steps": 16,
+    "seed": 0,
+    "physical_execution_invoked": false
+  },
+  "compatibility_adaptations": {
+    "camera_key_mapping": {
+      "observation.images.image2": "observation.images.wrist_image"
+    },
+    "checkpoint_model_locators_rewritten_to_pinned_local_snapshots": true,
+    "missing_lerobot_libero_assets_resolved_from_pinned_isaac_groot_checkout": true,
+    "ephemeral_swap_gib": 24,
+    "unmodified_official_runner_claimed": false
+  },
+  "unmodified_behavior_screen": {
+    "instrumentation_enabled": false,
+    "episode_successes": [
+      true,
+      false,
+      true,
+      true,
+      false
+    ],
+    "success_count": 3,
+    "episode_count": 5,
+    "success_rate": 0.6,
+    "eval_info_sha256": "5434f03bf5fa2943482b51062e2290c21e64fc3244687fc6158d4d8f72a3db13",
+    "run_log_sha256": "6d1afdcb44ef625f13b66a0d66c5dc0af1cd8a2b2e8a3d42ed0f0d2b676ac3b7",
+    "video_sha256": [
+      "da2254594100d1602623c9c0d6604e8a19403b7264583e968c0bd14033b85fcb",
+      "086853a083f9b323c19412422d6414b48609f95fc1f03d5c8e4314c0b9f2a859",
+      "df5d9ff89c4a060350c445a12af6c4465bfe99a0588d30692ead02479ea769b4",
+      "595454d9a47dec2ac92e24f585f3eb77a6d56dbddeb8ca554d38a3cc6ce589f3",
+      "2dbb6dbd0d938fd442ea64467ef41c1627c825a08f3c068aa9d8774ca4dccf27"
+    ]
+  },
+  "predicate_instrumented_reproduction": {
+    "instrumentation_patch": "docs/agents/evidence/20260816-groot-n17-lerobot-libero10-baseline-screen-instrumentation.patch",
+    "original_lerobot_env_sha256": "97c984f12331527626812ec19967ef399e545535b3571becf044db2417ae9d71",
+    "instrumented_lerobot_env_sha256": "1f576dd6522cf7b57719a38021034b55a9ee794ee26236f40b926e70a6e295a1",
+    "episode_successes": [
+      true,
+      false
+    ],
+    "run_log_sha256": "8a7542cae872064125a84e4656283bcc4eb3b722a8e64a8a0d94efae346eda65",
+    "eval_info_sha256": "4c5878c940c9d58d197f7e98f61fc85e83cd9ef3c2ee16b98b1dcb9cbedb8cd0",
+    "video_sha256": [
+      "da2254594100d1602623c9c0d6604e8a19403b7264583e968c0bd14033b85fcb",
+      "086853a083f9b323c19412422d6414b48609f95fc1f03d5c8e4314c0b9f2a859"
+    ],
+    "videos_bit_identical_to_screen_episodes_0_and_1": true,
+    "change_only_trace": true,
+    "successful_episode": {
+      "episode_init_state_index": 0,
+      "success_step_index": 397,
+      "goal_predicate_vector": [
+        true,
+        true,
+        true
+      ],
+      "official_success": true
+    },
+    "natural_failure_episode": {
+      "episode_init_state_index": 1,
+      "last_change_step_index": 172,
+      "last_goal_predicate_vector": [
+        false,
+        true,
+        true
+      ],
+      "completed_step_budget": 520,
+      "later_predicate_change_observed": false,
+      "official_success": false,
+      "achieved_predicate_indices": [
+        1,
+        2
+      ],
+      "unmet_predicate_indices": [
+        0
+      ]
+    },
+    "predicate_definitions": [
+      [
+        "on",
+        "moka_pot_1",
+        "flat_stove_1_cook_region"
+      ],
+      [
+        "on",
+        "moka_pot_2",
+        "flat_stove_1_cook_region"
+      ],
+      [
+        "turnon",
+        "flat_stove_1"
+      ]
+    ]
+  },
+  "claim_boundary": {
+    "model_runtime_invoked": true,
+    "simulator_steps_observed": true,
+    "official_success_and_failure_coexistence_established": true,
+    "natural_achieved_plus_unmet_vector_established": true,
+    "repair_candidate_selected": true,
+    "repair_instruction_generated": false,
+    "human_approval_created": false,
+    "dispatch_authority_created": false,
+    "repair_executed": false,
+    "semantic_repair_established": false,
+    "root_cause_of_natural_failure_established": false,
+    "physical_execution_invoked": false
+  },
+  "resource_cleanup": {
+    "vm_deleted": true,
+    "boot_disk_deleted": true,
+    "protected_images_or_model_cache_disks_modified": false
+  }
+}

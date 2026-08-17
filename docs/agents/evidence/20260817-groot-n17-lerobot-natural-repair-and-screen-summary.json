@@ -1,0 +1,83 @@
+{
+  "schema_version": "missionos.groot_lerobot_natural_repair_and_screen_summary.v1",
+  "recorded_on": "2026-08-17",
+  "checkpoint": {
+    "repository": "nvidia/gr00t17-lerobot-libero_10-640",
+    "revision": "5ee08ab09fac5c5ef2388a14c882ea825ac861db",
+    "lerobot_revision": "6adf51511b7625090eade8d82d9f61a1846ebe56"
+  },
+  "task": {
+    "suite": "libero_10",
+    "task_id": 8,
+    "source_step_budget": 520
+  },
+  "screen_summary": {
+    "recorded_episode_execution_count": 14,
+    "source_satisfied_execution_count": 11,
+    "natural_asymmetric_failure_execution_count": 1,
+    "non_asymmetric_failure_execution_count": 2,
+    "distinct_init_state_indices": [2, 3, 4, 5, 6, 7, 8, 9, 12, 13, 14, 15],
+    "distinct_init_state_count": 12,
+    "init_states_observed_satisfied_at_least_once": [2, 3, 5, 6, 7, 8, 9, 12, 13, 15],
+    "init_states_observed_satisfied_at_least_once_count": 10,
+    "init_states_never_observed_satisfied": [4, 14],
+    "init_state_9_observed_outcomes": [
+      {
+        "source_goal_predicate_vector": [true, false, true],
+        "source_steps_executed": 520
+      },
+      {
+        "source_goal_predicate_vector": [true, true, true],
+        "source_steps_executed": 384
+      },
+      {
+        "source_goal_predicate_vector": [true, true, true],
+        "source_steps_executed": 384
+      }
+    ],
+    "probability_estimated": false,
+    "independent_identically_distributed_samples_established": false
+  },
+  "natural_repair_attempt": {
+    "episode_init_state_index": 9,
+    "source_goal_predicate_vector": [true, false, true],
+    "source_steps_executed": 520,
+    "natural_task_failure_established": true,
+    "new_contract_created": true,
+    "new_human_approval_observed": true,
+    "single_dispatch_observed": true,
+    "same_world_reset_count": 1,
+    "repair_instruction": "put the second moka pot on the stove",
+    "maximum_repair_chunks": 45,
+    "repair_chunks_executed": 45,
+    "maximum_repair_steps": 720,
+    "model_inference_invoked": true,
+    "simulator_execution_observed": true,
+    "final_goal_predicate_vector": [true, false, true],
+    "preserve_predicates_maintained": true,
+    "predicate_improvement_observed": false,
+    "result": "budget_exhausted_without_improvement",
+    "semantic_repair_established": false,
+    "physical_execution_invoked": false
+  },
+  "source_artifacts": [
+    {
+      "description": "natural screen and governed Repair campaign archive",
+      "sha256": "751787426352858045e603a007c62e533fdf5cef1eee9e20416ff4fcb728ab01",
+      "repository_contains_raw_artifact": false
+    },
+    {
+      "description": "later original-task screen archive",
+      "sha256": "077f9d74f06b344da26d51eefd6a4e23fc5df7318b818064d04629fe38fc8ef9",
+      "repository_contains_raw_artifact": false
+    }
+  ],
+  "claim_boundary": {
+    "governed_loop_closed_on_natural_partial_failure": true,
+    "repair_target_improved": false,
+    "semantic_repair_established": false,
+    "init_index_determines_future_outcome": false,
+    "screen_strategy_reliably_reproduces_candidate": false,
+    "additional_random_screening_authorized_by_this_record": false
+  }
+}

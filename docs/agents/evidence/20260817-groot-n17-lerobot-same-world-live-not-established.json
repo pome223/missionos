@@ -1,0 +1,87 @@
+{
+  "schema_version": "missionos_groot_lerobot_same_world_live_not_established.v1",
+  "recorded_at": "2026-08-17",
+  "subject": "GR00T N1.7 LeRobot same-world Semantic Repair live attempt",
+  "runtime": {
+    "accelerator": "NVIDIA L4",
+    "machine_type": "g2-standard-4",
+    "maximum_runtime_seconds": 3600,
+    "billable_vm_deleted": true,
+    "temporary_disk_deleted": true
+  },
+  "source_binding": {
+    "lerobot_revision": "6adf51511b7625090eade8d82d9f61a1846ebe56",
+    "policy_repository": "nvidia/gr00t17-lerobot-libero_10-640",
+    "policy_revision": "5ee08ab09fac5c5ef2388a14c882ea825ac861db",
+    "base_model_revision": "2fc962b973bccdd5d8ce4f67cc63b264d6886495",
+    "cosmos_revision": "9ce19a195e423419c349abfc86fd07178b230561",
+    "snapshot_revision_metadata_verified": true,
+    "required_local_file_digests_computed": true,
+    "checkpoint_locator_adaptation_sha256": {
+      "config_json": "bbefd68a61a90ca822921db05f0f58b8521825feb59d240fd48f4e5d21b1e557",
+      "policy_preprocessor_json": "2694606f406852403ab51ae83a98af622006c80fbd633ce3913cfef37b321f89"
+    }
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "result": "execution_failed",
+      "cause_type": "EOFError",
+      "failure_stage": "libero_noninteractive_configuration",
+      "environment_reset_observed": false,
+      "repair_executed": false
+    },
+    {
+      "attempt": 2,
+      "result": "execution_failed",
+      "cause_type": "AttributeError",
+      "failure_stage": "after_policy_load_before_action_chunk",
+      "root_cause_established": false,
+      "repair_executed": false
+    },
+    {
+      "attempt": 3,
+      "result": "execution_failed",
+      "cause_type": "AttributeError",
+      "failure_stage": "first_policy_forward",
+      "root_cause_established": true,
+      "root_cause": "runtime_environment_omitted_pixels_agent_pos_and_supplied_pixels_only",
+      "action_chunk_produced": false,
+      "repair_executed": false
+    }
+  ],
+  "fixes": [
+    {
+      "commit": "6bab73a",
+      "description": "bind local policy, base-model, and Cosmos snapshots to revision metadata and file digests",
+      "live_retested": true
+    },
+    {
+      "commit": "e1c9b5b",
+      "description": "retain an operator-local traceback while keeping public failure JSON sanitized",
+      "live_retested": true
+    },
+    {
+      "commit": "cf8e536",
+      "description": "pass pixels_agent_pos from the frozen LeRobot environment profile to the runtime environment",
+      "live_retested": false
+    }
+  ],
+  "claim_boundary": {
+    "pinned_policy_weights_loaded_on_l4": true,
+    "real_libero_environment_reset_observed": true,
+    "first_policy_forward_entered": true,
+    "action_chunk_produced": false,
+    "same_world_source_episode_completed": false,
+    "repair_contract_dispatched": false,
+    "repair_executed": false,
+    "semantic_repair_established": false,
+    "physical_execution_invoked": false,
+    "post_fix_live_run_completed": false,
+    "prior_attempts_retroactively_upgraded": false
+  },
+  "local_archive": {
+    "archive_sha256": "2a36214a3a39a875a790b6646ab6b79916d7879410af84e5a4eea71320d64ac1",
+    "repository_contains_raw_runtime_log": false
+  }
+}
