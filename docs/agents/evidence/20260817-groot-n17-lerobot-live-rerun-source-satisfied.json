@@ -1,0 +1,80 @@
+{
+  "schema_version": "missionos_groot_lerobot_live_rerun_source_satisfied.v1",
+  "recorded_at": "2026-08-17",
+  "subject": "GR00T N1.7 LeRobot same-world live rerun",
+  "runtime": {
+    "accelerator": "NVIDIA L4",
+    "machine_type": "g2-standard-4",
+    "maximum_runtime_seconds": 3600,
+    "billable_vm_deleted": true,
+    "temporary_disk_deleted": true
+  },
+  "source_binding": {
+    "missionos_commit": "59c36c33f6d3ab2955d2f0a9dbf7cec416d82c01",
+    "lerobot_revision": "6adf51511b7625090eade8d82d9f61a1846ebe56",
+    "lerobot_revision_basis": "entrypoint_git_rev_parse_fail_closed",
+    "policy_repository": "nvidia/gr00t17-lerobot-libero_10-640",
+    "policy_revision": "5ee08ab09fac5c5ef2388a14c882ea825ac861db",
+    "base_model_revision": "2fc962b973bccdd5d8ce4f67cc63b264d6886495",
+    "cosmos_revision": "9ce19a195e423419c349abfc86fd07178b230561",
+    "snapshot_revision_metadata_verified": true,
+    "required_local_file_digests_computed": true,
+    "checkpoint_locator_adaptation_sha256": {
+      "config_json": "bbefd68a61a90ca822921db05f0f58b8521825feb59d240fd48f4e5d21b1e557",
+      "policy_preprocessor_json": "2694606f406852403ab51ae83a98af622006c80fbd633ce3913cfef37b321f89"
+    }
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "result": "execution_failed",
+      "cause_type": "ValueError",
+      "failure_stage": "first_environment_preprocessing",
+      "root_cause_established": true,
+      "root_cause": "single_environment_nested_robot_state_lacked_the_official_vector_batch_dimension",
+      "action_chunk_produced": false,
+      "repair_executed": false
+    },
+    {
+      "attempt": 2,
+      "result": "source_satisfied_no_repair_needed",
+      "source_contract_sha256": "82fef20c90b32f09abd220ff417f4fa43b52c77ddc39cbf7418028054e033f1a",
+      "same_world_reset_count": 1,
+      "source_steps_executed": 453,
+      "source_model_forward_count": 29,
+      "source_goal_predicate_vector": [
+        true,
+        true,
+        true
+      ],
+      "source_goal_predicate_vector_sha256": "657e32ef2d8d397f73c673043f3cc99961f916060bed1fcc3d740239460f3bc8",
+      "repair_executed": false
+    }
+  ],
+  "claim_boundary": {
+    "committed_head_exercised": true,
+    "pinned_policy_weights_loaded_on_l4": true,
+    "real_libero_environment_reset_observed": true,
+    "real_model_forward_count": 29,
+    "real_simulator_steps_executed": 453,
+    "source_predicate_timeline_observed": true,
+    "source_task_satisfied": true,
+    "expected_partial_vector_reproduced": false,
+    "repair_contract_created": false,
+    "repair_dispatch_created": false,
+    "repair_executed": false,
+    "semantic_repair_established": false,
+    "physical_execution_invoked": false,
+    "prior_attempts_retroactively_upgraded": false
+  },
+  "local_archive": {
+    "archive_sha256": "b21a221ea76c4e74d1533a96c60dca50f68374714a6e3cb7268b61b391d68d8d",
+    "live_attempt_result_sha256": "333afdea270052f2ef7e86177e2bfeed3c17cfed794c2928b840b8c8f7200305",
+    "repository_contains_raw_runtime_log": false,
+    "operator_written_lerobot_commit_metadata_trustworthy": false,
+    "operator_written_lerobot_commit_metadata_error": "the_archive_metadata_file_was_populated_from_an_incorrect_fixed_string_instead_of_git_rev_parse",
+    "runtime_revision_binding_basis": "committed_entrypoint_fail_closed_revision_check",
+    "init_state_selection_observer_present_in_recorded_run": false,
+    "init_state_selection_observer_scope": "runs_after_the_followup_entrypoint_fix_only"
+  }
+}

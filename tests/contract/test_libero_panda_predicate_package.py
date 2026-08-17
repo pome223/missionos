@@ -31,10 +31,13 @@ from src.runtime.libero_panda_predicate_package import (
     LIBERO_PANDA_EPISODE_RESULT_SCHEMA_VERSION,
     LIBERO_POLICY_ACTION_HORIZON,
     LIBERO_PANDA_OUTCOME_CLAIM_SCOPE,
+    LIBERO_PANDA_SCENE8_ENVIRONMENT,
+    LIBERO_PANDA_SCENE8_TASK_PREDICATE_SHA256,
     LIBERO_REVISION,
     LIBERO_TASK_PREDICATE_SHA256,
     LIBEROPandaActionChunk,
     LIBEROPandaActionField,
+    LIBEROPandaGoalPredicateObservation,
     LIBEROPandaPredicateContent,
     LIBEROPandaPredicateStatus,
     LIBEROPandaRunnerConfiguration,
@@ -43,6 +46,7 @@ from src.runtime.libero_panda_predicate_package import (
     build_libero_panda_replay_input,
     evaluate_libero_panda_predicate,
     libero_panda_predicate_package_binding,
+    libero_panda_task_material,
 )
 from src.runtime.nav2_turtlebot3_predicate_package import (
     build_nav2_turtlebot3_replay_contract,
@@ -111,9 +115,7 @@ def _action_chunk(
         "action.roll": (0.0,) * LIBERO_POLICY_ACTION_HORIZON,
         "action.pitch": (0.0,) * LIBERO_POLICY_ACTION_HORIZON,
         "action.yaw": (0.0,) * LIBERO_POLICY_ACTION_HORIZON,
-        "action.gripper": (
-            (gripper_value,) * LIBERO_POLICY_ACTION_HORIZON
-        ),
+        "action.gripper": ((gripper_value,) * LIBERO_POLICY_ACTION_HORIZON),
     }
     return LIBEROPandaActionChunk(
         chunk_index=0,
@@ -137,17 +139,11 @@ def _content(
     configuration = _runner_configuration(action_dim=action_dim)
     chunk = _action_chunk()
     env_step_input = (
-        (0.1, 0.0, 0.0, -1.0)
-        if action_dim == 4
-        else (0.1, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0)
+        (0.1, 0.0, 0.0, -1.0) if action_dim == 4 else (0.1, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0)
     )
     transformations = (
         *LIBERO_BASE_TRANSFORMATIONS,
-        *(
-            ("project_osc_position_to_xyz_gripper",)
-            if action_dim == 4
-            else ()
-        ),
+        *(("project_osc_position_to_xyz_gripper",) if action_dim == 4 else ()),
     )
     step = LIBEROPandaStepApplication(
         global_step_index=0,
@@ -156,11 +152,24 @@ def _content(
         action_chunk_sha256=chunk.action_chunk_sha256,
         transformation_names=transformations,
         env_step_input=env_step_input,
-        simulator_step_return_sha256=canonical_sha256(
-            {"step_return": 1}
-        ),
-        result_observation_sha256=canonical_sha256(
-            {"observation": 1}
+        simulator_step_return_sha256=canonical_sha256({"step_return": 1}),
+        result_observation_sha256=canonical_sha256({"observation": 1}),
+        goal_predicate_observations=(
+            LIBEROPandaGoalPredicateObservation(
+                predicate_index=0,
+                predicate_name="turnon",
+                arguments=("flat_stove_1",),
+                satisfied=predicate_result,
+            ),
+            LIBEROPandaGoalPredicateObservation(
+                predicate_index=1,
+                predicate_name="on",
+                arguments=(
+                    "moka_pot_1",
+                    "flat_stove_1_cook_region",
+                ),
+                satisfied=predicate_result,
+            ),
         ),
         official_predicate_result=predicate_result,
         terminated=predicate_result,
@@ -171,9 +180,7 @@ def _content(
         run_identity=RUN_ID,
         episode_identity=EPISODE_ID,
         runner_configuration=configuration,
-        runtime_controller_configuration_sha256=(
-            configuration.controller_configuration_sha256
-        ),
+        runtime_controller_configuration_sha256=(configuration.controller_configuration_sha256),
         runtime_action_dim=configuration.action_dim,
         task_predicate_sha256=LIBERO_TASK_PREDICATE_SHA256,
         action_chunks=(chunk,),
@@ -207,16 +214,10 @@ def test_exact_child_contract_is_structurally_valid_and_simulator_scoped() -> No
     contract = _contract()
 
     assert validate_frozen_mission_contract(contract) == ()
-    assert contract.predicate_package == (
-        libero_panda_predicate_package_binding()
-    )
+    assert contract.predicate_package == (libero_panda_predicate_package_binding())
     assert contract.quantification_scope.member_ids == (EPISODE_ID,)
-    assert contract.outcome_claim_spec.claim_scope == (
-        LIBERO_PANDA_OUTCOME_CLAIM_SCOPE
-    )
-    assert "LIBERO simulator episode" in (
-        contract.outcome_claim_spec.statement
-    )
+    assert contract.outcome_claim_spec.claim_scope == (LIBERO_PANDA_OUTCOME_CLAIM_SCOPE)
+    assert "LIBERO simulator episode" in (contract.outcome_claim_spec.statement)
     assert [item.input_id for item in contract.reference_inputs] == [
         "approved_runner_configuration",
         "approved_task_predicate",
@@ -226,16 +227,39 @@ def test_exact_child_contract_is_structurally_valid_and_simulator_scoped() -> No
     ]
 
 
+def test_scene8_contract_freezes_distinct_task_predicate_and_process_seed() -> None:
+    configuration = replace(
+        _runner_configuration(),
+        environment=LIBERO_PANDA_SCENE8_ENVIRONMENT,
+        process_seed=0,
+    )
+    contract = _contract(configuration=configuration)
+    references = {item.input_id: item for item in contract.reference_inputs}
+
+    assert validate_frozen_mission_contract(contract) == ()
+    assert contract.predicate_package == libero_panda_predicate_package_binding(
+        LIBERO_PANDA_SCENE8_ENVIRONMENT
+    )
+    assert references["approved_runner_configuration"].content_sha256 == (
+        configuration.content_sha256
+    )
+    assert references["approved_task_predicate"].content_sha256 == (
+        LIBERO_PANDA_SCENE8_TASK_PREDICATE_SHA256
+    )
+    assert configuration.to_material()["process_seed"] == 0
+    assert (
+        libero_panda_task_material(LIBERO_PANDA_SCENE8_ENVIRONMENT)["task_predicate_sha256"]
+        == LIBERO_PANDA_SCENE8_TASK_PREDICATE_SHA256
+    )
+
+
 def test_content_bound_fixture_episode_satisfies_exact_package() -> None:
     evaluation = _evaluate()
 
     assert evaluation.evidence_readiness is MissionEvidenceReadiness.READY
     assert evaluation.status is LIBEROPandaPredicateStatus.SATISFIED
     assert evaluation.evaluated_outcome_claim is True
-    assert (
-        evaluation.actual_verification_basis
-        is VerificationBasis.DETERMINISTIC
-    )
+    assert evaluation.actual_verification_basis is VerificationBasis.DETERMINISTIC
     assert evaluation.predicate_package_evaluated is True
     assert evaluation.simulator_step_return_observed is True
     assert evaluation.official_sim_task_success is True
@@ -247,9 +271,7 @@ def test_content_bound_fixture_episode_satisfies_exact_package() -> None:
     assert evaluation.runtime_effect_requested is False
     assert evaluation.operational_closure_created is False
     assert evaluation.physical_execution_invoked is False
-    assert evaluation.evidence_origins == (
-        EvidenceOrigin.STORED_ARTIFACT,
-    )
+    assert evaluation.evidence_origins == (EvidenceOrigin.STORED_ARTIFACT,)
     serialized = evaluation.to_dict()
     assert "action_chunks" not in serialized
     assert "step_applications" not in serialized
@@ -261,14 +283,51 @@ def test_content_bound_fixture_episode_satisfies_exact_package() -> None:
 def test_false_official_predicate_does_not_satisfy_outcome() -> None:
     evaluation = _evaluate(content=_content(predicate_result=False))
 
-    assert evaluation.status is (
-        LIBEROPandaPredicateStatus.NOT_SATISFIED
-    )
+    assert evaluation.status is (LIBEROPandaPredicateStatus.NOT_SATISFIED)
     assert evaluation.evaluated_outcome_claim is False
     assert evaluation.official_sim_task_success is False
-    assert evaluation.reasons == (
-        "official_sim_task_predicate_not_satisfied",
+    assert evaluation.reasons == ("official_sim_task_predicate_not_satisfied",)
+
+
+def test_partial_goal_predicate_vector_identifies_the_unmet_member() -> None:
+    content = _content(predicate_result=False)
+    step = content.step_applications[0]
+    observations = (
+        replace(step.goal_predicate_observations[0], satisfied=True),
+        step.goal_predicate_observations[1],
     )
+    evaluation = _evaluate(
+        content=replace(
+            content,
+            step_applications=(replace(step, goal_predicate_observations=observations),),
+        )
+    )
+
+    assert evaluation.status is LIBEROPandaPredicateStatus.NOT_SATISFIED
+    serialized = evaluation.to_dict()
+    assert [item["satisfied"] for item in serialized["goal_predicate_observations"]] == [
+        True,
+        False,
+    ]
+    assert serialized["satisfied_predicate_ids"] == [observations[0].predicate_id]
+    assert serialized["unsatisfied_predicate_ids"] == [observations[1].predicate_id]
+
+
+def test_goal_predicate_conjunction_must_match_official_result() -> None:
+    content = _content(predicate_result=False)
+    step = content.step_applications[0]
+    observations = tuple(
+        replace(observation, satisfied=True) for observation in step.goal_predicate_observations
+    )
+    evaluation = _evaluate(
+        content=replace(
+            content,
+            step_applications=(replace(step, goal_predicate_observations=observations),),
+        )
+    )
+
+    assert evaluation.status is LIBEROPandaPredicateStatus.BLOCKED
+    assert "goal_predicate_conjunction_mismatch:0" in evaluation.reasons
 
 
 @pytest.mark.parametrize(
@@ -381,10 +440,7 @@ def test_execution_horizon_is_not_accepted_as_full_policy_horizon() -> None:
     chunk = content.action_chunks[0]
     truncated_chunk = replace(
         chunk,
-        fields=tuple(
-            replace(field, values=field.values[:8])
-            for field in chunk.fields
-        ),
+        fields=tuple(replace(field, values=field.values[:8]) for field in chunk.fields),
     )
     content = replace(content, action_chunks=(truncated_chunk,))
 
@@ -503,9 +559,7 @@ def test_task_predicate_reference_cannot_be_replaced_by_real_world_claim() -> No
     references = tuple(
         replace(
             item,
-            content_sha256=canonical_sha256(
-                {"claim": "a real stove was turned on"}
-            ),
+            content_sha256=canonical_sha256({"claim": "a real stove was turned on"}),
         )
         if item.input_id == "approved_task_predicate"
         else item
@@ -521,20 +575,13 @@ def test_task_predicate_reference_cannot_be_replaced_by_real_world_claim() -> No
 
 
 def test_stale_episode_is_unverified_and_predicate_is_not_evaluated() -> None:
-    evaluation = _evaluate(
-        evaluated_at="2026-07-31T00:01:00+00:00"
-    )
+    evaluation = _evaluate(evaluated_at="2026-07-31T00:01:00+00:00")
 
-    assert evaluation.evidence_readiness is (
-        MissionEvidenceReadiness.INCOMPLETE
-    )
+    assert evaluation.evidence_readiness is (MissionEvidenceReadiness.INCOMPLETE)
     assert evaluation.status is LIBEROPandaPredicateStatus.UNVERIFIED
     assert evaluation.predicate_package_evaluated is False
     assert evaluation.evaluated_outcome_claim is False
-    assert (
-        "observation_stale:libero_panda_episode_result"
-        in evaluation.reasons
-    )
+    assert "observation_stale:libero_panda_episode_result" in evaluation.reasons
 
 
 def test_receipt_binding_mutation_is_unverified() -> None:
@@ -561,14 +608,11 @@ def test_receipt_binding_mutation_is_unverified() -> None:
         evaluated_at=EVALUATED_AT,
     )
 
-    assert evaluation.evidence_readiness is (
-        MissionEvidenceReadiness.INCOMPLETE
-    )
+    assert evaluation.evidence_readiness is (MissionEvidenceReadiness.INCOMPLETE)
     assert evaluation.status is LIBEROPandaPredicateStatus.UNVERIFIED
     assert (
         "observation_source_receipt_binding_mismatch:"
-        "libero_panda_episode_result"
-        in evaluation.reasons
+        "libero_panda_episode_result" in evaluation.reasons
     )
 
 
@@ -671,9 +715,7 @@ def test_parent_contract_accepts_libero_as_third_concrete_package() -> None:
     )
     assert parent.identity_continuity_claimed is False
     assert parent.shared_world_claimed is False
-    assert parent.stages[2].predicate_package == (
-        libero_panda_predicate_package_binding()
-    )
+    assert parent.stages[2].predicate_package == (libero_panda_predicate_package_binding())
 
 
 def test_runner_configuration_requires_one_frozen_vector_environment() -> None:
@@ -694,13 +736,9 @@ def test_runner_configuration_requires_one_frozen_vector_environment() -> None:
 def test_task_predicate_reference_is_a_simulator_definition() -> None:
     contract = _contract()
     task_reference = next(
-        item
-        for item in contract.reference_inputs
-        if item.input_id == "approved_task_predicate"
+        item for item in contract.reference_inputs if item.input_id == "approved_task_predicate"
     )
 
     assert isinstance(task_reference, ReferenceInput)
-    assert task_reference.kind == (
-        "approved_pinned_libero_simulator_predicate"
-    )
+    assert task_reference.kind == ("approved_pinned_libero_simulator_predicate")
     assert task_reference.content_sha256 == LIBERO_TASK_PREDICATE_SHA256

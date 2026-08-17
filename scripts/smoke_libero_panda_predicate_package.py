@@ -20,6 +20,7 @@ from src.runtime.libero_panda_predicate_package import (
     LIBERO_TASK_PREDICATE_SHA256,
     LIBEROPandaActionChunk,
     LIBEROPandaActionField,
+    LIBEROPandaGoalPredicateObservation,
     LIBEROPandaPredicateContent,
     LIBEROPandaRunnerConfiguration,
     LIBEROPandaStepApplication,
@@ -73,9 +74,7 @@ def main() -> None:
     chunk = LIBEROPandaActionChunk(
         chunk_index=0,
         policy_request_sha256=canonical_sha256({"fixture_request": 1}),
-        policy_response_sha256=canonical_sha256(
-            {"fixture_response": 1}
-        ),
+        policy_response_sha256=canonical_sha256({"fixture_response": 1}),
         fields=tuple(
             LIBEROPandaActionField(
                 field_name=field_name,
@@ -91,11 +90,24 @@ def main() -> None:
         action_chunk_sha256=chunk.action_chunk_sha256,
         transformation_names=LIBERO_BASE_TRANSFORMATIONS,
         env_step_input=(0.1, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0),
-        simulator_step_return_sha256=canonical_sha256(
-            {"fixture_step_return": 1}
-        ),
-        result_observation_sha256=canonical_sha256(
-            {"fixture_observation": 1}
+        simulator_step_return_sha256=canonical_sha256({"fixture_step_return": 1}),
+        result_observation_sha256=canonical_sha256({"fixture_observation": 1}),
+        goal_predicate_observations=(
+            LIBEROPandaGoalPredicateObservation(
+                predicate_index=0,
+                predicate_name="turnon",
+                arguments=("flat_stove_1",),
+                satisfied=True,
+            ),
+            LIBEROPandaGoalPredicateObservation(
+                predicate_index=1,
+                predicate_name="on",
+                arguments=(
+                    "moka_pot_1",
+                    "flat_stove_1_cook_region",
+                ),
+                satisfied=True,
+            ),
         ),
         official_predicate_result=True,
         terminated=True,
@@ -106,9 +118,7 @@ def main() -> None:
         run_identity=run_identity,
         episode_identity=episode_identity,
         runner_configuration=configuration,
-        runtime_controller_configuration_sha256=(
-            configuration.controller_configuration_sha256
-        ),
+        runtime_controller_configuration_sha256=(configuration.controller_configuration_sha256),
         runtime_action_dim=configuration.action_dim,
         task_predicate_sha256=LIBERO_TASK_PREDICATE_SHA256,
         action_chunks=(chunk,),

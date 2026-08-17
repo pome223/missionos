@@ -49,6 +49,9 @@ class _UnderlyingEnvironment:
     def check_success(self):
         return True
 
+    def missionos_goal_predicate_observations(self, expected):
+        return tuple(True for _ in expected)
+
     def close(self):
         return None
 
@@ -62,14 +65,9 @@ class _LiberoEnvironment:
         return self._env.reset(), {"success": self._env.check_success()}
 
     def step(self, action):
-        vector = [
-            float(action[field_name][0])
-            for field_name in LIBERO_ACTION_FIELDS
-        ]
+        vector = [float(action[field_name][0]) for field_name in LIBERO_ACTION_FIELDS]
         vector[-1] = 2.0 * vector[-1] - 1.0
-        vector[-1] = (
-            1.0 if vector[-1] > 0 else -1.0 if vector[-1] < 0 else 0.0
-        )
+        vector[-1] = 1.0 if vector[-1] > 0 else -1.0 if vector[-1] < 0 else 0.0
         vector[-1] *= -1.0
         observation, reward, done, info = self._env.step(vector)
         info["success"] = self._env.check_success()
@@ -118,13 +116,8 @@ class _OfficialRunnerShape:
         env = self.get_gym_env(env_name, 0, n_envs)
         observation, _ = env.reset()
         policy.reset()
-        actions, _ = policy.get_action(
-            {key: [value] for key, value in observation.items()}
-        )
-        step_action = {
-            key: [values[0][0]]
-            for key, values in actions.items()
-        }
+        actions, _ = policy.get_action({key: [value] for key, value in observation.items()})
+        step_action = {key: [values[0][0]] for key, values in actions.items()}
         env.step(step_action)
         env.reset()
         env.close()
@@ -132,9 +125,7 @@ class _OfficialRunnerShape:
 
 
 def main() -> None:
-    controller_digest = canonical_sha256(
-        {"controller": "OSC_POSE", "action_dim": 7}
-    )
+    controller_digest = canonical_sha256({"controller": "OSC_POSE", "action_dim": 7})
     configuration = LIBEROPandaRunnerConfiguration(
         model_repository=GROOT_CHECKPOINT_REPOSITORY,
         checkpoint_revision=GROOT_CHECKPOINT_REVISION,
@@ -162,11 +153,9 @@ def main() -> None:
         policy=_Policy(),
         wrapper_configs=SimpleNamespace(),
         prepared=prepared,
-        controller_probe=lambda env: (
-            LIBEROPandaControllerRuntimeBinding(
-                controller_configuration_sha256=controller_digest,
-                action_dim=env._env.action_dim,
-            )
+        controller_probe=lambda env: LIBEROPandaControllerRuntimeBinding(
+            controller_configuration_sha256=controller_digest,
+            action_dim=env._env.action_dim,
         ),
     )
     material: dict[str, Any] = {

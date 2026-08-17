@@ -1,0 +1,40 @@
+{
+  "schema_version": "missionos.groot_lerobot_simulator_state_snapshot_probe_summary.v1",
+  "recorded_on": "2026-08-17",
+  "task_suite": "libero_10",
+  "task_id": 8,
+  "episode_init_state_index": 9,
+  "missionos_commit": "4fa53890ab832f216a1e1aa6cdb76456a39692a9",
+  "runtime": "cpu_osmesa",
+  "snapshot_value_count": 47,
+  "snapshot_file_sha256": "f08e3e9aa5fa1657a91324e0c6c4b3128aa0f56d30c5ae24ac8f68c26f427606",
+  "raw_probe_result_file_sha256": "dae9da50547310c6a0e4cd46c347b6ef5d443a70ebc7cfff6b5ef91db57bde7d",
+  "mutation_observed": true,
+  "snapshot_disk_round_trip_exactly_equal": true,
+  "restored_state_exactly_equal": true,
+  "restored_state_maximum_absolute_error": 0.0,
+  "restored_goal_predicates_equal": true,
+  "model_runtime_invoked": false,
+  "physical_execution_invoked": false,
+  "repository_contains_raw_snapshot": false,
+  "runtime_image": {
+    "name": "missionos-groot-n17-lerobot-runtime-v2-20260817",
+    "status_after_creation": "READY",
+    "storage_location": "us-central1",
+    "contains_model_weights": false,
+    "contains_missionos_checkout": false,
+    "contains_run_evidence": false,
+    "contains_credentials": false
+  },
+  "claim_boundary": {
+    "simulator_physics_state_snapshot_restore_established": true,
+    "snapshot_can_be_saved_and_loaded_from_disk": true,
+    "policy_action_queue_restored": false,
+    "python_numpy_torch_rng_restored": false,
+    "environment_episode_counters_restored": false,
+    "controller_internal_state_restored": false,
+    "bit_for_bit_trajectory_replay_established": false,
+    "same_world_production_repair_established": false,
+    "semantic_repair_established": false
+  }
+}

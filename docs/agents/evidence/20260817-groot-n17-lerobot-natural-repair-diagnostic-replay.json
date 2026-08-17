@@ -1,0 +1,209 @@
+{
+  "schema_version": "missionos.groot_lerobot_natural_repair_diagnostic_replay_summary.v1",
+  "recorded_on": "2026-08-17",
+  "execution_source": {
+    "missionos_commit": "740c76c2d534bd2cd79be654089d66a4be94e69c",
+    "runner_sha256": "ae9fc021e1f2cfbdde3c62af90892ef7b5b517c2197af0c0f3ce0e8cd2dc181a",
+    "lerobot_repair_binding_sha256": "5f9c46bbb85f15875b4323e347124a5f760febe00abc4445df4e989082f4b6be",
+    "shared_repair_core_sha256": "8aa2d8a7817c3128ce591a2aff8e10595f857bf86dddedc967917a5a447e209c",
+    "live_harness_was_committed": true
+  },
+  "runtime": {
+    "gpu": "NVIDIA L4",
+    "gpu_memory_mib": 23034,
+    "driver_version": "610.43.02",
+    "machine_type": "g2-standard-4",
+    "maximum_vm_runtime_seconds": 3600,
+    "spot_instance": false,
+    "physical_execution_invoked": false
+  },
+  "checkpoint": {
+    "repository": "nvidia/gr00t17-lerobot-libero_10-640",
+    "revision": "5ee08ab09fac5c5ef2388a14c882ea825ac861db",
+    "base_repository": "nvidia/GR00T-N1.7-3B",
+    "base_revision": "2fc962b973bccdd5d8ce4f67cc63b264d6886495",
+    "cosmos_repository": "nvidia/Cosmos-Reason2-2B",
+    "cosmos_revision": "9ce19a195e423419c349abfc86fd07178b230561",
+    "lerobot_revision": "6adf51511b7625090eade8d82d9f61a1846ebe56"
+  },
+  "experiment_preregistration": {
+    "sha256": "a028067f7e4e1f65566a4f954d97ab56d43893e52613d4da5503e0f04a9aaca6",
+    "planned_trials_per_variant": 5,
+    "variants": ["short_target", "original_task"],
+    "alternating_pair_order": true,
+    "fully_order_balanced": false,
+    "first_position_counts": {
+      "short_target": 3,
+      "original_task": 2
+    },
+    "same_sampling_seed_within_each_pair": true,
+    "clone_success_can_establish_semantic_repair": false
+  },
+  "screen": {
+    "requested_init_state_indices": [9, 0, 1, 2, 3],
+    "completed_episode_count": 3,
+    "model_initialization_count": 1,
+    "same_loaded_policy_reused": true,
+    "episodes": [
+      {
+        "init_state_index": 9,
+        "steps_executed": 384,
+        "terminal_predicate_vector": [true, true, true],
+        "result": "source_satisfied_no_repair_needed"
+      },
+      {
+        "init_state_index": 0,
+        "steps_executed": 430,
+        "terminal_predicate_vector": [true, true, true],
+        "result": "source_satisfied_no_repair_needed"
+      },
+      {
+        "init_state_index": 1,
+        "steps_executed": 520,
+        "terminal_predicate_vector": [false, true, true],
+        "result": "budget_exhausted_without_improvement",
+        "natural_task_failure_established": true,
+        "failure_snapshot_written": true
+      }
+    ],
+    "asymmetric_partial_failure_count": 1,
+    "selection_rule": "first_full_budget_asymmetric_predicate_failure"
+  },
+  "selected_failure": {
+    "task_suite": "libero_10",
+    "task_id": 8,
+    "episode_init_state_index": 1,
+    "source_steps_executed": 520,
+    "source_predicates": [
+      {
+        "predicate": "on(moka_pot_1, flat_stove_1_cook_region)",
+        "satisfied": false
+      },
+      {
+        "predicate": "on(moka_pot_2, flat_stove_1_cook_region)",
+        "satisfied": true
+      },
+      {
+        "predicate": "turnon(flat_stove_1)",
+        "satisfied": true
+      }
+    ],
+    "predicate_vector_sha256": "c2705493308215a6441a317522e2d61d65bd2caeed8ac8399b5f0827e6460221",
+    "snapshot_authority": "diagnostic_only",
+    "snapshot_artifact_sha256": "6f2fa4e6c89cf6b7935355a683ca67fe9865cd2b8eb4960f1b63a0635d17d9b9",
+    "simulator_state_sha256": "a180c18e779e8dc9ce1dc5bb39b51dd72f7030fcc35d39759e0556ce98f98e9e",
+    "raw_snapshot_in_repository": false
+  },
+  "candidate_specification_match": {
+    "pre_registered_source_vector": [false, true, true],
+    "observed_source_vector": [false, true, true],
+    "pre_registered_target": "on(moka_pot_1, flat_stove_1_cook_region)",
+    "pre_registered_preserve": [
+      "on(moka_pot_2, flat_stove_1_cook_region)",
+      "turnon(flat_stove_1)"
+    ],
+    "natural_candidate_matches_original_specification": true
+  },
+  "original_world_repair": {
+    "state_continuity_basis": "live_same_world",
+    "same_world_state_preserved": true,
+    "single_reset_observed": true,
+    "repair_instruction": "put the first moka pot on the stove",
+    "target_predicate_ids_count": 1,
+    "preserve_predicate_ids_count": 2,
+    "proposal_sha256": "c3324a7118ceb953cd9d907fb68e4bc33a45b65a42344e22e15675e4b91de3d1",
+    "repair_contract_sha256": "b9be8a4c5fc48c63d88b67ffb1e918dbc477047fca818a214f11ff1da18cfee1",
+    "approval_sha256": "b854c1655ccce1c38c94191c068003b3a5f6f833f21aa790a6c3c94517d48c46",
+    "dispatch_sha256": "380677e20f3ec7fe77525651a8772c5995e919222c29e37d0fd3875926386ccf",
+    "maximum_repair_chunks": 45,
+    "maximum_repair_steps": 720,
+    "repair_chunks_executed": 45,
+    "model_inference_invoked": true,
+    "simulator_execution_observed": true,
+    "dispatch_receipt_present": true,
+    "controller_ack_observed": false,
+    "source_predicate_vector": [false, true, true],
+    "terminal_predicate_vector": [false, true, true],
+    "predicate_improvement_observed": false,
+    "preservation_violation_observed": false,
+    "additional_attempt_authorized": false,
+    "task_completion_claimed": false,
+    "result": "budget_exhausted_without_improvement",
+    "result_sha256": "203a7f1aa132d6f3d37f73f1d742243b3a1cda66ba39b3677ee438574d5a6330",
+    "semantic_repair_established": false
+  },
+  "preservation_observation": {
+    "attempt_count": 11,
+    "original_world_attempt_count": 1,
+    "diagnostic_clone_attempt_count": 10,
+    "preserve_predicates_maintained_count": 11,
+    "preservation_violation_count": 0,
+    "preservation_violation_rate": 0.0,
+    "scope": "this saved world, checkpoint, instruction set, and bounded budget",
+    "generalization_claimed": false
+  },
+  "statistical_boundary": {
+    "diagnostic_clone_improvement_count": 2,
+    "diagnostic_clone_attempt_count": 10,
+    "descriptive_rate": 0.2,
+    "approximate_95_percent_interval": [0.03, 0.56],
+    "original_world_attempt_count": 1,
+    "original_world_failure_is_not_evidence_of_clone_difficulty": true,
+    "clone_continuation_difference_measured": false,
+    "instruction_superiority_claimed": false
+  },
+  "diagnostic_clone_replay": {
+    "completed_trial_count": 10,
+    "all_clone_identities_verified": true,
+    "expected_source_predicate_vector": [false, true, true],
+    "success_counts": {
+      "short_target": 1,
+      "original_task": 1
+    },
+    "successful_trials": [
+      {
+        "trial_index": 2,
+        "variant": "original_task",
+        "sampling_seed": 1001,
+        "chunks_executed": 28
+      },
+      {
+        "trial_index": 7,
+        "variant": "short_target",
+        "sampling_seed": 1003,
+        "chunks_executed": 26
+      }
+    ],
+    "preservation_violation_count": 0,
+    "conclusion_key": "diagnostic_clones_only_success",
+    "pre_registered_conclusion": "Repair capability or instruction sensitivity observed in diagnostic clones; Semantic Repair remains false.",
+    "general_instruction_superiority_claimed": false,
+    "same_world_semantic_repair_claimed_from_clones": false,
+    "semantic_repair_established": false
+  },
+  "external_artifacts": {
+    "final_result_sha256": "b9f457919d123370a49ef6829b769b7c6463b19a0404a7e53893926e74dafa10",
+    "screen_progress_sha256": "928cee1b56e648c9891827a0a939102f3814b9c0808bfee9c73c1c8d688800c4",
+    "replay_progress_sha256": "9f31533f6b2ea973bbf79f6fe45fd6c74045cb0b3a15f50de55ce4e052e27013",
+    "dispatch_ledger_sha256": "aba5ff6314d93839daeaf52a696f0ca53f5e48534d4af929b2eb7ade06f47072",
+    "live_log_sha256": "9f2f5f4ff88e78e33b6d86b389331c60810562bdd893ddccdef495b4f794116c",
+    "raw_artifacts_in_repository": false,
+    "remote_to_local_hashes_verified": true
+  },
+  "resource_cleanup": {
+    "gpu_vm_deleted": true,
+    "auto_delete_boot_disk_absent": true,
+    "protected_model_cache_disk_untouched": true
+  },
+  "claim_boundary": {
+    "natural_partial_failure_observed": true,
+    "governed_original_world_repair_executed": true,
+    "original_world_target_improved": false,
+    "diagnostic_clone_completion_observed": true,
+    "preserve_maintained_11_of_11": true,
+    "diagnostic_clone_completion_is_semantic_repair": false,
+    "instruction_variant_superiority_established": false,
+    "semantic_repair_established": false,
+    "physical_execution_invoked": false
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "schema_version": "missionos.groot_lerobot_budget_truncation_attempts.v1",
+  "recorded_at": "2026-08-17T03:30:00Z",
+  "subject": "GR00T N1.7 LeRobot post-hoc budget truncation attempts",
+  "missionos_live_harness_commit": "4e59b64cd47bf59bdb8e5624db6e69b4e4a33fe6",
+  "pinned_lerobot_source_audit": {
+    "revision": "6adf51511b7625090eade8d82d9f61a1846ebe56",
+    "path": "src/lerobot/envs/libero.py",
+    "reset_settling_loop_lines": "312-324",
+    "default_num_steps_wait": 10,
+    "episode_horizon_consumed_by_reset_settling": true
+  },
+  "runtime": {
+    "accelerator": "NVIDIA L4",
+    "machine_type": "g2-standard-4",
+    "task_suite": "libero_10",
+    "task_id": 8,
+    "physical_execution_invoked": false
+  },
+  "attempts": [
+    {
+      "name": "asset_cache_not_ready",
+      "result": "execution_failed",
+      "model_evidence_created": false,
+      "repair_executed": false,
+      "result_sha256": "6ab6d2af1e3579f84a6c5b27688e75672cadc841f3d78f2ec44d5316eec70663"
+    },
+    {
+      "name": "source_budget_480",
+      "source_goal_predicate_vector": [false, true, true],
+      "source_steps_executed": 480,
+      "repair_executed": true,
+      "repair_result": "stopped_on_preservation_invariant",
+      "first_invariant_breach": {
+        "repair_action_step_number": 13,
+        "protected_object": "moka_pot_2",
+        "translation_distance_metres": 0.005054431863653664,
+        "contract_bound_limit_metres": 0.005,
+        "predicate_vector_at_stop": [false, true, true]
+      },
+      "semantic_repair_established": false,
+      "result_sha256": "456fc3206fdffef6bca5036da9f10ac5fb8ebd63fbb1d4009c8d61fcf6a01a5d",
+      "run_log_sha256": "c434bf93dd36cba1c590a05d436bbe9909b55d83b50004442696e0c8e1db0a06",
+      "dispatch_ledger_sha256": "0eebdc745f6eb8fe56700d82236c1c8093e73035ff15dd8a4d4b3abedb3f4543"
+    },
+    {
+      "name": "source_budget_496",
+      "source_goal_predicate_vector": [false, true, true],
+      "source_steps_executed": 496,
+      "repair_executed": true,
+      "repair_actions_applied_before_failure": 6,
+      "failure": "simulator_episode_horizon_exhausted",
+      "predicate_improvement_observed": false,
+      "semantic_repair_established": false,
+      "result_sha256": "2ab90641f2a580b04aabfe79fa3465438f020de691ebf08e7aa7939726827a2e",
+      "run_log_sha256": "cf6e75f44d184a0c824685281467543db1ecee726ea8bc8cdb9c22f64b159d30",
+      "dispatch_ledger_sha256": "fd8f52f43dd7ce1a67091cdff788603455e52002dc59d7929744523564f6ef86"
+    }
+  ],
+  "evidence_archive": {
+    "archive_sha256": "0913f9d19f16ddf4d6f011c1657b322fea7c9dc1456081e6303ffcfc71914a13",
+    "repository_contains_raw_state": false,
+    "transfer_hash_verified": true,
+    "contained_files_verified_except_manifest_self_entry": true,
+    "manifest_self_entry_valid": false
+  },
+  "claim_boundary": {
+    "production_control_path_exercised": true,
+    "post_hoc_budget_truncation_is_natural_failure_evidence": false,
+    "source_budget_480_proves_verifier_stop_before_second_chunk": true,
+    "source_budget_496_proves_semantic_repair": false,
+    "semantic_repair_established": false,
+    "physical_execution_invoked": false
+  },
+  "resource_cleanup": {
+    "vm_deleted": true,
+    "boot_disk_deleted": true,
+    "protected_model_cache_disk_status": "READY",
+    "protected_runtime_image_status": "READY"
+  }
+}

@@ -29,12 +29,11 @@ from .libero_panda_predicate_package import (
     LIBERO_ACTION_FIELDS,
     LIBERO_BASE_TRANSFORMATIONS,
     LIBERO_FOUR_DIMENSIONAL_PROJECTION,
-    LIBERO_PANDA_ENVIRONMENT,
     LIBERO_PANDA_EPISODE_RESULT_SCHEMA_VERSION,
     LIBERO_PANDA_PREDICATE_PACKAGE_SHA256,
-    LIBERO_TASK_PREDICATE_SHA256,
     LIBEROPandaActionChunk,
     LIBEROPandaActionField,
+    LIBEROPandaGoalPredicateObservation,
     LIBEROPandaPredicateContent,
     LIBEROPandaPredicateEvaluation,
     LIBEROPandaRunnerConfiguration,
@@ -42,6 +41,8 @@ from .libero_panda_predicate_package import (
     build_libero_panda_replay_contract,
     build_libero_panda_replay_input,
     evaluate_libero_panda_predicate,
+    libero_panda_goal_predicate_specs,
+    libero_panda_task_material,
 )
 
 
@@ -67,16 +68,10 @@ class LIBEROPandaInstrumentationEvent(str, Enum):
 class LIBEROPandaInstrumentationRejectionReason(str, Enum):
     """Publication-safe rejection vocabulary for the live boundary."""
 
-    INSTRUMENTATION_BOUNDARY_REJECTED = (
-        "libero_panda_instrumentation_boundary_rejected"
-    )
-    OFFICIAL_ENVIRONMENT_CREATION_FAILED = (
-        "official_environment_creation_failed"
-    )
+    INSTRUMENTATION_BOUNDARY_REJECTED = "libero_panda_instrumentation_boundary_rejected"
+    OFFICIAL_ENVIRONMENT_CREATION_FAILED = "official_environment_creation_failed"
     CONTROLLER_RUNTIME_PROBE_FAILED = "controller_runtime_probe_failed"
-    ENVIRONMENT_INSTRUMENTATION_FAILED = (
-        "environment_instrumentation_failed"
-    )
+    ENVIRONMENT_INSTRUMENTATION_FAILED = "environment_instrumentation_failed"
     ENVIRONMENT_RESET_FAILED = "environment_reset_failed"
     POLICY_CLIENT_RESET_FAILED = "policy_client_reset_failed"
     POLICY_REQUEST_FAILED = "policy_request_failed"
@@ -84,29 +79,15 @@ class LIBEROPandaInstrumentationRejectionReason(str, Enum):
     SIMULATOR_STEP_RETURN_INVALID = "simulator_step_return_invalid"
     OFFICIAL_RUNNER_FAILED = "official_runner_failed"
     ROLLOUT_DEADLINE_EXCEEDED = "rollout_deadline_exceeded"
-    RUNTIME_DEPENDENCY_PROFILE_MISMATCH = (
-        "runtime_dependency_profile_mismatch"
-    )
+    RUNTIME_DEPENDENCY_PROFILE_MISMATCH = "runtime_dependency_profile_mismatch"
     CONTRACT_BINDING_MISMATCH = "contract_binding_mismatch"
     POLICY_RESPONSE_SHAPE_INVALID = "policy_response_shape_invalid"
-    POLICY_RESPONSE_ACTION_NOT_MAPPING = (
-        "policy_response_action_not_mapping"
-    )
-    POLICY_RESPONSE_ACTION_FIELDS_MISSING = (
-        "policy_response_action_fields_missing"
-    )
-    POLICY_RESPONSE_ACTION_HORIZON_INVALID = (
-        "policy_response_action_horizon_invalid"
-    )
-    POLICY_RESPONSE_ACTION_FIELD_NOT_SCALAR = (
-        "policy_response_action_field_not_scalar"
-    )
-    POLICY_RESPONSE_ACTION_FIELD_NOT_NUMERIC = (
-        "policy_response_action_field_not_numeric"
-    )
-    POLICY_RESPONSE_ACTION_FIELD_NON_FINITE = (
-        "policy_response_action_field_non_finite"
-    )
+    POLICY_RESPONSE_ACTION_NOT_MAPPING = "policy_response_action_not_mapping"
+    POLICY_RESPONSE_ACTION_FIELDS_MISSING = "policy_response_action_fields_missing"
+    POLICY_RESPONSE_ACTION_HORIZON_INVALID = "policy_response_action_horizon_invalid"
+    POLICY_RESPONSE_ACTION_FIELD_NOT_SCALAR = "policy_response_action_field_not_scalar"
+    POLICY_RESPONSE_ACTION_FIELD_NOT_NUMERIC = "policy_response_action_field_not_numeric"
+    POLICY_RESPONSE_ACTION_FIELD_NON_FINITE = "policy_response_action_field_non_finite"
 
 
 _LIBERO_PANDA_INSTRUMENTATION_MATERIAL = {
@@ -118,9 +99,7 @@ _LIBERO_PANDA_INSTRUMENTATION_MATERIAL = {
         "simulator_step",
         "termination",
     ],
-    "missionos_capture_points": [
-        event.value for event in LIBEROPandaInstrumentationEvent
-    ],
+    "missionos_capture_points": [event.value for event in LIBEROPandaInstrumentationEvent],
     "contract_and_identity_order": [
         "contract_before_reset",
         "run_identity_before_reset",
@@ -144,9 +123,7 @@ _LIBERO_PANDA_INSTRUMENTATION_MATERIAL = {
     "readback_satisfies_controller_ack": False,
     "safe_stop_effect_observed": False,
     "physical_execution_invoked": False,
-    "rejection_vocabulary": [
-        reason.value for reason in LIBEROPandaInstrumentationRejectionReason
-    ],
+    "rejection_vocabulary": [reason.value for reason in LIBEROPandaInstrumentationRejectionReason],
 }
 LIBERO_PANDA_INSTRUMENTATION_MATERIAL_SHA256 = canonical_sha256(
     _LIBERO_PANDA_INSTRUMENTATION_MATERIAL
@@ -161,8 +138,7 @@ class LIBEROPandaInstrumentationError(RuntimeError):
         message: str,
         *,
         rejection_reason: LIBEROPandaInstrumentationRejectionReason = (
-            LIBEROPandaInstrumentationRejectionReason
-            .INSTRUMENTATION_BOUNDARY_REJECTED
+            LIBEROPandaInstrumentationRejectionReason.INSTRUMENTATION_BOUNDARY_REJECTED
         ),
     ) -> None:
         super().__init__(message)
@@ -206,36 +182,26 @@ class LIBEROPandaInstrumentedEpisodeResult:
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "schema_version": (
-                "missionos_groot_n17_libero_panda_instrumented_episode.v2"
-            ),
+            "schema_version": ("missionos_groot_n17_libero_panda_instrumented_episode.v3"),
             "run_identity": self.content.run_identity,
             "episode_identity": self.content.episode_identity,
             "contract_sha256": self.predicate_evaluation.contract_sha256,
             "observation_content_sha256": self.content.content_sha256,
-            "raw_action_stream_manifest_sha256": (
-                self.content.raw_action_stream_manifest_sha256
-            ),
+            "raw_action_stream_manifest_sha256": (self.content.raw_action_stream_manifest_sha256),
             "env_step_input_stream_manifest_sha256": (
                 self.content.env_step_input_stream_manifest_sha256
             ),
             "simulator_step_return_manifest_sha256": (
                 self.content.simulator_step_return_manifest_sha256
             ),
-            "official_runner_result_sha256": (
-                self.official_runner_result_sha256
-            ),
+            "official_runner_result_sha256": (self.official_runner_result_sha256),
             "reset_observation_sha256": self.reset_observation_sha256,
             "event_sequence": [event.value for event in self.event_sequence],
             "predicate_evaluation": self.predicate_evaluation.to_dict(),
             "controller_ack_observed": self.controller_ack_observed,
-            "readback_satisfies_controller_ack": (
-                self.readback_satisfies_controller_ack
-            ),
+            "readback_satisfies_controller_ack": (self.readback_satisfies_controller_ack),
             "safe_stop_effect_observed": self.safe_stop_effect_observed,
-            "parent_mission_completion_claimed": (
-                self.parent_mission_completion_claimed
-            ),
+            "parent_mission_completion_claimed": (self.parent_mission_completion_claimed),
             "physical_execution_invoked": self.physical_execution_invoked,
             "raw_action_values_included": False,
             "raw_simulator_observations_included": False,
@@ -250,6 +216,7 @@ class _PendingStep:
     transformation_names: tuple[str, ...]
     env_step_input: tuple[float, ...] | None = None
     simulator_step_return_sha256: str | None = None
+    goal_predicate_observations: tuple[LIBEROPandaGoalPredicateObservation, ...] | None = None
 
 
 class LIBEROPandaOfficialRunnerRecorder:
@@ -272,9 +239,7 @@ class LIBEROPandaOfficialRunnerRecorder:
         self._events: list[LIBEROPandaInstrumentationEvent] = [
             LIBEROPandaInstrumentationEvent.PREPARED_BEFORE_RESET
         ]
-        self._controller_binding: (
-            LIBEROPandaControllerRuntimeBinding | None
-        ) = None
+        self._controller_binding: LIBEROPandaControllerRuntimeBinding | None = None
         self._reset_observation_sha256 = ""
         self._reset_seen = False
         self._terminal_seen = False
@@ -302,16 +267,13 @@ class LIBEROPandaOfficialRunnerRecorder:
                 "controller runtime must be observed before reset"
             )
         if self._controller_binding is not None:
-            raise LIBEROPandaInstrumentationError(
-                "controller runtime was bound more than once"
-            )
+            raise LIBEROPandaInstrumentationError("controller runtime was bound more than once")
         if (
             binding.controller_configuration_sha256
             != self.runner_configuration.controller_configuration_sha256
         ):
             raise LIBEROPandaInstrumentationError(
-                "runtime controller configuration does not match "
-                "the frozen contract"
+                "runtime controller configuration does not match the frozen contract"
             )
         if (
             isinstance(binding.action_dim, bool)
@@ -321,15 +283,11 @@ class LIBEROPandaOfficialRunnerRecorder:
                 "runtime action_dim does not match the frozen contract"
             )
         self._controller_binding = binding
-        self._events.append(
-            LIBEROPandaInstrumentationEvent.CONTROLLER_RUNTIME_BOUND
-        )
+        self._events.append(LIBEROPandaInstrumentationEvent.CONTROLLER_RUNTIME_BOUND)
 
     def record_reset(self, reset_result: Any) -> None:
         if self._controller_binding is None:
-            raise LIBEROPandaInstrumentationError(
-                "controller runtime is missing before reset"
-            )
+            raise LIBEROPandaInstrumentationError("controller runtime is missing before reset")
         if self._reset_seen:
             if not self._step_applications:
                 raise LIBEROPandaInstrumentationError(
@@ -352,11 +310,7 @@ class LIBEROPandaOfficialRunnerRecorder:
         observations: Any,
         response: Any,
     ) -> None:
-        if (
-            not self._reset_seen
-            or self._terminal_seen
-            or self._post_episode_reset_count
-        ):
+        if not self._reset_seen or self._terminal_seen or self._post_episode_reset_count:
             raise LIBEROPandaInstrumentationError(
                 "policy response was observed outside the active episode"
             )
@@ -364,29 +318,24 @@ class LIBEROPandaOfficialRunnerRecorder:
             response,
             length=2,
             rejection_reason=(
-                LIBEROPandaInstrumentationRejectionReason
-                .POLICY_RESPONSE_SHAPE_INVALID
+                LIBEROPandaInstrumentationRejectionReason.POLICY_RESPONSE_SHAPE_INVALID
             ),
         )
         if not isinstance(action, Mapping):
             raise LIBEROPandaInstrumentationError(
                 "policy response action must be a mapping",
                 rejection_reason=(
-                    LIBEROPandaInstrumentationRejectionReason
-                    .POLICY_RESPONSE_ACTION_NOT_MAPPING
+                    LIBEROPandaInstrumentationRejectionReason.POLICY_RESPONSE_ACTION_NOT_MAPPING
                 ),
             )
         missing_fields = tuple(
-            field_name
-            for field_name in LIBERO_ACTION_FIELDS
-            if field_name not in action
+            field_name for field_name in LIBERO_ACTION_FIELDS if field_name not in action
         )
         if missing_fields:
             raise LIBEROPandaInstrumentationError(
                 "policy response is missing required namespaced action fields",
                 rejection_reason=(
-                    LIBEROPandaInstrumentationRejectionReason
-                    .POLICY_RESPONSE_ACTION_FIELDS_MISSING
+                    LIBEROPandaInstrumentationRejectionReason.POLICY_RESPONSE_ACTION_FIELDS_MISSING
                 ),
             )
         chunk_index = len(self._action_chunks)
@@ -395,9 +344,7 @@ class LIBEROPandaOfficialRunnerRecorder:
                 field_name=field_name,
                 values=_extract_single_env_action_values(
                     action.get(field_name),
-                    expected_steps=(
-                        self.runner_configuration.policy_action_horizon
-                    ),
+                    expected_steps=(self.runner_configuration.policy_action_horizon),
                     field_name=field_name,
                 ),
             )
@@ -418,22 +365,14 @@ class LIBEROPandaOfficialRunnerRecorder:
         self._action_chunks.append(chunk)
         self._chunk_step_counts[chunk_index] = 0
         self._last_observed_at = self._clock()
-        self._events.append(
-            LIBEROPandaInstrumentationEvent.POLICY_RESPONSE_OBSERVED
-        )
+        self._events.append(LIBEROPandaInstrumentationEvent.POLICY_RESPONSE_OBSERVED)
 
     def record_policy_request_invoked(self) -> None:
-        if (
-            not self._reset_seen
-            or self._terminal_seen
-            or self._post_episode_reset_count
-        ):
+        if not self._reset_seen or self._terminal_seen or self._post_episode_reset_count:
             raise LIBEROPandaInstrumentationError(
                 "policy request was invoked outside the active episode"
             )
-        self._events.append(
-            LIBEROPandaInstrumentationEvent.POLICY_REQUEST_INVOKED
-        )
+        self._events.append(LIBEROPandaInstrumentationEvent.POLICY_REQUEST_INVOKED)
 
     def begin_simulator_step(self, action: Any) -> None:
         if self._pending_step is not None:
@@ -445,34 +384,25 @@ class LIBEROPandaOfficialRunnerRecorder:
                 "simulator step occurred before a policy response"
             )
         if not isinstance(action, Mapping):
-            raise LIBEROPandaInstrumentationError(
-                "per-step action must be a mapping"
-            )
+            raise LIBEROPandaInstrumentationError("per-step action must be a mapping")
         chunk = self._action_chunks[-1]
         chunk_step_index = self._chunk_step_counts[chunk.chunk_index]
         if chunk_step_index >= self.runner_configuration.n_action_steps:
             raise LIBEROPandaInstrumentationError(
                 "simulator consumed more steps than the frozen chunk horizon"
             )
-        expected = {
-            field.field_name: field.values[chunk_step_index]
-            for field in chunk.fields
-        }
+        expected = {field.field_name: field.values[chunk_step_index] for field in chunk.fields}
         observed = {
             field_name: _single_float(action.get(field_name), field_name)
             for field_name in LIBERO_ACTION_FIELDS
         }
-        if canonical_sha256({"action": observed}) != canonical_sha256(
-            {"action": expected}
-        ):
+        if canonical_sha256({"action": observed}) != canonical_sha256({"action": expected}):
             raise LIBEROPandaInstrumentationError(
                 "MultiStepWrapper slice does not match the recorded chunk"
             )
         transformations = list(LIBERO_BASE_TRANSFORMATIONS)
         if self._controller_binding is None:
-            raise LIBEROPandaInstrumentationError(
-                "controller runtime is not bound"
-            )
+            raise LIBEROPandaInstrumentationError("controller runtime is not bound")
         if self._controller_binding.action_dim == 4:
             transformations.append(LIBERO_FOUR_DIMENSIONAL_PROJECTION)
         self._pending_step = _PendingStep(
@@ -492,13 +422,10 @@ class LIBEROPandaOfficialRunnerRecorder:
         expected_dim = self.runner_configuration.action_dim
         if len(vector) != expected_dim:
             raise LIBEROPandaInstrumentationError(
-                "underlying simulator input dimension does not match "
-                "the runtime controller"
+                "underlying simulator input dimension does not match the runtime controller"
             )
         pending.env_step_input = vector
-        self._events.append(
-            LIBEROPandaInstrumentationEvent.SIMULATOR_STEP_INPUT_OBSERVED
-        )
+        self._events.append(LIBEROPandaInstrumentationEvent.SIMULATOR_STEP_INPUT_OBSERVED)
 
     def record_underlying_step_return(self, step_return: Any) -> None:
         pending = self._require_pending_step()
@@ -520,31 +447,36 @@ class LIBEROPandaOfficialRunnerRecorder:
             raise LIBEROPandaInstrumentationError(
                 "underlying simulator step return is invalid",
                 rejection_reason=(
-                    LIBEROPandaInstrumentationRejectionReason
-                    .SIMULATOR_STEP_RETURN_INVALID
+                    LIBEROPandaInstrumentationRejectionReason.SIMULATOR_STEP_RETURN_INVALID
                 ),
             ) from error
-        self._events.append(
-            LIBEROPandaInstrumentationEvent.SIMULATOR_STEP_RETURN_OBSERVED
-        )
+        self._events.append(LIBEROPandaInstrumentationEvent.SIMULATOR_STEP_RETURN_OBSERVED)
+
+    def record_goal_predicate_observations(
+        self,
+        observations: tuple[LIBEROPandaGoalPredicateObservation, ...],
+    ) -> None:
+        pending = self._require_pending_step()
+        if pending.goal_predicate_observations is not None:
+            raise LIBEROPandaInstrumentationError(
+                "goal predicate vector was recorded more than once"
+            )
+        pending.goal_predicate_observations = observations
 
     def finish_simulator_step(self, step_result: Any) -> None:
         pending = self._require_pending_step()
         if (
             pending.env_step_input is None
             or pending.simulator_step_return_sha256 is None
+            or pending.goal_predicate_observations is None
         ):
-            raise LIBEROPandaInstrumentationError(
-                "simulator step lineage is incomplete"
-            )
+            raise LIBEROPandaInstrumentationError("simulator step lineage is incomplete")
         observation, _, terminated, truncated, info = _require_result_tuple(
             step_result,
             length=5,
         )
         if not isinstance(info, Mapping) or "success" not in info:
-            raise LIBEROPandaInstrumentationError(
-                "official post-step success result is missing"
-            )
+            raise LIBEROPandaInstrumentationError("official post-step success result is missing")
         predicate_result = _strict_bool(info["success"], "success")
         terminated_value = _strict_bool(terminated, "terminated")
         truncated_value = _strict_bool(truncated, "truncated")
@@ -556,13 +488,12 @@ class LIBEROPandaOfficialRunnerRecorder:
                 action_chunk_sha256=pending.action_chunk_sha256,
                 transformation_names=pending.transformation_names,
                 env_step_input=pending.env_step_input,
-                simulator_step_return_sha256=(
-                    pending.simulator_step_return_sha256
-                ),
+                simulator_step_return_sha256=(pending.simulator_step_return_sha256),
                 result_observation_sha256=_digest_material(
                     "processed_result_observation",
                     observation,
                 ),
+                goal_predicate_observations=(pending.goal_predicate_observations),
                 official_predicate_result=predicate_result,
                 terminated=terminated_value,
                 truncated=truncated_value,
@@ -570,13 +501,9 @@ class LIBEROPandaOfficialRunnerRecorder:
         )
         self._chunk_step_counts[pending.chunk_index] += 1
         self._pending_step = None
-        self._terminal_seen = (
-            predicate_result or terminated_value or truncated_value
-        )
+        self._terminal_seen = predicate_result or terminated_value or truncated_value
         self._last_observed_at = self._clock()
-        self._events.append(
-            LIBEROPandaInstrumentationEvent.OFFICIAL_PREDICATE_OBSERVED
-        )
+        self._events.append(LIBEROPandaInstrumentationEvent.OFFICIAL_PREDICATE_OBSERVED)
 
     def finalize(
         self,
@@ -595,7 +522,7 @@ class LIBEROPandaOfficialRunnerRecorder:
             official_runner_result,
             length=3,
         )
-        if env_name != LIBERO_PANDA_ENVIRONMENT:
+        if env_name != self.runner_configuration.environment:
             raise LIBEROPandaInstrumentationError(
                 "official runner returned a different environment"
             )
@@ -609,13 +536,9 @@ class LIBEROPandaOfficialRunnerRecorder:
             "official_runner_episode_success",
         )
         received_at = self._clock()
-        self._events.append(
-            LIBEROPandaInstrumentationEvent.OFFICIAL_RUNNER_RESULT_OBSERVED
-        )
+        self._events.append(LIBEROPandaInstrumentationEvent.OFFICIAL_RUNNER_RESULT_OBSERVED)
         content = LIBEROPandaPredicateContent(
-            source_schema_version=(
-                LIBERO_PANDA_EPISODE_RESULT_SCHEMA_VERSION
-            ),
+            source_schema_version=(LIBERO_PANDA_EPISODE_RESULT_SCHEMA_VERSION),
             run_identity=self.run_identity,
             episode_identity=self.episode_identity,
             runner_configuration=self.runner_configuration,
@@ -623,7 +546,9 @@ class LIBEROPandaOfficialRunnerRecorder:
                 self._controller_binding.controller_configuration_sha256
             ),
             runtime_action_dim=self._controller_binding.action_dim,
-            task_predicate_sha256=LIBERO_TASK_PREDICATE_SHA256,
+            task_predicate_sha256=libero_panda_task_material(self.runner_configuration.environment)[
+                "task_predicate_sha256"
+            ],
             action_chunks=tuple(self._action_chunks),
             step_applications=tuple(self._step_applications),
             official_runner_episode_ended=True,
@@ -653,9 +578,7 @@ class LIBEROPandaOfficialRunnerRecorder:
 
     def _require_pending_step(self) -> _PendingStep:
         if self._pending_step is None:
-            raise LIBEROPandaInstrumentationError(
-                "no simulator step is currently active"
-            )
+            raise LIBEROPandaInstrumentationError("no simulator step is currently active")
         return self._pending_step
 
 
@@ -678,10 +601,7 @@ class _InstrumentedPolicy:
         except Exception as error:
             raise LIBEROPandaInstrumentationError(
                 "official policy request failed",
-                rejection_reason=(
-                    LIBEROPandaInstrumentationRejectionReason
-                    .POLICY_REQUEST_FAILED
-                ),
+                rejection_reason=(LIBEROPandaInstrumentationRejectionReason.POLICY_REQUEST_FAILED),
             ) from error
         self._recorder.record_policy_response(
             observations=observations,
@@ -698,8 +618,7 @@ class _InstrumentedPolicy:
             raise LIBEROPandaInstrumentationError(
                 "official policy client reset failed",
                 rejection_reason=(
-                    LIBEROPandaInstrumentationRejectionReason
-                    .POLICY_CLIENT_RESET_FAILED
+                    LIBEROPandaInstrumentationRejectionReason.POLICY_CLIENT_RESET_FAILED
                 ),
             ) from error
 
@@ -726,10 +645,7 @@ class _UnderlyingSimulatorStepProxy:
         except Exception as error:
             raise LIBEROPandaInstrumentationError(
                 "underlying simulator step failed",
-                rejection_reason=(
-                    LIBEROPandaInstrumentationRejectionReason
-                    .SIMULATOR_STEP_FAILED
-                ),
+                rejection_reason=(LIBEROPandaInstrumentationRejectionReason.SIMULATOR_STEP_FAILED),
             ) from error
         self._recorder.record_underlying_step_return(result)
         return result
@@ -751,9 +667,7 @@ def prepare_libero_panda_instrumented_episode(
 
     clock = clock or _utc_now
     if (run_identity is None) != (episode_identity is None):
-        raise ValueError(
-            "run_identity and episode_identity must be supplied together"
-        )
+        raise ValueError("run_identity and episode_identity must be supplied together")
     if run_identity is None:
         identity_factory = identity_factory or (lambda: str(uuid4()))
         run_identity = f"missionos-libero-panda-run:{identity_factory()}"
@@ -805,13 +719,9 @@ def run_instrumented_official_libero_rollout(
     )
     original_get_gym_env = getattr(rollout_module, "get_gym_env", None)
     if not callable(official_runner) or not callable(original_get_gym_env):
-        raise LIBEROPandaInstrumentationError(
-            "pinned official rollout module API is unavailable"
-        )
+        raise LIBEROPandaInstrumentationError("pinned official rollout module API is unavailable")
     if prepared.runner_configuration.n_envs != 1:
-        raise LIBEROPandaInstrumentationError(
-            "first governed rollout requires n_envs=1"
-        )
+        raise LIBEROPandaInstrumentationError("first governed rollout requires n_envs=1")
     env_created = False
 
     def instrumented_get_gym_env(
@@ -837,8 +747,7 @@ def run_instrumented_official_libero_rollout(
             raise LIBEROPandaInstrumentationError(
                 "official LIBERO environment creation failed",
                 rejection_reason=(
-                    LIBEROPandaInstrumentationRejectionReason
-                    .OFFICIAL_ENVIRONMENT_CREATION_FAILED
+                    LIBEROPandaInstrumentationRejectionReason.OFFICIAL_ENVIRONMENT_CREATION_FAILED
                 ),
             ) from error
         base_env = getattr(env, "unwrapped", env)
@@ -850,8 +759,7 @@ def run_instrumented_official_libero_rollout(
             raise LIBEROPandaInstrumentationError(
                 "live controller runtime probe failed",
                 rejection_reason=(
-                    LIBEROPandaInstrumentationRejectionReason
-                    .CONTROLLER_RUNTIME_PROBE_FAILED
+                    LIBEROPandaInstrumentationRejectionReason.CONTROLLER_RUNTIME_PROBE_FAILED
                 ),
             ) from error
         prepared.recorder.bind_controller_runtime(binding)
@@ -866,8 +774,7 @@ def run_instrumented_official_libero_rollout(
             raise LIBEROPandaInstrumentationError(
                 "LIBERO environment instrumentation failed",
                 rejection_reason=(
-                    LIBEROPandaInstrumentationRejectionReason
-                    .ENVIRONMENT_INSTRUMENTATION_FAILED
+                    LIBEROPandaInstrumentationRejectionReason.ENVIRONMENT_INSTRUMENTATION_FAILED
                 ),
             ) from error
         env_created = True
@@ -892,10 +799,7 @@ def run_instrumented_official_libero_rollout(
         except Exception as error:
             raise LIBEROPandaInstrumentationError(
                 "official LIBERO runner failed outside a typed boundary",
-                rejection_reason=(
-                    LIBEROPandaInstrumentationRejectionReason
-                    .OFFICIAL_RUNNER_FAILED
-                ),
+                rejection_reason=(LIBEROPandaInstrumentationRejectionReason.OFFICIAL_RUNNER_FAILED),
             ) from error
     finally:
         rollout_module.get_gym_env = original_get_gym_env
@@ -916,14 +820,8 @@ def _instrument_libero_environment(
     original_underlying = getattr(env, "_env", None)
     original_reset = getattr(env, "reset", None)
     original_step = getattr(env, "step", None)
-    if (
-        original_underlying is None
-        or not callable(original_reset)
-        or not callable(original_step)
-    ):
-        raise LIBEROPandaInstrumentationError(
-            "pinned LIBERO environment API is unavailable"
-        )
+    if original_underlying is None or not callable(original_reset) or not callable(original_step):
+        raise LIBEROPandaInstrumentationError("pinned LIBERO environment API is unavailable")
     env._env = _UnderlyingSimulatorStepProxy(
         underlying=original_underlying,
         recorder=recorder,
@@ -942,8 +840,7 @@ def _instrument_libero_environment(
             raise LIBEROPandaInstrumentationError(
                 "LIBERO environment reset failed",
                 rejection_reason=(
-                    LIBEROPandaInstrumentationRejectionReason
-                    .ENVIRONMENT_RESET_FAILED
+                    LIBEROPandaInstrumentationRejectionReason.ENVIRONMENT_RESET_FAILED
                 ),
             ) from error
         recorder.record_reset(result)
@@ -958,16 +855,74 @@ def _instrument_libero_environment(
         except Exception as error:
             raise LIBEROPandaInstrumentationError(
                 "LIBERO environment step failed",
-                rejection_reason=(
-                    LIBEROPandaInstrumentationRejectionReason
-                    .SIMULATOR_STEP_FAILED
-                ),
+                rejection_reason=(LIBEROPandaInstrumentationRejectionReason.SIMULATOR_STEP_FAILED),
             ) from error
+        recorder.record_goal_predicate_observations(
+            _observe_libero_goal_predicates(
+                original_underlying,
+                environment=recorder.runner_configuration.environment,
+            )
+        )
         recorder.finish_simulator_step(result)
         return result
 
     env.reset = MethodType(instrumented_reset, env)
     env.step = MethodType(instrumented_step, env)
+
+
+def _observe_libero_goal_predicates(
+    underlying: Any,
+    *,
+    environment: str,
+) -> tuple[LIBEROPandaGoalPredicateObservation, ...]:
+    expected = libero_panda_goal_predicate_specs(environment)
+    fixture_probe = getattr(
+        underlying,
+        "missionos_goal_predicate_observations",
+        None,
+    )
+    if callable(fixture_probe):
+        observed = fixture_probe(expected)
+        if not isinstance(observed, (list, tuple)):
+            raise LIBEROPandaInstrumentationError(
+                "fixture goal predicate probe returned an invalid vector"
+            )
+        values = tuple(observed)
+        if len(values) != len(expected) or any(not isinstance(value, bool) for value in values):
+            raise LIBEROPandaInstrumentationError(
+                "fixture goal predicate probe returned invalid values"
+            )
+    else:
+        task_env = getattr(underlying, "env", None)
+        parsed_problem = getattr(task_env, "parsed_problem", None)
+        evaluator = getattr(task_env, "_eval_predicate", None)
+        if not isinstance(parsed_problem, Mapping) or not callable(evaluator):
+            raise LIBEROPandaInstrumentationError("pinned LIBERO goal predicate API is unavailable")
+        goal_state = parsed_problem.get("goal_state")
+        if not isinstance(goal_state, (list, tuple)):
+            raise LIBEROPandaInstrumentationError("pinned LIBERO goal state is unavailable")
+        observed_specs = tuple(
+            tuple(str(part).casefold() for part in state)
+            for state in goal_state
+            if isinstance(state, (list, tuple))
+        )
+        if observed_specs != expected:
+            raise LIBEROPandaInstrumentationError(
+                "live LIBERO goal state does not match the frozen task"
+            )
+        values = tuple(
+            _strict_bool(evaluator(state), f"goal_predicate_{index}")
+            for index, state in enumerate(goal_state)
+        )
+    return tuple(
+        LIBEROPandaGoalPredicateObservation(
+            predicate_index=index,
+            predicate_name=spec[0],
+            arguments=spec[1:],
+            satisfied=values[index],
+        )
+        for index, spec in enumerate(expected)
+    )
 
 
 def _extract_single_env_action_values(
@@ -987,14 +942,10 @@ def _extract_single_env_action_values(
         raise LIBEROPandaInstrumentationError(
             f"policy action horizon is invalid for {field_name}",
             rejection_reason=(
-                LIBEROPandaInstrumentationRejectionReason
-                .POLICY_RESPONSE_ACTION_HORIZON_INVALID
+                LIBEROPandaInstrumentationRejectionReason.POLICY_RESPONSE_ACTION_HORIZON_INVALID
             ),
         )
-    return tuple(
-        _single_float(item, field_name, policy_response=True)
-        for item in material
-    )
+    return tuple(_single_float(item, field_name, policy_response=True) for item in material)
 
 
 def _single_float(
@@ -1010,28 +961,21 @@ def _single_float(
             raise LIBEROPandaInstrumentationError(
                 f"policy action field is not scalar: {field_name}",
                 rejection_reason=(
-                    LIBEROPandaInstrumentationRejectionReason
-                    .POLICY_RESPONSE_ACTION_FIELD_NOT_SCALAR
+                    LIBEROPandaInstrumentationRejectionReason.POLICY_RESPONSE_ACTION_FIELD_NOT_SCALAR
                     if policy_response
-                    else LIBEROPandaInstrumentationRejectionReason
-                    .INSTRUMENTATION_BOUNDARY_REJECTED
+                    else LIBEROPandaInstrumentationRejectionReason.INSTRUMENTATION_BOUNDARY_REJECTED
                 ),
             )
         material = values[0]
     if hasattr(material, "item") and callable(material.item):
         material = material.item()
-    if (
-        isinstance(material, bool)
-        or not isinstance(material, (int, float))
-    ):
+    if isinstance(material, bool) or not isinstance(material, (int, float)):
         raise LIBEROPandaInstrumentationError(
             f"policy action field is not numeric: {field_name}",
             rejection_reason=(
-                LIBEROPandaInstrumentationRejectionReason
-                .POLICY_RESPONSE_ACTION_FIELD_NOT_NUMERIC
+                LIBEROPandaInstrumentationRejectionReason.POLICY_RESPONSE_ACTION_FIELD_NOT_NUMERIC
                 if policy_response
-                else LIBEROPandaInstrumentationRejectionReason
-                .INSTRUMENTATION_BOUNDARY_REJECTED
+                else LIBEROPandaInstrumentationRejectionReason.INSTRUMENTATION_BOUNDARY_REJECTED
             ),
         )
     number = float(material)
@@ -1039,11 +983,9 @@ def _single_float(
         raise LIBEROPandaInstrumentationError(
             f"policy action field is non-finite: {field_name}",
             rejection_reason=(
-                LIBEROPandaInstrumentationRejectionReason
-                .POLICY_RESPONSE_ACTION_FIELD_NON_FINITE
+                LIBEROPandaInstrumentationRejectionReason.POLICY_RESPONSE_ACTION_FIELD_NON_FINITE
                 if policy_response
-                else LIBEROPandaInstrumentationRejectionReason
-                .INSTRUMENTATION_BOUNDARY_REJECTED
+                else LIBEROPandaInstrumentationRejectionReason.INSTRUMENTATION_BOUNDARY_REJECTED
             ),
         )
     return number
@@ -1051,8 +993,7 @@ def _single_float(
 
 def _float_vector(value: Any) -> tuple[float, ...]:
     return tuple(
-        _single_float(item, "underlying_simulator_input")
-        for item in _sequence_values(value)
+        _single_float(item, "underlying_simulator_input") for item in _sequence_values(value)
     )
 
 
@@ -1061,9 +1002,7 @@ def _strict_bool(value: Any, field_name: str) -> bool:
     if hasattr(material, "item") and callable(material.item):
         material = material.item()
     if not isinstance(material, bool):
-        raise LIBEROPandaInstrumentationError(
-            f"{field_name} is not a boolean"
-        )
+        raise LIBEROPandaInstrumentationError(f"{field_name} is not a boolean")
     return material
 
 
@@ -1072,8 +1011,7 @@ def _require_result_tuple(
     *,
     length: int,
     rejection_reason: LIBEROPandaInstrumentationRejectionReason = (
-        LIBEROPandaInstrumentationRejectionReason
-        .INSTRUMENTATION_BOUNDARY_REJECTED
+        LIBEROPandaInstrumentationRejectionReason.INSTRUMENTATION_BOUNDARY_REJECTED
     ),
 ) -> tuple[Any, ...]:
     if not isinstance(value, tuple) or len(value) != length:
@@ -1088,14 +1026,18 @@ def _digest_material(label: str, value: Any) -> str:
     return canonical_sha256({label: _json_material(value)})
 
 
+def digest_runtime_material(label: str, value: Any) -> str:
+    """Content-bind runtime material through the supported public boundary."""
+
+    return _digest_material(label, value)
+
+
 def _json_material(value: Any) -> Any:
     if value is None or isinstance(value, (str, bool, int)):
         return value
     if isinstance(value, float):
         if value != value or value in (float("inf"), float("-inf")):
-            raise LIBEROPandaInstrumentationError(
-                "non-finite value cannot be content-bound"
-            )
+            raise LIBEROPandaInstrumentationError("non-finite value cannot be content-bound")
         return value
     if isinstance(value, Enum):
         return _json_material(value.value)
@@ -1103,10 +1045,7 @@ def _json_material(value: Any) -> Any:
     if array_material is not None:
         return array_material
     if isinstance(value, Mapping):
-        return {
-            str(key): _json_material(item)
-            for key, item in value.items()
-        }
+        return {str(key): _json_material(item) for key, item in value.items()}
     if _is_sequence_like(value):
         return [_json_material(item) for item in _sequence_values(value)]
     if hasattr(value, "item") and callable(value.item):
@@ -1133,21 +1072,15 @@ def _binary_array_material(value: Any) -> dict[str, Any] | None:
     if not dimensions:
         return None
     if any(dimension < 0 for dimension in dimensions):
-        raise LIBEROPandaInstrumentationError(
-            "array shape cannot contain a negative dimension"
-        )
+        raise LIBEROPandaInstrumentationError("array shape cannot contain a negative dimension")
     if bool(getattr(dtype, "hasobject", False)):
-        raise LIBEROPandaInstrumentationError(
-            "object arrays cannot be content-bound"
-        )
+        raise LIBEROPandaInstrumentationError("object arrays cannot be content-bound")
     try:
         payload = tobytes(order="C")
     except TypeError:
         payload = tobytes()
     if not isinstance(payload, bytes):
-        raise LIBEROPandaInstrumentationError(
-            "array byte representation is invalid"
-        )
+        raise LIBEROPandaInstrumentationError("array byte representation is invalid")
     return {
         "array_dtype": str(dtype),
         "array_shape": list(dimensions),
@@ -1187,6 +1120,7 @@ __all__ = [
     "LIBEROPandaInstrumentedEpisodeResult",
     "LIBEROPandaOfficialRunnerRecorder",
     "PreparedLIBEROPandaInstrumentedEpisode",
+    "digest_runtime_material",
     "prepare_libero_panda_instrumented_episode",
     "run_instrumented_official_libero_rollout",
 ]

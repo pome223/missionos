@@ -1,0 +1,52 @@
+--- libero.py
++++ libero.py
+@@ -17,6 +17,7 @@
+
+ import os
+ import re
++import json
+ from collections import defaultdict
+ from collections.abc import Callable, Iterable, Mapping, Sequence
+ from functools import partial
+@@ -360,6 +361,8 @@
+         else:
+             raise ValueError(f"Invalid control mode: {self.control_mode}")
+         observation = self._format_raw_obs(raw_obs)
++        self._missionos_step_index = 0
++        self._missionos_last_goal_predicates = None
+         info = {"is_success": False}
+         return observation, info
+
+@@ -374,6 +377,32 @@
+         raw_obs, reward, done, info = self._env.step(action)
+
+         is_success = self._env.check_success()
++        goal_state = self._env.env.parsed_problem["goal_state"]
++        goal_predicates = [
++            {
++                "predicate_index": index,
++                "predicate": [str(part).casefold() for part in state],
++                "satisfied": bool(self._env.env._eval_predicate(state)),
++            }
++            for index, state in enumerate(goal_state)
++        ]
++        goal_vector = tuple(item["satisfied"] for item in goal_predicates)
++        if goal_vector != self._missionos_last_goal_predicates:
++            print(
++                "MISSIONOS_LIBERO_PREDICATE_VECTOR "
++                + json.dumps(
++                    {
++                        "episode_init_state_index": self.init_state_id - self._reset_stride,
++                        "step_index": self._missionos_step_index,
++                        "official_success": bool(is_success),
++                        "goal_predicates": goal_predicates,
++                    },
++                    sort_keys=True,
++                ),
++                flush=True,
++            )
++            self._missionos_last_goal_predicates = goal_vector
++        self._missionos_step_index += 1
+         terminated = done or is_success
+         info.update(
+             {
