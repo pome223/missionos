@@ -18,7 +18,6 @@
   "physical_execution_invoked": false,
   "repository_contains_raw_snapshot": false,
   "runtime_image": {
-    "project": "keen-petal-210912",
     "name": "missionos-groot-n17-lerobot-runtime-v2-20260817",
     "status_after_creation": "READY",
     "storage_location": "us-central1",
