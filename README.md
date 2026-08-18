@@ -6,7 +6,100 @@
 
 **Give the AI a control tower, not a joystick.**
 
-MissionOS is a mission-control CLI for LLM-assisted drone and robot missions.
+MissionOS is a control plane for AI-driven robots. VLA/LLM agents propose
+actions; humans and deterministic rules keep execution authority.
+
+```text
+        AI / VLA
+           │  proposes (no authority)
+           ▼
+     Mission Contract
+           │
+           ▼
+     Human Approval          ← the only thing that creates execution authority
+           │
+           ▼
+     Bounded Dispatch        ← deterministic rules constrain what may run
+           │
+           ▼
+   PX4 / Nav2 / GR00T        ← executor applies actions
+           │
+           ▼
+        Verifier             ← non-model evidence decides
+     ├── continue
+     ├── repair
+     └── stop
+```
+
+Every stage leaves its own record: what was proposed, what was approved, what
+was sent, what was ACKed, and what was actually observed. Because those are
+separate facts, they cannot be collapsed into a single "the agent did it." An
+ACK is not success. Observed progress is not mission completion.
+
+**Core principle:**
+> LLM judges. Human approves. Rules constrain. Executor acts. Verifier checks.
+> Repair loops.
+
+## What Has Actually Run
+
+The same contract and authority mechanism has been exercised over three
+bounded simulator paths. All results below are simulator evidence.
+
+| Stack | Exercised | Observed |
+| ----- | --------- | -------- |
+| **PX4 / Gazebo SITL** | Outbound mission with two collision obstacles at ~50% and ~75% route progress | Two separate LLM proposals and two separate human approvals; second centerline rejoin observed; saved outbound and return telemetry |
+| **TurtleBot3 / ROS2 Nav2** | Chat request to deliver to a named room in `turtlebot3_house` | Three real doorways traversed from front yard to bedroom dropoff; AMCL-corrected observed trail against the approved plan |
+| **GR00T N1.7 / LIBERO Panda** | A natural partial failure continued **without resetting the world**, under a new contract, human approval, and one dispatch | Preserve predicates maintained 11/11 across 1 original-world attempt + 10 diagnostic clones; original-world target repair 0/1; diagnostic completion 2/10 |
+
+| PX4 drone · two separately approved obstacle recoveries | TurtleBot3 · house delivery to a named room |
+| -------------------------------------------------------- | --------------------------------------------- |
+| ![PX4 SITL map showing saved outbound telemetry, two operator-approved Recovery bypasses beside two collision obstacles, the second route rejoin, dropoff, and saved return telemetry](docs/examples/assets/missionos-two-obstacle-recovery-map.png) | ![TurtleBot3 chat delivery to the bedroom in turtlebot3_house, planned route and observed trail on the evidence map](docs/agents/evidence/pr7-turtlebot3-chat-e2e-map-task_d9ecedc8e7d5.png) |
+
+Both views are read-only evidence displays — radar screens, not cockpits. On
+the left, solid blue/cyan lines are saved telemetry, orange lines are the
+separately observed approved Recovery maneuvers, and the two red
+`18 x 18 x 20 m` footprints are collision obstacles. On the right, the
+approved plan is orange and the AMCL-corrected observed trail is blue. The PX4
+image is a sanitized, display-only summary derived from a reviewed SITL run;
+raw task identifiers and runtime artifacts are intentionally not published.
+
+An outdoor MAVLink drone, an indoor Nav2 ground robot, and a manipulation VLA
+are entirely different stacks, but the tower is the same: vehicles plug in as
+adapters while the control plane — proposal, approval, dispatch, evidence —
+stays fixed.
+
+### Where the frontier currently is
+
+The GR00T row is the open edge. The governed Repair path executes end to end:
+a natural partial failure is continued in the same world under a new Mission
+Contract, a recorded human approval, and a single bounded dispatch, with the
+verifier checking both the target predicate and the predicates that must not
+break. **Same-world Semantic Repair itself is not established** — the one
+original-world attempt did not improve the target predicate, and diagnostic
+clone completions cannot be promoted into a same-world claim.
+
+What that separates is worth stating plainly: the governed Repair control
+path has been exercised end to end; the model's own same-world repair
+capability has not been established. See the
+[GR00T Repair claim boundary](docs/agents/groot-lerobot-semantic-repair-checkpoint-gate.md)
+for the full evidence and pre-registered limits.
+
+## What Happens in a Run
+
+1. You ask MissionOS for a mission or a recovery decision.
+2. The LLM — the controller in the tower — proposes a route or a bounded
+   recovery action. At this point it has no authority at all.
+3. A human operator approves or rejects the proposal. A rejection is recorded
+   and grants nothing. An approval is recorded and is the only thing that
+   creates execution authority.
+4. MissionOS sends only approved actions through the execution boundary.
+5. MissionOS records proposal, approval, command send, ACK, observed progress,
+   and completion as separate facts.
+6. If the evidence shows a problem — an obstacle, a stall — the LLM proposes
+   the next recovery action. It still cannot approve or execute by itself.
+
+The loop runs the same way in nominal and off-nominal conditions. Recovery is
+not an escape hatch from governance; it goes through the same tower.
 
 Putting an AI agent into the physical world is not a question of making the
 model smarter. It is a question of which authority you hand it. An air traffic
@@ -15,22 +108,27 @@ confirmation. That separation of authority — not pilot skill alone — is what
 lets aviation scale safely. MissionOS applies the same structure to LLM
 agents.
 
-The LLM sits in the tower. It plans routes, judges situations, and proposes
-recovery actions. It holds no execution authority. A human approves or rejects
-each proposal, only approved actions cross the execution boundary, and every
-stage leaves its own record: what was proposed, what was approved, what was
-sent, what was ACKed, and what was actually observed.
+## What Is Not Claimed
 
-One consequence of this separation is that overclaiming becomes structurally
-impossible. When proposal, approval, dispatch, ACK, observation, and
-verification are separate facts, they cannot be collapsed into a single "the
-agent did it." An ACK is not success. Observed progress is not mission
-completion. This is not a slogan bolted onto the system — it falls out of the
-control-tower architecture.
+| Stack | Still not claimed |
+| ----- | ----------------- |
+| PX4 / Gazebo SITL | Physical flight, payload delivery, and delivery completion |
+| TurtleBot3 / ROS2 Nav2 | Physical robot execution, real actuator/E-stop validation, and delivery completion |
+| GR00T N1.7 / LIBERO Panda | Same-world Semantic Repair success, free-form instruction delivery, independent controller ACK, in-episode external stop, real Panda execution, and physical safety |
 
-**Core principle:**
-> LLM judges. Human approves. Rules constrain. Executor acts. Verifier checks.
-> Repair loops.
+Start here for each path: the [Chat Quickstart](#chat-quickstart) and the
+[obstacle recovery run](docs/examples/missionos-chat-obstacle-recovery.md) for
+PX4; the [TurtleBot3 Simulator Quickstart](#turtlebot3-simulator-quickstart)
+and the [TurtleBot3 bridge contract](docs/agents/ros2-nav2-turtlebot3-sim.md)
+for Nav2; the [v0.2.0 release boundary](docs/releases/v0.2.0.md) and the
+[parent-mission concept](docs/concepts/parent-mission-control.md) for GR00T.
+
+TurtleBot3 is used as the indoor baseline because it is the current
+reproducible ROS2/Nav2 simulator path, not because MissionOS prefers older
+hardware. TurtleBot4 support exists as an opt-in profile, but its current
+Create3/Gazebo stack has not yet produced the same repeatable odometry-backed
+motion evidence. See [Simulator Baseline](docs/concepts/simulator-baseline.md)
+for the migration boundary.
 
 ## Disclaimer
 
@@ -55,71 +153,6 @@ perception claims, shadow measurement, and action promotion described in
 LLM may propose during a fault; it does not widen what may execute without
 a recorded human approval, with one narrowly-scoped exception documented in
 `docs/agents/recovery-delegation-authority.md`.
-
-## What Happens in a Run
-
-1. You ask MissionOS for a mission or a recovery decision.
-2. The LLM — the controller in the tower — proposes a route or a bounded
-   recovery action. At this point it has no authority at all.
-3. A human operator approves or rejects the proposal. A rejection is recorded
-   and grants nothing. An approval is recorded and is the only thing that
-   creates execution authority.
-4. MissionOS sends only approved actions through the execution boundary.
-5. MissionOS records proposal, approval, command send, ACK, observed progress,
-   and completion as separate facts.
-6. If the evidence shows a problem — an obstacle, a stall — the LLM proposes
-   the next recovery action. It still cannot approve or execute by itself.
-
-The loop runs the same way in nominal and off-nominal conditions. Recovery is
-not an escape hatch from governance; it goes through the same tower.
-
-## The Same Tower Over Different Vehicles
-
-The control loop does not care what the vehicle is. The same contract and
-authority mechanism has now been exercised over three bounded simulator
-paths:
-
-| Path                            | Start here                                                                                                           | What to look for                                                                                                | Still not claimed                                                                   |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| PX4 / Gazebo SITL               | Use the [Chat Quickstart](#chat-quickstart), then read the [obstacle recovery run](docs/examples/missionos-chat-obstacle-recovery.md). | LLM proposal, human approval, PX4/Gazebo dispatch, `watch` / `operate` / `map` evidence, and recovery evidence. | Physical flight, payload delivery, and delivery completion.                         |
-| TurtleBot3 / ROS2 Nav2 / Gazebo | Use the [TurtleBot3 Simulator Quickstart](#turtlebot3-simulator-quickstart), then read the [TurtleBot3 bridge contract](docs/agents/ros2-nav2-turtlebot3-sim.md). | The same chat -> Gateway -> approval -> dispatch -> observed-motion loop on an indoor ground robot.             | Physical robot execution, real actuator/E-stop validation, and delivery completion. |
-| GR00T N1.7 / LIBERO Panda       | Read the [v0.2.0 release boundary](docs/releases/v0.2.0.md) and the [parent-mission concept](docs/concepts/parent-mission-control.md). | Approved catalog selection, frozen contract, action lineage, exact simulator predicate, and post-episode operator review. | Free-form instruction delivery, independent controller ACK, in-episode external stop, real Panda execution, and physical safety. |
-
-On the left, the OpenStreetMap recovery view shows an opt-in PX4/Gazebo SITL
-route with two collision obstacles, placed near 50% and 75% route progress.
-Each obstacle produced a separate LLM proposal and a separate human approval.
-Solid blue/cyan lines are saved telemetry, orange lines are the separately
-observed approved Recovery maneuvers, and the two red `18 x 18 x 20 m`
-footprints are collision obstacles. The first Recovery proceeds into the next
-obstacle epoch before a strict centerline rejoin is observed; the second rejoin
-is observed. No gray connector is present because this saved display has no
-unobserved gap. On the right, a
-TurtleBot3 in the stock
-Gazebo `turtlebot3_house` world asked in chat to deliver to the bedroom: the
-approved plan (orange) and the AMCL-corrected observed trail (blue) pass through
-three real doorways from the front yard to the bedroom dropoff.
-
-| PX4 drone · two separately approved obstacle recoveries | TurtleBot3 · house delivery to a named room |
-| -------------------------------------------------------- | --------------------------------------------- |
-| ![PX4 SITL map showing saved outbound telemetry, two operator-approved Recovery bypasses beside two collision obstacles, the second route rejoin, dropoff, and saved return telemetry](docs/examples/assets/missionos-two-obstacle-recovery-map.png) | ![TurtleBot3 chat delivery to the bedroom in turtlebot3_house, planned route and observed trail on the evidence map](docs/agents/evidence/pr7-turtlebot3-chat-e2e-map-task_d9ecedc8e7d5.png) |
-
-Both views are read-only evidence displays — radar screens, not cockpits. The
-PX4 image is a sanitized, display-only summary derived from a reviewed SITL
-run; raw task identifiers and runtime artifacts are intentionally not
-published, and source task artifacts remain authoritative.
-MissionOS claims only sim results and never claims physical execution or
-payload delivery.
-
-An outdoor MAVLink drone and an indoor Nav2 ground robot are entirely
-different stacks, but the tower is the same: vehicles plug in as adapters
-while the control plane — proposal, approval, dispatch, evidence — stays
-fixed. TurtleBot3 is used as the indoor baseline because it is the current
-reproducible ROS2/Nav2 simulator path, not because MissionOS prefers older
-hardware. TurtleBot4 support exists as an opt-in profile, but its current
-Create3/Gazebo stack has not yet produced the same repeatable odometry-backed
-motion evidence. See [Simulator Baseline](docs/concepts/simulator-baseline.md)
-for the migration boundary.
-
 ## Current Status
 
 MissionOS is an early public snapshot. The public path documented here is:
