@@ -78,8 +78,9 @@ break. **Same-world Semantic Repair itself is not established** — the one
 original-world attempt did not improve the target predicate, and diagnostic
 clone completions cannot be promoted into a same-world claim.
 
-What that separates is worth stating plainly: the control plane is
-demonstrated, the model's own repair capability is not. See the
+What that separates is worth stating plainly: the governed Repair control
+path has been exercised end to end; the model's own same-world repair
+capability has not been established. See the
 [GR00T Repair claim boundary](docs/agents/groot-lerobot-semantic-repair-checkpoint-gate.md)
 for the full evidence and pre-registered limits.
 
