@@ -1,0 +1,57 @@
+{
+  "attempt_count_total": 5,
+  "attempts_are_independent_observations": false,
+  "automatic_retry_performed": false,
+  "cohort_status": "cohort_complete",
+  "completed_loop_count": 5,
+  "independence_claimed": false,
+  "loops": [
+    {
+      "attempt_count": 1,
+      "cohort_index": 0,
+      "preservation_violation_observed": false,
+      "repair_loop_id": "groot-lerobot-repair-loop:9dced4d0-68ae-4064-b876-69d60c37bb8b",
+      "semantic_repair_established": false,
+      "status": "loop_budget_exhausted_without_improvement"
+    },
+    {
+      "attempt_count": 1,
+      "cohort_index": 1,
+      "preservation_violation_observed": false,
+      "repair_loop_id": "groot-lerobot-repair-loop:bdbdcc05-57a0-4797-86dc-41627a42a4dd",
+      "semantic_repair_established": false,
+      "status": "loop_budget_exhausted_without_improvement"
+    },
+    {
+      "attempt_count": 1,
+      "cohort_index": 2,
+      "preservation_violation_observed": false,
+      "repair_loop_id": "groot-lerobot-repair-loop:b099eca7-8f7e-4380-ae36-f9ee5a94a6b3",
+      "semantic_repair_established": false,
+      "status": "loop_budget_exhausted_without_improvement"
+    },
+    {
+      "attempt_count": 1,
+      "cohort_index": 3,
+      "preservation_violation_observed": false,
+      "repair_loop_id": "groot-lerobot-repair-loop:5661353b-135d-4c6d-9543-5b60fdaa7b03",
+      "semantic_repair_established": false,
+      "status": "loop_budget_exhausted_without_improvement"
+    },
+    {
+      "attempt_count": 1,
+      "cohort_index": 4,
+      "preservation_violation_observed": false,
+      "repair_loop_id": "groot-lerobot-repair-loop:250b0bd0-a3a2-479d-bd86-6702273f0600",
+      "semantic_repair_established": false,
+      "status": "loop_budget_exhausted_without_improvement"
+    }
+  ],
+  "physical_execution_invoked": false,
+  "planned_loop_count": 5,
+  "preservation_violation_loop_count": 0,
+  "primary_measurement": "0/5 loops",
+  "result_sha256": "4fd32ca5ba70641ce0eeea2893333eaa6fa9d13e11c9ca7f2e2c4b7026f7fa40",
+  "schema_version": "missionos_groot_lerobot_repair_loop_cohort.v1",
+  "successful_loop_count": 0
+}
