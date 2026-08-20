@@ -22,6 +22,12 @@ automatic_retry_performed = false
 primary_measurement = 0/5 loops
 ```
 
+The aggregator fails closed unless every loop has the expected schema, at
+least one indexed attempt, an explicit result mapping and status, an explicit
+boolean preservation result, an explicit boolean Semantic Repair result, and
+consistent loop/result terminal states. Missing evidence is not normalized
+into a negative observation.
+
 | Loop | Source vector | Repair target | Contract-bound preserve set | Result |
 | ---- | ------------- | ------------- | --------------------------- | ------ |
 | 1 | `[false, true, true]` | predicate 0 | predicates 1 and 2 | no improvement |

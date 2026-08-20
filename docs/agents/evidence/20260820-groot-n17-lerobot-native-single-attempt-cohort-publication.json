@@ -89,8 +89,8 @@
     "previous_public_record_contribution": "11/11",
     "previous_public_record": "20260817-groot-n17-lerobot-natural-repair-diagnostic-replay.json",
     "target_direction_breakdown": {
-      "predicate_0_target_execution_count": 2,
-      "predicate_1_target_execution_count": 14
+      "predicate_0_target_execution_count": 13,
+      "predicate_1_target_execution_count": 3
     },
     "same_preserve_pair_claimed_across_all_executions": false,
     "generalization_claimed": false
