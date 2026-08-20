@@ -169,7 +169,17 @@ def test_publication_companion_derives_combined_direction_and_digests() -> None:
     combined = publication["combined_preservation_accounting"]
     assert previous_attempt_count + publication["cohort_result"]["attempt_count_total"] == 16
     assert sum(expected_direction_counts.values()) == combined["execution_count"] == 16
-    assert combined["preserve_predicates_maintained_count"] == 16
+    previous_preserved = previous["preservation_observation"][
+        "preserve_predicates_maintained_count"
+    ]
+    native_preserved = (
+        publication["cohort_result"]["attempt_count_total"]
+        - publication["cohort_result"]["preservation_violation_loop_count"]
+    )
+    assert previous_preserved + native_preserved == combined[
+        "preserve_predicates_maintained_count"
+    ]
+    assert combined["preserve_predicates_maintained_count"] == combined["execution_count"]
 
 
 def test_cohort_rejects_empty_attempts() -> None:
