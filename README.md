@@ -49,7 +49,7 @@ bounded simulator paths. All results below are simulator evidence.
 | ----- | --------- | -------- |
 | **PX4 / Gazebo SITL** | Outbound mission with two collision obstacles at ~50% and ~75% route progress | Two separate LLM proposals and two separate human approvals; second centerline rejoin observed; saved outbound and return telemetry |
 | **TurtleBot3 / ROS2 Nav2** | Chat request to deliver to a named room in `turtlebot3_house` | Three real doorways traversed from front yard to bedroom dropoff; AMCL-corrected observed trail against the approved plan |
-| **GR00T N1.7 / LIBERO Panda** | A natural partial failure continued **without resetting the world**, under a new contract, human approval, and one dispatch | Preserve predicates maintained 11/11 across 1 original-world attempt + 10 diagnostic clones; original-world target repair 0/1; diagnostic completion 2/10 |
+| **GR00T N1.7 / LIBERO Panda** | Natural asymmetric partial failures continued **without resetting the world**, under a new contract, human approval, and one dispatch per loop | Native single-attempt cohort: target repair 0/5 loops; each execution's Contract-bound preserve predicates maintained 16/16 across 6 original-world attempts + 10 diagnostic clones |
 
 | PX4 drone · two separately approved obstacle recoveries | TurtleBot3 · house delivery to a named room |
 | -------------------------------------------------------- | --------------------------------------------- |
@@ -74,15 +74,21 @@ The GR00T row is the open edge. The governed Repair path executes end to end:
 a natural partial failure is continued in the same world under a new Mission
 Contract, a recorded human approval, and a single bounded dispatch, with the
 verifier checking both the target predicate and the predicates that must not
-break. **Same-world Semantic Repair itself is not established** — the one
-original-world attempt did not improve the target predicate, and diagnostic
-clone completions cannot be promoted into a same-world claim.
+break. A post-observation-amended native single-attempt cohort completed at
+**0/5 loops**: none of five natural asymmetric partial failures improved its
+target predicate. Across that cohort and the earlier original-world plus
+diagnostic-clone record, each execution's own Contract-bound preserve
+predicates were maintained **16/16**.
 
 What that separates is worth stating plainly: the governed Repair control
 path has been exercised end to end; the model's own same-world repair
-capability has not been established. See the
-[GR00T Repair claim boundary](docs/agents/groot-lerobot-semantic-repair-checkpoint-gate.md)
-for the full evidence and pre-registered limits.
+capability has not been established. The `0/5` is a bounded negative
+measurement, not a general Repair rate, and the `16/16` is not a real-world
+safety claim. See the
+[native single-attempt cohort record](docs/agents/groot-lerobot-native-single-attempt-cohort.md)
+and [GR00T Repair claim boundary](docs/agents/groot-lerobot-semantic-repair-checkpoint-gate.md)
+for the full evidence limits. The originally planned max-two-attempt protocol
+remains unmeasured.
 
 ## What Happens in a Run
 
@@ -114,7 +120,7 @@ agents.
 | ----- | ----------------- |
 | PX4 / Gazebo SITL | Physical flight, payload delivery, and delivery completion |
 | TurtleBot3 / ROS2 Nav2 | Physical robot execution, real actuator/E-stop validation, and delivery completion |
-| GR00T N1.7 / LIBERO Panda | Same-world Semantic Repair success, free-form instruction delivery, independent controller ACK, in-episode external stop, real Panda execution, and physical safety |
+| GR00T N1.7 / LIBERO Panda | General Repair rate, a difference from diagnostic clone re-entry, the unmeasured max-two-attempt protocol, independent controller ACK, real Panda execution, and physical safety |
 
 Start here for each path: the [Chat Quickstart](#chat-quickstart) and the
 [obstacle recovery run](docs/examples/missionos-chat-obstacle-recovery.md) for

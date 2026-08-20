@@ -17,6 +17,7 @@ docs.
 | Recovery delegation (reflex/deliberation split, perception claims, shadow measurement, action promotion) | `recovery-delegation-authority.md`, `claim-semantics.md`, `hardware-adapter-contract.md` |
 | Nav2 Core Recovery candidate divergence | `nav2-core-recovery-divergence.md` |
 | Evidence, claims, completion, or verifier behavior | `claim-semantics.md`, `artifact-taxonomy.md`, `contracts.md` |
+| GR00T / LeRobot native Repair cohort accounting or publication | `groot-lerobot-native-single-attempt-cohort.md`, `groot-lerobot-semantic-repair-checkpoint-gate.md`, `publication-rules.md`, `claim-semantics.md` |
 | Anonymized recovery replay publication or verification | `replay-bundle-contract.md`, `publication-rules.md`, `claim-semantics.md` |
 | PX4 / Gazebo SITL or PX4 bench-adjacent runtime | `px4-gazebo-route-runtime.md`, `px4-sim-to-hardware-portability.md`, `hardware-adapter-contract.md`, `claim-semantics.md`, `e2e-verification.md`, `publication-rules.md` |
 | PX4 SITL 成果を実機（bench/HITL/field）に載せる・作り直し境界 | `px4-sim-to-hardware-portability.md`, `hardware-adapter-contract.md`, `recovery-intent-compiler-verifier.md`, `claim-semantics.md`, `hardware-partner-integration-guide.md` |
@@ -67,6 +68,7 @@ When the map above is not enough, read the complete set:
 - `recovery-intent-compiler-verifier.md`
 - `backend-neutral-adapter-runtime.md`
 - `replay-bundle-contract.md`
+- `groot-lerobot-native-single-attempt-cohort.md` — bounded `0/5` Repair result and Contract-bound `16/16` preservation accounting
 - `repository-status.md` — whole-repo status snapshot (maturity, risks, next work)
 
 ## Working Rule

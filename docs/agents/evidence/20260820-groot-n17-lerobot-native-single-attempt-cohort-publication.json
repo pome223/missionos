@@ -1,0 +1,117 @@
+{
+  "schema_version": "missionos.groot_lerobot_native_single_attempt_cohort_publication.v1",
+  "recorded_on": "2026-08-20",
+  "protocol_status": {
+    "decision_status": "post_observation_protocol_amendment",
+    "amended_protocol_preregistered_before_all_observations": false,
+    "amended_protocol_fixed_before_native_loops_2_through_5": true,
+    "original_max_two_attempt_protocol_status": "unmeasured_as_registered"
+  },
+  "cohort_configuration": {
+    "measurement_unit": "one_natural_failure_live_same_world_loop",
+    "planned_loop_count": 5,
+    "max_attempts_per_loop": 1,
+    "automatic_retry_allowed": false,
+    "source_step_budget_per_init_state": 520,
+    "source_selection_rule": "first_full_budget_asymmetric_predicate_failure",
+    "maximum_repair_chunks": 45,
+    "simulator_actions_per_chunk": 16,
+    "required_reset_count": 1,
+    "required_state_continuity_basis": "live_same_world",
+    "stop_on_preservation_violation": true
+  },
+  "cohort_result": {
+    "source_record": "20260820-groot-n17-lerobot-native-single-attempt-cohort-result.json",
+    "source_record_sha256": "9f026952460cc1ca7634b8ab7df2224fe3af642b04a9285fccd73014958809ea",
+    "result_sha256": "4fd32ca5ba70641ce0eeea2893333eaa6fa9d13e11c9ca7f2e2c4b7026f7fa40",
+    "cohort_status": "cohort_complete",
+    "completed_loop_count": 5,
+    "successful_loop_count": 0,
+    "primary_measurement": "0/5 loops",
+    "attempt_count_total": 5,
+    "preservation_violation_loop_count": 0
+  },
+  "native_loop_context": [
+    {
+      "cohort_index": 0,
+      "episode_init_state_index": 12,
+      "source_goal_predicate_vector": [false, true, true],
+      "target_predicate_index": 0,
+      "preserve_predicate_indices": [1, 2],
+      "terminal_goal_predicate_vector": [false, true, true],
+      "source_result_sha256": "0667770815d933bffc64b47589efec3c57f4749d4d20c7eb6dfe481a629185cb"
+    },
+    {
+      "cohort_index": 1,
+      "episode_init_state_index": 12,
+      "source_goal_predicate_vector": [false, true, true],
+      "target_predicate_index": 0,
+      "preserve_predicate_indices": [1, 2],
+      "terminal_goal_predicate_vector": [false, true, true],
+      "source_result_sha256": "255ea2923bac496cda88dc38a7e014986d1a86729fd8176905268a66cd08364a"
+    },
+    {
+      "cohort_index": 2,
+      "episode_init_state_index": 15,
+      "source_goal_predicate_vector": [true, false, true],
+      "target_predicate_index": 1,
+      "preserve_predicate_indices": [0, 2],
+      "terminal_goal_predicate_vector": [true, false, true],
+      "source_result_sha256": "b1c7ff126426c046bf936519fc1a4691953f7ab806283db32dfed98e3b0cc6fd"
+    },
+    {
+      "cohort_index": 3,
+      "episode_init_state_index": 4,
+      "source_goal_predicate_vector": [true, false, true],
+      "target_predicate_index": 1,
+      "preserve_predicate_indices": [0, 2],
+      "terminal_goal_predicate_vector": [true, false, true],
+      "source_result_sha256": "23a024c91895749950fb141127a866a2a7ba16adc34fdbbed8328aecdb77a1c0"
+    },
+    {
+      "cohort_index": 4,
+      "episode_init_state_index": 15,
+      "source_goal_predicate_vector": [true, false, true],
+      "target_predicate_index": 1,
+      "preserve_predicate_indices": [0, 2],
+      "terminal_goal_predicate_vector": [true, false, true],
+      "source_result_sha256": "0ac40c755aff8600c6069ab7fe5f99fd9b05723d0c02fb3309f12679303c2512"
+    }
+  ],
+  "combined_preservation_accounting": {
+    "scope": "each_execution_own_contract_bound_preserve_predicates",
+    "original_world_attempt_count": 6,
+    "diagnostic_clone_attempt_count": 10,
+    "execution_count": 16,
+    "preserve_predicates_maintained_count": 16,
+    "preservation_violation_count": 0,
+    "native_cohort_contribution": "5/5",
+    "previous_public_record_contribution": "11/11",
+    "previous_public_record": "20260817-groot-n17-lerobot-natural-repair-diagnostic-replay.json",
+    "target_direction_breakdown": {
+      "predicate_0_target_execution_count": 13,
+      "predicate_1_target_execution_count": 3
+    },
+    "same_preserve_pair_claimed_across_all_executions": false,
+    "generalization_claimed": false
+  },
+  "evidence_separation": {
+    "proposal_is_approval": false,
+    "approval_is_dispatch": false,
+    "dispatch_is_controller_ack": false,
+    "controller_ack_is_simulator_effect": false,
+    "simulator_effect_is_predicate_improvement": false,
+    "predicate_improvement_is_task_completion": false,
+    "task_completion_is_semantic_repair": false,
+    "physical_execution_invoked": false
+  },
+  "claim_boundary": {
+    "target_predicate_improvement_observed_in_native_cohort": false,
+    "semantic_repair_established_in_native_cohort": false,
+    "contract_bound_preserve_predicates_maintained_16_of_16": true,
+    "general_groot_repair_rate_established": false,
+    "difference_from_diagnostic_clone_reentry_established": false,
+    "real_world_safety_established": false,
+    "physical_execution_invoked": false
+  }
+}
