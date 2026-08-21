@@ -1403,12 +1403,17 @@ def execute_live(
                 target_object_name: str,
                 target_predicate_index: int,
             ) -> dict[str, Any]:
-                current_observation, restored_state_sha256 = restore_trial_observation()
+                _, restored_state_sha256 = restore_trial_observation()
+                # Rendering the same MuJoCo state can contain non-semantic camera
+                # nondeterminism.  Freeze the first verified observation itself as
+                # the policy input for all three trials while independently restoring
+                # the simulator state before action application.
+                current_observation = deepcopy(fixed_observation)
                 if (
                     digest_runtime_material("semantic_direction_observation", current_observation)
                     != fixed_observation_sha256
                 ):
-                    raise RuntimeError("semantic_direction_observation_not_reproduced")
+                    raise RuntimeError("semantic_direction_frozen_observation_copy_mismatch")
                 policy.reset()
                 if len(policy._action_queue) != 0:
                     raise RuntimeError("semantic_direction_policy_queue_not_empty")
