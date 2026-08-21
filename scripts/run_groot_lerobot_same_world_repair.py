@@ -33,6 +33,9 @@ from src.runtime.groot_lerobot_live_session import (  # noqa: E402
     batch_single_environment_observation,
     verify_huggingface_local_snapshot,
 )
+from src.runtime.groot_lerobot_language_conditioning_probe import (  # noqa: E402
+    build_language_conditioning_probe_result,
+)
 from src.runtime.groot_lerobot_same_world_repair import (  # noqa: E402
     build_lerobot_same_world_repair_proposal,
     run_lerobot_same_world_repair,
@@ -76,6 +79,8 @@ FAILURE_SNAPSHOT_SCHEMA_VERSION = "missionos.groot_lerobot_failure_snapshot.v1"
 REPLAY_PROGRESS_SCHEMA_VERSION = "missionos.groot_lerobot_repair_replay_progress.v1"
 REPLAY_RESULT_SCHEMA_VERSION = "missionos.groot_lerobot_repair_replay_result.v1"
 REPLAY_VARIANTS = ("short_target", "original_task")
+FIRST_POT_INSTRUCTION = "put the first moka pot on the stove"
+SECOND_POT_INSTRUCTION = "put the second moka pot on the stove"
 REFERENCE_SOURCE_STEP_BUDGET = 520
 REFERENCE_SOURCE_SUCCESS_STEP_INDEX = 504
 REFERENCE_SOURCE_STEPS_EXECUTED = 505
@@ -269,6 +274,91 @@ def _write_json(path: Path, value: dict[str, Any]) -> None:
     finally:
         if temporary.exists():
             temporary.unlink()
+
+
+def execute_language_conditioning_probe(
+    *,
+    snapshot_artifact_sha256: str,
+    observation_sha256: str,
+    checkpoint_revision: str,
+    lerobot_revision: str,
+    sampling_seed: int,
+    instruction_a: str,
+    instruction_b: str,
+    diagnostic_authorization_ref: str,
+    invoke_trial: Any,
+) -> dict[str, Any]:
+    """Run the fixed A/A/B sequence without approving or applying an action."""
+
+    if instruction_a == instruction_b:
+        raise ValueError("language_probe_instructions_not_contrasted")
+    trials = []
+    for trial_index, (label, instruction) in enumerate(
+        (("A", instruction_a), ("A", instruction_a), ("B", instruction_b))
+    ):
+        trial = invoke_trial(
+            trial_index=trial_index,
+            label=label,
+            instruction=instruction,
+            sampling_seed=sampling_seed,
+        )
+        trials.append(trial)
+    return build_language_conditioning_probe_result(
+        snapshot_artifact_sha256=snapshot_artifact_sha256,
+        observation_sha256=observation_sha256,
+        checkpoint_revision=checkpoint_revision,
+        lerobot_revision=lerobot_revision,
+        sampling_seed=sampling_seed,
+        diagnostic_authorization_ref=diagnostic_authorization_ref,
+        trials=trials,
+    )
+
+
+def execute_fixture_language_conditioning_probe(
+    *, sampling_seed: int, diagnostic_authorization_ref: str
+) -> dict[str, Any]:
+    """Exercise the production probe classifier without GR00T or a simulator."""
+
+    if os.environ.get(FIXTURE_OPT_IN_ENV) != "1":
+        raise RuntimeError("lerobot_fixture_runtime_opt_in_required")
+
+    def invoke_trial(*, trial_index: int, label: str, instruction: str, sampling_seed: int):
+        instruction_sha256 = hashlib.sha256(instruction.encode("utf-8")).hexdigest()
+        prediction_basis = "fixture-a" if label == "A" else "fixture-b"
+        return {
+            "trial_index": trial_index,
+            "label": label,
+            "instruction": instruction,
+            "instruction_sha256": instruction_sha256,
+            "packed_language_exact_match": True,
+            "packed_language_sha256": instruction_sha256,
+            "observation_sha256": canonical_sha256({"observation": "fixture"}),
+            "sampling_seed": sampling_seed,
+            "policy_queue_empty_before_forward": True,
+            "policy_request_sha256": canonical_sha256(
+                {"observation": "fixture", "instruction": instruction}
+            ),
+            "policy_prediction_sha256": canonical_sha256(
+                {"prediction_basis": prediction_basis}
+            ),
+            "selected_action_sha256": canonical_sha256(
+                {"selected_action_basis": prediction_basis}
+            ),
+            "model_forward_observed": True,
+            "simulator_action_applied": False,
+        }
+
+    return execute_language_conditioning_probe(
+        snapshot_artifact_sha256="a" * 64,
+        observation_sha256=canonical_sha256({"observation": "fixture"}),
+        checkpoint_revision=CHECKPOINT_REVISION,
+        lerobot_revision=LEROBOT_REVISION,
+        sampling_seed=sampling_seed,
+        instruction_a=FIRST_POT_INSTRUCTION,
+        instruction_b=SECOND_POT_INSTRUCTION,
+        diagnostic_authorization_ref=diagnostic_authorization_ref,
+        invoke_trial=invoke_trial,
+    )
 
 
 def _sha256_path(path: Path) -> str:
@@ -782,8 +872,8 @@ def execute_fixture(
 def execute_live(
     *,
     checkpoint_path: Path,
-    operator_approval_ref: str,
-    dispatch_state_path: Path,
+    operator_approval_ref: str | None,
+    dispatch_state_path: Path | None,
     maximum_repair_chunks: int,
     episode_init_state_index: int = EPISODE_INIT_STATE_INDEX,
     source_step_budget: int = SOURCE_STEP_BUDGET,
@@ -793,6 +883,8 @@ def execute_live(
     failure_snapshot_path: Path | None = None,
     restore_snapshot_path: Path | None = None,
     repair_sampling_seed: int | None = None,
+    language_conditioning_probe: bool = False,
+    diagnostic_authorization_ref: str | None = None,
 ) -> dict[str, Any]:
     if not checkpoint_path.is_dir():
         raise ValueError("lerobot_checkpoint_directory_required")
@@ -817,6 +909,15 @@ def execute_live(
         raise ValueError("restored_trial_cannot_write_source_failure_snapshot")
     if restore_snapshot_path is not None and repair_sampling_seed is None:
         raise ValueError("restored_trial_repair_sampling_seed_required")
+    if language_conditioning_probe and restore_snapshot_path is None:
+        raise ValueError("language_probe_restore_snapshot_required")
+    if language_conditioning_probe:
+        if not isinstance(diagnostic_authorization_ref, str) or not diagnostic_authorization_ref:
+            raise ValueError("language_probe_diagnostic_authorization_ref_required")
+        if operator_approval_ref is not None or dispatch_state_path is not None:
+            raise ValueError("language_probe_approval_or_dispatch_forbidden")
+    elif not isinstance(operator_approval_ref, str) or dispatch_state_path is None:
+        raise ValueError("repair_approval_and_dispatch_state_required")
     if repair_sampling_seed is not None and (
         isinstance(repair_sampling_seed, bool) or repair_sampling_seed < 0
     ):
@@ -1170,6 +1271,89 @@ def execute_live(
         observed_reset_count=lambda: environment.reset_count,
     )
     try:
+        if language_conditioning_probe:
+            if restored_snapshot_metadata is None:
+                raise RuntimeError("language_probe_snapshot_metadata_missing")
+            restored_vector = [item["satisfied"] for item in restored_predicates]
+            if restored_vector == [False, True, True]:
+                instruction_a = FIRST_POT_INSTRUCTION
+                instruction_b = SECOND_POT_INSTRUCTION
+            elif restored_vector == [True, False, True]:
+                instruction_a = SECOND_POT_INSTRUCTION
+                instruction_b = FIRST_POT_INSTRUCTION
+            else:
+                raise ValueError("language_probe_snapshot_not_asymmetric_candidate")
+            observation_sha256 = digest_runtime_material(
+                "language_conditioning_observation", observation
+            )
+
+            def invoke_probe_trial(
+                *, trial_index: int, label: str, instruction: str, sampling_seed: int
+            ) -> dict[str, Any]:
+                policy.reset()
+                if len(policy._action_queue) != 0:
+                    raise RuntimeError("language_probe_policy_queue_not_empty")
+                random.seed(sampling_seed)
+                np.random.seed(sampling_seed)
+                torch.manual_seed(sampling_seed)
+                torch.cuda.manual_seed_all(sampling_seed)
+                processed = preprocess_observation(
+                    batch_single_environment_observation(observation)
+                )
+                processed["task"] = [instruction]
+                processed = env_preprocessor(processed)
+                language_count_before = int(language_observation["count"])
+                processed = preprocessor(processed)
+                if language_observation["count"] != language_count_before + 1:
+                    raise RuntimeError("language_probe_packed_payload_not_observed")
+                instruction_payload = deepcopy(language_observation["payload"])
+                instruction_sha256 = hashlib.sha256(instruction.encode("utf-8")).hexdigest()
+                request_sha256 = digest_runtime_material("policy_request", processed)
+                count_before = prediction_observer.count
+                action = policy.select_action(processed)
+                if prediction_observer.count != count_before + 1:
+                    raise RuntimeError("language_probe_model_forward_not_observed")
+                prediction_sha256 = prediction_observer.last_prediction_sha256
+                if not prediction_sha256:
+                    raise RuntimeError("language_probe_prediction_digest_missing")
+                return {
+                    "trial_index": trial_index,
+                    "label": label,
+                    "instruction": instruction,
+                    "instruction_sha256": instruction_sha256,
+                    "packed_language_exact_match": instruction_payload == [instruction],
+                    "packed_language_sha256": (
+                        hashlib.sha256(instruction_payload[0].encode("utf-8")).hexdigest()
+                        if isinstance(instruction_payload, list)
+                        and len(instruction_payload) == 1
+                        and isinstance(instruction_payload[0], str)
+                        else "0" * 64
+                    ),
+                    "observation_sha256": observation_sha256,
+                    "sampling_seed": sampling_seed,
+                    "policy_queue_empty_before_forward": True,
+                    "policy_request_sha256": request_sha256,
+                    "policy_prediction_sha256": prediction_sha256,
+                    "selected_action_sha256": digest_runtime_material(
+                        "selected_action", action
+                    ),
+                    "model_forward_observed": True,
+                    "simulator_action_applied": False,
+                }
+
+            return execute_language_conditioning_probe(
+                snapshot_artifact_sha256=restored_snapshot_metadata[
+                    "snapshot_artifact_sha256"
+                ],
+                observation_sha256=observation_sha256,
+                checkpoint_revision=CHECKPOINT_REVISION,
+                lerobot_revision=observed_lerobot_revision,
+                sampling_seed=int(repair_sampling_seed),
+                instruction_a=instruction_a,
+                instruction_b=instruction_b,
+                diagnostic_authorization_ref=diagnostic_authorization_ref,
+                invoke_trial=invoke_probe_trial,
+            )
         if restored_snapshot_metadata is None:
             source = session.run_source_steps(
                 instruction=SOURCE_INSTRUCTION,
@@ -1669,8 +1853,12 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--runtime", choices=("live", "fixture"), default="live")
     parser.add_argument("--checkpoint-path", type=Path, required=True)
-    parser.add_argument("--operator-approval-ref", required=True)
-    parser.add_argument("--dispatch-state-path", type=Path, required=True)
+    parser.add_argument("--operator-approval-ref")
+    parser.add_argument("--dispatch-state-path", type=Path)
+    parser.add_argument(
+        "--diagnostic-authorization-ref",
+        help="operator authorization for an inference-only diagnostic; not an approval ref",
+    )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--maximum-repair-chunks", type=int, default=45)
     parser.add_argument(
@@ -1708,6 +1896,14 @@ def main() -> int:
     parser.add_argument("--replay-progress-output", type=Path)
     parser.add_argument("--replay-trial-output-dir", type=Path)
     parser.add_argument("--repair-sampling-seed", type=int)
+    parser.add_argument(
+        "--language-conditioning-probe",
+        action="store_true",
+        help=(
+            "run one diagnostic-only A/A/B model-forward probe; no policy action is "
+            "applied to the simulator"
+        ),
+    )
     parser.add_argument("--source-step-budget", type=int, default=SOURCE_STEP_BUDGET)
     parser.add_argument(
         "--repair-instruction-variant",
@@ -1735,31 +1931,48 @@ def main() -> int:
         print(json.dumps({"status": "not_run", "required_opt_in": OPT_IN_ENV}))
         return 3
     try:
+        if args.language_conditioning_probe:
+            if not args.diagnostic_authorization_ref:
+                raise ValueError("language_probe_diagnostic_authorization_ref_required")
+            if args.operator_approval_ref is not None or args.dispatch_state_path is not None:
+                raise ValueError("language_probe_approval_or_dispatch_forbidden")
+            if args.screen_init_state_indices or args.replay_trials_per_variant:
+                raise ValueError("language_probe_screen_or_replay_forbidden")
+        elif args.operator_approval_ref is None or args.dispatch_state_path is None:
+            raise ValueError("repair_approval_and_dispatch_state_required")
         if args.runtime == "fixture":
             if args.screen_init_state_indices:
                 raise ValueError("fixture_runtime_does_not_screen_init_states")
-            report = execute_fixture(
-                operator_approval_ref=args.operator_approval_ref,
-                dispatch_state_path=args.dispatch_state_path.resolve(),
-                maximum_repair_chunks=args.maximum_repair_chunks,
-                failure_snapshot_path=(
-                    args.failure_snapshot_out.resolve()
-                    if args.failure_snapshot_out is not None
-                    else None
-                ),
-                replay_trials_per_variant=args.replay_trials_per_variant,
-                replay_seed_base=args.replay_seed_base,
-                replay_progress_output=(
-                    args.replay_progress_output.resolve()
-                    if args.replay_progress_output is not None
-                    else None
-                ),
-                replay_trial_output_dir=(
-                    args.replay_trial_output_dir.resolve()
-                    if args.replay_trial_output_dir is not None
-                    else None
-                ),
-            )
+            if args.language_conditioning_probe:
+                if args.repair_sampling_seed is None:
+                    raise ValueError("language_probe_sampling_seed_required")
+                report = execute_fixture_language_conditioning_probe(
+                    sampling_seed=args.repair_sampling_seed,
+                    diagnostic_authorization_ref=args.diagnostic_authorization_ref,
+                )
+            else:
+                report = execute_fixture(
+                    operator_approval_ref=args.operator_approval_ref,
+                    dispatch_state_path=args.dispatch_state_path.resolve(),
+                    maximum_repair_chunks=args.maximum_repair_chunks,
+                    failure_snapshot_path=(
+                        args.failure_snapshot_out.resolve()
+                        if args.failure_snapshot_out is not None
+                        else None
+                    ),
+                    replay_trials_per_variant=args.replay_trials_per_variant,
+                    replay_seed_base=args.replay_seed_base,
+                    replay_progress_output=(
+                        args.replay_progress_output.resolve()
+                        if args.replay_progress_output is not None
+                        else None
+                    ),
+                    replay_trial_output_dir=(
+                        args.replay_trial_output_dir.resolve()
+                        if args.replay_trial_output_dir is not None
+                        else None
+                    ),
+                )
         elif args.screen_init_state_indices:
             if args.source_failure_basis != "unknown":
                 raise ValueError("screen_source_failure_basis_is_observation_derived")
@@ -1815,6 +2028,8 @@ def main() -> int:
                     args.restore_snapshot.resolve() if args.restore_snapshot is not None else None
                 ),
                 repair_sampling_seed=args.repair_sampling_seed,
+                language_conditioning_probe=args.language_conditioning_probe,
+                diagnostic_authorization_ref=args.diagnostic_authorization_ref,
             )
     except Exception as error:
         # Keep the public JSON fail-closed and path-free, while preserving a
@@ -1844,6 +2059,7 @@ def main() -> int:
     return (
         0
         if report.get("fixture_runtime_verified") is True
+        or "local_instruction_conditioning_observed" in report
         or report.get("semantic_repair_established") is True
         or report.get("budget_truncated_source_semantic_repair_established") is True
         else 2
