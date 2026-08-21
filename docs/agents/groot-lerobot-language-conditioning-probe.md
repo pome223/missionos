@@ -102,3 +102,44 @@ Do not publish a live result until its `result_sha256`, file SHA-256, source
 commit, bundle digest, snapshot digest, model revisions, and resource cleanup
 have been verified. A capacity failure is environment status, not model
 evidence.
+
+## Verified Live Measurement (2026-08-21)
+
+The publication-safe companion is
+[`20260821-groot-n17-lerobot-language-conditioning-probe-publication.json`](evidence/20260821-groot-n17-lerobot-language-conditioning-probe-publication.json).
+It records one `g2-standard-8` plus NVIDIA L4 run from commit `615dff3`:
+
+- the A/A request, full prediction, and selected action reproduced
+- the A/B request, full prediction, and selected action differed
+- packed language matched exactly in all three forwards
+- the model-forward count was exactly three
+- no approval, dispatch, controller ACK, simulator action, predicate
+  improvement, Semantic Repair, or physical execution was claimed
+- the transient VM and boot disk were deleted and the persistent cache was
+  left detached
+
+The exact supported claim is local instruction sensitivity at one frozen
+observation and seed. The measurement does not show that the change points in
+the semantically correct object-relative direction.
+
+## Semantic-Direction Follow-up
+
+`--semantic-direction-probe` is a separate diagnostic clone. It restores the
+same asymmetric `[true, false, true]` snapshot before each `A, A, B` trial and
+applies exactly one 16-action chunk. A names the failed second-pot predicate;
+B names the already-satisfied first-pot contrast. No Repair approval or
+governed dispatch is created.
+
+The preregistered local-direction status requires:
+
+- exact A/A request, prediction, action-chunk, and terminal-state reproduction
+- positive end-effector progress toward the failed second pot under A
+- more A progress toward the failed pot than toward the protected first pot
+- more progress toward the failed pot under A than under the B contrast
+- no Contract-bound preservation violation during the 16 simulator steps
+
+Because B names an already-satisfied predicate, the classifier does not require
+B to approach the first pot. A positive result supports only local failed-target
+direction alignment. It is not instruction comprehension, Repair capability,
+task completion, Semantic Repair, controller ACK, governed dispatch, or
+physical execution.

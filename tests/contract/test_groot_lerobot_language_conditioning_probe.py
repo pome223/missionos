@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from copy import deepcopy
 import hashlib
+import json
+from pathlib import Path
 
 import pytest
 
@@ -157,3 +159,28 @@ def test_probe_fails_closed_on_incomplete_or_overreaching_trial(
             diagnostic_authorization_ref="diagnostic:test",
             trials=forged,
         )
+
+
+def test_live_publication_companion_preserves_the_claim_boundary() -> None:
+    publication = json.loads(
+        (
+            Path(__file__).resolve().parents[2]
+            / "docs/agents/evidence"
+            / "20260821-groot-n17-lerobot-language-conditioning-probe-publication.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert publication["source_result_sha256"] == (
+        "653141c8bb4b8dd76f2df3037767dad889a01a0a20010374a928b2abd01afffd"
+    )
+    assert publication["probe_configuration"]["model_forward_count"] == 3
+    assert publication["probe_configuration"]["simulator_actions_applied"] == 0
+    assert publication["result"]["local_instruction_conditioning_observed"] is True
+    assert publication["result"]["aa_policy_prediction_reproduced"] is True
+    assert publication["result"]["ab_policy_prediction_differs"] is True
+    assert all(value is False for value in publication["evidence_separation"].values())
+    boundary = publication["claim_boundary"]
+    assert boundary["instruction_comprehension_established"] is False
+    assert boundary["semantic_direction_alignment_established"] is False
+    assert boundary["repair_capability_established"] is False
+    assert boundary["native_repair_cohort_result_changed"] is False
