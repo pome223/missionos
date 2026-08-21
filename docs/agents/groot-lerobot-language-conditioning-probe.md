@@ -168,3 +168,7 @@ action because independently regenerated camera observations did not have an
 exact digest match. That run is recorded as excluded and contributes no
 measurement claim. The accepted run freezes one verified observation object
 for policy input while restoring the simulator state before every trial.
+
+The separately preregistered three-chunk follow-up is specified in
+[`groot-lerobot-semantic-direction-horizon-probe.md`](groot-lerobot-semantic-direction-horizon-probe.md).
+It does not revise this completed one-chunk result.

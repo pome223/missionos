@@ -39,6 +39,9 @@ from src.runtime.groot_lerobot_language_conditioning_probe import (  # noqa: E40
 from src.runtime.groot_lerobot_semantic_direction_probe import (  # noqa: E402
     build_semantic_direction_probe_result,
 )
+from src.runtime.groot_lerobot_semantic_direction_horizon_probe import (  # noqa: E402
+    build_semantic_direction_horizon_probe_result,
+)
 from src.runtime.groot_lerobot_same_world_repair import (  # noqa: E402
     build_lerobot_same_world_repair_proposal,
     run_lerobot_same_world_repair,
@@ -417,6 +420,128 @@ def execute_fixture_semantic_direction_probe(
     return build_semantic_direction_probe_result(
         snapshot_artifact_sha256="a" * 64,
         observation_sha256=canonical_sha256({"observation": "fixture"}),
+        checkpoint_revision=CHECKPOINT_REVISION,
+        lerobot_revision=LEROBOT_REVISION,
+        sampling_seed=sampling_seed,
+        diagnostic_authorization_ref=diagnostic_authorization_ref,
+        trials=(
+            fixture_trial(
+                trial_index=0,
+                label="A",
+                instruction=SECOND_POT_INSTRUCTION,
+                target_object_name="moka_pot_2",
+                target_progress=0.08,
+                other_progress=0.01,
+            ),
+            fixture_trial(
+                trial_index=1,
+                label="A",
+                instruction=SECOND_POT_INSTRUCTION,
+                target_object_name="moka_pot_2",
+                target_progress=0.08,
+                other_progress=0.01,
+            ),
+            fixture_trial(
+                trial_index=2,
+                label="B",
+                instruction=FIRST_POT_INSTRUCTION,
+                target_object_name="moka_pot_1",
+                target_progress=0.01,
+                other_progress=0.02,
+            ),
+        ),
+    )
+
+
+def execute_fixture_semantic_direction_horizon_probe(
+    *, sampling_seed: int, diagnostic_authorization_ref: str
+) -> dict[str, Any]:
+    """Exercise the production three-chunk classifier without GR00T."""
+
+    if os.environ.get(FIXTURE_OPT_IN_ENV) != "1":
+        raise RuntimeError("lerobot_fixture_runtime_opt_in_required")
+
+    observation_sha256 = canonical_sha256({"observation": "fixture"})
+
+    def fixture_trial(
+        *,
+        trial_index: int,
+        label: str,
+        instruction: str,
+        target_object_name: str,
+        target_progress: float,
+        other_progress: float,
+    ) -> dict[str, Any]:
+        instruction_sha256 = hashlib.sha256(instruction.encode()).hexdigest()
+        target_initial = 0.4
+        other_initial = 0.3
+        chunks = []
+        for chunk_index in range(3):
+            basis = "fixture-a" if label == "A" else "fixture-b"
+            chunks.append(
+                {
+                    "chunk_index": chunk_index,
+                    "policy_queue_empty_before_forward": True,
+                    "policy_request_sha256": canonical_sha256(
+                        {
+                            "instruction": instruction,
+                            "observation": "fixture" if chunk_index == 0 else basis,
+                            "chunk_index": chunk_index,
+                        }
+                    ),
+                    "policy_prediction_sha256": canonical_sha256(
+                        {"prediction": basis, "chunk_index": chunk_index}
+                    ),
+                    "action_chunk_sha256": canonical_sha256(
+                        {"actions": basis, "chunk_index": chunk_index}
+                    ),
+                    "model_forward_count": 1,
+                    "actions_applied": LEROBOT_LIVE_ACTION_STEPS,
+                    "target_terminal_distance_metres": (
+                        target_initial - target_progress * (chunk_index + 1) / 3
+                    ),
+                    "non_target_terminal_distance_metres": (
+                        other_initial - other_progress * (chunk_index + 1) / 3
+                    ),
+                    "terminal_goal_predicate_vector": [True, False, True],
+                    "preservation_violation_observed": False,
+                }
+            )
+        return {
+            "trial_index": trial_index,
+            "label": label,
+            "instruction": instruction,
+            "instruction_sha256": instruction_sha256,
+            "packed_language_exact_match": True,
+            "packed_language_sha256": instruction_sha256,
+            "target_object_name": target_object_name,
+            "non_target_object_name": (
+                "moka_pot_1" if target_object_name == "moka_pot_2" else "moka_pot_2"
+            ),
+            "observation_sha256": observation_sha256,
+            "restored_state_sha256": canonical_sha256({"state": "fixture"}),
+            "terminal_state_sha256": canonical_sha256(
+                {"terminal": label, "trial_index": trial_index}
+            ),
+            "sampling_seed": sampling_seed,
+            "chunks": chunks,
+            "model_forward_count": 3,
+            "actions_applied": 3 * LEROBOT_LIVE_ACTION_STEPS,
+            "simulator_effect_observed": True,
+            "initial_end_effector_position_metres": [0.0, 0.0, 0.0],
+            "terminal_end_effector_position_metres": [0.03, 0.04, 0.05],
+            "target_initial_distance_metres": target_initial,
+            "target_terminal_distance_metres": target_initial - target_progress,
+            "non_target_initial_distance_metres": other_initial,
+            "non_target_terminal_distance_metres": other_initial - other_progress,
+            "initial_goal_predicate_vector": [True, False, True],
+            "terminal_goal_predicate_vector": [True, False, True],
+            "preservation_violation_observed": False,
+        }
+
+    return build_semantic_direction_horizon_probe_result(
+        snapshot_artifact_sha256="a" * 64,
+        observation_sha256=observation_sha256,
         checkpoint_revision=CHECKPOINT_REVISION,
         lerobot_revision=LEROBOT_REVISION,
         sampling_seed=sampling_seed,
@@ -974,6 +1099,7 @@ def execute_live(
     repair_sampling_seed: int | None = None,
     language_conditioning_probe: bool = False,
     semantic_direction_probe: bool = False,
+    semantic_direction_horizon_probe: bool = False,
     diagnostic_authorization_ref: str | None = None,
 ) -> dict[str, Any]:
     if not checkpoint_path.is_dir():
@@ -999,8 +1125,13 @@ def execute_live(
         raise ValueError("restored_trial_cannot_write_source_failure_snapshot")
     if restore_snapshot_path is not None and repair_sampling_seed is None:
         raise ValueError("restored_trial_repair_sampling_seed_required")
-    diagnostic_probe = language_conditioning_probe or semantic_direction_probe
-    if language_conditioning_probe and semantic_direction_probe:
+    diagnostic_modes = (
+        language_conditioning_probe,
+        semantic_direction_probe,
+        semantic_direction_horizon_probe,
+    )
+    diagnostic_probe = any(diagnostic_modes)
+    if sum(diagnostic_modes) > 1:
         raise ValueError("diagnostic_probe_modes_mutually_exclusive")
     if diagnostic_probe and restore_snapshot_path is None:
         raise ValueError("diagnostic_probe_restore_snapshot_required")
@@ -1366,7 +1497,7 @@ def execute_live(
         observed_reset_count=lambda: environment.reset_count,
     )
     try:
-        if semantic_direction_probe:
+        if semantic_direction_probe or semantic_direction_horizon_probe:
             if restored_snapshot_metadata is None or restored_simulator_state is None:
                 raise RuntimeError("semantic_direction_snapshot_metadata_missing")
             restored_vector = [item["satisfied"] for item in restored_predicates]
@@ -1440,54 +1571,97 @@ def execute_live(
                     if satisfied and index != target_predicate_index
                 ]
                 prediction_count_before = prediction_observer.count
-                actions: list[Any] = []
+                chunk_count = 3 if semantic_direction_horizon_probe else 1
+                chunks: list[dict[str, Any]] = []
                 predicate_trace: list[list[bool]] = []
                 any_effect = False
-                request_sha256: str | None = None
-                prediction_sha256: str | None = None
                 instruction_payload: Any = None
-                for action_step_index in range(LEROBOT_LIVE_ACTION_STEPS):
-                    queue_before = len(policy._action_queue)
-                    selected = select_action(current_observation, instruction)
-                    if action_step_index == 0:
-                        if selected.model_forward_observed is not True:
-                            raise RuntimeError("semantic_direction_model_forward_missing")
-                        request_sha256 = selected.policy_request_sha256
-                        prediction_sha256 = selected.policy_response_sha256
-                        instruction_payload = selected.instruction_payload
-                    elif selected.model_forward_observed is True:
-                        raise RuntimeError("semantic_direction_extra_model_forward")
-                    expected_queue = (
-                        LEROBOT_LIVE_ACTION_STEPS - 1 if queue_before == 0 else queue_before - 1
+                for chunk_index in range(chunk_count):
+                    if len(policy._action_queue) != 0:
+                        raise RuntimeError("semantic_direction_policy_queue_not_empty")
+                    chunk_prediction_before = prediction_observer.count
+                    actions: list[Any] = []
+                    request_sha256: str | None = None
+                    prediction_sha256: str | None = None
+                    chunk_preservation_violation = False
+                    for action_step_index in range(LEROBOT_LIVE_ACTION_STEPS):
+                        queue_before = len(policy._action_queue)
+                        selected = select_action(current_observation, instruction)
+                        if action_step_index == 0:
+                            if selected.model_forward_observed is not True:
+                                raise RuntimeError("semantic_direction_model_forward_missing")
+                            request_sha256 = selected.policy_request_sha256
+                            prediction_sha256 = selected.policy_response_sha256
+                            if chunk_index == 0:
+                                instruction_payload = selected.instruction_payload
+                        elif selected.model_forward_observed is True:
+                            raise RuntimeError("semantic_direction_extra_model_forward")
+                        expected_queue = (
+                            LEROBOT_LIVE_ACTION_STEPS - 1 if queue_before == 0 else queue_before - 1
+                        )
+                        if len(policy._action_queue) != expected_queue:
+                            raise RuntimeError("semantic_direction_queue_transition_mismatch")
+                        actions.append(selected.action)
+                        before_sha256 = digest_runtime_material(
+                            "semantic_direction_step_observation", current_observation
+                        )
+                        action = postprocessor(selected.action)
+                        transition = env_postprocessor({ACTION: action})
+                        action_numpy = transition[ACTION].to("cpu").numpy()
+                        if action_numpy.shape != (1, 7):
+                            raise RuntimeError("semantic_direction_action_shape_mismatch")
+                        current_observation, _, terminated, truncated, info = environment.step(
+                            action_numpy[0]
+                        )
+                        after_sha256 = digest_runtime_material(
+                            "semantic_direction_step_observation", current_observation
+                        )
+                        any_effect = any_effect or before_sha256 != after_sha256
+                        predicates = _predicate_material(environment)
+                        vector = [item["satisfied"] for item in predicates]
+                        predicate_trace.append(vector)
+                        chunk_preservation_violation = chunk_preservation_violation or any(
+                            not vector[index] for index in preserve_indices
+                        )
+                        official_result = bool(environment.environment._env.check_success())
+                        if official_result is not all(vector):
+                            raise RuntimeError("semantic_direction_predicate_conjunction_mismatch")
+                        if truncated or (
+                            bool(info.get("done", terminated)) and not official_result
+                        ):
+                            raise RuntimeError("semantic_direction_environment_ended")
+                    if len(policy._action_queue) != 0:
+                        raise RuntimeError("semantic_direction_action_queue_not_consumed")
+                    chunk_positions = {
+                        name: np.asarray(position, dtype=np.float64)
+                        for name, position in _object_poses(environment).items()
+                    }
+                    chunk_eef = np.asarray(
+                        current_observation["robot_state"]["eef"]["pos"], dtype=np.float64
                     )
-                    if len(policy._action_queue) != expected_queue:
-                        raise RuntimeError("semantic_direction_queue_transition_mismatch")
-                    actions.append(selected.action)
-                    before_sha256 = digest_runtime_material(
-                        "semantic_direction_step_observation", current_observation
+                    chunks.append(
+                        {
+                            "chunk_index": chunk_index,
+                            "policy_queue_empty_before_forward": True,
+                            "policy_request_sha256": request_sha256,
+                            "policy_prediction_sha256": prediction_sha256,
+                            "action_chunk_sha256": digest_runtime_material(
+                                "semantic_direction_action_chunk", actions
+                            ),
+                            "model_forward_count": (
+                                prediction_observer.count - chunk_prediction_before
+                            ),
+                            "actions_applied": LEROBOT_LIVE_ACTION_STEPS,
+                            "target_terminal_distance_metres": float(
+                                np.linalg.norm(chunk_positions[target_object_name] - chunk_eef)
+                            ),
+                            "non_target_terminal_distance_metres": float(
+                                np.linalg.norm(chunk_positions[other_object_name] - chunk_eef)
+                            ),
+                            "terminal_goal_predicate_vector": predicate_trace[-1],
+                            "preservation_violation_observed": (chunk_preservation_violation),
+                        }
                     )
-                    action = postprocessor(selected.action)
-                    transition = env_postprocessor({ACTION: action})
-                    action_numpy = transition[ACTION].to("cpu").numpy()
-                    if action_numpy.shape != (1, 7):
-                        raise RuntimeError("semantic_direction_action_shape_mismatch")
-                    current_observation, _, terminated, truncated, info = environment.step(
-                        action_numpy[0]
-                    )
-                    after_sha256 = digest_runtime_material(
-                        "semantic_direction_step_observation", current_observation
-                    )
-                    any_effect = any_effect or before_sha256 != after_sha256
-                    predicates = _predicate_material(environment)
-                    vector = [item["satisfied"] for item in predicates]
-                    predicate_trace.append(vector)
-                    official_result = bool(environment.environment._env.check_success())
-                    if official_result is not all(vector):
-                        raise RuntimeError("semantic_direction_predicate_conjunction_mismatch")
-                    if truncated or (bool(info.get("done", terminated)) and not official_result):
-                        raise RuntimeError("semantic_direction_environment_ended")
-                if len(policy._action_queue) != 0:
-                    raise RuntimeError("semantic_direction_action_queue_not_consumed")
                 model_forward_count = prediction_observer.count - prediction_count_before
                 terminal_positions = {
                     name: np.asarray(position, dtype=np.float64)
@@ -1523,14 +1697,9 @@ def execute_live(
                     "restored_state_sha256": restored_state_sha256,
                     "terminal_state_sha256": hashlib.sha256(terminal_state.tobytes()).hexdigest(),
                     "sampling_seed": int(repair_sampling_seed),
-                    "policy_queue_empty_before_forward": True,
-                    "policy_request_sha256": request_sha256,
-                    "policy_prediction_sha256": prediction_sha256,
-                    "action_chunk_sha256": digest_runtime_material(
-                        "semantic_direction_action_chunk", actions
-                    ),
+                    "chunks": chunks,
                     "model_forward_count": model_forward_count,
-                    "actions_applied": LEROBOT_LIVE_ACTION_STEPS,
+                    "actions_applied": chunk_count * LEROBOT_LIVE_ACTION_STEPS,
                     "simulator_effect_observed": bool(any_effect),
                     "initial_end_effector_position_metres": initial_eef.tolist(),
                     "terminal_end_effector_position_metres": terminal_eef.tolist(),
@@ -1574,7 +1743,25 @@ def execute_live(
                     target_predicate_index=0,
                 ),
             )
-            return build_semantic_direction_probe_result(
+            result_builder = (
+                build_semantic_direction_horizon_probe_result
+                if semantic_direction_horizon_probe
+                else build_semantic_direction_probe_result
+            )
+            if not semantic_direction_horizon_probe:
+                for trial in direction_trials:
+                    first_chunk = trial.pop("chunks")[0]
+                    trial.update(
+                        {
+                            "policy_queue_empty_before_forward": first_chunk[
+                                "policy_queue_empty_before_forward"
+                            ],
+                            "policy_request_sha256": first_chunk["policy_request_sha256"],
+                            "policy_prediction_sha256": first_chunk["policy_prediction_sha256"],
+                            "action_chunk_sha256": first_chunk["action_chunk_sha256"],
+                        }
+                    )
+            return result_builder(
                 snapshot_artifact_sha256=restored_snapshot_metadata["snapshot_artifact_sha256"],
                 observation_sha256=fixed_observation_sha256,
                 checkpoint_revision=CHECKPOINT_REVISION,
@@ -2220,6 +2407,15 @@ def main() -> int:
             "trial; no approval or governed dispatch is created"
         ),
     )
+    parser.add_argument(
+        "--semantic-direction-horizon-probe",
+        action="store_true",
+        help=(
+            "run the separately preregistered diagnostic A/A/B clone with exactly "
+            "three 16-action closed-loop chunks per trial; no approval or governed "
+            "dispatch is created"
+        ),
+    )
     parser.add_argument("--source-step-budget", type=int, default=SOURCE_STEP_BUDGET)
     parser.add_argument(
         "--repair-instruction-variant",
@@ -2247,8 +2443,13 @@ def main() -> int:
         print(json.dumps({"status": "not_run", "required_opt_in": OPT_IN_ENV}))
         return 3
     try:
-        diagnostic_probe = args.language_conditioning_probe or args.semantic_direction_probe
-        if args.language_conditioning_probe and args.semantic_direction_probe:
+        diagnostic_modes = (
+            args.language_conditioning_probe,
+            args.semantic_direction_probe,
+            args.semantic_direction_horizon_probe,
+        )
+        diagnostic_probe = any(diagnostic_modes)
+        if sum(diagnostic_modes) > 1:
             raise ValueError("diagnostic_probe_modes_mutually_exclusive")
         if diagnostic_probe:
             if not args.diagnostic_authorization_ref:
@@ -2270,8 +2471,13 @@ def main() -> int:
                         sampling_seed=args.repair_sampling_seed,
                         diagnostic_authorization_ref=args.diagnostic_authorization_ref,
                     )
-                else:
+                elif args.semantic_direction_probe:
                     report = execute_fixture_semantic_direction_probe(
+                        sampling_seed=args.repair_sampling_seed,
+                        diagnostic_authorization_ref=args.diagnostic_authorization_ref,
+                    )
+                else:
+                    report = execute_fixture_semantic_direction_horizon_probe(
                         sampling_seed=args.repair_sampling_seed,
                         diagnostic_authorization_ref=args.diagnostic_authorization_ref,
                     )
@@ -2359,6 +2565,7 @@ def main() -> int:
                 repair_sampling_seed=args.repair_sampling_seed,
                 language_conditioning_probe=args.language_conditioning_probe,
                 semantic_direction_probe=args.semantic_direction_probe,
+                semantic_direction_horizon_probe=args.semantic_direction_horizon_probe,
                 diagnostic_authorization_ref=args.diagnostic_authorization_ref,
             )
     except Exception as error:
