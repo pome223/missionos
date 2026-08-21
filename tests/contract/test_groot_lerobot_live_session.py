@@ -1043,6 +1043,56 @@ def test_fixture_cli_exercises_snapshot_and_atomic_replay_outputs(monkeypatch, t
     assert __import__("json").loads(progress.read_text())["completed_trial_count"] == 4
 
 
+def test_live_language_probe_cli_passes_no_dispatch_state(monkeypatch, tmp_path) -> None:
+    output = tmp_path / "probe-result.json"
+    checkpoint = tmp_path / "checkpoint"
+    snapshot = tmp_path / "candidate.npz"
+    checkpoint.mkdir()
+    snapshot.write_bytes(b"diagnostic-snapshot")
+    calls = []
+
+    def fake_execute_live(**kwargs):
+        calls.append(kwargs)
+        return {
+            "status": "no_local_prediction_difference_observed",
+            "local_instruction_conditioning_observed": False,
+            "semantic_repair_established": False,
+            "physical_execution_invoked": False,
+        }
+
+    monkeypatch.setattr(live_runner, "execute_live", fake_execute_live)
+    monkeypatch.setenv(live_runner.OPT_IN_ENV, "1")
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "run_groot_lerobot_same_world_repair.py",
+            "--runtime",
+            "live",
+            "--checkpoint-path",
+            str(checkpoint),
+            "--restore-snapshot",
+            str(snapshot),
+            "--diagnostic-authorization-ref",
+            "diagnostic:test",
+            "--output",
+            str(output),
+            "--language-conditioning-probe",
+            "--repair-sampling-seed",
+            "1000",
+        ],
+    )
+
+    assert live_runner.main() == 0
+    assert len(calls) == 1
+    assert calls[0]["operator_approval_ref"] is None
+    assert calls[0]["dispatch_state_path"] is None
+    assert calls[0]["language_conditioning_probe"] is True
+    assert calls[0]["diagnostic_authorization_ref"] == "diagnostic:test"
+    assert __import__("json").loads(output.read_text())["status"] == (
+        "no_local_prediction_difference_observed"
+    )
+
+
 def test_live_replay_trials_alternate_order_are_atomic_and_never_semantic(
     monkeypatch, tmp_path
 ) -> None:

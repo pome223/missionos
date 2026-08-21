@@ -2013,7 +2013,11 @@ def main() -> int:
             report = execute_live(
                 checkpoint_path=args.checkpoint_path.resolve(),
                 operator_approval_ref=args.operator_approval_ref,
-                dispatch_state_path=args.dispatch_state_path.resolve(),
+                dispatch_state_path=(
+                    args.dispatch_state_path.resolve()
+                    if args.dispatch_state_path is not None
+                    else None
+                ),
                 maximum_repair_chunks=args.maximum_repair_chunks,
                 episode_init_state_index=args.episode_init_state_index,
                 source_step_budget=args.source_step_budget,
