@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import hashlib
+import json
+from pathlib import Path
 
 import pytest
 
@@ -169,3 +171,28 @@ def test_probe_fails_closed_on_invalid_trial(field: str, value: object, error: s
             diagnostic_authorization_ref="diagnostic:test",
             trials=trials,
         )
+
+
+def test_live_publication_records_the_negative_one_chunk_boundary() -> None:
+    publication = json.loads(
+        (
+            Path(__file__).resolve().parents[2]
+            / "docs/agents/evidence"
+            / "20260821-groot-n17-lerobot-semantic-direction-probe-publication.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    result = publication["result"]
+    assert result["status"] == "aa_trajectory_control_not_reproduced"
+    assert result["aa_policy_prediction_reproduced"] is True
+    assert result["aa_action_chunk_reproduced"] is True
+    assert result["aa_terminal_state_reproduced"] is False
+    assert all(value < 0.0 for value in result["failed_target_progress_metres"])
+    assert result["local_failed_target_direction_alignment_observed"] is False
+    assert result["preservation_violation_observed"] is False
+    assert publication["excluded_pre_forward_run"]["measurement_claimed"] is False
+    assert publication["probe_configuration"]["model_forward_count"] == 3
+    assert publication["probe_configuration"]["simulator_action_count"] == 48
+    assert publication["evidence_separation"]["simulator_action_application_observed"] is True
+    assert publication["evidence_separation"]["policy_actions_dispatched"] is False
+    assert publication["claim_boundary"]["native_repair_cohort_result_changed"] is False

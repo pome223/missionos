@@ -143,3 +143,28 @@ B to approach the first pot. A positive result supports only local failed-target
 direction alignment. It is not instruction comprehension, Repair capability,
 task completion, Semantic Repair, controller ACK, governed dispatch, or
 physical execution.
+
+## Verified Semantic-Direction Measurement (2026-08-21)
+
+The publication-safe companion is
+[`20260821-groot-n17-lerobot-semantic-direction-probe-publication.json`](evidence/20260821-groot-n17-lerobot-semantic-direction-probe-publication.json).
+The fixed one-chunk live result was
+`aa_trajectory_control_not_reproduced`:
+
+- A/A policy request, full prediction, and 16-action chunk digests reproduced
+- the restored simulator-state digest reproduced
+- the A/A terminal simulator-state digests differed slightly
+- end-effector distance to the failed second-pot target increased by about
+  6.41 cm in both A trials
+- no preserve predicate was violated
+- three model forwards and 48 simulator actions were observed in total
+
+Therefore the preregistered local semantic-direction criterion was not met.
+This is an inconclusive/negative one-chunk diagnostic, not evidence of semantic
+misunderstanding in general. It does not alter the native Repair cohort result.
+
+An earlier source commit failed closed before any model forward or simulator
+action because independently regenerated camera observations did not have an
+exact digest match. That run is recorded as excluded and contributes no
+measurement claim. The accepted run freezes one verified observation object
+for policy input while restoring the simulator state before every trial.
