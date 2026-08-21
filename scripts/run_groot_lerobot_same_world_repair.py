@@ -718,8 +718,17 @@ def _pre_registered_replay_claims_sha256() -> str:
 
 
 def _git_revision(path: Path) -> str:
+    resolved = path.resolve()
     completed = subprocess.run(
-        ["git", "-C", str(path), "rev-parse", "HEAD"],
+        [
+            "git",
+            "-c",
+            f"safe.directory={resolved}",
+            "-C",
+            str(resolved),
+            "rev-parse",
+            "HEAD",
+        ],
         check=True,
         capture_output=True,
         text=True,

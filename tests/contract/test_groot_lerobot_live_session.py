@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from collections import deque
 from copy import deepcopy
+from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -38,6 +40,33 @@ def test_live_candidate_profile_matches_pinned_baseline() -> None:
         (False, True, True),
         (True, False, True),
     )
+
+
+def test_git_revision_scopes_safe_directory_without_global_mutation(monkeypatch) -> None:
+    calls: list[tuple[list[str], dict[str, object]]] = []
+
+    def fake_run(command: list[str], **kwargs: object) -> SimpleNamespace:
+        calls.append((command, kwargs))
+        return SimpleNamespace(stdout="6adf51511b7625090eade8d82d9f61a1846ebe56\n")
+
+    monkeypatch.setattr(live_runner.subprocess, "run", fake_run)
+    repository = Path("/opt/lerobot")
+
+    assert live_runner._git_revision(repository) == live_runner.LEROBOT_REVISION
+    assert calls == [
+        (
+            [
+                "git",
+                "-c",
+                "safe.directory=/opt/lerobot",
+                "-C",
+                "/opt/lerobot",
+                "rev-parse",
+                "HEAD",
+            ],
+            {"check": True, "capture_output": True, "text": True},
+        )
+    ]
 
 
 @pytest.mark.parametrize(
