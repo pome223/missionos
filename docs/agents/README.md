@@ -71,6 +71,7 @@ When the map above is not enough, read the complete set:
 - `replay-bundle-contract.md`
 - `groot-lerobot-native-single-attempt-cohort.md` — bounded `0/5` Repair result and Contract-bound `16/16` preservation accounting
 - `groot-lerobot-language-conditioning-probe.md` — inference-only A/A/B evidence and its claim boundary
+- `groot-lerobot-semantic-direction-horizon-probe.md` — preregistered three-chunk A/A/B semantic-direction diagnostic and its bounded result
 - `repository-status.md` — whole-repo status snapshot (maturity, risks, next work)
 
 ## Working Rule

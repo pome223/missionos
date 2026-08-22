@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import hashlib
+import json
+from pathlib import Path
 
 import pytest
 
@@ -199,3 +201,43 @@ def test_horizon_probe_fails_closed_on_invalid_trial(field: str, value: object, 
             diagnostic_authorization_ref="diagnostic:test-horizon",
             trials=result["trials"],
         )
+
+
+def test_live_horizon_publication_records_the_negative_boundary() -> None:
+    publication = json.loads(
+        (
+            Path(__file__).resolve().parents[2]
+            / "docs/agents/evidence"
+            / "20260822-groot-n17-lerobot-semantic-direction-horizon-probe-publication.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert publication["source_evidence_file_sha256"] == (
+        "6354919bb8adbcf831f61c8666354f20682548b23488fe8c1235a2f66cbd371b"
+    )
+    assert publication["source_result_sha256"] == (
+        "6251f7b91854a52befa7bf898a4eee56107135a2a4ee41cb0f1ae2e16f1e9c59"
+    )
+    configuration = publication["probe_configuration"]
+    assert configuration["model_forward_count"] == 9
+    assert configuration["simulator_action_count"] == 144
+    assert configuration["later_closed_loop_trajectories_independent"] is True
+    result = publication["result"]
+    assert result["status"] == "local_three_chunk_direction_alignment_not_observed"
+    assert result["aa_initial_policy_request_prediction_and_chunk_reproduced"] is True
+    assert all(value < 0.0 for value in result["failed_target_progress_metres"])
+    assert result["failed_target_positive_progress"] == [False, False]
+    assert result["failed_target_progress_exceeds_contrast_trial"] == [False, False]
+    assert result["local_three_chunk_failed_target_direction_alignment_observed"] is False
+    assert result["preservation_violation_observed"] is False
+    separation = publication["evidence_separation"]
+    assert separation["simulator_action_application_observed"] is True
+    assert separation["approval_created"] is False
+    assert separation["dispatch_created"] is False
+    assert separation["controller_ack_observed"] is False
+    assert separation["semantic_repair_established"] is False
+    boundary = publication["claim_boundary"]
+    assert boundary["instruction_comprehension_established"] is False
+    assert boundary["repair_capability_established"] is False
+    assert boundary["native_repair_cohort_result_changed"] is False
+    assert boundary["physical_execution_established"] is False

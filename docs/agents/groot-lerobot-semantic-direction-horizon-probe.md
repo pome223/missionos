@@ -54,3 +54,32 @@ restored observation and seed. It does not establish general instruction
 comprehension, Repair capability, task completion, Semantic Repair, controller
 ACK, governed dispatch, real-world safety, or physical execution. This probe is
 not a Repair attempt and does not change the published native cohort result.
+
+## Verified measurement (2026-08-22)
+
+The publication-safe companion is
+[`20260822-groot-n17-lerobot-semantic-direction-horizon-probe-publication.json`](evidence/20260822-groot-n17-lerobot-semantic-direction-horizon-probe-publication.json).
+The live result was
+`local_three_chunk_direction_alignment_not_observed`:
+
+- the first A/A policy request, full prediction, and 16-action chunk reproduced;
+- both A trials completed all three closed-loop chunks;
+- failed-second-pot progress was `-0.07404997105318845 m` and
+  `-0.0763733205535726 m` under A;
+- the B contrast's progress toward that same failed second pot was
+  `-0.07342729718890362 m`;
+- neither A trial had positive failed-target progress or exceeded the B
+  contrast's progress toward that target;
+- no preserve predicate was violated across 144 simulator actions; and
+- exactly nine model forwards and 144 simulator actions were observed.
+
+Therefore the frozen positive classifier was not met. This result narrows the
+local observation from instruction sensitivity to a negative three-chunk
+semantic-direction diagnostic. It does not establish general semantic
+misunderstanding, Repair incapability, task completion, Semantic Repair,
+controller ACK, governed dispatch, real-world safety, or physical execution.
+It does not alter the native Repair cohort `0/5`.
+
+The raw simulator logs remain local. The checked-in companion contains only
+reviewed digests, bounded metrics, revisions, cleanup state, and claim
+limitations.
