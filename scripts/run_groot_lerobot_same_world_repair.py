@@ -2317,6 +2317,8 @@ def execute_live_replay_trials(
                 "physical_execution_invoked": False,
             },
         )
+        if summary["preservation_violation_observed"]:
+            break
     success_counts = {
         variant: sum(
             trial["predicate_improvement_observed"]
@@ -2325,7 +2327,12 @@ def execute_live_replay_trials(
         )
         for variant in REPLAY_VARIANTS
     }
-    if all(count == 0 for count in success_counts.values()):
+    preservation_violation_observed = any(
+        trial["preservation_violation_observed"] for trial in trials
+    )
+    if preservation_violation_observed:
+        conclusion_key = "stopped_on_preservation_violation"
+    elif all(count == 0 for count in success_counts.values()):
         conclusion_key = "both_variants_zero"
     elif len(set(success_counts.values())) > 1:
         conclusion_key = "variant_difference"
@@ -2340,16 +2347,25 @@ def execute_live_replay_trials(
         "completed_trial_count": len(trials),
         "success_counts": success_counts,
         "conclusion_key": conclusion_key,
-        "pre_registered_conclusion": preregistration[conclusion_key].format(
-            trial_count=len(trials)
+        "pre_registered_conclusion": (
+            "The diagnostic replay stopped immediately after a preservation violation; "
+            "no instruction comparison is established."
+            if preservation_violation_observed
+            else preregistration[conclusion_key].format(trial_count=len(trials))
         ),
+        "status": (
+            "stopped_on_preservation_violation"
+            if preservation_violation_observed
+            else "replay_complete"
+        ),
+        "preservation_violation_observed": preservation_violation_observed,
         "experiment_preregistration_sha256": _pre_registered_replay_claims_sha256(),
         "general_instruction_superiority_claimed": False,
         "same_world_semantic_repair_claimed_from_clones": False,
         "semantic_repair_established": False,
         "physical_execution_invoked": False,
     }
-    _write_json(progress_output, {**result, "status": "replay_complete"})
+    _write_json(progress_output, result)
     return result
 
 
@@ -2547,9 +2563,23 @@ def main() -> int:
                     else None
                 ),
             )
+        elif args.replay_trials_per_variant:
+            if args.restore_snapshot is None:
+                raise ValueError("replay_trials_require_screen_or_restore_snapshot")
+            if args.replay_progress_output is None or args.replay_trial_output_dir is None:
+                raise ValueError("replay_trials_require_atomic_outputs")
+            report = execute_live_replay_trials(
+                checkpoint_path=args.checkpoint_path.resolve(),
+                snapshot_path=args.restore_snapshot.resolve(),
+                operator_approval_ref=args.operator_approval_ref,
+                dispatch_state_path=args.dispatch_state_path.resolve(),
+                maximum_repair_chunks=args.maximum_repair_chunks,
+                trials_per_variant=args.replay_trials_per_variant,
+                seed_base=args.replay_seed_base,
+                progress_output=args.replay_progress_output.resolve(),
+                trial_output_dir=args.replay_trial_output_dir.resolve(),
+            )
         else:
-            if args.replay_trials_per_variant:
-                raise ValueError("replay_trials_require_screen_mode")
             report = execute_live(
                 checkpoint_path=args.checkpoint_path.resolve(),
                 operator_approval_ref=args.operator_approval_ref,

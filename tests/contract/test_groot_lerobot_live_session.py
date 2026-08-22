@@ -1272,3 +1272,111 @@ def test_live_replay_rejects_clone_identity_mismatch_before_counting_trial(
 
     assert not (tmp_path / "progress.json").exists()
     assert list((tmp_path / "trials").glob("trial-*.json")) == []
+
+
+def test_live_restore_snapshot_replay_cli_runs_matrix_without_screening(
+    monkeypatch, tmp_path
+) -> None:
+    output = tmp_path / "result.json"
+    checkpoint = tmp_path / "checkpoint"
+    snapshot = tmp_path / "candidate.npz"
+    checkpoint.mkdir()
+    snapshot.write_bytes(b"diagnostic-snapshot")
+    calls = []
+
+    def fake_execute_live_replay_trials(**kwargs):
+        calls.append(kwargs)
+        return {
+            "schema_version": live_runner.REPLAY_RESULT_SCHEMA_VERSION,
+            "status": "replay_complete",
+            "completed_trial_count": 10,
+            "success_counts": {"short_target": 0, "original_task": 0},
+            "semantic_repair_established": False,
+            "physical_execution_invoked": False,
+        }
+
+    monkeypatch.setattr(
+        live_runner, "execute_live_replay_trials", fake_execute_live_replay_trials
+    )
+    monkeypatch.setenv(live_runner.OPT_IN_ENV, "1")
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "run_groot_lerobot_same_world_repair.py",
+            "--runtime",
+            "live",
+            "--checkpoint-path",
+            str(checkpoint),
+            "--restore-snapshot",
+            str(snapshot),
+            "--operator-approval-ref",
+            "operator:original-task-control",
+            "--dispatch-state-path",
+            str(tmp_path / "dispatch.json"),
+            "--output",
+            str(output),
+            "--maximum-repair-chunks",
+            "45",
+            "--replay-trials-per-variant",
+            "5",
+            "--replay-seed-base",
+            "2000",
+            "--replay-progress-output",
+            str(tmp_path / "progress.json"),
+            "--replay-trial-output-dir",
+            str(tmp_path / "trials"),
+        ],
+    )
+
+    assert live_runner.main() == 2
+    assert len(calls) == 1
+    assert calls[0]["snapshot_path"] == snapshot
+    assert calls[0]["trials_per_variant"] == 5
+    assert calls[0]["maximum_repair_chunks"] == 45
+    assert calls[0]["operator_approval_ref"] == "operator:original-task-control"
+    assert __import__("json").loads(output.read_text())["completed_trial_count"] == 10
+
+
+def test_live_replay_stops_matrix_on_first_preservation_violation(
+    monkeypatch, tmp_path
+) -> None:
+    snapshot_path = tmp_path / "candidate.npz"
+    live_runner._write_failure_snapshot(
+        path=snapshot_path,
+        simulator_state=[0.1, 0.2, 0.3],
+        metadata=_failure_snapshot_metadata(),
+    )
+    calls = []
+
+    def fake_execute_live(**kwargs):
+        calls.append(kwargs)
+        return {
+            "result": "stopped_on_preservation_violation",
+            "source_goal_predicate_vector": [False, True, True],
+            "diagnostic_clone_identity_verified": True,
+            "semantic_repair_established": False,
+            "repair_result": {
+                "status": "stopped_on_preservation_violation",
+                "predicate_improvement_observed": False,
+                "chunks_executed": 1,
+            },
+        }
+
+    monkeypatch.setattr(live_runner, "execute_live", fake_execute_live)
+    result = live_runner.execute_live_replay_trials(
+        checkpoint_path=tmp_path / "checkpoint",
+        snapshot_path=snapshot_path,
+        operator_approval_ref="operator:test",
+        dispatch_state_path=tmp_path / "dispatch.json",
+        maximum_repair_chunks=45,
+        trials_per_variant=5,
+        seed_base=42,
+        progress_output=tmp_path / "progress.json",
+        trial_output_dir=tmp_path / "trials",
+    )
+
+    assert len(calls) == 1
+    assert result["status"] == "stopped_on_preservation_violation"
+    assert result["preservation_violation_observed"] is True
+    assert result["completed_trial_count"] == 1
+    assert result["semantic_repair_established"] is False
