@@ -281,9 +281,7 @@ def execute_live(
             raise RuntimeError("vla0_snapshot_task_id_mismatch")
         if snapshot_metadata.get("episode_init_state_index") != episode_init_state_index:
             raise RuntimeError("vla0_snapshot_init_state_mismatch")
-        environment.sim.set_state_from_flattened(simulator_state)
-        environment.sim.forward()
-        observation = environment._get_observations()
+        observation = environment.regenerate_obs_from_state(simulator_state)
         restored_state = np.asarray(environment.sim.get_state().flatten(), dtype=np.float64)
         if hashlib.sha256(restored_state.tobytes()).hexdigest() != snapshot_metadata.get(
             "simulator_state_sha256"
