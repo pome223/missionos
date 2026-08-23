@@ -48,10 +48,12 @@ DEFAULT_PRESERVED_OBJECT_MAX_DISPLACEMENT_METRES = 0.005
 DEFAULT_REPAIR_INSTRUCTION_VARIANT = "semantic_preserve"
 DEFAULT_EXECUTION_ADAPTER = "isaac_groot_zmq_multistep_v1"
 LEROBOT_GROOT_N17_EXECUTION_ADAPTER = "lerobot_groot_n17_select_action_v1"
+VLA0_LIBERO_EXECUTION_ADAPTER = "vla0_libero_qwen_text_action_v1"
 SUPPORTED_EXECUTION_ADAPTERS = frozenset(
     {
         DEFAULT_EXECUTION_ADAPTER,
         LEROBOT_GROOT_N17_EXECUTION_ADAPTER,
+        VLA0_LIBERO_EXECUTION_ADAPTER,
     }
 )
 REPAIR_INSTRUCTION_VARIANTS = frozenset({"semantic_preserve", "original_task", "short_target"})
@@ -790,6 +792,8 @@ def _validate_proposal_instruction_binding(proposal: Mapping[str, Any]) -> None:
         raise ValueError("isaac_groot_zmq_requires_eight_action_steps")
     if execution_adapter == LEROBOT_GROOT_N17_EXECUTION_ADAPTER and n_action_steps != 16:
         raise ValueError("lerobot_groot_n17_requires_sixteen_action_steps")
+    if execution_adapter == VLA0_LIBERO_EXECUTION_ADAPTER and n_action_steps != 1:
+        raise ValueError("vla0_libero_requires_one_action_step")
     _validate_state_continuity_binding(proposal)
 
 
@@ -944,6 +948,8 @@ def build_same_world_repair_proposal(
         raise ValueError("isaac_groot_zmq_requires_eight_action_steps")
     if execution_adapter == LEROBOT_GROOT_N17_EXECUTION_ADAPTER and n_action_steps != 16:
         raise ValueError("lerobot_groot_n17_requires_sixteen_action_steps")
+    if execution_adapter == VLA0_LIBERO_EXECUTION_ADAPTER and n_action_steps != 1:
+        raise ValueError("vla0_libero_requires_one_action_step")
     if state_continuity_basis not in STATE_CONTINUITY_BASES:
         raise ValueError("state_continuity_basis_not_supported")
     if state_continuity_basis == STATE_CONTINUITY_LIVE_SAME_WORLD:
