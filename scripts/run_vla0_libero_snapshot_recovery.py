@@ -86,6 +86,7 @@ TASK_ID = 8
 SOURCE_INSTRUCTION = "put both moka pots on the stove"
 EXPECTED_SOURCE_VECTOR = [True, False, True]
 PROCESS_SEED = 1000
+ENVIRONMENT_SEED = 0
 ENSEMBLE_PREDICTIONS = 8
 
 
@@ -229,6 +230,7 @@ def execute_live(
     from roboverse.datasets.lerobot import dataloader as lerobot_dataloader
     from roboverse.evals.libero.eval import init_libero_env, libero_to_rv_obs
     from roboverse.main import get_cfg as get_roboverse_cfg
+    from rv_train.train import get_cfg as get_vla0_cfg
     from rv_train.train import get_pretrained_model
 
     # The public LIBERO dataset metadata is v2.0 while the pinned VLA-0
@@ -244,12 +246,10 @@ def execute_live(
     torch.manual_seed(PROCESS_SEED)
     torch.cuda.manual_seed_all(PROCESS_SEED)
 
-    model, model_cfg = get_pretrained_model(
-        str(runtime_checkpoint_path / "model_last.pth"),
-        0,
-        torch_compile=False,
+    model_cfg = get_vla0_cfg(
+        str(runtime_checkpoint_path / "config.yaml"),
+        cfg_opts="",
     )
-    model.eval()
     if model_cfg.EXP.DATASET != "roboverse" or model_cfg.EXP.MODEL != "qwen":
         raise RuntimeError("vla0_checkpoint_runtime_contract_mismatch")
     if int(model_cfg.MODEL.QWEN.horizon) != 8:
@@ -264,7 +264,7 @@ def execute_live(
     environment, init_states, _, task_instruction = init_libero_env(
         verse_config=dataset_cfg,
         task_name=TASK_NAME,
-        seed=7,
+        seed=ENVIRONMENT_SEED,
         act_space="original",
         task_suite_name=TASK_SUITE,
         num_steps=maximum_repair_steps,
@@ -300,6 +300,7 @@ def execute_live(
             "task_id": TASK_ID,
             "episode_init_state_index": episode_init_state_index,
             "source_instruction": SOURCE_INSTRUCTION,
+            "environment_seed": ENVIRONMENT_SEED,
             "source_goal_predicate_vector": source_vector,
             "diagnostic_handoff_snapshot_sha256": snapshot_metadata[
                 "snapshot_artifact_sha256"
@@ -324,6 +325,21 @@ def execute_live(
             ),
         }
         source_contract_sha256 = canonical_sha256(source_contract_material)
+        if task_instruction != SOURCE_INSTRUCTION:
+            raise RuntimeError("vla0_snapshot_task_instruction_mismatch")
+        model, loaded_model_cfg = get_pretrained_model(
+            str(runtime_checkpoint_path / "model_last.pth"),
+            0,
+            torch_compile=False,
+        )
+        model.eval()
+        if (
+            loaded_model_cfg.MODEL.QWEN.qwen_model_id
+            != model_cfg.MODEL.QWEN.qwen_model_id
+            or int(loaded_model_cfg.MODEL.QWEN.horizon) != 8
+            or int(loaded_model_cfg.MODEL.QWEN.original_action_dim) != 7
+        ):
+            raise RuntimeError("vla0_loaded_model_contract_mismatch")
         proposal = build_vla0_same_world_repair_proposal(
             environment=LIBERO_PANDA_SCENE8_ENVIRONMENT,
             environment_session_id=f"vla0-libero10-diagnostic-clone:{uuid4()}",
