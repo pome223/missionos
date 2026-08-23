@@ -33,8 +33,11 @@ Neither instruction produced target improvement (`0/5` and `0/5`). All ten
 trials ended at `[true, false, true]`, and no Contract-bound preserve violation
 was observed.
 
-These were diagnostic clones. They created no approval, governed dispatch, or
-controller ACK and are not eligible to establish Semantic Repair.
+These were diagnostic clones. Each trial recorded its own proposal, approval,
+dispatch, dispatch receipt, model inference, and simulator execution. No
+controller ACK was observed. Because the execution state was a restored
+diagnostic clone, these records are not eligible to establish same-world
+Semantic Repair.
 
 ## Privileged recoverability control
 
@@ -62,8 +65,9 @@ The bounded conclusion is:
 The control does not establish a general GR00T recovery failure rate. The
 planner used privileged simulator state, so it does not establish autonomous
 recovery, an observation-grounded fallback, task completion by GR00T, Semantic
-Repair, controller ACK, governed dispatch, real-world safety, or physical
-execution.
+Repair, controller ACK, real-world safety, or physical execution. The ten
+diagnostic clone dispatch records remain separate from the privileged control,
+which created no approval or dispatch.
 
 The publication-safe companion is
 [`20260822-groot-n17-lerobot-snapshot-recoverability-publication.json`](evidence/20260822-groot-n17-lerobot-snapshot-recoverability-publication.json).

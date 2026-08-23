@@ -81,8 +81,10 @@
     }
   },
   "evidence_separation": {
-    "human_approval_created": false,
-    "governed_dispatch_created": false,
+    "diagnostic_clone_proposal_count": 10,
+    "diagnostic_clone_approval_record_count": 10,
+    "diagnostic_clone_dispatch_record_count": 10,
+    "diagnostic_clone_dispatch_receipt_count": 10,
     "controller_ack_observed": false,
     "groot_model_inference_observed_in_diagnostic_control": true,
     "model_inference_invoked_by_privileged_control": false,
@@ -97,7 +99,6 @@
     "autonomous_oracle_recovery_capability_established": false,
     "observation_grounded_fallback_established": false,
     "semantic_repair_established": false,
-    "governed_dispatch_established": false,
     "controller_ack_established": false,
     "real_world_safety_established": false,
     "physical_execution_established": false

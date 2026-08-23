@@ -43,8 +43,10 @@ def test_snapshot_recoverability_publication_preserves_authority_boundaries() ->
     separation = publication["evidence_separation"]
     boundary = publication["claim_boundary"]
 
-    assert separation["human_approval_created"] is False
-    assert separation["governed_dispatch_created"] is False
+    assert separation["diagnostic_clone_proposal_count"] == 10
+    assert separation["diagnostic_clone_approval_record_count"] == 10
+    assert separation["diagnostic_clone_dispatch_record_count"] == 10
+    assert separation["diagnostic_clone_dispatch_receipt_count"] == 10
     assert separation["controller_ack_observed"] is False
     assert separation["semantic_repair_established"] is False
     assert separation["physical_execution_invoked"] is False
