@@ -15,6 +15,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import pickle
 import random
 import subprocess
 import sys
@@ -147,6 +148,51 @@ def _verify_checkpoint(checkpoint_path: Path) -> dict[str, Any]:
         "repository": "ankgoyal/vla0-libero",
         "revision": VLA0_CHECKPOINT_REVISION,
         "files": files,
+    }
+
+
+def _verify_loaded_dataset_stats(
+    *,
+    model: Any,
+    verified_checkpoint_path: Path,
+) -> dict[str, Any]:
+    """Bind the loaded action decoder to the verified official stats file."""
+
+    import numpy as np
+
+    stats_path = verified_checkpoint_path / "dataset_stats.pkl"
+    with stats_path.open("rb") as stream:
+        expected = pickle.load(stream)  # noqa: S301 - exact file digest is verified first
+
+    model_module = model.module if hasattr(model, "module") else model
+    observed = getattr(model_module, "original_dataset_stats", None)
+    observed_action_stats = getattr(model_module, "dataset_stats", None)
+    if not isinstance(expected, Mapping) or not isinstance(observed, Mapping):
+        raise RuntimeError("vla0_loaded_dataset_stats_missing")
+    if not isinstance(observed_action_stats, Mapping):
+        raise RuntimeError("vla0_loaded_action_stats_missing")
+    expected_action_stats = expected.get("out_ori_act")
+    if not isinstance(expected_action_stats, Mapping):
+        raise RuntimeError("vla0_verified_action_stats_missing")
+
+    material: dict[str, list[float]] = {}
+    for key in ("min", "max"):
+        expected_values = np.asarray(expected_action_stats.get(key), dtype=np.float64)
+        observed_values = np.asarray(observed_action_stats.get(key), dtype=np.float64)
+        if expected_values.shape != (7,) or observed_values.shape != (7,):
+            raise RuntimeError(f"vla0_loaded_action_stats_shape_mismatch:{key}")
+        if not np.array_equal(expected_values, observed_values):
+            raise RuntimeError(f"vla0_loaded_action_stats_value_mismatch:{key}")
+        material[key] = observed_values.tolist()
+
+    return {
+        "source_file": "dataset_stats.pkl",
+        "source_sha256": _sha256_path(stats_path),
+        "action_key": "out_ori_act",
+        "action_dimension": 7,
+        "min": material["min"],
+        "max": material["max"],
+        "loaded_values_match_verified_file": True,
     }
 
 
@@ -356,6 +402,8 @@ def execute_live(
         model_cfg.DATALOADER.ROBOVERSE.cfg_path,
         model_cfg.DATALOADER.ROBOVERSE.cfg_opts,
     )
+    if bool(dataset_cfg.IMAGE.return_proprio):
+        raise RuntimeError("vla0_official_libero_return_proprio_mismatch")
 
     environment, init_states, _, task_instruction = init_libero_env(
         verse_config=dataset_cfg,
@@ -412,9 +460,7 @@ def execute_live(
                 else "diagnostic_mujoco_state_clone"
             ),
             "setup_snapshot_sha256": snapshot_metadata["snapshot_artifact_sha256"],
-            "snapshot_producer_checkpoint_revision": snapshot_metadata.get(
-                "checkpoint_revision"
-            ),
+            "snapshot_producer_checkpoint_revision": snapshot_metadata.get("checkpoint_revision"),
             "vla0_source_revision": VLA0_SOURCE_REVISION,
             "vla0_lerobot_revision": VLA0_LEROBOT_REVISION,
             "vla0_checkpoint": checkpoint_evidence,
@@ -453,12 +499,28 @@ def execute_live(
         )
         model.eval()
         if (
-            loaded_model_cfg.MODEL.QWEN.qwen_model_id
-            != model_cfg.MODEL.QWEN.qwen_model_id
+            loaded_model_cfg.MODEL.QWEN.qwen_model_id != model_cfg.MODEL.QWEN.qwen_model_id
             or int(loaded_model_cfg.MODEL.QWEN.horizon) != 8
             or int(loaded_model_cfg.MODEL.QWEN.original_action_dim) != 7
         ):
             raise RuntimeError("vla0_loaded_model_contract_mismatch")
+        loaded_dataset_stats = _verify_loaded_dataset_stats(
+            model=model,
+            verified_checkpoint_path=checkpoint_source_path,
+        )
+        source_contract_material["model_input_contract"] = {
+            "adapter_constructs_numeric_robot_state": True,
+            "official_dataset_config_return_proprio": False,
+            "numeric_robot_state_passed_to_qwen_model": False,
+            "model_conditioning": [
+                "agentview_image",
+                "wrist_image",
+                "task_language",
+                "system_prompt",
+            ],
+        }
+        source_contract_material["action_decoder_stats"] = loaded_dataset_stats
+        source_contract_sha256 = canonical_sha256(source_contract_material)
         continuity_basis = (
             STATE_CONTINUITY_LIVE_SAME_WORLD
             if scripted_fixture_material is not None
@@ -672,7 +734,7 @@ def execute_live(
             "scripted_failure_fixture": scripted_fixture_material,
             "initial_frame_capture": initial_frame_capture,
             "raw_action_trace": raw_action_trace,
-            "raw_action_trace_sha256": canonical_sha256(raw_action_trace),
+            "raw_action_trace_sha256": canonical_sha256({"raw_action_trace": raw_action_trace}),
             "semantic_repair_established": False,
             "controller_ack_observed": False,
             "physical_execution_invoked": False,
@@ -715,7 +777,7 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--dispatch-state", type=Path, required=True)
     parser.add_argument("--operator-approval-ref", required=True)
-    parser.add_argument("--maximum-repair-steps", type=int, default=720)
+    parser.add_argument("--maximum-repair-steps", type=int, default=520)
     parser.add_argument("--episode-init-state-index", type=int, default=15)
     parser.add_argument(
         "--scripted-failure-fixture",
@@ -735,16 +797,18 @@ def main() -> int:
         episode_init_state_index=args.episode_init_state_index,
         scripted_failure_fixture=args.scripted_failure_fixture,
         frame_capture_dir=(
-            args.frame_capture_dir.resolve()
-            if args.frame_capture_dir is not None
-            else None
+            args.frame_capture_dir.resolve() if args.frame_capture_dir is not None else None
         ),
     )
     print(json.dumps(report, indent=2, sort_keys=True))
-    return 0 if (
-        report["diagnostic_clone_recovery_observed"]
-        or report["scripted_fixture_repair_established"]
-    ) else 2
+    return (
+        0
+        if (
+            report["diagnostic_clone_recovery_observed"]
+            or report["scripted_fixture_repair_established"]
+        )
+        else 2
+    )
 
 
 if __name__ == "__main__":

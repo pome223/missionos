@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import pickle
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -9,6 +11,7 @@ from missionos_core import canonical_sha256
 from scripts.run_vla0_libero_snapshot_recovery import (
     _capture_frames,
     _official_ensemble_action,
+    _verify_loaded_dataset_stats,
     _validate_scripted_fixture_snapshot,
 )
 from src.gateway.missionos_dispatch_runtime import DispatchAuthorityTable
@@ -199,9 +202,7 @@ def test_vla0_run_reaches_same_verifier_without_controller_ack_claim(tmp_path) -
     assert result["n_action_steps"] == 1
     assert result["execution_adapter"] == VLA0_LIBERO_EXECUTION_ADAPTER
     assert result["task_completion_claimed"] is True
-    assert all(
-        chunk["controller_ack_observed"] is False for chunk in result["chunk_evidence"]
-    )
+    assert all(chunk["controller_ack_observed"] is False for chunk in result["chunk_evidence"])
 
 
 def test_vla0_wrapper_rejects_gr00t_adapter_before_model_invocation(tmp_path) -> None:
@@ -258,6 +259,65 @@ def test_official_temporal_ensemble_shifts_prior_prediction_by_one_step() -> Non
     assert len(prior) == 2
     np.testing.assert_array_equal(prior[0], first[1:])
     np.testing.assert_array_equal(prior[1], second)
+
+
+def test_official_temporal_ensemble_matches_pinned_upstream_v1_reference() -> None:
+    """Compare against NVlabs/vla0 b78db19e eval.py version-1 logic."""
+
+    rng = np.random.default_rng(1000)
+    implementation_history: list[np.ndarray] = []
+    reference_history: list[np.ndarray] = []
+
+    for _ in range(12):
+        prediction = rng.normal(size=(8, 7)).astype(np.float32)
+        observed = _official_ensemble_action(
+            prediction=prediction,
+            previous_predictions=implementation_history,
+        )
+
+        reference_history.append(prediction.copy())
+        if len(reference_history) > 8:
+            reference_history.pop(0)
+        retained: list[np.ndarray] = []
+        combined = np.zeros_like(reference_history[-1])
+        weights = np.zeros_like(reference_history[-1])
+        for old_prediction in reference_history[:-1]:
+            if len(old_prediction) <= 1:
+                continue
+            shifted = old_prediction[1:]
+            retained.append(shifted)
+            combined[: len(shifted)] += 0.5 * shifted
+            weights[: len(shifted)] += 0.5
+        retained.append(reference_history[-1])
+        combined += reference_history[-1]
+        weights += 1.0
+        reference_history = retained
+        expected = (combined / weights)[0]
+
+        np.testing.assert_array_equal(observed, expected)
+
+
+def test_loaded_action_decoder_stats_match_verified_checkpoint(tmp_path) -> None:
+    action_stats = {
+        "min": np.asarray([-0.9, -0.8, -0.7, -0.2, -0.3, -0.4, -1.0]),
+        "max": np.asarray([0.9, 0.8, 0.7, 0.2, 0.3, 0.4, 1.0]),
+    }
+    with (tmp_path / "dataset_stats.pkl").open("wb") as stream:
+        pickle.dump({"out_ori_act": action_stats}, stream)
+    model = SimpleNamespace(
+        original_dataset_stats={"out_ori_act": action_stats},
+        dataset_stats=action_stats,
+    )
+
+    evidence = _verify_loaded_dataset_stats(
+        model=model,
+        verified_checkpoint_path=tmp_path,
+    )
+
+    assert evidence["loaded_values_match_verified_file"] is True
+    assert evidence["action_dimension"] == 7
+    assert evidence["min"] == action_stats["min"].tolist()
+    assert evidence["max"] == action_stats["max"].tolist()
 
 
 def _scripted_fixture_metadata() -> dict:
