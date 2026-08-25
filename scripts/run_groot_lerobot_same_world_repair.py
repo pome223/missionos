@@ -1124,6 +1124,7 @@ def execute_live(
     semantic_direction_horizon_probe: bool = False,
     diagnostic_authorization_ref: str | None = None,
     scripted_failure_fixture: str | None = None,
+    scripted_failure_snapshot_path: Path | None = None,
 ) -> dict[str, Any]:
     if not checkpoint_path.is_dir():
         raise ValueError("lerobot_checkpoint_directory_required")
@@ -1154,6 +1155,8 @@ def execute_live(
             raise ValueError("scripted_failure_fixture_source_basis_required")
     elif source_failure_basis == SCRIPTED_FAILURE_FIXTURE_BASIS:
         raise ValueError("scripted_failure_fixture_scenario_required")
+    if scripted_failure_snapshot_path is not None and scripted_failure_fixture is None:
+        raise ValueError("scripted_failure_snapshot_requires_scenario")
     if restore_snapshot_path is not None and failure_snapshot_path is not None:
         raise ValueError("restored_trial_cannot_write_source_failure_snapshot")
     if restore_snapshot_path is not None and repair_sampling_seed is None:
@@ -1431,6 +1434,7 @@ def execute_live(
     restored_snapshot_metadata: dict[str, Any] | None = None
     restored_simulator_state: Any | None = None
     scripted_failure_fixture_material: dict[str, Any] | None = None
+    scripted_failure_snapshot_metadata: dict[str, Any] | None = None
     if restore_snapshot_path is not None:
         simulator_state, restored_snapshot_metadata = _read_failure_snapshot(restore_snapshot_path)
         restored_simulator_state = np.asarray(simulator_state, dtype=np.float64).copy()
@@ -1472,7 +1476,60 @@ def execute_live(
         source_contract_sha256 = canonical_sha256(source_contract_material)
         policy.reset()
 
-    if scripted_failure_fixture is not None:
+    if scripted_failure_snapshot_path is not None:
+        simulator_state, scripted_failure_snapshot_metadata = _read_failure_snapshot(
+            scripted_failure_snapshot_path
+        )
+        if scripted_failure_snapshot_metadata.get("task_suite") != TASK_SUITE:
+            raise ValueError("scripted_failure_snapshot_task_suite_mismatch")
+        if scripted_failure_snapshot_metadata.get("task_id") != TASK_ID:
+            raise ValueError("scripted_failure_snapshot_task_id_mismatch")
+        if scripted_failure_snapshot_metadata.get("checkpoint_revision") != CHECKPOINT_REVISION:
+            raise ValueError("scripted_failure_snapshot_checkpoint_revision_mismatch")
+        if scripted_failure_snapshot_metadata.get("lerobot_revision") != observed_lerobot_revision:
+            raise ValueError("scripted_failure_snapshot_lerobot_revision_mismatch")
+        if (
+            scripted_failure_snapshot_metadata.get("source_failure_basis")
+            != SCRIPTED_FAILURE_FIXTURE_BASIS
+        ):
+            raise ValueError("scripted_failure_snapshot_basis_mismatch")
+        scripted_failure_fixture_material = deepcopy(
+            scripted_failure_snapshot_metadata.get("scripted_failure_fixture")
+        )
+        if not isinstance(scripted_failure_fixture_material, dict):
+            raise ValueError("scripted_failure_snapshot_fixture_material_missing")
+        if scripted_failure_fixture_material.get("scenario") != scripted_failure_fixture:
+            raise ValueError("scripted_failure_snapshot_scenario_mismatch")
+        raw_observation = raw_environment._env.regenerate_obs_from_state(simulator_state)
+        observation = raw_environment._format_raw_obs(raw_observation)
+        restored_state = np.asarray(
+            raw_environment._env.get_sim_state(), dtype=np.float64
+        ).reshape(-1)
+        if (
+            hashlib.sha256(restored_state.tobytes()).hexdigest()
+            != scripted_failure_snapshot_metadata["simulator_state_sha256"]
+        ):
+            raise ValueError("scripted_failure_snapshot_restored_state_digest_mismatch")
+        fixture_predicates = _predicate_material(environment)
+        if (
+            canonical_sha256({"goal_predicate_observations": fixture_predicates})
+            != scripted_failure_snapshot_metadata["source_goal_predicate_vector_sha256"]
+        ):
+            raise ValueError("scripted_failure_snapshot_predicate_vector_mismatch")
+        source_contract_material.update(
+            {
+                "scripted_failure_fixture_setup_snapshot_sha256": (
+                    scripted_failure_snapshot_metadata["snapshot_artifact_sha256"]
+                ),
+                "scripted_failure_fixture_observation": deepcopy(
+                    scripted_failure_fixture_material
+                ),
+                "fixture_setup_snapshot_restore_only": True,
+            }
+        )
+        source_contract_sha256 = canonical_sha256(source_contract_material)
+        policy.reset()
+    elif scripted_failure_fixture is not None:
         observation, scripted_failure_fixture_material = inject_failure_fixture(
             environment=raw_environment,
             scenario=scripted_failure_fixture,
@@ -2005,6 +2062,11 @@ def execute_live(
             ),
             "repair_sampling_seed": repair_sampling_seed,
             "scripted_failure_fixture": deepcopy(scripted_failure_fixture_material),
+            "scripted_failure_fixture_setup_snapshot_sha256": (
+                scripted_failure_snapshot_metadata["snapshot_artifact_sha256"]
+                if scripted_failure_snapshot_metadata is not None
+                else None
+            ),
         }
         snapshot_metadata: dict[str, Any] | None = None
         if observed_source_vector != [True, True, True] and failure_snapshot_path is not None:
@@ -2153,6 +2215,9 @@ def execute_live(
                 ),
                 "source_created_by_scripted_failure_fixture": (
                     scripted_failure_fixture_material is not None
+                ),
+                "fixture_setup_snapshot_restore": (
+                    scripted_failure_snapshot_metadata is not None
                 ),
                 "scripted_fixture_repair_is_not_natural_failure_rate_evidence": (
                     scripted_failure_fixture_material is not None
@@ -2558,6 +2623,14 @@ def main() -> int:
             "normal proposal/approval/dispatch/Verifier path"
         ),
     )
+    parser.add_argument(
+        "--scripted-failure-snapshot",
+        type=Path,
+        help=(
+            "restore a previously generated scripted fixture as authority-free test "
+            "setup before proposal/approval/dispatch"
+        ),
+    )
     args = parser.parse_args()
     if os.environ.get(OPT_IN_ENV) != "1":
         print(json.dumps({"status": "not_run", "required_opt_in": OPT_IN_ENV}))
@@ -2587,6 +2660,8 @@ def main() -> int:
                 raise ValueError("scripted_failure_fixture_cannot_screen_init_states")
             if args.replay_trials_per_variant:
                 raise ValueError("scripted_failure_fixture_cannot_run_replay_trials")
+        elif args.scripted_failure_snapshot is not None:
+            raise ValueError("scripted_failure_snapshot_requires_scenario")
         if args.runtime == "fixture":
             if args.screen_init_state_indices:
                 raise ValueError("fixture_runtime_does_not_screen_init_states")
@@ -2709,6 +2784,11 @@ def main() -> int:
                 semantic_direction_horizon_probe=args.semantic_direction_horizon_probe,
                 diagnostic_authorization_ref=args.diagnostic_authorization_ref,
                 scripted_failure_fixture=args.scripted_failure_fixture,
+                scripted_failure_snapshot_path=(
+                    args.scripted_failure_snapshot.resolve()
+                    if args.scripted_failure_snapshot is not None
+                    else None
+                ),
             )
     except Exception as error:
         # Keep the public JSON fail-closed and path-free, while preserving a

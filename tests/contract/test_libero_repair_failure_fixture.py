@@ -81,3 +81,40 @@ def test_live_runner_rejects_fixture_basis_without_scenario(tmp_path) -> None:
             maximum_repair_chunks=45,
             source_failure_basis=SCRIPTED_FAILURE_FIXTURE_BASIS,
         )
+
+
+def test_live_runner_rejects_scripted_snapshot_without_scenario(tmp_path) -> None:
+    checkpoint = tmp_path / "checkpoint"
+    checkpoint.mkdir()
+
+    with pytest.raises(
+        ValueError,
+        match="scripted_failure_snapshot_requires_scenario",
+    ):
+        execute_live(
+            checkpoint_path=checkpoint,
+            operator_approval_ref="operator:test",
+            dispatch_state_path=tmp_path / "dispatch.json",
+            maximum_repair_chunks=45,
+            scripted_failure_snapshot_path=tmp_path / "fixture.npz",
+        )
+
+
+def test_live_runner_rejects_diagnostic_restore_with_scripted_fixture(tmp_path) -> None:
+    checkpoint = tmp_path / "checkpoint"
+    checkpoint.mkdir()
+
+    with pytest.raises(
+        ValueError,
+        match="scripted_failure_fixture_cannot_restore_snapshot",
+    ):
+        execute_live(
+            checkpoint_path=checkpoint,
+            operator_approval_ref="operator:test",
+            dispatch_state_path=tmp_path / "dispatch.json",
+            maximum_repair_chunks=45,
+            source_failure_basis=SCRIPTED_FAILURE_FIXTURE_BASIS,
+            scripted_failure_fixture="displaced_from_stove",
+            restore_snapshot_path=tmp_path / "diagnostic.npz",
+            scripted_failure_snapshot_path=tmp_path / "fixture.npz",
+        )

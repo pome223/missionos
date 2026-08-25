@@ -66,11 +66,19 @@ python scripts/run_groot_lerobot_same_world_repair.py \
   --output /tmp/missionos-scripted-fixture-result.json \
   --source-failure-basis scripted_failure_fixture \
   --scripted-failure-fixture displaced_from_stove \
+  --scripted-failure-snapshot /tmp/displaced-from-stove.npz \
   --maximum-repair-chunks 45
 ```
 
 Replace the placeholder checkpoint and approval values at run time. Do not
 commit live evidence, credentials, private paths, or dispatch state.
+
+`--scripted-failure-snapshot` is an optional authority-free fixture-setup
+restore. The runner verifies that its task, revisions, source basis, scenario,
+simulator-state digest, and predicate digest match before creating a Repair
+proposal. It is recorded separately from a diagnostic handoff snapshot: it may
+support only `scripted_fixture_repair_established`, never a natural-failure
+Repair rate.
 
 ## Required measurement order
 
