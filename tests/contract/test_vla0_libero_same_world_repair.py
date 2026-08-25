@@ -6,7 +6,11 @@ import numpy as np
 import pytest
 
 from missionos_core import canonical_sha256
-from scripts.run_vla0_libero_snapshot_recovery import _official_ensemble_action
+from scripts.run_vla0_libero_snapshot_recovery import (
+    _capture_frames,
+    _official_ensemble_action,
+    _validate_scripted_fixture_snapshot,
+)
 from src.gateway.missionos_dispatch_runtime import DispatchAuthorityTable
 from src.runtime.groot_libero_same_world_repair import (
     PRESERVATION_STEP_TRACE_SCHEMA_VERSION,
@@ -16,6 +20,10 @@ from src.runtime.groot_libero_same_world_repair import (
     build_same_world_repair_dispatch,
 )
 from src.runtime.libero_panda_predicate_package import LIBERO_PANDA_SCENE8_ENVIRONMENT
+from src.runtime.libero_repair_failure_fixture import (
+    SCRIPTED_FAILURE_FIXTURE_BASIS,
+    failure_fixture_contract,
+)
 from src.runtime.vla0_libero_same_world_repair import (
     VLA0_LIBERO_ACTION_STEPS,
     build_vla0_same_world_repair_proposal,
@@ -250,6 +258,69 @@ def test_official_temporal_ensemble_shifts_prior_prediction_by_one_step() -> Non
     assert len(prior) == 2
     np.testing.assert_array_equal(prior[0], first[1:])
     np.testing.assert_array_equal(prior[1], second)
+
+
+def _scripted_fixture_metadata() -> dict:
+    fixture = {
+        **failure_fixture_contract("displaced_from_stove"),
+        "stable_failure_fixture_observed": True,
+        "terminal_goal_predicate_vector": [True, False, True],
+    }
+    return {
+        "source_failure_basis": SCRIPTED_FAILURE_FIXTURE_BASIS,
+        "scripted_failure_fixture": fixture,
+    }
+
+
+def test_scripted_fixture_snapshot_validation_binds_authority_free_setup() -> None:
+    fixture = _validate_scripted_fixture_snapshot(
+        metadata=_scripted_fixture_metadata(),
+        scenario="displaced_from_stove",
+    )
+
+    assert fixture["authority"] == "test_fixture_only"
+    assert fixture["human_approval_created"] is False
+    assert fixture["governed_dispatch_created"] is False
+    assert fixture["model_inference_invoked"] is False
+    assert fixture["terminal_goal_predicate_vector"] == [True, False, True]
+
+
+def test_scripted_fixture_snapshot_validation_rejects_scenario_drift() -> None:
+    metadata = _scripted_fixture_metadata()
+    metadata["scripted_failure_fixture"]["scenario"] = "wrong_table_location"
+
+    with pytest.raises(
+        RuntimeError,
+        match="vla0_scripted_fixture_snapshot_contract_mismatch:scenario",
+    ):
+        _validate_scripted_fixture_snapshot(
+            metadata=metadata,
+            scenario="displaced_from_stove",
+        )
+
+
+def test_frame_capture_writes_relative_digest_bound_pngs(tmp_path) -> None:
+    observation = {
+        "agentview_image": np.zeros((8, 12, 3), dtype=np.uint8),
+        "robot0_eye_in_hand_image": np.full((8, 12, 3), 127, dtype=np.uint8),
+    }
+
+    record = _capture_frames(
+        observation=observation,
+        frame_capture_dir=tmp_path / "frames",
+        artifact_root=tmp_path,
+        step_number=3,
+    )
+
+    assert record["status"] == "captured"
+    assert record["authority"] == "diagnostic_only"
+    assert [camera["observation_key"] for camera in record["cameras"]] == [
+        "video.image",
+        "video.wrist_image",
+    ]
+    for camera in record["cameras"]:
+        assert not camera["artifact_relative_path"].startswith("/")
+        assert (tmp_path / camera["artifact_relative_path"]).is_file()
 
 
 def test_diagnostic_clone_success_cannot_claim_task_completion(tmp_path) -> None:

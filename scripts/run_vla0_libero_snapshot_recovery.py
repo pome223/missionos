@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Run one governed VLA-0 recovery diagnostic on a saved LIBERO state.
+"""Run one governed VLA-0 recovery on a saved LIBERO state.
 
-The saved state is a diagnostic MuJoCo clone, not the uninterrupted source
-world.  A successful run can therefore establish recovery of that clone under
-the shared deterministic verifier, but cannot establish same-world Semantic
-Repair.  VLA-0 receives no approval, dispatch, or verifier authority here.
+The default mode remains a diagnostic MuJoCo clone.  The explicit scripted
+fixture mode instead treats a preregistered fixture restore as authority-free
+test setup before proposal, approval, and governed dispatch in one live world.
+Neither mode grants VLA-0 approval, dispatch, or verifier authority.
 """
 
 from __future__ import annotations
@@ -35,11 +35,19 @@ from scripts.run_groot_lerobot_same_world_repair import (  # noqa: E402
 )
 from src.gateway.missionos_dispatch_runtime import DispatchAuthorityTable  # noqa: E402
 from src.runtime.groot_libero_same_world_repair import (  # noqa: E402
+    FRAME_CAPTURE_AUTHORITY,
+    FRAME_CAPTURE_SCHEMA_VERSION,
     PRESERVATION_STEP_TRACE_SCHEMA_VERSION,
     STATE_CONTINUITY_DIAGNOSTIC_MUJOCO_CLONE,
+    STATE_CONTINUITY_LIVE_SAME_WORLD,
     approve_same_world_repair,
     build_same_world_repair_dispatch,
     verify_exact_repair_instruction_payload,
+)
+from src.runtime.libero_repair_failure_fixture import (  # noqa: E402
+    FAILURE_FIXTURE_SPECS,
+    SCRIPTED_FAILURE_FIXTURE_BASIS,
+    failure_fixture_contract,
 )
 from src.runtime.libero_panda_official_runner_instrumentation import (  # noqa: E402
     _observe_libero_goal_predicates,
@@ -152,6 +160,81 @@ def _predicate_material(environment: Any) -> list[dict[str, Any]]:
     ]
 
 
+def _validate_scripted_fixture_snapshot(
+    *,
+    metadata: Mapping[str, Any],
+    scenario: str,
+) -> dict[str, Any]:
+    """Fail closed unless the snapshot is the named authority-free fixture."""
+
+    expected_contract = failure_fixture_contract(scenario)
+    if metadata.get("source_failure_basis") != SCRIPTED_FAILURE_FIXTURE_BASIS:
+        raise RuntimeError("vla0_scripted_fixture_snapshot_basis_mismatch")
+    fixture = metadata.get("scripted_failure_fixture")
+    if not isinstance(fixture, Mapping):
+        raise RuntimeError("vla0_scripted_fixture_snapshot_material_missing")
+    for field, expected in expected_contract.items():
+        if fixture.get(field) != expected:
+            raise RuntimeError(f"vla0_scripted_fixture_snapshot_contract_mismatch:{field}")
+    if fixture.get("stable_failure_fixture_observed") is not True:
+        raise RuntimeError("vla0_scripted_fixture_snapshot_not_stable")
+    if fixture.get("terminal_goal_predicate_vector") != EXPECTED_SOURCE_VECTOR:
+        raise RuntimeError("vla0_scripted_fixture_snapshot_vector_mismatch")
+    return deepcopy(dict(fixture))
+
+
+def _capture_frames(
+    *,
+    observation: Mapping[str, Any],
+    frame_capture_dir: Path,
+    artifact_root: Path,
+    step_number: int,
+) -> dict[str, Any]:
+    """Write powerless visual diagnostics for one observed simulator state."""
+
+    import numpy as np
+    from PIL import Image
+
+    cameras: list[dict[str, Any]] = []
+    for observation_key, evidence_key in (
+        ("agentview_image", "video.image"),
+        ("robot0_eye_in_hand_image", "video.wrist_image"),
+    ):
+        raw = observation.get(observation_key)
+        if raw is None:
+            continue
+        image = np.asarray(raw)
+        if image.ndim != 3 or image.shape[2] not in (3, 4):
+            raise RuntimeError("vla0_frame_capture_image_shape_invalid")
+        if image.dtype != np.uint8:
+            image = np.clip(image, 0, 255).astype(np.uint8)
+        image = np.flipud(image)
+        filename = f"step-{step_number:04d}-{observation_key}.png"
+        path = frame_capture_dir / filename
+        path.parent.mkdir(parents=True, exist_ok=True)
+        Image.fromarray(image).save(path, format="PNG", optimize=False)
+        relative_path = path.resolve().relative_to(artifact_root.resolve()).as_posix()
+        cameras.append(
+            {
+                "observation_key": evidence_key,
+                "image_sha256": _sha256_path(path),
+                "artifact_relative_path": relative_path,
+                "encoding": "png",
+                "height_pixels": int(image.shape[0]),
+                "width_pixels": int(image.shape[1]),
+                "channels": int(image.shape[2]),
+            }
+        )
+    if not cameras:
+        raise RuntimeError("vla0_frame_capture_cameras_missing")
+    return {
+        "schema_version": FRAME_CAPTURE_SCHEMA_VERSION,
+        "authority": FRAME_CAPTURE_AUTHORITY,
+        "status": "captured",
+        "cameras": cameras,
+    }
+
+
 def _environment_adapter(environment: Any) -> Any:
     """Expose the shape used by the shared object-witness instrumentation."""
 
@@ -200,11 +283,24 @@ def execute_live(
     operator_approval_ref: str,
     maximum_repair_steps: int,
     episode_init_state_index: int,
+    scripted_failure_fixture: str | None = None,
+    frame_capture_dir: Path | None = None,
 ) -> dict[str, Any]:
     if os.environ.get(OPT_IN_ENV) != "1":
         raise RuntimeError("vla0_snapshot_recovery_live_opt_in_required")
     if maximum_repair_steps <= 0:
         raise ValueError("vla0_maximum_repair_steps_invalid")
+    if scripted_failure_fixture is not None:
+        failure_fixture_contract(scripted_failure_fixture)
+        if frame_capture_dir is None:
+            raise ValueError("vla0_scripted_fixture_frame_capture_required")
+    if frame_capture_dir is not None:
+        try:
+            frame_capture_dir.resolve().relative_to(output_path.parent.resolve())
+        except ValueError as exc:
+            raise ValueError("vla0_frame_capture_must_be_below_output_directory") from exc
+        if frame_capture_dir.exists():
+            raise ValueError("vla0_frame_capture_directory_already_exists")
     if _git_revision(source_root) != VLA0_SOURCE_REVISION:
         raise RuntimeError("vla0_source_revision_mismatch")
     lerobot_root = source_root / "libs" / "RoboVerse" / "libs" / "lerobot"
@@ -281,6 +377,14 @@ def execute_live(
             raise RuntimeError("vla0_snapshot_task_id_mismatch")
         if snapshot_metadata.get("episode_init_state_index") != episode_init_state_index:
             raise RuntimeError("vla0_snapshot_init_state_mismatch")
+        scripted_fixture_material = (
+            _validate_scripted_fixture_snapshot(
+                metadata=snapshot_metadata,
+                scenario=scripted_failure_fixture,
+            )
+            if scripted_failure_fixture is not None
+            else None
+        )
         observation = environment.regenerate_obs_from_state(simulator_state)
         restored_state = np.asarray(environment.sim.get_state().flatten(), dtype=np.float64)
         if hashlib.sha256(restored_state.tobytes()).hexdigest() != snapshot_metadata.get(
@@ -302,9 +406,12 @@ def execute_live(
             "source_instruction": SOURCE_INSTRUCTION,
             "environment_seed": ENVIRONMENT_SEED,
             "source_goal_predicate_vector": source_vector,
-            "diagnostic_handoff_snapshot_sha256": snapshot_metadata[
-                "snapshot_artifact_sha256"
-            ],
+            "source_failure_basis": (
+                SCRIPTED_FAILURE_FIXTURE_BASIS
+                if scripted_fixture_material is not None
+                else "diagnostic_mujoco_state_clone"
+            ),
+            "setup_snapshot_sha256": snapshot_metadata["snapshot_artifact_sha256"],
             "snapshot_producer_checkpoint_revision": snapshot_metadata.get(
                 "checkpoint_revision"
             ),
@@ -324,6 +431,18 @@ def execute_live(
                 Path(build_vla0_same_world_repair_proposal.__code__.co_filename)
             ),
         }
+        if scripted_fixture_material is not None:
+            source_contract_material.update(
+                {
+                    "scripted_failure_fixture_contract": failure_fixture_contract(
+                        scripted_failure_fixture
+                    ),
+                    "scripted_failure_fixture_observation": scripted_fixture_material,
+                    "fixture_setup_snapshot_restore_only": True,
+                    "fixture_setup_precedes_repair_proposal": True,
+                    "natural_policy_failure_observed": False,
+                }
+            )
         source_contract_sha256 = canonical_sha256(source_contract_material)
         if task_instruction != SOURCE_INSTRUCTION:
             raise RuntimeError("vla0_snapshot_task_instruction_mismatch")
@@ -340,19 +459,30 @@ def execute_live(
             or int(loaded_model_cfg.MODEL.QWEN.original_action_dim) != 7
         ):
             raise RuntimeError("vla0_loaded_model_contract_mismatch")
+        continuity_basis = (
+            STATE_CONTINUITY_LIVE_SAME_WORLD
+            if scripted_fixture_material is not None
+            else STATE_CONTINUITY_DIAGNOSTIC_MUJOCO_CLONE
+        )
         proposal = build_vla0_same_world_repair_proposal(
             environment=LIBERO_PANDA_SCENE8_ENVIRONMENT,
-            environment_session_id=f"vla0-libero10-diagnostic-clone:{uuid4()}",
+            environment_session_id=(
+                f"vla0-libero10-scripted-fixture-world:{uuid4()}"
+                if scripted_fixture_material is not None
+                else f"vla0-libero10-diagnostic-clone:{uuid4()}"
+            ),
             source_contract_sha256=source_contract_sha256,
             source_goal_predicates=source_predicates,
             reset_count=reset_count,
             maximum_repair_steps=maximum_repair_steps,
             source_object_poses=source_object_poses,
             repair_instruction_variant="original_task",
-            state_continuity_basis=STATE_CONTINUITY_DIAGNOSTIC_MUJOCO_CLONE,
-            diagnostic_handoff_snapshot_sha256=snapshot_metadata[
-                "snapshot_artifact_sha256"
-            ],
+            state_continuity_basis=continuity_basis,
+            diagnostic_handoff_snapshot_sha256=(
+                None
+                if scripted_fixture_material is not None
+                else snapshot_metadata["snapshot_artifact_sha256"]
+            ),
         )
         approval = approve_same_world_repair(
             proposal=proposal,
@@ -365,6 +495,17 @@ def execute_live(
         )
 
         prior_predictions: list[Any] = []
+        raw_action_trace: list[dict[str, Any]] = []
+        initial_frame_capture = (
+            _capture_frames(
+                observation=observation,
+                frame_capture_dir=frame_capture_dir,
+                artifact_root=output_path.parent,
+                step_number=0,
+            )
+            if frame_capture_dir is not None
+            else None
+        )
         previous_positions = {
             name: np.asarray(position, dtype=np.float64)
             for name, position in source_object_poses.items()
@@ -430,6 +571,23 @@ def execute_live(
                 previous_positions,
             )
             action_sha256 = digest_runtime_material("vla0_selected_action", action)
+            raw_action_trace.append(
+                {
+                    "global_repair_step_index": chunk_index,
+                    "action_7d": [float(value) for value in action.tolist()],
+                    "action_step_sha256": action_sha256,
+                }
+            )
+            frame_capture = (
+                _capture_frames(
+                    observation=next_observation,
+                    frame_capture_dir=frame_capture_dir,
+                    artifact_root=output_path.parent,
+                    step_number=chunk_index + 1,
+                )
+                if frame_capture_dir is not None
+                else None
+            )
             trace = {
                 "schema_version": PRESERVATION_STEP_TRACE_SCHEMA_VERSION,
                 "chunk_index": chunk_index,
@@ -446,7 +604,7 @@ def execute_live(
                 "official_predicate_result": official_result,
                 "conjunction_matches_official_result": True,
                 "object_witnesses": witnesses,
-                "frame_capture": None,
+                "frame_capture": frame_capture,
             }
             observation = next_observation
             return next_observation, {
@@ -469,23 +627,32 @@ def execute_live(
             apply_action_chunk=apply_action,
             observe_goal_predicates=lambda: _predicate_material(environment),
             observed_reset_count=lambda: reset_count,
-            observed_state_continuity_basis=STATE_CONTINUITY_DIAGNOSTIC_MUJOCO_CLONE,
+            observed_state_continuity_basis=continuity_basis,
         )
         final_vector = [
             item["satisfied"] for item in repair_result["final_goal_predicate_observations"]
         ]
+        expected_satisfied_status = (
+            "satisfied"
+            if scripted_fixture_material is not None
+            else "satisfied_diagnostic_observation"
+        )
         recovery_observed = bool(
-            repair_result["status"] == "satisfied_diagnostic_observation"
+            repair_result["status"] == expected_satisfied_status
             and repair_result["predicate_improvement_observed"] is True
             and final_vector == [True, True, True]
             and repair_result["first_preservation_violation"] is None
             and repair_result["first_preservation_invariant_breach"] is None
         )
         report_without_digest = {
-            "schema_version": "missionos.vla0_libero_snapshot_recovery.v1",
+            "schema_version": "missionos.vla0_libero_snapshot_recovery.v2",
             "status": (
-                "diagnostic_clone_recovery_observed"
+                "scripted_fixture_repair_observed"
+                if recovery_observed and scripted_fixture_material is not None
+                else "diagnostic_clone_recovery_observed"
                 if recovery_observed
+                else "scripted_fixture_repair_not_observed"
+                if scripted_fixture_material is not None
                 else "diagnostic_clone_recovery_not_observed"
             ),
             "source_contract": source_contract_material,
@@ -496,16 +663,35 @@ def execute_live(
             "approval": approval,
             "dispatch": dispatch,
             "repair_result": repair_result,
-            "diagnostic_clone_recovery_observed": recovery_observed,
+            "diagnostic_clone_recovery_observed": bool(
+                recovery_observed and scripted_fixture_material is None
+            ),
+            "scripted_fixture_repair_established": bool(
+                recovery_observed and scripted_fixture_material is not None
+            ),
+            "scripted_failure_fixture": scripted_fixture_material,
+            "initial_frame_capture": initial_frame_capture,
+            "raw_action_trace": raw_action_trace,
+            "raw_action_trace_sha256": canonical_sha256(raw_action_trace),
             "semantic_repair_established": False,
             "controller_ack_observed": False,
             "physical_execution_invoked": False,
             "claim_boundary": {
-                "state_continuity_basis": STATE_CONTINUITY_DIAGNOSTIC_MUJOCO_CLONE,
+                "state_continuity_basis": continuity_basis,
                 "same_verifier_as_groot_cohort": True,
                 "same_7d_libero_action_interface": True,
                 "general_vla0_recovery_rate_established": False,
+                "fixture_setup_precedes_proposal_approval_dispatch": bool(
+                    scripted_fixture_material is not None
+                ),
+                "source_created_by_scripted_failure_fixture": bool(
+                    scripted_fixture_material is not None
+                ),
+                "natural_policy_failure_observed": False,
                 "same_world_semantic_repair_established": False,
+                "scripted_fixture_repair_is_not_natural_failure_rate_evidence": bool(
+                    scripted_fixture_material is not None
+                ),
                 "autonomous_oracle_capability_established": False,
                 "real_world_safety_established": False,
             },
@@ -531,6 +717,11 @@ def main() -> int:
     parser.add_argument("--operator-approval-ref", required=True)
     parser.add_argument("--maximum-repair-steps", type=int, default=720)
     parser.add_argument("--episode-init-state-index", type=int, default=15)
+    parser.add_argument(
+        "--scripted-failure-fixture",
+        choices=sorted(FAILURE_FIXTURE_SPECS),
+    )
+    parser.add_argument("--frame-capture-dir", type=Path)
     args = parser.parse_args()
     report = execute_live(
         source_root=args.source_root.resolve(),
@@ -542,9 +733,18 @@ def main() -> int:
         operator_approval_ref=args.operator_approval_ref,
         maximum_repair_steps=args.maximum_repair_steps,
         episode_init_state_index=args.episode_init_state_index,
+        scripted_failure_fixture=args.scripted_failure_fixture,
+        frame_capture_dir=(
+            args.frame_capture_dir.resolve()
+            if args.frame_capture_dir is not None
+            else None
+        ),
     )
     print(json.dumps(report, indent=2, sort_keys=True))
-    return 0 if report["diagnostic_clone_recovery_observed"] else 2
+    return 0 if (
+        report["diagnostic_clone_recovery_observed"]
+        or report["scripted_fixture_repair_established"]
+    ) else 2
 
 
 if __name__ == "__main__":
