@@ -2,7 +2,10 @@
   "schema_version": "missionos.vla0_libero_clear_fixture_repair_publication.v1",
   "publication_scope": "public_bounded_negative_observation",
   "measurement_completed": true,
-  "publication_gate_satisfied": true,
+  "publication_gate_satisfied": false,
+  "publication_safe_behavior_observation_gate_satisfied": true,
+  "capability_interpretation_gate_satisfied": false,
+  "result_classification": "unmeasured_as_repair_capability",
   "task": {
     "suite": "libero_10",
     "name": "KITCHEN_SCENE8_put_both_moka_pots_on_the_stove",
@@ -61,7 +64,10 @@
       true
     ],
     "setup_preceded_proposal_approval_dispatch": true,
-    "natural_policy_failure_observed": false
+    "natural_policy_failure_observed": false,
+    "fixture_recoverability_established": false,
+    "scripted_oracle_evidence_bound": false,
+    "capability_interpretation_eligible": false
   },
   "governed_repair": {
     "proposal_count": 1,
@@ -84,9 +90,16 @@
       true
     ],
     "predicate_improvement_observed": false,
-    "target_minimum_end_effector_distance_metres": 0.545737582647126,
-    "target_contact_step_count": 0,
-    "target_directed_approach_observed": false,
+    "target_minimum_end_effector_to_target_center_distance_metres": 0.545737582647126,
+    "target_gripper_contact_step_count": 0,
+    "target_directed_approach_interpretation": "no_sustained_or_meaningful_target_directed_approach_observed",
+    "qualitative_frame_review": {
+      "camera": "agentview_image",
+      "reviewed_step_start": 0,
+      "reviewed_step_end": 520,
+      "reviewed_frame_count": 521,
+      "sustained_or_meaningful_target_directed_approach_observed": false
+    },
     "target_grasp_or_transport_observed": false,
     "preservation_violation_observed": false,
     "preservation_invariant_breach_observed": false,
@@ -103,8 +116,11 @@
     "camera_image_records": 1042,
     "official_dataset_stats_sha256": "ee365dfe83bb9a20a8e5b3777ce72d44e26b7352fa6e609cd9d6483aaae09c6b",
     "loaded_dataset_stats_matched_verified_file": true,
-    "public_video_sha256": "bb4768b26671618a5fa6916c1c266189091c8aba56862445e6e4e462243498e9",
-    "public_poster_sha256": "1bd4ea446218e673dab3ab335a26c4c5dfdc83d3a8d1a1a075a7248eee4f2e8e"
+    "normalized_public_observation_file": "20260825-vla0-libero-clear-fixture-repair-normalized-observation.json",
+    "normalized_public_observation_file_sha256": "3881301f1163e34c93f6650bb384201d0177981a82c55d0c51f0ae130d72abdb",
+    "normalized_public_observation_sha256": "64fc68373baa5e2a38b64944389d773a3e926ec7c6f7a399ed7ea14bb2609340",
+    "public_video_sha256": "a22efb87ce3bd44412773c87fdf0ca55da890104bca731d8086646a0c721491b",
+    "public_poster_sha256": "cedc9e3c4e49023fccf5de5b8816debc6d84219dc738b82408ff5fc0e6602563"
   },
   "residual_uncertainty": {
     "official_ensemble_formula_matched": true,
@@ -113,10 +129,12 @@
     "reason": "the official positive-control output did not preserve exact numeric prediction and selected-action material for the same observation",
     "adapter_difference_fully_excluded": false,
     "mid_episode_distribution_shift_proven": false,
-    "mid_episode_distribution_shift_is_leading_explanation": true
+    "mid_episode_distribution_shift_hypothesis_only": true
   },
   "claim_boundary": {
-    "bounded_observation": "VLA-0 completed one nominal official-runner control, but this checkpoint, observation, and instruction did not generate a target-directed recovery trajectory after the target object was displaced approximately 22.7 cm in a mid-episode partial-success state.",
+    "bounded_observation": "VLA-0 completed one nominal official-runner control. In the scripted 22.7 cm fixture observation, no sustained or meaningful target-directed approach was observed; the minimum end-effector-to-target-center distance remained approximately 54.6 cm, no gripper-target contact occurred, and the predicate vector remained [true, false, true] through 520 actions.",
+    "fixture_recoverability_established": false,
+    "result_is_unmeasured_as_repair_capability": true,
     "scripted_fixture_is_not_natural_policy_failure": true,
     "one_positive_control_is_not_a_nominal_success_rate": true,
     "one_negative_repair_is_not_a_general_recovery_rate": true,

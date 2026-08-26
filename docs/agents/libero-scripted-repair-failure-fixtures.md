@@ -93,3 +93,9 @@ Before using a scenario as VLA capability evidence, independently demonstrate
 recoverability through the same 7D simulator action interface and within the
 same action budget. If recoverability is not established, report the scenario
 as `unmeasured_as_repair_capability`; do not interpret a VLA failure.
+
+The public VLA-0 `displaced_from_stove` observation currently remains in that
+state: fixture recoverability is not established, so its 520-step trace is
+published only as a bounded behavioral observation. The capability
+interpretation gate is false even though the sanitized observation itself is
+safe to publish.
