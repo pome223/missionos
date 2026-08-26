@@ -1,15 +1,15 @@
 {
   "capability_gate": {
-    "capability_interpretation_gate_satisfied": false,
-    "fixture_recoverability_established": false,
+    "capability_interpretation_gate_satisfied": true,
+    "fixture_recoverability_established": true,
     "publication_safe_behavior_observation_gate_satisfied": true,
-    "result_classification": "unmeasured_as_repair_capability"
+    "result_classification": "bounded_recoverable_fixture_repair_not_observed"
   },
   "fixture": {
-    "fixture_recoverability_established": false,
+    "fixture_recoverability_established": true,
     "protected_object_displacement_metres": 3.469446951953614e-18,
     "scenario": "displaced_from_stove",
-    "scripted_oracle_evidence_bound": false,
+    "scripted_oracle_evidence_bound": true,
     "target_outside_stove_clearance_metres": 0.0700024799848706,
     "target_translation_metres": 0.22725263543585766
   },
@@ -1080,13 +1080,16 @@
     ],
     "target_gripper_contact_step_count": 0
   },
-  "normalized_observation_sha256": "64fc68373baa5e2a38b64944389d773a3e926ec7c6f7a399ed7ea14bb2609340",
+  "normalized_observation_sha256": "fb0c9b6937c003229aac495f8295dfeac441c21c542d48a60a0844703f2f75f1",
   "publication_scope": "sanitized_metric_trace_only",
   "schema_version": "missionos.vla0_libero_clear_fixture_normalized_observation.v1",
   "source_evidence": {
     "canonical_result_sha256": "94a1f7bf0e2b4f3fe80bc15a3a1a6e997058c4d1a79a3294327f3c238f028070",
     "frame_capture_sha256": "1b5ba5e75c69c1000cdaff8d1101182e62660c66326dabc45567eaa2f15fa6ed",
     "official_dataset_stats_sha256": "ee365dfe83bb9a20a8e5b3777ce72d44e26b7352fa6e609cd9d6483aaae09c6b",
+    "normalized_oracle_control_file": "20260826-vla0-libero-displaced-fixture-oracle-normalized.json",
+    "normalized_oracle_control_file_sha256": "bc35f0ce899185b3ff52236de821ab0ab52aa230c21c8f37902d066edd80fe7a",
+    "normalized_oracle_control_sha256": "5451f6bdfa786bb44857f00c224fe14924b80de7a3d41bcf49b430f2004a6b82",
     "private_frame_sequence_published": false,
     "private_raw_result_file_published": false,
     "private_raw_result_file_sha256": "8894991698415cbcdafb44ea08f559931682ddcdb53ecdbeae1f3e08014a0b19",

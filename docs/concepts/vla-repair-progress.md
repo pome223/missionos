@@ -17,7 +17,7 @@ as separate facts.
 | Policy | Control | Repair observation | Boundary |
 | ------ | ------- | ------------------ | -------- |
 | GR00T N1.7 | The same saved diagnostic snapshot was recoverable by a deterministic planner through the same 7D interface in 81 actions | GR00T did not recover it in 10 diagnostic clones across two instructions; the native same-world cohort also observed target improvement in 0/5 Repair loops | The saved-state displacement was only 4.1 mm, so this is a useful control but a threshold-adjacent case |
-| VLA-0 | The pinned official runner completed the nominal LIBERO-10 task in 1/1 positive control within the official 520-action limit | After the second pot was moved approximately 22.7 cm, one governed 520-action behavioral observation ended at the same `[true, false, true]` predicate vector | Independent fixture recoverability is not established, so this is unmeasured as Repair capability |
+| VLA-0 | The pinned official runner completed the nominal task in 1/1; a privileged oracle then recovered the exact fixture through the same original 7D interface in 517/520 actions | After the second pot was moved approximately 22.7 cm, one governed 520-action Repair observation ended at the same `[true, false, true]` predicate vector | This is one bounded failure on a demonstrated-recoverable scripted fixture, not a general Repair rate |
 
 The GR00T and VLA-0 measurements are not a leaderboard. They use different
 policies and different failure states. Together they show why nominal task
@@ -34,13 +34,20 @@ The task was the LIBERO-10 scene
 `KITCHEN_SCENE8_put_both_moka_pots_on_the_stove`, with the original benchmark
 instruction `put both moka pots on the stove` and init-state index 15.
 
-The test had two deliberately separate parts:
+The test had three deliberately separate parts:
 
 1. **Nominal positive control.** The pinned upstream VLA-0 runner completed the
    unmodified task in 1/1 run within 520 actions. This weakens the explanations
    that the checkpoint was completely broken or could not solve this task at
    all. It does not establish a nominal success rate.
-2. **Governed Repair.** A test-only fixture moved the second pot approximately
+2. **Recoverability control.** A privileged scripted oracle received the exact
+   same fixture through the pinned VLA-0 LIBERO environment's `original` 7D
+   action interface and the same 520-action budget. It first reached
+   `[true, true, true]` after 497 actions and maintained that vector for 20
+   settling actions, for 517 actions total. The already correct pot and stove
+   predicates remained satisfied. This proves that the fixture was recoverable
+   under the tested interface and budget; it is not a VLA or MissionOS Repair.
+3. **Governed Repair.** A test-only fixture moved the second pot approximately
    22.7 cm, leaving it approximately 7.0 cm outside the stove region. The first
    pot and the stove-on predicate remained satisfied. Only after the verifier
    confirmed `[true, false, true]` did MissionOS create one proposal, record one
@@ -82,23 +89,28 @@ it is not real-time wall-clock playback.
 
 The strongest bounded statement is:
 
-> VLA-0 completed one nominal official-runner control. In the scripted 22.7 cm
-> fixture observation, no sustained or meaningful target-directed approach was
-> observed; the minimum end-effector-to-target-center distance remained
-> approximately 54.6 cm, no gripper-target contact occurred, and the predicate
-> vector remained `[true, false, true]` through 520 actions.
+> A privileged oracle recovered the exact scripted 22.7 cm fixture through the
+> same original 7D simulator action interface in 517 of 520 allowed actions,
+> including 20 stable success steps, without a preserve violation. VLA-0
+> completed one nominal official-runner control, but in the recoverable fixture
+> observation it produced no sustained or meaningful target-directed approach;
+> the minimum end-effector-to-target-center distance remained approximately
+> 54.6 cm, no gripper-target contact occurred, and the predicate vector remained
+> `[true, false, true]` through 520 actions.
 
-This behavior was not close to the completion threshold, but the fixture's
-independent recoverability has not been established through the same 7D
-interface and budget. The result is therefore
-`unmeasured_as_repair_capability`; it is a behavioral observation, not evidence
-that VLA-0 lacks Repair capability for a recoverable fixture.
+This behavior was not close to the completion threshold, and the oracle closes
+the missing recoverability gate. The result is therefore classified as
+`bounded_recoverable_fixture_repair_not_observed`: evidence that this VLA-0
+configuration did not repair this exact recoverable fixture under the tested
+observation, adapter, and budget. It is not evidence that VLA-0 can never
+repair recoverable states.
 
 A mid-episode distribution shift is one hypothesis: VLA-0 completed one nominal
 episode but did not produce sustained target-directed behavior after a large
-object-only change. Because fixture recoverability and full adapter parity are
-not established, distribution shift remains a hypothesis rather than the
-leading established explanation.
+object-only change. Fixture infeasibility is now excluded for this action
+interface and budget. Because full adapter parity is not established,
+mid-episode distribution shift remains the leading hypothesis rather than a
+proven mechanism.
 
 ## What is still unresolved
 
@@ -113,9 +125,9 @@ This report does **not** establish:
 
 - a general VLA-0 nominal success or recovery rate;
 - a naturally occurring policy failure—the 22.7 cm displacement was scripted;
-- Repair capability on this fixture, because independent recoverability is not
-  established;
-- that VLA-0 has no possible recovery trajectory;
+- a general conclusion that VLA-0 lacks Repair capability;
+- that VLA-0 has no possible recovery trajectory under another observation,
+  adapter, prompt, or checkpoint;
 - same-world Semantic Repair success;
 - controller ACK, physical Panda execution, or real-world safety.
 
@@ -134,8 +146,10 @@ are in the
 [publication companion record](../agents/evidence/20260825-vla0-libero-clear-fixture-repair-publication.json).
 The companion is cross-checked against a
 [normalized public observation manifest](../agents/evidence/20260825-vla0-libero-clear-fixture-repair-normalized-observation.json)
-that retains only sanitized metric traces and source digests, not raw actions or
-private frames.
+and a
+[normalized oracle control](../agents/evidence/20260826-vla0-libero-displaced-fixture-oracle-normalized.json).
+They retain only sanitized metrics and source digests, not raw actions or
+private frame sequences.
 
 The upstream VLA-0 source and weights are CC BY-NC 4.0 and are not copied into
 this repository. Live execution remains opt-in and requires separately obtained,

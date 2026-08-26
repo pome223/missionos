@@ -94,8 +94,15 @@ recoverability through the same 7D simulator action interface and within the
 same action budget. If recoverability is not established, report the scenario
 as `unmeasured_as_repair_capability`; do not interpret a VLA failure.
 
-The public VLA-0 `displaced_from_stove` observation currently remains in that
-state: fixture recoverability is not established, so its 520-step trace is
-published only as a bounded behavioral observation. The capability
-interpretation gate is false even though the sanitized observation itself is
-safe to publish.
+The public VLA-0 `displaced_from_stove` observation now passes this gate. A
+privileged two-axis push oracle recovered the exact fixture through the pinned
+VLA-0 LIBERO environment's `original` 7D action interface in 517 of the same
+520 allowed actions, including 20 stable success steps. The source and final
+predicate vectors were `[true, false, true]` and `[true, true, true]`; the
+protected-object displacement remained below the 5 mm bound and no preserve
+violation was observed.
+
+The governed VLA-0 trace may therefore be interpreted as one
+`bounded_recoverable_fixture_repair_not_observed` result. This closes only the
+fixture-recoverability gate. The scripted oracle is not a VLA Repair, and one
+recoverable-fixture failure is not a natural-failure or general Repair rate.

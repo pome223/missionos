@@ -13,6 +13,9 @@ PUBLICATION_PATH = EVIDENCE_ROOT / "20260825-vla0-libero-clear-fixture-repair-pu
 NORMALIZED_OBSERVATION_PATH = (
     EVIDENCE_ROOT / "20260825-vla0-libero-clear-fixture-repair-normalized-observation.json"
 )
+ORACLE_CONTROL_PATH = (
+    EVIDENCE_ROOT / "20260826-vla0-libero-displaced-fixture-oracle-normalized.json"
+)
 RUNNER_PATH = REPOSITORY_ROOT / "scripts" / "run_vla0_libero_snapshot_recovery.py"
 VIDEO_PATH = REPOSITORY_ROOT / "docs" / "assets" / "vla0-libero-clear-fixture-repair.mp4"
 POSTER_PATH = REPOSITORY_ROOT / "docs" / "assets" / "vla0-libero-clear-fixture-repair-poster.png"
@@ -52,6 +55,7 @@ def test_vla0_publication_assets_match_bound_digests() -> None:
     evidence = publication["evidence"]
     assert isinstance(evidence, dict)
     normalized = _read_json(NORMALIZED_OBSERVATION_PATH)
+    oracle = _read_json(ORACLE_CONTROL_PATH)
     normalized_without_digest = dict(normalized)
     normalized_digest = normalized_without_digest.pop("normalized_observation_sha256")
 
@@ -64,6 +68,14 @@ def test_vla0_publication_assets_match_bound_digests() -> None:
     )
     assert normalized_digest == _canonical_sha256(normalized_without_digest)
     assert evidence["normalized_public_observation_sha256"] == normalized_digest
+    oracle_without_digest = dict(oracle)
+    oracle_digest = oracle_without_digest.pop("normalized_oracle_control_sha256")
+    assert oracle_digest == _canonical_sha256(oracle_without_digest)
+    assert evidence["normalized_oracle_control_file"] == ORACLE_CONTROL_PATH.name
+    assert evidence["normalized_oracle_control_file_sha256"] == _sha256(
+        ORACLE_CONTROL_PATH
+    )
+    assert evidence["normalized_oracle_control_sha256"] == oracle_digest
 
     source = normalized["source_evidence"]
     assert isinstance(source, dict)
@@ -74,6 +86,11 @@ def test_vla0_publication_assets_match_bound_digests() -> None:
     assert source["private_raw_result_file_published"] is False
     assert source["raw_action_trace_published"] is False
     assert source["private_frame_sequence_published"] is False
+    assert source["normalized_oracle_control_file"] == ORACLE_CONTROL_PATH.name
+    assert source["normalized_oracle_control_file_sha256"] == _sha256(
+        ORACLE_CONTROL_PATH
+    )
+    assert source["normalized_oracle_control_sha256"] == oracle_digest
 
 
 def test_vla0_publication_metrics_reduce_from_normalized_trace() -> None:
@@ -143,7 +160,7 @@ def evidence_camera_count(publication: dict[str, object]) -> int:
     return int(evidence["camera_image_records"])
 
 
-def test_vla0_publication_fails_closed_without_recoverability_evidence() -> None:
+def test_vla0_publication_binds_same_interface_recoverability_control() -> None:
     publication = _read_json(PUBLICATION_PATH)
     normalized = _read_json(NORMALIZED_OBSERVATION_PATH)
     fixture = publication["scripted_fixture"]
@@ -151,29 +168,49 @@ def test_vla0_publication_fails_closed_without_recoverability_evidence() -> None
     residual = publication["residual_uncertainty"]
     claim_boundary = publication["claim_boundary"]
     governed = publication["governed_repair"]
+    oracle = publication["scripted_oracle_control"]
     assert isinstance(fixture, dict)
     assert isinstance(capability_gate, dict)
     assert isinstance(residual, dict)
     assert isinstance(claim_boundary, dict)
     assert isinstance(governed, dict)
+    assert isinstance(oracle, dict)
 
-    assert fixture["scripted_oracle_evidence_bound"] is False
-    assert fixture["fixture_recoverability_established"] is False
-    assert fixture["capability_interpretation_eligible"] is False
-    assert publication["publication_gate_satisfied"] is False
-    assert publication["capability_interpretation_gate_satisfied"] is False
+    assert fixture["scripted_oracle_evidence_bound"] is True
+    assert fixture["fixture_recoverability_established"] is True
+    assert fixture["capability_interpretation_eligible"] is True
+    assert publication["publication_gate_satisfied"] is True
+    assert publication["capability_interpretation_gate_satisfied"] is True
     assert publication["publication_safe_behavior_observation_gate_satisfied"] is True
-    assert publication["result_classification"] == "unmeasured_as_repair_capability"
-    assert capability_gate["fixture_recoverability_established"] is False
-    assert capability_gate["capability_interpretation_gate_satisfied"] is False
-    assert capability_gate["result_classification"] == "unmeasured_as_repair_capability"
+    assert publication["result_classification"] == (
+        "bounded_recoverable_fixture_repair_not_observed"
+    )
+    assert capability_gate["fixture_recoverability_established"] is True
+    assert capability_gate["capability_interpretation_gate_satisfied"] is True
+    assert capability_gate["result_classification"] == (
+        "bounded_recoverable_fixture_repair_not_observed"
+    )
+    assert oracle["same_original_7d_action_interface_used"] is True
+    assert oracle["same_maximum_action_budget"] == 520
+    assert oracle["actions_applied"] == 517
+    assert oracle["success_first_observed_after_action"] == 497
+    assert oracle["stable_success_steps_completed"] == 20
+    assert oracle["source_goal_predicate_vector"] == [True, False, True]
+    assert oracle["terminal_goal_predicate_vector"] == [True, True, True]
+    assert oracle["preservation_violation_observed"] is False
+    assert oracle["protected_maximum_displacement_metres"] < oracle[
+        "protected_maximum_displacement_limit_metres"
+    ]
+    assert oracle["model_inference_invoked"] is False
+    assert oracle["missionos_repair_run"] is False
 
     assert residual["full_one_step_numeric_parity_established"] is False
     assert residual["adapter_difference_fully_excluded"] is False
     assert residual["mid_episode_distribution_shift_proven"] is False
     assert residual["mid_episode_distribution_shift_hypothesis_only"] is True
-    assert claim_boundary["fixture_recoverability_established"] is False
-    assert claim_boundary["result_is_unmeasured_as_repair_capability"] is True
+    assert claim_boundary["fixture_recoverability_established"] is True
+    assert claim_boundary["result_is_unmeasured_as_repair_capability"] is False
+    assert claim_boundary["result_is_one_bounded_recoverable_fixture_failure_observation"] is True
     assert governed["target_directed_approach_interpretation"] == (
         "no_sustained_or_meaningful_target_directed_approach_observed"
     )
@@ -199,16 +236,17 @@ def test_vla0_publication_wording_matches_measured_boundary() -> None:
     required_phrases = (
         "no sustained or meaningful target-directed approach",
         "gripper-target contact",
-        "unmeasured as Repair capability",
+        "oracle recovered",
+        "517/520",
     )
     for phrase in required_phrases:
         assert phrase in readme
         assert phrase in report
     assert "policy never moved toward the target" not in report
     assert "leading explanation" not in report
-    assert "unmeasured_as_repair_capability" in fixture_contract
-    assert "capability interpretation gate is false" in fixture_contract
+    assert "bounded_recoverable_fixture_repair_not_observed" in fixture_contract
+    assert "now passes this gate" in fixture_contract
     assert (
-        "minimum end-effector-to-target-center distance remained approximately 54.6 cm"
+        "A privileged oracle recovered the exact scripted 22.7 cm fixture"
         in (claim_boundary["bounded_observation"])
     )

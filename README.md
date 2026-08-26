@@ -50,7 +50,7 @@ bounded simulator paths. All results below are simulator evidence.
 | **PX4 / Gazebo SITL** | Outbound mission with two collision obstacles at ~50% and ~75% route progress | Two separate LLM proposals and two separate human approvals; second centerline rejoin observed; saved outbound and return telemetry |
 | **TurtleBot3 / ROS2 Nav2** | Chat request to deliver to a named room in `turtlebot3_house` | Three real doorways traversed from front yard to bedroom dropoff; AMCL-corrected observed trail against the approved plan |
 | **GR00T N1.7 / LIBERO Panda** | Natural asymmetric partial failures continued **without resetting the world**, under a new contract, human approval, and one dispatch per loop | Native single-attempt cohort: target repair 0/5 loops; each execution's Contract-bound preserve predicates maintained 16/16 across 6 original-world attempts + 10 diagnostic clones |
-| **VLA-0 / LIBERO Panda** | One official-runner nominal control, then one governed behavioral observation after a test-only fixture moved the remaining target pot approximately 22.7 cm | Nominal control 1/1 within 520 actions; the fixture observation remained `[true, false, true]` after 520 one-action simulator steps, with no sustained or meaningful target-directed approach, no gripper-target contact, and no preserve violation |
+| **VLA-0 / LIBERO Panda** | One official-runner nominal control, one same-interface scripted-oracle control, then one governed Repair observation after a test-only fixture moved the remaining target pot approximately 22.7 cm | Nominal control 1/1; the oracle recovered the exact fixture in 517/520 actions; VLA-0 remained `[true, false, true]` after 520 actions, with no sustained or meaningful target-directed approach, no gripper-target contact, and no preserve violation |
 
 | PX4 drone · two separately approved obstacle recoveries | TurtleBot3 · house delivery to a named room |
 | -------------------------------------------------------- | --------------------------------------------- |
@@ -102,12 +102,17 @@ predictions and 520 one-action simulator steps**, the verifier still observed
 distance was approximately 54.6 cm and gripper-target contact was observed on
 0/520 steps.
 
-This is one scripted-fixture behavioral observation, not a natural-failure or
-general recovery rate. Independent recoverability of this 22.7 cm fixture has
-not been established, so the result is **unmeasured as Repair capability**.
-The official ensemble formula and dataset statistics match, but full one-step
-numeric parity between the official runner and MissionOS adapter is not
-established. See the
+The exact 22.7 cm fixture was independently recovered by a privileged oracle
+through the same `original` 7D simulator action interface and the same
+520-action budget. It first reached `[true, true, true]` after 497 actions and
+remained satisfied for 20 settling actions, with no preserve violation. The
+VLA-0 trace is therefore one **bounded failure to repair a demonstrated-
+recoverable fixture**, not merely an unmeasured behavioral observation.
+
+It is still one scripted fixture, not a natural-failure or general recovery
+rate. The official ensemble formula and dataset statistics match, but full
+one-step numeric parity between the official runner and MissionOS adapter is
+not established. See the
 [GR00T and VLA-0 Repair progress report](docs/concepts/vla-repair-progress.md),
 including the annotated video and exact evidence boundary.
 
@@ -237,7 +242,7 @@ evidence does not imply physical execution, and ACK is not success.
 | Nvblox / Isaac ROS perception evidence | The v1 perception-evidence contract, env/bridge payload ingestion, required gate, tests, and docs are in place. Nvblox evidence is explicitly not approval, dispatch, or obstacle-avoidance completion by itself. | No live Nvblox data yet. It needs depth/pose -> reconstruction -> Nav2 costmap evidence paired with trajectory/verifier clearance evidence.                                                       |
 | Parent Mission / three executors        | PX4, Nav2, and GR00T/LIBERO concrete predicate packages fit one parent contract without backend branches in `missionos-core`. A reviewed manual run records all three bounded simulator stages under one parent identity. | Three satisfied stages are not projected into parent mission completion, shared-world identity, delivery completion, or physical execution. |
 | GR00T N1.7 / LIBERO Panda VLA           | One reviewed bounded episode records policy responses, simulator step inputs and returns, exact official predicate observations, and content-bound lineage. Chat, approval, run, status, `operate`, `watch`, `map`, and one-shot post-episode repair have reviewed simulator evidence. | The public CI replays fixtures and checks evidence compatibility; it does not start an NVIDIA GPU. Independent controller ACK, instruction delivery into the policy, in-episode external stop, physical Panda execution, and real-world safety remain unverified. |
-| VLA-0 / LIBERO Panda VLA                | A pinned official-runner nominal control succeeded 1/1. A separate governed clear-fixture observation applied 520 one-action simulator steps after a 22.7 cm target displacement; predicates remained `[true, false, true]`, gripper-target contact was 0/520, and preserve predicates remained satisfied. | Fixture recoverability is not established, so Repair capability remains unmeasured. Full one-step numeric parity with the official runner, natural-failure Repair, controller ACK, physical Panda execution, and real-world safety remain unverified. |
+| VLA-0 / LIBERO Panda VLA                | A pinned official-runner nominal control succeeded 1/1. A privileged oracle recovered the exact 22.7 cm fixture through the same original 7D interface in 517/520 actions. In the separate governed VLA-0 observation, predicates remained `[true, false, true]` through 520 actions, gripper-target contact was 0/520, and preserve predicates remained satisfied. | This is one scripted recoverable-fixture failure, not a general Repair rate. Full one-step numeric parity with the official runner, natural-failure Repair, controller ACK, physical Panda execution, and real-world safety remain unverified. |
 
 ## Chat Quickstart
 

@@ -1,0 +1,69 @@
+{
+  "schema_version": "missionos.vla0_libero_same_interface_oracle_recoverability.v1",
+  "publication_scope": "sanitized_scripted_oracle_control",
+  "normalized_oracle_control_sha256": "5451f6bdfa786bb44857f00c224fe14924b80de7a3d41bcf49b430f2004a6b82",
+  "task": {
+    "suite": "libero_10",
+    "name": "KITCHEN_SCENE8_put_both_moka_pots_on_the_stove",
+    "instruction": "put both moka pots on the stove",
+    "episode_init_state_index": 15,
+    "environment_seed": 7
+  },
+  "environment": {
+    "vla0_source_revision": "b78db19eda67b02844fe82b8929e1f94de7f2dcc",
+    "lerobot_revision": "c55fbe1b3e36f640d659918945514fbb43a2b53d",
+    "pinned_vla0_libero_environment_construction_mirrored": true,
+    "action_space": "original_7d",
+    "maximum_action_budget": 520
+  },
+  "fixture": {
+    "scenario": "displaced_from_stove",
+    "snapshot_sha256": "370c9436d63c0eafcc76deeb139cd4e2cafe40b04ab3189d6892c8dbf2fc8386",
+    "target_translation_metres": 0.22725263543585766,
+    "target_outside_stove_clearance_metres": 0.0700024799848706,
+    "source_goal_predicate_vector": [
+      true,
+      false,
+      true
+    ]
+  },
+  "scripted_oracle": {
+    "controller": "privileged_two_axis_push_waypoint_oracle",
+    "controller_source_sha256": "874953911a37ad2aefba7f95437aa9821324e6135485db205e0c78fe863993f8",
+    "actions_applied": 517,
+    "success_first_observed_after_action": 497,
+    "stable_success_steps_required": 20,
+    "stable_success_steps_completed": 20,
+    "terminal_goal_predicate_vector": [
+      true,
+      true,
+      true
+    ],
+    "stable_success_observed": true,
+    "preservation_violation_observed": false,
+    "protected_maximum_displacement_metres": 0.004176949540363893,
+    "protected_maximum_displacement_limit_metres": 0.005,
+    "canonical_result_sha256": "6ac0f20779787a2fa7a7a7d57df604a59b460c7219097557caf0565416547024",
+    "raw_action_trace_sha256": "5702fed28ee8b004dc7d23bb09ebe400915a2e5198dc5d94db068bc7bb3abbe7",
+    "raw_action_trace_published": false,
+    "private_frame_sequence_published": false
+  },
+  "capability_gate": {
+    "fixture_recoverability_established": true,
+    "same_action_interface_and_budget_established": true,
+    "capability_interpretation_gate_satisfied": true,
+    "vla0_result_classification": "bounded_recoverable_fixture_repair_not_observed"
+  },
+  "claim_boundary": {
+    "privileged_object_state_used_for_oracle_planning": true,
+    "simulator_state_directly_changed_after_fixture_restore": false,
+    "model_inference_invoked": false,
+    "missionos_proposal_created": false,
+    "human_approval_created": false,
+    "governed_dispatch_created": false,
+    "controller_ack_observed": false,
+    "physical_execution_invoked": false,
+    "oracle_success_is_not_vla_repair": true,
+    "one_recoverable_fixture_is_not_a_general_recovery_benchmark": true
+  }
+}

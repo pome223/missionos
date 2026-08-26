@@ -2,10 +2,10 @@
   "schema_version": "missionos.vla0_libero_clear_fixture_repair_publication.v1",
   "publication_scope": "public_bounded_negative_observation",
   "measurement_completed": true,
-  "publication_gate_satisfied": false,
+  "publication_gate_satisfied": true,
   "publication_safe_behavior_observation_gate_satisfied": true,
-  "capability_interpretation_gate_satisfied": false,
-  "result_classification": "unmeasured_as_repair_capability",
+  "capability_interpretation_gate_satisfied": true,
+  "result_classification": "bounded_recoverable_fixture_repair_not_observed",
   "task": {
     "suite": "libero_10",
     "name": "KITCHEN_SCENE8_put_both_moka_pots_on_the_stove",
@@ -65,9 +65,37 @@
     ],
     "setup_preceded_proposal_approval_dispatch": true,
     "natural_policy_failure_observed": false,
-    "fixture_recoverability_established": false,
-    "scripted_oracle_evidence_bound": false,
-    "capability_interpretation_eligible": false
+    "fixture_recoverability_established": true,
+    "scripted_oracle_evidence_bound": true,
+    "capability_interpretation_eligible": true
+  },
+  "scripted_oracle_control": {
+    "controller": "privileged_two_axis_push_waypoint_oracle",
+    "same_pinned_vla0_libero_environment_construction_mirrored": true,
+    "same_original_7d_action_interface_used": true,
+    "same_maximum_action_budget": 520,
+    "source_goal_predicate_vector": [
+      true,
+      false,
+      true
+    ],
+    "terminal_goal_predicate_vector": [
+      true,
+      true,
+      true
+    ],
+    "actions_applied": 517,
+    "success_first_observed_after_action": 497,
+    "stable_success_steps_required": 20,
+    "stable_success_steps_completed": 20,
+    "stable_success_observed": true,
+    "preservation_violation_observed": false,
+    "protected_maximum_displacement_metres": 0.004176949540363893,
+    "protected_maximum_displacement_limit_metres": 0.005,
+    "model_inference_invoked": false,
+    "missionos_repair_run": false,
+    "controller_ack_observed": false,
+    "physical_execution_invoked": false
   },
   "governed_repair": {
     "proposal_count": 1,
@@ -117,10 +145,13 @@
     "official_dataset_stats_sha256": "ee365dfe83bb9a20a8e5b3777ce72d44e26b7352fa6e609cd9d6483aaae09c6b",
     "loaded_dataset_stats_matched_verified_file": true,
     "normalized_public_observation_file": "20260825-vla0-libero-clear-fixture-repair-normalized-observation.json",
-    "normalized_public_observation_file_sha256": "3881301f1163e34c93f6650bb384201d0177981a82c55d0c51f0ae130d72abdb",
-    "normalized_public_observation_sha256": "64fc68373baa5e2a38b64944389d773a3e926ec7c6f7a399ed7ea14bb2609340",
-    "public_video_sha256": "a22efb87ce3bd44412773c87fdf0ca55da890104bca731d8086646a0c721491b",
-    "public_poster_sha256": "cedc9e3c4e49023fccf5de5b8816debc6d84219dc738b82408ff5fc0e6602563"
+    "normalized_public_observation_file_sha256": "8b6daf4925c67caa12bf0a1096028d6b17accfe01c0067e25d71f8d0548b618f",
+    "normalized_public_observation_sha256": "fb0c9b6937c003229aac495f8295dfeac441c21c542d48a60a0844703f2f75f1",
+    "normalized_oracle_control_file": "20260826-vla0-libero-displaced-fixture-oracle-normalized.json",
+    "normalized_oracle_control_file_sha256": "bc35f0ce899185b3ff52236de821ab0ab52aa230c21c8f37902d066edd80fe7a",
+    "normalized_oracle_control_sha256": "5451f6bdfa786bb44857f00c224fe14924b80de7a3d41bcf49b430f2004a6b82",
+    "public_video_sha256": "fdd1a33dfe3bbeb99a12420222673b6c978b448e42385db76819206c359ec70c",
+    "public_poster_sha256": "f7601df074ae6bb1cb7d7c904e4e639c49725d4db5d7cbe4a3d71639ef583266"
   },
   "residual_uncertainty": {
     "official_ensemble_formula_matched": true,
@@ -132,9 +163,10 @@
     "mid_episode_distribution_shift_hypothesis_only": true
   },
   "claim_boundary": {
-    "bounded_observation": "VLA-0 completed one nominal official-runner control. In the scripted 22.7 cm fixture observation, no sustained or meaningful target-directed approach was observed; the minimum end-effector-to-target-center distance remained approximately 54.6 cm, no gripper-target contact occurred, and the predicate vector remained [true, false, true] through 520 actions.",
-    "fixture_recoverability_established": false,
-    "result_is_unmeasured_as_repair_capability": true,
+    "bounded_observation": "A privileged oracle recovered the exact scripted 22.7 cm fixture through the same original 7D simulator action interface in 517 of 520 allowed actions, including 20 stable success steps, without a preserve violation. VLA-0 completed one nominal official-runner control, but in the recoverable fixture observation it produced no sustained or meaningful target-directed approach; the minimum end-effector-to-target-center distance remained approximately 54.6 cm, no gripper-target contact occurred, and the predicate vector remained [true, false, true] through 520 actions.",
+    "fixture_recoverability_established": true,
+    "result_is_unmeasured_as_repair_capability": false,
+    "result_is_one_bounded_recoverable_fixture_failure_observation": true,
     "scripted_fixture_is_not_natural_policy_failure": true,
     "one_positive_control_is_not_a_nominal_success_rate": true,
     "one_negative_repair_is_not_a_general_recovery_rate": true,
