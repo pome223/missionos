@@ -56,6 +56,8 @@ was sent, what was observed, and what remains unproven.
   robot-specific calculations produce a tri-state result without authority.
 - Read `docs/concepts/groot-language-conditioning.md` for the inference-only
   A/A/B check that separates instruction delivery from local model sensitivity.
+- Read `docs/concepts/groot-snapshot-recoverability.md` for the bounded control
+  that separates a policy's negative result from an unrecoverable saved state.
 - Read `docs/examples/README.md` for planned scenario writeups and their
   verification requirements.
 - Read `docs/agents/README.md` if you are an AI agent or maintainer changing the

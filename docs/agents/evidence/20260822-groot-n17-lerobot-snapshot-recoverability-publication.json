@@ -1,0 +1,106 @@
+{
+  "schema_version": "missionos.groot_lerobot_snapshot_recoverability_publication.v1",
+  "recorded_on": "2026-08-22",
+  "snapshot_artifact_sha256": "a674f7ed37ffd0511824bdbe5a7146fa4d0fd6bccd0a5a80cdf1e87d8124e111",
+  "restored_state": {
+    "source_goal_predicate_vector": [
+      true,
+      false,
+      true
+    ],
+    "target_predicate": "on(moka_pot_2, flat_stove_1_cook_region)",
+    "preserve_predicates": [
+      "on(moka_pot_1, flat_stove_1_cook_region)",
+      "turnon(flat_stove_1)"
+    ]
+  },
+  "groot_diagnostic_control": {
+    "source_commit": "e4d663e0c7a7b70f5b7ece9e1904c6450a591187",
+    "checkpoint_revision": "5ee08ab09fac5c5ef2388a14c882ea825ac861db",
+    "base_model_revision": "2fc962b973bccdd5d8ce4f67cc63b264d6886495",
+    "cosmos_revision": "9ce19a195e423419c349abfc86fd07178b230561",
+    "lerobot_revision": "6adf51511b7625090eade8d82d9f61a1846ebe56",
+    "source_evidence_file_sha256": "42064a93aaf41718c01a14ff9cd38de06922ea465fe0479442354406589a28c4",
+    "source_preregistration_file_sha256": "0c894188694954aa234b9f3bc0c49cc880fa3bfad97623082848a42ab3e77b38",
+    "source_validation_file_sha256": "8ebe09dde845aedf4e2e18ae0b99a0c35d6d13a68ca0cbd9345b41ce69ecc2bc",
+    "source_result_canonical_sha256": "8c9e966adb05dd79e1cfa1799698623b86f576c1aee20cc79fb4af977b3e88c2",
+    "trial_design": {
+      "diagnostic_clones_only": true,
+      "paired_sampling_seeds": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2004
+      ],
+      "short_target_instruction": "put the second moka pot on the stove",
+      "benchmark_standard_instruction": "put both moka pots on the stove",
+      "trials_per_instruction": 5,
+      "maximum_chunks_per_trial": 45,
+      "actions_per_chunk": 16,
+      "maximum_actions_per_trial": 720
+    },
+    "result": {
+      "short_target_success_count": 0,
+      "benchmark_standard_success_count": 0,
+      "short_target_trial_count": 5,
+      "benchmark_standard_trial_count": 5,
+      "completed_trial_count": 10,
+      "model_forward_count": 450,
+      "maximum_simulator_action_count": 7200,
+      "terminal_goal_predicate_vector": [
+        true,
+        false,
+        true
+      ],
+      "preservation_violation_observed": false,
+      "semantic_repair_established": false
+    }
+  },
+  "privileged_recoverability_control": {
+    "controller": "deterministic privileged waypoint planner",
+    "same_7d_simulator_action_interface_used": true,
+    "source_evidence_file_sha256": "841a2d2891705fa02a8c85d3ddb5eee6d5965bdfa300aefb77b78f3af4d8b4e6",
+    "source_preregistration_file_sha256": "85a17560fd4528910d2caf93767d8626fd98550faeae450a111837178dbf0658",
+    "source_validation_file_sha256": "ed82834eb4d52111c69c04390001248195f3b6ad80d35cc31ff94ed81aaf4368",
+    "result": {
+      "status": "scripted_action_recoverability_observed",
+      "maximum_action_budget": 720,
+      "predicate_success_first_observed_after_action": 61,
+      "settling_action_count": 20,
+      "total_action_count": 81,
+      "terminal_goal_predicate_vector": [
+        true,
+        true,
+        true
+      ],
+      "failed_object_displacement_metres": 0.0041013722496907315,
+      "maximum_protected_object_displacement_metres": 3.469446951953614e-18,
+      "preservation_violation_observed": false,
+      "stable_success_after_settle": true
+    }
+  },
+  "evidence_separation": {
+    "diagnostic_clone_proposal_count": 10,
+    "diagnostic_clone_approval_record_count": 10,
+    "diagnostic_clone_dispatch_record_count": 10,
+    "diagnostic_clone_dispatch_receipt_count": 10,
+    "controller_ack_observed": false,
+    "groot_model_inference_observed_in_diagnostic_control": true,
+    "model_inference_invoked_by_privileged_control": false,
+    "simulator_action_application_observed": true,
+    "predicate_completion_observed_in_privileged_control": true,
+    "semantic_repair_established": false,
+    "physical_execution_invoked": false
+  },
+  "claim_boundary": {
+    "supported": "For this specific restored simulator snapshot, the source state, target predicate, same 7D simulator action interface, and 720-action horizon were sufficient for recovery: a privileged scripted planner reached [true,true,true] after 61 actions and maintained it through 20 settling actions. Under the same restored snapshot and per-trial action budget, GR00T N1.7 showed no target improvement in five diagnostic trials with target-specific ordinal language and five diagnostic trials with benchmark-standard task language.",
+    "general_groot_recovery_failure_rate_established": false,
+    "autonomous_oracle_recovery_capability_established": false,
+    "observation_grounded_fallback_established": false,
+    "semantic_repair_established": false,
+    "controller_ack_established": false,
+    "real_world_safety_established": false,
+    "physical_execution_established": false
+  }
+}
