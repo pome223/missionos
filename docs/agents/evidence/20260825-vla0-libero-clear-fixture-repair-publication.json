@@ -1,0 +1,128 @@
+{
+  "schema_version": "missionos.vla0_libero_clear_fixture_repair_publication.v1",
+  "publication_scope": "public_bounded_negative_observation",
+  "measurement_completed": true,
+  "publication_gate_satisfied": true,
+  "task": {
+    "suite": "libero_10",
+    "name": "KITCHEN_SCENE8_put_both_moka_pots_on_the_stove",
+    "instruction": "put both moka pots on the stove",
+    "episode_init_state_index": 15,
+    "maximum_selected_actions": 520
+  },
+  "policy": {
+    "name": "NVIDIA VLA-0",
+    "source_revision": "b78db19eda67b02844fe82b8929e1f94de7f2dcc",
+    "lerobot_revision": "c55fbe1b3e36f640d659918945514fbb43a2b53d",
+    "checkpoint_repository": "ankgoyal/vla0-libero",
+    "checkpoint_revision": "6c62a511ad56042b2b3ea0a90c4def33e1ea3b96",
+    "execution_adapter": "vla0_libero_qwen_text_action_v1",
+    "action_dimension": 7,
+    "selected_actions_per_model_invocation": 1,
+    "prediction_horizon": 8,
+    "temporal_ensemble_prediction_count": 8,
+    "temporal_ensemble_version": 1,
+    "official_dataset_config_return_proprio": false,
+    "model_conditioning": [
+      "agentview_image",
+      "wrist_image",
+      "task_language",
+      "system_prompt"
+    ],
+    "numeric_robot_state_passed_to_qwen_model": false
+  },
+  "official_positive_control": {
+    "runner": "pinned_upstream_vla0_official_libero_evaluation",
+    "camera_metadata_only_compatibility_shim": true,
+    "observation_model_prediction_ensemble_action_path_changed": false,
+    "successes": 1,
+    "attempts": 1,
+    "succeeded_within_520_actions": true,
+    "repair_run": false,
+    "missionos_approval_created": false,
+    "missionos_dispatch_created": false,
+    "controller_ack_observed": false,
+    "physical_execution_invoked": false,
+    "general_nominal_success_rate_established": false
+  },
+  "scripted_fixture": {
+    "scenario": "displaced_from_stove",
+    "authority": "test_fixture_only",
+    "source_failure_basis": "scripted_failure_fixture",
+    "target_object": "moka_pot_2",
+    "protected_object": "moka_pot_1",
+    "target_translation_metres": 0.22725263543585766,
+    "target_outside_stove_clearance_metres": 0.0700024799848706,
+    "protected_object_displacement_metres": 3.469446951953614e-18,
+    "stable_failure_fixture_observed": true,
+    "goal_predicate_vector": [
+      true,
+      false,
+      true
+    ],
+    "setup_preceded_proposal_approval_dispatch": true,
+    "natural_policy_failure_observed": false
+  },
+  "governed_repair": {
+    "proposal_count": 1,
+    "human_approval_count": 1,
+    "dispatch_count": 1,
+    "approval_reference_published": false,
+    "model_forward_count": 520,
+    "selected_simulator_actions_applied": 520,
+    "action_horizon": 1,
+    "status": "scripted_fixture_repair_not_observed",
+    "repair_status": "budget_exhausted_without_improvement",
+    "source_goal_predicate_vector": [
+      true,
+      false,
+      true
+    ],
+    "final_goal_predicate_vector": [
+      true,
+      false,
+      true
+    ],
+    "predicate_improvement_observed": false,
+    "target_minimum_end_effector_distance_metres": 0.545737582647126,
+    "target_contact_step_count": 0,
+    "target_directed_approach_observed": false,
+    "target_grasp_or_transport_observed": false,
+    "preservation_violation_observed": false,
+    "preservation_invariant_breach_observed": false,
+    "controller_ack_observed": false,
+    "physical_execution_invoked": false,
+    "additional_attempt_authorized": false
+  },
+  "evidence": {
+    "runner_source_sha256": "503225c04d8d3faee26d1607e560a7a45080158f39d5962fae34118f6a90ee42",
+    "result_sha256": "94a1f7bf0e2b4f3fe80bc15a3a1a6e997058c4d1a79a3294327f3c238f028070",
+    "raw_action_trace_sha256": "47ca49568bfaea5701067c6184e64842f3082fb665c65442576ea50d7fc04546",
+    "frame_capture_sha256": "1b5ba5e75c69c1000cdaff8d1101182e62660c66326dabc45567eaa2f15fa6ed",
+    "frame_capture_records": 521,
+    "camera_image_records": 1042,
+    "official_dataset_stats_sha256": "ee365dfe83bb9a20a8e5b3777ce72d44e26b7352fa6e609cd9d6483aaae09c6b",
+    "loaded_dataset_stats_matched_verified_file": true,
+    "public_video_sha256": "bb4768b26671618a5fa6916c1c266189091c8aba56862445e6e4e462243498e9",
+    "public_poster_sha256": "1bd4ea446218e673dab3ab335a26c4c5dfdc83d3a8d1a1a075a7248eee4f2e8e"
+  },
+  "residual_uncertainty": {
+    "official_ensemble_formula_matched": true,
+    "official_dataset_statistics_matched": true,
+    "full_one_step_numeric_parity_established": false,
+    "reason": "the official positive-control output did not preserve exact numeric prediction and selected-action material for the same observation",
+    "adapter_difference_fully_excluded": false,
+    "mid_episode_distribution_shift_proven": false,
+    "mid_episode_distribution_shift_is_leading_explanation": true
+  },
+  "claim_boundary": {
+    "bounded_observation": "VLA-0 completed one nominal official-runner control, but this checkpoint, observation, and instruction did not generate a target-directed recovery trajectory after the target object was displaced approximately 22.7 cm in a mid-episode partial-success state.",
+    "scripted_fixture_is_not_natural_policy_failure": true,
+    "one_positive_control_is_not_a_nominal_success_rate": true,
+    "one_negative_repair_is_not_a_general_recovery_rate": true,
+    "same_world_semantic_repair_established": false,
+    "controller_ack_established": false,
+    "physical_execution_established": false,
+    "real_world_safety_established": false
+  }
+}
