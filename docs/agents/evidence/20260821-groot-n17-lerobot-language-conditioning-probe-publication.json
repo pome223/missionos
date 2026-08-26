@@ -1,0 +1,62 @@
+{
+  "schema_version": "missionos.groot_lerobot_language_conditioning_probe_publication.v1",
+  "recorded_on": "2026-08-21",
+  "source_commit": "615dff3680cdba4f2ba21e397ec276fe4c7a6001",
+  "runtime_bundle_sha256": "4cc50e4eb97c413764d77bc429a0eeded4fcaf0879888620f6e2a4418534ebaf",
+  "source_evidence_file_sha256": "92e6f202fe98b8066aee5e22d1cbcdfbca67871149fb068a2aaa5ee72ccb5eb6",
+  "source_result_sha256": "653141c8bb4b8dd76f2df3037767dad889a01a0a20010374a928b2abd01afffd",
+  "snapshot_artifact_sha256": "a674f7ed37ffd0511824bdbe5a7146fa4d0fd6bccd0a5a80cdf1e87d8124e111",
+  "observation_sha256": "4c8ba4140ac79f595cc328eb838d40d61aaa3131904257269e5620319a6276a2",
+  "checkpoint_revision": "5ee08ab09fac5c5ef2388a14c882ea825ac861db",
+  "base_model_revision": "2fc962b973bccdd5d8ce4f67cc63b264d6886495",
+  "cosmos_revision": "9ce19a195e423419c349abfc86fd07178b230561",
+  "lerobot_revision": "6adf51511b7625090eade8d82d9f61a1846ebe56",
+  "probe_configuration": {
+    "runtime": "live",
+    "machine_type": "g2-standard-8",
+    "accelerator": "one NVIDIA L4",
+    "sampling_seed": 1000,
+    "trial_sequence": ["A", "A", "B"],
+    "model_forward_count": 3,
+    "same_restored_observation_for_all_trials": true,
+    "empty_action_queue_before_each_forward": true,
+    "simulator_actions_applied": 0
+  },
+  "result": {
+    "status": "local_instruction_conditioning_observed",
+    "packed_language_exact_match_count": 3,
+    "aa_policy_request_reproduced": true,
+    "aa_policy_prediction_reproduced": true,
+    "aa_selected_action_reproduced": true,
+    "ab_policy_request_differs": true,
+    "ab_policy_prediction_differs": true,
+    "ab_selected_action_differs": true,
+    "local_instruction_conditioning_observed": true
+  },
+  "evidence_separation": {
+    "approval_created": false,
+    "dispatch_created": false,
+    "controller_ack_observed": false,
+    "policy_actions_dispatched": false,
+    "simulator_action_application_observed": false,
+    "predicate_improvement_observed": false,
+    "semantic_repair_established": false,
+    "physical_execution_invoked": false
+  },
+  "resource_cleanup": {
+    "transient_vm_present": false,
+    "transient_boot_disk_present": false,
+    "transient_cache_disk_present": false,
+    "permanent_cache_disk_detached": true
+  },
+  "claim_boundary": {
+    "supported": "Changing only the instruction changed the native policy prediction and selected action at one frozen observation and sampling seed, while the repeated A control reproduced.",
+    "instruction_comprehension_established": false,
+    "semantic_direction_alignment_established": false,
+    "repair_capability_established": false,
+    "native_repair_cohort_result_changed": false,
+    "controller_ack_established": false,
+    "simulator_effect_established": false,
+    "physical_execution_established": false
+  }
+}

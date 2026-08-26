@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from collections import deque
 from copy import deepcopy
+from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -38,6 +40,33 @@ def test_live_candidate_profile_matches_pinned_baseline() -> None:
         (False, True, True),
         (True, False, True),
     )
+
+
+def test_git_revision_scopes_safe_directory_without_global_mutation(monkeypatch) -> None:
+    calls: list[tuple[list[str], dict[str, object]]] = []
+
+    def fake_run(command: list[str], **kwargs: object) -> SimpleNamespace:
+        calls.append((command, kwargs))
+        return SimpleNamespace(stdout="6adf51511b7625090eade8d82d9f61a1846ebe56\n")
+
+    monkeypatch.setattr(live_runner.subprocess, "run", fake_run)
+    repository = Path("/opt/lerobot")
+
+    assert live_runner._git_revision(repository) == live_runner.LEROBOT_REVISION
+    assert calls == [
+        (
+            [
+                "git",
+                "-c",
+                "safe.directory=/opt/lerobot",
+                "-C",
+                "/opt/lerobot",
+                "rev-parse",
+                "HEAD",
+            ],
+            {"check": True, "capture_output": True, "text": True},
+        )
+    ]
 
 
 @pytest.mark.parametrize(
@@ -1041,6 +1070,104 @@ def test_fixture_cli_exercises_snapshot_and_atomic_replay_outputs(monkeypatch, t
     assert report["fixture_replay"]["semantic_repair_established"] is False
     assert len(list(trials.glob("trial-*.json"))) == 4
     assert __import__("json").loads(progress.read_text())["completed_trial_count"] == 4
+
+
+def test_live_language_probe_cli_passes_no_dispatch_state(monkeypatch, tmp_path) -> None:
+    output = tmp_path / "probe-result.json"
+    checkpoint = tmp_path / "checkpoint"
+    snapshot = tmp_path / "candidate.npz"
+    checkpoint.mkdir()
+    snapshot.write_bytes(b"diagnostic-snapshot")
+    calls = []
+
+    def fake_execute_live(**kwargs):
+        calls.append(kwargs)
+        return {
+            "status": "no_local_prediction_difference_observed",
+            "local_instruction_conditioning_observed": False,
+            "semantic_repair_established": False,
+            "physical_execution_invoked": False,
+        }
+
+    monkeypatch.setattr(live_runner, "execute_live", fake_execute_live)
+    monkeypatch.setenv(live_runner.OPT_IN_ENV, "1")
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "run_groot_lerobot_same_world_repair.py",
+            "--runtime",
+            "live",
+            "--checkpoint-path",
+            str(checkpoint),
+            "--restore-snapshot",
+            str(snapshot),
+            "--diagnostic-authorization-ref",
+            "diagnostic:test",
+            "--output",
+            str(output),
+            "--language-conditioning-probe",
+            "--repair-sampling-seed",
+            "1000",
+        ],
+    )
+
+    assert live_runner.main() == 0
+    assert len(calls) == 1
+    assert calls[0]["operator_approval_ref"] is None
+    assert calls[0]["dispatch_state_path"] is None
+    assert calls[0]["language_conditioning_probe"] is True
+    assert calls[0]["diagnostic_authorization_ref"] == "diagnostic:test"
+    assert __import__("json").loads(output.read_text())["status"] == (
+        "no_local_prediction_difference_observed"
+    )
+
+
+def test_live_semantic_direction_probe_cli_passes_no_dispatch_state(monkeypatch, tmp_path) -> None:
+    output = tmp_path / "probe-result.json"
+    checkpoint = tmp_path / "checkpoint"
+    snapshot = tmp_path / "candidate.npz"
+    checkpoint.mkdir()
+    snapshot.write_bytes(b"diagnostic-snapshot")
+    calls = []
+
+    def fake_execute_live(**kwargs):
+        calls.append(kwargs)
+        return {
+            "status": "local_direction_alignment_inconclusive",
+            "local_failed_target_direction_alignment_observed": False,
+            "semantic_repair_established": False,
+            "physical_execution_invoked": False,
+        }
+
+    monkeypatch.setattr(live_runner, "execute_live", fake_execute_live)
+    monkeypatch.setenv(live_runner.OPT_IN_ENV, "1")
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "run_groot_lerobot_same_world_repair.py",
+            "--runtime",
+            "live",
+            "--checkpoint-path",
+            str(checkpoint),
+            "--restore-snapshot",
+            str(snapshot),
+            "--diagnostic-authorization-ref",
+            "diagnostic:semantic-direction",
+            "--output",
+            str(output),
+            "--semantic-direction-probe",
+            "--repair-sampling-seed",
+            "1000",
+        ],
+    )
+
+    assert live_runner.main() == 0
+    assert len(calls) == 1
+    assert calls[0]["operator_approval_ref"] is None
+    assert calls[0]["dispatch_state_path"] is None
+    assert calls[0]["language_conditioning_probe"] is False
+    assert calls[0]["semantic_direction_probe"] is True
+    assert calls[0]["diagnostic_authorization_ref"] == "diagnostic:semantic-direction"
 
 
 def test_live_replay_trials_alternate_order_are_atomic_and_never_semantic(

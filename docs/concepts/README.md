@@ -54,6 +54,8 @@ was sent, what was observed, and what remains unproven.
   dispatch, observation, and verification flow across robot backends.
 - Read `docs/concepts/action-feasibility.md` for how common evidence and
   robot-specific calculations produce a tri-state result without authority.
+- Read `docs/concepts/groot-language-conditioning.md` for the inference-only
+  A/A/B check that separates instruction delivery from local model sensitivity.
 - Read `docs/examples/README.md` for planned scenario writeups and their
   verification requirements.
 - Read `docs/agents/README.md` if you are an AI agent or maintainer changing the

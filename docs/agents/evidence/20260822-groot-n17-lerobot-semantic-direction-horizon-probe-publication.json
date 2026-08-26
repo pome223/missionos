@@ -1,0 +1,73 @@
+{
+  "schema_version": "missionos.groot_lerobot_semantic_direction_horizon_probe_publication.v1",
+  "recorded_on": "2026-08-22",
+  "source_commit": "d8188d111105190cacd37dbd9db4d0a53306cb6e",
+  "runtime_bundle_sha256": "a095f7ad3fcfad2702d828bce8b0539b646bcfe0716dc5e7cc8875f12a30fb23",
+  "source_evidence_file_sha256": "6354919bb8adbcf831f61c8666354f20682548b23488fe8c1235a2f66cbd371b",
+  "source_result_sha256": "6251f7b91854a52befa7bf898a4eee56107135a2a4ee41cb0f1ae2e16f1e9c59",
+  "snapshot_artifact_sha256": "a674f7ed37ffd0511824bdbe5a7146fa4d0fd6bccd0a5a80cdf1e87d8124e111",
+  "observation_sha256": "6cda3afe1ff195cb46ebb51a2d928187e5c2de6ebe7e7520926dbe3bb3c5afaa",
+  "checkpoint_revision": "5ee08ab09fac5c5ef2388a14c882ea825ac861db",
+  "base_model_revision": "2fc962b973bccdd5d8ce4f67cc63b264d6886495",
+  "cosmos_revision": "9ce19a195e423419c349abfc86fd07178b230561",
+  "lerobot_revision": "6adf51511b7625090eade8d82d9f61a1846ebe56",
+  "probe_configuration": {
+    "runtime": "live",
+    "machine_type": "g2-standard-8",
+    "accelerator": "one NVIDIA L4",
+    "sampling_seed": 1000,
+    "source_goal_predicate_vector": [true, false, true],
+    "trial_sequence": ["A", "A", "B"],
+    "chunks_per_trial": 3,
+    "actions_per_chunk": 16,
+    "model_forward_count": 9,
+    "simulator_action_count": 144,
+    "snapshot_restored_before_each_trial": true,
+    "same_frozen_first_policy_observation_for_all_trials": true,
+    "later_closed_loop_trajectories_independent": true
+  },
+  "result": {
+    "status": "local_three_chunk_direction_alignment_not_observed",
+    "aa_initial_policy_request_prediction_and_chunk_reproduced": true,
+    "failed_target_progress_metres": [
+      -0.07404997105318845,
+      -0.0763733205535726
+    ],
+    "failed_target_positive_progress": [false, false],
+    "failed_target_preferred_to_protected_object": [true, true],
+    "failed_target_progress_exceeds_contrast_trial": [false, false],
+    "contrast_progress_to_failed_target_metres": -0.07342729718890362,
+    "local_three_chunk_failed_target_direction_alignment_observed": false,
+    "terminal_goal_predicate_vector": [true, false, true],
+    "preservation_violation_observed": false
+  },
+  "evidence_separation": {
+    "approval_created": false,
+    "dispatch_created": false,
+    "controller_ack_observed": false,
+    "policy_actions_dispatched": false,
+    "simulator_action_application_observed": true,
+    "predicate_improvement_observed": false,
+    "task_completion_claimed": false,
+    "semantic_repair_established": false,
+    "physical_execution_invoked": false
+  },
+  "resource_cleanup": {
+    "transient_vm_present": false,
+    "transient_boot_disk_present": false,
+    "transient_cache_disk_present": false,
+    "permanent_cache_disk_detached": true
+  },
+  "claim_boundary": {
+    "supported": "The fixed three-chunk diagnostic did not observe local semantic-direction alignment. The initial A/A policy request, prediction, and action chunk reproduced, but both A trajectories increased end-effector distance to the failed target and did not exceed the B contrast trajectory's progress toward that target. No preserve predicate was violated.",
+    "instruction_comprehension_established": false,
+    "repair_capability_established": false,
+    "task_completion_established": false,
+    "semantic_repair_established": false,
+    "native_repair_cohort_result_changed": false,
+    "controller_ack_established": false,
+    "governed_dispatch_established": false,
+    "real_world_safety_established": false,
+    "physical_execution_established": false
+  }
+}
