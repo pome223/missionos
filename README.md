@@ -108,6 +108,8 @@ through the same `original` 7D simulator action interface and the same
 remained satisfied for 20 settling actions, with no preserve violation. The
 VLA-0 trace is therefore one **bounded failure to repair a demonstrated-
 recoverable fixture**, not merely an unmeasured behavioral observation.
+The publication classification is
+`bounded_recoverable_fixture_repair_not_observed`.
 
 It is still one scripted fixture, not a natural-failure or general recovery
 rate. The official ensemble formula and dataset statistics match, but full

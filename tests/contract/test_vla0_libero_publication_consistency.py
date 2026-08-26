@@ -242,6 +242,8 @@ def test_vla0_publication_wording_matches_measured_boundary() -> None:
     for phrase in required_phrases:
         assert phrase in readme
         assert phrase in report
+    assert "bounded_recoverable_fixture_repair_not_observed" in readme
+    assert "bounded_recoverable_fixture_repair_not_observed" in report
     assert "policy never moved toward the target" not in report
     assert "leading explanation" not in report
     assert "bounded_recoverable_fixture_repair_not_observed" in fixture_contract

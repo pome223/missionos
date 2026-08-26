@@ -150,8 +150,8 @@
     "normalized_oracle_control_file": "20260826-vla0-libero-displaced-fixture-oracle-normalized.json",
     "normalized_oracle_control_file_sha256": "bc35f0ce899185b3ff52236de821ab0ab52aa230c21c8f37902d066edd80fe7a",
     "normalized_oracle_control_sha256": "5451f6bdfa786bb44857f00c224fe14924b80de7a3d41bcf49b430f2004a6b82",
-    "public_video_sha256": "fdd1a33dfe3bbeb99a12420222673b6c978b448e42385db76819206c359ec70c",
-    "public_poster_sha256": "f7601df074ae6bb1cb7d7c904e4e639c49725d4db5d7cbe4a3d71639ef583266"
+    "public_video_sha256": "b8c57eba79d0788154cd010a1e0394ad30d0124fce0853beb6adfd90fc78cc1b",
+    "public_poster_sha256": "fbffde11a5f65654736b18e53d05ebafeb0a5795a0f892880d3cbf42008b8838"
   },
   "residual_uncertainty": {
     "official_ensemble_formula_matched": true,
