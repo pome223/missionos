@@ -42,7 +42,7 @@ ACK is not success. Observed progress is not mission completion.
 
 ## What Has Actually Run
 
-The same contract and authority mechanism has been exercised over three
+The same contract and authority mechanism has been exercised over four
 bounded simulator paths. All results below are simulator evidence.
 
 | Stack | Exercised | Observed |
@@ -50,6 +50,7 @@ bounded simulator paths. All results below are simulator evidence.
 | **PX4 / Gazebo SITL** | Outbound mission with two collision obstacles at ~50% and ~75% route progress | Two separate LLM proposals and two separate human approvals; second centerline rejoin observed; saved outbound and return telemetry |
 | **TurtleBot3 / ROS2 Nav2** | Chat request to deliver to a named room in `turtlebot3_house` | Three real doorways traversed from front yard to bedroom dropoff; AMCL-corrected observed trail against the approved plan |
 | **GR00T N1.7 / LIBERO Panda** | Natural asymmetric partial failures continued **without resetting the world**, under a new contract, human approval, and one dispatch per loop | Native single-attempt cohort: target repair 0/5 loops; each execution's Contract-bound preserve predicates maintained 16/16 across 6 original-world attempts + 10 diagnostic clones |
+| **VLA-0 / LIBERO Panda** | One official-runner nominal control, one same-interface scripted-oracle control, then one governed Repair observation after a test-only fixture moved the remaining target pot approximately 22.7 cm | Nominal control 1/1; the oracle recovered the exact fixture in 517/520 actions; VLA-0 remained `[true, false, true]` after 520 actions, with no sustained or meaningful target-directed approach, no gripper-target contact, and no preserve violation |
 
 | PX4 drone · two separately approved obstacle recoveries | TurtleBot3 · house delivery to a named room |
 | -------------------------------------------------------- | --------------------------------------------- |
@@ -63,10 +64,10 @@ approved plan is orange and the AMCL-corrected observed trail is blue. The PX4
 image is a sanitized, display-only summary derived from a reviewed SITL run;
 raw task identifiers and runtime artifacts are intentionally not published.
 
-An outdoor MAVLink drone, an indoor Nav2 ground robot, and a manipulation VLA
-are entirely different stacks, but the tower is the same: vehicles plug in as
-adapters while the control plane — proposal, approval, dispatch, evidence —
-stays fixed.
+An outdoor MAVLink drone, an indoor Nav2 ground robot, and two manipulation
+policies are entirely different stacks, but the tower is the same: vehicles
+and policies plug in as adapters while the control plane — proposal, approval,
+dispatch, evidence — stays fixed.
 
 ### Where the frontier currently is
 
@@ -89,6 +90,33 @@ safety claim. See the
 and [GR00T Repair claim boundary](docs/agents/groot-lerobot-semantic-repair-checkpoint-gate.md)
 for the full evidence limits. The originally planned max-two-attempt protocol
 remains unmeasured.
+
+The newer VLA-0 result adds a behavioral observation at the mid-episode Repair
+boundary. The pinned official runner completed the unmodified task in **1/1
+positive control** within the official 520-action limit. In the governed
+fixture observation, a test-only fixture moved the second pot approximately
+**22.7 cm** while preserving the first-pot and stove predicates. MissionOS then
+recorded one human approval and one bounded dispatch. After **520 fresh
+predictions and 520 one-action simulator steps**, the verifier still observed
+`[true, false, true]`; the minimum measured end-effector-to-target-center
+distance was approximately 54.6 cm and gripper-target contact was observed on
+0/520 steps.
+
+The exact 22.7 cm fixture was independently recovered by a privileged oracle
+through the same `original` 7D simulator action interface and the same
+520-action budget. It first reached `[true, true, true]` after 497 actions and
+remained satisfied for 20 settling actions, with no preserve violation. The
+VLA-0 trace is therefore one **bounded failure to repair a demonstrated-
+recoverable fixture**, not merely an unmeasured behavioral observation.
+The publication classification is
+`bounded_recoverable_fixture_repair_not_observed`.
+
+It is still one scripted fixture, not a natural-failure or general recovery
+rate. The official ensemble formula and dataset statistics match, but full
+one-step numeric parity between the official runner and MissionOS adapter is
+not established. See the
+[GR00T and VLA-0 Repair progress report](docs/concepts/vla-repair-progress.md),
+including the annotated video and exact evidence boundary.
 
 ## What Happens in a Run
 
@@ -121,6 +149,7 @@ agents.
 | PX4 / Gazebo SITL | Physical flight, payload delivery, and delivery completion |
 | TurtleBot3 / ROS2 Nav2 | Physical robot execution, real actuator/E-stop validation, and delivery completion |
 | GR00T N1.7 / LIBERO Panda | General Repair rate, a difference from diagnostic clone re-entry, the unmeasured max-two-attempt protocol, independent controller ACK, real Panda execution, and physical safety |
+| VLA-0 / LIBERO Panda | General nominal or Repair rate, a natural policy-failure result, complete official-runner/adapter action parity, independent controller ACK, real Panda execution, and physical safety |
 
 Start here for each path: the [Chat Quickstart](#chat-quickstart) and the
 [obstacle recovery run](docs/examples/missionos-chat-obstacle-recovery.md) for
@@ -128,6 +157,8 @@ PX4; the [TurtleBot3 Simulator Quickstart](#turtlebot3-simulator-quickstart)
 and the [TurtleBot3 bridge contract](docs/agents/ros2-nav2-turtlebot3-sim.md)
 for Nav2; the [v0.2.0 release boundary](docs/releases/v0.2.0.md) and the
 [parent-mission concept](docs/concepts/parent-mission-control.md) for GR00T.
+For the latest manipulation result, start with the
+[GR00T and VLA-0 Repair progress report](docs/concepts/vla-repair-progress.md).
 
 TurtleBot3 is used as the indoor baseline because it is the current
 reproducible ROS2/Nav2 simulator path, not because MissionOS prefers older
@@ -199,10 +230,10 @@ are maintained in [the agent documentation](docs/agents/README.md).
 
 ### Runtime Progress
 
-Status as of 2026-08-02. This table is evidence-bounded: the v0.2.0 stable gate
-keeps fixture status, reviewed live evidence, and implementation binding as
-separate dimensions. Simulator evidence does not imply physical execution,
-and ACK is not success.
+This table combines the v0.2.0 stable-gate baseline with later evidence-linked
+manipulation progress through 2026-08-25. It keeps fixture status, reviewed
+live evidence, and implementation binding as separate dimensions. Simulator
+evidence does not imply physical execution, and ACK is not success.
 
 | Track                                  | Progress                                                                                                                                                                                                 | Currently blocked by                                                                                                                                                                              |
 | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -213,6 +244,7 @@ and ACK is not success.
 | Nvblox / Isaac ROS perception evidence | The v1 perception-evidence contract, env/bridge payload ingestion, required gate, tests, and docs are in place. Nvblox evidence is explicitly not approval, dispatch, or obstacle-avoidance completion by itself. | No live Nvblox data yet. It needs depth/pose -> reconstruction -> Nav2 costmap evidence paired with trajectory/verifier clearance evidence.                                                       |
 | Parent Mission / three executors        | PX4, Nav2, and GR00T/LIBERO concrete predicate packages fit one parent contract without backend branches in `missionos-core`. A reviewed manual run records all three bounded simulator stages under one parent identity. | Three satisfied stages are not projected into parent mission completion, shared-world identity, delivery completion, or physical execution. |
 | GR00T N1.7 / LIBERO Panda VLA           | One reviewed bounded episode records policy responses, simulator step inputs and returns, exact official predicate observations, and content-bound lineage. Chat, approval, run, status, `operate`, `watch`, `map`, and one-shot post-episode repair have reviewed simulator evidence. | The public CI replays fixtures and checks evidence compatibility; it does not start an NVIDIA GPU. Independent controller ACK, instruction delivery into the policy, in-episode external stop, physical Panda execution, and real-world safety remain unverified. |
+| VLA-0 / LIBERO Panda VLA                | A pinned official-runner nominal control succeeded 1/1. A privileged oracle recovered the exact 22.7 cm fixture through the same original 7D interface in 517/520 actions. In the separate governed VLA-0 observation, predicates remained `[true, false, true]` through 520 actions, gripper-target contact was 0/520, and preserve predicates remained satisfied. | This is one scripted recoverable-fixture failure, not a general Repair rate. Full one-step numeric parity with the official runner, natural-failure Repair, controller ACK, physical Panda execution, and real-world safety remain unverified. |
 
 ## Chat Quickstart
 

@@ -59,6 +59,13 @@ from src.runtime.libero_panda_official_runner_instrumentation import (  # noqa: 
 from src.runtime.libero_panda_predicate_package import (  # noqa: E402
     LIBERO_PANDA_SCENE8_ENVIRONMENT,
 )
+from src.runtime.libero_repair_failure_fixture import (  # noqa: E402
+    FAILURE_FIXTURE_SPECS,
+    SCRIPTED_FAILURE_FIXTURE_BASIS,
+    failure_fixture_contract,
+    failure_fixture_spec,
+    inject_failure_fixture,
+)
 
 
 OPT_IN_ENV = "RUN_MISSIONOS_GROOT_LEROBOT_SAME_WORLD_REPAIR"
@@ -78,7 +85,13 @@ ENVIRONMENT_SEED = 0
 SIMULATOR_RESET_STABILIZATION_STEPS = 10
 MAX_SCREEN_INIT_STATES = 20
 REPAIR_CANDIDATE_VECTORS = ((False, True, True), (True, False, True))
-SOURCE_FAILURE_BASES = frozenset({"unknown", "post_hoc_reference_success_truncation"})
+SOURCE_FAILURE_BASES = frozenset(
+    {
+        "unknown",
+        "post_hoc_reference_success_truncation",
+        SCRIPTED_FAILURE_FIXTURE_BASIS,
+    }
+)
 NATURAL_SCREEN_FAILURE_BASIS = "natural_full_budget_screen"
 DIAGNOSTIC_CLONE_FAILURE_BASIS = "diagnostic_restored_failure_snapshot"
 FAILURE_SNAPSHOT_SCHEMA_VERSION = "missionos.groot_lerobot_failure_snapshot.v1"
@@ -1110,6 +1123,8 @@ def execute_live(
     semantic_direction_probe: bool = False,
     semantic_direction_horizon_probe: bool = False,
     diagnostic_authorization_ref: str | None = None,
+    scripted_failure_fixture: str | None = None,
+    scripted_failure_snapshot_path: Path | None = None,
 ) -> dict[str, Any]:
     if not checkpoint_path.is_dir():
         raise ValueError("lerobot_checkpoint_directory_required")
@@ -1130,6 +1145,18 @@ def execute_live(
         raise ValueError("natural_screen_requires_frozen_full_source_budget")
     if natural_screen_mode and restore_snapshot_path is not None:
         raise ValueError("natural_screen_cannot_restore_snapshot")
+    if scripted_failure_fixture is not None:
+        failure_fixture_spec(scripted_failure_fixture)
+        if natural_screen_mode:
+            raise ValueError("scripted_failure_fixture_cannot_natural_screen")
+        if restore_snapshot_path is not None:
+            raise ValueError("scripted_failure_fixture_cannot_restore_snapshot")
+        if source_failure_basis != SCRIPTED_FAILURE_FIXTURE_BASIS:
+            raise ValueError("scripted_failure_fixture_source_basis_required")
+    elif source_failure_basis == SCRIPTED_FAILURE_FIXTURE_BASIS:
+        raise ValueError("scripted_failure_fixture_scenario_required")
+    if scripted_failure_snapshot_path is not None and scripted_failure_fixture is None:
+        raise ValueError("scripted_failure_snapshot_requires_scenario")
     if restore_snapshot_path is not None and failure_snapshot_path is not None:
         raise ValueError("restored_trial_cannot_write_source_failure_snapshot")
     if restore_snapshot_path is not None and repair_sampling_seed is None:
@@ -1171,9 +1198,15 @@ def execute_live(
 
     import lerobot
 
+    fixture_settle_steps = (
+        failure_fixture_spec(scripted_failure_fixture).settle_steps
+        if scripted_failure_fixture is not None
+        else 0
+    )
     total_horizon = (
         SIMULATOR_RESET_STABILIZATION_STEPS
-        + source_step_budget
+        + (0 if scripted_failure_fixture is not None else source_step_budget)
+        + fixture_settle_steps
         + maximum_repair_chunks * LEROBOT_LIVE_ACTION_STEPS
     )
     environment_session_id = f"lerobot-libero10-world:{uuid4()}"
@@ -1339,7 +1372,9 @@ def execute_live(
         "source_step_budget": source_step_budget,
         "source_failure_basis": source_failure_basis,
         "candidate_selection_mode": (
-            "diagnostic_restored_failure_snapshot"
+            "scripted_failure_fixture"
+            if scripted_failure_fixture is not None
+            else "diagnostic_restored_failure_snapshot"
             if restore_snapshot_path is not None
             else "full_budget_natural_screen"
             if natural_screen_mode
@@ -1369,6 +1404,10 @@ def execute_live(
             Path(approve_same_world_repair.__code__.co_filename).read_bytes()
         ).hexdigest(),
     }
+    if scripted_failure_fixture is not None:
+        source_contract_material["scripted_failure_fixture_contract"] = (
+            failure_fixture_contract(scripted_failure_fixture)
+        )
 
     source_contract_material.update(
         {
@@ -1394,6 +1433,8 @@ def execute_live(
 
     restored_snapshot_metadata: dict[str, Any] | None = None
     restored_simulator_state: Any | None = None
+    scripted_failure_fixture_material: dict[str, Any] | None = None
+    scripted_failure_snapshot_metadata: dict[str, Any] | None = None
     if restore_snapshot_path is not None:
         simulator_state, restored_snapshot_metadata = _read_failure_snapshot(restore_snapshot_path)
         restored_simulator_state = np.asarray(simulator_state, dtype=np.float64).copy()
@@ -1431,6 +1472,71 @@ def execute_live(
                 ],
                 "semantic_repair_claim_eligible": False,
             }
+        )
+        source_contract_sha256 = canonical_sha256(source_contract_material)
+        policy.reset()
+
+    if scripted_failure_snapshot_path is not None:
+        simulator_state, scripted_failure_snapshot_metadata = _read_failure_snapshot(
+            scripted_failure_snapshot_path
+        )
+        if scripted_failure_snapshot_metadata.get("task_suite") != TASK_SUITE:
+            raise ValueError("scripted_failure_snapshot_task_suite_mismatch")
+        if scripted_failure_snapshot_metadata.get("task_id") != TASK_ID:
+            raise ValueError("scripted_failure_snapshot_task_id_mismatch")
+        if scripted_failure_snapshot_metadata.get("checkpoint_revision") != CHECKPOINT_REVISION:
+            raise ValueError("scripted_failure_snapshot_checkpoint_revision_mismatch")
+        if scripted_failure_snapshot_metadata.get("lerobot_revision") != observed_lerobot_revision:
+            raise ValueError("scripted_failure_snapshot_lerobot_revision_mismatch")
+        if (
+            scripted_failure_snapshot_metadata.get("source_failure_basis")
+            != SCRIPTED_FAILURE_FIXTURE_BASIS
+        ):
+            raise ValueError("scripted_failure_snapshot_basis_mismatch")
+        scripted_failure_fixture_material = deepcopy(
+            scripted_failure_snapshot_metadata.get("scripted_failure_fixture")
+        )
+        if not isinstance(scripted_failure_fixture_material, dict):
+            raise ValueError("scripted_failure_snapshot_fixture_material_missing")
+        if scripted_failure_fixture_material.get("scenario") != scripted_failure_fixture:
+            raise ValueError("scripted_failure_snapshot_scenario_mismatch")
+        raw_observation = raw_environment._env.regenerate_obs_from_state(simulator_state)
+        observation = raw_environment._format_raw_obs(raw_observation)
+        restored_state = np.asarray(
+            raw_environment._env.get_sim_state(), dtype=np.float64
+        ).reshape(-1)
+        if (
+            hashlib.sha256(restored_state.tobytes()).hexdigest()
+            != scripted_failure_snapshot_metadata["simulator_state_sha256"]
+        ):
+            raise ValueError("scripted_failure_snapshot_restored_state_digest_mismatch")
+        fixture_predicates = _predicate_material(environment)
+        if (
+            canonical_sha256({"goal_predicate_observations": fixture_predicates})
+            != scripted_failure_snapshot_metadata["source_goal_predicate_vector_sha256"]
+        ):
+            raise ValueError("scripted_failure_snapshot_predicate_vector_mismatch")
+        source_contract_material.update(
+            {
+                "scripted_failure_fixture_setup_snapshot_sha256": (
+                    scripted_failure_snapshot_metadata["snapshot_artifact_sha256"]
+                ),
+                "scripted_failure_fixture_observation": deepcopy(
+                    scripted_failure_fixture_material
+                ),
+                "fixture_setup_snapshot_restore_only": True,
+            }
+        )
+        source_contract_sha256 = canonical_sha256(source_contract_material)
+        policy.reset()
+    elif scripted_failure_fixture is not None:
+        observation, scripted_failure_fixture_material = inject_failure_fixture(
+            environment=raw_environment,
+            scenario=scripted_failure_fixture,
+            observe_goal_predicates=lambda: _predicate_material(environment),
+        )
+        source_contract_material["scripted_failure_fixture_observation"] = deepcopy(
+            scripted_failure_fixture_material
         )
         source_contract_sha256 = canonical_sha256(source_contract_material)
         policy.reset()
@@ -1858,7 +1964,19 @@ def execute_live(
                 diagnostic_authorization_ref=diagnostic_authorization_ref,
                 invoke_trial=invoke_probe_trial,
             )
-        if restored_snapshot_metadata is None:
+        if scripted_failure_fixture_material is not None:
+            source = {
+                "source_steps_executed": 0,
+                "source_model_forward_count": 0,
+                "source_goal_predicate_observations": deepcopy(
+                    scripted_failure_fixture_material[
+                        "terminal_goal_predicate_observations"
+                    ]
+                ),
+                "queued_source_actions_remaining": 0,
+                "source_created_by_scripted_failure_fixture": True,
+            }
+        elif restored_snapshot_metadata is None:
             source = session.run_source_steps(
                 instruction=SOURCE_INSTRUCTION,
                 maximum_steps=source_step_budget,
@@ -1876,7 +1994,9 @@ def execute_live(
             item["satisfied"] for item in source["source_goal_predicate_observations"]
         ]
         source_budget_exhausted = (
-            True
+            False
+            if scripted_failure_fixture_material is not None
+            else True
             if restored_snapshot_metadata is not None
             else _source_budget_exhausted(
                 source_steps_executed=source["source_steps_executed"],
@@ -1890,7 +2010,9 @@ def execute_live(
             and _is_repair_candidate(observed_source_vector)
         )
         observed_source_failure_basis = (
-            DIAGNOSTIC_CLONE_FAILURE_BASIS
+            SCRIPTED_FAILURE_FIXTURE_BASIS
+            if scripted_failure_fixture_material is not None
+            else DIAGNOSTIC_CLONE_FAILURE_BASIS
             if restored_snapshot_metadata is not None
             else NATURAL_SCREEN_FAILURE_BASIS
             if natural_task_failure_established
@@ -1900,7 +2022,16 @@ def execute_live(
             "schema_version": "missionos_groot_lerobot_same_world_repair_live.v1",
             "source": source,
             "source_contract_sha256": source_contract_sha256,
-            "source_contract_frozen_before_reset": restored_snapshot_metadata is None,
+            "source_contract_frozen_before_reset": bool(
+                restored_snapshot_metadata is None
+                and scripted_failure_fixture_material is None
+            ),
+            "fixture_contract_frozen_before_reset": (
+                scripted_failure_fixture_material is not None
+            ),
+            "fixture_observation_bound_before_repair_proposal": (
+                scripted_failure_fixture_material is not None
+            ),
             "diagnostic_contract_frozen_before_repair": (restored_snapshot_metadata is not None),
             "init_state_selection": init_state_selection,
             "environment_session_id": environment_session_id,
@@ -1930,6 +2061,12 @@ def execute_live(
                 else None
             ),
             "repair_sampling_seed": repair_sampling_seed,
+            "scripted_failure_fixture": deepcopy(scripted_failure_fixture_material),
+            "scripted_failure_fixture_setup_snapshot_sha256": (
+                scripted_failure_snapshot_metadata["snapshot_artifact_sha256"]
+                if scripted_failure_snapshot_metadata is not None
+                else None
+            ),
         }
         snapshot_metadata: dict[str, Any] | None = None
         if observed_source_vector != [True, True, True] and failure_snapshot_path is not None:
@@ -1972,6 +2109,7 @@ def execute_live(
                 "repair_executed": False,
                 "semantic_repair_established": False,
                 "budget_truncated_source_semantic_repair_established": False,
+                "scripted_fixture_repair_established": False,
             }
         if not _is_repair_candidate(observed_source_vector):
             return {
@@ -1980,6 +2118,7 @@ def execute_live(
                 "repair_executed": False,
                 "semantic_repair_established": False,
                 "budget_truncated_source_semantic_repair_established": False,
+                "scripted_fixture_repair_established": False,
             }
 
         source_object_poses = _object_poses(environment)
@@ -2057,6 +2196,10 @@ def execute_live(
             "repair_result": repair_result,
             "repair_executed": True,
             **repair_claims,
+            "scripted_fixture_repair_established": bool(
+                repair_completion_established
+                and scripted_failure_fixture_material is not None
+            ),
             "claim_boundary": {
                 "model_runtime_invoked": bool(repair_result.get("chunks_executed")),
                 "simulator_steps_observed": True,
@@ -2069,6 +2212,15 @@ def execute_live(
                 "diagnostic_clone": restored_snapshot_metadata is not None,
                 "diagnostic_clone_completion_cannot_establish_semantic_repair": (
                     restored_snapshot_metadata is not None
+                ),
+                "source_created_by_scripted_failure_fixture": (
+                    scripted_failure_fixture_material is not None
+                ),
+                "fixture_setup_snapshot_restore": (
+                    scripted_failure_snapshot_metadata is not None
+                ),
+                "scripted_fixture_repair_is_not_natural_failure_rate_evidence": (
+                    scripted_failure_fixture_material is not None
                 ),
             },
         }
@@ -2463,6 +2615,22 @@ def main() -> int:
         choices=sorted(SOURCE_FAILURE_BASES),
         default="unknown",
     )
+    parser.add_argument(
+        "--scripted-failure-fixture",
+        choices=sorted(FAILURE_FIXTURE_SPECS),
+        help=(
+            "inject one preregistered, visibly failed simulator state before the "
+            "normal proposal/approval/dispatch/Verifier path"
+        ),
+    )
+    parser.add_argument(
+        "--scripted-failure-snapshot",
+        type=Path,
+        help=(
+            "restore a previously generated scripted fixture as authority-free test "
+            "setup before proposal/approval/dispatch"
+        ),
+    )
     args = parser.parse_args()
     if os.environ.get(OPT_IN_ENV) != "1":
         print(json.dumps({"status": "not_run", "required_opt_in": OPT_IN_ENV}))
@@ -2485,6 +2653,15 @@ def main() -> int:
                 raise ValueError("diagnostic_probe_screen_or_replay_forbidden")
         elif args.operator_approval_ref is None or args.dispatch_state_path is None:
             raise ValueError("repair_approval_and_dispatch_state_required")
+        if args.scripted_failure_fixture is not None:
+            if args.runtime != "live":
+                raise ValueError("scripted_failure_fixture_requires_live_runtime")
+            if args.screen_init_state_indices:
+                raise ValueError("scripted_failure_fixture_cannot_screen_init_states")
+            if args.replay_trials_per_variant:
+                raise ValueError("scripted_failure_fixture_cannot_run_replay_trials")
+        elif args.scripted_failure_snapshot is not None:
+            raise ValueError("scripted_failure_snapshot_requires_scenario")
         if args.runtime == "fixture":
             if args.screen_init_state_indices:
                 raise ValueError("fixture_runtime_does_not_screen_init_states")
@@ -2606,6 +2783,12 @@ def main() -> int:
                 semantic_direction_probe=args.semantic_direction_probe,
                 semantic_direction_horizon_probe=args.semantic_direction_horizon_probe,
                 diagnostic_authorization_ref=args.diagnostic_authorization_ref,
+                scripted_failure_fixture=args.scripted_failure_fixture,
+                scripted_failure_snapshot_path=(
+                    args.scripted_failure_snapshot.resolve()
+                    if args.scripted_failure_snapshot is not None
+                    else None
+                ),
             )
     except Exception as error:
         # Keep the public JSON fail-closed and path-free, while preserving a

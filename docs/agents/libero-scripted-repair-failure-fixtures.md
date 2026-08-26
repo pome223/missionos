@@ -1,0 +1,108 @@
+# LIBERO scripted Repair failure fixtures
+
+This diagnostic path creates an explicit failed simulator state before the
+normal MissionOS Repair authority path begins. It exists to avoid treating a
+millimetre-scale predicate-boundary miss as a representative VLA recovery
+problem.
+
+## Authority boundary
+
+Fixture injection is test setup only:
+
+```text
+script creates failed state
+  -> Verifier confirms [true, false, true]
+  -> Human-approved Repair proposal is created
+  -> governed dispatch is consumed once
+  -> executor applies VLA actions
+  -> Verifier checks preserve and target predicates
+```
+
+The injection step creates no proposal, approval, dispatch, controller ACK, or
+physical execution claim. A successful run is reported as
+`scripted_fixture_repair_established`; it is not counted as a naturally
+occurring Repair success and does not estimate a general recovery rate.
+
+## Frozen scenarios
+
+The runtime accepts four named fixtures. Their distances, settling budgets, and
+validation gates are code-frozen in
+`src/runtime/libero_repair_failure_fixture.py`.
+
+- `displaced_from_stove`: the second pot is upright and clearly outside the
+  stove region.
+- `wrong_table_location`: the second pot is placed farther away at a distinct
+  table location.
+- `tipped_over`: the second pot is moved outside the stove region and rotated
+  by 90 degrees.
+- `dropped_during_scripted_transfer`: the second pot is released from a raised
+  transfer pose and allowed to settle. This is a scripted release fixture, not
+  evidence that a policy previously grasped and dropped the object.
+
+Every fixture fails closed unless all of the following are observed before the
+Repair proposal is created:
+
+- terminal goal vector is exactly `[true, false, true]`;
+- the protected first pot and stove-on predicate remain true;
+- the target moved by at least five centimetres;
+- the target is at least five centimetres outside the stove boundary;
+- the object has settled below the scenario's velocity limits;
+- the protected pot moved no more than five millimetres;
+- tipped and dropped fixtures satisfy their additional orientation or fall
+  gates.
+
+## Opt-in invocation
+
+The production runner remains opt-in and requires an operator approval
+reference plus a single-use dispatch ledger. For example:
+
+```bash
+RUN_MISSIONOS_GROOT_LEROBOT_SAME_WORLD_REPAIR=1 \
+python scripts/run_groot_lerobot_same_world_repair.py \
+  --runtime live \
+  --checkpoint-path /opt/model-cache/POLICY_SNAPSHOT \
+  --operator-approval-ref OPERATOR_APPROVAL_REF \
+  --dispatch-state-path /tmp/missionos-dispatch-ledger.json \
+  --output /tmp/missionos-scripted-fixture-result.json \
+  --source-failure-basis scripted_failure_fixture \
+  --scripted-failure-fixture displaced_from_stove \
+  --scripted-failure-snapshot /tmp/displaced-from-stove.npz \
+  --maximum-repair-chunks 45
+```
+
+Replace the placeholder checkpoint and approval values at run time. Do not
+commit live evidence, credentials, private paths, or dispatch state.
+
+`--scripted-failure-snapshot` is an optional authority-free fixture-setup
+restore. The runner verifies that its task, revisions, source basis, scenario,
+simulator-state digest, and predicate digest match before creating a Repair
+proposal. It is recorded separately from a diagnostic handoff snapshot: it may
+support only `scripted_fixture_repair_established`, never a natural-failure
+Repair rate.
+
+## Required measurement order
+
+Run the scenarios from least to most demanding:
+
+1. displaced from stove;
+2. wrong table location;
+3. tipped over;
+4. dropped during scripted transfer.
+
+Before using a scenario as VLA capability evidence, independently demonstrate
+recoverability through the same 7D simulator action interface and within the
+same action budget. If recoverability is not established, report the scenario
+as `unmeasured_as_repair_capability`; do not interpret a VLA failure.
+
+The public VLA-0 `displaced_from_stove` observation now passes this gate. A
+privileged two-axis push oracle recovered the exact fixture through the pinned
+VLA-0 LIBERO environment's `original` 7D action interface in 517 of the same
+520 allowed actions, including 20 stable success steps. The source and final
+predicate vectors were `[true, false, true]` and `[true, true, true]`; the
+protected-object displacement remained below the 5 mm bound and no preserve
+violation was observed.
+
+The governed VLA-0 trace may therefore be interpreted as one
+`bounded_recoverable_fixture_repair_not_observed` result. This closes only the
+fixture-recoverability gate. The scripted oracle is not a VLA Repair, and one
+recoverable-fixture failure is not a natural-failure or general Repair rate.
