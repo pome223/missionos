@@ -115,3 +115,38 @@ Copy the complete output and runtime logs locally, validate their hashes, and
 then delete the exact VM and all attached billable disks. A model load, future
 prediction, or generated action does not by itself establish nominal success,
 Repair success, controller ACK, or physical execution.
+
+## 6. Diagnose candidate generation before building a selector
+
+The exact-fixture 520-action run produced no contact. Before implementing a
+best-of-N selector, run the cache-only seed probe with the successful nominal
+report and exact-fixture oracle report as admission evidence:
+
+```bash
+export RUN_MISSIONOS_COSMOS_POLICY_LIBERO_SEED_PROBE=1
+python scripts/run_cosmos_policy_libero_seed_probe.py \
+  --source-root /path/to/pinned/cosmos-policy \
+  --checkpoint-path /path/to/Cosmos-Policy-LIBERO-Predict2-2B \
+  --tokenizer-path /path/to/tokenizer/tokenizer.pth \
+  --restore-snapshot /path/to/displaced-from-stove.npz \
+  --oracle-recoverability-report /path/to/oracle-result.json \
+  --nominal-report /path/to/nominal/report.json \
+  --output-dir /path/to/new/seed-probe-output \
+  --operator-approval-ref operator:explicit-seed-probe-approval \
+  --seeds 17,71,195,231
+```
+
+This loads the model once and applies at most 128 actions for each of four
+unique seeds. It uses only the released embedding for the original task string
+and does not perform candidate selection. The 2026-08-27 run found zero
+contacts for all four seeds, minimum end-effector distances of about 52.7 cm,
+and target translations of about 0.67 micrometres. A selector is therefore not
+the next implementation step for this exact state unless candidate generation
+changes first.
+
+Do not silently turn this into an instruction ablation. Upstream computes an
+unseen string with `google-t5/t5-11b`, while the released cache contains the
+known LIBERO task strings. Before adding a new instruction, regenerate one
+known cached sentence through the exact upstream encoder and require embedding
+equality. A smaller encoder or different pooling path is a different
+experiment.

@@ -450,7 +450,11 @@ def _action_command_statistics(
 
 
 def _build_model_runtime(
-    *, source_root: Path, checkpoint_path: Path, tokenizer_path: Path
+    *,
+    source_root: Path,
+    checkpoint_path: Path,
+    tokenizer_path: Path,
+    process_seed: int = PROCESS_SEED,
 ):
     if _git_revision(source_root) != COSMOS_POLICY_SOURCE_REVISION:
         raise RuntimeError("cosmos_policy_source_revision_mismatch")
@@ -484,11 +488,11 @@ def _build_model_runtime(
 
     if not torch.cuda.is_available():
         raise RuntimeError("cosmos_policy_cuda_required")
-    random.seed(PROCESS_SEED)
-    np.random.seed(PROCESS_SEED)
-    torch.manual_seed(PROCESS_SEED)
-    torch.cuda.manual_seed_all(PROCESS_SEED)
-    set_seed_everywhere(PROCESS_SEED)
+    random.seed(process_seed)
+    np.random.seed(process_seed)
+    torch.manual_seed(process_seed)
+    torch.cuda.manual_seed_all(process_seed)
+    set_seed_everywhere(process_seed)
 
     verified_model_path = checkpoint_path / "Cosmos-Policy-LIBERO-Predict2-2B.pt"
     cfg = PolicyEvalConfig(
@@ -508,7 +512,7 @@ def _build_model_runtime(
         num_open_loop_steps=COSMOS_POLICY_LIBERO_ACTION_STEPS,
         task_suite_name=TASK_SUITE,
         randomize_seed=False,
-        seed=PROCESS_SEED,
+        seed=process_seed,
         use_variance_scale=False,
         deterministic=True,
         ar_future_prediction=False,
@@ -601,6 +605,7 @@ def _run_nominal(
     source_root: Path,
     artifact_root: Path,
     maximum_actions: int,
+    process_seed: int = PROCESS_SEED,
 ) -> dict[str, Any]:
     import numpy as np
     from cosmos_policy.experiments.robot.libero.libero_utils import get_libero_dummy_action
@@ -640,7 +645,7 @@ def _run_nominal(
                 dataset_stats=dataset_stats,
                 observation=observation,
                 instruction=instruction,
-                seed=PROCESS_SEED,
+                seed=process_seed,
             )
             future_manifest.append(
                 _save_future_prediction(
@@ -705,7 +710,7 @@ def _run_nominal(
             "episode_init_state_index": EPISODE_INIT_STATE_INDEX,
             "instruction": instruction,
             "environment_seed": ENVIRONMENT_SEED,
-            "process_seed": PROCESS_SEED,
+            "process_seed": process_seed,
             "official_stabilization_steps": OFFICIAL_STABILIZATION_STEPS,
             "maximum_applied_actions": maximum_actions,
             "applied_action_count": applied,
@@ -747,6 +752,7 @@ def _run_repair(
     dispatch_state_path: Path,
     operator_approval_ref: str,
     maximum_actions: int,
+    process_seed: int = PROCESS_SEED,
 ) -> dict[str, Any]:
     import numpy as np
 
@@ -796,6 +802,7 @@ def _run_repair(
             "episode_init_state_index": EPISODE_INIT_STATE_INDEX,
             "source_instruction": instruction,
             "environment_seed": ENVIRONMENT_SEED,
+            "process_seed": process_seed,
             "source_goal_predicate_vector": source_vector,
             "source_failure_basis": SCRIPTED_FAILURE_FIXTURE_BASIS,
             "setup_snapshot_sha256": snapshot_metadata["snapshot_artifact_sha256"],
@@ -870,7 +877,7 @@ def _run_repair(
                 dataset_stats=dataset_stats,
                 observation=raw_observation,
                 instruction=repair_instruction,
-                seed=PROCESS_SEED,
+                seed=process_seed,
             )
             future_manifest.append(
                 _save_future_prediction(
@@ -1050,6 +1057,7 @@ def execute_live(
     dispatch_state_path: Path,
     operator_approval_ref: str,
     maximum_actions: int = 520,
+    process_seed: int = PROCESS_SEED,
 ) -> dict[str, Any]:
     if os.environ.get(OPT_IN_ENV) != "1":
         raise RuntimeError("cosmos_policy_libero_live_opt_in_required")
@@ -1066,6 +1074,7 @@ def execute_live(
         source_root=source_root,
         checkpoint_path=checkpoint_path,
         tokenizer_path=tokenizer_path,
+        process_seed=process_seed,
     )
     nominal = _run_nominal(
         cfg=cfg,
@@ -1075,6 +1084,7 @@ def execute_live(
         source_root=source_root,
         artifact_root=output_dir,
         maximum_actions=maximum_actions,
+        process_seed=process_seed,
     )
     if nominal["nominal_success_observed"] is not True:
         experiment = {
@@ -1102,6 +1112,7 @@ def execute_live(
             dispatch_state_path=dispatch_state_path,
             operator_approval_ref=operator_approval_ref,
             maximum_actions=maximum_actions,
+            process_seed=process_seed,
         )
         experiment = {
             "schema_version": "missionos.cosmos_policy_libero_experiment.v1",
@@ -1138,6 +1149,7 @@ def main() -> int:
     parser.add_argument("--dispatch-state", type=Path, required=True)
     parser.add_argument("--operator-approval-ref", required=True)
     parser.add_argument("--maximum-actions", type=int, default=520)
+    parser.add_argument("--process-seed", type=int, default=PROCESS_SEED)
     args = parser.parse_args()
     result = execute_live(
         source_root=args.source_root.resolve(),
@@ -1149,6 +1161,7 @@ def main() -> int:
         dispatch_state_path=args.dispatch_state.resolve(),
         operator_approval_ref=args.operator_approval_ref,
         maximum_actions=args.maximum_actions,
+        process_seed=args.process_seed,
     )
     print(json.dumps(result, indent=2, sort_keys=True))
     if result["status"] == "stopped_after_nominal_baseline_failure":

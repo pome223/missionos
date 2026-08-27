@@ -8,6 +8,7 @@ import pytest
 
 from missionos_core import canonical_sha256
 from scripts import run_cosmos_policy_libero_experiment as experiment_runner
+from scripts import run_cosmos_policy_libero_seed_probe as seed_probe
 from src.gateway.missionos_dispatch_runtime import DispatchAuthorityTable
 from src.runtime.cosmos_policy_libero_same_world_repair import (
     COSMOS_POLICY_LIBERO_ACTION_STEPS,
@@ -545,3 +546,114 @@ def test_live_runner_requires_explicit_opt_in(monkeypatch, tmp_path) -> None:
             dispatch_state_path=tmp_path / "dispatch.json",
             operator_approval_ref="operator:test",
         )
+
+
+def _write_nominal_admission_report(tmp_path):
+    report_without_digest = {
+        "schema_version": "missionos.cosmos_policy_libero_nominal.v1",
+        "task_suite": experiment_runner.TASK_SUITE,
+        "task_name": experiment_runner.TASK_NAME,
+        "task_id": experiment_runner.TASK_ID,
+        "episode_init_state_index": experiment_runner.EPISODE_INIT_STATE_INDEX,
+        "source_revision": experiment_runner.COSMOS_POLICY_SOURCE_REVISION,
+        "applied_action_count": 369,
+        "nominal_success_observed": True,
+    }
+    report = {
+        **report_without_digest,
+        "result_sha256": canonical_sha256(report_without_digest),
+    }
+    path = tmp_path / "nominal-report.json"
+    path.write_text(json.dumps(report), encoding="utf-8")
+    return path
+
+
+def test_seed_probe_nominal_admission_is_digest_and_task_bound(tmp_path) -> None:
+    admission = seed_probe._verify_nominal_admission_report(
+        _write_nominal_admission_report(tmp_path)
+    )
+
+    assert admission["nominal_success_observed"] is True
+    assert admission["does_not_establish_repair"] is True
+    assert admission["applied_action_count"] == 369
+
+
+def test_seed_probe_requires_four_unique_seeds() -> None:
+    with pytest.raises(
+        ValueError,
+        match="cosmos_policy_seed_probe_requires_four_unique_seeds",
+    ):
+        seed_probe._validate_seeds((17, 71, 195))
+    with pytest.raises(
+        ValueError,
+        match="cosmos_policy_seed_probe_requires_four_unique_seeds",
+    ):
+        seed_probe._validate_seeds((17, 71, 195, 195))
+
+
+def test_seed_probe_loads_model_once_and_keeps_results_diagnostic(
+    monkeypatch, tmp_path
+) -> None:
+    snapshot_path, oracle_path = _write_oracle_report(tmp_path, stable_success=True)
+    nominal_path = _write_nominal_admission_report(tmp_path)
+    model_loads = []
+    repair_seeds = []
+
+    def fake_build_model_runtime(**kwargs):
+        model_loads.append(kwargs["process_seed"])
+        return "cfg", "model", "stats", {"checkpoint": "fixture"}
+
+    def fake_run_repair(**kwargs):
+        seed = kwargs["process_seed"]
+        repair_seeds.append(seed)
+        witness = {
+            "position_metres": [0.1, 0.2, 0.3],
+            "end_effector_distance_metres": 0.5,
+            "gripper_contact_observed": False,
+        }
+        return {
+            "result_sha256": f"{seed:064x}",
+            "repair_result": {
+                "applied_action_count": 128,
+                "chunk_evidence": [
+                    {
+                        "preservation_step_trace": [
+                            {"object_witnesses": {"moka_pot_2": witness}}
+                        ]
+                    }
+                ],
+            },
+            "final_goal_predicate_vector": [True, False, True],
+            "scripted_fixture_repair_established": False,
+            "action_command_statistics": {"sample_count": 128},
+        }
+
+    monkeypatch.setenv(seed_probe.OPT_IN_ENV, "1")
+    monkeypatch.setattr(seed_probe, "_build_model_runtime", fake_build_model_runtime)
+    monkeypatch.setattr(seed_probe, "_run_repair", fake_run_repair)
+
+    result = seed_probe.execute_live(
+        source_root=tmp_path / "source",
+        checkpoint_path=tmp_path / "checkpoint",
+        tokenizer_path=tmp_path / "tokenizer.pth",
+        snapshot_path=snapshot_path,
+        oracle_recoverability_report_path=oracle_path,
+        nominal_report_path=nominal_path,
+        output_dir=tmp_path / "seed-output",
+        operator_approval_ref="operator:seed-probe-test",
+    )
+
+    assert model_loads == [17]
+    assert repair_seeds == [17, 71, 195, 231]
+    assert result["instruction_ablation_performed"] is False
+    assert result["claim_boundary"]["authority"] == "diagnostic_only"
+    assert result["claim_boundary"]["candidate_selector_used"] is False
+    assert result["results"][0]["actual_effect_statistics"] == {
+        "schema_version": "missionos.cosmos_policy_actual_effect_statistics.v1",
+        "authority": "actual_libero_simulator_observation",
+        "sample_count": 1,
+        "gripper_contact_observation_count": 0,
+        "minimum_end_effector_distance_to_target_metres": 0.5,
+        "maximum_target_translation_from_first_observation_metres": 0.0,
+        "physical_path_length_established": False,
+    }
