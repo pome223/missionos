@@ -58,7 +58,9 @@ SUPPORTED_EXECUTION_ADAPTERS = frozenset(
         COSMOS_POLICY_LIBERO_EXECUTION_ADAPTER,
     }
 )
-REPAIR_INSTRUCTION_VARIANTS = frozenset({"semantic_preserve", "original_task", "short_target"})
+REPAIR_INSTRUCTION_VARIANTS = frozenset(
+    {"semantic_preserve", "original_task", "short_target", "cached_singular_task"}
+)
 REPAIR_INSTRUCTION_ABLATION_METRICS = (
     "target_minimum_end_effector_distance_metres",
     "target_gripper_contact_steps",
@@ -740,6 +742,12 @@ def _scene8_repair_instruction(
             return "put both moka pots on the stove"
         if instruction_variant == "short_target":
             return short_target_instructions[frozenset(target_indices)]
+        if instruction_variant == "cached_singular_task":
+            # Exact language from another official LIBERO task. Cosmos Policy's
+            # published embedding cache contains this sentence, so it supports
+            # a no-training diagnostic without introducing a second T5 path.
+            semantic_instructions[frozenset(target_indices)]
+            return "turn on the stove and put the moka pot on it"
         return semantic_instructions[frozenset(target_indices)]
     except KeyError as error:
         raise ValueError("scene8_repair_target_not_supported") from error
@@ -749,7 +757,7 @@ def _instruction_ablation_material(variant: str) -> dict[str, Any]:
     return {
         "controlled_variable": "repair_instruction",
         "variant": variant,
-        "target_specific_instruction": variant != "original_task",
+        "target_specific_instruction": variant in {"semantic_preserve", "short_target"},
         "fixed_comparison_metrics": list(REPAIR_INSTRUCTION_ABLATION_METRICS),
         "root_cause_established": False,
     }

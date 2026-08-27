@@ -5,10 +5,14 @@ import json
 
 import numpy as np
 import pytest
+from PIL import Image
 
 from missionos_core import canonical_sha256
+from scripts import analyze_cosmos_policy_future_actual_motion as future_actual_analyzer
 from scripts import run_cosmos_policy_libero_experiment as experiment_runner
 from scripts import run_cosmos_policy_libero_seed_probe as seed_probe
+from scripts import probe_libero_displacement_curriculum as curriculum_probe
+from scripts import run_cosmos_policy_libero_curriculum_probe as live_curriculum_probe
 from src.gateway.missionos_dispatch_runtime import DispatchAuthorityTable
 from src.runtime.cosmos_policy_libero_same_world_repair import (
     COSMOS_POLICY_LIBERO_ACTION_STEPS,
@@ -22,6 +26,57 @@ from src.runtime.groot_libero_same_world_repair import (
     build_same_world_repair_dispatch,
 )
 from src.runtime.libero_panda_predicate_package import LIBERO_PANDA_SCENE8_ENVIRONMENT
+
+
+def test_future_actual_motion_analysis_is_diagnostic_only(tmp_path) -> None:
+    trial_root = tmp_path / "trial"
+    actual_dir = trial_root / "repair" / "actual_observations"
+    future_dir = trial_root / "repair" / "future_predictions"
+    actual_dir.mkdir(parents=True)
+    future_dir.mkdir(parents=True)
+    cameras = []
+    for step, value in ((0, 0), (16, 10)):
+        step_cameras = []
+        for key in ("agentview_image", "robot0_eye_in_hand_image"):
+            path = actual_dir / f"step-{step:04d}-{key}.png"
+            Image.fromarray(np.full((4, 4, 3), value, dtype=np.uint8)).save(path)
+            step_cameras.append(
+                {
+                    "observation_key": key,
+                    "artifact_relative_path": str(path.relative_to(trial_root)),
+                }
+            )
+        cameras.append({"step_number": step, "cameras": step_cameras})
+    future_images = []
+    for key in ("future_image", "future_wrist_image"):
+        path = future_dir / f"query-0000-{key}.png"
+        Image.fromarray(np.full((4, 4, 3), 20, dtype=np.uint8)).save(path)
+        future_images.append(
+            {"prediction_key": key, "artifact_relative_path": str(path.relative_to(trial_root))}
+        )
+    report = {
+        "result_sha256": "a" * 64,
+        "actual_observation_manifest": cameras,
+        "future_prediction_manifest": [
+            {
+                "query_index": 0,
+                "applied_action_start_index": 0,
+                "images": future_images,
+            }
+        ],
+    }
+    (trial_root / "repair" / "report.json").write_text(json.dumps(report), encoding="utf-8")
+
+    result = future_actual_analyzer.analyze(
+        trial_root=trial_root,
+        output_path=tmp_path / "analysis.json",
+    )
+
+    assert result["agentview_mean_actual_motion_pixel_difference"] == 10
+    assert result["agentview_mean_predicted_motion_pixel_difference"] == 20
+    assert result["agentview_mean_prediction_error_pixel_difference"] == 10
+    assert result["claim_boundary"]["future_predictions_may_establish_success"] is False
+    assert result["claim_boundary"]["object_motion_established_by_pixel_difference"] is False
 
 
 def _vector(*, second: bool = False) -> list[dict]:
@@ -389,23 +444,18 @@ def test_action_statistics_keep_command_magnitude_separate_from_physical_motion(
 
 def test_action_statistics_report_non_monotonic_chunks_without_null_claim() -> None:
     trace = [
-        {"action_7d": [value, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0]}
-        for value in (0.4, 0.2, 0.5, 0.3)
+        {"action_7d": [value, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0]} for value in (0.4, 0.2, 0.5, 0.3)
     ]
 
     result = experiment_runner._action_command_statistics(trace, chunk_size=1)
 
     assert result["chunk_mean_xyz_command_norm_strictly_nonincreasing"] is False
-    assert result["first_to_last_chunk_mean_xyz_command_norm_ratio"] == pytest.approx(
-        0.75
-    )
+    assert result["first_to_last_chunk_mean_xyz_command_norm_ratio"] == pytest.approx(0.75)
     assert result["gripper_command"]["sign_transition_count"] == 0
     assert "null_like_behavior_established" not in result
 
 
-def test_gated_tokenizer_is_a_separately_digest_bound_input(
-    monkeypatch, tmp_path
-) -> None:
+def test_gated_tokenizer_is_a_separately_digest_bound_input(monkeypatch, tmp_path) -> None:
     tokenizer_path = tmp_path / "tokenizer.pth"
     tokenizer_path.write_bytes(b"pinned-tokenizer-fixture")
     monkeypatch.setattr(
@@ -480,9 +530,7 @@ def test_oracle_gate_admits_only_same_hash_stable_diagnostic_recovery(tmp_path) 
 
     assert admission["authority"] == "diagnostic_only"
     assert admission["may_establish_model_repair_success"] is False
-    assert admission["snapshot_sha256"] == experiment_runner._sha256_path(
-        snapshot_path
-    )
+    assert admission["snapshot_sha256"] == experiment_runner._sha256_path(snapshot_path)
     assert admission["stable_success_steps"] == 20
 
 
@@ -531,6 +579,134 @@ def test_oracle_gate_accepts_vla0_same_interface_report_shape(tmp_path) -> None:
 
     assert admission["stable_success_steps"] == 20
     assert admission["report_schema_version"].startswith("missionos.vla0_")
+
+
+def _curriculum_fixture_metadata() -> dict:
+    fixture = {
+        "schema_version": experiment_runner.DISPLACEMENT_CURRICULUM_SCHEMA_VERSION,
+        "authority": "diagnostic_fixture_only",
+        "construction": experiment_runner.DISPLACEMENT_CURRICULUM_CONSTRUCTION,
+        "requested_translation_from_source_metres": 0.005,
+        "observed_translation_from_source_metres": 0.0050003,
+        "protected_object_displacement_metres": 0.0,
+        "fixture_settle_steps_applied": 60,
+        "fixture_settle_trace": [
+            {"fixture_step_index": index, "predicate_vector": [True, False, True]}
+            for index in range(60)
+        ],
+        "terminal_goal_predicate_vector": [True, False, True],
+        "actual_predicate_failure_observed": True,
+        "model_inference_invoked": False,
+        "repair_attempted": False,
+        "physical_execution_invoked": False,
+    }
+    return {
+        "source_failure_basis": experiment_runner.DISPLACEMENT_CURRICULUM_BASIS,
+        "source_goal_predicate_vector": [True, False, True],
+        "source_failure_is_repair_candidate": True,
+        "displacement_curriculum_fixture": fixture,
+        "displacement_curriculum_fixture_sha256": canonical_sha256(fixture),
+    }
+
+
+def test_curriculum_fixture_admission_is_digest_stability_and_claim_bound() -> None:
+    admission = experiment_runner._validate_repair_fixture_snapshot(_curriculum_fixture_metadata())
+
+    assert admission["fixture_family"] == "bounded_displacement_curriculum"
+    assert admission["fixture_contract"]["requested_translation_from_source_metres"] == 0.005
+    assert admission["fixture_contract"]["model_inference_invoked_for_fixture_creation"] is False
+
+
+def test_curriculum_fixture_admission_rejects_settle_or_digest_drift() -> None:
+    unstable = _curriculum_fixture_metadata()
+    unstable["displacement_curriculum_fixture"]["fixture_settle_trace"][-1]["predicate_vector"] = [
+        True,
+        True,
+        True,
+    ]
+    unstable["displacement_curriculum_fixture_sha256"] = canonical_sha256(
+        unstable["displacement_curriculum_fixture"]
+    )
+    with pytest.raises(RuntimeError, match="cosmos_policy_curriculum_fixture_stability_invalid"):
+        experiment_runner._validate_repair_fixture_snapshot(unstable)
+
+    digest_drift = _curriculum_fixture_metadata()
+    digest_drift["displacement_curriculum_fixture"]["requested_translation_from_source_metres"] = (
+        0.01
+    )
+    with pytest.raises(RuntimeError, match="cosmos_policy_curriculum_fixture_digest_mismatch"):
+        experiment_runner._validate_repair_fixture_snapshot(digest_drift)
+
+
+def test_curriculum_distance_grid_is_sorted_unique_and_bounded() -> None:
+    assert curriculum_probe._validate_distances((0.005, 0.01, 0.02), 0.22) == (
+        0.005,
+        0.01,
+        0.02,
+    )
+    with pytest.raises(ValueError, match="distances_not_unique_sorted"):
+        curriculum_probe._validate_distances((0.01, 0.005), 0.22)
+
+
+def test_live_curriculum_probe_reuses_admission_and_caps_one_trial(monkeypatch, tmp_path) -> None:
+    calls = {"build": 0, "repair": 0}
+
+    monkeypatch.setenv(live_curriculum_probe.OPT_IN_ENV, "1")
+    monkeypatch.setattr(
+        live_curriculum_probe,
+        "_verify_oracle_recoverability_report",
+        lambda **kwargs: {"authority": "diagnostic_only"},
+    )
+    monkeypatch.setattr(
+        live_curriculum_probe,
+        "_verify_nominal_admission_report",
+        lambda path: {"nominal_success_observed": True},
+    )
+
+    def fake_build_model_runtime(**kwargs):
+        calls["build"] += 1
+        return "cfg", "model", "stats", "checkpoint"
+
+    def fake_run_repair(**kwargs):
+        calls["repair"] += 1
+        assert kwargs["maximum_actions"] == 64
+        assert kwargs["process_seed"] == 195
+        assert kwargs["repair_instruction_variant"] == "cached_singular_task"
+        return {
+            "result_sha256": "repair-digest",
+            "repair_result": {"applied_action_count": 64},
+            "final_goal_predicate_vector": [True, False, True],
+            "scripted_fixture_repair_established": False,
+            "action_command_statistics": {"sample_count": 64},
+        }
+
+    monkeypatch.setattr(live_curriculum_probe, "_build_model_runtime", fake_build_model_runtime)
+    monkeypatch.setattr(live_curriculum_probe, "_run_repair", fake_run_repair)
+    monkeypatch.setattr(
+        live_curriculum_probe,
+        "_actual_effect_statistics",
+        lambda report: {"sample_count": 64, "gripper_contact_observation_count": 0},
+    )
+
+    result = live_curriculum_probe.execute_live(
+        source_root=tmp_path / "source",
+        checkpoint_path=tmp_path / "checkpoint",
+        tokenizer_path=tmp_path / "tokenizer.pth",
+        snapshot_path=tmp_path / "fixture.npz",
+        oracle_recoverability_report_path=tmp_path / "oracle.json",
+        nominal_report_path=tmp_path / "nominal.json",
+        output_dir=tmp_path / "output",
+        operator_approval_ref="operator:test",
+        maximum_actions=64,
+        instruction_variant="cached_singular_task",
+    )
+
+    assert calls == {"build": 1, "repair": 1}
+    assert result["additional_training_performed"] is False
+    assert result["instruction_variant"] == "cached_singular_task"
+    assert result["instruction_embedding_source"] == "verified_official_checkpoint_cache"
+    assert result["fixture_repair_established"] is False
+    assert result["claim_boundary"]["general_recovery_rate_established"] is False
 
 
 def test_live_runner_requires_explicit_opt_in(monkeypatch, tmp_path) -> None:
@@ -591,9 +767,7 @@ def test_seed_probe_requires_four_unique_seeds() -> None:
         seed_probe._validate_seeds((17, 71, 195, 195))
 
 
-def test_seed_probe_loads_model_once_and_keeps_results_diagnostic(
-    monkeypatch, tmp_path
-) -> None:
+def test_seed_probe_loads_model_once_and_keeps_results_diagnostic(monkeypatch, tmp_path) -> None:
     snapshot_path, oracle_path = _write_oracle_report(tmp_path, stable_success=True)
     nominal_path = _write_nominal_admission_report(tmp_path)
     model_loads = []
@@ -616,11 +790,7 @@ def test_seed_probe_loads_model_once_and_keeps_results_diagnostic(
             "repair_result": {
                 "applied_action_count": 128,
                 "chunk_evidence": [
-                    {
-                        "preservation_step_trace": [
-                            {"object_witnesses": {"moka_pot_2": witness}}
-                        ]
-                    }
+                    {"preservation_step_trace": [{"object_witnesses": {"moka_pot_2": witness}}]}
                 ],
             },
             "final_goal_predicate_vector": [True, False, True],

@@ -150,3 +150,59 @@ known LIBERO task strings. Before adding a new instruction, regenerate one
 known cached sentence through the exact upstream encoder and require embedding
 equality. A smaller encoder or different pooling path is a different
 experiment.
+
+## 7. Measure the small-displacement boundary before blaming fixture severity
+
+`probe_libero_displacement_curriculum.py` constructs diagnostic fixtures on a
+protected-separating horizontal ray from the successful target position. It
+rejects predicate-unstable points, object jumps, protected-pot motion, and
+translations above 2 cm. Source dataset metadata is not predicate authority;
+the restored official LIBERO environment is.
+
+The 2026-08-28 boundary run found stable `[true, false, true]` fixtures at 0.5,
+1.0, 1.5, and 2.0 cm. The 0.5 cm snapshot has SHA-256
+`458e2d60eef71e4b9a6ebf3528c944ebad725f1eb5c6abfeda56a0c63d200a80`.
+A same-hash raw-7D oracle recovered it after action 52 and held all predicates
+for 20 settle steps, with 73 total actions and effectively zero protected-pot
+motion.
+
+The bounded Cosmos Policy trial on that 0.5 cm fixture still produced zero
+contacts in 128 actions, moved the target by less than 0.5 micrometres, and
+never changed `[true, false, true]`. This rejects displacement severity as a
+sufficient explanation. It does not establish general model incapability.
+
+## 8. Keep robot-pose and instruction probes diagnostic-only
+
+`generate_libero_robot_pose_normalized_fixture.py` creates a diagnostic clone
+that preserves the fixture objects and stove state while directly replacing
+the robot joint and gripper state with the task-initial pose. Because simulator
+state is directly changed, the clone is never eligible for a Repair claim even
+if actual predicates later improve.
+
+For the 0.5 cm clone, object motion during construction was at most 5.7
+micrometres and `[true, false, true]` held for all 10 settle steps. Its snapshot
+SHA-256 is
+`1d10b9544e867cf415bb0ea2e4dcac287c5db7cafcaf151c5ceafed5a2173c26`.
+The same-hash oracle recovered it in 53 actions without a preservation
+violation.
+
+With the original cached instruction, Cosmos Policy then moved the end
+effector to 26.9 cm from the target and changed the gripper sign once, but
+still produced zero contacts and no target motion in 128 actions. The exact
+cached sentence `turn on the stove and put the moka pot on it` reduced the
+minimum distance to 23.1 cm but also produced zero contacts and no predicate
+improvement. This is an embedding-cache-controlled diagnostic, not a
+target-specific instruction test: the sentence does not identify the second
+pot.
+
+Run `analyze_cosmos_policy_future_actual_motion.py` only as a visual-motion
+diagnostic. After correcting LIBERO's stored image orientation, the original
+instruction run had mean agent-view pixel differences of 8.96 for actual
+motion and 17.59 for predicted motion; the cached singular run measured 8.19
+and 16.95. Thus the future rollout is not visually static, but pixel difference
+does not establish object motion, physical correctness, or task success.
+
+These results prioritize action/world alignment and target-specific language
+over a best-of-N selector. A selector remains unjustified until at least one
+candidate contacts or moves the target. Unknown target-specific text still
+requires exact T5-11B cache-parity verification before use.

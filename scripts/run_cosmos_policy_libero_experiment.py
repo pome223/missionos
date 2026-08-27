@@ -93,6 +93,12 @@ TASK_ID = 8
 EPISODE_INIT_STATE_INDEX = 15
 TASK_INSTRUCTION = "put both moka pots on the stove"
 EXPECTED_REPAIR_SOURCE_VECTOR = [True, False, True]
+DISPLACEMENT_CURRICULUM_BASIS = "diagnostic_displacement_curriculum"
+DISPLACEMENT_CURRICULUM_SCHEMA_VERSION = "missionos.libero_displacement_curriculum_fixture.v1"
+DISPLACEMENT_CURRICULUM_CONSTRUCTION = "protected_separating_horizontal_ray_from_success_state"
+MAXIMUM_CURRICULUM_TRANSLATION_METRES = 0.02
+ROBOT_POSE_NORMALIZED_BASIS = "diagnostic_robot_pose_normalized_curriculum"
+ROBOT_POSE_NORMALIZED_SCHEMA_VERSION = "missionos.libero_robot_pose_normalized_fixture.v1"
 ENVIRONMENT_SEED = 0
 PROCESS_SEED = 195
 OFFICIAL_STABILIZATION_STEPS = 10
@@ -101,15 +107,11 @@ MODEL_CONFIG = "cosmos_predict2_2b_480p_libero__inference_only"
 UPSTREAM_CONFIG_BASE_CHECKPOINT_URI = (
     "hf://nvidia/Cosmos-Predict2-2B-Video2World/model-480p-16fps.pt"
 )
-UPSTREAM_TOKENIZER_URI = (
-    "hf://nvidia/Cosmos-Predict2-2B-Video2World/tokenizer/tokenizer.pth"
-)
+UPSTREAM_TOKENIZER_URI = "hf://nvidia/Cosmos-Predict2-2B-Video2World/tokenizer/tokenizer.pth"
 UPSTREAM_TOKENIZER_REPOSITORY = "nvidia/Cosmos-Predict2-2B-Video2World"
 UPSTREAM_TOKENIZER_REVISION = "f50c09f5d8ab133a90cac3f4886a6471e9ba3f18"
 UPSTREAM_TOKENIZER_SIZE_BYTES = 507_609_880
-UPSTREAM_TOKENIZER_SHA256 = (
-    "38071ab59bd94681c686fa51d75a1968f64e470262043be31f7a094e442fd981"
-)
+UPSTREAM_TOKENIZER_SHA256 = "38071ab59bd94681c686fa51d75a1968f64e470262043be31f7a094e442fd981"
 
 
 def _sha256_path(path: Path) -> str:
@@ -145,9 +147,7 @@ def _write_json(path: Path, value: Mapping[str, Any]) -> None:
 
 def _verify_checkpoint(checkpoint_path: Path) -> dict[str, Any]:
     files = {}
-    for relative_path, (expected_size, expected_sha256) in (
-        COSMOS_POLICY_CHECKPOINT_FILES.items()
-    ):
+    for relative_path, (expected_size, expected_sha256) in COSMOS_POLICY_CHECKPOINT_FILES.items():
         path = checkpoint_path / relative_path
         if not path.is_file():
             raise RuntimeError(f"cosmos_policy_checkpoint_file_missing:{relative_path}")
@@ -202,9 +202,7 @@ def _verify_oracle_recoverability_report(
     if not isinstance(report, dict):
         raise RuntimeError("cosmos_policy_oracle_gate_report_not_mapping")
     supplied_digest = report.get("result_sha256")
-    report_without_digest = {
-        key: value for key, value in report.items() if key != "result_sha256"
-    }
+    report_without_digest = {key: value for key, value in report.items() if key != "result_sha256"}
     if supplied_digest != canonical_sha256(report_without_digest):
         raise RuntimeError("cosmos_policy_oracle_gate_report_digest_mismatch")
 
@@ -253,6 +251,152 @@ def _verify_oracle_recoverability_report(
         "terminal_goal_predicate_vector": [True, True, True],
         "preservation_violation_observed": False,
         "same_7d_simulator_action_interface_used": True,
+    }
+
+
+def _validate_repair_fixture_snapshot(metadata: Mapping[str, Any]) -> dict[str, Any]:
+    """Admit either the original fixed fixture or a bounded curriculum fixture."""
+
+    if metadata.get("source_failure_basis") == SCRIPTED_FAILURE_FIXTURE_BASIS:
+        fixture = _validate_scripted_fixture_snapshot(
+            metadata=metadata,
+            scenario="displaced_from_stove",
+        )
+        return {
+            "fixture_family": "scripted_displaced_from_stove",
+            "fixture_contract": failure_fixture_contract("displaced_from_stove"),
+            "fixture_observation": fixture,
+        }
+
+    if metadata.get("source_failure_basis") == ROBOT_POSE_NORMALIZED_BASIS:
+        normalization = metadata.get("robot_pose_normalization")
+        base_fixture = metadata.get("base_displacement_curriculum_fixture")
+        if not isinstance(normalization, Mapping) or not isinstance(base_fixture, Mapping):
+            raise RuntimeError("cosmos_policy_robot_pose_fixture_material_missing")
+        normalization_material = deepcopy(dict(normalization))
+        base_material = deepcopy(dict(base_fixture))
+        if metadata.get("robot_pose_normalization_sha256") != canonical_sha256(
+            normalization_material
+        ) or metadata.get("base_displacement_curriculum_fixture_sha256") != canonical_sha256(
+            base_material
+        ):
+            raise RuntimeError("cosmos_policy_robot_pose_fixture_digest_mismatch")
+        trace = normalization_material.get("fixture_settle_trace")
+        if (
+            normalization_material.get("schema_version") != ROBOT_POSE_NORMALIZED_SCHEMA_VERSION
+            or normalization_material.get("authority") != "diagnostic_fixture_only"
+            or normalization_material.get("robot_pose_changed") is not True
+            or normalization_material.get("terminal_goal_predicate_vector")
+            != EXPECTED_REPAIR_SOURCE_VECTOR
+            or not isinstance(trace, list)
+            or normalization_material.get("fixture_settle_steps_applied") != len(trace)
+            or len(trace) < 10
+            or any(
+                not isinstance(item, Mapping)
+                or item.get("predicate_vector") != EXPECTED_REPAIR_SOURCE_VECTOR
+                for item in trace
+            )
+            or normalization_material.get("simulator_state_directly_changed_for_diagnostic")
+            is not True
+            or normalization_material.get("model_inference_invoked") is not False
+            or normalization_material.get("repair_attempted") is not False
+            or normalization_material.get("physical_execution_invoked") is not False
+            or metadata.get("source_goal_predicate_vector") != EXPECTED_REPAIR_SOURCE_VECTOR
+        ):
+            raise RuntimeError("cosmos_policy_robot_pose_fixture_contract_invalid")
+        maximum_displacement = normalization_material.get("maximum_object_displacement_metres")
+        if (
+            isinstance(maximum_displacement, bool)
+            or not isinstance(maximum_displacement, (int, float))
+            or not 0.0 <= float(maximum_displacement) <= 0.001
+        ):
+            raise RuntimeError("cosmos_policy_robot_pose_fixture_object_motion_invalid")
+        contract = {
+            "schema_version": ROBOT_POSE_NORMALIZED_SCHEMA_VERSION,
+            "authority": "diagnostic_fixture_only",
+            "source_failure_basis": ROBOT_POSE_NORMALIZED_BASIS,
+            "normalization_sha256": canonical_sha256(normalization_material),
+            "base_fixture_sha256": canonical_sha256(base_material),
+            "simulator_state_directly_changed_for_diagnostic": True,
+            "repair_claim_eligible": False,
+            "model_inference_invoked_for_fixture_creation": False,
+            "physical_execution_invoked": False,
+        }
+        return {
+            "fixture_family": "robot_pose_normalized_diagnostic_clone",
+            "fixture_contract": contract,
+            "fixture_observation": normalization_material,
+        }
+
+    if metadata.get("source_failure_basis") != DISPLACEMENT_CURRICULUM_BASIS:
+        raise RuntimeError("cosmos_policy_repair_fixture_basis_mismatch")
+    fixture = metadata.get("displacement_curriculum_fixture")
+    if not isinstance(fixture, Mapping):
+        raise RuntimeError("cosmos_policy_curriculum_fixture_material_missing")
+    material = deepcopy(dict(fixture))
+    if metadata.get("displacement_curriculum_fixture_sha256") != canonical_sha256(material):
+        raise RuntimeError("cosmos_policy_curriculum_fixture_digest_mismatch")
+    if (
+        material.get("schema_version") != DISPLACEMENT_CURRICULUM_SCHEMA_VERSION
+        or material.get("authority") != "diagnostic_fixture_only"
+        or material.get("construction") != DISPLACEMENT_CURRICULUM_CONSTRUCTION
+    ):
+        raise RuntimeError("cosmos_policy_curriculum_fixture_contract_mismatch")
+    requested_translation = material.get("requested_translation_from_source_metres")
+    observed_translation = material.get("observed_translation_from_source_metres")
+    if (
+        isinstance(requested_translation, bool)
+        or not isinstance(requested_translation, (int, float))
+        or not 0.0 < float(requested_translation) <= MAXIMUM_CURRICULUM_TRANSLATION_METRES
+        or isinstance(observed_translation, bool)
+        or not isinstance(observed_translation, (int, float))
+        or abs(float(observed_translation) - float(requested_translation)) > 0.01
+    ):
+        raise RuntimeError("cosmos_policy_curriculum_fixture_translation_invalid")
+    protected_displacement = material.get("protected_object_displacement_metres")
+    if (
+        isinstance(protected_displacement, bool)
+        or not isinstance(protected_displacement, (int, float))
+        or not 0.0 <= float(protected_displacement) <= 0.005
+    ):
+        raise RuntimeError("cosmos_policy_curriculum_fixture_preservation_invalid")
+    trace = material.get("fixture_settle_trace")
+    if (
+        not isinstance(trace, list)
+        or material.get("fixture_settle_steps_applied") != len(trace)
+        or len(trace) < 60
+        or any(
+            not isinstance(item, Mapping)
+            or item.get("predicate_vector") != EXPECTED_REPAIR_SOURCE_VECTOR
+            for item in trace
+        )
+    ):
+        raise RuntimeError("cosmos_policy_curriculum_fixture_stability_invalid")
+    if (
+        material.get("terminal_goal_predicate_vector") != EXPECTED_REPAIR_SOURCE_VECTOR
+        or material.get("actual_predicate_failure_observed") is not True
+        or material.get("model_inference_invoked") is not False
+        or material.get("repair_attempted") is not False
+        or material.get("physical_execution_invoked") is not False
+        or metadata.get("source_goal_predicate_vector") != EXPECTED_REPAIR_SOURCE_VECTOR
+        or metadata.get("source_failure_is_repair_candidate") is not True
+    ):
+        raise RuntimeError("cosmos_policy_curriculum_fixture_claim_boundary_invalid")
+    contract = {
+        "schema_version": DISPLACEMENT_CURRICULUM_SCHEMA_VERSION,
+        "authority": "diagnostic_fixture_only",
+        "source_failure_basis": DISPLACEMENT_CURRICULUM_BASIS,
+        "construction": DISPLACEMENT_CURRICULUM_CONSTRUCTION,
+        "requested_translation_from_source_metres": float(requested_translation),
+        "maximum_admitted_translation_metres": MAXIMUM_CURRICULUM_TRANSLATION_METRES,
+        "fixture_sha256": canonical_sha256(material),
+        "model_inference_invoked_for_fixture_creation": False,
+        "physical_execution_invoked": False,
+    }
+    return {
+        "fixture_family": "bounded_displacement_curriculum",
+        "fixture_contract": contract,
+        "fixture_observation": material,
     }
 
 
@@ -402,9 +546,7 @@ def _action_command_statistics(
                 "applied_action_count": len(chunk),
                 "mean_xyz_command_norm": sum(chunk_norms) / len(chunk_norms),
                 "sum_xyz_command_norm": sum(chunk_norms),
-                "xyz_command_vector_sum_norm": math.dist(
-                    (0.0, 0.0, 0.0), vector_sum
-                ),
+                "xyz_command_vector_sum_norm": math.dist((0.0, 0.0, 0.0), vector_sum),
             }
         )
 
@@ -433,9 +575,7 @@ def _action_command_statistics(
             "positive_count": sum(value > 0.0 for value in gripper_commands),
             "sign_transition_count": sum(
                 current != previous
-                for previous, current in zip(
-                    gripper_signs, gripper_signs[1:], strict=False
-                )
+                for previous, current in zip(gripper_signs, gripper_signs[1:], strict=False)
             ),
         },
         "chunks": chunks,
@@ -471,7 +611,9 @@ def _build_model_runtime(
     # The official cu128 uv environment installs NVRTC inside the Python
     # environment rather than /usr/local/cuda. Transformer Engine probes
     # CUDA_HOME before importing torch, so bind it to the verified wheel path.
-    bundled_nvrtc_root = Path(sys.prefix) / "lib" / "python3.10" / "site-packages" / "nvidia" / "cuda_nvrtc"
+    bundled_nvrtc_root = (
+        Path(sys.prefix) / "lib" / "python3.10" / "site-packages" / "nvidia" / "cuda_nvrtc"
+    )
     if "CUDA_HOME" not in os.environ and bundled_nvrtc_root.is_dir():
         os.environ["CUDA_HOME"] = str(bundled_nvrtc_root)
 
@@ -703,7 +845,9 @@ def _run_nominal(
             query_index += 1
         report_without_digest = {
             "schema_version": "missionos.cosmos_policy_libero_nominal.v1",
-            "status": "nominal_predicate_success_observed" if success else "nominal_budget_exhausted",
+            "status": "nominal_predicate_success_observed"
+            if success
+            else "nominal_budget_exhausted",
             "task_suite": TASK_SUITE,
             "task_name": TASK_NAME,
             "task_id": TASK_ID,
@@ -753,6 +897,7 @@ def _run_repair(
     operator_approval_ref: str,
     maximum_actions: int,
     process_seed: int = PROCESS_SEED,
+    repair_instruction_variant: str = "original_task",
 ) -> dict[str, Any]:
     import numpy as np
 
@@ -779,9 +924,10 @@ def _run_repair(
             raise RuntimeError("cosmos_policy_snapshot_task_id_mismatch")
         if snapshot_metadata.get("episode_init_state_index") != EPISODE_INIT_STATE_INDEX:
             raise RuntimeError("cosmos_policy_snapshot_init_state_mismatch")
-        fixture_material = _validate_scripted_fixture_snapshot(
-            metadata=snapshot_metadata,
-            scenario="displaced_from_stove",
+        fixture_admission = _validate_repair_fixture_snapshot(snapshot_metadata)
+        fixture_material = fixture_admission["fixture_observation"]
+        fixture_repair_claim_eligible = (
+            fixture_admission["fixture_family"] != "robot_pose_normalized_diagnostic_clone"
         )
         observation = environment.regenerate_obs_from_state(simulator_state)
         restored_state = np.asarray(environment.sim.get_state().flatten(), dtype=np.float64)
@@ -806,9 +952,9 @@ def _run_repair(
             "source_goal_predicate_vector": source_vector,
             "source_failure_basis": SCRIPTED_FAILURE_FIXTURE_BASIS,
             "setup_snapshot_sha256": snapshot_metadata["snapshot_artifact_sha256"],
-            "scripted_failure_fixture_contract": failure_fixture_contract(
-                "displaced_from_stove"
-            ),
+            "repair_fixture_family": fixture_admission["fixture_family"],
+            "repair_fixture_contract": fixture_admission["fixture_contract"],
+            "repair_fixture_claim_eligible": fixture_repair_claim_eligible,
             "scripted_failure_fixture_observation": fixture_material,
             "fixture_setup_precedes_repair_proposal": True,
             "natural_policy_failure_observed": False,
@@ -831,7 +977,7 @@ def _run_repair(
             reset_count=reset_count,
             maximum_repair_steps=maximum_actions,
             source_object_poses=source_object_poses,
-            repair_instruction_variant="original_task",
+            repair_instruction_variant=repair_instruction_variant,
             state_continuity_basis=STATE_CONTINUITY_LIVE_SAME_WORLD,
         )
         approval = approve_same_world_repair(
@@ -927,9 +1073,7 @@ def _run_repair(
                     {"robot_state": {"eef": {"pos": observation["robot0_eef_pos"]}}},
                     previous_positions,
                 )
-                action_sha256 = digest_runtime_material(
-                    "cosmos_policy_selected_action", action
-                )
+                action_sha256 = digest_runtime_material("cosmos_policy_selected_action", action)
                 raw_action_trace.append(
                     {
                         "global_repair_step_index": applied_action_count - 1,
@@ -996,13 +1140,14 @@ def _run_repair(
         final_vector = [
             item["satisfied"] for item in repair_result["final_goal_predicate_observations"]
         ]
-        repair_observed = bool(
+        actual_predicate_recovery_observed = bool(
             repair_result["status"] == "satisfied"
             and repair_result["predicate_improvement_observed"] is True
             and final_vector == [True, True, True]
             and repair_result["first_preservation_violation"] is None
             and repair_result["first_preservation_invariant_breach"] is None
         )
+        repair_observed = bool(actual_predicate_recovery_observed and fixture_repair_claim_eligible)
         report_without_digest = {
             "schema_version": "missionos.cosmos_policy_libero_fixture_repair.v1",
             "status": (
@@ -1019,12 +1164,12 @@ def _run_repair(
             "dispatch": dispatch,
             "repair_result": repair_result,
             "scripted_fixture_repair_established": repair_observed,
+            "actual_predicate_recovery_observed": actual_predicate_recovery_observed,
+            "repair_claim_eligible": fixture_repair_claim_eligible,
             "future_prediction_manifest": future_manifest,
             "actual_observation_manifest": actual_manifest,
             "raw_action_trace": raw_action_trace,
-            "raw_action_trace_sha256": canonical_sha256(
-                {"raw_action_trace": raw_action_trace}
-            ),
+            "raw_action_trace_sha256": canonical_sha256({"raw_action_trace": raw_action_trace}),
             "action_command_statistics": _action_command_statistics(
                 raw_action_trace,
                 chunk_size=COSMOS_POLICY_LIBERO_ACTION_STEPS,
