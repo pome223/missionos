@@ -314,3 +314,40 @@ a diagnostic known-skill decomposition on this fixture. It does not establish
 learned-policy Repair, human approval, governed dispatch, controller ACK, or
 physical execution. The publication-safe numeric record is
 `docs/agents/evidence/cosmos-policy-libero-seed0-3cm-20260828.json`.
+
+## 13. Compare VLA-0 on the exact admitted 3 cm snapshot
+
+The pinned VLA-0 LIBERO checkpoint was run without additional training on the
+same seed-0 snapshot, original instruction, and 128-action ceiling. A dedicated
+wrapper admits only the exact 3 cm snapshot digest and the matching v2 oracle
+report before loading the model. It leaves the historical publication runner
+unchanged.
+
+The preregistered first run admitted one repeat only if the policy contacted
+the target or moved it by at least 1 mm. The first run passed both conditions,
+so one same-condition repeat was executed. VLA-0 produced an actual terminal
+`[true, true, true]` conjunction in both runs:
+
+- run 1: first contact after action 66, conjunction after action 84, and 25.41
+  mm maximum target translation;
+- run 2: first contact after action 70, conjunction after action 83, and 22.34
+  mm maximum target translation.
+
+Neither run breached the declared preservation invariant. The result was not
+bitwise deterministic, but the target engagement and terminal predicate
+conjunction repeated 2/2. The privileged oracle remained faster, with first
+contact after action 32 and predicate success after action 33.
+
+This changes the executor comparison. Cosmos Policy failed to contact or move
+the target in its 128-action trial on this snapshot, while VLA-0 contacted the
+target and restored the missing predicate twice. Repair behavior is therefore
+executor-dependent in this bounded fixture; it is not correct to infer that
+all learned executors lack a corrective path.
+
+The authority boundary remains strict. The snapshot restore is a diagnostic
+MuJoCo clone, each VLA-0 run stopped on its first observed terminal conjunction,
+and stable success within either VLA-0 run was not measured. These runs do not
+establish same-world semantic Repair, a general VLA-0 recovery rate, controller
+ACK, physical execution, or real-world safety. The publication-safe numeric
+record is
+`docs/agents/evidence/vla0-libero-seed0-3cm-20260828.json`.

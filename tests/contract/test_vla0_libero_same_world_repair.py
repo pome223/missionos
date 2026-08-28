@@ -8,6 +8,12 @@ import numpy as np
 import pytest
 
 from missionos_core import canonical_sha256
+from scripts.run_vla0_libero_curriculum_probe import (
+    EXACT_SEED0_THREE_CENTIMETRE_SNAPSHOT_SHA256,
+    _actual_effect_statistics,
+    _validate_probe_identity,
+    _validate_curriculum_fixture_snapshot,
+)
 from scripts.run_vla0_libero_snapshot_recovery import (
     _capture_frames,
     _official_ensemble_action,
@@ -357,6 +363,109 @@ def test_scripted_fixture_snapshot_validation_rejects_scenario_drift() -> None:
             metadata=metadata,
             scenario="displaced_from_stove",
         )
+
+
+def _curriculum_fixture_metadata() -> dict:
+    fixture = {
+        "schema_version": "missionos.libero_displacement_curriculum_fixture.v2",
+        "authority": "diagnostic_fixture_only",
+        "construction": "protected_separating_horizontal_ray_from_success_state",
+        "environment_seed": 0,
+        "requested_translation_from_source_metres": 0.03,
+        "observed_translation_from_source_metres": 0.030001,
+        "protected_object_displacement_metres": 0.0,
+        "fixture_settle_steps_applied": 60,
+        "fixture_settle_trace": [
+            {"fixture_step_index": index, "predicate_vector": [True, False, True]}
+            for index in range(60)
+        ],
+        "terminal_goal_predicate_vector": [True, False, True],
+        "actual_predicate_failure_observed": True,
+        "model_inference_invoked": False,
+        "repair_attempted": False,
+        "physical_execution_invoked": False,
+    }
+    return {
+        "source_failure_basis": "diagnostic_displacement_curriculum",
+        "environment_seed": 0,
+        "source_goal_predicate_vector": [True, False, True],
+        "source_failure_is_repair_candidate": True,
+        "displacement_curriculum_fixture": fixture,
+        "displacement_curriculum_fixture_sha256": canonical_sha256(fixture),
+    }
+
+
+def test_curriculum_fixture_admission_binds_seed_stability_and_digest() -> None:
+    fixture = _validate_curriculum_fixture_snapshot(_curriculum_fixture_metadata())
+
+    assert fixture["requested_translation_from_source_metres"] == 0.03
+    assert fixture["environment_seed"] == 0
+
+
+def test_curriculum_fixture_admission_rejects_seed_mismatch() -> None:
+    metadata = _curriculum_fixture_metadata()
+    metadata["environment_seed"] = 7
+    metadata["displacement_curriculum_fixture"]["environment_seed"] = 7
+    metadata["displacement_curriculum_fixture_sha256"] = canonical_sha256(
+        metadata["displacement_curriculum_fixture"]
+    )
+
+    with pytest.raises(RuntimeError, match="vla0_curriculum_fixture_contract_mismatch"):
+        _validate_curriculum_fixture_snapshot(metadata)
+
+
+def test_curriculum_probe_identity_requires_exact_seed0_three_centimetre_snapshot() -> None:
+    fixture = _validate_curriculum_fixture_snapshot(_curriculum_fixture_metadata())
+
+    _validate_probe_identity(
+        snapshot_sha256=EXACT_SEED0_THREE_CENTIMETRE_SNAPSHOT_SHA256,
+        fixture=fixture,
+    )
+    with pytest.raises(
+        RuntimeError, match="vla0_curriculum_probe_snapshot_identity_mismatch"
+    ):
+        _validate_probe_identity(snapshot_sha256="0" * 64, fixture=fixture)
+
+
+def test_actual_effect_statistics_records_initial_minimum_final_and_contact() -> None:
+    first = _step_trace(chunk_index=0, vector=_vector())[0]
+    second = _step_trace(chunk_index=1, vector=_vector())[0]
+    first["object_witnesses"]["moka_pot_2"].update(
+        {
+            "end_effector_distance_metres": 0.25,
+            "position_metres": [1.1, 0.2, 0.3],
+            "gripper_contact_observed": False,
+        }
+    )
+    second["object_witnesses"]["moka_pot_2"].update(
+        {
+            "end_effector_distance_metres": 0.20,
+            "position_metres": [1.101, 0.2, 0.3],
+            "gripper_contact_observed": True,
+        }
+    )
+    result = _actual_effect_statistics(
+        initial_eef_target_distance_metres=0.30,
+        initial_target_position_metres=[1.1, 0.2, 0.3],
+        repair_result={
+            "chunk_evidence": [
+                {"preservation_step_trace": [first]},
+                {"preservation_step_trace": [second]},
+            ]
+        },
+        raw_action_trace=[
+            {"action_7d": [0, 0, 0, 0, 0, 0, -1]},
+            {"action_7d": [0, 0, 0, 0, 0, 0, 1]},
+        ],
+    )
+
+    assert result["initial_end_effector_distance_to_target_metres"] == 0.30
+    assert result["minimum_end_effector_distance_to_target_metres"] == 0.20
+    assert result["minimum_distance_after_action"] == 2
+    assert result["final_end_effector_distance_to_target_metres"] == 0.20
+    assert result["first_gripper_contact_after_action"] == 2
+    assert result["maximum_target_translation_metres"] == pytest.approx(0.001)
+    assert result["gripper_command"]["sign_transition_count"] == 1
 
 
 def test_frame_capture_writes_relative_digest_bound_pngs(tmp_path) -> None:

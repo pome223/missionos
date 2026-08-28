@@ -1,0 +1,90 @@
+{
+  "schema_version": "missionos.vla0_libero_seed0_3cm_evidence.v1",
+  "status": "bounded_diagnostic_predicate_recovery_observed_twice",
+  "task": {
+    "task_suite": "libero_10",
+    "task_id": 8,
+    "episode_init_state_index": 15,
+    "environment_seed": 0,
+    "instruction": "put both moka pots on the stove"
+  },
+  "fixture": {
+    "requested_displacement_metres": 0.03,
+    "snapshot_sha256": "8064d6faeeb02a67a08649be0ca39529b4a79da459cf8d11493c0412bbc7b651",
+    "source_goal_predicate_vector": [true, false, true],
+    "fixture_material_sha256": "11e359861138e487d0cc7a461f8d72acf79fb0ad8645f0008addf5fa530bcf5e"
+  },
+  "scripted_oracle_admission": {
+    "first_contact_after_action": 32,
+    "first_success_after_action": 33,
+    "actions_applied_including_stable_settle": 54,
+    "stable_success_observed": true,
+    "result_sha256": "163981901bcddefc545be9a18e0c41545d57c0db105612ff59179fa79df58016"
+  },
+  "vla0": {
+    "source_revision": "b78db19eda67b02844fe82b8929e1f94de7f2dcc",
+    "lerobot_revision": "c55fbe1b3e36f640d659918945514fbb43a2b53d",
+    "checkpoint_repository": "ankgoyal/vla0-libero",
+    "checkpoint_revision": "6c62a511ad56042b2b3ea0a90c4def33e1ea3b96",
+    "process_seed": 1000,
+    "additional_training_performed": false,
+    "maximum_applied_actions_per_run": 128,
+    "run_count": 2,
+    "predicate_conjunction_observed_count": 2,
+    "runs": [
+      {
+        "run_index": 1,
+        "applied_action_count": 84,
+        "first_contact_after_action": 66,
+        "contact_observation_count": 16,
+        "first_predicate_conjunction_after_action": 84,
+        "minimum_end_effector_distance_to_target_metres": 0.0823507985340252,
+        "minimum_distance_after_action": 71,
+        "maximum_target_translation_metres": 0.025413682030405855,
+        "final_goal_predicate_vector": [true, true, true],
+        "preservation_invariant_breach_observed": false,
+        "gripper_command_minimum": 1.0,
+        "gripper_command_maximum": 1.0,
+        "wrapper_result_sha256": "6a506467bc41cd895fcadf77439e2b61b618a4287923ffa4ae17970286d20f1e",
+        "base_result_sha256": "748a27bc5a52d6435b5ef1e2d67d0f3ee36eb3953646975c13a238b275f3be33"
+      },
+      {
+        "run_index": 2,
+        "applied_action_count": 83,
+        "first_contact_after_action": 70,
+        "contact_observation_count": 14,
+        "first_predicate_conjunction_after_action": 83,
+        "minimum_end_effector_distance_to_target_metres": 0.08210634331470766,
+        "minimum_distance_after_action": 71,
+        "maximum_target_translation_metres": 0.022339082462668542,
+        "final_goal_predicate_vector": [true, true, true],
+        "preservation_invariant_breach_observed": false,
+        "gripper_command_minimum": 1.0,
+        "gripper_command_maximum": 1.0,
+        "wrapper_result_sha256": "6bd54eaeb2dd0e76d4fe46e273c4db9bad9b544c99bd9d105219af6ac8026267",
+        "base_result_sha256": "f093203a9aab12b97655e223f5ff06d4c3078d9ba7cafe78cbce389fc62dfc4e"
+      }
+    ]
+  },
+  "runtime": {
+    "provider": "google_cloud",
+    "zone": "us-west1-a",
+    "machine_type": "g2-standard-8",
+    "accelerator": "nvidia-l4",
+    "accelerator_count": 1,
+    "maximum_run_duration_seconds": 7200,
+    "observed_instance_lifetime_seconds": 3193.111,
+    "instance_deleted": true,
+    "attached_billable_disks_deleted": true
+  },
+  "claim_boundary": {
+    "authority": "diagnostic_only",
+    "state_continuity_basis": "diagnostic_mujoco_state_clone",
+    "actual_libero_predicates_established_each_terminal_conjunction": true,
+    "stable_success_within_each_vla0_run_established": false,
+    "same_world_semantic_repair_established": false,
+    "general_vla0_recovery_rate_established": false,
+    "controller_ack_observed": false,
+    "physical_execution_invoked": false
+  }
+}
