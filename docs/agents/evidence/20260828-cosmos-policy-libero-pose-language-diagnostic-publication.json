@@ -1,0 +1,93 @@
+{
+  "schema_version": "missionos.cosmos_policy_libero_pose_language_diagnostic_publication.v1",
+  "publication_scope": "public_bounded_diagnostic_negative_observation",
+  "task": {
+    "suite": "libero_10",
+    "name": "KITCHEN_SCENE8_put_both_moka_pots_on_the_stove",
+    "episode_init_state_index": 15,
+    "target_object": "moka_pot_2",
+    "protected_object": "moka_pot_1"
+  },
+  "policy": {
+    "checkpoint_repository": "nvidia/Cosmos-Policy-LIBERO-Predict2-2B",
+    "checkpoint_revision": "cb689ec0e3347c13667d70a78a3447388f5c3bb8",
+    "source_revision": "18a2accadf4e7a3531e56754102af5a24d2316da",
+    "additional_training_performed": false
+  },
+  "paired_pose_sensitivity": {
+    "canonical_result_sha256": "ce743c77ad762ecbe7ce6fce0310d879443d2239e12555bc63ba4a23011fb693",
+    "pose_count": 5,
+    "fixture_state_count": 4,
+    "seed_count": 4,
+    "forward_query_count": 80,
+    "queried_actions_applied": false,
+    "strongest_pose_action_count": 184,
+    "observed_displacement_metres": 0.1431249039726511,
+    "strongest_action_signal_to_seed_noise_ratio": 14.508664656238826,
+    "object_sensitivity_observed": true,
+    "corrective_targeting_established": false
+  },
+  "pose_rollouts": {
+    "canonical_result_sha256": "4854ed0d3aed48ec3ccea58f52dd59531faa0329834f9193f8dbb99f384fae3a",
+    "pose_action_counts": [
+      0,
+      184,
+      369
+    ],
+    "seed_count_per_pose": 4,
+    "trial_count": 12,
+    "maximum_actions_per_trial": 128,
+    "contact_positive_trials": 0,
+    "target_motion_positive_trials": 0,
+    "actual_predicate_success_trials": 0,
+    "protected_predicate_regression_trials": 1
+  },
+  "public_dataset_probe": {
+    "repository": "nvidia/LIBERO-Cosmos-Policy",
+    "suite": "libero_10",
+    "task_id": 8,
+    "file_count": 50,
+    "successful_episodes": 31,
+    "failed_episodes": 19,
+    "episodes_with_extra_gripper_cycle_proxy": 6,
+    "per_step_predicates_available": false,
+    "complete_simulator_state_available": false,
+    "semantic_recovery_segments_established": false,
+    "success_only_training_premise_rejected": true
+  },
+  "t5_instruction_diagnostic": {
+    "canonical_result_sha256": "f980fa368c611a65eef12624fb392e4f741f5234aca9eb493397a59274623e4a",
+    "artifact_archive_sha256": "9b04a7cbf7ea93920410121ed8cf73923da991391cdcd285247e0bf0be817fae",
+    "encoder": "google-t5/t5-11b",
+    "baseline_embedding_bitwise_equal": false,
+    "baseline_different_element_count": 5665,
+    "baseline_element_count": 524288,
+    "baseline_maximum_absolute_difference": 0.00390625,
+    "arm_count": 6,
+    "maximum_actions_per_arm": 128,
+    "target_specific_arm_count": 3,
+    "wrong_target_control_count": 1,
+    "contact_positive_arms": 0,
+    "target_motion_positive_arms": 0,
+    "actual_predicate_success_arms": 0,
+    "minimum_end_effector_distance_metres_all_arms": 0.24047440567606954,
+    "semantic_corrective_grounding_observed": false
+  },
+  "result_classification": "object_sensitive_but_corrective_targeting_not_observed",
+  "stop_rule": {
+    "prompt_ablation_for_exact_checkpoint_task_fixture": "stop",
+    "seed_selector_for_exact_checkpoint_task_fixture": "stop",
+    "wam_mpc_for_exact_checkpoint_task_fixture": "stop",
+    "next_comparison": "known_skill_or_scripted_controller_or_labeled_recovery_data"
+  },
+  "claim_boundary": {
+    "authority": "diagnostic_only",
+    "simulator_state_and_robot_pose_directly_changed": true,
+    "future_prediction_establishes_success": false,
+    "missionos_repair_success_established": false,
+    "governed_repair_dispatch_performed": false,
+    "controller_ack_observed": false,
+    "physical_execution_invoked": false,
+    "general_cosmos_policy_recovery_incapability_established": false
+  }
+}

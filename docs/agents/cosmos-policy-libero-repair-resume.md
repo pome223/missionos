@@ -206,3 +206,68 @@ These results prioritize action/world alignment and target-specific language
 over a best-of-N selector. A selector remains unjustified until at least one
 candidate contacts or moves the target. Unknown target-specific text still
 requires exact T5-11B cache-parity verification before use.
+
+## 9. Separate object sensitivity from corrective targeting
+
+`run_cosmos_policy_libero_paired_pose_sensitivity.py` replays the exact
+successful nominal trace and tests five robot poses against one successful
+object state plus 0.5, 5, and 22.5 cm requested displacements. It performs 80
+forward queries without applying any queried action. The requested 5 cm state
+settled to 14.31 cm, so reports keep requested and observed displacement
+separate.
+
+The strongest action-signal-to-seed-noise ratios occurred at nominal action
+184: 14.51 for the observed 14.31 cm displacement and 13.03 for the observed
+22.71 cm displacement. The model is therefore not object-blind in this fixed
+diagnostic. Sensitivity is phase-dependent, however; poses 92 and 276 were
+mostly below seed noise.
+
+`run_cosmos_policy_libero_pose_rollout_diagnostic.py` then applied 128 actions
+for poses 0, 184, and 369 with four seeds at the observed 22.71 cm state. All
+12 trials had zero target contacts, zero target motion, and no actual predicate
+success. Pose 184 produced large actions but moved the end effector away from
+the target. One pose-369 trial also changed the protected-pot predicate. Thus
+action sensitivity is not evidence of corrective targeting, and neither an
+MPC wrapper nor a candidate selector is justified by these candidates.
+
+Both runners directly transplant simulator state and robot pose. Their results
+are diagnostic-only and cannot establish MissionOS Repair.
+
+## 10. Do not describe the public training mixture as success-only
+
+The public `nvidia/LIBERO-Cosmos-Policy` task-8 subset contains 31 successful
+and 19 failed episodes. The released training configuration samples
+demonstrations and rollouts and includes both successful and failed rollouts.
+An offline action-only probe found six of 50 episodes with more than four
+gripper sign flips, which is only a regrasp proxy.
+
+The HDF5 files do not contain per-step LIBERO predicates or complete simulator
+state. They therefore cannot establish that any extra gripper cycle is a
+semantic recovery segment. The bounded conclusion is that the earlier
+"success demonstrations only" premise is false for this public training
+mixture; the presence or absence of labeled repair trajectories remains
+unestablished.
+
+## 11. Close the target-specific instruction hypothesis before MPC
+
+The exact upstream `google-t5/t5-11b` encoder generated a replacement baseline,
+three target-specific instructions, and one wrong-target control. The generated
+baseline differed from the released bf16 cache in 5,665 of 524,288 elements;
+the maximum absolute difference was one tested bf16 rounding step
+(`0.00390625`). Its 128-action behavior closely reproduced the released-cache
+baseline but was not action-bitwise identical.
+
+At pose 184 and the observed 22.71 cm displacement, six 128-action arms were
+run with the same seed: released baseline, regenerated baseline, three
+target-specific forms, and the wrong-target control. Every arm produced zero
+contacts, zero target motion, no predicate improvement, and a minimum target
+distance equal to the initial 24.05 cm distance. The target-specific strings
+changed action values, but the wrong-target string changed them by a similar
+order and produced the same qualitative outcome. This supports instruction as
+a perturbation in this diagnostic, not semantic corrective grounding.
+
+Stop prompt, seed-selector, and WAM-MPC work for this exact checkpoint, task,
+and fixture. The next comparison should change the executor capability: use a
+known skill or scripted controller, or add explicitly labeled recovery data.
+That is a design recommendation, not proof that every Cosmos Policy task lacks
+recovery capability.

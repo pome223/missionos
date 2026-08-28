@@ -13,6 +13,9 @@ from scripts import run_cosmos_policy_libero_experiment as experiment_runner
 from scripts import run_cosmos_policy_libero_seed_probe as seed_probe
 from scripts import probe_libero_displacement_curriculum as curriculum_probe
 from scripts import run_cosmos_policy_libero_curriculum_probe as live_curriculum_probe
+from scripts import run_cosmos_policy_libero_paired_pose_sensitivity as pose_sensitivity
+from scripts import run_cosmos_policy_libero_pose_rollout_diagnostic as pose_rollout
+from scripts import run_cosmos_policy_libero_t5_instruction_diagnostic as t5_instruction
 from src.gateway.missionos_dispatch_runtime import DispatchAuthorityTable
 from src.runtime.cosmos_policy_libero_same_world_repair import (
     COSMOS_POLICY_LIBERO_ACTION_STEPS,
@@ -77,6 +80,113 @@ def test_future_actual_motion_analysis_is_diagnostic_only(tmp_path) -> None:
     assert result["agentview_mean_prediction_error_pixel_difference"] == 10
     assert result["claim_boundary"]["future_predictions_may_establish_success"] is False
     assert result["claim_boundary"]["object_motion_established_by_pixel_difference"] is False
+
+
+def test_pose_sensitivity_grid_uses_one_baseline_per_pose() -> None:
+    poses, distances, seeds = pose_sensitivity._validate_grid(
+        pose_action_counts=(0, 92, 184, 276, 369),
+        displacements_metres=(0.0, 0.005, 0.05, 0.225),
+        seeds=(17, 71, 195, 231),
+    )
+
+    assert len(poses) * len(distances) * len(seeds) == 80
+    assert distances[0] == 0.0
+
+
+def test_pose_sensitivity_action_delta_separates_translation_and_gripper() -> None:
+    baseline = np.zeros((16, 7), dtype=np.float32)
+    baseline[:, 6] = -1.0
+    displaced = baseline.copy()
+    displaced[:, 0] = 0.25
+    displaced[:8, 6] = 1.0
+
+    result = pose_sensitivity._action_delta(baseline, displaced)
+
+    assert result["mean_translation_l2_delta"] == 0.25
+    assert result["gripper_sign_mismatch_fraction"] == 0.5
+
+
+def test_pose_rollout_requires_forward_only_sensitivity_admission(tmp_path) -> None:
+    report_without_digest = {
+        "schema_version": "missionos.cosmos_policy_libero_paired_pose_sensitivity.v1",
+        "nominal_report_sha256": "nominal-digest",
+        "forward_query_count": 80,
+        "claim_boundary": {"queried_actions_applied_to_simulator": False},
+    }
+    report = {
+        **report_without_digest,
+        "result_sha256": canonical_sha256(report_without_digest),
+    }
+    path = tmp_path / "sensitivity.json"
+    path.write_text(json.dumps(report), encoding="utf-8")
+
+    admitted = pose_rollout._verify_sensitivity_report(path, "nominal-digest")
+
+    assert admitted["forward_query_count"] == 80
+    assert admitted["claim_boundary"]["queried_actions_applied_to_simulator"] is False
+
+
+def test_pose_rollout_requires_explicit_opt_in(monkeypatch, tmp_path) -> None:
+    monkeypatch.delenv(pose_rollout.OPT_IN_ENV, raising=False)
+    with pytest.raises(RuntimeError, match="cosmos_pose_rollout_opt_in_required"):
+        pose_rollout.execute_live(
+            source_root=tmp_path,
+            checkpoint_path=tmp_path,
+            tokenizer_path=tmp_path / "tokenizer.pth",
+            nominal_report_path=tmp_path / "nominal.json",
+            sensitivity_report_path=tmp_path / "sensitivity.json",
+            output_dir=tmp_path / "output",
+        )
+
+
+def test_t5_instruction_parity_accepts_one_bf16_rounding_step(tmp_path) -> None:
+    report = {
+        "schema_version": "missionos.cosmos_policy_t5_11b_embedding_parity.v1",
+        "baseline_prompt": t5_instruction.BASELINE_PROMPT,
+        "model": "google-t5/t5-11b",
+        "shape": [1, 512, 1024],
+        "generated_storage_dtype": "torch.bfloat16",
+        "maximum_absolute_difference": 0.00390625,
+        "unknown_prompts": [prompt for _, prompt, _ in t5_instruction.PROMPT_ARMS],
+    }
+    path = tmp_path / "parity.json"
+    path.write_text(json.dumps(report), encoding="utf-8")
+
+    admitted = t5_instruction._load_parity(path)
+
+    assert admitted["maximum_absolute_difference"] == 0.00390625
+
+
+def test_t5_instruction_parity_rejects_prompt_or_numeric_drift(tmp_path) -> None:
+    report = {
+        "schema_version": "missionos.cosmos_policy_t5_11b_embedding_parity.v1",
+        "baseline_prompt": t5_instruction.BASELINE_PROMPT,
+        "model": "google-t5/t5-11b",
+        "shape": [1, 512, 1024],
+        "generated_storage_dtype": "torch.bfloat16",
+        "maximum_absolute_difference": 0.0078125,
+        "unknown_prompts": [],
+    }
+    path = tmp_path / "parity.json"
+    path.write_text(json.dumps(report), encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="cosmos_t5_instruction_numeric_parity_invalid"):
+        t5_instruction._load_parity(path)
+
+
+def test_t5_instruction_requires_explicit_opt_in(monkeypatch, tmp_path) -> None:
+    monkeypatch.delenv(t5_instruction.OPT_IN_ENV, raising=False)
+    with pytest.raises(RuntimeError, match="cosmos_t5_instruction_opt_in_required"):
+        t5_instruction.execute_live(
+            source_root=tmp_path / "source",
+            checkpoint_path=tmp_path / "checkpoint",
+            tokenizer_path=tmp_path / "tokenizer.pth",
+            nominal_report_path=tmp_path / "nominal.json",
+            sensitivity_report_path=tmp_path / "sensitivity.json",
+            generated_embeddings_path=tmp_path / "generated.pkl",
+            parity_report_path=tmp_path / "parity.json",
+            output_dir=tmp_path / "output",
+        )
 
 
 def _vector(*, second: bool = False) -> list[dict]:
