@@ -291,6 +291,7 @@ def test_proposal_binds_partial_vector_instruction_budget_and_same_world() -> No
         ),
         ("original_task", "put both moka pots on the stove"),
         ("short_target", "put the second moka pot on the stove"),
+        ("cached_singular_task", "turn on the stove and put the moka pot on it"),
     ],
 )
 def test_proposal_binds_fixed_instruction_ablation_variant(
@@ -328,12 +329,17 @@ def test_instruction_ablation_variants_change_contract_and_proposal_digests() ->
             proposal_id="proposal:ablation",
             proposed_at="2026-08-14T00:00:00+00:00",
         )
-        for variant in ("semantic_preserve", "original_task", "short_target")
+        for variant in (
+            "semantic_preserve",
+            "original_task",
+            "short_target",
+            "cached_singular_task",
+        )
     ]
 
-    assert len({item["repair_contract_sha256"] for item in proposals}) == 3
-    assert len({item["proposal_sha256"] for item in proposals}) == 3
-    assert len({item["repair_instruction_sha256"] for item in proposals}) == 3
+    assert len({item["repair_contract_sha256"] for item in proposals}) == 4
+    assert len({item["proposal_sha256"] for item in proposals}) == 4
+    assert len({item["repair_instruction_sha256"] for item in proposals}) == 4
 
     fixed_materials = []
     for proposal in proposals:

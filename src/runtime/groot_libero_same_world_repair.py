@@ -25,14 +25,14 @@ from src.runtime.libero_panda_predicate_package import (
 # v4 additionally binds the concrete action-execution adapter. This prevents an
 # approval for the 8-step Isaac-GR00T/ZMQ path from being reused by the 16-step
 # LeRobot policy path (or vice versa).
-SAME_WORLD_REPAIR_PROPOSAL_SCHEMA_VERSION = "missionos_groot_libero_same_world_repair_proposal.v4"
+SAME_WORLD_REPAIR_PROPOSAL_SCHEMA_VERSION = "missionos_groot_libero_same_world_repair_proposal.v5"
 SAME_WORLD_REPAIR_APPROVAL_SCHEMA_VERSION = "missionos_groot_libero_same_world_repair_approval.v3"
-SAME_WORLD_REPAIR_DISPATCH_SCHEMA_VERSION = "missionos_groot_libero_same_world_repair_dispatch.v3"
+SAME_WORLD_REPAIR_DISPATCH_SCHEMA_VERSION = "missionos_groot_libero_same_world_repair_dispatch.v4"
 # v4 split frame diagnostics from the receipt digest. v5 records the
 # instruction-ablation variant. v6 separates terminal predicate observation
 # from completion authority for diagnostic state clones. v7 binds the action
 # execution adapter used by the live runtime.
-SAME_WORLD_REPAIR_RESULT_SCHEMA_VERSION = "missionos_groot_libero_same_world_repair_result.v7"
+SAME_WORLD_REPAIR_RESULT_SCHEMA_VERSION = "missionos_groot_libero_same_world_repair_result.v8"
 PRESERVATION_STEP_TRACE_SCHEMA_VERSION = "missionos_groot_libero_preservation_step_trace.v1"
 FRAME_CAPTURE_SCHEMA_VERSION = "missionos_groot_libero_repair_frame_capture.v1"
 PRESERVATION_INVARIANT_SCHEMA_VERSION = "missionos_groot_libero_preservation_invariant.v1"
@@ -49,14 +49,18 @@ DEFAULT_REPAIR_INSTRUCTION_VARIANT = "semantic_preserve"
 DEFAULT_EXECUTION_ADAPTER = "isaac_groot_zmq_multistep_v1"
 LEROBOT_GROOT_N17_EXECUTION_ADAPTER = "lerobot_groot_n17_select_action_v1"
 VLA0_LIBERO_EXECUTION_ADAPTER = "vla0_libero_qwen_text_action_v1"
+COSMOS_POLICY_LIBERO_EXECUTION_ADAPTER = "cosmos_policy_libero_predict2_2b_v1"
 SUPPORTED_EXECUTION_ADAPTERS = frozenset(
     {
         DEFAULT_EXECUTION_ADAPTER,
         LEROBOT_GROOT_N17_EXECUTION_ADAPTER,
         VLA0_LIBERO_EXECUTION_ADAPTER,
+        COSMOS_POLICY_LIBERO_EXECUTION_ADAPTER,
     }
 )
-REPAIR_INSTRUCTION_VARIANTS = frozenset({"semantic_preserve", "original_task", "short_target"})
+REPAIR_INSTRUCTION_VARIANTS = frozenset(
+    {"semantic_preserve", "original_task", "short_target", "cached_singular_task"}
+)
 REPAIR_INSTRUCTION_ABLATION_METRICS = (
     "target_minimum_end_effector_distance_metres",
     "target_gripper_contact_steps",
@@ -473,6 +477,7 @@ def normalize_preservation_step_trace(
     environment: str,
     chunk_index: int,
     n_action_steps: int,
+    global_action_stride: int | None = None,
     trace: Any,
 ) -> list[dict[str, Any]]:
     """Validate observations captured after every simulator step in one chunk."""
@@ -488,7 +493,9 @@ def normalize_preservation_step_trace(
             raise RuntimeError("repair_preservation_step_trace_entry_not_mapping")
         if raw_entry.get("schema_version") != PRESERVATION_STEP_TRACE_SCHEMA_VERSION:
             raise RuntimeError("repair_preservation_step_trace_schema_mismatch")
-        expected_global_index = chunk_index * n_action_steps + action_step_index
+        expected_global_index = chunk_index * (
+            global_action_stride if global_action_stride is not None else n_action_steps
+        ) + action_step_index
         expected_global_number = expected_global_index + 1
         if (
             raw_entry.get("chunk_index") != chunk_index
@@ -735,6 +742,12 @@ def _scene8_repair_instruction(
             return "put both moka pots on the stove"
         if instruction_variant == "short_target":
             return short_target_instructions[frozenset(target_indices)]
+        if instruction_variant == "cached_singular_task":
+            # Exact language from another official LIBERO task. Cosmos Policy's
+            # published embedding cache contains this sentence, so it supports
+            # a no-training diagnostic without introducing a second T5 path.
+            semantic_instructions[frozenset(target_indices)]
+            return "turn on the stove and put the moka pot on it"
         return semantic_instructions[frozenset(target_indices)]
     except KeyError as error:
         raise ValueError("scene8_repair_target_not_supported") from error
@@ -744,7 +757,7 @@ def _instruction_ablation_material(variant: str) -> dict[str, Any]:
     return {
         "controlled_variable": "repair_instruction",
         "variant": variant,
-        "target_specific_instruction": variant != "original_task",
+        "target_specific_instruction": variant in {"semantic_preserve", "short_target"},
         "fixed_comparison_metrics": list(REPAIR_INSTRUCTION_ABLATION_METRICS),
         "root_cause_established": False,
     }
@@ -794,6 +807,8 @@ def _validate_proposal_instruction_binding(proposal: Mapping[str, Any]) -> None:
         raise ValueError("lerobot_groot_n17_requires_sixteen_action_steps")
     if execution_adapter == VLA0_LIBERO_EXECUTION_ADAPTER and n_action_steps != 1:
         raise ValueError("vla0_libero_requires_one_action_step")
+    if execution_adapter == COSMOS_POLICY_LIBERO_EXECUTION_ADAPTER and n_action_steps != 16:
+        raise ValueError("cosmos_policy_libero_requires_sixteen_action_steps")
     _validate_state_continuity_binding(proposal)
 
 
@@ -917,6 +932,7 @@ def build_same_world_repair_proposal(
     reset_count: int,
     maximum_repair_chunks: int = 90,
     n_action_steps: int = 8,
+    maximum_repair_steps: int | None = None,
     execution_adapter: str = DEFAULT_EXECUTION_ADAPTER,
     proposal_id: str | None = None,
     proposed_at: str | None = None,
@@ -950,6 +966,18 @@ def build_same_world_repair_proposal(
         raise ValueError("lerobot_groot_n17_requires_sixteen_action_steps")
     if execution_adapter == VLA0_LIBERO_EXECUTION_ADAPTER and n_action_steps != 1:
         raise ValueError("vla0_libero_requires_one_action_step")
+    if execution_adapter == COSMOS_POLICY_LIBERO_EXECUTION_ADAPTER and n_action_steps != 16:
+        raise ValueError("cosmos_policy_libero_requires_sixteen_action_steps")
+    full_chunk_budget = maximum_repair_chunks * n_action_steps
+    if maximum_repair_steps is None:
+        maximum_repair_steps = full_chunk_budget
+    if (
+        isinstance(maximum_repair_steps, bool)
+        or maximum_repair_steps <= 0
+        or maximum_repair_steps > full_chunk_budget
+        or maximum_repair_steps <= (maximum_repair_chunks - 1) * n_action_steps
+    ):
+        raise ValueError("maximum_repair_steps_chunk_binding_invalid")
     if state_continuity_basis not in STATE_CONTINUITY_BASES:
         raise ValueError("state_continuity_basis_not_supported")
     if state_continuity_basis == STATE_CONTINUITY_LIVE_SAME_WORLD:
@@ -988,7 +1016,7 @@ def build_same_world_repair_proposal(
         "maximum_repair_chunks": maximum_repair_chunks,
         "n_action_steps": n_action_steps,
         "execution_adapter": execution_adapter,
-        "maximum_repair_steps": maximum_repair_chunks * n_action_steps,
+        "maximum_repair_steps": maximum_repair_steps,
         "verify_after_each_chunk": True,
         "stop_on_success": True,
         "stop_on_preservation_violation": True,
@@ -1118,6 +1146,7 @@ def build_same_world_repair_dispatch(
         "execution_adapter": proposal["execution_adapter"],
         "maximum_repair_chunks": proposal["repair_contract"]["maximum_repair_chunks"],
         "n_action_steps": proposal["repair_contract"]["n_action_steps"],
+        "maximum_repair_steps": proposal["repair_contract"]["maximum_repair_steps"],
         "physical_execution_invoked": False,
     }
     return {**base, "dispatch_sha256": canonical_sha256(base)}
@@ -1162,6 +1191,8 @@ def run_same_world_repair(
         raise ValueError("dispatch_action_steps_binding_mismatch")
     if dispatch.get("maximum_repair_chunks") != repair_contract.get("maximum_repair_chunks"):
         raise ValueError("dispatch_chunk_budget_binding_mismatch")
+    if dispatch.get("maximum_repair_steps") != repair_contract.get("maximum_repair_steps"):
+        raise ValueError("dispatch_applied_action_budget_binding_mismatch")
     if observed_reset_count() != 1:
         raise ValueError("same_world_reset_count_changed_before_dispatch")
 
@@ -1250,11 +1281,34 @@ def run_same_world_repair(
                 environment=str(proposal["environment"]),
                 observations=observe_goal_predicates(),
             )
+            remaining_action_budget = int(dispatch["maximum_repair_steps"]) - (
+                chunk_index * int(dispatch["n_action_steps"])
+            )
+            expected_action_steps = min(
+                int(dispatch["n_action_steps"]),
+                remaining_action_budget,
+            )
+            if expected_action_steps <= 0:
+                raise RuntimeError("repair_applied_action_budget_exhausted_before_chunk")
+            raw_step_trace = application.get("preservation_step_trace")
+            observed_action_steps = (
+                len(raw_step_trace)
+                if isinstance(raw_step_trace, Sequence)
+                and not isinstance(raw_step_trace, (str, bytes))
+                else expected_action_steps
+            )
+            if observed_action_steps != expected_action_steps:
+                if not (
+                    0 < observed_action_steps < expected_action_steps
+                    and application.get("stopped_early_on_official_success") is True
+                ):
+                    raise RuntimeError("repair_applied_action_count_mismatch")
             step_trace = normalize_preservation_step_trace(
                 environment=str(proposal["environment"]),
                 chunk_index=chunk_index,
-                n_action_steps=int(dispatch["n_action_steps"]),
-                trace=application.get("preservation_step_trace"),
+                n_action_steps=observed_action_steps,
+                global_action_stride=int(dispatch["n_action_steps"]),
+                trace=raw_step_trace,
             )
             if step_trace[-1]["goal_predicate_observations"] != final_vector:
                 raise RuntimeError("repair_preservation_step_trace_final_vector_mismatch")
@@ -1303,6 +1357,8 @@ def run_same_world_repair(
                 raise RuntimeError("repair_goal_predicate_conjunction_mismatch")
             if official_predicate_result is not step_trace[-1]["official_predicate_result"]:
                 raise RuntimeError("repair_preservation_step_trace_final_official_mismatch")
+            if application.get("stopped_early_on_official_success") is True and not conjunction:
+                raise RuntimeError("repair_early_success_stop_without_predicate_conjunction")
             if preservation_violations and chunk_first_preservation_violation is None:
                 raise RuntimeError("repair_preservation_violation_not_localized_to_step")
             chunk_evidence.append(
@@ -1327,6 +1383,7 @@ def run_same_world_repair(
                         "repair_instruction_payload_shape"
                     ),
                     "action_chunk_sha256": application.get("action_chunk_sha256"),
+                    "applied_action_count": len(step_trace),
                     "simulator_step_return_observed": True,
                     "controller_ack_observed": False,
                     "simulator_effect_observed": True,
@@ -1405,6 +1462,10 @@ def run_same_world_repair(
         "chunks_executed": len(chunk_evidence),
         "maximum_repair_chunks": dispatch["maximum_repair_chunks"],
         "n_action_steps": dispatch["n_action_steps"],
+        "maximum_repair_steps": dispatch["maximum_repair_steps"],
+        "applied_action_count": sum(
+            int(item["applied_action_count"]) for item in chunk_evidence
+        ),
         "chunk_evidence": chunk_evidence,
         "first_preservation_violation": first_preservation_violation,
         "preservation_violation_localized_to_simulator_step": (
@@ -1422,7 +1483,11 @@ def run_same_world_repair(
             first_preservation_violation is not None
         ),
         "admitted_steps_executed_after_first_preservation_violation": (
-            int(dispatch["n_action_steps"])
+            len(
+                chunk_evidence[int(first_preservation_violation["chunk_index"])][
+                    "preservation_step_trace"
+                ]
+            )
             - int(first_preservation_violation["action_step_number"])
             if first_preservation_violation is not None
             else 0

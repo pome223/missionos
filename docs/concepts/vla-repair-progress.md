@@ -1,4 +1,4 @@
-# Manipulation VLA Repair progress: GR00T N1.7 and VLA-0
+# Manipulation VLA Repair progress: GR00T, Cosmos Policy, and VLA-0
 
 MissionOS is testing a narrow question that ordinary benchmark success does not
 answer:
@@ -17,16 +17,103 @@ as separate facts.
 | Policy | Control | Repair observation | Boundary |
 | ------ | ------- | ------------------ | -------- |
 | GR00T N1.7 | The same saved diagnostic snapshot was recoverable by a deterministic planner through the same 7D interface in 81 actions | GR00T did not recover it in 10 diagnostic clones across two instructions; the native same-world cohort also observed target improvement in 0/5 Repair loops | The saved-state displacement was only 4.1 mm, so this is a useful control but a threshold-adjacent case |
-| VLA-0 | The pinned official runner completed the nominal task in 1/1; a privileged oracle then recovered the exact fixture through the same original 7D interface in 517/520 actions | After the second pot was moved approximately 22.7 cm, one governed 520-action Repair observation ended at the same `[true, false, true]` predicate vector | This is one bounded failure on a demonstrated-recoverable scripted fixture, not a general Repair rate |
+| Cosmos Policy LIBERO 2B | On the aligned 3 cm fixture, a privileged controller made contact after action 32, reached all three predicates after action 33, and retained them for 20 steps in 3/3 replays | Cosmos applied 128 actions but produced no contact, about 1 nm of target motion, and no predicate recovery | One checkpoint, task, fixture, and seed; diagnostic MuJoCo clone only |
+| VLA-0 | The same 3 cm fixture, instruction, 128-action ceiling, and oracle admission | VLA-0 engaged and moved the target in 3/3 policy trials and entered all three predicates in 2/3, but the two successful traces each lost the repaired predicate on the fifth stationary hold step | Corrective targeting was observed; 20-step stable completion was 0/2 fixed-action replays and is not established |
 
-The GR00T and VLA-0 measurements are not a leaderboard. They use different
-policies and different failure states. Together they show why nominal task
-execution, verifier-backed recoverability, and model-generated Repair must be
-measured separately.
+The aligned Cosmos and VLA-0 rows are the clearest comparison because they use
+the same snapshot digest, task, instruction, action ceiling, actual predicates,
+and positive control. They separate three capabilities that a terminal success
+bit would otherwise collapse:
+
+1. **Target engagement.** Does the policy reach and move the failed object?
+2. **Predicate entry.** Does the actual simulator ever reach `[true, true,
+   true]`?
+3. **Stable completion.** Does that conjunction survive 20 stationary hold
+   steps without breaking a protected predicate?
+
+Cosmos did not pass the first layer in its bounded 3 cm trial. VLA-0 passed the
+first layer repeatedly and the second layer twice, but did not pass the third
+layer in either replayed successful trace. The fresh stability trial also
+showed variability: it contacted the target after action 67 and moved it by as
+much as 14.06 cm, yet ended after 128 actions at `[true, false, true]` and never
+entered the hold gate.
+
+This supports an executor-dependent difference in corrective targeting. It
+does not support a stable VLA-0 Repair claim, a general recovery rate, or a
+claim about VLA architectures as a class.
+
+The GR00T measurement uses a different failure state and is not a leaderboard
+comparison. Together the results show why nominal task execution,
+verifier-backed recoverability, target engagement, predicate entry, and stable
+completion must be measured separately.
 
 See the [GR00T recoverability control](groot-snapshot-recoverability.md) for the
-earlier saved-state result. The rest of this report describes the clearer VLA-0
-fixture.
+earlier saved-state result. The older 22.7 cm VLA-0 experiment below is retained
+as historical context; the aligned 3 cm comparison above is the primary result.
+In that earlier record, the oracle recovered the fixture in 517/520 actions;
+the separate VLA-0 trace showed no sustained or meaningful target-directed
+approach and no gripper-target contact.
+
+## Why the aligned 3 cm fixture is primary
+
+The first Cosmos experiment used a 22.7 cm displacement. It was visibly clear,
+but its privileged controller needed almost the entire 520-action budget and a
+special push strategy. A later 0.5 cm fixture was easy for the controller, but
+raised a fair question about whether the camera could see the displacement.
+
+The final seed-aligned sweep selected 3 cm because it closed both problems:
+
+- 2 cm still satisfied all predicates, so it was not a valid failure;
+- 5 cm became unstable and settled much farther than requested, so it was
+  rejected;
+- 3 cm remained `[true, false, true]` through construction and fresh-restore
+  settling;
+- processed policy inputs changed by 3,565 pixels in the primary camera and
+  6,595 in the wrist camera;
+- the privileged controller recovered the exact snapshot in 3/3 runs, with
+  contact after action 32, success after action 33, and 20 stable steps.
+
+The snapshot SHA-256 is
+`8064d6faeeb02a67a08649be0ca39529b4a79da459cf8d11493c0412bbc7b651`.
+Both policy runners used the original instruction, no additional training, and
+the same 128-action ceiling. Only actual LIBERO predicates established entry
+or completion; model-generated future images did not.
+
+## What the aligned comparison found
+
+Cosmos Policy was not simply producing zero actions. Earlier pose and object
+sensitivity probes showed that its action distribution changed. Target-specific
+and wrong-target language controls also changed action values. But those
+changes did not become semantic corrective targeting: in the admitted 3 cm
+trial Cosmos made no contact, moved the target by only about 1 nm, and retained
+`[true, false, true]` after 128 actions.
+
+VLA-0 behaved differently on the exact same fixture:
+
+- trial 1 contacted after action 66 and entered `[true, true, true]` after
+  action 84;
+- trial 2 contacted after action 70 and entered the conjunction after action
+  83;
+- trial 3 contacted after action 67 and moved the target substantially, but
+  overshot or drifted and ended at `[true, false, true]` after 128 actions.
+
+The first two trials originally stopped at their first conjunction. Their
+recorded VLA-0 actions were therefore replayed from the digest-bound snapshot,
+then followed by the same 20-step stationary hold used by the oracle. Both
+replays reproduced their conjunction. Both retained it for four full hold
+steps and lost the repaired predicate on the fifth, while the protected pot
+remained well inside its fixed 5 mm bound.
+
+The honest result is therefore not “VLA-0 repaired the fixture.” It is:
+
+> On this fixture, VLA-0 repeatedly generated target-directed corrective
+> motion and twice entered the required predicate conjunction, while Cosmos
+> did not engage the target. Neither executor established the preregistered
+> 20-step stable completion criterion.
+
+These are diagnostic MuJoCo state clones. MissionOS did not run a live
+`verify -> select -> execute -> verify` Repair loop, no independent controller
+ACK was observed, and no physical robot execution occurred.
 
 ## The VLA-0 test
 
@@ -154,3 +241,11 @@ private frame sequences.
 The upstream VLA-0 source and weights are CC BY-NC 4.0 and are not copied into
 this repository. Live execution remains opt-in and requires separately obtained,
 revision-pinned source and checkpoint files.
+
+The aligned 3 cm comparison and stability follow-up are recorded in the
+[Cosmos evidence](../agents/evidence/cosmos-policy-libero-seed0-3cm-20260828.json),
+[initial VLA-0 evidence](../agents/evidence/vla0-libero-seed0-3cm-20260828.json),
+and [stability evidence](../agents/evidence/vla0-libero-seed0-3cm-stability-20260829.json).
+The stability runner measures a fresh policy trial; the separate replay runner
+uses only a prior digest-bound action trace and must not be counted as new policy
+inference.

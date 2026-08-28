@@ -24,6 +24,12 @@ REPORT_PATH = REPOSITORY_ROOT / "docs" / "concepts" / "vla-repair-progress.md"
 FIXTURE_CONTRACT_PATH = (
     REPOSITORY_ROOT / "docs" / "agents" / "libero-scripted-repair-failure-fixtures.md"
 )
+STABILITY_EVIDENCE_PATH = (
+    EVIDENCE_ROOT / "vla0-libero-seed0-3cm-stability-20260829.json"
+)
+COSMOS_REPAIR_CONTRACT_PATH = (
+    REPOSITORY_ROOT / "docs" / "agents" / "cosmos-policy-libero-repair-resume.md"
+)
 
 
 def _read_json(path: Path) -> dict[str, object]:
@@ -252,3 +258,51 @@ def test_vla0_publication_wording_matches_measured_boundary() -> None:
         "A privileged oracle recovered the exact scripted 22.7 cm fixture"
         in (claim_boundary["bounded_observation"])
     )
+
+
+def test_vla0_three_centimetre_stability_publication_keeps_entry_and_completion_separate() -> None:
+    evidence = _read_json(STABILITY_EVIDENCE_PATH)
+    fresh = evidence["fresh_vla0_trial"]
+    replays = evidence["recorded_success_trace_stability_replays"]
+    comparison = evidence["bounded_comparison"]
+    boundary = evidence["claim_boundary"]
+    assert isinstance(fresh, dict)
+    assert isinstance(replays, dict)
+    assert isinstance(comparison, dict)
+    assert isinstance(boundary, dict)
+
+    assert evidence["status"] == (
+        "target_engagement_repeated_but_stable_predicate_recovery_not_established"
+    )
+    assert fresh["first_contact_after_action"] == 67
+    assert fresh["contact_observation_count"] == 52
+    assert fresh["maximum_target_translation_metres"] == pytest.approx(
+        0.14064955496623274
+    )
+    assert fresh["terminal_goal_predicate_vector"] == [True, False, True]
+    assert fresh["predicate_conjunction_observed"] is False
+    assert fresh["post_success_stability_admitted"] is False
+
+    assert replays["new_policy_inference_invoked"] is False
+    assert replays["conjunction_reproduced_count"] == 2
+    assert replays["stable_success_count"] == 0
+    runs = replays["runs"]
+    assert isinstance(runs, list)
+    assert [run["first_success_after_action"] for run in runs] == [84, 83]
+    assert [run["stable_success_steps_completed"] for run in runs] == [4, 4]
+    assert all(run["terminal_goal_predicate_vector"] == [True, False, True] for run in runs)
+
+    assert comparison["vla0_target_engagement_observed_count"] == 3
+    assert comparison["vla0_terminal_conjunction_observed_count"] == 2
+    assert comparison["vla0_twenty_step_stable_success_count"] == 0
+    assert boundary["stable_vla0_predicate_recovery_established"] is False
+    assert boundary["same_world_semantic_repair_established"] is False
+    assert boundary["physical_execution_invoked"] is False
+
+    for path in (README_PATH, REPORT_PATH, COSMOS_REPAIR_CONTRACT_PATH):
+        text = _compact_markdown(path)
+        assert "20-step" in text
+        assert "fifth stationary hold step" in text or "fifth" in text
+    assert "Target engagement 3/3" in _compact_markdown(README_PATH)
+    assert "terminal conjunction 2/3" in _compact_markdown(README_PATH)
+    assert "0/2" in _compact_markdown(REPORT_PATH)
