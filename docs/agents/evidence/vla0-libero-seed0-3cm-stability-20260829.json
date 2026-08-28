@@ -1,0 +1,116 @@
+{
+  "schema_version": "missionos.vla0_libero_seed0_3cm_stability_evidence.v1",
+  "status": "target_engagement_repeated_but_stable_predicate_recovery_not_established",
+  "task": {
+    "task_suite": "libero_10",
+    "task_id": 8,
+    "episode_init_state_index": 15,
+    "environment_seed": 0,
+    "instruction": "put both moka pots on the stove"
+  },
+  "fixture": {
+    "requested_displacement_metres": 0.03,
+    "snapshot_sha256": "8064d6faeeb02a67a08649be0ca39529b4a79da459cf8d11493c0412bbc7b651",
+    "source_goal_predicate_vector": [true, false, true]
+  },
+  "scripted_oracle_admission": {
+    "first_contact_after_action": 32,
+    "first_success_after_action": 33,
+    "actions_applied_including_stable_settle": 54,
+    "stable_success_steps": 20,
+    "repeatability_success_count": 3,
+    "repeatability_run_count": 3,
+    "result_sha256": "163981901bcddefc545be9a18e0c41545d57c0db105612ff59179fa79df58016"
+  },
+  "fresh_vla0_trial": {
+    "source_revision": "b78db19eda67b02844fe82b8929e1f94de7f2dcc",
+    "lerobot_revision": "c55fbe1b3e36f640d659918945514fbb43a2b53d",
+    "checkpoint_repository": "ankgoyal/vla0-libero",
+    "checkpoint_revision": "6c62a511ad56042b2b3ea0a90c4def33e1ea3b96",
+    "process_seed": 1000,
+    "additional_training_performed": false,
+    "maximum_applied_actions": 128,
+    "applied_action_count": 128,
+    "first_contact_after_action": 67,
+    "contact_observation_count": 52,
+    "maximum_target_translation_metres": 0.14064955496623274,
+    "minimum_end_effector_distance_to_target_metres": 0.09217729237604882,
+    "minimum_distance_after_action": 81,
+    "final_end_effector_distance_to_target_metres": 0.11091711045253334,
+    "terminal_goal_predicate_vector": [true, false, true],
+    "predicate_conjunction_observed": false,
+    "post_success_stability_admitted": false,
+    "preservation_invariant_breach_observed": false,
+    "stability_result_sha256": "576fd2b998094727461aeeb5dfc1bc8c58b03f0d06ee9c8139beb3b167448ae1",
+    "curriculum_probe_result_sha256": "1747bef20110c99eada63b6a13f54eeabaee754740e9ee868698e8e9a7838f9a",
+    "base_result_sha256": "b4878eac9464551f83c080a5d350cc35b830e941fc5885a24897a842ca9d3f0c"
+  },
+  "recorded_success_trace_stability_replays": {
+    "authority": "diagnostic_fixed_action_replay",
+    "new_policy_inference_invoked": false,
+    "hold_action_7d": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0],
+    "stable_success_steps_required": 20,
+    "run_count": 2,
+    "conjunction_reproduced_count": 2,
+    "stable_success_count": 0,
+    "runs": [
+      {
+        "source_policy_action_count": 84,
+        "source_base_result_sha256": "748a27bc5a52d6435b5ef1e2d67d0f3ee36eb3953646975c13a238b275f3be33",
+        "first_success_after_action": 84,
+        "stable_success_steps_completed": 4,
+        "predicate_regression_after_global_action": 89,
+        "target_translation_during_hold_metres": 0.004881869776965314,
+        "terminal_goal_predicate_vector": [true, false, true],
+        "maximum_protected_displacement_metres": 0.0000018330089713365858,
+        "result_sha256": "274f8a084466e0361d2806e822bfca5d42995419d5f4705bfabfc623a89304fb"
+      },
+      {
+        "source_policy_action_count": 83,
+        "source_base_result_sha256": "f093203a9aab12b97655e223f5ff06d4c3078d9ba7cafe78cbce389fc62dfc4e",
+        "first_success_after_action": 83,
+        "stable_success_steps_completed": 4,
+        "predicate_regression_after_global_action": 88,
+        "target_translation_during_hold_metres": 0.005210153917080195,
+        "terminal_goal_predicate_vector": [true, false, true],
+        "maximum_protected_displacement_metres": 0.0000018330089713365858,
+        "result_sha256": "941bea3b481f98dc62629c44efe4a8d2e0a54b5149f656fa32e71e4c5916eab8"
+      }
+    ]
+  },
+  "bounded_comparison": {
+    "cosmos_policy_target_contact_count": 0,
+    "cosmos_policy_target_translation_metres": 9.994715107991805e-10,
+    "cosmos_policy_terminal_goal_predicate_vector": [true, false, true],
+    "vla0_target_engagement_trial_count": 3,
+    "vla0_target_engagement_observed_count": 3,
+    "vla0_terminal_conjunction_trial_count": 3,
+    "vla0_terminal_conjunction_observed_count": 2,
+    "vla0_stability_replay_count": 2,
+    "vla0_twenty_step_stable_success_count": 0
+  },
+  "runtime": {
+    "provider": "google_cloud",
+    "zone": "us-west1-a",
+    "machine_type": "g2-standard-8",
+    "accelerator": "nvidia-l4",
+    "accelerator_count": 1,
+    "maximum_run_duration_seconds": 7200,
+    "instance_name": "missionos-vla0-stability-20260829",
+    "instance_deleted": true,
+    "attached_boot_disk_deleted": true,
+    "post_delete_instance_name_match_count": 0,
+    "post_delete_disk_name_match_count": 0
+  },
+  "claim_boundary": {
+    "authority": "diagnostic_only",
+    "state_continuity_basis": "diagnostic_mujoco_state_clone",
+    "actual_libero_predicates_used": true,
+    "target_engagement_repeated_on_this_fixture": true,
+    "stable_vla0_predicate_recovery_established": false,
+    "same_world_semantic_repair_established": false,
+    "general_vla0_recovery_rate_established": false,
+    "controller_ack_observed": false,
+    "physical_execution_invoked": false
+  }
+}

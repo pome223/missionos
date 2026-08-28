@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import json
 import pickle
 from types import SimpleNamespace
 
@@ -20,6 +21,12 @@ from scripts.run_vla0_libero_snapshot_recovery import (
     _verify_loaded_dataset_stats,
     _validate_scripted_fixture_snapshot,
 )
+from scripts.run_vla0_libero_curriculum_stability import (
+    SETTLE_ACTION_7D,
+    STABLE_SUCCESS_STEPS,
+    _run_with_post_success_settle,
+)
+from scripts.replay_vla0_libero_curriculum_stability import _read_verified_trace
 from src.gateway.missionos_dispatch_runtime import DispatchAuthorityTable
 from src.runtime.groot_libero_same_world_repair import (
     PRESERVATION_STEP_TRACE_SCHEMA_VERSION,
@@ -466,6 +473,146 @@ def test_actual_effect_statistics_records_initial_minimum_final_and_contact() ->
     assert result["first_gripper_contact_after_action"] == 2
     assert result["maximum_target_translation_metres"] == pytest.approx(0.001)
     assert result["gripper_command"]["sign_transition_count"] == 1
+
+
+def test_post_success_settle_requires_twenty_actual_predicate_steps() -> None:
+    applied: list[list[float]] = []
+
+    def standard_runner(**kwargs):
+        del kwargs
+        return {
+            "applied_action_count": 84,
+            "predicate_conjunction_observed": True,
+            "first_preservation_invariant_breach": None,
+            "final_goal_predicate_observations": _vector(second=True),
+            "result_sha256": "old",
+        }
+
+    def apply_action_chunk(action, index):
+        applied.append(action.tolist())
+        predicates = _vector(second=True)
+        return object(), {
+            "preservation_step_trace": [
+                {
+                    "action_step_sha256": f"action-{index}",
+                    "goal_predicate_observations": predicates,
+                    "goal_predicate_vector_sha256": canonical_sha256(
+                        {"goal_predicate_observations": predicates}
+                    ),
+                    "object_witnesses": {
+                        "moka_pot_1": {"position_metres": [0.0, 0.0, 0.0]},
+                        "moka_pot_2": {"position_metres": [0.1, 0.0, 0.0]},
+                    },
+                    "frame_capture": None,
+                }
+            ]
+        }
+
+    result = _run_with_post_success_settle(
+        standard_runner=standard_runner,
+        proposal={
+            "repair_contract": {
+                "maximum_repair_steps": 128,
+                "preservation_invariant": {
+                    "reference_position_metres": {"moka_pot_1": [0.0, 0.0, 0.0]},
+                    "maximum_displacement_metres": 0.005,
+                },
+            }
+        },
+        apply_action_chunk=apply_action_chunk,
+    )
+
+    stability = result["post_success_zero_motion_stability"]
+    assert len(applied) == STABLE_SUCCESS_STEPS
+    assert all(action == SETTLE_ACTION_7D for action in applied)
+    assert stability["stable_success_steps_completed"] == STABLE_SUCCESS_STEPS
+    assert stability["stable_success_observed"] is True
+    assert stability["total_simulator_actions_after_settle"] == 104
+    assert result["result_sha256"] == canonical_sha256(
+        {key: value for key, value in result.items() if key != "result_sha256"}
+    )
+
+
+def test_post_success_settle_stops_on_first_predicate_regression() -> None:
+    calls = 0
+
+    def standard_runner(**kwargs):
+        del kwargs
+        return {
+            "applied_action_count": 83,
+            "predicate_conjunction_observed": True,
+            "first_preservation_invariant_breach": None,
+            "final_goal_predicate_observations": _vector(second=True),
+        }
+
+    def apply_action_chunk(action, index):
+        del action, index
+        nonlocal calls
+        calls += 1
+        predicates = _vector(second=calls < 3)
+        return object(), {
+            "preservation_step_trace": [
+                {
+                    "action_step_sha256": f"action-{calls}",
+                    "goal_predicate_observations": predicates,
+                    "goal_predicate_vector_sha256": canonical_sha256(
+                        {"goal_predicate_observations": predicates}
+                    ),
+                    "object_witnesses": {
+                        "moka_pot_1": {"position_metres": [0.0, 0.0, 0.0]},
+                        "moka_pot_2": {"position_metres": [0.1, 0.0, 0.0]},
+                    },
+                    "frame_capture": None,
+                }
+            ]
+        }
+
+    result = _run_with_post_success_settle(
+        standard_runner=standard_runner,
+        proposal={
+            "repair_contract": {
+                "maximum_repair_steps": 128,
+                "preservation_invariant": {
+                    "reference_position_metres": {"moka_pot_1": [0.0, 0.0, 0.0]},
+                    "maximum_displacement_metres": 0.005,
+                },
+            }
+        },
+        apply_action_chunk=apply_action_chunk,
+    )
+
+    stability = result["post_success_zero_motion_stability"]
+    assert calls == 3
+    assert stability["stable_success_steps_completed"] == 2
+    assert stability["stable_success_observed"] is False
+    assert stability["terminal_goal_predicate_vector"] == [True, False, True]
+
+
+def test_stability_replay_admits_only_digest_bound_success_trace(tmp_path) -> None:
+    material = {
+        "source_contract": {
+            "setup_snapshot_sha256": (
+                "8064d6faeeb02a67a08649be0ca39529b4a79da459cf8d11493c0412bbc7b651"
+            )
+        },
+        "source_goal_predicate_vector": [True, False, True],
+        "final_goal_predicate_vector": [True, True, True],
+        "diagnostic_clone_recovery_observed": True,
+        "raw_action_trace": [
+            {
+                "global_repair_step_index": 0,
+                "action_7d": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+            }
+        ],
+    }
+    report = {**material, "result_sha256": canonical_sha256(material)}
+    path = tmp_path / "base-report.json"
+    path.write_text(json.dumps(report), encoding="utf-8")
+
+    actions, source = _read_verified_trace(path)
+
+    assert actions == [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]]
+    assert source == {"result_sha256": report["result_sha256"], "action_count": 1}
 
 
 def test_frame_capture_writes_relative_digest_bound_pngs(tmp_path) -> None:

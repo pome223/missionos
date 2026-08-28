@@ -351,3 +351,44 @@ establish same-world semantic Repair, a general VLA-0 recovery rate, controller
 ACK, physical execution, or real-world safety. The publication-safe numeric
 record is
 `docs/agents/evidence/vla0-libero-seed0-3cm-20260828.json`.
+
+## 14. Require stable success, not a one-step conjunction
+
+A third fixed-condition VLA-0 trial was run to extend the first conjunction by
+20 simulator steps. It used the same snapshot, original instruction, pinned
+source and checkpoint, process seed, and 128-action ceiling. Unlike the first
+two trials, it did not reach a conjunction: it contacted the target after
+action 67 and moved it by as much as 14.06 cm, but finished after 128 actions at
+`[true, false, true]`. The post-success hold was therefore not admitted. This
+is target engagement followed by an incorrect outcome, not policy inactivity.
+
+To test the physical stability of the two earlier terminal conjunctions
+without paying for more policy inference, their digest-bound VLA-0 action
+traces were replayed from the exact snapshot. Both replays reproduced their
+first conjunction at actions 84 and 83. Each then received the same stationary
+7D hold used by the scripted oracle: zero arm motion with gripper command `-1`.
+Both retained `[true, true, true]` for four complete hold steps, then regressed
+to `[true, false, true]` on the fifth. The target moved another 4.88 mm and
+5.21 mm during those hold intervals. Protected-pot motion remained below
+0.002 mm, far inside the preregistered 5 mm limit.
+
+The evidence must therefore be described in three layers:
+
+- VLA-0 engaged the target in all three policy trials on this fixture;
+- a terminal conjunction was observed in two of three policy trials;
+- 20-step stable predicate recovery was established in zero of the two
+  digest-bound successful-trace replays.
+
+The replay is diagnostic physical-outcome evidence. It invokes no new policy
+inference and must not be counted as another VLA-0 policy trial. Conversely,
+the fresh third trial did not enter the stability gate and must not be called a
+stability failure. Together these results weaken the earlier implication that
+VLA-0 had completed Repair on this fixture: the demonstrated capability is
+target-directed corrective motion and transient predicate entry, not stable
+task completion.
+
+The same bounded executor comparison remains useful. Cosmos Policy produced no
+contact and approximately 1 nm of target motion in its trial; VLA-0 repeatedly
+engaged and moved the target. But neither executor has established 20-step
+stable recovery on this fixture. The publication-safe record is
+`docs/agents/evidence/vla0-libero-seed0-3cm-stability-20260829.json`.
