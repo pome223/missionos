@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import hashlib
 import json
 
 import numpy as np
@@ -16,6 +17,10 @@ from scripts import run_cosmos_policy_libero_curriculum_probe as live_curriculum
 from scripts import run_cosmos_policy_libero_paired_pose_sensitivity as pose_sensitivity
 from scripts import run_cosmos_policy_libero_pose_rollout_diagnostic as pose_rollout
 from scripts import run_cosmos_policy_libero_t5_instruction_diagnostic as t5_instruction
+from scripts import run_libero_curriculum_oracle as curriculum_oracle
+from scripts import probe_libero_policy_input_visibility as input_visibility
+from scripts import summarize_libero_oracle_repeatability as oracle_repeatability
+from scripts import bind_libero_known_skill_repair_diagnostic as known_skill_binding
 from src.gateway.missionos_dispatch_runtime import DispatchAuthorityTable
 from src.runtime.cosmos_policy_libero_same_world_repair import (
     COSMOS_POLICY_LIBERO_ACTION_STEPS,
@@ -691,11 +696,161 @@ def test_oracle_gate_accepts_vla0_same_interface_report_shape(tmp_path) -> None:
     assert admission["report_schema_version"].startswith("missionos.vla0_")
 
 
+def test_curriculum_oracle_event_summary_uses_preregistered_thresholds() -> None:
+    trace = []
+    distances = [0.50, 0.489, 0.488, 0.487]
+    for action_index, distance in enumerate(distances, start=1):
+        trace.append(
+            {
+                "action_index": action_index,
+                "eef_target_distance_metres": distance,
+                "target_displacement_metres": 0.0012 if action_index >= 3 else 0.0,
+                "target_gripper_contact_observed": action_index == 4,
+            }
+        )
+
+    events = curriculum_oracle._event_summary(
+        trace, initial_eef_target_distance_metres=0.50
+    )
+
+    assert events["first_approach_after_action"] == 2
+    assert events["first_target_motion_after_action"] == 3
+    assert events["first_contact_after_action"] == 4
+    assert events["definitions"]["first_approach"] == {
+        "minimum_eef_target_distance_reduction_metres": 0.01,
+        "consecutive_steps_required": 3,
+    }
+
+
+def test_curriculum_oracle_event_summary_preserves_absent_events() -> None:
+    trace = [
+        {
+            "action_index": 1,
+            "eef_target_distance_metres": 0.495,
+            "target_displacement_metres": 0.0009,
+            "target_gripper_contact_observed": False,
+        }
+    ]
+
+    events = curriculum_oracle._event_summary(
+        trace, initial_eef_target_distance_metres=0.50
+    )
+
+    assert events["first_approach_after_action"] is None
+    assert events["first_target_motion_after_action"] is None
+    assert events["first_contact_after_action"] is None
+
+
+def test_policy_input_visibility_is_a_rejection_only_filter() -> None:
+    source = np.zeros((8, 8, 3), dtype=np.uint8)
+    fixture = source.copy()
+    fixture[2:6, 2:6] = 20
+    jpeg_noise = np.ones_like(source)
+
+    metrics = input_visibility._camera_metrics(source, fixture, jpeg_noise)
+
+    assert metrics["robust_changed_pixel_count"] == 16
+    assert metrics["rejection_filter_passed"] is True
+    assert metrics["robust_difference_bounding_box"] == {
+        "x_min": 2,
+        "y_min": 2,
+        "x_max": 5,
+        "y_max": 5,
+        "width_pixels": 4,
+        "height_pixels": 4,
+    }
+
+
+def test_policy_input_visibility_rejects_subthreshold_difference() -> None:
+    source = np.zeros((8, 8, 3), dtype=np.uint8)
+    fixture = source.copy()
+    fixture[0:3, 0:3] = 20
+
+    metrics = input_visibility._camera_metrics(
+        source, fixture, np.ones_like(source)
+    )
+
+    assert metrics["robust_changed_pixel_count"] == 9
+    assert metrics["rejection_filter_passed"] is False
+
+
+def test_oracle_repeatability_requires_same_fixture_and_fixed_limit(tmp_path) -> None:
+    reports = []
+    for index, displacement in enumerate((0.001, 0.002, 0.003)):
+        without_digest = {
+            "snapshot_sha256": "a" * 64,
+            "stable_success_observed": True,
+            "terminal_goal_predicate_vector": [True, True, True],
+            "preservation_violation_observed": False,
+            "protected_maximum_displacement_metres": displacement,
+            "actions_applied": 76 + index,
+            "success_first_observed_after_action": 56 + index,
+            "trajectory_events": {},
+        }
+        material = {
+            **without_digest,
+            "result_sha256": canonical_sha256(without_digest),
+        }
+        path = tmp_path / f"run-{index}.json"
+        path.write_text(json.dumps(material), encoding="utf-8")
+        reports.append(path)
+
+    result = oracle_repeatability.summarize(
+        reports=reports, output_path=tmp_path / "summary.json"
+    )
+
+    assert result["all_runs_stable_success_within_preregistered_preservation_limit"] is True
+    assert result["preservation_limit_metres"] == 0.005
+    assert result["protected_displacement_metres"] == {
+        "minimum": 0.001,
+        "maximum": 0.003,
+        "mean": 0.002,
+        "range": 0.002,
+    }
+    assert result["action_counts"]["range"] == 2
+
+
+def test_known_skill_binding_is_privileged_and_not_learned_repair(tmp_path) -> None:
+    snapshot = tmp_path / "fixture.npz"
+    snapshot.write_bytes(b"fixture")
+    oracle_without_digest = {
+        "schema_version": "missionos.vla0_same_interface_oracle_recoverability.v2",
+        "snapshot_sha256": hashlib.sha256(b"fixture").hexdigest(),
+        "source_goal_predicate_vector": [True, False, True],
+        "terminal_goal_predicate_vector": [True, True, True],
+        "stable_success_observed": True,
+        "preservation_violation_observed": False,
+        "actions_applied": 54,
+        "success_first_observed_after_action": 33,
+        "trajectory_events": {"first_contact_after_action": 32},
+        "claim_boundary": {
+            "privileged_object_state_used_for_oracle_planning": True,
+        },
+    }
+    oracle = {
+        **oracle_without_digest,
+        "result_sha256": canonical_sha256(oracle_without_digest),
+    }
+    oracle_path = tmp_path / "oracle.json"
+    oracle_path.write_text(json.dumps(oracle), encoding="utf-8")
+
+    result = known_skill_binding.bind(
+        snapshot_path=snapshot,
+        oracle_report_path=oracle_path,
+        output_path=tmp_path / "binding.json",
+    )
+
+    assert result["selected_skill"]["first_contact_after_action"] == 32
+    assert result["claim_boundary"]["privileged_object_state_used"] is True
+    assert result["claim_boundary"]["learned_policy_repair_established"] is False
+
+
 def _curriculum_fixture_metadata() -> dict:
     fixture = {
         "schema_version": experiment_runner.DISPLACEMENT_CURRICULUM_SCHEMA_VERSION,
         "authority": "diagnostic_fixture_only",
         "construction": experiment_runner.DISPLACEMENT_CURRICULUM_CONSTRUCTION,
+        "environment_seed": experiment_runner.ENVIRONMENT_SEED,
         "requested_translation_from_source_metres": 0.005,
         "observed_translation_from_source_metres": 0.0050003,
         "protected_object_displacement_metres": 0.0,
@@ -711,6 +866,7 @@ def _curriculum_fixture_metadata() -> dict:
         "physical_execution_invoked": False,
     }
     return {
+        "environment_seed": experiment_runner.ENVIRONMENT_SEED,
         "source_failure_basis": experiment_runner.DISPLACEMENT_CURRICULUM_BASIS,
         "source_goal_predicate_vector": [True, False, True],
         "source_failure_is_repair_candidate": True,
@@ -746,6 +902,18 @@ def test_curriculum_fixture_admission_rejects_settle_or_digest_drift() -> None:
     )
     with pytest.raises(RuntimeError, match="cosmos_policy_curriculum_fixture_digest_mismatch"):
         experiment_runner._validate_repair_fixture_snapshot(digest_drift)
+
+
+def test_curriculum_fixture_admission_rejects_environment_seed_mismatch() -> None:
+    mismatch = _curriculum_fixture_metadata()
+    mismatch["environment_seed"] = 7
+    mismatch["displacement_curriculum_fixture"]["environment_seed"] = 7
+    mismatch["displacement_curriculum_fixture_sha256"] = canonical_sha256(
+        mismatch["displacement_curriculum_fixture"]
+    )
+
+    with pytest.raises(RuntimeError, match="cosmos_policy_curriculum_fixture_contract_mismatch"):
+        experiment_runner._validate_repair_fixture_snapshot(mismatch)
 
 
 def test_curriculum_distance_grid_is_sorted_unique_and_bounded() -> None:

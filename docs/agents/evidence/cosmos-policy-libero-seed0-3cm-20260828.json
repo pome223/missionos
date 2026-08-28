@@ -1,0 +1,73 @@
+{
+  "schema_version": "missionos.cosmos_policy_libero_seed0_3cm_evidence.v1",
+  "status": "bounded_negative_policy_result_with_positive_scripted_control",
+  "task": {
+    "task_suite": "libero_10",
+    "task_id": 8,
+    "episode_init_state_index": 15,
+    "environment_seed": 0,
+    "instruction": "put both moka pots on the stove"
+  },
+  "fixture": {
+    "requested_displacement_metres": 0.03,
+    "observed_displacement_metres": 0.03000071347365017,
+    "snapshot_sha256": "8064d6faeeb02a67a08649be0ca39529b4a79da459cf8d11493c0412bbc7b651",
+    "terminal_goal_predicate_vector": [true, false, true],
+    "predicate_vector_stable_for_construction_steps": 60,
+    "fresh_restore_zero_action_steps": 60,
+    "fresh_restore_target_drift_metres": 4.71876355124373e-10,
+    "fresh_restore_protected_drift_metres": 4.866751798595979e-11,
+    "policy_input_robust_changed_pixels": {
+      "primary_image": 3565,
+      "wrist_image": 6595
+    }
+  },
+  "boundary_observations": {
+    "two_centimetres_terminal_goal_predicate_vector": [true, true, true],
+    "five_centimetres_rejected_for_translation_drift": true,
+    "five_centimetres_observed_translation_before_rejection_metres": 0.16195743061294443,
+    "five_centimetres_rejection_result_sha256": "978817d22934958435980154ea63893924297fdcd621f28469518c0fe282b85a"
+  },
+  "scripted_oracle": {
+    "run_count": 3,
+    "stable_success_count": 3,
+    "first_approach_after_action": 2,
+    "first_contact_after_action": 32,
+    "first_success_after_action": 33,
+    "actions_applied_including_stable_settle": 54,
+    "protected_maximum_displacement_metres": 4.379749621479208e-11,
+    "terminal_goal_predicate_vector": [true, true, true],
+    "result_sha256": "163981901bcddefc545be9a18e0c41545d57c0db105612ff59179fa79df58016",
+    "repeatability_result_sha256": "ff08d7d63086cb474b2ee14f53ed46ac6ec5067b3ab078cc9f7ed0f73401a4f5"
+  },
+  "cosmos_policy": {
+    "checkpoint_family": "Cosmos-Policy-LIBERO-Predict2-2B",
+    "additional_training_performed": false,
+    "process_seed": 195,
+    "maximum_applied_actions": 128,
+    "applied_action_count": 128,
+    "gripper_contact_observation_count": 0,
+    "minimum_end_effector_distance_to_target_metres": 0.27001580335097797,
+    "maximum_target_translation_metres": 9.994715107991805e-10,
+    "final_goal_predicate_vector": [true, false, true],
+    "actual_predicate_recovery_observed": false,
+    "repair_result_sha256": "47b889ab9dbcf682723d1739180232c99d98d5e114651560d8d7007ea7f08adf",
+    "probe_result_sha256": "642064d4496b7cd4625465f3fab847e706dac7a12d0c365ec031a8d0930ade32"
+  },
+  "known_skill_binding": {
+    "skill_id": "privileged_push_moka_pot_2_to_stove_region.v1",
+    "selection_basis": "exact_registered_residual_predicate_match",
+    "diagnostic_only": true,
+    "privileged_object_state_used": true,
+    "learned_policy_repair_established": false,
+    "result_sha256": "243f295bb85cdb718fd1f729b46fe971268dd6c8ca623dc8b8499e31fbbc3931"
+  },
+  "claim_boundary": {
+    "model_inference_observed": true,
+    "simulator_actions_applied": true,
+    "future_predictions_establish_success": false,
+    "general_recovery_rate_established": false,
+    "controller_ack_observed": false,
+    "physical_execution_invoked": false
+  }
+}

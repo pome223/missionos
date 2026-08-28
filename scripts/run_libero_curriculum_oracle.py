@@ -16,13 +16,18 @@ TASK_NAME = "KITCHEN_SCENE8_put_both_moka_pots_on_the_stove"
 TASK_SUITE = "libero_10"
 TASK_ID = 8
 EPISODE_INIT_STATE_INDEX = 15
-ENVIRONMENT_SEED = 7
+ENVIRONMENT_SEED = 0
 TARGET_OBJECT = "moka_pot_2"
 PROTECTED_OBJECT = "moka_pot_1"
 MAXIMUM_ACTIONS = 320
 STABLE_SUCCESS_STEPS = 20
 PROTECTED_MAXIMUM_DISPLACEMENT_METRES = 0.005
+APPROACH_MINIMUM_DISTANCE_REDUCTION_METRES = 0.01
+APPROACH_CONSECUTIVE_STEPS = 3
+TARGET_MOTION_MINIMUM_METRES = 0.001
+RESTORE_MAXIMUM_ABSOLUTE_ERROR = 1e-12
 CURRICULUM_BASIS = "diagnostic_displacement_curriculum"
+CURRICULUM_SCHEMA_VERSION = "missionos.libero_displacement_curriculum_fixture.v2"
 ROBOT_POSE_NORMALIZED_BASIS = "diagnostic_robot_pose_normalized_curriculum"
 
 
@@ -59,6 +64,79 @@ def _predicate_material(environment: Any) -> list[dict[str, Any]]:
             }
         )
     return material
+
+
+def _first_consecutive_true(values: list[bool], required: int) -> int | None:
+    """Return the one-based first step of the first qualifying run."""
+
+    if required <= 0:
+        raise ValueError("libero_curriculum_oracle_consecutive_steps_invalid")
+    run_start: int | None = None
+    run_length = 0
+    for index, value in enumerate(values, start=1):
+        if value:
+            if run_start is None:
+                run_start = index
+            run_length += 1
+            if run_length >= required:
+                return run_start
+        else:
+            run_start = None
+            run_length = 0
+    return None
+
+
+def _event_summary(
+    trace: list[dict[str, Any]], *, initial_eef_target_distance_metres: float
+) -> dict[str, Any]:
+    """Summarize preregistered trajectory events without changing pass criteria."""
+
+    approach_limit = (
+        initial_eef_target_distance_metres - APPROACH_MINIMUM_DISTANCE_REDUCTION_METRES
+    )
+    first_approach = _first_consecutive_true(
+        [float(item["eef_target_distance_metres"]) <= approach_limit for item in trace],
+        APPROACH_CONSECUTIVE_STEPS,
+    )
+    first_contact = next(
+        (
+            int(item["action_index"])
+            for item in trace
+            if item["target_gripper_contact_observed"] is True
+        ),
+        None,
+    )
+    first_motion = next(
+        (
+            int(item["action_index"])
+            for item in trace
+            if float(item["target_displacement_metres"])
+            >= TARGET_MOTION_MINIMUM_METRES
+        ),
+        None,
+    )
+    return {
+        "definitions": {
+            "first_approach": {
+                "minimum_eef_target_distance_reduction_metres": (
+                    APPROACH_MINIMUM_DISTANCE_REDUCTION_METRES
+                ),
+                "consecutive_steps_required": APPROACH_CONSECUTIVE_STEPS,
+            },
+            "first_contact": {
+                "source": "libero_simulator_explicit_target_gripper_contact_api",
+            },
+            "first_target_motion": {
+                "minimum_translation_from_restored_fixture_metres": (
+                    TARGET_MOTION_MINIMUM_METRES
+                ),
+            },
+        },
+        "initial_eef_target_distance_metres": initial_eef_target_distance_metres,
+        "first_approach_after_action": first_approach,
+        "first_contact_after_action": first_contact,
+        "first_target_motion_after_action": first_motion,
+    }
 
 
 def _make_environment() -> tuple[Any, Any, str]:
@@ -117,6 +195,9 @@ def execute_live(*, snapshot_path: Path, output_dir: Path) -> dict[str, Any]:
         raise RuntimeError("libero_curriculum_oracle_fixture_basis_invalid")
     if (
         not isinstance(fixture, dict)
+        or fixture.get("schema_version") != CURRICULUM_SCHEMA_VERSION
+        or fixture.get("environment_seed") != ENVIRONMENT_SEED
+        or metadata.get("environment_seed") != ENVIRONMENT_SEED
         or fixture.get("actual_predicate_failure_observed") is not True
         or fixture.get("terminal_goal_predicate_vector") != [True, False, True]
     ):
@@ -140,8 +221,22 @@ def execute_live(*, snapshot_path: Path, output_dir: Path) -> dict[str, Any]:
         environment.reset()
         environment.set_init_state(init_states[EPISODE_INIT_STATE_INDEX])
         observation = environment.regenerate_obs_from_state(snapshot)
-        if not np.array_equal(environment.sim.get_state().flatten(), snapshot):
-            raise RuntimeError("libero_curriculum_oracle_snapshot_restore_not_exact")
+        restored_snapshot = np.asarray(
+            environment.sim.get_state().flatten(), dtype=np.float64
+        )
+        restore_difference = np.abs(restored_snapshot - snapshot)
+        restore_maximum_error = float(restore_difference.max())
+        if restore_maximum_error > RESTORE_MAXIMUM_ABSOLUTE_ERROR:
+            raise RuntimeError(
+                "libero_curriculum_oracle_snapshot_restore_not_within_tolerance:"
+                f"max_abs={restore_maximum_error}"
+            )
+        restore_check = {
+            "bitwise_equal": bool(np.array_equal(restored_snapshot, snapshot)),
+            "maximum_absolute_error": restore_maximum_error,
+            "changed_value_count": int(np.count_nonzero(restore_difference)),
+            "maximum_admitted_absolute_error": RESTORE_MAXIMUM_ABSOLUTE_ERROR,
+        }
         source_predicates = _predicate_material(environment)
         source_vector = [item["satisfied"] for item in source_predicates]
         if source_vector != [True, False, True]:
@@ -156,6 +251,8 @@ def execute_live(*, snapshot_path: Path, output_dir: Path) -> dict[str, Any]:
         initial_protected = np.asarray(
             simulator.sim.data.body_xpos[protected_body], dtype=np.float64
         ).copy()
+        initial_eef = np.asarray(observation["robot0_eef_pos"], dtype=np.float64).copy()
+        initial_eef_target_distance = float(np.linalg.norm(initial_eef - initial_target))
         desired_target = np.asarray(fixture["source_target_position_metres"], dtype=np.float64)
 
         def capture(label: str) -> str:
@@ -167,14 +264,20 @@ def execute_live(*, snapshot_path: Path, output_dir: Path) -> dict[str, Any]:
         def state_material() -> dict[str, Any]:
             target = np.asarray(simulator.sim.data.body_xpos[target_body], dtype=np.float64)
             protected = np.asarray(simulator.sim.data.body_xpos[protected_body], dtype=np.float64)
+            eef = np.asarray(observation["robot0_eef_pos"], dtype=np.float64)
             return {
                 "predicate_vector": [
                     item["satisfied"] for item in _predicate_material(environment)
                 ],
-                "eef_position_metres": np.asarray(
-                    observation["robot0_eef_pos"], dtype=np.float64
-                ).tolist(),
+                "eef_position_metres": eef.tolist(),
+                "eef_target_distance_metres": float(np.linalg.norm(eef - target)),
                 "target_position_metres": target.tolist(),
+                "target_displacement_metres": float(np.linalg.norm(target - initial_target)),
+                "target_gripper_contact_observed": bool(
+                    simulator.check_contact(
+                        simulator.get_object(TARGET_OBJECT), simulator.robots[0].gripper
+                    )
+                ),
                 "protected_position_metres": protected.tolist(),
                 "protected_displacement_metres": float(
                     np.linalg.norm(protected - initial_protected)
@@ -280,8 +383,11 @@ def execute_live(*, snapshot_path: Path, output_dir: Path) -> dict[str, Any]:
         )
         trace_path = output_dir / "raw-7d-actions.json"
         trace_path.write_text(json.dumps(trace, indent=2, sort_keys=True) + "\n")
+        events = _event_summary(
+            trace, initial_eef_target_distance_metres=initial_eef_target_distance
+        )
         result_without_digest = {
-            "schema_version": "missionos.vla0_same_interface_oracle_recoverability.v1",
+            "schema_version": "missionos.vla0_same_interface_oracle_recoverability.v2",
             "status": (
                 "scripted_oracle_recoverability_established"
                 if stable_success
@@ -292,12 +398,14 @@ def execute_live(*, snapshot_path: Path, output_dir: Path) -> dict[str, Any]:
             "episode_init_state_index": EPISODE_INIT_STATE_INDEX,
             "environment_seed": ENVIRONMENT_SEED,
             "snapshot_sha256": _sha256_path(snapshot_path),
+            "snapshot_restore_check": restore_check,
             "source_failure_basis": source_basis,
             "source_goal_predicate_vector": source_vector,
             "terminal_goal_predicate_vector": terminal["predicate_vector"],
             "maximum_action_budget": MAXIMUM_ACTIONS,
             "actions_applied": action_count,
             "success_first_observed_after_action": success_first_action,
+            "trajectory_events": events,
             "stable_success_steps_required": STABLE_SUCCESS_STEPS,
             "stable_success_steps_completed": stable_steps,
             "stable_success_observed": stable_success,

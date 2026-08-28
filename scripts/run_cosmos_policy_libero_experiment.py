@@ -94,9 +94,10 @@ EPISODE_INIT_STATE_INDEX = 15
 TASK_INSTRUCTION = "put both moka pots on the stove"
 EXPECTED_REPAIR_SOURCE_VECTOR = [True, False, True]
 DISPLACEMENT_CURRICULUM_BASIS = "diagnostic_displacement_curriculum"
-DISPLACEMENT_CURRICULUM_SCHEMA_VERSION = "missionos.libero_displacement_curriculum_fixture.v1"
+DISPLACEMENT_CURRICULUM_SCHEMA_VERSION = "missionos.libero_displacement_curriculum_fixture.v2"
 DISPLACEMENT_CURRICULUM_CONSTRUCTION = "protected_separating_horizontal_ray_from_success_state"
-MAXIMUM_CURRICULUM_TRANSLATION_METRES = 0.02
+MAXIMUM_CURRICULUM_TRANSLATION_METRES = 0.05
+RESTORE_MAXIMUM_ABSOLUTE_ERROR = 1e-12
 ROBOT_POSE_NORMALIZED_BASIS = "diagnostic_robot_pose_normalized_curriculum"
 ROBOT_POSE_NORMALIZED_SCHEMA_VERSION = "missionos.libero_robot_pose_normalized_fixture.v1"
 ENVIRONMENT_SEED = 0
@@ -340,6 +341,8 @@ def _validate_repair_fixture_snapshot(metadata: Mapping[str, Any]) -> dict[str, 
         material.get("schema_version") != DISPLACEMENT_CURRICULUM_SCHEMA_VERSION
         or material.get("authority") != "diagnostic_fixture_only"
         or material.get("construction") != DISPLACEMENT_CURRICULUM_CONSTRUCTION
+        or material.get("environment_seed") != ENVIRONMENT_SEED
+        or metadata.get("environment_seed") != ENVIRONMENT_SEED
     ):
         raise RuntimeError("cosmos_policy_curriculum_fixture_contract_mismatch")
     requested_translation = material.get("requested_translation_from_source_metres")
@@ -931,10 +934,20 @@ def _run_repair(
         )
         observation = environment.regenerate_obs_from_state(simulator_state)
         restored_state = np.asarray(environment.sim.get_state().flatten(), dtype=np.float64)
-        if hashlib.sha256(restored_state.tobytes()).hexdigest() != snapshot_metadata.get(
-            "simulator_state_sha256"
-        ):
-            raise RuntimeError("cosmos_policy_snapshot_restored_state_digest_mismatch")
+        restore_difference = np.abs(restored_state - simulator_state)
+        restore_maximum_error = float(restore_difference.max())
+        if restore_maximum_error > RESTORE_MAXIMUM_ABSOLUTE_ERROR:
+            raise RuntimeError(
+                "cosmos_policy_snapshot_restore_not_within_tolerance:"
+                f"max_abs={restore_maximum_error}"
+            )
+        restore_check = {
+            "snapshot_state_sha256": snapshot_metadata.get("simulator_state_sha256"),
+            "bitwise_equal": bool(np.array_equal(restored_state, simulator_state)),
+            "maximum_absolute_error": restore_maximum_error,
+            "changed_value_count": int(np.count_nonzero(restore_difference)),
+            "maximum_admitted_absolute_error": RESTORE_MAXIMUM_ABSOLUTE_ERROR,
+        }
         source_predicates = _predicate_material(environment)
         source_vector = [item["satisfied"] for item in source_predicates]
         if source_vector != EXPECTED_REPAIR_SOURCE_VECTOR:
@@ -952,6 +965,7 @@ def _run_repair(
             "source_goal_predicate_vector": source_vector,
             "source_failure_basis": SCRIPTED_FAILURE_FIXTURE_BASIS,
             "setup_snapshot_sha256": snapshot_metadata["snapshot_artifact_sha256"],
+            "snapshot_restore_check": restore_check,
             "repair_fixture_family": fixture_admission["fixture_family"],
             "repair_fixture_contract": fixture_admission["fixture_contract"],
             "repair_fixture_claim_eligible": fixture_repair_claim_eligible,

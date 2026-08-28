@@ -153,11 +153,13 @@ experiment.
 
 ## 7. Measure the small-displacement boundary before blaming fixture severity
 
-`probe_libero_displacement_curriculum.py` constructs diagnostic fixtures on a
-protected-separating horizontal ray from the successful target position. It
-rejects predicate-unstable points, object jumps, protected-pot motion, and
-translations above 2 cm. Source dataset metadata is not predicate authority;
-the restored official LIBERO environment is.
+`probe_libero_displacement_curriculum.py` constructs one diagnostic point per
+process on a protected-separating horizontal ray from the successful target
+position. It rejects predicate-unstable points, object jumps, protected-pot
+motion, and translations above the preregistered 5 cm sweep range. Source
+dataset metadata is not predicate authority; the restored official LIBERO
+environment is. Fixture construction, oracle execution, and policy execution
+must use the same environment seed.
 
 The 2026-08-28 boundary run found stable `[true, false, true]` fixtures at 0.5,
 1.0, 1.5, and 2.0 cm. The 0.5 cm snapshot has SHA-256
@@ -170,6 +172,10 @@ The bounded Cosmos Policy trial on that 0.5 cm fixture still produced zero
 contacts in 128 actions, moved the target by less than 0.5 micrometres, and
 never changed `[true, false, true]`. This rejects displacement severity as a
 sufficient explanation. It does not establish general model incapability.
+
+That result used a seed-7 fixture in a seed-0 policy environment and is retained
+only as historical diagnostic evidence. It must not be used as the primary
+competence result. The aligned seed-0 rerun below supersedes it.
 
 ## 8. Keep robot-pose and instruction probes diagnostic-only
 
@@ -271,3 +277,40 @@ and fixture. The next comparison should change the executor capability: use a
 known skill or scripted controller, or add explicitly labeled recovery data.
 That is a design recommendation, not proof that every Cosmos Policy task lacks
 recovery capability.
+
+## 12. Use the aligned seed-0 3 cm fixture as the bounded primary result
+
+The policy runner, source-state replay, fixture constructor, visibility probe,
+and oracle now all use LIBERO environment seed 0. Replaying the digest-bound
+nominal trace produced a successful object state with the robot normalized to
+its nominal initial pose before displacement construction.
+
+The aligned sweep changed the fixture choice:
+
+- 2 cm remained `[true, true, true]` and is not a Repair fixture;
+- 5 cm settled 16.20 cm from the source and was rejected for instability;
+- 3 cm remained `[true, false, true]` for 60 construction steps and another 60
+  zero-action steps after fresh restore, with target drift below 1 nanometre;
+- both policy cameras observed robust processed-image differences.
+
+The exact 3 cm snapshot SHA-256 is
+`8064d6faeeb02a67a08649be0ca39529b4a79da459cf8d11493c0412bbc7b651`.
+The same controller recovered it identically in three runs: first explicit
+contact after action 32, predicate success after action 33, and 54 actions
+including 20 stable-success steps. Protected-object motion was effectively
+zero under the fixed 5 mm limit.
+
+Cosmos Policy then applied 128 actions to the same snapshot with its released
+task embedding and no additional training. It produced no target contact,
+moved the target by about 1 nanometre, never came closer than 27.0 cm, and
+finished at `[true, false, true]`. The commands were not near-null and included
+one gripper-sign transition. The bounded conclusion is therefore not that the
+model was inactive, but that this action sequence did not engage the target or
+recover the missing predicate despite an oracle horizon of 33 actions.
+
+`bind_libero_known_skill_repair_diagnostic.py` separately maps the exact
+residual predicate to the proven privileged push controller. This establishes
+a diagnostic known-skill decomposition on this fixture. It does not establish
+learned-policy Repair, human approval, governed dispatch, controller ACK, or
+physical execution. The publication-safe numeric record is
+`docs/agents/evidence/cosmos-policy-libero-seed0-3cm-20260828.json`.

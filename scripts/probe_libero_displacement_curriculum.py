@@ -29,12 +29,14 @@ TASK_NAME = "KITCHEN_SCENE8_put_both_moka_pots_on_the_stove"
 TASK_SUITE = "libero_10"
 TASK_ID = 8
 EPISODE_INIT_STATE_INDEX = 15
-ENVIRONMENT_SEED = 7
+ENVIRONMENT_SEED = 0
 TARGET_OBJECT = "moka_pot_2"
 PROTECTED_OBJECT = "moka_pot_1"
 STOVE_REGION = "flat_stove_1_cook_region"
 DEFAULT_DISTANCES_METRES = (0.02, 0.05, 0.10, 0.15, 0.22)
 SETTLE_STEPS = 60
+RESTORE_MAXIMUM_ABSOLUTE_ERROR = 1e-12
+FIXTURE_SCHEMA_VERSION = "missionos.libero_displacement_curriculum_fixture.v2"
 
 
 def canonical_sha256(value: Any) -> str:
@@ -203,9 +205,13 @@ def execute_live(
         environment.reset()
         environment.set_init_state(init_states[EPISODE_INIT_STATE_INDEX])
         environment.regenerate_obs_from_state(source_state)
-        if not np.array_equal(environment.sim.get_state().flatten(), source_state):
+        source_restore_error = float(
+            np.max(np.abs(environment.sim.get_state().flatten() - source_state))
+        )
+        if source_restore_error > RESTORE_MAXIMUM_ABSOLUTE_ERROR:
             raise RuntimeError("libero_displacement_curriculum_source_restore_not_exact")
         source_vector = [item["satisfied"] for item in _predicate_material(environment)]
+        print("curriculum_stage=source_restored", file=sys.stderr, flush=True)
         if source_vector != [True, True, True]:
             raise RuntimeError(
                 f"libero_displacement_curriculum_source_vector_invalid:{source_vector}"
@@ -224,22 +230,19 @@ def execute_live(
             simulator.sim.data.body_xpos[protected_body_id], dtype=np.float64
         ).copy()
 
-        environment.regenerate_obs_from_state(reference_state)
-        if not np.array_equal(environment.sim.get_state().flatten(), reference_state):
-            raise RuntimeError("libero_displacement_curriculum_reference_restore_not_exact")
-        reference_vector = [item["satisfied"] for item in _predicate_material(environment)]
-        if reference_vector != [True, False, True]:
-            raise RuntimeError(
-                f"libero_displacement_curriculum_reference_vector_invalid:{reference_vector}"
-            )
+        reference_fixture = reference_metadata.get("scripted_failure_fixture")
+        if not isinstance(reference_fixture, dict):
+            raise RuntimeError("libero_displacement_curriculum_reference_fixture_missing")
+        reference_vector = reference_fixture.get("before_goal_predicate_vector")
         reference_target_position = np.asarray(
-            simulator.sim.data.body_xpos[target_body_id], dtype=np.float64
-        ).copy()
-        reference_vector_xy = reference_target_position - source_target_position
-        reference_vector_xy[2] = 0.0
-        reference_displacement = float(np.linalg.norm(reference_vector_xy))
-        if reference_displacement <= 0.0:
-            raise RuntimeError("libero_displacement_curriculum_reference_not_displaced")
+            reference_fixture.get("terminal_target_position_metres"), dtype=np.float64
+        )
+        reference_displacement = float(
+            reference_fixture.get("terminal_target_translation_metres", 0.0)
+        )
+        if reference_vector != [True, False, True] or reference_displacement <= 0.0:
+            raise RuntimeError("libero_displacement_curriculum_reference_contract_invalid")
+        print("curriculum_stage=reference_validated", file=sys.stderr, flush=True)
         displacement_vector = source_target_position - source_protected_position
         displacement_vector[2] = 0.0
         separating_norm = float(np.linalg.norm(displacement_vector))
@@ -247,17 +250,14 @@ def execute_live(
             raise RuntimeError("libero_displacement_curriculum_separating_ray_invalid")
         direction = displacement_vector / separating_norm
         distances = _validate_distances(distances_metres, reference_displacement)
+        if len(distances) != 1:
+            raise ValueError("libero_displacement_curriculum_one_point_per_process_required")
 
         points = []
         for distance in distances:
-            # OffScreenRenderEnv retains termination and simulator wrapper state
-            # across resets in this pinned runtime.  Use a fresh environment for
-            # every independently admitted curriculum point.
-            environment.close()
-            environment, init_states = _make_environment()
-            environment.reset()
-            environment.set_init_state(init_states[EPISODE_INIT_STATE_INDEX])
-            environment.regenerate_obs_from_state(source_state)
+            # The source is already restored above. This pinned EGL runtime can
+            # terminate the interpreter on a second reset/restore, so each
+            # independently admitted point is generated in its own process.
             simulator = environment.env
             target_body_id = int(simulator.obj_body_id[TARGET_OBJECT])
             protected_body_id = int(simulator.obj_body_id[PROTECTED_OBJECT])
@@ -275,10 +275,17 @@ def execute_live(
             simulator.sim.forward()
             simulator._post_process()
             simulator._update_observables(force=True)
+            print("curriculum_stage=target_injected", file=sys.stderr, flush=True)
 
             trace = []
             for step_index in range(SETTLE_STEPS):
                 _, _, done, info = environment.step(np.zeros(7, dtype=np.float64))
+                if step_index in {0, 9, 29, 59}:
+                    print(
+                        f"curriculum_stage=settle_{step_index + 1}",
+                        file=sys.stderr,
+                        flush=True,
+                    )
                 vector = [item["satisfied"] for item in _predicate_material(environment)]
                 trace.append(
                     {
@@ -314,6 +321,25 @@ def execute_live(
                 np.linalg.norm(terminal_protected - source_protected_position)
             )
             if abs(observed_translation - distance) > 0.01:
+                rejection_without_digest = {
+                    "schema_version": "missionos.libero_displacement_curriculum_rejection.v1",
+                    "status": "fixture_rejected_for_translation_drift",
+                    "environment_seed": ENVIRONMENT_SEED,
+                    "requested_translation_from_source_metres": distance,
+                    "observed_translation_from_source_metres": observed_translation,
+                    "maximum_admitted_absolute_translation_error_metres": 0.01,
+                    "terminal_goal_predicate_vector": vector,
+                    "model_inference_invoked": False,
+                    "repair_attempted": False,
+                    "physical_execution_invoked": False,
+                }
+                _write_json(
+                    output_dir / "rejection.json",
+                    {
+                        **rejection_without_digest,
+                        "result_sha256": canonical_sha256(rejection_without_digest),
+                    },
+                )
                 raise RuntimeError(
                     "libero_displacement_curriculum_translation_drift_too_large:"
                     f"requested={distance}:observed={observed_translation}"
@@ -329,8 +355,9 @@ def execute_live(
             render = _capture(simulator, point_dir / "terminal.png")
             terminal_state = np.asarray(environment.sim.get_state().flatten(), dtype=np.float64)
             fixture_material = {
-                "schema_version": "missionos.libero_displacement_curriculum_fixture.v1",
+                "schema_version": FIXTURE_SCHEMA_VERSION,
                 "authority": "diagnostic_fixture_only",
+                "environment_seed": ENVIRONMENT_SEED,
                 "construction": "protected_separating_horizontal_ray_from_success_state",
                 "requested_translation_from_source_metres": distance,
                 "observed_translation_from_source_metres": observed_translation,
@@ -361,6 +388,7 @@ def execute_live(
                     "task_suite": TASK_SUITE,
                     "task_id": TASK_ID,
                     "episode_init_state_index": EPISODE_INIT_STATE_INDEX,
+                    "environment_seed": ENVIRONMENT_SEED,
                     "source_failure_basis": "diagnostic_displacement_curriculum",
                     "source_goal_predicate_observations": predicates,
                     "source_goal_predicate_vector": vector,
@@ -393,8 +421,9 @@ def execute_live(
             )
 
         report_without_digest = {
-            "schema_version": "missionos.libero_displacement_curriculum_probe.v1",
+            "schema_version": "missionos.libero_displacement_curriculum_probe.v2",
             "status": "diagnostic_curriculum_completed",
+            "environment_seed": ENVIRONMENT_SEED,
             "source_snapshot_sha256": _sha256_path(source_snapshot_path),
             "reference_snapshot_sha256": _sha256_path(reference_snapshot_path),
             "source_goal_predicate_vector": source_vector,
