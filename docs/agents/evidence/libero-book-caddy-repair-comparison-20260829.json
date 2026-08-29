@@ -1,0 +1,126 @@
+{
+  "schema_version": "missionos.libero_book_caddy_repair_comparison_evidence.v1",
+  "status": "cosmos_bounded_negative_vla0_stopped_at_nominal_gate",
+  "task": {
+    "task_suite": "libero_10",
+    "task_id": 5,
+    "task_name": "STUDY_SCENE1_pick_up_the_book_and_place_it_in_the_back_compartment_of_the_caddy",
+    "episode_init_state_index": 0,
+    "environment_seed": 0,
+    "instruction": "pick up the book and place it in the back compartment of the caddy",
+    "target_object": "black_book_1",
+    "container_object": "desk_caddy_1",
+    "protected_object": "white_yellow_mug_1"
+  },
+  "fixture": {
+    "construction": "translate_book_from_successful_demonstration_terminal_state_then_settle",
+    "requested_translation_metres": 0.03,
+    "settled_translation_from_successful_source_metres": 0.053140977377272386,
+    "last_twenty_step_target_drift_metres": 0.00001497590661457776,
+    "terminal_goal_predicate_vector": [false],
+    "container_displacement_metres": 0.0,
+    "protected_object_displacement_metres": 0.0,
+    "policy_camera_changed_pixels": {
+      "agentview": 6091,
+      "wrist": 61135
+    },
+    "snapshot_sha256": "f0c2d1244ac80d28dbe90c5a2714166f29ccb3182bd15bacb63b2a35133d1ac5",
+    "fixture_sha256": "b85dfd86db1282a920b32c1a54315b60a086f3a7c72906e4cc28fb663db1c9c7",
+    "fixture_report_sha256": "8aafe59487d9e3c0d8688f32127535681396c62f1be5336df4db0f1350db4e9c"
+  },
+  "scripted_positive_control": {
+    "privileged_object_state_used": true,
+    "same_original_7d_action_interface_used": true,
+    "run_count": 3,
+    "stable_success_count": 3,
+    "first_contact_after_action": 9,
+    "first_predicate_success_after_action": 13,
+    "stable_success_steps_completed": 20,
+    "actions_applied_including_stability_hold": 33,
+    "maximum_container_displacement_metres": 0.0,
+    "maximum_protected_object_displacement_metres": 0.0,
+    "terminal_goal_predicate_vector": [true],
+    "canonical_result_sha256": "49177ac15a740800fcacbe3f4710370991a609cb23cb9999a44d884481a0707b"
+  },
+  "cosmos_policy": {
+    "source_revision": "18a2accadf4e7a3531e56754102af5a24d2316da",
+    "checkpoint_repository": "nvidia/Cosmos-Policy-LIBERO-Predict2-2B",
+    "checkpoint_revision": "cb689ec0e3347c13667d70a78a3447388f5c3bb8",
+    "checkpoint_weight_sha256": "8818528d8c9150cda0ddf8c711b0f221b21dac8ac379bd26d5690235954d33e2",
+    "additional_training_performed": false,
+    "nominal": {
+      "applied_action_count": 166,
+      "actual_predicate_success_observed": true,
+      "terminal_goal_predicate_vector": [true]
+    },
+    "repair": {
+      "maximum_applied_actions": 128,
+      "applied_action_count": 128,
+      "target_gripper_contact_observed": false,
+      "maximum_target_displacement_metres": 0.0,
+      "initial_eef_target_distance_metres": 0.18141816779976064,
+      "minimum_eef_target_distance_metres": 0.14647643125167686,
+      "minimum_eef_target_distance_after_action": 52,
+      "terminal_eef_target_distance_metres": 0.20673439453152367,
+      "gripper_command_minimum": -1.0271700620651245,
+      "gripper_command_maximum": 1.0106112957000732,
+      "gripper_command_change_count": 127,
+      "actual_predicate_recovery_observed": false,
+      "stable_success_observed": false,
+      "preservation_violation_observed": false,
+      "terminal_goal_predicate_vector": [false],
+      "future_prediction_chunks_retained_separately": 8,
+      "actual_observation_steps_retained_separately": 129
+    },
+    "result_sha256": "9ed536df87b96e7e9f381ccda45ab06b7949ed0ff8444f570c25b6877dbd80b7"
+  },
+  "vla0": {
+    "source_revision": "b78db19eda67b02844fe82b8929e1f94de7f2dcc",
+    "lerobot_revision": "c55fbe1b3e36f640d659918945514fbb43a2b53d",
+    "checkpoint_repository": "ankgoyal/vla0-libero",
+    "checkpoint_revision": "6c62a511ad56042b2b3ea0a90c4def33e1ea3b96",
+    "checkpoint_weight_sha256": "5b35632c59130ed8a67e5019707851735cb3e13fcc769f172eae45c37bf39b9d",
+    "process_seed": 1000,
+    "inference_precision": "upstream_evaluator_default_fp32_no_amp_flag",
+    "additional_training_performed": false,
+    "nominal": {
+      "maximum_applied_actions": 520,
+      "applied_action_count": 520,
+      "actual_predicate_success_observed": false,
+      "terminal_goal_predicate_vector": [false]
+    },
+    "repair": {
+      "attempted": false,
+      "reason": "nominal_control_gate_not_passed"
+    },
+    "result_sha256": "b10fe1b7140a4632ccf4236c29dea96dd9ae444872e36a16f3147690450b447b",
+    "runtime_log_sha256": "9b4852326206fd284472467021d326a6a8a06f62b94b17feeca20b2d8136ceee"
+  },
+  "compute": {
+    "gpu": "NVIDIA L4 23034 MiB",
+    "machine_type": "g2-standard-4",
+    "boot_disk_gb": 200,
+    "driver_version": "580.173.02",
+    "python_version": "3.10.12",
+    "pytorch_version_after_vla0_compatibility_pin": "2.7.1+cu126",
+    "transformers_version_after_vla0_compatibility_pin": "4.51.3",
+    "instance_created_at": "2026-08-29T00:32:20.864Z",
+    "artifact_verification_completed_at": "2026-08-29T03:34:11Z",
+    "billing_charge_available": false,
+    "matching_instances_after_teardown": 0,
+    "matching_disks_after_teardown": 0
+  },
+  "claim_boundary": {
+    "cosmos_repair_attempt_measured": true,
+    "vla0_repair_attempt_measured": false,
+    "actual_predicates_are_success_authority": true,
+    "predicted_future_establishes_success": false,
+    "diagnostic_mujoco_clones_only": true,
+    "missionos_verify_select_execute_verify_loop_observed": false,
+    "human_approval_created": false,
+    "governed_dispatch_created": false,
+    "controller_ack_observed": false,
+    "physical_execution_invoked": false,
+    "general_model_family_recovery_rate_established": false
+  }
+}

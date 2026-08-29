@@ -47,6 +47,41 @@ comparison. Together the results show why nominal task execution,
 verifier-backed recoverability, target engagement, predicate entry, and stable
 completion must be measured separately.
 
+## Does the Cosmos result only apply to moka pots?
+
+We added a second diagnostic task: pick up a black book and place it in the
+back compartment of a desk caddy. The fixture starts from a successful
+demonstration, injects a 3 cm horizontal displacement, and then lets the book
+fall and settle. Its final displacement from the successful position is 5.31
+cm. The actual predicate remains false, while both policy cameras visibly
+change and the caddy and a protected mug remain fixed.
+
+A privileged 7D controller contacts the book after action 9, reaches the
+predicate after action 13, and then retains it for 20 stationary steps, in 33
+total actions and 3/3 identical runs. Cosmos Policy also passes the
+ordinary version of this task, reaching the actual goal predicate after 166
+actions. On the displaced snapshot, however, it applies all 128 admitted
+actions without contacting or moving the book. Its end effector moves from
+18.14 cm away to a minimum of 14.65 cm at action 52, then finishes 20.67 cm
+away. This is an approach followed by retreat, not a trajectory converging on
+contact.
+
+This strengthens the bounded observation that the tested Cosmos checkpoint's
+failure is not unique to the moka-pot scene. It is still only one additional
+task, init state, seed, and fixture. It does not establish a Cosmos Policy or
+WAM failure rate, and it does not by itself explain which training or
+architecture difference causes the behavior.
+
+The pinned VLA-0 runner did not pass the nominal-control gate for this second
+task: it applied the 520-action ceiling and the actual predicate remained
+false. The displaced-snapshot Repair stage was therefore not run. This is not
+a VLA-0 Repair failure and does not support an executor-to-executor Repair
+comparison on the book fixture; it records only that VLA-0 Repair was
+unmeasured under this fixed protocol because its nominal control did not pass.
+
+The detailed contract is in the
+[book-to-caddy comparison](../agents/libero-book-caddy-repair-comparison.md).
+
 See the [GR00T recoverability control](groot-snapshot-recoverability.md) for the
 earlier saved-state result. The older 22.7 cm VLA-0 experiment below is retained
 as historical context; the aligned 3 cm comparison above is the primary result.
