@@ -21,11 +21,6 @@ from scripts.run_vla0_libero_snapshot_recovery import (
     _verify_loaded_dataset_stats,
     _validate_scripted_fixture_snapshot,
 )
-from scripts.run_vla0_libero_curriculum_stability import (
-    SETTLE_ACTION_7D,
-    STABLE_SUCCESS_STEPS,
-    _run_with_post_success_settle,
-)
 from scripts.replay_vla0_libero_curriculum_stability import _read_verified_trace
 from src.gateway.missionos_dispatch_runtime import DispatchAuthorityTable
 from src.runtime.groot_libero_same_world_repair import (
@@ -42,6 +37,8 @@ from src.runtime.libero_repair_failure_fixture import (
 )
 from src.runtime.vla0_libero_same_world_repair import (
     VLA0_LIBERO_ACTION_STEPS,
+    VLA0_STABLE_SUCCESS_STEPS,
+    VLA0_VERIFIER_HOLD_ACTION_7D,
     build_vla0_same_world_repair_proposal,
     run_vla0_same_world_repair,
 )
@@ -71,7 +68,7 @@ def _vector(*, second: bool = False) -> list[dict]:
     ]
 
 
-def _authorization(*, maximum_steps: int = 2, diagnostic_clone: bool = False):
+def _authorization(*, maximum_steps: int = 22, diagnostic_clone: bool = False):
     proposal = build_vla0_same_world_repair_proposal(
         environment=LIBERO_PANDA_SCENE8_ENVIRONMENT,
         environment_session_id="vla0-live-world:fixture",
@@ -153,24 +150,38 @@ def _step_trace(*, chunk_index: int, vector: list[dict]) -> list[dict]:
     ]
 
 
-def test_vla0_contract_binds_official_one_step_execution_and_original_task() -> None:
+def test_vla0_contract_binds_predicate_driven_semantic_repair_and_stability() -> None:
     proposal, approval, dispatch = _authorization(maximum_steps=720)
 
     assert VLA0_LIBERO_ACTION_STEPS == 1
     assert proposal["execution_adapter"] == VLA0_LIBERO_EXECUTION_ADAPTER
-    assert proposal["repair_instruction"] == "put both moka pots on the stove"
+    assert proposal["repair_instruction"] == (
+        "Place the second moka pot on the stove. Keep the first moka pot on the "
+        "stove and keep the stove turned on."
+    )
+    assert proposal["repair_instruction_variant"] == "semantic_preserve"
+    assert proposal["repair_intent_selection"]["selection_source"] == (
+        "deterministic_non_model_predicate_diagnosis"
+    )
+    assert proposal["repair_intent_selection"]["repair_instruction"] == proposal[
+        "repair_instruction"
+    ]
+    assert proposal["repair_intent_selection"]["human_supplied_runtime_instruction"] is False
     assert proposal["repair_contract"]["n_action_steps"] == 1
     assert proposal["repair_contract"]["maximum_repair_steps"] == 720
+    assert proposal["repair_contract"]["post_conjunction_stability"][
+        "required_steps"
+    ] == VLA0_STABLE_SUCCESS_STEPS
     assert approval["execution_adapter"] == VLA0_LIBERO_EXECUTION_ADAPTER
     assert dispatch["execution_adapter"] == VLA0_LIBERO_EXECUTION_ADAPTER
 
 
-def test_vla0_run_reaches_same_verifier_without_controller_ack_claim(tmp_path) -> None:
-    proposal, approval, dispatch = _authorization(maximum_steps=2)
+def test_vla0_run_reaches_stable_verdict_without_controller_ack_claim(tmp_path) -> None:
+    proposal, approval, dispatch = _authorization(maximum_steps=22)
     current = _vector()
 
     def invoke_model(observation, instruction, chunk_index):
-        assert instruction == "put both moka pots on the stove"
+        assert instruction == proposal["repair_instruction"]
         return [[0.0] * 6 + [-1.0]], {
             "model_runtime_invoked": True,
             "repair_instruction_sha256": proposal["repair_instruction_sha256"],
@@ -198,6 +209,27 @@ def test_vla0_run_reaches_same_verifier_without_controller_ack_claim(tmp_path) -
             ),
         }
 
+    hold_calls = 0
+
+    def apply_verifier_hold_step(action, global_action_index):
+        nonlocal hold_calls
+        hold_calls += 1
+        assert list(action) == list(VLA0_VERIFIER_HOLD_ACTION_7D)
+        return {"version": global_action_index + 1}, {
+            "simulator_step_return_observed": True,
+            "simulator_effect_observed": False,
+            "official_predicate_result": True,
+            "policy_inference_invoked": False,
+            "verifier_hold_step": True,
+            "verifier_hold_action_sha256": canonical_sha256(
+                {"verifier_hold_action_7d": list(VLA0_VERIFIER_HOLD_ACTION_7D)}
+            ),
+            "preservation_step_trace": _step_trace(
+                chunk_index=global_action_index,
+                vector=deepcopy(current),
+            ),
+        }
+
     result = run_vla0_same_world_repair(
         proposal=proposal,
         approval=approval,
@@ -206,15 +238,22 @@ def test_vla0_run_reaches_same_verifier_without_controller_ack_claim(tmp_path) -
         initial_observation={"version": 0},
         invoke_model=invoke_model,
         apply_action_chunk=apply_action_chunk,
+        apply_verifier_hold_step=apply_verifier_hold_step,
         observe_goal_predicates=lambda: deepcopy(current),
         observed_reset_count=lambda: 1,
     )
 
-    assert result["status"] == "satisfied"
+    assert result["status"] == "stable_satisfied"
     assert result["chunks_executed"] == 2
     assert result["n_action_steps"] == 1
     assert result["execution_adapter"] == VLA0_LIBERO_EXECUTION_ADAPTER
     assert result["task_completion_claimed"] is True
+    assert result["stable_completion_observed"] is True
+    assert result["final_verdict"] == "stable"
+    assert result["policy_action_count"] == 2
+    assert result["verifier_hold_action_count"] == VLA0_STABLE_SUCCESS_STEPS
+    assert result["total_simulator_action_count"] == 22
+    assert hold_calls == VLA0_STABLE_SUCCESS_STEPS
     assert all(chunk["controller_ack_observed"] is False for chunk in result["chunk_evidence"])
 
 
@@ -232,6 +271,9 @@ def test_vla0_wrapper_rejects_gr00t_adapter_before_model_invocation(tmp_path) ->
             initial_observation={},
             invoke_model=lambda *_: pytest.fail("must fail before model invocation"),
             apply_action_chunk=lambda *_: pytest.fail("must fail before execution"),
+            apply_verifier_hold_step=lambda *_: pytest.fail(
+                "must fail before stability execution"
+            ),
             observe_goal_predicates=lambda: _vector(),
             observed_reset_count=lambda: 1,
         )
@@ -475,117 +517,88 @@ def test_actual_effect_statistics_records_initial_minimum_final_and_contact() ->
     assert result["gripper_command"]["sign_transition_count"] == 1
 
 
-def test_post_success_settle_requires_twenty_actual_predicate_steps() -> None:
-    applied: list[list[float]] = []
+def test_integrated_stability_hold_stops_on_first_target_regression(tmp_path) -> None:
+    proposal, approval, dispatch = _authorization(maximum_steps=22, diagnostic_clone=True)
+    current = _vector()
+    model_calls = 0
+    hold_calls = 0
 
-    def standard_runner(**kwargs):
-        del kwargs
-        return {
-            "applied_action_count": 84,
-            "predicate_conjunction_observed": True,
-            "first_preservation_invariant_breach": None,
-            "final_goal_predicate_observations": _vector(second=True),
-            "result_sha256": "old",
+    def invoke_model(_observation, instruction, chunk_index):
+        nonlocal model_calls
+        model_calls += 1
+        return [0.0] * 6 + [-1.0], {
+            "model_runtime_invoked": True,
+            "repair_instruction_sha256": proposal["repair_instruction_sha256"],
+            "repair_instruction_payload_exact_match": True,
+            "repair_instruction_payload_sha256": proposal["repair_instruction_sha256"],
+            "repair_instruction_payload_length": len(instruction),
+            "repair_instruction_payload_kind": "list",
+            "repair_instruction_payload_dtype": "str",
+            "repair_instruction_payload_shape": [1],
+            "policy_request_sha256": canonical_sha256({"request": chunk_index}),
+            "policy_response_sha256": canonical_sha256({"response": chunk_index}),
         }
 
-    def apply_action_chunk(action, index):
-        applied.append(action.tolist())
-        predicates = _vector(second=True)
+    def apply_action_chunk(action, chunk_index):
+        del action
+        nonlocal current
+        current = _vector(second=True)
         return object(), {
-            "preservation_step_trace": [
-                {
-                    "action_step_sha256": f"action-{index}",
-                    "goal_predicate_observations": predicates,
-                    "goal_predicate_vector_sha256": canonical_sha256(
-                        {"goal_predicate_observations": predicates}
-                    ),
-                    "object_witnesses": {
-                        "moka_pot_1": {"position_metres": [0.0, 0.0, 0.0]},
-                        "moka_pot_2": {"position_metres": [0.1, 0.0, 0.0]},
-                    },
-                    "frame_capture": None,
-                }
-            ]
+            "simulator_step_return_observed": True,
+            "simulator_effect_observed": True,
+            "official_predicate_result": True,
+            "action_chunk_sha256": canonical_sha256({"policy": chunk_index}),
+            "preservation_step_trace": _step_trace(
+                chunk_index=chunk_index,
+                vector=deepcopy(current),
+            ),
         }
 
-    result = _run_with_post_success_settle(
-        standard_runner=standard_runner,
-        proposal={
-            "repair_contract": {
-                "maximum_repair_steps": 128,
-                "preservation_invariant": {
-                    "reference_position_metres": {"moka_pot_1": [0.0, 0.0, 0.0]},
-                    "maximum_displacement_metres": 0.005,
-                },
-            }
-        },
-        apply_action_chunk=apply_action_chunk,
-    )
-
-    stability = result["post_success_zero_motion_stability"]
-    assert len(applied) == STABLE_SUCCESS_STEPS
-    assert all(action == SETTLE_ACTION_7D for action in applied)
-    assert stability["stable_success_steps_completed"] == STABLE_SUCCESS_STEPS
-    assert stability["stable_success_observed"] is True
-    assert stability["total_simulator_actions_after_settle"] == 104
-    assert result["result_sha256"] == canonical_sha256(
-        {key: value for key, value in result.items() if key != "result_sha256"}
-    )
-
-
-def test_post_success_settle_stops_on_first_predicate_regression() -> None:
-    calls = 0
-
-    def standard_runner(**kwargs):
-        del kwargs
-        return {
-            "applied_action_count": 83,
-            "predicate_conjunction_observed": True,
-            "first_preservation_invariant_breach": None,
-            "final_goal_predicate_observations": _vector(second=True),
-        }
-
-    def apply_action_chunk(action, index):
-        del action, index
-        nonlocal calls
-        calls += 1
-        predicates = _vector(second=calls < 3)
+    def apply_verifier_hold_step(action, global_action_index):
+        del action
+        nonlocal current, hold_calls
+        hold_calls += 1
+        current = _vector(second=hold_calls < 3)
+        conjunction = all(item["satisfied"] for item in current)
         return object(), {
-            "preservation_step_trace": [
-                {
-                    "action_step_sha256": f"action-{calls}",
-                    "goal_predicate_observations": predicates,
-                    "goal_predicate_vector_sha256": canonical_sha256(
-                        {"goal_predicate_observations": predicates}
-                    ),
-                    "object_witnesses": {
-                        "moka_pot_1": {"position_metres": [0.0, 0.0, 0.0]},
-                        "moka_pot_2": {"position_metres": [0.1, 0.0, 0.0]},
-                    },
-                    "frame_capture": None,
-                }
-            ]
+            "simulator_step_return_observed": True,
+            "simulator_effect_observed": False,
+            "official_predicate_result": conjunction,
+            "policy_inference_invoked": False,
+            "verifier_hold_step": True,
+            "verifier_hold_action_sha256": canonical_sha256(
+                {"verifier_hold_action_7d": list(VLA0_VERIFIER_HOLD_ACTION_7D)}
+            ),
+            "preservation_step_trace": _step_trace(
+                chunk_index=global_action_index,
+                vector=deepcopy(current),
+            ),
         }
 
-    result = _run_with_post_success_settle(
-        standard_runner=standard_runner,
-        proposal={
-            "repair_contract": {
-                "maximum_repair_steps": 128,
-                "preservation_invariant": {
-                    "reference_position_metres": {"moka_pot_1": [0.0, 0.0, 0.0]},
-                    "maximum_displacement_metres": 0.005,
-                },
-            }
-        },
+    result = run_vla0_same_world_repair(
+        proposal=proposal,
+        approval=approval,
+        dispatch=dispatch,
+        dispatch_ledger=DispatchAuthorityTable(tmp_path / "dispatch-unstable.json"),
+        initial_observation={},
+        invoke_model=invoke_model,
         apply_action_chunk=apply_action_chunk,
+        apply_verifier_hold_step=apply_verifier_hold_step,
+        observe_goal_predicates=lambda: deepcopy(current),
+        observed_reset_count=lambda: 1,
+        observed_state_continuity_basis=STATE_CONTINUITY_DIAGNOSTIC_MUJOCO_CLONE,
     )
 
-    stability = result["post_success_zero_motion_stability"]
-    assert calls == 3
-    assert stability["stable_success_steps_completed"] == 2
-    assert stability["stable_success_observed"] is False
-    assert stability["terminal_goal_predicate_vector"] == [True, False, True]
+    stability = result["post_conjunction_stability"]
+    assert model_calls == 1
+    assert hold_calls == 3
+    assert result["status"] == "unstable_after_predicate_conjunction"
+    assert result["predicate_conjunction_observed"] is True
+    assert result["stable_completion_observed"] is False
+    assert result["final_verdict"] == "unstable"
+    assert stability["completed_steps"] == 2
+    assert stability["termination_reason"] == "target_predicate_regressed"
+    assert stability["policy_inference_invoked_during_hold"] is False
 
 
 def test_stability_replay_admits_only_digest_bound_success_trace(tmp_path) -> None:
@@ -640,7 +653,7 @@ def test_frame_capture_writes_relative_digest_bound_pngs(tmp_path) -> None:
 
 
 def test_diagnostic_clone_success_cannot_claim_task_completion(tmp_path) -> None:
-    proposal, approval, dispatch = _authorization(maximum_steps=1, diagnostic_clone=True)
+    proposal, approval, dispatch = _authorization(maximum_steps=21, diagnostic_clone=True)
     current = _vector()
 
     def invoke_model(_observation, instruction, _chunk_index):
@@ -671,6 +684,23 @@ def test_diagnostic_clone_success_cannot_claim_task_completion(tmp_path) -> None
             ),
         }
 
+    def apply_verifier_hold_step(action, global_action_index):
+        assert list(action) == list(VLA0_VERIFIER_HOLD_ACTION_7D)
+        return {"version": global_action_index + 1}, {
+            "simulator_step_return_observed": True,
+            "simulator_effect_observed": False,
+            "official_predicate_result": True,
+            "policy_inference_invoked": False,
+            "verifier_hold_step": True,
+            "verifier_hold_action_sha256": canonical_sha256(
+                {"verifier_hold_action_7d": list(VLA0_VERIFIER_HOLD_ACTION_7D)}
+            ),
+            "preservation_step_trace": _step_trace(
+                chunk_index=global_action_index,
+                vector=deepcopy(current),
+            ),
+        }
+
     result = run_vla0_same_world_repair(
         proposal=proposal,
         approval=approval,
@@ -679,12 +709,14 @@ def test_diagnostic_clone_success_cannot_claim_task_completion(tmp_path) -> None
         initial_observation={"version": 0},
         invoke_model=invoke_model,
         apply_action_chunk=apply_action_chunk,
+        apply_verifier_hold_step=apply_verifier_hold_step,
         observe_goal_predicates=lambda: deepcopy(current),
         observed_reset_count=lambda: 1,
         observed_state_continuity_basis=STATE_CONTINUITY_DIAGNOSTIC_MUJOCO_CLONE,
     )
 
-    assert result["status"] == "satisfied_diagnostic_observation"
+    assert result["status"] == "stable_satisfied_diagnostic_observation"
     assert result["predicate_improvement_observed"] is True
     assert result["task_completion_claimed"] is False
     assert result["semantic_repair_claim_eligible"] is False
+    assert result["stable_completion_observed"] is True

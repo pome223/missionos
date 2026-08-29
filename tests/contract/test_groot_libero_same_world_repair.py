@@ -348,6 +348,9 @@ def test_instruction_ablation_variants_change_contract_and_proposal_digests() ->
         material.pop("repair_instruction_sha256")
         material["instruction_ablation"].pop("variant")
         material["instruction_ablation"].pop("target_specific_instruction")
+        material["repair_intent_selection"].pop("repair_instruction_variant")
+        material["repair_intent_selection"].pop("repair_instruction")
+        material["repair_intent_selection"].pop("repair_instruction_sha256")
         fixed_materials.append(material)
     assert fixed_materials[0] == fixed_materials[1] == fixed_materials[2]
     assert proposals[0]["repair_contract"]["instruction_ablation"] == {

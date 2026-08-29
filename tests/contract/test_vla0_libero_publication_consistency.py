@@ -16,7 +16,9 @@ NORMALIZED_OBSERVATION_PATH = (
 ORACLE_CONTROL_PATH = (
     EVIDENCE_ROOT / "20260826-vla0-libero-displaced-fixture-oracle-normalized.json"
 )
-RUNNER_PATH = REPOSITORY_ROOT / "scripts" / "run_vla0_libero_snapshot_recovery.py"
+HISTORICAL_CLEAR_FIXTURE_RUNNER_SHA256 = (
+    "503225c04d8d3faee26d1607e560a7a45080158f39d5962fae34118f6a90ee42"
+)
 VIDEO_PATH = REPOSITORY_ROOT / "docs" / "assets" / "vla0-libero-clear-fixture-repair.mp4"
 POSTER_PATH = REPOSITORY_ROOT / "docs" / "assets" / "vla0-libero-clear-fixture-repair-poster.png"
 README_PATH = REPOSITORY_ROOT / "README.md"
@@ -26,6 +28,9 @@ FIXTURE_CONTRACT_PATH = (
 )
 STABILITY_EVIDENCE_PATH = (
     EVIDENCE_ROOT / "vla0-libero-seed0-3cm-stability-20260829.json"
+)
+SUPERVISORY_LOOP_EVIDENCE_PATH = (
+    EVIDENCE_ROOT / "20260829-vla0-libero-supervisory-loop.json"
 )
 COSMOS_REPAIR_CONTRACT_PATH = (
     REPOSITORY_ROOT / "docs" / "agents" / "cosmos-policy-libero-repair-resume.md"
@@ -65,7 +70,11 @@ def test_vla0_publication_assets_match_bound_digests() -> None:
     normalized_without_digest = dict(normalized)
     normalized_digest = normalized_without_digest.pop("normalized_observation_sha256")
 
-    assert evidence["runner_source_sha256"] == _sha256(RUNNER_PATH)
+    # The clear-fixture publication is historical evidence. The runner now has
+    # a newer semantic-selection and stability-verification path, so keep the
+    # original measured source digest fixed instead of relabeling the old run
+    # with the current implementation.
+    assert evidence["runner_source_sha256"] == HISTORICAL_CLEAR_FIXTURE_RUNNER_SHA256
     assert evidence["public_video_sha256"] == _sha256(VIDEO_PATH)
     assert evidence["public_poster_sha256"] == _sha256(POSTER_PATH)
     assert evidence["normalized_public_observation_file"] == NORMALIZED_OBSERVATION_PATH.name
@@ -306,3 +315,46 @@ def test_vla0_three_centimetre_stability_publication_keeps_entry_and_completion_
     assert "Target engagement 3/3" in _compact_markdown(README_PATH)
     assert "terminal conjunction 2/3" in _compact_markdown(README_PATH)
     assert "0/2" in _compact_markdown(REPORT_PATH)
+
+
+def test_vla0_supervisory_loop_publication_records_bounded_negative_trace() -> None:
+    evidence = _read_json(SUPERVISORY_LOOP_EVIDENCE_PATH)
+    trace = evidence["supervisory_trace"]
+    result = evidence["observed_result"]
+    stability = evidence["stability_contract"]
+    boundary = evidence["claim_boundary"]
+
+    assert evidence["status"] == (
+        "semantic_intervention_executed_but_predicate_recovery_not_observed"
+    )
+    assert trace["repair_intent_selection_source"] == (
+        "deterministic_non_model_predicate_diagnosis"
+    )
+    assert trace["repair_instruction_variant"] == "semantic_preserve"
+    assert trace["human_supplied_runtime_instruction"] is False
+    assert trace["missionos_generated_low_level_action"] is False
+    assert trace["repair_instruction_payload_exact_match_for_all_policy_calls"] is True
+    assert trace["dispatch_receipt_present"] is True
+
+    assert result["policy_action_count"] == 128
+    assert result["verifier_hold_action_count"] == 0
+    assert result["total_simulator_action_count"] == 128
+    assert result["predicate_conjunction_observed"] is False
+    assert result["final_goal_predicate_vector"] == [True, False, True]
+    assert result["final_verdict"] == "predicate_not_reached"
+    assert result["stable_completion_observed"] is False
+
+    assert stability["authority"] == "verifier_owned"
+    assert stability["required_steps"] == 20
+    assert stability["policy_inference_allowed_during_hold"] is False
+    assert stability["hold_admitted"] is False
+    assert stability["hold_not_admitted_reason"] == (
+        "predicate_conjunction_not_observed"
+    )
+
+    assert boundary["closed_supervisory_trace_recorded"] is True
+    assert boundary["predicate_recovery_observed"] is False
+    assert boundary["stable_vla0_predicate_recovery_established"] is False
+    assert boundary["same_world_semantic_repair_established"] is False
+    assert boundary["controller_ack_observed"] is False
+    assert boundary["physical_execution_invoked"] is False
