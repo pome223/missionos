@@ -1486,6 +1486,38 @@ def test_displacement_without_contact_does_not_trip_the_invariant(tmp_path) -> N
     assert result["status"] != "stopped_on_preservation_invariant"
 
 
+def test_strict_invariant_trips_on_indirect_displacement_without_contact() -> None:
+    vector = _vector()
+    invariant = same_world_repair.build_preservation_invariant(
+        goal_predicate_observations=vector,
+        preserve_predicate_ids=[vector[0]["predicate_id"]],
+        source_object_poses={"moka_pot_1": [0.0, 0.0, 0.0]},
+        maximum_displacement_metres=0.005,
+        requires_contact_observation=False,
+    )
+    breach = same_world_repair._preservation_invariant_breach(
+        invariant=invariant,
+        trace_entry={
+            "chunk_index": 2,
+            "action_step_index": 0,
+            "action_step_number": 1,
+            "global_repair_step_index": 2,
+            "global_repair_step_number": 3,
+            "goal_predicate_observations": vector,
+            "object_witnesses": {
+                "moka_pot_1": {
+                    "position_metres": [0.006, 0.0, 0.0],
+                    "gripper_contact_observed": False,
+                }
+            },
+        },
+    )
+
+    assert breach is not None
+    assert breach["displacement_metres"] == pytest.approx(0.006)
+    assert breach["contact_observed"] is False
+
+
 def test_contact_within_the_approved_tolerance_does_not_trip(tmp_path) -> None:
     result = _run_guarded(
         tmp_path,
