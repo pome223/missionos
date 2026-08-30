@@ -33,6 +33,19 @@ that calculation and supplies the resulting status, measurements, criterion
 reference, and evidence references. Core validates their evidence basis and
 scope binding without adopting a waypoint representation.
 
+Runtime producers should use digest-bound evidence references that locate the
+supporting material, for example:
+
+```text
+sha256:<digest>#/raw_action_trace/0:128
+sha256:<digest>#/post_conjunction_stability/trace/0:20
+```
+
+The criterion material must be retained in `measurements` and its canonical
+digest used as `criterion_ref`. Step ranges are inclusive in measurements and
+use one-based simulator step numbers; JSON-pointer-like evidence ranges use the
+stored collection's zero-based half-open indices.
+
 The status is `satisfied`, `not_satisfied`, or `not_observed`. A
 `not_observed` axis must use the `not_observed` evidence basis and must not cite
 evidence. An observed status must cite at least one evidence reference.

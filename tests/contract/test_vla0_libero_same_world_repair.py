@@ -16,6 +16,9 @@ from scripts.run_vla0_libero_curriculum_probe import (
     _validate_curriculum_fixture_snapshot,
 )
 from scripts.run_vla0_libero_snapshot_recovery import (
+    ACTION_ACTIVITY_MINIMUM_ARM_COMMAND_NORM,
+    CORRECTIVE_ALIGNMENT_MINIMUM_EEF_APPROACH_METRES,
+    _build_repair_diagnostic_report,
     _capture_frames,
     _official_ensemble_action,
     _verify_loaded_dataset_stats,
@@ -163,15 +166,16 @@ def test_vla0_contract_binds_predicate_driven_semantic_repair_and_stability() ->
     assert proposal["repair_intent_selection"]["selection_source"] == (
         "deterministic_non_model_predicate_diagnosis"
     )
-    assert proposal["repair_intent_selection"]["repair_instruction"] == proposal[
-        "repair_instruction"
-    ]
+    assert (
+        proposal["repair_intent_selection"]["repair_instruction"] == proposal["repair_instruction"]
+    )
     assert proposal["repair_intent_selection"]["human_supplied_runtime_instruction"] is False
     assert proposal["repair_contract"]["n_action_steps"] == 1
     assert proposal["repair_contract"]["maximum_repair_steps"] == 720
-    assert proposal["repair_contract"]["post_conjunction_stability"][
-        "required_steps"
-    ] == VLA0_STABLE_SUCCESS_STEPS
+    assert (
+        proposal["repair_contract"]["post_conjunction_stability"]["required_steps"]
+        == VLA0_STABLE_SUCCESS_STEPS
+    )
     assert approval["execution_adapter"] == VLA0_LIBERO_EXECUTION_ADAPTER
     assert dispatch["execution_adapter"] == VLA0_LIBERO_EXECUTION_ADAPTER
 
@@ -256,6 +260,119 @@ def test_vla0_run_reaches_stable_verdict_without_controller_ack_claim(tmp_path) 
     assert hold_calls == VLA0_STABLE_SUCCESS_STEPS
     assert all(chunk["controller_ack_observed"] is False for chunk in result["chunk_evidence"])
 
+    raw_action_trace = [
+        {
+            "global_repair_step_index": index,
+            "action_7d": [0.1, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0],
+            "action_step_sha256": result["chunk_evidence"][index]["preservation_step_trace"][0][
+                "action_step_sha256"
+            ],
+        }
+        for index in range(2)
+    ]
+    raw_action_trace_sha256 = canonical_sha256({"raw_action_trace": raw_action_trace})
+    diagnostic = _build_repair_diagnostic_report(
+        repair_result=result,
+        raw_action_trace=raw_action_trace,
+        raw_action_trace_sha256=raw_action_trace_sha256,
+        initial_eef_target_distance_metres=0.3,
+        initial_target_position_metres=[1.1, 0.2, 0.3],
+        target_object="moka_pot_2",
+    )
+
+    assert diagnostic["validation_status"] == "verified"
+    assert diagnostic["first_failed_axis"] == "none"
+    assert diagnostic["bounded_stable_repair_observed"] is True
+    assert diagnostic["approval_created"] is False
+    assert diagnostic["dispatch_authority_created"] is False
+    assert diagnostic["mission_completion_claimed"] is False
+    assert diagnostic["executor_repair_capability_established"] is False
+    assert diagnostic["physical_execution_invoked"] is False
+    assert {axis["observation_scope_ref"] for axis in diagnostic["axes"]} == {
+        (f"repair-dispatch:{result['environment_session_id']}:{result['dispatch_sha256']}")
+    }
+    assert diagnostic["axes"][0]["measurements"]["criterion"]["minimum_norm"] == (
+        ACTION_ACTIVITY_MINIMUM_ARM_COMMAND_NORM
+    )
+    assert (
+        diagnostic["axes"][1]["measurements"]["criterion"]["minimum_eef_approach_metres"]
+        == CORRECTIVE_ALIGNMENT_MINIMUM_EEF_APPROACH_METRES
+    )
+    assert diagnostic["axes"][4]["measurements"]["hold_global_step_range"] == {
+        "first_step": 3,
+        "last_step": 22,
+    }
+    for axis in diagnostic["axes"]:
+        assert axis["criterion_ref"] == (
+            f"sha256:{canonical_sha256(axis['measurements']['criterion'])}"
+        )
+
+
+def test_vla0_diagnostic_separates_activity_from_failed_alignment() -> None:
+    step = _step_trace(chunk_index=0, vector=_vector())[0]
+    step["object_witnesses"]["moka_pot_2"]["end_effector_distance_metres"] = 0.2
+    raw_action_trace = [
+        {
+            "global_repair_step_index": 0,
+            "action_7d": [0.1, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0],
+            "action_step_sha256": step["action_step_sha256"],
+        },
+    ]
+    raw_action_trace_sha256 = canonical_sha256({"raw_action_trace": raw_action_trace})
+    result = {
+        "result_sha256": "e" * 64,
+        "policy_action_count": 1,
+        "total_simulator_action_count": 1,
+        "chunk_evidence": [{"preservation_step_trace": [step]}],
+        "predicate_conjunction_observed": False,
+        "first_conjunction_after_action": None,
+        "final_goal_predicate_observations": _vector(),
+        "first_preservation_violation": None,
+        "first_preservation_invariant_breach": None,
+        "post_conjunction_stability": None,
+        "environment_session_id": "vla0-diagnostic:fixture",
+        "dispatch_sha256": "d" * 64,
+        "execution_adapter": VLA0_LIBERO_EXECUTION_ADAPTER,
+        "repair_contract_sha256": "c" * 64,
+        "diagnostic_handoff_snapshot_sha256": "b" * 64,
+        "state_continuity_basis": STATE_CONTINUITY_DIAGNOSTIC_MUJOCO_CLONE,
+    }
+
+    diagnostic = _build_repair_diagnostic_report(
+        repair_result=result,
+        raw_action_trace=raw_action_trace,
+        raw_action_trace_sha256=raw_action_trace_sha256,
+        initial_eef_target_distance_metres=0.2,
+        initial_target_position_metres=[1.1, 0.2, 0.3],
+        target_object="moka_pot_2",
+    )
+
+    axes = {axis["axis"]: axis for axis in diagnostic["axes"]}
+    assert diagnostic["validation_status"] == "verified"
+    assert diagnostic["first_failed_axis"] == "corrective_alignment"
+    assert diagnostic["bounded_stable_repair_observed"] is False
+    assert axes["action_activity"]["status"] == "satisfied"
+    assert axes["corrective_alignment"]["status"] == "not_satisfied"
+    assert axes["predicate_recovery"]["status"] == "not_satisfied"
+    assert axes["preservation"]["status"] == "satisfied"
+    assert axes["stable_hold"]["status"] == "not_observed"
+    assert axes["action_activity"]["evidence_refs"][0].startswith(
+        f"sha256:{raw_action_trace_sha256}#/raw_action_trace/"
+    )
+    assert axes["stable_hold"]["evidence_refs"] == []
+
+    unbound_trace = deepcopy(raw_action_trace)
+    unbound_trace[0]["action_step_sha256"] = "f" * 64
+    with pytest.raises(RuntimeError, match="vla0_repair_diagnostic_action_step_binding_mismatch"):
+        _build_repair_diagnostic_report(
+            repair_result=result,
+            raw_action_trace=unbound_trace,
+            raw_action_trace_sha256=canonical_sha256({"raw_action_trace": unbound_trace}),
+            initial_eef_target_distance_metres=0.2,
+            initial_target_position_metres=[1.1, 0.2, 0.3],
+            target_object="moka_pot_2",
+        )
+
 
 def test_vla0_wrapper_rejects_gr00t_adapter_before_model_invocation(tmp_path) -> None:
     proposal, approval, dispatch = _authorization()
@@ -271,9 +388,7 @@ def test_vla0_wrapper_rejects_gr00t_adapter_before_model_invocation(tmp_path) ->
             initial_observation={},
             invoke_model=lambda *_: pytest.fail("must fail before model invocation"),
             apply_action_chunk=lambda *_: pytest.fail("must fail before execution"),
-            apply_verifier_hold_step=lambda *_: pytest.fail(
-                "must fail before stability execution"
-            ),
+            apply_verifier_hold_step=lambda *_: pytest.fail("must fail before stability execution"),
             observe_goal_predicates=lambda: _vector(),
             observed_reset_count=lambda: 1,
         )
@@ -470,9 +585,7 @@ def test_curriculum_probe_identity_requires_exact_seed0_three_centimetre_snapsho
         snapshot_sha256=EXACT_SEED0_THREE_CENTIMETRE_SNAPSHOT_SHA256,
         fixture=fixture,
     )
-    with pytest.raises(
-        RuntimeError, match="vla0_curriculum_probe_snapshot_identity_mismatch"
-    ):
+    with pytest.raises(RuntimeError, match="vla0_curriculum_probe_snapshot_identity_mismatch"):
         _validate_probe_identity(snapshot_sha256="0" * 64, fixture=fixture)
 
 

@@ -69,6 +69,27 @@ The digest-bound report must retain:
 - policy-action, verifier-hold, and total simulator-action counts;
 - stable steps required and observed, final predicates, and final verdict.
 
+## Five-axis runtime diagnostic producer
+
+`run_vla0_libero_snapshot_recovery.py` projects the same attempt into
+`missionos_core_repair_diagnostic_report.v1`. It does not recalculate or create
+authority in Core. The VLA-0 adapter owns these criteria:
+
+| Axis | Adapter criterion | Provenance |
+| --- | --- | --- |
+| action activity | at least one applied six-dimensional arm command has norm at least `1e-4`; the gripper dimension is excluded | digest-bound applied 7D action trace and policy step range |
+| corrective alignment | the EEF approaches the failed target by at least `0.01 m`, or target/gripper contact is observed | per-step target witness trace |
+| predicate recovery | the actual LIBERO goal conjunction is observed at least once | per-step simulator predicate trace |
+| preservation | no preserved predicate transition or registered continuous invariant breach is observed | full policy and verifier-hold trace |
+| stable hold | the verifier-owned post-conjunction hold is admitted and retains the conjunction for all 20 required steps | hold-action digest and contiguous hold step range |
+
+Every axis uses one dispatch-bound `observation_scope_ref`. Criterion material
+is stored with its canonical digest, and evidence references identify the
+supporting digest and collection range. If the predicate conjunction is never
+observed, the stable-hold axis is `not_observed`, not failed. Approval,
+dispatch, completion, general executor capability, and physical execution
+fields remain false in the diagnostic report.
+
 ## Claim boundary
 
 A positive diagnostic-clone verdict establishes only that the tested VLA-0

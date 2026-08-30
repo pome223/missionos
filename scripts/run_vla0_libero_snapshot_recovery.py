@@ -13,6 +13,7 @@ import argparse
 from copy import deepcopy
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import pickle
@@ -28,7 +29,15 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
-from missionos_core import canonical_sha256  # noqa: E402
+from missionos_core import (  # noqa: E402
+    RepairAxisObservation,
+    RepairAxisStatus,
+    RepairDiagnosticAxis,
+    RepairDiagnosticContext,
+    RepairEvidenceBasis,
+    canonical_sha256,
+    evaluate_repair_diagnostics,
+)
 from scripts.run_groot_lerobot_same_world_repair import (  # noqa: E402
     _object_poses,
     _object_witnesses,
@@ -58,6 +67,7 @@ from src.runtime.libero_panda_predicate_package import (  # noqa: E402
     LIBERO_PANDA_SCENE8_ENVIRONMENT,
 )
 from src.runtime.vla0_libero_same_world_repair import (  # noqa: E402
+    VLA0_STABLE_SUCCESS_STEPS,
     VLA0_VERIFIER_HOLD_ACTION_7D,
     build_vla0_same_world_repair_proposal,
     run_vla0_same_world_repair,
@@ -98,6 +108,9 @@ EXPECTED_SOURCE_VECTOR = [True, False, True]
 PROCESS_SEED = 1000
 ENVIRONMENT_SEED = 0
 ENSEMBLE_PREDICTIONS = 8
+TARGET_OBJECT = "moka_pot_2"
+ACTION_ACTIVITY_MINIMUM_ARM_COMMAND_NORM = 1e-4
+CORRECTIVE_ALIGNMENT_MINIMUM_EEF_APPROACH_METRES = 0.01
 
 
 def _sha256_path(path: Path) -> str:
@@ -129,6 +142,347 @@ def _write_json(path: Path, value: Mapping[str, Any]) -> None:
     finally:
         if temporary.exists():
             temporary.unlink()
+
+
+def _digest_evidence_ref(digest: str, pointer: str) -> str:
+    if len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest):
+        raise RuntimeError("vla0_repair_diagnostic_evidence_digest_invalid")
+    if not pointer.startswith("#/"):
+        raise RuntimeError("vla0_repair_diagnostic_evidence_pointer_invalid")
+    return f"sha256:{digest}{pointer}"
+
+
+def _criterion_ref(material: Mapping[str, Any]) -> str:
+    return f"sha256:{canonical_sha256(dict(material))}"
+
+
+def _build_repair_diagnostic_report(
+    *,
+    repair_result: Mapping[str, Any],
+    raw_action_trace: list[Mapping[str, Any]],
+    raw_action_trace_sha256: str,
+    initial_eef_target_distance_metres: float,
+    initial_target_position_metres: list[float],
+    target_object: str,
+) -> dict[str, Any]:
+    """Project one VLA-0 run into the backend-neutral five-axis Core contract."""
+
+    import numpy as np
+
+    if raw_action_trace_sha256 != canonical_sha256({"raw_action_trace": raw_action_trace}):
+        raise RuntimeError("vla0_repair_diagnostic_action_trace_digest_mismatch")
+    for field in (
+        "environment_session_id",
+        "dispatch_sha256",
+        "execution_adapter",
+        "repair_contract_sha256",
+        "state_continuity_basis",
+    ):
+        if not isinstance(repair_result.get(field), str) or not repair_result[field]:
+            raise RuntimeError(f"vla0_repair_diagnostic_result_field_missing:{field}")
+    for field in (
+        "predicate_conjunction_observed",
+        "first_preservation_violation",
+        "first_preservation_invariant_breach",
+        "post_conjunction_stability",
+    ):
+        if field not in repair_result:
+            raise RuntimeError(f"vla0_repair_diagnostic_result_field_missing:{field}")
+    if not isinstance(repair_result["predicate_conjunction_observed"], bool):
+        raise RuntimeError("vla0_repair_diagnostic_predicate_status_invalid")
+    policy_action_count = repair_result.get("policy_action_count")
+    if (
+        isinstance(policy_action_count, bool)
+        or not isinstance(policy_action_count, int)
+        or policy_action_count < 0
+        or policy_action_count != len(raw_action_trace)
+    ):
+        raise RuntimeError("vla0_repair_diagnostic_policy_action_count_mismatch")
+    repair_result_sha256 = repair_result.get("result_sha256")
+    if not isinstance(repair_result_sha256, str):
+        raise RuntimeError("vla0_repair_diagnostic_result_digest_missing")
+
+    policy_steps = [
+        step
+        for chunk in repair_result.get("chunk_evidence", [])
+        for step in chunk.get("preservation_step_trace", [])
+    ]
+    if len(policy_steps) != policy_action_count:
+        raise RuntimeError("vla0_repair_diagnostic_policy_step_count_mismatch")
+    for expected_index, (action_item, policy_step) in enumerate(
+        zip(raw_action_trace, policy_steps), start=0
+    ):
+        if action_item.get("global_repair_step_index") not in (
+            None,
+            expected_index,
+        ) or action_item.get("action_step_sha256") != policy_step.get("action_step_sha256"):
+            raise RuntimeError("vla0_repair_diagnostic_action_step_binding_mismatch")
+
+    arm_command_norms: list[float] = []
+    for item in raw_action_trace:
+        action = item.get("action_7d")
+        if isinstance(action, (str, bytes)) or not isinstance(action, list) or len(action) != 7:
+            raise RuntimeError("vla0_repair_diagnostic_action_invalid")
+        normalized = [float(value) for value in action]
+        if any(not math.isfinite(value) for value in normalized):
+            raise RuntimeError("vla0_repair_diagnostic_action_not_finite")
+        arm_command_norms.append(math.sqrt(sum(value * value for value in normalized[:6])))
+
+    target_witnesses: list[Mapping[str, Any]] = []
+    for step in policy_steps:
+        witnesses = step.get("object_witnesses")
+        witness = witnesses.get(target_object) if isinstance(witnesses, Mapping) else None
+        if not isinstance(witness, Mapping):
+            raise RuntimeError("vla0_repair_diagnostic_target_witness_missing")
+        target_witnesses.append(witness)
+    target_distances = [
+        float(witness["end_effector_distance_metres"]) for witness in target_witnesses
+    ]
+    if any(not math.isfinite(value) or value < 0.0 for value in target_distances):
+        raise RuntimeError("vla0_repair_diagnostic_target_distance_invalid")
+    initial_distance = float(initial_eef_target_distance_metres)
+    if not math.isfinite(initial_distance) or initial_distance < 0.0:
+        raise RuntimeError("vla0_repair_diagnostic_initial_target_distance_invalid")
+    initial_target = np.asarray(initial_target_position_metres, dtype=np.float64)
+    if initial_target.shape != (3,) or not np.all(np.isfinite(initial_target)):
+        raise RuntimeError("vla0_repair_diagnostic_initial_target_position_invalid")
+    target_translations = [
+        float(
+            np.linalg.norm(
+                np.asarray(witness["position_metres"], dtype=np.float64) - initial_target
+            )
+        )
+        for witness in target_witnesses
+    ]
+    contact_steps = [
+        index
+        for index, witness in enumerate(target_witnesses, start=1)
+        if witness.get("gripper_contact_observed") is True
+    ]
+
+    maximum_arm_command_norm = max(arm_command_norms, default=0.0)
+    activity_observed = bool(
+        policy_action_count > 0
+        and maximum_arm_command_norm >= ACTION_ACTIVITY_MINIMUM_ARM_COMMAND_NORM
+    )
+    minimum_target_distance = min(target_distances, default=initial_distance)
+    approach_metres = max(0.0, initial_distance - minimum_target_distance)
+    corrective_alignment_observed = bool(
+        approach_metres >= CORRECTIVE_ALIGNMENT_MINIMUM_EEF_APPROACH_METRES or contact_steps
+    )
+    predicate_recovery_observed = repair_result.get("predicate_conjunction_observed") is True
+    preservation_observed = bool(
+        repair_result.get("first_preservation_violation") is None
+        and repair_result.get("first_preservation_invariant_breach") is None
+    )
+    stability = repair_result.get("post_conjunction_stability")
+    if isinstance(stability, Mapping) and stability.get("required_steps") != (
+        VLA0_STABLE_SUCCESS_STEPS
+    ):
+        raise RuntimeError("vla0_repair_diagnostic_stability_contract_mismatch")
+
+    scope_ref = (
+        f"repair-dispatch:{repair_result.get('environment_session_id')}:"
+        f"{repair_result.get('dispatch_sha256')}"
+    )
+    action_range = {
+        "first_step": 1 if policy_action_count else None,
+        "last_step": policy_action_count,
+    }
+    action_criterion = {
+        "criterion": "maximum_applied_arm_command_norm_at_least",
+        "minimum_norm": ACTION_ACTIVITY_MINIMUM_ARM_COMMAND_NORM,
+        "command_space": "libero_applied_7d_controller_command",
+        "gripper_dimension_excluded": True,
+    }
+    alignment_criterion = {
+        "criterion": "failed_target_approach_or_contact",
+        "minimum_eef_approach_metres": CORRECTIVE_ALIGNMENT_MINIMUM_EEF_APPROACH_METRES,
+        "contact_alternative": True,
+        "reference": "end_effector_to_failed_target_object",
+    }
+    predicate_criterion = {
+        "criterion": "actual_goal_predicate_conjunction_observed",
+        "authority": "libero_simulator_predicates",
+    }
+    preservation_criterion = {
+        "criterion": "no_preserved_predicate_or_invariant_breach",
+        "evaluated_every_simulator_step": True,
+    }
+    stable_criterion = {
+        "criterion": "contiguous_post_conjunction_hold",
+        "required_steps": VLA0_STABLE_SUCCESS_STEPS,
+        "authority": "verifier_owned",
+    }
+
+    result_ref = _digest_evidence_ref(repair_result_sha256, "#/chunk_evidence")
+    action_ref = _digest_evidence_ref(
+        raw_action_trace_sha256,
+        f"#/raw_action_trace/0:{policy_action_count}",
+    )
+    preservation_refs = [result_ref]
+    if isinstance(stability, Mapping) and stability.get("hold_action_count"):
+        preservation_refs.append(
+            _digest_evidence_ref(
+                repair_result_sha256,
+                f"#/post_conjunction_stability/trace/0:{stability['hold_action_count']}",
+            )
+        )
+    observations = [
+        RepairAxisObservation(
+            axis=RepairDiagnosticAxis.ACTION_ACTIVITY,
+            status=(
+                RepairAxisStatus.SATISFIED if activity_observed else RepairAxisStatus.NOT_SATISFIED
+            ),
+            evidence_basis=RepairEvidenceBasis.SIMULATOR_OBSERVATION,
+            criterion_ref=_criterion_ref(action_criterion),
+            observation_scope_ref=scope_ref,
+            evidence_refs=(action_ref, result_ref),
+            measurements={
+                "criterion": action_criterion,
+                "policy_action_step_range": action_range,
+                "maximum_arm_command_norm": maximum_arm_command_norm,
+                "mean_arm_command_norm": (
+                    sum(arm_command_norms) / len(arm_command_norms) if arm_command_norms else 0.0
+                ),
+            },
+        ),
+        RepairAxisObservation(
+            axis=RepairDiagnosticAxis.CORRECTIVE_ALIGNMENT,
+            status=(
+                RepairAxisStatus.SATISFIED
+                if corrective_alignment_observed
+                else RepairAxisStatus.NOT_SATISFIED
+            ),
+            evidence_basis=RepairEvidenceBasis.SIMULATOR_OBSERVATION,
+            criterion_ref=_criterion_ref(alignment_criterion),
+            observation_scope_ref=scope_ref,
+            evidence_refs=(result_ref,),
+            measurements={
+                "criterion": alignment_criterion,
+                "policy_action_step_range": action_range,
+                "target_object": target_object,
+                "initial_eef_target_distance_metres": initial_distance,
+                "minimum_eef_target_distance_metres": minimum_target_distance,
+                "eef_target_approach_metres": approach_metres,
+                "first_contact_after_action": contact_steps[0] if contact_steps else None,
+                "maximum_target_translation_metres": max(target_translations, default=0.0),
+            },
+        ),
+        RepairAxisObservation(
+            axis=RepairDiagnosticAxis.PREDICATE_RECOVERY,
+            status=(
+                RepairAxisStatus.SATISFIED
+                if predicate_recovery_observed
+                else RepairAxisStatus.NOT_SATISFIED
+            ),
+            evidence_basis=RepairEvidenceBasis.SIMULATOR_OBSERVATION,
+            criterion_ref=_criterion_ref(predicate_criterion),
+            observation_scope_ref=scope_ref,
+            evidence_refs=(result_ref,),
+            measurements={
+                "criterion": predicate_criterion,
+                "first_conjunction_after_action": repair_result.get(
+                    "first_conjunction_after_action"
+                ),
+                "final_goal_predicate_vector": [
+                    item["satisfied"]
+                    for item in repair_result.get("final_goal_predicate_observations", [])
+                ],
+            },
+        ),
+        RepairAxisObservation(
+            axis=RepairDiagnosticAxis.PRESERVATION,
+            status=(
+                RepairAxisStatus.SATISFIED
+                if preservation_observed
+                else RepairAxisStatus.NOT_SATISFIED
+            ),
+            evidence_basis=RepairEvidenceBasis.SIMULATOR_OBSERVATION,
+            criterion_ref=_criterion_ref(preservation_criterion),
+            observation_scope_ref=scope_ref,
+            evidence_refs=tuple(preservation_refs),
+            measurements={
+                "criterion": preservation_criterion,
+                "total_simulator_action_count": repair_result.get("total_simulator_action_count"),
+                "first_preservation_violation": repair_result.get("first_preservation_violation"),
+                "first_preservation_invariant_breach": repair_result.get(
+                    "first_preservation_invariant_breach"
+                ),
+            },
+        ),
+    ]
+    if not isinstance(stability, Mapping) or stability.get("admitted") is not True:
+        observations.append(
+            RepairAxisObservation(
+                axis=RepairDiagnosticAxis.STABLE_HOLD,
+                status=RepairAxisStatus.NOT_OBSERVED,
+                evidence_basis=RepairEvidenceBasis.NOT_OBSERVED,
+                criterion_ref=_criterion_ref(stable_criterion),
+                observation_scope_ref=scope_ref,
+                measurements={
+                    "criterion": stable_criterion,
+                    "hold_admitted": False,
+                    "reason": (
+                        stability.get("termination_reason")
+                        if isinstance(stability, Mapping)
+                        else "predicate_conjunction_not_observed"
+                    ),
+                },
+            )
+        )
+    else:
+        completed_steps = int(stability["completed_steps"])
+        required_steps = int(stability["required_steps"])
+        observations.append(
+            RepairAxisObservation(
+                axis=RepairDiagnosticAxis.STABLE_HOLD,
+                status=(
+                    RepairAxisStatus.SATISFIED
+                    if stability.get("stable") is True
+                    else RepairAxisStatus.NOT_SATISFIED
+                ),
+                evidence_basis=RepairEvidenceBasis.SIMULATOR_OBSERVATION,
+                criterion_ref=_criterion_ref(stable_criterion),
+                observation_scope_ref=scope_ref,
+                evidence_refs=(
+                    _digest_evidence_ref(
+                        repair_result_sha256,
+                        f"#/post_conjunction_stability/trace/0:{stability.get('hold_action_count')}",
+                    ),
+                ),
+                measurements={
+                    "criterion": stable_criterion,
+                    "required_hold_steps": required_steps,
+                    "observed_hold_steps": completed_steps,
+                    "hold_global_step_range": {
+                        "first_step": (
+                            int(stability["policy_action_count_before_hold"]) + 1
+                            if stability.get("hold_action_count")
+                            else None
+                        ),
+                        "last_step": int(stability["total_simulator_action_count"]),
+                    },
+                    "termination_reason": stability.get("termination_reason"),
+                },
+            )
+        )
+
+    assessment = evaluate_repair_diagnostics(
+        observations,
+        context=RepairDiagnosticContext(
+            report_id=f"repair-diagnostic:{repair_result.get('dispatch_sha256')}",
+            executor_ref=str(repair_result.get("execution_adapter")),
+            task_ref=f"repair-contract:{repair_result.get('repair_contract_sha256')}",
+            fixture_ref=(
+                f"snapshot:{repair_result.get('diagnostic_handoff_snapshot_sha256')}"
+                if repair_result.get("diagnostic_handoff_snapshot_sha256")
+                else f"source-contract:{repair_result.get('repair_contract_sha256')}"
+            ),
+            evaluation_scope=str(repair_result.get("state_continuity_basis")),
+        ),
+    )
+    return assessment.to_dict()
 
 
 def _verify_checkpoint(checkpoint_path: Path) -> dict[str, Any]:
@@ -447,6 +801,13 @@ def execute_live(
             raise RuntimeError("vla0_snapshot_source_vector_mismatch")
         adapter = _environment_adapter(environment)
         source_object_poses = _object_poses(adapter)
+        initial_target_position = np.asarray(source_object_poses[TARGET_OBJECT], dtype=np.float64)
+        initial_eef_target_distance = float(
+            np.linalg.norm(
+                np.asarray(observation["robot0_eef_pos"], dtype=np.float64)
+                - initial_target_position
+            )
+        )
         source_contract_material = {
             "task_suite": TASK_SUITE,
             "task_name": TASK_NAME,
@@ -747,8 +1108,19 @@ def execute_live(
             and repair_result["first_preservation_violation"] is None
             and repair_result["first_preservation_invariant_breach"] is None
         )
+        raw_action_trace_sha256 = canonical_sha256({"raw_action_trace": raw_action_trace})
+        repair_diagnostic_report = _build_repair_diagnostic_report(
+            repair_result=repair_result,
+            raw_action_trace=raw_action_trace,
+            raw_action_trace_sha256=raw_action_trace_sha256,
+            initial_eef_target_distance_metres=initial_eef_target_distance,
+            initial_target_position_metres=[
+                float(value) for value in initial_target_position.tolist()
+            ],
+            target_object=TARGET_OBJECT,
+        )
         report_without_digest = {
-            "schema_version": "missionos.vla0_libero_snapshot_recovery.v3",
+            "schema_version": "missionos.vla0_libero_snapshot_recovery.v4",
             "status": (
                 "scripted_fixture_repair_observed"
                 if recovery_observed and scripted_fixture_material is not None
@@ -772,6 +1144,7 @@ def execute_live(
             "approval": approval,
             "dispatch": dispatch,
             "repair_result": repair_result,
+            "repair_diagnostic_report": repair_diagnostic_report,
             "diagnostic_clone_recovery_observed": bool(
                 recovery_observed and scripted_fixture_material is None
             ),
@@ -781,7 +1154,7 @@ def execute_live(
             "scripted_failure_fixture": scripted_fixture_material,
             "initial_frame_capture": initial_frame_capture,
             "raw_action_trace": raw_action_trace,
-            "raw_action_trace_sha256": canonical_sha256({"raw_action_trace": raw_action_trace}),
+            "raw_action_trace_sha256": raw_action_trace_sha256,
             "semantic_repair_established": False,
             "controller_ack_observed": False,
             "physical_execution_invoked": False,
