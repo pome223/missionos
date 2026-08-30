@@ -1,0 +1,655 @@
+{
+  "claim_boundary": {
+    "executor_repair_capability_established": false,
+    "missing_axes_backfilled": false,
+    "new_approval_created": false,
+    "new_dispatch_authority_created": false,
+    "new_execution_claimed": false,
+    "physical_execution_invoked": false
+  },
+  "fresh_inference_performed": false,
+  "paid_compute_used": false,
+  "projection_kind": "existing_public_evidence_only",
+  "report_count": 5,
+  "reports": [
+    {
+      "approval_created": false,
+      "axes": [
+        {
+          "axis": "action_activity",
+          "criterion_ref": "sha256:2d934df0ff40bf7be23ffea6d87cc3eef9a8b6a80c6692c9d6c81a6084186e1e",
+          "evidence_basis": "not_observed",
+          "evidence_refs": [],
+          "measurements": {
+            "criterion": {
+              "rule": "meaningful_executor_action_or_effect_must_be_observed"
+            },
+            "not_observed_reason": "published_cohort_does_not_retain_action_magnitude_or_effect_trace"
+          },
+          "observation_scope_ref": "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/0",
+          "status": "not_observed"
+        },
+        {
+          "axis": "corrective_alignment",
+          "criterion_ref": "sha256:235262d7c75c4822a2338d590a6ea0b6f8cceda8779395324833615d3c9c16db",
+          "evidence_basis": "not_observed",
+          "evidence_refs": [],
+          "measurements": {
+            "criterion": {
+              "rule": "action_or_effect_must_align_with_preregistered_corrective_reference"
+            },
+            "not_observed_reason": "published_cohort_does_not_retain_corrective_reference_or_alignment_trace"
+          },
+          "observation_scope_ref": "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/0",
+          "status": "not_observed"
+        },
+        {
+          "axis": "predicate_recovery",
+          "criterion_ref": "sha256:f2edd2029422a6e1c2299045642ace9996542b7b46762ec06733e0133833a444",
+          "evidence_basis": "simulator_observation",
+          "evidence_refs": [
+            "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/0",
+            "sha256:9f026952460cc1ca7634b8ab7df2224fe3af642b04a9285fccd73014958809ea#/loops/0"
+          ],
+          "measurements": {
+            "criterion": {
+              "rule": "failed_target_predicate_must_transition_to_true",
+              "target_predicate_index": 0
+            },
+            "source_goal_predicate_vector": [
+              false,
+              true,
+              true
+            ],
+            "source_result_sha256": "0667770815d933bffc64b47589efec3c57f4749d4d20c7eb6dfe481a629185cb",
+            "target_predicate_index": 0,
+            "terminal_goal_predicate_vector": [
+              false,
+              true,
+              true
+            ]
+          },
+          "observation_scope_ref": "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/0",
+          "status": "not_satisfied"
+        },
+        {
+          "axis": "preservation",
+          "criterion_ref": "sha256:86b69d69d50a80cf76bb4d89083b4d580d95d5f344caecbf0eaaef33873ed019",
+          "evidence_basis": "simulator_observation",
+          "evidence_refs": [
+            "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/0",
+            "sha256:9f026952460cc1ca7634b8ab7df2224fe3af642b04a9285fccd73014958809ea#/loops/0"
+          ],
+          "measurements": {
+            "criterion": {
+              "preserve_predicate_indices": [
+                1,
+                2
+              ],
+              "rule": "all_contract_bound_preserve_predicates_remain_true"
+            },
+            "preservation_violation_observed": false,
+            "source_goal_predicate_vector": [
+              false,
+              true,
+              true
+            ],
+            "terminal_goal_predicate_vector": [
+              false,
+              true,
+              true
+            ]
+          },
+          "observation_scope_ref": "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/0",
+          "status": "satisfied"
+        },
+        {
+          "axis": "stable_hold",
+          "criterion_ref": "sha256:92b5b8ebceb5b8bc658dada4249006ab6cdb5793bb6832802fff95ce84f267e2",
+          "evidence_basis": "not_observed",
+          "evidence_refs": [],
+          "measurements": {
+            "criterion": {
+              "required_hold_steps": 20,
+              "rule": "full_predicate_conjunction_must_hold_for_contiguous_steps"
+            },
+            "not_observed_reason": "predicate_conjunction_not_reached_so_stable_hold_was_not_admitted"
+          },
+          "observation_scope_ref": "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/0",
+          "status": "not_observed"
+        }
+      ],
+      "bounded_stable_repair_observed": false,
+      "context": {
+        "evaluation_scope": "simulator_live_same_world_publication_projection",
+        "executor_ref": "huggingface:nvidia/GR00T-N1.7-3B",
+        "fixture_ref": "source-result:0667770815d933bffc64b47589efec3c57f4749d4d20c7eb6dfe481a629185cb:init-state:12",
+        "report_id": "repair-diagnostic:groot-n17-native-cohort:0",
+        "task_ref": "publication-bound:libero-native-repair-cohort"
+      },
+      "dispatch_authority_created": false,
+      "dispatch_request_sent": false,
+      "executor_repair_capability_established": false,
+      "first_failed_axis": "undetermined",
+      "mission_completion_claimed": false,
+      "next_unobserved_axis": "action_activity",
+      "physical_execution_invoked": false,
+      "reasons": [],
+      "schema_version": "missionos_core_repair_diagnostic_report.v1",
+      "validation_status": "verified"
+    },
+    {
+      "approval_created": false,
+      "axes": [
+        {
+          "axis": "action_activity",
+          "criterion_ref": "sha256:2d934df0ff40bf7be23ffea6d87cc3eef9a8b6a80c6692c9d6c81a6084186e1e",
+          "evidence_basis": "not_observed",
+          "evidence_refs": [],
+          "measurements": {
+            "criterion": {
+              "rule": "meaningful_executor_action_or_effect_must_be_observed"
+            },
+            "not_observed_reason": "published_cohort_does_not_retain_action_magnitude_or_effect_trace"
+          },
+          "observation_scope_ref": "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/1",
+          "status": "not_observed"
+        },
+        {
+          "axis": "corrective_alignment",
+          "criterion_ref": "sha256:235262d7c75c4822a2338d590a6ea0b6f8cceda8779395324833615d3c9c16db",
+          "evidence_basis": "not_observed",
+          "evidence_refs": [],
+          "measurements": {
+            "criterion": {
+              "rule": "action_or_effect_must_align_with_preregistered_corrective_reference"
+            },
+            "not_observed_reason": "published_cohort_does_not_retain_corrective_reference_or_alignment_trace"
+          },
+          "observation_scope_ref": "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/1",
+          "status": "not_observed"
+        },
+        {
+          "axis": "predicate_recovery",
+          "criterion_ref": "sha256:f2edd2029422a6e1c2299045642ace9996542b7b46762ec06733e0133833a444",
+          "evidence_basis": "simulator_observation",
+          "evidence_refs": [
+            "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/1",
+            "sha256:9f026952460cc1ca7634b8ab7df2224fe3af642b04a9285fccd73014958809ea#/loops/1"
+          ],
+          "measurements": {
+            "criterion": {
+              "rule": "failed_target_predicate_must_transition_to_true",
+              "target_predicate_index": 0
+            },
+            "source_goal_predicate_vector": [
+              false,
+              true,
+              true
+            ],
+            "source_result_sha256": "255ea2923bac496cda88dc38a7e014986d1a86729fd8176905268a66cd08364a",
+            "target_predicate_index": 0,
+            "terminal_goal_predicate_vector": [
+              false,
+              true,
+              true
+            ]
+          },
+          "observation_scope_ref": "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/1",
+          "status": "not_satisfied"
+        },
+        {
+          "axis": "preservation",
+          "criterion_ref": "sha256:86b69d69d50a80cf76bb4d89083b4d580d95d5f344caecbf0eaaef33873ed019",
+          "evidence_basis": "simulator_observation",
+          "evidence_refs": [
+            "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/1",
+            "sha256:9f026952460cc1ca7634b8ab7df2224fe3af642b04a9285fccd73014958809ea#/loops/1"
+          ],
+          "measurements": {
+            "criterion": {
+              "preserve_predicate_indices": [
+                1,
+                2
+              ],
+              "rule": "all_contract_bound_preserve_predicates_remain_true"
+            },
+            "preservation_violation_observed": false,
+            "source_goal_predicate_vector": [
+              false,
+              true,
+              true
+            ],
+            "terminal_goal_predicate_vector": [
+              false,
+              true,
+              true
+            ]
+          },
+          "observation_scope_ref": "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/1",
+          "status": "satisfied"
+        },
+        {
+          "axis": "stable_hold",
+          "criterion_ref": "sha256:92b5b8ebceb5b8bc658dada4249006ab6cdb5793bb6832802fff95ce84f267e2",
+          "evidence_basis": "not_observed",
+          "evidence_refs": [],
+          "measurements": {
+            "criterion": {
+              "required_hold_steps": 20,
+              "rule": "full_predicate_conjunction_must_hold_for_contiguous_steps"
+            },
+            "not_observed_reason": "predicate_conjunction_not_reached_so_stable_hold_was_not_admitted"
+          },
+          "observation_scope_ref": "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/1",
+          "status": "not_observed"
+        }
+      ],
+      "bounded_stable_repair_observed": false,
+      "context": {
+        "evaluation_scope": "simulator_live_same_world_publication_projection",
+        "executor_ref": "huggingface:nvidia/GR00T-N1.7-3B",
+        "fixture_ref": "source-result:255ea2923bac496cda88dc38a7e014986d1a86729fd8176905268a66cd08364a:init-state:12",
+        "report_id": "repair-diagnostic:groot-n17-native-cohort:1",
+        "task_ref": "publication-bound:libero-native-repair-cohort"
+      },
+      "dispatch_authority_created": false,
+      "dispatch_request_sent": false,
+      "executor_repair_capability_established": false,
+      "first_failed_axis": "undetermined",
+      "mission_completion_claimed": false,
+      "next_unobserved_axis": "action_activity",
+      "physical_execution_invoked": false,
+      "reasons": [],
+      "schema_version": "missionos_core_repair_diagnostic_report.v1",
+      "validation_status": "verified"
+    },
+    {
+      "approval_created": false,
+      "axes": [
+        {
+          "axis": "action_activity",
+          "criterion_ref": "sha256:2d934df0ff40bf7be23ffea6d87cc3eef9a8b6a80c6692c9d6c81a6084186e1e",
+          "evidence_basis": "not_observed",
+          "evidence_refs": [],
+          "measurements": {
+            "criterion": {
+              "rule": "meaningful_executor_action_or_effect_must_be_observed"
+            },
+            "not_observed_reason": "published_cohort_does_not_retain_action_magnitude_or_effect_trace"
+          },
+          "observation_scope_ref": "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/2",
+          "status": "not_observed"
+        },
+        {
+          "axis": "corrective_alignment",
+          "criterion_ref": "sha256:235262d7c75c4822a2338d590a6ea0b6f8cceda8779395324833615d3c9c16db",
+          "evidence_basis": "not_observed",
+          "evidence_refs": [],
+          "measurements": {
+            "criterion": {
+              "rule": "action_or_effect_must_align_with_preregistered_corrective_reference"
+            },
+            "not_observed_reason": "published_cohort_does_not_retain_corrective_reference_or_alignment_trace"
+          },
+          "observation_scope_ref": "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/2",
+          "status": "not_observed"
+        },
+        {
+          "axis": "predicate_recovery",
+          "criterion_ref": "sha256:1884918c32942522586c634a4d76ef4f0a1734a2cc420c789e03c4735b915d5a",
+          "evidence_basis": "simulator_observation",
+          "evidence_refs": [
+            "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/2",
+            "sha256:9f026952460cc1ca7634b8ab7df2224fe3af642b04a9285fccd73014958809ea#/loops/2"
+          ],
+          "measurements": {
+            "criterion": {
+              "rule": "failed_target_predicate_must_transition_to_true",
+              "target_predicate_index": 1
+            },
+            "source_goal_predicate_vector": [
+              true,
+              false,
+              true
+            ],
+            "source_result_sha256": "b1c7ff126426c046bf936519fc1a4691953f7ab806283db32dfed98e3b0cc6fd",
+            "target_predicate_index": 1,
+            "terminal_goal_predicate_vector": [
+              true,
+              false,
+              true
+            ]
+          },
+          "observation_scope_ref": "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/2",
+          "status": "not_satisfied"
+        },
+        {
+          "axis": "preservation",
+          "criterion_ref": "sha256:1b31bae258b4ab067ca46d40f83d461f520858408d99ff560a9abc54dbf6d7e9",
+          "evidence_basis": "simulator_observation",
+          "evidence_refs": [
+            "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/2",
+            "sha256:9f026952460cc1ca7634b8ab7df2224fe3af642b04a9285fccd73014958809ea#/loops/2"
+          ],
+          "measurements": {
+            "criterion": {
+              "preserve_predicate_indices": [
+                0,
+                2
+              ],
+              "rule": "all_contract_bound_preserve_predicates_remain_true"
+            },
+            "preservation_violation_observed": false,
+            "source_goal_predicate_vector": [
+              true,
+              false,
+              true
+            ],
+            "terminal_goal_predicate_vector": [
+              true,
+              false,
+              true
+            ]
+          },
+          "observation_scope_ref": "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/2",
+          "status": "satisfied"
+        },
+        {
+          "axis": "stable_hold",
+          "criterion_ref": "sha256:92b5b8ebceb5b8bc658dada4249006ab6cdb5793bb6832802fff95ce84f267e2",
+          "evidence_basis": "not_observed",
+          "evidence_refs": [],
+          "measurements": {
+            "criterion": {
+              "required_hold_steps": 20,
+              "rule": "full_predicate_conjunction_must_hold_for_contiguous_steps"
+            },
+            "not_observed_reason": "predicate_conjunction_not_reached_so_stable_hold_was_not_admitted"
+          },
+          "observation_scope_ref": "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/2",
+          "status": "not_observed"
+        }
+      ],
+      "bounded_stable_repair_observed": false,
+      "context": {
+        "evaluation_scope": "simulator_live_same_world_publication_projection",
+        "executor_ref": "huggingface:nvidia/GR00T-N1.7-3B",
+        "fixture_ref": "source-result:b1c7ff126426c046bf936519fc1a4691953f7ab806283db32dfed98e3b0cc6fd:init-state:15",
+        "report_id": "repair-diagnostic:groot-n17-native-cohort:2",
+        "task_ref": "publication-bound:libero-native-repair-cohort"
+      },
+      "dispatch_authority_created": false,
+      "dispatch_request_sent": false,
+      "executor_repair_capability_established": false,
+      "first_failed_axis": "undetermined",
+      "mission_completion_claimed": false,
+      "next_unobserved_axis": "action_activity",
+      "physical_execution_invoked": false,
+      "reasons": [],
+      "schema_version": "missionos_core_repair_diagnostic_report.v1",
+      "validation_status": "verified"
+    },
+    {
+      "approval_created": false,
+      "axes": [
+        {
+          "axis": "action_activity",
+          "criterion_ref": "sha256:2d934df0ff40bf7be23ffea6d87cc3eef9a8b6a80c6692c9d6c81a6084186e1e",
+          "evidence_basis": "not_observed",
+          "evidence_refs": [],
+          "measurements": {
+            "criterion": {
+              "rule": "meaningful_executor_action_or_effect_must_be_observed"
+            },
+            "not_observed_reason": "published_cohort_does_not_retain_action_magnitude_or_effect_trace"
+          },
+          "observation_scope_ref": "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/3",
+          "status": "not_observed"
+        },
+        {
+          "axis": "corrective_alignment",
+          "criterion_ref": "sha256:235262d7c75c4822a2338d590a6ea0b6f8cceda8779395324833615d3c9c16db",
+          "evidence_basis": "not_observed",
+          "evidence_refs": [],
+          "measurements": {
+            "criterion": {
+              "rule": "action_or_effect_must_align_with_preregistered_corrective_reference"
+            },
+            "not_observed_reason": "published_cohort_does_not_retain_corrective_reference_or_alignment_trace"
+          },
+          "observation_scope_ref": "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/3",
+          "status": "not_observed"
+        },
+        {
+          "axis": "predicate_recovery",
+          "criterion_ref": "sha256:1884918c32942522586c634a4d76ef4f0a1734a2cc420c789e03c4735b915d5a",
+          "evidence_basis": "simulator_observation",
+          "evidence_refs": [
+            "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/3",
+            "sha256:9f026952460cc1ca7634b8ab7df2224fe3af642b04a9285fccd73014958809ea#/loops/3"
+          ],
+          "measurements": {
+            "criterion": {
+              "rule": "failed_target_predicate_must_transition_to_true",
+              "target_predicate_index": 1
+            },
+            "source_goal_predicate_vector": [
+              true,
+              false,
+              true
+            ],
+            "source_result_sha256": "23a024c91895749950fb141127a866a2a7ba16adc34fdbbed8328aecdb77a1c0",
+            "target_predicate_index": 1,
+            "terminal_goal_predicate_vector": [
+              true,
+              false,
+              true
+            ]
+          },
+          "observation_scope_ref": "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/3",
+          "status": "not_satisfied"
+        },
+        {
+          "axis": "preservation",
+          "criterion_ref": "sha256:1b31bae258b4ab067ca46d40f83d461f520858408d99ff560a9abc54dbf6d7e9",
+          "evidence_basis": "simulator_observation",
+          "evidence_refs": [
+            "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/3",
+            "sha256:9f026952460cc1ca7634b8ab7df2224fe3af642b04a9285fccd73014958809ea#/loops/3"
+          ],
+          "measurements": {
+            "criterion": {
+              "preserve_predicate_indices": [
+                0,
+                2
+              ],
+              "rule": "all_contract_bound_preserve_predicates_remain_true"
+            },
+            "preservation_violation_observed": false,
+            "source_goal_predicate_vector": [
+              true,
+              false,
+              true
+            ],
+            "terminal_goal_predicate_vector": [
+              true,
+              false,
+              true
+            ]
+          },
+          "observation_scope_ref": "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/3",
+          "status": "satisfied"
+        },
+        {
+          "axis": "stable_hold",
+          "criterion_ref": "sha256:92b5b8ebceb5b8bc658dada4249006ab6cdb5793bb6832802fff95ce84f267e2",
+          "evidence_basis": "not_observed",
+          "evidence_refs": [],
+          "measurements": {
+            "criterion": {
+              "required_hold_steps": 20,
+              "rule": "full_predicate_conjunction_must_hold_for_contiguous_steps"
+            },
+            "not_observed_reason": "predicate_conjunction_not_reached_so_stable_hold_was_not_admitted"
+          },
+          "observation_scope_ref": "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/3",
+          "status": "not_observed"
+        }
+      ],
+      "bounded_stable_repair_observed": false,
+      "context": {
+        "evaluation_scope": "simulator_live_same_world_publication_projection",
+        "executor_ref": "huggingface:nvidia/GR00T-N1.7-3B",
+        "fixture_ref": "source-result:23a024c91895749950fb141127a866a2a7ba16adc34fdbbed8328aecdb77a1c0:init-state:4",
+        "report_id": "repair-diagnostic:groot-n17-native-cohort:3",
+        "task_ref": "publication-bound:libero-native-repair-cohort"
+      },
+      "dispatch_authority_created": false,
+      "dispatch_request_sent": false,
+      "executor_repair_capability_established": false,
+      "first_failed_axis": "undetermined",
+      "mission_completion_claimed": false,
+      "next_unobserved_axis": "action_activity",
+      "physical_execution_invoked": false,
+      "reasons": [],
+      "schema_version": "missionos_core_repair_diagnostic_report.v1",
+      "validation_status": "verified"
+    },
+    {
+      "approval_created": false,
+      "axes": [
+        {
+          "axis": "action_activity",
+          "criterion_ref": "sha256:2d934df0ff40bf7be23ffea6d87cc3eef9a8b6a80c6692c9d6c81a6084186e1e",
+          "evidence_basis": "not_observed",
+          "evidence_refs": [],
+          "measurements": {
+            "criterion": {
+              "rule": "meaningful_executor_action_or_effect_must_be_observed"
+            },
+            "not_observed_reason": "published_cohort_does_not_retain_action_magnitude_or_effect_trace"
+          },
+          "observation_scope_ref": "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/4",
+          "status": "not_observed"
+        },
+        {
+          "axis": "corrective_alignment",
+          "criterion_ref": "sha256:235262d7c75c4822a2338d590a6ea0b6f8cceda8779395324833615d3c9c16db",
+          "evidence_basis": "not_observed",
+          "evidence_refs": [],
+          "measurements": {
+            "criterion": {
+              "rule": "action_or_effect_must_align_with_preregistered_corrective_reference"
+            },
+            "not_observed_reason": "published_cohort_does_not_retain_corrective_reference_or_alignment_trace"
+          },
+          "observation_scope_ref": "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/4",
+          "status": "not_observed"
+        },
+        {
+          "axis": "predicate_recovery",
+          "criterion_ref": "sha256:1884918c32942522586c634a4d76ef4f0a1734a2cc420c789e03c4735b915d5a",
+          "evidence_basis": "simulator_observation",
+          "evidence_refs": [
+            "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/4",
+            "sha256:9f026952460cc1ca7634b8ab7df2224fe3af642b04a9285fccd73014958809ea#/loops/4"
+          ],
+          "measurements": {
+            "criterion": {
+              "rule": "failed_target_predicate_must_transition_to_true",
+              "target_predicate_index": 1
+            },
+            "source_goal_predicate_vector": [
+              true,
+              false,
+              true
+            ],
+            "source_result_sha256": "0ac40c755aff8600c6069ab7fe5f99fd9b05723d0c02fb3309f12679303c2512",
+            "target_predicate_index": 1,
+            "terminal_goal_predicate_vector": [
+              true,
+              false,
+              true
+            ]
+          },
+          "observation_scope_ref": "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/4",
+          "status": "not_satisfied"
+        },
+        {
+          "axis": "preservation",
+          "criterion_ref": "sha256:1b31bae258b4ab067ca46d40f83d461f520858408d99ff560a9abc54dbf6d7e9",
+          "evidence_basis": "simulator_observation",
+          "evidence_refs": [
+            "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/4",
+            "sha256:9f026952460cc1ca7634b8ab7df2224fe3af642b04a9285fccd73014958809ea#/loops/4"
+          ],
+          "measurements": {
+            "criterion": {
+              "preserve_predicate_indices": [
+                0,
+                2
+              ],
+              "rule": "all_contract_bound_preserve_predicates_remain_true"
+            },
+            "preservation_violation_observed": false,
+            "source_goal_predicate_vector": [
+              true,
+              false,
+              true
+            ],
+            "terminal_goal_predicate_vector": [
+              true,
+              false,
+              true
+            ]
+          },
+          "observation_scope_ref": "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/4",
+          "status": "satisfied"
+        },
+        {
+          "axis": "stable_hold",
+          "criterion_ref": "sha256:92b5b8ebceb5b8bc658dada4249006ab6cdb5793bb6832802fff95ce84f267e2",
+          "evidence_basis": "not_observed",
+          "evidence_refs": [],
+          "measurements": {
+            "criterion": {
+              "required_hold_steps": 20,
+              "rule": "full_predicate_conjunction_must_hold_for_contiguous_steps"
+            },
+            "not_observed_reason": "predicate_conjunction_not_reached_so_stable_hold_was_not_admitted"
+          },
+          "observation_scope_ref": "sha256:8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89#/native_loop_context/4",
+          "status": "not_observed"
+        }
+      ],
+      "bounded_stable_repair_observed": false,
+      "context": {
+        "evaluation_scope": "simulator_live_same_world_publication_projection",
+        "executor_ref": "huggingface:nvidia/GR00T-N1.7-3B",
+        "fixture_ref": "source-result:0ac40c755aff8600c6069ab7fe5f99fd9b05723d0c02fb3309f12679303c2512:init-state:15",
+        "report_id": "repair-diagnostic:groot-n17-native-cohort:4",
+        "task_ref": "publication-bound:libero-native-repair-cohort"
+      },
+      "dispatch_authority_created": false,
+      "dispatch_request_sent": false,
+      "executor_repair_capability_established": false,
+      "first_failed_axis": "undetermined",
+      "mission_completion_claimed": false,
+      "next_unobserved_axis": "action_activity",
+      "physical_execution_invoked": false,
+      "reasons": [],
+      "schema_version": "missionos_core_repair_diagnostic_report.v1",
+      "validation_status": "verified"
+    }
+  ],
+  "result_sha256": "6422b9ab383d33674db119bd34042535e7a1dfc00234296695c9206b770212fa",
+  "schema_version": "missionos_groot_repair_diagnostic_projection.v1",
+  "source_bindings": {
+    "cohort_record": "20260820-groot-n17-lerobot-native-single-attempt-cohort-result.json",
+    "cohort_record_sha256": "9f026952460cc1ca7634b8ab7df2224fe3af642b04a9285fccd73014958809ea",
+    "cohort_result_sha256": "4fd32ca5ba70641ce0eeea2893333eaa6fa9d13e11c9ca7f2e2c4b7026f7fa40",
+    "publication_record": "20260820-groot-n17-lerobot-native-single-attempt-cohort-publication.json",
+    "publication_record_sha256": "8aebf6acd20489ceaa5557a044a73dc4374293b4e9a9241785c4d573347f1f89"
+  }
+}
