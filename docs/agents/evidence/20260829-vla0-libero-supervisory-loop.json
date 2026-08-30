@@ -1,0 +1,100 @@
+{
+  "schema_version": "missionos.vla0_libero_supervisory_loop_evidence.v1",
+  "publication_scope": "public_bounded_diagnostic_negative_observation",
+  "status": "semantic_intervention_executed_but_predicate_recovery_not_observed",
+  "task": {
+    "task_suite": "libero_10",
+    "task_id": 8,
+    "episode_init_state_index": 15,
+    "environment_seed": 0
+  },
+  "fixture": {
+    "requested_displacement_metres": 0.03,
+    "snapshot_sha256": "8064d6faeeb02a67a08649be0ca39529b4a79da459cf8d11493c0412bbc7b651",
+    "source_goal_predicate_vector": [true, false, true],
+    "scripted_oracle_recoverability_result_sha256": "163981901bcddefc545be9a18e0c41545d57c0db105612ff59179fa79df58016"
+  },
+  "runtime": {
+    "provider": "google_cloud",
+    "zone": "us-central1-a",
+    "machine_type": "g2-standard-4",
+    "accelerator": "nvidia-l4",
+    "accelerator_count": 1,
+    "maximum_run_duration_seconds": 7200,
+    "vla0_source_revision": "b78db19eda67b02844fe82b8929e1f94de7f2dcc",
+    "lerobot_source_revision": "c55fbe1b3e36f640d659918945514fbb43a2b53d",
+    "checkpoint_repository": "ankgoyal/vla0-libero",
+    "checkpoint_revision": "6c62a511ad56042b2b3ea0a90c4def33e1ea3b96",
+    "additional_training_performed": false,
+    "instance_deleted": true,
+    "attached_boot_disk_deleted": true,
+    "post_delete_instance_name_match_count": 0,
+    "post_delete_disk_name_match_count": 0
+  },
+  "supervisory_trace": {
+    "detected_failed_predicate_count": 1,
+    "detected_preserved_predicate_count": 2,
+    "repair_intent_selection_source": "deterministic_non_model_predicate_diagnosis",
+    "repair_instruction_variant": "semantic_preserve",
+    "repair_instruction": "Place the second moka pot on the stove. Keep the first moka pot on the stove and keep the stove turned on.",
+    "repair_instruction_sha256": "8fba98961fa646682525f4f0338115d19c563c7e28077bb8af85c56839fd8732",
+    "human_supplied_runtime_instruction": false,
+    "missionos_generated_low_level_action": false,
+    "proposal_sha256": "d7c3f17e984fd9852eda1f77b1c5c159328f8f26cf15da0cb7840bd4d3429548",
+    "operator_approval_ref": "issue-77-user-approval-20260829",
+    "approval_sha256": "e959ba049f14266ac033fc218683f4f876ba690e98000ca4744e307c4ebbf8c3",
+    "dispatch_sha256": "57e1a5c71e0cf9f87bf19e77e0db2b3c456ebcfb89fffb11baa458f833bf60a8",
+    "dispatch_receipt_present": true,
+    "model_inference_invoked": true,
+    "repair_instruction_payload_exact_match_for_all_policy_calls": true,
+    "simulator_execution_observed": true
+  },
+  "observed_result": {
+    "maximum_policy_action_count": 128,
+    "policy_action_count": 128,
+    "verifier_hold_action_count": 0,
+    "total_simulator_action_count": 128,
+    "predicate_conjunction_observed": false,
+    "first_conjunction_after_action": null,
+    "source_goal_predicate_vector": [true, false, true],
+    "final_goal_predicate_vector": [true, false, true],
+    "first_gripper_contact_after_action": null,
+    "gripper_contact_observation_count": 0,
+    "maximum_target_translation_metres": 1.007026553366761e-9,
+    "predicate_improvement_observed": false,
+    "preservation_invariant_breach_observed": false,
+    "stable_completion_observed": false,
+    "final_verdict": "predicate_not_reached",
+    "runtime_status": "budget_exhausted_without_improvement"
+  },
+  "stability_contract": {
+    "authority": "verifier_owned",
+    "required_steps": 20,
+    "hold_action_7d": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0],
+    "hold_action_sha256": "2b8f24a1a98949599f3ddf8fb53fefe0e6bd2a0cc3aedd1b6e84ae7937e4b0d6",
+    "policy_inference_allowed_during_hold": false,
+    "hold_admitted": false,
+    "hold_not_admitted_reason": "predicate_conjunction_not_observed"
+  },
+  "evidence": {
+    "base_report_result_sha256": "fffc377bb02dedcb3d7f3e1cb8f81439688ccfb47ed798daef5e897934949dec",
+    "repair_result_sha256": "fe34297290d23d9e1567f8e523a4ad06832b05525d2625e809623ebf52f78680",
+    "curriculum_probe_result_sha256": "4ffa6c2fadd9f2f88e1402985353633718bc90fe952f3df4185c13ce5f5294d0",
+    "base_report_file_sha256": "f04a38dad8235a8e1df1c75448623c63fcebeda01a6c694cca6abef94709fc29",
+    "curriculum_probe_file_sha256": "4b1018bb5abfa7ed08db69a1c70c1780bec9a40393fa52884bf8c24f0596ebca",
+    "raw_action_values_published": false,
+    "raw_frames_published": false
+  },
+  "claim_boundary": {
+    "authority": "diagnostic_only",
+    "state_continuity_basis": "diagnostic_mujoco_state_clone",
+    "closed_supervisory_trace_recorded": true,
+    "predicate_recovery_observed": false,
+    "stable_vla0_predicate_recovery_established": false,
+    "same_world_semantic_repair_established": false,
+    "general_vla0_recovery_rate_established": false,
+    "controller_ack_observed": false,
+    "physical_execution_invoked": false,
+    "real_world_safety_established": false
+  }
+}

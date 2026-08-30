@@ -264,9 +264,10 @@ def execute_live(
         repair_result=base_report["repair_result"],
         raw_action_trace=base_report["raw_action_trace"],
     )
-    recovery = bool(base_report["diagnostic_clone_recovery_observed"])
+    predicate_entry = bool(base_report["repair_result"]["predicate_conjunction_observed"])
+    recovery = bool(base_report["repair_result"]["stable_completion_observed"])
     report_without_digest = {
-        "schema_version": "missionos.vla0_libero_curriculum_probe.v1",
+        "schema_version": "missionos.vla0_libero_curriculum_probe.v2",
         "status": (
             "bounded_curriculum_fixture_recovery_observed"
             if recovery
@@ -284,7 +285,10 @@ def execute_live(
         "base_report_sha256": base_report["result_sha256"],
         "source_goal_predicate_vector": base_report["source_goal_predicate_vector"],
         "final_goal_predicate_vector": base_report["final_goal_predicate_vector"],
+        "repair_intent_selection": base_report["repair_intent_selection"],
+        "predicate_conjunction_observed": predicate_entry,
         "actual_predicate_recovery_observed": recovery,
+        "stable_predicate_recovery_observed": recovery,
         "actual_effect_statistics": effects,
         "additional_training_performed": False,
         "stopping_rule": {

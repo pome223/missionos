@@ -58,6 +58,7 @@ from src.runtime.libero_panda_predicate_package import (  # noqa: E402
     LIBERO_PANDA_SCENE8_ENVIRONMENT,
 )
 from src.runtime.vla0_libero_same_world_repair import (  # noqa: E402
+    VLA0_VERIFIER_HOLD_ACTION_7D,
     build_vla0_same_world_repair_proposal,
     run_vla0_same_world_repair,
 )
@@ -538,7 +539,6 @@ def execute_live(
             reset_count=reset_count,
             maximum_repair_steps=maximum_repair_steps,
             source_object_poses=source_object_poses,
-            repair_instruction_variant="original_task",
             state_continuity_basis=continuity_basis,
             diagnostic_handoff_snapshot_sha256=(
                 None
@@ -610,9 +610,12 @@ def execute_live(
                 **instruction_evidence,
             }
 
-        def apply_action(
+        def _apply_simulator_action(
             selected_action: Any,
-            chunk_index: int,
+            global_action_index: int,
+            *,
+            phase: str,
+            policy_generated: bool,
         ) -> tuple[Any, dict[str, Any]]:
             nonlocal observation
             action = np.asarray(selected_action, dtype=np.float32).copy()
@@ -632,31 +635,35 @@ def execute_live(
                 {"robot_state": {"eef": {"pos": next_observation["robot0_eef_pos"]}}},
                 previous_positions,
             )
-            action_sha256 = digest_runtime_material("vla0_selected_action", action)
-            raw_action_trace.append(
-                {
-                    "global_repair_step_index": chunk_index,
-                    "action_7d": [float(value) for value in action.tolist()],
-                    "action_step_sha256": action_sha256,
-                }
+            action_sha256 = digest_runtime_material(
+                "vla0_selected_action" if policy_generated else "vla0_verifier_hold_action",
+                action,
             )
+            if policy_generated:
+                raw_action_trace.append(
+                    {
+                        "global_repair_step_index": global_action_index,
+                        "action_7d": [float(value) for value in action.tolist()],
+                        "action_step_sha256": action_sha256,
+                    }
+                )
             frame_capture = (
                 _capture_frames(
                     observation=next_observation,
                     frame_capture_dir=frame_capture_dir,
                     artifact_root=output_path.parent,
-                    step_number=chunk_index + 1,
+                    step_number=global_action_index + 1,
                 )
                 if frame_capture_dir is not None
                 else None
             )
             trace = {
                 "schema_version": PRESERVATION_STEP_TRACE_SCHEMA_VERSION,
-                "chunk_index": chunk_index,
+                "chunk_index": global_action_index,
                 "action_step_index": 0,
                 "action_step_number": 1,
-                "global_repair_step_index": chunk_index,
-                "global_repair_step_number": chunk_index + 1,
+                "global_repair_step_index": global_action_index,
+                "global_repair_step_number": global_action_index + 1,
                 "action_step_sha256": action_sha256,
                 "goal_predicate_observations": deepcopy(predicates),
                 "goal_predicate_vector_sha256": canonical_sha256(
@@ -677,7 +684,39 @@ def execute_live(
                 "truncated": False,
                 "action_chunk_sha256": action_sha256,
                 "preservation_step_trace": [trace],
+                "execution_phase": phase,
+                "policy_inference_invoked": policy_generated,
+                "verifier_hold_step": not policy_generated,
             }
+
+        def apply_action(
+            selected_action: Any,
+            chunk_index: int,
+        ) -> tuple[Any, dict[str, Any]]:
+            return _apply_simulator_action(
+                selected_action,
+                chunk_index,
+                phase="vla0_policy_execution",
+                policy_generated=True,
+            )
+
+        def apply_verifier_hold_step(
+            hold_action: Any,
+            global_action_index: int,
+        ) -> tuple[Any, dict[str, Any]]:
+            normalized = [float(value) for value in hold_action]
+            if normalized != list(VLA0_VERIFIER_HOLD_ACTION_7D):
+                raise RuntimeError("vla0_verifier_hold_action_mismatch")
+            next_observation, evidence = _apply_simulator_action(
+                hold_action,
+                global_action_index,
+                phase="verifier_owned_post_conjunction_stability",
+                policy_generated=False,
+            )
+            evidence["verifier_hold_action_sha256"] = canonical_sha256(
+                {"verifier_hold_action_7d": normalized}
+            )
+            return next_observation, evidence
 
         repair_result = run_vla0_same_world_repair(
             proposal=proposal,
@@ -687,6 +726,7 @@ def execute_live(
             initial_observation=observation,
             invoke_model=invoke_model,
             apply_action_chunk=apply_action,
+            apply_verifier_hold_step=apply_verifier_hold_step,
             observe_goal_predicates=lambda: _predicate_material(environment),
             observed_reset_count=lambda: reset_count,
             observed_state_continuity_basis=continuity_basis,
@@ -695,19 +735,20 @@ def execute_live(
             item["satisfied"] for item in repair_result["final_goal_predicate_observations"]
         ]
         expected_satisfied_status = (
-            "satisfied"
+            "stable_satisfied"
             if scripted_fixture_material is not None
-            else "satisfied_diagnostic_observation"
+            else "stable_satisfied_diagnostic_observation"
         )
         recovery_observed = bool(
             repair_result["status"] == expected_satisfied_status
             and repair_result["predicate_improvement_observed"] is True
+            and repair_result["stable_completion_observed"] is True
             and final_vector == [True, True, True]
             and repair_result["first_preservation_violation"] is None
             and repair_result["first_preservation_invariant_breach"] is None
         )
         report_without_digest = {
-            "schema_version": "missionos.vla0_libero_snapshot_recovery.v2",
+            "schema_version": "missionos.vla0_libero_snapshot_recovery.v3",
             "status": (
                 "scripted_fixture_repair_observed"
                 if recovery_observed and scripted_fixture_material is not None
@@ -721,6 +762,12 @@ def execute_live(
             "source_contract_sha256": source_contract_sha256,
             "source_goal_predicate_vector": source_vector,
             "final_goal_predicate_vector": final_vector,
+            "detected_deviation": {
+                "source_goal_predicate_vector": source_vector,
+                "failed_predicate_ids": proposal["target_predicate_ids"],
+                "preserved_predicate_ids": proposal["preserve_predicate_ids"],
+            },
+            "repair_intent_selection": proposal["repair_intent_selection"],
             "proposal": proposal,
             "approval": approval,
             "dispatch": dispatch,

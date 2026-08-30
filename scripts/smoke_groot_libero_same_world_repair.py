@@ -20,6 +20,7 @@ from src.runtime.groot_libero_same_world_repair import (  # noqa: E402
     DEFAULT_EXECUTION_ADAPTER,
     LEROBOT_GROOT_N17_EXECUTION_ADAPTER,
     PRESERVATION_STEP_TRACE_SCHEMA_VERSION,
+    VLA0_LIBERO_EXECUTION_ADAPTER,
     approve_same_world_repair,
     build_same_world_repair_dispatch,
     build_same_world_repair_proposal,
@@ -27,6 +28,12 @@ from src.runtime.groot_libero_same_world_repair import (  # noqa: E402
 )
 from src.runtime.libero_panda_predicate_package import (  # noqa: E402
     LIBERO_PANDA_SCENE8_ENVIRONMENT,
+)
+from src.runtime.vla0_libero_same_world_repair import (  # noqa: E402
+    VLA0_STABLE_SUCCESS_STEPS,
+    VLA0_VERIFIER_HOLD_ACTION_7D,
+    build_vla0_same_world_repair_proposal,
+    run_vla0_same_world_repair,
 )
 
 
@@ -129,29 +136,46 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--execution-profile",
-        choices=("isaac-zmq", "lerobot-n17"),
+        choices=("isaac-zmq", "lerobot-n17", "vla0"),
         default="isaac-zmq",
     )
     args = parser.parse_args()
     lerobot = args.execution_profile == "lerobot-n17"
-    n_action_steps = 16 if lerobot else 8
+    vla0 = args.execution_profile == "vla0"
+    n_action_steps = 1 if vla0 else 16 if lerobot else 8
     execution_adapter = (
-        LEROBOT_GROOT_N17_EXECUTION_ADAPTER if lerobot else DEFAULT_EXECUTION_ADAPTER
+        VLA0_LIBERO_EXECUTION_ADAPTER
+        if vla0
+        else LEROBOT_GROOT_N17_EXECUTION_ADAPTER
+        if lerobot
+        else DEFAULT_EXECUTION_ADAPTER
     )
     initial_first = not lerobot
     initial_second = lerobot
 
-    proposal = build_same_world_repair_proposal(
-        environment=LIBERO_PANDA_SCENE8_ENVIRONMENT,
-        environment_session_id="fixture-world:scene8",
-        source_contract_sha256="a" * 64,
-        source_goal_predicates=_vector(first=initial_first, second=initial_second),
-        reset_count=1,
-        maximum_repair_chunks=3,
-        n_action_steps=n_action_steps,
-        execution_adapter=execution_adapter,
-        repair_instruction_variant="short_target" if lerobot else "semantic_preserve",
-        proposal_id="fixture-proposal",
+    proposal = (
+        build_vla0_same_world_repair_proposal(
+            environment=LIBERO_PANDA_SCENE8_ENVIRONMENT,
+            environment_session_id="fixture-world:scene8",
+            source_contract_sha256="a" * 64,
+            source_goal_predicates=_vector(first=initial_first, second=initial_second),
+            reset_count=1,
+            maximum_repair_steps=2 + VLA0_STABLE_SUCCESS_STEPS,
+            proposal_id="fixture-proposal",
+        )
+        if vla0
+        else build_same_world_repair_proposal(
+            environment=LIBERO_PANDA_SCENE8_ENVIRONMENT,
+            environment_session_id="fixture-world:scene8",
+            source_contract_sha256="a" * 64,
+            source_goal_predicates=_vector(first=initial_first, second=initial_second),
+            reset_count=1,
+            maximum_repair_chunks=3,
+            n_action_steps=n_action_steps,
+            execution_adapter=execution_adapter,
+            repair_instruction_variant="short_target" if lerobot else "semantic_preserve",
+            proposal_id="fixture-proposal",
+        )
     )
     approval = approve_same_world_repair(
         proposal=proposal,
@@ -200,17 +224,48 @@ def main() -> int:
             ),
         }
 
+    hold_steps = 0
+
+    def apply_verifier_hold_step(action, global_action_index):
+        nonlocal hold_steps
+        hold_steps += 1
+        if list(action) != list(VLA0_VERIFIER_HOLD_ACTION_7D):
+            raise RuntimeError("vla0 smoke hold action mismatch")
+        return {"version": global_action_index + 1}, {
+            "simulator_step_return_observed": True,
+            "simulator_effect_observed": False,
+            "official_predicate_result": True,
+            "policy_inference_invoked": False,
+            "verifier_hold_step": True,
+            "verifier_hold_action_sha256": canonical_sha256(
+                {"verifier_hold_action_7d": list(VLA0_VERIFIER_HOLD_ACTION_7D)}
+            ),
+            "preservation_step_trace": _step_trace(
+                chunk_index=global_action_index,
+                n_action_steps=1,
+                initial_first=True,
+                initial_second=True,
+                target_satisfied_at_last_step=False,
+            ),
+        }
+
     with TemporaryDirectory(prefix="missionos-libero-same-world-smoke-") as directory:
-        result = run_same_world_repair(
-            proposal=proposal,
-            approval=approval,
-            dispatch=dispatch,
-            dispatch_ledger=DispatchAuthorityTable(Path(directory) / "dispatch.json"),
-            initial_observation={"version": 0},
-            invoke_model=invoke_model,
-            apply_action_chunk=apply_action_chunk,
-            observe_goal_predicates=lambda: deepcopy(current_vector),
-            observed_reset_count=lambda: 1,
+        run = run_vla0_same_world_repair if vla0 else run_same_world_repair
+        run_kwargs = {
+            "proposal": proposal,
+            "approval": approval,
+            "dispatch": dispatch,
+            "dispatch_ledger": DispatchAuthorityTable(Path(directory) / "dispatch.json"),
+            "initial_observation": {"version": 0},
+            "invoke_model": invoke_model,
+            "apply_action_chunk": apply_action_chunk,
+            "observe_goal_predicates": lambda: deepcopy(current_vector),
+            "observed_reset_count": lambda: 1,
+        }
+        if vla0:
+            run_kwargs["apply_verifier_hold_step"] = apply_verifier_hold_step
+        result = run(
+            **run_kwargs,
         )
 
     summary = {
@@ -221,6 +276,9 @@ def main() -> int:
         "chunks_executed": result["chunks_executed"],
         "policy_observation_versions": policy_observation_versions,
         "predicate_improvement_observed": result["predicate_improvement_observed"],
+        "repair_instruction_variant": result["repair_instruction_variant"],
+        "stable_completion_observed": result["stable_completion_observed"],
+        "verifier_hold_action_count": result["verifier_hold_action_count"],
         "task_completion_claimed": result["task_completion_claimed"],
         "same_world_reset_count": result["same_world_reset_count"],
         "dispatch_receipt_present": result["dispatch_receipt_present"],
@@ -233,10 +291,15 @@ def main() -> int:
         "schema_version": "missionos_groot_libero_same_world_repair_smoke.v1",
         "runtime": "fixture",
         "execution_adapter": execution_adapter,
-        "status": "satisfied",
+        "status": "stable_satisfied" if vla0 else "satisfied",
         "chunks_executed": 2,
         "policy_observation_versions": [0, 1],
         "predicate_improvement_observed": True,
+        "repair_instruction_variant": "semantic_preserve" if vla0 else (
+            "short_target" if lerobot else "semantic_preserve"
+        ),
+        "stable_completion_observed": vla0,
+        "verifier_hold_action_count": VLA0_STABLE_SUCCESS_STEPS if vla0 else 0,
         "task_completion_claimed": True,
         "same_world_reset_count": 1,
         "dispatch_receipt_present": True,

@@ -25,17 +25,21 @@ from src.runtime.libero_panda_predicate_package import (
 # v4 additionally binds the concrete action-execution adapter. This prevents an
 # approval for the 8-step Isaac-GR00T/ZMQ path from being reused by the 16-step
 # LeRobot policy path (or vice versa).
-SAME_WORLD_REPAIR_PROPOSAL_SCHEMA_VERSION = "missionos_groot_libero_same_world_repair_proposal.v5"
+SAME_WORLD_REPAIR_PROPOSAL_SCHEMA_VERSION = "missionos_groot_libero_same_world_repair_proposal.v6"
 SAME_WORLD_REPAIR_APPROVAL_SCHEMA_VERSION = "missionos_groot_libero_same_world_repair_approval.v3"
-SAME_WORLD_REPAIR_DISPATCH_SCHEMA_VERSION = "missionos_groot_libero_same_world_repair_dispatch.v4"
+SAME_WORLD_REPAIR_DISPATCH_SCHEMA_VERSION = "missionos_groot_libero_same_world_repair_dispatch.v5"
 # v4 split frame diagnostics from the receipt digest. v5 records the
 # instruction-ablation variant. v6 separates terminal predicate observation
 # from completion authority for diagnostic state clones. v7 binds the action
 # execution adapter used by the live runtime.
-SAME_WORLD_REPAIR_RESULT_SCHEMA_VERSION = "missionos_groot_libero_same_world_repair_result.v8"
+SAME_WORLD_REPAIR_RESULT_SCHEMA_VERSION = "missionos_groot_libero_same_world_repair_result.v9"
 PRESERVATION_STEP_TRACE_SCHEMA_VERSION = "missionos_groot_libero_preservation_step_trace.v1"
 FRAME_CAPTURE_SCHEMA_VERSION = "missionos_groot_libero_repair_frame_capture.v1"
 PRESERVATION_INVARIANT_SCHEMA_VERSION = "missionos_groot_libero_preservation_invariant.v1"
+REPAIR_INTENT_SELECTION_SCHEMA_VERSION = "missionos_predicate_driven_repair_intent_selection.v1"
+POST_CONJUNCTION_STABILITY_SCHEMA_VERSION = (
+    "missionos_verifier_owned_post_conjunction_stability.v1"
+)
 
 # Three evidence types with different evaluation timing and different authority.
 # Keeping them separate stops a continuously-evaluated invariant from being
@@ -763,6 +767,65 @@ def _instruction_ablation_material(variant: str) -> dict[str, Any]:
     }
 
 
+def _repair_intent_selection_material(
+    *,
+    satisfied: Sequence[Mapping[str, Any]],
+    unsatisfied: Sequence[Mapping[str, Any]],
+    instruction_variant: str,
+    instruction: str,
+    instruction_sha256: str,
+) -> dict[str, Any]:
+    return {
+        "schema_version": REPAIR_INTENT_SELECTION_SCHEMA_VERSION,
+        "selection_source": "deterministic_non_model_predicate_diagnosis",
+        "failed_predicate_ids": [item["predicate_id"] for item in unsatisfied],
+        "preserved_predicate_ids": [item["predicate_id"] for item in satisfied],
+        "repair_instruction_variant": instruction_variant,
+        "repair_instruction": instruction,
+        "repair_instruction_sha256": instruction_sha256,
+        "human_supplied_runtime_instruction": False,
+        "model_generated_low_level_action": False,
+    }
+
+
+def _post_conjunction_stability_material(
+    *,
+    required_steps: int,
+    hold_action: Sequence[float] | None,
+) -> dict[str, Any] | None:
+    if (
+        isinstance(required_steps, bool)
+        or not isinstance(required_steps, int)
+        or required_steps < 0
+    ):
+        raise ValueError("post_conjunction_stability_steps_invalid")
+    if required_steps == 0:
+        if hold_action is not None:
+            raise ValueError("stability_hold_action_without_required_steps")
+        return None
+    if (
+        hold_action is None
+        or isinstance(hold_action, (str, bytes))
+        or len(hold_action) != 7
+    ):
+        raise ValueError("post_conjunction_stability_hold_action_invalid")
+    normalized_action = [
+        _finite_number(value, field="stability_hold_action") for value in hold_action
+    ]
+    return {
+        "schema_version": POST_CONJUNCTION_STABILITY_SCHEMA_VERSION,
+        "authority": "verifier_owned",
+        "required_steps": required_steps,
+        "hold_action_7d": normalized_action,
+        "hold_action_sha256": canonical_sha256(
+            {"verifier_hold_action_7d": normalized_action}
+        ),
+        "policy_inference_allowed_during_hold": False,
+        "stop_on_predicate_regression": True,
+        "stop_on_preservation_violation": True,
+    }
+
+
 def _validate_proposal_instruction_binding(proposal: Mapping[str, Any]) -> None:
     """Re-derive the fixed instruction at the authority boundary."""
 
@@ -795,6 +858,29 @@ def _validate_proposal_instruction_binding(proposal: Mapping[str, Any]) -> None:
         raise ValueError("repair_contract_instruction_digest_binding_mismatch")
     if contract.get("instruction_ablation") != _instruction_ablation_material(variant):
         raise ValueError("repair_contract_instruction_ablation_binding_mismatch")
+    satisfied = [item for item in normalized if item["satisfied"]]
+    unsatisfied = [item for item in normalized if not item["satisfied"]]
+    expected_selection = _repair_intent_selection_material(
+        satisfied=satisfied,
+        unsatisfied=unsatisfied,
+        instruction_variant=variant,
+        instruction=expected_instruction,
+        instruction_sha256=expected_digest,
+    )
+    if proposal.get("repair_intent_selection") != expected_selection:
+        raise ValueError("repair_intent_selection_binding_mismatch")
+    if contract.get("repair_intent_selection") != expected_selection:
+        raise ValueError("repair_contract_intent_selection_binding_mismatch")
+    stability = contract.get("post_conjunction_stability")
+    if stability is not None:
+        if not isinstance(stability, Mapping):
+            raise ValueError("post_conjunction_stability_contract_invalid")
+        expected_stability = _post_conjunction_stability_material(
+            required_steps=stability.get("required_steps"),
+            hold_action=stability.get("hold_action_7d"),
+        )
+        if stability != expected_stability:
+            raise ValueError("post_conjunction_stability_contract_binding_mismatch")
     execution_adapter = proposal.get("execution_adapter")
     if execution_adapter not in SUPPORTED_EXECUTION_ADAPTERS:
         raise ValueError("same_world_repair_execution_adapter_not_supported")
@@ -941,6 +1027,8 @@ def build_same_world_repair_proposal(
     preserved_object_max_displacement_metres: float = (
         DEFAULT_PRESERVED_OBJECT_MAX_DISPLACEMENT_METRES
     ),
+    post_conjunction_stability_steps: int = 0,
+    post_conjunction_hold_action: Sequence[float] | None = None,
     state_continuity_basis: str = STATE_CONTINUITY_LIVE_SAME_WORLD,
     diagnostic_handoff_snapshot_sha256: str | None = None,
 ) -> dict[str, Any]:
@@ -1003,6 +1091,22 @@ def build_same_world_repair_proposal(
     )
     vector_sha256 = canonical_sha256({"goal_predicate_observations": normalized})
     instruction_sha256 = canonical_sha256({"repair_instruction": repair_instruction})
+    intent_selection = _repair_intent_selection_material(
+        satisfied=satisfied,
+        unsatisfied=unsatisfied,
+        instruction_variant=repair_instruction_variant,
+        instruction=repair_instruction,
+        instruction_sha256=instruction_sha256,
+    )
+    stability_contract = _post_conjunction_stability_material(
+        required_steps=post_conjunction_stability_steps,
+        hold_action=post_conjunction_hold_action,
+    )
+    if (
+        stability_contract is not None
+        and post_conjunction_stability_steps >= maximum_repair_steps
+    ):
+        raise ValueError("post_conjunction_stability_exhausts_repair_budget")
     contract_material = {
         "environment": environment,
         "environment_session_id": environment_session_id,
@@ -1013,6 +1117,7 @@ def build_same_world_repair_proposal(
         "repair_instruction_variant": repair_instruction_variant,
         "repair_instruction_sha256": instruction_sha256,
         "instruction_ablation": _instruction_ablation_material(repair_instruction_variant),
+        "repair_intent_selection": intent_selection,
         "maximum_repair_chunks": maximum_repair_chunks,
         "n_action_steps": n_action_steps,
         "execution_adapter": execution_adapter,
@@ -1029,6 +1134,8 @@ def build_same_world_repair_proposal(
         "additional_attempts_allowed": 0,
         "physical_execution_invoked": False,
     }
+    if stability_contract is not None:
+        contract_material["post_conjunction_stability"] = stability_contract
     if state_continuity_basis != STATE_CONTINUITY_LIVE_SAME_WORLD:
         contract_material.update(
             {
@@ -1055,6 +1162,7 @@ def build_same_world_repair_proposal(
         "execution_adapter": execution_adapter,
         "repair_instruction": repair_instruction,
         "repair_instruction_sha256": instruction_sha256,
+        "repair_intent_selection": intent_selection,
         "repair_contract": contract_material,
         "repair_contract_sha256": repair_contract_sha256,
         "requires_new_human_approval": True,
@@ -1147,6 +1255,9 @@ def build_same_world_repair_dispatch(
         "maximum_repair_chunks": proposal["repair_contract"]["maximum_repair_chunks"],
         "n_action_steps": proposal["repair_contract"]["n_action_steps"],
         "maximum_repair_steps": proposal["repair_contract"]["maximum_repair_steps"],
+        "post_conjunction_stability": deepcopy(
+            proposal["repair_contract"].get("post_conjunction_stability")
+        ),
         "physical_execution_invoked": False,
     }
     return {**base, "dispatch_sha256": canonical_sha256(base)}
@@ -1161,6 +1272,9 @@ def run_same_world_repair(
     initial_observation: Any,
     invoke_model: Callable[[Any, str, int], tuple[Any, Mapping[str, Any]]],
     apply_action_chunk: Callable[[Any, int], tuple[Any, Mapping[str, Any]]],
+    apply_verifier_hold_step: (
+        Callable[[Sequence[float], int], tuple[Any, Mapping[str, Any]]] | None
+    ) = None,
     observe_goal_predicates: Callable[[], Sequence[Mapping[str, Any]]],
     observed_reset_count: Callable[[], int],
     observed_state_continuity_basis: str = STATE_CONTINUITY_LIVE_SAME_WORLD,
@@ -1193,6 +1307,13 @@ def run_same_world_repair(
         raise ValueError("dispatch_chunk_budget_binding_mismatch")
     if dispatch.get("maximum_repair_steps") != repair_contract.get("maximum_repair_steps"):
         raise ValueError("dispatch_applied_action_budget_binding_mismatch")
+    stability_contract = repair_contract.get("post_conjunction_stability")
+    if dispatch.get("post_conjunction_stability") != stability_contract:
+        raise ValueError("dispatch_stability_contract_binding_mismatch")
+    if stability_contract is None and apply_verifier_hold_step is not None:
+        raise ValueError("verifier_hold_callback_without_contract")
+    if stability_contract is not None and apply_verifier_hold_step is None:
+        raise ValueError("verifier_hold_callback_required")
     if observed_reset_count() != 1:
         raise ValueError("same_world_reset_count_changed_before_dispatch")
 
@@ -1213,6 +1334,9 @@ def run_same_world_repair(
             terminal_verdicts=(
                 "satisfied",
                 "satisfied_diagnostic_observation",
+                "stable_satisfied",
+                "stable_satisfied_diagnostic_observation",
+                "unstable_after_predicate_conjunction",
                 "predicate_improved",
                 "stopped_on_preservation_invariant",
                 "stopped_on_preservation_violation",
@@ -1220,9 +1344,11 @@ def run_same_world_repair(
             verifier_passed_verdicts=(
                 "satisfied",
                 "satisfied_diagnostic_observation",
+                "stable_satisfied",
+                "stable_satisfied_diagnostic_observation",
                 "predicate_improved",
             ),
-            completion_verdicts=("satisfied",),
+            completion_verdicts=("satisfied", "stable_satisfied"),
             budget_exhausted_verdict="budget_exhausted_without_improvement",
         ),
         dispatch_ref=str(dispatch["dispatch_ref"]),
@@ -1251,6 +1377,139 @@ def run_same_world_repair(
     preservation_invariant = proposal["repair_contract"].get("preservation_invariant") or {
         "enabled": False
     }
+    predicate_conjunction_observed = False
+    first_conjunction_after_action: int | None = None
+    stability_verification: dict[str, Any] | None = None
+
+    def run_stability_verification(*, policy_action_count: int) -> tuple[str, dict[str, Any]]:
+        nonlocal observation
+        nonlocal final_vector
+        nonlocal previous_step_vector
+        nonlocal first_preservation_violation
+        nonlocal first_preservation_invariant_breach
+
+        if not isinstance(stability_contract, Mapping) or apply_verifier_hold_step is None:
+            raise RuntimeError("post_conjunction_stability_not_configured")
+        required_steps = int(stability_contract["required_steps"])
+        hold_action = list(stability_contract["hold_action_7d"])
+        available_steps = int(dispatch["maximum_repair_steps"]) - policy_action_count
+        trace: list[dict[str, Any]] = []
+        stable_steps = 0
+        termination_reason = "required_steps_completed"
+        if available_steps < required_steps:
+            termination_reason = "insufficient_dispatch_action_budget"
+        else:
+            for hold_index in range(required_steps):
+                if observed_reset_count() != 1:
+                    raise RuntimeError("same_world_reset_count_changed_during_stability_hold")
+                global_action_index = policy_action_count + hold_index
+                observation, application = apply_verifier_hold_step(
+                    hold_action,
+                    global_action_index,
+                )
+                if application.get("simulator_step_return_observed") is not True:
+                    raise RuntimeError("stability_hold_simulator_step_return_not_observed")
+                if not isinstance(application.get("simulator_effect_observed"), bool):
+                    raise RuntimeError("stability_hold_simulator_effect_not_observed")
+                if application.get("policy_inference_invoked") is not False:
+                    raise RuntimeError("stability_hold_policy_inference_must_be_false")
+                if application.get("verifier_hold_step") is not True:
+                    raise RuntimeError("stability_hold_authority_marker_missing")
+                if application.get("verifier_hold_action_sha256") != stability_contract.get(
+                    "hold_action_sha256"
+                ):
+                    raise RuntimeError("stability_hold_action_binding_mismatch")
+                observed_vector = normalize_goal_predicates(
+                    environment=str(proposal["environment"]),
+                    observations=observe_goal_predicates(),
+                )
+                step_trace = normalize_preservation_step_trace(
+                    environment=str(proposal["environment"]),
+                    chunk_index=global_action_index,
+                    n_action_steps=1,
+                    global_action_stride=1,
+                    trace=application.get("preservation_step_trace"),
+                )
+                step = step_trace[0]
+                if step["goal_predicate_observations"] != observed_vector:
+                    raise RuntimeError("stability_hold_trace_final_vector_mismatch")
+                conjunction = all(item["satisfied"] for item in observed_vector)
+                if application.get("official_predicate_result") is not conjunction:
+                    raise RuntimeError("stability_hold_official_predicate_mismatch")
+                transitions = _preservation_transitions(
+                    previous_vector=previous_step_vector,
+                    current_vector=observed_vector,
+                    preserve_ids=preserve_ids,
+                    trace_entry=step,
+                )
+                breach = _preservation_invariant_breach(
+                    invariant=preservation_invariant,
+                    trace_entry=step,
+                )
+                if transitions and first_preservation_violation is None:
+                    first_preservation_violation = transitions[0]
+                if breach is not None and first_preservation_invariant_breach is None:
+                    first_preservation_invariant_breach = breach
+                previous_step_vector = observed_vector
+                final_vector = observed_vector
+                trace.append(
+                    {
+                        "hold_step_number": hold_index + 1,
+                        "global_repair_step_number": global_action_index + 1,
+                        "hold_action_7d": hold_action,
+                        "action_step_sha256": step["action_step_sha256"],
+                        "goal_predicate_observations": observed_vector,
+                        "goal_predicate_vector_sha256": step[
+                            "goal_predicate_vector_sha256"
+                        ],
+                        "official_predicate_conjunction": conjunction,
+                        "preservation_transitions": transitions,
+                        "preservation_invariant_breach": breach,
+                        "object_witnesses": step["object_witnesses"],
+                        "frame_capture": step["frame_capture"],
+                    }
+                )
+                if transitions:
+                    termination_reason = "preservation_predicate_regressed"
+                    break
+                if breach is not None:
+                    termination_reason = "preservation_invariant_breached"
+                    break
+                if not conjunction:
+                    termination_reason = "target_predicate_regressed"
+                    break
+                stable_steps += 1
+
+        stable = stable_steps == required_steps
+        evidence = {
+            "schema_version": POST_CONJUNCTION_STABILITY_SCHEMA_VERSION,
+            "authority": "verifier_owned",
+            "admitted": available_steps >= required_steps,
+            "policy_inference_invoked_during_hold": False,
+            "required_steps": required_steps,
+            "completed_steps": stable_steps,
+            "hold_action_7d": hold_action,
+            "hold_action_sha256": stability_contract["hold_action_sha256"],
+            "policy_action_count_before_hold": policy_action_count,
+            "available_dispatch_action_steps": available_steps,
+            "hold_action_count": len(trace),
+            "total_simulator_action_count": policy_action_count + len(trace),
+            "stable": stable,
+            "termination_reason": termination_reason,
+            "final_goal_predicate_observations": final_vector,
+            "trace": trace,
+        }
+        return (
+            (
+                "stable_satisfied"
+                if proposal.get("semantic_repair_claim_eligible", True) is True
+                else "stable_satisfied_diagnostic_observation"
+            )
+            if stable
+            else "unstable_after_predicate_conjunction",
+            evidence,
+        )
+
     try:
         for chunk_index in authority.chunk_indices:
             if observed_reset_count() != 1:
@@ -1415,16 +1674,26 @@ def run_same_world_repair(
                 status = "stopped_on_preservation_violation"
                 break
             if conjunction:
-                status = (
-                    "satisfied"
-                    if proposal.get("semantic_repair_claim_eligible", True) is True
-                    else "satisfied_diagnostic_observation"
+                predicate_conjunction_observed = True
+                policy_action_count = sum(
+                    int(item["applied_action_count"]) for item in chunk_evidence
                 )
+                first_conjunction_after_action = policy_action_count
+                if stability_contract is not None:
+                    status, stability_verification = run_stability_verification(
+                        policy_action_count=policy_action_count
+                    )
+                else:
+                    status = (
+                        "satisfied"
+                        if proposal.get("semantic_repair_claim_eligible", True) is True
+                        else "satisfied_diagnostic_observation"
+                    )
                 break
             if target_satisfied > prior_target_satisfied:
                 status = "predicate_improved"
                 break
-        improvement_observed = any(
+        improvement_observed = predicate_conjunction_observed or any(
             item["predicate_id"] in target_ids and item["satisfied"] for item in final_vector
         ) and not any(
             item["predicate_id"] in target_ids and item["satisfied"] for item in source_vector
@@ -1450,6 +1719,7 @@ def run_same_world_repair(
         "repair_contract_sha256": proposal["repair_contract_sha256"],
         "repair_instruction_sha256": proposal["repair_instruction_sha256"],
         "repair_instruction_variant": proposal["repair_instruction_variant"],
+        "repair_intent_selection": deepcopy(proposal["repair_intent_selection"]),
         "execution_adapter": proposal["execution_adapter"],
         "instruction_ablation": deepcopy(proposal["repair_contract"]["instruction_ablation"]),
         "state_continuity_basis": proposal.get(
@@ -1466,7 +1736,24 @@ def run_same_world_repair(
         "applied_action_count": sum(
             int(item["applied_action_count"]) for item in chunk_evidence
         ),
+        "policy_action_count": sum(
+            int(item["applied_action_count"]) for item in chunk_evidence
+        ),
+        "verifier_hold_action_count": (
+            int(stability_verification["hold_action_count"])
+            if stability_verification is not None
+            else 0
+        ),
+        "total_simulator_action_count": sum(
+            int(item["applied_action_count"]) for item in chunk_evidence
+        )
+        + (
+            int(stability_verification["hold_action_count"])
+            if stability_verification is not None
+            else 0
+        ),
         "chunk_evidence": chunk_evidence,
+        "post_conjunction_stability": stability_verification,
         "first_preservation_violation": first_preservation_violation,
         "preservation_violation_localized_to_simulator_step": (
             first_preservation_violation is not None
@@ -1494,10 +1781,22 @@ def run_same_world_repair(
         ),
         "status": status,
         "predicate_improvement_observed": improvement_observed,
-        "predicate_conjunction_observed": status
-        in {"satisfied", "satisfied_diagnostic_observation"},
+        "predicate_conjunction_observed": predicate_conjunction_observed,
+        "first_conjunction_after_action": first_conjunction_after_action,
+        "stable_completion_required": stability_contract is not None,
+        "stable_completion_observed": bool(
+            stability_verification is not None and stability_verification["stable"] is True
+        ),
+        "final_verdict": (
+            "stable"
+            if stability_verification is not None and stability_verification["stable"] is True
+            else "unstable"
+            if predicate_conjunction_observed and stability_contract is not None
+            else "predicate_not_reached"
+        ),
         "task_completion_claimed": (
-            status == "satisfied" and proposal.get("semantic_repair_claim_eligible", True) is True
+            status in {"satisfied", "stable_satisfied"}
+            and proposal.get("semantic_repair_claim_eligible", True) is True
         ),
         "same_world_reset_count": observed_reset_count(),
         "single_reset_observed": observed_reset_count() == 1,
