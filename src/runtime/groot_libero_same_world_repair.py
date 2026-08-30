@@ -25,14 +25,14 @@ from src.runtime.libero_panda_predicate_package import (
 # v4 additionally binds the concrete action-execution adapter. This prevents an
 # approval for the 8-step Isaac-GR00T/ZMQ path from being reused by the 16-step
 # LeRobot policy path (or vice versa).
-SAME_WORLD_REPAIR_PROPOSAL_SCHEMA_VERSION = "missionos_groot_libero_same_world_repair_proposal.v6"
+SAME_WORLD_REPAIR_PROPOSAL_SCHEMA_VERSION = "missionos_groot_libero_same_world_repair_proposal.v7"
 SAME_WORLD_REPAIR_APPROVAL_SCHEMA_VERSION = "missionos_groot_libero_same_world_repair_approval.v3"
 SAME_WORLD_REPAIR_DISPATCH_SCHEMA_VERSION = "missionos_groot_libero_same_world_repair_dispatch.v5"
 # v4 split frame diagnostics from the receipt digest. v5 records the
 # instruction-ablation variant. v6 separates terminal predicate observation
 # from completion authority for diagnostic state clones. v7 binds the action
 # execution adapter used by the live runtime.
-SAME_WORLD_REPAIR_RESULT_SCHEMA_VERSION = "missionos_groot_libero_same_world_repair_result.v9"
+SAME_WORLD_REPAIR_RESULT_SCHEMA_VERSION = "missionos_groot_libero_same_world_repair_result.v10"
 PRESERVATION_STEP_TRACE_SCHEMA_VERSION = "missionos_groot_libero_preservation_step_trace.v1"
 FRAME_CAPTURE_SCHEMA_VERSION = "missionos_groot_libero_repair_frame_capture.v1"
 PRESERVATION_INVARIANT_SCHEMA_VERSION = "missionos_groot_libero_preservation_invariant.v1"
@@ -54,12 +54,15 @@ DEFAULT_EXECUTION_ADAPTER = "isaac_groot_zmq_multistep_v1"
 LEROBOT_GROOT_N17_EXECUTION_ADAPTER = "lerobot_groot_n17_select_action_v1"
 VLA0_LIBERO_EXECUTION_ADAPTER = "vla0_libero_qwen_text_action_v1"
 COSMOS_POLICY_LIBERO_EXECUTION_ADAPTER = "cosmos_policy_libero_predict2_2b_v1"
+REGISTERED_SKILL_LIBERO_EXECUTION_ADAPTER = "registered_skill_libero_7d_v1"
+REGISTERED_SKILL_BINDING_SCHEMA_VERSION = "missionos_registered_skill_binding.v1"
 SUPPORTED_EXECUTION_ADAPTERS = frozenset(
     {
         DEFAULT_EXECUTION_ADAPTER,
         LEROBOT_GROOT_N17_EXECUTION_ADAPTER,
         VLA0_LIBERO_EXECUTION_ADAPTER,
         COSMOS_POLICY_LIBERO_EXECUTION_ADAPTER,
+        REGISTERED_SKILL_LIBERO_EXECUTION_ADAPTER,
     }
 )
 REPAIR_INSTRUCTION_VARIANTS = frozenset(
@@ -332,6 +335,7 @@ def build_preservation_invariant(
     preserve_predicate_ids: Sequence[str],
     source_object_poses: Mapping[str, Sequence[float]] | None,
     maximum_displacement_metres: float,
+    requires_contact_observation: bool = True,
 ) -> dict[str, Any]:
     """Bind the continuous preservation invariant into the Repair Contract.
 
@@ -348,6 +352,8 @@ def build_preservation_invariant(
     threshold = float(maximum_displacement_metres)
     if not np.isfinite(threshold) or threshold <= 0.0:
         raise ValueError("preservation_invariant_displacement_invalid")
+    if not isinstance(requires_contact_observation, bool):
+        raise TypeError("preservation_invariant_contact_requirement_not_boolean")
 
     candidates = preserved_object_names(
         goal_predicate_observations=goal_predicate_observations,
@@ -375,7 +381,7 @@ def build_preservation_invariant(
         "protected_object_names": sorted(reference),
         "reference_position_metres": {name: reference[name] for name in sorted(reference)},
         "maximum_displacement_metres": threshold,
-        "requires_contact_observation": True,
+        "requires_contact_observation": requires_contact_observation,
     }
 
 
@@ -384,11 +390,11 @@ def _preservation_invariant_breach(
     invariant: Mapping[str, Any],
     trace_entry: Mapping[str, Any],
 ) -> dict[str, Any] | None:
-    """Detect a preserved object being moved while something is touching it.
+    """Detect a protected object exceeding its bound.
 
-    This fires before the completion predicate breaks. Displacement alone is not
-    enough — an object nudged by settling physics is not the same event as an
-    object being carried — so contact must be observed in the same step.
+    Learned-policy contracts retain the historical direct-contact requirement.
+    Registered deterministic skills use the stricter mode so indirect collision
+    cannot move a protected object past the approved displacement bound.
     """
 
     if invariant.get("enabled") is not True:
@@ -401,7 +407,8 @@ def _preservation_invariant_breach(
         witness = witnesses.get(name)
         if not isinstance(witness, Mapping):
             continue
-        if witness.get("gripper_contact_observed") is not True:
+        contact_observed = witness.get("gripper_contact_observed") is True
+        if invariant.get("requires_contact_observation") is True and not contact_observed:
             continue
         reference = invariant["reference_position_metres"][name]
         position = witness.get("position_metres")
@@ -426,7 +433,7 @@ def _preservation_invariant_breach(
             "observed_position_metres": [float(value) for value in position],
             "displacement_metres": displacement,
             "maximum_displacement_metres": threshold,
-            "contact_observed": True,
+            "contact_observed": contact_observed,
             "goal_predicate_still_satisfied": trace_entry["goal_predicate_observations"],
             "root_cause_claimed": False,
         }
@@ -895,7 +902,38 @@ def _validate_proposal_instruction_binding(proposal: Mapping[str, Any]) -> None:
         raise ValueError("vla0_libero_requires_one_action_step")
     if execution_adapter == COSMOS_POLICY_LIBERO_EXECUTION_ADAPTER and n_action_steps != 16:
         raise ValueError("cosmos_policy_libero_requires_sixteen_action_steps")
+    if execution_adapter == REGISTERED_SKILL_LIBERO_EXECUTION_ADAPTER:
+        if n_action_steps != 1:
+            raise ValueError("registered_skill_libero_requires_one_action_step")
+        _validate_registered_skill_binding(proposal)
+    elif proposal.get("registered_skill_binding") is not None:
+        raise ValueError("registered_skill_binding_requires_registered_skill_adapter")
     _validate_state_continuity_binding(proposal)
+
+
+def _validate_registered_skill_binding(proposal: Mapping[str, Any]) -> None:
+    binding = proposal.get("registered_skill_binding")
+    contract = proposal.get("repair_contract")
+    if not isinstance(binding, Mapping) or not isinstance(contract, Mapping):
+        raise ValueError("registered_skill_binding_required")
+    if binding.get("schema_version") != REGISTERED_SKILL_BINDING_SCHEMA_VERSION:
+        raise ValueError("registered_skill_binding_schema_mismatch")
+    skill_id = str(binding.get("skill_id") or "").strip()
+    if not skill_id:
+        raise ValueError("registered_skill_id_required")
+    if binding.get("selection_basis") != "exact_registered_residual_predicate_match":
+        raise ValueError("registered_skill_selection_basis_invalid")
+    if not isinstance(binding.get("privileged_state_required"), bool):
+        raise TypeError("registered_skill_privileged_state_boolean_required")
+    if binding.get("model_inference_required") is not False:
+        raise ValueError("registered_skill_model_inference_must_be_false")
+    if binding.get("completion_basis") != "skill_complete_and_predicate_conjunction":
+        raise ValueError("registered_skill_completion_basis_invalid")
+    material = {key: value for key, value in binding.items() if key != "binding_sha256"}
+    if binding.get("binding_sha256") != canonical_sha256(material):
+        raise ValueError("registered_skill_binding_digest_mismatch")
+    if contract.get("registered_skill_binding") != binding:
+        raise ValueError("repair_contract_registered_skill_binding_mismatch")
 
 
 def _validate_state_continuity_binding(proposal: Mapping[str, Any]) -> None:
@@ -1031,6 +1069,8 @@ def build_same_world_repair_proposal(
     post_conjunction_hold_action: Sequence[float] | None = None,
     state_continuity_basis: str = STATE_CONTINUITY_LIVE_SAME_WORLD,
     diagnostic_handoff_snapshot_sha256: str | None = None,
+    registered_skill_binding: Mapping[str, Any] | None = None,
+    preservation_requires_contact_observation: bool = True,
 ) -> dict[str, Any]:
     """Create an approval-eligible proposal only while the source world is live."""
 
@@ -1056,6 +1096,13 @@ def build_same_world_repair_proposal(
         raise ValueError("vla0_libero_requires_one_action_step")
     if execution_adapter == COSMOS_POLICY_LIBERO_EXECUTION_ADAPTER and n_action_steps != 16:
         raise ValueError("cosmos_policy_libero_requires_sixteen_action_steps")
+    if execution_adapter == REGISTERED_SKILL_LIBERO_EXECUTION_ADAPTER:
+        if n_action_steps != 1:
+            raise ValueError("registered_skill_libero_requires_one_action_step")
+        if not isinstance(registered_skill_binding, Mapping):
+            raise ValueError("registered_skill_binding_required")
+    elif registered_skill_binding is not None:
+        raise ValueError("registered_skill_binding_requires_registered_skill_adapter")
     full_chunk_budget = maximum_repair_chunks * n_action_steps
     if maximum_repair_steps is None:
         maximum_repair_steps = full_chunk_budget
@@ -1130,10 +1177,15 @@ def build_same_world_repair_proposal(
             preserve_predicate_ids=[item["predicate_id"] for item in satisfied],
             source_object_poses=source_object_poses,
             maximum_displacement_metres=preserved_object_max_displacement_metres,
+            requires_contact_observation=preservation_requires_contact_observation,
         ),
         "additional_attempts_allowed": 0,
         "physical_execution_invoked": False,
     }
+    if registered_skill_binding is not None:
+        contract_material["registered_skill_binding"] = deepcopy(
+            dict(registered_skill_binding)
+        )
     if stability_contract is not None:
         contract_material["post_conjunction_stability"] = stability_contract
     if state_continuity_basis != STATE_CONTINUITY_LIVE_SAME_WORLD:
@@ -1181,7 +1233,11 @@ def build_same_world_repair_proposal(
         "execution_authority_created": False,
         "physical_execution_invoked": False,
     }
-    return {**base, "proposal_sha256": canonical_sha256(base)}
+    if registered_skill_binding is not None:
+        base["registered_skill_binding"] = deepcopy(dict(registered_skill_binding))
+    candidate = {**base, "proposal_sha256": canonical_sha256(base)}
+    _validate_proposal_instruction_binding(candidate)
+    return candidate
 
 
 def approve_same_world_repair(
@@ -1308,6 +1364,10 @@ def run_same_world_repair(
     if dispatch.get("maximum_repair_steps") != repair_contract.get("maximum_repair_steps"):
         raise ValueError("dispatch_applied_action_budget_binding_mismatch")
     stability_contract = repair_contract.get("post_conjunction_stability")
+    registered_skill_binding = repair_contract.get("registered_skill_binding")
+    registered_skill_execution = (
+        proposal.get("execution_adapter") == REGISTERED_SKILL_LIBERO_EXECUTION_ADAPTER
+    )
     if dispatch.get("post_conjunction_stability") != stability_contract:
         raise ValueError("dispatch_stability_contract_binding_mismatch")
     if stability_contract is None and apply_verifier_hold_step is not None:
@@ -1519,18 +1579,42 @@ def run_same_world_repair(
                 str(proposal["repair_instruction"]),
                 chunk_index,
             )
-            if invocation.get("model_runtime_invoked") is not True:
-                raise RuntimeError("repair_model_runtime_not_invoked")
-            if invocation.get("repair_instruction_sha256") != proposal.get(
-                "repair_instruction_sha256"
-            ):
-                raise RuntimeError("repair_model_instruction_binding_mismatch")
-            if invocation.get("repair_instruction_payload_exact_match") is not True:
-                raise RuntimeError("repair_model_instruction_payload_not_exact")
-            if invocation.get("repair_instruction_payload_sha256") != proposal.get(
-                "repair_instruction_sha256"
-            ):
-                raise RuntimeError("repair_model_instruction_payload_digest_mismatch")
+            if registered_skill_execution:
+                if invocation.get("registered_skill_runtime_invoked") is not True:
+                    raise RuntimeError("repair_registered_skill_runtime_not_invoked")
+                if invocation.get("model_runtime_invoked") is not False:
+                    raise RuntimeError("repair_registered_skill_model_inference_forbidden")
+                if not isinstance(registered_skill_binding, Mapping):
+                    raise RuntimeError("repair_registered_skill_binding_missing")
+                if invocation.get("registered_skill_id") != registered_skill_binding.get(
+                    "skill_id"
+                ):
+                    raise RuntimeError("repair_registered_skill_id_binding_mismatch")
+                if invocation.get(
+                    "registered_skill_binding_sha256"
+                ) != registered_skill_binding.get("binding_sha256"):
+                    raise RuntimeError("repair_registered_skill_digest_binding_mismatch")
+                if invocation.get("repair_contract_sha256") != proposal.get(
+                    "repair_contract_sha256"
+                ):
+                    raise RuntimeError("repair_registered_skill_contract_binding_mismatch")
+                if not isinstance(
+                    invocation.get("registered_skill_ready_for_stability"), bool
+                ):
+                    raise RuntimeError("repair_registered_skill_completion_signal_missing")
+            else:
+                if invocation.get("model_runtime_invoked") is not True:
+                    raise RuntimeError("repair_model_runtime_not_invoked")
+                if invocation.get("repair_instruction_sha256") != proposal.get(
+                    "repair_instruction_sha256"
+                ):
+                    raise RuntimeError("repair_model_instruction_binding_mismatch")
+                if invocation.get("repair_instruction_payload_exact_match") is not True:
+                    raise RuntimeError("repair_model_instruction_payload_not_exact")
+                if invocation.get("repair_instruction_payload_sha256") != proposal.get(
+                    "repair_instruction_sha256"
+                ):
+                    raise RuntimeError("repair_model_instruction_payload_digest_mismatch")
             observation, application = apply_action_chunk(action_chunk, chunk_index)
             if application.get("simulator_step_return_observed") is not True:
                 raise RuntimeError("repair_simulator_step_return_not_observed")
@@ -1623,9 +1707,29 @@ def run_same_world_repair(
             chunk_evidence.append(
                 {
                     "chunk_index": chunk_index,
+                    "executor_runtime_kind": (
+                        "registered_skill" if registered_skill_execution else "learned_model"
+                    ),
+                    "registered_skill_id": (
+                        invocation.get("registered_skill_id")
+                        if registered_skill_execution
+                        else None
+                    ),
+                    "registered_skill_binding_sha256": (
+                        invocation.get("registered_skill_binding_sha256")
+                        if registered_skill_execution
+                        else None
+                    ),
+                    "registered_skill_ready_for_stability": (
+                        invocation.get("registered_skill_ready_for_stability")
+                        if registered_skill_execution
+                        else None
+                    ),
                     "policy_request_sha256": invocation.get("policy_request_sha256"),
                     "policy_response_sha256": invocation.get("policy_response_sha256"),
-                    "repair_instruction_payload_exact_match": True,
+                    "repair_instruction_payload_exact_match": (
+                        None if registered_skill_execution else True
+                    ),
                     "repair_instruction_payload_sha256": invocation.get(
                         "repair_instruction_payload_sha256"
                     ),
@@ -1675,22 +1779,25 @@ def run_same_world_repair(
                 break
             if conjunction:
                 predicate_conjunction_observed = True
-                policy_action_count = sum(
+                executor_action_count = sum(
                     int(item["applied_action_count"]) for item in chunk_evidence
                 )
-                first_conjunction_after_action = policy_action_count
-                if stability_contract is not None:
-                    status, stability_verification = run_stability_verification(
-                        policy_action_count=policy_action_count
-                    )
-                else:
-                    status = (
-                        "satisfied"
-                        if proposal.get("semantic_repair_claim_eligible", True) is True
-                        else "satisfied_diagnostic_observation"
-                    )
-                break
-            if target_satisfied > prior_target_satisfied:
+                if first_conjunction_after_action is None:
+                    first_conjunction_after_action = executor_action_count
+                skill_ready = invocation.get("registered_skill_ready_for_stability") is True
+                if not registered_skill_execution or skill_ready:
+                    if stability_contract is not None:
+                        status, stability_verification = run_stability_verification(
+                            policy_action_count=executor_action_count
+                        )
+                    else:
+                        status = (
+                            "satisfied"
+                            if proposal.get("semantic_repair_claim_eligible", True) is True
+                            else "satisfied_diagnostic_observation"
+                        )
+                    break
+            if target_satisfied > prior_target_satisfied and not registered_skill_execution:
                 status = "predicate_improved"
                 break
         improvement_observed = predicate_conjunction_observed or any(
@@ -1736,8 +1843,18 @@ def run_same_world_repair(
         "applied_action_count": sum(
             int(item["applied_action_count"]) for item in chunk_evidence
         ),
-        "policy_action_count": sum(
+        "executor_action_count": sum(
             int(item["applied_action_count"]) for item in chunk_evidence
+        ),
+        "policy_action_count": (
+            0
+            if registered_skill_execution
+            else sum(int(item["applied_action_count"]) for item in chunk_evidence)
+        ),
+        "registered_skill_action_count": (
+            sum(int(item["applied_action_count"]) for item in chunk_evidence)
+            if registered_skill_execution
+            else 0
         ),
         "verifier_hold_action_count": (
             int(stability_verification["hold_action_count"])
@@ -1765,7 +1882,11 @@ def run_same_world_repair(
             EVIDENCE_TYPE_COMPLETION_PREDICATE,
             EVIDENCE_TYPE_PRESERVATION_INVARIANT,
         ],
-        "preservation_stop_granularity": "before_next_model_chunk",
+        "preservation_stop_granularity": (
+            "before_next_registered_skill_step"
+            if registered_skill_execution
+            else "before_next_model_chunk"
+        ),
         "already_admitted_chunk_remainder_may_have_executed": (
             first_preservation_violation is not None
         ),
@@ -1804,7 +1925,13 @@ def run_same_world_repair(
             observed_reset_count() == 1
             and observed_state_continuity_basis == STATE_CONTINUITY_LIVE_SAME_WORLD
         ),
-        "model_inference_invoked": bool(chunk_evidence),
+        "model_inference_invoked": bool(chunk_evidence) and not registered_skill_execution,
+        "registered_skill_execution_invoked": (
+            bool(chunk_evidence) and registered_skill_execution
+        ),
+        "registered_skill_binding": (
+            deepcopy(registered_skill_binding) if registered_skill_execution else None
+        ),
         "simulator_execution_observed": bool(chunk_evidence),
         "controller_ack_observed": False,
         "dispatch_receipt_present": receipt["receipt_present"],
@@ -1822,6 +1949,8 @@ def run_same_world_repair(
 
 __all__ = [
     "DEFAULT_REPAIR_INSTRUCTION_VARIANT",
+    "REGISTERED_SKILL_BINDING_SCHEMA_VERSION",
+    "REGISTERED_SKILL_LIBERO_EXECUTION_ADAPTER",
     "REPAIR_INSTRUCTION_ABLATION_METRICS",
     "REPAIR_INSTRUCTION_VARIANTS",
     "approve_same_world_repair",

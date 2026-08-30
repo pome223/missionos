@@ -1,0 +1,72 @@
+{
+  "schema_version": "missionos.libero_registered_skill_same_world_publication.v1",
+  "recorded_date": "2026-08-31",
+  "fixture": {
+    "task_suite": "libero_10",
+    "task_id": 8,
+    "episode_init_state_index": 15,
+    "environment_seed": 0,
+    "source_goal_predicate_vector": [true, false, true],
+    "observed_translation_from_source_metres": 0.030001126274677565,
+    "protected_object_displacement_metres": 0.0,
+    "fixture_sha256": "2516cf092ea213c180b7d9104ea6276649c645b56e7a723621c9c45522f4a2fe",
+    "snapshot_artifact_sha256": "adeaeb010c3f926e72a3b1e5d11cea2629b6fc855dea2ed90b0e6612d93bcb9d",
+    "simulator_state_sha256": "9da41f98f878ace4d8325be6b0c09cae2329fb8102bd910c0cbd9d789a5eb88b",
+    "fixture_result_sha256": "3975323108182cf302b9f96f45041e030cd1a857f20459ddbc6b507974cf5ade"
+  },
+  "runtime": {
+    "execution_adapter": "registered_skill_libero_7d_v1",
+    "registered_skill_id": "privileged_push_moka_pot_2_to_stove_region.v1",
+    "registered_skill_selection_basis": "exact_registered_residual_predicate_match",
+    "registered_skill_completion_basis": "skill_complete_and_predicate_conjunction",
+    "privileged_state_required": true,
+    "model_inference_invoked": false,
+    "single_use_dispatch_receipt_observed": true,
+    "same_world_state_preserved": true,
+    "proposal_sha256": "b4c4e454814b060b2156cdf460f4bff4f056670a96ba28d3d04bda74dae1c450",
+    "approval_sha256": "90ba93c7cbde50560d1c8e720c6e9f57c8c97b7250160682b05ca6b4dcb9cb49",
+    "dispatch_sha256": "ecbbe65c02dd44c524760934705392a02ccf17d363cedec3bf632fd22a5a0393"
+  },
+  "outcome": {
+    "status": "stopped_on_preservation_invariant",
+    "first_conjunction_after_action": 33,
+    "registered_skill_action_count": 58,
+    "verifier_hold_action_count": 0,
+    "total_simulator_action_count": 58,
+    "terminal_goal_predicate_vector": [true, true, true],
+    "preservation_invariant_breach_after_action": 58,
+    "protected_object_displacement_metres": 0.0054411034160610355,
+    "maximum_protected_object_displacement_metres": 0.005,
+    "direct_gripper_contact_with_protected_object_observed": false,
+    "stable_completion_observed": false,
+    "task_completion_claimed": false,
+    "repair_result_sha256": "844a5800c29aa9e816f1c4662e8b99849fc7cf0297ef20c1e809b5f08bb7cec7",
+    "wrapper_result_sha256": "a9735c3e25ba85e9586624c81d150d8c81a62dc2e9eb58e90a7022e526b3183e",
+    "raw_trace_sha256": "d442afbc74d1e5c42a8aa1cf8d649deaa10e68d4e060d42f48506978863f0f3e"
+  },
+  "five_axis_repair_diagnostic": {
+    "validation_status": "verified",
+    "action_activity": "satisfied",
+    "corrective_alignment": "satisfied",
+    "predicate_recovery": "satisfied",
+    "preservation": "not_satisfied",
+    "stable_hold": "not_observed",
+    "first_failed_axis": "preservation",
+    "bounded_stable_repair_observed": false,
+    "approval_created": false,
+    "dispatch_authority_created": false,
+    "dispatch_request_sent": false,
+    "mission_completion_claimed": false,
+    "executor_repair_capability_established": false,
+    "physical_execution_invoked": false
+  },
+  "claim_boundary": {
+    "registered_skill_repair_observed": false,
+    "learned_executor_repair_established": false,
+    "observation_only_repair_established": false,
+    "general_repair_rate_established": false,
+    "controller_ack_observed": false,
+    "real_world_safety_claimed": false,
+    "physical_execution_invoked": false
+  }
+}
