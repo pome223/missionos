@@ -39,6 +39,12 @@ evidence. An observed status must cite at least one evidence reference.
 All five axes must use the same `observation_scope_ref`; evidence from separate
 runs cannot be combined into one assessment.
 
+Historical evidence may be projected into this schema, but a projection must
+not silently turn an absent measurement into a failure or a pass. A missing
+action trace, alignment reference, or hold window remains `not_observed`. The
+projector must bind its source artifacts by digest and state that it performed
+no fresh execution or inference.
+
 ## Failure classification
 
 The evaluator reports the first failed axis only when every preceding axis is

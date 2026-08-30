@@ -82,6 +82,28 @@ The publication companion adds the per-loop target direction, combined
 preservation denominator, and explicit claim boundary in
 [`20260820-groot-n17-lerobot-native-single-attempt-cohort-publication.json`](evidence/20260820-groot-n17-lerobot-native-single-attempt-cohort-publication.json).
 
+## Five-axis projection
+
+The existing cohort has also been projected into the backend-neutral Repair
+diagnostic contract without rerunning GR00T. For each loop, the publication
+supports `predicate_recovery=not_satisfied` and `preservation=satisfied`.
+It does not retain action-magnitude evidence, a preregistered corrective
+alignment trace, or a post-conjunction hold window. Those axes therefore remain
+`not_observed`; they are not inferred from the terminal predicate result.
+
+The deterministic projection is
+[`20260830-groot-n17-five-axis-repair-diagnostics.json`](evidence/20260830-groot-n17-five-axis-repair-diagnostics.json).
+It binds the source cohort and publication by SHA-256, validates their internal
+result digest and per-loop predicate partition, and creates no new approval,
+dispatch, execution, capability, or physical-execution claim. Rebuild it with:
+
+```bash
+python scripts/project_groot_lerobot_repair_diagnostics.py \
+  docs/agents/evidence/20260820-groot-n17-lerobot-native-single-attempt-cohort-result.json \
+  docs/agents/evidence/20260820-groot-n17-lerobot-native-single-attempt-cohort-publication.json \
+  --output docs/agents/evidence/20260830-groot-n17-five-axis-repair-diagnostics.json
+```
+
 Raw simulator logs, approval values, dispatch ledger entries, environment
 session identifiers, credentials, and workstation-local paths are not
 published.

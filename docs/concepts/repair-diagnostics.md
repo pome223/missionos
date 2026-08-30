@@ -12,6 +12,12 @@ records five separate questions:
 The first two questions diagnose model behavior. The last three require observed
 simulator, runtime, or physical effects; a model prediction is not enough.
 
+The same representation also works for older evidence. If an earlier run
+recorded predicate recovery and preservation but did not retain action or
+alignment traces, those missing stages stay `not_observed`. MissionOS does not
+rewrite missing evidence as success or failure merely to make a report look
+complete.
+
 Passing all five axes supports only a bounded statement about the evaluated
 task, fixture, executor, and observation scope. It does not create approval or
 dispatch authority, prove mission completion, establish general Repair
