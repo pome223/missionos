@@ -54,6 +54,8 @@ was sent, what was observed, and what remains unproven.
   dispatch, observation, and verification flow across robot backends.
 - Read `docs/concepts/action-feasibility.md` for how common evidence and
   robot-specific calculations produce a tri-state result without authority.
+- Read `docs/concepts/repair-diagnostics.md` for the five separate stages of a
+  Repair attempt and the evidence required before each stage can pass.
 - Read `docs/concepts/groot-language-conditioning.md` for the inference-only
   A/A/B check that separates instruction delivery from local model sensitivity.
 - Read `docs/concepts/groot-snapshot-recoverability.md` for the bounded control
