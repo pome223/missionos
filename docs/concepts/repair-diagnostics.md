@@ -16,3 +16,8 @@ Passing all five axes supports only a bounded statement about the evaluated
 task, fixture, executor, and observation scope. It does not create approval or
 dispatch authority, prove mission completion, establish general Repair
 capability, or imply physical execution.
+
+A runtime adapter may produce this report directly from one attempt. Each axis
+must retain a reference to the action, predicate, preservation, or hold evidence
+that supports it. A missing observation remains `not_observed`; it is not
+silently converted into failure or success.
