@@ -17,6 +17,7 @@ docs.
 | Recovery delegation (reflex/deliberation split, perception claims, shadow measurement, action promotion) | `recovery-delegation-authority.md`, `claim-semantics.md`, `hardware-adapter-contract.md` |
 | Nav2 Core Recovery candidate divergence | `nav2-core-recovery-divergence.md` |
 | Evidence, claims, completion, or verifier behavior | `claim-semantics.md`, `artifact-taxonomy.md`, `contracts.md` |
+| Repair diagnostic or executor conformance reporting | `repair-diagnostic-contract.md`, `claim-semantics.md`, `artifact-taxonomy.md`, `contracts.md` |
 | GR00T / LeRobot native Repair cohort accounting or publication | `groot-lerobot-native-single-attempt-cohort.md`, `groot-lerobot-semantic-repair-checkpoint-gate.md`, `publication-rules.md`, `claim-semantics.md` |
 | GR00T / LeRobot instruction delivery, local language sensitivity, semantic-direction diagnostics, or snapshot recoverability | `groot-lerobot-language-conditioning-probe.md`, `groot-lerobot-semantic-direction-horizon-probe.md`, `groot-lerobot-snapshot-recoverability-control.md`, `groot-lerobot-native-single-attempt-cohort.md`, `claim-semantics.md`, `publication-rules.md` |
 | Anonymized recovery replay publication or verification | `replay-bundle-contract.md`, `publication-rules.md`, `claim-semantics.md` |
@@ -69,6 +70,7 @@ When the map above is not enough, read the complete set:
 - `recovery-intent-compiler-verifier.md`
 - `backend-neutral-adapter-runtime.md`
 - `replay-bundle-contract.md`
+- `repair-diagnostic-contract.md` — backend-neutral five-axis Repair diagnosis and fail-closed evidence rules
 - `groot-lerobot-native-single-attempt-cohort.md` — bounded `0/5` Repair result and Contract-bound `16/16` preservation accounting
 - `groot-lerobot-language-conditioning-probe.md` — inference-only A/A/B evidence and its claim boundary
 - `groot-lerobot-semantic-direction-horizon-probe.md` — preregistered three-chunk A/A/B semantic-direction diagnostic and its bounded result
