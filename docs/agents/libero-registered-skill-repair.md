@@ -55,6 +55,10 @@ predicate recovery satisfied, preservation not satisfied, and stable hold not
 observed. Its Core diagnostic authority fields remain false; the actual approval
 and dispatch receipts stay separate runtime evidence.
 
+This is a negative registered-skill result, not a basis for a selector or a
+second Repair strategy. The first preservation violation remains the terminal
+outcome of this exercise; completion is false.
+
 See
 [`evidence/20260831-libero-registered-skill-same-world-repair.json`](evidence/20260831-libero-registered-skill-same-world-repair.json).
 

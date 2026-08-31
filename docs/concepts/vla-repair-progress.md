@@ -47,6 +47,31 @@ comparison. Together the results show why nominal task execution,
 verifier-backed recoverability, target engagement, predicate entry, and stable
 completion must be measured separately.
 
+## Closure of this Repair exploration
+
+This exploration stops here. None of the tested learned executors established
+stable Repair under the registered criterion, and the deterministic registered
+skill did not establish it either: it entered the conjunction, then violated a
+protected-object preservation limit and was stopped before stable-hold
+verification.
+
+The durable result is the five-axis diagnostic, not a new Repair policy:
+
+```text
+action activity -> corrective alignment -> predicate recovery
+-> preservation -> stable hold
+```
+
+Each axis is reported separately so that movement, a transient predicate
+conjunction, and bounded stable Repair cannot be conflated. This record does
+not authorize a candidate selector, Repair-of-Repair mechanism, or recovery
+training follow-up. Those would be separate research work with new hypotheses
+and evaluation criteria; they are not continuations of this bounded result.
+
+The five-axis contract remains available for future executor evaluations. It
+does not itself make an executor repair-capable or create any approval,
+dispatch, completion, or physical-execution claim.
+
 ## Does the Cosmos result only apply to moka pots?
 
 We added a second diagnostic task: pick up a black book and place it in the

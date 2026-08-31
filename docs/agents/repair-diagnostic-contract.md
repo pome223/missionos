@@ -69,6 +69,15 @@ failure stage. If no axis fails but a required axis is unobserved,
 `observed_hold_steps >= 0`. A satisfied hold must meet the required count; a
 failed hold must fall short of it.
 
+## Scope of the diagnostic
+
+This contract classifies an attempted Repair; it is not a Repair generator,
+candidate selector, retry policy, or Repair-of-Repair mechanism. In particular,
+a transient predicate conjunction must not be promoted to a successful Repair
+when preservation or stable hold is not satisfied. A new executor, training
+procedure, or recovery strategy requires a separately registered hypothesis,
+fixture, and evaluation plan rather than being implied by a diagnostic result.
+
 ## Authority and claim boundary
 
 Even when all five axes are satisfied,

@@ -112,6 +112,10 @@ for either learned executor**. This remains one scripted diagnostic clone, not
 a natural-failure or general recovery rate. See the
 [manipulation Repair progress report](docs/concepts/vla-repair-progress.md) for
 the older 22.7 cm history, the aligned comparison, and exact evidence limits.
+The companion same-world registered-skill exercise also stopped on a
+preservation violation after transient predicate recovery; it is not counted as
+Repair success. The resulting five-axis diagnostic is an evaluation contract,
+not a candidate-selection or retry mechanism.
 
 For continuity with that earlier publication: its oracle recovered the 22.7 cm
 fixture in 517/520 actions, while the separate VLA-0 run showed no sustained or
