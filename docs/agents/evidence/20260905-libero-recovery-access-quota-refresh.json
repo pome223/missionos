@@ -1,0 +1,106 @@
+{
+  "schema_version": "missionos.libero_recovery_access_quota_refresh.v1",
+  "recorded_at": "2026-09-05",
+  "scope": "authenticated_metadata_head_and_read_only_cloud_inventory",
+  "model_access": {
+    "credential_source": "google_cloud_secret_manager",
+    "credential_value_emitted": false,
+    "files_downloaded": false,
+    "groot_checkpoint": {
+      "model_id": "nvidia/GR00T-N1.7-3B",
+      "requested_revision": "2fc962b973bccdd5d8ce4f67cc63b264d6886495",
+      "resolved_revision": "2fc962b973bccdd5d8ce4f67cc63b264d6886495",
+      "metadata_access": true,
+      "weight_file_count": 3,
+      "weight_head_access": true,
+      "probed_weight_size_bytes": 4990519232
+    },
+    "cosmos_backbone": {
+      "model_id": "nvidia/Cosmos-Reason2-2B",
+      "requested_revision": "9ce19a195e423419c349abfc86fd07178b230561",
+      "resolved_revision": "9ce19a195e423419c349abfc86fd07178b230561",
+      "metadata_access": true,
+      "weight_file_count": 1,
+      "weight_head_access": true,
+      "probed_weight_size_bytes": 4877470304
+    }
+  },
+  "license_review": {
+    "status": "CONFLICT_REQUIRES_HUMAN_REVIEW",
+    "groot_repository_license": {
+      "file": "LICENSE",
+      "size_bytes": 4063,
+      "sha256": "fdc54058d8b52bbb3b06c924326ff95a15687b08b15f92bc63adabc291638c89",
+      "observed_limitation": "work_and_derivatives_noncommercial_research_or_evaluation_only"
+    },
+    "groot_repository_readme": {
+      "file": "README.md",
+      "size_bytes": 13111,
+      "sha256": "7d0a4423a5a5bc7ac35f9ab4c1f64eb3f74f7592418a8dc5c80702b48455c788",
+      "observed_statement": "commercial_and_noncommercial_use_ready",
+      "linked_license": "https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/"
+    },
+    "cosmos_repository_readme": {
+      "file": "README.md",
+      "size_bytes": 35046,
+      "sha256": "1b0428109d3cf7d8d209c7ad3b31afe037689bfd9d25589f0f6335bb56223fab",
+      "license_name": "nvidia-open-model-license",
+      "linked_license": "https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/"
+    },
+    "current_linked_license_observation": {
+      "last_modified": "2025-10-24",
+      "commercial_use_described": true,
+      "derivative_models_described": true,
+      "cosmos_attribution_requirement_described": true
+    },
+    "interpretation": "the pinned GR00T repository contains conflicting license signals, so this record does not choose which terms control",
+    "legal_advice_provided": false
+  },
+  "a100_quota": {
+    "region": "us-central1",
+    "quota_id": "GPUS-PER-GPU-FAMILY-per-project-region",
+    "preferred_value": 1,
+    "granted_value": 0,
+    "reconciling": true,
+    "gpu_provisionable": false
+  },
+  "cloud_inventory": {
+    "instance_count": 0,
+    "persistent_disk_count": 0,
+    "snapshot_count": 0,
+    "custom_image_count": 2,
+    "custom_image_archive_size_bytes": 112548008768,
+    "custom_image_archive_size_gib": 104.81850129365921,
+    "custom_image_storage_list_price_usd_per_gib_hour": 0.000068493,
+    "estimated_730_hour_storage_cost_usd": 5.2409135346478175,
+    "pricing_source": "https://cloud.google.com/compute/disks-image-pricing",
+    "pricing_currency": "USD",
+    "billing_total_confirmed": false,
+    "images_deleted": false,
+    "image_deletion_requires_separate_decision": true
+  },
+  "decision": {
+    "status": "NO_GO",
+    "paid_training_authorized": false,
+    "gpu_provision_authorized": false,
+    "resolved_gates": [
+      "authenticated_groot_checkpoint_weight_access",
+      "authenticated_cosmos_backbone_weight_access"
+    ],
+    "blocking_reasons": [
+      "pinned_groot_license_signals_conflict",
+      "a100_quota_not_granted",
+      "hard_cost_cap_not_reviewed"
+    ]
+  },
+  "claim_boundary": {
+    "model_files_downloaded": false,
+    "gpu_provisioned": false,
+    "training_invoked": false,
+    "model_inference_invoked": false,
+    "dispatch_request_sent": false,
+    "physical_execution_invoked": false,
+    "repair_capability_established": false
+  },
+  "result_sha256": "cf59a848869dae906b4d02fcf69449e155f85aa897ebc7158175446bb5166626"
+}

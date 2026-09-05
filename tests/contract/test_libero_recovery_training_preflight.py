@@ -10,6 +10,7 @@ from src.runtime.libero_recovery_training_preflight import training_preflight_su
 
 ROOT = Path(__file__).resolve().parents[2]
 RECORD = ROOT / "docs/agents/evidence/20260905-libero-recovery-training-preflight.json"
+REFRESH = ROOT / "docs/agents/evidence/20260905-libero-recovery-access-quota-refresh.json"
 
 
 def _record() -> dict:
@@ -53,9 +54,9 @@ def test_budget_alert_is_not_accepted_as_hard_stop() -> None:
     record = _record()
     record["cost_control"]["billing_budget_is_hard_stop"] = True
     _resign(record)
-    assert "preflight_budget_must_not_claim_hard_stop" in training_preflight_summary(record)[
-        "errors"
-    ]
+    assert (
+        "preflight_budget_must_not_claim_hard_stop" in training_preflight_summary(record)["errors"]
+    )
 
 
 def test_tampering_is_detected() -> None:
@@ -68,6 +69,27 @@ def test_dataset_manifest_file_digest_is_verified() -> None:
     record = _record()
     record["dataset"]["manifest_file_sha256"] = "0" * 64
     _resign(record)
-    assert "preflight_dataset_manifest_file_digest_mismatch" in training_preflight_summary(
-        record, repository_root=ROOT
-    )["errors"]
+    assert (
+        "preflight_dataset_manifest_file_digest_mismatch"
+        in training_preflight_summary(record, repository_root=ROOT)["errors"]
+    )
+
+
+def test_access_quota_refresh_resolves_access_without_authorizing_gpu() -> None:
+    record = json.loads(REFRESH.read_text(encoding="utf-8"))
+    material = {key: value for key, value in record.items() if key != "result_sha256"}
+
+    assert record["result_sha256"] == canonical_sha256(material)
+    assert record["model_access"]["credential_value_emitted"] is False
+    assert record["model_access"]["files_downloaded"] is False
+    assert record["model_access"]["groot_checkpoint"]["weight_head_access"] is True
+    assert record["model_access"]["cosmos_backbone"]["weight_head_access"] is True
+    assert record["license_review"]["status"] == "CONFLICT_REQUIRES_HUMAN_REVIEW"
+    assert record["a100_quota"]["granted_value"] == 0
+    assert record["cloud_inventory"]["instance_count"] == 0
+    assert record["cloud_inventory"]["persistent_disk_count"] == 0
+    assert record["cloud_inventory"]["snapshot_count"] == 0
+    assert record["cloud_inventory"]["images_deleted"] is False
+    assert record["decision"]["status"] == "NO_GO"
+    assert record["decision"]["gpu_provision_authorized"] is False
+    assert record["claim_boundary"]["training_invoked"] is False
