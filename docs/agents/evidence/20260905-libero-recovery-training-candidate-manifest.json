@@ -1,0 +1,248 @@
+{
+  "admission": {
+    "blocking_reasons": [],
+    "status": "admitted",
+    "training_examples_admitted": 4
+  },
+  "claim_boundary": {
+    "candidate_contracts_valid": true,
+    "gpu_provision_authorized": false,
+    "model_inference_invoked": false,
+    "paid_training_authorized": false,
+    "physical_execution_invoked": false,
+    "training_invoked": false
+  },
+  "conversion_manifest_file_sha256": [
+    "9584b2993f7aab45edc9a07f8284b0e63516ffe41dd7ac9d4b9c6e47343f967a",
+    "2a9a4f368e651cf390b4e557e307c0120ce86690d50d1251ce4469545528e9c1",
+    "48c73aa8394ae0a6ec883f2768dff848c499f78829b80edd642b9206cd978211",
+    "a0f10bcc7f1e5da56157a2eef7856b654c13136fb29054e281d89b4ccab550c6"
+  ],
+  "leakage_audit": {
+    "exact_evaluation_holdout_count": 3,
+    "exact_holdout_materialization_complete": true,
+    "fully_materialized_holdout_count": 3,
+    "known_identifier_audit": {
+      "errors": [],
+      "evaluation_holdout_count": 6,
+      "status": "passed",
+      "training_record_count": 4
+    },
+    "legacy_holdout_reference_count": 3,
+    "passed": true
+  },
+  "result_sha256": "7ec2f3b274b3536153e20b2443d1e66f2b759abf28ae03f01e0bba4f80c1f917",
+  "schema_version": "missionos.libero_recovery_training_manifest.v1",
+  "serialized_conversion_bytes": 367839,
+  "statistics": {
+    "action": {
+      "max": [
+        1.0,
+        0.032672591507434845,
+        0.042830340564250946,
+        0.0,
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "mean": [
+        0.10637716948986053,
+        -0.33396610617637634,
+        -0.20973390340805054,
+        0.0,
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "min": [
+        -0.0341893769800663,
+        -1.0,
+        -1.0,
+        0.0,
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "std": [
+        0.23475374281406403,
+        0.4555797874927521,
+        0.3614569306373596,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "observation_state": {
+      "max": [
+        -0.14231549203395844,
+        0.011020378209650517,
+        1.1861766576766968,
+        3.145210027694702,
+        0.008396320976316929,
+        -0.03474273532629013,
+        0.03974662721157074,
+        -0.020004117861390114
+      ],
+      "mean": [
+        -0.1758318394422531,
+        -0.18637581169605255,
+        1.0934138298034668,
+        3.1399717330932617,
+        0.0007182731060311198,
+        -0.08552536368370056,
+        0.03747708350419998,
+        -0.03783498331904411
+      ],
+      "min": [
+        -0.21294176578521729,
+        -0.240640327334404,
+        1.0319573879241943,
+        3.129020929336548,
+        -0.011213751509785652,
+        -0.10625403374433517,
+        0.020004140213131905,
+        -0.04000874236226082
+      ],
+      "std": [
+        0.02299579791724682,
+        0.07466494292020798,
+        0.050261978060007095,
+        0.004023903980851173,
+        0.004098941572010517,
+        0.015522359870374203,
+        0.004823324736207724,
+        0.0048280078917741776
+      ]
+    }
+  },
+  "status": "admitted",
+  "training_candidate_count": 4,
+  "training_frame_count": 206,
+  "transition_records": [
+    {
+      "applied_action_trace_sha256": "d5238e4c2d5082eb62a13d5bb399094fe62da6720bb447455fba5fee63cf47b7",
+      "capture_archive_sha256": "f0bc66311b9ef520984f7d8e70c9e93a029993f70494a97d0853850e1b25d536",
+      "corrective_action_sequence_sha256": "845a277ae9774a73b7e3f357075f488d92e6a99309ced9099f151211c8f7969f",
+      "corrective_transition_observed": true,
+      "environment_seed": 101,
+      "episode_init_state_index": 0,
+      "frame_count": 52,
+      "generator_type": "privileged_planner",
+      "observation_schema_sha256": "5c5fc9cb48215d2d3363fff353fbfd4ef50b0faae0d9c487fc5cf8dd733e00d0",
+      "predicate_trace_sha256": "94f6642f6f6d1ad2bd8450b57ca873b9c968aee0e5f22edc6298574a08054128",
+      "preservation_trace_sha256": "8e8bb6126ac1d342ef9163207f3fe3a2b12db7f5d1cf5f23553658593dad84d0",
+      "preservation_violation_observed": false,
+      "privileged_state_used": true,
+      "proprioception_schema_sha256": "d26ec2aad3a32fa0aeeda8a6837743e7f0a35a0eba1e5b2167c8eb714cadf115",
+      "protected_object_reference_poses_sha256": "9ecff0fdcee124b93cd30f765d1615e7dc0295fcce4ba77a25cd6ef3a94628c7",
+      "sample_kind": "recovery_demonstration",
+      "schema_version": "missionos.libero_recovery_transition.v1",
+      "source_fixture_sha256": "e554399415a65038c1be1e5ff2893be176b9f76ed14228bf7388022c04baae07",
+      "source_goal_predicate_vector": [
+        true,
+        false,
+        true
+      ],
+      "source_simulator_state_sha256": "ad220ca55a3e1bbb0d317dc418bc5ef12c6cf3a7b381451c87493981e72c6de7",
+      "split_id": "training",
+      "stable_hold_result": "satisfied",
+      "task_id": 8,
+      "task_suite": "libero_10",
+      "transition_id": "b97a7ef12c0e6cca4588490159dbe24ccaa545fe4cfd1901a18e74ee4fb5b0c6"
+    },
+    {
+      "applied_action_trace_sha256": "c8dff7fb5eff404a3f5f2246e371fc1565cb53f56f3f80d03f1505f570c77ed2",
+      "capture_archive_sha256": "85c2d8b41deaeb361d53b2b3520df25aae35906dfaa45a3ee46856d1f067e1e9",
+      "corrective_action_sequence_sha256": "0ab8939132240af7ddc81d443fa6565d3bcf8a45404df6da29124cc816dd6629",
+      "corrective_transition_observed": true,
+      "environment_seed": 102,
+      "episode_init_state_index": 1,
+      "frame_count": 52,
+      "generator_type": "privileged_planner",
+      "observation_schema_sha256": "5c5fc9cb48215d2d3363fff353fbfd4ef50b0faae0d9c487fc5cf8dd733e00d0",
+      "predicate_trace_sha256": "94f6642f6f6d1ad2bd8450b57ca873b9c968aee0e5f22edc6298574a08054128",
+      "preservation_trace_sha256": "8e8bb6126ac1d342ef9163207f3fe3a2b12db7f5d1cf5f23553658593dad84d0",
+      "preservation_violation_observed": false,
+      "privileged_state_used": true,
+      "proprioception_schema_sha256": "d26ec2aad3a32fa0aeeda8a6837743e7f0a35a0eba1e5b2167c8eb714cadf115",
+      "protected_object_reference_poses_sha256": "fe7b19a548ba44ccb04dc8adf79ce32ba4df1da6fae1829d35cba87b90e591d0",
+      "sample_kind": "recovery_demonstration",
+      "schema_version": "missionos.libero_recovery_transition.v1",
+      "source_fixture_sha256": "fe8175320955fc63cd118f26daad21eac9c152b19d93684fd34da4e1ed58e977",
+      "source_goal_predicate_vector": [
+        true,
+        false,
+        true
+      ],
+      "source_simulator_state_sha256": "a95134ada1efec77aa8b726639ee40aa8b6c8ae5ad023c3ea743f0bf4afc8f91",
+      "split_id": "training",
+      "stable_hold_result": "satisfied",
+      "task_id": 8,
+      "task_suite": "libero_10",
+      "transition_id": "4fdfddc56d6944444da0fabdb957712087dcdd70f6321339dff3f974e5e64461"
+    },
+    {
+      "applied_action_trace_sha256": "68927c0420f22628b6f623b68124c58460bdc24755a91bc002f2c2fd7c09439a",
+      "capture_archive_sha256": "d5401ebc66ce6cd46d45980af133ee26a8dd094a192d00845e747a5f271125cd",
+      "corrective_action_sequence_sha256": "7ccc666d9557adca02eb6d32cde4434c1aaebbfbb52a2452446d8c6552741b35",
+      "corrective_transition_observed": true,
+      "environment_seed": 103,
+      "episode_init_state_index": 2,
+      "frame_count": 51,
+      "generator_type": "privileged_planner",
+      "observation_schema_sha256": "5c5fc9cb48215d2d3363fff353fbfd4ef50b0faae0d9c487fc5cf8dd733e00d0",
+      "predicate_trace_sha256": "1e284f205c0f6c8aebdb4c44ebde5e813645cc3972c50f2e13aa6603b0b4ac0f",
+      "preservation_trace_sha256": "edf4927c5af955455d22f1c8e4e523b43a6281664e3498044c6f392e167abb32",
+      "preservation_violation_observed": false,
+      "privileged_state_used": true,
+      "proprioception_schema_sha256": "d26ec2aad3a32fa0aeeda8a6837743e7f0a35a0eba1e5b2167c8eb714cadf115",
+      "protected_object_reference_poses_sha256": "e3f58894af6b53eaefbda6274ae96817599284dc631b4da905f1555ac3ba5979",
+      "sample_kind": "recovery_demonstration",
+      "schema_version": "missionos.libero_recovery_transition.v1",
+      "source_fixture_sha256": "c2d77872579f09ec7da540cb855c1b35702148c976c653a376c1a0f2f5e19be2",
+      "source_goal_predicate_vector": [
+        true,
+        false,
+        true
+      ],
+      "source_simulator_state_sha256": "901a9263ebcecb1f2ed29fd044b072179948e2cbdf808c769eec4d7528c6800d",
+      "split_id": "training",
+      "stable_hold_result": "satisfied",
+      "task_id": 8,
+      "task_suite": "libero_10",
+      "transition_id": "015f88c7689f98c14fa1e75fad2622caedd46efab178d1f8533d5ed2e08fd544"
+    },
+    {
+      "applied_action_trace_sha256": "6a0e5a27e019ec816461e1831fa1e201264b20d3804dd75885ef78020097c4e4",
+      "capture_archive_sha256": "72bed7029a7bee1b11fe0ff70f2ede974763a4aefc3aa2d560a7014fd285df5e",
+      "corrective_action_sequence_sha256": "1dfa6eda63fe9ff97415e33037d206024f22701aa0440081940c84d235a35211",
+      "corrective_transition_observed": true,
+      "environment_seed": 104,
+      "episode_init_state_index": 3,
+      "frame_count": 51,
+      "generator_type": "privileged_planner",
+      "observation_schema_sha256": "5c5fc9cb48215d2d3363fff353fbfd4ef50b0faae0d9c487fc5cf8dd733e00d0",
+      "predicate_trace_sha256": "1e284f205c0f6c8aebdb4c44ebde5e813645cc3972c50f2e13aa6603b0b4ac0f",
+      "preservation_trace_sha256": "edf4927c5af955455d22f1c8e4e523b43a6281664e3498044c6f392e167abb32",
+      "preservation_violation_observed": false,
+      "privileged_state_used": true,
+      "proprioception_schema_sha256": "d26ec2aad3a32fa0aeeda8a6837743e7f0a35a0eba1e5b2167c8eb714cadf115",
+      "protected_object_reference_poses_sha256": "9dba46e1fa22f27d7a4bf275a92006f9a9ff83e70e70ddd389e1460be48a921e",
+      "sample_kind": "recovery_demonstration",
+      "schema_version": "missionos.libero_recovery_transition.v1",
+      "source_fixture_sha256": "918025ff3d6323878d2b845acd83e841c05eb68f2eecf6995b2b82f0d2d42cc8",
+      "source_goal_predicate_vector": [
+        true,
+        false,
+        true
+      ],
+      "source_simulator_state_sha256": "8a2a7d50db3aeb41a3e27c1de613e3c9549bb472f7b889174aa14ccedd50d272",
+      "split_id": "training",
+      "stable_hold_result": "satisfied",
+      "task_id": 8,
+      "task_suite": "libero_10",
+      "transition_id": "1979bff2e3d42b0798f9b963253a58aa9a5d0ca1804a3c877f17940da082f934"
+    }
+  ]
+}

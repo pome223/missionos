@@ -1,0 +1,66 @@
+{
+  "claim_boundary": {
+    "evaluation_data_used_for_training": false,
+    "model_inference_invoked": false,
+    "physical_execution_invoked": false,
+    "privileged_oracle_generation": true,
+    "training_invoked": false
+  },
+  "evaluation_holdout_count": 3,
+  "evaluation_holdouts": [
+    {
+      "action_trace_sha256": "918e4ed239b7972ee8bfcd7713edc27bcb8c78885d621275c6942493faa08a22",
+      "environment_seed": 0,
+      "episode_init_state_index": 4,
+      "generator_type": "privileged_planner",
+      "preservation_violation_observed": false,
+      "privileged_state_used": true,
+      "source_fixture_sha256": "5cd490f469e61eee45271cb352e4ba09baad4fc9e2dae3c5e170029913e8fe55",
+      "source_simulator_state_sha256": "dca4a8983d3e8fc36666e1ef4d4d4612cce822ee11902143b66c27a925ed9305",
+      "split_id": "evaluation",
+      "stable_hold_result": "satisfied",
+      "stable_success_observed": true,
+      "task_id": 8,
+      "task_suite": "libero_10",
+      "training_excluded": true,
+      "used_for_training": false
+    },
+    {
+      "action_trace_sha256": "a9ea872f1ef4c20b093f2d32636c3574c1f85fbf98fb8a9f0398b4968a25ce69",
+      "environment_seed": 0,
+      "episode_init_state_index": 12,
+      "generator_type": "privileged_planner",
+      "preservation_violation_observed": false,
+      "privileged_state_used": true,
+      "source_fixture_sha256": "2516cf092ea213c180b7d9104ea6276649c645b56e7a723621c9c45522f4a2fe",
+      "source_simulator_state_sha256": "c35534ed7190c5ce858023f5121d28bf1d86ec5d21e8a2855dad5185fd65014d",
+      "split_id": "evaluation",
+      "stable_hold_result": "satisfied",
+      "stable_success_observed": true,
+      "task_id": 8,
+      "task_suite": "libero_10",
+      "training_excluded": true,
+      "used_for_training": false
+    },
+    {
+      "action_trace_sha256": "ccf49248cb702c7d87e0540e9f29dd18f8011d2f95ad17cb0479bce6d9c4e28b",
+      "environment_seed": 0,
+      "episode_init_state_index": 15,
+      "generator_type": "privileged_planner",
+      "preservation_violation_observed": false,
+      "privileged_state_used": true,
+      "source_fixture_sha256": "2516cf092ea213c180b7d9104ea6276649c645b56e7a723621c9c45522f4a2fe",
+      "source_simulator_state_sha256": "9da41f98f878ace4d8325be6b0c09cae2329fb8102bd910c0cbd9d789a5eb88b",
+      "split_id": "evaluation",
+      "stable_hold_result": "satisfied",
+      "stable_success_observed": true,
+      "task_id": 8,
+      "task_suite": "libero_10",
+      "training_excluded": true,
+      "used_for_training": false
+    }
+  ],
+  "result_sha256": "76496f28d6d53bb3b889cc4faa21a6271bffcf9f9ae66b99b48fbfe50b44676d",
+  "schema_version": "missionos.libero_recovery_evaluation_holdout_manifest.v1",
+  "status": "complete_training_excluded"
+}

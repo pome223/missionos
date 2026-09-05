@@ -51,10 +51,37 @@ admission: a multi-example cohort, generated statistics, exact holdout
 exclusions, and the Phase 0 leakage audit are still required before any paid
 training review.
 
-The current record has no admitted recovery-training examples, measured
-dataset size, selected trainable checkpoint, measured GPU-hour estimate, or
-reviewed cost cap. A GPU must not be provisioned and training must not start
-until all of those inputs exist and a separate human approval is recorded.
+## Minimal training-candidate cohort (2026-09-05)
+
+The preregistered diagonal cohort `(init, seed) = (0,101), (1,102), (2,103),
+(3,104)` was run at the 3 cm negative-x condition. All four privileged-oracle
+candidates recovered the predicates, preserved the protected object, and
+completed the 20-step hold. Their trajectory lengths were 52, 52, 51, and 51
+actions, for 206 aligned frames total. All four captures were converted to the
+same LeRobot v2 contract.
+
+The digest-bound candidate manifest is
+[`evidence/20260905-libero-recovery-training-candidate-manifest.json`](evidence/20260905-libero-recovery-training-candidate-manifest.json).
+All four transition contracts validate and have distinct source-state and
+fixture identities. Three preregistered evaluation conditions `(init, seed) =
+(4,0), (12,0), (15,0)` were then materialized separately. Their exact source-
+state, fixture, and applied-action identities are fixed in
+[`evidence/20260905-libero-recovery-evaluation-holdout-manifest.json`](evidence/20260905-libero-recovery-evaluation-holdout-manifest.json).
+The holdout manifest explicitly records `used_for_training=false`; holdout
+images, states, and actions were not joined to the training candidates.
+
+The exact audit against those three holdouts plus all identifiers available in
+the three earlier evaluation references found no collision. Therefore
+`leakage_audit.passed=true` and the four candidates are admitted to the bounded
+future recovery-training set. This is dataset admission only. It is not an
+authorization to provision a GPU, start paid training, or claim learned-model
+recovery.
+
+The current set has four admitted recovery-training examples and 367,839 bytes
+of serialized LeRobot v2 conversion artifacts. It still has no selected
+trainable checkpoint, measured GPU-hour estimate, or reviewed hard cost cap. A
+GPU must not be provisioned and training must not start until those inputs,
+automatic teardown, and a separate human approval are recorded.
 
 The machine-readable decision is
 [`evidence/20260905-libero-recovery-training-phase0.json`](evidence/20260905-libero-recovery-training-phase0.json).
@@ -95,8 +122,9 @@ excluded from training. The validator rejects:
 - malformed provenance or content digests;
 - a failure rollout relabeled as a recovery demonstration.
 
-The current audit status is `blocked_no_training_manifest`, because zero
-training examples exist. This is not a passed leakage audit.
+The original Phase 0 decision record remains an immutable **NO-GO** checkpoint.
+The subsequent candidate manifest now contains the passed exact audit and four
+admitted examples; it does not retroactively authorize paid training.
 
 ## Preregistered matched comparison
 
