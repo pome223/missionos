@@ -5,6 +5,39 @@
 Paid training is **NO-GO** at this checkpoint. This is a readiness decision,
 not evidence that recovery-state training will or will not work.
 
+## Phase 1 capture status (2026-09-05)
+
+There is now bounded positive evidence for data generation, while paid training
+remains **NO-GO**. A privileged scripted oracle recovered one non-evaluation
+condition (`episode_init_state_index=0`, `environment_seed=101`) in 52 applied
+actions, preserved the protected predicates, and held the complete predicate
+vector for 20 steps.
+
+The run also captured all 52 aligned pre-action samples required before dataset
+conversion:
+
+- 256 x 256 `agentview` RGB;
+- 256 x 256 wrist RGB;
+- 8-D end-effector axis-angle plus gripper state;
+- the actual 7-D action applied at that step;
+- 20 Hz timestamps and the existing post-action predicate/preservation trace.
+
+The compact evidence record is
+[`evidence/20260905-libero-recovery-transition-capture.json`](evidence/20260905-libero-recovery-transition-capture.json).
+The raw archive is digest-bound but intentionally not published in the source
+repository. Its status is
+`raw_transition_capture_complete_conversion_and_admission_pending`: it has not
+yet been converted into GR00T LeRobot v2, admitted as a training example, used
+for training, or evaluated by model inference.
+
+The capture layout follows NVIDIA's current
+[LIBERO modality contract](https://github.com/NVIDIA/Isaac-GR00T/blob/main/examples/LIBERO/modality.json)
+and [GR00T LeRobot v2 preparation requirements](https://github.com/NVIDIA/Isaac-GR00T/blob/main/getting_started/data_preparation.md).
+The next gate is deterministic MP4/Parquet conversion plus validation against
+the official LIBERO schema. No GPU should be provisioned before a converted
+multi-example manifest passes the leakage audit and receives separate cost
+approval.
+
 The current record has no admitted recovery-training examples, measured
 dataset size, selected trainable checkpoint, measured GPU-hour estimate, or
 reviewed cost cap. A GPU must not be provisioned and training must not start

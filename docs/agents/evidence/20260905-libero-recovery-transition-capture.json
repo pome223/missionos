@@ -1,0 +1,103 @@
+{
+  "schema_version": "missionos.libero_recovery_transition_capture_evidence.v1",
+  "recorded_at": "2026-09-05",
+  "decision": "RAW_CAPTURE_POSITIVE_PAID_TRAINING_NO_GO",
+  "official_contract": {
+    "isaac_groot_revision": "51d4c89f72fda44cbf77285c6a8114b52676b8a1",
+    "libero_modality_url": "https://github.com/NVIDIA/Isaac-GR00T/blob/main/examples/LIBERO/modality.json",
+    "data_preparation_url": "https://github.com/NVIDIA/Isaac-GR00T/blob/main/getting_started/data_preparation.md",
+    "videos": [
+      "observation.images.image",
+      "observation.images.wrist_image"
+    ],
+    "observation_state_dimensions": 8,
+    "action_dimensions": 7,
+    "control_frequency_hz": 20
+  },
+  "scenario": {
+    "task_suite": "libero_10",
+    "task_id": 8,
+    "task_name": "KITCHEN_SCENE8_put_both_moka_pots_on_the_stove",
+    "episode_init_state_index": 0,
+    "environment_seed": 101,
+    "split": "training_candidate_non_evaluation",
+    "source_goal_predicate_vector": [
+      true,
+      false,
+      true
+    ],
+    "terminal_goal_predicate_vector": [
+      true,
+      true,
+      true
+    ]
+  },
+  "observed_result": {
+    "fixture_status": "stable_three_centimetre_fixture_observed",
+    "oracle_status": "scripted_oracle_recoverability_established",
+    "actions_applied": 52,
+    "stable_success_steps_completed": 20,
+    "stable_success_observed": true,
+    "preservation_violation_observed": false,
+    "generator_type": "privileged_planner",
+    "privileged_state_used": true
+  },
+  "capture": {
+    "status": "raw_transition_capture_complete_conversion_and_admission_pending",
+    "alignment": "observation_before_applied_action",
+    "frame_count": 52,
+    "archive_size_bytes": 6657679,
+    "archive_sha256": "f0bc66311b9ef520984f7d8e70c9e93a029993f70494a97d0853850e1b25d536",
+    "manifest_file_sha256": "6d15c7adc10e26a6a0d731331a92649562704b9f81098f5d084f1ebfe4e17bf8",
+    "raw_action_trace_sha256": "8851f6bce6f1fc899fb5a75c4660b89454fd6f8c512f04cdaaf56b8b798829c3",
+    "arrays": {
+      "agentview_rgb": {
+        "dtype": "uint8",
+        "shape": [52, 256, 256, 3],
+        "sha256": "cd6d69b6f605202b385cdb52a5a8531b6fa66804152c69e5d961ce895d754146"
+      },
+      "wrist_rgb": {
+        "dtype": "uint8",
+        "shape": [52, 256, 256, 3],
+        "sha256": "c16a1c7153f7f8b467cfacb78235433701abb6657dd4559715b1e00745a1e61e"
+      },
+      "observation_state": {
+        "dtype": "float32",
+        "shape": [52, 8],
+        "sha256": "8ef34b2fd084335484bec05473eef83b8a43b4c5935216d6331d6bfc10d56382"
+      },
+      "applied_action": {
+        "dtype": "float32",
+        "shape": [52, 7],
+        "sha256": "d5238e4c2d5082eb62a13d5bb399094fe62da6720bb447455fba5fee63cf47b7"
+      },
+      "timestamp": {
+        "dtype": "float32",
+        "shape": [52],
+        "sha256": "d17f17739494ca0e55ae59cf084bf309fe65d93800ca98d71210bb728b5508d7"
+      }
+    }
+  },
+  "cost_control": {
+    "gpu_used": false,
+    "machine_type": "e2-standard-4",
+    "maximum_run_duration_seconds": 3600,
+    "instance_termination_action": "DELETE",
+    "restart_on_failure": false,
+    "capture_vm_observed_lifetime_minutes_upper_bound": 11,
+    "instance_absent_after_run": true,
+    "boot_disk_absent_after_run": true,
+    "billing_total_confirmed": false
+  },
+  "claim_boundary": {
+    "raw_capture_only": true,
+    "lerobot_v2_conversion_complete": false,
+    "training_example_admitted": false,
+    "paid_training_authorized": false,
+    "gpu_provision_authorized": false,
+    "training_invoked": false,
+    "model_inference_invoked": false,
+    "repair_capability_established": false,
+    "physical_execution_invoked": false
+  }
+}
