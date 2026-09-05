@@ -413,7 +413,15 @@ def execute_live(
                     "episode_init_state_index": EPISODE_INIT_STATE_INDEX,
                     "environment_seed": ENVIRONMENT_SEED,
                     "snapshot_sha256": _sha256_path(snapshot_path),
+                    "source_simulator_state_sha256": metadata["simulator_state_sha256"],
+                    "source_fixture_sha256": fixture_sha256,
                     "source_goal_predicate_vector": source_vector,
+                    "protected_object_reference_poses_sha256": _canonical_sha256(
+                        {
+                            "protected_object": PROTECTED_OBJECT,
+                            "source_position_metres": initial_protected.tolist(),
+                        }
+                    ),
                     "privileged_state_used": True,
                     "generator_type": "privileged_planner",
                 },
