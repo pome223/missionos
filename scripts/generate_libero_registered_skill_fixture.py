@@ -33,6 +33,13 @@ from scripts.probe_libero_displacement_curriculum import (  # noqa: E402
 
 OPT_IN_ENV = "RUN_MISSIONOS_LIBERO_REGISTERED_SKILL_FIXTURE"
 DISPLACEMENT_METRES = 0.03
+DISPLACEMENT_DIRECTION = "negative_x"
+DIRECTION_VECTORS = {
+    "positive_x": (1.0, 0.0),
+    "negative_x": (-1.0, 0.0),
+    "positive_y": (0.0, 1.0),
+    "negative_y": (0.0, -1.0),
+}
 SETTLE_STEPS = 60
 SUCCESS_LAYOUT_OFFSETS_METRES = {
     PROTECTED_OBJECT: (0.035, 0.035),
@@ -118,9 +125,17 @@ def generate(*, output_dir: Path) -> dict[str, Any]:
             dtype=np.float64,
         ).copy()
 
-        injected_target = source_target + np.array(
-            [-DISPLACEMENT_METRES, 0.0, 0.0], dtype=np.float64
+        try:
+            direction_xy = DIRECTION_VECTORS[DISPLACEMENT_DIRECTION]
+        except KeyError as exc:
+            raise ValueError("registered_skill_fixture_displacement_direction_invalid") from exc
+        if not np.isfinite(DISPLACEMENT_METRES) or DISPLACEMENT_METRES <= 0.0:
+            raise ValueError("registered_skill_fixture_displacement_distance_invalid")
+        displacement_vector = (
+            np.array([direction_xy[0], direction_xy[1], 0.0], dtype=np.float64)
+            * DISPLACEMENT_METRES
         )
+        injected_target = source_target + displacement_vector
         _set_object_position(environment, TARGET_OBJECT, injected_target)
         simulator.sim.forward()
         simulator._post_process()
@@ -136,18 +151,14 @@ def generate(*, output_dir: Path) -> dict[str, Any]:
             dtype=np.float64,
         ).copy()
         observed_displacement = float(np.linalg.norm(terminal_target - source_target))
-        protected_displacement = float(
-            np.linalg.norm(terminal_protected - source_protected)
-        )
+        protected_displacement = float(np.linalg.norm(terminal_protected - source_protected))
         if abs(observed_displacement - DISPLACEMENT_METRES) > 0.002:
             raise RuntimeError(
-                "registered_skill_fixture_translation_drift:"
-                f"observed={observed_displacement}"
+                f"registered_skill_fixture_translation_drift:observed={observed_displacement}"
             )
         if protected_displacement > 0.005:
             raise RuntimeError(
-                "registered_skill_fixture_protected_object_moved:"
-                f"observed={protected_displacement}"
+                f"registered_skill_fixture_protected_object_moved:observed={protected_displacement}"
             )
 
         predicates = _predicate_material(environment)
@@ -155,9 +166,9 @@ def generate(*, output_dir: Path) -> dict[str, Any]:
             "schema_version": FIXTURE_SCHEMA_VERSION,
             "authority": "diagnostic_fixture_only",
             "environment_seed": ENVIRONMENT_SEED,
-            "construction": (
-                "direct_preregistered_stove_layout_then_three_centimetre_displacement"
-            ),
+            "construction": "direct_preregistered_stove_layout_then_planar_displacement",
+            "displacement_direction": DISPLACEMENT_DIRECTION,
+            "requested_translation_vector_metres": displacement_vector.tolist(),
             "requested_translation_from_source_metres": DISPLACEMENT_METRES,
             "observed_translation_from_source_metres": observed_displacement,
             "source_target_position_metres": source_target.tolist(),
@@ -167,15 +178,11 @@ def generate(*, output_dir: Path) -> dict[str, Any]:
             "terminal_protected_position_metres": terminal_protected.tolist(),
             "protected_object_displacement_metres": protected_displacement,
             "success_fixture_settle_steps_applied": len(success_trace),
-            "success_fixture_settle_trace_sha256": canonical_sha256(
-                {"trace": success_trace}
-            ),
+            "success_fixture_settle_trace_sha256": canonical_sha256({"trace": success_trace}),
             "fixture_settle_steps_applied": len(failure_trace),
             "fixture_settle_trace": failure_trace,
             "terminal_goal_predicate_observations": predicates,
-            "terminal_goal_predicate_vector": [
-                item["satisfied"] for item in predicates
-            ],
+            "terminal_goal_predicate_vector": [item["satisfied"] for item in predicates],
             "actual_predicate_failure_observed": True,
             "model_inference_invoked": False,
             "repair_attempted": False,
@@ -193,9 +200,7 @@ def generate(*, output_dir: Path) -> dict[str, Any]:
                 "environment_seed": ENVIRONMENT_SEED,
                 "source_failure_basis": "diagnostic_displacement_curriculum",
                 "source_goal_predicate_observations": predicates,
-                "source_goal_predicate_vector": [
-                    item["satisfied"] for item in predicates
-                ],
+                "source_goal_predicate_vector": [item["satisfied"] for item in predicates],
                 "source_goal_predicate_vector_sha256": canonical_sha256(
                     {"goal_predicate_observations": predicates}
                 ),
@@ -208,7 +213,11 @@ def generate(*, output_dir: Path) -> dict[str, Any]:
         )
         result_without_digest = {
             "schema_version": "missionos.libero_registered_skill_fixture.v1",
-            "status": "stable_three_centimetre_fixture_observed",
+            "status": (
+                "stable_three_centimetre_fixture_observed"
+                if DISPLACEMENT_METRES == 0.03 and DISPLACEMENT_DIRECTION == "negative_x"
+                else "stable_displaced_fixture_observed"
+            ),
             "fixture": fixture,
             "fixture_sha256": fixture_sha256,
             "snapshot": snapshot,
