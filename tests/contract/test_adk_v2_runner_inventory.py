@@ -3,7 +3,6 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 # A Runner is the ADK application/session entrypoint. Multi-stage orchestration
@@ -35,6 +34,14 @@ EXPECTED_RUNNER_ROOTS = {
         "src/intelligence/missionos_adk_v2_shadow_graph.py",
         "_run_missionos_conversation_graph_async",
     ): ("workflow_root", "workflow"),
+    (
+        "src/intelligence/missionos_mission_incident_graph.py",
+        "_run_mission_incident_graph_async",
+    ): ("workflow_root", "workflow"),
+    (
+        "src/intelligence/missionos_mission_incident_continuation_graph.py",
+        "_run_mission_incident_continuation_async",
+    ): ("workflow_root", "workflow"),
     ("src/main.py", "_run_cli"): ("single_agent_root", "root_agent"),
     ("src/main.py", "_run_channels"): ("single_agent_root", "root_agent"),
     (
@@ -56,6 +63,10 @@ EXPECTED_RUNNER_ROOTS = {
     (
         "src/intelligence/missionos_agent_runtime.py",
         "_invoke_runtime_recovery_agent_text_with_tools_async",
+    ): ("single_agent_root", "agent"),
+    (
+        "src/intelligence/mission_assurance_agent.py",
+        "_invoke_adk_response",
     ): ("single_agent_root", "agent"),
     (
         "src/intelligence/missionos_chief_planner_tools.py",
@@ -148,8 +159,8 @@ def test_every_production_runner_has_an_explicit_v2_root_classification() -> Non
     assert sum(
         classification == "workflow_root"
         for classification, _agent in EXPECTED_RUNNER_ROOTS.values()
-    ) == 6
+    ) == 8
     assert sum(
         classification == "single_agent_root"
         for classification, _agent in EXPECTED_RUNNER_ROOTS.values()
-    ) == 12
+    ) == 13

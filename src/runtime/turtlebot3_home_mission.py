@@ -456,11 +456,11 @@ _TURTLEBOT3_HOME_FLOOR_PLAN = {
 }
 _TURTLEBOT3_DYNAMIC_OBSTACLE_APPROACH_SEGMENT = Nav2GoalPose(
     frame_id="map",
-    # Stop before the obstacle's local-costmap lethal footprint. Recovery
-    # candidate evaluation must begin from an executable observation pose,
-    # rather than after the robot has already entered the blocked cell.
-    x_m=-1.60,
-    y_m=-0.85,
+    # Reserve the full goal tolerance and one costmap cell outside the Core
+    # surface-clearance floor. A merely non-lethal stopping cell can still be
+    # too close for *every* recovery path, including a retreat, to be feasible.
+    x_m=-1.90,
+    y_m=-0.95,
     yaw_rad=0.0,
     tolerance_m=0.25,
     max_speed_mps=0.25,
@@ -1672,6 +1672,15 @@ def _build_autonomy_envelope(
                     *applied_promotion_refs,
                     application.application_id,
                 )
+    # A movement proposal is reviewed only after the common incident judgment.
+    # Bind this restriction into the envelope itself, before its ID is built.
+    movement_actions = {"avoid_obstacle", "return_home", "reroute"}
+    preapproved_recovery_actions = tuple(
+        action for action in preapproved_recovery_actions if action not in movement_actions
+    )
+    requires_human_approval_for = tuple(dict.fromkeys(
+        (*requires_human_approval_for, *sorted(movement_actions))
+    ))
     return build_mission_autonomy_envelope(
         mission_ref=proposal_id,
         operator_approved=operator_approved,
@@ -2962,7 +2971,7 @@ def _revalidate_approved_recovery_candidate(
 ) -> dict[str, Any]:
     """Revalidate the exact approved target immediately before dispatch."""
 
-    if checkpoint.get("selected_action") not in {"avoid_obstacle", "reroute"}:
+    if checkpoint.get("selected_action") not in {"avoid_obstacle", "reroute", "return_home"}:
         return {
             "schema_version": "missionos_nav2_recovery_candidate_revalidation.v1",
             "revalidation_status": "not_required",
@@ -5720,9 +5729,53 @@ def _build_turtlebot3_recovery_checkpoint(
             candidate_resolution.get("blocking_reasons")
             or ["no_core_verified_recovery_candidate"]
         )
+    if selected_action in {"return_home", "reroute"}:
+        resolution, reasons = _validate_operator_revision_recovery_goals(
+            recovery_goal_poses=checkpoint.get("recovery_goal_poses") or [
+                {"x_m": approved_parameters.get("target_x_m"),
+                 "y_m": approved_parameters.get("target_y_m"),
+                 "yaw_rad": approved_parameters.get("target_yaw_rad", 0.0)}
+            ],
+            obstacle_scenario=runtime_recovery_obstacle_scenario,
+        )
+        checkpoint["mission_incident_source_feasibility"] = resolution
+        if resolution:
+            sequence = resolution["selected_sequence"]
+            checkpoint["recovery_candidate_binding"] = {
+                "candidate_id": sequence[-1]["candidate_id"],
+                "candidate_ids": [item["candidate_id"] for item in sequence],
+                "live_costmap_validated": True, "dual_costmap_validated": True,
+                "core_action_feasibility_required": True,
+                "core_hazard_state": resolution.get("core_hazard_state"),
+            }
+        if reasons:
+            checkpoint["action_feasibility_blocking_reasons"] = reasons
     checkpoint["recovery_contract_bundle"] = (
         build_turtlebot3_recovery_contract_bundle(checkpoint)
     )
+    from src.runtime.turtlebot3_mission_incident import judge_turtlebot3_checkpoint
+
+    try:
+        graph = judge_turtlebot3_checkpoint(
+            checkpoint=checkpoint,
+            proposal=proposal,
+            recovery_proposal=recovery_proposal,
+            planner_result=recovery_planner_result,
+            motion=runtime_recovery_motion_context,
+            obstacle=runtime_recovery_obstacle_scenario,
+        )
+    except Exception as exc:
+        graph = {
+            "graph_runtime_status": "guardrail_blocked",
+            "decision_status": "operator_escalation",
+            "blocking_reasons": [f"nav2_mission_incident_failed:{type(exc).__name__}"],
+            "approval_created": False,
+            "dispatch_request_sent": False,
+        }
+    checkpoint["missionos_mission_incident_graph"] = graph
+    checkpoint["approval_eligible"] = graph.get("decision_status") == "awaiting_operator_approval"
+    if graph.get("decision_status") != "awaiting_operator_approval":
+        checkpoint["operator_guidance_required"] = True
     checkpoint_hash = _recovery_checkpoint_hash(checkpoint)
     checkpoint["checkpoint_hash"] = checkpoint_hash
     checkpoint["checkpoint_id"] = f"turtlebot3_recovery_checkpoint_{checkpoint_hash[:12]}"
@@ -7314,6 +7367,8 @@ def _validate_operator_revision_recovery_goals(
         "global_costmap_source": evaluation.get("global_costmap_source"),
         "local_costmap_source": evaluation.get("local_costmap_source"),
         "compute_path_action": evaluation.get("compute_path_action"),
+        "core_hazard_state": evaluation.get("core_hazard_state"),
+        "core_adapter_id": evaluation.get("core_adapter_id"),
         "dispatch_request_sent": False,
         "dispatch_authority_created": False,
         "physical_execution_invoked": False,
@@ -7405,7 +7460,7 @@ def build_turtlebot3_recovery_checkpoint_revision(
         )
     recovery_goal_poses = list(geometry["recovery_goal_poses"])
     revision_candidate_resolution: dict[str, Any] = {}
-    if selected_action in {"avoid_obstacle", "reroute"}:
+    if selected_action in {"avoid_obstacle", "reroute", "return_home"}:
         revision_candidate_resolution, evaluation_reasons = (
             _validate_operator_revision_recovery_goals(
                 recovery_goal_poses=recovery_goal_poses,
@@ -7666,6 +7721,30 @@ def build_turtlebot3_recovery_checkpoint_revision(
     new_checkpoint["recovery_contract_bundle"] = (
         build_turtlebot3_recovery_contract_bundle(new_checkpoint)
     )
+    from src.runtime.turtlebot3_mission_incident import judge_turtlebot3_checkpoint
+
+    new_checkpoint["mission_incident_source_feasibility"] = revision_candidate_resolution
+    try:
+        revision_graph = judge_turtlebot3_checkpoint(
+            checkpoint=new_checkpoint, proposal=proposal,
+            recovery_proposal=recovery_proposal, planner_result=planner_result,
+            motion=execution.get("runtime_recovery_motion_context") or {},
+            obstacle=execution.get("runtime_recovery_obstacle_scenario") or {},
+        )
+    except Exception as exc:
+        return _recovery_revision_blocked_response(
+            status="blocked", checkpoint=checkpoint,
+            blocking_reasons=[f"nav2_revision_judgment_failed:{type(exc).__name__}"],
+        )
+    if revision_graph.get("decision_status") != "awaiting_operator_approval":
+        return {
+            **_recovery_revision_blocked_response(
+                status="blocked", checkpoint=checkpoint,
+                blocking_reasons=revision_graph.get("blocking_reasons") or ["nav2_revision_not_accepted_by_agents"],
+            ),
+            "missionos_mission_incident_graph": revision_graph,
+        }
+    new_checkpoint["missionos_mission_incident_graph"] = revision_graph
     new_checkpoint_hash = _recovery_checkpoint_hash(new_checkpoint)
     new_checkpoint["checkpoint_hash"] = new_checkpoint_hash
     new_checkpoint["checkpoint_id"] = (
@@ -7749,7 +7828,9 @@ def _validate_turtlebot3_recovery_resume(
     goals: tuple[Nav2GoalPose, ...],
     recovery_operator_approval: Mapping[str, Any] | None,
 ) -> list[str]:
-    reasons: list[str] = []
+    from src.runtime.turtlebot3_mission_incident import turtlebot3_incident_dispatch_reasons
+
+    reasons = turtlebot3_incident_dispatch_reasons(checkpoint)
     if checkpoint.get("schema_version") != TURTLEBOT3_RECOVERY_CHECKPOINT_SCHEMA:
         reasons.append("turtlebot3_recovery_checkpoint_schema_invalid")
     if checkpoint.get("checkpoint_status") != "awaiting_operator_approval":
@@ -8007,6 +8088,56 @@ def run_turtlebot3_home_mission_dispatch(
     resume_execution: Mapping[str, Any] | None = None,
     recovery_operator_approval: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
+    from src.runtime.turtlebot3_mission_incident import continue_turtlebot3_incident
+
+    kwargs = dict(proposal=proposal, approval=approval, now=now,
+                  progress_callback=progress_callback, resume_execution=resume_execution,
+                  recovery_operator_approval=recovery_operator_approval)
+    checkpoint = _recovery_checkpoint_from_execution(resume_execution)
+    if resume_execution is not None:
+        def validate():
+            reasons = _validate_turtlebot3_recovery_resume(
+                checkpoint=checkpoint,
+                resume_state=_recovery_resume_payload(resume_execution),
+                proposal=proposal,
+                goals=_planned_segment_goals_from_proposal(proposal),
+                recovery_operator_approval=recovery_operator_approval,
+            )
+            if not reasons:
+                checked = _revalidate_approved_recovery_candidate(
+                    checkpoint=checkpoint,
+                    obstacle_scenario=_recovery_resume_payload(resume_execution).get("runtime_recovery_obstacle_scenario") or {},
+                )
+                if checked.get("revalidation_status") != "validated":
+                    reasons.extend(checked.get("blocking_reasons") or ["nav2_fresh_feasibility_required"])
+            return reasons
+
+        result = continue_turtlebot3_incident(
+            checkpoint=checkpoint,
+            approval=recovery_operator_approval or {},
+            validate=validate,
+            execute=lambda: _execute_turtlebot3_home_mission(**kwargs),
+        )
+    else:
+        result = _execute_turtlebot3_home_mission(**kwargs)
+    summary = result.get("summary") or {}
+    current = result.get("turtlebot3_recovery_checkpoint") or summary.get("turtlebot3_recovery_checkpoint") or checkpoint
+    graph = current.get("missionos_mission_incident_graph") or {}
+    if graph:
+        result["missionos_mission_incident_graph"] = graph
+        summary["missionos_mission_incident_graph"] = graph
+    return result
+
+
+def _execute_turtlebot3_home_mission(
+    *,
+    proposal: Mapping[str, Any],
+    approval: Mapping[str, Any],
+    now: datetime | None = None,
+    progress_callback: Callable[[dict[str, Any]], None] | None = None,
+    resume_execution: Mapping[str, Any] | None = None,
+    recovery_operator_approval: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     """Execute an approved TurtleBot3 home mission through the Nav2 bridge.
 
     ``progress_callback`` receives a partial, claim-safe running summary after
@@ -8072,6 +8203,10 @@ def run_turtlebot3_home_mission_dispatch(
 
     blocking_reasons = list(_bridge_readiness_blocking_reasons(robot_profile))
     blocking_reasons.extend(_pre_dispatch_judgment_blocking_reasons(proposal))
+    if set(autonomy_envelope.get("preapproved_recovery_actions") or ()) & {
+        "avoid_obstacle", "return_home", "reroute"
+    }:
+        blocking_reasons.append("nav2_legacy_movement_envelope_requires_new_mission_approval")
     if not approval_ref or approval.get("operator_approved") is not True:
         blocking_reasons.append("operator_approval_missing")
     route_authority = approval.get("route_authority")

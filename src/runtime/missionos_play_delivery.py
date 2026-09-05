@@ -28,6 +28,9 @@ from datetime import datetime, timezone
 from typing import Any, Mapping
 
 from src.intelligence.missionos_agent_runtime import run_missionos_runtime_recovery_agent
+from src.intelligence.missionos_mission_incident_graph import (
+    run_missionos_mission_incident_graph,
+)
 from src.runtime.missionos_play_scenario import PlayScenario
 from src.runtime.missionos_play_weather import WeatherForecast
 from src.runtime.missionos_play_wind_driver import (
@@ -80,6 +83,7 @@ class PlayDeliveryResult:
     max_drift_xy_m: float = 0.0
     steps: tuple[DeliveryFlightStep, ...] = field(default_factory=tuple)
     recovery_agent_result: Mapping[str, Any] = field(default_factory=dict)
+    missionos_mission_incident_graph: Mapping[str, Any] = field(default_factory=dict)
     blocking_reasons: tuple[str, ...] = field(default_factory=tuple)
     delivery_completion_claimed: bool = False
     physical_execution_invoked: bool = False
@@ -245,6 +249,7 @@ def run_play_delivery(
     blocking: list[str] = []
     steps: list[DeliveryFlightStep] = []
     recovery_result: Mapping[str, Any] = {}
+    mission_incident_graph: Mapping[str, Any] = {}
     takeoff_observed = mission_uploaded = mission_ack = dropoff_reached = False
     payload_commanded = False
     payload_separated = False
@@ -357,22 +362,66 @@ def run_play_delivery(
                         scenario=scenario, drift_m=cross_track, wind_mps=wind_mps,
                         phase=phase, deviation_limit_m=deviation_limit_m,
                     )
-                    recovery_result = run_missionos_runtime_recovery_agent(
-                        telemetry_snapshot=snapshot,
-                        mission_context={
-                            "scenario_key": scenario.key,
+                    mission_context = {
+                        "task_id": f"missionos_play_delivery:{scenario.key}",
+                        "scenario_key": scenario.key,
+                        "mission_kind": "pickup_dropoff_delivery",
+                        "mission_phase": phase,
+                        "execution_scope": "simulator",
+                        "mission_contract": {
                             "mission_kind": "pickup_dropoff_delivery",
-                            "delivery_completion_claimed": False,
+                            "scenario_key": scenario.key,
+                        },
+                        "delivery_completion_claimed": False,
+                        "physical_execution_invoked": False,
+                    }
+                    recovery_policy = {
+                        "policy_ref": "missionos_play_delivery_recovery_policy.v1",
+                        "max_wind_speed_mps": scenario.vehicle.max_wind_speed_mps,
+                        "max_route_deviation_xy_m": deviation_limit_m,
+                        "emergency_landing_route_deviation_xy_m": (
+                            deviation_limit_m * 3.0
+                        ),
+                        "preauthorized_actions": [
+                            "continue",
+                            "hold",
+                            "return_to_launch",
+                            "land",
+                        ],
+                    }
+                    try:
+                        mission_incident_graph = run_missionos_mission_incident_graph(
+                            telemetry_snapshot=snapshot,
+                            mission_context=mission_context,
+                            recovery_policy=recovery_policy,
+                            recovery_runner=run_missionos_runtime_recovery_agent,
+                        )
+                    except Exception as exc:
+                        blocking.append("mission_incident_graph_runtime_failure")
+                        mission_incident_graph = {
+                            "schema_version": (
+                                "missionos_mission_incident_graph_failure.v1"
+                            ),
+                            "graph_runtime_status": "guardrail_blocked",
+                            "decision_status": "operator_escalation",
+                            "blocking_reasons": [
+                                "mission_incident_graph_runtime_failure:"
+                                f"{type(exc).__name__}"
+                            ],
+                            "approval_created": False,
+                            "dispatch_authority_created": False,
                             "physical_execution_invoked": False,
-                        },
-                        recovery_policy={
-                            "policy_ref": "missionos_play_delivery_recovery_policy.v1",
-                            "max_wind_speed_mps": scenario.vehicle.max_wind_speed_mps,
-                            "max_route_deviation_xy_m": deviation_limit_m,
-                            "emergency_landing_route_deviation_xy_m": deviation_limit_m * 3.0,
-                            "preauthorized_actions": ["continue", "hold", "return_to_launch", "land"],
-                        },
+                            "progress_counted": False,
+                        }
+                    recovery_result = dict(
+                        mission_incident_graph.get("recovery_result") or {}
                     )
+                    if (
+                        mission_incident_graph.get("graph_runtime_status")
+                        != "proposal_guardrail_passed"
+                        and "mission_incident_graph_runtime_failure" not in blocking
+                    ):
+                        blocking.append("mission_incident_graph_guardrail_blocked")
                 sleep(step_s)
     finally:
         if cleanup:
@@ -392,5 +441,6 @@ def run_play_delivery(
         max_drift_xy_m=round(max_drift, 2),
         steps=tuple(steps),
         recovery_agent_result=dict(recovery_result),
+        missionos_mission_incident_graph=dict(mission_incident_graph),
         blocking_reasons=tuple(blocking),
     )

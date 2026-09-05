@@ -113,8 +113,8 @@ def test_envelope_applies_valid_promotion_file(tmp_path: Path, monkeypatch) -> N
     )
 
     promoted = _build_autonomy_envelope(proposal_id="promotion_test")
-    assert "avoid_obstacle" in promoted["preapproved_recovery_actions"]
-    assert "avoid_obstacle" not in promoted["requires_human_approval_for"]
+    assert "avoid_obstacle" not in promoted["preapproved_recovery_actions"]
+    assert "avoid_obstacle" in promoted["requires_human_approval_for"]
     assert promoted["applied_recovery_promotions"] == [
         "recovery_action_promotion_application_testabcd"
     ]
@@ -270,7 +270,8 @@ def test_promotion_cli_evaluate_and_apply_close_the_loop(
         TURTLEBOT3_PROMOTED_ACTIONS_JSON_ENV, str(applications_path)
     )
     envelope = _build_autonomy_envelope(proposal_id="post_promotion_mission")
-    assert "avoid_obstacle" in envelope["preapproved_recovery_actions"]
+    assert "avoid_obstacle" not in envelope["preapproved_recovery_actions"]
+    assert "avoid_obstacle" in envelope["requires_human_approval_for"]
     assert envelope["applied_recovery_promotions"] == [
         applied["application"]["application_id"]
     ]

@@ -1217,15 +1217,28 @@ def _dropoff_flight_fact_from_summary(
         raise PX4GazeboMissionDesignerSITLRunnerError(
             "dropoff verification requires observed dropoff-region reach"
         )
-    completed_x, completed_y = _completed_pose_xy(summary)
+    explicit_dropoff_observation = (
+        summary.get("mission_assurance_continue_dropoff_approach_observed") is True
+        and bool(summary.get("dropoff_region_observed_at"))
+    )
+    if explicit_dropoff_observation:
+        observed_x = _summary_float(summary, "dropoff_region_observed_pose_x_m")
+        observed_y = _summary_float(summary, "dropoff_region_observed_pose_y_m")
+        observed_z = _summary_float(summary, "dropoff_region_observed_pose_z_m")
+        mission_item_reached_at = _summary_timestamp(
+            summary, "dropoff_region_observed_at"
+        )
+    else:
+        observed_x, observed_y = _completed_pose_xy(summary)
+        observed_z = _summary_float(summary, "completed_pose_z_m")
+        mission_item_reached_at = _summary_timestamp(summary, "recorded_at")
     target_x, target_y, target_altitude = _dropoff_target(summary)
-    mission_item_reached_at = _summary_timestamp(summary, "recorded_at")
     return build_px4_gazebo_sitl_dropoff_flight_fact(
         vehicle_id=MISSION_DESIGNER_SITL_DROPOFF_VEHICLE_ID,
         dropoff_zone_id=MISSION_DESIGNER_SITL_DROPOFF_ZONE_ID,
-        position_x_m=completed_x,
-        position_y_m=completed_y,
-        position_z_m=_summary_float(summary, "completed_pose_z_m"),
+        position_x_m=observed_x,
+        position_y_m=observed_y,
+        position_z_m=observed_z,
         dropoff_target_x_m=target_x,
         dropoff_target_y_m=target_y,
         dropoff_target_altitude_m=target_altitude,
@@ -1240,6 +1253,11 @@ def _dropoff_flight_fact_from_summary(
             "source": "px4_gazebo_mission_designer_sitl_dropoff_verification",
             "horizontal_summary_sha256": _canonical_sha256(dict(summary)),
             "dropoff_target_altitude_source": "gazebo_ground_plane_default",
+            "dropoff_pose_source": (
+                "mission_assurance_dropoff_region_observation"
+                if explicit_dropoff_observation
+                else "completed_pose_legacy_fallback"
+            ),
         },
     )
 
@@ -1273,13 +1291,11 @@ def _validate_dropoff_verification_summary_fields(
             "dropoff verification flight fact ref mismatch"
         )
     target_x, target_y, target_altitude = _dropoff_target(summary)
-    completed_x, completed_y = _completed_pose_xy(summary)
     observed_distance = (
-        (target_x - completed_x) ** 2 + (target_y - completed_y) ** 2
+        (target_x - flight_fact.position_x_m) ** 2
+        + (target_y - flight_fact.position_y_m) ** 2
     ) ** 0.5
-    observed_altitude_error = abs(
-        _summary_float(summary, "completed_pose_z_m") - target_altitude
-    )
+    observed_altitude_error = abs(flight_fact.position_z_m - target_altitude)
     release_distance = (
         (target_x - _payload_release_position(summary, "payload_release_position_x_m"))
         ** 2
@@ -1296,7 +1312,7 @@ def _validate_dropoff_verification_summary_fields(
     release_time_delta = abs(
         (
             _payload_release_observed_at(summary)
-            - _summary_timestamp(summary, "recorded_at")
+            - flight_fact.mission_item_reached_at
         ).total_seconds()
     )
     for expected, actual in (

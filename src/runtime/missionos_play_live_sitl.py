@@ -19,6 +19,9 @@ import time
 from typing import Any, Callable, Mapping, Sequence
 
 from src.intelligence.missionos_agent_runtime import run_missionos_runtime_recovery_agent
+from src.intelligence.missionos_mission_incident_graph import (
+    run_missionos_mission_incident_graph,
+)
 from src.runtime.missionos_play_scenario import PlayScenario
 from src.runtime.missionos_play_weather import WeatherForecast
 from src.runtime.missionos_play_wind_driver import (
@@ -63,6 +66,7 @@ class PlayLiveSitlResult:
     position_trustworthy: bool | None = None
     wind_steps: tuple[WindDriverStep, ...] = field(default_factory=tuple)
     recovery_agent_result: Mapping[str, Any] = field(default_factory=dict)
+    missionos_mission_incident_graph: Mapping[str, Any] = field(default_factory=dict)
     logs_tail: str = ""
     blocking_reasons: tuple[str, ...] = field(default_factory=tuple)
     delivery_completion_claimed: bool = False
@@ -327,6 +331,7 @@ def run_play_live_sitl(
     takeoff_observed = False
     route_deviation_xy_m = 0.0
     recovery_result: Mapping[str, Any] = {}
+    mission_incident_graph: Mapping[str, Any] = {}
     battery_coupled = False
     battery_idle = None
     battery_under_load = None
@@ -394,27 +399,62 @@ def run_play_live_sitl(
                 gps_state = read_gps_status(container)
                 snapshot["gps"] = gps_health_snapshot(gps_state)
                 position_trustworthy = gps_state.xy_position_valid is True
-            recovery_result = run_missionos_runtime_recovery_agent(
-                telemetry_snapshot=snapshot,
-                mission_context={
+            mission_context = {
+                "task_id": f"missionos_play_live_sitl:{scenario.key}",
+                "scenario_key": scenario.key,
+                "scenario_title": scenario.title,
+                "mission_phase": "post_takeoff_runtime_observation",
+                "execution_scope": "simulator",
+                "mission_contract": {
+                    "mission_kind": "play_live_sitl",
                     "scenario_key": scenario.key,
                     "scenario_title": scenario.title,
-                    "delivery_completion_claimed": False,
-                    "physical_execution_invoked": False,
                 },
-                recovery_policy={
-                    "policy_ref": "missionos_play_live_sitl_recovery_policy.v1",
-                    "max_wind_speed_mps": scenario.vehicle.max_wind_speed_mps,
-                    "max_route_deviation_xy_m": 8.0,
-                    "emergency_landing_route_deviation_xy_m": 25.0,
-                    "preauthorized_actions": [
-                        "continue",
-                        "hold",
-                        "return_to_launch",
-                        "land",
+                "delivery_completion_claimed": False,
+                "physical_execution_invoked": False,
+            }
+            recovery_policy = {
+                "policy_ref": "missionos_play_live_sitl_recovery_policy.v1",
+                "max_wind_speed_mps": scenario.vehicle.max_wind_speed_mps,
+                "max_route_deviation_xy_m": 8.0,
+                "emergency_landing_route_deviation_xy_m": 25.0,
+                "preauthorized_actions": [
+                    "continue",
+                    "hold",
+                    "return_to_launch",
+                    "land",
+                ],
+            }
+            try:
+                mission_incident_graph = run_missionos_mission_incident_graph(
+                    telemetry_snapshot=snapshot,
+                    mission_context=mission_context,
+                    recovery_policy=recovery_policy,
+                    recovery_runner=run_missionos_runtime_recovery_agent,
+                )
+            except Exception as exc:
+                blocking.append("mission_incident_graph_runtime_failure")
+                mission_incident_graph = {
+                    "schema_version": "missionos_mission_incident_graph_failure.v1",
+                    "graph_runtime_status": "guardrail_blocked",
+                    "decision_status": "operator_escalation",
+                    "blocking_reasons": [
+                        f"mission_incident_graph_runtime_failure:{type(exc).__name__}"
                     ],
-                },
+                    "approval_created": False,
+                    "dispatch_authority_created": False,
+                    "physical_execution_invoked": False,
+                    "progress_counted": False,
+                }
+            recovery_result = dict(
+                mission_incident_graph.get("recovery_result") or {}
             )
+            if (
+                mission_incident_graph.get("graph_runtime_status")
+                != "proposal_guardrail_passed"
+                and "mission_incident_graph_runtime_failure" not in blocking
+            ):
+                blocking.append("mission_incident_graph_guardrail_blocked")
     finally:
         logs = _logs(container, runner)[-3000:] or logs
         if cleanup:
@@ -446,6 +486,7 @@ def run_play_live_sitl(
         position_trustworthy=position_trustworthy,
         wind_steps=wind_steps,
         recovery_agent_result=dict(recovery_result),
+        missionos_mission_incident_graph=dict(mission_incident_graph),
         logs_tail=logs,
         blocking_reasons=tuple(blocking),
     )

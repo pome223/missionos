@@ -116,9 +116,21 @@ the direct emergency dispatcher.
 
 Operator natural-language recovery requests, such as asking to climb or reroute
 from `missionos chat`, are proposal requests only. They may ask the Runtime
-Recovery Agent planner for bounded parameters, but they must not approve,
-dispatch, execute, verify, or count progress. The resulting command still goes
-through the standard operator confirmation and Gateway recovery-dispatch route.
+Recovery Agent planner for bounded parameters, but the result must then pass
+through the shared Mission Incident Workflow: Recovery judgment, source Rules
+feasibility, Mission Assurance judgment, and checkpoint resolution. Only an
+accepted action-aligned result creates a v4 durable proposal for standard
+operator confirmation. A Mission Assurance `hold`, `continue`, or
+`operator_escalation` result creates no dispatch candidate. Neither path may
+approve, dispatch, execute, verify, or count progress.
+
+After explicit operator confirmation, the Gateway does not resume or rerun the
+Recovery and Mission Assurance judgment nodes. It starts the linked Mission
+Incident continuation Workflow, validates the frozen v4 graph binding, and
+records dispatch-time Rules revalidation, the executor boundary, verifier
+output, and the next-observation attempt as separate facts. An unchanged
+telemetry cursor is not a new MissionSituation. Missing or changed graph
+bindings and failed revalidation stop before the executor.
 
 Obstacle and building handling must remain source-backed. `avoid_obstacle` may
 pass the recovery guardrail only when telemetry includes obstacle or building

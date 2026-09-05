@@ -32,6 +32,7 @@ def test_route_argument_defaults_do_not_request_recovery_loops() -> None:
     assert args.inject_target_offset_m == 0.0
     assert args.on_deviation_action == "abort_only"
     assert args.max_pose_deviation_xy_m == 2.0
+    assert args.mission_assurance_on_deviation is False
     assert args.payload_advisory_recovery_action == "none"
     assert args.post_recovery_action == "none"
     assert args.mission_os_supervisor_recovery_loop is False
@@ -50,6 +51,7 @@ def test_route_argument_parser_preserves_explicit_scenario_selection() -> None:
             "rtl",
             "--max-pose-deviation-xy-m",
             "3.25",
+            "--mission-assurance-on-deviation",
             "--payload-advisory-recovery-action",
             "rtl",
             "--post-recovery-action",
@@ -66,6 +68,7 @@ def test_route_argument_parser_preserves_explicit_scenario_selection() -> None:
     assert args.inject_target_offset_m == 1.5
     assert args.on_deviation_action == "rtl"
     assert args.max_pose_deviation_xy_m == 3.25
+    assert args.mission_assurance_on_deviation is True
     assert args.payload_advisory_recovery_action == "rtl"
     assert args.post_recovery_action == "land"
     assert args.mission_os_supervisor_recovery_loop is True
@@ -79,9 +82,7 @@ def test_route_argument_parser_rejects_unlisted_actions() -> None:
     with pytest.raises(SystemExit):
         configuration.parse_route_args(["--on-deviation-action", "unbounded"])
     with pytest.raises(SystemExit):
-        configuration.parse_route_args(
-            ["--payload-advisory-recovery-action", "execute_anything"]
-        )
+        configuration.parse_route_args(["--payload-advisory-recovery-action", "execute_anything"])
 
 
 def test_payload_recovery_validation_accepts_no_recovery_request() -> None:
@@ -127,6 +128,19 @@ def test_payload_supervisor_loop_accepts_source_bound_rtl_then_land() -> None:
 
     assert configuration.payload_advisory_recovery_requested(args) is True
     configuration.validate_payload_advisory_recovery_args(args)
+
+
+def test_live_mission_assurance_requires_existing_rtl_executor() -> None:
+    invalid = configuration.parse_route_args(
+        ["--mission-assurance-on-deviation", "--on-deviation-action", "land"]
+    )
+    with pytest.raises(RuntimeError, match="requires.*rtl"):
+        configuration.validate_mission_assurance_args(invalid)
+
+    valid = configuration.parse_route_args(
+        ["--mission-assurance-on-deviation", "--on-deviation-action", "rtl"]
+    )
+    configuration.validate_mission_assurance_args(valid)
 
 
 def test_route_stream_budget_accepts_limit_and_rejects_excess() -> None:

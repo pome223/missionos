@@ -80,6 +80,7 @@ def test_operator_recovery_durable_proposal_requires_hosted_invocation() -> None
             task_id="task_missing_hosted_origin",
             telemetry_snapshot={},
             agent_result=result,
+            incident_graph={},
             observed_at=gateway_server.datetime.now(
                 gateway_server.timezone.utc
             ),
@@ -992,11 +993,11 @@ def test_chat_turtlebot3_low_battery_blocks_dispatch(
     assert summary["dispatch_request_sent"] is False
     assert summary["completion_claimed"] is False
     assert summary["recovery_action_suggested"] == "return_home"
-    assert summary["recovery_execution_permitted_by_envelope"] is True
+    assert summary["recovery_execution_permitted_by_envelope"] is False
     assert summary["recovery_dispatch_request_sent"] is False
     assert summary["recovery_proposal_classifications"][0]["proposal_allowed"] is True
     assert summary["recovery_proposal_classifications"][0]["execution_class"] == (
-        "auto_executable"
+        "requires_human_approval"
     )
     assert "battery_below_minimum_required" in summary["blocking_reasons"]
     assert summary["physical_execution_invoked"] is False

@@ -42,7 +42,7 @@ from src.runtime.turtlebot3_home_mission import (
     build_turtlebot3_home_mission_plan,
     infer_turtlebot3_home_mission_kind,
     instruction_requests_turtlebot3_home_mission,
-    run_turtlebot3_home_mission_dispatch,
+    _execute_turtlebot3_home_mission as run_turtlebot3_home_mission_dispatch,
 )
 from src.runtime.turtlebot3_telemetry_sidecar import (
     TURTLEBOT3_TELEMETRY_SIDECAR_JSONL_ENV,
@@ -57,6 +57,14 @@ def _default_arena_world_profile(monkeypatch):
     """
 
     monkeypatch.setenv("MISSIONOS_TURTLEBOT3_WORLD_PROFILE", "arena")
+    # These are Nav2 runtime component tests, with subprocess model/bridge
+    # fixtures. The common graph and its inference/approval enforcement are
+    # exercised without these stubs in test_turtlebot3_mission_incident.py.
+    from src.runtime import turtlebot3_mission_incident
+    monkeypatch.setattr(turtlebot3_mission_incident, "judge_turtlebot3_checkpoint",
+                        lambda **_: {"decision_status": "awaiting_operator_approval"})
+    monkeypatch.setattr(turtlebot3_mission_incident, "turtlebot3_incident_dispatch_reasons",
+                        lambda _: [])
 
 
 
@@ -1065,6 +1073,15 @@ def _build_awaiting_obstacle_recovery(
     trajectory_frame_id: str | None = "map",
     sample_collection: str = "trajectory_samples",
 ) -> tuple[dict[str, object], dict[str, object], dict[str, object], Path]:
+    # The directional-revision corpus fixes its historical route heading and
+    # collision geometry. Production approach clearance is covered separately
+    # by test_public_assurance_readiness and the chat arena E2E.
+    monkeypatch.setattr(
+        turtlebot3_home_mission_runtime, "_TURTLEBOT3_DYNAMIC_OBSTACLE_APPROACH_SEGMENT",
+        turtlebot3_home_mission_runtime._TURTLEBOT3_DYNAMIC_OBSTACLE_APPROACH_SEGMENT.model_copy(
+            update={"x_m": -1.60, "y_m": -0.85},
+        ),
+    )
     bridge = tmp_path / "revision_bridge.py"
     planner = tmp_path / "revision_planner.py"
     _write_success_bridge(
@@ -1311,8 +1328,8 @@ def test_turtlebot3_approval_classifies_low_battery_return_home_recovery() -> No
     assert approved["llm_recovery_proposals_allowed"] is True
     assert approved["proposal_first_classification"] is True
     assert classification["proposal_allowed"] is True
-    assert classification["execution_class"] == "auto_executable"
-    assert classification["execution_permitted_by_envelope"] is True
+    assert classification["execution_class"] == "requires_human_approval"
+    assert classification["execution_permitted_by_envelope"] is False
     assert classification["dispatch_authority_created"] is False
     assert classification["physical_execution_invoked"] is False
 
@@ -1572,11 +1589,11 @@ def test_turtlebot3_low_battery_judgment_blocks_before_bridge(
     assert summary["completion_claimed"] is False
     assert summary["physical_execution_invoked"] is False
     assert summary["recovery_action_suggested"] == "return_home"
-    assert summary["recovery_execution_permitted_by_envelope"] is True
+    assert summary["recovery_execution_permitted_by_envelope"] is False
     assert summary["recovery_dispatch_request_sent"] is False
     assert summary["recovery_proposal_classifications"][0]["proposal_allowed"] is True
     assert summary["recovery_proposal_classifications"][0]["execution_class"] == (
-        "auto_executable"
+        "requires_human_approval"
     )
     assert "battery_below_minimum_required" in summary["blocking_reasons"]
 
@@ -2169,7 +2186,7 @@ def test_turtlebot3_mid_mission_low_battery_dispatches_return_home_recovery(
 
     summary = result["summary"]
     execution = result["turtlebot3_home_mission_execution"]
-    assert summary["status"] == "recovered"
+    assert summary["status"] == "pending"
     assert summary["completion_claimed"] is False
     assert summary["indoor_delivery_route_completion_claimed"] is False
     assert summary["dropoff_arrival_claimed"] is False
@@ -2180,14 +2197,12 @@ def test_turtlebot3_mid_mission_low_battery_dispatches_return_home_recovery(
     assert summary["segment_dispatch_count"] == 1
     assert summary["segment_completion_count"] == 1
     assert summary["recovery_action_suggested"] == "return_home"
-    assert summary["recovery_dispatch_request_sent"] is True
-    assert summary["recovery_completion_claimed"] is True
-    assert summary["recovery_segment_result"]["goal_pose"]["label"] == (
-        "simulated_home_origin"
-    )
+    assert summary["recovery_dispatch_request_sent"] is False
+    assert summary["recovery_completion_claimed"] is False
+    assert summary["turtlebot3_recovery_checkpoint"]["selected_action"] == "return_home"
     assert summary["physical_execution_invoked"] is False
     assert summary["mission_delivery_completion_claimed"] is False
-    assert execution["recovery_completion_claimed"] is True
+    assert execution["recovery_completion_claimed"] is False
 
 
 def test_turtlebot3_mid_mission_obstacle_recovery_resumes_delivery_with_llm_proposal(
@@ -2220,6 +2235,13 @@ def test_turtlebot3_mid_mission_obstacle_recovery_resumes_delivery_with_llm_prop
         approval=approval["turtlebot3_home_mission_approval"],
     )
 
+    assert result["summary"]["recovery_dispatch_request_sent"] is False
+    checkpoint = result["turtlebot3_recovery_checkpoint"]
+    result = run_turtlebot3_home_mission_dispatch(
+        proposal=proposal, approval=approval["turtlebot3_home_mission_approval"],
+        resume_execution=result["turtlebot3_home_mission_execution"],
+        recovery_operator_approval=_recovery_operator_approval(checkpoint),
+    )
     summary = result["summary"]
     execution = result["turtlebot3_home_mission_execution"]
     assert proposal["mission_kind"] == "indoor_delivery_route_leg"
@@ -2227,7 +2249,7 @@ def test_turtlebot3_mid_mission_obstacle_recovery_resumes_delivery_with_llm_prop
     assert proposal["planned_segments"][0]["label"] == (
         "simulated_dynamic_obstacle_approach"
     )
-    assert proposal["planned_segments"][0]["x_m"] == pytest.approx(-1.60)
+    assert proposal["planned_segments"][0]["x_m"] == pytest.approx(-1.90)
     assert math.hypot(
         proposal["planned_segments"][0]["x_m"]
         - turtlebot3_home_mission_runtime._TURTLEBOT3_DELIVERY_OBSTACLE_X_M,
@@ -2239,9 +2261,7 @@ def test_turtlebot3_mid_mission_obstacle_recovery_resumes_delivery_with_llm_prop
     assert len(proposal["planned_segments"]) == 10
     assert 8.4 < proposal["planned_route_distance_m"] < 9.0
     assert proposal["autonomy_envelope"]["preapproved_recovery_actions"] == [
-        "return_home",
         "hold",
-        "avoid_obstacle",
     ]
     assert summary["status"] == "completed"
     assert summary["completion_claimed"] is True
@@ -2254,7 +2274,7 @@ def test_turtlebot3_mid_mission_obstacle_recovery_resumes_delivery_with_llm_prop
     assert summary["recovery_proposals"][0]["proposal_source"] == "llm"
     assert summary["recovery_proposals"][0]["llm_judgment_recorded"] is True
     assert summary["recovery_proposal_classifications"][0]["execution_class"] == (
-        "auto_executable"
+        "requires_human_approval"
     )
     reflex = summary["recovery_planner_result"]["recovery_reflex"]
     assert reflex["trigger"] == "runtime_obstacle_observed"
@@ -2467,14 +2487,11 @@ def test_runtime_obstacle_recovery_wires_camera_perception_claim_into_planner(
     )
 
     summary = result["summary"]
-    assert summary["status"] == "completed"
+    assert summary["status"] == "pending"
+    assert summary["recovery_dispatch_request_sent"] is False
     assert summary["runtime_recovery_action_kind"] == "avoid_obstacle"
-    assert summary["recovery_proposals"][0]["proposal_source"] == (
-        "deterministic_fallback"
-    )
-    assert summary["recovery_proposal_classifications"][0]["execution_class"] == (
-        "auto_executable"
-    )
+    assert summary["recovery_proposals"][0]["proposal_source"] == "deterministic_fallback"
+    assert summary["recovery_proposal_classifications"][0]["execution_class"] == "requires_human_approval"
     claims = summary["recovery_planner_result"]["perception_claims"]
     assert len(claims) == 1
     claim = claims[0]
@@ -2559,11 +2576,10 @@ def test_camera_perception_pipeline_captures_classifies_and_feeds_planner(
 
     summary = result["summary"]
     execution = result["turtlebot3_home_mission_execution"]
-    assert summary["status"] == "completed"
+    assert summary["status"] == "pending"
+    assert summary["recovery_dispatch_request_sent"] is False
     assert summary["runtime_recovery_action_kind"] == "avoid_obstacle"
-    assert summary["recovery_proposals"][0]["proposal_source"] == (
-        "deterministic_fallback"
-    )
+    assert summary["recovery_proposals"][0]["proposal_source"] == "deterministic_fallback"
 
     pipeline = execution["runtime_recovery_obstacle_scenario"][
         "camera_perception_pipeline"
@@ -2635,7 +2651,8 @@ def test_camera_perception_pipeline_disabled_by_default(
 
     summary = result["summary"]
     execution = result["turtlebot3_home_mission_execution"]
-    assert summary["status"] == "completed"
+    assert summary["status"] == "pending"
+    assert summary["recovery_dispatch_request_sent"] is False
     pipeline = execution["runtime_recovery_obstacle_scenario"][
         "camera_perception_pipeline"
     ]
@@ -2685,7 +2702,8 @@ def test_camera_perception_pipeline_fails_open_when_camera_topic_missing(
 
     summary = result["summary"]
     execution = result["turtlebot3_home_mission_execution"]
-    assert summary["status"] == "completed"
+    assert summary["status"] == "pending"
+    assert summary["recovery_dispatch_request_sent"] is False
     assert summary["runtime_recovery_action_kind"] == "avoid_obstacle"
     pipeline = execution["runtime_recovery_obstacle_scenario"][
         "camera_perception_pipeline"
@@ -4481,33 +4499,28 @@ def test_turtlebot3_resume_preserves_approved_recovery_when_later_route_fails(
     assert summary["route_completed_after_recovery"] is False
     assert summary["recovery_dispatch_request_sent"] is True
     assert summary["recovery_completion_claimed"] is True
-    assert summary["subsequent_recovery_dispatch_request_sent"] is True
-    assert summary["subsequent_recovery_completion_claimed"] is True
+    assert summary["subsequent_recovery_dispatch_request_sent"] is False
+    assert summary["subsequent_recovery_completion_claimed"] is False
     assert approved_recovery["goal_pose"]["label"] == (
         "runtime_recovery_avoid_obstacle_waypoint"
     )
     assert approved_recovery["adapter_evidence"]["operator_approval_ref"] == (
         "operator_approval:test_interactive_recovery"
     )
-    assert len(followups) == 1
-    assert followups[0]["goal_pose"]["label"] == "simulated_home_origin"
-    assert execution["latest_adapter_evidence_role"] == "subsequent_recovery"
+    assert followups == []
     assert resumed["ros2_nav2_recovery_adapter_evidence"][
         "operator_approval_ref"
     ] == "operator_approval:test_interactive_recovery"
     assert len(
         resumed["ros2_nav2_subsequent_recovery_adapter_evidence_segments"]
-    ) == 1
+    ) == 0
     indoor_map = execution["turtlebot3_indoor_map_model"]
-    assert indoor_map["recovery"]["subsequent_targets"][0]["label"] == (
-        "simulated_home_origin"
-    )
-    assert indoor_map["recovery"]["subsequent_completion_claimed"] is True
+    assert indoor_map["recovery"]["subsequent_targets"] == []
+    assert indoor_map["recovery"]["subsequent_completion_claimed"] is False
     subsequent_observed_points = indoor_map["recovery"][
         "subsequent_observed_points"
     ]
-    assert subsequent_observed_points
-    assert indoor_map["current_pose"] == subsequent_observed_points[-1]
+    assert not subsequent_observed_points
 
 
 def test_turtlebot3_later_route_failure_proposes_fresh_followup_checkpoint(
@@ -4807,11 +4820,11 @@ def test_turtlebot3_mid_mission_obstacle_recovery_uses_fallback_when_llm_guardra
     )
     assert summary["recovery_proposals"][0]["llm_judgment_recorded"] is False
     assert summary["recovery_action_suggested"] == "avoid_obstacle"
-    assert summary["recovery_dispatch_request_sent"] is True
-    assert summary["recovery_completion_claimed"] is True
-    assert summary["route_resumed_after_recovery"] is True
-    assert summary["route_completed_after_recovery"] is True
-    assert summary["completion_claimed"] is True
+    assert summary["recovery_dispatch_request_sent"] is False
+    assert summary["recovery_completion_claimed"] is False
+    assert summary["route_resumed_after_recovery"] is False
+    assert summary["route_completed_after_recovery"] is False
+    assert summary["completion_claimed"] is False
     assert summary["mission_delivery_completion_claimed"] is False
     assert summary["physical_execution_invoked"] is False
 
@@ -4845,16 +4858,12 @@ def test_turtlebot3_mid_mission_nav2_failure_convenes_recovery_and_stays_blocked
     )
 
     summary = result["summary"]
-    assert summary["status"] == "blocked"
-    assert summary["mission_episode_review_status"] == "blocked"
-    assert "episode_blocked" in summary["mission_episode_review_blocked_buckets"]
+    assert summary["status"] == "pending"
     assert summary["dispatch_request_sent"] is True
     assert summary["completion_claimed"] is False
     assert summary["completion_scope"] == "none"
     # An unplanned segment failure now convenes the recovery machinery:
-    # the planner proposes, the envelope classifies, and a permitted
-    # return_home is attempted under the existing mission approval. The
-    # failing bridge also fails the recovery dispatch, so nothing is claimed.
+    # The planner proposes return_home and waits for fresh action approval.
     assert summary["runtime_recovery_triggered"] is True
     assert summary["runtime_failure_recovery_triggered"] is True
     failure_context = summary["runtime_failure_context"]
@@ -4895,7 +4904,7 @@ def test_turtlebot3_mid_mission_nav2_failure_convenes_recovery_and_stays_blocked
     )
     assert summary["recovery_planner_status"] == "proposal_guardrail_passed"
     assert summary["runtime_recovery_action_kind"] == "return_home"
-    assert summary["recovery_dispatch_request_sent"] is True
+    assert summary["recovery_dispatch_request_sent"] is False
     assert summary["recovery_completion_claimed"] is False
     assert summary["mission_delivery_completion_claimed"] is False
     assert summary["physical_execution_invoked"] is False

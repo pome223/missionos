@@ -402,6 +402,9 @@ TUTORIAL_PLAN_INSTRUCTION = (
     "it through payload delivery SITL readiness."
 )
 DEFAULT_TUTORIAL_SESSION_ID = "missionos-cli-tutorial"
+DEFAULT_MISSION_ASSURANCE_E2E_PROMPT = (
+    "高度30mで風速4m/sのPX4/Gazebo経路逸脱Mission Assurance試験を実行する"
+)
 
 console = Console()
 
@@ -521,6 +524,8 @@ def _job_progress_status_text(task_payload: dict[str, Any] | None) -> str:
         return "Execute Live SITL is running... waiting for Gateway response"
     task = _task_record(task_payload)
     artifacts = _task_artifacts(task_payload)
+    route = artifacts.get("mission_designer_coordinate_pair_route")
+    route = route if isinstance(route, Mapping) else {}
     snapshot = artifacts.get("missionos_auto_mission_runtime_snapshot")
     snapshot = snapshot if isinstance(snapshot, dict) else {}
     running_receipt = artifacts.get("missionos_auto_mission_gui_dispatch_running_receipt")
@@ -624,13 +629,139 @@ def _job_progress_status_text(task_payload: dict[str, Any] | None) -> str:
     return "Execute Live SITL is running... " + " · ".join(parts)
 
 
+def _task_requests_obstacle_preflight_calibration(
+    task_payload: dict[str, Any],
+) -> bool:
+    """Return whether an obstacle mission needs a measured OFFBOARD envelope."""
+
+    artifacts = _task_artifacts(task_payload)
+    route = artifacts.get("mission_designer_coordinate_pair_route")
+    route = route if isinstance(route, Mapping) else {}
+    if not (
+        route.get("gazebo_obstacle_model_spawn_requested") is True
+        or route.get("building_risk_detected") is True
+        or route.get("obstacle_manifest")
+        or route.get("obstacles")
+    ):
+        return False
+    bridge = artifacts.get("missionos_runtime_recovery_agent_live_bridge")
+    bridge = bridge if isinstance(bridge, Mapping) else {}
+    hazard_state = bridge.get("hazard_state")
+    hazard_state = hazard_state if isinstance(hazard_state, Mapping) else {}
+    performance = hazard_state.get("performance_envelope")
+    performance = performance if isinstance(performance, Mapping) else {}
+    return performance.get("envelope_status") != "verified"
+
+
+def _preflight_offboard_calibration_parameters(
+    task_payload: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Build one bounded calibration leg from fresh, conflict-free telemetry."""
+
+    if _task_status(task_payload) != "running":
+        return None
+    artifacts = _task_artifacts(task_payload)
+    route = artifacts.get("mission_designer_coordinate_pair_route")
+    route = route if isinstance(route, Mapping) else {}
+    if isinstance(
+        artifacts.get("missionos_runtime_recovery_safety_hold_receipt"), Mapping
+    ):
+        return None
+    snapshot = artifacts.get("missionos_auto_mission_runtime_snapshot")
+    snapshot = snapshot if isinstance(snapshot, Mapping) else {}
+    if not snapshot or snapshot.get("snapshot_status") not in {None, "running"}:
+        return None
+    if snapshot.get("landed") is True or snapshot.get("heartbeat_observed") is False:
+        return None
+    if int(snapshot.get("nav_state") or -1) != 3:  # PX4 AUTO_MISSION
+        return None
+    local_x = _as_float(snapshot.get("local_x_m"))
+    local_y = _as_float(snapshot.get("local_y_m"))
+    altitude = _as_float(snapshot.get("altitude_above_home_m"))
+    distance_to_home = _as_float(snapshot.get("distance_to_home_m"))
+    wind_speed = _as_float(snapshot.get("wind_speed_mps"))
+    requested_wind_speed = _as_float(route.get("wind_speed_mps"))
+    terrain_clearance = _as_float(snapshot.get("terrain_clearance_m"))
+    terrain_target = _as_float(snapshot.get("terrain_clearance_target_m"))
+    terrain_grace = _as_float(snapshot.get("terrain_clearance_grace_m"))
+    if local_x is None or local_y is None or altitude is None:
+        return None
+    if any(
+        value is not None and not math.isfinite(value)
+        for value in (
+            local_x, local_y, altitude, distance_to_home, wind_speed,
+            requested_wind_speed, terrain_clearance, terrain_target, terrain_grace,
+        )
+    ):
+        return None
+    # Calibrate only after takeoff and near the start, before a route obstacle
+    # can become an active conflict. Wait for wind and terrain readback because
+    # the Gateway correctly rejects a performance envelope without either.
+    if (
+        altitude < 3.0
+        or distance_to_home is None
+        or distance_to_home > 400.0
+        or wind_speed is None
+        or (
+            requested_wind_speed is not None
+            and requested_wind_speed > 0.0
+            and (
+                snapshot.get("wind_mean_started") is not True
+                or not math.isclose(
+                    wind_speed,
+                    requested_wind_speed,
+                    rel_tol=0.0,
+                    abs_tol=0.1,
+                )
+            )
+        )
+        or terrain_clearance is None
+        or terrain_target is None
+        or terrain_clearance
+        < terrain_target - (terrain_grace if terrain_grace is not None else 1.0)
+    ):
+        return None
+    if snapshot.get("operator_recovery_request_observed") is True:
+        return None
+    # The route's grace window is for observing takeoff, not permission to
+    # calibrate below the clearance policy. Include a bounded climb to the
+    # measured terrain target plus 0.5 m; never command a descent. Gateway
+    # Rules still revalidate this exact leg against the latest observation.
+    calibration_altitude = math.ceil(
+        (altitude + max(0.0, terrain_target + 0.5 - terrain_clearance)) * 1000
+    ) / 1000
+    if calibration_altitude > 500.0 or calibration_altitude - altitude > 1.501:
+        return None
+    # A 10 m cross-track leg permits observing acceleration and settling. At
+    # takeoff the home-to-current vector approximates the outbound direction;
+    # crossing it leaves more room for along-track observation latency than
+    # extending the route. This is not a clearance claim: Rules revalidate the
+    # exact target, including the unchanged 15 m distance limit.
+    outbound_length = math.hypot(local_x, local_y)
+    cross_x, cross_y = (
+        (-local_y / outbound_length, local_x / outbound_length)
+        if outbound_length > 0.1
+        else (0.0, 1.0)
+    )
+    return {
+        "target_x_m": round(local_x + 10.0 * cross_x, 3),
+        "target_y_m": round(local_y + 10.0 * cross_y, 3),
+        "target_altitude_m": calibration_altitude,
+        "calibration_only": True,
+        "resume_original_route": True,
+    }
+
+
 def _execute_sitl_with_task_polling(
     client: MissionOSGatewayClient,
     *,
     task_id: str,
     live_flight_mode: bool,
+    mission_assurance_on_deviation: bool = False,
+    preflight_calibration_approved: bool = False,
     poll_interval: float = SITL_EXECUTION_POLL_INTERVAL,
     progress_callback: Callable[[dict[str, Any]], None] | None = None,
+    preflight_calibration_callback: Callable[[dict[str, Any]], None] | None = None,
 ) -> tuple[dict[str, Any] | None, dict[str, Any] | None, dict[str, Any] | None]:
     """Run Execute Live SITL while polling task state.
 
@@ -645,10 +776,42 @@ def _execute_sitl_with_task_polling(
         client.execute_sitl,
         task_id=task_id,
         live_flight_mode=live_flight_mode,
+        mission_assurance_on_deviation=mission_assurance_on_deviation,
     )
     last_task_payload: dict[str, Any] | None = None
     last_timeline_payload: dict[str, Any] | None = None
     http_timed_out = False
+    preflight_calibration_dispatched = False
+
+    def maybe_dispatch_preflight_calibration(
+        task_payload: dict[str, Any] | None,
+    ) -> None:
+        nonlocal preflight_calibration_dispatched
+        if not preflight_calibration_approved or preflight_calibration_dispatched:
+            return
+        parameters = _preflight_offboard_calibration_parameters(task_payload or {})
+        if parameters is None:
+            return
+        # The chat confirmation or explicit CLI flag is the human approval.
+        # Mark before the request so a slow response cannot duplicate dispatch.
+        preflight_calibration_dispatched = True
+        result = client.recovery_dispatch(
+            task_id=task_id,
+            recovery_action="calibrate_offboard",
+            recovery_parameters=parameters,
+        )
+        if preflight_calibration_callback is not None:
+            preflight_calibration_callback(result)
+
+    def terminal_evidence_ready(task_payload: dict[str, Any] | None) -> bool:
+        if not mission_assurance_on_deviation:
+            return True
+        artifacts = _task_artifacts(task_payload or {})
+        return isinstance(
+            artifacts.get("missionos_mission_assurance_gateway_px4_e2e"),
+            dict,
+        )
+
     try:
         while True:
             if http_timed_out:
@@ -659,8 +822,12 @@ def _execute_sitl_with_task_polling(
                     continue
                 if progress_callback:
                     progress_callback(last_task_payload)
+                maybe_dispatch_preflight_calibration(last_task_payload)
                 status = _task_status(last_task_payload)
-                if status in TERMINAL_TASK_STATUSES:
+                if (
+                    status in TERMINAL_TASK_STATUSES
+                    and terminal_evidence_ready(last_task_payload)
+                ):
                     return None, last_task_payload, last_timeline_payload
                 time.sleep(max(0.01, poll_interval))
                 continue
@@ -675,8 +842,12 @@ def _execute_sitl_with_task_polling(
                     continue
                 if progress_callback:
                     progress_callback(last_task_payload)
+                maybe_dispatch_preflight_calibration(last_task_payload)
                 status = _task_status(last_task_payload)
-                if status in TERMINAL_TASK_STATUSES:
+                if (
+                    status in TERMINAL_TASK_STATUSES
+                    and terminal_evidence_ready(last_task_payload)
+                ):
                     try:
                         payload = future.result(timeout=0.01)
                     except (FutureTimeout, httpx.ReadTimeout):
@@ -692,8 +863,12 @@ def _execute_sitl_with_task_polling(
                     ) from exc
                 if progress_callback:
                     progress_callback(last_task_payload)
+                maybe_dispatch_preflight_calibration(last_task_payload)
                 status = _task_status(last_task_payload)
-                if status in TERMINAL_TASK_STATUSES:
+                if (
+                    status in TERMINAL_TASK_STATUSES
+                    and terminal_evidence_ready(last_task_payload)
+                ):
                     return None, last_task_payload, last_timeline_payload
                 http_timed_out = True
     finally:
@@ -1112,6 +1287,24 @@ def recover_command(
     help="Request the explicit Execute Live SITL boundary.",
 )
 @click.option(
+    "--mission-assurance-on-deviation/--no-mission-assurance-on-deviation",
+    default=False,
+    show_default=True,
+    help=(
+        "Run the shared MissionAssuranceAgent before bounded RTL recovery when "
+        "the live route observer detects a deviation."
+    ),
+)
+@click.option(
+    "--preflight-calibration/--no-preflight-calibration",
+    default=False,
+    show_default=True,
+    help=(
+        "After takeoff and before an obstacle conflict, run one operator-approved "
+        "bounded OFFBOARD performance calibration, then resume AUTO."
+    ),
+)
+@click.option(
     "--poll-interval",
     default=SITL_EXECUTION_POLL_INTERVAL,
     show_default=True,
@@ -1123,6 +1316,8 @@ def execute_sitl_command(
     ctx: click.Context,
     task_id: str,
     live_flight: bool,
+    mission_assurance_on_deviation: bool,
+    preflight_calibration: bool,
     poll_interval: float,
 ) -> None:
     """Run the explicit Execute Live SITL boundary."""
@@ -1130,6 +1325,10 @@ def execute_sitl_command(
     if not resolved_task_id:
         raise click.ClickException(
             "task id is required; run `missionos run` first or pass --task-id"
+        )
+    if preflight_calibration and not live_flight:
+        raise click.ClickException(
+            "--preflight-calibration requires --live-flight"
         )
     client: MissionOSGatewayClient = ctx.obj["missionos_client"]
     if live_flight:
@@ -1141,15 +1340,25 @@ def execute_sitl_command(
                 client,
                 task_id=resolved_task_id,
                 live_flight_mode=True,
+                mission_assurance_on_deviation=(
+                    mission_assurance_on_deviation
+                ),
+                preflight_calibration_approved=preflight_calibration,
                 poll_interval=poll_interval,
                 progress_callback=lambda latest: status.update(
                     f"[red]{_job_progress_status_text(latest)}[/red]"
+                ),
+                preflight_calibration_callback=lambda result: _print_recovery_result(
+                    result
                 ),
             )
     else:
         payload = client.execute_sitl(
             task_id=resolved_task_id,
             live_flight_mode=False,
+            mission_assurance_on_deviation=(
+                mission_assurance_on_deviation
+            ),
         )
         task_payload = None
         timeline_payload = None
@@ -1202,6 +1411,185 @@ def start_sitl_command(ctx: click.Context, task_id: str) -> None:
         _print_json(payload)
         return
     _print_sitl_start_result(payload)
+
+
+@missionos.command("mission-assurance-e2e")
+@click.option(
+    "--prompt",
+    default=DEFAULT_MISSION_ASSURANCE_E2E_PROMPT,
+    show_default=True,
+    help="Bounded simulator-only Mission Designer prompt.",
+)
+@click.option(
+    "--yes",
+    "allow_live",
+    is_flag=True,
+    help="Explicitly approve scenario preparation and live SITL execution.",
+)
+@click.option(
+    "--autostart/--no-autostart",
+    default=False,
+    show_default=True,
+    help="Start and stop a temporary Gateway for this command.",
+)
+@click.option(
+    "--enable-live-sitl/--planning-only",
+    default=False,
+    show_default=True,
+    help="Enable live SITL only for an autostarted Gateway.",
+)
+@click.option(
+    "--poll-interval",
+    default=SITL_EXECUTION_POLL_INTERVAL,
+    show_default=True,
+    type=click.FloatRange(0.1, 60.0),
+)
+@click.pass_context
+def mission_assurance_e2e_command(
+    ctx: click.Context,
+    prompt: str,
+    allow_live: bool,
+    autostart: bool,
+    enable_live_sitl: bool,
+    poll_interval: float,
+) -> None:
+    """Run CLI -> Gateway -> Agent -> PX4 SITL in one source-bound task."""
+
+    if not allow_live:
+        raise click.ClickException(
+            "--yes is required for the live Mission Assurance SITL E2E"
+        )
+    if autostart and not enable_live_sitl:
+        raise click.ClickException(
+            "--enable-live-sitl is required with --autostart"
+        )
+    client: MissionOSGatewayClient = ctx.obj["missionos_client"]
+    gateway_proc = _ensure_gateway(
+        client,
+        ctx.obj["missionos_gateway_url"],
+        autostart=autostart,
+        enable_live_sitl=enable_live_sitl,
+    )
+    try:
+        proposed = client.propose_sitl_scenario(prompt=prompt)
+        approved = client.approve_sitl_scenario(
+            scenario_proposal=dict(proposed["scenario_proposal"]),
+            validation_result=dict(proposed["validation_result"]),
+        )
+        prepared = client.prepare_sitl_scenario(
+            proposed=proposed,
+            approved=approved,
+        )
+        prepared_summary = prepared.get("summary")
+        prepared_summary = (
+            prepared_summary if isinstance(prepared_summary, dict) else {}
+        )
+        task_id = str(prepared_summary.get("task_id") or "").strip()
+        if not task_id:
+            raise click.ClickException(
+                "Gateway did not return a prepared Mission Assurance SITL task id"
+            )
+        startup = client.start_sitl(task_id=task_id)
+        with console.status(
+            "[red]Mission Assurance E2E is running through Gateway and PX4 SITL...[/red]",
+            spinner="dots",
+        ) as status:
+            payload, task_payload, timeline_payload = _execute_sitl_with_task_polling(
+                client,
+                task_id=task_id,
+                live_flight_mode=True,
+                mission_assurance_on_deviation=True,
+                poll_interval=poll_interval,
+                progress_callback=lambda latest: status.update(
+                    f"[red]{_job_progress_status_text(latest)}[/red]"
+                ),
+            )
+        result_payload = payload or {}
+        result_task = (
+            result_payload.get("task")
+            if isinstance(result_payload.get("task"), dict)
+            else task_payload
+        )
+        artifacts = _task_artifacts(result_task or {})
+        e2e_artifact = result_payload.get(
+            "missionos_mission_assurance_gateway_px4_e2e"
+        )
+        if not isinstance(e2e_artifact, dict):
+            e2e_artifact = artifacts.get(
+                "missionos_mission_assurance_gateway_px4_e2e"
+            )
+        if not isinstance(e2e_artifact, dict):
+            e2e_artifact = {}
+        if not (
+            e2e_artifact.get("full_gateway_runtime_loop") is True
+            and e2e_artifact.get("e2e_status") == "completed"
+        ):
+            blocking_reasons = e2e_artifact.get("blocking_reasons")
+            blocking_reasons = (
+                blocking_reasons if isinstance(blocking_reasons, list) else []
+            )
+            reason_text = ", ".join(str(reason) for reason in blocking_reasons)
+            raise click.ClickException(
+                "Mission Assurance E2E did not satisfy the full Gateway/PX4 loop"
+                + (f": {reason_text}" if reason_text else "")
+            )
+        if ctx.obj["missionos_json_output"]:
+            timeline_entries = (
+                timeline_payload.get("entries")
+                if isinstance(timeline_payload, dict)
+                and isinstance(timeline_payload.get("entries"), list)
+                else []
+            )
+            _print_json(
+                {
+                    "schema_version": "missionos_cli_mission_assurance_e2e.v1",
+                    "task_id": task_id,
+                    "cli_entrypoint_observed": True,
+                    "gateway_url": ctx.obj["missionos_gateway_url"],
+                    "scenario_proposal_ref": (
+                        "px4_gazebo_mission_scenario_proposal:"
+                        + str(
+                            proposed.get("scenario_proposal", {}).get(
+                                "proposal_id"
+                            )
+                            or ""
+                        )
+                    ),
+                    "startup_summary": startup.get("summary", {}),
+                    "execution_summary": {
+                        key: result_payload.get("summary", {}).get(key)
+                        for key in (
+                            "task_id",
+                            "task_status",
+                            "live_flight_status",
+                            "actual_px4_gazebo_horizontal_smoke_observed",
+                            "actual_sitl_flight_evidence_observed",
+                            "mission_assurance_agent_invoked",
+                            "recovery_state_observed",
+                            "recovery_state_label",
+                            "final_status",
+                            "full_gateway_runtime_loop",
+                            "delivery_completion_claimed",
+                            "physical_execution_invoked",
+                        )
+                    },
+                    "mission_assurance_gateway_px4_e2e": e2e_artifact,
+                    "task_status": _task_status(result_task or {}),
+                    "timeline_event_count": len(timeline_entries),
+                }
+            )
+            return
+        console.print(
+            f"[green]Mission Assurance full Gateway/PX4 E2E observed:[/green] {task_id}"
+        )
+        if payload is not None:
+            _print_sitl_execution_result(payload)
+        elif result_task is not None and timeline_payload is not None:
+            _print_job_status(result_task, timeline_payload)
+    finally:
+        if gateway_proc is not None:
+            console.print("[blue]Stopping the autostarted Gateway...[/blue]")
+            _terminate_gateway(gateway_proc)
 
 
 @missionos.command("job-status")
@@ -1435,6 +1823,9 @@ def map_command(
         else
         "boundary=indoor local-XY MissionOS/Nav2 evidence display; read-only, not verifier/dispatch/delivery/physical claim"
         if model.get("map_kind") == "indoor_local_xy"
+        else
+        "boundary=PX4/Gazebo local-XY persisted telemetry; read-only, no final RTL/home XY, verifier, dispatch, delivery, or physical claim"
+        if model.get("map_kind") == "px4_gazebo_local_xy"
         else "boundary=real basemap tiles + MissionOS route/telemetry overlay; read-only, not verifier/dispatch/delivery claim"
     )
     console.print(
@@ -1680,6 +2071,7 @@ def _pending_recovery_approval_from_task(
             "missionos_runtime_recovery_proposal_evidence.v1",
             "missionos_runtime_recovery_proposal_evidence.v2",
             "missionos_runtime_recovery_proposal_evidence.v3",
+            "missionos_runtime_recovery_proposal_evidence.v4",
         }
         and runtime_proposal.get("proposal_status") == "awaiting_operator_approval"
     ):
@@ -1697,7 +2089,7 @@ def _pending_recovery_approval_from_task(
             or reachability.get("reachability_verified") is not True
         ):
             return None
-        if runtime_proposal_schema.endswith(".v3"):
+        if runtime_proposal_schema.endswith((".v3", ".v4")):
             hazard_state = runtime_assessment.get("hazard_state")
             hazard_state = hazard_state if isinstance(hazard_state, Mapping) else {}
             action_feasibility = runtime_assessment.get("action_feasibility")
@@ -1717,6 +2109,16 @@ def _pending_recovery_approval_from_task(
             or runtime_assessment.get("selected_bounded_action")
             or ""
         ).strip()
+        incident_graph = runtime_proposal.get("missionos_mission_incident_graph")
+        incident_graph = incident_graph if isinstance(incident_graph, Mapping) else {}
+        graph_bound = runtime_proposal_schema.endswith(".v4")
+        if graph_bound and (
+            incident_graph.get("decision_status") != "awaiting_operator_approval"
+            or incident_graph.get("alignment_status") != "accepted"
+            or incident_graph.get("recovery_proposed_action") != selected_action
+            or not incident_graph.get("mission_incident_graph_sha256")
+        ):
+            return None
         dispatch_action = _recovery_dispatch_action_from_proposal_action(selected_action)
         proposed_parameters = compilation.get("compiled_parameters") or runtime_assessment.get(
             "proposed_parameters"
@@ -1765,8 +2167,8 @@ def _pending_recovery_approval_from_task(
                 "proposal_source": str(runtime_proposal.get("proposal_source") or ""),
                 "rules_execution_class": str(runtime_assessment.get("assessment_status") or ""),
                 "requires_new_human_approval": True,
-                "checkpoint_id": "",
-                "checkpoint_hash": "",
+                "checkpoint_id": proposal_id if graph_bound else "",
+                "checkpoint_hash": str(incident_graph.get("mission_incident_graph_sha256") or "") if graph_bound else "",
                 "checkpoint_approval_supported": True,
                 "runtime_proposal_approval_supported": True,
                 "checkpoint_revision_supported": False,
@@ -1789,9 +2191,10 @@ def _pending_recovery_approval_from_task(
                 ),
                 "action_feasibility": (
                     dict(action_feasibility)
-                    if runtime_proposal_schema.endswith(".v3")
+                    if runtime_proposal_schema.endswith((".v3", ".v4"))
                     else {}
                 ),
+                "mission_assurance": dict(incident_graph) if graph_bound else {},
                 "dispatch_authority_created": False,
                 "physical_execution_invoked": False,
             }
@@ -1891,6 +2294,7 @@ def _pending_recovery_approval_from_task(
             ),
             "checkpoint_revision_supported": strict_turtlebot3_scope,
             "checkpoint_dispatch_supported": checkpoint_dispatch_supported,
+            "mission_assurance": checkpoint.get("missionos_mission_incident_graph") or {},
             "operator_guidance_required": operator_guidance_required,
             "recovery_proposal_id": proposal_id,
             "recovery_classification_id": classification_id,
@@ -2557,6 +2961,13 @@ def _render_chat_recovery_review(pending: dict[str, Any]) -> Panel:
         "",
         decision_text,
     ]
+    assurance_graph = pending.get("mission_assurance") or {}
+    if assurance_graph:
+        assurance = assurance_graph.get("mission_assurance_proposal") or {}
+        lines[5:5] = [
+            f"MissionAssuranceAgent={rich_escape(str(assurance_graph.get('mission_assurance_response_kind') or '-'))}",
+            f"mission rationale={rich_escape(str(assurance.get('rationale') or '-'))}",
+        ]
     return Panel(
         "\n".join(lines),
         title="Recovery Agent Proposal Review",
@@ -2694,6 +3105,7 @@ def _handle_chat_recovery_approval(
         blocked_reasons = [str(item) for item in response_summary.get("blocked_reasons") or []]
         reviewed_checkpoint_changed = any(
             reason.startswith("reviewed_turtlebot3_recovery_checkpoint_")
+            or reason.startswith("reviewed_px4_recovery_checkpoint_")
             or reason == "turtlebot3_recovery_checkpoint_claim_conflict"
             for reason in blocked_reasons
         )
@@ -3012,6 +3424,7 @@ def _handle_operate_console_command(
         task_id=task_id,
         recovery_action=action,
         recovery_parameters=command.parameters or {},
+        **({"operator_direct_land": True} if action == "land" else {}),
     )
     task_payload = _wait_for_active_runner_recovery_observation(client, payload)
     _print_recovery_result(payload, task_payload=task_payload)
@@ -3190,6 +3603,7 @@ def _operator_recovery_command(
         task_id=resolved_task_id,
         recovery_action=action,
         recovery_parameters=recovery_parameters,
+        **({"operator_direct_land": True} if action == "land" else {}),
     )
     if ctx.obj["missionos_json_output"]:
         _print_json(payload)
@@ -3977,11 +4391,24 @@ def _handle_chat_input(
             _clear_chat_back_stack(ctx)
             action = "land" if parts[0] == "/land" else "return_to_launch"
             with console.status("[cyan]dispatching recovery…[/cyan]", spinner="dots"):
-                payload = client.recovery_dispatch(task_id=parts[1], recovery_action=action)
+                payload = client.recovery_dispatch(
+                    task_id=parts[1], recovery_action=action,
+                    **({"operator_direct_land": True} if action == "land" else {}),
+                )
                 task_payload = _wait_for_active_runner_recovery_observation(client, payload)
             _print_recovery_result(payload, task_payload=task_payload)
             return True
-        if raw.startswith(("/climb", "/speed", "/reroute", "/avoid ", "/avoid-obstacle")):
+        if raw.startswith(
+            (
+                "/climb",
+                "/speed",
+                "/reroute",
+                "/avoid ",
+                "/avoid-obstacle",
+                "/calibrate ",
+                "/calibrate-offboard",
+            )
+        ):
             try:
                 parts = shlex.split(raw)
             except ValueError as exc:
@@ -4001,7 +4428,9 @@ def _handle_chat_input(
                 stored_task_id=_stored_sitl_task_id(ctx),
             )
             if command.kind != "dispatch":
-                console.print("[yellow]Usage: /climb, /speed, /reroute, or /avoid[/yellow]")
+                console.print(
+                    "[yellow]Usage: /climb, /speed, /reroute, /avoid, or /calibrate[/yellow]"
+                )
                 return True
             _clear_chat_back_stack(ctx)
             if _handle_operate_console_command(client, task_id, command):
@@ -4044,13 +4473,34 @@ def _handle_chat_input(
             return True
         if raw.startswith("/execute-sitl"):
             parts = shlex.split(raw)
-            if len(parts) > 2:
-                console.print("[yellow]Usage: /execute-sitl [task_id][/yellow]")
+            allowed_flags = {"--preflight-calibration"}
+            unknown_flags = [
+                part
+                for part in parts[1:]
+                if part.startswith("--") and part not in allowed_flags
+            ]
+            task_parts = [part for part in parts[1:] if not part.startswith("--")]
+            if unknown_flags or len(task_parts) > 1:
+                console.print(
+                    "[yellow]Usage: /execute-sitl [task_id] "
+                    "[--preflight-calibration][/yellow]"
+                )
                 return True
-            task_id = parts[1] if len(parts) == 2 else _stored_sitl_task_id(ctx)
+            task_id = task_parts[0] if task_parts else _stored_sitl_task_id(ctx)
             if not task_id:
                 console.print(
                     "[yellow]No stored task id; run /run or pass /execute-sitl <task_id>[/yellow]"
+                )
+                return True
+            preflight_calibration_approved = "--preflight-calibration" in parts
+            if preflight_calibration_approved and not click.confirm(
+                "Approve one bounded preflight OFFBOARD calibration before "
+                f"the obstacle route for task {task_id} "
+                "(10 m cross-track leg, up to 1.5 m climb for terrain clearance)?",
+                default=False,
+            ):
+                console.print(
+                    "[yellow]Calibration was not approved; live execution was not started.[/yellow]"
                 )
                 return True
             _clear_chat_back_stack(ctx)
@@ -4060,8 +4510,12 @@ def _handle_chat_input(
                     client,
                     task_id=task_id,
                     live_flight_mode=True,
+                    preflight_calibration_approved=preflight_calibration_approved,
                     progress_callback=lambda latest: status.update(
                         f"[green]{_job_progress_status_text(latest)}[/green]"
+                    ),
+                    preflight_calibration_callback=lambda result: _print_recovery_result(
+                        result
                     ),
                 )
             if payload is None and task_payload is not None and timeline_payload is not None:
@@ -4117,8 +4571,29 @@ def _handle_chat_input(
                 fallback_task_id=task_id,
             )
             _print_sitl_start_result(payload)
-            _print_chat_followup("SITL is ready. Start live execution? Type 'fly' to proceed.")
-            _set_chat_suggestion(ctx, raw=f"/execute-sitl {latest_task_id}", label="fly")
+            if _task_requests_obstacle_preflight_calibration(payload):
+                _print_chat_followup(
+                    "SITL is ready. This obstacle route needs a measured OFFBOARD "
+                    "performance envelope. Start live execution with one bounded "
+                    "preflight calibration?"
+                )
+                _set_chat_suggestion(
+                    ctx,
+                    raw=(
+                        f"/execute-sitl {latest_task_id} "
+                        "--preflight-calibration"
+                    ),
+                    label="approve calibration + fly",
+                )
+            else:
+                _print_chat_followup(
+                    "SITL is ready. Start live execution? Type 'fly' to proceed."
+                )
+                _set_chat_suggestion(
+                    ctx,
+                    raw=f"/execute-sitl {latest_task_id}",
+                    label="fly",
+                )
             return True
         if raw.startswith("/job-status"):
             parts = shlex.split(raw)

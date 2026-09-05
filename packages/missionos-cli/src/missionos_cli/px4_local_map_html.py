@@ -1,0 +1,35 @@
+"""Read-only HTML renderer for persisted PX4/Gazebo local coordinates."""
+
+from __future__ import annotations
+
+import html
+import json
+from typing import Any
+
+
+def _mission_px4_local_map_html(model: dict[str, Any]) -> str:
+    data = json.dumps(model, ensure_ascii=False).replace("</", "<\\/")
+    title = html.escape(f"MissionOS PX4/Gazebo Local Map · {model.get('task_id', '-')}")
+    return f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><link rel="icon" href="data:,"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{title}</title><style>
+:root{{--bg:#07101d;--panel:#0d1728;--line:#26364d;--text:#edf5ff;--muted:#9bacbf}}
+*{{box-sizing:border-box}}body{{margin:0;background:var(--bg);color:var(--text);font:14px system-ui,sans-serif}}
+.shell{{padding:16px;display:grid;gap:14px}}header{{display:flex;justify-content:space-between;gap:16px}}h1,h2{{margin:0}}h1{{font-size:20px}}h2{{font-size:15px;margin-bottom:10px}}.muted{{color:var(--muted)}}
+.grid{{display:grid;grid-template-columns:minmax(0,2fr) minmax(320px,1fr);gap:14px}}.card{{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:13px}}
+svg{{width:100%;height:min(70vh,720px);min-height:430px;background:#091525;border-radius:6px}}.facts{{display:grid;gap:9px}}.fact{{border-bottom:1px solid var(--line);padding-bottom:8px}}.label{{color:var(--muted);font-size:12px}}.value{{margin-top:3px;overflow-wrap:anywhere}}.boundary{{color:#fbd38d;line-height:1.45}}@media(max-width:850px){{.grid{{grid-template-columns:1fr}}}}
+</style></head><body><div class="shell"><header><div><h1>PX4/Gazebo local XY</h1><div class="muted" id="subtitle"></div></div><div id="live" class="muted">read-only</div></header>
+<div class="grid"><div class="card"><svg id="map" viewBox="0 0 900 650" aria-label="PX4 Gazebo local coordinate map"></svg><div class="muted">X is up · Y is right · uniform metric scale · no basemap/WGS84 conversion</div></div><div class="facts" id="facts"></div></div></div><script>
+const initial={data}; const val=v=>v===null||v===undefined||v===""?"-":String(v),yn=v=>v===true?"yes":v===false?"no":"-",metres=v=>Number.isFinite(Number(v))?Number(v).toFixed(2):"-";
+function esc(v){{return val(v).replace(/[&<>\"']/g,c=>({{'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}}[c]))}}
+function render(model){{document.getElementById('subtitle').textContent=`task=${{val(model.task_id)}} · status=${{val(model.task_status)}} · source=${{val(model.telemetry?.source_artifact)}}`;
+const pts=[...(model.planned_points||[]),...(model.observed_points||[])],xs=pts.map(p=>Number(p.x_m)).filter(Number.isFinite),ys=pts.map(p=>Number(p.y_m)).filter(Number.isFinite);if(!xs.length)return;
+let xmin=Math.min(...xs,0),xmax=Math.max(...xs,0),ymin=Math.min(...ys,0),ymax=Math.max(...ys,0);const span=Math.max(xmax-xmin,ymax-ymin,1),pad=span*.18;xmin-=pad;xmax+=pad;ymin-=pad;ymax+=pad;
+const W=900,H=650,m=45,scale=Math.min((W-2*m)/(ymax-ymin),(H-2*m)/(xmax-xmin)),p=q=>[m+(Number(q.y_m)-ymin)*scale,H-m-(Number(q.x_m)-xmin)*scale];let s='';
+for(let i=0;i<=10;i++){{const x=m+i*(W-2*m)/10,y=m+i*(H-2*m)/10;s+=`<line x1="${{x}}" y1="${{m}}" x2="${{x}}" y2="${{H-m}}" stroke="#1d2c42"/><line x1="${{m}}" y1="${{y}}" x2="${{W-m}}" y2="${{y}}" stroke="#1d2c42"/>`}}
+const planned=model.planned_points||[],obs=model.observed_points||[];if(planned.length>1)s+=`<polyline points="${{planned.map(q=>p(q).join(',')).join(' ')}}" fill="none" stroke="#38bdf8" stroke-width="4" stroke-dasharray="10 8"/>`;if(obs.length)s+=`<polyline points="${{obs.map(q=>p(q).join(',')).join(' ')}}" fill="none" stroke="#4ade80" stroke-width="5"/>`;
+planned.forEach(q=>{{const [x,y]=p(q);s+=`<circle cx="${{x}}" cy="${{y}}" r="8" fill="#38bdf8"/><text x="${{x+11}}" y="${{y-9}}" fill="#edf5ff">${{esc(q.role)}}</text>`}});if(obs.length){{const [x,y]=p(obs[obs.length-1]);s+=`<circle cx="${{x}}" cy="${{y}}" r="9" fill="#facc15"/><text x="${{x+12}}" y="${{y-15}}" fill="#facc15">latest observed</text>`}}if(model.recovery_event?.x_m!==undefined){{const [x,y]=p(model.recovery_event);s+=`<circle cx="${{x}}" cy="${{y}}" r="15" fill="none" stroke="#e879f9" stroke-width="4"/><text x="${{x+17}}" y="${{y+22}}" fill="#e879f9">Recovery evidence boundary</text>`}}s+=`<text x="750" y="636" fill="#9bacbf">local Y →</text><text x="12" y="30" fill="#9bacbf">local X ↑</text>`;document.getElementById('map').innerHTML=s;
+const a=model.mission_assurance||{{}},facts=[['Decision sequence',(a.decision_sequence||[]).join(' → ')],['Recovery Agent',`${{val(a.recovery_proposed_action)}} · ${{val(a.recovery_model_id)}}`],['MissionAssuranceAgent',`${{val(a.mission_assurance_response)}} · ${{val(a.mission_assurance_model_id)}}`],['Feasibility',`original=${{val(a.original_feasibility)}} · current=${{val(a.current_feasibility)}} · revalidation=${{val(a.revalidation_status)}} · guard=${{val(a.guard_status)}}`],['Agent disagreement',a.agent_disagreement_observed===true?`Recovery=${{val(a.recovery_no_action_response)}} · Assurance requested=${{val(a.assurance_requested_action)}} · resolution=${{val(a.agent_disagreement_resolution)}}`:'none observed'],['Operator approval',a.fresh_operator_approval_required===true?`required for ${{val(a.proposed_action_awaiting_approval)}} · route approval is not Recovery approval`:'not pending'],['Intervention',a.dispatch_prevented_by_mission_assurance===true?`feasible recovery suppressed by ${{val(a.suppression_source)}} · dispatch=no · re-observation=${{yn(a.post_suppression_reobservation_observed)}}`:'none observed'],['Human/runtime',`route approval consumed=${{yn(a.route_execution_approval_consumed)}} · Recovery approval=${{yn(a.recovery_approval_recorded)}} · selected=${{val(a.selected_action)}} · state=${{val(a.runtime_state_label)}} · ACK=${{yn(a.command_ack_observed)}}`],['Latest observed',`x=${{metres(model.latest?.x_m)}}m · y=${{metres(model.latest?.y_m)}}m · z(up)=${{metres(model.latest?.altitude_up_m)}}m · samples=${{val(model.telemetry?.sample_count)}}`],['Authority',`agent approval=${{yn(a.agent_created_approval)}} · agent dispatch authority=${{yn(a.agent_created_dispatch_authority)}} · physical execution=${{yn(a.physical_execution_invoked)}}`]];
+document.getElementById('facts').innerHTML='<div class="card"><h2>Two-Agent evidence</h2>'+facts.map(([k,v])=>`<div class="fact"><div class="label">${{esc(k)}}</div><div class="value">${{esc(v)}}</div></div>`).join('')+'</div><div class="card"><h2>Claim boundaries</h2><div class="boundary">'+(model.boundaries||[]).map(esc).join('<br><br>')+'</div></div>'}}
+render(initial);if(initial.live?.enabled&&initial.live.task_url){{document.getElementById('live').textContent='live read-only';setInterval(async()=>{{try{{const r=await fetch(initial.live.task_url,{{cache:'no-store'}}),payload=await r.json();if(payload.missionos_map_model)render(payload.missionos_map_model)}}catch(e){{document.getElementById('live').textContent='refresh unavailable'}}}},initial.live.poll_interval_ms||1000)}}
+</script></body></html>"""

@@ -23,6 +23,11 @@ VLA_POST_EPISODE_REPAIR_ROUTE = (
 RECOVERY_AGENT_PROPOSAL_ROUTE = "/missionos/runtime-recovery-agent/propose-for-task"
 TURTLEBOT3_RECOVERY_REVISION_ROUTE = "/missionos/turtlebot3/recovery-agent/revise-for-task"
 SITL_START_ROUTE = "/px4-gazebo/mission-scenarios/start-sitl"
+SITL_SCENARIO_PROPOSE_ROUTE = "/px4-gazebo/mission-scenarios/propose"
+SITL_SCENARIO_APPROVE_ROUTE = "/px4-gazebo/mission-scenarios/approve"
+SITL_SCENARIO_PREPARE_ROUTE = (
+    "/px4-gazebo/mission-scenarios/prepare-sitl-execution"
+)
 SITL_EXECUTION_APPROVAL_ROUTE = "/px4-gazebo/mission-scenarios/approve-sitl-execution"
 SITL_EXECUTION_ROUTE = "/px4-gazebo/mission-scenarios/execute-sitl"
 
@@ -214,17 +219,21 @@ class MissionOSGatewayClient:
         recovery_parameters: dict[str, Any] | None = None,
         expected_recovery_checkpoint_id: str = "",
         expected_recovery_checkpoint_hash: str = "",
+        operator_direct_land: bool = False,
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "task_id": task_id,
             "recovery_action": recovery_action,
             "recovery_parameters": recovery_parameters or {},
             "explicit_recovery_dispatch_approval": True,
+            "wait_for_effect_observation": True,
         }
         if expected_recovery_checkpoint_id:
             payload["expected_recovery_checkpoint_id"] = expected_recovery_checkpoint_id
         if expected_recovery_checkpoint_hash:
             payload["expected_recovery_checkpoint_hash"] = expected_recovery_checkpoint_hash
+        if operator_direct_land:
+            payload["operator_direct_land"] = True
         return self._request(
             "POST",
             RECOVERY_DISPATCH_ROUTE,
@@ -296,25 +305,114 @@ class MissionOSGatewayClient:
             },
         )
 
-    def execute_sitl(self, *, task_id: str, live_flight_mode: bool) -> dict[str, Any]:
+    def propose_sitl_scenario(self, *, prompt: str) -> dict[str, Any]:
+        return self._request(
+            "POST",
+            SITL_SCENARIO_PROPOSE_ROUTE,
+            json={"prompt": prompt},
+        )
+
+    def approve_sitl_scenario(
+        self,
+        *,
+        scenario_proposal: dict[str, Any],
+        validation_result: dict[str, Any],
+    ) -> dict[str, Any]:
+        return self._request(
+            "POST",
+            SITL_SCENARIO_APPROVE_ROUTE,
+            json={
+                "scenario_proposal": scenario_proposal,
+                "validation_result": validation_result,
+            },
+        )
+
+    def prepare_sitl_scenario(
+        self,
+        *,
+        proposed: dict[str, Any],
+        approved: dict[str, Any],
+    ) -> dict[str, Any]:
+        payload = {
+            "scenario_proposal": proposed["scenario_proposal"],
+            "validation_result": proposed["validation_result"],
+            "scenario_approval": approved["scenario_approval"],
+            "scenario_compile_result": approved["scenario_compile_result"],
+            "bounded_simulation_request": approved["bounded_simulation_request"],
+        }
+        for key in (
+            "mission_designer_coordinate_pair_route",
+            "real_world_target_resolution",
+            "terrain_dem_source_snapshot",
+            "terrain_heightmap_file_artifact",
+            "gazebo_world_artifact",
+            "coordinate_transform_candidate",
+            "digital_twin_sitl_binding_gate",
+            "digital_twin_route_plan",
+            "digital_twin_px4_mission_item_candidate",
+            "summary",
+        ):
+            value = proposed.get(key)
+            if isinstance(value, dict):
+                payload[key] = value
+        if isinstance(proposed.get("execution_terrain_fallback_reason"), str):
+            payload["execution_terrain_fallback_reason"] = proposed[
+                "execution_terrain_fallback_reason"
+            ]
+        if isinstance(proposed.get("execution_terrain_source_backed"), bool):
+            payload["execution_terrain_source_backed"] = proposed[
+                "execution_terrain_source_backed"
+            ]
+        return self._request(
+            "POST",
+            SITL_SCENARIO_PREPARE_ROUTE,
+            json=payload,
+        )
+
+    def execute_sitl(
+        self,
+        *,
+        task_id: str,
+        live_flight_mode: bool,
+        mission_assurance_on_deviation: bool = False,
+    ) -> dict[str, Any]:
+        approval_payload: dict[str, Any] = {
+            "task_id": task_id,
+            "explicit_execution_approval": True,
+        }
+        if mission_assurance_on_deviation:
+            approval_payload.update(
+                {
+                    "mission_assurance_on_deviation": True,
+                    "missionos_client_surface": "missionos_cli",
+                }
+            )
         approval = self._request(
             "POST",
             SITL_EXECUTION_APPROVAL_ROUTE,
-            json={"task_id": task_id, "explicit_execution_approval": True},
+            json=approval_payload,
         )
         approval_artifact = approval.get("execution_operator_approval")
         approval_artifact = approval_artifact if isinstance(approval_artifact, dict) else {}
         execution_approval_id = str(approval_artifact.get("approval_id") or "").strip()
         if not execution_approval_id:
             raise click.ClickException("Gateway did not return a stored SITL execution approval id")
+        execution_payload: dict[str, Any] = {
+            "task_id": task_id,
+            "execution_approval_id": execution_approval_id,
+            "live_flight_mode": live_flight_mode,
+        }
+        if mission_assurance_on_deviation:
+            execution_payload.update(
+                {
+                    "mission_assurance_on_deviation": True,
+                    "missionos_client_surface": "missionos_cli",
+                }
+            )
         return self._request(
             "POST",
             SITL_EXECUTION_ROUTE,
-            json={
-                "task_id": task_id,
-                "execution_approval_id": execution_approval_id,
-                "live_flight_mode": live_flight_mode,
-            },
+            json=execution_payload,
             timeout=max(self.timeout, SITL_DISPATCH_TIMEOUT),
         )
 

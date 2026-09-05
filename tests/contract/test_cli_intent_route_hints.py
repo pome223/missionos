@@ -1069,6 +1069,42 @@ def test_chat_slash_avoid_dispatches_parameterized_recovery(tmp_path: Path) -> N
     }
 
 
+def test_chat_slash_calibrate_dispatches_parameterized_recovery(tmp_path: Path) -> None:
+    client = RecordingMissionOSClient()
+    ctx = click.Context(missionos_cli.missionos)
+    ctx.obj = {
+        "missionos_client": client,
+        "missionos_gateway_url": "http://127.0.0.1:18881",
+        "missionos_json_output": False,
+        "missionos_state_path": tmp_path / "state.json",
+    }
+    missionos_cli._remember_sitl_task_id(ctx, "task_chat_avoid")
+
+    assert (
+        missionos_cli._handle_chat_input(
+            ctx,
+            client,
+            "/calibrate 40 20 45 --yes",
+            session_id="chat-session",
+        )
+        is True
+    )
+
+    assert client.requests[-1] == {
+        "task_id": "task_chat_avoid",
+        "recovery_action": "calibrate_offboard",
+        "recovery_parameters": {
+            "target_x_m": 40.0,
+            "target_y_m": 20.0,
+            "target_altitude_m": 45.0,
+        },
+    }
+    assert missionos_cli._chat_suggestion(ctx) == {
+        "raw": "/job-status task_chat_avoid",
+        "label": "show status",
+    }
+
+
 def test_chat_approve_recovery_dispatches_pending_human_approval_proposal(
     tmp_path: Path,
 ) -> None:
@@ -2911,6 +2947,162 @@ def test_chat_back_does_not_cross_start_sitl_boundary(tmp_path: Path) -> None:
     assert missionos_cli._stored_sitl_task_id(ctx) == "task_prepare"
 
 
+def test_chat_start_sitl_suggests_preflight_calibration_for_obstacle_route(
+    tmp_path: Path,
+) -> None:
+    class ObstacleStartClient(BackNavigationMissionOSClient):
+        def start_sitl(self, *, task_id: str) -> dict[str, Any]:
+            payload = super().start_sitl(task_id=task_id)
+            payload["task"] = {
+                "task_id": task_id,
+                "status": "pending",
+                "artifacts": {
+                    "mission_designer_coordinate_pair_route": {
+                        "gazebo_obstacle_model_spawn_requested": True,
+                        "building_risk_detected": True,
+                    }
+                },
+            }
+            return payload
+
+    client = ObstacleStartClient()
+    ctx = _chat_ctx(tmp_path)
+    missionos_cli._remember_sitl_task_id(ctx, "task_obstacle")
+
+    assert missionos_cli._handle_chat_input(
+        ctx, client, "/start-sitl", session_id="chat-obstacle"
+    )
+    assert missionos_cli._chat_suggestion(ctx) == {
+        "raw": "/execute-sitl task_obstacle --preflight-calibration",
+        "label": "approve calibration + fly",
+    }
+
+
+def test_preflight_calibration_parameters_use_fresh_airborne_position() -> None:
+    task_payload = {
+        "task": {
+            "task_id": "task_calibration",
+            "status": "running",
+            "artifacts": {
+                "mission_designer_coordinate_pair_route": {
+                    "wind_speed_mps": 3.0,
+                },
+                "missionos_auto_mission_runtime_snapshot": {
+                    "snapshot_status": "running",
+                    "sample_index": 12,
+                    "heartbeat_observed": True,
+                    "landed": False,
+                    "nav_state": 3,
+                    "local_x_m": 24.5,
+                    "local_y_m": -7.25,
+                    "altitude_above_home_m": 10.2,
+                    "distance_to_home_m": 25.6,
+                    "wind_speed_mps": 3.0,
+                    "wind_mean_started": True,
+                    "terrain_clearance_m": 29.8,
+                    "terrain_clearance_target_m": 30.0,
+                    "operator_recovery_request_observed": False,
+                }
+            },
+        }
+    }
+
+    assert missionos_cli._preflight_offboard_calibration_parameters(task_payload) == {
+        "target_x_m": 27.338,
+        "target_y_m": 2.339,
+        "target_altitude_m": 10.9,
+        "calibration_only": True,
+        "resume_original_route": True,
+    }
+
+
+@pytest.mark.parametrize(
+    ("wind_mean_started", "observed_wind_speed"),
+    [(False, 3.0), (True, 0.0)],
+)
+def test_preflight_calibration_waits_for_requested_wind_readback(
+    wind_mean_started: bool,
+    observed_wind_speed: float,
+) -> None:
+    task_payload = {
+        "task": {
+            "task_id": "task_calibration_wind_pending",
+            "status": "running",
+            "artifacts": {
+                "mission_designer_coordinate_pair_route": {
+                    "wind_speed_mps": 3.0,
+                },
+                "missionos_auto_mission_runtime_snapshot": {
+                    "snapshot_status": "running",
+                    "heartbeat_observed": True,
+                    "landed": False,
+                    "nav_state": 3,
+                    "local_x_m": 24.5,
+                    "local_y_m": -7.25,
+                    "altitude_above_home_m": 10.2,
+                    "distance_to_home_m": 25.6,
+                    "wind_speed_mps": observed_wind_speed,
+                    "wind_mean_started": wind_mean_started,
+                    "terrain_clearance_m": 30.0,
+                    "terrain_clearance_target_m": 30.0,
+                    "operator_recovery_request_observed": False,
+                },
+            },
+        }
+    }
+
+    assert missionos_cli._preflight_offboard_calibration_parameters(task_payload) is None
+
+
+@pytest.mark.parametrize(
+    "artifact_update",
+    [
+        {"missionos_runtime_recovery_safety_hold_receipt": {"hold_observed": True}},
+        {
+            "missionos_auto_mission_runtime_snapshot": {
+                "snapshot_status": "running",
+                "heartbeat_observed": True,
+                "landed": False,
+                "nav_state": 3,
+                "local_x_m": 450.0,
+                "local_y_m": 0.0,
+                "altitude_above_home_m": 10.0,
+                "distance_to_home_m": 450.0,
+            }
+        },
+    ],
+)
+def test_preflight_calibration_does_not_start_after_conflict_or_far_down_route(
+    artifact_update: dict[str, Any],
+) -> None:
+    artifacts: dict[str, Any] = {
+        "missionos_auto_mission_runtime_snapshot": {
+            "snapshot_status": "running",
+            "heartbeat_observed": True,
+            "landed": False,
+            "nav_state": 3,
+            "local_x_m": 10.0,
+            "local_y_m": 5.0,
+            "altitude_above_home_m": 10.0,
+            "distance_to_home_m": 11.2,
+            "wind_speed_mps": 3.0,
+            "terrain_clearance_m": 30.0,
+            "terrain_clearance_target_m": 30.0,
+            "terrain_clearance_grace_m": 1.0,
+        }
+    }
+    artifacts.update(artifact_update)
+    task_payload = {
+        "task": {
+            "task_id": "task_calibration_blocked",
+            "status": "running",
+            "artifacts": artifacts,
+        }
+    }
+
+    assert missionos_cli._preflight_offboard_calibration_parameters(task_payload) is None
+
+
 def test_chat_execute_sitl_launches_companion_terminals(
     monkeypatch: Any,
     tmp_path: Path,
@@ -2951,6 +3143,53 @@ def test_chat_execute_sitl_launches_companion_terminals(
         "raw": "/job-status task_fly",
         "label": "show status",
     }
+
+
+def test_chat_execute_sitl_requires_human_confirmation_for_preflight_calibration(
+    monkeypatch: Any,
+    tmp_path: Path,
+) -> None:
+    client = RecordingMissionOSClient()
+    ctx = _chat_ctx(tmp_path)
+    missionos_cli._remember_sitl_task_id(ctx, "task_calibrated_fly")
+    captured: dict[str, Any] = {}
+
+    def fake_execute_sitl(*_args: Any, **kwargs: Any) -> tuple[dict[str, Any], None, None]:
+        captured.update(kwargs)
+        return (
+            {
+                "summary": {
+                    "task_id": "task_calibrated_fly",
+                    "task_status": "running",
+                    "upload_status": "uploaded",
+                    "live_flight_status": "started",
+                    "dropoff_verified": False,
+                    "delivery_completion_claimed": False,
+                    "physical_execution_invoked": False,
+                }
+            },
+            None,
+            None,
+        )
+
+    monkeypatch.setattr(click, "confirm", lambda *_args, **_kwargs: True)
+    monkeypatch.setattr(
+        missionos_cli, "_execute_sitl_with_task_polling", fake_execute_sitl
+    )
+    monkeypatch.setattr(
+        missionos_cli,
+        "_ensure_chat_companion_terminals",
+        lambda *_args, **_kwargs: None,
+    )
+
+    assert missionos_cli._handle_chat_input(
+        ctx,
+        client,
+        "/execute-sitl task_calibrated_fly --preflight-calibration",
+        session_id="chat-calibrated-fly",
+    )
+    assert captured["preflight_calibration_approved"] is True
+    assert callable(captured["preflight_calibration_callback"])
 
 
 def test_chat_map_reuses_authenticated_live_companion_instead_of_snapshot(

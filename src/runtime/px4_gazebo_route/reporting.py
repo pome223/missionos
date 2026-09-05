@@ -54,6 +54,41 @@ def build_route_summary(inputs: RouteSummaryInputs) -> dict[str, Any]:
     gate = inputs.gate
     route_send = inputs.route_send
     supervisor_loop = inputs.obstacle_supervisor_recovery_loop
+    mission_assurance_guard = (
+        dict(route_send.get("mission_assurance_live_guard"))
+        if isinstance(route_send.get("mission_assurance_live_guard"), Mapping)
+        else None
+    )
+    mission_assurance_evaluation = (
+        mission_assurance_guard.get("mission_assurance_evaluation", {})
+        if mission_assurance_guard is not None
+        else {}
+    )
+    mission_assurance_evaluation = (
+        mission_assurance_evaluation
+        if isinstance(mission_assurance_evaluation, Mapping)
+        else {}
+    )
+    mission_assurance_proposal = mission_assurance_evaluation.get("proposal", {})
+    mission_assurance_proposal = (
+        mission_assurance_proposal
+        if isinstance(mission_assurance_proposal, Mapping)
+        else {}
+    )
+    continue_execution = (
+        dict(route_send.get("mission_assurance_continue_execution"))
+        if isinstance(
+            route_send.get("mission_assurance_continue_execution"), Mapping
+        )
+        else {}
+    )
+    continue_dropoff_approach = (
+        dict(route_send.get("mission_assurance_continue_dropoff_approach"))
+        if isinstance(
+            route_send.get("mission_assurance_continue_dropoff_approach"), Mapping
+        )
+        else {}
+    )
     summary = {
         "artifact_dir": str(inputs.artifact_dir),
         "recorded_at": inputs.recorded_at,
@@ -88,11 +123,73 @@ def build_route_summary(inputs: RouteSummaryInputs) -> dict[str, Any]:
         "horizontal_progress_m": gate.horizontal_progress_m,
         "dropoff_region_reached": gate.dropoff_region_reached,
         "delivery_completion_claimed": inputs.delivery_completion_claimed,
+        "mission_assurance_live_guard": mission_assurance_guard,
+        "mission_assurance_agent_invoked": (
+            mission_assurance_guard is not None
+            and mission_assurance_proposal.get("model_inference_invoked") is True
+        ),
+        "runtime_recovery_agent_invoked": (
+            mission_assurance_guard is not None
+            and mission_assurance_guard.get("runtime_recovery_agent_invoked")
+            is True
+        ),
+        "mission_assurance_continue_execution": continue_execution,
+        "mission_assurance_continue_dropoff_approach": continue_dropoff_approach,
+        "mission_assurance_continue_dropoff_approach_observed": (
+            continue_dropoff_approach.get("dropoff_approach_effect_observed")
+            is True
+        ),
+        "dropoff_region_observed_at": continue_dropoff_approach.get(
+            "dropoff_region_observed_at"
+        ),
+        "dropoff_region_observed_pose_x_m": (
+            continue_dropoff_approach.get("approach_observed_pose", {}).get("x")
+            if isinstance(
+                continue_dropoff_approach.get("approach_observed_pose"), Mapping
+            )
+            else None
+        ),
+        "dropoff_region_observed_pose_y_m": (
+            continue_dropoff_approach.get("approach_observed_pose", {}).get("y")
+            if isinstance(
+                continue_dropoff_approach.get("approach_observed_pose"), Mapping
+            )
+            else None
+        ),
+        "dropoff_region_observed_pose_z_m": (
+            continue_dropoff_approach.get("approach_observed_pose", {}).get("z")
+            if isinstance(
+                continue_dropoff_approach.get("approach_observed_pose"), Mapping
+            )
+            else None
+        ),
+        "mission_assurance_continue_execution_invoked": (
+            continue_execution.get("simulator_route_resume_invoked") is True
+        ),
+        "mission_assurance_continue_effect_observed": (
+            continue_execution.get("route_resume_effect_observed") is True
+        ),
+        "mission_assurance_continue_route_completion_observed": (
+            continue_execution.get("route_completion_claimed") is True
+            and gate.dropoff_region_reached
+            and not gate.blocked_reasons
+        ),
+        "recovery_command_ack_observed": False,
+        "recovery_state_observed": False,
+        "recovery_state_label": None,
         **inputs.terminal_pose_fields,
         "route_geofence_violation": gate.route_geofence_violation,
         "blocked_reasons": list(gate.blocked_reasons),
         "pose_deviation_gate_active": True,
         "pose_deviation_aborted": False,
+        "initial_pose_deviation_aborted": route_send.get(
+            "initial_pose_deviation_aborted"
+        )
+        is True,
+        "route_stream_resumed_after_mission_assurance_continue": route_send.get(
+            "route_stream_resumed_after_mission_assurance_continue"
+        )
+        is True,
         "deviation_samples": list(progress.deviation_samples),
         "route_monitor_sample_count": route_send["route_monitor_sample_count"],
         "setpoint_frames_sent": dispatch.setpoint_frames_sent,
@@ -157,9 +254,13 @@ def build_route_summary(inputs: RouteSummaryInputs) -> dict[str, Any]:
         ),
         "payload_release_summary": payload or {},
         "decision_loop_driver": (
-            "mission_os_supervisor"
-            if supervisor_loop is not None
-            else "scripted_horizontal_route_smoke"
+            "runtime_recovery_agent_then_mission_assurance_agent"
+            if mission_assurance_guard is not None
+            else (
+                "mission_os_supervisor"
+                if supervisor_loop is not None
+                else "scripted_horizontal_route_smoke"
+            )
         ),
         "primary_trigger": (
             "route_blocking_obstacle_verified" if supervisor_loop is not None else None

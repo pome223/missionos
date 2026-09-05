@@ -11,6 +11,8 @@ from __future__ import annotations
 import json
 import subprocess
 import time
+from collections.abc import Mapping
+from datetime import datetime, timezone
 from typing import Any, Callable, Protocol
 
 
@@ -235,7 +237,7 @@ def run_route_with_monitor(
     feed_forward_ramp_start_fraction: float = 0.65,
     feed_forward_ramp_end_fraction: float = 0.9,
     timeout: int = 45,
-    on_deviation: Callable[[], dict[str, Any]] | None = None,
+    on_deviation: Callable[[Mapping[str, Any]], dict[str, Any]] | None = None,
     popen_factory: Callable[..., Any] = subprocess.Popen,
     monotonic: Callable[[], float] = time.monotonic,
     sleep: Callable[[float], None] = time.sleep,
@@ -286,20 +288,19 @@ def run_route_with_monitor(
             end_xy=expected_target_xy,
         )
         deviation_z = abs(float(sample["z"]) - float(altitude_max_m))
-        if (
-            deviation_xy > max_pose_deviation_xy_m
-            or deviation_z > max_pose_deviation_z_m
-        ):
-            deviation_samples.append(
-                {
-                    "phase": "route",
-                    "sample": sample,
-                    "deviation_xy_m": deviation_xy,
-                    "deviation_z_m": deviation_z,
-                    "threshold_xy_m": max_pose_deviation_xy_m,
-                    "threshold_z_m": max_pose_deviation_z_m,
-                }
-            )
+        if deviation_xy > max_pose_deviation_xy_m or deviation_z > max_pose_deviation_z_m:
+            deviation_observation = {
+                "phase": "route",
+                "sample": sample,
+                "sample_index": monitor_sample_count - 1,
+                "elapsed_seconds": monotonic() - started_at,
+                "observed_at": datetime.now(timezone.utc).isoformat(),
+                "deviation_xy_m": deviation_xy,
+                "deviation_z_m": deviation_z,
+                "threshold_xy_m": max_pose_deviation_xy_m,
+                "threshold_z_m": max_pose_deviation_z_m,
+            }
+            deviation_samples.append(deviation_observation)
             process.terminate()
             route_stream_stop_reason = "pose_deviation"
             route_stream_forced_kill = False
@@ -312,7 +313,7 @@ def run_route_with_monitor(
                 route_stream_forced_kill = True
             recovery_payload = None
             if on_deviation is not None:
-                recovery_payload = on_deviation()
+                recovery_payload = on_deviation(deviation_observation)
             return {
                 "mode": "route",
                 "sent": False,

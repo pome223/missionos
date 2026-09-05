@@ -8,14 +8,17 @@ deterministic guardrails over their JSON outputs.
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
-from hashlib import sha256
 import json
 import math
 import os
-from pathlib import Path
 import re
-from typing import Any, Mapping
+from collections.abc import Mapping
+from datetime import datetime, timezone
+from hashlib import sha256
+from pathlib import Path
+from typing import Any, Literal
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.agents.model_config import (
     agent_model_label,
@@ -25,16 +28,16 @@ from src.agents.model_config import (
     llm_provider_label,
     local_llm_backend_enabled,
 )
+from src.gateway.missionos_capabilities import (
+    MISSIONOS_OPERATOR_FACING_ROUTE,
+    all_capability_descriptors_for_prompt,
+    build_missionos_capability_registry_summary,
+)
 from src.intelligence.missionos_adk_v2_shadow_graph import (
     MISSIONOS_ADK_V2_GRAPH_PRIMARY_ENV,
     MISSIONOS_ADK_V2_GRAPH_ROLLBACK_ENV,
     MISSIONOS_ADK_V2_GRAPH_SHADOW_ENV,
     validate_adk_v2_graph_rollout_env,
-)
-from src.gateway.missionos_capabilities import (
-    MISSIONOS_OPERATOR_FACING_ROUTE,
-    all_capability_descriptors_for_prompt,
-    build_missionos_capability_registry_summary,
 )
 from src.runtime.px4_gazebo_route.action_feasibility import (
     SUPPORTED_FEASIBILITY_ACTIONS,
@@ -50,7 +53,6 @@ from src.runtime.px4_gazebo_route.recovery_intent_compiler import (
     verify_runtime_recovery_reachability,
 )
 
-
 MISSIONOS_AGENT_RUNTIME_RESULT_SCHEMA_VERSION = "missionos_agent_runtime_result.v1"
 MISSIONOS_AGENT_INVOCATION_EVIDENCE_SCHEMA_VERSION = "missionos_agent_invocation_evidence.v1"
 MISSIONOS_AGENT_GUARDRAIL_SCHEMA_VERSION = "missionos_agent_guardrail.v1"
@@ -62,6 +64,39 @@ MISSIONOS_AGENT_RUNTIME_TIMEOUT_ENV = "MISSIONOS_AGENT_RUNTIME_TIMEOUT_SECONDS"
 
 DEFAULT_TIMEOUT_SECONDS = 45
 ARTIFACT_ROOT = Path("output/mission_designer_behavior_delta_audits")
+_ENV_SWITCH_FALSE_VALUES = frozenset({"0", "false", "no", "off"})
+
+
+class _RuntimeRecoveryADKResponse(BaseModel):
+    """Structured no-tool response for non-parameterized recovery actions."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    intent: Literal["runtime_recovery"]
+    operator_instruction: str = Field(min_length=1)
+    selected_bounded_action: Literal[
+        "continue",
+        "hold",
+        "return_to_launch",
+        "land",
+        "operator_review",
+    ]
+    proposed_parameters: dict[str, Any]
+    trigger_level: Literal["none", "advisory", "immediate"]
+    trigger_reasons: list[str]
+    telemetry_assessment: dict[str, Any]
+    rationale: str = Field(min_length=1)
+    expected_outcome: str = Field(min_length=1)
+    requires_human_approval: bool
+    uncertainty: str
+
+
+def _runtime_recovery_output_schema() -> type[_RuntimeRecoveryADKResponse] | None:
+    """DeepSeek currently rejects ADK response_format; guards still parse JSON."""
+
+    if deepseek_llm_backend_enabled("missionos_runtime_recovery_agent"):
+        return None
+    return _RuntimeRecoveryADKResponse
 
 MISSIONOS_AGENT_ALLOWED_INTENTS = frozenset(
     {
@@ -532,6 +567,25 @@ def _finalize_runtime_recovery_tool_response(
     return _runtime_recovery_agent_output_from_planner_result(planner_result)
 
 
+def _runtime_recovery_planner_tool_required(
+    *,
+    requested_action: str,
+    planner_preview: Mapping[str, Any],
+) -> bool:
+    """Attach the maneuver tool only when a parameterized action can use it."""
+
+    if requested_action in _PARAMETERIZED_RUNTIME_RECOVERY_ACTIONS:
+        return True
+    candidates = planner_preview.get("candidates")
+    candidates = candidates if isinstance(candidates, list) else []
+    return any(
+        isinstance(candidate, Mapping)
+        and candidate.get("selected_bounded_action")
+        in _PARAMETERIZED_RUNTIME_RECOVERY_ACTIONS
+        for candidate in candidates
+    )
+
+
 async def _invoke_runtime_recovery_agent_text_with_tools_async(
     *,
     model_id: str,
@@ -575,8 +629,15 @@ async def _invoke_runtime_recovery_agent_text_with_tools_async(
                 maneuver.
             strategy: Optional monitor, global_reroute, local_avoidance, hold,
                 or rtl_or_land strategy selected by the Runtime Recovery Agent.
+                It must match the selected action's compiler mapping:
+                adjust_altitude/adjust_speed/avoid_obstacle use local_avoidance,
+                reroute uses global_reroute, hold uses hold, and
+                return_to_launch/land use rtl_or_land.
             avoidance_side: Optional left or right semantic constraint.
             minimum_clearance_m: Optional minimum lateral clearance constraint.
+                Supply it only when the selected candidate basis explicitly
+                contains minimum_lateral_clearance_m or
+                required_lateral_clearance_m; otherwise omit it.
             maximum_duration_s: Optional maximum execution-duration envelope.
             maximum_speed_mps: Optional maximum horizontal-speed envelope.
             destination_kind: Optional original_route or alternate_dropoff intent.
@@ -632,10 +693,33 @@ async def _invoke_runtime_recovery_agent_text_with_tools_async(
             tool_context=tool_context,
         )
 
+    operator_request = mission_context.get("operator_recovery_request")
+    operator_request = (
+        dict(operator_request) if isinstance(operator_request, Mapping) else {}
+    )
+    requested_action = str(operator_request.get("requested_action") or "").strip()
+    planner_preview = plan_runtime_recovery_maneuver(
+        telemetry_snapshot=telemetry_snapshot,
+        mission_context=mission_context,
+        recovery_policy=recovery_policy,
+        requested_action="",
+        request_reason="planner_tool_attachment_preview",
+    )
+    planner_tool_required = _runtime_recovery_planner_tool_required(
+        requested_action=requested_action,
+        planner_preview=planner_preview,
+    )
     agent = build_missionos_runtime_recovery_agent(
         model_id=model_id,
-        tools=[FunctionTool(missionos_plan_bounded_recovery_maneuver)],
+        tools=(
+            [FunctionTool(missionos_plan_bounded_recovery_maneuver)]
+            if planner_tool_required
+            else []
+        ),
     )
+    output_schema = _runtime_recovery_output_schema()
+    if not planner_tool_required and output_schema is not None:
+        agent = agent.model_copy(update={"output_schema": output_schema})
     app_name = "missionos_runtime_recovery_function_tool"
     user_id = "missionos_operator"
     session_service = create_session_service()
@@ -685,6 +769,7 @@ async def _invoke_runtime_recovery_agent_text_with_tools_async(
         "function_calls": function_calls,
         "function_responses": function_responses,
         "function_tool_called": bool(captured["tool_results"]),
+        "planner_tool_attached": planner_tool_required,
         "tool_arguments": list(captured["tool_arguments"]),
         "function_tool_results": list(captured["tool_results"]),
     }
@@ -850,13 +935,87 @@ def _run_runtime_recovery_agent_once(
 ) -> dict[str, Any]:
     agent_name = "missionos_runtime_recovery_agent"
     model_id = _model_id(agent_name)
-    prompt_text = json.dumps(dict(prompt_payload), ensure_ascii=False, sort_keys=True)
+    operator_request = mission_context.get("operator_recovery_request")
+    operator_request = (
+        dict(operator_request) if isinstance(operator_request, Mapping) else {}
+    )
+    requested_action = str(operator_request.get("requested_action") or "").strip()
+    model_prompt_payload = dict(prompt_payload)
+    if requested_action and requested_action not in _PARAMETERIZED_RUNTIME_RECOVERY_ACTIONS:
+        model_prompt_payload = {
+            "schema_version": "missionos_runtime_recovery_agent_prompt.v1",
+            "task": "judge_non_parameterized_recovery_proposal",
+            "authority_boundary": (
+                "proposal only; human approval, rules, execution, and verification "
+                "remain outside this Agent"
+            ),
+            "allowed_actions": [
+                "continue",
+                "hold",
+                "return_to_launch",
+                "land",
+                "operator_review",
+            ],
+            "requested_action": requested_action,
+            "judgment_instruction": (
+                "Judge the requested recovery action against the observed mission "
+                "facts. When return_to_launch is requested and no observed fact "
+                "establishes that RTL is blocked, propose return_to_launch. Do not "
+                "replace it with hold or operator_review merely because later "
+                "Action Feasibility and human approval are still required."
+            ),
+            "telemetry_snapshot": {
+                key: telemetry_snapshot.get(key)
+                for key in (
+                    "source",
+                    "observed_at",
+                    "sample_index",
+                    "elapsed_seconds",
+                    "telemetry",
+                    "position",
+                    "battery",
+                    "wind",
+                    "terrain",
+                )
+                if telemetry_snapshot.get(key) is not None
+            },
+            "mission_context": {
+                key: mission_context.get(key)
+                for key in (
+                    "task_id",
+                    "mission_phase",
+                    "route_plan_id",
+                    "route_deviation",
+                )
+                if mission_context.get(key) is not None
+            },
+            "recovery_policy": {
+                key: recovery_policy.get(key)
+                for key in (
+                    "policy_ref",
+                    "base_policy_ref",
+                    "execution_scope",
+                    "battery_return_threshold_percent",
+                    "min_terrain_clearance_m",
+                    "max_recovery_horizontal_speed_mps",
+                    "max_recovery_duration_s",
+                )
+                if recovery_policy.get(key) is not None
+            },
+            "output_contract": {
+                "selected_action_must_equal_requested_or_be_safer": True,
+                "return_to_launch_parameters_must_be_empty": True,
+                "requires_human_approval": True,
+            },
+        }
+    prompt_text = json.dumps(model_prompt_payload, ensure_ascii=False, sort_keys=True)
     started_at = _utc_now()
     function_calls: list[dict[str, Any]] = []
     function_responses: list[dict[str, Any]] = []
     function_tool_results: list[dict[str, Any]] = []
     tool_arguments: list[dict[str, Any]] = []
     function_tool_called = False
+    planner_tool_attached = False
     response_source = "llm_final_response"
     try:
         invocation = _invoke_runtime_recovery_agent_text_with_tools(
@@ -886,6 +1045,7 @@ def _run_runtime_recovery_agent_once(
             dict(item) for item in invocation.get("tool_arguments", []) if isinstance(item, Mapping)
         ]
         function_tool_called = bool(invocation.get("function_tool_called"))
+        planner_tool_attached = bool(invocation.get("planner_tool_attached"))
         invocation_error = ""
     except Exception as exc:  # pragma: no cover - live service failure shape varies.
         response_text = ""
@@ -924,7 +1084,11 @@ def _run_runtime_recovery_agent_once(
         "agent_name": "missionos_runtime_recovery_agent",
         "agent_role": "MissionOS runtime recovery agent",
         "provider": llm_provider_label(agent_name),
-        "invocation_kind": "google_adk_function_tool_call",
+        "invocation_kind": (
+            "google_adk_function_tool_call"
+            if planner_tool_attached
+            else "google_adk_recovery_judgment"
+        ),
         "model_id": model_id,
         "prompt_sha256": _sha256_text(prompt_text),
         "response_sha256": _sha256_text(response_text),
@@ -938,6 +1102,7 @@ def _run_runtime_recovery_agent_once(
         "function_calls": function_calls,
         "function_responses": function_responses,
         "function_tool_called": function_tool_called,
+        "planner_tool_attached": planner_tool_attached,
         "tool_arguments": tool_arguments,
         "function_tool_results": function_tool_results,
         "validated_output": guardrail.get("validated_output") or {},
@@ -1142,6 +1307,18 @@ def _runtime_recovery_prompt_payload(
                     "express optional intent_constraints for direction, minimum "
                     "clearance, destination meaning, duration, speed, or altitude "
                     "bounds; the compiler may not silently change them"
+                ),
+                (
+                    "preserve the compiler strategy mapping exactly: "
+                    "adjust_altitude, adjust_speed, and avoid_obstacle use "
+                    "local_avoidance; reroute uses global_reroute; hold uses "
+                    "hold; return_to_launch and land use rtl_or_land"
+                ),
+                (
+                    "omit optional intent constraints unless the selected "
+                    "candidate fields explicitly demonstrate that the compiler "
+                    "can preserve them; do not derive minimum_clearance_m from "
+                    "alternate-dropoff horizontal-clearance metadata"
                 ),
                 (
                     "prioritize a source-backed local route conflict when "
@@ -2237,10 +2414,19 @@ def plan_runtime_recovery_maneuver(
         # because the actual avoidance candidate is unverified.  Keep all
         # candidates in judgment_candidates for the LLM explanation, while the
         # deterministic selectable set remains scoped to the primary hazard.
+        # A manifest-bound alternate dropoff is the terminal-conflict recovery,
+        # not an arbitrary reroute: it must remain selectable when the previous
+        # resume verification proved that the original dropoff is unavailable.
         candidates = [
             candidate
             for candidate in candidates
             if candidate.get("selected_bounded_action") == "avoid_obstacle"
+            or (
+                candidate.get("selected_bounded_action") == "reroute"
+                and isinstance(candidate.get("proposed_parameters"), Mapping)
+                and candidate["proposed_parameters"].get("alternate_dropoff") is True
+                and candidate["proposed_parameters"].get("resume_original_route") is False
+            )
         ]
 
     if requested in _PARAMETERIZED_RUNTIME_RECOVERY_ACTIONS:
@@ -2346,17 +2532,18 @@ def _matching_recovery_tool_candidate(
     return None
 
 
-def _recommended_recovery_tool_action(
+def _recommended_recovery_tool_actions(
     planner_tool_results: list[Mapping[str, Any]],
-) -> str:
+) -> set[str]:
+    selected_actions: set[str] = set()
     for result in planner_tool_results:
         recommended = result.get("recommended_candidate")
         if not isinstance(recommended, Mapping):
             continue
         selected = str(recommended.get("selected_bounded_action") or "").strip()
         if selected:
-            return selected
-    return ""
+            selected_actions.add(selected)
+    return selected_actions
 
 
 def _telemetry_risk_reasons(
@@ -2577,13 +2764,13 @@ def _validate_runtime_recovery_output(
                 "parameterized_recovery_requires_runtime_recovery_planner_tool_call"
             )
         if parameter_tool_called:
-            recommended_tool_action = _recommended_recovery_tool_action(
+            recommended_tool_actions = _recommended_recovery_tool_actions(
                 list(planner_tool_results or [])
             )
             if (
                 require_parameter_tool_call
-                and recommended_tool_action
-                and recommended_tool_action != selected_action
+                and recommended_tool_actions
+                and selected_action not in recommended_tool_actions
             ):
                 blocking_reasons.append(
                     "parameterized_recovery_action_must_match_runtime_recovery_"
@@ -2931,6 +3118,264 @@ def run_missionos_runtime_recovery_agent(
         "assessment": assessment,
         "agent_output": dict(agent_output),
         "agent_invocations": [invocation],
+        "progress_counted": False,
+    }
+
+
+def run_missionos_runtime_recovery_agent_pipeline(
+    *,
+    telemetry_snapshot: Mapping[str, Any],
+    mission_context: Mapping[str, Any] | None = None,
+    recovery_policy: Mapping[str, Any] | None = None,
+    timeout_seconds: int | None = None,
+) -> dict[str, Any]:
+    """Run one visible Chief -> Recovery -> Critic judgment epoch.
+
+    This is an intelligence pipeline only.  It creates no approval, dispatch
+    authority, executor ACK, observed effect, verifier result, or progress
+    claim.  The existing runtime supervisor remains responsible for binding a
+    separately approved proposal to executor and observation records.
+    """
+
+    context = dict(mission_context or {})
+    policy = dict(recovery_policy or {})
+    if os.environ.get(MISSIONOS_AGENT_RUNTIME_ADK_ENABLED_ENV, "").strip() != "1":
+        return {
+            "schema_version": MISSIONOS_RUNTIME_RECOVERY_RESULT_SCHEMA_VERSION,
+            "runtime_status": "not_configured",
+            "blocking_reasons": [f"{MISSIONOS_AGENT_RUNTIME_ADK_ENABLED_ENV}_not_enabled"],
+            "assessment": {},
+            "agent_invocations": [],
+            "agent_pipeline": {
+                "schema_version": "missionos_agent_judgment_pipeline.v1",
+                "pipeline_status": "not_configured",
+                "decision_source": "unavailable",
+                "task_id": str(context.get("task_id") or ""),
+                "stages": [],
+            },
+            "progress_counted": False,
+        }
+    for agent_name in (
+        "missionos_chief_agent",
+        "missionos_runtime_recovery_agent",
+        MISSIONOS_SAFETY_CRITIC_AGENT_NAME,
+    ):
+        if not _adk_llm_credentials_available(agent_name):
+            return {
+                "schema_version": MISSIONOS_RUNTIME_RECOVERY_RESULT_SCHEMA_VERSION,
+                "runtime_status": "not_configured",
+                "blocking_reasons": [_llm_credentials_blocking_reason(agent_name)],
+                "assessment": {},
+                "agent_invocations": [],
+                "agent_pipeline": {
+                    "schema_version": "missionos_agent_judgment_pipeline.v1",
+                    "pipeline_status": "not_configured",
+                    "decision_source": "unavailable",
+                    "task_id": str(context.get("task_id") or ""),
+                    "stages": [],
+                },
+                "progress_counted": False,
+            }
+
+    utterance = (
+        "Assess the current runtime telemetry and select the bounded runtime "
+        "recovery specialist. This is a proposal-only judgment epoch."
+    )
+    missionos_state = {
+        "task_id": str(context.get("task_id") or ""),
+        "mission_phase": str(context.get("mission_phase") or "live_runtime"),
+        "authority_status": "proposal_only",
+        "telemetry_snapshot": dict(telemetry_snapshot),
+        "recovery_policy": policy,
+    }
+    invocations: list[dict[str, Any]] = []
+    chief_invocation = _run_agent_once(
+        agent_name="missionos_chief_agent",
+        agent_role="MissionOS chief coordinator agent",
+        prompt_payload=_root_prompt_payload(
+            utterance=utterance,
+            missionos_state=missionos_state,
+            mission_designer_context=None,
+            coordinate_route=None,
+            conversation_history=None,
+            route_hint="runtime_recovery",
+        ),
+        timeout_seconds=timeout_seconds,
+    )
+    invocations.append(chief_invocation)
+    chief_guardrail = chief_invocation.get("guardrail_result")
+    chief_guardrail = chief_guardrail if isinstance(chief_guardrail, Mapping) else {}
+    chief_output = chief_invocation.get("validated_output")
+    chief_output = dict(chief_output) if isinstance(chief_output, Mapping) else {}
+    if chief_guardrail.get("guardrail_passed") is not True:
+        return _blocked_runtime_recovery_pipeline_result(
+            context=context,
+            invocations=invocations,
+            blocking_reasons=list(chief_guardrail.get("blocking_reasons") or []),
+            failed_stage="chief",
+        )
+    if chief_output.get("intent") != "runtime_recovery":
+        return _blocked_runtime_recovery_pipeline_result(
+            context=context,
+            invocations=invocations,
+            blocking_reasons=[
+                "chief_intent_not_runtime_recovery:"
+                + str(chief_output.get("intent") or "missing")
+            ],
+            failed_stage="chief",
+        )
+
+    recovery_prompt = _runtime_recovery_prompt_payload(
+        telemetry_snapshot=telemetry_snapshot,
+        mission_context=context,
+        recovery_policy=policy,
+    )
+    specialist_invocation = _run_runtime_recovery_agent_once(
+        prompt_payload={
+            **recovery_prompt,
+            "chief_agent_output": chief_output,
+        },
+        telemetry_snapshot=telemetry_snapshot,
+        mission_context=context,
+        recovery_policy=policy,
+        timeout_seconds=timeout_seconds,
+    )
+    invocations.append(specialist_invocation)
+    specialist_guardrail = specialist_invocation.get("guardrail_result")
+    specialist_guardrail = (
+        specialist_guardrail if isinstance(specialist_guardrail, Mapping) else {}
+    )
+    if specialist_guardrail.get("guardrail_passed") is not True:
+        return _blocked_runtime_recovery_pipeline_result(
+            context=context,
+            invocations=invocations,
+            blocking_reasons=list(specialist_guardrail.get("blocking_reasons") or []),
+            failed_stage="specialist",
+        )
+    specialist_output = specialist_invocation.get("validated_output")
+    specialist_output = (
+        dict(specialist_output) if isinstance(specialist_output, Mapping) else {}
+    )
+    planner_tool_results = [
+        dict(item)
+        for item in specialist_invocation.get("function_tool_results", [])
+        if isinstance(item, Mapping)
+    ]
+    assessment = _validate_runtime_recovery_output(
+        agent_output=specialist_output,
+        telemetry_snapshot=telemetry_snapshot,
+        recovery_policy=policy,
+        planner_tool_results=planner_tool_results,
+        require_parameter_tool_call=True,
+        parameter_tool_called=bool(specialist_invocation.get("function_tool_called")),
+    )
+    if assessment.get("assessment_status") != "proposal_guardrail_passed":
+        return _blocked_runtime_recovery_pipeline_result(
+            context=context,
+            invocations=invocations,
+            blocking_reasons=list(assessment.get("blocking_reasons") or []),
+            failed_stage="specialist_guardrail",
+        )
+
+    critic_invocation = _run_agent_once(
+        agent_name=MISSIONOS_SAFETY_CRITIC_AGENT_NAME,
+        agent_role="MissionOS safety and boundary critic agent",
+        validate_intent=False,
+        prompt_payload=_safety_critic_prompt_payload(
+            utterance=utterance,
+            chief_output=chief_output,
+            specialist_name="missionos_runtime_recovery_agent",
+            specialist_output=specialist_output,
+            missionos_state=missionos_state,
+            mission_designer_context=None,
+            coordinate_route=None,
+            route_hint="runtime_recovery",
+        ),
+        timeout_seconds=timeout_seconds,
+    )
+    invocations.append(critic_invocation)
+    critic_guardrail = critic_invocation.get("guardrail_result")
+    critic_guardrail = critic_guardrail if isinstance(critic_guardrail, Mapping) else {}
+    critic_output = critic_invocation.get("validated_output")
+    critic_output = dict(critic_output) if isinstance(critic_output, Mapping) else {}
+    if critic_guardrail.get("guardrail_passed") is not True:
+        return _blocked_runtime_recovery_pipeline_result(
+            context=context,
+            invocations=invocations,
+            blocking_reasons=list(critic_guardrail.get("blocking_reasons") or []),
+            failed_stage="safety_critic",
+        )
+    boundary_status = str(critic_output.get("boundary_status") or "")
+    if boundary_status not in MISSIONOS_SAFETY_CRITIC_PASS_STATUSES:
+        return _blocked_runtime_recovery_pipeline_result(
+            context=context,
+            invocations=invocations,
+            blocking_reasons=[
+                "safety_critic_boundary_status:" + (boundary_status or "missing")
+            ],
+            failed_stage="safety_critic",
+        )
+
+    return {
+        "schema_version": MISSIONOS_RUNTIME_RECOVERY_RESULT_SCHEMA_VERSION,
+        "runtime_status": "proposal_guardrail_passed",
+        "blocking_reasons": [],
+        "assessment": assessment,
+        "agent_output": specialist_output,
+        "agent_invocations": invocations,
+        "agent_pipeline": {
+            "schema_version": "missionos_agent_judgment_pipeline.v1",
+            "pipeline_status": "proposal_guardrail_passed",
+            "decision_source": "llm",
+            "task_id": str(context.get("task_id") or ""),
+            "chief_agent_output": chief_output,
+            "specialist_agent": "missionos_runtime_recovery_agent",
+            "specialist_agent_output": specialist_output,
+            "safety_critic_agent_output": critic_output,
+            "requires_human_approval": True,
+            "dispatch_authority_created": False,
+            "executor_ack_observed": "unknown",
+            "effect_observed": "unknown",
+            "verifier_status": "not_started",
+            "stages": ["chief", "specialist", "safety_critic"],
+        },
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }
+
+
+def _blocked_runtime_recovery_pipeline_result(
+    *,
+    context: Mapping[str, Any],
+    invocations: list[dict[str, Any]],
+    blocking_reasons: list[str],
+    failed_stage: str,
+) -> dict[str, Any]:
+    reasons = [str(reason) for reason in blocking_reasons if str(reason)]
+    if not reasons:
+        reasons = [f"{failed_stage}_guardrail_blocked"]
+    return {
+        "schema_version": MISSIONOS_RUNTIME_RECOVERY_RESULT_SCHEMA_VERSION,
+        "runtime_status": "guardrail_blocked",
+        "blocking_reasons": reasons,
+        "assessment": {},
+        "agent_invocations": invocations,
+        "agent_pipeline": {
+            "schema_version": "missionos_agent_judgment_pipeline.v1",
+            "pipeline_status": "guardrail_blocked",
+            "decision_source": "unavailable",
+            "task_id": str(context.get("task_id") or ""),
+            "failed_stage": failed_stage,
+            "blocking_reasons": reasons,
+            "stages": [
+                str(item.get("agent_name") or "")
+                for item in invocations
+                if isinstance(item, Mapping)
+            ],
+        },
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
         "progress_counted": False,
     }
 
@@ -3397,4 +3842,5 @@ __all__ = [
     "guard_runtime_recovery_planner_result",
     "run_missionos_agent_runtime",
     "run_missionos_runtime_recovery_agent",
+    "run_missionos_runtime_recovery_agent_pipeline",
 ]

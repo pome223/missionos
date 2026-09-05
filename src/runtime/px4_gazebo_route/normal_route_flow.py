@@ -112,6 +112,12 @@ class NormalRouteRuntime:
     project_terminal_realism: Callable[..., NormalRouteTerminalProjection]
     snapshot_task_database: Callable[..., None]
     recorded_at: Callable[[], datetime]
+    assess_mission_assurance: Callable[..., Mapping[str, Any]] | None = None
+    execute_mission_assurance_continue: Callable[..., Mapping[str, Any]] | None = None
+    release_payload_at_route_terminal: Callable[[], Mapping[str, Any] | None] | None = None
+    execute_mission_assurance_dropoff_approach: (
+        Callable[..., Mapping[str, Any]] | None
+    ) = None
 
 
 @dataclass(frozen=True)
@@ -190,19 +196,109 @@ def run_normal_route_flow(
     recovery_approval = None
     recovery_allowlist = None
     recovery_dispatch = None
+    mission_assurance_guard: dict[str, Any] | None = None
 
-    def on_deviation() -> dict[str, Any]:
-        nonlocal recovery_approval, recovery_allowlist, recovery_dispatch
+    def on_deviation(
+        deviation_observation: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        nonlocal \
+            recovery_approval, \
+            recovery_allowlist, \
+            recovery_dispatch, \
+            mission_assurance_guard
         if inputs.route.on_deviation_action == "abort_only":
             return {"recovery_action_taken": None}
+        selected_action = inputs.route.on_deviation_action
+        if runtime.assess_mission_assurance is not None:
+            try:
+                mission_assurance_guard = dict(
+                    runtime.assess_mission_assurance(
+                        deviation=dict(deviation_observation),
+                        requested_recovery_action=inputs.route.on_deviation_action,
+                        target=target,
+                    )
+                )
+            except Exception as exc:  # noqa: BLE001 - runtime evidence sources vary.
+                mission_assurance_guard = {
+                    "guard_status": "blocked",
+                    "selected_recovery_action": None,
+                    "blocking_reasons": [
+                        f"mission_assurance_live_guard_failed:{type(exc).__name__}"
+                    ],
+                    "approval_recorded": False,
+                    "dispatch_authority_created": False,
+                    "dispatch_request_sent": False,
+                    "physical_execution_invoked": False,
+                    "progress_counted": False,
+                    "delivery_completion_claimed": False,
+                }
+            selected_action = str(
+                mission_assurance_guard.get("selected_recovery_action") or ""
+            )
+            continue_accepted = bool(
+                mission_assurance_guard.get("guard_status") == "no_dispatch"
+                and mission_assurance_guard.get("mission_assurance_response_kind")
+                == "continue"
+                and mission_assurance_guard.get("recovery_no_dispatch_response_accepted")
+                is True
+                and mission_assurance_guard.get("recovery_proposal_accepted") is True
+            )
+            if continue_accepted:
+                if runtime.execute_mission_assurance_continue is None:
+                    mission_assurance_guard["blocking_reasons"] = [
+                        *list(mission_assurance_guard.get("blocking_reasons") or []),
+                        "mission_assurance_continue_executor_missing",
+                    ]
+                    mission_assurance_guard["guard_status"] = "blocked"
+                else:
+                    continue_execution = dict(
+                        runtime.execute_mission_assurance_continue(
+                            deviation=dict(deviation_observation),
+                            target=target,
+                        )
+                    )
+                    mission_assurance_guard[
+                        "mission_assurance_continue_execution"
+                    ] = continue_execution
+                    return {
+                        "recovery_action_taken": None,
+                        "mission_assurance_guard_status": "no_dispatch",
+                        "mission_assurance_continue_execution": continue_execution,
+                    }
+            if (
+                mission_assurance_guard.get("guard_status") != "dispatch_eligible"
+                or selected_action != inputs.route.on_deviation_action
+            ):
+                return {
+                    "recovery_action_taken": None,
+                    "mission_assurance_guard_status": (
+                        mission_assurance_guard.get("guard_status") or "blocked"
+                    ),
+                    "mission_assurance_blocking_reasons": list(
+                        mission_assurance_guard.get("blocking_reasons") or []
+                    ),
+                }
+            if mission_assurance_guard.get("approval_recorded") is not True:
+                return {
+                    "recovery_action_taken": None,
+                    "mission_assurance_guard_status": "awaiting_operator_approval",
+                    "mission_assurance_blocking_reasons": [
+                        "fresh_operator_recovery_approval_required"
+                    ],
+                }
         recovery_approval, recovery_allowlist, recovery_dispatch = runtime.dispatch_recovery(
-            inputs.route.on_deviation_action
+            selected_action
         )
         return {
-            "recovery_action_taken": inputs.route.on_deviation_action,
+            "recovery_action_taken": selected_action,
             "recovery_dispatch_status": recovery_dispatch.dispatch_status,
             "recovery_command_ack_observed": recovery_dispatch.command_ack_observed,
             "recovery_command_ack_result_name": recovery_dispatch.command_ack_result_name,
+            "mission_assurance_guard_status": (
+                mission_assurance_guard.get("guard_status")
+                if mission_assurance_guard is not None
+                else "not_requested"
+            ),
         }
 
     route_stream = dict(
@@ -229,6 +325,63 @@ def run_normal_route_flow(
             on_deviation=on_deviation,
         )
     )
+    route_stream.update(
+        {
+            "route_target_x_m": target.route_delta_x_m,
+            "route_target_y_m": target.route_delta_y_m,
+            "route_target_z_m": target.target_z_m,
+        }
+    )
+    if mission_assurance_guard is not None:
+        route_stream["mission_assurance_live_guard"] = dict(
+            mission_assurance_guard
+        )
+    recovery_payload = route_stream.get("recovery_payload")
+    recovery_payload = (
+        recovery_payload if isinstance(recovery_payload, Mapping) else {}
+    )
+    continue_execution = recovery_payload.get(
+        "mission_assurance_continue_execution"
+    )
+    if isinstance(continue_execution, Mapping):
+        route_stream["mission_assurance_continue_execution"] = dict(
+            continue_execution
+        )
+        continue_completed = bool(
+            continue_execution.get("resume_stream_completed") is True
+            and continue_execution.get("route_resume_effect_observed") is True
+        )
+        if route_stream.get("pose_deviation_aborted") is True and continue_completed:
+            route_stream["initial_pose_deviation_aborted"] = True
+            route_stream["pose_deviation_aborted"] = False
+            route_stream[
+                "route_stream_resumed_after_mission_assurance_continue"
+            ] = True
+            route_stream["setpoint_frames_sent"] = int(
+                route_stream.get("setpoint_frames_sent") or 0
+            ) + int(continue_execution.get("setpoint_frames_sent") or 0)
+            route_stream["setpoint_stream_duration_seconds"] = float(
+                route_stream.get("setpoint_stream_duration_seconds") or 0.0
+            ) + float(continue_execution.get("resume_duration_seconds") or 0.0)
+            route_stream["offboard_mode_switch_ack_observed"] = (
+                continue_execution.get("offboard_mode_switch_ack_observed") is True
+            )
+            for key in (
+                "offboard_mode_switch_allowed",
+                "offboard_mode_switch_command_id",
+                "offboard_mode_switch_frame_sent",
+                "offboard_mode_switch_ack_required",
+                "offboard_mode_switch_ack_command_id",
+                "offboard_mode_switch_ack_timeout_seconds",
+            ):
+                route_stream[key] = continue_execution.get(key)
+            route_stream["offboard_mode_switch_ack_result_code"] = (
+                continue_execution.get("offboard_mode_switch_ack_result_code")
+            )
+            route_stream["offboard_mode_switch_ack_result_name"] = (
+                continue_execution.get("offboard_mode_switch_ack_result_name")
+                or route_stream.get("offboard_mode_switch_ack_result_name")
+            )
     if route_stream.get("pose_deviation_aborted") is True:
         deviation = runtime.handle_route_deviation(
             route_stream=route_stream,
@@ -259,6 +412,32 @@ def run_normal_route_flow(
         ),
         record_wait_observation=runtime.record_wait_observation,
     )
+    payload_release_summary = None
+    dropoff_region_observed_pose: Mapping[str, Any] | None = None
+    if (
+        isinstance(continue_execution, Mapping)
+        and runtime.execute_mission_assurance_dropoff_approach is not None
+    ):
+        dropoff_approach = dict(
+            runtime.execute_mission_assurance_dropoff_approach(target=target)
+        )
+        if dropoff_approach.get("dropoff_approach_effect_observed") is not True:
+            raise RuntimeError(
+                "mission_assurance_continue_dropoff_approach_not_observed"
+            )
+        route_stream["mission_assurance_continue_dropoff_approach"] = (
+            dropoff_approach
+        )
+        observed_approach_pose = dropoff_approach.get("approach_observed_pose")
+        if isinstance(observed_approach_pose, Mapping):
+            dropoff_region_observed_pose = observed_approach_pose
+    if (
+        not blocking_decision.rth_behavior_requested
+        and runtime.release_payload_at_route_terminal is not None
+    ):
+        observed_payload_release = runtime.release_payload_at_route_terminal()
+        if isinstance(observed_payload_release, Mapping):
+            payload_release_summary = dict(observed_payload_release)
     terminal = execute_route_terminal_action(
         rth_behavior_requested=blocking_decision.rth_behavior_requested,
         alternate_landing_requested=blocking_decision.alternate_landing_requested,
@@ -284,6 +463,7 @@ def run_normal_route_flow(
         blocking_decision=blocking_decision,
         terminal_action=terminal,
         target=target,
+        payload_release_summary=payload_release_summary,
     )
     finalization = finalize_route_observation(
         RouteFinalizationInputs(
@@ -299,8 +479,12 @@ def run_normal_route_flow(
             route_stream=route_stream,
             pickup_pose_xy_m=(float(inputs.pickup_pose["x"]), float(inputs.pickup_pose["y"])),
             observed_pose_xy_m=(
-                terminal.completed_pose["x"],
-                terminal.completed_pose["y"],
+                float(
+                    (dropoff_region_observed_pose or terminal.completed_pose)["x"]
+                ),
+                float(
+                    (dropoff_region_observed_pose or terminal.completed_pose)["y"]
+                ),
             ),
             horizontal_route_motion_observed=True,
             px4_telemetry_correlated=True,
@@ -320,6 +504,32 @@ def run_normal_route_flow(
         and finalization.gate.dropoff_region_reached
         and not finalization.gate.blocked_reasons
     )
+    if isinstance(continue_execution, Mapping):
+        completed_continue_execution = {
+            **dict(continue_execution),
+            "route_terminal_observation_completed": (
+                finalization.gate.dropoff_region_reached
+                and not finalization.gate.blocked_reasons
+            ),
+            "route_completion_claimed": runner["final_status"] == "completed",
+            "delivery_completion_claimed": delivery_completion_claimed,
+            "dropoff_approach_effect_observed": (
+                route_stream.get(
+                    "mission_assurance_continue_dropoff_approach", {}
+                ).get("dropoff_approach_effect_observed")
+                is True
+            ),
+        }
+        route_stream["mission_assurance_continue_execution"] = (
+            completed_continue_execution
+        )
+        if mission_assurance_guard is not None:
+            mission_assurance_guard["mission_assurance_continue_execution"] = (
+                completed_continue_execution
+            )
+            route_stream["mission_assurance_live_guard"] = dict(
+                mission_assurance_guard
+            )
     terminal_fields = terminal_pose_summary_fields(
         route_pose=route_pose,
         completed_pose=terminal.completed_pose,

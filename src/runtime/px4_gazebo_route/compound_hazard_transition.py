@@ -14,6 +14,7 @@ TELEMETRY_ARBITRATION_SCHEMA_VERSION = (
     "missionos_runtime_recovery_telemetry_arbitration.v1"
 )
 DEFAULT_TELEMETRY_CURSOR_MAX_ELAPSED_DELTA_S = 15.0
+DEFAULT_TELEMETRY_CONTEXT_MAX_ELAPSED_DELTA_S = 2.5
 COMPOUND_HAZARD_STATE_SCHEMA_VERSION = (
     "missionos_runtime_recovery_compound_hazard_state.v1"
 )
@@ -54,10 +55,17 @@ def arbitrate_latest_telemetry(
     bridge_telemetry: Mapping[str, Any],
     runtime_telemetry: Mapping[str, Any],
     maximum_elapsed_delta_s: float = DEFAULT_TELEMETRY_CURSOR_MAX_ELAPSED_DELTA_S,
+    maximum_context_elapsed_delta_s: float = (
+        DEFAULT_TELEMETRY_CONTEXT_MAX_ELAPSED_DELTA_S
+    ),
 ) -> dict[str, Any]:
     """Select the newest source only when both cursor dimensions agree."""
 
     maximum_elapsed_delta_s = max(0.001, float(maximum_elapsed_delta_s))
+    maximum_context_elapsed_delta_s = max(
+        0.001,
+        min(float(maximum_context_elapsed_delta_s), maximum_elapsed_delta_s),
+    )
     bridge_present = bool(bridge_telemetry)
     runtime_present = bool(runtime_telemetry)
     bridge_cursor = telemetry_cursor(bridge_telemetry)
@@ -86,8 +94,24 @@ def arbitrate_latest_telemetry(
             reasons.append("telemetry_arbitration_elapsed_delta_exceeded")
         else:
             if index_delta > 0:
-                selected_source = "missionos_auto_mission_runtime_snapshot"
-                selected_telemetry = dict(runtime_telemetry)
+                if elapsed_delta <= maximum_context_elapsed_delta_s:
+                    # The runtime snapshot is the newest pose/heartbeat sample,
+                    # while the live bridge carries normalized obstacle,
+                    # Recovery, payload, and calibration context. Preserve that
+                    # immediately preceding context only inside a much tighter
+                    # cursor window; explicit fields in the newer runtime sample
+                    # still win. Outside the window we select runtime alone and
+                    # downstream feasibility fails closed on missing context.
+                    selected_source = (
+                        "missionos_auto_mission_runtime_snapshot_with_bridge_context"
+                    )
+                    selected_telemetry = {
+                        **dict(bridge_telemetry),
+                        **dict(runtime_telemetry),
+                    }
+                else:
+                    selected_source = "missionos_auto_mission_runtime_snapshot"
+                    selected_telemetry = dict(runtime_telemetry)
             elif index_delta < 0:
                 selected_source = "missionos_runtime_recovery_agent_live_bridge"
                 selected_telemetry = dict(bridge_telemetry)
@@ -105,6 +129,7 @@ def arbitrate_latest_telemetry(
         "bridge_cursor": bridge_cursor,
         "runtime_cursor": runtime_cursor,
         "maximum_elapsed_delta_s": maximum_elapsed_delta_s,
+        "maximum_context_elapsed_delta_s": maximum_context_elapsed_delta_s,
         "blocking_reasons": list(dict.fromkeys(reasons)),
         "dispatch_authority_created": False,
         "physical_execution_invoked": False,

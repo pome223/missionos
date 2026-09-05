@@ -74,7 +74,7 @@ def _write_terminal_route_evidence(
 ) -> dict[str, Any] | None:
     """Write source-backed terminal route evidence for supported flight maps."""
 
-    if model.get("map_kind") in {"indoor_local_xy", "vla_evidence_timeline"}:
+    if model.get("map_kind") in {"indoor_local_xy", "px4_gazebo_local_xy", "vla_evidence_timeline"}:
         return None
     if str(model.get("task_status") or "").strip().lower() not in (TERMINAL_TASK_STATUSES):
         return None

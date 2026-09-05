@@ -63,8 +63,7 @@ def _merge_non_overlapping(
     overlapping = sorted(set(summary).intersection(values))
     if overlapping:
         raise ValueError(
-            f"{label} cannot overwrite recovery summary fields: "
-            + ", ".join(overlapping)
+            f"{label} cannot overwrite recovery summary fields: " + ", ".join(overlapping)
         )
     summary.update(values)
 
@@ -92,9 +91,7 @@ def build_payload_recovery_summary(
         "payload_recovery_dispatch_ref": payload.dispatch_ref,
         "payload_recovery_dispatch_status": payload.dispatch_status,
         "payload_recovery_command_ack_observed": payload.command_ack_observed,
-        "payload_recovery_command_ack_result_name": (
-            payload.command_ack_result_name
-        ),
+        "payload_recovery_command_ack_result_name": (payload.command_ack_result_name),
         "payload_recovery_state_observed": payload.state_observed,
         "payload_recovery_state_label": payload.state_label,
         "payload_recovery_completed": payload.completed,
@@ -106,12 +103,8 @@ def build_payload_recovery_summary(
         "payload_pre_recovery_distance_to_pickup_m": (
             inputs.payload_pre_recovery_distance_to_pickup_m
         ),
-        "payload_recovery_distance_to_pickup_m": (
-            inputs.payload_recovery_distance_to_pickup_m
-        ),
-        "payload_recovery_action_artifact": dict(
-            inputs.payload_action_artifact
-        ),
+        "payload_recovery_distance_to_pickup_m": (inputs.payload_recovery_distance_to_pickup_m),
+        "payload_recovery_action_artifact": dict(inputs.payload_action_artifact),
         "post_recovery_action_taken": post.action,
         "post_recovery_dispatch_ref": post.dispatch_ref,
         "post_recovery_dispatch_status": post.dispatch_status,
@@ -121,29 +114,21 @@ def build_payload_recovery_summary(
         "post_recovery_state_label": post.state_label,
         "post_recovery_completed": post.completed,
         "post_recovery_pose_z_m": post.pose_z_m,
-        "payload_supervisor_post_recovery_action_ref": (
-            inputs.payload_post_recovery_action_ref
-        ),
+        "payload_supervisor_post_recovery_action_ref": (inputs.payload_post_recovery_action_ref),
         "payload_supervisor_post_recovery_action_artifact": (
             None
             if inputs.payload_post_recovery_action_artifact is None
             else dict(inputs.payload_post_recovery_action_artifact)
         ),
         "decision_loop_driver": (
-            "mission_os_supervisor"
-            if loop is not None
-            else "scripted_payload_recovery_smoke"
+            "mission_os_supervisor" if loop is not None else "scripted_payload_recovery_smoke"
         ),
-        "supervisor_scope": (
-            "payload_form3_sitl_only" if loop is not None else None
-        ),
+        "supervisor_scope": ("payload_form3_sitl_only" if loop is not None else None),
         "full_gateway_runtime_loop": False,
         "supervisor_loop_claim_supported": (
             None if loop is None else loop["supervisor_loop_claim_supported"]
         ),
-        "mission_os_supervisor_recovery_loop": (
-            None if loop is None else dict(loop)
-        ),
+        "mission_os_supervisor_recovery_loop": (None if loop is None else dict(loop)),
         "setpoint_frames_sent": 0,
         "hardware_target_allowed": False,
         "physical_execution_invoked": False,
@@ -170,6 +155,16 @@ def build_route_deviation_recovery_summary(
     stream = inputs.route_stream
     loop = inputs.supervisor_loop
     completion = inputs.recovery_completion
+    mission_assurance_guard = (
+        dict(stream.get("mission_assurance_live_guard"))
+        if isinstance(stream.get("mission_assurance_live_guard"), Mapping)
+        else None
+    )
+    continue_execution = (
+        dict(stream.get("mission_assurance_continue_execution"))
+        if isinstance(stream.get("mission_assurance_continue_execution"), Mapping)
+        else {}
+    )
     summary = {
         "artifact_dir": str(inputs.artifact_dir),
         "task_status": inputs.task_status,
@@ -181,10 +176,14 @@ def build_route_deviation_recovery_summary(
         "delivery_completion_claimed": False,
         "deviation_abort_schema_version": inputs.deviation_abort.schema_version,
         "deviation_abort_ref": (
-            "px4_gazebo_route_deviation_abort:"
-            f"{inputs.deviation_abort.abort_id}"
+            f"px4_gazebo_route_deviation_abort:{inputs.deviation_abort.abort_id}"
         ),
         "route_plan_schema_version": inputs.route.schema_version,
+        "route_target_x_m": inputs.route_stream.get("route_target_x_m"),
+        "route_target_y_m": inputs.route_stream.get("route_target_y_m"),
+        "route_target_z_m": inputs.route_stream.get("route_target_z_m"),
+        "route_geofence_violation": False,
+        "blocked_reasons": [],
         "on_deviation_action": inputs.route.on_deviation_action,
         "pose_deviation_gate_active": True,
         "pose_deviation_aborted": True,
@@ -193,9 +192,7 @@ def build_route_deviation_recovery_summary(
         "route_stream_terminated_before_recovery_dispatch": stream[
             "route_stream_terminated_before_recovery_dispatch"
         ],
-        "route_stream_process_returncode": stream[
-            "route_stream_process_returncode"
-        ],
+        "route_stream_process_returncode": stream["route_stream_process_returncode"],
         "route_stream_stop_reason": stream["route_stream_stop_reason"],
         "route_stream_forced_kill": stream["route_stream_forced_kill"],
         "recovery_action_taken": recovery.action,
@@ -227,22 +224,48 @@ def build_route_deviation_recovery_summary(
         "post_recovery_command_ack_observed": post.command_ack_observed,
         "post_recovery_command_ack_result_name": post.command_ack_result_name,
         "post_recovery_pose_z_m": post.pose_z_m,
+        "mission_assurance_live_guard": mission_assurance_guard,
+        "mission_assurance_continue_execution": continue_execution,
+        "mission_assurance_continue_execution_invoked": (
+            continue_execution.get("simulator_route_resume_invoked") is True
+        ),
+        "mission_assurance_continue_effect_observed": (
+            continue_execution.get("route_resume_effect_observed") is True
+        ),
+        "mission_assurance_agent_invoked": (
+            None
+            if mission_assurance_guard is None
+            else (
+                mission_assurance_guard.get("mission_assurance_evaluation", {})
+                .get("proposal", {})
+                .get("model_inference_invoked")
+                is True
+            )
+        ),
+        "runtime_recovery_agent_invoked": (
+            None
+            if mission_assurance_guard is None
+            else mission_assurance_guard.get("runtime_recovery_agent_invoked") is True
+        ),
+        "mission_assurance_dispatch_eligible": (
+            None
+            if mission_assurance_guard is None
+            else mission_assurance_guard.get("guard_status") == "dispatch_eligible"
+        ),
         "setpoint_frames_sent": 0,
         "hardware_target_allowed": False,
         "physical_execution_invoked": False,
         "px4_mission_upload_allowed": False,
         "decision_loop_driver": (
-            "mission_os_supervisor"
+            "runtime_recovery_agent_then_mission_assurance_agent"
+            if mission_assurance_guard is not None
+            else "mission_os_supervisor"
             if loop is not None
             else "scripted_horizontal_route_smoke"
         ),
-        "supervisor_scope": (
-            loop.get("supervisor_scope") if loop is not None else None
-        ),
+        "supervisor_scope": (loop.get("supervisor_scope") if loop is not None else None),
         "full_gateway_runtime_loop": False,
-        "mission_os_supervisor_recovery_loop": (
-            None if loop is None else dict(loop)
-        ),
+        "mission_os_supervisor_recovery_loop": (None if loop is None else dict(loop)),
     }
     _merge_non_overlapping(
         summary,
@@ -282,9 +305,7 @@ def recovery_pose_rows(
         for index, sample in enumerate(primary_samples)
     )
     if primary_pose is not None:
-        rows.append(
-            {"phase": primary_completed_phase, "sample": dict(primary_pose)}
-        )
+        rows.append({"phase": primary_completed_phase, "sample": dict(primary_pose)})
     rows.extend(
         {
             "phase": post_phase,

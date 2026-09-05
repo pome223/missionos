@@ -7,6 +7,7 @@ import html
 import json
 
 from .indoor_map_html import _mission_indoor_map_html
+from .px4_local_map_html import _mission_px4_local_map_html
 from .vla_operator import _vla_evidence_html
 
 
@@ -19,6 +20,8 @@ def _mission_map_html(model: dict[str, Any]) -> str:
         return _vla_evidence_html(model)
     if model.get("map_kind") == "indoor_local_xy":
         return _mission_indoor_map_html(model)
+    if model.get("map_kind") == "px4_gazebo_local_xy":
+        return _mission_px4_local_map_html(model)
     model_json = _json_for_html_script(model)
     escaped_title = html.escape(f"MissionOS 2D Map · {model['task_id']}")
     return f"""<!doctype html>

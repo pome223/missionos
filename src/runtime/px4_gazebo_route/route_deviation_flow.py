@@ -145,6 +145,11 @@ def run_route_deviation_flow(
             post_approval=post_approval,
             post_allowlist=post_allowlist,
             post_dispatch=post_dispatch,
+            mission_assurance_live_guard=(
+                route_stream.get("mission_assurance_live_guard")
+                if isinstance(route_stream.get("mission_assurance_live_guard"), Mapping)
+                else None
+            ),
         )
     )
     refreshed = runtime.refresh_realism()

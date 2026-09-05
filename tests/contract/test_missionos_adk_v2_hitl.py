@@ -243,7 +243,11 @@ def _form2a_fixture(root: Path, *, approved: bool = True) -> dict[str, Path]:
         "form2a_response_selected_in_artifact": True,
         "form2a_response_selected_in_runtime": False,
         "mission_response_kind": "action",
-        "selected_response_kind": "operator_gated_continue_with_wind_warning",
+        "proposed_response_kind": "replan",
+        "selected_response_kind": "operator_gated_wind_compensated_reroute",
+        "bounded_action_kind": "reroute",
+        "action_feasibility_status": "verified_feasible",
+        "action_feasibility_ref": "action_feasibility:fixture",
         "operator_approval_required": True,
         "operator_approval_token_issued_in_artifact": True,
         "operator_approval_token_consumed_in_runtime": False,
@@ -329,7 +333,7 @@ def test_form2a_canonical_approval_reloads_hash_binding_and_human_review(
     assert validation["progress_counted"] is False
 
     changed = json.loads(paths["selection"].read_text(encoding="utf-8"))
-    changed["selected_response_kind"] = "operator_gated_wind_compensated_reroute"
+    changed["selected_response_kind"] = "operator_gated_wind_replan_with_compensation"
     _write_json(paths["selection"], changed)
     stale = knowledge.validate_form2a_canonical_approval(
         binding["approval_ref"],

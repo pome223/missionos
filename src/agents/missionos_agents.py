@@ -12,8 +12,7 @@ from google.adk.agents import LlmAgent
 from google.adk.agents.base_agent import BaseAgent
 from google.genai import types
 
-from src.agents.model_config import resolve_agent_model
-
+from src.agents.model_config import deepseek_llm_backend_enabled, resolve_agent_model
 
 _COMMON_BOUNDARY = """
 Return exactly one JSON object. Do not use markdown.
@@ -26,7 +25,9 @@ Verifier boundaries.
 """.strip()
 
 
-def _json_config() -> types.GenerateContentConfig:
+def _json_config(agent_name: str) -> types.GenerateContentConfig:
+    if deepseek_llm_backend_enabled(agent_name):
+        return types.GenerateContentConfig(temperature=0.0)
     return types.GenerateContentConfig(
         temperature=0.0,
         responseMimeType="application/json",
@@ -46,7 +47,7 @@ def _agent(
         name=name,
         model=resolve_agent_model(model_id, agent_name=name),
         instruction=f"{_COMMON_BOUNDARY}\n\nRole: {role}\n\n{instruction}",
-        generate_content_config=_json_config(),
+        generate_content_config=_json_config(name),
         description=role,
         sub_agents=sub_agents or [],
         tools=tools or [],
@@ -230,13 +231,38 @@ recommend continue, hold, return_to_launch, land, adjust_altitude,
 adjust_speed, reroute, avoid_obstacle, or operator_review. Only propose
 adjust_altitude, adjust_speed, reroute, or avoid_obstacle when the supplied
 telemetry and policy provide bounded parameters; otherwise use operator_review.
+Treat a threshold crossing as the trigger for this reassessment, not as proof
+that a recovery action is required. Read the source-backed mission_contract,
+progress, observations, constraints, and uncertainty in mission_context. When
+the vehicle is stable, no material hazard or uncertainty is observed, and the
+mission context permits continued route progress, independently consider
+continue instead of selecting a recovery action merely because the gate fired.
+When recovery_trigger.decision_scope is vehicle_recovery_candidate_only,
+answer only the vehicle-level recovery question. Use the shared mission facts
+for safety and uncertainty, but defer final mission-objective alignment to the
+named mission_alignment_deferred_to Agent. Do not replace a technically
+warranted vehicle recovery solely because it conflicts with a wider mission
+objective; that conflict must remain visible for Mission Assurance to judge.
 The prompt includes action_judgment_context. Compare all candidates and their
 blocking_reasons or unverified_reasons, but never upgrade feasibility yourself.
 Only verified_selectable_candidates may be requested from the planner. When a
 needed maneuver is unverified, prefer hold, land, return_to_launch, or
 operator_review according to the remaining verified facts.
+When the prompt explicitly says source Action Feasibility is materialized after
+the proposal, absence of a preselected candidate is not rejection evidence for
+the non-parameterized return_to_launch candidate. Propose it only when the
+source telemetry and recovery facts warrant it; downstream Rules still decide
+whether it is verified feasible.
 If mission_context includes an operator recovery request, treat it as a
-proposal request only and still require bounded planner-derived parameters.
+proposal request only. Require planner-derived parameters only for actions that
+need numeric parameters. return_to_launch, land, hold, continue, and
+operator_review use an empty parameters object and do not require a planner
+tool.
+For a non-parameterized operator request such as return_to_launch, judge the
+request against observed mission facts. Preserve the requested action when no
+observed fact establishes that it is blocked; do not substitute hold or
+operator_review merely because downstream feasibility and human approval are
+still pending.
 When its requested_action matches a verified_selectable_candidate, call the
 planner for that requested action and return the verified candidate as the
 proposal. Do not replace a feasible requested maneuver with operator_review
