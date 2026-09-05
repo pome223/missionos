@@ -1,0 +1,24 @@
+# Fixture only; deliberately long expiry for a reproducible example.
+version: 1
+policy_id: fixture-delivery-v1
+mission_id: fixture-delivery
+mission_contract_sha256: d831595d1f9a12e30f0403bff803710cd26a4c6746ba0f542b52972494dd82b5
+execution_scope: fixture
+mode: bounded
+expires_at: '2099-01-01T00:00:00Z'
+max_observation_age_seconds: 30
+max_total_actions: 3
+preserve:
+- payload_integrity
+- return_energy_reserve
+actions:
+  avoid_obstacle:
+    parameters:
+      target_x_m:
+        minimum: 0.0
+        maximum: 5.0
+      target_y_m:
+        minimum: 0.0
+        maximum: 5.0
+    max_uses: 3
+on_unresolved: request_human

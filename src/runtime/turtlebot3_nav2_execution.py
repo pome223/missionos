@@ -246,6 +246,7 @@ def dispatch_nav2_goal(
     raw_logs_ref: str | None,
     publish_initialpose: bool,
     simulate_cancel_after_accept: bool = False,
+    authorization_source: str = "individual_human_approval",
 ) -> dict[str, Any]:
     """Dispatch one already approved goal and return claim-safe observations."""
 
@@ -255,6 +256,7 @@ def dispatch_nav2_goal(
         goal_pose=goal,
         execution_mode=HardwareExecutionMode.SIM,
         operator_approval_ref=approval_ref or None,
+        authorization_source=authorization_source,
         approval_actor=approval_actor,
         approval_timestamp=dispatched_at,
         max_distance_m=goal.max_distance_m,

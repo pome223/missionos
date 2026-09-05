@@ -249,6 +249,7 @@ class HardwareAdapterEvidence(BaseModel):
     missionos_action_ref: str
     adapter_action_kind: HardwareActionKind
     operator_approval_ref: str | None = None
+    authorization_source: Literal["individual_human_approval", "human_approved_policy"] = "individual_human_approval"
     preflight_status: HardwarePreflightStatus
     dispatch_status: HardwareDispatchStatus
     dispatch_request_sent: bool

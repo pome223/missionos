@@ -422,6 +422,7 @@ def verify_turtlebot3_recovery_outcome(
     obstacle_clearance_required: bool,
     obstacle_clearance_observed: bool,
     route_resume_explicitly_approved: bool,
+    policy_grant=None,
 ) -> dict[str, Any]:
     """Project runtime facts without collapsing ACK, effect, or completion."""
 
@@ -438,6 +439,14 @@ def verify_turtlebot3_recovery_outcome(
         and approval.get("approved_action") == checkpoint.get("selected_action")
         and approval.get("approved_parameters") == approved_parameters
     )
+    from src.runtime.turtlebot3_assurance_policy import PolicyGrant
+
+    policy_authority_bound = (
+        isinstance(policy_grant, PolicyGrant)
+        and policy_grant.matches(checkpoint, {"proposal_id": checkpoint.get("proposal_id")})
+    )
+    individual_authority_bound = authority_bound
+    authority_bound = authority_bound or policy_authority_bound
     dispatch_request_sent = any(
         result.get("dispatch_request_sent") is True for result in action_results
     )
@@ -497,6 +506,9 @@ def verify_turtlebot3_recovery_outcome(
         "selected_action": checkpoint.get("selected_action"),
         "operator_approval_ref": approval.get("operator_approval_ref"),
         "authority_bound": authority_bound,
+        "individual_human_approval_bound": individual_authority_bound,
+        "policy_authority_bound": policy_authority_bound,
+        "authority_source": "human_approved_policy" if policy_authority_bound else "individual_human_approval" if individual_authority_bound else "none",
         "dispatch_request_sent": dispatch_request_sent,
         "command_ack_observed": command_ack_observed,
         "ack_is_executor_effect": False,

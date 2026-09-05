@@ -51,6 +51,8 @@ def judge_turtlebot3_checkpoint(
     obstacle: Mapping[str, Any],
     mission_assurance_agent: Any = None,
 ) -> dict[str, Any]:
+    from src.runtime.turtlebot3_assurance_policy import mission_contract
+
     action = str(checkpoint.get("selected_action") or "")
     if recovery_proposal.get("proposal_source") == "operator":
         from src.intelligence.turtlebot3_recovery_planner import run_turtlebot3_recovery_planner
@@ -140,14 +142,11 @@ def judge_turtlebot3_checkpoint(
             "task_id": checkpoint.get("proposal_id"),
             "mission_phase": "recovery_checkpoint",
             "execution_scope": "simulator",
-            "mission_contract": {
-                "operator_instruction": proposal.get("operator_instruction"),
-                "objective": proposal.get("mission_objective"),
-                "route": proposal.get("indoor_delivery_route"),
-            },
+            "mission_contract": mission_contract(proposal),
             "progress": {"completed_segment_count": checkpoint.get("completed_segment_count")},
             "observations": {"battery": proposal.get("battery_envelope")},
             "constraints": {
+                "assurance_policy": proposal.get("assurance_policy"),
                 "autonomy_envelope": proposal.get("autonomy_envelope"),
                 "compiled_candidate": candidate,
                 "available_executor_actions": [action],
@@ -183,7 +182,8 @@ def turtlebot3_incident_dispatch_reasons(checkpoint: Mapping[str, Any]) -> list[
     return list(dict.fromkeys(reasons))
 
 
-def continue_turtlebot3_incident(*, checkpoint, approval, validate, execute):
+def continue_turtlebot3_incident(*, checkpoint, approval, validate, execute,
+                                 policy_authorization_handler=None):
     """Schedule real Nav2 continuation inside the same common authority graph."""
     result: dict[str, Any] = {}
 
@@ -197,14 +197,14 @@ def continue_turtlebot3_incident(*, checkpoint, approval, validate, execute):
 
     async def executor(_state):
         nonlocal result
-        result = await asyncio.to_thread(execute)
+        result = await asyncio.to_thread(execute, _state) if policy_authorization_handler else await asyncio.to_thread(execute)
         summary = _mapping(result.get("summary"))
         return {
             "executor_invoked": True,
             "dispatch_authority_created": summary.get(
                 "recovery_execution_permitted_by_operator_approval"
             )
-            is True,
+            is True or summary.get("recovery_execution_permitted_by_policy") is True,
             "dispatch_request_sent": summary.get("recovery_dispatch_request_sent") is True,
             "physical_execution_invoked": False,
         }
@@ -278,6 +278,7 @@ def continue_turtlebot3_incident(*, checkpoint, approval, validate, execute):
         executor_handler=executor,
         verifier_handler=verifier,
         observation_handler=observe,
+        policy_authorization_handler=policy_authorization_handler,
     )
     if not result:
         result = {

@@ -121,6 +121,8 @@ _ALLOWED_INPUT_OBSERVATION_KEYS = tuple(
             "route_progress_delta_m",
             "runtime_failure_observed",
             "runtime_failure_source",
+            "nav2_status",
+            "goal_cancel_result_observed",
             "runtime_obstacle_observed",
             "runtime_obstacle_recovery_required",
             "runtime_obstacle_source",
@@ -238,8 +240,12 @@ def build_turtlebot3_recovery_planner_prompt(
             "requested mission reserve and the source-backed home-distance "
             "envelope supports a bounded return. Prefer avoid_obstacle only "
             "when obstacle_scenario supplies source-backed runtime obstacle "
-            "evidence. Prefer return_home or hold when runtime_failure_context "
-            "supplies source-backed segment failure evidence. Use "
+            "evidence. A segment failure alone does not justify return_home. "
+            "When nav2_status is canceled and goal_cancel_result_observed is true, "
+            "consider reroute: one bounded retry of the exact failed route goal, "
+            "subject to fresh path feasibility and mission assurance. A cancellation "
+            "does not prove the route safe. Choose hold or ask_human when observations "
+            "are insufficient, and return_home when the mission context warrants it. Use "
             "runtime_motion_context to distinguish no-motion stalls from "
             "near-complete progress. "
             "Use hold for critical stop/hold cases. You must not include approval, "
@@ -360,6 +366,7 @@ def _source_observations_from_envelopes(
     for key in (
         "runtime_failure_observed",
         "failed_segment_completion_claimed",
+        "goal_cancel_result_observed",
         "failed_recovery_completion_claimed",
         "requires_new_human_approval",
     ):
@@ -381,6 +388,7 @@ def _source_observations_from_envelopes(
         "failed_recovery_checkpoint_id",
         "failed_recovery_action",
         "runtime_failure_source",
+        "nav2_status",
         "recommended_recovery_action",
     ):
         if key in failure:
@@ -953,6 +961,7 @@ def _invoke_ollama_response_text(
         "recommended_avoidance_target_y_m, runtime_obstacle_source, and "
         "recommended_recovery_action, runtime_failure_observed, "
         "failed_segment_index, failed_segment_label, runtime_failure_source, "
+        "nav2_status, goal_cancel_result_observed, "
         "failed_segment_completion_claimed, failed_segment_blocking_reason_count, "
         "robot_motion_observed, odom_delta_m, route_progress_delta_m, "
         "completed_route_distance_m, planned_segment_distance_m, "

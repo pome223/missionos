@@ -5312,6 +5312,8 @@ def _dispatch_nav2_goal(
         ),
         publish_initialpose=publish_initialpose,
         simulate_cancel_after_accept=simulate_cancel_after_accept,
+        **({"authorization_source": "human_approved_policy"}
+           if approval.get("authority_source") == "human_approved_policy" else {}),
     )
     if mission_contract is None:
         return result
@@ -5488,6 +5490,22 @@ def _max_numeric(values: list[Any]) -> float | None:
     return max(numbers)
 
 
+def _segment_failure_status_observation(result: Mapping[str, Any]) -> dict[str, Any]:
+    """Expose actual bridge result status, never infer it from a fault request."""
+    responses = result.get("bridge_responses") or []
+    response = next(
+        (item for item in reversed(responses)
+         if isinstance(item, Mapping) and item.get("action") == "send_goal_pose"),
+        {},
+    )
+    return {
+        "nav2_status": response.get("nav2_status", "unknown"),
+        "goal_cancel_result_observed": (
+            (response.get("goal_cancel_result") or {}).get("goal_cancel_result_observed") is True
+        ),
+    }
+
+
 def _recovery_approved_parameters(
     *,
     selected_action: str,
@@ -5620,6 +5638,25 @@ def _build_turtlebot3_recovery_checkpoint(
         "physical_execution_invoked": False,
         "progress_counted": False,
     }
+    if selected_action == "reroute":
+        geometry, reasons = _build_retry_failed_segment_recovery_revision_geometry(
+            proposal={**proposal, "planned_segments": [goal.model_dump(mode="json") for goal in goals]},
+            execution={"route_failure_observation_results": route_failure_observation_results or []},
+            checkpoint=checkpoint,
+        )
+        if reasons:
+            checkpoint["action_feasibility_blocking_reasons"] = reasons
+        else:
+            retry_goal = dict(geometry["recovery_goal_poses"][0])
+            retry_goal["label"] = "recovery_retry_failed_segment_once"
+            checkpoint["recovery_goal_poses"] = [retry_goal]
+            approved_parameters = {
+                "target_x_m": retry_goal["x_m"],
+                "target_y_m": retry_goal["y_m"],
+                "retry_failed_segment_required": True,
+                "retry_count": 1,
+            }
+            checkpoint["approved_parameters"] = approved_parameters
     if selected_action == "return_home":
         checkpoint["recovery_goal_poses"] = [
             _profile_home_pose().model_dump(mode="json")
@@ -5729,7 +5766,9 @@ def _build_turtlebot3_recovery_checkpoint(
             candidate_resolution.get("blocking_reasons")
             or ["no_core_verified_recovery_candidate"]
         )
-    if selected_action in {"return_home", "reroute"}:
+    if selected_action in {"return_home", "reroute"} and not checkpoint.get(
+        "action_feasibility_blocking_reasons"
+    ):
         resolution, reasons = _validate_operator_revision_recovery_goals(
             recovery_goal_poses=checkpoint.get("recovery_goal_poses") or [
                 {"x_m": approved_parameters.get("target_x_m"),
@@ -7300,6 +7339,7 @@ def _validate_operator_revision_recovery_goals(
             "y_m": float(goal["y_m"]),
             "yaw_rad": float(goal.get("yaw_rad") or 0.0),
             "selection_priority": index,
+            "max_speed_mps": goal.get("max_speed_mps"),
             "geometry_source": "operator_revision_source_bound_geometry",
         }
         for index, goal in enumerate(recovery_goal_poses)
@@ -7827,6 +7867,8 @@ def _validate_turtlebot3_recovery_resume(
     proposal: Mapping[str, Any],
     goals: tuple[Nav2GoalPose, ...],
     recovery_operator_approval: Mapping[str, Any] | None,
+    policy_grant=None,
+    policy_precheck: bool = False,
 ) -> list[str]:
     from src.runtime.turtlebot3_mission_incident import turtlebot3_incident_dispatch_reasons
 
@@ -7886,41 +7928,47 @@ def _validate_turtlebot3_recovery_resume(
     if not isinstance(stored_results, list) or len(stored_results) != completed_count:
         reasons.append("turtlebot3_recovery_checkpoint_segment_results_invalid")
 
-    approval_payload = (
-        recovery_operator_approval
-        if isinstance(recovery_operator_approval, Mapping)
-        else {}
-    )
-    if (
-        approval_payload.get("schema_version")
-        != TURTLEBOT3_RECOVERY_OPERATOR_APPROVAL_SCHEMA
-    ):
-        reasons.append("turtlebot3_recovery_operator_approval_schema_invalid")
-    if (
-        approval_payload.get("operator_approved") is not True
-        or approval_payload.get("explicit_recovery_dispatch_approval") is not True
-        or not str(approval_payload.get("operator_approval_ref") or "").strip()
-    ):
-        reasons.append("turtlebot3_recovery_operator_approval_missing")
-    bindings = (
-        ("checkpoint_id", "checkpoint_id"),
-        ("checkpoint_hash", "checkpoint_hash"),
-        ("recovery_proposal_id", "recovery_proposal_id"),
-        ("recovery_classification_id", "recovery_classification_id"),
-        ("approved_action", "selected_action"),
-    )
-    for approval_key, checkpoint_key in bindings:
-        if str(approval_payload.get(approval_key) or "") != str(
-            checkpoint.get(checkpoint_key) or ""
+    from src.runtime.turtlebot3_assurance_policy import PolicyGrant
+
+    policy_authorized = isinstance(policy_grant, PolicyGrant) and policy_grant.matches(checkpoint, proposal)
+    if policy_grant is not None and not policy_authorized:
+        reasons.append("turtlebot3_policy_grant_binding_mismatch")
+    if not policy_precheck and not policy_authorized:
+        approval_payload = (
+            recovery_operator_approval
+            if isinstance(recovery_operator_approval, Mapping)
+            else {}
+        )
+        if (
+            approval_payload.get("schema_version")
+            != TURTLEBOT3_RECOVERY_OPERATOR_APPROVAL_SCHEMA
         ):
-            reasons.append(
-                f"turtlebot3_recovery_operator_approval_{approval_key}_mismatch"
-            )
-    approved_parameters = approval_payload.get("approved_parameters")
-    if not isinstance(approved_parameters, Mapping) or dict(approved_parameters) != dict(
-        checkpoint.get("approved_parameters") or {}
-    ):
-        reasons.append("turtlebot3_recovery_operator_approval_parameters_mismatch")
+            reasons.append("turtlebot3_recovery_operator_approval_schema_invalid")
+        if (
+            approval_payload.get("operator_approved") is not True
+            or approval_payload.get("explicit_recovery_dispatch_approval") is not True
+            or not str(approval_payload.get("operator_approval_ref") or "").strip()
+        ):
+            reasons.append("turtlebot3_recovery_operator_approval_missing")
+        bindings = (
+            ("checkpoint_id", "checkpoint_id"),
+            ("checkpoint_hash", "checkpoint_hash"),
+            ("recovery_proposal_id", "recovery_proposal_id"),
+            ("recovery_classification_id", "recovery_classification_id"),
+            ("approved_action", "selected_action"),
+        )
+        for approval_key, checkpoint_key in bindings:
+            if str(approval_payload.get(approval_key) or "") != str(
+                checkpoint.get(checkpoint_key) or ""
+            ):
+                reasons.append(
+                    f"turtlebot3_recovery_operator_approval_{approval_key}_mismatch"
+                )
+        approved_parameters = approval_payload.get("approved_parameters")
+        if not isinstance(approved_parameters, Mapping) or dict(approved_parameters) != dict(
+            checkpoint.get("approved_parameters") or {}
+        ):
+            reasons.append("turtlebot3_recovery_operator_approval_parameters_mismatch")
     selected_action = str(checkpoint.get("selected_action") or "")
     approved_parameters = checkpoint.get("approved_parameters")
     approved_parameters = (
@@ -8090,6 +8138,9 @@ def run_turtlebot3_home_mission_dispatch(
 ) -> dict[str, Any]:
     from src.runtime.turtlebot3_mission_incident import continue_turtlebot3_incident
 
+    from src.runtime.turtlebot3_assurance_policy import bind_policy, run_policy_continuations
+
+    proposal, policy_store, policy = bind_policy(proposal, approval)
     kwargs = dict(proposal=proposal, approval=approval, now=now,
                   progress_callback=progress_callback, resume_execution=resume_execution,
                   recovery_operator_approval=recovery_operator_approval)
@@ -8120,6 +8171,12 @@ def run_turtlebot3_home_mission_dispatch(
         )
     else:
         result = _execute_turtlebot3_home_mission(**kwargs)
+    if policy is not None:
+        result = run_policy_continuations(
+            result=result, proposal=proposal, approval=approval,
+            store=policy_store, policy=policy, execute=_execute_turtlebot3_home_mission,
+            progress_callback=progress_callback, now=now,
+        )
     summary = result.get("summary") or {}
     current = result.get("turtlebot3_recovery_checkpoint") or summary.get("turtlebot3_recovery_checkpoint") or checkpoint
     graph = current.get("missionos_mission_incident_graph") or {}
@@ -8137,6 +8194,7 @@ def _execute_turtlebot3_home_mission(
     progress_callback: Callable[[dict[str, Any]], None] | None = None,
     resume_execution: Mapping[str, Any] | None = None,
     recovery_operator_approval: Mapping[str, Any] | None = None,
+    policy_grant=None,
 ) -> dict[str, Any]:
     """Execute an approved TurtleBot3 home mission through the Nav2 bridge.
 
@@ -8200,6 +8258,9 @@ def _execute_turtlebot3_home_mission(
         "autonomy_envelope" if recovery_execution_permitted_by_envelope else None
     )
     fresh_recovery_operator_approvals: list[dict[str, Any]] = []
+    policy_recovery_authorities: list[dict[str, Any]] = []
+    recovery_authority: dict[str, Any] = {}
+    recovery_execution_permitted_by_policy = False
 
     blocking_reasons = list(_bridge_readiness_blocking_reasons(robot_profile))
     blocking_reasons.extend(_pre_dispatch_judgment_blocking_reasons(proposal))
@@ -8431,6 +8492,7 @@ def _execute_turtlebot3_home_mission(
             proposal=proposal,
             goals=goals,
             recovery_operator_approval=recovery_operator_approval,
+            policy_grant=policy_grant,
         )
         stored_segment_results = recovery_resume_state.get("segment_results")
         if isinstance(stored_segment_results, list):
@@ -8589,28 +8651,36 @@ def _execute_turtlebot3_home_mission(
                 )
         else:
             start_segment_index = int(recovery_checkpoint["next_segment_index"])
-            approval_payload = dict(recovery_operator_approval or {})
-            approval_payload.setdefault("approval_status", "approved")
-            approval_payload.setdefault(
-                "approval_actor", "missionos_chat_operator"
-            )
-            approval_payload.setdefault("approved_at", dispatched_at.isoformat())
-            approval_payload.setdefault(
-                "proposal_ref", recovery_checkpoint.get("recovery_proposal_id")
-            )
-            approval_payload.setdefault(
-                "classification_ref",
-                recovery_checkpoint.get("recovery_classification_id"),
-            )
-            approval_payload["requires_new_human_approval_satisfied"] = True
-            approval_payload["dispatch_authority_created_by_operator_approval"] = True
-            approval_payload["proposal_dispatch_authority_created"] = False
-            approval_payload["physical_execution_invoked"] = False
-            approval_payload["mission_delivery_completion_claimed"] = False
-            approval_payload["progress_counted"] = False
-            fresh_recovery_operator_approvals.append(approval_payload)
-            recovery_execution_permitted_by_operator_approval = True
-            recovery_dispatch_authority_source = "fresh_operator_approval"
+            if policy_grant is not None:
+                recovery_authority = policy_grant.receipt(recovery_checkpoint)
+                policy_recovery_authorities.append(recovery_authority)
+                recovery_execution_permitted_by_policy = True
+                recovery_dispatch_authority_source = "human_approved_policy"
+            else:
+                approval_payload = dict(recovery_operator_approval or {})
+                approval_payload.setdefault("approval_status", "approved")
+                approval_payload.setdefault(
+                    "approval_actor", "missionos_chat_operator"
+                )
+                approval_payload.setdefault("approved_at", dispatched_at.isoformat())
+                approval_payload.setdefault(
+                    "proposal_ref", recovery_checkpoint.get("recovery_proposal_id")
+                )
+                approval_payload.setdefault(
+                    "classification_ref",
+                    recovery_checkpoint.get("recovery_classification_id"),
+                )
+                approval_payload["requires_new_human_approval_satisfied"] = True
+                approval_payload["dispatch_authority_created_by_operator_approval"] = True
+                approval_payload["proposal_dispatch_authority_created"] = False
+                approval_payload["physical_execution_invoked"] = False
+                approval_payload["mission_delivery_completion_claimed"] = False
+                approval_payload["progress_counted"] = False
+                fresh_recovery_operator_approvals.append(approval_payload)
+                recovery_execution_permitted_by_operator_approval = True
+                recovery_dispatch_authority_source = "fresh_operator_approval"
+                recovery_authority = approval_payload
+
     if blocking_reasons:
         config = Ros2Nav2HardwareAdapterConfig(
             missionos_action_ref=str(
@@ -8640,7 +8710,7 @@ def _execute_turtlebot3_home_mission(
             "runtime_obstacle_recovery_trigger_after_segment_index"
         )
         if resume_requested:
-            recovery_approval = fresh_recovery_operator_approvals[-1]
+            recovery_approval = recovery_authority
             recovery_goals = _recovery_goals_from_checkpoint(recovery_checkpoint)
             selected_recovery_action = str(
                 recovery_checkpoint.get("selected_action") or ""
@@ -8759,6 +8829,7 @@ def _execute_turtlebot3_home_mission(
             recovery_outcome_verification = verify_turtlebot3_recovery_outcome(
                 checkpoint=recovery_checkpoint,
                 operator_approval=recovery_approval,
+                policy_grant=policy_grant,
                 action_results=approved_recovery_segment_results,
                 goal_sequence_completed=recovery_goal_sequence_completed,
                 requested_side_required=immediate_side_verification_required,
@@ -9102,7 +9173,7 @@ def _execute_turtlebot3_home_mission(
                     "failed_segment_completion_claimed": False,
                     "source": "ros2_nav2_bridge_segment_result",
                     "runtime_failure_source": "ros2_nav2_bridge_segment_result",
-                    "recommended_recovery_action": "return_home",
+                    **_segment_failure_status_observation(result),
                 }
                 runtime_recovery_battery_envelope = (
                     _runtime_recovery_battery_envelope(battery_envelope)
@@ -9591,6 +9662,7 @@ def _execute_turtlebot3_home_mission(
                 )
                 if (
                     recovery_action_suggested == "avoid_obstacle"
+                    and not proposal.get("assurance_policy")
                     and recovery_candidate_resolution.get("resolution_status")
                     != "blocked"
                     and (
@@ -10236,6 +10308,8 @@ def _execute_turtlebot3_home_mission(
         "recovery_execution_permitted_by_operator_approval": (
             recovery_execution_permitted_by_operator_approval
         ),
+        "recovery_execution_permitted_by_policy": recovery_execution_permitted_by_policy,
+        "policy_recovery_authorities": policy_recovery_authorities,
         "recovery_dispatch_authority_source": recovery_dispatch_authority_source,
         "runtime_recovery_triggered": runtime_recovery_triggered,
         **recovery_status,
@@ -10401,6 +10475,8 @@ def _execute_turtlebot3_home_mission(
             "recovery_execution_permitted_by_operator_approval": (
                 recovery_execution_permitted_by_operator_approval
             ),
+            "recovery_execution_permitted_by_policy": recovery_execution_permitted_by_policy,
+            "policy_recovery_authorities": policy_recovery_authorities,
             "recovery_dispatch_authority_source": recovery_dispatch_authority_source,
             "runtime_recovery_triggered": runtime_recovery_triggered,
             **recovery_status,

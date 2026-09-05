@@ -1,0 +1,39 @@
+# Simulator template. Set a short future expiry and review map-frame bounds.
+# bind-turtlebot3 replaces the mission ID and contract hash before approval.
+version: 1
+policy_id: turtlebot3-bounded-recovery-v1
+mission_id: bind-to-approved-mission
+mission_contract_sha256: '0000000000000000000000000000000000000000000000000000000000000000'
+execution_scope: simulator
+mode: bounded
+# Intentionally expired: copying this example must not create usable authority.
+expires_at: '2000-01-01T00:00:00Z'
+max_observation_age_seconds: 60
+max_total_actions: 3
+preserve:
+- nav2_path_feasible
+- mission_contract_unchanged
+actions:
+  avoid_obstacle:
+    max_uses: 3
+    parameter_variants:
+    - target_x_m: {minimum: -8.0, maximum: 8.0}
+      target_y_m: {minimum: -8.0, maximum: 8.0}
+      target_yaw_rad: {minimum: -3.15, maximum: 3.15}
+      obstacle_avoidance_required: {equals: true}
+    - recovery_waypoints:
+        min_items: 1
+        max_items: 2
+        items:
+          properties:
+            target_x_m: {minimum: -8.0, maximum: 8.0}
+            target_y_m: {minimum: -8.0, maximum: 8.0}
+      obstacle_avoidance_required: {equals: true}
+  reroute:
+    max_uses: 2
+    parameters:
+      target_x_m: {minimum: -8.0, maximum: 8.0}
+      target_y_m: {minimum: -8.0, maximum: 8.0}
+      retry_failed_segment_required: {equals: true}
+      retry_count: {minimum: 1.0, maximum: 1.0}
+on_unresolved: request_human

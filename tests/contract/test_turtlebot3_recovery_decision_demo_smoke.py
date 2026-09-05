@@ -1,5 +1,5 @@
-from pathlib import Path
 import re
+from pathlib import Path
 
 from src.runtime.turtlebot3_chat_e2e_runner import (
     _ADK_ENV_KEYS,
@@ -363,3 +363,30 @@ def test_recovery_decision_demo_disabled_shape_is_explicit() -> None:
         "schema_version": "missionos_turtlebot3_recovery_decision_demo.v1",
         "enabled": False,
     }
+
+
+def test_repeated_recovery_uses_gateway_task_identity(monkeypatch):
+    import pytest
+
+    requests = []
+    def checkpoint(index):
+        return {"checkpoint_status": "awaiting_operator_approval",
+                "checkpoint_id": f"checkpoint-{index}", "checkpoint_hash": f"hash-{index}",
+                "selected_action": "reroute", "approved_parameters": {}}
+    def post(url, payload, **kwargs):
+        requests.append(payload)
+        return {"task": {"task_id": "task-same", "artifacts": {
+            "summary": {}, "turtlebot3_recovery_checkpoint": checkpoint(2),
+        }}}
+    monkeypatch.setattr("src.runtime.turtlebot3_chat_e2e_runner._post_json", post)
+    result = _approve_turtlebot3_recovery_checkpoint(base_url="http://fixture", executed={
+        "operation_result": {"summary": {"task_id": "task-same"},
+                             "turtlebot3_recovery_checkpoint": checkpoint(1)},
+    })
+    _approve_turtlebot3_recovery_checkpoint(base_url="http://fixture", executed=result)
+    assert [item["task_id"] for item in requests] == ["task-same", "task-same"]
+    assert [item["expected_recovery_checkpoint_id"] for item in requests] == ["checkpoint-1", "checkpoint-2"]
+    result["operation_result"]["summary"]["task_id"] = "different-task"
+    with pytest.raises(RuntimeError, match="identity changed"):
+        _approve_turtlebot3_recovery_checkpoint(base_url="http://fixture", executed=result)
+    assert len(requests) == 2
