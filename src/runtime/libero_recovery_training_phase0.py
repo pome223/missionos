@@ -210,6 +210,59 @@ def validate_phase0_record(record: Mapping[str, Any]) -> list[str]:
     required_matches = {"model", "optimizer", "compute", "seeds", "observations", "actions"}
     if not isinstance(matched_fields, list) or not required_matches.issubset(matched_fields):
         errors.append("phase0_matched_fields_incomplete")
+    pilot = experiment.get("preregistered_pilot") if isinstance(experiment, Mapping) else None
+    if not isinstance(pilot, Mapping):
+        errors.append("phase0_preregistered_pilot_required")
+    else:
+        training_indices = pilot.get("training_episode_init_state_indices")
+        evaluation_indices = pilot.get("evaluation_episode_init_state_indices")
+        valid_training_indices = (
+            isinstance(training_indices, list)
+            and bool(training_indices)
+            and all(isinstance(value, int) and not isinstance(value, bool) for value in training_indices)
+        )
+        valid_evaluation_indices = (
+            isinstance(evaluation_indices, list)
+            and bool(evaluation_indices)
+            and all(
+                isinstance(value, int) and not isinstance(value, bool)
+                for value in evaluation_indices
+            )
+        )
+        if (
+            not valid_training_indices
+            or not valid_evaluation_indices
+            or set(training_indices).intersection(evaluation_indices)
+        ):
+            errors.append("phase0_training_evaluation_fixture_partition_invalid")
+        training_seeds = pilot.get("training_environment_seeds")
+        evaluation_seeds = pilot.get("evaluation_environment_seeds")
+        valid_training_seeds = (
+            isinstance(training_seeds, list)
+            and bool(training_seeds)
+            and all(isinstance(value, int) and not isinstance(value, bool) for value in training_seeds)
+        )
+        valid_evaluation_seeds = (
+            isinstance(evaluation_seeds, list)
+            and bool(evaluation_seeds)
+            and all(isinstance(value, int) and not isinstance(value, bool) for value in evaluation_seeds)
+        )
+        if (
+            not valid_training_seeds
+            or not valid_evaluation_seeds
+            or set(training_seeds).intersection(evaluation_seeds)
+        ):
+            errors.append("phase0_training_evaluation_seed_partition_invalid")
+        if not isinstance(pilot.get("matched_model_sampling_seeds"), list) or not pilot.get(
+            "matched_model_sampling_seeds"
+        ):
+            errors.append("phase0_model_sampling_seeds_required")
+        if pilot.get("maximum_policy_actions") != 128:
+            errors.append("phase0_policy_action_budget_mismatch")
+        if pilot.get("required_stable_hold_actions") != 20:
+            errors.append("phase0_pilot_hold_budget_mismatch")
+        if pilot.get("maximum_total_actions_including_hold") != 148:
+            errors.append("phase0_total_action_budget_mismatch")
 
     evaluation = record.get("evaluation")
     if not isinstance(evaluation, Mapping):

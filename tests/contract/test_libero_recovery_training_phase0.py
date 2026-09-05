@@ -113,3 +113,23 @@ def test_evidence_file_digest_is_verified() -> None:
     record["result_sha256"] = canonical_sha256(body)
     errors = phase0_summary(record, repository_root=ROOT)["errors"]
     assert "holdout[0]:evidence_file_digest_mismatch" in errors
+
+
+def test_preregistered_training_and_evaluation_partitions_must_not_overlap() -> None:
+    record = json.loads(RECORD.read_text(encoding="utf-8"))
+    pilot = record["matched_experiment"]["preregistered_pilot"]
+    pilot["training_episode_init_state_indices"] = [0, 15]
+    pilot["training_environment_seeds"] = [0, 101]
+    body = {key: value for key, value in record.items() if key != "result_sha256"}
+    record["result_sha256"] = canonical_sha256(body)
+    errors = phase0_summary(record)["errors"]
+    assert "phase0_training_evaluation_fixture_partition_invalid" in errors
+    assert "phase0_training_evaluation_seed_partition_invalid" in errors
+
+
+def test_preregistered_action_budget_includes_verifier_hold() -> None:
+    record = json.loads(RECORD.read_text(encoding="utf-8"))
+    pilot = record["matched_experiment"]["preregistered_pilot"]
+    assert pilot["maximum_policy_actions"] == 128
+    assert pilot["required_stable_hold_actions"] == 20
+    assert pilot["maximum_total_actions_including_hold"] == 148

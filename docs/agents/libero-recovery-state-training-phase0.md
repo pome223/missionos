@@ -74,6 +74,19 @@ action activity
 All five axes must pass in one held-out scope. First predicate conjunction is
 not stable Repair.
 
+The first pilot is fixed to LIBERO-10 task 8. Training-transition generation
+may use init-state indices `0, 1, 2, 3`, environment seeds `101-104`,
+disturbances of `1, 3, and 5 cm`, and four planar directions. Evaluation
+reserves init-state indices `4, 12, 15`, environment seed `0`, and the `3 cm`
+condition. Both cells use model sampling seeds `1000, 1001, 1002`, at most 128
+policy actions, and the same 20-step verifier hold, for a maximum of 148
+simulator actions. Exact evaluation fixtures must be materialized and added to
+the exclusion manifest before a future `GO` decision.
+
+These values preregister the comparison but do not claim that all candidate
+training transitions will be admitted. Only traces that satisfy the recovery-
+demonstration contract enter the recovery cell.
+
 ## Requirements before another GO review
 
 - generate a public-safe manifest of admitted training transitions;
