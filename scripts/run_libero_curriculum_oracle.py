@@ -160,7 +160,12 @@ def _make_environment() -> tuple[Any, Any, str]:
     raise RuntimeError("libero_curriculum_oracle_task_not_found")
 
 
-def execute_live(*, snapshot_path: Path, output_dir: Path) -> dict[str, Any]:
+def execute_live(
+    *,
+    snapshot_path: Path,
+    output_dir: Path,
+    capture_transition: bool = False,
+) -> dict[str, Any]:
     if os.environ.get(OPT_IN_ENV) != "1":
         raise RuntimeError("libero_curriculum_oracle_opt_in_required")
     if output_dir.exists():
@@ -168,6 +173,14 @@ def execute_live(*, snapshot_path: Path, output_dir: Path) -> dict[str, Any]:
 
     import numpy as np
     from PIL import Image
+
+    transition_capture = None
+    if capture_transition:
+        from src.runtime.libero_recovery_transition_capture import (
+            LiberoRecoveryTransitionCapture,
+        )
+
+        transition_capture = LiberoRecoveryTransitionCapture()
 
     with np.load(snapshot_path, allow_pickle=False) as archive:
         snapshot = np.asarray(archive["simulator_state"], dtype=np.float64).reshape(-1)
@@ -288,6 +301,8 @@ def execute_live(*, snapshot_path: Path, output_dir: Path) -> dict[str, Any]:
             nonlocal action_count, observation, success_first_action
             nonlocal preservation_violation
             array = np.asarray(action, dtype=np.float64)
+            if transition_capture is not None:
+                transition_capture.append(observation=observation, action=array)
             observation, _, done, info = environment.step(array.tolist())
             action_count += 1
             state = state_material()
@@ -386,6 +401,31 @@ def execute_live(*, snapshot_path: Path, output_dir: Path) -> dict[str, Any]:
         events = _event_summary(
             trace, initial_eef_target_distance_metres=initial_eef_target_distance
         )
+        transition_capture_result = None
+        if transition_capture is not None:
+            transition_capture_result = transition_capture.write(
+                output_dir=output_dir / "transition-capture",
+                source={
+                    "task_suite": TASK_SUITE,
+                    "task_id": TASK_ID,
+                    "task_name": TASK_NAME,
+                    "instruction": instruction,
+                    "episode_init_state_index": EPISODE_INIT_STATE_INDEX,
+                    "environment_seed": ENVIRONMENT_SEED,
+                    "snapshot_sha256": _sha256_path(snapshot_path),
+                    "source_goal_predicate_vector": source_vector,
+                    "privileged_state_used": True,
+                    "generator_type": "privileged_planner",
+                },
+                outcome={
+                    "actions_applied": action_count,
+                    "stable_success_observed": stable_success,
+                    "stable_success_steps_completed": stable_steps,
+                    "preservation_violation_observed": preservation_violation,
+                    "terminal_goal_predicate_vector": terminal["predicate_vector"],
+                    "raw_action_trace_sha256": _sha256_path(trace_path),
+                },
+            )
         result_without_digest = {
             "schema_version": "missionos.vla0_same_interface_oracle_recoverability.v2",
             "status": (
@@ -436,6 +476,8 @@ def execute_live(*, snapshot_path: Path, output_dir: Path) -> dict[str, Any]:
                 "physical_execution_invoked": False,
             },
         }
+        if transition_capture_result is not None:
+            result_without_digest["transition_capture"] = transition_capture_result
         result = {
             **result_without_digest,
             "result_sha256": _canonical_sha256(result_without_digest),
@@ -452,9 +494,16 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--snapshot", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument(
+        "--capture-transition",
+        action="store_true",
+        help="Capture aligned pre-action RGB/state/action arrays for later LeRobot v2 conversion.",
+    )
     args = parser.parse_args()
     result = execute_live(
-        snapshot_path=args.snapshot.resolve(), output_dir=args.output_dir.resolve()
+        snapshot_path=args.snapshot.resolve(),
+        output_dir=args.output_dir.resolve(),
+        capture_transition=args.capture_transition,
     )
     print(json.dumps(result, sort_keys=True))
     return 0 if result["stable_success_observed"] else 2
