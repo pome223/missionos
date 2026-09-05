@@ -1,0 +1,109 @@
+{
+  "schema_version": "missionos.libero_recovery_training_preflight.v1",
+  "recorded_date": "2026-09-05",
+  "scope": "planning_and_read_only_preflight",
+  "upstream_software": {
+    "repository": "NVIDIA/Isaac-GR00T",
+    "revision": "51d4c89f72fda44cbf77285c6a8114b52676b8a1",
+    "license": "Apache-2.0",
+    "source_url": "https://github.com/NVIDIA/Isaac-GR00T"
+  },
+  "checkpoint": {
+    "model_id": "nvidia/GR00T-N1.7-3B",
+    "revision": "2fc962b973bccdd5d8ce4f67cc63b264d6886495",
+    "repository_public": true,
+    "repository_gated": false,
+    "reported_storage_bytes": 13421964025,
+    "license_file_sha256": "fdc54058d8b52bbb3b06c924326ff95a15687b08b15f92bc63adabc291638c89",
+    "license_scope": "research_and_evaluation_only",
+    "commercial_use_authorized": false,
+    "derivative_weights_publication_authorized": false,
+    "selection_status": "research_only_candidate_access_pending",
+    "source_url": "https://huggingface.co/nvidia/GR00T-N1.7-3B"
+  },
+  "dependent_backbone": {
+    "model_id": "nvidia/Cosmos-Reason2-2B",
+    "revision": "9ce19a195e423419c349abfc86fd07178b230561",
+    "gating": "auto",
+    "access_verified": false,
+    "reported_storage_bytes": 9755691186,
+    "source_url": "https://huggingface.co/nvidia/Cosmos-Reason2-2B"
+  },
+  "dataset": {
+    "manifest_ref": "docs/agents/evidence/20260905-libero-recovery-training-candidate-manifest.json",
+    "manifest_file_sha256": "68f3e9a8dde3b021639cfd541351d4d852eb3f51e5119e36dfb0bccb0417d64d",
+    "manifest_result_sha256": "7ec2f3b274b3536153e20b2443d1e66f2b759abf28ae03f01e0bba4f80c1f917",
+    "admission_status": "admitted",
+    "training_examples_admitted": 4,
+    "training_frame_count": 206,
+    "serialized_conversion_bytes": 367839
+  },
+  "hardware": {
+    "official_minimum_vram_gb": 40,
+    "official_default_peak_vram_below_gb": 35,
+    "default_tuned_modules": [
+      "projector",
+      "diffusion_action_head"
+    ],
+    "l4_vram_gb": 24,
+    "l4_training_eligible": false,
+    "minimum_gcp_candidate": "a2-highgpu-1g",
+    "minimum_gcp_candidate_gpu": "NVIDIA A100 40GB",
+    "observed_project_quota": {
+      "region": "us-central1",
+      "nvidia_a100_gpus_limit": 0,
+      "nvidia_a100_gpus_usage": 0,
+      "nvidia_l4_gpus_limit": 1,
+      "nvidia_l4_gpus_usage": 0
+    }
+  },
+  "runtime_estimate": {
+    "official_reference_hardware": "single NVIDIA RTX 6000 Ada 48GB",
+    "official_reference_steps": 20000,
+    "official_reference_hours_lower": 2,
+    "official_reference_hours_upper": 3,
+    "matched_experiment_run_count": 6,
+    "reference_runtime_extrapolated_to_this_dataset": false,
+    "measured_pilot_gpu_hours": null,
+    "next_measurement": "single_gpu_200_step_compile_and_throughput_calibration"
+  },
+  "cost_control": {
+    "currency": "JPY",
+    "proposed_hard_cap_jpy": 5000,
+    "prelaunch_estimate_ceiling_jpy": 3500,
+    "cost_cap_reviewed": false,
+    "pricing_quote_required_immediately_before_launch": true,
+    "maximum_runtime_seconds": 3600,
+    "maximum_gpu_count": 1,
+    "spot_preferred": true,
+    "automatic_restart": false,
+    "termination_action": "DELETE",
+    "boot_disk_auto_delete": true,
+    "persistent_model_cache_allowed": false,
+    "external_logging_enabled": false,
+    "billing_budget_alert_jpy": 4000,
+    "billing_budget_is_hard_stop": false,
+    "post_run_instance_and_disk_absence_required": true
+  },
+  "decision": {
+    "status": "NO_GO",
+    "paid_training_authorized": false,
+    "gpu_provision_authorized": false,
+    "blocking_reasons": [
+      "dependent_backbone_access_not_verified",
+      "research_only_model_license_not_reviewed",
+      "minimum_40gb_gpu_quota_unavailable",
+      "pilot_gpu_hours_not_measured",
+      "hard_cost_cap_not_reviewed"
+    ]
+  },
+  "claim_boundary": {
+    "gpu_provisioned": false,
+    "training_invoked": false,
+    "model_inference_invoked": false,
+    "dispatch_request_sent": false,
+    "physical_execution_invoked": false,
+    "repair_capability_established": false
+  },
+  "result_sha256": "42f7cb78eeec3b7712e5f31345b714fcfab172ba84ec9e3a6db3df7d2fbea869"
+}

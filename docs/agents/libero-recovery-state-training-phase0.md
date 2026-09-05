@@ -83,6 +83,48 @@ trainable checkpoint, measured GPU-hour estimate, or reviewed hard cost cap. A
 GPU must not be provisioned and training must not start until those inputs,
 automatic teardown, and a separate human approval are recorded.
 
+## Training compute preflight (2026-09-05)
+
+The next read-only checkpoint and compute review is recorded in
+[`evidence/20260905-libero-recovery-training-preflight.json`](evidence/20260905-libero-recovery-training-preflight.json).
+It selects the revision-pinned `nvidia/GR00T-N1.7-3B` only as a research and
+evaluation candidate. The checkpoint's current license limits the work and its
+derivatives to non-commercial research or evaluation, while the upstream
+Isaac-GR00T software repository is Apache-2.0. No derivative model weights are
+authorized for publication.
+
+The checkpoint configuration names the auto-gated
+`nvidia/Cosmos-Reason2-2B` backbone. Current access to that dependency has not
+been verified after deletion of the earlier temporary model cache. This is an
+access blocker, not evidence that the model or training procedure fails.
+
+NVIDIA's current hardware guide requires one GPU with at least 40 GB VRAM for
+fine-tuning and reports that default projector-plus-diffusion-head tuning stays
+below approximately 35 GB peak VRAM. The available L4 quota provides only 24 GB
+per GPU and is therefore not an eligible training target. The minimum matching
+Google Cloud shape is an A100 40 GB `a2-highgpu-1g`, but the observed
+`us-central1` A100 quota is zero.
+
+The cost-control proposal is a 5,000 JPY experiment cap, with a pre-launch
+estimate below 3,500 JPY, one GPU maximum, a 60-minute runtime limit, no restart,
+termination action `DELETE`, boot-disk auto-delete, no persistent model cache,
+and mandatory post-run absence checks. A billing budget alert is monitoring
+only; it is not treated as a hard stop. This proposal has not yet been reviewed
+or approved.
+
+Accordingly paid training and GPU provisioning remain **NO-GO**. Before any
+quota request or billable launch, the gated-backbone access, research-only
+license suitability, exact current price, and hard cap require review. If those
+pass, the first billable operation would be a resumable 200-step throughput
+calibration—not the matched experiment—and it would require separate approval.
+
+Validate this boundary with:
+
+```bash
+python scripts/check_libero_recovery_training_preflight.py \
+  docs/agents/evidence/20260905-libero-recovery-training-preflight.json
+```
+
 The machine-readable decision is
 [`evidence/20260905-libero-recovery-training-phase0.json`](evidence/20260905-libero-recovery-training-phase0.json).
 Validate it through the production CLI boundary with:
