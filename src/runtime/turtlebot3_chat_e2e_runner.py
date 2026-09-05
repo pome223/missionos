@@ -494,7 +494,11 @@ def _approve_turtlebot3_recovery_checkpoint(
     summary = dict(summary) if isinstance(summary, dict) else {}
     checkpoint = operation.get("turtlebot3_recovery_checkpoint")
     checkpoint = dict(checkpoint) if isinstance(checkpoint, dict) else {}
-    task_id = str(summary.get("task_id") or "")
+    previous_response = executed.get("recovery_approval_response") or {}
+    previous_task = previous_response.get("task") or {}
+    task_id = str(summary.get("task_id") or previous_task.get("task_id") or "")
+    if previous_task.get("task_id") and str(previous_task["task_id"]) != task_id:
+        raise RuntimeError("TurtleBot3 recovery task identity changed")
     if not task_id:
         raise RuntimeError("pending TurtleBot3 recovery task_id is missing")
     if checkpoint.get("checkpoint_status") != "awaiting_operator_approval":

@@ -12,7 +12,7 @@ from collections.abc import Mapping
 from datetime import datetime, timezone
 import math
 import os
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -90,6 +90,7 @@ class Ros2Nav2HardwareAdapterConfig(BaseModel):
     goal_pose: Nav2GoalPose | None = None
     execution_mode: HardwareExecutionMode = HardwareExecutionMode.LOOPBACK
     operator_approval_ref: str | None = None
+    authorization_source: Literal["individual_human_approval", "human_approved_policy"] = "individual_human_approval"
     preparation_ref: str | None = None
     preparation_sha256: str | None = None
     approval_actor: str | None = None
@@ -297,6 +298,8 @@ def build_ros2_nav2_hardware_operator_approval(
 ) -> HardwareOperatorApproval:
     """Build scoped operator approval for one bounded Nav2 action."""
 
+    if config.authorization_source == "human_approved_policy":
+        raise ValueError("policy_authority_is_not_individual_operator_approval")
     if not (
         config.operator_approval_ref
         and config.approval_actor
@@ -328,6 +331,7 @@ def build_blocked_ros2_nav2_hardware_adapter_evidence(
         missionos_action_ref=config.missionos_action_ref,
         adapter_action_kind=config.action_kind,
         operator_approval_ref=config.operator_approval_ref,
+        authorization_source=config.authorization_source,
         preflight_status=HardwarePreflightStatus.BLOCKED,
         dispatch_status=HardwareDispatchStatus.BLOCKED,
         dispatch_request_sent=False,
@@ -431,6 +435,7 @@ def build_ros2_nav2_hardware_adapter_evidence(
         missionos_action_ref=config.missionos_action_ref,
         adapter_action_kind=config.action_kind,
         operator_approval_ref=config.operator_approval_ref,
+        authorization_source=config.authorization_source,
         preflight_status=(
             HardwarePreflightStatus.PASSED
             if command_sent
@@ -488,6 +493,7 @@ def build_ros2_nav2_safe_stop_hardware_adapter_evidence(
         missionos_action_ref=config.missionos_action_ref,
         adapter_action_kind=HardwareActionKind.SAFE_STOP,
         operator_approval_ref=config.operator_approval_ref,
+        authorization_source=config.authorization_source,
         preflight_status=HardwarePreflightStatus.BLOCKED,
         dispatch_status=HardwareDispatchStatus.SAFE_STOP_REQUESTED,
         dispatch_request_sent=False,
@@ -562,6 +568,9 @@ class Ros2Nav2HardwareAdapter:
     def dispatch_approved_action(self) -> HardwareAdapterEvidence:
         preflight = self.preflight_check()
         blocking_reasons = list(preflight.blocking_reasons)
+        if (self._config.authorization_source == "human_approved_policy"
+                and self._config.execution_mode is not HardwareExecutionMode.SIM):
+            blocking_reasons.append("policy_delegation_simulator_only")
         if not self._config.operator_approval_ref:
             blocking_reasons.append("operator_approval_missing")
         if preflight.preflight_status is HardwarePreflightStatus.BLOCKED or blocking_reasons:

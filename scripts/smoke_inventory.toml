@@ -18,6 +18,7 @@ files = [
   "smoke_adk_v2_default_proposal.py",
   "smoke_adk_v2_legacy_gateway.py",
   "smoke_adk_v2_shadow_graph.py",
+  "smoke_assurance_policy.py",
   "smoke_atomic_dispatch.py",
   "smoke_backend_neutral_unitree_gateway.py",
   "smoke_execution_envelope.py",

@@ -308,6 +308,11 @@ def build_mission_assurance_prompt(situation: MissionSituation) -> dict[str, Any
             "response_kind_is_judgment_not_execution_authority": True,
             "human_approval_is_always_a_separate_downstream_boundary": True,
             "do_not_choose_operator_escalation_only_because_human_approval_is_required": True,
+            "approved_policy_is_a_constraint_not_model_created_authority": True,
+            "judge_against_bound_assurance_policy_when_present": True,
+            "never_expand_policy_or_relax_its_preserve_conditions": True,
+            "escalate_when_required_action_exceeds_policy": True,
+            "continue_means_no_recovery_action_not_continue_via_recovery": True,
             "do_not_generate_or_modify_backend_action": True,
             "choose_exactly_one_response": True,
             "allowed_response_kinds": list(situation.allowed_response_kinds),
@@ -548,7 +553,13 @@ async def _invoke_adk_response(prompt_text: str) -> str:
             "action inside the MissionSituation. Judge whether that proposal is "
             "aligned with the wider mission: continue, hold, replan, return, "
             "abort, or operator escalation. Do not generate, replace, or modify "
-            "the recovery action or its parameters. A supported "
+            "the recovery action or its parameters. The response enum names the "
+            "mission response, not a generic yes/no vote. Use replan to endorse "
+            "executing a proposed bounded avoid_obstacle or reroute action. "
+            "Use continue ONLY when judging that no recovery action should be "
+            "executed. Continuing the mission VIA a recovery action is not the "
+            "continue response. Keep parameters empty when endorsing the already "
+            "bound candidate. A supported "
             "return_to_launch proposal maps to the semantic response return with "
             "an empty parameters object. Action Feasibility and operator "
             "preapproval are execution constraints, not proof of mission "

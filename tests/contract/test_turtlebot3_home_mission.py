@@ -961,7 +961,7 @@ def _write_failure_recovery_planner(path: Path) -> None:
         "        'runtime_failure_source': failure['runtime_failure_source'],\n"
         "        'failed_segment_completion_claimed': failure['failed_segment_completion_claimed'],\n"
         "        'failed_segment_blocking_reason_count': failure['failed_segment_blocking_reason_count'],\n"
-        "        'recommended_recovery_action': failure['recommended_recovery_action'],\n"
+        "        'nav2_status': failure['nav2_status'],\n"
         "        'odom_delta_m': motion['odom_delta_m'],\n"
         "        'robot_motion_observed': motion['robot_motion_observed'],\n"
         "        'stalled_after_dispatch': motion['stalled_after_dispatch'],\n"
@@ -4870,7 +4870,9 @@ def test_turtlebot3_mid_mission_nav2_failure_convenes_recovery_and_stays_blocked
     assert failure_context["failed_segment_index"] == 1
     assert failure_context["source"] == "ros2_nav2_bridge_segment_result"
     assert failure_context["runtime_failure_observed"] is True
-    assert failure_context["recommended_recovery_action"] == "return_home"
+    assert "recommended_recovery_action" not in failure_context
+    assert failure_context["nav2_status"] == "aborted"
+    assert failure_context["goal_cancel_result_observed"] is False
     motion_context = summary["runtime_recovery_motion_context"]
     assert motion_context["odom_delta_m"] == 0.0
     assert motion_context["stalled_after_dispatch"] is True

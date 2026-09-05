@@ -1,8 +1,9 @@
 """Post-approval continuation for a frozen Mission Incident judgment.
 
 This graph never reruns Recovery or Mission Assurance.  It accepts only the
-hash-bound output of the judgment graph, observes an explicit human approval,
-revalidates the action, invokes one executor boundary, verifies the returned
+hash-bound output of the judgment graph, observes individual human approval or
+checks an explicitly injected human-approved policy, revalidates the action,
+invokes one executor boundary, verifies the returned
 receipt, and creates the next observation as distinct facts.
 """
 
@@ -146,6 +147,7 @@ async def _run_mission_incident_continuation_async(
     executor_handler: ContinuationHandler,
     verifier_handler: ContinuationHandler,
     observation_handler: ContinuationHandler,
+    policy_authorization_handler: ContinuationHandler | None = None,
 ) -> dict[str, Any]:
     from google.adk import Workflow
     from google.adk.runners import Runner
@@ -215,13 +217,20 @@ async def _run_mission_incident_continuation_async(
         request = _mapping(state.get("continuation_request"))
         reasons: list[str] = []
         if request.get("explicit_recovery_dispatch_approval") is not True:
-            reasons.append("explicit_recovery_dispatch_approval_required")
+            if policy_authorization_handler is None:
+                reasons.append("explicit_recovery_dispatch_approval_required")
+            else:
+                # Trusted Python composition, never a request-supplied verdict.
+                state["policy_authorization_pending"] = True
         if not str(request.get("task_id") or ""):
             reasons.append("continuation_task_id_missing")
         if not str(request.get("proposal_id") or ""):
             reasons.append("continuation_proposal_id_missing")
         state["human_approval"] = {
-            "approval_status": "observed" if not reasons else "blocked",
+            "approval_status": (
+                "blocked" if reasons else "not_observed"
+                if state.get("policy_authorization_pending") else "observed"
+            ),
             "task_id": request.get("task_id"),
             "proposal_id": request.get("proposal_id"),
             "recovery_action": request.get("recovery_action"),
@@ -229,7 +238,9 @@ async def _run_mission_incident_continuation_async(
             "explicit_recovery_dispatch_approval": (
                 request.get("explicit_recovery_dispatch_approval") is True
             ),
-            "human_approval_observed": not reasons,
+            "human_approval_observed": (
+                not reasons and request.get("explicit_recovery_dispatch_approval") is True
+            ),
             "approval_created_by_graph": False,
             "dispatch_authority_created": False,
         }
@@ -294,6 +305,21 @@ async def _run_mission_incident_continuation_async(
         ]
         if state.get("continuation_runtime_status") != "running":
             return state
+        if policy_authorization_handler is not None:
+            policy_state = {**state, "policy_check_phase": "before_executor"}
+            policy_result = await _resolve(policy_authorization_handler, policy_state)
+            state["policy_authorization"] = policy_result
+            policy_required = (
+                state.get("policy_authorization_pending")
+                or policy_result.get("mode") not in {"human", "shadow"}
+            )
+            if policy_required and policy_result.get("policy_authorized") is not True:
+                state["continuation_runtime_status"] = "blocked"
+                state["blocking_reasons"] = list(
+                    policy_result.get("blocking_reasons")
+                    or ["individual_human_approval_required_by_policy_mode"]
+                )
+                return state
         execution = await _resolve(executor_handler, state)
         state["execution"] = execution
         if execution.get("executor_invoked") is True:
@@ -382,6 +408,13 @@ async def _run_mission_incident_continuation_async(
             "recovery_agent_rerun": False,
             "mission_assurance_agent_rerun": False,
             "human_approval": approval,
+            "policy_authorization": _mapping(state.get("policy_authorization")),
+            "authorization_source": (
+                "individual_human_approval" if approval.get("human_approval_observed")
+                else "human_approved_policy"
+                if _mapping(state.get("policy_authorization")).get("policy_authorized")
+                else "none"
+            ),
             "action_revalidation": _mapping(state.get("action_revalidation")),
             "execution": execution,
             "verification": verification,
@@ -501,6 +534,7 @@ def run_missionos_mission_incident_continuation_graph(
     executor_handler: ContinuationHandler,
     verifier_handler: ContinuationHandler,
     observation_handler: ContinuationHandler,
+    policy_authorization_handler: ContinuationHandler | None = None,
 ) -> dict[str, Any]:
     """Run the post-approval graph without rerunning either LLM judgment."""
 
@@ -512,6 +546,7 @@ def run_missionos_mission_incident_continuation_graph(
             executor_handler=executor_handler,
             verifier_handler=verifier_handler,
             observation_handler=observation_handler,
+            policy_authorization_handler=policy_authorization_handler,
         )
     )
 
