@@ -1,0 +1,131 @@
+{
+  "schema_version": "missionos.libero_recovery_geometry_expansion.v1",
+  "recorded_at": "2026-09-05",
+  "decision": "NO_NEW_TRAINING_CANDIDATE_PAID_TRAINING_NO_GO",
+  "scope": "cpu_only_one_init_seed_geometry_screen",
+  "preregistration": {
+    "distances_metres": [0.01, 0.03, 0.05],
+    "directions": ["positive_x", "negative_x", "positive_y", "negative_y"],
+    "existing_baseline": {
+      "distance_metres": 0.03,
+      "direction": "negative_x"
+    },
+    "remaining_condition_count": 11,
+    "episode_init_state_index": 0,
+    "environment_seed": 101
+  },
+  "runtime": {
+    "machine_type": "e2-standard-4",
+    "gpu_used": false,
+    "maximum_run_duration_seconds": 2700,
+    "termination_action": "DELETE",
+    "automatic_restart": false,
+    "boot_disk_auto_delete": true,
+    "mujoco_version": "2.3.7",
+    "numpy_version": "1.22.4",
+    "opencv_python_version": "4.6.0.66",
+    "robosuite_version": "1.4.0",
+    "torch_version": "2.14.0+cpu",
+    "trusted_upstream_init_state_loaded_with_weights_only_false": true,
+    "instance_absent_after_run": true,
+    "boot_disk_absent_after_run": true,
+    "billing_total_confirmed": false
+  },
+  "environment_diagnostics": {
+    "one_centimetre_batch_geometry_result_accepted": false,
+    "reason": "initial batch used an incompatible MuJoCo version and raised assertions before fixture evaluation",
+    "negative_result_preserved": true,
+    "geometry_claims_derived_from_corrected_three_and_five_centimetre_batches_only": true
+  },
+  "observed_geometry": [
+    {
+      "distance_metres": 0.03,
+      "direction": "positive_x",
+      "status": "not_a_failure_fixture",
+      "terminal_goal_predicate_vector": [true, true, true]
+    },
+    {
+      "distance_metres": 0.03,
+      "direction": "positive_y",
+      "status": "not_a_failure_fixture",
+      "terminal_goal_predicate_vector": [true, true, true]
+    },
+    {
+      "distance_metres": 0.03,
+      "direction": "negative_y",
+      "status": "not_a_failure_fixture",
+      "terminal_goal_predicate_vector": [true, true, true]
+    },
+    {
+      "distance_metres": 0.05,
+      "direction": "positive_x",
+      "status": "wrong_failure_profile",
+      "terminal_goal_predicate_vector": [false, false, true]
+    },
+    {
+      "distance_metres": 0.05,
+      "direction": "negative_x",
+      "status": "fixture_translation_drift",
+      "observed_translation_metres": 0.06861738341802975
+    },
+    {
+      "distance_metres": 0.05,
+      "direction": "positive_y",
+      "status": "not_a_failure_fixture",
+      "terminal_goal_predicate_vector": [true, true, true]
+    },
+    {
+      "distance_metres": 0.05,
+      "direction": "negative_y",
+      "status": "recoverability_not_established",
+      "fixture_status": "stable_displaced_fixture_observed",
+      "oracle_status": "scripted_oracle_recoverability_not_established",
+      "actions_applied": 128,
+      "stable_success_steps_completed": 0,
+      "stable_success_observed": false,
+      "preservation_violation_observed": false,
+      "raw_transition_frame_count": 128,
+      "raw_transition_archive_sha256": "f1591bb52c306c5eab1286e0d4fedf1d4f645b14e7581bacb7a7891a8f5b87b9",
+      "raw_transition_manifest_sha256": "2cb37f9d3dd052a862f231eb6e1a1b42369451d6ba30e29f4c1299776057e1fa"
+    }
+  ],
+  "summary": {
+    "artifact_backed_geometry_conditions_evaluated": 7,
+    "new_recoverable_training_candidates": 0,
+    "new_raw_negative_transition_captures": 1,
+    "training_examples_admitted": 0,
+    "strongest_bounded_result": "the existing three-centimetre negative-x fixture remains the only admitted recoverable geometry in this screen"
+  },
+  "access_and_quota_preflight": {
+    "hugging_face_local_token_configured": false,
+    "groot_checkpoint_weight_access_verified": false,
+    "cosmos_backbone_gated": true,
+    "cosmos_backbone_weight_access_verified": false,
+    "a100_quota_preference": {
+      "region": "us-central1",
+      "preferred_value": 1,
+      "granted_value": 0,
+      "reconciling": true
+    }
+  },
+  "next_gate": {
+    "paid_training_authorized": false,
+    "gpu_provision_authorized": false,
+    "requirements": [
+      "verify authenticated access to both pinned model repositories",
+      "obtain one A100 quota grant",
+      "review the research-only checkpoint license for the intended use",
+      "retain the 5000 JPY proposal cap and refresh the price immediately before launch"
+    ]
+  },
+  "claim_boundary": {
+    "privileged_oracle_used": true,
+    "raw_capture_is_training_data": false,
+    "training_invoked": false,
+    "model_inference_invoked": false,
+    "dispatch_request_sent": false,
+    "physical_execution_invoked": false,
+    "repair_capability_established": false
+  },
+  "result_sha256": "a2a8f34e9b82c08a1fd82de6cc9947cc00e5eb0a1c39c8a4e9ba4437813be235"
+}

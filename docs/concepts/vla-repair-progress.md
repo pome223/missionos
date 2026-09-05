@@ -114,6 +114,21 @@ Both policy runners used the original instruction, no additional training, and
 the same 128-action ceiling. Only actual LIBERO predicates established entry
 or completion; model-generated future images did not.
 
+### Small geometry expansion screen
+
+A later CPU-only screen tested whether the recovery-training set could be
+expanded cheaply before any GPU training. On the same init state and seed, the
+remaining 3 cm directions either left the task fully successful, while the
+tested 5 cm directions were unstable, changed the wrong predicate profile, or
+remained unrecoverable under the bounded scripted oracle. The one valid 5 cm
+failure fixture produced a 128-frame raw negative trace, but the oracle did not
+reach stable success, so it was not admitted as a recovery demonstration.
+
+The screen added zero training candidates. The existing recoverable 3 cm
+negative-x fixture remains the only admitted geometry from this narrow test.
+No GPU, model inference, or physical execution was used. The detailed record is
+the [geometry expansion evidence](../agents/evidence/20260905-libero-recovery-geometry-expansion.json).
+
 ## What the aligned comparison found
 
 Cosmos Policy was not simply producing zero actions. Earlier pose and object

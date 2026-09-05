@@ -91,9 +91,7 @@ def _event_summary(
 ) -> dict[str, Any]:
     """Summarize preregistered trajectory events without changing pass criteria."""
 
-    approach_limit = (
-        initial_eef_target_distance_metres - APPROACH_MINIMUM_DISTANCE_REDUCTION_METRES
-    )
+    approach_limit = initial_eef_target_distance_metres - APPROACH_MINIMUM_DISTANCE_REDUCTION_METRES
     first_approach = _first_consecutive_true(
         [float(item["eef_target_distance_metres"]) <= approach_limit for item in trace],
         APPROACH_CONSECUTIVE_STEPS,
@@ -110,8 +108,7 @@ def _event_summary(
         (
             int(item["action_index"])
             for item in trace
-            if float(item["target_displacement_metres"])
-            >= TARGET_MOTION_MINIMUM_METRES
+            if float(item["target_displacement_metres"]) >= TARGET_MOTION_MINIMUM_METRES
         ),
         None,
     )
@@ -127,9 +124,7 @@ def _event_summary(
                 "source": "libero_simulator_explicit_target_gripper_contact_api",
             },
             "first_target_motion": {
-                "minimum_translation_from_restored_fixture_metres": (
-                    TARGET_MOTION_MINIMUM_METRES
-                ),
+                "minimum_translation_from_restored_fixture_metres": (TARGET_MOTION_MINIMUM_METRES),
             },
         },
         "initial_eef_target_distance_metres": initial_eef_target_distance_metres,
@@ -234,9 +229,7 @@ def execute_live(
         environment.reset()
         environment.set_init_state(init_states[EPISODE_INIT_STATE_INDEX])
         observation = environment.regenerate_obs_from_state(snapshot)
-        restored_snapshot = np.asarray(
-            environment.sim.get_state().flatten(), dtype=np.float64
-        )
+        restored_snapshot = np.asarray(environment.sim.get_state().flatten(), dtype=np.float64)
         restore_difference = np.abs(restored_snapshot - snapshot)
         restore_maximum_error = float(restore_difference.max())
         if restore_maximum_error > RESTORE_MAXIMUM_ABSOLUTE_ERROR:
@@ -267,6 +260,13 @@ def execute_live(
         initial_eef = np.asarray(observation["robot0_eef_pos"], dtype=np.float64).copy()
         initial_eef_target_distance = float(np.linalg.norm(initial_eef - initial_target))
         desired_target = np.asarray(fixture["source_target_position_metres"], dtype=np.float64)
+        push_direction = desired_target - initial_target
+        push_direction[2] = 0.0
+        push_distance = float(np.linalg.norm(push_direction))
+        if push_distance <= 0.0:
+            raise RuntimeError("libero_curriculum_oracle_push_direction_invalid")
+        push_direction /= push_distance
+        approach_direction = -push_direction
 
         def capture(label: str) -> str:
             path = frame_dir / f"{action_count:04d}-{label}.png"
@@ -368,11 +368,19 @@ def execute_live(
             capture(stage)
 
         capture("source")
-        move_to("hover_left_of_target", initial_target + np.array([-0.065, 0.0, 0.15]), 120)
-        move_to("descend_left_of_target", initial_target + np.array([-0.055, 0.0, 0.032]), 100)
+        move_to(
+            "hover_behind_target",
+            initial_target + approach_direction * 0.065 + np.array([0.0, 0.0, 0.15]),
+            120,
+        )
+        move_to(
+            "descend_behind_target",
+            initial_target + approach_direction * 0.055 + np.array([0.0, 0.0, 0.032]),
+            100,
+        )
         move_to(
             "push_target_to_source_success_position",
-            desired_target + np.array([0.035, 0.0, 0.032]),
+            desired_target + push_direction * 0.035 + np.array([0.0, 0.0, 0.032]),
             80,
             stop_on_success=False,
             success_seating_steps=2,
