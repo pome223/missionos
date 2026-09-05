@@ -30,6 +30,7 @@ _OPERATOR_RECOVERY_ACTIONS = {
     "adjust_speed": "ADJUST SPEED",
     "reroute": "REROUTE",
     "avoid_obstacle": "AVOID OBSTACLE",
+    "calibrate_offboard": "CALIBRATE OFFBOARD",
 }
 
 
@@ -151,6 +152,8 @@ _OPERATE_CONSOLE_COMMANDS = (
     "reroute",
     "avoid",
     "avoid-obstacle",
+    "calibrate",
+    "calibrate-offboard",
     "quit",
 )
 
@@ -173,6 +176,9 @@ _OPERATE_RECOVERY_ACTION_ALIASES = {
     "avoid": "avoid_obstacle",
     "avoid-obstacle": "avoid_obstacle",
     "avoid_obstacle": "avoid_obstacle",
+    "calibrate": "calibrate_offboard",
+    "calibrate-offboard": "calibrate_offboard",
+    "calibrate_offboard": "calibrate_offboard",
 }
 
 
@@ -346,7 +352,7 @@ def _parse_operate_console_parameters(
             raise click.ClickException("usage: speed <speed_mps>")
         return values, assume_yes
 
-    if action in {"reroute", "avoid_obstacle"}:
+    if action in {"reroute", "avoid_obstacle", "calibrate_offboard"}:
         if positional:
             values["target_x_m"] = _float_operate_argument(
                 positional.pop(0),
@@ -363,10 +369,22 @@ def _parse_operate_console_parameters(
                 label="target_altitude_m",
             )
         if positional:
-            raise click.ClickException("reroute/avoid accepts x y and optional altitude")
+            raise click.ClickException(
+                "reroute/avoid/calibrate accepts x y and altitude"
+            )
         if "target_x_m" not in values or "target_y_m" not in values:
-            verb = "avoid" if action == "avoid_obstacle" else "reroute"
+            verb = (
+                "avoid"
+                if action == "avoid_obstacle"
+                else "calibrate"
+                if action == "calibrate_offboard"
+                else "reroute"
+            )
             raise click.ClickException(f"usage: {verb} <target_x_m> <target_y_m> [altitude_m]")
+        if action == "calibrate_offboard" and "target_altitude_m" not in values:
+            raise click.ClickException(
+                "usage: calibrate <target_x_m> <target_y_m> <altitude_m>"
+            )
         return values, assume_yes
 
     raise click.ClickException(f"unsupported recovery action: {action}")

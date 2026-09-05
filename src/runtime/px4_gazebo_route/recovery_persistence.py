@@ -7,6 +7,7 @@ artifacts, choose an action, invoke a backend, or upgrade completion evidence.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
@@ -33,6 +34,7 @@ class RouteDeviationRecoveryPersistenceInputs:
     post_approval: Any | None = None
     post_allowlist: Any | None = None
     post_dispatch: Any | None = None
+    mission_assurance_live_guard: Mapping[str, Any] | None = None
 
 
 def persist_route_deviation_recovery(
@@ -40,25 +42,26 @@ def persist_route_deviation_recovery(
 ) -> dict[str, Any]:
     """Persist supplied recovery facts without creating new authority."""
 
+    artifacts = recovery_task_artifacts(
+        deviation_abort=inputs.deviation_abort,
+        approval=inputs.approval,
+        allowlist=inputs.allowlist,
+        dispatch=inputs.dispatch,
+        completion=inputs.workflow.primary.completion,
+        post_approval=inputs.post_approval,
+        post_allowlist=inputs.post_allowlist,
+        post_dispatch=inputs.post_dispatch,
+        post_completion=inputs.workflow.post.completion,
+    )
+    if inputs.mission_assurance_live_guard is not None:
+        artifacts["mission_assurance_live_guard"] = dict(inputs.mission_assurance_live_guard)
     updated = inputs.store.update(
         inputs.task_id,
         status=inputs.workflow.task_status,
-        artifacts=recovery_task_artifacts(
-            deviation_abort=inputs.deviation_abort,
-            approval=inputs.approval,
-            allowlist=inputs.allowlist,
-            dispatch=inputs.dispatch,
-            completion=inputs.workflow.primary.completion,
-            post_approval=inputs.post_approval,
-            post_allowlist=inputs.post_allowlist,
-            post_dispatch=inputs.post_dispatch,
-            post_completion=inputs.workflow.post.completion,
-        ),
+        artifacts=artifacts,
     )
     if updated is None:
-        raise RecoveryPersistenceError(
-            f"route recovery task not found: {inputs.task_id}"
-        )
+        raise RecoveryPersistenceError(f"route recovery task not found: {inputs.task_id}")
     return updated
 
 

@@ -14,6 +14,7 @@ from typing import Any
 
 from missionos_core import (
     ActionCandidate,
+    CursorOrder,
     DerivedFact,
     EvidenceSourceRef,
     ExtensionVerdict,
@@ -27,6 +28,7 @@ from missionos_core import (
     VerificationItemStatus,
     verify_action_candidate,
 )
+
 from src.runtime.px4_gazebo_route.action_feasibility import (
     verify_runtime_recovery_action_candidates as _legacy_verify_candidates,
 )
@@ -36,7 +38,6 @@ from src.runtime.px4_gazebo_route.action_feasibility import (
 from src.runtime.px4_gazebo_route.hazard_state import (
     build_runtime_recovery_hazard_state as _legacy_build_hazard_state,
 )
-
 
 PX4_CORE_ADAPTER_ID = "missionos.px4.action_feasibility.v1"
 PX4_CURSOR_CONTRACT = "missionos.px4.telemetry_cursor.v1"
@@ -56,6 +57,35 @@ def _canonical_sha256(value: Mapping[str, Any]) -> str:
             default=str,
         ).encode("utf-8")
     ).hexdigest()
+
+
+def compare_px4_telemetry_cursors(
+    earlier: Mapping[str, Any],
+    later: Mapping[str, Any],
+) -> CursorOrder:
+    """Compare both PX4 cursor dimensions without inventing an ordering."""
+
+    if (
+        earlier.get("cursor_status") != "complete"
+        or later.get("cursor_status") != "complete"
+    ):
+        return CursorOrder.INCOMPARABLE
+    try:
+        index_delta = int(later["sample_index"]) - int(earlier["sample_index"])
+        elapsed_delta = float(later["elapsed_seconds"]) - float(
+            earlier["elapsed_seconds"]
+        )
+    except (KeyError, TypeError, ValueError):
+        return CursorOrder.INCOMPARABLE
+    index_sign = (index_delta > 0) - (index_delta < 0)
+    elapsed_sign = (elapsed_delta > 1e-9) - (elapsed_delta < -1e-9)
+    if index_sign != elapsed_sign:
+        return CursorOrder.INCOMPARABLE
+    if index_sign < 0:
+        return CursorOrder.AFTER
+    if index_sign > 0:
+        return CursorOrder.BEFORE
+    return CursorOrder.EQUAL
 
 
 def _core_hazard_state_from_runtime(
@@ -397,6 +427,7 @@ __all__ = [
     "PX4_CURSOR_CONTRACT",
     "attach_core_hazard_state",
     "build_runtime_recovery_hazard_state",
+    "compare_px4_telemetry_cursors",
     "verify_runtime_recovery_action_candidates",
     "verify_runtime_recovery_action_feasibility",
 ]

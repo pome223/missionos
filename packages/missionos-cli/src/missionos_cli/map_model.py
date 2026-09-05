@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import math
 from datetime import datetime, timezone
 from typing import Any
-import math
 
 import click
 
@@ -20,7 +20,7 @@ from .job_status import (
     _task_status,
     _terrain_profile_samples_for_watch,
 )
-
+from .mission_assurance_projection import mission_assurance_projection
 
 TERMINAL_TASK_STATUSES = frozenset(
     {"completed", "recovered", "blocked", "failed", "cancelled", "canceled"}
@@ -1861,6 +1861,121 @@ def _mission_indoor_map_model(
     }
 
 
+def _mission_px4_local_map_model(
+    *,
+    task_payload: dict[str, Any],
+    artifacts: dict[str, Any],
+    live_task_url: str | None,
+    poll_interval: float,
+) -> dict[str, Any] | None:
+    """Build a source-backed PX4/Gazebo local-XY map when WGS84 is absent."""
+
+    telemetry = artifacts.get("mission_designer_live_telemetry_snapshot")
+    telemetry = telemetry if isinstance(telemetry, dict) else {}
+    samples = _mission_map_flight_samples(artifacts)
+    observed: list[dict[str, Any]] = []
+    for index, sample in enumerate(samples):
+        x_m = _as_float(sample.get("local_x_m"))
+        y_m = _as_float(sample.get("local_y_m"))
+        if x_m is None or y_m is None:
+            continue
+        observed.append(
+            {
+                "sample_index": _as_int(sample.get("sample_index")) or index,
+                "x_m": x_m,
+                "y_m": y_m,
+                "altitude_up_m": _as_float(sample.get("local_z_m")),
+                "phase": _status_text(sample.get("phase"), "observed"),
+                "battery_remaining_percent": _as_float(
+                    sample.get("battery_remaining_percent")
+                ),
+                "source": "mission_designer_live_telemetry_snapshot.flight_path_profile",
+            }
+        )
+    if not observed:
+        return None
+
+    summary = artifacts.get("missionos_mission_assurance_px4_horizontal_summary")
+    summary = summary if isinstance(summary, dict) else {}
+    target_x = _as_float(summary.get("route_target_x_m"))
+    target_y = _as_float(summary.get("route_target_y_m"))
+    target_ned_z = _as_float(summary.get("route_target_z_m"))
+    planned = [{"role": "home", "x_m": 0.0, "y_m": 0.0, "altitude_up_m": 0.0}]
+    if target_x is not None and target_y is not None:
+        planned.append(
+            {
+                "role": "route_target",
+                "x_m": target_x,
+                "y_m": target_y,
+                "altitude_up_m": -target_ned_z if target_ned_z is not None else None,
+            }
+        )
+    assurance = mission_assurance_projection(artifacts)
+    last = observed[-1]
+    recovery_event = {}
+    if assurance.get("runtime_state_observed") is True or summary.get("recovery_action_taken"):
+        recovery_event = {
+            "x_m": last["x_m"],
+            "y_m": last["y_m"],
+            "altitude_up_m": last.get("altitude_up_m"),
+            "action": _first_present(
+                assurance.get("selected_action"), summary.get("recovery_action_taken")
+            ),
+            "state_label": _first_present(
+                assurance.get("runtime_state_label"), summary.get("recovery_state_label")
+            ),
+            "source": "latest_observed_telemetry_at_recovery_evidence_boundary",
+            "final_xy_observed": False,
+        }
+    task = _task_record(task_payload)
+    return {
+        "schema_version": "missionos_cli_px4_gazebo_local_map.v1",
+        "map_kind": "px4_gazebo_local_xy",
+        "task_id": _status_text(task.get("task_id")),
+        "task_status": _task_status(task_payload),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "provider": {
+            "key": "px4_gazebo_local_xy",
+            "label": "PX4/Gazebo local XY",
+            "url_template": "",
+            "attribution": "Mission Designer persisted telemetry",
+            "attribution_url": "",
+        },
+        "coordinate_frame": {
+            "frame_id": "px4_gazebo_local_xy",
+            "x_axis": "local X / north-like display axis (up)",
+            "y_axis": "local Y / east-like display axis (right)",
+            "observed_z_semantics": "altitude-up value persisted as local_z_m",
+            "planned_z_transform": "altitude_up_m = -route_target_z_m (NED target)",
+        },
+        "planned_points": planned,
+        "observed_points": observed,
+        "points": observed,
+        "latest": last,
+        "recovery_event": recovery_event,
+        "mission_assurance": assurance,
+        "telemetry": {
+            "sample_count": telemetry.get("sample_count", len(observed)),
+            "source_artifact": "mission_designer_live_telemetry_snapshot",
+        },
+        "live": {
+            "enabled": bool(live_task_url),
+            "task_url": live_task_url or "",
+            "poll_interval_ms": max(500, int(float(poll_interval) * 1000)),
+            "terminal_statuses": sorted(TERMINAL_TASK_STATUSES),
+        },
+        "boundaries": [
+            "Coordinates are persisted PX4/Gazebo local simulator observations, "
+            "not WGS84 positions.",
+            "The Recovery marker is the latest observed point at the evidence "
+            "boundary; final RTL/home XY was not observed.",
+            "Runtime state observation and command ACK are separate facts.",
+            "This map is read-only and creates no approval, dispatch, verifier, "
+            "delivery, or physical-execution claim.",
+        ],
+    }
+
+
 def _mission_map_model(
     *,
     task_payload: dict[str, Any],
@@ -1884,6 +1999,14 @@ def _mission_map_model(
         )
     route = _mission_map_latlon_from_route(artifacts)
     if route is None:
+        local_model = _mission_px4_local_map_model(
+            task_payload=task_payload,
+            artifacts=artifacts,
+            live_task_url=live_task_url,
+            poll_interval=poll_interval,
+        )
+        if local_model:
+            return local_model
         raise click.ClickException(
             "task does not include source coordinates; `missionos map` needs "
             "mission_designer_coordinate_pair_route takeoff/dropoff lat/lon"

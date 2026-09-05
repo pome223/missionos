@@ -21,6 +21,7 @@ GATEWAY_LLM_ADK_ENV_KEYS = (
     "MISSIONOS_LLM_DIALOGUE_ROUTER_ADK_ENABLED",
     "MISSIONOS_LLM_REPAIR_PLANNER_ADK_ENABLED",
     "MISSIONOS_LLM_RESPONSE_PLANNER_ADK_ENABLED",
+    "MISSIONOS_MISSION_ASSURANCE_ADK_ENABLED",
     "MISSIONOS_REAL_HARDWARE_ARM_DISARM_PLANNER_ADK_ENABLED",
 )
 
@@ -753,6 +754,7 @@ def test_execute_sitl_boolean_cannot_replace_stored_authority(
 
 
 def _pending_turtlebot3_recovery_task_artifacts() -> dict:
+    from test_turtlebot3_mission_incident import bind_checkpoint_graph
     from src.runtime.turtlebot3_home_mission import (
         _planned_segment_goals_from_proposal,
         _planned_segments_sha256,
@@ -803,6 +805,7 @@ def _pending_turtlebot3_recovery_task_artifacts() -> dict:
         "physical_execution_invoked": False,
         "progress_counted": False,
     }
+    bind_checkpoint_graph(checkpoint)
     checkpoint_hash = _recovery_checkpoint_hash(checkpoint)
     checkpoint["checkpoint_hash"] = checkpoint_hash
     checkpoint["checkpoint_id"] = (
@@ -2088,6 +2091,38 @@ def test_turtlebot3_recovery_approval_resumes_without_px4_runner_receipt(
     assert len(calls) == 1
 
 
+def test_turtlebot3_graphless_checkpoint_blocks_before_approval_and_executor(
+    isolated_gateway_factory, monkeypatch,
+) -> None:
+    from fastapi.testclient import TestClient
+    from src.gateway import server as gateway_server
+
+    gateway = isolated_gateway_factory()
+    artifacts = _pending_turtlebot3_recovery_task_artifacts()
+    checkpoint = artifacts["turtlebot3_recovery_checkpoint"]
+    checkpoint.pop("missionos_mission_incident_graph")
+    checkpoint["checkpoint_hash"] = gateway_server._recovery_checkpoint_hash(checkpoint)
+    checkpoint["checkpoint_id"] = "turtlebot3_recovery_checkpoint_" + checkpoint["checkpoint_hash"][:12]
+    artifacts["turtlebot3_recovery_checkpoints"] = {checkpoint["checkpoint_id"]: checkpoint}
+    task = gateway.task_store.create(
+        kind="turtlebot3_home_mission_execution", title="Graphless boundary test",
+        status="pending", artifacts=artifacts,
+    )
+    calls = []
+    monkeypatch.setattr(gateway_server, "run_turtlebot3_home_mission_dispatch", lambda **_: calls.append(True))
+    response = TestClient(gateway.app).post("/px4-gazebo/mission-scenarios/recovery-dispatch", json={
+        "task_id": task["task_id"], "recovery_action": "avoid_obstacle",
+        "recovery_parameters": checkpoint["approved_parameters"],
+        "explicit_recovery_dispatch_approval": True,
+    })
+    assert response.status_code == 409
+    assert response.json()["summary"]["blocked_reasons"] == ["mission_incident_graph_required_for_recovery_dispatch"]
+    assert calls == []
+    saved = gateway.task_store.get(task["task_id"])["artifacts"]
+    assert "turtlebot3_recovery_operator_approval" not in saved
+    assert "turtlebot3_recovery_bounded_action" not in saved
+
+
 def test_turtlebot3_core_revalidation_blocks_before_dispatch_authority(
     isolated_gateway_factory,
     monkeypatch,
@@ -2104,6 +2139,8 @@ def test_turtlebot3_core_revalidation_blocks_before_dispatch_authority(
         "core_action_feasibility_required": True,
         "core_hazard_state": {"state_id": "approved-state"},
     }
+    from test_turtlebot3_mission_incident import bind_checkpoint_graph
+    bind_checkpoint_graph(checkpoint)
     checkpoint["checkpoint_hash"] = gateway_server._recovery_checkpoint_hash(
         checkpoint
     )
@@ -3196,6 +3233,8 @@ def test_turtlebot3_recovery_return_home_uses_ground_action_without_route_resume
             "return_home_required": True,
         },
     }
+    from test_turtlebot3_mission_incident import bind_checkpoint_graph
+    bind_checkpoint_graph(checkpoint)
     checkpoint_hash = _recovery_checkpoint_hash(checkpoint)
     checkpoint["checkpoint_hash"] = checkpoint_hash
     checkpoint["checkpoint_id"] = (
@@ -3514,7 +3553,7 @@ def test_px4_stale_agent_recovery_proposal_cannot_mint_or_queue_authority(
     assert receipt["proposal_revalidation"]["validation_status"] == "blocked"
 
 
-def test_px4_fresh_bound_agent_recovery_proposal_can_queue_after_approval(
+def test_px4_fresh_v1_agent_proposal_cannot_bypass_incident_graph(
     isolated_gateway_factory,
     monkeypatch,
 ) -> None:
@@ -3641,33 +3680,26 @@ def test_px4_fresh_bound_agent_recovery_proposal_can_queue_after_approval(
         },
     )
 
-    assert response.status_code == 200, response.json()
+    assert response.status_code == 409, response.json()
     payload = response.json()
-    assert payload["summary"]["dispatch_status"] == "queued_for_active_runner"
-    assert payload["summary"]["dispatch_authority_created"] is True
-    assert payload["summary"]["proposal_revalidation"]["validation_status"] == "valid"
-    assert len(queue_calls) == 1
-    queued_request = queue_calls[0]["request_payload"]
-    assert queued_request["operator_approved"] is True
-    assert queued_request["proposal_origin"] == proposal_origin
-    assert queued_request["proposal_origin_sha256"] == proposal_origin_sha256
-    assert queued_request["recovery_parameters"] == {
-        **proposed_parameters,
-        "obstacle_avoidance_required": True,
-    }
+    assert payload["summary"]["dispatch_status"] == "blocked"
+    assert payload["summary"]["dispatch_authority_created"] is False
+    revalidation = payload["summary"]["proposal_revalidation"]
+    assert revalidation["validation_status"] == "blocked"
+    assert (
+        "mission_incident_graph_required_for_recovery_dispatch"
+        in revalidation["reasons"]
+    )
+    assert queue_calls == []
     stored = gateway.task_store.get(task_id)
     assert stored is not None
     stored_artifacts = stored["artifacts"]
-    bound_proposal = stored_artifacts[
+    unbound_proposal = stored_artifacts[
         "missionos_runtime_recovery_last_proposal"
     ]
-    assert bound_proposal["proposal_status"] == "dispatch_authority_bound"
-    assert bound_proposal["dispatch_authority_created"] is True
-    assert bound_proposal["proposal_origin"] == proposal_origin
-    assert bound_proposal["claimed_by_approval_ref"]
-    assert stored_artifacts["missionos_runtime_recovery_proposals"][
-        bound_proposal["proposal_id"]
-    ] == bound_proposal
+    assert unbound_proposal["proposal_status"] == "awaiting_operator_approval"
+    assert unbound_proposal["dispatch_authority_created"] is False
+    assert unbound_proposal["proposal_origin"] == proposal_origin
     receipt = stored_artifacts["missionos_runtime_recovery_dispatch_receipt"]
     assert receipt["dispatch_receipt_id"].startswith(
         "runtime_recovery_dispatch_receipt_"
@@ -3678,7 +3710,7 @@ def test_px4_fresh_bound_agent_recovery_proposal_can_queue_after_approval(
     ] == receipt
 
 
-def test_px4_fresh_obstacle_proposal_binds_source_name_after_cli_coordinate_match(
+def test_px4_v1_obstacle_source_binding_does_not_bypass_incident_graph(
     isolated_gateway_factory,
     monkeypatch,
 ) -> None:
@@ -3760,11 +3792,15 @@ def test_px4_fresh_obstacle_proposal_binds_source_name_after_cli_coordinate_matc
         },
     )
 
-    assert response.status_code == 200, response.json()
-    assert queued[0]["recovery_parameters"] == proposed
+    assert response.status_code == 409, response.json()
+    assert queued == []
     revalidation = response.json()["summary"]["proposal_revalidation"]
     assert revalidation["parameters_match"] is True
     assert revalidation["bound_parameters"] == proposed
+    assert (
+        "mission_incident_graph_required_for_recovery_dispatch"
+        in revalidation["reasons"]
+    )
 
 
 def test_px4_v2_dispatch_rejects_changed_nearest_obstacle(

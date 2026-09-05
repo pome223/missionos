@@ -21,7 +21,6 @@ from .execution_scope import (
     parse_hardware_execution_mode,
 )
 
-
 HAZARD_STATE_SCHEMA_VERSION = "missionos_core_hazard_state.v1"
 ACTION_CANDIDATE_SCHEMA_VERSION = "missionos_core_action_candidate.v1"
 ACTION_FEASIBILITY_SCHEMA_VERSION = "missionos_core_action_feasibility.v1"
@@ -795,3 +794,31 @@ class RevalidationArtifact:
     execution_invoked: bool = False
     completion_claimed: bool = False
     schema_version: str = REVALIDATION_SCHEMA_VERSION
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, value: Mapping[str, Any]) -> RevalidationArtifact:
+        return cls(
+            proposal_ref=str(value.get("proposal_ref") or ""),
+            original_result_sha256=str(
+                value.get("original_result_sha256") or ""
+            ),
+            current_result_sha256=str(
+                value.get("current_result_sha256") or ""
+            ),
+            status=FeasibilityStatus(
+                value.get("status", FeasibilityStatus.UNVERIFIED)
+            ),
+            reasons=tuple(str(item) for item in value.get("reasons", ())),
+            approval_created=bool(value.get("approval_created", False)),
+            dispatch_authority_created=bool(
+                value.get("dispatch_authority_created", False)
+            ),
+            execution_invoked=bool(value.get("execution_invoked", False)),
+            completion_claimed=bool(value.get("completion_claimed", False)),
+            schema_version=str(
+                value.get("schema_version", REVALIDATION_SCHEMA_VERSION)
+            ),
+        )

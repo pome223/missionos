@@ -6,6 +6,7 @@ import asyncio
 from contextlib import suppress
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -186,8 +187,57 @@ def _proposal(telemetry: dict[str, Any]) -> dict[str, Any]:
         recovery_policy=policy,
     )
     now = datetime.now(timezone.utc)
+    incident_graph = {
+        "schema_version": (
+            "missionos_adk_v2_mission_incident_graph_result.v1"
+        ),
+        "workflow_name": "missionos_mission_incident_v2",
+        "graph_runtime_status": "proposal_guardrail_passed",
+        "decision_status": "awaiting_operator_approval",
+        "alignment_status": "accepted",
+        "graph_node_sequence": [
+            "observe_mission_incident",
+            "invoke_runtime_recovery_agent",
+            "materialize_source_action_feasibility",
+            "invoke_mission_assurance_agent",
+            "resolve_mission_incident_checkpoint",
+            "finalize_mission_incident",
+        ],
+        "mission_assurance_agent_invoked": True,
+        "recovery_agent_invoked": True,
+        "recovery_agent_invoked_before_mission_assurance": True,
+        "recovery_judgment_available_before_mission_assurance": True,
+        "recovery_proposed_action": "avoid_obstacle",
+        "operator_approval_required": True,
+        "approval_created": False,
+        "dispatch_authority_created": False,
+        "dispatch_request_sent": False,
+        "executor_invoked": False,
+        "command_ack_observed": False,
+        "effect_observed": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+        "delivery_completion_claimed": False,
+        "fixture_only": True,
+    }
+    incident_graph_sha256 = hashlib.sha256(
+        json.dumps(
+            incident_graph,
+            ensure_ascii=True,
+            sort_keys=True,
+            separators=(",", ":"),
+            default=str,
+        ).encode("utf-8")
+    ).hexdigest()
+    incident_graph = {
+        **incident_graph,
+        "mission_incident_graph_sha256": incident_graph_sha256,
+        "mission_incident_graph_id": (
+            f"mission_incident_graph_{incident_graph_sha256[:12]}"
+        ),
+    }
     return {
-        "schema_version": "missionos_runtime_recovery_proposal_evidence.v3",
+        "schema_version": "missionos_runtime_recovery_proposal_evidence.v4",
         "proposal_id": "fixture_gateway_smoke_proposal",
         "proposal_status": "awaiting_operator_approval",
         "source_obstacle_name": "fixture_obstacle",
@@ -213,6 +263,7 @@ def _proposal(telemetry: dict[str, Any]) -> dict[str, Any]:
                 "action_feasibility": feasibility,
             }
         },
+        "missionos_mission_incident_graph": incident_graph,
         "dispatch_authority_created": False,
         "physical_execution_invoked": False,
         "completion_claimed": False,
@@ -275,6 +326,7 @@ async def _main() -> dict[str, Any]:
         reset_task_store()
         audit._audit_logger = None
         queued_requests: list[dict[str, Any]] = []
+        emergency_dispatch_calls: list[dict[str, Any]] = []
 
         def _fixture_runner_write(**kwargs) -> dict[str, Any]:
             queued_requests.append(deepcopy(kwargs))
@@ -288,12 +340,45 @@ async def _main() -> dict[str, Any]:
         gateway_server._write_missionos_auto_operator_recovery_request_to_container = (
             _fixture_runner_write
         )
+
+        def _unexpected_emergency_dispatch(**kwargs) -> None:
+            emergency_dispatch_calls.append(deepcopy(kwargs))
+            raise AssertionError(
+                "graphless Agent proposal reached emergency MAVLink dispatch"
+            )
+
+        gateway_server.run_px4_gazebo_emergency_command_dispatch = (
+            _unexpected_emergency_dispatch
+        )
         gateway = create_missionos_gateway()
         proposal_telemetry = _telemetry(
             sample_index=200,
             battery_percent=80.0,
         )
         proposal = _proposal(proposal_telemetry)
+        graphless_proposal = deepcopy(proposal)
+        graphless_proposal["schema_version"] = (
+            "missionos_runtime_recovery_proposal_evidence.v3"
+        )
+        graphless_proposal.pop("missionos_mission_incident_graph", None)
+        graphless_emergency_proposal = {
+            "schema_version": "missionos_runtime_recovery_proposal_evidence.v1",
+            "proposal_id": "fixture_graphless_emergency_proposal",
+            "proposal_status": "awaiting_operator_approval",
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+            "valid_until": (
+                datetime.now(timezone.utc) + timedelta(minutes=2)
+            ).isoformat(),
+            "runtime_recovery_agent_result": {
+                "assessment": {
+                    "recovery_planner_tool_candidate": {
+                        "selected_bounded_action": "return_to_launch",
+                        "proposed_parameters": {},
+                    }
+                }
+            },
+            "dispatch_authority_created": False,
+        }
         valid_telemetry = _telemetry(
             sample_index=201,
             battery_percent=80.0,
@@ -342,6 +427,27 @@ async def _main() -> dict[str, Any]:
                 status="running",
                 artifacts=_artifacts(deepcopy(proposal), telemetry),
             )
+        gateway.task_store.create(
+            task_id="task_fixture_graphless_maneuver",
+            kind="mission_designer_sitl_execution",
+            title="Graphless maneuver must fail closed",
+            status="running",
+            artifacts=_artifacts(graphless_proposal, valid_telemetry),
+        )
+        emergency_artifacts = _artifacts(
+            graphless_emergency_proposal,
+            valid_telemetry,
+        )
+        emergency_artifacts[
+            "missionos_auto_mission_gui_dispatch_running_receipt"
+        ]["operator_recovery_request_container_path"] = ""
+        gateway.task_store.create(
+            task_id="task_fixture_graphless_emergency",
+            kind="mission_designer_sitl_execution",
+            title="Graphless emergency must fail closed",
+            status="running",
+            artifacts=emergency_artifacts,
+        )
 
         parameters = proposal["intent_compilation"]["compiled_parameters"]
         requested = {
@@ -407,6 +513,24 @@ async def _main() -> dict[str, Any]:
                         "explicit_recovery_dispatch_approval": True,
                     },
                 )
+                graphless_maneuver = await client.post(
+                    "/px4-gazebo/mission-scenarios/recovery-dispatch",
+                    json={
+                        "task_id": "task_fixture_graphless_maneuver",
+                        "recovery_action": "avoid_obstacle",
+                        "recovery_parameters": requested,
+                        "explicit_recovery_dispatch_approval": True,
+                    },
+                )
+                graphless_emergency = await client.post(
+                    "/px4-gazebo/mission-scenarios/recovery-dispatch",
+                    json={
+                        "task_id": "task_fixture_graphless_emergency",
+                        "recovery_action": "return_to_launch",
+                        "recovery_parameters": {},
+                        "explicit_recovery_dispatch_approval": True,
+                    },
+                )
         finally:
             server.should_exit = True
             await server_task
@@ -429,10 +553,24 @@ async def _main() -> dict[str, Any]:
                 "verified calibration was not accepted: "
                 + calibration.text
             )
+        if graphless_maneuver.status_code != 409:
+            raise RuntimeError(
+                "graphless maneuver was not rejected: "
+                + graphless_maneuver.text
+            )
+        if graphless_emergency.status_code != 409:
+            raise RuntimeError(
+                "graphless emergency was not rejected: "
+                + graphless_emergency.text
+            )
         if len(queued_requests) != 2:
             raise RuntimeError(
                 "fixture runner must receive the verified dispatch and "
                 "explicit calibration only"
+            )
+        if emergency_dispatch_calls:
+            raise RuntimeError(
+                "graphless emergency reached MAVLink dispatch"
             )
         valid_body = valid.json()
         blocked_body = blocked.json()
@@ -448,6 +586,15 @@ async def _main() -> dict[str, Any]:
         calibration_revalidation = calibration_body["summary"][
             "proposal_revalidation"
         ]
+        graphless_maneuver_revalidation = graphless_maneuver.json()[
+            "summary"
+        ]["proposal_revalidation"]
+        graphless_emergency_revalidation = graphless_emergency.json()[
+            "summary"
+        ]["proposal_revalidation"]
+        graph_required_reason = (
+            "mission_incident_graph_required_for_recovery_dispatch"
+        )
         return {
             "gateway_loopback_smoke_passed": True,
             "valid_http_status": valid.status_code,
@@ -489,6 +636,21 @@ async def _main() -> dict[str, Any]:
             ),
             "fixture_runner_request_count": len(queued_requests),
             "physical_execution_invoked": False,
+            "graphless_maneuver_http_status": (
+                graphless_maneuver.status_code
+            ),
+            "graphless_maneuver_blocked_before_side_effect": (
+                graph_required_reason
+                in graphless_maneuver_revalidation["reasons"]
+            ),
+            "graphless_emergency_http_status": (
+                graphless_emergency.status_code
+            ),
+            "graphless_emergency_blocked_before_side_effect": (
+                graph_required_reason
+                in graphless_emergency_revalidation["reasons"]
+                and not emergency_dispatch_calls
+            ),
             "completion_claimed": False,
         }
 

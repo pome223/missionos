@@ -517,9 +517,24 @@ def _maneuver_geometry(
         reasons.append("action_feasibility_setup_duration_missing")
     if duration_margin is None:
         reasons.append("action_feasibility_duration_margin_missing")
+    # Separating setup/resume waits from measured travel must not erase them
+    # from the duration budget. Keep the policy floor and reserve observed
+    # same-task non-movement time with the existing uncertainty margin.
+    observed_non_movement_seconds = (
+        _number(performance_envelope.get("non_movement_duration_seconds"))
+        if performance_required else None
+    )
+    effective_setup_seconds = setup_seconds
+    if (
+        observed_non_movement_seconds is not None
+        and setup_seconds is not None and duration_margin is not None
+    ):
+        effective_setup_seconds = max(
+            setup_seconds, observed_non_movement_seconds * duration_margin
+        )
     duration = (
         max(horizontal_duration, vertical_duration) * duration_margin
-        + setup_seconds
+        + effective_setup_seconds
         if horizontal_duration is not None
         and vertical_duration is not None
         and duration_margin is not None
@@ -551,6 +566,8 @@ def _maneuver_geometry(
         ),
         "duration_margin_factor": duration_margin,
         "setup_seconds": setup_seconds,
+        "observed_non_movement_duration_seconds": observed_non_movement_seconds,
+        "effective_setup_seconds": effective_setup_seconds,
         "source_refs": list(performance_envelope.get("source_refs") or []),
     }
     return (

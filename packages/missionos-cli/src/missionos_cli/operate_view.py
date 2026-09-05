@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Any
 import json
+from typing import Any
 
 from rich.console import Group
 from rich.markup import escape as rich_escape
 from rich.panel import Panel
 from rich.text import Text
 
+from .mission_assurance_projection import mission_assurance_projection
 from .job_status import (
     _as_float,
     _as_int,
@@ -497,6 +498,29 @@ def _render_operate_status_line(
             f"planned_waypoints={len(planned_points) if isinstance(planned_points, list) else 0} · "
             "map: `missionos watch`[/dim]"
         )
+    designer_snapshot = artifacts.get("mission_designer_live_telemetry_snapshot")
+    designer_snapshot = designer_snapshot if isinstance(designer_snapshot, dict) else {}
+    latest = designer_snapshot.get("latest_sample")
+    latest = latest if isinstance(latest, dict) else {}
+    if not snapshot and latest:
+        battery_value = latest.get("battery_remaining_percent")
+        if battery_value is None:
+            battery_value = designer_snapshot.get("battery_remaining_percent")
+        local_x = _as_float(latest.get("local_x_m"))
+        local_y = _as_float(latest.get("local_y_m"))
+        local_z = _as_float(latest.get("local_z_m"))
+        position = (
+            f"x={local_x:.2f}m y={local_y:.2f}m z={local_z:.2f}m"
+            if local_x is not None and local_y is not None and local_z is not None
+            else "x/y/z=-"
+        )
+        return Text.from_markup(
+            f"[dim]task={task_id} status={status} · "
+            f"battery={_format_percent(battery_value)} · local={position} · "
+            f"phase={rich_escape(_status_text(latest.get('phase')))} · "
+            f"observed_samples={_status_text(designer_snapshot.get('sample_count'))} · "
+            "frame=PX4/Gazebo local XY · map: `missionos map`[/dim]"
+        )
     reached = _status_text(_as_int(snapshot.get("mission_reached_seq")))
     total = _status_text(_as_int(snapshot.get("waypoint_total")))
     return Text.from_markup(
@@ -507,6 +531,82 @@ def _render_operate_status_line(
         f"progress={_fmt_metres(snapshot.get('progress_m'))} · "
         f"home_dist={_fmt_metres(snapshot.get('distance_to_home_m'))} · "
         "full map in a separate pane: `missionos watch`[/dim]"
+    )
+
+
+def _render_mission_assurance_panel(projection: dict[str, Any]) -> Panel:
+    sequence = " -> ".join(projection.get("decision_sequence") or []) or "-"
+
+    def yes_no(value: Any) -> str:
+        return "yes" if value is True else "no" if value is False else "-"
+
+    intervention_line = None
+    if projection.get("dispatch_prevented_by_mission_assurance") is True:
+        intervention_line = (
+            "[bold yellow]Intervention:[/bold yellow] feasible recovery proposal "
+            "suppressed by MissionAssuranceAgent; dispatch=no; "
+            "post-decision re-observation="
+            f"{yes_no(projection.get('post_suppression_reobservation_observed'))}."
+        )
+    lines = [
+        f"[bold]Sequence:[/bold] {rich_escape(sequence)}",
+        (
+            "[cyan]Recovery Agent[/cyan] proposes "
+            f"[bold]{rich_escape(_status_text(projection.get('recovery_proposed_action')))}[/bold] "
+            f"(model={rich_escape(_status_text(projection.get('recovery_model_id')))}, "
+            f"status={rich_escape(_status_text(projection.get('recovery_proposal_status')))})"
+        ),
+        (
+            "[magenta]MissionAssuranceAgent[/magenta] judges "
+            f"[bold]{rich_escape(_status_text(projection.get('mission_assurance_response')))}[/bold] "
+            f"(model={rich_escape(_status_text(projection.get('mission_assurance_model_id')))}, "
+            f"status={rich_escape(_status_text(projection.get('mission_assurance_judgment_status')))})"
+        ),
+        (
+            "[dim]Feasibility: original="
+            f"{rich_escape(_status_text(projection.get('original_feasibility')))}; current="
+            f"{rich_escape(_status_text(projection.get('current_feasibility')))}; revalidation="
+            f"{rich_escape(_status_text(projection.get('revalidation_status')))}; guard="
+            f"{rich_escape(_status_text(projection.get('guard_status')))}[/dim]"
+        ),
+        (
+            "[dim]Operator/runtime: route_execution_approval_consumed="
+            f"{yes_no(projection.get('route_execution_approval_consumed'))}; "
+            "recovery_approval_recorded="
+            f"{yes_no(projection.get('recovery_approval_recorded'))}; selected_action="
+            f"{rich_escape(_status_text(projection.get('selected_action')))}; state="
+            f"{rich_escape(_status_text(projection.get('runtime_state_label')))}; command_ACK="
+            f"{yes_no(projection.get('command_ack_observed'))}; final="
+            f"{rich_escape(_status_text(projection.get('final_status')))}[/dim]"
+        ),
+        (
+            "[yellow]Authority boundary:[/yellow] agents created no approval or dispatch authority; "
+            f"physical_execution={yes_no(projection.get('physical_execution_invoked'))}. "
+            "Observed runtime state and command ACK remain separate facts."
+        ),
+    ]
+    if projection.get("fresh_operator_approval_required") is True:
+        lines.insert(
+            4,
+            "[bold yellow]Operator approval required:[/bold yellow] fresh approval for "
+            f"{rich_escape(_status_text(projection.get('proposed_action_awaiting_approval')))}. "
+            "The route execution approval does not authorize this Recovery action.",
+        )
+    if projection.get("agent_disagreement_observed") is True:
+        lines.insert(
+            4,
+            "[bold yellow]Agent disagreement:[/bold yellow] Recovery proposed "
+            f"{rich_escape(_status_text(projection.get('recovery_no_action_response')))}, "
+            "while MissionAssuranceAgent requested "
+            f"{rich_escape(_status_text(projection.get('assurance_requested_action')))}. "
+            "No action was invented; resolution=operator_escalation.",
+        )
+    if intervention_line:
+        lines.insert(4, intervention_line)
+    return Panel(
+        "\n".join(lines),
+        title="Mission Assurance — Recovery proposal review",
+        border_style="magenta",
     )
 
 
@@ -557,6 +657,7 @@ def _build_operate_status_group(
     checkpoint = checkpoint if isinstance(checkpoint, dict) else {}
     indoor_map = _turtlebot3_indoor_map_model_from_artifacts(artifacts)
     observed_points = indoor_map.get("observed_points")
+    assurance_projection = mission_assurance_projection(artifacts)
     fingerprint = json.dumps(
         {
             "status": status,
@@ -574,6 +675,7 @@ def _build_operate_status_group(
             "observed_point_count": (
                 len(observed_points) if isinstance(observed_points, list) else 0
             ),
+            "mission_assurance": assurance_projection,
         },
         sort_keys=True,
         default=str,
@@ -587,6 +689,10 @@ def _build_operate_status_group(
                 status=status,
                 task_id=task_id,
                 pending=pending,
+            ),
+            *(
+                (_render_mission_assurance_panel(assurance_projection),)
+                if assurance_projection else ()
             ),
             _render_operate_status_line(
                 snapshot,

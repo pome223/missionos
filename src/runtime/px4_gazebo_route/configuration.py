@@ -15,7 +15,6 @@ from src.runtime.px4_gazebo_route_dispatcher import (
 )
 from src.runtime.px4_gazebo_route_plan import ROUTE_ON_DEVIATION_ACTIONS
 
-
 PAYLOAD_FEASIBILITY_ADVISORY_REF_PREFIX = (
     "payload_feasibility_advisory:mission_designer_payload_mass"
 )
@@ -42,6 +41,15 @@ def parse_route_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help=(
             "Horizontal route-deviation threshold for the planned route. "
             "Used by scoped runtime audits such as wind-drift recovery."
+        ),
+    )
+    parser.add_argument(
+        "--mission-assurance-on-deviation",
+        action="store_true",
+        help=(
+            "Ask the shared MissionAssuranceAgent to judge a route deviation, "
+            "then require same-runtime Action Feasibility revalidation before "
+            "the preapproved RTL recovery can be dispatched."
         ),
     )
     parser.add_argument(
@@ -106,8 +114,7 @@ def parse_route_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--payload-feasibility-advisory-ref",
         default="",
         help=(
-            "Source payload_feasibility_advisory.v1 ref consumed by the "
-            "payload recovery action."
+            "Source payload_feasibility_advisory.v1 ref consumed by the payload recovery action."
         ),
     )
     return parser.parse_args(argv)
@@ -135,13 +142,22 @@ def validate_payload_advisory_recovery_args(args: argparse.Namespace) -> None:
             f"{PAYLOAD_FEASIBILITY_ADVISORY_REF_PREFIX}"
         )
     if args.mission_os_supervisor_payload_loop and (
-        args.payload_advisory_recovery_action != "rtl"
-        or args.post_recovery_action != "land"
+        args.payload_advisory_recovery_action != "rtl" or args.post_recovery_action != "land"
     ):
         raise RuntimeError(
             "payload supervisor Form 3 requires "
             "--payload-advisory-recovery-action rtl and "
             "--post-recovery-action land"
+        )
+
+
+def validate_mission_assurance_args(args: argparse.Namespace) -> None:
+    """Keep dispatch bounded without preselecting the Recovery Agent answer."""
+
+    if args.mission_assurance_on_deviation and args.on_deviation_action != "rtl":
+        raise RuntimeError(
+            "--mission-assurance-on-deviation currently requires the rtl executor "
+            "as an available upper bound, not as a requested Recovery Agent action"
         )
 
 
@@ -157,6 +173,7 @@ __all__ = [
     "PAYLOAD_FEASIBILITY_ADVISORY_REF_PREFIX",
     "parse_route_args",
     "payload_advisory_recovery_requested",
+    "validate_mission_assurance_args",
     "validate_payload_advisory_recovery_args",
     "validate_planned_route_stream_budget",
 ]

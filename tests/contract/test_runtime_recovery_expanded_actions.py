@@ -1,4 +1,5 @@
 from __future__ import annotations
+from copy import deepcopy
 
 from datetime import datetime, timezone
 import json
@@ -13,6 +14,10 @@ from missionos_cli import cli as missionos_cli
 from scripts import smoke_missionos_auto_mission_full_runtime_probe as auto_probe
 from src.gateway import server as gateway_server
 from src.intelligence import missionos_agent_runtime
+from src.intelligence.mission_assurance_agent import (
+    MissionAssuranceAgent,
+    ModelJudgment,
+)
 from src.runtime import missionos_auto_mission_runner as auto_runner
 from src.runtime import px4_gazebo_mission_designer_sitl_live_flight_run as live_run
 from src.runtime.px4_gazebo_route.compound_hazard_transition import (
@@ -687,7 +692,7 @@ def test_gateway_preserves_only_safe_alternate_dropoff_metadata() -> None:
         )
 
 
-def test_alternate_dropoff_dispatch_revalidates_exact_fresh_proposal() -> None:
+def test_alternate_dropoff_binding_does_not_bypass_incident_graph() -> None:
     now = datetime.now(timezone.utc)
     parameters = {
         "target_x_m": 100.0,
@@ -745,12 +750,54 @@ def test_alternate_dropoff_dispatch_revalidates_exact_fresh_proposal() -> None:
         now=now,
     )
 
-    assert result["validation_status"] == "valid"
+    assert result["validation_status"] == "blocked"
     assert result["parameters_match"] is True
     assert result["manifest_bound_alternate_dropoff"] is True
     assert result["alternate_dropoff_manifest_binding_valid"] is True
     assert "origin_drift_m" not in result
-    assert result["reasons"] == []
+    assert "mission_incident_graph_required_for_recovery_dispatch" in result[
+        "reasons"
+    ]
+
+
+def test_v4_recovery_proposal_requires_unified_incident_graph() -> None:
+    now = datetime.now(timezone.utc)
+    result = gateway_server._runtime_recovery_proposal_revalidation(
+        artifacts={
+            "missionos_runtime_recovery_last_proposal": {
+                "schema_version": (
+                    "missionos_runtime_recovery_proposal_evidence.v4"
+                ),
+                "proposal_id": "proposal_without_incident_graph",
+                "proposal_status": "awaiting_operator_approval",
+                "observed_at": now.isoformat(),
+                "valid_until": now.replace(year=now.year + 1).isoformat(),
+                "runtime_recovery_agent_result": {
+                    "assessment": {
+                        "recovery_planner_tool_candidate": {
+                            "selected_bounded_action": "avoid_obstacle",
+                            "proposed_parameters": {
+                                "target_x_m": 100.0,
+                                "target_y_m": 30.0,
+                            },
+                        }
+                    }
+                },
+            },
+            "missionos_runtime_recovery_agent_live_bridge": {
+                "telemetry_snapshot": {
+                    "position": {"local_x_m": 0.0, "local_y_m": 0.0},
+                    "telemetry": {"stale": False},
+                }
+            },
+        },
+        recovery_action="avoid_obstacle",
+        recovery_parameters={"target_x_m": 100.0, "target_y_m": 30.0},
+        now=now,
+    )
+
+    assert result["validation_status"] == "blocked"
+    assert "mission_incident_graph_missing_or_invalid" in result["reasons"]
 
 
 def test_alternate_dropoff_revalidation_rejects_changed_obstacle_manifest() -> None:
@@ -1681,6 +1728,19 @@ def test_runtime_recovery_agent_waits_for_new_decision_epoch(
             "dispatch_authority_created": False,
             "progress_counted": False,
         }
+        incident_graph = live_run.run_missionos_mission_incident_graph(
+            telemetry_snapshot=telemetry_snapshot,
+            mission_context={
+                "task_id": kwargs["task_id"],
+                "mission_phase": "live_auto_mission",
+                "execution_scope": "simulator",
+            },
+            recovery_policy=recovery_policy,
+            recovery_runner=lambda **_: result,
+        )
+        result["missionos_mission_incident_graph"] = incident_graph
+        result["mission_incident_graph_required"] = True
+        return result
 
     monkeypatch.setattr(
         live_run,
@@ -2008,6 +2068,42 @@ def test_safety_hold_preserves_matching_local_avoidance_proposal(
         },
     )
     invocations: list[int] = []
+    assurance_samples: list[int] = []
+
+    class _ReplanJudge:
+        def judge(self, prompt) -> ModelJudgment:
+            telemetry = prompt["mission_situation"]["observations"][
+                "runtime_telemetry"
+            ]
+            assurance_samples.append(int(telemetry["sample_index"]))
+            return ModelJudgment(
+                output={
+                    "proposed_response_kind": "replan",
+                    "parameters": {},
+                    "rationale": "Fresh obstacle avoidance remains mission aligned.",
+                    "expected_outcome": "Operator may review the fresh proposal.",
+                    "uncertainty": "Fixture judgment.",
+                    "operator_question": "Approve the fresh avoidance proposal?",
+                },
+                invocation_evidence={
+                    "invocation_kind": "fixture",
+                    "model_id": "fixture-mission-assurance",
+                },
+            )
+
+    real_incident_graph = live_run.run_missionos_mission_incident_graph
+
+    def _incident_graph_with_fixture_assurance(**kwargs):
+        return real_incident_graph(
+            **kwargs,
+            mission_assurance_agent=MissionAssuranceAgent(_ReplanJudge()),
+        )
+
+    monkeypatch.setattr(
+        live_run,
+        "run_missionos_mission_incident_graph",
+        _incident_graph_with_fixture_assurance,
+    )
 
     def _proposal(**kwargs) -> dict:
         invocations.append(int(kwargs["telemetry_snapshot"]["sample_index"]))
@@ -2038,7 +2134,7 @@ def test_safety_hold_preserves_matching_local_avoidance_proposal(
                 parameter_tool_called=True,
             )
         )
-        return {
+        result = {
             "schema_version": "missionos_runtime_recovery_agent_result.v1",
             "runtime_status": assessment["assessment_status"],
             "blocking_reasons": assessment["blocking_reasons"],
@@ -2056,6 +2152,19 @@ def test_safety_hold_preserves_matching_local_avoidance_proposal(
             "dispatch_authority_created": False,
             "progress_counted": False,
         }
+        incident_graph = live_run.run_missionos_mission_incident_graph(
+            telemetry_snapshot=telemetry_snapshot,
+            mission_context={
+                "task_id": kwargs["task_id"],
+                "mission_phase": "live_auto_mission",
+                "execution_scope": "simulator",
+            },
+            recovery_policy=recovery_policy,
+            recovery_runner=lambda **_: result,
+        )
+        result["missionos_mission_incident_graph"] = incident_graph
+        result["mission_incident_graph_required"] = True
+        return result
 
     monkeypatch.setattr(
         live_run,
@@ -2133,6 +2242,21 @@ def test_safety_hold_preserves_matching_local_avoidance_proposal(
     assert hold_receipt["request_status"] == "observed"
     assert hold_receipt["runner_observed"] is True
 
+    # Reproduce the live ordering where a non-judgment telemetry poll adopted
+    # the held conflict signature.  Signature equality alone must not suppress
+    # the first hosted avoid_obstacle judgment for this obstacle.
+    store.update(
+        task["task_id"],
+        replace_artifacts={
+            "missionos_runtime_recovery_agent_live_bridge": {
+                **bridge,
+                "last_recovery_decision_signature": bridge[
+                    "recovery_decision_signature"
+                ],
+            }
+        },
+    )
+
     live_run._attach_auto_runtime_recovery_agent_proposal(
         store=store,
         task_id=task["task_id"],
@@ -2156,6 +2280,9 @@ def test_safety_hold_preserves_matching_local_avoidance_proposal(
     proposal_id = current["proposal_id"]
     assert invocations == [42]
     assert current["proposal_status"] == "awaiting_operator_approval"
+    assert current["schema_version"] == (
+        "missionos_runtime_recovery_proposal_evidence.v4"
+    )
     assert (
         proposed["artifacts"]["missionos_runtime_recovery_agent_live_bridge"][
             "agent_refresh_status"
@@ -2274,9 +2401,112 @@ def test_safety_hold_preserves_matching_local_avoidance_proposal(
     assert invocations == [42]
     assert refreshed["proposal_id"] != proposal_id
     assert refreshed["proposal_status"] == "awaiting_operator_approval"
+    assert refreshed["schema_version"] == (
+        "missionos_runtime_recovery_proposal_evidence.v4"
+    )
     assert refreshed["proposal_source"] == ("deterministic_recompile_of_prior_llm_judgment")
     assert refreshed["source_proposal_id"] == proposal_id
     assert refreshed["hosted_model_invoked_for_proposal"] is False
+    assert refreshed["missionos_mission_incident_graph"][
+        "recovery_judgment_inherited"
+    ] is True
+    assert refreshed["missionos_mission_incident_graph"][
+        "mission_assurance_agent_invoked"
+    ] is True
+    assert assurance_samples == [42, 46]
+    assurance_recompile = refreshed["assurance_recompile_evidence"]
+    assert assurance_recompile["source_telemetry_cursor"]["sample_index"] == 42
+    assert assurance_recompile["fresh_telemetry_cursor"]["sample_index"] == 46
+    assert assurance_recompile["recovery_judgment_inherited"] is True
+    assert assurance_recompile["mission_assurance_reexecuted"] is True
+    assert (
+        assurance_recompile["old_mission_assurance_judgment_inherited"]
+        is False
+    )
+    recompile_evidence = refreshed["parameter_recompile_evidence"]
+    assert recompile_evidence["comparison_status"] == "computed"
+    assert recompile_evidence["recompile_performed"] is True
+    assert recompile_evidence["source_proposal_id"] == proposal_id
+    assert recompile_evidence["source_parameters"]
+    assert recompile_evidence["recompiled_parameters"]
+    assert recompile_evidence["parameter_recompile_evidence_id"] == (
+        refreshed["parameter_recompile_evidence_id"]
+    )
+    recompiled_candidate = refreshed["runtime_recovery_agent_result"][
+        "assessment"
+    ]["recovery_planner_tool_candidate"]
+    recompiled_artifacts["missionos_auto_mission_runtime_snapshot"] = {
+        **recompiled_artifacts["missionos_auto_mission_runtime_snapshot"],
+        "sample_index": 46,
+        "elapsed_seconds": 86.0,
+    }
+    requested_recompiled_parameters = (
+        gateway_server._bounded_operator_recovery_parameters(
+            recovery_action="avoid_obstacle",
+            body={
+                "recovery_parameters": {
+                    key: value
+                    for key, value in recompiled_candidate[
+                        "proposed_parameters"
+                    ].items()
+                    if key != "source_obstacle_name"
+                }
+            },
+        )
+    )
+    revalidation = gateway_server._runtime_recovery_proposal_revalidation(
+        artifacts=recompiled_artifacts,
+        recovery_action="avoid_obstacle",
+        recovery_parameters=requested_recompiled_parameters,
+        now=datetime.now(timezone.utc),
+    )
+    assert revalidation["validation_status"] == "valid", revalidation[
+        "reasons"
+    ]
+    assert revalidation["parameter_recompile_evidence_id"] == (
+        recompile_evidence["parameter_recompile_evidence_id"]
+    )
+    assert revalidation["parameter_recompile_evidence"][
+        "source_proposal_id"
+    ] == proposal_id
+    tampered_artifacts = deepcopy(recompiled_artifacts)
+    tampered_artifacts["missionos_runtime_recovery_last_proposal"][
+        "parameter_recompile_evidence"
+    ]["recompiled_parameters"]["target_x_m"] += 1.0
+    tampered_revalidation = (
+        gateway_server._runtime_recovery_proposal_revalidation(
+            artifacts=tampered_artifacts,
+            recovery_action="avoid_obstacle",
+            recovery_parameters=requested_recompiled_parameters,
+            now=datetime.now(timezone.utc),
+        )
+    )
+    assert tampered_revalidation["validation_status"] == "blocked"
+    assert (
+        "runtime_recovery_parameter_recompile_evidence_hash_mismatch"
+        in tampered_revalidation["reasons"]
+    )
+    assurance_tampered_artifacts = deepcopy(recompiled_artifacts)
+    assurance_tampered_artifacts["missionos_runtime_recovery_last_proposal"][
+        "assurance_recompile_evidence"
+    ]["old_mission_assurance_judgment_inherited"] = True
+    assurance_tampered_revalidation = (
+        gateway_server._runtime_recovery_proposal_revalidation(
+            artifacts=assurance_tampered_artifacts,
+            recovery_action="avoid_obstacle",
+            recovery_parameters=requested_recompiled_parameters,
+            now=datetime.now(timezone.utc),
+        )
+    )
+    assert assurance_tampered_revalidation["validation_status"] == "blocked"
+    assert (
+        "runtime_recovery_assurance_recompile_evidence_hash_mismatch"
+        in assurance_tampered_revalidation["reasons"]
+    )
+    assert (
+        "runtime_recovery_fresh_assurance_not_observed"
+        in assurance_tampered_revalidation["reasons"]
+    )
     assert (
         recompiled_artifacts["missionos_runtime_recovery_proposals"][proposal_id]["proposal_status"]
         == "stale"
@@ -2315,8 +2545,12 @@ def test_safety_hold_preserves_matching_local_avoidance_proposal(
     assert invocations == [42]
     assert repaired_proposal["proposal_id"] != refreshed["proposal_id"]
     assert repaired_proposal["proposal_status"] == "awaiting_operator_approval"
+    assert repaired_proposal["schema_version"] == (
+        "missionos_runtime_recovery_proposal_evidence.v4"
+    )
     assert repaired_proposal["proposal_source"] == ("deterministic_recompile_of_prior_llm_judgment")
     assert repaired_proposal["source_proposal_id"] == refreshed["proposal_id"]
+    assert assurance_samples == [42, 46, 47]
 
 
 def test_successful_recovery_does_not_queue_a_second_hold(
@@ -3785,6 +4019,8 @@ def test_runtime_probe_never_resumes_auto_before_recovery_target_is_reached() ->
     assert "recovery_leg_lateral_clearance_not_verified" in script
     assert "recovery_leg_clearance_verified" in script
     assert "OPERATOR_RECOVERY_LATERAL_OBSTACLE_MARGIN_M=20.0" in script
+    assert "HEARTBEAT_LIVENESS_WINDOW_SECONDS=10.0" in script
+    assert auto_probe.SITL_HEARTBEAT_LIVENESS_WINDOW_SECONDS == 10.0
     assert "original_dropoff_collision_occupied" in script
     assert "held_remaining_route_or_dropoff_unsafe" in script
     assert "held_at_alternate_dropoff_awaiting_operator_decision" in script
@@ -3798,10 +4034,14 @@ def test_runtime_probe_never_resumes_auto_before_recovery_target_is_reached() ->
     assert "'calibrate_offboard'" in script
     assert "bounded_offboard_performance_calibration" in script
     assert "if action == 'calibrate_offboard'" in script
+    assert "OPERATOR_RECOVERY_CALIBRATION_MIN_SAMPLE_COUNT=5" in script
+    assert "or len(maneuver_samples)" in script
+    assert ">= OPERATOR_RECOVERY_CALIBRATION_MIN_SAMPLE_COUNT" in script
+    assert "'minimum_sample_count': minimum_samples" in script
     assert "horizontal_tolerance_m" in script
     assert "last_distance_to_target <= horizontal_tolerance_m" in script
     assert (
-        "OPERATOR_RECOVERY_ASSIST_OBSTACLE_AVOIDANCE_MAX_SECONDS=150.0"
+        "OPERATOR_RECOVERY_ASSIST_OBSTACLE_AVOIDANCE_MAX_SECONDS=240.0"
         in script
     )
     assert "if action == 'avoid_obstacle'" in script
@@ -4372,6 +4612,70 @@ def test_obstacle_conflict_projection_waits_until_destination_obstacle_is_local(
     assert local["nearest_obstacle"]["time_to_conflict_s"] == 10.0
 
 
+def test_obstacle_conflict_projection_does_not_hold_before_horizontal_motion() -> None:
+    artifacts = {
+        "mission_designer_coordinate_pair_route": {
+            "takeoff_latitude": 35.0,
+            "takeoff_longitude": 139.0,
+            "dropoff_latitude": 35.0027,
+            "dropoff_longitude": 139.0,
+        }
+    }
+    obstacle = {
+        "projection_status": "source_backed",
+        "obstacle_manifest": {
+            "obstacles": [
+                {
+                    "name": "missionos_route_obstacle",
+                    "x_m": 75.0,
+                    "y_m": 0.0,
+                    "size_x_m": 18.0,
+                    "size_y_m": 18.0,
+                }
+            ]
+        },
+    }
+
+    stationary = live_run._auto_runtime_obstacle_conflict_projection(
+        snapshot={
+            "local_x_m": 0.0,
+            "local_y_m": 0.0,
+            "local_vx_mps": 0.0,
+            "local_vy_mps": 0.0,
+        },
+        artifacts=artifacts,
+        obstacle_projection=obstacle,
+    )
+    moving = live_run._auto_runtime_obstacle_conflict_projection(
+        snapshot={
+            "local_x_m": 0.0,
+            "local_y_m": 0.0,
+            "local_vx_mps": 5.0,
+            "local_vy_mps": 0.0,
+        },
+        artifacts=artifacts,
+        obstacle_projection=obstacle,
+    )
+    held = live_run._auto_runtime_obstacle_conflict_projection(
+        snapshot={
+            "local_x_m": 0.0,
+            "local_y_m": 0.0,
+            "local_vx_mps": 0.0,
+            "local_vy_mps": 0.0,
+            "operator_recovery_action": "safety_hold",
+            "operator_recovery_assist_status": "safety_hold_observed",
+        },
+        artifacts=artifacts,
+        obstacle_projection=obstacle,
+    )
+
+    assert stationary["local_avoidance_required"] is False
+    assert stationary["nearest_obstacle"]["time_to_conflict_s"] is None
+    assert moving["local_avoidance_required"] is True
+    assert moving["nearest_obstacle"]["time_to_conflict_s"] == 13.2
+    assert held["local_avoidance_required"] is True
+
+
 def test_obstacle_conflict_projection_selects_next_local_conflict_not_passed_one() -> None:
     artifacts = {
         "mission_designer_coordinate_pair_route": {
@@ -4738,20 +5042,20 @@ def test_live_recovery_agent_timeout_falls_back_to_guarded_planner() -> None:
     assert result["progress_counted"] is False
 
 
-def test_runtime_recovery_agent_timeout_uses_gemini_budget_and_bounded_cap(
+def test_runtime_recovery_agent_timeout_uses_three_agent_epoch_budget_and_cap(
     monkeypatch,
 ) -> None:
     monkeypatch.delenv(
         live_run.MISSIONOS_RUNTIME_RECOVERY_AGENT_TIMEOUT_SECONDS_ENV,
         raising=False,
     )
-    assert live_run._runtime_recovery_agent_timeout_seconds() == 45.0
+    assert live_run._runtime_recovery_agent_timeout_seconds() == 120.0
 
     monkeypatch.setenv(
         live_run.MISSIONOS_RUNTIME_RECOVERY_AGENT_TIMEOUT_SECONDS_ENV,
-        "120",
+        "240",
     )
-    assert live_run._runtime_recovery_agent_timeout_seconds() == 90.0
+    assert live_run._runtime_recovery_agent_timeout_seconds() == 120.0
 
 
 def test_fallback_proposal_origin_is_not_labeled_as_hosted_judgment() -> None:
@@ -4771,6 +5075,62 @@ def test_fallback_proposal_origin_is_not_labeled_as_hosted_judgment() -> None:
     assert origin["invocation_kind"] == "deterministic_guardrail_fallback"
     assert origin["fallback_reason"] == "runtime_recovery_agent_timeout"
     assert origin["contains_prompt_or_response_text"] is False
+
+
+def test_parameter_recompile_evidence_exposes_exact_parameter_changes() -> None:
+    evidence = live_run._runtime_recovery_parameter_recompile_evidence(
+        proposal_recompiled=True,
+        source_proposal={
+            "proposal_id": "runtime_recovery_proposal_source",
+            "missionos_mission_incident_graph": {
+                "mission_incident_graph_id": "mission_incident_graph_source",
+                "mission_assurance_proposal": {
+                    "proposal_id": "mission_response_proposal_source"
+                },
+            },
+        },
+        source_parameters={
+            "target_x_m": 894.969,
+            "target_y_m": 426.967,
+            "target_altitude_m": 45.0,
+        },
+        recompiled_parameters={
+            "target_x_m": 895.594,
+            "target_y_m": 426.693,
+            "target_altitude_m": 45.0,
+        },
+    )
+
+    assert evidence["recompile_performed"] is True
+    assert evidence["parameters_changed"] is True
+    assert evidence["exact_parameters_preserved"] is False
+    assert evidence["source_proposal_id"] == "runtime_recovery_proposal_source"
+    assert evidence["source_mission_incident_graph_id"] == (
+        "mission_incident_graph_source"
+    )
+    assert evidence["source_mission_assurance_proposal_id"] == (
+        "mission_response_proposal_source"
+    )
+    assert evidence["changed_parameter_keys"] == [
+        "target_x_m",
+        "target_y_m",
+    ]
+    assert evidence["parameter_changes"] == [
+        {
+            "parameter": "target_x_m",
+            "source_value": 894.969,
+            "recompiled_value": 895.594,
+            "numeric_delta": 0.625,
+        },
+        {
+            "parameter": "target_y_m",
+            "source_value": 426.967,
+            "recompiled_value": 426.693,
+            "numeric_delta": -0.274,
+        },
+    ]
+    assert evidence["approval_created"] is False
+    assert evidence["dispatch_authority_created"] is False
 
 
 def test_runtime_recovery_accepts_adk_skip_summarization_tool_judgment(
@@ -4845,6 +5205,92 @@ def test_runtime_recovery_accepts_adk_skip_summarization_tool_judgment(
     assert origin["origin_kind"] == "hosted_llm"
     assert origin["function_calls_sha256"] == invocation["function_calls_sha256"]
     assert origin["function_tool_results_sha256"] == (invocation["function_tool_results_sha256"])
+
+
+def test_non_parameterized_rtl_uses_reduced_no_tool_agent_prompt(monkeypatch) -> None:
+    captured: dict = {}
+
+    def invoke(**kwargs):
+        captured.update(kwargs)
+        return {
+            "response_text": json.dumps(
+                {
+                    "intent": "runtime_recovery",
+                    "operator_instruction": "Review RTL.",
+                    "selected_bounded_action": "return_to_launch",
+                    "proposed_parameters": {},
+                    "trigger_level": "advisory",
+                    "trigger_reasons": ["route_deviation"],
+                    "telemetry_assessment": {"route_deviation": True},
+                    "rationale": "RTL remains consistent with observed facts.",
+                    "expected_outcome": "Return toward launch.",
+                    "requires_human_approval": True,
+                    "uncertainty": "Fresh feasibility remains required.",
+                }
+            ),
+            "response_source": "llm_final_response",
+            "function_calls": [],
+            "function_responses": [],
+            "function_tool_called": False,
+            "planner_tool_attached": False,
+            "tool_arguments": [],
+            "function_tool_results": [],
+        }
+
+    monkeypatch.setattr(
+        missionos_agent_runtime,
+        "_invoke_runtime_recovery_agent_text_with_tools",
+        invoke,
+    )
+    invocation = missionos_agent_runtime._run_runtime_recovery_agent_once(
+        prompt_payload={
+            "telemetry_snapshot": {"physical_execution_invoked": False},
+            "role_contract": {
+                "agents_must_not_output": ["physical_execution_invoked"]
+            },
+        },
+        telemetry_snapshot={
+            "source": "fixture",
+            "sample_index": 1,
+            "physical_execution_invoked": False,
+        },
+        mission_context={
+            "task_id": "task_rtl",
+            "operator_recovery_request": {"requested_action": "return_to_launch"},
+        },
+        recovery_policy={"policy_ref": "fixture_policy"},
+    )
+
+    prompt = json.loads(captured["prompt_text"])
+    assert prompt["task"] == "judge_non_parameterized_recovery_proposal"
+    assert "physical_execution_invoked" not in captured["prompt_text"]
+    assert invocation["invocation_kind"] == "google_adk_recovery_judgment"
+    assert invocation["function_tool_called"] is False
+    assert invocation["guardrail_result"]["guardrail_passed"] is True
+
+
+def test_recovery_planner_tool_is_not_attached_without_parameterized_candidate() -> None:
+    assert (
+        missionos_agent_runtime._runtime_recovery_planner_tool_required(
+            requested_action="",
+            planner_preview={"candidates": []},
+        )
+        is False
+    )
+    assert (
+        missionos_agent_runtime._runtime_recovery_planner_tool_required(
+            requested_action="",
+            planner_preview={
+                "candidates": [
+                    {
+                        "selected_bounded_action": "avoid_obstacle",
+                        "proposed_parameters": {"target_x_m": 1.0, "target_y_m": 2.0},
+                    }
+                ]
+            },
+        )
+        is True
+    )
 
 
 def test_running_snapshot_preserves_operator_maneuver_observation() -> None:
@@ -5480,3 +5926,44 @@ def test_mission_map_html_and_watch_surface_obstacle_layers() -> None:
     assert "avoid=target_reached" in rendered
     assert "samples=3" in rendered
     assert "obstacles=1(spawned)" in rendered
+def test_telemetry_arbitration_preserves_immediately_prior_bridge_context() -> None:
+    result = arbitrate_latest_telemetry(
+        bridge_telemetry={
+            "sample_index": 174,
+            "elapsed_seconds": 198.9,
+            "position": {"local_x_m": 366.0},
+            "obstacle": {
+                "conflict_assessment": {
+                    "local_avoidance_required": True,
+                }
+            },
+            "recovery": {
+                "performance_observation": {
+                    "action": "calibrate_offboard",
+                    "sample_count": 5,
+                }
+            },
+        },
+        runtime_telemetry={
+            "sample_index": 175,
+            "elapsed_seconds": 200.0,
+            "position": {"local_x_m": 366.5},
+            "telemetry": {"stale": False},
+        },
+    )
+
+    assert result["arbitration_status"] == "verified"
+    assert result["selected_source"] == (
+        "missionos_auto_mission_runtime_snapshot_with_bridge_context"
+    )
+    assert result["selected_telemetry"]["sample_index"] == 175
+    assert result["selected_telemetry"]["position"]["local_x_m"] == 366.5
+    assert (
+        result["selected_telemetry"]["obstacle"]["conflict_assessment"]
+        ["local_avoidance_required"]
+        is True
+    )
+    assert result["selected_telemetry"]["recovery"]["performance_observation"][
+        "sample_count"
+    ] == 5
+    assert result["maximum_context_elapsed_delta_s"] == 2.5

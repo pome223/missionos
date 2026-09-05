@@ -246,7 +246,22 @@ def audit_route_summary(
 
     assert summary["pose_deviation_gate_active"] is True
     assert summary["pose_deviation_aborted"] is False
-    assert summary["deviation_samples"] == []
+    resumed_after_assurance_continue = bool(
+        summary.get("initial_pose_deviation_aborted") is True
+        and summary.get("route_stream_resumed_after_mission_assurance_continue")
+        is True
+        and summary.get("mission_assurance_continue_effect_observed") is True
+        and summary.get("mission_assurance_continue_route_completion_observed")
+        is True
+    )
+    if resumed_after_assurance_continue:
+        assert summary["deviation_samples"] != []
+        assert all(
+            float(sample["deviation_xy_m"]) > 0.0
+            for sample in summary["deviation_samples"]
+        )
+    else:
+        assert summary["deviation_samples"] == []
     if expectations.contact_topic_requested:
         _validate_contact_evidence(summary)
 
@@ -281,13 +296,8 @@ def audit_payload_recovery_summary(
     assert summary["delivery_completion_claimed"] is False
     assert summary["hardware_target_allowed"] is False
     assert summary["physical_execution_invoked"] is False
-    assert summary["payload_feasibility_advisory_ref"].startswith(
-        expectations.advisory_ref_prefix
-    )
-    assert (
-        summary["payload_advisory_consumed_by_ref"]
-        == expectations.payload_action_ref
-    )
+    assert summary["payload_feasibility_advisory_ref"].startswith(expectations.advisory_ref_prefix)
+    assert summary["payload_advisory_consumed_by_ref"] == expectations.payload_action_ref
     if expectations.payload_action == "land":
         assert summary["payload_recovery_dispatch_status"] in (
             "accepted",
@@ -295,10 +305,7 @@ def audit_payload_recovery_summary(
         )
         assert summary["payload_recovery_completed"] is True
         assert summary["payload_recovery_state_observed"] is True
-        assert (
-            float(summary["payload_recovery_pose_z_m"])
-            <= expectations.landing_z_threshold_m
-        )
+        assert float(summary["payload_recovery_pose_z_m"]) <= expectations.landing_z_threshold_m
     if expectations.payload_action == "rtl":
         assert summary["payload_recovery_dispatch_status"] in (
             "accepted",
@@ -306,19 +313,13 @@ def audit_payload_recovery_summary(
         )
         assert summary["payload_recovery_completed"] is True
         assert summary["payload_recovery_state_observed"] is True
-        assert (
-            summary["payload_recovery_state_label"]
-            == "return_to_launch_state_observed"
-        )
+        assert summary["payload_recovery_state_label"] == "return_to_launch_state_observed"
     if expectations.supervisor_loop_requested:
         assert summary["decision_loop_driver"] == "mission_os_supervisor"
         assert summary["supervisor_scope"] == "payload_form3_sitl_only"
         assert summary["full_gateway_runtime_loop"] is False
         assert summary["supervisor_loop_claim_supported"] is True
-        assert (
-            summary["payload_route_progress_away_from_pickup_observed"]
-            is True
-        )
+        assert summary["payload_route_progress_away_from_pickup_observed"] is True
         assert float(summary["payload_pre_recovery_distance_to_pickup_m"]) >= 2.5
         assert float(summary["payload_recovery_distance_to_pickup_m"]) <= 2.0
         assert float(summary["payload_recovery_distance_to_pickup_m"]) < float(
@@ -331,10 +332,7 @@ def audit_payload_recovery_summary(
         )
         assert summary["post_recovery_completed"] is True
         assert summary["post_recovery_state_observed"] is True
-        assert (
-            float(summary["post_recovery_pose_z_m"])
-            <= expectations.landing_z_threshold_m
-        )
+        assert float(summary["post_recovery_pose_z_m"]) <= expectations.landing_z_threshold_m
 
 
 def audit_route_deviation_recovery_summary(
@@ -346,6 +344,16 @@ def audit_route_deviation_recovery_summary(
 
     action = expectations.on_deviation_action
     post_action = expectations.post_recovery_action
+    mission_assurance_guard = summary.get("mission_assurance_live_guard")
+    if (
+        isinstance(mission_assurance_guard, Mapping)
+        and mission_assurance_guard.get("guard_status") != "dispatch_eligible"
+    ):
+        assert summary["final_status"] == "aborted_pose_deviation"
+        assert summary["task_status"] == "blocked"
+        assert summary["recovery_action_taken"] is None
+        assert summary["recovery_dispatch_ref"] is None
+        action = "abort_only"
     if action == "abort_only":
         assert summary["final_status"] == "aborted_pose_deviation"
         assert summary["task_status"] == "blocked"
@@ -365,14 +373,8 @@ def audit_route_deviation_recovery_summary(
         assert summary["recovery_dispatch_status"] in ("accepted", "timeout")
         if summary["recovery_dispatch_status"] == "timeout":
             assert summary["recovery_ack_complete"] is False
-            assert (
-                summary["recovery_completion_basis"]
-                == "state_observed_after_dispatch_timeout"
-            )
-        assert (
-            float(summary["recovery_pose_z_m"])
-            <= expectations.landing_z_threshold_m
-        )
+            assert summary["recovery_completion_basis"] == "state_observed_after_dispatch_timeout"
+        assert float(summary["recovery_pose_z_m"]) <= expectations.landing_z_threshold_m
     if action == "hold":
         if summary["recovery_state_label"] == "hold_command_unsupported":
             assert summary["final_status"] == "emergency_recovery_unconfirmed"
@@ -407,10 +409,7 @@ def audit_route_deviation_recovery_summary(
         assert summary["task_status"] == "completed"
         assert summary["recovery_completed"] is True
         assert summary["recovery_state_observed"] is True
-        assert (
-            summary["recovery_state_label"]
-            == "return_to_launch_state_observed"
-        )
+        assert summary["recovery_state_label"] == "return_to_launch_state_observed"
         _audit_post_recovery_land(
             summary,
             post_action=post_action,

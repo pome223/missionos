@@ -72,6 +72,9 @@ from src.runtime.px4_gazebo_sitl_mission_upload import (
     MAV_CMD_NAV_LAND,
     MAV_CMD_NAV_WAYPOINT,
     MAV_MISSION_ACCEPTED,
+    PX4_GAZEBO_SITL_DOCKER_EXEC_UPLOADER_CONTAINER_ENV,
+    PX4_GAZEBO_SITL_DOCKER_EXEC_UPLOADER_OPT_IN_ENV,
+    PX4_GAZEBO_SITL_DOCKER_EXEC_UPLOADER_REUSE_CONTAINER_ENV,
     PX4GazeboSITLMissionItem,
     PX4GazeboSITLMissionUploadReceipt,
     PX4GazeboSITLMissionUploadStatus,
@@ -82,7 +85,13 @@ from src.intelligence.missionos_agent_runtime import (
     MISSIONOS_RUNTIME_RECOVERY_RESULT_SCHEMA_VERSION,
     guard_runtime_recovery_planner_result,
     plan_runtime_recovery_maneuver,
-    run_missionos_runtime_recovery_agent,
+    run_missionos_runtime_recovery_agent_pipeline,
+)
+from src.intelligence.missionos_mission_incident_graph import (
+    run_missionos_mission_incident_graph,
+)
+from src.intelligence.runtime_recovery_shadow_comparison import (
+    build_runtime_recovery_shadow_comparison,
 )
 
 PX4_GAZEBO_MISSION_DESIGNER_SITL_LIVE_FLIGHT_RUN_SCHEMA_VERSION = (
@@ -93,6 +102,9 @@ PX4_GAZEBO_MISSION_DESIGNER_SITL_LIVE_FLIGHT_BLOCKED_RECEIPT_SCHEMA_VERSION = (
 )
 PX4_GAZEBO_MISSION_DESIGNER_SITL_LIVE_FLIGHT_FAILED_RECEIPT_SCHEMA_VERSION = (
     "px4_gazebo_mission_designer_sitl_live_flight_failed_receipt.v1"
+)
+MISSIONOS_MISSION_ASSURANCE_PX4_LIVE_FLIGHT_OBSERVATION_SCHEMA_VERSION = (
+    "missionos_mission_assurance_px4_live_flight_observation.v1"
 )
 MISSION_DESIGNER_LIVE_SITL_FLIGHT_OPT_IN_ENV = (
     "RUN_MISSION_DESIGNER_PX4_GAZEBO_SITL_LIVE_FLIGHT"
@@ -112,6 +124,9 @@ MISSION_DESIGNER_LIVE_SITL_HORIZONTAL_ROUTE_PREUPLOAD_ENV = (
 )
 MISSION_DESIGNER_LIVE_SITL_HORIZONTAL_ROUTE_PAYLOAD_RELEASE_MODEL_ENV = (
     "PX4_GAZEBO_HORIZONTAL_ROUTE_PAYLOAD_RELEASE_MODEL"
+)
+MISSION_DESIGNER_LIVE_SITL_HORIZONTAL_ROUTE_DEFER_WIND_UNTIL_AIRBORNE_ENV = (
+    "PX4_GAZEBO_HORIZONTAL_ROUTE_DEFER_WIND_UNTIL_AIRBORNE"
 )
 MISSION_DESIGNER_REALISM_WIND_MEAN_MPS_ENV = "MISSION_DESIGNER_REALISM_WIND_MEAN_MPS"
 MISSION_DESIGNER_REALISM_WIND_DIRECTION_DEG_ENV = (
@@ -256,8 +271,8 @@ MISSIONOS_AUTO_MISSION_GZ_COUPLER_PLUGIN_SO_DEFAULT = (
 MISSIONOS_AUTO_MISSION_FULL_RUNTIME_PROBE_SCRIPT = (
     "scripts/smoke_missionos_auto_mission_full_runtime_probe.py"
 )
-MISSIONOS_RUNTIME_RECOVERY_AGENT_TIMEOUT_SECONDS = 45.0
-MISSIONOS_RUNTIME_RECOVERY_AGENT_TIMEOUT_MAX_SECONDS = 90.0
+MISSIONOS_RUNTIME_RECOVERY_AGENT_TIMEOUT_SECONDS = 120.0
+MISSIONOS_RUNTIME_RECOVERY_AGENT_TIMEOUT_MAX_SECONDS = 120.0
 MISSIONOS_RUNTIME_RECOVERY_AGENT_TIMEOUT_SECONDS_ENV = (
     "MISSIONOS_RUNTIME_RECOVERY_AGENT_TIMEOUT_SECONDS"
 )
@@ -701,6 +716,17 @@ def _stable_id(prefix: str, payload: Any) -> str:
 
 def _canonical_sha256(payload: Any) -> str:
     encoded = json.dumps(payload, ensure_ascii=True, sort_keys=True, default=str)
+    return sha256(encoded.encode("utf-8")).hexdigest()
+
+
+def _recovery_contract_sha256(payload: Mapping[str, Any]) -> str:
+    encoded = json.dumps(
+        dict(payload),
+        ensure_ascii=True,
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    )
     return sha256(encoded.encode("utf-8")).hexdigest()
 
 
@@ -1943,6 +1969,16 @@ def _coordinate_route_with_explicit_realism_env(
 def _mission_designer_terrain_world_env(task: Mapping[str, Any]) -> dict[str, str]:
     artifacts = task.get("artifacts")
     artifacts = artifacts if isinstance(artifacts, Mapping) else {}
+    designer_summary = artifacts.get("mission_scenario_designer_summary")
+    designer_summary = (
+        designer_summary if isinstance(designer_summary, Mapping) else {}
+    )
+    # The generic bounded horizontal-route runner is intentionally a flat-world
+    # simulator. A generated Digital Twin artifact is not enough to opt it into
+    # the much heavier terrain world; that requires an explicit coordinate-pair
+    # route from the operator-facing scenario.
+    if designer_summary.get("coordinate_pair_route_mode") is not True:
+        return {}
     world = artifacts.get("gazebo_world_artifact")
     world = world if isinstance(world, Mapping) else {}
     if not world:
@@ -2133,12 +2169,142 @@ def _attach_px4_reflex_watch(
     return watch
 
 
-def _horizontal_route_runtime_command() -> list[str]:
-    return [
+def _horizontal_route_runtime_command(
+    *,
+    mission_assurance_on_deviation: bool = False,
+) -> list[str]:
+    command = [
         sys.executable,
         "-m",
         MISSION_DESIGNER_LIVE_SITL_HORIZONTAL_ROUTE_MODULE,
     ]
+    if mission_assurance_on_deviation:
+        command.extend(
+            [
+                "--on-deviation-action",
+                "rtl",
+                "--max-pose-deviation-xy-m",
+                "0.85",
+                "--mission-assurance-on-deviation",
+            ]
+        )
+    return command
+
+
+def stop_gateway_upload_runtime_before_live_flight(
+    *,
+    task: Mapping[str, Any],
+    runner: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
+) -> dict[str, Any]:
+    """Release the upload-only SITL after its accepted receipt is durable.
+
+    The Gateway upload runtime and the richer horizontal-route runtime are two
+    simulator processes. Running both Gazebo instances concurrently can starve
+    the live process before takeoff. The handoff is allowed only when the task,
+    startup artifact, accepted upload receipt, and configured reusable
+    container all bind to the same exact container name.
+    """
+
+    if (
+        os.getenv(PX4_GAZEBO_SITL_DOCKER_EXEC_UPLOADER_OPT_IN_ENV) != "1"
+        or os.getenv(PX4_GAZEBO_SITL_DOCKER_EXEC_UPLOADER_REUSE_CONTAINER_ENV)
+        != "1"
+    ):
+        return {
+            "schema_version": "mission_designer_sitl_runtime_handoff.v1",
+            "handoff_status": "not_required",
+            "upload_runtime_stopped": False,
+            "live_runtime_started": False,
+            "approval_created": False,
+            "dispatch_authority_created": False,
+            "physical_execution_invoked": False,
+        }
+
+    artifacts = task.get("artifacts")
+    artifacts = artifacts if isinstance(artifacts, Mapping) else {}
+    startup = artifacts.get("px4_gazebo_mission_designer_sitl_startup")
+    startup = startup if isinstance(startup, Mapping) else {}
+    receipt = artifacts.get("px4_gazebo_sitl_mission_upload_receipt")
+    receipt = receipt if isinstance(receipt, Mapping) else {}
+    configured_container = str(
+        os.getenv(PX4_GAZEBO_SITL_DOCKER_EXEC_UPLOADER_CONTAINER_ENV) or ""
+    ).strip()
+    startup_container = str(startup.get("container_name") or "").strip()
+    blocked_reasons: list[str] = []
+    if not configured_container:
+        blocked_reasons.append("gateway_upload_runtime_container_missing")
+    if not startup_container:
+        blocked_reasons.append("gateway_startup_runtime_container_missing")
+    if configured_container != startup_container:
+        blocked_reasons.append("gateway_upload_runtime_container_binding_mismatch")
+    if receipt.get("upload_status") != "uploaded":
+        blocked_reasons.append("gateway_upload_receipt_not_uploaded")
+    if (
+        receipt.get("mission_ack_observed") is not True
+        or receipt.get("mission_ack_type") != MAV_MISSION_ACCEPTED
+    ):
+        blocked_reasons.append("gateway_upload_receipt_ack_not_accepted")
+    if blocked_reasons:
+        raise PX4GazeboMissionDesignerSITLLiveFlightRunError(
+            "Mission Designer SITL runtime handoff blocked: "
+            + ", ".join(blocked_reasons)
+        )
+
+    completed = runner(
+        ["docker", "rm", "-f", configured_container],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    if completed.returncode != 0:
+        reason = (completed.stderr or completed.stdout or "docker rm failed").strip()
+        raise PX4GazeboMissionDesignerSITLLiveFlightRunError(
+            "Mission Designer SITL runtime handoff failed: " + reason[:360]
+        )
+    return {
+        "schema_version": "mission_designer_sitl_runtime_handoff.v1",
+        "handoff_status": "upload_runtime_stopped",
+        "upload_runtime_container": configured_container,
+        "upload_runtime_stopped": True,
+        "accepted_upload_receipt_ref": _artifact_ref(
+            "px4_gazebo_sitl_mission_upload_receipt",
+            str(receipt.get("receipt_id") or ""),
+        ),
+        "live_runtime_started": False,
+        "approval_created": False,
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+        "observed_at": _utc().isoformat(),
+    }
+
+
+def configure_horizontal_route_payload_model(
+    env: dict[str, str],
+    *,
+    mission_assurance_on_deviation: bool,
+) -> None:
+    """Keep the delivery payload available across governed route decisions."""
+
+    env[MISSION_DESIGNER_LIVE_SITL_HORIZONTAL_ROUTE_PAYLOAD_RELEASE_MODEL_ENV] = "1"
+
+
+def configure_horizontal_route_wind_activation(
+    env: dict[str, str],
+    *,
+    mission_assurance_on_deviation: bool,
+) -> None:
+    """Apply scenario wind only after Mission Assurance observes takeoff."""
+
+    if mission_assurance_on_deviation:
+        env[
+            MISSION_DESIGNER_LIVE_SITL_HORIZONTAL_ROUTE_DEFER_WIND_UNTIL_AIRBORNE_ENV
+        ] = "1"
+        return
+    env.pop(
+        MISSION_DESIGNER_LIVE_SITL_HORIZONTAL_ROUTE_DEFER_WIND_UNTIL_AIRBORNE_ENV,
+        None,
+    )
 
 
 def run_px4_gazebo_horizontal_route_live_summary(
@@ -2148,6 +2314,7 @@ def run_px4_gazebo_horizontal_route_live_summary(
     timeout_seconds: float = 900.0,
     task_store_factory: Callable[[], TaskStore] | None = None,
     task: Mapping[str, Any] | None = None,
+    mission_assurance_on_deviation: bool = False,
 ) -> dict[str, Any]:
     """Run the real horizontal-route runtime and return its observed summary."""
 
@@ -2156,6 +2323,26 @@ def run_px4_gazebo_horizontal_route_live_summary(
         artifact_root or root / "output" / "mission_designer_live_sitl_runs" / task_id
     )
     resolved_artifact_root.mkdir(parents=True, exist_ok=True)
+    runtime_handoff = (
+        stop_gateway_upload_runtime_before_live_flight(task=task)
+        if task is not None
+        else {
+            "schema_version": "mission_designer_sitl_runtime_handoff.v1",
+            "handoff_status": "not_required",
+            "upload_runtime_stopped": False,
+            "live_runtime_started": False,
+            "approval_created": False,
+            "dispatch_authority_created": False,
+            "physical_execution_invoked": False,
+        }
+    )
+    if runtime_handoff.get("upload_runtime_stopped") is True:
+        store = (task_store_factory or get_task_store)()
+        store.update(
+            task_id,
+            artifacts={"mission_designer_sitl_runtime_handoff": runtime_handoff},
+            metadata={"mission_designer_upload_runtime_stopped": True},
+        )
     env = os.environ.copy()
     env[MISSION_DESIGNER_LIVE_SITL_HORIZONTAL_ROUTE_OPT_IN_ENV] = "1"
     env[MISSION_DESIGNER_LIVE_SITL_HORIZONTAL_ROUTE_ARTIFACT_ROOT_ENV] = str(
@@ -2164,7 +2351,14 @@ def run_px4_gazebo_horizontal_route_live_summary(
     # Gateway already performed and persisted the mission upload receipt. The
     # live flight runner must not silently upload a second, script-local mission.
     env.pop(MISSION_DESIGNER_LIVE_SITL_HORIZONTAL_ROUTE_PREUPLOAD_ENV, None)
-    env[MISSION_DESIGNER_LIVE_SITL_HORIZONTAL_ROUTE_PAYLOAD_RELEASE_MODEL_ENV] = "1"
+    configure_horizontal_route_payload_model(
+        env,
+        mission_assurance_on_deviation=mission_assurance_on_deviation,
+    )
+    configure_horizontal_route_wind_activation(
+        env,
+        mission_assurance_on_deviation=mission_assurance_on_deviation,
+    )
     if task is not None:
         env.update(_coordinate_route_realism_env(task))
         env.update(_mission_designer_terrain_world_env(task))
@@ -2174,7 +2368,9 @@ def run_px4_gazebo_horizontal_route_live_summary(
         if not existing_pythonpath
         else os.pathsep.join([str(root), existing_pythonpath])
     )
-    command = _horizontal_route_runtime_command()
+    command = _horizontal_route_runtime_command(
+        mission_assurance_on_deviation=mission_assurance_on_deviation,
+    )
     stdout_log = resolved_artifact_root / f"{task_id}_horizontal_stdout.log"
     stderr_log = resolved_artifact_root / f"{task_id}_horizontal_stderr.log"
     with stdout_log.open("w") as stdout_file, stderr_log.open("w") as stderr_file:
@@ -2223,6 +2419,13 @@ def run_px4_gazebo_horizontal_route_live_summary(
             f"reason={digest}; stdout_log={stdout_log}; stderr_log={stderr_log}"
         )
     summary = _latest_horizontal_summary(resolved_artifact_root)
+    runtime_handoff = {
+        **runtime_handoff,
+        "handoff_status": "live_runtime_completed",
+        "live_runtime_started": True,
+        "live_runtime_container": "boiled-claw-px4-gazebo-horizontal-route-smoke",
+    }
+    summary["mission_designer_sitl_runtime_handoff"] = runtime_handoff
     cleanup = dict(summary.get("scenario_cleanup_receipt") or {})
     if cleanup:
         cleanup["cleanup_status"] = "isolated_container_teardown_observed"
@@ -2971,6 +3174,18 @@ def _auto_runtime_obstacle_conflict_projection(
         ground_speed_mps = math.hypot(velocity_x_mps, velocity_y_mps)
     if ground_speed_mps is None or ground_speed_mps <= 0.1:
         ground_speed_mps = _auto_snapshot_number(snapshot.get("ground_speed_mps"))
+    recovery_action = str(snapshot.get("operator_recovery_action") or "").strip().lower()
+    recovery_assist_status = str(
+        snapshot.get("operator_recovery_assist_status") or ""
+    ).strip().lower()
+    safety_hold_active = bool(
+        recovery_action == "safety_hold"
+        and recovery_assist_status == "safety_hold_observed"
+    )
+    route_progress_m = _auto_snapshot_number(snapshot.get("progress_m"))
+    route_motion_observed = bool(
+        route_progress_m is not None and route_progress_m > 1.0
+    )
     lookahead_m = 150.0
     time_limit_s = 30.0
     for index, obstacle in enumerate(obstacles):
@@ -3005,7 +3220,17 @@ def _auto_runtime_obstacle_conflict_projection(
             ahead
             and route_intersects
             and distance_m <= lookahead_m
-            and (time_to_conflict_s is None or time_to_conflict_s <= time_limit_s)
+            and (
+                safety_hold_active
+                or (
+                    time_to_conflict_s is None
+                    and route_motion_observed
+                )
+                or (
+                    time_to_conflict_s is not None
+                    and time_to_conflict_s <= time_limit_s
+                )
+            )
         )
         assessments.append(
             {
@@ -3707,6 +3932,58 @@ def _runtime_recovery_observation_state(
     return "none"
 
 
+def _runtime_recovery_observation_failure_is_new(
+    *,
+    proposal: Mapping[str, Any],
+    current_observation_state: str,
+) -> bool:
+    """Distinguish a new failed attempt from the failure being recovered.
+
+    A proposal produced because the preceding bounded action failed must remain
+    reviewable while that same failed observation is unchanged.  A transition
+    into ``failed`` after proposal creation still invalidates it.
+    """
+
+    proposal_categorical_state = proposal.get("categorical_decision_state")
+    proposal_categorical_state = (
+        proposal_categorical_state
+        if isinstance(proposal_categorical_state, Mapping)
+        else {}
+    )
+    return bool(
+        current_observation_state == "failed"
+        and proposal_categorical_state.get("recovery_observation_state") != "failed"
+    )
+
+
+def _runtime_recovery_bounded_hold_observed(
+    telemetry_snapshot: Mapping[str, Any],
+) -> bool:
+    """Recognize a source-backed HOLD reached by either recovery path."""
+
+    if telemetry_snapshot.get("nav_state") != 4:
+        return False
+    recovery = telemetry_snapshot.get("recovery")
+    recovery = recovery if isinstance(recovery, Mapping) else {}
+    assist_status = str(recovery.get("assist_status") or "").strip().lower()
+    resume_status = str(recovery.get("resume_status") or "").strip().lower()
+    return bool(
+        (
+            str(recovery.get("action") or "").strip().lower() == "safety_hold"
+            and assist_status == "safety_hold_observed"
+            and resume_status == "held_awaiting_operator_recovery_approval"
+        )
+        or (
+            recovery.get("target_reached") is True
+            and resume_status
+            in {
+                "held_remaining_route_or_dropoff_unsafe",
+                "hold_remaining_route_or_dropoff_unsafe_failed",
+            }
+        )
+    )
+
+
 def _runtime_recovery_safety_hold_stable(
     *,
     bridge: Mapping[str, Any],
@@ -3714,9 +3991,7 @@ def _runtime_recovery_safety_hold_stable(
 ) -> bool:
     """Require two fresh HOLD observations before paying for an LLM judgment."""
 
-    if _runtime_recovery_observation_state(telemetry_snapshot) != (
-        "held_awaiting_operator_approval"
-    ):
+    if not _runtime_recovery_bounded_hold_observed(telemetry_snapshot):
         return False
     current_telemetry = telemetry_snapshot.get("telemetry")
     current_telemetry = (
@@ -3726,9 +4001,7 @@ def _runtime_recovery_safety_hold_stable(
         return False
     previous = bridge.get("telemetry_snapshot")
     previous = previous if isinstance(previous, Mapping) else {}
-    if _runtime_recovery_observation_state(previous) != (
-        "held_awaiting_operator_approval"
-    ):
+    if not _runtime_recovery_bounded_hold_observed(previous):
         return False
     previous_telemetry = previous.get("telemetry")
     previous_telemetry = (
@@ -3980,6 +4253,15 @@ def _runtime_recovery_agent_skipped_result(
             "source": "missionos_auto_live_telemetry_advisory_guard",
             "detail": detail[:500],
         },
+        "agent_pipeline": {
+            "decision_source": "unavailable",
+            "failed_stage": "preflight",
+            "requires_human_approval": True,
+            "dispatch_authority_created": False,
+            "executor_ack_observed": "unknown",
+            "effect_observed": "unknown",
+            "verifier_status": "not_started",
+        },
         "dispatch_authority_created": False,
         "progress_counted": False,
     }
@@ -4047,18 +4329,83 @@ def _runtime_recovery_agent_fallback_result(
             }
         ],
         "fallback_planner_result": guarded,
+        "agent_pipeline": {
+            "decision_source": "deterministic_fallback",
+            "failed_stage": str(reason or "hosted_agent_unavailable"),
+            "requires_human_approval": True,
+            "dispatch_authority_created": False,
+            "executor_ack_observed": "unknown",
+            "effect_observed": "unknown",
+            "verifier_status": "not_started",
+        },
         "dispatch_authority_created": False,
         "progress_counted": False,
     }
 
 
+def _run_recompiled_mission_incident_graph(
+    *,
+    telemetry_snapshot: Mapping[str, Any],
+    task_id: str,
+    recovery_result: Mapping[str, Any],
+    source_proposal: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Re-run Assurance on fresh telemetry for a bound Recovery recompile."""
+
+    source_graph = source_proposal.get("missionos_mission_incident_graph")
+    source_graph = dict(source_graph) if isinstance(source_graph, Mapping) else {}
+    if (
+        source_proposal.get("schema_version")
+        != "missionos_runtime_recovery_proposal_evidence.v4"
+        or not source_graph
+    ):
+        return {}
+    mission_context = {
+        "task_id": task_id,
+        "mission_phase": "live_auto_mission_recompile",
+        "authority_status": "proposal_only",
+        "execution_scope": "simulator",
+        "observations": {
+            key: telemetry_snapshot.get(key)
+            for key in (
+                "obstacle",
+                "wind",
+                "battery",
+                "terrain",
+                "recovery_window_summary",
+            )
+            if telemetry_snapshot.get(key) is not None
+        },
+        "constraints": {
+            "human_recovery_approval_required": True,
+            "dispatch_time_revalidation_required": True,
+            "fresh_mission_assurance_after_recompile_required": True,
+        },
+        "recovery_judgment_binding": {
+            "binding_mode": "deterministic_recompile_of_prior_judgment",
+            "source_proposal_id": str(source_proposal.get("proposal_id") or ""),
+            "source_mission_incident_graph": source_graph,
+        },
+    }
+    return run_missionos_mission_incident_graph(
+        telemetry_snapshot=telemetry_snapshot,
+        mission_context=mission_context,
+        recovery_policy=_runtime_recovery_policy(),
+        recovery_runner=lambda **_: dict(recovery_result),
+        mission_assurance_timeout_seconds=max(
+            1.0,
+            _runtime_recovery_agent_timeout_seconds() / 4.0,
+        ),
+    )
+
+
 def _runtime_recovery_agent_timeout_seconds() -> float:
     """Resolve the runtime recovery agent timeout, env-overridable.
 
-    Gemini gets a 45 second default because live ADK function-tool calls can
-    legitimately exceed the old five-second budget.  The environment override
-    is capped at 90 seconds so a hosted judgment cannot stall the runtime
-    supervisor indefinitely.  Local backends can use the same bounded override.
+    The visible Chief -> Recovery -> Safety Critic -> Mission Assurance epoch
+    gets a 120 second default. The supervisor divides that epoch budget across
+    the four hosted judgment stages while the whole graph remains capped at
+    120 seconds.
     """
     raw = os.getenv(MISSIONOS_RUNTIME_RECOVERY_AGENT_TIMEOUT_SECONDS_ENV)
     if raw is not None and raw.strip():
@@ -4097,14 +4444,22 @@ def _execute_auto_runtime_recovery_agent_with_timeout(
             reason=reason,
             detail=detail,
         )
+        fallback["mission_incident_graph_required"] = True
         invocations = (
             source_result.get("agent_invocations")
             if isinstance(source_result, Mapping)
             else []
         )
+        invocation_candidates = [
+            dict(item) for item in invocations or [] if isinstance(item, Mapping)
+        ]
         invocation = next(
-            (dict(item) for item in invocations or [] if isinstance(item, Mapping)),
-            {},
+            (
+                item
+                for item in invocation_candidates
+                if item.get("agent_name") == "missionos_runtime_recovery_agent"
+            ),
+            invocation_candidates[0] if invocation_candidates else {},
         )
         fallback["hosted_model_attempt"] = {
             "provider": str(
@@ -4134,19 +4489,121 @@ def _execute_auto_runtime_recovery_agent_with_timeout(
             "timeout_seconds": timeout_seconds,
             "contains_prompt_or_response_text": False,
         }
+        if isinstance(source_result, Mapping):
+            source_pipeline = source_result.get("agent_pipeline")
+            if isinstance(source_pipeline, Mapping):
+                fallback["hosted_agent_pipeline_attempt"] = {
+                    "decision_source": str(
+                        source_pipeline.get("decision_source") or "unavailable"
+                    ),
+                    "failed_stage": str(source_pipeline.get("failed_stage") or ""),
+                    "blocking_reasons": [
+                        str(item)
+                        for item in source_result.get("blocking_reasons") or []
+                    ],
+                    "dispatch_authority_created": False,
+                    "contains_prompt_or_response_text": False,
+                }
         return fallback
 
     def _invoke() -> None:
         try:
-            result = run_missionos_runtime_recovery_agent(
-                telemetry_snapshot=telemetry_snapshot,
-                mission_context={
-                    "task_id": task_id,
-                    "mission_phase": "live_auto_mission",
-                    "authority_status": "proposal_only",
+            mission_context = {
+                "task_id": task_id,
+                "mission_phase": "live_auto_mission",
+                "authority_status": "proposal_only",
+                "execution_scope": "simulator",
+                "observations": {
+                    key: telemetry_snapshot.get(key)
+                    for key in (
+                        "obstacle",
+                        "wind",
+                        "battery",
+                        "terrain",
+                        "recovery_window_summary",
+                    )
+                    if telemetry_snapshot.get(key) is not None
                 },
-                recovery_policy=_runtime_recovery_policy(),
+                "constraints": {
+                    "human_recovery_approval_required": True,
+                    "dispatch_time_revalidation_required": True,
+                },
+            }
+            policy = _runtime_recovery_policy()
+
+            def _recovery_runner(**_: Any) -> Mapping[str, Any]:
+                return run_missionos_runtime_recovery_agent_pipeline(
+                    telemetry_snapshot=telemetry_snapshot,
+                    mission_context=mission_context,
+                    recovery_policy=policy,
+                    # Recovery owns Chief, specialist, and Safety Critic.  The
+                    # Mission Incident graph adds Mission Assurance as the
+                    # next judgment node inside the same bounded epoch.
+                    timeout_seconds=max(1, int(timeout_seconds / 4)),
+                )
+
+            incident_graph = run_missionos_mission_incident_graph(
+                telemetry_snapshot=telemetry_snapshot,
+                mission_context=mission_context,
+                recovery_policy=policy,
+                recovery_runner=_recovery_runner,
+                mission_assurance_timeout_seconds=max(
+                    1.0,
+                    timeout_seconds / 4.0,
+                ),
             )
+            recovery_result = incident_graph.get("recovery_result")
+            result = (
+                dict(recovery_result)
+                if isinstance(recovery_result, Mapping)
+                else {}
+            )
+            assurance_proposal = incident_graph.get(
+                "mission_assurance_proposal"
+            )
+            assurance_proposal = (
+                dict(assurance_proposal)
+                if isinstance(assurance_proposal, Mapping)
+                else {}
+            )
+            result["missionos_mission_incident_graph"] = incident_graph
+            result["mission_incident_graph_required"] = True
+            result["mission_assurance_evaluation"] = {
+                "schema_version": (
+                    "missionos_mission_assurance_agent_result.v1"
+                ),
+                "situation": incident_graph.get("mission_situation") or {},
+                "proposal": assurance_proposal,
+                "agent_status": assurance_proposal.get("judgment_status"),
+                "operator_approved": False,
+                "dispatch_authority_created": False,
+                "dispatch_request_sent": False,
+                "physical_execution_invoked": False,
+                "progress_counted": False,
+            }
+            agent_pipeline = result.get("agent_pipeline")
+            if isinstance(agent_pipeline, Mapping):
+                result["agent_pipeline"] = {
+                    **dict(agent_pipeline),
+                    "pipeline_status": incident_graph.get(
+                        "graph_runtime_status"
+                    ),
+                    "mission_incident_workflow": incident_graph.get(
+                        "workflow_name"
+                    ),
+                    "mission_assurance_response_kind": incident_graph.get(
+                        "mission_assurance_response_kind"
+                    ),
+                    "mission_assurance_decision_status": incident_graph.get(
+                        "decision_status"
+                    ),
+                    "stages": [
+                        *list(agent_pipeline.get("stages") or []),
+                        "source_action_feasibility",
+                        "mission_assurance_agent",
+                        "operator_recovery_approval_boundary",
+                    ],
+                }
         except Exception as exc:  # Advisory path must not break live telemetry.
             result_queue.put(("error", exc))
             return
@@ -4417,7 +4874,6 @@ def _revalidate_completed_runtime_recovery_inference(
         reasons.append("runtime_recovery_inference_elapsed_cursor_regressed")
     for field in (
         "decision_signature",
-        "semantic_state_machine_hash",
         "hazard_state_id",
         "source_obstacle_name",
     ):
@@ -4600,6 +5056,172 @@ def _runtime_recovery_proposal_origin(
     return {
         **origin,
         "origin_sha256": _canonical_sha256(origin),
+    }
+
+
+def _runtime_recovery_parameter_recompile_evidence(
+    *,
+    proposal_recompiled: bool,
+    source_proposal: Mapping[str, Any],
+    source_parameters: Mapping[str, Any],
+    recompiled_parameters: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Record whether deterministic recompilation changed judged parameters."""
+
+    source = dict(source_parameters) if proposal_recompiled else {}
+    recompiled = dict(recompiled_parameters) if proposal_recompiled else {}
+    changed_keys = sorted(
+        key
+        for key in set(source) | set(recompiled)
+        if source.get(key) != recompiled.get(key)
+    )
+    changes: list[dict[str, Any]] = []
+    for key in changed_keys:
+        source_value = source.get(key)
+        recompiled_value = recompiled.get(key)
+        change: dict[str, Any] = {
+            "parameter": key,
+            "source_value": source_value,
+            "recompiled_value": recompiled_value,
+        }
+        if (
+            isinstance(source_value, (int, float))
+            and not isinstance(source_value, bool)
+            and isinstance(recompiled_value, (int, float))
+            and not isinstance(recompiled_value, bool)
+        ):
+            change["numeric_delta"] = round(
+                float(recompiled_value) - float(source_value),
+                9,
+            )
+        changes.append(change)
+    source_graph = source_proposal.get("missionos_mission_incident_graph")
+    source_graph = dict(source_graph) if isinstance(source_graph, Mapping) else {}
+    source_assurance = source_graph.get("mission_assurance_proposal")
+    source_assurance = (
+        dict(source_assurance) if isinstance(source_assurance, Mapping) else {}
+    )
+    evidence = {
+        "schema_version": (
+            "missionos_runtime_recovery_parameter_recompile_evidence.v1"
+        ),
+        "comparison_status": "computed" if proposal_recompiled else "not_applicable",
+        "recompile_performed": proposal_recompiled,
+        "source_proposal_id": (
+            str(source_proposal.get("proposal_id") or "")
+            if proposal_recompiled
+            else ""
+        ),
+        "source_mission_incident_graph_id": (
+            str(source_graph.get("mission_incident_graph_id") or "")
+        ),
+        "source_mission_assurance_proposal_id": (
+            str(source_assurance.get("proposal_id") or "")
+        ),
+        "source_parameters": source,
+        "source_parameters_sha256": _canonical_sha256(source) if source else "",
+        "recompiled_parameters": recompiled,
+        "recompiled_parameters_sha256": (
+            _canonical_sha256(recompiled) if recompiled else ""
+        ),
+        "parameters_changed": bool(changed_keys),
+        "exact_parameters_preserved": bool(proposal_recompiled and not changed_keys),
+        "changed_parameter_keys": changed_keys,
+        "parameter_changes": changes,
+        "approval_created": False,
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }
+    digest = _recovery_contract_sha256(evidence)
+    return {
+        **evidence,
+        "parameter_recompile_evidence_sha256": digest,
+        "parameter_recompile_evidence_id": (
+            f"parameter_recompile_evidence_{digest[:12]}"
+        ),
+    }
+
+
+def _runtime_recovery_assurance_recompile_evidence(
+    *,
+    proposal_recompiled: bool,
+    source_proposal: Mapping[str, Any],
+    recompiled_graph: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Bind the inherited Recovery judgment to fresh Assurance inference."""
+
+    if not proposal_recompiled:
+        return {}
+    source_graph = source_proposal.get("missionos_mission_incident_graph")
+    source_graph = dict(source_graph) if isinstance(source_graph, Mapping) else {}
+    source_situation = source_graph.get("mission_situation")
+    source_situation = (
+        dict(source_situation) if isinstance(source_situation, Mapping) else {}
+    )
+    fresh_situation = recompiled_graph.get("mission_situation")
+    fresh_situation = (
+        dict(fresh_situation) if isinstance(fresh_situation, Mapping) else {}
+    )
+    fresh_assurance = recompiled_graph.get("mission_assurance_proposal")
+    fresh_assurance = (
+        dict(fresh_assurance) if isinstance(fresh_assurance, Mapping) else {}
+    )
+
+    def _cursor(situation: Mapping[str, Any]) -> dict[str, Any]:
+        observations = situation.get("observations")
+        observations = (
+            observations if isinstance(observations, Mapping) else {}
+        )
+        telemetry = observations.get("runtime_telemetry")
+        telemetry = telemetry if isinstance(telemetry, Mapping) else {}
+        return {
+            "observed_at": telemetry.get("observed_at"),
+            "sample_index": telemetry.get("sample_index"),
+            "elapsed_seconds": telemetry.get("elapsed_seconds"),
+        }
+
+    evidence = {
+        "schema_version": (
+            "missionos_runtime_recovery_assurance_recompile_evidence.v1"
+        ),
+        "source_proposal_id": str(source_proposal.get("proposal_id") or ""),
+        "source_mission_incident_graph_id": str(
+            source_graph.get("mission_incident_graph_id") or ""
+        ),
+        "source_mission_situation_id": str(
+            source_situation.get("situation_id") or ""
+        ),
+        "source_telemetry_cursor": _cursor(source_situation),
+        "fresh_mission_incident_graph_id": str(
+            recompiled_graph.get("mission_incident_graph_id") or ""
+        ),
+        "fresh_mission_situation_id": str(
+            fresh_situation.get("situation_id") or ""
+        ),
+        "fresh_telemetry_cursor": _cursor(fresh_situation),
+        "fresh_mission_assurance_proposal_id": str(
+            fresh_assurance.get("proposal_id") or ""
+        ),
+        "recovery_judgment_inherited": (
+            recompiled_graph.get("recovery_judgment_inherited") is True
+        ),
+        "mission_assurance_reexecuted": (
+            recompiled_graph.get("mission_assurance_agent_invoked") is True
+        ),
+        "old_mission_assurance_judgment_inherited": False,
+        "approval_created": False,
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }
+    digest = _recovery_contract_sha256(evidence)
+    return {
+        **evidence,
+        "assurance_recompile_evidence_sha256": digest,
+        "assurance_recompile_evidence_id": (
+            f"assurance_recompile_evidence_{digest[:12]}"
+        ),
     }
 
 
@@ -4969,6 +5591,11 @@ def _attach_auto_runtime_recovery_agent_proposal(
         for value in bridge.get("judged_recovery_decision_signatures") or []
         if str(value).strip()
     ]
+    judged_local_conflict_obstacle_names = [
+        str(value)
+        for value in bridge.get("judged_local_conflict_obstacle_names") or []
+        if str(value).strip()
+    ]
     prior_legacy_decision_signature = str(
         bridge.get("legacy_recovery_decision_signature") or ""
     )
@@ -5136,6 +5763,24 @@ def _attach_auto_runtime_recovery_agent_proposal(
         and str(current_recovery.get("resume_status") or "").strip().lower()
         == "held_awaiting_operator_recovery_approval"
     )
+    proposal_categorical_state = last_proposal.get("categorical_decision_state")
+    proposal_categorical_state = (
+        proposal_categorical_state
+        if isinstance(proposal_categorical_state, Mapping)
+        else {}
+    )
+    bounded_hold_preserves_recovery_proposal = bool(
+        telemetry_snapshot.get("nav_state") == 4
+        and observation_state
+        in {
+            "failed",
+            "held_awaiting_operator_approval",
+            "held_at_alternate_dropoff",
+        }
+        and proposal_categorical_state.get("nav_state") == 4
+        and proposal_categorical_state.get("recovery_observation_state")
+        == observation_state
+    )
     # A transient heartbeat gap while the aircraft is already in the bounded
     # safety HOLD invalidates immediate dispatch, not the human-visible
     # recovery judgment. Gateway revalidation still fails closed until fresh
@@ -5143,7 +5788,10 @@ def _attach_auto_runtime_recovery_agent_proposal(
     # of equivalent checkpoints during harmless two-poll gaps.
     materially_new_hard_breach = any(
         not (
-            safety_hold_preserves_local_avoidance_proposal
+            (
+                safety_hold_preserves_local_avoidance_proposal
+                or bounded_hold_preserves_recovery_proposal
+            )
             and key == "telemetry_lost"
         )
         for key in newly_observed_hard_breach_keys
@@ -5153,8 +5801,11 @@ def _attach_auto_runtime_recovery_agent_proposal(
         and observation_state not in {"in_progress", "succeeded"}
     )
     safety_hold_observed = bool(
-        safety_hold_receipt.get("request_status") == "observed"
-        and observation_state == "held_awaiting_operator_approval"
+        (
+            safety_hold_receipt.get("request_status") == "observed"
+            and observation_state == "held_awaiting_operator_approval"
+        )
+        or _runtime_recovery_bounded_hold_observed(telemetry_snapshot)
     )
     safety_hold_stable = _runtime_recovery_safety_hold_stable(
         bridge=bridge,
@@ -5272,6 +5923,10 @@ def _attach_auto_runtime_recovery_agent_proposal(
             "rejudgment_ready",
         }
     )
+    newly_failed_recovery_observation = _runtime_recovery_observation_failure_is_new(
+        proposal=last_proposal,
+        current_observation_state=observation_state,
+    )
     proposal_materially_changed = bool(
         proposal_awaiting_approval
         and (
@@ -5280,7 +5935,7 @@ def _attach_auto_runtime_recovery_agent_proposal(
                 nav_state_changed
                 and not safety_hold_preserves_local_avoidance_proposal
             )
-            or observation_state == "failed"
+            or newly_failed_recovery_observation
         )
     )
     if proposal_materially_changed:
@@ -5304,6 +5959,24 @@ def _attach_auto_runtime_recovery_agent_proposal(
         telemetry_snapshot=telemetry_snapshot,
         refresh_seconds=active_refresh_seconds,
     )
+    initial_local_avoidance_judgment_required = bool(
+        local_conflict_requires_hold
+        and safety_hold_observed
+        and safety_hold_stable
+        and not proposal_awaiting_approval
+        and not safety_hold_preserves_local_avoidance_proposal
+        and decision_signature not in judged_decision_signatures
+        and active_conflict_obstacle_name
+        not in judged_local_conflict_obstacle_names
+    )
+    # Preflight observations can establish the same semantic decision
+    # signature later seen in the stabilized safety HOLD.  Signature
+    # de-duplication must not suppress the first hosted judgment for that
+    # source-backed local conflict: no avoid_obstacle proposal exists yet for
+    # the human to approve.  Once the signature is actually judged, the normal
+    # task-local de-duplication and immutable-proposal rules apply again.
+    if initial_local_avoidance_judgment_required:
+        should_refresh = True
     if has_news and "runtime_recovery_window_no_news" in prior_reasons:
         should_refresh = True
     if has_semantic_news:
@@ -5487,7 +6160,43 @@ def _attach_auto_runtime_recovery_agent_proposal(
             reason="runtime_recovery_proposal_deterministic_recompile",
             detail=str(last_proposal.get("proposal_id") or ""),
         )
-        refresh_status = "proposal_recompiled"
+        try:
+            recompiled_incident_graph = _run_recompiled_mission_incident_graph(
+                telemetry_snapshot=telemetry_snapshot,
+                task_id=task_id,
+                recovery_result=result,
+                source_proposal=last_proposal,
+            )
+        except Exception as exc:
+            recompiled_incident_graph = {}
+            result["mission_incident_graph_error"] = type(exc).__name__
+        result["missionos_mission_incident_graph"] = recompiled_incident_graph
+        result["mission_incident_graph_required"] = True
+        assurance_proposal = recompiled_incident_graph.get(
+            "mission_assurance_proposal"
+        )
+        assurance_proposal = (
+            dict(assurance_proposal)
+            if isinstance(assurance_proposal, Mapping)
+            else {}
+        )
+        result["mission_assurance_evaluation"] = {
+            "schema_version": "missionos_mission_assurance_agent_result.v1",
+            "situation": recompiled_incident_graph.get("mission_situation") or {},
+            "proposal": assurance_proposal,
+            "agent_status": assurance_proposal.get("judgment_status"),
+            "operator_approved": False,
+            "dispatch_authority_created": False,
+            "dispatch_request_sent": False,
+            "physical_execution_invoked": False,
+            "progress_counted": False,
+        }
+        refresh_status = (
+            "proposal_recompiled_with_fresh_assurance"
+            if recompiled_incident_graph.get("decision_status")
+            == "awaiting_operator_approval"
+            else "proposal_recompile_assurance_blocked"
+        )
     elif observation_state == "in_progress":
         agent_invoked = False
         result = _runtime_recovery_agent_skipped_result(
@@ -5550,6 +6259,7 @@ def _attach_auto_runtime_recovery_agent_proposal(
     elif (
         prior_decision_signature == decision_signature
         and not receipt_invalidated_proposal
+        and not initial_local_avoidance_judgment_required
     ):
         # Proposal expiry, origin drift, or a legacy-v1 threshold transition
         # can revoke the concrete approval target, but none of those facts
@@ -5618,6 +6328,36 @@ def _attach_auto_runtime_recovery_agent_proposal(
             agent_invoked = True
             refresh_status = "agent_invoked"
     runtime_status = result.get("runtime_status")
+    mission_incident_graph = result.get("missionos_mission_incident_graph")
+    mission_incident_graph = (
+        dict(mission_incident_graph)
+        if isinstance(mission_incident_graph, Mapping)
+        else dict(last_proposal.get("missionos_mission_incident_graph"))
+        if proposal_recompiled
+        and isinstance(
+            last_proposal.get("missionos_mission_incident_graph"), Mapping
+        )
+        else {}
+    )
+    mission_incident_graph_required = bool(
+        result.get("mission_incident_graph_required") is True
+    )
+    mission_incident_allows_approval = bool(
+        not mission_incident_graph_required
+        or (
+            mission_incident_graph.get("graph_runtime_status")
+            == "proposal_guardrail_passed"
+            and mission_incident_graph.get("decision_status")
+            == "awaiting_operator_approval"
+            and mission_incident_graph.get("alignment_status") == "accepted"
+            and mission_incident_graph.get("mission_assurance_agent_invoked")
+            is True
+            and mission_incident_graph.get(
+                "recovery_judgment_available_before_mission_assurance"
+            )
+            is True
+        )
+    )
     result_assessment_for_transition = result.get("assessment")
     result_assessment_for_transition = (
         result_assessment_for_transition
@@ -5627,6 +6367,7 @@ def _attach_auto_runtime_recovery_agent_proposal(
     proposal_created = bool(
         (agent_invoked or proposal_recompiled)
         and runtime_status == "proposal_guardrail_passed"
+        and mission_incident_allows_approval
     )
     result_compilation_for_transition = result_assessment_for_transition.get(
         "intent_compilation"
@@ -5697,6 +6438,14 @@ def _attach_auto_runtime_recovery_agent_proposal(
     if agent_invoked and not agent_result_retryable:
         if decision_signature not in judged_decision_signatures:
             judged_decision_signatures.append(decision_signature)
+        if (
+            active_conflict_obstacle_name
+            and active_conflict_obstacle_name
+            not in judged_local_conflict_obstacle_names
+        ):
+            judged_local_conflict_obstacle_names.append(
+                active_conflict_obstacle_name
+            )
     if (
         (agent_invoked and not agent_result_retryable)
         or proposal_recompiled
@@ -5801,6 +6550,9 @@ def _attach_auto_runtime_recovery_agent_proposal(
         "legacy_recovery_decision_signature": legacy_decision_signature,
         "last_recovery_decision_signature": next_decision_signature,
         "judged_recovery_decision_signatures": judged_decision_signatures[-64:],
+        "judged_local_conflict_obstacle_names": (
+            judged_local_conflict_obstacle_names[-64:]
+        ),
         "signature_shadow_comparison": {
             "legacy_changed": bool(
                 prior_legacy_decision_signature
@@ -5845,6 +6597,7 @@ def _attach_auto_runtime_recovery_agent_proposal(
         ),
         "proposal_invalidation_reasons": proposal_lifecycle_reasons,
         "runtime_recovery_agent_result": result,
+        "missionos_mission_incident_graph": mission_incident_graph,
         "observed_at": observed_at,
         "dispatch_authority_created": False,
         "progress_counted": False,
@@ -5853,6 +6606,17 @@ def _attach_auto_runtime_recovery_agent_proposal(
     replaced_artifacts: dict[str, Any] = {
         "missionos_runtime_recovery_agent_live_bridge": bridge_payload
     }
+    if mission_incident_graph:
+        replaced_artifacts["missionos_mission_incident_graph"] = (
+            mission_incident_graph
+        )
+        mission_incident_graph_id = str(
+            mission_incident_graph.get("mission_incident_graph_id") or ""
+        )
+        if mission_incident_graph_id:
+            artifact_updates["missionos_mission_incident_graphs"] = {
+                mission_incident_graph_id: mission_incident_graph
+            }
     if compound_hazard_state:
         replaced_artifacts[
             "missionos_runtime_recovery_compound_hazard_state"
@@ -6039,6 +6803,36 @@ def _attach_auto_runtime_recovery_agent_proposal(
             source_proposal=last_proposal,
         )
         proposal_origin_kind = str(proposal_origin.get("origin_kind") or "")
+        shadow_source_result = (
+            last_proposal.get("runtime_recovery_agent_result")
+            if proposal_recompiled
+            else result
+        )
+        shadow_source_result = (
+            dict(shadow_source_result)
+            if isinstance(shadow_source_result, Mapping)
+            else {}
+        )
+        shadow_source_proposal_id = (
+            str(last_proposal.get("proposal_id") or "")
+            if proposal_recompiled
+            else proposal_id
+        )
+        retained_shadow_comparison = last_proposal.get(
+            "runtime_recovery_shadow_comparison"
+        )
+        runtime_recovery_shadow_comparison = (
+            dict(retained_shadow_comparison)
+            if proposal_recompiled
+            and isinstance(retained_shadow_comparison, Mapping)
+            and retained_shadow_comparison.get("comparison_status")
+            == "computed"
+            else build_runtime_recovery_shadow_comparison(
+                task_id=task_id,
+                proposal_id=shadow_source_proposal_id,
+                runtime_recovery_agent_result=shadow_source_result,
+            )
+        )
         result_assessment = result.get("assessment")
         result_assessment = (
             dict(result_assessment)
@@ -6077,8 +6871,34 @@ def _attach_auto_runtime_recovery_agent_proposal(
             if isinstance(action_feasibility, Mapping)
             else {}
         )
+        recompiled_parameters = intent_compilation.get("compiled_parameters")
+        recompiled_parameters = (
+            dict(recompiled_parameters)
+            if isinstance(recompiled_parameters, Mapping)
+            else dict(result_assessment.get("proposed_parameters") or {})
+            if isinstance(result_assessment.get("proposed_parameters"), Mapping)
+            else {}
+        )
+        parameter_recompile_evidence = (
+            _runtime_recovery_parameter_recompile_evidence(
+                proposal_recompiled=proposal_recompiled,
+                source_proposal=last_proposal,
+                source_parameters=last_compiled_parameters,
+                recompiled_parameters=recompiled_parameters,
+            )
+        )
+        assurance_recompile_evidence = (
+            _runtime_recovery_assurance_recompile_evidence(
+                proposal_recompiled=proposal_recompiled,
+                source_proposal=last_proposal,
+                recompiled_graph=mission_incident_graph,
+            )
+        )
         proposal_schema_version = (
-            "missionos_runtime_recovery_proposal_evidence.v3"
+            "missionos_runtime_recovery_proposal_evidence.v4"
+            if mission_incident_graph_required
+            and mission_incident_allows_approval
+            else "missionos_runtime_recovery_proposal_evidence.v3"
             if hazard_state.get("hazard_state_status") == "verified"
             and action_feasibility.get("feasibility_status")
             == "verified_feasible"
@@ -6127,6 +6947,17 @@ def _attach_auto_runtime_recovery_agent_proposal(
             "semantic_numeric_delta": semantic_numeric_delta,
             "semantic_numeric_decision_delta": semantic_numeric_decision_delta,
             "runtime_recovery_agent_result": result,
+            "missionos_mission_incident_graph": mission_incident_graph,
+            "mission_assurance_evaluation": (
+                result.get("mission_assurance_evaluation")
+                if isinstance(
+                    result.get("mission_assurance_evaluation"), Mapping
+                )
+                else {}
+            ),
+            "runtime_recovery_shadow_comparison": (
+                runtime_recovery_shadow_comparison
+            ),
             "recovery_intent": recovery_intent,
             "recovery_intent_id": recovery_intent.get("recovery_intent_id"),
             "recovery_intent_sha256": recovery_intent.get(
@@ -6158,6 +6989,28 @@ def _attach_auto_runtime_recovery_agent_proposal(
             ),
             "proposal_origin": proposal_origin,
             "proposal_origin_sha256": proposal_origin["origin_sha256"],
+            "parameter_recompile_evidence": parameter_recompile_evidence,
+            "parameter_recompile_evidence_id": (
+                parameter_recompile_evidence.get(
+                    "parameter_recompile_evidence_id"
+                )
+            ),
+            "parameter_recompile_evidence_sha256": (
+                parameter_recompile_evidence.get(
+                    "parameter_recompile_evidence_sha256"
+                )
+            ),
+            "assurance_recompile_evidence": assurance_recompile_evidence,
+            "assurance_recompile_evidence_id": (
+                assurance_recompile_evidence.get(
+                    "assurance_recompile_evidence_id"
+                )
+            ),
+            "assurance_recompile_evidence_sha256": (
+                assurance_recompile_evidence.get(
+                    "assurance_recompile_evidence_sha256"
+                )
+            ),
             "proposal_source": (
                 "deterministic_recompile_of_prior_llm_judgment"
                 if proposal_recompiled
@@ -7167,6 +8020,7 @@ def run_px4_gazebo_mission_designer_live_sitl_flight_execution(
     horizontal_runner: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
     task_store_factory: Callable[[], TaskStore] | None = None,
     now: datetime | None = None,
+    mission_assurance_on_deviation: bool = False,
 ) -> dict[str, Any]:
     """Run the live horizontal-route mode and persist its live-run artifact."""
 
@@ -7181,6 +8035,7 @@ def run_px4_gazebo_mission_designer_live_sitl_flight_execution(
             task_id=str(task["task_id"]),
             task_store_factory=task_store_factory,
             task=task,
+            mission_assurance_on_deviation=mission_assurance_on_deviation,
         )
     )
     raw_summary = runner(current)
@@ -7188,6 +8043,95 @@ def run_px4_gazebo_mission_designer_live_sitl_flight_execution(
         task=current,
         horizontal_summary=raw_summary,
     )
+    if mission_assurance_on_deviation:
+        mission_assurance_attached = attach_mission_assurance_px4_live_flight_observation(
+            task_id,
+            horizontal_summary=stamped_summary,
+            task_store_factory=task_store_factory,
+            now=now,
+        )
+        if stamped_summary.get("delivery_completion_claimed") is not True:
+            return mission_assurance_attached
+        completed_live = attach_px4_gazebo_mission_designer_sitl_live_flight_run(
+            task_id,
+            horizontal_summary=stamped_summary,
+            task_store_factory=task_store_factory,
+            now=now,
+        )
+        completed_flight = attach_px4_gazebo_mission_designer_sitl_flight_evidence(
+            task_id,
+            horizontal_summary=stamped_summary,
+            task_store_factory=task_store_factory,
+            now=now,
+        )
+        completed_payload = (
+            attach_px4_gazebo_mission_designer_sitl_payload_release_observation(
+                task_id,
+                horizontal_summary=stamped_summary,
+                task_store_factory=task_store_factory,
+                now=now,
+            )
+        )
+        completed_dropoff = (
+            attach_px4_gazebo_mission_designer_sitl_dropoff_verification(
+                task_id,
+                horizontal_summary=stamped_summary,
+                task_store_factory=task_store_factory,
+                now=now,
+            )
+        )
+        completed_exit = (
+            attach_px4_gazebo_mission_designer_sitl_delivery_epic_exit_result(
+                task_id,
+                prompt=_task_prompt(current),
+                upload_only_delivery_success_rejected=True,
+                missing_flight_delivery_success_rejected=True,
+                missing_payload_release_delivery_success_rejected=True,
+                missing_dropoff_delivery_success_rejected=True,
+                task_store_factory=task_store_factory,
+                now=now,
+            )
+        )
+        mission_assurance_attached["task"] = completed_exit["task"]
+        mission_assurance_attached.update(
+            {
+                "px4_gazebo_mission_designer_sitl_live_flight_run": completed_live[
+                    "px4_gazebo_mission_designer_sitl_live_flight_run"
+                ],
+                "px4_gazebo_mission_designer_sitl_flight_evidence": completed_flight[
+                    "px4_gazebo_mission_designer_sitl_flight_evidence"
+                ],
+                "px4_gazebo_mission_designer_sitl_execution_result": completed_flight[
+                    "px4_gazebo_mission_designer_sitl_execution_result"
+                ],
+                "px4_gazebo_mission_designer_sitl_payload_release_observation": (
+                    completed_payload[
+                        "px4_gazebo_mission_designer_sitl_payload_release_observation"
+                    ]
+                ),
+                "px4_gazebo_mission_designer_sitl_dropoff_verification": (
+                    completed_dropoff[
+                        "px4_gazebo_mission_designer_sitl_dropoff_verification"
+                    ]
+                ),
+                "px4_gazebo_mission_designer_sitl_delivery_epic_exit": completed_exit[
+                    "px4_gazebo_mission_designer_sitl_delivery_epic_exit"
+                ],
+            }
+        )
+        mission_assurance_attached["summary"] = {
+            **mission_assurance_attached["summary"],
+            **completed_live["summary"],
+            **completed_flight["summary"],
+            **completed_payload["summary"],
+            **completed_dropoff["summary"],
+            **completed_exit["summary"],
+            **dict(stamped_summary),
+            "live_flight_status": "completed",
+            "failure_reasons": [],
+            "delivery_completion_claimed": True,
+        }
+        return mission_assurance_attached
     attached = attach_px4_gazebo_mission_designer_sitl_live_flight_run(
         task_id,
         horizontal_summary=stamped_summary,
@@ -7276,6 +8220,395 @@ def run_px4_gazebo_mission_designer_live_sitl_flight_execution(
         ],
     }
     return attached
+
+
+def build_mission_assurance_px4_live_flight_observation(
+    *,
+    task_id: str,
+    horizontal_summary: Mapping[str, Any],
+    observed_at: datetime | None = None,
+) -> dict[str, Any]:
+    """Project a governed live response without claiming delivery completion."""
+
+    summary = dict(horizontal_summary)
+    guard = summary.get("mission_assurance_live_guard")
+    guard = guard if isinstance(guard, Mapping) else {}
+    blocking_reasons: list[str] = []
+
+    def require(condition: bool, reason: str) -> None:
+        if not condition:
+            blocking_reasons.append(reason)
+
+    require(
+        summary.get("mission_designer_task_id") == task_id,
+        "mission_designer_task_binding_mismatch",
+    )
+    require(
+        summary.get("same_gateway_execution_run_observed") is True,
+        "same_gateway_execution_run_not_observed",
+    )
+    require(
+        summary.get("actual_px4_gazebo_horizontal_smoke_observed") is True,
+        "actual_px4_gazebo_horizontal_smoke_not_observed",
+    )
+    require(
+        summary.get("decision_loop_driver")
+        == "runtime_recovery_agent_then_mission_assurance_agent",
+        "two_agent_decision_order_not_observed",
+    )
+    require(
+        summary.get("runtime_recovery_agent_invoked") is True
+        and guard.get("runtime_recovery_agent_invoked") is True,
+        "runtime_recovery_agent_not_invoked",
+    )
+    require(
+        guard.get("recovery_agent_invoked_before_mission_assurance") is True,
+        "recovery_agent_not_observed_before_mission_assurance",
+    )
+    require(
+        summary.get("mission_assurance_agent_invoked") is True,
+        "mission_assurance_agent_not_invoked",
+    )
+    response_kind = str(guard.get("mission_assurance_response_kind") or "")
+    recovery_proposal = guard.get("runtime_recovery_agent_proposal")
+    recovery_proposal = (
+        recovery_proposal if isinstance(recovery_proposal, Mapping) else {}
+    )
+    recovery_response = str(
+        recovery_proposal.get("selected_bounded_action") or ""
+    )
+    disagreement_observed = guard.get("agent_disagreement_observed") is True
+    if disagreement_observed:
+        require(
+            recovery_response in {"continue", "hold", "operator_review"},
+            "agent_disagreement_recovery_no_action_response_missing",
+        )
+        require(
+            response_kind in {"return", "replan"},
+            "agent_disagreement_assurance_action_missing",
+        )
+        require(
+            guard.get("guard_status") == "operator_escalation"
+            and guard.get("agent_disagreement_resolution")
+            == "operator_escalation",
+            "agent_disagreement_not_escalated",
+        )
+        require(
+            guard.get("selected_recovery_action") is None
+            and guard.get("dispatch_request_sent") is False,
+            "agent_disagreement_created_recovery_authority",
+        )
+        require(
+            summary.get("task_status") == "blocked",
+            "agent_disagreement_task_not_blocked",
+        )
+        disposition = "agent_disagreement_operator_escalation"
+    elif response_kind == "return":
+        approval_request = guard.get("operator_recovery_approval_request")
+        approval_request = (
+            approval_request if isinstance(approval_request, Mapping) else {}
+        )
+        require(
+            guard.get("guard_status") == "awaiting_operator_approval",
+            "mission_assurance_fresh_operator_approval_not_requested",
+        )
+        require(
+            approval_request.get("request_status")
+            == "awaiting_operator_approval"
+            and approval_request.get("recovery_action") == "rtl"
+            and approval_request.get("requires_new_human_approval") is True,
+            "mission_assurance_recovery_approval_request_missing",
+        )
+        require(
+            guard.get("selected_recovery_action") is None
+            and guard.get("dispatch_request_sent") is False,
+            "mission_assurance_return_dispatched_without_fresh_approval",
+        )
+        require(
+            summary.get("task_status") == "blocked",
+            "mission_assurance_recovery_approval_wait_not_blocked",
+        )
+        disposition = "return_awaiting_operator_approval"
+    elif response_kind == "hold":
+        recovery_proposed_dispatch = recovery_response not in {
+            "continue",
+            "hold",
+            "operator_review",
+        }
+        require(
+            guard.get("guard_status") in {"blocked", "no_dispatch"},
+            "mission_assurance_hold_did_not_prevent_dispatch",
+        )
+        if recovery_proposed_dispatch:
+            require(
+                guard.get("dispatch_prevented_by_mission_assurance") is True,
+                "mission_assurance_hold_dispatch_prevention_not_observed",
+            )
+        require(
+            guard.get("selected_recovery_action") is None,
+            "mission_assurance_hold_selected_recovery_action",
+        )
+        require(
+            summary.get("recovery_command_ack_observed") is not True,
+            "mission_assurance_hold_recovery_ack_observed",
+        )
+        require(
+            summary.get("task_status") == "blocked",
+            "mission_assurance_hold_task_not_blocked",
+        )
+        disposition = (
+            "hold_prevented_recovery_dispatch"
+            if recovery_proposed_dispatch
+            else "hold_no_recovery_dispatch"
+        )
+    elif response_kind in {"continue", "operator_escalation"}:
+        expected_recovery_response = {
+            "continue": "continue",
+            "operator_escalation": "operator_review",
+        }[response_kind]
+        require(
+            recovery_response == expected_recovery_response,
+            "mission_assurance_no_dispatch_response_mismatch",
+        )
+        require(
+            guard.get("guard_status") == "no_dispatch",
+            "mission_assurance_no_dispatch_not_accepted",
+        )
+        require(
+            guard.get("selected_recovery_action") is None,
+            "mission_assurance_no_dispatch_selected_recovery_action",
+        )
+        require(
+            summary.get("recovery_command_ack_observed") is not True,
+            "mission_assurance_no_dispatch_recovery_ack_observed",
+        )
+        if response_kind == "continue":
+            continue_execution = summary.get(
+                "mission_assurance_continue_execution"
+            )
+            continue_execution = (
+                continue_execution
+                if isinstance(continue_execution, Mapping)
+                else {}
+            )
+            require(
+                summary.get("mission_assurance_continue_execution_invoked")
+                is True,
+                "mission_assurance_continue_execution_not_invoked",
+            )
+            require(
+                continue_execution.get("existing_route_approval_consumed")
+                is True,
+                "mission_assurance_continue_route_approval_not_consumed",
+            )
+            require(
+                continue_execution.get("offboard_mode_switch_ack_observed")
+                is True
+                and continue_execution.get(
+                    "offboard_mode_switch_ack_result_code"
+                )
+                == 0,
+                "mission_assurance_continue_offboard_ack_not_observed",
+            )
+            require(
+                int(continue_execution.get("setpoint_frames_sent") or 0) > 0,
+                "mission_assurance_continue_setpoint_stream_not_observed",
+            )
+            require(
+                summary.get("mission_assurance_continue_effect_observed")
+                is True,
+                "mission_assurance_continue_effect_not_observed",
+            )
+            require(
+                summary.get("mission_assurance_continue_route_completion_observed")
+                is True,
+                "mission_assurance_continue_route_completion_not_observed",
+            )
+            require(
+                summary.get(
+                    "mission_assurance_continue_dropoff_approach_observed"
+                )
+                is True,
+                "mission_assurance_continue_dropoff_approach_not_observed",
+            )
+            require(
+                summary.get("task_status") == "completed"
+                and summary.get("final_status") == "completed",
+                "mission_assurance_continue_task_not_completed",
+            )
+            require(
+                summary.get("dropoff_region_reached") is True,
+                "mission_assurance_continue_dropoff_not_observed",
+            )
+            require(
+                summary.get("payload_release_observed") is True,
+                "mission_assurance_continue_payload_release_not_observed",
+            )
+            require(
+                summary.get("delivery_completion_claimed") is True,
+                "mission_assurance_continue_delivery_completion_not_observed",
+            )
+            disposition = "continue_completed_route_delivery"
+        else:
+            require(
+                summary.get("task_status") == "blocked",
+                "mission_assurance_no_dispatch_task_not_blocked",
+            )
+            disposition = "operator_escalation_no_recovery_dispatch"
+    else:
+        require(False, "mission_assurance_response_not_supported")
+        disposition = "unsupported"
+    if response_kind != "continue":
+        require(
+            summary.get("dropoff_region_reached") is False
+            and summary.get("delivery_completion_claimed") is False,
+            "mission_assurance_recovery_must_not_claim_delivery",
+        )
+    require(
+        summary.get("hardware_target_allowed") is False
+        and summary.get("physical_execution_invoked") is False,
+        "mission_assurance_recovery_scope_invalid",
+    )
+    if blocking_reasons:
+        raise PX4GazeboMissionDesignerSITLLiveFlightRunError(
+            "Mission Assurance PX4 live observation blocked: "
+            + ", ".join(blocking_reasons)
+        )
+    summary_sha256 = _canonical_sha256(summary)
+    deviation_samples = summary.get("deviation_samples")
+    deviation_samples = deviation_samples if isinstance(deviation_samples, list) else []
+    airborne_route_sample_observed = any(
+        isinstance(sample, Mapping)
+        and isinstance(sample.get("sample"), Mapping)
+        and float(sample["sample"].get("z") or 0.0) >= 1.0
+        for sample in deviation_samples
+    )
+    require(
+        airborne_route_sample_observed,
+        "mission_assurance_airborne_route_sample_not_observed",
+    )
+    if blocking_reasons:
+        raise PX4GazeboMissionDesignerSITLLiveFlightRunError(
+            "Mission Assurance PX4 live observation blocked: "
+            + ", ".join(blocking_reasons)
+        )
+    return {
+        "schema_version": (
+            MISSIONOS_MISSION_ASSURANCE_PX4_LIVE_FLIGHT_OBSERVATION_SCHEMA_VERSION
+        ),
+        "observation_id": (
+            "mission_assurance_px4_live_flight_observation_"
+            f"{summary_sha256[:12]}"
+        ),
+        "task_id": task_id,
+        "mission_designer_live_sitl_run_id": summary.get(
+            "mission_designer_live_sitl_run_id"
+        ),
+        "horizontal_summary_sha256": summary_sha256,
+        "actual_sitl_flight_evidence_observed": True,
+        "actual_px4_gazebo_horizontal_smoke_observed": True,
+        "airborne_route_sample_observed": True,
+        "mission_assurance_agent_invoked": True,
+        "runtime_recovery_agent_invoked": True,
+        "recovery_agent_invoked_before_mission_assurance": True,
+        "decision_sequence": list(guard.get("decision_sequence") or []),
+        "decision_loop_driver": (
+            "runtime_recovery_agent_then_mission_assurance_agent"
+        ),
+        "guard_status": guard.get("guard_status"),
+        "mission_assurance_response_kind": response_kind,
+        "disposition": disposition,
+        "selected_recovery_action": guard.get("selected_recovery_action"),
+        "mission_assurance_continue_execution_invoked": summary.get(
+            "mission_assurance_continue_execution_invoked"
+        )
+        is True,
+        "mission_assurance_continue_effect_observed": summary.get(
+            "mission_assurance_continue_effect_observed"
+        )
+        is True,
+        "mission_assurance_continue_execution": (
+            dict(summary["mission_assurance_continue_execution"])
+            if isinstance(
+                summary.get("mission_assurance_continue_execution"), Mapping
+            )
+            else {}
+        ),
+        "recovery_command_ack_observed": summary.get(
+            "recovery_command_ack_observed"
+        )
+        is True,
+        "recovery_state_observed": summary.get("recovery_state_observed") is True,
+        "recovery_state_label": summary.get("recovery_state_label"),
+        "final_status": summary.get("final_status"),
+        "mission_assurance_continue_route_completion_observed": summary.get(
+            "mission_assurance_continue_route_completion_observed"
+        )
+        is True,
+        "mission_assurance_continue_dropoff_approach_observed": summary.get(
+            "mission_assurance_continue_dropoff_approach_observed"
+        )
+        is True,
+        "dropoff_region_reached": summary.get("dropoff_region_reached") is True,
+        "payload_release_observed": summary.get("payload_release_observed") is True,
+        "delivery_completion_claimed": summary.get(
+            "delivery_completion_claimed"
+        )
+        is True,
+        "agent_created_approval": False,
+        "agent_created_dispatch_authority": False,
+        "hardware_target_allowed": False,
+        "physical_execution_invoked": False,
+        "observed_at": _utc(observed_at).isoformat(),
+    }
+
+
+def attach_mission_assurance_px4_live_flight_observation(
+    task_id: str,
+    *,
+    horizontal_summary: Mapping[str, Any],
+    task_store_factory: Callable[[], TaskStore] | None = None,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    store = (task_store_factory or get_task_store)()
+    observation = build_mission_assurance_px4_live_flight_observation(
+        task_id=task_id,
+        horizontal_summary=horizontal_summary,
+        observed_at=now,
+    )
+    delivery_completed = observation["delivery_completion_claimed"] is True
+    summary = {
+        **dict(horizontal_summary),
+        "live_flight_status": "completed",
+        "live_flight_opted_in": True,
+        "live_flight_runner_invoked": True,
+        "actual_sitl_flight_evidence_observed": True,
+        "payload_dropoff_success_claimed": delivery_completed,
+        "delivery_completion_claimed": delivery_completed,
+        "failure_reasons": [],
+    }
+    updated = store.update(
+        task_id,
+        status="completed",
+        artifacts={
+            "missionos_mission_assurance_px4_live_flight_observation": observation,
+            "missionos_mission_assurance_px4_horizontal_summary": dict(
+                horizontal_summary
+            ),
+        },
+        metadata={
+            "actual_sitl_flight_evidence_observed": True,
+            "mission_assurance_px4_live_flight_observed": True,
+            "delivery_completion_claimed": delivery_completed,
+            "hardware_target_allowed": False,
+            "physical_execution_invoked": False,
+        },
+    )
+    return {
+        "task": updated or store.get(task_id),
+        "missionos_mission_assurance_px4_live_flight_observation": observation,
+        "summary": summary,
+    }
 
 
 def _task_prompt(task: Mapping[str, Any]) -> str:

@@ -7,20 +7,20 @@ this module so existing imports and monkeypatches retain identical semantics.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import hashlib
 import json
 import math
 import os
-from pathlib import Path
 import re
 import shlex
 import shutil
 import subprocess
 import time
+import xml.etree.ElementTree as ET
+from datetime import datetime, timezone
+from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, Callable
-import xml.etree.ElementTree as ET
 
 from scripts import smoke_px4_gazebo_collision_contact_event as contact_event_smoke
 from scripts import smoke_px4_gazebo_sitl_mission_upload as mission_upload_smoke
@@ -33,168 +33,347 @@ from src.runtime.px4_gazebo_emergency_dispatcher import (
     build_px4_gazebo_emergency_command_approval,
     run_px4_gazebo_emergency_command_dispatch,
 )
-from src.runtime.px4_gazebo_route_dispatcher import (
-    build_px4_gazebo_route_deviation_abort,
-    build_px4_gazebo_route_recovery_completion,
-    derive_px4_gazebo_route_target_ned,
+from src.runtime.px4_gazebo_route import scenario as _route_scenario
+from src.runtime.px4_gazebo_route import supervision as _route_supervision
+from src.runtime.px4_gazebo_route.alternate_route import (
+    alternate_mission_upload_payloads as _alternate_route_mission_upload_payloads,
+)
+from src.runtime.px4_gazebo_route.alternate_route import (
+    execute_alternate_route_rewrite as _run_alternate_route_rewrite,
+)
+from src.runtime.px4_gazebo_route.alternate_route import (
+    project_alternate_mission_upload as _project_alternate_mission_upload,
+)
+from src.runtime.px4_gazebo_route.artifacts import (
+    create_run_directory as _new_run_dir,
+)
+from src.runtime.px4_gazebo_route.artifacts import (
+    mark_cleanup_observed as _mark_cleanup_observed,
+)
+from src.runtime.px4_gazebo_route.artifacts import (
+    snapshot_task_database_evidence as _snapshot_task_database_evidence,
+)
+from src.runtime.px4_gazebo_route.artifacts import (
+    write_recovery_run_artifacts as _write_recovery_run_artifacts,
+)
+from src.runtime.px4_gazebo_route.artifacts import (
+    write_run_artifacts as _write_run_artifacts,
+)
+from src.runtime.px4_gazebo_route.audit import (
+    PayloadRecoveryAuditExpectations as _PayloadRecoveryAuditExpectations,
+)
+from src.runtime.px4_gazebo_route.audit import (
+    RouteAuditExpectations as _RouteAuditExpectations,
+)
+from src.runtime.px4_gazebo_route.audit import (
+    RouteDeviationRecoveryAuditExpectations as _RouteDeviationRecoveryAuditExpectations,
+)
+from src.runtime.px4_gazebo_route.audit import (
+    audit_payload_recovery_summary as _audit_payload_recovery_summary,
+)
+from src.runtime.px4_gazebo_route.audit import (
+    audit_route_deviation_recovery_summary as _audit_route_deviation_recovery_summary,
+)
+from src.runtime.px4_gazebo_route.audit import (
+    audit_route_summary as _audit_route_summary,
+)
+from src.runtime.px4_gazebo_route.bootstrap import (
+    RouteBootstrapResult as _RouteBootstrapResult,
+)
+from src.runtime.px4_gazebo_route.bootstrap import (
+    bootstrap_route_task as _bootstrap_route_task,
+)
+from src.runtime.px4_gazebo_route.collision_observation import (
+    project_route_blocking_candidate as _project_route_blocking_candidate,
+)
+from src.runtime.px4_gazebo_route.collision_observation import (
+    run_collision_obstacle_evidence as _run_collision_obstacle_evidence,
+)
+from src.runtime.px4_gazebo_route.configuration import (
+    PAYLOAD_FEASIBILITY_ADVISORY_REF_PREFIX,
+)
+from src.runtime.px4_gazebo_route.configuration import (
+    parse_route_args as _parse_args,
+)
+from src.runtime.px4_gazebo_route.configuration import (
+    payload_advisory_recovery_requested as _payload_advisory_recovery_requested,
+)
+from src.runtime.px4_gazebo_route.configuration import (
+    validate_mission_assurance_args as _validate_mission_assurance_args,
+)
+from src.runtime.px4_gazebo_route.configuration import (
+    validate_payload_advisory_recovery_args as _validate_payload_advisory_recovery_args,
+)
+from src.runtime.px4_gazebo_route.configuration import (
+    validate_planned_route_stream_budget as _assert_planned_route_stream_budget,
+)
+from src.runtime.px4_gazebo_route.contact_integration import (
+    project_horizontal_contact_topic_integration as _project_horizontal_contact_topic_integration,
+)
+from src.runtime.px4_gazebo_route.dynamic_observation import (
+    observe_moving_actor_pose as _observe_moving_actor_pose,
+)
+from src.runtime.px4_gazebo_route.dynamic_observation import (
+    project_moving_actor_proximity as _project_moving_actor_proximity,
+)
+from src.runtime.px4_gazebo_route.dynamic_observation import (
+    run_moving_actor_waypoint_motion_application as _run_moving_actor_waypoint_motion_application,
 )
 from src.runtime.px4_gazebo_route.embedded_mavlink import (
     MAVLINK_HEARTBEAT_OBSERVER_HELPER,
     MAVLINK_LINK_LOSS_APPLICATOR_HELPER,
     MAVLINK_ROUTE_HELPER,
 )
-from src.runtime.px4_gazebo_route.execution import (
-    apply_bounded_mavlink_link_loss as _execute_bounded_mavlink_link_loss,
-    observe_mavlink_heartbeat_gap as _execute_mavlink_heartbeat_observer,
-    run_route_with_monitor as _execute_route_with_monitor,
-    send_embedded_helper as _execute_embedded_helper,
+from src.runtime.px4_gazebo_route.environment import (
+    PAYLOAD_RELEASE_MODEL_ENV,
+)
+from src.runtime.px4_gazebo_route.environment import (
+    alternate_landing_marker_requested as _alternate_landing_marker_requested,
+)
+from src.runtime.px4_gazebo_route.environment import (
+    battery_requested_profile as _battery_requested_profile,
+)
+from src.runtime.px4_gazebo_route.environment import (
+    collision_obstacle_contact_topic_requested as _collision_obstacle_contact_topic_requested,
+)
+from src.runtime.px4_gazebo_route.environment import (
+    collision_obstacle_motion_spec as _collision_obstacle_motion_spec,
+)
+from src.runtime.px4_gazebo_route.environment import (
+    collision_obstacle_requested as _collision_obstacle_requested,
+)
+from src.runtime.px4_gazebo_route.environment import (
+    form2a_wind_compensation_request as _form2a_wind_compensation_request,
+)
+from src.runtime.px4_gazebo_route.environment import (
+    landing_zone_blocked_requested as _landing_zone_blocked_requested,
+)
+from src.runtime.px4_gazebo_route.environment import (
+    mavlink_link_degradation_mode_request as _mavlink_link_degradation_mode_request,
+)
+from src.runtime.px4_gazebo_route.environment import (
+    moving_actor_marker_requested as _moving_actor_marker_requested,
+)
+from src.runtime.px4_gazebo_route.environment import (
+    multi_drone_conflict_probe_requested as _multi_drone_conflict_probe_requested,
+)
+from src.runtime.px4_gazebo_route.environment import (
+    no_fly_zone_marker_requested as _no_fly_zone_marker_requested,
+)
+from src.runtime.px4_gazebo_route.environment import (
+    payload_mass_request as _payload_mass_request,
+)
+from src.runtime.px4_gazebo_route.environment import (
+    payload_model_enabled as _payload_model_enabled,
+)
+from src.runtime.px4_gazebo_route.environment import (
+    rth_behavior_requested as _rth_behavior_requested,
+)
+from src.runtime.px4_gazebo_route.environment import (
+    sensor_failure_requested_profile as _sensor_failure_requested_profile,
+)
+from src.runtime.px4_gazebo_route.environment import (
+    telemetry_dropout_mode_request as _telemetry_dropout_mode_request,
+)
+from src.runtime.px4_gazebo_route.environment import (
+    thermal_weather_requested_profile as _thermal_weather_requested_profile,
+)
+from src.runtime.px4_gazebo_route.environment import (
+    traffic_conflict_marker_requested as _traffic_conflict_marker_requested,
+)
+from src.runtime.px4_gazebo_route.environment import (
+    visibility_mode_request as _visibility_mode_request,
+)
+from src.runtime.px4_gazebo_route.environment import (
+    wind_requested_profile as _wind_requested_profile,
 )
 from src.runtime.px4_gazebo_route.environmental_realism import (
     project_landing_zone_blocked_realism as _project_landing_zone_blocked_realism,
+)
+from src.runtime.px4_gazebo_route.environmental_realism import (
     project_operational_markers_realism as _project_operational_markers_realism,
+)
+from src.runtime.px4_gazebo_route.environmental_realism import (
     project_visibility_realism as _project_visibility_realism,
+)
+from src.runtime.px4_gazebo_route.environmental_realism import (
     run_sensor_failure_realism as _run_sensor_failure_realism,
+)
+from src.runtime.px4_gazebo_route.environmental_realism import (
     run_thermal_weather_realism as _run_thermal_weather_realism,
 )
-from src.runtime.px4_gazebo_route.dynamic_observation import (
-    observe_moving_actor_pose as _observe_moving_actor_pose,
-    project_moving_actor_proximity as _project_moving_actor_proximity,
-    run_moving_actor_waypoint_motion_application as _run_moving_actor_waypoint_motion_application,
+from src.runtime.px4_gazebo_route.execution import (
+    apply_bounded_mavlink_link_loss as _execute_bounded_mavlink_link_loss,
 )
-from src.runtime.px4_gazebo_route.collision_observation import (
-    project_route_blocking_candidate as _project_route_blocking_candidate,
-    run_collision_obstacle_evidence as _run_collision_obstacle_evidence,
+from src.runtime.px4_gazebo_route.execution import (
+    observe_mavlink_heartbeat_gap as _execute_mavlink_heartbeat_observer,
 )
-from src.runtime.px4_gazebo_route.contact_integration import (
-    project_horizontal_contact_topic_integration as _project_horizontal_contact_topic_integration,
+from src.runtime.px4_gazebo_route.execution import (
+    run_route_with_monitor as _execute_route_with_monitor,
 )
-from src.runtime.px4_gazebo_route.recovery_outcomes import (
-    PAYLOAD_RECOVERY_ACTION_REF,
+from src.runtime.px4_gazebo_route.execution import (
+    send_embedded_helper as _execute_embedded_helper,
+)
+from src.runtime.px4_gazebo_route.live_mission_assurance import (
+    configured_mission_assurance_context as _configured_mission_assurance_context,
+)
+from src.runtime.px4_gazebo_route.live_mission_assurance import (
+    evaluate_live_route_deviation as _evaluate_live_route_deviation,
+)
+from src.runtime.px4_gazebo_route.normal_route_flow import (
+    NormalRouteFlowInputs as _NormalRouteFlowInputs,
+)
+from src.runtime.px4_gazebo_route.normal_route_flow import (
+    NormalRouteRuntime as _NormalRouteRuntime,
+)
+from src.runtime.px4_gazebo_route.normal_route_flow import (
+    NormalRouteTarget as _NormalRouteTarget,
+)
+from src.runtime.px4_gazebo_route.normal_route_flow import (
+    NormalRouteTerminalProjection as _NormalRouteTerminalProjection,
+)
+from src.runtime.px4_gazebo_route.normal_route_flow import (
+    run_normal_route_flow as _run_normal_route_flow,
+)
+from src.runtime.px4_gazebo_route.observation import (
+    battery_status_from_listener_output as _battery_status_from_listener_output,
+)
+from src.runtime.px4_gazebo_route.observation import (
+    contact_topic_observation as _contact_topic_observation,
+)
+from src.runtime.px4_gazebo_route.observation import (
+    distance_to_segment_xy as _distance_to_segment_xy,
+)
+from src.runtime.px4_gazebo_route.observation import (
+    listener_field as _listener_field,
+)
+from src.runtime.px4_gazebo_route.observation import (
+    point_to_segment_distance_m as _point_to_segment_distance_m,  # noqa: F401
+)
+from src.runtime.px4_gazebo_route.observation import (
+    select_contact_topic as _select_contact_topic,
+)
+from src.runtime.px4_gazebo_route.observation import (
+    xy_pairs_match as _xy_pairs_match,  # noqa: F401
+)
+from src.runtime.px4_gazebo_route.operational_outcomes import (
+    project_alternate_landing_outcome as _project_alternate_landing_outcome,
+)
+from src.runtime.px4_gazebo_route.operational_outcomes import (
+    project_rth_outcome as _project_rth_outcome,
+)
+from src.runtime.px4_gazebo_route.operational_verification import (
+    build_alternate_landing_candidate_evidence as _build_alternate_landing_candidate_evidence,
+)
+from src.runtime.px4_gazebo_route.operational_verification import (
+    build_operational_incident_report as _build_operational_incident_report,
+)
+from src.runtime.px4_gazebo_route.operational_verification import (
+    build_route_blocking_verification as _build_route_blocking_verification,
+)
+from src.runtime.px4_gazebo_route.operational_verification import (
+    build_traffic_conflict_verification as _build_traffic_conflict_verification,
 )
 from src.runtime.px4_gazebo_route.payload_recovery_flow import (
     PayloadRecoveryFlowInputs as _PayloadRecoveryFlowInputs,
+)
+from src.runtime.px4_gazebo_route.payload_recovery_flow import (
     PayloadRecoveryRealismRefresh as _PayloadRecoveryRealismRefresh,
+)
+from src.runtime.px4_gazebo_route.payload_recovery_flow import (
     PayloadRecoveryRuntime as _PayloadRecoveryRuntime,
+)
+from src.runtime.px4_gazebo_route.payload_recovery_flow import (
     run_payload_recovery_flow as _run_payload_recovery_flow,
 )
 from src.runtime.px4_gazebo_route.recovery_execution import (
     observe_dispatched_recovery as _observe_dispatched_recovery,
 )
+from src.runtime.px4_gazebo_route.recovery_outcomes import (
+    PAYLOAD_RECOVERY_ACTION_REF,
+)
 from src.runtime.px4_gazebo_route.route_deviation_flow import (
     RouteDeviationFlowInputs as _RouteDeviationFlowInputs,
-    RouteDeviationRealismRefresh as _RouteDeviationRealismRefresh,
-    RouteDeviationRuntime as _RouteDeviationRuntime,
-    run_route_deviation_flow as _run_route_deviation_flow,
 )
-from src.runtime.px4_gazebo_route.normal_route_flow import (
-    NormalRouteFlowInputs as _NormalRouteFlowInputs,
-    NormalRouteRuntime as _NormalRouteRuntime,
-    NormalRouteTarget as _NormalRouteTarget,
-    NormalRouteTerminalProjection as _NormalRouteTerminalProjection,
-    run_normal_route_flow as _run_normal_route_flow,
+from src.runtime.px4_gazebo_route.route_deviation_flow import (
+    RouteDeviationRealismRefresh as _RouteDeviationRealismRefresh,
+)
+from src.runtime.px4_gazebo_route.route_deviation_flow import (
+    RouteDeviationRuntime as _RouteDeviationRuntime,
+)
+from src.runtime.px4_gazebo_route.route_deviation_flow import (
+    run_route_deviation_flow as _run_route_deviation_flow,
 )
 from src.runtime.px4_gazebo_route.runtime_lifecycle import (
     PX4RouteInitialRealismRuntime as _PX4RouteInitialRealismRuntime,
+)
+from src.runtime.px4_gazebo_route.runtime_lifecycle import (
     PX4RouteRuntimeLifecycle as _PX4RouteRuntimeLifecycle,
+)
+from src.runtime.px4_gazebo_route.runtime_lifecycle import (
     collect_initial_realism as _collect_initial_realism,
+)
+from src.runtime.px4_gazebo_route.runtime_lifecycle import (
     px4_route_runtime_session as _px4_route_runtime_session,
-)
-from src.runtime.px4_gazebo_route.observation import (
-    battery_status_from_listener_output as _battery_status_from_listener_output,
-    contact_topic_observation as _contact_topic_observation,
-    distance_to_segment_xy as _distance_to_segment_xy,
-    listener_field as _listener_field,
-    point_to_segment_distance_m as _point_to_segment_distance_m,  # noqa: F401
-    select_contact_topic as _select_contact_topic,
-    xy_pairs_match as _xy_pairs_match,  # noqa: F401
-)
-from src.runtime.px4_gazebo_route.operational_verification import (
-    build_alternate_landing_candidate_evidence as _build_alternate_landing_candidate_evidence,
-    build_operational_incident_report as _build_operational_incident_report,
-    build_route_blocking_verification as _build_route_blocking_verification,
-    build_traffic_conflict_verification as _build_traffic_conflict_verification,
-)
-from src.runtime.px4_gazebo_route.operational_outcomes import (
-    project_alternate_landing_outcome as _project_alternate_landing_outcome,
-    project_rth_outcome as _project_rth_outcome,
-)
-from src.runtime.px4_gazebo_route.alternate_route import (
-    alternate_mission_upload_payloads as _alternate_route_mission_upload_payloads,
-    execute_alternate_route_rewrite as _run_alternate_route_rewrite,
-    project_alternate_mission_upload as _project_alternate_mission_upload,
-)
-from src.runtime.px4_gazebo_route import scenario as _route_scenario
-from src.runtime.px4_gazebo_route import supervision as _route_supervision
-from src.runtime.px4_gazebo_route.artifacts import (
-    create_run_directory as _new_run_dir,
-    mark_cleanup_observed as _mark_cleanup_observed,
-    snapshot_task_database_evidence as _snapshot_task_database_evidence,
-    write_recovery_run_artifacts as _write_recovery_run_artifacts,
-    write_run_artifacts as _write_run_artifacts,
-)
-from src.runtime.px4_gazebo_route.audit import (
-    PayloadRecoveryAuditExpectations as _PayloadRecoveryAuditExpectations,
-    RouteAuditExpectations as _RouteAuditExpectations,
-    RouteDeviationRecoveryAuditExpectations as _RouteDeviationRecoveryAuditExpectations,
-    audit_payload_recovery_summary as _audit_payload_recovery_summary,
-    audit_route_deviation_recovery_summary as _audit_route_deviation_recovery_summary,
-    audit_route_summary as _audit_route_summary,
-)
-from src.runtime.px4_gazebo_route.bootstrap import (
-    RouteBootstrapResult as _RouteBootstrapResult,
-    bootstrap_route_task as _bootstrap_route_task,
-)
-from src.runtime.px4_gazebo_route.configuration import (
-    PAYLOAD_FEASIBILITY_ADVISORY_REF_PREFIX,
-    parse_route_args as _parse_args,
-    payload_advisory_recovery_requested as _payload_advisory_recovery_requested,
-    validate_payload_advisory_recovery_args as _validate_payload_advisory_recovery_args,
-    validate_planned_route_stream_budget as _assert_planned_route_stream_budget,
-)
-from src.runtime.px4_gazebo_route.environment import (
-    PAYLOAD_RELEASE_MODEL_ENV,
-    alternate_landing_marker_requested as _alternate_landing_marker_requested,
-    battery_requested_profile as _battery_requested_profile,
-    collision_obstacle_contact_topic_requested as _collision_obstacle_contact_topic_requested,
-    collision_obstacle_motion_spec as _collision_obstacle_motion_spec,
-    collision_obstacle_requested as _collision_obstacle_requested,
-    form2a_wind_compensation_request as _form2a_wind_compensation_request,
-    landing_zone_blocked_requested as _landing_zone_blocked_requested,
-    mavlink_link_degradation_mode_request as _mavlink_link_degradation_mode_request,
-    moving_actor_marker_requested as _moving_actor_marker_requested,
-    multi_drone_conflict_probe_requested as _multi_drone_conflict_probe_requested,
-    no_fly_zone_marker_requested as _no_fly_zone_marker_requested,
-    payload_mass_request as _payload_mass_request,
-    payload_model_enabled as _payload_model_enabled,
-    rth_behavior_requested as _rth_behavior_requested,
-    sensor_failure_requested_profile as _sensor_failure_requested_profile,
-    telemetry_dropout_mode_request as _telemetry_dropout_mode_request,
-    thermal_weather_requested_profile as _thermal_weather_requested_profile,
-    traffic_conflict_marker_requested as _traffic_conflict_marker_requested,
-    visibility_mode_request as _visibility_mode_request,
-    wind_requested_profile as _wind_requested_profile,
 )
 from src.runtime.px4_gazebo_route.verification import (
     application_status_is_materialized as _application_status_is_materialized,
+)
+from src.runtime.px4_gazebo_route.verification import (
     px4_param_set_applied as _px4_param_set_applied,
+)
+from src.runtime.px4_gazebo_route.verification import (
     px4_param_value_matches as _px4_param_value_matches,
+)
+from src.runtime.px4_gazebo_route.verification import (
     route_corridor_obstacle_application_source_check as _route_corridor_obstacle_application_source_check,
+)
+from src.runtime.px4_gazebo_route.verification import (
     wind_readback_status as _wind_readback_status,
 )
 from src.runtime.px4_gazebo_route.world import (
     VISIBILITY_FOG_RENDER_MARKER_ID,
+)
+from src.runtime.px4_gazebo_route.world import (
     alternate_landing_world_sdf_patch as _alternate_landing_world_sdf_patch,
+)
+from src.runtime.px4_gazebo_route.world import (
     collision_obstacle_world_sdf_patch as _world_collision_obstacle_world_sdf_patch,
+)
+from src.runtime.px4_gazebo_route.world import (
     inject_visibility_fog_render_marker as _inject_visibility_fog_render_marker,
+)
+from src.runtime.px4_gazebo_route.world import (
     landing_zone_blocked_world_sdf_patch as _landing_zone_blocked_world_sdf_patch,
+)
+from src.runtime.px4_gazebo_route.world import (
     moving_actor_waypoint_motion_spec as _moving_actor_waypoint_motion_spec,
+)
+from src.runtime.px4_gazebo_route.world import (
     moving_actor_waypoint_trajectory_definition_sha256 as _moving_actor_waypoint_trajectory_definition_sha256,
+)
+from src.runtime.px4_gazebo_route.world import (
     moving_actor_world_sdf_patch as _moving_actor_world_sdf_patch,
+)
+from src.runtime.px4_gazebo_route.world import (
     no_fly_zone_world_sdf_patch as _no_fly_zone_world_sdf_patch,
+)
+from src.runtime.px4_gazebo_route.world import (
     payload_model_sdf_patch as _payload_model_sdf_patch,
+)
+from src.runtime.px4_gazebo_route.world import (
     payload_world_sdf_patch as _payload_world_sdf_patch,
+)
+from src.runtime.px4_gazebo_route.world import (
     traffic_conflict_world_sdf_patch as _traffic_conflict_world_sdf_patch,
+)
+from src.runtime.px4_gazebo_route.world import (
     wind_effects_world_sdf_patch as _wind_effects_world_sdf_patch,
+)
+from src.runtime.px4_gazebo_route_dispatcher import (
+    build_px4_gazebo_route_deviation_abort,
+    build_px4_gazebo_route_recovery_completion,
+    derive_px4_gazebo_route_target_ned,
 )
 from src.runtime.task_store import TaskStore
 
@@ -218,6 +397,9 @@ TERRAIN_PROVIDER_STATUS_ENV = "PX4_GAZEBO_HORIZONTAL_ROUTE_TERRAIN_PROVIDER_STAT
 TERRAIN_SAMPLING_MODE_ENV = "PX4_GAZEBO_HORIZONTAL_ROUTE_TERRAIN_SAMPLING_MODE"
 TERRAIN_VERTICAL_REFERENCE_ENV = "PX4_GAZEBO_HORIZONTAL_ROUTE_TERRAIN_VERTICAL_REFERENCE"
 TERRAIN_COLLISION_MODE_ENV = "PX4_GAZEBO_HORIZONTAL_ROUTE_TERRAIN_COLLISION_MODE"
+DEFER_WIND_UNTIL_AIRBORNE_ENV = (
+    "PX4_GAZEBO_HORIZONTAL_ROUTE_DEFER_WIND_UNTIL_AIRBORNE"
+)
 CONTAINER_NAME = "boiled-claw-px4-gazebo-horizontal-route-smoke"
 ROUTE_MAVLINK_LOCAL_PORT = 14650
 ROUTE_MAVLINK_PX4_PORT = 14600
@@ -234,6 +416,7 @@ MAV_CMD_NAV_LAND = 21
 PREUPLOAD_SUMMARY: dict[str, Any] | None = None
 PAYLOAD_RELEASE_SUMMARY: dict[str, Any] | None = None
 WIND_REALISM_SUMMARY: dict[str, Any] | None = None
+WIND_ACTIVATION_ALLOWED = False
 THERMAL_WEATHER_REALISM_SUMMARY: dict[str, Any] | None = None
 VEHICLE_REALISM_SUMMARY: dict[str, Any] | None = None
 BATTERY_REALISM_SUMMARY: dict[str, Any] | None = None
@@ -329,6 +512,16 @@ def _enable_wind_on_x500_base(model_root: Path) -> dict[str, Any]:
     }
 
 
+def _initial_world_wind_vector(
+    *,
+    requested_x: float,
+    requested_y: float,
+) -> tuple[float, float]:
+    if os.getenv(DEFER_WIND_UNTIL_AIRBORNE_ENV) == "1":
+        return 0.0, 0.0
+    return requested_x, requested_y
+
+
 def _prepare_payload_model_root(
     run_dir: Path,
     *,
@@ -418,6 +611,10 @@ def _prepare_payload_model_root(
         wind_mean = float(wind_requested["wind_mean_mps"] or 0.0)
         wind_direction = float(wind_requested["wind_direction_deg"] or 0.0)
         wind_x, wind_y = _wind_vector(mean_mps=wind_mean, direction_deg=wind_direction)
+        wind_x, wind_y = _initial_world_wind_vector(
+            requested_x=wind_x,
+            requested_y=wind_y,
+        )
         if "gz::sim::systems::WindEffects" not in world_text:
             world_text = world_text.replace(
                 "  </world>\n</sdf>",
@@ -869,6 +1066,12 @@ def _apply_wind_realism(payload_model_root: Path | None = None) -> dict[str, Any
     profile = _wind_requested_profile()
     requested = profile["requested"]
     requested_present = profile["requested_present"]
+    if (
+        requested_present
+        and os.getenv(DEFER_WIND_UNTIL_AIRBORNE_ENV) == "1"
+        and not WIND_ACTIVATION_ALLOWED
+    ):
+        return _pending_airborne_wind_realism(profile)
     wind_mean_capability_status = "not_requested"
     wind_gust_capability_status = "not_requested"
     wind_variance_capability_status = "not_requested"
@@ -940,11 +1143,20 @@ def _apply_wind_realism(payload_model_root: Path | None = None) -> dict[str, Any
                 expected_y=wind_y,
             )
             runtime_readback = _wind_runtime_gazebo_readback(payload_model_root)
+            deferred_activation = os.getenv(DEFER_WIND_UNTIL_AIRBORNE_ENV) == "1"
             terminal_physics_observed = bool(
-                physics_readback["wind_effects_world_sdf_readback_observed"]
+                physics_readback["wind_effects_plugin_materialized"]
+                and physics_readback["wind_enabled_on_vehicle_links"]
+                and (
+                    physics_readback["wind_world_linear_velocity_matches_requested"]
+                    or (deferred_activation and readback["readback_observed"])
+                )
                 and runtime_readback["gazebo_runtime_world_model_readback_observed"]
             )
-            if not physics_readback["wind_effects_world_sdf_readback_observed"]:
+            if not (
+                physics_readback["wind_effects_world_sdf_readback_observed"]
+                or (deferred_activation and readback["readback_observed"])
+            ):
                 unsupported_reasons.append("gazebo_wind_terminal_physics_not_observed")
             if not runtime_readback["gazebo_runtime_world_model_readback_observed"]:
                 unsupported_reasons.append("gazebo_wind_runtime_world_model_not_observed")
@@ -1012,6 +1224,13 @@ def _apply_wind_realism(payload_model_root: Path | None = None) -> dict[str, Any
                 "wind_world_linear_velocity_matches_requested": physics_readback[
                     "wind_world_linear_velocity_matches_requested"
                 ],
+                "wind_activation_phase": (
+                    "after_airborne_climb" if deferred_activation else "runtime_initialization"
+                ),
+                "wind_world_initially_calm": deferred_activation,
+                "wind_topic_dynamic_activation_observed": (
+                    deferred_activation and readback["readback_observed"]
+                ),
                 "gazebo_runtime_world_model_readback_observed": runtime_readback[
                     "gazebo_runtime_world_model_readback_observed"
                 ],
@@ -1063,6 +1282,13 @@ def _apply_wind_realism(payload_model_root: Path | None = None) -> dict[str, Any
                 "wind_world_linear_velocity_matches_requested": physics_readback[
                     "wind_world_linear_velocity_matches_requested"
                 ],
+                "wind_activation_phase": (
+                    "after_airborne_climb" if deferred_activation else "runtime_initialization"
+                ),
+                "wind_world_initially_calm": deferred_activation,
+                "wind_topic_dynamic_activation_observed": (
+                    deferred_activation and readback["readback_observed"]
+                ),
                 "wind_enabled_on_vehicle_links": physics_readback["wind_enabled_on_vehicle_links"],
                 "wind_enabled_link_count": physics_readback["wind_enabled_link_count"],
                 "world_sdf_sha256": physics_readback.get("world_sdf_sha256"),
@@ -1154,6 +1380,67 @@ def _apply_wind_realism(payload_model_root: Path | None = None) -> dict[str, Any
         "simulator_condition_application": application,
         "observed_environment_evidence": evidence,
     }
+
+
+def _pending_airborne_wind_realism(profile: dict[str, Any]) -> dict[str, Any]:
+    condition_ref = profile["condition_id"]
+    return {
+        "environment_condition_profile": profile,
+        "simulator_capability_matrix": {
+            "schema_version": "simulator_capability_matrix.v1",
+            "capability_id": "simulator_capability_matrix:mission_designer_wind_gust",
+            "wind_mean": "pending",
+            "wind_gust": "pending",
+            "wind_variance": "pending",
+            "support_detection_method": "deferred_until_airborne",
+            "unsupported_reasons": [],
+            "approximation_reasons": [],
+        },
+        "simulator_condition_application": {
+            "schema_version": "simulator_condition_application.v1",
+            "application_id": "simulator_condition_application:mission_designer_wind_gust",
+            "condition_kind": "wind_gust",
+            "application_status": "pending_airborne_activation",
+            "requested_condition_ref": condition_ref,
+            "applied": {},
+            "unsupported_reasons": [],
+            "approximation_reasons": [],
+            "simulator_only": True,
+            "auto_gate": False,
+            "task_status_mutated": False,
+            "gate_status_mutated": False,
+            "dropoff_verified": False,
+            "delivery_completion_claimed": False,
+            "hardware_target_allowed": False,
+            "physical_execution_invoked": False,
+        },
+        "observed_environment_evidence": {
+            "schema_version": "observed_environment_evidence.v1",
+            "evidence_id": "observed_environment_evidence:mission_designer_wind_gust",
+            "condition_kind": "wind_gust",
+            "observation_status": "pending_airborne_activation",
+            "requested_condition_ref": condition_ref,
+            "application_ref": "simulator_condition_application:mission_designer_wind_gust",
+            "observed": {
+                "observed": False,
+                "wind_activation_phase": "after_airborne_climb",
+            },
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+            "delivery_completion_claimed": False,
+        },
+    }
+
+
+def _activate_deferred_wind(payload_model_root: Path | None) -> None:
+    global WIND_ACTIVATION_ALLOWED, WIND_REALISM_SUMMARY
+
+    if (
+        os.getenv(DEFER_WIND_UNTIL_AIRBORNE_ENV) != "1"
+        or not _wind_requested_profile()["requested_present"]
+    ):
+        return
+    WIND_ACTIVATION_ALLOWED = True
+    WIND_REALISM_SUMMARY = _apply_wind_realism(payload_model_root)
 
 
 def _wind_realism_summary_artifacts(*, cleanup_status: str) -> dict[str, Any]:
@@ -3184,9 +3471,10 @@ def _trigger_payload_release() -> dict[str, Any] | None:
         "payload_id": "pkg-sitl-dropoff",
         "payload_detach_topic": PAYLOAD_DETACH_TOPIC,
         "payload_pose_before_release": before,
-        "payload_release_position_x_m": after["x"],
-        "payload_release_position_y_m": after["y"],
-        "payload_release_position_z_m": after["z"],
+        "payload_release_position_x_m": before["x"],
+        "payload_release_position_y_m": before["y"],
+        "payload_release_position_z_m": before["z"],
+        "payload_pose_after_release_observation": after,
         "payload_release_observed_at": observed_at,
         "gazebo_detachable_joint_release_performed": True,
         "gazebo_detachable_joint_release_observed": True,
@@ -3256,7 +3544,7 @@ def _send_route_with_monitor(
     max_pose_deviation_z_m: float,
     duration_seconds: float,
     timeout: int = 45,
-    on_deviation: Callable[[], dict[str, Any]] | None = None,
+    on_deviation: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     return _execute_route_with_monitor(
         target_x=target_x,
@@ -3288,7 +3576,8 @@ def _send_command(
     *,
     approval: Any,
     coupled_allowlist: Any,
-) -> None:
+    allow_temporary_rejection: bool = False,
+) -> bool:
     command_id = {
         "arm": MAV_CMD_COMPONENT_ARM_DISARM,
         "takeoff": MAV_CMD_NAV_TAKEOFF,
@@ -3300,10 +3589,15 @@ def _send_command(
         command_id=command_id,
     )
     result = _send_helper(command_name)
+    if result.get("command_ack_observed") is True and result.get("command_ack_result_code") == 0:
+        return True
+    if allow_temporary_rejection and result.get("command_ack_result_code") == 1:
+        return False
     if result.get("command_ack_observed") is not True or result.get("command_ack_result_code") != 0:
         raise RuntimeError(
             f"{command_name}_command_ack_not_accepted: {json.dumps(result, sort_keys=True)}"
         )
+    return True
 
 
 def _dispatch_emergency_recovery(action: str) -> Any:
@@ -3327,6 +3621,433 @@ def _dispatch_emergency_recovery(action: str) -> Any:
         now=NOW,
     )
     return emergency_approval, emergency_allowlist, emergency_dispatch
+
+
+def _live_mission_assurance_telemetry_bundle(
+    *,
+    phase: str,
+    deviation: dict[str, Any],
+    pickup_pose: dict[str, float],
+    current_pose: dict[str, float],
+    sample_index: int,
+    elapsed_seconds: float,
+    invocation_started_at: datetime,
+) -> dict[str, Any]:
+    """Bind one same-runtime pose/battery/wind observation without authority."""
+
+    battery_status = _battery_status_sample()
+    wind_evidence = (WIND_REALISM_SUMMARY or {}).get("observed_environment_evidence") or {}
+    observed_wind = wind_evidence.get("observed") or {}
+    wind_x = observed_wind.get("readback_wind_vector_x_mps")
+    wind_y = observed_wind.get("readback_wind_vector_y_mps")
+    try:
+        wind_speed = math.hypot(float(wind_x), float(wind_y))
+    except (TypeError, ValueError):
+        wind_speed = observed_wind.get("wind_mean_mps")
+    wind_direction = observed_wind.get("wind_direction_deg")
+    altitude_above_home = max(
+        0.0,
+        float(current_pose["z"]) - float(pickup_pose["z"]),
+    )
+    distance_to_home = math.hypot(
+        float(current_pose["x"]) - float(pickup_pose["x"]),
+        float(current_pose["y"]) - float(pickup_pose["y"]),
+    )
+    completed_at = datetime.now(timezone.utc)
+    telemetry = {
+        "source": "px4_gazebo_horizontal_route_same_runtime",
+        "observed_at": completed_at.isoformat(),
+        "sample_index": sample_index,
+        "elapsed_seconds": elapsed_seconds,
+        "telemetry": {
+            "stale": False,
+            "dropout": False,
+            "source_refs": [
+                "gz_topic:/world/default/pose/info",
+                "px4-listener:battery_status",
+            ],
+        },
+        "position": {
+            "local_x_m": float(current_pose["x"]),
+            "local_y_m": float(current_pose["y"]),
+            "altitude_above_home_m": altitude_above_home,
+            "distance_to_home_m": distance_to_home,
+            "frame_id": "gazebo_world_xy_altitude_up",
+            "source_refs": ["gz_topic:/world/default/pose/info"],
+        },
+        "battery": {
+            "remaining_percent": battery_status.get("battery_remaining_percent"),
+            "source_refs": ["px4-listener:battery_status"],
+            "observation_status": (
+                "observed"
+                if battery_status.get("battery_status_observed") is True
+                else "unverified"
+            ),
+        },
+        "wind": {
+            "speed_mps": wind_speed,
+            "gust_mps": wind_speed,
+            "direction_deg": wind_direction,
+            "source_refs": [
+                str(wind_evidence.get("evidence_id") or "observed_environment_evidence_missing")
+            ],
+            "observation_status": wind_evidence.get("observation_status"),
+        },
+        "terrain": {
+            "terrain_clearance_m": altitude_above_home,
+            "frame_id": "gazebo_world_xy_altitude_up",
+            "source_refs": [
+                "gz_topic:/world/default/pose/info",
+                "route_pickup_pose_ground_reference",
+            ],
+        },
+        "route_deviation": dict(deviation),
+        "approval_created": False,
+        "dispatch_authority_created": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+    }
+    stdout_preimage = json.dumps(
+        telemetry,
+        ensure_ascii=True,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    stderr_preimage = ""
+    return {
+        "telemetry_snapshot": telemetry,
+        "runtime_invocation_evidence": {
+            "schema_version": "runtime_invocation_evidence.v1",
+            "invocation_kind": "docker_exec",
+            "invocation_target": (f"px4_gazebo_horizontal_route_same_runtime_snapshot:{phase}"),
+            "invocation_started_at": invocation_started_at.isoformat(),
+            "invocation_completed_at": completed_at.isoformat(),
+            "invocation_exit_code": 0,
+            "invocation_stdout_sha256": hashlib.sha256(stdout_preimage.encode("utf-8")).hexdigest(),
+            "invocation_stderr_sha256": hashlib.sha256(stderr_preimage.encode("utf-8")).hexdigest(),
+            "invocation_stdout_preimage": stdout_preimage,
+            "invocation_stderr_preimage": stderr_preimage,
+        },
+    }
+
+
+def _assess_live_route_deviation_mission_assurance(
+    *,
+    task_id: str,
+    run_dir: Path,
+    route: Any,
+    pickup_pose: dict[str, float],
+    route_approval: Any,
+    deviation: dict[str, Any],
+    requested_recovery_action: str,
+    target: Any,
+) -> dict[str, Any]:
+    _ = target
+    original_index = int(deviation.get("sample_index") or 0)
+    original_elapsed = float(deviation.get("elapsed_seconds") or 0.0)
+    observation_started = time.monotonic()
+
+    def observe(phase: str) -> dict[str, Any]:
+        if phase == "original":
+            invocation_started_at = datetime.fromisoformat(
+                str(deviation.get("observed_at") or datetime.now(timezone.utc).isoformat()).replace(
+                    "Z", "+00:00"
+                )
+            )
+            pose = {
+                key: float(value)
+                for key, value in (deviation.get("sample") or {}).items()
+                if key in {"x", "y", "z"}
+            }
+            index = original_index
+            elapsed = original_elapsed
+        else:
+            invocation_started_at = datetime.now(timezone.utc)
+            pose = _pose_sample()
+            index = original_index + 1
+            elapsed = original_elapsed + max(0.001, time.monotonic() - observation_started)
+        return _live_mission_assurance_telemetry_bundle(
+            phase=phase,
+            deviation=deviation,
+            pickup_pose=pickup_pose,
+            current_pose=pose,
+            sample_index=index,
+            elapsed_seconds=elapsed,
+            invocation_started_at=invocation_started_at,
+        )
+
+    return _evaluate_live_route_deviation(
+        task_id=task_id,
+        artifact_dir=run_dir,
+        route=route,
+        deviation=deviation,
+        available_recovery_executor_action=requested_recovery_action,
+        # This is evidence of route approval only; the evaluator never treats
+        # it as authority for the later Recovery action.
+        operator_preapproval_observed=(route_approval.operator_approval_performed is True),
+        telemetry_observer=observe,
+        mission_context=_configured_mission_assurance_context(),
+    )
+
+
+def _execute_bounded_mission_assurance_continue(
+    *,
+    deviation: dict[str, Any],
+    target: _NormalRouteTarget,
+    route: Any,
+    route_approval: Any,
+) -> dict[str, Any]:
+    """Resume the approved simulator route briefly and observe its effect."""
+
+    approval_observed = route_approval.operator_approval_performed is True
+    if not approval_observed:
+        raise RuntimeError("mission_assurance_continue_route_approval_missing")
+    before = {
+        key: float(value)
+        for key, value in (deviation.get("sample") or _pose_sample()).items()
+        if key in {"x", "y", "z"}
+    }
+    duration_seconds = 5.0
+    _assert_planned_route_stream_budget(duration_seconds=duration_seconds)
+    stream = _send_route_with_monitor(
+        target_x=target.sent_target_x_m,
+        target_y=target.sent_target_y_m,
+        target_z=target.target_z_m,
+        feed_forward_vx_mps=target.feed_forward_velocity_x_mps,
+        feed_forward_vy_mps=target.feed_forward_velocity_y_mps,
+        feed_forward_ramp_start_fraction=float(
+            target.wind_compensation["feed_forward_ramp_start_fraction"]
+        ),
+        feed_forward_ramp_end_fraction=float(
+            target.wind_compensation["feed_forward_ramp_end_fraction"]
+        ),
+        expected_target_x=target.uncompensated_target_x_m,
+        expected_target_y=target.uncompensated_target_y_m,
+        pickup_pose=before,
+        altitude_max_m=route.altitude_max_m,
+        max_pose_deviation_xy_m=route.max_pose_deviation_xy_m,
+        max_pose_deviation_z_m=route.max_pose_deviation_z_m,
+        duration_seconds=duration_seconds,
+        timeout=15,
+        on_deviation=None,
+    )
+    after = {key: float(value) for key, value in _pose_sample().items()}
+    _append_live_pose_row("mission_assurance_continue_resume", after)
+    displacement_m = math.sqrt(
+        (after["x"] - before["x"]) ** 2
+        + (after["y"] - before["y"]) ** 2
+        + (after["z"] - before["z"]) ** 2
+    )
+    before_target_distance_m = math.hypot(
+        target.uncompensated_target_x_m - before["x"],
+        target.uncompensated_target_y_m - before["y"],
+    )
+    after_target_distance_m = math.hypot(
+        target.uncompensated_target_x_m - after["x"],
+        target.uncompensated_target_y_m - after["y"],
+    )
+    stream_completed = bool(
+        stream.get("pose_deviation_aborted") is False
+        and stream.get("offboard_mode_switch_ack_observed") is True
+        and stream.get("offboard_mode_switch_ack_result_code") == 0
+        and int(stream.get("setpoint_frames_sent") or 0) > 0
+    )
+    effect_observed = bool(
+        stream_completed
+        and displacement_m >= 0.05
+        and after_target_distance_m + 0.02 < before_target_distance_m
+    )
+    return {
+        "schema_version": "missionos_px4_continue_execution.v1",
+        "execution_scope": "simulator",
+        "execution_kind": "bounded_offboard_route_resume",
+        "resume_duration_seconds": duration_seconds,
+        "available_executor_action": "continue_route_setpoint_stream",
+        "existing_route_approval_ref": (
+            "px4_gazebo_coupled_command_approval:"
+            f"{route_approval.approval_id}"
+        ),
+        "existing_route_approval_consumed": approval_observed,
+        "agent_created_approval": False,
+        "agent_created_dispatch_authority": False,
+        "simulator_route_resume_invoked": True,
+        "resume_stream_completed": stream_completed,
+        "offboard_mode_switch_allowed": stream.get(
+            "offboard_mode_switch_allowed"
+        )
+        is True,
+        "offboard_mode_switch_command_id": stream.get(
+            "offboard_mode_switch_command_id"
+        ),
+        "offboard_mode_switch_frame_sent": stream.get(
+            "offboard_mode_switch_frame_sent"
+        )
+        is True,
+        "offboard_mode_switch_ack_required": stream.get(
+            "offboard_mode_switch_ack_required"
+        )
+        is True,
+        "offboard_mode_switch_ack_command_id": stream.get(
+            "offboard_mode_switch_ack_command_id"
+        ),
+        "offboard_mode_switch_ack_timeout_seconds": stream.get(
+            "offboard_mode_switch_ack_timeout_seconds"
+        ),
+        "offboard_mode_switch_ack_observed": stream.get(
+            "offboard_mode_switch_ack_observed"
+        )
+        is True,
+        "offboard_mode_switch_ack_result_code": stream.get(
+            "offboard_mode_switch_ack_result_code"
+        ),
+        "offboard_mode_switch_ack_result_name": stream.get(
+            "offboard_mode_switch_ack_result_name"
+        ),
+        "setpoint_frames_sent": int(stream.get("setpoint_frames_sent") or 0),
+        "resume_start_pose": before,
+        "resume_observed_pose": after,
+        "resume_displacement_m": displacement_m,
+        "target_distance_before_m": before_target_distance_m,
+        "target_distance_after_m": after_target_distance_m,
+        "target_distance_reduced": (
+            after_target_distance_m < before_target_distance_m
+        ),
+        "route_resume_effect_observed": effect_observed,
+        "resume_stream_stop_reason": stream.get("route_stream_stop_reason"),
+        "physical_execution_invoked": False,
+        "delivery_completion_claimed": False,
+        "route_completion_claimed": False,
+    }
+
+
+def _execute_mission_assurance_dropoff_approach(
+    *,
+    target: _NormalRouteTarget,
+) -> dict[str, Any]:
+    """Center the simulator vehicle at low altitude before payload release."""
+
+    before = {key: float(value) for key, value in _pose_sample().items()}
+    initial_duration_seconds = 5.0
+    correction_duration_seconds = 2.0
+    target_altitude_m = 0.25
+    current = before
+    command_target_x_m = target.uncompensated_target_x_m
+    command_target_y_m = target.uncompensated_target_y_m
+    cycles: list[dict[str, Any]] = []
+    effect_observed = False
+    for cycle_index in range(1, 5):
+        duration_seconds = (
+            initial_duration_seconds
+            if cycle_index == 1
+            else correction_duration_seconds
+        )
+        _assert_planned_route_stream_budget(duration_seconds=duration_seconds)
+        stream = _send_route_with_monitor(
+            target_x=command_target_x_m,
+            target_y=command_target_y_m,
+            target_z=-target_altitude_m,
+            feed_forward_vx_mps=0.0,
+            feed_forward_vy_mps=0.0,
+            feed_forward_ramp_start_fraction=0.65,
+            feed_forward_ramp_end_fraction=0.9,
+            expected_target_x=command_target_x_m,
+            expected_target_y=command_target_y_m,
+            pickup_pose=current,
+            altitude_max_m=max(target_altitude_m, target.target_z_m * -1.0),
+            max_pose_deviation_xy_m=2.0,
+            # This bounded maneuver intentionally descends from route altitude to
+            # release altitude, so the route-altitude deviation gate must cover
+            # the commanded vertical range. Final altitude is checked below.
+            max_pose_deviation_z_m=max(1.5, target.target_z_m * -1.0 + 0.5),
+            duration_seconds=duration_seconds,
+            timeout=15,
+            on_deviation=None,
+        )
+        current = {key: float(value) for key, value in _pose_sample().items()}
+        _append_live_pose_row(
+            f"mission_assurance_dropoff_approach_cycle_{cycle_index}",
+            current,
+        )
+        horizontal_error_m = math.hypot(
+            target.uncompensated_target_x_m - current["x"],
+            target.uncompensated_target_y_m - current["y"],
+        )
+        cycle_effect_observed = bool(
+            stream.get("pose_deviation_aborted") is False
+            and stream.get("offboard_mode_switch_ack_observed") is True
+            and stream.get("offboard_mode_switch_ack_result_code") == 0
+            and int(stream.get("setpoint_frames_sent") or 0) > 0
+            and horizontal_error_m <= 0.45
+            and current["z"] <= 0.6
+        )
+        cycles.append(
+            {
+                "cycle_index": cycle_index,
+                "command_target_x_m": command_target_x_m,
+                "command_target_y_m": command_target_y_m,
+                "duration_seconds": duration_seconds,
+                "setpoint_frames_sent": int(
+                    stream.get("setpoint_frames_sent") or 0
+                ),
+                "offboard_mode_switch_ack_observed": stream.get(
+                    "offboard_mode_switch_ack_observed"
+                )
+                is True,
+                "offboard_mode_switch_ack_result_code": stream.get(
+                    "offboard_mode_switch_ack_result_code"
+                ),
+                "pose_deviation_aborted": stream.get("pose_deviation_aborted")
+                is True,
+                "observed_pose": current,
+                "horizontal_target_error_m": horizontal_error_m,
+                "cycle_effect_observed": cycle_effect_observed,
+            }
+        )
+        if cycle_effect_observed:
+            effect_observed = True
+            break
+        # Correct only from observed position error, and keep the correction
+        # bounded. This is executor feedback under the existing approval, not a
+        # new agent-selected action or dispatch authority.
+        error_x_m = current["x"] - target.uncompensated_target_x_m
+        error_y_m = current["y"] - target.uncompensated_target_y_m
+        command_target_x_m = target.uncompensated_target_x_m - max(
+            -1.5, min(1.5, error_x_m * 0.5)
+        )
+        command_target_y_m = target.uncompensated_target_y_m - max(
+            -1.5, min(1.5, error_y_m * 0.5)
+        )
+    after = current
+    dropoff_region_observed_at = datetime.now(timezone.utc).isoformat()
+    horizontal_error_m = float(cycles[-1]["horizontal_target_error_m"])
+    total_frames = sum(int(item["setpoint_frames_sent"]) for item in cycles)
+    return {
+        "schema_version": "missionos_px4_dropoff_approach.v1",
+        "execution_scope": "simulator",
+        "execution_kind": "bounded_offboard_dropoff_approach",
+        "existing_route_approval_consumed": True,
+        "agent_created_approval": False,
+        "agent_created_dispatch_authority": False,
+        "dropoff_approach_invoked": True,
+        "dropoff_approach_effect_observed": effect_observed,
+        "dropoff_approach_cycle_count": len(cycles),
+        "dropoff_approach_cycles": cycles,
+        "target_altitude_m": target_altitude_m,
+        "horizontal_effect_threshold_m": 0.45,
+        "setpoint_frames_sent": total_frames,
+        "offboard_mode_switch_ack_observed": all(
+            item["offboard_mode_switch_ack_observed"] for item in cycles
+        ),
+        "offboard_mode_switch_ack_result_code": cycles[-1][
+            "offboard_mode_switch_ack_result_code"
+        ],
+        "approach_start_pose": before,
+        "approach_observed_pose": after,
+        "dropoff_region_observed_at": dropoff_region_observed_at,
+        "horizontal_target_error_m": horizontal_error_m,
+        "physical_execution_invoked": False,
+        "delivery_completion_claimed": False,
+    }
 
 
 def _obstacle_supervisor_assessment_inputs(
@@ -3379,11 +4100,14 @@ def _send_until_z(
         now = time.monotonic()
         if now - last_sent_at >= resend_interval:
             for command_name in command_names:
-                _send_command(
+                command_accepted = _send_command(
                     command_name,
                     approval=approval,
                     coupled_allowlist=coupled_allowlist,
+                    allow_temporary_rejection=True,
                 )
+                if not command_accepted:
+                    break
             last_sent_at = now
         sample = _pose_sample()
         samples.append(sample)
@@ -3580,6 +4304,7 @@ def _project_normal_route_terminal_realism(
     blocking_decision: Any,
     terminal_action: Any,
     target: _NormalRouteTarget,
+    payload_release_summary: dict[str, Any] | None = None,
 ) -> _NormalRouteTerminalProjection:
     global \
         PAYLOAD_RELEASE_SUMMARY, \
@@ -3598,7 +4323,9 @@ def _project_normal_route_terminal_realism(
         RTH_BEHAVIOR_SUMMARY
 
     rth_requested = blocking_decision.rth_behavior_requested
-    PAYLOAD_RELEASE_SUMMARY = None if rth_requested else _trigger_payload_release()
+    PAYLOAD_RELEASE_SUMMARY = (
+        None if rth_requested else payload_release_summary
+    )
     VEHICLE_REALISM_SUMMARY = _vehicle_payload_mass_realism(
         payload_model_root=payload_model_root,
         payload_release_summary=PAYLOAD_RELEASE_SUMMARY,
@@ -3611,13 +4338,9 @@ def _project_normal_route_terminal_realism(
         COLLISION_OBSTACLE_SUMMARY = summaries.get("collision_obstacle", {})
         ROUTE_BLOCKING_CANDIDATE_SUMMARY = summaries.get("route_blocking_candidate", {})
         OPERATIONAL_INCIDENT_REPORT_SUMMARY = summaries.get("operational_incident_report", {})
-        TRAFFIC_CONFLICT_VERIFICATION_SUMMARY = summaries.get(
-            "traffic_conflict_verification", {}
-        )
+        TRAFFIC_CONFLICT_VERIFICATION_SUMMARY = summaries.get("traffic_conflict_verification", {})
         ROUTE_BLOCKING_VERIFICATION_SUMMARY = summaries.get("route_blocking_verification", {})
-        ALTERNATE_LANDING_CANDIDATE_SUMMARY = summaries.get(
-            "alternate_landing_candidate", {}
-        )
+        ALTERNATE_LANDING_CANDIDATE_SUMMARY = summaries.get("alternate_landing_candidate", {})
     else:
         _collect_route_blocking_observation(
             route_start_xy_m=(pickup_pose["x"], pickup_pose["y"]),
@@ -3636,9 +4359,7 @@ def _project_normal_route_terminal_realism(
     ALTERNATE_MISSION_UPLOAD_SUMMARY = _alternate_mission_upload_realism(
         upload_result=terminal_action.alternate_mission_upload_result,
         alternate_behavior_observation=(
-            ALTERNATE_LANDING_EXECUTION_SUMMARY.get(
-                "alternate_landing_behavior_observation", {}
-            )
+            ALTERNATE_LANDING_EXECUTION_SUMMARY.get("alternate_landing_behavior_observation", {})
         ),
         alternate_route_execution=terminal_action.alternate_route_execution_result,
         operator_approval_performed=(route_approval.operator_approval_performed is True),
@@ -3706,6 +4427,7 @@ def _reset_route_runtime_state(run_dir: Path) -> Path:
         namespace[name] = None
     namespace["TELEMETRY_DROPOUT_EVENTS"] = []
     namespace["TELEMETRY_OBSERVER_SAMPLE_EVENTS"] = []
+    namespace["WIND_ACTIVATION_ALLOWED"] = False
     return trace_path
 
 
@@ -3729,17 +4451,11 @@ def _initialize_route_runtime_realism(
             terrain_world_readback=_terrain_world_readback,
             apply_wind_realism=_apply_wind_realism,
             thermal_weather_realism=_thermal_weather_realism,
-            vehicle_realism=lambda root: _vehicle_payload_mass_realism(
-                payload_model_root=root
-            ),
+            vehicle_realism=lambda root: _vehicle_payload_mass_realism(payload_model_root=root),
             battery_realism=_battery_realism,
             sensor_realism=_sensor_failure_realism,
-            world_realism=lambda root: _landing_zone_blocked_realism(
-                payload_model_root=root
-            ),
-            visibility_realism=lambda root: _visibility_realism(
-                payload_model_root=root
-            ),
+            world_realism=lambda root: _landing_zone_blocked_realism(payload_model_root=root),
+            visibility_realism=lambda root: _visibility_realism(payload_model_root=root),
             operational_realism=lambda root: _operational_no_fly_zone_realism(
                 payload_model_root=root
             ),
@@ -3764,6 +4480,7 @@ def main() -> int:
     args = _parse_args()
     _require_opt_in()
     _validate_payload_advisory_recovery_args(args)
+    _validate_mission_assurance_args(args)
     with _px4_route_runtime_session(
         _PX4RouteRuntimeLifecycle(
             create_run_directory=_new_run_dir,
@@ -3805,6 +4522,7 @@ def main() -> int:
                 timeout=75.0,
                 phase="climb",
             )
+            _activate_deferred_wind(payload_model_root)
             if _payload_advisory_recovery_requested(args):
                 payload_recovery = _run_payload_recovery_flow(
                     _PayloadRecoveryFlowInputs(
@@ -3880,9 +4598,7 @@ def main() -> int:
                     pickup_pose=pickup_pose,
                     climb_samples=climb_samples,
                     inject_target_offset_m=args.inject_target_offset_m,
-                    collision_observation_attempts=(
-                        8 if _collision_obstacle_requested() else 1
-                    ),
+                    collision_observation_attempts=(8 if _collision_obstacle_requested() else 1),
                     rth_requested=_rth_behavior_requested(),
                     observed_at=NOW,
                     preupload_summary=preupload_summary,
@@ -3899,23 +4615,19 @@ def main() -> int:
                     assert_stream_budget=_assert_planned_route_stream_budget,
                     send_route_with_monitor=_send_route_with_monitor,
                     dispatch_recovery=_dispatch_emergency_recovery,
-                    handle_route_deviation=lambda **values: (
-                        _run_normal_route_deviation_handoff(
-                            store=store,
-                            task_id=task["task_id"],
-                            run_dir=run_dir,
-                            route=route,
-                            route_allowlist=route_allowlist,
-                            pickup_pose=pickup_pose,
-                            post_recovery_action=args.post_recovery_action,
-                            supervisor_loop_requested=(
-                                args.mission_os_supervisor_recovery_loop
-                            ),
-                            multi_condition_supervisor_requested=(
-                                args.mission_os_supervisor_multi_condition_loop
-                            ),
-                            **values,
-                        )
+                    handle_route_deviation=lambda **values: _run_normal_route_deviation_handoff(
+                        store=store,
+                        task_id=task["task_id"],
+                        run_dir=run_dir,
+                        route=route,
+                        route_allowlist=route_allowlist,
+                        pickup_pose=pickup_pose,
+                        post_recovery_action=args.post_recovery_action,
+                        supervisor_loop_requested=(args.mission_os_supervisor_recovery_loop),
+                        multi_condition_supervisor_requested=(
+                            args.mission_os_supervisor_multi_condition_loop
+                        ),
+                        **values,
                     ),
                     pose_sample=_pose_sample,
                     append_pose_row=_append_live_pose_row,
@@ -3948,6 +4660,41 @@ def main() -> int:
                     ),
                     snapshot_task_database=_snapshot_task_database_evidence,
                     recorded_at=lambda: datetime.now(timezone.utc),
+                    assess_mission_assurance=(
+                        lambda **values: (
+                            (
+                                _assess_live_route_deviation_mission_assurance(
+                                    task_id=task["task_id"],
+                                    run_dir=run_dir,
+                                    route=route,
+                                    pickup_pose=pickup_pose,
+                                    route_approval=approval,
+                                    **values,
+                                )
+                            )
+                            if args.mission_assurance_on_deviation
+                            else None
+                        )
+                    ),
+                    execute_mission_assurance_continue=(
+                        (
+                            lambda **values: (
+                                _execute_bounded_mission_assurance_continue(
+                                    route=route,
+                                    route_approval=approval,
+                                    **values,
+                                )
+                            )
+                        )
+                        if args.mission_assurance_on_deviation
+                        else None
+                    ),
+                    release_payload_at_route_terminal=_trigger_payload_release,
+                    execute_mission_assurance_dropoff_approach=(
+                        _execute_mission_assurance_dropoff_approach
+                        if args.mission_assurance_on_deviation
+                        else None
+                    ),
                 ),
             )
             if normal_route.branch == "route_deviation":
@@ -3993,9 +4740,7 @@ def main() -> int:
                     landing_z_threshold_m=_landing_z_threshold(pickup_pose),
                     preupload_requested=os.getenv(PREUPLOAD_MISSION_ENV) == "1",
                     payload_release_requested=(os.getenv(PAYLOAD_RELEASE_MODEL_ENV) == "1"),
-                    contact_topic_requested=(
-                        _collision_obstacle_contact_topic_requested()
-                    ),
+                    contact_topic_requested=(_collision_obstacle_contact_topic_requested()),
                 ),
             )
             return 0

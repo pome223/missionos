@@ -9,38 +9,40 @@ physical execution, or claim delivery completion.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
 import fcntl
 import hashlib
 import json
 import os
-from pathlib import Path
 import shlex
 import subprocess
 import sys
 import uuid
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any, Mapping
 
 import yaml
+from missionos_core import (
+    REVALIDATION_SCHEMA_VERSION,
+    CursorOrder,
+    FeasibilityStatus,
+    RevalidationArtifact,
+)
 
-from src.gateway.missionos_dispatch_runtime import DispatchAuthorityTable
 from src.gateway.missionos_capabilities import (
     approval_request_tool_record,
     capability_invocation_context,
 )
+from src.gateway.missionos_dispatch_runtime import DispatchAuthorityTable
 from src.gateway.missionos_knowledge_browser import (
     build_missionos_knowledge_browser_summary,
 )
 from src.gateway.missionos_milestone import ARTIFACT_ROOT, _relative
 from src.gateway.missionos_runtime_bridge import invoke_missionos_subprocess
 from src.intelligence.llm_repair_planner import run_llm_repair_planner
-from src.intelligence.llm_response_planner import run_llm_response_planner
-from src.runtime.runtime_claim_evidence import (
-    AUTHORITY_RUNTIME_CLAIM_KEYS,
-    RuntimeClaimValidationError,
-    normalize_runtime_claims,
-    runtime_claim_validation_summary,
-    validate_runtime_invocation_evidence,
+from src.intelligence.mission_assurance_agent import (
+    configured_mission_assurance_agent,
+    persist_mission_assurance_evaluation,
 )
 from src.runtime.missionos_sitl_dispatch_runtime import (
     WIND_FEED_FORWARD_MPS_ENV,
@@ -50,7 +52,23 @@ from src.runtime.missionos_sitl_dispatch_runtime import (
     invoke_missionos_sitl_dispatch_runtime,
     runtime_summary_supports_dispatch,
 )
-
+from src.runtime.px4_gazebo_route.action_feasibility import (
+    action_feasibility_hash_matches,
+)
+from src.runtime.px4_gazebo_route.core_action_feasibility_adapter import (
+    compare_px4_telemetry_cursors,
+)
+from src.runtime.px4_gazebo_route.mission_assurance_adapter import (
+    compile_mission_response_proposal,
+    observe_form1_mission_situation,
+)
+from src.runtime.runtime_claim_evidence import (
+    AUTHORITY_RUNTIME_CLAIM_KEYS,
+    RuntimeClaimValidationError,
+    normalize_runtime_claims,
+    runtime_claim_validation_summary,
+    validate_runtime_invocation_evidence,
+)
 
 LESSON_SCHEMA_VERSION = "cross_session_lesson.v1"
 CURATOR_SCHEMA_VERSION = "missionos_knowledge_curator_dry_run.v1"
@@ -74,6 +92,7 @@ SITL_DISPATCH_EXECUTION_SUMMARY_SCHEMA_VERSION = "missionos_sitl_dispatch_execut
 SCOPED_FORM3_CLOSED_LOOP_SUMMARY_SCHEMA_VERSION = "missionos_scoped_form3_closed_loop_gui_summary.v1"
 SCOPED_FORM3_CLOSED_LOOP_RECORD_SCHEMA_VERSION = "missionos_scoped_form3_closed_loop_record.v1"
 FORM2A_RESPONSE_SELECTION_SCHEMA_VERSION = "missionos_form2a_response_selection.v1"
+FORM2_ADVISORY_SELECTION_SCHEMA_VERSION = "missionos_form2_advisory_selection.v1"
 FORM2A_OPERATOR_APPROVAL_TOKEN_SCHEMA_VERSION = "missionos_form2a_operator_approval_token.v1"
 FORM2A_HUMAN_OPERATOR_REVIEW_SCHEMA_VERSION = "missionos_form2a_human_operator_review.v1"
 FORM2A_HUMAN_OPERATOR_REVIEW_SUMMARY_SCHEMA_VERSION = "missionos_form2a_human_operator_review_gui_summary.v1"
@@ -83,6 +102,7 @@ FORM2A_CANONICAL_APPROVAL_VALIDATION_SCHEMA_VERSION = (
 FORM2A_RESPONSE_SELECTION_SUMMARY_SCHEMA_VERSION = "missionos_form2a_response_selection_gui_summary.v1"
 FORM2A_ACTION_CONSUMMATION_SCHEMA_VERSION = "missionos_form2a_action_consumption.v1"
 FORM2A_ACTION_CONSUMMATION_SUMMARY_SCHEMA_VERSION = "missionos_form2a_action_consumption_gui_summary.v1"
+FORM2A_ACTION_REVALIDATION_MAX_AGE_SECONDS = 30.0
 LLM_REPAIR_PLANNER_SUMMARY_SCHEMA_VERSION = "missionos_llm_repair_planner_gui_summary.v1"
 FORM2A_TRAJECTORY_REOBSERVATION_OPT_IN_ENV = "RUN_MISSIONOS_FORM2A_TRAJECTORY_REOBSERVATION"
 FORM2A_TRAJECTORY_REOBSERVATION_COMMAND_ENV = "MISSIONOS_FORM2A_TRAJECTORY_REOBSERVATION_COMMAND"
@@ -96,11 +116,19 @@ FORM2A_COMPENSATION_RESPONSE_KINDS = frozenset(
 )
 FORM2A_WARNING_RESPONSE_KIND = "operator_gated_continue_with_wind_warning"
 FORM2A_PAYLOAD_RECOVERY_RESPONSE_KIND = "operator_gated_payload_recovery_land"
+FORM2B_PAYLOAD_ADVISORY_RESPONSE_KIND = "payload_feasibility_advisory"
+FORM2B_OPERATOR_ESCALATION_RESPONSE_KIND = "operator_escalation"
 FORM2A_DEFAULT_IMPROVEMENT_GATE_RATIO = 1.0
 INTERIM_RULE_INTELLIGENCE_SOURCE = "interim_rule_static_selector_pending_llm_migration"
-GUARDRAIL_FALLBACK_INTELLIGENCE_SOURCE = "interim_rule_static_selector_fallback"
 EXTERNAL_REVIEW_INTELLIGENCE_SOURCE = "external_claude_codex_session"
 AI_AGENT_PROGRESS_ELIGIBLE_INTELLIGENCE_SOURCE = "llm_response_planner"
+MISSION_ASSURANCE_AGENT_INTELLIGENCE_SOURCE = "mission_assurance_agent"
+AI_AGENT_PROGRESS_ELIGIBLE_INTELLIGENCE_SOURCES = frozenset(
+    {
+        AI_AGENT_PROGRESS_ELIGIBLE_INTELLIGENCE_SOURCE,
+        MISSION_ASSURANCE_AGENT_INTELLIGENCE_SOURCE,
+    }
+)
 REPAIR_PLANNER_INTELLIGENCE_SOURCE = "llm_repair_planner"
 
 MISSIONOS_RUNTIME_CLAIM_KEYS = AUTHORITY_RUNTIME_CLAIM_KEYS
@@ -1572,151 +1600,641 @@ def _payload_form1_runtime_delta_source_check(form1: Mapping[str, Any]) -> dict[
     }
 
 
-def _select_form2a_wind_response(form1: Mapping[str, Any]) -> dict[str, Any]:
-    if form1.get("schema_version") == "drone_behavior_delta_under_payload_mass.v1":
-        metrics = _as_mapping(form1.get("metrics"))
-        requested = _as_mapping(form1.get("requested"))
-        threshold = float(metrics.get("climb_time_delta_threshold_seconds") or 0.0)
-        climb_delta = metrics.get("climb_elapsed_seconds_delta_at_target_z")
-        try:
-            margin = float(climb_delta) / threshold if threshold > 0.0 else 0.0
-        except (TypeError, ValueError):
-            margin = 0.0
-        return {
-            "intelligence_source": INTERIM_RULE_INTELLIGENCE_SOURCE,
-            "eligible_for_ai_agent_progress": False,
-            "llm_judgment_in_gate": False,
-            "selected_response_kind": FORM2A_PAYLOAD_RECOVERY_RESPONSE_KIND,
-            "bounded_action_kind": FORM2A_PAYLOAD_RECOVERY_RESPONSE_KIND,
-            "selection_reason": "form1_payload_climb_delay_operator_recovery_required",
-            "response_urgency": "operator_review_required",
-            "mission_response_kind": "action",
-            "trigger_level": "level_1_direct",
-            "source_condition_kind": form1.get("condition_kind"),
-            "source_margin_ratio": margin,
-            "source_max_observed_delta_m": metrics.get("max_observed_delta_m"),
-            "source_delta_threshold_m": metrics.get("delta_threshold_m"),
-            "source_observed_wind_a_mps": None,
-            "source_observed_wind_b_mps": None,
-            "source_light_payload_kg": requested.get("light_payload_kg"),
-            "source_heavy_payload_kg": requested.get("heavy_payload_kg"),
-        }
-    metrics = _as_mapping(form1.get("metrics"))
-    requested = _as_mapping(form1.get("requested"))
-    margin = float(form1.get("observed_delta_margin_ratio") or 0.0)
-    max_delta = float(metrics.get("max_observed_delta_m") or 0.0)
-    threshold = float(metrics.get("delta_threshold_m") or 0.0)
-    if margin >= 5.0:
-        action_kind = "operator_gated_wind_replan_with_compensation"
-        reason = "form1a_wind_delta_margin_above_5x"
-        urgency = "high"
-    elif margin >= 2.0:
-        action_kind = "operator_gated_wind_compensated_reroute"
-        reason = "form1a_wind_delta_margin_above_2x"
-        urgency = "medium"
-    else:
-        action_kind = "operator_gated_continue_with_wind_warning"
-        reason = "form1b_wind_delta_above_threshold"
-        urgency = "low"
-    return {
-        "intelligence_source": INTERIM_RULE_INTELLIGENCE_SOURCE,
-        "eligible_for_ai_agent_progress": False,
-        "llm_judgment_in_gate": False,
-        "selected_response_kind": action_kind,
-        "bounded_action_kind": action_kind,
-        "selection_reason": reason,
-        "response_urgency": urgency,
-        "mission_response_kind": "action",
-        "trigger_level": "level_1_direct",
-        "source_condition_kind": form1.get("condition_kind"),
-        "source_margin_ratio": margin,
-        "source_max_observed_delta_m": max_delta,
-        "source_delta_threshold_m": threshold,
-        "source_observed_wind_a_mps": requested.get("observed_wind_a_mps"),
-        "source_observed_wind_b_mps": requested.get("observed_wind_b_mps"),
-    }
+def _latest_form2_response_selection(root: Path) -> tuple[str, dict[str, Any]]:
+    paths = [
+        *root.rglob("missionos_form2a_response_selection.json"),
+        *root.rglob("missionos_form2_advisory_selection.json"),
+    ]
+    for path in sorted(
+        paths,
+        key=lambda candidate: (candidate.stat().st_mtime, candidate.as_posix()),
+        reverse=True,
+    ):
+        payload = _read_json(path)
+        if payload is not None:
+            return _relative(path), payload
+    return "", {}
 
 
-def _select_form2a_wind_response_from_llm_proposal(
-    *,
-    form1: Mapping[str, Any],
-    planner_result: Mapping[str, Any],
-) -> dict[str, Any]:
+def _form2_source_projection(form1: Mapping[str, Any]) -> dict[str, Any]:
     metrics = _as_mapping(form1.get("metrics"))
     requested = _as_mapping(form1.get("requested"))
     source_check = _form1_runtime_delta_source_check(form1)
-    proposal = _as_mapping(planner_result.get("proposal"))
-    parameters = _as_mapping(proposal.get("parameters"))
-    response_kind = str(proposal.get("response_kind") or "")
     return {
-        "intelligence_source": AI_AGENT_PROGRESS_ELIGIBLE_INTELLIGENCE_SOURCE,
-        "eligible_for_ai_agent_progress": True,
-        "llm_judgment_in_gate": False,
-        "selected_response_kind": response_kind,
-        "bounded_action_kind": response_kind,
-        "selection_reason": "llm_response_planner_proposal_guardrail_passed",
-        "response_urgency": str(
-            parameters.get("urgency") or "operator_review_required"
-        ),
-        "mission_response_kind": "action",
-        "trigger_level": "level_1_direct",
         "source_condition_kind": form1.get("condition_kind"),
-        "source_margin_ratio": float(
-            form1.get("observed_delta_margin_ratio")
-            or source_check.get("margin_ratio")
-            or 0.0
-        ),
-        "source_max_observed_delta_m": float(metrics.get("max_observed_delta_m") or 0.0),
-        "source_delta_threshold_m": float(metrics.get("delta_threshold_m") or 0.0),
+        "source_margin_ratio": source_check.get("margin_ratio")
+        if source_check.get("margin_ratio") is not None
+        else form1.get("observed_delta_margin_ratio"),
+        "source_max_observed_delta_m": metrics.get("max_observed_delta_m"),
+        "source_delta_threshold_m": metrics.get("delta_threshold_m"),
         "source_observed_wind_a_mps": requested.get("observed_wind_a_mps"),
         "source_observed_wind_b_mps": requested.get("observed_wind_b_mps"),
         "source_light_payload_kg": requested.get("light_payload_kg"),
         "source_heavy_payload_kg": requested.get("heavy_payload_kg"),
-        "llm_response_proposal_ref": planner_result.get("proposal_ref") or "",
-        "llm_response_proposal_artifact_path": planner_result.get(
-            "proposal_artifact_path"
-        )
-        or "",
-        "llm_response_planner_status": planner_result.get("planner_status") or "",
-        "llm_response_planner_guardrail": dict(
-            _as_mapping(planner_result.get("guardrail"))
-        ),
-        "llm_response_parameters": dict(parameters),
-        "llm_response_rationale": proposal.get("rationale") or "",
-        "llm_response_expected_outcome": proposal.get("expected_outcome") or "",
-        "llm_response_uncertainty": proposal.get("uncertainty") or "",
-        "llm_response_approval_request": proposal.get("approval_request") or "",
     }
 
 
-def _form2a_llm_response_kind_compatible_with_source(
+def _write_form2_advisory_selection(
     *,
+    root: Path,
     form1: Mapping[str, Any],
-    response_kind: str,
+    source_check: Mapping[str, Any],
+    source_artifact_path: str,
+    input_sha256: str,
+    operator_instruction: Mapping[str, Any],
+    capability_context: Mapping[str, Any],
+    selected_response_kind: str,
+    proposed_response_kind: str,
+    selection_reason: str,
+    trigger_level: str,
+    intelligence_source: str,
+    judgment_status: str,
+    judgment_mode: str = "llm_required",
+    fallback_mode: str = "operator_escalation_only",
+    model_inference_invoked: bool = False,
+    blocking_reasons: list[str] | None = None,
+    mission_assurance_result: Mapping[str, Any] | None = None,
+    action_feasibility: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    advisory_id = f"missionos_form2_advisory_selection_{uuid.uuid4().hex[:12]}"
+    advisory_dir = _artifact_dir(root, "missionos_form2_advisory_selection")
+    advisory_dir.mkdir(parents=True, exist_ok=True)
+    advisory_path = advisory_dir / "missionos_form2_advisory_selection.json"
+    result = _as_mapping(mission_assurance_result)
+    proposal = _as_mapping(result.get("proposal"))
+    advisory = {
+        "schema_version": FORM2_ADVISORY_SELECTION_SCHEMA_VERSION,
+        "response_selection_id": advisory_id,
+        "selection_status": "advisory_only",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "causal_form": "Form 2b",
+        "form2_subtype": "Form 2b advisory",
+        "progress_counted": False,
+        "form2a_response_selection_progress_counted_in_artifact": False,
+        "form2a_response_selection_progress_counted_in_runtime": False,
+        "goal_640_progress_counted": False,
+        "form2a_response_selected_in_artifact": False,
+        "form2a_response_selected_in_runtime": False,
+        "input_form1_artifact_path": source_artifact_path,
+        "input_form1_artifact_sha256": input_sha256,
+        "input_form1_ref": f"{form1.get('schema_version')}:{form1.get('audit_id')}",
+        "input_causal_form": form1.get("causal_form") or "Form 1a",
+        "input_form1_scope": form1.get("form1_scope")
+        or "drone_physics_or_mission_behavior",
+        "source_check": dict(source_check),
+        "operator_instruction": dict(operator_instruction),
+        "capability_invocation": dict(capability_context),
+        "capability_invocation_ref": capability_context.get(
+            "capability_invocation_ref", ""
+        ),
+        "operator_facing_route": capability_context.get("operator_facing_route", ""),
+        "requested_by": capability_context.get("requested_by", ""),
+        "intelligence_source": intelligence_source,
+        "eligible_for_ai_agent_progress": False,
+        "ai_agent_progress_counted": False,
+        "llm_judgment_in_gate": False,
+        "mission_response_kind": "advisory",
+        "proposed_response_kind": proposed_response_kind,
+        "selected_response_kind": selected_response_kind,
+        "bounded_action_kind": None,
+        "selection_reason": selection_reason,
+        "response_urgency": "operator_review_required",
+        "trigger_level": trigger_level,
+        **_form2_source_projection(form1),
+        "judgment_status": judgment_status,
+        "judgment_mode": judgment_mode,
+        "fallback_mode": fallback_mode,
+        "model_inference_invoked": model_inference_invoked,
+        "mission_assurance_situation_ref": result.get("situation_ref") or "",
+        "mission_assurance_situation_artifact_path": result.get(
+            "situation_artifact_path"
+        )
+        or "",
+        "mission_response_proposal_ref": result.get("proposal_ref") or "",
+        "mission_response_proposal_artifact_path": result.get(
+            "proposal_artifact_path"
+        )
+        or "",
+        "llm_response_planner_status": judgment_status,
+        "llm_response_planner_blocking_reasons": list(blocking_reasons or []),
+        "llm_response_planner_guardrail": {},
+        "llm_response_proposal_ref": result.get("proposal_ref") or "",
+        "llm_response_proposal_artifact_path": result.get("proposal_artifact_path")
+        or "",
+        "llm_response_parameters": dict(_as_mapping(proposal.get("parameters"))),
+        "llm_response_rationale": proposal.get("rationale") or "",
+        "llm_response_expected_outcome": proposal.get("expected_outcome") or "",
+        "llm_response_uncertainty": proposal.get("uncertainty") or "",
+        "llm_response_approval_request": proposal.get("operator_question") or "",
+        "action_feasibility": dict(action_feasibility or {}),
+        "operator_review_required": True,
+        "operator_approval_required": False,
+        "operator_approval_token_issued_in_artifact": False,
+        "operator_approval_token_consumed_in_runtime": False,
+        "eligible_for_direct_trigger": False,
+        "eligible_for_advisory_only": True,
+        "automatic_dispatch_suppressed": True,
+        "approval_ref": None,
+        "approval_artifact_path": "",
+        "approval_request_ref": "",
+        "approval_request_artifact_path": "",
+        "bounded_action_ref": None,
+        "dispatch_ref": None,
+        "dispatch_execution_status": "not_executed",
+        "approval_recorded": False,
+        "dispatch_authority_created": False,
+        "dispatch_request_sent": False,
+        "command_ack_observed": False,
+        "runtime_progress_observed": False,
+        "landing_observed": False,
+        "dispatch_executed_in_runtime": False,
+        "automatic_dispatch_executed": False,
+        "physical_execution_invoked": False,
+        "hardware_target_allowed": False,
+        "core_direct_execution_used": False,
+        "llm_gate_judge_used": False,
+        "approval_free_stronger_execution": False,
+        "delivery_completion_claimed": False,
+        "public_sync_performed": False,
+        "drone_physics_affected": False,
+        "blocking_reasons": list(blocking_reasons or []),
+        "next_required_applicator": "operator_review_or_new_action_workflow",
+    }
+    _write_artifact(advisory_path, advisory)
+    return build_form2a_response_selection_summary(artifact_root=root)
+
+
+def _load_bound_action_feasibility(
+    *, root: Path, artifact_path: Path | str | None
+) -> tuple[dict[str, Any], str, list[str]]:
+    if artifact_path is None or not str(artifact_path).strip():
+        return {}, "", ["action_feasibility_artifact_missing"]
+    path = _resolve_repo_or_artifact_path(root, artifact_path)
+    try:
+        path.resolve().relative_to(root.resolve())
+    except ValueError:
+        return {}, "", ["action_feasibility_artifact_outside_artifact_root"]
+    payload = _read_json(path)
+    if payload is None:
+        return {}, _relative(path), ["action_feasibility_artifact_unreadable"]
+    return payload, _relative(path), []
+
+
+def _action_feasibility_blocking_reasons(
+    *,
+    feasibility: Mapping[str, Any],
+    bounded_action_kind: str,
+    candidate_parameters: Mapping[str, Any],
+    situation_input_digest: str,
+    execution_scope: str,
+) -> list[str]:
+    reasons: list[str] = []
+    if not action_feasibility_hash_matches(feasibility):
+        reasons.append("action_feasibility_sha256_mismatch")
+    if feasibility.get("action") != bounded_action_kind:
+        reasons.append("action_feasibility_action_mismatch")
+    if dict(_as_mapping(feasibility.get("candidate_parameters"))) != dict(
+        candidate_parameters
+    ):
+        reasons.append("action_feasibility_candidate_parameters_mismatch")
+    status = str(feasibility.get("feasibility_status") or "unverified")
+    if status != "verified_feasible":
+        reasons.append(f"action_feasibility_{status}")
+        reasons.extend(str(item) for item in feasibility.get("blocking_reasons") or [])
+        reasons.extend(str(item) for item in feasibility.get("unverified_reasons") or [])
+    if not feasibility.get("source_hazard_state_sha256"):
+        reasons.append("action_feasibility_source_hazard_state_unbound")
+    if not feasibility.get("policy_sha256"):
+        reasons.append("action_feasibility_policy_unbound")
+    if feasibility.get("mission_situation_input_digest") != situation_input_digest:
+        reasons.append("action_feasibility_mission_situation_digest_mismatch")
+    if feasibility.get("execution_scope") != execution_scope:
+        reasons.append("action_feasibility_execution_scope_mismatch")
+    for key in (
+        "approval_created",
+        "dispatch_authority_created",
+        "physical_execution_invoked",
+        "completion_claimed",
+        "progress_counted",
+    ):
+        if feasibility.get(key) is not False:
+            reasons.append(f"action_feasibility_{key}_must_be_false")
+    return list(dict.fromkeys(reasons))
+
+
+def _action_revalidation_hash_matches(
+    revalidation: Mapping[str, Any],
 ) -> bool:
-    condition_kind = str(form1.get("condition_kind") or "")
-    if form1.get("schema_version") == "drone_behavior_delta_under_payload_mass.v1":
-        return response_kind == FORM2A_PAYLOAD_RECOVERY_RESPONSE_KIND
-    if condition_kind == "payload_mass_drone_behavior_delta":
-        return response_kind == FORM2A_PAYLOAD_RECOVERY_RESPONSE_KIND
-    if "wind" in condition_kind:
-        return response_kind in {
-            *FORM2A_COMPENSATION_RESPONSE_KINDS,
-            FORM2A_WARNING_RESPONSE_KIND,
+    expected = str(revalidation.get("revalidation_artifact_sha256") or "")
+    material = {
+        key: value
+        for key, value in revalidation.items()
+        if key
+        not in {
+            "revalidation_artifact_id",
+            "revalidation_artifact_sha256",
         }
-    return True
+    }
+    return bool(
+        expected
+        and expected
+        == hashlib.sha256(
+            json.dumps(
+                material,
+                ensure_ascii=True,
+                sort_keys=True,
+                separators=(",", ":"),
+                default=str,
+            ).encode("utf-8")
+        ).hexdigest()
+    )
 
 
-def _form2a_response_selection_planner_fallback_source(
-    planner_result: Mapping[str, Any],
-) -> str:
-    _ = planner_result
-    return GUARDRAIL_FALLBACK_INTELLIGENCE_SOURCE
+def _load_artifact_inside_root(
+    *,
+    root: Path,
+    artifact_path: Path | str | None,
+    reason_prefix: str,
+) -> tuple[dict[str, Any], str, list[str]]:
+    if artifact_path is None or not str(artifact_path).strip():
+        return {}, "", [f"{reason_prefix}_artifact_missing"]
+    path = _resolve_repo_or_artifact_path(root, artifact_path)
+    try:
+        path.resolve().relative_to(root.resolve())
+    except ValueError:
+        return {}, "", [f"{reason_prefix}_artifact_outside_artifact_root"]
+    payload = _read_json(path)
+    if payload is None:
+        return {}, _relative(path), [f"{reason_prefix}_artifact_unreadable"]
+    return payload, _relative(path), []
+
+
+def _form2a_action_revalidation_reasons(
+    *,
+    selection: Mapping[str, Any],
+    original: Mapping[str, Any],
+    current: Mapping[str, Any],
+    evaluated_at: datetime,
+) -> list[str]:
+    reasons: list[str] = []
+    bounded_action_kind = str(selection.get("bounded_action_kind") or "")
+    parameters = _as_mapping(selection.get("llm_response_parameters"))
+    situation_digest = str(selection.get("input_form1_artifact_sha256") or "")
+    execution_scope = str(original.get("execution_scope") or "")
+    if not execution_scope:
+        reasons.append("action_revalidation_execution_scope_missing")
+    reasons.extend(
+        f"action_revalidation_original:{reason}"
+        for reason in _action_feasibility_blocking_reasons(
+            feasibility=original,
+            bounded_action_kind=bounded_action_kind,
+            candidate_parameters=parameters,
+            situation_input_digest=situation_digest,
+            execution_scope=execution_scope,
+        )
+    )
+    reasons.extend(
+        f"action_revalidation_current:{reason}"
+        for reason in _action_feasibility_blocking_reasons(
+            feasibility=current,
+            bounded_action_kind=bounded_action_kind,
+            candidate_parameters=parameters,
+            situation_input_digest=situation_digest,
+            execution_scope=execution_scope,
+        )
+    )
+    original_sha256 = str(original.get("action_feasibility_sha256") or "")
+    current_sha256 = str(current.get("action_feasibility_sha256") or "")
+    if original_sha256 and current_sha256 == original_sha256:
+        reasons.append("action_revalidation_result_not_recomputed")
+    if current.get("policy_sha256") != original.get("policy_sha256"):
+        reasons.append("action_revalidation_policy_drift")
+    original_models = _as_mapping(original.get("model_refs"))
+    current_models = _as_mapping(current.get("model_refs"))
+    if not original_models or not current_models:
+        reasons.append("action_revalidation_model_binding_missing")
+    elif dict(current_models) != dict(original_models):
+        reasons.append("action_revalidation_model_drift")
+    original_cursor = _as_mapping(original.get("telemetry_cursor"))
+    current_cursor = _as_mapping(current.get("telemetry_cursor"))
+    cursor_order = compare_px4_telemetry_cursors(original_cursor, current_cursor)
+    if cursor_order is CursorOrder.INCOMPARABLE:
+        reasons.append("action_revalidation_cursor_incomparable")
+    elif cursor_order is CursorOrder.AFTER:
+        reasons.append("action_revalidation_cursor_regression")
+
+    try:
+        runtime_evidence = validate_runtime_invocation_evidence(
+            current.get("runtime_invocation_evidence")
+        )
+    except RuntimeClaimValidationError as exc:
+        runtime_evidence = {}
+        reasons.append(f"action_revalidation_runtime_evidence_invalid:{exc}")
+    if runtime_evidence.get("invocation_exit_code") != 0:
+        reasons.append("action_revalidation_runtime_evidence_exit_nonzero")
+
+    current_evaluated_at = _parse_timestamp(current.get("evaluated_at"))
+    freshness_deadline = _parse_timestamp(current.get("freshness_deadline"))
+    evaluated_at = evaluated_at.astimezone(timezone.utc)
+    runtime_completed_at = _parse_timestamp(
+        runtime_evidence.get("invocation_completed_at")
+    )
+    if runtime_completed_at is not None:
+        runtime_completed_at = runtime_completed_at.astimezone(timezone.utc)
+        runtime_age_seconds = (evaluated_at - runtime_completed_at).total_seconds()
+        if runtime_age_seconds < -1.0:
+            reasons.append("action_revalidation_runtime_evidence_in_future")
+        elif runtime_age_seconds > FORM2A_ACTION_REVALIDATION_MAX_AGE_SECONDS:
+            reasons.append("action_revalidation_runtime_evidence_stale")
+    if current_evaluated_at is None:
+        reasons.append("action_revalidation_evaluated_at_missing_or_invalid")
+    else:
+        current_evaluated_at = current_evaluated_at.astimezone(timezone.utc)
+        if (
+            runtime_completed_at is not None
+            and current_evaluated_at < runtime_completed_at
+        ):
+            reasons.append(
+                "action_revalidation_evaluated_before_runtime_completed"
+            )
+        age_seconds = (evaluated_at - current_evaluated_at).total_seconds()
+        if age_seconds < -1.0:
+            reasons.append("action_revalidation_evaluated_at_in_future")
+        elif age_seconds > FORM2A_ACTION_REVALIDATION_MAX_AGE_SECONDS:
+            reasons.append("action_revalidation_evidence_stale")
+    if freshness_deadline is None:
+        reasons.append("action_revalidation_freshness_deadline_missing_or_invalid")
+    else:
+        freshness_deadline = freshness_deadline.astimezone(timezone.utc)
+        if evaluated_at > freshness_deadline:
+            reasons.append("action_revalidation_freshness_deadline_expired")
+        if (
+            current_evaluated_at is not None
+            and (
+                freshness_deadline - current_evaluated_at
+            ).total_seconds()
+            > FORM2A_ACTION_REVALIDATION_MAX_AGE_SECONDS
+        ):
+            reasons.append("action_revalidation_freshness_window_too_large")
+    return list(dict.fromkeys(reasons))
+
+
+def run_form2a_action_revalidation(
+    *,
+    artifact_root: Path | str = ARTIFACT_ROOT,
+    current_action_feasibility_artifact_path: Path | str | None = None,
+    evaluated_at: datetime | None = None,
+) -> dict[str, Any]:
+    """Persist a fresh Core revalidation result without creating authority."""
+
+    root = Path(artifact_root)
+    root.mkdir(parents=True, exist_ok=True)
+    selection_path, selection = _latest_form2_response_selection(root)
+    original, original_path, reasons = _load_artifact_inside_root(
+        root=root,
+        artifact_path=selection.get("action_feasibility_artifact_path"),
+        reason_prefix="action_revalidation_original_feasibility",
+    )
+    current, current_path, current_load_reasons = _load_artifact_inside_root(
+        root=root,
+        artifact_path=current_action_feasibility_artifact_path,
+        reason_prefix="action_revalidation_current_feasibility",
+    )
+    reasons.extend(current_load_reasons)
+    now = (evaluated_at or datetime.now(timezone.utc)).astimezone(timezone.utc)
+    if not selection_path or selection.get("selection_status") != "selected":
+        reasons.append("action_revalidation_response_selection_not_ready")
+    if (
+        selection.get("intelligence_source")
+        != MISSION_ASSURANCE_AGENT_INTELLIGENCE_SOURCE
+    ):
+        reasons.append("action_revalidation_mission_assurance_selection_missing")
+    if original and current:
+        reasons.extend(
+            _form2a_action_revalidation_reasons(
+                selection=selection,
+                original=original,
+                current=current,
+                evaluated_at=now,
+            )
+        )
+    proposal_ref = str(selection.get("mission_response_proposal_ref") or "")
+    if not proposal_ref:
+        reasons.append("action_revalidation_proposal_ref_missing")
+    reasons = list(dict.fromkeys(reasons))
+    current_status_text = str(
+        current.get("feasibility_status") or FeasibilityStatus.UNVERIFIED.value
+    )
+    try:
+        current_status = FeasibilityStatus(current_status_text)
+    except ValueError:
+        current_status = FeasibilityStatus.UNVERIFIED
+    core = RevalidationArtifact(
+        proposal_ref=proposal_ref,
+        original_result_sha256=str(
+            original.get("action_feasibility_sha256") or ""
+        ),
+        current_result_sha256=str(
+            current.get("action_feasibility_sha256") or ""
+        ),
+        status=(
+            FeasibilityStatus.VERIFIED_FEASIBLE if not reasons else current_status
+        ),
+        reasons=tuple(reasons),
+    )
+    selection_abs = (
+        _resolve_artifact_path(root, selection_path)
+        if selection_path
+        else Path("")
+    )
+    artifact = {
+        **core.to_dict(),
+        "revalidation_status": "valid" if not reasons else "blocked",
+        "revalidated_at": now.isoformat(),
+        "freshness_deadline": current.get("freshness_deadline"),
+        "response_selection_ref": (
+            "missionos_form2a_response_selection:"
+            f"{selection.get('response_selection_id')}"
+        ),
+        "response_selection_artifact_path": selection_path,
+        "response_selection_artifact_sha256": (
+            _sha256_file(selection_abs)
+            if selection_path and selection_abs.is_file()
+            else ""
+        ),
+        "original_action_feasibility_artifact_path": original_path,
+        "current_action_feasibility_artifact_path": current_path,
+        "bounded_action_kind": selection.get("bounded_action_kind"),
+        "candidate_parameters": dict(
+            _as_mapping(selection.get("llm_response_parameters"))
+        ),
+        "mission_situation_input_digest": selection.get(
+            "input_form1_artifact_sha256"
+        ),
+        "execution_scope": original.get("execution_scope"),
+        "policy_sha256": original.get("policy_sha256"),
+        "model_refs": dict(_as_mapping(original.get("model_refs"))),
+        "original_telemetry_cursor": dict(
+            _as_mapping(original.get("telemetry_cursor"))
+        ),
+        "current_telemetry_cursor": dict(
+            _as_mapping(current.get("telemetry_cursor"))
+        ),
+        "approval_recorded": False,
+        "dispatch_request_sent": False,
+        "command_ack_observed": False,
+        "runtime_progress_observed": False,
+        "landing_observed": False,
+        "physical_execution_invoked": False,
+        "progress_counted": False,
+        "delivery_completion_claimed": False,
+    }
+    artifact = _claim_payload(artifact)
+    digest = hashlib.sha256(
+        json.dumps(
+            artifact,
+            ensure_ascii=True,
+            sort_keys=True,
+            separators=(",", ":"),
+            default=str,
+        ).encode("utf-8")
+    ).hexdigest()
+    artifact = {
+        **artifact,
+        "revalidation_artifact_sha256": digest,
+        "revalidation_artifact_id": f"action_revalidation_{digest[:12]}",
+    }
+    artifact_dir = _artifact_dir(root, "missionos_form2a_action_revalidation")
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    artifact_path = artifact_dir / "missionos_form2a_action_revalidation.json"
+    persisted = _write_artifact(artifact_path, artifact)
+    return {**persisted, "artifact_path": _relative(artifact_path)}
+
+
+def _validate_form2a_action_revalidation(
+    *,
+    root: Path,
+    selection_path: str,
+    selection: Mapping[str, Any],
+    artifact_path: Path | str | None,
+    evaluated_at: datetime,
+) -> tuple[dict[str, Any], str, list[str]]:
+    revalidation, revalidation_path, reasons = _load_artifact_inside_root(
+        root=root,
+        artifact_path=artifact_path,
+        reason_prefix="mission_assurance_dispatch_time_revalidation",
+    )
+    if not revalidation:
+        return revalidation, revalidation_path, reasons
+    if not _action_revalidation_hash_matches(revalidation):
+        reasons.append("action_revalidation_artifact_sha256_mismatch")
+    try:
+        core = RevalidationArtifact.from_dict(revalidation)
+    except (TypeError, ValueError):
+        core = None
+        reasons.append("action_revalidation_core_artifact_invalid")
+    if core is not None:
+        if core.schema_version != REVALIDATION_SCHEMA_VERSION:
+            reasons.append("action_revalidation_schema_not_supported")
+        if core.status is not FeasibilityStatus.VERIFIED_FEASIBLE:
+            reasons.append("action_revalidation_status_not_verified_feasible")
+        if core.reasons:
+            reasons.extend(core.reasons)
+        for key in (
+            "approval_created",
+            "dispatch_authority_created",
+            "execution_invoked",
+            "completion_claimed",
+        ):
+            if getattr(core, key) is not False:
+                reasons.append(f"action_revalidation_{key}_must_be_false")
+    if revalidation.get("revalidation_status") != "valid":
+        reasons.append("action_revalidation_not_valid")
+    proposal_ref = str(selection.get("mission_response_proposal_ref") or "")
+    if core is not None and core.proposal_ref != proposal_ref:
+        reasons.append("action_revalidation_proposal_ref_mismatch")
+    expected_selection_ref = (
+        "missionos_form2a_response_selection:"
+        f"{selection.get('response_selection_id')}"
+    )
+    if revalidation.get("response_selection_ref") != expected_selection_ref:
+        reasons.append("action_revalidation_response_selection_ref_mismatch")
+    if revalidation.get("response_selection_artifact_path") != selection_path:
+        reasons.append("action_revalidation_response_selection_path_mismatch")
+    selection_abs = _resolve_artifact_path(root, selection_path)
+    if (
+        not selection_abs.is_file()
+        or revalidation.get("response_selection_artifact_sha256")
+        != _sha256_file(selection_abs)
+    ):
+        reasons.append("action_revalidation_response_selection_sha256_mismatch")
+
+    original, original_path, original_load_reasons = _load_artifact_inside_root(
+        root=root,
+        artifact_path=selection.get("action_feasibility_artifact_path"),
+        reason_prefix="action_revalidation_original_feasibility",
+    )
+    current, current_path, current_load_reasons = _load_artifact_inside_root(
+        root=root,
+        artifact_path=revalidation.get(
+            "current_action_feasibility_artifact_path"
+        ),
+        reason_prefix="action_revalidation_current_feasibility",
+    )
+    reasons.extend(original_load_reasons)
+    reasons.extend(current_load_reasons)
+    if revalidation.get("original_action_feasibility_artifact_path") != original_path:
+        reasons.append("action_revalidation_original_feasibility_path_mismatch")
+    if revalidation.get("current_action_feasibility_artifact_path") != current_path:
+        reasons.append("action_revalidation_current_feasibility_path_mismatch")
+    if core is not None:
+        if core.original_result_sha256 != original.get(
+            "action_feasibility_sha256"
+        ):
+            reasons.append("action_revalidation_original_result_sha256_mismatch")
+        if core.current_result_sha256 != current.get(
+            "action_feasibility_sha256"
+        ):
+            reasons.append("action_revalidation_current_result_sha256_mismatch")
+    if original and current:
+        reasons.extend(
+            _form2a_action_revalidation_reasons(
+                selection=selection,
+                original=original,
+                current=current,
+                evaluated_at=evaluated_at,
+            )
+        )
+    revalidated_at = _parse_timestamp(revalidation.get("revalidated_at"))
+    if revalidated_at is None:
+        reasons.append("action_revalidation_timestamp_missing_or_invalid")
+    else:
+        age_seconds = (
+            evaluated_at.astimezone(timezone.utc)
+            - revalidated_at.astimezone(timezone.utc)
+        ).total_seconds()
+        if age_seconds < -1.0:
+            reasons.append("action_revalidation_timestamp_in_future")
+        elif age_seconds > FORM2A_ACTION_REVALIDATION_MAX_AGE_SECONDS:
+            reasons.append("action_revalidation_artifact_stale")
+    for key in (
+        "approval_recorded",
+        "dispatch_request_sent",
+        "command_ack_observed",
+        "runtime_progress_observed",
+        "landing_observed",
+        "physical_execution_invoked",
+        "progress_counted",
+        "delivery_completion_claimed",
+    ):
+        if revalidation.get(key) is not False:
+            reasons.append(f"action_revalidation_{key}_must_be_false")
+    return revalidation, revalidation_path, list(dict.fromkeys(reasons))
 
 
 def _latest_form2a_response_selection_chain(root: Path) -> dict[str, tuple[str, dict[str, Any]]]:
     return {
-        "selection": (_latest_payloads(root, "missionos_form2a_response_selection.json") or [("", {})])[0],
+        "selection": _latest_form2_response_selection(root),
         "token": (
             _latest_payloads(root, "missionos_form2a_operator_approval_token.json")
             or [("", {})]
@@ -1732,13 +2250,15 @@ def run_form2a_response_selection_from_form1(
     *,
     artifact_root: Path | str = ARTIFACT_ROOT,
     form1_artifact_path: Path | str | None = None,
+    action_feasibility_artifact_path: Path | str | None = None,
     operator_instruction: str | Mapping[str, Any] | None = None,
     capability_context: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Select a bounded Form 2a response from the source-bound Form 1 wind delta.
+    """Judge a mission response and offer only a verified-feasible action.
 
-    This issues an operator-approval token artifact and planned refs only. It
-    deliberately does not consume the token or execute dispatch.
+    Advisory and failed/unverified paths create neither action tokens nor
+    pending dispatch refs.  An eligible action still requires later human
+    approval and dispatch-time revalidation.
     """
 
     root = Path(artifact_root)
@@ -1799,7 +2319,6 @@ def run_form2a_response_selection_from_form1(
         )
     )
     selection_dir.mkdir(parents=True, exist_ok=True)
-    token_dir.mkdir(parents=True, exist_ok=True)
 
     if source_check["source_supported"] is not True:
         blocked = {
@@ -1849,55 +2368,179 @@ def run_form2a_response_selection_from_form1(
         _write_artifact(selection_path, blocked)
         return build_form2a_response_selection_summary(artifact_root=root)
 
-    planner_result = run_llm_response_planner(
-        form1_artifact=form1,
+    if form1.get("schema_version") == "drone_behavior_delta_under_payload_mass.v1":
+        return _write_form2_advisory_selection(
+            root=root,
+            form1=form1,
+            source_check=source_check,
+            source_artifact_path=source_artifact_path,
+            input_sha256=input_sha256,
+            operator_instruction=operator_instruction_payload,
+            capability_context=capability_context_payload,
+            selected_response_kind=FORM2B_PAYLOAD_ADVISORY_RESPONSE_KIND,
+            proposed_response_kind="operator_escalation",
+            selection_reason="payload_climb_delay_is_level_2_feasibility_advisory",
+            trigger_level="level_2_inferred",
+            intelligence_source="source_bound_payload_feasibility_advisory",
+            judgment_status="not_invoked_advisory_only",
+            judgment_mode="source_classification",
+            fallback_mode="new_action_workflow_required",
+            model_inference_invoked=False,
+        )
+
+    situation = observe_form1_mission_situation(
+        form1=form1,
         source_check=source_check,
-        artifact_root=root,
-        artifact_relative=_relative,
+        source_ref=source_artifact_path,
+        input_digest=input_sha256,
         operator_instruction=operator_instruction_payload,
     )
-    if planner_result.get("planner_status") == "proposal_guardrail_passed":
-        response = _select_form2a_wind_response_from_llm_proposal(
+    proposal = configured_mission_assurance_agent().evaluate(situation)
+    assurance_result = persist_mission_assurance_evaluation(
+        situation=situation,
+        proposal=proposal,
+        artifact_root=root,
+        artifact_relative=_relative,
+    )
+    proposal_payload = proposal.to_dict()
+    proposal_kind = proposal.proposed_response_kind
+    proposal_reasons = list(proposal.blocking_reasons)
+    if proposal.judgment_status != "proposal_guardrail_passed":
+        return _write_form2_advisory_selection(
+            root=root,
             form1=form1,
-            planner_result=planner_result,
+            source_check=source_check,
+            source_artifact_path=source_artifact_path,
+            input_sha256=input_sha256,
+            operator_instruction=operator_instruction_payload,
+            capability_context=capability_context_payload,
+            selected_response_kind=FORM2B_OPERATOR_ESCALATION_RESPONSE_KIND,
+            proposed_response_kind="operator_escalation",
+            selection_reason="mission_assurance_llm_judgment_not_safely_available",
+            trigger_level="level_2_inferred",
+            intelligence_source=MISSION_ASSURANCE_AGENT_INTELLIGENCE_SOURCE,
+            judgment_status=proposal.judgment_status,
+            model_inference_invoked=proposal.model_inference_invoked,
+            blocking_reasons=proposal_reasons,
+            mission_assurance_result=assurance_result,
         )
-        if not _form2a_llm_response_kind_compatible_with_source(
+
+    compilation = compile_mission_response_proposal(proposal)
+    bounded_action_kind = str(compilation.get("bounded_action_kind") or "")
+    if compilation.get("compile_status") != "candidate_compiled":
+        selected_kind = (
+            proposal_kind
+            if compilation.get("compile_status") == "no_action_required"
+            else FORM2B_OPERATOR_ESCALATION_RESPONSE_KIND
+        )
+        advisory_kind = (
+            proposal_kind
+            if compilation.get("compile_status") == "no_action_required"
+            else "operator_escalation"
+        )
+        return _write_form2_advisory_selection(
+            root=root,
             form1=form1,
-            response_kind=str(response.get("selected_response_kind") or ""),
-        ):
-            response = _select_form2a_wind_response(form1)
-            response["intelligence_source"] = GUARDRAIL_FALLBACK_INTELLIGENCE_SOURCE
-            response["eligible_for_ai_agent_progress"] = False
-            response["llm_response_planner_status"] = "guardrail_blocked"
-            response["llm_response_planner_blocking_reasons"] = [
-                "response_kind_not_compatible_with_source_condition_kind"
-            ]
-            response["llm_response_planner_guardrail"] = dict(
-                _as_mapping(planner_result.get("guardrail"))
+            source_check=source_check,
+            source_artifact_path=source_artifact_path,
+            input_sha256=input_sha256,
+            operator_instruction=operator_instruction_payload,
+            capability_context=capability_context_payload,
+            selected_response_kind=selected_kind,
+            proposed_response_kind=advisory_kind,
+            selection_reason=(
+                "mission_assurance_no_action_response"
+                if compilation.get("compile_status") == "no_action_required"
+                else "mission_response_has_no_verified_px4_action_binding"
+            ),
+            trigger_level="level_2_inferred",
+            intelligence_source=MISSION_ASSURANCE_AGENT_INTELLIGENCE_SOURCE,
+            judgment_status=proposal.judgment_status,
+            model_inference_invoked=True,
+            blocking_reasons=list(compilation.get("blocking_reasons") or []),
+            mission_assurance_result=assurance_result,
+        )
+
+    feasibility, feasibility_path, feasibility_load_reasons = (
+        _load_bound_action_feasibility(
+            root=root,
+            artifact_path=action_feasibility_artifact_path,
+        )
+    )
+    feasibility_reasons = [
+        *feasibility_load_reasons,
+        *(
+            _action_feasibility_blocking_reasons(
+                feasibility=feasibility,
+                bounded_action_kind=bounded_action_kind,
+                candidate_parameters=_as_mapping(
+                    compilation.get("candidate_parameters")
+                ),
+                situation_input_digest=situation.input_digest,
+                execution_scope=situation.execution_scope,
             )
-            response["llm_response_proposal_ref"] = (
-                planner_result.get("proposal_ref") or ""
-            )
-            response["llm_response_proposal_artifact_path"] = (
-                planner_result.get("proposal_artifact_path") or ""
-            )
-    else:
-        response = _select_form2a_wind_response(form1)
-        response["intelligence_source"] = _form2a_response_selection_planner_fallback_source(
-            planner_result
+            if feasibility
+            else []
+        ),
+    ]
+    if feasibility_reasons:
+        rejected_feasibility = dict(feasibility)
+        rejected_feasibility["artifact_path"] = feasibility_path
+        return _write_form2_advisory_selection(
+            root=root,
+            form1=form1,
+            source_check=source_check,
+            source_artifact_path=source_artifact_path,
+            input_sha256=input_sha256,
+            operator_instruction=operator_instruction_payload,
+            capability_context=capability_context_payload,
+            selected_response_kind=FORM2B_OPERATOR_ESCALATION_RESPONSE_KIND,
+            proposed_response_kind="operator_escalation",
+            selection_reason="proposed_action_not_verified_feasible",
+            trigger_level="level_2_inferred",
+            intelligence_source=MISSION_ASSURANCE_AGENT_INTELLIGENCE_SOURCE,
+            judgment_status=proposal.judgment_status,
+            model_inference_invoked=True,
+            blocking_reasons=list(dict.fromkeys(feasibility_reasons)),
+            mission_assurance_result=assurance_result,
+            action_feasibility=rejected_feasibility,
         )
-        response["eligible_for_ai_agent_progress"] = False
-        response["llm_response_planner_status"] = planner_result.get("planner_status")
-        response["llm_response_planner_blocking_reasons"] = list(
-            planner_result.get("blocking_reasons") or []
+
+    selected_response_kind = {
+        "replan": "operator_gated_wind_compensated_reroute",
+        "return": "operator_gated_return_to_launch",
+    }.get(proposal_kind, f"operator_gated_{proposal_kind}")
+    response = {
+        "intelligence_source": MISSION_ASSURANCE_AGENT_INTELLIGENCE_SOURCE,
+        "eligible_for_ai_agent_progress": True,
+        "llm_judgment_in_gate": False,
+        "proposed_response_kind": proposal_kind,
+        "selected_response_kind": selected_response_kind,
+        "bounded_action_kind": bounded_action_kind,
+        "selection_reason": "mission_assurance_proposal_and_action_feasibility_passed",
+        "response_urgency": "operator_review_required",
+        "mission_response_kind": "action",
+        "trigger_level": "level_1_direct",
+        **_form2_source_projection(form1),
+        "llm_response_planner_status": proposal.judgment_status,
+        "llm_response_planner_blocking_reasons": [],
+        "llm_response_planner_guardrail": {},
+        "llm_response_proposal_ref": assurance_result.get("proposal_ref") or "",
+        "llm_response_proposal_artifact_path": assurance_result.get(
+            "proposal_artifact_path"
         )
-        response["llm_response_planner_guardrail"] = dict(
-            _as_mapping(planner_result.get("guardrail"))
-        )
-        response["llm_response_proposal_ref"] = planner_result.get("proposal_ref") or ""
-        response["llm_response_proposal_artifact_path"] = (
-            planner_result.get("proposal_artifact_path") or ""
-        )
+        or "",
+        "llm_response_parameters": dict(
+            _as_mapping(proposal_payload.get("parameters"))
+        ),
+        "llm_response_rationale": proposal_payload.get("rationale") or "",
+        "llm_response_expected_outcome": proposal_payload.get("expected_outcome")
+        or "",
+        "llm_response_uncertainty": proposal_payload.get("uncertainty") or "",
+        "llm_response_approval_request": proposal_payload.get("operator_question")
+        or "",
+    }
+    token_dir.mkdir(parents=True, exist_ok=True)
     token_expires_at = (generated_at_dt + timedelta(minutes=30)).isoformat()
     approval_request_tool = approval_request_tool_record(
         approval_scope="form2a_bounded_action_operator_review",
@@ -1963,6 +2606,7 @@ def run_form2a_response_selection_from_form1(
         "ai_agent_progress_counted": False,
         "llm_judgment_in_gate": response["llm_judgment_in_gate"],
         "mission_response_kind": response["mission_response_kind"],
+        "proposed_response_kind": response["proposed_response_kind"],
         "selected_response_kind": response["selected_response_kind"],
         "bounded_action_kind": response["bounded_action_kind"],
         "selection_reason": response["selection_reason"],
@@ -1998,6 +2642,28 @@ def run_form2a_response_selection_from_form1(
         "llm_response_uncertainty": response.get("llm_response_uncertainty") or "",
         "llm_response_approval_request": response.get("llm_response_approval_request")
         or "",
+        "judgment_status": proposal.judgment_status,
+        "judgment_mode": proposal.judgment_mode,
+        "fallback_mode": proposal.fallback_mode,
+        "model_inference_invoked": proposal.model_inference_invoked,
+        "mission_assurance_situation_ref": assurance_result.get("situation_ref")
+        or "",
+        "mission_assurance_situation_artifact_path": assurance_result.get(
+            "situation_artifact_path"
+        )
+        or "",
+        "mission_response_proposal_ref": assurance_result.get("proposal_ref") or "",
+        "mission_response_proposal_artifact_path": assurance_result.get(
+            "proposal_artifact_path"
+        )
+        or "",
+        "action_feasibility": {
+            **dict(feasibility),
+            "artifact_path": feasibility_path,
+        },
+        "action_feasibility_status": feasibility.get("feasibility_status"),
+        "action_feasibility_ref": feasibility.get("action_feasibility_id"),
+        "action_feasibility_artifact_path": feasibility_path,
         "approval_ref": approval_ref,
         "approval_artifact_path": _relative(token_path),
         "approval_request_tool": approval_request_tool,
@@ -2006,9 +2672,15 @@ def run_form2a_response_selection_from_form1(
         "operator_approval_required": True,
         "operator_approval_token_issued_in_artifact": True,
         "operator_approval_token_consumed_in_runtime": False,
+        "approval_recorded": False,
         "bounded_action_ref": bounded_action_ref,
         "dispatch_ref": dispatch_ref,
         "dispatch_execution_status": "not_executed",
+        "dispatch_authority_created": False,
+        "dispatch_request_sent": False,
+        "command_ack_observed": False,
+        "runtime_progress_observed": False,
+        "landing_observed": False,
         "dispatch_executed_in_runtime": False,
         "automatic_dispatch_executed": False,
         "physical_execution_invoked": False,
@@ -2054,7 +2726,12 @@ def run_form2a_response_selection_from_form1(
         "bounded_action_ref": bounded_action_ref,
         "dispatch_ref": dispatch_ref,
         "mission_response_kind": response["mission_response_kind"],
+        "proposed_response_kind": response["proposed_response_kind"],
         "selected_response_kind": response["selected_response_kind"],
+        "bounded_action_kind": response["bounded_action_kind"],
+        "action_feasibility_status": feasibility.get("feasibility_status"),
+        "action_feasibility_ref": feasibility.get("action_feasibility_id"),
+        "action_feasibility_artifact_path": feasibility_path,
         "llm_response_planner_status": response.get("llm_response_planner_status")
         or "not_configured",
         "llm_response_proposal_ref": response.get("llm_response_proposal_ref") or "",
@@ -2066,6 +2743,12 @@ def run_form2a_response_selection_from_form1(
         "eligible_for_ai_agent_progress": response["eligible_for_ai_agent_progress"],
         "ai_agent_progress_counted": False,
         "llm_judgment_in_gate": response["llm_judgment_in_gate"],
+        "approval_recorded": False,
+        "dispatch_authority_created": False,
+        "dispatch_request_sent": False,
+        "command_ack_observed": False,
+        "runtime_progress_observed": False,
+        "landing_observed": False,
         "automatic_dispatch_executed": False,
         "dispatch_executed_in_runtime": False,
         "physical_execution_invoked": False,
@@ -2094,6 +2777,11 @@ def build_form2a_response_selection_summary(
     token_path, token_raw = chain["token"]
     selection, selection_runtime_blocks = _runtime_claims(selection_raw)
     token, token_runtime_blocks = _runtime_claims(token_raw)
+    advisory_only = selection.get("selection_status") == "advisory_only"
+    if advisory_only:
+        token_path = ""
+        token = {}
+        token_runtime_blocks = []
     source_path = (
         _resolve_repo_or_artifact_path(root, str(selection.get("input_form1_artifact_path") or ""))
         if selection.get("input_form1_artifact_path")
@@ -2130,32 +2818,66 @@ def build_form2a_response_selection_summary(
         )
         if selection.get(key) is True or token.get(key) is True
     ]
-    required_true = {
-        "source_form1_supported": source_check.get("source_supported") is True,
-        "source_form1_hash_matches": source_hash_matches,
-        "selection_status_selected": selection.get("selection_status") == "selected",
-        "form2a_response_selected_in_artifact": selection.get(
-            "form2a_response_selected_in_artifact"
-        )
-        is True,
-        "mission_response_kind_action": selection.get("mission_response_kind") == "action",
-        "operator_approval_required": selection.get("operator_approval_required") is True,
-        "operator_approval_token_issued_in_artifact": selection.get(
-            "operator_approval_token_issued_in_artifact"
-        )
-        is True,
-        "operator_approval_token_unconsumed": token.get(
-            "operator_approval_token_consumed_in_runtime"
-        )
-        is False,
-        "bounded_action_ref_present": bool(selection.get("bounded_action_ref")),
-        "dispatch_ref_present": bool(selection.get("dispatch_ref")),
-        "token_refs_consistent": token_refs_consistent,
-    }
+    required_true = (
+        {
+            "source_form1_supported": source_check.get("source_supported") is True,
+            "source_form1_hash_matches": source_hash_matches,
+            "selection_status_advisory_only": advisory_only,
+            "mission_response_kind_advisory": selection.get("mission_response_kind")
+            == "advisory",
+            "operator_review_required": selection.get("operator_review_required")
+            is True,
+            "automatic_dispatch_suppressed": selection.get(
+                "automatic_dispatch_suppressed"
+            )
+            is True,
+            "eligible_for_direct_trigger_false": selection.get(
+                "eligible_for_direct_trigger"
+            )
+            is False,
+            "bounded_action_absent": not selection.get("bounded_action_kind")
+            and not selection.get("bounded_action_ref"),
+            "approval_token_absent": selection.get(
+                "operator_approval_token_issued_in_artifact"
+            )
+            is False
+            and not selection.get("approval_ref"),
+            "pending_dispatch_absent": not selection.get("dispatch_ref"),
+        }
+        if advisory_only
+        else {
+            "source_form1_supported": source_check.get("source_supported") is True,
+            "source_form1_hash_matches": source_hash_matches,
+            "selection_status_selected": selection.get("selection_status") == "selected",
+            "form2a_response_selected_in_artifact": selection.get(
+                "form2a_response_selected_in_artifact"
+            )
+            is True,
+            "mission_response_kind_action": selection.get("mission_response_kind")
+            == "action",
+            "action_feasibility_verified": selection.get(
+                "action_feasibility_status"
+            )
+            == "verified_feasible",
+            "operator_approval_required": selection.get("operator_approval_required")
+            is True,
+            "operator_approval_token_issued_in_artifact": selection.get(
+                "operator_approval_token_issued_in_artifact"
+            )
+            is True,
+            "operator_approval_token_unconsumed": token.get(
+                "operator_approval_token_consumed_in_runtime"
+            )
+            is False,
+            "bounded_action_ref_present": bool(selection.get("bounded_action_ref")),
+            "dispatch_ref_present": bool(selection.get("dispatch_ref")),
+            "token_refs_consistent": token_refs_consistent,
+        }
+    )
     blocking_reasons = []
     if not selection_path:
         blocking_reasons.append("form2a_response_selection_missing")
-    if selection_path and not token_path:
+    if selection_path and not token_path and not advisory_only:
         blocking_reasons.append("form2a_operator_approval_token_missing")
     blocking_reasons.extend(
         f"{key}_not_observed" for key, value in required_true.items() if not value
@@ -2163,8 +2885,10 @@ def build_form2a_response_selection_summary(
     blocking_reasons.extend(forbidden_true)
     blocking_reasons.extend(selection_runtime_blocks + token_runtime_blocks)
     summary_status = (
-        "form2a_response_selected"
-        if not blocking_reasons
+        "form2_advisory_selected"
+        if advisory_only and not blocking_reasons
+        else "form2a_response_selected"
+        if not advisory_only and not blocking_reasons
         else "blocked"
         if selection_path
         else "missing"
@@ -2174,8 +2898,14 @@ def build_form2a_response_selection_summary(
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "summary_status": summary_status,
         "classification": {
-            "causal_form": "Form 2a" if summary_status == "form2a_response_selected" else "Form 0b",
-            "surface": "Form 1 runtime behavior delta to operator-gated Form 2a response selection",
+            "causal_form": (
+                "Form 2b"
+                if summary_status == "form2_advisory_selected"
+                else "Form 2a"
+                if summary_status == "form2a_response_selected"
+                else "Form 0b"
+            ),
+            "surface": "Form 1 runtime behavior delta to mission response proposal",
             "progress_counted": False,
             "form2a_response_selection_progress_counted_in_artifact": (
                 summary_status == "form2a_response_selected"
@@ -2232,10 +2962,44 @@ def build_form2a_response_selection_summary(
             is True,
             "llm_judgment_in_gate": selection.get("llm_judgment_in_gate") is True,
             "mission_response_kind": selection.get("mission_response_kind"),
+            "proposed_response_kind": selection.get("proposed_response_kind"),
             "selected_response_kind": selection.get("selected_response_kind"),
             "bounded_action_kind": selection.get("bounded_action_kind"),
             "selection_reason": selection.get("selection_reason"),
             "trigger_level": selection.get("trigger_level"),
+            "judgment_status": selection.get("judgment_status"),
+            "judgment_mode": selection.get("judgment_mode"),
+            "fallback_mode": selection.get("fallback_mode"),
+            "model_inference_invoked": selection.get("model_inference_invoked")
+            is True,
+            "operator_review_required": selection.get("operator_review_required")
+            is True,
+            "eligible_for_direct_trigger": selection.get(
+                "eligible_for_direct_trigger"
+            )
+            is True,
+            "eligible_for_advisory_only": selection.get(
+                "eligible_for_advisory_only"
+            )
+            is True,
+            "automatic_dispatch_suppressed": selection.get(
+                "automatic_dispatch_suppressed"
+            )
+            is True,
+            "action_feasibility_status": selection.get(
+                "action_feasibility_status"
+            )
+            or _as_mapping(selection.get("action_feasibility")).get(
+                "feasibility_status"
+            ),
+            "action_feasibility_ref": selection.get("action_feasibility_ref"),
+            "action_feasibility_artifact_path": selection.get(
+                "action_feasibility_artifact_path"
+            )
+            or _as_mapping(selection.get("action_feasibility")).get(
+                "artifact_path"
+            ),
+            "blocking_reasons": list(selection.get("blocking_reasons") or []),
             "llm_response_planner_status": selection.get("llm_response_planner_status")
             or "not_configured",
             "llm_response_planner_blocking_reasons": list(
@@ -2379,9 +3143,11 @@ def build_form2a_response_selection_summary(
             "blocking_reasons": blocking_reasons,
         },
         "operator_note": (
-            "This selects a Form 2a action from the source-bound Form 1 wind "
-            "or payload behavior delta and issues an operator-approval token artifact. It does not "
-            "consume the token or execute dispatch."
+            "This records an advisory-only mission response. It creates no "
+            "approval token, bounded action, or pending dispatch."
+            if advisory_only
+            else "This offers a verified-feasible Form 2a action for operator "
+            "review. It does not record approval or execute dispatch."
         ),
     }
 
@@ -3448,6 +4214,7 @@ def _remove_truthy_unsuffixed_runtime_claims(value: Any) -> Any:
 def run_form2a_action_consumption(
     *,
     artifact_root: Path | str = ARTIFACT_ROOT,
+    action_revalidation_artifact_path: Path | str | None = None,
 ) -> dict[str, Any]:
     """Consume the Form 2a token, run SITL dispatch, and re-observe trajectory delta."""
 
@@ -3458,7 +4225,8 @@ def run_form2a_action_consumption(
     selection_path, selection = chain["selection"]
     token_path_text, token = chain["token"]
     review_path_text, review = chain["human_review"]
-    generated_at = datetime.now(timezone.utc).isoformat()
+    generated_at_dt = datetime.now(timezone.utc)
+    generated_at = generated_at_dt.isoformat()
     action_dir = _artifact_dir(root, "missionos_form2a_action_consumption")
     action_path = action_dir / "missionos_form2a_action_consumption.json"
     action_dir.mkdir(parents=True, exist_ok=True)
@@ -3496,6 +4264,31 @@ def run_form2a_action_consumption(
         blocking_reasons.append("RUN_MISSIONOS_SITL_DISPATCH_RUNTIME_not_enabled")
     selected_response_kind = str(selection.get("selected_response_kind") or "")
     payload_recovery_requested = selected_response_kind == FORM2A_PAYLOAD_RECOVERY_RESPONSE_KIND
+    action_revalidation: Mapping[str, Any] = {}
+    action_revalidation_path = ""
+    if (
+        selection.get("intelligence_source")
+        == MISSION_ASSURANCE_AGENT_INTELLIGENCE_SOURCE
+    ):
+        (
+            action_revalidation,
+            action_revalidation_path,
+            action_revalidation_reasons,
+        ) = _validate_form2a_action_revalidation(
+            root=root,
+            selection_path=selection_path,
+            selection=selection,
+            artifact_path=action_revalidation_artifact_path,
+            evaluated_at=generated_at_dt,
+        )
+        blocking_reasons.extend(action_revalidation_reasons)
+    if (
+        selected_response_kind not in FORM2A_COMPENSATION_RESPONSE_KINDS
+        and not payload_recovery_requested
+    ):
+        blocking_reasons.append(
+            "form2a_selected_response_kind_not_bound_to_action_consumption"
+        )
     if (
         not payload_recovery_requested
         and os.getenv(FORM2A_TRAJECTORY_REOBSERVATION_OPT_IN_ENV) != "1"
@@ -3595,7 +4388,7 @@ def run_form2a_action_consumption(
     intelligence_source = str(selection.get("intelligence_source") or "")
     eligible_for_ai_agent_progress = bool(
         selection.get("eligible_for_ai_agent_progress") is True
-        and intelligence_source == AI_AGENT_PROGRESS_ELIGIBLE_INTELLIGENCE_SOURCE
+        and intelligence_source in AI_AGENT_PROGRESS_ELIGIBLE_INTELLIGENCE_SOURCES
     )
     goal_progress = bool(token_consumed and real_dispatch_smoke and trajectory_reobserved)
     execution_path = str(_as_mapping(dispatch_summary.get("bounded_dispatch_execution")).get("artifact_path") or "")
@@ -3659,6 +4452,12 @@ def run_form2a_action_consumption(
         is True,
         "form2a_response_selection_artifact_path": selection_path,
         "operator_approval_token_artifact_path": token_path_text,
+        "action_revalidation_artifact_path": action_revalidation_path,
+        "action_revalidation": dict(action_revalidation),
+        "action_revalidation_status": action_revalidation.get(
+            "revalidation_status"
+        )
+        or "not_applicable",
         "token_consumption_evidence": dict(token_consumption),
         "selected_response_kind": selection.get("selected_response_kind"),
         "llm_response_parameters": dict(
@@ -3666,7 +4465,7 @@ def run_form2a_action_consumption(
         ),
         "llm_response_parameters_bound_to_runtime": bool(
             selection.get("intelligence_source")
-            == AI_AGENT_PROGRESS_ELIGIBLE_INTELLIGENCE_SOURCE
+            in AI_AGENT_PROGRESS_ELIGIBLE_INTELLIGENCE_SOURCES
             and llm_parameters_bound_to_runtime
         ),
         "form2a_runtime_smoke_env": dict(dispatch_runtime_env),
@@ -3793,6 +4592,14 @@ def build_form2a_action_consumption_summary(
             )
             is True,
             "form2a_action_consumed_in_runtime": action.get("form2a_action_consumed_in_runtime") is True,
+            "action_revalidation_status": action.get(
+                "action_revalidation_status"
+            )
+            or "not_applicable",
+            "action_revalidation_artifact_path": action.get(
+                "action_revalidation_artifact_path"
+            )
+            or "",
             "selected_response_kind": action.get("selected_response_kind"),
             "llm_response_parameters": dict(
                 _as_mapping(action.get("llm_response_parameters"))

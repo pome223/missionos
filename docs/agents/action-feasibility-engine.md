@@ -140,8 +140,25 @@ LLM-selectable recovery action, and requires a separate human confirmation.
 It is accepted only while telemetry is fresh and synchronized, no local
 obstacle conflict is active, no verified same-task envelope already exists,
 and the target remains inside the calibration distance and altitude limits.
-The runner uses a tighter 2 m horizontal target tolerance than normal recovery
-and persists a successful observation as
+Chat's opt-in preflight calibration requests a 10 m cross-track leg with a
+bounded terrain-clearance climb. The 15 m distance and 2 m altitude-delta Rules
+limits are unchanged and still apply to the latest dispatch observation.
+The runner enters OFFBOARD at the current horizontal position, waits for two
+fresh settled samples, then measures the full leg including acceleration and
+deceleration. Arrival requires 0.5 m horizontal error and two fresh samples at
+no more than 0.5 m/s. A verified calibration measurement also requires at least
+8 m observed displacement and five samples; a short or unfinished leg remains
+unverified.
+
+`measurement_basis=matched_offboard_pose_samples.v1` binds displacement and
+duration to the same first/last pose samples. Monotonic wall time matches the
+executor's timeout clock; strictly increasing PX4 timestamps establish sample
+freshness. Mode setup and post-maneuver AUTO/HOLD waits are recorded separately,
+not divided into travel distance. They are not discarded: the duration estimate
+reserves the larger of the policy setup allowance and observed non-movement
+time multiplied by the existing duration margin. This is a conservative
+same-task sample, not physical calibration or a proven guarantee in other
+conditions. The runner persists a successful observation as
 `missionos_runtime_recovery_performance_evidence.v1`. A later Safety HOLD does
 not overwrite that evidence.
 
@@ -157,7 +174,7 @@ is `unverified`.
 
 The active SITL policy keeps the normal maneuver-duration bound at 75 seconds.
 Only source-backed `avoid_obstacle` candidates observed under the complete
-Safety HOLD contract may use the separate 150-second avoidance bound. This
+Safety HOLD contract may use the separate 240-second avoidance bound. This
 does not apply to `reroute`, calibration, altitude, speed, RTL, or LAND.
 Observed performance, battery reserve, wind margin, terrain clearance,
 obstacle geometry, policy binding, dispatch-time telemetry, and human approval
@@ -176,8 +193,12 @@ feasibility, or create approval or dispatch authority.
 
 ## Proposal and dispatch binding
 
-A proposal with complete hazard and feasibility evidence uses
-`missionos_runtime_recovery_proposal_evidence.v3`. It binds:
+A proposal with complete hazard and feasibility evidence first satisfies the
+v3 evidence contract. A proposal that may reach operator-approved dispatch uses
+`missionos_runtime_recovery_proposal_evidence.v4` and additionally binds an
+accepted Mission Incident graph containing Recovery, source feasibility, and
+Mission Assurance judgment. v1-v3 remain readable but are not dispatchable. The
+underlying evidence binds:
 
 - hazard-state id and digest
 - action-feasibility id and digest
@@ -199,10 +220,9 @@ At operator-approved dispatch time, Gateway:
 8. queues the runner request only when the result remains
    `verified_feasible`.
 
-When the current policy has `action_feasibility_required=true`, pending legacy
-v2 proposals are invalidated at dispatch and must be regenerated as v3. This
-closes the deployment window in which an already-approved v2 artifact could
-otherwise bypass the new engine.
+At dispatch, every stored Agent proposal must be v4. Older v1-v3 proposals are
+invalidated and must be regenerated through the shared graph. This prevents a
+legacy proposal from bypassing either Action Feasibility or Mission Assurance.
 
 ## Verification and evidence boundary
 

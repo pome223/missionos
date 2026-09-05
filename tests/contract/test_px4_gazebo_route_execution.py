@@ -268,6 +268,58 @@ def test_legacy_send_helper_delegates_to_packaged_execution(monkeypatch: Any) ->
     assert runner.calls[0]["timeout"] == 7
 
 
+def test_send_command_can_defer_a_temporary_px4_rejection(monkeypatch: Any) -> None:
+    monkeypatch.setattr(
+        route_entrypoint,
+        "_send_helper",
+        lambda _command_name: {
+            "command_ack_observed": True,
+            "command_ack_result_code": 1,
+            "command_ack_result_name": "TEMPORARILY_REJECTED",
+        },
+    )
+    monkeypatch.setattr(
+        route_entrypoint,
+        "validate_px4_gazebo_coupled_command_dispatch",
+        lambda **_kwargs: None,
+    )
+
+    assert (
+        route_entrypoint._send_command(
+            "arm",
+            approval=object(),
+            coupled_allowlist=object(),
+            allow_temporary_rejection=True,
+        )
+        is False
+    )
+
+
+def test_send_command_still_fails_closed_for_denied_px4_ack(monkeypatch: Any) -> None:
+    monkeypatch.setattr(
+        route_entrypoint,
+        "_send_helper",
+        lambda _command_name: {
+            "command_ack_observed": True,
+            "command_ack_result_code": 2,
+            "command_ack_result_name": "DENIED",
+        },
+    )
+    monkeypatch.setattr(
+        route_entrypoint,
+        "validate_px4_gazebo_coupled_command_dispatch",
+        lambda **_kwargs: None,
+    )
+
+    with pytest.raises(RuntimeError, match="arm_command_ack_not_accepted"):
+        route_entrypoint._send_command(
+            "arm",
+            approval=object(),
+            coupled_allowlist=object(),
+            allow_temporary_rejection=True,
+        )
+
+
 def test_route_monitor_returns_helper_result_after_bounded_pose_sampling() -> None:
     process = FakeProcess(
         polls=[None, 0],
@@ -307,9 +359,7 @@ def test_route_monitor_returns_helper_result_after_bounded_pose_sampling() -> No
     assert result["pose_deviation_aborted"] is False
     assert result["route_monitor_sample_count"] == 1
     assert result["feed_forward_phase_schedule"] == "full_then_linear_ramp_down"
-    assert observed_rows == [
-        ("route", {"x": 1.0, "y": 0.0, "z": -2.5}, 0)
-    ]
+    assert observed_rows == [("route", {"x": 1.0, "y": 0.0, "z": -2.5}, 0)]
     assert popen_calls[0]["command"][3] == "fixture-container"
     assert process.stdin is None
 
@@ -334,19 +384,24 @@ def test_route_monitor_stops_stream_before_deviation_recovery() -> None:
         pose_sampler=lambda: {"x": 0.5, "y": 2.0, "z": -2.5},
         append_pose_row=lambda *_args, **_kwargs: None,
         distance_to_segment=distance_to_segment_xy,
-        on_deviation=lambda: recovery_calls.append("called") or {"status": "held"},
+        on_deviation=lambda observation: (
+            recovery_calls.append(observation["phase"]) or {"status": "held"}
+        ),
         popen_factory=lambda *_args, **_kwargs: process,
         monotonic=lambda: 0.0,
         sleep=lambda _seconds: None,
     )
 
     assert process.terminated is True
-    assert recovery_calls == ["called"]
+    assert recovery_calls == ["route"]
     assert result["sent"] is False
     assert result["pose_deviation_aborted"] is True
     assert result["route_stream_terminated_before_recovery_dispatch"] is True
     assert result["route_stream_stop_reason"] == "pose_deviation"
     assert result["recovery_payload"] == {"status": "held"}
+    assert result["deviation_samples"][0]["sample_index"] == 0
+    assert result["deviation_samples"][0]["elapsed_seconds"] == 0.0
+    assert result["deviation_samples"][0]["observed_at"]
 
 
 def test_route_monitor_timeout_terminates_without_sampling() -> None:

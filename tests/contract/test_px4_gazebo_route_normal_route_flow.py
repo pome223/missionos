@@ -17,7 +17,6 @@ from src.runtime.px4_gazebo_route.normal_route_flow import (
 from src.runtime.px4_gazebo_route_dispatcher import derive_px4_gazebo_route_target_ned
 from src.runtime.task_store import TaskStore
 
-
 NOW = datetime(2026, 7, 17, 9, 0, tzinfo=timezone.utc)
 
 
@@ -97,6 +96,10 @@ def _runtime(
     *,
     target: tuple[float, float, float],
     stream: dict[str, Any],
+    assess_mission_assurance: Any = None,
+    execute_mission_assurance_continue: Any = None,
+    release_payload_at_route_terminal: Any = None,
+    execute_mission_assurance_dropoff_approach: Any = None,
 ) -> NormalRouteRuntime:
     pose_samples = iter(
         [
@@ -108,9 +111,22 @@ def _runtime(
         events.append("stream")
         assert kwargs["target_x"] == target[0]
         assert kwargs["target_y"] == target[1]
+        result = dict(stream)
         if stream["pose_deviation_aborted"]:
-            kwargs["on_deviation"]()
-        return dict(stream)
+            result["recovery_payload"] = kwargs["on_deviation"](
+                {
+                    "phase": "route",
+                    "sample": {"x": 0.5, "y": 2.0, "z": 2.5},
+                    "sample_index": 4,
+                    "elapsed_seconds": 4.0,
+                    "observed_at": NOW.isoformat(),
+                    "deviation_xy_m": 2.0,
+                    "deviation_z_m": 0.0,
+                    "threshold_xy_m": 1.0,
+                    "threshold_z_m": 1.5,
+                }
+            )
+        return result
 
     return NormalRouteRuntime(
         terrain_relative_xy_origin=lambda _pickup: (0.0, 0.0),
@@ -124,8 +140,7 @@ def _runtime(
         assert_stream_budget=lambda **_kwargs: events.append("budget"),
         send_route_with_monitor=send_route,
         dispatch_recovery=lambda action: (
-            events.append(f"dispatch:{action}")
-            or ("approval", "allowlist", _RecoveryDispatch())
+            events.append(f"dispatch:{action}") or ("approval", "allowlist", _RecoveryDispatch())
         ),
         handle_route_deviation=lambda **kwargs: (
             events.append("deviation")
@@ -155,14 +170,13 @@ def _runtime(
         ),
         send_standard_land=lambda: events.append("land"),
         wait_for_landing=lambda phase: (
-            events.append(f"landing:{phase}")
-            or {"x": target[0], "y": target[1], "z": 0.0},
+            events.append(f"landing:{phase}") or {"x": target[0], "y": target[1], "z": 0.0},
             [{"x": target[0], "y": target[1], "z": 0.0}],
         ),
-        project_terminal_realism=lambda **_kwargs: (
+        project_terminal_realism=lambda **values: (
             events.append("project")
             or NormalRouteTerminalProjection(
-                payload_release_summary=None,
+                payload_release_summary=values.get("payload_release_summary"),
                 telemetry_summary={},
                 vehicle_summary={},
                 obstacle_supervisor_recovery_loop=None,
@@ -172,6 +186,12 @@ def _runtime(
         ),
         snapshot_task_database=lambda **_kwargs: events.append("snapshot"),
         recorded_at=lambda: NOW,
+        assess_mission_assurance=assess_mission_assurance,
+        execute_mission_assurance_continue=execute_mission_assurance_continue,
+        release_payload_at_route_terminal=release_payload_at_route_terminal,
+        execute_mission_assurance_dropoff_approach=(
+            execute_mission_assurance_dropoff_approach
+        ),
     )
 
 
@@ -226,6 +246,216 @@ def test_deviation_hands_captured_authority_to_separate_flow(
     persisted = inputs.store.get(inputs.task_id)
     assert persisted is not None
     assert persisted["status"] == "running"
+
+
+def test_deviation_dispatches_only_after_explicit_recovery_approval(
+    tmp_path: Path,
+) -> None:
+    events: list[str] = []
+    inputs, target = _bootstrap(tmp_path, on_deviation_action="rtl")
+
+    def assess(**values: Any) -> dict[str, Any]:
+        events.append("assess")
+        assert values["requested_recovery_action"] == "rtl"
+        assert values["deviation"]["sample_index"] == 4
+        return {
+            "guard_status": "dispatch_eligible",
+            "selected_recovery_action": "rtl",
+            "approval_recorded": True,
+            "blocking_reasons": [],
+        }
+
+
+    result = run_normal_route_flow(
+        inputs,
+        runtime=_runtime(
+            events,
+            target=target,
+            stream=_route_stream(deviation=True),
+            assess_mission_assurance=assess,
+        ),
+    )
+
+    assert events == [
+        "budget",
+        "stream",
+        "assess",
+        "dispatch:rtl",
+        "deviation",
+    ]
+    assert (
+        result.route_stream["mission_assurance_live_guard"]["guard_status"] == "dispatch_eligible"
+    )
+    assert result.deviation_result["dispatch"] == _RecoveryDispatch()
+
+
+def test_route_approval_cannot_dispatch_mission_assurance_recovery(
+    tmp_path: Path,
+) -> None:
+    events: list[str] = []
+    inputs, target = _bootstrap(tmp_path, on_deviation_action="rtl")
+
+    result = run_normal_route_flow(
+        inputs,
+        runtime=_runtime(
+            events,
+            target=target,
+            stream=_route_stream(deviation=True),
+            assess_mission_assurance=lambda **_values: {
+                "guard_status": "dispatch_eligible",
+                "selected_recovery_action": "rtl",
+                "approval_recorded": False,
+                "blocking_reasons": [],
+            },
+        ),
+    )
+
+    assert events == ["budget", "stream", "deviation"]
+    assert result.deviation_result["dispatch"] is None
+    assert result.deviation_result["route_stream"]["recovery_payload"][
+        "mission_assurance_guard_status"
+    ] == "awaiting_operator_approval"
+
+
+def test_deviation_fails_closed_when_mission_assurance_blocks(
+    tmp_path: Path,
+) -> None:
+    events: list[str] = []
+    inputs, target = _bootstrap(tmp_path, on_deviation_action="rtl")
+
+    result = run_normal_route_flow(
+        inputs,
+        runtime=_runtime(
+            events,
+            target=target,
+            stream=_route_stream(deviation=True),
+            assess_mission_assurance=lambda **_values: {
+                "guard_status": "blocked",
+                "selected_recovery_action": None,
+                "blocking_reasons": ["current_feasibility_unverified"],
+            },
+        ),
+    )
+
+    assert events == ["budget", "stream", "deviation"]
+    assert result.deviation_result["dispatch"] is None
+    assert result.route_stream["mission_assurance_live_guard"]["blocking_reasons"] == [
+        "current_feasibility_unverified"
+    ]
+
+
+def test_continue_resumes_approved_route_without_recovery_dispatch(
+    tmp_path: Path,
+) -> None:
+    events: list[str] = []
+    inputs, target = _bootstrap(tmp_path, on_deviation_action="rtl")
+
+    def assess(**_values: Any) -> dict[str, Any]:
+        events.append("assess")
+        return {
+            "guard_status": "no_dispatch",
+            "mission_assurance_response_kind": "continue",
+            "selected_recovery_action": None,
+            "recovery_no_dispatch_response_accepted": True,
+            "recovery_proposal_accepted": True,
+            "blocking_reasons": [],
+        }
+
+    def execute_continue(**values: Any) -> dict[str, Any]:
+        events.append("continue")
+        assert values["deviation"]["sample_index"] == 4
+        assert values["target"].sent_target_x_m == target[0]
+        return {
+            "schema_version": "missionos_px4_continue_execution.v1",
+            "existing_route_approval_consumed": True,
+            "simulator_route_resume_invoked": True,
+            "offboard_mode_switch_allowed": True,
+            "offboard_mode_switch_command_id": 176,
+            "offboard_mode_switch_frame_sent": True,
+            "offboard_mode_switch_ack_required": True,
+            "offboard_mode_switch_ack_command_id": 176,
+            "offboard_mode_switch_ack_timeout_seconds": 5.0,
+            "offboard_mode_switch_ack_observed": True,
+            "offboard_mode_switch_ack_result_code": 0,
+            "setpoint_frames_sent": 50,
+            "resume_duration_seconds": 5.0,
+            "resume_stream_completed": True,
+            "route_resume_effect_observed": True,
+            "physical_execution_invoked": False,
+            "delivery_completion_claimed": False,
+            "route_completion_claimed": False,
+        }
+
+    result = run_normal_route_flow(
+        inputs,
+        runtime=_runtime(
+            events,
+            target=target,
+            stream=_route_stream(deviation=True),
+            assess_mission_assurance=assess,
+            execute_mission_assurance_continue=execute_continue,
+            execute_mission_assurance_dropoff_approach=lambda **_values: (
+                events.append("approach")
+                or {
+                    "dropoff_approach_effect_observed": True,
+                    "approach_observed_pose": {
+                        "x": target[0],
+                        "y": target[1],
+                        "z": 0.2,
+                    },
+                    "dropoff_region_observed_at": NOW.isoformat(),
+                }
+            ),
+            release_payload_at_route_terminal=lambda: (
+                events.append("payload")
+                or {
+                    "payload_release_observed": True,
+                    "payload_release_event_source": (
+                        "gazebo_detachable_joint_detach_event"
+                    ),
+                    "payload_release_observed_at": NOW.isoformat(),
+                    "payload_release_position_x_m": target[0],
+                    "payload_release_position_y_m": target[1],
+                    "payload_release_position_z_m": 0.1,
+                }
+            ),
+        ),
+    )
+
+    assert events == [
+        "budget",
+        "stream",
+        "assess",
+        "continue",
+        "pose:route",
+        "observe-blocking",
+        "approach",
+        "payload",
+        "land",
+        "landing:landing",
+        "pose:completed",
+        "project",
+        "snapshot",
+    ]
+    assert result.branch == "normal_route"
+    assert result.deviation_result is None
+    assert result.route_stream["mission_assurance_continue_execution"][
+        "route_resume_effect_observed"
+    ] is True
+    assert result.route_stream["mission_assurance_live_guard"][
+        "selected_recovery_action"
+    ] is None
+    assert result.summary is not None
+    assert result.summary["final_status"] == "completed"
+    assert result.summary["dropoff_region_reached"] is True
+    assert result.summary["delivery_completion_claimed"] is True
+    assert result.summary["payload_release_observed"] is True
+    assert result.summary[
+        "mission_assurance_continue_dropoff_approach_observed"
+    ] is True
+    assert result.summary[
+        "mission_assurance_continue_route_completion_observed"
+    ] is True
 
 
 def test_missing_offboard_ack_fails_before_terminal_or_completion(

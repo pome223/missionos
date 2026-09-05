@@ -110,9 +110,16 @@ OPERATOR_RECOVERY_ASSIST_PRESTREAM_FRAMES = 20
 # observed OFFBOARD leg clears the collision footprint before AUTO resumes.
 # Allow enough time for that longer bounded leg plus the commanded climb.
 OPERATOR_RECOVERY_ASSIST_MAX_SECONDS = 75.0
-OPERATOR_RECOVERY_ASSIST_OBSTACLE_AVOIDANCE_MAX_SECONDS = 150.0
+OPERATOR_RECOVERY_CALIBRATION_MIN_SAMPLE_COUNT = 5
+OPERATOR_RECOVERY_ASSIST_OBSTACLE_AVOIDANCE_MAX_SECONDS = 240.0
 OPERATOR_RECOVERY_ASSIST_LAND_MAX_SECONDS = 60.0
 OPERATOR_RECOVERY_ASSIST_SETPOINT_INTERVAL_SECONDS = 0.05
+# PX4 emits HEARTBEAT on simulator time. Under the coupled Gazebo workload the
+# observed wall-clock gap can exceed six seconds even while current PX4 uORB
+# telemetry is still arriving. Keep this SITL-only liveness window bounded but
+# large enough that simulator slowdown does not create a false stale dispatch
+# rejection. A sustained absence beyond this window still fails closed.
+SITL_HEARTBEAT_LIVENESS_WINDOW_SECONDS = 10.0
 OPERATOR_RECOVERY_LATERAL_OBSTACLE_MARGIN_M = 20.0
 OPERATOR_RECOVERY_ASSIST_RTL_HOME_RADIUS_M = 3.0
 OPERATOR_RECOVERY_ASSIST_LAND_ALTITUDE_M = 0.75
@@ -2673,7 +2680,7 @@ def _inner_runtime_probe_script(
         MIN_ROUTE_ALTITUDE_M={float(min_route_altitude_m)}
         ALTITUDE_GRACE_SECONDS={float(altitude_grace_seconds)}
         MIN_BATTERY_REMAINING_PERCENT={float(min_battery_remaining_percent)}
-        HEARTBEAT_LIVENESS_WINDOW_SECONDS=2.5
+        HEARTBEAT_LIVENESS_WINDOW_SECONDS={float(SITL_HEARTBEAT_LIVENESS_WINDOW_SECONDS)}
         POST_ABORT_WAIT_SECONDS={float(post_abort_wait_seconds)}
         LAND_POST_ABORT_WAIT_SECONDS={float(land_post_abort_wait_seconds)}
         RTL_POST_ABORT_WAIT_SECONDS={float(rtl_post_abort_wait_seconds)}
@@ -2682,6 +2689,7 @@ def _inner_runtime_probe_script(
         OPERATOR_RECOVERY_ASSIST_LAND_FINALIZE_SECONDS={float(OPERATOR_RECOVERY_ASSIST_LAND_FINALIZE_SECONDS)}
         OPERATOR_RECOVERY_ASSIST_PRESTREAM_FRAMES={int(OPERATOR_RECOVERY_ASSIST_PRESTREAM_FRAMES)}
         OPERATOR_RECOVERY_ASSIST_MAX_SECONDS={float(OPERATOR_RECOVERY_ASSIST_MAX_SECONDS)}
+        OPERATOR_RECOVERY_CALIBRATION_MIN_SAMPLE_COUNT={int(OPERATOR_RECOVERY_CALIBRATION_MIN_SAMPLE_COUNT)}
         OPERATOR_RECOVERY_ASSIST_OBSTACLE_AVOIDANCE_MAX_SECONDS={float(OPERATOR_RECOVERY_ASSIST_OBSTACLE_AVOIDANCE_MAX_SECONDS)}
         OPERATOR_RECOVERY_ASSIST_LAND_MAX_SECONDS={float(OPERATOR_RECOVERY_ASSIST_LAND_MAX_SECONDS)}
         OPERATOR_RECOVERY_ASSIST_SETPOINT_INTERVAL_SECONDS={float(OPERATOR_RECOVERY_ASSIST_SETPOINT_INTERVAL_SECONDS)}
@@ -4129,6 +4137,81 @@ def _inner_runtime_probe_script(
                 }}, None
             return None, 'unsupported_operator_recovery_maneuver'
 
+        def observe_operator_maneuver(target, started):
+            local=listener('vehicle_local_position', 1)
+            elapsed=time.monotonic()-started
+            status=listener('vehicle_status', 1)
+            x=parse_float(local, 'x')
+            y=parse_float(local, 'y')
+            z=parse_float(local, 'z')
+            vx=parse_float(local, 'vx')
+            vy=parse_float(local, 'vy')
+            return {{
+                'elapsed_seconds': round(elapsed, 6),
+                'position_timestamp_us': parse_int(local, 'timestamp'),
+                'x_m': x, 'y_m': y,
+                'altitude_above_home_m': -z if z is not None else None,
+                'nav_state': parse_int(status, 'nav_state'),
+                'horizontal_speed_mps': math.hypot(vx, vy) if vx is not None and vy is not None else None,
+                'distance_to_target_m': (
+                    math.hypot(x-target['target_x_m'], y-target['target_y_m'])
+                    if x is not None and y is not None else None
+                ),
+                'altitude_error_m': abs(z-target['target_z_m']) if z is not None else None,
+            }}
+
+        def operator_performance_observation(action, samples, target_reached, setup_seconds, post_seconds, start_settled):
+            # Use the entire recorded leg, not the fastest interval. Monotonic
+            # wall time matches executor timeouts; PX4 timestamps prove freshness.
+            valid=bool(samples) and all(
+                all(isinstance(s.get(k), (int, float)) and math.isfinite(s[k])
+                    for k in ('elapsed_seconds', 'position_timestamp_us', 'x_m', 'y_m'))
+                and s.get('nav_state') == NAV_OFFBOARD
+                for s in samples
+            )
+            valid=valid and all(
+                b['elapsed_seconds'] > a['elapsed_seconds']
+                and b['position_timestamp_us'] > a['position_timestamp_us']
+                for a, b in zip(samples, samples[1:])
+            )
+            duration=(samples[-1]['elapsed_seconds']-samples[0]['elapsed_seconds']) if valid else 0.0
+            distance=math.hypot(samples[-1]['x_m']-samples[0]['x_m'], samples[-1]['y_m']-samples[0]['y_m']) if valid else 0.0
+            minimum_samples=OPERATOR_RECOVERY_CALIBRATION_MIN_SAMPLE_COUNT
+            reasons=[]
+            if not valid or duration <= 0:
+                reasons.append('performance_pose_time_pairs_invalid')
+            if not target_reached:
+                reasons.append('performance_target_not_reached')
+            if len(samples) < minimum_samples:
+                reasons.append('performance_sample_count_insufficient')
+            if action == 'calibrate_offboard':
+                if not start_settled:
+                    reasons.append('performance_calibration_departure_not_settled')
+                if distance < 8.0:
+                    reasons.append('performance_calibration_distance_insufficient')
+            return {{
+                'schema_version': 'missionos_px4_bounded_offboard_performance_observation.v1',
+                'measurement_basis': 'matched_offboard_pose_samples.v1',
+                'observation_status': 'measured' if not reasons else 'unverified',
+                'blocking_reasons': reasons,
+                'action': action,
+                'sample_count': len(samples),
+                'minimum_sample_count': minimum_samples,
+                'duration_seconds': round(duration, 6),
+                'horizontal_distance_m': round(distance, 6),
+                'observed_horizontal_speed_mps': round(distance/duration, 6) if valid and duration > 0 else None,
+                'setup_duration_seconds': round(setup_seconds, 6),
+                'post_maneuver_duration_seconds': round(post_seconds, 6),
+                'non_movement_duration_seconds': round(setup_seconds+post_seconds, 6),
+                'measurement_start_elapsed_seconds': samples[0].get('elapsed_seconds') if samples else None,
+                'measurement_end_elapsed_seconds': samples[-1].get('elapsed_seconds') if samples else None,
+                'calibration_start_settled': start_settled if action == 'calibrate_offboard' else None,
+                'target_reached': target_reached,
+                'source_refs': ['operator_recovery_command.maneuver_observation_samples', 'vehicle_local_position:x,y,timestamp'],
+                'approval_created': False, 'dispatch_authority_created': False,
+                'physical_execution_invoked': False, 'completion_claimed': False,
+            }}
+
         def run_operator_maneuver(sock, remote, seq, request, local_x, local_y, local_z, altitude):
             action=str(request.get('recovery_action') or '')
             params=request.get('recovery_parameters')
@@ -4182,13 +4265,20 @@ def _inner_runtime_probe_script(
                 }}
             started=time.monotonic()
             frames_sent=0
+            # Enter OFFBOARD at the current horizontal position for calibration.
+            # Do not spend the calibration leg while waiting for the mode ACK.
+            transition_target=(
+                {{**target, 'target_x_m': float(local_x), 'target_y_m': float(local_y)}}
+                if action == 'calibrate_offboard'
+                else target
+            )
             for _ in range(OPERATOR_RECOVERY_ASSIST_PRESTREAM_FRAMES):
                 sock.sendto(heartbeat(seq), remote); seq+=1
                 sock.sendto(
                     setpoint_local_ned(
-                        target['target_x_m'],
-                        target['target_y_m'],
-                        target['target_z_m'],
+                        transition_target['target_x_m'],
+                        transition_target['target_y_m'],
+                        transition_target['target_z_m'],
                         seq,
                         target['feed_forward_vx_mps'],
                         target['feed_forward_vy_mps'],
@@ -4205,7 +4295,7 @@ def _inner_runtime_probe_script(
                 {offboard_params!r},
                 seq,
                 5.0,
-                target,
+                transition_target,
             )
             seq=offboard.get('next_seq', seq)
             frames_sent+=int(offboard.get('setpoint_frames_sent') or 0)
@@ -4229,8 +4319,45 @@ def _inner_runtime_probe_script(
                     'setpoint_frames_sent': frames_sent,
                     'setpoint_stream_duration_seconds': round(time.monotonic()-started, 3),
                 }}
+            calibration_start_settled=action != 'calibrate_offboard'
+            calibration_setup_samples=[]
+            if action == 'calibrate_offboard':
+                settle_started=time.monotonic()
+                settle_next_observe=settle_started
+                settled_samples=0
+                while time.monotonic()-settle_started < 10.0:
+                    sock.sendto(heartbeat(seq), remote); seq+=1
+                    sock.sendto(setpoint_local_ned(
+                        transition_target['target_x_m'], transition_target['target_y_m'],
+                        transition_target['target_z_m'], seq, 0.0, 0.0, 0.0,
+                    ), remote); seq+=1
+                    frames_sent+=1
+                    if time.monotonic() >= settle_next_observe:
+                        sample=observe_operator_maneuver(target, started)
+                        calibration_setup_samples.append(sample)
+                        speed=sample.get('horizontal_speed_mps')
+                        stable=(
+                            sample.get('nav_state') == NAV_OFFBOARD
+                            and speed is not None and speed <= 0.5
+                            and sample.get('altitude_error_m') is not None
+                            and sample['altitude_error_m'] <= 0.5
+                            and (
+                                len(calibration_setup_samples) < 2
+                                or (sample.get('position_timestamp_us') or 0)
+                                > (calibration_setup_samples[-2].get('position_timestamp_us') or 0)
+                            )
+                        )
+                        settled_samples=settled_samples+1 if stable else 0
+                        if settled_samples >= 2:
+                            calibration_start_settled=True
+                            break
+                        settle_next_observe=time.monotonic()+1.0
+                    time.sleep(OPERATOR_RECOVERY_ASSIST_SETPOINT_INTERVAL_SECONDS)
+            # The same pose/time pairs define both distance and duration. Keep
+            # mode setup and AUTO/HOLD restoration outside this measurement.
+            baseline=observe_operator_maneuver(target, started)
             stream_started=time.monotonic()
-            next_observe_at=stream_started
+            next_observe_at=stream_started+1.0
             target_reached=False
             first_x=float(local_x)
             first_y=float(local_y)
@@ -4240,13 +4367,14 @@ def _inner_runtime_probe_script(
             last_altitude=first_altitude
             last_distance_to_target=None
             last_altitude_error=None
-            maneuver_samples=[]
+            maneuver_samples=[baseline]
+            calibration_end_settled_samples=0
             assist_max_seconds=(
                 OPERATOR_RECOVERY_ASSIST_OBSTACLE_AVOIDANCE_MAX_SECONDS
                 if action == 'avoid_obstacle'
                 else OPERATOR_RECOVERY_ASSIST_MAX_SECONDS
             )
-            while (time.monotonic()-stream_started) < assist_max_seconds:
+            while calibration_start_settled and (time.monotonic()-stream_started) < assist_max_seconds:
                 sock.sendto(heartbeat(seq), remote); seq+=1
                 sock.sendto(
                     setpoint_local_ned(
@@ -4263,13 +4391,10 @@ def _inner_runtime_probe_script(
                 frames_sent+=1
                 now=time.monotonic()
                 if now >= next_observe_at:
-                    local_sample=listener('vehicle_local_position', 1)
-                    status_sample=listener('vehicle_status', 1)
-                    sample_x=parse_float(local_sample, 'x')
-                    sample_y=parse_float(local_sample, 'y')
-                    sample_z=parse_float(local_sample, 'z')
-                    sample_altitude=(-sample_z) if sample_z is not None else None
-                    sample_nav=parse_int(status_sample, 'nav_state')
+                    sample=observe_operator_maneuver(target, started)
+                    sample_x=sample['x_m']
+                    sample_y=sample['y_m']
+                    sample_altitude=sample['altitude_above_home_m']
                     if sample_x is not None:
                         last_x=float(sample_x)
                     if sample_y is not None:
@@ -4285,23 +4410,7 @@ def _inner_runtime_probe_script(
                         last_altitude_error=abs(
                             float(sample_altitude)-abs(float(target['target_z_m']))
                         )
-                    maneuver_samples.append({{
-                        'elapsed_seconds': round(time.monotonic()-started, 3),
-                        'x_m': sample_x,
-                        'y_m': sample_y,
-                        'altitude_above_home_m': sample_altitude,
-                        'nav_state': sample_nav,
-                        'distance_to_target_m': (
-                            round(last_distance_to_target, 3)
-                            if last_distance_to_target is not None
-                            else None
-                        ),
-                        'altitude_error_m': (
-                            round(last_altitude_error, 3)
-                            if last_altitude_error is not None
-                            else None
-                        ),
-                    }})
+                    maneuver_samples.append(sample)
                     if action == 'adjust_altitude':
                         target_reached=(
                             last_altitude_error is not None
@@ -4309,7 +4418,7 @@ def _inner_runtime_probe_script(
                         )
                     else:
                         horizontal_tolerance_m=(
-                            2.0
+                            0.5
                             if action == 'calibrate_offboard'
                             else 5.0
                         )
@@ -4320,11 +4429,33 @@ def _inner_runtime_probe_script(
                                 last_altitude_error is None
                                 or last_altitude_error <= 2.0
                             )
+                            and (
+                                action != 'calibrate_offboard'
+                                or len(maneuver_samples)
+                                >= OPERATOR_RECOVERY_CALIBRATION_MIN_SAMPLE_COUNT
+                            )
                         )
+                        if action == 'calibrate_offboard':
+                            # Include deceleration and two fresh settled samples;
+                            # a fly-through or a short tolerance hit is not a
+                            # representative calibration observation.
+                            speed=sample.get('horizontal_speed_mps')
+                            settled=(
+                                target_reached
+                                and sample.get('nav_state') == NAV_OFFBOARD
+                                and speed is not None and speed <= 0.5
+                                and (sample.get('position_timestamp_us') or 0)
+                                > (maneuver_samples[-2].get('position_timestamp_us') or 0)
+                            )
+                            calibration_end_settled_samples=(
+                                calibration_end_settled_samples+1 if settled else 0
+                            )
+                            target_reached=calibration_end_settled_samples >= 2
                     if target_reached:
                         break
                     next_observe_at=now+1.0
                 time.sleep(OPERATOR_RECOVERY_ASSIST_SETPOINT_INTERVAL_SECONDS)
+            movement_finished=started+maneuver_samples[-1]['elapsed_seconds']
             maneuver_status='target_reached' if target_reached else 'stream_window_complete'
             resume_safety_verification=(
                 verify_recovery_resume(
@@ -4526,42 +4657,11 @@ def _inner_runtime_probe_script(
                         if hold_after_failure_observed
                         else 'hold_remaining_route_or_dropoff_unsafe_failed'
                     )
-            performance_duration_seconds=max(
-                0.0,
-                time.monotonic()-stream_started,
+            performance_observation=operator_performance_observation(
+                action, maneuver_samples, target_reached,
+                baseline['elapsed_seconds'], time.monotonic()-movement_finished,
+                calibration_start_settled,
             )
-            performance_horizontal_distance_m=math.hypot(
-                last_x-first_x,
-                last_y-first_y,
-            )
-            performance_observation={{
-                'schema_version': 'missionos_px4_bounded_offboard_performance_observation.v1',
-                'action': action,
-                'sample_count': len(maneuver_samples),
-                'duration_seconds': round(performance_duration_seconds, 3),
-                'horizontal_distance_m': round(
-                    performance_horizontal_distance_m,
-                    3,
-                ),
-                'observed_horizontal_speed_mps': (
-                    round(
-                        performance_horizontal_distance_m
-                        / performance_duration_seconds,
-                        6,
-                    )
-                    if performance_duration_seconds > 0
-                    and performance_horizontal_distance_m > 0
-                    else None
-                ),
-                'target_reached': target_reached,
-                'source_refs': [
-                    'operator_recovery_command.maneuver_observation_samples',
-                    'vehicle_local_position:x,y',
-                ],
-                'approval_created': False,
-                'dispatch_authority_created': False,
-                'completion_claimed': False,
-            }}
             return {{
                 **offboard,
                 'status': maneuver_status,
@@ -4649,6 +4749,7 @@ def _inner_runtime_probe_script(
                 # it creates no approval, dispatch, or completion authority.
                 'maneuver_observation_sample_count': len(maneuver_samples),
                 'maneuver_observation_samples': maneuver_samples,
+                'calibration_setup_samples': calibration_setup_samples,
                 'performance_observation': performance_observation,
             }}
 

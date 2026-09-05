@@ -82,6 +82,23 @@ def test_completed_summary_passes_without_promoting_new_claims(tmp_path: Path) -
     assert summary["physical_execution_invoked"] is False
 
 
+def test_completed_assurance_continue_retains_resolved_deviation(
+    tmp_path: Path,
+) -> None:
+    summary = _summary(tmp_path)
+    summary.update(
+        {
+            "initial_pose_deviation_aborted": True,
+            "route_stream_resumed_after_mission_assurance_continue": True,
+            "mission_assurance_continue_effect_observed": True,
+            "mission_assurance_continue_route_completion_observed": True,
+            "deviation_samples": [{"deviation_xy_m": 1.0}],
+        }
+    )
+
+    audit.audit_route_summary(summary, expectations=_expectations())
+
+
 def test_summary_audit_rejects_hardware_or_physical_claim(tmp_path: Path) -> None:
     summary = _summary(tmp_path)
     summary["hardware_target_allowed"] = True

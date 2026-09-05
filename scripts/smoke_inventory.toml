@@ -27,6 +27,8 @@ files = [
   "smoke_libero_panda_official_runner_instrumentation.py",
   "smoke_libero_panda_predicate_package.py",
   "smoke_mission_designer_envelope_violation_advisory.py",
+  "smoke_mission_assurance_form2a_gateway.py",
+  "smoke_operator_chat_mission_incident_graph.py",
   "smoke_nav2_core_recovery_divergence.py",
   "smoke_missionos_real_hardware_arm_disarm_route.py",
   "smoke_parent_mission_coordinator.py",

@@ -137,6 +137,14 @@ def _performance_envelope(
         recovery_policy.get("offboard_performance_uncertainty_fraction")
     )
     reasons: list[str] = []
+    measurement_basis = observation.get("measurement_basis")
+    non_movement_seconds = _number(observation.get("non_movement_duration_seconds"))
+    if measurement_basis == "matched_offboard_pose_samples.v1":
+        if observation.get("observation_status") != "measured":
+            reasons.append("performance_envelope_measurement_unverified")
+            reasons.extend(str(item) for item in observation.get("blocking_reasons") or [])
+        if non_movement_seconds is None or non_movement_seconds < 0:
+            reasons.append("performance_envelope_non_movement_duration_missing")
     if action not in {
         "avoid_obstacle",
         "reroute",
@@ -191,6 +199,8 @@ def _performance_envelope(
             int(minimum_samples) if minimum_samples is not None else None
         ),
         "duration_seconds": duration_seconds,
+        "measurement_basis": measurement_basis,
+        "non_movement_duration_seconds": non_movement_seconds,
         "horizontal_distance_m": horizontal_distance_m,
         "observed_horizontal_speed_mps": observed_speed_mps,
         "uncertainty_fraction": uncertainty_fraction,

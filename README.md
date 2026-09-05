@@ -382,6 +382,7 @@ want to run something.
 
 - [docs/concepts/what-happens-in-a-run.md](docs/concepts/what-happens-in-a-run.md) — the clearest single flow
 - [docs/concepts/README.md](docs/concepts/README.md)
+- [Mission Assurance](docs/concepts/mission-assurance.md) — shared mission judgment for PX4 and TurtleBot3
 - [docs/concepts/boundaries.md](docs/concepts/boundaries.md)
 
 **Packages**

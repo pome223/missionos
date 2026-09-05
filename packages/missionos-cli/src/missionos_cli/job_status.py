@@ -2075,8 +2075,23 @@ def _job_operator_summary(task_payload: dict[str, Any]) -> list[str]:
     )
     snapshot_landed = snapshot.get("landed")
     snapshot_maybe_landed = snapshot.get("maybe_landed")
-    snapshot_has_ground_signal = snapshot_landed is not None or snapshot_maybe_landed is not None
-    snapshot_ground_confirmed = snapshot_landed is True or snapshot_maybe_landed is True
+    snapshot_ground_contact = snapshot.get("ground_contact")
+    snapshot_has_ground_signal = any(
+        value is not None
+        for value in (
+            snapshot_landed,
+            snapshot_maybe_landed,
+            snapshot_ground_contact,
+        )
+    )
+    snapshot_ground_confirmed = any(
+        value is True
+        for value in (
+            snapshot_landed,
+            snapshot_maybe_landed,
+            snapshot_ground_contact,
+        )
+    )
     snapshot_arming_state = _as_int(snapshot.get("arming_state"))
     snapshot_disarmed = snapshot_arming_state is not None and snapshot_arming_state != 2
     snapshot_force_without_ground = bool(
@@ -2092,15 +2107,25 @@ def _job_operator_summary(task_payload: dict[str, Any]) -> list[str]:
             True,
         )
     if "land" in recovery_action_text and snapshot_has_ground_signal:
-        recovery_latest_ground_confirmed = _first_present(
-            recovery_latest_ground_confirmed,
-            snapshot_ground_confirmed,
-        )
+        # The terminal runtime snapshot is newer than the pre-closeout return
+        # projection.  Do not let stale false values contradict observed
+        # ground contact, landing, and disarm in the same operator panel.
+        recovery_latest_ground_confirmed = snapshot_ground_confirmed
     if snapshot_disarmed:
-        recovery_disarm_observed = _first_present(
-            recovery_disarm_observed,
-            True,
-        )
+        recovery_disarm_observed = True
+    snapshot_land_ack_observed = (
+        snapshot.get("operator_recovery_command_ack_observed") is True
+        and snapshot.get("operator_recovery_command_ack_result") == 0
+    )
+    if (
+        "land" in recovery_action_text
+        and snapshot_land_ack_observed
+        and snapshot_landed is True
+        and snapshot_ground_confirmed
+        and snapshot_disarmed
+    ):
+        recovery_final_landing_safe = True
+        force_disarm_no_ground_confirmation = False
     recovery_evidence_path = runtime_summary.get("recovery_agent_evidence_window_path")
     guard_failure_reasons = runtime_summary.get("guard_failure_reasons")
     guard_failure_reasons = (

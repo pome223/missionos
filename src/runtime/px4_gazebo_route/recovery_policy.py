@@ -38,7 +38,7 @@ def live_sitl_recovery_policy() -> dict[str, Any]:
         # lateral-and-forward leg than other bounded interventions. This
         # extension applies only after Safety HOLD and remains subject to
         # observed performance, battery, wind, terrain, and human approval.
-        "max_obstacle_avoidance_duration_s": 150,
+        "max_obstacle_avoidance_duration_s": 240,
         "max_recovery_horizontal_speed_mps": 10,
         "max_recovery_vertical_speed_mps": 3,
         "reachability_duration_margin_factor": 1.25,
