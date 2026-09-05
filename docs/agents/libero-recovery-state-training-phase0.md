@@ -38,6 +38,19 @@ the official LIBERO schema. No GPU should be provisioned before a converted
 multi-example manifest passes the leakage audit and receives separate cost
 approval.
 
+The first raw capture has now passed that structural conversion gate. The
+converter produced two deterministic AV1 videos at 256 x 256 and 20 Hz (52
+frames each), one 52-row Parquet episode with fixed-size 8-D state and 7-D
+action columns, and the required LIBERO task, episode, modality, and dataset
+metadata. A second conversion produced identical video, Parquet, task,
+episode, and modality digests. See
+[`evidence/20260905-libero-recovery-lerobot-v2-conversion.json`](evidence/20260905-libero-recovery-lerobot-v2-conversion.json).
+
+This closes conversion for one candidate only. It does not close dataset
+admission: a multi-example cohort, generated statistics, exact holdout
+exclusions, and the Phase 0 leakage audit are still required before any paid
+training review.
+
 The current record has no admitted recovery-training examples, measured
 dataset size, selected trainable checkpoint, measured GPU-hour estimate, or
 reviewed cost cap. A GPU must not be provisioned and training must not start

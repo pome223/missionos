@@ -1,0 +1,63 @@
+{
+  "schema_version": "missionos.libero_recovery_lerobot_v2_conversion_evidence.v1",
+  "recorded_at": "2026-09-05",
+  "decision": "SINGLE_CANDIDATE_CONVERSION_POSITIVE_DATASET_ADMISSION_PENDING",
+  "source_capture": {
+    "episode_init_state_index": 0,
+    "environment_seed": 101,
+    "frame_count": 52,
+    "archive_sha256": "f0bc66311b9ef520984f7d8e70c9e93a029993f70494a97d0853850e1b25d536"
+  },
+  "observed_output": {
+    "status": "lerobot_v2_conversion_complete_admission_pending",
+    "episode_count": 1,
+    "parquet_rows": 52,
+    "observation_state_type": "fixed_size_list<float32>[8]",
+    "action_type": "fixed_size_list<float32>[7]",
+    "agentview_video": {
+      "codec": "av1",
+      "width": 256,
+      "height": 256,
+      "fps": 20,
+      "frames": 52
+    },
+    "wrist_video": {
+      "codec": "av1",
+      "width": 256,
+      "height": 256,
+      "fps": 20,
+      "frames": 52
+    },
+    "file_sha256": {
+      "data/chunk-000/episode_000000.parquet": "fb96d53b2603e895aa283d247c1d6ceaed4090c8907181ae11362873f73b57f0",
+      "meta/episodes.jsonl": "4c7d113babc49de253e9ae21dbecbbab8adf0c4aac94abdfa4f9d0e810ce1395",
+      "meta/info.json": "61a06edd3b631254864cc931daef7591da8f1b888ebdd81fee676be9b15463be",
+      "meta/modality.json": "f717eb5b919213cf34f07a69c963587c680e02e03a8930a06d4a006468a9e869",
+      "meta/tasks.jsonl": "c8b9f62118c880d69f9dca41e6f72989203e01ff23f0d25ca21e4642f43d2173",
+      "videos/chunk-000/observation.images.image/episode_000000.mp4": "5bd7ba7c60dc0536dd454a2fc12733e32f6ec3e214d2f00b99d9a7f0b9c56d5a",
+      "videos/chunk-000/observation.images.wrist_image/episode_000000.mp4": "8dba3b1242a5043efd9f6b401bbaba41d1faa0f92c879e49dbfeb861ab1c6d9b"
+    },
+    "determinism_check": {
+      "independent_conversion_count": 2,
+      "all_output_file_digests_equal": true
+    }
+  },
+  "cost_control": {
+    "cloud_resources_created": false,
+    "gpu_used": false,
+    "paid_training_invoked": false
+  },
+  "claim_boundary": {
+    "single_candidate_schema_conversion_complete": true,
+    "multi_example_dataset_complete": false,
+    "dataset_statistics_complete": false,
+    "leakage_audit_passed": false,
+    "training_example_admitted": false,
+    "paid_training_authorized": false,
+    "gpu_provision_authorized": false,
+    "training_invoked": false,
+    "model_inference_invoked": false,
+    "repair_capability_established": false,
+    "physical_execution_invoked": false
+  }
+}
