@@ -1,0 +1,150 @@
+{
+  "schema_version": "missionos.libero_recovery_training_phase0.v1",
+  "recorded_date": "2026-09-05",
+  "research_question": "Does explicit disturbed-state-to-corrective-action training improve stable preservation-constrained LIBERO Repair relative to nominal-only training?",
+  "dataset_contract": {
+    "schema_version": "missionos.libero_recovery_transition.v1",
+    "required_fields": [
+      "transition_id",
+      "sample_kind",
+      "split_id",
+      "task_suite",
+      "task_id",
+      "episode_init_state_index",
+      "environment_seed",
+      "source_simulator_state_sha256",
+      "source_fixture_sha256",
+      "source_goal_predicate_vector",
+      "protected_object_reference_poses_sha256",
+      "observation_schema_sha256",
+      "proprioception_schema_sha256",
+      "corrective_action_sequence_sha256",
+      "applied_action_trace_sha256",
+      "predicate_trace_sha256",
+      "preservation_trace_sha256",
+      "stable_hold_result",
+      "corrective_transition_observed",
+      "privileged_state_used",
+      "generator_type"
+    ],
+    "recovery_demonstration_requires_corrective_transition": true,
+    "recovery_demonstration_requires_stable_hold": true,
+    "failure_rollout_is_recovery_demonstration": false,
+    "privileged_generator_must_be_disclosed": true
+  },
+  "evaluation_holdouts": [
+    {
+      "evidence_ref": "docs/agents/evidence/20260820-groot-n17-lerobot-native-single-attempt-cohort-result.json",
+      "evidence_file_sha256": "9f026952460cc1ca7634b8ab7df2224fe3af642b04a9285fccd73014958809ea",
+      "training_excluded": true
+    },
+    {
+      "evidence_ref": "docs/agents/evidence/20260829-vla0-libero-supervisory-loop.json",
+      "evidence_file_sha256": "f78780f4dcc3c0c0827a967fc0227a87960e9c5e830d13d098a942bd6ce900cf",
+      "source_fixture_sha256": "8064d6faeeb02a67a08649be0ca39529b4a79da459cf8d11493c0412bbc7b651",
+      "training_excluded": true
+    },
+    {
+      "evidence_ref": "docs/agents/evidence/20260831-libero-registered-skill-same-world-repair.json",
+      "evidence_file_sha256": "8c6cd20a58bfdede9391e2656760239c5a0abbdd85b9f30de13f8079bd1e130b",
+      "source_simulator_state_sha256": "9da41f98f878ace4d8325be6b0c09cae2329fb8102bd910c0cbd9d789a5eb88b",
+      "source_fixture_sha256": "2516cf092ea213c180b7d9104ea6276649c645b56e7a723621c9c45522f4a2fe",
+      "action_trace_sha256": "d442afbc74d1e5c42a8aa1cf8d649deaa10e68d4e060d42f48506978863f0f3e",
+      "training_excluded": true
+    }
+  ],
+  "leakage_audit": {
+    "status": "blocked_no_training_manifest",
+    "training_record_count": 0,
+    "evaluation_holdout_count": 3,
+    "exact_source_state_exclusion_required": true,
+    "exact_fixture_exclusion_required": true,
+    "action_trace_exclusion_required": true,
+    "passed": false
+  },
+  "matched_experiment": {
+    "cells": [
+      {
+        "cell_id": "nominal_only",
+        "training_data": "nominal demonstrations only"
+      },
+      {
+        "cell_id": "nominal_plus_recovery",
+        "training_data": "same nominal demonstrations plus admitted recovery demonstrations"
+      }
+    ],
+    "matched_fields": [
+      "model",
+      "optimizer",
+      "compute",
+      "seeds",
+      "observations",
+      "actions"
+    ],
+    "cohort_partition": [
+      "task",
+      "fixture",
+      "seed"
+    ]
+  },
+  "evaluation": {
+    "axes": [
+      "action_activity",
+      "corrective_alignment",
+      "predicate_recovery",
+      "preservation",
+      "stable_hold"
+    ],
+    "required_hold_steps": 20,
+    "success_requires_all_five_axes": true,
+    "first_predicate_conjunction_is_completion": false,
+    "generated_futures_are_verifier_evidence": false,
+    "model_self_reports_are_verifier_evidence": false
+  },
+  "compute_plan": {
+    "trainable_checkpoint": null,
+    "training_record_count": 0,
+    "serialized_dataset_bytes": null,
+    "estimated_gpu_hours": null,
+    "gpu_type": null,
+    "pricing_region": null,
+    "pricing_timestamp": null,
+    "hard_cost_cap": null,
+    "automatic_teardown_plan_reviewed": false
+  },
+  "go_no_go": {
+    "decision": "NO_GO",
+    "paid_training_authorized": false,
+    "prerequisites": {
+      "dataset_manifest_admitted": false,
+      "leakage_audit_passed": false,
+      "trainable_checkpoint_selected": false,
+      "dataset_size_measured": false,
+      "gpu_hours_estimated": false,
+      "cost_cap_reviewed": false,
+      "teardown_plan_reviewed": false
+    },
+    "blocking_reasons": [
+      "no_admitted_recovery_training_examples",
+      "no_training_manifest_for_leakage_audit",
+      "trainable_checkpoint_not_selected",
+      "dataset_size_not_measured",
+      "gpu_hours_not_estimated",
+      "hard_cost_cap_not_reviewed",
+      "automatic_teardown_plan_not_reviewed"
+    ]
+  },
+  "claim_boundary": {
+    "training_performed": false,
+    "model_inference_performed": false,
+    "simulator_execution_performed": false,
+    "approval_created": false,
+    "dispatch_request_sent": false,
+    "repair_capability_established": false,
+    "general_recovery_rate_established": false,
+    "controller_ack_observed": false,
+    "real_world_safety_claimed": false,
+    "physical_execution_invoked": false
+  },
+  "result_sha256": "f6b723053f7dcb11cdb80a879f89a645f4208f38319efb5c119a8dfc65d29060"
+}
