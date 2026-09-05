@@ -112,11 +112,26 @@ and mandatory post-run absence checks. A billing budget alert is monitoring
 only; it is not treated as a hard stop. This proposal has not yet been reviewed
 or approved.
 
-Accordingly paid training and GPU provisioning remain **NO-GO**. Before any
-quota request or billable launch, the gated-backbone access, research-only
-license suitability, exact current price, and hard cap require review. If those
-pass, the first billable operation would be a resumable 200-step throughput
-calibration—not the matched experiment—and it would require separate approval.
+Accordingly paid training and GPU provisioning remain **NO-GO**. A later
+read-only refresh verified authenticated HEAD access to the pinned GR00T and
+Cosmos weight files and submitted a one-A100 quota preference. The quota grant
+remains zero. The pinned GR00T repository also contains conflicting license
+signals: its `LICENSE` file limits use to non-commercial research or evaluation,
+while its README links the NVIDIA Open Model License and describes commercial
+and non-commercial use. This requires human review rather than an automated
+license conclusion.
+
+The refresh also found no instances, persistent disks, or snapshots, but two
+older custom runtime images remain. Their compressed size is about 104.82 GiB,
+which is approximately USD 5.24 per 730-hour month at the observed list price;
+the billing total is not confirmed. They were not deleted because image removal
+is a separate retention decision. See the
+[`access and quota refresh`](evidence/20260905-libero-recovery-access-quota-refresh.json).
+
+Before any billable launch, the license conflict, actual A100 grant, exact
+current price, and hard cap require review. If those pass, the first billable
+operation would be a resumable 200-step throughput calibration—not the matched
+experiment—and it would require separate approval.
 
 Validate this boundary with:
 
