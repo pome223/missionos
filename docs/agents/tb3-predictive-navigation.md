@@ -1,6 +1,6 @@
 # TB3 predictive recovery: maintainer contract
 
-The [detailed Japanese research report](tb3-observed-recovery-research-report.ja.md)
+The [detailed research report](tb3-observed-recovery-research-report.md)
 adds historical comparisons, full trial analysis, observed trajectories, latency
 and usage accounting, and a critical audit of Agent reasoning.
 

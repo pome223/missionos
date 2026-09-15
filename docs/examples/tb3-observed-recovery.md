@@ -72,4 +72,4 @@ result, or evidence of physical operation. See the
 
 For historical comparisons, four research figures, all trial details, and the
 remaining Agent reasoning issues, see the
-[detailed research report (Japanese)](../agents/tb3-observed-recovery-research-report.ja.md).
+[detailed research report](../agents/tb3-observed-recovery-research-report.md).
