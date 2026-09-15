@@ -78,6 +78,8 @@ def test_same_start_verifier_receipts_are_required_before_selection():
         "parent", "direct:parent-success", digest, "completed", True, True, True
     )
     assert adjudicate_counterfactual_trials(plan, [parent_success])["program_id"] == "parent"
+    with pytest.raises(ValueError, match="trial after verified success"):
+        adjudicate_counterfactual_trials(plan, [parent_success, near])
     with pytest.raises(ValueError, match="release or start mismatch"):
         adjudicate_counterfactual_trials(
             plan,

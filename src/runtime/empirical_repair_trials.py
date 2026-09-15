@@ -149,6 +149,7 @@ def adjudicate_counterfactual_trials(
     if not attempts or len(attempts) > len(plan.ordered_program_ids):
         raise ValueError("invalid counterfactual attempt population")
     seen = set()
+    winner = None
     for index, attempt in enumerate(attempts):
         if (
             attempt.program_id != plan.ordered_program_ids[index]
@@ -158,18 +159,22 @@ def adjudicate_counterfactual_trials(
         ):
             raise ValueError("counterfactual trial release or start mismatch")
         seen.add(attempt.episode_id)
+        if winner is not None:
+            raise ValueError("counterfactual trial after verified success")
         if attempt.success is None:
             return {"status": "hold", "reason": "unknown_trial_outcome", "plan_digest": plan.digest}
         if attempt.protected is False or attempt.achieved is False:
             return {"status": "hold", "reason": "trial_lost_protection", "plan_digest": plan.digest}
         if attempt.success is True:
-            return {
-                "status": "proposed",
-                "program_id": attempt.program_id,
-                "episode_id": attempt.episode_id,
-                "selection_basis": "same_start_verified_counterfactual",
-                "plan_digest": plan.digest,
-            }
+            winner = attempt
+    if winner is not None:
+        return {
+            "status": "proposed",
+            "program_id": winner.program_id,
+            "episode_id": winner.episode_id,
+            "selection_basis": "same_start_verified_counterfactual",
+            "plan_digest": plan.digest,
+        }
     if len(attempts) < len(plan.ordered_program_ids):
         return {"status": "pending", "plan_digest": plan.digest}
     return {"status": "no_verified_recovery", "plan_digest": plan.digest}
