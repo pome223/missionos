@@ -41,10 +41,12 @@ _NO_ACTION_RECOVERY_RESPONSES = {
     "operator_review": "operator_escalation",
 }
 _ACTION_RESPONSE_ALIGNMENT = {
+    "wait_until_observed_clear": "hold",
     "adjust_altitude": "replan",
     "adjust_speed": "replan",
     "avoid_obstacle": "replan",
     "reroute": "replan",
+    "resume_original_route": "continue",
     "return_to_launch": "return",
     "return_home": "return",
     "land": "abort",

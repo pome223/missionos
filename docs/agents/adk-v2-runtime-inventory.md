@@ -46,6 +46,7 @@ scope without updating this contract and reviewing its classification.
 | `_invoke_adk_gemini_response_text_async` in the arm/disarm planner | one props-removed bench proposal judgment |
 | `_invoke_adk_perception_response_async` | one TurtleBot perception judgment |
 | `_invoke_adk_response_text_async` | one TurtleBot recovery judgment |
+| `navigation_agents._infer` | one predictive navigation judgment with bound read-only evidence; approval and execution remain separate |
 | `SubagentManager._worker_loop` | one explicitly requested background Agent job |
 
 These entries describe individual inference roots, not alternative operational

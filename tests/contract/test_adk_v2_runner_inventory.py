@@ -10,6 +10,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 # ADK v2 root and must not be wrapped in a one-node placeholder Workflow. Each
 # value records (classification, Runner agent expression).
 EXPECTED_RUNNER_ROOTS = {
+    ("src/intelligence/navigation_agents.py", "_infer"): ("single_agent_root", "agent"),
     ("src/control_loop/root_workflow.py", "ControlLoop.run"): (
         "workflow_root",
         "workflow",
@@ -163,4 +164,4 @@ def test_every_production_runner_has_an_explicit_v2_root_classification() -> Non
     assert sum(
         classification == "single_agent_root"
         for classification, _agent in EXPECTED_RUNNER_ROOTS.values()
-    ) == 13
+    ) == 14

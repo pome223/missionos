@@ -1,0 +1,2627 @@
+{
+  "schema_version": "tb3_research_analysis.v1",
+  "date": "2026-09-15",
+  "runtime_commit": "614361147ccd6d1263d8c4b538105b350d13de2c",
+  "basis": "Read-only analysis of saved live runs; no new simulator or model invocation",
+  "public_cohort_source": "tb3-observed-recovery-20260915.json",
+  "public_cohort_source_sha256": "2f52af29f3540400bdd8a3388c8784a7da3b155fba6f6e6af0aeea95e2ec4dcb",
+  "trajectory_note": "Display only: every fifth saved pose plus final point; no smoothing; metric path lengths use full saved trajectory. Pose time is latest simulator clock at receipt, not exact synchronized pose timestamp.",
+  "trials": [
+    {
+      "name": "wait-direct-r1",
+      "arrival": true,
+      "candidate": "wait_then_direct",
+      "seconds": 16.502,
+      "final_error_m": 0.22535990233706832,
+      "requested_goals": 1,
+      "phases": [
+        "initial_assurance",
+        "recovery",
+        "recovery_assurance_graph",
+        "rules",
+        "post_wait_assurance"
+      ],
+      "reobservations": 0,
+      "executed_wait_s": 1.4720000000000004,
+      "post_wait_passed": true,
+      "exposure": 0.0,
+      "actor_initial_y": -0.88,
+      "actor_speed": 0.29,
+      "cleanup": true,
+      "bounded_detour_approved": false,
+      "observed_continue_approved": false,
+      "first_plan_delay_wall_s": 0,
+      "source_sha256": {
+        "result.json": "5e804632a8b89af92d3a1933ec076e7cd7bf0f7a6cbb3d65d32ca4a85dadc7c5",
+        "agent-chain.json": "c1bb79d3ce8cf495877ee3773c65e64e1f1ac33ecceb9f80a27134e9d8f6f015",
+        "trajectory.json": "4500dfc68a60b95745d863b8a343973f7197dd838315b68354a76e699826f7c9"
+      },
+      "timing": {
+        "decision_observation_sim_s": 2.0020000000000002,
+        "decision_latency_wall_s": 4.004117377,
+        "decision_observation_age_sim_s": 2.2299999999999995,
+        "elapsed_decision_to_end_wall_s": 29.395870762999998,
+        "observed_path_length_m": 1.7818873576036154,
+        "stationary_sim_s": 8.892,
+        "cli_wall_s": 52.849915981292725
+      },
+      "prediction": {
+        "current_exposure": 0.15528972783143108,
+        "predicted_exposure": 0.009789614006876945,
+        "latency_wall_s": 0.30269112437963486,
+        "forecast_exposure_threshold": 0.2
+      },
+      "goals": [
+        {
+          "goal_index": 0,
+          "start_sim_s": 7.3039999999999985,
+          "end_sim_s": 18.503999999999998,
+          "robot_xy_m": [
+            -1.0004366568712006,
+            4.3573417527117337e-10
+          ],
+          "end_robot_xy_m": [
+            0.7786268618085715,
+            -0.042202123982706
+          ],
+          "requested_yaw_rad": 0.0,
+          "nav2_status": "succeeded",
+          "target_xy_m": [
+            1.0,
+            0.0
+          ],
+          "error_m": 0.22535990233706832
+        }
+      ],
+      "contact_messages": 0,
+      "contact_events": null,
+      "observation_audit": [],
+      "agent_usage": {
+        "unique_invocations": 4,
+        "elapsed_call_wall_s": 5.327576124109328,
+        "prompt_tokens": 16176,
+        "output_tokens": 458,
+        "cached_prompt_tokens": 2048
+      },
+      "readiness": {
+        "elapsed_wall_s": 3.2463380824774504,
+        "unique_invocations": 1,
+        "prompt_tokens": 367,
+        "output_tokens": 5
+      },
+      "display_trajectory_columns": [
+        "episode_sim_s",
+        "robot_x_m",
+        "robot_y_m",
+        "actor_y_m"
+      ],
+      "display_trajectory": [
+        [
+          0.002,
+          -1.000408,
+          0.0,
+          -0.88
+        ],
+        [
+          0.512,
+          -1.000436,
+          0.0,
+          -0.7611
+        ],
+        [
+          1.02,
+          -1.000437,
+          0.0,
+          -0.6132
+        ],
+        [
+          1.53,
+          -1.000437,
+          0.0,
+          -0.46588
+        ],
+        [
+          2.03,
+          -1.000437,
+          0.0,
+          -0.3203
+        ],
+        [
+          2.534,
+          -1.000437,
+          0.0,
+          -0.17472
+        ],
+        [
+          3.036,
+          -1.000437,
+          0.0,
+          -0.02856
+        ],
+        [
+          3.536,
+          -1.000437,
+          0.0,
+          0.11644
+        ],
+        [
+          4.038,
+          -1.000437,
+          0.0,
+          0.26202
+        ],
+        [
+          4.542,
+          -1.000437,
+          0.0,
+          0.40818
+        ],
+        [
+          5.048,
+          -1.000437,
+          0.0,
+          0.55492
+        ],
+        [
+          5.552,
+          -1.000437,
+          0.0,
+          0.7005
+        ],
+        [
+          6.06,
+          -1.000437,
+          0.0,
+          0.84782
+        ],
+        [
+          6.562,
+          -1.000437,
+          0.0,
+          0.99398
+        ],
+        [
+          7.072,
+          -1.000437,
+          0.0,
+          1.1413
+        ],
+        [
+          7.578,
+          -1.000437,
+          0.0,
+          1.28746
+        ],
+        [
+          8.08,
+          -1.000437,
+          0.0,
+          1.4342
+        ],
+        [
+          8.588,
+          -1.000437,
+          0.0,
+          1.58094
+        ],
+        [
+          9.096,
+          -0.938338,
+          1e-06,
+          1.6
+        ],
+        [
+          9.608,
+          -0.837265,
+          0.000221,
+          1.6
+        ],
+        [
+          10.118,
+          -0.741888,
+          0.000445,
+          1.6
+        ],
+        [
+          10.622,
+          -0.644811,
+          -7.9e-05,
+          1.6
+        ],
+        [
+          11.126,
+          -0.547932,
+          -0.002927,
+          1.6
+        ],
+        [
+          11.63,
+          -0.450522,
+          -0.007052,
+          1.6
+        ],
+        [
+          12.13,
+          -0.352309,
+          -0.012241,
+          1.6
+        ],
+        [
+          12.636,
+          -0.254887,
+          -0.01766,
+          1.6
+        ],
+        [
+          13.14,
+          -0.157388,
+          -0.02305,
+          1.6
+        ],
+        [
+          13.642,
+          -0.062084,
+          -0.027869,
+          1.6
+        ],
+        [
+          14.146,
+          0.035291,
+          -0.031979,
+          1.6
+        ],
+        [
+          14.664,
+          0.133142,
+          -0.038042,
+          1.6
+        ],
+        [
+          15.178,
+          0.234988,
+          -0.045824,
+          1.6
+        ],
+        [
+          15.69,
+          0.331935,
+          -0.053552,
+          1.6
+        ],
+        [
+          16.2,
+          0.428201,
+          -0.059994,
+          1.6
+        ],
+        [
+          16.71,
+          0.52516,
+          -0.06185,
+          1.6
+        ],
+        [
+          17.224,
+          0.622461,
+          -0.058529,
+          1.6
+        ],
+        [
+          17.73,
+          0.714994,
+          -0.050354,
+          1.6
+        ],
+        [
+          18.244,
+          0.778511,
+          -0.042207,
+          1.6
+        ],
+        [
+          18.448,
+          0.778627,
+          -0.042202,
+          1.6
+        ]
+      ],
+      "actor_materialization": {
+        "apply_receipts": 183,
+        "accepted_receipts": 183,
+        "median_observed_mps": 0.2900000000000002,
+        "velocity_samples": 85,
+        "method": "Median successive observed actor y differences / episode time differences, dt > 0, dy > 0, ending y < 1.59 m; excludes capped/stationary segments"
+      }
+    },
+    {
+      "name": "blocked-no-detour",
+      "arrival": false,
+      "candidate": null,
+      "seconds": 3.724,
+      "final_error_m": 2.0004366568712006,
+      "requested_goals": 0,
+      "phases": [
+        "initial_assurance",
+        "recovery",
+        "recovery_assurance_graph",
+        "rules"
+      ],
+      "reobservations": 0,
+      "executed_wait_s": 1.3499999999999996,
+      "post_wait_passed": false,
+      "exposure": 0.6940298507462687,
+      "actor_initial_y": -0.8,
+      "actor_speed": 0.16,
+      "cleanup": true,
+      "bounded_detour_approved": false,
+      "observed_continue_approved": false,
+      "first_plan_delay_wall_s": 0,
+      "source_sha256": {
+        "result.json": "d280e48695762aaf686b3ae5b6263cb5cc99fdd76bac02394fec495e4f5ba5d8",
+        "agent-chain.json": "b633748a0b4acb0968ab83c26f27ed288f351b71e733fecb773b4f9326e528be",
+        "trajectory.json": "3f5a1074720aa6212b00200cbca93f8f7978964cfbb2f0c03b3882974ed3eed5"
+      },
+      "timing": {
+        "decision_observation_sim_s": 2.0079999999999996,
+        "decision_latency_wall_s": 4.221980293000001,
+        "decision_observation_age_sim_s": 2.3740000000000006,
+        "elapsed_decision_to_end_wall_s": 6.577710585999995,
+        "observed_path_length_m": 6.211479864035549e-05,
+        "stationary_sim_s": 5.680000000000001,
+        "cli_wall_s": 27.89148998260498
+      },
+      "prediction": {
+        "current_exposure": 0.0,
+        "predicted_exposure": 0.15757660567760468,
+        "latency_wall_s": 0.3304967079311609,
+        "forecast_exposure_threshold": 0.2
+      },
+      "goals": [],
+      "contact_messages": 0,
+      "contact_events": null,
+      "observation_audit": [],
+      "agent_usage": {
+        "unique_invocations": 3,
+        "elapsed_call_wall_s": 3.839901958592236,
+        "prompt_tokens": 11671,
+        "output_tokens": 340,
+        "cached_prompt_tokens": 1536
+      },
+      "readiness": {
+        "elapsed_wall_s": 2.2990224584937096,
+        "unique_invocations": 1,
+        "prompt_tokens": 367,
+        "output_tokens": 5
+      },
+      "display_trajectory_columns": [
+        "episode_sim_s",
+        "robot_x_m",
+        "robot_y_m",
+        "actor_y_m"
+      ],
+      "display_trajectory": [
+        [
+          0.002,
+          -1.000375,
+          0.0,
+          -0.8
+        ],
+        [
+          0.504,
+          -1.000428,
+          0.0,
+          -0.73568
+        ],
+        [
+          1.016,
+          -1.000437,
+          0.0,
+          -0.65344
+        ],
+        [
+          1.526,
+          -1.000437,
+          0.0,
+          -0.57184
+        ],
+        [
+          2.034,
+          -1.000437,
+          0.0,
+          -0.49088
+        ],
+        [
+          2.538,
+          -1.000437,
+          0.0,
+          -0.40992
+        ],
+        [
+          3.04,
+          -1.000437,
+          0.0,
+          -0.3296
+        ],
+        [
+          3.554,
+          -1.000437,
+          0.0,
+          -0.24768
+        ],
+        [
+          4.064,
+          -1.000437,
+          0.0,
+          -0.16576
+        ],
+        [
+          4.566,
+          -1.000437,
+          0.0,
+          -0.08544
+        ],
+        [
+          5.07,
+          -1.000437,
+          0.0,
+          -0.0048
+        ],
+        [
+          5.58,
+          -1.000437,
+          0.0,
+          0.0768
+        ],
+        [
+          5.682,
+          -1.000437,
+          0.0,
+          0.0928
+        ]
+      ],
+      "actor_materialization": {
+        "apply_receipts": 57,
+        "accepted_receipts": 57,
+        "median_observed_mps": 0.1599999999999996,
+        "velocity_samples": 56,
+        "method": "Median successive observed actor y differences / episode time differences, dt > 0, dy > 0, ending y < 1.59 m; excludes capped/stationary segments"
+      }
+    },
+    {
+      "name": "blocked-recovery-r1",
+      "arrival": true,
+      "candidate": "agent_detour_after_wait_observation",
+      "seconds": 34.658,
+      "final_error_m": 0.04238310283713272,
+      "requested_goals": 2,
+      "phases": [
+        "initial_assurance",
+        "recovery",
+        "recovery_assurance_graph",
+        "rules",
+        "failed_wait_assurance",
+        "detour_recovery",
+        "detour_assurance_graph",
+        "detour_rules"
+      ],
+      "reobservations": 0,
+      "executed_wait_s": 1.0140000000000002,
+      "post_wait_passed": false,
+      "exposure": 0.632791922739245,
+      "actor_initial_y": -0.8,
+      "actor_speed": 0.16,
+      "cleanup": true,
+      "bounded_detour_approved": true,
+      "observed_continue_approved": true,
+      "first_plan_delay_wall_s": 0,
+      "source_sha256": {
+        "result.json": "f5d45c938a3744c45a6f254bd555455a616d662b2b71517130d671728d0c76bd",
+        "agent-chain.json": "64f44f6cf959480ea068ddfd996d7ac5c4bd7ac8f4cc8707b53c08c15d614c97",
+        "trajectory.json": "4b5f3f23279cd170b3332f3edd78389bf1f3b0e9d6c053006f2e749992c95ad5"
+      },
+      "timing": {
+        "decision_observation_sim_s": 2.004,
+        "decision_latency_wall_s": 4.758301586000002,
+        "decision_observation_age_sim_s": 2.7119999999999997,
+        "elapsed_decision_to_end_wall_s": 71.205754117,
+        "observed_path_length_m": 2.431159531489763,
+        "stationary_sim_s": 20.886,
+        "cli_wall_s": 93.5098249912262
+      },
+      "prediction": {
+        "current_exposure": 0.0,
+        "predicted_exposure": 0.16443563997745514,
+        "latency_wall_s": 0.3118179151788354,
+        "forecast_exposure_threshold": 0.2
+      },
+      "goals": [
+        {
+          "goal_index": 0,
+          "start_sim_s": 12.046,
+          "end_sim_s": 21.180000000000003,
+          "robot_xy_m": [
+            -1.0004366568712006,
+            4.3573417527117337e-10
+          ],
+          "end_robot_xy_m": [
+            0.16503849317921365,
+            -0.5449781706559528
+          ],
+          "requested_yaw_rad": -0.47822028810381784,
+          "nav2_status": "succeeded",
+          "target_xy_m": [
+            0.35,
+            -0.7
+          ],
+          "error_m": 0.24133488471124656
+        },
+        {
+          "goal_index": 1,
+          "start_sim_s": 21.180000000000003,
+          "end_sim_s": 36.662,
+          "robot_xy_m": [
+            0.16503849317921365,
+            -0.5449781706559528
+          ],
+          "end_robot_xy_m": [
+            1.0423098480152828,
+            0.0024908165381330193
+          ],
+          "requested_yaw_rad": 0.0,
+          "nav2_status": "succeeded",
+          "target_xy_m": [
+            1.0,
+            0.0
+          ],
+          "error_m": 0.04238310283713272
+        }
+      ],
+      "contact_messages": 0,
+      "contact_events": null,
+      "observation_audit": [
+        {
+          "phase": "failed_wait_assurance",
+          "exposure": 0.632791922739245,
+          "passed": false,
+          "threshold": 0.06,
+          "sim_s": 8.3,
+          "camera_stamp_sim_s": 8.25,
+          "png_sha256": "cb76c7bc52dc2841730984d636c899be40030a772fe2c5c686116fd0e72822c3",
+          "decoded_rgb_sha256": "7dacbf5d193c87deb394d39c84a9ff751d73c76cdfca3d6904ccd1e4d33b98f4",
+          "decoded_rgb_matches": true,
+          "observation_ref": "8e1a53d27e42149fff8c3398656eb8662454552d0d0e4e8c10ad2729a5038fb3",
+          "extension_eligible": false
+        }
+      ],
+      "agent_usage": {
+        "unique_invocations": 6,
+        "elapsed_call_wall_s": 12.618907125666738,
+        "prompt_tokens": 34464,
+        "output_tokens": 1187,
+        "cached_prompt_tokens": 4992
+      },
+      "readiness": {
+        "elapsed_wall_s": 2.8810416674241424,
+        "unique_invocations": 1,
+        "prompt_tokens": 367,
+        "output_tokens": 5
+      },
+      "display_trajectory_columns": [
+        "episode_sim_s",
+        "robot_x_m",
+        "robot_y_m",
+        "actor_y_m"
+      ],
+      "display_trajectory": [
+        [
+          0.002,
+          -1.000375,
+          0.0,
+          -0.8
+        ],
+        [
+          0.514,
+          -1.000428,
+          0.0,
+          -0.7344
+        ],
+        [
+          1.028,
+          -1.000437,
+          0.0,
+          -0.65312
+        ],
+        [
+          1.532,
+          -1.000437,
+          0.0,
+          -0.5712
+        ],
+        [
+          2.048,
+          -1.000437,
+          0.0,
+          -0.48864
+        ],
+        [
+          2.55,
+          -1.000437,
+          0.0,
+          -0.408
+        ],
+        [
+          3.058,
+          -1.000437,
+          0.0,
+          -0.32704
+        ],
+        [
+          3.558,
+          -1.000437,
+          0.0,
+          -0.24672
+        ],
+        [
+          4.066,
+          -1.000437,
+          0.0,
+          -0.16608
+        ],
+        [
+          4.572,
+          -1.000437,
+          0.0,
+          -0.08448
+        ],
+        [
+          5.074,
+          -1.000437,
+          0.0,
+          -0.00416
+        ],
+        [
+          5.584,
+          -1.000437,
+          0.0,
+          0.07744
+        ],
+        [
+          6.09,
+          -1.000437,
+          0.0,
+          0.15808
+        ],
+        [
+          6.61,
+          -1.000437,
+          0.0,
+          0.2416
+        ],
+        [
+          7.114,
+          -1.000437,
+          0.0,
+          0.32224
+        ],
+        [
+          7.618,
+          -1.000437,
+          0.0,
+          0.40288
+        ],
+        [
+          8.128,
+          -1.000437,
+          0.0,
+          0.48416
+        ],
+        [
+          8.64,
+          -1.000437,
+          0.0,
+          0.5648
+        ],
+        [
+          9.146,
+          -1.000437,
+          0.0,
+          0.6464
+        ],
+        [
+          9.66,
+          -1.000437,
+          0.0,
+          0.7296
+        ],
+        [
+          10.162,
+          -1.000437,
+          0.0,
+          0.80992
+        ],
+        [
+          10.666,
+          -1.000437,
+          0.0,
+          0.88992
+        ],
+        [
+          11.166,
+          -1.000437,
+          0.0,
+          0.97056
+        ],
+        [
+          11.678,
+          -1.000437,
+          0.0,
+          1.05216
+        ],
+        [
+          12.184,
+          -1.000437,
+          0.0,
+          1.13344
+        ],
+        [
+          12.688,
+          -1.000437,
+          0.0,
+          1.21376
+        ],
+        [
+          13.194,
+          -1.000437,
+          0.0,
+          1.29504
+        ],
+        [
+          13.698,
+          -1.000437,
+          0.0,
+          1.37536
+        ],
+        [
+          14.2,
+          -0.947473,
+          -0.002678,
+          1.456
+        ],
+        [
+          14.712,
+          -0.845586,
+          -0.019231,
+          1.5376
+        ],
+        [
+          15.226,
+          -0.751365,
+          -0.045631,
+          1.6
+        ],
+        [
+          15.734,
+          -0.656794,
+          -0.082086,
+          1.6
+        ],
+        [
+          16.25,
+          -0.564842,
+          -0.12331,
+          1.6
+        ],
+        [
+          16.754,
+          -0.474252,
+          -0.168646,
+          1.6
+        ],
+        [
+          17.266,
+          -0.386442,
+          -0.215361,
+          1.6
+        ],
+        [
+          17.77,
+          -0.2993,
+          -0.262971,
+          1.6
+        ],
+        [
+          18.28,
+          -0.211309,
+          -0.312174,
+          1.6
+        ],
+        [
+          18.79,
+          -0.123631,
+          -0.362383,
+          1.6
+        ],
+        [
+          19.306,
+          -0.037498,
+          -0.413298,
+          1.6
+        ],
+        [
+          19.814,
+          0.043155,
+          -0.463627,
+          1.6
+        ],
+        [
+          20.33,
+          0.112731,
+          -0.50916,
+          1.6
+        ],
+        [
+          20.84,
+          0.164135,
+          -0.544435,
+          1.6
+        ],
+        [
+          21.348,
+          0.165038,
+          -0.544978,
+          1.6
+        ],
+        [
+          21.854,
+          0.165039,
+          -0.544978,
+          1.6
+        ],
+        [
+          22.366,
+          0.165039,
+          -0.544978,
+          1.6
+        ],
+        [
+          22.872,
+          0.165228,
+          -0.544962,
+          1.6
+        ],
+        [
+          23.376,
+          0.227475,
+          -0.575734,
+          1.6
+        ],
+        [
+          23.88,
+          0.324035,
+          -0.588965,
+          1.6
+        ],
+        [
+          24.392,
+          0.418396,
+          -0.574487,
+          1.6
+        ],
+        [
+          24.9,
+          0.514036,
+          -0.537322,
+          1.6
+        ],
+        [
+          25.414,
+          0.601014,
+          -0.487335,
+          1.6
+        ],
+        [
+          25.926,
+          0.68069,
+          -0.427658,
+          1.6
+        ],
+        [
+          26.436,
+          0.753371,
+          -0.362011,
+          1.6
+        ],
+        [
+          26.948,
+          0.819928,
+          -0.291845,
+          1.6
+        ],
+        [
+          27.458,
+          0.875104,
+          -0.226375,
+          1.6
+        ],
+        [
+          27.972,
+          0.913355,
+          -0.176422,
+          1.6
+        ],
+        [
+          28.476,
+          0.942787,
+          -0.136177,
+          1.6
+        ],
+        [
+          28.988,
+          0.965777,
+          -0.103725,
+          1.6
+        ],
+        [
+          29.496,
+          0.983744,
+          -0.078538,
+          1.6
+        ],
+        [
+          30.01,
+          0.998008,
+          -0.059246,
+          1.6
+        ],
+        [
+          30.518,
+          1.009114,
+          -0.044383,
+          1.6
+        ],
+        [
+          31.024,
+          1.018707,
+          -0.031167,
+          1.6
+        ],
+        [
+          31.53,
+          1.024765,
+          -0.022312,
+          1.6
+        ],
+        [
+          32.042,
+          1.028681,
+          -0.015904,
+          1.6
+        ],
+        [
+          32.548,
+          1.031005,
+          -0.01154,
+          1.6
+        ],
+        [
+          33.06,
+          1.034671,
+          -0.005433,
+          1.6
+        ],
+        [
+          33.562,
+          1.037305,
+          -0.000715,
+          1.6
+        ],
+        [
+          34.066,
+          1.038463,
+          0.000459,
+          1.6
+        ],
+        [
+          34.572,
+          1.039453,
+          0.001161,
+          1.6
+        ],
+        [
+          35.076,
+          1.040916,
+          0.00199,
+          1.6
+        ],
+        [
+          35.578,
+          1.041661,
+          0.002309,
+          1.6
+        ],
+        [
+          36.088,
+          1.042276,
+          0.00251,
+          1.6
+        ],
+        [
+          36.594,
+          1.04231,
+          0.002491,
+          1.6
+        ]
+      ],
+      "actor_materialization": {
+        "apply_receipts": 361,
+        "accepted_receipts": 361,
+        "median_observed_mps": 0.1600000000000007,
+        "velocity_samples": 148,
+        "method": "Median successive observed actor y differences / episode time differences, dt > 0, dy > 0, ending y < 1.59 m; excludes capped/stationary segments"
+      }
+    },
+    {
+      "name": "expired-no-continue",
+      "arrival": false,
+      "candidate": null,
+      "seconds": 7.101999999999999,
+      "final_error_m": 2.0004366568712006,
+      "requested_goals": 0,
+      "phases": [
+        "stale_prediction",
+        "initial_assurance"
+      ],
+      "reobservations": 1,
+      "executed_wait_s": null,
+      "post_wait_passed": null,
+      "exposure": null,
+      "actor_initial_y": -0.95,
+      "actor_speed": 0.18,
+      "cleanup": true,
+      "bounded_detour_approved": true,
+      "observed_continue_approved": false,
+      "first_plan_delay_wall_s": 8,
+      "source_sha256": {
+        "result.json": "af070173d4edcfcfcf145faabdeace17711a94e1946074da3b570104c28a3b19",
+        "agent-chain.json": "54802624c8aaaec8c193845bbfe83891608908bc10ea8bc9a04375d05e3c2e2a",
+        "trajectory.json": "092693e6d8a0bad54767589d4c17b442ee611168db8428f864e30aec27ec2515"
+      },
+      "timing": {
+        "decision_observation_sim_s": 2.0,
+        "decision_latency_wall_s": null,
+        "decision_observation_age_sim_s": null,
+        "elapsed_decision_to_end_wall_s": 12.482728380999987,
+        "observed_path_length_m": 8.162032847790442e-05,
+        "stationary_sim_s": 9.034000000000002,
+        "cli_wall_s": 34.7134792804718
+      },
+      "prediction": {
+        "current_exposure": 0.0,
+        "predicted_exposure": 0.00013830875104758888,
+        "latency_wall_s": 0.30275250039994717,
+        "forecast_exposure_threshold": 0.2
+      },
+      "goals": [],
+      "contact_messages": 0,
+      "contact_events": null,
+      "observation_audit": [],
+      "agent_usage": {
+        "unique_invocations": 1,
+        "elapsed_call_wall_s": 0.9797272495925426,
+        "prompt_tokens": 4204,
+        "output_tokens": 98,
+        "cached_prompt_tokens": 512
+      },
+      "readiness": {
+        "elapsed_wall_s": 2.9738278333097696,
+        "unique_invocations": 1,
+        "prompt_tokens": 367,
+        "output_tokens": 5
+      },
+      "display_trajectory_columns": [
+        "episode_sim_s",
+        "robot_x_m",
+        "robot_y_m",
+        "actor_y_m"
+      ],
+      "display_trajectory": [
+        [
+          0.002,
+          -1.000355,
+          0.0,
+          -0.95
+        ],
+        [
+          0.506,
+          -1.000417,
+          0.0,
+          -0.87728
+        ],
+        [
+          1.022,
+          -1.000437,
+          0.0,
+          -0.7844
+        ],
+        [
+          1.534,
+          -1.000437,
+          0.0,
+          -0.69188
+        ],
+        [
+          2.048,
+          -1.000437,
+          0.0,
+          -0.60008
+        ],
+        [
+          2.566,
+          -1.000437,
+          0.0,
+          -0.5072
+        ],
+        [
+          3.07,
+          -1.000437,
+          0.0,
+          -0.4154
+        ],
+        [
+          3.578,
+          -1.000437,
+          0.0,
+          -0.32396
+        ],
+        [
+          4.078,
+          -1.000437,
+          0.0,
+          -0.23396
+        ],
+        [
+          4.578,
+          -1.000437,
+          0.0,
+          -0.14396
+        ],
+        [
+          5.078,
+          -1.000437,
+          0.0,
+          -0.05396
+        ],
+        [
+          5.584,
+          -1.000437,
+          0.0,
+          0.03676
+        ],
+        [
+          6.088,
+          -1.000437,
+          0.0,
+          0.12784
+        ],
+        [
+          6.596,
+          -1.000437,
+          0.0,
+          0.21856
+        ],
+        [
+          7.108,
+          -1.000437,
+          0.0,
+          0.31108
+        ],
+        [
+          7.618,
+          -1.000437,
+          0.0,
+          0.40288
+        ],
+        [
+          8.12,
+          -1.000437,
+          0.0,
+          0.4936
+        ],
+        [
+          8.636,
+          -1.000437,
+          0.0,
+          0.58612
+        ],
+        [
+          9.036,
+          -1.000437,
+          0.0,
+          0.65848
+        ]
+      ],
+      "actor_materialization": {
+        "apply_receipts": 90,
+        "accepted_receipts": 90,
+        "median_observed_mps": 0.1799999999999997,
+        "velocity_samples": 89,
+        "method": "Median successive observed actor y differences / episode time differences, dt > 0, dy > 0, ending y < 1.59 m; excludes capped/stationary segments"
+      }
+    },
+    {
+      "name": "expired-continue",
+      "arrival": true,
+      "candidate": "observed_original_route_continue",
+      "seconds": 23.58,
+      "final_error_m": 0.2258497988941959,
+      "requested_goals": 1,
+      "phases": [
+        "stale_prediction",
+        "initial_assurance",
+        "continue_recovery",
+        "continue_assurance_graph",
+        "continue_rules"
+      ],
+      "reobservations": 1,
+      "executed_wait_s": 0.0,
+      "post_wait_passed": null,
+      "exposure": null,
+      "actor_initial_y": -0.95,
+      "actor_speed": 0.18,
+      "cleanup": true,
+      "bounded_detour_approved": true,
+      "observed_continue_approved": true,
+      "first_plan_delay_wall_s": 8,
+      "source_sha256": {
+        "result.json": "620eccc562c3f9a95f1a840b51bf7ac8ffb0bffa75c850d2803a11532d388232",
+        "agent-chain.json": "73f4f6a8d0e61197223f56dff8f8f856031fb17352e1d485945b55177add5e18",
+        "trajectory.json": "e5dd4ddf9a4b5513a4057f02496b93b43f0926fd5e3e7c45e5970687e6c81fc0"
+      },
+      "timing": {
+        "decision_observation_sim_s": 2.0020000000000002,
+        "decision_latency_wall_s": 19.890658384999995,
+        "decision_observation_age_sim_s": 11.379999999999999,
+        "elapsed_decision_to_end_wall_s": 41.370815686000014,
+        "observed_path_length_m": 1.7800957184785118,
+        "stationary_sim_s": 15.911999999999999,
+        "cli_wall_s": 64.57474493980408
+      },
+      "prediction": {
+        "current_exposure": 0.0,
+        "predicted_exposure": 0.00011923362035304308,
+        "latency_wall_s": 0.3475295836105943,
+        "forecast_exposure_threshold": 0.2
+      },
+      "goals": [
+        {
+          "goal_index": 0,
+          "start_sim_s": 14.394,
+          "end_sim_s": 25.582,
+          "robot_xy_m": [
+            -1.0004366568712006,
+            4.3573417527117337e-10
+          ],
+          "end_robot_xy_m": [
+            0.7787023094524789,
+            -0.0451161148469403
+          ],
+          "requested_yaw_rad": 0.0,
+          "nav2_status": "succeeded",
+          "target_xy_m": [
+            1.0,
+            0.0
+          ],
+          "error_m": 0.2258497988941959
+        }
+      ],
+      "contact_messages": 0,
+      "contact_events": null,
+      "observation_audit": [
+        {
+          "phase": "continue_recovery",
+          "exposure": 0.0,
+          "passed": true,
+          "threshold": 0.06,
+          "sim_s": 12.13,
+          "camera_stamp_sim_s": 12.126,
+          "png_sha256": "566be0c2a532196de802458331412c8daa94e2e05ceacc5aa6658a492d2365f9",
+          "decoded_rgb_sha256": "9fd005d3d17f07483397141c6af7bc32894e7bdf71a2f73a80de5f499cd8b433",
+          "decoded_rgb_matches": true,
+          "observation_ref": "0b3ecce58f72407a7269ce126b07d7b5cd448b10e1a0c0acf6b7cceecd5b6fb6",
+          "extension_eligible": null
+        }
+      ],
+      "agent_usage": {
+        "unique_invocations": 3,
+        "elapsed_call_wall_s": 7.327672083862126,
+        "prompt_tokens": 25288,
+        "output_tokens": 771,
+        "cached_prompt_tokens": 8320
+      },
+      "readiness": {
+        "elapsed_wall_s": 3.3905298337340355,
+        "unique_invocations": 1,
+        "prompt_tokens": 367,
+        "output_tokens": 5
+      },
+      "display_trajectory_columns": [
+        "episode_sim_s",
+        "robot_x_m",
+        "robot_y_m",
+        "actor_y_m"
+      ],
+      "display_trajectory": [
+        [
+          0.002,
+          -1.000401,
+          0.0,
+          -0.95
+        ],
+        [
+          0.514,
+          -1.000437,
+          0.0,
+          -0.87548
+        ],
+        [
+          1.018,
+          -1.000437,
+          0.0,
+          -0.78476
+        ],
+        [
+          1.538,
+          -1.000437,
+          0.0,
+          -0.69116
+        ],
+        [
+          2.048,
+          -1.000437,
+          0.0,
+          -0.60008
+        ],
+        [
+          2.568,
+          -1.000437,
+          0.0,
+          -0.50576
+        ],
+        [
+          3.074,
+          -1.000437,
+          0.0,
+          -0.4154
+        ],
+        [
+          3.578,
+          -1.000437,
+          0.0,
+          -0.32396
+        ],
+        [
+          4.08,
+          -1.000437,
+          0.0,
+          -0.23396
+        ],
+        [
+          4.58,
+          -1.000437,
+          0.0,
+          -0.1436
+        ],
+        [
+          5.082,
+          -1.000437,
+          0.0,
+          -0.05324
+        ],
+        [
+          5.584,
+          -1.000437,
+          0.0,
+          0.03712
+        ],
+        [
+          6.094,
+          -1.000437,
+          0.0,
+          0.12856
+        ],
+        [
+          6.594,
+          -1.000437,
+          0.0,
+          0.21892
+        ],
+        [
+          7.102,
+          -1.000437,
+          0.0,
+          0.31
+        ],
+        [
+          7.61,
+          -1.000437,
+          0.0,
+          0.40144
+        ],
+        [
+          8.116,
+          -1.000437,
+          0.0,
+          0.49288
+        ],
+        [
+          8.618,
+          -1.000437,
+          0.0,
+          0.58324
+        ],
+        [
+          9.118,
+          -1.000437,
+          0.0,
+          0.67324
+        ],
+        [
+          9.628,
+          -1.000437,
+          0.0,
+          0.76468
+        ],
+        [
+          10.13,
+          -1.000437,
+          0.0,
+          0.8554
+        ],
+        [
+          10.632,
+          -1.000437,
+          0.0,
+          0.94576
+        ],
+        [
+          11.142,
+          -1.000437,
+          0.0,
+          1.0372
+        ],
+        [
+          11.65,
+          -1.000437,
+          0.0,
+          1.129
+        ],
+        [
+          12.162,
+          -1.000437,
+          0.0,
+          1.22116
+        ],
+        [
+          12.664,
+          -1.000437,
+          0.0,
+          1.31152
+        ],
+        [
+          13.168,
+          -1.000437,
+          0.0,
+          1.40224
+        ],
+        [
+          13.67,
+          -1.000437,
+          0.0,
+          1.4926
+        ],
+        [
+          14.176,
+          -1.000437,
+          0.0,
+          1.58368
+        ],
+        [
+          14.682,
+          -1.000437,
+          0.0,
+          1.6
+        ],
+        [
+          15.198,
+          -1.000437,
+          0.0,
+          1.6
+        ],
+        [
+          15.706,
+          -0.996297,
+          0.0,
+          1.6
+        ],
+        [
+          16.216,
+          -0.905596,
+          6.7e-05,
+          1.6
+        ],
+        [
+          16.726,
+          -0.806453,
+          0.000305,
+          1.6
+        ],
+        [
+          17.242,
+          -0.70667,
+          0.00054,
+          1.6
+        ],
+        [
+          17.752,
+          -0.610559,
+          -0.001133,
+          1.6
+        ],
+        [
+          18.276,
+          -0.509448,
+          -0.004829,
+          1.6
+        ],
+        [
+          18.784,
+          -0.415979,
+          -0.009457,
+          1.6
+        ],
+        [
+          19.296,
+          -0.313732,
+          -0.015176,
+          1.6
+        ],
+        [
+          19.818,
+          -0.212861,
+          -0.020747,
+          1.6
+        ],
+        [
+          20.338,
+          -0.112485,
+          -0.025988,
+          1.6
+        ],
+        [
+          20.852,
+          -0.014351,
+          -0.03036,
+          1.6
+        ],
+        [
+          21.362,
+          0.085164,
+          -0.033869,
+          1.6
+        ],
+        [
+          21.876,
+          0.184276,
+          -0.036709,
+          1.6
+        ],
+        [
+          22.38,
+          0.278108,
+          -0.038812,
+          1.6
+        ],
+        [
+          22.888,
+          0.376742,
+          -0.04068,
+          1.6
+        ],
+        [
+          23.396,
+          0.473964,
+          -0.042073,
+          1.6
+        ],
+        [
+          23.916,
+          0.574905,
+          -0.043285,
+          1.6
+        ],
+        [
+          24.428,
+          0.668973,
+          -0.044133,
+          1.6
+        ],
+        [
+          24.932,
+          0.746781,
+          -0.044834,
+          1.6
+        ],
+        [
+          25.446,
+          0.778702,
+          -0.045116,
+          1.6
+        ],
+        [
+          25.55,
+          0.778702,
+          -0.045116,
+          1.6
+        ]
+      ],
+      "actor_materialization": {
+        "apply_receipts": 252,
+        "accepted_receipts": 252,
+        "median_observed_mps": 0.1799999999999999,
+        "velocity_samples": 140,
+        "method": "Median successive observed actor y differences / episode time differences, dt > 0, dy > 0, ending y < 1.59 m; excludes capped/stationary segments"
+      }
+    },
+    {
+      "name": "blocked-recovery-r2",
+      "arrival": true,
+      "candidate": "agent_detour_after_wait_observation",
+      "seconds": 32.108,
+      "final_error_m": 0.011669310456352939,
+      "requested_goals": 2,
+      "phases": [
+        "initial_assurance",
+        "recovery",
+        "recovery_assurance_graph",
+        "rules",
+        "failed_wait_assurance",
+        "detour_recovery",
+        "detour_assurance_graph",
+        "detour_rules"
+      ],
+      "reobservations": 0,
+      "executed_wait_s": 0.5499999999999998,
+      "post_wait_passed": false,
+      "exposure": 0.6940298507462687,
+      "actor_initial_y": -0.95,
+      "actor_speed": 0.18,
+      "cleanup": true,
+      "bounded_detour_approved": true,
+      "observed_continue_approved": true,
+      "first_plan_delay_wall_s": 0,
+      "source_sha256": {
+        "result.json": "d6a142dea443d635082cdad3dd409266f07dcdfcd6023161cee481d8ff889855",
+        "agent-chain.json": "9ea5e5bf0d0eadeac7981c1e09aa2102fcb9ef99718cc1a29f46932fad48c4c3",
+        "trajectory.json": "329265672e2725b4255414af6a2c899b9d16801004e3df29f95a019f5b292918"
+      },
+      "timing": {
+        "decision_observation_sim_s": 2.0020000000000002,
+        "decision_latency_wall_s": 5.5920209600000135,
+        "decision_observation_age_sim_s": 3.1079999999999997,
+        "elapsed_decision_to_end_wall_s": 65.523681737,
+        "observed_path_length_m": 2.383022370113011,
+        "stationary_sim_s": 18.418,
+        "cli_wall_s": 89.25778722763062
+      },
+      "prediction": {
+        "current_exposure": 0.0,
+        "predicted_exposure": 0.41351455450057983,
+        "latency_wall_s": 0.6318710409104824,
+        "forecast_exposure_threshold": 0.2
+      },
+      "goals": [
+        {
+          "goal_index": 0,
+          "start_sim_s": 11.745999999999999,
+          "end_sim_s": 20.588,
+          "robot_xy_m": [
+            -1.0004366568712006,
+            4.3573417527117337e-10
+          ],
+          "end_robot_xy_m": [
+            0.13472017642408643,
+            -0.5309804921145005
+          ],
+          "requested_yaw_rad": -0.47822028810381784,
+          "nav2_status": "succeeded",
+          "target_xy_m": [
+            0.35,
+            -0.7
+          ],
+          "error_m": 0.2737023866990072
+        },
+        {
+          "goal_index": 1,
+          "start_sim_s": 20.588,
+          "end_sim_s": 34.11,
+          "robot_xy_m": [
+            0.13472017642408643,
+            -0.5309804921145005
+          ],
+          "end_robot_xy_m": [
+            1.0114519961655302,
+            0.0022415598032241822
+          ],
+          "requested_yaw_rad": 0.0,
+          "nav2_status": "succeeded",
+          "target_xy_m": [
+            1.0,
+            0.0
+          ],
+          "error_m": 0.011669310456352939
+        }
+      ],
+      "contact_messages": 0,
+      "contact_events": null,
+      "observation_audit": [
+        {
+          "phase": "failed_wait_assurance",
+          "exposure": 0.6940298507462687,
+          "passed": false,
+          "threshold": 0.06,
+          "sim_s": 8.296,
+          "camera_stamp_sim_s": 8.25,
+          "png_sha256": "ed48ba871b5f1df6cd72ea89483f03c18e4969202b0263d4320652c49379c3eb",
+          "decoded_rgb_sha256": "d0dc50d0022c837268b8b51d71b91bd9924e8db7731698eb1db7cfbcd103b9c0",
+          "decoded_rgb_matches": true,
+          "observation_ref": "1b2d14ee5f76c202821141f4534f543b468b3b0d0852004fa90318bde9f86759",
+          "extension_eligible": false
+        }
+      ],
+      "agent_usage": {
+        "unique_invocations": 6,
+        "elapsed_call_wall_s": 12.557588374242187,
+        "prompt_tokens": 46801,
+        "output_tokens": 1187,
+        "cached_prompt_tokens": 11520
+      },
+      "readiness": {
+        "elapsed_wall_s": 3.3214044580236077,
+        "unique_invocations": 1,
+        "prompt_tokens": 367,
+        "output_tokens": 5
+      },
+      "display_trajectory_columns": [
+        "episode_sim_s",
+        "robot_x_m",
+        "robot_y_m",
+        "actor_y_m"
+      ],
+      "display_trajectory": [
+        [
+          0.002,
+          -1.000376,
+          0.0,
+          -0.95
+        ],
+        [
+          0.508,
+          -1.000435,
+          0.0,
+          -0.87692
+        ],
+        [
+          1.012,
+          -1.000437,
+          0.0,
+          -0.78584
+        ],
+        [
+          1.52,
+          -1.000437,
+          0.0,
+          -0.6944
+        ],
+        [
+          2.032,
+          -1.000437,
+          0.0,
+          -0.60404
+        ],
+        [
+          2.58,
+          -1.000437,
+          0.0,
+          -0.5036
+        ],
+        [
+          3.08,
+          -1.000437,
+          0.0,
+          -0.4136
+        ],
+        [
+          3.588,
+          -1.000437,
+          0.0,
+          -0.32216
+        ],
+        [
+          4.096,
+          -1.000437,
+          0.0,
+          -0.23072
+        ],
+        [
+          4.604,
+          -1.000437,
+          0.0,
+          -0.13928
+        ],
+        [
+          5.108,
+          -1.000437,
+          0.0,
+          -0.04856
+        ],
+        [
+          5.608,
+          -1.000437,
+          0.0,
+          0.04144
+        ],
+        [
+          6.108,
+          -1.000437,
+          0.0,
+          0.13144
+        ],
+        [
+          6.626,
+          -1.000437,
+          0.0,
+          0.22432
+        ],
+        [
+          7.138,
+          -1.000437,
+          0.0,
+          0.31612
+        ],
+        [
+          7.662,
+          -1.000437,
+          0.0,
+          0.41116
+        ],
+        [
+          8.168,
+          -1.000437,
+          0.0,
+          0.50224
+        ],
+        [
+          8.67,
+          -1.000437,
+          0.0,
+          0.5926
+        ],
+        [
+          9.178,
+          -1.000437,
+          0.0,
+          0.68368
+        ],
+        [
+          9.684,
+          -1.000437,
+          0.0,
+          0.77476
+        ],
+        [
+          10.192,
+          -1.000437,
+          0.0,
+          0.86656
+        ],
+        [
+          10.71,
+          -1.000437,
+          0.0,
+          0.95764
+        ],
+        [
+          11.21,
+          -1.000437,
+          0.0,
+          1.0498
+        ],
+        [
+          11.718,
+          -1.000437,
+          0.0,
+          1.14124
+        ],
+        [
+          12.222,
+          -1.000437,
+          0.0,
+          1.23196
+        ],
+        [
+          12.722,
+          -1.000437,
+          0.0,
+          1.32196
+        ],
+        [
+          13.228,
+          -1.000437,
+          0.0,
+          1.41304
+        ],
+        [
+          13.74,
+          -0.984279,
+          -0.00034,
+          1.5052
+        ],
+        [
+          14.244,
+          -0.884393,
+          -0.011689,
+          1.59556
+        ],
+        [
+          14.748,
+          -0.789848,
+          -0.033893,
+          1.6
+        ],
+        [
+          15.258,
+          -0.693711,
+          -0.067023,
+          1.6
+        ],
+        [
+          15.764,
+          -0.602304,
+          -0.105425,
+          1.6
+        ],
+        [
+          16.27,
+          -0.512667,
+          -0.148493,
+          1.6
+        ],
+        [
+          16.774,
+          -0.422931,
+          -0.195672,
+          1.6
+        ],
+        [
+          17.284,
+          -0.335383,
+          -0.243305,
+          1.6
+        ],
+        [
+          17.796,
+          -0.248193,
+          -0.292591,
+          1.6
+        ],
+        [
+          18.304,
+          -0.161025,
+          -0.343354,
+          1.6
+        ],
+        [
+          18.81,
+          -0.073232,
+          -0.395958,
+          1.6
+        ],
+        [
+          19.322,
+          0.00744,
+          -0.446334,
+          1.6
+        ],
+        [
+          19.828,
+          0.083254,
+          -0.495756,
+          1.6
+        ],
+        [
+          20.34,
+          0.134587,
+          -0.530895,
+          1.6
+        ],
+        [
+          20.854,
+          0.13472,
+          -0.53098,
+          1.6
+        ],
+        [
+          21.36,
+          0.13472,
+          -0.53098,
+          1.6
+        ],
+        [
+          21.872,
+          0.13472,
+          -0.53098,
+          1.6
+        ],
+        [
+          22.38,
+          0.146584,
+          -0.538504,
+          1.6
+        ],
+        [
+          22.892,
+          0.232182,
+          -0.570347,
+          1.6
+        ],
+        [
+          23.402,
+          0.32989,
+          -0.570884,
+          1.6
+        ],
+        [
+          23.912,
+          0.420314,
+          -0.548283,
+          1.6
+        ],
+        [
+          24.424,
+          0.514856,
+          -0.505022,
+          1.6
+        ],
+        [
+          24.93,
+          0.595669,
+          -0.451809,
+          1.6
+        ],
+        [
+          25.442,
+          0.671671,
+          -0.387941,
+          1.6
+        ],
+        [
+          25.946,
+          0.739754,
+          -0.318908,
+          1.6
+        ],
+        [
+          26.452,
+          0.804136,
+          -0.246397,
+          1.6
+        ],
+        [
+          26.964,
+          0.854536,
+          -0.187152,
+          1.6
+        ],
+        [
+          27.472,
+          0.89292,
+          -0.141211,
+          1.6
+        ],
+        [
+          27.98,
+          0.921598,
+          -0.10584,
+          1.6
+        ],
+        [
+          28.492,
+          0.944254,
+          -0.077638,
+          1.6
+        ],
+        [
+          29.002,
+          0.962014,
+          -0.055748,
+          1.6
+        ],
+        [
+          29.508,
+          0.974974,
+          -0.039924,
+          1.6
+        ],
+        [
+          30.012,
+          0.987814,
+          -0.024253,
+          1.6
+        ],
+        [
+          30.514,
+          0.997618,
+          -0.012107,
+          1.6
+        ],
+        [
+          31.02,
+          1.004386,
+          -0.003516,
+          1.6
+        ],
+        [
+          31.53,
+          1.008011,
+          0.000407,
+          1.6
+        ],
+        [
+          32.036,
+          1.009146,
+          0.001267,
+          1.6
+        ],
+        [
+          32.542,
+          1.010125,
+          0.001797,
+          1.6
+        ],
+        [
+          33.048,
+          1.010914,
+          0.00211,
+          1.6
+        ],
+        [
+          33.556,
+          1.011496,
+          0.002283,
+          1.6
+        ],
+        [
+          34.074,
+          1.011452,
+          0.002242,
+          1.6
+        ]
+      ],
+      "actor_materialization": {
+        "apply_receipts": 336,
+        "accepted_receipts": 336,
+        "median_observed_mps": 0.1799999999999997,
+        "velocity_samples": 139,
+        "method": "Median successive observed actor y differences / episode time differences, dt > 0, dy > 0, ending y < 1.59 m; excludes capped/stationary segments"
+      }
+    },
+    {
+      "name": "wait-direct-r2",
+      "arrival": true,
+      "candidate": "wait_then_direct",
+      "seconds": 16.791999999999998,
+      "final_error_m": 0.2180036677822841,
+      "requested_goals": 1,
+      "phases": [
+        "initial_assurance",
+        "recovery",
+        "recovery_assurance_graph",
+        "rules",
+        "post_wait_assurance"
+      ],
+      "reobservations": 0,
+      "executed_wait_s": 0.7919999999999998,
+      "post_wait_passed": true,
+      "exposure": 0.0,
+      "actor_initial_y": -0.95,
+      "actor_speed": 0.3,
+      "cleanup": true,
+      "bounded_detour_approved": false,
+      "observed_continue_approved": false,
+      "first_plan_delay_wall_s": 0,
+      "source_sha256": {
+        "result.json": "c32ad82f3b0afba8ae1a47506c108085c003ccda93dec64cb552910c5bae94c2",
+        "agent-chain.json": "ee8180a0a71e290541ddd8a1e4c5b944b4a6ba13b0e14a689613fd8f18622760",
+        "trajectory.json": "104e3124141c61de7bf61f62450280c92f89df9fdcf9f85b5afefb38b1105583"
+      },
+      "timing": {
+        "decision_observation_sim_s": 2.0,
+        "decision_latency_wall_s": 4.891732461000004,
+        "decision_observation_age_sim_s": 2.8760000000000003,
+        "elapsed_decision_to_end_wall_s": 29.244558597000037,
+        "observed_path_length_m": 1.7838533086228372,
+        "stationary_sim_s": 9.187999999999997,
+        "cli_wall_s": 52.0202910900116
+      },
+      "prediction": {
+        "current_exposure": 0.06354258121158911,
+        "predicted_exposure": 0.02290244586765766,
+        "latency_wall_s": 0.3688987921923399,
+        "forecast_exposure_threshold": 0.2
+      },
+      "goals": [
+        {
+          "goal_index": 0,
+          "start_sim_s": 6.920000000000001,
+          "end_sim_s": 18.791999999999998,
+          "robot_xy_m": [
+            -1.0004366568712006,
+            4.3573417527117337e-10
+          ],
+          "end_robot_xy_m": [
+            0.7825945734792247,
+            -0.016139383069010325
+          ],
+          "requested_yaw_rad": 0.0,
+          "nav2_status": "succeeded",
+          "target_xy_m": [
+            1.0,
+            0.0
+          ],
+          "error_m": 0.2180036677822841
+        }
+      ],
+      "contact_messages": 0,
+      "contact_events": null,
+      "observation_audit": [],
+      "agent_usage": {
+        "unique_invocations": 4,
+        "elapsed_call_wall_s": 5.647230960428715,
+        "prompt_tokens": 16102,
+        "output_tokens": 483,
+        "cached_prompt_tokens": 2048
+      },
+      "readiness": {
+        "elapsed_wall_s": 2.792774417437613,
+        "unique_invocations": 1,
+        "prompt_tokens": 367,
+        "output_tokens": 5
+      },
+      "display_trajectory_columns": [
+        "episode_sim_s",
+        "robot_x_m",
+        "robot_y_m",
+        "actor_y_m"
+      ],
+      "display_trajectory": [
+        [
+          0.002,
+          -1.000402,
+          0.0,
+          -0.95
+        ],
+        [
+          0.508,
+          -1.000436,
+          0.0,
+          -0.8282
+        ],
+        [
+          1.016,
+          -1.000437,
+          0.0,
+          -0.6752
+        ],
+        [
+          1.524,
+          -1.000437,
+          0.0,
+          -0.5234
+        ],
+        [
+          2.024,
+          -1.000437,
+          0.0,
+          -0.3728
+        ],
+        [
+          2.528,
+          -1.000437,
+          0.0,
+          -0.2216
+        ],
+        [
+          3.04,
+          -1.000437,
+          0.0,
+          -0.0686
+        ],
+        [
+          3.544,
+          -1.000437,
+          0.0,
+          0.0832
+        ],
+        [
+          4.048,
+          -1.000437,
+          0.0,
+          0.2338
+        ],
+        [
+          4.556,
+          -1.000437,
+          0.0,
+          0.3868
+        ],
+        [
+          5.06,
+          -1.000437,
+          0.0,
+          0.538
+        ],
+        [
+          5.56,
+          -1.000437,
+          0.0,
+          0.688
+        ],
+        [
+          6.062,
+          -1.000437,
+          0.0,
+          0.838
+        ],
+        [
+          6.562,
+          -1.000437,
+          0.0,
+          0.9886
+        ],
+        [
+          7.07,
+          -1.000437,
+          0.0,
+          1.1404
+        ],
+        [
+          7.572,
+          -1.000437,
+          0.0,
+          1.2916
+        ],
+        [
+          8.078,
+          -1.000437,
+          0.0,
+          1.4434
+        ],
+        [
+          8.584,
+          -1.000437,
+          0.0,
+          1.5952
+        ],
+        [
+          9.088,
+          -0.969416,
+          0.0,
+          1.6
+        ],
+        [
+          9.594,
+          -0.879508,
+          0.000171,
+          1.6
+        ],
+        [
+          10.1,
+          -0.779267,
+          0.000453,
+          1.6
+        ],
+        [
+          10.604,
+          -0.687556,
+          0.000667,
+          1.6
+        ],
+        [
+          11.104,
+          -0.586789,
+          -0.001171,
+          1.6
+        ],
+        [
+          11.608,
+          -0.492397,
+          -0.00434,
+          1.6
+        ],
+        [
+          12.112,
+          -0.395143,
+          -0.008434,
+          1.6
+        ],
+        [
+          12.614,
+          -0.300436,
+          -0.013196,
+          1.6
+        ],
+        [
+          13.122,
+          -0.202152,
+          -0.018342,
+          1.6
+        ],
+        [
+          13.624,
+          -0.108524,
+          -0.022014,
+          1.6
+        ],
+        [
+          14.136,
+          -0.009445,
+          -0.02085,
+          1.6
+        ],
+        [
+          14.65,
+          0.087612,
+          -0.017013,
+          1.6
+        ],
+        [
+          15.162,
+          0.184793,
+          -0.013972,
+          1.6
+        ],
+        [
+          15.674,
+          0.282196,
+          -0.013674,
+          1.6
+        ],
+        [
+          16.186,
+          0.376745,
+          -0.014668,
+          1.6
+        ],
+        [
+          16.692,
+          0.474855,
+          -0.01699,
+          1.6
+        ],
+        [
+          17.204,
+          0.567248,
+          -0.019852,
+          1.6
+        ],
+        [
+          17.71,
+          0.667323,
+          -0.019868,
+          1.6
+        ],
+        [
+          18.22,
+          0.756591,
+          -0.017215,
+          1.6
+        ],
+        [
+          18.726,
+          0.782595,
+          -0.016139,
+          1.6
+        ]
+      ],
+      "actor_materialization": {
+        "apply_receipts": 186,
+        "accepted_receipts": 186,
+        "median_observed_mps": 0.3,
+        "velocity_samples": 84,
+        "method": "Median successive observed actor y differences / episode time differences, dt > 0, dy > 0, ending y < 1.59 m; excludes capped/stationary segments"
+      }
+    }
+  ],
+  "historical_three_arm": {
+    "status": "Separate historical source and cohort, not public-source rerun; saved receipt/evidence hashes checked during report preparation",
+    "protocol_sha256": "a658ef9eae21ce3c8e200b5fa3ad25500c1ffe9ff5306290432b39023f883cef",
+    "trials": [
+      {
+        "name": "r1-history",
+        "arrival": true,
+        "seconds": 25.78,
+        "cleanup": true,
+        "receipt_sha256": "0f17da85d9fc5fd13da67bcc4f2704ff843c95977f93e5f2947a329ec87d9c82"
+      },
+      {
+        "name": "r1-nwm",
+        "arrival": true,
+        "seconds": 15.214000000000002,
+        "cleanup": true,
+        "receipt_sha256": "d0ef40b6002cfbff37e2f920f293373282069992a208d435754ae21f00e57a94"
+      },
+      {
+        "name": "r1-agent",
+        "arrival": true,
+        "seconds": 16.528,
+        "cleanup": true,
+        "receipt_sha256": "4339c469c6472a1f8a3ccf8c9ce03bcb572fadcadc83530218ebaa0f05800d03"
+      },
+      {
+        "name": "r2-agent",
+        "arrival": true,
+        "seconds": 16.979999999999997,
+        "cleanup": true,
+        "receipt_sha256": "b2a3c17c2f3ea28d69f4a9b9cfad2ba7541435010dcd683c28aacf808fd474c0"
+      },
+      {
+        "name": "r2-nwm",
+        "arrival": true,
+        "seconds": 15.482000000000001,
+        "cleanup": true,
+        "receipt_sha256": "f03bf2eaa3f540b1da1a0c318f40518eadc7e7d48867dc20754783a5dca9eb4e"
+      },
+      {
+        "name": "r2-history",
+        "arrival": true,
+        "seconds": 26.285999999999998,
+        "cleanup": true,
+        "receipt_sha256": "dda1171f42cd79dd2a061eada04dfc066692b50c643d3be89d3feb534c38ce25"
+      }
+    ]
+  },
+  "historical_heading_confirmation": {
+    "status": "Separate historical four-run confirmation, not public-source rerun; receipt/evidence hashes checked for report",
+    "protocol_sha256": "d10bf45169d7bd3cacc11cf9192aef924b1366be69d96180110c119535febabd",
+    "trials": [
+      {
+        "name": "outgoing-agent-r1",
+        "arrival": true,
+        "seconds": 40.874,
+        "final_error_m": 0.01213438476201348,
+        "receipt_sha256": "06c1efb7b6df65a94c6faf086fd9ad3d77536bf283368276209e442166283ea4"
+      },
+      {
+        "name": "incoming-agent-r1",
+        "arrival": true,
+        "seconds": 36.542,
+        "final_error_m": 0.03991294014099423,
+        "receipt_sha256": "43c10ad50240d075b1b45e2f73bac921c8af08925391515286dba5f9ef73e2b6"
+      },
+      {
+        "name": "incoming-agent-r2",
+        "arrival": true,
+        "seconds": 31.876000000000005,
+        "final_error_m": 0.06127316552715105,
+        "receipt_sha256": "ba2e3b0ac80e480e780a1eb31c515fa9a129435492cb7fbfeb7a1265bf79c91f"
+      },
+      {
+        "name": "outgoing-agent-r2",
+        "arrival": true,
+        "seconds": 42.78,
+        "final_error_m": 0.05208048038034958,
+        "receipt_sha256": "f5b7c63714da9195053a46ab6567c5849910992b6e6d4c9444ee5dc3dc921455"
+      }
+    ]
+  }
+}
