@@ -5,3 +5,5 @@ Saved repair procedures may work in one observed state and fail in a nearby one.
 This lets experience change the use of a small trial budget without asking an LLM to write a new movement for each failure. A human approves the allowed scope, Rules constrain trials, the Executor acts, and the Verifier checks the result. A simulator result does not establish that a physical robot will behave the same way.
 
 The public fixture demonstrates the proposal and verification boundary. It does not demonstrate robot recovery.
+
+The measured comparisons and their limits are in the [public research report](../agents/experience-ordered-repair-research-report-20260915.md).

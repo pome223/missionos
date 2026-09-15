@@ -11,3 +11,5 @@
 This interface assumes a resettable Backend that can reproduce the entry state for every counterfactual trial. A simulator result cannot be treated as physical robot evidence without separate transfer validation. Preserve the current policy when a frozen evaluation cohort lacks additional recovery or loses prior verified successes; do not re-fit on an opened evaluation cohort and call it held out.
 
 The checked-in process smoke uses synthetic receipts and makes no robot, GPU, live-simulator or physical claim. Private research databases, raw episodes, credentials, local paths and generated evidence artifacts are excluded from this public repository.
+
+See the [public research report](experience-ordered-repair-research-report-20260915.md) for the frozen simulator comparisons, rejected static-selector results, adoption scope and unresolved transfer limits.
