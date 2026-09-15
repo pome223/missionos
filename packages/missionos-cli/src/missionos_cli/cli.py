@@ -31,6 +31,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from .assurance_policy import assurance_policy as _assurance_policy_group
+from .navigation import navigation as _navigation_group
 from .chat_companions import (
     CHAT_COMPANION_TERMINAL_ROOT as CHAT_COMPANION_TERMINAL_ROOT,
     CHAT_COMPANION_TERMINAL_SURFACES as CHAT_COMPANION_TERMINAL_SURFACES,
@@ -5046,3 +5047,4 @@ def play_command(
     )
 
 missionos.add_command(_assurance_policy_group)
+missionos.add_command(_navigation_group)

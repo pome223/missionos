@@ -20,6 +20,10 @@ Each example should include commands, observed evidence, and limitations.
   two-Recovery export and verification with a deterministic fixture. It is a
   contract smoke, not evidence of a new simulator or physical run.
 
+- [TB3: Recover When Waiting Does Not Clear the Route](tb3-observed-recovery.md)
+  shows prediction-grounded waiting, observed failed-wait recovery, separately
+  approved continuation, and terminal arrival or authority stops through the CLI.
+
 ## Example Checklist
 
 Each example should state:

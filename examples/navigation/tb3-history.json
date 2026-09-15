@@ -1,0 +1,8 @@
+{
+  "repository": "../..",
+  "python": "../../.venv/bin/python",
+  "tb3_actor_speed_mps": 0.29,
+  "tb3_actor_initial_y_m": -0.88,
+  "tb3_controller_profile": "legacy",
+  "tb3_via_heading": "incoming"
+}

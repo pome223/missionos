@@ -42,13 +42,14 @@ ACK is not success. Observed progress is not mission completion.
 
 ## What Has Actually Run
 
-The same contract and authority mechanism has been exercised over five
+The same contract and authority mechanism has been exercised over six
 bounded simulator paths. All results below are simulator evidence.
 
 | Stack | Exercised | Observed |
 | ----- | --------- | -------- |
 | **PX4 / Gazebo SITL** | Outbound mission with two collision obstacles at ~50% and ~75% route progress | Two separate LLM proposals and two separate human approvals; second centerline rejoin observed; saved outbound and return telemetry |
 | **TurtleBot3 / ROS2 Nav2** | Chat request to deliver to a named room in `turtlebot3_house` | Three real doorways traversed from front yard to bedroom dropoff; AMCL-corrected observed trail against the approved plan |
+| **TB3 / predictive Recovery** | Fixed crossing-obstacle scene through the installed navigation CLI | [Public-source cohort](docs/examples/tb3-observed-recovery.md): 2/2 failed-wait detours reached the goal; 1/1 expiry-reobserved continuation reached the goal; 2/2 missing-grant controls stopped with zero goals; 2/2 original wait/direct runs retained |
 | **GR00T N1.7 / LIBERO Panda** | Natural asymmetric partial failures continued **without resetting the world**, under a new contract, human approval, and one dispatch per loop | Native single-attempt cohort: target repair 0/5 loops; each execution's Contract-bound preserve predicates maintained 16/16 across 6 original-world attempts + 10 diagnostic clones |
 | **Cosmos Policy / LIBERO Panda** | Seed-aligned 3 cm diagnostic fixture with a 3/3 stable scripted control and 128-action policy ceiling | No target contact, about 1 nm target motion, and `[true, false, true]` after 128 actions |
 | **VLA-0 / LIBERO Panda** | The same 3 cm snapshot, instruction, action ceiling, and scripted control | Target engagement 3/3; terminal conjunction 2/3; both successful traces lost the repaired predicate on the fifth stationary hold step, so 20-step stable completion was 0/2 replays |
