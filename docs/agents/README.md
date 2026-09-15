@@ -20,6 +20,7 @@ docs.
 | Repair diagnostic or executor conformance reporting | `repair-diagnostic-contract.md`, `claim-semantics.md`, `artifact-taxonomy.md`, `contracts.md` |
 | GR00T / LeRobot native Repair cohort accounting or publication | `groot-lerobot-native-single-attempt-cohort.md`, `groot-lerobot-semantic-repair-checkpoint-gate.md`, `publication-rules.md`, `claim-semantics.md` |
 | GR00T / LeRobot instruction delivery, local language sensitivity, semantic-direction diagnostics, or snapshot recoverability | `groot-lerobot-language-conditioning-probe.md`, `groot-lerobot-semantic-direction-horizon-probe.md`, `groot-lerobot-snapshot-recoverability-control.md`, `groot-lerobot-native-single-attempt-cohort.md`, `claim-semantics.md`, `publication-rules.md` |
+| WAM candidate/value or experience-based action selection claims | `wam-libero-terminal-selection-negative-result-20260915.md`, `claim-semantics.md`, `publication-rules.md` |
 | Anonymized recovery replay publication or verification | `replay-bundle-contract.md`, `publication-rules.md`, `claim-semantics.md` |
 | PX4 / Gazebo SITL or PX4 bench-adjacent runtime | `px4-gazebo-route-runtime.md`, `px4-sim-to-hardware-portability.md`, `hardware-adapter-contract.md`, `claim-semantics.md`, `e2e-verification.md`, `publication-rules.md` |
 | PX4 SITL 成果を実機（bench/HITL/field）に載せる・作り直し境界 | `px4-sim-to-hardware-portability.md`, `hardware-adapter-contract.md`, `recovery-intent-compiler-verifier.md`, `claim-semantics.md`, `hardware-partner-integration-guide.md` |
@@ -75,6 +76,7 @@ When the map above is not enough, read the complete set:
 - `groot-lerobot-language-conditioning-probe.md` — inference-only A/A/B evidence and its claim boundary
 - `groot-lerobot-semantic-direction-horizon-probe.md` — preregistered three-chunk A/A/B semantic-direction diagnostic and its bounded result
 - `groot-lerobot-snapshot-recoverability-control.md` — same-snapshot instruction control and privileged 7D-action recoverability boundary
+- `wam-libero-terminal-selection-negative-result-20260915.md` — same-state LIBERO candidate/value and experience-selection negative result, with terminal and adoption boundaries
 - `repository-status.md` — whole-repo status snapshot (maturity, risks, next work)
 
 ## Working Rule
