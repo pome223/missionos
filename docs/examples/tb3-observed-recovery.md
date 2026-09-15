@@ -69,3 +69,7 @@ training data, and upstream model implementation are not included. The result
 is not a stock-model benchmark, a general navigation qualification, a PX4
 result, or evidence of physical operation. See the
 [contracts, commands, results, and asset requirements](../agents/tb3-predictive-navigation.md).
+
+For historical comparisons, four research figures, all trial details, and the
+remaining Agent reasoning issues, see the
+[detailed research report (Japanese)](../agents/tb3-observed-recovery-research-report.ja.md).

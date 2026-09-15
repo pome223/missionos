@@ -1,5 +1,9 @@
 # TB3 predictive recovery: maintainer contract
 
+The [detailed Japanese research report](tb3-observed-recovery-research-report.ja.md)
+adds historical comparisons, full trial analysis, observed trajectories, latency
+and usage accounting, and a critical audit of Agent reasoning.
+
 ## Scope and authority
 
 `missionos navigation run tb3` is an opt-in local Gazebo Garden / ROS2 Humble /
@@ -43,10 +47,13 @@ may wait up to 0.25 wall seconds for the clock to catch up when it is less than
 0.05 simulator seconds ahead; timestamps and freshness limits are not rewritten.
 
 The central red-mask exposure threshold is 0.06. A clear mask is a scene-specific
-obstruction test, not a complete obstacle detector. Fresh verification frames
-and earlier planning frames may differ; a Recovery statement about their
-difference is not itself an integrity failure. The verification PNG and its
-timestamp must match the actual observation used by Rules.
+obstruction test, not a complete obstacle detector. PNG-file hashes and raw-camera RGB hashes identify different byte
+representations and must not be compared as if their difference proved a
+different frame. The report
+confirmed that decoding the verification PNG reproduced the observation RGB
+hash in both detour runs and the observed-continuation run. The Agent
+misinterpreted this distinction in one explanation. The verification PNG and
+its timestamp must match the actual observation used by Rules.
 
 Recovery text that explicitly claims collision freedom or safety is rejected
 by the bounded language check before Rules. This catches the tested phrases;
