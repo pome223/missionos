@@ -1,8 +1,8 @@
 # Causal repair candidate generation before selection
 
-Status: implementation and fixture validation only. No new robotics outcome
-matrix has been collected. This does not establish candidate quality, added
-recovery, superiority to an incumbent repair, or readiness for Phase B.
+Status: research implementation. Candidate quality, added recovery, superiority
+to an incumbent repair, and readiness for Phase B require separate measured
+qualification; their existence must not be inferred from these modules.
 
 ## Scope and authority
 
@@ -49,6 +49,41 @@ rejects the candidate. Even a feasible program still requires normal authority
 checks before operational execution.
 
 ## Phase A protocol
+
+`src/runtime/primitive_repair_adapter.py` implements closed-loop execution for
+the direct, clearance and detour templates. A caller-provided `RobotSession`
+owns full-state restoration, real world-frame robot control, current object and
+hand positions, loaded grasp/support observations, protected-object verification
+and terminal predicates. `allow_simulator=True` is required. This opt-in is a
+research execution permission, not a production MissionOS approval token.
+The session must explicitly declare `fixture` or `simulator` evidence; the adapter
+preserves that classification. Opting in does not promote a fixture to robotics
+evidence. As with receipts, this declaration is trusted caller input.
+
+The adapter clips requested translation to 6 mm per axis per control tick and
+requires the session to retain its registered hand orientation. It observes and
+checks preservation after every tick, stops on lost grasp, and enforces primitive
+and whole-program budgets. Placement requires five supported observations near
+the target. Release requires support before opening, then withdraws the open
+hand vertically by 4 cm. The final observation phase keeps the hand open and
+requires the caller's terminal predicates after at least 21 control ticks. The
+session must define the sampling period and independently enforce the required
+stability duration; 21 ticks alone is not evidence of one second of stability.
+
+Opposite-side reacquisition is deliberately absent from the adapter's supported
+primitive list. A different staged upper-grasp controller must not be relabeled
+as opposite-side reacquisition. It requires its own proposal, feasibility checks,
+measured support transfer and new-grasp validation. This adapter also does not
+implement swept-volume planning or robot inverse kinematics; admission and the
+session's physical controller retain those responsibilities. A development run
+with weaker geometric admission cannot establish the full feasibility contract.
+
+`stop_reasons` retains observed grasp loss, denied release, timeout and protection
+stops. A timeout is a measured incomplete attempt when observations remain valid;
+exceptions become unknown in the exhaustive runner. Sessions must journal every
+actual control and witness, including partial progress before an exception.
+The adapter consumes a restore once, preventing accidental second-arm execution
+from the preceding arm's terminal state.
 
 `src/runtime/candidate_informativeness.py` provides a backend-neutral exhaustive
 runner and evaluator. Freeze the following before inspecting evaluation outcomes:
@@ -129,7 +164,9 @@ current-state heuristic, experience, WAM, and their combination on unused starts
 
 ```sh
 PYTHONPATH=. python3 -m scripts.smoke_causal_repair_candidates --fixture
+PYTHONPATH=. python3 -m scripts.smoke_primitive_repair_adapter --fixture
 PYTHONPATH=. python3 -m pytest -q tests/contract/test_causal_repair_candidates.py
+PYTHONPATH=. python3 -m pytest -q tests/contract/test_primitive_repair_adapter.py
 ```
 
 Add `--output <new-directory>` to save the plan before execution and flush each
@@ -143,7 +180,7 @@ scripted to test distinct mechanisms and arithmetic. `evidence_kind=fixture`
 always prevents Phase B admission. Neither this smoke nor the tests run LIBERO,
 robotics dynamics, a real LLM, production approval/dispatch or hardware.
 
-To complete qualification, implement the above primitive and reset contract in
-an opt-in robotics adapter and run the frozen cohort. Fixture results must never
-be relabeled as simulator results. Until then, the research success condition
-remains untested and this feature should remain a draft research implementation.
+To qualify a candidate set, connect a version-bound robotics session and run the
+frozen cohort. Fixture results must never be relabeled as simulator results.
+The implementation remains a draft until the research success condition is
+supported by measured evidence under the complete protocol.
