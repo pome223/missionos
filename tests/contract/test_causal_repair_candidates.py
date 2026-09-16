@@ -251,3 +251,26 @@ def test_qualification_arithmetic_requires_full_cohort_and_is_fixture_blocked():
     assert not summarize(plan, rows, evidence_kind="fixture")["phase_b_admissible"]
     damaged = (replace(rows[0], preservation=False), *rows[1:])
     assert not summarize(plan, damaged, evidence_kind="simulator")["phase_b_admissible"]
+
+
+def test_unilateral_recovery_has_separate_precondition_and_capability():
+    proposal = (FamilyProposal("recover_bilateral_grasp", "observed-one-pad"),)
+    c = context(
+        held=False,
+        unilateral_grasp_observed=True,
+        supported_operations=(*OPERATIONS, "recover_bilateral_grasp"),
+    )
+    programs, rejected = generate_candidates(c, proposal, feasible=lambda _: True)
+    assert rejected == {"direct": "requires_observed_grasp"}
+    assert len(programs) == 1
+    assert programs[0].operations[0].operation == "recover_bilateral_grasp"
+    assert programs[0].operations[1].operation == "translate"
+    for changes, reason in [
+        ({"unilateral_grasp_observed": False}, "requires_observed_unilateral_grasp"),
+        ({"supported_operations": OPERATIONS}, "unsupported_primitive"),
+    ]:
+        programs, rejected = generate_candidates(
+            replace(c, **changes), proposal, feasible=lambda _: True
+        )
+        assert not programs
+        assert rejected["recover_bilateral_grasp"] == reason

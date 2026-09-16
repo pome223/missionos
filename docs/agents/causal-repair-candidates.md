@@ -32,6 +32,7 @@ both primitive and whole-program limits and monitor preservation throughout.
 | `increase_clearance` | vertical clearance | Raise above both entry and goal, translate, lower |
 | `lateral_detour` | lateral corridor | Shift laterally, transport along that corridor, return |
 | `release_and_reacquire` | grasp side | Place at staging region, release, acquire from opposite side, transport |
+| `recover_bilateral_grasp` | loaded contact at both pads | Close with bounded contact-guided centering, qualify grasp, transport |
 
 Every prefix ends with `place_then_stabilize(goal)`, `release(goal)`, and
 `hold_and_observe(goal)`. Placement must be supported and stable before release.
@@ -40,13 +41,48 @@ must preserve the released state, not close the gripper again. An adapter that
 cannot implement these semantics must omit the primitive from its capabilities.
 Unsupported regrasp is rejected, never translated into an equivalent transport.
 
-The initial compiler supports these three repair families plus direct transport.
+The default family tuple retains the three transport/reacquisition families.
+`REGISTERED_FAMILIES` additionally allows explicit `recover_bilateral_grasp`
+proposals, still with at most three proposals plus direct per call. This family
+requires caller-observed unilateral grasp; other families still require `held`.
 It does not yet implement obstacle relocation or arbitrary free-text programs.
 Protected objects cannot be direct manipulation targets. Workspace and budget
 checks are necessary only: the caller's feasibility callback must check swept
 geometry, protected objects, grasp and staging feasibility. Unknown feasibility
 rejects the candidate. Even a feasible program still requires normal authority
 checks before operational execution.
+
+## Experimental unilateral grasp recovery
+
+`grasp_recovery.py` qualifies loaded bilateral contact before transport. It
+requires current `GraspEvidence`: simulation/control time, normal force at each
+pad, the object-to-pad-midpoint error projected onto the measured closing axis,
+object pose relative to the hand, and upright status. Missing, invalid, stale or
+more than 100 ms separated samples stop the primitive. Forces are newtons;
+positions are metres and the relative rotation is a proper row-major 3x3 matrix.
+The session must convert sensor/physics scalars to Python floats.
+
+`recover_bilateral_grasp` keeps the gripper closed and commands at most 0.5 mm
+translation per tick along the measured error. Error above 5 mm is rejected;
+observed hand travel and object displacement from entry must each remain within
+5 mm. Loss of loaded contact, upright status or protection stops execution. The
+session must retain the registered hand orientation. These are sampled guards,
+not a continuous collision or force-limit guarantee. Object-center alignment is
+an experimental geometric hypothesis and can be inappropriate for an intentional
+off-center grasp; it is not an inferred grasp-quality measurement.
+
+Qualification requires both pad forces at least 0.5 N plus observed bilateral
+contact for at least 0.5 seconds, with relative translation within 1 mm and
+rotation within 2 degrees of the window's first sample. Slip restarts that window.
+The primitive never opens the gripper. `close_and_qualify_grasp` exposes the same
+qualification and guards with zero translation as a required simple comparator
+for development experiments. Neither qualification nor `program_complete` is
+mission completion; terminal predicates still come from the mission Verifier.
+
+This is opt-in research code, not an adopted repair. Test development states
+against close-only first. Expand to a frozen cohort only if added recovery is
+observed, then measure mission outcomes under matched whole-program budgets.
+Do not infer terminal improvement from intermediate grasp qualification.
 
 ## Phase A protocol
 
@@ -165,8 +201,9 @@ current-state heuristic, experience, WAM, and their combination on unused starts
 ```sh
 PYTHONPATH=. python3 -m scripts.smoke_causal_repair_candidates --fixture
 PYTHONPATH=. python3 -m scripts.smoke_primitive_repair_adapter --fixture
+PYTHONPATH=. python3 -m scripts.smoke_grasp_recovery --fixture
 PYTHONPATH=. python3 -m pytest -q tests/contract/test_causal_repair_candidates.py
-PYTHONPATH=. python3 -m pytest -q tests/contract/test_primitive_repair_adapter.py
+PYTHONPATH=. python3 -m pytest -q tests/contract/test_primitive_repair_adapter.py tests/contract/test_grasp_recovery.py
 ```
 
 Add `--output <new-directory>` to save the plan before execution and flush each

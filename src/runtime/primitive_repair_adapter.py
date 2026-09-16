@@ -8,6 +8,7 @@ from dataclasses import dataclass
 import math
 from typing import Protocol
 
+from src.runtime.grasp_recovery import GraspEvidence, GraspRecovery
 from src.runtime.causal_repair_candidates import Candidate
 from src.runtime.candidate_informativeness import Measurement, Start
 
@@ -21,6 +22,7 @@ class RobotObservation:
     preserved: bool
     predicates: tuple[bool, ...]
     minimum_clearance_m: float
+    grasp: GraspEvidence | None = None
 
 
 class RobotSession(Protocol):
@@ -42,6 +44,8 @@ class RobotSession(Protocol):
 
 class PrimitiveRepairAdapter:
     supported_operations = (
+        "recover_bilateral_grasp",
+        "close_and_qualify_grasp",
         "translate",
         "raise",
         "lower",
@@ -134,6 +138,7 @@ class PrimitiveRepairAdapter:
             settled = 0
             reached = False
             release_hand = obs.hand_m
+            recovery = GraspRecovery(obs, recenter=op.operation == "recover_bilateral_grasp")
             if not preserved:
                 reason = "preservation_stop"
                 break
@@ -141,7 +146,16 @@ class PrimitiveRepairAdapter:
                 if steps >= maximum_steps:
                     reason = "program_budget"
                     break
-                if op.operation in {"translate", "raise", "lower", "place_then_stabilize"}:
+                if op.operation in {"recover_bilateral_grasp", "close_and_qualify_grasp"}:
+                    status, delta = recovery.update(obs)
+                    if status == "qualified":
+                        reached = True
+                        break
+                    if status != "running":
+                        reason = status
+                        break
+                    advance(delta, 1.0)
+                elif op.operation in {"translate", "raise", "lower", "place_then_stabilize"}:
                     if not obs.held:
                         reason = "grasp_lost"
                         break

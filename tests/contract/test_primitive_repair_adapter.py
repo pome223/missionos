@@ -121,3 +121,56 @@ def test_nonfinite_target_cannot_turn_into_a_robot_command():
     with pytest.raises(ValueError):
         a.execute(start, c, 30)
     assert not s.calls
+
+
+def test_grasp_recovery_qualifies_before_transport_and_never_opens():
+    from src.runtime.grasp_recovery import GraspEvidence
+
+    s, a, start, c = setup(
+        [
+            Primitive("recover_bilateral_grasp", "object", (0.0, 0.0, 0.0), 20),
+            Primitive("translate", "object", (0.01, 0.0, 0.0), 10),
+        ]
+    )
+    s.current = replace(
+        s.current,
+        held=False,
+        grasp=GraspEvidence(
+            0.0,
+            (1.0, 0.0),
+            (0.002, 0.0, 0.0),
+            (0.0, 0.0, -0.1),
+            (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0),
+            True,
+        ),
+    )
+    step = s.step
+
+    def progress(delta, grip):
+        step(delta, grip)
+        s.current = replace(
+            s.current,
+            grasp=replace(
+                s.current.grasp, time_seconds=len(s.calls) * 0.05, pad_forces_n=(1.0, 1.0)
+            ),
+        )
+
+    s.step = progress
+    a.execute(start, c, 30)
+    assert a.stop_reasons[(start.start_id, c.family)] == "program_complete"
+    assert len(s.calls) >= 12
+    assert s.calls[0] == ((0.0005, 0.0, 0.0), 1.0)
+    assert all(grip == 1.0 for _, grip in s.calls)
+    assert all(delta == (0.0, 0.0, 0.0) for delta, _ in s.calls[1:11])
+
+
+def test_grasp_recovery_missing_evidence_prevents_following_motion():
+    s, a, start, c = setup(
+        [
+            Primitive("recover_bilateral_grasp", "object", (0.0, 0.0, 0.0), 20),
+            Primitive("translate", "object", (0.01, 0.0, 0.0), 10),
+        ]
+    )
+    a.execute(start, c, 30)
+    assert a.stop_reasons[(start.start_id, c.family)] == "grasp_evidence_missing"
+    assert s.calls == []

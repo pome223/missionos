@@ -60,6 +60,7 @@ class RepairContext:
     steps_per_operation: int = 40
     clearance_m: float = 0.06
     detour_m: float = 0.08
+    unilateral_grasp_observed: bool = False
 
 
 @dataclass(frozen=True)
@@ -68,7 +69,12 @@ class FamilyProposal:
     hypothesis_ref: str
 
 
-FAMILIES = ("increase_clearance", "lateral_detour", "release_and_reacquire")
+FAMILIES = (
+    "increase_clearance",
+    "lateral_detour",
+    "release_and_reacquire",
+)
+REGISTERED_FAMILIES = (*FAMILIES, "recover_bilateral_grasp")
 
 
 def generate_candidates(
@@ -99,9 +105,10 @@ def generate_candidates(
         or c.clearance_m <= 0
         or c.detour_m <= 0
         or type(c.held) is not bool
+        or type(c.unilateral_grasp_observed) is not bool
         or len(proposals) > 3
         or len({p.family for p in proposals}) != len(proposals)
-        or any(p.family not in FAMILIES or not p.hypothesis_ref for p in proposals)
+        or any(p.family not in REGISTERED_FAMILIES or not p.hypothesis_ref for p in proposals)
     ):
         raise ValueError("invalid repair context or family proposal")
     x, y, z = c.position_m
@@ -109,6 +116,10 @@ def generate_candidates(
     height = max(z, gz) + c.clearance_m
     # Different intervention variables, not nearby parameter samples.
     templates = {
+        "recover_bilateral_grasp": (
+            "loaded_grasp_contact",
+            (("recover_bilateral_grasp", c.position_m), ("translate", c.goal_m)),
+        ),
         "direct": ("transport_path", (("translate", c.goal_m),)),
         "increase_clearance": (
             "vertical_clearance",
@@ -152,7 +163,9 @@ def generate_candidates(
             ),
         )
         reason = None
-        if not c.held:
+        if proposal.family == "recover_bilateral_grasp" and not c.unilateral_grasp_observed:
+            reason = "requires_observed_unilateral_grasp"
+        elif not c.held and proposal.family != "recover_bilateral_grasp":
             reason = "requires_observed_grasp"
         elif c.object_id in c.protected_objects:
             reason = "protected_object"
