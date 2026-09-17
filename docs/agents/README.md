@@ -35,6 +35,10 @@ docs.
 | Local LLM backends or model config | `local-llm-backends.md`, `contracts.md` |
 | Anything that ships to the public snapshot | `publication-rules.md`, `e2e-verification.md`, `missionos-chat-pr-merge-e2e-checklist.md`, `claim-semantics.md` |
 
+## Research Reports
+
+- [Block stacking with a VLA and learned world model](block-stacking-wam-technical-report-20260918.md) — prediction failures, the offset pilot, and the frozen-model ten-start game; score gains remain confounded by fixed-count stopping.
+
 ## Full Reference
 
 When the map above is not enough, read the complete set:
