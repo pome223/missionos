@@ -1,0 +1,40 @@
+{
+  "scope": "video recreation, not additional benchmark trials",
+  "seed": 45104,
+  "capture_stride_control_steps": 4,
+  "control_hz": 20,
+  "mp4_fps": 5,
+  "playback_speed": 1,
+  "end_display": "shorter panels freeze; final montage held two video seconds",
+  "scores_and_states_verified": [
+    {
+      "arm": "baseline",
+      "score": 0,
+      "recorded_frames": 89,
+      "decision_images_and_decisions_match": true,
+      "final_object_poses_exact_match": true,
+      "maximum_drop_exact_match": true
+    },
+    {
+      "arm": "wam",
+      "score": 1,
+      "recorded_frames": 113,
+      "decision_images_and_decisions_match": true,
+      "final_object_poses_exact_match": true,
+      "maximum_drop_exact_match": true
+    },
+    {
+      "arm": "finish2",
+      "score": 0,
+      "recorded_frames": 89,
+      "decision_images_and_decisions_match": true,
+      "final_object_poses_exact_match": true,
+      "maximum_drop_exact_match": true
+    }
+  ],
+  "media_sha256": {
+    "offset-pilot-replay.mp4": "8ceeea8474495e00b181ae7ba6c6155e7d69cdba5a459879184ffe3ba8cfc751",
+    "offset-pilot-replay.gif": "7844b15433fb6608b3119d54301ac0e307b08ac62e2125fc0fd492a541583a1e",
+    "offset-pilot-replay-poster.png": "2b42e19cb26155eb4fe8ac073856ce04a36e118f3a2ec4fc0e3fc64738df9c9a"
+  }
+}

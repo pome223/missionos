@@ -420,6 +420,37 @@ a bounded instance of forecast, changed decision, and preserved score. It does
 not establish broad accuracy, statistical superiority, or useful continuation
 beyond the shared current-state rule.
 
+### 5.1 Video of the pilot's useful intervention
+
+![Offset pilot, fifth game: current-state rule scores zero, WAM banks one, and release counterfactual scores zero](../assets/block-stacking-pilot-20260918/offset-pilot-replay.gif)
+
+[Watch or download the pilot MP4](../assets/block-stacking-pilot-20260918/offset-pilot-replay.mp4)
+· [Static final frame](../assets/block-stacking-pilot-20260918/offset-pilot-replay-poster.png)
+· [Pilot video recreation checks](../assets/block-stacking-pilot-20260918/replay-verification.json)
+
+This video shows **only the fifth pilot game**, seed 45104 with an 18 mm
+per-level offset. It is distinct from the later centered eight/nine-block
+comparison. Left: the current-state stopping rule permits the second release,
+which collapses and scores zero. Center: WAM forecasts 42.223 mm of downward
+motion, chooses bank instead of release, and preserves one point. Right: the
+saved same-state release counterfactual confirms 42.607 mm of actual maximum
+drop and zero points. The left and right releases reproduce the same outcome;
+they are not independent successful prediction cases.
+
+The held second block in the center panel is withdrawn and excluded from the
+score. This is the single pilot intervention supporting the claim of correct
+fall prediction followed by a changed decision and preserved score. It does not
+establish general predictive accuracy or explain the later fixed-eight behavior.
+
+These are report-time saved-action simulator replays, with no new model
+inference or additional benchmark trials. All three scores, collapse flags,
+maximum drops, final object poses, and reached decision images/choices matched
+the original records exactly. Frames are captured every four 20 Hz control
+steps and played at 5 fps: **normal simulation speed**, unlike the 4× centered
+game video. Completed panels freeze while the others finish. The displayed
+release-attempt counter advances when the release segment begins; only the
+terminal label is the verified score. Staged acquisition remains scripted.
+
 ## 6. Ten-start centered game with frozen models
 
 ### 6.1 Protocol
