@@ -29,8 +29,7 @@ class PredictionSession:
     def __init__(self, provider, output: Path, *, allow_simulator_decisions: bool):
         self.provider = provider
         self.registry = PredictionRegistry()
-        if provider is not None:
-            self.registry.register(provider)
+        self.registry.register(provider)
         self.output = output
         output.mkdir(parents=True, exist_ok=False)
         self.allow_simulator_decisions = allow_simulator_decisions
@@ -49,7 +48,7 @@ class PredictionSession:
             raise ValueError("simulator session not enabled")
         x = validate_state(body["state"])
         binding = PredictionBinding(**body["binding"])
-        if self.provider is not None and binding != self.provider.binding:
+        if binding != self.provider.binding:
             raise ValueError("session binding mismatch")
         # Current-state fallback is explicitly a policy, never a prediction.
         tilt = max(
@@ -67,7 +66,7 @@ class PredictionSession:
             ]
         )
         options = tuple(PredictionOption(**o) for o in body["options"])
-        expected_horizon = self.provider.horizon_steps / 20 if self.provider is not None else 28.4
+        expected_horizon = self.provider.horizon_steps / 20
         if [(o.option_id, o.horizon_seconds) for o in options] != [
             ("continue", expected_horizon),
             ("bank", 14.2),
@@ -87,7 +86,7 @@ class PredictionSession:
             "invalid_horizon",
         ):
             raise ValueError(forecast["reason"])
-        threshold = self.provider.threshold if self.provider is not None else 0.5
+        threshold = self.provider.threshold
         stop = tilt > 5 or drift > 0.003
         mode = "current_state_fallback"
         if forecast["status"] == "available":
@@ -103,6 +102,7 @@ class PredictionSession:
             "selected_option": "bank" if stop else "continue",
             "decision_policy": mode,
             "threshold": threshold,
+            "existing_count": int(x["count"]) - 1,
             "llm_invoked": False,
             "scope": "opt_in_simulator_lab",
             "hardware_dispatch_authorized": False,
@@ -140,6 +140,14 @@ class PredictionSession:
             raise ValueError("collapse label not supported by measured drop")
         if result["technical_failure"] is not None:
             raise ValueError("unscorable technical failure")
+        count = result["count_after"]
+        expected_count = decision["existing_count"] + (option == "continue")
+        if type(count) is not int or not decision["existing_count"] <= count <= expected_count:
+            raise ValueError("invalid observed block count")
+        if not collapsed and count != expected_count:
+            raise ValueError("incomplete noncollapsed option")
+        if type(result["score"]) is not int or result["score"] != (0 if collapsed else count):
+            raise ValueError("score not supported by observed outcome")
         predicted = decision["forecast"]
         receipt = compare_prediction(
             predicted,

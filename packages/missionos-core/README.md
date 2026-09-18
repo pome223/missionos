@@ -18,3 +18,11 @@ alignment requires a registered diagnostic reference or observed effect, while
 predicate recovery, preservation, and stable hold require simulator, external
 runtime, or physical observations. A passing report remains bounded to its
 declared executor, task, fixture, and evaluation scope and creates no authority.
+
+## Mission-scoped prediction
+
+`missionos_core.prediction` defines model/policy/mission bindings, forecast options,
+a predictor protocol and registry, and horizon-bound outcome comparisons. It is
+dependency-free and never grants action authority. Learned backends are optional
+and live outside Core. See `docs/agents/mission-prediction-contract.md` in the
+monorepo for the initial opt-in stacking integration and its limitations.

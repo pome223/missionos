@@ -93,3 +93,6 @@ the same change.
 - `docs/agents/adk-v2-control-loop.md`
 - `docs/agents/adk-v2-legacy-gateway.md`
 - `docs/agents/adk-v2-runtime-inventory.md`
+
+- [Mission-scoped prediction contract](mission-prediction-contract.md) — dependency-free Core forecast interface and opt-in stacking adapter.
+- [Stacking prediction integration verification](mission-prediction-stacking-integration.md) — known-case live Core/CLI simulator verification, separate from capability evaluation.

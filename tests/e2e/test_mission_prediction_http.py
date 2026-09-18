@@ -84,8 +84,15 @@ def test_actual_http_decision_observation_and_rejection(tmp_path):
                 "collapsed": False,
                 "technical_failure": None,
                 "score": 0,
+                "count_after": 0,
             },
         }
+        for key, bad in [("request_sha256", "wrong"), ("option_id", "continue")]:
+            with pytest.raises(HTTPError):
+                post("/observe", o | {key: bad})
+        for key, bad in [("score", 10), ("horizon_steps", 568), ("collapsed", True)]:
+            with pytest.raises(HTTPError):
+                post("/observe", o | {"result": o["result"] | {key: bad}})
         receipt = post("/observe", o)
         assert receipt["classification"] == "TN"
         assert not receipt["completion_claimed"]
