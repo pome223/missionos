@@ -4,6 +4,17 @@ Technical report — 18 September 2026
 
 Scope: simulated block-stacking experiments recorded in the 17 September experiment series, through the ten-start evaluation and its subsequent audit.
 
+## Subsequent evaluations
+
+The [physical-variation follow-up](block-stacking-wam-physics-followup-20260918.md)
+reports two later, separate forty-game cohorts: the frozen WAM scored 292 versus
+280 for width-dependent stopping; after longer-horizon retraining, new WAM scored
+273 versus old WAM 281 and width stopping 280 on the same new starts. It details
+the unresolved simple-baseline comparison and unequal terminal stability checks.
+The methods, weights, and future-work recommendations below describe the earlier
+study; the follow-up records subsequent changes. Existing videos are historical
+replays, not footage of the later cohorts.
+
 ## Abstract
 
 We investigated whether a world action model (WAM) can predict the state of
