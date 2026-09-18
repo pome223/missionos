@@ -5046,3 +5046,8 @@ def play_command(
     )
 
 missionos.add_command(_assurance_policy_group)
+
+# Keep optional ML imports out of ordinary CLI startup.
+from .prediction_command import prediction_command  # noqa: E402
+
+missionos.add_command(prediction_command)
