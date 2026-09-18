@@ -6,7 +6,16 @@ This continues the [initial report](block-stacking-wam-technical-report-20260918
 The original pilot and centered-game videos remain historical examples; they are
 not footage of the two forty-game cohorts reported here. No new video is included.
 
-## Findings
+## Latest evaluation
+
+Section 8 reports a third, independent forty-game cohort with **uniform terminal
+stability scoring**: new WAM 279, old WAM 225, width rule 280, current rule 198,
+and VLA 30. Models and thresholds were unchanged. The new WAM gained one point
+in fifteen games relative to width stopping, but lost eight points in each of
+two games. State-dependent decisions were observed; superiority over width
+stopping remains unestablished. Earlier v5/v6 endpoints are preserved below.
+
+## Findings from v5 and v6
 
 The frozen short-horizon WAM scored **292 points in v5**, versus 280 for a
 validation-selected width-dependent stopping rule, 208 for the current-state
@@ -255,8 +264,8 @@ The width rule still scores higher than either WAM under this diagnostic.
 
 The next justified protocol change is to apply the same post-placement terminal
 stability interval at every stopping count, including ten, and align training,
-validation selection, and evaluation with it. That next experiment has **not**
-been performed in this update. Previously inspected games cannot become fresh
+validation selection, and evaluation with it. That protocol change was subsequently evaluated in v7 (Section 8);
+it does not retroactively change either earlier cohort’s primary endpoint. Previously inspected games cannot become fresh
 test data after redesign. Neither cohort establishes superiority over the width
 rule, equivalence of methods, hardware safety, or general-purpose WAM capability.
 
@@ -382,3 +391,214 @@ or independent runtime proof. The PR is not an independently runnable replicatio
 package. Public documentation checks can establish arithmetic and link integrity,
 not independently validate the physics. The existing videos only cover the
 initial report's pilot and centered examples.
+
+## 8. v7: uniform terminal stability, frozen models, forty new games
+
+### 8.1 Protocol and verification
+
+Seeds 67000–67039, twenty wide and twenty narrow, were fixed before testing.
+Every voluntary stop **and ten-block completion** now requires the same
+284-step / 14.2-second bank/hold after the last placement. Collapse during that
+interval gives zero. Placement macros, physical-property distribution, exact-state
+inputs, shared actual VLA prefixes, and saved-state branching follow Section 2.
+Intermediate extra holds remain diagnostic branches and are not inserted between
+actual placements. This is finite-horizon stability, not indefinite safety.
+
+Both WAMs and SmolVLA retain the hashes in Section 7. No retraining or threshold
+selection occurred: old threshold 0.2, new threshold 0.5; width stopping remains
+eight for wide games and six for narrow games. The new model predicts placement
+plus hold; the old model retains its shorter prediction target. Neither was
+reselected for the newly standardized scoring objective.
+
+Before evaluation, saved-action checks on two previously inspected starts
+confirmed the scoring change: stable seed 65008 remained ten; seed 65016 changed
+from ten to zero after its delayed collapse. Original inputs, actions, and branch
+outcomes matched. These two checks are excluded from the new forty-game cohort.
+
+Primary comparisons were new versus width rule, old versus width rule, and new
+versus old; secondary comparisons were each WAM versus current rule and VLA.
+All seven comparisons use one Holm family. Paired width-stratified bootstrap
+intervals use 20,000 resamples; two-sided sign-flip tests use 100,000 draws.
+Intervals are unadjusted per comparison; p-values are multiplicity-adjusted.
+The study stopped at forty games, without outcome-dependent extension, pooling,
+or replacement. All forty yielded complete comparisons without technical errors;
+the all-attempt technical-as-zero sensitivity totals equal the main totals.
+
+Recorded checks covered 355 prediction-input hashes, 155 saved-state placement
+replays, 4,598 actual VLA action chunks, and 315 agreements between forecast
+waiting and the corresponding next bank branch. Every arm's score was independently
+reconstructed from the saved decisions and outcomes. Model, code, and dependency
+hashes matched pre-test records. Local model servers and the evaluation process
+exited successfully; no cloud resources were created. Publication did not rerun
+the experiment, add videos, or expose raw private artifacts.
+
+### 8.2 Results
+
+| Method | Total | Mean |
+| --- | ---: | ---: |
+| VLA only | 30 | 0.750 |
+| Current-state rule | 198 | 4.950 |
+| New WAM | 279 | 6.975 |
+| Old WAM | 225 | 5.625 |
+| Width rule | 280 | 7.000 |
+| Fixed six | 240 | 6.000 |
+| Fixed seven | 203 | 5.075 |
+| Fixed eight | 160 | 4.000 |
+| Fixed nine | 144 | 3.600 |
+
+| Paired comparison | Mean difference | 95% interval | Holm p | Wins / ties / losses |
+| --- | ---: | --- | ---: | --- |
+| New minus width rule | -0.025 | [-0.700, 0.450] | 1.00000 | 15 / 23 / 2 |
+| Old minus width rule | -1.375 | [-2.400, -0.350] | 0.08988 | 12 / 19 / 9 |
+| New minus old | +1.350 | [0.250, 2.450] | 0.11232 | 8 / 26 / 6 |
+| New minus current rule | +2.025 | [1.025, 3.050] | 0.00515 | 19 / 14 / 7 |
+| New minus VLA | +6.225 | [5.275, 7.000] | 0.00007 | 35 / 2 / 3 |
+| Old minus current rule | +0.675 | [-0.800, 2.200] | 0.92153 | 17 / 12 / 11 |
+| Old minus VLA | +4.875 | [3.900, 5.875] | 0.00007 | 28 / 12 / 0 |
+
+New WAM retained 54 more points than old WAM, but the predeclared corrected
+comparison did not establish significance at 5%. This supports investigating
+long-horizon stopping; it is not a causal proof that horizon extension alone
+improved capability, since the models also differ in learned parameters and
+previously selected settings. v5's 292 and v6's 273 must not be compared directly
+with these totals: both test starts and the primary endpoint differ.
+
+### 8.3 Why 279 versus 280 matters
+
+Against the width rule, new WAM gained **15 × 1 = 15 points**, tied in 23 games,
+and lost **2 × 8 = 16 points** through collapse, for a net difference of minus
+one. The observed benefit of continuing beyond the simple cutoff was canceled
+by a small number of large losses. This is informative evidence about the
+risk/reward tradeoff, rather than evidence of either general superiority or
+uselessness of prediction.
+
+The new model did distinguish correct stopping from safe continuation at the
+same ninth-placement depth in wide games. However, this alone does not show
+that detailed mass/friction/center-of-mass information caused the decisions or
+that prediction was necessary; attribute ablations were not performed. The
+fifteen gains alone cannot establish reliable identification of all safe states.
+
+New WAM stopped in all forty games: twenty narrow games at six, and wide games
+seventeen times at nine and three times at eight. Two attempted nine-block banks
+collapsed. It earned fifteen nine-point scores and no ten-point scores. Narrow
+scores were new WAM 120, width rule 120, current rule 51; wide scores were new
+159, width rule 160, current rule 147. Thus the aggregate current-rule improvement
+should not be mistaken for proof of WAM-specific value over simple stopping.
+
+Old WAM stopped voluntarily in 31 games, with three bank collapses, and completed
+three stable ten-block games. Same-depth correct stop/continue examples occurred
+at wide depths nine and ten and narrow depth seven. Models' reached-state sets
+are different and must not be treated as the same prediction sample.
+
+| Reached-state scope / target | TP | FP | TN | FN |
+| --- | ---: | ---: | ---: | ---: |
+| New reached / long target | 27 | 13 | 295 | 2 |
+| New reached / immediate target | 12 | 28 | 297 | 0 |
+| Old reached / immediate target | 13 | 18 | 308 | 2 |
+| Old reached / long diagnostic | 24 | 7 | 301 | 9 |
+
+Long-target assessment of the old model is outside its trained horizon. A
+placement-then-stop hazard does not imply that continuing to further placements
+would necessarily collapse. New WAM had 25 successful long-hazard banking
+interventions (ten immediate-collapse and fifteen delayed-collapse cases), and
+thirteen stops where the next placement plus hold was actually safe. New long-target
+maximum-drop MAE was 27.59 mm; mean final-XYZ RMSE was 13.83 mm versus 17.81 mm
+for the planned/current pose predictor. Separate regression and classification
+heads remain potentially inconsistent.
+
+### 8.4 Five priority errors and a counterexample to score-only interpretation
+
+| Seed | Decision under examination | New continue risk | Old continue risk | Matched outcome and score |
+| --- | --- | ---: | ---: | --- |
+| 67006 | Before block nine | 0.381 | 0.343 | New continued and later banked too late: 0; old stopped: 8; width rule: 8 |
+| 67010 | Before block nine | 0.465 | 0.120 | Both continued and later banking collapsed: 0; width rule: 8 |
+| 67016 | Before block ten | 0.827 | 0.115 | Placement plus terminal hold safe; new stopped at 9, old completed 10 |
+| 67020 | Before block ten | 0.804 | 0.085 | Placement plus terminal hold safe; new stopped at 9, old completed 10 |
+| 67036 | Before block ten | 0.779 | 0.152 | Placement plus terminal hold safe; new stopped at 9, old completed 10 |
+
+The two new-model misses were below its 0.5 threshold. Seed 67010 was close;
+67006 was farther below. Their old-model scores cannot be compared without its
+lower 0.2 threshold. This is insufficient to diagnose calibration versus missing
+features or training coverage. The three safe-ten cases received high new-model
+risk scores, not merely borderline warnings. All three were accepted by old WAM.
+
+A useful delayed-collapse intervention was seed 67002: before block nine, new
+risk 0.818 triggered banking eight, whereas old risk 0.193 allowed continuation.
+The ninth placement initially stood but collapsed during banking; old WAM scored
+zero. Width stopping also earned eight, so this example alone is not added value
+beyond that comparator.
+
+Conversely, seed 67004 shows why a higher score is not automatically a correct
+next-state forecast. New WAM stopped before a safe ninth placement and earned
+eight; old WAM progressed to ten and eventually collapsed, scoring zero. New won
+this game but its immediate stop forecast was a false positive.
+
+Eleven source trajectories completed ten within the original placement endpoint;
+eight then collapsed in the required terminal hold, leaving only three stable
+ten-point outcomes. New WAM stopped all three at nine. The hindsight best observed
+bank score totaled 308 versus width stopping's 280; this is a diagnostic upper
+bound on observed options, not a realizable policy or guaranteed learning gain.
+
+### 8.5 Next diagnosis, not a completed improvement
+
+The next bounded analysis should examine the two misses and three safe-ten
+rejections before collecting more evaluation games: compare nearby training
+states, onset of motion, feature contributions, continue versus bank risk, and
+threshold sensitivity on development data. Prior long-target validation had
+zero safe tenth-placement examples; its role in false stopping remains a
+hypothesis, not an established cause. A lower threshold might prevent misses
+while increasing false stops; adjusting it on these forty outcomes would make
+this cohort development data, requiring a fresh held-out evaluation.
+
+The supported conclusion is that meaningful state-dependent decisions and
+useful interventions exist, but their aggregate advantage over the width rule
+remains unestablished. No new diagnostic retraining, feature attribution, or
+calibration analysis was performed for this publication update.
+
+### 8.6 All forty original v7 outcomes under uniform terminal scoring
+
+A dash means no voluntary stop. Stop counts record decisions; zero scores may
+include collapse during banking. These rows are not pooled with v5 or v6.
+
+| Seed | Width | VLA | Current rule | New WAM | Old WAM | Width rule | New / old stop |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| 67000 | wide | 0 | 0 | 9 | 9 | 8 | 9 / 9 |
+| 67001 | narrow | 0 | 7 | 6 | 7 | 6 | 6 / 7 |
+| 67002 | wide | 0 | 8 | 8 | 0 | 8 | 8 / 9 |
+| 67003 | narrow | 0 | 7 | 6 | 6 | 6 | 6 / 6 |
+| 67004 | wide | 0 | 8 | 8 | 0 | 8 | 8 / — |
+| 67005 | narrow | 0 | 0 | 6 | 7 | 6 | 6 / 7 |
+| 67006 | wide | 0 | 0 | 0 | 8 | 8 | 9 / 8 |
+| 67007 | narrow | 0 | 0 | 6 | 6 | 6 | 6 / 6 |
+| 67008 | wide | 0 | 9 | 9 | 9 | 8 | 9 / 9 |
+| 67009 | narrow | 0 | 6 | 6 | 6 | 6 | 6 / 6 |
+| 67010 | wide | 0 | 8 | 0 | 0 | 8 | 9 / 9 |
+| 67011 | narrow | 0 | 6 | 6 | 6 | 6 | 6 / 6 |
+| 67012 | wide | 0 | 9 | 9 | 9 | 8 | 9 / 9 |
+| 67013 | narrow | 0 | 0 | 6 | 6 | 6 | 6 / 6 |
+| 67014 | wide | 0 | 9 | 9 | 9 | 8 | 9 / 9 |
+| 67015 | narrow | 0 | 5 | 6 | 6 | 6 | 6 / 6 |
+| 67016 | wide | 10 | 8 | 9 | 10 | 8 | 9 / — |
+| 67017 | narrow | 0 | 0 | 6 | 6 | 6 | 6 / 6 |
+| 67018 | wide | 0 | 9 | 9 | 9 | 8 | 9 / 9 |
+| 67019 | narrow | 0 | 0 | 6 | 6 | 6 | 6 / 6 |
+| 67020 | wide | 10 | 10 | 9 | 10 | 8 | 9 / — |
+| 67021 | narrow | 0 | 0 | 6 | 6 | 6 | 6 / 6 |
+| 67022 | wide | 0 | 9 | 9 | 0 | 8 | 9 / — |
+| 67023 | narrow | 0 | 0 | 6 | 0 | 6 | 6 / 7 |
+| 67024 | wide | 0 | 8 | 9 | 0 | 8 | 9 / — |
+| 67025 | narrow | 0 | 0 | 6 | 6 | 6 | 6 / 6 |
+| 67026 | wide | 0 | 0 | 9 | 9 | 8 | 9 / 9 |
+| 67027 | narrow | 0 | 0 | 6 | 6 | 6 | 6 / 6 |
+| 67028 | wide | 0 | 9 | 9 | 0 | 8 | 9 / — |
+| 67029 | narrow | 0 | 0 | 6 | 6 | 6 | 6 / 6 |
+| 67030 | wide | 0 | 8 | 8 | 8 | 8 | 8 / 8 |
+| 67031 | narrow | 0 | 0 | 6 | 6 | 6 | 6 / 6 |
+| 67032 | wide | 0 | 8 | 9 | 9 | 8 | 9 / 9 |
+| 67033 | narrow | 0 | 7 | 6 | 6 | 6 | 6 / 6 |
+| 67034 | wide | 0 | 9 | 9 | 0 | 8 | 9 / — |
+| 67035 | narrow | 0 | 7 | 6 | 6 | 6 | 6 / 6 |
+| 67036 | wide | 10 | 10 | 9 | 10 | 8 | 9 / — |
+| 67037 | narrow | 0 | 6 | 6 | 6 | 6 | 6 / 6 |
+| 67038 | wide | 0 | 8 | 9 | 0 | 8 | 9 / — |
+| 67039 | narrow | 0 | 0 | 6 | 6 | 6 | 6 / 6 |

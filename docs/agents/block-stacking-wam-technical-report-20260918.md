@@ -9,8 +9,9 @@ Scope: simulated block-stacking experiments recorded in the 17 September experim
 The [physical-variation follow-up](block-stacking-wam-physics-followup-20260918.md)
 reports two later, separate forty-game cohorts: the frozen WAM scored 292 versus
 280 for width-dependent stopping; after longer-horizon retraining, new WAM scored
-273 versus old WAM 281 and width stopping 280 on the same new starts. It details
-the unresolved simple-baseline comparison and unequal terminal stability checks.
+273 versus old WAM 281 and width stopping 280 on the same new starts. Its subsequent uniform-terminal evaluation scored new WAM 279, old WAM 225,
+and width stopping 280 on forty additional unused starts. It details the
+unresolved simple-baseline comparison and the correction to terminal scoring.
 The methods, weights, and future-work recommendations below describe the earlier
 study; the follow-up records subsequent changes. Existing videos are historical
 replays, not footage of the later cohorts.

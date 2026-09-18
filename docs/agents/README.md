@@ -98,4 +98,4 @@ the same change.
 - `docs/agents/adk-v2-legacy-gateway.md`
 - `docs/agents/adk-v2-runtime-inventory.md`
 
-- [Block stacking physical-variation follow-up](block-stacking-wam-physics-followup-20260918.md) — two independent forty-game cohorts, longer-horizon retraining, and the terminal stability scoring limitation.
+- [Block stacking physical-variation follow-up](block-stacking-wam-physics-followup-20260918.md) — three independent forty-game cohorts, longer-horizon retraining, and uniform terminal stability scoring.
