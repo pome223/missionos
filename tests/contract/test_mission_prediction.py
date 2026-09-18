@@ -9,7 +9,7 @@ from missionos_core.prediction import (
     PredictionOption,
     PredictionRegistry,
     PredictionRequest,
-    compare_prediction,
+    bind_prediction_observation,
 )
 
 BINDING = PredictionBinding("fixture", "a" * 64, "mission", "b" * 64, "environment", "state.v1")
@@ -98,12 +98,15 @@ def test_outcome_must_match_request_option_and_horizon():
         observation_id=req.observation_id,
         option_id="move",
         horizon_seconds=2.0,
-        collapsed=True,
-        threshold=0.5,
         outcome_ref="sim:1",
         source_kind="simulator_observation",
     )
-    assert compare_prediction(result, **args)["classification"] == "TP"
+    receipt = bind_prediction_observation(result, **args)
+    assert receipt["status"] == "bound"
+    assert receipt["request_sha256"] == req.digest()
+    assert "classification" not in receipt
+    assert "observed_collapse" not in receipt
+    assert not receipt["completion_claimed"]
     for k, v in [
         ("request_sha256", "bad"),
         ("observation_id", "other"),
@@ -111,4 +114,4 @@ def test_outcome_must_match_request_option_and_horizon():
         ("horizon_seconds", 1.0),
         ("source_kind", "prediction"),
     ]:
-        assert compare_prediction(result, **(args | {k: v}))["status"] == "incomparable"
+        assert bind_prediction_observation(result, **(args | {k: v}))["status"] == "incomparable"

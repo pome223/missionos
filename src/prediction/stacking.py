@@ -16,6 +16,7 @@ from missionos_core.prediction import (
     OptionForecast,
     PredictionBinding,
     PredictionRequest,
+    bind_prediction_observation,
 )
 
 INPUT_SCHEMA = "stacking.exact_state.v1"
@@ -172,3 +173,27 @@ class StackingPredictor:
                 )
             )
         return tuple(forecasts)
+
+
+def compare_stacking_prediction(
+    forecast: dict, *, collapsed: bool, threshold: float, **observation_binding
+) -> dict:
+    """Score collapse only after Core binds the observed option and horizon."""
+    receipt = bind_prediction_observation(forecast, **observation_binding)
+    result = {
+        **receipt,
+        "schema_version": "stacking_prediction_comparison.v1",
+        "status": "incomparable",
+        "observation_binding": receipt,
+    }
+    if receipt["status"] != "bound" or type(collapsed) is not bool or not 0 <= threshold <= 1:
+        return result
+    option = next(f for f in forecast["forecasts"] if f["option_id"] == receipt["option_id"])
+    danger = option["risk_score"] >= threshold
+    result.update(
+        status="compared",
+        predicted_danger=danger,
+        observed_collapse=collapsed,
+        classification=("TP" if collapsed else "FP") if danger else ("FN" if collapsed else "TN"),
+    )
+    return result

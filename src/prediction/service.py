@@ -20,9 +20,10 @@ from missionos_core.prediction import (
     PredictionOption,
     PredictionRegistry,
     PredictionRequest,
-    compare_prediction,
     prediction_digest,
 )
+
+from src.prediction.stacking import compare_stacking_prediction
 
 
 class PredictionSession:
@@ -149,7 +150,7 @@ class PredictionSession:
         if type(result["score"]) is not int or result["score"] != (0 if collapsed else count):
             raise ValueError("score not supported by observed outcome")
         predicted = decision["forecast"]
-        receipt = compare_prediction(
+        receipt = compare_stacking_prediction(
             predicted,
             request_sha256=body["request_sha256"],
             observation_id=body["observation_id"],

@@ -120,3 +120,35 @@ def test_actual_http_decision_observation_and_rejection(tmp_path):
         server.shutdown()
         thread.join()
         server.server_close()
+
+
+@pytest.mark.parametrize(
+    "risk,collapsed,expected",
+    [(0.9, True, "TP"), (0.9, False, "FP"), (0.1, False, "TN"), (0.1, True, "FN")],
+)
+def test_stacking_owns_collapse_classification(risk, collapsed, expected):
+    from src.prediction.stacking import compare_stacking_prediction
+
+    forecast = {
+        "status": "available",
+        "request_sha256": "request",
+        "observation_id": "observation",
+        "forecasts": [{"option_id": "continue", "horizon_seconds": 28.4, "risk_score": risk}],
+    }
+    args = dict(
+        request_sha256="request",
+        observation_id="observation",
+        option_id="continue",
+        horizon_seconds=28.4,
+        outcome_ref="sim:outcome",
+        source_kind="simulator_observation",
+        collapsed=collapsed,
+        threshold=0.5,
+    )
+    receipt = compare_stacking_prediction(forecast, **args)
+    assert receipt["classification"] == expected
+    assert receipt["observation_binding"]["status"] == "bound"
+    assert "classification" not in receipt["observation_binding"]
+    mismatch = compare_stacking_prediction(forecast, **(args | {"horizon_seconds": 14.2}))
+    assert mismatch["status"] == "incomparable"
+    assert "classification" not in mismatch

@@ -143,21 +143,22 @@ class PredictionRegistry:
         return result
 
 
-def compare_prediction(
+def bind_prediction_observation(
     forecast: dict[str, Any],
     *,
     request_sha256: str,
     observation_id: str,
     option_id: str,
     horizon_seconds: float,
-    collapsed: bool,
-    threshold: float,
     outcome_ref: str,
     source_kind: str,
 ) -> dict[str, Any]:
-    """Compare a bound observed branch; no mission completion promotion."""
+    """Bind an observation reference without interpreting its mission-specific outcome.
+
+    This checks identity and horizon, not source authenticity or outcome correctness.
+    """
     result: dict[str, Any] = {
-        "schema_version": "missionos_core_prediction_comparison.v1",
+        "schema_version": "missionos_core_prediction_observation_binding.v1",
         "status": "incomparable",
         "completion_claimed": False,
         "physical_execution_invoked": False,
@@ -169,21 +170,17 @@ def compare_prediction(
         or forecast["observation_id"] != observation_id
         or not outcome_ref
         or source_kind not in ("simulator_observation", "hardware_observation")
-        or type(collapsed) is not bool
-        or not 0 <= threshold <= 1
     ):
         return result
     options = [f for f in forecast["forecasts"] if f["option_id"] == option_id]
     if len(options) != 1 or options[0]["horizon_seconds"] != horizon_seconds:
         return result
-    danger = options[0]["risk_score"] >= threshold
     result.update(
-        status="compared",
+        status="bound",
+        request_sha256=request_sha256,
+        observation_id=observation_id,
         option_id=option_id,
         horizon_seconds=horizon_seconds,
-        predicted_danger=danger,
-        observed_collapse=collapsed,
-        classification=("TP" if collapsed else "FP") if danger else ("FN" if collapsed else "TN"),
         source_kind=source_kind,
     )
     return result

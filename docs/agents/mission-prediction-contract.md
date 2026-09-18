@@ -43,7 +43,10 @@ binding even when model names match. `PredictionRequest` adds unique request and
 observation IDs, observation time, current state, and options with explicit
 horizons and parameters. The complete request receives a canonical SHA-256.
 
-Observation age defaults to sixty seconds. Future timestamps and stale snapshots
+Observation age defaults to sixty seconds. This is a lab limit, not a suitable
+robot control freshness guarantee. Production integration must also bind mission
+execution identity, observation sequence/state revision, and source provenance,
+and invalidate predictions after world-changing actions. Future timestamps and stale snapshots
 are unavailable. Duplicate or invalid options, mismatched bindings, backend
 exceptions, mutation of input, nonfinite values, and incomplete forecasts cannot
 be promoted to available predictions. JSON snapshots isolate provider input from
@@ -87,6 +90,13 @@ An explicitly labeled saved-state placement-then-hold branch supplies the matchi
 counterfactual is not silently described as the selected physical action. At ten
 blocks, the same extra hold becomes the actual terminal scoring condition.
 
+Core's `bind_prediction_observation` returns an authority-free observation binding
+receipt after matching request digest, observation ID, option, and horizon. It
+does not interpret the outcome, classify danger, or authenticate the source.
+The stacking adapter's `compare_stacking_prediction` owns collapse-specific
+TP/FP/TN/FN semantics and includes the Core binding receipt in its result. Other
+missions supply their own outcome definitions and comparison logic.
+
 The service derives collapse from measured maximum per-object drop exceeding
 30 mm and checks consistency with the simulator label. A matching risk prediction
 is recorded as TP/FP/TN/FN, never as mission completion. These are observations
@@ -99,6 +109,14 @@ current-state inputs, the session uses the explicitly labeled current-state
 fallback (tilt above five degrees or drift above three millimeters). Stale inputs
 and contract mismatches are rejected, not interpreted as safe continuation.
 Neither fallback nor a bank forecast guarantees that stopping prevents collapse.
+This fallback is a simulator-session policy, not part of the Core prediction
+contract. Future production consumption must send unavailable forecasts to
+Assurance/policy, which determines whether a registered fallback is allowed or
+whether to stop/escalate. Prediction itself must not authorize that choice.
+
+The next integration boundary is forecast evidence consumed by Mission Assurance.
+It must preserve separate rules, approval, execution, and verification; this PR
+does not connect WAM directly to dispatch.
 
 ## Running and validation
 

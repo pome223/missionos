@@ -93,12 +93,19 @@ PYTHONPATH=packages/missionos-core/src:packages/missionos-cli/src:. \
   python -m missionos_cli prediction --help
 ```
 
-Observed: 25 tests passed; CLI entrypoint exposed `serve-stacking`. Tests include
+After the Core/stacking comparison separation: 29 tests passed; CLI entrypoint exposed `serve-stacking`. Tests include
 cross-model/policy/mission/environment mismatches, stale input, input mutation,
 unknown future fields, duplicate decisions/outcomes, unsupported outcome horizons,
 wrong action bindings, unsupported score/collapse labels, and unavailable-model
 fallback. The HTTP smoke exercises the actual service implementation with a
 synthetic predictor; synthetic outputs are not presented as learned predictions.
+The latest revision additionally checks all four stacking confusion outcomes and
+rejects horizon mismatches before classification. Core only binds observation
+references and carries no collapse or confusion-matrix semantics.
+
+The six-case live simulator result above was recorded at `ac2db1f`, before this
+comparison refactor. It was not rerun for the refactor; the updated production
+HTTP decision/observation path was exercised with the synthetic predictor.
 
 The live command and external dependency requirements are documented in the
 [contract](mission-prediction-contract.md). The live model is the unchanged
@@ -119,9 +126,9 @@ real robots, and another mission have not been validated. The simulator harness
 requires external trusted environment modules and a separately running frozen
 VLA service; this PR is not a full public replication package.
 
-The next product integration is to let the existing Agent consume these bound
-forecasts as decision evidence while retaining human approval, deterministic
-constraints, execution, and verification as separate steps. A full Agent/Gateway
+The next product integration is to let Mission Assurance receive these bound
+forecasts as evidence, before connecting the Agent. Human approval, deterministic
+constraints, execution, and verification remain separate steps. A full Agent/Gateway
 mission loop must have its own runtime verification; it is not implied by this
 Core/CLI lab result. New mission models also require their own outcome-based
 comparison with simple baselines before adoption.
