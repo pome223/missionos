@@ -1,0 +1,188 @@
+{
+  "schema": "missionos.public-experience-ordered-repair-analysis.v1",
+  "experiment_date": "2026-09-15",
+  "source_boundary": "Reviewed numerical aggregates from saved local simulator receipts; raw episodes and reset inputs are excluded",
+  "outcome": "MissionOS stable book placement with completion, protected-object retention, and achieved-state retention; not official benchmark judgment",
+  "public_implementation_sha256": "12e46b2419107417fe9d7e6410badf1d23279bfda855724dbd39e5133d28b8a3",
+  "static_selector_comparisons": [
+    {
+      "comparison": "static_1",
+      "development_matrix": {
+        "starts": 116,
+        "parent_measured_successes": 101,
+        "candidate_expected_successes": 107,
+        "expected_added_successes": 6
+      },
+      "unused_simulator": {
+        "starts": 16,
+        "parent_completed": 11,
+        "candidate_completed": 11,
+        "candidate_only_successes": 0,
+        "parent_only_successes": 0,
+        "older_version_only_successes_lost": 3,
+        "unknown": 0,
+        "protected_or_achieved_losses": 0,
+        "backend_runs": 52,
+        "controls": 8443
+      },
+      "protocol_sha256": "4f1c2b00d50f4bc0ee2f75af3fa5cf3f22db2497517c70f05aa02196bb32cd87",
+      "adopted": false
+    },
+    {
+      "comparison": "static_2",
+      "development_matrix": {
+        "starts": 132,
+        "parent_measured_successes": 112,
+        "candidate_expected_successes": 121,
+        "expected_added_successes": 9
+      },
+      "unused_simulator": {
+        "starts": 16,
+        "parent_completed": 8,
+        "candidate_completed": 8,
+        "candidate_only_successes": 1,
+        "parent_only_successes": 1,
+        "older_version_only_successes_lost": 1,
+        "unknown": 0,
+        "protected_or_achieved_losses": 0,
+        "backend_runs": 60,
+        "controls": 8829
+      },
+      "protocol_sha256": "d6bb2ef872a9012699fe3ce303084e3eb5f83cb6e63a39efb865ee5c01a1b25c",
+      "adopted": false
+    },
+    {
+      "comparison": "static_3",
+      "development_matrix": {
+        "starts": 148,
+        "parent_measured_successes": 120,
+        "candidate_expected_successes": 131,
+        "expected_added_successes": 11
+      },
+      "unused_simulator": {
+        "starts": 16,
+        "parent_completed": 11,
+        "candidate_completed": 9,
+        "candidate_only_successes": 0,
+        "parent_only_successes": 2,
+        "older_version_only_successes_lost": 1,
+        "unknown": 0,
+        "protected_or_achieved_losses": 0,
+        "backend_runs": 52,
+        "controls": 6882
+      },
+      "protocol_sha256": "0e01454da924234154183d1b061c56933b55d4dfbad9325e27a3b55202ed93be",
+      "adopted": false
+    }
+  ],
+  "direct_route_attribution": {
+    "starts": 2,
+    "matched_requested_action_sequences": 2,
+    "matched_terminal_outcomes": 2,
+    "one_success_and_one_failure": true,
+    "controls": 279,
+    "protocol_sha256": "1ef3b38c31aceac044c5208fc2ea981e68ff82c9b078405eb5384bcbca4a1710"
+  },
+  "direct_trial_cohorts": [
+    {
+      "cohort": "initial_16",
+      "starts": 16,
+      "development_records": 148,
+      "selected_development_centers": 4,
+      "registered_alternative_programs": 4,
+      "maximum_alternative_trials": 1,
+      "entry_fact_scales": {
+        "object_in_hand_x_m": 0.001,
+        "object_in_hand_y_m": 0.001,
+        "object_in_receptacle_x_m": 0.001,
+        "object_in_receptacle_y_m": 0.001
+      },
+      "fixed_first_alternative": "one preselected saved program",
+      "limits": {
+        "new_backend_arms_max": 64,
+        "controls_per_arm_max": 300,
+        "tool_calls_per_arm_max": 20,
+        "new_foundation_policy_inference": false,
+        "gpu": false,
+        "paid_calls": 0
+      },
+      "parent_completed": 9,
+      "fixed_order_completed": 15,
+      "experience_order_completed": 15,
+      "paired_fixed_vs_experience": {
+        "both_complete": 15,
+        "experience_only_complete": 0,
+        "fixed_only_complete": 0,
+        "neither_complete": 1
+      },
+      "additional_vs_parent": 6,
+      "additional_vs_fixed": 0,
+      "lost_parent_successes": 0,
+      "unknown": 0,
+      "protection_losses": 0,
+      "backend_runs": 30,
+      "controls": 4196,
+      "protocol_sha256": "75fbe5df5844423ed525c9a15174249299e0cd14e03a6b7e6e20d15c5d00a9b3",
+      "eligible_under_frozen_gate": true,
+      "production_deployment": false
+    },
+    {
+      "cohort": "targeted_20",
+      "starts": 20,
+      "development_records": 148,
+      "selected_development_centers": 5,
+      "registered_alternative_programs": 4,
+      "maximum_alternative_trials": 1,
+      "entry_fact_scales": {
+        "object_in_hand_x_m": 0.001,
+        "object_in_hand_y_m": 0.001,
+        "object_in_receptacle_x_m": 0.001,
+        "object_in_receptacle_y_m": 0.001
+      },
+      "fixed_first_alternative": "one preselected saved program",
+      "limits": {
+        "new_backend_arms_max": 80,
+        "controls_per_arm_max": 300,
+        "tool_calls_per_arm_max": 20,
+        "new_foundation_policy_inference": false,
+        "gpu": false,
+        "paid_calls": 0
+      },
+      "parent_completed": 12,
+      "fixed_order_completed": 12,
+      "experience_order_completed": 17,
+      "paired_fixed_vs_experience": {
+        "both_complete": 12,
+        "experience_only_complete": 5,
+        "fixed_only_complete": 0,
+        "neither_complete": 3
+      },
+      "additional_vs_parent": 5,
+      "additional_vs_fixed": 5,
+      "lost_parent_successes": 0,
+      "unknown": 0,
+      "protection_losses": 0,
+      "backend_runs": 41,
+      "controls": 6835,
+      "protocol_sha256": "f6c56f0245f6e19aa51c9400bbe01a22e2577efa87889cc0dec2c6a69a4c63d5",
+      "eligible_under_frozen_gate": true,
+      "production_deployment": false,
+      "targeted_role_breakdown": {
+        "center_perturbations": {
+          "starts": 10,
+          "parent_completed": 6,
+          "fixed_completed": 6,
+          "experience_completed": 9,
+          "experience_only_completed": 3
+        },
+        "parent_success_control_perturbations": {
+          "starts": 10,
+          "parent_completed": 6,
+          "fixed_completed": 6,
+          "experience_completed": 8,
+          "experience_only_completed": 2
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+# Bounded experience-ordered repair trials
+
+`src/runtime/empirical_repair_trials.py` has no Backend, tool or authorization switch. It proposes registered immutable program IDs for separate, resettable **same-start** simulator trials. The caller is responsible for trusted execution receipts and normal MissionOS authority checks: LLM judgment, human-approved scope, Rules constraints, Executor action, Verifier outcome, and repair follow-up remain distinct.
+
+`MatchedExperience` binds an entry fact map to one `MeasuredArm` per registered parent or alternative program. Each arm must have the correct program ID, the digest of that entry map, and a unique episode ID. `complete`, `protected`, and `achieved` come from Verifier-owned execution records. Unknown, infrastructure-error and untried results cannot supply success evidence. Record and episode IDs bind provenance. Ranking distance uses only the declared observation facts and scales; at exactly equal distances, witness episode IDs and then program IDs determine the stable tie order.
+
+`plan_counterfactual_trials` validates a bounded population and caller-declared finite fact scales. It puts the complete parent program first, then orders at most the caller's alternative budget by distance to each program's nearest **measured successful** entry. Missing or nonfinite ranking observations block planning. The ranking is a proposal for direct trials, not a success prediction or action command. The plan digest binds the entry digest, program order and successful witness episode IDs.
+
+`adjudicate_counterfactual_trials` accepts only an ordered prefix of direct `MeasuredArm` results matching the plan's program IDs and entry digest. It proposes the first directly verified success and rejects further trials after that success. An unknown trial or protection/achieved loss holds; no verified success returns `no_verified_recovery`. Callers should compare the chosen program with the parent under the same start and budget, and rerun a proposed alternative independently when adoption depends on repeatability. Trial planning and adjudication do not grant authority to materialize the chosen program.
+
+This interface assumes a resettable Backend that can reproduce the entry state for every counterfactual trial. A simulator result cannot be treated as physical robot evidence without separate transfer validation. Preserve the current policy when a frozen evaluation cohort lacks additional recovery or loses prior verified successes; do not re-fit on an opened evaluation cohort and call it held out.
+
+The checked-in process smoke uses synthetic receipts and makes no robot, GPU, live-simulator or physical claim. Private research databases, raw episodes, credentials, local paths and generated evidence artifacts are excluded from this public repository.
+
+See the [public research report](experience-ordered-repair-research-report-20260915.md) for the frozen simulator comparisons, rejected static-selector results, adoption scope and unresolved transfer limits.
