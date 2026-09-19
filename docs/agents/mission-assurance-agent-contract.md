@@ -474,5 +474,6 @@ The separate [prediction evidence admission boundary](assurance-prediction-evide
 can populate `MissionSituation.uncertainty.prediction_evidence` with an adopted
 or rejected receipt. Model-inferred forecasts remain separate from observed facts
 and Action Feasibility. Admission is not an LLM judgment, approval, or dispatch.
-This slice exposes explicit CLI intake and prompt projection; automatic Gateway
-and live Agent wiring are not enabled.
+The intake exposes explicit CLI receipt creation and prompt projection. The
+separately enabled [stacking mission E2E](stacking-mission-e2e.md) uses the actual
+Agent and a bounded simulator executor; automatic Gateway wiring is not enabled.

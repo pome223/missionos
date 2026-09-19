@@ -98,3 +98,5 @@ the same change.
 - [Stacking prediction integration verification](mission-prediction-stacking-integration.md) — known-case live Core/CLI simulator verification, separate from capability evaluation.
 
 - [Assurance prediction evidence admission](assurance-prediction-evidence.md): bound intake, rejection, and runtime verification.
+
+- [Governed stacking mission E2E](stacking-mission-e2e.md): actual LLM, bounded preapproval, simulator execution and measured verification.

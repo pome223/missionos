@@ -71,3 +71,34 @@ def admit_evidence(situation, evidence, max_age_seconds, output):
         click.echo(receipt["status"] + ": " + receipt["reason"])
     except (ValueError, OSError, TypeError) as exc:
         raise click.ClickException(str(exc)) from exc
+
+
+@prediction_command.command("serve-stacking-mission")
+@click.option(
+    "--trusted-model",
+    "model",
+    required=True,
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+)
+@click.option("--model-sha256", required=True)
+@click.option("--policy-sha256", required=True)
+@click.option("--output", required=True, type=click.Path(path_type=Path))
+@click.option("--llm-model", required=True)
+@click.option(
+    "--llm-backend",
+    type=click.Choice(["deepseek", "ollama"]),
+    default="deepseek",
+    show_default=True,
+)
+@click.option("--seed", "seeds", type=int, multiple=True, required=True)
+@click.option("--approve-simulator-mission", is_flag=True)
+@click.option("--operator", default="")
+@click.option("--port", default=0, type=click.IntRange(0, 65535))
+def serve_stacking_mission(**kwargs):
+    """Run actual Assurance with a bounded simulator policy; no hardware."""
+    try:
+        from src.prediction.stacking_mission import serve_mission
+
+        serve_mission(**kwargs)
+    except (ValueError, OSError) as exc:
+        raise click.ClickException(str(exc)) from exc

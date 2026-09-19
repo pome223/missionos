@@ -2,8 +2,10 @@
 
 This slice follows the common Prediction interface. It ends at a bound
 `MissionSituation` containing a prediction admission receipt, and the existing
-Assurance prompt projection. It invokes neither the LLM judge nor an Executor.
+Assurance prompt projection. Intake itself invokes neither the LLM judge nor an Executor.
 It is not wired into the Gateway or a live robot observation lifecycle.
+The separately enabled [stacking mission E2E](stacking-mission-e2e.md) composes
+this intake with an actual LLM, bounded policy and simulator execution.
 
 ```text
 PredictionRegistry forecast + original PredictionRequest
