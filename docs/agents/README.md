@@ -98,4 +98,6 @@ the same change.
 - `docs/agents/adk-v2-legacy-gateway.md`
 - `docs/agents/adk-v2-runtime-inventory.md`
 
+- [Mission-scoped prediction contract](mission-prediction-contract.md) — dependency-free Core forecast interface and opt-in stacking adapter.
+- [Stacking prediction integration verification](mission-prediction-stacking-integration.md) — known-case live Core/CLI simulator verification, separate from capability evaluation.
 - [Block stacking physical-variation follow-up](block-stacking-wam-physics-followup-20260918.md) — three independent forty-game cohorts, longer-horizon retraining, and uniform terminal stability scoring.

@@ -26,6 +26,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+prediction = [
+  "scikit-learn>=1.5,<2.0",
+]
 hardware = [
   "pymavlink>=2.4.40",
   "pyserial>=3.5",
