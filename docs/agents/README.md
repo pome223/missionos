@@ -105,3 +105,5 @@ the same change.
 
 - [Governed stacking mission E2E](stacking-mission-e2e.md): actual LLM, bounded preapproval, simulator execution and measured verification.
 - [Block stacking physical-variation follow-up](block-stacking-wam-physics-followup-20260918.md) — three independent forty-game cohorts, longer-horizon retraining, and uniform terminal stability scoring.
+
+- [Mission-specific WAM system technical report](missionos-wam-system-technical-report-20260919.md) — complete experimental and governed E2E synthesis with six reproducible figures, all cohort scores, and claim limits.
