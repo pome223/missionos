@@ -35,3 +35,39 @@ def serve_stacking(**kwargs):
         raise click.ClickException("Prediction requires the optional local ML runtime") from exc
     except (ValueError, OSError) as exc:
         raise click.ClickException(str(exc)) from exc
+
+
+@prediction_command.command("admit-evidence")
+@click.option(
+    "--situation", required=True, type=click.Path(exists=True, dir_okay=False, path_type=Path)
+)
+@click.option(
+    "--evidence", required=True, type=click.Path(exists=True, dir_okay=False, path_type=Path)
+)
+@click.option("--max-age-seconds", required=True, type=click.FloatRange(min=0, min_open=True))
+@click.option("--output", required=True, type=click.Path(path_type=Path))
+def admit_evidence(situation, evidence, max_age_seconds, output):
+    """Record Assurance evidence admission only; no LLM, approval, or execution."""
+    import json
+    import time
+
+    try:
+        from src.intelligence.mission_assurance_agent import MissionSituation
+        from src.intelligence.prediction_evidence import receive_prediction_evidence
+
+        updated, receipt = receive_prediction_evidence(
+            MissionSituation.from_dict(json.loads(situation.read_text())),
+            json.loads(evidence.read_text()),
+            now=time.time(),
+            max_age_seconds=max_age_seconds,
+        )
+        with output.open("x") as stream:
+            json.dump(
+                {"situation": updated.to_dict(), "receipt": receipt},
+                stream,
+                indent=2,
+                allow_nan=False,
+            )
+        click.echo(receipt["status"] + ": " + receipt["reason"])
+    except (ValueError, OSError, TypeError) as exc:
+        raise click.ClickException(str(exc)) from exc

@@ -96,3 +96,5 @@ the same change.
 
 - [Mission-scoped prediction contract](mission-prediction-contract.md) — dependency-free Core forecast interface and opt-in stacking adapter.
 - [Stacking prediction integration verification](mission-prediction-stacking-integration.md) — known-case live Core/CLI simulator verification, separate from capability evaluation.
+
+- [Assurance prediction evidence admission](assurance-prediction-evidence.md): bound intake, rejection, and runtime verification.
