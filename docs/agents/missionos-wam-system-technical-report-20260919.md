@@ -230,7 +230,8 @@ stopping baselines.
 
 ### 4.3 Exact-state ExtraTrees model and longer targets
 
-Later WAMs use ExtraTrees classifiers plus future-pose/drop regressors. Inputs include ten object poses and velocities,
+Later WAMs use ExtraTrees classifiers plus future-pose/drop regressors. Inputs
+include ten object poses and velocities,
 dimensions, mass, friction, center of mass, accepted positions, robot state,
 next target, count, and the registered procedure. Public adapter contracts validate
 shape, binding, finite values, allowed options, and forecast horizons.
@@ -283,30 +284,35 @@ v5 totals are VLA 130, current rule 208, WAM 292, and width rule 280. The primar
 WAM-minus-width difference is +0.300 points per game, unadjusted 95% interval
 [−0.225, 0.625], Holm p=0.29670. The secondary current-rule difference is +2.100
 [1.325, 2.800], p=0.00080; versus VLA it is +4.050 [3.150, 5.000], p=0.00003.
-The primary superiority claim is not established.
+The comparisons support higher scores relative to the current-state rule and
+VLA. For the primary width-rule comparison, the interval spans zero and the
+adjusted p-value remains above the significance threshold.
 
-All twenty narrow WAM games bank six. Wide totals are WAM 172, current rule 174,
-width rule 160. Therefore aggregate improvement over current-state stopping is
-not sufficient to prove that detailed physical forecasting caused the advantage.
-At wide depth ten there are both continued safe and correctly stopped unsafe
-cases, but one bank fails through delayed collapse. Mean final-XYZ RMSE is
-9.51 mm versus 7.76 mm for a simple planned/current-pose predictor: higher score
-does not imply uniformly better future-state regression.
+The current-state-rule score gain is concentrated in narrow games, where all
+twenty WAM games bank six. Wide totals are WAM 172, current rule 174, and width
+rule 160. This distribution motivates the feature-use questions in Section 10.
+At wide depth ten, the WAM both continues in safe cases and correctly stops in
+unsafe cases; one bank also fails through delayed collapse. Mean final-XYZ RMSE
+is 9.51 mm versus 7.76 mm for a simple planned/current-pose predictor. Thus this
+cohort records higher game scores alongside higher pose-regression error than
+that simple prediction baseline.
 
 ### 5.2 v6 retraining and endpoint audit
 
 On the same new forty games, long-horizon WAM scores 273, old WAM 281, width
 rule 280, current rule 202, and VLA 80. New minus width is −0.175 points per game,
 interval [−0.825, 0.300], Holm p=0.51918; new minus old is −0.200,
-[−0.350, −0.050], p=0.07004. This does not establish a new-model advantage.
+[−0.350, −0.050], p=0.07004. The point estimates favor the old model and width
+rule on this cohort; both adjusted comparisons remain above the stated
+significance threshold.
 
 The original endpoint contains a mismatch: voluntary banking waits, while ten
 completed placements are scored immediately at the placement endpoint. A separate
 diagnostic terminal hold changes old WAM's total from 281 to 261; new remains
 273 and width remains 280. Seven of eight common-path ten-point games collapse
-during this extra wait. The diagnostic is retained separately, not substituted
-for the original primary result after seeing it. It motivates v7's prospective
-uniform scoring.
+during this extra wait. The original primary result and the terminal-hold
+diagnostic remain separate reported endpoints. The diagnostic motivates v7's
+prospective uniform scoring.
 
 ### 5.3 v7 uniform terminal stability
 
@@ -338,8 +344,9 @@ stated family, despite a positive new-versus-old point estimate.
 
 New minus current is +2.025 [1.025, 3.050], Holm p=0.00515. New minus VLA is
 +6.225 [5.275, 7.000], p=0.00007. New minus width is −0.025 [−0.700, 0.450],
-p=1.00000. New minus old is +1.350 [0.250, 2.450], p=0.11232. The new WAM retains 54 more points than old WAM on this cohort; the adjusted
-new-versus-old test remains above 0.05.
+p=1.00000. New minus old is +1.350 [0.250, 2.450], p=0.11232. The new WAM
+retains 54 more points than old WAM on this cohort; the adjusted new-versus-old
+test remains above 0.05.
 
 The complete recorded v7 audit checks 355 prediction-input hashes, 155 saved-state
 placement replays, 4,598 actual VLA chunks, and 315 agreements between forecast
@@ -681,8 +688,7 @@ Rules constrain authorization and consistency but do not guarantee safe physics.
 and fixture tests are public. Private raw evidence and trusted checkpoints are
 not redistributed. Full independent replication would require separately available
 model artifacts, simulator setup, training protocol/data, dependency environment,
-and hosted-model controls. This report must not claim that publication alone
-provides those components.
+and hosted-model controls. Publication alone does not provide those components.
 
 ## 11. Conclusion and stopping point
 
