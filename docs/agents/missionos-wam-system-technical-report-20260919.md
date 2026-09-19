@@ -1,4 +1,4 @@
-# Mission-Specific World Models in a Governed Robot Control Plane
+# MissionOS: Integrating Mission-Specific WAMs into Governed VLA Execution
 
 ## From block-stacking prediction to audited MissionOS execution
 
@@ -6,85 +6,88 @@
 **Scope:** PRs [#102](https://github.com/pome223/missionos/pull/102),
 [#103](https://github.com/pome223/missionos/pull/103), and
 [#104](https://github.com/pome223/missionos/pull/104).  
-**Status:** bounded simulator evidence; no hardware validation or claim of general superiority.
+**Demonstration:** learned WAM prediction, actual LLM judgment, bounded human
+preapproval, ticketed simulator execution, and measured verification.
 
 ## Abstract
 
-We study two distinct questions: whether a lightweight, mission-specific world
-model can improve stopping decisions for a learned manipulation policy, and
-whether an imperfect forecast can be integrated into a mission control system
-without being confused with observation, approval, or execution authority. The
-task is a ten-block stacking game: a stable voluntary stop earns the number of
-blocks retained; collapse earns zero. Early off-the-shelf video-model diagnostics
-did not produce usable object-state predictions in the custom scene. We therefore
-trained dedicated state predictors conditioned on a frozen SmolVLA placement
-procedure and explicit simulator physical properties.
+We implement and demonstrate a MissionOS control path that uses a learned World
+Action Model (WAM) to inform robot mission decisions. In a ten-block stacking
+game, a frozen SmolVLA performs registered placement procedures, a lightweight
+mission-specific WAM predicts their outcomes, and MissionOS carries those
+forecasts through Assurance, bounded human preapproval, Rules, execution, and
+measured verification. The WAM takes current object state, known physical
+properties, and the registered operation as inputs and predicts future object
+state and collapse risk.
 
-Three separate forty-game cohorts examine the fixed-count confound, longer
-prediction horizons, and terminal-scoring consistency. Under the final uniform
-terminal hold, the new WAM earned 279 points, versus 198 for a current-state rule,
-30 for unconditional continuation, and 280 for a validation-selected width rule.
-The WAM gained one point over width stopping in fifteen games but lost eight in
-each of two collapses. Its advantage over the simple width rule was not
-established. Prediction and score metrics also reveal false stops, delayed
-collapse misses, and disagreement between classification and pose regression.
+Three separate forty-game cohorts develop and evaluate predictive stopping.
+With a uniform terminal stability check, WAM-based stopping earns 279 points,
+compared with 198 for a current-state rule and 30 for unconditional continuation.
+A validation-selected width rule, well suited to this task, earns 280: the
+observed scores are nearly the same, while superiority over that rule remains
+unestablished. Fifteen one-point gains and two eight-point losses explain the
+WAM's result and identify its remaining failure modes.
 
-We then connect the frozen predictor to MissionOS through a mission-bound
-Prediction contract, model-inferred Assurance evidence, real LLM judgment,
-bounded human preapproval, Rules checks, ticketed execution, and measured
-verification. Six known-case deterministic integrations reproduce both successes
-and failures. A subsequent DeepSeek E2E demonstration traverses the complete
-control path. Clarifying risk semantics and supplying explicit, uncalibrated
-score-proxy arithmetic changes one premature stop on two inspected cases,
-increasing their combined score from 13 to 16 while remaining below the prior
-deterministic WAM reference of 17. This post-hoc result is a diagnostic correction,
-not held-out evidence of an LLM or MissionOS performance advantage.
+MissionOS reproduces six known cases, including the WAM's errors, through a
+common Prediction contract. The governed E2E demonstration then uses actual
+DeepSeek judgments, separately checked execution bounds, dispatch tickets, and
+simulator measurements. Its final run records 18 judgments, 5,112 motor steps,
+and 208 SmolVLA inference chunks. This study implements a common path for
+mission-specific WAMs and demonstrates it on block stacking: **VLA proposes
+motor actions. WAM predicts. LLM Assurance judges. Humans pre-authorize bounded
+execution. Rules constrain. Executor acts. Verifier checks.**
 
-The supported system contribution is an implemented and exercised separation
-between fallible predictive evidence and execution authority. The supported
-capability finding is bounded utility relative to particular weaker comparators,
-with unresolved superiority over simple stopping. Both contributions and their
-limits are retained together.
+**Keywords:** MissionOS; World Action Model; VLA; predictive stopping; Mission
+Assurance; bounded preapproval; simulator execution; outcome verification.
 
-**Keywords:** mission-specific world model; VLA; stopping policy; uncertainty;
-Mission Assurance; bounded approval; simulator verification; failure analysis.
+## 1. System contribution and research questions
 
-## 1. Questions, contributions, and claim structure
+### 1.1 What the study demonstrates
 
-A useful world model should predict what happens to the **target objects** after
-an operation. A moving gripper, changing background, or visually plausible frame
-is insufficient if the blocks themselves remain incorrectly stationary or lose
-identity. The first question is therefore operational: does the forecast preserve
-object correspondence and anticipate the relevant outcome at the relevant time?
+| Result | Evidence |
+| --- | --- |
+| Learned WAM stopping improves the measured score over current-state stopping and unconditional continuation | Final forty games: 279 versus 198 and 30 points |
+| WAM stopping reaches nearly the same observed score as a strong task-specific width rule | 279 versus 280 points; the paired statistical comparison is reported in Section 5 |
+| MissionOS uses the WAM through a common Prediction contract and executes a governed mission loop | Matching known-case behavior, actual DeepSeek calls, bounded preapproval, Rules checks, dispatch tickets, motor actions, and measured terminal scores |
 
-A second question concerns decision value. Correct predictions need not improve a
-policy if a simple stopping rule already obtains similar outcomes. Conversely,
-a high game score can result from conservative stopping even when the predicted
-next-state hazard is wrong. We evaluate score, matched outcomes, same-depth
-choices, simple baselines, and horizon-specific prediction errors separately.
+The system contribution is a reusable integration structure. Mission-specific
+adapters provide the state representation, learned model, and outcome semantics.
+MissionOS manages the common correspondence between observations, model and
+policy bindings, environment, registered options, and forecast horizons.
+Assurance receives the forecast as model-inferred evidence alongside the current
+mission context. Missions that fit this contract can add their own adapters and
+learned WAMs through the same path. The stacking implementation makes that design
+concrete and exercises it through actual simulator execution.
 
-A third question concerns system integration. A world-model output cannot safely
-serve simultaneously as an observation, a judgment, and permission to move a
-robot. MissionOS distinguishes these records and the responsible components.
-This report documents an actual simulator path, rather than inferring execution
-from the existence of a forecast JSON file or a passing schema test.
+### 1.2 WAM definition and decision role
 
-The contributions are deliberately scoped:
+In this report, **World Action Model (WAM)** means a lightweight learned model
+for a specific mission. It takes current state, physical properties, and a
+registered operation, conditioned on a fixed VLA/controller procedure, and
+predicts object state and collapse risk at a specified future horizon. Here the
+registered operations are placement and bank/hold. Actual closed-loop motor
+actions are generated by SmolVLA during execution.
 
-1. An experimental progression that preserves negative integration results and
-   identifies fixed-count and terminal-time confounds.
-2. A paired benchmark with explicit object properties, frozen policies, saved-state
-   alternatives, and published scores for three independent forty-game cohorts.
-3. A common Prediction interface that binds forecasts to the model, policy,
-   mission, environment, input schema, and observation without granting authority.
-4. Assurance evidence intake and a bounded, actually executed LLM-to-simulator
-   receipt chain, including rejection tests and retained failure cases.
-5. A diagnosis of risk-to-utility ambiguity and one explicitly post-hoc correction.
+The later WAM uses ExtraTrees classification and regression heads. Future
+object poses/drop and collapse risk are separate outputs; the deterministic
+stopping policy primarily uses the classifier, while Assurance receives both.
+The model description in Section 4 records the features and selected settings.
 
-No contribution establishes universal physical understanding, hidden-property
-inference from images, arbitrary-action dynamics, formal safety, or general
-MissionOS performance improvement. This is a technical report, not a claim of
-peer-reviewed novelty or a complete public replication package.
+### 1.3 Questions and evidence
+
+The study connects three questions. First, can an action-conditioned forecast
+anticipate the target objects' outcome? Second, does using that forecast improve
+stopping decisions compared with current-state and task-specific rules? Third,
+can MissionOS preserve the distinction between a prediction, an LLM judgment,
+human preauthorization, dispatch, and a measured result throughout execution?
+
+The experimental progression answers these questions with paired game scores,
+matched future outcomes, and runtime records. It identifies fixed-count and
+terminal-time confounds, preserves the model's useful and erroneous decisions
+during integration, and connects real LLM judgments to simulator actions. Sections
+2–5 present the task and capability results; Sections 6–8 explain and verify the
+system path; Section 9 gives provenance and reproducibility material. Section 10
+collects the scope limits and remaining research questions.
 
 ## 2. Evidence map and experimental chronology
 
@@ -105,10 +108,9 @@ and a counterfactual branch is not another independently sampled mission.
 | DeepSeek R3 | Two inspected cases | 5 and 8 | Real governed E2E, premature conservative stopping |
 | DeepSeek R4 | Same two inspected cases after correction | 8 and 8 | Known-case decision correction, not generalization |
 
-The chronology is **not a learning curve**. Test starts, model settings, judgment
-mechanisms, and in one stage the scoring endpoint change. Cohorts are not pooled
-for an overall significance claim. Publication of this report adds figures and
-synthesis; it does not create new model inference, training, or simulator trials.
+The chronology covers changes in test starts, model settings, judgment mechanisms,
+and scoring endpoint. Each cohort is analyzed separately. Figure 1 identifies
+these differences when displaying the score summaries together.
 
 ## 3. Task, simulator, and comparison protocol
 
@@ -118,14 +120,13 @@ A game allows at most ten placements. Let `b` be the number of retained blocks
 when the game ends and `C` its operational collapse event. The score is
 `S = b` when `C = false`, and `S = 0` otherwise. Collapse is latched when a
 score-bearing block drops more than 30 mm from its accepted reference height.
-This operational predicate is useful for reproducible scoring, but is not a
-complete mechanical definition of all unsafe states.
+This operational predicate defines collapse consistently for scoring and
+matched-outcome comparisons.
 
 In the final v7 protocol, every termination count, including ten completed
 placements, receives the same 14.2-second terminal hold. Stability means surviving
-this finite interval. It does not guarantee indefinite stability, survival under
-external disturbance, or physical-robot safety. Stopping itself can fail: a tower
-already moving can collapse during the bank/hold branch.
+this finite interval. Stopping itself can fail: a tower already moving can
+collapse during the bank/hold branch.
 
 ### 3.2 Physics variation and action scope
 
@@ -134,26 +135,23 @@ remove the intentional accumulating horizontal offset of the initial pilot.
 Each forty-game cohort contains twenty wide and twenty narrow games. Wide block
 widths range from 44 to 56 mm; narrow widths range from 24.64 to 31.36 mm. Depth
 and height are 40 mm. This deliberate width grouping is a substantial distribution
-factor, not merely microscopic variation in otherwise identical cubes.
+factor alongside the smaller within-group physical variations.
 
 Individual blocks have masses of 45–95 g and friction coefficients of 0.35–1.1.
 Center-of-mass offsets range over ±25% of half-width and ±10% of half-depth and
 half-height. Properties are sampled per block and remain fixed during the game.
-The model receives them explicitly; the experiment does not ask it to infer
-unobservable material properties from appearance.
+The WAM receives these known physical properties explicitly.
 
 The actor is a frozen, fine-tuned SmolVLA checkpoint within a staged manipulation
 procedure. At 20 Hz, one 284-step continuation includes 60 approach steps,
 20 grasp-staging steps, 60 learned lowering steps, 12 learned release steps,
 60 withdrawal steps, and 72 settling steps. Shared controllers handle approach
-and withdrawal; acquisition is staged. This is not unrestricted autonomous
-pick-and-place from arbitrary initial grasps.
+and withdrawal; acquisition is staged.
 
-The predictor sees the registered VLA/controller macro and current state. The
-future closed-loop motor tape is not known in advance and is not retrospectively
-inserted into the WAM input. Actual VLA chunks are generated during execution.
-Thus the learned dynamics are **policy- and macro-conditioned**, not demonstrated
-as a universal model of arbitrary proposed action sequences.
+The WAM sees the registered VLA/controller macro and current state. Its learned
+dynamics are **policy- and macro-conditioned**: predictions precede the actual
+closed-loop VLA chunks generated during execution. The input excludes realized
+future motor tapes.
 
 ### 3.3 Paired comparisons and baselines
 
@@ -168,7 +166,11 @@ The baselines are unconditional continuation through ten, a current-state rule
 (tilt above 5 degrees or horizontal drift above 3 mm), and a validation-selected
 width rule (stop at eight for wide games, six for narrow games). Fixed six,
 seven, eight, and nine are additional references. The width rule is especially
-important because it tests whether coarse task structure explains the gains.
+important because it captures a useful feature of this task with a simple
+decision. It is a strong task-specific comparator. The WAM is another way to
+construct a decision aid, combining learned outcomes with designed features and
+selected stopping settings. Their observed scores assess the two approaches on
+the same games.
 
 ### 3.4 Statistical unit and stopping discipline
 
@@ -181,9 +183,9 @@ excluding zero need not imply rejection after the stated multiplicity correction
 
 The binary failure event, score, and prediction errors measure different things.
 Reached-state confusion counts are conditioned on a policy's decisions: different
-policies reach different sample sets. They must not be treated as independent,
-identically sampled prediction benchmarks. No trials are added until significance,
-and no failed or inconvenient result is replaced by a better-looking seed.
+policies reach different sample sets. The reported confusion tables retain those
+sampling scopes. Evaluation ends at the declared cohort size and retains every
+recorded game.
 
 ## 4. From video diagnostics to a lightweight mission model
 
@@ -194,7 +196,7 @@ scene. All were judged non-collapse; one actual offset placement fell about
 81.638 mm. Twelve apparent correct labels therefore matched the trivial
 always-safe baseline. Later action contrasts changed the output images, but the
 required object falling motion was not reproduced. This distinguishes action
-sensitivity from useful object dynamics and does not prove the input was ignored.
+sensitivity from useful object dynamics.
 
 RynnVLA-002 experiments encountered orientation and decoding problems. Early
 misoriented attempts were excluded. Syntax-constrained generation was a separate
@@ -204,10 +206,10 @@ preserve custom-scene identity. In the five-round game the same invalid first
 prediction stopped all WAM rounds, so zero was an integration failure repeated
 five times, not five independently detected collapse hazards.
 
-These observations justify investigating a narrower predictor for this scene.
-They do not rank model families, establish absent physical understanding, or rule
-out a correctly adapted off-the-shelf model. Full historical details and video
-qualifications remain in the [initial report](block-stacking-wam-technical-report-20260918.md).
+These observations motivated a mission-specific WAM using exact simulator state.
+The change in model and information access is part of the experimental progression.
+Full historical details and video qualifications remain in the
+[initial report](block-stacking-wam-technical-report-20260918.md).
 
 ### 4.2 Initial dedicated state model and fixed-count confound
 
@@ -215,24 +217,29 @@ The initial dedicated neural dynamics model had 349,652 parameters. In the
 five-game offset pilot, current-state stopping scored 11, fixed-three plus the
 shared rule 10, and WAM plus the rule 12. One saved-state release was predicted
 to fall approximately 42.2 mm; actual release fell approximately 42.6 mm, while
-withholding release preserved one point. This is a concrete useful intervention,
-not a population-level estimate.
+withholding release preserved one point. This is the pilot's directly verified
+useful intervention.
 
 The subsequent centered test removed forced accumulating offsets. Nine complete
 comparisons produced totals of 10 for unconditional continuation, 35 for current
 state, and 72 for WAM. One additional start had a placement-readiness failure.
 All completed WAM games stopped at eight, and reached decisions matched a fixed-eight
-policy. A post-hoc ninth placement was safe despite a warning. The result supports
-score protection relative to those baselines, but not state-dependent advantage
-over count stopping. Later physical-variation experiments address this confound.
+policy. A post-hoc ninth placement was safe despite a warning. This fixed-count
+explanation motivated the later physical-variation experiments and stronger
+stopping baselines.
 
 ### 4.3 Exact-state ExtraTrees model and longer targets
 
-Later WAMs are ExtraTrees classifiers plus future-pose/drop regressors, not the
-initial neural checkpoint. Inputs include ten object poses and velocities,
+Later WAMs use ExtraTrees classifiers plus future-pose/drop regressors. Inputs
+include ten object poses and velocities,
 dimensions, mass, friction, center of mass, accepted positions, robot state,
 next target, count, and the registered procedure. Public adapter contracts validate
 shape, binding, finite values, allowed options, and forecast horizons.
+The feature construction also computes mass-weighted centers of the upper block
+groups and approximate margins relative to their supporting positions and block
+dimensions. These designed geometric features complement the learned classifier
+and regressor; the implementation is recorded in
+[`features`](../../src/prediction/stacking.py).
 
 Training uses 48 games and validation 16, with 834 training and 280 validation
 branch samples. The short-horizon model uses minimum leaf size one and threshold
@@ -241,8 +248,8 @@ additional hold on the prediction-label branch; 21 labels change from safe to
 collapsed. Leaf sizes 1, 3, 6 and thresholds 0.1, 0.2, 0.35, 0.5, 0.65, 0.8 are
 considered. Selection favors original validation-game score, then long-target
 balanced accuracy, then larger leaf size. The selected long model uses leaf size
-six and threshold 0.5. This changes horizon, fitted weights, and selected settings;
-it is not a one-factor horizon ablation.
+six and threshold 0.5. Thus the comparison covers the longer target, newly fitted
+weights, and reselected settings together.
 
 | Next block | Training safe / collapse, long target | Validation safe / collapse |
 | --- | ---: | ---: |
@@ -253,14 +260,14 @@ it is not a one-factor horizon ablation.
 | 9 | 19 / 7 | 5 / 3 |
 | 10 | 7 / 15 | 0 / 6 |
 
-These are continuation-label counts, not the combined continue-and-bank totals.
-The absence of safe tenth-placement validation examples is a plausible coverage
-limitation. Its causal contribution to false stops was not experimentally isolated.
+The table gives continuation-label counts. Safe and collapsed outcomes are both
+present at depths eight and nine; depth-ten validation contains only collapse
+examples. Section 10 discusses this coverage limitation.
 
 The stop rule is `continue_risk >= threshold` and `bank_risk < continue_risk`.
 Risk is the positive-class output of a classifier trained with balanced class
-weights. It is not established as a calibrated physical collapse probability.
-Regression and classification are separate heads and may disagree.
+weights. It is an uncalibrated score used by the stopping rule. The pose/drop
+regressor supplies the separate future-state output.
 
 ## 5. Quantitative capability results
 
@@ -277,30 +284,35 @@ v5 totals are VLA 130, current rule 208, WAM 292, and width rule 280. The primar
 WAM-minus-width difference is +0.300 points per game, unadjusted 95% interval
 [−0.225, 0.625], Holm p=0.29670. The secondary current-rule difference is +2.100
 [1.325, 2.800], p=0.00080; versus VLA it is +4.050 [3.150, 5.000], p=0.00003.
-The primary superiority claim is not established.
+The comparisons support higher scores relative to the current-state rule and
+VLA. For the primary width-rule comparison, the interval spans zero and the
+adjusted p-value remains above the significance threshold.
 
-All twenty narrow WAM games bank six. Wide totals are WAM 172, current rule 174,
-width rule 160. Therefore aggregate improvement over current-state stopping is
-not sufficient to prove that detailed physical forecasting caused the advantage.
-At wide depth ten there are both continued safe and correctly stopped unsafe
-cases, but one bank fails through delayed collapse. Mean final-XYZ RMSE is
-9.51 mm versus 7.76 mm for a simple planned/current-pose predictor: higher score
-does not imply uniformly better future-state regression.
+The current-state-rule score gain is concentrated in narrow games, where all
+twenty WAM games bank six. Wide totals are WAM 172, current rule 174, and width
+rule 160. This distribution motivates the feature-use questions in Section 10.
+At wide depth ten, the WAM both continues in safe cases and correctly stops in
+unsafe cases; one bank also fails through delayed collapse. Mean final-XYZ RMSE
+is 9.51 mm versus 7.76 mm for a simple planned/current-pose predictor. Thus this
+cohort records higher game scores alongside higher pose-regression error than
+that simple prediction baseline.
 
 ### 5.2 v6 retraining and endpoint audit
 
 On the same new forty games, long-horizon WAM scores 273, old WAM 281, width
 rule 280, current rule 202, and VLA 80. New minus width is −0.175 points per game,
 interval [−0.825, 0.300], Holm p=0.51918; new minus old is −0.200,
-[−0.350, −0.050], p=0.07004. This does not establish a new-model advantage.
+[−0.350, −0.050], p=0.07004. The point estimates favor the old model and width
+rule on this cohort; both adjusted comparisons remain above the stated
+significance threshold.
 
 The original endpoint contains a mismatch: voluntary banking waits, while ten
 completed placements are scored immediately at the placement endpoint. A separate
 diagnostic terminal hold changes old WAM's total from 281 to 261; new remains
 273 and width remains 280. Seven of eight common-path ten-point games collapse
-during this extra wait. The diagnostic is retained separately, not substituted
-for the original primary result after seeing it. It motivates v7's prospective
-uniform scoring.
+during this extra wait. The original primary result and the terminal-hold
+diagnostic remain separate reported endpoints. The diagnostic motivates v7's
+prospective uniform scoring.
 
 ### 5.3 v7 uniform terminal stability
 
@@ -332,14 +344,14 @@ stated family, despite a positive new-versus-old point estimate.
 
 New minus current is +2.025 [1.025, 3.050], Holm p=0.00515. New minus VLA is
 +6.225 [5.275, 7.000], p=0.00007. New minus width is −0.025 [−0.700, 0.450],
-p=1.00000. New minus old is +1.350 [0.250, 2.450], p=0.11232. The 54-point gain
-over old WAM is a descriptive improvement whose adjusted test remains unresolved.
+p=1.00000. New minus old is +1.350 [0.250, 2.450], p=0.11232. The new WAM
+retains 54 more points than old WAM on this cohort; the adjusted new-versus-old
+test remains above 0.05.
 
 The complete recorded v7 audit checks 355 prediction-input hashes, 155 saved-state
 placement replays, 4,598 actual VLA chunks, and 315 agreements between forecast
 waiting and the corresponding bank branch. Every arm's score is reconstructed
-from outcomes. All forty games complete without technical failures. These are
-local recorded audits, not independent external replication.
+from outcomes. All forty games complete without technical failures.
 
 ### 5.4 Gains, catastrophic losses, and stopping structure
 
@@ -353,9 +365,8 @@ The strong width/count structure persists despite some state-dependent choices.
 New WAM stops all forty games: narrow twenty at six; wide three at eight and
 seventeen at nine. Two nine-block banks collapse. It achieves fifteen nine-point
 scores and no tens. Narrow totals are WAM 120, width 120, current 51; wide totals
-are WAM 159, width 160, current 147. A small number of missed hazards cancels the
-reward from many additional placements, but those additional placements alone
-do not prove reliable state discrimination.
+are WAM 159, width 160, current 147. These results show both the benefit of
+additional placements and the cost of missed hazards within the observed games.
 
 New reached-state long-target confusion counts are TP 27, FP 13, TN 295, FN 2.
 Against the immediate target the same model gives TP 12, FP 28, TN 297, FN 0.
@@ -365,8 +376,9 @@ is outside the trained horizon. A placement-then-stop hazard does not prove that
 continuing immediately with another placement would also fail.
 
 New long-target maximum-drop MAE is 27.59 mm. Mean final-XYZ RMSE is 13.83 mm
-versus 17.81 mm for the planned/current-pose baseline. This reverses the regression
-comparison seen in v5, but does not make every classifier warning correct.
+versus 17.81 mm for the planned/current-pose baseline. This cohort therefore
+shows improved pose regression relative to that baseline, alongside the
+classification errors described below.
 
 ### 5.5 Five priority errors and contrasting examples
 
@@ -379,9 +391,9 @@ comparison seen in v5, but does not make every classifier warning correct.
 | 67036 | Before ten | 0.779 | Matched ten plus hold is safe; new stops at 9 |
 
 One miss lies closer to the threshold than the other; all three safe-ten warnings
-are high rather than borderline. This pattern does not isolate calibration,
-feature insufficiency, or coverage as the cause. No feature attribution or
-training-neighbor causal analysis is claimed.
+are high rather than borderline. The cases identify specific misses and false
+stops for diagnosis; calibration, feature use, and training coverage are the
+remaining explanatory questions in Section 10.
 
 Seed 67002 is a useful delayed-collapse warning: new risk 0.818 stops at eight;
 old risk 0.193 permits nine, followed by collapse during banking. The width rule
@@ -403,26 +415,27 @@ Core validates identifiers, current observation timing, immutable input binding,
 finite values, option membership, and supported horizons. It does not own a
 stacking-specific collapse ontology. `bind_prediction_observation` binds matching
 outcome references; collapse-to-TP/FP/TN/FN comparison belongs to the stacking
-adapter. This separation allows another mission to define its own outcome
-semantics without adding stacking assumptions to the common contract.
+adapter. This assigns mission-specific outcome semantics to the adapter while
+keeping observation, option, and horizon correspondence in the shared Core.
+An additional mission fitting these contracts can supply its own state schema,
+WAM, and outcome interpretation through the same integration structure.
 
-A lab predictor-unavailable fallback is a session policy, not universal permission
-to execute heuristics. The governed Agent path has no silent substitute for
-missing LLM judgment. Production freshness also requires execution identity,
-revision and provenance, rather than timestamp age alone.
+The lab session owns its predictor-unavailable fallback policy. The governed
+Agent path requires an actual LLM judgment before dispatch. Its freshness checks
+use execution identity, revision, provenance, and time.
 
 Six inspected cases are chosen to include a useful warning, two misses, and three
 safe-ten false stops. The Core/CLI deterministic integration reproduces scores
 8, 0, 0, 9, 9, 9 with 59 decisions, 16,756 selected motor steps, and 689 actual
 VLA chunks. Input/trajectory agreement is checked at 1e-9 and forecast risk/pose
-agreement at 1e-12. Failure fidelity is as important as success fidelity: the
-adapter does not silently replace the model or improve its behavior.
+agreement at 1e-12. Matching both useful warnings and model errors demonstrates
+that the adapter preserves the original model's behavior.
 
 The six-case live run was recorded at `ac2db1f`. A later Core/adapter comparison
 refactor was checked with 29 tests and the actual HTTP path using a synthetic
-predictor; the six cases were not rerun for that refactor. This historical
-boundary is explicit. It prevents documentation from claiming live coverage at a
-revision that only received boundary tests.
+predictor; the six cases were not rerun for that refactor. The detailed
+[integration record](mission-prediction-stacking-integration.md) identifies the
+revision and verification boundary for each result.
 
 ## 7. Assurance, approval, execution, and verification
 
@@ -440,22 +453,23 @@ mission context. Adopted evidence is labeled `model_inferred` and placed in
 uncertainty material, separately from observed facts and action feasibility.
 Unavailable forecasts, stale observations, model/policy/environment mismatch,
 and changed execution revision are rejected. Rejection removes stale prior
-forecast material. Adoption means eligibility as judgment material, not proof
-that an LLM used it or that an operation is safe.
+forecast material. Adoption establishes eligibility as judgment material.
+Section 8 verifies delivery to actual DeepSeek calls and references in their
+returned rationales.
 
 In the E2E path, the existing `MissionAssuranceAgent` calls the actual configured
 LLM. Raw prompt/response hashes and an updated situation digest bind what it
 received to the adopted evidence. The LLM proposes `continue`, `hold`, or
 `operator_escalation`; parameters remain empty. Continue maps to a registered
 placement macro, hold to noncontact bank/hold, and escalation dispatches nothing.
-The complete forecast, not just a selected risk scalar, is supplied.
+The supplied forecast includes both risk scores and future object-state outputs.
 
 ### 7.2 Bounded human preapproval and Rules
 
 The user approves named simulator seeds, frozen model/policy/environment bindings,
 registered macros, at most ten decisions per game, and a two-hour expiry.
-`individual_action_human_approval=false` records that this is bounded preapproval,
-not a fabricated per-action click. The LLM cannot approve that policy.
+`individual_action_human_approval=false` records this bounded preapproval scheme.
+The human supplies the approved scope; Rules enforce it for each proposed action.
 
 Rules revalidate the decision digest, policy binding, current observation and
 state hash, revision, freshness, macro, expiry, and remaining budget. A durable
@@ -480,17 +494,28 @@ revision changes invalidate the older context. A `mission_complete` receipt
 means the game ended and was scored, including zero-point failure, not generic
 mission success.
 
-The implementation is a CLI and loopback simulator composition. It is not the
-Gateway deployment path, an authenticated multi-user robot service, or the
-separate Recovery continuation graph. Simulation pauses while the LLM thinks;
-the 300-second freshness allowance is a lab convention, not a robot-control
-latency target. The trusted simulator client is not authenticated physical
-telemetry. These are deployment limits, not missing evidence silently filled
-by architecture diagrams.
+The implementation is a CLI and loopback simulator composition with a trusted
+local client. Simulation pauses during LLM judgment, with a 300-second lab
+freshness allowance. Section 10 records the production deployment boundary.
 
-## 8. Actual LLM E2E results and risk-semantics correction
+## 8. Actual DeepSeek E2E demonstration
 
-### 8.1 Retained execution history
+### 8.1 Execution and evidence delivery
+
+The actual DeepSeek API is used in the governed stacking loop. WAM forecasts
+enter Assurance, DeepSeek proposes an operation, Rules check it against the
+human-preauthorized bounds, the ticketed Executor runs SmolVLA and the simulator,
+and Verifier measures the result. The final R4 run records **18 DeepSeek
+judgments, 5,112 motor steps, and 208 SmolVLA inference chunks**. Six live
+rejection probes block mismatched approval, stale observation, or changed revision
+before motion. Both games and both host services exit zero.
+
+Saved API prompts contain the admitted WAM forecast and matching situation
+identity. Response hashes and request bindings match the recorded decisions,
+and DeepSeek explicitly cites forecast risks in its returned rationales. These
+records verify delivery and reported use of the WAM evidence in actual judgments.
+
+### 8.2 Recorded runs and the known-case correction
 
 | Run | Judgment backend | Seeds / scores | Actual judgments | Selected motor steps | VLA chunks |
 | --- | --- | --- | ---: | ---: | ---: |
@@ -499,81 +524,41 @@ by architecture diagrams.
 | R3 | DeepSeek flash | 67002: 5; 67016: 8 | 15 | 4,260 | 169 |
 | R4 | DeepSeek flash, corrected framing | 67002: 8; 67016: 8 | 18 | 5,112 | 208 |
 
-R1 continues in all twenty decisions, including a collapse. R2 is a post-hoc
-stop-branch coverage check. At the user's request DeepSeek replaces Gemma for
-the final backend; there is no fallback to a local model. The Llama 3 ten-point
-completion must not be attributed to DeepSeek. These runs are not a controlled
-ranking of LLMs: backends, some adapter revisions, and prompt framing differ.
+*Table note: the ten-point completion belongs to Llama 3 R1, not DeepSeek.
+R2 adds a stop-branch check; R3 and R4 use the user-selected DeepSeek backend.
+The runs are historical integration coverage, not a controlled LLM ranking.*
 
-### 8.2 Was the WAM forecast actually delivered?
+R3 stops earlier than the WAM plus its existing deterministic stop rule. R4
+clarifies the risk score's meaning and supplies provisional score arithmetic
+while retaining the same WAM, VLA, physics, and two seeds. The combined score
+changes from **13 to 16**, compared with **17 for WAM plus the existing
+deterministic stop rule** on those cases. This is a post-hoc correction on
+inspected cases, not a held-out improvement comparison.
 
-Yes, as an audited runtime fact for these calls. Saved API prompts contain the
-admitted forecast and the situation identity; response hashes, request bindings,
-and raw judgment rationales correspond. DeepSeek explicitly cites forecast
-risks. This establishes delivery and reported use in its rationale, not access
-to the model's internal reasoning or a causal attribution to every feature.
-
-R3 seed 67002 stops before six with continue risk 0.084593 and bank risk 0.007822.
-Its rationale emphasizes the asymmetric loss of the five retained points and
-claims stopping maximizes expected points. If those scores are provisionally
-substituted for failure probabilities, one additional placement followed by bank
-would instead give about 5.492 points versus 4.961 for immediate bank. The WAM
-scores are uncalibrated, so these are not established true expectations; however,
-the cited risk numbers alone do not support the asserted expected-score ordering.
-
-### 8.3 The correction and its assumptions
-
-R4 keeps the WAM, VLA, physics and seeds fixed. Before Assurance admission, the
-stacking mission adds `constraints.stacking_score_comparison`, which is included
-in the situation digest. It specifies the classifier score's meaning and gives
-provisional arithmetic for count `n`:
-
-`bank_proxy = n × (1 − bank_risk)`  
-`continue_proxy = (n + 1) × (1 − continue_risk)`
-
-Continue already refers to placement plus terminal hold, so bank risk is not
-applied again. Collapse-to-zero loss is already represented; the prompt prohibits
-an unspecified extra loss-aversion penalty under the game's linear point
-objective. It asks the LLM to cite both proxy values and identify concrete extra
-evidence if choosing against their ordering. It explicitly states that the
-numbers are not calibrated expected points or optimal ten-step planning.
-
-The helper returns no recommended option and creates no authority. The actual
-LLM still proposes. Nevertheless, this is an intervention on decision framing:
-the arithmetic aid and prompt constraints change together. It is not a neutral
-measurement of an unchanged judge, and their individual effects are not isolated.
+At seed 67002, R4 continues through the earlier premature stop and ultimately
+banks eight; at seed 67016 it again banks eight. Inputs match R3 exactly through
+decision six and nine respectively; forecasts match within 1e-12, and motor tapes
+match wherever the paired prefix choices agree. The detailed
+[risk-comparison audit](stacking-mission-e2e.md#detailed-risk-comparison-audit)
+preserves the formulas, assumptions, per-decision values, and diagnostic reasoning.
 
 ![DeepSeek correction and provisional arithmetic](../assets/missionos-wam-20260919/05-deepseek-correction.png)
 
-**Figure 6.** Left: measured scores on two already inspected cases, including the
-unchanged deterministic WAM reference. Right: illustrative one-placement utility
-proxies at the earlier stop states. The right panel is not a probability calibration
-plot and must not be read as measured expected return.
+**Figure 6.** Left: measured scores on two already inspected cases, including
+WAM plus the existing deterministic stop rule. Right: illustrative one-placement
+utility proxies at the earlier stop states. The right panel is not a probability
+calibration plot and must not be read as measured expected return.
 
-### 8.4 Matched results and interpretation
+### 8.3 What the LLM contributes to this demonstration
 
-At seed 67002 decision six, DeepSeek R4 cites bank 4.960892 versus continue
-5.492440 and chooses continue. The actual placement remains stable. At decision
-nine it cites bank 6.654698 versus continue 1.636099 and stops; the final hold
-retains eight points. At seed 67016 decision nine it cites bank 7.819628 versus
-continue 7.024974 and stops at eight again. The correction does not simply force
-more continuation everywhere.
-
-Pre-decision input arrays match R3 exactly through decision six for 67002 and
-through nine for 67016. Forecast risks and poses match within 1e-12, and motor
-tapes match wherever the prefix decisions agree. The observed decision change
-therefore occurs at the same physical state with the same WAM forecast. Remote
-LLM variability is uncontrolled, and the prompt is changed after inspecting the
-cases. The score increase from 13 to 16 is descriptive, not a statistically
-established or held-out improvement. Both games still stop at eight. The total
-also remains below deterministic WAM's 17; adding LLM Assurance has not been
-shown to improve this benchmark over WAM plus its original stop rule.
-
-R4 verifies eighteen actual DeepSeek calls, 5,112 motor steps, 208 VLA chunks,
-and six live pre-motion rejection probes. Both simulator games and both host
-services exit zero. API usage is real: 81,279 prompt plus 7,130 completion tokens,
-88,409 total. No currency cost is inferred and no cloud GPU is provisioned.
-No further prompt iterations or seed searches follow this correction.
+DeepSeek exercises the MissionOS judgment interface with real model output while
+approval, constraints, execution, and measured verification retain their separate
+roles. The proxy arithmetic could also be evaluated by a deterministic stopping
+policy; the benchmark does not establish that an LLM is necessary or improves on
+that policy. Its contribution here is the exercised integration path. Mission
+context or exceptions that resist a compact numerical rule could motivate LLM
+judgment in other missions; that is a future use case rather than a measured
+benefit of this stacking test.
 
 ## 9. Reproducibility, provenance, and verification tiers
 
@@ -605,8 +590,7 @@ or a substitute for access to the original evidence.
 There are three separate tiers. Public contract/HTTP/CLI tests verify semantics
 with fixtures. Recorded real-model simulator runs verify the actual scoped
 execution path. Report-generation checks verify transcription, arithmetic,
-links, and figure correspondence. None independently certifies the physics or
-establishes hardware safety.
+links, and figure correspondence.
 
 The focused prediction/Assurance boundary suite recorded 68 passing tests for
 R4. During merge preparation the full CI exposed an omitted smoke-inventory
@@ -654,21 +638,26 @@ and [centered replay](../assets/block-stacking-20260918/centered-game-replay.mp4
 show historical 0/1/0 and 0/8/9 comparisons respectively. They are **not footage
 of v5–v7 or the governed DeepSeek games**. The initial report contains GIF embeds,
 playback speed, replay checks, and qualification of their counterfactual branches.
-No visually illustrative clip is relabeled as footage of a later experiment.
 
 ## 10. Threats to validity and unresolved questions
 
-**Task distribution and information privilege.** Exact simulator state, known
+**Task distribution and information access.** Exact simulator state, known
 mass/friction/center of mass, staged grasps, and two width groups simplify the
-problem. Generalization to noisy observation, unseen materials, a new VLA,
+problem. The early video models and the later exact-state WAM have different
+information access, so their outcomes are a development history rather than a
+like-for-like model ranking. Generalization to noisy observation, unseen materials, a new VLA,
 other control macros, hardware, or another mission remains untested. A common
 interface is architectural generality, not demonstrated learned-model transfer.
 
 **Policy confounding and simple baselines.** Narrow stopping remains effectively
-fixed at six; width-dependent stopping matches aggregate performance. Same-depth
+fixed at six; width-dependent stopping produces nearly the same observed total.
+The 279-versus-280 comparison establishes neither WAM superiority nor statistical
+equivalence. Same-depth
 choices do not establish that mass, friction or center-of-mass features are
 causally used. No physical-attribute ablation, count-only classifier ablation,
 or learned policy-matched baseline establishes necessity of the full WAM.
+A count-and-width-only WAM comparison is a focused future ablation; it is not
+part of this report's completion criteria.
 
 **Horizon and endpoint sensitivity.** Delayed failure matters, but the long model
 also changes training targets, parameters and selected settings. Original and
@@ -699,39 +688,41 @@ Rules constrain authorization and consistency but do not guarantee safe physics.
 and fixture tests are public. Private raw evidence and trusted checkpoints are
 not redistributed. Full independent replication would require separately available
 model artifacts, simulator setup, training protocol/data, dependency environment,
-and hosted-model controls. This report must not claim that publication alone
-provides those components.
+and hosted-model controls. Publication alone does not provide those components.
 
 ## 11. Conclusion and stopping point
 
-The experiments show useful but limited predictive stopping behavior in a
-well-defined simulated mission. Under uniform scoring the dedicated WAM exceeds
-current-state stopping and unconditional continuation on the forty-game cohort,
-but does not establish superiority over a validation-selected width rule. Fifteen
-small gains are canceled by two large misses, and safe tenth placements remain
-unnecessarily rejected. These are central findings, not residual footnotes.
+MissionOS integrates a mission-specific WAM through a common prediction contract
+and carries its forecasts into actual LLM judgment, bounded human preauthorization,
+Rules checks, simulator execution, and measured verification. The implementation
+reproduces the WAM's useful and erroneous decisions and records the later
+DeepSeek-driven missions from current observation through terminal score.
 
-MissionOS then preserves the predictor's behavior through a common contract and
-extends it into an actually exercised governed loop. Real DeepSeek judgment,
-bounded human preapproval, Rules, ticketed SmolVLA/simulator execution, and measured
-verification are all recorded as different events. Correcting risk explanation
-changes one known premature stop, while leaving the unresolved calibration and
-performance questions visible.
+The stacking experiments quantify the WAM's decision value. On the final forty
+games, WAM-based stopping earns 279 points, ahead of current-state stopping at
+198 and unconditional continuation at 30. The task-adapted width rule earns 280,
+placing the WAM at nearly the same observed score as this strong comparator.
+Fifteen additional one-point gains and two eight-point losses explain the result.
+The complete comparison and failure analysis remain part of the finding.
 
-The completed claim is: **VLA proposes motor actions. WAM predicts. LLM Assurance
-judges. Humans approve. Rules constrain. Executor acts. Verifier checks.** This
-chain has been demonstrated in the specified simulator composition. It is not a
-claim that LLM Assurance improves WAM's predictive accuracy or outperforms the
-original deterministic stop rule.
+The broader design value is a common route for mission-specific learned WAMs:
+the adapter supplies the model and outcome semantics, and MissionOS binds the
+forecast to the observation, mission, policy, environment, and operation before
+Assurance uses it. Block stacking demonstrates this architecture in an executed
+mission. It provides a concrete foundation for incorporating learned forecasts
+when designing a compact rule for every relevant condition becomes difficult.
 
-The series stops here. New training, calibration, wider cohorts, LLM comparison,
-Gateway deployment and physical execution would be separately scoped studies,
-not prerequisites retroactively added to this bounded contribution.
+**VLA proposes motor actions. WAM predicts. LLM Assurance judges. Humans
+pre-authorize bounded execution. Rules constrain. Executor acts. Verifier checks.**
+
+The series concludes with this implemented and measured result. Section 10 records
+further questions for future work; the present contribution is the evaluated
+stacking WAM and its governed MissionOS execution path.
 
 ## References and detailed appendices
 
-These are primary project records; no external literature survey or novelty
-ranking is implied.
+The following primary project records provide the detailed experiments,
+contracts, and runtime audits supporting this report.
 
 1. [Initial block-stacking report](block-stacking-wam-technical-report-20260918.md):
    video-model diagnostics, neural pilot, centered confound, replay details.

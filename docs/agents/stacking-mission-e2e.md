@@ -170,6 +170,47 @@ game completed ten blocks. This demonstrates a corrected known-case decision
 and intact governed execution, **not statistically established performance gain,
 calibrated risk, or superiority over WAM plus the deterministic stop rule**.
 
+### Detailed risk-comparison audit
+
+This audit preserves the numeric diagnosis summarized in the
+[system report](missionos-wam-system-technical-report-20260919.md#82-recorded-runs-and-the-known-case-correction).
+For current bankable count `n`, the supplied comparison is:
+
+`bank_proxy = n × (1 − bank_risk)`
+
+`continue_proxy = (n + 1) × (1 − continue_risk)`
+
+Continue already includes placement plus terminal hold. The calculation therefore
+uses that option's risk once; it does not multiply by bank risk again. The
+collapse-to-zero loss is already represented. The revised prompt asks the LLM to
+cite both proxy values and explain concrete additional evidence if it chooses
+against their ordering. The input explicitly labels the substitution of raw risk
+for failure probability as provisional. It is neither probability calibration
+nor optimal planning through all remaining placements.
+
+| Seed | Next placement | Continue risk | Bank risk | Continue proxy points | Bank proxy points | R3 / R4 choice |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| 67002 | 6 | 0.084593 | 0.007822 | 5.492440 | 4.960892 | bank / continue |
+| 67002 | 9 | 0.818211 | 0.168163 | 1.636099 | 6.654698 | not reached / bank |
+| 67016 | 9 | 0.219447 | 0.022547 | 7.024974 | 7.819628 | bank / bank |
+
+R3's decision-six rationale for 67002 emphasizes losing the five retained points
+and asserts that immediate bank maximizes expected points. Under the explicitly
+provisional probability substitution, the cited values give the opposite order
+(approximately 5.492 versus 4.961). R4 makes this assumption and arithmetic
+visible and chooses continue; the actual placement is stable. Its subsequent
+bank before nine retains eight points. For 67016, the same arithmetic favors
+bank before nine, and both runs select it.
+
+`constraints.stacking_score_comparison` is added before Assurance admission and
+included in the updated situation digest. The helper supplies arithmetic evidence
+with no recommended option and no authority. The actual LLM makes the proposal.
+The arithmetic aid and prompt constraints change together; their individual
+effects are not isolated. The remote LLM is also an uncontrolled source of
+variation. Matching simulator inputs and WAM forecasts locates the changed
+judgment at the same physical state, but two inspected cases do not establish a
+population improvement or an LLM advantage over deterministic stopping.
+
 ## Previous DeepSeek validation (R3), retained, 2026-09-19
 
 At the user's request, the final backend is **DeepSeek**, not Gemma. The available
