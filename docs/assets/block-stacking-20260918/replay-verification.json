@@ -1,0 +1,40 @@
+{
+  "scope": "video recreation, not additional benchmark trials",
+  "seed": 47000,
+  "capture_stride_control_steps": 4,
+  "control_hz": 20,
+  "mp4_fps": 20,
+  "playback_speed": 4,
+  "end_display": "shorter panels freeze; final montage held two video seconds",
+  "scores_and_states_verified": [
+    {
+      "arm": "baseline",
+      "score": 0,
+      "recorded_frames": 450,
+      "decision_images_and_decisions_match": true,
+      "final_object_poses_exact_match": true,
+      "maximum_drop_exact_match": true
+    },
+    {
+      "arm": "wam",
+      "score": 8,
+      "recorded_frames": 421,
+      "decision_images_and_decisions_match": true,
+      "final_object_poses_exact_match": true,
+      "maximum_drop_exact_match": true
+    },
+    {
+      "arm": "finish9",
+      "score": 9,
+      "recorded_frames": 406,
+      "decision_images_and_decisions_match": true,
+      "final_object_poses_exact_match": true,
+      "maximum_drop_exact_match": true
+    }
+  ],
+  "media_sha256": {
+    "centered-game-replay.gif": "7ee538863e98ab705a5980afe754d360af5fb19406d8821b0b1537248f741cff",
+    "centered-game-replay.mp4": "05c7d935db2fbd7ff2405e77a5a7567b24b4b19623ee807e2aa980fe07ef33ea",
+    "centered-game-replay-poster.png": "5e1f609150c353ac44dae7d4e79bf97cba577b3ebe521c8796e7d964ae8930f6"
+  }
+}
