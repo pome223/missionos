@@ -106,6 +106,7 @@ class PredictionSession:
             "existing_count": int(x["count"]) - 1,
             "llm_invoked": False,
             "scope": "opt_in_simulator_lab",
+            "governed_mission": hasattr(self, "dispatch"),
             "hardware_dispatch_authorized": False,
         }
         # Persist before responding, hence before any simulator outcome is available.
@@ -228,6 +229,7 @@ def make_server(session: PredictionSession, *, port: int = 0) -> HTTPServer:
                     "threshold": session.provider.threshold,
                     "continue_horizon_seconds": session.provider.horizon_steps / 20,
                     "scope": "opt_in_simulator_lab",
+                    "governed_mission": hasattr(session, "dispatch"),
                 },
             )
 
@@ -242,6 +244,8 @@ def make_server(session: PredictionSession, *, port: int = 0) -> HTTPServer:
                 )
                 if self.path == "/decide":
                     result = session.decide(body)
+                elif self.path == "/dispatch" and hasattr(session, "dispatch"):
+                    result = session.dispatch(body)
                 elif self.path == "/observe":
                     result = session.observe(body)
                 else:

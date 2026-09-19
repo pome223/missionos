@@ -20,3 +20,13 @@ a simple width-dependent stopping rule have not been established. The lab does
 not yet connect forecasts to the main MissionOS Agent or hardware execution.
 
 [Implementation and verification contract](../agents/mission-prediction-contract.md)
+
+Mission Assurance can receive a forecast as model-inferred evidence, keeping it
+separate from observed facts. A receipt records whether it was accepted as
+judgment material and why. Accepting evidence does not establish feasibility or
+authorize execution. Unavailable or outdated forecasts are excluded.
+
+An opt-in stacking demonstration connects those boundaries into a complete
+simulator game: the LLM proposes whether to continue, an approved bounded policy
+constrains execution, and measured outcomes determine the score. A functioning
+control path does not by itself establish that the LLM makes better decisions.

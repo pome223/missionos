@@ -467,3 +467,13 @@ display; observed `local_z_m` is shown exactly as persisted. The Recovery marker
 is the latest observed point at the evidence boundary. It must not be described
 as an observed final RTL/home position because no final X/Y sample establishes
 that fact.
+
+## Optional prediction evidence intake
+
+The separate [prediction evidence admission boundary](assurance-prediction-evidence.md)
+can populate `MissionSituation.uncertainty.prediction_evidence` with an adopted
+or rejected receipt. Model-inferred forecasts remain separate from observed facts
+and Action Feasibility. Admission is not an LLM judgment, approval, or dispatch.
+The intake exposes explicit CLI receipt creation and prompt projection. The
+separately enabled [stacking mission E2E](stacking-mission-e2e.md) uses the actual
+Agent and a bounded simulator executor; automatic Gateway wiring is not enabled.

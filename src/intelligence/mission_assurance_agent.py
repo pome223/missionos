@@ -304,6 +304,9 @@ def build_mission_assurance_prompt(situation: MissionSituation) -> dict[str, Any
         },
         "decision_contract": {
             "thresholds_are_inputs_not_final_judgment": True,
+            "prediction_evidence_is_model_inferred_not_observed_fact": True,
+            "prediction_admission_is_not_feasibility_approval_or_execution_authority": True,
+            "rejected_prediction_evidence_must_not_support_judgment": True,
             "judge_recovery_proposal_mission_alignment": True,
             "response_kind_is_judgment_not_execution_authority": True,
             "human_approval_is_always_a_separate_downstream_boundary": True,

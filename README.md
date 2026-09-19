@@ -170,6 +170,14 @@ Create3/Gazebo stack has not yet produced the same repeatable odometry-backed
 motion evidence. See [Simulator Baseline](docs/concepts/simulator-baseline.md)
 for the migration boundary.
 
+## Mission-specific WAM study
+
+The [illustrated technical report](docs/agents/missionos-wam-system-technical-report-20260919.md)
+connects block-stacking experiments to actual governed MissionOS simulator execution.
+It documents useful predictive stopping, unresolved superiority over a simple width
+rule, and the separation of forecasts, LLM judgment, human approval, Rules,
+execution and measured verification.
+
 ## Disclaimer
 
 MissionOS is reference software for AI-assisted mission-control research and

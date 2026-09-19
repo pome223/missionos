@@ -100,4 +100,10 @@ the same change.
 
 - [Mission-scoped prediction contract](mission-prediction-contract.md) — dependency-free Core forecast interface and opt-in stacking adapter.
 - [Stacking prediction integration verification](mission-prediction-stacking-integration.md) — known-case live Core/CLI simulator verification, separate from capability evaluation.
+
+- [Assurance prediction evidence admission](assurance-prediction-evidence.md): bound intake, rejection, and runtime verification.
+
+- [Governed stacking mission E2E](stacking-mission-e2e.md): actual LLM, bounded preapproval, simulator execution and measured verification.
 - [Block stacking physical-variation follow-up](block-stacking-wam-physics-followup-20260918.md) — three independent forty-game cohorts, longer-horizon retraining, and uniform terminal stability scoring.
+
+- [Mission-specific WAM system technical report](missionos-wam-system-technical-report-20260919.md) — complete experimental and governed E2E synthesis with six reproducible figures, all cohort scores, and claim limits.
