@@ -43,6 +43,52 @@ def utc():
     return datetime.now(timezone.utc).isoformat()
 
 
+def stacking_score_comparison(forecast: dict, next_count: int) -> dict:
+    """Arithmetic evidence under an explicit proxy assumption, never an action selector.
+
+    Frozen ExtraTrees uses balanced class weights. Its predict_proba output is
+    not a calibrated physical frequency; the following is not measured utility.
+    """
+    semantics = {
+        "schema_version": "stacking_score_comparison.v1",
+        "risk_meaning": "Uncalibrated ExtraTrees positive-class score; training uses balanced class weights. It is not an established physical collapse probability.",
+        "positive_class": "Any score-bearing block drops more than 0.03 m within the option's rollout horizon.",
+        "objective": "Maximize banked block count with linear point utility; collapse yields zero. No additional loss-aversion penalty is specified.",
+        "assumption": "For this provisional arithmetic comparison ONLY, substitute risk_score for failure probability. This is not calibration and not a guaranteed expected score.",
+        "calibrated": False,
+        "recommended_option": None,
+        "dispatch_authority_created": False,
+        "regression_note": "Per-object drops and poses are a separate regression head describing the same rollout. They are not independent probabilities or proof of certain collapse; do not double-count the same hazard.",
+    }
+    if forecast.get("status") != "available":
+        return semantics | {"status": "unavailable"}
+    options = {f["option_id"]: f for f in forecast["forecasts"]}
+    if (
+        set(options) != {"continue", "bank"}
+        or type(next_count) is not int
+        or not 1 <= next_count <= 10
+    ):
+        raise ValueError("unsupported_score_comparison")
+    if options["continue"]["horizon_seconds"] != 28.4 or options["bank"]["horizon_seconds"] != 14.2:
+        raise ValueError("score_comparison_requires_placement_plus_terminal_hold")
+    current = next_count - 1
+    continued = next_count * (1 - options["continue"]["risk_score"])
+    banked = current * (1 - options["bank"]["risk_score"])
+    return semantics | {
+        "status": "illustrative_proxy_only",
+        "current_count": current,
+        "next_count": next_count,
+        "formula": "bank=n*(1-bank_risk); continue_then_bank=(n+1)*(1-continue_risk)",
+        "bank_proxy_points": banked,
+        "continue_then_bank_proxy_points": continued,
+        "continue_minus_bank_proxy_points": continued - banked,
+        "break_even_continue_risk_under_proxy": 1 - banked / next_count,
+        "continue_then_bank_horizon_seconds": 28.4,
+        "bank_horizon_seconds": 14.2,
+        "planning_limit": "One placement followed by terminal hold, not optimal planning through ten blocks; choosing continue here does not precommit later actions.",
+    }
+
+
 class LocalOllamaJudge:
     """Actual local model IO, with raw prompt/response and invocation provenance."""
 
@@ -64,7 +110,7 @@ class LocalOllamaJudge:
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are the Mission Assurance judge. Read the mission contract and admitted model-inferred evidence. Choose exactly one allowed response. Return the required JSON only, with empty parameters. Do not claim approval, feasibility, or execution. Be concise. Risk is fallible evidence; choose to maximize expected banked score, including risk of losing all points. Do not infer safety from count alone.",
+                    "content": "You are the Mission Assurance judge. Read the mission contract and admitted model-inferred evidence. Choose exactly one allowed response. Return the required JSON only, with empty parameters. Do not claim approval, feasibility, or execution. Be concise. Risk is fallible evidence; choose to maximize banked score. Read constraints.stacking_score_comparison: risk is a class-reweighted score, not a calibrated probability. Cite both supplied proxy point values in your rationale, and call them proxy values rather than true expected points. The collapse-to-zero loss is already included in this arithmetic; do not add an unspecified loss-aversion penalty. For these bounded simulator games the objective is linear point utility. If you choose against the proxy comparison, identify concrete additional evidence and explain why it changes the comparison; unknown calibration alone does not establish that bank maximizes expected points. Do not infer safety from count alone.",
                 },
                 {"role": "user", "content": json.dumps(prompt)},
             ],
@@ -127,7 +173,7 @@ class DeepSeekJudge:
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are the Mission Assurance judge. Read the mission contract and admitted model-inferred evidence. Choose exactly one allowed response. Return one JSON object only with these six keys: proposed_response_kind, parameters, rationale, expected_outcome, uncertainty, operator_question. parameters must be an empty object; all other fields must be nonempty strings. Do not claim approval, feasibility, or execution. Risk is fallible evidence; choose to maximize expected banked score, including risk of losing all points. Do not infer safety from count alone.",
+                    "content": "You are the Mission Assurance judge. Read the mission contract and admitted model-inferred evidence. Choose exactly one allowed response. Return one JSON object only with these six keys: proposed_response_kind, parameters, rationale, expected_outcome, uncertainty, operator_question. parameters must be an empty object; all other fields must be nonempty strings. Do not claim approval, feasibility, or execution. Risk is fallible evidence; choose to maximize banked score. Read constraints.stacking_score_comparison: risk is a class-reweighted score, not a calibrated probability. Cite both supplied proxy point values in your rationale, and call them proxy values rather than true expected points. The collapse-to-zero loss is already included in this arithmetic; do not add an unspecified loss-aversion penalty. For these bounded simulator games the objective is linear point utility. If you choose against the proxy comparison, identify concrete additional evidence and explain why it changes the comparison; unknown calibration alone does not establish that bank maximizes expected points. Do not infer safety from count alone.",
                 },
                 {"role": "user", "content": json.dumps(prompt)},
             ],
@@ -283,6 +329,9 @@ class GovernedStackingSession(PredictionSession):
                 "prediction_context": evidence["context"],
                 "assurance_policy": policy.model_dump(),
                 "reference_classifier_threshold": self.provider.threshold,
+                "stacking_score_comparison": stacking_score_comparison(
+                    decision["forecast"], revision
+                ),
                 "unknown_calibration": True,
                 "actions_require_separate_policy_revalidation": True,
             },

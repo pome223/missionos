@@ -41,6 +41,32 @@ audit. It is neither dispatched nor supplied as a recommendation to the LLM.
 Risk and the classifier's reference threshold remain evidence. Scores need not
 match earlier deterministic-rule games because the actual LLM now chooses.
 
+## Risk semantics and provisional score comparison
+
+The frozen WAM's risk is the positive-class output of an ExtraTrees classifier
+trained with balanced class weights. It is **not a calibrated physical collapse
+probability**. The positive event is a score-bearing block dropping more than
+0.03 m within the option horizon. The separate future-pose/drop regression head
+is fallible evidence about the same rollout, not another independent probability.
+
+The stacking mission supplies `constraints.stacking_score_comparison` before
+Assurance admission, so the resulting situation digest also binds the arithmetic.
+For current count `n`, it explicitly substitutes raw risk for failure probability
+**only as an illustrative proxy**:
+
+- Bank proxy points: `n * (1 - bank_risk)` over the 14.2-second hold.
+- Continue-then-bank proxy points: `(n + 1) * (1 - continue_risk)` over placement
+  plus terminal hold, 28.4 seconds. Bank risk is not applied a second time.
+
+The prompt requires both proxy values in the rationale, distinguishes them from
+true expected points, and specifies the game's linear point objective. Collapse
+to zero is already represented in this arithmetic; an unspecified additional
+loss-aversion penalty must not be introduced. A contrary choice must cite
+concrete additional evidence. This changes the decision framing and may influence
+the LLM; it is not calibration, an optimal ten-step planner, or a neutral test of
+an unchanged prompt. The helper returns no recommended action and creates no
+authority. The actual LLM still proposes; approval and Rules remain separate.
+
 ## Approval and Rules
 
 `--approve-simulator-mission --operator <authorization-reference>` records the
@@ -93,7 +119,58 @@ Raw LLM prompt/response records, admissions, decisions, policy reservations,
 dispatches, selected action arrays and measured results form the local audit.
 Do not import these private/raw artifacts wholesale into the public repository.
 
-## Final requested DeepSeek validation (R3), 2026-09-19
+## Risk-semantics correction and matched rerun (R4), 2026-09-19
+
+After inspecting R3's early stop, the user requested a correction and rerun.
+Only the score-comparison evidence and judgment instructions changed. WAM, VLA,
+seeds, physics, action execution and terminal scoring remained frozen. This is
+one post-hoc correction on two already inspected cases, not held-out evaluation.
+
+| Seed | Previous DeepSeek R3 | Corrected DeepSeek R4 | R4 terminal decision |
+| ---: | ---: | ---: | --- |
+| 67002 | 5 | 8 | Bank before placement 9; terminal hold stable |
+| 67016 | 8 | 8 | Bank before placement 9; terminal hold stable |
+| Total | 13 | 16 | |
+
+At seed 67002, decision 6, the raw risks remained **0.084593 continue / 0.007822
+bank**. DeepSeek now explicitly cited **5.492440 continue-then-bank proxy points
+versus 4.960892 bank proxy points**, named the uncalibrated-score assumption, and
+selected continue. The actual placement was stable. At decision 9 it selected
+bank, citing 1.636099 continue versus 6.654698 bank proxy points; the measured
+terminal score was eight.
+
+At seed 67016, decision 9, it cited **7.024974 continue versus 7.819628 bank**
+proxy points and again stopped at eight. Thus the correction did not merely
+force more placements everywhere. However, both games still stopped at the
+same count, and no state-dependent generalization or optimal stopping claim
+follows. The previous deterministic WAM rule scored 8 and 9 on these seeds;
+R4's total of 16 still does not exceed that reference total of 17.
+
+The audit verified identical pre-decision input arrays through decision 6 for
+67002 and decision 9 for 67016, matching forecast risks and poses within 1e-12,
+and identical motor tapes wherever the decisions in these prefixes agreed.
+The changed judgment therefore occurred with the same current state and WAM
+forecast. Both the arithmetic aid and prompt framing changed together; their
+individual effects are not isolated. Remote LLM variability is also uncontrolled.
+
+The complete actual runtime audit matched **18 DeepSeek judgments, 5,112 motor
+steps and 208 SmolVLA inference chunks**, plus six pre-motion rejection probes.
+It checked the actual API prompt against the admitted situation, including the
+score comparison, response hashes, decision/ticket/reservation bindings, motor
+arrays, measured scores and terminal receipts. Both games and both host services
+exited zero. Standard subprocess invocation evidence validated. No cloud GPU or
+physical robot was used. The API reported 81,279 prompt and 7,130 completion
+tokens (88,409 total); no currency cost is inferred.
+
+R4 used `stacking_mission.py` SHA-256
+`fc302df01264b4dbc4deff058f4fbf0a423a315959adb9a1155417317240b431`.
+The production code manifest remained unchanged throughout the run. No further
+prompt iterations or new seeds were run to pursue a higher score. Neither R4
+game completed ten blocks. This demonstrates a corrected known-case decision
+and intact governed execution, **not statistically established performance gain,
+calibrated risk, or superiority over WAM plus the deterministic stop rule**.
+
+## Previous DeepSeek validation (R3), retained, 2026-09-19
 
 At the user's request, the final backend is **DeepSeek**, not Gemma. The available
 API model list was checked and `deepseek-flash` was requested; every response
@@ -104,7 +181,7 @@ also identified `deepseek-flash`. There is no silent fallback to a local model.
 | 67002 | Bank before placement 6; terminal hold stable | 5 | 6 |
 | 67016 | Bank before placement 9; terminal hold stable | 8 | 9 |
 
-The final audit matched **15 actual DeepSeek judgments, 4,260 motor steps and
+The R3 audit matched **15 actual DeepSeek judgments, 4,260 motor steps and
 169 actual SmolVLA inference chunks**. Six live rejection probes rejected
 invalid approval binding, stale observation and changed revision before motion.
 Both simulator games and both services exited zero. Forecasts, admissions,
@@ -117,11 +194,11 @@ seed 67002 at decision 6, continue risk was 0.084593 and bank risk 0.007822.
 DeepSeek cited the asymmetric cost of losing five points and larger predicted
 drops. This is actual evidence-dependent rationale and action selection, not
 proof of optimal expected-score reasoning or calibrated probabilities. These
-results do **not** establish improved decision quality. Neither final DeepSeek
+results do **not** establish improved decision quality. Neither R3 DeepSeek
 game reached ten blocks; the real ten-block completion below belongs to the
 earlier Llama 3 run, and must not be attributed to DeepSeek.
 
-The final adapter SHA-256 is
+The R3 adapter SHA-256 is
 `48c77e9ebbcbbdf931ce4604d848a17c0ec794608dcdb1ac366ed264cca173dc`.
 Remote weights are unavailable: `model_sha256=null` for DeepSeek rather than an
 invented checkpoint digest. Response IDs, requested/returned model IDs, usage
@@ -193,7 +270,7 @@ terminal-ordering contract is covered by tests; the final live R2 exercises the
 stop path. Full per-run code manifests and raw simulator/model records remain
 local rather than being imported into the public repository.
 
-Final automated validation: **63 tests passed**, with lint, whitespace and
+Final automated validation: **68 tests passed**, with lint, whitespace and
 changed-document link checks also passing. The six-case synthetic intake CLI
 smoke still passes. The relevant test command is:
 

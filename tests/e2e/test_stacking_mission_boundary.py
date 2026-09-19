@@ -323,3 +323,50 @@ def test_deepseek_records_response_without_credentials(tmp_path, monkeypatch):
     assert result.invocation_evidence["model_sha256"] is None
     saved = next((tmp_path / "llm").glob("*.json")).read_text()
     assert "synthetic-not-a-real-key" not in saved and "Authorization" not in saved
+
+
+@pytest.mark.parametrize(
+    "next_count,continue_risk,bank_risk,expected_delta",
+    [
+        (6, 0.08459337597468057, 0.007821687687475343, 0.5315481825892943),
+        (9, 0.2194472881399866, 0.0225465541029936, -0.794653160435931),
+        (1, 0.0, 0.0, 1.0),
+        (10, 1.0, 0.0, -9.0),
+    ],
+)
+def test_score_comparison_explains_tradeoff_without_selecting(
+    next_count, continue_risk, bank_risk, expected_delta
+):
+    from src.prediction.stacking_mission import stacking_score_comparison
+
+    result = stacking_score_comparison(
+        {
+            "status": "available",
+            "forecasts": [
+                {"option_id": "continue", "risk_score": continue_risk, "horizon_seconds": 28.4},
+                {"option_id": "bank", "risk_score": bank_risk, "horizon_seconds": 14.2},
+            ],
+        },
+        next_count,
+    )
+    assert result["continue_minus_bank_proxy_points"] == pytest.approx(expected_delta)
+    assert result["calibrated"] is False
+    assert result["recommended_option"] is None
+    assert result["dispatch_authority_created"] is False
+    assert "selected_option" not in result
+
+
+def test_score_comparison_rejects_incomparable_horizons():
+    from src.prediction.stacking_mission import stacking_score_comparison
+
+    with pytest.raises(ValueError, match="terminal_hold"):
+        stacking_score_comparison(
+            {
+                "status": "available",
+                "forecasts": [
+                    {"option_id": "continue", "risk_score": 0.1, "horizon_seconds": 14.2},
+                    {"option_id": "bank", "risk_score": 0.0, "horizon_seconds": 14.2},
+                ],
+            },
+            6,
+        )
