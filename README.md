@@ -43,7 +43,7 @@ ACK is not success. Observed progress is not mission completion.
 ## What Has Actually Run
 
 The same contract and authority mechanism has been exercised over five
-bounded simulator paths, plus a governed WAM-assisted stacking loop. All
+bounded simulator paths, plus a governed ExtraTrees-assisted stacking loop. All
 results below are simulator evidence.
 
 | Stack | Exercised | Observed |
@@ -53,7 +53,7 @@ results below are simulator evidence.
 | **GR00T N1.7 / LIBERO Panda** | Natural asymmetric partial failures continued **without resetting the world**, under a new contract, human approval, and one dispatch per loop | Native single-attempt cohort: target repair 0/5 loops; each execution's Contract-bound preserve predicates maintained 16/16 across 6 original-world attempts + 10 diagnostic clones |
 | **Cosmos Policy / LIBERO Panda** | Seed-aligned 3 cm diagnostic fixture with a 3/3 stable scripted control and 128-action policy ceiling | No target contact, about 1 nm target motion, and `[true, false, true]` after 128 actions |
 | **VLA-0 / LIBERO Panda** | The same 3 cm snapshot, instruction, action ceiling, and scripted control | Target engagement 3/3; terminal conjunction 2/3; both successful traces lost the repaired predicate on the fifth stationary hold step, so 20-step stable completion was 0/2 replays |
-| **SmolVLA / WAM / DeepSeek stacking** | WAM forecasts through Mission Assurance, bounded human preapproval, Rules, ticketed execution, and measured verification | Final two-case DeepSeek run banked 8 + 8 points; 18 LLM judgments, 208 SmolVLA inference chunks, and 5,112 motor steps |
+| **SmolVLA / ExtraTrees / DeepSeek stacking** | ExtraTrees forecasts through Mission Assurance, bounded human preapproval, Rules, ticketed execution, and measured verification | Final two-case DeepSeek run banked 8 + 8 points; 18 LLM judgments, 208 SmolVLA inference chunks, and 5,112 motor steps |
 
 | PX4 drone · two separately approved obstacle recoveries | TurtleBot3 · house delivery to a named room |
 | -------------------------------------------------------- | --------------------------------------------- |
@@ -72,19 +72,23 @@ policies are entirely different stacks, but the tower is the same: vehicles
 and policies plug in as adapters while the control plane — proposal, approval,
 dispatch, evidence — stays fixed.
 
-### WAM-assisted stacking: prediction through execution
+### ExtraTrees-assisted stacking: prediction through execution
 
-**MissionOS executed a block-stacking mission using WAM forecasts and actual
+**MissionOS executed a block-stacking mission using ExtraTrees forecasts and actual
 DeepSeek judgments, with bounded human preapproval, Rules checks, ticketed
 execution, and measured verification.**
 
-> VLA proposes motor actions. WAM predicts. LLM Assurance judges. Humans
+> VLA proposes motor actions. ExtraTrees predicts. LLM Assurance judges. Humans
 > pre-authorize bounded execution. Rules constrain. Executor acts. Verifier checks.
 
-Here, a **World Action Model (WAM)** is a lightweight, mission-specific learned
-model. It takes current object state, known physical properties, and a registered
-operation under a fixed VLA/controller procedure, then predicts future object
-state and collapse risk. Mission-specific adapters supply the model and outcome
+The stacking predictor uses **ExtraTrees: ensembles of randomized decision
+trees for supervised classification and regression**, fitted on simulator data.
+It was not obtained by fine-tuning a pretrained WAM. SmolVLA was separately
+fine-tuned to produce actions. The predictor takes exact object state, known
+physical properties, engineered geometric features, and a registered operation,
+then predicts collapse-risk scores and future object state. Historical reports
+and plots call it “WAM”; the later evaluation models are ExtraTrees ensembles.
+Mission-specific adapters supply the model and outcome
 meaning; the common Prediction contract binds forecasts to their observations,
 model, policy, environment, and operation. Assurance receives these forecasts as
 model-inferred evidence. Human preapproval sets the execution bounds, and Rules
@@ -98,10 +102,10 @@ the same 14.2-second terminal stability check:
 | --- | ---: |
 | VLA, always continue | 30 |
 | Current-state rule | 198 |
-| **WAM-based stopping** | **279** |
+| **ExtraTrees-based stopping** | **279** |
 | Validation-selected width rule | 280 |
 
-WAM-based stopping improved on current-state stopping and unconditional
+ExtraTrees-based stopping improved on current-state stopping and unconditional
 continuation. It reached nearly the same observed score as the strong width
 rule; superiority over that rule remains unestablished. Fifteen one-point gains
 were offset by two eight-point losses, with 23 ties.
@@ -109,13 +113,13 @@ were offset by two eight-point losses, with 23 ties.
 The subsequent **MissionOS E2E demonstration** connected the actual DeepSeek API
 to this execution path. Its final run banked **8 + 8 points** on two known cases,
 after a prompt correction clarified risk semantics and proxy score comparisons.
-WAM with deterministic stopping scored 17 on the same pair. This demonstrates the
+ExtraTrees with deterministic stopping scored 17 on the same pair. This demonstrates the
 integrated control path; the forty-game comparison above measures the separate
 WAM stopping strategy. Stale observations, state-revision mismatches, and approval
 mismatches were also rejected before motion.
 
 The demonstration uses exact simulator state and known physical properties.
-It exercises the shared interface with one mission-specific WAM; hardware use
+It exercises the shared interface with one mission-specific ExtraTrees predictor; hardware use
 and additional missions require their own validation.
 
 Read the [illustrated technical report](docs/agents/missionos-wam-system-technical-report-20260919.md)

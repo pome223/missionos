@@ -1,4 +1,4 @@
-# MissionOS: Integrating Mission-Specific WAMs into Governed VLA Execution
+# MissionOS: Integrating ExtraTrees Outcome Prediction into Governed VLA Execution
 
 ## From block-stacking prediction to audited MissionOS execution
 
@@ -6,38 +6,40 @@
 **Scope:** PRs [#102](https://github.com/pome223/missionos/pull/102),
 [#103](https://github.com/pome223/missionos/pull/103), and
 [#104](https://github.com/pome223/missionos/pull/104).  
-**Demonstration:** learned WAM prediction, actual LLM judgment, bounded human
+**Demonstration:** ExtraTrees classification and regression, actual LLM judgment, bounded human
 preapproval, ticketed simulator execution, and measured verification.
 
 ## Abstract
 
-We implement and demonstrate a MissionOS control path that uses a learned World
-Action Model (WAM) to inform robot mission decisions. In a ten-block stacking
-game, a frozen SmolVLA performs registered placement procedures, a lightweight
-mission-specific WAM predicts their outcomes, and MissionOS carries those
-forecasts through Assurance, bounded human preapproval, Rules, execution, and
-measured verification. The WAM takes current object state, known physical
-properties, and the registered operation as inputs and predicts future object
-state and collapse risk.
+We implement and demonstrate a MissionOS control path using task-specific
+ExtraTrees classifiers and regressors trained on simulator-generated examples.
+ExtraTrees is an ensemble of randomized decision trees. The final stacking
+predictor was fitted for this task; it was not obtained by fine-tuning a
+pretrained World Action Model (WAM). SmolVLA is the separately fine-tuned action
+model. The predictor takes exact object state, known physical properties,
+engineered geometric features, and a registered placement or stopping procedure,
+and outputs a collapse-risk score and future object-state estimates.
+MissionOS carries these predictions through actual LLM judgment, bounded human
+preapproval, Rules checks, simulator execution, and measured verification.
 
 Three separate forty-game cohorts develop and evaluate predictive stopping.
-With a uniform terminal stability check, WAM-based stopping earns 279 points,
+With a uniform terminal stability check, ExtraTrees-based stopping earns 279 points,
 compared with 198 for a current-state rule and 30 for unconditional continuation.
 A validation-selected width rule, well suited to this task, earns 280: the
 observed scores are nearly the same, while superiority over that rule remains
 unestablished. Fifteen one-point gains and two eight-point losses explain the
-WAM's result and identify its remaining failure modes.
+predictor's result and identify its remaining failure modes.
 
-MissionOS reproduces six known cases, including the WAM's errors, through a
+MissionOS reproduces six known cases, including the predictor's errors, through a
 common Prediction contract. The governed E2E demonstration then uses actual
 DeepSeek judgments, separately checked execution bounds, dispatch tickets, and
 simulator measurements. Its final run records 18 judgments, 5,112 motor steps,
 and 208 SmolVLA inference chunks. This study implements a common path for
-mission-specific WAMs and demonstrates it on block stacking: **VLA proposes
-motor actions. WAM predicts. LLM Assurance judges. Humans pre-authorize bounded
+mission-specific predictors and demonstrates it on block stacking: **VLA proposes
+motor actions. ExtraTrees predicts. LLM Assurance judges. Humans pre-authorize bounded
 execution. Rules constrain. Executor acts. Verifier checks.**
 
-**Keywords:** MissionOS; World Action Model; VLA; predictive stopping; Mission
+**Keywords:** MissionOS; ExtraTrees; supervised learning; VLA; predictive stopping; Mission
 Assurance; bounded preapproval; simulator execution; outcome verification.
 
 ## 1. System contribution and research questions
@@ -46,9 +48,9 @@ Assurance; bounded preapproval; simulator execution; outcome verification.
 
 | Result | Evidence |
 | --- | --- |
-| Learned WAM stopping improves the measured score over current-state stopping and unconditional continuation | Final forty games: 279 versus 198 and 30 points |
-| WAM stopping reaches nearly the same observed score as a strong task-specific width rule | 279 versus 280 points; the paired statistical comparison is reported in Section 5 |
-| MissionOS uses the WAM through a common Prediction contract and executes a governed mission loop | Matching known-case behavior, actual DeepSeek calls, bounded preapproval, Rules checks, dispatch tickets, motor actions, and measured terminal scores |
+| ExtraTrees-based stopping improves the measured score over current-state stopping and unconditional continuation | Final forty games: 279 versus 198 and 30 points |
+| ExtraTrees-based stopping reaches nearly the same observed score as a strong task-specific width rule | 279 versus 280 points; the paired statistical comparison is reported in Section 5 |
+| MissionOS uses the ExtraTrees predictor through a common Prediction contract and executes a governed mission loop | Matching known-case behavior, actual DeepSeek calls, bounded preapproval, Rules checks, dispatch tickets, motor actions, and measured terminal scores |
 
 The system contribution is a reusable integration structure. Mission-specific
 adapters provide the state representation, learned model, and outcome semantics.
@@ -56,22 +58,31 @@ MissionOS manages the common correspondence between observations, model and
 policy bindings, environment, registered options, and forecast horizons.
 Assurance receives the forecast as model-inferred evidence alongside the current
 mission context. Missions that fit this contract can add their own adapters and
-learned WAMs through the same path. The stacking implementation makes that design
+learned predictors through the same path. The stacking implementation makes that design
 concrete and exercises it through actual simulator execution.
 
-### 1.2 WAM definition and decision role
+### 1.2 Model identity, historical terminology, and decision role
 
-In this report, **World Action Model (WAM)** means a lightweight learned model
-for a specific mission. It takes current state, physical properties, and a
-registered operation, conditioned on a fixed VLA/controller procedure, and
-predicts object state and collapse risk at a specified future horizon. Here the
-registered operations are placement and bank/hold. Actual closed-loop motor
-actions are generated by SmolVLA during execution.
+**The final predictor is a task-specific ExtraTrees decision-tree ensemble,
+not a fine-tuned pretrained WAM.** It contains supervised classifiers and
+regressors fitted to simulator-generated labels. It is not a neural dynamics
+model. Fine-tuning SmolVLA and fitting this predictor are separate operations.
 
-The later WAM uses ExtraTrees classification and regression heads. Future
-object poses/drop and collapse risk are separate outputs; the deterministic
-stopping policy primarily uses the classifier, while Assurance receives both.
-The model description in Section 4 records the features and selected settings.
+Earlier versions of this report used “WAM” as a functional label for predicting
+the outcome of an operation. That label obscured the model's actual construction.
+We correct the title and summary here. In historical tables, figures, filenames,
+and saved run identifiers, “old WAM” and “new WAM” refer to the short- and
+long-horizon ExtraTrees predictors for the later evaluations (v4–v7). Those
+labels are retained for traceability, not as claims of pretrained-model lineage.
+The earlier video-model trials and neural pilot are separate experiments.
+
+Inputs include exact simulator state, known physical properties, engineered
+support/center-of-mass features, and a registered operation conditioned on the
+fixed VLA/controller procedure. Placement and bank/hold are the available
+operations. SmolVLA generates closed-loop motor actions during execution.
+Future object poses/drop and collapse risk are separate regression and
+classification outputs. Deterministic stopping primarily uses the classifier;
+Assurance receives both. Risk scores are uncalibrated classifier outputs.
 
 ### 1.3 Questions and evidence
 
@@ -230,7 +241,8 @@ stopping baselines.
 
 ### 4.3 Exact-state ExtraTrees model and longer targets
 
-Later WAMs use ExtraTrees classifiers plus future-pose/drop regressors. Inputs
+The later predictors are ExtraTrees classifiers plus future-pose/drop regressors,
+fitted for this experiment rather than adapted from pretrained WAM weights. Inputs
 include ten object poses and velocities,
 dimensions, mass, friction, center of mass, accepted positions, robot state,
 next target, count, and the registered procedure. Public adapter contracts validate
@@ -249,7 +261,7 @@ collapsed. Leaf sizes 1, 3, 6 and thresholds 0.1, 0.2, 0.35, 0.5, 0.65, 0.8 are
 considered. Selection favors original validation-game score, then long-target
 balanced accuracy, then larger leaf size. The selected long model uses leaf size
 six and threshold 0.5. Thus the comparison covers the longer target, newly fitted
-weights, and reselected settings together.
+tree ensembles, and reselected settings together.
 
 | Next block | Training safe / collapse, long target | Validation safe / collapse |
 | --- | ---: | ---: |
@@ -692,32 +704,32 @@ and hosted-model controls. Publication alone does not provide those components.
 
 ## 11. Conclusion and stopping point
 
-MissionOS integrates a mission-specific WAM through a common prediction contract
+MissionOS integrates a task-specific ExtraTrees predictor through a common prediction contract
 and carries its forecasts into actual LLM judgment, bounded human preauthorization,
 Rules checks, simulator execution, and measured verification. The implementation
-reproduces the WAM's useful and erroneous decisions and records the later
+reproduces the predictor's useful and erroneous decisions and records the later
 DeepSeek-driven missions from current observation through terminal score.
 
-The stacking experiments quantify the WAM's decision value. On the final forty
-games, WAM-based stopping earns 279 points, ahead of current-state stopping at
+The stacking experiments quantify the predictor's decision value. On the final forty
+games, ExtraTrees-based stopping earns 279 points, ahead of current-state stopping at
 198 and unconditional continuation at 30. The task-adapted width rule earns 280,
-placing the WAM at nearly the same observed score as this strong comparator.
+placing the predictor at nearly the same observed score as this strong comparator.
 Fifteen additional one-point gains and two eight-point losses explain the result.
 The complete comparison and failure analysis remain part of the finding.
 
-The broader design value is a common route for mission-specific learned WAMs:
+The broader design value is a common route for mission-specific learned predictors:
 the adapter supplies the model and outcome semantics, and MissionOS binds the
 forecast to the observation, mission, policy, environment, and operation before
 Assurance uses it. Block stacking demonstrates this architecture in an executed
 mission. It provides a concrete foundation for incorporating learned forecasts
 when designing a compact rule for every relevant condition becomes difficult.
 
-**VLA proposes motor actions. WAM predicts. LLM Assurance judges. Humans
+**VLA proposes motor actions. ExtraTrees predicts. LLM Assurance judges. Humans
 pre-authorize bounded execution. Rules constrain. Executor acts. Verifier checks.**
 
 The series concludes with this implemented and measured result. Section 10 records
 further questions for future work; the present contribution is the evaluated
-stacking WAM and its governed MissionOS execution path.
+stacking ExtraTrees predictor and its governed MissionOS execution path.
 
 ## References and detailed appendices
 

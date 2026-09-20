@@ -1,5 +1,13 @@
 # Block stacking follow-up: physical variation, frozen-model evaluation, and delayed collapse
 
+**Model clarification (20 September 2026):** The later “WAM” models in the
+physical-variation evaluations and MissionOS integration are task-specific
+ExtraTrees classifiers and regressors: randomized decision-tree ensembles fitted
+on simulator-generated data, not fine-tuned pretrained WAMs. SmolVLA was
+fine-tuned separately. Historical labels and run identifiers remain unchanged
+for traceability. See the [corrected model description](missionos-wam-system-technical-report-20260919.md#12-model-identity-historical-terminology-and-decision-role).
+
+
 Technical report — 18 September 2026
 
 This continues the [initial report](block-stacking-wam-technical-report-20260918.md).
