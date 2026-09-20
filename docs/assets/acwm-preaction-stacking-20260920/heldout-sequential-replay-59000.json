@@ -75,6 +75,17 @@
       "decision": "bank"
     }
   ],
+  "bank_outcome": {
+    "source_case": "physics-wam-v6/validation/59000/step-09",
+    "horizon_steps": 284,
+    "control_frequency_hz": 20,
+    "observation_seconds": 14.2,
+    "count_after": 8,
+    "collapsed": false,
+    "technical_failure": null,
+    "max_drop_m": 0.011251332137516723,
+    "score": 8
+  },
   "decision_source": "fixed ACWM future generation plus readout trained only on generated training forecasts",
   "execution_scope": "counterfactual replay over exact saved VLA action plans; not a new live simulator run"
 }
