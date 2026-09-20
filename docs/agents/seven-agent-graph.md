@@ -1,6 +1,8 @@
 # Seven-agent proposal graph
 
-The active registry contains Chief, Situation Judge, Response Planner, Runtime
+This proposal registry is part of the [integrated Assurance graph](integrated-assurance-graph.md), which also includes Mission Assurance.
+
+The proposal registry contains Chief, Situation Judge, Response Planner, Runtime
 Recovery, Flight Scenario Designer, Repair Planner, and Safety Critic.
 Root, Dialogue Router, and Knowledge Curator are omitted from the active registry
 and Chief instructions. Compatibility builder functions remain in source.

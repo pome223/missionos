@@ -149,3 +149,19 @@ def test_invalid_age_policy_is_caller_error(age):
     situation, envelope = fixture()
     with pytest.raises(ValueError, match="invalid_freshness_policy"):
         receive_prediction_evidence(situation, envelope, now=101, max_age_seconds=age)
+
+
+@pytest.mark.parametrize('change', ['none', 'stale', 'revision', 'missing', 'changed'])
+def test_dispatch_revalidates_original_prediction_against_current_owner(change):
+    from src.intelligence.prediction_evidence import revalidate_incident_prediction
+    situation, envelope = fixture()
+    updated, receipt = receive_prediction_evidence(situation, envelope, now=101, max_age_seconds=30)
+    graph = {'prediction_admission':receipt, 'mission_situation':updated.to_dict()}
+    context = deepcopy(envelope['context'])
+    now = 140 if change == 'stale' else 102
+    if change == 'revision': context['state_revision'] = 'revision2'
+    if change == 'missing': envelope = None
+    if change == 'changed': envelope['forecast']['forecasts'][0]['risk_score'] = .1
+    check = revalidate_incident_prediction(graph, envelope=envelope, current_context=context, now=now)
+    assert check['status'] == ('adopted' if change == 'none' else 'rejected')
+    assert check['dispatch_authority_created'] is False

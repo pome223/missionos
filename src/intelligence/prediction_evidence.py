@@ -195,3 +195,21 @@ def receive_prediction_evidence(
     updated = replace(situation, uncertainty=uncertainty)
     updated = replace(updated, input_digest=prediction_digest(updated.to_dict()))
     return updated, snapshot(receipt)
+
+
+def revalidate_incident_prediction(graph: dict, *, envelope, current_context, now: float) -> dict:
+    """Dispatch revalidation uses the trusted owner's *current* independent context."""
+    original = graph.get("prediction_admission") or {}
+    if (not original or original.get("status") == "not_supplied") and envelope is None:
+        return {"status": "not_supplied", "dispatch_authority_created": False}
+    if original.get("status") != "adopted":
+        return {"status": "rejected", "reason": "prediction_judgment_missing", "dispatch_authority_created": False}
+    try:
+        if prediction_digest(envelope) != original.get("evidence_sha256"):
+            raise ValueError("prediction_evidence_changed")
+        situation = MissionSituation.from_dict(graph["mission_situation"])
+        situation = replace(situation, constraints={**situation.constraints, "prediction_context": current_context})
+        _, receipt = receive_prediction_evidence(situation, envelope, now=now, max_age_seconds=30)
+        return receipt
+    except (KeyError, TypeError, ValueError):
+        return {"status": "rejected", "reason": "prediction_evidence_missing_or_changed", "dispatch_authority_created": False}

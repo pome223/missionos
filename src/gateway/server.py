@@ -4807,6 +4807,17 @@ def _runtime_recovery_proposal_revalidation(
             reasons.append("mission_incident_graph_node_sequence_incomplete")
         if incident_graph.get("mission_assurance_agent_invoked") is not True:
             reasons.append("mission_assurance_agent_not_observed")
+        from src.intelligence.prediction_evidence import revalidate_incident_prediction
+        prediction_check = revalidate_incident_prediction(
+            incident_graph,
+            envelope=artifacts.get("missionos_prediction_evidence"),
+            current_context=artifacts.get("missionos_prediction_context"),
+            now=now.timestamp(),
+        )
+        evidence["prediction_revalidation"] = prediction_check
+        if prediction_check["status"] == "rejected":
+            reasons.append("dispatch_prediction_rejected:" + prediction_check["reason"])
+
         if (
             incident_graph.get(
                 "recovery_judgment_available_before_mission_assurance"
@@ -9038,6 +9049,25 @@ class GatewayServer:
                 )
             )
 
+        @self.app.post("/missionos/mission-incident/run")
+        async def missionos_mission_incident_run(
+            payload: Dict[str, Any] | None = Body(default=None),
+        ):
+            # Diagnostic proposal route. Caller input never creates a task approval
+            # candidate or a dispatchable checkpoint in the trusted TaskStore.
+            body = payload or {}
+            if not isinstance(body.get("telemetry_snapshot"), dict):
+                raise HTTPException(status_code=400, detail="telemetry_snapshot object is required")
+            for field in ("mission_context", "recovery_policy"):
+                if field in body and not isinstance(body[field], dict):
+                    raise HTTPException(status_code=400, detail=f"{field} must be an object")
+            return await run_in_threadpool(
+                run_missionos_mission_incident_graph,
+                telemetry_snapshot=body["telemetry_snapshot"],
+                mission_context=body.get("mission_context", {}),
+                recovery_policy=body.get("recovery_policy", {}),
+            )
+
         @self.app.post("/missionos/runtime-recovery-agent/run")
         async def missionos_runtime_recovery_agent_run(
             payload: Dict[str, Any] | None = Body(default=None),
@@ -9458,6 +9488,14 @@ class GatewayServer:
                 },
                 "authority_status": "proposal_only",
             }
+            # Only the task's observation owner supplies prediction bindings.
+            # Never derive the current context from the supplied forecast envelope.
+            if "missionos_prediction_evidence" in artifacts:
+                mission_context.update(
+                    prediction_evidence=artifacts["missionos_prediction_evidence"],
+                    prediction_context=artifacts.get("missionos_prediction_context"),
+                    prediction_contract=artifacts.get("missionos_prediction_contract"),
+                )
             agent_result = await run_in_threadpool(
                 run_missionos_runtime_recovery_agent,
                 telemetry_snapshot=telemetry_snapshot,

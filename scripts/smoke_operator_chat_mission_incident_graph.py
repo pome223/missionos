@@ -49,6 +49,31 @@ class _AssuranceJudge:
         )
 
 
+def _prediction_artifacts(agent_result):
+    import time
+    from missionos_core.prediction import (
+        PredictionBinding, PredictionOption, PredictionRequest, PredictionRegistry, OptionForecast,
+    )
+    from src.intelligence.prediction_evidence import capture_prediction_evidence
+    class Predictor:
+        binding = PredictionBinding("fixture", "a" * 64, "fixture-mission", "b" * 64, "fixture-env", "fixture-state")
+        def predict(self, request):
+            return (OptionForecast("avoid_obstacle", 2.0, .1, {}),)
+    registry = PredictionRegistry()
+    registry.register(Predictor())
+    request = PredictionRequest(
+        "fixture-prediction", "fixture-observation", time.time(), Predictor.binding, {},
+        (PredictionOption("avoid_obstacle", 2.0, agent_result["assessment"]["proposed_parameters"]),),
+    )
+    envelope = capture_prediction_evidence(
+        request, registry.forecast(request, now=request.observed_at),
+        execution_id="fixture", state_revision="1", source_ref="fixture",
+    )
+    return {"missionos_prediction_evidence": envelope,
+            "missionos_prediction_context": envelope["context"],
+            "missionos_prediction_contract": Predictor.binding.mission_contract}
+
+
 def _free_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(("127.0.0.1", 0))
@@ -214,6 +239,7 @@ async def _main() -> dict[str, Any]:
                 title="Operator chat Mission Incident graph smoke",
                 status="running",
                 artifacts={
+                    **(_prediction_artifacts(agent_result) if task_id.endswith("accept") else {}),
                     "missionos_runtime_recovery_agent_live_bridge": {
                         "telemetry_snapshot": telemetry,
                     },
@@ -313,6 +339,8 @@ async def _main() -> dict[str, Any]:
             await server_task
 
         accepted = responses["accepted"]
+        assert accepted["missionos_mission_incident_graph"]["prediction_admission"]["status"] == "adopted"
+
         suppressed = responses["suppressed"]
         continuation_suppressed = responses["continuation_suppressed"]
         if accepted.get("durable_proposal_created") is not True:
@@ -563,6 +591,7 @@ async def _main() -> dict[str, Any]:
                 "next_mission_situation_created"
             ],
             "physical_execution_invoked": False,
+            "prediction_admission": accepted["missionos_mission_incident_graph"]["prediction_admission"]["status"],
         }
 
 

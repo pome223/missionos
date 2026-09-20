@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the seven-agent Gateway against an explicit local state directory.
+"""Run the integrated Gateway against an explicit local state directory.
 
 The DeepSeek key is read from Secret Manager into process memory. This launcher
 does not approve missions, run simulations, or install a system service.
@@ -20,6 +20,8 @@ def main():
     parser.add_argument("--secret-project", required=True)
     parser.add_argument("--secret-name", default="deepseek-api-key")
     parser.add_argument("--enable-live-sitl", action="store_true")
+    parser.add_argument("--jev-mode", choices=("off", "shadow", "primary"), default="off")
+    parser.add_argument("--jev-secret-name", default="jev-api-key")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     state_root = args.state_root.resolve(strict=True)
@@ -49,10 +51,28 @@ def main():
     if key_result.returncode:
         raise SystemExit("DeepSeek secret could not be read; Gateway was not started")
     env["DEEPSEEK_API_KEY"] = key_result.stdout.decode().strip()
+    if args.jev_mode != "off":
+        jev_secret = subprocess.run(
+            [
+                "gcloud",
+                f"--project={args.secret_project}",
+                "secrets",
+                "versions",
+                "access",
+                "latest",
+                f"--secret={args.jev_secret_name}",
+            ],
+            capture_output=True,
+        )
+        if jev_secret.returncode or not jev_secret.stdout.strip():
+            raise SystemExit("Jev secret could not be read; Gateway was not started")
+        env["TYPESAFE_API_KEY"] = jev_secret.stdout.decode().strip()
     env.update(
         {
             "MISSIONOS_LLM_BACKEND": "deepseek",
             "MISSIONOS_AGENT_RUNTIME_ADK_ENABLED": "1",
+            "MISSIONOS_MISSION_ASSURANCE_ADK_ENABLED": "1",
+            "MISSIONOS_JEV_MODE": args.jev_mode,
             "MISSIONOS_ADK_V2_GRAPH_PRIMARY": "1",
             "MISSIONOS_ADK_V2_GRAPH_ROLLBACK": "0",
             "MISSIONOS_ADK_V2_GRAPH_SHADOW": "0",

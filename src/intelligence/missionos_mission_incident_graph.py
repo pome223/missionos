@@ -12,7 +12,9 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import time
 from collections.abc import Callable, Mapping
+from dataclasses import replace
 from datetime import datetime, timezone
 from typing import Any
 
@@ -30,6 +32,7 @@ MISSION_INCIDENT_GRAPH_NODE_SEQUENCE = (
     "observe_mission_incident",
     "invoke_runtime_recovery_agent",
     "materialize_source_action_feasibility",
+    "admit_prediction_evidence",
     "invoke_mission_assurance_agent",
     "resolve_mission_incident_checkpoint",
     "finalize_mission_incident",
@@ -324,6 +327,7 @@ async def _run_mission_incident_graph_async(
                 "observe",
                 "recovery",
                 "feasibility",
+                "prediction",
                 "assurance",
                 "checkpoint",
                 "finalize",
@@ -417,14 +421,14 @@ async def _run_mission_incident_graph_async(
             ]
         return state
 
-    @node(name=node_names["assurance"], rerun_on_resume=True)
-    async def invoke_mission_assurance_agent(
+    @node(name=node_names["prediction"], rerun_on_resume=True)
+    async def admit_prediction_evidence(
         node_input: Mapping[str, Any],
     ) -> dict[str, Any]:
         state = dict(node_input)
         state["graph_node_sequence"] = [
             *list(state.get("graph_node_sequence") or []),
-            node_names["assurance"],
+            node_names["prediction"],
         ]
         if state.get("graph_runtime_status") != "running":
             return state
@@ -440,6 +444,51 @@ async def _run_mission_incident_graph_async(
             recovery_result=_mapping(state.get("recovery_result")),
             source_feasibility=_mapping(state.get("source_action_feasibility")),
         )
+        envelope = mission_context.get("prediction_evidence")
+        if envelope is None:
+            receipt = {"status": "not_supplied", "reason": "no_bound_predictor_evidence"}
+        else:
+            from src.intelligence.prediction_evidence import receive_prediction_evidence
+            situation = replace(
+                situation,
+                mission_contract={**situation.mission_contract,
+                    "prediction_contract": mission_context.get("prediction_contract")},
+                constraints={**situation.constraints,
+                    "prediction_context": mission_context.get("prediction_context")},
+            )
+            situation, receipt = receive_prediction_evidence(
+                situation, envelope, now=time.time(), max_age_seconds=30,
+            )
+            # An admitted forecast must describe the candidate actually judged.
+            assessment = _mapping(_mapping(state.get("recovery_result")).get("assessment"))
+            options = _mapping(_mapping(envelope).get("request")).get("options") or []
+            candidate_bound = any(
+                _mapping(option).get("option_id") == state.get("recovery_action")
+                and _mapping(option).get("parameters") == _mapping(assessment.get("proposed_parameters"))
+                for option in options
+            )
+            if receipt["status"] == "adopted" and not candidate_bound:
+                receipt = {**receipt, "status": "rejected", "reason": "prediction_candidate_mismatch"}
+                situation = replace(situation, uncertainty={
+                    **situation.uncertainty,
+                    "prediction_evidence": {"receipt": receipt, "forecast_status": "not_adopted"},
+                })
+            if receipt["status"] != "adopted":
+                state["graph_runtime_status"] = "guardrail_blocked"
+                state["blocking_reasons"] = ["prediction_evidence_rejected:" + receipt["reason"]]
+        state["prediction_admission"] = receipt
+        state["mission_situation"] = situation.to_dict()
+        return state
+
+    @node(name=node_names["assurance"], rerun_on_resume=True)
+    async def invoke_mission_assurance_agent(node_input: Mapping[str, Any]) -> dict[str, Any]:
+        state = dict(node_input)
+        state["graph_node_sequence"] = [
+            *list(state.get("graph_node_sequence") or []), node_names["assurance"],
+        ]
+        if state.get("graph_runtime_status") != "running":
+            return state
+        situation = MissionSituation.from_dict(state["mission_situation"])
         evaluation = asyncio.to_thread(
             mission_assurance_agent.evaluate,
             situation,
@@ -561,6 +610,7 @@ async def _run_mission_incident_graph_async(
             "decision_sequence": [
                 "runtime_recovery_agent",
                 "source_action_feasibility",
+                "prediction_evidence_admission",
                 "mission_assurance_agent",
                 terminal_boundary,
             ],
@@ -580,6 +630,7 @@ async def _run_mission_incident_graph_async(
                 state.get("source_action_feasibility")
             ),
             "mission_situation": _mapping(state.get("mission_situation")),
+            "prediction_admission": _mapping(state.get("prediction_admission")),
             "mission_assurance_proposal": proposal,
             "mission_assurance_response_kind": response_kind,
             "expected_mission_response_kind": state.get(
@@ -656,6 +707,7 @@ async def _run_mission_incident_graph_async(
                 observe_mission_incident,
                 invoke_runtime_recovery_agent,
                 materialize_source_action_feasibility,
+                admit_prediction_evidence,
                 invoke_mission_assurance_agent,
                 resolve_mission_incident_checkpoint,
                 finalize_mission_incident,

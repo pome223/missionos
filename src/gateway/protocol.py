@@ -310,6 +310,17 @@ EVENT_SCHEMAS: dict[str, dict[str, Any]] = {
 
 
 HTTP_ROUTE_SCHEMAS: dict[str, dict[str, Any]] = {
+    "POST /missionos/mission-incident/run": {
+        "description": "Run the proposal-only Recovery/Prediction/Assurance diagnostic graph; creates no task approval candidate.",
+        "request": {
+            "type": "object", "required": ["telemetry_snapshot"],
+            "properties": {name: {"type": "object"} for name in ("telemetry_snapshot", "mission_context", "recovery_policy")},
+        },
+        "response": {
+            "type": "object", "required": ["schema_version"],
+            "properties": {"schema_version": {"const": "missionos_adk_v2_mission_incident_graph_result.v1"}},
+        },
+    },
     "GET /missionos/agent-runtime": {
         "description": "Read configured agent topology and latest recorded graph; does not probe or invoke an LLM.",
         "response": {

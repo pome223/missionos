@@ -674,7 +674,7 @@ def _timeout_seconds() -> int:
         return DEFAULT_MISSION_ASSURANCE_TIMEOUT_SECONDS
 
 
-def configured_mission_assurance_agent() -> MissionAssuranceAgent:
+def _configured_mission_assurance_agent() -> MissionAssuranceAgent:
     """Return the single configured Agent; unavailable LLMs escalate only."""
 
     if os.environ.get(MISSION_ASSURANCE_ADK_ENABLED_ENV) == "1":
@@ -689,6 +689,21 @@ def configured_mission_assurance_agent() -> MissionAssuranceAgent:
     return MissionAssuranceAgent(
         _UnavailableJudge(f"{MISSION_ASSURANCE_ADK_ENABLED_ENV}_not_enabled")
     )
+
+
+def configured_mission_assurance_agent() -> MissionAssuranceAgent:
+    """Jev is opt-in; shadow results cannot replace the primary judgment."""
+    mode = os.environ.get("MISSIONOS_JEV_MODE", "off")
+    if mode not in {"off", "shadow", "primary"}:
+        return MissionAssuranceAgent(_UnavailableJudge("invalid_jev_mode"))
+    if mode == "primary":
+        from src.intelligence.jev_assurance import JevAssuranceJudge
+        return MissionAssuranceAgent(JevAssuranceJudge())
+    agent = _configured_mission_assurance_agent()
+    if mode == "shadow":
+        from src.intelligence.jev_assurance import JevShadowJudge
+        return MissionAssuranceAgent(JevShadowJudge(agent._judge))
+    return agent
 
 
 def persist_mission_assurance_evaluation(
