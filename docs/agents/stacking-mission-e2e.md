@@ -1,5 +1,13 @@
 # Governed stacking mission demonstration
 
+**Model clarification (20 September 2026):** The later “WAM” models in the
+physical-variation evaluations and MissionOS integration are task-specific
+ExtraTrees classifiers and regressors: randomized decision-tree ensembles fitted
+on simulator-generated data, not fine-tuned pretrained WAMs. SmolVLA was
+fine-tuned separately. Historical labels and run identifiers remain unchanged
+for traceability. See the [corrected model description](missionos-wam-system-technical-report-20260919.md#12-model-identity-historical-terminology-and-decision-role).
+
+
 This opt-in simulator adapter connects the Prediction contract and Assurance
 intake to actual mission-level LLM judgment, a bounded approved policy, dispatch,
 simulator motor execution, measured outcome verification, and the next step.

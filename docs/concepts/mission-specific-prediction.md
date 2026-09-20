@@ -13,8 +13,9 @@ intervals, and compare them with subsequent observations. Different missions can
 use different models and state representations. A model is used only with the
 contract it was registered for.
 
-The first implementation connects a lightweight stacking predictor to a local
-simulator lab. It uses exact object states and material properties, not images
+The first implementation connects ExtraTrees classifiers and regressors—
+randomized decision-tree ensembles fitted on simulator examples—to a local
+simulator lab. It does not fine-tune a pretrained WAM. It uses exact object states and material properties, not images
 alone. Useful stop decisions have been observed, but better overall scores than
 a simple width-dependent stopping rule have not been established. The lab does
 not yet connect forecasts to the main MissionOS Agent or hardware execution.
