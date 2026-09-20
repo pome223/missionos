@@ -9066,6 +9066,7 @@ class GatewayServer:
                 telemetry_snapshot=body["telemetry_snapshot"],
                 mission_context=body.get("mission_context", {}),
                 recovery_policy=body.get("recovery_policy", {}),
+                recovery_runner=run_missionos_runtime_recovery_agent,
             )
 
         @self.app.post("/missionos/runtime-recovery-agent/run")

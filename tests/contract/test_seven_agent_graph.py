@@ -53,3 +53,25 @@ def test_topology_distinguishes_configuration_from_model_health(monkeypatch):
     assert not set(result["agents"]) & set(result["omitted_agents"])
     assert set(result["specialist_by_intent"].values()) <= set(result["agents"])
     assert result["llm_health"] == "not_probed"
+
+
+def test_incident_diagnostic_binds_production_recovery_runner(monkeypatch, tmp_path):
+    from fastapi.testclient import TestClient
+    from scripts.smoke_runtime_recovery_action_feasibility_gateway import _configure_temp_paths
+    from src.config.settings import reset_settings
+    from src.runtime.task_store import reset_task_store
+    _configure_temp_paths(tmp_path)
+    reset_settings()
+    reset_task_store()
+    called = []
+    def graph(**kwargs):
+        assert kwargs['recovery_runner'] is server.run_missionos_runtime_recovery_agent
+        called.append(kwargs)
+        return {'schema_version':'fixture', 'dispatch_authority_created':False}
+    monkeypatch.setattr(server, 'run_missionos_mission_incident_graph', graph)
+    with TestClient(server.create_missionos_gateway().app) as client:
+        assert client.post('/missionos/mission-incident/run',json={}).status_code == 400
+        response = client.post('/missionos/mission-incident/run',json={'telemetry_snapshot':{}})
+        assert response.status_code == 200
+        assert response.json()['dispatch_authority_created'] is False
+        assert len(called) == 1
