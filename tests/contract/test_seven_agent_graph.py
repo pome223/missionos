@@ -57,21 +57,30 @@ def test_topology_distinguishes_configuration_from_model_health(monkeypatch):
 
 def test_incident_diagnostic_binds_production_recovery_runner(monkeypatch, tmp_path):
     from fastapi.testclient import TestClient
-    from scripts.smoke_runtime_recovery_action_feasibility_gateway import _configure_temp_paths
     from src.config.settings import reset_settings
     from src.runtime.task_store import reset_task_store
-    _configure_temp_paths(tmp_path)
+
+    for key in (
+        "TASK_STORE_DB_PATH",
+        "MEMORY_DB_PATH",
+        "AUDIT_LOG_PATH",
+        "COMPUTER_TRAJECTORY_DB_PATH",
+        "PHYSICAL_AI_VALIDATION_DB_PATH",
+    ):
+        monkeypatch.setenv(key, str(tmp_path / key.lower()))
     reset_settings()
     reset_task_store()
     called = []
+
     def graph(**kwargs):
-        assert kwargs['recovery_runner'] is server.run_missionos_runtime_recovery_agent
+        assert kwargs["recovery_runner"] is server.run_missionos_runtime_recovery_agent
         called.append(kwargs)
-        return {'schema_version':'fixture', 'dispatch_authority_created':False}
-    monkeypatch.setattr(server, 'run_missionos_mission_incident_graph', graph)
+        return {"schema_version": "fixture", "dispatch_authority_created": False}
+
+    monkeypatch.setattr(server, "run_missionos_mission_incident_graph", graph)
     with TestClient(server.create_missionos_gateway().app) as client:
-        assert client.post('/missionos/mission-incident/run',json={}).status_code == 400
-        response = client.post('/missionos/mission-incident/run',json={'telemetry_snapshot':{}})
+        assert client.post("/missionos/mission-incident/run", json={}).status_code == 400
+        response = client.post("/missionos/mission-incident/run", json={"telemetry_snapshot": {}})
         assert response.status_code == 200
-        assert response.json()['dispatch_authority_created'] is False
+        assert response.json()["dispatch_authority_created"] is False
         assert len(called) == 1

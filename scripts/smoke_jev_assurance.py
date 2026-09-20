@@ -1,6 +1,6 @@
 """Opt-in paired hosted judgments through the PR104 governed HTTP boundary.
 
-Synthetic WAM forecasts and a fixture executor: no simulator or physical claims.
+Synthetic prediction forecasts and a fixture executor: no simulator or physical claims.
 Outputs are local experimental records, not a public provider benchmark.
 """
 
@@ -25,7 +25,7 @@ from src.prediction.service import make_server
 
 class Predictor:
     binding = PredictionBinding(
-        "synthetic-wam", "a" * 64, MISSION, "b" * 64, ENVIRONMENT, INPUT_SCHEMA
+        "synthetic-predictor", "a" * 64, MISSION, "b" * 64, ENVIRONMENT, INPUT_SCHEMA
     )
     threshold = 0.5
     horizon_steps = 568

@@ -24,9 +24,12 @@ class _Judge:
     def judge(self, prompt: dict[str, Any]) -> ModelJudgment:
         self.called = True
         self.prompt = prompt
-        assert prompt["mission_situation"]["observations"][
-            "runtime_recovery_agent_result"
-        ]["assessment"]["selected_bounded_action"] == self.expected_action
+        assert (
+            prompt["mission_situation"]["observations"]["runtime_recovery_agent_result"][
+                "assessment"
+            ]["selected_bounded_action"]
+            == self.expected_action
+        )
         return ModelJudgment(
             output={
                 "proposed_response_kind": self.response_kind,
@@ -60,9 +63,7 @@ def _recovery_result(
             },
             "action_feasibility": {
                 "action": action,
-                "feasibility_status": (
-                    "verified_feasible" if feasible else "blocked"
-                ),
+                "feasibility_status": ("verified_feasible" if feasible else "blocked"),
             },
         },
         "agent_invocations": [
@@ -153,9 +154,7 @@ def test_one_graph_records_assurance_preventing_recovery_continue(
 
     assert judge.called is True
     assert result["decision_status"] == "no_dispatch"
-    assert result["alignment_status"] == (
-        "mission_continuation_suppressed_by_mission_assurance"
-    )
+    assert result["alignment_status"] == ("mission_continuation_suppressed_by_mission_assurance")
     assert result["mission_continuation_prevented_by_mission_assurance"] is True
     assert result["dispatch_prevented_by_mission_assurance"] is False
     assert result["suppression_source"] == "mission_assurance_agent"
@@ -221,9 +220,7 @@ def test_one_graph_keeps_unsupported_action_guardrail_blocked() -> None:
     assert result["graph_runtime_status"] == "guardrail_blocked"
     assert result["decision_status"] == "operator_escalation"
     assert result["alignment_status"] == "unsupported_recovery_action"
-    assert result["blocking_reasons"] == [
-        "recovery_action_has_no_mission_response_alignment"
-    ]
+    assert result["blocking_reasons"] == ["recovery_action_has_no_mission_response_alignment"]
 
 
 def test_one_graph_rejects_unbound_deterministic_recovery_before_assurance() -> None:
@@ -284,41 +281,79 @@ def test_one_graph_rejudges_assurance_for_bound_recompiled_recovery() -> None:
     assert result["recovery_judgment_available_before_mission_assurance"] is True
     assert result["mission_assurance_agent_invoked"] is True
     assert result["recovery_judgment_binding"]["binding_status"] == "verified"
-    assert result["mission_situation"]["observed_at"] == (
-        "2026-09-04T00:01:00+00:00"
-    )
+    assert result["mission_situation"]["observed_at"] == ("2026-09-04T00:01:00+00:00")
 
 
-@pytest.mark.parametrize('condition', ['current', 'stale', 'candidate_mismatch'])
+@pytest.mark.parametrize("condition", ["current", "stale", "candidate_mismatch"])
 def test_prediction_admission_precedes_assurance(condition):
-    stale = condition == 'stale'
-    accepted = condition == 'current'
+    stale = condition == "stale"
+    accepted = condition == "current"
     import time
-    from dataclasses import asdict
-    from missionos_core.prediction import PredictionBinding, PredictionOption, PredictionRequest, PredictionRegistry, OptionForecast
+    from missionos_core.prediction import (
+        PredictionBinding,
+        PredictionOption,
+        PredictionRequest,
+        PredictionRegistry,
+        OptionForecast,
+    )
     from src.intelligence.prediction_evidence import capture_prediction_evidence
+
     class Predictor:
-        binding = PredictionBinding('fixture', 'a'*64, 'fixture-mission', 'b'*64, 'fixture-env', 'fixture-state')
-        def predict(self, request): return (OptionForecast('avoid_obstacle', 2., .2, {}),)
+        binding = PredictionBinding(
+            "fixture", "a" * 64, "fixture-mission", "b" * 64, "fixture-env", "fixture-state"
+        )
+
+        def predict(self, request):
+            return (OptionForecast("avoid_obstacle", 2.0, 0.2, {}),)
+
     now = time.time()
     registry = PredictionRegistry()
     registry.register(Predictor())
-    request = PredictionRequest('request', 'observation', now - (100 if stale else 0), Predictor.binding,
-                                {}, (PredictionOption('avoid_obstacle', 2., {'target_x_m':999. if condition == 'candidate_mismatch' else 40., 'target_y_m':10.}),))
-    envelope = capture_prediction_evidence(request, registry.forecast(request, now=request.observed_at),
-                                          execution_id='fixture', state_revision='1', source_ref='fixture')
-    judge = _Judge('replan')
+    request = PredictionRequest(
+        "request",
+        "observation",
+        now - (100 if stale else 0),
+        Predictor.binding,
+        {},
+        (
+            PredictionOption(
+                "avoid_obstacle",
+                2.0,
+                {
+                    "target_x_m": 999.0 if condition == "candidate_mismatch" else 40.0,
+                    "target_y_m": 10.0,
+                },
+            ),
+        ),
+    )
+    envelope = capture_prediction_evidence(
+        request,
+        registry.forecast(request, now=request.observed_at),
+        execution_id="fixture",
+        state_revision="1",
+        source_ref="fixture",
+    )
+    judge = _Judge("replan")
     result = run_missionos_mission_incident_graph(
-        telemetry_snapshot={'observed_at': '2026-09-20T00:00:00Z'},
-        mission_context={'prediction_evidence': envelope, 'prediction_context': envelope['context'],
-                         'prediction_contract': Predictor.binding.mission_contract},
-        recovery_policy={}, recovery_runner=lambda **_: _recovery_result(),
+        telemetry_snapshot={"observed_at": "2026-09-20T00:00:00Z"},
+        mission_context={
+            "prediction_evidence": envelope,
+            "prediction_context": envelope["context"],
+            "prediction_contract": Predictor.binding.mission_contract,
+        },
+        recovery_policy={},
+        recovery_runner=lambda **_: _recovery_result(),
         mission_assurance_agent=MissionAssuranceAgent(judge),
     )
-    assert result['prediction_admission']['status'] == ('adopted' if accepted else 'rejected')
+    assert result["prediction_admission"]["status"] == ("adopted" if accepted else "rejected")
     assert judge.called is accepted
-    assert result['dispatch_authority_created'] is False
+    assert result["dispatch_authority_created"] is False
     if accepted:
-        assert judge.prompt['mission_situation']['uncertainty']['prediction_evidence']['receipt']['status'] == 'adopted'
+        assert (
+            judge.prompt["mission_situation"]["uncertainty"]["prediction_evidence"]["receipt"][
+                "status"
+            ]
+            == "adopted"
+        )
     else:
-        assert result['decision_status'] == 'operator_escalation'
+        assert result["decision_status"] == "operator_escalation"

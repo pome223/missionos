@@ -1,7 +1,8 @@
 # Integrated MissionOS Assurance graph
 
-This release combines the PR #105 report's underlying PR #103/#104 Prediction
-and governed execution implementation with the proposal graph. The active roles
+This release combines the PR #103/#104 Prediction and governed execution
+implementation with the proposal graph. Model terminology follows the correction
+in PR #107; the stacking component is a task-specific ExtraTrees predictor. The active roles
 are the seven [proposal agents](seven-agent-graph.md) plus Mission Assurance.
 Root, Dialogue Router, and Knowledge Curator remain omitted.
 
@@ -48,12 +49,24 @@ The stacking adapter retains the separate PR #104 loopback service and explicit
 trusted-checkpoint/seed policy configuration. `prediction serve-stacking-mission`
 runs Prediction → admission → Assurance → `/dispatch` revalidation → external
 simulator Executor → `/observe` verification. It is an HTTP state machine, not an
-ADK Workflow. The eight-role Gateway alone does not start a WAM predictor, VLA
+ADK Workflow. The eight-role Gateway alone does not start a prediction model, VLA
 server, simulator, or hardware. Model health is `not_probed` until actually tested.
 
 ## Jev placement
 
 `MISSIONOS_JEV_MODE` supports `off` (default), `shadow`, and `primary`:
+
+```dotenv
+MISSIONOS_JEV_MODE=off
+# Use shadow for comparison, or primary for experimental Jev judgment.
+# TYPESAFE_API_KEY is needed only when Jev is enabled (or supplied by Secret Manager).
+```
+
+The release launcher resolves this setting in order: explicit `--jev-mode`,
+process environment, state directory `.env`, then `off`. Invalid values stop the
+launcher before any secret lookup. Restart the Gateway to apply changes.
+This switch controls the configured Mission Assurance judge; the stacking lab
+CLI has its separate explicit `--llm-backend` selection.
 
 - `shadow`: run Jev alongside the configured Assurance judge on the same prompt.
   Only the primary output controls the proposal. Disagreement, distribution,
@@ -83,6 +96,10 @@ python scripts/smoke_operator_chat_mission_incident_graph.py
 python scripts/smoke_assurance_prediction_evidence.py
 RUN_MISSIONOS_JEV_ASSURANCE_SMOKE=1 python scripts/smoke_jev_assurance.py --output output/jev-paired
 ```
+
+`python scripts/smoke_jev_modes_gateway.py` additionally checks all three modes
+through real Gateway HTTP and ADK graphs using fixture model responses. It tests
+that a disagreeing Jev response cannot change the primary decision in shadow mode.
 
 The first command uses a real Gateway HTTP client, ADK workflows, TaskStore,
 explicit fixture approval and fixture executor queue. The second checks evidence

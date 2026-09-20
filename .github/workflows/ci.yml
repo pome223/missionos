@@ -71,6 +71,11 @@ jobs:
           PYTHONPATH: .:packages/missionos-cli/src:packages/missionos-gateway/src
         run: python -m pytest -q
 
+      - name: Verify Jev mode selection through the Gateway
+        env:
+          PYTHONPATH: .:packages/missionos-cli/src:packages/missionos-gateway/src
+        run: python scripts/smoke_jev_modes_gateway.py
+
       - name: Enforce v0.1.0 two-backend stable gate
         env:
           PYTHONPATH: .:packages/missionos-cli/src:packages/missionos-gateway/src

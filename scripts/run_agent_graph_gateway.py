@@ -20,7 +20,12 @@ def main():
     parser.add_argument("--secret-project", required=True)
     parser.add_argument("--secret-name", default="deepseek-api-key")
     parser.add_argument("--enable-live-sitl", action="store_true")
-    parser.add_argument("--jev-mode", choices=("off", "shadow", "primary"), default="off")
+    parser.add_argument(
+        "--jev-mode",
+        choices=("off", "shadow", "primary"),
+        default=None,
+        help="Override MISSIONOS_JEV_MODE from the process environment or state-root .env (default: off).",
+    )
     parser.add_argument("--jev-secret-name", default="jev-api-key")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
@@ -35,6 +40,9 @@ def main():
     for key, value in dotenv_values(state_root / ".env").items():
         if value is not None:
             env.setdefault(key, value)
+    jev_mode = args.jev_mode if args.jev_mode is not None else env.get("MISSIONOS_JEV_MODE", "off")
+    if jev_mode not in {"off", "shadow", "primary"}:
+        parser.error("MISSIONOS_JEV_MODE must be off, shadow, or primary")
     key_result = subprocess.run(
         [
             "gcloud",
@@ -51,7 +59,7 @@ def main():
     if key_result.returncode:
         raise SystemExit("DeepSeek secret could not be read; Gateway was not started")
     env["DEEPSEEK_API_KEY"] = key_result.stdout.decode().strip()
-    if args.jev_mode != "off":
+    if jev_mode != "off":
         jev_secret = subprocess.run(
             [
                 "gcloud",
@@ -72,7 +80,7 @@ def main():
             "MISSIONOS_LLM_BACKEND": "deepseek",
             "MISSIONOS_AGENT_RUNTIME_ADK_ENABLED": "1",
             "MISSIONOS_MISSION_ASSURANCE_ADK_ENABLED": "1",
-            "MISSIONOS_JEV_MODE": args.jev_mode,
+            "MISSIONOS_JEV_MODE": jev_mode,
             "MISSIONOS_ADK_V2_GRAPH_PRIMARY": "1",
             "MISSIONOS_ADK_V2_GRAPH_ROLLBACK": "0",
             "MISSIONOS_ADK_V2_GRAPH_SHADOW": "0",

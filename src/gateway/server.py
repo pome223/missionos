@@ -9058,9 +9058,9 @@ class GatewayServer:
             body = payload or {}
             if not isinstance(body.get("telemetry_snapshot"), dict):
                 raise HTTPException(status_code=400, detail="telemetry_snapshot object is required")
-            for field in ("mission_context", "recovery_policy"):
-                if field in body and not isinstance(body[field], dict):
-                    raise HTTPException(status_code=400, detail=f"{field} must be an object")
+            for context_key in ("mission_context", "recovery_policy"):
+                if context_key in body and not isinstance(body[context_key], dict):
+                    raise HTTPException(status_code=400, detail=f"{context_key} must be an object")
             return await run_in_threadpool(
                 run_missionos_mission_incident_graph,
                 telemetry_snapshot=body["telemetry_snapshot"],
