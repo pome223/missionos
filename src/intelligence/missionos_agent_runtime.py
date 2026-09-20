@@ -827,6 +827,7 @@ async def _run_agent_once_async(
     workflow_execution_mode: str = "sequential_runner",
     workflow_ctx: Any | None = None,
     workflow_run_id: str = "",
+    graph_run_id: str = "",
 ) -> dict[str, Any]:
     model_id = _model_id(agent_name)
     prompt_text = json.dumps(dict(prompt_payload), ensure_ascii=False, sort_keys=True)
@@ -888,6 +889,7 @@ async def _run_agent_once_async(
         "invocation_started_at": started_at.isoformat(),
         "invocation_completed_at": completed_at.isoformat(),
         "workflow_execution_mode": workflow_execution_mode,
+        "graph_run_id": graph_run_id,
         "adk_v2_graph_invoked": workflow_execution_mode.startswith("adk_v2_graph_"),
         "agent_node_execution": (
             "ctx.run_node" if workflow_ctx is not None else "standalone_runner"

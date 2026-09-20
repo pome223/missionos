@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from pathlib import Path
 from collections.abc import AsyncGenerator
 from typing import Any
 
@@ -193,19 +194,23 @@ def test_adk_v2_shadow_graph_runs_chief_specialist_and_critic_without_authority(
     assert all(call["workflow_execution_mode"] == "adk_v2_graph_shadow" for call in calls)
 
 
+@pytest.mark.parametrize("intent,specialist", list(agent_runtime._CHIEF_TO_SPECIALIST.items()))
 def test_adk_v2_shadow_agents_are_dynamic_children_without_nested_runners(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    intent: str,
+    specialist: str,
 ) -> None:
     from src.agents import missionos_agents
 
     responses = {
         "missionos_chief_agent": {
-            "intent": "status",
+            "intent": intent,
             "operator_instruction": "Inspect current status.",
             "requires_human_approval": False,
         },
-        "missionos_situation_judge_agent": {
-            "intent": "status",
+        specialist: {
+            "intent": intent,
             "operator_instruction": "Current evidence is advisory only.",
             "requires_human_approval": False,
         },
@@ -234,6 +239,7 @@ def test_adk_v2_shadow_agents_are_dynamic_children_without_nested_runners(
         raise AssertionError("shadow graph invoked the standalone nested Runner")
 
     monkeypatch.setattr(missionos_agents, "build_missionos_agent", build_fixture_agent)
+    monkeypatch.setattr(agent_runtime, "ARTIFACT_ROOT", tmp_path)
     monkeypatch.setattr(
         agent_runtime,
         "_invoke_adk_agent_text_async",
@@ -262,13 +268,15 @@ def test_adk_v2_shadow_agents_are_dynamic_children_without_nested_runners(
     paths = result["workflow_node_paths"]
     assert any("/missionos_chief_agent@chief-agent" in path for path in paths)
     assert any(
-        "/missionos_situation_judge_agent@specialist-agent" in path for path in paths
+        f"/{specialist}@specialist-agent" in path for path in paths
     )
     assert any(
         "/missionos_safety_critic_agent@safety-critic-agent" in path for path in paths
     )
     assert result["approval_created"] is False
     assert result["dispatch_authority_created"] is False
+    assert all(item["graph_run_id"] == result["graph_run_id"] for item in result["agent_invocations"])
+    assert json.loads(Path(result["artifact_path"]).read_text())["graph_run_id"] == result["graph_run_id"]
 
 
 def test_adk_v2_primary_graph_runs_same_proposal_nodes_without_authority(

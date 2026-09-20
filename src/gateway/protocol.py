@@ -310,6 +310,20 @@ EVENT_SCHEMAS: dict[str, dict[str, Any]] = {
 
 
 HTTP_ROUTE_SCHEMAS: dict[str, dict[str, Any]] = {
+    "GET /missionos/agent-runtime": {
+        "description": "Read configured agent topology and latest recorded graph; does not probe or invoke an LLM.",
+        "response": {
+            "type": "object",
+            "required": ["schema_version", "configured_execution_mode", "agents", "llm_health"],
+            "properties": {
+                "configured_execution_mode": {"type": "string"},
+                "agents": {"type": "array", "items": {"type": "string"}},
+                "omitted_agents": {"type": "array", "items": {"type": "string"}},
+                "llm_health": {"const": "not_probed"},
+                "latest_recorded_graph": {"type": ["object", "null"]},
+            },
+        },
+    },
     "POST /tasks/supervisors/control-loop": {
         "description": "Start an opt-in long-running supervisor from a goal or first-class mission_contract.",
         "request": {

@@ -12,6 +12,7 @@ import asyncio
 from hashlib import sha256
 import json
 import os
+from uuid import uuid4
 from typing import Any, Mapping
 
 
@@ -170,6 +171,8 @@ async def _run_missionos_conversation_graph_async(
 
     from src.intelligence import missionos_agent_runtime as runtime
 
+    graph_run_id = uuid4().hex
+
     @node(name=node_names["normalize"], rerun_on_resume=False)
     async def normalize_shadow_input(node_input: Any) -> dict[str, Any]:
         try:
@@ -230,6 +233,7 @@ async def _run_missionos_conversation_graph_async(
             workflow_execution_mode=workflow_execution_mode,
             workflow_ctx=ctx,
             workflow_run_id="chief-agent",
+            graph_run_id=graph_run_id,
         )
         state["agent_invocations"] = [invocation]
         state["chief_output"] = dict(_validated_output(invocation))
@@ -306,6 +310,7 @@ async def _run_missionos_conversation_graph_async(
             workflow_execution_mode=workflow_execution_mode,
             workflow_ctx=ctx,
             workflow_run_id="specialist-agent",
+            graph_run_id=graph_run_id,
         )
         state["agent_invocations"] = [
             *list(state.get("agent_invocations") or []),
@@ -377,6 +382,7 @@ async def _run_missionos_conversation_graph_async(
             workflow_execution_mode=workflow_execution_mode,
             workflow_ctx=ctx,
             workflow_run_id="safety-critic-agent",
+            graph_run_id=graph_run_id,
         )
         state["agent_invocations"] = [
             *list(state.get("agent_invocations") or []),
@@ -558,6 +564,14 @@ async def _run_missionos_conversation_graph_async(
     if final_output.get("schema_version") != result_schema_version:
         raise RuntimeError(f"adk_v2_{execution_mode}_graph_final_output_missing")
     final_output["workflow_node_paths"] = workflow_node_paths
+    final_output["graph_run_id"] = graph_run_id
+    # Keep the graph and its actual child invocations together for runtime audits.
+    receipt_root = runtime.ARTIFACT_ROOT / "missionos_agent_graph"
+    receipt_root.mkdir(parents=True, exist_ok=True)
+    started = runtime._utc_now().strftime("%Y%m%dT%H%M%S%fZ")
+    receipt_path = receipt_root / f"{started}_{graph_run_id}.json"
+    final_output["artifact_path"] = str(receipt_path)
+    receipt_path.write_text(json.dumps(final_output, ensure_ascii=False, indent=2) + "\n")
     return final_output
 
 

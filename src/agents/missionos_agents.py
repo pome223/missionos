@@ -22,6 +22,13 @@ claim verifier passage, claim physical execution, claim delivery completion, or
 claim progress. Human approval, deterministic guardrails, execution, verifier
 results, and artifact persistence belong to Gateway / Rule / Executor /
 Verifier boundaries.
+Emit only the output fields specified for your role. Do not echo input state or
+add authority/provenance flags, even with a false value. In particular, never
+emit keys approved, approval_granted, dispatch_authority_created,
+dispatch_executed, physical_execution_invoked, delivery_completion_claimed,
+progress_counted, gate_passed, or verifier passage flags at any nesting level.
+Describe missing authority in rationale/uncertainty, and use only
+requires_human_approval to express an approval requirement.
 """.strip()
 
 
@@ -111,7 +118,6 @@ Use specialist_agent to name the next specialist:
 - missionos_runtime_recovery_agent for telemetry-driven in-flight recovery judgment
 - missionos_flight_scenario_designer_agent for Mission Designer route/payload/weather scenario planning
 - missionos_repair_planner_agent for blocked evidence and repair proposals
-- missionos_knowledge_curator_agent for lesson/failure/envelope curation proposals
 - missionos_safety_critic_agent for proposal boundary review before Gateway handles approval or execution
 - gateway_human_review when the next step is only asking the operator for approval
 - gateway_execution_boundary when the next step belongs to deterministic execution after approval
@@ -399,16 +405,20 @@ Output fields:
 
 MISSIONOS_AGENT_BUILDERS = {
     "missionos_chief_agent": build_missionos_chief_agent,
-    "missionos_root_agent": build_missionos_root_agent,
-    "missionos_dialogue_router_agent": build_missionos_dialogue_router_agent,
     "missionos_situation_judge_agent": build_missionos_situation_judge_agent,
     "missionos_response_planner_agent": build_missionos_response_planner_agent,
     "missionos_runtime_recovery_agent": build_missionos_runtime_recovery_agent,
     "missionos_flight_scenario_designer_agent": build_missionos_flight_scenario_designer_agent,
     "missionos_repair_planner_agent": build_missionos_repair_planner_agent,
-    "missionos_knowledge_curator_agent": build_missionos_knowledge_curator_agent,
     "missionos_safety_critic_agent": build_missionos_safety_critic_agent,
 }
+
+# Kept as source-level compatibility helpers, excluded from the active runtime.
+MISSIONOS_OMITTED_AGENTS = (
+    "missionos_root_agent",
+    "missionos_dialogue_router_agent",
+    "missionos_knowledge_curator_agent",
+)
 
 
 def build_missionos_agent(agent_name: str, *, model_id: str | None = None) -> LlmAgent:
