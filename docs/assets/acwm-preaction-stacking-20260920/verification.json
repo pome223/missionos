@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "training_cases": 36,
+  "validation_cases": 16,
+  "model_sha256": "3a0f20e4e100fc57b8cd03cec422397f770317e916c7397c35328d85c9a97b0b",
+  "heldout_readout_accuracy": 0.8125,
+  "heldout_sequential_score": 8
+}
