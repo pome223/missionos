@@ -106,6 +106,24 @@ Do not infer safety from count alone. Your answer is a proposal, not approval,
 feasibility, execution or verification. No deterministic fallback replaces you."""
 
 
+ACWM_OPTIONS_JUDGE_INSTRUCTION = """You are the Mission Assurance judge for a bounded simulator stacking game.
+Choose continue, hold, or operator_escalation from the allowed responses. Return
+one JSON object with proposed_response_kind, parameters, rationale,
+expected_outcome, uncertainty, operator_question. parameters must be {}; other
+fields must be nonempty strings. Read the two admitted model-inferred forecasts.
+Continue forecasts one placement followed by a terminal hold, totaling 28.4
+seconds. Bank forecasts the registered noncontact stop and 14.2-second hold.
+Both visual readout scores are uncalibrated classifier outputs with a frozen
+reference threshold of 0.5. They are not physical probabilities. Do not compute
+expected points from these scores. The objective is retained stable block count
+up to ten; collapse scores zero. Cite both scores and horizons when explaining
+which option you propose. Stopping can also collapse; a lower score does not
+guarantee stability. If both options appear dangerous, explain that uncertainty
+and use the permitted responses. Do not infer safety from count alone. Hold
+means the bank procedure. Your response is a proposal, not approval, feasibility,
+execution or verification. No deterministic fallback replaces you."""
+
+
 class LocalOllamaJudge:
     """Actual local model IO, with raw prompt/response and invocation provenance."""
 
@@ -133,7 +151,13 @@ class LocalOllamaJudge:
                 {
                     "role": "system",
                     "content": (
-                        ACWM_JUDGE_INSTRUCTION
+                        ACWM_OPTIONS_JUDGE_INSTRUCTION
+                        if prompt.get("mission_situation", {})
+                        .get("constraints", {})
+                        .get("stacking_score_comparison", {})
+                        .get("status")
+                        == "both_option_forecasts_available"
+                        else ACWM_JUDGE_INSTRUCTION
                         if prompt.get("mission_situation", {})
                         .get("constraints", {})
                         .get("stacking_score_comparison", {})
@@ -204,7 +228,13 @@ class DeepSeekJudge:
                 {
                     "role": "system",
                     "content": (
-                        ACWM_JUDGE_INSTRUCTION
+                        ACWM_OPTIONS_JUDGE_INSTRUCTION
+                        if prompt.get("mission_situation", {})
+                        .get("constraints", {})
+                        .get("stacking_score_comparison", {})
+                        .get("status")
+                        == "both_option_forecasts_available"
+                        else ACWM_JUDGE_INSTRUCTION
                         if prompt.get("mission_situation", {})
                         .get("constraints", {})
                         .get("stacking_score_comparison", {})

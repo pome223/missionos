@@ -1,0 +1,258 @@
+[
+  {
+    "name": "validation-59000-01-bank",
+    "seed": 59000,
+    "count": 1,
+    "option": "bank",
+    "collapsed": false,
+    "horizon_seconds": 14.2
+  },
+  {
+    "name": "validation-59000-01-continue_hold",
+    "seed": 59000,
+    "count": 1,
+    "option": "continue_hold",
+    "collapsed": false,
+    "horizon_seconds": 28.4
+  },
+  {
+    "name": "validation-59000-02-bank",
+    "seed": 59000,
+    "count": 2,
+    "option": "bank",
+    "collapsed": false,
+    "horizon_seconds": 14.2
+  },
+  {
+    "name": "validation-59000-02-continue_hold",
+    "seed": 59000,
+    "count": 2,
+    "option": "continue_hold",
+    "collapsed": false,
+    "horizon_seconds": 28.4
+  },
+  {
+    "name": "validation-59000-03-bank",
+    "seed": 59000,
+    "count": 3,
+    "option": "bank",
+    "collapsed": false,
+    "horizon_seconds": 14.2
+  },
+  {
+    "name": "validation-59000-03-continue_hold",
+    "seed": 59000,
+    "count": 3,
+    "option": "continue_hold",
+    "collapsed": false,
+    "horizon_seconds": 28.4
+  },
+  {
+    "name": "validation-59000-04-bank",
+    "seed": 59000,
+    "count": 4,
+    "option": "bank",
+    "collapsed": false,
+    "horizon_seconds": 14.2
+  },
+  {
+    "name": "validation-59000-04-continue_hold",
+    "seed": 59000,
+    "count": 4,
+    "option": "continue_hold",
+    "collapsed": false,
+    "horizon_seconds": 28.4
+  },
+  {
+    "name": "validation-59000-05-bank",
+    "seed": 59000,
+    "count": 5,
+    "option": "bank",
+    "collapsed": false,
+    "horizon_seconds": 14.2
+  },
+  {
+    "name": "validation-59000-05-continue_hold",
+    "seed": 59000,
+    "count": 5,
+    "option": "continue_hold",
+    "collapsed": false,
+    "horizon_seconds": 28.4
+  },
+  {
+    "name": "validation-59000-06-bank",
+    "seed": 59000,
+    "count": 6,
+    "option": "bank",
+    "collapsed": false,
+    "horizon_seconds": 14.2
+  },
+  {
+    "name": "validation-59000-06-continue_hold",
+    "seed": 59000,
+    "count": 6,
+    "option": "continue_hold",
+    "collapsed": false,
+    "horizon_seconds": 28.4
+  },
+  {
+    "name": "validation-59000-07-bank",
+    "seed": 59000,
+    "count": 7,
+    "option": "bank",
+    "collapsed": false,
+    "horizon_seconds": 14.2
+  },
+  {
+    "name": "validation-59000-07-continue_hold",
+    "seed": 59000,
+    "count": 7,
+    "option": "continue_hold",
+    "collapsed": false,
+    "horizon_seconds": 28.4
+  },
+  {
+    "name": "validation-59000-08-bank",
+    "seed": 59000,
+    "count": 8,
+    "option": "bank",
+    "collapsed": false,
+    "horizon_seconds": 14.2
+  },
+  {
+    "name": "validation-59000-08-continue_hold",
+    "seed": 59000,
+    "count": 8,
+    "option": "continue_hold",
+    "collapsed": false,
+    "horizon_seconds": 28.4
+  },
+  {
+    "name": "validation-59000-09-bank",
+    "seed": 59000,
+    "count": 9,
+    "option": "bank",
+    "collapsed": false,
+    "horizon_seconds": 14.2
+  },
+  {
+    "name": "validation-59000-09-continue_hold",
+    "seed": 59000,
+    "count": 9,
+    "option": "continue_hold",
+    "collapsed": true,
+    "horizon_seconds": 28.4
+  },
+  {
+    "name": "validation-59000-10-bank",
+    "seed": 59000,
+    "count": 10,
+    "option": "bank",
+    "collapsed": true,
+    "horizon_seconds": 14.2
+  },
+  {
+    "name": "validation-59000-10-continue_hold",
+    "seed": 59000,
+    "count": 10,
+    "option": "continue_hold",
+    "collapsed": true,
+    "horizon_seconds": 28.4
+  },
+  {
+    "name": "validation-59001-08-bank",
+    "seed": 59001,
+    "count": 8,
+    "option": "bank",
+    "collapsed": false,
+    "horizon_seconds": 14.2
+  },
+  {
+    "name": "validation-59001-08-continue_hold",
+    "seed": 59001,
+    "count": 8,
+    "option": "continue_hold",
+    "collapsed": true,
+    "horizon_seconds": 28.4
+  },
+  {
+    "name": "validation-59002-08-bank",
+    "seed": 59002,
+    "count": 8,
+    "option": "bank",
+    "collapsed": false,
+    "horizon_seconds": 14.2
+  },
+  {
+    "name": "validation-59002-08-continue_hold",
+    "seed": 59002,
+    "count": 8,
+    "option": "continue_hold",
+    "collapsed": false,
+    "horizon_seconds": 28.4
+  },
+  {
+    "name": "validation-59002-10-bank",
+    "seed": 59002,
+    "count": 10,
+    "option": "bank",
+    "collapsed": false,
+    "horizon_seconds": 14.2
+  },
+  {
+    "name": "validation-59002-10-continue_hold",
+    "seed": 59002,
+    "count": 10,
+    "option": "continue_hold",
+    "collapsed": true,
+    "horizon_seconds": 28.4
+  },
+  {
+    "name": "validation-59003-08-bank",
+    "seed": 59003,
+    "count": 8,
+    "option": "bank",
+    "collapsed": true,
+    "horizon_seconds": 14.2
+  },
+  {
+    "name": "validation-59003-08-continue_hold",
+    "seed": 59003,
+    "count": 8,
+    "option": "continue_hold",
+    "collapsed": true,
+    "horizon_seconds": 28.4
+  },
+  {
+    "name": "validation-59006-10-bank",
+    "seed": 59006,
+    "count": 10,
+    "option": "bank",
+    "collapsed": false,
+    "horizon_seconds": 14.2
+  },
+  {
+    "name": "validation-59006-10-continue_hold",
+    "seed": 59006,
+    "count": 10,
+    "option": "continue_hold",
+    "collapsed": true,
+    "horizon_seconds": 28.4
+  },
+  {
+    "name": "validation-59010-10-bank",
+    "seed": 59010,
+    "count": 10,
+    "option": "bank",
+    "collapsed": false,
+    "horizon_seconds": 14.2
+  },
+  {
+    "name": "validation-59010-10-continue_hold",
+    "seed": 59010,
+    "count": 10,
+    "option": "continue_hold",
+    "collapsed": true,
+    "horizon_seconds": 28.4
+  }
+]

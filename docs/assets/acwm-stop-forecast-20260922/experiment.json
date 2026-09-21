@@ -1,0 +1,16 @@
+{
+  "schema": "acwm_terminal_hold_closure.v1",
+  "scope": "known-validation model repair and fixture HTTP contract regression",
+  "new_games_executed": 0,
+  "new_llm_judgments": 0,
+  "threshold": 0.5,
+  "primary_noise_seed": 195,
+  "sensitivity_noise_seed": 196,
+  "final_model_sha256": "dd7d4c941909ccf0ccdcbaad4ddd4c6353d2d35bac3c3975e322161bc3fe5310",
+  "final_readout_sha256": "162fc037bb3f3270be1270c16412c36688617190167a3536c0a19e00c221daac",
+  "final_gate_pass": false,
+  "initial_bank_collapse_training_cases": 3,
+  "final_bank_collapse_training_cases": 9,
+  "training_attempts": 720,
+  "ending": "final bounded attempt; experiment closed"
+}

@@ -1,0 +1,46 @@
+[
+  {
+    "name": "train-58009-08-bank",
+    "initial_max_drop_m": 0.008894672733408493
+  },
+  {
+    "name": "train-58014-10-bank",
+    "initial_max_drop_m": 0.011780752548593787
+  },
+  {
+    "name": "train-58015-09-bank",
+    "initial_max_drop_m": 0.004803854544327413
+  },
+  {
+    "name": "train-58017-08-bank",
+    "initial_max_drop_m": 0.00524309578035187
+  },
+  {
+    "name": "train-58025-07-bank",
+    "initial_max_drop_m": 0.004622571701116018
+  },
+  {
+    "name": "train-58028-10-bank",
+    "initial_max_drop_m": 0.006590787841295298
+  },
+  {
+    "name": "train-58035-07-bank",
+    "initial_max_drop_m": 0.004557526086732988
+  },
+  {
+    "name": "train-58038-10-bank",
+    "initial_max_drop_m": 0.004905763498987525
+  },
+  {
+    "name": "train-58041-09-bank",
+    "initial_max_drop_m": 0.008351352103158405
+  },
+  {
+    "name": "validation-59000-10-bank",
+    "initial_max_drop_m": 0.011926397501175856
+  },
+  {
+    "name": "validation-59003-08-bank",
+    "initial_max_drop_m": 0.00491538313260087
+  }
+]

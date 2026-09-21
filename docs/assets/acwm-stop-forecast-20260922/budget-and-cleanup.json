@@ -1,0 +1,17 @@
+{
+  "checked_at": "2026-09-21T23:01:39.584374+00:00",
+  "gpu_instance_deleted": true,
+  "dedicated_disk_deleted": true,
+  "remaining_matching_instances": 0,
+  "remaining_matching_disks": 0,
+  "elapsed_hours_upper": 0.6160523261111112,
+  "compute_hourly_assumption_usd": 0.706832276,
+  "compute_estimate_usd": 0.43544566780021093,
+  "this_attempt_conservative_estimate_usd": 1.5,
+  "prior_conservative_estimate_usd": 6.04,
+  "cumulative_conservative_estimate_usd": 7.54,
+  "authorized_cap_usd": 10,
+  "invoice_confirmed": false,
+  "storage_network_reserve_included": true,
+  "model_and_evidence_sha256_verified": true
+}
