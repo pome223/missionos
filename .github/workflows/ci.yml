@@ -76,6 +76,11 @@ jobs:
           python docs/assets/acwm-online-stacking-20260921/verify_report.py --statistics
           python -m pytest docs/assets/acwm-online-stacking-20260921/test_verify_report.py -q
 
+      - name: Verify governed ACWM published evidence
+        run: |
+          python docs/assets/acwm-governed-stacking-20260921/verify_report.py
+          python -m pytest docs/assets/acwm-governed-stacking-20260921/test_verify_report.py -q
+
       - name: Enforce v0.1.0 two-backend stable gate
         env:
           PYTHONPATH: .:packages/missionos-cli/src:packages/missionos-gateway/src
