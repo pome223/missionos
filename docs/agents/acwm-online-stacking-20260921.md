@@ -60,8 +60,12 @@ Measured future frames are used as supervised training targets only.
 The inherited pre-action checkpoint has SHA-256
 `3a0f20e4e100fc57b8cd03cec422397f770317e916c7397c35328d85c9a97b0b`.
 We fine-tuned its VideoDiT and physical-context projection on the existing 36
-training placements: 720 update attempts, 719 successful updates, one overflow
-skip, learning rate 2e-5. The frozen VAE encodes images. The final budgeted
+training placements at learning rate 2e-5. The fixed 720-attempt training schedule
+completed; one AMP/overflow event skipped an optimizer update, leaving 719
+successful parameter updates. No additional step was added after inspecting
+validation. The original protocol's "720 updates" wording is preserved as the
+planned schedule; these counts describe the actual execution.
+The frozen VAE encodes images. The final budgeted
 checkpoint was used, with no validation-based checkpoint selection. The
 inference-matched loss keeps the current latent clean and weights future block
 regions during training.
@@ -215,7 +219,9 @@ All **309 ACWM generations** returned valid 37-frame arrays; actual-game and
 diagnostic execution failures were both zero. The 32 bank judgments include
 24 false alarms within the model's 14.2-second window. Five continued placements
 collapsed within that window, and three actual bank branches collapsed during
-the terminal hold. Three games reached ten stable blocks.
+the terminal hold (seeds 68006, 68022 and 68034). These five continued-placement
+collapses and three bank collapses account for all eight ACWM collapse games.
+Three games reached ten stable blocks.
 
 The narrow group contributed **92 points**, versus 120 for width stopping:
 fourteen games banked at four blocks, accounting for the 28-point group deficit.
