@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "excluded_seed": 65008,
+  "scores": {
+    "vla": 10,
+    "rule": 10,
+    "width_rule": 8,
+    "extratrees": 9,
+    "acwm": 10
+  },
+  "decisions_verified": 49,
+  "actual_motor_steps": 13916,
+  "exact_common_prefix_states": true,
+  "exact_common_prefix_actions": true,
+  "decision_precedes_execution": true,
+  "terminal_hold_verified": true
+}

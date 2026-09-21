@@ -139,6 +139,18 @@ ExtraTrees predictor, 280 for width-specific fixed stopping, 198 for the
 current-state rule, and 30 for VLA continuation. This follow-up is
 offline replay evidence using saved VLA action plans, not a live MissionOS run.
 
+### Online ACWM stacking
+
+The [online follow-up](docs/agents/acwm-online-stacking-20260921.md) replaces saved
+future action tapes with the current image/state, placement target and registered
+macro. On **40 fresh seeds × five independently executed methods**, online ACWM
+scored **201/400**. Its forecasts passed through MissionOS Prediction
+Core before actual SmolVLA actions were generated and executed. All game endings
+used the same 14.2-second stability check. The report includes per-game results,
+plots, inference-order evidence and the remaining 14.2/28.4-second predictor-horizon
+difference. This is an online simulator benchmark with a fixed lab stopping
+policy; the earlier governed DeepSeek execution record remains separate.
+
 ### Where the manipulation Repair frontier currently is
 
 The GR00T row is the open edge. The governed Repair path executes end to end:

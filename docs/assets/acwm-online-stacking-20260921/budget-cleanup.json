@@ -1,0 +1,11 @@
+{
+  "phase1_conservative_usd": 0.75,
+  "phase2_vm_hours_upper_bound": 2.5384580966666666,
+  "phase2_vm_usd": 1.794264113997528,
+  "phase2_ancillary_allowance_usd": 1.0,
+  "conservative_total_usd": 3.544264113997528,
+  "limit_usd": 10,
+  "billing_final": false,
+  "vm_remaining": false,
+  "disk_remaining": false
+}
