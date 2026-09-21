@@ -1,0 +1,25 @@
+{
+  "frozen_at": "2026-09-21T03:15:09.968065+00:00",
+  "files": {
+    "acwm_bridge.py": "28107cb49080f959788816512f8772dfbe034b13be75e2a2cadc183aa5518852",
+    "acwm_bridge_core.py": "63a49a4c33d20aba5f7cdc33423fede85c89647477efa15257f9d8d877bebaf6",
+    "gpu_policy.py": "094bd204abee45a9ed57b8470d733d5446112743a1edb526642b12c232f3159c",
+    "verify_smoke.py": "fd9f4223088b6d8ef3a0050073512d65b1d55e0a3a2ed93770d0646225576c3d",
+    "gpu_server.py": "464d8103b22085d209c20465537c77e63d94085bb72f88383570cec147398253",
+    "vla_server.py": "1b56f98c3e3023ac69f11e81251d56350adf5b8f52cf07e3f99919e0233ea2a3",
+    "run_games.py": "33e3d33de9ea9890c43fe714b4f5b5ef9937e3bbed9245e0b9dcf795909fd90e",
+    "gpu_vla_server.py": "5bee4f71136f126b0274708e2e65d639ec3e81f8d366f914656d179bf3446469",
+    "et_server.py": "f5dd7cb9a1e7fa208c69892c4b285fcf45bfc006df3c9c17349f4deefbed6cb9",
+    "vla_bridge.py": "8de0a744baa2d12313072d2da678d22190685409a07d26679c36579e1f9febf2",
+    "runtime/sim.py": "886e4b575f63c671b8906c3ec5fbbe1d73a61260929edd64a269f6b356670c76",
+    "runtime/game.py": "c1c0159d9a0080481143c9b0b032d9aab7a6261aeeced9aaa494d0b4de3934c5",
+    "runtime/features.py": "1205be08a3235a6370ce65af3b153df2a00e6c8c67c67503b2edacf8c2f56364",
+    "runtime/learn.py": "6184650645808836872a84288e9b6662b1903f2a9f2f8cd0a5b923efbac70866",
+    "runtime/online_game.py": "09bd1a49a8cb19358274c9d5c3357abac931b79650426e7b7da343278f17b112",
+    "protocol.json": "1ab9edd3ffa5f921fedf83cbe523f90da769c297fc446b2d50defad9a645a3dd"
+  },
+  "public_adapter_sha256": "e88c687398ae9474233e6e7db84b6e5d302d9b4579e0fda9a921d72b3a42abcb",
+  "smoke_passed": true,
+  "core_runtime_smoke_passed": true,
+  "no_test_outcomes_seen": true
+}

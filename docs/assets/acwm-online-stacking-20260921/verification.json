@@ -1,0 +1,47 @@
+{
+  "schema": "acwm_online_evidence_verification.v1",
+  "status": "PASS",
+  "games": 200,
+  "decisions": 1643,
+  "acwm_generations": 309,
+  "actual_vla_inferences": 19497,
+  "actual_motor_steps": 483652,
+  "applied_vla_motor_steps": 107964,
+  "all_common_prefixes_and_counterfactual_actions_match": true,
+  "actual_vla_commands_match_saved_responses": true,
+  "distinct_gpu_log_entries_match_actual_inferences": true,
+  "frozen_runtime_hashes_unchanged": true,
+  "contract_and_http_tests_passed": 64,
+  "negative_artifact_tests_passed": 4,
+  "pngs_decoded": 7,
+  "mp4s_decoded": 2,
+  "public_adapter_commit_used_in_runtime": "31ec586",
+  "public_base_commit": "2f674fb",
+  "private_runtime_freeze_commit": "cf338af",
+  "commands": [
+    {
+      "command": "python online-phase2/run_games.py test",
+      "scope": "Private opt-in simulator harness: 40 fresh seeds, five independent methods, actual GPU SmolVLA and ACWM; no future action tape input."
+    },
+    {
+      "command": "PYTHONPATH=packages/missionos-core/src:. python -m pytest tests/contract/test_stacking_acwm.py tests/contract/test_mission_prediction.py tests/contract/test_assurance_prediction_evidence.py tests/e2e/test_stacking_mission_boundary.py tests/e2e/test_mission_prediction_http.py -q",
+      "scope": "Public adapter/core contracts and existing HTTP/mission boundaries; fixture tests are distinct from the GPU benchmark."
+    },
+    {
+      "command": "python docs/assets/acwm-online-stacking-20260921/verify_report.py --statistics",
+      "scope": "Public individual records, score/label/time audits, paired statistics and hashes."
+    },
+    {
+      "command": "python -m pytest docs/assets/acwm-online-stacking-20260921/test_verify_report.py -q",
+      "scope": "Four corrupt-evidence fixtures, including rebuilt manifests."
+    },
+    {
+      "command": "python docs/assets/acwm-online-stacking-20260921/verify_media.py",
+      "scope": "Actual PNG loads and full MP4 decoding."
+    }
+  ],
+  "limitations": [
+    "GPU benchmark is an opt-in simulator lab loop through Prediction Core, not a new DeepSeek/approval/ticket chain.",
+    "Public checks verify released evidence and contracts; full training/checkpoints/private simulator runtime are not bundled."
+  ]
+}
