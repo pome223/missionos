@@ -90,7 +90,7 @@ def admit_evidence(situation, evidence, max_age_seconds, output):
 @click.option("--llm-model", required=True)
 @click.option(
     "--llm-backend",
-    type=click.Choice(["deepseek", "ollama"]),
+    type=click.Choice(["deepseek", "ollama", "jev"]),
     default="deepseek",
     show_default=True,
 )

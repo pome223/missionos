@@ -598,10 +598,14 @@ def serve_mission(
     if approve_simulator_mission and not operator.strip():
         raise ValueError("operator_authorization_reference_required")
     provider = StackingPredictor(model, model_sha256, policy_sha256)
-    if llm_backend not in ("deepseek", "ollama"):
+    if llm_backend not in ("deepseek", "ollama", "jev"):
         raise ValueError("unsupported_llm_backend")
-    judge_type = DeepSeekJudge if llm_backend == "deepseek" else LocalOllamaJudge
-    judge = judge_type(llm_model, output.parent / "llm")
+    if llm_backend == "jev":
+        from src.intelligence.jev_assurance import JevAssuranceJudge
+        judge = JevAssuranceJudge(model=llm_model)
+    else:
+        judge_type = DeepSeekJudge if llm_backend == "deepseek" else LocalOllamaJudge
+        judge = judge_type(llm_model, output.parent / "llm")
     session = GovernedStackingSession(
         provider,
         output,

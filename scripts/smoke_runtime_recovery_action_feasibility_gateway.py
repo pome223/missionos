@@ -199,6 +199,7 @@ def _proposal(telemetry: dict[str, Any]) -> dict[str, Any]:
             "observe_mission_incident",
             "invoke_runtime_recovery_agent",
             "materialize_source_action_feasibility",
+            "admit_prediction_evidence",
             "invoke_mission_assurance_agent",
             "resolve_mission_incident_checkpoint",
             "finalize_mission_incident",

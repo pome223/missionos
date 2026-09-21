@@ -98,6 +98,7 @@ from src.intelligence.missionos_mission_incident_graph import (
 from src.intelligence.missionos_mission_incident_continuation_graph import (
     run_missionos_mission_incident_continuation_graph,
 )
+from src.intelligence.missionos_agent_topology import describe_agent_runtime
 from src.intelligence.missionos_agent_runtime import (
     run_missionos_agent_runtime,
     run_missionos_runtime_recovery_agent,
@@ -1609,9 +1610,9 @@ def _missionos_gateway_fallback_safety_critic(
 def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None) -> dict[str, Any]:
     """Route a plain-language operator instruction through existing MissionOS gates.
 
-    Tries the LLM Dialogue Router first. If unavailable, falls back to keyword
-    routing. If the LLM output fails the guardrail, returns an error to the
-    human rather than silently substituting keyword routing (Case B).
+    Uses the Chief/specialist/critic graph when enabled. A failed primary graph
+    blocks the request. Legacy dialogue/keyword routing is available only when
+    the graph is explicitly disabled or rolled back.
     """
     request = dict(payload or {})
     text = _missionos_instruction_text(request)
@@ -1829,6 +1830,24 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
             enriched_instruction = text
             routing_source = "missionos_agent_runtime_status_boundary_corrected"
     else:
+        rollout = validate_adk_v2_graph_rollout_env()
+        if (
+            rollout["primary"] and not rollout["rollback"]
+            and os.getenv("MISSIONOS_AGENT_RUNTIME_ADK_ENABLED") == "1"
+        ):
+            # A failed primary graph must not silently switch to an omitted
+            # Dialogue Router or keyword action path.
+            return {
+                "schema_version": "missionos_autonomy_conversation_response.v1",
+                "routed_action": "agent_graph_blocked",
+                "routing_source": "missionos_agent_graph",
+                "message": "Agent graph could not produce a validated proposal. No action was taken.",
+                "operation_result": {},
+                "missionos_agent_runtime": agent_runtime_result,
+                "missionos_agent_invocations": list(agent_runtime_result.get("agent_invocations") or []),
+                "progress_counted": False,
+                "conversation_route_bypassed_guardrails": False,
+            }
         # A blocked Agent output is evidence about that Agent invocation, not an
         # automatic operator-facing conversation block. Non-sensitive,
         # deterministic localized flight intents must still be allowed
@@ -4788,6 +4807,17 @@ def _runtime_recovery_proposal_revalidation(
             reasons.append("mission_incident_graph_node_sequence_incomplete")
         if incident_graph.get("mission_assurance_agent_invoked") is not True:
             reasons.append("mission_assurance_agent_not_observed")
+        from src.intelligence.prediction_evidence import revalidate_incident_prediction
+        prediction_check = revalidate_incident_prediction(
+            incident_graph,
+            envelope=artifacts.get("missionos_prediction_evidence"),
+            current_context=artifacts.get("missionos_prediction_context"),
+            now=now.timestamp(),
+        )
+        evidence["prediction_revalidation"] = prediction_check
+        if prediction_check["status"] == "rejected":
+            reasons.append("dispatch_prediction_rejected:" + prediction_check["reason"])
+
         if (
             incident_graph.get(
                 "recovery_judgment_available_before_mission_assurance"
@@ -8704,6 +8734,7 @@ class GatewayServer:
                 "gateway_profile": self.gateway_profile,
                 "session_backend": self.session_backend["backend"],
                 "session_namespace": self.session_backend["namespace"],
+                "agent_runtime": describe_agent_runtime(),
             }
 
         @self.app.get("/protocol")
@@ -8735,6 +8766,10 @@ class GatewayServer:
         @self.app.get("/missionos/agents")
         async def missionos_agents():
             return build_missionos_agent_dashboard_summary()
+
+        @self.app.get("/missionos/agent-runtime")
+        async def missionos_agent_runtime_status():
+            return describe_agent_runtime(include_latest=True)
 
         @self.app.get("/missionos/capabilities")
         async def missionos_capabilities():
@@ -9012,6 +9047,26 @@ class GatewayServer:
                     capability_id="llm_repair_planning",
                     source_route="/missionos/llm-repair-planner/run",
                 )
+            )
+
+        @self.app.post("/missionos/mission-incident/run")
+        async def missionos_mission_incident_run(
+            payload: Dict[str, Any] | None = Body(default=None),
+        ):
+            # Diagnostic proposal route. Caller input never creates a task approval
+            # candidate or a dispatchable checkpoint in the trusted TaskStore.
+            body = payload or {}
+            if not isinstance(body.get("telemetry_snapshot"), dict):
+                raise HTTPException(status_code=400, detail="telemetry_snapshot object is required")
+            for context_key in ("mission_context", "recovery_policy"):
+                if context_key in body and not isinstance(body[context_key], dict):
+                    raise HTTPException(status_code=400, detail=f"{context_key} must be an object")
+            return await run_in_threadpool(
+                run_missionos_mission_incident_graph,
+                telemetry_snapshot=body["telemetry_snapshot"],
+                mission_context=body.get("mission_context", {}),
+                recovery_policy=body.get("recovery_policy", {}),
+                recovery_runner=run_missionos_runtime_recovery_agent,
             )
 
         @self.app.post("/missionos/runtime-recovery-agent/run")
@@ -9434,6 +9489,14 @@ class GatewayServer:
                 },
                 "authority_status": "proposal_only",
             }
+            # Only the task's observation owner supplies prediction bindings.
+            # Never derive the current context from the supplied forecast envelope.
+            if "missionos_prediction_evidence" in artifacts:
+                mission_context.update(
+                    prediction_evidence=artifacts["missionos_prediction_evidence"],
+                    prediction_context=artifacts.get("missionos_prediction_context"),
+                    prediction_contract=artifacts.get("missionos_prediction_contract"),
+                )
             agent_result = await run_in_threadpool(
                 run_missionos_runtime_recovery_agent,
                 telemetry_snapshot=telemetry_snapshot,

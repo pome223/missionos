@@ -18,6 +18,7 @@ files = [
   "smoke_adk_v2_default_proposal.py",
   "smoke_adk_v2_legacy_gateway.py",
   "smoke_adk_v2_shadow_graph.py",
+  "smoke_jev_modes_gateway.py",
   "smoke_assurance_policy.py",
   "smoke_assurance_prediction_evidence.py",
   "smoke_atomic_dispatch.py",
@@ -72,6 +73,8 @@ files = [
 [categories.opt_in_live_integration]
 action = "retain_opt_in_and_never_run_by_default"
 files = [
+  "smoke_jev_assurance.py",
+  "smoke_seven_agent_graph.py",
   "smoke_adk_v2_guarded_execution_gateway.py",
   "smoke_adk_v2_hitl_gateway.py",
   "smoke_adk_v2_primary_gateway.py",
