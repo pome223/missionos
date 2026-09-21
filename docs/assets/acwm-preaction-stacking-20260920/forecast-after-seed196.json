@@ -1,0 +1,162 @@
+[
+  {
+    "name": "validation-59000-01",
+    "count": 1,
+    "collapsed": false,
+    "noise_seed": 196,
+    "block_mask_iou": 0.370618385725044,
+    "late3_iou": 0.7568538397035796,
+    "rgb_mse": 0.004755138419568539,
+    "block_centroid_error_pixels": 12.428181384136545
+  },
+  {
+    "name": "validation-59000-02",
+    "count": 2,
+    "collapsed": false,
+    "noise_seed": 196,
+    "block_mask_iou": 0.6308165448955579,
+    "late3_iou": 0.7277339207641136,
+    "rgb_mse": 0.004822028335183859,
+    "block_centroid_error_pixels": 10.401879232575986
+  },
+  {
+    "name": "validation-59000-03",
+    "count": 3,
+    "collapsed": false,
+    "noise_seed": 196,
+    "block_mask_iou": 0.707675799465326,
+    "late3_iou": 0.8544568020900298,
+    "rgb_mse": 0.004403901752084494,
+    "block_centroid_error_pixels": 6.176428918205585
+  },
+  {
+    "name": "validation-59000-04",
+    "count": 4,
+    "collapsed": false,
+    "noise_seed": 196,
+    "block_mask_iou": 0.7684100113603356,
+    "late3_iou": 0.9114748224090711,
+    "rgb_mse": 0.003651323961094022,
+    "block_centroid_error_pixels": 4.818598056197061
+  },
+  {
+    "name": "validation-59000-05",
+    "count": 5,
+    "collapsed": false,
+    "noise_seed": 196,
+    "block_mask_iou": 0.7510655123079597,
+    "late3_iou": 0.8586615965119054,
+    "rgb_mse": 0.0025608143769204617,
+    "block_centroid_error_pixels": 6.941959286630843
+  },
+  {
+    "name": "validation-59000-06",
+    "count": 6,
+    "collapsed": false,
+    "noise_seed": 196,
+    "block_mask_iou": 0.7790123759841883,
+    "late3_iou": 0.8710212778209669,
+    "rgb_mse": 0.0023049323353916407,
+    "block_centroid_error_pixels": 5.110857243560473
+  },
+  {
+    "name": "validation-59000-07",
+    "count": 7,
+    "collapsed": false,
+    "noise_seed": 196,
+    "block_mask_iou": 0.8904548062147213,
+    "late3_iou": 0.8833906175891274,
+    "rgb_mse": 0.003690119367092848,
+    "block_centroid_error_pixels": 0.9412865904590721
+  },
+  {
+    "name": "validation-59000-08",
+    "count": 8,
+    "collapsed": false,
+    "noise_seed": 196,
+    "block_mask_iou": 0.8120777348566027,
+    "late3_iou": 0.863376175383915,
+    "rgb_mse": 0.00233640824444592,
+    "block_centroid_error_pixels": 5.16097838108796
+  },
+  {
+    "name": "validation-59000-09",
+    "count": 9,
+    "collapsed": false,
+    "noise_seed": 196,
+    "block_mask_iou": 0.5887871719914224,
+    "late3_iou": 0.16549293292446512,
+    "rgb_mse": 0.0029832087457180023,
+    "block_centroid_error_pixels": 18.720078592182443
+  },
+  {
+    "name": "validation-59000-10",
+    "count": 10,
+    "collapsed": true,
+    "noise_seed": 196,
+    "block_mask_iou": 0.47698867459468564,
+    "late3_iou": 0.05397935835012247,
+    "rgb_mse": 0.006787166930735111,
+    "block_centroid_error_pixels": 25.50662850474145
+  },
+  {
+    "name": "validation-59001-08",
+    "count": 8,
+    "collapsed": true,
+    "noise_seed": 196,
+    "block_mask_iou": 0.7931609747989548,
+    "late3_iou": 0.6892053546371738,
+    "rgb_mse": 0.002437607618048787,
+    "block_centroid_error_pixels": 4.42363129899827
+  },
+  {
+    "name": "validation-59002-08",
+    "count": 8,
+    "collapsed": false,
+    "noise_seed": 196,
+    "block_mask_iou": 0.5900338194453625,
+    "late3_iou": 0.3676667354040755,
+    "rgb_mse": 0.003688742173835635,
+    "block_centroid_error_pixels": 17.514560990170075
+  },
+  {
+    "name": "validation-59002-10",
+    "count": 10,
+    "collapsed": true,
+    "noise_seed": 196,
+    "block_mask_iou": 0.6395179258680659,
+    "late3_iou": 0.483759959729083,
+    "rgb_mse": 0.0042135086841881275,
+    "block_centroid_error_pixels": 10.893543774696953
+  },
+  {
+    "name": "validation-59003-08",
+    "count": 8,
+    "collapsed": true,
+    "noise_seed": 196,
+    "block_mask_iou": 0.5849263330163105,
+    "late3_iou": 0.5540574267611545,
+    "rgb_mse": 0.0044066947884857655,
+    "block_centroid_error_pixels": 9.805383283492489
+  },
+  {
+    "name": "validation-59006-10",
+    "count": 10,
+    "collapsed": false,
+    "noise_seed": 196,
+    "block_mask_iou": 0.5533499643204679,
+    "late3_iou": 0.1429049077174904,
+    "rgb_mse": 0.004994872957468033,
+    "block_centroid_error_pixels": 21.661473080913154
+  },
+  {
+    "name": "validation-59010-10",
+    "count": 10,
+    "collapsed": false,
+    "noise_seed": 196,
+    "block_mask_iou": 0.5157190106011924,
+    "late3_iou": 0.08694990228338828,
+    "rgb_mse": 0.004827780183404684,
+    "block_centroid_error_pixels": 20.692832898468893
+  }
+]

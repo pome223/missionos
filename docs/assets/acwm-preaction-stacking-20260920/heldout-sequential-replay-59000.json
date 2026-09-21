@@ -1,0 +1,91 @@
+{
+  "seed": 59000,
+  "score": 8,
+  "decisions": [
+    {
+      "name": "validation-59000-01",
+      "collapsed": false,
+      "predicted_collapse": false,
+      "probability": 0.04007821832654181,
+      "next_count": 1,
+      "decision": "place"
+    },
+    {
+      "name": "validation-59000-02",
+      "collapsed": false,
+      "predicted_collapse": false,
+      "probability": 0.1346996532789827,
+      "next_count": 2,
+      "decision": "place"
+    },
+    {
+      "name": "validation-59000-03",
+      "collapsed": false,
+      "predicted_collapse": false,
+      "probability": 0.08328775857085788,
+      "next_count": 3,
+      "decision": "place"
+    },
+    {
+      "name": "validation-59000-04",
+      "collapsed": false,
+      "predicted_collapse": false,
+      "probability": 0.04920386154245731,
+      "next_count": 4,
+      "decision": "place"
+    },
+    {
+      "name": "validation-59000-05",
+      "collapsed": false,
+      "predicted_collapse": false,
+      "probability": 0.04830352531860445,
+      "next_count": 5,
+      "decision": "place"
+    },
+    {
+      "name": "validation-59000-06",
+      "collapsed": false,
+      "predicted_collapse": false,
+      "probability": 0.08521925801326635,
+      "next_count": 6,
+      "decision": "place"
+    },
+    {
+      "name": "validation-59000-07",
+      "collapsed": false,
+      "predicted_collapse": false,
+      "probability": 0.0972875947048681,
+      "next_count": 7,
+      "decision": "place"
+    },
+    {
+      "name": "validation-59000-08",
+      "collapsed": false,
+      "predicted_collapse": false,
+      "probability": 0.11111741877281091,
+      "next_count": 8,
+      "decision": "place"
+    },
+    {
+      "name": "validation-59000-09",
+      "collapsed": false,
+      "predicted_collapse": true,
+      "probability": 0.9995356334975094,
+      "next_count": 9,
+      "decision": "bank"
+    }
+  ],
+  "bank_outcome": {
+    "source_case": "physics-wam-v6/validation/59000/step-09",
+    "horizon_steps": 284,
+    "control_frequency_hz": 20,
+    "observation_seconds": 14.2,
+    "count_after": 8,
+    "collapsed": false,
+    "technical_failure": null,
+    "max_drop_m": 0.011251332137516723,
+    "score": 8
+  },
+  "decision_source": "fixed ACWM future generation plus readout trained only on generated training forecasts",
+  "execution_scope": "counterfactual replay over exact saved VLA action plans; not a new live simulator run"
+}
