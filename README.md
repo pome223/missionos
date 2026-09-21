@@ -43,7 +43,7 @@ ACK is not success. Observed progress is not mission completion.
 ## What Has Actually Run
 
 The same contract and authority mechanism has been exercised over five
-bounded simulator paths, plus a governed ExtraTrees-assisted stacking loop. All
+bounded simulator paths, plus governed ExtraTrees- and neural ACWM-assisted stacking loops. All
 results below are simulator evidence.
 
 | Stack | Exercised | Observed |
@@ -54,6 +54,7 @@ results below are simulator evidence.
 | **Cosmos Policy / LIBERO Panda** | Seed-aligned 3 cm diagnostic fixture with a 3/3 stable scripted control and 128-action policy ceiling | No target contact, about 1 nm target motion, and `[true, false, true]` after 128 actions |
 | **VLA-0 / LIBERO Panda** | The same 3 cm snapshot, instruction, action ceiling, and scripted control | Target engagement 3/3; terminal conjunction 2/3; both successful traces lost the repaired predicate on the fifth stationary hold step, so 20-step stable completion was 0/2 replays |
 | **SmolVLA / ExtraTrees / DeepSeek stacking** | ExtraTrees forecasts through Mission Assurance, bounded human preapproval, Rules, ticketed execution, and measured verification | Final two-case DeepSeek run banked 8 + 8 points; 18 LLM judgments, 208 SmolVLA inference chunks, and 5,112 motor steps |
+| **SmolVLA / neural ACWM / DeepSeek stacking** | Online future-video forecasts through Assurance, bounded preapproval, Rules, ticketed execution, and measured verification | Two known cases banked 9 + 4 points; 15 actual DeepSeek judgments, 169 SmolVLA inference chunks, and 4,260 motor steps. [Integration report](docs/assets/acwm-governed-stacking-20260921/REPORT.md) |
 
 | PX4 drone · two separately approved obstacle recoveries | TurtleBot3 · house delivery to a named room |
 | -------------------------------------------------------- | --------------------------------------------- |

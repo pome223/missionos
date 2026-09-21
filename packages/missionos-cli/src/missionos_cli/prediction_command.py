@@ -39,10 +39,14 @@ def serve_stacking(**kwargs):
 
 @prediction_command.command("admit-evidence")
 @click.option(
-    "--situation", required=True, type=click.Path(exists=True, dir_okay=False, path_type=Path)
+    "--situation",
+    required=True,
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
 )
 @click.option(
-    "--evidence", required=True, type=click.Path(exists=True, dir_okay=False, path_type=Path)
+    "--evidence",
+    required=True,
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
 )
 @click.option("--max-age-seconds", required=True, type=click.FloatRange(min=0, min_open=True))
 @click.option("--output", required=True, type=click.Path(path_type=Path))
@@ -100,5 +104,26 @@ def serve_stacking_mission(**kwargs):
         from src.prediction.stacking_mission import serve_mission
 
         serve_mission(**kwargs)
+    except (ValueError, OSError) as exc:
+        raise click.ClickException(str(exc)) from exc
+
+
+@prediction_command.command("serve-stacking-acwm-mission")
+@click.option("--backend-url", required=True)
+@click.option("--model-sha256", required=True)
+@click.option("--readout-sha256", required=True)
+@click.option("--policy-sha256", required=True)
+@click.option("--output", required=True, type=click.Path(path_type=Path))
+@click.option("--llm-model", required=True)
+@click.option("--seed", "seeds", type=int, multiple=True, required=True)
+@click.option("--approve-simulator-mission", is_flag=True)
+@click.option("--operator", default="")
+@click.option("--port", default=0, type=click.IntRange(0, 65535))
+def serve_stacking_acwm_mission(**kwargs):
+    """Use online ACWM evidence with actual DeepSeek and bounded simulator Rules."""
+    try:
+        from src.prediction.stacking_acwm_mission import serve_acwm_mission
+
+        serve_acwm_mission(**kwargs)
     except (ValueError, OSError) as exc:
         raise click.ClickException(str(exc)) from exc

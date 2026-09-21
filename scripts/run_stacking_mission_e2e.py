@@ -29,6 +29,65 @@ def post(url, route, value):
         return json.load(response)
 
 
+def acwm_current_image(env, np, mujoco):
+    """Registered #110 camera, restored before any VLA observation or motor call."""
+    model = env.sim.model._model
+    cid = env.sim.model.camera_name2id("agentview")
+    old = (
+        model.cam_pos[cid].copy(),
+        model.cam_quat[cid].copy(),
+        float(model.cam_fovy[cid]),
+    )
+    pos, target = np.array([1.15, 0, 1.5]), np.array([0, 0, 1.0])
+    back = (pos - target) / np.linalg.norm(pos - target)
+    right = np.cross([0, 0, 1.0], back)
+    right /= np.linalg.norm(right)
+    up = np.cross(back, right)
+    quat = np.empty(4)
+    mujoco.mju_mat2Quat(quat, np.column_stack([right, up, back]).ravel())
+    try:
+        model.cam_pos[cid], model.cam_quat[cid], model.cam_fovy[cid] = pos, quat, 50
+        mujoco.mj_forward(model, env.sim.data._data)
+        return np.ascontiguousarray(env.sim.render(240, 240, camera_name="agentview")[::-1])
+    finally:
+        model.cam_pos[cid], model.cam_quat[cid], model.cam_fovy[cid] = old
+        mujoco.mj_forward(model, env.sim.data._data)
+
+
+def predictor_inputs(game, env, obs, place, accepted, health):
+    if health["binding"]["input_schema"] == "stacking.current_image_macro.v1":
+        # Rendering refreshes MuJoCo's derived kinematics. Capture numerical
+        # state afterward, matching the online benchmark's observation order.
+        frame = acwm_current_image(env, game.np, game.mujoco)
+        state = game.gate_inputs(env, obs, place, accepted)
+        state = {k: state[k] for k in ("objects", "velocity", "physics", "robot", "count", "plan")}
+        state["image"] = frame
+        return state
+    return game.gate_inputs(env, obs, place, accepted)
+
+
+def predictor_options(health):
+    if health["binding"]["input_schema"] == "stacking.current_image_macro.v1":
+        return [
+            {
+                "option_id": "continue",
+                "horizon_seconds": 14.2,
+                "parameters": {
+                    "macro": "smolvla-physical-tower-placement-284-v1",
+                    "readout_sha256": health["readout_sha256"],
+                },
+            }
+        ]
+    return [
+        {
+            "option_id": k,
+            "horizon_seconds": h,
+            "parameters": {"macro": "stacking.fixed_vla_placement.v1"},
+        }
+        for k, h in [("continue", health["continue_horizon_seconds"]), ("bank", 14.2)]
+    ]
+
+
 def run(args):
     if not args.allow_simulator:
         raise ValueError("simulator execution requires --allow-simulator")
@@ -66,7 +125,7 @@ def run(args):
             step = folder / f"step-{i + 1:02}"
             step.mkdir()
             place = np.r_[xy, zs[i]]
-            x = game.gate_inputs(env, obs, place, accepted)
+            x = predictor_inputs(game, env, obs, place, accepted, health)
             np.savez(step / "input.npz", **x)
             request = {
                 "request_id": f"game-{seed}-step-{i + 1}",
@@ -76,19 +135,13 @@ def run(args):
                 "observed_at": time.time(),
                 "binding": health["binding"],
                 "state": {k: v.tolist() for k, v in x.items()},
-                "options": [
-                    {
-                        "option_id": k,
-                        "horizon_seconds": h,
-                        "parameters": {"macro": "stacking.fixed_vla_placement.v1"},
-                    }
-                    for k, h in [("continue", health["continue_horizon_seconds"]), ("bank", 14.2)]
-                ],
+                "options": predictor_options(health),
             }
             decision = post(args.service_url, "/decide", request)
             (step / "decision.json").write_text(json.dumps(decision, indent=2))
             option = decision["selected_option"]
-            current = game.gate_inputs(env, obs, place, accepted)
+            current = predictor_inputs(game, env, obs, place, accepted, health)
+            np.savez(step / "dispatch-input.npz", **current)
 
             def digest(value):
                 return hashlib.sha256(
@@ -115,7 +168,11 @@ def run(args):
                 ]:
                     before = float(env.sim.data.time)
                     try:
-                        post(args.service_url, "/dispatch", dispatch_request | {key: value})
+                        post(
+                            args.service_url,
+                            "/dispatch",
+                            dispatch_request | {key: value},
+                        )
                     except HTTPError as error:
                         assert error.code == 400
                         probes.append({"mutation": key, "status": 400, "motor_calls": 0})
@@ -202,7 +259,10 @@ def run(args):
             "physical_execution_invoked": False,
         }
         (folder / "result.json").write_text(json.dumps(record, indent=2))
-        print(json.dumps({"seed": seed, "score": score, "decisions": len(events)}), flush=True)
+        print(
+            json.dumps({"seed": seed, "score": score, "decisions": len(events)}),
+            flush=True,
+        )
     finally:
         env.close()
 
