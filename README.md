@@ -134,7 +134,7 @@ from 0.439 to 0.669; a visual readout detected all four held-out collapses while
 conservatively rejecting three safe placements. The
 [ACWM pre-action technical report](docs/agents/acwm-preaction-stacking-forecast-20260920.md)
 includes side-by-side videos, a one-block-at-a-time replay, and a frozen
-same-cohort forty-game comparison. ACWM scores 243, versus 279 for the final
+same-cohort forty-game comparison. ACWM scores 233, versus 279 for the final
 ExtraTrees predictor, 280 for width-specific fixed stopping, 198 for the
 current-state rule, and 30 for VLA continuation. This follow-up is
 offline replay evidence using saved VLA action plans, not a live MissionOS run.

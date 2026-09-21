@@ -1939,7 +1939,13 @@
           "bank_horizon_steps": 284,
           "decision": "place"
         }
-      ]
+      ],
+      "terminal_hold_outcome": {
+        "score": 10,
+        "collapsed": false,
+        "total_horizon_steps": 568,
+        "post_placement_hold_steps": 284
+      }
     },
     {
       "seed": 67017,
@@ -2422,7 +2428,13 @@
           "bank_horizon_steps": 284,
           "decision": "place"
         }
-      ]
+      ],
+      "terminal_hold_outcome": {
+        "score": 10,
+        "collapsed": false,
+        "total_horizon_steps": 568,
+        "post_placement_hold_steps": 284
+      }
     },
     {
       "seed": 67021,
@@ -3843,7 +3855,7 @@
     },
     {
       "seed": 67034,
-      "score": 10,
+      "score": 0,
       "stop_count": 10,
       "decisions": [
         {
@@ -3976,7 +3988,13 @@
           "bank_horizon_steps": 284,
           "decision": "place"
         }
-      ]
+      ],
+      "terminal_hold_outcome": {
+        "score": 0,
+        "collapsed": true,
+        "total_horizon_steps": 568,
+        "post_placement_hold_steps": 284
+      }
     },
     {
       "seed": 67035,
@@ -4534,7 +4552,7 @@
       ]
     }
   ],
-  "acwm_total_score": 243,
+  "acwm_total_score": 233,
   "baselines": {
     "vla": 30,
     "rule": 198,
@@ -4549,7 +4567,7 @@
   "noise_seed": 195,
   "offline_saved_action_conditioning": true,
   "totals": {
-    "acwm": 243,
+    "acwm": 233,
     "wam": 279,
     "width_rule": 280,
     "old_wam": 225,
@@ -4563,71 +4581,71 @@
   "comparisons": {
     "wam": {
       "n": 40,
-      "mean_difference": -0.9,
-      "total_difference": -36.0,
+      "mean_difference": -1.15,
+      "total_difference": -46.0,
       "bootstrap95": [
-        -1.725,
-        -0.05
+        -2.1,
+        -0.2
       ],
-      "p": 0.07691923080769192,
-      "wins": 7,
+      "p": 0.035469645303546966,
+      "wins": 6,
       "ties": 15,
-      "losses": 18,
-      "holm_p": 0.17897821021789784
+      "losses": 19,
+      "holm_p": 0.1064089359106409
     },
     "width_rule": {
       "n": 40,
-      "mean_difference": -0.925,
-      "total_difference": -37.0,
+      "mean_difference": -1.175,
+      "total_difference": -47.0,
       "bootstrap95": [
-        -1.6,
-        -0.3
+        -1.975,
+        -0.45
       ],
-      "p": 0.028089719102808972,
-      "wins": 10,
+      "p": 0.00916990830091699,
+      "wins": 9,
       "ties": 16,
-      "losses": 14,
-      "holm_p": 0.11235887641123589
+      "losses": 15,
+      "holm_p": 0.03667963320366796
     },
     "old_wam": {
       "n": 40,
-      "mean_difference": 0.45,
-      "total_difference": 18.0,
+      "mean_difference": 0.2,
+      "total_difference": 8.0,
       "bootstrap95": [
-        -0.7,
-        1.6
+        -0.9,
+        1.3
       ],
-      "p": 0.5518544814551855,
-      "wins": 10,
-      "ties": 13,
+      "p": 0.7952020479795202,
+      "wins": 9,
+      "ties": 14,
       "losses": 17,
-      "holm_p": 0.5518544814551855
+      "holm_p": 0.7952020479795202
     },
     "rule": {
       "n": 40,
-      "mean_difference": 1.125,
-      "total_difference": 45.0,
+      "mean_difference": 0.875,
+      "total_difference": 35.0,
       "bootstrap95": [
-        0.05,
-        2.25
+        -0.325,
+        2.075
       ],
-      "p": 0.05965940340596594,
-      "wins": 14,
+      "p": 0.18036819631803683,
+      "wins": 13,
       "ties": 15,
-      "losses": 11,
-      "holm_p": 0.17897821021789784
+      "losses": 12,
+      "holm_p": 0.36073639263607366
     },
     "vla": {
       "n": 40,
-      "mean_difference": 5.325,
-      "total_difference": 213.0,
+      "mean_difference": 5.075,
+      "total_difference": 203.0,
       "bootstrap95": [
-        4.35,
-        6.2
+        4.075,
+        5.975
       ],
       "p": 9.99990000099999e-06,
-      "wins": 30,
-      "ties": 9,
+      "wins": 29,
+      "ties": 10,
       "losses": 1,
       "holm_p": 4.9999500004999955e-05
     }
@@ -5215,7 +5233,7 @@
       "seed": 67034,
       "width_group": "wide",
       "scores": {
-        "acwm": 10,
+        "acwm": 0,
         "vla": 0,
         "rule": 9,
         "wam": 9,
@@ -5323,12 +5341,12 @@
   },
   "score_distribution": {
     "9": 5,
-    "0": 7,
+    "0": 8,
     "8": 9,
     "6": 8,
     "7": 4,
     "5": 4,
-    "10": 3
+    "10": 2
   },
   "stop_count_distribution": {
     "9": 5,
@@ -5338,7 +5356,13 @@
     "5": 4,
     "10": 3
   },
-  "zero_score_games": 7,
+  "zero_score_games": 8,
   "bank_decisions": 32,
-  "completed_ten": 3
+  "completed_ten": 2,
+  "scoring_correction": {
+    "previous_total": 243,
+    "corrected_total": 233,
+    "seed": 67034,
+    "reason": "ten-block completion must include the recorded additional 284-step hold; this branch collapsed during that hold"
+  }
 }

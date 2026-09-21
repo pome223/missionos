@@ -112,12 +112,24 @@ for seed, current in game_lookup.items():
     assert decisions and all(row["seed"] == seed for row in decisions)
     assert [row["count"] for row in decisions] == list(range(1, len(decisions) + 1))
     last = decisions[-1]
-    expected_score = last["bank_score"] if last["decision"] == "bank" else (0 if last["continue_collapsed"] else last["continue_score"])
+    if last["decision"] == "bank":
+        expected_score = last["bank_score"]
+    elif last["count"] == 10:
+        hold = current["terminal_hold_outcome"]
+        assert hold["total_horizon_steps"] == 568
+        assert hold["post_placement_hold_steps"] == 284
+        assert hold["score"] == (0 if hold["collapsed"] else 10)
+        expected_score = hold["score"]
+    else:
+        assert last["continue_collapsed"]
+        expected_score = 0
     assert current["score"] == expected_score
     assert current["stop_count"] == len(decisions) - int(last["decision"] == "bank")
     assert row_lookup[seed]["scores"]["acwm"] == current["score"]
     reached.extend(decisions)
 
+assert sum(g["score"] == 0 for g in forty["games"]) == forty["zero_score_games"] == 8
+assert sum(g["score"] == 10 for g in forty["games"]) == forty["completed_ten"] == 2
 truth = [row["continue_collapsed"] for row in reached]
 prediction = [row["predicted_collapse"] for row in reached]
 reached_confusion = {
@@ -128,9 +140,9 @@ reached_confusion = {
     "fn": sum(not pred and actual for pred, actual in zip(prediction, truth)),
 }
 assert reached_confusion == forty["event_confusion_reached"] == {"n": 327, "tp": 9, "fp": 23, "tn": 290, "fn": 5}
-for method, expected in {"acwm": 243, "wam": 279, "width_rule": 280, "old_wam": 225, "rule": 198, "vla": 30, "fixed6": 240}.items():
+for method, expected in {"acwm": 233, "wam": 279, "width_rule": 280, "old_wam": 225, "rule": 198, "vla": 30, "fixed6": 240}.items():
     assert sum(row["scores"][method] for row in forty["rows"]) == forty["totals"][method] == expected
-for method, expected in {"wam": (7, 15, 18), "width_rule": (10, 16, 14), "old_wam": (10, 13, 17), "rule": (14, 15, 11), "vla": (30, 9, 1)}.items():
+for method, expected in {"wam": (6, 15, 19), "width_rule": (9, 16, 15), "old_wam": (9, 14, 17), "rule": (13, 15, 12), "vla": (29, 10, 1)}.items():
     differences = [row["scores"]["acwm"] - row["scores"][method] for row in forty["rows"]]
     comparison = forty["comparisons"][method]
     assert (sum(value > 0 for value in differences), sum(value == 0 for value in differences), sum(value < 0 for value in differences)) == expected
@@ -151,5 +163,5 @@ for name, expected_sha in media_hashes.items():
         assert data[4:8] == b"ftyp" and b"moov" in data and b"mdat" in data
 
 assert not re.search(r"/Users/|file://|\.codex/", report)
-assert "13/16" in report and "0.669" in report and "counterfactual replay" in report and "243" in report
+assert "13/16" in report and "0.669" in report and "counterfactual replay" in report and "233" in report
 print("PASS: ACWM per-case metrics, decisions, bank outcome, and media hashes verified")

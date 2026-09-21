@@ -150,32 +150,45 @@ weights, or generation settings were changed after seeing this cohort.
 | --- | ---: |
 | Width-specific fixed stopping | **280** |
 | Final long-horizon ExtraTrees | **279** |
-| **ACWM future video + fixed visual readout** | **243** |
+| **ACWM future video + fixed visual readout** | **233** |
 | Fixed stop at six | 240 |
 | Earlier short-horizon ExtraTrees | 225 |
 | Current-state rule | 198 |
 | VLA continuation without predictive stopping | 30 |
 
-ACWM therefore exceeds VLA continuation, current-state stopping, the earlier
-ExtraTrees predictor, and fixed-six stopping in observed total score. It remains
-36 points below the final ExtraTrees predictor and 37 below the width-specific
-fixed rule.
+ACWM exceeds VLA continuation, current-state stopping, and the earlier
+ExtraTrees predictor in observed total score. It scores 7 points below fixed-six,
+46 below final ExtraTrees, and 47 below the width-specific fixed rule.
 
-Across games, ACWM beats the final ExtraTrees policy seven times, ties fifteen,
-and loses eighteen. Its paired mean difference is -0.90 points per game, with a
-width-stratified bootstrap interval of [-1.725, -0.05]; the sign-randomization
-test is `p=0.0769` and Holm-adjusted `p=0.179`. Against the width rule, the mean
-difference is -0.925, interval [-1.6, -0.3], unadjusted `p=0.0281`, and
-Holm-adjusted `p=0.112`. These results do not establish ACWM superiority over
-either strong baseline.
+The earlier short-horizon predictor is the v5 model itself: its SHA-256 matches
+v7's saved old-model checkpoint
+(`3114956c577511c385436f625ecb9936fa98a8c2290fe77b7282f0b1823a7077`).
+Both it and ACWM predict the 284-step placement horizon. ACWM scores 233 versus
+225, a paired mean difference of +0.20, bootstrap interval [-0.90, 1.30], and
+Holm-adjusted `p=0.795`. This same-horizon comparison is already included;
+the observed eight-point lead establishes neither superiority nor equivalence.
 
-The behavioral decomposition explains the score. ACWM banks in 32 games and
-completes ten blocks in three. On reached decision states, it records 9 true
-positives, 23 false positives, 290 true negatives, and 5 false negatives. The
-five missed collapses produce five zero-score games. Two additional games score
-zero even after a correct danger decision because the corresponding measured
-bank branch also collapses. The remaining conservative errors surrender points
-without collapse.
+Against final ExtraTrees, ACWM wins six games, ties fifteen, and loses nineteen.
+The paired mean difference is -1.15 points, bootstrap interval [-2.10, -0.20],
+unadjusted `p=0.0355`, and Holm-adjusted `p=0.106`. Against the width rule,
+the mean difference is -1.175, interval [-1.975, -0.45], unadjusted `p=0.00917`,
+and Holm-adjusted `p=0.0367`.
+
+ACWM banks in 32 games and completes ten blocks with terminal stability in two.
+On reached decision states, it records 9 true positives, 23 false positives,
+290 true negatives, and 5 false negatives against the placement-horizon label.
+The five missed collapses produce five zero-score games. Two more games score
+zero because the bank branch collapses. An eighth zero occurs after ten-block
+completion during the additional terminal hold; it is outside that confusion
+matrix's placement horizon.
+
+**Scoring correction:** the initial publication reported 243 points because
+it used the immediate placement score at ten-block completion. Seed 67034 scored
+10 immediately but collapsed during the additional 284-step hold, giving a
+terminal score of 0. Applying the uniform hold rule corrects the total to 233.
+The published records now include the terminal hold outcomes for all three
+completed placements, and verification recomputes scores from those outcomes.
+No predictions, decisions, or model settings changed for this correction.
 
 This is the same game cohort and scoring protocol, but the predictor horizons
 are not identical. ACWM generates one 284-step placement. The final ExtraTrees
