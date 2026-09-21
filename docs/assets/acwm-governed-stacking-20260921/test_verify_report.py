@@ -13,7 +13,12 @@ spec.loader.exec_module(verifier)
 
 
 def test_published_chain():
-    assert verifier.verify()["scores"] == [9, 4]
+    verified = verifier.verify()
+    assert verified["scores"] == [9, 4]
+    legacy = verified["known_legacy_inconsistencies"]["decision.llm_invoked"]
+    assert legacy["recorded_value"] is False
+    assert legacy["actual_invocation_value"] is True
+    assert legacy["affected_decisions"] == verified["llm_judgments"] == 15
 
 
 @pytest.mark.parametrize("mutation", ["empty", "score", "ticket", "prediction", "timing", "vla"])
@@ -52,4 +57,27 @@ def test_modified_api_prompt_detected_without_manifest(tmp_path):
     record["request_payload"]["messages"][1]["content"] = "No prediction provided"
     p.write_text(json.dumps(record))
     with pytest.raises(AssertionError):
+        verifier.verify(root, manifest=False)
+
+
+@pytest.mark.parametrize(
+    "field,value,message",
+    [
+        ("legacy", True, "known legacy llm_invoked"),
+        ("legacy", 0, "known legacy llm_invoked"),
+        ("actual", False, "actual model invocation required"),
+    ],
+)
+def test_known_legacy_mismatch_is_explicitly_checked(tmp_path, field, value, message):
+    root = tmp_path / "evidence"
+    shutil.copytree(ROOT, root, ignore=shutil.ignore_patterns("__pycache__"))
+    p = root / "run.json"
+    data = json.loads(p.read_text())
+    decision = data["games"][0]["steps"][0]["decision"]
+    if field == "legacy":
+        decision["llm_invoked"] = value
+    else:
+        decision["proposal"]["model_inference_invoked"] = value
+    p.write_text(json.dumps(data))
+    with pytest.raises(AssertionError, match=message):
         verifier.verify(root, manifest=False)

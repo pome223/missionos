@@ -97,3 +97,8 @@ fabricated bank evidence. Live model runs must be reported separately.
 The [two-case integration report](../assets/acwm-governed-stacking-20260921/REPORT.md)
 records 15 actual DeepSeek judgments and terminal scores 9 and 4. Model backends
 were stopped and the temporary GPU deleted after the demonstration.
+
+In this adapter, the executor is the ticket-controlled simulator runner, not the
+Gateway Executor service. `dispatch.executor_invoked = false` applies to ticket
+issuance; the later verifier receipt records `simulator_execution_invoked = true`
+and motor-loop invocation evidence after execution.

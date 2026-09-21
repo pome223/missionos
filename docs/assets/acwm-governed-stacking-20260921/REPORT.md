@@ -99,6 +99,12 @@ no motor calls from those probes. Predictions and LLM proposals themselves did
 not create dispatch authority. Human approval was bounded preauthorization of
 these simulator games, not a separate human approval at every placement.
 
+Here, “Executor” means the ticket-controlled simulator runner, not a started
+Gateway Executor service. The dispatch receipt's `executor_invoked: false`
+records that ticket issuance itself does not run the simulator. Subsequent
+verifier receipts record `simulator_execution_invoked: true` together with the
+actual motor-loop invocation and measured outcome.
+
 The numerical states and executed motor arrays matched the corresponding PR #110
 ACWM trajectories exactly at all 15 common decision points. The scores also match
 those two earlier cases. This is useful regression evidence for the adapter, not
@@ -134,7 +140,13 @@ preserved raw records are unchanged. Actual invocation is established by
 `proposal.model_inference_invoked = true`, the saved DeepSeek API payloads and
 responses, and their hashes. Current code synchronizes the legacy flag with the
 proposal; this metadata-only change was checked through the HTTP boundary tests,
-without repeating GPU games.
+without repeating GPU games. The public verifier explicitly requires the
+historical `decision.llm_invoked = false` and
+`proposal.model_inference_invoked = true` pair in all 15 decisions. Its
+`known_legacy_inconsistencies` output identifies the fields and affected count,
+while API payload and response verification still establishes actual invocation.
+This check describes the preserved historical package, not the corrected runtime
+contract.
 
 ## Public evidence and verification
 

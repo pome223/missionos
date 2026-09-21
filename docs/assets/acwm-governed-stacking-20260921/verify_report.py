@@ -33,6 +33,7 @@ def verify(root=ROOT, *, manifest=True):
         authority_rejection_probes=0,
         completed_run_technical_failures=0,
     )
+    legacy_flag_count = 0
     ids, tickets, generations, responses = set(), set(), set(), set()
     for game in games:
         steps = game["steps"]
@@ -69,7 +70,11 @@ def verify(root=ROOT, *, manifest=True):
             assert s["dispatch_observation_identical"] is True
             assert d["admission"]["status"] == s["admission"]["receipt"]["status"] == "adopted"
             proposal = d["proposal"]
-            assert proposal["model_inference_invoked"] is True
+            # Frozen historical evidence: preserve and explicitly audit the stale
+            # top-level flag rather than silently treating it as current truth.
+            assert d["llm_invoked"] is False, "unexpected change to known legacy llm_invoked field"
+            assert proposal["model_inference_invoked"] is True, "actual model invocation required"
+            legacy_flag_count += 1
             ev = proposal["model_invocation_evidence"]
             assert ev["invocation_kind"] == "llm_api" and ev["provider"] == "deepseek"
             llm = json.loads((root / ev["record_ref"]).read_text())
@@ -163,7 +168,18 @@ def verify(root=ROOT, *, manifest=True):
         p["state_max_abs_difference"] == p["motor_action_max_abs_difference"] == 0
         for p in data["prefix_comparison_with_pr110"]
     )
-    return totals
+    assert legacy_flag_count == totals["llm_judgments"] == 15
+    return totals | {
+        "known_legacy_inconsistencies": {
+            "decision.llm_invoked": {
+                "recorded_value": False,
+                "actual_invocation_field": "proposal.model_inference_invoked",
+                "actual_invocation_value": True,
+                "affected_decisions": legacy_flag_count,
+                "scope": "preserved historical run only; current runtime field corrected",
+            }
+        }
+    }
 
 
 if __name__ == "__main__":
