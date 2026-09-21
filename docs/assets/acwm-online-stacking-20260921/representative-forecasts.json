@@ -1,0 +1,49 @@
+{
+  "selection": "First seed/count in each nonempty confusion cell, using ACWM 14.2-second labels. Images are generated futures, not measured video.",
+  "rows": [
+    {
+      "seed": 68000,
+      "next_count": 10,
+      "decision": "bank",
+      "risk": 0.8527340654361382,
+      "continue_collapsed": true,
+      "long_continue_collapsed": true,
+      "prediction_invocation_id": "f0a8fb84-561b-4caf-815f-d2ac184ebda2",
+      "selection_cell": "tp",
+      "image": "phase2-tp-68000-10.png"
+    },
+    {
+      "seed": 68001,
+      "next_count": 5,
+      "decision": "bank",
+      "risk": 0.8349401302252952,
+      "continue_collapsed": false,
+      "long_continue_collapsed": false,
+      "prediction_invocation_id": "a18eba8c-13bf-4689-ac70-b6db33fff906",
+      "selection_cell": "fp",
+      "image": "phase2-fp-68001-05.png"
+    },
+    {
+      "seed": 68000,
+      "next_count": 1,
+      "decision": "place",
+      "risk": 0.049489806051511924,
+      "continue_collapsed": false,
+      "long_continue_collapsed": false,
+      "prediction_invocation_id": "9495a574-0784-4681-a750-801ea6718dbe",
+      "selection_cell": "tn",
+      "image": "phase2-tn-68000-01.png"
+    },
+    {
+      "seed": 68008,
+      "next_count": 10,
+      "decision": "place",
+      "risk": 0.03352119710883072,
+      "continue_collapsed": true,
+      "long_continue_collapsed": true,
+      "prediction_invocation_id": "e166cd45-ecc1-4c7d-8781-fc42857006af",
+      "selection_cell": "fn",
+      "image": "phase2-fn-68008-10.png"
+    }
+  ]
+}

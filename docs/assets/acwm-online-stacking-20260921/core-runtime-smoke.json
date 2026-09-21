@@ -1,0 +1,48 @@
+{
+  "invocation_id": "9e11b7de-ced3-4237-b605-687cd013b391",
+  "readout_output": 0.17218989530183407,
+  "decision": "place",
+  "latency_seconds": 2.782545680000112,
+  "future_action_tape_access": false,
+  "macro_id": "smolvla-physical-tower-placement-284-v1",
+  "horizon_seconds": 14.2,
+  "request_sha256": "8bcc0736e817d427cb51ade87d1b66aca6a9fd007d0cfcbf4dcd002ffc7563cc",
+  "prediction_started_at": 1789960487.428698,
+  "prediction_finished_at": 1789960490.211804,
+  "model_sha256": "473a14e0b305ad9537f969284ccf6c62fbe12b9fc01501e27f41ce1dd492ff8c",
+  "readout_sha256": "df01a3947a752abd4d7ba7d74aa48ac400ea9fabd2e90a3f6d5c27804dc083c5",
+  "missionos_prediction_receipt": {
+    "schema_version": "missionos_core_prediction.v1",
+    "request_id": "core-smoke",
+    "observation_id": "preaction-core-smoke",
+    "request_sha256": "989b32ba8f65043069bc4dbd2baa2670685d545db7e514bebc4b4b233f615546",
+    "binding": {
+      "model_id": "stacking-online-acwm",
+      "model_sha256": "473a14e0b305ad9537f969284ccf6c62fbe12b9fc01501e27f41ce1dd492ff8c",
+      "mission_contract": "stacking.max10.uniform_terminal_hold14.2.v1",
+      "policy_sha256": "254ec40e3be4a44f62073be9cea999ed165ca533d26204beb7f1238890fd38b4",
+      "environment_contract": "mujoco.panda.staged_cuboids20hz.v1",
+      "input_schema": "stacking.current_image_macro.v1"
+    },
+    "status": "available",
+    "reason": "",
+    "forecasts": [
+      {
+        "option_id": "continue",
+        "horizon_seconds": 14.2,
+        "risk_score": 0.17218989530183407,
+        "future_state": {
+          "representation": "generated_video_visual_readout",
+          "risk_semantics": "uncalibrated_classifier_output",
+          "readout_sha256": "df01a3947a752abd4d7ba7d74aa48ac400ea9fabd2e90a3f6d5c27804dc083c5",
+          "generation_invocation_id": "9e11b7de-ced3-4237-b605-687cd013b391"
+        }
+      }
+    ],
+    "verification_basis": "model_inferred",
+    "approval_recorded": false,
+    "dispatch_authority_created": false,
+    "physical_execution_invoked": false,
+    "completion_claimed": false
+  }
+}

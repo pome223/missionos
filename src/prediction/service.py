@@ -76,7 +76,12 @@ class PredictionSession:
         if any(o.parameters != {"macro": "stacking.fixed_vla_placement.v1"} for o in options):
             raise ValueError("unsupported action parameters")
         request = PredictionRequest(
-            ident, body["observation_id"], body["observed_at"], binding, body["state"], options
+            ident,
+            body["observation_id"],
+            body["observed_at"],
+            binding,
+            body["state"],
+            options,
         )
         forecast = self.registry.forecast(request)
         if forecast["reason"] in (
@@ -230,6 +235,7 @@ def make_server(session: PredictionSession, *, port: int = 0) -> HTTPServer:
                     "continue_horizon_seconds": session.provider.horizon_steps / 20,
                     "scope": "opt_in_simulator_lab",
                     "governed_mission": hasattr(session, "dispatch"),
+                    "readout_sha256": getattr(session.provider, "readout_sha256", None),
                 },
             )
 

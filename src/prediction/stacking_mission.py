@@ -89,6 +89,23 @@ def stacking_score_comparison(forecast: dict, next_count: int) -> dict:
     }
 
 
+ACWM_JUDGE_INSTRUCTION = """You are the Mission Assurance judge for a bounded simulator stacking game.
+Choose continue, hold, or operator_escalation from the allowed responses. Return
+one JSON object with proposed_response_kind, parameters, rationale,
+expected_outcome, uncertainty, operator_question. parameters must be {}; other
+fields must be nonempty strings. Read the admitted model-inferred forecast.
+The ACWM visual readout is an uncalibrated score for collapse during the next
+14.2-second placement, with a frozen reference threshold of 0.5. It is not a
+physical probability. There is no forecast for bank or the extra terminal hold.
+Do not invent either risk, compute expected points from the score, or claim that
+bank guarantees stability. The objective is retained stable block count up to
+ten; collapse scores zero. Use the forecast as fallible evidence for your
+choice, cite its score and horizon in the rationale, and acknowledge the missing
+bank forecast. Hold means the registered noncontact 14.2-second bank procedure.
+Do not infer safety from count alone. Your answer is a proposal, not approval,
+feasibility, execution or verification. No deterministic fallback replaces you."""
+
+
 class LocalOllamaJudge:
     """Actual local model IO, with raw prompt/response and invocation provenance."""
 
@@ -106,11 +123,24 @@ class LocalOllamaJudge:
             "stream": False,
             "think": False,
             "format": MISSION_ASSURANCE_RESPONSE_JSON_SCHEMA,
-            "options": {"temperature": 0, "seed": 104, "num_predict": 512, "num_ctx": 8192},
+            "options": {
+                "temperature": 0,
+                "seed": 104,
+                "num_predict": 512,
+                "num_ctx": 8192,
+            },
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are the Mission Assurance judge. Read the mission contract and admitted model-inferred evidence. Choose exactly one allowed response. Return the required JSON only, with empty parameters. Do not claim approval, feasibility, or execution. Be concise. Risk is fallible evidence; choose to maximize banked score. Read constraints.stacking_score_comparison: risk is a class-reweighted score, not a calibrated probability. Cite both supplied proxy point values in your rationale, and call them proxy values rather than true expected points. The collapse-to-zero loss is already included in this arithmetic; do not add an unspecified loss-aversion penalty. For these bounded simulator games the objective is linear point utility. If you choose against the proxy comparison, identify concrete additional evidence and explain why it changes the comparison; unknown calibration alone does not establish that bank maximizes expected points. Do not infer safety from count alone.",
+                    "content": (
+                        ACWM_JUDGE_INSTRUCTION
+                        if prompt.get("mission_situation", {})
+                        .get("constraints", {})
+                        .get("stacking_score_comparison", {})
+                        .get("status")
+                        == "unavailable_missing_bank_forecast"
+                        else "You are the Mission Assurance judge. Read the mission contract and admitted model-inferred evidence. Choose exactly one allowed response. Return the required JSON only, with empty parameters. Do not claim approval, feasibility, or execution. Be concise. Risk is fallible evidence; choose to maximize banked score. Read constraints.stacking_score_comparison: risk is a class-reweighted score, not a calibrated probability. Cite both supplied proxy point values in your rationale, and call them proxy values rather than true expected points. The collapse-to-zero loss is already included in this arithmetic; do not add an unspecified loss-aversion penalty. For these bounded simulator games the objective is linear point utility. If you choose against the proxy comparison, identify concrete additional evidence and explain why it changes the comparison; unknown calibration alone does not establish that bank maximizes expected points. Do not infer safety from count alone."
+                    ),
                 },
                 {"role": "user", "content": json.dumps(prompt)},
             ],
@@ -173,7 +203,15 @@ class DeepSeekJudge:
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are the Mission Assurance judge. Read the mission contract and admitted model-inferred evidence. Choose exactly one allowed response. Return one JSON object only with these six keys: proposed_response_kind, parameters, rationale, expected_outcome, uncertainty, operator_question. parameters must be an empty object; all other fields must be nonempty strings. Do not claim approval, feasibility, or execution. Risk is fallible evidence; choose to maximize banked score. Read constraints.stacking_score_comparison: risk is a class-reweighted score, not a calibrated probability. Cite both supplied proxy point values in your rationale, and call them proxy values rather than true expected points. The collapse-to-zero loss is already included in this arithmetic; do not add an unspecified loss-aversion penalty. For these bounded simulator games the objective is linear point utility. If you choose against the proxy comparison, identify concrete additional evidence and explain why it changes the comparison; unknown calibration alone does not establish that bank maximizes expected points. Do not infer safety from count alone.",
+                    "content": (
+                        ACWM_JUDGE_INSTRUCTION
+                        if prompt.get("mission_situation", {})
+                        .get("constraints", {})
+                        .get("stacking_score_comparison", {})
+                        .get("status")
+                        == "unavailable_missing_bank_forecast"
+                        else "You are the Mission Assurance judge. Read the mission contract and admitted model-inferred evidence. Choose exactly one allowed response. Return one JSON object only with these six keys: proposed_response_kind, parameters, rationale, expected_outcome, uncertainty, operator_question. parameters must be an empty object; all other fields must be nonempty strings. Do not claim approval, feasibility, or execution. Risk is fallible evidence; choose to maximize banked score. Read constraints.stacking_score_comparison: risk is a class-reweighted score, not a calibrated probability. Cite both supplied proxy point values in your rationale, and call them proxy values rather than true expected points. The collapse-to-zero loss is already included in this arithmetic; do not add an unspecified loss-aversion penalty. For these bounded simulator games the objective is linear point utility. If you choose against the proxy comparison, identify concrete additional evidence and explain why it changes the comparison; unknown calibration alone does not establish that bank maximizes expected points. Do not infer safety from count alone."
+                    ),
                 },
                 {"role": "user", "content": json.dumps(prompt)},
             ],
@@ -183,7 +221,10 @@ class DeepSeekJudge:
             Request(
                 "https://api.deepseek.com/chat/completions",
                 data=json.dumps(payload).encode(),
-                headers={"Content-Type": "application/json", "Authorization": "Bearer " + self.key},
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + self.key,
+                },
             ),
             timeout=240,
         ) as response:
@@ -194,6 +235,7 @@ class DeepSeekJudge:
             "started_at": started,
             "completed_at": utc(),
             "requested_model": self.model,
+            "request_payload": payload,
             "model_digest": None,
         }
         (self.output / f"{ident}.json").write_text(json.dumps(record, indent=2))
@@ -207,6 +249,7 @@ class DeepSeekJudge:
                 "provider": "deepseek",
                 "model_id": raw["model"],
                 "requested_model_id": self.model,
+                "request_payload_sha256": prediction_digest(payload),
                 "response_id": raw["id"],
                 "usage": raw.get("usage", {}),
                 "model_sha256": None,
@@ -220,6 +263,15 @@ class DeepSeekJudge:
 
 
 class GovernedStackingSession(PredictionSession):
+    macro_id = "stacking.fixed_vla_placement.v1"
+    model_limit = "Exact-state mission-specific model, known to miss some collapses and stop some safe placements."
+
+    def prediction_decision(self, body):
+        return super().decide(body)
+
+    def score_evidence(self, forecast, next_count):
+        return stacking_score_comparison(forecast, next_count)
+
     def __init__(self, provider, output: Path, *, agent, seeds, approve: bool, operator: str):
         super().__init__(provider, output, allow_simulator_decisions=True)
         self.agent = agent
@@ -237,7 +289,7 @@ class GovernedStackingSession(PredictionSession):
                 "terminal_hold_seconds": 14.2,
                 "binding": asdict(provider.binding),
                 "execution_scope": "simulator",
-                "macro": "stacking.fixed_vla_placement.v1",
+                "macro": self.macro_id,
                 "maximum_steps_per_option": 568,
             }
             policy = AssurancePolicy.model_validate(
@@ -251,7 +303,11 @@ class GovernedStackingSession(PredictionSession):
                     "expires_at": (datetime.now(timezone.utc) + timedelta(hours=2)).isoformat(),
                     "max_observation_age_seconds": 300,
                     "max_total_actions": 10,
-                    "preserve": ["same_observation", "registered_macro", "simulation_only"],
+                    "preserve": [
+                        "same_observation",
+                        "registered_macro",
+                        "simulation_only",
+                    ],
                     "actions": {
                         k: {"parameters": {}, "max_uses": 10} for k in ("continue", "bank")
                     },
@@ -285,7 +341,7 @@ class GovernedStackingSession(PredictionSession):
         if int(body["state"]["count"]) != revision:
             raise ValueError("count_revision_mismatch")
         # Retain the previous lab policy only as an audit reference. It is not dispatched or shown to the LLM.
-        decision = super().decide(body)
+        decision = self.prediction_decision(body)
         reference = decision["selected_option"]
         request = PredictionRequest(
             body["request_id"],
@@ -329,17 +385,13 @@ class GovernedStackingSession(PredictionSession):
                 "prediction_context": evidence["context"],
                 "assurance_policy": policy.model_dump(),
                 "reference_classifier_threshold": self.provider.threshold,
-                "stacking_score_comparison": stacking_score_comparison(
-                    decision["forecast"], revision
-                ),
+                "stacking_score_comparison": self.score_evidence(decision["forecast"], revision),
                 "unknown_calibration": True,
                 "actions_require_separate_policy_revalidation": True,
             },
-            uncertainty={
-                "model_limit": "Exact-state mission-specific model, known to miss some collapses and stop some safe placements."
-            },
+            uncertainty={"model_limit": self.model_limit},
             source_refs=(f"simulator:{seed}",),
-            source_schema_version="stacking.exact_state.v1",
+            source_schema_version=self.provider.binding.input_schema,
             input_digest=request.digest(),
             execution_scope="simulator",
             allowed_response_kinds=("continue", "hold", "operator_escalation"),
@@ -349,7 +401,11 @@ class GovernedStackingSession(PredictionSession):
         )
         self.save(
             body["request_id"] + "-admission",
-            {"evidence": evidence, "situation": updated.to_dict(), "receipt": admission},
+            {
+                "evidence": evidence,
+                "situation": updated.to_dict(),
+                "receipt": admission,
+            },
         )
         if admission["status"] != "adopted":
             raise ValueError("prediction_not_adopted")
@@ -360,6 +416,7 @@ class GovernedStackingSession(PredictionSession):
         decision.update(
             selected_option=option,
             decision_policy="mission_assurance_llm",
+            llm_invoked=proposal["model_inference_invoked"],
             baseline_reference_option=reference,
             proposal=proposal,
             admission=admission,
@@ -411,7 +468,10 @@ class GovernedStackingSession(PredictionSession):
         if type(observed) not in (int, float) or not 0 <= time.time() - observed <= 300:
             reasons.append("fresh_observation_required")
         _, readmission = receive_prediction_evidence(
-            pending["situation"], pending["evidence"], now=time.time(), max_age_seconds=300
+            pending["situation"],
+            pending["evidence"],
+            now=time.time(),
+            max_age_seconds=300,
         )
         if readmission["status"] != "adopted":
             reasons.append("forecast_no_longer_current")
@@ -430,7 +490,8 @@ class GovernedStackingSession(PredictionSession):
             if not row or row[0]:
                 reasons.append("approved_active_policy_required")
             total = db.execute(
-                "SELECT COUNT(*) FROM reservations WHERE mission=?", (policy.mission_id,)
+                "SELECT COUNT(*) FROM reservations WHERE mission=?",
+                (policy.mission_id,),
             ).fetchone()[0]
             if total >= policy.max_total_actions:
                 reasons.append("budget_exhausted")
@@ -455,9 +516,9 @@ class GovernedStackingSession(PredictionSession):
             "execution_scope": "simulator",
             "physical_execution_invoked": False,
             "executor_invoked": False,
-            "maximum_motor_steps": 568
-            if pending["revision"] == 10 and option == "continue"
-            else 284,
+            "maximum_motor_steps": (
+                568 if pending["revision"] == 10 and option == "continue" else 284
+            ),
             "individual_action_human_approval": False,
             "authority_source": "bounded_user_preapproval",
         }

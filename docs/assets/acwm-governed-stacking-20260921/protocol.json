@@ -1,0 +1,20 @@
+{
+  "purpose": "known-case ACWM governed MissionOS integration, not new capability evaluation",
+  "seeds": [
+    68000,
+    68001
+  ],
+  "checkpoint_sha256": "473a14e0b305ad9537f969284ccf6c62fbe12b9fc01501e27f41ce1dd492ff8c",
+  "readout_sha256": "df01a3947a752abd4d7ba7d74aa48ac400ea9fabd2e90a3f6d5c27804dc083c5",
+  "vla_sha256": "254ec40e3be4a44f62073be9cea999ed165ca533d26204beb7f1238890fd38b4",
+  "model": "deepseek-flash",
+  "max_decisions_per_game": 10,
+  "terminal_hold_seconds": 14.2,
+  "future_action_tape_allowed": false,
+  "bank_forecast_available": false,
+  "training_allowed": false,
+  "prior_conservative_cost_usd": 3.54,
+  "cumulative_budget_usd": 10,
+  "vm_max_hours": 2,
+  "registered_at": "2026-09-21T10:52:57.819665+00:00"
+}

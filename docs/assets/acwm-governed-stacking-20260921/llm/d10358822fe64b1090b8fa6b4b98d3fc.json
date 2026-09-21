@@ -1,0 +1,286 @@
+{
+  "prompt": {
+    "schema_version": "missionos_mission_assurance_prompt.v1",
+    "task": "judge_mission_continuation_response",
+    "role_contract": {
+      "llm_judges": true,
+      "recovery_agent_proposal_is_input_not_approval": true,
+      "human_approves": true,
+      "rules_constrain": true,
+      "executor_acts": true,
+      "verifier_checks": true,
+      "repair_is_separately_bound": true
+    },
+    "decision_contract": {
+      "thresholds_are_inputs_not_final_judgment": true,
+      "prediction_evidence_is_model_inferred_not_observed_fact": true,
+      "prediction_admission_is_not_feasibility_approval_or_execution_authority": true,
+      "rejected_prediction_evidence_must_not_support_judgment": true,
+      "judge_recovery_proposal_mission_alignment": true,
+      "response_kind_is_judgment_not_execution_authority": true,
+      "human_approval_is_always_a_separate_downstream_boundary": true,
+      "do_not_choose_operator_escalation_only_because_human_approval_is_required": true,
+      "approved_policy_is_a_constraint_not_model_created_authority": true,
+      "judge_against_bound_assurance_policy_when_present": true,
+      "never_expand_policy_or_relax_its_preserve_conditions": true,
+      "escalate_when_required_action_exceeds_policy": true,
+      "continue_means_no_recovery_action_not_continue_via_recovery": true,
+      "do_not_generate_or_modify_backend_action": true,
+      "choose_exactly_one_response": true,
+      "allowed_response_kinds": [
+        "continue",
+        "hold",
+        "operator_escalation"
+      ],
+      "required_output_fields": [
+        "proposed_response_kind",
+        "parameters",
+        "rationale",
+        "expected_outcome",
+        "uncertainty",
+        "operator_question"
+      ],
+      "forbidden_authority_keys": [
+        "approval_granted",
+        "approval_recorded",
+        "approved",
+        "command_ack_observed",
+        "delivery_completion_claimed",
+        "dispatch_authority_created",
+        "dispatch_request_sent",
+        "gate_passed",
+        "landing_observed",
+        "operator_approved",
+        "physical_execution_invoked",
+        "progress_counted",
+        "runtime_progress_observed"
+      ]
+    },
+    "response_semantics": {
+      "continue": "judge that no recovery action is needed and mission continuation is aligned",
+      "hold": "judge that the mission should remain held without dispatching the proposed action",
+      "operator_escalation": "use when mission-level evidence is insufficient or contradictory, not merely because a separate human approval is required downstream"
+    },
+    "mission_situation": {
+      "situation_id": "game-68001-step-5",
+      "observed_at": "2026-09-21T11:04:06.862519+00:00",
+      "mission_contract": {
+        "prediction_contract": "stacking.max10.uniform_terminal_hold14.2.v1",
+        "mission": {
+          "mission_id": "stacking-68001",
+          "seed": 68001,
+          "max_blocks": 10,
+          "collapse_score": 0,
+          "terminal_hold_seconds": 14.2,
+          "binding": {
+            "model_id": "stacking-online-acwm",
+            "model_sha256": "473a14e0b305ad9537f969284ccf6c62fbe12b9fc01501e27f41ce1dd492ff8c",
+            "mission_contract": "stacking.max10.uniform_terminal_hold14.2.v1",
+            "policy_sha256": "254ec40e3be4a44f62073be9cea999ed165ca533d26204beb7f1238890fd38b4",
+            "environment_contract": "mujoco.panda.staged_cuboids20hz.v1",
+            "input_schema": "stacking.current_image_macro.v1"
+          },
+          "execution_scope": "simulator",
+          "macro": "smolvla-physical-tower-placement-284-v1",
+          "maximum_steps_per_option": 568
+        },
+        "objective": "Maximize stable banked count, up to ten blocks. Collapse loses all points.",
+        "response_mapping": {
+          "continue": "Execute the registered VLA placement macro for the next block.",
+          "hold": "Do not place another block; finish by the registered bank macro, which only holds position for 14.2 seconds. It does not move toward or release a block.",
+          "operator_escalation": "No dispatch; pause this mission for human review."
+        }
+      },
+      "progress": {
+        "existing_count": 4,
+        "next_count": 5,
+        "task_id": "stacking-68001"
+      },
+      "observations": {
+        "source_ref": "simulator:68001",
+        "state_sha256": "42b0d6f7f299523b1250cff29fe52cc719b1a3c1680d22d72b6738e67d0c5a87"
+      },
+      "constraints": {
+        "prediction_context": {
+          "execution_id": "stacking-68001",
+          "state_revision": "5",
+          "source_ref": "simulator:68001",
+          "observation_id": "sim:68001:5",
+          "binding": {
+            "model_id": "stacking-online-acwm",
+            "model_sha256": "473a14e0b305ad9537f969284ccf6c62fbe12b9fc01501e27f41ce1dd492ff8c",
+            "mission_contract": "stacking.max10.uniform_terminal_hold14.2.v1",
+            "policy_sha256": "254ec40e3be4a44f62073be9cea999ed165ca533d26204beb7f1238890fd38b4",
+            "environment_contract": "mujoco.panda.staged_cuboids20hz.v1",
+            "input_schema": "stacking.current_image_macro.v1"
+          }
+        },
+        "assurance_policy": {
+          "version": 1,
+          "policy_id": "stacking-e2e-68001",
+          "mission_id": "stacking-68001",
+          "mission_contract_sha256": "60374ce05de380faeff5c5ae4a4055674c0414204d34ec4716eb898916c8bacb",
+          "execution_scope": "simulator",
+          "mode": "bounded",
+          "expires_at": "2026-09-21T13:02:10.984258+00:00",
+          "max_observation_age_seconds": 300,
+          "max_total_actions": 10,
+          "preserve": [
+            "same_observation",
+            "registered_macro",
+            "simulation_only"
+          ],
+          "actions": {
+            "continue": {
+              "parameters": {},
+              "parameter_variants": [],
+              "max_uses": 10
+            },
+            "bank": {
+              "parameters": {},
+              "parameter_variants": [],
+              "max_uses": 10
+            }
+          },
+          "on_unresolved": "request_human"
+        },
+        "reference_classifier_threshold": 0.5,
+        "stacking_score_comparison": {
+          "schema_version": "stacking_acwm_score_scope.v1",
+          "status": "unavailable_missing_bank_forecast",
+          "current_count": 4,
+          "next_count": 5,
+          "risk_meaning": "Uncalibrated classifier output from generated video, not collapse probability.",
+          "positive_class": "A score-bearing block drops more than 0.03 m during the placement.",
+          "continue_horizon_seconds": 14.2,
+          "bank_forecast_available": false,
+          "terminal_hold_forecast_available": false,
+          "bank_risk": null,
+          "bank_proxy_points": null,
+          "continue_then_bank_proxy_points": null,
+          "calibrated": false,
+          "recommended_option": null,
+          "dispatch_authority_created": false
+        },
+        "unknown_calibration": true,
+        "actions_require_separate_policy_revalidation": true
+      },
+      "uncertainty": {
+        "model_limit": "Neural future-video generation followed by a frozen visual readout. Exact current simulator state is supplied. Only the next 14.2-second placement is forecast; bank and delayed terminal stability are unpredicted.",
+        "prediction_evidence": {
+          "receipt": {
+            "schema_version": "missionos_assurance_prediction_admission.v1",
+            "status": "adopted",
+            "reason": "bound_current_model_evidence",
+            "evidence_source": "model_inferred",
+            "evidence_sha256": "2aaac48376b309c3d1d0696d5fa94967b31447c077cc95d9c4b10d9618928aef",
+            "source_situation_id": "game-68001-step-5",
+            "source_situation_sha256": "c9ccc78c36b47824a3ba6aa077217cf6bb508f8bbe0fe2c5240f7d9d42268384",
+            "evaluated_at": 1789988646.988798,
+            "max_age_seconds": 300,
+            "freshness_status": "current",
+            "feasibility_established": false,
+            "llm_judgment_invoked": false,
+            "approval_recorded": false,
+            "dispatch_authority_created": false,
+            "physical_execution_invoked": false,
+            "completion_claimed": false
+          },
+          "context": {
+            "execution_id": "stacking-68001",
+            "state_revision": "5",
+            "source_ref": "simulator:68001",
+            "observation_id": "sim:68001:5",
+            "binding": {
+              "model_id": "stacking-online-acwm",
+              "model_sha256": "473a14e0b305ad9537f969284ccf6c62fbe12b9fc01501e27f41ce1dd492ff8c",
+              "mission_contract": "stacking.max10.uniform_terminal_hold14.2.v1",
+              "policy_sha256": "254ec40e3be4a44f62073be9cea999ed165ca533d26204beb7f1238890fd38b4",
+              "environment_contract": "mujoco.panda.staged_cuboids20hz.v1",
+              "input_schema": "stacking.current_image_macro.v1"
+            }
+          },
+          "request_sha256": "e32f9083a93c92f4771c0a1f23aa8bd41d6cd4958fb74a10325c8a3f059972c5",
+          "forecasts": [
+            {
+              "option_id": "continue",
+              "horizon_seconds": 14.2,
+              "risk_score": 0.8349401302252952,
+              "future_state": {
+                "representation": "generated_video_visual_readout",
+                "risk_semantics": "uncalibrated_classifier_output",
+                "readout_sha256": "df01a3947a752abd4d7ba7d74aa48ac400ea9fabd2e90a3f6d5c27804dc083c5",
+                "generation_invocation_id": "c7789c49-09b9-4c19-9ec1-8c6d6bb8be3f"
+              }
+            }
+          ],
+          "forecast_status": "available",
+          "verification_basis": "model_inferred"
+        }
+      },
+      "source_refs": [
+        "simulator:68001"
+      ],
+      "source_schema_version": "stacking.current_image_macro.v1",
+      "input_digest": "6b5460159425f44f2310aa56c9d9f1cd27e5b5095de369474b3fdfb78dafa94d",
+      "execution_scope": "simulator",
+      "allowed_response_kinds": [
+        "continue",
+        "hold",
+        "operator_escalation"
+      ],
+      "schema_version": "missionos_mission_situation.v1"
+    }
+  },
+  "response": {
+    "id": "5373bafc-525e-4ddb-b58a-4a4a918534ee",
+    "object": "chat.completion",
+    "created": 1789988647,
+    "model": "deepseek-flash",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "{\n  \"proposed_response_kind\": \"hold\",\n  \"parameters\": {},\n  \"rationale\": \"The admitted model-inferred forecast for the next 14.2-second placement (continue option) reports an uncalibrated ACWM visual readout of 0.8349401302252952, above the frozen reference threshold of 0.5, indicating elevated collapse risk during that placement. This is fallible generated-video evidence, not a physical probability, but it is the only admitted forecast and it points away from placing another block. The stacking score comparison explicitly reports status 'unavailable_missing_bank_forecast' with bank_forecast_available false and bank_risk null, so no forecast supports the bank or the extra terminal hold; I do not invent one or treat bank as guaranteeing stability. With 4 blocks already retained and collapse scoring zero, the conservative mission-aligned judgment is to remain held without dispatching the proposed placement macro, preserving the existing stable count rather than risking it on a high-risk placement. This is a proposal only and does not approve, execute, or verify anything.\",\n  \"expected_outcome\": \"No further block is placed; the registered noncontact 14.2-second bank procedure is used to finish, retaining the existing stable count of 4 rather than risking collapse on a placement whose admitted forecast readout is 0.8349401302252952.\",\n  \"uncertainty\": \"The ACWM readout is uncalibrated and model-inferred from generated video, so its 0.8349401302252952 value is not a collapse probability and may be wrong. No forecast exists for the bank procedure or the extra terminal hold, so post-hold stability and the value of holding versus a successful fifth placement are unknown. The exact simulator state is supplied, but the forecast covers only the next 14.2-second placement.\",\n  \"operator_question\": \"Do you approve holding without dispatching the next placement macro, given the admitted 14.2-second continue forecast readout of 0.8349401302252952 and the absence of any bank or terminal-hold forecast?\"\n}"
+        },
+        "logprobs": null,
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 2841,
+      "completion_tokens": 442,
+      "total_tokens": 3283,
+      "prompt_tokens_details": {
+        "cached_tokens": 640
+      },
+      "prompt_cache_hit_tokens": 640,
+      "prompt_cache_miss_tokens": 2201
+    },
+    "system_fingerprint": "aeb56401ca74e127821c4f9126dcb669"
+  },
+  "started_at": "2026-09-21T11:04:07.226539+00:00",
+  "completed_at": "2026-09-21T11:04:10.027680+00:00",
+  "requested_model": "deepseek-flash",
+  "request_payload": {
+    "model": "deepseek-flash",
+    "stream": false,
+    "temperature": 0,
+    "max_tokens": 1024,
+    "thinking": {
+      "type": "disabled"
+    },
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are the Mission Assurance judge for a bounded simulator stacking game.\nChoose continue, hold, or operator_escalation from the allowed responses. Return\none JSON object with proposed_response_kind, parameters, rationale,\nexpected_outcome, uncertainty, operator_question. parameters must be {}; other\nfields must be nonempty strings. Read the admitted model-inferred forecast.\nThe ACWM visual readout is an uncalibrated score for collapse during the next\n14.2-second placement, with a frozen reference threshold of 0.5. It is not a\nphysical probability. There is no forecast for bank or the extra terminal hold.\nDo not invent either risk, compute expected points from the score, or claim that\nbank guarantees stability. The objective is retained stable block count up to\nten; collapse scores zero. Use the forecast as fallible evidence for your\nchoice, cite its score and horizon in the rationale, and acknowledge the missing\nbank forecast. Hold means the registered noncontact 14.2-second bank procedure.\nDo not infer safety from count alone. Your answer is a proposal, not approval,\nfeasibility, execution or verification. No deterministic fallback replaces you."
+      },
+      {
+        "role": "user",
+        "content": "{\"schema_version\": \"missionos_mission_assurance_prompt.v1\", \"task\": \"judge_mission_continuation_response\", \"role_contract\": {\"llm_judges\": true, \"recovery_agent_proposal_is_input_not_approval\": true, \"human_approves\": true, \"rules_constrain\": true, \"executor_acts\": true, \"verifier_checks\": true, \"repair_is_separately_bound\": true}, \"decision_contract\": {\"thresholds_are_inputs_not_final_judgment\": true, \"prediction_evidence_is_model_inferred_not_observed_fact\": true, \"prediction_admission_is_not_feasibility_approval_or_execution_authority\": true, \"rejected_prediction_evidence_must_not_support_judgment\": true, \"judge_recovery_proposal_mission_alignment\": true, \"response_kind_is_judgment_not_execution_authority\": true, \"human_approval_is_always_a_separate_downstream_boundary\": true, \"do_not_choose_operator_escalation_only_because_human_approval_is_required\": true, \"approved_policy_is_a_constraint_not_model_created_authority\": true, \"judge_against_bound_assurance_policy_when_present\": true, \"never_expand_policy_or_relax_its_preserve_conditions\": true, \"escalate_when_required_action_exceeds_policy\": true, \"continue_means_no_recovery_action_not_continue_via_recovery\": true, \"do_not_generate_or_modify_backend_action\": true, \"choose_exactly_one_response\": true, \"allowed_response_kinds\": [\"continue\", \"hold\", \"operator_escalation\"], \"required_output_fields\": [\"proposed_response_kind\", \"parameters\", \"rationale\", \"expected_outcome\", \"uncertainty\", \"operator_question\"], \"forbidden_authority_keys\": [\"approval_granted\", \"approval_recorded\", \"approved\", \"command_ack_observed\", \"delivery_completion_claimed\", \"dispatch_authority_created\", \"dispatch_request_sent\", \"gate_passed\", \"landing_observed\", \"operator_approved\", \"physical_execution_invoked\", \"progress_counted\", \"runtime_progress_observed\"]}, \"response_semantics\": {\"continue\": \"judge that no recovery action is needed and mission continuation is aligned\", \"hold\": \"judge that the mission should remain held without dispatching the proposed action\", \"operator_escalation\": \"use when mission-level evidence is insufficient or contradictory, not merely because a separate human approval is required downstream\"}, \"mission_situation\": {\"situation_id\": \"game-68001-step-5\", \"observed_at\": \"2026-09-21T11:04:06.862519+00:00\", \"mission_contract\": {\"prediction_contract\": \"stacking.max10.uniform_terminal_hold14.2.v1\", \"mission\": {\"mission_id\": \"stacking-68001\", \"seed\": 68001, \"max_blocks\": 10, \"collapse_score\": 0, \"terminal_hold_seconds\": 14.2, \"binding\": {\"model_id\": \"stacking-online-acwm\", \"model_sha256\": \"473a14e0b305ad9537f969284ccf6c62fbe12b9fc01501e27f41ce1dd492ff8c\", \"mission_contract\": \"stacking.max10.uniform_terminal_hold14.2.v1\", \"policy_sha256\": \"254ec40e3be4a44f62073be9cea999ed165ca533d26204beb7f1238890fd38b4\", \"environment_contract\": \"mujoco.panda.staged_cuboids20hz.v1\", \"input_schema\": \"stacking.current_image_macro.v1\"}, \"execution_scope\": \"simulator\", \"macro\": \"smolvla-physical-tower-placement-284-v1\", \"maximum_steps_per_option\": 568}, \"objective\": \"Maximize stable banked count, up to ten blocks. Collapse loses all points.\", \"response_mapping\": {\"continue\": \"Execute the registered VLA placement macro for the next block.\", \"hold\": \"Do not place another block; finish by the registered bank macro, which only holds position for 14.2 seconds. It does not move toward or release a block.\", \"operator_escalation\": \"No dispatch; pause this mission for human review.\"}}, \"progress\": {\"existing_count\": 4, \"next_count\": 5, \"task_id\": \"stacking-68001\"}, \"observations\": {\"source_ref\": \"simulator:68001\", \"state_sha256\": \"42b0d6f7f299523b1250cff29fe52cc719b1a3c1680d22d72b6738e67d0c5a87\"}, \"constraints\": {\"prediction_context\": {\"execution_id\": \"stacking-68001\", \"state_revision\": \"5\", \"source_ref\": \"simulator:68001\", \"observation_id\": \"sim:68001:5\", \"binding\": {\"model_id\": \"stacking-online-acwm\", \"model_sha256\": \"473a14e0b305ad9537f969284ccf6c62fbe12b9fc01501e27f41ce1dd492ff8c\", \"mission_contract\": \"stacking.max10.uniform_terminal_hold14.2.v1\", \"policy_sha256\": \"254ec40e3be4a44f62073be9cea999ed165ca533d26204beb7f1238890fd38b4\", \"environment_contract\": \"mujoco.panda.staged_cuboids20hz.v1\", \"input_schema\": \"stacking.current_image_macro.v1\"}}, \"assurance_policy\": {\"version\": 1, \"policy_id\": \"stacking-e2e-68001\", \"mission_id\": \"stacking-68001\", \"mission_contract_sha256\": \"60374ce05de380faeff5c5ae4a4055674c0414204d34ec4716eb898916c8bacb\", \"execution_scope\": \"simulator\", \"mode\": \"bounded\", \"expires_at\": \"2026-09-21T13:02:10.984258+00:00\", \"max_observation_age_seconds\": 300, \"max_total_actions\": 10, \"preserve\": [\"same_observation\", \"registered_macro\", \"simulation_only\"], \"actions\": {\"continue\": {\"parameters\": {}, \"parameter_variants\": [], \"max_uses\": 10}, \"bank\": {\"parameters\": {}, \"parameter_variants\": [], \"max_uses\": 10}}, \"on_unresolved\": \"request_human\"}, \"reference_classifier_threshold\": 0.5, \"stacking_score_comparison\": {\"schema_version\": \"stacking_acwm_score_scope.v1\", \"status\": \"unavailable_missing_bank_forecast\", \"current_count\": 4, \"next_count\": 5, \"risk_meaning\": \"Uncalibrated classifier output from generated video, not collapse probability.\", \"positive_class\": \"A score-bearing block drops more than 0.03 m during the placement.\", \"continue_horizon_seconds\": 14.2, \"bank_forecast_available\": false, \"terminal_hold_forecast_available\": false, \"bank_risk\": null, \"bank_proxy_points\": null, \"continue_then_bank_proxy_points\": null, \"calibrated\": false, \"recommended_option\": null, \"dispatch_authority_created\": false}, \"unknown_calibration\": true, \"actions_require_separate_policy_revalidation\": true}, \"uncertainty\": {\"model_limit\": \"Neural future-video generation followed by a frozen visual readout. Exact current simulator state is supplied. Only the next 14.2-second placement is forecast; bank and delayed terminal stability are unpredicted.\", \"prediction_evidence\": {\"receipt\": {\"schema_version\": \"missionos_assurance_prediction_admission.v1\", \"status\": \"adopted\", \"reason\": \"bound_current_model_evidence\", \"evidence_source\": \"model_inferred\", \"evidence_sha256\": \"2aaac48376b309c3d1d0696d5fa94967b31447c077cc95d9c4b10d9618928aef\", \"source_situation_id\": \"game-68001-step-5\", \"source_situation_sha256\": \"c9ccc78c36b47824a3ba6aa077217cf6bb508f8bbe0fe2c5240f7d9d42268384\", \"evaluated_at\": 1789988646.988798, \"max_age_seconds\": 300, \"freshness_status\": \"current\", \"feasibility_established\": false, \"llm_judgment_invoked\": false, \"approval_recorded\": false, \"dispatch_authority_created\": false, \"physical_execution_invoked\": false, \"completion_claimed\": false}, \"context\": {\"execution_id\": \"stacking-68001\", \"state_revision\": \"5\", \"source_ref\": \"simulator:68001\", \"observation_id\": \"sim:68001:5\", \"binding\": {\"model_id\": \"stacking-online-acwm\", \"model_sha256\": \"473a14e0b305ad9537f969284ccf6c62fbe12b9fc01501e27f41ce1dd492ff8c\", \"mission_contract\": \"stacking.max10.uniform_terminal_hold14.2.v1\", \"policy_sha256\": \"254ec40e3be4a44f62073be9cea999ed165ca533d26204beb7f1238890fd38b4\", \"environment_contract\": \"mujoco.panda.staged_cuboids20hz.v1\", \"input_schema\": \"stacking.current_image_macro.v1\"}}, \"request_sha256\": \"e32f9083a93c92f4771c0a1f23aa8bd41d6cd4958fb74a10325c8a3f059972c5\", \"forecasts\": [{\"option_id\": \"continue\", \"horizon_seconds\": 14.2, \"risk_score\": 0.8349401302252952, \"future_state\": {\"representation\": \"generated_video_visual_readout\", \"risk_semantics\": \"uncalibrated_classifier_output\", \"readout_sha256\": \"df01a3947a752abd4d7ba7d74aa48ac400ea9fabd2e90a3f6d5c27804dc083c5\", \"generation_invocation_id\": \"c7789c49-09b9-4c19-9ec1-8c6d6bb8be3f\"}}], \"forecast_status\": \"available\", \"verification_basis\": \"model_inferred\"}}, \"source_refs\": [\"simulator:68001\"], \"source_schema_version\": \"stacking.current_image_macro.v1\", \"input_digest\": \"6b5460159425f44f2310aa56c9d9f1cd27e5b5095de369474b3fdfb78dafa94d\", \"execution_scope\": \"simulator\", \"allowed_response_kinds\": [\"continue\", \"hold\", \"operator_escalation\"], \"schema_version\": \"missionos_mission_situation.v1\"}}"
+      }
+    ]
+  },
+  "model_digest": null
+}

@@ -1,0 +1,167 @@
+{
+  "receipts": [
+    {
+      "invocation_id": "de9e249c-322b-457e-912b-838a058deb6c",
+      "readout_output": 0.05170976638970448,
+      "decision": "place",
+      "latency_seconds": 3.0364743930000486,
+      "future_action_tape_access": false,
+      "macro_id": "smolvla-physical-tower-placement-284-v1",
+      "horizon_seconds": 14.2,
+      "name": "validation-59000-01"
+    },
+    {
+      "invocation_id": "40cec159-cc98-4ead-9fa9-dff1d72882a9",
+      "readout_output": 0.08483289117687924,
+      "decision": "place",
+      "latency_seconds": 1.337710510000079,
+      "future_action_tape_access": false,
+      "macro_id": "smolvla-physical-tower-placement-284-v1",
+      "horizon_seconds": 14.2,
+      "name": "validation-59000-02"
+    },
+    {
+      "invocation_id": "64639540-dc9b-4132-a58b-0acb7735ef40",
+      "readout_output": 0.0600821819209729,
+      "decision": "place",
+      "latency_seconds": 1.3187511209999911,
+      "future_action_tape_access": false,
+      "macro_id": "smolvla-physical-tower-placement-284-v1",
+      "horizon_seconds": 14.2,
+      "name": "validation-59000-03"
+    },
+    {
+      "invocation_id": "6fd866d0-f29e-4e52-9cf8-a4bf43b9ef07",
+      "readout_output": 0.061371109871651536,
+      "decision": "place",
+      "latency_seconds": 1.3394209740000633,
+      "future_action_tape_access": false,
+      "macro_id": "smolvla-physical-tower-placement-284-v1",
+      "horizon_seconds": 14.2,
+      "name": "validation-59000-04"
+    },
+    {
+      "invocation_id": "03d5db1c-a35c-4b1c-8a8c-4b8805648164",
+      "readout_output": 0.09687842203047668,
+      "decision": "place",
+      "latency_seconds": 1.3264538990000574,
+      "future_action_tape_access": false,
+      "macro_id": "smolvla-physical-tower-placement-284-v1",
+      "horizon_seconds": 14.2,
+      "name": "validation-59000-05"
+    },
+    {
+      "invocation_id": "36ff6a39-e295-4d07-83a1-ac726ce21a79",
+      "readout_output": 0.0827096290908045,
+      "decision": "place",
+      "latency_seconds": 1.313821900999983,
+      "future_action_tape_access": false,
+      "macro_id": "smolvla-physical-tower-placement-284-v1",
+      "horizon_seconds": 14.2,
+      "name": "validation-59000-06"
+    },
+    {
+      "invocation_id": "379ac106-4d03-4aab-aa10-23ac1450b9f2",
+      "readout_output": 0.0841691245323493,
+      "decision": "place",
+      "latency_seconds": 1.321105766999949,
+      "future_action_tape_access": false,
+      "macro_id": "smolvla-physical-tower-placement-284-v1",
+      "horizon_seconds": 14.2,
+      "name": "validation-59000-07"
+    },
+    {
+      "invocation_id": "2a899249-e050-4727-86ec-f60a4143fbea",
+      "readout_output": 0.07908504429297453,
+      "decision": "place",
+      "latency_seconds": 1.3411758429999736,
+      "future_action_tape_access": false,
+      "macro_id": "smolvla-physical-tower-placement-284-v1",
+      "horizon_seconds": 14.2,
+      "name": "validation-59000-08"
+    },
+    {
+      "invocation_id": "306ec444-e3b0-45a8-b88c-e1d4a878829e",
+      "readout_output": 0.08257901782795972,
+      "decision": "place",
+      "latency_seconds": 1.3292700540000624,
+      "future_action_tape_access": false,
+      "macro_id": "smolvla-physical-tower-placement-284-v1",
+      "horizon_seconds": 14.2,
+      "name": "validation-59000-09"
+    },
+    {
+      "invocation_id": "12ea4232-2224-4e7d-a191-9965a57cb587",
+      "readout_output": 0.9727813841126531,
+      "decision": "bank",
+      "latency_seconds": 1.3188696710000158,
+      "future_action_tape_access": false,
+      "macro_id": "smolvla-physical-tower-placement-284-v1",
+      "horizon_seconds": 14.2,
+      "name": "validation-59000-10"
+    },
+    {
+      "invocation_id": "05340809-2223-4eca-92cb-7f571bcb488e",
+      "readout_output": 0.9880753504339508,
+      "decision": "bank",
+      "latency_seconds": 1.328211806000013,
+      "future_action_tape_access": false,
+      "macro_id": "smolvla-physical-tower-placement-284-v1",
+      "horizon_seconds": 14.2,
+      "name": "validation-59001-08"
+    },
+    {
+      "invocation_id": "7bee0023-b39e-425c-a7b7-46f225e091d9",
+      "readout_output": 0.11812150771830189,
+      "decision": "place",
+      "latency_seconds": 1.3455124870000645,
+      "future_action_tape_access": false,
+      "macro_id": "smolvla-physical-tower-placement-284-v1",
+      "horizon_seconds": 14.2,
+      "name": "validation-59002-08"
+    },
+    {
+      "invocation_id": "ecf2d430-e925-4018-a31f-3ba2f3bdba9a",
+      "readout_output": 0.9207890076314387,
+      "decision": "bank",
+      "latency_seconds": 1.3264048480000383,
+      "future_action_tape_access": false,
+      "macro_id": "smolvla-physical-tower-placement-284-v1",
+      "horizon_seconds": 14.2,
+      "name": "validation-59002-10"
+    },
+    {
+      "invocation_id": "cd5d9232-a23e-44b5-ade8-31813b0baaa4",
+      "readout_output": 0.9687732410304788,
+      "decision": "bank",
+      "latency_seconds": 1.32464714799994,
+      "future_action_tape_access": false,
+      "macro_id": "smolvla-physical-tower-placement-284-v1",
+      "horizon_seconds": 14.2,
+      "name": "validation-59003-08"
+    },
+    {
+      "invocation_id": "198120de-95a8-4ec4-b743-f55f698cd21b",
+      "readout_output": 0.9224218282860929,
+      "decision": "bank",
+      "latency_seconds": 1.3302986070000316,
+      "future_action_tape_access": false,
+      "macro_id": "smolvla-physical-tower-placement-284-v1",
+      "horizon_seconds": 14.2,
+      "name": "validation-59006-10"
+    },
+    {
+      "invocation_id": "290e01eb-7600-41a8-8243-6c93d3eca67f",
+      "readout_output": 0.04092670365844301,
+      "decision": "place",
+      "latency_seconds": 1.3173442710000245,
+      "future_action_tape_access": false,
+      "macro_id": "smolvla-physical-tower-placement-284-v1",
+      "horizon_seconds": 14.2,
+      "name": "validation-59010-10"
+    }
+  ],
+  "latency_p50_seconds": 1.3273328525000352,
+  "latency_p95_seconds": 1.7682529635000606,
+  "scope": "Real current-image encoding, ACWM inference and visual readout; saved current observations, no live VLA execution."
+}

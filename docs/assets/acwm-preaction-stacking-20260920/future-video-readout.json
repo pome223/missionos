@@ -1,0 +1,770 @@
+{
+  "readout": "ridge-regularized logistic regression over block-mask trajectory features",
+  "training_source": "fixed WAM forecasts for training cases only (noise seed 195)",
+  "threshold": 0.5,
+  "wam_generated_train_seed195": {
+    "accuracy": 0.9444444444444444,
+    "tp": 11,
+    "fp": 1,
+    "tn": 23,
+    "fn": 1,
+    "rows": [
+      {
+        "name": "train-58000-01",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.03200977699308972
+      },
+      {
+        "name": "train-58001-01",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.03111531974482512
+      },
+      {
+        "name": "train-58000-02",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.03563023841554535
+      },
+      {
+        "name": "train-58001-02",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.06873289227422351
+      },
+      {
+        "name": "train-58000-03",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.13264692791976768
+      },
+      {
+        "name": "train-58001-03",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.06442108347877785
+      },
+      {
+        "name": "train-58000-04",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.15074403740319467
+      },
+      {
+        "name": "train-58001-04",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.13800683767282115
+      },
+      {
+        "name": "train-58000-05",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.03682446788222739
+      },
+      {
+        "name": "train-58001-05",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.0736817767397587
+      },
+      {
+        "name": "train-58000-06",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.11337301425903298
+      },
+      {
+        "name": "train-58001-06",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.06114983172979547
+      },
+      {
+        "name": "train-58003-07",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.8608455659783107
+      },
+      {
+        "name": "train-58005-07",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.8797960010054581
+      },
+      {
+        "name": "train-58007-07",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.8611001116513494
+      },
+      {
+        "name": "train-58000-07",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.1418166845673295
+      },
+      {
+        "name": "train-58001-07",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.05507693710907085
+      },
+      {
+        "name": "train-58002-07",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.05361001285374233
+      },
+      {
+        "name": "train-58001-08",
+        "collapsed": true,
+        "predicted_collapse": false,
+        "probability": 0.16293811016408208
+      },
+      {
+        "name": "train-58009-08",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.9612703400295757
+      },
+      {
+        "name": "train-58013-08",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.9191856466081872
+      },
+      {
+        "name": "train-58000-08",
+        "collapsed": false,
+        "predicted_collapse": true,
+        "probability": 0.6125064087261101
+      },
+      {
+        "name": "train-58002-08",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.18961085739903402
+      },
+      {
+        "name": "train-58004-08",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.17887709408830407
+      },
+      {
+        "name": "train-58000-09",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.9994066320857479
+      },
+      {
+        "name": "train-58015-09",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.9175377345466172
+      },
+      {
+        "name": "train-58026-09",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.9994144154826117
+      },
+      {
+        "name": "train-58002-09",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.07479286064835144
+      },
+      {
+        "name": "train-58004-09",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.09282994044615661
+      },
+      {
+        "name": "train-58006-09",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.07986792304363743
+      },
+      {
+        "name": "train-58002-10",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.9649984939580193
+      },
+      {
+        "name": "train-58008-10",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.9994193354742471
+      },
+      {
+        "name": "train-58014-10",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.9993549042829178
+      },
+      {
+        "name": "train-58004-10",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.14200751721909913
+      },
+      {
+        "name": "train-58006-10",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.13866959023522468
+      },
+      {
+        "name": "train-58010-10",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.27343912198482084
+      }
+    ]
+  },
+  "measured_train": {
+    "accuracy": 0.8611111111111112,
+    "tp": 7,
+    "fp": 0,
+    "tn": 24,
+    "fn": 5,
+    "rows": [
+      {
+        "name": "train-58000-01",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.01324131735140096
+      },
+      {
+        "name": "train-58001-01",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.008651391552592492
+      },
+      {
+        "name": "train-58000-02",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.001112094444765696
+      },
+      {
+        "name": "train-58001-02",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.0019992086162623187
+      },
+      {
+        "name": "train-58000-03",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.028903248152241125
+      },
+      {
+        "name": "train-58001-03",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.0033862174983335575
+      },
+      {
+        "name": "train-58000-04",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.0034250916342633813
+      },
+      {
+        "name": "train-58001-04",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.005071597731952774
+      },
+      {
+        "name": "train-58000-05",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.007381834539358763
+      },
+      {
+        "name": "train-58001-05",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.0017210946373006945
+      },
+      {
+        "name": "train-58000-06",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.0030240997869727887
+      },
+      {
+        "name": "train-58001-06",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.017643788250183038
+      },
+      {
+        "name": "train-58003-07",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.5614612657417262
+      },
+      {
+        "name": "train-58005-07",
+        "collapsed": true,
+        "predicted_collapse": false,
+        "probability": 0.4417282473323366
+      },
+      {
+        "name": "train-58007-07",
+        "collapsed": true,
+        "predicted_collapse": false,
+        "probability": 0.02039859729663348
+      },
+      {
+        "name": "train-58000-07",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.07542550355838552
+      },
+      {
+        "name": "train-58001-07",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.027317139038339825
+      },
+      {
+        "name": "train-58002-07",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.015042265465374419
+      },
+      {
+        "name": "train-58001-08",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.679232838835809
+      },
+      {
+        "name": "train-58009-08",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.8580107925208202
+      },
+      {
+        "name": "train-58013-08",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.9161364282698107
+      },
+      {
+        "name": "train-58000-08",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.01204385659031773
+      },
+      {
+        "name": "train-58002-08",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.014033542007127192
+      },
+      {
+        "name": "train-58004-08",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.027535528479443756
+      },
+      {
+        "name": "train-58000-09",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.8649586633783775
+      },
+      {
+        "name": "train-58015-09",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.9238075995080491
+      },
+      {
+        "name": "train-58026-09",
+        "collapsed": true,
+        "predicted_collapse": false,
+        "probability": 0.4895683531145155
+      },
+      {
+        "name": "train-58002-09",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.020099766713692496
+      },
+      {
+        "name": "train-58004-09",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.041185827926774825
+      },
+      {
+        "name": "train-58006-09",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.02402935734428154
+      },
+      {
+        "name": "train-58002-10",
+        "collapsed": true,
+        "predicted_collapse": false,
+        "probability": 0.31046467791283716
+      },
+      {
+        "name": "train-58008-10",
+        "collapsed": true,
+        "predicted_collapse": false,
+        "probability": 0.35145608050942945
+      },
+      {
+        "name": "train-58014-10",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.970964298214579
+      },
+      {
+        "name": "train-58004-10",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.02734080337072333
+      },
+      {
+        "name": "train-58006-10",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.0026669012873967333
+      },
+      {
+        "name": "train-58010-10",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.003247476092510138
+      }
+    ]
+  },
+  "measured_validation": {
+    "accuracy": 0.875,
+    "tp": 2,
+    "fp": 0,
+    "tn": 12,
+    "fn": 2,
+    "rows": [
+      {
+        "name": "validation-59000-01",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.003316469375046853
+      },
+      {
+        "name": "validation-59000-02",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.016836097546063626
+      },
+      {
+        "name": "validation-59000-03",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.002260292901069023
+      },
+      {
+        "name": "validation-59000-04",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.008156721896451457
+      },
+      {
+        "name": "validation-59000-05",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.006531860542209121
+      },
+      {
+        "name": "validation-59000-06",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.014391063486872505
+      },
+      {
+        "name": "validation-59000-07",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.007308887807471154
+      },
+      {
+        "name": "validation-59000-09",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.005163630205323259
+      },
+      {
+        "name": "validation-59001-08",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.8350537916699338
+      },
+      {
+        "name": "validation-59003-08",
+        "collapsed": true,
+        "predicted_collapse": false,
+        "probability": 0.2619239697703393
+      },
+      {
+        "name": "validation-59000-08",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.16232430555367716
+      },
+      {
+        "name": "validation-59002-08",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.014243680461915405
+      },
+      {
+        "name": "validation-59000-10",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.860532508624249
+      },
+      {
+        "name": "validation-59002-10",
+        "collapsed": true,
+        "predicted_collapse": false,
+        "probability": 0.3703578665645263
+      },
+      {
+        "name": "validation-59006-10",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.005257274723389232
+      },
+      {
+        "name": "validation-59010-10",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.004786987221623126
+      }
+    ]
+  },
+  "wam_generated_seed195": {
+    "accuracy": 0.8125,
+    "tp": 4,
+    "fp": 3,
+    "tn": 9,
+    "fn": 0,
+    "rows": [
+      {
+        "name": "validation-59000-01",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.04007821832654181
+      },
+      {
+        "name": "validation-59000-02",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.1346996532789827
+      },
+      {
+        "name": "validation-59000-03",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.08328775857085788
+      },
+      {
+        "name": "validation-59000-04",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.04920386154245731
+      },
+      {
+        "name": "validation-59000-05",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.04830352531860445
+      },
+      {
+        "name": "validation-59000-06",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.08521925801326635
+      },
+      {
+        "name": "validation-59000-07",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.0972875947048681
+      },
+      {
+        "name": "validation-59000-09",
+        "collapsed": false,
+        "predicted_collapse": true,
+        "probability": 0.9995356334975094
+      },
+      {
+        "name": "validation-59001-08",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.9640450034704506
+      },
+      {
+        "name": "validation-59003-08",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.879072703031378
+      },
+      {
+        "name": "validation-59000-08",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.11111741877281091
+      },
+      {
+        "name": "validation-59002-08",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.10721340214040814
+      },
+      {
+        "name": "validation-59000-10",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.9995981260718341
+      },
+      {
+        "name": "validation-59002-10",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.9177480798754737
+      },
+      {
+        "name": "validation-59006-10",
+        "collapsed": false,
+        "predicted_collapse": true,
+        "probability": 0.9542597975291299
+      },
+      {
+        "name": "validation-59010-10",
+        "collapsed": false,
+        "predicted_collapse": true,
+        "probability": 0.9997377513584169
+      }
+    ]
+  },
+  "wam_generated_seed196": {
+    "accuracy": 0.75,
+    "tp": 4,
+    "fp": 4,
+    "tn": 8,
+    "fn": 0,
+    "rows": [
+      {
+        "name": "validation-59000-01",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.01663727835184593
+      },
+      {
+        "name": "validation-59000-02",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.07931775695238141
+      },
+      {
+        "name": "validation-59000-03",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.1538525600875365
+      },
+      {
+        "name": "validation-59000-04",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.17719350430289307
+      },
+      {
+        "name": "validation-59000-05",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.1412582587519559
+      },
+      {
+        "name": "validation-59000-06",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.22237300621895434
+      },
+      {
+        "name": "validation-59000-07",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.08648849324032636
+      },
+      {
+        "name": "validation-59000-09",
+        "collapsed": false,
+        "predicted_collapse": true,
+        "probability": 0.880706759181498
+      },
+      {
+        "name": "validation-59001-08",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.6352427738945309
+      },
+      {
+        "name": "validation-59003-08",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.8747789310654968
+      },
+      {
+        "name": "validation-59000-08",
+        "collapsed": false,
+        "predicted_collapse": false,
+        "probability": 0.08113208188112539
+      },
+      {
+        "name": "validation-59002-08",
+        "collapsed": false,
+        "predicted_collapse": true,
+        "probability": 0.6623074389352854
+      },
+      {
+        "name": "validation-59000-10",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.9862757401921943
+      },
+      {
+        "name": "validation-59002-10",
+        "collapsed": true,
+        "predicted_collapse": true,
+        "probability": 0.9989715513885135
+      },
+      {
+        "name": "validation-59006-10",
+        "collapsed": false,
+        "predicted_collapse": true,
+        "probability": 0.9782116613185611
+      },
+      {
+        "name": "validation-59010-10",
+        "collapsed": false,
+        "predicted_collapse": true,
+        "probability": 0.9969690993216429
+      }
+    ]
+  }
+}
