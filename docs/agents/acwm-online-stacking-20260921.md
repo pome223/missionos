@@ -1,26 +1,36 @@
-# Online ACWM forecasts for block stacking in MissionOS
+# Predict Before Acting: Online Video-World-Model Stopping Control for Block Stacking in MissionOS
 
-2026-09-21. Fixed benchmark: 40 fresh seeds, five independently executed methods.
+**Technical research report · 21 September 2026**
+
+**Keywords:** action-conditioned world models; video prediction; vision-language-action
+models; online stopping; simulator evaluation; MissionOS.
+
+Fixed benchmark: 40 fresh seeds, five independently executed methods.
 
 ## Abstract
 
-We adapted a neural ACWM VideoDiT to generate the future of one complete block
-placement from information available **before approach begins**. The conditioning
-uses the current image and physical state, a placement target and a registered
-controller macro. Actual future SmolVLA motor commands are generated only after
-the stopping decision. In the new online cohort, ACWM scored **201/400**;
-the individual results and paired comparisons below describe its practical
-stopping performance.
-
-The experiment connects real video generation through MissionOS Prediction Core
-to a fixed lab stopping policy and subsequent SmolVLA simulator execution.
-The record includes **309 ACWM decisions**, **19,497 actual-game
-SmolVLA inference chunks**, and **483,652 actual-game motor steps**
-across the five methods. Of these steps, **107,964** apply
-actual returned VLA commands; the others belong to the registered macro's
-approach, grasp staging, withdrawal and hold controllers. Prediction remains model-inferred evidence; the
-experiment demonstrates an online simulator control loop within an explicitly
-authorized lab scope.
+We study whether a video-generating world model can decide when to stop a
+robotic stacking mission using only information available before the next
+placement. We adapt ACWM VideoDiT from conditioning on saved future motor
+commands to conditioning on the current image, current physical state, a
+placement target and a registered controller macro. Fine-tuning uses 36
+placement examples; a fixed feasibility gate on 16 known validation placements
+precedes a frozen evaluation on 40 fresh simulator seeds. Five stopping systems
+independently execute each game with the same SmolVLA weights, physical
+initialization and terminal stability check. Online ACWM scores 201/400, compared
+with 40 for VLA continuation, 192 for a current-state rule, 280 for width-specific
+stopping and 291 for frozen ExtraTrees. Its paired mean advantage over
+continuation is 4.025 points (95% bootstrap interval 3.075–5.025); the difference
+from the current-state rule is inconclusive. All 309 ACWM generations succeed,
+with encoding/generation/readout latency of 1.655 seconds at the median and
+1.723 seconds at the 95th percentile. The full record covers 200 games, 19,497
+actual-game SmolVLA inference chunks and 483,652 motor steps. ACWM forecasts one
+14.2-second placement, whereas ExtraTrees covers placement plus hold over 28.4
+seconds. Three of ACWM's eight collapsed games occur after banking, exposing a
+limit of predicting only the continue option. The experiment demonstrates a
+pre-action video-prediction gate connected through MissionOS Prediction Core to
+actual VLA simulator execution, with forecasts retained as model-inferred
+evidence and execution recorded separately.
 
 ## 1. Question and contribution
 
@@ -47,6 +57,49 @@ flowchart TD
   G --> H[Measured outcome]
   H --> A
 ```
+
+### 1.1 Contributions
+
+| Contribution | Evidence |
+|---|---|
+| Online conditioning replaces saved future actions | Current-only input contract; inference and decision precede the proposed placement's VLA calls |
+| Generated futures control an actual sequential game | 309 forecast decisions, followed by place/bank execution and measured outcomes |
+| Fixed paired evaluation includes strong simple baselines | 40 preselected seeds × five independent methods, unchanged terminal scoring |
+| Forecast provenance remains distinct from authority | Model/policy/observation binding, rejection tests and per-decision Prediction receipts |
+
+### 1.2 Relation to prior work
+
+[ACWM-Phys](https://github.com/xavihart/ACWM-Phys-dev) supplies an
+action-conditioned latent video diffusion transformer and pretrained components
+for physical-interaction forecasting. Our contribution is a mission-specific
+conditioning and evaluation path built on that implementation, rather than a
+new video-model architecture. [SmolVLA](https://arxiv.org/abs/2506.01844) supplies
+the vision-language-action model used for learned placement/release phases.
+[ExtraTrees](https://scikit-learn.org/stable/modules/ensemble.html#extremely-randomized-trees)
+is the separately evaluated tree-ensemble predictor; it does not generate video.
+
+The preceding MissionOS [offline ACWM study](acwm-preaction-stacking-forecast-20260920.md)
+showed full-placement forecasting with saved future action conditioning. The
+present experiment removes that information dependency and measures the resulting
+stopping system on a new cohort. Earlier MissionOS authority integration remains
+a separate system result; Section 7 identifies precisely the boundary exercised here.
+
+### 1.3 Problem formulation
+
+At gate t, let I_t be the current image, x_t the current physical and robot
+state, g_t the next placement target, and m the registered macro/controller.
+The frozen generator produces a video V_hat_t = G_theta(I_t, x_t, g_t, m; z)
+with fixed noise seed z. A frozen readout r_t = h_phi(V_hat_t) maps that video
+to an uncalibrated danger score. The policy chooses bank when r_t ≥ 0.5 and
+place otherwise. Future VLA motor commands are generated only after place is
+committed. The next gate receives the new measured state, not a rolled-forward
+synthetic state.
+
+For game j and method k, the terminal score S_jk is zero if collapse is measured;
+otherwise it is the retained count, at most ten, after the common terminal hold.
+The primary endpoint is the sum of S_jk over 40 games. Paired inference uses
+d_j = S_j,ACWM − S_j,comparator. Prediction accuracy and latency are secondary
+endpoints that help explain the score, rather than replacing it.
 
 ## 2. Tape-free conditioning and Phase 1
 
@@ -279,7 +332,58 @@ opt-in and requires an explicitly supplied backend. Its interface and causal
 verification requirements are documented in
 [the adapter contract](stacking-acwm-online.md).
 
-## 8. Evidence, costs and limits
+## 8. Discussion
+
+### 8.1 What the online result establishes
+
+The operational result is the ordering of prediction and action. A full future
+video is generated from the available gate information, converted into a
+stopping decision, and followed by actual SmolVLA execution only when selected.
+The matched prefixes and timing/inference receipts make that ordering auditable.
+The 161-point improvement over continuation shows useful intervention under
+these game conditions. Stronger comparators demonstrate how much performance
+remains available without video generation.
+
+### 8.2 Stopping safely is a separate prediction problem
+
+ACWM assesses the proposed placement, then banks when that future looks risky.
+It does not generate a bank future. Seeds 68006, 68022 and 68034 show why this
+matters: stopping the next placement did not keep the existing tower stable
+through the terminal hold. Thus, detecting a dangerous continuation and
+identifying a safe termination are different requirements.
+
+The longer ExtraTrees horizon and its continue/bank treatment are plausible
+contributors to the score difference. The experiment does not isolate their
+individual effects from model representation, training or readout errors.
+A next experiment could extend the generated horizon and add a bank branch,
+then freeze both before evaluating fresh games. Those changes are future work,
+not retrospective changes to this benchmark.
+
+### 8.3 Conservative behavior and costly misses coexist
+
+The 24 false alarms and five short-horizon misses rule out a simple explanation
+that the system is merely too conservative. It often refuses a safe placement
+and occasionally accepts a collapsing one. Fourteen narrow games stop at four,
+while the stronger width rule reaches six. A late false negative, in contrast,
+can erase an entire tall tower's score. Optimizing average image fidelity or
+classification accuracy therefore need not optimize retained game score.
+
+The readout is a separate learned component, and its score is uncalibrated.
+This study measures the composed generator/readout/policy system; it does not
+attribute each failure uniquely to video generation. A future readout-on-measured-
+video diagnostic and a horizon-matched comparison could separate these effects.
+
+### 8.4 Deployment relevance
+
+A median 1.655-second generation path on one L4 makes a per-placement forecast
+practical in this paused simulator setup. The approximately 2.84-second mean
+end-to-end decision latency includes service overhead. A physical tower would
+continue moving during that interval, so a deployment would also need to handle
+observation freshness and state changes before execution. The present experiment
+establishes the integration mechanism and its measured cost, with physical
+real-time behavior left to a distinct deployment evaluation.
+
+## 9. Evidence, costs and limitations
 
 [Public individual evidence and verification](../assets/acwm-online-stacking-20260921/README.md)
 include 200 attempts, per-decision outputs, terminal measurements, inference IDs,
@@ -304,7 +408,7 @@ its fixed readout can also introduce errors. The result evaluates the combined
 forecast-plus-readout system. Additional training, threshold tuning and LLM
 changes were not performed after test start.
 
-## 9. Conclusion
+## 10. Conclusion
 
 The experiment moves action-conditioned video forecasting from saved-action
 replay into a pre-action online loop: **observe, generate the placement future,
@@ -312,3 +416,48 @@ decide, then obtain and execute VLA actions, and measure the result**. The compl
 fixed-cohort results preserve both useful decisions and prediction failures.
 MissionOS carries this forecast as explicitly bound evidence, while the lab
 control policy and actual execution remain separate responsibilities.
+
+
+## References
+
+1. ACWM-Phys authors. *ACWM-Phys: Investigating Generalized Physical Interaction
+   in Action-Conditioned Video World Models.* [Implementation and released-model documentation](https://github.com/xavihart/ACWM-Phys-dev).
+2. Shukor et al. *SmolVLA: A Vision-Language-Action Model for Affordable and
+   Efficient Robotics.* 2025. [arXiv:2506.01844](https://arxiv.org/abs/2506.01844).
+3. scikit-learn developers. *Extremely Randomized Trees.*
+   [Ensemble documentation](https://scikit-learn.org/stable/modules/ensemble.html#extremely-randomized-trees).
+4. MissionOS. *Predicting One Complete Block Placement Before Acting with ACWM.*
+   20 September 2026. [Previous offline report](acwm-preaction-stacking-forecast-20260920.md).
+5. MissionOS. *Online ACWM stacking evidence.* 21 September 2026.
+   [Individual records, protocol, verification and media](../assets/acwm-online-stacking-20260921/README.md).
+
+## Appendix A. Artifact identity and reproduction
+
+The [frozen protocol](../assets/acwm-online-stacking-20260921/protocol.json)
+identifies the final ACWM checkpoint, fixed visual readout, SmolVLA weights and
+ExtraTrees model by SHA-256. The separate
+[runtime freeze](../assets/acwm-online-stacking-20260921/runtime-freeze.json)
+records the executed code hashes and the pre-test freeze condition.
+`benchmark.json` contains all 200 game outcomes and paired scores;
+`decisions.csv` exposes 1,643 decisions; `decision-evidence.json.gz` retains
+complete decision-level provenance. These are linked from the evidence index.
+
+To verify the released evidence from the repository root:
+
+```sh
+python docs/assets/acwm-online-stacking-20260921/verify_report.py --statistics
+python -m pytest docs/assets/acwm-online-stacking-20260921/test_verify_report.py -q
+python docs/assets/acwm-online-stacking-20260921/verify_media.py
+```
+
+The first command checks individual outcomes, causal ordering, common-prefix
+agreement, aggregate scores, latency, paired statistics and manifest hashes.
+The four corruption tests deliberately alter records and rebuild manifests so
+that semantic failures must be detected. The media command loads seven PNGs and
+fully decodes two MP4s. Statistics requires NumPy; media decoding requires Pillow,
+ffmpeg and ffprobe. The standard-library verifier also runs without `--statistics`.
+
+The actual opt-in run used `python online-phase2/run_games.py test` in the private
+simulator harness. Its output is audited in the public packet; the full training
+and simulator environment is not bundled. Published verification reproduces
+calculations and checks recorded execution, rather than rerunning 200 games.
