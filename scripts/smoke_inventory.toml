@@ -22,6 +22,7 @@ files = [
   "smoke_assurance_prediction_evidence.py",
   "smoke_atomic_dispatch.py",
   "smoke_backend_neutral_unitree_gateway.py",
+  "smoke_empirical_repair_trials.py",
   "smoke_execution_envelope.py",
   "smoke_groot_arm_controller_bridge.py",
   "smoke_groot_lerobot_live_session.py",
