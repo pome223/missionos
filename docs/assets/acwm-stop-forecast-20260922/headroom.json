@@ -1,0 +1,113 @@
+[
+  {
+    "seed": 68006,
+    "existing_count": 8,
+    "restored_input_max_error": 8.195638656616211e-08,
+    "bank_score": 8,
+    "bank_collapsed": false,
+    "bank_drop_m": 0.003887806984284925,
+    "bank_hold_seconds": 14.2,
+    "bank_first_failure": null,
+    "saved_continue_plus_hold_collapsed": true,
+    "saved_continue_first_failure": {
+      "stage": "post_placement_wait",
+      "step": 432
+    },
+    "bank_requires_vla_inference": false,
+    "scope": "known-case diagnostic; not held-out evidence"
+  },
+  {
+    "seed": 68006,
+    "existing_count": 9,
+    "restored_input_max_error": 8.195638656616211e-08,
+    "bank_score": 0,
+    "bank_collapsed": true,
+    "bank_drop_m": 0.3169601013532304,
+    "bank_hold_seconds": 14.2,
+    "bank_first_failure": {
+      "stage": "stop",
+      "step": 148
+    },
+    "saved_continue_plus_hold_collapsed": true,
+    "saved_continue_first_failure": {
+      "stage": "withdraw",
+      "step": 190
+    },
+    "bank_requires_vla_inference": false,
+    "scope": "known-case diagnostic; not held-out evidence"
+  },
+  {
+    "seed": 68022,
+    "existing_count": 8,
+    "restored_input_max_error": 8.195638656616211e-08,
+    "bank_score": 8,
+    "bank_collapsed": false,
+    "bank_drop_m": 0.006748819254269067,
+    "bank_hold_seconds": 14.2,
+    "bank_first_failure": null,
+    "saved_continue_plus_hold_collapsed": true,
+    "saved_continue_first_failure": {
+      "stage": "post_placement_wait",
+      "step": 563
+    },
+    "bank_requires_vla_inference": false,
+    "scope": "known-case diagnostic; not held-out evidence"
+  },
+  {
+    "seed": 68022,
+    "existing_count": 9,
+    "restored_input_max_error": 1.1920928955078125e-07,
+    "bank_score": 0,
+    "bank_collapsed": true,
+    "bank_drop_m": 0.3201922562836156,
+    "bank_hold_seconds": 14.2,
+    "bank_first_failure": {
+      "stage": "stop",
+      "step": 279
+    },
+    "saved_continue_plus_hold_collapsed": true,
+    "saved_continue_first_failure": {
+      "stage": "withdraw",
+      "step": 172
+    },
+    "bank_requires_vla_inference": false,
+    "scope": "known-case diagnostic; not held-out evidence"
+  },
+  {
+    "seed": 68034,
+    "existing_count": 8,
+    "restored_input_max_error": 7.82310962677002e-08,
+    "bank_score": 8,
+    "bank_collapsed": false,
+    "bank_drop_m": 0.014145865237775057,
+    "bank_hold_seconds": 14.2,
+    "bank_first_failure": null,
+    "saved_continue_plus_hold_collapsed": true,
+    "saved_continue_first_failure": {
+      "stage": "post_placement_wait",
+      "step": 365
+    },
+    "bank_requires_vla_inference": false,
+    "scope": "known-case diagnostic; not held-out evidence"
+  },
+  {
+    "seed": 68034,
+    "existing_count": 9,
+    "restored_input_max_error": 1.1920928955078125e-07,
+    "bank_score": 0,
+    "bank_collapsed": true,
+    "bank_drop_m": 0.3249703782671012,
+    "bank_hold_seconds": 14.2,
+    "bank_first_failure": {
+      "stage": "stop",
+      "step": 81
+    },
+    "saved_continue_plus_hold_collapsed": true,
+    "saved_continue_first_failure": {
+      "stage": "lower",
+      "step": 81
+    },
+    "bank_requires_vla_inference": false,
+    "scope": "known-case diagnostic; not held-out evidence"
+  }
+]

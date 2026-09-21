@@ -35,3 +35,7 @@ accuracy, actual LLM invocation, or simulator game performance.
 
 This adapter is experimental and has no default service startup. Qualification
 of a trained two-option generator is separate from these interface tests.
+
+The [bounded terminal-hold study](../../assets/acwm-stop-forecast-20260922/REPORT.md)
+records neural generation measurements separately from these fixture regressions.
+Its final checkpoint is not enabled automatically by merging this adapter.

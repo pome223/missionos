@@ -77,6 +77,9 @@ class StackingACWMOptionsPredictor:
             risk = float(result["readout_output"])
             if not np.isfinite(risk) or not 0 <= risk <= 1:
                 raise ValueError("invalid visual readout")
+            invocation = result.get("invocation_id")
+            if not isinstance(invocation, str) or not invocation.strip():
+                raise ValueError("generation invocation required")
             forecasts.append(
                 OptionForecast(
                     option,
@@ -86,7 +89,7 @@ class StackingACWMOptionsPredictor:
                         "representation": "generated_video_visual_readout",
                         "risk_semantics": "uncalibrated_classifier_output",
                         "readout_sha256": self.readout_sha256,
-                        "generation_invocation_id": str(result["invocation_id"]),
+                        "generation_invocation_id": invocation,
                     },
                 )
             )

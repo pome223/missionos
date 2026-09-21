@@ -98,6 +98,8 @@ def test_future_fields_rejected_before_backend(key):
         {"readout_sha256": "d" * 64},
         {"horizon_seconds": 1.8},
         {"readout_output": float("nan")},
+        {"invocation_id": None},
+        {"invocation_id": ""},
     ],
 )
 def test_backend_mismatch_fails_closed(change):

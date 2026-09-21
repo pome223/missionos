@@ -152,6 +152,12 @@ plots, inference-order evidence and the remaining 14.2/28.4-second predictor-hor
 difference. This is an online simulator benchmark with a fixed lab stopping
 policy; the earlier governed DeepSeek execution record remains separate.
 
+The [terminal-hold follow-up](docs/assets/acwm-stop-forecast-20260922/REPORT.md)
+extends the neural forecast to both placing-and-waiting and stopping-and-waiting.
+It records a final bounded fine-tuning attempt, per-case prediction errors, and
+an experimental two-option Assurance contract. This closes the current
+model-improvement study; the online game totals above remain unchanged.
+
 ### Where the manipulation Repair frontier currently is
 
 The GR00T row is the open edge. The governed Repair path executes end to end:
