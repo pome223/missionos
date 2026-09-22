@@ -27,6 +27,7 @@ from missionos_core.prediction import (
     PredictionRegistry,
     PredictionRequest,
     prediction_digest,
+    validate_forecast_metrics,
 )
 from src.intelligence.prediction_evidence import (
     AUTHORITY_FLAGS,
@@ -232,9 +233,10 @@ class NavigationHTTPPredictor:
                     item["horizon_seconds"]
                 ) not in (int, float):
                     raise ValueError("navigation_wam_horizon_mismatch")
-                _number(item["risk_score"], 0, 1, "navigation_wam_invalid_risk")
-                if not isinstance(item["future_state"], dict):
-                    raise ValueError("navigation_wam_invalid_future_state")
+                try:
+                    validate_forecast_metrics(item["risk_score"], item["future_state"])
+                except ValueError as exc:
+                    raise ValueError("navigation_wam_" + str(exc)) from exc
             evidence["response_contract_validated"] = True
             return tuple(OptionForecast(**item) for item in forecasts)
         except Exception as exc:

@@ -174,6 +174,36 @@ def test_off_does_not_read_manifest_or_network(monkeypatch, tmp_path, endpoint):
     assert endpoint[1] == []
 
 
+@pytest.mark.parametrize("metric_valid", [True, False])
+def test_http_goal_compatibility_does_not_invent_risk(
+    monkeypatch, tmp_path, endpoint, metric_valid
+):
+    situation, _, _, now = setup(monkeypatch, tmp_path, endpoint)
+
+    def mutate(response):
+        for forecast in response["forecasts"]:
+            forecast["risk_score"] = None
+            forecast["future_state"] = {
+                "goal_compatibility": {
+                    "schema_version": "missionos_goal_compatibility.v1",
+                    "metric_id": "anwm_goal_image_mse",
+                    "raw_cost": 0.04,
+                    "lower_is_better": True,
+                    "risk_assessed": not metric_valid,
+                }
+            }
+
+    endpoint[2]["mutate"] = mutate
+    updated, record = prepare(situation, now=now)
+    assert record["status"] == ("adopted" if metric_valid else "rejected")
+    assert record["required_blocked"] is not metric_valid
+    if metric_valid:
+        forecast = updated.uncertainty["prediction_evidence"]["forecasts"][0]
+        assert forecast["risk_score"] is None
+        assert forecast["future_state"]["goal_compatibility"]["risk_assessed"] is False
+    assert record["dispatch_authority_created"] is False
+
+
 def test_shadow_never_changes_judge_input(monkeypatch, tmp_path, endpoint):
     situation, _, _, now = setup(monkeypatch, tmp_path, endpoint, mode="shadow")
     updated, record = prepare(situation, now=now)

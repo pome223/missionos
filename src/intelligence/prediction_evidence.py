@@ -13,6 +13,7 @@ from missionos_core.prediction import (
     PredictionOption,
     PredictionRequest,
     prediction_digest,
+    validate_forecast_metrics,
 )
 from src.intelligence.mission_assurance_agent import MissionSituation
 
@@ -128,10 +129,10 @@ def _reason(envelope: dict, situation: MissionSituation, now: float, max_age_sec
             or f["horizon_seconds"] != option.horizon_seconds
         ):
             return "horizon_mismatch"
-        if type(f["risk_score"]) not in (int, float) or not 0 <= f["risk_score"] <= 1:
-            return "invalid_risk"
-        if not isinstance(f["future_state"], dict):
-            return "invalid_future_state"
+        try:
+            validate_forecast_metrics(f["risk_score"], f["future_state"])
+        except ValueError as exc:
+            return str(exc)
     return "bound_current_model_evidence"
 
 

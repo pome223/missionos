@@ -130,6 +130,16 @@ def navigation_fixture(
             elif condition == "service_failure":
                 status = 503
                 response = {"error": "fixture_service_failure"}
+            elif condition == "goal_compatibility":
+                for forecast in response["forecasts"]:
+                    forecast["risk_score"] = None
+                    forecast["future_state"] = {"goal_compatibility": {
+                        "schema_version": "missionos_goal_compatibility.v1",
+                        "metric_id": "anwm_goal_image_mse",
+                        "raw_cost": 0.04,
+                        "lower_is_better": True,
+                        "risk_assessed": False,
+                    }}
             data = b"{invalid-json" if condition == "malformed" else json.dumps(response).encode()
             self.send_response(status)
             self.send_header("Content-Type", "application/json")
@@ -276,6 +286,10 @@ def verify_case(case, *, backend, wam_mode, jev_mode, condition="valid"):
             for prompt in prompts:
                 uncertainty = prompt["mission_situation"]["uncertainty"]
                 assert ("prediction_evidence" in uncertainty) is (wam_mode == "required")
+                if condition == "goal_compatibility" and wam_mode == "required":
+                    for forecast in uncertainty["prediction_evidence"]["forecasts"]:
+                        assert forecast["risk_score"] is None
+                        assert forecast["future_state"]["goal_compatibility"]["risk_assessed"] is False
         if wam_mode == "required":
             assert graph["prediction_admission"]["status"] == "adopted"
         if jev_mode == "shadow" and condition != "jev_failure":
@@ -346,7 +360,7 @@ async def gateway_task_case(root, *, condition):
                 finally:
                     server.should_exit = True
                     await serving
-                accepted = condition == "valid"
+                accepted = condition in {"valid", "goal_compatibility"}
                 # This proposal route returns HTTP 200 for completed evaluations;
                 # the graph and durable-proposal fields carry a rejected verdict.
                 assert response.status_code == 200, {
@@ -380,13 +394,14 @@ def main():
                 for wam in ("off", "shadow", "required")
                 for jev in ("off", "shadow", "primary")
             ] + [("required", "primary", condition) for condition in FAILURE_CONDITIONS]
+            scenarios.append(("required", "primary", "goal_compatibility"))
             for index, (wam_mode, jev_mode, condition) in enumerate(scenarios):
                 arguments = dict(backend=backend, wam_mode=wam_mode, jev_mode=jev_mode, condition=condition)
                 case = run_case(Path(directory) / backend / str(index), **arguments)
                 results.append(verify_case(case, **arguments))
         gateway_results = [
             asyncio.run(gateway_task_case(Path(directory) / "gateway" / condition, condition=condition))
-            for condition in ("valid", "service_failure")
+            for condition in ("valid", "goal_compatibility", "service_failure")
         ]
     print(json.dumps({
         "runtime_boundary": "loopback WAM HTTP client, PX4 Gateway task proposal HTTP, and shared ADK mission incident graph",

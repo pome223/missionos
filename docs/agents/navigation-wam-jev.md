@@ -123,7 +123,12 @@ The response uses `missionos_core_prediction.v1`. It must echo the request ID,
 observation ID, binding and canonical request SHA-256, return `status: available`
 and `verification_basis: model_inferred`, and contain exactly one forecast per
 requested option. Every forecast contains its matching option ID/horizon,
-finite `risk_score` in `[0, 1]`, and a `future_state` object. The four fields
+finite `risk_score` in `[0, 1]`, and a `future_state` object. Models that predict
+only image-goal compatibility may instead use `risk_score: null` with the strict
+typed `future_state.goal_compatibility` contract described in
+[aerial model evaluation](aerial-wam-model-evaluation.md). Missing risk without
+that typed metric is rejected; goal discrepancy is not collision probability.
+The four fields
 `approval_recorded`, `dispatch_authority_created`, `physical_execution_invoked`,
 and `completion_claimed` must all be false. See the executable fixture service in
 [`smoke_navigation_wam_jev.py`](../../scripts/smoke_navigation_wam_jev.py).
@@ -173,7 +178,8 @@ judgment, and the absence of approval/execution authority. It also starts a fres
 Gateway and calls the PX4 task-proposal route over HTTP. The valid case persists
 a bounded proposal; a provider failure returns an evaluation with a blocked
 verdict and no durable proposal, without calling either judge. Local verification
-passed all 32 graph cases and both Gateway cases.
+passed all 34 graph cases and three Gateway cases, including typed goal costs
+with unassessed risk for both backends and through the PX4 HTTP proposal route.
 
 The separate Jev Gateway smoke
 restarts a temporary Gateway for each Jev mode and uses real HTTP requests.
