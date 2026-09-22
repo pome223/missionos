@@ -3632,8 +3632,9 @@ def _live_mission_assurance_telemetry_bundle(
     sample_index: int,
     elapsed_seconds: float,
     invocation_started_at: datetime,
+    pose_observed_at: str | None = None,
 ) -> dict[str, Any]:
-    """Bind one same-runtime pose/battery/wind observation without authority."""
+    """Bind pose source time separately from this bundle invocation receipt."""
 
     battery_status = _battery_status_sample()
     wind_evidence = (WIND_REALISM_SUMMARY or {}).get("observed_environment_evidence") or {}
@@ -3656,7 +3657,9 @@ def _live_mission_assurance_telemetry_bundle(
     completed_at = datetime.now(timezone.utc)
     telemetry = {
         "source": "px4_gazebo_horizontal_route_same_runtime",
-        "observed_at": completed_at.isoformat(),
+        # A cached deviation pose cannot become fresh when battery is reread.
+        "observed_at": pose_observed_at
+        or (deviation.get("observed_at") if phase == "original" else None),
         "sample_index": sample_index,
         "elapsed_seconds": elapsed_seconds,
         "telemetry": {
@@ -3748,12 +3751,9 @@ def _assess_live_route_deviation_mission_assurance(
     observation_started = time.monotonic()
 
     def observe(phase: str) -> dict[str, Any]:
+        invocation_started_at = datetime.now(timezone.utc)
         if phase == "original":
-            invocation_started_at = datetime.fromisoformat(
-                str(deviation.get("observed_at") or datetime.now(timezone.utc).isoformat()).replace(
-                    "Z", "+00:00"
-                )
-            )
+            pose_observed_at = deviation.get("observed_at")
             pose = {
                 key: float(value)
                 for key, value in (deviation.get("sample") or {}).items()
@@ -3762,8 +3762,8 @@ def _assess_live_route_deviation_mission_assurance(
             index = original_index
             elapsed = original_elapsed
         else:
-            invocation_started_at = datetime.now(timezone.utc)
             pose = _pose_sample()
+            pose_observed_at = datetime.now(timezone.utc).isoformat()
             index = original_index + 1
             elapsed = original_elapsed + max(0.001, time.monotonic() - observation_started)
         return _live_mission_assurance_telemetry_bundle(
@@ -3774,6 +3774,7 @@ def _assess_live_route_deviation_mission_assurance(
             sample_index=index,
             elapsed_seconds=elapsed,
             invocation_started_at=invocation_started_at,
+            pose_observed_at=pose_observed_at,
         )
 
     return _evaluate_live_route_deviation(

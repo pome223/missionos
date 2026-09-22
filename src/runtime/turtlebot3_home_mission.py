@@ -19,6 +19,7 @@ import time
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+from missionos_core.prediction import prediction_digest
 
 from src.intelligence.turtlebot3_recovery_planner import (
     TURTLEBOT3_RECOVERY_PLANNER_RESULT_SCHEMA_VERSION,
@@ -2917,8 +2918,13 @@ def _resolve_recovery_candidate(
         selected = selected_sequence[-1] if validated else None
         if not validated:
             selected_sequence = []
+    from src.runtime.turtlebot3_mission_incident import navigation_telemetry_from_evaluation
+
     return {
         **base,
+        "navigation_telemetry": navigation_telemetry_from_evaluation(
+            evaluation, candidates=selected_sequence
+        ),
         "resolution_status": "validated" if validated else "blocked",
         "selected_candidate": selected if validated else None,
         "live_costmap_validated": validated,
@@ -2968,13 +2974,19 @@ def _revalidate_approved_recovery_candidate(
     *,
     checkpoint: Mapping[str, Any],
     obstacle_scenario: Mapping[str, Any],
+    active_policy: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Revalidate the exact approved target immediately before dispatch."""
 
+    from src.prediction.navigation import navigation_prediction_required
+
+    prediction = (checkpoint.get("missionos_mission_incident_graph") or {}).get("navigation_prediction") or {}
+    prediction_required = navigation_prediction_required(prediction)
     if checkpoint.get("selected_action") not in {"avoid_obstacle", "reroute", "return_home"}:
         return {
             "schema_version": "missionos_nav2_recovery_candidate_revalidation.v1",
-            "revalidation_status": "not_required",
+            "revalidation_status": "blocked" if prediction_required else "not_required",
+            "blocking_reasons": ["navigation_prediction_current_observation_required"] if prediction_required else [],
             "dispatch_request_sent": False,
             "dispatch_authority_created": False,
             "physical_execution_invoked": False,
@@ -2982,7 +2994,8 @@ def _revalidate_approved_recovery_candidate(
     if not _truthy_env(TURTLEBOT3_RECOVERY_CANDIDATE_EVALUATION_ENV):
         return {
             "schema_version": "missionos_nav2_recovery_candidate_revalidation.v1",
-            "revalidation_status": "fixture_not_requested",
+            "revalidation_status": "blocked" if prediction_required else "fixture_not_requested",
+            "blocking_reasons": ["navigation_prediction_current_observation_required"] if prediction_required else [],
             "dispatch_request_sent": False,
             "dispatch_authority_created": False,
             "physical_execution_invoked": False,
@@ -3115,9 +3128,28 @@ def _revalidate_approved_recovery_candidate(
             for candidate in candidates
         )
     )
+    from src.runtime.turtlebot3_mission_incident import (
+        navigation_telemetry_from_evaluation,
+        turtlebot3_incident_dispatch_reasons,
+    )
+
+    current_navigation = navigation_telemetry_from_evaluation(
+        evaluation, candidates=[by_id.get(candidate["candidate_id"], {}) for candidate in candidates]
+    )
+    prediction_reasons = turtlebot3_incident_dispatch_reasons(
+        checkpoint,
+        current_navigation_telemetry=current_navigation,
+        policy_sha256=prediction_digest(dict(active_policy)) if active_policy is not None else None,
+    ) if prediction_required else []
     return {
         "schema_version": "missionos_nav2_recovery_candidate_revalidation.v1",
-        "revalidation_status": "validated" if validated else "blocked",
+        "revalidation_status": "validated" if validated and not prediction_reasons else "blocked",
+        "navigation_telemetry": current_navigation,
+        "navigation_prediction_revalidation": {
+            "status": "blocked" if prediction_reasons else "valid" if prediction_required else "not_required",
+            "reasons": prediction_reasons,
+            "dispatch_authority_created": False,
+        },
         "approved_candidates": candidates,
         "candidate_evaluations": [dict(item) for item in evaluated],
         "costmap_snapshot_hash": evaluation.get("costmap_snapshot_hash"),
@@ -3145,7 +3177,7 @@ def _revalidate_approved_recovery_candidate(
             for candidate in candidates
         ],
         "original_path_sha256_sequence": binding.get("path_sha256_sequence"),
-        "blocking_reasons": [] if validated else ["approved_recovery_path_invalid"],
+        "blocking_reasons": ([] if validated else ["approved_recovery_path_invalid"]) + prediction_reasons,
         "dispatch_request_sent": False,
         "dispatch_authority_created": False,
         "command_ack_observed": False,
@@ -5432,6 +5464,7 @@ def _runtime_motion_context(
     )
     context = {
         "schema_version": "missionos_turtlebot3_runtime_motion_context.v1",
+        "result_observed_at": action_result.get("result_observed_at"),
         "robot_motion_observed": robot_motion_observed,
         "odom_delta_m": odom_delta_m,
         "odom_topic": action_result.get("odom_topic"),
@@ -7386,9 +7419,12 @@ def _validate_operator_revision_recovery_goals(
             )
         )
     sequence = [dict(by_id[candidate["candidate_id"]]) for candidate in candidates]
+    from src.runtime.turtlebot3_mission_incident import navigation_telemetry_from_evaluation
+
     return {
         "schema_version": "missionos_nav2_recovery_candidate_resolution.v1",
         "resolution_status": "validated",
+        "navigation_telemetry": navigation_telemetry_from_evaluation(evaluation, candidates=sequence),
         "candidate_generation": "operator_revision_source_bound_geometry.v1",
         "candidates": candidates,
         "candidate_evaluations": evaluated,
@@ -7872,7 +7908,9 @@ def _validate_turtlebot3_recovery_resume(
 ) -> list[str]:
     from src.runtime.turtlebot3_mission_incident import turtlebot3_incident_dispatch_reasons
 
-    reasons = turtlebot3_incident_dispatch_reasons(checkpoint)
+    # Current prediction state is checked by the independent plan-only snapshot
+    # immediately before execution, after these static checkpoint checks.
+    reasons = turtlebot3_incident_dispatch_reasons(checkpoint, prediction_dispatch=False)
     if checkpoint.get("schema_version") != TURTLEBOT3_RECOVERY_CHECKPOINT_SCHEMA:
         reasons.append("turtlebot3_recovery_checkpoint_schema_invalid")
     if checkpoint.get("checkpoint_status") != "awaiting_operator_approval":
@@ -8158,6 +8196,7 @@ def run_turtlebot3_home_mission_dispatch(
                 checked = _revalidate_approved_recovery_candidate(
                     checkpoint=checkpoint,
                     obstacle_scenario=_recovery_resume_payload(resume_execution).get("runtime_recovery_obstacle_scenario") or {},
+                    active_policy=proposal.get("autonomy_envelope") or {},
                 )
                 if checked.get("revalidation_status") != "validated":
                     reasons.extend(checked.get("blocking_reasons") or ["nav2_fresh_feasibility_required"])
@@ -8585,6 +8624,7 @@ def _execute_turtlebot3_home_mission(
             _revalidate_approved_recovery_candidate(
                 checkpoint=recovery_checkpoint,
                 obstacle_scenario=runtime_recovery_obstacle_scenario,
+                active_policy=proposal.get("autonomy_envelope") or {},
             )
         )
         if recovery_candidate_revalidation.get("revalidation_status") == "blocked":

@@ -76,6 +76,11 @@ jobs:
           PYTHONPATH: .:packages/missionos-cli/src:packages/missionos-gateway/src
         run: python scripts/smoke_jev_modes_gateway.py
 
+      - name: Verify PX4 and TurtleBot3 WAM to Jev integration
+        env:
+          PYTHONPATH: .:packages/missionos-cli/src:packages/missionos-gateway/src
+        run: python scripts/smoke_navigation_wam_jev.py
+
       - name: Verify online ACWM published evidence
         run: |
           python docs/assets/acwm-online-stacking-20260921/verify_report.py --statistics

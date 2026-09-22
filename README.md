@@ -484,6 +484,7 @@ want to run something.
 **For agents and maintainers**
 
 - [docs/agents/README.md](docs/agents/README.md)
+- [PX4 / TurtleBot3 WAM and Jev](docs/agents/navigation-wam-jev.md) — opt-in navigation prediction and judgment integration; requires a compatible model service
 - [docs/agents/contracts.md](docs/agents/contracts.md)
 - [docs/agents/claim-semantics.md](docs/agents/claim-semantics.md)
 - [docs/agents/artifact-taxonomy.md](docs/agents/artifact-taxonomy.md)

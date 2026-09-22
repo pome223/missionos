@@ -18,6 +18,8 @@ from pathlib import Path
 from typing import Any
 
 from missionos_core import FeasibilityStatus, RevalidationArtifact
+from missionos_core.prediction import prediction_digest
+from src.prediction.navigation import navigation_prediction_required
 
 from src.intelligence.mission_assurance_agent import (
     MissionAssuranceAgent,
@@ -632,6 +634,7 @@ def evaluate_live_route_deviation(
         mission_assurance_agent=(
             agent or configured_mission_assurance_agent()
         ),
+        navigation_backend="px4",
     )
     recovery_tuple = graph_recovery.get("tuple")
     if not isinstance(recovery_tuple, tuple) or len(recovery_tuple) != 3:
@@ -886,12 +889,23 @@ def evaluate_live_route_deviation(
     current_hazard: dict[str, Any] = {}
     current_feasibility: dict[str, Any] = {}
     revalidation_payload: dict[str, Any] = {}
+    prediction_revalidation: dict[str, Any] = {"status": "not_required", "reasons": []}
     post_suppression_observation: dict[str, Any] = {}
     if bounded_action and recovery_approval_observed:
         current_telemetry, current_runtime_evidence, current_reasons = _snapshot_bundle(
             telemetry_observer, "current"
         )
         blocking_reasons.extend(current_reasons)
+        from src.prediction.navigation import revalidate_navigation_prediction
+
+        prediction_revalidation = revalidate_navigation_prediction(
+            _mapping(incident_graph.get("navigation_prediction")),
+            backend="px4", telemetry=current_telemetry,
+            action=recovery_bounded_action,
+            parameters=_mapping(recovery_proposal.get("proposed_parameters")),
+            policy_sha256=prediction_digest(policy),
+        )
+        blocking_reasons.extend(prediction_revalidation.get("reasons") or [])
         current_hazard, current_feasibility = _feasibility(
             telemetry=current_telemetry,
             runtime_evidence=current_runtime_evidence,
@@ -939,6 +953,27 @@ def evaluate_live_route_deviation(
             "progress_counted": False,
             "delivery_completion_claimed": False,
         }
+
+    if (
+        no_dispatch_responses_aligned
+        and proposal.proposed_response_kind == "continue"
+        and navigation_prediction_required(_mapping(incident_graph.get("navigation_prediction")))
+        and not blocking_reasons
+    ):
+        from src.prediction.navigation import revalidate_navigation_prediction
+
+        # Continuing the route changes the world too. Reobserve independently
+        # even though this path does not dispatch a separate recovery action.
+        current_telemetry, _, current_reasons = _snapshot_bundle(telemetry_observer, "current")
+        blocking_reasons.extend(current_reasons)
+        prediction_revalidation = revalidate_navigation_prediction(
+            _mapping(incident_graph.get("navigation_prediction")),
+            backend="px4", telemetry=current_telemetry,
+            action=recovery_bounded_action,
+            parameters=_mapping(recovery_proposal.get("proposed_parameters")),
+            policy_sha256=prediction_digest(policy),
+        )
+        blocking_reasons.extend(prediction_revalidation.get("reasons") or [])
 
     if (
         assurance_suppresses_recovery_proposal
@@ -1189,6 +1224,7 @@ def evaluate_live_route_deviation(
         "current_hazard_state": current_hazard,
         "current_action_feasibility": current_feasibility,
         "action_revalidation": revalidation_payload,
+        "navigation_prediction_revalidation": prediction_revalidation,
         "post_suppression_observation": post_suppression_observation,
         "blocking_reasons": blocking_reasons,
         "approval_recorded": False,

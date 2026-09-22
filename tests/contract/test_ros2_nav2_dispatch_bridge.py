@@ -26,6 +26,29 @@ from src.runtime.ros2_nav2_hardware_adapter import (
 )
 
 
+def test_costmap_content_identity_ignores_time_but_detects_world_changes():
+    from scripts.ros2_nav2_turtlebot4_bridge import _costmap_content_sha256
+
+    header = {
+        "label": "local", "frame_id": "map", "width": 2, "height": 2,
+        "resolution": 0.05, "origin_x": -1.0, "origin_y": -1.0, "origin_z": 0.0,
+        "origin_orientation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0},
+        "stamp_sec": 10, "stamp_nanosec": 0, "stamp_ns": 10_000_000_000,
+    }
+    costs = bytes([0, 0, 0, 254])
+    original = _costmap_content_sha256(header, costs)
+    assert _costmap_content_sha256(
+        {**header, "stamp_sec": 11, "stamp_nanosec": 1, "stamp_ns": 11_000_000_001}, costs
+    ) == original
+    for field, changed in (
+        ("frame_id", "odom"), ("width", 1), ("height", 4), ("resolution", 0.1),
+        ("origin_x", -0.5), ("origin_y", -0.5), ("origin_z", 0.1),
+        ("origin_orientation", {"x": 0.0, "y": 0.0, "z": 1.0, "w": 0.0}),
+    ):
+        assert _costmap_content_sha256({**header, field: changed}, costs) != original
+    assert _costmap_content_sha256(header, bytes([0, 254, 0, 0])) != original
+
+
 def _write_bridge(
     path: Path,
     *,

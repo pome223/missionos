@@ -108,3 +108,12 @@ PR #104 HTTP decision/dispatch/observe service on synthetic numeric inputs. Its
 simulator-shaped observation messages are fixtures, not simulator measurements.
 No physical or simulator outcome improvement can be inferred. Keep experimental
 provider comparisons local; do not publish generated artifacts automatically.
+
+## Native navigation prediction
+
+PX4 route deviations and TurtleBot3 recovery checkpoints can invoke an explicitly
+configured navigation WAM after candidate feasibility and before Assurance.
+The [navigation WAM/Jev contract](navigation-wam-jev.md) defines the independent
+off/shadow/required switch, HTTP model binding, and native dispatch revalidation.
+No trained navigation checkpoint is bundled; fixture transport checks are not
+learned prediction or live simulator evidence.

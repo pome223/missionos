@@ -314,6 +314,7 @@ async def _run_mission_incident_graph_async(
     recovery_runner: Callable[..., Mapping[str, Any]],
     mission_assurance_agent: MissionAssuranceAgent,
     mission_assurance_timeout_seconds: float | None,
+    navigation_backend: str | None,
 ) -> dict[str, Any]:
     from google.adk import Workflow
     from google.adk.runners import Runner
@@ -445,6 +446,34 @@ async def _run_mission_incident_graph_async(
             source_feasibility=_mapping(state.get("source_action_feasibility")),
         )
         envelope = mission_context.get("prediction_evidence")
+        if navigation_backend is not None:
+            from missionos_core.prediction import prediction_digest
+            from src.prediction.navigation import prepare_navigation_prediction
+
+            assessment = _mapping(_mapping(state.get("recovery_result")).get("assessment"))
+            situation, navigation = await asyncio.to_thread(
+                prepare_navigation_prediction,
+                situation,
+                backend=navigation_backend,
+                action=state.get("recovery_action"),
+                parameters=_mapping(assessment.get("proposed_parameters")),
+                policy_sha256=prediction_digest(_mapping(payload.get("recovery_policy"))),
+            )
+            state["navigation_prediction"] = navigation
+            if navigation.get("required_blocked") or navigation.get("mode") == "required":
+                receipt = _mapping(navigation.get("admission")) or {
+                    "status": "rejected", "reason": navigation.get("reason", "unavailable")
+                }
+                if navigation.get("required_blocked") or envelope is not None:
+                    state["graph_runtime_status"] = "guardrail_blocked"
+                    reason = (
+                        "external_prediction_conflicts_with_navigation_provider"
+                        if envelope is not None else navigation.get("reason", "unavailable")
+                    )
+                    state["blocking_reasons"] = ["navigation_prediction_rejected:" + str(reason)]
+                state["prediction_admission"] = receipt
+                state["mission_situation"] = situation.to_dict()
+                return state
         if envelope is None:
             receipt = {"status": "not_supplied", "reason": "no_bound_predictor_evidence"}
         else:
@@ -631,6 +660,7 @@ async def _run_mission_incident_graph_async(
             ),
             "mission_situation": _mapping(state.get("mission_situation")),
             "prediction_admission": _mapping(state.get("prediction_admission")),
+            "navigation_prediction": _mapping(state.get("navigation_prediction")),
             "mission_assurance_proposal": proposal,
             "mission_assurance_response_kind": response_kind,
             "expected_mission_response_kind": state.get(
@@ -755,8 +785,14 @@ def run_missionos_mission_incident_graph(
     recovery_runner: Callable[..., Mapping[str, Any]],
     mission_assurance_agent: MissionAssuranceAgent | None = None,
     mission_assurance_timeout_seconds: float | None = None,
+    navigation_backend: str | None = None,
 ) -> dict[str, Any]:
     """Run the shared proposal graph without creating downstream authority."""
+
+    # Only a backend adapter supplies this argument; operator mission text cannot
+    # choose a provider or promote external prediction evidence into this path.
+    if navigation_backend not in (None, "px4", "nav2"):
+        raise ValueError("unsupported_navigation_backend")
 
     return asyncio.run(
         _run_mission_incident_graph_async(
@@ -770,6 +806,7 @@ def run_missionos_mission_incident_graph(
             mission_assurance_timeout_seconds=(
                 mission_assurance_timeout_seconds
             ),
+            navigation_backend=navigation_backend,
         )
     )
 

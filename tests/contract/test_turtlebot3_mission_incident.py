@@ -1,5 +1,6 @@
 import json
 from copy import deepcopy
+from datetime import datetime, timezone
 
 import pytest
 
@@ -7,6 +8,7 @@ from src.intelligence.mission_assurance_agent import MissionAssuranceAgent, Mode
 from src.runtime.turtlebot3_mission_incident import (
     continue_turtlebot3_incident,
     judge_turtlebot3_checkpoint,
+    navigation_telemetry_from_evaluation,
     turtlebot3_incident_dispatch_reasons,
 )
 
@@ -31,6 +33,22 @@ class Judge:
         )
 
 
+def navigation_evaluation():
+    return {
+        "observation_captured_at": datetime.now(timezone.utc).isoformat(),
+        "global_costmap_snapshot_hash": "fixture-global-map",
+        "local_costmap_snapshot_hash": "fixture-local-map",
+        "global_costmap_content_sha256": "a" * 64,
+        "local_costmap_content_sha256": "b" * 64,
+        "candidate_evaluations": [{
+            "candidate_id": "fixture-path", "x_m": 2.0, "y_m": 1.0, "yaw_rad": 0.0,
+            "path_points": [{"x_m": 0.0, "y_m": 0.0}, {"x_m": 2.0, "y_m": 1.0}],
+            "path_sha256": "fixture-path-sha", "path_valid": True,
+            "core_action_feasibility_status": "verified_feasible",
+        }],
+    }
+
+
 def input_case():
     checkpoint = {
         "proposal_id": "mission-fixture",
@@ -42,6 +60,7 @@ def input_case():
         "planned_segments_sha256": "route-fixture",
         "resume_state_hash": "resume-fixture",
     }
+    evaluation = navigation_evaluation()
     return dict(
         checkpoint=checkpoint,
         proposal={"operator_instruction": "Deliver via safe bypass"},
@@ -60,6 +79,9 @@ def input_case():
         motion={"robot_motion_observed": True, "telemetry_window_ref": "window-fixture"},
         obstacle={
             "recovery_candidate_resolution": {
+                "navigation_telemetry": navigation_telemetry_from_evaluation(
+                    evaluation, candidates=evaluation["candidate_evaluations"]
+                ),
                 "resolution_status": "validated",
                 "dual_costmap_validated": True,
                 "selected_candidate": {
@@ -70,6 +92,151 @@ def input_case():
             }
         },
     )
+
+
+@pytest.mark.parametrize("changed", [False, True])
+def test_required_navigation_revalidates_fresh_plan_only_state(tmp_path, monkeypatch, changed):
+    from scripts.smoke_navigation_wam_jev import navigation_fixture
+    from src.runtime import turtlebot3_home_mission as runtime
+
+    case = input_case()
+    checkpoint = case["checkpoint"]
+    checkpoint["recovery_candidate_binding"] = {
+        "candidate_id": "fixture-path", "live_costmap_validated": True,
+        "dual_costmap_validated": True,
+    }
+    evaluation = navigation_evaluation()
+    case["obstacle"]["recovery_candidate_resolution"]["navigation_telemetry"] = (
+        navigation_telemetry_from_evaluation(evaluation, candidates=evaluation["candidate_evaluations"])
+    )
+    monkeypatch.setenv(runtime.TURTLEBOT3_RECOVERY_CANDIDATE_EVALUATION_ENV, "1")
+    fresh = deepcopy(evaluation)
+    fresh["observation_captured_at"] = datetime.now(timezone.utc).isoformat()
+    # Real Core snapshot hashes include capture timestamps; advancing them
+    # alone must not invalidate unchanged map content and path geometry.
+    fresh["global_costmap_snapshot_hash"] = "new-snapshot-of-same-global-content"
+    fresh["local_costmap_snapshot_hash"] = "new-snapshot-of-same-local-content"
+    if changed:
+        fresh["local_costmap_content_sha256"] = "c" * 64
+    calls = []
+
+    def reobserve(**_kwargs):
+        calls.append("independent-plan-only-observation")
+        return fresh
+
+    monkeypatch.setattr(runtime, "_evaluate_recovery_candidates_plan_only", reobserve)
+    with navigation_fixture(tmp_path, backend="nav2", policy={}):
+        graph = judge_turtlebot3_checkpoint(
+            **case, mission_assurance_agent=MissionAssuranceAgent(Judge("replan"))
+        )
+        checkpoint["missionos_mission_incident_graph"] = graph
+        assert graph["navigation_prediction"]["status"] == "adopted"
+        result = runtime._revalidate_approved_recovery_candidate(
+            checkpoint=checkpoint, obstacle_scenario=case["obstacle"], active_policy={}
+        )
+        assert result["revalidation_status"] == ("blocked" if changed else "validated")
+        if changed:
+            assert "navigation_prediction_state_changed" in result["blocking_reasons"]
+        # A frozen checkpoint alone is never current sensor evidence.
+        assert turtlebot3_incident_dispatch_reasons(checkpoint)
+    assert calls == ["independent-plan-only-observation"]
+    assert result["dispatch_request_sent"] is False
+
+
+def test_required_navigation_rejects_missing_original_observation_time(tmp_path):
+    from scripts.smoke_navigation_wam_jev import navigation_fixture
+
+    case = input_case()
+    case["obstacle"]["recovery_candidate_resolution"]["navigation_telemetry"]["observed_at"] = None
+    judge = Judge("replan")
+    with navigation_fixture(tmp_path, backend="nav2", policy={}) as fixture:
+        graph = judge_turtlebot3_checkpoint(**case, mission_assurance_agent=MissionAssuranceAgent(judge))
+    assert graph["navigation_prediction"]["required_blocked"] is True
+    assert graph["navigation_prediction"]["reason"] == "navigation_observation_timestamp_required"
+    assert judge.calls == 0
+    assert fixture["calls"]["wam"] == 0
+
+
+@pytest.mark.parametrize("field,value", [("global_costmap_content_sha256", None), ("path_points", [])])
+def test_required_navigation_rejects_incomplete_plan_only_observation(tmp_path, field, value):
+    from scripts.smoke_navigation_wam_jev import navigation_fixture
+
+    case = input_case()
+    evaluation = navigation_evaluation()
+    target = evaluation["candidate_evaluations"][0] if field == "path_points" else evaluation
+    target[field] = value
+    case["obstacle"]["recovery_candidate_resolution"]["navigation_telemetry"] = (
+        navigation_telemetry_from_evaluation(evaluation, candidates=evaluation["candidate_evaluations"])
+    )
+    judge = Judge("replan")
+    with navigation_fixture(tmp_path, backend="nav2", policy={}) as fixture:
+        graph = judge_turtlebot3_checkpoint(**case, mission_assurance_agent=MissionAssuranceAgent(judge))
+    assert graph["navigation_prediction"]["required_blocked"] is True
+    assert judge.calls == 0
+    assert fixture["calls"]["wam"] == 0
+
+
+@pytest.mark.parametrize("action", ["hold", "wait", "adjust_speed"])
+def test_required_navigation_does_not_bypass_reobservation_for_other_actions(action):
+    from src.runtime import turtlebot3_home_mission as runtime
+
+    checkpoint = input_case()["checkpoint"]
+    checkpoint.update(
+        selected_action=action,
+        missionos_mission_incident_graph={"navigation_prediction": {"mode": "required"}},
+    )
+    result = runtime._revalidate_approved_recovery_candidate(
+        checkpoint=checkpoint, obstacle_scenario={}, active_policy={}
+    )
+    assert result["revalidation_status"] == "blocked"
+    assert result["blocking_reasons"] == ["navigation_prediction_current_observation_required"]
+    assert result["dispatch_request_sent"] is False
+
+
+def test_required_navigation_without_live_reobservation_fails_closed(tmp_path, monkeypatch):
+    from scripts.smoke_navigation_wam_jev import navigation_fixture
+    from src.runtime import turtlebot3_home_mission as runtime
+
+    case = input_case()
+    monkeypatch.delenv(runtime.TURTLEBOT3_RECOVERY_CANDIDATE_EVALUATION_ENV, raising=False)
+    with navigation_fixture(tmp_path, backend="nav2", policy={}):
+        graph = judge_turtlebot3_checkpoint(
+            **case, mission_assurance_agent=MissionAssuranceAgent(Judge("replan"))
+        )
+        case["checkpoint"]["missionos_mission_incident_graph"] = graph
+        result = runtime._revalidate_approved_recovery_candidate(
+            checkpoint=case["checkpoint"], obstacle_scenario=case["obstacle"], active_policy={}
+        )
+    assert result["revalidation_status"] == "blocked"
+    assert result["blocking_reasons"] == ["navigation_prediction_current_observation_required"]
+
+
+@pytest.mark.parametrize("old_mode", ["off", "shadow"])
+def test_enabling_required_mode_rejects_old_native_checkpoint(tmp_path, monkeypatch, old_mode):
+    from scripts.smoke_navigation_wam_jev import navigation_fixture
+    from src.runtime import turtlebot3_home_mission as runtime
+
+    case = input_case()
+    checkpoint = case["checkpoint"]
+    checkpoint["recovery_candidate_binding"] = {
+        "candidate_id": "fixture-path", "live_costmap_validated": True,
+        "dual_costmap_validated": True,
+    }
+    monkeypatch.setenv(runtime.TURTLEBOT3_RECOVERY_CANDIDATE_EVALUATION_ENV, "1")
+    monkeypatch.setattr(runtime, "_evaluate_recovery_candidates_plan_only", lambda **_: navigation_evaluation())
+    with navigation_fixture(tmp_path, backend="nav2", policy={}, wam_mode=old_mode):
+        graph = judge_turtlebot3_checkpoint(
+            **case, mission_assurance_agent=MissionAssuranceAgent(Judge("replan"))
+        )
+        checkpoint["missionos_mission_incident_graph"] = graph
+        assert graph["decision_status"] == "awaiting_operator_approval"
+        monkeypatch.setenv("MISSIONOS_NAVIGATION_WAM_MODE", "required")
+        result = runtime._revalidate_approved_recovery_candidate(
+            checkpoint=checkpoint, obstacle_scenario=case["obstacle"], active_policy={}
+        )
+    assert result["revalidation_status"] == "blocked"
+    assert result["navigation_prediction_revalidation"]["status"] == "blocked"
+    assert result["dispatch_request_sent"] is False
 
 
 def bind_checkpoint_graph(checkpoint):

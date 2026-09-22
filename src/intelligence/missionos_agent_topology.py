@@ -56,6 +56,9 @@ def describe_agent_runtime(*, include_latest: bool = False) -> dict:
             "admission": "bound_optional_evidence",
             "provider_health": "not_probed",
             "stacking_entrypoint": "prediction serve-stacking-mission",
+            "navigation_wam_mode": os.getenv("MISSIONOS_NAVIGATION_WAM_MODE", "off"),
+            "navigation_wam_configured": bool(os.getenv("MISSIONOS_NAVIGATION_WAM_CONFIG")),
+            "navigation_backends": ["px4", "nav2"],
         },
         "execution": {
             "requires_separate_approval": True,

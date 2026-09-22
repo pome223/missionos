@@ -1934,9 +1934,12 @@ def test_turtlebot3_recovery_revision_rejects_rehashed_semantic_contradiction(
     assert "turtlebot3_recovery_bounded_action" not in stored["artifacts"]
 
 
+@pytest.mark.parametrize("navigation_mode", ["off", "required"])
 def test_turtlebot3_recovery_approval_resumes_without_px4_runner_receipt(
     isolated_gateway_factory,
     monkeypatch,
+    tmp_path,
+    navigation_mode,
 ) -> None:
     from fastapi.testclient import TestClient
 
@@ -1944,8 +1947,13 @@ def test_turtlebot3_recovery_approval_resumes_without_px4_runner_receipt(
 
     gateway = isolated_gateway_factory()
     task_id = "task_turtlebot3_pending_recovery"
-    task_artifacts = _pending_turtlebot3_recovery_task_artifacts()
+    from scripts.smoke_navigation_wam_jev import navigation_fixture
+
+    with navigation_fixture(tmp_path, backend="nav2", wam_mode=navigation_mode, policy={}):
+        task_artifacts = _pending_turtlebot3_recovery_task_artifacts()
     checkpoint = task_artifacts["turtlebot3_recovery_checkpoint"]
+    if navigation_mode == "required":
+        assert checkpoint["missionos_mission_incident_graph"]["prediction_admission"]["status"] == "adopted"
     gateway.task_store.create(
         task_id=task_id,
         kind="turtlebot3_home_mission_execution",

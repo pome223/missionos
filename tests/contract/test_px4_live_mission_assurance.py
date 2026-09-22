@@ -603,6 +603,97 @@ def test_explicit_scoped_recovery_approval_enables_fresh_revalidation(
     ]
 
 
+@pytest.mark.parametrize("changed", [False, True])
+def test_required_navigation_checks_fresh_px4_state_before_dispatch(tmp_path, changed):
+    from scripts.smoke_navigation_wam_jev import navigation_fixture
+
+    policy = live_assurance.horizontal_route_mission_assurance_policy(_route())
+    phases = []
+
+    def observer(phase):
+        phases.append(phase)
+        telemetry = _telemetry(11 if changed and phase == "current" else 10)
+        telemetry["sample_index"] = 11 if phase == "current" else 10
+        telemetry["elapsed_seconds"] = float(telemetry["sample_index"])
+        return {"telemetry_snapshot": telemetry,
+                "runtime_invocation_evidence": _runtime_evidence(phase, telemetry)}
+
+    with navigation_fixture(tmp_path, backend="px4", policy=policy):
+        result = evaluate_live_route_deviation(
+            task_id="required-wam-px4", artifact_dir=tmp_path / "artifacts",
+            route=_route(), deviation=_deviation(),
+            available_recovery_executor_action="rtl", operator_preapproval_observed=True,
+            telemetry_observer=observer,
+            agent=MissionAssuranceAgent(_Judge(_judgment("return"))),
+            recovery_agent_runner=lambda **_: _recovery_result(),
+            operator_recovery_approval={
+                "operator_approval_performed": True, "approved_recovery_action": "rtl",
+                "explicit_recovery_dispatch_approval": True,
+            },
+        )
+    assert phases == ["original", "current"]
+    assert result["missionos_mission_incident_graph"]["navigation_prediction"]["status"] == "adopted"
+    assert result["guard_status"] == ("blocked" if changed else "dispatch_eligible")
+    assert result["navigation_prediction_revalidation"]["status"] == ("blocked" if changed else "valid")
+    if changed:
+        assert "navigation_prediction_state_changed" in result["blocking_reasons"]
+    assert result["dispatch_request_sent"] is False
+
+
+def test_required_navigation_reobserves_px4_continue(tmp_path):
+    from scripts.smoke_navigation_wam_jev import navigation_fixture
+
+    policy = live_assurance.horizontal_route_mission_assurance_policy(_route())
+    phases = []
+
+    def observer(phase):
+        phases.append(phase)
+        return _observer()(phase)
+
+    with navigation_fixture(tmp_path, backend="px4", policy=policy):
+        result = evaluate_live_route_deviation(
+            task_id="required-wam-px4-continue", artifact_dir=tmp_path / "artifacts",
+            route=_route(), deviation=_deviation(),
+            available_recovery_executor_action="rtl", operator_preapproval_observed=True,
+            telemetry_observer=observer,
+            agent=MissionAssuranceAgent(_Judge(_judgment("continue"))),
+            recovery_agent_runner=lambda **_: _recovery_result("continue"),
+        )
+    assert phases == ["original", "current"]
+    assert result["guard_status"] == "blocked"
+    assert "navigation_prediction_state_changed" in result["blocking_reasons"]
+
+
+def test_enabling_required_mode_cannot_reuse_px4_continue_without_forecast(tmp_path, monkeypatch):
+    from scripts.smoke_navigation_wam_jev import navigation_fixture
+
+    policy = live_assurance.horizontal_route_mission_assurance_policy(_route())
+    phases = []
+
+    class EnableRequiredJudge(_Judge):
+        def judge(self, prompt):
+            monkeypatch.setenv("MISSIONOS_NAVIGATION_WAM_MODE", "required")
+            return super().judge(prompt)
+
+    def observer(phase):
+        phases.append(phase)
+        return _observer()(phase)
+
+    with navigation_fixture(tmp_path, backend="px4", policy=policy, wam_mode="off"):
+        result = evaluate_live_route_deviation(
+            task_id="mode-transition-px4", artifact_dir=tmp_path / "artifacts",
+            route=_route(), deviation=_deviation(),
+            available_recovery_executor_action="rtl", operator_preapproval_observed=True,
+            telemetry_observer=observer,
+            agent=MissionAssuranceAgent(EnableRequiredJudge(_judgment("continue"))),
+            recovery_agent_runner=lambda **_: _recovery_result("continue"),
+        )
+    assert result["missionos_mission_incident_graph"]["navigation_prediction"]["mode"] == "off"
+    assert phases == ["original", "current"]
+    assert result["guard_status"] == "blocked"
+    assert result["navigation_prediction_revalidation"]["status"] == "blocked"
+
+
 def test_assurance_cannot_invent_rtl_when_recovery_proposes_continue(
     tmp_path: Path,
 ) -> None:
