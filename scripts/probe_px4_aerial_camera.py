@@ -9,12 +9,14 @@ camera intrinsics are retained; this probe does not register depth onto RGB.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
 import re
 import subprocess
 import time
+import xml.etree.ElementTree as ET
 
 NAME = "missionos-aerial-camera-probe"
 OPT_IN = "RUN_PX4_AERIAL_CAMERA_PROBE"
@@ -41,6 +43,8 @@ from gz.msgs10.pose_v_pb2 import Pose_V
 from google.protobuf.json_format import MessageToDict
 
 ROOT = Path('/capture')
+CONFIG = json.loads((ROOT / 'capture-config.json').read_text())
+FRAME_COUNT = CONFIG['frame_count']
 MODEL = 'x500_depth_0'
 PREFIX = '/world/default/model/' + MODEL + '/link/camera_link/sensor/IMX214'
 TOPICS = {'rgb': PREFIX + '/image', 'depth': '/depth_camera',
@@ -132,6 +136,9 @@ def write_frame(index, sim_ns, bundle, extrinsics):
               'vehicle_model_pose': MessageToDict(vehicle, preserving_proto_field_name=True),
               'reported_camera_link_pose': MessageToDict(camera_link[0], preserving_proto_field_name=True),
               'pose_message_sha256': sha(messages['pose'].SerializeToString()), 'sensors': {}}
+    record['scene_model_poses'] = [MessageToDict(item, preserving_proto_field_name=True)
+                                   for item in messages['pose'].pose
+                                   if item.name in CONFIG['scene_entity_names']]
     (ROOT / (prefix + '-pose.pb')).write_bytes(messages['pose'].SerializeToString())
     for key in ('rgb', 'depth'):
         image, info = messages[key], messages[key + '_info']
@@ -191,29 +198,50 @@ node = Node()
 for kind, topic in TOPICS.items():
     cls = Pose_V if kind == 'pose' else CameraInfo if kind.endswith('_info') else Image
     node.subscribe(cls, topic, lambda message, key=kind: callback(key, message))
-deadline = time.monotonic() + 45
-records = []
-last = -1000000000
-while time.monotonic() < deadline and len(records) < 4:
+deadline = time.monotonic() + 120
+bundles = []
+anchor = None
+while time.monotonic() < deadline and len(bundles) < FRAME_COUNT:
     chosen = None
     with LOCK:
         common = set.intersection(*(set(bucket) for bucket in BUCKETS.values()))
-        valid = [value for value in common if value >= last + 250000000]
+        target = 0 if anchor is None else anchor + len(bundles) * 250000000
+        previous = -1 if not bundles else bundles[-1][0]
+        # The default world advances in 4 ms steps. A 250 ms period alternates
+        # 248/252 ms; retain these measured frames instead of skipping the one
+        # 2 ms before the nominal target and silently doubling the interval.
+        valid = [value for value in common
+                 if value >= target - CONFIG['target_tolerance_ns'] and value > previous]
         if valid:
-            chosen = max(valid)
+            chosen = min(valid)
             bundle = {key: bucket[chosen] for key, bucket in BUCKETS.items()}
     if chosen is None:
         time.sleep(.01)
         continue
     if max(time.monotonic() - item[2] for item in bundle.values()) > 5:
         raise ValueError('sensor capture became stale during collection')
-    records.append(write_frame(len(records), chosen, bundle, extrinsics))
-    last = chosen
-if len(records) != 4:
-    raise RuntimeError('four exactly synchronized RGB/depth/calibration/pose samples were not observed')
+    if anchor is None:
+        anchor = chosen
+    bundles.append((chosen, bundle))
+if len(bundles) != FRAME_COUNT:
+    raise RuntimeError('requested synchronized RGB/depth/calibration/pose samples were not observed')
+# Retain raw synchronized messages first. PNG compression must not make history
+# skip simulator timestamps. Every output remains an independently received frame.
+records = [write_frame(index, sim_ns, bundle, extrinsics)
+           for index, (sim_ns, bundle) in enumerate(bundles)]
+jitter_ns = [record['simulation_time_ns'] - (anchor + index * 250000000)
+             for index, record in enumerate(records)]
 result = {'schema_version': 'missionos_px4_aerial_camera_probe.v1',
           'source_kind': 'actual_px4_gazebo_sensor_capture', 'source_topics': TOPICS,
+          'capture_configuration': CONFIG,
+          'history_timing': {'target_period_ns': 250000000,
+              'actual_timestamps_ns': [record['simulation_time_ns'] for record in records],
+              'target_lateness_ns': jitter_ns, 'maximum_lateness_ns': max(jitter_ns),
+              'maximum_absolute_phase_error_ns': max(abs(value) for value in jitter_ns),
+              'interpolated_frames': 0, 'duplicated_frames': 0,
+              'physical_wall_clock_timing_claimed': False},
           'model_sdf_sha256': sdf_hashes, 'frames': records,
+          'model_sdf_files': {'airframe': 'airframe.sdf', 'camera': 'camera.sdf'},
           'rgb_to_depth_sensor_transform': {'translation_m': [0, 0, 0], 'rotation_xyzw': [0, 0, 0, 1],
               'basis': 'identical fixed sensor poses in the observed model SDF',
               'pixel_registration_performed': False},
@@ -235,10 +263,39 @@ def run(command, *, timeout=15, **kwargs):
     return subprocess.run(command, check=True, capture_output=True, text=True, timeout=timeout, **kwargs)
 
 
+def calibration_scene():
+    """Declared static geometry for sensor checks, not a navigation benchmark."""
+    return [
+        {"name": "aerial_calibration_wall", "center_xyz_m": [3, 0, 1.5],
+         "size_xyz_m": [0.25, 2, 3], "rgba": [0.9, 0.05, 0.05, 1]},
+        {"name": "aerial_calibration_backdrop", "center_xyz_m": [8, 0, 6],
+         "size_xyz_m": [0.25, 16, 12], "rgba": [0.05, 0.15, 0.9, 1]},
+    ]
+
+
+def box_sdf(box):
+    pose = " ".join(map(str, box["center_xyz_m"]))
+    size = " ".join(map(str, box["size_xyz_m"]))
+    color = " ".join(map(str, box["rgba"]))
+    return (
+        f'<sdf version="1.9"><model name="{box["name"]}"><static>true</static>'
+        f'<pose>{pose} 0 0 0</pose><link name="box_link">'
+        f'<collision name="box_collision"><geometry><box><size>{size}</size>'
+        '</box></geometry></collision><visual name="box_visual">'
+        f'<geometry><box><size>{size}</size></box></geometry>'
+        f'<material><ambient>{color}</ambient><diffuse>{color}</diffuse>'
+        '</material></visual></link></model></sdf>'
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--image", default="px4io/px4-sitl-gazebo:latest")
+    parser.add_argument("--frames", type=int, choices=range(4, 33), default=4)
+    parser.add_argument("--scene", choices=("default", "calibration-wall"), default="default")
+    parser.add_argument("--sensor-profile", choices=("native", "history-4hz"), default="native")
+    parser.add_argument("--sim-speed-factor", type=float, choices=(0.1, 0.25, 1.0), default=1.0)
     args = parser.parse_args()
     if os.environ.get(OPT_IN) != "1":
         parser.error(f"set {OPT_IN}=1 to start the disposable simulator")
@@ -246,7 +303,43 @@ def main():
     if output.exists() and any(output.iterdir()):
         parser.error("output directory must be empty")
     output.mkdir(parents=True, exist_ok=True)
+    scene = calibration_scene() if args.scene == "calibration-wall" else []
+    (output / "capture-config.json").write_text(json.dumps({
+        "frame_count": args.frames, "target_frame_interval_ns": 250000000,
+        "target_tolerance_ns": 4000000,
+        "intervals_uniform": False, "scene": args.scene,
+        "sensor_profile": args.sensor_profile,
+        "requested_simulation_speed_factor": args.sim_speed_factor,
+        "scene_entity_names": [item["name"] for item in scene],
+        "purpose": "sensor_calibration_and_candidate_geometry_screen",
+    }, indent=2) + "\n")
     image = json.loads(run(["docker", "image", "inspect", args.image]).stdout)[0]
+    sensor_mount = []
+    if args.sensor_profile == "history-4hz":
+        sensor_path = "/opt/px4-gazebo/share/gz/models/OakD-Lite/model.sdf"
+        original = run(["docker", "run", "--rm", "--network", "none", "--entrypoint",
+                        "/bin/cat", image["Id"], sensor_path]).stdout
+        (output / "original-camera.sdf").write_text(original)
+        tree = ET.fromstring(original)
+        sensors = tree.findall("model/link[@name='camera_link']/sensor")
+        if {item.get("name") for item in sensors} != {"IMX214", "StereoOV7251"}:
+            raise RuntimeError("unsupported camera model for history sensor profile")
+        for sensor in sensors:
+            sensor.find("update_rate").text = "4"
+            if sensor.get("name") == "IMX214":
+                sensor.find("camera/image/width").text = "640"
+                sensor.find("camera/image/height").text = "360"
+        override = ET.tostring(tree, encoding="unicode") + "\n"
+        override_path = output / "history-camera.sdf"
+        override_path.write_text(override)
+        (output / "sensor-profile.json").write_text(json.dumps({
+            "name": args.sensor_profile, "original_sdf_sha256": hashlib.sha256(original.encode()).hexdigest(),
+            "effective_sdf_sha256": hashlib.sha256(override.encode()).hexdigest(),
+            "rgb_native_resolution": [640, 360], "depth_native_resolution": [640, 480],
+            "configured_sensor_rate_hz": 4, "frames_interpolated": False,
+            "timestamps_are_measured": True,
+        }, indent=2) + "\n")
+        sensor_mount = ["--mount", f"type=bind,src={override_path},dst={sensor_path},readonly"]
     container_id = None
     cleaned = False
     try:
@@ -255,7 +348,8 @@ def main():
             "--mount", f"type=bind,src={output},dst=/capture",
             "-e", "PX4_SIM_MODEL=gz_x500_depth", "-e", "PX4_GZ_WORLD=default",
             "-e", "HEADLESS=1", "-e", "PX4_GZ_NO_FOLLOW=1",
-            "-e", "LIBGL_ALWAYS_SOFTWARE=1", args.image, "-d",
+            "-e", f"PX4_SIM_SPEED_FACTOR={args.sim_speed_factor}",
+            "-e", "LIBGL_ALWAYS_SOFTWARE=1", *sensor_mount, image["Id"], "-d",
         ], timeout=30).stdout.strip()
         if not re.fullmatch(r"[0-9a-f]{64}", container_id):
             raise RuntimeError("Docker did not return the created container identity")
@@ -267,8 +361,28 @@ def main():
             time.sleep(.5)
         else:
             raise RuntimeError("PX4 depth-camera startup timed out")
+        for key, model in (("airframe", "x500_depth"), ("camera", "OakD-Lite")):
+            run(["docker", "cp",
+                 f"{container_id}:/opt/px4-gazebo/share/gz/models/{model}/model.sdf",
+                 str(output / f"{key}.sdf")])
+        scene_receipts = []
+        for box in scene:
+            sdf = box_sdf(box)
+            (output / (box["name"] + ".sdf")).write_text(sdf + "\n")
+            response = run([
+                "docker", "exec", container_id, "gz", "service", "-s", "/world/default/create",
+                "--reqtype", "gz.msgs.EntityFactory", "--reptype", "gz.msgs.Boolean",
+                "--timeout", "10000", "--req", "sdf: " + json.dumps(sdf),
+            ], timeout=15)
+            if "data: true" not in response.stdout:
+                raise RuntimeError("calibration scene entity creation was not acknowledged")
+            scene_receipts.append({**box, "spawn_response": response.stdout.strip()})
+        (output / "scene.json").write_text(json.dumps({
+            "schema_version": "missionos_px4_calibration_scene.v1", "boxes": scene_receipts,
+            "flight_outcomes_observed": False,
+        }, indent=2) + "\n")
         capture = run(["docker", "exec", "-i", container_id, "python3", "-"],
-                      timeout=60, input=CAPTURE)
+                      timeout=140, input=CAPTURE)
         (output / "capture-process.json").write_text(json.dumps({
             "image_id": image["Id"], "image_architecture": image["Architecture"],
             "container_id": container_id, "network_mode": "none",

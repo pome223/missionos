@@ -211,6 +211,7 @@ def main():
         },
         "diffusion_steps": a.diffusion_steps,
         "seed": 42,
+        "source_kind": "public_dataset_replay",
         "public_provenance": {
             "dataset_repository": "EmbodiedCity/ANWM-Dataset",
             "dataset_revision": DATASET_REVISION,

@@ -137,6 +137,11 @@ opt-in; this evaluation does not enable them by default.
 
 ### Grounded sensor acquisition probe
 
+The follow-up [CPU registration contract](px4-aerial-camera-registration.md)
+defines depth/RGB alignment, optical-frame conversion, recorded history timing,
+and strict separation of frozen simulator captures from public dataset inputs.
+This adapter does not itself make a capture eligible for ANWM or live dispatch.
+
 [`probe_px4_aerial_camera.py`](../../scripts/probe_px4_aerial_camera.py) starts a
 new disposable `gz_x500_depth` simulator with no container network or published
 ports. It sends no arm or flight commands and removes its own container on exit.

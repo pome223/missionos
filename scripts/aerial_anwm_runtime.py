@@ -84,6 +84,8 @@ def validate_request(request: dict[str, Any], base: Path) -> tuple[Any, dict[str
 
     if request.get("schema_version") != "aerial_anwm_request.v1":
         raise ValueError("unsupported request schema")
+    if request.get("source_kind", "public_dataset_replay") != "public_dataset_replay":
+        raise ValueError("this runner only accepts public_dataset_replay inputs")
     if not isinstance(request.get("request_id"), str) or not request["request_id"]:
         raise ValueError("request_id is required")
     if request.get("delta_frame") != "body_frd_at_observation":
