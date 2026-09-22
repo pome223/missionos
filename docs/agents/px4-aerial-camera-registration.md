@@ -73,8 +73,9 @@ and [depth shader](https://github.com/gazebosim/gz-rendering/blob/gz-rendering8/
 ## Model and comparison admission
 
 The source is `px4_gazebo_frozen_capture`, never `public_dataset_replay`.
-The public-dataset ANWM runner rejects an explicit PX4 source even if public
-dataset metadata is also supplied. Registered geometry alone does not satisfy
+The ANWM runner rejects public-dataset metadata attached to an explicit PX4
+source. Its separate [airborne input adapter](aerial-wam-px4-flight.md) accepts
+only the typed PX4 source contract. Registered geometry alone does not satisfy
 the model contract: a declared goal, candidate trajectories, an explicit
 missing-depth policy, history selection, and validated model timing remain
 separate requirements. `model_input_ready` and `model_time_alignment_verified`

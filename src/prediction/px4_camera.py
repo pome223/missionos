@@ -339,6 +339,22 @@ def register_capture(
         or capture.get("source_kind") != "actual_px4_gazebo_sensor_capture"
     ):
         raise ValueError("unsupported capture schema or source")
+    capture_scope = capture.get("capture_scope", "grounded_observation")
+    if capture_scope not in ("grounded_observation", "px4_sitl_airborne_observation"):
+        raise ValueError("unsupported capture observation scope")
+    flight_session = None
+    if capture_scope == "px4_sitl_airborne_observation":
+        status_bytes = _read_bound(capture_path.parent,
+                                   capture["flight_session_status_file"],
+                                   capture["flight_session_status_sha256"])
+        flight_session = json.loads(status_bytes)
+        expected_session = {**flight_session, "status_sha256": _sha(status_bytes),
+                            "status_file": capture["flight_session_status_file"]}
+        if (expected_session != capture.get("flight_session")
+                or flight_session.get("phase") not in ("holding", "awaiting_candidate")
+                or not isinstance(flight_session.get("session_id"), str)):
+            raise ValueError("airborne capture needs a bound held SITL session")
+        flight_session = expected_session
     for key in (
         "hardware_target_allowed",
         "arm_command_sent",
@@ -348,7 +364,7 @@ def register_capture(
         "physical_execution_invoked",
     ):
         if capture.get(key) is not False:
-            raise ValueError("capture exceeds the grounded, authority-free scope")
+            raise ValueError("capture process must remain authority-free")
     sdf_bytes = {
         "airframe": Path(airframe_sdf).read_bytes(),
         "camera": Path(camera_sdf).read_bytes(),
@@ -487,6 +503,8 @@ def register_capture(
     manifest = {
         "schema_version": SCHEMA,
         "source_kind": "px4_gazebo_frozen_capture",
+        "capture_scope": capture_scope,
+        "flight_session": flight_session,
         "capture_sha256": _sha(capture_bytes),
         "algorithm": ALGORITHM,
         "source_sdf_sha256": hashes,

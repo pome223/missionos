@@ -3,10 +3,15 @@
 This document defines the bounded evaluation of a released aerial world model
 through MissionOS. It extends the [navigation predictor contract](navigation-wam-jev.md).
 Model execution, prediction usefulness, Jev judgment, approval, and flight are
-separate results. A released ANWM checkpoint ran on two supplied candidate
-actions, its recorded predictions were admitted, and the real Jev API produced a
-bounded response. The learned choice was worse than the projection baseline on
-the independent endpoint-distance proxy. No flight was performed.
+separate results. In the initial public dataset replay, a released ANWM checkpoint
+ran on two supplied candidate actions, its recorded predictions were admitted,
+and the real Jev API produced a bounded response. The learned choice was worse
+than the projection baseline on the independent endpoint-distance proxy. That
+replay performed no flight. The separate [PX4 SITL flight contract](aerial-wam-px4-flight.md)
+defines airborne capture, typed model input, existing authorization, and the
+bounded execution and verification path. Its separate trial completed observed
+candidate motion, landing, and disarm, while choosing the wrong side for the
+declared visual goal; that connection result does not establish model usefulness.
 
 ## Model and runtime requirements
 
@@ -31,6 +36,22 @@ real-world results are offline; they do not establish autonomous PX4 deployment.
 Neither model's published result supplies a MissionOS latency or memory result.
 
 ## Bounded replay design
+
+For the optional PX4/Gazebo flight path, preserve gravity when changing simulation
+speed. [PX4 issue #27480](https://github.com/PX4/PX4-Autopilot/issues/27480)
+documents a startup bug where a `set_physics` request containing only
+`real_time_factor` resets physics-engine gravity to zero. The installed image's
+`px4-rc.gzsim` lines 153–158 contain that request. The SDF still declares gravity,
+and cached IMU gravity can conceal the problem from the autopilot; neither is
+sufficient proof of correct runtime physics.
+
+`scripts/px4_aerial_flight_scene.py` explicitly sends gravity `(0, 0, -9.8)` m/s²,
+real-time factor `0.1`, and maximum step `0.004` s after startup and before flight.
+It requires service acceptance and records `physics-configuration.json`. That
+receipt establishes configuration acceptance, not flight success. Preserve the
+failed attempt separately and verify the subsequent hover and landing from
+observed simulator motion. Do not compensate by changing thrust, teleporting the
+aircraft, or claiming that a normal-looking IMU proves gravity was applied.
 
 Start with a small, explicitly selected upstream dataset sample and the released
 checkpoint. Preserve the upstream input normalization, camera convention, action
@@ -107,7 +128,7 @@ Jev may use admitted goal evidence when choosing among existing bounded
 responses. Its response remains a judgment. Human approval or an existing
 bounded policy, Rules, Executor, and Verifier retain their separate roles.
 
-## Remaining PX4 input boundary
+## Generic route input boundary
 
 The current native route runtime launches `gz_x500`. Its
 `_pose_sample()` in
@@ -132,8 +153,10 @@ Before a live PX4 prediction is claimed, provide:
 
 The existing generic action plus `hold` interface is insufficient to infer these
 inputs. A successful replay and a successful fixture transport smoke do not
-close this live sensor/action gap. Live simulator and hardware execution remain
-opt-in; this evaluation does not enable them by default.
+close this live sensor/action gap. The separate flight contract supplies an
+explicit airborne adapter; it does not infer these fields from generic route
+telemetry. Live simulator execution remains opt-in, and hardware is unsupported
+by that bounded adapter.
 
 ### Grounded sensor acquisition probe
 

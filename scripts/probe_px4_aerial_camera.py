@@ -28,6 +28,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
 import struct
 import sys
@@ -42,8 +43,11 @@ from gz.msgs10.camera_info_pb2 import CameraInfo
 from gz.msgs10.pose_v_pb2 import Pose_V
 from google.protobuf.json_format import MessageToDict
 
-ROOT = Path('/capture')
+ROOT = Path(os.environ.get('MISSIONOS_AERIAL_CAPTURE_ROOT', '/capture'))
 CONFIG = json.loads((ROOT / 'capture-config.json').read_text())
+CAPTURE_SCOPE = CONFIG.get('capture_scope', 'grounded_observation')
+if CAPTURE_SCOPE not in ('grounded_observation', 'px4_sitl_airborne_observation'):
+    raise ValueError('unsupported observation scope')
 FRAME_COUNT = CONFIG['frame_count']
 MODEL = 'x500_depth_0'
 PREFIX = '/world/default/model/' + MODEL + '/link/camera_link/sensor/IMX214'
@@ -126,8 +130,13 @@ def write_frame(index, sim_ns, bundle, extrinsics):
     if len(camera_link) != 1:
         raise ValueError('exact camera link pose unavailable')
     xyz = position(vehicle)
-    if any(not math.isfinite(x) for x in xyz) or abs(xyz[2]) > 0.5:
+    if any(not math.isfinite(x) for x in xyz):
+        raise ValueError('nonfinite vehicle position')
+    if CAPTURE_SCOPE == 'grounded_observation' and abs(xyz[2]) > 0.5:
         raise ValueError('grounded pose boundary violated')
+    if CAPTURE_SCOPE == 'px4_sitl_airborne_observation' and not (
+            abs(xyz[0]) < 1 and abs(xyz[1]) < 1 and 2.5 < xyz[2] < 3.5):
+        raise ValueError('authorized initial hover boundary violated')
     rot = rotation(vehicle)
     prefix = 'frame_%02d' % index
     record = {'simulation_time_ns': sim_ns, 'source_timestamp_match': 'exact',
@@ -232,6 +241,7 @@ records = [write_frame(index, sim_ns, bundle, extrinsics)
 jitter_ns = [record['simulation_time_ns'] - (anchor + index * 250000000)
              for index, record in enumerate(records)]
 result = {'schema_version': 'missionos_px4_aerial_camera_probe.v1',
+          'capture_scope': CAPTURE_SCOPE,
           'source_kind': 'actual_px4_gazebo_sensor_capture', 'source_topics': TOPICS,
           'capture_configuration': CONFIG,
           'history_timing': {'target_period_ns': 250000000,
@@ -254,6 +264,17 @@ result = {'schema_version': 'missionos_px4_aerial_camera_probe.v1',
                          'camera pose uses Gazebo sensor axes; optical-frame conversion is not established',
                          'invalid depth values are preserved; no depth filling is performed',
                          'grounded capture does not establish flight, prediction, or collision avoidance']}
+if CAPTURE_SCOPE == 'px4_sitl_airborne_observation':
+    status_bytes = Path(CONFIG['flight_session_status_file']).read_bytes()
+    status = json.loads(status_bytes)
+    if status.get('phase') not in ('holding', 'awaiting_candidate'):
+        raise ValueError('flight session is not holding for prediction')
+    (ROOT / 'flight-session-status.json').write_bytes(status_bytes)
+    result['flight_session_status_sha256'] = sha(status_bytes)
+    result['flight_session_status_file'] = 'flight-session-status.json'
+    result['flight_session'] = {**status, 'status_sha256': sha(status_bytes),
+                                'status_file': 'flight-session-status.json'}
+    result['limitations'][-1] = 'the capture process sends no flight commands; flight-session execution is separately recorded'
 (ROOT / 'capture.json').write_text(json.dumps(result, indent=2, allow_nan=False) + '\n')
 print(json.dumps({'synchronized_frames': len(records), 'model_input_ready': False}))
 '''

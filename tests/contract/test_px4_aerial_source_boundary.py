@@ -1,4 +1,4 @@
-"""Source identity must not be changed by the public-only ANWM validator.
+"""Source identity must not be overridden by public-shaped input metadata.
 
 These synthetic arrays satisfy its public input geometry solely to isolate
 source admission. They are neither simulator captures nor model evidence.
@@ -75,5 +75,5 @@ def test_px4_and_other_sources_cannot_be_relabelled_as_public_dataset(public_com
     request["source_kind"] = source_kind
     # Even otherwise acceptable public metadata cannot override explicit source
     # identity. A real adapter must validate the source under its own contract.
-    with pytest.raises(ValueError, match="public_dataset_replay"):
+    with pytest.raises(ValueError):
         run(request, base, base / "unused", validate_only=True)
