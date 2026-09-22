@@ -269,9 +269,26 @@ python docs/assets/aerial-wam-px4-20260922/verify_report.py
 python -m pytest docs/assets/aerial-wam-px4-20260922/test_verify_report.py -q
 ```
 
-PRはDraftとする。共有Core/Gateway変更に必要なLevel B検証のうち、インストール済み
-`missionos chat`からの一連の操作と、更新済みNav2ブリッジを使った実シミュレーターの
-横断確認は未実施である。ここでの単独PX4飛行とfixture Gateway検証は、その代替ではない。
+PR追加検証では、インストール済み`missionos` CLI、隔離したloopback Gateway、
+実Gazebo/Nav2のTurtleBot3で`chat`→明示的な`/approve`→`/run`を実行した。
+同じタスクを`job-status`、`operate`、`watch`、`map`で照合し、Nav2の
+`Reached the goal!`とオドメトリ移動2.730 m、屋内地図の計画2点・観測39点を確認した。
+終端のスコープは`sim_action`、`physical_execution_invoked: false`であり、
+家全体の巡回完了や配達完了ではない。提案のsourceは`keyword_fallback`だったため、
+このrunをホスト型モデルの実呼び出しや学習WAMによるNav2運転の証拠にはしない。
+実ROS2のcostmap読み取りは、初期poseが未確立のときframe変換不能で`blocked`、
+初期pose確立後にglobal/localの内容hashと観測時刻を得て`validated`となった。
+いずれも読み取りであり、回復案のdispatchは行っていない。
+
+別の隔離PX4 SITL runでは、初回のarmがPX4のpreflight準備前に拒否され、
+離陸・候補dispatchが起きないことを確認した。新しいセッションでは観測済みhover後、
+期限切れの候補命令がdispatch入口で拒否され、命令inboxも作られなかった。
+候補飛行イベントなしで明示的なlandを送り、PX4の着陸とdisarmを観測した。
+このrunの`complete`は`false`であり、モデル選択の成功回数には数えない。
+
+PX4側の`chat`は提案表示までで、承認後の同一タスクを使ったPX4/Gateway/
+`operate`/`watch`/`map`横断と、実回復中の再検証は未実施である。
+したがってLevel Bの全項目はまだ満たさず、PRはDraftを維持する。
 
 Jevのキーはホスト上でGoogle Secret Managerから取得し、予測入力や公開成果物へ
 含めない。HMAC鍵もローカルセッションに限定する。シミュレーターはネットワークを
