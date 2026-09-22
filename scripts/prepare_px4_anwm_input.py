@@ -34,7 +34,9 @@ from scripts.aerial_anwm_runtime import (  # noqa: E402
     validate_request,
 )
 from scripts.screen_px4_aerial_candidates import verify_scene  # noqa: E402
-from src.prediction.px4_camera import LOCAL_NED_FROM_ENU, pose_matrix, register_capture  # noqa: E402
+from src.prediction.px4_camera import (  # noqa: E402
+    FLU_FROM_OPTICAL, LOCAL_NED_FROM_ENU, _rigid, _sdf_pose, pose_matrix, register_capture,
+)
 
 
 def last_frame_observation_time(capture):
@@ -159,9 +161,32 @@ def load_goal_reference(
     if not np.allclose(reference["intrinsics"], expected_K, rtol=2e-6, atol=1e-5):
         raise ValueError("goal camera must match the historical RGB intrinsics")
     sdf = read_bound(path.parent, reference["camera_sdf_file"], reference["camera_sdf_sha256"])
-    camera = ET.fromstring(sdf).find(".//sensor[@type='camera']/camera")
+    tree = ET.fromstring(sdf)
+    models = tree.findall("model")
+    if (len(models) != 1 or len(tree.findall(".//model")) != 1
+            or tree.findall(".//include") or tree.findall(".//plugin") or tree.findall(".//frame")):
+        raise ValueError("goal SDF requires one explicit static camera model")
+    model = models[0]
+    links, sensors = model.findall("link"), model.findall(".//sensor")
+    if (model.get("name") != "aerial_goal_reference" or model.findtext("static") != "true"
+            or len(links) != 1 or len(sensors) != 1 or model.findall(".//joint")
+            or sensors[0] not in list(links[0]) or sensors[0].get("type") != "camera"):
+        raise ValueError("goal SDF requires one explicit static camera model")
+    camera = sensors[0].find("camera")
     if camera is None:
         raise ValueError("goal SDF does not declare an RGB camera")
+    world_from_model = _sdf_pose(model.find("pose"))
+    observed = reference.get("observed_reference_pose")
+    if (not isinstance(observed, dict) or observed.get("name") != model.get("name")
+            or not np.allclose(pose_matrix(observed), world_from_model, atol=1e-6, rtol=0)):
+        raise ValueError("goal observed reference pose disagrees with bound SDF")
+    ned_from_enu, flu_from_optical = np.eye(4), np.eye(4)
+    ned_from_enu[:3, :3] = LOCAL_NED_FROM_ENU
+    flu_from_optical[:3, :3] = FLU_FROM_OPTICAL
+    derived_optical = (ned_from_enu @ world_from_model @ _sdf_pose(links[0].find("pose"))
+                       @ _sdf_pose(sensors[0].find("pose")) @ flu_from_optical)
+    if not np.allclose(_rigid(reference["optical_to_local_ned"]), derived_optical, atol=1e-6, rtol=0):
+        raise ValueError("goal optical pose disagrees with bound SDF and observed reference pose")
     width, height = (
         int(camera.findtext("image/width", "0")),
         int(camera.findtext("image/height", "0")),

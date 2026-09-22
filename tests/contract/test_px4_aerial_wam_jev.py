@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 
 from missionos_core.prediction import prediction_digest
-from scripts.aerial_anwm_runtime import target_pose_from_delta
+from scripts.aerial_anwm_runtime import MODEL_REVISION, UPSTREAM_REVISION, VAE_REVISION, target_pose_from_delta
 from scripts.evaluate_px4_aerial_wam_jev import evaluate, validate_result
 from src.intelligence.jev_assurance import JevAssuranceJudge
 
@@ -68,7 +68,9 @@ def trial():
                for c, cost in zip(candidates, [0.3, 0.05])]
     result = {"schema_version": "aerial_anwm_result.v1", "input_manifest": manifest,
               "input_manifest_sha256": prediction_digest(manifest), "score_is_calibrated_risk": False,
-              "model": {"model_id": "EmbodiedCity/ANWM", "checkpoint_sha256": MODEL, "context_size": 16},
+              "model": {"model_id": "EmbodiedCity/ANWM", "checkpoint_sha256": MODEL, "context_size": 16,
+                        "model_revision": MODEL_REVISION, "upstream_revision": UPSTREAM_REVISION,
+                        "vae_repository": "stabilityai/sd-vae-ft-ema", "vae_revision": VAE_REVISION},
               "candidates": outputs, "runtime_invocation_evidence": {
                   "schema_version": "runtime_invocation_evidence.v1", "fixture_invocation": False,
                   "model_execution_verified": True, "actual_model_calls": 2,
@@ -124,6 +126,8 @@ def test_bounded_command_uses_existing_authorization_and_exact_vehicle_target(tr
     assert command["approval_receipt_sha256"] == prediction_digest(trial[1]["authorization"])
     assert command["model_receipt_sha256"] == prediction_digest(trial[0]["runtime_invocation_evidence"])
     assert output["command_sha256"] == prediction_digest(command)
+    assert output["request"]["state"]["model_identity_sha256"] == prediction_digest(trial[0]["model"])
+    assert output["rule_receipt"]["model_identity_sha256"] == prediction_digest(trial[0]["model"])
     assert output["admission"]["status"] == "adopted"
     assert output["rule_receipt"]["approval_generated"] is False
     assert output["rule_receipt"]["dispatch_invoked"] is False
@@ -220,6 +224,20 @@ def test_altered_model_receipt_rejected(trial, mutation):
     mutation(trial[0])
     with pytest.raises(ValueError):
         validate_result(trial[0], expected_model_sha256=MODEL)
+
+
+@pytest.mark.parametrize("field", ["model_revision", "upstream_revision", "vae_revision", "vae_repository"])
+@pytest.mark.parametrize("missing", [False, True])
+def test_full_model_identity_cannot_change_with_unchanged_invocation_receipt(trial, field, missing):
+    result = trial[0]
+    receipt = deepcopy(result["runtime_invocation_evidence"])
+    if missing:
+        result["model"].pop(field)
+    else:
+        result["model"][field] = "other/model" if field == "vae_repository" else "0" * 40
+    with pytest.raises(ValueError, match="model_identity_mismatch"):
+        validate_result(result, expected_model_sha256=MODEL)
+    assert result["runtime_invocation_evidence"] == receipt
 
 
 @pytest.mark.parametrize("defect", ["camera_yaw", "vehicle_origin", "goal_is_future_outcome", "goal_is_history"])

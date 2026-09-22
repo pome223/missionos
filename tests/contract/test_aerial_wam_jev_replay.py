@@ -16,10 +16,25 @@ from missionos_core.prediction import (
     prediction_digest,
 )
 from scripts.evaluate_aerial_wam_jev import RecordedAerialPredictor, evaluate, validate_result
+from scripts.aerial_anwm_runtime import MODEL_REVISION, UPSTREAM_REVISION, VAE_REVISION
 from src.intelligence.jev_assurance import JevAssuranceJudge
 from src.intelligence.prediction_evidence import AUTHORITY_FLAGS
 
 FIXTURE_MODEL_HASH = prediction_digest("unit-test-only synthetic checkpoint")
+
+
+@pytest.mark.parametrize("field", ["model_revision", "upstream_revision", "vae_revision", "vae_repository"])
+@pytest.mark.parametrize("missing", [False, True])
+def test_replay_rejects_model_identity_drift_with_unchanged_invocation(field, missing):
+    result = result_fixture()
+    receipt = deepcopy(result["runtime_invocation_evidence"])
+    if missing:
+        result["model"].pop(field)
+    else:
+        result["model"][field] = "other/model" if field == "vae_repository" else "0" * 40
+    with pytest.raises(ValueError, match="model_identity_mismatch"):
+        validate_result(result, FIXTURE_MODEL_HASH)
+    assert result["runtime_invocation_evidence"] == receipt
 
 
 def result_fixture():
@@ -97,10 +112,10 @@ def result_fixture():
             "model_id": "EmbodiedCity/ANWM",
             "checkpoint_sha256": FIXTURE_MODEL_HASH,
             "context_size": 16,
-            "model_revision": "fixture-model-revision",
-            "upstream_revision": "fixture-code-revision",
+            "model_revision": MODEL_REVISION,
+            "upstream_revision": UPSTREAM_REVISION,
             "vae_repository": "stabilityai/sd-vae-ft-ema",
-            "vae_revision": "fixture-vae-revision",
+            "vae_revision": VAE_REVISION,
         },
         "candidates": outputs,
         "current_frame_goal_mse": 0.2,
@@ -132,6 +147,7 @@ def test_null_risk_forecasts_admitted_with_learned_and_projection_choices_separa
     assert output["admission"]["status"] == "adopted"
     assert output["forecast"]["request_sha256"] == prediction_digest(output["request"])
     assert output["request"]["state"]["input_manifest"] == result["input_manifest"]
+    assert output["request"]["state"]["model_identity_sha256"] == prediction_digest(result["model"])
     assert output["request"]["state"]["input_manifest"]["physical_frame_timing_verified"] is False
     assert output["request"]["state"]["input_manifest"]["horizon_seconds_nominal"] is True
     assert output["request"]["binding"]["model_sha256"] == FIXTURE_MODEL_HASH

@@ -29,7 +29,7 @@ from missionos_core.prediction import (
 from src.intelligence.jev_assurance import JevAssuranceJudge
 from src.intelligence.mission_assurance_agent import MissionAssuranceAgent, MissionSituation
 from src.intelligence.prediction_evidence import capture_prediction_evidence, receive_prediction_evidence
-from scripts.aerial_anwm_runtime import target_pose_from_delta
+from scripts.aerial_anwm_runtime import target_pose_from_delta, validate_model_identity
 
 MODEL_SHA256 = "bdd149cac6ec002ba7dc4ad99ec6f9eb02cd6d4f05320195cf174737b13b0bc2"
 SOURCE_KIND = "px4_gazebo_frozen_capture"
@@ -184,9 +184,7 @@ def validate_result(result, *, expected_model_sha256=MODEL_SHA256):
         _goal_state(output)
         _require(_number(output["projection_goal_mse"]) >= 0, "invalid_projection_cost")
     model, invocation = result["model"], result["runtime_invocation_evidence"]
-    _require(model.get("model_id") == "EmbodiedCity/ANWM"
-             and model.get("checkpoint_sha256") == expected_model_sha256
-             and type(model.get("context_size")) is int and model["context_size"] == 16, "model_identity_mismatch")
+    validate_model_identity(model, expected_model_sha256)
     _require(invocation.get("schema_version") == "runtime_invocation_evidence.v1"
              and invocation.get("fixture_invocation") is False
              and invocation.get("model_execution_verified") is True
@@ -278,6 +276,7 @@ def evaluate(result, policy, *, judge, telemetry_reader, now_fn=time.time, expec
     # the timestamps or change the model's already evaluated candidate set.
     result, policy = json.loads(json.dumps([result, policy], allow_nan=False))
     manifest, outputs, captured_at = validate_result(result, expected_model_sha256=expected_model_sha256)
+    model_identity_sha256 = prediction_digest(validate_model_identity(result["model"], expected_model_sha256))
     _revalidate(manifest, policy, telemetry_reader(), captured_at, now_fn())
     binding = PredictionBinding("EmbodiedCity/ANWM", expected_model_sha256,
                                 "missionos.px4.sitl.image_goal_trial.v1", prediction_digest(policy),
@@ -286,6 +285,7 @@ def evaluate(result, policy, *, judge, telemetry_reader, now_fn=time.time, expec
                                 "captured_" + manifest["px4_provenance"]["history"]["capture_sha256"],
                                 captured_at, binding,
                                 {"input_manifest_sha256": result["input_manifest_sha256"],
+                                 "model_identity_sha256": model_identity_sha256,
                                  "candidate_plans_sha256": manifest["candidate_plans_sha256"]},
                                 tuple(PredictionOption(c["candidate_id"], c["horizon_seconds"],
                                                        {"candidate_sha256": c["candidate_sha256"]})
@@ -357,6 +357,7 @@ def evaluate(result, policy, *, judge, telemetry_reader, now_fn=time.time, expec
             "rule_receipt": {"schema_version": "missionos_px4_aerial_rule_evaluation.v1", "decision": "permit",
                              "policy_sha256": prediction_digest(policy), "telemetry_sha256": prediction_digest(telemetry),
                              "input_manifest_sha256": result["input_manifest_sha256"], "evaluated_at_unix_s": now,
+                             "model_identity_sha256": model_identity_sha256,
                              "authorization_basis": "provided_explicit_user_instruction", "approval_generated": False,
                              "collision_risk_from_model_used": False, "dispatch_invoked": False},
             "command": command, "command_sha256": prediction_digest(command),

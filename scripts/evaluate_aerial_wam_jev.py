@@ -31,6 +31,7 @@ from src.intelligence.prediction_evidence import (
     capture_prediction_evidence,
     receive_prediction_evidence,
 )
+from scripts.aerial_anwm_runtime import validate_model_identity
 
 
 ANWM_CHECKPOINT_SHA256 = "bdd149cac6ec002ba7dc4ad99ec6f9eb02cd6d4f05320195cf174737b13b0bc2"
@@ -53,6 +54,7 @@ def validate_result(result, expected_model_sha256):
         raise ValueError("aerial_result_schema_mismatch")
     if result.get("score_is_calibrated_risk") is not False:
         raise ValueError("aerial_goal_cost_is_not_calibrated_risk")
+    validate_model_identity(result.get("model"), expected_model_sha256)
     manifest = result["input_manifest"]
     if manifest.get("schema_version") != "missionos_aerial_anwm_input.v1":
         raise ValueError("aerial_input_schema_mismatch")
@@ -229,7 +231,8 @@ def evaluate(result, *, expected_model_sha256=ANWM_CHECKPOINT_SHA256, judge=None
         "aerial_input_" + digest,
         0.0,
         binding,
-        {"input_manifest": manifest, "clock_kind": "offline_replay_no_live_freshness"},
+        {"input_manifest": manifest, "clock_kind": "offline_replay_no_live_freshness",
+         "model_identity_sha256": prediction_digest(validate_model_identity(result["model"], expected_model_sha256))},
         tuple(
             PredictionOption(x["candidate_id"], x["horizon_seconds"], dict(x))
             for x in candidates

@@ -37,6 +37,7 @@ docs.
 
 ## Research Reports
 
+- [PX4 aerial WAM and Jev technical report](aerial-wam-px4-technical-report-20260922.md) — real model/API calls and a completed selected SITL maneuver, with a failed goal-direction choice and curated evidence.
 - [Block stacking with a VLA and learned world model](block-stacking-wam-technical-report-20260918.md) — prediction failures, the offset pilot, and the frozen-model ten-start game; score gains remain confounded by fixed-count stopping.
 
 ## Full Reference

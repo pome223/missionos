@@ -249,14 +249,15 @@ def test_asset_tampering_does_not_pass_portable_receipt(px4_request):
         validate_request(request, base)
 
 
-def test_goal_reference_camera_calibration_is_bound_to_sdf(tmp_path):
+@pytest.fixture
+def goal_reference_fixture(tmp_path):
     from PIL import Image
-    from scripts.prepare_px4_anwm_input import load_goal_reference
 
     Image.fromarray(np.zeros((16, 16, 3), dtype=np.uint8)).save(tmp_path / "goal.png")
     (tmp_path / "goal-rgb.pb").write_bytes(b"synthetic-wire-fixture-not-simulator-evidence")
     (tmp_path / "camera.sdf").write_text(
-        '<sdf><model><link><sensor type="camera"><camera>'
+        '<sdf><model name="aerial_goal_reference"><static>true</static>'
+        '<pose>1 5 3 0 0 0</pose><link name="goal_camera_link"><sensor type="camera"><camera>'
         "<horizontal_fov>1.5707963267948966</horizontal_fov>"
         "<image><width>16</width><height>16</height></image>"
         "</camera></sensor></link></model></sdf>"
@@ -275,7 +276,9 @@ def test_goal_reference_camera_calibration_is_bound_to_sdf(tmp_path):
         "width": 16,
         "height": 16,
         "intrinsics": K.tolist(),
-        "optical_to_local_ned": np.eye(4).tolist(),
+        "optical_to_local_ned": [[-1, 0, 0, 5], [0, 0, 1, 1], [0, 1, 0, -3], [0, 0, 0, 1]],
+        "observed_reference_pose": {"name": "aerial_goal_reference",
+                                    "position": {"x": 1, "y": 5, "z": 3}, "orientation": {"w": 1}},
         "simulation_time_ns": 1,
         "future_outcome_image": False,
         "candidate_outcome_observed": False,
@@ -283,6 +286,14 @@ def test_goal_reference_camera_calibration_is_bound_to_sdf(tmp_path):
     }
     path = tmp_path / "goal.json"
     path.write_text(json.dumps(reference))
+    return path, reference, K
+
+
+def test_goal_reference_camera_calibration_is_bound_to_sdf(goal_reference_fixture):
+    from scripts.prepare_px4_anwm_input import load_goal_reference
+
+    path, reference, K = goal_reference_fixture
+    tmp_path = path.parent
     image, provenance = load_goal_reference(path, (16, 16, 3), K, "a" * 64)
     assert image.shape == (16, 16, 3)
     assert provenance["flight_outcome_observed"] is False
@@ -293,6 +304,56 @@ def test_goal_reference_camera_calibration_is_bound_to_sdf(tmp_path):
     path.write_text(json.dumps(reference))
     with pytest.raises(ValueError, match="SDF camera calibration"):
         load_goal_reference(path, (16, 16, 3), K, "a" * 64)
+
+
+@pytest.mark.parametrize("defect", ["flip_goal", "rotate_goal", "move_observed", "rotate_observed",
+                                  "missing_observed", "change_model", "change_link", "change_sensor",
+                                  "relative_pose", "dynamic_model"])
+def test_goal_pose_cannot_drift_from_bound_geometry(goal_reference_fixture, defect):
+    from scripts.prepare_px4_anwm_input import load_goal_reference
+
+    path, reference, K = goal_reference_fixture
+    sdf_path = path.parent / "camera.sdf"
+    if defect == "flip_goal":
+        reference["optical_to_local_ned"][0][3] = -5
+    elif defect == "rotate_goal":
+        reference["optical_to_local_ned"] = np.eye(4).tolist()
+    elif defect == "move_observed":
+        reference["observed_reference_pose"]["position"]["y"] = -5
+    elif defect == "rotate_observed":
+        reference["observed_reference_pose"]["orientation"] = {"z": 1}
+    elif defect == "missing_observed":
+        reference.pop("observed_reference_pose")
+    else:
+        sdf = sdf_path.read_text()
+        replacements = {
+            "change_model": ("1 5 3 0 0 0", "1 -5 3 0 0 0"),
+            "change_link": ('<link name="goal_camera_link">', '<link name="goal_camera_link"><pose>0 1 0 0 0 0</pose>'),
+            "change_sensor": ('<sensor type="camera">', '<sensor type="camera"><pose>1 0 0 0 0 0</pose>'),
+            "relative_pose": ('<pose>', '<pose relative_to="world">'),
+            "dynamic_model": ("<static>true</static>", "<static>false</static>"),
+        }
+        sdf_path.write_text(sdf.replace(*replacements[defect]))
+        reference["camera_sdf_sha256"] = digest_file(sdf_path)
+    path.write_text(json.dumps(reference))
+    with pytest.raises(ValueError, match="goal|SDF"):
+        load_goal_reference(path, (16, 16, 3), K, "a" * 64)
+
+
+def test_goal_pose_composes_model_link_sensor_and_optical_frames(goal_reference_fixture):
+    from scripts.prepare_px4_anwm_input import load_goal_reference
+
+    path, reference, K = goal_reference_fixture
+    sdf_path = path.parent / "camera.sdf"
+    sdf = sdf_path.read_text().replace('<link name="goal_camera_link">',
+        '<link name="goal_camera_link"><pose>1 0 0 0 0 1.5707963267948966</pose>')
+    sdf = sdf.replace('<sensor type="camera">', '<sensor type="camera"><pose>0 2 0 0 0 0</pose>')
+    sdf_path.write_text(sdf)
+    reference["camera_sdf_sha256"] = digest_file(sdf_path)
+    reference["optical_to_local_ned"] = [[0, 0, 1, 5], [1, 0, 0, 0], [0, 1, 0, -3], [0, 0, 0, 1]]
+    path.write_text(json.dumps(reference))
+    _, accepted = load_goal_reference(path, (16, 16, 3), K, "a" * 64)
+    assert accepted["optical_to_local_ned"] == reference["optical_to_local_ned"]
 
 
 @pytest.mark.parametrize("flag", [

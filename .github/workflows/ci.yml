@@ -86,6 +86,11 @@ jobs:
           python docs/assets/acwm-online-stacking-20260921/verify_report.py --statistics
           python -m pytest docs/assets/acwm-online-stacking-20260921/test_verify_report.py -q
 
+      - name: Verify curated PX4 aerial flight report
+        run: |
+          python docs/assets/aerial-wam-px4-20260922/verify_report.py
+          python -m pytest docs/assets/aerial-wam-px4-20260922/test_verify_report.py -q
+
       - name: Verify governed ACWM published evidence
         run: |
           python docs/assets/acwm-governed-stacking-20260921/verify_report.py

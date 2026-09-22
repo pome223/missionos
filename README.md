@@ -485,6 +485,7 @@ want to run something.
 
 - [docs/agents/README.md](docs/agents/README.md)
 - [PX4 / TurtleBot3 WAM and Jev](docs/agents/navigation-wam-jev.md) — opt-in navigation prediction and judgment integration; requires a compatible model service
+- [PX4 aerial WAM and Jev technical report (Japanese)](docs/agents/aerial-wam-px4-technical-report-20260922.md) — ANWM/Jev connected to a completed SITL maneuver; goal-direction selection failed
 - [docs/agents/contracts.md](docs/agents/contracts.md)
 - [docs/agents/claim-semantics.md](docs/agents/claim-semantics.md)
 - [docs/agents/artifact-taxonomy.md](docs/agents/artifact-taxonomy.md)

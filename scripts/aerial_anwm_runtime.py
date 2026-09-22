@@ -31,6 +31,32 @@ VAE_REVISION = "f04b2c4b98319346dad8c65879f680b1997b204a"
 CONTEXT_SIZE = 16
 
 
+def validate_model_identity(model: dict[str, Any], expected_model_sha256: str = MODEL_SHA256) -> dict[str, Any]:
+    """Pin checkpoint, code and auxiliary weights as one consumer identity.
+
+    Historical invocation receipts bind the checkpoint digest. Consumers also
+    bind this complete, independently pinned identity into their request state;
+    this does not rewrite an old receipt or attest to remote execution.
+    """
+    if not isinstance(expected_model_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", expected_model_sha256):
+        raise ValueError("invalid_expected_model_hash")
+    expected = {
+        "model_id": "EmbodiedCity/ANWM",
+        "checkpoint_sha256": expected_model_sha256,
+        "model_revision": MODEL_REVISION,
+        "upstream_revision": UPSTREAM_REVISION,
+        "vae_repository": "stabilityai/sd-vae-ft-ema",
+        "vae_revision": VAE_REVISION,
+        "context_size": CONTEXT_SIZE,
+    }
+    if not isinstance(model, dict) or any(
+        type(model.get(key)) is not type(value) or model[key] != value
+        for key, value in expected.items()
+    ):
+        raise ValueError("aerial_model_identity_mismatch")
+    return expected
+
+
 def digest_file(path: Path) -> str:
     with path.open("rb") as handle:
         digest = hashlib.sha256()
