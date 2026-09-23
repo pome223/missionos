@@ -309,8 +309,30 @@ dispatch時の再検証は`valid`、候補は`verified_feasible`であり、PX4�
 `state=resumed_auto_mission`、`final=verified`を確認した。
 この修正は承認・dispatchの権限判定を変更しない。
 
-既定graphでの承認通過と、学習WAMまたはJevを有効にしたPX4の同一タスク横断は
-今回確認できていない。Level Bの全項目はまだ満たさず、PRはDraftを維持する。
+2026-09-23に既定ADK v2 graphを再試験した。`MISSIONOS_ADK_V2_GRAPH_PRIMARY=1`、
+`MISSIONOS_ADK_V2_GRAPH_ROLLBACK=0`、Vertexの`gemini-3.1-flash-lite`を明示し、
+新しいGatewayとインストール済みCLIから、提案、`/approve`、`/run`、
+`/start-sitl`、限定校正付き`/execute-sitl`を同一タスクで実行した。前回429で
+停止した承認境界は今回通過し、承認直後には未dispatchを表示した。
+障害物でSafety HOLDが発生し、Recovery AgentとMissionAssuranceAgentが
+`avoid_obstacle`を提案した。別の`operate`操作で人間が承認すると、dispatch時の
+再検証は`valid`、命令ACKと効果、回避目標到達、AUTO復帰が記録された。
+その後RTL、着陸、disarmまで観測し、同じタスクは`completed`となった。
+終端の`job-status`、`operate`、`watch`、`map`を照合し、地図は計画23点・
+観測900点・回避23点だった。タスク記録の`landed: true`、`arming_state: 1`、
+`dropoff_verified: true`を確認したが、`delivery_completion_claimed: false`、
+`physical_execution_invoked: false`は維持された。今回のchat runはオプションの
+学習WAMとJevを無効にしており、それらのPX4同一タスク運転の証拠ではない。
+
+終端横断確認では、`job-status`が着陸時の最低AGLを対象外として扱う一方、
+`watch`と地図が0 m AGLを飛行中の不足と表示する不一致を見つけた。
+着陸観測時のみ`landed_not_applicable`へ表示を揃え、飛行中の不足表示は維持した。
+9件の関連テストを通し、Gateway再起動後の実タスク`watch`と地図HTMLで
+修正済みの表示を確認した。これは表示修正であり、飛行判定を変えない。
+
+既定graphの同一タスクPX4経路はこの再試験で通過した。一方、学習WAMまたはJevを
+有効にした同一タスク横断は未確認で、Level Bの全項目を満たしたとは主張しない。
+PRはDraftを維持する。
 
 Jevのキーはホスト上でGoogle Secret Managerから取得し、予測入力や公開成果物へ
 含めない。HMAC鍵もローカルセッションに限定する。シミュレーターはネットワークを

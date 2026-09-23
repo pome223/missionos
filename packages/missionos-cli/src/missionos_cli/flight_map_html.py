@@ -458,7 +458,9 @@ def _mission_map_html(model: dict[str, Any]) -> str:
             agl_m: agl,
             agl_target_m: aglTarget,
             agl_margin_m: aglMargin,
-            agl_status: statusText(snapshot.terrain_clearance_status),
+            agl_status: snapshot.landed === true || snapshot.maybe_landed === true
+              ? 'landed_not_applicable'
+              : statusText(snapshot.terrain_clearance_status),
             destination_target_amsl_m: destinationTargetAmsl,
             climb_to_destination_m: destinationTargetAmsl !== null && currentAmsl !== null
               ? destinationTargetAmsl - currentAmsl

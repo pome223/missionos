@@ -1,4 +1,6 @@
 from missionos_cli import cli as missionos_cli
+from missionos_cli.map_model import _mission_map_telemetry_model
+from missionos_cli.map_terminal import _watch_altitude_status
 from missionos_gateway.server import _fixture_task
 
 
@@ -45,3 +47,24 @@ def test_px4_terminal_status_separates_historical_hold_from_later_dispatch() -> 
     assert "later dispatch is reported separately" in rendered
     assert "Operator Dispatch: status=queued_for_active_runner" in rendered
     assert "Terrain: AGL=0 m; target=30 m; margin=-30 m; status=landed_not_applicable" in rendered
+
+
+def test_px4_landed_clearance_is_not_reported_as_in_flight_breach_on_map() -> None:
+    snapshot = {
+        "landed": True,
+        "terrain_elevation_m": 3.0,
+        "terrain_clearance_m": 0.0,
+        "terrain_clearance_target_m": 30.0,
+        "terrain_clearance_status": "below_minimum",
+    }
+
+    assert "target=30m (landed_not_applicable)" in _watch_altitude_status(snapshot)
+    assert _mission_map_telemetry_model(snapshot=snapshot, artifacts={})["agl_status"] == (
+        "landed_not_applicable"
+    )
+
+    snapshot["landed"] = False
+    assert "target=30m (below_minimum)" in _watch_altitude_status(snapshot)
+    assert _mission_map_telemetry_model(snapshot=snapshot, artifacts={})["agl_status"] == (
+        "below_minimum"
+    )

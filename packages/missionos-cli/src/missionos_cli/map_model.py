@@ -1241,7 +1241,11 @@ def _mission_map_telemetry_model(
         "agl_m": agl,
         "agl_target_m": agl_target,
         "agl_margin_m": agl_margin,
-        "agl_status": _status_text(snapshot.get("terrain_clearance_status")),
+        "agl_status": (
+            "landed_not_applicable"
+            if snapshot.get("landed") is True or snapshot.get("maybe_landed") is True
+            else _status_text(snapshot.get("terrain_clearance_status"))
+        ),
         "destination_target_amsl_m": destination_target_amsl,
         "climb_to_destination_m": climb_to_destination,
     }
