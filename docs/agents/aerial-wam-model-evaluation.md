@@ -86,6 +86,11 @@ the best achievable result among those candidates. If the baseline already
 matches that result, the sample can validate invocation and contracts but cannot
 demonstrate useful selection headroom. Retain unfavorable and tied results.
 
+The [value experiment contract](aerial-wam-value-experiment.md) specifies the
+next inspection-view hypothesis, cheap baseline screen, held-out comparison and
+latency accounting. Its completed CPU audit finds that the calibration target
+was outside every history frame; its proposed new experiments remain unexecuted.
+
 The first integration boundary is:
 
 ```text
