@@ -14,10 +14,17 @@ experiments. Hardware execution and arbitrary vehicle endpoints are unsupported.
 
 ## Observed integration result
 
-The final trial's model receipt, Jev API receipt, signed command, simulator
+The 2026-09-22 final trial's model receipt, Jev API receipt, signed command, simulator
 telemetry, and terminal flight receipt agree on `right_5m`. Takeoff, the selected
 candidate's motion, landing, and disarm were observed; the terminal receipt
 contains no error. These results cover one isolated static-scene SITL trial.
+
+A separate 2026-09-23 repeat again reached actual ANWM inference, Jev judgment,
+bounded dispatch, 5.05848 m observed candidate motion, landing, and disarm.
+Its left-side goal was again scored lower for the right candidate, so goal
+selection failed again. Earlier captures aged past the 180 s input limit before
+judgment; they produced no Jev judgment or candidate dispatch. The repeat
+is documented in the [Japanese technical report](aerial-wam-px4-technical-report-20260922.md#9-2026-09-23追試鮮度失効と再飛行).
 
 | Boundary | Observed result |
 | --- | --- |

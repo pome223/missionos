@@ -1,6 +1,9 @@
 # ANWM・Jev・MissionOSをPX4へ接続した飛行検証
 
-技術レポート — 2026年9月22日
+技術レポート — 初回 2026年9月22日、追試 2026年9月23日
+
+第1～8節は9月22日の初回飛行とその後の契約検証を記述する。9月23日に行った
+独立した飛行追試は第9節に分け、公開済みの初回集計値と混ぜない。
 
 公開済みの航空機向け世界モデルANWM、Jevの判断API、MissionOSの制約検査を接続し、
 PX4/Gazebo SITLで離陸、選択した候補への移動、着陸、disarmまでを確認した。
@@ -356,3 +359,51 @@ Jevのキーはホスト上でGoogle Secret Managerから取得し、予測入�
 比較がどこで失敗するかを確認する。その改善余地がある条件でのみ、学習スコアの
 価値を測る。実未来画像の収集とモデル時間軸の検証も、その性能主張に先立って必要になる。
 今回の一試行から、実機利用、汎用航法、ルート最適化、衝突予測の精度は結論しない。
+
+## 9. 2026-09-23追試：鮮度失効と再飛行
+
+公開済みのANWMコードと同じチェックポイント、16枚のPX4/Gazebo RGB-D履歴、
+250 sampling steps、実Jev API、独立Rules、期限付きExecutorという契約で再試験した。
+カメラを備えた**独立のSITL飛行セッション**であり、上記の通常の
+`chat`→Gateway→PX4タスクに学習WAMとJevを有効化した試験ではない。
+
+最初の新規セッションではL4 VMの16 GiB RAMで重みの再ハッシュに時間がかかった。
+ANWMの左右2候補の実予測は完了したが、元観測が180秒を超え、評価入口は
+`original_model_input_stale_or_future`で拒否した。Jevを呼ばず候補もdispatchせず、
+PX4の離陸後に明示的に着陸・disarmした。同じVMを32 GiB RAMの構成へ
+変更した後も、最初の撮影分は判断前に180秒を超えた。その入力を採用せず、
+同じ定点保持中に新しい16フレームを取得した。
+失効した観測に新しい時刻を付け直していない。
+
+新しい撮影分では、公開コード・重み・補助VAEを固定してL4上でANWMを実行し、
+ホストだけがGoogle Secret ManagerからJevキーを取得した。キーとユーザー承認記録は
+GPU VMへ転送しなかった。評価とdispatchを連続実行し、次を観測した。
+
+| 境界 | 2026-09-23の観測 |
+| --- | --- |
+| ANWM | 実モデル呼び出し2回。読込16.700秒、予測合計39.404秒。左MSE 0.036433、右MSE 0.028039。 |
+| Jev | 実`jev-1.13.0`判断API、304.34 ms。`replan`を返し、既定の対応で`right_5m`を選択。 |
+| Rulesと鮮度 | 元の最終フレームの最も早いUTC受信から評価まで152.503秒。180秒上限内で、独立した静的SDF・領域・現状態の検査が`permit`。 |
+| Executor | 候補命令の発行から0.103秒後に受理し、`candidate_dispatch`を記録。 |
+| SITLの効果 | 右候補へ5.05848 mの観測変位。指定終点との誤差0.08714 m、移動開始から到達まで6.764 simulation秒。 |
+| 終端 | PX4着陸状態とGazebo地面付近のpose、その後のdisarmを観測。終端エラーなし。 |
+
+目標カメラは左にあり、計画した左カメラ終点との距離は0.09539 m、右終点とは
+10.00036 mだった。したがって**接続と候補飛行は再現したが、目標方向の選択も再び
+誤った**。未選択の左候補は飛ばしておらず、距離は計画幾何である。モデルの名目1秒と
+実移動6.764 simulation秒も時間校正された比較ではない。追試のPyTorchは
+`2.14.0+cu130`で初回と異なり、この2試行から成功率、モデル精度、実機安全性を
+推定しない。
+
+正確なランタイム境界は、隔離シーンでの`setup`→`goal`→`initialize`→`start`、
+`phase: holding`の確認後の`history`→`register_px4_aerial_capture.py`→
+`prepare_px4_anwm_input.py`→`aerial_anwm_runtime.py`→
+`build_px4_aerial_execution_policy.py`→`evaluate_px4_aerial_wam_jev.py`→
+`px4_aerial_flight_session.py dispatch`である。実行可能な引数とopt-in変数は
+[飛行契約](aerial-wam-px4-flight.md#portable-orchestration)に記載した。
+この追試の生画像、姿勢、承認文、秘密値、クラウド識別子は公開成果物へ含めない。
+GPU VM・起動ディスク・隔離シミュレーターは削除後の一覧でも0件と確認した。
+再借用のVM稼働は1時間未満で、
+[Google Cloudの公開従量単価](https://cloud.google.com/products/compute/pricing/accelerator-optimized)
+からの計算では追加GPU computeは1米ドル未満と見積もる。
+ディスク、IP、Jev API、請求書の確定額は未確認である。
