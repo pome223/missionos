@@ -294,7 +294,7 @@ PR追加検証では、インストール済み`missionos` CLI、隔離したloo
 明示的な`MISSIONOS_ADK_V2_GRAPH_ROLLBACK=1`でGatewayを再起動した別セッションでは、
 インストール済みCLIの`chat`から提案、`/approve`、`/run`、`/start-sitl`、
 限定OFFBOARD校正を伴う`/execute-sitl`を順に実行した。障害物付近でSafety HOLDが
-発生し、Recovery Agentの`avoid_obstacle`提案を別途人間操作で承認した。
+発生し、Recovery Agentの`avoid_obstacle`提案を別途操作者承認操作で承認した。
 dispatch時の再検証は`valid`、候補は`verified_feasible`であり、PX4のACK、
 回避目標到達、AUTO復帰、RTL、着陸、disarmを同一タスクで観測した。
 `job-status`と`watch`は終端`completed`、`map`は計画23点・観測924点・
@@ -315,7 +315,7 @@ dispatch時の再検証は`valid`、候補は`verified_feasible`であり、PX4�
 `/start-sitl`、限定校正付き`/execute-sitl`を同一タスクで実行した。前回429で
 停止した承認境界は今回通過し、承認直後には未dispatchを表示した。
 障害物でSafety HOLDが発生し、Recovery AgentとMissionAssuranceAgentが
-`avoid_obstacle`を提案した。別の`operate`操作で人間が承認すると、dispatch時の
+`avoid_obstacle`を提案した。別の`operate`操作で明示承認すると、dispatch時の
 再検証は`valid`、命令ACKと効果、回避目標到達、AUTO復帰が記録された。
 その後RTL、着陸、disarmまで観測し、同じタスクは`completed`となった。
 終端の`job-status`、`operate`、`watch`、`map`を照合し、地図は計画23点・
