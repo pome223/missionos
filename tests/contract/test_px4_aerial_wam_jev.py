@@ -140,6 +140,22 @@ def test_bounded_command_uses_existing_authorization_and_exact_vehicle_target(tr
     assert "fixture:synthetic-authorization" not in json_text(prompt)
 
 
+def test_outcome_evaluation_forecast_cannot_enter_jev_or_dispatch(trial):
+    result, _, _ = trial
+    manifest = result["input_manifest"]
+    manifest["num_timesteps"] = 27
+    manifest["outcome_evaluation_only"] = True
+    for candidate in manifest["candidates"]:
+        candidate["horizon_seconds"] = 6.75
+    manifest_hash = prediction_digest(manifest)
+    result["input_manifest_sha256"] = manifest_hash
+    result["runtime_invocation_evidence"]["input_manifest_sha256"] = manifest_hash
+    prompts = []
+    with pytest.raises(ValueError, match="invalid_model_configuration"):
+        call(trial, judge=fixture_judge(prompts=prompts))
+    assert prompts == []
+
+
 def json_text(value):
     import json
     return json.dumps(value)

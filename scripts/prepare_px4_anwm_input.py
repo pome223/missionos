@@ -238,7 +238,10 @@ def prepare(
     *,
     upstream_root: str,
     checkpoint_path: str,
+    num_timesteps: int = 4,
 ) -> dict:
+    if num_timesteps not in (4, 27):
+        raise ValueError("PX4 input supports four-step dispatch or 27-step outcome evaluation")
     if output_dir.exists():
         raise ValueError("prepared output directory must not already exist")
     capture, registration, frames = load_registered_history(capture_dir, registration_dir)
@@ -294,7 +297,7 @@ def prepare(
             "target_camera_pose": target_pose_from_delta(
                 np, arrays["context_camera_poses"][-1], np.array(delta)
             ).tolist(),
-            "horizon_seconds": 1.0,
+            "horizon_seconds": num_timesteps * 0.25,
         }
         candidate["candidate_sha256"] = digest_json(candidate)
         candidates.append(candidate)
@@ -340,7 +343,7 @@ def prepare(
         "request_id": f"px4-{session['session_id']}",
         "assets_npz": "assets.npz",
         "delta_frame": "body_frd_at_observation",
-        "num_timesteps": 4,
+        "num_timesteps": num_timesteps,
         "frame_interval_seconds": 0.25,
         "frame_interval_source": "measured_Gazebo_simulation_timestamps",
         "physical_frame_timing_verified": False,
@@ -356,6 +359,8 @@ def prepare(
         "upstream_root": upstream_root,
         "checkpoint_path": checkpoint_path,
     }
+    if num_timesteps == 27:
+        request["outcome_evaluation_only"] = True
     output_dir.mkdir(parents=True)
     np.savez_compressed(output_dir / "assets.npz", **arrays)
     request["asset_npz_sha256"] = digest_file(output_dir / "assets.npz")
@@ -375,6 +380,7 @@ def main() -> None:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--upstream-root", required=True)
     parser.add_argument("--checkpoint-path", required=True)
+    parser.add_argument("--num-timesteps", type=int, choices=(4, 27), default=4)
     args = parser.parse_args()
     manifest = prepare(
         args.capture_dir,
@@ -383,6 +389,7 @@ def main() -> None:
         args.output_dir,
         upstream_root=args.upstream_root,
         checkpoint_path=args.checkpoint_path,
+        num_timesteps=args.num_timesteps,
     )
     print(
         json.dumps(

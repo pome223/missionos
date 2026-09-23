@@ -139,6 +139,25 @@ def test_typed_px4_validate_only_retains_masks_and_source(px4_request):
     assert str(base) not in json.dumps(manifest)
 
 
+def test_six_point_seven_five_second_px4_forecast_is_evaluation_only(px4_request):
+    request, _, base = px4_request
+    request["num_timesteps"] = 27
+    for candidate in request["candidates"]:
+        candidate["horizon_seconds"] = 6.75
+        candidate["candidate_sha256"] = digest_json({
+            key: value for key, value in candidate.items() if key != "candidate_sha256"
+        })
+    request["candidate_plans_sha256"] = digest_json(request["candidates"])
+    with pytest.raises(ValueError, match="outcome_evaluation_only"):
+        validate_request(request, base)
+    request["outcome_evaluation_only"] = True
+    result = run(request, base, base / "unused", validate_only=True)
+    manifest = result["input_manifest"]
+    assert manifest["num_timesteps"] * manifest["frame_interval_seconds"] == 6.75
+    assert manifest["outcome_evaluation_only"] is True
+    assert manifest["model_time_alignment_verified"] is False
+
+
 def test_original_observation_timestamp_survives_manifest_cleaning(px4_request):
     request, _, base = px4_request
     history = request["px4_provenance"]["history"]

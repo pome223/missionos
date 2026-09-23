@@ -120,11 +120,15 @@ def validate_px4_timing(np: Any, request: dict[str, Any]) -> dict[str, Any]:
         or request.get("horizon_seconds_nominal") is not True
         or request.get("simulation_frame_timing_verified") is not True
         or request.get("model_time_alignment_verified") is not False
-        or request.get("num_timesteps") != 4
+        or request.get("num_timesteps") not in (4, 27)
     ):
         raise ValueError(
             "PX4 timing requires measured simulation cadence and nominal model horizon"
         )
+    if request["num_timesteps"] == 27 and request.get("outcome_evaluation_only") is not True:
+        raise ValueError("6.75-second PX4 forecast requires outcome_evaluation_only")
+    if request["num_timesteps"] == 4 and "outcome_evaluation_only" in request:
+        raise ValueError("one-second PX4 dispatch input cannot claim outcome evaluation")
     source = request.get("source_timing", {})
     stamps = source.get("simulation_time_ns", [])
     if (
@@ -524,6 +528,8 @@ def validate_request(request: dict[str, Any], base: Path) -> tuple[Any, dict[str
         "goal_image_used_for_scoring_only": True,
         "future_ground_truth_used_for_forecast": False,
     }
+    if source_kind == "px4_gazebo_frozen_capture" and num_timesteps == 27:
+        manifest["outcome_evaluation_only"] = True
     return arrays, manifest
 
 

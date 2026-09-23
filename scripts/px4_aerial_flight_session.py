@@ -541,10 +541,19 @@ class FlightSession:
         self.origin = initial["local_ned_pose_m"]
         if math.hypot(*self.origin[:2]) > 0.3 or abs(self.origin[2]) > 0.2:
             raise RuntimeError("initial pose must be on the ground near world origin")
-        self.target_yaw = initial["px4_yaw_ned_rad"]
         self.phase = "arming"
         self.command(400, [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "arm")
-        self.wait(lambda s: s["armed"] is True, 10, "armed heartbeat")
+        armed = self.wait(lambda s: s["armed"] is True, 10, "armed heartbeat")
+        # The unarmed preflight heartbeat can still report a placeholder yaw.
+        # Bind OFFBOARD's heading target only after the armed estimator agrees
+        # with the observed Gazebo heading under the normal safety bound.
+        self.target_yaw = armed["px4_yaw_ned_rad"]
+        self.event(
+            "armed_heading_target_observed",
+            target_yaw_ned_rad=self.target_yaw,
+            gazebo_yaw_ned_rad=armed["yaw_ned_rad"],
+            pose_simulation_time_ns=armed["pose_simulation_time_ns"],
+        )
         self.phase = "taking_off"
         self.command(
             22,
