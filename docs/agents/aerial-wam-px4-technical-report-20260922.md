@@ -286,9 +286,31 @@ PR追加検証では、インストール済み`missionos` CLI、隔離したloo
 候補飛行イベントなしで明示的なlandを送り、PX4の着陸とdisarmを観測した。
 このrunの`complete`は`false`であり、モデル選択の成功回数には数えない。
 
-PX4側の`chat`は提案表示までで、承認後の同一タスクを使ったPX4/Gateway/
-`operate`/`watch`/`map`横断と、実回復中の再検証は未実施である。
-したがってLevel Bの全項目はまだ満たさず、PRはDraftを維持する。
+続くPX4横断試験では、既定のADK v2 graphによる`chat`の提案表示は成功したが、
+`/approve`はCLIで2回とも安全側に停止した。独立した診断runで内側のVertex応答
+`429 RESOURCE_EXHAUSTED`を確認した。これは承認・準備・dispatchを作らない
+失敗であり、既定構成のE2E成功には数えない。
+
+明示的な`MISSIONOS_ADK_V2_GRAPH_ROLLBACK=1`でGatewayを再起動した別セッションでは、
+インストール済みCLIの`chat`から提案、`/approve`、`/run`、`/start-sitl`、
+限定OFFBOARD校正を伴う`/execute-sitl`を順に実行した。障害物付近でSafety HOLDが
+発生し、Recovery Agentの`avoid_obstacle`提案を別途人間操作で承認した。
+dispatch時の再検証は`valid`、候補は`verified_feasible`であり、PX4のACK、
+回避目標到達、AUTO復帰、RTL、着陸、disarmを同一タスクで観測した。
+`job-status`と`watch`は終端`completed`、`map`は計画23点・観測924点・
+回避24点を示した。`delivery_completion_claimed: false`、
+`physical_execution_invoked: false`は維持された。
+
+このrunで`operate`のMission Assurance欄が提案時の古い「承認待ち」を表示する
+不一致を見つけた。凍結incident graphと後続continuation graphのID・hash・
+対象actionが一致する場合に限り、後続の承認・再検証・ACK・効果を読み取り表示へ
+反映するよう修正した。実タスクを新しい本番Gatewayから再読込し、
+`recovery_approval_recorded=yes`、`revalidation=valid`、`command_ACK=yes`、
+`state=resumed_auto_mission`、`final=verified`を確認した。
+この修正は承認・dispatchの権限判定を変更しない。
+
+既定graphでの承認通過と、学習WAMまたはJevを有効にしたPX4の同一タスク横断は
+今回確認できていない。Level Bの全項目はまだ満たさず、PRはDraftを維持する。
 
 Jevのキーはホスト上でGoogle Secret Managerから取得し、予測入力や公開成果物へ
 含めない。HMAC鍵もローカルセッションに限定する。シミュレーターはネットワークを

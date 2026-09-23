@@ -183,6 +183,77 @@ def test_unified_incident_graph_is_visible_without_legacy_rtl_artifacts() -> Non
     assert projection["guard_status"] == "awaiting_operator_approval"
 
 
+def test_bound_continuation_replaces_stale_approval_display() -> None:
+    incident = {
+        "mission_incident_graph_id": "incident-1",
+        "mission_incident_graph_sha256": "a" * 64,
+        "decision_status": "awaiting_operator_approval",
+        "operator_approval_required": True,
+        "recovery_proposed_action": "avoid_obstacle",
+    }
+    continuation = {
+        "schema_version": "missionos_adk_v2_mission_incident_continuation_result.v1",
+        "frozen_mission_incident_graph_id": "incident-1",
+        "frozen_mission_incident_graph_sha256": "a" * 64,
+        "recovery_action": "avoid_obstacle",
+        "human_approval_observed": True,
+        "human_approval": {
+            "approval_status": "observed",
+            "explicit_recovery_dispatch_approval": True,
+        },
+        "action_revalidation": {
+            "validation_status": "valid",
+            "dispatch_action_feasibility": {
+                "feasibility_status": "verified_feasible"
+            },
+        },
+        "continuation_runtime_status": "completed",
+        "dispatch_authority_created": True,
+        "dispatch_request_sent": True,
+        "effect_observed": True,
+        "physical_execution_invoked": False,
+        "verification": {
+            "command_ack_observed": True,
+            "operator_recovery_resume_auto_status": "resumed_auto_mission",
+            "verifier_status": "verified",
+        },
+    }
+    artifacts = {
+        "missionos_mission_incident_graph": incident,
+        "missionos_mission_incident_continuation_graph": continuation,
+    }
+    projection = mission_assurance_projection(artifacts)
+
+    assert projection["source_artifact"] == "missionos_mission_incident_continuation_graph"
+    assert projection["fresh_operator_approval_required"] is False
+    assert projection["recovery_approval_recorded"] is True
+    assert projection["selected_action"] == "avoid_obstacle"
+    assert projection["current_feasibility"] == "verified_feasible"
+    assert projection["revalidation_status"] == "valid"
+    assert projection["command_ack_observed"] is True
+    assert projection["runtime_state_label"] == "resumed_auto_mission"
+    assert projection["physical_execution_invoked"] is False
+
+    task_payload = {"task": {"task_id": "task-bound", "status": "completed", "artifacts": artifacts}}
+    group, _ = _build_operate_status_group(
+        task_payload, proposal=None, pending=None, status="completed", task_id="task-bound"
+    )
+    console = Console(record=True, width=180)
+    console.print(group)
+    rendered = console.export_text()
+    assert "recovery_approval_recorded=yes" in rendered
+    assert "selected_action=avoid_obstacle" in rendered
+    assert "Operator approval required: fresh approval" not in rendered
+
+    unbound = deepcopy(artifacts)
+    unbound["missionos_mission_incident_continuation_graph"][
+        "frozen_mission_incident_graph_sha256"
+    ] = "b" * 64
+    rejected = mission_assurance_projection(unbound)
+    assert rejected["guard_status"] == "awaiting_operator_approval"
+    assert rejected["recovery_approval_recorded"] is False
+
+
 def test_map_uses_persisted_px4_local_coordinates_without_inventing_rtl_home() -> None:
     model = _mission_map_model(task_payload=_task_payload(), provider="osm", live_task_url=None)
 
