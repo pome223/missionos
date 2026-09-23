@@ -32,6 +32,10 @@ def image_pixels(path: Path) -> np.ndarray:
     """Mirror pinned ANWM CenterCropAR -> bilinear Resize -> ToTensor."""
     image = Image.open(path).convert("RGB")
     width, height = image.size
+    # Forecast PNGs have already passed through that transform. Cropping a
+    # square model output again would change its pixels and invalidate MSE.
+    if (width, height) == (224, 224):
+        return np.asarray(image, dtype=np.float32) / 255
     if width > height:
         cropped_width = int(height * 4 / 3)
         left = round((width - cropped_width) / 2)

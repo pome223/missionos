@@ -170,6 +170,12 @@ and `AERIAL_AUTHORIZATION_RECORD` must refer to the retained instruction. The
 controller is not proof of takeoff or stable hover. Wait for its fresh
 `session/status.json` to report `phase: holding`; a timeout must lead to the
 controller's landing/failure path, not input fabrication.
+The controller permits at most four arm attempts after brief telemetry waits
+for the observed PX4 preflight `ACK 1` rejection. Any other rejection, or four
+failed attempts, ends the session without takeoff. It binds the OFFBOARD yaw
+target from the **armed** estimator observation; an unarmed preflight heartbeat
+can still contain a placeholder yaw. Gazebo/PX4 heading disagreement above
+0.15 rad remains an abort condition.
 
 ```sh
 python scripts/px4_aerial_flight_session.py status --session-dir "$AERIAL_RUN/session"
@@ -185,6 +191,11 @@ python scripts/prepare_px4_anwm_input.py \
   --upstream-root "$ANWM_UPSTREAM_ROOT" \
   --checkpoint-path "$ANWM_CHECKPOINT_PATH"
 ```
+
+For offline future-image measurement only, add `--num-timesteps 27` to the
+preparation command. This declares a nominal 6.75 simulation-second offset
+and marks the request `outcome_evaluation_only`. The production Jev/Rules
+evaluator rejects that request; this option cannot authorize flight.
 
 The request's model paths must resolve on the inference host. Transfer the
 prepared request and assets to that host without changing source times or

@@ -542,7 +542,15 @@ class FlightSession:
         if math.hypot(*self.origin[:2]) > 0.3 or abs(self.origin[2]) > 0.2:
             raise RuntimeError("initial pose must be on the ground near world origin")
         self.phase = "arming"
-        self.command(400, [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "arm")
+        for attempt in range(4):
+            self.pump(3.0)
+            try:
+                self.command(400, [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "arm")
+                break
+            except RuntimeError as exc:
+                if "arm rejected with ACK 1" not in str(exc) or attempt == 3:
+                    raise
+                self.event("preflight_arm_retry", attempt=attempt + 1, reason=str(exc))
         armed = self.wait(lambda s: s["armed"] is True, 10, "armed heartbeat")
         # The unarmed preflight heartbeat can still report a placeholder yaw.
         # Bind OFFBOARD's heading target only after the armed estimator agrees
