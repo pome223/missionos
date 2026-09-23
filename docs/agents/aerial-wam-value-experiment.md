@@ -70,9 +70,11 @@ they can enter a flight experiment.
 
 1. Build twelve development cases from several static layouts, with mirrored
    targets, changed backgrounds, partial occlusion and varied viewing angles.
-   Include a fully observed control and an unobserved-target control. Use held-out
-   layouts and target appearances later; mirroring a development image is not an
-   independent test case.
+   Require a distinguishing target cue in the supplied history, documented before
+   learned inference. Add fully observed and unobserved-target controls separately;
+   do not count information-free guessing failures toward recoverable headroom.
+   Use held-out layouts and target appearances later; mirroring a development
+   image is not an independent test case.
 2. Capture real simulator observations from one restored state for every candidate.
    Record state restoration error and obtain an outcome matrix. Static camera
    renders can screen visibility cheaply, but do not count as feasible drone
@@ -101,7 +103,8 @@ outcome matrix. No new scene, flight, inference or headroom result is claimed.
 ## Freeze the comparison, then test the contribution
 
 After passing the screen, freeze the scorer and policies on the development set
-and collect twenty-four held-out cases. Keep the set size and decision rule fixed
+and collect twenty-four held-out cases using the same observability eligibility
+rule; report the extra controls separately. Keep the set size and decision rule fixed
 before inspecting learned-model results. Report each candidate's observed outcome,
 the hindsight best candidate, every method's selection and abstention, and failures.
 
