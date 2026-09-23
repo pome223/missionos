@@ -253,6 +253,16 @@ def test_bound_continuation_replaces_stale_approval_display() -> None:
     assert rejected["guard_status"] == "awaiting_operator_approval"
     assert rejected["recovery_approval_recorded"] is False
 
+    missing_binding = deepcopy(artifacts)
+    del missing_binding["missionos_mission_incident_graph"]["mission_incident_graph_id"]
+    del missing_binding["missionos_mission_incident_continuation_graph"][
+        "frozen_mission_incident_graph_id"
+    ]
+    assert (
+        mission_assurance_projection(missing_binding)["recovery_approval_recorded"]
+        is False
+    )
+
 
 def test_map_uses_persisted_px4_local_coordinates_without_inventing_rtl_home() -> None:
     model = _mission_map_model(task_payload=_task_payload(), provider="osm", live_task_url=None)

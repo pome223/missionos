@@ -233,6 +233,10 @@ def mission_assurance_projection(artifacts: dict[str, Any]) -> dict[str, Any]:
     if (
         not e2e
         and incident_graph
+        and isinstance(incident_graph.get("mission_incident_graph_id"), str)
+        and bool(incident_graph.get("mission_incident_graph_id"))
+        and isinstance(incident_graph.get("mission_incident_graph_sha256"), str)
+        and bool(incident_graph.get("mission_incident_graph_sha256"))
         and continuation.get("schema_version")
         == "missionos_adk_v2_mission_incident_continuation_result.v1"
         and continuation.get("frozen_mission_incident_graph_id")
