@@ -32,6 +32,8 @@ from scripts.aerial_anwm_runtime import (  # noqa: E402
     digest_json,
     target_pose_from_delta,
     validate_request,
+    URBAN_SOURCE,
+    urban_preview_candidates,
 )
 from scripts.screen_px4_aerial_candidates import verify_scene  # noqa: E402
 from src.prediction.px4_camera import (  # noqa: E402
@@ -239,14 +241,40 @@ def prepare(
     upstream_root: str,
     checkpoint_path: str,
     num_timesteps: int = 4,
+    urban_routes: bool = False,
 ) -> dict:
-    if num_timesteps not in (4, 27):
+    if num_timesteps not in ((32,) if urban_routes else (4, 27)):
         raise ValueError("PX4 input supports four-step dispatch or 27-step outcome evaluation")
     if output_dir.exists():
         raise ValueError("prepared output directory must not already exist")
     capture, registration, frames = load_registered_history(capture_dir, registration_dir)
-    boxes, _ = verify_scene(capture, capture_dir)
-    scene_hash = digest_json(boxes)
+    if urban_routes:
+        from scripts.urban_navigation_contract import scene_spec
+        from scripts.px4_urban_wam_trial import building_sdf
+        scene = json.loads((capture_dir / "scene.json").read_text())
+        if scene != scene_spec(scene["family"]):
+            raise ValueError("urban scene differs from declared contract")
+        scene_hash = scene["scene_sha256"]
+        for building in scene["buildings"]:
+            path = capture_dir / (building["name"] + ".sdf")
+            if path.is_symlink() or path.read_text() != building_sdf(building):
+                raise ValueError("urban visual/collision source differs from pinned scene")
+        if (capture["capture_configuration"].get("scene_geometry_sha256") != scene_hash
+                or capture["flight_session"].get("scene_sha256") != scene_hash
+                or capture["flight_session"].get("scene_static_verified") is not True):
+            raise ValueError("urban capture scene binding differs")
+        for frame in capture["frames"]:
+            observed = {p["name"]: p for p in frame["scene_model_poses"]}
+            if set(observed) != {b["name"] for b in scene["buildings"]}:
+                raise ValueError("urban scene observation is incomplete")
+            for building in scene["buildings"]:
+                transform = pose_matrix(observed[building["name"]])
+                if (not np.allclose(transform[:3, 3], building["translation_enu_m"], atol=1e-6, rtol=0)
+                        or not np.allclose(transform[:3, :3], np.eye(3), atol=1e-6, rtol=0)):
+                    raise ValueError("urban building moved during input capture")
+    else:
+        boxes, _ = verify_scene(capture, capture_dir)
+        scene_hash = digest_json(boxes)
     goal, goal_provenance = load_goal_reference(
         goal_reference, frames[0]["rgb"].shape, frames[0]["intrinsics"], scene_hash
     )
@@ -301,6 +329,10 @@ def prepare(
         }
         candidate["candidate_sha256"] = digest_json(candidate)
         candidates.append(candidate)
+    if urban_routes:
+        candidates = urban_preview_candidates(
+            np, scene["routes"], arrays["context_camera_poses"][-1], source_ned, source_yaw
+        )
     history = {
         "role": "historical_observation",
         "capture_scope": capture["capture_scope"],
@@ -339,7 +371,7 @@ def prepare(
     }
     request = {
         "schema_version": "aerial_anwm_request.v1",
-        "source_kind": "px4_gazebo_frozen_capture",
+        "source_kind": URBAN_SOURCE if urban_routes else "px4_gazebo_frozen_capture",
         "request_id": f"px4-{session['session_id']}",
         "assets_npz": "assets.npz",
         "delta_frame": "body_frd_at_observation",
@@ -361,6 +393,16 @@ def prepare(
     }
     if num_timesteps == 27:
         request["outcome_evaluation_only"] = True
+    if urban_routes:
+        request["pose_conditioned_route_preview_only"] = True
+        request["urban_preview_contract"] = {
+            "schema_version": "missionos_urban_route_preview.v1",
+            "scene_sha256": scene_hash,
+            "routes_enu_m": scene["routes"],
+            "route_plans_sha256": digest_json(scene["routes"]),
+            "prefix_path_length_m": 5.0,
+            "time_alignment_verified": False,
+        }
     output_dir.mkdir(parents=True)
     np.savez_compressed(output_dir / "assets.npz", **arrays)
     request["asset_npz_sha256"] = digest_file(output_dir / "assets.npz")
@@ -380,7 +422,8 @@ def main() -> None:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--upstream-root", required=True)
     parser.add_argument("--checkpoint-path", required=True)
-    parser.add_argument("--num-timesteps", type=int, choices=(4, 27), default=4)
+    parser.add_argument("--num-timesteps", type=int, choices=(4, 27, 32), default=4)
+    parser.add_argument("--urban-routes", action="store_true", help="explicit urban pose-preview contract; requires 32 steps")
     args = parser.parse_args()
     manifest = prepare(
         args.capture_dir,
@@ -390,6 +433,7 @@ def main() -> None:
         upstream_root=args.upstream_root,
         checkpoint_path=args.checkpoint_path,
         num_timesteps=args.num_timesteps,
+        urban_routes=args.urban_routes,
     )
     print(
         json.dumps(

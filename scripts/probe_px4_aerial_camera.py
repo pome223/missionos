@@ -210,6 +210,7 @@ for kind, topic in TOPICS.items():
 deadline = time.monotonic() + 120
 bundles = []
 anchor = None
+discarded_noncontiguous_frames = 0
 while time.monotonic() < deadline and len(bundles) < FRAME_COUNT:
     chosen = None
     with LOCK:
@@ -229,6 +230,11 @@ while time.monotonic() < deadline and len(bundles) < FRAME_COUNT:
         continue
     if max(time.monotonic() - item[2] for item in bundle.values()) > 5:
         raise ValueError('sensor capture became stale during collection')
+    if (CONFIG.get('require_contiguous_history') is True and bundles
+            and abs(chosen - bundles[-1][0] - 250000000) > CONFIG['target_tolerance_ns']):
+        discarded_noncontiguous_frames += len(bundles)
+        bundles = []
+        anchor = None
     if anchor is None:
         anchor = chosen
     bundles.append((chosen, bundle))
@@ -245,6 +251,7 @@ result = {'schema_version': 'missionos_px4_aerial_camera_probe.v1',
           'source_kind': 'actual_px4_gazebo_sensor_capture', 'source_topics': TOPICS,
           'capture_configuration': CONFIG,
           'history_timing': {'target_period_ns': 250000000,
+                            'discarded_noncontiguous_frames': discarded_noncontiguous_frames,
               'actual_timestamps_ns': [record['simulation_time_ns'] for record in records],
               'target_lateness_ns': jitter_ns, 'maximum_lateness_ns': max(jitter_ns),
               'maximum_absolute_phase_error_ns': max(abs(value) for value in jitter_ns),

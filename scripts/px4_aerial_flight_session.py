@@ -213,14 +213,14 @@ def decode_datagram(data):
         offset += total
 
 
-def assert_container(inspect, session_dir):
+def assert_container(inspect, session_dir, *, name=CONTAINER, label=LABEL):
     """Only the caller-owned, isolated x500_depth SITL container is eligible."""
     config, host = inspect["Config"], inspect["HostConfig"]
     env = dict(item.split("=", 1) for item in config.get("Env", []) if "=" in item)
     if (
-        inspect.get("Name") != "/" + CONTAINER
+        inspect.get("Name") != "/" + name
         or not inspect["State"]["Running"]
-        or config.get("Labels", {}).get("missionos.scope") != LABEL
+        or config.get("Labels", {}).get("missionos.scope") != label
         or env.get("PX4_SIM_MODEL") != "gz_x500_depth"
         or host.get("NetworkMode") != "none"
         or host.get("Privileged")
@@ -605,6 +605,10 @@ class FlightSession:
         }
         self.phase = "holding"
         self.event("hover_observed", **self.hover)
+        self.hold_for_command()
+
+    def hold_for_command(self):
+        """Default signed lateral command boundary; research subclasses stay separate."""
         deadline = time.monotonic() + 600
         while time.monotonic() < deadline:
             self.pump()

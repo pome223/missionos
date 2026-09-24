@@ -112,7 +112,53 @@ def digest_array(value: Any) -> str:
     return hashlib.sha256(header.encode() + b"\n" + value.tobytes(order="C")).hexdigest()
 
 
+URBAN_SOURCE = "px4_gazebo_urban_route_preview"
+
+
+def urban_preview_candidates(np, routes, reference, vehicle_ned, yaw):
+    """Five metres along each declared path, not a predicted flight trajectory.
+
+    Eight seconds is a nominal model conditioning index. Neither this planned
+    viewpoint nor its time is relabeled as an observed future vehicle state.
+    """
+    if not isinstance(routes, dict) or not 2 <= len(routes) <= 4:
+        raise ValueError("urban preview requires two through four declared routes")
+    candidates = []
+    c, s = math.cos(yaw), math.sin(yaw)
+    frd_from_ned = np.array([[c, s, 0], [-s, c, 0], [0, 0, 1]])
+    for name, route in routes.items():
+        if not isinstance(route, list) or not 1 <= len(route) <= 8:
+            raise ValueError("urban route requires bounded waypoint list")
+        cursor = np.array(vehicle_ned, dtype=float)
+        remaining = 5.0
+        for point in route:
+            enu = _array(np, point, (3,), "urban route waypoint")
+            if np.linalg.norm(enu) > 50 or not 1 <= enu[2] <= 8:
+                raise ValueError("urban waypoint outside preview bounds")
+            target = np.array([enu[1], enu[0], -enu[2]], dtype=float)
+            distance = float(np.linalg.norm(target - cursor))
+            if distance > remaining:
+                cursor += (target - cursor) * remaining / distance
+                remaining = 0
+                break
+            remaining -= distance
+            cursor = target
+        if remaining > 1e-5:
+            raise ValueError("urban route shorter than declared five-metre prefix")
+        delta = np.append(frd_from_ned @ (cursor - vehicle_ned), 0.0)
+        candidate = {
+            "candidate_id": name,
+            "delta_local_m_rad": delta.tolist(),
+            "target_camera_pose": target_pose_from_delta(np, reference, delta).tolist(),
+            "horizon_seconds": 8.0,
+        }
+        candidate["candidate_sha256"] = digest_json(candidate)
+        candidates.append(candidate)
+    return candidates
+
+
 def validate_px4_timing(np: Any, request: dict[str, Any]) -> dict[str, Any]:
+    urban = request.get("source_kind") == URBAN_SOURCE
     if (
         request.get("frame_interval_source") != "measured_Gazebo_simulation_timestamps"
         or request.get("frame_interval_seconds") != 0.25
@@ -120,7 +166,7 @@ def validate_px4_timing(np: Any, request: dict[str, Any]) -> dict[str, Any]:
         or request.get("horizon_seconds_nominal") is not True
         or request.get("simulation_frame_timing_verified") is not True
         or request.get("model_time_alignment_verified") is not False
-        or request.get("num_timesteps") not in (4, 27)
+        or request.get("num_timesteps") not in ((32,) if urban else (4, 27))
     ):
         raise ValueError(
             "PX4 timing requires measured simulation cadence and nominal model horizon"
@@ -129,6 +175,11 @@ def validate_px4_timing(np: Any, request: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("6.75-second PX4 forecast requires outcome_evaluation_only")
     if request["num_timesteps"] == 4 and "outcome_evaluation_only" in request:
         raise ValueError("one-second PX4 dispatch input cannot claim outcome evaluation")
+    if urban and (
+        "outcome_evaluation_only" in request
+        or request.get("pose_conditioned_route_preview_only") is not True
+    ):
+        raise ValueError("urban source must declare pose-conditioned route previews only")
     source = request.get("source_timing", {})
     stamps = source.get("simulation_time_ns", [])
     if (
@@ -178,13 +229,15 @@ def validate_px4_provenance(
         or provenance.get("transport_field_decode_independently_verified") is not False
     ):
         raise ValueError("PX4 source requires a bound airborne observation session")
-    expected_deltas = {"left_5m": [0, -5, 0, 0], "right_5m": [0, 5, 0, 0]}
-    if len(candidates) != 2 or any(
-        c["candidate_id"] not in expected_deltas
-        or not np.array_equal(c["delta_local_m_rad"], expected_deltas[c["candidate_id"]])
-        for c in candidates
-    ):
-        raise ValueError("PX4 candidates must be the two fixed lateral five-metre plans")
+    urban = request.get("source_kind") == URBAN_SOURCE
+    if not urban:
+        expected_deltas = {"left_5m": [0, -5, 0, 0], "right_5m": [0, 5, 0, 0]}
+        if len(candidates) != 2 or any(
+            c["candidate_id"] not in expected_deltas
+            or not np.array_equal(c["delta_local_m_rad"], expected_deltas[c["candidate_id"]])
+            for c in candidates
+        ):
+            raise ValueError("PX4 candidates must be the two fixed lateral five-metre plans")
     mask = arrays["context_valid_mask"]
     if mask.dtype != bool or not np.array_equal(mask, arrays["context_depth"] > 0):
         raise ValueError("PX4 validity mask must match positive depths; unknown uses zero sentinel")
@@ -274,6 +327,24 @@ def validate_px4_provenance(
         raise ValueError("PX4 original observation time must be preserved independently of completion")
     if sha(request.get("candidate_plans_sha256")) != digest_json(candidates):
         raise ValueError("PX4 candidate plans hash mismatch")
+    if urban:
+        contract = request.get("urban_preview_contract", {})
+        if (
+            set(contract) != {"schema_version", "scene_sha256", "routes_enu_m", "route_plans_sha256",
+                              "prefix_path_length_m", "time_alignment_verified"}
+            or contract.get("schema_version") != "missionos_urban_route_preview.v1"
+            or contract.get("scene_sha256") != scene_hash
+            or contract.get("prefix_path_length_m") != 5.0
+            or contract.get("time_alignment_verified") is not False
+            or sha(contract.get("route_plans_sha256")) != digest_json(contract.get("routes_enu_m"))
+        ):
+            raise ValueError("urban route preview contract differs")
+        expected = urban_preview_candidates(
+            np, contract["routes_enu_m"], arrays["context_camera_poses"][-1],
+            np.asarray(provenance["current_vehicle_local_ned_m"]), yaw,
+        )
+        if digest_json(expected) != digest_json(candidates):
+            raise ValueError("urban forecast candidates differ from declared route prefixes")
     if request.get("asset_npz_sha256") != digest_file(asset_path):
         raise ValueError("PX4 asset archive hash mismatch")
     clean_history = {
@@ -316,6 +387,7 @@ def validate_px4_provenance(
         )
     }
     return {
+        **({"urban_preview_contract": contract, "pose_conditioned_route_preview_only": True} if urban else {}),
         "simulation_frame_timing_verified": True,
         "model_time_alignment_verified": False,
         "candidate_plans_sha256": request["candidate_plans_sha256"],
@@ -350,9 +422,10 @@ def validate_request(request: dict[str, Any], base: Path) -> tuple[Any, dict[str
     if request.get("schema_version") != "aerial_anwm_request.v1":
         raise ValueError("unsupported request schema")
     source_kind = request.get("source_kind", "public_dataset_replay")
-    if source_kind not in ("public_dataset_replay", "px4_gazebo_frozen_capture"):
+    if source_kind not in ("public_dataset_replay", "px4_gazebo_frozen_capture", URBAN_SOURCE):
         raise ValueError("only public_dataset_replay or typed PX4 frozen inputs are supported")
-    if source_kind == "px4_gazebo_frozen_capture" and "public_provenance" in request:
+    is_px4 = source_kind in ("px4_gazebo_frozen_capture", URBAN_SOURCE)
+    if is_px4 and "public_provenance" in request:
         raise ValueError("PX4 inputs cannot carry public_dataset_replay provenance")
     if not isinstance(request.get("request_id"), str) or not request["request_id"]:
         raise ValueError("request_id is required")
@@ -364,7 +437,7 @@ def validate_request(request: dict[str, Any], base: Path) -> tuple[Any, dict[str
         raise ValueError("num_timesteps must be an integer from 1 through 128")
     if type(frame_interval) not in (int, float) or not 0 < frame_interval <= 10:
         raise ValueError("frame_interval_seconds must describe the source data")
-    if source_kind == "px4_gazebo_frozen_capture":
+    if is_px4:
         clean_source_timing = validate_px4_timing(np, request)
     else:
         if request.get("frame_interval_source") != "ANWM public benchmark 4 fps":
@@ -417,7 +490,7 @@ def validate_request(request: dict[str, Any], base: Path) -> tuple[Any, dict[str
             "camera_intrinsics",
             "goal_rgb",
         }
-        if source_kind == "px4_gazebo_frozen_capture":
+        if is_px4:
             expected_keys |= {"context_valid_mask", "context_simulation_time_ns"}
         if set(archive.files) != expected_keys:
             raise ValueError(
@@ -480,7 +553,7 @@ def validate_request(request: dict[str, Any], base: Path) -> tuple[Any, dict[str
     if len(delta_digests) < 2:
         raise ValueError("candidates must include at least two distinct actions")
     source_fields = {}
-    if source_kind == "px4_gazebo_frozen_capture":
+    if is_px4:
         source_fields = validate_px4_provenance(np, request, arrays, clean_candidates, path)
     else:
         provenance = request.get("public_provenance", {})
@@ -709,7 +782,8 @@ def run(
                 for name in ("torch", "torchvision", "diffusers", "timm", "numpy")
             },
             "execution_scope": (
-                "px4_gazebo_frozen_candidate_forecast"
+                "px4_gazebo_urban_pose_conditioned_route_preview"
+                if manifest["source_kind"] == URBAN_SOURCE else "px4_gazebo_frozen_candidate_forecast"
                 if manifest["source_kind"] == "px4_gazebo_frozen_capture"
                 else "public_dataset_offline_candidate_forecast"
             ),
