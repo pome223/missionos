@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime
 import hashlib
 import json
 import math
@@ -96,6 +97,11 @@ def verify(root):
         from scripts.select_urban_wam_route import select_route
 
         selection = json.loads((session / "urban-selection.json").read_text())
+        # The telemetry receipt can precede the command by one update interval.
+        # Expiry is checked at dispatch event time, preserving observation age.
+        dispatched_at = datetime.fromisoformat(dispatch["at"])
+        require(dispatched_at.tzinfo is not None, "dispatch event timezone missing")
+        dispatch_time = dispatched_at.timestamp()
         envelope = json.loads((session / "urban-go-accepted.json").read_text())
         require(
             sha(session / "urban-selection.json")
@@ -107,14 +113,14 @@ def verify(root):
             envelope,
             config,
             (session / ".dispatch-key").read_bytes(),
-            dispatch["observed_start"]["observed_at_unix_s"],
+            dispatch_time,
         )
         recomputed = select_route(
             root / "input",
             root / "forecast/result.json",
             scene,
             dispatch["observed_start"],
-            dispatch["observed_start"]["observed_at_unix_s"],
+            dispatch_time,
         )
         for key in (
             "route_id",

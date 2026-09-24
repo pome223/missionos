@@ -72,10 +72,12 @@ def infer(root, gpu_config_path):
     runtime = remote_root + "/aerial_anwm_runtime.py"
     q = shlex.quote
     # This check prevents silently running a different script on a reused VM.
-    observed_sha = call(ssh + ["--command", "sha256sum " + q(runtime)]).split()[0]
+    observed_sha = call(
+        ssh
+        + ["--command", "sha256sum " + q(runtime) + " && mkdir -p " + q(remote_input)]
+    ).split()[0]
     if observed_sha != cfg["published_runtime_sha256"]:
         raise ValueError("remote runtime differs from explicitly published script")
-    call(ssh + ["--command", "mkdir -p " + q(remote_input)])
     call(
         [
             "gcloud",
@@ -99,7 +101,9 @@ def infer(root, gpu_config_path):
             remote_output,
         )
     )
-    call(ssh + ["--command", "HF_HUB_OFFLINE=1 " + command], timeout=135)
+    # Three candidates need one more sampling call than the two-way passage.
+    # The independent 180-second observation limit remains unchanged.
+    call(ssh + ["--command", "HF_HUB_OFFLINE=1 " + command], timeout=150)
     call(
         [
             "gcloud",
