@@ -262,6 +262,19 @@ class MissionAssuranceJudgeUnavailable(RuntimeError):
     pass
 
 
+class MissionAssuranceJudgeError(RuntimeError):
+    """Provider failure with aggregate invocation facts from a composite judge."""
+
+    def __init__(
+        self, reason: str, *, status: Literal["not_configured", "failed"],
+        invoked: bool, invocation_evidence: Mapping[str, Any],
+    ) -> None:
+        super().__init__(reason)
+        self.status = status
+        self.invoked = invoked
+        self.invocation_evidence = dict(invocation_evidence)
+
+
 def build_mission_assurance_prompt(situation: MissionSituation) -> dict[str, Any]:
     """Build a backend-neutral prompt; thresholds remain facts, not decisions."""
 
@@ -347,6 +360,14 @@ class MissionAssuranceAgent:
         prompt = build_mission_assurance_prompt(situation)
         try:
             judgment = self._judge.judge(prompt)
+        except MissionAssuranceJudgeError as exc:
+            return self._escalation(
+                situation,
+                status=exc.status,
+                invoked=exc.invoked,
+                reasons=(str(exc),),
+                invocation_evidence=exc.invocation_evidence,
+            )
         except MissionAssuranceJudgeUnavailable as exc:
             return self._escalation(
                 situation,
@@ -771,6 +792,7 @@ __all__ = [
     "MissionAssuranceAgent",
     "MissionAssuranceJudge",
     "MissionAssuranceJudgeUnavailable",
+    "MissionAssuranceJudgeError",
     "MissionResponseProposal",
     "MissionSituation",
     "ModelJudgment",

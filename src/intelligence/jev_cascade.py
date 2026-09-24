@@ -4,7 +4,11 @@ from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 import os
 
-from src.intelligence.mission_assurance_agent import ModelJudgment, MissionAssuranceJudgeUnavailable
+from src.intelligence.mission_assurance_agent import (
+    ModelJudgment,
+    MissionAssuranceJudgeUnavailable,
+    MissionAssuranceJudgeError,
+)
 from src.intelligence.jev_assurance import JevAssuranceJudge
 
 POLICY_VERSION = "jev_assurance_cascade.v1"
@@ -40,6 +44,9 @@ def _fixture_fast_path(prompt, result, profile):
         and telemetry.get("stale") is False
         and telemetry.get("dropout") is False
         and not situation.get("mission_contract", {}).get("response_mapping")
+        and not situation.get("mission_contract", {})
+        .get("mission_context", {})
+        .get("response_mapping")
         and result.output.get("proposed_response_kind") in {"hold", "replan"}
         and result.invocation_evidence.get("review_signal") == "bounded"
     )
@@ -82,6 +89,22 @@ class JevCascadeJudge:
             )
             return finish(_escalation(reason, question), route, reason)
 
+        def provider_error(provider, exc, *, prior_invoked):
+            unavailable = isinstance(exc, MissionAssuranceJudgeUnavailable)
+            status = "not_configured" if unavailable else "failed"
+            reason = f"{provider}_{status}"
+            audit.update(route="human_review", reason=reason)
+            audit[f"{provider}_error_type"] = type(exc).__name__
+            audit[f"{provider}_status"] = status
+            if provider == "reasoner" and unavailable:
+                audit["reasoner_invoked"] = False
+            raise MissionAssuranceJudgeError(
+                reason,
+                status=status,
+                invoked=prior_invoked or not unavailable,
+                invocation_evidence={"jev_cascade": audit},
+            ) from exc
+
         if self.fast_path not in FAST_PATHS:
             raise MissionAssuranceJudgeUnavailable("invalid_fast_path_profile")
         try:
@@ -91,8 +114,7 @@ class JevCascadeJudge:
                 "invocation_evidence": dict(first.invocation_evidence),
             }
         except Exception as exc:  # Providers fail heterogeneously; no silent fallback.
-            audit["jev_error_type"] = type(exc).__name__
-            return stop("human_review", "jev_failed")
+            provider_error("jev", exc, prior_invoked=False)
 
         uncertainty = prompt["mission_situation"].get("uncertainty", {}).get("mission_context", {})
         if uncertainty.get("required_observations_missing"):
@@ -131,8 +153,7 @@ class JevCascadeJudge:
                 "invocation_evidence": dict(second.invocation_evidence),
             }
         except Exception as exc:
-            audit["reasoner_error_type"] = type(exc).__name__
-            return stop("human_review", "reasoner_failed")
+            provider_error("reasoner", exc, prior_invoked=True)
         # The enclosing MissionAssuranceAgent validates the final output as usual.
         return finish(second.output, "reasoner", reason, second)
 
@@ -151,24 +172,49 @@ class JevCascadeShadowJudge:
                 def judge(self, _prompt):
                     return future.result()
 
-            candidate = JevCascadeJudge(
-                SharedReasoner(), jev=self.jev, fast_path=self.fast_path
-            ).judge(deepcopy(prompt))
-            primary = future.result()
+            try:
+                candidate = JevCascadeJudge(
+                    SharedReasoner(), jev=self.jev, fast_path=self.fast_path
+                ).judge(deepcopy(prompt))
+                candidate_output = dict(candidate.output)
+                candidate_evidence = dict(candidate.invocation_evidence)
+                candidate_status = {"status": "observed"}
+            except MissionAssuranceJudgeError as exc:
+                candidate_output = {}
+                candidate_evidence = dict(exc.invocation_evidence)
+                candidate_status = {
+                    "status": exc.status,
+                    "model_inference_invoked": exc.invoked,
+                    "blocking_reasons": [str(exc)],
+                }
+            primary_error = None
+            try:
+                primary = future.result()
+            except Exception as exc:
+                primary_error = exc
+                primary = None
+        shadow = {
+            **candidate_status,
+            "used_for_decision": False,
+            "agrees_with_primary": primary is not None and candidate_output == primary.output,
+            "response_agrees_with_primary": primary is not None
+            and candidate_output.get("proposed_response_kind")
+            == primary.output.get("proposed_response_kind"),
+            "output": candidate_output,
+            "invocation_evidence": candidate_evidence,
+            "reasoner_reused_primary_call": candidate_evidence["jev_cascade"]["reasoner_invoked"],
+        }
+        if primary_error is not None:
+            unavailable = isinstance(primary_error, MissionAssuranceJudgeUnavailable)
+            status = "not_configured" if unavailable else "failed"
+            shadow["incumbent_error_type"] = type(primary_error).__name__
+            raise MissionAssuranceJudgeError(
+                f"incumbent_{status}",
+                status=status,
+                invoked=candidate_status.get("model_inference_invoked", True) or not unavailable,
+                invocation_evidence={"jev_cascade_shadow": shadow},
+            ) from primary_error
         return ModelJudgment(
             output=primary.output,
-            invocation_evidence={
-                **primary.invocation_evidence,
-                "jev_cascade_shadow": {
-                    "used_for_decision": False,
-                    "agrees_with_primary": candidate.output == primary.output,
-                    "response_agrees_with_primary": candidate.output.get("proposed_response_kind")
-                    == primary.output.get("proposed_response_kind"),
-                    "output": dict(candidate.output),
-                    "invocation_evidence": dict(candidate.invocation_evidence),
-                    "reasoner_reused_primary_call": candidate.invocation_evidence["jev_cascade"][
-                        "reasoner_invoked"
-                    ],
-                },
-            },
+            invocation_evidence={**primary.invocation_evidence, "jev_cascade_shadow": shadow},
         )

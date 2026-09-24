@@ -29,7 +29,8 @@ experimental profile, `fixture_verified_detour_v1`, requires all of:
 - Recovery's proposed action and source-verified feasibility both identify
   `avoid_obstacle`;
 - telemetry explicitly reports neither stale data nor dropout;
-- no custom mission response mapping;
+- no custom mission response mapping, either directly in `mission_contract` or
+  under the Gateway projection `mission_contract.mission_context`;
 - Jev returns `bounded` for review and routing, and selects `hold` or `replan`;
 - no source-declared missing observations, operator decision, or extra reasoning.
 
@@ -73,12 +74,22 @@ additional anchoring input. Its output passes the existing Assurance validator.
 `model_invocation_evidence.jev_cascade` records the policy version, selected
 profile, route, reason, provider outputs and invocation evidence, and whether the
 reasoner was invoked. Provider failures record error types without credentials.
-Stops are explicitly adapter templates, not model-generated rationale.
+Model-requested observation/human-review stops are explicitly adapter templates,
+not model-generated rationale. Provider errors are raised as typed failures rather
+than successful judgments: missing configuration records `not_configured`, while
+timeouts and malformed responses record `failed`, both with blocking reasons.
+Missing Jev credentials record `model_inference_invoked=false`. If Jev completed
+before the reasoner was unavailable or failed, the aggregate invocation flag
+remains true and the Jev receipt is retained. A timeout records an attempted
+invocation; it does not prove that the provider completed inference.
 
 In shadow mode, `jev_cascade_shadow` contains the candidate output and receipt,
 `used_for_decision=false`, label agreement and whether it reused the incumbent
 call. A candidate stop cannot alter the incumbent output. Incumbent failure is
-not replaced by the Jev result. A shadow comparison may wait for both models.
+not replaced by the Jev result. Failed shadow candidates have an explicit failure
+status, blocking reasons and an empty output; they cannot masquerade as successful
+human-review judgments. Incumbent failures also retain candidate invocation facts.
+A shadow comparison may wait for both models.
 
 Prediction admission still precedes Assurance. A rejected prediction stops the
 workflow before either judge. Human approval or an approved bounded policy,
@@ -98,4 +109,7 @@ The smoke runs real loopback HTTP and the ADK incident workflow. Fixture model
 responses cover the three original modes, all four routing outcomes in cascade
 and cascade shadow, and the default disabled fast path. It checks exact provider
 call counts, unchanged shadow output, and absence of approval/dispatch/executor
-activity. It does not establish hosted-model quality or mission outcome value.
+activity. HTTP regressions additionally cover missing Jev credentials, provider
+timeouts, malformed routing responses, an unconfigured reasoner, and nested
+Gateway response mappings. It does not establish hosted-model quality or mission
+outcome value.

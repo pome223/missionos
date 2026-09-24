@@ -6,6 +6,7 @@ from src.intelligence.jev_assurance import JevAssuranceJudge
 from src.intelligence.jev_cascade import JevCascadeJudge, JevCascadeShadowJudge
 from src.intelligence.mission_assurance_agent import (
     MissionAssuranceAgent,
+    MissionAssuranceJudgeUnavailable,
     ModelJudgment,
     build_mission_assurance_prompt,
     configured_mission_assurance_agent,
@@ -134,10 +135,14 @@ def test_source_declared_missing_requirement_overrides_bounded_model_answer(decl
 @pytest.mark.parametrize("failure", ["jev", "reasoner"])
 def test_provider_failure_escalates_without_another_fallback(failure):
     slow = Reasoner(fail=failure == "reasoner")
-    result = JevCascadeJudge(slow, jev=jev("deep_reasoning", fail=failure == "jev")).judge(prompt())
+    result = MissionAssuranceAgent(
+        JevCascadeJudge(slow, jev=jev("deep_reasoning", fail=failure == "jev"))
+    ).evaluate(situation())
     assert slow.calls == int(failure == "reasoner")
-    assert result.output["proposed_response_kind"] == "operator_escalation"
-    assert result.invocation_evidence["jev_cascade"]["reason"] == failure + "_failed"
+    assert result.proposed_response_kind == "operator_escalation"
+    assert result.judgment_status == "failed" and result.model_inference_invoked is True
+    assert result.blocking_reasons == (failure + "_failed",)
+    assert result.model_invocation_evidence["jev_cascade"]["reason"] == failure + "_failed"
 
 
 @pytest.mark.parametrize("route", ["bounded", "deep_reasoning", "need_observation", "human_review"])
@@ -155,8 +160,14 @@ def test_shadow_preserves_incumbent_and_reuses_single_reasoner_call(route):
 
 
 def test_shadow_incumbent_failure_is_not_replaced_by_jev():
-    with pytest.raises(TimeoutError):
-        JevCascadeShadowJudge(Reasoner(fail=True), jev=jev()).judge(prompt())
+    result = MissionAssuranceAgent(JevCascadeShadowJudge(Reasoner(fail=True), jev=jev())).evaluate(
+        situation()
+    )
+    assert result.judgment_status == "failed"
+    assert result.proposed_response_kind == "operator_escalation"
+    assert result.model_inference_invoked is True
+    assert result.blocking_reasons == ("incumbent_failed",)
+    assert "jev_cascade_shadow" in result.model_invocation_evidence
 
 
 @pytest.mark.parametrize("defect", ["choice", "sum", "nan", "missing"])
@@ -177,10 +188,12 @@ def test_invalid_routing_answer_never_reaches_reasoner(defect):
         return raw
 
     slow = Reasoner()
-    result = JevCascadeJudge(
-        slow, jev=JevAssuranceJudge(transport=invalid, include_routing=True)
-    ).judge(prompt())
-    assert slow.calls == 0 and result.output["proposed_response_kind"] == "operator_escalation"
+    result = MissionAssuranceAgent(
+        JevCascadeJudge(slow, jev=JevAssuranceJudge(transport=invalid, include_routing=True))
+    ).evaluate(situation())
+    assert slow.calls == 0 and result.proposed_response_kind == "operator_escalation"
+    assert result.judgment_status == "failed" and result.model_inference_invoked is True
+    assert result.blocking_reasons == ("jev_failed",)
 
 
 @pytest.mark.parametrize(
@@ -224,3 +237,86 @@ def test_invalid_profile_fails_before_any_model(monkeypatch):
     result = configured_mission_assurance_agent().evaluate(situation())
     assert result.proposed_response_kind == "operator_escalation"
     assert result.model_inference_invoked is False
+
+
+@pytest.mark.parametrize("nested", [False, True])
+def test_custom_response_mapping_excludes_fast_path(nested):
+    p, slow = prompt(), Reasoner()
+    contract = p["mission_situation"]["mission_contract"]
+    if nested:
+        contract = contract.setdefault("mission_context", {})
+    contract["response_mapping"] = {"hold": "custom response semantics"}
+    result = JevCascadeJudge(slow, jev=jev(), fast_path="fixture_verified_detour_v1").judge(p)
+    assert slow.calls == 1
+    assert result.invocation_evidence["jev_cascade"]["route"] == "reasoner"
+
+
+def test_missing_jev_key_is_not_a_model_judgment(monkeypatch):
+    monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)
+    slow = Reasoner()
+    result = MissionAssuranceAgent(JevCascadeJudge(slow)).evaluate(situation())
+    assert slow.calls == 0
+    assert result.judgment_status == "not_configured"
+    assert result.model_inference_invoked is False
+    assert result.blocking_reasons == ("jev_not_configured",)
+    assert (
+        result.model_invocation_evidence["jev_cascade"]["jev_error_type"]
+        == "MissionAssuranceJudgeUnavailable"
+    )
+
+
+def test_unconfigured_reasoner_keeps_prior_jev_invocation():
+    class MissingReasoner:
+        def judge(self, prompt):
+            raise MissionAssuranceJudgeUnavailable("reasoner_not_enabled")
+
+    result = MissionAssuranceAgent(
+        JevCascadeJudge(MissingReasoner(), jev=jev("deep_reasoning"))
+    ).evaluate(situation())
+    assert result.judgment_status == "not_configured"
+    assert result.model_inference_invoked is True  # Jev was called first.
+    assert result.blocking_reasons == ("reasoner_not_configured",)
+    audit = result.model_invocation_evidence["jev_cascade"]
+    assert audit["reasoner_invoked"] is False and "jev" in audit
+
+
+@pytest.mark.parametrize("missing", [True, False])
+def test_shadow_jev_failure_is_recorded_without_changing_primary(monkeypatch, missing):
+    monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)
+    first = JevAssuranceJudge(include_routing=True) if missing else jev(fail=True)
+    slow = Reasoner()
+    result = MissionAssuranceAgent(JevCascadeShadowJudge(slow, jev=first)).evaluate(situation())
+    assert result.judgment_status == "proposal_guardrail_passed"
+    assert result.proposed_response_kind == "replan" and result.model_inference_invoked is True
+    shadow = result.model_invocation_evidence["jev_cascade_shadow"]
+    assert shadow["status"] == ("not_configured" if missing else "failed")
+    assert shadow["model_inference_invoked"] is (not missing)
+    assert shadow["blocking_reasons"] and shadow["output"] == {}
+    assert shadow["used_for_decision"] is False and slow.calls == 1
+
+
+def test_model_requested_human_review_is_a_successful_judgment():
+    result = MissionAssuranceAgent(JevCascadeJudge(Reasoner(), jev=jev("human_review"))).evaluate(
+        situation()
+    )
+    assert result.proposed_response_kind == "operator_escalation"
+    assert result.judgment_status == "proposal_guardrail_passed"
+    assert result.model_inference_invoked is True and result.blocking_reasons == ()
+
+
+@pytest.mark.parametrize("jev_missing", [False, True])
+def test_shadow_unconfigured_incumbent_preserves_aggregate_invocation(monkeypatch, jev_missing):
+    monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)
+
+    class MissingReasoner:
+        def judge(self, prompt):
+            raise MissionAssuranceJudgeUnavailable("reasoner_not_enabled")
+
+    first = JevAssuranceJudge(include_routing=True) if jev_missing else jev()
+    result = MissionAssuranceAgent(JevCascadeShadowJudge(MissingReasoner(), jev=first)).evaluate(
+        situation()
+    )
+    assert result.judgment_status == "not_configured"
+    assert result.model_inference_invoked is (not jev_missing)
+    assert result.blocking_reasons == ("incumbent_not_configured",)
+    assert result.model_invocation_evidence["jev_cascade_shadow"]["used_for_decision"] is False
