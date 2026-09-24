@@ -1,157 +1,161 @@
-# Aerial WAM value experiment: choose a useful inspection view
+# Aerial WAM value experiment: navigate between buildings in 3D
 
-Status: **experiment design, not an observed WAM benefit**. The paired PX4
-calibration flight established an integration path and an unfavorable prediction
-result. The next objective is to obtain a usable target inspection image with
-fewer failed viewpoints and repeat visits. This gives a future observation a
-task consequence; full-frame RGB similarity alone does not define that outcome.
+Status: **design, not an observed navigation benefit**. The user's objective is
+flight through building gaps, climbing above obstructions and lateral avoidance
+on the way to a destination. This supersedes the earlier inspection-view proposal.
+The calibration audit remains valid, but acquiring a better inspection image is
+not the mission endpoint.
 
-## Why the calibration scene is insufficient
+## Intended behavior and current gap
 
-The CPU audit in `scripts/audit_px4_anwm_value.py` revalidates the paired flight,
-input and forecast artifacts through `compare_px4_anwm_outcomes.py`. It uses the
-published scene geometry **only for retrospective auditing**. It emits aggregate
-counts and costs; it cannot admit a prediction or dispatch a flight.
+At each decision, predict the consequences of forward, climbing and detour
+candidates; select a useful admissible route; execute a short verified portion;
+observe again and replan until the destination is reached. The experiment starts
+in a textured urban 3D simulator with real PX4 dynamics and observed motion.
+A convincing city image alone is not passage through its geometry.
 
-In both measured histories, the complete green target box lies outside the left
-plane of the raw 640 × 360 camera frustum in all sixteen frames. The scene-specific
-color diagnostic also counts zero green pixels in all history frames and all
-four predicted images, while the goal contains 49,344 green pixels. Its rule is
-`G > 2R`, `G > 2B`, `G > 0.1` in RGB scaled to [0, 1]. This is an artificial-marker
-diagnostic, not a general detector or proof about indirect lighting cues.
+The [ANWM upstream overview](https://github.com/EmbodiedCity/ANWM.code#overview)
+conditions forecasts on displacement in x/y/z and yaw and describes 3D aerial
+navigation. Its [limitations](https://github.com/EmbodiedCity/ANWM.code#limitations)
+state that real-world results are offline evaluations. The released interface
+supports a research direction; it is not evidence of our closed-loop navigation.
 
-Therefore, the current input supplies no direct view of the distinguishing
-target. Training a selector on a fixed "green is left" layout could exploit that
-layout without learning useful prediction. Color/layout swaps and unseen scenes
-are necessary controls. Completely unobserved, independently randomized target
-identity is an information-acquisition case, not a fair demand to guess it.
+| Boundary | Current implementation | Required for this experiment |
+| --- | --- | --- |
+| Model candidate input | Generic four-component displacement/yaw; PX4 provenance accepts only left/right 5 m | Bound forward, vertical, detour and hold plans to their actual source observation |
+| PX4 execution | Two lateral candidates, altitude near 3 m, one maneuver then land | Scene-specific 3D limits, timed waypoint segments and repeated decisions |
+| Prediction | One target RGB per candidate and nominal temporal offset | Forecasts aligned to intermediate executed poses and times along a route |
+| Candidate score | Full-frame goal RGB MSE | Validated route-progress/passability evidence with uncertainty; preserve independent geometry constraints |
+| Outcome | Candidate displacement, landing/disarm; goal-image diagnostic | Destination reached through the urban scene, contacts, clearance, detours and elapsed time |
 
-The available goal-pose baseline already selects the better measured arm. Its
-paired image-MSE regret is zero, versus 0.014968 for ANWM and projection MSE.
-This is a two-flight proxy with near-matched starts, not a complete same-state
-outcome matrix or a mission success rate. It supplies no improvement headroom
-over the strongest available baseline in this particular scene.
+Do not merely widen the executor's limits: input preparation, provenance,
+policy scope, Rules, command binding and controller validation must change
+consistently. The existing lateral contract remains unchanged until that work is
+implemented and verified. An endpoint image cannot certify the intervening path.
 
-The recorded inference takes 41.18–41.22 wall seconds for two candidates. The
-candidate motion takes about 6.8 **simulation** seconds; those clocks must not be
-treated as measured end-to-end time savings. A useful low-rate inspection planner
-must recover its inference cost through avoided travel or failed observations.
-This implementation has not established an emergency collision-avoidance loop.
+## Three initial scene families
 
-## Bounded hypothesis
+| Scene | Candidate alternatives | Verified outcome of interest |
+| --- | --- | --- |
+| Building gap | Forward through the gap, lateral route around the block, hold | Airframe passes the gap without contact and continues to the destination |
+| Low obstruction | Forward at current height, climb then advance, lateral detour | Altitude changes as commanded and the route clears the obstruction |
+| Offset passage or dead end | Left/right multi-segment detours, climb where permitted, observe/hold | Route reaches the destination instead of repeated stopping or backtracking |
 
-For a static inspection target with an image reference and a prior partial view,
-ANWM's action-conditioned future observation may rank candidate viewpoints better
-than projecting the same measured RGB-D history. The intended benefit is a usable
-first inspection view or fewer repeat visits. This hypothesis concerns viewpoint
-selection; generated RGB is not obstacle clearance or landing evidence.
+Vary gap width, building heights, layout, appearance and start orientation. Some
+layouts must favor climbing, some lateral detours and some direct progress.
+Include narrow-gap and altitude-limit cases where the appropriate result is a
+rejection or a different route. Stage geometry-only fixtures for debugging, then
+use building meshes/textures with verified collider alignment for the main test.
+Do not present colored-box flights as the completed urban experiment.
 
-The specific opportunity is a viewpoint that reveals a partly observed facade
-or target surface: raw reprojection leaves missing appearance, while a learned
-model might preserve task-relevant identity and shape there. Use textured scenes
-and actual sensor limitations. Do not artificially remove good depth or history
-from a comparator to manufacture this opportunity. Fully observed static geometry
-is an essential control and may leave no useful job for the learned model.
+Keep wholly unobserved, independently randomized alternatives as separate
+information-acquisition controls. WAM cannot be required to know an arbitrary
+hidden obstacle from identical inputs. For occlusion cases, record what earlier
+views or geometric cues make prediction informative, and compare history-based
+mapping as well. If evidence is insufficient, observe or hold.
 
-Use an image-reference mission where the target's global location is genuinely
-unavailable. Do not hide an available target pose merely to weaken the baseline.
-When the mission provides a target pose, retain the pose-based planner. Rules
-still receive the geofence and authoritative obstacle information they need.
-Future rendered images and target masks are verifier labels, never predictor
-inputs. Every selector receives the same observation history and candidate set.
+## Connection and value are separate milestones
 
-Candidate families are a short observation maneuver, two inspection viewpoints,
-and hold/abstain. These are proposed experimental actions; the existing public
-flight contract still permits only its declared fixed candidates. New maneuvers
-need their own bounded execution contract and actual motion verification before
-they can enter a flight experiment.
+1. **CPU/simulator feasibility, no rented GPU:** construct one development case
+   per family. Use a known geometric route to verify the scene, airframe swept
+   volume, actual PX4 forward/climb/detour motion and terminal observations.
+   Retain RGB-D and pose along the route. A successful hand-authored/geometric
+   flight validates the environment and executor, not learned navigation.
+2. **Matched candidate outcomes:** expand to twelve development starts across
+   the three families. Restore the same simulator state for every candidate,
+   measure restoration error and obtain actual outcome differences. Freeze route
+   limits, candidate costs, success predicates and comparison policies before
+   reviewing learned predictions. Treat static renders as visual screens only.
+3. **Real WAM forecasts in shadow:** predict these candidate routes from their
+   legitimate histories. Record every actual model call, temporal offset, pose,
+   projection baseline and scorer output. Compare predictions with observed
+   intermediate frames and outcomes. This may validate more than lateral actions
+   but still does not establish that WAM drove the aircraft.
+4. **Closed-loop WAM selection:** after the expanded contract and score are
+   validated, use the selected route through Jev, existing authorization, Rules
+   and Executor. Execute only the admitted prefix, capture a fresh history and
+   repeat. Attribute arrival to this stage only if the decision receipts bind
+   actual model outputs to the flown segments.
 
-## CPU and simulator screen before another GPU run
+The first three development scenes are feasibility work, not a result already
+obtained. No additional GPU, flight or urban scene was run for this design update.
 
-1. Build twelve development cases from several static layouts, with mirrored
-   targets, changed backgrounds, partial occlusion and varied viewing angles.
-   Require a distinguishing target cue in the supplied history, documented before
-   learned inference. Add fully observed and unobserved-target controls separately;
-   do not count information-free guessing failures toward recoverable headroom.
-   Use held-out layouts and target appearances later; mirroring a development
-   image is not an independent test case.
-2. Capture real simulator observations from one restored state for every candidate.
-   Record state restoration error and obtain an outcome matrix. Static camera
-   renders can screen visibility cheaply, but do not count as feasible drone
-   motion or completed flight. Later, confirm retained candidates through PX4.
-3. Define a usable inspection image before scoring: the correct target has at
-   least 80% unoccluded projected area and at least 64 pixels on its shorter side
-   in the raw 640 × 360 image. Simulator target masks measure these labels; neither
-   mask nor outcome image is exposed to the selector. Freeze any application-driven
-   change to these thresholds before the test set is captured.
-4. Measure the following fixed comparators: development-selected constant action;
-   current-image target matching plus geometric planning; all-history RGB-D
-   reprojection plus target matching; a geometric visibility/information-gain
-   observation policy; and goal-pose planning whenever available. Count sensing
-   maneuvers and repeat visits for every policy. Use the same frozen task scorer
-   on projection and learned future images to isolate the learned contribution.
-5. Continue to GPU only if a feasible candidate succeeds in at least ten of the
-   twelve development cases, and the strongest applicable cheap baseline misses
-   at least three of those recoverable cases. These are prespecified screening
-   thresholds, not statistical evidence. If target information is missing, first
-   test acquiring it. If geometry solves the task, use geometry and change the
-   research question instead of weakening it.
+## What the WAM must add
 
-The color audit above does not implement the new inspection scorer or this
-outcome matrix. No new scene, flight, inference or headroom result is claimed.
+The hypothesis is that action-conditioned prediction can choose routes that
+make useful future progress and avoid unnecessary stops/backtracking under
+partial observation. Independent geometric constraints continue to reject
+known-invalid motion. Rejection by those constraints is not WAM avoidance.
 
-## Freeze the comparison, then test the contribution
+The current RGB output supplies neither metric future clearance nor calibrated
+collision probability. A passability/depth/occupancy or outcome-value scorer is
+missing work. Validate any such scorer against independently measured route
+outcomes, with the same scorer applied to projection and model-generated views
+where applicable. A goal-progress-only experiment must say so; it cannot report
+its RGB cost as collision prediction. Freeze the scorer on development data and
+keep future labels outside all predictor inputs.
 
-After passing the screen, freeze the scorer and policies on the development set
-and collect twenty-four held-out cases using the same observability eligibility
-rule; report the extra controls separately. Keep the set size and decision rule fixed
-before inspecting learned-model results. Report each candidate's observed outcome,
-the hindsight best candidate, every method's selection and abstention, and failures.
+Compare against the strongest applicable cheap methods: a current RGB-D local
+planner, accumulated-history 3D occupancy planning, and geometric A*/trajectory
+planning when a map is actually supplied. All methods get the same available
+observations, destination, action set, control budget and Rules. Do not remove
+available maps, target pose or good depth to manufacture a WAM advantage.
 
-The primary endpoint is the usable first-view rate at the same allowed decision
-deadline. A pilot continuation criterion is at least three additional usable
-first views out of twenty-four over the strongest applicable cheap baseline;
-report paired uncertainty and do not call this small pilot statistical proof.
-Also report wasted travel, repeat views, inference wall time and per-case compute
-cost. A method that misses the deadline counts as a failure, not an excluded case.
-Set that deadline from the operational inspection budget before test collection.
-Do not sum slowed-simulator motion time and GPU wall time into a claimed real-world
-completion time; validate the timing relationship or report the components.
+A simulator ground-truth map is an auditor/oracle input unless explicitly part
+of the mission. If a Rules filter uses it, apply and report the identical filter
+for every method; report filtered and pre-filter choices separately. If a fully
+mapped geometric planner already solves the task, retain that as a successful
+control and do not claim extra navigation value from WAM there.
 
-Use the following ablations to explain any gain:
+Before repeated GPU runs or training, require executable alternatives with a
+recoverable outcome gap over the strongest cheap baseline. Connection work may
+proceed even without such a gap, but it must remain labeled connection work.
+Failure to find a gap should lead to another navigation condition, not silently
+to a different mission such as inspection photography.
 
-| Comparison | What it can establish |
-| --- | --- |
-| Projection + task scorer vs projection + RGB MSE | Scorer benefit, not WAM benefit |
-| ANWM + task scorer vs projection + the same scorer | Increment from learned future imagery |
-| ANWM vs the strongest history/geometry observation policy | Benefit beyond a cheap planner |
-| Both methods with an extra observation | Value of sensing separately from model inference |
-| Held-out outcomes vs development outcomes | Whether the result survives layout/appearance changes |
+## Terminal metrics and timing
 
-Post-training becomes justified only when the task has recoverable headroom,
-information sufficient to distinguish useful actions, and a reproducible model
-failure on that distinction. Fine-tuning must use separate training captures;
-the held-out matrix cannot become training data while retaining its test label.
-Recheck terminal outcomes and inference cost after training, not just image loss.
+The primary endpoint is **destination arrival without observed contact or a
+flight-envelope violation**, followed by landing/disarm when required by the
+scenario. Freeze goal radius, dwell time, deadline and terminal requirements
+before collection. Record contact-sensor coverage and independently check the
+observed airframe swept volume against scene colliders; absent telemetry does
+not mean contact-free. Verify minimum clearance along the path, not camera-center
+clearance or just the endpoint.
 
-Jev may judge admitted, bounded evidence; it does not turn a forecast into an
-approval or a calibrated risk. Human/policy authorization, Rules, Executor and
-Verifier retain their existing separate roles. The WAM may also abstain: making
-an unsupported image look plausible is not task value.
+Report arrival rate, contacts, minimum clearance, travelled distance, backtracks,
+interventions, inference wall time and motion simulation time. All timeouts,
+abstentions and safety-filter rejections remain in the results. After development,
+freeze the policies and compare twenty-four held-out starts, eight per family,
+with identical initial states and report paired uncertainty. These counts define
+a pilot, not a promise of statistical significance or general city navigation.
 
-## Reproduce the completed audit
+The recorded model currently takes about 41 wall seconds for two endpoint
+forecasts. More waypoints/candidates need a measured compute budget, not linear
+runtime assumptions. Begin with explicit hold-and-plan operation in a static
+scene. Count hold/inference cost. Continuous moving-flight prediction requires
+a separately demonstrated response time, observation freshness and control
+fallback; slowing simulator physics does not establish real-time deployment.
 
-With the two local captures from technical report section 11:
+Post-training is an option only after an observable, recoverable navigation
+failure is reproduced. Separate normalization/timing mistakes, missing scoring,
+missing observations and actual model error before deciding what to train.
+Training data and held-out outcome labels remain separate.
+
+## Retained calibration audit
+
+`scripts/audit_px4_anwm_value.py` revalidates the old paired captures. The target
+box lay outside the raw camera frustum in all 32 history frames; a scene-specific
+green-color rule found zero matching history/forecast pixels. The available
+pose baseline already selected the better arm. These facts diagnose that artificial
+scene; they do not rule out WAM value in urban passage, climbing or avoidance.
 
 ```sh
 PYTHONPATH=.:packages/missionos-core/src python scripts/audit_px4_anwm_value.py \
   --left-root "$LEFT_CAPTURE_ROOT" --right-root "$RIGHT_CAPTURE_ROOT" \
   --output "$LOCAL_VALUE_AUDIT_JSON"
-python -m pytest -q tests/contract/test_px4_anwm_value_audit.py \
-  tests/contract/test_px4_anwm_outcome_images.py
 ```
 
-The CLI validates existing real capture and inference artifacts and computes the
-CPU audit. It performs no fresh GPU inference, Jev call, flight or change to the
-production selector. Raw images, authorization records and cloud identifiers
-remain outside the public report.
+The audit dispatches no flight and invokes no new model or Jev call. Human/policy
+authorization, Rules, Executor and Verifier keep their separate roles throughout
+the proposed navigation work. Raw captures and authorization records stay local.

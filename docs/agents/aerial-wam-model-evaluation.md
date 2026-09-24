@@ -87,9 +87,11 @@ matches that result, the sample can validate invocation and contracts but cannot
 demonstrate useful selection headroom. Retain unfavorable and tied results.
 
 The [value experiment contract](aerial-wam-value-experiment.md) specifies the
-next inspection-view hypothesis, cheap baseline screen, held-out comparison and
-latency accounting. Its completed CPU audit finds that the calibration target
-was outside every history frame; its proposed new experiments remain unexecuted.
+next urban 3D navigation hypothesis: building passage, climbing and lateral
+avoidance, with actual PX4 route outcomes, strong cheap baselines and latency
+accounting. This supersedes the inspection-view proposal. The completed CPU
+audit found the calibration target outside every history frame; the new urban
+experiments remain unexecuted.
 
 The first integration boundary is:
 
