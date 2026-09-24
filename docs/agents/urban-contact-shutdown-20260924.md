@@ -84,3 +84,7 @@ The next research action would require a **newly registered CPU cohort** using
 the repaired probe and the same predeclared headroom criteria. This diagnostic
 provides no evidence of learned navigation benefit, no new training justification,
 and no authorization from the measurement gate to rent another GPU.
+
+The subsequently authorized [CPU cohort R2](urban-wam-headroom-r2-20260924.md)
+is registered separately. Its flights are not added to the fifty non-flight
+shutdown checks above.

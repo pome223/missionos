@@ -1,0 +1,42 @@
+{
+  "cohort_id": "urban-headroom-r2-20260924",
+  "source_commit": "928cbf5cd57bcaed5e73f70b8be16e97685c775a",
+  "frozen_record_sha256": "3617bae133d04b9e01d8086c408abc6bed97e540510fd51701644eef89c11ef1",
+  "protocol_sha256": "21dea44a2cad8b3664fe4295d375e144958fb414a635e1cc0a1a9ae352560fe2",
+  "frozen_at_unix_s": 1790256299.585376,
+  "runtime_source_sha256": {
+    "scripts/probe_px4_aerial_camera.py": "c39983324206573589ede310d94173c10f0db1132edc7f94c1ee08e66a5bb098",
+    "scripts/px4_aerial_flight_session.py": "a7f030b7f6c7de368a34d8d31bb2a26c074102e9486f0f295533997a8a713f97",
+    "scripts/px4_urban_headroom_trial.py": "8568f9736f97c49119695bf4047c89ee5b88683d036560b238addfdb36101a70",
+    "scripts/px4_urban_wam_trial.py": "ac710003170a090a6c0a61dea7e7d31239d3114d30a32650deff90ab95be8d0b",
+    "scripts/select_urban_depth_route.py": "6c9d19536835cca437c15b81b23fcf9236536f9c761e7958d10c9fda2af2da24",
+    "scripts/urban_headroom_contact_probe.py": "ea660c8ca97946c99c8f5fdddd83946049e4d8bb0f751060180808e2e286edda",
+    "scripts/urban_headroom_contract.py": "c57301d220ad196e3cc9634982fca4947a63ae1ed2366feb95e192fe698018ec",
+    "scripts/urban_navigation_contract.py": "a27b487c8ff938eb1824b8cba3747b5e0adebc18911d9fcf97a1a6c344b40088",
+    "src/prediction/px4_camera.py": "f61d898cd378aee6e7bd0ad29c1c93eae442cff5d1da140a68faf5b946aeb532"
+  },
+  "image_id": "sha256:79968fe25aa19d51c49fbd4a863ea9380f4efe6d9afabd1c579ddeffeb8b8c93",
+  "ordered_cases": [
+    "headroom_gap_0",
+    "headroom_gap_1",
+    "headroom_gap_2",
+    "headroom_gap_3",
+    "headroom_climb_0",
+    "headroom_climb_1",
+    "headroom_climb_2",
+    "headroom_climb_3",
+    "headroom_detour_0",
+    "headroom_detour_1",
+    "headroom_detour_2",
+    "headroom_detour_3"
+  ],
+  "cases_executed_at_registration": 0,
+  "same_scene_parameters_as_previous_incomplete_cohort": true,
+  "previous_outcomes_combined": false,
+  "additional_model_calls_permitted": 0,
+  "rented_gpu_instances_permitted": 0,
+  "minimum_free_bytes_before_case": 536870912,
+  "stop_on_any_case_or_measurement_failure": true,
+  "no_retry_or_case_replacement": true,
+  "registration_is_not_a_new_flight_result": true
+}

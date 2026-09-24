@@ -1,0 +1,65 @@
+[
+  {
+    "family": "gap",
+    "case": "headroom_gap_0",
+    "file": "gap-observed.png",
+    "image_sha256": "3b90ae212329344c61701aa9a586752fc5f83af1c506f27182acc23996ba7ce2",
+    "source_frames_sha256": "89ec0ad62b3dc35260b0ad3a78d8ec6cc785c18b2fd2b2e681f551343436ea0e",
+    "simulation_time_ns": 32252000000,
+    "pose_enu_m": [
+      6.074213189578357,
+      0.03143274246353076,
+      2.9727750309995677
+    ],
+    "selection_target_enu_m": [
+      6,
+      0,
+      3
+    ],
+    "selection_rule": "nearest recorded RGB pose to declared illustrative route point",
+    "generated_image": false,
+    "model_invoked": false
+  },
+  {
+    "family": "climb",
+    "case": "headroom_climb_0",
+    "file": "climb-observed.png",
+    "image_sha256": "d25d16556c8fb3ad25b6d311060a6545199dc933c2efa48193ff746b6f84efca",
+    "source_frames_sha256": "15673a5711b421c83d76a2569b09b9d8394c4c07d632e2433b7844920961abe1",
+    "simulation_time_ns": 37252000000,
+    "pose_enu_m": [
+      6.124880714587348,
+      0.006280490293660666,
+      5.443558982465397
+    ],
+    "selection_target_enu_m": [
+      6,
+      0,
+      5.5
+    ],
+    "selection_rule": "nearest recorded RGB pose to declared illustrative route point",
+    "generated_image": false,
+    "model_invoked": false
+  },
+  {
+    "family": "detour",
+    "case": "headroom_detour_0",
+    "file": "detour-observed.png",
+    "image_sha256": "a67759291ab14ad44fc841d4c68fd85a3e6be39dd6169e7f5642054418d62253",
+    "source_frames_sha256": "2d3673c665d3ccd95e51df1f6e7347333ecd9fe21b5684d27e847aff935f419a",
+    "simulation_time_ns": 37500000000,
+    "pose_enu_m": [
+      5.989478769151209,
+      -7.016211189588902,
+      3.0049600160257874
+    ],
+    "selection_target_enu_m": [
+      6,
+      -7.079634844677456,
+      3
+    ],
+    "selection_rule": "nearest recorded RGB pose to declared illustrative route point",
+    "generated_image": false,
+    "model_invoked": false
+  }
+]
