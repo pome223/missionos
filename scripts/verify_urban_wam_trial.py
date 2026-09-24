@@ -63,6 +63,7 @@ def verify(root):
     route = scene["routes"][route_id]
     require(
         model_used
+        or config.get("selection_mode") == "headroom"
         or (route_id == config["route_id"] and digest(route) == config["route_sha256"]),
         "route digest mismatch",
     )
@@ -92,6 +93,7 @@ def verify(root):
         and dispatch["model_forecast_used_for_dispatch"] is model_used,
         "dispatch route differs",
     )
+    depth_details = None
     if model_used:
         from scripts.px4_urban_wam_trial import validate_trigger
         from scripts.select_urban_wam_route import select_route
@@ -144,6 +146,10 @@ def verify(root):
             selection["route_id"] == route_id,
             "model selection did not control dispatched route",
         )
+    elif config.get("selection_mode") == "headroom":
+        from scripts.verify_urban_headroom import verify_choice
+
+        depth_details = verify_choice(root, scene, config, outcome, dispatch, events)
     waypoints = [
         event for event in events if event["event"] == "urban_waypoint_observed"
     ]
@@ -243,6 +249,7 @@ def verify(root):
         "selector": outcome["selector"],
         "model_invoked": model_used,
         "model_forecast_used_for_dispatch": model_used,
+        **({"depth_selection": depth_details} if depth_details is not None else {}),
         **(
             {
                 "model_selection": {

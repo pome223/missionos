@@ -179,8 +179,10 @@ def setup(
     root, assets, family, route_id, instruction_ref, image, selection_mode="geometric"
 ):
     require_opt_in()
-    if selection_mode not in ("geometric", "anwm"):
+    if selection_mode not in ("geometric", "anwm", "headroom"):
         raise ValueError("explicit urban selector required")
+    if (selection_mode == "headroom") != family.startswith("headroom_"):
+        raise ValueError("headroom cohort requires its separate selector contract")
     if root.exists():
         raise ValueError("refusing to overwrite an existing urban trial")
     verify_assets(assets)
@@ -286,6 +288,9 @@ def setup(
         "urban_navigation_contract.py",
         "urban_route_observer.py",
         "urban_goal_capture.py",
+        "urban_headroom_contract.py",
+        "px4_urban_headroom_trial.py",
+        "urban_headroom_contact_probe.py",
     ):
         shutil.copyfile(ROOT / "scripts" / name, scripts / name)
     identity = call(
@@ -623,6 +628,9 @@ class UrbanFlightSession(FlightSession):
         (self.directory / "urban-go.json").rename(
             self.directory / "urban-go-accepted.json"
         )
+        self.execute_urban_route()
+
+    def execute_urban_route(self):
         start = self.status()
         self.check_bounds(start)
         self.event(
@@ -902,10 +910,14 @@ def run_trial(args):
             raise RuntimeError("urban route did not complete")
     except Exception as exc:
         if root.exists():
-            atomic_json(root / "host-error.json", {
-                "exception": type(exc).__name__, "message": str(exc),
-                "stderr": getattr(exc, "stderr", None),
-            })
+            atomic_json(
+                root / "host-error.json",
+                {
+                    "exception": type(exc).__name__,
+                    "message": str(exc),
+                    "stderr": getattr(exc, "stderr", None),
+                },
+            )
         raise
     finally:
         if (root / "container.json").exists():
@@ -961,6 +973,11 @@ def main():
             or args.controller != Path("/session")
         ):
             raise ValueError("urban controller only runs in isolated stock SITL")
+        config = json.loads((args.controller / "config.json").read_text())
+        if config.get("selection_mode") == "headroom":
+            from scripts.px4_urban_headroom_trial import HeadroomFlightSession
+
+            return HeadroomFlightSession(args.controller).run()
         return UrbanFlightSession(args.controller).run()
     if args.phase == "screen":
         scene = scene_spec(args.scene)

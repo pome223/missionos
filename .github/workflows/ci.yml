@@ -96,6 +96,11 @@ jobs:
           python docs/assets/urban-wam-px4-20260924/verify_report.py
           python -m pytest docs/assets/urban-wam-px4-20260924/test_verify_report.py -q
 
+      - name: Verify CPU urban headroom gate
+        run: |
+          python docs/assets/urban-headroom-px4-20260924/verify_report.py
+          python -m pytest docs/assets/urban-headroom-px4-20260924/test_verify_report.py -q
+
       - name: Verify governed ACWM published evidence
         run: |
           python docs/assets/acwm-governed-stacking-20260921/verify_report.py

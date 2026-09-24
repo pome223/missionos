@@ -58,6 +58,10 @@ def building(name, east, north, scale):
 
 
 def scene_spec(family):
+    if isinstance(family, str) and family.startswith("headroom_"):
+        from scripts.urban_headroom_contract import case_scene
+
+        return case_scene(family)
     if family == "gap":
         buildings = [
             building("urban_left", 7.5, 5.4, 0.35),

@@ -1,5 +1,11 @@
 # Aerial WAM value experiment: navigate between buildings in 3D
 
+This is the design snapshot preceding the urban implementation. Current execution
+boundaries and results are in the [urban contract](urban-wam-px4-trial.md) and
+[technical report](aerial-wam-px4-technical-report-20260922.md). The subsequent
+[CPU headroom gate](urban-wam-headroom-20260924.md) stopped as incomplete after
+three flights and a fourth-case preflight process abort; no new GPU was used.
+
 Status: **design, not an observed navigation benefit**. The user's objective is
 flight through building gaps, climbing above obstructions and lateral avoidance
 on the way to a destination. This supersedes the earlier inspection-view proposal.
