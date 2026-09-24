@@ -36,6 +36,8 @@ preserve this failure and the unattempted denominator. A consistency check passi
 in CI does not make the development gate pass. The next engineering action is an
 isolated, non-flight investigation of the contact probe's native shutdown before
 considering a newly registered cohort; this cohort stays closed as incomplete.
+The subsequent [shutdown investigation and repair](urban-contact-shutdown-20260924.md)
+is recorded separately and does not revise this frozen result.
 
 ## Fixed cohort and information boundary
 
