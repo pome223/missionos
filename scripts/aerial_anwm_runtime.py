@@ -343,7 +343,13 @@ def validate_px4_provenance(
             np, contract["routes_enu_m"], arrays["context_camera_poses"][-1],
             np.asarray(provenance["current_vehicle_local_ned_m"]), yaw,
         )
-        if digest_json(expected) != digest_json(candidates):
+        if len(expected) != len(candidates) or any(
+            a["candidate_id"] != b["candidate_id"]
+            or a["horizon_seconds"] != b["horizon_seconds"]
+            or not np.allclose(a["delta_local_m_rad"], b["delta_local_m_rad"], atol=1e-8, rtol=0)
+            or not np.allclose(a["target_camera_pose"], b["target_camera_pose"], atol=1e-8, rtol=0)
+            for a, b in zip(expected, candidates)
+        ):
             raise ValueError("urban forecast candidates differ from declared route prefixes")
     if request.get("asset_npz_sha256") != digest_file(asset_path):
         raise ValueError("PX4 asset archive hash mismatch")
