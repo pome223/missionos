@@ -22,10 +22,11 @@ from src.intelligence.jev_assurance import JevAssuranceJudge
 from src.runtime.task_store import reset_task_store
 
 
-async def run_mode(mode, root):
+async def run_mode(mode, root, *, route="bounded", fast_path="disabled"):
     root.mkdir()
     _configure_temp_paths(root)
     os.environ["MISSIONOS_JEV_MODE"] = mode
+    os.environ["MISSIONOS_JEV_CASCADE_FAST_PATH"] = fast_path
     os.environ["MISSIONOS_MISSION_ASSURANCE_ADK_ENABLED"] = "1"
     os.environ["GATEWAY_API_KEY"] = ""
     reset_settings()
@@ -39,7 +40,7 @@ async def run_mode(mode, root):
 
     def jev(_self, payload):
         calls["jev"] += 1
-        return {
+        result = {
             "model": "fixture-jev",
             "answers": {
                 "response": {
@@ -54,6 +55,15 @@ async def run_mode(mode, root):
                 "review": {"type": "choice", "choice": "bounded"},
             },
         }
+        if "assessment_route" in payload["questions"]:
+            result["answers"]["assessment_route"] = {
+                "type": "choice", "choice": route, "confidence": 0.9,
+                "probabilities": {
+                    k: float(k == route)
+                    for k in payload["questions"]["assessment_route"]["criteria"]
+                },
+            }
+        return result
 
     with (
         patch.object(assurance._ADKJudge, "judge", primary),
@@ -91,13 +101,27 @@ async def run_mode(mode, root):
             await task
     proposal = graph["mission_assurance_proposal"]
     assert graph["graph_runtime_status"] == "proposal_guardrail_passed"
-    expected = "hold" if mode == "primary" else "replan"
+    cascade_expected = (
+        "operator_escalation" if route in {"need_observation", "human_review"}
+        else "hold" if route == "bounded" and fast_path == "fixture_verified_detour_v1"
+        else "replan"
+    )
+    expected = "hold" if mode == "primary" else cascade_expected if mode == "cascade" else "replan"
     assert proposal["proposed_response_kind"] == expected
-    assert calls == {"primary": int(mode != "primary"), "jev": int(mode != "off")}
+    expected_primary = int(mode != "primary")
+    if mode == "cascade":
+        expected_primary = int(cascade_expected == "replan")
+    assert calls == {"primary": expected_primary, "jev": int(mode != "off")}
     evidence = proposal["model_invocation_evidence"]
     if mode == "shadow":
         assert evidence["jev_shadow"]["agrees_with_primary"] is False
         assert evidence["jev_shadow"]["used_for_decision"] is False
+    elif mode == "cascade_shadow":
+        shadow = evidence["jev_cascade_shadow"]
+        assert shadow["used_for_decision"] is False
+        assert shadow["output"]["proposed_response_kind"] == cascade_expected
+    elif mode == "cascade":
+        assert evidence["jev_cascade"]["reasoner_invoked"] is bool(expected_primary)
     elif mode == "off":
         assert "jev_shadow" not in evidence
     for key in (
@@ -109,6 +133,8 @@ async def run_mode(mode, root):
         assert graph[key] is False
     return {
         "mode": mode,
+        "route_fixture": route,
+        "fast_path": fast_path,
         "response": expected,
         "model_calls": calls,
         "graph_status": graph["graph_runtime_status"],
@@ -122,6 +148,13 @@ async def main():
         results = [
             await run_mode(mode, Path(directory) / mode) for mode in ("off", "shadow", "primary")
         ]
+        for mode in ("cascade", "cascade_shadow"):
+            for route in ("bounded", "deep_reasoning", "need_observation", "human_review"):
+                results.append(await run_mode(
+                    mode, Path(directory) / (mode + route), route=route,
+                    fast_path="fixture_verified_detour_v1",
+                ))
+        results.append(await run_mode("cascade", Path(directory) / "cascade_disabled"))
     print(
         json.dumps(
             {

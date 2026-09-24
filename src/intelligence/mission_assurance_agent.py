@@ -694,12 +694,20 @@ def _configured_mission_assurance_agent() -> MissionAssuranceAgent:
 def configured_mission_assurance_agent() -> MissionAssuranceAgent:
     """Jev is opt-in; shadow results cannot replace the primary judgment."""
     mode = os.environ.get("MISSIONOS_JEV_MODE", "off")
-    if mode not in {"off", "shadow", "primary"}:
+    if mode not in {"off", "shadow", "primary", "cascade", "cascade_shadow"}:
         return MissionAssuranceAgent(_UnavailableJudge("invalid_jev_mode"))
     if mode == "primary":
         from src.intelligence.jev_assurance import JevAssuranceJudge
         return MissionAssuranceAgent(JevAssuranceJudge())
     agent = _configured_mission_assurance_agent()
+    if mode in {"cascade", "cascade_shadow"}:
+        from src.intelligence.jev_cascade import (
+            FAST_PATH_ENV, FAST_PATHS, JevCascadeJudge, JevCascadeShadowJudge,
+        )
+        if os.environ.get(FAST_PATH_ENV, "disabled") not in FAST_PATHS:
+            return MissionAssuranceAgent(_UnavailableJudge("invalid_fast_path_profile"))
+        judge = JevCascadeJudge if mode == "cascade" else JevCascadeShadowJudge
+        return MissionAssuranceAgent(judge(agent._judge))
     if mode == "shadow":
         from src.intelligence.jev_assurance import JevShadowJudge
         return MissionAssuranceAgent(JevShadowJudge(agent._judge))

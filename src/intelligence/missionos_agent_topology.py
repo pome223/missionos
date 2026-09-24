@@ -34,8 +34,9 @@ def describe_agent_runtime(*, include_latest: bool = False) -> dict:
         "proposal_only": True,
         "mission_assurance": {
             "enabled": os.getenv("MISSIONOS_MISSION_ASSURANCE_ADK_ENABLED") == "1"
-            or os.getenv("MISSIONOS_JEV_MODE") == "primary",
+            or os.getenv("MISSIONOS_JEV_MODE") in {"primary", "cascade", "cascade_shadow"},
             "jev_mode": os.getenv("MISSIONOS_JEV_MODE", "off"),
+            "jev_cascade_fast_path": os.getenv("MISSIONOS_JEV_CASCADE_FAST_PATH", "disabled"),
             "llm_health": "not_probed",
         },
         "workflows": {
