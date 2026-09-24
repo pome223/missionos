@@ -8722,6 +8722,11 @@ class GatewayServer:
     # ------------------------------------------------------------------
 
     def _setup_routes(self):
+        from src.gateway.px4_depth_routes import build_depth_navigation_router
+
+        self.app.include_router(build_depth_navigation_router(
+            task_store=self.task_store, resolve_http_user_id=self._resolve_http_user_id,
+        ))
         # --- health / root / protocol ---
 
         self.app.include_router(
@@ -13095,6 +13100,9 @@ class GatewayServer:
                         "SITL execution approval requires a pending prepared task"
                     ),
                 )
+            if task.get("kind") == "px4_depth_navigation":
+                from src.gateway.px4_depth_routes import approve_depth_navigation
+                return approve_depth_navigation(self, task, body, request)
             artifacts = task.get("artifacts") or {}
             artifacts = artifacts if isinstance(artifacts, dict) else {}
             execution_request = artifacts.get(
@@ -13238,6 +13246,9 @@ class GatewayServer:
                     status_code=409,
                     detail="SITL execution requires a pending prepared task",
                 )
+            if task.get("kind") == "px4_depth_navigation":
+                from src.gateway.px4_depth_routes import execute_depth_navigation
+                return await execute_depth_navigation(self, task, body)
             artifacts = task.get("artifacts") or {}
             artifacts = artifacts if isinstance(artifacts, dict) else {}
             stored_execution_approvals = artifacts.get(

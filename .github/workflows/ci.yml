@@ -81,6 +81,13 @@ jobs:
           PYTHONPATH: .:packages/missionos-cli/src:packages/missionos-gateway/src
         run: python scripts/smoke_navigation_wam_jev.py
 
+      - name: Verify PX4 depth navigation CLI and Gateway without flight
+        env:
+          PYTHONPATH: .:packages/missionos-core/src:packages/missionos-cli/src:packages/missionos-gateway/src
+        run: |
+          python scripts/check_px4_depth_gateway.py --output-dir "$RUNNER_TEMP/px4-depth-gateway" --scene all
+          python docs/assets/px4-depth-gateway-20260924/verify_report.py
+
       - name: Verify online ACWM published evidence
         run: |
           python docs/assets/acwm-online-stacking-20260921/verify_report.py --statistics

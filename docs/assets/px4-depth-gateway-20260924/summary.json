@@ -1,0 +1,674 @@
+{
+  "schema_version": "px4_depth_gateway_public_report.v1",
+  "scope": "cli_gateway_static_depth_navigation_integration",
+  "not_part_of_r2_cohort": true,
+  "heldout_efficacy_claimed": false,
+  "unauthenticated_request_rejected": true,
+  "missing_approval_rejected": true,
+  "default_off_http_check_passed": true,
+  "new_model_calls": 0,
+  "new_rented_gpus": 0,
+  "initial_result_schema_label_correct": false,
+  "initial_flight_evidence_retained_unchanged": true,
+  "cases": [
+    {
+      "scene": "gap",
+      "result": {
+        "schema_version": "missionos_urban_route_verification.v1",
+        "result_status": "verified",
+        "delivery_completion_claimed": false,
+        "physical_execution_invoked": false,
+        "family": "headroom_gap_0",
+        "route_id": "forward",
+        "route_sha256": "d428044ea1f88ae82114f2eba60838dfad1f6fa037e4b5e601f95b21def5cf2a",
+        "selector": "history_depth",
+        "model_invoked": false,
+        "model_forecast_used_for_dispatch": false,
+        "depth_selection": {
+          "choices": {
+            "stale_map": {
+              "route_id": "forward",
+              "scores": {
+                "forward": {
+                  "route_length_m": 14.00753789369951,
+                  "minimum_observed_surface_distance_m": null,
+                  "prior_map_envelope_clearance_m": 5.322829020000002,
+                  "rejected_by_observed_surface": false,
+                  "rejected_by_available_map": false
+                },
+                "left_detour": {
+                  "route_length_m": 34.61241296787563,
+                  "minimum_observed_surface_distance_m": null,
+                  "prior_map_envelope_clearance_m": 5.322829020000002,
+                  "rejected_by_observed_surface": false,
+                  "rejected_by_available_map": false
+                }
+              }
+            },
+            "latest_depth": {
+              "route_id": "forward",
+              "scores": {
+                "forward": {
+                  "route_length_m": 14.00753789369951,
+                  "minimum_observed_surface_distance_m": 1.5767847031221478,
+                  "prior_map_envelope_clearance_m": 5.322829020000002,
+                  "rejected_by_observed_surface": false,
+                  "rejected_by_available_map": false
+                },
+                "left_detour": {
+                  "route_length_m": 34.61241296787563,
+                  "minimum_observed_surface_distance_m": 2.9302303663705347,
+                  "prior_map_envelope_clearance_m": 5.322829020000002,
+                  "rejected_by_observed_surface": false,
+                  "rejected_by_available_map": false
+                }
+              }
+            },
+            "history_depth": {
+              "route_id": "forward",
+              "scores": {
+                "forward": {
+                  "route_length_m": 14.00753789369951,
+                  "minimum_observed_surface_distance_m": 1.5767847031221478,
+                  "prior_map_envelope_clearance_m": 5.322829020000002,
+                  "rejected_by_observed_surface": false,
+                  "rejected_by_available_map": false
+                },
+                "left_detour": {
+                  "route_length_m": 34.61241296787563,
+                  "minimum_observed_surface_distance_m": 2.925106835655751,
+                  "prior_map_envelope_clearance_m": 5.322829020000002,
+                  "rejected_by_observed_surface": false,
+                  "rejected_by_available_map": false
+                }
+              }
+            }
+          },
+          "truth_filter_on_shadow_choices": {
+            "stale_map": true,
+            "latest_depth": true,
+            "history_depth": true
+          },
+          "shadow_choices_are_not_additional_flights": true,
+          "uses_scene_truth_for_selection": false,
+          "safety_filter_rejected_frozen_choice": false,
+          "model_invoked": false,
+          "initial_position_error_m": 0.06553639067654105,
+          "initial_speed_m_s": 0.03265678671703982,
+          "initial_heading_error_rad": 0.002178086256685141,
+          "observed_start_enu_m": [
+            -0.003985790547332706,
+            -0.012349001838226752,
+            3.012602269015585
+          ],
+          "observation_age_at_dispatch_wall_s": 1.4907801151275635,
+          "building_sensor_positive_control_contacts": 10,
+          "probe_removed_before_flight": true,
+          "source_sha256": {
+            "depth-selection.json": "175af256dfa280ed4dd273c041777074a447d9dcb63208f24ce434d8d71e8223",
+            "contact-positive-control.json": "ec29b4816bfdf6fbc1b7c3afba0700b363f0125b409c9b5fc8c9adefbc794558",
+            "urban-go-accepted.json": "8d9efa9d7d283b2bcf124e59cd3f86d913774495d145a32a454d634029fa2772",
+            "history/capture.json": "dd0eaafc47f42ceb1d80afaed89a78fb4322af8b6c503a15505c1db889f5e3a3"
+          },
+          "planner_input_sha256": "2fbfd1642f41c3a667708f60ef1fde701f4f03b3d062ea1aa46f10467521a91b",
+          "surface_file_sha256": "3242af14307e3ef9f873a0a261f4f5940aa44f003b89b3efb7e2485a6a1b8987"
+        },
+        "jev_invoked": false,
+        "physical_hardware_executed": false,
+        "destination_reached": true,
+        "landing_and_disarm_observed": true,
+        "minimum_observed_envelope_clearance_m": 0.7952139508629271,
+        "clearance_scope": "piecewise_linear_observed_trajectory_against_mesh_AABBs_with_0.6m_sphere",
+        "building_contact_messages": 0,
+        "contact_sensor_streams_observed": false,
+        "ground_contact_positive_control_messages": 2447,
+        "route_simulation_seconds": 23.004,
+        "route_wall_seconds": 115.01567826099999,
+        "observed_distance_m": 14.255587322385146,
+        "maximum_altitude_m": 3.0447161039001647,
+        "waypoint_errors_m": [
+          0.11119452809771847,
+          0.14228207390677,
+          0.09165244091798884,
+          0.07870883247156095
+        ],
+        "trajectory_samples": 549,
+        "maximum_trajectory_sim_gap_seconds": 0.048,
+        "captured_rgb_frames": 194,
+        "simulator_removed": true,
+        "source_sha256": {
+          "scene.json": "731b9dbf9298baefc96ad8c562a122d70274ec6410f61c1dfa1fd1bc27c9c9bb",
+          "flight-result.json": "57a4ebc782f251390067cc2d66a9126da7c438b3df8420c445ab39012b08018e",
+          "events.jsonl": "7109e5f9549f449158060099b760de36dd34228fb1fd4d6f8290227d8e750a03",
+          "telemetry.jsonl": "0adc8549ccff3a8bcac02cf99e3841140c3733722f58c15da7c7cb13137c361b",
+          "route-images/frames.json": "0ebda7cb60f9312b306d6dd46cf0f665de76354c0b43a9238603516a7a543ddf"
+        },
+        "learned_navigation_benefit_established": false
+      },
+      "replay_rejected": true,
+      "same_task_approval_consumed": true,
+      "runtime_source_sha256": {
+        "scripts/px4_urban_headroom_trial.py": "8568f9736f97c49119695bf4047c89ee5b88683d036560b238addfdb36101a70",
+        "scripts/urban_headroom_contract.py": "c57301d220ad196e3cc9634982fca4947a63ae1ed2366feb95e192fe698018ec",
+        "scripts/select_urban_depth_route.py": "6c9d19536835cca437c15b81b23fcf9236536f9c761e7958d10c9fda2af2da24",
+        "scripts/px4_urban_wam_trial.py": "ac710003170a090a6c0a61dea7e7d31239d3114d30a32650deff90ab95be8d0b",
+        "scripts/urban_navigation_contract.py": "a27b487c8ff938eb1824b8cba3747b5e0adebc18911d9fcf97a1a6c344b40088",
+        "scripts/px4_aerial_flight_session.py": "a7f030b7f6c7de368a34d8d31bb2a26c074102e9486f0f295533997a8a713f97",
+        "scripts/probe_px4_aerial_camera.py": "c39983324206573589ede310d94173c10f0db1132edc7f94c1ee08e66a5bb098",
+        "src/prediction/px4_camera.py": "f61d898cd378aee6e7bd0ad29c1c93eae442cff5d1da140a68faf5b946aeb532",
+        "scripts/urban_headroom_contact_probe.py": "ea660c8ca97946c99c8f5fdddd83946049e4d8bb0f751060180808e2e286edda",
+        "src/runtime/px4_depth_navigation.py": "20d29f55647b7f639145f892a39d4d8b974c6b6a28c2561bf98f701b1e937f45"
+      }
+    },
+    {
+      "scene": "climb",
+      "result": {
+        "schema_version": "missionos_urban_route_verification.v1",
+        "result_status": "verified",
+        "delivery_completion_claimed": false,
+        "physical_execution_invoked": false,
+        "family": "headroom_climb_0",
+        "route_id": "climb",
+        "route_sha256": "8c654e7c3f894b0130b360e56a2b4fa31c3227c67abada39292c647558803b32",
+        "selector": "history_depth",
+        "model_invoked": false,
+        "model_forecast_used_for_dispatch": false,
+        "depth_selection": {
+          "choices": {
+            "stale_map": {
+              "route_id": "forward",
+              "scores": {
+                "climb": {
+                  "route_length_m": 17.389982361202815,
+                  "minimum_observed_surface_distance_m": null,
+                  "prior_map_envelope_clearance_m": 3.5027351250000005,
+                  "rejected_by_observed_surface": false,
+                  "rejected_by_available_map": false
+                },
+                "forward": {
+                  "route_length_m": 13.98473986257633,
+                  "minimum_observed_surface_distance_m": null,
+                  "prior_map_envelope_clearance_m": 3.498277565845789,
+                  "rejected_by_observed_surface": false,
+                  "rejected_by_available_map": false
+                },
+                "left_detour": {
+                  "route_length_m": 20.00186694044123,
+                  "minimum_observed_surface_distance_m": null,
+                  "prior_map_envelope_clearance_m": -0.09726487499999947,
+                  "rejected_by_observed_surface": false,
+                  "rejected_by_available_map": true
+                }
+              }
+            },
+            "latest_depth": {
+              "route_id": "climb",
+              "scores": {
+                "climb": {
+                  "route_length_m": 17.389982361202815,
+                  "minimum_observed_surface_distance_m": 1.4769055487741927,
+                  "prior_map_envelope_clearance_m": 3.5027351250000005,
+                  "rejected_by_observed_surface": false,
+                  "rejected_by_available_map": false
+                },
+                "forward": {
+                  "route_length_m": 13.98473986257633,
+                  "minimum_observed_surface_distance_m": 0.0894474754626615,
+                  "prior_map_envelope_clearance_m": 3.498277565845789,
+                  "rejected_by_observed_surface": true,
+                  "rejected_by_available_map": false
+                },
+                "left_detour": {
+                  "route_length_m": 20.00186694044123,
+                  "minimum_observed_surface_distance_m": 0.6791538853603056,
+                  "prior_map_envelope_clearance_m": -0.09726487499999947,
+                  "rejected_by_observed_surface": true,
+                  "rejected_by_available_map": true
+                }
+              }
+            },
+            "history_depth": {
+              "route_id": "climb",
+              "scores": {
+                "climb": {
+                  "route_length_m": 17.389982361202815,
+                  "minimum_observed_surface_distance_m": 1.4769055487741927,
+                  "prior_map_envelope_clearance_m": 3.5027351250000005,
+                  "rejected_by_observed_surface": false,
+                  "rejected_by_available_map": false
+                },
+                "forward": {
+                  "route_length_m": 13.98473986257633,
+                  "minimum_observed_surface_distance_m": 0.0894474754626615,
+                  "prior_map_envelope_clearance_m": 3.498277565845789,
+                  "rejected_by_observed_surface": true,
+                  "rejected_by_available_map": false
+                },
+                "left_detour": {
+                  "route_length_m": 20.00186694044123,
+                  "minimum_observed_surface_distance_m": 0.6791538853603056,
+                  "prior_map_envelope_clearance_m": -0.09726487499999947,
+                  "rejected_by_observed_surface": true,
+                  "rejected_by_available_map": true
+                }
+              }
+            }
+          },
+          "truth_filter_on_shadow_choices": {
+            "stale_map": false,
+            "latest_depth": true,
+            "history_depth": true
+          },
+          "shadow_choices_are_not_additional_flights": true,
+          "uses_scene_truth_for_selection": false,
+          "safety_filter_rejected_frozen_choice": false,
+          "model_invoked": false,
+          "initial_position_error_m": 0.050709753762054915,
+          "initial_speed_m_s": 0.04698139750292249,
+          "initial_heading_error_rad": 0.0019424478559599834,
+          "observed_start_enu_m": [
+            0.018616150353909584,
+            -0.007851988043792878,
+            3.027889152213514
+          ],
+          "observation_age_at_dispatch_wall_s": 1.3832800388336182,
+          "building_sensor_positive_control_contacts": 11,
+          "probe_removed_before_flight": true,
+          "source_sha256": {
+            "depth-selection.json": "c603861751e44e39d4de9b8cf3485b3000dab3427db370aa81973b4f9ee08180",
+            "contact-positive-control.json": "9eabc16b5e9cbea2ff51145a9309915b0a61e74f9ae6e2dd3857630f048cf556",
+            "urban-go-accepted.json": "c70eb5720b34282dd199d6a1bb52c93af8df37846f3bee052c9983774f68ec06",
+            "history/capture.json": "ffd630cb639bb8d14a7299f02d652f58b5a6b5ad53525871c74c376f1d48f28e"
+          },
+          "planner_input_sha256": "c0e2778c639e2e6e111607324ca2ab13903bad6c97a8b66e38a02cdc8f5deb27",
+          "surface_file_sha256": "5524bf8455dcbd9bdb8e366514514cf2e4e4bc6f5f9c15b408fa22ae6b5213f4"
+        },
+        "jev_invoked": false,
+        "physical_hardware_executed": false,
+        "destination_reached": true,
+        "landing_and_disarm_observed": true,
+        "minimum_observed_envelope_clearance_m": 0.7862051394621997,
+        "clearance_scope": "piecewise_linear_observed_trajectory_against_mesh_AABBs_with_0.6m_sphere",
+        "building_contact_messages": 0,
+        "contact_sensor_streams_observed": false,
+        "ground_contact_positive_control_messages": 2435,
+        "route_simulation_seconds": 26.768,
+        "route_wall_seconds": 133.847183395,
+        "observed_distance_m": 17.665526989714625,
+        "maximum_altitude_m": 5.566503269249705,
+        "waypoint_errors_m": [
+          0.09412472351332059,
+          0.14755393620901022,
+          0.07498651359438768,
+          0.15110894855350424
+        ],
+        "trajectory_samples": 640,
+        "maximum_trajectory_sim_gap_seconds": 0.048,
+        "captured_rgb_frames": 210,
+        "simulator_removed": true,
+        "source_sha256": {
+          "scene.json": "f55af386e0f042002b297c75aaa9697eb37188d78ee9fe143acad271586d6f11",
+          "flight-result.json": "d466ed3f8e4ddf3d357eab48dd8427fe53e18531e2fea2a1dfa0084d2afa74f1",
+          "events.jsonl": "4584ac961d8fcca36d1c8a4aae746c2ffcb8372c3d501acd02108abf6430b29f",
+          "telemetry.jsonl": "918914cfd57c8d257e96d9206d421ef0b74a04debdc87855b1be931bba1bfb58",
+          "route-images/frames.json": "78c4e423ef4f8915a06284798298fcd768cadd5b58b02ac6fc3e3bb05fd57fee"
+        },
+        "learned_navigation_benefit_established": false
+      },
+      "replay_rejected": true,
+      "same_task_approval_consumed": true,
+      "runtime_source_sha256": {
+        "scripts/px4_urban_headroom_trial.py": "8568f9736f97c49119695bf4047c89ee5b88683d036560b238addfdb36101a70",
+        "scripts/urban_headroom_contract.py": "c57301d220ad196e3cc9634982fca4947a63ae1ed2366feb95e192fe698018ec",
+        "scripts/select_urban_depth_route.py": "6c9d19536835cca437c15b81b23fcf9236536f9c761e7958d10c9fda2af2da24",
+        "scripts/px4_urban_wam_trial.py": "ac710003170a090a6c0a61dea7e7d31239d3114d30a32650deff90ab95be8d0b",
+        "scripts/urban_navigation_contract.py": "a27b487c8ff938eb1824b8cba3747b5e0adebc18911d9fcf97a1a6c344b40088",
+        "scripts/px4_aerial_flight_session.py": "a7f030b7f6c7de368a34d8d31bb2a26c074102e9486f0f295533997a8a713f97",
+        "scripts/probe_px4_aerial_camera.py": "c39983324206573589ede310d94173c10f0db1132edc7f94c1ee08e66a5bb098",
+        "src/prediction/px4_camera.py": "f61d898cd378aee6e7bd0ad29c1c93eae442cff5d1da140a68faf5b946aeb532",
+        "scripts/urban_headroom_contact_probe.py": "ea660c8ca97946c99c8f5fdddd83946049e4d8bb0f751060180808e2e286edda",
+        "src/runtime/px4_depth_navigation.py": "20d29f55647b7f639145f892a39d4d8b974c6b6a28c2561bf98f701b1e937f45"
+      }
+    },
+    {
+      "scene": "detour",
+      "result": {
+        "schema_version": "missionos_urban_route_verification.v1",
+        "result_status": "verified",
+        "delivery_completion_claimed": false,
+        "physical_execution_invoked": false,
+        "family": "headroom_detour_0",
+        "route_id": "right_detour",
+        "route_sha256": "0393874ca5d017b71c5e46397c595e81088adcba8a8d0fc55053711a41669d65",
+        "selector": "history_depth",
+        "model_invoked": false,
+        "model_forecast_used_for_dispatch": false,
+        "depth_selection": {
+          "choices": {
+            "stale_map": {
+              "route_id": "forward",
+              "scores": {
+                "forward": {
+                  "route_length_m": 15.990436321281363,
+                  "minimum_observed_surface_distance_m": null,
+                  "prior_map_envelope_clearance_m": 3.3228290200000017,
+                  "rejected_by_observed_surface": false,
+                  "rejected_by_available_map": false
+                },
+                "left_detour": {
+                  "route_length_m": 27.75948463420132,
+                  "minimum_observed_surface_distance_m": null,
+                  "prior_map_envelope_clearance_m": 3.3228290200000017,
+                  "rejected_by_observed_surface": false,
+                  "rejected_by_available_map": false
+                },
+                "right_detour": {
+                  "route_length_m": 27.6965141480082,
+                  "minimum_observed_surface_distance_m": null,
+                  "prior_map_envelope_clearance_m": 3.3228290200000017,
+                  "rejected_by_observed_surface": false,
+                  "rejected_by_available_map": false
+                }
+              }
+            },
+            "latest_depth": {
+              "route_id": "right_detour",
+              "scores": {
+                "forward": {
+                  "route_length_m": 15.990436321281363,
+                  "minimum_observed_surface_distance_m": 0.07631253257393807,
+                  "prior_map_envelope_clearance_m": 3.3228290200000017,
+                  "rejected_by_observed_surface": true,
+                  "rejected_by_available_map": false
+                },
+                "left_detour": {
+                  "route_length_m": 27.75948463420132,
+                  "minimum_observed_surface_distance_m": 2.1951159337190056,
+                  "prior_map_envelope_clearance_m": 3.3228290200000017,
+                  "rejected_by_observed_surface": false,
+                  "rejected_by_available_map": false
+                },
+                "right_detour": {
+                  "route_length_m": 27.6965141480082,
+                  "minimum_observed_surface_distance_m": 2.1729846911281805,
+                  "prior_map_envelope_clearance_m": 3.3228290200000017,
+                  "rejected_by_observed_surface": false,
+                  "rejected_by_available_map": false
+                }
+              }
+            },
+            "history_depth": {
+              "route_id": "right_detour",
+              "scores": {
+                "forward": {
+                  "route_length_m": 15.990436321281363,
+                  "minimum_observed_surface_distance_m": 0.07631253257393807,
+                  "prior_map_envelope_clearance_m": 3.3228290200000017,
+                  "rejected_by_observed_surface": true,
+                  "rejected_by_available_map": false
+                },
+                "left_detour": {
+                  "route_length_m": 27.75948463420132,
+                  "minimum_observed_surface_distance_m": 2.164039626725228,
+                  "prior_map_envelope_clearance_m": 3.3228290200000017,
+                  "rejected_by_observed_surface": false,
+                  "rejected_by_available_map": false
+                },
+                "right_detour": {
+                  "route_length_m": 27.6965141480082,
+                  "minimum_observed_surface_distance_m": 2.1729846911281805,
+                  "prior_map_envelope_clearance_m": 3.3228290200000017,
+                  "rejected_by_observed_surface": false,
+                  "rejected_by_available_map": false
+                }
+              }
+            }
+          },
+          "truth_filter_on_shadow_choices": {
+            "stale_map": false,
+            "latest_depth": true,
+            "history_depth": true
+          },
+          "shadow_choices_are_not_additional_flights": true,
+          "uses_scene_truth_for_selection": false,
+          "safety_filter_rejected_frozen_choice": false,
+          "model_invoked": false,
+          "initial_position_error_m": 0.058700117292565857,
+          "initial_speed_m_s": 0.032061961010346696,
+          "initial_heading_error_rad": 0.0025733170566244468,
+          "observed_start_enu_m": [
+            0.006997669880806006,
+            -0.03552267051971032,
+            3.022912208293451
+          ],
+          "observation_age_at_dispatch_wall_s": 1.762009859085083,
+          "building_sensor_positive_control_contacts": 12,
+          "probe_removed_before_flight": true,
+          "source_sha256": {
+            "depth-selection.json": "4fe1bfae5159d16c7162b303bbd78fa6202e346cfc245b2eddeba8c14e80f64b",
+            "contact-positive-control.json": "f2bbb2ff1264c789dd81de28e94233f55b9c206627fb411abba77cc1b5f935ce",
+            "urban-go-accepted.json": "1b6ceba0a3e410429bef49fa8b18cfae1b6ecb86dc402744a4289c21401a5f62",
+            "history/capture.json": "ffa72c54c995adb8377fe8f109ddf72a3ad8bba18cc13f05b2371c2abe678c7c"
+          },
+          "planner_input_sha256": "07dd497f9e53aa0cfa9c606b5cb94bb5feb2133a9edb7875798f8b4c30a6e3e5",
+          "surface_file_sha256": "9835ffa4e88863e7afcbc939336c360a0730ccc4dc410efca647992daf44bcbb"
+        },
+        "jev_invoked": false,
+        "physical_hardware_executed": false,
+        "destination_reached": true,
+        "landing_and_disarm_observed": true,
+        "minimum_observed_envelope_clearance_m": 0.70589742833891,
+        "clearance_scope": "piecewise_linear_observed_trajectory_against_mesh_AABBs_with_0.6m_sphere",
+        "building_contact_messages": 0,
+        "contact_sensor_streams_observed": false,
+        "ground_contact_positive_control_messages": 2424,
+        "route_simulation_seconds": 34.656,
+        "route_wall_seconds": 173.28815303700003,
+        "observed_distance_m": 28.257872675994797,
+        "maximum_altitude_m": 3.0244048902930163,
+        "waypoint_errors_m": [
+          0.14388925933200503,
+          0.13741662127415857,
+          0.1304010634112153
+        ],
+        "trajectory_samples": 831,
+        "maximum_trajectory_sim_gap_seconds": 0.048,
+        "captured_rgb_frames": 242,
+        "simulator_removed": true,
+        "source_sha256": {
+          "scene.json": "ccf2bf9fb9a88d29a83b0a7c8f2de69dc34322d7e0d4782094e3a2950e2a2b41",
+          "flight-result.json": "80649411782ea7d6977e7d9e73d5b4df8f5e5978c08a116b1b6f107a023b4da1",
+          "events.jsonl": "b7957f388ae9237fd9624e95dead6171e89d59578e56a1730c90e036072cfaa7",
+          "telemetry.jsonl": "d4a04e8ea64e2e5089ab1411813acc390d9642223e53dd4211815f1ef23a45e1",
+          "route-images/frames.json": "8dcc09d76b944ae87e4a1d24efa98d994ec2c29172a88d7a4b4caf428e173d72"
+        },
+        "learned_navigation_benefit_established": false
+      },
+      "replay_rejected": true,
+      "same_task_approval_consumed": true,
+      "runtime_source_sha256": {
+        "scripts/px4_urban_headroom_trial.py": "8568f9736f97c49119695bf4047c89ee5b88683d036560b238addfdb36101a70",
+        "scripts/urban_headroom_contract.py": "c57301d220ad196e3cc9634982fca4947a63ae1ed2366feb95e192fe698018ec",
+        "scripts/select_urban_depth_route.py": "6c9d19536835cca437c15b81b23fcf9236536f9c761e7958d10c9fda2af2da24",
+        "scripts/px4_urban_wam_trial.py": "ac710003170a090a6c0a61dea7e7d31239d3114d30a32650deff90ab95be8d0b",
+        "scripts/urban_navigation_contract.py": "a27b487c8ff938eb1824b8cba3747b5e0adebc18911d9fcf97a1a6c344b40088",
+        "scripts/px4_aerial_flight_session.py": "a7f030b7f6c7de368a34d8d31bb2a26c074102e9486f0f295533997a8a713f97",
+        "scripts/probe_px4_aerial_camera.py": "c39983324206573589ede310d94173c10f0db1132edc7f94c1ee08e66a5bb098",
+        "src/prediction/px4_camera.py": "f61d898cd378aee6e7bd0ad29c1c93eae442cff5d1da140a68faf5b946aeb532",
+        "scripts/urban_headroom_contact_probe.py": "ea660c8ca97946c99c8f5fdddd83946049e4d8bb0f751060180808e2e286edda",
+        "src/runtime/px4_depth_navigation.py": "20d29f55647b7f639145f892a39d4d8b974c6b6a28c2561bf98f701b1e937f45"
+      }
+    }
+  ],
+  "post_schema_fix_regression": {
+    "scene": "climb",
+    "result": {
+      "schema_version": "px4_depth_navigation_result.v1",
+      "family": "headroom_climb_0",
+      "route_id": "climb",
+      "route_sha256": "8c654e7c3f894b0130b360e56a2b4fa31c3227c67abada39292c647558803b32",
+      "selector": "history_depth",
+      "model_invoked": false,
+      "model_forecast_used_for_dispatch": false,
+      "depth_selection": {
+        "choices": {
+          "stale_map": {
+            "route_id": "forward",
+            "scores": {
+              "climb": {
+                "route_length_m": 17.430004606326026,
+                "minimum_observed_surface_distance_m": null,
+                "prior_map_envelope_clearance_m": 3.5027351250000005,
+                "rejected_by_observed_surface": false,
+                "rejected_by_available_map": false
+              },
+              "forward": {
+                "route_length_m": 14.024730210472194,
+                "minimum_observed_surface_distance_m": null,
+                "prior_map_envelope_clearance_m": 3.486593404390636,
+                "rejected_by_observed_surface": false,
+                "rejected_by_available_map": false
+              },
+              "left_detour": {
+                "route_length_m": 20.03719809706619,
+                "minimum_observed_surface_distance_m": null,
+                "prior_map_envelope_clearance_m": -0.09726487499999947,
+                "rejected_by_observed_surface": false,
+                "rejected_by_available_map": true
+              }
+            }
+          },
+          "latest_depth": {
+            "route_id": "climb",
+            "scores": {
+              "climb": {
+                "route_length_m": 17.430004606326026,
+                "minimum_observed_surface_distance_m": 1.4769055487741927,
+                "prior_map_envelope_clearance_m": 3.5027351250000005,
+                "rejected_by_observed_surface": false,
+                "rejected_by_available_map": false
+              },
+              "forward": {
+                "route_length_m": 14.024730210472194,
+                "minimum_observed_surface_distance_m": 0.08946947546130876,
+                "prior_map_envelope_clearance_m": 3.486593404390636,
+                "rejected_by_observed_surface": true,
+                "rejected_by_available_map": false
+              },
+              "left_detour": {
+                "route_length_m": 20.03719809706619,
+                "minimum_observed_surface_distance_m": 0.6791538853603056,
+                "prior_map_envelope_clearance_m": -0.09726487499999947,
+                "rejected_by_observed_surface": true,
+                "rejected_by_available_map": true
+              }
+            }
+          },
+          "history_depth": {
+            "route_id": "climb",
+            "scores": {
+              "climb": {
+                "route_length_m": 17.430004606326026,
+                "minimum_observed_surface_distance_m": 1.4769055487741927,
+                "prior_map_envelope_clearance_m": 3.5027351250000005,
+                "rejected_by_observed_surface": false,
+                "rejected_by_available_map": false
+              },
+              "forward": {
+                "route_length_m": 14.024730210472194,
+                "minimum_observed_surface_distance_m": 0.08946947546130876,
+                "prior_map_envelope_clearance_m": 3.486593404390636,
+                "rejected_by_observed_surface": true,
+                "rejected_by_available_map": false
+              },
+              "left_detour": {
+                "route_length_m": 20.03719809706619,
+                "minimum_observed_surface_distance_m": 0.6791538853603056,
+                "prior_map_envelope_clearance_m": -0.09726487499999947,
+                "rejected_by_observed_surface": true,
+                "rejected_by_available_map": true
+              }
+            }
+          }
+        },
+        "truth_filter_on_shadow_choices": {
+          "stale_map": false,
+          "latest_depth": true,
+          "history_depth": true
+        },
+        "shadow_choices_are_not_additional_flights": true,
+        "uses_scene_truth_for_selection": false,
+        "safety_filter_rejected_frozen_choice": false,
+        "model_invoked": false,
+        "initial_position_error_m": 0.06625612607975531,
+        "initial_speed_m_s": 0.032169872852344746,
+        "initial_heading_error_rad": 0.01101223799614548,
+        "observed_start_enu_m": [
+          -0.01885604447822291,
+          -0.029710289564693588,
+          3.002638908506492
+        ],
+        "observation_age_at_dispatch_wall_s": 1.4207561016082764,
+        "building_sensor_positive_control_contacts": 12,
+        "probe_removed_before_flight": true,
+        "source_sha256": {
+          "depth-selection.json": "690f1f2bb08a07de9dccf5c87ba5bb133c5ca18dbd28e78ebe35caded95d8515",
+          "contact-positive-control.json": "f2bbb2ff1264c789dd81de28e94233f55b9c206627fb411abba77cc1b5f935ce",
+          "urban-go-accepted.json": "33b768f3384bc4d2ba1af76fa613467c43bb87750c0445ac1116ebd0dc945fd9",
+          "history/capture.json": "6ae910464865cfb1084d4830958bca1b56933ba9de5cf7142662792e5b4bc17f"
+        },
+        "planner_input_sha256": "d62487b5a4c89e7c04572b0df42292ac0d29922f3ac9f7c1b580551530cc19b5",
+        "surface_file_sha256": "2f32d6cb077eb09ebcae94156194aa26d16f35a89d86aba2977f498d86ca0b67"
+      },
+      "jev_invoked": false,
+      "physical_hardware_executed": false,
+      "destination_reached": true,
+      "landing_and_disarm_observed": true,
+      "minimum_observed_envelope_clearance_m": 0.8005234725191387,
+      "clearance_scope": "piecewise_linear_observed_trajectory_against_mesh_AABBs_with_0.6m_sphere",
+      "building_contact_messages": 0,
+      "contact_sensor_streams_observed": false,
+      "ground_contact_positive_control_messages": 2447,
+      "route_simulation_seconds": 26.708,
+      "route_wall_seconds": 133.57588589400007,
+      "observed_distance_m": 17.539532345405448,
+      "maximum_altitude_m": 5.526454669164984,
+      "waypoint_errors_m": [
+        0.11010831707541954,
+        0.14181140696053077,
+        0.10722275223235565,
+        0.12894024357586262
+      ],
+      "trajectory_samples": 640,
+      "maximum_trajectory_sim_gap_seconds": 0.048,
+      "captured_rgb_frames": 209,
+      "simulator_removed": true,
+      "source_sha256": {
+        "scene.json": "f55af386e0f042002b297c75aaa9697eb37188d78ee9fe143acad271586d6f11",
+        "flight-result.json": "aa858d0cfd97d877d619710f998fc4d6a864782d66a36a59d228a86e12c37a04",
+        "events.jsonl": "3a94fd036aae2f8bb84fdac618e75b03fcb356699c476646c4aefee2007acbe8",
+        "telemetry.jsonl": "141f37e58c0d1c637aef750a1c5c30d6c4d1d4b62ed29affc51f37adea34f4a3",
+        "route-images/frames.json": "1095a70f5c121b13e20ebff7a39987a02f0eda19f8d27881641711a62c76ccab"
+      },
+      "learned_navigation_benefit_established": false,
+      "source_verification_schema_version": "missionos_urban_route_verification.v1",
+      "result_status": "verified",
+      "delivery_completion_claimed": false,
+      "physical_execution_invoked": false
+    },
+    "replay_rejected": true,
+    "same_task_approval_consumed": true,
+    "runtime_source_sha256": {
+      "scripts/px4_urban_headroom_trial.py": "8568f9736f97c49119695bf4047c89ee5b88683d036560b238addfdb36101a70",
+      "scripts/urban_headroom_contract.py": "c57301d220ad196e3cc9634982fca4947a63ae1ed2366feb95e192fe698018ec",
+      "scripts/select_urban_depth_route.py": "6c9d19536835cca437c15b81b23fcf9236536f9c761e7958d10c9fda2af2da24",
+      "scripts/px4_urban_wam_trial.py": "ac710003170a090a6c0a61dea7e7d31239d3114d30a32650deff90ab95be8d0b",
+      "scripts/urban_navigation_contract.py": "a27b487c8ff938eb1824b8cba3747b5e0adebc18911d9fcf97a1a6c344b40088",
+      "scripts/px4_aerial_flight_session.py": "a7f030b7f6c7de368a34d8d31bb2a26c074102e9486f0f295533997a8a713f97",
+      "scripts/probe_px4_aerial_camera.py": "c39983324206573589ede310d94173c10f0db1132edc7f94c1ee08e66a5bb098",
+      "src/prediction/px4_camera.py": "f61d898cd378aee6e7bd0ad29c1c93eae442cff5d1da140a68faf5b946aeb532",
+      "scripts/urban_headroom_contact_probe.py": "ea660c8ca97946c99c8f5fdddd83946049e4d8bb0f751060180808e2e286edda",
+      "src/runtime/px4_depth_navigation.py": "69a710eb020aa0552a339e2ce36b5f8d134c0bdc64d22c30d3fe667b3b0c8705"
+    }
+  }
+}

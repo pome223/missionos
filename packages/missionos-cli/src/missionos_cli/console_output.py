@@ -328,6 +328,17 @@ def _print_recovery_result(
 
 def _print_sitl_execution_result(payload: dict[str, Any]) -> None:
     summary = payload.get("summary") if isinstance(payload.get("summary"), dict) else {}
+    depth = payload.get("px4_depth_navigation_result")
+    if isinstance(depth, dict):
+        lines = [
+            f"Task: {summary.get('task_id')} ({summary.get('task_status')})",
+            f"Selected route: {depth.get('route_id', 'unknown')}",
+            f"Destination reached: {depth.get('destination_reached')}",
+            f"Landing and disarm observed: {depth.get('landing_and_disarm_observed')}",
+            "Scope: bounded simulator navigation; payload delivery not evaluated",
+        ]
+        console.print(Panel("\n".join(lines), title="PX4 Depth Navigation", border_style="green"))
+        return
     blocked = summary.get("blocked_reasons") if isinstance(summary.get("blocked_reasons"), list) else []
     lines = [
         f"task_id={_status_text(summary.get('task_id'))}",
