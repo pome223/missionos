@@ -29,8 +29,9 @@ def _utc():
 
 
 class JevAssuranceJudge:
-    def __init__(self, *, model="jev-latest", timeout=15, transport=None):
+    def __init__(self, *, model="jev-latest", timeout=15, transport=None, include_routing=False):
         self.model = model
+        self.include_routing = include_routing
         self.model_digest = None
         self.timeout = timeout
         self.transport = transport or self._request
@@ -83,6 +84,25 @@ class JevAssuranceJudge:
                 },
             },
         }
+        if self.include_routing:
+            payload["questions"]["assessment_route"] = {
+                "type": "choice",
+                "instructions": (
+                    "Classify what is needed to judge this situation. Missing required facts "
+                    "cannot be supplied by more reasoning. Prefer need_observation when required "
+                    "observations are missing, human_review when an operator must resolve an "
+                    "objective or policy ambiguity, and deep_reasoning for complex tradeoffs "
+                    "or conflicting evidence that can be analyzed using the supplied facts. "
+                    "A separate downstream approval alone does not require human_review. "
+                    "This classification never grants approval or execution authority."
+                ),
+                "criteria": {
+                    "bounded": "Supplied evidence supports a straightforward bounded judgment.",
+                    "deep_reasoning": "Evidence is available but requires resolving complex tradeoffs or conflicts.",
+                    "need_observation": "A required observation is absent; obtain evidence before judging.",
+                    "human_review": "An operator must resolve ambiguous objectives or policy.",
+                },
+            }
         start = time.perf_counter()
         started = _utc()
         raw = self.transport(payload)
@@ -105,6 +125,22 @@ class JevAssuranceJudge:
         review = raw["answers"]["review"]["choice"]
         if review not in ("bounded", "review"):
             raise ValueError("invalid_jev_review")
+        routing_evidence = {}
+        if self.include_routing:
+            routing = raw["answers"]["assessment_route"]
+            labels = set(payload["questions"]["assessment_route"]["criteria"])
+            distribution = routing["probabilities"]
+            if (routing.get("type") != "choice" or routing.get("choice") not in labels
+                    or set(distribution) != labels):
+                raise ValueError("invalid_jev_assessment_route")
+            values = [*distribution.values(), routing["confidence"]]
+            if any(type(n) not in (int, float) or not math.isfinite(n) or not 0 <= n <= 1 for n in values):
+                raise ValueError("invalid_jev_routing_distribution")
+            if not math.isclose(sum(distribution.values()), 1, abs_tol=0.01):
+                raise ValueError("invalid_jev_routing_probability_sum")
+            routing_evidence = {"assessment_route": routing["choice"],
+                                "assessment_route_probabilities": distribution,
+                                "assessment_route_confidence": routing["confidence"]}
         return ModelJudgment(
             output={
                 "proposed_response_kind": choice,
@@ -131,6 +167,7 @@ class JevAssuranceJudge:
                 "probabilities": probabilities,
                 "confidence": answer["confidence"],
                 "review_signal": review,
+                **routing_evidence,
                 "usage": raw.get("usage", {}),
                 "rationale_source": "adapter_template",
                 "confidence_is_mission_success_probability": False,
