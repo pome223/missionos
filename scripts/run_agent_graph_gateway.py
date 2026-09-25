@@ -22,7 +22,7 @@ def main():
     parser.add_argument("--enable-live-sitl", action="store_true")
     parser.add_argument(
         "--jev-mode",
-        choices=("off", "shadow", "primary"),
+        choices=("off", "shadow", "primary", "cascade", "cascade_shadow"),
         default=None,
         help="Override MISSIONOS_JEV_MODE from the process environment or state-root .env (default: off).",
     )
@@ -46,8 +46,13 @@ def main():
         if value is not None:
             env.setdefault(key, value)
     jev_mode = args.jev_mode if args.jev_mode is not None else env.get("MISSIONOS_JEV_MODE", "off")
-    if jev_mode not in {"off", "shadow", "primary"}:
-        parser.error("MISSIONOS_JEV_MODE must be off, shadow, or primary")
+    if jev_mode not in {"off", "shadow", "primary", "cascade", "cascade_shadow"}:
+        parser.error("MISSIONOS_JEV_MODE must be off, shadow, primary, cascade, or cascade_shadow")
+    if jev_mode in {"cascade", "cascade_shadow"}:
+        if env.get("MISSIONOS_JEV_CASCADE_FAST_PATH", "disabled") not in {
+            "disabled", "fixture_verified_detour_v1"
+        }:
+            parser.error("invalid MISSIONOS_JEV_CASCADE_FAST_PATH")
     wam_mode = args.navigation_wam_mode or env.get("MISSIONOS_NAVIGATION_WAM_MODE", "off")
     if wam_mode not in {"off", "shadow", "required"}:
         parser.error("MISSIONOS_NAVIGATION_WAM_MODE must be off, shadow, or required")

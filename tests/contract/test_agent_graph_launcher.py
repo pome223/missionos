@@ -16,6 +16,8 @@ class Launched(Exception):
     "cli,environment,dotenv,expected",
     [
         (None, None, None, "off"),
+        ("cascade", "off", None, "cascade"),
+        (None, None, "cascade_shadow", "cascade_shadow"),
         (None, None, "shadow", "shadow"),
         (None, None, "primary", "primary"),
         (None, "off", "shadow", "off"),
@@ -31,6 +33,7 @@ def test_mode_precedence_and_optional_secret(
     state.mkdir()
     if dotenv is not None:
         (state / ".env").write_text(f"MISSIONOS_JEV_MODE={dotenv}\n")
+    monkeypatch.delenv("MISSIONOS_JEV_CASCADE_FAST_PATH", raising=False)
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("MISSIONOS_JEV_MODE", raising=False)
     if environment is not None:
@@ -136,6 +139,21 @@ def test_invalid_navigation_config_stops_before_secrets(monkeypatch, tmp_path, m
     def forbidden(*args, **kwargs):
         pytest.fail("invalid navigation configuration reached secret lookup")
 
+    monkeypatch.setattr(launcher.subprocess, "run", forbidden)
+    with pytest.raises(SystemExit) as error:
+        launcher.main()
+    assert error.value.code == 2
+
+
+def test_invalid_cascade_profile_stops_before_secret_lookup(monkeypatch, tmp_path):
+    monkeypatch.setenv("MISSIONOS_JEV_MODE", "cascade")
+    monkeypatch.setenv("MISSIONOS_JEV_CASCADE_FAST_PATH", "unreviewed_live_profile")
+    monkeypatch.setattr(launcher.sys, "argv", [
+        "launcher", "--state-root", str(tmp_path), "--task-db", str(tmp_path / "tasks.db"),
+        "--secret-project", "fixture-project",
+    ])
+    def forbidden(*args, **kwargs):
+        pytest.fail("invalid profile reached external process")
     monkeypatch.setattr(launcher.subprocess, "run", forbidden)
     with pytest.raises(SystemExit) as error:
         launcher.main()

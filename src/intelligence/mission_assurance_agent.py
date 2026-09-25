@@ -252,6 +252,7 @@ class MissionResponseProposal:
 class ModelJudgment:
     output: Mapping[str, Any]
     invocation_evidence: Mapping[str, Any]
+    model_inference_invoked: bool = True
 
 
 class MissionAssuranceJudge(Protocol):
@@ -260,6 +261,19 @@ class MissionAssuranceJudge(Protocol):
 
 class MissionAssuranceJudgeUnavailable(RuntimeError):
     pass
+
+
+class MissionAssuranceJudgeError(RuntimeError):
+    """Provider failure with aggregate invocation facts from a composite judge."""
+
+    def __init__(
+        self, reason: str, *, status: Literal["not_configured", "failed"],
+        invoked: bool, invocation_evidence: Mapping[str, Any],
+    ) -> None:
+        super().__init__(reason)
+        self.status = status
+        self.invoked = invoked
+        self.invocation_evidence = dict(invocation_evidence)
 
 
 def build_mission_assurance_prompt(situation: MissionSituation) -> dict[str, Any]:
@@ -347,6 +361,14 @@ class MissionAssuranceAgent:
         prompt = build_mission_assurance_prompt(situation)
         try:
             judgment = self._judge.judge(prompt)
+        except MissionAssuranceJudgeError as exc:
+            return self._escalation(
+                situation,
+                status=exc.status,
+                invoked=exc.invoked,
+                reasons=(str(exc),),
+                invocation_evidence=exc.invocation_evidence,
+            )
         except MissionAssuranceJudgeUnavailable as exc:
             return self._escalation(
                 situation,
@@ -368,7 +390,7 @@ class MissionAssuranceAgent:
             return self._escalation(
                 situation,
                 status="guardrail_blocked",
-                invoked=True,
+                invoked=judgment.model_inference_invoked,
                 reasons=tuple(reasons),
                 invocation_evidence=judgment.invocation_evidence,
             )
@@ -384,9 +406,9 @@ class MissionAssuranceAgent:
             uncertainty=str(output["uncertainty"]),
             operator_question=str(output["operator_question"]),
             judgment_status="proposal_guardrail_passed",
-            judgment_mode="llm_required",
+            judgment_mode="llm_required" if judgment.model_inference_invoked else "deterministic_routing",
             fallback_mode="operator_escalation_only",
-            model_inference_invoked=True,
+            model_inference_invoked=judgment.model_inference_invoked,
             model_invocation_evidence=dict(judgment.invocation_evidence),
         )
 
@@ -694,12 +716,20 @@ def _configured_mission_assurance_agent() -> MissionAssuranceAgent:
 def configured_mission_assurance_agent() -> MissionAssuranceAgent:
     """Jev is opt-in; shadow results cannot replace the primary judgment."""
     mode = os.environ.get("MISSIONOS_JEV_MODE", "off")
-    if mode not in {"off", "shadow", "primary"}:
+    if mode not in {"off", "shadow", "primary", "cascade", "cascade_shadow"}:
         return MissionAssuranceAgent(_UnavailableJudge("invalid_jev_mode"))
     if mode == "primary":
         from src.intelligence.jev_assurance import JevAssuranceJudge
         return MissionAssuranceAgent(JevAssuranceJudge())
     agent = _configured_mission_assurance_agent()
+    if mode in {"cascade", "cascade_shadow"}:
+        from src.intelligence.jev_cascade import (
+            FAST_PATH_ENV, FAST_PATHS, JevCascadeJudge, JevCascadeShadowJudge,
+        )
+        if os.environ.get(FAST_PATH_ENV, "disabled") not in FAST_PATHS:
+            return MissionAssuranceAgent(_UnavailableJudge("invalid_fast_path_profile"))
+        judge = JevCascadeJudge if mode == "cascade" else JevCascadeShadowJudge
+        return MissionAssuranceAgent(judge(agent._judge))
     if mode == "shadow":
         from src.intelligence.jev_assurance import JevShadowJudge
         return MissionAssuranceAgent(JevShadowJudge(agent._judge))
@@ -763,6 +793,7 @@ __all__ = [
     "MissionAssuranceAgent",
     "MissionAssuranceJudge",
     "MissionAssuranceJudgeUnavailable",
+    "MissionAssuranceJudgeError",
     "MissionResponseProposal",
     "MissionSituation",
     "ModelJudgment",

@@ -54,7 +54,8 @@ server, simulator, or hardware. Model health is `not_probed` until actually test
 
 ## Jev placement
 
-`MISSIONOS_JEV_MODE` supports `off` (default), `shadow`, and `primary`:
+`MISSIONOS_JEV_MODE` supports `off` (default), `shadow`, `primary`, and the
+experimental `cascade` / `cascade_shadow` modes:
 
 ```dotenv
 MISSIONOS_JEV_MODE=off
@@ -74,11 +75,17 @@ CLI has its separate explicit `--llm-backend` selection.
 - `primary`: opt-in experimental bounded response selection by Jev. Invalid
   responses and provider failures escalate. Approval and Rules remain mandatory.
 
-Jev asks two independent questions in one request: the bounded mission response
+The original three modes ask two independent questions in one request: the bounded mission response
 and whether evidence needs further review. Review/confidence do not bypass Rules
 or select a fallback automatically. Probability and confidence are provider model
 outputs, not calibrated mission-success probabilities. Jev does not write a
 rationale; adapter-generated explanatory strings are explicitly labeled templates.
+
+[Cascade routing](jev-assurance-cascade.md) adds a third question to distinguish
+bounded judgment, extra reasoning, missing observations, and human review.
+`cascade_shadow` preserves the incumbent output. `cascade` uses an explicit
+routing policy; its Jev-only fast path is disabled by default and currently has
+only an opt-in fixture profile. No live applicability is inferred from the pilot.
 
 `TYPESAFE_API_KEY` is read from the process environment, never recorded in
 artifacts. `run_agent_graph_gateway.py --jev-mode shadow` reads it from the supplied
