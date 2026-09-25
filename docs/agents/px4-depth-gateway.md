@@ -96,6 +96,63 @@ python scripts/check_px4_depth_gateway.py --output-dir "$LIVE_RUN" --scene all -
 The frozen twelve-case R2 report is unchanged. This integration does not reopen
 its WAM/GPU/training gate.
 
+## Planned stop and reobservation
+
+`POST /px4-gazebo/depth-navigation/prepare` also accepts
+`{"scene":"gap","reobserve":true}`. The CLI equivalent is
+`missionos prepare-px4-depth --scene gap --reobserve`. Other scenes, nonboolean
+flags and client-supplied route/asset fields are rejected. Preparation still
+creates a pending `px4_depth_navigation` task without flying or approving it.
+The existing `execute-sitl` and `job-status` commands use that same task ID.
+
+The opt-in request binds the original gap scene, supplied approach/resume routes,
+checkpoint `(3,0,3)`, protocol, pinned simulator image and controller/adapter/verifier
+source hashes. A scripted static obstacle is inserted after eastward departure
+passes 1 m. Only the planner's partial map and measured RGB-D enter selection;
+the common safety gate independently sees the declared scene truth.
+
+Approval permits one approach, one planned checkpoint, one new observation and
+at most one supplied resume decision, followed by landing. The old single-route
+approval scope cannot authorize this option. Both stages use separate one-shot
+signed dispatch files with four-second expiry, five-second maximum observation
+age, stationary-pose checks and the same approval reference. Resume images must
+postdate both the observed stop and obstacle appearance. This authority does not
+permit repeated replanning, another task, changed code/routes or hardware.
+
+`px4_depth_navigation_lifecycle.entries` is an ordered durable record on the
+original task. It distinguishes route selection from observed controller
+consumption, safety-gate outcome and route dispatch. Checkpoint, landing and
+disarm records contain observed telemetry. `job-status` exposes the current phase
+and verified replan/abort result. Source verification, raw RGB-D re-scoring,
+trajectory/dwell/contact checks and container cleanup precede completion.
+
+A verified safe abort has `result_status=safe_aborted`, task `status=failed`,
+`destination_reached=false` and `landing_and_disarm_observed=true`. An exception
+or missing evidence instead leaves unknown terminal fields and a failed task;
+neither executor success nor an ACK is completion evidence. Both consume the
+approval and disallow replay. Host failure uses the existing signal-to-land and
+owned-container cleanup boundary. No automatic reflight is performed.
+
+```sh
+python scripts/check_px4_depth_gateway.py --output-dir "$HTTP_RUN" --scene gap --reobserve
+# All three documented server-side SITL opt-ins and pinned assets are required:
+python scripts/check_px4_depth_gateway.py --output-dir "$LIVE_RUN" --scene gap --reobserve --live
+python -m pytest tests/contract/test_px4_reobserve_navigation.py -q
+```
+
+The first command uses a newly started real loopback Gateway and packaged CLI,
+testing authentication, preparation, approval and opt-in refusal without Docker.
+The second additionally exercises the controller, sensors and raw verifier in
+one simulator flight. Each requires a fresh output directory. This mode is a
+fixed supplied-route integration, not a general recovery planner, a WAM result,
+or continuous emergency avoidance. No WAM/Jev/GPU/training calls occur.
+
 ## Observed integration checks (2026-09-24–25)
 
 All three profiles completed through CLI → authenticated Gateway → depth selection → PX4/Gazebo → same-task verification. A result-schema merge-order defect was then corrected; original records remain unchanged. A fresh climb run after Gateway restart completed with the corrected schema. The four flights all reached the goal, landed/disarmed and removed their containers. No model/GPU/training calls occurred. See the [reviewed results](../assets/px4-depth-gateway-20260924/README.md) and section 19 of the [Japanese technical report](aerial-wam-px4-technical-report-20260922.md).
+
+One subsequent `gap --reobserve` integration flight also completed through a new
+Gateway and the same task: initial forward choice, observed checkpoint stop,
+fresh depth, left detour, goal dwell, landing/disarm, independent verification and
+container removal. Approval replay was rejected. The full suite passed 3276 tests.
+See the separate [Gateway reobservation evidence and replay](../assets/px4-reobserve-gateway-20260925/README.md).

@@ -25,38 +25,43 @@ HTML = """<!doctype html><html lang="ja"><meta charset="utf-8">
 <title>PX4：停止・再観測・迂回</title>
 <style>
 :root{color-scheme:light;font-family:system-ui,sans-serif;color:#182e40;background:#f3f6f8}*{box-sizing:border-box}body{margin:0;padding:24px;max-width:1260px;margin:auto}h1{font-size:clamp(23px,4vw,36px);margin:4px 0 12px}.eyebrow{font-size:12px;letter-spacing:.13em;color:#52717b}p{line-height:1.7}.lead{max-width:950px}.controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;position:sticky;top:0;background:#f3f6f8f2;padding:14px 0;z-index:2}button,select{font:inherit;border:1px solid #a5b7c1;border-radius:6px;background:white;padding:8px 12px}input{flex:1;min-width:140px;accent-color:#007b7e}output{min-width:100px;font-variant-numeric:tabular-nums}.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}article{background:white;border:1px solid #d4dfe5;border-radius:12px;overflow:hidden}article h2{font-size:20px;margin:18px 18px 6px}.detail{margin:0 18px 12px;font-size:14px;color:#526974;min-height:48px}canvas{width:100%;display:block;background:#f8fafb}video{width:100%;display:block;background:#182e40}.status{padding:12px 18px;min-height:64px;font-size:14px;font-variant-numeric:tabular-nums}.legend{font-size:13px;color:#526974}.note{background:#e7eff3;padding:16px;border-radius:8px;margin-top:22px}table{border-collapse:collapse;width:100%;font-size:14px}td,th{padding:10px 8px;text-align:left;border-bottom:1px solid #d7e1e7}.tablewrap{overflow-x:auto}.limit{font-size:13px;color:#526974}a{color:#056875}@media(max-width:736px){body{padding:16px}.grid{grid-template-columns:1fr}.controls{gap:8px}.detail{min-height:0}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+.grid.single article{display:grid;grid-template-columns:1fr 1fr;align-items:start}.grid.single article h2,.grid.single article .detail,.grid.single article .status{grid-column:1/-1}.grid.single video{aspect-ratio:580/400;object-fit:contain}@media(max-width:736px){.grid.single article{grid-template-columns:1fr}}
 </style>
 <main><div class="eyebrow">MISSIONOS · PX4 / GAZEBO · RECORDED DEVELOPMENT TRIAL</div>
 <h1>停止して見直し、通れる経路へ。</h1>
 <p class="lead" id="finding"></p>
-<p class="legend">地図：灰色＝建物、橙色＝飛行開始後に出現した障害物、線＝記録された飛行軌跡。下段は実際のシミュレーターカメラ映像です。</p>
+<p class="legend">地図：灰色＝建物、橙色＝飛行開始後に出現した障害物、線＝記録された飛行軌跡。映像は実際のシミュレーターカメラ画像です。</p>
 <div class="controls"><button id="play" type="button">再生</button><label for="speed">速度</label><select id="speed"><option value="1">1×</option><option value="4" selected>4×</option></select><input id="time" type="range" min="0" step="0.1" value="0" aria-label="出発からのシミュレーション経過秒"><output id="clock"></output></div>
 <div class="grid" id="cases"></div>
-<div class="note"><strong>何を確かめたか</strong><p>停止地点で取り直した深度画像によって、直進候補がふさがれたことを検出し、供給済みの迂回候補を選び直せるかを比較しました。安全判定は両方式に共通です。障害物は出発後に挿入され、その後は動きません。</p></div>
-<div class="tablewrap"><table><thead><tr><th>観測指標</th><th>経路を維持</th><th>再観測・再選択</th></tr></thead><tbody id="metrics"></tbody></table></div>
-<p class="limit">各方式1試行の開発比較。停止は予定したチェックポイントで行っています。連続飛行中の緊急回避、任意経路の生成、動く障害物の予測、実機飛行、WAMの効果は検証していません。WAM・Jev・GPU呼出しは0です。録画はシミュレーション時刻に合わせて再生し、推論映像や未来の予測を含みません。</p>
+<div class="note"><strong>何を確かめたか</strong><p id="method">停止地点で取り直した深度画像によって、直進候補がふさがれたことを検出し、供給済みの迂回候補を選び直せるかを比較しました。安全判定は両方式に共通です。障害物は出発後に挿入され、その後は動きません。</p></div>
+<div class="tablewrap"><table><thead><tr id="metric-head"><th>観測指標</th></tr></thead><tbody id="metrics"></tbody></table></div>
+<p class="limit" id="scope">各方式1試行の開発比較。停止は予定したチェックポイントで行っています。連続飛行中の緊急回避、任意経路の生成、動く障害物の予測、実機飛行、WAMの効果は検証していません。WAM・Jev・GPU呼出しは0です。録画はシミュレーション時刻に合わせて再生し、推論映像や未来の予測を含みません。</p>
 <p class="limit">距離と経過時間は出発から着陸・disarmまで。停止中に16フレームを取得しているため、最新観測の古さと停止・判断に要した時間は異なります。未到達の短い経路を効率向上とは解釈しません。位置表示は間引いた観測点で、滑らかな補間や連続接触保証ではありません。</p>
 <p class="limit">Apartment assets: OSRF gazebo_models, CC BY 3.0, Nathan Koenig / Cole Biesemeyer. <a href="https://github.com/osrf/gazebo_models">Source</a> · <a href="summary.json">測定値</a> · <a href="manifest.json">証拠ハッシュ</a></p></main>
 <script>
 const D=__DATA__, slider=document.getElementById('time'), clock=document.getElementById('clock'), play=document.getElementById('play');
 slider.max=Math.max(...D.cases.map(c=>c.result.elapsed_departure_through_disarm_sim_s));
 document.getElementById('finding').textContent=D.finding;
-const labels=['元の経路を維持','停止・再観測して選び直す'];
+const labels=D.cases.map(c=>c.mode==='frozen_route'?'元の経路を維持':'停止・再観測して選び直す');
+document.getElementById('metric-head').innerHTML='<th>観測指標</th>'+labels.map(l=>`<th>${l}</th>`).join('');
+if(D.single_run){document.querySelector('.grid').style.gridTemplateColumns='minmax(0,1fr)';document.querySelector('.grid').classList.add('single');document.getElementById('method').textContent='停止地点で取り直した深度画像による再選択と、その後の飛行結果を記録しています。障害物は出発後に挿入され、その後は動きません。';document.getElementById('scope').textContent='1試行の統合動作確認。予定された停止点と経路候補を使います。連続緊急回避、任意経路生成、動く障害物、実機、WAMの効果は検証していません。WAM・Jev・GPU呼出しは0です。';}
 const views=D.cases.map((c,i)=>{const el=document.createElement('article');el.innerHTML=`<h2>${labels[i]}</h2><p class="detail">${c.result.destination_reached?'目的地に到達し、着陸・disarmを確認':'安全制約で経路を退け、停止地点で着陸・disarmを確認'}</p><canvas width="580" height="400" aria-label="観測された飛行軌跡"></canvas><video preload="auto" muted playsinline poster="${c.mode}-checkpoint.png" aria-label="シミュレーターカメラ映像"><source src="${c.mode}.mp4" type="video/mp4"></video><div class="status"></div>`;document.getElementById('cases').appendChild(el);return{el,canvas:el.querySelector('canvas'),video:el.querySelector('video'),status:el.querySelector('.status')};});
 const fmt=(n,u='')=>n.toFixed(2)+u;
 const metrics=[['到達',r=>r.destination_reached?'確認':'未到達'],['経路変更回数',r=>r.replan_count],['飛行距離（着陸を含む）',r=>fmt(r.path_from_departure_through_disarm_m,' m')],['経過（sim）',r=>fmt(r.elapsed_departure_through_disarm_sim_s,' s')],['機体包絡の最小余裕',r=>fmt(r.minimum_observed_envelope_clearance_m,' m')],['観測された障害物接触通知',r=>r.building_contact_messages],['停止から再判断まで（sim）',r=>fmt(r.checkpoint_to_resume_sim_s,' s')],['停止から再判断まで（wall）',r=>fmt(r.checkpoint_to_resume_wall_s,' s')],['最新観測の採用時の古さ（wall）',r=>fmt(r.input_age_wall_s.resume,' s')]];
 document.getElementById('metrics').innerHTML=metrics.map(([label,f])=>`<tr><th>${label}</th>${D.cases.map(c=>`<td>${f(c.result)}</td>`).join('')}</tr>`).join('');
-function draw(t){clock.value=fmt(t,' sim s');D.cases.forEach((c,i)=>{const v=views[i],ctx=v.canvas.getContext('2d'),W=580,H=400,s=14,X=x=>55+x*s,Y=y=>210-y*s;ctx.clearRect(0,0,W,H);ctx.fillStyle='#f8fafb';ctx.fillRect(0,0,W,H);ctx.font='12px system-ui';ctx.fillStyle='#687f8c';for(let x=0;x<=30;x+=5){ctx.fillText(x+' m',X(x)-8,388);ctx.strokeStyle='#e4ebef';ctx.beginPath();ctx.moveTo(X(x),18);ctx.lineTo(X(x),372);ctx.stroke()}for(let y=-10;y<=10;y+=5){ctx.fillText(y+' m',4,Y(y));}function box(b,color){ctx.fillStyle=color;ctx.fillRect(X(b.lower_enu_m[0]),Y(b.upper_enu_m[1]),(b.upper_enu_m[0]-b.lower_enu_m[0])*s,(b.upper_enu_m[1]-b.lower_enu_m[1])*s)}D.buildings.forEach(b=>box(b,'#c8d3da'));if(t>=c.barrier_s)box(D.barrier,'#e9813c');ctx.strokeStyle='#78909c';ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(X(D.checkpoint[0]),Y(D.checkpoint[1]),8,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#607684';ctx.fillText('停止点',X(3)-12,Y(0)+25);ctx.fillText('目的地',X(14)-16,Y(0)+25);ctx.strokeRect(X(14)-5,Y(0)-5,10,10);const selected=c.trace.filter(p=>p.t<=t),p=selected[selected.length-1]||c.trace[0];ctx.strokeStyle=i?'#007f80':'#527cc0';ctx.lineWidth=3;ctx.beginPath();selected.forEach((p,j)=>{j?ctx.lineTo(X(p.p[0]),Y(p.p[1])):ctx.moveTo(X(p.p[0]),Y(p.p[1]))});ctx.stroke();ctx.fillStyle=i?'#007f80':'#527cc0';ctx.beginPath();ctx.arc(X(p.p[0]),Y(p.p[1]),6,0,Math.PI*2);ctx.fill();let state=t<c.barrier_s?'通路へ移動':t<c.stop_s?'障害物出現 → 停止点へ':t<c.resume_s?'停止・新しいRGB-Dを取得':c.result.destination_reached?'迂回経路を実行':'安全制約で中止 → 着陸';if(t>=c.result.elapsed_departure_through_disarm_sim_s)state=c.result.destination_reached?'到達・着陸・disarm確認':'未到達・安全中止・disarm確認';v.status.textContent=`${state} ｜ 高度 ${fmt(p.p[2],' m')} ｜ 位置の観測時刻 ${fmt(p.t,' s')}`;let target=Math.max(0,Math.min(t-c.video_start_s,c.video_duration_s-.05));if(Number.isFinite(v.video.duration)&&Math.abs(v.video.currentTime-target)>.12)v.video.currentTime=target;});}
+function draw(t){clock.value=fmt(t,' sim s');D.cases.forEach((c,i)=>{const v=views[i],ctx=v.canvas.getContext('2d'),W=580,H=400,s=14,X=x=>55+x*s,Y=y=>210-y*s;ctx.clearRect(0,0,W,H);ctx.fillStyle='#f8fafb';ctx.fillRect(0,0,W,H);ctx.font='12px system-ui';ctx.fillStyle='#687f8c';for(let x=0;x<=30;x+=5){ctx.fillText(x+' m',X(x)-8,388);ctx.strokeStyle='#e4ebef';ctx.beginPath();ctx.moveTo(X(x),18);ctx.lineTo(X(x),372);ctx.stroke()}for(let y=-10;y<=10;y+=5){ctx.fillText(y+' m',4,Y(y));}function box(b,color){ctx.fillStyle=color;ctx.fillRect(X(b.lower_enu_m[0]),Y(b.upper_enu_m[1]),(b.upper_enu_m[0]-b.lower_enu_m[0])*s,(b.upper_enu_m[1]-b.lower_enu_m[1])*s)}D.buildings.forEach(b=>box(b,'#c8d3da'));if(t>=c.barrier_s)box(D.barrier,'#e9813c');ctx.strokeStyle='#78909c';ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(X(D.checkpoint[0]),Y(D.checkpoint[1]),8,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#607684';ctx.fillText('停止点',X(3)-12,Y(0)+25);ctx.fillText('目的地',X(14)-16,Y(0)+25);ctx.strokeRect(X(14)-5,Y(0)-5,10,10);const selected=c.trace.filter(p=>p.t<=t),p=selected[selected.length-1]||c.trace[0];ctx.strokeStyle=i?'#007f80':'#527cc0';ctx.lineWidth=3;ctx.beginPath();selected.forEach((p,j)=>{j?ctx.lineTo(X(p.p[0]),Y(p.p[1])):ctx.moveTo(X(p.p[0]),Y(p.p[1]))});ctx.stroke();ctx.fillStyle=i?'#007f80':'#527cc0';ctx.beginPath();ctx.arc(X(p.p[0]),Y(p.p[1]),6,0,Math.PI*2);ctx.fill();let state=t<c.barrier_s?'通路へ移動':t<c.stop_s?'障害物出現 → 停止点へ':t<c.resume_s?'停止・新しいRGB-Dを取得':c.result.destination_reached?'迂回経路を実行':'安全制約で中止 → 着陸';if(t>=c.result.elapsed_departure_through_disarm_sim_s)state=c.result.destination_reached?'到達・着陸・disarm確認':'未到達・安全中止・disarm確認';v.status.textContent=`${state} ｜ 高度 ${fmt(p.p[2],' m')} ｜ 位置の観測時刻 ${fmt(p.t,' s')}`;let target=Math.max(0,Math.min(t-c.video_start_s,c.video_duration_s-.05));if(Number.isFinite(v.video.duration)&&(v.video.currentTime===0||Math.abs(v.video.currentTime-target)>.12))v.video.currentTime=Math.max(.001,target);});}
 let playing=false,last=0;play.onclick=()=>{playing=!playing;play.textContent=playing?'一時停止':'再生';last=performance.now();if(playing&&+slider.value>=+slider.max)slider.value=0;};slider.oninput=()=>draw(+slider.value);views.forEach(v=>v.video.addEventListener('loadedmetadata',()=>draw(+slider.value)));function tick(now){if(playing){slider.value=Math.min(+slider.max,+slider.value+(now-last)/1000*+document.getElementById('speed').value);draw(+slider.value);if(+slider.value>=+slider.max){playing=false;play.textContent='再生';}}last=now;requestAnimationFrame(tick)}draw(0);requestAnimationFrame(tick);
 </script></html>"""
 
 
-def render(cohort, output):
-    results = [verify(cohort / mode) for mode in MODES]
+def render(cohort, output, *, single_run=False):
+    modes = ("reobserve",) if single_run else MODES
+    roots = [cohort] if single_run else [cohort / mode for mode in modes]
+    results = [verify(root) for root in roots]
     output.mkdir(parents=True, exist_ok=False)
     cases, manifest = [], {}
-    for mode, result in zip(MODES, results):
-        session = cohort / mode / "session"
+    for mode, result, root in zip(modes, results, roots):
+        session = root / "session"
         origin = result["departure_sim_ns"]
         trace = [
             json.loads(line) for line in (session / "telemetry.jsonl").read_text().splitlines()
@@ -163,11 +168,15 @@ def render(cohort, output):
             ).hexdigest()
     finding = (
         "元の直進経路を維持した試行は安全に中止。再観測した試行は左へ迂回し、目的地への到達と着陸を確認しました。"
-        if results[0]["safe_abort"] and results[1]["destination_reached"]
+        if not single_run and results[0]["safe_abort"] and results[1]["destination_reached"]
         else "結果は下の観測値を参照してください。予定した到達差が成立したとは限りません。"
     )
+    if single_run:
+        finding = ("停止地点で深度を取り直し、左へ迂回して到達・着陸した1試行の記録です。"
+                   if results[0]["destination_reached"] else "到達は確認できませんでした。測定値を参照してください。")
     data = {
         "finding": finding,
+        "single_run": single_run,
         "cases": cases,
         "buildings": scene_spec("gap")["buildings"],
         "barrier": BARRIER,
@@ -176,18 +185,18 @@ def render(cohort, output):
         "trace_uses_observed_samples_only": True,
     }
     summary = {
-        "schema_version": "urban_reobserve_report.v1",
+        "schema_version": "urban_reobserve_single_report.v1" if single_run else "urban_reobserve_report.v1",
         "runs": results,
-        "cohort_size": 2,
+        "cohort_size": len(results),
         "learned_navigation_benefit_established": False,
-        "wam_arrival_headroom_in_this_case": 0 if results[1]["destination_reached"] else None,
+        "wam_arrival_headroom_in_this_case": 0 if results[-1]["destination_reached"] else None,
         "limitations": [
             "one development trial per method",
             "scripted static insertion",
             "planned checkpoint stop",
             "supplied route candidates",
             "no WAM/GPU",
-            "not a Gateway closed-loop task",
+            "one integration flight" if single_run else "not a Gateway closed-loop task",
         ],
     }
     for name, value in (
@@ -219,12 +228,15 @@ def render(cohort, output):
         if path.name != "manifest.json"
     }
     manifest_path.write_text(json.dumps(manifest_record, indent=2) + "\n")
-    print(json.dumps({"report": str(output / "index.html"), "runs_verified": 2}))
+    print(json.dumps({"report": str(output / "index.html"), "runs_verified": len(results)}))
 
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--cohort", type=Path, required=True)
+    source = p.add_mutually_exclusive_group(required=True)
+    source.add_argument("--cohort", type=Path)
+    source.add_argument("--single-run", type=Path)
     p.add_argument("--output", type=Path, required=True)
     args = p.parse_args()
-    render(args.cohort.resolve(), args.output.resolve())
+    render((args.single_run or args.cohort).resolve(), args.output.resolve(),
+           single_run=args.single_run is not None)

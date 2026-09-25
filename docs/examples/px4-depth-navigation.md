@@ -23,3 +23,21 @@ landing and disarm, followed by verification.
 The task records the selected route and outcome. These runs use no WAM, Jev or
 GPU and do not release a payload. A failed task retains its evidence and cannot
 be silently retried with the same approval.
+
+For a planned stop and one route change, use the gap profile:
+
+```sh
+missionos prepare-px4-depth --scene gap --reobserve
+missionos execute-sitl --task-id TASK_ID
+missionos job-status --task-id TASK_ID
+```
+
+Here, a static obstacle appears after departure. The aircraft stops at a supplied
+checkpoint, measures depth again and chooses from the declared resume routes.
+The execution approval covers this single checkpoint and at most one resume
+decision. The same task retains the initial choice, stop, new choice, observed
+dispatch and verified outcome. If no route is selected or the constraints reject it,
+landing is recorded as a safe abort, without claiming destination arrival.
+
+This option is limited to this simulator scenario. It does not provide continuous
+emergency avoidance or route generation for arbitrary missions.

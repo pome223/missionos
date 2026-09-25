@@ -121,3 +121,12 @@ corrected comparison sessions. The reobservation pause was 37.212 wall seconds
 intermediate frames before retaining sixteen valid ones. This is not a real-time
 emergency avoidance result. Latest-frame age at dispatch was 1.424 wall seconds.
 No WAM advantage or new WAM/GPU admission follows from this successful depth case.
+
+## Subsequent Gateway integration
+
+The separate paired trial above remains development evidence with its original
+frozen source hashes. The same session controller is now reusable by the normal
+depth task through [`--scene gap --reobserve`](px4-depth-gateway.md#planned-stop-and-reobservation).
+This option has its own request and approval scope for one checkpoint/resume;
+it does not expand previously issued single-route approvals. Gateway integration
+flights are recorded separately from the two-method research comparison.

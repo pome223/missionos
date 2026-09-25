@@ -11,12 +11,13 @@ def build_depth_navigation_router(*, task_store, resolve_http_user_id):
 
     @router.post("/px4-gazebo/depth-navigation/prepare")
     async def prepare(request: Request, payload: dict = Body(...)):
-        if set(payload) != {"scene"}:
-            raise HTTPException(400, "only an explicit scene is accepted")
+        if "scene" not in payload or set(payload) - {"scene", "reobserve"}:
+            raise HTTPException(400, "only an explicit scene and optional reobserve are accepted")
         try:
             return depth.prepare(
                 task_store,
                 payload["scene"],
+                reobserve=payload.get("reobserve", False),
                 owner=resolve_http_user_id(
                     request, None, default_user_id="loopback_local_operator"
                 ),

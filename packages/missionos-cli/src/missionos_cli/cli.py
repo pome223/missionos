@@ -1278,16 +1278,20 @@ def recover_command(
 @missionos.command("prepare-px4-depth")
 @click.option("--scene", type=click.Choice(["gap", "climb", "detour"]), required=True,
               help="Static simulator profile; prepares a task without flying.")
+@click.option("--reobserve", is_flag=True,
+              help="Gap profile: stop at the checkpoint, observe again, and allow one route change.")
 @click.pass_context
-def prepare_px4_depth_command(ctx: click.Context, scene: str) -> None:
+def prepare_px4_depth_command(ctx: click.Context, scene: str, reobserve: bool) -> None:
     """Prepare bounded RGB-D navigation for the normal execute-sitl command."""
     client: MissionOSGatewayClient = ctx.obj["missionos_client"]
-    payload = client.prepare_px4_depth(scene=scene)
+    payload = client.prepare_px4_depth(scene=scene, reobserve=reobserve)
     task_id = _remember_sitl_task_id_from_payload(ctx, payload)
     if ctx.obj["missionos_json_output"]:
         _print_json(payload)
         return
     console.print(f"Prepared PX4 depth navigation: {scene} (task {task_id})")
+    if reobserve:
+        console.print("Scope: one planned stop, fresh depth, one declared resume route, then land.")
     console.print(f"missionos execute-sitl --task-id {task_id}")
 
 

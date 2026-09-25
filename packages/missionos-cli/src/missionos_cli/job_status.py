@@ -1899,7 +1899,13 @@ def _job_operator_summary(task_payload: dict[str, Any]) -> list[str]:
             f"Selected route: {result.get('route_id', progress.get('route_id', 'pending'))}",
             f"Destination reached: {_status_text(result.get('destination_reached'))}",
             f"Landing and disarm observed: {_status_text(result.get('landing_and_disarm_observed'))}",
-            "Scope: static simulator profile; model calls=0; payload delivery not evaluated",
+            *([
+                f"Replans observed: {result.get('replan_count', 'pending')}",
+                f"Safe abort verified: {_status_text(result.get('safe_abort'))}",
+                "Scope: one planned checkpoint and reobservation; simulator; model calls=0; payload delivery not evaluated",
+            ] if request.get("reobserve") is True else [
+                "Scope: static simulator profile; model calls=0; payload delivery not evaluated",
+            ]),
         ]
     if _is_parent_mission_job(task_payload):
         return _parent_mission_job_operator_summary(task_payload)

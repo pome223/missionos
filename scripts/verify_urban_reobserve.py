@@ -45,7 +45,12 @@ def verify(root):
     def read(name):
         return json.loads((session / name).read_text())
 
-    frozen = json.loads((root.parent / "protocol.json").read_text())
+    # Paired research runs retain the cohort freeze; Gateway single sessions
+    # carry their own source binding without borrowing another task's file.
+    protocol_path = root.parent / "protocol.json"
+    if not protocol_path.exists():
+        protocol_path = root / "protocol.json"
+    frozen = json.loads(protocol_path.read_text())
     config, result, scene = read("config.json"), read("flight-result.json"), read("scene.json")
     require(
         frozen["protocol"] == PROTOCOL and frozen["source_sha256"] == source_hashes(),

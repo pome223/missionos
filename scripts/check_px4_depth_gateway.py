@@ -19,6 +19,8 @@ from src.runtime import px4_depth_navigation as depth
 
 
 async def check(args):
+    if args.reobserve and args.scene != "gap":
+        raise ValueError("--reobserve requires --scene gap")
     root = args.output_dir.resolve()
     if root.exists():
         raise ValueError("use a fresh output directory")
@@ -96,7 +98,8 @@ async def check(args):
             headers = {"X-API-Key": os.environ["GATEWAY_API_KEY"]}
             rows = []
             for scene in (depth.SCENES if args.scene == "all" else (args.scene,)):
-                proposed = await cli("prepare-px4-depth", "--scene", scene)
+                proposed = await cli("prepare-px4-depth", "--scene", scene,
+                                     *(["--reobserve"] if args.reobserve else []))
                 task_id = proposed["task"]["task_id"]
                 assert proposed["task"]["status"] == "pending"
                 missing = await client.post(
@@ -130,6 +133,23 @@ async def check(args):
                         result["model_invoked"] is False
                         and result["simulator_removed"] is True
                     )
+                    if args.reobserve:
+                        assert result["reobserve"] is True and result["replan_count"] == 1
+                        assert result["choices"]["approach"]["selected"] == "forward"
+                        assert result["route_id"] == "left_detour"
+                        entries = task["artifacts"]["px4_depth_navigation_lifecycle"]["entries"]
+                        phases = [entry["phase"] for entry in entries]
+                        expected = [
+                            "contact_control_passed", "observing_initial_depth",
+                            "approach_route_selected", "checkpoint_stopped", "reobserving_depth",
+                            "resume_route_selected", "resume_authority_consumed",
+                            "resume_dispatched", "landing_observed", "simulator_removed", "verified",
+                        ]
+                        assert phases == expected, phases
+                        approval = task["artifacts"][depth.APPROVALS][result["execution_approval_id"]]
+                        assert approval["scope"] == depth.approval_scope(task["artifacts"][depth.REQUEST])
+                        assert approval["consumed_in_runtime"] is True
+                        assert [e["sequence"] for e in entries] == list(range(len(entries)))
                     replay = await client.post(
                         "/px4-gazebo/mission-scenarios/execute-sitl",
                         headers=headers,
@@ -149,6 +169,21 @@ async def check(args):
                         }
                     )
                 else:
+                    if args.reobserve:
+                        for payload in (
+                            {"scene": "climb", "reobserve": True},
+                            {"scene": "gap", "reobserve": "true"},
+                            {"scene": "gap", "reobserve": True, "routes": {}},
+                        ):
+                            invalid = await client.post(
+                                "/px4-gazebo/depth-navigation/prepare", headers=headers, json=payload
+                            )
+                            assert invalid.status_code == 400, invalid.text
+                        implicit = await client.post(
+                            "/px4-gazebo/mission-scenarios/approve-sitl-execution",
+                            headers=headers, json={"task_id": task_id},
+                        )
+                        assert implicit.status_code == 400, implicit.text
                     approval = await client.post(
                         "/px4-gazebo/mission-scenarios/approve-sitl-execution",
                         headers=headers,
@@ -196,6 +231,7 @@ async def check(args):
             "missing_approval_rejected": True,
             "new_model_calls": 0,
             "new_rented_gpus": 0,
+            "reobserve": args.reobserve,
             "cases": rows,
         }
         (root / "summary.json").write_text(json.dumps(result, indent=2) + "\n")
@@ -213,4 +249,5 @@ if __name__ == "__main__":
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--scene", choices=(*depth.SCENES, "all"), default="climb")
     parser.add_argument("--live", action="store_true")
+    parser.add_argument("--reobserve", action="store_true")
     asyncio.run(check(parser.parse_args()))

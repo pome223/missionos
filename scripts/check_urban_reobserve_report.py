@@ -19,7 +19,10 @@ def check(root):
     replay = json.loads((root / "replay-data.json").read_text())
     html = (root / "index.html").read_text()
     embedded = json.loads(html.split("const D=", 1)[1].split(", slider=", 1)[0])
-    if embedded != replay or len(replay["cases"]) != 2 or summary["cohort_size"] != 2:
+    expected = {"urban_reobserve_report.v1": 2, "urban_reobserve_single_report.v1": 1}.get(
+        summary.get("schema_version")
+    )
+    if expected is None or embedded != replay or len(replay["cases"]) != expected or summary["cohort_size"] != expected:
         raise ValueError("HTML/dataset/cohort differs")
     if [c["result"] for c in replay["cases"]] != summary["runs"]:
         raise ValueError("metrics differ between replay and summary")

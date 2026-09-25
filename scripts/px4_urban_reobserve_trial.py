@@ -288,7 +288,7 @@ def start_controller(root):
         )
 
 
-def observe_and_dispatch(root, stage):
+def observe_and_dispatch(root, stage, progress=lambda *_: None):
     from scripts.select_urban_depth_route import depth_clouds, rank_routes
     from scripts.urban_checkpoint_capture import capture_program
 
@@ -352,6 +352,10 @@ def observe_and_dispatch(root, stage):
     }
     atomic_json(session / (stage + "-planner-input.json"), geometry)
     atomic_json(session / (stage + "-selection.json"), selection)
+    progress(stage + "_route_selected", {
+        "stage": stage, "route_id": selected, "selection_sha256": digest(selection),
+        "selection_is_not_execution": True, "model_invoked": False,
+    })
     now = time.time()
     command = {
         k: config[k]
@@ -385,6 +389,22 @@ def observe_and_dispatch(root, stage):
     )
 
 
+def wait_event(root, name, *, stage=None, timeout=30):
+    """Wait for an observed controller event, tolerating only a partial last line."""
+    end = time.monotonic() + timeout
+    path = root / "session/events.jsonl"
+    while time.monotonic() < end:
+        lines = path.read_text().splitlines(keepends=True) if path.exists() else []
+        for line in lines:
+            if not line.endswith("\n"):
+                continue
+            event = json.loads(line)
+            if event["event"] == name and (stage is None or event.get("stage") == stage):
+                return event
+        time.sleep(0.1)
+    raise TimeoutError("controller event not observed: " + name)
+
+
 def run_case(args, mode):
     cohort = args.output_dir.resolve()
     frozen = json.loads((cohort / "protocol.json").read_text())
@@ -400,11 +420,32 @@ def run_case(args, mode):
             raise ValueError("previous case incomplete or failed; frozen pair stopped")
     if root.exists() or shutil.disk_usage(cohort).free < 350 * 1024**2:
         raise ValueError("fresh case and at least 350 MiB free required")
+    run_session(root, args.assets_dir.resolve(), args.approved_instruction_ref, mode)
+
+
+def run_session(root, assets, instruction, mode, progress=lambda *_: None, binding=None):
+    """One source-bound session, shared by the paired trial and Gateway executor.
+
+    The caller owns the shared simulator lock and authority admission. This
+    function owns recovery and cleanup, including when a progress write fails.
+    """
+    require_opt_in()
+    if mode not in MODES or not instruction.strip() or root.exists():
+        raise ValueError("fresh session, declared mode and retained approval required")
+    root.parent.mkdir(parents=True, exist_ok=True)
+    if shutil.disk_usage(root.parent).free < 512 * 1024**2:
+        raise ValueError("at least 512 MiB free required")
     session = root / "session"
     try:
         setup(
-            root, args.assets_dir.resolve(), "gap", "forward", args.approved_instruction_ref, IMAGE
+            root, assets, "gap", "forward", instruction, IMAGE
         )
+        atomic_json(root / "protocol.json", {
+            "protocol": PROTOCOL, "source_sha256": source_hashes(),
+            "scope": "single_session_execution_binding", "mode": mode,
+        })
+        if binding is not None:
+            atomic_json(root / "gateway-binding.json", binding)
         config = json.loads((session / "config.json").read_text())
         policy = {"protocol": PROTOCOL, "mode": mode, "source_sha256": source_hashes()}
         config.update(
@@ -419,9 +460,11 @@ def run_case(args, mode):
             timeout=60,
         )
         atomic_json(root / "probe-process.json", {"returncode": probe.returncode})
+        progress("contact_control_passed")
         start_controller(root)
         wait_file(session, "status.json", lambda s: s.get("phase") == "holding", 420)
-        observe_and_dispatch(root, "approach")
+        progress("observing_initial_depth")
+        observe_and_dispatch(root, "approach", progress)
         current = wait_file(
             session,
             "status.json",
@@ -463,7 +506,19 @@ def run_case(args, mode):
         if checkpoint["barrier_first_seen_sim_ns"] is None:
             raise RuntimeError("barrier not observed before stop")
         wait_file(session, "status.json", lambda s: s.get("phase") == "holding", 10)
-        observe_and_dispatch(root, "resume")
+        progress("checkpoint_stopped", {
+            "checkpoint": checkpoint,
+            "approach_consumed": wait_event(root, "reobserve_decision_consumed", stage="approach"),
+        })
+        progress("reobserving_depth")
+        observe_and_dispatch(root, "resume", progress)
+        consumed = wait_event(root, "reobserve_decision_consumed", stage="resume")
+        gate = wait_event(root, "reobserve_safety_gate")
+        progress("resume_authority_consumed", {"resume_consumed": consumed, "safety_gate": gate})
+        if gate["result"]["admissible"]:
+            progress("resume_dispatched", {"dispatch": wait_event(root, "urban_route_dispatch")})
+        else:
+            progress("safety_gate_rejected", {"safe_abort": wait_event(root, "reobserve_safe_abort")})
         result = wait_file(
             session,
             "flight-result.json",
@@ -484,6 +539,10 @@ def run_case(args, mode):
         )
         if result["error"] or not (result["complete"] or result["safe_abort_observed"]):
             raise RuntimeError("failed trial; stop frozen pair")
+        progress("landing_observed", {
+            "landing": wait_event(root, "landing_observed"),
+            "disarm": wait_event(root, "disarm_observed"),
+        })
     except Exception as exc:
         if root.exists():
             atomic_json(
@@ -514,6 +573,7 @@ def run_case(args, mode):
                 except Exception as exc:
                     atomic_json(root / "recovery-error.json", {"error": str(exc)})
             cleanup(root)
+            progress("simulator_removed")
 
 
 def main():

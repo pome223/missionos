@@ -335,9 +335,12 @@ def _print_sitl_execution_result(payload: dict[str, Any]) -> None:
             f"Selected route: {depth.get('route_id', 'unknown')}",
             f"Destination reached: {depth.get('destination_reached')}",
             f"Landing and disarm observed: {depth.get('landing_and_disarm_observed')}",
+            *([f"Replans observed: {depth.get('replan_count')}; safe abort: {depth.get('safe_abort')}"]
+              if depth.get("reobserve") is True else []),
             "Scope: bounded simulator navigation; payload delivery not evaluated",
         ]
-        console.print(Panel("\n".join(lines), title="PX4 Depth Navigation", border_style="green"))
+        console.print(Panel("\n".join(lines), title="PX4 Depth Navigation",
+                            border_style="green" if depth.get("destination_reached") else "yellow"))
         return
     blocked = summary.get("blocked_reasons") if isinstance(summary.get("blocked_reasons"), list) else []
     lines = [

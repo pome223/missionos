@@ -63,7 +63,13 @@ def _exclusive(name):
         os.close(fd)
 
 
-def build_request(scene):
+def build_request(scene, *, reobserve=False):
+    _require(type(reobserve) is bool, "reobserve must be a boolean")
+    if reobserve:
+        from src.runtime.px4_reobserve_navigation import build_request as build_reobserve
+
+        _require(scene == "gap", "reobserve supports only the gap simulator profile")
+        return build_reobserve()
     _require(scene in SCENES, "unsupported static depth navigation profile")
     spec = case_scene(f"headroom_{scene}_0")
     return {
@@ -90,11 +96,11 @@ def build_request(scene):
     }
 
 
-def prepare(store, scene, *, owner=None):
-    request = build_request(scene)
+def prepare(store, scene, *, owner=None, reobserve=False):
+    request = build_request(scene, reobserve=reobserve)
     task = store.create(
         kind=KIND,
-        title=f"PX4 depth navigation: {scene}",
+        title=f"PX4 depth navigation: {scene}" + (" / stop and reobserve" if reobserve else ""),
         status="pending",
         owner_user_id=owner,
         artifacts={REQUEST: request},
@@ -121,10 +127,16 @@ def _pending(store, task_id):
     )
     request = task["artifacts"].get(REQUEST, {})
     _require(
-        request == build_request(request.get("scene")),
+        request == build_request(request.get("scene"), reobserve=request.get("reobserve", False)),
         "depth request or runtime changed",
     )
     return task, request
+
+
+def approval_scope(request):
+    if request.get("reobserve") is True:
+        return "one_approach_one_checkpoint_reobservation_one_declared_resume_then_land_in_simulator"
+    return "choose_one_declared_route_then_land_in_simulator"
 
 
 def approve(store, task_id, *, actor, now=None):
@@ -142,7 +154,7 @@ def approve(store, task_id, *, actor, now=None):
             "operator_approved": True,
             "approval_status": "issued_unconsumed",
             "consumed_in_runtime": False,
-            "scope": "choose_one_declared_route_then_land_in_simulator",
+            "scope": approval_scope(request),
         }
         task = store.update(
             task_id, artifacts={APPROVALS: {approval["approval_id"]: approval}}
@@ -169,6 +181,7 @@ def _validate_approval(task, request, approval_id, now):
         and approval.get("operator_approved") is True
         and approval.get("approval_status") == "issued_unconsumed"
         and approval.get("consumed_in_runtime") is False
+        and approval.get("scope") == approval_scope(request)
         and bool(approval.get("approval_actor")),
         "missing, changed or consumed depth execution approval",
     )
@@ -212,16 +225,22 @@ def execute(store, task_id, approval_id, *, runner=None):
             metadata={"depth_navigation_phase": "starting"},
         )
 
+        lifecycle = []
+
         def progress(phase, evidence=None):
+            entry = {
+                **(evidence or {}),
+                "sequence": len(lifecycle),
+                "phase": phase,
+                "observed_at": datetime.now(timezone.utc).isoformat(),
+            }
+            lifecycle.append(entry)
             store.update(
                 task_id,
                 metadata={"depth_navigation_phase": phase},
                 artifacts={
-                    "px4_depth_navigation_progress": {
-                        "phase": phase,
-                        "observed_at": datetime.now(timezone.utc).isoformat(),
-                        **(evidence or {}),
-                    }
+                    "px4_depth_navigation_progress": entry,
+                    "px4_depth_navigation_lifecycle": {"entries": list(lifecycle)},
                 },
             )
 
@@ -252,22 +271,31 @@ def execute(store, task_id, approval_id, *, runner=None):
             raise DepthNavigationError(
                 "depth execution or verification failed; inspect durable task evidence"
             ) from exc
+        reached = result.get("destination_reached") is True
+        # Existing one-route verifier only returns for arrival. A reobserve run
+        # can instead verify a safe abort, which must never complete the mission.
+        if not request.get("reobserve"):
+            reached = True
+        status = "completed" if reached else "failed"
+        phase = "verified" if reached else "safe_aborted"
+        progress(phase, {"destination_reached": reached})
         task = store.update(
             task_id,
-            status="completed",
+            status=status,
             artifacts={RESULT: result},
-            metadata={"depth_navigation_phase": "verified"},
+            metadata={"depth_navigation_phase": phase},
+            error=None if reached else "Safe abort: no admissible resume route; landed without arrival",
         )
         return {
             "task": task,
             RESULT: result,
             "summary": {
                 "task_id": task_id,
-                "task_status": "completed",
-                "live_flight_status": "completed",
+                "task_status": status,
+                "live_flight_status": "completed" if reached else "safe_aborted",
                 "actual_sitl_flight_evidence_observed": True,
                 "selected_route": result["route_id"],
-                "destination_reached": True,
+                "destination_reached": reached,
                 "actual_land_observed": True,
                 "delivery_completion_claimed": False,
                 "hardware_target_allowed": False,
@@ -277,6 +305,10 @@ def execute(store, task_id, approval_id, *, runner=None):
 
 
 def run_live(root, request, approval, progress):
+    if request.get("reobserve") is True:
+        from src.runtime.px4_reobserve_navigation import run_live as run_reobserve
+
+        return run_reobserve(root, request, approval, progress)
     from scripts import px4_urban_wam_trial as urban
     from scripts.select_urban_depth_route import select
 
@@ -405,6 +437,10 @@ def run_live(root, request, approval, progress):
 
 
 def verify_run(root, request, approval):
+    if request.get("reobserve") is True:
+        from src.runtime.px4_reobserve_navigation import verify_run as verify_reobserve
+
+        return verify_reobserve(root, request, approval)
     from scripts.verify_urban_wam_trial import verify
 
     binding = json.loads((root / "gateway-binding.json").read_text())
