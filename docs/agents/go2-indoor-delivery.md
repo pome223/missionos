@@ -86,7 +86,9 @@ chat, or `missionos job-status --task-id <id>`, `missionos operate --task-id
 map is a static indoor snapshot of the known simulator geometry and observed
 trajectory. These views do not claim physical delivery.
 
-The optional browser client uses that same production conversation route:
+The optional browser client uses that same production conversation route.
+Its fresh-page default is `rules`, which works with the ordinary Gateway setup.
+`agent` remains an explicit selection requiring the Agent setup below:
 
 ```bash
 PYTHONPATH=.:packages/missionos-core/src \
@@ -119,8 +121,20 @@ Go2 task, using the Gateway's existing shared operator authentication scope.
   code, phase label, command ACK or video alone cannot establish completion.
 - Plans and outcomes are durable; the Gateway's context registry and retry budget
   within a physics episode are process-local. Gateway restart does not resume or
-  replay execution. Interrupted active tasks become `needs_attention`; create a
-  new plan and approval after restarting. Graceful shutdown requests cancellation.
+  replay execution. On restart, interrupted tasks become `needs_attention` and
+  receive a cancellation file in their recorded output root. New dispatch is
+  blocked until the previous worker's process-lifetime lock is released. The
+  lock is acquired before launch and inherited by the child, closing the spawn
+  window even if the Gateway dies before recording the child PID. Lock identity
+  includes the original device/inode; missing or replaced files are not stop
+  evidence. A second restart preserves the fence, including records beyond the
+  newest 100 tasks. Do not delete lock files while workers may exist.
+  Worker exit only proves that simulator execution ended; it does not verify
+  mission success or a physically settled robot. A fresh plan/approval is needed.
+  Pre-lease records or unreadable evidence remain blocked for explicit operator
+  investigation; no automatic or PID-only unlock is provided. Old conversation
+  contexts remain invalid after restart; automatic stop requests do not depend
+  on reusing them. Graceful shutdown also requests cancellation.
 - Browser context survives page reloads within the same tab through session
   storage. Restarting the browser client creates a new operator session; CLI
   `job-status` and TaskStore retain recorded results. This is a local prototype, not a multi-operator fleet UI.
@@ -434,3 +448,35 @@ physical hardware was invoked in these public integration runs. Previously
 documented Agent-mode runs are separate historical evidence. PX4/Gazebo and
 Nav2 live simulators were not rerun; this is not full Level C release acceptance.
 Do not infer release-wide readiness from this bounded Go2 verification.
+
+### Review regression verification (2026-09-25)
+
+The orphan-worker and fresh-browser-default regressions failed before the fix.
+The revised suite passes 73 Go2 tests, including a live child retaining an
+inherited lease, release after child exit, the pre-spawn window, repeated restart,
+legacy `needs_attention` records, changed output roots, older pages, and
+missing/replaced locks. These fixtures do not execute robot physics.
+
+A separate opt-in probe exercises the actual simulator and installed CLI:
+
+```sh
+RUN_MISSIONOS_GO2_DELIVERY_SIM=1 PYTHONPATH=. \
+  python scripts/verify_go2_gateway_restart.py \
+  --port 18845 --output "$VERIFY_ROOT/restart"
+```
+
+It starts its own fresh Gateway/database, observes physics progress, pauses only
+its simulator child with `SIGSTOP`, kills that Gateway, and restarts it. The new
+approved delivery is rejected while the old child retains its lock; the stop
+file appears in the original output root. After `SIGCONT` and child exit, the
+same approved new task may dispatch, then is canceled for cleanup. The interrupted
+mission remains unverified. Old conversation context rejection is also preserved.
+The injected process signals are fault simulation, not ordinary control behavior.
+
+This probe passed. The normal delivery CLI probe was also rerun on a separate
+fresh Gateway and completed in 87.39 simulated seconds, with two yields, zero
+obstacle contacts and consistent results across all five operator surfaces.
+A fresh browser page, with no Agent opt-in, selected rules; clicking Send without
+changing its selectors produced an unapproved plan and enabled approval.
+The full Python 3.11 suite passed 2,712 tests. Release-wide Level C limits above
+remain unchanged.

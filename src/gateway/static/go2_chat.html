@@ -13,7 +13,7 @@
 <section class="panel chat" aria-label="MissionOSチャット">
 <div class="messages" id="messages" aria-live="polite"><div class="bubble">「会議室Aへ届けて」と依頼してください。受付から出発し、模擬受領を確認して受付へ戻る計画を作ります。</div></div>
 <div class="composer"><label for="scenario">試す場面</label><select id="scenario"><option value="moving_obstacle">動く障害物を避けて配送</option><option value="baseline">通常の配送</option><option value="blocked_passage">途中で片方の通路を塞ぐ</option><option value="all_blocked">両方の通路が塞がり、再開時刻が不明</option><option value="temporary_blockage">両方の通路が一時的に塞がる</option></select>
-<label for="supervision">管制方法</label><select id="supervision"><option value="agent">MissionOS Agentが状況を判断</option><option value="rules">固定ルールで比較</option></select>
+<label for="supervision">管制方法</label><select id="supervision"><option value="rules" selected>固定ルールで管制</option><option value="agent">MissionOS Agentが状況を判断（有効化が必要）</option></select>
 <form id="form"><input id="instruction" aria-label="配送の依頼" value="会議室Aへ届けて" maxlength="500" autocomplete="off"><button id="send" type="submit">送信</button></form>
 <div class="actions"><button type="button" class="approve" id="approve" disabled>承認して配送開始</button><button type="button" class="stop" id="stop" disabled>中止</button></div></div>
 </section>

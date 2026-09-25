@@ -6510,10 +6510,12 @@ class GatewayServer:
         self._acquire_gateway_process_lock()
         try:
             await self._startup_gateway()
+            from src.gateway.go2_delivery_chat import service as go2_chat_service
             try:
+                # Fence interrupted workers before accepting the first request.
+                go2_chat_service()
                 yield
             finally:
-                from src.gateway.go2_delivery_chat import service as go2_chat_service
                 go2_chat_service().close()
                 await self._shutdown_gateway()
         finally:

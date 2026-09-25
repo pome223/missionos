@@ -23,6 +23,7 @@ import uuid
 from src.runtime.go2_delivery_mission import Go2DeliveryPlan
 from src.runtime.go2_supervision import MAX_DECISIONS, digest, supervision_envelope
 from src.runtime.task_store import TaskStore, get_task_store
+from src.runtime import go2_worker_lease
 
 
 KIND = "go2_delivery_execution"
@@ -103,13 +104,59 @@ class Go2ChatService:
         self.cache = Path(
             os.environ.get("GO2_DELIVERY_CACHE", str(Path.home() / ".cache/missionos-go2-delivery"))
         )
-        for task in self.store.list(kind=KIND, limit=100):
-            if task["status"] in ACTIVE:
+        self.recovering: set[str] = set()
+        # Collect every page before mutating task ordering/status.
+        tasks, page = [], 1
+        while True:
+            result = self.store.query(kind=KIND, page=page, page_size=100)
+            tasks.extend(result["tasks"])
+            if not result["pagination"]["has_more"]:
+                break
+            page += 1
+        for task in tasks:
+            recovery = task["artifacts"].get("go2_restart_recovery", {})
+            if (
+                task["status"] in ACTIVE
+                or (recovery and not recovery.get("stop_confirmed"))
+                or (
+                    task["status"] == "needs_attention"
+                    and task["artifacts"].get("go2_output_directory")
+                    and not task["artifacts"].get("go2_delivery_result")
+                )
+            ):
+                self.recovering.add(task["task_id"])
                 self.store.update(
                     task["task_id"],
                     status="needs_attention",
-                    error="Gateway was restarted; the prior execution is not resumed automatically.",
+                    artifacts={"go2_restart_recovery": {"stop_confirmed": False}},
+                    error="Gateway restarted; waiting for previous worker stop confirmation.",
                 )
+        self._reconcile_recovery()
+
+    def _request_stop(self, task):
+        folder = task["artifacts"].get("go2_output_directory")
+        root = Path(folder).parent if folder else self.outputs
+        root.mkdir(parents=True, exist_ok=True)
+        (root / f"{task['task_id']}.cancel").touch()
+
+    def _reconcile_recovery(self):
+        for identity in list(self.recovering):
+            task = self.store.get(identity)
+            try:
+                self._request_stop(task)
+            except OSError as exc:
+                self.store.update(identity, error=f"Previous worker stop request failed: {exc}")
+                continue
+            lease = task["artifacts"].get("go2_worker_lease", {})
+            if go2_worker_lease.stopped(lease):
+                self.store.update(
+                    identity,
+                    status="needs_attention",
+                    artifacts={"go2_restart_recovery": {"stop_confirmed": True}},
+                    error="Previous worker exited; mission outcome remains unverified. Create a new plan.",
+                )
+                self.store.append_event(identity, event_type="go2_restart_worker_stop_confirmed")
+                self.recovering.remove(identity)
 
     def inputs(self):
         paths = {
@@ -226,6 +273,15 @@ class Go2ChatService:
         return task
 
     def execute(self, task):
+        with self.lock:
+            return self._execute(task)
+
+    def _execute(self, task):
+        self._reconcile_recovery()
+        if self.recovering:
+            raise ValueError(
+                "以前のGo2ワーカーの停止確認ができていません。新規実行を抑止しています。"
+            )
         if task["status"] in ACTIVE or task["status"] == "completed":
             return task
         if task["status"] != "approved":
@@ -261,22 +317,36 @@ class Go2ChatService:
         manifest.write_text(
             json.dumps(dict(proposal=proposal, approval=approval), ensure_ascii=False)
         )
-        task = self.store.update(
-            identity, status="starting", artifacts={"go2_output_directory": str(folder)}
-        )
-        self.active = identity
-        self.store.append_event(
-            identity,
-            event_type="go2_dispatch_reserved",
-            payload={"proposal_sha256": _digest(proposal)},
-        )
-        thread = threading.Thread(
-            target=self._worker, args=(identity, paths, manifest), daemon=True
-        )
-        thread.start()
+        lease_fd, lease = go2_worker_lease.acquire(self.outputs / f"{identity}.worker.lock")
+        try:
+            # Persist the fence before launch. The parent holds it across the
+            # spawn window; pass_fds transfers that same open description.
+            task = self.store.update(
+                identity,
+                status="starting",
+                artifacts={
+                    "go2_output_directory": str(folder),
+                    "go2_worker_lease": lease,
+                },
+            )
+            self.active = identity
+            self.store.append_event(
+                identity,
+                event_type="go2_dispatch_reserved",
+                payload={"proposal_sha256": _digest(proposal)},
+            )
+            thread = threading.Thread(
+                target=self._worker, args=(identity, paths, manifest, lease_fd), daemon=True
+            )
+            thread.start()
+        except BaseException:
+            os.close(lease_fd)
+            self.active = None
+            self.store.update(identity, status="needs_attention", error="Worker launch failed.")
+            raise
         return task
 
-    def _worker(self, identity, paths, manifest):
+    def _worker(self, identity, paths, manifest, lease_fd=None):
         folder = self.outputs / identity
         proc = None
         try:
@@ -324,9 +394,11 @@ class Go2ChatService:
                 stderr=subprocess.STDOUT,
                 text=True,
                 bufsize=1,
+                pass_fds=() if lease_fd is None else (lease_fd,),
             )
             with self.lock:
                 self.workers[identity] = proc
+                self.store.update(identity, artifacts={"go2_worker_pid": proc.pid})
                 current = self.store.get(identity)
                 if current["status"] == "cancel_requested":
                     (self.outputs / f"{identity}.cancel").touch()
@@ -448,6 +520,8 @@ class Go2ChatService:
                 except subprocess.TimeoutExpired:
                     proc.kill()
                     proc.wait()
+            if lease_fd is not None:
+                os.close(lease_fd)
             with self.lock:
                 self.workers.pop(identity, None)
                 if self.active == identity:
@@ -505,6 +579,11 @@ class Go2ChatService:
         )
 
     def cancel(self, task):
+        if task["task_id"] in self.recovering:
+            self._request_stop(task)
+            self.store.append_event(task["task_id"], event_type="go2_cancel_requested")
+            self._reconcile_recovery()
+            return self.store.get(task["task_id"])
         if task["status"] in ("proposed", "approved"):
             return self.store.update(task["task_id"], status="rejected")
         if task["status"] in ACTIVE:
@@ -631,6 +710,7 @@ class Go2ChatService:
                         )
                         + " /approve で計画を承認し、/run で開始できます。",
                     )
+                self._reconcile_recovery()
                 task = self.task(context, session_id)
                 if intent in ("approve", "approve_and_run"):
                     task = self.approve(task, session_id)
