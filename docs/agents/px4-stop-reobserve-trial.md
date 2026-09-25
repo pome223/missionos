@@ -70,7 +70,7 @@ are mandatory. Camera images and telemetry remain local until individually
 reviewed for a portable report. No secrets, dispatch keys or approval reference
 are included in public artifacts.
 
-## Development status on 2026-09-25
+## First development attempt and correction (2026-09-25)
 
 The first frozen pair stopped after its first attempt. PX4 took off, moved to
 the checkpoint, observed the inserted barrier and stopped. The existing origin-
@@ -84,8 +84,11 @@ unchanged origin-only probe. Its sole spatial change is a 0.2 m box around the
 fixed checkpoint (3, 0, 3); arbitrary capture positions remain unsupported. Native
 sensor timestamps, calibration, raw data and stationary flight-status checks are
 unchanged. A regression test reproduces the old scope mismatch and checks the new
-box. This correction has **not yet completed a new live comparison**: the host
-has approximately 200 MiB free, below the runner's 350 MiB admission threshold.
+box. Initially the corrected comparison was blocked by approximately 200 MiB
+free space, below the runner's 350 MiB admission threshold. Removing seven
+unreferenced, untagged Docker images later restored approximately 5.2 GiB free
+space without archiving experiment data or removing volumes. The corrected pair
+was frozen separately as `pair02`; it does not replace the failed first attempt.
 
 Validation performed after the correction:
 
@@ -100,6 +103,21 @@ python scripts/check_px4_depth_gateway.py --output-dir "$HTTP_RUN" --scene all
 Result: 69 tests passed; a freshly started loopback Gateway and packaged CLI
 passed the three existing nonflight profile checks, including authentication,
 approval and opt-in refusal. Lint passed for the new scripts and tests. The HTTP
-check does not cover the new stop/observe/resume loop. Live validation after the
-camera correction and generation/visual QA of the paired replay remain pending.
-No WAM/Jev/GPU/training calls occurred. Keep this work in Draft.
+check does not cover the new stop/observe/resume loop. No WAM/Jev/GPU/training
+calls occurred. Keep this work in Draft.
+
+## Corrected frozen pair results
+
+The separately frozen `pair02` completed both sessions. The frozen-route controller
+retained `forward`, was rejected by the common gate and safely landed at the
+checkpoint. The latest-depth controller changed to `left_detour`, reached and
+dwelled at the destination, landed/disarmed and removed its simulator. Both
+original records passed independent verification. See the [measured report and
+synchronized camera/trajectory replay](../assets/px4-stop-reobserve-20260925/README.md).
+
+There were three flights across development: one failed first attempt and two
+corrected comparison sessions. The reobservation pause was 37.212 wall seconds
+(7.444 sim seconds), including a contiguous-history reset that discarded 12
+intermediate frames before retaining sixteen valid ones. This is not a real-time
+emergency avoidance result. Latest-frame age at dispatch was 1.424 wall seconds.
+No WAM advantage or new WAM/GPU admission follows from this successful depth case.

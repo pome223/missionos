@@ -320,6 +320,13 @@ def verify(root):
         "landing_and_disarm_observed": True,
         "choices": choices,
         "input_age_wall_s": ages,
+        "checkpoint_to_resume_sim_s": (
+            gate["observed"]["pose_simulation_time_ns"] - stopped["pose_simulation_time_ns"]
+        )
+        / 1e9,
+        "checkpoint_to_resume_wall_s": (
+            datetime.fromisoformat(gate["at"]) - datetime.fromisoformat(checkpoint["at"])
+        ).total_seconds(),
         "minimum_observed_envelope_clearance_m": clearance,
         "building_contact_messages": result["building_contact_messages"],
         "path_from_departure_through_disarm_m": distance,

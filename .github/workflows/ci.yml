@@ -93,6 +93,9 @@ jobs:
           python docs/assets/acwm-online-stacking-20260921/verify_report.py --statistics
           python -m pytest docs/assets/acwm-online-stacking-20260921/test_verify_report.py -q
 
+      - name: Verify portable PX4 stop and reobserve comparison
+        run: python scripts/check_urban_reobserve_report.py docs/assets/px4-stop-reobserve-20260925/pair02
+
       - name: Verify curated PX4 aerial flight report
         run: |
           python docs/assets/aerial-wam-px4-20260922/verify_report.py
