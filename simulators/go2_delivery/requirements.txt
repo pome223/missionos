@@ -1,0 +1,13 @@
+# Optional simulator environment; not added to the Gateway's base dependencies.
+mujoco==3.13.0
+torch==2.14.0
+numpy==2.5.3
+pillow==12.3.0
+imageio==2.37.4
+imageio-ffmpeg==0.6.0
+pydantic==2.13.5
+pydantic-settings==2.15.0
+fastapi==0.141.1
+httpx==0.28.1
+rich==15.0.0
+pyyaml==6.0.3

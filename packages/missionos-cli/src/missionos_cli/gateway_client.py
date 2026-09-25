@@ -194,6 +194,8 @@ class MissionOSGatewayClient:
         route_hint: str | None = None,
         client_surface: str | None = None,
         robot_profile: str | None = None,
+        go2_scenario: str | None = None,
+        go2_supervision_mode: str | None = None,
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "operator_instruction": instruction,
@@ -209,6 +211,10 @@ class MissionOSGatewayClient:
             payload["missionos_client_surface"] = client_surface
         if robot_profile:
             payload["robot_profile"] = robot_profile
+        if go2_scenario:
+            payload["go2_scenario"] = go2_scenario
+        if go2_supervision_mode:
+            payload["go2_supervision_mode"] = go2_supervision_mode
         return self._request("POST", CONVERSATION_ROUTE, json=payload)
 
     def recovery_dispatch(

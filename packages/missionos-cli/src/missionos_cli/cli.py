@@ -113,6 +113,13 @@ from .gateway_client import (
     MissionOSGatewayClient,
     _join_url,
 )
+from .go2_operator_views import (
+    TERMINAL as GO2_TERMINAL,
+    html_map as _go2_html_map,
+    is_go2_task as _is_go2_task,
+    local_map_model as _go2_local_map_model,
+    summary_lines as _go2_summary_lines,
+)
 from .gateway_process import (
     GATEWAY_PID_RECORD_SCHEMA_VERSION as GATEWAY_PID_RECORD_SCHEMA_VERSION,
     _apply_gateway_llm_env as _apply_gateway_llm_env,
@@ -1732,6 +1739,43 @@ def map_command(
     )
     task_payload, _ = _task_and_timeline(client, resolved_task_id, timeline_limit=0)
     task_record = _task_record(task_payload)
+    if _is_go2_task(task_record):
+        model = _go2_local_map_model(task_record)
+        path = output_path or MISSION_MAP_OUTPUT_DIR / f"{resolved_task_id}_indoor.html"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(_go2_html_map(model), encoding="utf-8")
+        file_url = path.resolve().as_uri()
+        if ctx.obj["missionos_json_output"]:
+            _print_json(
+                {
+                    "task_id": resolved_task_id,
+                    "map_kind": "go2_indoor_local_xy",
+                    "output_path": str(path),
+                    "file_url": file_url,
+                    "observed_point_count": len(model["trail"]),
+                    "live": False,
+                    "opened": False,
+                }
+            )
+            return
+        opened = not no_open and click.launch(file_url) == 0
+        console.print(
+            Panel(
+                "\n".join(
+                    [
+                        f"task_id={resolved_task_id}",
+                        "map_kind=go2_indoor_local_xy",
+                        f"observed_points={len(model['trail'])}",
+                        f"html={path}",
+                        f"opened={str(opened).lower()}",
+                        "boundary=read-only simulator map and observed trail; physical_execution=False",
+                    ]
+                ),
+                title="MissionOS Go2 Indoor Map",
+                border_style="cyan",
+            )
+        )
+        return
     if (
         serve_live
         and task_record.get("kind") == "turtlebot3_home_mission_execution"
@@ -3568,6 +3612,22 @@ def operate_command(
         explicit_task_id=task_id,
         stored_task_id=_stored_sitl_task_id(ctx),
     )
+    task_payload, _ = _task_and_timeline(client, resolved_task_id, timeline_limit=0)
+    if _is_go2_task(_task_record(task_payload)):
+        while True:
+            task_payload, _ = _task_and_timeline(client, resolved_task_id, timeline_limit=0)
+            task = _task_record(task_payload)
+            console.print(
+                Panel(
+                    "\n".join(_go2_summary_lines(task)),
+                    title="MissionOS Go2 Operate · read-only",
+                    border_style="cyan",
+                )
+            )
+            if str(task.get("status") or "") in GO2_TERMINAL:
+                break
+            time.sleep(poll_interval)
+        return
     try:
         _operate_live(
             client,
@@ -4180,7 +4240,9 @@ def _update_chat_suggestion_from_conversation(
         operation = payload.get("operation_result")
         operation = operation if isinstance(operation, dict) else {}
         summary = operation.get("summary") if isinstance(operation.get("summary"), dict) else {}
-        if _is_home_robot_nav2_execution_target(summary.get("execution_target")):
+        if summary.get("execution_target") == "go2_mujoco_delivery":
+            _set_chat_suggestion(ctx, raw=f"/job-status {_stored_sitl_task_id(ctx)}", label="配送状況")
+        elif _is_home_robot_nav2_execution_target(summary.get("execution_target")):
             task_id = _stored_sitl_task_id(ctx)
             pending = (
                 _lookup_pending_recovery_approval(client, task_id=task_id)
@@ -4218,6 +4280,16 @@ def _update_chat_suggestion_from_conversation(
             _set_chat_suggestion(ctx, raw="/start-sitl", label="start")
     else:
         _clear_chat_suggestion(ctx)
+
+
+def _go2_chat_kwargs(ctx: click.Context) -> dict[str, str]:
+    """Send Go2 options only for an explicit Go2 simulator chat."""
+    result = {}
+    if scenario := ctx.obj.get("missionos_go2_scenario"):
+        result["go2_scenario"] = scenario
+    if mode := ctx.obj.get("missionos_go2_supervision_mode"):
+        result["go2_supervision_mode"] = mode
+    return result
 
 
 def _handle_chat_input(
@@ -4359,6 +4431,20 @@ def _handle_chat_input(
         console.clear()
         return True
     try:
+        go2_context = _stored_mission_designer_context(ctx, session_id)
+        if raw in {"/status", "/cancel"} and str(
+            go2_context.get("mission_designer_context_ref", "")
+        ).startswith("mission_designer_context:go2_"):
+            payload = client.conversation(
+                raw,
+                session_id=session_id,
+                mission_designer_context=go2_context,
+                client_surface="chat",
+            )
+            _remember_mission_designer_context(ctx, payload, session_id=session_id)
+            _print_conversation_result(payload)
+            _update_chat_suggestion_from_conversation(ctx, payload, client)
+            return True
         if raw == "/status":
             ctx.invoke(status_command)
             return True
@@ -4671,6 +4757,7 @@ def _handle_chat_input(
                             route_hint=INTENT_ROUTE_HINTS[intent],
                             client_surface="chat",
                             robot_profile=robot_profile or None,
+                            **_go2_chat_kwargs(ctx),
                         )
 
                     payload = (
@@ -4707,6 +4794,7 @@ def _handle_chat_input(
                 route_hint=route_hint,
                 client_surface="chat",
                 robot_profile=robot_profile or None,
+                **_go2_chat_kwargs(ctx),
             )
         _remember_mission_designer_context(ctx, payload, session_id=session_id)
         _maybe_open_turtlebot3_companion_terminals(ctx, payload)
@@ -4810,6 +4898,18 @@ def _maybe_retarget_turtlebot3_gateway_url(ctx: click.Context) -> None:
 )
 @click.option("--session-id", default=DEFAULT_SESSION_ID, show_default=True)
 @click.option(
+    "--go2-scenario",
+    type=click.Choice(["baseline", "moving_obstacle"]),
+    default=None,
+    help="Opt in to the Go2 indoor simulator scenario for this chat.",
+)
+@click.option(
+    "--go2-supervision-mode",
+    type=click.Choice(["rules", "agent"]),
+    default=None,
+    help="Go2 supervision mode; rules keeps the existing simulator safety guard.",
+)
+@click.option(
     "--history-path",
     default=DEFAULT_HISTORY_PATH,
     show_default=True,
@@ -4847,12 +4947,16 @@ def chat_command(
     turtlebot3_dry_run: bool,
     turtlebot3_smoke: bool,
     session_id: str,
+    go2_scenario: str | None,
+    go2_supervision_mode: str | None,
     history_path: Path,
     autostart: bool,
     enable_live_sitl: bool,
     companion_terminals: bool,
 ) -> None:
     """Start a text-first MissionOS operator session."""
+    ctx.obj["missionos_go2_scenario"] = go2_scenario
+    ctx.obj["missionos_go2_supervision_mode"] = go2_supervision_mode
     initial_raw, autostart, enable_live_sitl = _chat_initial_instruction_and_autostart(
         initial_instruction,
         autostart=autostart,

@@ -9,6 +9,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from .go2_operator_views import is_go2_task, summary_lines
 from .job_status import (
     _fmt_metres,
     _format_duration,
@@ -372,10 +373,12 @@ def _print_job_status(
     task_payload: dict[str, Any],
     timeline_payload: dict[str, Any],
 ) -> None:
+    task = task_payload.get("task") if isinstance(task_payload.get("task"), dict) else task_payload
+    go2 = is_go2_task(task)
     console.print(
         Panel(
-            "\n".join(_job_operator_summary(task_payload)),
-            title="MissionOS Job",
+            "\n".join(summary_lines(task) if go2 else _job_operator_summary(task_payload)),
+            title="MissionOS Go2 Job" if go2 else "MissionOS Job",
             border_style="magenta",
         )
     )

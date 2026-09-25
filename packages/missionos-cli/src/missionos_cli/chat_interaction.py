@@ -127,6 +127,7 @@ def _looks_like_mission_planning_request(raw: str) -> bool:
     ):
         return True
     home_robot_terms = (
+        "go2", "unitree", "犬", "会議室",
         "turtlebot3",
         "turtlebot",
         "nova carter",

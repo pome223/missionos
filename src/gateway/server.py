@@ -1622,6 +1622,15 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
     physical_ai_kind = physical_ai_resolution.mission_kind
     physical_ai_rejection_reason = physical_ai_resolution.rejection_reason
     mission_designer_context = _missionos_mission_designer_context(request)
+    # The fixed Go2 delivery catalog enters the same operator conversation and
+    # source-bound context boundary as the other simulator mission types.
+    from src.gateway.go2_delivery_chat import service as go2_chat_service
+    go2_response = go2_chat_service().handle(
+        request, text, session_id, mission_designer_context,
+        _missionos_register_mission_designer_context,
+    )
+    if go2_response is not None:
+        return go2_response
     coordinate_route = request.get("coordinate_route") if isinstance(request.get("coordinate_route"), Mapping) else None
     turtlebot3_home_mission_requested = (
         _missionos_instruction_requests_turtlebot3_home_mission(
@@ -6504,6 +6513,8 @@ class GatewayServer:
             try:
                 yield
             finally:
+                from src.gateway.go2_delivery_chat import service as go2_chat_service
+                go2_chat_service().close()
                 await self._shutdown_gateway()
         finally:
             self._release_gateway_process_lock()
@@ -8689,6 +8700,8 @@ class GatewayServer:
 
     def _setup_routes(self):
         # --- health / root / protocol ---
+        from src.gateway.go2_delivery_routes import build_go2_delivery_router
+        self.app.include_router(build_go2_delivery_router())
 
         self.app.include_router(
             build_real_hardware_router(
