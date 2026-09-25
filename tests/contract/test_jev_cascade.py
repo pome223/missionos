@@ -320,3 +320,106 @@ def test_shadow_unconfigured_incumbent_preserves_aggregate_invocation(monkeypatc
     assert result.model_inference_invoked is (not jev_missing)
     assert result.blocking_reasons == ("incumbent_not_configured",)
     assert result.model_invocation_evidence["jev_cascade_shadow"]["used_for_decision"] is False
+
+
+class ForbiddenJev:
+    def judge(self, prompt):
+        pytest.fail("input-declared routing must not call Jev")
+
+
+@pytest.mark.parametrize(
+    "declaration,route,calls",
+    [
+        ({"required_observations_missing": ["occupancy"]}, "need_observation", 0),
+        ({"operator_decision_required": True}, "human_review", 0),
+        ({"requires_additional_reasoning": True}, "reasoner", 1),
+        (
+            {
+                "required_observations_missing": ["occupancy"],
+                "operator_decision_required": True,
+                "requires_additional_reasoning": True,
+            },
+            "need_observation",
+            0,
+        ),
+        (
+            {"operator_decision_required": True, "requires_additional_reasoning": True},
+            "human_review",
+            0,
+        ),
+    ],
+)
+def test_declared_routing_skips_jev_and_preserves_precedence(declaration, route, calls):
+    from dataclasses import replace
+
+    source = replace(situation(), uncertainty={"mission_context": declaration})
+    slow = Reasoner()
+    result = MissionAssuranceAgent(JevCascadeJudge(slow, jev=ForbiddenJev())).evaluate(source)
+    assert slow.calls == calls
+    assert result.judgment_status == "proposal_guardrail_passed"
+    assert result.model_inference_invoked is bool(calls)
+    assert result.judgment_mode == ("llm_required" if calls else "deterministic_routing")
+    audit = result.model_invocation_evidence["jev_cascade"]
+    assert audit["route"] == route and audit["jev_invoked"] is False
+    assert "jev" not in audit
+
+
+@pytest.mark.parametrize(
+    "flag",
+    [
+        "required_observations_missing",
+        "operator_decision_required",
+        "requires_additional_reasoning",
+    ],
+)
+def test_shadow_declared_routing_skips_jev_and_retains_incumbent(flag):
+    from dataclasses import replace
+
+    source = replace(situation(), uncertainty={"mission_context": {flag: True}})
+    slow = Reasoner()
+    result = MissionAssuranceAgent(JevCascadeShadowJudge(slow, jev=ForbiddenJev())).evaluate(source)
+    assert slow.calls == 1 and result.rationale == "reasoner"
+    assert result.model_inference_invoked is True
+    candidate = result.model_invocation_evidence["jev_cascade_shadow"]
+    assert candidate["model_inference_invoked"] is (flag == "requires_additional_reasoning")
+    assert candidate["used_for_decision"] is False
+
+
+@pytest.mark.parametrize("unavailable", [True, False])
+def test_direct_reasoner_failure_records_no_prior_jev(unavailable):
+    from dataclasses import replace
+
+    class BrokenReasoner:
+        def judge(self, prompt):
+            if unavailable:
+                raise MissionAssuranceJudgeUnavailable("not_enabled")
+            raise TimeoutError()
+
+    source = replace(
+        situation(), uncertainty={"mission_context": {"requires_additional_reasoning": True}}
+    )
+    result = MissionAssuranceAgent(JevCascadeJudge(BrokenReasoner(), jev=ForbiddenJev())).evaluate(
+        source
+    )
+    assert result.judgment_status == ("not_configured" if unavailable else "failed")
+    assert result.model_inference_invoked is (not unavailable)
+    audit = result.model_invocation_evidence["jev_cascade"]
+    assert audit["jev_invoked"] is False and "jev" not in audit
+
+
+def test_shadow_primary_unavailable_and_code_only_candidate_reports_zero_inference():
+    from dataclasses import replace
+
+    class MissingReasoner:
+        def judge(self, prompt):
+            raise MissionAssuranceJudgeUnavailable("not_enabled")
+
+    source = replace(
+        situation(), uncertainty={"mission_context": {"operator_decision_required": True}}
+    )
+    result = MissionAssuranceAgent(
+        JevCascadeShadowJudge(MissingReasoner(), jev=ForbiddenJev())
+    ).evaluate(source)
+    assert result.model_inference_invoked is False
+    assert result.judgment_status == "not_configured"
+    assert result.blocking_reasons == ("incumbent_not_configured",)

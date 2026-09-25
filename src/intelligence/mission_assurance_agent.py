@@ -252,6 +252,7 @@ class MissionResponseProposal:
 class ModelJudgment:
     output: Mapping[str, Any]
     invocation_evidence: Mapping[str, Any]
+    model_inference_invoked: bool = True
 
 
 class MissionAssuranceJudge(Protocol):
@@ -389,7 +390,7 @@ class MissionAssuranceAgent:
             return self._escalation(
                 situation,
                 status="guardrail_blocked",
-                invoked=True,
+                invoked=judgment.model_inference_invoked,
                 reasons=tuple(reasons),
                 invocation_evidence=judgment.invocation_evidence,
             )
@@ -405,9 +406,9 @@ class MissionAssuranceAgent:
             uncertainty=str(output["uncertainty"]),
             operator_question=str(output["operator_question"]),
             judgment_status="proposal_guardrail_passed",
-            judgment_mode="llm_required",
+            judgment_mode="llm_required" if judgment.model_inference_invoked else "deterministic_routing",
             fallback_mode="operator_escalation_only",
-            model_inference_invoked=True,
+            model_inference_invoked=judgment.model_inference_invoked,
             model_invocation_evidence=dict(judgment.invocation_evidence),
         )
 

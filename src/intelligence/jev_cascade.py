@@ -11,7 +11,7 @@ from src.intelligence.mission_assurance_agent import (
 )
 from src.intelligence.jev_assurance import JevAssuranceJudge
 
-POLICY_VERSION = "jev_assurance_cascade.v1"
+POLICY_VERSION = "jev_assurance_cascade.v2"
 FAST_PATH_ENV = "MISSIONOS_JEV_CASCADE_FAST_PATH"
 FAST_PATHS = {"disabled", "fixture_verified_detour_v1"}
 
@@ -53,7 +53,7 @@ def _fixture_fast_path(prompt, result, profile):
 
 
 class JevCascadeJudge:
-    """Jev first; code routes to a reasoner, evidence collection, or human review."""
+    """Route declared requirements first; consult Jev only for unresolved choices."""
 
     def __init__(self, reasoner, *, jev=None, fast_path=None):
         self.reasoner = reasoner
@@ -68,6 +68,7 @@ class JevCascadeJudge:
             "fast_path_profile": self.fast_path,
             "confidence_used_for_routing": False,
             "reasoner_invoked": False,
+            "jev_invoked": False,
             "dispatch_authority_created": False,
         }
 
@@ -79,6 +80,7 @@ class JevCascadeJudge:
                     **(dict(selected.invocation_evidence) if selected else {}),
                     "jev_cascade": audit,
                 },
+                model_inference_invoked=audit["jev_invoked"] or audit["reasoner_invoked"],
             )
 
         def stop(route, reason):
@@ -96,8 +98,7 @@ class JevCascadeJudge:
             audit.update(route="human_review", reason=reason)
             audit[f"{provider}_error_type"] = type(exc).__name__
             audit[f"{provider}_status"] = status
-            if provider == "reasoner" and unavailable:
-                audit["reasoner_invoked"] = False
+            audit[f"{provider}_invoked"] = not unavailable
             raise MissionAssuranceJudgeError(
                 reason,
                 status=status,
@@ -105,22 +106,39 @@ class JevCascadeJudge:
                 invocation_evidence={"jev_cascade": audit},
             ) from exc
 
+        def reason(reason_code):
+            audit["reasoner_invoked"] = True
+            try:
+                # Preserve original facts; Jev's answer is never an anchoring input.
+                second = self.reasoner.judge(deepcopy(prompt))
+                audit["reasoner"] = {
+                    "output": dict(second.output),
+                    "invocation_evidence": dict(second.invocation_evidence),
+                }
+                audit["reasoner_invoked"] = second.model_inference_invoked
+            except Exception as exc:
+                provider_error("reasoner", exc, prior_invoked=audit["jev_invoked"])
+            return finish(second.output, "reasoner", reason_code, second)
+
         if self.fast_path not in FAST_PATHS:
             raise MissionAssuranceJudgeUnavailable("invalid_fast_path_profile")
-        try:
-            first = self.jev.judge(deepcopy(prompt))
-            audit["jev"] = {
-                "output": dict(first.output),
-                "invocation_evidence": dict(first.invocation_evidence),
-            }
-        except Exception as exc:  # Providers fail heterogeneously; no silent fallback.
-            provider_error("jev", exc, prior_invoked=False)
-
         uncertainty = prompt["mission_situation"].get("uncertainty", {}).get("mission_context", {})
         if uncertainty.get("required_observations_missing"):
             return stop("need_observation", "declared_required_observations_missing")
         if uncertainty.get("operator_decision_required") is True:
             return stop("human_review", "declared_operator_decision_required")
+        if uncertainty.get("requires_additional_reasoning") is True:
+            return reason("declared_additional_reasoning")
+
+        try:
+            first = self.jev.judge(deepcopy(prompt))
+            audit["jev_invoked"] = True
+            audit["jev"] = {
+                "output": dict(first.output),
+                "invocation_evidence": dict(first.invocation_evidence),
+            }
+        except Exception as exc:
+            provider_error("jev", exc, prior_invoked=False)
 
         route = first.invocation_evidence.get("assessment_route")
         if route in {"need_observation", "human_review"}:
@@ -129,33 +147,11 @@ class JevCascadeJudge:
             return stop("human_review", "invalid_assessment_route")
         if first.output.get("proposed_response_kind") == "operator_escalation":
             return stop("human_review", "jev_response_requires_operator")
-        requires_reasoning = uncertainty.get("requires_additional_reasoning") is True
-        if (
-            route == "bounded"
-            and not requires_reasoning
-            and _fixture_fast_path(prompt, first, self.fast_path)
-        ):
+        if route == "bounded" and _fixture_fast_path(prompt, first, self.fast_path):
             return finish(first.output, "jev", "explicit_fixture_scope_matched", first)
-
-        reason = (
-            "declared_additional_reasoning"
-            if requires_reasoning
-            else "jev_requested_reasoning"
-            if route == "deep_reasoning"
-            else "outside_fast_path"
+        return reason(
+            "jev_requested_reasoning" if route == "deep_reasoning" else "outside_fast_path"
         )
-        audit["reasoner_invoked"] = True
-        try:
-            # Preserve the original evidence and avoid anchoring on Jev's answer.
-            second = self.reasoner.judge(deepcopy(prompt))
-            audit["reasoner"] = {
-                "output": dict(second.output),
-                "invocation_evidence": dict(second.invocation_evidence),
-            }
-        except Exception as exc:
-            provider_error("reasoner", exc, prior_invoked=True)
-        # The enclosing MissionAssuranceAgent validates the final output as usual.
-        return finish(second.output, "reasoner", reason, second)
 
 
 class JevCascadeShadowJudge:
@@ -178,7 +174,10 @@ class JevCascadeShadowJudge:
                 ).judge(deepcopy(prompt))
                 candidate_output = dict(candidate.output)
                 candidate_evidence = dict(candidate.invocation_evidence)
-                candidate_status = {"status": "observed"}
+                candidate_status = {
+                    "status": "observed",
+                    "model_inference_invoked": candidate.model_inference_invoked,
+                }
             except MissionAssuranceJudgeError as exc:
                 candidate_output = {}
                 candidate_evidence = dict(exc.invocation_evidence)
@@ -217,4 +216,6 @@ class JevCascadeShadowJudge:
         return ModelJudgment(
             output=primary.output,
             invocation_evidence={**primary.invocation_evidence, "jev_cascade_shadow": shadow},
+            model_inference_invoked=primary.model_inference_invoked
+            or candidate_status["model_inference_invoked"],
         )

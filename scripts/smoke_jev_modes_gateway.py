@@ -23,7 +23,7 @@ from src.runtime.task_store import reset_task_store
 
 
 async def run_mode(
-    mode, root, *, route="bounded", fast_path="disabled", failure=None, custom_mapping=False,
+    mode, root, *, route="bounded", fast_path="disabled", failure=None, custom_mapping=False, declared=None,
 ):
     root.mkdir()
     _configure_temp_paths(root)
@@ -81,6 +81,10 @@ async def run_mode(
         return result
 
     context = {"execution_scope": "fixture"}
+    if declared:
+        context["uncertainty"] = declared
+    skip_jev = bool(declared)
+    active_failure = failure if not (skip_jev and failure and failure.startswith("jev")) else None
     if custom_mapping:
         context["mission_contract"] = {"response_mapping": {"hold": "custom hold semantics"}}
     with (
@@ -119,10 +123,10 @@ async def run_mode(
             server.should_exit = True
             await task
     proposal = graph["mission_assurance_proposal"]
-    failure_status = "not_configured" if failure and failure.endswith("unconfigured") else "failed"
-    expected_graph_status = "guardrail_blocked" if failure and mode == "cascade" else "proposal_guardrail_passed"
+    active_failure_status = "not_configured" if active_failure and active_failure.endswith("unconfigured") else "failed"
+    expected_graph_status = "guardrail_blocked" if active_failure and mode == "cascade" else "proposal_guardrail_passed"
     assert graph["graph_runtime_status"] == expected_graph_status
-    assert proposal["judgment_status"] == (failure_status if failure and mode == "cascade" else "proposal_guardrail_passed")
+    assert proposal["judgment_status"] == (active_failure_status if active_failure and mode == "cascade" else "proposal_guardrail_passed")
     if custom_mapping:
         assert graph["mission_situation"]["mission_contract"]["mission_context"]["response_mapping"]
     cascade_expected = (
@@ -130,21 +134,26 @@ async def run_mode(
         else "hold" if route == "bounded" and fast_path == "fixture_verified_detour_v1" and not custom_mapping
         else "replan"
     )
-    if failure:
+    if declared:
+        cascade_expected = (
+            "operator_escalation" if declared.get("required_observations_missing") or declared.get("operator_decision_required")
+            else "replan"
+        )
+    if active_failure:
         cascade_expected = "operator_escalation"
     expected = "hold" if mode == "primary" else cascade_expected if mode == "cascade" else "replan"
     assert proposal["proposed_response_kind"] == expected
     expected_primary = int(mode != "primary")
     if mode == "cascade":
         expected_primary = int(cascade_expected == "replan")
-    if failure == "reasoner_timeout":
+    if active_failure == "reasoner_timeout":
         expected_primary = 1
-    elif failure == "reasoner_unconfigured":
+    elif active_failure == "reasoner_unconfigured":
         expected_primary = 0
-    expected_jev = int(mode != "off" and failure != "jev_unconfigured")
+    expected_jev = int(mode != "off" and active_failure != "jev_unconfigured" and not skip_jev)
     assert calls == {"primary": expected_primary, "jev": expected_jev}
     assert proposal["model_inference_invoked"] is bool(expected_primary or expected_jev)
-    if failure and mode == "cascade":
+    if active_failure and mode == "cascade":
         assert proposal["blocking_reasons"]
         assert graph["blocking_reasons"]
     else:
@@ -156,18 +165,24 @@ async def run_mode(
     elif mode == "cascade_shadow":
         shadow = evidence["jev_cascade_shadow"]
         assert shadow["used_for_decision"] is False
-        if failure:
-            assert shadow["status"] == failure_status
+        if active_failure:
+            assert shadow["status"] == active_failure_status
             assert shadow["output"] == {} and shadow["blocking_reasons"]
-            assert shadow["model_inference_invoked"] is (failure != "jev_unconfigured")
+            assert shadow["model_inference_invoked"] is (active_failure != "jev_unconfigured")
         else:
             assert shadow["output"]["proposed_response_kind"] == cascade_expected
     elif mode == "cascade":
         assert evidence["jev_cascade"]["reasoner_invoked"] is bool(expected_primary)
         if custom_mapping:
             assert evidence["jev_cascade"]["route"] == "reasoner"
-        if failure and failure.startswith("reasoner"):
+        if active_failure and active_failure.startswith("reasoner") and not skip_jev:
             assert evidence["jev_cascade"]["jev"]["invocation_evidence"]
+    if declared:
+        candidate_evidence = evidence["jev_cascade_shadow"]["invocation_evidence"] if mode == "cascade_shadow" else evidence
+        assert candidate_evidence["jev_cascade"]["jev_invoked"] is False
+        assert "jev" not in candidate_evidence["jev_cascade"]
+        if mode == "cascade":
+            assert proposal["judgment_mode"] == ("llm_required" if expected_primary or active_failure else "deterministic_routing")
     elif mode == "off":
         assert "jev_shadow" not in evidence
     for key in (
@@ -183,6 +198,7 @@ async def run_mode(
         "fast_path": fast_path,
         "failure_fixture": failure,
         "custom_mapping": custom_mapping,
+        "declared": declared,
         "judgment_status": proposal["judgment_status"],
         "model_inference_invoked": proposal["model_inference_invoked"],
         "blocking_reasons": proposal["blocking_reasons"],
@@ -215,6 +231,24 @@ async def main():
             ))
         for failure in ("reasoner_unconfigured", "reasoner_timeout"):
             results.append(await run_mode("cascade", Path(directory) / failure, failure=failure))
+        declarations = [
+            {"required_observations_missing": ["occupancy"]},
+            {"operator_decision_required": True},
+            {"requires_additional_reasoning": True},
+            {"required_observations_missing": ["occupancy"], "operator_decision_required": True,
+             "requires_additional_reasoning": True},
+        ]
+        for mode in ("cascade", "cascade_shadow"):
+            for index, declared in enumerate(declarations):
+                results.append(await run_mode(
+                    mode, Path(directory) / f"{mode}_declared_{index}",
+                    declared=declared, failure="jev_unconfigured",
+                ))
+        for failure in ("reasoner_unconfigured", "reasoner_timeout"):
+            results.append(await run_mode(
+                "cascade", Path(directory) / (failure + "_direct"), failure=failure,
+                declared={"requires_additional_reasoning": True},
+            ))
     print(
         json.dumps(
             {

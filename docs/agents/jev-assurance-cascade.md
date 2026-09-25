@@ -14,8 +14,9 @@ are unchanged.
   cascade needs reasoning, so there is no duplicate incumbent call. This mode
   measures routing disagreements, not latency or cost savings from skipping the
   incumbent.
-- `cascade`: Jev runs first. Code chooses whether to use its response, invoke the
-  configured reasoner, request observations, or request human review.
+- `cascade`: code handles declared missing observations, operator decisions, and
+  explicit reasoning requirements first. Only unresolved routing calls Jev; code
+  then chooses its response, the reasoner, observations, or human review.
 
 Both are opt-in. `off` remains the default; existing `shadow` and `primary`
 semantics are unchanged. Restart the Gateway to apply configuration.
@@ -63,6 +64,14 @@ The Gateway builds this context from `mission_context.uncertainty`. Missing
 observations and human decisions take precedence over extra reasoning. These
 fields can restrict routing; they do not grant permission or expand a profile.
 
+Policy `jev_assurance_cascade.v2` checks these source declarations before any Jev
+call, in this order: missing observations, operator decision, extra reasoning.
+The first two require zero model calls; the third calls only the reasoner.
+At the judge boundary, Jev being unconfigured or unavailable does not affect a
+path that does not use it; the Gateway launcher still requires credentials for
+an enabled Jev mode.
+Unresolved paths still fail closed on Jev errors; no outage fallback is introduced.
+
 The cascade does not invent missing observations. `need_observation` is an
 explicit next-step request, not an automatic sensor or tool invocation. Jev's
 classification is fallible and does not prove evidence completeness. The
@@ -78,14 +87,20 @@ Model-requested observation/human-review stops are explicitly adapter templates,
 not model-generated rationale. Provider errors are raised as typed failures rather
 than successful judgments: missing configuration records `not_configured`, while
 timeouts and malformed responses record `failed`, both with blocking reasons.
-Missing Jev credentials record `model_inference_invoked=false`. If Jev completed
+A source-directed stop has `judgment_mode=deterministic_routing` and
+`model_inference_invoked=false`; it is a successful routing result, not a model
+judgment or a configuration failure. `jev_invoked` and `reasoner_invoked` record
+which paths actually attempted inference. Missing credentials on a required Jev
+path record `model_inference_invoked=false`. If Jev completed
 before the reasoner was unavailable or failed, the aggregate invocation flag
 remains true and the Jev receipt is retained. A timeout records an attempted
 invocation; it does not prove that the provider completed inference.
 
 In shadow mode, `jev_cascade_shadow` contains the candidate output and receipt,
 `used_for_decision=false`, label agreement and whether it reused the incumbent
-call. A candidate stop cannot alter the incumbent output. Incumbent failure is
+call. Its candidate invocation flag is separate from the overall result: a
+source-directed candidate may use no models while shadow still invokes the
+incumbent for comparison. A candidate stop cannot alter the incumbent output. Incumbent failure is
 not replaced by the Jev result. Failed shadow candidates have an explicit failure
 status, blocking reasons and an empty output; they cannot masquerade as successful
 human-review judgments. Incumbent failures also retain candidate invocation facts.
@@ -111,5 +126,6 @@ and cascade shadow, and the default disabled fast path. It checks exact provider
 call counts, unchanged shadow output, and absence of approval/dispatch/executor
 activity. HTTP regressions additionally cover missing Jev credentials, provider
 timeouts, malformed routing responses, an unconfigured reasoner, and nested
-Gateway response mappings. It does not establish hosted-model quality or mission
+Gateway response mappings, source-first routing, declaration precedence, and
+unavailable reasoning on a direct path. It does not establish hosted-model quality or mission
 outcome value.
