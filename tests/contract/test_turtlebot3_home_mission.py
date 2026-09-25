@@ -64,7 +64,7 @@ def _default_arena_world_profile(monkeypatch):
     monkeypatch.setattr(turtlebot3_mission_incident, "judge_turtlebot3_checkpoint",
                         lambda **_: {"decision_status": "awaiting_operator_approval"})
     monkeypatch.setattr(turtlebot3_mission_incident, "turtlebot3_incident_dispatch_reasons",
-                        lambda _: [])
+                        lambda _, **_kwargs: [])
 
 
 

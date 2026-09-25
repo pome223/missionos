@@ -1,0 +1,20 @@
+{
+  "raw_sha256": {
+    "reobserve/events.jsonl": "bc00842a4ba9357a6e4344a16fa7f9094debc1e93580714f37dba24fb12edafa",
+    "reobserve/telemetry.jsonl": "e1788e961c34346887f4ddaf22d46f78fa23eac88e17d9c04b753f1f89681c30",
+    "reobserve/flight-result.json": "e60792928fb835d92aacab52c53a30adce0248568e62698c9800b13be3034524",
+    "reobserve/route-images/frames.json": "f3f99bea494e8daea69cb49e55489f0fe5b8807dd48120bfc0f31e96d4829887",
+    "reobserve/history-approach/capture.json": "bd74c9abfe4eb3ac2f78c5bc5eca833f644f54e01c6443d29f1b9f609c6ba68a",
+    "reobserve/history-resume/capture.json": "02ad2e28018e4cde756745f4b826d205a217340e6ddd6484bbc5c49612ac9228",
+    "reobserve/barrier.sdf": "425d7de027c4c36e2bac5fb427e4ef0a9f5ee851ac2b5ea291aaabccaf36cd90"
+  },
+  "protocol_sha256": "40aca54af726bd63da21b07d286824a33e99e8fc27f37f0a6a9f07e9c2d2b149",
+  "artifact_sha256": {
+    "index.html": "54a7c562385d04d5cf5216894ad1b376153f799fb0b605dacbdda3eb4f1773fa",
+    "reobserve-checkpoint.png": "af0a55ec765c5a583eb8cf1cf88bd4f55654e81bb9c6a0ce43a6dc19b5ddf7e1",
+    "reobserve.mp4": "b08d49ab917c075fced8d09b89be7712e1d107321b9271800a3a91b53742308d",
+    "replay-data.json": "8496e6984c4373ae12e8a2abf09e5f07b3bf9415898435d5fed45970d47bd5ac",
+    "summary.json": "807b2e76adaa0f677bde2060f07ad9215c1838ff81cc8198afb449ef76101386",
+    "gateway-evidence.json": "7727ad8f8da07517daf8fd170d041286ec9fa1615896b80f0e1fac79794b652b"
+  }
+}

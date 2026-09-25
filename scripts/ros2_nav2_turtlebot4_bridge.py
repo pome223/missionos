@@ -102,6 +102,18 @@ def _truthy_env(name: str) -> bool:
     return os.environ.get(name, "").strip().lower() in _TRUE_VALUES
 
 
+def _costmap_content_sha256(header: dict[str, Any], costs: bytes) -> str:
+    """Identify map geometry and cell costs independently of sensor capture time."""
+    content = {
+        key: value for key, value in header.items()
+        if key not in {"stamp_sec", "stamp_nanosec", "stamp_ns"}
+    }
+    return hashlib.sha256(
+        json.dumps(content, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        + b"\0" + costs
+    ).hexdigest()
+
+
 def _wait_for_clock_at_or_after_snapshot(
     *,
     read_clock_ns: Callable[[], int],
@@ -486,6 +498,17 @@ def _evaluate_recovery_candidates(payload: dict[str, Any]) -> dict[str, Any]:
                 + b"\0"
                 + costs
             ).hexdigest()
+            content_hash = _costmap_content_sha256(
+                {
+                    **header,
+                    "origin_z": float(metadata.origin.position.z),
+                    "origin_orientation": {
+                        axis: float(getattr(metadata.origin.orientation, axis))
+                        for axis in ("x", "y", "z", "w")
+                    },
+                },
+                costs,
+            )
 
             def _cost_at(x_m: float, y_m: float) -> int | None:
                 if resolution <= 0:
@@ -505,6 +528,7 @@ def _evaluate_recovery_candidates(payload: dict[str, Any]) -> dict[str, Any]:
             return {
                 **header,
                 "snapshot_hash": snapshot_hash,
+                "content_sha256": content_hash,
                 "service": service_name,
                 "cost_at": _cost_at,
             }
@@ -942,11 +966,13 @@ def _evaluate_recovery_candidates(payload: dict[str, Any]) -> dict[str, Any]:
             costmap_snapshot_hash=costmap_snapshot_hash,
             costmap_source=costmap_service_name,
             global_costmap_snapshot_hash=global_costmap["snapshot_hash"],
+            global_costmap_content_sha256=global_costmap["content_sha256"],
             global_costmap_source=costmap_service_name,
             global_costmap_frame_id=global_costmap["frame_id"],
             global_costmap_stamp_ns=global_costmap["stamp_ns"],
             global_costmap_age_s=_costmap_age_s(global_costmap),
             local_costmap_snapshot_hash=local_costmap["snapshot_hash"],
+            local_costmap_content_sha256=local_costmap["content_sha256"],
             local_costmap_source=local_costmap_service_name,
             local_costmap_frame_id=local_costmap["frame_id"],
             local_costmap_stamp_ns=local_costmap["stamp_ns"],

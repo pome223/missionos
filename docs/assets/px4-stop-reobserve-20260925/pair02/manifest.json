@@ -1,0 +1,28 @@
+{
+  "raw_sha256": {
+    "frozen_route/events.jsonl": "9888d14dbb51d8f406a111c8e6e310ec8a695d10670993e08ad062baf051cca0",
+    "frozen_route/telemetry.jsonl": "91af23c2a8ac19720f5d9aec20937ddbd7a1cc0a18a54e114d21824b414490bd",
+    "frozen_route/flight-result.json": "9c444c5b7756f31af17bff8bf5b85a0f1306cb60ec2ff5b687ef5c4b693956c5",
+    "frozen_route/route-images/frames.json": "fa1f906e37b29b081e519f4b87ca0f1785d2f652e779d43162cd620a5e4525a1",
+    "frozen_route/history-approach/capture.json": "ffa204263c7e6d364316bb910f0037bacff90adf742dd2ce3e9dcc66e7f31dc6",
+    "frozen_route/history-resume/capture.json": "31cca5cf344a8b0362c98e2891befebed4e99c1218d68480dec962a18518d6fc",
+    "frozen_route/barrier.sdf": "425d7de027c4c36e2bac5fb427e4ef0a9f5ee851ac2b5ea291aaabccaf36cd90",
+    "reobserve/events.jsonl": "0302ff7742e6a256540d95180f260b3f067ceb131bd48058eeb01073f72d732f",
+    "reobserve/telemetry.jsonl": "c5a9c61665e8bbcdb2e2f6fdde2cdb0a69c4cab28e1fe58aee0efc1851a172ac",
+    "reobserve/flight-result.json": "96dab3d4ebfa9db6aaaffed02a265da09600add17f483ccb3bc137bff8adf271",
+    "reobserve/route-images/frames.json": "15823bad28933720a6e8ab2f048f85a43520a4c96e748249cb6bd6b707d128d9",
+    "reobserve/history-approach/capture.json": "1f3ad59ef94096d53c7d830e3131a1f85543f9846f24f69c010ae4050f0096e9",
+    "reobserve/history-resume/capture.json": "69c4e3a02222cc726fb37e4e94cc9db2ade6a304ec23b1d5c42f1584ce747c43",
+    "reobserve/barrier.sdf": "425d7de027c4c36e2bac5fb427e4ef0a9f5ee851ac2b5ea291aaabccaf36cd90"
+  },
+  "protocol_sha256": "abd2137cc59e40cec4b00e471814e3a5fde6c366065e51516c76de924da321b4",
+  "artifact_sha256": {
+    "frozen_route-checkpoint.png": "a7af8b26bef4ae50b9685aeb2a605f64d04dcd83d06a3f26396be2fb15b84ad0",
+    "frozen_route.mp4": "66b4d1ca200a893d60406c91d764cd57184a05575416a698ca2318bc6b97c67e",
+    "index.html": "55ded3f92eabab41ac38b1a6826d6ca8fc57e09c787bbbe9e64d3bc8c013369f",
+    "reobserve-checkpoint.png": "83af73de3db80c2bb1c0f7f1dc04f92c9b31bec93dd8be5974c9598ae58ad053",
+    "reobserve.mp4": "ac8a07427ba9848724d66f6c947a55164158449335ac7af35ea5f64d12e17e5c",
+    "replay-data.json": "2c9d73bc2dd62d04b3a356dd7a9ac4b9507b09ad0ae6135080104d11409fabd0",
+    "summary.json": "2d8c1a19b810176c3b8eed43a8e456ed2387843ebb32592e396340087283eea8"
+  }
+}

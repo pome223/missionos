@@ -4275,6 +4275,9 @@ def _runtime_recovery_telemetry_from_runtime_snapshot(
         terrain_margin_m = terrain_clearance_m - terrain_target
     return {
         "source": "missionos_auto_mission_runtime_snapshot",
+        # Keep the sensor owner's time; projecting an old snapshot is not a
+        # fresh observation for required prediction admission or dispatch.
+        "observed_at": snapshot.get("observed_at"),
         "sample_index": snapshot.get("sample_index"),
         "elapsed_seconds": snapshot.get("elapsed_seconds"),
         "route": {
@@ -4603,6 +4606,8 @@ def _runtime_recovery_proposal_revalidation(
         return evidence
 
     reasons: list[str] = []
+    navigation_prediction: dict[str, Any] = {}
+    current_policy: dict[str, Any] = {}
     if expected_recovery_checkpoint_id or expected_recovery_checkpoint_hash:
         reviewed_graph = proposal.get("missionos_mission_incident_graph")
         reviewed_graph = reviewed_graph if isinstance(reviewed_graph, Mapping) else {}
@@ -4807,16 +4812,20 @@ def _runtime_recovery_proposal_revalidation(
             reasons.append("mission_incident_graph_node_sequence_incomplete")
         if incident_graph.get("mission_assurance_agent_invoked") is not True:
             reasons.append("mission_assurance_agent_not_observed")
-        from src.intelligence.prediction_evidence import revalidate_incident_prediction
-        prediction_check = revalidate_incident_prediction(
-            incident_graph,
-            envelope=artifacts.get("missionos_prediction_evidence"),
-            current_context=artifacts.get("missionos_prediction_context"),
-            now=now.timestamp(),
-        )
-        evidence["prediction_revalidation"] = prediction_check
-        if prediction_check["status"] == "rejected":
-            reasons.append("dispatch_prediction_rejected:" + prediction_check["reason"])
+        navigation_record = incident_graph.get("navigation_prediction")
+        navigation_prediction = dict(navigation_record) if isinstance(navigation_record, Mapping) else {}
+        if navigation_prediction.get("mode") != "required":
+            from src.intelligence.prediction_evidence import revalidate_incident_prediction
+
+            prediction_check = revalidate_incident_prediction(
+                incident_graph,
+                envelope=artifacts.get("missionos_prediction_evidence"),
+                current_context=artifacts.get("missionos_prediction_context"),
+                now=now.timestamp(),
+            )
+            evidence["prediction_revalidation"] = prediction_check
+            if prediction_check["status"] == "rejected":
+                reasons.append("dispatch_prediction_rejected:" + prediction_check["reason"])
 
         if (
             incident_graph.get(
@@ -5064,6 +5073,31 @@ def _runtime_recovery_proposal_revalidation(
         artifacts,
         prefer_live_bridge=True,
     )
+    from src.prediction.navigation import navigation_prediction_required
+
+    if navigation_prediction_required(navigation_prediction):
+        from missionos_core.prediction import prediction_digest
+        from src.prediction.navigation import revalidate_navigation_prediction
+
+        if navigation_prediction.get("mode") != "required":
+            navigation_check = {
+                "status": "blocked",
+                "reasons": ["navigation_prediction_required_for_dispatch"],
+                "dispatch_authority_created": False,
+            }
+        else:
+            navigation_check = revalidate_navigation_prediction(
+                navigation_prediction,
+                backend="px4",
+                telemetry=current_telemetry,
+                action=recovery_action,
+                parameters=dict(candidate_parameters),
+                policy_sha256=prediction_digest(current_policy),
+                now=now.timestamp(),
+            )
+        evidence["navigation_prediction_revalidation"] = navigation_check
+        if navigation_check["status"] == "blocked":
+            reasons.extend(navigation_check["reasons"])
     telemetry_arbitration = current_telemetry.get("telemetry_arbitration")
     telemetry_arbitration = (
         dict(telemetry_arbitration)
@@ -8688,6 +8722,11 @@ class GatewayServer:
     # ------------------------------------------------------------------
 
     def _setup_routes(self):
+        from src.gateway.px4_depth_routes import build_depth_navigation_router
+
+        self.app.include_router(build_depth_navigation_router(
+            task_store=self.task_store, resolve_http_user_id=self._resolve_http_user_id,
+        ))
         # --- health / root / protocol ---
 
         self.app.include_router(
@@ -9510,6 +9549,7 @@ class GatewayServer:
                     mission_context=mission_context,
                     recovery_policy=recovery_policy,
                     recovery_runner=lambda **_kwargs: dict(agent_result),
+                    navigation_backend="px4",
                 )
             except Exception as exc:
                 incident_graph_error = f"{type(exc).__name__}: {exc}"
@@ -11046,7 +11086,9 @@ class GatewayServer:
 
                     blocked_reasons = [
                         *checkpoint_integrity_reasons,
-                        *turtlebot3_incident_dispatch_reasons(checkpoint),
+                        # Fresh observation checks belong to native execution;
+                        # this route records approval of the frozen candidate.
+                        *turtlebot3_incident_dispatch_reasons(checkpoint, prediction_dispatch=False),
                     ]
                     if (
                         checkpoint.get("operator_guidance_required") is True
@@ -13058,6 +13100,9 @@ class GatewayServer:
                         "SITL execution approval requires a pending prepared task"
                     ),
                 )
+            if task.get("kind") == "px4_depth_navigation":
+                from src.gateway.px4_depth_routes import approve_depth_navigation
+                return approve_depth_navigation(self, task, body, request)
             artifacts = task.get("artifacts") or {}
             artifacts = artifacts if isinstance(artifacts, dict) else {}
             execution_request = artifacts.get(
@@ -13201,6 +13246,9 @@ class GatewayServer:
                     status_code=409,
                     detail="SITL execution requires a pending prepared task",
                 )
+            if task.get("kind") == "px4_depth_navigation":
+                from src.gateway.px4_depth_routes import execute_depth_navigation
+                return await execute_depth_navigation(self, task, body)
             artifacts = task.get("artifacts") or {}
             artifacts = artifacts if isinstance(artifacts, dict) else {}
             stored_execution_approvals = artifacts.get(

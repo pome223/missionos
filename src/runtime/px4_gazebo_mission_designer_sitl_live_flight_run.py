@@ -3489,6 +3489,7 @@ def _auto_runtime_recovery_agent_telemetry_snapshot(
         }
     return {
         "source": "missionos_auto_mission_runtime_snapshot",
+        "observed_at": snapshot.get("observed_at"),
         "sample_index": snapshot.get("sample_index"),
         "elapsed_seconds": snapshot.get("elapsed_seconds"),
         "route": {
@@ -4396,6 +4397,7 @@ def _run_recompiled_mission_incident_graph(
             1.0,
             _runtime_recovery_agent_timeout_seconds() / 4.0,
         ),
+        navigation_backend="px4",
     )
 
 
@@ -4551,6 +4553,7 @@ def _execute_auto_runtime_recovery_agent_with_timeout(
                     1.0,
                     timeout_seconds / 4.0,
                 ),
+                navigation_backend="px4",
             )
             recovery_result = incident_graph.get("recovery_result")
             result = (

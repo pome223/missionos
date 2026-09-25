@@ -27,6 +27,11 @@ def main():
         help="Override MISSIONOS_JEV_MODE from the process environment or state-root .env (default: off).",
     )
     parser.add_argument("--jev-secret-name", default="jev-api-key")
+    parser.add_argument("--navigation-wam-mode", choices=("off", "shadow", "required"))
+    parser.add_argument(
+        "--navigation-wam-config", type=Path,
+        help="Operator-owned navigation WAM manifest; relative paths use --state-root.",
+    )
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     state_root = args.state_root.resolve(strict=True)
@@ -48,6 +53,20 @@ def main():
             "disabled", "fixture_verified_detour_v1"
         }:
             parser.error("invalid MISSIONOS_JEV_CASCADE_FAST_PATH")
+    wam_mode = args.navigation_wam_mode or env.get("MISSIONOS_NAVIGATION_WAM_MODE", "off")
+    if wam_mode not in {"off", "shadow", "required"}:
+        parser.error("MISSIONOS_NAVIGATION_WAM_MODE must be off, shadow, or required")
+    wam_config = args.navigation_wam_config or env.get("MISSIONOS_NAVIGATION_WAM_CONFIG", "")
+    if wam_mode != "off":
+        if not wam_config:
+            parser.error("navigation WAM requires MISSIONOS_NAVIGATION_WAM_CONFIG")
+        config_path = Path(wam_config)
+        if not config_path.is_absolute():
+            config_path = state_root / config_path
+        if not config_path.is_file():
+            parser.error("navigation WAM config file does not exist")
+        env["MISSIONOS_NAVIGATION_WAM_CONFIG"] = str(config_path.resolve())
+    env["MISSIONOS_NAVIGATION_WAM_MODE"] = wam_mode
     key_result = subprocess.run(
         [
             "gcloud",

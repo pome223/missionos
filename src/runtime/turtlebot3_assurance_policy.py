@@ -139,6 +139,7 @@ def _continue_once(
                     "runtime_recovery_obstacle_scenario"
                 )
                 or {},
+                active_policy=proposal.get("autonomy_envelope") or {},
             )
             observed_at = datetime.now(timezone.utc).isoformat()
             if revalidation.get("revalidation_status") != "validated":

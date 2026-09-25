@@ -369,6 +369,12 @@ class MissionOSGatewayClient:
             json=payload,
         )
 
+    def prepare_px4_depth(self, *, scene: str, reobserve: bool = False) -> dict[str, Any]:
+        payload = {"scene": scene}
+        if reobserve:
+            payload["reobserve"] = True
+        return self._request("POST", "/px4-gazebo/depth-navigation/prepare", json=payload)
+
     def execute_sitl(
         self,
         *,

@@ -1,0 +1,206 @@
+[
+  {
+    "case": "headroom_gap_0",
+    "case_started_at_unix_s": 1790256411.0505311,
+    "scene_ready_after_zero_probe_exit": true,
+    "probe_receipt": {
+      "messages": 12,
+      "probe_contacts": 12,
+      "probe_pose_seen": true,
+      "subscriptions_released": true,
+      "probe_removed_observed": true,
+      "building_sensor_positive_control": true,
+      "aircraft_commands_sent": false,
+      "model_invoked": false
+    },
+    "probe_receipt_sha256": "f2bbb2ff1264c789dd81de28e94233f55b9c206627fb411abba77cc1b5f935ce",
+    "flight_result_sha256": "43e1650bac7f64593248598da10498c2abb5c6a10802a54cb1f6b1c4c8767491"
+  },
+  {
+    "case": "headroom_gap_1",
+    "case_started_at_unix_s": 1790256683.3889,
+    "scene_ready_after_zero_probe_exit": true,
+    "probe_receipt": {
+      "messages": 11,
+      "probe_contacts": 11,
+      "probe_pose_seen": true,
+      "subscriptions_released": true,
+      "probe_removed_observed": true,
+      "building_sensor_positive_control": true,
+      "aircraft_commands_sent": false,
+      "model_invoked": false
+    },
+    "probe_receipt_sha256": "9eabc16b5e9cbea2ff51145a9309915b0a61e74f9ae6e2dd3857630f048cf556",
+    "flight_result_sha256": "89c7fc7c81981edf5c9596fff19fda16ec5bb791bd6942b269a67c863cb590d9"
+  },
+  {
+    "case": "headroom_gap_2",
+    "case_started_at_unix_s": 1790256951.9616919,
+    "scene_ready_after_zero_probe_exit": true,
+    "probe_receipt": {
+      "messages": 10,
+      "probe_contacts": 10,
+      "probe_pose_seen": true,
+      "subscriptions_released": true,
+      "probe_removed_observed": true,
+      "building_sensor_positive_control": true,
+      "aircraft_commands_sent": false,
+      "model_invoked": false
+    },
+    "probe_receipt_sha256": "ec29b4816bfdf6fbc1b7c3afba0700b363f0125b409c9b5fc8c9adefbc794558",
+    "flight_result_sha256": "25ab4c50f1e4e8bc4364b754d75dd20a8671964a63ca5f8bfc5133d54d191882"
+  },
+  {
+    "case": "headroom_gap_3",
+    "case_started_at_unix_s": 1790257220.3560681,
+    "scene_ready_after_zero_probe_exit": true,
+    "probe_receipt": {
+      "messages": 11,
+      "probe_contacts": 11,
+      "probe_pose_seen": true,
+      "subscriptions_released": true,
+      "probe_removed_observed": true,
+      "building_sensor_positive_control": true,
+      "aircraft_commands_sent": false,
+      "model_invoked": false
+    },
+    "probe_receipt_sha256": "9eabc16b5e9cbea2ff51145a9309915b0a61e74f9ae6e2dd3857630f048cf556",
+    "flight_result_sha256": "0fcf2e50175ef8368d392bc4193be88110803b51870c67631c11d52a151a518c"
+  },
+  {
+    "case": "headroom_climb_0",
+    "case_started_at_unix_s": 1790257491.422103,
+    "scene_ready_after_zero_probe_exit": true,
+    "probe_receipt": {
+      "messages": 12,
+      "probe_contacts": 12,
+      "probe_pose_seen": true,
+      "subscriptions_released": true,
+      "probe_removed_observed": true,
+      "building_sensor_positive_control": true,
+      "aircraft_commands_sent": false,
+      "model_invoked": false
+    },
+    "probe_receipt_sha256": "f2bbb2ff1264c789dd81de28e94233f55b9c206627fb411abba77cc1b5f935ce",
+    "flight_result_sha256": "835dd19712f355791c15bb6c3fae3fa4f94e95209584125224c1dc7f50fbce72"
+  },
+  {
+    "case": "headroom_climb_1",
+    "case_started_at_unix_s": 1790257780.540489,
+    "scene_ready_after_zero_probe_exit": true,
+    "probe_receipt": {
+      "messages": 12,
+      "probe_contacts": 12,
+      "probe_pose_seen": true,
+      "subscriptions_released": true,
+      "probe_removed_observed": true,
+      "building_sensor_positive_control": true,
+      "aircraft_commands_sent": false,
+      "model_invoked": false
+    },
+    "probe_receipt_sha256": "f2bbb2ff1264c789dd81de28e94233f55b9c206627fb411abba77cc1b5f935ce",
+    "flight_result_sha256": "e83724fa44d775c7c8cfc7bc2b3e721ac78090714ab79684431fc8b02cf9d035"
+  },
+  {
+    "case": "headroom_climb_2",
+    "case_started_at_unix_s": 1790258080.515399,
+    "scene_ready_after_zero_probe_exit": true,
+    "probe_receipt": {
+      "messages": 11,
+      "probe_contacts": 11,
+      "probe_pose_seen": true,
+      "subscriptions_released": true,
+      "probe_removed_observed": true,
+      "building_sensor_positive_control": true,
+      "aircraft_commands_sent": false,
+      "model_invoked": false
+    },
+    "probe_receipt_sha256": "9eabc16b5e9cbea2ff51145a9309915b0a61e74f9ae6e2dd3857630f048cf556",
+    "flight_result_sha256": "455c88f896ad9ebc8042107df6e2c2a1a08434e32fe71ed3551ba5222997d767"
+  },
+  {
+    "case": "headroom_climb_3",
+    "case_started_at_unix_s": 1790258371.274053,
+    "scene_ready_after_zero_probe_exit": true,
+    "probe_receipt": {
+      "messages": 12,
+      "probe_contacts": 12,
+      "probe_pose_seen": true,
+      "subscriptions_released": true,
+      "probe_removed_observed": true,
+      "building_sensor_positive_control": true,
+      "aircraft_commands_sent": false,
+      "model_invoked": false
+    },
+    "probe_receipt_sha256": "f2bbb2ff1264c789dd81de28e94233f55b9c206627fb411abba77cc1b5f935ce",
+    "flight_result_sha256": "147b61b3f5a4d5c7d558f815658b744119ffc6d4992f1398404561d27ffd3775"
+  },
+  {
+    "case": "headroom_detour_0",
+    "case_started_at_unix_s": 1790258662.09054,
+    "scene_ready_after_zero_probe_exit": true,
+    "probe_receipt": {
+      "messages": 12,
+      "probe_contacts": 12,
+      "probe_pose_seen": true,
+      "subscriptions_released": true,
+      "probe_removed_observed": true,
+      "building_sensor_positive_control": true,
+      "aircraft_commands_sent": false,
+      "model_invoked": false
+    },
+    "probe_receipt_sha256": "f2bbb2ff1264c789dd81de28e94233f55b9c206627fb411abba77cc1b5f935ce",
+    "flight_result_sha256": "1dcecd233d77db30f0ab6c7379cc0a7c1d19ee735b835c44e28a35385baa16ad"
+  },
+  {
+    "case": "headroom_detour_1",
+    "case_started_at_unix_s": 1790258989.872855,
+    "scene_ready_after_zero_probe_exit": true,
+    "probe_receipt": {
+      "messages": 12,
+      "probe_contacts": 12,
+      "probe_pose_seen": true,
+      "subscriptions_released": true,
+      "probe_removed_observed": true,
+      "building_sensor_positive_control": true,
+      "aircraft_commands_sent": false,
+      "model_invoked": false
+    },
+    "probe_receipt_sha256": "f2bbb2ff1264c789dd81de28e94233f55b9c206627fb411abba77cc1b5f935ce",
+    "flight_result_sha256": "6ada664cecb027f83ddfaadd42408558a3cab85b08caf51deb359bc4c5f9a3b3"
+  },
+  {
+    "case": "headroom_detour_2",
+    "case_started_at_unix_s": 1790259335.054096,
+    "scene_ready_after_zero_probe_exit": true,
+    "probe_receipt": {
+      "messages": 12,
+      "probe_contacts": 12,
+      "probe_pose_seen": true,
+      "subscriptions_released": true,
+      "probe_removed_observed": true,
+      "building_sensor_positive_control": true,
+      "aircraft_commands_sent": false,
+      "model_invoked": false
+    },
+    "probe_receipt_sha256": "f2bbb2ff1264c789dd81de28e94233f55b9c206627fb411abba77cc1b5f935ce",
+    "flight_result_sha256": "9c1c9117a8ea0e89ae99880c1ce77f8c1de7f1939c4d496e4c2a8199b46edc6a"
+  },
+  {
+    "case": "headroom_detour_3",
+    "case_started_at_unix_s": 1790259691.849314,
+    "scene_ready_after_zero_probe_exit": true,
+    "probe_receipt": {
+      "messages": 12,
+      "probe_contacts": 12,
+      "probe_pose_seen": true,
+      "subscriptions_released": true,
+      "probe_removed_observed": true,
+      "building_sensor_positive_control": true,
+      "aircraft_commands_sent": false,
+      "model_invoked": false
+    },
+    "probe_receipt_sha256": "f2bbb2ff1264c789dd81de28e94233f55b9c206627fb411abba77cc1b5f935ce",
+    "flight_result_sha256": "fcc2af8f333e0b7e2c6794aecdacf87b3ffe4713e411f2901b190290424f7ca0"
+  }
+]

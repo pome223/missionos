@@ -1,0 +1,915 @@
+{
+  "schema_version": "urban_contact_shutdown_report.v1",
+  "scope": "non-flight infrastructure diagnosis; not navigation evaluation",
+  "legacy_commit": "1f0bad3b1e0f2a58ddae9e3ed249cade3135d27e",
+  "legacy_probe_sha256": "16df3d226ac5e799b631391aa31dfc1d26e2d06d2dd1906831cd89b2936d03a1",
+  "fixed_probe_sha256": "ea660c8ca97946c99c8f5fdddd83946049e4d8bb0f751060180808e2e286edda",
+  "image_id": "sha256:79968fe25aa19d51c49fbd4a863ea9380f4efe6d9afabd1c579ddeffeb8b8c93",
+  "gazebo_transport_version": "13.5.0-1~noble",
+  "container_python_version": "3.12.3",
+  "legacy_attempts": [
+    {
+      "index": 0,
+      "exit_code": 0,
+      "wall_seconds": 2.5747125830093864,
+      "probe_contacts": 12,
+      "probe_removed_observed": true,
+      "raw_record_sha256": "0275d830db582e8291bf5e943a98d38374d7e528f4b42a62d920f43cbf0f2054"
+    },
+    {
+      "index": 1,
+      "exit_code": 0,
+      "wall_seconds": 2.576958541991189,
+      "probe_contacts": 13,
+      "probe_removed_observed": true,
+      "raw_record_sha256": "8da68ae99fb2c5fafca23b71b2684d07323409907c9a523f0a40596bbb00f1c1"
+    },
+    {
+      "index": 2,
+      "exit_code": 0,
+      "wall_seconds": 2.5712652090005577,
+      "probe_contacts": 11,
+      "probe_removed_observed": true,
+      "raw_record_sha256": "d4ae4dbd58f68f10b482387688292fb58df5373777ca41c571f30175ccae78c0"
+    },
+    {
+      "index": 3,
+      "exit_code": 0,
+      "wall_seconds": 2.567394250014331,
+      "probe_contacts": 11,
+      "probe_removed_observed": true,
+      "raw_record_sha256": "a84c351b67e5c0eec4ae5e3dcd561430a9f6dbb0ef2375eb55dce909dae90d22"
+    },
+    {
+      "index": 4,
+      "exit_code": 0,
+      "wall_seconds": 2.5759654169960413,
+      "probe_contacts": 12,
+      "probe_removed_observed": true,
+      "raw_record_sha256": "470f5824d2e0c909dbb5af287c944ad87400cc2ec31071fba937ad4b44f8f3d7"
+    },
+    {
+      "index": 5,
+      "exit_code": 0,
+      "wall_seconds": 2.5840162499807775,
+      "probe_contacts": 13,
+      "probe_removed_observed": true,
+      "raw_record_sha256": "2fa7d7a4a5ac8d71322c11b5b64a73a58859e44a0d80179325b2f827b78fe5a3"
+    },
+    {
+      "index": 6,
+      "exit_code": 0,
+      "wall_seconds": 2.584055791987339,
+      "probe_contacts": 12,
+      "probe_removed_observed": true,
+      "raw_record_sha256": "3a667771826ee65a8d2a5f9da69535cbf2c13d71e9588f698d72be5603fa9cc2"
+    },
+    {
+      "index": 7,
+      "exit_code": 134,
+      "wall_seconds": 2.5701199999894015,
+      "probe_contacts": 13,
+      "probe_removed_observed": true,
+      "raw_record_sha256": "36754f3191bbe58719d988f018f4c147ba32cfe7c605393a982c079c411fca65"
+    }
+  ],
+  "reproduced_stderr_tail": [
+    "terminate called without an active exception",
+    "Fatal Python error: Aborted",
+    "<no Python frame>"
+  ],
+  "native_backtrace_captured": false,
+  "native_root_cause_proven": false,
+  "fixed_checks_original_simulator": [
+    {
+      "index": 0,
+      "exit_code": 0,
+      "wall_seconds": 2.6110124999831896,
+      "receipt": {
+        "messages": 13,
+        "probe_contacts": 13,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "95921af02433d048bc66b9cd6e32060aea40624f98a7b355c64faca7d2cf31d2"
+    },
+    {
+      "index": 1,
+      "exit_code": 0,
+      "wall_seconds": 2.6016633750114124,
+      "receipt": {
+        "messages": 13,
+        "probe_contacts": 13,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "e9871fb87252bd51a00c581a192fe301aaf3cb4a0fd5b6a8085848a7381a7d5d"
+    },
+    {
+      "index": 2,
+      "exit_code": 0,
+      "wall_seconds": 2.5892302920110524,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "86a5aac2c1b696ef8844d0fda2ff56e7cfd3cdbf44e33832875a097c894fecd4"
+    },
+    {
+      "index": 3,
+      "exit_code": 0,
+      "wall_seconds": 2.570520499983104,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "a77b7974ffbfc29d23e8a381a5293b2b7ba128724f1d4f18cb7b0c8d097701e8"
+    },
+    {
+      "index": 4,
+      "exit_code": 0,
+      "wall_seconds": 2.55058516698773,
+      "receipt": {
+        "messages": 13,
+        "probe_contacts": 13,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "6d7748daadfe0bfaf696d55c49fe249aa4a89fb761a4b81bd1b55488ed478673"
+    },
+    {
+      "index": 5,
+      "exit_code": 0,
+      "wall_seconds": 2.573391083016759,
+      "receipt": {
+        "messages": 11,
+        "probe_contacts": 11,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "6c5ee30fd6da0da9bbca725673d7e96e5ceaeb1acad6019ca7dac6643f3f90d6"
+    },
+    {
+      "index": 6,
+      "exit_code": 0,
+      "wall_seconds": 2.5860297499748413,
+      "receipt": {
+        "messages": 13,
+        "probe_contacts": 13,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "3e389c1e725cd15638ade6c60a03116ecceec39591d3f3906b8a330953b9750b"
+    },
+    {
+      "index": 7,
+      "exit_code": 0,
+      "wall_seconds": 2.571497791010188,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "d9dce8512d40e82b99f841e51ce9bf449dfa5ab6f44cd4b85568c7dc1ea1107a"
+    },
+    {
+      "index": 8,
+      "exit_code": 0,
+      "wall_seconds": 2.5673712919815443,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "0a6f8459c6c6942ebbdd7f8a35f3de23108b21f4beacdf799968ab824b97aa0d"
+    },
+    {
+      "index": 9,
+      "exit_code": 0,
+      "wall_seconds": 2.578620584012242,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "ec5834ad65f387dd777c0b015f891c072e7821a1083a5654aa279ab0bbc9b9b7"
+    },
+    {
+      "index": 10,
+      "exit_code": 0,
+      "wall_seconds": 2.5711931249825284,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "3b60a636d13f99871857cfaf62e0665b6b27efd6f8a5dcc75cf25f5c55551f79"
+    },
+    {
+      "index": 11,
+      "exit_code": 0,
+      "wall_seconds": 2.5848346250131726,
+      "receipt": {
+        "messages": 11,
+        "probe_contacts": 11,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "087bcaf30d163aca4f220fbc7bd553ba7d079ccc94adc8409645cfefeb61ad14"
+    },
+    {
+      "index": 12,
+      "exit_code": 0,
+      "wall_seconds": 2.5981389170046896,
+      "receipt": {
+        "messages": 14,
+        "probe_contacts": 14,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "812bcc7e8615de0602f116796bffc5e9bf3ee28bb1fad4f5929baa51600342a9"
+    },
+    {
+      "index": 13,
+      "exit_code": 0,
+      "wall_seconds": 2.6040097079821862,
+      "receipt": {
+        "messages": 13,
+        "probe_contacts": 13,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "f695b005040ff6b8e379593cd122682e9c81d4ab096b9090a4937a7f8c292130"
+    },
+    {
+      "index": 14,
+      "exit_code": 0,
+      "wall_seconds": 2.57730529201217,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "7010a72a7d853a9f78a0eb40c029935ec10e4ab17e25382b4004dc4a0aec1d20"
+    },
+    {
+      "index": 15,
+      "exit_code": 0,
+      "wall_seconds": 2.5783080420223996,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "0ac5575da9dad26dfa0259e8c7dc821fa5bf138023da57cb88e1a9bb4b2b6279"
+    },
+    {
+      "index": 16,
+      "exit_code": 0,
+      "wall_seconds": 2.5703479170042556,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "15a2aace68451208b2c8cd3adfa363b9f709137307b5ca8ca694ff5e01c74081"
+    },
+    {
+      "index": 17,
+      "exit_code": 0,
+      "wall_seconds": 2.5839858330145944,
+      "receipt": {
+        "messages": 13,
+        "probe_contacts": 13,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "0b7cfaa698c8039ad275f6d990d0d449baeceaa9c4111fca726f51daab7312d0"
+    },
+    {
+      "index": 18,
+      "exit_code": 0,
+      "wall_seconds": 2.564644457976101,
+      "receipt": {
+        "messages": 11,
+        "probe_contacts": 11,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "47232a77c45d66a77397c974ea4ff341e6cabd228cce419ad02b8fd224c7cff9"
+    },
+    {
+      "index": 19,
+      "exit_code": 0,
+      "wall_seconds": 2.6152159170014784,
+      "receipt": {
+        "messages": 13,
+        "probe_contacts": 13,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "c54aba3deb66d9a130d2fdf8625e9648f2f37a783dfa96e43bd509a2ed4cb97e"
+    },
+    {
+      "index": 20,
+      "exit_code": 0,
+      "wall_seconds": 2.595490708015859,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "cc6be01d8386f1e18d3ef0c2e6ec3e7f06e66d2f7f26309207e817cf098d0412"
+    },
+    {
+      "index": 21,
+      "exit_code": 0,
+      "wall_seconds": 2.6084612920240033,
+      "receipt": {
+        "messages": 13,
+        "probe_contacts": 13,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "5946dfc5178bc48314c4544c257732ad3ac44ea4a1267312fca5a70d8023ca50"
+    },
+    {
+      "index": 22,
+      "exit_code": 0,
+      "wall_seconds": 2.5699219169910066,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "3bb0cbc9476429be56f4d9f8df6274a6db409cfeecdd315f8cb93ded2b8a5a82"
+    },
+    {
+      "index": 23,
+      "exit_code": 0,
+      "wall_seconds": 2.566765875002602,
+      "receipt": {
+        "messages": 13,
+        "probe_contacts": 13,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "f0580b0d489bfa67fa38a74ea6650587b4793da97e41d78727530ff90dd5a5da"
+    },
+    {
+      "index": 24,
+      "exit_code": 0,
+      "wall_seconds": 2.560379875008948,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "5730fd639b3533d7bb014a96d18209a47b89acb11ee8851c252e81c00abf3ff1"
+    },
+    {
+      "index": 25,
+      "exit_code": 0,
+      "wall_seconds": 2.573215957992943,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "d582b239b20fbb43310374c26d2facf504ebef6883a05b83fdcae8326c6d1f92"
+    },
+    {
+      "index": 26,
+      "exit_code": 0,
+      "wall_seconds": 2.5405814580153674,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "ccf754045f149b1450f96a1e98bb50cbf04a3bf07d87726d11b4d373aaa97527"
+    },
+    {
+      "index": 27,
+      "exit_code": 0,
+      "wall_seconds": 2.569140207982855,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "bd2d258b9d506beb41c9d035114ff20d8aae2f51049d7a6b1115ee53a7319ac5"
+    },
+    {
+      "index": 28,
+      "exit_code": 0,
+      "wall_seconds": 2.59422016699682,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "c408b9ef95646228454f893353e5a44e9ae2f388950ab210ca9f46c63cfa4fec"
+    },
+    {
+      "index": 29,
+      "exit_code": 0,
+      "wall_seconds": 2.571818541997345,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      },
+      "raw_record_sha256": "ed9dba8d9794819b687563a57d1036248c89657123dd1baa50c8f448cd53e723"
+    }
+  ],
+  "fixed_checks_fresh_simulator": [
+    {
+      "index": 0,
+      "kind": "positive_contact",
+      "exit_code": 0,
+      "wall_seconds": 2.5690975000034086,
+      "receipt": {
+        "messages": 10,
+        "probe_contacts": 10,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      }
+    },
+    {
+      "index": 1,
+      "kind": "positive_contact",
+      "exit_code": 0,
+      "wall_seconds": 2.5856096670031548,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      }
+    },
+    {
+      "index": 2,
+      "kind": "positive_contact",
+      "exit_code": 0,
+      "wall_seconds": 2.5972614159982186,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      }
+    },
+    {
+      "index": 3,
+      "kind": "positive_contact",
+      "exit_code": 0,
+      "wall_seconds": 2.5215280420088675,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      }
+    },
+    {
+      "index": 4,
+      "kind": "positive_contact",
+      "exit_code": 0,
+      "wall_seconds": 2.558737959014252,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      }
+    },
+    {
+      "index": 5,
+      "kind": "positive_contact",
+      "exit_code": 0,
+      "wall_seconds": 2.5713608330115676,
+      "receipt": {
+        "messages": 13,
+        "probe_contacts": 13,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      }
+    },
+    {
+      "index": 6,
+      "kind": "positive_contact",
+      "exit_code": 0,
+      "wall_seconds": 2.617309833993204,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      }
+    },
+    {
+      "index": 7,
+      "kind": "positive_contact",
+      "exit_code": 0,
+      "wall_seconds": 2.707968166010687,
+      "receipt": {
+        "messages": 13,
+        "probe_contacts": 13,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      }
+    },
+    {
+      "index": 8,
+      "kind": "positive_contact",
+      "exit_code": 0,
+      "wall_seconds": 2.6383984579879325,
+      "receipt": {
+        "messages": 13,
+        "probe_contacts": 13,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      }
+    },
+    {
+      "index": 9,
+      "kind": "positive_contact",
+      "exit_code": 0,
+      "wall_seconds": 2.624966208008118,
+      "receipt": {
+        "messages": 13,
+        "probe_contacts": 13,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      }
+    },
+    {
+      "index": 10,
+      "kind": "positive_contact",
+      "exit_code": 0,
+      "wall_seconds": 2.647629250015598,
+      "receipt": {
+        "messages": 14,
+        "probe_contacts": 14,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      }
+    },
+    {
+      "index": 11,
+      "kind": "positive_contact",
+      "exit_code": 0,
+      "wall_seconds": 2.7161779169982765,
+      "receipt": {
+        "messages": 13,
+        "probe_contacts": 13,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      }
+    },
+    {
+      "index": 12,
+      "kind": "positive_contact",
+      "exit_code": 0,
+      "wall_seconds": 2.5794320839922875,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      }
+    },
+    {
+      "index": 13,
+      "kind": "positive_contact",
+      "exit_code": 0,
+      "wall_seconds": 2.593523292016471,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      }
+    },
+    {
+      "index": 14,
+      "kind": "positive_contact",
+      "exit_code": 0,
+      "wall_seconds": 2.5696303749864455,
+      "receipt": {
+        "messages": 11,
+        "probe_contacts": 11,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      }
+    },
+    {
+      "index": 15,
+      "kind": "positive_contact",
+      "exit_code": 0,
+      "wall_seconds": 2.548796791001223,
+      "receipt": {
+        "messages": 11,
+        "probe_contacts": 11,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      }
+    },
+    {
+      "index": 16,
+      "kind": "positive_contact",
+      "exit_code": 0,
+      "wall_seconds": 2.6101679999846965,
+      "receipt": {
+        "messages": 13,
+        "probe_contacts": 13,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      }
+    },
+    {
+      "index": 17,
+      "kind": "positive_contact",
+      "exit_code": 0,
+      "wall_seconds": 2.603570542007219,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      }
+    },
+    {
+      "index": 18,
+      "kind": "positive_contact",
+      "exit_code": 0,
+      "wall_seconds": 2.5579012079979293,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      }
+    },
+    {
+      "index": 19,
+      "kind": "positive_contact",
+      "exit_code": 0,
+      "wall_seconds": 2.5960499579960015,
+      "receipt": {
+        "messages": 12,
+        "probe_contacts": 12,
+        "probe_pose_seen": true,
+        "subscriptions_released": true,
+        "probe_removed_observed": true,
+        "building_sensor_positive_control": true,
+        "aircraft_commands_sent": false,
+        "model_invoked": false
+      }
+    },
+    {
+      "index": 20,
+      "kind": "missing_contact_topic",
+      "exit_code": 1,
+      "wall_seconds": 35.885911249992205,
+      "receipt": null
+    }
+  ],
+  "fresh_simulator_aircraft_status": {
+    "before": {
+      "arming_state": "Disarmed",
+      "source_sha256": "45edd889b7c0c290012cdd9b34ea6099221936a9e47ae0b3ca3047ac20c05cb4"
+    },
+    "after": {
+      "arming_state": "Disarmed",
+      "source_sha256": "09cc720e7817a96c7ce4547148f4b3ba857d856506bf7719d6931ca4b3f66932"
+    }
+  },
+  "fixed_positive_checks": 50,
+  "expected_negative_checks": 1,
+  "created_containers_removed": 2,
+  "aircraft_controller_started": false,
+  "new_flights": 0,
+  "new_model_calls": 0,
+  "new_rented_gpu_instances": 0,
+  "frozen_cohort_changed": false,
+  "frozen_cohort_decision": "incomplete_stop",
+  "gpu_gate_passed": false,
+  "learned_navigation_benefit_established": false
+}

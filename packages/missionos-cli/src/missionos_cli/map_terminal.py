@@ -51,6 +51,8 @@ def _watch_altitude_status(snapshot: dict[str, Any]) -> str:
     clearance = _as_float(snapshot.get("terrain_clearance_m"))
     target = _as_float(snapshot.get("terrain_clearance_target_m"))
     status = _status_text(snapshot.get("terrain_clearance_status"))
+    if snapshot.get("landed") is True or snapshot.get("maybe_landed") is True:
+        status = "landed_not_applicable"
     if terrain is None and clearance is None and target is None:
         return (
             f"alt(home)={_fmt_metres(alt_home)}  "

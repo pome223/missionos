@@ -1,0 +1,311 @@
+{
+  "schema_version": "missionos_aerial_flight_public_summary.v1",
+  "date": "2026-09-22",
+  "scope": {
+    "evaluation_unit": "one static-scene PX4/Gazebo SITL integration trial",
+    "completed_selected_simulator_action": true,
+    "goal_direction_selection_correct": false,
+    "physical_hardware_execution": false,
+    "mission_completion_claimed": false,
+    "live_turtlebot3_motion_demonstrated": false,
+    "navigation_gateway_model_io": "fixtures"
+  },
+  "model": {
+    "model_id": "EmbodiedCity/ANWM",
+    "checkpoint_sha256": "bdd149cac6ec002ba7dc4ad99ec6f9eb02cd6d4f05320195cf174737b13b0bc2",
+    "model_revision": "dfe59001de57a96d6620313897f09436c6940983",
+    "upstream_revision": "657a80268505fa9149c4df502e35aa0f5bce11e5",
+    "vae_repository": "stabilityai/sd-vae-ft-ema",
+    "vae_revision": "f04b2c4b98319346dad8c65879f680b1997b204a",
+    "context_size": 16,
+    "actual_calls": 2,
+    "seed": 42,
+    "diffusion_steps": 250,
+    "device": "NVIDIA L4",
+    "forecast_seconds": 39.6495062030001,
+    "load_seconds": 16.431276142999877,
+    "nominal_horizon_seconds": 1.0,
+    "model_time_alignment_verified": false,
+    "risk_score": null
+  },
+  "observation": {
+    "context_frames": 16,
+    "frame_simulation_times_ns": [
+      21752000000,
+      22000000000,
+      22252000000,
+      22500000000,
+      22752000000,
+      23000000000,
+      23252000000,
+      23500000000,
+      23752000000,
+      24000000000,
+      24252000000,
+      24500000000,
+      24752000000,
+      25000000000,
+      25252000000,
+      25500000000
+    ],
+    "native_rgb_size": [
+      640,
+      360
+    ],
+    "native_depth_size": [
+      640,
+      480
+    ],
+    "original_image_age_at_evaluation_s": 145.37635803222656,
+    "original_image_age_at_dispatch_s": 145.5057430267334,
+    "command_age_at_dispatch_s": 0.12938499450683594,
+    "image_max_age_s": 180,
+    "command_max_age_s": 5,
+    "current_telemetry_max_age_s": 2
+  },
+  "goal_camera_position_ned_m": [
+    5,
+    0.13233,
+    -3.26078
+  ],
+  "candidates": [
+    {
+      "candidate_id": "left_5m",
+      "delta_body_frd_m_rad": [
+        0.0,
+        -5.0,
+        0.0,
+        0.0
+      ],
+      "planned_camera_position_ned_m": [
+        5.000200152985302,
+        0.16021307014942193,
+        -3.2915731434781055
+      ],
+      "distance_to_goal_camera_m": 0.041541826481731624,
+      "goal_image_mse": 0.035747844725847244,
+      "projection_goal_image_mse": 0.03597067669034004
+    },
+    {
+      "candidate_id": "right_5m",
+      "delta_body_frd_m_rad": [
+        0.0,
+        5.0,
+        0.0,
+        0.0
+      ],
+      "planned_camera_position_ned_m": [
+        -4.999796093889701,
+        0.1688769310589227,
+        -3.2915731434781055
+      ],
+      "distance_to_goal_camera_m": 9.99991029035895,
+      "goal_image_mse": 0.029645971953868866,
+      "projection_goal_image_mse": 0.03578894957900047
+    }
+  ],
+  "jev": {
+    "provider": "typesafe",
+    "model_id": "jev-1.13.0",
+    "actual_api_call": true,
+    "response": "replan",
+    "selected_candidate": "right_5m",
+    "latency_ms": 549.179624998942,
+    "review_signal": "bounded",
+    "confidence_is_success_probability": false,
+    "approval_generated": false
+  },
+  "flight": {
+    "selected_candidate": "right_5m",
+    "commanded_target_ned_m": [
+      -4.999377562184355,
+      0.03683489217058468,
+      -3.0306475561980877
+    ],
+    "measured_displacement_m": 5.109432479756411,
+    "target_error_m": 0.12879824666117756,
+    "candidate_duration_simulation_s": 6.824,
+    "max_height_m": 3.0700412521687546,
+    "max_absolute_horizontal_coordinate_m": 5.231697607251937,
+    "takeoff_observed": true,
+    "selected_candidate_reached": true,
+    "landing_observed": true,
+    "disarm_observed": true,
+    "terminal_error": null,
+    "checkpoints": {
+      "dispatch": {
+        "elapsed_simulation_s": 31.344,
+        "position_ned_m": [
+          -0.0068514875550503285,
+          0.03980469861532718,
+          -3.0627991067137637
+        ],
+        "velocity_ned_mps": [
+          -0.01956288330256939,
+          0.0019036531448364258,
+          -0.004846225958317518
+        ],
+        "armed": true,
+        "landed_state": 2,
+        "telemetry_age_s": 0.934600374999718
+      },
+      "arrival": {
+        "elapsed_simulation_s": 38.168,
+        "position_ned_m": [
+          -5.115714401646915,
+          -0.013818802503453255,
+          -3.0085357642597272
+        ],
+        "velocity_ned_mps": [
+          -0.07952915132045746,
+          0.027434712275862694,
+          -0.0031980997882783413
+        ],
+        "armed": true,
+        "landed_state": 2,
+        "telemetry_age_s": 0.266789124999832
+      },
+      "landing": {
+        "elapsed_simulation_s": 44.352,
+        "position_ned_m": [
+          -5.222639565909897,
+          0.03304678297823986,
+          0.013133658706305423
+        ],
+        "velocity_ned_mps": [
+          -0.008108684793114662,
+          -0.013224654830992222,
+          -0.006922763306647539
+        ],
+        "armed": true,
+        "landed_state": 1,
+        "telemetry_age_s": 0.3617988749997494
+      },
+      "disarm": {
+        "elapsed_simulation_s": 46.348,
+        "position_ned_m": [
+          -5.222639366168032,
+          0.03303330080342335,
+          0.01300115927880302
+        ],
+        "velocity_ned_mps": [
+          -0.0020250079687684774,
+          -0.0036342928651720285,
+          -0.00491747073829174
+        ],
+        "armed": false,
+        "landed_state": 1,
+        "telemetry_age_s": 0.3136479169997983
+      }
+    }
+  },
+  "geometry": {
+    "margin_m": 0.6,
+    "horizontal_bound_m": 6,
+    "height_bound_m": 5,
+    "declared_static_collision_boxes_enu": [
+      {
+        "center_xyz_m": [
+          3,
+          0,
+          3
+        ],
+        "size_xyz_m": [
+          0.25,
+          2,
+          6
+        ]
+      },
+      {
+        "center_xyz_m": [
+          8,
+          0,
+          5
+        ],
+        "size_xyz_m": [
+          0.25,
+          20,
+          10
+        ]
+      },
+      {
+        "center_xyz_m": [
+          4,
+          5,
+          3.2
+        ],
+        "size_xyz_m": [
+          0.5,
+          1.5,
+          2
+        ]
+      },
+      {
+        "center_xyz_m": [
+          4,
+          -5,
+          3.2
+        ],
+        "size_xyz_m": [
+          0.5,
+          1.5,
+          2
+        ]
+      }
+    ]
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "candidate_dispatched": false,
+      "result": "failed; zero runtime gravity after simulation-speed update; simulator removed without verified landing"
+    },
+    {
+      "attempt": 2,
+      "candidate_dispatched": false,
+      "result": "takeoff, hover, model inference, caller-requested landing and disarm; hover reference repaired before new run"
+    },
+    {
+      "attempt": 3,
+      "candidate_dispatched": true,
+      "result": "selected simulator action completed; goal-direction choice incorrect"
+    }
+  ],
+  "budget": {
+    "user_total_cap_usd": 10,
+    "prior_total_estimate_usd": 0.72577,
+    "current_vm_estimate_usd": 0.50019979146177,
+    "current_100gb_pd_balanced_estimate_usd": 0.008027011229071538,
+    "ephemeral_ipv4_estimate_usd": 0.0029298590986111114,
+    "cumulative_compute_storage_ip_estimate_usd": 1.2369266617894525,
+    "remaining_instances": 0,
+    "remaining_disks": 0,
+    "billing_statement_verified": false,
+    "jev_api_billing_verified": false
+  },
+  "cleanup": {
+    "simulator_removed": true,
+    "gpu_vm_removed": true,
+    "boot_disk_removed": true
+  },
+  "provenance": {
+    "implementation_commit": "4ff0fa7",
+    "public_input_manifest_sha256": "fce8474e109862818c0a2987a4ca8db2d1afe8b9c1cfe2873fc214009813a562",
+    "retained_source_sha256": {
+      "model_result": "91662babd4a3c389426fad2c9073036e520748bb1e27f34f73f4bfd90177e2ed",
+      "evaluation": "20481394cab52d0c7df63e2e1b7df16ee2445d02bcd383b2a9af2b9e7460eeb3",
+      "flight_result": "bff49047c739df9b37b231b4fba7c4ffb62a80528b33332ae6da7a7cb176e095",
+      "sampled_from_telemetry": "934b4b44093ee1a81297f608ba1625bab72fdb1e08b0be1b25e85ad4d7c47f1c"
+    },
+    "export_kind": "reviewed allowlist; relative simulation coordinates and aggregate results only",
+    "verification_scope": "public artifact consistency; retained raw preimages and model rerun are not included"
+  },
+  "limitations": [
+    "One static-scene integration trial, not a navigation benchmark.",
+    "Jev followed goal-image MSE; the selected direction was opposite the declared goal.",
+    "Nominal 1 s model horizon differs from 6.824 s simulator motion.",
+    "Forecast generation time excludes preparation, loading, transfers and admission.",
+    "SDF geometry checks are independent rules, not learned collision risk.",
+    "The public figure is rendered from sampled telemetry, not a video or camera image."
+  ]
+}

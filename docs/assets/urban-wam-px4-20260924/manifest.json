@@ -1,0 +1,11 @@
+{
+  "README.md": "5eea734ff3e0047650b59ffcb82172680ec4344f1397a31ffbdc7a9a1e3cd56b",
+  "summary.json": "a0d2e491c1508edfa24c7adc486b72e41257334b6d566f18666b8a5ae9eb79b4",
+  "geometric-flights.png": "0a708a76e8bf91560cfa217b8208bf987fb504cec706e2743db2b9645618ab7e",
+  "wam-flights.png": "d1f45314cb859677501de1867882ab9f70c87224bbd1d5092a5e98905a7d2ee3",
+  "wam-previews.png": "4a18f88d872949afe1eedb6ee8073075233b4d6dfd1caa8f34a7bac587e5a3ed",
+  "wam-flights.mp4": "e5a935a63ce22554d3d47053416a580b8cd0c1c2fa8a2c203b8187a277f707e3",
+  "render_previews.py": "9008c8df8a50e4227087b8602069a64777577b1ddc1d9c5f1d21d3c29cc94f41",
+  "verify_report.py": "c07fe8052ebbbcd35d2366e050c89a041ee9453941fa25a3e419fbf38ac84661",
+  "test_verify_report.py": "c904a4c5a28710f1f2281152c03adceb45aab8bc00d8d22a7138fa8f6b5c76b4"
+}

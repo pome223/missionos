@@ -1,0 +1,12 @@
+{
+  "schema_version": "urban_headroom_registration_timing.v1",
+  "cohort_id": "urban-headroom-r2-20260924",
+  "registration_url": "https://github.com/pome223/missionos/pull/113#issuecomment-5815010766",
+  "github_created_at": "2026-09-24T13:25:59Z",
+  "github_updated_at": "2026-09-24T13:25:59Z",
+  "frozen_at_unix_s": 1790256299.585376,
+  "driver_started_at_unix_s": 1790256411.050366,
+  "driver_sha256": "ae3116b8a4622d2a9b9d48f46026a88c9414b835a1950b676965a78e4d7628a4",
+  "registration_body_sha256": "f9aec05006c3a0f205df1f9b3c64811c0d42f05a9d9e05020023703a47196bfe",
+  "registration_preceded_first_case": true
+}

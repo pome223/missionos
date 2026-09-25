@@ -274,6 +274,8 @@ def _recovery_snapshot(
     # EKF/local-position estimate, yielding an unphysical drift. Flag that
     # honestly rather than reporting it as a real distance.
     position_estimate_diverged = abs(route_deviation_xy_m) > 100_000.0
+    # This advisory projection has no source acquisition timestamp. Required
+    # navigation prediction must reject it rather than inventing a fresh time.
     return {
         "schema_version": "missionos_play_live_sitl_telemetry_snapshot.v1",
         "simulator": "px4_gazebo",
@@ -431,6 +433,7 @@ def run_play_live_sitl(
                     mission_context=mission_context,
                     recovery_policy=recovery_policy,
                     recovery_runner=run_missionos_runtime_recovery_agent,
+                    navigation_backend="px4",
                 )
             except Exception as exc:
                 blocking.append("mission_incident_graph_runtime_failure")

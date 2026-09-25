@@ -1,0 +1,154 @@
+{
+  "schema_version": "urban_reobserve_report.v1",
+  "runs": [
+    {
+      "schema_version": "urban_reobserve_verification.v1",
+      "mode": "frozen_route",
+      "destination_reached": false,
+      "safe_abort": true,
+      "landing_and_disarm_observed": true,
+      "choices": {
+        "approach": {
+          "selected": "forward",
+          "latest_depth": "forward",
+          "scores": {
+            "forward": {
+              "route_length_m": 13.990165827023556,
+              "minimum_observed_surface_distance_m": 1.5767847031221478,
+              "prior_map_envelope_clearance_m": 0.902735125000001,
+              "rejected_by_observed_surface": false,
+              "rejected_by_available_map": false
+            },
+            "left_detour": {
+              "route_length_m": 35.99058086565486,
+              "minimum_observed_surface_distance_m": 2.92766972180948,
+              "prior_map_envelope_clearance_m": 1.1027351250000001,
+              "rejected_by_observed_surface": false,
+              "rejected_by_available_map": false
+            }
+          }
+        },
+        "resume": {
+          "selected": "forward",
+          "latest_depth": "left_detour",
+          "scores": {
+            "forward": {
+              "route_length_m": 11.007600055940216,
+              "minimum_observed_surface_distance_m": 0.10606601717798193,
+              "prior_map_envelope_clearance_m": 0.8642375543630975,
+              "rejected_by_observed_surface": true,
+              "rejected_by_available_map": false
+            },
+            "left_detour": {
+              "route_length_m": 35.993464614479365,
+              "minimum_observed_surface_distance_m": 2.4338766941600083,
+              "prior_map_envelope_clearance_m": 1.1027351250000001,
+              "rejected_by_observed_surface": false,
+              "rejected_by_available_map": false
+            }
+          }
+        }
+      },
+      "input_age_wall_s": {
+        "approach": 1.408257007598877,
+        "resume": 1.418118953704834
+      },
+      "checkpoint_to_resume_sim_s": 4.188,
+      "checkpoint_to_resume_wall_s": 20.928079,
+      "minimum_observed_envelope_clearance_m": 1.1040471546539412,
+      "building_contact_messages": 0,
+      "path_from_departure_through_disarm_m": 6.2136319613421005,
+      "elapsed_departure_through_disarm_sim_s": 18.348,
+      "maximum_telemetry_gap_sim_s": 0.048,
+      "barrier_appearance_sim_ns": 25396000000,
+      "checkpoint_sim_ns": 29096000000,
+      "departure_sim_ns": 23032000000,
+      "terminal_sim_ns": 41380000000,
+      "replan_count": 0,
+      "model_invoked": false,
+      "learned_navigation_benefit_established": false,
+      "physical_execution_invoked": false,
+      "simulator_removed": true
+    },
+    {
+      "schema_version": "urban_reobserve_verification.v1",
+      "mode": "reobserve",
+      "destination_reached": true,
+      "safe_abort": false,
+      "landing_and_disarm_observed": true,
+      "choices": {
+        "approach": {
+          "selected": "forward",
+          "latest_depth": "forward",
+          "scores": {
+            "forward": {
+              "route_length_m": 13.958809283257729,
+              "minimum_observed_surface_distance_m": 1.5767847031221478,
+              "prior_map_envelope_clearance_m": 0.902735125000001,
+              "rejected_by_observed_surface": false,
+              "rejected_by_available_map": false
+            },
+            "left_detour": {
+              "route_length_m": 35.95985494652231,
+              "minimum_observed_surface_distance_m": 2.925106835655751,
+              "prior_map_envelope_clearance_m": 1.1027351250000001,
+              "rejected_by_observed_surface": false,
+              "rejected_by_available_map": false
+            }
+          }
+        },
+        "resume": {
+          "selected": "left_detour",
+          "latest_depth": "left_detour",
+          "scores": {
+            "forward": {
+              "route_length_m": 11.025674126818064,
+              "minimum_observed_surface_distance_m": 0.10606601717798193,
+              "prior_map_envelope_clearance_m": 0.8960337013907128,
+              "rejected_by_observed_surface": true,
+              "rejected_by_available_map": false
+            },
+            "left_detour": {
+              "route_length_m": 35.97479274151558,
+              "minimum_observed_surface_distance_m": 2.591208077771485,
+              "prior_map_envelope_clearance_m": 1.1027351250000001,
+              "rejected_by_observed_surface": false,
+              "rejected_by_available_map": false
+            }
+          }
+        }
+      },
+      "input_age_wall_s": {
+        "approach": 1.3319041728973389,
+        "resume": 1.4240400791168213
+      },
+      "checkpoint_to_resume_sim_s": 7.444,
+      "checkpoint_to_resume_wall_s": 37.212256,
+      "minimum_observed_envelope_clearance_m": 1.0929605695476368,
+      "building_contact_messages": 0,
+      "path_from_departure_through_disarm_m": 42.78898258110224,
+      "elapsed_departure_through_disarm_sim_s": 66.764,
+      "maximum_telemetry_gap_sim_s": 0.048,
+      "barrier_appearance_sim_ns": 25900000000,
+      "checkpoint_sim_ns": 29592000000,
+      "departure_sim_ns": 23516000000,
+      "terminal_sim_ns": 90280000000,
+      "replan_count": 1,
+      "model_invoked": false,
+      "learned_navigation_benefit_established": false,
+      "physical_execution_invoked": false,
+      "simulator_removed": true
+    }
+  ],
+  "cohort_size": 2,
+  "learned_navigation_benefit_established": false,
+  "wam_arrival_headroom_in_this_case": 0,
+  "limitations": [
+    "one development trial per method",
+    "scripted static insertion",
+    "planned checkpoint stop",
+    "supplied route candidates",
+    "no WAM/GPU",
+    "not a Gateway closed-loop task"
+  ]
+}

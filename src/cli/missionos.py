@@ -1977,6 +1977,8 @@ def _job_operator_summary(task_payload: dict[str, Any]) -> list[str]:
     terrain_clearance_m = _as_float(snapshot.get("terrain_clearance_m"))
     terrain_clearance_target_m = _as_float(snapshot.get("terrain_clearance_target_m"))
     terrain_clearance_status = _status_text(snapshot.get("terrain_clearance_status"))
+    if snapshot.get("landed") is True or snapshot.get("maybe_landed") is True:
+        terrain_clearance_status = "landed_not_applicable"
     monitor_stop = _status_text(snapshot.get("monitor_stop_reason"))
     readiness_text = _status_text(readiness.get("readiness_status"))
     actual_sitl_evidence = _first_present(
@@ -3170,6 +3172,8 @@ def _watch_altitude_status(snapshot: dict[str, Any]) -> str:
     clearance = _as_float(snapshot.get("terrain_clearance_m"))
     target = _as_float(snapshot.get("terrain_clearance_target_m"))
     status = _status_text(snapshot.get("terrain_clearance_status"))
+    if snapshot.get("landed") is True or snapshot.get("maybe_landed") is True:
+        status = "landed_not_applicable"
     if terrain is None and clearance is None and target is None:
         return (
             f"alt(home)={_fmt_metres(alt_home)}  "

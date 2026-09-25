@@ -10,6 +10,43 @@ from dataclasses import asdict, dataclass
 from typing import Any, Protocol
 
 PREDICTION_SCHEMA = "missionos_core_prediction.v1"
+GOAL_COMPATIBILITY_SCHEMA = "missionos_goal_compatibility.v1"
+GOAL_COMPATIBILITY_METRICS = frozenset({"uanwm_hep_residual", "anwm_goal_image_mse"})
+
+
+def validate_forecast_metrics(risk_score: Any, future_state: Any) -> None:
+    """Validate risk or an explicitly uncalibrated goal-compatibility forecast.
+
+    Goal costs rank candidate outcomes; they do not estimate collision risk,
+    establish feasibility, or prove that a learned model executed. Keeping risk
+    null preserves that distinction instead of coercing similarity into safety.
+    """
+    if not isinstance(future_state, dict):
+        raise ValueError("invalid_future_state")
+    if risk_score is not None:
+        if type(risk_score) not in (int, float) or not 0 <= risk_score <= 1:
+            raise ValueError("invalid_risk")
+        return
+    metric = future_state.get("goal_compatibility")
+    if not isinstance(metric, dict) or set(metric) != {
+        "schema_version",
+        "metric_id",
+        "raw_cost",
+        "lower_is_better",
+        "risk_assessed",
+    }:
+        raise ValueError("invalid_goal_compatibility")
+    cost = metric["raw_cost"]
+    if (
+        metric["schema_version"] != GOAL_COMPATIBILITY_SCHEMA
+        or not isinstance(metric["metric_id"], str)
+        or metric["metric_id"] not in GOAL_COMPATIBILITY_METRICS
+        or type(cost) not in (int, float)
+        or not 0 <= cost < math.inf
+        or metric["lower_is_better"] is not True
+        or metric["risk_assessed"] is not False
+    ):
+        raise ValueError("invalid_goal_compatibility")
 
 
 def prediction_digest(value: Any) -> str:
@@ -52,7 +89,7 @@ class PredictionRequest:
 class OptionForecast:
     option_id: str
     horizon_seconds: float
-    risk_score: float
+    risk_score: float | None
     future_state: dict[str, Any]
 
 
@@ -134,8 +171,7 @@ class PredictionRegistry:
                     f = by_id[option.option_id]
                     if f.horizon_seconds != option.horizon_seconds:
                         raise ValueError("forecast_horizon_mismatch")
-                    if not math.isfinite(f.risk_score) or not 0 <= f.risk_score <= 1:
-                        raise ValueError("invalid_risk")
+                    validate_forecast_metrics(f.risk_score, f.future_state)
                     prediction_digest(asdict(f))
                 result.update(status="available", forecasts=[asdict(f) for f in forecasts])
             except Exception as exc:

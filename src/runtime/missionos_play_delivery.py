@@ -205,6 +205,8 @@ def command_payload_release(container: str, runner: Runner) -> bool:
 
 
 def _recovery_snapshot(*, scenario, drift_m, wind_mps, phase, deviation_limit_m):
+    # This advisory projection has no source acquisition timestamp. Required
+    # navigation prediction must reject it rather than inventing a fresh time.
     return {
         "schema_version": "missionos_play_delivery_telemetry_snapshot.v1",
         "simulator": "px4_gazebo",
@@ -395,6 +397,7 @@ def run_play_delivery(
                             mission_context=mission_context,
                             recovery_policy=recovery_policy,
                             recovery_runner=run_missionos_runtime_recovery_agent,
+                            navigation_backend="px4",
                         )
                     except Exception as exc:
                         blocking.append("mission_incident_graph_runtime_failure")

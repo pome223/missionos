@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import math
+import re
 from collections.abc import Mapping
 from typing import Any
 
@@ -38,6 +40,51 @@ def checkpoint_candidate(checkpoint: Mapping[str, Any]) -> dict[str, Any]:
             "planned_segments_sha256",
             "resume_state_hash",
         )
+    }
+
+
+def navigation_telemetry_from_evaluation(
+    evaluation: Mapping[str, Any], *, candidates: list[Mapping[str, Any]]
+) -> dict[str, Any]:
+    """Project an actual plan-only observation, never invent its capture time.
+
+    Costmap identity and every selected path point remain part of the predicted
+    state. A fresh planning observation that changes either needs new judgment.
+    """
+    valid = bool(
+        all(
+            isinstance(evaluation.get(key), str)
+            and re.fullmatch(r"[0-9a-f]{64}", evaluation[key])
+            for key in ("global_costmap_content_sha256", "local_costmap_content_sha256")
+        )
+        and candidates
+        and all(
+            isinstance(candidate.get("path_points"), list)
+            and len(candidate["path_points"]) >= 2
+            and all(
+                isinstance(point, Mapping)
+                and all(type(point.get(key)) in (int, float) and math.isfinite(point[key])
+                        for key in ("x_m", "y_m"))
+                for point in candidate["path_points"]
+            )
+            for candidate in candidates
+        )
+    )
+    return {
+        "observed_at": evaluation.get("observation_captured_at") if valid else None,
+        "navigation_state": {
+            "observation_contract_valid": valid,
+            "global_costmap_content_sha256": evaluation.get("global_costmap_content_sha256"),
+            "local_costmap_content_sha256": evaluation.get("local_costmap_content_sha256"),
+            "candidate_paths": [
+                {key: candidate[key] for key in (
+                    "candidate_id", "x_m", "y_m", "yaw_rad", "path_points", "path_sha256",
+                    "path_length_m", "maximum_path_cost", "local_maximum_path_cost",
+                    "minimum_clearance_m", "local_minimum_clearance_m",
+                ) if key in candidate}
+                for candidate in candidates
+            ],
+        },
     }
 
 
@@ -136,15 +183,27 @@ def judge_turtlebot3_checkpoint(
         if observed_inference
         else [],
     }
+    navigation_telemetry = _mapping(resolution.get("navigation_telemetry"))
+    # Missing source time stays missing. The graph's own creation time cannot
+    # establish freshness of a stored motion summary or a costmap observation.
+    # A completed-segment timestamp also cannot date an absent planning snapshot.
+    telemetry = navigation_telemetry or {
+        "motion": dict(motion), "obstacle": dict(obstacle),
+        "observed_at": None,
+    }
     return run_missionos_mission_incident_graph(
-        telemetry_snapshot={"motion": dict(motion), "obstacle": dict(obstacle)},
+        telemetry_snapshot=telemetry,
         mission_context={
             "task_id": checkpoint.get("proposal_id"),
             "mission_phase": "recovery_checkpoint",
             "execution_scope": "simulator",
             "mission_contract": mission_contract(proposal),
             "progress": {"completed_segment_count": checkpoint.get("completed_segment_count")},
-            "observations": {"battery": proposal.get("battery_envelope")},
+            "observations": {
+                "battery": proposal.get("battery_envelope"),
+                "motion": dict(motion),
+                "obstacle": dict(obstacle),
+            },
             "constraints": {
                 "assurance_policy": proposal.get("assurance_policy"),
                 "autonomy_envelope": proposal.get("autonomy_envelope"),
@@ -164,10 +223,16 @@ def judge_turtlebot3_checkpoint(
         recovery_runner=lambda **_: result,
         mission_assurance_agent=mission_assurance_agent,
         mission_assurance_timeout_seconds=120.0,
+        navigation_backend="nav2",
     )
 
 
-def turtlebot3_incident_dispatch_reasons(checkpoint: Mapping[str, Any]) -> list[str]:
+def turtlebot3_incident_dispatch_reasons(
+    checkpoint: Mapping[str, Any], *,
+    current_navigation_telemetry: Mapping[str, Any] | None = None,
+    prediction_dispatch: bool = True,
+    policy_sha256: str | None = None,
+) -> list[str]:
     """Validate before approval/CAS and again before Nav2 execution."""
     graph = _mapping(checkpoint.get("missionos_mission_incident_graph"))
     if not graph:
@@ -179,6 +244,20 @@ def turtlebot3_incident_dispatch_reasons(checkpoint: Mapping[str, Any]) -> list[
         reasons.append("nav2_assurance_compiled_candidate_changed")
     if graph.get("recovery_proposed_action") != checkpoint.get("selected_action"):
         reasons.append("nav2_assurance_recovery_action_changed")
+    if prediction_dispatch:
+        from src.prediction.navigation import revalidate_navigation_prediction
+
+        check = revalidate_navigation_prediction(
+            _mapping(graph.get("navigation_prediction")),
+            backend="nav2",
+            telemetry=_mapping(current_navigation_telemetry),
+            action=str(checkpoint.get("selected_action") or ""),
+            parameters=_mapping(checkpoint.get("approved_parameters")),
+            compiled_candidate=checkpoint_candidate(checkpoint),
+            policy_sha256=policy_sha256,
+        )
+        if check.get("status") == "blocked":
+            reasons.extend(check.get("reasons") or ["navigation_prediction_revalidation_blocked"])
     return list(dict.fromkeys(reasons))
 
 

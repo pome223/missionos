@@ -73,7 +73,7 @@ def mission_assurance_projection(artifacts: dict[str, Any]) -> dict[str, Any]:
     )
     if not isinstance(sequence, list):
         sequence = []
-    return {
+    projection = {
         "schema_version": "missionos_cli_mission_assurance_projection.v1",
         "present": True,
         "e2e_status": e2e.get("e2e_status"),
@@ -229,3 +229,74 @@ def mission_assurance_projection(artifacts: dict[str, Any]) -> dict[str, Any]:
             else "missionos_mission_assurance_px4_horizontal_summary.mission_assurance_live_guard"
         ),
     }
+    continuation = _mapping(artifacts.get("missionos_mission_incident_continuation_graph"))
+    if (
+        not e2e
+        and incident_graph
+        and isinstance(incident_graph.get("mission_incident_graph_id"), str)
+        and bool(incident_graph.get("mission_incident_graph_id"))
+        and isinstance(incident_graph.get("mission_incident_graph_sha256"), str)
+        and bool(incident_graph.get("mission_incident_graph_sha256"))
+        and continuation.get("schema_version")
+        == "missionos_adk_v2_mission_incident_continuation_result.v1"
+        and continuation.get("frozen_mission_incident_graph_id")
+        == incident_graph.get("mission_incident_graph_id")
+        and continuation.get("frozen_mission_incident_graph_sha256")
+        == incident_graph.get("mission_incident_graph_sha256")
+        and continuation.get("recovery_action")
+        == incident_graph.get("recovery_proposed_action")
+    ):
+        human = _mapping(continuation.get("human_approval"))
+        if (
+            continuation.get("human_approval_observed") is True
+            and human.get("approval_status") == "observed"
+            and human.get("explicit_recovery_dispatch_approval") is True
+        ):
+            current_revalidation = _mapping(continuation.get("action_revalidation"))
+            current_feasibility = _mapping(
+                current_revalidation.get("dispatch_action_feasibility")
+            )
+            verification = _mapping(continuation.get("verification"))
+            dispatched = (
+                continuation.get("dispatch_authority_created") is True
+                and continuation.get("dispatch_request_sent") is True
+            )
+            projection.update(
+                {
+                    "current_feasibility": _first(
+                        current_feasibility.get("feasibility_status"),
+                        projection["current_feasibility"],
+                    ),
+                    "revalidation_status": _first(
+                        current_revalidation.get("validation_status"),
+                        projection["revalidation_status"],
+                    ),
+                    "guard_status": _first(
+                        continuation.get("continuation_runtime_status"),
+                        projection["guard_status"],
+                    ),
+                    "selected_action": (
+                        continuation.get("recovery_action") if dispatched else None
+                    ),
+                    "proposed_action_awaiting_approval": None,
+                    "fresh_operator_approval_required": False,
+                    "recovery_approval_status": human.get("approval_status"),
+                    "recovery_approval_recorded": True,
+                    "runtime_state_observed": continuation.get("effect_observed") is True,
+                    "runtime_state_label": verification.get(
+                        "operator_recovery_resume_auto_status"
+                    ),
+                    "command_ack_observed": (
+                        verification.get("command_ack_observed") is True
+                    ),
+                    "final_status": _first(
+                        verification.get("verifier_status"),
+                        continuation.get("verifier_status"),
+                    ),
+                    "physical_execution_invoked": (
+                        continuation.get("physical_execution_invoked") is True
+                    ),
+                    "source_artifact": "missionos_mission_incident_continuation_graph",
+                }
+            )
+    return projection
