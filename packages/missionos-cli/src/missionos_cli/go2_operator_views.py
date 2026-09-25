@@ -82,6 +82,57 @@ def _delivery_and_return_verified(task: dict[str, Any], result: dict[str, Any]) 
     )
 
 
+def supervision_summary(task: dict[str, Any]) -> dict[str, Any]:
+    artifacts, proposal, result, _, _ = _sources(task)
+    entries = artifacts.get("go2_supervision_decisions") or result.get("supervision_decisions", [])
+    decisions = []
+    for entry in entries:
+        invocation = entry.get("invocation", {})
+        action = entry.get("proposal", {})
+        observed = invocation.get("standalone_runner_invoked") is True and invocation.get(
+            "response_sha256"
+        ) not in (
+            None,
+            "",
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        )
+        decisions.append(
+            dict(
+                observation_id=entry.get("observation", {}).get("observation_id"),
+                action=action.get("action", "unknown"),
+                rationale=action.get("rationale", ""),
+                model=invocation.get("model_id"),
+                response_observed=observed,
+                rules=(
+                    "allowed"
+                    if entry.get("judge_status") == "valid"
+                    and entry.get("rule_blocking_reasons") == []
+                    else "blocked_or_unverified"
+                ),
+            )
+        )
+    return dict(
+        mode=proposal.get("plan", {}).get("supervision_mode", "rules"),
+        configured_model=(proposal.get("supervisor") or {}).get("model_id"),
+        observed_responses=sum(d["response_observed"] for d in decisions),
+        decisions=decisions,
+    )
+
+
+def supervision_lines(task: dict[str, Any]) -> list[str]:
+    summary = supervision_summary(task)
+    lines = [
+        f"Supervision: {summary['mode']}; configured_model={summary['configured_model'] or '-'}; "
+        f"observed_responses={summary['observed_responses']}"
+    ]
+    for decision in summary["decisions"]:
+        lines.append(
+            f"Agent {decision['observation_id']}: {decision['action']}; Rules={decision['rules']}"
+            f" — {decision['rationale']}"
+        )
+    return lines
+
+
 def summary_lines(task: dict[str, Any]) -> list[str]:
     artifacts, proposal, result, snapshot, avoidance = _sources(task)
     task_id = str(task.get("task_id") or "-")
@@ -103,6 +154,7 @@ def summary_lines(task: dict[str, Any]) -> list[str]:
         f"Moving-obstacle contacts: {dynamic.get('contact_physics_steps', '-')}",
         "Boundary: simulated Go2 only; physical_execution=False; view is read-only",
     ]
+    lines.extend(supervision_lines(task))
     if task.get("error"):
         lines.append(f"Error: {task['error']}")
     return lines
@@ -135,6 +187,8 @@ def local_map_model(task: dict[str, Any]) -> dict[str, Any]:
         static_obstacles=OFFICE_OBSTACLES,
         receipt_observed=_receipt_observed(result),
         delivery_and_return_verified=_delivery_and_return_verified(task, result),
+        supervision=supervision_summary(task),
+        supervision_lines=supervision_lines(task),
         source="Gateway task artifacts and simulator known map",
         live=False,
     )
@@ -200,11 +254,12 @@ def html_map(model: dict[str, Any]) -> str:
             shapes.append(
                 f'<circle cx="{x:.1f}" cy="{y:.1f}" r="11" class="{klass}"/><text x="{x:.1f}" y="{y + 4:.1f}" text-anchor="middle">{label}</text>'
             )
+    supervision = "".join(f"<p>{escape(line)}</p>" for line in model.get("supervision_lines", []))
     title = escape(model["task_id"])
     status = escape(model["status"])
     data = json.dumps(model, ensure_ascii=False).replace("<", "\\u003c")
     return f"""<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MissionOS Go2 indoor map — {title}</title>
 <style>body{{background:#101925;color:#e6f0fb;font:16px system-ui;margin:24px}}main{{max-width:920px;margin:auto}}svg{{width:100%;background:#17263a;border:1px solid #42607d;border-radius:12px}}.wall{{fill:#586a7a}}.trail{{fill:none;stroke:#5bd6b3;stroke-width:3}}.home{{fill:#3088c7}}.destination{{fill:#57b68d}}.obstacle{{fill:#e06a51}}.robot{{fill:#f4d36b}}text{{fill:#111;font:bold 13px system-ui}}.muted{{color:#a8bdd0}}</style>
-<main><h1>Go2 屋内配送マップ</h1><p>配送ID: <code>{title}</code> · 状態: {status}</p><svg viewBox="0 0 {width} {height}" role="img" aria-label="Go2 indoor map">{"".join(shapes)}</svg>
+<main><h1>Go2 屋内配送マップ</h1><p>配送ID: <code>{title}</code> · 状態: {status}</p>{supervision}<svg viewBox="0 0 {width} {height}" role="img" aria-label="Go2 indoor map">{"".join(shapes)}</svg>
 <p>H 受付 · D 会議室A · R Go2現在位置 · O 動く障害物 · 緑線 観測された走行軌跡</p><p class="muted">この表示はシミュレータの既知の室内地図とGatewayに保存された観測値です。予測・承認・実行・配送完了の証明ではありません。</p>
 <script id="go2-map-data" type="application/json">{data}</script></main></html>"""

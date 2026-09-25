@@ -4899,7 +4899,9 @@ def _maybe_retarget_turtlebot3_gateway_url(ctx: click.Context) -> None:
 @click.option("--session-id", default=DEFAULT_SESSION_ID, show_default=True)
 @click.option(
     "--go2-scenario",
-    type=click.Choice(["baseline", "moving_obstacle"]),
+    type=click.Choice(
+        ["baseline", "moving_obstacle", "blocked_passage", "all_blocked", "temporary_blockage"]
+    ),
     default=None,
     help="Opt in to the Go2 indoor simulator scenario for this chat.",
 )

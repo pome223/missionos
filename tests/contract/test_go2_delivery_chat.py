@@ -22,6 +22,7 @@ def service(tmp_path, monkeypatch):
     monkeypatch.setenv("GO2_DELIVERY_CACHE", str(cache))
     monkeypatch.setenv("MISSIONOS_GO2_OUTPUT_ROOT", str(tmp_path / "runs"))
     monkeypatch.setenv("RUN_MISSIONOS_GO2_DELIVERY_SIM", "1")
+    monkeypatch.setenv("MISSIONOS_GO2_SUPERVISION_MODE", "rules")
     return Go2ChatService(TaskStore(str(tmp_path / "tasks.db")))
 
 
@@ -258,7 +259,7 @@ def test_restart_blocks_new_delivery_while_legacy_worker_is_alive(service, monke
         child.wait(timeout=5)
 
 
-def test_browser_default_uses_available_rules_mode():
+def test_browser_default_uses_agent_mode():
     from html.parser import HTMLParser
     from pathlib import Path
 
@@ -280,7 +281,7 @@ def test_browser_default_uses_available_rules_mode():
     parser = SelectParser()
     parser.feed((Path(__file__).parents[2] / "src/gateway/static/go2_chat.html").read_text())
     selected = next((x for x in parser.options if "selected" in x), parser.options[0])
-    assert selected["value"] == "rules"
+    assert selected["value"] == "agent"
 
 
 def test_restart_waits_for_inherited_child_lease_and_then_allows_new_plan(service, monkeypatch):
@@ -398,3 +399,11 @@ def test_missing_or_replaced_lease_is_not_stop_evidence(tmp_path):
         os.close(fd)
     assert not go2_worker_lease.stopped(lease)
     assert not go2_worker_lease.stopped({})
+
+
+def test_default_agent_requires_configuration_without_rules_fallback(service, monkeypatch):
+    monkeypatch.delenv("MISSIONOS_GO2_SUPERVISION_MODE")
+    monkeypatch.delenv("RUN_MISSIONOS_GO2_SUPERVISOR", raising=False)
+    with pytest.raises(ValueError, match="Agent管制"):
+        plan(service)
+    assert not service.store.list(kind="go2_delivery_execution")

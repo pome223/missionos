@@ -18,6 +18,13 @@ def main():
     parser.add_argument("--gateway-url", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--cancel-during-yield", action="store_true")
+    parser.add_argument(
+        "--scenario", choices=("moving_obstacle", "temporary_blockage"), default="moving_obstacle"
+    )
+    parser.add_argument(
+        "--supervision-mode", choices=("rules", "agent", "default"), default="rules"
+    )
+    parser.add_argument("--require-agent-judgment", action="store_true")
     args = parser.parse_args()
     if os.getenv("RUN_MISSIONOS_GO2_DELIVERY_SIM") != "1":
         parser.error("requires RUN_MISSIONOS_GO2_DELIVERY_SIM=1")
@@ -42,11 +49,11 @@ def main():
         "--history-path",
         str(args.output / "history"),
         "--go2-scenario",
-        "moving_obstacle",
-        "--go2-supervision-mode",
-        "rules",
+        args.scenario,
         "--no-companion-terminals",
     ]
+    if args.supervision_mode != "default":
+        chat += ["--go2-supervision-mode", args.supervision_mode]
     commands = []
     workers = []
     identity = None
@@ -161,7 +168,33 @@ def main():
             result = current["artifacts"]["go2_delivery_result"]
             assert result["physical_execution_invoked"] is False
             assert result["dynamic_avoidance"]["contact_physics_steps"] == 0
-            assert result["dynamic_avoidance"]["yield_count"] >= 1
+            if args.scenario == "moving_obstacle":
+                assert result["dynamic_avoidance"]["yield_count"] >= 1
+            decisions = result.get("supervision_decisions", [])
+            if args.require_agent_judgment:
+                assert result["llm_judgment_invoked"] is True
+                assert 1 <= len(decisions) <= 3
+                for decision in decisions:
+                    invocation = decision["invocation"]
+                    assert invocation["standalone_runner_invoked"] is True
+                    assert invocation["provider"] == "google_adk_litellm_deepseek"
+                    assert invocation["model_id"] == "deepseek-flash"
+                    assert invocation["response_sha256"] not in (
+                        "",
+                        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                    )
+                    assert not decision["rule_blocking_reasons"]
+                allowed = {d["observation"]["observation_id"] for d in decisions}
+                assert any(
+                    e.get("source_decision_id") in allowed and e["event"] == "navigation_verified"
+                    for e in result["events"]
+                )
+                for view in ("job-status", "operate", "watch"):
+                    text = (args.output / (view + "-final.log")).read_text()
+                    assert "Supervision: agent" in text and "deepseek-flash" in text
+                    for decision in decisions:
+                        assert decision["observation"]["observation_id"] in text
+                assert model["supervision"]["observed_responses"] == len(decisions)
             events = [event["event"] for event in result["events"]]
             if args.cancel_during_yield:
                 assert canceled and "operator_cancel_stopped" in events
@@ -183,6 +216,8 @@ def main():
                 physical_execution_invoked=False,
                 sim_time_s=result["terminal_state"]["sim_time_s"],
                 dynamic_avoidance=result["dynamic_avoidance"],
+                supervision=model["supervision"],
+                scenario=args.scenario,
                 observed_points=len(model["trail"]),
                 surfaces=["chat", "job-status", "operate", "watch", "map"],
                 browser_visual_check=False,

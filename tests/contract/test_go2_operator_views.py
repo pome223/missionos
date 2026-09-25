@@ -74,3 +74,40 @@ def test_completed_label_requires_receipt_and_terminal_hold_evidence():
     item["artifacts"]["go2_delivery_result"]["receipt"]["received"] = False
     assert "Receipt observed: False" in "\n".join(summary_lines(item))
     assert local_map_model(item)["delivery_and_return_verified"] is False
+
+
+def test_agent_configuration_does_not_claim_an_observed_response():
+    item = task("proposed")
+    proposal = item["artifacts"]["go2_delivery_proposal"]
+    proposal["plan"]["supervision_mode"] = "agent"
+    proposal["supervisor"] = {"model_id": "deepseek-flash"}
+    lines = "\n".join(summary_lines(item))
+    assert "Supervision: agent" in lines
+    assert "observed_responses=0" in lines
+    assert local_map_model(item)["supervision"]["decisions"] == []
+
+
+def test_agent_decisions_show_observed_response_and_rules_separately():
+    item = task()
+    proposal = item["artifacts"]["go2_delivery_proposal"]
+    proposal["plan"]["supervision_mode"] = "agent"
+    proposal["supervisor"] = {"model_id": "deepseek-flash"}
+    item["artifacts"]["go2_supervision_decisions"] = [
+        {
+            "observation": {"observation_id": "decision_1"},
+            "proposal": {"action": "wait", "rationale": "<b>fixture wait</b>"},
+            "invocation": {
+                "model_id": "deepseek-flash",
+                "standalone_runner_invoked": True,
+                "response_sha256": "1" * 64,
+            },
+            "judge_status": "valid",
+            "rule_blocking_reasons": ["map_changed_since_observation"],
+        }
+    ]
+    lines = "\n".join(summary_lines(item))
+    assert "observed_responses=1" in lines
+    assert "Agent decision_1: wait; Rules=blocked_or_unverified" in lines
+    page = html_map(local_map_model(item))
+    assert "&lt;b&gt;fixture wait&lt;/b&gt;" in page
+    assert "<b>fixture wait</b>" not in page

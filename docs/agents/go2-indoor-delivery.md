@@ -55,12 +55,16 @@ After preparing the simulator cache above, use a MissionOS Python environment
 with the repository's Gateway/CLI dependencies installed. Start a fresh Gateway
 from this checkout after every runtime code change. These commands use a separate
 task database and explicit simulator opt-in; they do not enable hardware or SITL.
+Agent supervision is the default. Supply `DEEPSEEK_API_KEY` in the host environment,
+or add `--secret-project "$GO2_SECRET_PROJECT" --secret-id "$GO2_SECRET_ID"` using
+an authorized existing Secret Manager locator. The launcher validates configuration
+before listening. Credentials are never passed to simulator children or the browser.
 
 ```bash
+RUN_MISSIONOS_GO2_DELIVERY_SIM=1 RUN_MISSIONOS_GO2_SUPERVISOR=1 \
 PYTHONPATH=.:packages/missionos-core/src:packages/missionos-gateway/src \
-RUN_MISSIONOS_GO2_DELIVERY_SIM=1 \
-TASK_STORE_DB_PATH=output/go2-chat/tasks.db \
-python -c 'from src.gateway.server import create_missionos_gateway; create_missionos_gateway().run(host="127.0.0.1", port=18791)'
+python scripts/start_go2_supervisor_gateway.py \
+  --state-dir output/go2-agent --port 18791
 ```
 
 In another terminal:
@@ -87,8 +91,8 @@ map is a static indoor snapshot of the known simulator geometry and observed
 trajectory. These views do not claim physical delivery.
 
 The optional browser client uses that same production conversation route.
-Its fresh-page default is `rules`, which works with the ordinary Gateway setup.
-`agent` remains an explicit selection requiring the Agent setup below:
+Its fresh-page default is `agent`, using the Agent-enabled Gateway above.
+An unconfigured Agent is an explicit error; it never silently becomes rules mode.
 
 ```bash
 PYTHONPATH=.:packages/missionos-core/src \
@@ -249,7 +253,7 @@ filenames to retain evidence. This does not validate real hardware, payload
 handling, navigation perception or learned mission-level judgment.
 
 
-## Optional Agent supervision
+## Default Agent supervision
 
 Prepare the simulator cache and MissionOS dependencies as above. Explicitly start
 the Agent-enabled Gateway with an operator-supplied Secret Manager locator. The
@@ -265,7 +269,7 @@ python scripts/start_go2_supervisor_gateway.py \
   --secret-project "$GO2_SECRET_PROJECT" --secret-id "$GO2_SECRET_ID"
 ```
 
-Use the browser command above and choose `MissionOS Agentが状況を判断`. The
+Use the browser command above; `MissionOS Agentが状況を判断` is already selected. The
 proposal binds `supervision_mode`, the selected `missionos_go2_supervisor_agent`,
 `deepseek-flash` connection and action envelope. Missing or changed model
 configuration does not fall back to fixed-rule execution.
@@ -476,7 +480,62 @@ The injected process signals are fault simulation, not ordinary control behavior
 This probe passed. The normal delivery CLI probe was also rerun on a separate
 fresh Gateway and completed in 87.39 simulated seconds, with two yields, zero
 obstacle contacts and consistent results across all five operator surfaces.
-A fresh browser page, with no Agent opt-in, selected rules; clicking Send without
-changing its selectors produced an unapproved plan and enabled approval.
+At that review revision, a fresh browser page selected rules and produced an
+unapproved plan. That default was subsequently superseded by the operator-requested
+Agent default below; current normal startup uses the Agent-enabled launcher.
 The full Python 3.11 suite passed 2,712 tests. Release-wide Level C limits above
 remain unchanged.
+
+### Agent-default CLI verification
+
+The browser and Go2 conversation default to Agent supervision. The direct simulator
+runner retains its explicit rules baseline, and CLI comparisons may request
+`--go2-supervision-mode rules`. Rules-only Gateway operation must explicitly set
+`MISSIONOS_GO2_SUPERVISION_MODE=rules`; it is not a fallback for missing Agent access.
+
+An unobstructed run or a moving-cart yield can finish without a mission-level Agent
+judgment. To verify actual judgment use, select the temporary passage closure:
+
+```sh
+missionos --gateway-url http://127.0.0.1:18791 chat \
+  --go2-scenario temporary_blockage 'Go2で会議室Aへ届けて'
+```
+
+Use `/approve`, `/run`, then `/status`. The default model can propose a bounded
+wait, reroute, undelivered return, or operator attention. Only Rules-admitted
+decisions may continue under the approved mission. `status` is the Gateway health
+command; `job-status --task-id <id>` is the task status command.
+
+The reproducible installed-CLI probe leaves the mode option unset and requires
+real DeepSeek response evidence plus a decision-linked verified navigation leg:
+
+```sh
+RUN_MISSIONOS_GO2_DELIVERY_SIM=1 python scripts/verify_go2_delivery_cli.py \
+  --gateway-url http://127.0.0.1:18791 --scenario temporary_blockage \
+  --supervision-mode default --require-agent-judgment \
+  --output "$VERIFY_ROOT/agent-default"
+```
+
+`job-status`, `operate`, `watch` and `map` distinguish configured supervision from
+observed model responses, and show the action, rationale and Rules verdict for
+each decision. `map` remains a generated snapshot, not a continuously updating map.
+
+Observed on 2026-09-25 using the default mode: two real `deepseek-flash` responses
+selected `wait`, then `reroute` after reobservation. Both passed Rules; the second
+decision was linked to a verified outbound navigation leg. Simulated receipt,
+return and terminal hold completed in 95.45 simulated seconds with zero obstacle
+contacts. All five CLI surfaces agreed on the task and terminal outcome;
+`job-status`, `operate`, `watch` and the map showed both decisions. The separate
+`status` command reported a healthy Gateway. A fresh browser page kept Agent
+selected, and Send created an unapproved plan without changing the selector.
+The completed map was visually checked for the return trail, destination/home
+and both judgment rationales.
+
+This run invokes the hosted Agent and real simulator physics, but does not test
+WAM or physical delivery. It uses known simulator geometry/pose and a facility
+reopening notice. It establishes the governed integration, not superiority over
+a matched rules comparator. Raw tasks, credentials and logs remain local.
+
+The final Python 3.11 suite passed 2,715 tests (76 Go2 tests). Lint, both
+versioned evidence gates, the 114-entry smoke inventory, outgoing publication
+checks and relative documentation links passed.

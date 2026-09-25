@@ -51,6 +51,9 @@ def main():
         TASK_STORE_DB_PATH=str(state / "gateway-tasks.db"),
         AUDIT_LOG_PATH=str(state / "audit.log"),
     )
+    from src.intelligence.go2_supervisor import configuration
+
+    configuration()  # Fail before listening if the default Agent cannot be configured.
     from src.gateway.server import create_missionos_gateway
 
     create_missionos_gateway().run(host="127.0.0.1", port=args.port)

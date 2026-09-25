@@ -193,7 +193,7 @@ class Go2ChatService:
             "moving_obstacle",
         ):
             raise ValueError("未対応のシナリオです。")
-        mode = supervision_mode or os.getenv("MISSIONOS_GO2_SUPERVISION_MODE", "rules")
+        mode = supervision_mode or os.getenv("MISSIONOS_GO2_SUPERVISION_MODE", "agent")
         if mode not in ("rules", "agent"):
             raise ValueError("未対応の管制方法です。")
         agent_config = None
