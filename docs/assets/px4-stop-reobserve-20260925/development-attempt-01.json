@@ -1,0 +1,42 @@
+{
+  "schema_version": "urban_reobserve_development_attempt.v1",
+  "attempt": "pair01/frozen_route",
+  "frozen_cases": 2,
+  "attempted_cases": 1,
+  "unattempted_cases": [
+    "reobserve"
+  ],
+  "comparison_completed": false,
+  "failure_stage": "checkpoint_capture",
+  "failure_reason": "origin-only capture guard rejected stationary checkpoint at ENU east 3 m",
+  "takeoff_observed": true,
+  "stopped_at_checkpoint": true,
+  "destination_reached": false,
+  "landing_observed": true,
+  "disarm_observed": true,
+  "building_contact_messages": 0,
+  "created_container_removed": true,
+  "model_invoked": false,
+  "runtime_source_sha256": {
+    "scripts/prepare_px4_anwm_input.py": "16e336ef3bcd6bb52714b4b95078b228e327a8a4c40b8d9a8b4cda43172f224c",
+    "scripts/probe_px4_aerial_camera.py": "c39983324206573589ede310d94173c10f0db1132edc7f94c1ee08e66a5bb098",
+    "scripts/px4_aerial_flight_session.py": "a7f030b7f6c7de368a34d8d31bb2a26c074102e9486f0f295533997a8a713f97",
+    "scripts/px4_urban_headroom_trial.py": "8568f9736f97c49119695bf4047c89ee5b88683d036560b238addfdb36101a70",
+    "scripts/px4_urban_reobserve_trial.py": "a38a8e79dea4c5e716705f3537d3a5e91287ee04a2e46876731c7dfacceece4c",
+    "scripts/px4_urban_wam_trial.py": "ac710003170a090a6c0a61dea7e7d31239d3114d30a32650deff90ab95be8d0b",
+    "scripts/select_urban_depth_route.py": "6c9d19536835cca437c15b81b23fcf9236536f9c761e7958d10c9fda2af2da24",
+    "scripts/urban_headroom_contact_probe.py": "ea660c8ca97946c99c8f5fdddd83946049e4d8bb0f751060180808e2e286edda",
+    "scripts/urban_headroom_contract.py": "c57301d220ad196e3cc9634982fca4947a63ae1ed2366feb95e192fe698018ec",
+    "scripts/urban_navigation_contract.py": "a27b487c8ff938eb1824b8cba3747b5e0adebc18911d9fcf97a1a6c344b40088",
+    "scripts/urban_reobserve_contract.py": "1a12ef532a5e8474b8ee36a079693ca8def718f3aa5fc8a9eba29778efe5f9f8",
+    "scripts/urban_route_observer.py": "595fa22354f8fdf4732377819dda98c0b2f1981fb6eec2c97e20335cf3b55873",
+    "src/prediction/px4_camera.py": "f61d898cd378aee6e7bd0ad29c1c93eae442cff5d1da140a68faf5b946aeb532"
+  },
+  "raw_sha256": {
+    "host-error.json": "4408f934009f196276a4d55a6cff4e2ef3a144b36ab0418c645324426dc797de",
+    "cleanup.json": "3556a2091693cda01d789f85ae19cd4c835fb0cc1d019e6a3bd8524902f5c0bf",
+    "session/flight-result.json": "5e55aef18c0501b3895b223363c87f4172e863b9bb7746ec682e2392ec5d7759",
+    "session/events.jsonl": "7e7f7cbc5534bc9630ada687bdd524c40956f984562f2f28f1a84b07f6f76989",
+    "session/telemetry.jsonl": "e0e580f790ccff94bb9e619831b533a829ba26966a771624709081f9a7bc8c7e"
+  }
+}
