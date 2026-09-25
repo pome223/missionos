@@ -16,6 +16,7 @@ from urllib.request import Request, urlopen
 from src.intelligence.mission_assurance_agent import (
     MISSION_RESPONSE_KINDS,
     MissionAssuranceJudgeUnavailable,
+    MissionAssuranceJudgeError,
     ModelJudgment,
 )
 
@@ -46,7 +47,22 @@ class JevAssuranceJudge:
             headers={"Content-Type": "application/json", "Authorization": f"Bearer {key}"},
         )
         with urlopen(request, timeout=self.timeout) as response:
-            return json.load(response)
+            body = response.read()
+        try:
+            return json.loads(body)
+        except (ValueError, UnicodeError) as exc:
+            raise MissionAssuranceJudgeError(
+                "invalid_jev_json", status="failed", invoked=True,
+                invocation_evidence={
+                    "schema_version": "runtime_invocation_evidence.v1",
+                    "invocation_kind": "decision_api", "provider": "typesafe",
+                    "request_sha256": _digest(payload),
+                    "response_sha256": hashlib.sha256(body).hexdigest(),
+                    "response_hash_encoding": "raw_bytes",
+                    "validation_reason": "invalid_jev_json", "raw_response_recorded": False,
+                    "dispatch_authority_created": False,
+                },
+            ) from exc
 
     def judge(self, prompt):
         allowed = prompt["decision_contract"]["allowed_response_kinds"]
@@ -106,6 +122,50 @@ class JevAssuranceJudge:
         start = time.perf_counter()
         started = _utc()
         raw = self.transport(payload)
+        try:
+            return self._interpret_response(raw, prompt, payload, allowed, criteria, start, started)
+        except (ValueError, KeyError, TypeError, AttributeError) as exc:
+            known = {
+                "invalid_jev_choice", "invalid_jev_distribution", "invalid_jev_probability_sum",
+                "invalid_jev_review", "invalid_jev_assessment_route",
+                "invalid_jev_routing_distribution", "invalid_jev_routing_probability_sum",
+            }
+            reason = str(exc) if type(exc) is ValueError and str(exc) in known else "invalid_jev_response_schema"
+            try:
+                response_hash = hashlib.sha256(
+                    json.dumps(raw, sort_keys=True, allow_nan=True).encode()
+                ).hexdigest()
+            except (TypeError, ValueError):
+                response_hash = None
+            sums = {}
+            answers = raw.get("answers", {}) if isinstance(raw, dict) else {}
+            for name in ("response", "assessment_route"):
+                answer = answers.get(name) if isinstance(answers, dict) else None
+                probabilities = answer.get("probabilities") if isinstance(answer, dict) else None
+                if isinstance(probabilities, dict) and all(
+                    type(n) in (int, float) and math.isfinite(n) for n in probabilities.values()
+                ):
+                    total = sum(probabilities.values())
+                    if math.isfinite(total):
+                        sums[name] = total
+            raise MissionAssuranceJudgeError(
+                reason, status="failed", invoked=True,
+                invocation_evidence={
+                    "schema_version": "runtime_invocation_evidence.v1",
+                    "invocation_kind": "decision_api", "provider": "typesafe",
+                    "requested_model_id": self.model,
+                    "prompt_sha256": _digest(prompt), "request_sha256": _digest(payload),
+                    "response_sha256": response_hash,
+                    "response_hash_encoding": "sorted_json_allow_nan",
+                    "validation_reason": reason, "probability_sums": sums,
+                    "started_at": started, "completed_at": _utc(),
+                    "latency_ms": (time.perf_counter() - start) * 1000,
+                    "raw_response_recorded": False,
+                    "dispatch_authority_created": False,
+                },
+            ) from exc
+
+    def _interpret_response(self, raw, prompt, payload, allowed, criteria, start, started):
         answer = raw["answers"]["response"]
         choice = answer["choice"]
         probabilities = answer["probabilities"]
@@ -192,6 +252,9 @@ class JevShadowJudge:
                     "output": dict(result.output),
                     "invocation_evidence": dict(result.invocation_evidence),
                 }
+            except MissionAssuranceJudgeError as exc:
+                return {"status": exc.status, "error_type": type(exc).__name__,
+                        "validation_reason": str(exc), "invocation_evidence": exc.invocation_evidence}
             except Exception as exc:
                 return {"status": "failed", "error_type": type(exc).__name__}
 

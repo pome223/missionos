@@ -106,6 +106,36 @@ status, blocking reasons and an empty output; they cannot masquerade as successf
 human-review judgments. Incumbent failures also retain candidate invocation facts.
 A shadow comparison may wait for both models.
 
+Jev response-validation failures retain an allowlisted `validation_reason`, a
+`response_sha256`, request/prompt hashes where available, and finite numeric
+`probability_sums` for the response and routing questions. Raw response bodies,
+provider exception text, headers and credentials are not recorded. JSON failures
+hash raw response bytes; parsed-response failures hash sorted JSON with NaN allowed
+solely for fingerprinting (`response_hash_encoding` distinguishes the two).
+Probability acceptance thresholds are unchanged. The fingerprint diagnoses a
+failure; it does not make an invalid answer acceptable. Cascade and shadow
+composition preserve the nested typed failure receipt.
+
+## ADK candidate semantics
+
+The configured ADK reasoner now returns an internal `candidate_assessment` enum:
+`aligned`, `conflicting`, `unresolved`, or `not_applicable`. It assesses the exact
+bound candidate, not a different plan described in prose. With built-in response
+semantics, `replan`, `return`, and `abort` require `aligned`; otherwise the adapter
+raises `candidate_response_assessment_mismatch` and no supporting proposal is
+accepted. A missing/invalid enum raises `candidate_assessment_required`.
+
+The common six-field proposal remains unchanged; this internal field is removed
+and retained under `candidate_semantics` in invocation evidence. The prompt tells
+the model that `replan` cannot mean "generate a different candidate": a known
+conflict requires a supported hold or operator escalation. This validates the
+enum pair, not the truth of the assessment or arbitrary prose consistency;
+`free_text_consistency_verified=false` is explicit. A model can still incorrectly
+claim `aligned`. The legacy command judge and Jev output schema are unchanged.
+Explicit custom response mappings at either supported nesting level disable this
+built-in enum relationship; the assessment remains required and audited for ADK.
+Deployment must not treat this internal check as approval or outcome verification.
+
 Prediction admission still precedes Assurance. A rejected prediction stops the
 workflow before either judge. Human approval or an approved bounded policy,
 dispatch-time Rules, Executor, and Verifier remain separate. Neither model

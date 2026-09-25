@@ -93,16 +93,21 @@ class JevCascadeJudge:
 
         def provider_error(provider, exc, *, prior_invoked):
             unavailable = isinstance(exc, MissionAssuranceJudgeUnavailable)
-            status = "not_configured" if unavailable else "failed"
+            status = exc.status if isinstance(exc, MissionAssuranceJudgeError) else ("not_configured" if unavailable else "failed")
+            invoked = exc.invoked if isinstance(exc, MissionAssuranceJudgeError) else not unavailable
+            if isinstance(exc, MissionAssuranceJudgeError):
+                audit[f"{provider}_failure"] = {
+                    "reason": str(exc), "invocation_evidence": dict(exc.invocation_evidence),
+                }
             reason = f"{provider}_{status}"
             audit.update(route="human_review", reason=reason)
             audit[f"{provider}_error_type"] = type(exc).__name__
             audit[f"{provider}_status"] = status
-            audit[f"{provider}_invoked"] = not unavailable
+            audit[f"{provider}_invoked"] = invoked
             raise MissionAssuranceJudgeError(
                 reason,
                 status=status,
-                invoked=prior_invoked or not unavailable,
+                invoked=prior_invoked or invoked,
                 invocation_evidence={"jev_cascade": audit},
             ) from exc
 
@@ -205,12 +210,19 @@ class JevCascadeShadowJudge:
         }
         if primary_error is not None:
             unavailable = isinstance(primary_error, MissionAssuranceJudgeUnavailable)
-            status = "not_configured" if unavailable else "failed"
+            typed = isinstance(primary_error, MissionAssuranceJudgeError)
+            status = primary_error.status if typed else ("not_configured" if unavailable else "failed")
+            invoked = primary_error.invoked if typed else not unavailable
             shadow["incumbent_error_type"] = type(primary_error).__name__
+            if typed:
+                shadow["incumbent_failure"] = {
+                    "reason": str(primary_error),
+                    "invocation_evidence": dict(primary_error.invocation_evidence),
+                }
             raise MissionAssuranceJudgeError(
                 f"incumbent_{status}",
                 status=status,
-                invoked=candidate_status.get("model_inference_invoked", True) or not unavailable,
+                invoked=candidate_status.get("model_inference_invoked", True) or invoked,
                 invocation_evidence={"jev_cascade_shadow": shadow},
             ) from primary_error
         return ModelJudgment(

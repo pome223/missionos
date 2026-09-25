@@ -24,6 +24,7 @@ from src.runtime.task_store import reset_task_store
 
 async def run_mode(
     mode, root, *, route="bounded", fast_path="disabled", failure=None, custom_mapping=False, declared=None,
+    adk_assessment=None,
 ):
     root.mkdir()
     _configure_temp_paths(root)
@@ -37,6 +38,15 @@ async def run_mode(
     telemetry = _telemetry(sample_index=200, battery_percent=80.0)
 
     original_request = JevAssuranceJudge._request
+    original_adk_judge = assurance._ADKJudge.judge
+
+    async def adk_response(_prompt):
+        return json.dumps({
+            "candidate_assessment": adk_assessment, "proposed_response_kind": "replan",
+            "parameters": {}, "rationale": "Fixture candidate assessment.",
+            "expected_outcome": "Proposal only.", "uncertainty": "Fixture.",
+            "operator_question": "Review the evidence.",
+        })
 
     def primary(_self, prompt):
         if failure == "reasoner_unconfigured":
@@ -44,6 +54,8 @@ async def run_mode(
         calls["primary"] += 1
         if failure == "reasoner_timeout":
             raise TimeoutError("fixture_reasoner_timeout")
+        if adk_assessment is not None:
+            return original_adk_judge(_self, prompt)
         return fixture._AssuranceJudge("replan").judge(prompt)
 
     def jev(_self, payload):
@@ -90,6 +102,7 @@ async def run_mode(
     with (
         patch.dict(os.environ, {"TYPESAFE_API_KEY": ""}),
         patch.object(assurance._ADKJudge, "judge", primary),
+        patch.object(assurance, "_invoke_adk_response", adk_response),
         patch.object(JevAssuranceJudge, "_request", jev),
         patch.object(
             gateway_server,
@@ -146,7 +159,7 @@ async def run_mode(
     expected_primary = int(mode != "primary")
     if mode == "cascade":
         expected_primary = int(cascade_expected == "replan")
-    if active_failure == "reasoner_timeout":
+    if active_failure in {"reasoner_timeout", "reasoner_semantics"}:
         expected_primary = 1
     elif active_failure == "reasoner_unconfigured":
         expected_primary = 0
@@ -159,6 +172,18 @@ async def run_mode(
     else:
         assert proposal["blocking_reasons"] == []
     evidence = proposal["model_invocation_evidence"]
+    if active_failure == "jev_malformed":
+        candidate_evidence = evidence["jev_cascade_shadow"]["invocation_evidence"] if mode == "cascade_shadow" else evidence
+        diagnostic = candidate_evidence["jev_cascade"]["jev_failure"]["invocation_evidence"]
+        assert diagnostic["validation_reason"] == "invalid_jev_assessment_route"
+        assert len(diagnostic["response_sha256"]) == 64
+        assert diagnostic["raw_response_recorded"] is False
+    if adk_assessment is not None:
+        audit = evidence["jev_cascade"]
+        if active_failure:
+            assert audit["reasoner_failure"]["reason"] == "candidate_response_assessment_mismatch"
+        else:
+            assert audit["reasoner"]["invocation_evidence"]["candidate_semantics"]["assessment"] == "aligned"
     if mode == "shadow":
         assert evidence["jev_shadow"]["agrees_with_primary"] is False
         assert evidence["jev_shadow"]["used_for_decision"] is False
@@ -199,6 +224,7 @@ async def run_mode(
         "failure_fixture": failure,
         "custom_mapping": custom_mapping,
         "declared": declared,
+        "adk_assessment": adk_assessment,
         "judgment_status": proposal["judgment_status"],
         "model_inference_invoked": proposal["model_inference_invoked"],
         "blocking_reasons": proposal["blocking_reasons"],
@@ -249,6 +275,14 @@ async def main():
                 "cascade", Path(directory) / (failure + "_direct"), failure=failure,
                 declared={"requires_additional_reasoning": True},
             ))
+        for assessment in ("aligned", "conflicting", "unresolved"):
+            for direct in (False, True):
+                results.append(await run_mode(
+                    "cascade", Path(directory) / f"semantic_{assessment}_{direct}",
+                    adk_assessment=assessment,
+                    failure=None if assessment == "aligned" else "reasoner_semantics",
+                    declared={"requires_additional_reasoning": True} if direct else None,
+                ))
     print(
         json.dumps(
             {
