@@ -40,3 +40,5 @@ MissionOSが「会議室Aへ届けて、受領確認後に受付へ戻る」と�
 接続設定を用意したAgent対応Gatewayで起動してください。「固定ルールで比較」も選べます。受付へ戻れた場合も、未配送なら配送完了にはしません。
 
 [実行手順と検証範囲](../agents/go2-indoor-delivery.md)
+
+[動画付きの技術レポート（日本語・English）](../assets/go2-agent-delivery-20260925/README.md)では、犬側の譲り動作とAgentによる待機・再計画を別々の録画で確認できます。

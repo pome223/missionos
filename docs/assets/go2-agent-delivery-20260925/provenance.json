@@ -1,0 +1,29 @@
+{
+  "schema_version": "go2_public_report_provenance.v1",
+  "code_revision": "cf3db6c462db4cee9dd818f37b62af2011f09646",
+  "validation_date": "2026-09-25",
+  "pr": "https://github.com/pome223/missionos/pull/115",
+  "publication_scope": "Reviewed simulator-only excerpts and recordings. No raw private logs, task IDs, approvals, credentials or workstation paths. No new simulator/model execution.",
+  "source_evidence": {
+    "moving": {
+      "result.json": "df788450d6124e17ef2bfe0857d7c179b3bfada3eca6a6ff24d2708d8dfbdd32",
+      "events.jsonl": "ff6f2ffb4dd610c76b191d6d69974f72b5634c55c1e0a0c542633bee1776cc25",
+      "telemetry.jsonl": "cb7b0c932e38bd31edbc3bc50f2e025648f9b1ca9183e06b6311d32c918206fd"
+    },
+    "agent": {
+      "result.json": "542c979402cbdeea4cad0339a9e614a9bee12801fa975d2e4caa7fc782081735",
+      "events.jsonl": "4a286a05240bf141347ddbb69719b7f0fc6e930a5a5fc71e2624a7773e6a3298",
+      "telemetry.jsonl": "0e52ff2e58cd32ade69a7c253d4a1c6747d98e65fd2bf8327ae3aacd45c81a35"
+    }
+  },
+  "runtime_source_sha256": {
+    "scripts/run_go2_delivery.py": "d1c4c0c88c2cf95e5f861ef3b2377e070205a5fbbd0d03581c240c649a644721",
+    "src/runtime/go2_delivery_mission.py": "3b78844ca4b05e41ceec63ad875142f47f0a82ff540f2e1401d7cb6a72693098",
+    "src/runtime/go2_delivery_navigation.py": "b9328bc7c0300d54eac3fea97711dcd0508bf3905e653d42216ad00b5813cefa",
+    "simulators/go2_delivery/mujoco_backend.py": "5229a2733f1e229c89d1db026b2060b68c7886658cbbb49faa12ed627cb74c4a",
+    "simulators/go2_delivery/recording.py": "e35e21ae38809bbbb21e51465fa325f1d62ca74e5a2b7c4ec4d494399bcc6edf",
+    "simulators/go2_delivery/dynamic_obstacles.py": "d47a551346f4eff4d872952e22a6ee1e692da80e4b56bd5ca9405adc00457bd7",
+    "src/runtime/go2_supervision.py": "e8a1d9a9578cb371126d7c5b094a277e8951deffbfd5f68ad0c78fdcef982a91"
+  },
+  "verification_limit": "Published checks validate consistency and integrity of curated excerpts, not independent execution of the simulator or access to private raw records."
+}

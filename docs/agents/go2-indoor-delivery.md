@@ -539,3 +539,13 @@ a matched rules comparator. Raw tasks, credentials and logs remain local.
 The final Python 3.11 suite passed 2,715 tests (76 Go2 tests). Lint, both
 versioned evidence gates, the 114-entry smoke inventory, outgoing publication
 checks and relative documentation links passed.
+
+### Published technical report and recordings
+
+The detailed [Japanese report](../assets/go2-agent-delivery-20260925/report.md) and
+[English report](../assets/go2-agent-delivery-20260925/report-en.md) include the
+Agent-default CLI run and a separate browser moving-obstacle run. Both configured
+Agent supervision; only the temporary-closure run actually invoked the LLM.
+The [report bundle](../assets/go2-agent-delivery-20260925/README.md) includes both
+recordings, standalone HTML replay, reviewed result excerpts, and integrity checks.
+The scenarios differ and do not constitute an Agent-versus-rules comparison.
