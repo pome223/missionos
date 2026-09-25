@@ -1,5 +1,11 @@
 # Registered CPU headroom repeat R2 — 2026-09-24
 
+**Policy clarification, 2026-09-26:** the decision below is the historical result
+of the registered *improvement* screen, not a requirement that WAM beat Rules to
+be useful. Future capability acceptance follows the
+[absolute-performance policy](aerial-wam-capability-evaluation.md). R2's source,
+measurements and frozen decision remain unchanged.
+
 This is a new twelve-case development cohort using the repaired contact-probe
 lifecycle at commit `928cbf5cd57bcaed5e73f70b8be16e97685c775a`.
 [Registration on PR #113](https://github.com/pome223/missionos/pull/113#issuecomment-5815010766)
@@ -57,11 +63,10 @@ an arbitrary city. Fresh simulators do not establish exact physics-state cloning
 The camera images are actual Gazebo observations, not forecasts or real buildings.
 See the [reviewed evidence and image attribution](../assets/urban-headroom-r2-px4-20260924/README.md).
 
-The concrete engineering follow-up is to evaluate integration of this depth-based
-baseline with MissionOS's normal PX4 simulator workflow. Reopening WAM research
-would require a separately specified outcome gap and observable predictive cue,
-established without model spend first; moving to training alone does not supply
-that evidence.
+The depth baseline was subsequently integrated with the normal PX4 simulator
+workflow. Future WAM capability evaluation needs a separately specified operating
+envelope and absolute acceptance bounds, not proof that this baseline fails.
+R2 did not invoke WAM and therefore cannot determine whether WAM meets those bounds.
 
 ## Fixed scope and stopping rule
 

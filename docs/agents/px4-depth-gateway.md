@@ -93,8 +93,10 @@ checks that replay is rejected after completion:
 python scripts/check_px4_depth_gateway.py --output-dir "$LIVE_RUN" --scene all --live
 ```
 
-The frozen twelve-case R2 report is unchanged. This integration does not reopen
-its WAM/GPU/training gate.
+The frozen twelve-case R2 report is unchanged. This integration does not execute
+WAM/GPU/training work. Separate WAM capability evaluation uses
+[absolute acceptance bounds](aerial-wam-capability-evaluation.md), without requiring
+superiority over the depth method or an ideal full-map planner.
 
 ## Planned stop and reobservation
 

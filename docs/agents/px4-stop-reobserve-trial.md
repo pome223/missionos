@@ -38,9 +38,11 @@ additional arrivals over the frozen baseline in this single pair is one.
 The pair permits two flights and zero WAM/Jev/GPU/training calls. Freeze protocol
 and runtime source hashes before the first flight. Preserve failed attempts and
 stop on infrastructure or safety failure; no replacement inside the frozen pair.
-There are no held-out cases and no exact physics-state cloning claim. If the
-simple reobservation controller reaches the destination, this case supplies no
-arrival headroom for WAM and does not reopen the closed R2 model experiment.
+There are no held-out cases and no exact physics-state cloning claim. A successful
+simple controller leaves no additional-arrival headroom in this case; that is
+not a reason to reject a separate WAM capability evaluation. The frozen R2
+improvement study stays closed; future evaluation follows the
+[absolute-performance policy](aerial-wam-capability-evaluation.md).
 
 ## Authority and runtime boundary
 
@@ -120,7 +122,8 @@ corrected comparison sessions. The reobservation pause was 37.212 wall seconds
 (7.444 sim seconds), including a contiguous-history reset that discarded 12
 intermediate frames before retaining sixteen valid ones. This is not a real-time
 emergency avoidance result. Latest-frame age at dispatch was 1.424 wall seconds.
-No WAM advantage or new WAM/GPU admission follows from this successful depth case.
+No WAM advantage follows from this depth-only case, and no new WAM/GPU run was
+performed. Depth success does not itself establish or disqualify WAM capability.
 
 ## Subsequent Gateway integration
 
