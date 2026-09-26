@@ -1,0 +1,112 @@
+[
+  {
+    "attempt": "01-contacts",
+    "run_id": "yokohama-11dc8b3d915f",
+    "status": "failed",
+    "phase": "contacts",
+    "reason": null,
+    "result_sha256": "110f9bb20a94f754fd74c532219db5a830be3de351b66eb3d5a3255b7d3000b6",
+    "classification": "development",
+    "note": "DART rejected meshes without normals; simulator segmentation fault."
+  },
+  {
+    "attempt": "02-contacts",
+    "run_id": "yokohama-fb5930ae802d",
+    "status": "failed",
+    "phase": "contacts",
+    "reason": "ValueError: Degenerate collision triangle",
+    "result_sha256": "52d5311faf667563b67bae4664181c135792b801a2fa2810c6e3a94d58611c31",
+    "classification": "development",
+    "note": "Importer rejected zero-area output triangles before runtime."
+  },
+  {
+    "attempt": "03-contacts",
+    "run_id": "yokohama-0027d51e02b2",
+    "status": "failed",
+    "phase": "contacts",
+    "reason": null,
+    "result_sha256": "10650aed5e752d380d030d88aa1740d4e07a4f788d89099da625df0a65f6c33a",
+    "classification": "development",
+    "note": "Wrong assumed contact topic; positive contact events not received."
+  },
+  {
+    "attempt": "04-contacts",
+    "run_id": "yokohama-612f7a5a38bd",
+    "status": "failed",
+    "phase": "contacts",
+    "reason": null,
+    "result_sha256": "1bc4d5a2cc03dd7cfcf90b2faf88a5121837c59f6937b1399a030053549525e0",
+    "classification": "development",
+    "note": "Custom contact alias still did not publish; observed scoped topic used next."
+  },
+  {
+    "attempt": "05-flight",
+    "run_id": "yokohama-8992248f8e7c",
+    "status": "failed",
+    "phase": "flight",
+    "reason": "RuntimeError: Missing or stale independent Gazebo vehicle pose",
+    "result_sha256": "6c69a74f550ba24247b7273d30c2abf6f2d565480ccde29f3ec2c89136702fd5",
+    "classification": "development",
+    "note": "First PX4 observation preceded transport discovery; no flight qualification."
+  },
+  {
+    "attempt": "06-contacts",
+    "run_id": "yokohama-2d9954dedc40",
+    "status": "failed",
+    "phase": "contacts",
+    "reason": null,
+    "result_sha256": "7bb077abb2b075a2557a14482345eae9e55668dc1ae3c04dd0aa3c1aeb486656",
+    "classification": "development",
+    "note": "Three contact checks passed but Python transport callback teardown aborted process."
+  },
+  {
+    "attempt": "07-flight",
+    "run_id": "yokohama-a7396e11d644",
+    "status": "passed",
+    "phase": "flight",
+    "reason": null,
+    "result_sha256": "a03e7740a88768bb1d69ef2eac1d9700e1c48d0d9caf90844cf780cf6478f665",
+    "classification": "development",
+    "note": "Development AP route completed; supplemental poses could carry id=0 and zero timestamps, so excluded from final qualification."
+  },
+  {
+    "attempt": "08-contacts",
+    "run_id": "yokohama-d37af9f2c61e",
+    "status": "passed",
+    "phase": "contacts",
+    "reason": null,
+    "result_sha256": "e2e9778e9c12f8a84dbedacf08b831f77fc2e7cbeed8d8d42993894212f7643d",
+    "classification": "development",
+    "note": "Development contact pass after subscription teardown fix."
+  },
+  {
+    "attempt": "09-contacts-final",
+    "run_id": "yokohama-d403666067d7",
+    "status": "passed",
+    "phase": "contacts",
+    "reason": null,
+    "result_sha256": "5363e38d18cd9ba820f29ee14a61995e78055bcd9940403f90ba1d43c07b4c5d",
+    "classification": "development",
+    "note": "Contact pass before world-only pose subscription amendment; repeated for the final cohort."
+  },
+  {
+    "attempt": "10-flight-final",
+    "run_id": "yokohama-d8034ac7c65b",
+    "status": "passed",
+    "phase": "flight",
+    "reason": null,
+    "result_sha256": "fcb0d5562cafb02dee4066a2298da457da096a5337111d707233234de50c28c2",
+    "classification": "final qualification",
+    "note": "Final qualification flight; independent verification passed."
+  },
+  {
+    "attempt": "11-contacts-final",
+    "run_id": "yokohama-90137d96a4eb",
+    "status": "passed",
+    "phase": "contacts",
+    "reason": null,
+    "result_sha256": "c851b94c53d6482359be220ecde0ba47e5b5b92ffd379de19d7fb63fad48831c",
+    "classification": "final qualification",
+    "note": "Final qualification contacts; independent verification passed."
+  }
+]

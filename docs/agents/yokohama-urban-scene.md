@@ -46,8 +46,9 @@ fills vertical openings and varying roof levels; horizontal courtyards remain.
 A 0.02 m horizontal expansion followed by 0.005 m topology-preserving simplification
 removes numerical slivers. The builder asserts containment of the original
 projection. These values clean topology, not source accuracy or wind margins.
-The collision proxy passes edge-incidence and winding checks but has not been
-loaded into a simulator collision engine.
+The frozen design bundle establishes edge incidence and winding. The separate
+[CPU SITL integration](yokohama-sitl.md) loads those proxies into Gazebo and records
+contact/flight evidence; it does not change the frozen design evidence.
 
 The reported 7.698 m clearance is to the original projection at the route's height
 band, not the expanded OBJ or actual vehicle envelope. The separate 1 m radius
@@ -71,7 +72,10 @@ with zero issues; the separate receipt names that version. The rebuild retains t
 receipt only if its GLB hash equals the published asset. This is not simulator
 collision certification. `geometry-checks.json` and `browser-checks.json` state what ran.
 
-## Next integration gate
+## Integration gates
+
+The separate [CPU SITL contract](yokohama-sitl.md) covers gates 1–2 below. Native
+VLA/WAM remains a later boundary; do not promote AP evidence into model evidence.
 
 1. Load source visual meshes and conservative collision proxies into an opt-in
    stationary-world simulator. Validate coordinate mapping, depth observations,

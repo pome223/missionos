@@ -1,0 +1,142 @@
+[
+  {
+    "duration_sim_s": 30.391999999999996,
+    "samples": 92,
+    "max_horizontal_error_m": 0.06932456565934124,
+    "max_vertical_error_m": 0.10620834487637687,
+    "max_px4_speed_mps": 0.0449368212048872,
+    "all_auto_loiter": true,
+    "all_airborne_armed": true,
+    "max_pose_age_s": 0.02404383299995061,
+    "max_sample_gap_sim_s": 0.4160000000000039,
+    "start_sim_s": 30.664,
+    "end_sim_s": 61.056,
+    "point": "00-D1",
+    "target_world_xyz_m": [
+      0.0,
+      0.0,
+      15.110143087104275
+    ],
+    "passed": true
+  },
+  {
+    "duration_sim_s": 30.051999999999992,
+    "samples": 91,
+    "max_horizontal_error_m": 0.19017808868908562,
+    "max_vertical_error_m": 0.083558703273237,
+    "max_px4_speed_mps": 0.09909775274949478,
+    "all_auto_loiter": true,
+    "all_airborne_armed": true,
+    "max_pose_age_s": 0.02080129199998737,
+    "max_sample_gap_sim_s": 0.4159999999999968,
+    "start_sim_s": 94.14,
+    "end_sim_s": 124.192,
+    "point": "01-D2",
+    "target_world_xyz_m": [
+      -34.88761388811289,
+      -60.6945307036456,
+      15.110143087104275
+    ],
+    "passed": true
+  },
+  {
+    "duration_sim_s": 30.02799999999999,
+    "samples": 93,
+    "max_horizontal_error_m": 0.13307504572416332,
+    "max_vertical_error_m": 0.07239307730703892,
+    "max_px4_speed_mps": 0.08514134953123541,
+    "all_auto_loiter": true,
+    "all_airborne_armed": true,
+    "max_pose_age_s": 0.021776124999860258,
+    "max_sample_gap_sim_s": 0.41200000000000614,
+    "start_sim_s": 192.852,
+    "end_sim_s": 222.88,
+    "point": "02-D3",
+    "target_world_xyz_m": [
+      108.17735177259866,
+      -142.92962206786046,
+      15.110143087104275
+    ],
+    "passed": true
+  },
+  {
+    "duration_sim_s": 30.283999999999992,
+    "samples": 92,
+    "max_horizontal_error_m": 0.1310566408768182,
+    "max_vertical_error_m": 0.0901928400204639,
+    "max_px4_speed_mps": 0.07044436670167459,
+    "all_auto_loiter": true,
+    "all_airborne_armed": true,
+    "max_pose_age_s": 0.019803207999984807,
+    "max_sample_gap_sim_s": 0.4159999999999968,
+    "start_sim_s": 266.588,
+    "end_sim_s": 296.872,
+    "point": "03-DELIVERY",
+    "target_world_xyz_m": [
+      153.03285452510517,
+      -64.89336826549612,
+      15.110143087104275
+    ],
+    "passed": true
+  },
+  {
+    "duration_sim_s": 30.25999999999999,
+    "samples": 92,
+    "max_horizontal_error_m": 0.0802621132219218,
+    "max_vertical_error_m": 0.11371445971644611,
+    "max_px4_speed_mps": 0.07406809434567625,
+    "all_auto_loiter": true,
+    "all_airborne_armed": true,
+    "max_pose_age_s": 0.02217820800001391,
+    "max_sample_gap_sim_s": 0.4159999999999968,
+    "start_sim_s": 337.08,
+    "end_sim_s": 367.34,
+    "point": "04-D3",
+    "target_world_xyz_m": [
+      108.17735177259866,
+      -142.92962206786046,
+      15.110143087104275
+    ],
+    "passed": true
+  },
+  {
+    "duration_sim_s": 30.324000000000012,
+    "samples": 92,
+    "max_horizontal_error_m": 0.05579519904836723,
+    "max_vertical_error_m": 0.09038703172805995,
+    "max_px4_speed_mps": 0.052089666921569,
+    "all_auto_loiter": true,
+    "all_airborne_armed": true,
+    "max_pose_age_s": 0.020833416999948895,
+    "max_sample_gap_sim_s": 0.4159999999999968,
+    "start_sim_s": 432.544,
+    "end_sim_s": 462.868,
+    "point": "05-D2",
+    "target_world_xyz_m": [
+      -34.88761388811289,
+      -60.6945307036456,
+      15.110143087104275
+    ],
+    "passed": true
+  },
+  {
+    "duration_sim_s": 30.120000000000005,
+    "samples": 91,
+    "max_horizontal_error_m": 0.1389813644148192,
+    "max_vertical_error_m": 0.09497631265460349,
+    "max_px4_speed_mps": 0.07033601424590392,
+    "all_auto_loiter": true,
+    "all_airborne_armed": true,
+    "max_pose_age_s": 0.020698541999990994,
+    "max_sample_gap_sim_s": 0.41600000000005366,
+    "start_sim_s": 499.572,
+    "end_sim_s": 529.692,
+    "point": "06-D1",
+    "target_world_xyz_m": [
+      0.0,
+      0.0,
+      15.110143087104275
+    ],
+    "passed": true
+  }
+]
