@@ -122,3 +122,18 @@ An earlier sample causes another observation, not a verifier exemption. The
 mode-ordering, timeout, command-window and motion checks are unchanged. A real
 loopback UDP regression reproduces the concurrent-arrival case. The failed
 cohort remains failed; a repaired implementation requires a new frozen cohort.
+
+## Numeric permit reproducibility
+
+Linux worker and macOS verifier math libraries can differ by one floating-point
+ULP. One native flight retained successful delivery/recovery but failed exact
+permit reproduction: a derived coordinate differed by 5.55e-17 m and a clearance
+endpoint by 1.11e-16 m. The original Linux runtime reproduced the saved permit;
+the macOS runtime did not. The historical integration result remains failed.
+
+New permits canonicalize derived target positions to 1e-9 m, derived headings
+to 1e-12 rad and nominal motion duration to 1e-9 s before issuance. Raw sensor
+records, observation timestamps, acceptance limits and the verifier's exact
+equality check remain unchanged. An offline new issuance on the retained sensor
+rows produced byte-identical permits in both actual runtimes. This is a
+serialization repair, not a reclassification of the earlier flight.

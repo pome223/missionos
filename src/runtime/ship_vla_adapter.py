@@ -209,7 +209,9 @@ def assess_proposal(proposal, observation, current, envelope, *, now_s, archived
         )
         if abs(heading_drift) > limits["max_heading_drift_rad"]:
             reasons.append("vehicle_rotated_since_input")
-        heading = math.remainder(observation["heading_ned_rad"] + yaw, 2 * math.pi)
+        # Bind derived values at a declared precision before issuing a permit.
+        # Linux/macOS libm may differ by an ULP; verification stays exact.
+        heading = round(math.remainder(observation["heading_ned_rad"] + yaw, 2 * math.pi), 12)
         # Match upstream yaw-first / large-yaw vertical-only semantics. No
         # clamping, altitude repair or reinterpretation as PX4 velocity.
         horizontal = forward if abs(yaw) < 0.25 else 0.0
@@ -219,9 +221,9 @@ def assess_proposal(proposal, observation, current, envelope, *, now_s, archived
         if distance <= 0.01:
             translation_s = 0.0
         # Upstream allows up to 3 s to rotate, then a 0.5 s braking command.
-        nominal = 3.0 + translation_s + 0.5
+        nominal = round(3.0 + translation_s + 0.5, 9)
         start = list(observation["position_ned_m"])
-        end = [a + b for a, b in zip(start, delta)]
+        end = [round(a + b, 9) for a, b in zip(start, delta)]
         candidate = {
             "bins": bins,
             "frame_id": envelope["frame_id"],
@@ -327,7 +329,9 @@ def snapshot_from_px4(row, config):
         "position_ned_m": row["local_ned"],
         # Upstream uses scipy Rotation.as_euler('zyx')[0] (extrinsic),
         # which differs from conventional PX4 yaw when roll/pitch are nonzero.
-        "heading_ned_rad": math.atan2(2 * (w * z - x * y), 1 - 2 * (y * y + z * z)),
+        "heading_ned_rad": round(
+            math.atan2(2 * (w * z - x * y), 1 - 2 * (y * y + z * z)), 12
+        ),
         "velocity_ned_mps": row["velocity_ned"],
         "position_valid": row["position_valid"] is True
         and all(

@@ -90,6 +90,25 @@ def test_positive_down_is_descent_and_never_clamped():
     assert "altitude_envelope_violation" in result["reasons"]
 
 
+def test_derived_candidate_is_exact_under_one_ulp_math_library_variation(monkeypatch):
+    # Worker Linux libm and host macOS libm differed by 5.55e-17 m in a real
+    # permit. Canonicalize derived values at production, not verifier tolerance.
+    baseline = check("55 47 55")
+    original_sin, original_cos = math.sin, math.cos
+    monkeypatch.setattr(math, "sin", lambda x: math.nextafter(original_sin(x), math.inf))
+    monkeypatch.setattr(math, "cos", lambda x: math.nextafter(original_cos(x), -math.inf))
+    assert check("55 47 55") == baseline
+
+
+def test_derived_heading_is_exact_under_one_ulp_atan2_variation(monkeypatch):
+    config, _, _ = context()
+    row = px4_row()
+    baseline = snapshot_from_px4(row, config)
+    original_atan2 = math.atan2
+    monkeypatch.setattr(math, "atan2", lambda a, b: math.nextafter(original_atan2(a, b), math.inf))
+    assert snapshot_from_px4(row, config) == baseline
+
+
 @pytest.mark.parametrize(
     "text",
     [
