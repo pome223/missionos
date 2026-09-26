@@ -63,6 +63,10 @@ class _MissionAssuranceADKResponse(BaseModel):
     operator_question: str = Field(min_length=1)
 
 
+class _MissionAssuranceADKCandidateResponse(_MissionAssuranceADKResponse):
+    candidate_assessment: Literal["aligned", "conflicting", "unresolved", "not_applicable"]
+
+
 MISSION_ASSURANCE_RESPONSE_JSON_SCHEMA: dict[str, Any] = (
     _MissionAssuranceADKResponse.model_json_schema()
 )
@@ -533,9 +537,7 @@ class _ADKJudge:
             raise ValueError("mission_assurance_adk_response_not_json") from exc
         if not isinstance(output, Mapping):
             raise TypeError("mission_assurance_adk_response_not_object")
-        return ModelJudgment(
-            output=dict(output),
-            invocation_evidence={
+        evidence = {
                 "invocation_kind": "adk_llm",
                 "provider": llm_provider_label("mission_assurance_agent"),
                 "model_id": _model_id(),
@@ -544,18 +546,43 @@ class _ADKJudge:
                 "started_at": started_at,
                 "completed_at": completed_at,
                 "exit_code": 0,
-            },
-        )
+        }
+        assessment = output.get("candidate_assessment")
+        response = output.get("proposed_response_kind")
+        contract = prompt["mission_situation"].get("mission_contract", {})
+        custom_mapping = bool(contract.get("response_mapping") or
+                              contract.get("mission_context", {}).get("response_mapping"))
+        known = {"aligned", "conflicting", "unresolved", "not_applicable"}
+        valid_assessment = isinstance(assessment, str) and assessment in known
+        evidence["candidate_semantics"] = {
+            "contract_version": "bound_candidate_assessment.v1",
+            "assessment": assessment if valid_assessment else "invalid",
+            "built_in_response_guard_applied": not custom_mapping,
+            "free_text_consistency_verified": False,
+        }
+        reason = None
+        if not valid_assessment:
+            reason = "candidate_assessment_required"
+        elif not custom_mapping and response in {"replan", "return", "abort"} and assessment != "aligned":
+            reason = "candidate_response_assessment_mismatch"
+        if reason:
+            evidence["validation_reason"] = reason
+            raise MissionAssuranceJudgeError(
+                reason, status="failed", invoked=True, invocation_evidence=evidence,
+            )
+        # Keep the common proposal schema unchanged; the internal judgment is audited.
+        proposal_output = {k: v for k, v in output.items() if k != "candidate_assessment"}
+        return ModelJudgment(output=proposal_output, invocation_evidence=evidence)
 
 
-def _adk_output_schema() -> type[_MissionAssuranceADKResponse] | None:
+def _adk_output_schema() -> type[_MissionAssuranceADKCandidateResponse] | None:
     """Avoid DeepSeek response_format while retaining guarded JSON parsing."""
 
     from src.agents.model_config import deepseek_llm_backend_enabled
 
     if deepseek_llm_backend_enabled("mission_assurance_agent"):
         return None
-    return _MissionAssuranceADKResponse
+    return _MissionAssuranceADKCandidateResponse
 
 
 async def _invoke_adk_response(prompt_text: str) -> str:
@@ -583,7 +610,18 @@ async def _invoke_adk_response(prompt_text: str) -> str:
             "executing a proposed bounded avoid_obstacle or reroute action. "
             "Use continue ONLY when judging that no recovery action should be "
             "executed. Continuing the mission VIA a recovery action is not the "
-            "continue response. Keep parameters empty when endorsing the already "
+            "continue response. First assess that exact candidate in candidate_assessment: "
+            "aligned, conflicting, unresolved, or not_applicable (no candidate). "
+            "Never use replan to mean that a DIFFERENT plan should be created. "
+            "Under the built-in response semantics, replan, return, and abort endorse "
+            "the bound candidate and therefore require candidate_assessment=aligned. "
+            "If this candidate violates a mission constraint, mark it conflicting "
+            "and choose hold when a safe pause is supported, otherwise operator_escalation. "
+            "If resolving the situation requires a different route, courier, destination, "
+            "or changed parameters, do not endorse this candidate. "
+            "Before responding, ensure the label and candidate assessment agree with "
+            "the explanation. Explicit custom response mappings retain their meanings. "
+            "Keep parameters empty when endorsing the already "
             "bound candidate. A supported "
             "return_to_launch proposal maps to the semantic response return with "
             "an empty parameters object. Action Feasibility and operator "
@@ -596,10 +634,10 @@ async def _invoke_adk_response(prompt_text: str) -> str:
             "mission while awaiting an observation or operator decision. Use "
             "operator_escalation when the evidence is insufficient or conflicting "
             "so that no bounded response can be judged. Return one JSON object only. "
-            "Return exactly these six keys and omit none: "
+            "Return exactly these seven keys and omit none: candidate_assessment, "
             "proposed_response_kind, parameters, rationale, expected_outcome, "
             "uncertainty, operator_question. parameters must be an object and "
-            "the other five values must be non-empty strings. "
+            "the other values must be non-empty strings. "
             "Treat thresholds as evidence and constraints, not as the final "
             "decision. Never approve, dispatch, execute, verify, or claim progress."
         ),
@@ -620,7 +658,7 @@ async def _invoke_adk_response(prompt_text: str) -> str:
             types.Part(
                 text=(
                     "Judge this mission situation as JSON only. Use exactly "
-                    'this shape: {"proposed_response_kind":"return",'
+                    'this shape: {"candidate_assessment":"aligned","proposed_response_kind":"return",'
                     '"parameters":{},"rationale":"...",'
                     '"expected_outcome":"...","uncertainty":"...",'
                     '"operator_question":"..."}. Choose the response kind '
