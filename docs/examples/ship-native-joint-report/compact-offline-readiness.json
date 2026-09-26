@@ -1,0 +1,68 @@
+{
+  "schema_version": "ship_compact_offline_readiness.v1",
+  "source_revision": "f9c21384916ba0aa0778da5b7527d598303879bb",
+  "input_cohort": "association-ack-inspection-repair-v5",
+  "scope": "new offline permit issuance on retained sensor and model bytes; historical results unchanged",
+  "cases": 3,
+  "permits": 6,
+  "stages": [
+    "prestream",
+    "execution"
+  ],
+  "macos_linux_byte_identical": true,
+  "canonical_output_sha256": "e0701de21ccd2796ba80052a817ff44a687f0b82bd32af8675f97a88d22d9593",
+  "rows": [
+    {
+      "candidate_eligible": true,
+      "case": "01-static_center",
+      "dispatch_invoked": false,
+      "permit_sha256": "09a1e299197a53b7380b25491d45e4b35331c37076910adce9af880a14559aee",
+      "stage": "prestream"
+    },
+    {
+      "candidate_eligible": true,
+      "case": "01-static_center",
+      "dispatch_invoked": false,
+      "permit_sha256": "13353fc1715a47704d47dd96468879b419d08859f09255347ec934ef358bc648",
+      "stage": "execution"
+    },
+    {
+      "candidate_eligible": true,
+      "case": "02-static_near",
+      "dispatch_invoked": false,
+      "permit_sha256": "635c8d35d67352425182bd923d2d1fda63f3eb58b59aca300b4bc9d6249a6d21",
+      "stage": "prestream"
+    },
+    {
+      "candidate_eligible": true,
+      "case": "02-static_near",
+      "dispatch_invoked": false,
+      "permit_sha256": "df3f018e072ee0355ba8c3e4e34502a4d55b4f2ad4a33331fdd2a8b20166dffc",
+      "stage": "execution"
+    },
+    {
+      "candidate_eligible": true,
+      "case": "03-static_clear",
+      "dispatch_invoked": false,
+      "permit_sha256": "03e5101b1624d09d407e3036ee1859e23280fa6442b4059f82e31adbe186577d",
+      "stage": "prestream"
+    },
+    {
+      "candidate_eligible": true,
+      "case": "03-static_clear",
+      "dispatch_invoked": false,
+      "permit_sha256": "680ef964fd88e654d854ddbeefd67462e820d1226be2fb7baa5b1a3ebe07b520",
+      "stage": "execution"
+    }
+  ],
+  "fresh_model_invocations": 0,
+  "new_simulator_flights": 0,
+  "dispatch_invoked": false,
+  "historical_failed_flight_reclassified": false,
+  "fresh_three_case_qualification_complete": false,
+  "input_source_revision": "f658b604e1c60ee4e7d3ba03061e91539840abbc",
+  "offline_harness_sha256": "efa85b6e2a814dfda7a656d445f1b7255a5858e6aa16943792de7e8967a73b2b",
+  "linux_container_image": "sha256:79968fe25aa19d51c49fbd4a863ea9380f4efe6d9afabd1c579ddeffeb8b8c93",
+  "linux_network": "none",
+  "mounts_read_only": true
+}

@@ -1,0 +1,58 @@
+{
+  "schema_version": "ship_native_joint_report.v1",
+  "source_revision": "57c84a50bf407b971f2f16138790148e6ad3057f",
+  "cohort_attempts": 1,
+  "verified_native_flights": 0,
+  "all_four_native_flights_completed": false,
+  "rule_superiority_evaluated": false,
+  "physical_execution_invoked": false,
+  "cohort": "association-ack-format-repair-v4",
+  "vla_decoding_policy": "aerovla_action_grammar.v1",
+  "native_vertical_bins": [
+    0,
+    98
+  ],
+  "runs": [
+    {
+      "directory": "01-static_center",
+      "run_id": "171ec670565f4d23872e7d81e3749cc8",
+      "case": "static_center",
+      "offshore_distance_m": 100,
+      "status": "blocked",
+      "vla_invoked": true,
+      "wam_invoked": false,
+      "same_flight_native_integration_verified": false,
+      "delivery_verified": false,
+      "recovery_verified": false,
+      "container_removed": true,
+      "observed_elapsed_s": 63.894908946,
+      "vla_displacement_m": null,
+      "vla_target_error_m": null,
+      "vla_altitude_error_m": null,
+      "vla_host_exchange_s": null,
+      "vla_input_to_permit_s": null,
+      "wam_max_prediction_error_m": null,
+      "wam_exchange_s": null,
+      "stage_times_s": null,
+      "raw_sha256": {
+        "config.json": "0701f3c4f5ddd19f472e2d2d22d26a875dbb2f6f75f44847731166c2ad786b65",
+        "result.json": "257564deaa6ed57a1c4300c43534c5962c349bbe4547e7820283833a815278d7",
+        "events.jsonl": "262e9d29d0c7d9941fa4a270a78982fe950df94ac753d189cb0d7af3408115c9",
+        "telemetry.jsonl": "96722166c36705261f309589d863d8b317cbb3d18bcb18145e3a2b8842f759b3",
+        "vla-execution.json": "a94cf81e33dc63c42ae1daf5da5150484a77aadb4405c3eb5e42715bde756ca9"
+      }
+    }
+  ],
+  "cloud": {
+    "cleanup_confirmed": true,
+    "elapsed_observed_s": 767.583632,
+    "new_estimated_usd_including_transfer_reserve": 0.455265988792103,
+    "cumulative_estimated_usd": 5.892272685496638,
+    "invoice_confirmed": false
+  },
+  "cloud_evidence": {
+    "archive_sha256": "1e492b571fc759015339b57664d8714bcea4c60d595f1b3b00260326b874aa61",
+    "remote_files_verified": 31,
+    "all_attempted_model_results_matched": true
+  }
+}

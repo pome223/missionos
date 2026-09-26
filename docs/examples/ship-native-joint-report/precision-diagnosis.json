@@ -1,0 +1,12 @@
+{
+  "scope": "new offline permit issuance on unchanged archived sensor rows, not reclassification of an old flight",
+  "macos_linux_byte_identical": true,
+  "sha256": "d19098edc96405a146af08db2f85e61aaab1eaba896e43957e4a8442aa35ceef",
+  "old_linux_receipt_exact_match": true,
+  "old_macos_receipt_exact_match": false,
+  "maximum_observed_old_difference_m": 1.1102230246251565e-16,
+  "position_precision_m": 1e-09,
+  "heading_precision_rad": 1e-12,
+  "nominal_time_precision_s": 1e-09,
+  "exact_verifier_equality_unchanged": true
+}

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>機上映像から配送・帰還まで — 判断ゲートの比較</title>
+<style>
+:root{color-scheme:light dark;--bg:light-dark(#f5f6f8,#15191f);--fg:light-dark(#1c2632,#e3eaf1);--panel:light-dark(#fff,#202833);--muted:light-dark(#4c596a,#b6c2d2);--grid:light-dark(#c9d0da,#536173);--sea:light-dark(#deedf8,#1c384a);--land:light-dark(#e7eddf,#283c2d);--baseline:light-dark(#1461a8,#67b5ff);--candidate:light-dark(#7941a3,#c69df0);--obstacle:light-dark(#b7432a,#ee8a72)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,sans-serif}main{max-width:1120px;margin:auto;padding:24px}h1{font-size:25px;margin:0 0 8px}h2{font-size:18px;margin:0}p{margin:8px 0;color:var(--muted)}.controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:20px 0}select,button{font:inherit;padding:8px 14px;border:1px solid var(--grid);border-radius:8px;color:var(--fg);background:var(--panel)}input{flex:1;min-width:120px}output{font-variant-numeric:tabular-nums}.panels{display:grid;grid-template-columns:1fr 1fr;gap:18px}.panel{background:var(--panel);border-radius:12px;padding:18px;min-width:0}.meta{color:var(--muted);font-size:14px;min-height:28px}.map{width:100%;height:330px;display:block}.camera{width:100%;aspect-ratio:16/9;object-fit:contain;background:var(--sea);border-radius:8px}.event{min-height:50px;margin-top:8px;font-size:14px}.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:14px;margin:10px 0}.legend span:before{content:'●';margin-right:6px}.blue:before{color:var(--baseline)}.purple:before{color:var(--candidate)}.red:before{color:var(--obstacle)}.scroll{overflow:auto;margin-top:20px}table{border-collapse:collapse;width:100%;background:var(--panel);font-size:14px}th,td{padding:10px;text-align:left;border-bottom:1px solid var(--grid);white-space:nowrap}a{color:var(--baseline)}.summary{margin-top:16px;font-weight:600}.limit{font-size:14px}svg text{fill:var(--fg);font:12px system-ui}footer{margin:24px 0;font-size:14px}@media(max-width:700px){main{padding:16px}.panels{grid-template-columns:1fr}h1{font-size:21px}.map{height:290px}}
+</style>
+<main>
+<h1>機上映像から配送・帰還まで</h1>
+<p>通常ルールと出発時の判断ゲートを、記録された飛行で比較します。</p>
+<p class="limit">1機・静止船・沖合100 m＋内陸200 mのPX4/Gazebo試験。予測映像・実機映像ではありません。</p>
+<div class="controls">
+<label for="case">障害物</label><select id="case"><option value="short_clear">短時間で通過</option><option value="long_block">長時間の遮蔽</option><option value="brake_stop">減速して停止</option></select>
+<button id="play" type="button" aria-pressed="false">再生</button><label for="time">経過</label><input id="time" type="range" min="0" max="300" step="0.5" value="0"><output id="clock" for="time">0.0 s</output>
+</div>
+<p class="limit">市街地入口で時刻を揃えています。地図は検算用のGazebo位置、画像は機上カメラです。表示時刻以前の記録を使います。別々の飛行なので入力画像は一致しません。</p>
+<div class="legend"><span class="blue">通常ルールの機体</span><span class="purple">判断ゲートの機体</span><span class="red">動く障害物</span></div>
+<div class="panels">
+<section class="panel"><h2>通常ルール</h2><div class="meta" id="meta0"></div><svg id="map0" class="map" viewBox="-120 -360 250 400" role="img" aria-label="通常ルールの記録済み軌跡"></svg><img class="camera" id="image0" alt="通常ルールで飛ぶ機体の前方カメラ"><div class="meta" id="imageTime0"></div><div class="event" id="event0"></div></section>
+<section class="panel"><h2>出発時の判断ゲート</h2><div class="meta" id="meta1"></div><svg id="map1" class="map" viewBox="-120 -360 250 400" role="img" aria-label="判断ゲートの記録済み軌跡"></svg><img class="camera" id="image1" alt="判断ゲートを使う機体の前方カメラ"><div class="meta" id="imageTime1"></div><div class="event" id="event1"></div></section>
+</div>
+<p id="summary" class="summary"></p>
+<div class="scroll"><table><thead><tr><th>条件</th><th>通常ルール</th><th>判断ゲート</th><th>時間差</th><th>同一画像で選択変更</th></tr></thead><tbody id="results"></tbody></table></div>
+<p class="limit">時間は入口ホールドから配送ホバーまでの壁時計で、推定処理とシミュレータ負荷を含みます。配送の接地・安定と帰艦は別途検証しています。各条件1回で、時間差だけから性能向上を主張しません。</p>
+<p class="limit">これは「見える障害物1個＋地図上の迂回路」への接続試験です。CPUで改善した二つの動的経路の再現ではありません。WAM/VLAはこの試験では呼び出していません。</p>
+<footer><a href="REPORT-ja.md">レポート</a> · <a href="comparison.json">再検証した比較結果</a> · <a href="replay-data.json">記録済み軌跡</a></footer>
+</main>
+<script id="data" type="application/json">__REPLAY_DATA__</script>
+<script>
+const data=JSON.parse(document.getElementById('data').textContent), slider=document.getElementById('time'), button=document.getElementById('play'), picker=document.getElementById('case');
+const names={short_clear:'短時間で通過',long_block:'長時間の遮蔽',brake_stop:'減速して停止'}, actions={wait:'待機→直進',detour:'迂回'};
+const labels={urban_entry_observed:'入口で保持',urban_actor_started:'障害物の動き開始',urban_decision:'経路提案',urban_requested:'経路の実行開始',delivery_hover_observed:'配送地点で低空ホバー',detach_published:'荷物の切り離し要求を送信',return_authorized:'配送を検証・帰還を許可',return_requested:'帰還の実行開始',return_climb_observed:'帰還上昇を観測',recovery_candidate_observed:'甲板上の停止を観測・安定確認開始'};
+let playing=false,last=0,selected=[],playhead=0;
+function selectCase(){selected=['onboard_stopping','onboard_uncertainty'].map(p=>data.runs.find(r=>r.case===picker.value&&r.policy===p));slider.max=Math.max(1,...selected.filter(Boolean).map(r=>r.points.at(-1).t));slider.value=0;playhead=0;last=0;render();}
+function render(){const t=Number(slider.value);document.getElementById('clock').textContent=t.toFixed(1)+' s';selected.forEach((run,i)=>{const svg=document.getElementById('map'+i);if(!run){svg.innerHTML='';document.getElementById('meta'+i).textContent='完了した記録なし';document.getElementById('image'+i).hidden=true;document.getElementById('imageTime'+i).textContent='';document.getElementById('event'+i).textContent='';return;}const points=run.points.filter(p=>p.t<=t);if(!points.length){svg.innerHTML='';document.getElementById('meta'+i).textContent='最初の観測を待っています';document.getElementById('image'+i).hidden=true;document.getElementById('imageTime'+i).textContent='';document.getElementById('event'+i).textContent='';return;}const p=points.at(-1),color=i?'var(--candidate)':'var(--baseline)';
+const buildings=run.buildings.map(b=>`<rect x="${b.xyz[0]-b.size[0]/2}" y="${-b.xyz[1]-b.size[1]/2}" width="${b.size[0]}" height="${b.size[1]}" fill="var(--grid)"/>`).join('');
+const track=points.map(v=>`${v.vehicle[0]},${-v.vehicle[1]}`).join(' '),o=p.obstacle;
+svg.innerHTML=`<rect x="-120" y="-360" width="250" height="400" fill="var(--sea)"/><rect x="-120" y="-360" width="250" height="260" fill="var(--land)"/>${buildings}<rect x="-12" y="-18" width="24" height="36" fill="var(--grid)"/><text x="18" y="5">船</text><rect x="-8" y="-308" width="16" height="16" fill="var(--grid)"/><text x="14" y="-305">配送先</text><text x="-112" y="-104">海岸</text><polyline points="${track}" fill="none" stroke="${color}" stroke-width="2"/>${o?`<rect x="${o[0]-8}" y="${-o[1]-4}" width="16" height="8" fill="var(--obstacle)"/>`:''}<circle cx="${p.vehicle[0]}" cy="${-p.vehicle[1]}" r="4" fill="${color}"/>${p.payload?`<rect x="${p.payload[0]-2}" y="${-p.payload[1]-2}" width="4" height="4" fill="var(--fg)"/>`:''}`;
+document.getElementById('meta'+i).textContent=(actions[run.action]||run.action)+' · 高度 '+p.vehicle[2].toFixed(1)+' m · 観測 '+p.t.toFixed(1)+' s';
+const image=points.filter(p=>p.image).at(-1);document.getElementById('image'+i).hidden=!image;document.getElementById('imageTime'+i).textContent='';if(image){document.getElementById('image'+i).src=image.image;document.getElementById('imageTime'+i).textContent='保存画像 '+image.t.toFixed(1)+' s';}
+const event=run.events.filter(e=>e.t<=t&&labels[e.event]).at(-1);document.getElementById('event'+i).textContent=t>=run.points.at(-1).t?'配送・帰還の独立検証に合格':event?event.t.toFixed(1)+' s · '+labels[event.event]:'入口の観測';});}
+button.onclick=()=>{playing=!playing;playhead=Number(slider.value);last=0;button.textContent=playing?'一時停止':'再生';button.setAttribute('aria-pressed',String(playing));};picker.onchange=selectCase;slider.oninput=()=>{playhead=Number(slider.value);last=0;render();};
+function tick(now){if(playing){if(last){playhead=Math.min(Number(slider.max),playhead+(now-last)/1000*4);slider.value=playhead;render();if(Number(slider.value)>=Number(slider.max)){playing=false;button.textContent='再生';button.setAttribute('aria-pressed','false');}}last=now;}requestAnimationFrame(tick);}requestAnimationFrame(tick);
+document.getElementById('summary').textContent=`全${data.comparison.attempt_count}試行中、${data.comparison.verified_flight_count}試行の配送・帰還を再検証。失敗も比較記録に保持。`;
+document.getElementById('results').innerHTML=data.comparison.pairs.map(p=>`<tr><td>${names[p.case]}</td><td>${p.baseline_verified?actions[p.baseline_action]+' / '+p.baseline_urban_elapsed_s.toFixed(1)+' s':'未完了'}</td><td>${p.candidate_verified?actions[p.candidate_action]+' / '+p.candidate_urban_elapsed_s.toFixed(1)+' s':'未完了'}</td><td>${p.candidate_minus_baseline_s===null?'—':(p.candidate_minus_baseline_s>=0?'+':'')+p.candidate_minus_baseline_s.toFixed(1)+' s'}</td><td>${p.candidate_differs_on_same_images===null?'—':p.candidate_differs_on_same_images?'あり':'なし'}</td></tr>`).join('');selectCase();
+</script>
+</html>

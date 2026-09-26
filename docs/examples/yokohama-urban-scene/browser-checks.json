@@ -1,0 +1,59 @@
+{
+  "schema": "missionos.urban-scene-artifact-check.v1",
+  "date_utc": "2026-09-26T14:39:52.204931+00:00",
+  "browser": "Codex in-app browser",
+  "index_sha256": "e3caa555245743b05d4aa426b2d78e5db2eff4cdae24c28436ebc1fb8c8f8b9e",
+  "observed_checks": [
+    "WebGL overview rendered source buildings, coast terrain, route and judgment labels",
+    "Top view fits entire proposed route",
+    "D1/D2/D3 and delivery viewpoint controls available; D2/D3/delivery selection exercised",
+    "D2 eye view rendered the street between buildings",
+    "Route, buildings and visibility comparison checkboxes toggled",
+    "No browser error log entries",
+    "Loopback HTTP 200 for HTML, GLB, route, report, attribution and geometry receipt"
+  ],
+  "screenshots": [
+    "overview.png",
+    "top-view.png",
+    "view-D2.png"
+  ],
+  "source_rebuild": {
+    "cli": "python docs/examples/yokohama-urban-scene/reproduce/rebuild.py --work-dir \"$SCENE_WORKDIR\" --replace-preview",
+    "scenario": "Six verified compressed cache members and one missing 47,547-byte bridge member; official conditional range download then full build",
+    "boundary": "Real range HTTP, pinned cache verification, CityGML extraction, mesh/route packaging and geometric verification",
+    "result": "pass",
+    "offline_rebuild": "pass; all seven members loaded from verified cache",
+    "byte_identical_files": [
+      "scene.json",
+      "route.json",
+      "urban-scene.glb",
+      "buildings-bridges.obj",
+      "collision-prisms.obj",
+      "collision-footprints.geojson",
+      "geometry-checks.json",
+      "index.html"
+    ],
+    "limitations": [
+      "No PX4/Gazebo world loaded",
+      "No GPU/VLA/WAM call",
+      "No real flight or power measurement"
+    ],
+    "http_acquisition_note": "A separate fresh-workspace run of the same acquisition implementation fetched the missing 47,547-byte bridge member with --allow-download before full extraction."
+  },
+  "negative_cli_cases": [
+    {
+      "case": "missing_cache",
+      "exit_code": 2,
+      "expected_reason": "Source cache missing",
+      "geometry_generated": false,
+      "network_authorized": false
+    },
+    {
+      "case": "corrupt_cache",
+      "exit_code": 1,
+      "expected_reason": "Cache length mismatch",
+      "geometry_generated": false,
+      "network_authorized": false
+    }
+  ]
+}

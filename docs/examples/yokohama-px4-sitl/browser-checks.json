@@ -1,0 +1,24 @@
+{
+  "schema": "missionos.yokohama-browser-check.v1",
+  "renderer": "actual Chromium WebGL",
+  "desktop": true,
+  "narrow_width_px": 390,
+  "horizontal_overflow_after_fix": false,
+  "observed_replay_times_s": [
+    0,
+    280,
+    358.5,
+    540
+  ],
+  "view_switches": [
+    "overview",
+    "top"
+  ],
+  "hold_image_selection": "02-D3",
+  "play_pause": true,
+  "video_duration_s": 68.066667,
+  "video_ready_state": 4,
+  "console_errors": [],
+  "image_width": 640,
+  "notes": "Responsive canvas min-width repaired; viewport override reset after verification."
+}

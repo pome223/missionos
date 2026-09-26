@@ -1,0 +1,26 @@
+{
+  "schema_version": "ship_vla_phase_diagnosis.v1",
+  "run_id": "171ec670565f4d23872e7d81e3749cc8",
+  "source_revision": "57c84a50bf407b971f2f16138790148e6ad3057f",
+  "original_generated_text": "55 84 49</s>",
+  "generated_token_ids": [
+    29945,
+    29945,
+    29871,
+    29947,
+    29946,
+    29871,
+    29946,
+    29929,
+    2
+  ],
+  "decoding_policy": "aerovla_action_grammar.v1",
+  "requested_down_m": 3.571428571428571,
+  "direct_rejection": "candidate_rejected:altitude_envelope_violation",
+  "wam_invoked": false,
+  "delivery_verified": false,
+  "recovery_verified": false,
+  "old_attempt_reinterpreted": false,
+  "response_sha256": "742f8fe0e235862da6b8fe82f72b39113f834adc0f3ea654def8153e41958a8a",
+  "repair_scope": "Explicit urban-entry level-inspection action space: vertical bins 47..51, about plus or minus0.204m. Forward and yaw0..98 and LAND remain model choices. Independent guards unchanged. Not unrestricted 3D VLA qualification."
+}

@@ -1,0 +1,70 @@
+{
+  "schema_version": "ship_native_joint_report.v1",
+  "source_revision": "f9c21384916ba0aa0778da5b7527d598303879bb",
+  "cohort_attempts": 1,
+  "verified_native_flights": 1,
+  "all_four_native_flights_completed": false,
+  "targeted_extension_completed": true,
+  "planned_attempts": 1,
+  "study_kind": "targeted_1km_followup",
+  "rule_superiority_evaluated": false,
+  "physical_execution_invoked": false,
+  "cohort": "precision-repair-targeted-1km-v6",
+  "vla_decoding_policy": "aerovla_inspection_grammar.v1",
+  "native_vertical_bins": [
+    47,
+    51
+  ],
+  "runs": [
+    {
+      "directory": "01-full-route-static_center",
+      "run_id": "f6078dd6972749e4b19f05cdba024d46",
+      "case": "static_center",
+      "offshore_distance_m": 1000,
+      "status": "completed",
+      "vla_invoked": true,
+      "wam_invoked": true,
+      "same_flight_native_integration_verified": true,
+      "delivery_verified": true,
+      "recovery_verified": true,
+      "container_removed": true,
+      "observed_elapsed_s": 685.140198354,
+      "vla_displacement_m": 2.90530723287567,
+      "vla_target_error_m": 0.11155100289279295,
+      "vla_altitude_error_m": 0.017429999999997392,
+      "vla_host_exchange_s": 1.0821282080141827,
+      "vla_input_to_permit_s": 1.1507858340000041,
+      "wam_max_prediction_error_m": 0.6589601358990382,
+      "wam_exchange_s": 50.14621287502814,
+      "stage_times_s": {
+        "vla_execution_observed": 167.884713118,
+        "native_history_started": 167.924748826,
+        "native_history_captured": 179.541140206,
+        "urban_decision": 233.76135652300002,
+        "anwm_dispatch_revalidated": 237.4173259,
+        "urban_requested": 238.010080692,
+        "vla_mission_resumed": 240.78478061
+      },
+      "raw_sha256": {
+        "config.json": "262db42d9d3daedc1c51384675ce626ea60afaeb03624909cc6c663040d3e5bd",
+        "result.json": "4f9c2264ca9f4952d0137ce53a1fb7e5dd5ccb6030e1a8c3ec5afc7824a61b18",
+        "events.jsonl": "00ddefdaab3e59f5eb5ca641552ec5a85eef2c62217401cb4cf66a364a022f1e",
+        "telemetry.jsonl": "79aba335ff9bb6cf31f1d23600cab7610b88d2ef6e13582d072e6f4214a4c300",
+        "anwm-http-response.json": "879059c2f7259271f74651ecf382f7d30d5657d560a537e8d588aa1bb6edc7ac",
+        "vla-execution.json": "769c13136091b9d1ad41b3a53b5b419df9c7e5fb2f3a1c6fea529970cd01bcd5"
+      }
+    }
+  ],
+  "cloud": {
+    "cleanup_confirmed": true,
+    "elapsed_observed_s": 1379.162218,
+    "new_estimated_usd_including_transfer_reserve": 0.6586512695237876,
+    "cumulative_estimated_usd": 7.48961682893669,
+    "invoice_confirmed": false
+  },
+  "cloud_evidence": {
+    "archive_sha256": "cbf6aa3b5aac374538a7880712f6393fc088ce913c50a62b0a4b0383c773f3e6",
+    "remote_files_verified": 38,
+    "all_attempted_model_results_matched": true
+  }
+}

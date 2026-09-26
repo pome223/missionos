@@ -71,6 +71,9 @@ jobs:
           PYTHONPATH: .:packages/missionos-cli/src:packages/missionos-gateway/src
         run: python -m pytest -q
 
+      - name: Verify urban-only decision control with CPU doubles
+        run: python scripts/smoke_ship_urban_loop.py --output-dir /tmp/ship-urban-loop-ci
+
       - name: Verify Jev mode selection through the Gateway
         env:
           PYTHONPATH: .:packages/missionos-cli/src:packages/missionos-gateway/src
