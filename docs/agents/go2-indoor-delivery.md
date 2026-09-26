@@ -15,11 +15,14 @@ also binds approval to its registered context, owning session, scenario and
 model/policy file hashes, and saves proposals, approval and progress in TaskStore.
 
 This prototype connects to the normal Gateway conversation, CLI chat and job-status.
-Default `rules` mode makes no LLM call. Optional `agent` mode uses a dedicated
+The Gateway conversation and browser default to `agent`; CLI chat inherits the
+Gateway default when no supervision mode is specified. Agent mode uses a dedicated
 MissionOS ADK supervisor through the existing agent Runner and invocation-evidence
-contract, with a Go2-specific deterministic gate. It does not claim integration
-with the persistent Mission Assurance policy graph. The learned locomotion network
-runs locally and has no mission approval authority.
+contract, with a Go2-specific deterministic gate. Explicit `rules` mode makes no
+LLM call and remains the standalone simulator runner's baseline default. Agent
+configuration alone does not imply that a judgment was invoked. This does not claim
+integration with the persistent Mission Assurance policy graph. The learned
+locomotion network runs locally and has no mission approval authority.
 
 ## Reproduce
 
