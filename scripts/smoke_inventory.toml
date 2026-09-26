@@ -46,6 +46,7 @@ files = [
   "smoke_px4_gazebo_mission_designer_sitl_payload_release_observation.py",
   "smoke_runtime_recovery_action_feasibility_gateway.py",
   "smoke_safe_stop_exercise_receipt.py",
+  "smoke_ship_delivery.py",
   "smoke_virtual_to_real_promotion_receipt.py",
 ]
 
