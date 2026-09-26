@@ -94,9 +94,12 @@ the CLI never provisions compute.
 ## Recorded qualification
 
 The [same-flight report](../examples/ship-native-joint-report/REPORT-ja.md)
-retains the original cohort, the association-only cohort and the subsequent
-cohort with post-ACK observation ordering. Each has its own frozen source
-revision and attempt denominator. The public replay exports reviewed synthetic
+retains six implementation stages: original, target association, ACK ordering,
+action syntax, level inspection, and canonical numeric permits. Each has its
+own frozen source revision and attempt denominator. The final stage is one
+predeclared targeted 1,000 m follow-up within the remaining compute budget.
+It does not establish all four conditions on the final implementation; earlier
+100 m passes and failed integration certificates are not pooled or relabeled. The public replay exports reviewed synthetic
 images and recorded positions; raw cloud logs remain private. Public hashes
 identify those records but do not replace a full independently runnable archive.
 

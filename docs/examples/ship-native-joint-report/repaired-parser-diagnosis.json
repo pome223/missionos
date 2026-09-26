@@ -1,0 +1,70 @@
+{
+  "scope": "deterministic decoder diagnosis on new native predictions; not a flight under the legacy decoder and not a WAM-versus-Rules evaluation",
+  "predictions": [
+    {
+      "run_id": "f6078dd6972749e4b19f05cdba024d46",
+      "case": "01-full-route-static_center",
+      "candidate": "hold",
+      "image_sha256": "7d5bc54065e8f10446bc9e3dc97e5aa01bf25134fb22a2977dba3fe4456a0f98",
+      "runtime_interval_px": [
+        118,
+        162
+      ],
+      "association": {
+        "source": "past_rgbd_cross_section.v1",
+        "history_sha256": "3d1cbc2692559c5cafc8825fa638c1cf930db3000d463e6f41fd971d3384206c",
+        "reference_interval_px": [
+          118.2666666666667,
+          162.1333333333333
+        ],
+        "warm_intervals_px": [
+          [
+            118,
+            162
+          ],
+          [
+            25,
+            36
+          ]
+        ]
+      },
+      "legacy_interval_px": [
+        118,
+        162
+      ]
+    },
+    {
+      "run_id": "f6078dd6972749e4b19f05cdba024d46",
+      "case": "01-full-route-static_center",
+      "candidate": "right_5m",
+      "image_sha256": "5550d6fd8467894c8e37163de263bb3929cbd930c731c8b21a51a626ad2b5f19",
+      "runtime_interval_px": [
+        103,
+        147
+      ],
+      "association": {
+        "source": "past_rgbd_cross_section.v1",
+        "history_sha256": "3d1cbc2692559c5cafc8825fa638c1cf930db3000d463e6f41fd971d3384206c",
+        "reference_interval_px": [
+          104.65600858964882,
+          148.2709396564279
+        ],
+        "warm_intervals_px": [
+          [
+            103,
+            147
+          ],
+          [
+            0,
+            36
+          ],
+          [
+            38,
+            48
+          ]
+        ]
+      },
+      "legacy_rejection": "Main predicted obstacle missing, clipped or ambiguous"
+    }
+  ]
+}

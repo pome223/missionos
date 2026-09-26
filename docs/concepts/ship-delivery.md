@@ -75,10 +75,12 @@ hold and a verified-delivery gate. Only the scenario's distances and cruise
 altitude map into this plan. Wind, battery, and
 urban decisions are not connected to PX4 by this export.
 
-The next steps are to measure whether learned prediction improves decisions
-over a matched simple policy, add a moving ship
-and deck motion, and then coordinate multiple drones up to a fleet of ten.
-Those capabilities remain separate development milestones.
+Native VLA and WAM participation is evaluated against fixed delivery, safety,
+timing and compute-cost requirements. Superiority over an idealized rule policy
+is not a qualification gate. The [same-flight report](../examples/ship-native-joint-report/REPORT-en.md)
+records successful and unsuccessful native trials and their verification limits.
+Moving ships, deck motion and coordination up to ten drones remain separate
+development milestones.
 
 See the [maintainer contract](../agents/ship-delivery.md) for evidence and authority
 requirements.
