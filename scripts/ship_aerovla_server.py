@@ -28,7 +28,7 @@ def digest(value):
 
 
 class NativeModel:
-    def __init__(self, base, adapter):
+    def __init__(self, base, adapter, *, constrain_action_format=False):
         for name, sha in {**native.WEIGHTS, **native.CUSTOM_CODE}.items():
             if native.digest(base / name) != sha:
                 raise ValueError("Unreviewed base weights or custom code")
@@ -45,6 +45,7 @@ class NativeModel:
         self.tokenizer = AutoTokenizer.from_pretrained(
             base, trust_remote_code=True, local_files_only=True
         )
+        self.grammar = native.ActionGrammar(self.tokenizer) if constrain_action_format else None
         self.processor = AutoImageProcessor.from_pretrained(
             base, trust_remote_code=True, local_files_only=True
         )
@@ -83,6 +84,9 @@ class NativeModel:
                 max_new_tokens=20,
                 do_sample=False,
                 eos_token_id=[self.tokenizer.eos_token_id],
+                prefix_allowed_tokens_fn=(
+                    self.grammar.bind(inputs["input_ids"].shape[1]) if self.grammar else None
+                ),
             )
         torch.cuda.synchronize()
         completed = time.time()
@@ -212,9 +216,9 @@ def make_handler(model, identity, root, *, exit_after_request=False):
     return Handler
 
 
-def serve(base, adapter, output, port, *, exit_after_request=False):
+def serve(base, adapter, output, port, *, exit_after_request=False, constrain_action_format=False):
     output.mkdir(parents=True, exist_ok=False)
-    model = NativeModel(base, adapter)
+    model = NativeModel(base, adapter, constrain_action_format=constrain_action_format)
     warmup, mosaic = model.predict(
         "<image>\nFly straight ahead and find the target.\nAction: ",
         [Image.new("RGB", (640, 360)) for _ in range(2)],
@@ -246,6 +250,7 @@ def serve(base, adapter, output, port, *, exit_after_request=False):
         "warmup_completed": True,
         "dispatch_capability": False,
         "exit_after_request": exit_after_request,
+        "decoding_policy": native.ActionGrammar.policy if constrain_action_format else "unconstrained_greedy.v1",
     }
     (output / "service.json").write_text(json.dumps(identity, indent=2))
     server = HTTPServer(
@@ -266,7 +271,10 @@ if __name__ == "__main__":
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--port", type=int, default=18117)
     parser.add_argument("--exit-after-request", action="store_true")
+    parser.add_argument("--constrain-action-format", action="store_true")
     args = parser.parse_args()
     serve(
-        args.base, args.adapter, args.output, args.port, exit_after_request=args.exit_after_request
+        args.base, args.adapter, args.output, args.port,
+        exit_after_request=args.exit_after_request,
+        constrain_action_format=args.constrain_action_format,
     )

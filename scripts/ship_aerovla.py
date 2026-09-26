@@ -38,6 +38,69 @@ CUSTOM_CODE = {
 }
 
 
+class ActionGrammar:
+    """Constrain generation syntax, leaving all native bins and LAND available.
+
+    This is a generation-time mask, never a repair of returned model text.
+    Numeric motion, clearance, approval and terminal-proposal guards still apply.
+    The pinned Llama vocabulary is validated before any prediction is made.
+    """
+
+    policy = "aerovla_action_grammar.v1"
+
+    def __init__(self, tokenizer):
+        vocab = tokenizer.get_vocab()
+        pieces = {**{str(i): str(i) for i in range(10)}, "▁": " ", "L": "L", "AND": "AND"}
+        self.pieces = {vocab[k]: text for k, text in pieces.items()}
+        self.eos = tokenizer.eos_token_id
+        self.numbers = {str(i) for i in range(99)}
+        if self.eos in self.pieces or len(self.pieces) != len(pieces):
+            raise ValueError("Unsupported action-grammar vocabulary")
+        for text in [*sorted(self.numbers), "0 49 98", "LAND", "98 49 0 LAND"]:
+            ids = []
+            for part in re.findall(r"AND|.", text):
+                ids.append(vocab["▁" if part == " " else part])
+            if tokenizer.decode(ids, skip_special_tokens=False).strip() != text:
+                raise ValueError("Unsupported action-grammar token decoding")
+
+    def valid_prefix(self, text, *, complete=False):
+        # At most one leading separator; no repeated separators or leading zeroes.
+        if text.startswith(" "):
+            text = text[1:]
+        if text in ("", "L", "LAND"):
+            return text == "LAND" if complete else True
+        parts = text.split(" ")
+        if len(parts) > 4 or any(p not in self.numbers for p in parts[:-1]):
+            return False
+        last = parts[-1]
+        if len(parts) == 4:
+            return last == "LAND" if complete else "LAND".startswith(last)
+        if complete:
+            return len(parts) == 3 and last in self.numbers
+        return any(n.startswith(last) for n in self.numbers)
+
+    def allowed(self, generated):
+        if any(token not in self.pieces for token in generated):
+            raise ValueError("Invalid generated action prefix")
+        text = "".join(self.pieces[token] for token in generated)
+        if not self.valid_prefix(text):
+            raise ValueError("Invalid generated action prefix")
+        allowed = [token for token, part in self.pieces.items() if self.valid_prefix(text + part)]
+        if self.valid_prefix(text, complete=True):
+            allowed.append(self.eos)
+        if not allowed:
+            raise ValueError("No valid action continuation")
+        return sorted(allowed)
+
+    def bind(self, input_length):
+        def allowed_tokens(batch_id, tokens):
+            if batch_id != 0:
+                raise ValueError("Action grammar requires a single observation")
+            return self.allowed(tokens.tolist()[input_length:])
+
+        return allowed_tokens
+
+
 def parse_proposal(text):
     # Unlike the upstream convenience parser, malformed text must not become a
     # zero-action / LAND instruction, and out-of-range bins are not clamped.

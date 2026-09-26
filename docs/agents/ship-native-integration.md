@@ -43,6 +43,20 @@ start a new service, complete its synthetic warmup and bind its new identity in
 the approved mission plan. No service is restarted during a flight to replace
 a rejected output. Both options are explicit and default off.
 
+The optional AeroVLA `--constrain-action-format` flag masks next-token choices
+to the native three-bin syntax (each bin 0–98) or a `LAND` proposal. It uses
+Transformers' `prefix_allowed_tokens_fn` during the same single generation;
+there is no output rewriting, numeric substitution or retry. All bins, including
+terminal bins and explicit `LAND`, remain available. Existing terminal, motion,
+freshness and clearance guards still reject unsuitable proposals. The default
+remains unconstrained greedy decoding. The selected decoding policy is included
+in the pinned service identity and must be frozen as part of each qualification.
+
+This addresses malformed text generation, not the semantic quality of the
+chosen motion. The saved `故4924 49</s>` response remains a rejected attempt.
+See the [generation API](https://huggingface.co/docs/transformers/v4.42.4/main_classes/text_generation)
+for the prefix constraint hook.
+
 ## Qualification and scope
 
 Freeze the source, service configuration, model identities, three stationary
@@ -60,3 +74,20 @@ performance, moving decks, ten-aircraft coordination or physical delivery.
 Current sensor/material assumptions and simulator-based VLA clearance remain
 explicit. Cloud startup requires the existing user budget and opt-in approval;
 the CLI never provisions compute.
+
+## Recorded qualification
+
+The [same-flight report](../examples/ship-native-joint-report/REPORT-ja.md)
+retains the original cohort, the association-only cohort and the subsequent
+cohort with post-ACK observation ordering. Each has its own frozen source
+revision and attempt denominator. The public replay exports reviewed synthetic
+images and recorded positions; raw cloud logs remain private. Public hashes
+identify those records but do not replace a full independently runnable archive.
+
+For the 1,000 m extension, use the same native command with
+`--scenario examples/fixture_missions/ship_delivery/clear.json` and
+`--urban-case static_center`. The empty scenario selects the default 1,000 m
+offshore distance and 200 m urban segment. The three shorter cases instead use
+`urban-compact.json` with `static_center`, `static_near` and `static_clear`.
+Output directories must be new, and both native services must have completed
+their required setup and warmup before the opt-in command is run.
