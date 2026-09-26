@@ -1,0 +1,50 @@
+{
+  "source": "frozen original cohort; development regressions only, not held-out validation",
+  "frames": "last pre-inference input only; no future observation or obstacle truth",
+  "cases": [
+    {
+      "case": "01-static_center",
+      "run_id": "48c8acd1b7e6487a9cac9987ae67a31e",
+      "history_sha256": "9379432140e68f178664265fac133f6d5db408af81ebb3937782d2b1b345dd4d",
+      "files": {
+        "geometry.npz": "792aa91500d06a12c01bf04b9ae0434ab481625878b3c3ec2076c918b1131d17",
+        "hold.png": "5f365c50d0e8a311d979e63ed71991922a489d5cc9bae59d0e4c15857f0e3a93",
+        "observed.png": "988318d078e1a87ebe5c4395eb56cae22af31c544a98e7696503eac7ebeb2175",
+        "right_5m.png": "541f5a085ef5f882913dc3650ee33641b554cdfc27971cac79b655c3cc3bc16e"
+      }
+    },
+    {
+      "case": "02-static_near",
+      "run_id": "943b41c0d262419dae28e42cf91f1a70",
+      "history_sha256": "99743e5f8bf1c82276967039cdb22640f20a4ff727690512fa8e566d65ffaa6d",
+      "files": {
+        "geometry.npz": "d4b894884aac6871d3a3d118b5a7ad4e492a6a5b8061e887edbbf964c9141466",
+        "hold.png": "2e3ec95c4e67e677491aa1397e8367b71680f3443d3c41350ff591c5ad537bac",
+        "observed.png": "0ac9c5d38068939577e212bb2e09841a4a41b34d6cdd6c6bfe344899b5b338a8",
+        "right_5m.png": "df645647a90725c821c6966e2ec4166316c1c22a566abb29d8c737807fd16e91"
+      }
+    },
+    {
+      "case": "03-static_clear",
+      "run_id": "44b7a80908af42eb9b2960c32ac2cd9b",
+      "history_sha256": "a5613f724ebd39b378f13e0c81d640c39181210f8ea3347d6bcf67fdedc14762",
+      "files": {
+        "geometry.npz": "38038b033492c4659f1f64f0b63bb037cf61db5fc22cf123c9a16c7654d8e411",
+        "hold.png": "f7ae6129a4966d68be513a18c454d941d0094d364733cb7039ea2bf0ae12080b",
+        "observed.png": "2e30fd964644c61437f5703861ffbb28f6f48c7dbb453366e3c0c38712ca6c49",
+        "right_5m.png": "2a66ea1cfb870189a9a7cb950ade7d6831c7f0de8bb045879fc61596348d6cba"
+      }
+    },
+    {
+      "case": "04-full-route-static_center",
+      "run_id": "52387a937a5a453fa8b7eb07ee0fd502",
+      "history_sha256": "6f50793d3051f1298cb72921d9ded366da0267db7c53cb037d4b72c44fad8ffb",
+      "files": {
+        "geometry.npz": "70361dd47c754414e92639c845768d346fd089b1d9e056917295db8b25ece2a1",
+        "hold.png": "887c5246a09a866e5d49ef9f82ac760f399dc2f25bf109e0295e42f4668add6f",
+        "observed.png": "9baba410c51b558edfd7e4bbc73c1601efbb5ad9aa98a728ea5a76e7e45fb8ad",
+        "right_5m.png": "059528ad36603d078949a87746ffa21a598405273c90a49a3cdea9dc44c82b50"
+      }
+    }
+  ]
+}

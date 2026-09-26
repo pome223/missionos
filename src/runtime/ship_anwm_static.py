@@ -22,7 +22,8 @@ from scripts import ship_anwm as native
 
 POLICY = "onboard_anwm_static"
 CONTRACT = {
-    "schema_version": "ship_anwm_static_contract.v1",
+    "schema_version": "ship_anwm_static_contract.v2",
+    "target_association": "past_rgbd_cross_section.v1",
     "position_error_limit_m": 5.0,
     "stationarity_limit_m": 1.5,
     "host_inference_limit_s": 75.0,
@@ -72,14 +73,8 @@ def check_service(url):
     return {"identity": identity, "contract": CONTRACT}
 
 
-def obstacle_interval(image):
-    """Require one substantial warm-colored object; ignore isolated texture.
-
-    The native decoder changes the synthetic red material to pale orange.
-    Channel differences admit that palette without treating grey scenery as
-    an obstacle. Missing/ambiguous regions still fail closed; the independent
-    five-metre position requirement is unaffected by this color calibration.
-    """
+def warm_spans(image):
+    """Read substantial warm regions, without assigning object identity."""
     rgb = np.asarray(image)
     if rgb.shape != (224, 224, 3) or rgb.dtype != np.uint8:
         raise ValueError("Expected 224px RGB prediction")
@@ -88,18 +83,80 @@ def obstacle_interval(image):
     columns = np.flatnonzero(warm[56:168].mean(axis=0) >= 0.55)
     spans = [v for v in np.split(columns, np.flatnonzero(np.diff(columns) > 1) + 1) if len(v) >= 6]
     spans.sort(key=len, reverse=True)
+    return [[int(v[0]), int(v[-1])] for v in spans]
+
+
+def obstacle_interval(image, reference=None):
+    """Associate the forecast with a past RGBD target, never a future observation.
+
+    The legacy unassociated reader remains available for diagnosis. Association
+    uses a half-width search margin, a 2x scale bound and >= 0.5 interval IoU.
+    Every substantial region touching that search window competes: a second
+    plausible region, missing target, merged object or clipping still rejects.
+    Regions elsewhere are not certified free space or classified as harmless.
+    """
+    spans = warm_spans(image)
+    if reference is not None:
+        lo, hi = reference
+        if not all(math.isfinite(v) for v in reference) or not 0 < lo < hi < 223:
+            raise ValueError("Past target projection missing or clipped")
+        width = hi - lo + 1
+        associated = [s for s in spans if s[1] >= lo - width / 2 and s[0] <= hi + width / 2]
+        if len(associated) != 1:
+            raise ValueError("Predicted target missing or ambiguous in association window")
+        left, right = associated[0]
+        intersection = max(0, min(hi, right) - max(lo, left) + 1)
+        union = max(hi, right) - min(lo, left) + 1
+        if (
+            left == 0
+            or right == 223
+            or not 0.5 <= (right - left + 1) / width <= 2
+            or intersection / union < 0.5
+        ):
+            raise ValueError("Predicted target clipped, displaced or shape-inconsistent")
+        return associated[0]
     if (
         not spans
         or spans[0][0] == 0
         or spans[0][-1] == 223
-        or (len(spans) > 1 and len(spans[1]) >= len(spans[0]) / 2)
+        or (len(spans) > 1 and spans[1][1] - spans[1][0] + 1 >= (spans[0][1] - spans[0][0] + 1) / 2)
     ):
         raise ValueError("Main predicted obstacle missing, clipped or ambiguous")
     return [int(spans[0][0]), int(spans[0][-1])]
 
 
-def mapped_center(image, pose, intrinsics, plane_north_m):
-    interval = obstacle_interval(image)
+def projected_target_interval(arrays, target_pose):
+    """Project the last observed red cross-section using its measured depth.
+
+    Only the bound model input history is read. No forecast/projection returned
+    by the service, mapped obstacle coordinate, or post-inference truth is used.
+    The stationary-scene admission and later independent checks remain required.
+    """
+    from src.runtime.ship_onboard import observed_obstacle_pixel_center
+
+    rgb, depth = arrays["rgb"][-1], arrays["depth"][-1]
+    _, v = observed_obstacle_pixel_center(rgb.astype(float))
+    columns = np.flatnonzero(native.red_mask(rgb)[int(v)])
+    if len(columns) < 20 or len(columns) / (columns[-1] - columns[0] + 1) < 0.9:
+        raise ValueError("Past target cross-section ambiguous")
+    z = depth[int(v), columns]
+    if not np.all(np.isfinite(z) & (z > 0) & (z <= 500)):
+        raise ValueError("Past target depth incomplete")
+    k = arrays["intrinsics"]
+    rays = np.stack(
+        ((columns - k[0, 2]) / k[0, 0], np.full(len(z), (v - k[1, 2]) / k[1, 1]), np.ones(len(z)))
+    )
+    world = arrays["poses"][-1][:3, :3] @ (rays * z) + arrays["poses"][-1][:3, 3, None]
+    camera = target_pose[:3, :3].T @ (world - target_pose[:3, 3, None])
+    if not np.isfinite(camera).all() or np.any(camera[2] <= 0):
+        raise ValueError("Past target outside candidate camera")
+    u = camera[0] / camera[2] * k[0, 0] + k[0, 2]
+    resized = (u - 80 + 0.5) * 224 / 480 - 0.5
+    return [float(resized.min()), float(resized.max())]
+
+
+def mapped_center(image, pose, intrinsics, plane_north_m, reference=None):
+    interval = obstacle_interval(image, reference)
     # Exact inverse pixel-centre convention of the native 480x360 crop/resize.
     u = ((sum(interval) / 2) + 0.5) * 480 / 224 + 80 - 0.5
     ray = pose[:3, :3] @ np.array([(u - intrinsics[0, 2]) / intrinsics[0, 0], 0.0, 1.0])
@@ -136,12 +193,23 @@ def decode_forecasts(response, request_path, config):
             if image.format != "PNG" or image.mode != "RGB":
                 raise ValueError("Invalid prediction format")
             pose = native.lateral_pose(arrays["poses"][-1], forecast["candidate"]["delta"][1])
+            reference = projected_target_interval(arrays, pose)
             decoded.append(
                 {
                     "candidate": forecast["candidate"]["id"],
                     "image_sha256": entry["sha256"],
+                    "association": {
+                        "source": CONTRACT["target_association"],
+                        "history_sha256": request["history_sha256"],
+                        "reference_interval_px": reference,
+                        "warm_intervals_px": warm_spans(image),
+                    },
                     **mapped_center(
-                        image, pose, arrays["intrinsics"], config["urban"]["obstacle_north_m"] - 4
+                        image,
+                        pose,
+                        arrays["intrinsics"],
+                        config["urban"]["obstacle_north_m"] - 4,
+                        reference,
                     ),
                 }
             )

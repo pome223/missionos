@@ -98,3 +98,29 @@ Separate runs do not establish that combined runtime proof.
 The [bounded experiment report](../examples/ship-anwm-static-report.md) records
 the final three short-distance cases, a separate one-kilometre extension, and
 all unsuccessful development cohorts. Raw evidence stays outside the repository.
+
+## Past-only target association (contract v2)
+
+The original same-flight 1 km extension stopped when a generated background
+building became orange. A global ranking of warm spans could not identify the
+intended pillar. `ship_anwm_static_contract.v2` associates the prediction with
+the last pre-inference RGBD cross-section of the observed stationary target.
+Its measured depth and camera pose project that cross-section into each
+candidate camera. This uses only the hash-bound model input; service-returned
+projection images, future observations and simulator obstacle coordinates are
+not association inputs. The input ego pose still comes from Gazebo.
+
+All warm spans touching a search interval expanded by half the projected
+width compete. Exactly one is required, with interval IoU >= 0.5, width ratio
+in [0.5, 2], and no image-edge clipping. Missing/incomplete depth, multiple
+plausible targets, missing targets, excessive shifts or merged shapes reject.
+The actual reported position is read from the generated image, never replaced
+by the projected reference. Reference and detected intervals are recorded.
+
+Other warm regions are outside this mapped-target association task; they are
+not certified harmless or free space. This is not general hazard detection.
+The existing position error <= 5 m, candidate agreement <= 5 m, stationarity,
+latency, fresh dispatch checks, and independent geometry checks remain required.
+The original images are development regressions; new native flights form a
+separate frozen qualification cohort. Historical evidence must be reverified
+with its recorded source revision, not silently reinterpreted as v2 success.
