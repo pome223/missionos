@@ -36,3 +36,7 @@ python scripts/smoke_ship_urban_loop.py --output-dir /tmp/new-urban-loop-matrix
 
 [利用者向けの説明](../concepts/ship-urban-loop.md) ·
 [実装契約・各条件の説明](../agents/ship-urban-loop.md)
+
+次の検証場面として、[横浜の海岸街区の3Dプレビュー](yokohama-urban-scene/REPORT-ja.md)
+を追加しました。実都市の建物153棟と、2つの角で見通しが変わる候補経路です。
+この街区での実モデル飛行はまだ行っていません。
