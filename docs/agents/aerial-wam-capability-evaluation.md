@@ -72,3 +72,9 @@ first small static-scene cohort and its absolute bounds before new model outputs
 It uses the existing ANWM route experiment; the [Gateway checkpoint
 lifecycle](px4-depth-gateway.md) remains a separate depth-based implementation.
 Neither a frozen protocol nor existing flight evidence is a new acceptance result.
+
+The [fresh pilot results and replay](../assets/aerial-wam-capability-20260926/README.md)
+record 3/3 governed arrivals within the predeclared bounds, 2/3 admissible raw
+model choices, and 1/3 requested maneuvers executed from the model's top choice.
+This is absolute capability evidence in known static scenes, not a superiority
+result or WAM integration into the Gateway reobservation adapter.

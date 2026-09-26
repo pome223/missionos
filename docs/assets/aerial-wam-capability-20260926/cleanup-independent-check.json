@@ -1,0 +1,7 @@
+{
+  "instances_absent": true,
+  "disks_absent": true,
+  "gap_container_absent": true,
+  "climb_container_absent": true,
+  "detour_container_absent": true
+}
