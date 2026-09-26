@@ -99,3 +99,7 @@ python docs/assets/aerial-wam-refinement-20260926/verify_report.py
 Apartment assets: [OSRF gazebo_models](https://github.com/osrf/gazebo_models), CC BY 3.0, Nathan Koenig / Cole Biesemeyer.
 
 UI確認: ローカルHTTPで3場面の切替、上昇の途中時刻と高度、終点での再生停止、実MP4の再生進行と停止、360pxでの文書幅、JavaScriptエラー0を確認した。直接file表示は確認していない。
+
+## その後の事前読み込み試験
+
+[常駐化の実装と未完了の実GPU確認](FOLLOWUP.md)を別に記録した。起動失敗1件と共有GPU枠待ちの中止があり、追加のモデル予測・飛行は0。起動費用を含む最新の累計見積もりは約$6.84。上の3飛行の結果を置き換えていない。

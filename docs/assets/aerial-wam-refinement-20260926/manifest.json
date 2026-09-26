@@ -2,7 +2,8 @@
   "protocol_sha256": "952546420a3a18f1e24f0c07f9c9d82f245f4711e0a85210a54ce50f898d6972",
   "files": {
     "DIAGNOSTICS.md": "cc93c562d07393770ec7925abefa554e6479a3e6291df02e16cf4d6e05f2a1d1",
-    "README.md": "7e5d684bd79cf003b8ab4c9b105bdca37fa6380e38cbd671ca4db08ea9c14f70",
+    "FOLLOWUP.md": "57c97582791e520ba08d604b4a6f941aa49fd93238d066fcce68ef8981375272",
+    "README.md": "82ccb5be922a017c3955eba140b86489f02a816c7cbdebc38752755fcac3312e",
     "climb-forecast-climb.png": "2c9d54eade0ca1d1c54ec06a848aa8a93f31d110bc16368575262ef6fea2e36e",
     "climb-forecast-forward.png": "5eda312613c7bffc29bcaebe75521d17ba28c7bf1670e2e9d88775fc816f4309",
     "climb-forecast-left_detour.png": "e20565da8106a3af0f1c0479f8dfb31aca6860559a9b0b09f7013fe8f42a1400",
@@ -31,9 +32,10 @@
     "observed-flight.mp4": "c418fdc6239a51e0e781f371ed0c111647ef8805de4f204269dbbd6408903757",
     "post-cohort-startup-profile.json": "6a867ffc52aa42bacf89430ffc24392c70568d02daeafbfe227c12ddb4012f2f",
     "protocol.md": "952546420a3a18f1e24f0c07f9c9d82f245f4711e0a85210a54ce50f898d6972",
+    "resident-preflight.json": "013bee92c7ea758931275a4f62008656871e1009272164d2eb515f8c3f9f5206",
     "summary.json": "30abcc13dca408bbf2a3e99ef11e8d6315870a6e5039025062778884aa015696",
     "ui-check.json": "2dfdcbdd196ea4adf2f040bc698417068860157414f1cf713063784136f95760",
-    "verify_report.py": "d9e9a9d47bf4dfb5519ffca493e42c9744457d8f1ed05a2f70e1fffadc84922f",
+    "verify_report.py": "a672c7eb3325c82367606cec2d762be978a46d0f63a8f74fa09a614ba9c44a57",
     "view-support-probe.json": "699984c42a4b08b9be5334b029e6b3002bcb615e5d655661b06b151792cfa8f7"
   }
 }

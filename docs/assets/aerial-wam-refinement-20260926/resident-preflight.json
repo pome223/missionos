@@ -1,0 +1,34 @@
+{
+  "schema_version": "aerial_wam_resident_preflight.v1",
+  "code_head": "33eeebae7eb3692ec168c2481790f3b243839131",
+  "protocol_sha256": "68f889c9a9a47532afc1304ece2243220460b87aa5c4858fef476df483d7e599",
+  "runtime_script_sha256": "47b131bf0a2687689fe30b7eec05aebf604bdfb5d0cb351c46eb0bec60583b13",
+  "real_model_forecast_calls": 0,
+  "flight_attempts": 0,
+  "preload_completion_verified": false,
+  "latency_target_evaluated": false,
+  "infrastructure_attempts": [
+    {
+      "stage": "detached_worker_launch",
+      "outcome": "ssh_timeout_before_model_requests",
+      "vm_created": true,
+      "vm_and_disk_verified_deleted": true,
+      "duration_upper_bound_minutes": 7.905958914756775,
+      "estimate_upper_bound_usd": 0.39494258010387423
+    },
+    {
+      "stage": "bounded_shared_quota_wait",
+      "outcome": "quota_unavailable",
+      "vm_created": false,
+      "new_gpu_cost_usd": 0,
+      "wait_started_at_utc": "2026-09-26T04:33:02.999609+00:00",
+      "wait_finished_at_utc": "2026-09-26T04:43:12.718200+00:00"
+    }
+  ],
+  "local_targeted_tests_passed": 59,
+  "local_full_tests_passed": 3298,
+  "cumulative_estimate_upper_bound_usd": 6.842952342682415,
+  "user_cap_usd": 10,
+  "invoice_reconciled": false,
+  "forecast_results_replaced": false
+}

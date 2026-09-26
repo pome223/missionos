@@ -67,6 +67,16 @@ def check(root):
     assert resource['created_vm_absent'] and resource['created_boot_disk_absent']
     assert resource['total_task_conservative_estimate_upper_bound_usd'] < resource['user_total_cap_usd'] == 10
     assert resource['invoice_reconciled'] is False
+    if (root / 'resident-preflight.json').exists():
+        preflight = json.loads((root / 'resident-preflight.json').read_text())
+        assert preflight['real_model_forecast_calls'] == preflight['flight_attempts'] == 0
+        assert preflight['latency_target_evaluated'] is False
+        assert preflight['preload_completion_verified'] is False
+        first, second = preflight['infrastructure_attempts']
+        assert first['vm_and_disk_verified_deleted'] is True
+        assert second['vm_created'] is False and second['new_gpu_cost_usd'] == 0
+        assert math.isclose(resource['total_task_conservative_estimate_upper_bound_usd'] + first['estimate_upper_bound_usd'], preflight['cumulative_estimate_upper_bound_usd'])
+        assert preflight['cumulative_estimate_upper_bound_usd'] < preflight['user_cap_usd'] == 10
     print('PASS: hashes, embedded data, case denominators, absolute bounds, attribution, time order and cleanup records')
     print('Portable checks only; original-record verification is documented separately.')
 
