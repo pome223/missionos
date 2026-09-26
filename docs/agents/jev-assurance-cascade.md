@@ -96,7 +96,7 @@ before the reasoner was unavailable or failed, the aggregate invocation flag
 remains true and the Jev receipt is retained. A timeout records an attempted
 invocation; it does not prove that the provider completed inference.
 
-In shadow mode, `jev_cascade_shadow` contains the candidate output and receipt,
+In `cascade_shadow` mode, `jev_cascade_shadow` contains the candidate output and receipt,
 `used_for_decision=false`, label agreement and whether it reused the incumbent
 call. Its candidate invocation flag is separate from the overall result: a
 source-directed candidate may use no models while shadow still invokes the
@@ -113,8 +113,17 @@ provider exception text, headers and credentials are not recorded. JSON failures
 hash raw response bytes; parsed-response failures hash sorted JSON with NaN allowed
 solely for fingerprinting (`response_hash_encoding` distinguishes the two).
 Probability acceptance thresholds are unchanged. The fingerprint diagnoses a
-failure; it does not make an invalid answer acceptable. Cascade and shadow
-composition preserve the nested typed failure receipt.
+failure; it does not make an invalid answer acceptable. `cascade` and
+`cascade_shadow` preserve the nested typed failure receipt.
+
+Ordinary `shadow` (`JevShadowJudge`) retains Jev diagnostics only when the primary
+judge returns successfully. If the primary judge also fails, the Jev-side
+diagnostic record is not retained: the primary exception propagates before the
+shadow result is attached. The primary failure still escalates without accepting
+a candidate. This is a diagnostic-retention limitation, not a candidate-rejection
+failure. Retaining Jev diagnostics in this dual-failure path is deferred to a
+follow-up PR; the contract above for `cascade_shadow` must not be generalized to
+ordinary `shadow`.
 
 ## ADK candidate semantics
 
