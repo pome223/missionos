@@ -1,0 +1,382 @@
+{
+  "schema_version": "counterfactual_view_support_probe.v1",
+  "model_invoked": false,
+  "flight_executed": false,
+  "observed_future": false,
+  "inputs": "retained historical RGB-D and supplied route waypoints; no building geometry",
+  "prefixes_m": [
+    1,
+    2,
+    3,
+    5
+  ],
+  "cases": [
+    {
+      "scene": "gap",
+      "candidates": [
+        {
+          "candidate_id": "forward",
+          "prefix_path_m": 1,
+          "target_displacement_ned_m": [
+            0.002199111262853609,
+            0.9999924524172151,
+            0.003202970224235102
+          ],
+          "model_grid_mean_observation_weight": 0.6383596062660217,
+          "fully_observed_fraction": 0.6173270089285714
+        },
+        {
+          "candidate_id": "forward",
+          "prefix_path_m": 2,
+          "target_displacement_ned_m": [
+            0.004398222525707218,
+            1.9999849048344303,
+            0.00640594044846976
+          ],
+          "model_grid_mean_observation_weight": 0.6198148727416992,
+          "fully_observed_fraction": 0.5388034119897959
+        },
+        {
+          "candidate_id": "forward",
+          "prefix_path_m": 3,
+          "target_displacement_ned_m": [
+            0.006597333788560826,
+            2.999977357251645,
+            0.009608910672704862
+          ],
+          "model_grid_mean_observation_weight": 0.5367569923400879,
+          "fully_observed_fraction": 0.32009327168367346
+        },
+        {
+          "candidate_id": "forward",
+          "prefix_path_m": 5,
+          "target_displacement_ned_m": [
+            0.006704833019911209,
+            4.9999769883028975,
+            0.009765481576123669
+          ],
+          "model_grid_mean_observation_weight": 0.302139550447464,
+          "fully_observed_fraction": 0.09907126913265306
+        },
+        {
+          "candidate_id": "left_detour",
+          "prefix_path_m": 1,
+          "target_displacement_ned_m": [
+            0.9902432630815081,
+            0.13934671876219024,
+            0.0008785737864518417
+          ],
+          "model_grid_mean_observation_weight": 0.6241536736488342,
+          "fully_observed_fraction": 0.6025191326530612
+        },
+        {
+          "candidate_id": "left_detour",
+          "prefix_path_m": 2,
+          "target_displacement_ned_m": [
+            1.9804865261630162,
+            0.27869343752438047,
+            0.0017571475729036834
+          ],
+          "model_grid_mean_observation_weight": 0.47901469469070435,
+          "fully_observed_fraction": 0.45374282525510207
+        },
+        {
+          "candidate_id": "left_detour",
+          "prefix_path_m": 3,
+          "target_displacement_ned_m": [
+            2.9707297892445244,
+            0.4180401562865707,
+            0.002635721359355081
+          ],
+          "model_grid_mean_observation_weight": 0.38665062189102173,
+          "fully_observed_fraction": 0.37021683673469385
+        },
+        {
+          "candidate_id": "left_detour",
+          "prefix_path_m": 5,
+          "target_displacement_ned_m": [
+            4.951216315407541,
+            0.6967335938109512,
+            0.004392868932258764
+          ],
+          "model_grid_mean_observation_weight": 0.22619681060314178,
+          "fully_observed_fraction": 0.21631855867346939
+        }
+      ]
+    },
+    {
+      "scene": "climb",
+      "candidates": [
+        {
+          "candidate_id": "climb",
+          "prefix_path_m": 1,
+          "target_displacement_ned_m": [
+            0.009543457913583665,
+            0.9999432295076807,
+            0.004739216475484476
+          ],
+          "model_grid_mean_observation_weight": 0.6205942630767822,
+          "fully_observed_fraction": 0.6131816007653061
+        },
+        {
+          "candidate_id": "climb",
+          "prefix_path_m": 2,
+          "target_displacement_ned_m": [
+            0.01908691582716733,
+            1.9998864590153613,
+            0.009478432950968507
+          ],
+          "model_grid_mean_observation_weight": 0.6147735714912415,
+          "fully_observed_fraction": 0.5409757653061225
+        },
+        {
+          "candidate_id": "climb",
+          "prefix_path_m": 3,
+          "target_displacement_ned_m": [
+            0.023998757132839946,
+            2.5145387477871948,
+            -0.4734008724746852
+          ],
+          "model_grid_mean_observation_weight": 0.441754013299942,
+          "fully_observed_fraction": 0.31644610969387754
+        },
+        {
+          "candidate_id": "climb",
+          "prefix_path_m": 5,
+          "target_displacement_ned_m": [
+            0.023998757132839946,
+            2.5145387477871948,
+            -2.473400872474685
+          ],
+          "model_grid_mean_observation_weight": 0.005965117830783129,
+          "fully_observed_fraction": 0.004324776785714286
+        },
+        {
+          "candidate_id": "forward",
+          "prefix_path_m": 1,
+          "target_displacement_ned_m": [
+            0.001712415492292195,
+            0.9999981722470189,
+            0.0008503739197500693
+          ],
+          "model_grid_mean_observation_weight": 0.6205152273178101,
+          "fully_observed_fraction": 0.6135801977040817
+        },
+        {
+          "candidate_id": "forward",
+          "prefix_path_m": 2,
+          "target_displacement_ned_m": [
+            0.00342483098458439,
+            1.9999963444940378,
+            0.0017007478395005826
+          ],
+          "model_grid_mean_observation_weight": 0.6126036643981934,
+          "fully_observed_fraction": 0.5397002551020408
+        },
+        {
+          "candidate_id": "forward",
+          "prefix_path_m": 3,
+          "target_displacement_ned_m": [
+            0.005137246476876585,
+            2.9999945167410567,
+            0.002551121759250652
+          ],
+          "model_grid_mean_observation_weight": 0.5506197214126587,
+          "fully_observed_fraction": 0.27010921556122447
+        },
+        {
+          "candidate_id": "forward",
+          "prefix_path_m": 5,
+          "target_displacement_ned_m": [
+            0.008562077461460975,
+            4.999990861235095,
+            0.0042518695987512345
+          ],
+          "model_grid_mean_observation_weight": 0.2917715609073639,
+          "fully_observed_fraction": 0.0003786670918367347
+        },
+        {
+          "candidate_id": "left_detour",
+          "prefix_path_m": 1,
+          "target_displacement_ned_m": [
+            0.9226618457503468,
+            0.38559812244508707,
+            0.0030341989695861216
+          ],
+          "model_grid_mean_observation_weight": 0.5848779678344727,
+          "fully_observed_fraction": 0.5603675063775511
+        },
+        {
+          "candidate_id": "left_detour",
+          "prefix_path_m": 2,
+          "target_displacement_ned_m": [
+            1.8453236915006936,
+            0.7711962448901741,
+            0.006068397939172243
+          ],
+          "model_grid_mean_observation_weight": 0.5312429666519165,
+          "fully_observed_fraction": 0.49768813775510207
+        },
+        {
+          "candidate_id": "left_detour",
+          "prefix_path_m": 3,
+          "target_displacement_ned_m": [
+            2.7679855372510405,
+            1.1567943673352614,
+            0.009102596908758365
+          ],
+          "model_grid_mean_observation_weight": 0.4302499294281006,
+          "fully_observed_fraction": 0.4094786352040816
+        },
+        {
+          "candidate_id": "left_detour",
+          "prefix_path_m": 5,
+          "target_displacement_ned_m": [
+            3.6239987571328403,
+            2.586773907586553,
+            0.011917620030913234
+          ],
+          "model_grid_mean_observation_weight": 0.3132513463497162,
+          "fully_observed_fraction": 0.27572943239795916
+        }
+      ]
+    },
+    {
+      "scene": "detour",
+      "candidates": [
+        {
+          "candidate_id": "forward",
+          "prefix_path_m": 1,
+          "target_displacement_ned_m": [
+            -0.002330944840961066,
+            0.9999917308978467,
+            0.0033323913450922227
+          ],
+          "model_grid_mean_observation_weight": 0.9808762073516846,
+          "fully_observed_fraction": 0.959343112244898
+        },
+        {
+          "candidate_id": "forward",
+          "prefix_path_m": 2,
+          "target_displacement_ned_m": [
+            -0.004661889681922132,
+            1.9999834617956938,
+            0.006664782690184445
+          ],
+          "model_grid_mean_observation_weight": 0.7999839186668396,
+          "fully_observed_fraction": 0.1201171875
+        },
+        {
+          "candidate_id": "forward",
+          "prefix_path_m": 3,
+          "target_displacement_ned_m": [
+            -0.006992834522883198,
+            2.9999751926935407,
+            0.009997174035276668
+          ],
+          "model_grid_mean_observation_weight": 0.0,
+          "fully_observed_fraction": 0.0
+        },
+        {
+          "candidate_id": "forward",
+          "prefix_path_m": 5,
+          "target_displacement_ned_m": [
+            -0.01165472420480533,
+            4.999958654489234,
+            0.016661956725461557
+          ],
+          "model_grid_mean_observation_weight": 0.0,
+          "fully_observed_fraction": 0.0
+        },
+        {
+          "candidate_id": "left_detour",
+          "prefix_path_m": 1,
+          "target_displacement_ned_m": [
+            0.9783508251570954,
+            0.20681811173231868,
+            0.007478741465561711
+          ],
+          "model_grid_mean_observation_weight": 0.8339762687683105,
+          "fully_observed_fraction": 0.7979512117346939
+        },
+        {
+          "candidate_id": "left_detour",
+          "prefix_path_m": 2,
+          "target_displacement_ned_m": [
+            1.9567016503141907,
+            0.41363622346463735,
+            0.014957482931122978
+          ],
+          "model_grid_mean_observation_weight": 0.49312475323677063,
+          "fully_observed_fraction": 0.4569515306122449
+        },
+        {
+          "candidate_id": "left_detour",
+          "prefix_path_m": 3,
+          "target_displacement_ned_m": [
+            2.935052475471286,
+            0.6204543351969561,
+            0.02243622439668469
+          ],
+          "model_grid_mean_observation_weight": 0.34475061297416687,
+          "fully_observed_fraction": 0.32071109693877553
+        },
+        {
+          "candidate_id": "left_detour",
+          "prefix_path_m": 5,
+          "target_displacement_ned_m": [
+            4.891754125785478,
+            1.0340905586615934,
+            0.03739370732780767
+          ],
+          "model_grid_mean_observation_weight": 0.0,
+          "fully_observed_fraction": 0.0
+        },
+        {
+          "candidate_id": "right_detour",
+          "prefix_path_m": 1,
+          "target_displacement_ned_m": [
+            -0.9787921410448367,
+            0.2047221067473171,
+            0.00740294791313989
+          ],
+          "model_grid_mean_observation_weight": 0.8467955589294434,
+          "fully_observed_fraction": 0.8095304528061225
+        },
+        {
+          "candidate_id": "right_detour",
+          "prefix_path_m": 2,
+          "target_displacement_ned_m": [
+            -1.9575842820896734,
+            0.4094442134946342,
+            0.014805895826279336
+          ],
+          "model_grid_mean_observation_weight": 0.47797927260398865,
+          "fully_observed_fraction": 0.4366828762755102
+        },
+        {
+          "candidate_id": "right_detour",
+          "prefix_path_m": 3,
+          "target_displacement_ned_m": [
+            -2.93637642313451,
+            0.6141663202419514,
+            0.022208843739419226
+          ],
+          "model_grid_mean_observation_weight": 0.3502797782421112,
+          "fully_observed_fraction": 0.32017299107142855
+        },
+        {
+          "candidate_id": "right_detour",
+          "prefix_path_m": 5,
+          "target_displacement_ned_m": [
+            -4.893960705224183,
+            1.0236105337365855,
+            0.03701473956569856
+          ],
+          "model_grid_mean_observation_weight": 0.0,
+          "fully_observed_fraction": 0.0
+        }
+      ]
+    }
+  ]
+}

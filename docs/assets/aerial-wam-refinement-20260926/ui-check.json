@@ -1,0 +1,16 @@
+{
+  "transport": "loopback_http",
+  "scene_choices_checked": [
+    "gap",
+    "climb",
+    "detour"
+  ],
+  "climb_middle_altitude_m": 5.4,
+  "timeline_end_stop_checked": true,
+  "video_play_advance_pause_checked": true,
+  "video_duration_s": 25.75,
+  "mobile_viewport_width": 360,
+  "mobile_document_width": 360,
+  "javascript_errors": 0,
+  "direct_file_preview_checked": false
+}

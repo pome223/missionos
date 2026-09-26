@@ -1,0 +1,18 @@
+{
+  "schema_version": "anwm_goal_metric_audit_protocol.v1",
+  "frozen_at": "2026-09-26T04:00:57.898368+00:00",
+  "upstream_revision": "657a80268505fa9149c4df502e35aa0f5bce11e5",
+  "planning_source_sha256": "4932dc302f3b28b161629bb2f4a50e7ebd1c64057adaf11e92c728eb1b79bb36",
+  "metric": "LPIPS(net=alex,version=0.1,lpips=True,spatial=False)",
+  "package": "lpips==0.1.4",
+  "resize_and_crop": "same pinned ANWM 4:3 center crop and bilinear 224 square",
+  "cohorts": [
+    "retained absolute capability pilot",
+    "fresh transport-only pilot when completed"
+  ],
+  "score_changed_after_results": false,
+  "navigation_selection_changed": false,
+  "new_anwm_inference_required": false,
+  "fresh_flight_benefit_claimed": false,
+  "purpose": "Audit official upstream perceptual ranking, not tune weights to expected route labels"
+}

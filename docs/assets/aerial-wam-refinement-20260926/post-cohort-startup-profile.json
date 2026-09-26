@@ -1,0 +1,8 @@
+{
+  "scope": "read-only diagnostic after all cohort forecasts completed",
+  "imports_seconds": 1.5765991109999504,
+  "checkpoint_sha256_seconds": 52.30886594000003,
+  "bytes": 18146420481,
+  "sha256": "bdd149cac6ec002ba7dc4ad99ec6f9eb02cd6d4f05320195cf174737b13b0bc2",
+  "model_calls": 0
+}

@@ -1,0 +1,102 @@
+{
+  "schema_version": "anwm_goal_metric_audit.v1",
+  "cohort": "aerial-wam-capability-20260926",
+  "protocol_sha256": "25b90ab1ef0fa275f97bf105b63b697bb906d5fcdc21bb85f2e2e7df75d0752f",
+  "runtime_invocation_evidence": {
+    "schema_version": "runtime_invocation_evidence.v1",
+    "model_execution_verified": true,
+    "fixture_invocation": false,
+    "model_id": "LPIPS-AlexNet-v0.1",
+    "metric_package_version": "0.1.4",
+    "backbone_sha256": "7be5be791159472b1fbf3c69796f7cb30dca7ad8466c2df70058c37116cdee02",
+    "linear_weights_sha256": "df73285e35b22355a2df87cdb6b70b343713b667eddbda73e1977e0c860835c0",
+    "image_pairs_evaluated": 8,
+    "device": "cpu",
+    "elapsed_wall_s": 5.569371459016111
+  },
+  "new_anwm_calls": 0,
+  "navigation_selection_changed": false,
+  "future_truth_used": false,
+  "safety_geometry_used_for_scores": false,
+  "note": "Saved forecast PNGs are quantized to 8 bit; this is a scoring audit, not a new flight or success outcome. No LPIPS threshold or fitted score weights.",
+  "cases": [
+    {
+      "scene": "gap",
+      "forecast_sha256": "f901391655485cb1a3440215e19e56b4d1df28661df7a8794e977fe48c20ede3",
+      "request_sha256": "ea08979aa5197a18eaae61985864a4f2739853149792e11efb52b72cbfbe4691",
+      "goal_model_grid_sha256": "9c80bfffcd98894864f4bbb1abe97c15461969cd38c02b29fad3722812e8096a",
+      "candidates": [
+        {
+          "candidate_id": "forward",
+          "goal_mse": 0.19194258749485016,
+          "goal_lpips": 0.8065352439880371,
+          "prediction_sha256": "401fe2440564c016c7a1c7be480d12ca57d247cbb461a39412fcc454538885d9"
+        },
+        {
+          "candidate_id": "left_detour",
+          "goal_mse": 0.10821183770895004,
+          "goal_lpips": 0.7367523908615112,
+          "prediction_sha256": "3ee0324335afe8f0a68f9773dd59dd53731994d5b00b020c1acf33a682db4a48"
+        }
+      ],
+      "mse_top": "left_detour",
+      "lpips_top": "left_detour"
+    },
+    {
+      "scene": "climb",
+      "forecast_sha256": "9db7a6884ca1c10e954d3691039741359758a279ea1d01fa3af1dc2913818ae3",
+      "request_sha256": "4dd02c5219c534c5fd507270b53a8bde9e76ec0644adaf47c64bc0e00cb9bd75",
+      "goal_model_grid_sha256": "9c80bfffcd98894864f4bbb1abe97c15461969cd38c02b29fad3722812e8096a",
+      "candidates": [
+        {
+          "candidate_id": "climb",
+          "goal_mse": 0.10754023492336273,
+          "goal_lpips": 0.7757096290588379,
+          "prediction_sha256": "b357c1ece5eda9fec2a58902bb41a3d53a43b9703d8bff48a74b46ccf09b4359"
+        },
+        {
+          "candidate_id": "forward",
+          "goal_mse": 0.1029340997338295,
+          "goal_lpips": 0.7344716787338257,
+          "prediction_sha256": "196a419d8ed795e2a42a86e57370c75ec696432d2d2ed25bab951c5daef352ea"
+        },
+        {
+          "candidate_id": "left_detour",
+          "goal_mse": 0.09253308922052383,
+          "goal_lpips": 0.7781591415405273,
+          "prediction_sha256": "f68f19ea8bf699694e4f20a88042d5230c334c4f4ecd7fb6239e7e6f12690ed8"
+        }
+      ],
+      "mse_top": "left_detour",
+      "lpips_top": "forward"
+    },
+    {
+      "scene": "detour",
+      "forecast_sha256": "9c64811bb4083cfdac57ff6bb07746f410b23c9cf169ae43d140836fb673bc04",
+      "request_sha256": "37757a857e5856e9df98f2ff74636d53cee9882ccfb36940fa581b806ce5f108",
+      "goal_model_grid_sha256": "18a4227aafd58c725a675b515f348e7a2dcf96381f2c58316f1ca59ca33b1ab9",
+      "candidates": [
+        {
+          "candidate_id": "forward",
+          "goal_mse": 0.14160670340061188,
+          "goal_lpips": 0.7972646355628967,
+          "prediction_sha256": "5a15621ecbff1445b6d2d00435b276d7543f04a5e260021cb32e4ca1e25794c2"
+        },
+        {
+          "candidate_id": "left_detour",
+          "goal_mse": 0.14047276973724365,
+          "goal_lpips": 0.7947858572006226,
+          "prediction_sha256": "412012032dbab98264b24fa0d3e5ff5a03378f4f33be60d1a72d975987be032f"
+        },
+        {
+          "candidate_id": "right_detour",
+          "goal_mse": 0.14008565247058868,
+          "goal_lpips": 0.7935985922813416,
+          "prediction_sha256": "a42af01a942204864d84b853d42250710111e38bfd1930596961d17c2e6ae6dc"
+        }
+      ],
+      "mse_top": "right_detour",
+      "lpips_top": "right_detour"
+    }
+  ]
+}
