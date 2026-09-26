@@ -14,6 +14,8 @@ import hashlib
 import importlib.metadata
 import json
 import math
+import os
+import uuid
 from pathlib import Path
 import re
 import subprocess
@@ -31,14 +33,18 @@ VAE_REVISION = "f04b2c4b98319346dad8c65879f680b1997b204a"
 CONTEXT_SIZE = 16
 
 
-def validate_model_identity(model: dict[str, Any], expected_model_sha256: str = MODEL_SHA256) -> dict[str, Any]:
+def validate_model_identity(
+    model: dict[str, Any], expected_model_sha256: str = MODEL_SHA256
+) -> dict[str, Any]:
     """Pin checkpoint, code and auxiliary weights as one consumer identity.
 
     Historical invocation receipts bind the checkpoint digest. Consumers also
     bind this complete, independently pinned identity into their request state;
     this does not rewrite an old receipt or attest to remote execution.
     """
-    if not isinstance(expected_model_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", expected_model_sha256):
+    if not isinstance(expected_model_sha256, str) or not re.fullmatch(
+        r"[0-9a-f]{64}", expected_model_sha256
+    ):
         raise ValueError("invalid_expected_model_hash")
     expected = {
         "model_id": "EmbodiedCity/ANWM",
@@ -321,17 +327,29 @@ def validate_px4_provenance(
         raise ValueError("PX4 hover pose and observation wall time are required")
     observed_at = datetime.fromisoformat(history["observed_at"].replace("Z", "+00:00"))
     completed_at = datetime.fromisoformat(history["capture_completed_at"].replace("Z", "+00:00"))
-    if (observed_at.tzinfo is None or completed_at.tzinfo is None
-            or not math.isclose(observed_at.timestamp(), observed, rel_tol=0, abs_tol=1e-6)
-            or completed_at.timestamp() < observed):
-        raise ValueError("PX4 original observation time must be preserved independently of completion")
+    if (
+        observed_at.tzinfo is None
+        or completed_at.tzinfo is None
+        or not math.isclose(observed_at.timestamp(), observed, rel_tol=0, abs_tol=1e-6)
+        or completed_at.timestamp() < observed
+    ):
+        raise ValueError(
+            "PX4 original observation time must be preserved independently of completion"
+        )
     if sha(request.get("candidate_plans_sha256")) != digest_json(candidates):
         raise ValueError("PX4 candidate plans hash mismatch")
     if urban:
         contract = request.get("urban_preview_contract", {})
         if (
-            set(contract) != {"schema_version", "scene_sha256", "routes_enu_m", "route_plans_sha256",
-                              "prefix_path_length_m", "time_alignment_verified"}
+            set(contract)
+            != {
+                "schema_version",
+                "scene_sha256",
+                "routes_enu_m",
+                "route_plans_sha256",
+                "prefix_path_length_m",
+                "time_alignment_verified",
+            }
             or contract.get("schema_version") != "missionos_urban_route_preview.v1"
             or contract.get("scene_sha256") != scene_hash
             or contract.get("prefix_path_length_m") != 5.0
@@ -340,8 +358,11 @@ def validate_px4_provenance(
         ):
             raise ValueError("urban route preview contract differs")
         expected = urban_preview_candidates(
-            np, contract["routes_enu_m"], arrays["context_camera_poses"][-1],
-            np.asarray(provenance["current_vehicle_local_ned_m"]), yaw,
+            np,
+            contract["routes_enu_m"],
+            arrays["context_camera_poses"][-1],
+            np.asarray(provenance["current_vehicle_local_ned_m"]),
+            yaw,
         )
         if len(expected) != len(candidates) or any(
             a["candidate_id"] != b["candidate_id"]
@@ -393,7 +414,11 @@ def validate_px4_provenance(
         )
     }
     return {
-        **({"urban_preview_contract": contract, "pose_conditioned_route_preview_only": True} if urban else {}),
+        **(
+            {"urban_preview_contract": contract, "pose_conditioned_route_preview_only": True}
+            if urban
+            else {}
+        ),
         "simulation_frame_timing_verified": True,
         "model_time_alignment_verified": False,
         "candidate_plans_sha256": request["candidate_plans_sha256"],
@@ -612,17 +637,8 @@ def validate_request(request: dict[str, Any], base: Path) -> tuple[Any, dict[str
     return arrays, manifest
 
 
-def run(
-    request: dict[str, Any], base: Path, output: Path, validate_only: bool = False
-) -> dict[str, Any]:
-    arrays, manifest = validate_request(request, base)
-    if validate_only:
-        return {
-            "validated": True,
-            "input_manifest": manifest,
-            "input_manifest_sha256": digest_json(manifest),
-        }
-
+def load_runtime(upstream: Path, checkpoint: Path, diffusion_steps: int = 250):
+    initialized = time.perf_counter()
     import numpy as np
     import torch
     from PIL import Image
@@ -631,15 +647,17 @@ def run(
         raise RuntimeError(
             "the upstream ANWM inference path requires a CUDA device with bfloat16 support"
         )
-    upstream = (base / request["upstream_root"]).resolve()
+    upstream = upstream.resolve()
     revision = subprocess.check_output(
         ["git", "-C", str(upstream), "rev-parse", "HEAD"], text=True
     ).strip()
     if revision != UPSTREAM_REVISION:
         raise ValueError("upstream revision differs from the reviewed implementation")
     subprocess.run(["git", "-C", str(upstream), "diff", "--quiet", "HEAD", "--"], check=True)
-    checkpoint = (base / request["checkpoint_path"]).resolve()
+    checkpoint = checkpoint.resolve()
+    validation_started = time.perf_counter()
     checkpoint_hash = digest_file(checkpoint)
+    checkpoint_validation_seconds = time.perf_counter() - validation_started
     if checkpoint_hash != MODEL_SHA256:
         raise ValueError("checkpoint SHA256 differs from the official released model")
     sys.path.insert(0, str(upstream))
@@ -673,9 +691,72 @@ def run(
         .eval()
         .to(device)
     )
-    diffusion = create_diffusion(str(manifest["diffusion_steps"]))
+    diffusion = create_diffusion(str(diffusion_steps))
     torch.cuda.synchronize()
     load_seconds = time.perf_counter() - started
+    return {
+        "upstream": upstream,
+        "checkpoint": checkpoint,
+        "diffusion_steps": diffusion_steps,
+        "checkpoint_hash": checkpoint_hash,
+        "revision": revision,
+        "model": model,
+        "vae": vae,
+        "diffusion": diffusion,
+        "device": device,
+        "np": np,
+        "torch": torch,
+        "Image": Image,
+        "transform": transform,
+        "normalize_data": normalize_data,
+        "model_forward_wrapper": model_forward_wrapper,
+        "reproject": reproject_depth_to_other_pose_seq2seq,
+        "project": project_to_2d_image_seq2seq,
+        "load_seconds": load_seconds,
+        "checkpoint_validation_seconds": checkpoint_validation_seconds,
+        "initialization_seconds": time.perf_counter() - initialized,
+    }
+
+
+def bind_loaded_runtime(loaded, request, base, manifest):
+    if (
+        loaded["upstream"] != (base / request["upstream_root"]).resolve()
+        or loaded["checkpoint"] != (base / request["checkpoint_path"]).resolve()
+        or loaded["diffusion_steps"] != manifest["diffusion_steps"]
+    ):
+        raise ValueError("request differs from the preloaded model configuration")
+
+
+def run(
+    request: dict[str, Any], base: Path, output: Path, validate_only: bool = False, *, loaded=None
+) -> dict[str, Any]:
+    arrays, manifest = validate_request(request, base)
+    if validate_only:
+        return {
+            "validated": True,
+            "input_manifest": manifest,
+            "input_manifest_sha256": digest_json(manifest),
+        }
+
+    resident = loaded is not None
+    if loaded is None:
+        loaded = load_runtime(
+            base / request["upstream_root"],
+            base / request["checkpoint_path"],
+            manifest["diffusion_steps"],
+        )
+    bind_loaded_runtime(loaded, request, base, manifest)
+    np, torch, Image = loaded["np"], loaded["torch"], loaded["Image"]
+    model, vae, diffusion = loaded["model"], loaded["vae"], loaded["diffusion"]
+    device, transform = loaded["device"], loaded["transform"]
+    normalize_data = loaded["normalize_data"]
+    model_forward_wrapper = loaded["model_forward_wrapper"]
+    reproject_depth_to_other_pose_seq2seq, project_to_2d_image_seq2seq = (
+        loaded["reproject"],
+        loaded["project"],
+    )
+    checkpoint_hash, revision = loaded["checkpoint_hash"], loaded["revision"]
+    load_seconds = 0.0 if resident else loaded["load_seconds"]
     context = torch.stack([transform(Image.fromarray(image)) for image in arrays["context_rgb"]])[
         None
     ].to(device)
@@ -782,6 +863,14 @@ def run(
             "device_total_memory_bytes": torch.cuda.get_device_properties(0).total_memory,
             "peak_allocated_gpu_bytes": torch.cuda.max_memory_allocated(),
             "model_load_seconds": load_seconds,
+            "resident_model_reused": resident,
+            "resident_worker_id": loaded.get("worker_id"),
+            "initialization_before_requests_seconds": (
+                loaded["initialization_seconds"] if resident else 0.0
+            ),
+            "request_initialization_seconds": (
+                0.0 if resident else loaded["initialization_seconds"]
+            ),
             "forecast_seconds": sum(item["elapsed_seconds"] for item in forecasts),
             "dependencies": {
                 name: importlib.metadata.version(name)
@@ -789,7 +878,8 @@ def run(
             },
             "execution_scope": (
                 "px4_gazebo_urban_pose_conditioned_route_preview"
-                if manifest["source_kind"] == URBAN_SOURCE else "px4_gazebo_frozen_candidate_forecast"
+                if manifest["source_kind"] == URBAN_SOURCE
+                else "px4_gazebo_frozen_candidate_forecast"
                 if manifest["source_kind"] == "px4_gazebo_frozen_capture"
                 else "public_dataset_offline_candidate_forecast"
             ),
@@ -805,12 +895,138 @@ def run(
     }
 
 
+def atomic_json(path: Path, value):
+    temporary = path.with_suffix(".tmp")
+    temporary.write_text(json.dumps(value, indent=2, allow_nan=False) + "\n")
+    temporary.replace(path)
+
+
+def resident_worker(
+    root: Path, upstream: Path, checkpoint: Path, max_requests: int = 3, max_seconds: float = 2400
+):
+    """Opt-in sequential file queue. Preload precedes fresh observation capture.
+
+    This process performs forecasting only. It holds no approval/dispatch key,
+    opens no listening socket, and cannot control a simulator or aircraft.
+    The operator must still bound the VM lifetime independently.
+    """
+    if not 1 <= max_requests <= 3 or not 1 <= max_seconds <= 2400:
+        raise ValueError("resident lifetime or request count exceeds the pilot bound")
+    root = root.resolve()
+    root.mkdir(parents=True, exist_ok=True)
+    # A root is single-use, including failed startups. Never reuse a stale worker.
+    state = root / "resident"
+    state.mkdir(mode=0o700)
+    incoming, outputs = root / "incoming", root / "output"
+    for directory in (incoming, outputs):
+        if directory.is_symlink():
+            raise ValueError("worker queue must not be a symlink")
+        directory.mkdir(mode=0o700, exist_ok=True)
+    ready = state / "ready.json"
+    started = time.monotonic()
+    handled = []
+    try:
+        loaded = load_runtime(upstream, checkpoint, 250)
+        loaded["worker_id"] = uuid.uuid4().hex
+        atomic_json(
+            ready,
+            {
+                "schema_version": "anwm_resident_ready.v1",
+                "pid": os.getpid(),
+                "worker_id": loaded["worker_id"],
+                "runtime_sha256": digest_file(Path(__file__)),
+                "model_sha256": loaded["checkpoint_hash"],
+                "sampling_steps": 250,
+                "initialization_seconds": loaded["initialization_seconds"],
+                "model_load_seconds": loaded["load_seconds"],
+                "checkpoint_validation_seconds": loaded.get("checkpoint_validation_seconds"),
+                "ready_at_unix_s": time.time(),
+                "forecast_calls": 0,
+                "approval_authority": False,
+            },
+        )
+        while len(handled) < max_requests and time.monotonic() - started < max_seconds:
+            jobs = sorted(
+                p
+                for p in incoming.iterdir()
+                if re.fullmatch(r"[0-9a-f]{32}", p.name)
+                and p.name not in handled
+                and (p / ".ready").exists()
+            )
+            if not jobs:
+                time.sleep(0.1)
+                continue
+            job = jobs[0]
+            out = outputs / job.name
+            try:
+                if job.is_symlink() or not job.is_dir() or out.exists():
+                    raise ValueError("non-fresh resident job")
+                for name, limit in (("request.json", 1024**2), ("assets.npz", 64 * 1024**2)):
+                    path = job / name
+                    if path.is_symlink() or not path.is_file() or path.stat().st_size > limit:
+                        raise ValueError("invalid bounded resident input")
+                request = json.loads((job / "request.json").read_text())
+                if (
+                    request.get("source_kind") != URBAN_SOURCE
+                    or request.get("assets_npz") != "assets.npz"
+                ):
+                    raise ValueError("resident accepts only bounded urban observation inputs")
+                result = run(request, job, out, loaded=loaded)
+                atomic_json(out / "result.json", result)
+            except Exception as exc:
+                # Keep failures; never relabel them as forecasts or retry a model result.
+                atomic_json(
+                    state / (job.name + "-error.json"),
+                    {
+                        "schema_version": "anwm_resident_error.v1",
+                        "error_type": type(exc).__name__,
+                        "job_id": job.name,
+                    },
+                )
+            handled.append(job.name)
+    finally:
+        ready.unlink(missing_ok=True)
+        atomic_json(
+            state / "stopped.json",
+            {
+                "handled_job_ids": handled,
+                "elapsed_seconds": time.monotonic() - started,
+            },
+        )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--request", type=Path, required=True)
-    parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--request", type=Path)
+    parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--validate-only", action="store_true")
+    parser.add_argument("--worker-root", type=Path)
+    parser.add_argument("--upstream-root", type=Path)
+    parser.add_argument("--checkpoint", type=Path)
+    parser.add_argument("--max-requests", type=int, default=3)
+    parser.add_argument("--max-seconds", type=float, default=2400)
     args = parser.parse_args()
+    if args.worker_root:
+        if (
+            args.request
+            or args.output_dir
+            or args.validate_only
+            or not args.upstream_root
+            or not args.checkpoint
+        ):
+            parser.error(
+                "worker mode requires upstream/checkpoint and excludes request/output options"
+            )
+        resident_worker(
+            args.worker_root,
+            args.upstream_root,
+            args.checkpoint,
+            args.max_requests,
+            args.max_seconds,
+        )
+        return
+    if not args.request or not args.output_dir:
+        parser.error("single request mode requires request and output-dir")
     request = json.loads(args.request.read_text())
     result = run(request, args.request.resolve().parent, args.output_dir, args.validate_only)
     args.output_dir.mkdir(parents=True, exist_ok=True)

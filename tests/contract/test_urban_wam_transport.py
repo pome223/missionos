@@ -72,6 +72,7 @@ def test_one_stream_executes_digest_checked_runtime_and_returns_exact_assets(tmp
     (remote / "venv/bin/python").symlink_to(sys.executable)
     runtime = remote / "aerial_anwm_runtime.py"
     runtime.write_text("""import argparse,json
+from pathlib import Path
 p=argparse.ArgumentParser();p.add_argument('--request');p.add_argument('--output-dir');a=p.parse_args()
 request=json.loads(Path(a.request).read_text());out=Path(a.output_dir)
 assert Path(a.request).with_name('assets.npz').read_bytes()==b'fixture input'

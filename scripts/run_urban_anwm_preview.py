@@ -66,7 +66,7 @@ def receive_forecasts(payload, destination, candidate_ids):
         (destination / name).write_bytes(content)
 
 
-def stream_command(remote_root, identity, runtime_hash, candidate_ids):
+def stream_command(remote_root, identity, runtime_hash, candidate_ids, *, resident=False):
     """One SSH session: input tar, pinned runtime, output tar; no extra code upload."""
     if (
         not re.fullmatch(r"/home/[A-Za-z0-9_-]+/aerial-wam", remote_root)
@@ -85,29 +85,63 @@ def stream_command(remote_root, identity, runtime_hash, candidate_ids):
     files = ["result.json"] + [
         filename for name in candidate_ids for filename in (name + ".png", name + "-projection.png")
     ]
+    readiness = (
+        "import json,os,sys; r=json.load(open(sys.argv[1])); "
+        "assert r['schema_version']=='anwm_resident_ready.v1'; "
+        "assert r['runtime_sha256']==sys.argv[2]; "
+        "assert r['sampling_steps']==250; os.kill(r['pid'],0)"
+    )
+    worker_steps = [
+        " ".join(
+            map(
+                q,
+                [
+                    remote_root + "/venv/bin/python",
+                    "-c",
+                    readiness,
+                    remote_root + "/resident/ready.json",
+                    runtime_hash,
+                ],
+            )
+        ),
+        "touch " + q(remote_input + "/.ready"),
+        "attempt=0",
+        "while [ ! -f " + q(remote_output + "/result.json") + " ]; do",
+        "  test ! -f " + q(remote_root + "/resident/" + identity + "-error.json"),
+        '  test "$attempt" -lt 170',
+        "  sleep 1; attempt=$((attempt+1))",
+        "done",
+    ]
     return "\n".join(
         [
             "set -eu",
             "umask 077",
             'test "$(sha256sum ' + q(runtime) + " | cut -d ' ' -f 1)\" = " + q(runtime_hash),
             "mkdir -p " + q(remote_root + "/incoming") + " " + q(remote_root + "/output"),
-            "mkdir " + q(remote_input) + " " + q(remote_output),
+            "mkdir " + q(remote_input) + ("" if resident else " " + q(remote_output)),
             "tar -xf - -C " + q(remote_input),
-            "HF_HUB_OFFLINE=1 "
-            + " ".join(
-                map(
-                    q,
-                    [
-                        remote_root + "/venv/bin/python",
-                        runtime,
-                        "--request",
-                        remote_input + "/request.json",
-                        "--output-dir",
-                        remote_output,
-                    ],
-                )
-            )
-            + " 1>&2",
+            *(
+                []
+                if resident
+                else [
+                    "HF_HUB_OFFLINE=1 "
+                    + " ".join(
+                        map(
+                            q,
+                            [
+                                remote_root + "/venv/bin/python",
+                                runtime,
+                                "--request",
+                                remote_input + "/request.json",
+                                "--output-dir",
+                                remote_output,
+                            ],
+                        )
+                    )
+                    + " 1>&2"
+                ]
+            ),
+            *(worker_steps if resident else []),
             "COPYFILE_DISABLE=1 tar -cf - -C " + q(remote_output) + " " + " ".join(map(q, files)),
         ]
     )
@@ -115,7 +149,11 @@ def stream_command(remote_root, identity, runtime_hash, candidate_ids):
 
 def stream_forecasts(ssh, cfg, identity, prepared, destination, candidate_ids):
     command = stream_command(
-        cfg["remote_root"], identity, cfg["published_runtime_sha256"], candidate_ids
+        cfg["remote_root"],
+        identity,
+        cfg["published_runtime_sha256"],
+        candidate_ids,
+        resident=cfg.get("transport") == "resident_ssh_tar_v1",
     )
     result = subprocess.run(
         ssh + ["--ssh-flag=-T", "--command", command],
@@ -149,7 +187,7 @@ def infer(root, gpu_config_path):
     if not re.fullmatch(r"[a-f0-9]{64}", cfg.get("published_runtime_sha256", "")):
         raise ValueError("published runtime digest required")
     transport = cfg.get("transport", "scp_v1")
-    if transport not in ("scp_v1", "single_ssh_tar_v1"):
+    if transport not in ("scp_v1", "single_ssh_tar_v1", "resident_ssh_tar_v1"):
         raise ValueError("unsupported urban GPU transport")
     session = root / "session"
     status = json.loads((session / "status.json").read_text())
@@ -184,7 +222,7 @@ def infer(root, gpu_config_path):
     remote_output = remote_root + "/output/" + identity
     runtime = remote_root + "/aerial_anwm_runtime.py"
     transport_started = time.perf_counter()
-    if transport == "single_ssh_tar_v1":
+    if transport in ("single_ssh_tar_v1", "resident_ssh_tar_v1"):
         stream_forecasts(
             ssh,
             cfg,
@@ -208,7 +246,7 @@ def infer(root, gpu_config_path):
         "transport_round_trip_wall_seconds": transport_seconds,
         "selection_validation_wall_seconds": time.perf_counter() - selection_started,
         "host_infer_wall_seconds": time.perf_counter() - infer_started,
-        "remote_transport_invocations": 1 if transport == "single_ssh_tar_v1" else 4,
+        "remote_transport_invocations": 4 if transport == "scp_v1" else 1,
         "scope": "infer entry through selection; input age also includes preceding capture wait",
     }
     decision["runtime_script_sha256"] = cfg["published_runtime_sha256"]
