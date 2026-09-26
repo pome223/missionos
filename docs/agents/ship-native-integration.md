@@ -1,5 +1,11 @@
 # Native VLA and WAM in one flight
 
+The historical `urban_entry` point is 30 m before the coastline. These native
+flights validate same-flight participation and delivery/return, not strictly
+urban-only model operation. The [urban-only loop controller](ship-urban-loop.md)
+is a separate CPU-tested development path; it is not yet connected to this SITL
+command or its native services.
+
 Both explicit loopback endpoints select a sequential native integration:
 
 ```sh

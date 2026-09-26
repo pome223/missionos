@@ -125,6 +125,36 @@ def px4_plan_command(scenario: Path | None, output: Path | None) -> None:
     _emit_report(report, output)
 
 
+@ship_delivery_command.command("urban-loop-smoke")
+@click.option(
+    "--output-dir", required=True, type=click.Path(file_okay=False, path_type=Path)
+)
+@click.option(
+    "--approve-fixture",
+    is_flag=True,
+    help="Approve CPU-only worker processes and local HTTP.",
+)
+@click.option(
+    "--fault",
+    default="none",
+    help="Explicit fixture fault; see the urban loop contract.",
+)
+def urban_loop_smoke_command(output_dir, approve_fixture, fault):
+    """Exercise two urban decision updates; no PX4, native models, GPU or flight."""
+    from src.runtime.ship_urban_loop_fixture import run_fixture
+    from src.runtime.ship_urban_loop_verifier import verify_urban_loop
+
+    try:
+        result = run_fixture(output_dir, approved=approve_fixture, fault=fault)
+        verification = verify_urban_loop(result)
+        _emit_report(verification, output_dir / "verification.json")
+        click.echo(f"Saved control receipt: {output_dir / 'result.json'}")
+    except (OSError, ValueError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    if not verification["control_sequence_verified"]:
+        raise click.exceptions.Exit(1)
+
+
 @ship_delivery_command.command("run-sitl")
 @click.option("--scenario", type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.option(

@@ -4,6 +4,8 @@ After the successful targeted 1 km flight, the unchanged final implementation co
 
 The final VLA stage is a short urban-entry level inspection with vertical proposals restricted to about ±0.204 m. This is not qualification of unrestricted three-dimensional VLA control.
 
+Location clarification: the waypoint called "urban entry" is 30 m before the coastline. Models ran on a cloud GPU, with VLA warmup before takeoff. These flights do not verify urban-only startup/inference/shutdown or repeated decisions after landfall. The [new urban-loop controller work](../ship-urban-loop-report.md) is separate evidence.
+
 The original cohort completed the three 100 m cases and stopped before delivery in its 1 km extension. That failure is retained. Results from different implementations are not pooled into a success rate.
 
 [Recorded trajectories and images across all seven retained cohorts](replay/replay.html)
