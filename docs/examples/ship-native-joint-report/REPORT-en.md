@@ -1,12 +1,12 @@
 # Native VLA + WAM delivery and the 1 km perception repair
 
-The final targeted 1 km stationary-ship PX4/Gazebo flight verified native AeroVLA movement, fresh post-movement ANWM input, delivery and stable deck recovery (1/1). It does not establish a four-case pass on one final implementation.
+After the successful targeted 1 km flight, the unchanged final implementation completed all three separately predeclared 100 m cases: 3 verified native VLA + WAM integrations, 3 deliveries and 3 stable recoveries. All four conditions are covered on the same implementation across two distinct cohorts; this is not one four-flight cohort.
 
 The final VLA stage is a short urban-entry level inspection with vertical proposals restricted to about ±0.204 m. This is not qualification of unrestricted three-dimensional VLA control.
 
 The original cohort completed the three 100 m cases and stopped before delivery in its 1 km extension. That failure is retained. Results from different implementations are not pooled into a success rate.
 
-[Recorded trajectories and images across all six implementation cohorts](replay/replay.html)
+[Recorded trajectories and images across all seven retained cohorts](replay/replay.html)
 
 ## Outcomes by implementation
 
@@ -18,8 +18,9 @@ The original cohort completed the three 100 m cases and stopped before delivery 
 | Action syntax | 4 | 1 | 0 | Descent veto; 1 km unattempted |
 | Level inspection | 4 | 3 | 2 | Numeric permit reproduction failed; 1 km unattempted |
 | Canonical numeric values; 1 km only | 1 | 1 | 1 | One predeclared targeted follow-up |
+| Same final implementation; 100 m follow-up | 3 | 3 | 3 | Three separately predeclared conditions |
 
-These are separate implementation cohorts. Successes are not pooled and unattempted conditions are not passes. The third flights of the association-only and level-inspection cohorts verified delivery/recovery but failed the combined integration certificate.
+The first six cohorts are separated by implementation changes. The seventh uses the same source as the sixth for a separately predeclared 100 m follow-up. Successes are not pooled and unattempted conditions are not passes. The third flights of the association-only and level-inspection cohorts verified delivery/recovery but failed the combined integration certificate.
 
 ## Measured targeted result
 
@@ -28,6 +29,18 @@ These are separate implementation cohorts. Successes are not pooled and unattemp
 | static_center | 1000 m | 2.905 m | 0.659 m | 50.146 s | 685.140 s | verified |
 
 Position error is the maximum difference between the two decoded predictions and independent simulator obstacle coordinates. Exchange time is measured host wall time; recorded elapsed runs from worker start to the final observation.
+
+## Three 100 m cases on the unchanged final implementation
+
+Source revision is the same as the preceding 1 km flight: `f9c21384916ba0aa0778da5b7527d598303879bb`. Three planned, 3 attempted, 3 integrations verified. Acceptance criteria, models and generation-time action space are unchanged. Unattempted or failed cases are not counted as passes.
+
+| Case | VLA displacement | WAM position error | WAM exchange | Recorded elapsed | Integration | Delivery | Recovery |
+| --- | ---: | ---: | ---: | ---: | --- | --- | --- |
+| static_center | 2.831 m | 0.630 m | 49.120 s | 456.387 s | verified | verified | verified |
+| static_near | 4.827 m | 0.205 m | 45.569 s | 458.044 s | verified | verified | verified |
+| static_clear | 4.894 m | 2.333 m | 44.873 s | 411.160 s | verified | verified | verified |
+
+[Follow-up outcomes and raw hashes](compact-followup-evidence.json), [predeclared protocol](compact-followup-protocol.json).
 
 ## Cause and repair
 
@@ -61,7 +74,7 @@ The fourth cohort opted into `aerovla_action_grammar.v1`: a generation-time next
 
 The fourth cohort stopped in its first 100 m case: the syntactically valid `55 84 49</s>` proposed a 3.57 m descent and was rejected by the independent altitude envelope. WAM was not invoked. It retains zero completions from one attempted case out of four planned.
 
-The fifth and sixth cohorts explicitly limit urban-entry inspection to vertical bins 47–51 (about ±0.204 m), while forward/yaw bins 0–98, LAND and terminal bins remain available. No returned value is rewritten. This changes the allowed model action space and is a separate implementation cohort; altitude, clearance, latency, delivery and recovery verification are not relaxed.
+The fifth and later cohorts explicitly limit urban-entry inspection to vertical bins 47–51 (about ±0.204 m), while forward/yaw bins 0–98, LAND and terminal bins remain available. No returned value is rewritten. This changes the allowed model action space and is a separate implementation cohort; altitude, clearance, latency, delivery and recovery verification are not relaxed.
 
 [Format-only outcomes](format-only-evidence.json) and [descent proposal and rejection](phase-action-diagnosis.json). The final policy is `aerovla_inspection_grammar.v1`.
 
@@ -71,7 +84,7 @@ The fifth cohort verified delivery and recovery in three 100 m flights, but the 
 
 The producer now canonicalizes derived position/time values to nine decimal places and heading to twelve. The exact-equality verifier and safety limits remain unchanged. A newly issued offline permit on the archived input was byte-identical in an actual Linux container and macOS. The historical failed receipt is not reclassified.
 
-The remaining budget funded one predeclared targeted 1 km flight, with the same native models and level-inspection action space as cohort five. The three 100 m cases were not rerun on the final source, so this is not four-condition qualification.
+The canonical-number repair first passed one predeclared targeted 1 km flight. Following explicit approval of an $11 cumulative limit, three fresh 100 m cases were predeclared on that unchanged source. Model and level-inspection action space remain the same as the fifth cohort.
 
 [Level-inspection outcomes](level-inspection-evidence.json), [protocol](level-inspection-protocol.json), and [numeric diagnosis and cross-platform comparison](precision-diagnosis.json).
 
@@ -79,7 +92,7 @@ The remaining budget funded one predeclared targeted 1 km flight, with the same 
 
 The final implementation regenerated permits from the fifth cohort’s retained inputs for the center, near and clear 100 m cases. All six results (prestream and execution for each case) were byte-identical on macOS and an actual Linux container with networking disabled. This used no additional GPU, model inference or flight.
 
-This checks numerical reproducibility only. Historical failures remain unchanged, and fresh three-case native-flight qualification is still pending. [Offline results and hashes](compact-offline-readiness.json).
+This checks numerical reproducibility only. Historical failures remain unchanged. The fresh three-case native-flight results are reported separately above. [Offline results and hashes](compact-offline-readiness.json).
 
 ## Evidence and scope
 
@@ -91,6 +104,6 @@ The setup relies on mapped planes, colored objects, calibration markers and Gaze
 
 The public bundle contains reviewed summaries, synthetic images, observed trajectories and hashes. The raw archive is private; hashes alone do not permit full independent reproduction. The replay uses recorded positions and camera images selected at intervals of at least five seconds.
 
-Estimated cost of the final cohort: $0.66; cumulative estimate: $7.49 of the $8 limit. The task-owned GPU VM and disk were deleted. These are estimates, not a confirmed invoice.
+Estimated cost of the 100 m follow-up: $0.94; cumulative estimate: $8.43 of the authorized $11 limit. The task-owned GPU VM and disk were deleted. These are estimates, not a confirmed invoice.
 
 [日本語レポート](REPORT-ja.md)

@@ -77,9 +77,10 @@ space and must not be pooled with unrestricted or format-only attempts.
 
 Freeze the source, service configuration, model identities, three stationary
 cases and numeric bounds before paid flight trials. Require all three 100 m
-offshore cases to complete within 900 wall seconds, followed by a separately
-frozen 1,000 m offshore extension with the same 900-second bound. Preserve all
-attempts and reject failure-driven model retries. Rules superiority is not a
+offshore cases to complete within 900 wall seconds and a separately frozen
+1,000 m offshore extension with the same 900-second bound. Record the actual
+cohort order and preserve each independently predeclared denominator. Preserve
+all attempts and reject failure-driven model retries. Rules superiority is not a
 gate. The VLA age limit remains two seconds, target error 0.25 m and altitude
 error 0.15 m; the [WAM absolute bounds](ship-anwm-static.md) remain unchanged.
 
@@ -94,13 +95,15 @@ the CLI never provisions compute.
 ## Recorded qualification
 
 The [same-flight report](../examples/ship-native-joint-report/REPORT-ja.md)
-retains six implementation stages: original, target association, ACK ordering,
-action syntax, level inspection, and canonical numeric permits. Each has its
-own frozen source revision and attempt denominator. The final stage is one
-predeclared targeted 1,000 m follow-up within the remaining compute budget.
-It does not establish all four conditions on the final implementation; earlier
-100 m passes and failed integration certificates are not pooled or relabeled. The public replay exports reviewed synthetic
-images and recorded positions; raw cloud logs remain private. Public hashes
+retains seven cohorts across six implementation stages: original, target
+association, ACK ordering, action syntax, level inspection, and canonical
+numeric permits. The canonical-number source first completed one predeclared
+1,000 m flight (1/1), then completed all three separately predeclared 100 m
+cases on the unchanged source (3 integrations verified). All four conditions
+are therefore covered by two separate cohorts on the same implementation,
+not one four-flight cohort. Earlier failures remain unchanged and results
+from different source revisions are not pooled. The public replay exports
+reviewed synthetic images and recorded positions; raw cloud logs remain private. Public hashes
 identify those records but do not replace a full independently runnable archive.
 
 For the 1,000 m extension, use the same native command with

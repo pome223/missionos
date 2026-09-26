@@ -48,9 +48,11 @@ missionos ship-delivery urban-compare \
   --run-dir /tmp/urban-long-rule --run-dir /tmp/urban-long-wait
 ```
 
-Before comparing VLA/WAM, provide matched camera observations and conditions
-where the best observed choice improves upon a strong simple rule. Calling a
-model alone does not satisfy that milestone.
+That initial screen tested whether these idealized cases offered decision
+headroom. The later VLA/WAM capability work uses predeclared arrival, safety,
+latency and compute bounds, with Rules remaining an independent constraint.
+It does not require a learned model to outperform the idealized rule. Calling
+a model alone does not establish verified mission completion.
 
 See the [maintainer contract](../agents/ship-urban-decisions.md) for boundaries.
 
@@ -75,5 +77,9 @@ extends this to a camera attached to the aircraft. A stopping-aware rule and
 local Gemma4 use observed images to choose wait or detour; PX4 executes the
 approved route and delivery and recovery are checked separately. The report
 includes inference time and failed development attempts. Gemma4 is a general
-vision-language model. Dedicated flight VLA and action-conditioned WAM
-integration remain open, so this comparison does not complete Step 2.
+vision-language model. That comparison alone does not establish dedicated flight
+VLA and action-conditioned WAM integration. The subsequent [native same-flight
+report](../examples/ship-native-joint-report/REPORT-ja.md) records real AeroVLA
+and ANWM participation, including the 1 km delivery and deck recovery. Its
+bounded stationary-ship simulator results do not establish moving-deck or
+ten-aircraft operation.
