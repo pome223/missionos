@@ -56,9 +56,7 @@ from src.runtime.task_store import TaskStore
 OPT_IN_ENV = "RUN_PX4_GAZEBO_SITL_MISSION_UPLOAD_SMOKE"
 ROOT_DIR = Path(__file__).resolve().parents[1]
 CONTAINER_NAME = "boiled-claw-px4-gazebo-sitl-mission-upload-smoke"
-PX4_GAZEBO_IMAGE = os.getenv(
-    "PX4_GAZEBO_SITL_TELEMETRY_IMAGE", "px4io/px4-sitl-gazebo:latest"
-)
+PX4_GAZEBO_IMAGE = os.getenv("PX4_GAZEBO_SITL_TELEMETRY_IMAGE", "px4io/px4-sitl-gazebo:latest")
 PX4_MODEL = "gz_x500"
 GAZEBO_WORLD = "default"
 PX4_MAVLINK_PORT = 14604
@@ -77,9 +75,7 @@ class ObservedUploader:
 
 def _require_opt_in() -> None:
     if os.getenv(OPT_IN_ENV) != "1":
-        raise SystemExit(
-            f"Set {OPT_IN_ENV}=1 to run the actual SITL mission upload smoke."
-        )
+        raise SystemExit(f"Set {OPT_IN_ENV}=1 to run the actual SITL mission upload smoke.")
 
 
 def _run(
@@ -117,9 +113,7 @@ def _wait_for_startup(timeout: float = 90.0) -> None:
             return
         last_logs = logs
         time.sleep(1)
-    raise RuntimeError(
-        "timed out waiting for PX4/Gazebo SITL startup: " + last_logs[-800:]
-    )
+    raise RuntimeError("timed out waiting for PX4/Gazebo SITL startup: " + last_logs[-800:])
 
 
 def _start_container() -> None:
@@ -209,7 +203,9 @@ def _mission_upload_item_tuples(
     return tuple(resolved)
 
 
-def _inner_upload_script(items: Sequence[Any] | None = None) -> str:
+def _inner_upload_script(
+    items: Sequence[Any] | None = None, *, reuse_mavlink_session: bool = False
+) -> str:
     mission_items_json = json.dumps(_mission_upload_item_tuples(items), sort_keys=True)
     return textwrap.dedent(f"""
         import json, socket, struct, subprocess, time
@@ -240,9 +236,11 @@ def _inner_upload_script(items: Sequence[Any] | None = None) -> str:
         def mission_item_int(seqno, command, lat, lon, alt, current, frame_kind, param1, param2, param3, param4, seq):
             payload=struct.pack('<ffffiifHHBBBBBB',float(param1),float(param2),float(param3),float(param4),int(lat*10000000),int(lon*10000000),float(alt),seqno,command,1,1,frame_kind,current,1,0)
             return frame(73, payload, seq)
-        subprocess.run(['/opt/px4-gazebo/bin/px4-mavlink','stop-all'], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        start_result=subprocess.run(['/opt/px4-gazebo/bin/px4-mavlink','start','-u','{PX4_MAVLINK_PORT}','-r','400000','-t','127.0.0.1','-o','{GCS_MAVLINK_PORT}','-m','onboard'], check=False, text=True, capture_output=True)
-        time.sleep(1.0)
+        start_result=None
+        if not {reuse_mavlink_session!r}:
+            subprocess.run(['/opt/px4-gazebo/bin/px4-mavlink','stop-all'], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            start_result=subprocess.run(['/opt/px4-gazebo/bin/px4-mavlink','start','-u','{PX4_MAVLINK_PORT}','-r','400000','-t','127.0.0.1','-o','{GCS_MAVLINK_PORT}','-m','onboard'], check=False, text=True, capture_output=True)
+            time.sleep(1.0)
         items=[tuple(item) for item in json.loads({mission_items_json!r})]
         requests=[]; ack=None; clear_ack=None; seq=0
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
@@ -274,9 +272,10 @@ def _inner_upload_script(items: Sequence[Any] | None = None) -> str:
                         requests.append(rq)
                         sock.sendto(mission_item_int(*items[rq], seq), ('127.0.0.1',{PX4_MAVLINK_PORT})); seq+=1
                 elif mid==MAVLINK_MSG_ID_MISSION_ACK and len(payload)>=3:
-                    ack=payload[2]
-                    break
-        print(json.dumps({{'mission_items':items,'mission_request_sequences':requests,'mission_ack_type':ack,'mission_ack_observed':ack is not None,'mission_clear_all_ack_type':clear_ack,'mavlink_start_returncode':start_result.returncode,'mavlink_start_stderr_tail':start_result.stderr[-500:]}}, sort_keys=True))
+                    if payload[2] != 0 or set(requests) == set(range(len(items))):
+                        ack=payload[2]
+                        break
+        print(json.dumps({{'mission_items':items,'mission_request_sequences':requests,'mission_ack_type':ack,'mission_ack_observed':ack is not None,'mission_clear_all_ack_type':clear_ack,'mavlink_session_reused':{reuse_mavlink_session!r},'mavlink_start_returncode':None if start_result is None else start_result.returncode,'mavlink_start_stderr_tail':None if start_result is None else start_result.stderr[-500:]}}, sort_keys=True))
     """)
 
 
@@ -289,14 +288,10 @@ def _actual_upload(items: Sequence[Any] | None = None) -> dict[str, Any]:
     )
     if result.returncode != 0:
         raise RuntimeError(
-            "mission upload script failed: "
-            + result.stdout[-1000:]
-            + result.stderr[-1000:]
+            "mission upload script failed: " + result.stdout[-1000:] + result.stderr[-1000:]
         )
     if not result.stdout.strip():
-        raise RuntimeError(
-            "mission upload script produced no output: " + result.stderr[-500:]
-        )
+        raise RuntimeError("mission upload script produced no output: " + result.stderr[-500:])
     return json.loads(result.stdout.strip().splitlines()[-1])
 
 
@@ -536,9 +531,7 @@ def main() -> int:
                 allow_sitl_mission_upload=True,
                 geofence_radius_m=20_000.0,
                 uploader=ObservedUploader(
-                    mission_request_sequences=tuple(
-                        observed["mission_request_sequences"]
-                    ),
+                    mission_request_sequences=tuple(observed["mission_request_sequences"]),
                     ack_type=int(observed["mission_ack_type"]),
                 ),
                 task_store_factory=lambda: store,
@@ -558,20 +551,13 @@ def main() -> int:
             "px4_mission_upload_performed": receipt["px4_mission_upload_performed"],
             "hardware_target_allowed": receipt["hardware_target_allowed"],
             "physical_execution_invoked": receipt["physical_execution_invoked"],
-            "gazebo_entity_mutation_performed": receipt[
-                "gazebo_entity_mutation_performed"
-            ],
+            "gazebo_entity_mutation_performed": receipt["gazebo_entity_mutation_performed"],
             "task_status": stored["status"] if stored else None,
-            "existing_artifact_kept": bool(
-                stored and stored["artifacts"]["existing"]["kept"]
-            ),
+            "existing_artifact_kept": bool(stored and stored["artifacts"]["existing"]["kept"]),
         }
         print(json.dumps(summary, indent=2, sort_keys=True))
         print("SMOKE_SUMMARY_JSON " + json.dumps(summary, sort_keys=True))
-        assert (
-            summary["schema_version"]
-            == PX4_GAZEBO_SITL_MISSION_UPLOAD_RECEIPT_SCHEMA_VERSION
-        )
+        assert summary["schema_version"] == PX4_GAZEBO_SITL_MISSION_UPLOAD_RECEIPT_SCHEMA_VERSION
         assert summary["upload_status"] == "uploaded"
         assert summary["external_dispatch_performed"] is True
         assert summary["mavlink_dispatch_performed"] is True

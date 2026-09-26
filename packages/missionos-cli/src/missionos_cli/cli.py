@@ -31,6 +31,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from .assurance_policy import assurance_policy as _assurance_policy_group
+from .ship_delivery_command import ship_delivery_command
 from .chat_companions import (
     CHAT_COMPANION_TERMINAL_ROOT as CHAT_COMPANION_TERMINAL_ROOT,
     CHAT_COMPANION_TERMINAL_SURFACES as CHAT_COMPANION_TERMINAL_SURFACES,
@@ -5152,6 +5153,7 @@ def play_command(
     )
 
 missionos.add_command(_assurance_policy_group)
+missionos.add_command(ship_delivery_command)
 
 # Keep optional ML imports out of ordinary CLI startup.
 from .prediction_command import prediction_command  # noqa: E402
