@@ -67,7 +67,8 @@ establish additional arrivals over that method. Keep these two questions separat
   question. New capability evaluation is a separately specified cohort, not a
   rewritten R2 result. This document does not start GPU work or relax runtime gates.
 
-The next experimental design task is to set the operating envelope and absolute
-bounds for a bounded WAM capability pilot. Existing flight evidence and the
-[Gateway checkpoint lifecycle](px4-depth-gateway.md) supply infrastructure,
-not an acceptance result for that future pilot.
+The [2026-09-26 pilot protocol](aerial-wam-capability-pilot-20260926.md) fixes the
+first small static-scene cohort and its absolute bounds before new model outputs.
+It uses the existing ANWM route experiment; the [Gateway checkpoint
+lifecycle](px4-depth-gateway.md) remains a separate depth-based implementation.
+Neither a frozen protocol nor existing flight evidence is a new acceptance result.
