@@ -106,3 +106,19 @@ The second completed the candidate maneuver but failed ACK verification and
 mission handoff; it included an explicitly recorded diagnostic module restart
 and was interrupted, so it is not a qualified success. The third used fixed
 code, preserved MAVLink sessions and completed without manual intervention.
+
+## ACK and observation ordering
+
+UDP reception runs concurrently with observation collection. A mode ACK can
+arrive after a sample's timestamp but before collection returns. Checking only
+whether an ACK currently exists can then incorrectly certify that older sample.
+The September 26 native cohort retained one such failure: observation
+63.956389821 s, ACK 63.958169238 s, a 1.779 ms reversal. Delivery and recovery
+passed, but the VLA and combined integration verifier correctly rejected it.
+
+The transport now stores the exact ACK log timestamp, and the executor requires
+an accepted ACK at or before the sample timestamp for OFFBOARD and LOITER.
+An earlier sample causes another observation, not a verifier exemption. The
+mode-ordering, timeout, command-window and motion checks are unchanged. A real
+loopback UDP regression reproduces the concurrent-arrival case. The failed
+cohort remains failed; a repaired implementation requires a new frozen cohort.

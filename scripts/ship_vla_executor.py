@@ -169,7 +169,7 @@ def execute_fixture(root, config, sample, event, run, binary, clock, *, provider
             state, row = observe(
                 "offboard", start, initial["heading_ned_rad"], permit, initial, {4, 14}
             )
-            if state["nav_state"] == 14 and transport.accepted():
+            if state["nav_state"] == 14 and transport.accepted(row["elapsed_s"]):
                 receipt["offboard_observed_at_s"] = row["elapsed_s"]
                 break
             if clock() > end:
@@ -220,7 +220,7 @@ def execute_fixture(root, config, sample, event, run, binary, clock, *, provider
             state, row = observe("loiter", target, yaw, permit, initial, {4, 14})
             okay = (
                 state["nav_state"] == 4
-                and transport.accepted()
+                and transport.accepted(row["elapsed_s"])
                 and at_target(state, candidate, contract)
             )
             stable = (stable if stable is not None else row["elapsed_s"]) if okay else None

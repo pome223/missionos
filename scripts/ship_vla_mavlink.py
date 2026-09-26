@@ -135,9 +135,18 @@ class PositionStream:
             self.acks.clear()
             self.emit(mode_command(mode, self.sequence), mode)
 
-    def accepted(self):
+    def accepted(self, observed_at_s):
+        """Require an ACK already received at the observation's timestamp.
+
+        Observation collection and UDP reception run concurrently. An ACK that
+        arrives while a sample is being collected must not certify that older
+        sample; the executor must obtain another observation instead.
+        """
         with self.lock:
-            return any(a["command"] == 176 and a["result"] == 0 for a in self.acks)
+            return math.isfinite(observed_at_s) and any(
+                a["command"] == 176 and a["result"] == 0 and a["elapsed_s"] <= observed_at_s
+                for a in self.acks
+            )
 
     def loop(self):
         try:
@@ -167,11 +176,14 @@ class PositionStream:
                             )
                             if (target_system, target_component) != (255, 191):
                                 continue
-                            self.acks.append({"command": command, "result": result})
+                            received_at_s = self.clock()
+                            self.acks.append(
+                                {"command": command, "result": result, "elapsed_s": received_at_s}
+                            )
                             self.log.write(
                                 json.dumps(
                                     {
-                                        "elapsed_s": self.clock(),
+                                        "elapsed_s": received_at_s,
                                         "direction": "received",
                                         "frame_hex": item["raw"].hex(),
                                     }

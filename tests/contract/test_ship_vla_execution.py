@@ -130,6 +130,49 @@ def test_batched_crc_checked_ack_and_no_unsupported_commands():
         setpoint([0, 0, float("nan")], 0, 0)
 
 
+def test_udp_ack_received_during_observation_requires_a_new_sample(tmp_path, monkeypatch):
+    import json
+    import socket
+    import time
+    from scripts import ship_vla_mavlink as transport
+
+    # Real loopback IO, with an explicit PX4 double and ephemeral test ports.
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as peer:
+        peer.bind(("127.0.0.1", 0))
+        monkeypatch.setattr(transport, "LOCAL", ("127.0.0.1", 0))
+        monkeypatch.setattr(transport, "REMOTE", peer.getsockname())
+        start = time.monotonic()
+        def clock():
+            return time.monotonic() - start
+        stream = transport.PositionStream(tmp_path, [0, 0, -30], 0, clock, 5, "a" * 64)
+        try:
+            stream.command("offboard")
+            sample_started_at = clock()
+            ack = frame(
+                77, struct.pack("<HBBiBB", 176, 0, 0, 0, 255, 191), 1, system=1, component=1
+            )
+            peer.sendto(ack, stream.sock.getsockname())
+            stream.start()
+            deadline = time.monotonic() + 2
+            while not stream.accepted(clock()) and time.monotonic() < deadline:
+                stream.update([0, 0, -30], 0)
+                time.sleep(0.005)
+            assert stream.accepted(clock())
+            # This is the captured failure: ACK exists by the time collection
+            # returns, but its time is later than the sample's own timestamp.
+            assert not stream.accepted(sample_started_at)
+            assert not stream.accepted(float("inf"))
+            rows = [
+                json.loads(x) for x in (tmp_path / "vla-transport.jsonl").read_text().splitlines()
+            ]
+            received = [x for x in rows if x["direction"] == "received"]
+            assert received[0]["elapsed_s"] == stream.acks[0]["elapsed_s"]
+            stream.command("loiter")
+            assert not stream.accepted(clock())  # preceding command's ACK is cleared
+        finally:
+            stream.close()
+
+
 def test_rejected_execution_does_not_open_transport_or_request_mode(monkeypatch, tmp_path):
     from scripts.ship_vla_executor import execute_fixture
 
