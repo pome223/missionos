@@ -77,6 +77,12 @@
 
 [高度保持集合の結果](level-inspection-evidence.json)、[固定条件](level-inspection-protocol.json)、[数値差の診断と両環境照合](precision-diagnosis.json)。
 
+## 100 m・3条件の追加の無料確認
+
+最終実装に対して、5回目の保存記録を使い、100 mの中央・近傍・明確な経路の3条件で許可生成を再計算しました。準備段階と実行段階の計6件が、macOSとネットワークを無効にした実際のLinuxコンテナでバイト単位まで一致しました。追加GPU利用・モデル推論・飛行はありません。
+
+これは数値再現性の確認です。過去の不合格は変更せず、新しい3条件の実モデル飛行が完了したとも扱いません。[無料確認の結果とハッシュ](compact-offline-readiness.json)。
+
 ## 証拠と確認範囲
 
 [元の4試行](evidence.json)、[元の診断](original-diagnosis.json)、[修正後の結果と原記録ハッシュ](repaired-evidence.json)、[修正後の固定条件](repaired-protocol.json)、[再現コマンドと連携契約](../../agents/ship-native-integration.md)、[対象識別の契約](../../agents/ship-anwm-static.md)。

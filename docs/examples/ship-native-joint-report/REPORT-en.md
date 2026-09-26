@@ -75,6 +75,12 @@ The remaining budget funded one predeclared targeted 1 km flight, with the same 
 
 [Level-inspection outcomes](level-inspection-evidence.json), [protocol](level-inspection-protocol.json), and [numeric diagnosis and cross-platform comparison](precision-diagnosis.json).
 
+## Additional offline check of the three 100 m cases
+
+The final implementation regenerated permits from the fifth cohort’s retained inputs for the center, near and clear 100 m cases. All six results (prestream and execution for each case) were byte-identical on macOS and an actual Linux container with networking disabled. This used no additional GPU, model inference or flight.
+
+This checks numerical reproducibility only. Historical failures remain unchanged, and fresh three-case native-flight qualification is still pending. [Offline results and hashes](compact-offline-readiness.json).
+
 ## Evidence and scope
 
 [Original outcomes](evidence.json), [original diagnosis](original-diagnosis.json), [repaired results and raw hashes](repaired-evidence.json), [frozen repair protocol](repaired-protocol.json), [runtime commands](../../agents/ship-native-integration.md), [association contract](../../agents/ship-anwm-static.md).
