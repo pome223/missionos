@@ -28,7 +28,9 @@ def digest(value):
 
 
 class NativeModel:
-    def __init__(self, base, adapter, *, constrain_action_format=False):
+    def __init__(self, base, adapter, *, constrain_action_format=False, inspection_level_flight=False):
+        if inspection_level_flight and not constrain_action_format:
+            raise ValueError("Inspection level flight requires action-format constraints")
         for name, sha in {**native.WEIGHTS, **native.CUSTOM_CODE}.items():
             if native.digest(base / name) != sha:
                 raise ValueError("Unreviewed base weights or custom code")
@@ -45,7 +47,10 @@ class NativeModel:
         self.tokenizer = AutoTokenizer.from_pretrained(
             base, trust_remote_code=True, local_files_only=True
         )
-        self.grammar = native.ActionGrammar(self.tokenizer) if constrain_action_format else None
+        self.grammar = (
+            native.ActionGrammar(self.tokenizer, vertical_bins=(47, 51) if inspection_level_flight else None)
+            if constrain_action_format else None
+        )
         self.processor = AutoImageProcessor.from_pretrained(
             base, trust_remote_code=True, local_files_only=True
         )
@@ -216,9 +221,11 @@ def make_handler(model, identity, root, *, exit_after_request=False):
     return Handler
 
 
-def serve(base, adapter, output, port, *, exit_after_request=False, constrain_action_format=False):
+def serve(base, adapter, output, port, *, exit_after_request=False, constrain_action_format=False,
+          inspection_level_flight=False):
     output.mkdir(parents=True, exist_ok=False)
-    model = NativeModel(base, adapter, constrain_action_format=constrain_action_format)
+    model = NativeModel(base, adapter, constrain_action_format=constrain_action_format,
+                        inspection_level_flight=inspection_level_flight)
     warmup, mosaic = model.predict(
         "<image>\nFly straight ahead and find the target.\nAction: ",
         [Image.new("RGB", (640, 360)) for _ in range(2)],
@@ -250,7 +257,9 @@ def serve(base, adapter, output, port, *, exit_after_request=False, constrain_ac
         "warmup_completed": True,
         "dispatch_capability": False,
         "exit_after_request": exit_after_request,
-        "decoding_policy": native.ActionGrammar.policy if constrain_action_format else "unconstrained_greedy.v1",
+        "decoding_policy": model.grammar.policy if model.grammar else "unconstrained_greedy.v1",
+        "inspection_level_flight": inspection_level_flight,
+        "vertical_bin_range": [47, 51] if inspection_level_flight else [0, 98],
     }
     (output / "service.json").write_text(json.dumps(identity, indent=2))
     server = HTTPServer(
@@ -272,9 +281,13 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, default=18117)
     parser.add_argument("--exit-after-request", action="store_true")
     parser.add_argument("--constrain-action-format", action="store_true")
+    parser.add_argument("--inspection-level-flight", action="store_true")
     args = parser.parse_args()
+    if args.inspection_level_flight and not args.constrain_action_format:
+        parser.error("--inspection-level-flight requires --constrain-action-format")
     serve(
         args.base, args.adapter, args.output, args.port,
         exit_after_request=args.exit_after_request,
         constrain_action_format=args.constrain_action_format,
+        inspection_level_flight=args.inspection_level_flight,
     )

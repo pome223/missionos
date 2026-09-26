@@ -57,6 +57,22 @@ chosen motion. The saved `故4924 49</s>` response remains a rejected attempt.
 See the [generation API](https://huggingface.co/docs/transformers/v4.42.4/main_classes/text_generation)
 for the prefix constraint hook.
 
+For an urban-entry inspection that must hold altitude, the separate opt-in
+`--inspection-level-flight` flag requires the format flag and narrows the
+vertical output to native bins 47–51 (about ±0.204 m). Forward and yaw bins
+remain 0–98; `LAND` and terminal bins remain possible and remain subject to
+the independent terminal guard. The policy is `aerovla_inspection_grammar.v1`,
+with the selected range pinned in the service identity and approved plan.
+This is an explicit mission-phase action-space restriction, not a claim of
+unrestricted three-dimensional VLA competence. It does not rewrite a response,
+choose a particular motion, relax the altitude envelope or replace clearance
+and observed-completion verification. It should not be used for a descent stage.
+
+The preceding format-only cohort proposed `55 84 49</s>` (3.57 m down) at urban
+entry and was correctly rejected by the altitude envelope. That failure remains
+recorded separately; a level-flight cohort changes the model's allowed action
+space and must not be pooled with unrestricted or format-only attempts.
+
 ## Qualification and scope
 
 Freeze the source, service configuration, model identities, three stationary

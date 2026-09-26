@@ -93,3 +93,29 @@ def test_unexpected_token_decoding_fails_before_inference():
 
     with pytest.raises(ValueError, match="token decoding"):
         ActionGrammar(WrongTokenizer())
+
+
+def test_inspection_phase_restricts_only_vertical_bins_and_preserves_terminal_proposals():
+    grammar = ActionGrammar(TokenizerDouble(), vertical_bins=(47, 51))
+    assert grammar.policy == "aerovla_inspection_grammar.v1"
+    for forward in range(99):
+        accepts(grammar, f"{forward} 49 49")
+    for yaw in range(99):
+        accepts(grammar, f"49 49 {yaw}")
+    for vertical in range(47, 52):
+        accepts(grammar, f"55 {vertical} 49")
+    accepts(grammar, "LAND")
+    accepts(grammar, "0 49 49 LAND")
+    # The original 3.57 m descent proposal is not rewritten or reclassified.
+    assert parse_proposal("55 84 49</s>")["down_m"] == pytest.approx(3.5714285714)
+    with pytest.raises(ValueError, match="Invalid generated"):
+        grammar.allowed(tokens("55 84"))
+    for vertical in [46, 52]:
+        with pytest.raises(ValueError, match="Invalid generated"):
+            grammar.allowed(tokens(f"55 {vertical}"))
+
+
+@pytest.mark.parametrize("bounds", [(52, 60), (30, 48), (-1, 51), (49, 99), (False, 51), (49,)])
+def test_invalid_inspection_range_fails_closed(bounds):
+    with pytest.raises(ValueError, match="vertical-bin range"):
+        ActionGrammar(TokenizerDouble(), vertical_bins=bounds)

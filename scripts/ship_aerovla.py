@@ -39,7 +39,7 @@ CUSTOM_CODE = {
 
 
 class ActionGrammar:
-    """Constrain generation syntax, leaving all native bins and LAND available.
+    """Constrain syntax, optionally applying a mission-phase vertical-bin range.
 
     This is a generation-time mask, never a repair of returned model text.
     Numeric motion, clearance, approval and terminal-proposal guards still apply.
@@ -48,12 +48,22 @@ class ActionGrammar:
 
     policy = "aerovla_action_grammar.v1"
 
-    def __init__(self, tokenizer):
+    def __init__(self, tokenizer, *, vertical_bins=None):
         vocab = tokenizer.get_vocab()
         pieces = {**{str(i): str(i) for i in range(10)}, "▁": " ", "L": "L", "AND": "AND"}
         self.pieces = {vocab[k]: text for k, text in pieces.items()}
         self.eos = tokenizer.eos_token_id
         self.numbers = {str(i) for i in range(99)}
+        if vertical_bins is not None and (
+            len(vertical_bins) != 2
+            or any(type(v) is not int for v in vertical_bins)
+            or not 0 <= vertical_bins[0] <= 49 <= vertical_bins[1] <= 98
+        ):
+            raise ValueError("Invalid inspection vertical-bin range")
+        self.bin_sets = [self.numbers, self.numbers, self.numbers]
+        if vertical_bins is not None:
+            self.bin_sets[1] = {str(i) for i in range(vertical_bins[0], vertical_bins[1] + 1)}
+            self.policy = "aerovla_inspection_grammar.v1"
         if self.eos in self.pieces or len(self.pieces) != len(pieces):
             raise ValueError("Unsupported action-grammar vocabulary")
         for text in [*sorted(self.numbers), "0 49 98", "LAND", "98 49 0 LAND"]:
@@ -70,14 +80,14 @@ class ActionGrammar:
         if text in ("", "L", "LAND"):
             return text == "LAND" if complete else True
         parts = text.split(" ")
-        if len(parts) > 4 or any(p not in self.numbers for p in parts[:-1]):
+        if len(parts) > 4 or any(p not in self.bin_sets[i] for i, p in enumerate(parts[:-1])):
             return False
         last = parts[-1]
         if len(parts) == 4:
             return last == "LAND" if complete else "LAND".startswith(last)
         if complete:
-            return len(parts) == 3 and last in self.numbers
-        return any(n.startswith(last) for n in self.numbers)
+            return len(parts) == 3 and last in self.bin_sets[2]
+        return any(n.startswith(last) for n in self.bin_sets[len(parts) - 1])
 
     def allowed(self, generated):
         if any(token not in self.pieces for token in generated):
