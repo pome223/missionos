@@ -40,6 +40,11 @@ ACK is not success. Observed progress is not mission completion.
 > LLM judges. Human approves. Rules constrain. Executor acts. Verifier checks.
 > Repair loops.
 
+An opt-in [Go2 indoor delivery example](docs/examples/go2-indoor-delivery.md)
+connects chat approval, simulated receipt and return, and read-only operator views.
+It uses a learned locomotion policy and simulator geometry; it does not claim
+WAM-assisted navigation or physical delivery.
+
 ## What Has Actually Run
 
 The same contract and authority mechanism has been exercised over five

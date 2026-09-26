@@ -1886,6 +1886,20 @@ def _turtlebot_job_operator_summary(task_payload: dict[str, Any]) -> list[str]:
 
 
 def _job_operator_summary(task_payload: dict[str, Any]) -> list[str]:
+    go2_task = _task_record(task_payload)
+    if go2_task.get("kind") == "go2_delivery_execution":
+        artifacts = _task_artifacts(task_payload)
+        snapshot = artifacts.get("go2_delivery_snapshot", {})
+        result = artifacts.get("go2_delivery_result", {})
+        receipt_observed = artifacts.get("go2_simulated_receipt_observed") or result.get("receipt")
+        return [
+            f"Go2 indoor delivery: {go2_task.get('status')}",
+            "受付 → 会議室A → 模擬受領 → 受付",
+            f"現在: {snapshot.get('phase', '承認待ち')} / 位置: {snapshot.get('xy', '未観測')}",
+            f"模擬受領: {'確認済み' if receipt_observed else '未確認'}",
+            f"配送・帰還の完了: {result.get('completion_claimed') is True}",
+            "屋内シミュレーション / 実機の配送ではありません",
+        ]
     if _is_parent_mission_job(task_payload):
         return _parent_mission_job_operator_summary(task_payload)
     if _is_vla_mission_job(task_payload):

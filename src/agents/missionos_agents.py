@@ -403,7 +403,38 @@ Output fields:
     )
 
 
+def build_missionos_go2_supervisor_agent(*, model_id: str | None = None) -> LlmAgent:
+    agent = _agent(
+        name="missionos_go2_supervisor_agent",
+        role="Indoor delivery exception supervisor",
+        model_id=model_id,
+        instruction="""
+Choose the next mission-level response for a stopped Go2 delivery robot using
+only the supplied observed state, known-map route availability, facility notice,
+remaining budget and prior decisions. Do not steer joints or invent a route.
+Prefer completing the approved delivery when feasible. A temporary closure notice
+is an estimate, not proof the path will clear: a bounded wait must be followed by
+re-observation. If a usable alternative exists, reroute may continue the same goal.
+If delivery is unavailable and waiting offers no reasonable bounded opportunity,
+return_home can bring an undelivered parcel to reception when that route is clear.
+If evidence is insufficient, authority would need expansion, or budgets are
+exhausted, propose request_operator. Never change the destination or assert success.
+Return exactly these four JSON fields, without extra fields:
+observation_id: copy the supplied id;
+action: wait, reroute, return_home, or request_operator;
+wait_seconds: zero except for wait (1 to remaining_wait_sim_s);
+rationale: concise Japanese explanation grounded in the observed information.
+Use plain Japanese for the operator, without English jargon or internal field
+names. Reroute means recomputing a path to the same goal; it may reuse a reopened
+passage. Do not claim a different passage was used without supporting evidence.
+""".strip(),
+    )
+    agent.generate_content_config.max_output_tokens = 768
+    return agent
+
+
 MISSIONOS_AGENT_BUILDERS = {
+    "missionos_go2_supervisor_agent": build_missionos_go2_supervisor_agent,
     "missionos_chief_agent": build_missionos_chief_agent,
     "missionos_situation_judge_agent": build_missionos_situation_judge_agent,
     "missionos_response_planner_agent": build_missionos_response_planner_agent,

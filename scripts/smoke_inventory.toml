@@ -93,6 +93,7 @@ files = [
   "smoke_gazebo_telemetry.py",
   "smoke_gz_sim_delivery_world.py",
   "smoke_gz_sim_telemetry.py",
+  "smoke_go2_delivery_chat.py",
   "smoke_groot_policy_client_loopback.py",
   "smoke_groot_governed_robocasa_e2e.py",
   "smoke_groot_robocasa_arm_controller.py",

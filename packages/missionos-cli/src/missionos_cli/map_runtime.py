@@ -18,6 +18,13 @@ from rich.live import Live
 from rich.panel import Panel
 
 from .flight_map_html import _mission_map_html
+from .go2_operator_views import (
+    TERMINAL as GO2_TERMINAL,
+    is_go2_task,
+    local_map_model,
+    summary_lines,
+    terminal_map,
+)
 from .gateway_client import MissionOSGatewayClient
 from .job_status import _as_float, _task_artifacts, _task_status
 from .map_model import (
@@ -103,6 +110,24 @@ def _watch_flight_map(
                 time.sleep(max(0.05, poll_interval))
                 continue
             artifacts = _task_artifacts(task_payload)
+            task = (
+                task_payload.get("task")
+                if isinstance(task_payload.get("task"), dict)
+                else task_payload
+            )
+            if is_go2_task(task):
+                model = local_map_model(task)
+                live.update(
+                    Panel(
+                        terminal_map(model) + "\n\n" + "\n".join(summary_lines(task)),
+                        title=f"Go2 Indoor Watch · {task_id}",
+                        border_style="cyan",
+                    )
+                )
+                if _task_status(task_payload) in GO2_TERMINAL:
+                    break
+                time.sleep(max(0.05, poll_interval))
+                continue
             if _is_vla_operator_task(task_payload):
                 live.update(
                     _render_vla_operator_panel(

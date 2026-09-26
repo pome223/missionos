@@ -49,7 +49,7 @@ def test_topology_distinguishes_configuration_from_model_health(monkeypatch):
     monkeypatch.setenv("MISSIONOS_ADK_V2_GRAPH_PRIMARY", "1")
     monkeypatch.setenv("MISSIONOS_ADK_V2_GRAPH_ROLLBACK", "0")
     result = describe_agent_runtime()
-    assert result["agent_count"] == 8
+    assert result["agent_count"] == 9
     assert not set(result["agents"]) & set(result["omitted_agents"])
     assert set(result["specialist_by_intent"].values()) <= set(result["agents"])
     assert result["llm_health"] == "not_probed"

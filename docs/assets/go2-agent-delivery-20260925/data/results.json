@@ -1,0 +1,257 @@
+{
+  "moving": {
+    "status": "completed",
+    "completion_claimed": true,
+    "completion_scope": "simulated_delivery_and_return",
+    "physical_execution_invoked": false,
+    "llm_judgment_invoked": false,
+    "supervision_mode": "agent",
+    "backend": {
+      "simulator": "MuJoCo",
+      "navigation": "known_map_astar_and_heading_feedback",
+      "actuator_model": "learned_position_targets_with_torque_limited_pd",
+      "ground_truth_used_by_navigation": true,
+      "obstacles_from": "simulator_geometry",
+      "robot_pose_overwrites_after_initialization": false,
+      "real_unitree_sdk_invoked": false,
+      "ros2_nav2_invoked": false,
+      "model_sha256": "2014a3d76e30f17ab9447d8a67bd015291f74fa4d71ae30d005f1a32bd693d4b",
+      "policy_sha256": "9f14cb95e74ac9e5e30954da0fc0c33eaa41e337852ebed19fcee869279ade0b",
+      "mujoco_version": "3.13.0",
+      "torch_version": "2.14.0",
+      "supervision_mode": "agent"
+    },
+    "scenario": "moving_obstacle",
+    "terminal_state": {
+      "sim_time_s": 87.38999999999301,
+      "ground_truth_xy": [
+        -2.4477157524208923,
+        -0.14903482708856045
+      ],
+      "height_m": 0.29091096232138863,
+      "roll_rad": -0.03699619551971809,
+      "pitch_rad": 0.01847602857749896,
+      "yaw_rad": 3.0576617698557276,
+      "measured_speed_mps": 0.0010433929190981947,
+      "measured_velocity_xy_mps": [
+        -0.0007785787424363477,
+        -0.0006946106286621932
+      ],
+      "base_stable": true,
+      "geofence_satisfied": true,
+      "telemetry_fresh": true,
+      "heartbeat_alive": true,
+      "state_observed": true,
+      "obstacle_contacts": [],
+      "physics_steps": 17478,
+      "policy_inference_calls": 4370,
+      "navigation_status": "succeeded",
+      "robot_motion_observed": true,
+      "safety_violation_observed": false,
+      "operator_cancel_requested": false,
+      "map_revision": 0,
+      "moving_obstacle": {
+        "obstacle_id": "moving_target",
+        "source": "simulator_geometry_readback",
+        "xy": [
+          -1.25,
+          -2.6
+        ],
+        "radius_m": 0.24,
+        "observed_sim_time_s": 87.34999999999305,
+        "velocity_observed": true,
+        "velocity_xy_mps": [
+          0.0,
+          0.0
+        ]
+      },
+      "local_avoidance_state": "clear"
+    },
+    "terminal_hold_sim_s": 5.0,
+    "runtime_source_sha256": {
+      "scripts/run_go2_delivery.py": "d1c4c0c88c2cf95e5f861ef3b2377e070205a5fbbd0d03581c240c649a644721",
+      "src/runtime/go2_delivery_mission.py": "3b78844ca4b05e41ceec63ad875142f47f0a82ff540f2e1401d7cb6a72693098",
+      "src/runtime/go2_delivery_navigation.py": "b9328bc7c0300d54eac3fea97711dcd0508bf3905e653d42216ad00b5813cefa",
+      "simulators/go2_delivery/mujoco_backend.py": "5229a2733f1e229c89d1db026b2060b68c7886658cbbb49faa12ed627cb74c4a",
+      "simulators/go2_delivery/recording.py": "e35e21ae38809bbbb21e51465fa325f1d62ca74e5a2b7c4ec4d494399bcc6edf",
+      "simulators/go2_delivery/dynamic_obstacles.py": "d47a551346f4eff4d872952e22a6ee1e692da80e4b56bd5ca9405adc00457bd7",
+      "src/runtime/go2_supervision.py": "e8a1d9a9578cb371126d7c5b094a277e8951deffbfd5f68ad0c78fdcef982a91"
+    },
+    "receipt": {
+      "received": true,
+      "source": "simulation_recipient",
+      "destination": "meeting_room_a"
+    },
+    "legs": [
+      {
+        "leg": "outbound",
+        "attempt": 0,
+        "source_decision_id": null,
+        "verified": true,
+        "error_m": 0.1692643886922039,
+        "sim_s": 44.760000000004446
+      },
+      {
+        "leg": "returning",
+        "attempt": 0,
+        "source_decision_id": null,
+        "verified": true,
+        "error_m": 0.1584654654997029,
+        "sim_s": 82.36499999999758
+      }
+    ],
+    "dynamic_avoidance": {
+      "enabled": true,
+      "source": "simulator_geometry_readback",
+      "controller": "local_velocity_guard_yield_and_resume",
+      "obstacle_travel_m": 3.85,
+      "minimum_center_separation_m": 1.2364509626945772,
+      "minimum_conservative_clearance_m": 0.5464509626945773,
+      "robot_envelope_radius_m": 0.45,
+      "obstacle_radius_m": 0.24,
+      "contact_physics_steps": 0,
+      "yield_count": 2
+    },
+    "decision_chain": []
+  },
+  "agent": {
+    "status": "completed",
+    "completion_claimed": true,
+    "completion_scope": "simulated_delivery_and_return",
+    "physical_execution_invoked": false,
+    "llm_judgment_invoked": true,
+    "supervision_mode": "agent",
+    "backend": {
+      "simulator": "MuJoCo",
+      "navigation": "known_map_astar_and_heading_feedback",
+      "actuator_model": "learned_position_targets_with_torque_limited_pd",
+      "ground_truth_used_by_navigation": true,
+      "obstacles_from": "simulator_geometry",
+      "robot_pose_overwrites_after_initialization": false,
+      "real_unitree_sdk_invoked": false,
+      "ros2_nav2_invoked": false,
+      "model_sha256": "2014a3d76e30f17ab9447d8a67bd015291f74fa4d71ae30d005f1a32bd693d4b",
+      "policy_sha256": "9f14cb95e74ac9e5e30954da0fc0c33eaa41e337852ebed19fcee869279ade0b",
+      "mujoco_version": "3.13.0",
+      "torch_version": "2.14.0",
+      "supervision_mode": "agent"
+    },
+    "scenario": "temporary_blockage",
+    "terminal_state": {
+      "sim_time_s": 95.45499999998567,
+      "ground_truth_xy": [
+        -2.4269667484795057,
+        -0.14241669594220668
+      ],
+      "height_m": 0.3051500606037583,
+      "roll_rad": -0.04054930403282258,
+      "pitch_rad": 0.009516754323264133,
+      "yaw_rad": 3.02652514555759,
+      "measured_speed_mps": 0.0013747815354125431,
+      "measured_velocity_xy_mps": [
+        -0.0012952284286232966,
+        -0.0004608769768574856
+      ],
+      "base_stable": true,
+      "geofence_satisfied": true,
+      "telemetry_fresh": true,
+      "heartbeat_alive": true,
+      "state_observed": true,
+      "obstacle_contacts": [],
+      "physics_steps": 19091,
+      "policy_inference_calls": 4773,
+      "navigation_status": "succeeded",
+      "robot_motion_observed": true,
+      "safety_violation_observed": false,
+      "operator_cancel_requested": false,
+      "map_revision": 2,
+      "moving_obstacle": null,
+      "local_avoidance_state": "clear"
+    },
+    "terminal_hold_sim_s": 5.0,
+    "runtime_source_sha256": {
+      "scripts/run_go2_delivery.py": "d1c4c0c88c2cf95e5f861ef3b2377e070205a5fbbd0d03581c240c649a644721",
+      "src/runtime/go2_delivery_mission.py": "3b78844ca4b05e41ceec63ad875142f47f0a82ff540f2e1401d7cb6a72693098",
+      "src/runtime/go2_delivery_navigation.py": "b9328bc7c0300d54eac3fea97711dcd0508bf3905e653d42216ad00b5813cefa",
+      "simulators/go2_delivery/mujoco_backend.py": "5229a2733f1e229c89d1db026b2060b68c7886658cbbb49faa12ed627cb74c4a",
+      "simulators/go2_delivery/recording.py": "e35e21ae38809bbbb21e51465fa325f1d62ca74e5a2b7c4ec4d494399bcc6edf",
+      "simulators/go2_delivery/dynamic_obstacles.py": "d47a551346f4eff4d872952e22a6ee1e692da80e4b56bd5ca9405adc00457bd7",
+      "src/runtime/go2_supervision.py": "e8a1d9a9578cb371126d7c5b094a277e8951deffbfd5f68ad0c78fdcef982a91"
+    },
+    "receipt": {
+      "received": true,
+      "source": "simulation_recipient",
+      "destination": "meeting_room_a"
+    },
+    "legs": [
+      {
+        "leg": "outbound",
+        "attempt": 0,
+        "source_decision_id": null,
+        "verified": false,
+        "error_m": 4.156130515049121,
+        "sim_s": 11.00500000000032
+      },
+      {
+        "leg": "outbound",
+        "attempt": 1,
+        "source_decision_id": "decision_2",
+        "verified": true,
+        "error_m": 0.16415812311350927,
+        "sim_s": 53.13000000000873
+      },
+      {
+        "leg": "returning",
+        "attempt": 0,
+        "source_decision_id": null,
+        "verified": true,
+        "error_m": 0.16200034663054783,
+        "sim_s": 90.42999999999024
+      }
+    ],
+    "dynamic_avoidance": {
+      "enabled": false,
+      "source": "simulator_geometry_readback",
+      "controller": "local_velocity_guard_yield_and_resume",
+      "obstacle_travel_m": 0.0,
+      "minimum_center_separation_m": null,
+      "minimum_conservative_clearance_m": null,
+      "robot_envelope_radius_m": 0.45,
+      "obstacle_radius_m": 0.24,
+      "contact_physics_steps": 0,
+      "yield_count": 0
+    },
+    "decision_chain": [
+      {
+        "id": "decision_1",
+        "proposal": {
+          "observation_id": "decision_1",
+          "action": "wait",
+          "wait_seconds": 10.0,
+          "rationale": "配達経路が現在利用不可で、施設通知では約10秒後に通行再開の見込みです。残り待機時間は20秒あり、まずこの範囲で待ってから再観測するのが妥当です。迂回や帰還は経路の再開可能性を確認する前には判断できません。"
+        },
+        "observation_sim_s": 11.00500000000032,
+        "response_wall_s": 5.259115,
+        "model": "deepseek-flash",
+        "request_sha256": "3d2d27282defc0233c868bf4f19fdc9d46f6bbdf20e37ace85434c700a8a5c42",
+        "response_sha256": "6e6e8b1fd62883e5b655a89393ab8158d280b388c7f46bf35bb3d904b3bdb694",
+        "rules": "allowed"
+      },
+      {
+        "id": "decision_2",
+        "proposal": {
+          "observation_id": "decision_2",
+          "action": "reroute",
+          "wait_seconds": 0,
+          "rationale": "配達経路は現在利用可能と観測され、施設通知の通行再開見込みも過ぎています。前回の待機で再観測の条件は満たされたため、同じ目的地への経路を再計算して配達継続を試みるのが妥当です。帰還は配達未達となるため優先しません。"
+        },
+        "observation_sim_s": 26.219999999999068,
+        "response_wall_s": 1.090103,
+        "model": "deepseek-flash",
+        "request_sha256": "a564bd100a89dc736acc574ffc46f667c5942fc63deaeed909658724edee8362",
+        "response_sha256": "3cb78e759aa7b28aeb95b0d79b36597c0e0099b4de9952957c29106807bbd1b4",
+        "rules": "allowed"
+      }
+    ]
+  }
+}
