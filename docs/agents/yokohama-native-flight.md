@@ -5,7 +5,14 @@ stopped at D1 before dispatch. Its VLA output was `79 48 0</s>` (rotation-only),
 and 9,568,256 CUDA bytes remained after CPU transfer. WAM was started but never
 invoked on a flight observation. The revised, separately qualified condition
 below adds cyclic-reference collection and an explicit short-segment decoder.
-It does not reclassify the original failure. Historical ship/pillar runs are separate.
+That revised trial also rejected residual CUDA memory. Neither failure is reclassified.
+A diagnostic found no live model CUDA tensors: cuBLAS/Lt workspaces survive
+CPU transfer, garbage collection and empty_cache. The current revision explicitly
+synchronizes and clears these workspaces before measuring allocation, using the
+[PyTorch 2.9 documented private API](https://docs.pytorch.org/docs/2.9/notes/cuda.html#cublas-workspaces).
+A missing API rejects. Actual process shutdown is still required; zero allocator
+bytes does not mean zero CUDA-context memory or zero power. Historical ship/pillar
+runs are separate.
 
 ## Frozen scope
 

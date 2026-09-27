@@ -22,6 +22,22 @@ from PIL import Image
 UPSTREAM_REVISION = "657a80268505fa9149c4df502e35aa0f5bce11e5"
 MODEL_REVISION = "dfe59001de57a96d6620313897f09436c6940983"
 MODEL_SHA256 = "bdd149cac6ec002ba7dc4ad99ec6f9eb02cd6d4f05320195cf174737b13b0bc2"
+
+
+def clear_cuda_workspaces(torch):
+    """Release cuBLAS/Lt workspaces on the pinned, serial CUDA runtime.
+
+    PyTorch 2.9 documents this private API. CPU transfer and empty_cache alone
+    leave these live allocations behind. A missing API must reject, not silently
+    claim release. This does not destroy the CUDA context or prove power savings.
+    """
+    clear = getattr(getattr(torch, "_C", None), "_cuda_clearCublasWorkspaces", None)
+    if not callable(clear):
+        raise RuntimeError("CUDA workspace release API unavailable")
+    torch.cuda.synchronize()
+    clear()
+
+
 VAE_REVISION = "f04b2c4b98319346dad8c65879f680b1997b204a"
 NED_FROM_ENU = np.array([[0, 1, 0], [1, 0, 0], [0, 0, -1]], dtype=float)
 FLU_FROM_OPTICAL = np.array([[0, 0, 1], [-1, 0, 0], [0, -1, 0]], dtype=float)

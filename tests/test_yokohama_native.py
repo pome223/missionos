@@ -147,8 +147,13 @@ def test_serial_gpu_residency_returns_to_cpu_on_success_and_failure(kind, failur
     model.vae = SimpleNamespace(to=lambda device: calls.append(("vae", device)))
     model.torch = SimpleNamespace(
         cuda=SimpleNamespace(
-            empty_cache=lambda: calls.append(("cache", "empty")), memory_allocated=lambda: 0
-        )
+            empty_cache=lambda: calls.append(("cache", "empty")),
+            memory_allocated=lambda: 0,
+            synchronize=lambda: calls.append(("cuda", "synchronize")),
+        ),
+        _C=SimpleNamespace(
+            _cuda_clearCublasWorkspaces=lambda: calls.append(("workspace", "clear"))
+        ),
     )
 
     def predict(*args):
@@ -223,8 +228,10 @@ def test_vla_releases_cyclic_temporaries_before_measuring_cuda_residency():
     model.torch = SimpleNamespace(
         cuda=SimpleNamespace(
             memory_allocated=allocated,
+            synchronize=lambda: None,
             empty_cache=lambda: cache_measurements.append(allocated()),
-        )
+        ),
+        _C=SimpleNamespace(_cuda_clearCublasWorkspaces=lambda: None),
     )
     model._predict = predict
     enabled = gc.isenabled()
@@ -291,3 +298,19 @@ def test_cross_cycle_response_file_cannot_authorize_motion(tmp_path):
     with pytest.raises(ValueError, match="inactive"):
         worker.exchange("authorize", row)
     assert len(list(folder.glob("*-request.json"))) == 1
+
+
+def test_cuda_workspace_release_is_synchronized_and_requires_supported_api():
+    from types import SimpleNamespace
+    from scripts.ship_anwm import clear_cuda_workspaces
+
+    calls = []
+    runtime = SimpleNamespace(
+        cuda=SimpleNamespace(synchronize=lambda: calls.append("synchronize")),
+        _C=SimpleNamespace(_cuda_clearCublasWorkspaces=lambda: calls.append("clear")),
+    )
+    clear_cuda_workspaces(runtime)
+    assert calls == ["synchronize", "clear"]
+    with pytest.raises(RuntimeError, match="API unavailable"):
+        clear_cuda_workspaces(SimpleNamespace(cuda=runtime.cuda))
+    assert calls == ["synchronize", "clear"]

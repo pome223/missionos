@@ -19,8 +19,10 @@ from PIL import Image
 
 if __package__:
     from .ship_anwm import NED_FROM_ENU, asset, digest, rotation, write_json
+    from .ship_anwm import clear_cuda_workspaces as clear_cuda_workspaces
 else:
     from ship_anwm import NED_FROM_ENU, asset, digest, rotation, write_json
+    from ship_anwm import clear_cuda_workspaces as clear_cuda_workspaces
 
 BASE_REVISION = "47a0ec7fc4ec123775a391911046cf33cf9ed83f"
 ADAPTER_REVISION = "196f2f3253b69df6e90ac10b6ae041c7b3a9569e"

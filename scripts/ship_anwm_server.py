@@ -75,9 +75,11 @@ class NativeModel:
             self.vae.to("cpu")
             before_gc = self.torch.cuda.memory_allocated()
             collected = gc.collect()
+            native.clear_cuda_workspaces(self.torch)
             self.torch.cuda.empty_cache()
         value["cuda_allocated_before_gc_bytes"] = before_gc
         value["gc_collected_objects"] = collected
+        value["cuda_workspaces_cleared"] = True
         value["cuda_allocated_after_request_bytes"] = self.torch.cuda.memory_allocated()
         return value
 

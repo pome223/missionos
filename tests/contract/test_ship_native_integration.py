@@ -204,7 +204,12 @@ def test_wam_releases_gpu_after_success_and_failure(failed):
     model.model = SimpleNamespace(to=lambda device: calls.append(("model", device)))
     model.vae = SimpleNamespace(to=lambda device: calls.append(("vae", device)))
     model.torch = SimpleNamespace(
-        cuda=SimpleNamespace(empty_cache=lambda: calls.append("released"), memory_allocated=lambda: 0)
+        cuda=SimpleNamespace(
+            empty_cache=lambda: calls.append("released"),
+            memory_allocated=lambda: 0,
+            synchronize=lambda: calls.append("synchronized"),
+        ),
+        _C=SimpleNamespace(_cuda_clearCublasWorkspaces=lambda: calls.append("workspaces_released")),
     )
 
     def predict(*args):
@@ -227,6 +232,8 @@ def test_wam_releases_gpu_after_success_and_failure(failed):
         ("vae", "cuda"),
         ("model", "cpu"),
         ("vae", "cpu"),
+        "synchronized",
+        "workspaces_released",
         "released",
     ]
 
