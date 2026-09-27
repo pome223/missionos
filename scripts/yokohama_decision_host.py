@@ -299,9 +299,11 @@ class DecisionHost:
                 if image.mode != "RGB" or image.size != (224, 224):
                     raise ValueError("Unexpected native forecast image")
                 predicted = np.array(image)
+                # Preserve the actual native PNG bytes, not a host re-encoding.
+                (output / (item["id"] + "-prediction.png")).write_bytes(data)
             else:
                 predicted = reference.copy()
-            Image.fromarray(predicted).save(output / (item["id"] + "-prediction.png"))
+                Image.fromarray(predicted).save(output / (item["id"] + "-prediction.png"))
             checks.append(dict(candidate=item, **forecast_consistency(predicted, reference, mask)))
         result = dict(
             checks=checks,
