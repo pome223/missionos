@@ -164,8 +164,10 @@ def flight_trial(config, obs, run, field):
             20,
         )
 
-    def activate():
+    def activate(*, expires_at_wall_s=None):
         for _ in range(4):
+            if expires_at_wall_s is not None and time.monotonic() - started > expires_at_wall_s:
+                raise ValueError("City activation expired before mode command")
             run([BIN + "commander", "mode", "auto:mission"])
             try:
                 wait_for(lambda r: r["nav_state"] == 3, 3)
@@ -253,7 +255,7 @@ def flight_trial(config, obs, run, field):
                 # and the bound two-second issuance age before activation.
                 if time.monotonic() - started > permit["expires_at_worker_wall_s"]:
                     raise ValueError("City permit expired before mission activation")
-                activate()
+                activate(expires_at_wall_s=permit["expires_at_worker_wall_s"])
                 event("city_segment_dispatched", permit_id=permit["permit_id"])
                 target_model = candidate["target_world_xyz_m"]
 

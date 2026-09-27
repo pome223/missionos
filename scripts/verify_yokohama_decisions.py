@@ -41,6 +41,7 @@ def verify(root):
         assert request["run_id"] == config["run_id"] and request["config_sha256"] == digest(config)
         requests.append((path, request, response))
     checks["mailboxes_bound"] = bool(requests)
+    identity = next(s["value"] for _, r, s in requests if r["operation"] == "start")
     checks["successful_run_and_shutdown"] = (
         result["status"] == "passed"
         and result.get("cleanup") is True
@@ -97,20 +98,38 @@ def verify(root):
         if native:
             assert raw_vla["vla_inference_invoked"] is True
             assert raw_vla["request_sha256"] == digest(read(vfolder / "native-request.json"))
+            assert raw_vla["service"] == identity["services"]["vla"]
+            assert raw_vla["cuda_allocated_after_request_bytes"] == 0
         wfolder = wpath.with_name(wpath.name.removesuffix("-request.json"))
         request, arrays = ship_anwm.validate(wfolder / "input/request.json")
+        _, captured_arrays = load_capture(root / wr["capture"]["file"])
+        assert all(np.array_equal(arrays[k], captured_arrays[k]) for k in arrays)
         assert request["vla_response_sha256"] == digest(raw_vla)
+        proposed_pose = ship_anwm.action_pose(
+            arrays["poses"][-1], request["candidates"][1]["delta"]
+        )
+        recovered_vehicle_ned = proposed_pose[:3, 3] - proposed_pose[:3, :3] @ [0, -0.1, 0.25]
+        recovered_world = recovered_vehicle_ned[[1, 0, 2]] * [1, 1, -1]
+        assert np.allclose(recovered_world, candidate["target_world_xyz_m"], atol=1e-7)
         if native:
             raw_wam = read(wfolder / "native-response.json")
             assert raw_wam["wam_inference_invoked"] is True
             assert raw_wam["request_sha256"] == ship_anwm.digest(wfolder / "input/request.json")
             assert raw_wam["history_sha256"] == request["history_sha256"]
+            assert raw_wam["identity"] == identity["services"]["wam"]
+            assert raw_wam["cuda_allocated_after_request_bytes"] == 0
         recomputed = []
         for c in request["candidates"]:
             reference, mask = past_view(
                 arrays, ship_anwm.action_pose(arrays["poses"][-1], c["delta"])
             )
             prediction = np.array(Image.open(wfolder / (c["id"] + "-prediction.png")))
+            if native:
+                forecast = next(f for f in raw_wam["forecasts"] if f["candidate"] == c)
+                assert (
+                    ship_anwm.digest(wfolder / (c["id"] + "-prediction.png"))
+                    == forecast["files"]["prediction"]["sha256"]
+                )
             recomputed.append(
                 dict(candidate=c, **forecast_consistency(prediction, reference, mask))
             )
