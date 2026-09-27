@@ -1,0 +1,324 @@
+{
+  "schema_version": "anwm_head_adaptation_comparison.v1",
+  "cases": [
+    {
+      "id": "test-12-hold",
+      "site": "test-12",
+      "action": "hold",
+      "label_ja": "区画1 · 停止",
+      "actual": "images/test-12-hold-actual.png",
+      "raw_actual": "images/test-12-hold-raw.png",
+      "actual_raw_sha256": "cb045cfe5bb9ca15e045195d5678693426f388ac6cda04612bc40953112d2cd1",
+      "context": "images/test-12-context.png",
+      "manual_after_pass": false,
+      "manual_status": "Visual inspection: failed. Near-left wall width and upper-right stepped building geometry differ; ground retains unsupported bright reflective appearance.",
+      "target_sim_s": 85.5,
+      "input_cutoff_sim_s": 84.5,
+      "before": {
+        "sample": "test-12-hold",
+        "image": "images/before-test-12-hold.png",
+        "sha256": "6a232a4fcbc8cacc9b0a7c1023cf3437dd61c580ab5162a2dafda559ac3b02d5",
+        "elapsed_s": 21.03642272799999,
+        "metrics": {
+          "rgb_mae": 36.17718298256803,
+          "fraction_pixels_max_channel_error_over_40": 0.5942881058673469
+        },
+        "numeric_pass": false
+      },
+      "after": {
+        "sample": "test-12-hold",
+        "image": "images/after-test-12-hold.png",
+        "sha256": "5a9bea97653fc8ddbe7b5305dd7a5d06b41a8aa6a234310e7ed57c1b38ce7602",
+        "elapsed_s": 20.784497359000056,
+        "metrics": {
+          "rgb_mae": 19.1800993835034,
+          "fraction_pixels_max_channel_error_over_40": 0.10596699617346939
+        },
+        "numeric_pass": false
+      },
+      "projection_mae": 22.244266847363946,
+      "manual_status_ja": "目視：未達。左手前の壁の幅と右上の段差形状が実観測と異なります。地面にも実観測にない明るい反射状の領域が残ります。"
+    },
+    {
+      "id": "test-12-forward",
+      "site": "test-12",
+      "action": "forward",
+      "label_ja": "区画1 · 2.8 m前進",
+      "actual": "images/test-12-forward-actual.png",
+      "raw_actual": "images/test-12-forward-raw.png",
+      "actual_raw_sha256": "c222fde44c9aef672d366cab3ea45a52881299f9887310e5f0698ccf47f2b178",
+      "context": "images/test-12-context.png",
+      "manual_after_pass": false,
+      "manual_status": "Visual inspection: failed. Near-left wall is replaced by a narrow building; a water-like corridor appearance prevents structural qualification.",
+      "target_sim_s": 86.5,
+      "input_cutoff_sim_s": 84.5,
+      "before": {
+        "sample": "test-12-forward",
+        "image": "images/before-test-12-forward.png",
+        "sha256": "10e5509b3747c0d6692dde310126faacd8c05ed05c70553fe95dddcc58bb13d5",
+        "elapsed_s": 20.74079962799999,
+        "metrics": {
+          "rgb_mae": 35.73443478954081,
+          "fraction_pixels_max_channel_error_over_40": 0.4836973852040816
+        },
+        "numeric_pass": false
+      },
+      "after": {
+        "sample": "test-12-forward",
+        "image": "images/after-test-12-forward.png",
+        "sha256": "126b36542d0d738e1c4d6dc59f56f59caa87eafc1db433e194c0052a8fe1434e",
+        "elapsed_s": 20.65460937599994,
+        "metrics": {
+          "rgb_mae": 21.454287574404763,
+          "fraction_pixels_max_channel_error_over_40": 0.17857142857142858
+        },
+        "numeric_pass": false
+      },
+      "projection_mae": 16.092401413690474,
+      "manual_status_ja": "目視：未達。左手前の壁が再現されず、別の細い建物に置き換わっています。通路も水面のような外観で、形状確認に使えません。"
+    },
+    {
+      "id": "test-13-hold",
+      "site": "test-13",
+      "action": "hold",
+      "label_ja": "区画2 · 停止",
+      "actual": "images/test-13-hold-actual.png",
+      "raw_actual": "images/test-13-hold-raw.png",
+      "actual_raw_sha256": "2e085dcbd7428aa89f09bf78f3063b2fc9b378a80771663b2cea313e3f975912",
+      "context": "images/test-13-context.png",
+      "manual_after_pass": false,
+      "manual_status": "Visual inspection: failed. Near-left wall is missing and the right roof is rounded; the corridor appearance does not match the actual view.",
+      "target_sim_s": 92.0,
+      "input_cutoff_sim_s": 91.0,
+      "before": {
+        "sample": "test-13-hold",
+        "image": "images/before-test-13-hold.png",
+        "sha256": "79a925793a906f65daea4e2fb138b0ed386fef505a16cd1d642c003703d1193c",
+        "elapsed_s": 20.761131878000015,
+        "metrics": {
+          "rgb_mae": 41.8564453125,
+          "fraction_pixels_max_channel_error_over_40": 0.5399792729591837
+        },
+        "numeric_pass": false
+      },
+      "after": {
+        "sample": "test-13-hold",
+        "image": "images/after-test-13-hold.png",
+        "sha256": "9beba1a1cfa1d54c69884a771b8a5d70aeb45e0b5d0ed891b9c872b5ac2d1356",
+        "elapsed_s": 20.80353590699997,
+        "metrics": {
+          "rgb_mae": 19.71518920068027,
+          "fraction_pixels_max_channel_error_over_40": 0.1532405931122449
+        },
+        "numeric_pass": false
+      },
+      "projection_mae": 23.8960724914966,
+      "manual_status_ja": "目視：未達。左手前の壁が失われ、右の屋根形状も丸く変形しています。通路の外観も実観測に一致しません。"
+    },
+    {
+      "id": "test-13-forward",
+      "site": "test-13",
+      "action": "forward",
+      "label_ja": "区画2 · 2.8 m前進",
+      "actual": "images/test-13-forward-actual.png",
+      "raw_actual": "images/test-13-forward-raw.png",
+      "actual_raw_sha256": "605bf41a7409150c30b3f59e99257b65681f75e688dba9dbea7006b1a81a46e9",
+      "context": "images/test-13-context.png",
+      "manual_after_pass": false,
+      "manual_status": "Visual inspection: failed. Foreground wall and distant-building boundaries differ; unsupported surfaces and vertical streaks appear in the corridor.",
+      "target_sim_s": 93.0,
+      "input_cutoff_sim_s": 91.0,
+      "before": {
+        "sample": "test-13-forward",
+        "image": "images/before-test-13-forward.png",
+        "sha256": "46650339b29adeae2ce9adbce67bad39cd9d8405ad5430219978af247b83a1bf",
+        "elapsed_s": 20.636352272000067,
+        "metrics": {
+          "rgb_mae": 34.59569648171769,
+          "fraction_pixels_max_channel_error_over_40": 0.49354272959183676
+        },
+        "numeric_pass": false
+      },
+      "after": {
+        "sample": "test-13-forward",
+        "image": "images/after-test-13-forward.png",
+        "sha256": "c4c38923babb0b8988b3effd93abf979a1937c821d90a280b5cf4865156ce198",
+        "elapsed_s": 21.03049260499995,
+        "metrics": {
+          "rgb_mae": 21.27759619472789,
+          "fraction_pixels_max_channel_error_over_40": 0.16868622448979592
+        },
+        "numeric_pass": false
+      },
+      "projection_mae": 18.68942655187075,
+      "manual_status_ja": "目視：未達。手前の壁と奥の建物の境界が異なり、実観測にない面や縦筋が通路に生成されています。"
+    },
+    {
+      "id": "test-14-hold",
+      "site": "test-14",
+      "action": "hold",
+      "label_ja": "区画3 · 停止",
+      "actual": "images/test-14-hold-actual.png",
+      "raw_actual": "images/test-14-hold-raw.png",
+      "actual_raw_sha256": "ac0deb880ca19f6672038ad90395f780cb9ccabd8babcfdf68dd456b60d36ad5",
+      "context": "images/test-14-context.png",
+      "manual_after_pass": false,
+      "manual_status": "Visual inspection: failed. Overall colors improve, but left building edges and right roof geometry shift and the ground structure remains ambiguous.",
+      "target_sim_s": 98.752,
+      "input_cutoff_sim_s": 97.752,
+      "before": {
+        "sample": "test-14-hold",
+        "image": "images/before-test-14-hold.png",
+        "sha256": "80344075e81e406429a6961f2914981f2495a95b3b43c717cd82a0a8e2ae7e85",
+        "elapsed_s": 20.638111303000073,
+        "metrics": {
+          "rgb_mae": 38.89910847151361,
+          "fraction_pixels_max_channel_error_over_40": 0.5681002869897959
+        },
+        "numeric_pass": false
+      },
+      "after": {
+        "sample": "test-14-hold",
+        "image": "images/after-test-14-hold.png",
+        "sha256": "1bcee2365000bb3e7c1b35b8ce44d824b1d9f8596813f8598534415bfb0e3db5",
+        "elapsed_s": 20.880317373000025,
+        "metrics": {
+          "rgb_mae": 17.97724675807823,
+          "fraction_pixels_max_channel_error_over_40": 0.10532924107142858
+        },
+        "numeric_pass": false
+      },
+      "projection_mae": 21.025815795068027,
+      "manual_status_ja": "目視：未達。全体の色は近づきましたが、左の建物端と右の屋根形状がずれ、地面の形状が曖昧です。"
+    },
+    {
+      "id": "test-14-forward",
+      "site": "test-14",
+      "action": "forward",
+      "label_ja": "区画3 · 2.8 m前進",
+      "actual": "images/test-14-forward-actual.png",
+      "raw_actual": "images/test-14-forward-raw.png",
+      "actual_raw_sha256": "46d2c97975c331701e9f3c7b4d593e0a8334eaa205ef3bf5dbee4f0e67850b0c",
+      "context": "images/test-14-context.png",
+      "manual_after_pass": false,
+      "manual_status": "Visual inspection: failed. Near-left wall and right-side distant boundaries differ; unsupported reflective streaks remain in the corridor.",
+      "target_sim_s": 99.752,
+      "input_cutoff_sim_s": 97.752,
+      "before": {
+        "sample": "test-14-forward",
+        "image": "images/before-test-14-forward.png",
+        "sha256": "59d94b0a8a25aed6503efcb10572f1b0c662c5b0171e9e641651aed6e396b975",
+        "elapsed_s": 20.597591738999995,
+        "metrics": {
+          "rgb_mae": 35.61596513605442,
+          "fraction_pixels_max_channel_error_over_40": 0.47279575892857145
+        },
+        "numeric_pass": false
+      },
+      "after": {
+        "sample": "test-14-forward",
+        "image": "images/after-test-14-forward.png",
+        "sha256": "80c4f81cf7f2c75ab15cb28a12b10924c9897654259d7ed0b997ae533335a4b5",
+        "elapsed_s": 20.981012598000007,
+        "metrics": {
+          "rgb_mae": 16.952799479166668,
+          "fraction_pixels_max_channel_error_over_40": 0.09879225127551021
+        },
+        "numeric_pass": false
+      },
+      "projection_mae": 12.716232196003402,
+      "manual_status_ja": "目視：未達。左手前の壁と右奥の建物境界が異なり、通路には実観測にない反射状の縦筋が残ります。"
+    },
+    {
+      "id": "test-15-hold",
+      "site": "test-15",
+      "action": "hold",
+      "label_ja": "区画4 · 停止",
+      "actual": "images/test-15-hold-actual.png",
+      "raw_actual": "images/test-15-hold-raw.png",
+      "actual_raw_sha256": "94b000cc73988c3f4441a421cb5977bbebe3180859b91ac17acb4bc56298ba58",
+      "context": "images/test-15-context.png",
+      "manual_after_pass": false,
+      "manual_status": "Visual inspection: failed. Nearby wall colors improve, but small lower-left structures disappear and corridor boundaries remain ambiguous.",
+      "target_sim_s": 105.252,
+      "input_cutoff_sim_s": 104.252,
+      "before": {
+        "sample": "test-15-hold",
+        "image": "images/before-test-15-hold.png",
+        "sha256": "811b13533f4bf6d9153180f74784127d94a91baa38302776975a4023b372938b",
+        "elapsed_s": 20.635283059000017,
+        "metrics": {
+          "rgb_mae": 37.80533189838435,
+          "fraction_pixels_max_channel_error_over_40": 0.5492267219387755
+        },
+        "numeric_pass": false
+      },
+      "after": {
+        "sample": "test-15-hold",
+        "image": "images/after-test-15-hold.png",
+        "sha256": "3f6a7135515711a2da682bd6ede1b19fe2e9d8b0d75d9f2a9719e69b7cdb53c9",
+        "elapsed_s": 20.8015719,
+        "metrics": {
+          "rgb_mae": 18.456134406887756,
+          "fraction_pixels_max_channel_error_over_40": 0.1389110331632653
+        },
+        "numeric_pass": false
+      },
+      "projection_mae": 15.79719387755102,
+      "manual_status_ja": "目視：未達。近い壁の色は近づきましたが、左下の小さな構造物が失われ、通路の境界が曖昧です。"
+    },
+    {
+      "id": "test-15-forward",
+      "site": "test-15",
+      "action": "forward",
+      "label_ja": "区画4 · 2.8 m前進",
+      "actual": "images/test-15-forward-actual.png",
+      "raw_actual": "images/test-15-forward-raw.png",
+      "actual_raw_sha256": "e324c40ae431dd80db1caf43323caf1bc1e42731a9a8a76993ea7b2adcdb666b",
+      "context": "images/test-15-context.png",
+      "manual_after_pass": false,
+      "manual_status": "Visual inspection: failed. Lower-left structures and building depth are not preserved; the corridor becomes a blue reflective surface.",
+      "target_sim_s": 106.252,
+      "input_cutoff_sim_s": 104.252,
+      "before": {
+        "sample": "test-15-forward",
+        "image": "images/before-test-15-forward.png",
+        "sha256": "1047a27f65cad6d2ed2c9cddcf17d5d866c81c1dab4df92d0f2a36c1baa49627",
+        "elapsed_s": 20.54550588099994,
+        "metrics": {
+          "rgb_mae": 33.59230176445578,
+          "fraction_pixels_max_channel_error_over_40": 0.40469547193877553
+        },
+        "numeric_pass": false
+      },
+      "after": {
+        "sample": "test-15-forward",
+        "image": "images/after-test-15-forward.png",
+        "sha256": "43662624bdf942ef6d4363b029face324538fe1406ccb2dfd766165ae4cddc4a",
+        "elapsed_s": 20.765915585000016,
+        "metrics": {
+          "rgb_mae": 22.258729272959183,
+          "fraction_pixels_max_channel_error_over_40": 0.19557158801020408
+        },
+        "numeric_pass": false
+      },
+      "projection_mae": 17.584064094387756,
+      "manual_status_ja": "目視：未達。左下の構造物と建物の奥行きが再現されず、通路が青い反射状の面に変わっています。"
+    }
+  ],
+  "steps": 512,
+  "trainable_parameters": 2692256,
+  "total_parameters": 1134100256,
+  "cumulative_estimated_usd": 11.389434471548807,
+  "minimum_feasibility_passed": false,
+  "native_flight_qualified": false,
+  "manual_inspection_complete": true,
+  "passed_sites": [],
+  "aggregate": {
+    "mean_rgb_mae_before": 36.78455835459184,
+    "mean_rgb_mae_after": 19.65901028380102,
+    "relative_mae_reduction": 0.4655635091688691
+  },
+  "summary_ja": "小規模な事後学習で平均RGB誤差は36.78から19.66へ減りました。ただし建物・通路の形状の誤りが残り、最低条件を通った地点は0／4です。飛行への適用は未成立です。",
+  "summary_en": "Small supervised post-training reduced mean RGB error from 36.78 to 19.66, but building/corridor geometry remains wrong. No evaluation site passed the minimum condition (0/4); flight use remains unqualified."
+}

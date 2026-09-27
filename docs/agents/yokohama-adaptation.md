@@ -68,7 +68,7 @@ Use the past-only appearance-fill projection with immutable metric geometry.
 No target image is fed as projection. No adapter is installed into flight.
 
 This is supervised output-head post-training, not LoRA, RL, full-model training,
-a new world model, or a image-renderer bypass. Save only the changed head, bind
+a new world model, or an image-renderer bypass. Save only the changed head, bind
 it to the original checkpoint and protocol hashes, verify the entire frozen
 parameter hash, reset/reload the saved head, then infer on the evaluation inputs.
 

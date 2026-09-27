@@ -1,0 +1,42 @@
+[
+  {
+    "attempt": "collection-01",
+    "status": "failed",
+    "reason": "CalledProcessError: Command '['docker', 'exec', 'missionos-yokohama-adapt-70ae6ec746', 'python3', '-u', '/mission/yokohama_adaptation_worker.py']' returned non-zero exit status 1.",
+    "cleanup": true,
+    "manifest_sha256": null,
+    "diagnosis": "Missing NumPy in the CPU container; installed from a pinned wheel in later attempts.",
+    "worker_sha256": "c0b2472e9b03a153c352e903c880b1405c99d7144a7382aa09c8279d1a8c9367",
+    "worker_stderr_sha256": "2d34c2a2427245a29849f1cd5da07e3f9cda54cce0102288a281a8233245b65f"
+  },
+  {
+    "attempt": "collection-02",
+    "status": "failed",
+    "reason": "CalledProcessError: Command '['docker', 'exec', 'missionos-yokohama-adapt-9ce2fc613c', 'python3', '-u', '/mission/yokohama_adaptation_worker.py']' returned non-zero exit status 1.",
+    "cleanup": true,
+    "manifest_sha256": null,
+    "diagnosis": "Capture timeout with zero PosePublisher envelope timestamps; no sample accepted.",
+    "worker_sha256": "c0b2472e9b03a153c352e903c880b1405c99d7144a7382aa09c8279d1a8c9367",
+    "worker_stderr_sha256": "1abd54883a24fc28f023c8bf426e7ff71f53db61025e3bfb99cd4a9172b2b75b"
+  },
+  {
+    "attempt": "collection-03",
+    "status": "failed",
+    "reason": "CalledProcessError: Command '['docker', 'exec', 'missionos-yokohama-adapt-31eb482e61', 'python3', '-u', '/mission/yokohama_adaptation_worker.py']' returned non-zero exit status 1.",
+    "cleanup": true,
+    "manifest_sha256": null,
+    "diagnosis": "Diagnostic confirmed fresh camera frames but zero pose envelope timestamp; switched to timestamped SceneBroadcaster for collection 04.",
+    "worker_sha256": "9d5d4a5c59ca33f2c0607bbad407b5546b53c753d5494fd09f26020bfbe42e89",
+    "worker_stderr_sha256": "804fc60f576aeb2ea7c426da37ecf343769275f74a3fe79431df309416dd5935"
+  },
+  {
+    "attempt": "collection-04",
+    "status": "passed",
+    "reason": null,
+    "cleanup": true,
+    "manifest_sha256": "7822ef2c4e010681749d925aa7820e1803e85447db67b7419f8e408851cc396f",
+    "diagnosis": null,
+    "worker_sha256": "208c98305d717bb8ca8e3362abc44aad79274544e44dd034dca1adf2ca6e77b3",
+    "worker_stderr_sha256": "54a7c03172ee4fddf6f3dbbe93fdfdd6fbcdcba7db8317084fe056ba7328c65a"
+  }
+]
