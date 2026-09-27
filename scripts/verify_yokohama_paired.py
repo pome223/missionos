@@ -47,11 +47,11 @@ def verify(root, export, capture_only=False):
         assert result["observed"]["city_decision_updates"] == 2
     assert config["decisions"]["backend"] == "fixture"
     assert config["decisions"]["capture_paired_views"]
-    export.mkdir(exist_ok=False, parents=True)
     rows = []
     events = [json.loads(line) for line in (root / "flight-events.jsonl").read_text().splitlines()]
     assert sum(e["event"] == "city_segment_arrived" for e in events) == 2
     assert any(e["event"] == "city_late_response_rejected" for e in events)
+    export.mkdir(exist_ok=False, parents=True)
     mailboxes = [read(p) for p in (root / "decisions").glob("*-request.json")]
     for cycle in (1, 2):
         paired = read(root / f"city-{cycle:02d}-paired-views.json")
