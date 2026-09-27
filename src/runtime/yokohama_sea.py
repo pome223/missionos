@@ -84,6 +84,15 @@ def flight_stops(world):
         )
         for i, p in enumerate(order)
     ]
+    if world.get("payload_delivery"):
+        city[4:4] = [
+            dict(
+                name="PAYLOAD-LOW",
+                target_world_xyz_m=world["payload_delivery"]["hover_world_xyz_m"],
+                airspeed_mps=3,
+            ),
+            dict(name="PAYLOAD-CLIMB", target_world_xyz_m=points[3]["world_xyz_m"], airspeed_mps=3),
+        ]
     sea = world.get("sea_extension")
     if not sea:
         return city

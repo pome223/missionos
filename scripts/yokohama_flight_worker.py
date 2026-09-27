@@ -60,6 +60,9 @@ def flight_trial(config, obs, run, field):
     frames = []
     video_frames = []
     last_video_sim_s = -10.0
+    cargo_frames = []
+    last_cargo_sim_s = -10.0
+    payload_receipt = None
     decisions = None
     next_connector = None
     landing_xy = (
@@ -72,7 +75,7 @@ def flight_trial(config, obs, run, field):
         print(json.dumps(row), flush=True)
 
     def sample():
-        nonlocal last_video_sim_s
+        nonlocal last_video_sim_s, last_cargo_sim_s
         raw = {
             key: run([BIN + "listener", key, "-n", "1"], 5)
             for key in [
@@ -128,7 +131,30 @@ def flight_trial(config, obs, run, field):
                 and field(raw["home_position"], "valid_alt") is True
                 else None
             )
+        if config["world"].get("payload_delivery"):
+            row["payload"] = snap["poses"].get("delivery_payload")
+            row["payload_joint"] = snap["payload_joint"]
         trajectory.write(json.dumps(row) + "\n")
+        if (
+            config["world"].get("payload_delivery")
+            and phase.startswith("PAYLOAD-")
+            and row["sim_s"] - last_cargo_sim_s >= 0.24
+            and "delivery_rgb" in obs.images
+        ):
+            captured = obs.images_to_disk(f"cargo-{len(cargo_frames):04d}", ["delivery_rgb"])
+            cargo_frames.append(
+                dict(
+                    sim_s=row["sim_s"],
+                    phase=phase,
+                    payload=row["payload"],
+                    vehicle=row["vehicle"],
+                    image=captured["delivery_rgb"],
+                )
+            )
+            (ROOT / "payload-video-frames.json").write_text(
+                json.dumps(cargo_frames, indent=2) + "\n"
+            )
+            last_cargo_sim_s = row["sim_s"]
         if row["sim_s"] - last_video_sim_s >= 2 and "onboard_rgb" in obs.images:
             captured = obs.images_to_disk(f"flight-{len(video_frames):04d}", ["onboard_rgb"])
             video_frames.append(
@@ -273,6 +299,10 @@ def flight_trial(config, obs, run, field):
         for i, stage in enumerate(config["flight_stages"]):
             phase = stage["name"]
             target = stage["target_world_xyz_m"]
+            if phase == "PAYLOAD-CLIMB":
+                if payload_receipt is None:
+                    raise RuntimeError("No observed cargo receipt; return remains unauthorized")
+                event("payload_return_authorized", receipt_id=payload_receipt["receipt_id"])
             run(
                 [
                     BIN + "param",
@@ -334,6 +364,71 @@ def flight_trial(config, obs, run, field):
             frames.append(obs.images_to_disk(phase, ["onboard_rgb", "onboard_depth", "down_rgb"]))
             if not metrics["passed"]:
                 raise RuntimeError("AP hold did not meet frozen bounds at " + phase)
+            if config["world"].get("payload_delivery") and phase == "SEA-TAKEOFF":
+                from yokohama_payload import fresh_pose
+
+                carried = sample()
+                if (
+                    not fresh_pose(carried, "payload")
+                    or math.dist(carried["vehicle"]["xyz"], carried["payload"]["xyz"]) > 0.8
+                ):
+                    raise RuntimeError("Cargo did not take off attached to the vehicle")
+                event("payload_airborne_observed", observation=carried)
+            if phase == "PAYLOAD-LOW":
+                from yokohama_payload import atomic_json, digest, require_release, require_receipt
+
+                if decisions and (decisions.active or not decisions.closed):
+                    raise RuntimeError("City models must be stopped before cargo release")
+                request = require_release(config, sample())
+                atomic_json(ROOT / "payload-request.json", request)
+                event("payload_release_requested", request_sha256=digest(request), request=request)
+
+                def detach(attempt):
+                    run(
+                        [
+                            "gz",
+                            "topic",
+                            "-t",
+                            config["world"]["payload_delivery"]["detach_topic"],
+                            "-m",
+                            "gz.msgs.Empty",
+                            "-p",
+                            "",
+                        ]
+                    )
+                    event("payload_detach_command", attempt=attempt)
+
+                detach(1)
+                phase = "PAYLOAD-VERIFY"
+                attempts, retry_at = 1, time.monotonic() + 5
+                deadline = time.monotonic() + 45
+                while time.monotonic() < deadline:
+                    observed = sample()
+                    receipt_path = ROOT / "payload-receipt.json"
+                    if receipt_path.exists():
+                        payload_receipt = json.loads(receipt_path.read_text())
+                        require_receipt(config, request, payload_receipt, observed)
+                        event(
+                            "payload_received",
+                            receipt=payload_receipt,
+                            receipt_sha256=digest(payload_receipt),
+                            observation=observed,
+                        )
+                        obs.images_to_disk("payload-received", ["delivery_rgb", "down_rgb"])
+                        break
+                    if (
+                        attempts < 3
+                        and time.monotonic() >= retry_at
+                        and observed.get("payload")
+                        and (observed.get("payload_joint") or {}).get("state") != "detached"
+                        and math.dist(observed["payload"]["xyz"], observed["vehicle"]["xyz"]) < 0.8
+                    ):
+                        attempts += 1
+                        detach(attempts)
+                        retry_at = time.monotonic() + 5
+                    time.sleep(0.3)
+                else:
+                    raise TimeoutError("No verified pad receipt; return remains unauthorized")
             if decisions and phase in ("00-D1", "01-D2"):
                 permit = decisions.decide(obs, config["flight_stages"][i + 1]["target_world_xyz_m"])
                 candidate = permit["candidate"]
@@ -436,7 +531,8 @@ def flight_trial(config, obs, run, field):
             vla_invoked=bool(decisions and config["decisions"]["backend"] == "native"),
             wam_invoked=bool(decisions and config["decisions"]["backend"] == "native"),
             physical_execution_invoked=False,
-            payload_delivery_verified=False,
+            payload_delivery_verified=bool(payload_receipt),
+            payload_receipt_id=payload_receipt["receipt_id"] if payload_receipt else None,
             native_model_flight=bool(
                 decisions
                 and len(decisions.completed) == 2

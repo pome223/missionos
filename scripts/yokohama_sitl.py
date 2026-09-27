@@ -51,7 +51,14 @@ def main():
         action="store_true",
         help="Add an authored 1 km offshore stationary ship and AP round trip",
     )
+    parser.add_argument(
+        "--deliver-payload",
+        action="store_true",
+        help="Attach 50 g simulated cargo; gate return on observed pad receipt",
+    )
     args = parser.parse_args()
+    if args.deliver_payload and (not args.sea_round_trip or args.phase != "flight"):
+        parser.error("Payload delivery requires --sea-round-trip --phase flight")
     if args.sea_round_trip and (
         args.phase != "flight" or args.capture_motion_views or args.capture_paired_views
     ):
@@ -89,6 +96,7 @@ def main():
     created = False
     worker = None
     decision_host = None
+    payload_receiver = None
     try:
         image = command(
             ["docker", "image", "inspect", "px4io/px4-sitl-gazebo:latest", "--format", "{{.Id}}"]
@@ -121,6 +129,10 @@ def main():
 
         if args.sea_round_trip:
             world = extend_world(root, REPO / "docs/examples/yokohama-urban-scene", world)
+        if args.deliver_payload:
+            from src.runtime.yokohama_payload import extend_world as add_payload
+
+            world = add_payload(root, REPO / "docs/examples/yokohama-urban-scene", world)
         config = {
             "run_id": run_id,
             "phase": args.phase,
@@ -174,7 +186,7 @@ def main():
                 rules_margin_m=2,
                 failure_response="bounded_stop_of_owned_SITL_container",
                 sea_leg_present=args.sea_round_trip,
-                payload_release_present=False,
+                payload_release_present=args.deliver_payload,
             )
         if args.decision_backend or args.capture_motion_views:
             # This pinned simulator's magnetometer frame conversion is not a
@@ -256,6 +268,13 @@ def main():
         ]
         if args.phase == "flight":
             sources.append(REPO / "scripts/yokohama_flight_worker.py")
+        if args.deliver_payload:
+            sources.extend(
+                [
+                    REPO / "src/runtime/yokohama_payload.py",
+                    REPO / "scripts/verify_yokohama_payload.py",
+                ]
+            )
         if args.capture_motion_views:
             sources.extend(
                 [
@@ -307,6 +326,10 @@ def main():
                 args.decision_backend,
                 service,
             )
+        if args.deliver_payload:
+            from src.runtime.yokohama_payload import PayloadReceiver
+
+            payload_receiver = PayloadReceiver(root, config)
         argv = [
             "docker",
             "run",
@@ -403,6 +426,13 @@ def main():
     except Exception as exc:
         result["reason"] = type(exc).__name__ + ": " + str(exc)
     finally:
+        if payload_receiver:
+            try:
+                payload_receiver.close()
+                result["payload_receiver_stopped"] = True
+            except Exception as exc:
+                result["payload_receiver_error"] = str(exc)
+                result["status"] = "failed"
         if decision_host:
             try:
                 result["model_shutdown"] = decision_host.close()

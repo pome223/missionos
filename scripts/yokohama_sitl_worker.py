@@ -22,6 +22,7 @@ from gz.msgs10.camera_info_pb2 import CameraInfo
 from gz.msgs10.image_pb2 import Image
 from gz.msgs10.pose_v_pb2 import Pose_V
 from gz.msgs10.world_stats_pb2 import WorldStatistics
+from gz.msgs10.stringmsg_pb2 import StringMsg
 from gz.transport13 import Node
 from ship_urban_camera_worker import png_rgb
 
@@ -63,16 +64,24 @@ class Observer:
         self.onboard_camera_info = {}
         if config.get("motion_capture"):
             from yokohama_motion_recorder import MotionRecorder
+
             self.motion = MotionRecorder(ROOT, config["motion_capture"])
         self.image_history = {k: {} for k in ("onboard_rgb", "onboard_depth", "down_rgb")}
         self.pose_history = deque(maxlen=5000)
         self.contacts = []
+        self.payload_joint = None
+        self.joint_file = None
         self.camera_info = {}
         self.callbacks = []
         self.topics = []
         self.sensor_file = (ROOT / "sensor-events.jsonl").open("w", buffering=1)
         self.subscribe(Pose_V, "/world/default/pose/info", self.receive_poses)
         self.subscribe(WorldStatistics, "/world/default/stats", self.receive_stats)
+        if config["world"].get("payload_delivery"):
+            self.joint_file = (ROOT / "payload-joint-events.jsonl").open("w", buffering=1)
+            self.subscribe(
+                StringMsg, config["world"]["payload_delivery"]["joint_topic"], self.receive_joint
+            )
         for name in ["city", "launch_pad", "delivery_pad", *config["world"]["probes"]]:
             model = "yokohama_city" if name == "city" else name
             self.subscribe(
@@ -89,6 +98,7 @@ class Observer:
             ("onboard_rgb", "/yokohama/onboard/image"),
             ("onboard_depth", "/yokohama/onboard/depth_image"),
             ("down_rgb", "/yokohama/down"),
+            *([("delivery_rgb", "/yokohama/delivery")] if self.joint_file else []),
         ]:
             self.subscribe(Image, topic, lambda m, k=key: self.receive_image(m, k))
 
@@ -104,12 +114,23 @@ class Observer:
         self.node = None
         time.sleep(0.1)
         self.sensor_file.close()
+        if self.joint_file:
+            self.joint_file.close()
         if self.motion:
             self.motion.close(self.onboard_camera_info)
 
     def receive_stats(self, m):
         with self.lock:
             self.sim_s = m.sim_time.sec + m.sim_time.nsec / 1e9
+
+    def receive_joint(self, m):
+        with self.lock:
+            self.payload_joint = dict(
+                state=m.data,
+                observed_sim_s=self.sim_s,
+                wall_elapsed_s=time.monotonic() - self.started,
+            )
+            self.joint_file.write(json.dumps(self.payload_joint) + "\n")
 
     def receive_poses(self, m):
         now = time.monotonic()
@@ -143,8 +164,9 @@ class Observer:
 
     def receive_onboard_info(self, m):
         with self.lock:
-            self.onboard_camera_info = dict(width=m.width, height=m.height,
-                                            k=list(m.intrinsics.k), sensor_sim_s=stamp(m))
+            self.onboard_camera_info = dict(
+                width=m.width, height=m.height, k=list(m.intrinsics.k), sensor_sim_s=stamp(m)
+            )
 
     def record_motion(self, row):
         if self.motion:
@@ -271,6 +293,7 @@ class Observer:
                 "wall_elapsed_s": now - self.started,
                 "poses": poses,
                 "contacts_seen": len(self.contacts),
+                "payload_joint": self.payload_joint,
             }
 
     def images_to_disk(self, label, required):

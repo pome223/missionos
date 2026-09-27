@@ -194,7 +194,7 @@ def verify(root, bundle):
         expected_stops = [s["name"] for s in config["flight_stages"]]
         sea = world.get("sea_extension")
         checks["all_authored_holds"] = (
-            len(holds) == (11 if sea else 7)
+            len(holds) == (11 if sea else 7) + (2 if world.get("payload_delivery") else 0)
             and [h["point"] for h in holds] == expected_stops
             and all(r["passed"] for r in holds)
         )
@@ -205,6 +205,13 @@ def verify(root, bundle):
             and final["arming_state"] == 1
             and math.dist(final["vehicle"]["xyz"][:2], landing_xy) < 1.5
         )
+        if world.get("payload_delivery"):
+            from scripts.verify_yokohama_payload import verify as verify_payload
+
+            output["payload_delivery"] = verify_payload(root)
+            checks["payload_delivery_and_return_order"] = (
+                output["payload_delivery"]["status"] == "passed"
+            )
         if sea:
             endpoints = {h["point"]: h["target_world_xyz_m"] for h in observed["holds"]}
             checks["one_km_sea_both_directions"] = all(
