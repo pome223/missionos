@@ -217,9 +217,11 @@ def test_wam_releases_gpu_after_success_and_failure(failed):
         with pytest.raises(ValueError, match="explicit inference failure"):
             model.predict(None, None, None)
     else:
-        assert model.predict(None, None, None) == {
-            "actual": "preserved", "cuda_allocated_after_request_bytes": 0,
-        }
+        result = model.predict(None, None, None)
+        assert result["actual"] == "preserved"
+        assert result["cuda_allocated_before_gc_bytes"] == 0
+        assert result["cuda_allocated_after_request_bytes"] == 0
+        assert result["gc_collected_objects"] >= 0
     assert calls == [
         ("model", "cuda"),
         ("vae", "cuda"),
