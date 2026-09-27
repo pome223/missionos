@@ -92,6 +92,11 @@ class DecisionHost:
                 raise ValueError("Serial CPU-between-requests residency required")
             if identities["vla"].get("exit_after_request") is not False:
                 raise ValueError("One-shot VLA cannot serve a repeated city session")
+            if (
+                identities["vla"].get("short_segment_flight") is not True
+                or identities["vla"].get("yaw_bin_range") != [38, 60]
+            ):
+                raise ValueError("City translation phase requires bounded native yaw decoding")
             if "yokohama_anwm_request.v1" not in identities["wam"].get("candidate_contracts", []):
                 raise ValueError("Native WAM does not support this action contract")
             sources = self.root / "sources"

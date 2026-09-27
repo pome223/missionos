@@ -48,7 +48,7 @@ class ActionGrammar:
 
     policy = "aerovla_action_grammar.v1"
 
-    def __init__(self, tokenizer, *, vertical_bins=None):
+    def __init__(self, tokenizer, *, vertical_bins=None, yaw_bins=None):
         vocab = tokenizer.get_vocab()
         pieces = {**{str(i): str(i) for i in range(10)}, "▁": " ", "L": "L", "AND": "AND"}
         self.pieces = {vocab[k]: text for k, text in pieces.items()}
@@ -64,6 +64,16 @@ class ActionGrammar:
         if vertical_bins is not None:
             self.bin_sets[1] = {str(i) for i in range(vertical_bins[0], vertical_bins[1] + 1)}
             self.policy = "aerovla_inspection_grammar.v1"
+        if yaw_bins is not None:
+            if (
+                vertical_bins is None
+                or len(yaw_bins) != 2
+                or any(type(v) is not int for v in yaw_bins)
+                or not 0 <= yaw_bins[0] <= 49 <= yaw_bins[1] <= 98
+            ):
+                raise ValueError("Invalid short-segment yaw-bin range")
+            self.bin_sets[2] = {str(i) for i in range(yaw_bins[0], yaw_bins[1] + 1)}
+            self.policy = "aerovla_short_segment_grammar.v1"
         if self.eos in self.pieces or len(self.pieces) != len(pieces):
             raise ValueError("Unsupported action-grammar vocabulary")
         for text in [*sorted(self.numbers), "0 49 98", "LAND", "98 49 0 LAND"]:

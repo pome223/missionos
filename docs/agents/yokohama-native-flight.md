@@ -1,7 +1,11 @@
 # Yokohama repeated model-view experiment
 
-Status: implementation and CPU qualification in progress. No native city result
-is established by this contract. Historical ship/pillar runs are separate.
+Status: the original CPU qualification passed; the first native city attempt
+stopped at D1 before dispatch. Its VLA output was `79 48 0</s>` (rotation-only),
+and 9,568,256 CUDA bytes remained after CPU transfer. WAM was started but never
+invoked on a flight observation. The revised, separately qualified condition
+below adds cyclic-reference collection and an explicit short-segment decoder.
+It does not reclassify the original failure. Historical ship/pillar runs are separate.
 
 ## Frozen scope
 
@@ -29,7 +33,12 @@ supports hardware endpoints. The disposable simulator retains `--network none`.
    messages, pixels, poses, timestamps and hashes. Hold drift is at most 0.5 m,
    speed 0.3 m/s, heading drift 0.03 rad and reserve at least 20% throughout waits.
 3. AeroVLA generates its native bins once with the explicit level-inspection
-   grammar (vertical bins 47–51). Malformed, terminal, rotation-only, <0.5 m,
+   grammar (vertical bins 47–51) and `--short-segment-flight` yaw bins 38–60
+   (absolute yaw <0.25 rad). This optional generation mask matches this phase's
+   pre-existing translation envelope; it does not rewrite returned text. All
+   forward bins and terminal proposals remain available, and terminal proposals
+   still reject. It is a bounded model choice, not whole-route planning.
+   Malformed, terminal, rotation-only, <0.5 m,
    >5 m or vertical displacement >0.205 m proposals reject without rewriting or
    retry. The AP reproduces the proposed endpoint; it does not reproduce the
    upstream low-level controller's exact timing or yaw-first motor sequence.
@@ -61,6 +70,9 @@ supports hardware endpoints. The disposable simulator retains `--network none`.
    the remaining AP route and observe launch-pad contact, landing and disarming.
    Models alternate CUDA residency; both return weights to CPU between requests.
    The response records CUDA allocated bytes after transfer, required to be zero.
+   Record allocation before cyclic-reference collection and after cache release;
+   process shutdown must still be verified separately. Collection is not evidence
+   of power savings, and a CPU lifetime double cannot prove real CUDA release.
 
 PX4 EKF yaw and the rendered camera's true ENU yaw can differ under the simulator
 magnetic-field settings. Use measured Gazebo camera orientation for interpreting

@@ -119,3 +119,26 @@ def test_inspection_phase_restricts_only_vertical_bins_and_preserves_terminal_pr
 def test_invalid_inspection_range_fails_closed(bounds):
     with pytest.raises(ValueError, match="vertical-bin range"):
         ActionGrammar(TokenizerDouble(), vertical_bins=bounds)
+
+
+def test_short_segment_yaw_mask_preserves_native_choices_and_terminal_rejection():
+    grammar = ActionGrammar(TokenizerDouble(), vertical_bins=(47, 51), yaw_bins=(38, 60))
+    assert grammar.policy == "aerovla_short_segment_grammar.v1"
+    for forward in range(99):
+        accepts(grammar, f"{forward} 49 49")
+    for yaw in range(38, 61):
+        accepts(grammar, f"79 48 {yaw}")
+        assert abs(decode_action(f"79 48 {yaw}")[1][2]) < 0.25
+    accepts(grammar, "LAND")
+    accepts(grammar, "0 49 49")
+    # The first city's frozen model response stays a rotation-only proposal.
+    assert decode_action("79 48 0</s>")[1][2] == pytest.approx(-1.1)
+    for yaw in [0, 37, 61, 98]:
+        with pytest.raises(ValueError, match="Invalid generated"):
+            grammar.allowed(tokens(f"79 48 {yaw}"))
+
+
+@pytest.mark.parametrize("bounds", [(50, 60), (38, 48), (False, 60), (38,), (-1, 60)])
+def test_bad_short_segment_mask_rejects(bounds):
+    with pytest.raises(ValueError, match="yaw-bin range"):
+        ActionGrammar(TokenizerDouble(), vertical_bins=(47, 51), yaw_bins=bounds)

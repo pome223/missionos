@@ -4,6 +4,7 @@
 from __future__ import annotations
 import argparse
 import base64
+import gc
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 from pathlib import Path
@@ -72,7 +73,11 @@ class NativeModel:
         finally:
             self.model.to("cpu")
             self.vae.to("cpu")
+            before_gc = self.torch.cuda.memory_allocated()
+            collected = gc.collect()
             self.torch.cuda.empty_cache()
+        value["cuda_allocated_before_gc_bytes"] = before_gc
+        value["gc_collected_objects"] = collected
         value["cuda_allocated_after_request_bytes"] = self.torch.cuda.memory_allocated()
         return value
 

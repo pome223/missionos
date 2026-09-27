@@ -197,6 +197,50 @@ def test_native_http_failure_is_not_retried_or_converted_to_a_proposal():
     assert len(calls) == 1
 
 
+def test_vla_releases_cyclic_temporaries_before_measuring_cuda_residency():
+    import gc
+    import weakref
+    from types import SimpleNamespace
+    from scripts.ship_aerovla_server import NativeModel
+
+    refs, cache_measurements = [], []
+
+    class TensorLifetimeDouble:
+        def __init__(self):
+            self.cycle = self
+
+    def allocated():
+        return sum(ref() is not None for ref in refs) * 9568256
+
+    def predict(*args):
+        temporary = TensorLifetimeDouble()
+        refs.append(weakref.ref(temporary))
+        return {"generated_text": "79 48 0</s>"}, b"image"
+
+    model = object.__new__(NativeModel)
+    model.cpu_between_requests = True
+    model.model = SimpleNamespace(to=lambda device: None)
+    model.torch = SimpleNamespace(
+        cuda=SimpleNamespace(
+            memory_allocated=allocated,
+            empty_cache=lambda: cache_measurements.append(allocated()),
+        )
+    )
+    model._predict = predict
+    enabled = gc.isenabled()
+    gc.disable()
+    try:
+        value, _ = model.predict(None, None)
+    finally:
+        if enabled:
+            gc.enable()
+    assert value["cuda_allocated_before_gc_bytes"] == 9568256
+    assert value["cuda_allocated_after_request_bytes"] == 0
+    assert value["gc_collected_objects"] > 0
+    assert cache_measurements == [0]
+    assert value["generated_text"] == "79 48 0</s>"
+
+
 def test_cross_cycle_response_file_cannot_authorize_motion(tmp_path):
     from threading import Thread
     import time
