@@ -300,6 +300,7 @@ def flight_trial(config, obs, run, field):
                 arrived = wait_for(settled, 20)
                 decisions.completed.append(dict(permit=permit, arrived=arrived))
                 event("city_segment_arrived", permit_id=permit["permit_id"], observation=arrived)
+                decisions.record_arrival(obs, permit, arrived)
                 import hashlib
 
                 connector = ROOT / (permit["connector_name"] + "-upload.py")

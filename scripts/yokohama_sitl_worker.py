@@ -146,13 +146,15 @@ class Observer:
                 while len(history) > 100:
                     del history[min(history)]
 
-    def capture_history(self, label, after_sim_s):
+    def capture_history(self, label, after_sim_s, *, evaluation_only=False):
         """Exact RGB/depth/down joins; nearest measured pose, never interpolation."""
         with self.lock:
             stamps = sorted(set.intersection(*(set(h) for h in self.image_history.values())))
             stamps = [s for s in stamps if s / 1e9 > after_sim_s][:24]
             if len(stamps) < 24:
                 return None
+            if evaluation_only and stamps[0] / 1e9 - after_sim_s > 0.254000001:
+                raise ValueError("Evaluation capture lost the first post-cutoff frame")
             if any(abs((b - a) / 1e9 - 0.25) > 0.004000001 for a, b in zip(stamps, stamps[1:])):
                 raise ValueError("Urban history is not uninterrupted 4 Hz")
             frames = [{k: h[s] for k, h in self.image_history.items()} for s in stamps]
@@ -206,11 +208,14 @@ class Observer:
                 )
             )
         capture = {
-            "schema_version": "yokohama_rgbd_history.v1",
+            "schema_version": (
+                "yokohama_rgbd_evaluation.v1" if evaluation_only else "yokohama_rgbd_history.v1"
+            ),
             "frames": result,
-            "startup_indices": list(range(8)),
-            "history_indices": list(range(8, 24)),
-            "future_frames_included": False,
+            "startup_indices": [] if evaluation_only else list(range(8)),
+            "history_indices": [] if evaluation_only else list(range(8, 24)),
+            "future_frames_included": evaluation_only,
+            "evaluation_only": evaluation_only,
         }
         (folder / "capture.json").write_text(json.dumps(capture, indent=2) + "\n")
         return {

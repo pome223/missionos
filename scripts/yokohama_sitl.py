@@ -30,6 +30,8 @@ def main():
     parser.add_argument("--timeout-seconds", type=int, default=900)
     parser.add_argument("--decision-backend", choices=["fixture", "native"])
     parser.add_argument("--native-service-config", type=Path)
+    parser.add_argument("--capture-paired-views", action="store_true",
+                        help="Record withheld outcome views during CPU fixture flight")
     args = parser.parse_args()
     if not args.approve_sitl:
         parser.error("Explicit --approve-sitl is required; no hardware execution is supported")
@@ -37,6 +39,8 @@ def main():
         parser.error("City decisions require --phase flight")
     if bool(args.native_service_config) != (args.decision_backend == "native"):
         parser.error("Native decisions require exactly one explicit --native-service-config")
+    if args.capture_paired_views and args.decision_backend != "fixture":
+        parser.error("Paired capture currently requires the CPU fixture backend")
     root = args.output_dir.resolve()
     if root.exists():
         parser.error("Output directory must not exist; preserve previous attempts")
@@ -100,6 +104,7 @@ def main():
         if args.decision_backend:
             config["decisions"] = dict(
                 backend=args.decision_backend,
+                capture_paired_views=args.capture_paired_views,
                 points=["D1", "D2"],
                 camera_rate_hz=4,
                 inference_timeout_s=75,

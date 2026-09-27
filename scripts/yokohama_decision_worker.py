@@ -30,6 +30,7 @@ class CityDecisions:
         self.sequence, self.cycle = 0, 0
         self.started, self.closed, self.active = False, False, False
         self.completed = []
+        self.paired_view = None
 
     def held(self, anchor):
         row = self.sample()
@@ -128,6 +129,17 @@ class CityDecisions:
         wam = self.exchange("wam", self.held(anchor), capture=capture, vla=vla)
         if wam.get("passed") is not True:
             raise ValueError("WAM visible-structure consistency rejected; no segment dispatched")
+        if self.config["decisions"].get("capture_paired_views"):
+            record = json.loads((self.root / capture["file"]).read_text())
+            cutoff = record["frames"][-1]["stamp_ns"] / 1e9
+            self.paired_view = dict(
+                schema_version="yokohama_paired_views.v1",
+                run_id=self.config["run_id"], cycle=self.cycle,
+                input_capture=capture, input_cutoff_sim_s=cutoff,
+                hold_outcome=self.capture_evaluation(obs, "hold", anchor, cutoff),
+                evaluation_only=True, model_predictions_used_for_dispatch=False,
+                decision_backend="fixture", future_observations_sent_to_model=False,
+            )
         current = self.held(anchor)
         permit = self.exchange("authorize", current, next_target_world_xyz_m=next_target)
         if (
@@ -148,6 +160,34 @@ class CityDecisions:
         self.held(current)
         self.event("city_upload_permit", permit=permit)
         return permit
+
+    def capture_evaluation(self, obs, suffix, anchor, after):
+        """Held-out measurements never enter the model mailbox or authorization."""
+        end = time.monotonic() + 20
+        while time.monotonic() < end:
+            self.held(anchor)
+            result = obs.capture_history(
+                f"city-{self.cycle:02d}-evaluation-{suffix}", after, evaluation_only=True
+            )
+            if result is not None:
+                self.event("city_evaluation_captured", cycle=self.cycle, capture=result)
+                return result
+            time.sleep(0.05)
+        raise TimeoutError("Held-out RGBD evaluation capture missing")
+
+    def record_arrival(self, obs, permit, arrived):
+        if not self.config["decisions"].get("capture_paired_views"):
+            return
+        self.paired_view.update(
+            prepared_candidate=permit["candidate"], permit_sha256=digest(permit),
+            arrival_observation=arrived,
+            endpoint_outcome=self.capture_evaluation(obs, "endpoint", arrived, arrived["sim_s"]),
+            endpoint_time_alignment_verified=False,
+        )
+        path = self.root / f"city-{self.cycle:02d}-paired-views.json"
+        path.write_text(json.dumps(self.paired_view, indent=2, allow_nan=False) + "\n")
+        self.event("city_paired_views_recorded", file=path.name,
+                   sha256=hashlib.sha256(path.read_bytes()).hexdigest())
 
     def activation_permit(self, prepared):
         current = self.sample()
