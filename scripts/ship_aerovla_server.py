@@ -38,11 +38,14 @@ class NativeModel:
         inspection_level_flight=False,
         cpu_between_requests=False,
         short_segment_flight=False,
+        compact_city_flight=False,
     ):
         if inspection_level_flight and not constrain_action_format:
             raise ValueError("Inspection level flight requires action-format constraints")
         if short_segment_flight and not inspection_level_flight:
             raise ValueError("Short segment flight requires inspection level flight")
+        if compact_city_flight and not short_segment_flight:
+            raise ValueError("Compact city flight requires short segment flight")
         for name, sha in {**native.WEIGHTS, **native.CUSTOM_CODE}.items():
             if native.digest(base / name) != sha:
                 raise ValueError("Unreviewed base weights or custom code")
@@ -64,7 +67,12 @@ class NativeModel:
             native.ActionGrammar(
                 self.tokenizer,
                 vertical_bins=(47, 51) if inspection_level_flight else None,
-                yaw_bins=(38, 60) if short_segment_flight else None,
+                yaw_bins=(45, 53)
+                if compact_city_flight
+                else (38, 60)
+                if short_segment_flight
+                else None,
+                forward_bins=(20, 58) if compact_city_flight else None,
             )
             if constrain_action_format
             else None
@@ -276,6 +284,7 @@ def serve(
     inspection_level_flight=False,
     cpu_between_requests=False,
     short_segment_flight=False,
+    compact_city_flight=False,
 ):
     output.mkdir(parents=True, exist_ok=False)
     model = NativeModel(
@@ -285,6 +294,7 @@ def serve(
         inspection_level_flight=inspection_level_flight,
         cpu_between_requests=cpu_between_requests,
         short_segment_flight=short_segment_flight,
+        compact_city_flight=compact_city_flight,
     )
     warmup, mosaic = model.predict(
         "<image>\nFly straight ahead and find the target.\nAction: ",
@@ -321,7 +331,14 @@ def serve(
         "decoding_policy": model.grammar.policy if model.grammar else "unconstrained_greedy.v1",
         "inspection_level_flight": inspection_level_flight,
         "vertical_bin_range": [47, 51] if inspection_level_flight else [0, 98],
-        "yaw_bin_range": [38, 60] if short_segment_flight else [0, 98],
+        "yaw_bin_range": [45, 53]
+        if compact_city_flight
+        else [38, 60]
+        if short_segment_flight
+        else [0, 98],
+        "forward_bin_range": [20, 58] if compact_city_flight else [0, 98],
+        "hold_bin_allowed": True,
+        "compact_city_flight": compact_city_flight,
         "short_segment_flight": short_segment_flight,
     }
     (output / "service.json").write_text(json.dumps(identity, indent=2))
@@ -347,11 +364,14 @@ if __name__ == "__main__":
     parser.add_argument("--inspection-level-flight", action="store_true")
     parser.add_argument("--cpu-between-requests", action="store_true")
     parser.add_argument("--short-segment-flight", action="store_true")
+    parser.add_argument("--compact-city-flight", action="store_true")
     args = parser.parse_args()
     if args.inspection_level_flight and not args.constrain_action_format:
         parser.error("--inspection-level-flight requires --constrain-action-format")
     if args.short_segment_flight and not args.inspection_level_flight:
         parser.error("--short-segment-flight requires --inspection-level-flight")
+    if args.compact_city_flight and not args.short_segment_flight:
+        parser.error("--compact-city-flight requires --short-segment-flight")
     serve(
         args.base,
         args.adapter,
@@ -362,4 +382,5 @@ if __name__ == "__main__":
         inspection_level_flight=args.inspection_level_flight,
         cpu_between_requests=args.cpu_between_requests,
         short_segment_flight=args.short_segment_flight,
+        compact_city_flight=args.compact_city_flight,
     )

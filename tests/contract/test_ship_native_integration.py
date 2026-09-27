@@ -201,6 +201,7 @@ def test_wam_releases_gpu_after_success_and_failure(failed):
     calls = []
     model = NativeModel.__new__(NativeModel)
     model.cpu_between_requests = True
+    model.adapter_sha256 = None
     model.model = SimpleNamespace(to=lambda device: calls.append(("model", device)))
     model.vae = SimpleNamespace(to=lambda device: calls.append(("vae", device)))
     model.torch = SimpleNamespace(
@@ -220,9 +221,9 @@ def test_wam_releases_gpu_after_success_and_failure(failed):
     model._predict = predict
     if failed:
         with pytest.raises(ValueError, match="explicit inference failure"):
-            model.predict(None, None, None)
+            model.predict({"schema_version": "ship_anwm_request.v1"}, None, None)
     else:
-        result = model.predict(None, None, None)
+        result = model.predict({"schema_version": "ship_anwm_request.v1"}, None, None)
         assert result["actual"] == "preserved"
         assert result["cuda_allocated_before_gc_bytes"] == 0
         assert result["cuda_allocated_after_request_bytes"] == 0

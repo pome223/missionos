@@ -17,12 +17,15 @@ from PIL import Image
 
 if __package__:
     from . import ship_anwm as native
+    from . import yokohama_appearance as appearance, yokohama_wam_profile as profile
 else:
     import ship_anwm as native
+    import yokohama_appearance as appearance
+    import yokohama_wam_profile as profile
 
 
 class NativeModel:
-    def __init__(self, upstream, checkpoint, *, cpu_between_requests=False):
+    def __init__(self, upstream, checkpoint, *, cpu_between_requests=False, motion_adapter=None):
         revision = subprocess.check_output(
             ["git", "-C", str(upstream), "rev-parse", "HEAD"], text=True
         ).strip()
@@ -39,6 +42,11 @@ class NativeModel:
         from diffusers import AutoencoderKL
 
         self.torch = torch
+        self.adapter_sha256 = None
+        if motion_adapter is not None:
+            self.adapter_sha256 = native.digest(motion_adapter)
+            if self.adapter_sha256 != profile.MOTION_ADAPTER_SHA256:
+                raise ValueError("Unreviewed motion adapter")
         self.cpu_between_requests = cpu_between_requests
         device = "cpu" if cpu_between_requests else "cuda"
         started = time.monotonic()
@@ -51,6 +59,21 @@ class NativeModel:
         self.model = CDiT_models["CDiT-XL/2"](context_size=16, input_size=28, in_channels=4)
         self.model.load_state_dict(state["ema"], strict=True)
         del state
+        if motion_adapter is not None:
+            saved = torch.load(motion_adapter, map_location="cpu", weights_only=True)
+            parameters = dict(self.model.named_parameters())
+            if (
+                saved.get("schema_version") != "anwm_head_adaptation.v1"
+                or saved.get("base_checkpoint_sha256") != native.MODEL_SHA256
+                or set(saved.get("state", {})) != profile.ADAPTER_NAMES
+            ):
+                raise ValueError("Motion adapter parameter contract mismatch")
+            with torch.no_grad():
+                for name, value in saved["state"].items():
+                    if value.shape != parameters[name].shape or not torch.isfinite(value).all():
+                        raise ValueError("Invalid adapted parameter")
+                    parameters[name].copy_(value)
+            del saved
         self.model = self.model.eval().to(device)
         self.vae = (
             AutoencoderKL.from_pretrained(
@@ -64,6 +87,9 @@ class NativeModel:
         self.load_seconds = time.monotonic() - started
 
     def predict(self, request, arrays, output):
+        motion = request["schema_version"] == profile.MOTION_CONTRACT
+        if motion != (self.adapter_sha256 is not None):
+            raise ValueError("Model weights and request profile mismatch")
         if not self.cpu_between_requests:
             return self._predict(request, arrays, output)
         try:
@@ -105,7 +131,8 @@ class NativeModel:
             delta = np.asarray(candidate["delta"], dtype=np.float32)
             target = (
                 native.action_pose(arrays["poses"][-1], delta)
-                if request["schema_version"] == "yokohama_anwm_request.v1"
+                if request["schema_version"]
+                in {"yokohama_anwm_request.v1", profile.MOTION_CONTRACT}
                 else native.lateral_pose(arrays["poses"][-1], float(delta[1]))
             )
             points, colors = reproject_depth_to_other_pose_seq2seq(
@@ -114,6 +141,33 @@ class NativeModel:
             projected = project_to_2d_image_seq2seq(
                 arrays["intrinsics"], points, colors, (360, 640)
             )[0]
+            conditioning = {"metric_geometry_changed": False, "appearance_added_fraction": 0.0}
+            if request["schema_version"] == profile.MOTION_CONTRACT:
+                known = (
+                    project_to_2d_image_seq2seq(
+                        arrays["intrinsics"],
+                        points,
+                        [np.full_like(c, 255) for c in colors],
+                        (360, 640),
+                    )[0][..., 0]
+                    > 0
+                )
+                raw_depth = np.where(arrays["last_depth_infinite"], np.inf, arrays["depth"][-1])
+                filled, mask = appearance.fill_infinite_appearance(
+                    projected,
+                    known,
+                    arrays["rgb"][-1],
+                    raw_depth,
+                    arrays["intrinsics"],
+                    arrays["poses"][-1],
+                    target,
+                )
+                if not np.array_equal(filled[known], projected[known]) or (mask & known).any():
+                    raise ValueError("Appearance changed metric geometry")
+                projected = filled
+                conditioning.update(
+                    appearance_added_fraction=float(mask.mean()), known_fraction=float(known.mean())
+                )
             projection = transform(Image.fromarray(projected))[None, None].to("cuda")
             delta[:3] = normalize_data(
                 delta[:3] / 3.30, {"min": np.array([-2.5, -4, -3]), "max": np.array([5, 4, 3])}
@@ -123,7 +177,7 @@ class NativeModel:
                     (self.model, self.diffusion, self.vae),
                     context,
                     torch.as_tensor(delta)[None, None].to("cuda"),
-                    4,
+                    request["num_timesteps"],
                     28,
                     device="cuda",
                     num_cond=16,
@@ -147,7 +201,13 @@ class NativeModel:
                     "png_base64": base64.b64encode(path.read_bytes()).decode(),
                 }
             forecasts.append(
-                {"candidate": candidate, "elapsed_s": time.monotonic() - begin, "files": files}
+                {
+                    "candidate": candidate,
+                    "elapsed_s": time.monotonic() - begin,
+                    "files": files,
+                    "conditioning": conditioning,
+                    "model_time_index": request["num_timesteps"],
+                }
             )
         return {
             "forecasts": forecasts,
@@ -234,12 +294,16 @@ def main():
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--port", type=int, default=18118)
     p.add_argument("--cpu-between-requests", action="store_true")
+    p.add_argument(
+        "--motion-adapter", type=Path, help="Opt in to the frozen motion-v4 city profile"
+    )
     args = p.parse_args()
     args.output.mkdir(parents=True, exist_ok=False)
     model = NativeModel(
         args.upstream.resolve(),
         args.checkpoint.resolve(),
         cpu_between_requests=args.cpu_between_requests,
+        motion_adapter=args.motion_adapter,
     )
     identity = {
         "schema_version": "ship_anwm_static_service.v1",
@@ -253,7 +317,14 @@ def main():
         "diffusion_steps": 250,
         "load_seconds": model.load_seconds,
         "cpu_between_requests": args.cpu_between_requests,
-        "candidate_contracts": ["ship_anwm_request.v1", "yokohama_anwm_request.v1"],
+        "candidate_contracts": [profile.MOTION_CONTRACT]
+        if args.motion_adapter
+        else ["ship_anwm_request.v1", "yokohama_anwm_request.v1"],
+        "adapter_sha256": model.adapter_sha256,
+        "model_time_index": 1 if args.motion_adapter else 4,
+        "appearance_policy": profile.APPEARANCE_POLICY if args.motion_adapter else None,
+        "appearance_sha256": native.digest(Path(appearance.__file__)),
+        "profile_sha256": native.digest(Path(profile.__file__)),
     }
     native.write_json(args.output / "identity.json", identity)
     print("READY", flush=True)

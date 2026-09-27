@@ -19,6 +19,10 @@ import time
 import numpy as np
 from PIL import Image
 
+MOTION_CONTRACT = "yokohama_anwm_request.v2"
+MOTION_ADAPTER_SHA256 = "e4b88ec38ce8f08ff90b692a3b545e573aadaacf0f080a0357409dfc2b308dd3"
+APPEARANCE_POLICY = "positive_infinite_upward_rays_past_only_no_metric_fill"
+
 UPSTREAM_REVISION = "657a80268505fa9149c4df502e35aa0f5bce11e5"
 MODEL_REVISION = "dfe59001de57a96d6620313897f09436c6940983"
 MODEL_SHA256 = "bdd149cac6ec002ba7dc4ad99ec6f9eb02cd6d4f05320195cf174737b13b0bc2"
@@ -210,13 +214,20 @@ def prepare(capture, output):
 
 def validate(request_path):
     request = json.loads(request_path.read_text())
-    city = request.get("schema_version") == "yokohama_anwm_request.v1"
+    motion = request.get("schema_version") == MOTION_CONTRACT
+    city = motion or request.get("schema_version") == "yokohama_anwm_request.v1"
+    if motion and (
+        request.get("adapter_sha256") != MOTION_ADAPTER_SHA256
+        or request.get("appearance_policy") != APPEARANCE_POLICY
+    ):
+        raise ValueError("City motion request has an unqualified adapter/appearance profile")
     if (
-        request.get("schema_version") not in {"ship_anwm_request.v1", "yokohama_anwm_request.v1"}
+        request.get("schema_version")
+        not in {"ship_anwm_request.v1", "yokohama_anwm_request.v1", MOTION_CONTRACT}
         or request.get("source_kind") != ("yokohama_rgbd_hold" if city else "px4_ship_rgbd_hold")
         or request.get("ego_source") != "Gazebo_model_pose_simulator_ground_truth"
         or request.get("delta_frame") != "body_frd_at_observation"
-        or request.get("num_timesteps") != 4
+        or request.get("num_timesteps") != (1 if motion else 4)
         or request.get("nominal_horizon_s") != 1
         or request.get("model_time_alignment_verified") is not False
         or request.get("future_ground_truth_used_for_forecast") is not False
@@ -234,7 +245,9 @@ def validate(request_path):
     if digest(path) != request["history_sha256"]:
         raise ValueError("Native input hash mismatch")
     with np.load(path, allow_pickle=False) as archive:
-        if set(archive.files) != {"rgb", "depth", "poses", "intrinsics", "stamps_ns"}:
+        if set(archive.files) != {"rgb", "depth", "poses", "intrinsics", "stamps_ns"} | (
+            {"last_depth_infinite"} if motion else set()
+        ):
             raise ValueError("Native input must contain history only")
         a = {k: archive[k] for k in archive.files}
     if a["rgb"].shape != (16, 360, 640, 3) or a["rgb"].dtype != np.uint8:
@@ -265,6 +278,12 @@ def validate(request_path):
     fx = 640 / (2 * math.tan(math.pi / 6))
     if not np.allclose(a["intrinsics"], [[fx, 0, 320], [0, fx, 180], [0, 0, 1]], atol=1e-5):
         raise ValueError("Unexpected camera intrinsics")
+    if motion and (
+        a["last_depth_infinite"].shape != (360, 640)
+        or a["last_depth_infinite"].dtype != bool
+        or (a["last_depth_infinite"] & (a["depth"][-1] > 0)).any()
+    ):
+        raise ValueError("Invalid observed infinity mask; metric geometry is immutable")
     if city:
         candidates = request.get("candidates")
         if (

@@ -41,7 +41,7 @@ CUSTOM_CODE = {
 
 
 class ActionGrammar:
-    """Constrain syntax, optionally applying a mission-phase vertical-bin range.
+    """Constrain syntax, optionally bounding motion bins for a mission phase.
 
     This is a generation-time mask, never a repair of returned model text.
     Numeric motion, clearance, approval and terminal-proposal guards still apply.
@@ -50,7 +50,7 @@ class ActionGrammar:
 
     policy = "aerovla_action_grammar.v1"
 
-    def __init__(self, tokenizer, *, vertical_bins=None, yaw_bins=None):
+    def __init__(self, tokenizer, *, vertical_bins=None, yaw_bins=None, forward_bins=None):
         vocab = tokenizer.get_vocab()
         pieces = {**{str(i): str(i) for i in range(10)}, "▁": " ", "L": "L", "AND": "AND"}
         self.pieces = {vocab[k]: text for k, text in pieces.items()}
@@ -76,6 +76,16 @@ class ActionGrammar:
                 raise ValueError("Invalid short-segment yaw-bin range")
             self.bin_sets[2] = {str(i) for i in range(yaw_bins[0], yaw_bins[1] + 1)}
             self.policy = "aerovla_short_segment_grammar.v1"
+        if forward_bins is not None:
+            if (
+                yaw_bins is None
+                or len(forward_bins) != 2
+                or any(type(v) is not int for v in forward_bins)
+                or not 1 <= forward_bins[0] <= forward_bins[1] <= 98
+            ):
+                raise ValueError("Invalid compact-city forward-bin range")
+            self.bin_sets[0] = {str(i) for i in range(forward_bins[0], forward_bins[1] + 1)} | {"0"}
+            self.policy = "aerovla_compact_city_grammar.v1"
         if self.eos in self.pieces or len(self.pieces) != len(pieces):
             raise ValueError("Unsupported action-grammar vocabulary")
         for text in [*sorted(self.numbers), "0 49 98", "LAND", "98 49 0 LAND"]:

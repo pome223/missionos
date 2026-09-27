@@ -30,10 +30,17 @@ def main():
     parser.add_argument("--timeout-seconds", type=int, default=900)
     parser.add_argument("--decision-backend", choices=["fixture", "native"])
     parser.add_argument("--native-service-config", type=Path)
-    parser.add_argument("--capture-paired-views", action="store_true",
-                        help="Record withheld outcome views during CPU fixture flight")
-    parser.add_argument("--capture-motion-views", action="store_true",
-                        help="Record bounded moving RGBD on the fixed CPU AP route")
+    parser.add_argument(
+        "--capture-paired-views",
+        action="store_true",
+        help="Record withheld outcome views during CPU fixture flight",
+    )
+    parser.add_argument(
+        "--capture-motion-views",
+        action="store_true",
+        help="Record bounded moving RGBD on the fixed CPU AP route",
+    )
+    parser.add_argument("--wam-profile", choices=["legacy", "motion-v4"], default="legacy")
     args = parser.parse_args()
     if not args.approve_sitl:
         parser.error("Explicit --approve-sitl is required; no hardware execution is supported")
@@ -45,6 +52,8 @@ def main():
         parser.error("Paired capture currently requires the CPU fixture backend")
     if args.capture_motion_views and (args.phase != "flight" or args.decision_backend):
         parser.error("Motion capture requires the fixed flight route without a decision backend")
+    if args.wam_profile != "legacy" and not args.decision_backend:
+        parser.error("WAM profile requires explicit decisions")
     root = args.output_dir.resolve()
     if root.exists():
         parser.error("Output directory must not exist; preserve previous attempts")
@@ -107,18 +116,27 @@ def main():
         }
         if args.capture_motion_views:
             config["motion_capture"] = dict(
-                phases=["01-D2", "02-D3", "03-DELIVERY"], camera_rate_hz=4,
-                hold_tail_s=8, max_frames=512, max_compressed_bytes=200 * 1024**2,
+                phases=["01-D2", "02-D3", "03-DELIVERY"],
+                camera_rate_hz=4,
+                hold_tail_s=8,
+                max_frames=512,
+                max_compressed_bytes=200 * 1024**2,
                 reserve_bytes=96 * 1024**2,
-                fraction_ranges={"01-D2":[.10,.55], "02-D3":[.48,.94], "03-DELIVERY":[.20,.70]},
-                phase_lines={name:[world["points"][i]["world_xyz_m"],
-                                  world["points"][i+1]["world_xyz_m"]]
-                             for i,name in enumerate(["01-D2","02-D3","03-DELIVERY"])},
+                fraction_ranges={
+                    "01-D2": [0.10, 0.55],
+                    "02-D3": [0.48, 0.94],
+                    "03-DELIVERY": [0.20, 0.70],
+                },
+                phase_lines={
+                    name: [world["points"][i]["world_xyz_m"], world["points"][i + 1]["world_xyz_m"]]
+                    for i, name in enumerate(["01-D2", "02-D3", "03-DELIVERY"])
+                },
                 purpose="AP motion acquisition; no model control or training",
             )
         if args.decision_backend:
             config["decisions"] = dict(
                 backend=args.decision_backend,
+                wam_profile=args.wam_profile,
                 capture_paired_views=args.capture_paired_views,
                 points=["D1", "D2"],
                 camera_rate_hz=4,
@@ -208,8 +226,12 @@ def main():
         if args.phase == "flight":
             sources.append(REPO / "scripts/yokohama_flight_worker.py")
         if args.capture_motion_views:
-            sources.extend([REPO / "scripts/yokohama_motion_recorder.py",
-                            REPO / "scripts/yokohama_decision_worker.py"])
+            sources.extend(
+                [
+                    REPO / "scripts/yokohama_motion_recorder.py",
+                    REPO / "scripts/yokohama_decision_worker.py",
+                ]
+            )
         if args.decision_backend:
             sources.extend(
                 REPO / p
@@ -218,6 +240,8 @@ def main():
                     "scripts/yokohama_decision_host.py",
                     "src/runtime/yokohama_native.py",
                     "scripts/ship_anwm.py",
+                    "scripts/yokohama_appearance.py",
+                    "scripts/yokohama_wam_profile.py",
                     "scripts/ship_anwm_server.py",
                     "scripts/ship_aerovla.py",
                     "scripts/ship_aerovla_server.py",

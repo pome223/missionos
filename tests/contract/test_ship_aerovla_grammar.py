@@ -142,3 +142,28 @@ def test_short_segment_yaw_mask_preserves_native_choices_and_terminal_rejection(
 def test_bad_short_segment_mask_rejects(bounds):
     with pytest.raises(ValueError, match="yaw-bin range"):
         ActionGrammar(TokenizerDouble(), vertical_bins=(47, 51), yaw_bins=bounds)
+
+
+def test_compact_city_allows_short_native_steps_and_refusal_without_rewriting():
+    grammar = ActionGrammar(
+        TokenizerDouble(), vertical_bins=(47, 51), yaw_bins=(45, 53), forward_bins=(20, 58)
+    )
+    assert grammar.policy == "aerovla_compact_city_grammar.v1"
+    accepts(grammar, "LAND")
+    accepts(grammar, "0 49 49")
+    for forward in range(20, 59):
+        for yaw in range(45, 54):
+            accepts(grammar, f"{forward} 49 {yaw}")
+            _, (distance, _, angle) = decode_action(f"{forward} 49 {yaw}")
+            assert 1 <= distance <= 3 and abs(angle) < 0.1
+    for text in ["19 49 49", "59 49 49", "30 49 44", "30 49 54"]:
+        with pytest.raises(ValueError):
+            grammar.allowed(tokens(text))
+
+
+@pytest.mark.parametrize("bounds", [(0, 58), (20, 99), (True, 58), (59, 20), (20,)])
+def test_invalid_compact_bounds_refused(bounds):
+    with pytest.raises(ValueError, match="forward-bin"):
+        ActionGrammar(
+            TokenizerDouble(), vertical_bins=(47, 51), yaw_bins=(45, 53), forward_bins=bounds
+        )

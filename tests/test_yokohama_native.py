@@ -134,12 +134,21 @@ def test_hold_rejects_drift_even_if_ap_still_reports_loiter(tmp_path):
 
 
 def test_hold_rejects_physical_yaw_drift_hidden_by_estimated_heading(tmp_path):
-    anchor = dict(nav_state=4, arming_state=2, landed=False, position_valid=True,
-                  battery_fraction=0.9, velocity_ned=[0, 0, 0],
-                  vehicle={"xyz": [0, 0, 10], "quat_wxyz": [1, 0, 0, 0]},
-                  heading_ned_rad=1.57, reset_counters=[0, 0, 0])
-    row = dict(anchor, vehicle={"xyz": [0, 0, 10],
-                               "quat_wxyz": [math.cos(.113 / 2), 0, 0, math.sin(.113 / 2)]})
+    anchor = dict(
+        nav_state=4,
+        arming_state=2,
+        landed=False,
+        position_valid=True,
+        battery_fraction=0.9,
+        velocity_ned=[0, 0, 0],
+        vehicle={"xyz": [0, 0, 10], "quat_wxyz": [1, 0, 0, 0]},
+        heading_ned_rad=1.57,
+        reset_counters=[0, 0, 0],
+    )
+    row = dict(
+        anchor,
+        vehicle={"xyz": [0, 0, 10], "quat_wxyz": [math.cos(0.113 / 2), 0, 0, math.sin(0.113 / 2)]},
+    )
     worker = CityDecisions(tmp_path, {}, lambda: row, lambda *a, **k: None, lambda: 0)
     with pytest.raises(ValueError, match="hold"):
         worker.held(anchor)
@@ -155,6 +164,7 @@ def test_serial_gpu_residency_returns_to_cpu_on_success_and_failure(kind, failur
     calls = []
     model = object.__new__(VLA if kind == "vla" else WAM)
     model.cpu_between_requests = True
+    model.adapter_sha256 = None
     model.model = SimpleNamespace(to=lambda device: calls.append(("model", device)))
     model.vae = SimpleNamespace(to=lambda device: calls.append(("vae", device)))
     model.torch = SimpleNamespace(
@@ -176,9 +186,21 @@ def test_serial_gpu_residency_returns_to_cpu_on_success_and_failure(kind, failur
     model._predict = predict
     if failure:
         with pytest.raises(RuntimeError, match="inference failure"):
-            model.predict(*([None, None] if kind == "vla" else [None, None, None]))
+            model.predict(
+                *(
+                    [None, None]
+                    if kind == "vla"
+                    else [{"schema_version": "yokohama_anwm_request.v1"}, None, None]
+                )
+            )
     else:
-        value = model.predict(*([None, None] if kind == "vla" else [None, None, None]))
+        value = model.predict(
+            *(
+                [None, None]
+                if kind == "vla"
+                else [{"schema_version": "yokohama_anwm_request.v1"}, None, None]
+            )
+        )
         assert (value[0] if kind == "vla" else value)["cuda_allocated_after_request_bytes"] == 0
     assert ("model", "cuda") in calls and ("model", "cpu") in calls
     assert calls[-1] == ("cache", "empty")
@@ -236,6 +258,7 @@ def test_vla_releases_cyclic_temporaries_before_measuring_cuda_residency():
 
     model = object.__new__(NativeModel)
     model.cpu_between_requests = True
+    model.adapter_sha256 = None
     model.model = SimpleNamespace(to=lambda device: None)
     model.torch = SimpleNamespace(
         cuda=SimpleNamespace(
@@ -328,16 +351,16 @@ def test_cuda_workspace_release_is_synchronized_and_requires_supported_api():
     assert calls == ["synchronize", "clear"]
 
 
-@pytest.mark.parametrize('enu_yaw', [0, .5, -2.35, 3.0])
+@pytest.mark.parametrize("enu_yaw", [0, 0.5, -2.35, 3.0])
 def test_pinned_gazebo_compass_declination_sign_matches_world_heading(enu_yaw):
     # Gazebo 8.11 NED field is transformed by its ENU pose, then this PX4
     # bridge maps x=-field.y, y=-field.x. A geographic declination added
     # again has the wrong sign; the bounded SITL correction cancels it.
     from scripts.yokohama_decision_worker import physical_heading
+
     declination = math.radians(-7.634295074001246)
     body_angle = declination - enu_yaw
     sensor_x, sensor_y = -math.sin(body_angle), -math.cos(body_angle)
     estimated = -math.atan2(sensor_y, sensor_x) - declination
-    row = {'vehicle': {'quat_wxyz': [math.cos(enu_yaw / 2), 0, 0,
-                                      math.sin(enu_yaw / 2)]}}
+    row = {"vehicle": {"quat_wxyz": [math.cos(enu_yaw / 2), 0, 0, math.sin(enu_yaw / 2)]}}
     assert abs(math.remainder(estimated - physical_heading(row), 2 * math.pi)) < 1e-12

@@ -87,7 +87,9 @@ def verify(root):
             entry = req["capture"]
             capture = root / entry["file"]
             assert ship_anwm.digest(capture) == entry["sha256"]
-            _, a = load_capture(capture)
+            _, a = load_capture(
+                capture, appearance=config["decisions"].get("wam_profile") == "motion-v4"
+            )
             assert a["stamps_ns"][0] / 1e9 > last_arrival
             assert 0 <= req["observation"]["sim_s"] - a["stamps_ns"][-1] / 1e9 <= 2
         assert vr["capture"] != wr["capture"]
@@ -103,7 +105,10 @@ def verify(root):
             assert raw_vla["cuda_allocated_after_request_bytes"] == 0
         wfolder = wpath.with_name(wpath.name.removesuffix("-request.json"))
         request, arrays = ship_anwm.validate(wfolder / "input/request.json")
-        _, captured_arrays = load_capture(root / wr["capture"]["file"])
+        _, captured_arrays = load_capture(
+            root / wr["capture"]["file"],
+            appearance=config["decisions"].get("wam_profile") == "motion-v4",
+        )
         assert all(np.array_equal(arrays[k], captured_arrays[k]) for k in arrays)
         assert request["vla_response_sha256"] == digest(raw_vla)
         proposed_pose = ship_anwm.action_pose(
@@ -185,9 +190,15 @@ def verify(root):
         error = math.dist(end["vehicle"]["xyz"], candidate["target_world_xyz_m"])
         assert error <= 0.25 and end["nav_state"] == 4 and math.hypot(*end["velocity_ned"]) <= 0.3
         if "simulator_initial_heading_deg" in config:
-            assert abs(math.remainder(
-                physical_heading(end) - candidate["target_heading_world_ned_rad"],
-                2 * math.pi)) <= 0.05
+            assert (
+                abs(
+                    math.remainder(
+                        physical_heading(end) - candidate["target_heading_world_ned_rad"],
+                        2 * math.pi,
+                    )
+                )
+                <= 0.05
+            )
         moved = math.dist(end["vehicle"]["xyz"], ar["observation"]["vehicle"]["xyz"])
         assert moved >= 0.25
         samples = [

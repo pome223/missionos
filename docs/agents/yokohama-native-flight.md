@@ -129,3 +129,47 @@ Claims about native participation require the reopened model/permit/motion chain
 and the separate whole-trajectory/contact verifier. The fixture labels remain
 false for native inference. No result establishes physical delivery, strong wind,
 moving-deck recovery, ten-drone coordination or whole-mission battery savings.
+
+## Opt-in motion-v4 mission integration
+
+`yokohama_sitl.py --wam-profile motion-v4` selects a new prospective city-flight
+profile. Legacy trials retain their original contracts and negative findings.
+The objective is two fresh, observed model-to-AP updates followed by the authored
+city delivery waypoint, return, landing and disarm. Pixel-perfect reconstruction
+and superiority over Rules are not acceptance conditions. This profile still has
+no sea leg, ship deck, parcel-release actuator, moving obstacles or hardware.
+
+- ANWM loads the pinned `motion-v4` adapter (SHA-256
+  `e4b88ec38ce8f08ff90b692a3b545e573aadaacf0f080a0357409dfc2b308dd3`)
+  only with `--motion-adapter`. Its 24 finite tensors must match the named final
+  block/head parameters and the released base checkpoint. No online training.
+- `yokohama_anwm_request.v2` binds this adapter, model time index **1**, and the
+  past-only appearance policy. These match the offline adaptation inputs.
+  Physical arrival after precisely one second remains **unverified**: the AP
+  executes a positional segment and verifies its actual arrival independently.
+- Inputs add a boolean `last_depth_infinite` mask from the last **observed** depth
+  image. Only positive-infinite, upward world rays can contribute sky appearance.
+  NaN/zero depth, occlusion holes and inferred empty space cannot. Existing metric
+  geometry is immutable; appearance is never added to the collision map.
+- AeroVLA uses `--compact-city-flight`: generation-time forward bins 20–58
+  (1.0204–2.9592 m), yaw bins 45–53 (±0.0898 rad), vertical bins 47–51.
+  Hold/terminal proposals remain representable and cannot authorize motion.
+  Native returned values are not rewritten. This limits initial integration to
+  short steps near the adapter's training displacement; it is not unconstrained
+  VLA navigation.
+- Service health binds adapter, helper source hashes, decoding ranges and time
+  index. Mixing the new request with legacy weights, or vice versa, fails before
+  CUDA inference. Remote helper files `yokohama_appearance.py` and
+  `yokohama_wam_profile.py` must accompany `ship_anwm_server.py`.
+- The existing visible-structure gate is **unchanged**. Independent Rules still
+  constrain both the native step and its AP connector; uncertainty still stops
+  the disposable simulation. Successful image generation alone is insufficient.
+- Startup is permitted only after the measured D1 hold. The D2 arrival/decision
+  uses new captures. After the second model segment, revoke authority and observe
+  remote process release before AP continuation; delayed authorization is rejected.
+
+CPU fixture qualification and native GPU flight are separate receipts. Require
+`verify_yokohama_sitl.py` and `verify_yokohama_decisions.py` to pass on the actual
+native run before claiming this integrated profile flew. The latter reopens the
+input mask, unchanged VLA output, generated predictions, permits and observed AP
+arrivals; the offline adaptation's image scores are not substituted for them.

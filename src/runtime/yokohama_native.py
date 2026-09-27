@@ -35,7 +35,7 @@ def read_asset(root, entry):
     return path.read_bytes()
 
 
-def load_capture(path):
+def load_capture(path, *, appearance=False):
     record = json.loads(path.read_text())
     if (
         record.get("schema_version") != "yokohama_rgbd_history.v1"
@@ -74,13 +74,16 @@ def load_capture(path):
     ):
         raise ValueError("Camera rotated during stationary history")
     fx = 640 / (2 * math.tan(math.pi / 6))
-    return record, dict(
+    arrays = dict(
         rgb=np.array(rgb[8:]),
         depth=np.array(depth[8:]),
         poses=np.array(poses[8:]),
         intrinsics=np.array([[fx, 0, 320], [0, fx, 180], [0, 0, 1]]),
         stamps_ns=stamps[8:],
     )
+    if appearance:
+        arrays["last_depth_infinite"] = np.isposinf(d)
+    return record, arrays
 
 
 def vla_candidate(text, row):
@@ -237,10 +240,20 @@ def forecast_consistency(predicted, reference, mask):
 
 
 def write_request(folder, arrays, config, candidate, vla_response_sha256):
+    from scripts.yokohama_wam_profile import (
+        APPEARANCE_POLICY,
+        MOTION_ADAPTER_SHA256,
+        MOTION_CONTRACT,
+    )
+
+    profile = config.get("decisions", {}).get("wam_profile", "legacy")
+    if profile not in {"legacy", "motion-v4"}:
+        raise ValueError("Unknown city WAM profile")
+    motion = profile == "motion-v4"
     folder.mkdir()
     np.savez_compressed(folder / "history.npz", **arrays)
     request = dict(
-        schema_version="yokohama_anwm_request.v1",
+        schema_version=MOTION_CONTRACT if motion else "yokohama_anwm_request.v1",
         run_id=config["run_id"],
         world_sha256=config["world"]["world_sha256"],
         plan_sha256=digest(config),
@@ -248,7 +261,7 @@ def write_request(folder, arrays, config, candidate, vla_response_sha256):
         ego_source="Gazebo_model_pose_simulator_ground_truth",
         history_sha256=ship_anwm.digest(folder / "history.npz"),
         delta_frame="body_frd_at_observation",
-        num_timesteps=4,
+        num_timesteps=1 if motion else 4,
         nominal_horizon_s=1,
         model_time_alignment_verified=False,
         future_ground_truth_used_for_forecast=False,
@@ -261,6 +274,8 @@ def write_request(folder, arrays, config, candidate, vla_response_sha256):
         ],
         vla_response_sha256=vla_response_sha256,
     )
+    if motion:
+        request.update(adapter_sha256=MOTION_ADAPTER_SHA256, appearance_policy=APPEARANCE_POLICY)
     ship_anwm.write_json(folder / "request.json", request)
     ship_anwm.validate(folder / "request.json")
     return request

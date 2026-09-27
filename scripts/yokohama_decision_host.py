@@ -21,6 +21,7 @@ import numpy as np
 from PIL import Image
 
 from scripts import ship_anwm
+from scripts.yokohama_wam_profile import MOTION_CONTRACT, validate_service_profile
 from scripts.smoke_px4_gazebo_sitl_mission_upload import _inner_upload_script
 from src.runtime.yokohama_native import (
     camera_heading,
@@ -92,14 +93,31 @@ class DecisionHost:
                 raise ValueError("Serial CPU-between-requests residency required")
             if identities["vla"].get("exit_after_request") is not False:
                 raise ValueError("One-shot VLA cannot serve a repeated city session")
+            wam_profile = self.config["decisions"].get("wam_profile", "legacy")
+            compact = wam_profile == "motion-v4"
             if (
                 identities["vla"].get("short_segment_flight") is not True
-                or identities["vla"].get("yaw_bin_range") != [38, 60]
+                or identities["vla"].get("yaw_bin_range") != ([45, 53] if compact else [38, 60])
+                or (
+                    compact
+                    and (
+                        identities["vla"].get("compact_city_flight") is not True
+                        or identities["vla"].get("forward_bin_range") != [20, 58]
+                        or identities["vla"].get("hold_bin_allowed") is not True
+                    )
+                )
             ):
-                raise ValueError("City translation phase requires bounded native yaw decoding")
-            if "yokohama_anwm_request.v1" not in identities["wam"].get("candidate_contracts", []):
+                raise ValueError("City translation phase requires bounded native decoding")
+            contract = MOTION_CONTRACT if wam_profile == "motion-v4" else "yokohama_anwm_request.v1"
+            if contract not in identities["wam"].get("candidate_contracts", []):
                 raise ValueError("Native WAM does not support this action contract")
             sources = self.root / "sources"
+            validate_service_profile(
+                identities["wam"],
+                wam_profile,
+                appearance_sha256=ship_anwm.digest(sources / "yokohama_appearance.py"),
+                profile_sha256=ship_anwm.digest(sources / "yokohama_wam_profile.py"),
+            )
             if (
                 identities["wam"].get("server_sha256")
                 != ship_anwm.digest(sources / "ship_anwm_server.py")
@@ -139,7 +157,9 @@ class DecisionHost:
             or ship_anwm.digest(path) != entry["sha256"]
         ):
             raise ValueError("Unbound city capture")
-        record, arrays = load_capture(path)
+        record, arrays = load_capture(
+            path, appearance=self.config["decisions"].get("wam_profile") == "motion-v4"
+        )
         if not 0 <= message["observation"]["sim_s"] - arrays["stamps_ns"][-1] / 1e9 <= 2:
             raise ValueError("History does not end at a fresh observation")
         return path, record, arrays
