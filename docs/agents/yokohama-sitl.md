@@ -69,10 +69,60 @@ Before spending on models, replace/extend that reader for ordinary buildings,
 freeze valid/ambiguous/blocked cases, and bind fresh images, native proposals,
 predictions, Rules, approval scope, dispatch ACKs, observed arrival, and lifecycle
 shutdown to the urban loop. Keep model calls and warmup inside the city. The
-1 km sea leg and moving ship are outside this scene test. Idealized Rules need
+default city-only test excludes the 1 km sea leg and moving ship. The optional
+stationary offshore extension below adds the sea leg. Idealized Rules need
 not be beaten; absolute arrival, safety, latency, and cost bounds apply.
 
 ## Reproduction and publication
+
+### Stationary offshore extension
+
+`--sea-round-trip` adds an authored stationary 12 m deck, visual-only water and
+an AP-only outbound/return route to the same world and vehicle. The synthetic
+coastal gateway is 400 m from D1 along a source-frame 15-degree ray; the ship is
+another 1,000 m away. This gateway is beyond the source crop, **not a surveyed
+shoreline**. The source meshes and city route remain source-bound. The complete
+approach is checked against height-overlapping building prisms before launch.
+
+The route is ship takeoff → coastal gateway → the seven city stops above →
+coastal gateway → ship hold → landing/disarm. Sea cruise is 8 m/s; the city and
+inbound connector to D1 use 3 m/s. All eleven stops require the same 30-second
+measured hold. Gazebo remains referenced to D1; the vehicle spawns on the ship
+and PX4 observes its home there. Landing checks use the ship position and require
+recent deck contact, rather than counting the initial takeoff contact.
+
+For model segments, the measured PX4 global altitude minus observed home altitude
+is mapped to the simultaneous Gazebo world height. Moving launch offshore changes
+the relative-home datum; using city world z directly left a retained CPU attempt
+about 0.19 m above its second model goal. Upload now uses observed relative altitude
+plus the model's requested world-height difference. Bind this mapping to the permit,
+reject a >0.05 m offset change during upload, and preserve the original 0.15 m
+observed vertical arrival bound. This is simulator observation-based frame mapping,
+not new altitude-estimation or hardware qualification.
+
+Model warm-up and inference still begin only after the D1 hold. Both the worker
+and host reject startup/inference unless the request phase is the approved D1/D2
+cycle and its observed vehicle position is within 1 m of that city stop. Cleanup
+stop remains available everywhere. Shutdown after D2 and late-authority rejection
+precede the remaining AP route, including both outbound sea stages. The verifier
+reopens requests, all eleven holds, both 1 km measured sea movements, model-off
+events, and final recovery. The separate decision verifier does not itself certify
+the sea trajectory; require both verifiers for the combined claim.
+
+```sh
+python scripts/yokohama_sitl.py --phase flight --approve-sitl --sea-round-trip \
+  --decision-backend fixture --wam-profile motion-v4 \
+  --output-dir /tmp/yokohama-sea-city --timeout-seconds 2200
+python scripts/verify_yokohama_sitl.py /tmp/yokohama-sea-city \
+  --output /tmp/yokohama-sea-city/verification.json
+python scripts/verify_yokohama_decisions.py /tmp/yokohama-sea-city \
+  --output /tmp/yokohama-sea-city/decision-verification.json
+```
+
+Fixture decisions establish control integration only. A native run requires an
+explicit native service configuration and its separately authorized compute
+budget. This extension does not add cargo release, moving-deck recovery, wind
+qualification, multi-vehicle scheduling or a validated energy model.
 
 Use the dependency versions from the scene bundle in a dedicated environment.
 Use the image ID recorded in each result; the tested arm64 image is resolved

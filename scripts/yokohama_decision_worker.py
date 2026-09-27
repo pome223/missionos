@@ -24,6 +24,33 @@ def physical_heading(row):
     return math.atan2(1 - 2 * (y * y + z * z), 2 * (x * y + w * z))
 
 
+def require_city_request(config, message):
+    """Gate model startup and calls by both the approved phase and measured position.
+
+    Stop is always permitted for cleanup; it never invokes model inference.
+    """
+    if message["operation"] == "stop":
+        return
+    cycle = message.get("cycle")
+    expected = {1: "00-D1", 2: "01-D2"}.get(cycle)
+    row = message.get("observation", {})
+    stages = [s for s in config.get("flight_stages", []) if s["name"] == expected]
+    xyz = row.get("vehicle", {}).get("xyz", [])
+    if (
+        not expected
+        or len(stages) != 1
+        or row.get("phase") != expected
+        or len(xyz) != 3
+        or not all(math.isfinite(v) for v in xyz)
+        or math.dist(xyz, stages[0]["target_world_xyz_m"]) > 1
+        or row.get("nav_state") != 4
+        or row.get("arming_state") != 2
+        or row.get("landed") is not False
+        or (message["operation"] == "start" and cycle != 1)
+    ):
+        raise ValueError("Model request outside approved inland phase/hold")
+
+
 class CityDecisions:
     def __init__(self, root, config, sample, event, clock):
         self.root, self.config, self.sample, self.event, self.clock = (
@@ -82,6 +109,7 @@ class CityDecisions:
             observation=row,
             **fields,
         )
+        require_city_request(self.config, message)
         stem = self.root / "decisions" / f"{self.sequence:03d}"
         temp = stem.with_name(stem.name + "-request.tmp")
         temp.write_text(json.dumps(message, allow_nan=False))

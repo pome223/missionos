@@ -86,6 +86,19 @@ def load_capture(path, *, appearance=False):
     return record, arrays
 
 
+def executor_altitude(target_world_z, row):
+    """Map an immutable world goal into PX4's observed home-relative altitude.
+
+    Moving the launch point offshore changes the home altitude in the global
+    frame. The city's rebased world z is not that relative-altitude datum.
+    """
+    relative = row.get("px4_relative_altitude_m")
+    world_z = row["vehicle"]["xyz"][2]
+    if relative is None or not all(math.isfinite(v) for v in (relative, world_z, target_world_z)):
+        raise ValueError("Missing finite PX4 home-relative altitude mapping")
+    return relative + target_world_z - world_z
+
+
 def vla_candidate(text, row):
     bins, (forward, down, yaw) = decode_action(text)
     # Preserve upstream yaw-first semantics. A rotation-only proposal does not

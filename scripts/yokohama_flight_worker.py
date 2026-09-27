@@ -62,6 +62,9 @@ def flight_trial(config, obs, run, field):
     last_video_sim_s = -10.0
     decisions = None
     next_connector = None
+    landing_xy = (
+        config["world"].get("sea_extension", {}).get("ship_deck_world_xyz_m", [0, 0, 0])[:2]
+    )
 
     def event(name, **data):
         row = dict(event=name, phase=phase, wall_s=time.monotonic() - started, **data)
@@ -80,6 +83,9 @@ def flight_trial(config, obs, run, field):
                 "battery_status",
             ]
         }
+        if config["world"].get("sea_extension"):
+            for key in ("vehicle_global_position", "home_position"):
+                raw[key] = run([BIN + "listener", key, "-n", "1"], 5)
         snap = obs.snapshot()
         v = snap["poses"].get("x500_0")
         if not v or v["age_s"] > 2 or snap["sim_s"] is None:
@@ -112,6 +118,16 @@ def flight_trial(config, obs, run, field):
         )
         if any(x is None or not math.isfinite(x) for x in row["local_ned"] + row["velocity_ned"]):
             raise RuntimeError("Invalid PX4 local state")
+        if config["world"].get("sea_extension"):
+            global_alt = field(raw["vehicle_global_position"], "alt")
+            home_alt = field(raw["home_position"], "alt")
+            row["px4_relative_altitude_m"] = (
+                global_alt - home_alt
+                if global_alt is not None
+                and home_alt is not None
+                and field(raw["home_position"], "valid_alt") is True
+                else None
+            )
         trajectory.write(json.dumps(row) + "\n")
         if row["sim_s"] - last_video_sim_s >= 2 and "onboard_rgb" in obs.images:
             captured = obs.images_to_disk(f"flight-{len(video_frames):04d}", ["onboard_rgb"])
@@ -257,6 +273,30 @@ def flight_trial(config, obs, run, field):
         for i, stage in enumerate(config["flight_stages"]):
             phase = stage["name"]
             target = stage["target_world_xyz_m"]
+            run(
+                [
+                    BIN + "param",
+                    "set",
+                    "MPC_XY_CRUISE",
+                    str(stage.get("airspeed_mps", config["airspeed_mps"])),
+                ]
+            )
+            if phase.startswith("SEA-"):
+                if decisions and (
+                    decisions.active
+                    or (
+                        i > 0
+                        and phase in {"SEA-OUTBOUND-COAST", "SEA-RETURN"}
+                        and not decisions.closed
+                    )
+                ):
+                    raise RuntimeError("Model session active on an AP-only sea leg")
+                event(
+                    "sea_ap_only_observed",
+                    observation=sample(),
+                    models_active=bool(decisions and decisions.active),
+                    session_closed=bool(decisions and decisions.closed),
+                )
             upload(next_connector or phase)
             next_connector = None
             if i == 0:
@@ -268,7 +308,7 @@ def flight_trial(config, obs, run, field):
                     math.dist(r["vehicle"]["xyz"], target) < 0.65
                     and math.sqrt(sum(v * v for v in r["velocity_ned"])) < 0.3
                 ),
-                150,
+                stage.get("arrival_timeout_s", 150),
             )
             run([BIN + "commander", "mode", "auto:loiter"])
             wait_for(lambda r: r["nav_state"] == 4, 10)
@@ -294,7 +334,7 @@ def flight_trial(config, obs, run, field):
             frames.append(obs.images_to_disk(phase, ["onboard_rgb", "onboard_depth", "down_rgb"]))
             if not metrics["passed"]:
                 raise RuntimeError("AP hold did not meet frozen bounds at " + phase)
-            if decisions and i in (0, 1):
+            if decisions and phase in ("00-D1", "01-D2"):
                 permit = decisions.decide(obs, config["flight_stages"][i + 1]["target_world_xyz_m"])
                 candidate = permit["candidate"]
                 upload(permit["upload_name"])
@@ -365,7 +405,7 @@ def flight_trial(config, obs, run, field):
                 if hashlib.sha256(connector.read_bytes()).hexdigest() != permit["connector_sha256"]:
                     raise ValueError("AP connector differs from independently checked route")
                 next_connector = permit["connector_name"]
-                if i == 1:
+                if phase == "01-D2":
                     decisions.stop()
         phase = "return_land"
         run([BIN + "commander", "land"])
@@ -373,7 +413,7 @@ def flight_trial(config, obs, run, field):
             lambda r: (
                 r["landed"] is True
                 and r["arming_state"] == 1
-                and math.hypot(*r["vehicle"]["xyz"][:2]) < 1.5
+                and math.dist(r["vehicle"]["xyz"][:2], landing_xy) < 1.5
             ),
             90,
         )
@@ -381,7 +421,7 @@ def flight_trial(config, obs, run, field):
         pad_contact = any(
             "x500" in c["collision1"] + c["collision2"]
             for c in obs.contacts
-            if c["topic"] == "launch_pad"
+            if c["topic"] == "launch_pad" and c["sensor_sim_s"] >= final["sim_s"] - 10
         )
         if not pad_contact:
             raise RuntimeError("Launch pad contact not observed")

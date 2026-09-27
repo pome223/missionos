@@ -13,11 +13,12 @@ from PIL import Image
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 from scripts import ship_anwm  # noqa: E402
-from scripts.yokohama_decision_worker import physical_heading  # noqa: E402
+from scripts.yokohama_decision_worker import physical_heading, require_city_request  # noqa: E402
 from src.runtime.yokohama_native import (  # noqa: E402
     digest,
     forecast_consistency,
     executor_heading,
+    executor_altitude,
     geometry_rules,
     load_capture,
     past_view,
@@ -41,8 +42,10 @@ def verify(root):
         response = read(path.with_name(path.name.replace("-request", "-response")))
         assert response["request_sha256"] == digest(request)
         assert request["run_id"] == config["run_id"] and request["config_sha256"] == digest(config)
+        require_city_request(config, request)
         requests.append((path, request, response))
     checks["mailboxes_bound"] = bool(requests)
+    checks["model_requests_inside_approved_city_holds"] = bool(requests)
     identity = next(s["value"] for _, r, s in requests if r["operation"] == "start")
     checks["successful_run_and_shutdown"] = (
         result["status"] == "passed"
@@ -205,6 +208,13 @@ def verify(root):
                 if e["event"] == "upload_receipt" and e["segment"] == permit["upload_name"]
             )
             assert abs(receipt["mission_items"][0][10] - math.degrees(expected_heading)) < 1e-4
+            if config["world"].get("sea_extension"):
+                assert permit["altitude_mapping_observation_sha256"] == digest(mapping_row)
+                expected_altitude = executor_altitude(
+                    candidate["target_world_xyz_m"][2], mapping_row
+                )
+                assert abs(permit["executor_relative_altitude_m"] - expected_altitude) < 1e-10
+                assert abs(receipt["mission_items"][0][13] - expected_altitude) < 1e-4
         end = arrival["observation"]
         assert (
             abs(
@@ -218,6 +228,7 @@ def verify(root):
         )
         error = math.dist(end["vehicle"]["xyz"], candidate["target_world_xyz_m"])
         assert error <= 0.25 and end["nav_state"] == 4 and math.hypot(*end["velocity_ned"]) <= 0.3
+        assert abs(end["vehicle"]["xyz"][2] - candidate["target_world_xyz_m"][2]) <= 0.15
         if "simulator_initial_heading_deg" in config:
             assert (
                 abs(

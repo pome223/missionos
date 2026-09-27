@@ -301,9 +301,16 @@ def test_cross_cycle_response_file_cannot_authorize_motion(tmp_path):
         reset_counters=[0, 0, 0],
     )
     worker = CityDecisions(
-        tmp_path, {"run_id": "run"}, lambda: row, lambda *a, **k: None, lambda: 0
+        tmp_path,
+        {"run_id": "run", "flight_stages": [{"name": "00-D1", "target_world_xyz_m": [0, 0, 15]}]},
+        lambda: row,
+        lambda *a, **k: None,
+        lambda: 0,
     )
     worker.active = True
+
+    row["phase"] = "00-D1"
+    worker.cycle = 1
 
     def old_response():
         deadline = time.monotonic() + 2
@@ -471,7 +478,7 @@ def test_fresh_ap_yaw_mapping_expires_if_camera_turns_during_upload(tmp_path):
         old,
         vehicle={"xyz": [0, 0, 15], "quat_wxyz": [math.cos(0.04 / 2), 0, 0, math.sin(0.04 / 2)]},
     )
-    host.config = {"decisions": {"wam_profile": "motion-v4"}}
+    host.config = {"world": {}, "decisions": {"wam_profile": "motion-v4"}}
     host.pending = {
         1: {"prepared_permit": {}, "input_observation": old, "prepared_observation": old}
     }

@@ -191,20 +191,60 @@ def verify(root, bundle):
             metrics["point"] = hold["point"]
             holds.append(metrics)
         output["holds_recomputed"] = holds
-        checks["seven_measured_holds"] = len(holds) == 7 and all(r["passed"] for r in holds)
+        expected_stops = [s["name"] for s in config["flight_stages"]]
+        sea = world.get("sea_extension")
+        checks["all_authored_holds"] = (
+            len(holds) == (11 if sea else 7)
+            and [h["point"] for h in holds] == expected_stops
+            and all(r["passed"] for r in holds)
+        )
         final = rows[-1]
+        landing_xy = (sea or {}).get("ship_deck_world_xyz_m", [0, 0, 0])[:2]
         checks["returned_landed_disarmed"] = (
             final["landed"] is True
             and final["arming_state"] == 1
-            and math.hypot(*final["vehicle"]["xyz"][:2]) < 1.5
+            and math.dist(final["vehicle"]["xyz"][:2], landing_xy) < 1.5
         )
+        if sea:
+            endpoints = {h["point"]: h["target_world_xyz_m"] for h in observed["holds"]}
+            checks["one_km_sea_both_directions"] = all(
+                abs(math.dist(endpoints[a], endpoints[b]) - 1000) < 1e-6
+                for a, b in [
+                    ("SEA-TAKEOFF", "SEA-INBOUND-COAST"),
+                    ("SEA-OUTBOUND-COAST", "SEA-RETURN"),
+                ]
+            )
+            sea_events = [e for e in flight_events if e["event"] == "sea_ap_only_observed"]
+            checks["sea_model_sessions_off"] = (
+                [e["phase"] for e in sea_events]
+                == ["SEA-TAKEOFF", "SEA-INBOUND-COAST", "SEA-OUTBOUND-COAST", "SEA-RETURN"]
+                and all(e["models_active"] is False for e in sea_events)
+                and (
+                    not config.get("decisions") or all(e["session_closed"] for e in sea_events[-2:])
+                )
+                and not any(
+                    e["event"] == "city_request" and e["phase"].startswith("SEA-")
+                    for e in flight_events
+                )
+            )
+            checks["sea_observed_motion"] = all(
+                sum(
+                    math.dist(a["vehicle"]["xyz"], b["vehicle"]["xyz"])
+                    for a, b in zip(rows, rows[1:])
+                    if a["phase"] == b["phase"] == phase
+                )
+                >= 990
+                for phase in ("SEA-INBOUND-COAST", "SEA-RETURN")
+            )
         events = [
             json.loads(line) for line in (root / "sensor-events.jsonl").read_text().splitlines()
         ]
         checks["contact_sensor_outcome"] = not any(
             e["topic"] == "city" and "x500" in e["collision1"] + e["collision2"] for e in events
         ) and any(
-            e["topic"] == "launch_pad" and "x500" in e["collision1"] + e["collision2"]
+            e["topic"] == "launch_pad"
+            and "x500" in e["collision1"] + e["collision2"]
+            and e["sensor_sim_s"] >= final["sim_s"] - 10
             for e in events
         )
         output["depth_check"] = depth_check(root, config, read(bundle / "scene.json"))

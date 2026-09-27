@@ -46,7 +46,16 @@ def main():
         action="store_true",
         help="Exercise slow startup/inference with CPU fixture delays",
     )
+    parser.add_argument(
+        "--sea-round-trip",
+        action="store_true",
+        help="Add an authored 1 km offshore stationary ship and AP round trip",
+    )
     args = parser.parse_args()
+    if args.sea_round_trip and (
+        args.phase != "flight" or args.capture_motion_views or args.capture_paired_views
+    ):
+        parser.error("Sea round trip requires flight without dataset capture")
     if not args.approve_sitl:
         parser.error("Explicit --approve-sitl is required; no hardware execution is supported")
     if args.decision_backend and args.phase != "flight":
@@ -108,6 +117,10 @@ def main():
             args.phase,
             camera_rate_hz=4 if args.decision_backend or args.capture_motion_views else 2,
         )
+        from src.runtime.yokohama_sea import extend_world, flight_stops
+
+        if args.sea_round_trip:
+            world = extend_world(root, REPO / "docs/examples/yokohama-urban-scene", world)
         config = {
             "run_id": run_id,
             "phase": args.phase,
@@ -160,7 +173,7 @@ def main():
                 model_altitude_error_m=0.15,
                 rules_margin_m=2,
                 failure_response="bounded_stop_of_owned_SITL_container",
-                sea_leg_present=False,
+                sea_leg_present=args.sea_round_trip,
                 payload_release_present=False,
             )
         if args.decision_backend or args.capture_motion_views:
@@ -184,13 +197,11 @@ def main():
             geod = Geod(ellps="WGS84")
             lon, lat = world["frame"]["home_lon_lat"]
             stages = []
-            points = world["points"]
-            previous = points[0]["world_xyz_m"]
-            route_order = [0, 1, 2, 3, 2, 1, 0]
-            for index, point_index in enumerate(route_order):
-                point = points[point_index]
-                target = point["world_xyz_m"]
-                name = f"{index:02d}-" + point["id"]
+            stops = flight_stops(world)
+            previous = stops[0]["target_world_xyz_m"]
+            for index, stop in enumerate(stops):
+                target = stop["target_world_xyz_m"]
+                name = stop["name"]
                 count = max(1, math.ceil(math.dist(previous, target) / 20))
                 items = []
                 for step in range(1, count + 1):
@@ -212,22 +223,32 @@ def main():
                             ),
                         )
                     )
-                facing = points[route_order[min(index + 1, len(route_order) - 1)]]["world_xyz_m"]
+                facing = stops[min(index + 1, len(stops) - 1)]["target_world_xyz_m"]
                 yaw = (
                     math.degrees(math.atan2(facing[0] - target[0], facing[1] - target[1]))
-                    if index < len(route_order) - 1
+                    if index < len(stops) - 1
                     else 0
                 )
                 items.append(dict(items[-1], seq=len(items), command=17, current=0, param4=yaw))
                 (root / (name + "-upload.py")).write_text(
                     _inner_upload_script(items, reuse_mavlink_session=index > 0)
                 )
-                stages.append(dict(name=name, target_world_xyz_m=target, items=items))
+                stages.append(
+                    dict(
+                        **stop,
+                        items=items,
+                        arrival_timeout_s=max(
+                            150,
+                            math.ceil(math.dist(previous, target) / stop["airspeed_mps"] * 3 + 60),
+                        ),
+                    )
+                )
                 previous = target
             config["flight_stages"] = stages
         (root / "config.json").write_text(json.dumps(config, indent=2) + "\n")
         sources = [
             REPO / "src/runtime/yokohama_scene.py",
+            REPO / "src/runtime/yokohama_sea.py",
             Path(__file__),
             REPO / "scripts/yokohama_sitl_worker.py",
             REPO / "scripts/ship_urban_camera_worker.py",
@@ -319,7 +340,21 @@ def main():
                 f"PX4_HOME_LAT={lat}",
                 f"PX4_HOME_LON={lon}",
                 "PX4_HOME_ALT=0",
-                "PX4_GZ_MODEL_POSE=0,0,0.3,0,0,0",
+                "PX4_GZ_MODEL_POSE="
+                + ",".join(
+                    map(
+                        str,
+                        [
+                            *world.get("sea_extension", {}).get("ship_deck_world_xyz_m", [0, 0, 0])[
+                                :2
+                            ],
+                            0.3,
+                            0,
+                            0,
+                            0,
+                        ],
+                    )
+                ),
             ]:
                 argv.extend(["-e", entry])
             if "simulator_initial_heading_deg" in config:

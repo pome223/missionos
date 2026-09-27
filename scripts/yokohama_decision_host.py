@@ -28,6 +28,7 @@ from src.runtime.yokohama_native import (
     digest,
     forecast_consistency,
     executor_heading,
+    executor_altitude,
     geometry_rules,
     load_capture,
     past_view,
@@ -377,12 +378,14 @@ class DecisionHost:
         command_heading = (
             executor_heading(candidate, row) if world_frame else candidate["target_heading_ned_rad"]
         )
+        offshore = bool(self.config["world"].get("sea_extension"))
+        command_altitude = executor_altitude(xyz[2], row) if offshore else xyz[2]
         item = dict(
             seq=0,
             command=16,
             latitude_deg=glat,
             longitude_deg=glon,
-            altitude_m=xyz[2],
+            altitude_m=command_altitude,
             current=1,
             frame=6,
             param2=0.25,
@@ -396,8 +399,10 @@ class DecisionHost:
             )
         )
         # Reconnect from the actual model endpoint, not the old authored stop.
-        stage_index = message["cycle"]
-        stage = self.config["flight_stages"][stage_index]
+        expected_next = {1: "01-D2", 2: "02-D3"}[message["cycle"]]
+        stage = next(s for s in self.config["flight_stages"] if s["name"] == expected_next)
+        if stage["target_world_xyz_m"] != message["next_target_world_xyz_m"]:
+            raise ValueError("City connector target is outside the approved stage")
         connector_name = name + "-connect"
         connector_items = []
         next_xyz = stage["target_world_xyz_m"]
@@ -415,7 +420,7 @@ class DecisionHost:
                     current=int(step == 1),
                     longitude_deg=lng,
                     latitude_deg=lt,
-                    altitude_m=point[2],
+                    altitude_m=executor_altitude(point[2], row) if offshore else point[2],
                     param2=0.5,
                     param4=math.degrees(math.atan2(next_xyz[0] - xyz[0], next_xyz[1] - xyz[1])),
                 )
@@ -451,6 +456,9 @@ class DecisionHost:
             physical_execution_invoked=False,
         )
         proposal["prepared_observation"] = row
+        if offshore:
+            permit["executor_relative_altitude_m"] = command_altitude
+            permit["altitude_mapping_observation_sha256"] = digest(row)
         proposal["prepared_permit"] = permit
         return permit
 
@@ -461,6 +469,15 @@ class DecisionHost:
             raise ValueError("Activation does not bind the uploaded mission")
         current = message["observation"]
         old = proposal["input_observation"]
+        if self.config["world"].get("sea_extension"):
+            if (
+                abs(
+                    executor_altitude(0, current)
+                    - executor_altitude(0, proposal["prepared_observation"])
+                )
+                > 0.05
+            ):
+                raise ValueError("World-to-AP altitude mapping expired during upload")
         if (
             math.dist(current["vehicle"]["xyz"], old["vehicle"]["xyz"]) > 0.5
             or abs(math.remainder(current["heading_ned_rad"] - old["heading_ned_rad"], 2 * math.pi))
@@ -518,6 +535,9 @@ class DecisionHost:
                     ] != digest(self.config):
                         raise ValueError("Mailbox run/config mismatch")
                     operation = message["operation"]
+                    from scripts.yokohama_decision_worker import require_city_request
+
+                    require_city_request(self.config, message)
                     if operation not in {"start", "stop"} and not self.active:
                         raise ValueError("Model session revoked or not started")
                     delay = self.config["decisions"].get("fixture_delay_s", {}).get(operation, 0)
