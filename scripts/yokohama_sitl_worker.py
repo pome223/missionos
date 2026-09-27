@@ -58,7 +58,12 @@ class Observer:
         self.sim_s = None
         self.poses = {}
         self.images = {}
-        self.decision_capture = bool(config.get("decisions"))
+        self.decision_capture = bool(config.get("decisions") or config.get("motion_capture"))
+        self.motion = None
+        self.onboard_camera_info = {}
+        if config.get("motion_capture"):
+            from yokohama_motion_recorder import MotionRecorder
+            self.motion = MotionRecorder(ROOT, config["motion_capture"])
         self.image_history = {k: {} for k in ("onboard_rgb", "onboard_depth", "down_rgb")}
         self.pose_history = deque(maxlen=5000)
         self.contacts = []
@@ -76,6 +81,8 @@ class Observer:
                 lambda m, n=name: self.receive_contacts(m, n),
             )
         self.subscribe(CameraInfo, "/yokohama/scene/camera_info", self.receive_camera_info)
+        if self.motion:
+            self.subscribe(CameraInfo, "/yokohama/onboard/camera_info", self.receive_onboard_info)
         for key, topic in [
             ("scene_rgb", "/yokohama/scene/image"),
             ("scene_depth", "/yokohama/scene/depth_image"),
@@ -97,6 +104,8 @@ class Observer:
         self.node = None
         time.sleep(0.1)
         self.sensor_file.close()
+        if self.motion:
+            self.motion.close(self.onboard_camera_info)
 
     def receive_stats(self, m):
         with self.lock:
@@ -131,6 +140,18 @@ class Observer:
                 "k": list(m.intrinsics.k),
                 "sensor_sim_s": stamp(m),
             }
+
+    def receive_onboard_info(self, m):
+        with self.lock:
+            self.onboard_camera_info = dict(width=m.width, height=m.height,
+                                            k=list(m.intrinsics.k), sensor_sim_s=stamp(m))
+
+    def record_motion(self, row):
+        if self.motion:
+            with self.lock:
+                histories = {k: dict(v) for k, v in self.image_history.items()}
+                poses = list(self.pose_history)
+            self.motion.append(histories, poses, row)
 
     def receive_image(self, m, key):
         with self.lock:

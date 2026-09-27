@@ -32,6 +32,8 @@ def main():
     parser.add_argument("--native-service-config", type=Path)
     parser.add_argument("--capture-paired-views", action="store_true",
                         help="Record withheld outcome views during CPU fixture flight")
+    parser.add_argument("--capture-motion-views", action="store_true",
+                        help="Record bounded moving RGBD on the fixed CPU AP route")
     args = parser.parse_args()
     if not args.approve_sitl:
         parser.error("Explicit --approve-sitl is required; no hardware execution is supported")
@@ -41,6 +43,8 @@ def main():
         parser.error("Native decisions require exactly one explicit --native-service-config")
     if args.capture_paired_views and args.decision_backend != "fixture":
         parser.error("Paired capture currently requires the CPU fixture backend")
+    if args.capture_motion_views and (args.phase != "flight" or args.decision_backend):
+        parser.error("Motion capture requires the fixed flight route without a decision backend")
     root = args.output_dir.resolve()
     if root.exists():
         parser.error("Output directory must not exist; preserve previous attempts")
@@ -86,7 +90,7 @@ def main():
             root,
             REPO / "docs/examples/yokohama-urban-scene",
             args.phase,
-            camera_rate_hz=4 if args.decision_backend else 2,
+            camera_rate_hz=4 if args.decision_backend or args.capture_motion_views else 2,
         )
         config = {
             "run_id": run_id,
@@ -101,6 +105,13 @@ def main():
             "airspeed_mps": 3.0,
             "wind_mps": 0.0,
         }
+        if args.capture_motion_views:
+            config["motion_capture"] = dict(
+                phases=["01-D2", "02-D3", "03-DELIVERY"], camera_rate_hz=4,
+                hold_tail_s=8, max_frames=1024, max_compressed_bytes=200 * 1024**2,
+                reserve_bytes=96 * 1024**2,
+                purpose="AP motion acquisition; no model control or training",
+            )
         if args.decision_backend:
             config["decisions"] = dict(
                 backend=args.decision_backend,
@@ -120,6 +131,7 @@ def main():
                 sea_leg_present=False,
                 payload_release_present=False,
             )
+        if args.decision_backend or args.capture_motion_views:
             # This pinned simulator's magnetometer frame conversion is not a
             # qualified heading source. Initialize once from the authored
             # launch orientation, then use PX4 inertial/GNSS estimation.
@@ -191,6 +203,9 @@ def main():
         ]
         if args.phase == "flight":
             sources.append(REPO / "scripts/yokohama_flight_worker.py")
+        if args.capture_motion_views:
+            sources.extend([REPO / "scripts/yokohama_motion_recorder.py",
+                            REPO / "scripts/yokohama_decision_worker.py"])
         if args.decision_backend:
             sources.extend(
                 REPO / p

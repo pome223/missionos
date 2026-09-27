@@ -125,6 +125,7 @@ def flight_trial(config, obs, run, field):
             if c["topic"] == "city"
         ):
             raise RuntimeError("Vehicle contact with city geometry observed")
+        obs.record_motion(row)
         return row
 
     def wait_for(predicate, timeout=90):
@@ -191,6 +192,8 @@ def flight_trial(config, obs, run, field):
             time.sleep(0.2)
         else:
             raise TimeoutError("Gazebo pose discovery timeout")
+        if "simulator_initial_heading_deg" in config and not decisions:
+            from yokohama_decision_worker import physical_heading
         if "simulator_heading_runtime" in config:
             expected = config["simulator_heading_runtime"]
             px4_version = run([BIN + "ver", "all"])
