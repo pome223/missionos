@@ -1,0 +1,83 @@
+{
+  "schema_version": "missionos.sea_city_integration_protocol.v1",
+  "declared_before_gpu": true,
+  "goal": "Same-sortie stationary ship takeoff, 1 km AP sea legs, two fresh native city updates, delivery waypoint, return landing/disarm",
+  "wam_profile": "motion-v4",
+  "adapter_sha256": "e4b88ec38ce8f08ff90b692a3b545e573aadaacf0f080a0357409dfc2b308dd3",
+  "appearance": "Observed historical positive-infinite upward rays only; no added metric geometry",
+  "model_time_index": 1,
+  "acceptance": {
+    "native_updates": 2,
+    "native_vla_calls": 2,
+    "native_wam_candidate_forecasts": 4,
+    "delivery_waypoint": true,
+    "city_contacts_observed": 0,
+    "independent_rules": true,
+    "unchanged_visible_structure_gate": true,
+    "shutdown_before_AP_remainder": true,
+    "late_authority_rejected": true,
+    "offshore_distance_each_way_m": 1000,
+    "coastal_connector_each_way_m": 400,
+    "measured_holds": 11,
+    "sea_model_requests": 0,
+    "ship_return_landing_disarm": true,
+    "recent_deck_contact": true,
+    "world_vertical_arrival_error_max_m": 0.15
+  },
+  "ideal_rules_superiority_required": false,
+  "pixel_perfect_images_required": false,
+  "vla_decoding": {
+    "forward_bins": [
+      20,
+      58
+    ],
+    "yaw_bins": [
+      45,
+      53
+    ],
+    "vertical_bins": [
+      47,
+      51
+    ],
+    "hold_and_terminal_preserved": false,
+    "output_rewriting": false,
+    "decoding_policy": "aerovla_compact_city_grammar.v2",
+    "role": "parameter_selection_only_for_preapproved_translation",
+    "legacy_grammars_unchanged": true
+  },
+  "flight_scope": "one stationary deck; authored coastal gateway outside PLATEAU crop; 1 km offshore plus 400 m city connector; zero wind; no cargo release/hardware",
+  "source_revision": "51d6de5962fb1f70cc53e85bfb06fd8a85449042",
+  "one_attempt": true,
+  "model_retries": 0,
+  "max_runtime_s": 4500,
+  "maximum_cumulative_estimated_usd": 16.406635298926187,
+  "payload_sha256": {
+    "ship_anwm_server.py": "30a0fa5e864279e2d09d8f7482dccacb93cb7961c8e28b46e070d8928ca04545",
+    "yokohama_wam_profile.py": "1dba81457144c67c1562689644f14ce4d2ea5d3cd73f5ddfbf964f86e3ad46c6",
+    "yokohama_appearance.py": "450da308c1d884e4fca1766d1143c80fd48b1f22b8aba3b071304100dd065ec9",
+    "ship_aerovla.py": "3cc49ed27d3ff813ce5cebd766e65196fe5ced20bdfc2ebd9ecb8fb45d2f9743",
+    "ship_aerovla_server.py": "867300859825c5dc2d51ff2ae3a6647a78d4699bba2534b0ce77a49fe7b53c7a",
+    "ship_anwm.py": "78e4680405eb0202eac2dbc0ba8035577b1765cf8f76961e83f6f6ae2a431509",
+    "bootstrap.sh": "168ae747045c4f32b50ae1bd7392c5a52741d7860498ac45224f6ee5e2284f56",
+    "motion-adapter.pt": "e4b88ec38ce8f08ff90b692a3b545e573aadaacf0f080a0357409dfc2b308dd3",
+    "remote_lifecycle.py": "44295e8510906f5b0a3c7d684261a5c59e521c974a1c8ce5806d59559ac68751"
+  },
+  "controller_sha256": "b4d58f56e082f9fdd4939b839bd5b0ddd9e5241dda2170f3fca17f771107f2d6",
+  "revision_purpose": "Connect observed AP offshore legs and map model world altitude into the observed offshore home-relative datum",
+  "previous_failed_run": "yokohama-6ce82b75afcf",
+  "inference_wait_physical_yaw_limit_rad": 0.25,
+  "capture_and_upload_yaw_limit_rad": 0.03,
+  "world_and_EKF_arrival_yaw_limit_rad": 0.05,
+  "cpu_contract_tests": {
+    "focused_passed": 71,
+    "adapter_passed": 88
+  },
+  "prior_city_evidence": {
+    "run_id": "yokohama-280d65f068d7",
+    "source_revision": "f79a199c64f52cb2faa8aa19f1babd1084e6b685",
+    "replay_used_as_model_output": false
+  },
+  "cpu_qualification_run_id": "yokohama-a8755409d0c9",
+  "cpu_qualification_source_revision": "1eb8a318b2c13e3d9b716127ae5f5d2c31dff58c",
+  "verifier_correction": "Read altitude at index 4 of the compact upload receipt; no flight/runtime behavior changed"
+}

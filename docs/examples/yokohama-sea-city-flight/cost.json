@@ -1,0 +1,11 @@
+{
+  "new_estimated_usd": 0.9349048686776886,
+  "cumulative_estimated_usd": 15.645029687603877,
+  "authorized_total_usd": 17,
+  "cleanup_confirmed": true,
+  "cost_estimate_closed": true,
+  "invoice_confirmed": false,
+  "elapsed_observed_s": 2209.855496,
+  "prior_estimated_usd": 14.710124818926188,
+  "vm_pricing_source": "https://cloud.google.com/products/compute/pricing/accelerator-optimized"
+}

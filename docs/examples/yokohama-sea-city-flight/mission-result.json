@@ -1,0 +1,15 @@
+{
+  "run_id": "yokohama-f17245dce007",
+  "source_revision": "51d6de5962fb1f70cc53e85bfb06fd8a85449042",
+  "native_updates": 2,
+  "real_observation_vla_calls": 2,
+  "native_wam_forecasts": 4,
+  "trajectory_points": 6989,
+  "measured_path_m": 3501.392400440033,
+  "eleven_holds_passed": true,
+  "sea_leg_verified": true,
+  "zero_sea_model_requests_verified": true,
+  "returned_landed_disarmed": true,
+  "payload_release_verified": false,
+  "physical_execution_verified": false
+}

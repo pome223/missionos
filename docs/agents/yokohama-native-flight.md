@@ -257,3 +257,25 @@ video, three retained development failures and closed cost receipts. This is one
 static, zero-wind city trial with constrained translation-parameter selection;
 the route connectors remain authored. It is not sea-leg, payload-release,
 hardware, unconstrained-navigation or energy-saving evidence.
+
+### Same-sortie stationary offshore integration
+
+Run `yokohama-f17245dce007` at source
+`51d6de5962fb1f70cc53e85bfb06fd8a85449042` passed both verifiers with the
+[stationary offshore extension](yokohama-sitl.md#stationary-offshore-extension).
+The same vehicle flew 1 km AP sea legs in both directions, the authored 400 m
+coastal connectors, two fresh native VLA/WAM segments, the delivery waypoint,
+and returned to land/disarm with recent deck contact. All eleven 30-second holds
+passed; measured world-frame path length was 3,501.39 m. Model requests occurred
+only at D1/D2, after the initial inland hold; shutdown and late-request rejection
+preceded the AP remainder. No previous native outputs were replayed.
+
+The [combined-flight report and actual camera video](../examples/yokohama-sea-city-flight/README.md)
+preserve the new evidence separately from the city-only trial. The coastal gateway
+is an authored boundary beyond the source crop, not a surveyed shoreline. The
+first CPU attempt retained a ~0.19 m altitude error after moving home offshore;
+an observed world-to-PX4-relative-altitude mapping fixed that datum mismatch
+without changing the 0.15 m vertical arrival bound. The successful native segment
+position errors were 0.040 m and 0.093 m. This is a single static, zero-wind
+simulation; payload release/receipt, moving ship, fleets, hardware and energy
+savings remain outside the qualified scope.
