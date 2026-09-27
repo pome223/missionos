@@ -17,6 +17,8 @@ def config():
         max_frames=100,
         max_compressed_bytes=10_000_000,
         reserve_bytes=0,
+        phase_lines={"01-D2": [[0, 0, 15], [100, 0, 15]]},
+        fraction_ranges={"01-D2": [0, 1]},
     )
 
 
@@ -124,3 +126,20 @@ def test_recorder_requires_pose_join_and_enforces_storage_bound(tmp_path):
         rec.append(history, poses, state)
     assert rec.count == 0
     rec.close({})
+
+
+def test_skipped_spatial_frames_do_not_reappear_when_mode_changes(tmp_path):
+    source = tmp_path / "source"
+    source.mkdir()
+    history, poses, state = fixture(source)
+    target = tmp_path / "window"
+    target.mkdir()
+    cfg = config()
+    cfg["fraction_ranges"]["01-D2"] = [0.1, 0.2]
+    recorder = MotionRecorder(target, cfg)
+    recorder.append(history, poses, state)
+    count = recorder.count
+    assert 0 < count < 44
+    recorder.append(history, poses, dict(state, nav_state=4, sim_s=22))
+    assert recorder.count == count
+    recorder.close({})

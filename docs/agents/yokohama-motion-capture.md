@@ -12,13 +12,17 @@ one-time disarmed heading initialization and independently observed alignment;
 never continuously feed Gazebo ground truth to PX4. All seven 30-second holds,
 return, landing/disarm and the existing geometry verifier still apply.
 
-Record only outbound phases D1→D2→D3→delivery, at 4 Hz, plus at most eight seconds
+Record only outbound phases D1→D2→D3→delivery, at 4 Hz. Fixed moving intervals
+are route fractions 0.10–0.55, 0.48–0.94 and 0.20–0.70 respectively, selected
+from the current measured pose and authored endpoints, never from image quality.
+Keep at most eight seconds
 of each observed AUTO_LOITER interval. Recording is lossless zlib-compressed
 640×360 RGB and axial float32 depth with actual onboard intrinsics and separate
 sensor/pose timestamps. Nearest Gazebo pose must be within 12 ms. The logged
 PX4 sample is explicitly a nearby polling observation, not a synchronized state
 at every camera timestamp. Do not interpolate sensor/pose records or fill gaps.
-Limit capture to 1,024 frames and 200 MiB, maintaining 96 MiB free space. Exceeding
+Float32 depth bytes are grouped into four byte planes before compression and
+restored exactly before raw-hash verification. Limit capture to 512 frames and 200 MiB, maintaining 96 MiB free space. Exceeding
 a bound fails the owned simulator run; prior evidence is retained.
 
 The read-only `scripts/verify_yokohama_motion.py --root <run> --output <json>`
@@ -48,3 +52,8 @@ partition, include all historical adapter/data provenance, prevent future-image
 leakage, and check the remaining cumulative USD 15 budget against a bounded
 resource lifetime. No learned-control claim follows from CPU admission. AP
 remains the sea-leg controller; this dataset has no sea leg or payload release.
+
+The first development run reached the 200 MiB bound during D2→D3 and stopped,
+with its container removed. Preserve that failure. Byte-plane compression and
+predeclared spatial recording windows address storage; no matching thresholds
+or aircraft controls were relaxed.

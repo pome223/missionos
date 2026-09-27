@@ -108,8 +108,12 @@ def main():
         if args.capture_motion_views:
             config["motion_capture"] = dict(
                 phases=["01-D2", "02-D3", "03-DELIVERY"], camera_rate_hz=4,
-                hold_tail_s=8, max_frames=1024, max_compressed_bytes=200 * 1024**2,
+                hold_tail_s=8, max_frames=512, max_compressed_bytes=200 * 1024**2,
                 reserve_bytes=96 * 1024**2,
+                fraction_ranges={"01-D2":[.10,.55], "02-D3":[.48,.94], "03-DELIVERY":[.20,.70]},
+                phase_lines={name:[world["points"][i]["world_xyz_m"],
+                                  world["points"][i+1]["world_xyz_m"]]
+                             for i,name in enumerate(["01-D2","02-D3","03-DELIVERY"])},
                 purpose="AP motion acquisition; no model control or training",
             )
         if args.decision_backend:

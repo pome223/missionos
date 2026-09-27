@@ -64,6 +64,15 @@ class MotionRecorder:
                 raise ValueError("Nonfinite motion pose")
             if self.count >= self.config["max_frames"]:
                 raise ValueError("Motion capture frame bound exceeded")
+            self.last_stamp = stamp
+            a, b = self.config["phase_lines"][phase]
+            delta = [y - x for x, y in zip(a, b)]
+            fraction = sum((x - y) * d for x, y, d in zip(pose["xyz"], a, delta)) / sum(
+                d * d for d in delta
+            )
+            lo, hi = self.config["fraction_ranges"][phase]
+            if state["nav_state"] == 3 and not lo <= fraction <= hi:
+                continue
             assets, pending = {}, []
             for key, size, encoding in [("onboard_rgb", 3, 3), ("onboard_depth", 4, 13)]:
                 message, _ = history[key][stamp]
@@ -75,7 +84,8 @@ class MotionRecorder:
                 ) != (640, 360, encoding, 640 * 360 * size):
                     raise ValueError("Invalid motion sensor encoding")
                 data = bytes(message.data)
-                packed = zlib.compress(data, level=3)
+                encoded = b"".join(data[j::4] for j in range(4)) if size == 4 else data
+                packed = zlib.compress(encoded, level=6)
                 name = f"{self.count:05d}-{key}.z"
                 assets[key] = dict(
                     file=name,
@@ -83,7 +93,7 @@ class MotionRecorder:
                     raw_sha256=digest(data),
                     raw_bytes=len(data),
                     compressed_bytes=len(packed),
-                    codec="zlib",
+                    codec="zlib-byteplanes4" if size == 4 else "zlib",
                 )
                 pending.append((name, packed))
             extra = sum(len(p) for _, p in pending)

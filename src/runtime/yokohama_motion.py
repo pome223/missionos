@@ -44,7 +44,9 @@ def load_frames(root):
             raise ValueError("Unexpected capture phase")
         for key, size in [("onboard_rgb", 3), ("onboard_depth", 4)]:
             a = f["assets"][key]
-            if a["file"] != f"{i:05d}-{key}.z" or a["codec"] != "zlib":
+            if a["file"] != f"{i:05d}-{key}.z" or a["codec"] != (
+                "zlib-byteplanes4" if size == 4 else "zlib"
+            ):
                 raise ValueError("Motion asset role mismatch")
             p = root / "motion" / a["file"]
             if p.is_symlink():
@@ -53,6 +55,13 @@ def load_frames(root):
             if sha(packed) != a["sha256"] or len(packed) != a["compressed_bytes"]:
                 raise ValueError("Motion compressed asset hash mismatch")
             data = zlib.decompress(packed)
+            if size == 4:
+                if len(data) != 640 * 360 * 4:
+                    raise ValueError("Invalid byteplane depth length")
+                decoded = bytearray(len(data))
+                for j in range(4):
+                    decoded[j::4] = data[j * 640 * 360 : (j + 1) * 640 * 360]
+                data = bytes(decoded)
             if (
                 len(data) != 640 * 360 * size
                 or len(data) != a["raw_bytes"]
