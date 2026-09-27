@@ -1,0 +1,5 @@
+{
+  "note": "Archive order is not chronological: its first JPEG is 226.jpg. The partially downloaded folder lacks some IDs because collection stopped before the entire trajectory. This does not prove frames are missing from the official dataset. The fixed diagnostic uses the first archive JPEG repeated 16 times, not consecutive official flight history.",
+  "protocol_unchanged": true,
+  "inference_outcome_not_used_for_selection": true
+}

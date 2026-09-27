@@ -1,0 +1,17 @@
+{
+  "scope": "documentation and retained offline diagnostic; no new mission qualification",
+  "actual_gpu_boundary": "Archived D1 RGBD -> same NativeModel and pinned official rollout/checkpoint -> six frozen ANWM images -> unchanged metrics; six VAE-only reconstructions",
+  "gpu_command": "wam-venv/bin/python -u diagnose.py",
+  "cpu_reverification_command": "python docs/examples/yokohama-wam-diagnosis/reproduce/verify_bundle.py",
+  "cpu_result": "publication_record_verified",
+  "local_links_checked": 49,
+  "missing_local_links": 0,
+  "desktop_visual_check": "1280x720: input cards and all four city comparison cards inspected",
+  "narrow_visual_check": "390x844: single-column cards; DOM scrollWidth=innerWidth=390; viewport reset afterward",
+  "private_path_and_credential_pattern_scan": "no matches",
+  "runtime_behavior_changed": false,
+  "original_forecast_png_reproduced_exactly": true,
+  "original_failed_flight_reclassified": false,
+  "owned_vm_and_boot_disk_absence_independently_rechecked": true,
+  "invoice_confirmed": false
+}

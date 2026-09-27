@@ -1,0 +1,49 @@
+{
+  "upstream_revision": "657a80268505fa9149c4df502e35aa0f5bce11e5",
+  "checkpoint_context_size": 16,
+  "checkpoint_pos_embed_shape": [
+    17,
+    196,
+    1152
+  ],
+  "published_main_config_context_size": 4,
+  "runtime_context_size": 16,
+  "context_mismatch_explains_failure": false,
+  "normalization": {
+    "crop": "480x360 from 640x360, then 224x224",
+    "channels": "RGB",
+    "image_range": [
+      -1,
+      1
+    ],
+    "translation_divisor": 3.3,
+    "action_min": [
+      -2.5,
+      -4,
+      -3
+    ],
+    "action_max": [
+      5,
+      4,
+      3
+    ],
+    "normalized_hold": [
+      -0.3333333333333333,
+      0,
+      0,
+      0
+    ],
+    "rel_t": "num_timesteps / 128",
+    "vae_scale": 0.18215,
+    "training_inference_match": "audited formula/source, not universal model compatibility proof"
+  },
+  "model_forward_matches_historical_source": true,
+  "rollout_changes": "error text only",
+  "utils_changes": "package import, output-key label and comments; image transform unchanged",
+  "evidence_sha256": {
+    "config/anwm.yaml": "15089becfd7e258ce5af4f77a50906df71c261d487b0a6c339e86e2802026e5b",
+    "anwm/rollout.py": "0aed5a4412886cdcfcc197b1a39bd26e4657962d9cae7c225825800543f469c8",
+    "anwm/utils.py": "0182c8e65e30fb0c1ee3687068cf92650d7b748b68ad059c6167ea81af43a1db",
+    "anwm/data/airvln.py": "6c77a29af96512ee2ee7de3aebd9aa3fe48840a2f15477ea340d4228494b4d02"
+  }
+}

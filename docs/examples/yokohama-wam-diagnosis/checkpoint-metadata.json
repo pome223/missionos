@@ -1,0 +1,88 @@
+{
+  "zip_bytes": 18146420481,
+  "metadata_bytes_transferred": 505580,
+  "root_keys": [
+    "model",
+    "ema",
+    "opt",
+    "args",
+    "epoch",
+    "train_steps",
+    "scaler"
+  ],
+  "namespace": {
+    "config": "config/nwm_cdit_airvln_16.yaml",
+    "epochs": 300,
+    "global_seed": 0,
+    "log_every": 100,
+    "ckpt_every": 10000,
+    "eval_every": 10000,
+    "bfloat16": 1,
+    "torch_compile": 0
+  },
+  "ema_pos_embed": {
+    "shape": [
+      17,
+      196,
+      1152
+    ],
+    "stride": [
+      225792,
+      1152,
+      1
+    ],
+    "storage_offset": 0,
+    "storage": {
+      "persistent": [
+        "storage",
+        [
+          "torch",
+          "FloatStorage"
+        ],
+        "485",
+        "cuda:0",
+        3838464
+      ]
+    }
+  },
+  "state_entries": 485,
+  "zip_entry_count": 2429,
+  "range_requests": [
+    {
+      "start": 0,
+      "bytes": 1
+    },
+    {
+      "start": 18146420459,
+      "bytes": 22
+    },
+    {
+      "start": 18146420439,
+      "bytes": 20
+    },
+    {
+      "start": 18146420383,
+      "bytes": 56
+    },
+    {
+      "start": 18146237632,
+      "bytes": 182751
+    },
+    {
+      "start": 0,
+      "bytes": 30
+    },
+    {
+      "start": 30,
+      "bytes": 20
+    },
+    {
+      "start": 50,
+      "bytes": 14
+    },
+    {
+      "start": 64,
+      "bytes": 322666
+    }
+  ]
+}

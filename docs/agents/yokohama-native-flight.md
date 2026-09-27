@@ -20,6 +20,14 @@ failed the unchanged image bounds; no model segment was dispatched. See the
 [retained result and all attempts](../examples/yokohama-native-flight/REPORT-ja.md).
 Repeated native city movement and return remain unverified.
 
+A [six-case offline diagnostic](../examples/yokohama-wam-diagnosis/REPORT-ja.md)
+reproduced the original forecast byte for byte and isolated strong dependence
+on projection gaps and time conditioning. Full observed RGB at time 4 passed
+the existing numeric bounds while still visibly inventing water. These bounds
+alone are insufficient admission evidence. Full observed RGB at time 0 is only
+a static identity diagnostic; do not promote it to a moving-view/future forecast
+fix or modify the frozen trial result. No production behavior changed.
+
 ## Frozen scope
 
 One stationary, wind-free, synthetic PLATEAU city world; one drone. The AP route

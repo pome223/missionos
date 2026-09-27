@@ -1,0 +1,182 @@
+[
+  {
+    "id": "city_original_t4",
+    "scene": "city",
+    "projection": "rgbd",
+    "time_steps": 4,
+    "elapsed_s": 21.531580208000037,
+    "image_sha256": "bbace67e23fcffb45cce080561c2ebd577a3f6fec074591689c7f73df71d9e4b",
+    "visible_consistency": {
+      "passed": false,
+      "known_pixel_fraction": 0.7028659119897959,
+      "reference_edge_pixels": 2942,
+      "matched_edge_fraction": 0.8358259687287559,
+      "luminance_mae": 52.22479938752942,
+      "predicted_edge_density": 0.15266396347860606,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    "full_frame_rgb_mae_to_observed": 47.47347337372449,
+    "hold_action_normalized": [
+      [
+        [
+          -0.3333333432674408,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ]
+    ],
+    "rel_t": 0.03125,
+    "dispatch_allowed": false
+  },
+  {
+    "id": "city_rgbd_t0",
+    "scene": "city",
+    "projection": "rgbd",
+    "time_steps": 0,
+    "elapsed_s": 19.098438053999985,
+    "image_sha256": "41197abba15f3eeaaee696b76e084d7a2f715edfca0c0e9132aa7961fe85533f",
+    "visible_consistency": {
+      "passed": false,
+      "known_pixel_fraction": 0.7028659119897959,
+      "reference_edge_pixels": 2942,
+      "matched_edge_fraction": 0.8501019714479946,
+      "luminance_mae": 50.21393937675448,
+      "predicted_edge_density": 0.1501403578416083,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    "full_frame_rgb_mae_to_observed": 46.12649473852041,
+    "hold_action_normalized": [
+      [
+        [
+          -0.3333333432674408,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ]
+    ],
+    "rel_t": 0.0,
+    "dispatch_allowed": false
+  },
+  {
+    "id": "city_full_t4",
+    "scene": "city",
+    "projection": "full_observed",
+    "time_steps": 4,
+    "elapsed_s": 19.083892171000002,
+    "image_sha256": "b1934ca65722693a264a00ec50233f2316f8b4c985f335a87cbddc9e7a8e4407",
+    "visible_consistency": {
+      "passed": true,
+      "known_pixel_fraction": 0.7028659119897959,
+      "reference_edge_pixels": 2942,
+      "matched_edge_fraction": 0.9694085656016316,
+      "luminance_mae": 28.722015859963513,
+      "predicted_edge_density": 0.14980009640740635,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    "full_frame_rgb_mae_to_observed": 28.769810267857142,
+    "hold_action_normalized": [
+      [
+        [
+          -0.3333333432674408,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ]
+    ],
+    "rel_t": 0.03125,
+    "dispatch_allowed": false
+  },
+  {
+    "id": "city_full_t0",
+    "scene": "city",
+    "projection": "full_observed",
+    "time_steps": 0,
+    "elapsed_s": 19.38701052099998,
+    "image_sha256": "e24b62f455c0cc45e0875f8a2b8bb2e06da5c0f2ee8130c6533105c3206112ad",
+    "visible_consistency": {
+      "passed": true,
+      "known_pixel_fraction": 0.7028659119897959,
+      "reference_edge_pixels": 2942,
+      "matched_edge_fraction": 1.0,
+      "luminance_mae": 5.909670040925888,
+      "predicted_edge_density": 0.09756996625740777,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    "full_frame_rgb_mae_to_observed": 7.504098905187075,
+    "hold_action_normalized": [
+      [
+        [
+          -0.3333333432674408,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ]
+    ],
+    "rel_t": 0.0,
+    "dispatch_allowed": false
+  },
+  {
+    "id": "reference_full_t4",
+    "scene": "reference",
+    "projection": "full_observed",
+    "time_steps": 4,
+    "elapsed_s": 18.997995124,
+    "image_sha256": "2edd6803cc923b1273f9f92dedb2060db00121bc469dc7573b8c648944156958",
+    "visible_consistency": {
+      "passed": true,
+      "known_pixel_fraction": 0.9298469387755102,
+      "reference_edge_pixels": 13704,
+      "matched_edge_fraction": 0.998029772329247,
+      "luminance_mae": 7.760423811156835,
+      "predicted_edge_density": 0.3075060013717421,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    "full_frame_rgb_mae_to_observed": 8.235730229591837,
+    "hold_action_normalized": [
+      [
+        [
+          -0.3333333432674408,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ]
+    ],
+    "rel_t": 0.03125,
+    "dispatch_allowed": false
+  },
+  {
+    "id": "reference_full_t0",
+    "scene": "reference",
+    "projection": "full_observed",
+    "time_steps": 0,
+    "elapsed_s": 19.14957481700003,
+    "image_sha256": "80ab5b2adb80900f3c882e0bbbfd7da7aed7a5f05d471a7e66485826437eebe2",
+    "visible_consistency": {
+      "passed": true,
+      "known_pixel_fraction": 0.9298469387755102,
+      "reference_edge_pixels": 13704,
+      "matched_edge_fraction": 0.9975189725627553,
+      "luminance_mae": 6.402956390032007,
+      "predicted_edge_density": 0.28002829218106995,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    "full_frame_rgb_mae_to_observed": 6.917237988945578,
+    "hold_action_normalized": [
+      [
+        [
+          -0.3333333432674408,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ]
+    ],
+    "rel_t": 0.0,
+    "dispatch_allowed": false
+  }
+]
