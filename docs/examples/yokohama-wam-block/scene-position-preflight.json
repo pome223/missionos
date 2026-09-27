@@ -1,0 +1,59 @@
+{
+  "schema_version": "renderer_position_preflight.v1",
+  "scope": "static renderer positions beyond delivery endpoint; no aircraft or collision-free path claim",
+  "assets_sha256": {
+    "scene.json": "180303fc3c4645c867be137dd895b5c9a6e32b1b3b3c2dc663d3fb0d1a19c03a",
+    "route.json": "f6b5d79ba0bbb84e8b258c2105e919f2168191df1f7678e282d48cb328ef23c9",
+    "collision-footprints.geojson": "494deab12304ac5f1f63eb7f7d45275b9aab642493df0526261f7f865eb3e37b"
+  },
+  "positions": [
+    {
+      "site": "test-v3-12",
+      "pose": "xyz",
+      "horizontal_building_distance_m": 22.1169275161446,
+      "height_above_source_terrain_m": 15.464865164721349
+    },
+    {
+      "site": "test-v3-12",
+      "pose": "endpoint_xyz",
+      "horizontal_building_distance_m": 24.398098480456312,
+      "height_above_source_terrain_m": 15.520367693025296
+    },
+    {
+      "site": "test-v3-13",
+      "pose": "xyz",
+      "horizontal_building_distance_m": 25.833299859951083,
+      "height_above_source_terrain_m": 15.566364614226352
+    },
+    {
+      "site": "test-v3-13",
+      "pose": "endpoint_xyz",
+      "horizontal_building_distance_m": 28.260676784867425,
+      "height_above_source_terrain_m": 15.572138799786185
+    },
+    {
+      "site": "test-v3-14",
+      "pose": "xyz",
+      "horizontal_building_distance_m": 29.766774040847995,
+      "height_above_source_terrain_m": 15.52888883597425
+    },
+    {
+      "site": "test-v3-14",
+      "pose": "endpoint_xyz",
+      "horizontal_building_distance_m": 32.28877593623583,
+      "height_above_source_terrain_m": 15.530256116151383
+    },
+    {
+      "site": "test-v3-15",
+      "pose": "xyz",
+      "horizontal_building_distance_m": 31.945115363341927,
+      "height_above_source_terrain_m": 15.524282954748703
+    },
+    {
+      "site": "test-v3-15",
+      "pose": "endpoint_xyz",
+      "horizontal_building_distance_m": 30.250991946943614,
+      "height_above_source_terrain_m": 15.514447495153352
+    }
+  ]
+}

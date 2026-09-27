@@ -1,0 +1,334 @@
+{
+  "schema_version": "anwm_block_adaptation_comparison.v1",
+  "cases": [
+    {
+      "id": "test-v3-12-hold",
+      "site": "test-v3-12",
+      "action": "hold",
+      "label_ja": "区画1 · 停止",
+      "actual": "images/test-v3-12-hold-actual.png",
+      "raw_actual": "images/test-v3-12-hold-raw.png",
+      "actual_raw_sha256": "bfd37e8959a789accb896aa8be6caf3ebdfab9e290202b7b05dd65ba51529061",
+      "context": "images/test-v3-12-context.png",
+      "manual_after_pass": true,
+      "manual_status": "pass",
+      "target_sim_s": 84.0,
+      "input_cutoff_sim_s": 83.0,
+      "before": {
+        "sample": "test-v3-12-hold",
+        "image": "images/before-test-v3-12-hold.png",
+        "sha256": "7c96b5e715a2be25626bfb54875a93071d354f33c8719b1b39d4a9cf572dd76a",
+        "elapsed_s": 20.886804985000026,
+        "metrics": {
+          "rgb_mae": 16.535734215561224,
+          "fraction_pixels_max_channel_error_over_40": 0.16761001275510204
+        },
+        "numeric_pass": false
+      },
+      "after": {
+        "sample": "test-v3-12-hold",
+        "image": "images/after-test-v3-12-hold.png",
+        "sha256": "68ae7f13b5a17d4f8c23c9a9c52fca7b0c9bfe52b8f94c4d998a89c75d998092",
+        "elapsed_s": 20.609979812999995,
+        "metrics": {
+          "rgb_mae": 15.722124787414966,
+          "fraction_pixels_max_channel_error_over_40": 0.021723533163265307
+        },
+        "numeric_pass": false
+      },
+      "projection_mae": 53.07661033163265,
+      "manual_status_ja": "目視：限定基準内。前景の箱状構造物と左の壁、開けた地面は概ね保持しています。輪郭のぼけと色差はありますが、この静止画像では経路を変える大きな架空構造は認めません。",
+      "manual_observation_en": "The foreground box, left wall and open ground are broadly preserved. Soft edges and color differences alone do not fail this static visual check."
+    },
+    {
+      "id": "test-v3-12-forward",
+      "site": "test-v3-12",
+      "action": "forward",
+      "label_ja": "区画1 · 2.8 m前進",
+      "actual": "images/test-v3-12-forward-actual.png",
+      "raw_actual": "images/test-v3-12-forward-raw.png",
+      "actual_raw_sha256": "37074d4b86b3a14f44b73678d80b7d662cda0dc1520aa1306b10c6c1e8b982aa",
+      "context": "images/test-v3-12-context.png",
+      "manual_after_pass": false,
+      "manual_status": "fail",
+      "target_sim_s": 85.0,
+      "input_cutoff_sim_s": 83.0,
+      "before": {
+        "sample": "test-v3-12-forward",
+        "image": "images/before-test-v3-12-forward.png",
+        "sha256": "6f01f3e1e8f4b567a4cef1fb7a3e90e71f5d5d39728a9a15a39f8f65358af5b6",
+        "elapsed_s": 20.64251478799997,
+        "metrics": {
+          "rgb_mae": 17.241197650935373,
+          "fraction_pixels_max_channel_error_over_40": 0.19040975765306123
+        },
+        "numeric_pass": false
+      },
+      "after": {
+        "sample": "test-v3-12-forward",
+        "image": "images/after-test-v3-12-forward.png",
+        "sha256": "4147ed155eb3dd3bbdfb761f3d538db44906061b5d8dd9283e6f2bd2295bdac5",
+        "elapsed_s": 20.563282804000096,
+        "metrics": {
+          "rgb_mae": 16.289321588010203,
+          "fraction_pixels_max_channel_error_over_40": 0.02658641581632653
+        },
+        "numeric_pass": false
+      },
+      "projection_mae": 52.48032924107143,
+      "manual_status_ja": "目視：未達。前景の構造物が横長につながり、下に小さな柱状の形が現れています。停止画像より占有形状が不確かです。",
+      "manual_observation_en": "The foreground object is stretched into a connecting horizontal shape with a small pillar below; occupied geometry is not preserved."
+    },
+    {
+      "id": "test-v3-13-hold",
+      "site": "test-v3-13",
+      "action": "hold",
+      "label_ja": "区画2 · 停止",
+      "actual": "images/test-v3-13-hold-actual.png",
+      "raw_actual": "images/test-v3-13-hold-raw.png",
+      "actual_raw_sha256": "d5192c2388f5075ff5d328070c68968c079879e9b1d99aea5a7dd60463f6f7a7",
+      "context": "images/test-v3-13-context.png",
+      "manual_after_pass": true,
+      "manual_status": "pass",
+      "target_sim_s": 90.5,
+      "input_cutoff_sim_s": 89.5,
+      "before": {
+        "sample": "test-v3-13-hold",
+        "image": "images/before-test-v3-13-hold.png",
+        "sha256": "349a3d7c5af2172b00ef24fc541db27330fb238b97044b9cae79213fa614d162",
+        "elapsed_s": 20.58980148400002,
+        "metrics": {
+          "rgb_mae": 17.572451636904763,
+          "fraction_pixels_max_channel_error_over_40": 0.17902981505102042
+        },
+        "numeric_pass": false
+      },
+      "after": {
+        "sample": "test-v3-13-hold",
+        "image": "images/after-test-v3-13-hold.png",
+        "sha256": "b7fa7c1491db24e525c4405de14d0117e435300722e5023b7b9a5af7274f2e61",
+        "elapsed_s": 20.539089582999964,
+        "metrics": {
+          "rgb_mae": 16.429215826955783,
+          "fraction_pixels_max_channel_error_over_40": 0.013592155612244899
+        },
+        "numeric_pass": false
+      },
+      "projection_mae": 58.60196774022109,
+      "manual_status_ja": "目視：限定基準内。箱状構造物と左の壁の配置は概ね保持しています。輪郭は柔らかいものの、この静止画像では経路を変える大きな架空構造は認めません。",
+      "manual_observation_en": "The box and left wall remain in approximately the observed arrangement. Soft boundaries alone do not fail this static visual check."
+    },
+    {
+      "id": "test-v3-13-forward",
+      "site": "test-v3-13",
+      "action": "forward",
+      "label_ja": "区画2 · 2.8 m前進",
+      "actual": "images/test-v3-13-forward-actual.png",
+      "raw_actual": "images/test-v3-13-forward-raw.png",
+      "actual_raw_sha256": "5aa33bd0c4b5f18df9abc778d2c0e187274aa98dd41db6a60b56f2ed248b3c84",
+      "context": "images/test-v3-13-context.png",
+      "manual_after_pass": false,
+      "manual_status": "fail",
+      "target_sim_s": 91.5,
+      "input_cutoff_sim_s": 89.5,
+      "before": {
+        "sample": "test-v3-13-forward",
+        "image": "images/before-test-v3-13-forward.png",
+        "sha256": "762d59ccc2880fec0522f65eb5684f5bb2024f133a0d8976a71d2e2cc7fae9e3",
+        "elapsed_s": 20.557996754999976,
+        "metrics": {
+          "rgb_mae": 20.762608949829932,
+          "fraction_pixels_max_channel_error_over_40": 0.22028459821428573
+        },
+        "numeric_pass": false
+      },
+      "after": {
+        "sample": "test-v3-13-forward",
+        "image": "images/after-test-v3-13-forward.png",
+        "sha256": "c2d656f93b10c7172d7b1dad76d478f72a632117fb23630e5e1f97aa80f15d8a",
+        "elapsed_s": 20.63748130700003,
+        "metrics": {
+          "rgb_mae": 19.198454772534014,
+          "fraction_pixels_max_channel_error_over_40": 0.061244419642857144
+        },
+        "numeric_pass": false
+      },
+      "projection_mae": 54.7811968537415,
+      "manual_status_ja": "目視：未達。左の壁や手前の形が分断・変形し、実観測の連続した境界を保てていません。",
+      "manual_observation_en": "The left wall and foreground geometry break into distorted shapes rather than preserve the observed continuous boundaries."
+    },
+    {
+      "id": "test-v3-14-hold",
+      "site": "test-v3-14",
+      "action": "hold",
+      "label_ja": "区画3 · 停止",
+      "actual": "images/test-v3-14-hold-actual.png",
+      "raw_actual": "images/test-v3-14-hold-raw.png",
+      "actual_raw_sha256": "56f3ba29276fe8f0530f3c350d6dbe68c46a8263ceda4135e0b1b39793521116",
+      "context": "images/test-v3-14-context.png",
+      "manual_after_pass": true,
+      "manual_status": "pass",
+      "target_sim_s": 97.0,
+      "input_cutoff_sim_s": 96.0,
+      "before": {
+        "sample": "test-v3-14-hold",
+        "image": "images/before-test-v3-14-hold.png",
+        "sha256": "464f20841f4114747d992de86d3b0267519f15307a0947c5907484826dddbe09",
+        "elapsed_s": 20.547920557999987,
+        "metrics": {
+          "rgb_mae": 18.996738148384352,
+          "fraction_pixels_max_channel_error_over_40": 0.1808235012755102
+        },
+        "numeric_pass": false
+      },
+      "after": {
+        "sample": "test-v3-14-hold",
+        "image": "images/after-test-v3-14-hold.png",
+        "sha256": "99f7d7a8cef88b45c098f47ed521cb02439c94c944d06bca72fec62731db403f",
+        "elapsed_s": 20.49234512700002,
+        "metrics": {
+          "rgb_mae": 14.286225818452381,
+          "fraction_pixels_max_channel_error_over_40": 0.020169005102040817
+        },
+        "numeric_pass": true
+      },
+      "projection_mae": 53.54205862032313,
+      "manual_status_ja": "目視：限定基準内。箱状構造物と開けた地面を概ね保持しています。左の壁周辺には変形が残りますが、この限定した静止画の確認では大きな架空の閉塞や水面は認めません。",
+      "manual_observation_en": "The box and open ground are broadly preserved. Deformation remains around the left wall, but no large invented obstruction or water surface is apparent in this bounded static check."
+    },
+    {
+      "id": "test-v3-14-forward",
+      "site": "test-v3-14",
+      "action": "forward",
+      "label_ja": "区画3 · 2.8 m前進",
+      "actual": "images/test-v3-14-forward-actual.png",
+      "raw_actual": "images/test-v3-14-forward-raw.png",
+      "actual_raw_sha256": "a438641f86200a038655ffe88f8efbf785a0defcbc4bc1f8c2c0e6e780c3af9b",
+      "context": "images/test-v3-14-context.png",
+      "manual_after_pass": false,
+      "manual_status": "fail",
+      "target_sim_s": 98.0,
+      "input_cutoff_sim_s": 96.0,
+      "before": {
+        "sample": "test-v3-14-forward",
+        "image": "images/before-test-v3-14-forward.png",
+        "sha256": "f41ec13559fd38a84333261c908a190818929539c28a3eef61e0b34bdcaae327",
+        "elapsed_s": 20.60741019799991,
+        "metrics": {
+          "rgb_mae": 20.381191539115648,
+          "fraction_pixels_max_channel_error_over_40": 0.2223174426020408
+        },
+        "numeric_pass": false
+      },
+      "after": {
+        "sample": "test-v3-14-forward",
+        "image": "images/after-test-v3-14-forward.png",
+        "sha256": "3100db4965aa5e7dc5b4378efd7db0168ab0415dbe056f27ad712bbcc695fffd",
+        "elapsed_s": 20.432851190000065,
+        "metrics": {
+          "rgb_mae": 16.174612032312925,
+          "fraction_pixels_max_channel_error_over_40": 0.042071906887755105
+        },
+        "numeric_pass": false
+      },
+      "projection_mae": 57.45181627338435,
+      "manual_status_ja": "目視：未達。左の壁が薄れて連続した形を失い、構造物の足元も混ざっています。前進先の占有境界は不確かです。",
+      "manual_observation_en": "The left wall loses its continuous shape and the structure base blends into surrounding surfaces; endpoint occupancy boundaries are ambiguous."
+    },
+    {
+      "id": "test-v3-15-hold",
+      "site": "test-v3-15",
+      "action": "hold",
+      "label_ja": "区画4 · 停止",
+      "actual": "images/test-v3-15-hold-actual.png",
+      "raw_actual": "images/test-v3-15-hold-raw.png",
+      "actual_raw_sha256": "eedf72e2c43b72a0cf1f22f249faf76d60c3bd885c6aa625ca37b6f5538f1529",
+      "context": "images/test-v3-15-context.png",
+      "manual_after_pass": false,
+      "manual_status": "fail",
+      "target_sim_s": 103.5,
+      "input_cutoff_sim_s": 102.5,
+      "before": {
+        "sample": "test-v3-15-hold",
+        "image": "images/before-test-v3-15-hold.png",
+        "sha256": "9a0ef8fdb689ed40413f0a47a7b69de5bbb93497f909a7d54f32f12d311310cc",
+        "elapsed_s": 20.519633949999957,
+        "metrics": {
+          "rgb_mae": 16.88186251062925,
+          "fraction_pixels_max_channel_error_over_40": 0.14853714923469388
+        },
+        "numeric_pass": false
+      },
+      "after": {
+        "sample": "test-v3-15-hold",
+        "image": "images/after-test-v3-15-hold.png",
+        "sha256": "2178e2a1293c8b93d7af1d7fe40ee5725285b366527c1a459db09a93e6ee87a5",
+        "elapsed_s": 20.564899652999998,
+        "metrics": {
+          "rgb_mae": 15.82308274872449,
+          "fraction_pixels_max_channel_error_over_40": 0.0214046556122449
+        },
+        "numeric_pass": false
+      },
+      "projection_mae": 64.18106265943878,
+      "manual_status_ja": "目視：未達。箱状構造物が丸い浮いた形に変わり、実観測にはない足元の隙間が現れています。",
+      "manual_observation_en": "The box becomes a rounded floating shape with a gap beneath it that is absent from the actual view."
+    },
+    {
+      "id": "test-v3-15-forward",
+      "site": "test-v3-15",
+      "action": "forward",
+      "label_ja": "区画4 · 2.8 m前進",
+      "actual": "images/test-v3-15-forward-actual.png",
+      "raw_actual": "images/test-v3-15-forward-raw.png",
+      "actual_raw_sha256": "cbbe010f5d198a711974bc0fb075e8e522a717ab027f0a2224b4c2670d087209",
+      "context": "images/test-v3-15-context.png",
+      "manual_after_pass": false,
+      "manual_status": "fail",
+      "target_sim_s": 104.5,
+      "input_cutoff_sim_s": 102.5,
+      "before": {
+        "sample": "test-v3-15-forward",
+        "image": "images/before-test-v3-15-forward.png",
+        "sha256": "06930853d93cc43fbff9face493aa0df9e7b4a8de29f9c6b60535068964e902d",
+        "elapsed_s": 20.57234964899999,
+        "metrics": {
+          "rgb_mae": 18.439439838435373,
+          "fraction_pixels_max_channel_error_over_40": 0.1846500318877551
+        },
+        "numeric_pass": false
+      },
+      "after": {
+        "sample": "test-v3-15-forward",
+        "image": "images/after-test-v3-15-forward.png",
+        "sha256": "f7bdf7cc01c34ddcf61f5bac41df3d2c604befce5207e22a0b61d051863a5a3e",
+        "elapsed_s": 20.42278942400003,
+        "metrics": {
+          "rgb_mae": 17.79189918154762,
+          "fraction_pixels_max_channel_error_over_40": 0.062181122448979595
+        },
+        "numeric_pass": false
+      },
+      "projection_mae": 60.395833333333336,
+      "manual_status_ja": "目視：未達。箱状構造物と左の壁が別の形に変わり、足元の境界も曖昧です。",
+      "manual_observation_en": "The box and left wall change shape and their ground-contact boundaries are ambiguous."
+    }
+  ],
+  "steps": 2048,
+  "trainable_parameters": 47851808,
+  "total_parameters": 1134100256,
+  "cumulative_estimated_usd": 12.527166707120537,
+  "minimum_feasibility_passed": false,
+  "native_flight_qualified": false,
+  "manual_inspection_complete": true,
+  "passed_sites": [],
+  "aggregate": {
+    "mean_rgb_mae_before": 18.351403061224488,
+    "mean_rgb_mae_after": 16.464367094494047,
+    "relative_mae_reduction": 0.1028278851723139
+  },
+  "summary_ja": "最後の内部ブロックまで追加学習し、開けた市街地で平均RGB誤差は18.35から16.46に減りました。数値基準を通ったのは停止画像1／8枚で、停止・前進の両方を満たす地点は0／4。最低条件は未達です。",
+  "summary_en": "Final-block adaptation reduced mean RGB error from 18.35 to 16.46 in a more open urban area. One hold image out of eight passed the numeric criteria; no site passed both hold and forward (0/4). The predeclared minimum remains unmet.",
+  "evaluation_envelope": "More open urban area past the authored delivery endpoint; does not resolve the earlier corridor failure or extend flight authority",
+  "manual_scope": "Static visual geometry inspection; minor blur or texture differences alone do not fail. No safety certification or route execution claim."
+}

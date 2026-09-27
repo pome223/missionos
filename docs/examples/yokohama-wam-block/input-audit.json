@@ -1,0 +1,46 @@
+{
+  "schema_version": "anwm_adaptation_input_audit.v1",
+  "upstream_commit": "657a80268505fa9149c4df502e35aa0f5bce11e5",
+  "source_sha256": {
+    "anwm/data/airvln.py": "6c77a29af96512ee2ee7de3aebd9aa3fe48840a2f15477ea340d4228494b4d02",
+    "anwm/utils.py": "0182c8e65e30fb0c1ee3687068cf92650d7b748b68ad059c6167ea81af43a1db",
+    "anwm/rollout.py": "0aed5a4412886cdcfcc197b1a39bd26e4657962d9cae7c225825800543f469c8",
+    "anwm/model.py": "e939407aca10988c06c0ffce1b437ba742929b256705905f7836485f29fb3ee7",
+    "train.py": "01d75e49eb78e0228d5940ba64f262ba4994571077aba6b2437844670fd72d41",
+    "data/preprocessing/Data_preprocessing_airvln_16.ipynb": "f9200e49735a2b9af605c415918a6e23539b8a5660a50d70032805f6c52a5f4c"
+  },
+  "matched_contracts": [
+    "RGB",
+    "4:3 center crop and 224 square bilinear resize",
+    "[-1,1] normalization",
+    "VAE scale 0.18215",
+    "translation metres/3.30 then fixed minmax normalization",
+    "16 actual released context slots"
+  ],
+  "differences": {
+    "upstream_notebook": {
+      "raw_shape": [
+        512,
+        512
+      ],
+      "hfov_deg": 90,
+      "cropped_hfov_deg": 90,
+      "cropped_vfov_deg": 73.73979529168804
+    },
+    "current_sensor": {
+      "raw_shape": [
+        360,
+        640
+      ],
+      "hfov_deg": 60,
+      "cropped_hfov_deg": 46.82644889274106,
+      "cropped_vfov_deg": 35.98339777135762
+    },
+    "appearance": "Untextured gray PLATEAU geometry; not a measured training-distribution statistic",
+    "history": "16 fresh stationary frames, unlike translating waypoint trajectories",
+    "time": "Upstream row-index difference /128; physical seconds not established"
+  },
+  "adaptation": "Continue previous attention adapter; update last transformer block plus final projection-attention and fusion/output layers; one static commanded viewpoint transition",
+  "unique_cause_proven": false,
+  "flight_adapter_changed": false
+}
