@@ -27,6 +27,7 @@ from src.runtime.yokohama_native import (
     camera_heading,
     digest,
     forecast_consistency,
+    executor_heading,
     geometry_rules,
     load_capture,
     past_view,
@@ -72,7 +73,11 @@ class DecisionHost:
             (self.folder / (operation + ".stderr")).open("w") as err,
         ):
             self.process = subprocess.Popen(argv, stdout=out, stderr=err, stdin=subprocess.DEVNULL)
-            self.process.wait(timeout=180 if operation == "start" else 60)
+            self.process.wait(
+                timeout=self.config["decisions"].get("startup_timeout_s", 180)
+                if operation == "start"
+                else 60
+            )
         if self.process.returncode:
             raise RuntimeError("Model lifecycle failed: " + operation)
         receipt = json.loads((self.folder / (operation + ".stdout")).read_text().splitlines()[-1])
@@ -365,6 +370,10 @@ class DecisionHost:
         glon, glat, _ = Geod(ellps="WGS84").fwd(
             lon, lat, math.degrees(math.atan2(xyz[0], xyz[1])), math.hypot(*xyz[:2])
         )
+        world_frame = self.config["decisions"].get("wam_profile") == "motion-v4"
+        command_heading = (
+            executor_heading(candidate, row) if world_frame else candidate["target_heading_ned_rad"]
+        )
         item = dict(
             seq=0,
             command=16,
@@ -374,7 +383,7 @@ class DecisionHost:
             current=1,
             frame=6,
             param2=0.25,
-            param4=math.degrees(candidate["target_heading_ned_rad"]),
+            param4=math.degrees(command_heading),
         )
         name = f"city-{message['cycle']:02d}"
         script = self.root / (name + "-upload.py")
@@ -425,6 +434,8 @@ class DecisionHost:
             cycle=message["cycle"],
             permit_id=uuid4().hex,
             candidate=candidate,
+            executor_heading_ned_rad=command_heading,
+            heading_mapping_observation_sha256=digest(row),
             rules=rules,
             observation_sha256=digest(row),
             vla_response_sha256=proposal["vla_response_sha256"],
@@ -436,6 +447,7 @@ class DecisionHost:
             connector_sha256=ship_anwm.digest(connector),
             physical_execution_invoked=False,
         )
+        proposal["prepared_observation"] = row
         proposal["prepared_permit"] = permit
         return permit
 
@@ -452,6 +464,17 @@ class DecisionHost:
             > 0.03
         ):
             raise ValueError("Hold lost during mission upload")
+        if self.config["decisions"].get("wam_profile") == "motion-v4":
+            mapping_pose = proposal["prepared_observation"]
+            if (
+                abs(
+                    math.remainder(
+                        camera_heading(current) - camera_heading(mapping_pose), 2 * math.pi
+                    )
+                )
+                > 0.03
+            ):
+                raise ValueError("World-to-AP heading mapping expired during upload")
         rules = geometry_rules(
             current["vehicle"]["xyz"],
             prepared["candidate"]["target_world_xyz_m"],
@@ -494,6 +517,9 @@ class DecisionHost:
                     operation = message["operation"]
                     if operation not in {"start", "stop"} and not self.active:
                         raise ValueError("Model session revoked or not started")
+                    delay = self.config["decisions"].get("fixture_delay_s", {}).get(operation, 0)
+                    if self.backend == "fixture" and delay:
+                        time.sleep(delay)
                     if operation in {"start", "stop"}:
                         value = getattr(self, operation)()
                     elif operation in {"vla", "wam", "authorize", "activate"}:
@@ -510,7 +536,7 @@ class DecisionHost:
 
     def close(self):
         self.stop_event.set()
-        self.thread.join(timeout=190)
+        self.thread.join(timeout=self.config["decisions"].get("startup_timeout_s", 180) + 10)
         if self.thread.is_alive():
             raise RuntimeError("Decision host still running; remote cleanup must reconcile")
         return self.stop()

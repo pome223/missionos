@@ -41,6 +41,11 @@ def main():
         help="Record bounded moving RGBD on the fixed CPU AP route",
     )
     parser.add_argument("--wam-profile", choices=["legacy", "motion-v4"], default="legacy")
+    parser.add_argument(
+        "--fixture-cold-start",
+        action="store_true",
+        help="Exercise slow startup/inference with CPU fixture delays",
+    )
     args = parser.parse_args()
     if not args.approve_sitl:
         parser.error("Explicit --approve-sitl is required; no hardware execution is supported")
@@ -54,6 +59,8 @@ def main():
         parser.error("Motion capture requires the fixed flight route without a decision backend")
     if args.wam_profile != "legacy" and not args.decision_backend:
         parser.error("WAM profile requires explicit decisions")
+    if args.fixture_cold_start and args.decision_backend != "fixture":
+        parser.error("Cold-start fixture delays require --decision-backend fixture")
     root = args.output_dir.resolve()
     if root.exists():
         parser.error("Output directory must not exist; preserve previous attempts")
@@ -141,7 +148,10 @@ def main():
                 points=["D1", "D2"],
                 camera_rate_hz=4,
                 inference_timeout_s=75,
-                startup_timeout_s=180,
+                startup_timeout_s=300 if args.wam_profile == "motion-v4" else 180,
+                fixture_delay_s={"start": 170, "vla": 10, "wam": 55}
+                if args.fixture_cold_start
+                else {},
                 shutdown_timeout_s=65,
                 hold_drift_m=0.5,
                 hold_speed_mps=0.3,

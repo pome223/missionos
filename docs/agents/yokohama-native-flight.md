@@ -173,3 +173,52 @@ CPU fixture qualification and native GPU flight are separate receipts. Require
 native run before claiming this integrated profile flew. The latter reopens the
 input mask, unchanged VLA output, generated predictions, permits and observed AP
 arrivals; the offline adaptation's image scores are not substituted for them.
+
+### Cold-start lifecycle correction
+
+The first motion-v4 native attempt (`yokohama-69a58ecbd93a`) stopped before any
+real-observation model request. During its 169.84-second service startup, true
+Gazebo heading slowly changed; the pre-start camera-anchor guard rejected a
+0.03008-radian change after 65.21 seconds, while position moved only 0.05773 m
+and the EKF heading/reset counters remained stable. Shutdown queued behind startup
+then timed out, masking that primary failure in the worker result. Retain this
+attempt as failed; it is not a forecast-quality measurement.
+
+The corrected motion-v4 lifecycle maintains AP mode, arming, position, reserve,
+velocity and estimator checks while starting/stopping services. A camera-view
+anchor is not used before any observation-bound judgment exists. After startup,
+use a fresh anchor and capture. Refresh again after VLA and at the fresh WAM
+capture. Subsequent CPU latency qualification also exposed yaw drift during
+inference; use the world-frame mapping below. This corrects anchor lifetime; it does not
+repair the simulator's physical-versus-estimated yaw drift or prove hardware yaw.
+Primary exceptions are retained even when cleanup also fails.
+
+The motion-v4 startup deadline is 300 seconds. CPU qualification can exercise
+actual AP holding with `--decision-backend fixture --wam-profile motion-v4
+--fixture-cold-start`: 170 seconds at startup, 10 seconds per VLA exchange and
+55 seconds per WAM exchange. These delays are allowed only for explicit fixtures,
+and must never be reported as native model latencies or capabilities.
+
+### World-frame goals while inference runs
+
+In the latency fixture `yokohama-2e6a5f977ed4`, the initial lifecycle correction
+passed the 170-second startup. At WAM time the physical camera changed 0.03103 rad
+in 11.16 seconds while position changed 0.06615 m and EKF heading changed only
+0.00317 rad. This CPU failure is retained and consumed no GPU budget.
+
+For the motion-v4 **static world**, keep the original VLA world position and world
+heading immutable. Capture histories still require at most 0.03 rad of rotation;
+only the waiting period for VLA/WAM permits up to 0.25 rad while all existing
+position, velocity, EKF continuity and reserve constraints remain. This is a
+conditional target-view forecast, not a time-aligned rolling flight forecast.
+
+At authorization, map the fixed world heading into the newly observed AP frame:
+`executor_heading = world_goal_heading + PX4_heading - Gazebo_heading`, wrapped
+into ±pi. Preserve the logical candidate and record the independent executor field
+and mapping-observation hash. Check that the physical heading changes by no more
+than 0.03 rad during upload, then require both actual world-facing error and
+commanded EKF-facing error ≤0.05 rad at the observed arrival. The verifier reopens
+the mapping observation and MAVLink upload ACK. No returned VLA value is rewritten.
+This explicit simulator-ground-truth transform is not a qualified onboard heading
+estimator; dynamic scenes, camera motion during capture and hardware remain outside
+this trial.

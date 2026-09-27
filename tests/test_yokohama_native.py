@@ -364,3 +364,118 @@ def test_pinned_gazebo_compass_declination_sign_matches_world_heading(enu_yaw):
     estimated = -math.atan2(sensor_y, sensor_x) - declination
     row = {"vehicle": {"quat_wxyz": [math.cos(enu_yaw / 2), 0, 0, math.sin(enu_yaw / 2)]}}
     assert abs(math.remainder(estimated - physical_heading(row), 2 * math.pi)) < 1e-12
+
+
+def test_lifecycle_position_hold_does_not_claim_a_stationary_camera(tmp_path):
+    anchor = dict(
+        nav_state=4,
+        arming_state=2,
+        landed=False,
+        position_valid=True,
+        battery_fraction=0.9,
+        velocity_ned=[0, 0, 0],
+        heading_ned_rad=1.57,
+        reset_counters=[0, 0, 0],
+        vehicle={"xyz": [0, 0, 10], "quat_wxyz": [1, 0, 0, 0]},
+    )
+    row = dict(
+        anchor,
+        vehicle={"xyz": [0.06, 0, 10], "quat_wxyz": [math.cos(0.08 / 2), 0, 0, math.sin(0.08 / 2)]},
+    )
+    worker = CityDecisions(tmp_path, {}, lambda: row, lambda *a, **k: None, lambda: 0)
+    assert worker.held(anchor, require_stationary_view=False) is row
+    assert worker.held(anchor, max_view_drift_rad=0.25) is row
+    with pytest.raises(ValueError):
+        worker.held(anchor)
+    row["vehicle"]["xyz"][0] = 0.51
+    with pytest.raises(ValueError):
+        worker.held(anchor, require_stationary_view=False)
+
+
+def test_motion_city_reanchors_after_cold_start_and_before_forecasting(tmp_path, monkeypatch):
+    state = dict(angle=0.0)
+    events = []
+
+    def sample():
+        angle = state["angle"]
+        return dict(
+            nav_state=4,
+            arming_state=2,
+            landed=False,
+            position_valid=True,
+            battery_fraction=0.9,
+            velocity_ned=[0, 0, 0],
+            heading_ned_rad=1.57,
+            reset_counters=[0, 0, 0],
+            vehicle={
+                "xyz": [0, 0, 10],
+                "quat_wxyz": [math.cos(angle / 2), 0, 0, math.sin(angle / 2)],
+            },
+        )
+
+    worker = CityDecisions(
+        tmp_path,
+        {"decisions": {"wam_profile": "motion-v4"}},
+        sample,
+        lambda name, **kw: events.append(name),
+        lambda: 0,
+    )
+
+    class ForecastReached(Exception):
+        pass
+
+    def exchange(operation, row, **fields):
+        if operation == "start":
+            state["angle"] = 0.08
+            return {}
+        if operation == "vla":
+            state["angle"] = 0.095
+            return {"vla_response_sha256": "a" * 64}
+        if operation == "wam":
+            raise ForecastReached
+        raise AssertionError(operation)
+
+    monkeypatch.setattr(worker, "exchange", exchange)
+    monkeypatch.setattr(worker, "capture", lambda *args: {"file": "not-read", "sha256": "b" * 64})
+    with pytest.raises(ForecastReached):
+        worker.decide(None, [1, 0, 10])
+    assert events.count("city_observation_reanchored") == 2
+
+
+@pytest.mark.parametrize(
+    "world_goal,estimated,physical", [(1.7, 1.57, 1.77), (-3.1, 3.0, -3.0), (3.1, -3.0, 3.0)]
+)
+def test_executor_refreshes_yaw_frame_without_changing_model_goal(world_goal, estimated, physical):
+    from src.runtime.yokohama_native import executor_heading
+
+    candidate = {"target_heading_world_ned_rad": world_goal, "target_world_xyz_m": [1, 2, 15]}
+    before = json.dumps(candidate)
+    enu = math.pi / 2 - physical
+    row = {
+        "heading_ned_rad": estimated,
+        "vehicle": {"quat_wxyz": [math.cos(enu / 2), 0, 0, math.sin(enu / 2)]},
+    }
+    command = executor_heading(candidate, row)
+    recovered_world = command - estimated + physical
+    assert abs(math.remainder(recovered_world - world_goal, 2 * math.pi)) < 1e-10
+    assert json.dumps(candidate) == before
+
+
+def test_fresh_ap_yaw_mapping_expires_if_camera_turns_during_upload(tmp_path):
+    from scripts.yokohama_decision_host import DecisionHost
+    from src.runtime.yokohama_native import digest
+
+    host = object.__new__(DecisionHost)
+    old = {"heading_ned_rad": 1.57, "vehicle": {"xyz": [0, 0, 15], "quat_wxyz": [1, 0, 0, 0]}}
+    current = dict(
+        old,
+        vehicle={"xyz": [0, 0, 15], "quat_wxyz": [math.cos(0.04 / 2), 0, 0, math.sin(0.04 / 2)]},
+    )
+    host.config = {"decisions": {"wam_profile": "motion-v4"}}
+    host.pending = {
+        1: {"prepared_permit": {}, "input_observation": old, "prepared_observation": old}
+    }
+    with pytest.raises(ValueError, match="mapping expired"):
+        host.activate(
+            {"cycle": 1, "prepared_permit_sha256": digest({}), "observation": current}, tmp_path
+        )

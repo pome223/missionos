@@ -17,6 +17,7 @@ from scripts.yokohama_decision_worker import physical_heading  # noqa: E402
 from src.runtime.yokohama_native import (  # noqa: E402
     digest,
     forecast_consistency,
+    executor_heading,
     geometry_rules,
     load_capture,
     past_view,
@@ -186,7 +187,35 @@ def verify(root):
             and e["wall_s"] < consume["wall_s"]
             for e in events
         )
+        if config["decisions"].get("wam_profile") == "motion-v4":
+            mapping_row = group["authorize"][1]["observation"]
+            assert permit["heading_mapping_observation_sha256"] == digest(mapping_row)
+            expected_heading = executor_heading(candidate, mapping_row)
+            assert (
+                abs(
+                    math.remainder(
+                        permit["executor_heading_ned_rad"] - expected_heading, 2 * math.pi
+                    )
+                )
+                < 1e-10
+            )
+            receipt = next(
+                e["receipt"]
+                for e in events
+                if e["event"] == "upload_receipt" and e["segment"] == permit["upload_name"]
+            )
+            assert abs(receipt["mission_items"][0][10] - math.degrees(expected_heading)) < 1e-4
         end = arrival["observation"]
+        assert (
+            abs(
+                math.remainder(
+                    end["heading_ned_rad"]
+                    - permit.get("executor_heading_ned_rad", candidate["target_heading_ned_rad"]),
+                    2 * math.pi,
+                )
+            )
+            <= 0.05
+        )
         error = math.dist(end["vehicle"]["xyz"], candidate["target_world_xyz_m"])
         assert error <= 0.25 and end["nav_state"] == 4 and math.hypot(*end["velocity_ned"]) <= 0.3
         if "simulator_initial_heading_deg" in config:

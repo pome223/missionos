@@ -3,6 +3,7 @@
 from __future__ import annotations
 import json
 import math
+import sys
 import time
 from pathlib import Path
 
@@ -198,7 +199,10 @@ def flight_trial(config, obs, run, field):
             expected = config["simulator_heading_runtime"]
             px4_version = run([BIN + "ver", "all"])
             gz_version = run(["dpkg-query", "-W", "-f=${Version}", "libgz-sim8"])
-            if expected["px4_git"] not in px4_version or gz_version.strip() != expected["gz_sim_version"]:
+            if (
+                expected["px4_git"] not in px4_version
+                or gz_version.strip() != expected["gz_sim_version"]
+            ):
                 raise ValueError("Unverified simulator compass implementation")
             event("simulator_heading_runtime_verified", px4=px4_version, gz=gz_version)
         for key, value in {
@@ -218,17 +222,36 @@ def flight_trial(config, obs, run, field):
         if "simulator_initial_heading_deg" in config:
             initial_heading = config["simulator_initial_heading_deg"]
             before = sample()
-            if (before["landed"] is not True or before["arming_state"] != 1
-                or abs(math.remainder(physical_heading(before) - math.radians(initial_heading),
-                                      2 * math.pi)) > 0.03):
+            if (
+                before["landed"] is not True
+                or before["arming_state"] != 1
+                or abs(
+                    math.remainder(
+                        physical_heading(before) - math.radians(initial_heading), 2 * math.pi
+                    )
+                )
+                > 0.03
+            ):
                 raise ValueError("Authored simulator launch heading not observed before arming")
             run([BIN + "commander", "set_heading", str(initial_heading)])
-            event("simulator_initial_heading_command", heading_deg=initial_heading,
-                  source=config["simulator_heading_runtime"]["source"], observation=before)
-            aligned = wait_for(lambda r: abs(math.remainder(
-                r["heading_ned_rad"] - physical_heading(r), 2 * math.pi)) <= 0.03, 45)
-            event("simulator_initial_heading_observed", observation=aligned,
-                  parameters={"EKF2_MAG_TYPE": run([BIN + "param", "show", "EKF2_MAG_TYPE"])})
+            event(
+                "simulator_initial_heading_command",
+                heading_deg=initial_heading,
+                source=config["simulator_heading_runtime"]["source"],
+                observation=before,
+            )
+            aligned = wait_for(
+                lambda r: (
+                    abs(math.remainder(r["heading_ned_rad"] - physical_heading(r), 2 * math.pi))
+                    <= 0.03
+                ),
+                45,
+            )
+            event(
+                "simulator_initial_heading_observed",
+                observation=aligned,
+                parameters={"EKF2_MAG_TYPE": run([BIN + "param", "show", "EKF2_MAG_TYPE"])},
+            )
         obs.images_to_disk("scene", ["scene_rgb", "scene_depth"])
         (ROOT / "camera-info.json").write_text(json.dumps(obs.camera_info, indent=2) + "\n")
         for i, stage in enumerate(config["flight_stages"]):
@@ -305,14 +328,21 @@ def flight_trial(config, obs, run, field):
                         and math.hypot(*r["velocity_ned"]) <= 0.3
                         and abs(
                             math.remainder(
-                                r["heading_ned_rad"] - candidate["target_heading_ned_rad"],
+                                r["heading_ned_rad"]
+                                - permit.get(
+                                    "executor_heading_ned_rad", candidate["target_heading_ned_rad"]
+                                ),
                                 2 * math.pi,
                             )
                         )
                         <= 0.05
-                        and abs(math.remainder(
-                            physical_heading(r) - candidate["target_heading_world_ned_rad"],
-                            2 * math.pi)) <= 0.05
+                        and abs(
+                            math.remainder(
+                                physical_heading(r) - candidate["target_heading_world_ned_rad"],
+                                2 * math.pi,
+                            )
+                        )
+                        <= 0.05
                     )
 
                 arrived = wait_for(at_model_target, 45)
@@ -376,7 +406,18 @@ def flight_trial(config, obs, run, field):
             city_decision_backend=config.get("decisions", {}).get("backend"),
         )
     finally:
-        if decisions:
-            decisions.stop()
-        events.close()
-        trajectory.close()
+        primary_failure = sys.exc_info()[0] is not None
+        try:
+            if decisions:
+                try:
+                    decisions.stop()
+                except Exception as cleanup_error:
+                    event(
+                        "city_shutdown_failed",
+                        reason=type(cleanup_error).__name__ + ": " + str(cleanup_error),
+                    )
+                    if not primary_failure:
+                        raise
+        finally:
+            events.close()
+            trajectory.close()

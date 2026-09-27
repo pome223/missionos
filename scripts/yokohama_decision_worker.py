@@ -38,7 +38,7 @@ class CityDecisions:
         self.completed = []
         self.paired_view = None
 
-    def held(self, anchor):
+    def held(self, anchor, *, require_stationary_view=True, max_view_drift_rad=0.03):
         row = self.sample()
         if (
             row["nav_state"] != 4
@@ -51,9 +51,21 @@ class CityDecisions:
             or abs(math.remainder(row["heading_ned_rad"] - anchor["heading_ned_rad"], 2 * math.pi))
             > 0.03
             or row["reset_counters"] != anchor["reset_counters"]
-            or abs(math.remainder(physical_heading(row) - physical_heading(anchor),
-                                  2 * math.pi)) > 0.03
+            or (
+                require_stationary_view
+                and abs(
+                    math.remainder(physical_heading(row) - physical_heading(anchor), 2 * math.pi)
+                )
+                > max_view_drift_rad
+            )
         ):
+            self.event(
+                "city_hold_rejected",
+                require_stationary_view=require_stationary_view,
+                max_view_drift_rad=max_view_drift_rad,
+                observation=row,
+                anchor=anchor,
+            )
             raise ValueError("City decision hold, reserve, heading or estimator continuity lost")
         return row
 
@@ -77,15 +89,32 @@ class CityDecisions:
         response = stem.with_name(stem.name + "-response.json")
         end = (
             time.monotonic()
-            + {"start": 180, "stop": 65, "vla": 75, "wam": 75, "authorize": 2, "activate": 2}[
-                operation
-            ]
+            + {
+                "start": self.config.get("decisions", {}).get("startup_timeout_s", 180),
+                "stop": 65,
+                "vla": 75,
+                "wam": 75,
+                "authorize": 2,
+                "activate": 2,
+            }[operation]
         )
         self.event(
             "city_request", operation=operation, cycle=self.cycle, request_sha256=digest(message)
         )
+        lifecycle_only = (
+            operation in {"start", "stop"}
+            and self.config.get("decisions", {}).get("wam_profile") == "motion-v4"
+        )
         while time.monotonic() < end:
-            self.held(row)
+            world_view = (
+                operation in {"vla", "wam"}
+                and self.config.get("decisions", {}).get("wam_profile") == "motion-v4"
+            )
+            self.held(
+                row,
+                require_stationary_view=not lifecycle_only,
+                max_view_drift_rad=0.25 if world_view else 0.03,
+            )
             if response.exists():
                 value = json.loads(response.read_text())
                 if (
@@ -127,13 +156,28 @@ class CityDecisions:
             self.started = True
             self.exchange("start", anchor)
             self.active = True
+        refresh = self.config.get("decisions", {}).get("wam_profile") == "motion-v4"
+        if refresh:
+            anchor = self.sample()
+            self.event(
+                "city_observation_reanchored", phase_boundary="after_startup", observation=anchor
+            )
         capture = self.capture(obs, f"city-{self.cycle:02d}-vla-capture", self.sample())
         vla = self.exchange(
             "vla", self.held(anchor), capture=capture, next_target_world_xyz_m=next_target
         )
+        if refresh:
+            anchor = self.sample()
         # A new uninterrupted history follows the VLA call; old imagery is not
         # reused to manufacture a second observation.
         capture = self.capture(obs, f"city-{self.cycle:02d}-wam-capture", self.sample())
+        if refresh:
+            anchor = self.held(anchor)
+            self.event(
+                "city_observation_reanchored",
+                phase_boundary="fresh_WAM_capture",
+                observation=anchor,
+            )
         wam = self.exchange("wam", self.held(anchor), capture=capture, vla=vla)
         if wam.get("passed") is not True:
             raise ValueError("WAM visible-structure consistency rejected; no segment dispatched")
@@ -142,13 +186,17 @@ class CityDecisions:
             cutoff = record["frames"][-1]["stamp_ns"] / 1e9
             self.paired_view = dict(
                 schema_version="yokohama_paired_views.v1",
-                run_id=self.config["run_id"], cycle=self.cycle,
-                input_capture=capture, input_cutoff_sim_s=cutoff,
+                run_id=self.config["run_id"],
+                cycle=self.cycle,
+                input_capture=capture,
+                input_cutoff_sim_s=cutoff,
                 hold_outcome=self.capture_evaluation(obs, "hold", anchor, cutoff),
-                evaluation_only=True, model_predictions_used_for_dispatch=False,
-                decision_backend="fixture", future_observations_sent_to_model=False,
+                evaluation_only=True,
+                model_predictions_used_for_dispatch=False,
+                decision_backend="fixture",
+                future_observations_sent_to_model=False,
             )
-        current = self.held(anchor)
+        current = self.held(anchor, max_view_drift_rad=0.25 if refresh else 0.03)
         permit = self.exchange("authorize", current, next_target_world_xyz_m=next_target)
         if (
             permit.get("run_id") != self.config["run_id"]
@@ -187,15 +235,19 @@ class CityDecisions:
         if not self.config["decisions"].get("capture_paired_views"):
             return
         self.paired_view.update(
-            prepared_candidate=permit["candidate"], permit_sha256=digest(permit),
+            prepared_candidate=permit["candidate"],
+            permit_sha256=digest(permit),
             arrival_observation=arrived,
             endpoint_outcome=self.capture_evaluation(obs, "endpoint", arrived, arrived["sim_s"]),
             endpoint_time_alignment_verified=False,
         )
         path = self.root / f"city-{self.cycle:02d}-paired-views.json"
         path.write_text(json.dumps(self.paired_view, indent=2, allow_nan=False) + "\n")
-        self.event("city_paired_views_recorded", file=path.name,
-                   sha256=hashlib.sha256(path.read_bytes()).hexdigest())
+        self.event(
+            "city_paired_views_recorded",
+            file=path.name,
+            sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+        )
 
     def activation_permit(self, prepared):
         current = self.sample()

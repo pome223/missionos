@@ -116,6 +116,18 @@ def camera_heading(row):
     return math.atan2(rotation[0, 0], rotation[1, 0])
 
 
+def executor_heading(candidate, row):
+    """Map an immutable world-facing goal into the current simulator EKF frame.
+
+    This changes only the transport representation, not the VLA's world target.
+    The observed Gazebo heading is simulator ground truth, not qualified hardware VO.
+    """
+    return math.remainder(
+        candidate["target_heading_world_ned_rad"] + row["heading_ned_rad"] - camera_heading(row),
+        2 * math.pi,
+    )
+
+
 def geometry_rules(start, target, next_target, config, bundle):
     """Constrain the proposed leg AND its connection to the authored AP route."""
     from shapely.geometry import LineString, shape
