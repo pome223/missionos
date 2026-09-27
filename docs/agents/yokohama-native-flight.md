@@ -132,7 +132,7 @@ moving-deck recovery, ten-drone coordination or whole-mission battery savings.
 
 ## Opt-in motion-v4 mission integration
 
-`yokohama_sitl.py --wam-profile motion-v4` selects a new prospective city-flight
+`yokohama_sitl.py --wam-profile motion-v4` selects an opt-in city-flight
 profile. Legacy trials retain their original contracts and negative findings.
 The objective is two fresh, observed model-to-AP updates followed by the authored
 city delivery waypoint, return, landing and disarm. Pixel-perfect reconstruction
@@ -241,3 +241,19 @@ deliberately narrower VLA role, not improved unconstrained navigation or a
 post-hoc replacement of a model's stop decision. Legacy non-compact grammars
 still represent hold and LAND. Service identity must declare the v2 policy and
 both disabled proposal types, otherwise startup rejects it.
+
+### Verified bounded integration
+
+Run `yokohama-280d65f068d7` at source
+`f79a199c64f52cb2faa8aa19f1babd1084e6b685` passed the full-flight and native
+decision-chain verifiers. Two real-observation AeroVLA calls and four adapted
+ANWM forecasts led to two observed model-segment arrivals, followed by the
+delivery waypoint, return, landing and disarm. Startup followed the first inland
+hold; shutdown and late-authority rejection preceded the AP remainder.
+
+The [portable report](../examples/yokohama-integrated-flight/README.md) preserves
+the original forecasts, native VLA responses, permits, trajectory, actual camera
+video, three retained development failures and closed cost receipts. This is one
+static, zero-wind city trial with constrained translation-parameter selection;
+the route connectors remain authored. It is not sea-leg, payload-release,
+hardware, unconstrained-navigation or energy-saving evidence.

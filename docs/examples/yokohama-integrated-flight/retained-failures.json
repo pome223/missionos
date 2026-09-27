@@ -1,0 +1,42 @@
+[
+  {
+    "run_id": "yokohama-69a58ecbd93a",
+    "first_failing_wall_s": 124.809904181,
+    "first_failing_sim_s": 128.196,
+    "failed_predicate": "physical_heading",
+    "physical_heading_change_rad": -0.030076473418281235,
+    "position_change_m": 0.05773477099325887,
+    "px4_estimated_heading_change_rad": 0.00018,
+    "estimator_resets_unchanged": true,
+    "model_startup_wall_s": 169.83841900003608,
+    "real_observation_model_requests": 0,
+    "root_cause": "Cold-start lifecycle incorrectly enforced pre-start stationary-camera orientation; secondary shutdown timeout masked primary exception.",
+    "retained_status": "failed",
+    "native_mission_completion": false
+  },
+  {
+    "run_id": "yokohama-2e6a5f977ed4",
+    "status": "failed",
+    "backend": "fixture",
+    "gpu_requested": false,
+    "failed_phase": "waiting_for_WAM",
+    "physical_heading_change_rad": -0.031034003316706915,
+    "position_change_m": 0.06615275564742991,
+    "elapsed_since_WAM_request_s": 11.156376630999944,
+    "primary_reason": "ValueError: City decision hold, reserve, heading or estimator continuity lost",
+    "raw_flight_events_sha256": "f49ea17dcab0aafc59ee0cd6235bed8c8c37d18cda6c59da9953f8ea188ff70d",
+    "root_cause": "Camera-fixed inference wait incompatible with physical/EKF yaw drift; executor yaw must be mapped from fresh pose while keeping world target immutable."
+  },
+  {
+    "run_id": "yokohama-84e200069b7b",
+    "status": "failed",
+    "backend": "native",
+    "vla_real_observation_calls": 1,
+    "wam_real_observation_calls": 0,
+    "generated_text": "0 49 48</s>",
+    "model_arrivals": 0,
+    "startup_guard_passed": true,
+    "shutdown_and_cleanup_confirmed": true,
+    "root_cause": "Compact-city v1 allowed zero translation but the flight phase required forward translation. Model selected zero forward; output retained unchanged."
+  }
+]

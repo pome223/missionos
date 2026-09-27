@@ -1,0 +1,38 @@
+{
+  "runtime_source_revision": "f79a199c64f52cb2faa8aa19f1babd1084e6b685",
+  "full_suite": {
+    "passed": 3412,
+    "warnings": 3,
+    "seconds": 106.38
+  },
+  "source_ci": {
+    "run_id": 36319921777,
+    "python_versions": [
+      "3.11",
+      "3.13"
+    ],
+    "conclusion": "success"
+  },
+  "browser": {
+    "viewport_widths": [
+      1280,
+      390
+    ],
+    "horizontal_overflow": false,
+    "all_eight_comparison_images_loaded": true,
+    "replay_play_and_seek_verified": true,
+    "end_seek_point": 5035,
+    "end_seek_nav_state": 4,
+    "delivery_image_selection_verified": true,
+    "video_playback_observed_at_s": 26.032481,
+    "video_duration_s": 113.291667,
+    "video_dimensions": [
+      640,
+      360
+    ],
+    "console_errors": 0,
+    "console_warning": "Existing bundled Three.js legacy-build deprecation; no runtime error"
+  },
+  "relative_links_checked": 27,
+  "private_path_and_credential_marker_scan": "passed"
+}
