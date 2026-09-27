@@ -1,0 +1,22 @@
+{
+  "run_id": "yokohama-b95aa9e3c929",
+  "status": "failed",
+  "source_revision": "035e2b539cf0660257a923fb36dbb5002afff219",
+  "generated_text": "95 48 38</s>",
+  "native_vla_invoked": true,
+  "native_wam_invoked": false,
+  "cuda_allocated_before_gc_bytes": 9568256,
+  "gc_collected_objects": 254,
+  "cuda_allocated_after_request_bytes": 9568256,
+  "model_shutdown": {
+    "remote_model_processes_absent": true,
+    "gpu_compute_processes": [],
+    "stopped_at_unix_s": 1790474400.1070302,
+    "session_revoked": true
+  },
+  "simulator_cleanup": true,
+  "model_segment_dispatches": 0,
+  "model_updates": 0,
+  "wam_flight_input_calls": 0,
+  "native_vla_flight_input_calls": 1
+}

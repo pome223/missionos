@@ -1,0 +1,15 @@
+{
+  "authorized_cumulative_usd": 11,
+  "prior_estimated_usd": 8.42824140943092,
+  "this_city_work_estimated_usd": 1.600234510999245,
+  "cumulative_estimated_usd": 10.028475920430164,
+  "invoice_confirmed": false,
+  "owned_cloud_vms_and_disks_absent": true,
+  "owned_local_containers_absent": true,
+  "cleanup_estimate_closed": true,
+  "closed_at_utc": "2026-09-27T02:22:51.183315+00:00",
+  "maximum_a3_cumulative_estimate_usd": 10.532534804786572,
+  "cleanup_warning": "An already-removed simulator inspect timed out; an independent subsequent owned-container listing verified both trial containers absent. Cloud deletion was confirmed.",
+  "private_cost_receipt_sha256": "3491bcd8603483b4c19cb80c8406ca22a7c7736d430e8d8acf6de5664d135a1a",
+  "repaired_remote_archive_sha256": "a61607de5156f5b7ef307c1d9f593b32bae5d5774d5b74eb967a31ff41d214d0"
+}

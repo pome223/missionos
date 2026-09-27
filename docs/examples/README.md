@@ -25,6 +25,11 @@ Each example should include commands, observed evidence, and limitations.
   Includes an observed 3D replay and onboard camera recording; native VLA/WAM
   and payload delivery are not part of this flight.
 
+- [Yokohama native model trial](yokohama-native-flight/REPORT-ja.md) records real
+  AeroVLA and ANWM calls at D1, CUDA workspace release, and a WAM-image rejection
+  before model-segment dispatch. Includes original predictions, observed video
+  and all three failed frozen trials; repeated native movement remains unverified.
+
 ## Example Checklist
 
 Each example should state:

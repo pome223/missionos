@@ -1,0 +1,24 @@
+{
+  "runtime_source_revision": "fa0d0d216bf6b8bebce6e915564f7473ce5496ad",
+  "full_tests": {
+    "passed": 3348,
+    "warnings": 3,
+    "elapsed_s": 103.15,
+    "log_sha256": "9aaa8d132201025be00712a4aa944e04aecc1a08b9a546ff15c56e8d4d8fea58"
+  },
+  "source_ci": {
+    "python": [
+      "3.11",
+      "3.13"
+    ],
+    "conclusion": "success",
+    "url": "https://github.com/pome223/missionos/actions/runs/36287796443"
+  },
+  "cpu_qualification": {
+    "run_id": "yokohama-cf58d737ae9b",
+    "source_revision": "035e2b539cf0660257a923fb36dbb5002afff219",
+    "native_models_invoked": false,
+    "both_verifiers_passed": true
+  },
+  "native_complete_flight_qualified": false
+}

@@ -14,6 +14,12 @@ A missing API rejects. Actual process shutdown is still required; zero allocator
 bytes does not mean zero CUDA-context memory or zero power. Historical ship/pillar
 runs are separate.
 
+The corrected run `yokohama-e9da88bd375a` on `fa0d0d21` reached actual VLA
+and WAM inference with zero post-request CUDA allocation. Both forecast candidates
+failed the unchanged image bounds; no model segment was dispatched. See the
+[retained result and all attempts](../examples/yokohama-native-flight/REPORT-ja.md).
+Repeated native city movement and return remain unverified.
+
 ## Frozen scope
 
 One stationary, wind-free, synthetic PLATEAU city world; one drone. The AP route

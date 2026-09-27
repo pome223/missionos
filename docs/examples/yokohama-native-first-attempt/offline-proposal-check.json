@@ -1,0 +1,21 @@
+{
+  "scope": "offline replay of the original native proposal, not an additional model call or runtime rejection",
+  "in_runtime": false,
+  "response_sha256": "eae8aff22a93e11d0b713b1b3ad3ab182e7a626824bc3e6d0e8ebb2b515923f0",
+  "decoded_bins_and_action": [
+    [
+      79,
+      48,
+      0
+    ],
+    [
+      4.030612244897959,
+      -0.1020408163265305,
+      -1.1
+    ]
+  ],
+  "outcome": {
+    "accepted": false,
+    "reason": "VLA did not propose an admissible short level translation"
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "run_id": "yokohama-b95aa9e3c929",
+  "status": "not_qualified",
+  "model_updates_observed": 0,
+  "native_vla_invoked": true,
+  "native_wam_invoked": false,
+  "world_sha256": "3d14db4c116d1f0892126e004be4249ab90edcdac9322aaa32a11a076db5bb3d",
+  "source_sha256": {
+    "yokohama_scene.py": "ad9ad3de307d590f052fd7b8a1f4623dd43714fdcf7b68424ffe35ea86e62be9",
+    "yokohama_sitl.py": "b6f7a4af869d2c6c0fbada0f1eabe78b1a7ca0f3da1dcd49a42fb82dc44395fb",
+    "yokohama_sitl_worker.py": "5152fcd618f5fc10190fa94cc5834df16a1b9b6bffb6a460f8dd63b907ace765",
+    "ship_urban_camera_worker.py": "d1410467349d7bc5526a46afe2e84a9cf8e44d7a3fc391d8b0361ad78696d6c7",
+    "ship_onboard_entrypoint.sh": "b45b89f4bc9cf4ecab5f3d041866a436d6133574717e122a9e02f86e4c977364",
+    "yokohama_flight_worker.py": "556ce27672edc4abca86d0093da9993da283935fb45ed64e8ce21232ebb12d87",
+    "yokohama_decision_worker.py": "e45dfa07ea89807bf156e29012bc6e99f6f2be063526a135dc975f988c9079c0",
+    "yokohama_decision_host.py": "1ce09ac361d856f9198691b685221d2f9fd06dd42ccf6240f3dcd142afd2787e",
+    "yokohama_native.py": "52574d155a26a9569dd76bfa8f6096eec48a247e297769cf882d8d8b3b4252fa",
+    "ship_anwm.py": "978e813357d08db3eb41ff0ec9a403d5813297d53c33b2a67794f7829a8f3f7f",
+    "ship_anwm_server.py": "2f98188553f61fc3ecefe4f15bd4f4db3630eb77893de5adb02d4e8b691a9356",
+    "ship_aerovla.py": "bd0c8dd2af639867cd3703a730870f0c59f6ed74ccb4f1bf87e681d452cf97fd",
+    "ship_aerovla_server.py": "9f08e633544a2384f35acc2b6569f01be4fad2e97aa372eff4993801f730c115",
+    "ship_vla_adapter.py": "0a155c594218e92875daf91e6bbaaf84152eb9a2f93929a64c3666a63e828dca",
+    "smoke_px4_gazebo_sitl_mission_upload.py": "424dac5e40ac45d1012653a891581a1dd4e1d5091700703f725dffc580e45e01",
+    "verify_yokohama_decisions.py": "49c405e0c1f9e9b2edeaefa0ef91f38242aad182ecf810dc3c06862d0a0e8958",
+    "verify_yokohama_sitl.py": "f74c83b67834f56db29112e127a95bd6131dd5b069e4dd036db47b596a407b52"
+  },
+  "error": "ValueError: ValueError: Unbound native VLA result",
+  "holds_completed": 1,
+  "cycles": [],
+  "vla_calls": [
+    {
+      "vla_inference_invoked": true,
+      "generated_text": "95 48 38</s>",
+      "generated_token_ids": [
+        29929,
+        29945,
+        29871,
+        29946,
+        29947,
+        29871,
+        29941,
+        29947,
+        2
+      ],
+      "request_sha256": "47b46ba3d37ebd084fdd875d4b72bb3bd05bc3b07e7439182e5fae57f42a9f09",
+      "input_images_sha256": {
+        "rgb": "f5dd99fcb0fdc0925e5d4aa9cf7e993b1e56a54c15578d2ede3dd66ca2d8a703",
+        "down": "80e1f8afa90b2676053a57c074d69fc0a6d9e188136fd1606175a1cdd1e625bb"
+      },
+      "elapsed_s": null,
+      "inference_s": null,
+      "cuda_allocated_after_request_bytes": 9568256
+    }
+  ],
+  "duration_sim_s": 260.36,
+  "duration_wall_s": 260.87227166099996,
+  "payload_delivery_verified": false,
+  "generic_obstacle_recognition_verified": false,
+  "energy_savings_verified": false
+}

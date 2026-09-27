@@ -1,0 +1,69 @@
+{
+  "status": "failure_record_verified",
+  "native_model_flight_verified": false,
+  "run_id": "yokohama-e9da88bd375a",
+  "vla_flight_input_calls": 1,
+  "wam_flight_input_calls": 1,
+  "wam_candidate_predictions": 2,
+  "dispatches": 0,
+  "observed_model_updates": 0,
+  "startup_after_inland_hold": true,
+  "remote_model_shutdown_verified": true,
+  "cuda_after_both_requests_bytes": 0,
+  "forecast_checks": [
+    {
+      "candidate": {
+        "id": "hold",
+        "delta": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "passed": false,
+      "known_pixel_fraction": 0.7028858418367347,
+      "reference_edge_pixels": 2943,
+      "matched_edge_fraction": 0.835881753312946,
+      "luminance_mae": 52.228101016974776,
+      "predicted_edge_density": 0.15268798911194284,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    {
+      "candidate": {
+        "id": "vla",
+        "delta": [
+          4.69685426802624,
+          -1.2204446732473553,
+          0.030846273508840838,
+          -0.2426308910227717
+        ]
+      },
+      "passed": false,
+      "known_pixel_fraction": 0.5961216517857143,
+      "reference_edge_pixels": 1830,
+      "matched_edge_fraction": 0.8398907103825136,
+      "luminance_mae": 58.3683928989335,
+      "predicted_edge_density": 0.23339239744575574,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    }
+  ],
+  "host_seconds": {
+    "start": 166.3085782499984,
+    "vla": 16.899649374943692,
+    "wam": 50.893796292017214,
+    "stop": 6.520113250007853
+  },
+  "model_wait": {
+    "wall_s": 253.941892034,
+    "max_drift_3d_m": 0.12693364210151392,
+    "max_speed_mps": 0.052975385793781624,
+    "max_observation_gap_s": 0.507803875999997,
+    "samples": 3283
+  },
+  "raw_result_sha256": "7536bea70b362c8e013137c6dc6229a8b6e76701a9c3b4bd89e558a8f2e51cb8",
+  "vla_response_sha256": "0b2120e349f40e29e5029affa812c26e97019636bd4c7e19a1401b1633e48b8e",
+  "wam_response_sha256": "4332706ad46744850c5f962c590d7a7357a1fd5579ac65a41af68bc72808b3e5",
+  "complete_flight_qualified": false,
+  "warmup_counted_as_flight_input": false
+}
