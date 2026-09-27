@@ -1,0 +1,8 @@
+{
+  "status": "saved_head_reopened",
+  "head_sha256": "b9f15a23f50b62769e058bf10df18cd65cf31d683abb38d126c8ec3348658ac8",
+  "all_tensors_finite": true,
+  "parameters": 47851808,
+  "adapter_sha256": "e4b88ec38ce8f08ff90b692a3b545e573aadaacf0f080a0357409dfc2b308dd3",
+  "protocol_sha256": "b46be0bd74748a7f8e7b1a14c0e0520230f3b1facf88d6b79a07a58c703a7e6a"
+}

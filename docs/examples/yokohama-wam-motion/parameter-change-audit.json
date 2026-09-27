@@ -1,0 +1,202 @@
+{
+  "schema_version": "anwm_changed_parameters_audit.v1",
+  "status": "verified",
+  "source": "separate CPU process; saved adapter compared with prior final-block adapter",
+  "adapter_sha256": "e4b88ec38ce8f08ff90b692a3b545e573aadaacf0f080a0357409dfc2b308dd3",
+  "protocol_sha256": "b46be0bd74748a7f8e7b1a14c0e0520230f3b1facf88d6b79a07a58c703a7e6a",
+  "cuda_initialized": false,
+  "parameters": [
+    {
+      "name": "blocks.27.attn.qkv.weight",
+      "parameters": 3981312,
+      "initial_sha256": "181684cef7324feb3541405de7d1efcea5a69d878753c4470f15787975ec5ff9",
+      "final_sha256": "17cfbdb44c4f37d3f610f9a66244dd6523a3296352f5439fc9b6e5d082dc08fa",
+      "change_l2": 5.276515483856201,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.attn.qkv.bias",
+      "parameters": 3456,
+      "initial_sha256": "0faed4be0280e4bbdf66e0cf6abe9b704b6bf8e26f9cad88ca41de8cbe71c749",
+      "final_sha256": "1f850693856509abf91ac73b27c3f596063b0c8ece58d906bce59e0b527c6397",
+      "change_l2": 0.08198454976081848,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.attn.proj.weight",
+      "parameters": 1327104,
+      "initial_sha256": "cdb8fa384140aa57481a86abb359115a8254e7d352e1893bc9984d306a2e1f9c",
+      "final_sha256": "eccbd1453ee8978d501591ba86c0599374f7db7eac7a8e72cbcdb5b2235b3f7a",
+      "change_l2": 3.3651864528656006,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.attn.proj.bias",
+      "parameters": 1152,
+      "initial_sha256": "de42feb3cb4eb4e76c14b06e86a57ce0d6d7b72cbfb836a1340a21fa49246a5c",
+      "final_sha256": "382f8f1f85445e08e201bca2088df8519890bf678200a7e33bf32ca53803bc8d",
+      "change_l2": 0.05135680362582207,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.cttn.in_proj_weight",
+      "parameters": 3981312,
+      "initial_sha256": "691ebaa7bd9f7a71cc13bd4b8ad14be79f91d486b6f987aa64046fcc117e15fa",
+      "final_sha256": "264557aae5ffc64142cfd797c9a3cefad605009a02c9a71e464e378f14c2e42f",
+      "change_l2": 6.000792980194092,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.cttn.in_proj_bias",
+      "parameters": 3456,
+      "initial_sha256": "229c886a093861888b77a23e1f95baab97f6050980b1b8294438a6c3720b165d",
+      "final_sha256": "ff9f872f02e889a791fc4918c45d909183b2b6b4e8a42eef7a722bade79c0a72",
+      "change_l2": 0.15944437682628632,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.cttn.bias_k",
+      "parameters": 1152,
+      "initial_sha256": "52211b53e09bc19b90e43ada7ae33de197c44ec323e17c6b57a6ce8c8e7ba96b",
+      "final_sha256": "7aca822d9d317146d30848552af8de28455f089f162b1272130e4f4f2c59ec10",
+      "change_l2": 0.15039551258087158,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.cttn.bias_v",
+      "parameters": 1152,
+      "initial_sha256": "7d9ca052970601030efc203aa3a0cfd223fd2fb29b0facd1b595e15d75ac9d48",
+      "final_sha256": "1df86f9b5d188a952f8b7b089995d7dfe0dab19df824f6f6df0dd7b59e7d9b7a",
+      "change_l2": 0.08706574887037277,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.cttn.out_proj.weight",
+      "parameters": 1327104,
+      "initial_sha256": "0c6e7a0a27e13dbb97d76cbcbb13dcb690ce5bbafba31b759de65906ef21d471",
+      "final_sha256": "586bf15847af5cd93a699c0012666b5a17b0957918cd24ace279021815144fdf",
+      "change_l2": 2.521822929382324,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.cttn.out_proj.bias",
+      "parameters": 1152,
+      "initial_sha256": "3df62aeb955c52b05a12b1106814165a4ebb5f27cd6f21337b1aa0765aeb6a3c",
+      "final_sha256": "551f344df7c46d766cc83be9b5113dbea88e0209a09159582ebb53531c35bb93",
+      "change_l2": 0.025150645524263382,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.adaLN_modulation.1.weight",
+      "parameters": 18579456,
+      "initial_sha256": "93f16b15cf3d91c329b3f9f6a1527c405b547f08eb7fa742027cd624023906e5",
+      "final_sha256": "86358e91fa30231ae5d420f1f2e15692ebb70dceca6d2594ba93ffb89a96f3d8",
+      "change_l2": 8.912571907043457,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.adaLN_modulation.1.bias",
+      "parameters": 16128,
+      "initial_sha256": "b5b34b6fdfc653d26673a4b7b17e6158af46cef421062d32b2d01075586b5475",
+      "final_sha256": "cc070e26528db2ca8a59836da5ce12b447b2fa0f2b981e93bb24bd37784d4c33",
+      "change_l2": 0.3428351879119873,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.mlp.fc1.weight",
+      "parameters": 5308416,
+      "initial_sha256": "9f7be6c64873dbf45a943883c53152bfd7bbe61034dd40eb0e8733f9377a5524",
+      "final_sha256": "64b73a0ed626036ebaffd546c0f2face83c12ed9b85a98d921ec3a890e6ae062",
+      "change_l2": 5.24177360534668,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.mlp.fc1.bias",
+      "parameters": 4608,
+      "initial_sha256": "3f299baa2829084dc865a4bd3f74498c2ad53883bce862f52f62342abe9993a6",
+      "final_sha256": "f7f55eb696e2218214aa81e02dc97c590501d4d906bec1f752a95b004b27feb8",
+      "change_l2": 0.11729973554611206,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.mlp.fc2.weight",
+      "parameters": 5308416,
+      "initial_sha256": "01d6248642f5de0c50eb18610a55ea9894598929cfc23ff3b608c91693c009ab",
+      "final_sha256": "ff119f571d5040d94838d03b05e6fc89ea176882b3b6ff280d60c223df3832cc",
+      "change_l2": 2.385028839111328,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.mlp.fc2.bias",
+      "parameters": 1152,
+      "initial_sha256": "61e818a93ee43b823b1618292946ba4d6a01c250aac9cb79ebdbe74900dadf5d",
+      "final_sha256": "aa7d15c1f4bdb319fc18dedf7fe2c5f9554adf8e3a3950b83ea02393b8352d7d",
+      "change_l2": 0.021662143990397453,
+      "all_finite": true
+    },
+    {
+      "name": "final_layer.linear.weight",
+      "parameters": 36864,
+      "initial_sha256": "472ae414b705f81608415e55385f0a0fc8ca8ef76e3397831bc9538ac6226c76",
+      "final_sha256": "1800e71ffe6e71c4f810f17f072dc28990fcd02b253b8a52d787227717439dfb",
+      "change_l2": 0.39014720916748047,
+      "all_finite": true
+    },
+    {
+      "name": "final_layer.linear.bias",
+      "parameters": 32,
+      "initial_sha256": "ee913ef8a5ed4f87ba16ba340e9cf31e246bd098e411ed09e8755a8614d80c75",
+      "final_sha256": "24886d537ed56723672c699f6a3361ff945c2450f9b7ce2b486d92adf0d8de3e",
+      "change_l2": 0.013840850442647934,
+      "all_finite": true
+    },
+    {
+      "name": "final_layer.fuse_supervised.weight",
+      "parameters": 2654208,
+      "initial_sha256": "980416244822eca1badd42252bdd6a5eb0e255ae0123ab7892e861e692df28c8",
+      "final_sha256": "c96f49b8cf0b180e13f1a33a4cc98e7912c2335a9a327c2256be4e8617ab8555",
+      "change_l2": 3.801025390625,
+      "all_finite": true
+    },
+    {
+      "name": "final_layer.fuse_supervised.bias",
+      "parameters": 1152,
+      "initial_sha256": "8984efc053d9cbb2a83d540af6801c5758ac734e5ad2da7436f3e395bbf50aef",
+      "final_sha256": "4d55cf4147bfd58091500485e0590f145303835edd510d46c20b73f7a8a573b7",
+      "change_l2": 0.01702207140624523,
+      "all_finite": true
+    },
+    {
+      "name": "final_layer.attn.mha.in_proj_weight",
+      "parameters": 3981312,
+      "initial_sha256": "842beab987083246b2fd878247d7c2d0634b30f35561d32c87a457597d50d065",
+      "final_sha256": "3f4154ef9cd129b7778d6c59a2120449371112b45563bff595af06a2de902a57",
+      "change_l2": 5.9510297775268555,
+      "all_finite": true
+    },
+    {
+      "name": "final_layer.attn.mha.in_proj_bias",
+      "parameters": 3456,
+      "initial_sha256": "ad6e6963d426838b033ddca7ccf02bea3c6925dd8c3b68c2e0bab02d6b265c79",
+      "final_sha256": "9485ce478c543b36a85c01fe5ed27cb2fbc8628cb5383773003097971eeab4ef",
+      "change_l2": 0.13490113615989685,
+      "all_finite": true
+    },
+    {
+      "name": "final_layer.attn.mha.out_proj.weight",
+      "parameters": 1327104,
+      "initial_sha256": "eee646ab42beeb3a9cbb26aa857f061a2e1196674b6fc66a816e936f7393c6ce",
+      "final_sha256": "ce16de094952eb0976cef808c648b32d06e9f3d95bcde7dfc9d30a6cba684a0e",
+      "change_l2": 1.2216191291809082,
+      "all_finite": true
+    },
+    {
+      "name": "final_layer.attn.mha.out_proj.bias",
+      "parameters": 1152,
+      "initial_sha256": "450d3e0ba74fbdcf5de9595ab85c131d7d9febcfc628073e8104308f5ba64944",
+      "final_sha256": "d1546bf2dd5e5ca1dec1b738d3b056d6e6e9b6382fc71f4788f0c3526959e8e5",
+      "change_l2": 0.016126170754432678,
+      "all_finite": true
+    }
+  ]
+}

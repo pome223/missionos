@@ -1,0 +1,20 @@
+[
+  {
+    "attempt": "flight-01",
+    "run_id": "yokohama-aa23e8705de5",
+    "status": "failed",
+    "reason": "ValueError: Motion capture byte bound exceeded",
+    "cleanup": true,
+    "raw_result_sha256": "503a8464cba2c17f4eb3c7bb177a2ef8dbd77d1b8d6b2f1b922b21f9bf255fce",
+    "raw_worker_result_sha256": "4bd531a8c6546072ddaf7c54290af40a41f0cc5f6cb9204c1e7678bedd732094"
+  },
+  {
+    "attempt": "flight-02",
+    "run_id": "yokohama-f9411b75693b",
+    "status": "passed",
+    "reason": null,
+    "cleanup": true,
+    "raw_result_sha256": "ab2fa3450e5aadb2d3b3356b17f1e12f9e01a582fdc9cb831e91e5c36cb7d143",
+    "raw_worker_result_sha256": "fc65224cc8237e9f54554593d3f779d783090d30b9794ef151160da5f4ab5934"
+  }
+]

@@ -1,0 +1,226 @@
+{
+  "schema_version": "anwm_motion_adaptation_comparison.v1",
+  "cases": [
+    {
+      "id": "test-motion-12-forward",
+      "site": "test-motion-12-forward",
+      "action": "forward",
+      "label_ja": "前進 1 · 3 m",
+      "actual": "images/test-motion-12-forward-actual.png",
+      "raw_actual": "images/test-motion-12-forward-raw.png",
+      "actual_raw_sha256": "839b26303354a26427f33d1883b61b0adeab1730a4c753d479a80ca561669457",
+      "context": "images/test-motion-12-forward-context.png",
+      "clip": "clips/test-motion-12-forward.mp4",
+      "manual_after_pass": true,
+      "manual_status": "pass",
+      "input_cutoff_sim_s": 170.0,
+      "target_sim_s": 171.0,
+      "before": {
+        "sample": "test-motion-12-forward",
+        "image": "images/before-test-motion-12-forward.png",
+        "sha256": "2023c78ee9b3cee235ecf7b134d622d10dc2add07562fc4abd8bfa14a8de0fed",
+        "elapsed_s": 20.818717375999995,
+        "metrics": {
+          "rgb_mae": 12.232561383928571,
+          "fraction_pixels_max_channel_error_over_40": 0.07505580357142858
+        },
+        "numeric_pass": true
+      },
+      "after": {
+        "sample": "test-motion-12-forward",
+        "image": "images/after-test-motion-12-forward.png",
+        "sha256": "5faf6ffec62b840f93f54dee4de432436808a93da00614b56f25ef8072640c7d",
+        "elapsed_s": 20.99333803600007,
+        "metrics": {
+          "rgb_mae": 10.310121704931973,
+          "fraction_pixels_max_channel_error_over_40": 0.043247767857142856
+        },
+        "numeric_pass": true
+      },
+      "projection_mae": 4.835087159863946,
+      "manual_status_ja": "目視：限定基準内。通路、左右の大きな建物、手前の壁の配置は概ね保持しています。壁縁のぼけ・足元の小さな変形は残りますが、今回の限定した目視では経路を変える大きな架空構造は認めません。",
+      "manual_observation_en": "The corridor and large buildings remain in broadly corresponding positions. Blurred edges and small base distortions remain, but no large invented route-changing structure is apparent in this bounded visual check."
+    },
+    {
+      "id": "test-motion-13-forward",
+      "site": "test-motion-13-forward",
+      "action": "forward",
+      "label_ja": "前進 2 · 3 m",
+      "actual": "images/test-motion-13-forward-actual.png",
+      "raw_actual": "images/test-motion-13-forward-raw.png",
+      "actual_raw_sha256": "dcd4e729ba8a606ce6346be830afa6a5eede1cde27aa14c91ff40a62f96b1b56",
+      "context": "images/test-motion-13-forward-context.png",
+      "clip": "clips/test-motion-13-forward.mp4",
+      "manual_after_pass": false,
+      "manual_status": "fail",
+      "input_cutoff_sim_s": 176.0,
+      "target_sim_s": 177.0,
+      "before": {
+        "sample": "test-motion-13-forward",
+        "image": "images/before-test-motion-13-forward.png",
+        "sha256": "630752926683fa4ffea55806e672d32fd4a0c08548406c4528a3960ee89ec5dd",
+        "elapsed_s": 20.800727423000012,
+        "metrics": {
+          "rgb_mae": 13.13687818877551,
+          "fraction_pixels_max_channel_error_over_40": 0.10004783163265306
+        },
+        "numeric_pass": false
+      },
+      "after": {
+        "sample": "test-motion-13-forward",
+        "image": "images/after-test-motion-13-forward.png",
+        "sha256": "6df4b84da870d863d9d7e9939dd013090775fdb05d40453e2297b7dcc0fdc099",
+        "elapsed_s": 20.741492648000076,
+        "metrics": {
+          "rgb_mae": 13.622375903486395,
+          "fraction_pixels_max_channel_error_over_40": 0.10190130739795919
+        },
+        "numeric_pass": false
+      },
+      "projection_mae": 5.138764880952381,
+      "manual_status_ja": "目視：未達。手前の左壁の境界が広くにじみ、実観測に対する壁の幅・位置が曖昧です。占有境界の保持を確認しきれず、今回は成立に数えません。数値基準も大きな誤差10.19%で上限10%を超えています。",
+      "manual_observation_en": "The near left wall boundary is broadly smeared and its extent relative to the observed edge is ambiguous. Occupied-boundary preservation is not established. The large-error fraction is also 10.19%, above the frozen 10% limit."
+    },
+    {
+      "id": "test-motion-14-forward",
+      "site": "test-motion-14-forward",
+      "action": "forward",
+      "label_ja": "前進 3 · 3 m",
+      "actual": "images/test-motion-14-forward-actual.png",
+      "raw_actual": "images/test-motion-14-forward-raw.png",
+      "actual_raw_sha256": "7360b6e444e0a87a339f9833b8ba66b4cfa04bd627b774a6448ea23356eed886",
+      "context": "images/test-motion-14-forward-context.png",
+      "clip": "clips/test-motion-14-forward.mp4",
+      "manual_after_pass": true,
+      "manual_status": "pass",
+      "input_cutoff_sim_s": 181.0,
+      "target_sim_s": 182.0,
+      "before": {
+        "sample": "test-motion-14-forward",
+        "image": "images/before-test-motion-14-forward.png",
+        "sha256": "832a24f973159fb4db590d89d4fc84d9afd8f652656e8c8e6dda62f7885467b2",
+        "elapsed_s": 20.685142324000026,
+        "metrics": {
+          "rgb_mae": 7.850001328656463,
+          "fraction_pixels_max_channel_error_over_40": 0.026885363520408163
+        },
+        "numeric_pass": true
+      },
+      "after": {
+        "sample": "test-motion-14-forward",
+        "image": "images/after-test-motion-14-forward.png",
+        "sha256": "f1e0ef2fe9cdc8e8f49875b23a52ccdc145c22344535156c2d0518d4f5be926a",
+        "elapsed_s": 20.81046813499995,
+        "metrics": {
+          "rgb_mae": 6.7618914753401365,
+          "fraction_pixels_max_channel_error_over_40": 0.025948660714285716
+        },
+        "numeric_pass": true
+      },
+      "projection_mae": 2.407751381802721,
+      "manual_status_ja": "目視：限定基準内。左右の建物と中央の通路の大まかな配置を保持しています。小さな構造物の輪郭や壁面の表現は一致しませんが、大きな架空の閉塞は認めません。",
+      "manual_observation_en": "The large buildings and central corridor are broadly preserved. Small-object edges and facade details differ, without an apparent large invented blockage."
+    },
+    {
+      "id": "test-motion-15-forward",
+      "site": "test-motion-15-forward",
+      "action": "forward",
+      "label_ja": "前進 4 · 3 m",
+      "actual": "images/test-motion-15-forward-actual.png",
+      "raw_actual": "images/test-motion-15-forward-raw.png",
+      "actual_raw_sha256": "22d89e48d1397e74e81ffe2c187ab2e1c519be847aae24486a4fe4ae50e6ca8e",
+      "context": "images/test-motion-15-forward-context.png",
+      "clip": "clips/test-motion-15-forward.mp4",
+      "manual_after_pass": true,
+      "manual_status": "pass",
+      "input_cutoff_sim_s": 187.0,
+      "target_sim_s": 188.0,
+      "before": {
+        "sample": "test-motion-15-forward",
+        "image": "images/before-test-motion-15-forward.png",
+        "sha256": "f88db609dca917aa2477abe6be15bcf8b27dc2faf4a222360229332ac488081a",
+        "elapsed_s": 20.646455065000055,
+        "metrics": {
+          "rgb_mae": 8.51031037414966,
+          "fraction_pixels_max_channel_error_over_40": 0.04595822704081633
+        },
+        "numeric_pass": true
+      },
+      "after": {
+        "sample": "test-motion-15-forward",
+        "image": "images/after-test-motion-15-forward.png",
+        "sha256": "77a71a63a00bc3b45a6ae48758a365b0ae450a6ac982e3453a13eb6127657288",
+        "elapsed_s": 20.95102341000006,
+        "metrics": {
+          "rgb_mae": 7.198600924744898,
+          "fraction_pixels_max_channel_error_over_40": 0.041095344387755105
+        },
+        "numeric_pass": true
+      },
+      "projection_mae": 2.992831898384354,
+      "manual_status_ja": "目視：限定基準内。通路と両側の壁の大まかな配置を保持しています。学習前にあった右壁上部の明るい抜けは学習後には目立たず、壁縁の湾曲や足元の小さな変形が残ります。",
+      "manual_observation_en": "The corridor and major walls are broadly preserved. The bright gap high in the right wall visible before training is no longer conspicuous afterward; curved edges and small base distortions remain."
+    },
+    {
+      "id": "test-motion-16-hold",
+      "site": "test-motion-16-hold",
+      "action": "hold",
+      "label_ja": "停止 · 保持",
+      "actual": "images/test-motion-16-hold-actual.png",
+      "raw_actual": "images/test-motion-16-hold-raw.png",
+      "actual_raw_sha256": "dcf172438c12623eebfc710e6bf2eca50f5bb13c1a0a35158ea17a456338c704",
+      "context": "images/test-motion-16-hold-context.png",
+      "clip": "clips/test-motion-16-hold.mp4",
+      "manual_after_pass": true,
+      "manual_status": "pass",
+      "input_cutoff_sim_s": 198.0,
+      "target_sim_s": 199.0,
+      "before": {
+        "sample": "test-motion-16-hold",
+        "image": "images/before-test-motion-16-hold.png",
+        "sha256": "fc3df4711b511f63f24fdddc5109eb7d30ea321a90b27b1ffbe8c78442ad6c5e",
+        "elapsed_s": 20.738509321999913,
+        "metrics": {
+          "rgb_mae": 9.736102253401361,
+          "fraction_pixels_max_channel_error_over_40": 0.03419961734693878
+        },
+        "numeric_pass": true
+      },
+      "after": {
+        "sample": "test-motion-16-hold",
+        "image": "images/after-test-motion-16-hold.png",
+        "sha256": "61e62308cc57d0fc3bdd5126d6fb17082c8a775314e4bce63118e8694976cf45",
+        "elapsed_s": 20.918276554000045,
+        "metrics": {
+          "rgb_mae": 8.923834768282314,
+          "fraction_pixels_max_channel_error_over_40": 0.031529017857142856
+        },
+        "numeric_pass": true
+      },
+      "projection_mae": 21.001195790816325,
+      "manual_status_ja": "目視：限定基準内。開けた地面、左の壁、地上マーカーの配置を概ね保持しています。左奥の低い構造物は変形しており細部は一致しませんが、今回の限定した目視では大きな架空の閉塞は認めません。",
+      "manual_observation_en": "The open ground, left wall and ground marker remain in broadly corresponding positions. Low structures at left are distorted; this bounded check does not identify a large invented obstruction and does not certify fine geometry."
+    }
+  ],
+  "steps": 2048,
+  "trainable_parameters": 47851808,
+  "total_parameters": 1134100256,
+  "cumulative_estimated_usd": 13.071426405612295,
+  "minimum_feasibility_passed": false,
+  "native_flight_qualified": false,
+  "manual_inspection_complete": true,
+  "aggregate": {
+    "mean_rgb_mae_before": 10.293170705782313,
+    "mean_rgb_mae_after": 9.363364955357143,
+    "relative_mae_reduction": 0.0903322967239667
+  },
+  "qualified_cases": [
+    "test-motion-12-forward",
+    "test-motion-14-forward",
+    "test-motion-15-forward",
+    "test-motion-16-hold"
+  ],
+  "summary_ja": "APの実移動履歴で事後学習し、平均RGB誤差は10.29から9.36に下がりました。数値基準は学習前後とも4/5件、学習後の目視を含む成立は4/5件です。左手前の壁が曖昧な1件が残り、事前に決めた全5件の成立条件は未達です。",
+  "summary_en": "Continuation using observed AP histories reduced mean RGB error from 10.29 to 9.36. Numeric passes stayed at 4/5, and four after-training cases also passed bounded visual inspection. One ambiguous near-left-wall case remains; the fixed all-five minimum is unmet.",
+  "manual_scope": "Static visual inspection of route-relevant coarse occupied geometry; small blur/texture differences alone do not fail. Not a depth reconstruction, safety certificate or authorization to fly."
+}

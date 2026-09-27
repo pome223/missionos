@@ -1,0 +1,117 @@
+{
+  "schema_version": "anwm_head_training_receipt.v1",
+  "total_parameters": 1134100256,
+  "trainable_parameters": 47851808,
+  "trainable_names": [
+    "blocks.27.attn.qkv.weight",
+    "blocks.27.attn.qkv.bias",
+    "blocks.27.attn.proj.weight",
+    "blocks.27.attn.proj.bias",
+    "blocks.27.cttn.in_proj_weight",
+    "blocks.27.cttn.in_proj_bias",
+    "blocks.27.cttn.bias_k",
+    "blocks.27.cttn.bias_v",
+    "blocks.27.cttn.out_proj.weight",
+    "blocks.27.cttn.out_proj.bias",
+    "blocks.27.adaLN_modulation.1.weight",
+    "blocks.27.adaLN_modulation.1.bias",
+    "blocks.27.mlp.fc1.weight",
+    "blocks.27.mlp.fc1.bias",
+    "blocks.27.mlp.fc2.weight",
+    "blocks.27.mlp.fc2.bias",
+    "final_layer.linear.weight",
+    "final_layer.linear.bias",
+    "final_layer.fuse_supervised.weight",
+    "final_layer.fuse_supervised.bias",
+    "final_layer.attn.mha.in_proj_weight",
+    "final_layer.attn.mha.in_proj_bias",
+    "final_layer.attn.mha.out_proj.weight",
+    "final_layer.attn.mha.out_proj.bias"
+  ],
+  "base_checkpoint_sha256": "bdd149cac6ec002ba7dc4ad99ec6f9eb02cd6d4f05320195cf174737b13b0bc2",
+  "frozen_parameters_sha256": "57adc15f42e1b7996df0c032ebf6ab5d5483f3a6460e321a6b8ed0da0d95d35f",
+  "initial_head_sha256": "b586373328d6916e8c28116dcbb6338cee85526c26220a105695b4f2384f233b",
+  "torch_version": "2.9.1+cu129",
+  "gpu": "NVIDIA L4",
+  "learning_kind": "motion-v4",
+  "initial_adapter_sha256": "852b0b0fa40ae73b3f396601e5c05b72f8dc667802490e8d4ceb0c4317056ca9",
+  "steps": 2048,
+  "training_seconds": 230.7618581920001,
+  "head_change_l2": 15.67983186465466,
+  "final_head_sha256": "b9f15a23f50b62769e058bf10df18cd65cf31d683abb38d126c8ec3348658ac8",
+  "frozen_base_unchanged": true,
+  "checkpoint_reloaded": true,
+  "adapter_sha256": "e4b88ec38ce8f08ff90b692a3b545e573aadaacf0f080a0357409dfc2b308dd3",
+  "before": [
+    {
+      "sample": "test-motion-12-forward",
+      "image": "before-test-motion-12-forward.png",
+      "sha256": "2023c78ee9b3cee235ecf7b134d622d10dc2add07562fc4abd8bfa14a8de0fed",
+      "elapsed_s": 20.818717375999995
+    },
+    {
+      "sample": "test-motion-13-forward",
+      "image": "before-test-motion-13-forward.png",
+      "sha256": "630752926683fa4ffea55806e672d32fd4a0c08548406c4528a3960ee89ec5dd",
+      "elapsed_s": 20.800727423000012
+    },
+    {
+      "sample": "test-motion-14-forward",
+      "image": "before-test-motion-14-forward.png",
+      "sha256": "832a24f973159fb4db590d89d4fc84d9afd8f652656e8c8e6dda62f7885467b2",
+      "elapsed_s": 20.685142324000026
+    },
+    {
+      "sample": "test-motion-15-forward",
+      "image": "before-test-motion-15-forward.png",
+      "sha256": "f88db609dca917aa2477abe6be15bcf8b27dc2faf4a222360229332ac488081a",
+      "elapsed_s": 20.646455065000055
+    },
+    {
+      "sample": "test-motion-16-hold",
+      "image": "before-test-motion-16-hold.png",
+      "sha256": "fc3df4711b511f63f24fdddc5109eb7d30ea321a90b27b1ffbe8c78442ad6c5e",
+      "elapsed_s": 20.738509321999913
+    }
+  ],
+  "after": [
+    {
+      "sample": "test-motion-12-forward",
+      "image": "after-test-motion-12-forward.png",
+      "sha256": "5faf6ffec62b840f93f54dee4de432436808a93da00614b56f25ef8072640c7d",
+      "elapsed_s": 20.99333803600007
+    },
+    {
+      "sample": "test-motion-13-forward",
+      "image": "after-test-motion-13-forward.png",
+      "sha256": "6df4b84da870d863d9d7e9939dd013090775fdb05d40453e2297b7dcc0fdc099",
+      "elapsed_s": 20.741492648000076
+    },
+    {
+      "sample": "test-motion-14-forward",
+      "image": "after-test-motion-14-forward.png",
+      "sha256": "f1e0ef2fe9cdc8e8f49875b23a52ccdc145c22344535156c2d0518d4f5be926a",
+      "elapsed_s": 20.81046813499995
+    },
+    {
+      "sample": "test-motion-15-forward",
+      "image": "after-test-motion-15-forward.png",
+      "sha256": "77a71a63a00bc3b45a6ae48758a365b0ae450a6ac982e3453a13eb6127657288",
+      "elapsed_s": 20.95102341000006
+    },
+    {
+      "sample": "test-motion-16-hold",
+      "image": "after-test-motion-16-hold.png",
+      "sha256": "61e62308cc57d0fc3bdd5126d6fb17082c8a775314e4bce63118e8694976cf45",
+      "elapsed_s": 20.918276554000045
+    }
+  ],
+  "max_cuda_allocated_bytes": 7338474496,
+  "protocol_sha256": "b46be0bd74748a7f8e7b1a14c0e0520230f3b1facf88d6b79a07a58c703a7e6a",
+  "training_targets_uploaded": true,
+  "test_targets_uploaded": false,
+  "flight_invoked": false,
+  "vla_invoked": false,
+  "inference_calls": 10,
+  "total_model_seconds": 574.953042176
+}

@@ -1,0 +1,66 @@
+{
+  "schema_version": "anwm_motion_adaptation_protocol.v1",
+  "frozen_at_utc": "2026-09-27T10:37:54.743353+00:00",
+  "source_commit": "d2b36e72509ed5f0725df85e2ecc411758f95351",
+  "learning_kind": "motion-v4",
+  "seed": 42,
+  "steps": 2048,
+  "lr": 5e-05,
+  "grad_clip": 1,
+  "weight_decay": 0,
+  "trainable_prefixes": [
+    "final_layer.fuse_supervised.",
+    "final_layer.linear.",
+    "final_layer.attn.",
+    "blocks.27."
+  ],
+  "context_frames": 16,
+  "transition_index": 1,
+  "time_semantics": "One short-view transition; evaluation happens at +1 observed simulator second; not a general time calibration",
+  "diffusion_training_steps": 1000,
+  "diffusion_sampling_steps": 250,
+  "model_work_seconds_max": 1800,
+  "checkpoint_selection": "fixed final update 2048; no test selection",
+  "bounds": {
+    "rgb_mae_max": 15,
+    "fraction_pixels_max_channel_error_over_40_max": 0.1,
+    "inference_seconds_max": 75
+  },
+  "minimum_result": "All five fixed cases pass numeric and visual occupied-geometry criteria. Offline recorded-motion diagnostic only; not same-anchor counterfactuals or native flight authority.",
+  "native_flight_admitted": false,
+  "train_target_upload_allowed": true,
+  "test_target_upload_allowed": false,
+  "payload_sha256": {
+    "ship_anwm_server.py": "2507e4637643934e3a142572515d32afb5e66685fda0e5bc7451a4a73fd5fafc",
+    "yokohama_motion_data.py": "08bd6626097319f6ad3cdd1a52f60757c077177ed2181da792dd19379c1246ba",
+    "ship_anwm.py": "4a64a0fa90aab8913529a8948edc9cef53d1c86d04becbf81250c67aceddcf21",
+    "train_head.py": "5ee231adc52434d3df5adac6019a77e92b5af595b4587dbeb3a42242c4c0f333",
+    "bootstrap.sh": "4effc0e9895bd2a01f3f1ab1e4c50c281fc182af05cce7342aa9196eb396f67e",
+    "paired_appearance.py": "5be9458b7538d2afe6252658fa85c6ce26c095a7a1b250c92de8643f498d0ec3",
+    "initial-adapter.pt": "852b0b0fa40ae73b3f396601e5c05b72f8dc667802490e8d4ceb0c4317056ca9",
+    "dataset.tar.gz": "ca95aac47c9aa57484c32d89f14fa11b1a58fa38ff7c3e1e894350f180d594f1"
+  },
+  "dataset_manifest_sha256": "9938d81e9865562c564086a18ad8c828b74ecb54c4a1869789c50d53f612b668",
+  "previous_publication_commit": "00f70a23183280f3d81bf33465287a1e347cb8fe",
+  "evaluation_envelope": "New moving histories in a previously inspected city region; not an unseen-scene claim",
+  "prior_studies": [
+    {
+      "study": "yokohama-wam-adapt-20260927",
+      "manifest_sha256": "7822ef2c4e010681749d925aa7820e1803e85447db67b7419f8e408851cc396f",
+      "min_test_to_previous_training_site_m": 17.759639940447126
+    },
+    {
+      "study": "yokohama-wam-attention-20260927",
+      "manifest_sha256": "8d57d691067b4c1195eb3826305df46c2dcb78bfe90f57beddcb2bad86bd9bec",
+      "min_test_to_previous_training_site_m": 17.759639940447126
+    },
+    {
+      "study": "yokohama-wam-block-20260927",
+      "manifest_sha256": "b48a097e5176dd74b3642606e31cce081518fd739d9019d587c216bd384267ad",
+      "min_test_to_previous_training_site_m": 17.759639940447126
+    }
+  ],
+  "motion_verification_sha256": "63e12cb208a2e0b7d5e290797f574ba100fe7c5e7008364f5bfa4a790fa81fbf",
+  "sitl_verification_sha256": "1f2096e7033b9a5d25b8e11cfa688de33b2d4f10e1c1102b6f304011a9926e7e",
+  "historical_failed_studies_retained": true
+}
