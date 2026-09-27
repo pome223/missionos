@@ -18,6 +18,12 @@ def digest(value):
     ).hexdigest()
 
 
+def physical_heading(row):
+    """Independent Gazebo camera/vehicle heading, in world NED radians."""
+    w, x, y, z = row["vehicle"]["quat_wxyz"]
+    return math.atan2(1 - 2 * (y * y + z * z), 2 * (x * y + w * z))
+
+
 class CityDecisions:
     def __init__(self, root, config, sample, event, clock):
         self.root, self.config, self.sample, self.event, self.clock = (
@@ -45,6 +51,8 @@ class CityDecisions:
             or abs(math.remainder(row["heading_ned_rad"] - anchor["heading_ned_rad"], 2 * math.pi))
             > 0.03
             or row["reset_counters"] != anchor["reset_counters"]
+            or abs(math.remainder(physical_heading(row) - physical_heading(anchor),
+                                  2 * math.pi)) > 0.03
         ):
             raise ValueError("City decision hold, reserve, heading or estimator continuity lost")
         return row

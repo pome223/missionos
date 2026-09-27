@@ -120,6 +120,18 @@ def main():
                 sea_leg_present=False,
                 payload_release_present=False,
             )
+            # This pinned simulator's magnetometer frame conversion is not a
+            # qualified heading source. Initialize once from the authored
+            # launch orientation, then use PX4 inertial/GNSS estimation.
+            config["simulator_initial_heading_deg"] = 90.0
+            config["simulator_heading_runtime"] = {
+                "px4_git": "381149fb012762f5e38c4a7fdc1b905b28038970",
+                "gz_sim_version": "8.11.0-1~noble",
+                "source": "authored_spawn_yaw_zero_ENU_equals_90deg_NED",
+                "magnetometer_mode": "initialization_only_EKF2_MAG_TYPE_6",
+                "continuous_ground_truth_heading_feed": False,
+                "hardware_applicable": False,
+            }
         if args.phase == "flight":
             from scripts.smoke_px4_gazebo_sitl_mission_upload import _inner_upload_script
             from pyproj import Geod
@@ -257,6 +269,8 @@ def main():
                 "PX4_GZ_MODEL_POSE=0,0,0.3,0,0,0",
             ]:
                 argv.extend(["-e", entry])
+            if "simulator_initial_heading_deg" in config:
+                argv.extend(["-e", "PX4_PARAM_EKF2_MAG_TYPE=6"])
             argv.extend([image, "/mission/ship_onboard_entrypoint.sh", "-d"])
         else:
             argv.extend(

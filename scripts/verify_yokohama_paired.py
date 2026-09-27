@@ -38,16 +38,20 @@ def crop(path):
     )
 
 
-def verify(root, export):
-    config, result = read(root / "config.json"), read(root / "result.json")
-    assert result["status"] == "passed" and result["cleanup"]
+def verify(root, export, capture_only=False):
+    config = read(root / "config.json")
+    result = read(root / "result.json") if (root / "result.json").exists() else None
+    if not capture_only:
+        assert result and result["status"] == "passed" and result["cleanup"]
+        assert not any(result[k] for k in ["vla_invoked", "wam_invoked", "gpu_requested"])
+        assert result["observed"]["city_decision_updates"] == 2
     assert config["decisions"]["backend"] == "fixture"
     assert config["decisions"]["capture_paired_views"]
-    assert not any(result[k] for k in ["vla_invoked", "wam_invoked", "gpu_requested"])
-    assert result["observed"]["city_decision_updates"] == 2
     export.mkdir(exist_ok=False, parents=True)
     rows = []
     events = [json.loads(line) for line in (root / "flight-events.jsonl").read_text().splitlines()]
+    assert sum(e["event"] == "city_segment_arrived" for e in events) == 2
+    assert any(e["event"] == "city_late_response_rejected" for e in events)
     mailboxes = [read(p) for p in (root / "decisions").glob("*-request.json")]
     for cycle in (1, 2):
         paired = read(root / f"city-{cycle:02d}-paired-views.json")
@@ -135,6 +139,8 @@ def verify(root, export):
     assert not any("evaluation" in json.dumps(r.get("capture", {})) for r in mailboxes)
     return dict(
         status="passed",
+        qualification_scope="paired_capture_only" if capture_only else "paired_capture_and_flight",
+        flight_terminal_status=result["status"] if result else "pending",
         run_id=config["run_id"],
         pairs=rows,
         real_model_flight=False,
@@ -147,7 +153,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--export-dir", type=Path, required=True)
+    parser.add_argument("--capture-only", action="store_true",
+                        help="Qualify completed pairs independently of the remaining AP route")
     args = parser.parse_args()
-    value = verify(args.root.resolve(), args.export_dir.resolve())
+    value = verify(args.root.resolve(), args.export_dir.resolve(), args.capture_only)
     (args.export_dir / "verification.json").write_text(json.dumps(value, indent=2) + "\n")
     print(json.dumps(value, indent=2))

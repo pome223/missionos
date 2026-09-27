@@ -72,3 +72,51 @@ the last raw depth and frozen source/protocol. Keep evaluation frames local
 until inference has finished. Bound instance lifetime, include disk/IP/transfer
 reserves in the cumulative estimate, collect evidence, delete owned resources,
 and verify absence before closing the estimate.
+
+## Simulator heading qualification
+
+A first otherwise successful fixture flight had 0.0587 m endpoint position
+error but 0.1130 rad camera rotation error at D1. It was rejected for paired
+forecast evaluation before any GPU call. Later frames were not substituted.
+Two subsequent preflight attempts with `EKF2_DECL_TYPE=0` also failed the new
+physical-heading check. Zero does not activate `EKF2_MAG_DECL` in this build.
+All three attempts remain separate evidence.
+
+This specific simulator has PX4 `381149fb012762f5e38c4a7fdc1b905b28038970`
+and Gazebo `8.11.0-1~noble`. Gazebo replaces the SDF field using its geographic
+lookup table, emits a NED field through an ENU pose, and this PX4 bridge maps
+`x=-field.y`, `y=-field.x`. The resulting geographic declination enters with
+the opposite sign from the desired heading. The source world field alone is
+therefore not the right calibration input.
+
+Parameter-only trials did not qualify: attempts 2/3/5/6 stopped before arming;
+attempt 4 aligned before arming but failed the physical arrival-yaw bound.
+These trials are retained. The final bounded configuration instead sets
+`EKF2_MAG_TYPE=6` before startup and uses PX4's `commander set_heading 90`
+once while disarmed, based on the authored spawn orientation (zero ENU yaw).
+The actual spawn orientation and resulting estimated heading must agree within
+0.03 rad before arming. This is an explicit initial heading reference, not a
+repair to upstream magnetometer physics. No measured future pose, future image,
+or continuous ground-truth heading is fed to PX4. Subsequent attitude/navigation
+uses PX4's inertial/GNSS estimator.
+
+This workaround is simulator-only; it does not establish a usable real-aircraft
+heading source. Runtime versions, initialization command and resulting PX4 state
+are recorded. The worker independently checks physical yaw during hold and at
+segment arrival. The paired verifier still requires full camera orientation
+within 0.05 rad of the original requested view.
+
+`verify_yokohama_paired.py --capture-only` may qualify the two completed pairs
+after both arrivals and session revocation while the remaining AP route runs.
+It labels its scope `paired_capture_only` and preserves the terminal flight
+status as pending or observed. This permits offline inference on already
+recorded views; it never proves delivery/return or enables native flight.
+Publication still requires the complete SITL and decision verifiers.
+
+Primary source references:
+
+- [Gazebo 8.11 magnetometer geographic field and frame convention](https://github.com/gazebosim/gz-sim/blob/gz-sim8_8.11.0/src/systems/magnetometer/Magnetometer.cc)
+- [Pinned PX4 bridge magnetometer conversion](https://github.com/PX4/PX4-Autopilot/blob/381149fb012762f5e38c4a7fdc1b905b28038970/src/modules/simulation/gz_bridge/GZBridge.cpp#L389)
+- [Pinned PX4 getMagDeclination bit handling](https://github.com/PX4/PX4-Autopilot/blob/381149fb012762f5e38c4a7fdc1b905b28038970/src/modules/ekf2/EKF/aid_sources/magnetometer/mag_control.cpp#L607)
+
+- [Pinned PX4 one-time heading initialization command](https://github.com/PX4/PX4-Autopilot/blob/381149fb012762f5e38c4a7fdc1b905b28038970/src/modules/commander/Commander.cpp#L487)

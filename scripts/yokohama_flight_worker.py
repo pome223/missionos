@@ -178,7 +178,7 @@ def flight_trial(config, obs, run, field):
 
     try:
         if config.get("decisions"):
-            from yokohama_decision_worker import CityDecisions
+            from yokohama_decision_worker import CityDecisions, physical_heading
 
             decisions = CityDecisions(
                 ROOT, config, sample, event, lambda: time.monotonic() - started
@@ -191,6 +191,13 @@ def flight_trial(config, obs, run, field):
             time.sleep(0.2)
         else:
             raise TimeoutError("Gazebo pose discovery timeout")
+        if "simulator_heading_runtime" in config:
+            expected = config["simulator_heading_runtime"]
+            px4_version = run([BIN + "ver", "all"])
+            gz_version = run(["dpkg-query", "-W", "-f=${Version}", "libgz-sim8"])
+            if expected["px4_git"] not in px4_version or gz_version.strip() != expected["gz_sim_version"]:
+                raise ValueError("Unverified simulator compass implementation")
+            event("simulator_heading_runtime_verified", px4=px4_version, gz=gz_version)
         for key, value in {
             "COM_RC_IN_MODE": 4,
             "NAV_DLL_ACT": 0,
@@ -200,10 +207,25 @@ def flight_trial(config, obs, run, field):
             "SIM_BAT_MIN_PCT": 0,
             "COM_DISARM_LAND": 2,
             "NAV_ACC_RAD": 0.5,
+            **({"EKF2_MAG_TYPE": 6} if "simulator_initial_heading_deg" in config else {}),
         }.items():
             run([BIN + "param", "set", key, str(value)])
         wait_for(lambda r: r["position_valid"] is True and r["preflight_pass"] is True, 90)
         event("preflight_observed", observation=sample())
+        if "simulator_initial_heading_deg" in config:
+            initial_heading = config["simulator_initial_heading_deg"]
+            before = sample()
+            if (before["landed"] is not True or before["arming_state"] != 1
+                or abs(math.remainder(physical_heading(before) - math.radians(initial_heading),
+                                      2 * math.pi)) > 0.03):
+                raise ValueError("Authored simulator launch heading not observed before arming")
+            run([BIN + "commander", "set_heading", str(initial_heading)])
+            event("simulator_initial_heading_command", heading_deg=initial_heading,
+                  source=config["simulator_heading_runtime"]["source"], observation=before)
+            aligned = wait_for(lambda r: abs(math.remainder(
+                r["heading_ned_rad"] - physical_heading(r), 2 * math.pi)) <= 0.03, 45)
+            event("simulator_initial_heading_observed", observation=aligned,
+                  parameters={"EKF2_MAG_TYPE": run([BIN + "param", "show", "EKF2_MAG_TYPE"])})
         obs.images_to_disk("scene", ["scene_rgb", "scene_depth"])
         (ROOT / "camera-info.json").write_text(json.dumps(obs.camera_info, indent=2) + "\n")
         for i, stage in enumerate(config["flight_stages"]):
@@ -285,6 +307,9 @@ def flight_trial(config, obs, run, field):
                             )
                         )
                         <= 0.05
+                        and abs(math.remainder(
+                            physical_heading(r) - candidate["target_heading_world_ned_rad"],
+                            2 * math.pi)) <= 0.05
                     )
 
                 arrived = wait_for(at_model_target, 45)

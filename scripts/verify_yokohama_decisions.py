@@ -13,6 +13,7 @@ from PIL import Image
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 from scripts import ship_anwm  # noqa: E402
+from scripts.yokohama_decision_worker import physical_heading  # noqa: E402
 from src.runtime.yokohama_native import (  # noqa: E402
     digest,
     forecast_consistency,
@@ -183,6 +184,10 @@ def verify(root):
         end = arrival["observation"]
         error = math.dist(end["vehicle"]["xyz"], candidate["target_world_xyz_m"])
         assert error <= 0.25 and end["nav_state"] == 4 and math.hypot(*end["velocity_ned"]) <= 0.3
+        if "simulator_initial_heading_deg" in config:
+            assert abs(math.remainder(
+                physical_heading(end) - candidate["target_heading_world_ned_rad"],
+                2 * math.pi)) <= 0.05
         moved = math.dist(end["vehicle"]["xyz"], ar["observation"]["vehicle"]["xyz"])
         assert moved >= 0.25
         samples = [
