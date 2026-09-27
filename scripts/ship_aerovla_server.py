@@ -28,7 +28,15 @@ def digest(value):
 
 
 class NativeModel:
-    def __init__(self, base, adapter, *, constrain_action_format=False, inspection_level_flight=False):
+    def __init__(
+        self,
+        base,
+        adapter,
+        *,
+        constrain_action_format=False,
+        inspection_level_flight=False,
+        cpu_between_requests=False,
+    ):
         if inspection_level_flight and not constrain_action_format:
             raise ValueError("Inspection level flight requires action-format constraints")
         for name, sha in {**native.WEIGHTS, **native.CUSTOM_CODE}.items():
@@ -44,12 +52,16 @@ class NativeModel:
             raise RuntimeError("CUDA bfloat16 required")
         started = time.monotonic()
         self.torch = torch
+        self.cpu_between_requests = cpu_between_requests
         self.tokenizer = AutoTokenizer.from_pretrained(
             base, trust_remote_code=True, local_files_only=True
         )
         self.grammar = (
-            native.ActionGrammar(self.tokenizer, vertical_bins=(47, 51) if inspection_level_flight else None)
-            if constrain_action_format else None
+            native.ActionGrammar(
+                self.tokenizer, vertical_bins=(47, 51) if inspection_level_flight else None
+            )
+            if constrain_action_format
+            else None
         )
         self.processor = AutoImageProcessor.from_pretrained(
             base, trust_remote_code=True, local_files_only=True
@@ -63,12 +75,26 @@ class NativeModel:
         )
         self.model.resize_token_embeddings(len(self.tokenizer))
         self.model = (
-            PeftModel.from_pretrained(self.model, adapter, is_trainable=False).to("cuda").eval()
+            PeftModel.from_pretrained(self.model, adapter, is_trainable=False)
+            .to("cpu" if cpu_between_requests else "cuda")
+            .eval()
         )
         torch.cuda.synchronize()
         self.load_seconds = time.monotonic() - started
 
     def predict(self, prompt, images):
+        if not self.cpu_between_requests:
+            return self._predict(prompt, images)
+        try:
+            self.model.to("cuda")
+            value = self._predict(prompt, images)
+        finally:
+            self.model.to("cpu")
+            self.torch.cuda.empty_cache()
+        value[0]["cuda_allocated_after_request_bytes"] = self.torch.cuda.memory_allocated()
+        return value
+
+    def _predict(self, prompt, images):
         torch = self.torch
         mosaic = Image.new("RGB", (224, 448))
         for i, image in enumerate(images):
@@ -131,10 +157,16 @@ def decode_request(payload):
     }
     if (
         set(request) != expected
-        or request["schema_version"] != "ship_aerovla_live_request.v1"
+        or request["schema_version"]
+        not in {"ship_aerovla_live_request.v1", "yokohama_aerovla_request.v1"}
         or request["dispatch_allowed"] is not False
         or request["future_ground_truth_used"] is not False
-        or request["direction_source"] != "approved_goal_and_px4_ego_pose"
+        or request["direction_source"]
+        != (
+            "approved_goal_and_simulator_camera_pose"
+            if request["schema_version"] == "yokohama_aerovla_request.v1"
+            else "approved_goal_and_px4_ego_pose"
+        )
         or not isinstance(request["prompt"], str)
         or not 1 <= len(request["prompt"]) <= 500
         or set(payload["images_base64"]) != {"rgb", "down"}
@@ -221,11 +253,25 @@ def make_handler(model, identity, root, *, exit_after_request=False):
     return Handler
 
 
-def serve(base, adapter, output, port, *, exit_after_request=False, constrain_action_format=False,
-          inspection_level_flight=False):
+def serve(
+    base,
+    adapter,
+    output,
+    port,
+    *,
+    exit_after_request=False,
+    constrain_action_format=False,
+    inspection_level_flight=False,
+    cpu_between_requests=False,
+):
     output.mkdir(parents=True, exist_ok=False)
-    model = NativeModel(base, adapter, constrain_action_format=constrain_action_format,
-                        inspection_level_flight=inspection_level_flight)
+    model = NativeModel(
+        base,
+        adapter,
+        constrain_action_format=constrain_action_format,
+        inspection_level_flight=inspection_level_flight,
+        cpu_between_requests=cpu_between_requests,
+    )
     warmup, mosaic = model.predict(
         "<image>\nFly straight ahead and find the target.\nAction: ",
         [Image.new("RGB", (640, 360)) for _ in range(2)],
@@ -257,6 +303,7 @@ def serve(base, adapter, output, port, *, exit_after_request=False, constrain_ac
         "warmup_completed": True,
         "dispatch_capability": False,
         "exit_after_request": exit_after_request,
+        "cpu_between_requests": cpu_between_requests,
         "decoding_policy": model.grammar.policy if model.grammar else "unconstrained_greedy.v1",
         "inspection_level_flight": inspection_level_flight,
         "vertical_bin_range": [47, 51] if inspection_level_flight else [0, 98],
@@ -282,12 +329,17 @@ if __name__ == "__main__":
     parser.add_argument("--exit-after-request", action="store_true")
     parser.add_argument("--constrain-action-format", action="store_true")
     parser.add_argument("--inspection-level-flight", action="store_true")
+    parser.add_argument("--cpu-between-requests", action="store_true")
     args = parser.parse_args()
     if args.inspection_level_flight and not args.constrain_action_format:
         parser.error("--inspection-level-flight requires --constrain-action-format")
     serve(
-        args.base, args.adapter, args.output, args.port,
+        args.base,
+        args.adapter,
+        args.output,
+        args.port,
         exit_after_request=args.exit_after_request,
         constrain_action_format=args.constrain_action_format,
         inspection_level_flight=args.inspection_level_flight,
+        cpu_between_requests=args.cpu_between_requests,
     )

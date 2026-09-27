@@ -68,11 +68,13 @@ class NativeModel:
         try:
             self.model.to("cuda")
             self.vae.to("cuda")
-            return self._predict(request, arrays, output)
+            value = self._predict(request, arrays, output)
         finally:
             self.model.to("cpu")
             self.vae.to("cpu")
             self.torch.cuda.empty_cache()
+        value["cuda_allocated_after_request_bytes"] = self.torch.cuda.memory_allocated()
+        return value
 
     def _predict(self, request, arrays, output):
         from anwm.projection import (
@@ -94,7 +96,11 @@ class NativeModel:
             np.random.seed(42)
             begin = time.monotonic()
             delta = np.asarray(candidate["delta"], dtype=np.float32)
-            target = native.lateral_pose(arrays["poses"][-1], float(delta[1]))
+            target = (
+                native.action_pose(arrays["poses"][-1], delta)
+                if request["schema_version"] == "yokohama_anwm_request.v1"
+                else native.lateral_pose(arrays["poses"][-1], float(delta[1]))
+            )
             points, colors = reproject_depth_to_other_pose_seq2seq(
                 arrays["intrinsics"], arrays["depth"], arrays["rgb"], arrays["poses"], target[None]
             )
@@ -240,6 +246,7 @@ def main():
         "diffusion_steps": 250,
         "load_seconds": model.load_seconds,
         "cpu_between_requests": args.cpu_between_requests,
+        "candidate_contracts": ["ship_anwm_request.v1", "yokohama_anwm_request.v1"],
     }
     native.write_json(args.output / "identity.json", identity)
     print("READY", flush=True)

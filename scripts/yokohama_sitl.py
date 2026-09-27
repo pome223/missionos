@@ -28,9 +28,15 @@ def main():
     parser.add_argument("--approve-sitl", action="store_true")
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--timeout-seconds", type=int, default=900)
+    parser.add_argument("--decision-backend", choices=["fixture", "native"])
+    parser.add_argument("--native-service-config", type=Path)
     args = parser.parse_args()
     if not args.approve_sitl:
         parser.error("Explicit --approve-sitl is required; no hardware execution is supported")
+    if args.decision_backend and args.phase != "flight":
+        parser.error("City decisions require --phase flight")
+    if bool(args.native_service_config) != (args.decision_backend == "native"):
+        parser.error("Native decisions require exactly one explicit --native-service-config")
     root = args.output_dir.resolve()
     if root.exists():
         parser.error("Output directory must not exist; preserve previous attempts")
@@ -49,6 +55,7 @@ def main():
     }
     created = False
     worker = None
+    decision_host = None
     try:
         image = command(
             ["docker", "image", "inspect", "px4io/px4-sitl-gazebo:latest", "--format", "{{.Id}}"]
@@ -71,7 +78,12 @@ def main():
                 "if [ -d /opt/px4-gazebo/share/gz/models/$model/meshes ]; then ln -s /opt/px4-gazebo/share/gz/models/$model/meshes /mission/models/$model/meshes; fi; done",
             ]
         )
-        world = build_world(root, REPO / "docs/examples/yokohama-urban-scene", args.phase)
+        world = build_world(
+            root,
+            REPO / "docs/examples/yokohama-urban-scene",
+            args.phase,
+            camera_rate_hz=4 if args.decision_backend else 2,
+        )
         config = {
             "run_id": run_id,
             "phase": args.phase,
@@ -85,6 +97,24 @@ def main():
             "airspeed_mps": 3.0,
             "wind_mps": 0.0,
         }
+        if args.decision_backend:
+            config["decisions"] = dict(
+                backend=args.decision_backend,
+                points=["D1", "D2"],
+                camera_rate_hz=4,
+                inference_timeout_s=75,
+                startup_timeout_s=180,
+                shutdown_timeout_s=65,
+                hold_drift_m=0.5,
+                hold_speed_mps=0.3,
+                maximum_model_translation_m=5.01,
+                model_target_error_m=0.25,
+                model_altitude_error_m=0.15,
+                rules_margin_m=2,
+                failure_response="bounded_stop_of_owned_SITL_container",
+                sea_leg_present=False,
+                payload_release_present=False,
+            )
         if args.phase == "flight":
             from scripts.smoke_px4_gazebo_sitl_mission_upload import _inner_upload_script
             from pyproj import Geod
@@ -144,6 +174,23 @@ def main():
         ]
         if args.phase == "flight":
             sources.append(REPO / "scripts/yokohama_flight_worker.py")
+        if args.decision_backend:
+            sources.extend(
+                REPO / p
+                for p in [
+                    "scripts/yokohama_decision_worker.py",
+                    "scripts/yokohama_decision_host.py",
+                    "src/runtime/yokohama_native.py",
+                    "scripts/ship_anwm.py",
+                    "scripts/ship_anwm_server.py",
+                    "scripts/ship_aerovla.py",
+                    "scripts/ship_aerovla_server.py",
+                    "src/runtime/ship_vla_adapter.py",
+                    "scripts/smoke_px4_gazebo_sitl_mission_upload.py",
+                    "scripts/verify_yokohama_decisions.py",
+                    "scripts/verify_yokohama_sitl.py",
+                ]
+            )
         (root / "sources").mkdir()
         for source in sources:
             shutil.copy2(source, root / source.name)
@@ -154,6 +201,21 @@ def main():
             source_sha256={p.name: sha256(p) for p in sources},
             started_utc=datetime.now(timezone.utc).isoformat(),
         )
+        if args.decision_backend:
+            from scripts.yokohama_decision_host import DecisionHost
+
+            service = (
+                json.loads(args.native_service_config.read_text())
+                if args.native_service_config
+                else None
+            )
+            decision_host = DecisionHost(
+                root,
+                config,
+                REPO / "docs/examples/yokohama-urban-scene",
+                args.decision_backend,
+                service,
+            )
         argv = [
             "docker",
             "run",
@@ -234,6 +296,18 @@ def main():
     except Exception as exc:
         result["reason"] = type(exc).__name__ + ": " + str(exc)
     finally:
+        if decision_host:
+            try:
+                result["model_shutdown"] = decision_host.close()
+            except Exception as exc:
+                result["model_shutdown_error"] = str(exc)
+                result["status"] = "failed"
+            result["decision_backend"] = args.decision_backend
+            responses = list((root / "decisions").glob("*/native-response.json"))
+            native_rows = [json.loads(p.read_text()) for p in responses]
+            result["vla_invoked"] = any(r.get("vla_inference_invoked") is True for r in native_rows)
+            result["wam_invoked"] = any(r.get("wam_inference_invoked") is True for r in native_rows)
+            result["gpu_requested"] = args.decision_backend == "native"
         if created:
             logs = command(["docker", "logs", container], check=False)
             (root / "simulator.stdout").write_text(logs.stdout)

@@ -136,10 +136,16 @@ def verify(root, bundle):
         and "LIBGL_ALWAYS_SOFTWARE=1" in inspect["Config"]["Env"]
         and result.get("nvidia_device_absent") is True
     )
-    checks["no_models_invoked"] = all(
-        result[k] is False
-        for k in ["vla_invoked", "wam_invoked", "physical_execution_invoked", "gpu_requested"]
-    )
+    if config.get("decisions", {}).get("backend") == "native":
+        checks["native_backend_declared_separate_verification_required"] = (
+            all(result.get(k) is True for k in ["vla_invoked", "wam_invoked", "gpu_requested"])
+            and result.get("physical_execution_invoked") is False
+        )
+    else:
+        checks["no_models_invoked"] = all(
+            result[k] is False
+            for k in ["vla_invoked", "wam_invoked", "physical_execution_invoked", "gpu_requested"]
+        )
     output = dict(run_id=config["run_id"], phase=config["phase"], checks=checks)
     observed = read(root / "worker-result.json")
     checks["worker_binding"] = (

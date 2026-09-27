@@ -59,6 +59,8 @@ def flight_trial(config, obs, run, field):
     frames = []
     video_frames = []
     last_video_sim_s = -10.0
+    decisions = None
+    next_connector = None
 
     def event(name, **data):
         row = dict(event=name, phase=phase, wall_s=time.monotonic() - started, **data)
@@ -74,6 +76,7 @@ def flight_trial(config, obs, run, field):
                 "vehicle_status",
                 "vehicle_land_detected",
                 "mission_result",
+                "battery_status",
             ]
         }
         snap = obs.snapshot()
@@ -91,6 +94,12 @@ def flight_trial(config, obs, run, field):
             local_ned=[field(pos, k) for k in "xyz"],
             velocity_ned=[field(pos, "v" + k) for k in "xyz"],
             position_valid=field(pos, "xy_valid"),
+            heading_ned_rad=field(pos, "heading"),
+            reset_counters=[
+                field(pos, key)
+                for key in ("xy_reset_counter", "z_reset_counter", "heading_reset_counter")
+            ],
+            battery_fraction=field(raw["battery_status"], "remaining"),
             preflight_pass=field(status, "pre_flight_checks_pass"),
             nav_state=field(status, "nav_state"),
             arming_state=field(status, "arming_state"),
@@ -131,9 +140,18 @@ def flight_trial(config, obs, run, field):
 
     def upload(name):
         old = field(run([BIN + "listener", "mission_result", "-n", "1"]), "mission_id")
-        receipt = json.loads(
-            run(["python3", str(ROOT / (name + "-upload.py"))], 40).splitlines()[-1]
-        )
+        if decisions and name.startswith("city-"):
+            from concurrent.futures import ThreadPoolExecutor
+
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                future = pool.submit(run, ["python3", str(ROOT / (name + "-upload.py"))], 40)
+                while not future.done():
+                    sample()
+                    time.sleep(0.1)
+                uploaded = future.result()
+        else:
+            uploaded = run(["python3", str(ROOT / (name + "-upload.py"))], 40)
+        receipt = json.loads(uploaded.splitlines()[-1])
         event("upload_receipt", segment=name, receipt=receipt)
         if receipt.get("mission_ack_type") != 0:
             raise RuntimeError("Mission rejected")
@@ -157,6 +175,12 @@ def flight_trial(config, obs, run, field):
         raise RuntimeError("AUTO MISSION not observed")
 
     try:
+        if config.get("decisions"):
+            from yokohama_decision_worker import CityDecisions
+
+            decisions = CityDecisions(
+                ROOT, config, sample, event, lambda: time.monotonic() - started
+            )
         discovery_deadline = time.monotonic() + 30
         while time.monotonic() < discovery_deadline:
             snap = obs.snapshot()
@@ -183,7 +207,8 @@ def flight_trial(config, obs, run, field):
         for i, stage in enumerate(config["flight_stages"]):
             phase = stage["name"]
             target = stage["target_world_xyz_m"]
-            upload(phase)
+            upload(next_connector or phase)
+            next_connector = None
             if i == 0:
                 run([BIN + "commander", "arm"])
                 wait_for(lambda r: r["arming_state"] == 2, 10)
@@ -219,6 +244,68 @@ def flight_trial(config, obs, run, field):
             frames.append(obs.images_to_disk(phase, ["onboard_rgb", "onboard_depth", "down_rgb"]))
             if not metrics["passed"]:
                 raise RuntimeError("AP hold did not meet frozen bounds at " + phase)
+            if decisions and i in (0, 1):
+                permit = decisions.decide(obs, config["flight_stages"][i + 1]["target_world_xyz_m"])
+                candidate = permit["candidate"]
+                upload(permit["upload_name"])
+                permit = decisions.activation_permit(permit)
+                # Mission upload does not itself move the vehicle. Recheck hold
+                # and the bound two-second issuance age before activation.
+                if time.monotonic() - started > permit["expires_at_worker_wall_s"]:
+                    raise ValueError("City permit expired before mission activation")
+                activate()
+                event("city_segment_dispatched", permit_id=permit["permit_id"])
+                target_model = candidate["target_world_xyz_m"]
+
+                def at_model_target(r):
+                    begin = permit["rules"]["start_world_xyz_m"]
+                    delta = [b - a for a, b in zip(begin, target_model)]
+                    length2 = sum(x * x for x in delta)
+                    fraction = max(
+                        0.0,
+                        min(
+                            1.0,
+                            sum((p - a) * d for p, a, d in zip(r["vehicle"]["xyz"], begin, delta))
+                            / length2,
+                        ),
+                    )
+                    nearest = [a + fraction * d for a, d in zip(begin, delta)]
+                    if math.dist(r["vehicle"]["xyz"], nearest) > 1:
+                        raise ValueError("City segment left the 1 m tracking tube")
+                    return (
+                        math.dist(r["vehicle"]["xyz"], target_model) <= 0.25
+                        and abs(r["vehicle"]["xyz"][2] - target_model[2]) <= 0.15
+                        and math.hypot(*r["velocity_ned"]) <= 0.3
+                        and abs(
+                            math.remainder(
+                                r["heading_ned_rad"] - candidate["target_heading_ned_rad"],
+                                2 * math.pi,
+                            )
+                        )
+                        <= 0.05
+                    )
+
+                arrived = wait_for(at_model_target, 45)
+                run([BIN + "commander", "mode", "auto:loiter"])
+                stable = None
+
+                def settled(r):
+                    nonlocal stable
+                    okay = at_model_target(r) and r["nav_state"] == 4
+                    stable = (r["sim_s"] if stable is None else stable) if okay else None
+                    return stable is not None and r["sim_s"] - stable >= 2
+
+                arrived = wait_for(settled, 20)
+                decisions.completed.append(dict(permit=permit, arrived=arrived))
+                event("city_segment_arrived", permit_id=permit["permit_id"], observation=arrived)
+                import hashlib
+
+                connector = ROOT / (permit["connector_name"] + "-upload.py")
+                if hashlib.sha256(connector.read_bytes()).hexdigest() != permit["connector_sha256"]:
+                    raise ValueError("AP connector differs from independently checked route")
+                next_connector = permit["connector_name"]
+                if i == 1:
+                    decisions.stop()
         phase = "return_land"
         run([BIN + "commander", "land"])
         final = wait_for(
@@ -245,12 +332,20 @@ def flight_trial(config, obs, run, field):
             simulation_duration_s=final["sim_s"],
             gazebo_runtime_invoked=True,
             px4_runtime_invoked=True,
-            vla_invoked=False,
-            wam_invoked=False,
+            vla_invoked=bool(decisions and config["decisions"]["backend"] == "native"),
+            wam_invoked=bool(decisions and config["decisions"]["backend"] == "native"),
             physical_execution_invoked=False,
             payload_delivery_verified=False,
-            native_model_flight=False,
+            native_model_flight=bool(
+                decisions
+                and len(decisions.completed) == 2
+                and config["decisions"]["backend"] == "native"
+            ),
+            city_decision_updates=len(decisions.completed) if decisions else 0,
+            city_decision_backend=config.get("decisions", {}).get("backend"),
         )
     finally:
+        if decisions:
+            decisions.stop()
         events.close()
         trajectory.close()

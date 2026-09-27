@@ -1,8 +1,11 @@
 # Yokohama CPU SITL boundary
 
 The opt-in `scripts/yokohama_sitl.py` loads the frozen [urban scene](yokohama-urban-scene.md)
-into a disposable PX4/Gazebo container. It supports only `contacts` and `flight`;
-there is no hardware, remote vehicle, model service, or cloud provisioning endpoint.
+into a disposable PX4/Gazebo container. Its default `contacts` and `flight` modes
+invoke no model service. There is no hardware, remote vehicle or cloud provisioning
+endpoint. The explicit `--decision-backend` option adds the separately qualified
+[city model-view boundary](yokohama-native-flight.md); it does not change the
+historical fixed-AP evidence or establish native inference by itself.
 Run-specific observations are written to a new explicit output directory.
 
 ## Source and physics
@@ -29,7 +32,7 @@ is a contact/vertical-support check, not proof of full horizontal rest.
 
 ## AP measurements
 
-The flight is a fixed, operator-authorized AP route: D1 → D2 → D3 → destination →
+The default flight is a fixed, operator-authorized AP route: D1 → D2 → D3 → destination →
 D3 → D2 → D1. The operator approved this simulation through `--approve-sitl`.
 No model chose these waypoints. Each leg is at most 20 m. MAVLink upload receipt,
 Navigator validation, observed AUTO_MISSION, arrival, AUTO_LOITER, and measured

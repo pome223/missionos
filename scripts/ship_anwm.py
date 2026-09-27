@@ -69,6 +69,23 @@ def lateral_pose(reference, metres):
     return target
 
 
+def action_pose(reference, delta):
+    """Body FRD translation and world-down yaw of a stationary camera view."""
+    value = np.asarray(delta, dtype=float)
+    if value.shape != (4,) or not np.isfinite(value).all():
+        raise ValueError("Invalid candidate delta")
+    if np.linalg.norm(value[:3]) > 5.01 or abs(value[2]) > 0.205 or abs(value[3]) > 0.25:
+        raise ValueError("City candidate outside short level inspection envelope")
+    forward = np.r_[reference[:2, 2], 0.0]
+    forward /= np.linalg.norm(forward)
+    right = np.array([-forward[1], forward[0], 0.0])
+    target = reference.copy()
+    target[:3, 3] += forward * value[0] + right * value[1] + [0, 0, value[2]]
+    c, s = np.cos(value[3]), np.sin(value[3])
+    target[:3, :3] = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]]) @ reference[:3, :3]
+    return target
+
+
 def asset(root, entry):
     name = entry["file"]
     if not isinstance(name, str) or Path(name).name != name or name in (".", ".."):
@@ -177,9 +194,10 @@ def prepare(capture, output):
 
 def validate(request_path):
     request = json.loads(request_path.read_text())
+    city = request.get("schema_version") == "yokohama_anwm_request.v1"
     if (
-        request.get("schema_version") != "ship_anwm_request.v1"
-        or request.get("source_kind") != "px4_ship_rgbd_hold"
+        request.get("schema_version") not in {"ship_anwm_request.v1", "yokohama_anwm_request.v1"}
+        or request.get("source_kind") != ("yokohama_rgbd_hold" if city else "px4_ship_rgbd_hold")
         or request.get("ego_source") != "Gazebo_model_pose_simulator_ground_truth"
         or request.get("delta_frame") != "body_frd_at_observation"
         or request.get("num_timesteps") != 4
@@ -187,8 +205,11 @@ def validate(request_path):
         or request.get("model_time_alignment_verified") is not False
         or request.get("future_ground_truth_used_for_forecast") is not False
         or request.get("dispatch_allowed") is not False
-        or request.get("candidates")
-        != [{"id": "hold", "delta": [0, 0, 0, 0]}, {"id": "right_5m", "delta": [0, 5, 0, 0]}]
+        or (
+            not city
+            and request.get("candidates")
+            != [{"id": "hold", "delta": [0, 0, 0, 0]}, {"id": "right_5m", "delta": [0, 5, 0, 0]}]
+        )
         or request.get("seed") != 42
         or request.get("diffusion_steps") != 250
     ):
@@ -228,6 +249,19 @@ def validate(request_path):
     fx = 640 / (2 * math.tan(math.pi / 6))
     if not np.allclose(a["intrinsics"], [[fx, 0, 320], [0, fx, 180], [0, 0, 1]], atol=1e-5):
         raise ValueError("Unexpected camera intrinsics")
+    if city:
+        candidates = request.get("candidates")
+        if (
+            not isinstance(candidates, list)
+            or len(candidates) != 2
+            or candidates[0] != {"id": "hold", "delta": [0, 0, 0, 0]}
+            or set(candidates[1]) != {"id", "delta"}
+            or candidates[1]["id"] != "vla"
+            or not isinstance(request.get("vla_response_sha256"), str)
+            or len(request["vla_response_sha256"]) != 64
+        ):
+            raise ValueError("City forecast must bind one native VLA proposal")
+        action_pose(a["poses"][-1], candidates[1]["delta"])
     return request, a
 
 

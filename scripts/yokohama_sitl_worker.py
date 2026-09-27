@@ -6,6 +6,7 @@ No inference or hardware endpoints. Receipts describe physics and AP observation
 from __future__ import annotations
 
 import array
+from collections import deque
 import hashlib
 import json
 import math
@@ -57,6 +58,9 @@ class Observer:
         self.sim_s = None
         self.poses = {}
         self.images = {}
+        self.decision_capture = bool(config.get("decisions"))
+        self.image_history = {k: {} for k in ("onboard_rgb", "onboard_depth", "down_rgb")}
+        self.pose_history = deque(maxlen=5000)
         self.contacts = []
         self.camera_info = {}
         self.callbacks = []
@@ -114,6 +118,10 @@ class Observer:
                     "sensor_sim_s": stamp(m),
                     "received_monotonic_s": now,
                 }
+                if p.name == "x500_0" and self.decision_capture:
+                    self.pose_history.append(
+                        dict(self.poses[p.name], raw_pose=p.SerializeToString())
+                    )
 
     def receive_camera_info(self, m):
         with self.lock:
@@ -129,6 +137,86 @@ class Observer:
             own = Image()
             own.CopyFrom(m)
             self.images[key] = (own, time.monotonic())
+            if self.decision_capture and key in self.image_history:
+                history = self.image_history[key]
+                history[m.header.stamp.sec * 1_000_000_000 + m.header.stamp.nsec] = (
+                    own,
+                    time.monotonic(),
+                )
+                while len(history) > 100:
+                    del history[min(history)]
+
+    def capture_history(self, label, after_sim_s):
+        """Exact RGB/depth/down joins; nearest measured pose, never interpolation."""
+        with self.lock:
+            stamps = sorted(set.intersection(*(set(h) for h in self.image_history.values())))
+            stamps = [s for s in stamps if s / 1e9 > after_sim_s][:24]
+            if len(stamps) < 24:
+                return None
+            if any(abs((b - a) / 1e9 - 0.25) > 0.004000001 for a, b in zip(stamps, stamps[1:])):
+                raise ValueError("Urban history is not uninterrupted 4 Hz")
+            frames = [{k: h[s] for k, h in self.image_history.items()} for s in stamps]
+            poses = list(self.pose_history)
+        folder = ROOT / label
+        folder.mkdir()
+        result = []
+        for index, (s, frameset) in enumerate(zip(stamps, frames)):
+            pose = min(poses, key=lambda p: abs(p["sensor_sim_s"] - s / 1e9))
+            if abs(pose["sensor_sim_s"] - s / 1e9) > 0.012:
+                raise ValueError("RGBD/Gazebo pose join exceeds 12 ms")
+            assets = {}
+            for key, (message, received) in frameset.items():
+                rgb = key != "onboard_depth"
+                if (
+                    message.width,
+                    message.height,
+                    message.pixel_format_type,
+                    len(message.data),
+                ) != (640, 360, 3 if rgb else 13, 640 * 360 * (3 if rgb else 4)):
+                    raise ValueError("Urban sensor encoding mismatch")
+                for suffix, data in [
+                    ("raw", bytes(message.data)),
+                    ("pb", message.SerializeToString()),
+                ]:
+                    name = f"{index:02d}-{key}.{suffix}"
+                    (folder / name).write_bytes(data)
+                    assets[key + "_" + suffix] = {
+                        "file": name,
+                        "sha256": hashlib.sha256(data).hexdigest(),
+                    }
+                if rgb:
+                    name = f"{index:02d}-{key}.png"
+                    data = png_rgb(640, 360, message.data)
+                    (folder / name).write_bytes(data)
+                    assets[key + "_png"] = {
+                        "file": name,
+                        "sha256": hashlib.sha256(data).hexdigest(),
+                    }
+            pose_file = f"{index:02d}-vehicle.pb"
+            (folder / pose_file).write_bytes(pose["raw_pose"])
+            assets["pose_pb"] = {
+                "file": pose_file,
+                "sha256": hashlib.sha256(pose["raw_pose"]).hexdigest(),
+            }
+            result.append(
+                dict(
+                    stamp_ns=s,
+                    pose={k: v for k, v in pose.items() if k != "raw_pose"},
+                    assets=assets,
+                )
+            )
+        capture = {
+            "schema_version": "yokohama_rgbd_history.v1",
+            "frames": result,
+            "startup_indices": list(range(8)),
+            "history_indices": list(range(8, 24)),
+            "future_frames_included": False,
+        }
+        (folder / "capture.json").write_text(json.dumps(capture, indent=2) + "\n")
+        return {
+            "file": label + "/capture.json",
+            "sha256": hashlib.sha256((folder / "capture.json").read_bytes()).hexdigest(),
+        }
 
     def receive_contacts(self, m, name):
         if not m.contact:

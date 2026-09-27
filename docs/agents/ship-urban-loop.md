@@ -5,6 +5,11 @@ native AeroVLA/ANWM or PX4/Gazebo flight adapters**. `run-sitl` retains its prio
 single-decision behavior. No new native flight, delivery, recovery or energy
 saving is established by this controller.
 
+The separate [Yokohama city adapter](yokohama-native-flight.md) implements explicit
+stop/observe/model/permit/AP stages for the imported street scene. It has its own
+per-cycle image and runtime receipts; do not treat this controller's fixture
+results as qualification of that adapter or of its native model behavior.
+
 The historical native flights used an `urban_entry` waypoint 30 m before the
 coastline and warmed the cloud VLA service before takeoff. Their verified
 delivery/return results remain valid, but they do not meet the new requirement

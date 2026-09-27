@@ -151,11 +151,11 @@ def contact_sensor(link, name, collisions):
         ET.SubElement(contact, "collision").text = collision
 
 
-def camera(link, name, xyz, rpy, topic, *, rgbd=False):
+def camera(link, name, xyz, rpy, topic, *, rgbd=False, rate_hz=2):
     sensor = ET.SubElement(link, "sensor", name=name, type="rgbd_camera" if rgbd else "camera")
     ET.SubElement(sensor, "pose").text = " ".join(map(str, [*xyz, *rpy]))
     ET.SubElement(sensor, "always_on").text = "true"
-    ET.SubElement(sensor, "update_rate").text = "2"
+    ET.SubElement(sensor, "update_rate").text = str(rate_hz)
     ET.SubElement(sensor, "topic").text = topic
     c = ET.SubElement(sensor, "camera")
     ET.SubElement(c, "horizontal_fov").text = str(math.pi / 3)
@@ -209,7 +209,7 @@ def sphere(world, name, xyz, gravity):
     contact_sensor(link, name, ["collision"])
 
 
-def build_world(root, bundle, phase):
+def build_world(root, bundle, phase, *, camera_rate_hz=2):
     root, bundle = Path(root), Path(bundle)
     expected = json.loads((bundle / "files.sha256.json").read_text())
     for name in [
@@ -335,8 +335,23 @@ def build_world(root, bundle, phase):
     xbase = root / "models/x500_base/model.sdf"
     bt = ET.parse(xbase)
     body = bt.getroot().find("model/link[@name='base_link']")
-    camera(body, "urban_rgbd", [0.25, 0, 0.1], [0, 0, 0], "/yokohama/onboard", rgbd=True)
-    camera(body, "urban_down", [0.25, 0, 0.1], [0, math.pi / 2, 0], "/yokohama/down")
+    camera(
+        body,
+        "urban_rgbd",
+        [0.25, 0, 0.1],
+        [0, 0, 0],
+        "/yokohama/onboard",
+        rgbd=True,
+        rate_hz=camera_rate_hz,
+    )
+    camera(
+        body,
+        "urban_down",
+        [0.25, 0, 0.1],
+        [0, math.pi / 2, 0],
+        "/yokohama/down",
+        rate_hz=camera_rate_hz,
+    )
     bt.write(xbase, encoding="utf-8", xml_declaration=True)
     xt = ET.parse(root / "models/x500/model.sdf")
     xm = xt.getroot().find("model")
