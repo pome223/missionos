@@ -61,16 +61,25 @@ BLOCK_NAMES = {
     ]
 }
 ATTENTION_ADAPTER_SHA256 = "0a0375fff9acced7c5b46c29236f4ff9c48063342772ef13441634fbb9b33458"
+BLOCK_ADAPTER_SHA256 = "852b0b0fa40ae73b3f396601e5c05b72f8dc667802490e8d4ceb0c4317056ca9"
+
+
+def motion_module():
+    if __package__:
+        from scripts import yokohama_motion_data
+    else:
+        import yokohama_motion_data
+    return yokohama_motion_data
 
 
 def validate_configuration(protocol):
     kind = protocol.get("learning_kind", "head-v1")
-    if kind not in {"head-v1", "attention-v2", "block-v3"}:
+    if kind not in {"head-v1", "attention-v2", "block-v3", "motion-v4"}:
         raise ValueError("Unknown adaptation configuration")
     expected = ["final_layer.fuse_supervised.", "final_layer.linear."]
     if kind != "head-v1":
         expected.append("final_layer.attn.")
-    if kind == "block-v3":
+    if kind in {"block-v3", "motion-v4"}:
         expected.append("blocks.27.")
     if (
         protocol["steps"] != (512 if kind == "head-v1" else 2048)
@@ -79,8 +88,16 @@ def validate_configuration(protocol):
         or protocol["trainable_prefixes"] != expected
     ):
         raise ValueError("Unreviewed adaptation configuration")
-    if kind != "head-v1" and protocol["payload_sha256"].get("initial-adapter.pt") != (
-        INITIAL_ADAPTER_SHA256 if kind == "attention-v2" else ATTENTION_ADAPTER_SHA256
+    if (
+        kind != "head-v1"
+        and protocol["payload_sha256"].get("initial-adapter.pt")
+        != (
+            {
+                "attention-v2": INITIAL_ADAPTER_SHA256,
+                "block-v3": ATTENTION_ADAPTER_SHA256,
+                "motion-v4": BLOCK_ADAPTER_SHA256,
+            }[kind]
+        )
     ):
         raise ValueError("Unqualified initial adapter")
     return kind
@@ -89,6 +106,15 @@ def validate_configuration(protocol):
 def validate(root):
     protocol = json.loads((root / "protocol.json").read_text())
     data = json.loads((root / "dataset/dataset.json").read_text())
+    kind = validate_configuration(protocol)
+    for name, value in protocol["payload_sha256"].items():
+        if digest(root / name) != value:
+            raise ValueError("Frozen payload changed: " + name)
+    if kind == "motion-v4":
+        if "yokohama_motion_data.py" not in protocol["payload_sha256"]:
+            raise ValueError("Missing motion loader binding")
+        motion_module().validate_payload(root / "dataset", protocol, data)
+        return protocol, data
     if (
         data.get("qualification", {}).get("status") != "passed"
         or len(data["samples"]) != 32
@@ -96,9 +122,6 @@ def validate(root):
         or sum(s["split"] == "test" for s in data["samples"]) != 8
     ):
         raise ValueError("Unqualified adaptation dataset")
-    for name, value in protocol["payload_sha256"].items():
-        if digest(root / name) != value:
-            raise ValueError("Frozen payload changed: " + name)
     expected = {"dataset.json", *data["assets"]}
     actual = {
         str(p.relative_to(root / "dataset")) for p in (root / "dataset").rglob("*") if p.is_file()
@@ -122,8 +145,7 @@ def validate(root):
             or sample["training_target"]["file"] not in data["assets"]
         ):
             raise ValueError("Training target role mismatch")
-    kind = validate_configuration(protocol)
-    if kind == "attention-v2":
+    if kind in {"attention-v2", "block-v3"}:
         if data.get("plan_version") != kind or digest(
             root / "dataset/dataset.json"
         ) != protocol.get("dataset_manifest_sha256"):
@@ -186,7 +208,9 @@ def main():
         initial_adapter_sha256 = digest(root / "initial-adapter.pt")
         saved = torch.load(root / "initial-adapter.pt", map_location="cpu", weights_only=True)
         if saved["base_checkpoint_sha256"] != native.MODEL_SHA256 or set(saved["state"]) != (
-            HEAD_NAMES | (ATTENTION_NAMES if learning_kind == "block-v3" else set())
+            HEAD_NAMES
+            | (ATTENTION_NAMES if learning_kind in {"block-v3", "motion-v4"} else set())
+            | (BLOCK_NAMES if learning_kind == "motion-v4" else set())
         ):
             raise ValueError("Initial adapter identity mismatch")
         with torch.no_grad():
@@ -202,7 +226,7 @@ def main():
     trainable = [(n, p) for n, p in model.model.named_parameters() if p.requires_grad]
     if set(n for n, _ in trainable) != HEAD_NAMES | (
         ATTENTION_NAMES if learning_kind != "head-v1" else set()
-    ) | (BLOCK_NAMES if learning_kind == "block-v3" else set()):
+    ) | (BLOCK_NAMES if learning_kind in {"block-v3", "motion-v4"} else set()):
         raise ValueError("Unexpected trainable parameters")
     initial = {n: p.detach().cpu().clone() for n, p in trainable}
     frozen_before = state_digest(False)
@@ -227,8 +251,11 @@ def main():
     np.random.seed(42)
     for sample in data["samples"]:
         deadline()
-        with np.load(root / "dataset" / sample["input"]["file"], allow_pickle=False) as a:
-            arrays = {k: a[k] for k in a.files}
+        if learning_kind == "motion-v4":
+            arrays = motion_module().load_history(root / "dataset", sample)
+        else:
+            with np.load(root / "dataset" / sample["input"]["file"], allow_pickle=False) as a:
+                arrays = {k: a[k] for k in a.files}
         if sample["site"] not in contexts:
             contexts[sample["site"]] = torch.stack(
                 [transform(Image.fromarray(im)) for im in arrays["rgb"]]

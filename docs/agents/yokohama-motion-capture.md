@@ -57,3 +57,40 @@ The first development run reached the 200 MiB bound during D2→D3 and stopped,
 with its container removed. Preserve that failure. Byte-plane compression and
 predeclared spatial recording windows address storage; no matching thresholds
 or aircraft controls were relaxed.
+
+## Bounded motion-v4 continuation
+
+The CPU geometry screen completed before any motion-v4 model work. Delivery's
+initial AUTO_LOITER frames were still settling, so the partition uses the first
+four qualified D1→D2 forward windows, first six delivery-leg forward windows,
+and first two D2 holds for training (12). The five test records are the first
+qualified forward windows at D2→D3 progress 0.60/0.70/0.80/0.90 (each within
++0.04 and with cutoff indices at least 20 frames apart), plus the first D3 hold.
+The two nearby training holds and overlapping training histories are correlated.
+This partition was fixed after inspecting pose qualification, before generating
+model predictions. It does not change the capture or image acceptance bounds.
+
+`prepare_yokohama_motion.py` requires the complete SITL and motion verifications.
+It exports 16 past frames per sample with shared, lossless compressed assets.
+Training targets are included; test future images and actual future poses remain
+on the host. Requested targets are independently reconstructed from the last
+past pose. No test target frame may appear in *any* uploaded input history,
+including another test history. All train/test history positions and requested
+endpoints must be at least 15.6 m apart, reserving 0.6 m for the two bounded
+actual endpoint errors. Inventory and hashes are checked before GPU imports.
+
+`train_yokohama_anwm_head.py` accepts `motion-v4` only with the pinned block-v3
+adapter, 24 trainable tensors, 2048 updates, seed 42 and learning rate 0.00005.
+The evaluation uses moving AP histories in a previously inspected city region;
+it is not an unseen-city or pristine held-out scene claim. Old training and
+failure provenance remains part of this diagnostic. A model transition index
+of 1 is evaluated against +1 observed simulator second here; this does not
+establish a general physical-time calibration.
+
+The limited image qualification requires **all five** fixed cases to satisfy
+RGB MAE ≤15, fraction of pixels with any channel error >40 ≤0.10, inference
+≤75 s, and visual preservation of route-relevant occupied geometry. Small
+texture/blur differences alone need not fail. These are separate recorded
+trajectories, not paired counterfactual hold/forward commands from one anchor.
+Passing would qualify only this offline motion-record diagnostic; native
+VLA/WAM city flight remains separately unqualified.
