@@ -15,6 +15,7 @@ from src.runtime.yokohama_adaptation import (
     site_plan,
     validate_split,
     validate_fresh_sites,
+    previous_site_plan,
     verify_export,
 )
 from scripts.ship_anwm import action_pose
@@ -47,6 +48,39 @@ def test_new_sites_avoid_all_previously_inspected_positions():
     bad[-1]["xyz"] = old[-1]["endpoint_xyz"]
     with pytest.raises(ValueError, match="Previously inspected"):
         validate_fresh_sites(bad, old)
+
+
+def test_block_sites_avoid_both_previous_experiments():
+    points = [[0, 0, 10], [70, 0, 10], [235, 0, 10], [235, 80, 10]]
+    prior = previous_site_plan(points, "block-v3")
+    assert len(prior) == 32
+    assert validate_fresh_sites(site_plan(points, "block-v3"), prior) > 15
+    bad = site_plan(points, "block-v3")
+    bad[-1]["endpoint_xyz"] = prior[-1]["xyz"]
+    with pytest.raises(ValueError, match="Previously inspected"):
+        validate_fresh_sites(bad, prior)
+
+
+def test_last_block_scope_requires_exact_prior_adapter():
+    from scripts.train_yokohama_anwm_head import ATTENTION_ADAPTER_SHA256
+
+    p = dict(
+        learning_kind="block-v3",
+        steps=2048,
+        lr=0.00005,
+        seed=42,
+        trainable_prefixes=[
+            "final_layer.fuse_supervised.",
+            "final_layer.linear.",
+            "final_layer.attn.",
+            "blocks.27.",
+        ],
+        payload_sha256={"initial-adapter.pt": ATTENTION_ADAPTER_SHA256},
+    )
+    assert validate_configuration(p) == "block-v3"
+    p["payload_sha256"]["initial-adapter.pt"] = INITIAL_ADAPTER_SHA256
+    with pytest.raises(ValueError, match="initial adapter"):
+        validate_configuration(p)
 
 
 @pytest.mark.parametrize("change", ["adapter", "steps", "prefixes"])

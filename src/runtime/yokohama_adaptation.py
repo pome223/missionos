@@ -17,7 +17,7 @@ def digest(path):
 
 def site_plan(points, version="head-v1"):
     """Keep an entire middle-route region out of training before rendering."""
-    if version not in {"head-v1", "attention-v2"}:
+    if version not in {"head-v1", "attention-v2", "block-v3"}:
         raise ValueError("Unknown adaptation site plan")
     groups = [
         (0, "train", [0.15, 0.35, 0.55, 0.75]),
@@ -29,6 +29,9 @@ def site_plan(points, version="head-v1"):
             [0.60, 0.72, 0.84, 0.96] if version == "head-v1" else [0.44, 0.455, 0.47, 0.485],
         ),
     ]
+    if version == "block-v3":
+        groups[-1] = (2, "test", [1.05, 1.10, 1.15, 1.20])
+    suffix = {"head-v1": "", "attention-v2": "v2-", "block-v3": "v3-"}[version]
     sites = []
     for segment, split, fractions in groups:
         a, b = np.asarray(points[segment]), np.asarray(points[segment + 1])
@@ -38,7 +41,7 @@ def site_plan(points, version="head-v1"):
             xyz = a + fraction * (b - a)
             sites.append(
                 dict(
-                    id=f"{split}-{'v2-' if version == 'attention-v2' else ''}{len(sites):02d}",
+                    id=f"{split}-{suffix}{len(sites):02d}",
                     split=split,
                     segment=segment,
                     fraction=fraction,
@@ -48,9 +51,16 @@ def site_plan(points, version="head-v1"):
                 )
             )
     validate_split(sites)
-    if version == "attention-v2":
-        validate_fresh_sites(sites, site_plan(points))
+    if version != "head-v1":
+        validate_fresh_sites(sites, previous_site_plan(points, version))
     return sites
+
+
+def previous_site_plan(points, version):
+    if version == "head-v1":
+        return []
+    prior = site_plan(points)
+    return prior + site_plan(points, "attention-v2") if version == "block-v3" else prior
 
 
 def validate_fresh_sites(sites, previous_sites, minimum_m=15):
@@ -96,7 +106,7 @@ def verify_export(root, manifest):
     """Verify split, strict target role and hashes before any paid operation."""
     root = Path(root)
     separation = validate_split(manifest["sites"])
-    if manifest.get("plan_version") == "attention-v2":
+    if manifest.get("plan_version") in {"attention-v2", "block-v3"}:
         previous_separation = validate_fresh_sites(
             manifest["sites"], manifest["previous_inspected_sites"]
         )

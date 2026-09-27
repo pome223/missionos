@@ -15,7 +15,13 @@ import zipfile
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 from src.runtime.yokohama_scene import build_world, camera  # noqa: E402
-from src.runtime.yokohama_adaptation import site_plan, digest, verify_export, validate_fresh_sites  # noqa: E402
+from src.runtime.yokohama_adaptation import (  # noqa: E402
+    site_plan,
+    previous_site_plan,
+    digest,
+    verify_export,
+    validate_fresh_sites,
+)
 
 
 def run(args, **kwargs):
@@ -26,7 +32,9 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--output-dir", type=Path, required=True)
     p.add_argument("--approve-simulation", action="store_true")
-    p.add_argument("--plan-version", choices=["head-v1", "attention-v2"], default="head-v1")
+    p.add_argument(
+        "--plan-version", choices=["head-v1", "attention-v2", "block-v3"], default="head-v1"
+    )
     p.add_argument(
         "--numpy-wheel",
         type=Path,
@@ -100,11 +108,11 @@ def main():
             schema_version="yokohama_adaptation_plan.v1",
             sites=sites,
             plan_version=args.plan_version,
-            previous_inspected_sites=site_plan(route)
-            if args.plan_version == "attention-v2"
-            else [],
-            previous_site_separation_m=validate_fresh_sites(sites, site_plan(route))
-            if args.plan_version == "attention-v2"
+            previous_inspected_sites=previous_site_plan(route, args.plan_version),
+            previous_site_separation_m=validate_fresh_sites(
+                sites, previous_site_plan(route, args.plan_version)
+            )
+            if args.plan_version != "head-v1"
             else None,
             scene_sha256=world["source_scene_sha256"]
             if "source_scene_sha256" in world

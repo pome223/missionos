@@ -39,13 +39,39 @@ ATTENTION_NAMES = {
 INITIAL_ADAPTER_SHA256 = "7d69f3d7eccfee89cdd43b0fe22f5622da3d7cc03d2554be64f02d05c1a07222"
 
 
+BLOCK_NAMES = {
+    "blocks.27." + n
+    for n in [
+        "attn.qkv.weight",
+        "attn.qkv.bias",
+        "attn.proj.weight",
+        "attn.proj.bias",
+        "cttn.in_proj_weight",
+        "cttn.in_proj_bias",
+        "cttn.bias_k",
+        "cttn.bias_v",
+        "cttn.out_proj.weight",
+        "cttn.out_proj.bias",
+        "adaLN_modulation.1.weight",
+        "adaLN_modulation.1.bias",
+        "mlp.fc1.weight",
+        "mlp.fc1.bias",
+        "mlp.fc2.weight",
+        "mlp.fc2.bias",
+    ]
+}
+ATTENTION_ADAPTER_SHA256 = "0a0375fff9acced7c5b46c29236f4ff9c48063342772ef13441634fbb9b33458"
+
+
 def validate_configuration(protocol):
     kind = protocol.get("learning_kind", "head-v1")
-    if kind not in {"head-v1", "attention-v2"}:
+    if kind not in {"head-v1", "attention-v2", "block-v3"}:
         raise ValueError("Unknown adaptation configuration")
     expected = ["final_layer.fuse_supervised.", "final_layer.linear."]
-    if kind == "attention-v2":
+    if kind != "head-v1":
         expected.append("final_layer.attn.")
+    if kind == "block-v3":
+        expected.append("blocks.27.")
     if (
         protocol["steps"] != (512 if kind == "head-v1" else 2048)
         or protocol["lr"] != (0.0001 if kind == "head-v1" else 0.00005)
@@ -53,9 +79,8 @@ def validate_configuration(protocol):
         or protocol["trainable_prefixes"] != expected
     ):
         raise ValueError("Unreviewed adaptation configuration")
-    if (
-        kind == "attention-v2"
-        and protocol["payload_sha256"].get("initial-adapter.pt") != INITIAL_ADAPTER_SHA256
+    if kind != "head-v1" and protocol["payload_sha256"].get("initial-adapter.pt") != (
+        INITIAL_ADAPTER_SHA256 if kind == "attention-v2" else ATTENTION_ADAPTER_SHA256
     ):
         raise ValueError("Unqualified initial adapter")
     return kind
@@ -99,7 +124,7 @@ def validate(root):
             raise ValueError("Training target role mismatch")
     kind = validate_configuration(protocol)
     if kind == "attention-v2":
-        if data.get("plan_version") != "attention-v2" or digest(
+        if data.get("plan_version") != kind or digest(
             root / "dataset/dataset.json"
         ) != protocol.get("dataset_manifest_sha256"):
             raise ValueError("Fresh evaluation sites required")
@@ -157,12 +182,11 @@ def main():
 
     learning_kind = protocol.get("learning_kind", "head-v1")
     initial_adapter_sha256 = None
-    if learning_kind == "attention-v2":
+    if learning_kind != "head-v1":
         initial_adapter_sha256 = digest(root / "initial-adapter.pt")
         saved = torch.load(root / "initial-adapter.pt", map_location="cpu", weights_only=True)
-        if (
-            saved["base_checkpoint_sha256"] != native.MODEL_SHA256
-            or set(saved["state"]) != HEAD_NAMES
+        if saved["base_checkpoint_sha256"] != native.MODEL_SHA256 or set(saved["state"]) != (
+            HEAD_NAMES | (ATTENTION_NAMES if learning_kind == "block-v3" else set())
         ):
             raise ValueError("Initial adapter identity mismatch")
         with torch.no_grad():
@@ -177,8 +201,8 @@ def main():
     model.vae.requires_grad_(False)
     trainable = [(n, p) for n, p in model.model.named_parameters() if p.requires_grad]
     if set(n for n, _ in trainable) != HEAD_NAMES | (
-        ATTENTION_NAMES if learning_kind == "attention-v2" else set()
-    ):
+        ATTENTION_NAMES if learning_kind != "head-v1" else set()
+    ) | (BLOCK_NAMES if learning_kind == "block-v3" else set()):
         raise ValueError("Unexpected trainable parameters")
     initial = {n: p.detach().cpu().clone() for n, p in trainable}
     frozen_before = state_digest(False)
