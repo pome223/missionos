@@ -214,7 +214,9 @@ def verify(root):
                     candidate["target_world_xyz_m"][2], mapping_row
                 )
                 assert abs(permit["executor_relative_altitude_m"] - expected_altitude) < 1e-10
-                assert abs(receipt["mission_items"][0][13] - expected_altitude) < 1e-4
+                # The upload receipt is the compiler's compact tuple:
+                # seq, command, latitude, longitude, altitude, current, frame, params.
+                assert abs(receipt["mission_items"][0][4] - expected_altitude) < 1e-4
         end = arrival["observation"]
         assert (
             abs(
