@@ -1,0 +1,21 @@
+{
+  "total_parameters": 1134100256,
+  "trainable_parameters": 8005280,
+  "trainable_names": [
+    "final_layer.linear.weight",
+    "final_layer.linear.bias",
+    "final_layer.fuse_supervised.weight",
+    "final_layer.fuse_supervised.bias",
+    "final_layer.attn.mha.in_proj_weight",
+    "final_layer.attn.mha.in_proj_bias",
+    "final_layer.attn.mha.out_proj.weight",
+    "final_layer.attn.mha.out_proj.bias"
+  ],
+  "base_checkpoint_sha256": "bdd149cac6ec002ba7dc4ad99ec6f9eb02cd6d4f05320195cf174737b13b0bc2",
+  "frozen_parameters_sha256": "60d4594b78df8f4808110c55941be79aa163ef2282065dd6a82c02be81594271",
+  "initial_head_sha256": "3473ad3aa3e1b3c69675a46ad3d6229296786def655f72954a0d2de38b87f586",
+  "torch_version": "2.9.1+cu129",
+  "gpu": "NVIDIA L4",
+  "learning_kind": "attention-v2",
+  "initial_adapter_sha256": "7d69f3d7eccfee89cdd43b0fe22f5622da3d7cc03d2554be64f02d05c1a07222"
+}

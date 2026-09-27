@@ -1,0 +1,45 @@
+{
+  "schema_version": "anwm_attention_adaptation_protocol.v1",
+  "frozen_at_utc": "2026-09-27T07:51:18.433067+00:00",
+  "source_commit": "6db04f3b0520b4a9b86c9e8676340d49298fdf13",
+  "learning_kind": "attention-v2",
+  "seed": 42,
+  "steps": 2048,
+  "lr": 5e-05,
+  "grad_clip": 1,
+  "weight_decay": 0,
+  "trainable_prefixes": [
+    "final_layer.fuse_supervised.",
+    "final_layer.linear.",
+    "final_layer.attn."
+  ],
+  "context_frames": 16,
+  "transition_index": 1,
+  "time_semantics": "One static commanded viewpoint transition, not seconds; fixed from the prior head pilot",
+  "diffusion_training_steps": 1000,
+  "diffusion_sampling_steps": 250,
+  "model_work_seconds_max": 1800,
+  "checkpoint_selection": "fixed final update 2048; no test selection",
+  "bounds": {
+    "rgb_mae_max": 15,
+    "fraction_pixels_max_channel_error_over_40_max": 0.1,
+    "inference_seconds_max": 75
+  },
+  "minimum_result": "At least one NEW held-out spatial site passes hold and forward plus visual inspection. Limited offline adaptation only.",
+  "native_flight_admitted": false,
+  "train_target_upload_allowed": true,
+  "test_target_upload_allowed": false,
+  "payload_sha256": {
+    "bootstrap.sh": "4effc0e9895bd2a01f3f1ab1e4c50c281fc182af05cce7342aa9196eb396f67e",
+    "dataset.tar.gz": "88bde3090e948104c4a4fb7fce52fcd9d27f085f27b005b285631aeeabaea6d1",
+    "initial-adapter.pt": "7d69f3d7eccfee89cdd43b0fe22f5622da3d7cc03d2554be64f02d05c1a07222",
+    "paired_appearance.py": "5be9458b7538d2afe6252658fa85c6ce26c095a7a1b250c92de8643f498d0ec3",
+    "ship_anwm.py": "4a64a0fa90aab8913529a8948edc9cef53d1c86d04becbf81250c67aceddcf21",
+    "ship_anwm_server.py": "2507e4637643934e3a142572515d32afb5e66685fda0e5bc7451a4a73fd5fafc",
+    "train_head.py": "d1dfdc83a88ceb69003dfe589c7e0621f009aa0e703c1b76f5fb366f8e4ba01f"
+  },
+  "dataset_manifest_sha256": "bd081bbf80baaa91f4c5b328d75d9c73d015617345be6c923d0757c55a48b996",
+  "collection_manifest_sha256": "8d57d691067b4c1195eb3826305df46c2dcb78bfe90f57beddcb2bad86bd9bec",
+  "previous_publication_commit": "75a822a574fa5a2fc514966c9dc94285df639b42",
+  "previous_manifest_sha256": "7822ef2c4e010681749d925aa7820e1803e85447db67b7419f8e408851cc396f"
+}

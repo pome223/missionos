@@ -1,0 +1,20 @@
+{
+  "source_commit": "6db04f3b0520b4a9b86c9e8676340d49298fdf13",
+  "full_pytest": {
+    "passed": 3367,
+    "warnings": 3,
+    "seconds": 103.34
+  },
+  "local_links": 35,
+  "remote_file_hashes_verified": 50,
+  "browser": {
+    "selector_cases": 8,
+    "images_per_case": 4,
+    "all_loaded": true,
+    "console_errors": 0,
+    "desktop_verified": true,
+    "narrow_width": 390,
+    "scroll_width": 390,
+    "viewport_reset": true
+  }
+}

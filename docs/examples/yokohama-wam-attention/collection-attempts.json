@@ -1,0 +1,9 @@
+[
+  {
+    "attempt": "collection-01",
+    "status": "passed",
+    "reason": null,
+    "cleanup": true,
+    "manifest_sha256": "8d57d691067b4c1195eb3826305df46c2dcb78bfe90f57beddcb2bad86bd9bec"
+  }
+]

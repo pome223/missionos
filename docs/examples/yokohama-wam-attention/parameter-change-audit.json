@@ -1,0 +1,74 @@
+{
+  "schema_version": "anwm_changed_parameters_audit.v1",
+  "status": "verified",
+  "source": "separate CPU process; saved adapter compared with released EMA attention and prior saved head",
+  "adapter_sha256": "0a0375fff9acced7c5b46c29236f4ff9c48063342772ef13441634fbb9b33458",
+  "protocol_sha256": "a6954e4240169302ba4e6b79237b8bd99255ce40233468f0c3194d0dd1329dd1",
+  "cuda_initialized": false,
+  "parameters": [
+    {
+      "name": "final_layer.linear.weight",
+      "parameters": 36864,
+      "initial_sha256": "97546b35002461f34b5e0eca0faad881690a1342ffecd3d338ca680f37adcb89",
+      "final_sha256": "c2d411e9b62d07cd8640a0cdad9d8ef0e2efcbbce10e80ae26e07affc46582fd",
+      "change_l2": 1.0683648586273193,
+      "all_finite": true
+    },
+    {
+      "name": "final_layer.linear.bias",
+      "parameters": 32,
+      "initial_sha256": "6144b925c5ed03da520d60aa745e56cbfefd81cab57cbc2cf4e4ce80f2083056",
+      "final_sha256": "e18d297303e979206e598f3d37f4e8eb5ea357a59928fc1c050138c32751bc55",
+      "change_l2": 0.014499212615191936,
+      "all_finite": true
+    },
+    {
+      "name": "final_layer.fuse_supervised.weight",
+      "parameters": 2654208,
+      "initial_sha256": "501e9adc6b6c3bc217afa4f734d0046c91de2fdeb63c56514095b64ef71ce02f",
+      "final_sha256": "fa785371f0d0064fd7389d16ab297e57b060a358b1715e4be89959f88879a682",
+      "change_l2": 11.00552749633789,
+      "all_finite": true
+    },
+    {
+      "name": "final_layer.fuse_supervised.bias",
+      "parameters": 1152,
+      "initial_sha256": "9ae3f899a5fccb8efca3c744ea1702cbb7b4d97b4c413c5223656a1c213831a7",
+      "final_sha256": "52a2f99f96d38ab522998c9369340aec18e914f5aa541e5196affd763c69d98c",
+      "change_l2": 0.03448862209916115,
+      "all_finite": true
+    },
+    {
+      "name": "final_layer.attn.mha.in_proj_weight",
+      "parameters": 3981312,
+      "initial_sha256": "ec12d96b8ea0b1ae0a8a72dee7aff12d0aa052589814ad69bf7f4c68048340b2",
+      "final_sha256": "1e2496695f9db266cdbc229b6dfc12fd81d0dc36cc3422c4b1cf1dc425108bd6",
+      "change_l2": 4.810444355010986,
+      "all_finite": true
+    },
+    {
+      "name": "final_layer.attn.mha.in_proj_bias",
+      "parameters": 3456,
+      "initial_sha256": "d9d11a36f256aa30e01cebeaa970d52aa3ff4b342732ed2c9631823062d8a504",
+      "final_sha256": "797f78f8551f2828387a49f2470f7af42bd6e16e533088cbf64962ced53fc39b",
+      "change_l2": 0.09825774282217026,
+      "all_finite": true
+    },
+    {
+      "name": "final_layer.attn.mha.out_proj.weight",
+      "parameters": 1327104,
+      "initial_sha256": "9bdbf6ae9f7d2acd011046d9929ccdefef719c77fb831f83d949dc15f3e4ac2f",
+      "final_sha256": "aa6c5719dc90a5f33b79f1fbe83d4c15d811bbb5ad64722a462f931301d26659",
+      "change_l2": 0.8494780659675598,
+      "all_finite": true
+    },
+    {
+      "name": "final_layer.attn.mha.out_proj.bias",
+      "parameters": 1152,
+      "initial_sha256": "b9f53daad4c218ca6eccbdaca5fbcacfe20aef03d1cb60e6170eb45562e4395c",
+      "final_sha256": "3fba981e602f15b1ff0a58d9d64aeaf12ccd8822ba50e1776c7e4df6288b6f46",
+      "change_l2": 0.008215991780161858,
+      "all_finite": true
+    }
+  ]
+}
