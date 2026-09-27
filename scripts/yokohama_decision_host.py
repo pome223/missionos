@@ -108,7 +108,10 @@ class DecisionHost:
                     and (
                         identities["vla"].get("compact_city_flight") is not True
                         or identities["vla"].get("forward_bin_range") != [20, 58]
-                        or identities["vla"].get("hold_bin_allowed") is not True
+                        or identities["vla"].get("hold_bin_allowed") is not False
+                        or identities["vla"].get("terminal_proposal_allowed") is not False
+                        or identities["vla"].get("decoding_policy")
+                        != "aerovla_compact_city_grammar.v2"
                     )
                 )
             ):

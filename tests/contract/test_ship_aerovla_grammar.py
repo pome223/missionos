@@ -144,21 +144,36 @@ def test_bad_short_segment_mask_rejects(bounds):
         ActionGrammar(TokenizerDouble(), vertical_bins=(47, 51), yaw_bins=bounds)
 
 
-def test_compact_city_allows_short_native_steps_and_refusal_without_rewriting():
+def test_compact_city_selects_translation_parameters_without_rewriting():
     grammar = ActionGrammar(
         TokenizerDouble(), vertical_bins=(47, 51), yaw_bins=(45, 53), forward_bins=(20, 58)
     )
-    assert grammar.policy == "aerovla_compact_city_grammar.v1"
-    accepts(grammar, "LAND")
-    accepts(grammar, "0 49 49")
+    assert grammar.policy == "aerovla_compact_city_grammar.v2"
     for forward in range(20, 59):
         for yaw in range(45, 54):
             accepts(grammar, f"{forward} 49 {yaw}")
             _, (distance, _, angle) = decode_action(f"{forward} 49 {yaw}")
             assert 1 <= distance <= 3 and abs(angle) < 0.1
-    for text in ["19 49 49", "59 49 49", "30 49 44", "30 49 54"]:
+    for text in [
+        "19 49 49",
+        "59 49 49",
+        "30 49 44",
+        "30 49 54",
+        "0 49 48",
+        "LAND",
+        "30 49 49 LAND",
+    ]:
         with pytest.raises(ValueError):
             grammar.allowed(tokens(text))
+
+
+def test_zero_translation_failure_remains_a_failure_when_read_as_a_record():
+    from src.runtime.yokohama_native import vla_candidate
+
+    # Actual failed run yokohama-84e200069b7b. A stricter later grammar must
+    # never turn this already returned zero-distance action into movement.
+    with pytest.raises(ValueError, match="admissible short level translation"):
+        vla_candidate("0 49 48</s>", {})
 
 
 @pytest.mark.parametrize("bounds", [(0, 58), (20, 99), (True, 58), (59, 20), (20,)])

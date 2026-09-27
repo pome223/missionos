@@ -56,6 +56,7 @@ class ActionGrammar:
         self.pieces = {vocab[k]: text for k, text in pieces.items()}
         self.eos = tokenizer.eos_token_id
         self.numbers = {str(i) for i in range(99)}
+        self.translation_only = forward_bins is not None
         if vertical_bins is not None and (
             len(vertical_bins) != 2
             or any(type(v) is not int for v in vertical_bins)
@@ -84,8 +85,8 @@ class ActionGrammar:
                 or not 1 <= forward_bins[0] <= forward_bins[1] <= 98
             ):
                 raise ValueError("Invalid compact-city forward-bin range")
-            self.bin_sets[0] = {str(i) for i in range(forward_bins[0], forward_bins[1] + 1)} | {"0"}
-            self.policy = "aerovla_compact_city_grammar.v1"
+            self.bin_sets[0] = {str(i) for i in range(forward_bins[0], forward_bins[1] + 1)}
+            self.policy = "aerovla_compact_city_grammar.v2"
         if self.eos in self.pieces or len(self.pieces) != len(pieces):
             raise ValueError("Unsupported action-grammar vocabulary")
         for text in [*sorted(self.numbers), "0 49 98", "LAND", "98 49 0 LAND"]:
@@ -99,13 +100,19 @@ class ActionGrammar:
         # At most one leading separator; no repeated separators or leading zeroes.
         if text.startswith(" "):
             text = text[1:]
-        if text in ("", "L", "LAND"):
+        if text == "":
+            return not complete
+        if text in ("L", "LAND"):
+            if self.translation_only:
+                return False
             return text == "LAND" if complete else True
         parts = text.split(" ")
         if len(parts) > 4 or any(p not in self.bin_sets[i] for i, p in enumerate(parts[:-1])):
             return False
         last = parts[-1]
         if len(parts) == 4:
+            if self.translation_only:
+                return False
             return last == "LAND" if complete else "LAND".startswith(last)
         if complete:
             return len(parts) == 3 and last in self.bin_sets[2]

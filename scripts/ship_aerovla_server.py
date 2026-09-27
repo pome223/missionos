@@ -337,7 +337,8 @@ def serve(
         if short_segment_flight
         else [0, 98],
         "forward_bin_range": [20, 58] if compact_city_flight else [0, 98],
-        "hold_bin_allowed": True,
+        "hold_bin_allowed": not compact_city_flight,
+        "terminal_proposal_allowed": not compact_city_flight,
         "compact_city_flight": compact_city_flight,
         "short_segment_flight": short_segment_flight,
     }

@@ -153,7 +153,9 @@ no sea leg, ship deck, parcel-release actuator, moving obstacles or hardware.
   geometry is immutable; appearance is never added to the collision map.
 - AeroVLA uses `--compact-city-flight`: generation-time forward bins 20–58
   (1.0204–2.9592 m), yaw bins 45–53 (±0.0898 rad), vertical bins 47–51.
-  Hold/terminal proposals remain representable and cannot authorize motion.
+  Its v2 grammar proposes parameters for an already requested translation;
+  zero translation and terminal proposals are outside this phase's output type.
+  MissionOS and independent Rules/WAM guards retain hold/reject authority.
   Native returned values are not rewritten. This limits initial integration to
   short steps near the adapter's training displacement; it is not unconstrained
   VLA navigation.
@@ -222,3 +224,20 @@ the mapping observation and MAVLink upload ACK. No returned VLA value is rewritt
 This explicit simulator-ground-truth transform is not a qualified onboard heading
 estimator; dynamic scenes, camera motion during capture and hardware remain outside
 this trial.
+
+### Translation-phase contract correction
+
+Native run `yokohama-84e200069b7b` passed startup/hold but returned
+`0 49 48</s>` at D1. Compact-city grammar v1 allowed this zero-forward action,
+whereas the downstream phase required a translation; it stopped before WAM.
+The original response remains a failed trial, not a later motion receipt.
+
+Compact-city grammar v2 removes zero-distance and LAND tokens at generation
+time. VLA now chooses only displacement/orientation parameters inside the
+preapproved short-translation envelope. It does **not** decide whether the
+mission may advance or whether a location is safe; the image gate, independent
+geometry Rules and executor checks can still reject every proposal. This is a
+deliberately narrower VLA role, not improved unconstrained navigation or a
+post-hoc replacement of a model's stop decision. Legacy non-compact grammars
+still represent hold and LAND. Service identity must declare the v2 policy and
+both disabled proposal types, otherwise startup rejects it.
