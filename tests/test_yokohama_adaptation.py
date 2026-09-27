@@ -4,12 +4,17 @@ import json
 import numpy as np
 import pytest
 
-from scripts.train_yokohama_anwm_head import validate
+from scripts.train_yokohama_anwm_head import (
+    validate,
+    validate_configuration,
+    INITIAL_ADAPTER_SHA256,
+)
 from src.runtime.yokohama_adaptation import (
     digest,
     optical_pose,
     site_plan,
     validate_split,
+    validate_fresh_sites,
     verify_export,
 )
 from scripts.ship_anwm import action_pose
@@ -30,6 +35,43 @@ def test_optical_and_native_action_frames_agree():
     target = action_pose(pose, [2.8, 0, 0, 0])
     expected = optical_pose([5 + 2.8 * np.cos(yaw), 7 + 2.8 * np.sin(yaw), 18], yaw)
     np.testing.assert_allclose(target, expected, atol=1e-12)
+
+
+def test_new_sites_avoid_all_previously_inspected_positions():
+    points = [[0, 0, 10], [70, 0, 10], [235, 0, 10], [235, 80, 10]]
+    old = site_plan(points)
+    new = site_plan(points, "attention-v2")
+    assert validate_fresh_sites(new, old) >= 15
+    assert validate_split(new) >= 15
+    bad = copy.deepcopy(new)
+    bad[-1]["xyz"] = old[-1]["endpoint_xyz"]
+    with pytest.raises(ValueError, match="Previously inspected"):
+        validate_fresh_sites(bad, old)
+
+
+@pytest.mark.parametrize("change", ["adapter", "steps", "prefixes"])
+def test_attention_protocol_rejects_unqualified_expansion(change):
+    p = dict(
+        learning_kind="attention-v2",
+        steps=2048,
+        lr=0.00005,
+        seed=42,
+        trainable_prefixes=[
+            "final_layer.fuse_supervised.",
+            "final_layer.linear.",
+            "final_layer.attn.",
+        ],
+        payload_sha256={"initial-adapter.pt": INITIAL_ADAPTER_SHA256},
+    )
+    assert validate_configuration(p) == "attention-v2"
+    if change == "adapter":
+        p["payload_sha256"]["initial-adapter.pt"] = "0" * 64
+    elif change == "steps":
+        p["steps"] = 4096
+    else:
+        p["trainable_prefixes"].append("blocks.")
+    with pytest.raises(ValueError):
+        validate_configuration(p)
 
 
 def manifest_at(root):

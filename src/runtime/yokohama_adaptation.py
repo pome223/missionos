@@ -15,13 +15,19 @@ def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def site_plan(points):
+def site_plan(points, version="head-v1"):
     """Keep an entire middle-route region out of training before rendering."""
+    if version not in {"head-v1", "attention-v2"}:
+        raise ValueError("Unknown adaptation site plan")
     groups = [
         (0, "train", [0.15, 0.35, 0.55, 0.75]),
         (1, "train", [0.10, 0.17, 0.24, 0.31]),
         (2, "train", [0.20, 0.40, 0.60, 0.80]),
-        (1, "test", [0.60, 0.72, 0.84, 0.96]),
+        (
+            1,
+            "test",
+            [0.60, 0.72, 0.84, 0.96] if version == "head-v1" else [0.44, 0.455, 0.47, 0.485],
+        ),
     ]
     sites = []
     for segment, split, fractions in groups:
@@ -32,7 +38,7 @@ def site_plan(points):
             xyz = a + fraction * (b - a)
             sites.append(
                 dict(
-                    id=f"{split}-{len(sites):02d}",
+                    id=f"{split}-{'v2-' if version == 'attention-v2' else ''}{len(sites):02d}",
                     split=split,
                     segment=segment,
                     fraction=fraction,
@@ -42,7 +48,19 @@ def site_plan(points):
                 )
             )
     validate_split(sites)
+    if version == "attention-v2":
+        validate_fresh_sites(sites, site_plan(points))
     return sites
+
+
+def validate_fresh_sites(sites, previous_sites, minimum_m=15):
+    """New evaluation positions must also avoid all previously inspected sites."""
+    new = np.asarray([s[p] for s in sites if s["split"] == "test" for p in ("xyz", "endpoint_xyz")])
+    old = np.asarray([s[p] for s in previous_sites for p in ("xyz", "endpoint_xyz")])
+    separation = float(np.linalg.norm(new[:, None] - old[None], axis=2).min())
+    if not np.isfinite(separation) or separation < minimum_m:
+        raise ValueError("Previously inspected evaluation spatial overlap")
+    return separation
 
 
 def validate_split(sites, minimum_m=15):
@@ -78,6 +96,12 @@ def verify_export(root, manifest):
     """Verify split, strict target role and hashes before any paid operation."""
     root = Path(root)
     separation = validate_split(manifest["sites"])
+    if manifest.get("plan_version") == "attention-v2":
+        previous_separation = validate_fresh_sites(
+            manifest["sites"], manifest["previous_inspected_sites"]
+        )
+        if abs(previous_separation - manifest["previous_site_separation_m"]) > 1e-8:
+            raise ValueError("Incorrect previous-site separation")
     sources = {s["id"]: s["split"] for s in manifest["sites"]}
     expected = set()
     for sample in manifest["samples"]:
@@ -164,6 +188,9 @@ def prepare_payload(collection, output):
     payload = dict(
         schema_version="yokohama_adaptation_payload.v1",
         sites=manifest["sites"],
+        plan_version=manifest.get("plan_version", "head-v1"),
+        previous_inspected_sites=manifest.get("previous_inspected_sites", []),
+        previous_site_separation_m=manifest.get("previous_site_separation_m"),
         samples=rows,
         assets=assets,
         qualification=receipt,

@@ -24,6 +24,43 @@ def write(path, value):
     path.write_text(json.dumps(value, indent=2, allow_nan=False) + "\n")
 
 
+HEAD_NAMES = {
+    "final_layer.fuse_supervised.weight",
+    "final_layer.fuse_supervised.bias",
+    "final_layer.linear.weight",
+    "final_layer.linear.bias",
+}
+ATTENTION_NAMES = {
+    "final_layer.attn.mha.in_proj_weight",
+    "final_layer.attn.mha.in_proj_bias",
+    "final_layer.attn.mha.out_proj.weight",
+    "final_layer.attn.mha.out_proj.bias",
+}
+INITIAL_ADAPTER_SHA256 = "7d69f3d7eccfee89cdd43b0fe22f5622da3d7cc03d2554be64f02d05c1a07222"
+
+
+def validate_configuration(protocol):
+    kind = protocol.get("learning_kind", "head-v1")
+    if kind not in {"head-v1", "attention-v2"}:
+        raise ValueError("Unknown adaptation configuration")
+    expected = ["final_layer.fuse_supervised.", "final_layer.linear."]
+    if kind == "attention-v2":
+        expected.append("final_layer.attn.")
+    if (
+        protocol["steps"] != (512 if kind == "head-v1" else 2048)
+        or protocol["lr"] != (0.0001 if kind == "head-v1" else 0.00005)
+        or protocol["seed"] != 42
+        or protocol["trainable_prefixes"] != expected
+    ):
+        raise ValueError("Unreviewed adaptation configuration")
+    if (
+        kind == "attention-v2"
+        and protocol["payload_sha256"].get("initial-adapter.pt") != INITIAL_ADAPTER_SHA256
+    ):
+        raise ValueError("Unqualified initial adapter")
+    return kind
+
+
 def validate(root):
     protocol = json.loads((root / "protocol.json").read_text())
     data = json.loads((root / "dataset/dataset.json").read_text())
@@ -60,13 +97,25 @@ def validate(root):
             or sample["training_target"]["file"] not in data["assets"]
         ):
             raise ValueError("Training target role mismatch")
-    if (
-        protocol["steps"] != 512
-        or protocol["lr"] != 0.0001
-        or protocol["seed"] != 42
-        or protocol["trainable_prefixes"] != ["final_layer.fuse_supervised.", "final_layer.linear."]
-    ):
-        raise ValueError("Unreviewed adaptation configuration")
+    kind = validate_configuration(protocol)
+    if kind == "attention-v2":
+        if data.get("plan_version") != "attention-v2" or digest(
+            root / "dataset/dataset.json"
+        ) != protocol.get("dataset_manifest_sha256"):
+            raise ValueError("Fresh evaluation sites required")
+        new = np.asarray(
+            [s[p] for s in data["sites"] if s["split"] == "test" for p in ("xyz", "endpoint_xyz")]
+        )
+        previous = np.asarray(
+            [s[p] for s in data["previous_inspected_sites"] for p in ("xyz", "endpoint_xyz")]
+        )
+        separation = float(np.linalg.norm(new[:, None] - previous[None], axis=2).min())
+        if (
+            not np.isfinite(separation)
+            or separation < 15
+            or abs(separation - data["previous_site_separation_m"]) > 1e-8
+        ):
+            raise ValueError("Previously inspected evaluation spatial overlap")
     return protocol, data
 
 
@@ -106,16 +155,30 @@ def main():
                 h.update(p.detach().cpu().contiguous().numpy().tobytes())
         return h.hexdigest()
 
+    learning_kind = protocol.get("learning_kind", "head-v1")
+    initial_adapter_sha256 = None
+    if learning_kind == "attention-v2":
+        initial_adapter_sha256 = digest(root / "initial-adapter.pt")
+        saved = torch.load(root / "initial-adapter.pt", map_location="cpu", weights_only=True)
+        if (
+            saved["base_checkpoint_sha256"] != native.MODEL_SHA256
+            or set(saved["state"]) != HEAD_NAMES
+        ):
+            raise ValueError("Initial adapter identity mismatch")
+        with torch.no_grad():
+            parameters = dict(model.model.named_parameters())
+            for name, value in saved["state"].items():
+                if value.shape != parameters[name].shape or not torch.isfinite(value).all():
+                    raise ValueError("Invalid initial adapter tensor")
+                parameters[name].copy_(value)
+
     for name, p in model.model.named_parameters():
         p.requires_grad_(any(name.startswith(prefix) for prefix in protocol["trainable_prefixes"]))
     model.vae.requires_grad_(False)
     trainable = [(n, p) for n, p in model.model.named_parameters() if p.requires_grad]
-    if set(n for n, _ in trainable) != {
-        "final_layer.fuse_supervised.weight",
-        "final_layer.fuse_supervised.bias",
-        "final_layer.linear.weight",
-        "final_layer.linear.bias",
-    }:
+    if set(n for n, _ in trainable) != HEAD_NAMES | (
+        ATTENTION_NAMES if learning_kind == "attention-v2" else set()
+    ):
         raise ValueError("Unexpected trainable parameters")
     initial = {n: p.detach().cpu().clone() for n, p in trainable}
     frozen_before = state_digest(False)
@@ -129,6 +192,8 @@ def main():
         initial_head_sha256=trainable_before,
         torch_version=torch.__version__,
         gpu=torch.cuda.get_device_name(0),
+        learning_kind=learning_kind,
+        initial_adapter_sha256=initial_adapter_sha256,
     )
     write(output / "identity.json", identity)
     prepared = []
@@ -315,6 +380,27 @@ def main():
     reloaded_hash = state_digest(True)
     if reloaded_hash == trainable_before:
         raise ValueError("Reloaded head remained unchanged")
+    # Reopened serialized tensors are independently checked before inference.
+    saved_hash = hashlib.sha256()
+    for name, param in trainable:
+        value = saved["state"][name]
+        if not torch.isfinite(value).all() or not torch.equal(param.detach().cpu(), value):
+            raise ValueError("Saved adapter reload mismatch")
+        saved_hash.update(name.encode())
+        saved_hash.update(value.contiguous().numpy().tobytes())
+    if saved_hash.hexdigest() != reloaded_hash:
+        raise ValueError("Saved adapter hash mismatch")
+    write(
+        output / "saved-head-audit.json",
+        dict(
+            status="saved_head_reopened",
+            head_sha256=reloaded_hash,
+            all_tensors_finite=True,
+            parameters=identity["trainable_parameters"],
+            adapter_sha256=digest(output / "adapter.pt"),
+            protocol_sha256=digest(root / "protocol.json"),
+        ),
+    )
     after = infer("after")
     write(
         output / "summary.json",
