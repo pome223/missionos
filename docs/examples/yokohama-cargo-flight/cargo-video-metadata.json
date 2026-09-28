@@ -1,0 +1,497 @@
+{
+  "schema": "missionos.observed-cargo-video.v1",
+  "run_id": "yokohama-6acc29204d62",
+  "source": "actual CPU-rendered Gazebo delivery camera",
+  "playback_speed": 1,
+  "frames": 60,
+  "source_start_sim_s": 1066.752,
+  "source_end_sim_s": 1091.252,
+  "release_sim_s": 1070.644,
+  "release_clock_source": "release-request observation; not physical detachment",
+  "detachment_observed_sim_s": 1077.54,
+  "receipt_sim_s": 1082.684,
+  "video_sha256": "1c75de99539f0ef380f4b84071b351566d7c229630623b4bc597e6d1fbfcbf4f",
+  "source_frames": [
+    {
+      "file": "images/cargo-0120-delivery_rgb.png",
+      "sha256": "5cae2d78a6b38554532ff9cd7d01470561428f046b84394ae0141cb671d1e0de",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1066.752
+    },
+    {
+      "file": "images/cargo-0121-delivery_rgb.png",
+      "sha256": "b23e9123dc94c90f3c6e491bbe5d2fb9212b78c1a5fe8b93414f89071ab9c5be",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1067.0
+    },
+    {
+      "file": "images/cargo-0122-delivery_rgb.png",
+      "sha256": "e973de6ba978418da9c1dfb9215966cb798415229ba466e1af0dfdaf6573b42e",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1067.5
+    },
+    {
+      "file": "images/cargo-0123-delivery_rgb.png",
+      "sha256": "f7a75b372508e7da9facb85eceac3b51723cb7d3b521b9afbfd7b93fe83d8d2d",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1067.752
+    },
+    {
+      "file": "images/cargo-0124-delivery_rgb.png",
+      "sha256": "7009baf89ea4f0cf8cb193407df77e93e079e1386fcc37730c0e9c8cc659aff2",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1068.0
+    },
+    {
+      "file": "images/cargo-0125-delivery_rgb.png",
+      "sha256": "a4f8d17bf9dbd427af607e04bd7b4faf02e2f6a33269a9a23156bbf21526af55",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1068.5
+    },
+    {
+      "file": "images/cargo-0126-delivery_rgb.png",
+      "sha256": "67a14cdc326ceb01d278e88c51c036b403ca67059eb6145a9ee1f64c4ecbfb2a",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1068.752
+    },
+    {
+      "file": "images/cargo-0127-delivery_rgb.png",
+      "sha256": "054db25e2c73013814181489be79a5bb5cece24219a570588fbcb719f675e9fd",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1069.0
+    },
+    {
+      "file": "images/cargo-0128-delivery_rgb.png",
+      "sha256": "5e4c64a87c5f26e8a37aa4b56593b6df7541a79dc0a576e3f504c3d125c2fa4e",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1069.5
+    },
+    {
+      "file": "images/cargo-0129-delivery_rgb.png",
+      "sha256": "4f781c882d3f90942abc341460b7abb3ce824cf3a76c28404798f4ce4a337163",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1069.752
+    },
+    {
+      "file": "images/cargo-0130-delivery_rgb.png",
+      "sha256": "1ab507a1b76ac0a8c599ee01c54cd29282c43f10460f269bf98c2caafc28d10d",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1070.252
+    },
+    {
+      "file": "images/cargo-0131-delivery_rgb.png",
+      "sha256": "0843e1c9c61960dfb7715242297a6189767889ac5ee1505ef6190a4afbc0555e",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1070.5
+    },
+    {
+      "file": "images/cargo-0132-delivery_rgb.png",
+      "sha256": "711e8829cba3eaad89214a08185a843c34f4cc552efba16829f1ca3ad2db8102",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1071.5
+    },
+    {
+      "file": "images/cargo-0133-delivery_rgb.png",
+      "sha256": "6332d555ef7cf9a29347d5e8b00e9fb056ca4dde64feec6a6b552c119ffe93c2",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1071.752
+    },
+    {
+      "file": "images/cargo-0134-delivery_rgb.png",
+      "sha256": "88b5b3ba60aa92ac4ef22b0693eae04a6e55cb1e3c4798dd99a9b794e44e25f9",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1072.0
+    },
+    {
+      "file": "images/cargo-0135-delivery_rgb.png",
+      "sha256": "06ed8b25636fbf23a429e76fb0c09fe242e3477643e72c02858f85a955f8603b",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1072.5
+    },
+    {
+      "file": "images/cargo-0136-delivery_rgb.png",
+      "sha256": "9c4a603b0578cd8576480fa75e64c35d9c0724d4cba0c74150ce21b5afeb1925",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1072.752
+    },
+    {
+      "file": "images/cargo-0137-delivery_rgb.png",
+      "sha256": "0ec6406d6679d57145b8fb517c97f2a59e6d02ef6c013402df5d8bf667d409f4",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1073.0
+    },
+    {
+      "file": "images/cargo-0138-delivery_rgb.png",
+      "sha256": "bc4cc41fda897ffbfbc672b153d3a22086506b5744ded20e5120f6103892824f",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1073.5
+    },
+    {
+      "file": "images/cargo-0139-delivery_rgb.png",
+      "sha256": "73dc60b8003c23bb3bc15ff519115e61dc647152ab521ed05146f01a7cad592e",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1073.752
+    },
+    {
+      "file": "images/cargo-0140-delivery_rgb.png",
+      "sha256": "3de8d88e94ce85e13fd62bfad3383ae1348046c58e8810376a7fe885e77eca72",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1074.252
+    },
+    {
+      "file": "images/cargo-0141-delivery_rgb.png",
+      "sha256": "96ab904e387eacfc0f1eb55e98815ef78b2566a9425be58ebfeea20bfbdd93be",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1074.5
+    },
+    {
+      "file": "images/cargo-0142-delivery_rgb.png",
+      "sha256": "42bbfed243b7a335fb570d58ef598823d5d8f128b05b1c9b88097f18d4302735",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1074.752
+    },
+    {
+      "file": "images/cargo-0143-delivery_rgb.png",
+      "sha256": "5d90dd9cb8513697057596f6a5229baa6fb88691ac91f3e4089bb30b5ed0edec",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1075.252
+    },
+    {
+      "file": "images/cargo-0144-delivery_rgb.png",
+      "sha256": "9317e121f058d92adbea2a4a11e58684bc34c29a772e9697d184ca6e23e1e768",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1075.5
+    },
+    {
+      "file": "images/cargo-0145-delivery_rgb.png",
+      "sha256": "965375583c515582f0c63749e8ea3969cb9f8346b7c9fc4dcc8271b2be761c52",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1076.0
+    },
+    {
+      "file": "images/cargo-0146-delivery_rgb.png",
+      "sha256": "8692e92e245bbf95d7811fb1f7c9fe0ac22f0aa21824b9e5c4efe4ed50f39944",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1076.252
+    },
+    {
+      "file": "images/cargo-0147-delivery_rgb.png",
+      "sha256": "e7c6a956cda610b3c97e376dfa9822598e9fa5bf109dd266c2f8d7e14c72a6cf",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1076.5
+    },
+    {
+      "file": "images/cargo-0148-delivery_rgb.png",
+      "sha256": "4453a27aa3a73467c00db171733417cdecb3cb1fe294e7186e3623dad95b0c06",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1077.752
+    },
+    {
+      "file": "images/cargo-0149-delivery_rgb.png",
+      "sha256": "eca16453bd02785721d836b15f8d2b91b04c33f54e266ee852bf5855e9a5f657",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1078.0
+    },
+    {
+      "file": "images/cargo-0150-delivery_rgb.png",
+      "sha256": "ca2c87e12edbf888ce5fa49c9b0428db244242e88fffa1529708d3a8962b1b59",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1078.5
+    },
+    {
+      "file": "images/cargo-0151-delivery_rgb.png",
+      "sha256": "fcabdb42a877d3ce714ecf5fd278a44fab7c780650506c58627281d227a1ebda",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1078.752
+    },
+    {
+      "file": "images/cargo-0152-delivery_rgb.png",
+      "sha256": "58497b9bcf30162cb70b0806fcb10013aaed78a2acbd29a51185bf312a181358",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1079.252
+    },
+    {
+      "file": "images/cargo-0153-delivery_rgb.png",
+      "sha256": "9a00b8d8f2f25468e57046184e55ba44e44a5fd3e08827f4463fbc4ab8299c01",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1079.5
+    },
+    {
+      "file": "images/cargo-0154-delivery_rgb.png",
+      "sha256": "afdb378c29217281bd0e5fbbea5797baa6ea938867907772ac254d9bf12d3244",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1079.752
+    },
+    {
+      "file": "images/cargo-0155-delivery_rgb.png",
+      "sha256": "fef53e9b599123a1d9ccc5e94001c5df09f1e3bd7231ec020b12c1f61c7272c2",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1080.252
+    },
+    {
+      "file": "images/cargo-0156-delivery_rgb.png",
+      "sha256": "8613cbcbba06ac82ca3b9cd95a99902787ff6bf80feafb806fd39386dcc9e3e4",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1080.5
+    },
+    {
+      "file": "images/cargo-0157-delivery_rgb.png",
+      "sha256": "5c53e80f6b2701f4a1db52dc691652ffc2b8398ba1eb87b317e86635ac39d8be",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1080.752
+    },
+    {
+      "file": "images/cargo-0158-delivery_rgb.png",
+      "sha256": "2e7021a78ec3062f6396215ddec93ff5e01af23a04e70edfb0187e46d605cbf0",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1081.252
+    },
+    {
+      "file": "images/cargo-0159-delivery_rgb.png",
+      "sha256": "b9d2e2a923bd447dea6ee952da51c405cca5891b4cdb9c3f3ac2b1cc446c06c7",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1081.5
+    },
+    {
+      "file": "images/cargo-0160-delivery_rgb.png",
+      "sha256": "feb7246a116ee14bb74c95f78da18562bde862b1e674d0f1a3e12e472c5138f5",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1082.0
+    },
+    {
+      "file": "images/cargo-0161-delivery_rgb.png",
+      "sha256": "f7a1157a80765a5e9e113124d26d1878223b4a990d0788957f38be8fe8890a34",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1082.252
+    },
+    {
+      "file": "images/cargo-0162-delivery_rgb.png",
+      "sha256": "c3460fe4d010d318b3b9eb7ada5d63a42f6133b5d553b5902e43ab798e907c4b",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1082.5
+    },
+    {
+      "file": "images/cargo-0163-delivery_rgb.png",
+      "sha256": "dc12186351b4700a0829e124a2c33bc30009861ebb3388cd9060cfe4c17adc44",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1085.752
+    },
+    {
+      "file": "images/cargo-0164-delivery_rgb.png",
+      "sha256": "ab3c4e595ae467f861725eee207de3401fab54b8a8f9e6cd0139626bf7c2c102",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1086.0
+    },
+    {
+      "file": "images/cargo-0165-delivery_rgb.png",
+      "sha256": "792b2e4bc0a444c39855eed73d4a10c63263db4ab464f277db24653325502de2",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1086.5
+    },
+    {
+      "file": "images/cargo-0166-delivery_rgb.png",
+      "sha256": "b36bf9521e961fcab03d5402c1b9796712c8ec274a1b82937392d89f4cd4f9c3",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1086.752
+    },
+    {
+      "file": "images/cargo-0167-delivery_rgb.png",
+      "sha256": "7ad8ed1fe8bea95981e1d7e1416d8cf4ba30662cdb0d0237bdf89cf8d466a54c",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1087.252
+    },
+    {
+      "file": "images/cargo-0168-delivery_rgb.png",
+      "sha256": "3788f9d47e9dd8e8be0ff7118a3f24fec3c084bc85613f4c4b7228628c51f9e3",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1087.5
+    },
+    {
+      "file": "images/cargo-0169-delivery_rgb.png",
+      "sha256": "b38ebd171b1db8a3b64f8a7d0b19f751e5ce0ec5ac2739110779f7e9fb35d5bf",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1087.752
+    },
+    {
+      "file": "images/cargo-0170-delivery_rgb.png",
+      "sha256": "f86a7c4b71b3b999b8e5372a23ffe91b5841c22c18398f46cfb34a1f564e0e07",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1088.252
+    },
+    {
+      "file": "images/cargo-0171-delivery_rgb.png",
+      "sha256": "33c8c667a7fbcb5af26974eda8e44f6430381709a2d93a29c82efd8706c0c417",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1088.5
+    },
+    {
+      "file": "images/cargo-0172-delivery_rgb.png",
+      "sha256": "7e2a2577237e93d68365c8a9cd492e5ecd9f41c20a51e7de1132dc02eba50fe0",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1088.752
+    },
+    {
+      "file": "images/cargo-0173-delivery_rgb.png",
+      "sha256": "cb72956ad5917f6458e3183664e1f09ae87082b4dfa43e2644fc6977a7aa98a5",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1089.252
+    },
+    {
+      "file": "images/cargo-0174-delivery_rgb.png",
+      "sha256": "7808b88058b3d5e09e5f9f123727b2712d5ba82fcb309a3ad20d81598b05c656",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1089.5
+    },
+    {
+      "file": "images/cargo-0175-delivery_rgb.png",
+      "sha256": "8b4b60587fc119fc833d58315965bb96708d62432b24457a353b5df5a6dc691f",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1090.0
+    },
+    {
+      "file": "images/cargo-0176-delivery_rgb.png",
+      "sha256": "6bf3ec1e703f428586fb893651e7103f53ceed3106ed95217d4c66022cd5478f",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1090.252
+    },
+    {
+      "file": "images/cargo-0177-delivery_rgb.png",
+      "sha256": "7b04400e77160c56c4a4dcbb07c89b00809feca102de01d7cbc387f1611dbacd",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1090.5
+    },
+    {
+      "file": "images/cargo-0178-delivery_rgb.png",
+      "sha256": "1256366fe5758f0f43a840e7f5686dfc8b72f907c7c64772e75393c33d51334e",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1091.0
+    },
+    {
+      "file": "images/cargo-0179-delivery_rgb.png",
+      "sha256": "20c5edb462864d5a1e5c7e466ec7ebae89ae24a9ec3f7df6b8d7796e9d7daddd",
+      "width": 640,
+      "height": 360,
+      "pixel_format": 3,
+      "sensor_sim_s": 1091.252
+    }
+  ],
+  "no_model_prediction_frames": true
+}

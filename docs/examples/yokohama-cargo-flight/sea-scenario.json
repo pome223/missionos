@@ -1,0 +1,28 @@
+{
+  "schema": "missionos.yokohama-sea-extension.v1",
+  "offshore_distance_m": 1000,
+  "coast_to_city_entry_m": 400,
+  "coast_world_xyz_m": [
+    386.1720648824816,
+    104.26474142489603,
+    15.110143087104275
+  ],
+  "ship_hold_world_xyz_m": [
+    1351.6022270886856,
+    364.9265949871361,
+    15.110143087104275
+  ],
+  "ship_deck_world_xyz_m": [
+    1351.6022270886856,
+    364.9265949871361,
+    0
+  ],
+  "launch_contact_topic": "launch_pad",
+  "source_connector_clearance_m": 5.582773621331227,
+  "sea_airspeed_mps": 8,
+  "city_airspeed_mps": 3,
+  "coastal_gateway_role": "authored boundary beyond the source crop, not surveyed shoreline",
+  "stationary_ship": true,
+  "wind_mps": 0,
+  "payload_release_present": true
+}

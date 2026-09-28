@@ -1,0 +1,10 @@
+{
+  "released_at": "2026-09-28T01:06:53.627487+00:00",
+  "own_resources": {
+    "instances": [],
+    "disks": []
+  },
+  "models_stopped_before_release": true,
+  "late_request_rejected_before_release": true,
+  "flight_still_running": true
+}

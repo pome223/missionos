@@ -1,0 +1,33 @@
+{
+  "schema": "missionos.yokohama-payload.v1",
+  "entity": "delivery_payload",
+  "mass_kg": 0.05,
+  "size_m": [
+    0.12,
+    0.12,
+    0.08
+  ],
+  "pad_world_xyz_m": [
+    153.03285452510517,
+    -64.89336826549612,
+    -0.16885691289572513
+  ],
+  "hover_world_xyz_m": [
+    153.03285452510517,
+    -64.89336826549612,
+    2.831143087104275
+  ],
+  "pad_acceptance_radius_m": 1.5,
+  "rest_height_tolerance_m": 0.08,
+  "stability_sim_s": 3,
+  "maximum_motion_m": 0.05,
+  "maximum_speed_mps": 0.1,
+  "maximum_observation_age_s": 0.5,
+  "maximum_contact_age_sim_s": 0.5,
+  "maximum_sample_gap_sim_s": 1,
+  "receipt_max_age_worker_s": 5,
+  "detach_topic": "/model/x500_0/delivery_payload/detach",
+  "joint_topic": "/model/x500_0/delivery_payload/state",
+  "receiver": "independent host verifier of simulated pad contact and resting cargo",
+  "physical_receipt_verified": false
+}

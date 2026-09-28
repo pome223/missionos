@@ -1,0 +1,80 @@
+{
+  "focused_tests": {
+    "command": "python -m pytest -q tests/test_yokohama_payload.py tests/test_yokohama_sea.py tests/test_yokohama_sitl.py tests/test_yokohama_native.py tests/test_yokohama_wam_profile.py",
+    "observed": "100 passed in 2.51s",
+    "runtime_source": "b06f17ceeb47ab03c235c11b00300a21d25054f4"
+  },
+  "ruff_changed_runtime_files": "passed",
+  "browser": {
+    "status": "passed",
+    "url": "http://127.0.0.1:8770/yokohama-cargo-flight/index.html",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "horizontal_overflow": false,
+    "images_loaded": 9,
+    "model_comparison_images_loaded": 8,
+    "observed_video_metadata_loaded": 2,
+    "delivery_video_playback_observed": true,
+    "delivery_video_duration_s": 25,
+    "onboard_video_duration_s": 211.166667,
+    "replay_play_and_pause_verified": true,
+    "seek_final_measured_point_verified": 7232,
+    "delivery_focus_and_observed_cargo_marker_verified": true,
+    "hold_image_selection_verified": "PAYLOAD-LOW",
+    "console_errors": 0,
+    "console_warning": "Existing vendored Three.js build deprecation; no functional error",
+    "mobile_viewport_not_rerun": true
+  },
+  "source_ci": {
+    "status": "passed",
+    "revision": "819b90c13ffc03a5fbd3773aeecb91278e988380",
+    "python_versions": [
+      "3.11",
+      "3.13"
+    ],
+    "url": "https://github.com/pome223/missionos/actions/runs/36363629808"
+  },
+  "cpu_qualification": {
+    "status": "passed",
+    "run_id": "yokohama-8e67321e4d83",
+    "flight_verifier": "passed",
+    "decision_verifier": "passed",
+    "payload_verifier": "passed",
+    "model_backend": "fixture",
+    "owned_runtime_cleanup_verified": true
+  },
+  "lifecycle_cli": {
+    "command": "python -m pytest -q tests/test_yokohama_cloud_lifecycle.py",
+    "observed": "6 passed in 0.37s",
+    "boundary": "actual CLI with a transport stub records the selected resource for start and stop; no cloud invocation",
+    "old_experiment_config_rejected_before_cloud": true
+  },
+  "earlier_payload_runtime_ci": {
+    "status": "passed",
+    "revision": "d5b452bafb87b0bb6a7388d8161f4e6dc2a8c4f3",
+    "python_versions": [
+      "3.11",
+      "3.13"
+    ],
+    "url": "https://github.com/pome223/missionos/actions/runs/36362013584"
+  },
+  "native_runtime": {
+    "run_id": "yokohama-6acc29204d62",
+    "source_revision": "819b90c13ffc03a5fbd3773aeecb91278e988380",
+    "flight_verifier": "passed",
+    "decision_verifier": "passed",
+    "payload_verifier": "passed",
+    "same_sortie_native_models_and_cargo": true,
+    "cloud_deleted_before_delivery_and_return_finished": true
+  },
+  "remote_evidence": {
+    "status": "passed",
+    "archive_sha256": "72f8197578f0d9999cd656824a9ac3e01f16449d5faafe8997fe5aa2c75ca9d0",
+    "files_verified": 52,
+    "uncompressed_bytes": 20425922
+  },
+  "relative_links_checked": 38,
+  "private_path_and_credential_marker_scan": "passed"
+}

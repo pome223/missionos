@@ -279,3 +279,25 @@ without changing the 0.15 m vertical arrival bound. The successful native segmen
 position errors were 0.040 m and 0.093 m. This is a single static, zero-wind
 simulation; payload release/receipt, moving ship, fleets, hardware and energy
 savings remain outside the qualified scope.
+
+### Same-sortie cargo follow-up
+
+The later [cargo report](../examples/yokohama-cargo-flight/README.md) records
+`yokohama-6acc29204d62` at source `819b90c13ffc03a5fbd3773aeecb91278e988380`:
+the same vehicle carried a dynamic 50 g box across the sea, used two fresh native
+VLA/WAM city decisions, released the parcel, obtained an independently computed
+simulated pad-contact/rest receipt, and returned to deck landing/disarm. All
+thirteen holds and the flight, decision and cargo verifiers passed. Require all
+three verifiers; the decision verifier alone still does not certify delivery.
+
+The first cargo native attempt failed before inference because an external
+lifecycle wrapper targeted a deleted old VM. Its failure and cost are retained.
+The recovery uses one reviewed resource manifest and a pre-allocation start/stop
+binding check. After observed model shutdown and late-request rejection, its GPU
+VM was deleted while the same local AP flight continued. No model output was
+replayed from the earlier cargo-free result, and no new training was performed.
+
+See the [cargo evidence contract](yokohama-payload-delivery.md). This establishes
+simulated receipt for one drone in zero wind on a static scene; human receipt,
+package integrity, moving decks, fleets, hardware and energy savings remain
+unverified.

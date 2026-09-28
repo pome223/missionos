@@ -1,0 +1,610 @@
+[
+  {
+    "cycle": 1,
+    "wam_profile": "motion-v4",
+    "input_request": {
+      "schema_version": "yokohama_anwm_request.v2",
+      "run_id": "yokohama-6acc29204d62",
+      "world_sha256": "a8fbab64f63f3595fbe7c472db61827f0ef907258d9c99bc56d22fe089da4e16",
+      "plan_sha256": "9f1ba3ff5716d2d42d6143b02fd3d73403bd4d901d8161864829fbc506a4dea7",
+      "source_kind": "yokohama_rgbd_hold",
+      "ego_source": "Gazebo_model_pose_simulator_ground_truth",
+      "history_sha256": "8d42a58c5789a36dc09a03ab9a9968df544794e1ed4b5e15a965f7bc5ad49d0b",
+      "delta_frame": "body_frd_at_observation",
+      "num_timesteps": 1,
+      "nominal_horizon_s": 1,
+      "model_time_alignment_verified": false,
+      "future_ground_truth_used_for_forecast": false,
+      "dispatch_allowed": false,
+      "seed": 42,
+      "diffusion_steps": 250,
+      "candidates": [
+        {
+          "id": "hold",
+          "delta": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "id": "vla",
+          "delta": [
+            2.9999196354250426,
+            -0.04333900238657162,
+            -0.022333681569646657,
+            -0.027663600328792448
+          ]
+        }
+      ],
+      "vla_response_sha256": "af03bace42e3e5264bd8aaa494bdbf2d4d94c45399ed7feffc1cbe971975a560",
+      "adapter_sha256": "e4b88ec38ce8f08ff90b692a3b545e573aadaacf0f080a0357409dfc2b308dd3",
+      "appearance_policy": "positive_infinite_upward_rays_past_only_no_metric_fill"
+    },
+    "service_identity": {
+      "schema_version": "ship_anwm_static_service.v1",
+      "session_id": "2678eaa5804549388f95edfca12056ae",
+      "model_revision": "dfe59001de57a96d6620313897f09436c6940983",
+      "checkpoint_sha256": "bdd149cac6ec002ba7dc4ad99ec6f9eb02cd6d4f05320195cf174737b13b0bc2",
+      "upstream_revision": "657a80268505fa9149c4df502e35aa0f5bce11e5",
+      "vae_revision": "f04b2c4b98319346dad8c65879f680b1997b204a",
+      "server_sha256": "30a0fa5e864279e2d09d8f7482dccacb93cb7961c8e28b46e070d8928ca04545",
+      "helper_sha256": "78e4680405eb0202eac2dbc0ba8035577b1765cf8f76961e83f6f6ae2a431509",
+      "diffusion_steps": 250,
+      "load_seconds": 15.317161735000013,
+      "cpu_between_requests": true,
+      "candidate_contracts": [
+        "yokohama_anwm_request.v2"
+      ],
+      "adapter_sha256": "e4b88ec38ce8f08ff90b692a3b545e573aadaacf0f080a0357409dfc2b308dd3",
+      "model_time_index": 1,
+      "appearance_policy": "positive_infinite_upward_rays_past_only_no_metric_fill",
+      "appearance_sha256": "450da308c1d884e4fca1766d1143c80fd48b1f22b8aba3b071304100dd065ec9",
+      "profile_sha256": "1dba81457144c67c1562689644f14ce4d2ea5d3cd73f5ddfbf964f86e3ad46c6"
+    },
+    "native_vla_response": {
+      "schema_version": "ship_aerovla_live_invocation.v1",
+      "request_sha256": "297013a1045c2f6bd671377580df77dc92e7fb0b9b31a25e14aa95920d000daa",
+      "service": {
+        "schema_version": "ship_aerovla_service.v1",
+        "session_id": "21f098ce5ba7477a87a575c8cd0e4436",
+        "base_revision": "47a0ec7fc4ec123775a391911046cf33cf9ed83f",
+        "adapter_revision": "196f2f3253b69df6e90ac10b6ae041c7b3a9569e",
+        "adapter_sha256": "05b11cf66d2a7bba9af3fefc5afa9e9af4fe1f2a567ddeca4fca73192060b846",
+        "upstream_revision": "2c5ae0987a484ab92f00dd9d9ed493cb3e98e492",
+        "weights_sha256": {
+          "model-00001-of-00003.safetensors": "10d8636256018712c5e5c823d12e22b5797f99bb721bd123bf6bf2379892be85",
+          "model-00002-of-00003.safetensors": "2050b14f21d48904d269f48d5a980fecea87cd7b36641d9b0f015e72d1fe216a",
+          "model-00003-of-00003.safetensors": "ea65305a1577f36f721965bf84c8caec0a948ce7ce84d754701637376c531fef"
+        },
+        "custom_code_sha256": {
+          "configuration_prismatic.py": "68cc5ae34f1b46af3168d8d479cb81bb776965653453fd904aa8eefb6c8f9f68",
+          "modeling_prismatic.py": "9ce241c5ca09a4bed73654d0ca509baaff0fc5887d0bdd62e360ca8254f7794a",
+          "processing_prismatic.py": "06563586bbc73d36501a14a231a3174904ede830d33174d0c625ece8e931ef1e"
+        },
+        "runtime_sha256": {
+          "ship_aerovla_server.py": "867300859825c5dc2d51ff2ae3a6647a78d4699bba2534b0ce77a49fe7b53c7a",
+          "ship_aerovla.py": "3cc49ed27d3ff813ce5cebd766e65196fe5ced20bdfc2ebd9ecb8fb45d2f9743",
+          "ship_anwm.py": "78e4680405eb0202eac2dbc0ba8035577b1765cf8f76961e83f6f6ae2a431509"
+        },
+        "gpu": "NVIDIA L4",
+        "torch_version": "2.9.1+cu129",
+        "load_seconds": 18.229492692000008,
+        "warmup_completed": true,
+        "dispatch_capability": false,
+        "exit_after_request": false,
+        "cpu_between_requests": true,
+        "decoding_policy": "aerovla_compact_city_grammar.v2",
+        "inspection_level_flight": true,
+        "vertical_bin_range": [
+          47,
+          51
+        ],
+        "yaw_bin_range": [
+          45,
+          53
+        ],
+        "forward_bin_range": [
+          20,
+          58
+        ],
+        "hold_bin_allowed": false,
+        "terminal_proposal_allowed": false,
+        "compact_city_flight": true,
+        "short_segment_flight": true
+      },
+      "input_images_sha256": {
+        "rgb": "f35c686a753dcbfad14ff59c62e9ff26d462ff6bec00531b5b5fd62212252259",
+        "down": "238c26d9d260b08ce23510bf019114f6deca923c6ecba892f4c2455ad7ab9fb0"
+      },
+      "generated_text": "58 49 48</s>",
+      "generated_token_ids": [
+        29945,
+        29947,
+        29871,
+        29946,
+        29929,
+        29871,
+        29946,
+        29947,
+        2
+      ],
+      "input_token_ids": [
+        [
+          1,
+          529,
+          3027,
+          29958,
+          13,
+          29943,
+          368,
+          7812,
+          14432,
+          3412,
+          278,
+          11952,
+          11183,
+          278,
+          28289,
+          17132,
+          29889,
+          341,
+          2365,
+          475,
+          3171,
+          29889,
+          13,
+          4276,
+          29901,
+          29871
+        ]
+      ],
+      "pixel_values_shape": [
+        1,
+        6,
+        224,
+        224
+      ],
+      "mosaic_sha256": "0652d774015afb83eff942f93e5bebaf9eb443b34dd2ced750f3c91a49323185",
+      "mosaic_rgb_sha256": "2bb8b45d03871a621b6f70cd236c02efc56f295802fdbbc9977bdcdea7bf67f9",
+      "started_at_unix_s": 1790557303.369012,
+      "completed_at_unix_s": 1790557304.1289027,
+      "inference_seconds": 0.7598905563354492,
+      "peak_cuda_allocated_bytes": 15875595264,
+      "cuda_allocated_before_gc_bytes": 9568256,
+      "gc_collected_objects": 254,
+      "cuda_workspaces_cleared": true,
+      "cuda_allocated_after_request_bytes": 0,
+      "vla_inference_invoked": true,
+      "dispatch_invoked": false,
+      "physical_execution_invoked": false
+    },
+    "checks": [
+      {
+        "candidate": {
+          "id": "hold",
+          "delta": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "passed": true,
+        "known_pixel_fraction": 0.7229950573979592,
+        "reference_edge_pixels": 1914,
+        "matched_edge_fraction": 0.9926854754440961,
+        "luminance_mae": 3.3766206319890464,
+        "predicted_edge_density": 0.06012073765746892,
+        "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+      },
+      {
+        "candidate": {
+          "id": "vla",
+          "delta": [
+            2.9999196354250426,
+            -0.04333900238657162,
+            -0.022333681569646657,
+            -0.027663600328792448
+          ]
+        },
+        "passed": true,
+        "known_pixel_fraction": 0.7288345025510204,
+        "reference_edge_pixels": 1807,
+        "matched_edge_fraction": 0.9728832318760376,
+        "luminance_mae": 7.859794002369883,
+        "predicted_edge_density": 0.06029532403609516,
+        "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+      }
+    ],
+    "wam_exchange_wall_s": 51.7266287910752,
+    "original_forecast_sha256": {
+      "hold": "486a8dc4ba668f2e0b7e3a8b5aa285f7e24150ef6767771343c099b9fddbc7fb",
+      "vla": "d7cc1c574fc68c672f79a98b4d7358c46d529252503a46b57baff8a88ab2c58d"
+    },
+    "permit": {
+      "run_id": "yokohama-6acc29204d62",
+      "config_sha256": "9f1ba3ff5716d2d42d6143b02fd3d73403bd4d901d8161864829fbc506a4dea7",
+      "cycle": 1,
+      "permit_id": "6722f07b2ef74d09a7edd68a0b3adba7",
+      "candidate": {
+        "bins": [
+          58,
+          49,
+          48
+        ],
+        "target_world_xyz_m": [
+          -1.399515216,
+          -2.630787069,
+          15.605138063
+        ],
+        "target_heading_ned_rad": -2.643758979592,
+        "target_heading_world_ned_rad": -2.65834222389,
+        "heading_source": "Gazebo_camera_pose_for_geometry_PX4_EKF_for_yaw_command",
+        "delta_body_frd": [
+          2.958438054586707,
+          -0.06642507433945544,
+          0.0,
+          -0.022448979591836782
+        ]
+      },
+      "executor_heading_ned_rad": -2.6751796929737615,
+      "heading_mapping_observation_sha256": "2326590528190f65fbd3cd1da7f624ce8a97df9a44f8ce0fc2ae5d228207dc13",
+      "rules": {
+        "allowed": true,
+        "source": "frozen_collision_prisms_not_model_perception",
+        "margin_m": 2,
+        "start_world_xyz_m": [
+          -0.03954355666602382,
+          -0.052855984101597205,
+          15.58018433517955
+        ],
+        "target_world_xyz_m": [
+          -1.399515216,
+          -2.630787069,
+          15.605138063
+        ],
+        "next_target_world_xyz_m": [
+          -34.88761388811289,
+          -60.6945307036456,
+          15.110143087104275
+        ],
+        "minimum_centerline_clearances_m": [
+          24.040627573677472,
+          22.04508434437279
+        ]
+      },
+      "observation_sha256": "c9ce855272486fd756ae1cfbed7d260bfa02fa43dee47bd319305c8899d7b36e",
+      "vla_response_sha256": "af03bace42e3e5264bd8aaa494bdbf2d4d94c45399ed7feffc1cbe971975a560",
+      "wam_assessment_sha256": "4316cbac54316b97c7ff9205c659cf814bd0c51fc4959d156ef249f7ec06ff83",
+      "expires_at_worker_wall_s": 694.0425922750001,
+      "upload_name": "city-01",
+      "upload_sha256": "87877895d1dddb885f542a2a37d845af0e3faf3690a68b0744718ce2b4843c55",
+      "connector_name": "city-01-connect",
+      "connector_sha256": "b395994cc2ea31b118cf85ab632152961168e15be5a0af7ef99f1badfa6aab69",
+      "physical_execution_invoked": false,
+      "executor_relative_altitude_m": 15.137124671241759,
+      "altitude_mapping_observation_sha256": "2326590528190f65fbd3cd1da7f624ce8a97df9a44f8ce0fc2ae5d228207dc13",
+      "prepared_permit_sha256": "6aa48e873d6b3676192846709b0bd3c00c77d5690d25ff093aaafa1505fed614"
+    },
+    "arrival_sim_s": 699.328,
+    "arrival_xyz_m": [
+      -1.4281283010851904,
+      -2.7273934219750497,
+      15.612375193041407
+    ],
+    "observed_target_error_m": 0.10101421743729176,
+    "actual_camera": {
+      "source_sha256": "42b2b2a867192bd37676b88990bd46dbe911575952d9166de051695ca09ce01a",
+      "sensor_sim_s": 698.5,
+      "before_settled_arrival_s": 0.8279999999999745,
+      "exact_future_image_alignment_verified": false
+    },
+    "native_cuda_allocated_after_request_bytes": 0
+  },
+  {
+    "cycle": 2,
+    "wam_profile": "motion-v4",
+    "input_request": {
+      "schema_version": "yokohama_anwm_request.v2",
+      "run_id": "yokohama-6acc29204d62",
+      "world_sha256": "a8fbab64f63f3595fbe7c472db61827f0ef907258d9c99bc56d22fe089da4e16",
+      "plan_sha256": "9f1ba3ff5716d2d42d6143b02fd3d73403bd4d901d8161864829fbc506a4dea7",
+      "source_kind": "yokohama_rgbd_hold",
+      "ego_source": "Gazebo_model_pose_simulator_ground_truth",
+      "history_sha256": "8b971aecb8432efbf6210c7bb3941a34dc4d372fae445f3e2d18bc6bdd098a3e",
+      "delta_frame": "body_frd_at_observation",
+      "num_timesteps": 1,
+      "nominal_horizon_s": 1,
+      "model_time_alignment_verified": false,
+      "future_ground_truth_used_for_forecast": false,
+      "dispatch_allowed": false,
+      "seed": 42,
+      "diffusion_steps": 250,
+      "candidates": [
+        {
+          "id": "hold",
+          "delta": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "id": "vla",
+          "delta": [
+            2.6751853949005864,
+            0.01433618517269708,
+            0.016663535686278763,
+            -0.0004525892599693826
+          ]
+        }
+      ],
+      "vla_response_sha256": "002368b20fa07c13caad20df437745bde87ab8746e5c053d364668a7e3c2059d",
+      "adapter_sha256": "e4b88ec38ce8f08ff90b692a3b545e573aadaacf0f080a0357409dfc2b308dd3",
+      "appearance_policy": "positive_infinite_upward_rays_past_only_no_metric_fill"
+    },
+    "service_identity": {
+      "schema_version": "ship_anwm_static_service.v1",
+      "session_id": "2678eaa5804549388f95edfca12056ae",
+      "model_revision": "dfe59001de57a96d6620313897f09436c6940983",
+      "checkpoint_sha256": "bdd149cac6ec002ba7dc4ad99ec6f9eb02cd6d4f05320195cf174737b13b0bc2",
+      "upstream_revision": "657a80268505fa9149c4df502e35aa0f5bce11e5",
+      "vae_revision": "f04b2c4b98319346dad8c65879f680b1997b204a",
+      "server_sha256": "30a0fa5e864279e2d09d8f7482dccacb93cb7961c8e28b46e070d8928ca04545",
+      "helper_sha256": "78e4680405eb0202eac2dbc0ba8035577b1765cf8f76961e83f6f6ae2a431509",
+      "diffusion_steps": 250,
+      "load_seconds": 15.317161735000013,
+      "cpu_between_requests": true,
+      "candidate_contracts": [
+        "yokohama_anwm_request.v2"
+      ],
+      "adapter_sha256": "e4b88ec38ce8f08ff90b692a3b545e573aadaacf0f080a0357409dfc2b308dd3",
+      "model_time_index": 1,
+      "appearance_policy": "positive_infinite_upward_rays_past_only_no_metric_fill",
+      "appearance_sha256": "450da308c1d884e4fca1766d1143c80fd48b1f22b8aba3b071304100dd065ec9",
+      "profile_sha256": "1dba81457144c67c1562689644f14ce4d2ea5d3cd73f5ddfbf964f86e3ad46c6"
+    },
+    "native_vla_response": {
+      "schema_version": "ship_aerovla_live_invocation.v1",
+      "request_sha256": "b5d9486924e6ab50de9810478ccec5194835ce00fb05a3517f734552c2028cba",
+      "service": {
+        "schema_version": "ship_aerovla_service.v1",
+        "session_id": "21f098ce5ba7477a87a575c8cd0e4436",
+        "base_revision": "47a0ec7fc4ec123775a391911046cf33cf9ed83f",
+        "adapter_revision": "196f2f3253b69df6e90ac10b6ae041c7b3a9569e",
+        "adapter_sha256": "05b11cf66d2a7bba9af3fefc5afa9e9af4fe1f2a567ddeca4fca73192060b846",
+        "upstream_revision": "2c5ae0987a484ab92f00dd9d9ed493cb3e98e492",
+        "weights_sha256": {
+          "model-00001-of-00003.safetensors": "10d8636256018712c5e5c823d12e22b5797f99bb721bd123bf6bf2379892be85",
+          "model-00002-of-00003.safetensors": "2050b14f21d48904d269f48d5a980fecea87cd7b36641d9b0f015e72d1fe216a",
+          "model-00003-of-00003.safetensors": "ea65305a1577f36f721965bf84c8caec0a948ce7ce84d754701637376c531fef"
+        },
+        "custom_code_sha256": {
+          "configuration_prismatic.py": "68cc5ae34f1b46af3168d8d479cb81bb776965653453fd904aa8eefb6c8f9f68",
+          "modeling_prismatic.py": "9ce241c5ca09a4bed73654d0ca509baaff0fc5887d0bdd62e360ca8254f7794a",
+          "processing_prismatic.py": "06563586bbc73d36501a14a231a3174904ede830d33174d0c625ece8e931ef1e"
+        },
+        "runtime_sha256": {
+          "ship_aerovla_server.py": "867300859825c5dc2d51ff2ae3a6647a78d4699bba2534b0ce77a49fe7b53c7a",
+          "ship_aerovla.py": "3cc49ed27d3ff813ce5cebd766e65196fe5ced20bdfc2ebd9ecb8fb45d2f9743",
+          "ship_anwm.py": "78e4680405eb0202eac2dbc0ba8035577b1765cf8f76961e83f6f6ae2a431509"
+        },
+        "gpu": "NVIDIA L4",
+        "torch_version": "2.9.1+cu129",
+        "load_seconds": 18.229492692000008,
+        "warmup_completed": true,
+        "dispatch_capability": false,
+        "exit_after_request": false,
+        "cpu_between_requests": true,
+        "decoding_policy": "aerovla_compact_city_grammar.v2",
+        "inspection_level_flight": true,
+        "vertical_bin_range": [
+          47,
+          51
+        ],
+        "yaw_bin_range": [
+          45,
+          53
+        ],
+        "forward_bin_range": [
+          20,
+          58
+        ],
+        "hold_bin_allowed": false,
+        "terminal_proposal_allowed": false,
+        "compact_city_flight": true,
+        "short_segment_flight": true
+      },
+      "input_images_sha256": {
+        "rgb": "8245f324020c4f1a887ea0a26d015569d7046fe776ca6b5583d50a48b075bf97",
+        "down": "7c5ebda19db9d294c5b4cd8d8369616cafa2413bb8b2d2fceab495cb927657ef"
+      },
+      "generated_text": "53 49 49</s>",
+      "generated_token_ids": [
+        29945,
+        29941,
+        29871,
+        29946,
+        29929,
+        29871,
+        29946,
+        29929,
+        2
+      ],
+      "input_token_ids": [
+        [
+          1,
+          529,
+          3027,
+          29958,
+          13,
+          29943,
+          368,
+          7812,
+          14432,
+          3412,
+          278,
+          11952,
+          11183,
+          278,
+          28289,
+          17132,
+          29889,
+          341,
+          2365,
+          475,
+          3171,
+          29889,
+          13,
+          4276,
+          29901,
+          29871
+        ]
+      ],
+      "pixel_values_shape": [
+        1,
+        6,
+        224,
+        224
+      ],
+      "mosaic_sha256": "bae8d8030c125207b463fe4932735dbda3b1051e67a3a20bcad24bcf87e13a95",
+      "mosaic_rgb_sha256": "54d1a73802ca19a7bfb66bf15a6868044627d8a9db3c5a2d9951803ec4e8f94a",
+      "started_at_unix_s": 1790557457.937774,
+      "completed_at_unix_s": 1790557458.6874106,
+      "inference_seconds": 0.7496366500854492,
+      "peak_cuda_allocated_bytes": 15875595264,
+      "cuda_allocated_before_gc_bytes": 9568256,
+      "gc_collected_objects": 254,
+      "cuda_workspaces_cleared": true,
+      "cuda_allocated_after_request_bytes": 0,
+      "vla_inference_invoked": true,
+      "dispatch_invoked": false,
+      "physical_execution_invoked": false
+    },
+    "checks": [
+      {
+        "candidate": {
+          "id": "hold",
+          "delta": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "passed": true,
+        "known_pixel_fraction": 0.8391262755102041,
+        "reference_edge_pixels": 1716,
+        "matched_edge_fraction": 0.9994172494172494,
+        "luminance_mae": 2.87471499144974,
+        "predicted_edge_density": 0.047335170055101655,
+        "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+      },
+      {
+        "candidate": {
+          "id": "vla",
+          "delta": [
+            2.6751853949005864,
+            0.01433618517269708,
+            0.016663535686278763,
+            -0.0004525892599693826
+          ]
+        },
+        "passed": true,
+        "known_pixel_fraction": 0.8353595344387755,
+        "reference_edge_pixels": 1729,
+        "matched_edge_fraction": 1.0,
+        "luminance_mae": 4.251302238657597,
+        "predicted_edge_density": 0.04728617440057259,
+        "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+      }
+    ],
+    "wam_exchange_wall_s": 49.05304799997248,
+    "original_forecast_sha256": {
+      "hold": "c6734101154a581971b6c1625299226e34e71185b92c2fddae0c987518e8d706",
+      "vla": "7d8a12f55bf19e7040d2a2340d578b9414355a5e4cbbd280b0e63c8f36a0ec13"
+    },
+    "permit": {
+      "run_id": "yokohama-6acc29204d62",
+      "config_sha256": "9f1ba3ff5716d2d42d6143b02fd3d73403bd4d901d8161864829fbc506a4dea7",
+      "cycle": 2,
+      "permit_id": "356649ab8cfc4f93a449fad3bd0f589b",
+      "candidate": {
+        "bins": [
+          53,
+          49,
+          49
+        ],
+        "target_world_xyz_m": [
+          -32.567434681,
+          -62.029399125,
+          15.143674238
+        ],
+        "target_heading_ned_rad": 2.0925,
+        "target_heading_world_ned_rad": 2.090914881033,
+        "heading_source": "Gazebo_camera_pose_for_geometry_PX4_EKF_for_yaw_command",
+        "delta_body_frd": [
+          2.7040816326530615,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "executor_heading_ned_rad": 2.094237763331673,
+      "heading_mapping_observation_sha256": "4e6861aa45c599d20893f1b317b7ae9dcf13224453e1bbd3378ca6c48b0c79ff",
+      "rules": {
+        "allowed": true,
+        "source": "frozen_collision_prisms_not_model_perception",
+        "margin_m": 2,
+        "start_world_xyz_m": [
+          -34.89688073803752,
+          -60.69909489207089,
+          15.142603676668523
+        ],
+        "target_world_xyz_m": [
+          -32.567434681,
+          -62.029399125,
+          15.143674238
+        ],
+        "next_target_world_xyz_m": [
+          108.17735177259866,
+          -142.92962206786046,
+          15.110143087104275
+        ],
+        "minimum_centerline_clearances_m": [
+          22.00948345891938,
+          7.69650462951667
+        ]
+      },
+      "observation_sha256": "c4a3e7b5cc39dfdce5ccf3d2032d1ea1469e92ad8fcb8b4d6495791c19b2b5d9",
+      "vla_response_sha256": "002368b20fa07c13caad20df437745bde87ab8746e5c053d364668a7e3c2059d",
+      "wam_assessment_sha256": "276092dd7131f2f1111484128a16fe43c17d6dc186d4b2bd10d98dd0b170aae0",
+      "expires_at_worker_wall_s": 845.851423844,
+      "upload_name": "city-02",
+      "upload_sha256": "4be0c1cc1a201b43f389dea2a109a8207c133a034b1435313306ff2f2db30c74",
+      "connector_name": "city-02-connect",
+      "connector_sha256": "1941d8dca938de9e54348865bd02bbd5270d5083e91c54c2f9330f0d7c584950",
+      "physical_execution_invoked": false,
+      "executor_relative_altitude_m": 14.673058703689406,
+      "altitude_mapping_observation_sha256": "4e6861aa45c599d20893f1b317b7ae9dcf13224453e1bbd3378ca6c48b0c79ff",
+      "prepared_permit_sha256": "44affbbb3c2aa762f4443e5f10856f037bfce6b075377baaf25a6f16ef93423b"
+    },
+    "arrival_sim_s": 850.356,
+    "arrival_xyz_m": [
+      -32.549765262676765,
+      -62.09865382652857,
+      15.175539359241183
+    ],
+    "observed_target_error_m": 0.078254763301721,
+    "actual_camera": {
+      "source_sha256": "907509d5f2e8229a4357a6d9f7e46511eb8916b99d5b82fa98a9466085eccddb",
+      "sensor_sim_s": 850.0,
+      "before_settled_arrival_s": 0.35599999999999454,
+      "exact_future_image_alignment_verified": false
+    },
+    "native_cuda_allocated_after_request_bytes": 0
+  }
+]

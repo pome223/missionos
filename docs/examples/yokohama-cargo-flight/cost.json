@@ -1,0 +1,13 @@
+{
+  "new_estimated_usd": 0.5126148826278853,
+  "cumulative_estimated_usd": 16.706277034434482,
+  "authorized_total_usd": 17,
+  "cleanup_confirmed": true,
+  "cost_estimate_closed": true,
+  "invoice_confirmed": false,
+  "elapsed_observed_s": 940.031487,
+  "prior_estimated_usd": 16.193662151806596,
+  "vm_pricing_source": "https://cloud.google.com/products/compute/pricing/accelerator-optimized",
+  "retained_preinference_failure_estimated_usd": 0.5486324642027176,
+  "total_added_this_cargo_stage_estimated_usd": 1.061247346830603
+}
