@@ -80,3 +80,25 @@ qualified release mechanism, strong-wind delivery, moving-deck recovery,
 multi-drone scheduling, onboard energy savings or physical-world delivery.
 Native city-model success from a prior run cannot be combined with a new CPU
 cargo flight and called same-sortie native cargo delivery.
+
+## External lifecycle binding
+
+An observed infrastructure failure reached the inland hold but used an old
+experiment's lifecycle wrapper, which targeted a deleted VM. Neither model
+inference nor parcel release occurred in that attempt. Keep that failure distinct
+from the completed CPU cargo qualification.
+
+`scripts/yokohama_cloud_lifecycle.py --resource-json RESOURCE start|stop` reads
+the instance, project and zone from a single explicit resource manifest. It
+provisions nothing. `--describe` prints the exact command without calling cloud
+services; the experiment controller must compare both start/stop commands and
+resource/helper/config hashes before allocating a VM. CLI tests use a transport
+stub to verify which resource would actually receive each operation.
+
+Weights-only setup may overlap AP sea transit. The city-gated start request
+alone permits model startup, optionally waiting up to 120 seconds for bootstrap
+readiness inside the existing startup deadline. Once model shutdown, absent GPU
+processes and late-request rejection are observed, the controller can collect
+model evidence and delete its VM while the same local AP flight continues to
+parcel delivery and return. This changes resource lifetime, not flight or receipt
+acceptance bounds.
