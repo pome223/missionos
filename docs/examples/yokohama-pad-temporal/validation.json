@@ -39,5 +39,15 @@
     "narrow_horizontal_overflow": false,
     "console_errors": 0,
     "native_playback": "full local MP4 blob allows seeking even on static servers without range responses"
+  },
+  "replay_repair": {
+    "focused_tests_passed": 6,
+    "seconds": 1.71,
+    "macos_real_cli_passed": true,
+    "linux_x86_pure_evidence_reader_passed": true,
+    "linux_loader_limit": "pure evidence functions isolated from unrelated src.runtime package initialization; full CLI remains covered by CI",
+    "original_evaluation_unchanged": true,
+    "first_ci_full_tests_passed": 3571,
+    "first_ci_failed_stage": "background numerical readback across CPU architectures"
   }
 }

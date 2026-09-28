@@ -89,4 +89,16 @@ docs/examples/yokohama-pad-temporal`. It verifies the manifest, source/capture
 bindings and reruns the native-result evaluation without a model or simulator.
 This proves the recorded negative result is reproducible, not a successful flight.
 
+CPU portability: reconstructing the background raster on x86 produced small
+diagnostic edge/MAE differences while every occupancy result and gate outcome
+remained identical. Preserve the original `evaluation.json`; do not loosen its
+comparison tolerance. `past-references/` freezes the original arm64 reconstruction
+and mask, hash-bound to each historical input and the reconstruction source.
+The maintained evaluator accepts `--reference-dir` to reopen those diagnostic
+rasters; without it, the background is reconstructed on the current CPU and its
+statistics need not match bit-for-bit. Original executed sources remain intact;
+`replay-source/` records this portability repair. See `portability.json` for the
+failed CI run and measured differences. Native forecasts, target images, reader
+thresholds, classification results and flight-admission policy are unchanged.
+
 [Human report](../examples/yokohama-pad-temporal/REPORT-ja.md)

@@ -37,4 +37,4 @@ python scripts/check_yokohama_pad_temporal.py \
   --bundle docs/examples/yokohama-pad-temporal
 ```
 
-New tests: 5 passed. Full local suite: 3571 passed, 2 skipped, 3 warnings. See [runtime contract and exact acquisition/native commands](../../agents/yokohama-pad-temporal.md) and [evidence manifest](evidence-manifest.json). Models/private cloud details are excluded. Source city data: Yokohama / Project PLATEAU, modified, [attribution](../yokohama-urban-scene/ATTRIBUTION.md).
+Initial full local suite: 3571 passed, 2 skipped, 3 warnings. CI exposed CPU-dependent background-reconstruction statistics with identical occupancy results and gate outcomes. The replay repair freezes the original diagnostic reference/mask, bound to input hashes, instead of relaxing comparison tolerances or changing the original evaluation. See [portability evidence](portability.json), [runtime contract and exact acquisition/native commands](../../agents/yokohama-pad-temporal.md) and [evidence manifest](evidence-manifest.json). Models/private cloud details are excluded. Source city data: Yokohama / Project PLATEAU, modified, [attribution](../yokohama-urban-scene/ATTRIBUTION.md).

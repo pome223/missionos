@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 from scripts.capture_yokohama_pad_motion import actor_xyz, cases
+from scripts.evaluate_yokohama_pad_temporal import saved_reference
 from scripts.prepare_yokohama_pad_temporal import gray_features, label, read_image
 from scripts.probe_yokohama_pad_temporal import sha, validate_inputs
 
@@ -109,3 +110,23 @@ def test_authored_actor_is_bounded_and_data_splits_are_predeclared():
     assert actor_xyz(c[2]["knots"], 24, p) == p["up"]
     assert actor_xyz(c[3]["knots"], 14, p) == [6, 0, 7]
     assert actor_xyz(c[0]["knots"], 100, p) == p["end"]
+
+
+def test_saved_diagnostic_reference_rejects_foreign_input_and_changed_bytes(tmp_path):
+    path = tmp_path / "reference.npz"
+    np.savez_compressed(
+        path, reference=np.zeros((224, 224, 3), np.uint8), mask=np.ones((224, 224), bool)
+    )
+    (tmp_path / "manifest.json").write_text(json.dumps({
+        "schema": "pad_past_reference_rasters.v1",
+        "samples": {"case": {
+            "file": path.name, "sha256": sha(path), "history_sha256": "original-history"
+        }},
+    }))
+    _, mask = saved_reference(tmp_path, "case", "original-history")
+    assert mask.all()
+    with pytest.raises(ValueError, match="another input"):
+        saved_reference(tmp_path, "case", "foreign-history")
+    path.write_bytes(path.read_bytes() + b"changed")
+    with pytest.raises(ValueError, match="changed"):
+        saved_reference(tmp_path, "case", "original-history")
