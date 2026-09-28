@@ -5,13 +5,18 @@
   "files": [
     {
       "path": "REPORT-ja.md",
-      "bytes": 6447,
-      "sha256": "699904b95fb6ad8cbc31d97edef724e160521ea8b68865aa44df120c7f5a58a9"
+      "bytes": 7864,
+      "sha256": "7b3bf4c74cfdbe5cec5355f6a806c1cf83bb43f0788163ba2ba2a8a94686302e"
     },
     {
       "path": "REPORT.md",
-      "bytes": 5851,
-      "sha256": "6a830b0e6d98c1083e8ba22a204ffde0680883dadd114b85c1a56ad4b0043207"
+      "bytes": 7049,
+      "sha256": "3aa047441b6a18f1314cb6a4f732bc8d0e1179a391dacb4116758fca0a9d00e6"
+    },
+    {
+      "path": "adoption-policy.json",
+      "bytes": 1606,
+      "sha256": "a93124f3d8b91a5567145e568c64831c691bf9ef813042bdacb415f552bfda0d"
     },
     {
       "path": "cost.json",
@@ -115,8 +120,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 808421,
-      "sha256": "f704f42640f3e207c30d963b332f02f9b3f10a692e1c16a6533875b84ea16f87"
+      "bytes": 808799,
+      "sha256": "ecf53e68da965f86960ea7c81a97c330b693ca30b68af91d3b66815024656834"
     },
     {
       "path": "model/model.json",

@@ -160,7 +160,6 @@ def render(bundle):
         FALSE=str(metric["false_clear"]),
         UNKNOWN=f"{100 * metric['unknown_fraction']:.1f}%",
         LATENCY=f"{metric['mean_compute_seconds']:.3f} s",
-        RESULT="事前条件を満たしています" if report["status"] == "passed" else "事前条件の一部が未達です",
     )
     for key, value in tokens.items():
         template = template.replace("{{" + key + "}}", value)

@@ -1,7 +1,10 @@
 # CPU learned pad state, v1
 
 This is a bounded **capability diagnostic**, not an ANWM adapter, VLA fine-tune,
-world-model added-value proof, or flight-qualified selector. The existing
+world-model added-value proof, or flight-qualified selector. The owner has removed
+the aggregate 90% adoption gate; proceed with advisory integration based on
+practical usefulness, as recorded in `adoption-policy.json`. Live integration
+is not claimed complete. The existing
 `src/runtime/yokohama_pad_prediction.py` boundary is unchanged.
 
 ## Runtime inputs and authority
@@ -91,9 +94,10 @@ checker verifies source identities but does not rerender/recompute every raw
 image resize. Training targets remain separate from inference arguments.
 
 Result: 80.2% occupancy agreement, 0/1,356 false clear, 19.8% abstention,
-139/155 (89.7%) supported histories against >=90% required. Other five conditions
+139/155 (89.7%) supported histories against the historical >=90% experiment condition.
+That condition no longer blocks adoption after the owner's explicit policy change. Other five conditions
 passed. All 16 unsupported histories contain a localization-margin failure.
-No threshold was loosened. Reported latency is local CPU computation, excluding
+Per-observation thresholds and model weights are unchanged. Reported latency is local CPU computation, excluding
 camera acquisition/transport/AP. Baseline latency fields reuse this common
 pipeline, not separately measured comparator timings. Comparator state rules
 lack the learned empirical-radius/occupancy-score guard, so this is diagnostic.
@@ -106,3 +110,20 @@ qualification. Do not register this single-action sampled forecast as native
 ANWM hold/vla forecasts. Sea-leg model execution remains prohibited.
 
 [Human report](../examples/yokohama-pad-state/REPORT-ja.md)
+
+## Adoption policy override
+
+`adoption-policy.json` is the current owner direction. Do not use a global
+accuracy/support fraction, including the frozen protocol's 90%, as an adoption
+veto. Decide by practical usefulness with model-enabled/disabled mission
+behavior and total time/energy/cost. Do not require superiority to ideal Rules.
+Current recorded inference establishes localization/forecast capability but
+not improved delivery or waiting time. Proceed to optional city pad-wait
+advisory integration; its live deployment is not yet complete.
+
+Keep the frozen training/evaluation source and metrics intact. Their historical
+`status=failed` remains reproducible and is not the current adoption decision.
+Likewise `flight_admitted=false` declares the absence of dispatch authority,
+not a percentage-based decision to reject all use. Missing evidence, stale
+history and changed-camera checks remain per-request validity constraints.
+No new GPU run or native model registration is implied by this policy update.

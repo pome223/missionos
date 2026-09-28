@@ -1,0 +1,32 @@
+{
+  "schema": "missionos.pad-state-adoption-policy.v1",
+  "decision": "proceed_with_advisory_integration",
+  "basis": "Owner instruction: adopt when practically useful; no fixed 90 percent gate",
+  "minimum_aggregate_agreement": null,
+  "minimum_aggregate_support_fraction": null,
+  "acceptance": "Practical benefit when enabled, considering mission outcome, avoidable waiting, rework or intervention and total time/energy/cost",
+  "ideal_rules_superiority_required": false,
+  "current_evidence": {
+    "reference": "evaluation/evaluation.json",
+    "sha256": "aba41105ec57ad961a5aa352e659ae85d9c832498b9102e88750b39100679e0a",
+    "mission_benefit_demonstrated": false,
+    "prediction_better_than_simple_occupancy_comparator": false,
+    "position_observation_demonstrated": true
+  },
+  "accepted_next_scope": "Integrate as optional city pad-wait advisory and measure enabled/disabled mission effect",
+  "uncertainty_behavior": "Defer to fresh observation and independent Rules; retain bounded hold/reobserve or mission-level escalation",
+  "deployment": {
+    "live_mission_integration_completed": false,
+    "flight_authority_created": false,
+    "native_anwm_profile_replaced": false,
+    "sea_leg_inference_enabled": false
+  },
+  "historical_protocol": {
+    "reference": "model/protocol.json",
+    "sha256": "3e26333bb95a287839b050d95f238262d9c8230cdda3ff69d753898f6736a814",
+    "status": "retained as the original experiment record; its 90 percent condition no longer blocks adoption"
+  },
+  "weights_changed": false,
+  "per_observation_validity_checks_changed": false,
+  "new_gpu_spend_usd": 0
+}

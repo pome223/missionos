@@ -1,6 +1,6 @@
 # Learning the lead aircraft's position and pad occupancy
 
-**A small CPU model changed its advisory from waiting to reviewing entry in all three new timing sequences, with zero false-clear occupied targets. Its supported-history rate narrowly missed the frozen condition, so it remains unqualified for flight. This does not improve native ANWM imagery or VLA weights.**
+**A small CPU model changed its advisory from waiting to reviewing entry in all three new timing sequences, with zero false-clear occupied targets. The owner has removed the fixed 90% adoption gate: proceed with advisory integration and decide adoption by practical usefulness. This does not improve native ANWM imagery or VLA weights.**
 
 [Interactive observations and forecasts](index.html) · [Departure video](videos/state-depart.mp4) · [Stall video](videos/state-stall.mp4) · [Reentry video](videos/state-reenter.mp4)
 
@@ -15,7 +15,7 @@ A frozen model processed three newly captured CPU Gazebo sequences: departure, a
 | Occupancy agreement, counting abstentions as mismatches | 1,999 / 2,491 = **80.2%** |
 | False clear on occupied targets | **0 / 1,356** |
 | Abstention on definite targets | 19.8% |
-| Supported histories | **139 / 155 = 89.7%**, versus 90% required |
+| Supported histories | **139 / 155 = 89.7%**, versus the historical 90% experiment condition, no longer an adoption gate |
 | Mean position error across supported histories and horizons | 0.279 m |
 | Position error at 4 seconds | 0.570 m |
 | CPU inference for 16 images, mean / p95 | 0.036 / 0.037 seconds |
@@ -24,6 +24,14 @@ A frozen model processed three newly captured CPU Gazebo sequences: departure, a
 Position errors exclude unsupported histories; agreement includes abstentions. Five of six frozen conditions passed. In all 16 unsupported histories, one image's localization peak was insufficiently separated from an alternative. The overlapping four-second history propagates that abstention to four consecutive advisories. The threshold and weights were not retuned after these results.
 
 In reentry, the advisory changed from reviewing entry to waiting near 12 seconds, and back near 49 seconds. It abstained again around 51–54 seconds before recovering near 55 seconds. These are recorded-image advisories, with no dispatch or aircraft motion caused by them. No review-entry advisory overlapped an occupied **sampled** target; this does not establish continuous collision freedom.
+
+## Updated adoption policy
+
+Use the model if enabling it provides practical benefit in arrival, avoidable waiting, rework or human intervention, taking total time/energy/cost into account. There is no universal accuracy or support-rate cutoff, and no requirement to beat ideal Rules. Per-observation validity checks and independent current-state Rules remain in place.
+
+The current decision is **proceed with optional city pad-wait advisory integration**. Reduced waiting or improved delivery outcomes have not yet been demonstrated. The next connected run will compare model-enabled and model-disabled behavior. Missing/ambiguous evidence falls back to fresh observation and existing bounded hold/reobserve or mission-level escalation.
+
+The original frozen protocol and failed experiment status remain historical evidence. They are superseded for adoption by the separate [adoption policy](adoption-policy.json), not relabeled as a passing experiment. Live integration is still incomplete; that is distinct from rejection at 89.7%.
 
 ## Diagnostic comparison
 
@@ -45,7 +53,7 @@ The learned localization and pixel-to-3D mapping apply only to one fixed camera 
 
 The camera is an authored static rig; the lead is a scripted Gazebo entity and the parcel is preplaced. There is no AP hold verification, battery telemetry, unloading, delivery, return, or physical execution in this experiment. Native ANWM weights and VLA are unchanged. Sampled forecasts have neither own-action conditioning nor continuous-interval collision semantics; the production flight adapter was not relaxed to accept them. Sea legs remain AP-only.
 
-The next integration is advisory/shadow use while MissionOS is waiting, alongside real VLA+WAM and independent current-state checks. Flight authorization remains separate.
+The next integration uses this optional advisory alongside real VLA+WAM while MissionOS is waiting, handles the transition from a fixed rig to a moving onboard camera, and measures enabled/disabled mission effects. Flight authorization remains separate.
 
 ## Reproduction and cost
 
