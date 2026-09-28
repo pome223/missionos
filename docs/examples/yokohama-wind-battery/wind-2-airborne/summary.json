@@ -1,0 +1,105 @@
+{
+  "case": "wind-2-airborne",
+  "run_id": "yokohama-61e8fc3796c0",
+  "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+  "wind": {
+    "schema": "missionos.yokohama-wind.v1",
+    "after_takeoff": true,
+    "velocity_enu_mps": [
+      2.0,
+      0,
+      0
+    ],
+    "force_scale_per_s": 1,
+    "force_law": "mass * 1/s * (wind_velocity - link_velocity)",
+    "time_constant_s": 1,
+    "gusts": false,
+    "building_wakes": false,
+    "calibrated_aerodynamics": false,
+    "affected_links": [
+      "x500_0/base_link",
+      "delivery_payload/link"
+    ],
+    "witness_start_xyz_m": [
+      0,
+      3000,
+      100
+    ],
+    "control_start_xyz_m": [
+      0,
+      3010,
+      100
+    ]
+  },
+  "observed_cargo_link": "payload_link",
+  "metadata_note": "Early run affected_links labels cargo as link; actual SDF name is payload_link. Physics flag and verification use the actual element.",
+  "status": "passed",
+  "reason": null,
+  "last_phase": "return_land",
+  "final_target_error_m": null,
+  "arrival_timeout_wall_s": null,
+  "duration_sim_s": 1469.4679999999998,
+  "decision_backend": "fixture",
+  "native_vla_invoked": false,
+  "native_wam_invoked": false,
+  "gpu_requested": false,
+  "cleanup": true,
+  "holds_passed": 13,
+  "holds_recorded": 13,
+  "holds_required": 13,
+  "max_hold_horizontal_error_m": 0.25520328733801523,
+  "max_hold_vertical_error_m": 0.3916451486586183,
+  "final_observed_pitch_deg": 1.3675579232365917e-05,
+  "receipt_present": true,
+  "cargo": {
+    "observed_stable_sim_s": 3.0119999999999436,
+    "pad_center_error_m": 0.7206111148729343,
+    "receipt_id": "068e93ba175db958466c9ca43a163bf0283ad3bc06bfb9ec39e3ed9403bb31e4"
+  },
+  "final_observed_tilt_deg": 0.0001379604167238532,
+  "completion_verified": true,
+  "verifiers": {
+    "verification.json": "passed",
+    "decision-verification.json": "passed",
+    "payload-verification.json": "passed"
+  },
+  "evidence_hashes": {
+    "config.json": "868ebcd2ebb3c687380701e922da7fde3f427d699fa05e334182b0946199397f",
+    "result.json": "8978e3fdfd91818e490b848fc3478c31ea7973915a5c1e0182f0edbb771185d9",
+    "worker-result.json": "b01aae1ee0570739696b99d811651c96ded614c771796623739065ed3f8a68c8",
+    "flight-trajectory.jsonl": "2eeed77f4d37513bb6eba4954db0a19847985a5268cce77cdde86a05c65c5e73",
+    "flight-events.jsonl": "ad4288453d993114a40eda538ca1e4bf25a0e5f46df1e6a107e91ec0f97be46b"
+  },
+  "source_sha256": {
+    "yokohama_scene.py": "ad9ad3de307d590f052fd7b8a1f4623dd43714fdcf7b68424ffe35ea86e62be9",
+    "yokohama_sea.py": "ba96c40195f6139438d98bf6a3c32d2d0980fe85fa064dba855d9f4ed878de51",
+    "yokohama_wind.py": "5e480151384124e6016d0c1f6061358ecf60ceb491abaf3703f8878a4c94c116",
+    "yokohama_sitl.py": "faf924a6c517fd2298642f10dd092207f381e1acc3ea96afd977047002b0ce39",
+    "yokohama_sitl_worker.py": "a7eaa3b7944ab3170c9de1911a8a8b519b340c4bb5c50eaf9d3d58b82f42f7fc",
+    "ship_urban_camera_worker.py": "d1410467349d7bc5526a46afe2e84a9cf8e44d7a3fc391d8b0361ad78696d6c7",
+    "ship_onboard_entrypoint.sh": "b45b89f4bc9cf4ecab5f3d041866a436d6133574717e122a9e02f86e4c977364",
+    "yokohama_flight_worker.py": "2ffc27ea89e7cc0b8cd70320088d712ed2dc7269a88cfb07911c555aaa88b83a",
+    "yokohama_payload.py": "65be8f3b8ec0b4e7886dc71cd9b58e6f7104809749862638fd31738bdd4d892e",
+    "verify_yokohama_payload.py": "b524a558591ea0b5dc1d6e82097b9ebbf5f08783d2f89b54ac872dc3643bbba8",
+    "yokohama_decision_worker.py": "d8f3d98f81f50780575e09167c6cccf5a8f726cbd16a140d9a210addc4eac31d",
+    "yokohama_decision_host.py": "2ab063982c4646215cc4acb3c5de1a378e4c85e827a322308d775803e2ec51e7",
+    "yokohama_native.py": "45d482af2828b4a04c7dbe27281c26fa0833461d5728a3a547a20b93367c4732",
+    "ship_anwm.py": "78e4680405eb0202eac2dbc0ba8035577b1765cf8f76961e83f6f6ae2a431509",
+    "yokohama_appearance.py": "450da308c1d884e4fca1766d1143c80fd48b1f22b8aba3b071304100dd065ec9",
+    "yokohama_wam_profile.py": "1dba81457144c67c1562689644f14ce4d2ea5d3cd73f5ddfbf964f86e3ad46c6",
+    "ship_anwm_server.py": "30a0fa5e864279e2d09d8f7482dccacb93cb7961c8e28b46e070d8928ca04545",
+    "ship_aerovla.py": "3cc49ed27d3ff813ce5cebd766e65196fe5ced20bdfc2ebd9ecb8fb45d2f9743",
+    "ship_aerovla_server.py": "867300859825c5dc2d51ff2ae3a6647a78d4699bba2534b0ce77a49fe7b53c7a",
+    "ship_vla_adapter.py": "0a155c594218e92875daf91e6bbaaf84152eb9a2f93929a64c3666a63e828dca",
+    "smoke_px4_gazebo_sitl_mission_upload.py": "424dac5e40ac45d1012653a891581a1dd4e1d5091700703f725dffc580e45e01",
+    "verify_yokohama_decisions.py": "57845c90e9ff41c4c9380d34df703f5c14863a6e3854fbf5f73767af1ae1c2d3",
+    "verify_yokohama_sitl.py": "6aa5457ddeb3f739c7737fb04199683bc21b942e8ace3011516490d3692b6f3f"
+  },
+  "publication_verifier_sha256": {
+    "src/runtime/yokohama_wind.py": "1abf3b96b569f192df42ab27fa16edf8a95f6d5d61bc917d4d5ea4d347214ae2",
+    "scripts/verify_yokohama_sitl.py": "6aa5457ddeb3f739c7737fb04199683bc21b942e8ace3011516490d3692b6f3f",
+    "scripts/verify_yokohama_decisions.py": "57845c90e9ff41c4c9380d34df703f5c14863a6e3854fbf5f73767af1ae1c2d3",
+    "scripts/verify_yokohama_payload.py": "b524a558591ea0b5dc1d6e82097b9ebbf5f08783d2f89b54ac872dc3643bbba8"
+  },
+  "native_wind_flight_verified": false
+}

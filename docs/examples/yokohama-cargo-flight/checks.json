@@ -76,5 +76,21 @@
     "uncompressed_bytes": 20425922
   },
   "relative_links_checked": 38,
-  "private_path_and_credential_marker_scan": "passed"
+  "private_path_and_credential_marker_scan": "passed",
+  "battery_overlay_browser": {
+    "status": "passed",
+    "tab_id": "30",
+    "desktop_width": 1280,
+    "narrow_width": 390,
+    "horizontal_overflow": false,
+    "video_duration_s": 211.166667,
+    "playback_time_observed_s": 115.382207,
+    "videos_errors": null,
+    "console_errors": [],
+    "temporary_viewport_reset": true,
+    "video_sha256": "d5d459db3de1227c48b32bb6344ce1322e469a2bd93d30569e05c630ff4fdfdb",
+    "overlay_position": "header",
+    "narrow_header_layout_verified": true,
+    "narrow_layout_test_tab_id": "31"
+  }
 }

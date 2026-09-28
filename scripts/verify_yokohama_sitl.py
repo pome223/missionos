@@ -280,6 +280,11 @@ def verify(root, bundle):
         )
         output["sim_duration_s"] = rows[-1]["sim_s"] - rows[0]["sim_s"]
         output["wall_duration_s"] = rows[-1]["wall_s"] - rows[0]["wall_s"]
+    if config["world"].get("wind"):
+        from src.runtime.yokohama_wind import verify_wind
+
+        output["wind_verification"] = verify_wind(root, config, rows)
+        checks["wind_force_runtime"] = output["wind_verification"]["status"] == "passed"
     output["status"] = "passed" if all(checks.values()) else "failed"
     output["evidence_hashes"] = {
         n: sha256(root / n)

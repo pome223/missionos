@@ -134,6 +134,8 @@ def flight_trial(config, obs, run, field):
         if config["world"].get("payload_delivery"):
             row["payload"] = snap["poses"].get("delivery_payload")
             row["payload_joint"] = snap["payload_joint"]
+        if config["world"].get("wind"):
+            row["wind_probe"] = {k: snap["poses"].get(k) for k in ("wind_witness", "wind_control")}
         trajectory.write(json.dumps(row) + "\n")
         if (
             config["world"].get("payload_delivery")
@@ -259,6 +261,12 @@ def flight_trial(config, obs, run, field):
             **({"EKF2_MAG_TYPE": 6} if "simulator_initial_heading_deg" in config else {}),
         }.items():
             run([BIN + "param", "set", key, str(value)])
+        event(
+            "battery_simulation_parameters",
+            drain=run([BIN + "param", "show", "SIM_BAT_DRAIN"]),
+            floor=run([BIN + "param", "show", "SIM_BAT_MIN_PCT"]),
+            source="PX4 battery_simulator; time-based, no current sensor",
+        )
         wait_for(lambda r: r["position_valid"] is True and r["preflight_pass"] is True, 90)
         event("preflight_observed", observation=sample())
         if "simulator_initial_heading_deg" in config:
@@ -374,6 +382,14 @@ def flight_trial(config, obs, run, field):
                 ):
                     raise RuntimeError("Cargo did not take off attached to the vehicle")
                 event("payload_airborne_observed", observation=carried)
+            if phase == "SEA-TAKEOFF" and config["world"].get("wind", {}).get("after_takeoff"):
+                activation = obs.activate_wind(config["world"]["wind"]["velocity_enu_mps"])
+                activation.update(run_id=config["run_id"], phase=phase)
+                (ROOT / "wind-activation.json").write_text(json.dumps(activation, indent=2) + "\n")
+                event("wind_activated", activation=activation)
+                if not activation["confirmed"]:
+                    raise RuntimeError("Wind activation was not confirmed by Gazebo")
+                wait_for(lambda r: r["sim_s"] - activation["end_sim_s"] >= 10, 30)
             if phase == "PAYLOAD-LOW":
                 from yokohama_payload import atomic_json, digest, require_release, require_receipt
 

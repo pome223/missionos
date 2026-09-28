@@ -1,0 +1,23 @@
+{
+  "schema": "missionos.simulated-battery-video.v1",
+  "run_id": "yokohama-61e8fc3796c0",
+  "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+  "camera": "onboard",
+  "playback_speed": 8,
+  "source": "Recorded Gazebo RGB plus PX4 battery_status; time-based synthetic battery",
+  "model_backend": "fixture",
+  "telemetry_rule": "Latest sample at or before sensor frame, maximum age 2 simulator seconds; no future filling",
+  "physical_energy_measured": false,
+  "wind_or_inference_energy_model": false,
+  "source_trajectory_sha256": "2eeed77f4d37513bb6eba4954db0a19847985a5268cce77cdde86a05c65c5e73",
+  "source_frame_manifest_sha256": "700aed41e29a376ba063199688593047fbf4b351cf8a5252c0d0011c4d07ac37",
+  "source_start_sim_s": 4.724,
+  "source_end_sim_s": 1473.752,
+  "frames": 688,
+  "unavailable_frames": 12,
+  "remaining_start_fraction": 0.99406,
+  "remaining_end_fraction": 0.59494,
+  "video_sha256": "c778fcfdd38493a5bfbe01af5b91c6c0b291746c6622e3f9b607a79466d5360c",
+  "video_bytes": 1558695,
+  "exporter_sha256": "578c63805ce28c9a4dec4e585b20a83fbbfdf21f6560b0a6ae2440cb67829f69"
+}

@@ -1,0 +1,282 @@
+{
+  "status": "passed",
+  "checks": {
+    "plugin_and_vector": true,
+    "vehicle_wind_enabled": true,
+    "cargo_wind_enabled": true,
+    "force_observed_against_unpowered_control": true
+  },
+  "samples": [
+    {
+      "sim_s": 8.072,
+      "elapsed_since_activation_start_s": 8.072,
+      "witness_x_m": 12.166162656392027,
+      "expected_x_m": 12.150288117593975,
+      "error_m": 0.015874538798051674,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 8.4,
+      "elapsed_since_activation_start_s": 8.4,
+      "witness_x_m": 12.820580970881029,
+      "expected_x_m": 12.80467724034292,
+      "error_m": 0.015903730538108007,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 8.748,
+      "elapsed_since_activation_start_s": 8.748,
+      "witness_x_m": 13.51534059070791,
+      "expected_x_m": 13.49941310403109,
+      "error_m": 0.015927486676819314,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 9.096,
+      "elapsed_since_activation_start_s": 9.096,
+      "witness_x_m": 14.210433530863956,
+      "expected_x_m": 14.19448801982366,
+      "error_m": 0.015945511040294846,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 9.448,
+      "elapsed_since_activation_start_s": 9.448,
+      "witness_x_m": 14.91376457070829,
+      "expected_x_m": 14.897805283244793,
+      "error_m": 0.015959287463497063,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 9.768,
+      "elapsed_since_activation_start_s": 9.768,
+      "witness_x_m": 15.553316377797122,
+      "expected_x_m": 15.537347547728004,
+      "error_m": 0.01596883006911831,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 10.096,
+      "elapsed_since_activation_start_s": 10.096,
+      "witness_x_m": 16.20897412565183,
+      "expected_x_m": 16.192997779747394,
+      "error_m": 0.01597634590443775,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 10.432,
+      "elapsed_since_activation_start_s": 10.432,
+      "witness_x_m": 16.88071505562809,
+      "expected_x_m": 16.864732843030392,
+      "error_m": 0.01598221259769872,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 10.792,
+      "elapsed_since_activation_start_s": 10.792,
+      "witness_x_m": 17.60051302525825,
+      "expected_x_m": 17.584526092847888,
+      "error_m": 0.01598693241036031,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 11.132,
+      "elapsed_since_activation_start_s": 11.132,
+      "witness_x_m": 18.280374674974357,
+      "expected_x_m": 18.264384410018003,
+      "error_m": 0.01599026495635414,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 11.475999999999999,
+      "elapsed_since_activation_start_s": 11.475999999999999,
+      "witness_x_m": 18.96827245757642,
+      "expected_x_m": 18.95227965817787,
+      "error_m": 0.015992799398549806,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 11.82,
+      "elapsed_since_activation_start_s": 11.82,
+      "witness_x_m": 19.65619801677998,
+      "expected_x_m": 19.640203318671162,
+      "error_m": 0.015994698108819705,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 12.156,
+      "elapsed_since_activation_start_s": 12.156,
+      "witness_x_m": 20.32814491860438,
+      "expected_x_m": 20.312148828747755,
+      "error_m": 0.015996089856624707,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 12.508,
+      "elapsed_since_activation_start_s": 12.508,
+      "witness_x_m": 21.032104450275646,
+      "expected_x_m": 21.016107270958926,
+      "error_m": 0.015997179316720178,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 12.844,
+      "elapsed_since_activation_start_s": 12.844,
+      "witness_x_m": 21.704076388503832,
+      "expected_x_m": 21.688078433684296,
+      "error_m": 0.01599795481953592,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 13.2,
+      "elapsed_since_activation_start_s": 13.2,
+      "witness_x_m": 22.41605482444355,
+      "expected_x_m": 22.400056258276404,
+      "error_m": 0.0159985661671449,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 13.552,
+      "elapsed_since_activation_start_s": 13.552,
+      "witness_x_m": 23.12003949363504,
+      "expected_x_m": 23.104040481577183,
+      "error_m": 0.015999012057857698,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 13.908,
+      "elapsed_since_activation_start_s": 13.908,
+      "witness_x_m": 23.83202834968975,
+      "expected_x_m": 23.81602900533753,
+      "error_m": 0.01599934435222039,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 14.24,
+      "elapsed_since_activation_start_s": 14.24,
+      "witness_x_m": 24.49602081957016,
+      "expected_x_m": 24.480021245286803,
+      "error_m": 0.015999574283355855,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 14.584,
+      "elapsed_since_activation_start_s": 14.584,
+      "witness_x_m": 25.18401513235792,
+      "expected_x_m": 25.168015380432944,
+      "error_m": 0.01599975192497638,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 14.912,
+      "elapsed_since_activation_start_s": 14.912,
+      "witness_x_m": 25.84001117686965,
+      "expected_x_m": 25.82401129862648,
+      "error_m": 0.015999878243167842,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 15.248,
+      "elapsed_since_activation_start_s": 15.248,
+      "witness_x_m": 26.51200820971883,
+      "expected_x_m": 26.496008234675298,
+      "error_m": 0.015999975043531123,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 15.592,
+      "elapsed_since_activation_start_s": 15.592,
+      "witness_x_m": 27.20000600282992,
+      "expected_x_m": 27.1840059542306,
+      "error_m": 0.016000048599320138,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 15.943999999999999,
+      "elapsed_since_activation_start_s": 15.943999999999999,
+      "witness_x_m": 27.904004375301714,
+      "expected_x_m": 27.888004271279947,
+      "error_m": 0.016000104021767214,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 16.288,
+      "elapsed_since_activation_start_s": 16.288,
+      "witness_x_m": 28.592003229939245,
+      "expected_x_m": 28.576003086083606,
+      "error_m": 0.016000143855638527,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 16.64,
+      "elapsed_since_activation_start_s": 16.64,
+      "witness_x_m": 29.2960023859742,
+      "expected_x_m": 29.280002212155875,
+      "error_m": 0.016000173818326857,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 16.988,
+      "elapsed_since_activation_start_s": 16.988,
+      "witness_x_m": 29.9920017866941,
+      "expected_x_m": 29.976001591162593,
+      "error_m": 0.016000195531507444,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 17.316,
+      "elapsed_since_activation_start_s": 17.316,
+      "witness_x_m": 30.648001376691113,
+      "expected_x_m": 30.63200116601448,
+      "error_m": 0.016000210676633486,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 17.652,
+      "elapsed_since_activation_start_s": 17.652,
+      "witness_x_m": 31.320001069974037,
+      "expected_x_m": 31.304000847755386,
+      "error_m": 0.016000222218650606,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 18.008,
+      "elapsed_since_activation_start_s": 18.008,
+      "witness_x_m": 32.0320008357867,
+      "expected_x_m": 32.01600060458677,
+      "error_m": 0.016000231199924997,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    }
+  ],
+  "limitation": "Uniform built-in force approximation; no calibrated wind envelope"
+}

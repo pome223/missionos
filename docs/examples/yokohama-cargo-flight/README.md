@@ -31,3 +31,7 @@ python docs/examples/yokohama-cargo-flight/verify_bundle.py
 Estimated cargo-stage total $1.0612, including the retained pre-inference failure ($0.5486); cumulative **$16.7063/$17**; invoice unconfirmed. Owned VM/disks deleted. [Cost](cost.json).
 
 Limits: one drone, zero wind, static buildings/deck, simulated receiver, no packaging-integrity, moving-deck, fleet, hardware or energy-savings validation. Heading conversion uses simulator ground truth. WAM checks visible-shape consistency, not general obstacle recognition or hidden free space. Replay markers are enlarged observed-position interpolations; video is actual camera footage. [PLATEAU attribution](../yokohama-urban-scene/ATTRIBUTION.md).
+
+## Battery overlay
+
+[Recorded camera video with simulated battery telemetry](battery/battery-flight.mp4) uses the same native-model sortie. The original camera video is retained. Latest battery samples at or before each sensor frame are accepted only within 2 simulator seconds; 12 of 798 frames show UNAVAILABLE. PX4's time-based battery simulation does not measure current, Wh, inference energy or aerodynamic energy. Disarming resets synthetic voltage. See [metadata](battery/battery-metadata.json), [frame bindings](battery/battery-frames.json), and the [separate wind stress report](../yokohama-wind-battery/REPORT-ja.md).

@@ -56,3 +56,11 @@ python docs/examples/yokohama-cargo-flight/verify_bundle.py
 3D表示は実測位置の補間で、機体・荷物マーカーは見やすく拡大しています。配送動画と機上動画は実カメラ記録、WAM予測は別表示です。次は条件を固定した風を加え、配送・帰船の成立範囲を確認できます。
 
 原典：横浜市 / Project PLATEAU、加工データ。[出典・ライセンス](../yokohama-urban-scene/ATTRIBUTION.md) · [保守契約](../../agents/yokohama-payload-delivery.md)
+
+## バッテリー表示の追加
+
+同じ飛行の `battery_status` と元のGazeboフレームを使い、[残量・電圧付き動画](battery/battery-flight.mp4)を追加しました。元の動画・生ログ・予測画像は保持しています。約2秒間隔の観測を8倍速で再生し、画像時刻以前の最新バッテリー値を対応させます。2秒より古い値や欠測は埋めず、12 / 798フレームを `UNAVAILABLE` と表示します。[対応表](battery/battery-frames.json)・[メタデータ](battery/battery-metadata.json)。
+
+PX4 `battery_simulator` はarm中の時間から電圧を生成します。この試験では `SIM_BAT_DRAIN=3600`、`SIM_BAT_MIN_PCT=0`。電流は `-1`（未計測）で、Wh、実際の航続可能時間、風やVLA/WAMの消費電力は分かりません。disarm後の模擬電圧回復もそのまま記録しています。[実行版のPX4ソース](https://github.com/PX4/PX4-Autopilot/blob/381149fb012762f5e38c4a7fdc1b905b28038970/src/modules/simulation/battery_simulator/BatterySimulator.cpp)。
+
+風を加えた別のCPU試験は[別レポート](../yokohama-wind-battery/REPORT-ja.md)に記録します。この実モデル飛行の無風条件は変わりません。

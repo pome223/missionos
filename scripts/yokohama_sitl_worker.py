@@ -23,6 +23,8 @@ from gz.msgs10.image_pb2 import Image
 from gz.msgs10.pose_v_pb2 import Pose_V
 from gz.msgs10.world_stats_pb2 import WorldStatistics
 from gz.msgs10.stringmsg_pb2 import StringMsg
+from gz.msgs10.wind_pb2 import Wind
+from gz.msgs10.empty_pb2 import Empty
 from gz.transport13 import Node
 from ship_urban_camera_worker import png_rgb
 
@@ -54,6 +56,11 @@ def stamp(message):
 class Observer:
     def __init__(self, config):
         self.node = Node()
+        self.wind_publisher = (
+            self.node.advertise("/world/default/wind", Wind)
+            if config["world"].get("wind", {}).get("after_takeoff")
+            else None
+        )
         self.lock = threading.Lock()
         self.started = time.monotonic()
         self.sim_s = None
@@ -118,6 +125,29 @@ class Observer:
             self.joint_file.close()
         if self.motion:
             self.motion.close(self.onboard_camera_info)
+
+    def activate_wind(self, velocity):
+        if self.wind_publisher is None:
+            raise RuntimeError("Wind activation not configured")
+        msg = Wind()
+        msg.enable_wind = True
+        msg.linear_velocity.x, msg.linear_velocity.y, msg.linear_velocity.z = velocity
+        start = self.snapshot()["sim_s"]
+        self.wind_publisher.publish(msg)
+        time.sleep(0.2)
+        okay, response = self.node.request("/world/default/wind_info", Empty(), Empty, Wind, 1000)
+        confirmed = (
+            okay
+            and response.enable_wind
+            and [response.linear_velocity.x, response.linear_velocity.y, response.linear_velocity.z]
+            == velocity
+        )
+        return dict(
+            start_sim_s=start,
+            end_sim_s=self.snapshot()["sim_s"],
+            confirmed=confirmed,
+            requested_enu_mps=velocity,
+        )
 
     def receive_stats(self, m):
         with self.lock:

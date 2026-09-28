@@ -147,3 +147,10 @@ Keep unsuccessful development attempts. Freeze the source and qualification
 limits before the final cohort. Publish reviewed metrics, camera captures,
 reduced trajectory, reproduction code, and evidence hashes; never copy raw
 container inspection or workstation paths into the public report.
+
+## Opt-in wind and battery display
+
+The [wind and battery contract](yokohama-wind-battery.md) adds uniform wind
+stress and an offline battery-overlay video exporter. These extensions preserve
+the default zero-wind behavior. Wind CPU fixtures and time-based simulated
+remaining charge are separate from native-model or energy qualification.

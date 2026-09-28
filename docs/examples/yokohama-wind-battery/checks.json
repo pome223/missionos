@@ -1,0 +1,44 @@
+{
+  "status": "passed",
+  "full_suite": {
+    "passed": 3471,
+    "skipped": 1,
+    "elapsed_wall_s": 130.58,
+    "initial_collection_error": "core package missing from PYTHONPATH; corrected before full run"
+  },
+  "runtime_trials": {
+    "wind-2": {
+      "run_id": "yokohama-a7514e6c798a",
+      "status": "failed",
+      "completion_verified": false,
+      "holds_passed": 0
+    },
+    "wind-2-airborne": {
+      "run_id": "yokohama-61e8fc3796c0",
+      "status": "passed",
+      "completion_verified": true,
+      "holds_passed": 13
+    },
+    "wind-5-airborne": {
+      "run_id": "yokohama-38933914c00d",
+      "status": "failed",
+      "completion_verified": false,
+      "holds_passed": 1
+    }
+  },
+  "battery_video_decoding": "all four videos passed ffmpeg decode",
+  "browser": {
+    "desktop_width": 1280,
+    "narrow_width": 390,
+    "horizontal_overflow": false,
+    "case_selector_verified": true,
+    "play_pause_and_final_time_verified": true,
+    "native_battery_video_playback_observed_s": 115.382207,
+    "wind_2_video_playback_observed_s": 8.977073,
+    "wind_5_video_loaded_duration_s": 63.708333,
+    "viewport_reset": true,
+    "wind_5_video_playback_observed_s": 63.708333,
+    "console_errors": []
+  },
+  "limits": "CPU fixture wind trials; native model flight remains zero-wind; no measured energy"
+}

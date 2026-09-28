@@ -56,7 +56,26 @@ def main():
         action="store_true",
         help="Attach 50 g simulated cargo; gate return on observed pad receipt",
     )
+    parser.add_argument(
+        "--wind-east-mps",
+        type=float,
+        default=0,
+        help="Opt-in uniform eastward WindEffects stress, 0..5 m/s",
+    )
+    parser.add_argument(
+        "--wind-after-takeoff",
+        action="store_true",
+        help="Start wind after the measured SEA-TAKEOFF hold",
+    )
     args = parser.parse_args()
+    if args.wind_after_takeoff and (not args.wind_east_mps or not args.sea_round_trip):
+        parser.error("Delayed wind requires nonzero wind and --sea-round-trip")
+    import math
+
+    if not math.isfinite(args.wind_east_mps) or not 0 <= args.wind_east_mps <= 5:
+        parser.error("Wind must be finite and in [0, 5] m/s")
+    if args.wind_east_mps and args.phase != "flight":
+        parser.error("Wind stress currently requires flight")
     if args.deliver_payload and (not args.sea_round_trip or args.phase != "flight"):
         parser.error("Payload delivery requires --sea-round-trip --phase flight")
     if args.sea_round_trip and (
@@ -133,6 +152,10 @@ def main():
             from src.runtime.yokohama_payload import extend_world as add_payload
 
             world = add_payload(root, REPO / "docs/examples/yokohama-urban-scene", world)
+        if args.wind_east_mps:
+            from src.runtime.yokohama_wind import add_wind
+
+            world = add_wind(root, world, args.wind_east_mps, after_takeoff=args.wind_after_takeoff)
         config = {
             "run_id": run_id,
             "phase": args.phase,
@@ -144,7 +167,7 @@ def main():
             "hold_vertical_tolerance_m": 0.6,
             "hold_max_speed_mps": 0.5,
             "airspeed_mps": 3.0,
-            "wind_mps": 0.0,
+            "wind_mps": args.wind_east_mps,
         }
         if args.capture_motion_views:
             config["motion_capture"] = dict(
@@ -261,6 +284,7 @@ def main():
         sources = [
             REPO / "src/runtime/yokohama_scene.py",
             REPO / "src/runtime/yokohama_sea.py",
+            REPO / "src/runtime/yokohama_wind.py",
             Path(__file__),
             REPO / "scripts/yokohama_sitl_worker.py",
             REPO / "scripts/ship_urban_camera_worker.py",
