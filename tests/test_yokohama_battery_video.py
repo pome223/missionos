@@ -57,3 +57,19 @@ def test_wind_video_never_uses_future_or_unconfirmed_gust():
     assert "UNCONFIRMED" in align_wind([r], 10, "run", "world")["label"]
     with pytest.raises(ValueError, match="Foreign"):
         align_wind([r], 10, "other", "world")
+
+
+def test_recovery_caption_is_not_backdated_or_invented_after_last_sample():
+    from scripts.build_yokohama_battery_video import recovery_timeline, align_recovery
+
+    rows = [dict(wall_s=1, sim_s=10), dict(wall_s=2, sim_s=11), dict(wall_s=3, sim_s=12)]
+    events = [
+        dict(event="city_attempt_revoked", wall_s=1.5),
+        dict(event="city_recovery_held", wall_s=2.5),
+        dict(event="city_segment_arrived", wall_s=3.5),
+    ]
+    timeline = recovery_timeline(events, rows)
+    assert len(timeline) == 2
+    assert "not observed" in align_recovery(timeline, 10.9)["label"]
+    assert "INTERRUPTED" in align_recovery(timeline, 11)["label"]
+    assert "STABLE" in align_recovery(timeline, 12)["label"]

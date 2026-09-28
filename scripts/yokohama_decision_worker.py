@@ -24,6 +24,15 @@ def physical_heading(row):
     return math.atan2(1 - 2 * (y * y + z * z), 2 * (x * y + w * z))
 
 
+class HoldInterrupted(ValueError):
+    """Transient movement before dispatch; other authority failures stay fatal."""
+
+
+def attempt_name(cycle, attempt=0):
+    name = f"city-{cycle:02d}"
+    return name + (f"-attempt-{attempt:02d}" if attempt else "")
+
+
 def require_city_request(config, message):
     """Gate model startup and calls by both the approved phase and measured position.
 
@@ -64,20 +73,33 @@ class CityDecisions:
         self.started, self.closed, self.active = False, False, False
         self.completed = []
         self.paired_view = None
+        self.attempt = 0
 
     def held(self, anchor, *, require_stationary_view=True, max_view_drift_rad=0.03):
         row = self.sample()
-        if (
+        fatal = (
             row["nav_state"] != 4
             or row["arming_state"] != 2
             or row["landed"] is not False
             or row["position_valid"] is not True
             or row["battery_fraction"] < 0.2
-            or math.hypot(*row["velocity_ned"]) > 0.3
+            or row["reset_counters"] != anchor["reset_counters"]
+            or not all(
+                math.isfinite(v)
+                for v in [
+                    *row["vehicle"]["xyz"],
+                    *row["velocity_ned"],
+                    row["heading_ned_rad"],
+                    row["battery_fraction"],
+                    physical_heading(row),
+                ]
+            )
+        )
+        moved = (
+            math.hypot(*row["velocity_ned"]) > 0.3
             or math.dist(row["vehicle"]["xyz"], anchor["vehicle"]["xyz"]) > 0.5
             or abs(math.remainder(row["heading_ned_rad"] - anchor["heading_ned_rad"], 2 * math.pi))
             > 0.03
-            or row["reset_counters"] != anchor["reset_counters"]
             or (
                 require_stationary_view
                 and abs(
@@ -85,7 +107,8 @@ class CityDecisions:
                 )
                 > max_view_drift_rad
             )
-        ):
+        )
+        if fatal or moved:
             self.event(
                 "city_hold_rejected",
                 require_stationary_view=require_stationary_view,
@@ -93,11 +116,12 @@ class CityDecisions:
                 observation=row,
                 anchor=anchor,
             )
-            raise ValueError("City decision hold, reserve, heading or estimator continuity lost")
+            error = ValueError if fatal else HoldInterrupted
+            raise error("City decision hold, reserve, heading or estimator continuity lost")
         return row
 
     def exchange(self, operation, row, **fields):
-        if self.closed or (operation not in {"start", "stop"} and not self.active):
+        if self.closed or (operation not in {"start", "stop", "resume"} and not self.active):
             raise ValueError("City session inactive; late responses cannot restore it")
         self.sequence += 1
         message = dict(
@@ -109,6 +133,8 @@ class CityDecisions:
             observation=row,
             **fields,
         )
+        if self.attempt:
+            message["attempt"] = self.attempt
         require_city_request(self.config, message)
         stem = self.root / "decisions" / f"{self.sequence:03d}"
         temp = stem.with_name(stem.name + "-request.tmp")
@@ -120,6 +146,7 @@ class CityDecisions:
             + {
                 "start": self.config.get("decisions", {}).get("startup_timeout_s", 180),
                 "stop": 65,
+                "resume": self.config.get("decisions", {}).get("startup_timeout_s", 180) + 5,
                 "vla": 75,
                 "wam": 75,
                 "authorize": 2,
@@ -127,10 +154,14 @@ class CityDecisions:
             }[operation]
         )
         self.event(
-            "city_request", operation=operation, cycle=self.cycle, request_sha256=digest(message)
+            "city_request",
+            operation=operation,
+            cycle=self.cycle,
+            attempt=self.attempt,
+            request_sha256=digest(message),
         )
         lifecycle_only = (
-            operation in {"start", "stop"}
+            operation in {"start", "stop", "resume"}
             and self.config.get("decisions", {}).get("wam_profile") == "motion-v4"
         )
         while time.monotonic() < end:
@@ -138,11 +169,15 @@ class CityDecisions:
                 operation in {"vla", "wam"}
                 and self.config.get("decisions", {}).get("wam_profile") == "motion-v4"
             )
-            self.held(
-                row,
-                require_stationary_view=not lifecycle_only,
-                max_view_drift_rad=0.25 if world_view else 0.03,
-            )
+            if operation == "stop":
+                # Cleanup must remain possible while the aircraft is moving.
+                self.sample()
+            else:
+                self.held(
+                    row,
+                    require_stationary_view=not lifecycle_only,
+                    max_view_drift_rad=0.25 if world_view else 0.03,
+                )
             if response.exists():
                 value = json.loads(response.read_text())
                 if (
@@ -176,13 +211,115 @@ class CityDecisions:
             time.sleep(0.05)
         raise TimeoutError("City RGBD history missing")
 
-    def decide(self, obs, next_target):
+    def revoke_attempt(self):
+        self.active = False
+        record = dict(
+            run_id=self.config["run_id"],
+            config_sha256=digest(self.config),
+            cycle=self.cycle,
+            attempt=self.attempt,
+        )
+        path = self.root / "decisions" / (attempt_name(self.cycle, self.attempt) + "-revoked.json")
+        temp = path.with_suffix(".tmp")
+        temp.write_text(json.dumps(record))
+        temp.replace(path)
+        self.event("city_attempt_revoked", **record)
+
+    def recover_hold(self, anchor):
+        """Keep the existing AP loiter target; never move it to follow a drift."""
+        policy = self.config["decisions"]["hold_recovery"]
+        deadline = time.monotonic() + policy["timeout_wall_s"]
+        stable, previous = None, None
+        self.event("city_recovery_started", cycle=self.cycle, attempt=self.attempt, anchor=anchor)
+        while time.monotonic() < deadline:
+            row = self.sample()
+            if (
+                row["nav_state"] != 4
+                or row["arming_state"] != 2
+                or row["landed"] is not False
+                or row["position_valid"] is not True
+                or not math.isfinite(row["battery_fraction"])
+                or row["battery_fraction"] < 0.2
+                or row["reset_counters"] != anchor["reset_counters"]
+                or not all(
+                    math.isfinite(v)
+                    for v in [
+                        *row["vehicle"]["xyz"],
+                        *row["velocity_ned"],
+                        row["heading_ned_rad"],
+                        physical_heading(row),
+                        row["sim_s"],
+                    ]
+                )
+                or math.dist(row["vehicle"]["xyz"], anchor["vehicle"]["xyz"])
+                > policy.get("maximum_anchor_distance_m", 1)
+                # Gazebo clock snapshots can repeat while pose/PX4 samples
+                # advance. Repeats earn no stable time; reversals/gaps fail.
+                or (previous is not None and not 0 <= row["sim_s"] - previous <= 2)
+            ):
+                raise ValueError("AP recovery left its hold, reserve or estimator bounds")
+            previous = row["sim_s"]
+            okay = (
+                math.dist(row["vehicle"]["xyz"], anchor["vehicle"]["xyz"]) <= 0.5
+                and math.hypot(*row["velocity_ned"]) <= 0.3
+                and abs(
+                    math.remainder(row["heading_ned_rad"] - anchor["heading_ned_rad"], 2 * math.pi)
+                )
+                <= 0.03
+                and abs(
+                    math.remainder(physical_heading(row) - physical_heading(anchor), 2 * math.pi)
+                )
+                <= 0.03
+            )
+            stable = (row["sim_s"] if stable is None else stable) if okay else None
+            if stable is not None and row["sim_s"] - stable >= policy["stable_sim_s"]:
+                self.event(
+                    "city_recovery_held",
+                    cycle=self.cycle,
+                    attempt=self.attempt,
+                    stable_since_sim_s=stable,
+                    observation=row,
+                )
+                return
+            time.sleep(0.05)
+        raise TimeoutError("AP recovery stable hold deadline")
+
+    def prepare_segment(self, obs, next_target, upload):
+        """Retry only before activation, with revoked authority and new imagery."""
+        policy = self.config["decisions"].get("hold_recovery")
+        if not policy:
+            prepared = self.decide(obs, next_target)
+            upload(prepared["upload_name"])
+            return self.activation_permit(prepared)
         self.cycle += 1
+        anchor = self.sample()
+        require_city_request(
+            self.config, dict(operation="resume", cycle=self.cycle, observation=anchor)
+        )
+        for attempt in range(1, policy["max_attempts"] + 1):
+            self.attempt = attempt
+            try:
+                prepared = self.decide(obs, next_target, new_cycle=False)
+                upload(prepared["upload_name"])
+                return self.activation_permit(prepared)
+            except HoldInterrupted:
+                self.revoke_attempt()
+                if attempt == policy["max_attempts"]:
+                    raise
+                self.recover_hold(anchor)
+        raise AssertionError("Recovery attempt bound")
+
+    def decide(self, obs, next_target, *, new_cycle=True):
+        if new_cycle:
+            self.cycle += 1
         anchor = self.sample()
         self.held(anchor)
         if not self.started:
             self.started = True
             self.exchange("start", anchor)
+            self.active = True
+        elif not self.active:
+            self.exchange("resume", anchor)
             self.active = True
         refresh = self.config.get("decisions", {}).get("wam_profile") == "motion-v4"
         if refresh:
@@ -190,7 +327,8 @@ class CityDecisions:
             self.event(
                 "city_observation_reanchored", phase_boundary="after_startup", observation=anchor
             )
-        capture = self.capture(obs, f"city-{self.cycle:02d}-vla-capture", self.sample())
+        name = attempt_name(self.cycle, self.attempt)
+        capture = self.capture(obs, name + "-vla-capture", self.sample())
         vla = self.exchange(
             "vla", self.held(anchor), capture=capture, next_target_world_xyz_m=next_target
         )
@@ -198,7 +336,7 @@ class CityDecisions:
             anchor = self.sample()
         # A new uninterrupted history follows the VLA call; old imagery is not
         # reused to manufacture a second observation.
-        capture = self.capture(obs, f"city-{self.cycle:02d}-wam-capture", self.sample())
+        capture = self.capture(obs, name + "-wam-capture", self.sample())
         if refresh:
             anchor = self.held(anchor)
             self.event(
@@ -232,7 +370,8 @@ class CityDecisions:
             or permit.get("cycle") != self.cycle
             or permit.get("observation_sha256") != digest(current)
             or self.clock() > permit["expires_at_worker_wall_s"]
-            or permit.get("upload_name") != f"city-{self.cycle:02d}"
+            or permit.get("upload_name") != name
+            or permit.get("attempt", 0) != self.attempt
             or permit.get("vla_response_sha256") != vla["vla_response_sha256"]
             or permit.get("wam_assessment_sha256") != digest(wam)
             or permit.get("rules", {}).get("allowed") is not True

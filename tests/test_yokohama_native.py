@@ -123,12 +123,12 @@ def test_hold_rejects_drift_even_if_ap_still_reports_loiter(tmp_path):
         position_valid=True,
         battery_fraction=0.9,
         velocity_ned=[0, 0, 0],
-        vehicle={"xyz": [1, 0, 10]},
+        vehicle={"xyz": [1, 0, 10], "quat_wxyz": [1, 0, 0, 0]},
         heading_ned_rad=0,
         reset_counters=[0, 0, 0],
     )
     worker = CityDecisions(tmp_path, {}, lambda: row, lambda *a, **k: None, lambda: 0)
-    anchor = dict(row, vehicle={"xyz": [0, 0, 10]})
+    anchor = dict(row, vehicle={"xyz": [0, 0, 10], "quat_wxyz": [1, 0, 0, 0]})
     with pytest.raises(ValueError, match="hold"):
         worker.held(anchor)
 

@@ -1,0 +1,22 @@
+{
+  "schema_version": "yokohama_hold_recovery_verification.v1",
+  "run_id": "yokohama-132fb7fdd8db",
+  "status": "failed",
+  "checks": {
+    "recovery_observed": false,
+    "fresh_decision_and_arrival": false,
+    "no_revoked_permit_consumed": true,
+    "city_request_gates": true,
+    "shutdown_acknowledged": true,
+    "host_cleanup": true
+  },
+  "recoveries": [],
+  "whole_delivery_verified": false,
+  "native_models_invoked": false,
+  "source_sha256": {
+    "config.json": "c9f083e48a0ca6a3650ef6822b1a04e5e7d36866b890839c4f476ad9f864fef1",
+    "flight-events.jsonl": "4816cc438671d42fb461636d813048a9ab2377dcadcb68559c50922cbe5b7df8",
+    "flight-trajectory.jsonl": "e453c793ae9a24dcfade1db970395deb11ba0f9c729912966e9da2a7be88e8e7",
+    "result.json": "16c7e409e5902f5f51cbb06af2410b77320adebc1bfff586a1745d027fc32b77"
+  }
+}

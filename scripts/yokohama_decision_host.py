@@ -55,6 +55,7 @@ class DecisionHost:
         self.root, self.config, self.bundle = Path(root), config, Path(bundle)
         self.backend, self.service_config = backend, service_config
         self.identity, self.pending = None, {}
+        self.attempts = {}
         self.active, self.closed = False, False
         self.stop_receipt = None
         self.stop_event = threading.Event()
@@ -391,7 +392,9 @@ class DecisionHost:
             param2=0.25,
             param4=math.degrees(command_heading),
         )
-        name = f"city-{message['cycle']:02d}"
+        from scripts.yokohama_decision_worker import attempt_name
+
+        name = attempt_name(message["cycle"], message.get("attempt", 0))
         script = self.root / (name + "-upload.py")
         script.write_text(
             _inner_upload_script(
@@ -456,6 +459,8 @@ class DecisionHost:
             physical_execution_invoked=False,
         )
         proposal["prepared_observation"] = row
+        if message.get("attempt"):
+            permit["attempt"] = message["attempt"]
         if offshore:
             permit["executor_relative_altitude_m"] = command_altitude
             permit["altitude_mapping_observation_sha256"] = digest(row)
@@ -512,6 +517,22 @@ class DecisionHost:
         del self.pending[message["cycle"]]
         return permit
 
+    def revoked(self, message):
+        from scripts.yokohama_decision_worker import attempt_name
+
+        path = self.folder / (
+            attempt_name(message["cycle"], message.get("attempt", 0)) + "-revoked.json"
+        )
+        if not path.exists():
+            return False
+        record = json.loads(path.read_text())
+        if record != {
+            key: message.get(key, 0) for key in ("run_id", "config_sha256", "cycle", "attempt")
+        }:
+            raise ValueError("Unbound attempt revocation")
+        self.pending.pop(message["cycle"], None)
+        return True
+
     def serve(self):
         seen = set()
         while not self.stop_event.wait(0.02):
@@ -540,16 +561,41 @@ class DecisionHost:
                     require_city_request(self.config, message)
                     if operation not in {"start", "stop"} and not self.active:
                         raise ValueError("Model session revoked or not started")
+                    if operation != "stop":
+                        attempt = message.get("attempt", 0)
+                        policy = self.config["decisions"].get("hold_recovery")
+                        if (policy and not 1 <= attempt <= policy["max_attempts"]) or (
+                            not policy and attempt
+                        ):
+                            raise ValueError("Attempt outside configured recovery bound")
+                        previous = self.attempts.get(message["cycle"], 0)
+                        if attempt < previous or (
+                            attempt > previous and operation not in {"start", "resume", "vla"}
+                        ):
+                            raise ValueError("Obsolete or unstarted decision attempt")
+                        if attempt > previous:
+                            self.pending.pop(message["cycle"], None)
+                            self.attempts[message["cycle"]] = attempt
+                        # A lifecycle already requested may finish, but its old
+                        # response cannot grant authority to a revoked attempt.
+                        if operation != "start" and self.revoked(message):
+                            raise ValueError("Decision attempt revoked before processing")
                     delay = self.config["decisions"].get("fixture_delay_s", {}).get(operation, 0)
                     if self.backend == "fixture" and delay:
                         time.sleep(delay)
                     if operation in {"start", "stop"}:
                         value = getattr(self, operation)()
+                    elif operation == "resume":
+                        self.pending.pop(message["cycle"], None)
+                        value = self.identity
                     elif operation in {"vla", "wam", "authorize", "activate"}:
                         value = getattr(self, operation)(message, output)
                     else:
                         raise ValueError("Unknown mailbox operation")
                     result["value"] = value
+                    if operation != "stop" and self.revoked(message):
+                        result["attempt_revoked"] = True
+                        raise ValueError("Late result from revoked decision attempt")
                 except Exception as exc:
                     result["error"] = type(exc).__name__ + ": " + str(exc)
                 result["elapsed_s"] = time.monotonic() - start

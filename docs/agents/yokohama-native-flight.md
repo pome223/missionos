@@ -187,7 +187,9 @@ then timed out, masking that primary failure in the worker result. Retain this
 attempt as failed; it is not a forecast-quality measurement.
 
 The corrected motion-v4 lifecycle maintains AP mode, arming, position, reserve,
-velocity and estimator checks while starting/stopping services. A camera-view
+velocity and estimator checks while starting services. Cleanup stop requests
+remain allowed during motion and keep sampling; they do not grant flight
+authority. See [bounded CPU hold recovery](yokohama-hold-recovery.md). A camera-view
 anchor is not used before any observation-bound judgment exists. After startup,
 use a fresh anchor and capture. Refresh again after VLA and at the fresh WAM
 capture. Subsequent CPU latency qualification also exposed yaw drift during

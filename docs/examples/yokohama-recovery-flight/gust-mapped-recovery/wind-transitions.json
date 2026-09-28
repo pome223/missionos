@@ -1,0 +1,800 @@
+[
+  {
+    "start_sim_s": 61.72,
+    "end_sim_s": 61.924,
+    "confirmed": true,
+    "requested_enu_mps": [
+      6.0,
+      0,
+      0
+    ],
+    "confirmation_attempts": 1,
+    "run_id": "yokohama-027cb61bbb7b",
+    "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+    "phase": "SEA-TAKEOFF",
+    "sequence": 0,
+    "previous_zone": null,
+    "zone": "offshore",
+    "observation_sim_s": 61.72,
+    "vehicle": {
+      "id": 48,
+      "xyz": [
+        1351.5974733267267,
+        364.9129520743012,
+        15.461314583814286
+      ],
+      "quat_wxyz": [
+        -0.12433832358920789,
+        -0.000878222281775217,
+        -0.0010683255271408164,
+        0.9922389171430526
+      ],
+      "sensor_sim_s": 61.76,
+      "received_monotonic_s": 1502.057395641,
+      "age_s": 0.013181041999814624
+    },
+    "gust_id": null,
+    "steady_speed_mps": 6.0,
+    "gust_epoch_sim_s": 61.72
+  },
+  {
+    "start_sim_s": 92.172,
+    "end_sim_s": 92.376,
+    "confirmed": true,
+    "requested_enu_mps": [
+      7.688735766620865,
+      0,
+      0
+    ],
+    "confirmation_attempts": 1,
+    "run_id": "yokohama-027cb61bbb7b",
+    "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+    "phase": "SEA-INBOUND-COAST",
+    "sequence": 1,
+    "previous_zone": "offshore",
+    "zone": "offshore",
+    "observation_sim_s": 92.172,
+    "vehicle": {
+      "id": 48,
+      "xyz": [
+        1314.8953770428143,
+        353.95002799762614,
+        15.506505569131734
+      ],
+      "quat_wxyz": [
+        -0.09576698650506792,
+        -0.38274192117963884,
+        0.006264300056858971,
+        0.9188569337020072
+      ],
+      "sensor_sim_s": 92.172,
+      "received_monotonic_s": 1532.637967905,
+      "age_s": 0.010364374999880965
+    },
+    "gust_id": 0,
+    "steady_speed_mps": 6.0,
+    "gust_epoch_sim_s": 61.72
+  },
+  {
+    "start_sim_s": 101.888,
+    "end_sim_s": 102.096,
+    "confirmed": true,
+    "requested_enu_mps": [
+      6.0,
+      0,
+      0
+    ],
+    "confirmation_attempts": 1,
+    "run_id": "yokohama-027cb61bbb7b",
+    "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+    "phase": "SEA-INBOUND-COAST",
+    "sequence": 2,
+    "previous_zone": "offshore",
+    "zone": "offshore",
+    "observation_sim_s": 101.888,
+    "vehicle": {
+      "id": 48,
+      "xyz": [
+        1300.3258091659645,
+        349.28504074093973,
+        15.511360965356431
+      ],
+      "quat_wxyz": [
+        -0.08949473414553004,
+        -0.38185564581544823,
+        0.022759327497105537,
+        0.9195971788402614
+      ],
+      "sensor_sim_s": 101.948,
+      "received_monotonic_s": 1542.422778743,
+      "age_s": 0.00563487499994153
+    },
+    "gust_id": null,
+    "steady_speed_mps": 6.0,
+    "gust_epoch_sim_s": 61.72
+  },
+  {
+    "start_sim_s": 169.488,
+    "end_sim_s": 169.696,
+    "confirmed": true,
+    "requested_enu_mps": [
+      7.947263800313033,
+      0,
+      0
+    ],
+    "confirmation_attempts": 1,
+    "run_id": "yokohama-027cb61bbb7b",
+    "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+    "phase": "SEA-INBOUND-COAST",
+    "sequence": 3,
+    "previous_zone": "offshore",
+    "zone": "offshore",
+    "observation_sim_s": 169.488,
+    "vehicle": {
+      "id": 48,
+      "xyz": [
+        1112.131183477225,
+        299.1611289694296,
+        15.55781223148786
+      ],
+      "quat_wxyz": [
+        -0.09609990436881483,
+        -0.38265646764457345,
+        0.00647567825098496,
+        0.9188563009204823
+      ],
+      "sensor_sim_s": 169.544,
+      "received_monotonic_s": 1610.153904607,
+      "age_s": 0.01054741699999795
+    },
+    "gust_id": 1,
+    "steady_speed_mps": 6.0,
+    "gust_epoch_sim_s": 61.72
+  },
+  {
+    "start_sim_s": 175.524,
+    "end_sim_s": 175.724,
+    "confirmed": true,
+    "requested_enu_mps": [
+      6.0,
+      0,
+      0
+    ],
+    "confirmation_attempts": 1,
+    "run_id": "yokohama-027cb61bbb7b",
+    "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+    "phase": "SEA-INBOUND-COAST",
+    "sequence": 4,
+    "previous_zone": "offshore",
+    "zone": "offshore",
+    "observation_sim_s": 175.524,
+    "vehicle": {
+      "id": 48,
+      "xyz": [
+        1102.9575640034489,
+        295.92552567953265,
+        15.5445887825821
+      ],
+      "quat_wxyz": [
+        -0.08465623528878992,
+        -0.38196886082559467,
+        0.02520449750273379,
+        0.9199444790268385
+      ],
+      "sensor_sim_s": 175.604,
+      "received_monotonic_s": 1616.223446694,
+      "age_s": 0.016150333000041428
+    },
+    "gust_id": null,
+    "steady_speed_mps": 6.0,
+    "gust_epoch_sim_s": 61.72
+  },
+  {
+    "start_sim_s": 244.128,
+    "end_sim_s": 244.332,
+    "confirmed": true,
+    "requested_enu_mps": [
+      7.914099258353002,
+      0,
+      0
+    ],
+    "confirmation_attempts": 1,
+    "run_id": "yokohama-027cb61bbb7b",
+    "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+    "phase": "SEA-INBOUND-COAST",
+    "sequence": 5,
+    "previous_zone": "offshore",
+    "zone": "offshore",
+    "observation_sim_s": 244.128,
+    "vehicle": {
+      "id": 48,
+      "xyz": [
+        912.5523516140773,
+        245.333762780295,
+        15.508237527758203
+      ],
+      "quat_wxyz": [
+        -0.0893619078111047,
+        -0.382745667610732,
+        0.0029260743153006656,
+        0.9195170696874941
+      ],
+      "sensor_sim_s": 244.184,
+      "received_monotonic_s": 1685.048581307,
+      "age_s": 0.004898500000081185
+    },
+    "gust_id": 2,
+    "steady_speed_mps": 6.0,
+    "gust_epoch_sim_s": 61.72
+  },
+  {
+    "start_sim_s": 253.912,
+    "end_sim_s": 254.116,
+    "confirmed": true,
+    "requested_enu_mps": [
+      6.0,
+      0,
+      0
+    ],
+    "confirmation_attempts": 1,
+    "run_id": "yokohama-027cb61bbb7b",
+    "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+    "phase": "SEA-INBOUND-COAST",
+    "sequence": 6,
+    "previous_zone": "offshore",
+    "zone": "offshore",
+    "observation_sim_s": 253.912,
+    "vehicle": {
+      "id": 48,
+      "xyz": [
+        899.6280104077044,
+        241.07909363329472,
+        15.55392254906134
+      ],
+      "quat_wxyz": [
+        -0.08110710484855818,
+        -0.38206364744754684,
+        0.023574423355363677,
+        0.9202680334585265
+      ],
+      "sensor_sim_s": 253.98,
+      "received_monotonic_s": 1694.863273479,
+      "age_s": 0.0011831249998977
+    },
+    "gust_id": null,
+    "steady_speed_mps": 6.0,
+    "gust_epoch_sim_s": 61.72
+  },
+  {
+    "start_sim_s": 267.804,
+    "end_sim_s": 268.008,
+    "confirmed": true,
+    "requested_enu_mps": [
+      5.0,
+      0,
+      0
+    ],
+    "confirmation_attempts": 1,
+    "run_id": "yokohama-027cb61bbb7b",
+    "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+    "phase": "SEA-INBOUND-COAST",
+    "sequence": 7,
+    "previous_zone": "offshore",
+    "zone": "harbor",
+    "observation_sim_s": 267.804,
+    "vehicle": {
+      "id": 48,
+      "xyz": [
+        863.8410953046949,
+        232.16666146349698,
+        15.603763871465574
+      ],
+      "quat_wxyz": [
+        -0.09221357791668328,
+        -0.38296625142787005,
+        0.004479465030757216,
+        0.919137335063769
+      ],
+      "sensor_sim_s": 267.864,
+      "received_monotonic_s": 1708.771532944,
+      "age_s": 0.005991291000100318
+    },
+    "gust_id": null,
+    "steady_speed_mps": 5.0,
+    "gust_epoch_sim_s": 61.72
+  },
+  {
+    "start_sim_s": 304.968,
+    "end_sim_s": 305.172,
+    "confirmed": true,
+    "requested_enu_mps": [
+      6.511557428673419,
+      0,
+      0
+    ],
+    "confirmation_attempts": 1,
+    "run_id": "yokohama-027cb61bbb7b",
+    "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+    "phase": "SEA-INBOUND-COAST",
+    "sequence": 8,
+    "previous_zone": "harbor",
+    "zone": "harbor",
+    "observation_sim_s": 304.968,
+    "vehicle": {
+      "id": 48,
+      "xyz": [
+        724.3895558331408,
+        194.85059603257614,
+        15.607544754603621
+      ],
+      "quat_wxyz": [
+        -0.09602438766256848,
+        -0.3829340796745632,
+        -0.0050404646462344285,
+        0.9187575312964644
+      ],
+      "sensor_sim_s": 304.992,
+      "received_monotonic_s": 1745.946822085,
+      "age_s": 0.022239333000015904
+    },
+    "gust_id": 3,
+    "steady_speed_mps": 5.0,
+    "gust_epoch_sim_s": 61.72
+  },
+  {
+    "start_sim_s": 313.764,
+    "end_sim_s": 313.968,
+    "confirmed": true,
+    "requested_enu_mps": [
+      5.0,
+      0,
+      0
+    ],
+    "confirmation_attempts": 1,
+    "run_id": "yokohama-027cb61bbb7b",
+    "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+    "phase": "SEA-INBOUND-COAST",
+    "sequence": 9,
+    "previous_zone": "harbor",
+    "zone": "harbor",
+    "observation_sim_s": 313.764,
+    "vehicle": {
+      "id": 48,
+      "xyz": [
+        701.1305243036169,
+        188.01605359386474,
+        15.582991750227697
+      ],
+      "quat_wxyz": [
+        -0.08921895786798299,
+        -0.38264523674211254,
+        0.01081266441656208,
+        0.9195138316761409
+      ],
+      "sensor_sim_s": 313.764,
+      "received_monotonic_s": 1754.723232922,
+      "age_s": 0.014874374999862994
+    },
+    "gust_id": null,
+    "steady_speed_mps": 5.0,
+    "gust_epoch_sim_s": 61.72
+  },
+  {
+    "start_sim_s": 359.824,
+    "end_sim_s": 360.024,
+    "confirmed": true,
+    "requested_enu_mps": [
+      6.6697947955708035,
+      0,
+      0
+    ],
+    "confirmation_attempts": 1,
+    "run_id": "yokohama-027cb61bbb7b",
+    "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+    "phase": "SEA-INBOUND-COAST",
+    "sequence": 10,
+    "previous_zone": "harbor",
+    "zone": "harbor",
+    "observation_sim_s": 359.824,
+    "vehicle": {
+      "id": 48,
+      "xyz": [
+        528.43022281771,
+        141.9600700739258,
+        15.622441292277987
+      ],
+      "quat_wxyz": [
+        -0.09663549500719235,
+        -0.38280027511740145,
+        -0.003954627055004908,
+        0.9187545327233019
+      ],
+      "sensor_sim_s": 359.888,
+      "received_monotonic_s": 1800.920281318,
+      "age_s": 0.011727750000090964
+    },
+    "gust_id": 4,
+    "steady_speed_mps": 5.0,
+    "gust_epoch_sim_s": 61.72
+  },
+  {
+    "start_sim_s": 365.888,
+    "end_sim_s": 366.092,
+    "confirmed": true,
+    "requested_enu_mps": [
+      5.0,
+      0,
+      0
+    ],
+    "confirmation_attempts": 1,
+    "run_id": "yokohama-027cb61bbb7b",
+    "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+    "phase": "SEA-INBOUND-COAST",
+    "sequence": 11,
+    "previous_zone": "harbor",
+    "zone": "harbor",
+    "observation_sim_s": 365.888,
+    "vehicle": {
+      "id": 48,
+      "xyz": [
+        512.0568060071504,
+        136.91037759528737,
+        15.653423266098791
+      ],
+      "quat_wxyz": [
+        -0.08856368439153003,
+        -0.38248990385014303,
+        0.012627581841425546,
+        0.9196186663158507
+      ],
+      "sensor_sim_s": 365.98,
+      "received_monotonic_s": 1807.094757738,
+      "age_s": 0.0036396250000052532
+    },
+    "gust_id": null,
+    "steady_speed_mps": 5.0,
+    "gust_epoch_sim_s": 61.72
+  },
+  {
+    "start_sim_s": 422.744,
+    "end_sim_s": 422.94,
+    "confirmed": true,
+    "requested_enu_mps": [
+      6.801897641476505,
+      0,
+      0
+    ],
+    "confirmation_attempts": 1,
+    "run_id": "yokohama-027cb61bbb7b",
+    "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+    "phase": "SEA-INBOUND-COAST",
+    "sequence": 12,
+    "previous_zone": "harbor",
+    "zone": "harbor",
+    "observation_sim_s": 422.744,
+    "vehicle": {
+      "id": 48,
+      "xyz": [
+        386.27197198217254,
+        104.24889676729934,
+        15.581515425530082
+      ],
+      "quat_wxyz": [
+        -0.11046069360713923,
+        -0.24940084568671808,
+        0.028700498727579522,
+        0.9616516701547227
+      ],
+      "sensor_sim_s": 422.744,
+      "received_monotonic_s": 1863.970646473,
+      "age_s": 0.008394749999979467
+    },
+    "gust_id": 5,
+    "steady_speed_mps": 5.0,
+    "gust_epoch_sim_s": 61.72
+  },
+  {
+    "start_sim_s": 431.112,
+    "end_sim_s": 431.316,
+    "confirmed": true,
+    "requested_enu_mps": [
+      5.0,
+      0,
+      0
+    ],
+    "confirmation_attempts": 1,
+    "run_id": "yokohama-027cb61bbb7b",
+    "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+    "phase": "SEA-INBOUND-COAST",
+    "sequence": 13,
+    "previous_zone": "harbor",
+    "zone": "harbor",
+    "observation_sim_s": 431.112,
+    "vehicle": {
+      "id": 48,
+      "xyz": [
+        386.72661336209177,
+        104.24014258165872,
+        15.611807426707315
+      ],
+      "quat_wxyz": [
+        -0.09883035094677939,
+        -0.3201946672398225,
+        0.03367850663521023,
+        0.9415804240710072
+      ],
+      "sensor_sim_s": 431.128,
+      "received_monotonic_s": 1872.37004081,
+      "age_s": 0.012534624999943844
+    },
+    "gust_id": null,
+    "steady_speed_mps": 5.0,
+    "gust_epoch_sim_s": 61.72
+  },
+  {
+    "start_sim_s": 448.476,
+    "end_sim_s": 448.684,
+    "confirmed": true,
+    "requested_enu_mps": [
+      4.0,
+      0,
+      0
+    ],
+    "confirmation_attempts": 1,
+    "run_id": "yokohama-027cb61bbb7b",
+    "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+    "phase": "00-D1",
+    "sequence": 14,
+    "previous_zone": "harbor",
+    "zone": "coast",
+    "observation_sim_s": 448.476,
+    "vehicle": {
+      "id": 48,
+      "xyz": [
+        381.1282491394333,
+        102.84554219034969,
+        15.661632246118184
+      ],
+      "quat_wxyz": [
+        -0.10561073712228874,
+        -0.3338539867851742,
+        0.01014215266287557,
+        0.9366349472721452
+      ],
+      "sensor_sim_s": 448.5,
+      "received_monotonic_s": 1889.772583735,
+      "age_s": 0.0004866670001320017
+    },
+    "gust_id": null,
+    "steady_speed_mps": 4.0,
+    "gust_epoch_sim_s": 61.72
+  },
+  {
+    "start_sim_s": 500.844,
+    "end_sim_s": 501.044,
+    "confirmed": true,
+    "requested_enu_mps": [
+      5.057734287641449,
+      0,
+      0
+    ],
+    "confirmation_attempts": 1,
+    "run_id": "yokohama-027cb61bbb7b",
+    "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+    "phase": "00-D1",
+    "sequence": 15,
+    "previous_zone": "coast",
+    "zone": "coast",
+    "observation_sim_s": 500.844,
+    "vehicle": {
+      "id": 48,
+      "xyz": [
+        232.89541370596135,
+        62.82561785543522,
+        15.58107155789017
+      ],
+      "quat_wxyz": [
+        -0.11197738166473156,
+        -0.32575485526935083,
+        0.0016391721041875795,
+        0.9387982495609842
+      ],
+      "sensor_sim_s": 500.892,
+      "received_monotonic_s": 1942.404857967,
+      "age_s": 0.009468333000086204
+    },
+    "gust_id": 6,
+    "steady_speed_mps": 4.0,
+    "gust_epoch_sim_s": 61.72
+  },
+  {
+    "start_sim_s": 510.548,
+    "end_sim_s": 510.752,
+    "confirmed": true,
+    "requested_enu_mps": [
+      4.0,
+      0,
+      0
+    ],
+    "confirmation_attempts": 1,
+    "run_id": "yokohama-027cb61bbb7b",
+    "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+    "phase": "00-D1",
+    "sequence": 16,
+    "previous_zone": "coast",
+    "zone": "coast",
+    "observation_sim_s": 510.548,
+    "vehicle": {
+      "id": 48,
+      "xyz": [
+        206.6229453781388,
+        55.68475979221909,
+        15.630499512825917
+      ],
+      "quat_wxyz": [
+        -0.10524074805228215,
+        -0.35395834207750565,
+        0.006500696499932415,
+        0.9292984547324694
+      ],
+      "sensor_sim_s": 510.616,
+      "received_monotonic_s": 1952.132341429,
+      "age_s": 0.0046782090000760945
+    },
+    "gust_id": null,
+    "steady_speed_mps": 4.0,
+    "gust_epoch_sim_s": 61.72
+  },
+  {
+    "start_sim_s": 561.196,
+    "end_sim_s": 561.396,
+    "confirmed": true,
+    "requested_enu_mps": [
+      5.025007637124764,
+      0,
+      0
+    ],
+    "confirmation_attempts": 1,
+    "run_id": "yokohama-027cb61bbb7b",
+    "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+    "phase": "00-D1",
+    "sequence": 17,
+    "previous_zone": "coast",
+    "zone": "coast",
+    "observation_sim_s": 561.196,
+    "vehicle": {
+      "id": 48,
+      "xyz": [
+        59.852231161307245,
+        16.13078304908,
+        15.604654653625122
+      ],
+      "quat_wxyz": [
+        -0.11221228293416764,
+        -0.3255539076632557,
+        0.002035277894031391,
+        0.9388391312721156
+      ],
+      "sensor_sim_s": 561.212,
+      "received_monotonic_s": 2002.861444161,
+      "age_s": 0.002324625000028391
+    },
+    "gust_id": 7,
+    "steady_speed_mps": 4.0,
+    "gust_epoch_sim_s": 61.72
+  },
+  {
+    "start_sim_s": 562.716,
+    "end_sim_s": 562.92,
+    "confirmed": true,
+    "requested_enu_mps": [
+      8.100030548499056,
+      0,
+      0
+    ],
+    "confirmation_attempts": 1,
+    "run_id": "yokohama-027cb61bbb7b",
+    "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+    "phase": "00-D1",
+    "sequence": 18,
+    "previous_zone": "coast",
+    "zone": "city",
+    "observation_sim_s": 562.716,
+    "vehicle": {
+      "id": 48,
+      "xyz": [
+        55.50290871808441,
+        14.909539830765663,
+        15.625587726299452
+      ],
+      "quat_wxyz": [
+        -0.10771698419532685,
+        -0.3434771110762424,
+        0.0042073516261838815,
+        0.9329538164747898
+      ],
+      "sensor_sim_s": 562.78,
+      "received_monotonic_s": 2004.433727995,
+      "age_s": 0.005304291999891575
+    },
+    "gust_id": 7,
+    "steady_speed_mps": 3.0,
+    "gust_epoch_sim_s": 61.72
+  },
+  {
+    "start_sim_s": 568.34,
+    "end_sim_s": 568.548,
+    "confirmed": true,
+    "requested_enu_mps": [
+      3.0,
+      0,
+      0
+    ],
+    "confirmation_attempts": 1,
+    "run_id": "yokohama-027cb61bbb7b",
+    "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+    "phase": "00-D1",
+    "sequence": 19,
+    "previous_zone": "city",
+    "zone": "city",
+    "observation_sim_s": 568.34,
+    "vehicle": {
+      "id": 48,
+      "xyz": [
+        47.272583083618805,
+        11.81258674137523,
+        15.648211970641567
+      ],
+      "quat_wxyz": [
+        -0.0860304325541422,
+        -0.38190885269478425,
+        0.026397717857509093,
+        0.9198084329901612
+      ],
+      "sensor_sim_s": 568.432,
+      "received_monotonic_s": 2010.090602498,
+      "age_s": 0.0034358750001501903
+    },
+    "gust_id": null,
+    "steady_speed_mps": 3.0,
+    "gust_epoch_sim_s": 61.72
+  },
+  {
+    "start_sim_s": 627.716,
+    "end_sim_s": 627.92,
+    "confirmed": true,
+    "requested_enu_mps": [
+      9.153487979297026,
+      0,
+      0
+    ],
+    "confirmation_attempts": 1,
+    "run_id": "yokohama-027cb61bbb7b",
+    "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+    "phase": "00-D1",
+    "sequence": 20,
+    "previous_zone": "city",
+    "zone": "city",
+    "observation_sim_s": 627.716,
+    "vehicle": {
+      "id": 48,
+      "xyz": [
+        0.06902993330333287,
+        0.02079010784440366,
+        15.588444467792813
+      ],
+      "quat_wxyz": [
+        -0.477988833200963,
+        -0.14065452314325086,
+        0.0778950074292398,
+        0.8635249552109802
+      ],
+      "sensor_sim_s": 627.74,
+      "received_monotonic_s": 2069.443608899,
+      "age_s": 0.006512083999950846
+    },
+    "gust_id": 8,
+    "steady_speed_mps": 3.0,
+    "gust_epoch_sim_s": 61.72
+  }
+]

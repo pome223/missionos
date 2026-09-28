@@ -1,0 +1,68 @@
+{
+  "base": {
+    "schema_version": "yokohama_recovery_run_protocol.v1",
+    "run_id": "yokohama-f5f67178b3fe",
+    "configuration_sha256": "8c6d3780d30602ce0f5d3de79fa4e4eeb21daf52d56e589d2366aba40ffcf8ee",
+    "comparison_reference_run": "yokohama-372932c0bec8",
+    "gust_seed": 20260928,
+    "attempts": 1,
+    "new_gpu_spend_usd": 0,
+    "scope": "CPU fixture; measured pre-dispatch hold recovery, fresh decisions and observed movement. Full cargo mission is independently verified.",
+    "recovery_policy": {
+      "max_attempts": 3,
+      "stable_sim_s": 5,
+      "timeout_wall_s": 90,
+      "maximum_anchor_distance_m": 1,
+      "before_dispatch_only": true
+    },
+    "no_threshold_changes": true,
+    "same_gust_seed_not_identical_phase_alignment": true,
+    "created_utc": "2026-09-28T04:46:49.781144+00:00"
+  },
+  "clock_fix": {
+    "run_id": "yokohama-132fb7fdd8db",
+    "config_sha256": "c9f083e48a0ca6a3650ef6822b1a04e5e7d36866b890839c4f476ad9f864fef1",
+    "reason_for_rerun": "Clock snapshots may repeat; such rows earn no stable time. No wind, hold, image, reserve or recovery-radius bounds changed.",
+    "superseded_run_kept": "gust-flight",
+    "gust_seed": 20260928,
+    "new_gpu_spend_usd": 0,
+    "recovery_policy": {
+      "max_attempts": 3,
+      "stable_sim_s": 5,
+      "timeout_wall_s": 90,
+      "maximum_anchor_distance_m": 1,
+      "before_dispatch_only": true
+    }
+  },
+  "mapped_recovery": {
+    "run_id": "yokohama-027cb61bbb7b",
+    "config_sha256": "bc9e16f12db1fb764388193937087ab5e08a2b482ffdc4c97b0be68aa1aff543",
+    "reason": "Separate explicitly mapped 3 m pre-dispatch recovery volume after the 1 m development bound stopped at 1.071 m; no change to new-decision stability, normal arrival holds, WAM or post-dispatch tracking bounds.",
+    "one_trial": true,
+    "gust_seed": 20260928,
+    "new_gpu_spend_usd": 0,
+    "recovery_policy": {
+      "max_attempts": 3,
+      "stable_sim_s": 5,
+      "timeout_wall_s": 90,
+      "maximum_anchor_distance_m": 3.0,
+      "before_dispatch_only": true,
+      "mapped_envelopes": [
+        {
+          "phase": "00-D1",
+          "anchor_offset_bound_m": 1,
+          "radius_m": 3.0,
+          "minimum_envelope_clearance_m": 20.248369189606674,
+          "map_sha256": "494deab12304ac5f1f63eb7f7d45275b9aab642493df0526261f7f865eb3e37b"
+        },
+        {
+          "phase": "01-D2",
+          "anchor_offset_bound_m": 1,
+          "radius_m": 3.0,
+          "minimum_envelope_clearance_m": 20.399202096828777,
+          "map_sha256": "494deab12304ac5f1f63eb7f7d45275b9aab642493df0526261f7f865eb3e37b"
+        }
+      ]
+    }
+  }
+}

@@ -177,6 +177,46 @@ def geometry_rules(start, target, next_target, config, bundle):
     )
 
 
+def recovery_envelopes(config, bundle, radius_m):
+    """Preflight clearance of a bounded recovery volume, not an AI permission."""
+    from shapely.geometry import Point, shape
+
+    if not math.isfinite(radius_m) or not 1 <= radius_m <= 3:
+        raise ValueError("Recovery radius must be in [1, 3] m")
+    asset = bundle / "collision-footprints.geojson"
+    features = json.loads(asset.read_text())["features"]
+    # A decision anchor may already be 1 m from the authored city hold.
+    # Bound the world->source scale and keep the existing 2 m map margin.
+    extent = radius_m + 1
+    matrix = np.array(config["world"]["frame"]["source_to_world_matrix"])
+    source_extent = extent * float(np.linalg.norm(np.linalg.inv(matrix), ord=2))
+    result = []
+    for name in ("00-D1", "01-D2"):
+        stage = next(s for s in config["flight_stages"] if s["name"] == name)
+        center = to_source(np.array([stage["target_world_xyz_m"]]), config["world"]["frame"])[0]
+        relevant = [
+            shape(f["geometry"])
+            for f in features
+            if f["properties"]["zmax"] >= center[2] - source_extent - 2
+            and f["properties"]["zmin"] <= center[2] + source_extent + 2
+        ]
+        if not relevant:
+            raise ValueError("Recovery map envelope missing")
+        clearance = min(Point(center[:2]).distance(g) for g in relevant) - source_extent
+        if clearance <= 2:
+            raise ValueError("Recovery volume violates the 2 m mapped clearance")
+        result.append(
+            dict(
+                phase=name,
+                anchor_offset_bound_m=1,
+                radius_m=radius_m,
+                minimum_envelope_clearance_m=clearance,
+                map_sha256=hashlib.sha256(asset.read_bytes()).hexdigest(),
+            )
+        )
+    return result
+
+
 def past_view(arrays, target_pose):
     """Independent z-buffer of past RGBD into the native 480x360/224 crop.
 

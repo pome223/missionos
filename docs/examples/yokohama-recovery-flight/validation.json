@@ -1,0 +1,40 @@
+{
+  "scope": "CPU recovery implementation and negative SITL evidence, not successful recovery or native model capability",
+  "local_full_suite": {
+    "passed": 3517,
+    "skipped": 2,
+    "before_final_anchor_precheck": true
+  },
+  "final_recovery_suite_with_map_dependencies": {
+    "passed": 17,
+    "skipped": 0
+  },
+  "publication": {
+    "status": "passed",
+    "cases": 3,
+    "links": "passed",
+    "privacy": "passed",
+    "full_video_decode": "passed",
+    "gpu_spend_usd": 0
+  },
+  "browser": {
+    "desktop_width": 1280,
+    "desktop_overflow": false,
+    "mobile_width": 390,
+    "mobile_overflow": false,
+    "mobile_grid_columns": "354px",
+    "viewport_reset": true,
+    "case_switching_verified": true,
+    "main_video_browser_ended": true,
+    "main_video_duration_s": 78.625,
+    "all_three_videos_full_ffmpeg_decode": true,
+    "browser_recovery": "Native media control click crashed first tab; fresh tab plus explicit page play button completed playback.",
+    "new_gpu_spend_usd": 0
+  },
+  "sources": {
+    "scripts/yokohama_decision_worker.py": "27779338c1ff027d3cad53d984fcd5223297038159b77998427c6ab5e8434a98",
+    "scripts/yokohama_decision_host.py": "c7ed358f41457be27b0c345405b5807783a98658a8958c7fed84993a0158b8ba",
+    "scripts/verify_yokohama_recovery.py": "6b9d2fac42f1b380e2076b994e57a9a8d6663e2dd6b4eedc053a09f5bf7d0a1a",
+    "tests/test_yokohama_recovery.py": "a4445084f1629793a5f9057ac5974cd53b404360ecacbd1ab27aed57dd2cb126"
+  }
+}

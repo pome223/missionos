@@ -45,6 +45,15 @@ def verify(root):
         require_city_request(config, request)
         requests.append((path, request, response))
     checks["mailboxes_bound"] = bool(requests)
+    revoked_attempts = [e for e in events if e["event"] == "city_attempt_revoked"]
+    checks["no_revoked_attempt_dispatched"] = not any(
+        e["event"] == "city_permit_consumed"
+        and any(
+            e["permit"]["cycle"] == r["cycle"] and e["permit"].get("attempt", 0) == r["attempt"]
+            for r in revoked_attempts
+        )
+        for e in events
+    )
     checks["model_requests_inside_approved_city_holds"] = bool(requests)
     identity = next(s["value"] for _, r, s in requests if r["operation"] == "start")
     checks["successful_run_and_shutdown"] = (
@@ -79,7 +88,19 @@ def verify(root):
     )
     last_arrival = -1
     for cycle in (1, 2):
-        group = {r["operation"]: (path, r, s) for path, r, s in requests if r["cycle"] == cycle}
+        group = {
+            r["operation"]: (path, r, s)
+            for path, r, s in requests
+            if r["cycle"] == cycle
+            and not any(
+                v["cycle"] == cycle and v["attempt"] == r.get("attempt", 0)
+                for v in revoked_attempts
+            )
+        }
+        required = ("vla", "wam", "authorize", "activate")
+        if any(operation not in group or "error" in group[operation][2] for operation in required):
+            checks[f"cycle_{cycle}_complete"] = False
+            continue
         vpath, vr, vs = group["vla"]
         wpath, wr, ws = group["wam"]
         apath, ar, ars = group["activate"]

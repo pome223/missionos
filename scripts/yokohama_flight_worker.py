@@ -548,10 +548,10 @@ def flight_trial(config, obs, run, field):
                 else:
                     raise TimeoutError("No verified pad receipt; return remains unauthorized")
             if decisions and phase in ("00-D1", "01-D2"):
-                permit = decisions.decide(obs, config["flight_stages"][i + 1]["target_world_xyz_m"])
+                permit = decisions.prepare_segment(
+                    obs, config["flight_stages"][i + 1]["target_world_xyz_m"], upload
+                )
                 candidate = permit["candidate"]
-                upload(permit["upload_name"])
-                permit = decisions.activation_permit(permit)
                 # Mission upload does not itself move the vehicle. Recheck hold
                 # and the bound two-second issuance age before activation.
                 if time.monotonic() - started > permit["expires_at_worker_wall_s"]:

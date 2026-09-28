@@ -77,7 +77,23 @@ def main():
         type=int,
         help="Opt-in reproducible gusts on a wind profile (CPU fixture only)",
     )
+    parser.add_argument(
+        "--recover-city-hold",
+        action="store_true",
+        help="CPU fixture: revoke an interrupted decision, re-hold and observe again (at most 3 attempts)",
+    )
+    parser.add_argument(
+        "--recovery-radius-m",
+        type=float,
+        help="Explicit recovery-only radius, 1..3 m; requires mapped clearance",
+    )
     args = parser.parse_args()
+    if args.recovery_radius_m is not None and (
+        not args.recover_city_hold or not 1 <= args.recovery_radius_m <= 3
+    ):
+        parser.error("Recovery radius requires --recover-city-hold and a finite value in [1, 3]")
+    if args.recover_city_hold and (args.decision_backend != "fixture" or args.capture_paired_views):
+        parser.error("Hold recovery currently requires fixture decisions without paired capture")
     if args.gust_seed is not None and (
         args.wind_profile != "harbor-nominal" or not 0 <= args.gust_seed <= 2**32 - 1
     ):
@@ -242,6 +258,14 @@ def main():
                 sea_leg_present=args.sea_round_trip,
                 payload_release_present=args.deliver_payload,
             )
+            if args.recover_city_hold:
+                config["decisions"]["hold_recovery"] = dict(
+                    max_attempts=3,
+                    stable_sim_s=5,
+                    timeout_wall_s=90,
+                    maximum_anchor_distance_m=args.recovery_radius_m or 1,
+                    before_dispatch_only=True,
+                )
         if args.decision_backend or args.capture_motion_views:
             # This pinned simulator's magnetometer frame conversion is not a
             # qualified heading source. Initialize once from the authored
@@ -315,6 +339,15 @@ def main():
                 )
                 previous = target
             config["flight_stages"] = stages
+        if args.recover_city_hold:
+            from src.runtime.yokohama_native import recovery_envelopes
+
+            policy = config["decisions"]["hold_recovery"]
+            policy["mapped_envelopes"] = recovery_envelopes(
+                config,
+                REPO / "docs/examples/yokohama-urban-scene",
+                policy["maximum_anchor_distance_m"],
+            )
         (root / "config.json").write_text(json.dumps(config, indent=2) + "\n")
         sources = [
             REPO / "src/runtime/yokohama_scene.py",
