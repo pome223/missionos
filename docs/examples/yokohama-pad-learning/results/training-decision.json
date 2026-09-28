@@ -1,0 +1,70 @@
+{
+  "training_needed": true,
+  "reason": "fixed 50-step/64-frame development capability gate",
+  "development": [
+    {
+      "sample_id": "train-depart-20-t64",
+      "reader": {
+        "state": "unknown",
+        "grayscale_rmse": {
+          "occupied": 11.073102951049805,
+          "clear": 10.142449378967285
+        },
+        "class_margin": 0.9306535720825195
+      },
+      "target_reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 10.235199928283691,
+          "clear": 0.0
+        },
+        "class_margin": 10.235199928283691
+      },
+      "rgb_mae": 33.93637728528912,
+      "passed": false
+    },
+    {
+      "sample_id": "train-stall-24-t64",
+      "reader": {
+        "state": "unknown",
+        "grayscale_rmse": {
+          "occupied": 11.039278984069824,
+          "clear": 10.104663848876953
+        },
+        "class_margin": 0.9346151351928711
+      },
+      "target_reader": {
+        "state": "occupied",
+        "grayscale_rmse": {
+          "occupied": 3.3974101543426514,
+          "clear": 10.692828178405762
+        },
+        "class_margin": 7.29541802406311
+      },
+      "rgb_mae": 33.63155027636054,
+      "passed": false
+    },
+    {
+      "sample_id": "train-reenter-10-t64",
+      "reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 10.542810440063477,
+          "clear": 9.500590324401855
+        },
+        "class_margin": 1.042220115661621
+      },
+      "target_reader": {
+        "state": "occupied",
+        "grayscale_rmse": {
+          "occupied": 3.3974101543426514,
+          "clear": 10.692828178405762
+        },
+        "class_margin": 7.29541802406311
+      },
+      "rgb_mae": 34.08974410076531,
+      "passed": false
+    }
+  ],
+  "evaluation_targets_used": false
+}

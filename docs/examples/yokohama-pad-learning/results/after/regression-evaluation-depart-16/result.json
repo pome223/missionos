@@ -1,0 +1,50 @@
+{
+  "forecasts": [
+    {
+      "candidate": {
+        "id": "hold",
+        "delta": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "elapsed_s": 5.881817941000008,
+      "files": {
+        "prediction": {
+          "file": "hold-prediction.png",
+          "sha256": "aeb15f51878293333d615b56a4db1f8f1c7ea46d22ef39d60a1e3639f7c2bb8a"
+        },
+        "projection": {
+          "file": "hold-projection.png",
+          "sha256": "5652d8940efa44d60a716fecf6cbb66cb55c4aa92b096788524d3abfa85ca0d4"
+        }
+      },
+      "conditioning": {
+        "metric_geometry_changed": false,
+        "appearance_added_fraction": 0.034058159722222224,
+        "known_fraction": 0.7459157986111111
+      },
+      "model_time_index": 64
+    }
+  ],
+  "peak_cuda_allocated_bytes": 6788531712,
+  "gpu": "NVIDIA L4",
+  "torch_version": "2.9.1+cu129",
+  "schema": "pad_learning_forecast.v1",
+  "sample_id": "regression-evaluation-depart-16",
+  "stage": "after",
+  "history_sha256": "6284ba88e47b6b2878f28cbf15217685a23e130d97ea60b104dbf9c557e10755",
+  "model_frame_offset": 64,
+  "requested_horizon_sim_s": 16.0,
+  "cutoff_stamp_ns": 68500000000,
+  "requested_future_stamp_ns": 84500000000,
+  "diffusion_steps": 50,
+  "seed": 42,
+  "request_total_seconds": 5.926082773999951,
+  "adapter_sha256": "5b78a8c97e6ed42ece769bf1d5bdeb35e8352ae8b64f7f4c27b0edc6b7518542",
+  "native_inference_invoked": true,
+  "flight_admitted": false,
+  "dispatch_invoked": false
+}

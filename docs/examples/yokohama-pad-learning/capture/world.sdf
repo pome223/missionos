@@ -1,0 +1,64 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf version="1.9">
+  <world name="default">
+    <physics type="ode">
+      <max_step_size>0.004</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>250</real_time_update_rate>
+    </physics>
+    <gravity>0 0 -9.8</gravity>
+    <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
+    <atmosphere type="adiabatic" />
+    <scene>
+      <grid>false</grid>
+      <ambient>0.4 0.4 0.4 1</ambient>
+      <background>0.7 0.7 0.7 1</background>
+      <shadows>true</shadows>
+    </scene>
+    <light name="sunUTC" type="directional">
+      <pose>0 0 500 0 -0 0</pose>
+      <cast_shadows>true</cast_shadows>
+      <intensity>1</intensity>
+      <direction>0.001 0.625 -0.78</direction>
+      <diffuse>0.904 0.904 0.904 1</diffuse>
+      <specular>0.271 0.271 0.271 1</specular>
+      <attenuation>
+        <range>2000</range>
+        <linear>0</linear>
+        <constant>1</constant>
+        <quadratic>0</quadratic>
+      </attenuation>
+      <spot>
+        <inner_angle>0</inner_angle>
+        <outer_angle>0</outer_angle>
+        <falloff>0</falloff>
+      </spot>
+    </light>
+    <spherical_coordinates>
+      <surface_model>EARTH_WGS84</surface_model>
+      <world_frame_orientation>ENU</world_frame_orientation>
+      <latitude_deg>35.44765024667082</latitude_deg>
+      <longitude_deg>139.64480691720166</longitude_deg>
+      <elevation>0</elevation>
+    </spherical_coordinates>
+  <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics" /><plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands" /><plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster" /><plugin filename="gz-sim-contact-system" name="gz::sim::systems::Contact" /><plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu" /><plugin filename="gz-sim-magnetometer-system" name="gz::sim::systems::Magnetometer" /><plugin filename="gz-sim-air-pressure-system" name="gz::sim::systems::AirPressure" /><plugin filename="gz-sim-navsat-system" name="gz::sim::systems::NavSat" /><plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors"><render_engine>ogre2</render_engine></plugin><model name="yokohama_city"><static>true</static><link name="link"><visual name="building"><geometry><mesh><uri>file:///mission/assets/building.obj</uri></mesh></geometry><material><ambient>.58 .65 .63 1</ambient><diffuse>.58 .65 .63 1</diffuse></material></visual><visual name="bridge"><geometry><mesh><uri>file:///mission/assets/bridge.obj</uri></mesh></geometry><material><ambient>.48 .55 .52 1</ambient><diffuse>.48 .55 .52 1</diffuse></material></visual><visual name="terrain"><geometry><mesh><uri>file:///mission/assets/terrain.obj</uri></mesh></geometry><material><ambient>.50 .59 .46 1</ambient><diffuse>.50 .59 .46 1</diffuse></material></visual><visual name="road"><geometry><mesh><uri>file:///mission/assets/road.obj</uri></mesh></geometry><material><ambient>.77 .78 .74 1</ambient><diffuse>.77 .78 .74 1</diffuse></material></visual><collision name="terrain"><geometry><mesh><uri>file:///mission/assets/terrain.obj</uri></mesh></geometry></collision><collision name="collision-prisms"><geometry><mesh><uri>file:///mission/assets/collision-prisms.obj</uri></mesh></geometry></collision><sensor name="city" type="contact"><always_on>true</always_on><update_rate>20</update_rate><topic>/yokohama/contacts/city</topic><contact><collision>terrain</collision><collision>collision-prisms</collision></contact></sensor></link></model><model name="launch_pad"><static>true</static><pose>1351.6022270886856 364.9265949871361 -0.5 0 0 0</pose><link name="link"><visual name="visual"><geometry><box><size>12 12 1</size></box></geometry><material><diffuse>.12 .48 .36 1</diffuse></material></visual><collision name="collision"><geometry><box><size>12 12 1</size></box></geometry></collision><sensor name="launch_pad" type="contact"><always_on>true</always_on><update_rate>20</update_rate><topic>/yokohama/contacts/launch_pad</topic><contact><collision>collision</collision></contact></sensor></link></model><model name="delivery_pad"><static>true</static><pose>153.03285452510517 -64.89336826549612 -0.2688569128957251 0 0 0</pose><link name="link"><visual name="visual"><geometry><box><size>4 4 .2</size></box></geometry><material><diffuse>.12 .48 .36 1</diffuse></material></visual><collision name="collision"><geometry><box><size>4 4 .2</size></box></geometry></collision><sensor name="delivery_pad" type="contact"><always_on>true</always_on><update_rate>20</update_rate><topic>/yokohama/contacts/delivery_pad</topic><contact><collision>collision</collision></contact></sensor></link></model><model name="scene_camera"><static>true</static><link name="link"><sensor name="rgbd" type="rgbd_camera"><pose>-34.88761388811289 -60.6945307036456 15.110143087104275 0 0 -0.5216910496069086</pose><always_on>true</always_on><update_rate>2</update_rate><topic>/yokohama/scene</topic><camera><horizontal_fov>1.0471975511965976</horizontal_fov><image><width>640</width><height>360</height><format>R8G8B8</format></image><clip><near>.1</near><far>800</far></clip><depth_camera><clip><near>.1</near><far>800</far></clip></depth_camera></camera></sensor></link></model><model name="authored_sea"><static>true</static><pose>1351.6022270886856 364.9265949871361 -3 0 0 0</pose><link name="link"><visual name="water_visual_only"><geometry><box><size>3500 3500 .02</size></box></geometry><material><diffuse>.10 .30 .40 1</diffuse></material></visual></link></model><model name="delivery_payload">
+      <pose>1351.6022270886856 364.9265949871361 0.04 0 0 0</pose>
+      <static>false</static>
+      <link name="payload_link">
+        <inertial>
+          <mass>0.050000</mass>
+          <inertia>
+            <ixx>0.0001</ixx><ixy>0</ixy><ixz>0</ixz>
+            <iyy>0.0001</iyy><iyz>0</iyz><izz>0.0001</izz>
+          </inertia>
+        </inertial>
+        <collision name="payload_collision">
+          <geometry><box><size>0.12 0.12 0.08</size></box></geometry>
+        </collision>
+        <visual name="payload_visual">
+          <geometry><box><size>0.12 0.12 0.08</size></box></geometry>
+          <material><diffuse>0.1 0.5 1.0 1</diffuse></material>
+        </visual>
+      </link>
+    </model><model name="delivery_camera"><static>true</static><link name="link"><sensor name="delivery_rgb" type="camera"><pose>158.03285452510517 -69.89336826549612 2.831143087104275 0 0.40124714191836086 2.356194490192345</pose><always_on>true</always_on><update_rate>4</update_rate><topic>/yokohama/delivery</topic><camera><horizontal_fov>1.0471975511965976</horizontal_fov><image><width>640</width><height>360</height><format>R8G8B8</format></image><clip><near>.1</near><far>800</far></clip></camera></sensor></link></model><model name="queue_lead"><static>true</static><pose>153.83285452510518 -64.09336826549612 1.0311430871042748 0 0 0</pose><link name="link"><visual name="body"><pose>0 0 0 0 0 0</pose><geometry><box><size>.8 .6 .25</size></box></geometry><material><diffuse>.95 .5 .05 1</diffuse><ambient>.95 .5 .05 1</ambient></material></visual><collision name="body"><pose>0 0 0 0 0 0</pose><geometry><box><size>.8 .6 .25</size></box></geometry></collision><visual name="rotor_0"><pose>-0.6 -0.6 0.1 0 0 0</pose><geometry><box><size>.5 .5 .04</size></box></geometry><material><diffuse>.08 .1 .12 1</diffuse><ambient>.08 .1 .12 1</ambient></material></visual><collision name="rotor_0"><pose>-0.6 -0.6 0.1 0 0 0</pose><geometry><box><size>.5 .5 .04</size></box></geometry></collision><visual name="rotor_1"><pose>-0.6 0.6 0.1 0 0 0</pose><geometry><box><size>.5 .5 .04</size></box></geometry><material><diffuse>.08 .1 .12 1</diffuse><ambient>.08 .1 .12 1</ambient></material></visual><collision name="rotor_1"><pose>-0.6 0.6 0.1 0 0 0</pose><geometry><box><size>.5 .5 .04</size></box></geometry></collision><visual name="rotor_2"><pose>0.6 -0.6 0.1 0 0 0</pose><geometry><box><size>.5 .5 .04</size></box></geometry><material><diffuse>.08 .1 .12 1</diffuse><ambient>.08 .1 .12 1</ambient></material></visual><collision name="rotor_2"><pose>0.6 -0.6 0.1 0 0 0</pose><geometry><box><size>.5 .5 .04</size></box></geometry></collision><visual name="rotor_3"><pose>0.6 0.6 0.1 0 0 0</pose><geometry><box><size>.5 .5 .04</size></box></geometry><material><diffuse>.08 .1 .12 1</diffuse><ambient>.08 .1 .12 1</ambient></material></visual><collision name="rotor_3"><pose>0.6 0.6 0.1 0 0 0</pose><geometry><box><size>.5 .5 .04</size></box></geometry></collision></link></model><model name="queue_parcel"><static>true</static><pose>153.83285452510518 -64.09336826549612 0.5311430871042748 0 0 0</pose><link name="link"><visual name="cargo"><pose>0 0 0 0 0 0</pose><geometry><box><size>.3 .3 .3</size></box></geometry><material><diffuse>.1 .7 .4 1</diffuse><ambient>.1 .7 .4 1</ambient></material></visual><collision name="cargo"><pose>0 0 0 0 0 0</pose><geometry><box><size>.3 .3 .3</size></box></geometry></collision></link></model><model name="queue_camera"><static>true</static><pose>0 0 0 0 0 0</pose><link name="link"><sensor name="queue_rgb" type="camera"><pose>169.03285452510517 -80.89336826549612 11.831143087104275 0 0.4161325009697857 2.356194490192345</pose><always_on>true</always_on><update_rate>4</update_rate><topic>/yokohama/queue</topic><camera><horizontal_fov>1.0471975511965976</horizontal_fov><image><width>640</width><height>360</height><format>R8G8B8</format></image><clip><near>.1</near><far>800</far></clip></camera></sensor></link></model><model name="x500_0"><static>true</static><pose>143.06599428639694 -82.2329673664574 9.831143087104275 0 0.2914567944778671 1.0491098217515702</pose><link name="base_link"><sensor name="urban_rgbd" type="rgbd_camera"><pose>0.25 0 0.1 0 0 0</pose><always_on>true</always_on><update_rate>4</update_rate><topic>/yokohama/onboard</topic><camera><horizontal_fov>1.0471975511965976</horizontal_fov><image><width>640</width><height>360</height><format>R8G8B8</format></image><clip><near>.1</near><far>800</far></clip><depth_camera><clip><near>.1</near><far>800</far></clip></depth_camera></camera></sensor><sensor name="urban_down" type="camera"><pose>0.25 0 0.1 0 1.5707963267948966 0</pose><always_on>true</always_on><update_rate>4</update_rate><topic>/yokohama/down</topic><camera><horizontal_fov>1.0471975511965976</horizontal_fov><image><width>640</width><height>360</height><format>R8G8B8</format></image><clip><near>.1</near><far>800</far></clip></camera></sensor></link><plugin filename="gz-sim-pose-publisher-system" name="gz::sim::systems::PosePublisher"><publish_model_pose>true</publish_model_pose><publish_link_pose>false</publish_link_pose><use_pose_vector_msg>true</use_pose_vector_msg><update_frequency>250</update_frequency><topic>/world/default/pose/info</topic></plugin></model></world>
+</sdf>

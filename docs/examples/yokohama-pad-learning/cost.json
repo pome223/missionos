@@ -1,0 +1,25 @@
+{
+  "schema": "pad_learning_cost_receipt.v1",
+  "error": null,
+  "cleanup_errors": [],
+  "cleanup_confirmed": true,
+  "elapsed_observed_s": 1004.119852,
+  "new_estimated_usd": 0.6823293807222222,
+  "cumulative_estimated_usd": 18.532818962573373,
+  "authorized_total_usd": 20,
+  "invoice_confirmed": false,
+  "cost_estimate_closed": true,
+  "completed_at": "2026-09-28T11:18:16.846868+00:00",
+  "prior_estimated_usd": 17.85048958185115,
+  "reserved_hourly_usd": 1.55,
+  "maximum_runtime_s": 3600,
+  "transfer_reserve_usd": 0.25,
+  "pricing_source": "https://cloud.google.com/products/compute/pricing/accelerator-optimized",
+  "g2_standard_16_base_hourly_usd": 1.147208384,
+  "one_owned_instance": true,
+  "own_resources_after": {
+    "instances": [],
+    "disks": []
+  },
+  "private_controller_receipt_sha256": "7907dc219a72d64041ee406699cc9d622f624e66eff980f85c6a4750e780ce0d"
+}

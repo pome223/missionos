@@ -1,0 +1,96 @@
+{
+  "records": [
+    {
+      "file": "ablation-50-1/train-depart-20-t01/result.json",
+      "sha256": "e0dc62577b872f1f9fe74b6f02c8b19dc371c8321587fda7fe22fe79f57d53d4"
+    },
+    {
+      "file": "ablation-50-64/train-depart-20-t64/result.json",
+      "sha256": "8ecc56b9008a61ede68cd0ea6cad8a8cce7e8e572ccdb71eb4a7313d66a27bca"
+    },
+    {
+      "file": "ablation-250-1/train-depart-20-t01/result.json",
+      "sha256": "c9ec50d16d97721f6a38d67b350f5bac219316035fee9d8cd06de2d4839952d1"
+    },
+    {
+      "file": "ablation-250-64/train-depart-20-t64/result.json",
+      "sha256": "8af1914b8004397d1cf8c51c2bdff30ba2250087733995794846ca4bb9dbc0b0"
+    },
+    {
+      "file": "development-before/train-depart-20-t64/result.json",
+      "sha256": "09df62f18b5fca5d657ffd7c50bc59c0646c4044fd60a0620ed9e6cc5ac519a9"
+    },
+    {
+      "file": "development-before/train-stall-24-t64/result.json",
+      "sha256": "515cf9c734d99ec324969cf01b4833d7655bfb705786ae2a561716a5856c95f0"
+    },
+    {
+      "file": "development-before/train-reenter-10-t64/result.json",
+      "sha256": "750c4dc30cf47d2d6cb9039d4b709347b5ae1b7e9671505ebfceaffe99dd61e1"
+    },
+    {
+      "file": "before/heldout-depart-18-t64/result.json",
+      "sha256": "628422696c287a08c993d6275ead07acca5b238397e1a3b4c38ab3df7e2ebefc"
+    },
+    {
+      "file": "before/heldout-depart-36-t64/result.json",
+      "sha256": "f678cedc2a834154553ae263d4207d2cd4c338a82030054ba138b7cd50c2c352"
+    },
+    {
+      "file": "before/heldout-stall-28-t64/result.json",
+      "sha256": "230bef5f9991cfe03fa9f8798af714daaf1ef2a1deabd4dfbe7ea38cff505ca2"
+    },
+    {
+      "file": "before/heldout-reenter-17-t64/result.json",
+      "sha256": "981307979931ef5c52a26894b6763c0e6aa1a49d34b23552101b5819e7f9567d"
+    },
+    {
+      "file": "before/regression-evaluation-depart-16/result.json",
+      "sha256": "69ade8850b30e0c17c30b69d03bbf0943fdaf14831403dd8ad33fee8dfb83a75"
+    },
+    {
+      "file": "before/regression-evaluation-depart-32/result.json",
+      "sha256": "a68b55368669f55a28f92cb6966aa8fa6abeee2602bd501832452850e4926d7b"
+    },
+    {
+      "file": "before/regression-evaluation-stall-24/result.json",
+      "sha256": "fbf04ff9793e9adb164392a26159624c0a5aaad917bb06688c14c4ae48cee966"
+    },
+    {
+      "file": "before/regression-evaluation-reenter-14/result.json",
+      "sha256": "dc59841d23f0b16415502a5befe46d97130acdc4272c7a5aa6b727d6b941d41f"
+    },
+    {
+      "file": "after/heldout-depart-18-t64/result.json",
+      "sha256": "dc4f671e6c87197f02bfcd979f21381f9770c0f0de3bac8088505595a098a9a4"
+    },
+    {
+      "file": "after/heldout-depart-36-t64/result.json",
+      "sha256": "0f5298027adbca172f12ab867420bab8c775d2697e5693f329c0fc1aba9c67f3"
+    },
+    {
+      "file": "after/heldout-stall-28-t64/result.json",
+      "sha256": "39200e7c9e5cf43cdf83c9a4ba795c5d2830cf5f914579a0dffd74359cdfff43"
+    },
+    {
+      "file": "after/heldout-reenter-17-t64/result.json",
+      "sha256": "4f109012b3a0f708f8a20f1fa626856bf7147589620a82d9d041dbec61339448"
+    },
+    {
+      "file": "after/regression-evaluation-depart-16/result.json",
+      "sha256": "2c7e85356b0ddc151197c8673fb30923c773e7d9ea90f9ccd620c5f5beb77d4b"
+    },
+    {
+      "file": "after/regression-evaluation-depart-32/result.json",
+      "sha256": "c373b36047f3a62568be258dc8e670100e2e158cf37d38c95f0fe35ab1fc41e9"
+    },
+    {
+      "file": "after/regression-evaluation-stall-24/result.json",
+      "sha256": "635b22502d70bfc7aff7c77864efcf4b6f00cf46e0594c8e0c2a73e52b20d3dc"
+    },
+    {
+      "file": "after/regression-evaluation-reenter-14/result.json",
+      "sha256": "1b9f1f852e42b78af978daabf8c4c6cee3b67a8e3f0f4ff7dee6ef037e0bb801"
+    }
+  ]
+}

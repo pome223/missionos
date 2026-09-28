@@ -1,0 +1,118 @@
+{
+  "schema": "pad_learning_targets.v1",
+  "rows": [
+    {
+      "id": "heldout-depart-18-t64",
+      "cohort": "fresh",
+      "target_state": "clear",
+      "source_state": "occupied",
+      "target_stamp_ns": 221000000000,
+      "target_sha256": "acf2d966dcc4e02182661f9ad0b94e7b76ce2c433a42357c55f6dfc44f1d280f",
+      "target_raw_sha256": "91b854c0c392df7d3305ab39b080648e9a5913288babab640d5833bbbf7c6e4d",
+      "capture_sha256": "34a41b45f6013f46f50c5dcbc16e7a61b51871ceb77f2289028cbe2bc9bae1c7",
+      "source_frame_index": 72,
+      "target_frame_index": 136,
+      "actual_reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 10.235199928283691,
+          "clear": 0.0
+        },
+        "class_margin": 10.235199928283691
+      }
+    },
+    {
+      "id": "heldout-depart-36-t64",
+      "cohort": "fresh",
+      "target_state": "clear",
+      "source_state": "clear",
+      "target_stamp_ns": 239000000000,
+      "target_sha256": "acf2d966dcc4e02182661f9ad0b94e7b76ce2c433a42357c55f6dfc44f1d280f",
+      "target_raw_sha256": "91b854c0c392df7d3305ab39b080648e9a5913288babab640d5833bbbf7c6e4d",
+      "capture_sha256": "34a41b45f6013f46f50c5dcbc16e7a61b51871ceb77f2289028cbe2bc9bae1c7",
+      "source_frame_index": 144,
+      "target_frame_index": 208,
+      "actual_reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 10.235199928283691,
+          "clear": 0.0
+        },
+        "class_margin": 10.235199928283691
+      }
+    },
+    {
+      "id": "heldout-stall-28-t64",
+      "cohort": "fresh",
+      "target_state": "occupied",
+      "source_state": "occupied",
+      "target_stamp_ns": 288000000000,
+      "target_sha256": "eea18d153f701503670d582234bbae5c038f9ac98297e5cc6fe123049749a4e0",
+      "target_raw_sha256": "15b882fac0fa5abd1f48774600c8702c998f92ebcc79dc377ebd3be3d1cdcf6d",
+      "capture_sha256": "207b58de549d229f22812e86feb5fec4f6ea40d990758c24f0792f70aac56ef1",
+      "source_frame_index": 111,
+      "target_frame_index": 175,
+      "actual_reader": {
+        "state": "occupied",
+        "grayscale_rmse": {
+          "occupied": 3.3974101543426514,
+          "clear": 10.692828178405762
+        },
+        "class_margin": 7.29541802406311
+      }
+    },
+    {
+      "id": "heldout-reenter-17-t64",
+      "cohort": "fresh",
+      "target_state": "occupied",
+      "source_state": "unknown",
+      "target_stamp_ns": 346000000000,
+      "target_sha256": "eea18d153f701503670d582234bbae5c038f9ac98297e5cc6fe123049749a4e0",
+      "target_raw_sha256": "15b882fac0fa5abd1f48774600c8702c998f92ebcc79dc377ebd3be3d1cdcf6d",
+      "capture_sha256": "a9e34cf317b27167984483f8c46087d62ac7dbcf786cfc74130f42a9e350d074",
+      "source_frame_index": 67,
+      "target_frame_index": 131,
+      "actual_reader": {
+        "state": "occupied",
+        "grayscale_rmse": {
+          "occupied": 3.3974101543426514,
+          "clear": 10.692828178405762
+        },
+        "class_margin": 7.29541802406311
+      }
+    },
+    {
+      "id": "regression-evaluation-depart-16",
+      "cohort": "previously_inspected_regression",
+      "target_state": "clear",
+      "source_state": "occupied",
+      "target_stamp_ns": 84500000000,
+      "target_sha256": "acf2d966dcc4e02182661f9ad0b94e7b76ce2c433a42357c55f6dfc44f1d280f"
+    },
+    {
+      "id": "regression-evaluation-depart-32",
+      "cohort": "previously_inspected_regression",
+      "target_state": "clear",
+      "source_state": "clear",
+      "target_stamp_ns": 100500000000,
+      "target_sha256": "acf2d966dcc4e02182661f9ad0b94e7b76ce2c433a42357c55f6dfc44f1d280f"
+    },
+    {
+      "id": "regression-evaluation-stall-24",
+      "cohort": "previously_inspected_regression",
+      "target_state": "occupied",
+      "source_state": "occupied",
+      "target_stamp_ns": 144000000000,
+      "target_sha256": "eea18d153f701503670d582234bbae5c038f9ac98297e5cc6fe123049749a4e0"
+    },
+    {
+      "id": "regression-evaluation-reenter-14",
+      "cohort": "previously_inspected_regression",
+      "target_state": "occupied",
+      "source_state": "clear",
+      "target_stamp_ns": 201000000000,
+      "target_sha256": "eea18d153f701503670d582234bbae5c038f9ac98297e5cc6fe123049749a4e0"
+    }
+  ],
+  "dataset_sha256": "31d88118e142617817652453af76cbfcb98c58c79e882c34edf1efea231d1437"
+}

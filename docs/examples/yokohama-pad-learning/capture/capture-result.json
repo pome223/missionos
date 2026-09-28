@@ -1,0 +1,37 @@
+{
+  "status": "passed",
+  "aircraft_flown": false,
+  "native_inference": false,
+  "cases": [
+    {
+      "id": "train-depart",
+      "frames": 224,
+      "capture_sha256": "d2d5701f6ce26bcd7c4514f3169d03048c17c27ef79eaa386ec3dc85aa6d7fa9"
+    },
+    {
+      "id": "train-stall",
+      "frames": 256,
+      "capture_sha256": "cd3b19cdbd61b40d2ebca3829b9163654feec9aecb432ee364810674fcf6ae56"
+    },
+    {
+      "id": "train-reenter",
+      "frames": 240,
+      "capture_sha256": "77d2780b0c56d6084aa5a5d3008a11d6b1a71d6468bb708d9bb7b2ab94d7abc5"
+    },
+    {
+      "id": "heldout-depart",
+      "frames": 224,
+      "capture_sha256": "34a41b45f6013f46f50c5dcbc16e7a61b51871ceb77f2289028cbe2bc9bae1c7"
+    },
+    {
+      "id": "heldout-stall",
+      "frames": 272,
+      "capture_sha256": "207b58de549d229f22812e86feb5fec4f6ea40d990758c24f0792f70aac56ef1"
+    },
+    {
+      "id": "heldout-reenter",
+      "frames": 256,
+      "capture_sha256": "a9e34cf317b27167984483f8c46087d62ac7dbcf786cfc74130f42a9e350d074"
+    }
+  ]
+}

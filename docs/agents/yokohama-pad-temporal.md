@@ -102,3 +102,7 @@ failed CI run and measured differences. Native forecasts, target images, reader
 thresholds, classification results and flight-admission policy are unchanged.
 
 [Human report](../examples/yokohama-pad-temporal/REPORT-ja.md)
+
+Follow-up: [conditional dynamic post-training](yokohama-pad-learning.md) separates
+the sampler/time factors and records a real weight update. It restores background
+appearance but still erases lead traffic, so neither result is admitted for flight.

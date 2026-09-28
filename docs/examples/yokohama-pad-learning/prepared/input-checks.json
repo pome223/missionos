@@ -1,0 +1,197 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "id": "train-depart-05",
+      "passed": true,
+      "known_pixel_fraction": 0.871711575255102,
+      "reference_edge_pixels": 1891,
+      "matched_edge_fraction": 1.0,
+      "luminance_mae": 0.0,
+      "predicted_edge_density": 0.04323372733715906,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    {
+      "id": "train-depart-12",
+      "passed": true,
+      "known_pixel_fraction": 0.871711575255102,
+      "reference_edge_pixels": 1879,
+      "matched_edge_fraction": 1.0,
+      "luminance_mae": 0.0,
+      "predicted_edge_density": 0.04295937264226434,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    {
+      "id": "train-depart-20",
+      "passed": true,
+      "known_pixel_fraction": 0.871711575255102,
+      "reference_edge_pixels": 1874,
+      "matched_edge_fraction": 1.0,
+      "luminance_mae": 0.0,
+      "predicted_edge_density": 0.04284505818605821,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    {
+      "id": "train-depart-26",
+      "passed": true,
+      "known_pixel_fraction": 0.871711575255102,
+      "reference_edge_pixels": 1837,
+      "matched_edge_fraction": 1.0,
+      "luminance_mae": 0.0,
+      "predicted_edge_density": 0.04199913121013284,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    {
+      "id": "train-depart-36",
+      "passed": true,
+      "known_pixel_fraction": 0.871711575255102,
+      "reference_edge_pixels": 1756,
+      "matched_edge_fraction": 1.0,
+      "luminance_mae": 0.0,
+      "predicted_edge_density": 0.040147237019593496,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    {
+      "id": "train-stall-06",
+      "passed": true,
+      "known_pixel_fraction": 0.871711575255102,
+      "reference_edge_pixels": 1889,
+      "matched_edge_fraction": 1.0,
+      "luminance_mae": 0.0,
+      "predicted_edge_density": 0.04318800155467661,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    {
+      "id": "train-stall-16",
+      "passed": true,
+      "known_pixel_fraction": 0.871711575255102,
+      "reference_edge_pixels": 1889,
+      "matched_edge_fraction": 1.0,
+      "luminance_mae": 0.0,
+      "predicted_edge_density": 0.04318800155467661,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    {
+      "id": "train-stall-24",
+      "passed": true,
+      "known_pixel_fraction": 0.871711575255102,
+      "reference_edge_pixels": 1889,
+      "matched_edge_fraction": 1.0,
+      "luminance_mae": 0.0,
+      "predicted_edge_density": 0.04318800155467661,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    {
+      "id": "train-stall-32",
+      "passed": true,
+      "known_pixel_fraction": 0.871711575255102,
+      "reference_edge_pixels": 1889,
+      "matched_edge_fraction": 1.0,
+      "luminance_mae": 0.0,
+      "predicted_edge_density": 0.04318800155467661,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    {
+      "id": "train-stall-46",
+      "passed": true,
+      "known_pixel_fraction": 0.871711575255102,
+      "reference_edge_pixels": 1885,
+      "matched_edge_fraction": 1.0,
+      "luminance_mae": 0.0,
+      "predicted_edge_density": 0.0430965499897117,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    {
+      "id": "train-reenter-06",
+      "passed": true,
+      "known_pixel_fraction": 0.871711575255102,
+      "reference_edge_pixels": 1756,
+      "matched_edge_fraction": 1.0,
+      "luminance_mae": 0.0,
+      "predicted_edge_density": 0.040147237019593496,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    {
+      "id": "train-reenter-10",
+      "passed": true,
+      "known_pixel_fraction": 0.871711575255102,
+      "reference_edge_pixels": 1821,
+      "matched_edge_fraction": 1.0,
+      "luminance_mae": 0.0,
+      "predicted_edge_density": 0.041633324950273214,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    {
+      "id": "train-reenter-18",
+      "passed": true,
+      "known_pixel_fraction": 0.871711575255102,
+      "reference_edge_pixels": 1889,
+      "matched_edge_fraction": 1.0,
+      "luminance_mae": 0.0,
+      "predicted_edge_density": 0.04318800155467661,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    {
+      "id": "train-reenter-28",
+      "passed": true,
+      "known_pixel_fraction": 0.871711575255102,
+      "reference_edge_pixels": 1889,
+      "matched_edge_fraction": 1.0,
+      "luminance_mae": 0.0,
+      "predicted_edge_density": 0.04318800155467661,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    {
+      "id": "train-reenter-42",
+      "passed": true,
+      "known_pixel_fraction": 0.871711575255102,
+      "reference_edge_pixels": 1874,
+      "matched_edge_fraction": 1.0,
+      "luminance_mae": 0.0,
+      "predicted_edge_density": 0.04284505818605821,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    {
+      "id": "heldout-depart-18",
+      "passed": true,
+      "known_pixel_fraction": 0.871711575255102,
+      "reference_edge_pixels": 1863,
+      "matched_edge_fraction": 1.0,
+      "luminance_mae": 0.0,
+      "predicted_edge_density": 0.04259356638240472,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    {
+      "id": "heldout-depart-36",
+      "passed": true,
+      "known_pixel_fraction": 0.871711575255102,
+      "reference_edge_pixels": 1756,
+      "matched_edge_fraction": 1.0,
+      "luminance_mae": 0.0,
+      "predicted_edge_density": 0.040147237019593496,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    {
+      "id": "heldout-stall-28",
+      "passed": true,
+      "known_pixel_fraction": 0.871711575255102,
+      "reference_edge_pixels": 1889,
+      "matched_edge_fraction": 1.0,
+      "luminance_mae": 0.0,
+      "predicted_edge_density": 0.04318800155467661,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    {
+      "id": "heldout-reenter-17",
+      "passed": true,
+      "known_pixel_fraction": 0.871711575255102,
+      "reference_edge_pixels": 1838,
+      "matched_edge_fraction": 1.0,
+      "luminance_mae": 0.0,
+      "predicted_edge_density": 0.04202199410137406,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    }
+  ],
+  "all_fresh_targets_readable": true,
+  "future_test_targets_uploaded": false
+}

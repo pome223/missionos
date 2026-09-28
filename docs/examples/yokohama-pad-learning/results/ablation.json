@@ -1,0 +1,94 @@
+[
+  {
+    "diffusion_steps": 50,
+    "frame_offset": 1,
+    "sample_id": "train-depart-20-t01",
+    "reader": {
+      "state": "clear",
+      "grayscale_rmse": {
+        "occupied": 10.322234153747559,
+        "clear": 9.21456527709961
+      },
+      "class_margin": 1.1076688766479492
+    },
+    "target_reader": {
+      "state": "occupied",
+      "grayscale_rmse": {
+        "occupied": 8.327651977539062,
+        "clear": 10.797956466674805
+      },
+      "class_margin": 2.470304489135742
+    },
+    "rgb_mae": 13.014183407738095,
+    "passed": false
+  },
+  {
+    "diffusion_steps": 50,
+    "frame_offset": 64,
+    "sample_id": "train-depart-20-t64",
+    "reader": {
+      "state": "unknown",
+      "grayscale_rmse": {
+        "occupied": 11.073102951049805,
+        "clear": 10.142449378967285
+      },
+      "class_margin": 0.9306535720825195
+    },
+    "target_reader": {
+      "state": "clear",
+      "grayscale_rmse": {
+        "occupied": 10.235199928283691,
+        "clear": 0.0
+      },
+      "class_margin": 10.235199928283691
+    },
+    "rgb_mae": 33.93637728528912,
+    "passed": false
+  },
+  {
+    "diffusion_steps": 250,
+    "frame_offset": 1,
+    "sample_id": "train-depart-20-t01",
+    "reader": {
+      "state": "unknown",
+      "grayscale_rmse": {
+        "occupied": 8.671924591064453,
+        "clear": 8.89200210571289
+      },
+      "class_margin": 0.2200775146484375
+    },
+    "target_reader": {
+      "state": "occupied",
+      "grayscale_rmse": {
+        "occupied": 8.327651977539062,
+        "clear": 10.797956466674805
+      },
+      "class_margin": 2.470304489135742
+    },
+    "rgb_mae": 11.487809576955783,
+    "passed": false
+  },
+  {
+    "diffusion_steps": 250,
+    "frame_offset": 64,
+    "sample_id": "train-depart-20-t64",
+    "reader": {
+      "state": "clear",
+      "grayscale_rmse": {
+        "occupied": 10.33495807647705,
+        "clear": 9.161648750305176
+      },
+      "class_margin": 1.173309326171875
+    },
+    "target_reader": {
+      "state": "clear",
+      "grayscale_rmse": {
+        "occupied": 10.235199928283691,
+        "clear": 0.0
+      },
+      "class_margin": 10.235199928283691
+    },
+    "rgb_mae": 31.459469334608844,
+    "passed": false
+  }
+]
