@@ -121,8 +121,12 @@ python scripts/verify_yokohama_decisions.py /tmp/yokohama-sea-city \
 
 Fixture decisions establish control integration only. A native run requires an
 explicit native service configuration and its separately authorized compute
-budget. This extension does not add cargo release, moving-deck recovery, wind
-qualification, multi-vehicle scheduling or a validated energy model.
+budget. Sea transit alone does not add cargo release. The separate opt-in
+[`--deliver-payload` extension](yokohama-payload-delivery.md) adds a dynamic
+50 g parcel, two extra AP holds, contact/rest-based simulated receipt and
+receipt-gated return. It requires all three flight, decision and cargo
+verifiers. Neither extension qualifies moving-deck recovery, wind,
+multi-vehicle scheduling or a validated energy model.
 
 Use the dependency versions from the scene bundle in a dedicated environment.
 Use the image ID recorded in each result; the tested arm64 image is resolved
