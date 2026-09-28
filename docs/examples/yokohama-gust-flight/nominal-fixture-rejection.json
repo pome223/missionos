@@ -1,0 +1,50 @@
+{
+  "request_sha256": "0fa267ce5824e84939548d3dd4701cec400d84fc95627504acd27649df7d9549",
+  "operation": "wam",
+  "run_id": "yokohama-5a405a1b1170",
+  "native_backend": false,
+  "value": {
+    "checks": [
+      {
+        "candidate": {
+          "id": "hold",
+          "delta": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "passed": false,
+        "known_pixel_fraction": 0.5607461734693877,
+        "reference_edge_pixels": 686,
+        "matched_edge_fraction": 1.0,
+        "luminance_mae": 0.0,
+        "predicted_edge_density": 0.0243815752061416,
+        "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+      },
+      {
+        "candidate": {
+          "id": "vla",
+          "delta": [
+            2.8338575001098936,
+            -0.009807629385108818,
+            0.01905250241468437,
+            0.0008109903668636065
+          ]
+        },
+        "passed": false,
+        "known_pixel_fraction": 0.5588528380102041,
+        "reference_edge_pixels": 662,
+        "matched_edge_fraction": 1.0,
+        "luminance_mae": 0.0,
+        "predicted_edge_density": 0.02360828786419885,
+        "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+      }
+    ],
+    "passed": false,
+    "vla_response_sha256": "1290f60bd608b16a44839846d5ca090a03c13493dcd489511a31d5dfc9ad8602",
+    "native_wam_invoked": false
+  },
+  "elapsed_s": 0.5507939170347527
+}

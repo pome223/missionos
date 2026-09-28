@@ -72,7 +72,16 @@ def main():
         action="store_true",
         help="Start wind after the measured SEA-TAKEOFF hold",
     )
+    parser.add_argument(
+        "--gust-seed",
+        type=int,
+        help="Opt-in reproducible gusts on a wind profile (CPU fixture only)",
+    )
     args = parser.parse_args()
+    if args.gust_seed is not None and (
+        args.wind_profile != "harbor-nominal" or not 0 <= args.gust_seed <= 2**32 - 1
+    ):
+        parser.error("Gust seed requires harbor-nominal and must be in [0, 2**32-1]")
     if args.wind_profile and (
         args.wind_east_mps
         or not args.wind_after_takeoff
@@ -169,7 +178,7 @@ def main():
         if args.wind_profile:
             from src.runtime.yokohama_wind_profile import make_profile
 
-            profile = make_profile(world, args.wind_profile)
+            profile = make_profile(world, args.wind_profile, args.gust_seed)
             args.wind_east_mps = profile["speeds_mps"]["offshore"]
         if args.wind_east_mps:
             from src.runtime.yokohama_wind import add_wind
@@ -177,6 +186,7 @@ def main():
             world = add_wind(root, world, args.wind_east_mps, after_takeoff=args.wind_after_takeoff)
             if args.wind_profile:
                 world["wind"]["profile"] = profile
+                world["wind"]["gusts"] = profile["gusts"]
         config = {
             "run_id": run_id,
             "phase": args.phase,
@@ -258,7 +268,11 @@ def main():
             for index, stop in enumerate(stops):
                 target = stop["target_world_xyz_m"]
                 name = stop["name"]
-                count = max(1, math.ceil(math.dist(previous, target) / 20))
+                count = (
+                    1
+                    if stop.get("direct_endpoint")
+                    else max(1, math.ceil(math.dist(previous, target) / 20))
+                )
                 items = []
                 for step in range(1, count + 1):
                     xyz = [a + (b - a) * step / count for a, b in zip(previous, target)]

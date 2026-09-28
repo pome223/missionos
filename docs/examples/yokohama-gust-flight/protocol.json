@@ -1,0 +1,47 @@
+{
+  "base_commit": "b240d0a82785849ce8f8a2fc8d33cbef6f1806f7",
+  "gpu_budget_increment_usd": 0,
+  "predeclared_runs": [
+    "nominal-direct: same 6/5/4/3 wind; sea endpoints directly; full cargo fixture mission once",
+    "gust-transport: seed 20260928; no PX4; production publisher plus physical force witness",
+    "gust-flight: seed 20260928; same fixture cargo mission once after runtime smoke"
+  ],
+  "gust_protocol": {
+    "seed": 20260928,
+    "first_onset_s": [
+      20,
+      35
+    ],
+    "later_gap_s": [
+      45,
+      75
+    ],
+    "duration_s": [
+      6,
+      10
+    ],
+    "peak_mps": {
+      "offshore": [
+        7,
+        8
+      ],
+      "harbor": [
+        6,
+        7
+      ],
+      "coast": [
+        5,
+        6
+      ],
+      "city": [
+        8,
+        12
+      ]
+    },
+    "direction": "east only",
+    "clock": "simulation seconds after first post-takeoff wind observation",
+    "window_s": 3600
+  },
+  "fixed_bounds": "same arrival deadlines and hold/receipt criteria; force coefficient 1/s; no native inference; preserve all failed attempts",
+  "ap_hypothesis": "missed dense fly-through waypoint leaves seq_current=1, target behind vehicle; direct straight sea endpoint avoids intermediate acceptance dependency"
+}

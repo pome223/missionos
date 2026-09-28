@@ -98,7 +98,11 @@ def flight_stops(world):
         return city
 
     def stop(name, target):
-        return dict(name=name, target_world_xyz_m=target, airspeed_mps=8)
+        # These authored sea legs are straight and have no intermediate task.
+        # Dense fly-through waypoints with a 0.5 m acceptance radius can be
+        # missed in wind, leaving Navigator on an already overflown waypoint.
+        # Keep the endpoint/hold tolerances; ask AP to brake at the endpoint.
+        return dict(name=name, target_world_xyz_m=target, airspeed_mps=8, direct_endpoint=True)
 
     return [
         stop("SEA-TAKEOFF", sea["ship_hold_world_xyz_m"]),

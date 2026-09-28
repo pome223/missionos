@@ -102,6 +102,8 @@ def test_sea_route_keeps_two_city_decisions_and_returns_to_ship():
         sea_extension=dict(ship_hold_world_xyz_m=[1400, 0, 15], coast_world_xyz_m=[400, 0, 15]),
     )
     route = flight_stops(world)
+    assert all(s.get("direct_endpoint") for s in route if s["name"].startswith("SEA-"))
+    assert all(not s.get("direct_endpoint") for s in route if not s["name"].startswith("SEA-"))
     assert route[0]["target_world_xyz_m"] == route[-1]["target_world_xyz_m"]
     assert math.dist(route[0]["target_world_xyz_m"], route[1]["target_world_xyz_m"]) == 1000
     assert [s["name"] for s in route[2:-2]] == [

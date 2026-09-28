@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "full_tests": "3501 passed, 1 skipped",
+  "ruff": "passed",
+  "diff": "passed",
+  "private_path_and_link_scan": "passed",
+  "videos_decode": true,
+  "source_video_and_telemetry_hashes_match": true,
+  "recorded_hold_metrics_recomputed": true,
+  "incremental_gpu_cost_usd": 0
+}

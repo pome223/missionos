@@ -21,7 +21,10 @@ def main():
     p.add_argument("--approve-sitl", action="store_true")
     p.add_argument("--flight-config", type=Path, required=True)
     p.add_argument("--output-dir", type=Path, required=True)
+    p.add_argument("--gust-seed", type=int)
     a = p.parse_args()
+    if a.gust_seed is not None and not 0 <= a.gust_seed <= 2**32 - 1:
+        p.error("Gust seed must be in [0, 2**32-1]")
     if not a.approve_sitl:
         p.error("Explicit simulation approval required")
     out = a.output_dir.resolve()
@@ -54,7 +57,8 @@ def main():
     m.parent.mkdir(parents=True)
     m.write_text('<sdf><model name="x500_base"><link name="base_link"/></model></sdf>')
     w = add_wind(out, w, 6, after_takeoff=True)
-    w["wind"]["profile"] = make_profile(w, "harbor-nominal")
+    w["wind"]["profile"] = make_profile(w, "harbor-nominal", a.gust_seed)
+    w["wind"]["gusts"] = a.gust_seed is not None
     entry = w["points"][0]["world_xyz_m"]
     direction = w["wind"]["profile"]["outward_unit_xy"]
     points = [
@@ -128,6 +132,8 @@ def main():
         result = verify_wind(out, c, rows)
         (out / "verification.json").write_text(json.dumps(result, indent=2) + "\n")
         assert result["status"] == "passed" and result["profile"]["all_zones_exercised"]
+        if a.gust_seed is not None:
+            assert result["profile"]["observed_gust_ids"]
         print(json.dumps({"status": result["status"], "profile": result["profile"]}))
         (out / "run-result.json").write_text(
             json.dumps(

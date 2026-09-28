@@ -67,7 +67,11 @@ def export(runs, output):
                     phase=row["phase"],
                     battery_fraction=row["battery_fraction"],
                     **(
-                        {"wind_zone": row.get("wind_zone")}
+                        {
+                            "wind_zone": row.get("wind_zone"),
+                            "wind_gust_id": row.get("wind_gust_id"),
+                            "wind_requested_enu_mps": row.get("wind_requested_enu_mps"),
+                        }
                         if config["world"]["wind"].get("profile")
                         else {}
                     ),
@@ -205,12 +209,24 @@ choose.onchange=load;slider.oninput=draw;button.onclick=()=>{playing=!playing;bu
         template.replace("OPTIONS", options)
         .replace("DATA", payload)
         .replace(
+            "突風、建物による乱流、波、船の動揺は含みません。",
+            "突風はシードを明記した試験だけに含まれます。建物による乱流、波、船の動揺は含みません。",
+        )
+        .replace(
+            "電流・Wh・風や推論の消費電力は未計測。",
+            "風表示はGazeboが受理した設定値で、局所風の実測ではありません。電流・Wh・風や推論の消費電力は未計測。",
+        )
+        .replace(
             "`東向き ${c.wind.velocity_enu_mps[0]} m/s設定 / `",
             "(c.wind.profile ? `位置別・東向き 沖合${c.wind.profile.speeds_mps.offshore} → 港内${c.wind.profile.speeds_mps.harbor} → 海沿い${c.wind.profile.speeds_mps.coast} → 市街地${c.wind.profile.speeds_mps.city} m/s（想定値） / ` : `東向き ${c.wind.velocity_enu_mps[0]} m/s設定 / `)",
         )
         .replace(
             "${i+1}/${rows.length}`",
-            '${i+1}/${rows.length}` + (row.wind_zone ? ` · WIND zone ${row.wind_zone}` : "")',
+            '${i+1}/${rows.length}` + (row.wind_zone ? ` · WIND zone ${row.wind_zone}` : "") + (row.wind_gust_id != null ? ` · 突風 #${row.wind_gust_id}` : "")',
+        )
+        .replace(
+            "+(c.reason?' / '+c.reason:'')",
+            "+(c.wind.profile?.gusts?' / ランダム突風 seed '+c.wind.profile.gust_schedule.seed:' / 突風なし')+(c.reason?' / '+c.reason:'')",
         )
     )
     return cases

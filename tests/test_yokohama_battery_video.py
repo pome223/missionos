@@ -1,5 +1,5 @@
 import pytest
-from scripts.build_yokohama_battery_video import align_battery, battery_samples
+from scripts.build_yokohama_battery_video import align_battery, align_wind, battery_samples
 
 
 def row(raw=None):
@@ -38,3 +38,22 @@ def test_foreign_run_or_clock_drift_rejected():
     r["sim_s"] = 20
     with pytest.raises(ValueError, match="clocks"):
         battery_samples([r], "run", "world")
+
+
+def test_wind_video_never_uses_future_or_unconfirmed_gust():
+    r = dict(
+        run_id="run",
+        world_sha256="world",
+        confirmed=True,
+        end_sim_s=10,
+        requested_enu_mps=[7.5, 0, 0],
+        gust_id=0,
+        zone="offshore",
+        sequence=1,
+    )
+    assert align_wind([r], 9, "run", "world")["gust_id"] is None
+    assert align_wind([r], 10, "run", "world")["gust_id"] == 0
+    r["confirmed"] = False
+    assert "UNCONFIRMED" in align_wind([r], 10, "run", "world")["label"]
+    with pytest.raises(ValueError, match="Foreign"):
+        align_wind([r], 10, "other", "world")

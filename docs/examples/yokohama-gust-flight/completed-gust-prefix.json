@@ -1,0 +1,63 @@
+{
+  "status": "passed",
+  "checks": {
+    "canonical_profile": true,
+    "position_bound_confirmed_transitions": true,
+    "scheduled_gusts_observed": true,
+    "piecewise_force_observed": true
+  },
+  "observed_zones": [
+    "offshore",
+    "harbor",
+    "coast",
+    "city"
+  ],
+  "all_zones_exercised": true,
+  "force_samples_per_transition": [
+    6,
+    27,
+    28,
+    27,
+    28,
+    26,
+    28,
+    27,
+    27,
+    28,
+    27,
+    27,
+    27,
+    28,
+    28,
+    27,
+    27,
+    26,
+    27,
+    28
+  ],
+  "maximum_witness_error_m": 0.048000383999408314,
+  "expected_gust_ids": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "observed_gust_ids": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "coverage_note": "Passed means observed transitions and forces agree; unvisited zones are untested",
+  "scope": "completed prefix only; final gust id 8 excluded because trial ended before force window or recovery",
+  "cutoff_sim_s_exclusive": 627.252,
+  "source_trajectory_sha256": "c732f5c5bd97dbe815a6e2f9f92f25617a37c8dc5c20b7734b3977af613d280b"
+}

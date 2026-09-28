@@ -1,0 +1,25 @@
+{
+  "run_id": "yokohama-372932c0bec8",
+  "sim_s": 627.656,
+  "speed_mps": 0.363782853499172,
+  "speed_limit_mps": 0.3,
+  "anchor_drift_m": 0.08310442686991251,
+  "drift_limit_m": 0.5,
+  "heading_drift_rad": 0.0042399999999997995,
+  "heading_limit_rad": 0.03,
+  "battery_fraction": 0.82925,
+  "estimator_reset_counters_unchanged": true,
+  "last_gust_id": 8,
+  "last_seed_enu_mps": [
+    9.153487979297026,
+    0,
+    0
+  ],
+  "worker_stop_handshake_failed": true,
+  "host_cleanup": {
+    "fixture_stopped": true,
+    "session_revoked": true
+  },
+  "container_removed": true,
+  "source_event_log_sha256": "b64ed722618eca6ea592e2059572d6f03da8d5d950d280c021a662e30be0e246"
+}

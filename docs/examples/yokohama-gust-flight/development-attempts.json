@@ -1,0 +1,32 @@
+{
+  "transport_attempts": [
+    {
+      "name": "gust-transport",
+      "worker": "passed; 9 confirmed transitions",
+      "initial_verifier": "failed: adjacent same-clock transitions rejected; short intervals expected isolated force samples",
+      "revised_offline_verifier": "passed"
+    },
+    {
+      "name": "gust-transport-final",
+      "status": "passed"
+    }
+  ],
+  "flight_attempts": [
+    {
+      "case": "nominal",
+      "run_id": "yokohama-29880f17cae8",
+      "status": "failed"
+    },
+    {
+      "case": "nominal-direct",
+      "run_id": "yokohama-5a405a1b1170",
+      "status": "failed"
+    },
+    {
+      "case": "gust-flight",
+      "run_id": "yokohama-372932c0bec8",
+      "status": "failed"
+    }
+  ],
+  "verifier_limit": "Whole-flight verifier requires successful worker holds; incomplete worker records produce KeyError holds. Cargo verifier unavailable before release. Neither is a pass."
+}

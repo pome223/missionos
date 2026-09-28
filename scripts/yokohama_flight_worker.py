@@ -65,6 +65,9 @@ def flight_trial(config, obs, run, field):
     payload_receipt = None
     wind_profile = config["world"].get("wind", {}).get("profile")
     wind_zone = None
+    wind_state_applied = None
+    gust_epoch_sim_s = None
+    gust_last_check_sim_s = None
     wind_transitions = []
     wind_profile_active = False
     last_diagnostic_sim_s = -10.0
@@ -80,13 +83,19 @@ def flight_trial(config, obs, run, field):
         print(json.dumps(row), flush=True)
 
     def update_profile_wind():
-        nonlocal wind_zone
-        from yokohama_wind_profile import requested_wind
+        nonlocal wind_zone, wind_state_applied, gust_epoch_sim_s, gust_last_check_sim_s
+        from yokohama_wind_profile import wind_state, check_gust_deadlines
 
         snap = obs.snapshot()
         pose = snap["poses"].get("x500_0")
-        zone, velocity = requested_wind(wind_profile, pose, snap["sim_s"], wind_zone)
-        if zone == wind_zone:
+        if gust_epoch_sim_s is None:
+            gust_epoch_sim_s = snap["sim_s"]
+            gust_last_check_sim_s = snap["sim_s"]
+        check_gust_deadlines(wind_profile, gust_epoch_sim_s, gust_last_check_sim_s, snap["sim_s"])
+        state = wind_state(wind_profile, pose, snap["sim_s"], wind_zone, gust_epoch_sim_s)
+        zone, velocity = state["zone"], state["requested_enu_mps"]
+        if state == wind_state_applied:
+            gust_last_check_sim_s = snap["sim_s"]
             return
         receipt = obs.activate_wind(velocity)
         receipt.update(
@@ -99,12 +108,18 @@ def flight_trial(config, obs, run, field):
             observation_sim_s=snap["sim_s"],
             vehicle=pose,
         )
+        receipt.update(state)
         wind_transitions.append(receipt)
         (ROOT / "wind-transitions.json").write_text(json.dumps(wind_transitions, indent=2) + "\n")
-        event("wind_zone_requested", receipt=receipt)
+        event("wind_state_requested", receipt=receipt)
         if not receipt["confirmed"]:
             raise RuntimeError("Wind zone change was not confirmed by Gazebo")
+        check_gust_deadlines(
+            wind_profile, gust_epoch_sim_s, gust_last_check_sim_s, receipt["end_sim_s"]
+        )
+        gust_last_check_sim_s = receipt["end_sim_s"]
         wind_zone = zone
+        wind_state_applied = state
         if len(wind_transitions) == 1:
             (ROOT / "wind-activation.json").write_text(json.dumps(receipt, indent=2) + "\n")
 
@@ -175,6 +190,12 @@ def flight_trial(config, obs, run, field):
             if wind_profile:
                 row["wind_zone"] = wind_zone
                 row["wind_transition_sequence"] = len(wind_transitions) - 1
+                row["wind_gust_id"] = (
+                    wind_state_applied.get("gust_id") if wind_state_applied else None
+                )
+                row["wind_requested_enu_mps"] = (
+                    wind_state_applied.get("requested_enu_mps") if wind_state_applied else None
+                )
             if row["arming_state"] == 2 and row["sim_s"] - last_diagnostic_sim_s >= 5:
                 diagnostic = dict(
                     run_id=config["run_id"],

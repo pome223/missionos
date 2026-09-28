@@ -1,0 +1,82 @@
+[
+  {
+    "duration_sim_s": 30.108,
+    "samples": 90,
+    "max_horizontal_error_m": 0.0487828136526459,
+    "max_vertical_error_m": 0.2911903106541889,
+    "max_px4_speed_mps": 0.050881787507908956,
+    "all_auto_loiter": true,
+    "all_airborne_armed": true,
+    "max_pose_age_s": 0.021194041000001107,
+    "max_sample_gap_sim_s": 0.4159999999999968,
+    "start_sim_s": 31.66,
+    "end_sim_s": 61.768,
+    "point": "SEA-TAKEOFF",
+    "target_world_xyz_m": [
+      1351.6022270886856,
+      364.9265949871361,
+      15.110143087104275
+    ],
+    "passed": true
+  },
+  {
+    "duration_sim_s": 30.156000000000006,
+    "samples": 89,
+    "max_horizontal_error_m": 0.1530564065604184,
+    "max_vertical_error_m": 0.47875448556366607,
+    "max_px4_speed_mps": 0.05138814941209695,
+    "all_auto_loiter": true,
+    "all_airborne_armed": true,
+    "max_pose_age_s": 0.02091941699995914,
+    "max_sample_gap_sim_s": 0.4159999999999968,
+    "start_sim_s": 391.664,
+    "end_sim_s": 421.82,
+    "point": "SEA-INBOUND-COAST",
+    "target_world_xyz_m": [
+      386.1720648824816,
+      104.26474142489603,
+      15.110143087104275
+    ],
+    "passed": true
+  },
+  {
+    "duration_sim_s": 30.18399999999997,
+    "samples": 89,
+    "max_horizontal_error_m": 0.1313065205225262,
+    "max_vertical_error_m": 0.5010149237437673,
+    "max_px4_speed_mps": 0.047068495833200365,
+    "all_auto_loiter": true,
+    "all_airborne_armed": true,
+    "max_pose_age_s": 0.022171042000081798,
+    "max_sample_gap_sim_s": 0.47199999999998,
+    "start_sim_s": 575.556,
+    "end_sim_s": 605.74,
+    "point": "00-D1",
+    "target_world_xyz_m": [
+      0.0,
+      0.0,
+      15.110143087104275
+    ],
+    "passed": true
+  },
+  {
+    "duration_sim_s": 30.02800000000002,
+    "samples": 89,
+    "max_horizontal_error_m": 0.14071308812846897,
+    "max_vertical_error_m": 0.13441889110968042,
+    "max_px4_speed_mps": 0.04980940573827397,
+    "all_auto_loiter": true,
+    "all_airborne_armed": true,
+    "max_pose_age_s": 0.02061279099996227,
+    "max_sample_gap_sim_s": 0.41200000000003456,
+    "start_sim_s": 669.804,
+    "end_sim_s": 699.832,
+    "point": "01-D2",
+    "target_world_xyz_m": [
+      -34.88761388811289,
+      -60.6945307036456,
+      15.110143087104275
+    ],
+    "passed": true
+  }
+]
