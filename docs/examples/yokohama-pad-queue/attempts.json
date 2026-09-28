@@ -1,0 +1,91 @@
+{
+  "attempts": [
+    {
+      "case": "01-flight",
+      "scope": "full CPU PX4 cargo mission",
+      "run_id": "yokohama-9364a32a1ca2",
+      "status": "failed",
+      "reason": "RuntimeError: Scripted lead pose service failed",
+      "cleanup": true,
+      "world_sha256": "bb9af02669a5274be1190c27135368ac1215cc909e74fcd55d5a8dcfa22a6da5",
+      "source_sha256": {
+        "yokohama_scene.py": "ad9ad3de307d590f052fd7b8a1f4623dd43714fdcf7b68424ffe35ea86e62be9",
+        "yokohama_sea.py": "7b2452561b1ca0aa5f51e1b86096dd844d91d19f537415840935956ae6feaee3",
+        "yokohama_wind.py": "a8e960e41583863d5b98aafdd436dcc8598cf98e3a3881b58f577d8cc1646c84",
+        "yokohama_wind_profile.py": "f2e3ee920d20981d6fee5362373ea81863bb060a3c485ed74a0355b04e0d2761",
+        "yokohama_sitl.py": "df0e9dc2787e12a277b12c26a41ff842c9fac45acbe29460dc8d6203e08e3e3c",
+        "yokohama_sitl_worker.py": "233518edcceee5ccea3a0052e9a98d7ee12893fe8a2b94b08d70266c75ea121c",
+        "ship_urban_camera_worker.py": "d1410467349d7bc5526a46afe2e84a9cf8e44d7a3fc391d8b0361ad78696d6c7",
+        "ship_onboard_entrypoint.sh": "b45b89f4bc9cf4ecab5f3d041866a436d6133574717e122a9e02f86e4c977364",
+        "yokohama_flight_worker.py": "25d0eded51928c1297aa7dd8f3551fcd37bec10cb86fa62bc5d0a507c5eced1c",
+        "yokohama_pad_queue.py": "4e6f032c225152368a5261b574e93d69a375207f5cc83131b9b1ae06195a147b",
+        "yokohama_pad_worker.py": "81d9a99a961ec0e813443cc8c9f416ef71911331ce0f940b2b3cf5a7beb6e23c",
+        "yokohama_decision_worker.py": "27779338c1ff027d3cad53d984fcd5223297038159b77998427c6ab5e8434a98",
+        "yokohama_payload.py": "65be8f3b8ec0b4e7886dc71cd9b58e6f7104809749862638fd31738bdd4d892e",
+        "verify_yokohama_payload.py": "b524a558591ea0b5dc1d6e82097b9ebbf5f08783d2f89b54ac872dc3643bbba8"
+      },
+      "raw_result_sha256": "0aaac1683fd455da252d89e402755e7d77d00f512969fbc760f1bb269c234131",
+      "worker_result_sha256": "5e29c0d4973689ae78ceae7b0f6d9cfffe887f56fa5b21175679b8e528a31a32"
+    },
+    {
+      "case": "02-flight",
+      "scope": "full CPU PX4 cargo mission",
+      "run_id": "yokohama-45d8607fa5c3",
+      "status": "passed",
+      "reason": null,
+      "cleanup": true,
+      "world_sha256": "bb9af02669a5274be1190c27135368ac1215cc909e74fcd55d5a8dcfa22a6da5",
+      "source_sha256": {
+        "yokohama_scene.py": "ad9ad3de307d590f052fd7b8a1f4623dd43714fdcf7b68424ffe35ea86e62be9",
+        "yokohama_sea.py": "7b2452561b1ca0aa5f51e1b86096dd844d91d19f537415840935956ae6feaee3",
+        "yokohama_wind.py": "a8e960e41583863d5b98aafdd436dcc8598cf98e3a3881b58f577d8cc1646c84",
+        "yokohama_wind_profile.py": "f2e3ee920d20981d6fee5362373ea81863bb060a3c485ed74a0355b04e0d2761",
+        "yokohama_sitl.py": "df0e9dc2787e12a277b12c26a41ff842c9fac45acbe29460dc8d6203e08e3e3c",
+        "yokohama_sitl_worker.py": "233518edcceee5ccea3a0052e9a98d7ee12893fe8a2b94b08d70266c75ea121c",
+        "ship_urban_camera_worker.py": "d1410467349d7bc5526a46afe2e84a9cf8e44d7a3fc391d8b0361ad78696d6c7",
+        "ship_onboard_entrypoint.sh": "b45b89f4bc9cf4ecab5f3d041866a436d6133574717e122a9e02f86e4c977364",
+        "yokohama_flight_worker.py": "25d0eded51928c1297aa7dd8f3551fcd37bec10cb86fa62bc5d0a507c5eced1c",
+        "yokohama_pad_queue.py": "4e6f032c225152368a5261b574e93d69a375207f5cc83131b9b1ae06195a147b",
+        "yokohama_pad_worker.py": "67018fd161fce81439a653f0aced1d96d4c784746cb66b5b8349f5634188c9f9",
+        "yokohama_decision_worker.py": "27779338c1ff027d3cad53d984fcd5223297038159b77998427c6ab5e8434a98",
+        "yokohama_payload.py": "65be8f3b8ec0b4e7886dc71cd9b58e6f7104809749862638fd31738bdd4d892e",
+        "verify_yokohama_payload.py": "b524a558591ea0b5dc1d6e82097b9ebbf5f08783d2f89b54ac872dc3643bbba8"
+      },
+      "raw_result_sha256": "b93069e9d7175397892a91804f84ab8e13abc1055f52c6dbcc37d1768c6866e8",
+      "worker_result_sha256": "ddffaa35ff68161f1c1ca700495f4b1ed3753599efc69d12e3f9be367fb16e0a"
+    },
+    {
+      "case": "actor-check",
+      "scope": "actor-only diagnostic; no delivery-aircraft flight",
+      "status": "diagnostic",
+      "reason": "Three acknowledged single-entity requests; pose change appeared later in observation",
+      "stdout_sha256": "2a2b829a3089eedcca98a89930518e5c4d276fa8b18c421f2cfbaae2880c76aa",
+      "stderr_sha256": "54a7c03172ee4fddf6f3dbbe93fdfdd6fbcdcba7db8317084fe056ba7328c65a"
+    },
+    {
+      "case": "actor-check-fixed",
+      "scope": "actor-only diagnostic; no delivery-aircraft flight",
+      "status": "failed",
+      "reason": "Diagnostic script used the clock before its first observation",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "a07d7b4a8780c10a9993b5841a671da5948e598e830e0a0fad7f738008ebd2de"
+    },
+    {
+      "case": "actor-check-fixed-clock",
+      "scope": "actor-only diagnostic; no delivery-aircraft flight",
+      "status": "failed",
+      "reason": "Three missing transport acknowledgements triggered an unnecessarily strict stop",
+      "stdout_sha256": "59a65510f4b95207228245ae27d501693b4158881581a119b581c75beebfbbc3",
+      "stderr_sha256": "fee2f01ce8dc104f3d9951a6607c79a56d727975c1250d1b002ac7be37a4fe00"
+    },
+    {
+      "case": "actor-check-observed",
+      "scope": "actor-only diagnostic; no delivery-aircraft flight",
+      "status": "passed",
+      "reason": "Scripted lead reached its end pose despite missing acknowledgements; final error 0 m",
+      "stdout_sha256": "953a2ba05f63d8c6d75ffa618a819b65dfa5e5b4e8d700aeb1baaae9c67a106e",
+      "stderr_sha256": "54a7c03172ee4fddf6f3dbbe93fdfdd6fbcdcba7db8317084fe056ba7328c65a"
+    }
+  ],
+  "interpretation": "Development failures are retained; this is not a success-rate or generalization estimate"
+}

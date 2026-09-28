@@ -106,6 +106,7 @@ class Observer:
             ("onboard_depth", "/yokohama/onboard/depth_image"),
             ("down_rgb", "/yokohama/down"),
             *([("delivery_rgb", "/yokohama/delivery")] if self.joint_file else []),
+            *([("queue_rgb", "/yokohama/queue")] if config["world"].get("pad_queue") else []),
         ]:
             self.subscribe(Image, topic, lambda m, k=key: self.receive_image(m, k))
 

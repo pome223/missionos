@@ -546,12 +546,8 @@ def main():
         result["reason"] = type(exc).__name__ + ": " + str(exc)
     finally:
         if pad_supervisor:
-            try:
-                pad_supervisor.close()
-                result["pad_supervisor_stopped"] = True
-            except Exception as exc:
-                result["pad_supervisor_error"] = str(exc)
-                result["status"] = "failed"
+            pad_supervisor.close()
+            result["pad_supervisor_stopped"] = True
         if payload_receiver:
             try:
                 payload_receiver.close()

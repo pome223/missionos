@@ -1,0 +1,593 @@
+{
+  "scope": "authored CPU Mission Assurance fixture; no AP dispatch or wind-flight result",
+  "status": "passed",
+  "cases": [
+    {
+      "case": "sea-reachable-shore",
+      "passed": true,
+      "situation": {
+        "situation_id": "sea-reachable-shore",
+        "observed_at": "2026-09-28T07:01:55.344611+00:00",
+        "mission_contract": {
+          "objective": "deliver cargo and return; preserve declared reserve"
+        },
+        "progress": {
+          "phase": "sea_inbound"
+        },
+        "observations": {
+          "request_id": "sea-reachable-shore",
+          "phase": "sea_inbound",
+          "region": "sea",
+          "observed_sim_s": 10,
+          "now_sim_s": 11,
+          "battery_fraction": 0.7,
+          "calm_duration_sim_s": 0,
+          "hazard_active": true,
+          "local_fallback_policy_ref": "authored-local-contingency-v1",
+          "refuges": [
+            {
+              "id": "shore-A",
+              "kind": "shore",
+              "eta_s": 50,
+              "feasibility_age_s": 1,
+              "preapproved": true,
+              "route_clear": true,
+              "wind_reachable": true,
+              "arrival_area_available": true,
+              "estimated_arrival_battery_fraction": 0.5
+            }
+          ]
+        },
+        "constraints": {
+          "local_fallback_policy_ref": "authored-local-contingency-v1",
+          "model_use": "city_only"
+        },
+        "uncertainty": {
+          "source": "authored CPU fixture; route and wind feasibility not measured here"
+        },
+        "source_refs": [
+          "sea-reachable-shore"
+        ],
+        "source_schema_version": "missionos.aircraft-wind-request.v1",
+        "input_digest": "b927728d0a9bc6a2e4ab34c3d0d64072a91bc927a7290e913b73bdffabbdb2e0",
+        "execution_scope": "fixture",
+        "allowed_response_kinds": [
+          "abort",
+          "continue",
+          "hold",
+          "operator_escalation",
+          "replan",
+          "return"
+        ],
+        "schema_version": "missionos_mission_situation.v1"
+      },
+      "proposal": {
+        "proposal_id": "mission_response_proposal_6794c93b2dcd",
+        "generated_at": "2026-09-28T07:01:55.344896+00:00",
+        "situation_ref": "mission_situation:sea-reachable-shore",
+        "situation_input_digest": "b927728d0a9bc6a2e4ab34c3d0d64072a91bc927a7290e913b73bdffabbdb2e0",
+        "proposed_response_kind": "replan",
+        "parameters": {
+          "action": "divert_to_preapproved_refuge",
+          "refuge_id": "shore-A"
+        },
+        "rationale": "Response conditioned on aircraft region, control capability and candidate feasibility.",
+        "expected_outcome": "A bounded proposal for independent approval and fresh executor checks.",
+        "uncertainty": "CPU fixture only; no weather inference or AP dispatch.",
+        "operator_question": "Review the response within the preapproved contingency scope.",
+        "judgment_status": "proposal_guardrail_passed",
+        "judgment_mode": "deterministic_routing",
+        "fallback_mode": "operator_escalation_only",
+        "model_inference_invoked": false,
+        "model_invocation_evidence": {
+          "invocation_kind": "deterministic_fixture"
+        },
+        "blocking_reasons": [],
+        "schema_version": "missionos_mission_response_proposal.v1",
+        "operator_review_required": true,
+        "operator_approval_required": false,
+        "llm_judgment_in_gate": false,
+        "operator_approved": false,
+        "approval_recorded": false,
+        "dispatch_authority_created": false,
+        "dispatch_request_sent": false,
+        "command_ack_observed": false,
+        "runtime_progress_observed": false,
+        "landing_observed": false,
+        "delivery_completion_claimed": false,
+        "physical_execution_invoked": false,
+        "progress_counted": false
+      }
+    },
+    {
+      "case": "sea-no-reachable-refuge",
+      "passed": true,
+      "situation": {
+        "situation_id": "sea-no-reachable-refuge",
+        "observed_at": "2026-09-28T07:01:55.344973+00:00",
+        "mission_contract": {
+          "objective": "deliver cargo and return; preserve declared reserve"
+        },
+        "progress": {
+          "phase": "sea_inbound"
+        },
+        "observations": {
+          "request_id": "sea-no-reachable-refuge",
+          "phase": "sea_inbound",
+          "region": "sea",
+          "observed_sim_s": 10,
+          "now_sim_s": 11,
+          "battery_fraction": 0.7,
+          "calm_duration_sim_s": 0,
+          "hazard_active": true,
+          "local_fallback_policy_ref": "authored-local-contingency-v1",
+          "refuges": [
+            {
+              "id": "shore-A",
+              "kind": "shore",
+              "eta_s": 50,
+              "feasibility_age_s": 1,
+              "preapproved": true,
+              "route_clear": true,
+              "wind_reachable": false,
+              "arrival_area_available": true,
+              "estimated_arrival_battery_fraction": 0.5
+            }
+          ]
+        },
+        "constraints": {
+          "local_fallback_policy_ref": "authored-local-contingency-v1",
+          "model_use": "city_only"
+        },
+        "uncertainty": {
+          "source": "authored CPU fixture; route and wind feasibility not measured here"
+        },
+        "source_refs": [
+          "sea-no-reachable-refuge"
+        ],
+        "source_schema_version": "missionos.aircraft-wind-request.v1",
+        "input_digest": "84f153e8dd26fc42f8d368ca374286120cb43132da81242f54e9e0aa660b22dd",
+        "execution_scope": "fixture",
+        "allowed_response_kinds": [
+          "abort",
+          "continue",
+          "hold",
+          "operator_escalation",
+          "replan",
+          "return"
+        ],
+        "schema_version": "missionos_mission_situation.v1"
+      },
+      "proposal": {
+        "proposal_id": "mission_response_proposal_fba02644c853",
+        "generated_at": "2026-09-28T07:01:55.345102+00:00",
+        "situation_ref": "mission_situation:sea-no-reachable-refuge",
+        "situation_input_digest": "84f153e8dd26fc42f8d368ca374286120cb43132da81242f54e9e0aa660b22dd",
+        "proposed_response_kind": "operator_escalation",
+        "parameters": {
+          "action": "retain_preconfigured_local_failsafe",
+          "policy_ref": "authored-local-contingency-v1"
+        },
+        "rationale": "Response conditioned on aircraft region, control capability and candidate feasibility.",
+        "expected_outcome": "A bounded proposal for independent approval and fresh executor checks.",
+        "uncertainty": "CPU fixture only; no weather inference or AP dispatch.",
+        "operator_question": "Review the response within the preapproved contingency scope.",
+        "judgment_status": "proposal_guardrail_passed",
+        "judgment_mode": "deterministic_routing",
+        "fallback_mode": "operator_escalation_only",
+        "model_inference_invoked": false,
+        "model_invocation_evidence": {
+          "invocation_kind": "deterministic_fixture"
+        },
+        "blocking_reasons": [],
+        "schema_version": "missionos_mission_response_proposal.v1",
+        "operator_review_required": true,
+        "operator_approval_required": false,
+        "llm_judgment_in_gate": false,
+        "operator_approved": false,
+        "approval_recorded": false,
+        "dispatch_authority_created": false,
+        "dispatch_request_sent": false,
+        "command_ack_observed": false,
+        "runtime_progress_observed": false,
+        "landing_observed": false,
+        "delivery_completion_claimed": false,
+        "physical_execution_invoked": false,
+        "progress_counted": false
+      }
+    },
+    {
+      "case": "land-safe-hold",
+      "passed": true,
+      "situation": {
+        "situation_id": "land-safe-hold",
+        "observed_at": "2026-09-28T07:01:55.345176+00:00",
+        "mission_contract": {
+          "objective": "deliver cargo and return; preserve declared reserve"
+        },
+        "progress": {
+          "phase": "sea_inbound"
+        },
+        "observations": {
+          "request_id": "land-safe-hold",
+          "phase": "sea_inbound",
+          "region": "land",
+          "observed_sim_s": 10,
+          "now_sim_s": 11,
+          "battery_fraction": 0.7,
+          "calm_duration_sim_s": 0,
+          "hazard_active": true,
+          "local_fallback_policy_ref": "authored-local-contingency-v1",
+          "refuges": [
+            {
+              "id": "shore-A",
+              "kind": "shore",
+              "eta_s": 50,
+              "feasibility_age_s": 1,
+              "preapproved": true,
+              "route_clear": true,
+              "wind_reachable": true,
+              "arrival_area_available": true,
+              "estimated_arrival_battery_fraction": 0.5
+            }
+          ],
+          "safe_hold_verified": true
+        },
+        "constraints": {
+          "local_fallback_policy_ref": "authored-local-contingency-v1",
+          "model_use": "city_only"
+        },
+        "uncertainty": {
+          "source": "authored CPU fixture; route and wind feasibility not measured here"
+        },
+        "source_refs": [
+          "land-safe-hold"
+        ],
+        "source_schema_version": "missionos.aircraft-wind-request.v1",
+        "input_digest": "08e755ecdd4e68b4ca8b4153dd1b49942e2edb09f10dd54d72658dca6de75697",
+        "execution_scope": "fixture",
+        "allowed_response_kinds": [
+          "abort",
+          "continue",
+          "hold",
+          "operator_escalation",
+          "replan",
+          "return"
+        ],
+        "schema_version": "missionos_mission_situation.v1"
+      },
+      "proposal": {
+        "proposal_id": "mission_response_proposal_6116bbe99353",
+        "generated_at": "2026-09-28T07:01:55.345248+00:00",
+        "situation_ref": "mission_situation:land-safe-hold",
+        "situation_input_digest": "08e755ecdd4e68b4ca8b4153dd1b49942e2edb09f10dd54d72658dca6de75697",
+        "proposed_response_kind": "hold",
+        "parameters": {
+          "action": "hold_at_verified_site"
+        },
+        "rationale": "Response conditioned on aircraft region, control capability and candidate feasibility.",
+        "expected_outcome": "A bounded proposal for independent approval and fresh executor checks.",
+        "uncertainty": "CPU fixture only; no weather inference or AP dispatch.",
+        "operator_question": "Review the response within the preapproved contingency scope.",
+        "judgment_status": "proposal_guardrail_passed",
+        "judgment_mode": "deterministic_routing",
+        "fallback_mode": "operator_escalation_only",
+        "model_inference_invoked": false,
+        "model_invocation_evidence": {
+          "invocation_kind": "deterministic_fixture"
+        },
+        "blocking_reasons": [],
+        "schema_version": "missionos_mission_response_proposal.v1",
+        "operator_review_required": true,
+        "operator_approval_required": false,
+        "llm_judgment_in_gate": false,
+        "operator_approved": false,
+        "approval_recorded": false,
+        "dispatch_authority_created": false,
+        "dispatch_request_sent": false,
+        "command_ack_observed": false,
+        "runtime_progress_observed": false,
+        "landing_observed": false,
+        "delivery_completion_claimed": false,
+        "physical_execution_invoked": false,
+        "progress_counted": false
+      }
+    },
+    {
+      "case": "calm-reobserve-resume",
+      "passed": true,
+      "situation": {
+        "situation_id": "calm-reobserve-resume",
+        "observed_at": "2026-09-28T07:01:55.345326+00:00",
+        "mission_contract": {
+          "objective": "deliver cargo and return; preserve declared reserve"
+        },
+        "progress": {
+          "phase": "sea_inbound"
+        },
+        "observations": {
+          "request_id": "calm-reobserve-resume",
+          "phase": "sea_inbound",
+          "region": "sea",
+          "observed_sim_s": 10,
+          "now_sim_s": 11,
+          "battery_fraction": 0.7,
+          "calm_duration_sim_s": 12,
+          "hazard_active": false,
+          "local_fallback_policy_ref": "authored-local-contingency-v1",
+          "refuges": [
+            {
+              "id": "shore-A",
+              "kind": "shore",
+              "eta_s": 50,
+              "feasibility_age_s": 1,
+              "preapproved": true,
+              "route_clear": true,
+              "wind_reachable": true,
+              "arrival_area_available": true,
+              "estimated_arrival_battery_fraction": 0.5
+            }
+          ],
+          "stable_vehicle_observed": true,
+          "fresh_route_revalidated": true,
+          "mission_deadline_valid": true
+        },
+        "constraints": {
+          "local_fallback_policy_ref": "authored-local-contingency-v1",
+          "model_use": "city_only"
+        },
+        "uncertainty": {
+          "source": "authored CPU fixture; route and wind feasibility not measured here"
+        },
+        "source_refs": [
+          "calm-reobserve-resume"
+        ],
+        "source_schema_version": "missionos.aircraft-wind-request.v1",
+        "input_digest": "1791f9607eccf47f20e49a68bfc7edd13b30e518377214cd2a9fc416f950a5ba",
+        "execution_scope": "fixture",
+        "allowed_response_kinds": [
+          "abort",
+          "continue",
+          "hold",
+          "operator_escalation",
+          "replan",
+          "return"
+        ],
+        "schema_version": "missionos_mission_situation.v1"
+      },
+      "proposal": {
+        "proposal_id": "mission_response_proposal_e7308d64effe",
+        "generated_at": "2026-09-28T07:01:55.345392+00:00",
+        "situation_ref": "mission_situation:calm-reobserve-resume",
+        "situation_input_digest": "1791f9607eccf47f20e49a68bfc7edd13b30e518377214cd2a9fc416f950a5ba",
+        "proposed_response_kind": "continue",
+        "parameters": {
+          "action": "recapture_and_reassess_mission"
+        },
+        "rationale": "Response conditioned on aircraft region, control capability and candidate feasibility.",
+        "expected_outcome": "A bounded proposal for independent approval and fresh executor checks.",
+        "uncertainty": "CPU fixture only; no weather inference or AP dispatch.",
+        "operator_question": "Review the response within the preapproved contingency scope.",
+        "judgment_status": "proposal_guardrail_passed",
+        "judgment_mode": "deterministic_routing",
+        "fallback_mode": "operator_escalation_only",
+        "model_inference_invoked": false,
+        "model_invocation_evidence": {
+          "invocation_kind": "deterministic_fixture"
+        },
+        "blocking_reasons": [],
+        "schema_version": "missionos_mission_response_proposal.v1",
+        "operator_review_required": false,
+        "operator_approval_required": false,
+        "llm_judgment_in_gate": false,
+        "operator_approved": false,
+        "approval_recorded": false,
+        "dispatch_authority_created": false,
+        "dispatch_request_sent": false,
+        "command_ack_observed": false,
+        "runtime_progress_observed": false,
+        "landing_observed": false,
+        "delivery_completion_claimed": false,
+        "physical_execution_invoked": false,
+        "progress_counted": false
+      }
+    },
+    {
+      "case": "calm-stale-route",
+      "passed": true,
+      "situation": {
+        "situation_id": "calm-stale-route",
+        "observed_at": "2026-09-28T07:01:55.345449+00:00",
+        "mission_contract": {
+          "objective": "deliver cargo and return; preserve declared reserve"
+        },
+        "progress": {
+          "phase": "sea_inbound"
+        },
+        "observations": {
+          "request_id": "calm-stale-route",
+          "phase": "sea_inbound",
+          "region": "sea",
+          "observed_sim_s": 10,
+          "now_sim_s": 11,
+          "battery_fraction": 0.7,
+          "calm_duration_sim_s": 12,
+          "hazard_active": false,
+          "local_fallback_policy_ref": "authored-local-contingency-v1",
+          "refuges": [
+            {
+              "id": "shore-A",
+              "kind": "shore",
+              "eta_s": 50,
+              "feasibility_age_s": 1,
+              "preapproved": true,
+              "route_clear": true,
+              "wind_reachable": true,
+              "arrival_area_available": true,
+              "estimated_arrival_battery_fraction": 0.5
+            }
+          ],
+          "stable_vehicle_observed": true,
+          "fresh_route_revalidated": false,
+          "mission_deadline_valid": true
+        },
+        "constraints": {
+          "local_fallback_policy_ref": "authored-local-contingency-v1",
+          "model_use": "city_only"
+        },
+        "uncertainty": {
+          "source": "authored CPU fixture; route and wind feasibility not measured here"
+        },
+        "source_refs": [
+          "calm-stale-route"
+        ],
+        "source_schema_version": "missionos.aircraft-wind-request.v1",
+        "input_digest": "0d145fc44f0fe9aaa5e7b68e53360b64c8c5e5ca26c90e69fdcfbef7cba83dce",
+        "execution_scope": "fixture",
+        "allowed_response_kinds": [
+          "abort",
+          "continue",
+          "hold",
+          "operator_escalation",
+          "replan",
+          "return"
+        ],
+        "schema_version": "missionos_mission_situation.v1"
+      },
+      "proposal": {
+        "proposal_id": "mission_response_proposal_42206574c39c",
+        "generated_at": "2026-09-28T07:01:55.345508+00:00",
+        "situation_ref": "mission_situation:calm-stale-route",
+        "situation_input_digest": "0d145fc44f0fe9aaa5e7b68e53360b64c8c5e5ca26c90e69fdcfbef7cba83dce",
+        "proposed_response_kind": "operator_escalation",
+        "parameters": {
+          "action": "retain_preconfigured_local_failsafe",
+          "policy_ref": "authored-local-contingency-v1"
+        },
+        "rationale": "Response conditioned on aircraft region, control capability and candidate feasibility.",
+        "expected_outcome": "A bounded proposal for independent approval and fresh executor checks.",
+        "uncertainty": "CPU fixture only; no weather inference or AP dispatch.",
+        "operator_question": "Review the response within the preapproved contingency scope.",
+        "judgment_status": "proposal_guardrail_passed",
+        "judgment_mode": "deterministic_routing",
+        "fallback_mode": "operator_escalation_only",
+        "model_inference_invoked": false,
+        "model_invocation_evidence": {
+          "invocation_kind": "deterministic_fixture"
+        },
+        "blocking_reasons": [],
+        "schema_version": "missionos_mission_response_proposal.v1",
+        "operator_review_required": true,
+        "operator_approval_required": false,
+        "llm_judgment_in_gate": false,
+        "operator_approved": false,
+        "approval_recorded": false,
+        "dispatch_authority_created": false,
+        "dispatch_request_sent": false,
+        "command_ack_observed": false,
+        "runtime_progress_observed": false,
+        "landing_observed": false,
+        "delivery_completion_claimed": false,
+        "physical_execution_invoked": false,
+        "progress_counted": false
+      }
+    },
+    {
+      "case": "reserve-insufficient",
+      "passed": true,
+      "situation": {
+        "situation_id": "reserve-insufficient",
+        "observed_at": "2026-09-28T07:01:55.345575+00:00",
+        "mission_contract": {
+          "objective": "deliver cargo and return; preserve declared reserve"
+        },
+        "progress": {
+          "phase": "sea_inbound"
+        },
+        "observations": {
+          "request_id": "reserve-insufficient",
+          "phase": "sea_inbound",
+          "region": "sea",
+          "observed_sim_s": 10,
+          "now_sim_s": 11,
+          "battery_fraction": 0.15,
+          "calm_duration_sim_s": 0,
+          "hazard_active": true,
+          "local_fallback_policy_ref": "authored-local-contingency-v1",
+          "refuges": [
+            {
+              "id": "shore-A",
+              "kind": "shore",
+              "eta_s": 50,
+              "feasibility_age_s": 1,
+              "preapproved": true,
+              "route_clear": true,
+              "wind_reachable": true,
+              "arrival_area_available": true,
+              "estimated_arrival_battery_fraction": 0.5
+            }
+          ]
+        },
+        "constraints": {
+          "local_fallback_policy_ref": "authored-local-contingency-v1",
+          "model_use": "city_only"
+        },
+        "uncertainty": {
+          "source": "authored CPU fixture; route and wind feasibility not measured here"
+        },
+        "source_refs": [
+          "reserve-insufficient"
+        ],
+        "source_schema_version": "missionos.aircraft-wind-request.v1",
+        "input_digest": "e15d05563597eadc6053aa7d9acbcea4a5db14ed6adc4c1cedab08cec18ad565",
+        "execution_scope": "fixture",
+        "allowed_response_kinds": [
+          "abort",
+          "continue",
+          "hold",
+          "operator_escalation",
+          "replan",
+          "return"
+        ],
+        "schema_version": "missionos_mission_situation.v1"
+      },
+      "proposal": {
+        "proposal_id": "mission_response_proposal_f5246e94ae83",
+        "generated_at": "2026-09-28T07:01:55.345633+00:00",
+        "situation_ref": "mission_situation:reserve-insufficient",
+        "situation_input_digest": "e15d05563597eadc6053aa7d9acbcea4a5db14ed6adc4c1cedab08cec18ad565",
+        "proposed_response_kind": "operator_escalation",
+        "parameters": {
+          "action": "retain_preconfigured_local_failsafe",
+          "policy_ref": "authored-local-contingency-v1"
+        },
+        "rationale": "Response conditioned on aircraft region, control capability and candidate feasibility.",
+        "expected_outcome": "A bounded proposal for independent approval and fresh executor checks.",
+        "uncertainty": "CPU fixture only; no weather inference or AP dispatch.",
+        "operator_question": "Review the response within the preapproved contingency scope.",
+        "judgment_status": "proposal_guardrail_passed",
+        "judgment_mode": "deterministic_routing",
+        "fallback_mode": "operator_escalation_only",
+        "model_inference_invoked": false,
+        "model_invocation_evidence": {
+          "invocation_kind": "deterministic_fixture"
+        },
+        "blocking_reasons": [],
+        "schema_version": "missionos_mission_response_proposal.v1",
+        "operator_review_required": true,
+        "operator_approval_required": false,
+        "llm_judgment_in_gate": false,
+        "operator_approved": false,
+        "approval_recorded": false,
+        "dispatch_authority_created": false,
+        "dispatch_request_sent": false,
+        "command_ack_observed": false,
+        "runtime_progress_observed": false,
+        "landing_observed": false,
+        "delivery_completion_claimed": false,
+        "physical_execution_invoked": false,
+        "progress_counted": false
+      }
+    }
+  ]
+}

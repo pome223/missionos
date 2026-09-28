@@ -1,0 +1,74 @@
+[
+  {
+    "event": "pad_occupied_reported",
+    "t": 570.856,
+    "phase": "02-D3",
+    "wall_s": 580.8275878479999,
+    "request_id": null,
+    "source_event_sha256": "1c7ebdfc151becded467a162a535365831bb93b14e6e336a5aaede5ae79faaee"
+  },
+  {
+    "event": "missionos_advice_requested",
+    "t": 570.856,
+    "phase": "02-D3",
+    "wall_s": 580.8611542649999,
+    "request_id": "1c988b3ff439556da45c9a7aaeeb3137b77dec729402ebd0fef98d2608d0fc07",
+    "source_event_sha256": "cd3580e9a8101bf47e58741101e918eab03df1e8c037a31a0dfef799e5041ab1"
+  },
+  {
+    "event": "missionos_advice_received",
+    "t": 570.956,
+    "phase": "02-D3",
+    "wall_s": 580.9467398899999,
+    "request_id": "1c988b3ff439556da45c9a7aaeeb3137b77dec729402ebd0fef98d2608d0fc07",
+    "source_event_sha256": "6a917d0d1acc59c430617456515e2aacbf888f5a2895335a1ddb2e56881aab54"
+  },
+  {
+    "event": "pad_wait_executed",
+    "t": 570.956,
+    "phase": "02-D3",
+    "wall_s": 580.9469130979999,
+    "request_id": null,
+    "source_event_sha256": "26a776e81ff858599dae8b80edf166eab4557d3ebbd007f927e65842530ac3af"
+  },
+  {
+    "event": "missionos_advice_requested",
+    "t": 602.256,
+    "phase": "02-D3",
+    "wall_s": 614.4272761549998,
+    "request_id": "2aa0ad13d6253038e7fac6cf2a09d706a0405884d1887c490a0dbb7d8185a81a",
+    "source_event_sha256": "d1e49ad3b969f4786e9633cd79515459b41033ad4de7112cc4767111c402326c"
+  },
+  {
+    "event": "missionos_advice_received",
+    "t": 605.164,
+    "phase": "02-D3",
+    "wall_s": 614.521900989,
+    "request_id": "2aa0ad13d6253038e7fac6cf2a09d706a0405884d1887c490a0dbb7d8185a81a",
+    "source_event_sha256": "f8697195f2708be794dd51304f768ed60fc6173d41193cf02ff990836af7008b"
+  },
+  {
+    "event": "pad_entry_authorized",
+    "t": 605.164,
+    "phase": "02-D3",
+    "wall_s": 614.5230612389998,
+    "request_id": "2aa0ad13d6253038e7fac6cf2a09d706a0405884d1887c490a0dbb7d8185a81a",
+    "source_event_sha256": "6e42ec03ca830059046469463a98f5fccc6c12902b004de24e48dd0341314240"
+  },
+  {
+    "event": "pad_entry_dispatch_checked",
+    "t": 605.356,
+    "phase": "03-DELIVERY",
+    "wall_s": 617.6562551989998,
+    "request_id": "2aa0ad13d6253038e7fac6cf2a09d706a0405884d1887c490a0dbb7d8185a81a",
+    "source_event_sha256": "6e37c1bb3a3052dd35f727cd705b7047bfd5e8e3fa53a21a6f4c5c0dd3efa172"
+  },
+  {
+    "event": "payload_received",
+    "t": 727.46,
+    "phase": "PAYLOAD-VERIFY",
+    "wall_s": 753.3329533440001,
+    "request_id": null,
+    "source_event_sha256": "55ff6e9789f7bf325f541b1afe80c2c7c27a9d48ebc791bc7007da4c88411cd8"
+  }
+]

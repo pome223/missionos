@@ -1,0 +1,12 @@
+{
+  "wait_sim_s": 31.5,
+  "minimum_sampled_separation_m": 12.816509327064885,
+  "run_duration_sim_s": 1285.72,
+  "hold_count": 13,
+  "trajectory_samples": 3849,
+  "final_simulated_battery_fraction": 0.75957,
+  "ack_missing_events": 7,
+  "tests": "3545 passed, 2 skipped, 3 warnings in 125.12s (0:02:05)",
+  "pre_touchdown_battery_fraction": 0.64616,
+  "pre_touchdown_sim_s": 1288.1
+}
