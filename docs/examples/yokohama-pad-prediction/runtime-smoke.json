@@ -1,0 +1,1781 @@
+{
+  "schema": "yokohama_pad_prediction_smoke.v1",
+  "status": "passed",
+  "scope": "CPU synthetic WAM forecasts and fixture judge through shared Mission Assurance; no AP dispatch",
+  "native_model_inference_invoked": false,
+  "gpu_requested": false,
+  "cost_usd": 0,
+  "cases": [
+    {
+      "case": "forecast_conflict",
+      "passed": true,
+      "envelope": {
+        "schema_version": "missionos_prediction_evidence.v1",
+        "context": {
+          "execution_id": "fixture-run",
+          "state_revision": "revision-1",
+          "source_ref": "fixture:camera-history",
+          "observation_id": "observation-1",
+          "binding": {
+            "model_id": "pad-wam-fixture",
+            "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mission_contract": "pad-wait-or-step.v1",
+            "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "environment_contract": "authored-pad-fixture.v1",
+            "input_schema": "pad-history.v1"
+          }
+        },
+        "request": {
+          "request_id": "request-1",
+          "observation_id": "observation-1",
+          "observed_at": 100.0,
+          "binding": {
+            "model_id": "pad-wam-fixture",
+            "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mission_contract": "pad-wait-or-step.v1",
+            "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "environment_contract": "authored-pad-fixture.v1",
+            "input_schema": "pad-history.v1"
+          },
+          "state": {
+            "history_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          },
+          "options": [
+            {
+              "option_id": "hold",
+              "horizon_seconds": 10,
+              "parameters": {
+                "delta_body_frd": [
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "option_id": "vla",
+              "horizon_seconds": 10,
+              "parameters": {
+                "delta_body_frd": [
+                  2,
+                  0,
+                  0,
+                  0
+                ],
+                "response_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+              }
+            }
+          ]
+        },
+        "forecast": {
+          "schema_version": "missionos_core_prediction.v1",
+          "request_id": "request-1",
+          "observation_id": "observation-1",
+          "request_sha256": "80bc33a37a326e89be7a6ac7cc151c7b7692669ae16dae523421df61b424d4f8",
+          "binding": {
+            "model_id": "pad-wam-fixture",
+            "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mission_contract": "pad-wait-or-step.v1",
+            "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "environment_contract": "authored-pad-fixture.v1",
+            "input_schema": "pad-history.v1"
+          },
+          "status": "available",
+          "reason": "",
+          "forecasts": [
+            {
+              "option_id": "hold",
+              "horizon_seconds": 10,
+              "risk_score": 0.1,
+              "future_state": {
+                "conflict_during_interval": false,
+                "pad_state_at_horizon": "occupied",
+                "coverage": "observation_through_horizon"
+              }
+            },
+            {
+              "option_id": "vla",
+              "horizon_seconds": 10,
+              "risk_score": 0.9,
+              "future_state": {
+                "conflict_during_interval": true,
+                "pad_state_at_horizon": "occupied",
+                "coverage": "observation_through_horizon"
+              }
+            }
+          ],
+          "verification_basis": "model_inferred",
+          "approval_recorded": false,
+          "dispatch_authority_created": false,
+          "physical_execution_invoked": false,
+          "completion_claimed": false
+        }
+      },
+      "result": {
+        "schema": "missionos.pad-prediction-selection.v1",
+        "execution_scope": "fixture",
+        "prediction_admission": {
+          "schema_version": "missionos_assurance_prediction_admission.v1",
+          "status": "adopted",
+          "reason": "bound_current_model_evidence",
+          "evidence_source": "model_inferred",
+          "evidence_sha256": "d8855270cf5269be362d673b325ca902f62c94d0d19c1f13438d5b3d484c3bd0",
+          "source_situation_id": "pad-situation-1",
+          "source_situation_sha256": "537abb979e5f2a5cb4d8a36d8f71cc28de5e11448fce02c408bbb379f8064c48",
+          "evaluated_at": 101,
+          "max_age_seconds": 2,
+          "freshness_status": "current",
+          "feasibility_established": false,
+          "llm_judgment_invoked": false,
+          "approval_recorded": false,
+          "dispatch_authority_created": false,
+          "physical_execution_invoked": false,
+          "completion_claimed": false
+        },
+        "proposal": {
+          "proposal_id": "mission_response_proposal_2cd41471bae9",
+          "generated_at": "2026-09-28T09:25:15.213837+00:00",
+          "situation_ref": "mission_situation:pad-situation-1",
+          "situation_input_digest": "ab8dcddabe8013ad66c8fd4a99787b968410bcf1f0f511a8e023a23b080c7162",
+          "proposed_response_kind": "hold",
+          "parameters": {
+            "candidate_id": "hold"
+          },
+          "rationale": "Authored fixture reads current occupancy and candidate-conditioned WAM evidence.",
+          "expected_outcome": "Bounded candidate selected for independent approval and Rules.",
+          "uncertainty": "Synthetic semantic forecasts and deterministic fixture judgment; no learned result.",
+          "operator_question": "Review within the existing simulator scope.",
+          "judgment_status": "proposal_guardrail_passed",
+          "judgment_mode": "deterministic_routing",
+          "fallback_mode": "operator_escalation_only",
+          "model_inference_invoked": false,
+          "model_invocation_evidence": {
+            "invocation_kind": "deterministic_fixture"
+          },
+          "blocking_reasons": [],
+          "schema_version": "missionos_mission_response_proposal.v1",
+          "operator_review_required": true,
+          "operator_approval_required": false,
+          "llm_judgment_in_gate": false,
+          "operator_approved": false,
+          "approval_recorded": false,
+          "dispatch_authority_created": false,
+          "dispatch_request_sent": false,
+          "command_ack_observed": false,
+          "runtime_progress_observed": false,
+          "landing_observed": false,
+          "delivery_completion_claimed": false,
+          "physical_execution_invoked": false,
+          "progress_counted": false
+        },
+        "selected_candidate": {
+          "option_id": "hold",
+          "horizon_seconds": 10,
+          "parameters": {
+            "delta_body_frd": [
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "selection_valid_for_review": true,
+        "judge_invoked": true,
+        "approval_recorded": false,
+        "dispatch_authority_created": false,
+        "dispatch_request_sent": false,
+        "physical_execution_invoked": false,
+        "completion_claimed": false,
+        "situation": {
+          "situation_id": "pad-situation-1",
+          "observed_at": "2026-09-28T00:00:00Z",
+          "mission_contract": {
+            "prediction_contract": "pad-wait-or-step.v1",
+            "objective": "deliver then return"
+          },
+          "progress": {
+            "region": "city",
+            "phase": "pad_wait"
+          },
+          "observations": {
+            "observed_sim_s": 100.5,
+            "pad_clear": true,
+            "approach_clear": true,
+            "bounded_hold_available": true,
+            "wait_budget_available": true
+          },
+          "constraints": {
+            "prediction_context": {
+              "execution_id": "fixture-run",
+              "state_revision": "revision-1",
+              "source_ref": "fixture:camera-history",
+              "observation_id": "observation-1",
+              "binding": {
+                "model_id": "pad-wam-fixture",
+                "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "mission_contract": "pad-wait-or-step.v1",
+                "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "environment_contract": "authored-pad-fixture.v1",
+                "input_schema": "pad-history.v1"
+              }
+            },
+            "vla_candidate": {
+              "delta_body_frd": [
+                2,
+                0,
+                0,
+                0
+              ],
+              "response_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            "candidate_duration_sim_s": {
+              "hold": 2,
+              "vla": 3
+            },
+            "pad_forecast_profile": {
+              "binding": {
+                "model_id": "pad-wam-fixture",
+                "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "mission_contract": "pad-wait-or-step.v1",
+                "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "environment_contract": "authored-pad-fixture.v1",
+                "input_schema": "pad-history.v1"
+              },
+              "clock": "sim",
+              "source": "fixture",
+              "semantic_validation_ref": "fixture:assumed-dynamic-interval-labels",
+              "time_calibration_ref": "fixture:authored-simulator-clock"
+            },
+            "pad_selection_contract": {
+              "hold_selects": "hold",
+              "continue_selects": "vla",
+              "forecast_is_not_current_occupancy": true,
+              "candidates": [
+                {
+                  "option_id": "hold",
+                  "horizon_seconds": 10,
+                  "parameters": {
+                    "delta_body_frd": [
+                      0,
+                      0,
+                      0,
+                      0
+                    ]
+                  }
+                },
+                {
+                  "option_id": "vla",
+                  "horizon_seconds": 10,
+                  "parameters": {
+                    "delta_body_frd": [
+                      2,
+                      0,
+                      0,
+                      0
+                    ],
+                    "response_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+                  }
+                }
+              ],
+              "required_parameter": "candidate_id"
+            }
+          },
+          "uncertainty": {
+            "source": "synthetic CPU fixture; no native model or flight",
+            "prediction_evidence": {
+              "receipt": {
+                "schema_version": "missionos_assurance_prediction_admission.v1",
+                "status": "adopted",
+                "reason": "bound_current_model_evidence",
+                "evidence_source": "model_inferred",
+                "evidence_sha256": "d8855270cf5269be362d673b325ca902f62c94d0d19c1f13438d5b3d484c3bd0",
+                "source_situation_id": "pad-situation-1",
+                "source_situation_sha256": "537abb979e5f2a5cb4d8a36d8f71cc28de5e11448fce02c408bbb379f8064c48",
+                "evaluated_at": 101,
+                "max_age_seconds": 2,
+                "freshness_status": "current",
+                "feasibility_established": false,
+                "llm_judgment_invoked": false,
+                "approval_recorded": false,
+                "dispatch_authority_created": false,
+                "physical_execution_invoked": false,
+                "completion_claimed": false
+              },
+              "context": {
+                "execution_id": "fixture-run",
+                "state_revision": "revision-1",
+                "source_ref": "fixture:camera-history",
+                "observation_id": "observation-1",
+                "binding": {
+                  "model_id": "pad-wam-fixture",
+                  "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "mission_contract": "pad-wait-or-step.v1",
+                  "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                  "environment_contract": "authored-pad-fixture.v1",
+                  "input_schema": "pad-history.v1"
+                }
+              },
+              "request_sha256": "80bc33a37a326e89be7a6ac7cc151c7b7692669ae16dae523421df61b424d4f8",
+              "forecasts": [
+                {
+                  "option_id": "hold",
+                  "horizon_seconds": 10,
+                  "risk_score": 0.1,
+                  "future_state": {
+                    "conflict_during_interval": false,
+                    "pad_state_at_horizon": "occupied",
+                    "coverage": "observation_through_horizon"
+                  }
+                },
+                {
+                  "option_id": "vla",
+                  "horizon_seconds": 10,
+                  "risk_score": 0.9,
+                  "future_state": {
+                    "conflict_during_interval": true,
+                    "pad_state_at_horizon": "occupied",
+                    "coverage": "observation_through_horizon"
+                  }
+                }
+              ],
+              "forecast_status": "available",
+              "verification_basis": "model_inferred"
+            }
+          },
+          "source_refs": [
+            "fixture:camera-history"
+          ],
+          "source_schema_version": "pad-fixture.v1",
+          "input_digest": "ab8dcddabe8013ad66c8fd4a99787b968410bcf1f0f511a8e023a23b080c7162",
+          "execution_scope": "fixture",
+          "allowed_response_kinds": [
+            "hold",
+            "continue",
+            "operator_escalation"
+          ],
+          "schema_version": "missionos_mission_situation.v1"
+        },
+        "reason": "source_bound_proposal_only_recheck_approval_and_rules_at_execution"
+      }
+    },
+    {
+      "case": "forecast_clear",
+      "passed": true,
+      "envelope": {
+        "schema_version": "missionos_prediction_evidence.v1",
+        "context": {
+          "execution_id": "fixture-run",
+          "state_revision": "revision-1",
+          "source_ref": "fixture:camera-history",
+          "observation_id": "observation-1",
+          "binding": {
+            "model_id": "pad-wam-fixture",
+            "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mission_contract": "pad-wait-or-step.v1",
+            "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "environment_contract": "authored-pad-fixture.v1",
+            "input_schema": "pad-history.v1"
+          }
+        },
+        "request": {
+          "request_id": "request-1",
+          "observation_id": "observation-1",
+          "observed_at": 100.0,
+          "binding": {
+            "model_id": "pad-wam-fixture",
+            "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mission_contract": "pad-wait-or-step.v1",
+            "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "environment_contract": "authored-pad-fixture.v1",
+            "input_schema": "pad-history.v1"
+          },
+          "state": {
+            "history_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          },
+          "options": [
+            {
+              "option_id": "hold",
+              "horizon_seconds": 10,
+              "parameters": {
+                "delta_body_frd": [
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "option_id": "vla",
+              "horizon_seconds": 10,
+              "parameters": {
+                "delta_body_frd": [
+                  2,
+                  0,
+                  0,
+                  0
+                ],
+                "response_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+              }
+            }
+          ]
+        },
+        "forecast": {
+          "schema_version": "missionos_core_prediction.v1",
+          "request_id": "request-1",
+          "observation_id": "observation-1",
+          "request_sha256": "80bc33a37a326e89be7a6ac7cc151c7b7692669ae16dae523421df61b424d4f8",
+          "binding": {
+            "model_id": "pad-wam-fixture",
+            "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mission_contract": "pad-wait-or-step.v1",
+            "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "environment_contract": "authored-pad-fixture.v1",
+            "input_schema": "pad-history.v1"
+          },
+          "status": "available",
+          "reason": "",
+          "forecasts": [
+            {
+              "option_id": "hold",
+              "horizon_seconds": 10,
+              "risk_score": 0.1,
+              "future_state": {
+                "conflict_during_interval": false,
+                "pad_state_at_horizon": "clear",
+                "coverage": "observation_through_horizon"
+              }
+            },
+            {
+              "option_id": "vla",
+              "horizon_seconds": 10,
+              "risk_score": 0.1,
+              "future_state": {
+                "conflict_during_interval": false,
+                "pad_state_at_horizon": "clear",
+                "coverage": "observation_through_horizon"
+              }
+            }
+          ],
+          "verification_basis": "model_inferred",
+          "approval_recorded": false,
+          "dispatch_authority_created": false,
+          "physical_execution_invoked": false,
+          "completion_claimed": false
+        }
+      },
+      "result": {
+        "schema": "missionos.pad-prediction-selection.v1",
+        "execution_scope": "fixture",
+        "prediction_admission": {
+          "schema_version": "missionos_assurance_prediction_admission.v1",
+          "status": "adopted",
+          "reason": "bound_current_model_evidence",
+          "evidence_source": "model_inferred",
+          "evidence_sha256": "3b6b7a5890b48ef108166b9207e913272bc51d1b452d785c3cdde10795e7be05",
+          "source_situation_id": "pad-situation-1",
+          "source_situation_sha256": "537abb979e5f2a5cb4d8a36d8f71cc28de5e11448fce02c408bbb379f8064c48",
+          "evaluated_at": 101,
+          "max_age_seconds": 2,
+          "freshness_status": "current",
+          "feasibility_established": false,
+          "llm_judgment_invoked": false,
+          "approval_recorded": false,
+          "dispatch_authority_created": false,
+          "physical_execution_invoked": false,
+          "completion_claimed": false
+        },
+        "proposal": {
+          "proposal_id": "mission_response_proposal_87004c1e89e2",
+          "generated_at": "2026-09-28T09:25:15.214905+00:00",
+          "situation_ref": "mission_situation:pad-situation-1",
+          "situation_input_digest": "22c89adc30cdfc7cc0574ed3ca9c4435f03cd3635c38b334263f9dc69fa90928",
+          "proposed_response_kind": "continue",
+          "parameters": {
+            "candidate_id": "vla"
+          },
+          "rationale": "Authored fixture reads current occupancy and candidate-conditioned WAM evidence.",
+          "expected_outcome": "Bounded candidate selected for independent approval and Rules.",
+          "uncertainty": "Synthetic semantic forecasts and deterministic fixture judgment; no learned result.",
+          "operator_question": "Review within the existing simulator scope.",
+          "judgment_status": "proposal_guardrail_passed",
+          "judgment_mode": "deterministic_routing",
+          "fallback_mode": "operator_escalation_only",
+          "model_inference_invoked": false,
+          "model_invocation_evidence": {
+            "invocation_kind": "deterministic_fixture"
+          },
+          "blocking_reasons": [],
+          "schema_version": "missionos_mission_response_proposal.v1",
+          "operator_review_required": false,
+          "operator_approval_required": false,
+          "llm_judgment_in_gate": false,
+          "operator_approved": false,
+          "approval_recorded": false,
+          "dispatch_authority_created": false,
+          "dispatch_request_sent": false,
+          "command_ack_observed": false,
+          "runtime_progress_observed": false,
+          "landing_observed": false,
+          "delivery_completion_claimed": false,
+          "physical_execution_invoked": false,
+          "progress_counted": false
+        },
+        "selected_candidate": {
+          "option_id": "vla",
+          "horizon_seconds": 10,
+          "parameters": {
+            "delta_body_frd": [
+              2,
+              0,
+              0,
+              0
+            ],
+            "response_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+          }
+        },
+        "selection_valid_for_review": true,
+        "judge_invoked": true,
+        "approval_recorded": false,
+        "dispatch_authority_created": false,
+        "dispatch_request_sent": false,
+        "physical_execution_invoked": false,
+        "completion_claimed": false,
+        "situation": {
+          "situation_id": "pad-situation-1",
+          "observed_at": "2026-09-28T00:00:00Z",
+          "mission_contract": {
+            "prediction_contract": "pad-wait-or-step.v1",
+            "objective": "deliver then return"
+          },
+          "progress": {
+            "region": "city",
+            "phase": "pad_wait"
+          },
+          "observations": {
+            "observed_sim_s": 100.5,
+            "pad_clear": true,
+            "approach_clear": true,
+            "bounded_hold_available": true,
+            "wait_budget_available": true
+          },
+          "constraints": {
+            "prediction_context": {
+              "execution_id": "fixture-run",
+              "state_revision": "revision-1",
+              "source_ref": "fixture:camera-history",
+              "observation_id": "observation-1",
+              "binding": {
+                "model_id": "pad-wam-fixture",
+                "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "mission_contract": "pad-wait-or-step.v1",
+                "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "environment_contract": "authored-pad-fixture.v1",
+                "input_schema": "pad-history.v1"
+              }
+            },
+            "vla_candidate": {
+              "delta_body_frd": [
+                2,
+                0,
+                0,
+                0
+              ],
+              "response_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            "candidate_duration_sim_s": {
+              "hold": 2,
+              "vla": 3
+            },
+            "pad_forecast_profile": {
+              "binding": {
+                "model_id": "pad-wam-fixture",
+                "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "mission_contract": "pad-wait-or-step.v1",
+                "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "environment_contract": "authored-pad-fixture.v1",
+                "input_schema": "pad-history.v1"
+              },
+              "clock": "sim",
+              "source": "fixture",
+              "semantic_validation_ref": "fixture:assumed-dynamic-interval-labels",
+              "time_calibration_ref": "fixture:authored-simulator-clock"
+            },
+            "pad_selection_contract": {
+              "hold_selects": "hold",
+              "continue_selects": "vla",
+              "forecast_is_not_current_occupancy": true,
+              "candidates": [
+                {
+                  "option_id": "hold",
+                  "horizon_seconds": 10,
+                  "parameters": {
+                    "delta_body_frd": [
+                      0,
+                      0,
+                      0,
+                      0
+                    ]
+                  }
+                },
+                {
+                  "option_id": "vla",
+                  "horizon_seconds": 10,
+                  "parameters": {
+                    "delta_body_frd": [
+                      2,
+                      0,
+                      0,
+                      0
+                    ],
+                    "response_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+                  }
+                }
+              ],
+              "required_parameter": "candidate_id"
+            }
+          },
+          "uncertainty": {
+            "source": "synthetic CPU fixture; no native model or flight",
+            "prediction_evidence": {
+              "receipt": {
+                "schema_version": "missionos_assurance_prediction_admission.v1",
+                "status": "adopted",
+                "reason": "bound_current_model_evidence",
+                "evidence_source": "model_inferred",
+                "evidence_sha256": "3b6b7a5890b48ef108166b9207e913272bc51d1b452d785c3cdde10795e7be05",
+                "source_situation_id": "pad-situation-1",
+                "source_situation_sha256": "537abb979e5f2a5cb4d8a36d8f71cc28de5e11448fce02c408bbb379f8064c48",
+                "evaluated_at": 101,
+                "max_age_seconds": 2,
+                "freshness_status": "current",
+                "feasibility_established": false,
+                "llm_judgment_invoked": false,
+                "approval_recorded": false,
+                "dispatch_authority_created": false,
+                "physical_execution_invoked": false,
+                "completion_claimed": false
+              },
+              "context": {
+                "execution_id": "fixture-run",
+                "state_revision": "revision-1",
+                "source_ref": "fixture:camera-history",
+                "observation_id": "observation-1",
+                "binding": {
+                  "model_id": "pad-wam-fixture",
+                  "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "mission_contract": "pad-wait-or-step.v1",
+                  "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                  "environment_contract": "authored-pad-fixture.v1",
+                  "input_schema": "pad-history.v1"
+                }
+              },
+              "request_sha256": "80bc33a37a326e89be7a6ac7cc151c7b7692669ae16dae523421df61b424d4f8",
+              "forecasts": [
+                {
+                  "option_id": "hold",
+                  "horizon_seconds": 10,
+                  "risk_score": 0.1,
+                  "future_state": {
+                    "conflict_during_interval": false,
+                    "pad_state_at_horizon": "clear",
+                    "coverage": "observation_through_horizon"
+                  }
+                },
+                {
+                  "option_id": "vla",
+                  "horizon_seconds": 10,
+                  "risk_score": 0.1,
+                  "future_state": {
+                    "conflict_during_interval": false,
+                    "pad_state_at_horizon": "clear",
+                    "coverage": "observation_through_horizon"
+                  }
+                }
+              ],
+              "forecast_status": "available",
+              "verification_basis": "model_inferred"
+            }
+          },
+          "source_refs": [
+            "fixture:camera-history"
+          ],
+          "source_schema_version": "pad-fixture.v1",
+          "input_digest": "22c89adc30cdfc7cc0574ed3ca9c4435f03cd3635c38b334263f9dc69fa90928",
+          "execution_scope": "fixture",
+          "allowed_response_kinds": [
+            "hold",
+            "continue",
+            "operator_escalation"
+          ],
+          "schema_version": "missionos_mission_situation.v1"
+        },
+        "reason": "source_bound_proposal_only_recheck_approval_and_rules_at_execution"
+      }
+    },
+    {
+      "case": "currently_busy_future_clear",
+      "passed": true,
+      "envelope": {
+        "schema_version": "missionos_prediction_evidence.v1",
+        "context": {
+          "execution_id": "fixture-run",
+          "state_revision": "revision-1",
+          "source_ref": "fixture:camera-history",
+          "observation_id": "observation-1",
+          "binding": {
+            "model_id": "pad-wam-fixture",
+            "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mission_contract": "pad-wait-or-step.v1",
+            "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "environment_contract": "authored-pad-fixture.v1",
+            "input_schema": "pad-history.v1"
+          }
+        },
+        "request": {
+          "request_id": "request-1",
+          "observation_id": "observation-1",
+          "observed_at": 100.0,
+          "binding": {
+            "model_id": "pad-wam-fixture",
+            "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mission_contract": "pad-wait-or-step.v1",
+            "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "environment_contract": "authored-pad-fixture.v1",
+            "input_schema": "pad-history.v1"
+          },
+          "state": {
+            "history_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          },
+          "options": [
+            {
+              "option_id": "hold",
+              "horizon_seconds": 10,
+              "parameters": {
+                "delta_body_frd": [
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "option_id": "vla",
+              "horizon_seconds": 10,
+              "parameters": {
+                "delta_body_frd": [
+                  2,
+                  0,
+                  0,
+                  0
+                ],
+                "response_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+              }
+            }
+          ]
+        },
+        "forecast": {
+          "schema_version": "missionos_core_prediction.v1",
+          "request_id": "request-1",
+          "observation_id": "observation-1",
+          "request_sha256": "80bc33a37a326e89be7a6ac7cc151c7b7692669ae16dae523421df61b424d4f8",
+          "binding": {
+            "model_id": "pad-wam-fixture",
+            "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mission_contract": "pad-wait-or-step.v1",
+            "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "environment_contract": "authored-pad-fixture.v1",
+            "input_schema": "pad-history.v1"
+          },
+          "status": "available",
+          "reason": "",
+          "forecasts": [
+            {
+              "option_id": "hold",
+              "horizon_seconds": 10,
+              "risk_score": 0.1,
+              "future_state": {
+                "conflict_during_interval": false,
+                "pad_state_at_horizon": "clear",
+                "coverage": "observation_through_horizon"
+              }
+            },
+            {
+              "option_id": "vla",
+              "horizon_seconds": 10,
+              "risk_score": 0.1,
+              "future_state": {
+                "conflict_during_interval": false,
+                "pad_state_at_horizon": "clear",
+                "coverage": "observation_through_horizon"
+              }
+            }
+          ],
+          "verification_basis": "model_inferred",
+          "approval_recorded": false,
+          "dispatch_authority_created": false,
+          "physical_execution_invoked": false,
+          "completion_claimed": false
+        }
+      },
+      "result": {
+        "schema": "missionos.pad-prediction-selection.v1",
+        "execution_scope": "fixture",
+        "prediction_admission": {
+          "schema_version": "missionos_assurance_prediction_admission.v1",
+          "status": "adopted",
+          "reason": "bound_current_model_evidence",
+          "evidence_source": "model_inferred",
+          "evidence_sha256": "3b6b7a5890b48ef108166b9207e913272bc51d1b452d785c3cdde10795e7be05",
+          "source_situation_id": "pad-situation-1",
+          "source_situation_sha256": "f615148a50d1df4ac4b08bc01ac7c03a70acaac1b0baaaae5941bb8c1c5978d4",
+          "evaluated_at": 101,
+          "max_age_seconds": 2,
+          "freshness_status": "current",
+          "feasibility_established": false,
+          "llm_judgment_invoked": false,
+          "approval_recorded": false,
+          "dispatch_authority_created": false,
+          "physical_execution_invoked": false,
+          "completion_claimed": false
+        },
+        "proposal": {
+          "proposal_id": "mission_response_proposal_5f9a2d9b5152",
+          "generated_at": "2026-09-28T09:25:15.215736+00:00",
+          "situation_ref": "mission_situation:pad-situation-1",
+          "situation_input_digest": "a25ac38bbe86c888e034e5f7ae551e02b3a6d9494f88cfda900ba3d49a2c3d54",
+          "proposed_response_kind": "hold",
+          "parameters": {
+            "candidate_id": "hold"
+          },
+          "rationale": "Authored fixture reads current occupancy and candidate-conditioned WAM evidence.",
+          "expected_outcome": "Bounded candidate selected for independent approval and Rules.",
+          "uncertainty": "Synthetic semantic forecasts and deterministic fixture judgment; no learned result.",
+          "operator_question": "Review within the existing simulator scope.",
+          "judgment_status": "proposal_guardrail_passed",
+          "judgment_mode": "deterministic_routing",
+          "fallback_mode": "operator_escalation_only",
+          "model_inference_invoked": false,
+          "model_invocation_evidence": {
+            "invocation_kind": "deterministic_fixture"
+          },
+          "blocking_reasons": [],
+          "schema_version": "missionos_mission_response_proposal.v1",
+          "operator_review_required": true,
+          "operator_approval_required": false,
+          "llm_judgment_in_gate": false,
+          "operator_approved": false,
+          "approval_recorded": false,
+          "dispatch_authority_created": false,
+          "dispatch_request_sent": false,
+          "command_ack_observed": false,
+          "runtime_progress_observed": false,
+          "landing_observed": false,
+          "delivery_completion_claimed": false,
+          "physical_execution_invoked": false,
+          "progress_counted": false
+        },
+        "selected_candidate": {
+          "option_id": "hold",
+          "horizon_seconds": 10,
+          "parameters": {
+            "delta_body_frd": [
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "selection_valid_for_review": true,
+        "judge_invoked": true,
+        "approval_recorded": false,
+        "dispatch_authority_created": false,
+        "dispatch_request_sent": false,
+        "physical_execution_invoked": false,
+        "completion_claimed": false,
+        "situation": {
+          "situation_id": "pad-situation-1",
+          "observed_at": "2026-09-28T00:00:00Z",
+          "mission_contract": {
+            "prediction_contract": "pad-wait-or-step.v1",
+            "objective": "deliver then return"
+          },
+          "progress": {
+            "region": "city",
+            "phase": "pad_wait"
+          },
+          "observations": {
+            "observed_sim_s": 100.5,
+            "pad_clear": false,
+            "approach_clear": true,
+            "bounded_hold_available": true,
+            "wait_budget_available": true
+          },
+          "constraints": {
+            "prediction_context": {
+              "execution_id": "fixture-run",
+              "state_revision": "revision-1",
+              "source_ref": "fixture:camera-history",
+              "observation_id": "observation-1",
+              "binding": {
+                "model_id": "pad-wam-fixture",
+                "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "mission_contract": "pad-wait-or-step.v1",
+                "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "environment_contract": "authored-pad-fixture.v1",
+                "input_schema": "pad-history.v1"
+              }
+            },
+            "vla_candidate": {
+              "delta_body_frd": [
+                2,
+                0,
+                0,
+                0
+              ],
+              "response_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            "candidate_duration_sim_s": {
+              "hold": 2,
+              "vla": 3
+            },
+            "pad_forecast_profile": {
+              "binding": {
+                "model_id": "pad-wam-fixture",
+                "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "mission_contract": "pad-wait-or-step.v1",
+                "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "environment_contract": "authored-pad-fixture.v1",
+                "input_schema": "pad-history.v1"
+              },
+              "clock": "sim",
+              "source": "fixture",
+              "semantic_validation_ref": "fixture:assumed-dynamic-interval-labels",
+              "time_calibration_ref": "fixture:authored-simulator-clock"
+            },
+            "pad_selection_contract": {
+              "hold_selects": "hold",
+              "continue_selects": "vla",
+              "forecast_is_not_current_occupancy": true,
+              "candidates": [
+                {
+                  "option_id": "hold",
+                  "horizon_seconds": 10,
+                  "parameters": {
+                    "delta_body_frd": [
+                      0,
+                      0,
+                      0,
+                      0
+                    ]
+                  }
+                },
+                {
+                  "option_id": "vla",
+                  "horizon_seconds": 10,
+                  "parameters": {
+                    "delta_body_frd": [
+                      2,
+                      0,
+                      0,
+                      0
+                    ],
+                    "response_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+                  }
+                }
+              ],
+              "required_parameter": "candidate_id"
+            }
+          },
+          "uncertainty": {
+            "source": "synthetic CPU fixture; no native model or flight",
+            "prediction_evidence": {
+              "receipt": {
+                "schema_version": "missionos_assurance_prediction_admission.v1",
+                "status": "adopted",
+                "reason": "bound_current_model_evidence",
+                "evidence_source": "model_inferred",
+                "evidence_sha256": "3b6b7a5890b48ef108166b9207e913272bc51d1b452d785c3cdde10795e7be05",
+                "source_situation_id": "pad-situation-1",
+                "source_situation_sha256": "f615148a50d1df4ac4b08bc01ac7c03a70acaac1b0baaaae5941bb8c1c5978d4",
+                "evaluated_at": 101,
+                "max_age_seconds": 2,
+                "freshness_status": "current",
+                "feasibility_established": false,
+                "llm_judgment_invoked": false,
+                "approval_recorded": false,
+                "dispatch_authority_created": false,
+                "physical_execution_invoked": false,
+                "completion_claimed": false
+              },
+              "context": {
+                "execution_id": "fixture-run",
+                "state_revision": "revision-1",
+                "source_ref": "fixture:camera-history",
+                "observation_id": "observation-1",
+                "binding": {
+                  "model_id": "pad-wam-fixture",
+                  "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "mission_contract": "pad-wait-or-step.v1",
+                  "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                  "environment_contract": "authored-pad-fixture.v1",
+                  "input_schema": "pad-history.v1"
+                }
+              },
+              "request_sha256": "80bc33a37a326e89be7a6ac7cc151c7b7692669ae16dae523421df61b424d4f8",
+              "forecasts": [
+                {
+                  "option_id": "hold",
+                  "horizon_seconds": 10,
+                  "risk_score": 0.1,
+                  "future_state": {
+                    "conflict_during_interval": false,
+                    "pad_state_at_horizon": "clear",
+                    "coverage": "observation_through_horizon"
+                  }
+                },
+                {
+                  "option_id": "vla",
+                  "horizon_seconds": 10,
+                  "risk_score": 0.1,
+                  "future_state": {
+                    "conflict_during_interval": false,
+                    "pad_state_at_horizon": "clear",
+                    "coverage": "observation_through_horizon"
+                  }
+                }
+              ],
+              "forecast_status": "available",
+              "verification_basis": "model_inferred"
+            }
+          },
+          "source_refs": [
+            "fixture:camera-history"
+          ],
+          "source_schema_version": "pad-fixture.v1",
+          "input_digest": "a25ac38bbe86c888e034e5f7ae551e02b3a6d9494f88cfda900ba3d49a2c3d54",
+          "execution_scope": "fixture",
+          "allowed_response_kinds": [
+            "hold",
+            "continue",
+            "operator_escalation"
+          ],
+          "schema_version": "missionos_mission_situation.v1"
+        },
+        "reason": "source_bound_proposal_only_recheck_approval_and_rules_at_execution"
+      }
+    },
+    {
+      "case": "late_response",
+      "passed": true,
+      "envelope": {
+        "schema_version": "missionos_prediction_evidence.v1",
+        "context": {
+          "execution_id": "fixture-run",
+          "state_revision": "revision-1",
+          "source_ref": "fixture:camera-history",
+          "observation_id": "observation-1",
+          "binding": {
+            "model_id": "pad-wam-fixture",
+            "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mission_contract": "pad-wait-or-step.v1",
+            "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "environment_contract": "authored-pad-fixture.v1",
+            "input_schema": "pad-history.v1"
+          }
+        },
+        "request": {
+          "request_id": "request-1",
+          "observation_id": "observation-1",
+          "observed_at": 100.0,
+          "binding": {
+            "model_id": "pad-wam-fixture",
+            "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mission_contract": "pad-wait-or-step.v1",
+            "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "environment_contract": "authored-pad-fixture.v1",
+            "input_schema": "pad-history.v1"
+          },
+          "state": {
+            "history_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          },
+          "options": [
+            {
+              "option_id": "hold",
+              "horizon_seconds": 10,
+              "parameters": {
+                "delta_body_frd": [
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "option_id": "vla",
+              "horizon_seconds": 10,
+              "parameters": {
+                "delta_body_frd": [
+                  2,
+                  0,
+                  0,
+                  0
+                ],
+                "response_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+              }
+            }
+          ]
+        },
+        "forecast": {
+          "schema_version": "missionos_core_prediction.v1",
+          "request_id": "request-1",
+          "observation_id": "observation-1",
+          "request_sha256": "80bc33a37a326e89be7a6ac7cc151c7b7692669ae16dae523421df61b424d4f8",
+          "binding": {
+            "model_id": "pad-wam-fixture",
+            "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mission_contract": "pad-wait-or-step.v1",
+            "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "environment_contract": "authored-pad-fixture.v1",
+            "input_schema": "pad-history.v1"
+          },
+          "status": "available",
+          "reason": "",
+          "forecasts": [
+            {
+              "option_id": "hold",
+              "horizon_seconds": 10,
+              "risk_score": 0.1,
+              "future_state": {
+                "conflict_during_interval": false,
+                "pad_state_at_horizon": "clear",
+                "coverage": "observation_through_horizon"
+              }
+            },
+            {
+              "option_id": "vla",
+              "horizon_seconds": 10,
+              "risk_score": 0.1,
+              "future_state": {
+                "conflict_during_interval": false,
+                "pad_state_at_horizon": "clear",
+                "coverage": "observation_through_horizon"
+              }
+            }
+          ],
+          "verification_basis": "model_inferred",
+          "approval_recorded": false,
+          "dispatch_authority_created": false,
+          "physical_execution_invoked": false,
+          "completion_claimed": false
+        }
+      },
+      "result": {
+        "schema": "missionos.pad-prediction-selection.v1",
+        "execution_scope": "fixture",
+        "prediction_admission": {
+          "schema_version": "missionos_assurance_prediction_admission.v1",
+          "status": "adopted",
+          "reason": "bound_current_model_evidence",
+          "evidence_source": "model_inferred",
+          "evidence_sha256": "3b6b7a5890b48ef108166b9207e913272bc51d1b452d785c3cdde10795e7be05",
+          "source_situation_id": "pad-situation-1",
+          "source_situation_sha256": "537abb979e5f2a5cb4d8a36d8f71cc28de5e11448fce02c408bbb379f8064c48",
+          "evaluated_at": 108,
+          "max_age_seconds": 20,
+          "freshness_status": "current",
+          "feasibility_established": false,
+          "llm_judgment_invoked": false,
+          "approval_recorded": false,
+          "dispatch_authority_created": false,
+          "physical_execution_invoked": false,
+          "completion_claimed": false
+        },
+        "proposal": null,
+        "selected_candidate": null,
+        "selection_valid_for_review": false,
+        "judge_invoked": false,
+        "approval_recorded": false,
+        "dispatch_authority_created": false,
+        "dispatch_request_sent": false,
+        "physical_execution_invoked": false,
+        "completion_claimed": false,
+        "reason": "forecast_expires_before_action_finishes"
+      }
+    },
+    {
+      "case": "uncalibrated_time",
+      "passed": true,
+      "envelope": {
+        "schema_version": "missionos_prediction_evidence.v1",
+        "context": {
+          "execution_id": "fixture-run",
+          "state_revision": "revision-1",
+          "source_ref": "fixture:camera-history",
+          "observation_id": "observation-1",
+          "binding": {
+            "model_id": "pad-wam-fixture",
+            "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mission_contract": "pad-wait-or-step.v1",
+            "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "environment_contract": "authored-pad-fixture.v1",
+            "input_schema": "pad-history.v1"
+          }
+        },
+        "request": {
+          "request_id": "request-1",
+          "observation_id": "observation-1",
+          "observed_at": 100.0,
+          "binding": {
+            "model_id": "pad-wam-fixture",
+            "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mission_contract": "pad-wait-or-step.v1",
+            "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "environment_contract": "authored-pad-fixture.v1",
+            "input_schema": "pad-history.v1"
+          },
+          "state": {
+            "history_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          },
+          "options": [
+            {
+              "option_id": "hold",
+              "horizon_seconds": 10,
+              "parameters": {
+                "delta_body_frd": [
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "option_id": "vla",
+              "horizon_seconds": 10,
+              "parameters": {
+                "delta_body_frd": [
+                  2,
+                  0,
+                  0,
+                  0
+                ],
+                "response_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+              }
+            }
+          ]
+        },
+        "forecast": {
+          "schema_version": "missionos_core_prediction.v1",
+          "request_id": "request-1",
+          "observation_id": "observation-1",
+          "request_sha256": "80bc33a37a326e89be7a6ac7cc151c7b7692669ae16dae523421df61b424d4f8",
+          "binding": {
+            "model_id": "pad-wam-fixture",
+            "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mission_contract": "pad-wait-or-step.v1",
+            "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "environment_contract": "authored-pad-fixture.v1",
+            "input_schema": "pad-history.v1"
+          },
+          "status": "available",
+          "reason": "",
+          "forecasts": [
+            {
+              "option_id": "hold",
+              "horizon_seconds": 10,
+              "risk_score": 0.1,
+              "future_state": {
+                "conflict_during_interval": false,
+                "pad_state_at_horizon": "clear",
+                "coverage": "observation_through_horizon"
+              }
+            },
+            {
+              "option_id": "vla",
+              "horizon_seconds": 10,
+              "risk_score": 0.1,
+              "future_state": {
+                "conflict_during_interval": false,
+                "pad_state_at_horizon": "clear",
+                "coverage": "observation_through_horizon"
+              }
+            }
+          ],
+          "verification_basis": "model_inferred",
+          "approval_recorded": false,
+          "dispatch_authority_created": false,
+          "physical_execution_invoked": false,
+          "completion_claimed": false
+        }
+      },
+      "result": {
+        "schema": "missionos.pad-prediction-selection.v1",
+        "execution_scope": "fixture",
+        "prediction_admission": {
+          "schema_version": "missionos_assurance_prediction_admission.v1",
+          "status": "adopted",
+          "reason": "bound_current_model_evidence",
+          "evidence_source": "model_inferred",
+          "evidence_sha256": "3b6b7a5890b48ef108166b9207e913272bc51d1b452d785c3cdde10795e7be05",
+          "source_situation_id": "pad-situation-1",
+          "source_situation_sha256": "28a73d33f6f12e6ef936e8b0af8381ee6c57c950bb717d86e943022389b892b8",
+          "evaluated_at": 101,
+          "max_age_seconds": 20,
+          "freshness_status": "current",
+          "feasibility_established": false,
+          "llm_judgment_invoked": false,
+          "approval_recorded": false,
+          "dispatch_authority_created": false,
+          "physical_execution_invoked": false,
+          "completion_claimed": false
+        },
+        "proposal": null,
+        "selected_candidate": null,
+        "selection_valid_for_review": false,
+        "judge_invoked": false,
+        "approval_recorded": false,
+        "dispatch_authority_created": false,
+        "dispatch_request_sent": false,
+        "physical_execution_invoked": false,
+        "completion_claimed": false,
+        "reason": "unqualified_pad_forecast_profile"
+      }
+    },
+    {
+      "case": "reoccupied_revision",
+      "passed": true,
+      "envelope": {
+        "schema_version": "missionos_prediction_evidence.v1",
+        "context": {
+          "execution_id": "fixture-run",
+          "state_revision": "revision-1",
+          "source_ref": "fixture:camera-history",
+          "observation_id": "observation-1",
+          "binding": {
+            "model_id": "pad-wam-fixture",
+            "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mission_contract": "pad-wait-or-step.v1",
+            "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "environment_contract": "authored-pad-fixture.v1",
+            "input_schema": "pad-history.v1"
+          }
+        },
+        "request": {
+          "request_id": "request-1",
+          "observation_id": "observation-1",
+          "observed_at": 100.0,
+          "binding": {
+            "model_id": "pad-wam-fixture",
+            "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mission_contract": "pad-wait-or-step.v1",
+            "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "environment_contract": "authored-pad-fixture.v1",
+            "input_schema": "pad-history.v1"
+          },
+          "state": {
+            "history_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          },
+          "options": [
+            {
+              "option_id": "hold",
+              "horizon_seconds": 10,
+              "parameters": {
+                "delta_body_frd": [
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "option_id": "vla",
+              "horizon_seconds": 10,
+              "parameters": {
+                "delta_body_frd": [
+                  2,
+                  0,
+                  0,
+                  0
+                ],
+                "response_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+              }
+            }
+          ]
+        },
+        "forecast": {
+          "schema_version": "missionos_core_prediction.v1",
+          "request_id": "request-1",
+          "observation_id": "observation-1",
+          "request_sha256": "80bc33a37a326e89be7a6ac7cc151c7b7692669ae16dae523421df61b424d4f8",
+          "binding": {
+            "model_id": "pad-wam-fixture",
+            "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mission_contract": "pad-wait-or-step.v1",
+            "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "environment_contract": "authored-pad-fixture.v1",
+            "input_schema": "pad-history.v1"
+          },
+          "status": "available",
+          "reason": "",
+          "forecasts": [
+            {
+              "option_id": "hold",
+              "horizon_seconds": 10,
+              "risk_score": 0.1,
+              "future_state": {
+                "conflict_during_interval": false,
+                "pad_state_at_horizon": "clear",
+                "coverage": "observation_through_horizon"
+              }
+            },
+            {
+              "option_id": "vla",
+              "horizon_seconds": 10,
+              "risk_score": 0.1,
+              "future_state": {
+                "conflict_during_interval": false,
+                "pad_state_at_horizon": "clear",
+                "coverage": "observation_through_horizon"
+              }
+            }
+          ],
+          "verification_basis": "model_inferred",
+          "approval_recorded": false,
+          "dispatch_authority_created": false,
+          "physical_execution_invoked": false,
+          "completion_claimed": false
+        }
+      },
+      "result": {
+        "schema": "missionos.pad-prediction-selection.v1",
+        "execution_scope": "fixture",
+        "prediction_admission": {
+          "schema_version": "missionos_assurance_prediction_admission.v1",
+          "status": "rejected",
+          "reason": "context_invalidated",
+          "evidence_source": "unaccepted",
+          "evidence_sha256": "3b6b7a5890b48ef108166b9207e913272bc51d1b452d785c3cdde10795e7be05",
+          "source_situation_id": "pad-situation-1",
+          "source_situation_sha256": "c0fec576b14f0bf3f5605c15719c456797a69f6450d467992ca1bda47ecec75e",
+          "evaluated_at": 101,
+          "max_age_seconds": 20,
+          "freshness_status": "not_accepted",
+          "feasibility_established": false,
+          "llm_judgment_invoked": false,
+          "approval_recorded": false,
+          "dispatch_authority_created": false,
+          "physical_execution_invoked": false,
+          "completion_claimed": false
+        },
+        "proposal": null,
+        "selected_candidate": null,
+        "selection_valid_for_review": false,
+        "judge_invoked": false,
+        "approval_recorded": false,
+        "dispatch_authority_created": false,
+        "dispatch_request_sent": false,
+        "physical_execution_invoked": false,
+        "completion_claimed": false,
+        "reason": "context_invalidated"
+      }
+    },
+    {
+      "case": "hold_lost",
+      "passed": true,
+      "envelope": {
+        "schema_version": "missionos_prediction_evidence.v1",
+        "context": {
+          "execution_id": "fixture-run",
+          "state_revision": "revision-1",
+          "source_ref": "fixture:camera-history",
+          "observation_id": "observation-1",
+          "binding": {
+            "model_id": "pad-wam-fixture",
+            "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mission_contract": "pad-wait-or-step.v1",
+            "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "environment_contract": "authored-pad-fixture.v1",
+            "input_schema": "pad-history.v1"
+          }
+        },
+        "request": {
+          "request_id": "request-1",
+          "observation_id": "observation-1",
+          "observed_at": 100.0,
+          "binding": {
+            "model_id": "pad-wam-fixture",
+            "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mission_contract": "pad-wait-or-step.v1",
+            "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "environment_contract": "authored-pad-fixture.v1",
+            "input_schema": "pad-history.v1"
+          },
+          "state": {
+            "history_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          },
+          "options": [
+            {
+              "option_id": "hold",
+              "horizon_seconds": 10,
+              "parameters": {
+                "delta_body_frd": [
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "option_id": "vla",
+              "horizon_seconds": 10,
+              "parameters": {
+                "delta_body_frd": [
+                  2,
+                  0,
+                  0,
+                  0
+                ],
+                "response_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+              }
+            }
+          ]
+        },
+        "forecast": {
+          "schema_version": "missionos_core_prediction.v1",
+          "request_id": "request-1",
+          "observation_id": "observation-1",
+          "request_sha256": "80bc33a37a326e89be7a6ac7cc151c7b7692669ae16dae523421df61b424d4f8",
+          "binding": {
+            "model_id": "pad-wam-fixture",
+            "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mission_contract": "pad-wait-or-step.v1",
+            "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "environment_contract": "authored-pad-fixture.v1",
+            "input_schema": "pad-history.v1"
+          },
+          "status": "available",
+          "reason": "",
+          "forecasts": [
+            {
+              "option_id": "hold",
+              "horizon_seconds": 10,
+              "risk_score": 0.1,
+              "future_state": {
+                "conflict_during_interval": false,
+                "pad_state_at_horizon": "clear",
+                "coverage": "observation_through_horizon"
+              }
+            },
+            {
+              "option_id": "vla",
+              "horizon_seconds": 10,
+              "risk_score": 0.1,
+              "future_state": {
+                "conflict_during_interval": false,
+                "pad_state_at_horizon": "clear",
+                "coverage": "observation_through_horizon"
+              }
+            }
+          ],
+          "verification_basis": "model_inferred",
+          "approval_recorded": false,
+          "dispatch_authority_created": false,
+          "physical_execution_invoked": false,
+          "completion_claimed": false
+        }
+      },
+      "result": {
+        "schema": "missionos.pad-prediction-selection.v1",
+        "execution_scope": "fixture",
+        "prediction_admission": {
+          "schema_version": "missionos_assurance_prediction_admission.v1",
+          "status": "adopted",
+          "reason": "bound_current_model_evidence",
+          "evidence_source": "model_inferred",
+          "evidence_sha256": "3b6b7a5890b48ef108166b9207e913272bc51d1b452d785c3cdde10795e7be05",
+          "source_situation_id": "pad-situation-1",
+          "source_situation_sha256": "622f9d6fb05776e5cbf109ccf64967168646eb8609015e186541773468efcb26",
+          "evaluated_at": 101,
+          "max_age_seconds": 20,
+          "freshness_status": "current",
+          "feasibility_established": false,
+          "llm_judgment_invoked": false,
+          "approval_recorded": false,
+          "dispatch_authority_created": false,
+          "physical_execution_invoked": false,
+          "completion_claimed": false
+        },
+        "proposal": null,
+        "selected_candidate": null,
+        "selection_valid_for_review": false,
+        "judge_invoked": false,
+        "approval_recorded": false,
+        "dispatch_authority_created": false,
+        "dispatch_request_sent": false,
+        "physical_execution_invoked": false,
+        "completion_claimed": false,
+        "reason": "current_hold_or_wait_budget_unavailable"
+      }
+    },
+    {
+      "case": "sea_phase",
+      "passed": true,
+      "envelope": {
+        "schema_version": "missionos_prediction_evidence.v1",
+        "context": {
+          "execution_id": "fixture-run",
+          "state_revision": "revision-1",
+          "source_ref": "fixture:camera-history",
+          "observation_id": "observation-1",
+          "binding": {
+            "model_id": "pad-wam-fixture",
+            "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mission_contract": "pad-wait-or-step.v1",
+            "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "environment_contract": "authored-pad-fixture.v1",
+            "input_schema": "pad-history.v1"
+          }
+        },
+        "request": {
+          "request_id": "request-1",
+          "observation_id": "observation-1",
+          "observed_at": 100.0,
+          "binding": {
+            "model_id": "pad-wam-fixture",
+            "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mission_contract": "pad-wait-or-step.v1",
+            "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "environment_contract": "authored-pad-fixture.v1",
+            "input_schema": "pad-history.v1"
+          },
+          "state": {
+            "history_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          },
+          "options": [
+            {
+              "option_id": "hold",
+              "horizon_seconds": 10,
+              "parameters": {
+                "delta_body_frd": [
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "option_id": "vla",
+              "horizon_seconds": 10,
+              "parameters": {
+                "delta_body_frd": [
+                  2,
+                  0,
+                  0,
+                  0
+                ],
+                "response_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+              }
+            }
+          ]
+        },
+        "forecast": {
+          "schema_version": "missionos_core_prediction.v1",
+          "request_id": "request-1",
+          "observation_id": "observation-1",
+          "request_sha256": "80bc33a37a326e89be7a6ac7cc151c7b7692669ae16dae523421df61b424d4f8",
+          "binding": {
+            "model_id": "pad-wam-fixture",
+            "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mission_contract": "pad-wait-or-step.v1",
+            "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "environment_contract": "authored-pad-fixture.v1",
+            "input_schema": "pad-history.v1"
+          },
+          "status": "available",
+          "reason": "",
+          "forecasts": [
+            {
+              "option_id": "hold",
+              "horizon_seconds": 10,
+              "risk_score": 0.1,
+              "future_state": {
+                "conflict_during_interval": false,
+                "pad_state_at_horizon": "clear",
+                "coverage": "observation_through_horizon"
+              }
+            },
+            {
+              "option_id": "vla",
+              "horizon_seconds": 10,
+              "risk_score": 0.1,
+              "future_state": {
+                "conflict_during_interval": false,
+                "pad_state_at_horizon": "clear",
+                "coverage": "observation_through_horizon"
+              }
+            }
+          ],
+          "verification_basis": "model_inferred",
+          "approval_recorded": false,
+          "dispatch_authority_created": false,
+          "physical_execution_invoked": false,
+          "completion_claimed": false
+        }
+      },
+      "result": {
+        "schema": "missionos.pad-prediction-selection.v1",
+        "execution_scope": "fixture",
+        "prediction_admission": {
+          "schema_version": "missionos_assurance_prediction_admission.v1",
+          "status": "adopted",
+          "reason": "bound_current_model_evidence",
+          "evidence_source": "model_inferred",
+          "evidence_sha256": "3b6b7a5890b48ef108166b9207e913272bc51d1b452d785c3cdde10795e7be05",
+          "source_situation_id": "pad-situation-1",
+          "source_situation_sha256": "c989eb2b2723fcc26d0a455e073db4c13a525928109ba7307efe9cfd4e527425",
+          "evaluated_at": 101,
+          "max_age_seconds": 20,
+          "freshness_status": "current",
+          "feasibility_established": false,
+          "llm_judgment_invoked": false,
+          "approval_recorded": false,
+          "dispatch_authority_created": false,
+          "physical_execution_invoked": false,
+          "completion_claimed": false
+        },
+        "proposal": null,
+        "selected_candidate": null,
+        "selection_valid_for_review": false,
+        "judge_invoked": false,
+        "approval_recorded": false,
+        "dispatch_authority_created": false,
+        "dispatch_request_sent": false,
+        "physical_execution_invoked": false,
+        "completion_claimed": false,
+        "reason": "outside_city_pad_phase"
+      }
+    }
+  ],
+  "native_audit": {
+    "source_identity_sha256": "736422dc64216e91c03a28cefe034579d4e54a890a0fb54b1119326fea5e7a42",
+    "evidence_integrity": "passed",
+    "physical_future_time_calibration_verified": false,
+    "reference_eligibility_passed": false,
+    "dynamic_pad_semantic_reader_implemented": false,
+    "native_forecasts_admitted": false,
+    "reason": "Existing images have no qualified dynamic pad semantics or execution-time forecast contract",
+    "vla_wait_discrimination_required_for_new_selection": false,
+    "prior_vla_diagnostic_unchanged": true,
+    "new_inference_invoked": false,
+    "aircraft_flown": false
+  }
+}

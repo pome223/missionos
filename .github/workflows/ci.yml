@@ -74,6 +74,12 @@ jobs:
       - name: Verify urban-only decision control with CPU doubles
         run: python scripts/smoke_ship_urban_loop.py --output-dir /tmp/ship-urban-loop-ci
 
+      - name: Verify WAM-informed pad selection with CPU doubles
+        run: |
+          python scripts/check_yokohama_pad_prediction.py \
+            --native-probe docs/examples/yokohama-pad-native-probe \
+            --output /tmp/yokohama-pad-prediction-ci.json
+
       - name: Verify Jev mode selection through the Gateway
         env:
           PYTHONPATH: .:packages/missionos-cli/src:packages/missionos-gateway/src
