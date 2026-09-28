@@ -1,0 +1,22 @@
+[
+  {
+    "duration_sim_s": 30.120000000000005,
+    "samples": 89,
+    "max_horizontal_error_m": 0.07502559785787706,
+    "max_vertical_error_m": 0.34323583868356344,
+    "max_px4_speed_mps": 0.0530540422588138,
+    "all_auto_loiter": true,
+    "all_airborne_armed": true,
+    "max_pose_age_s": 0.020447874999995008,
+    "max_sample_gap_sim_s": 0.4160000000000039,
+    "start_sim_s": 31.4,
+    "end_sim_s": 61.52,
+    "point": "SEA-TAKEOFF",
+    "target_world_xyz_m": [
+      1351.6022270886856,
+      364.9265949871361,
+      15.110143087104275
+    ],
+    "passed": true
+  }
+]

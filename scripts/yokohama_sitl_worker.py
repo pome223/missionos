@@ -133,20 +133,36 @@ class Observer:
         msg.enable_wind = True
         msg.linear_velocity.x, msg.linear_velocity.y, msg.linear_velocity.z = velocity
         start = self.snapshot()["sim_s"]
-        self.wind_publisher.publish(msg)
-        time.sleep(0.2)
-        okay, response = self.node.request("/world/default/wind_info", Empty(), Empty, Wind, 1000)
-        confirmed = (
-            okay
-            and response.enable_wind
-            and [response.linear_velocity.x, response.linear_velocity.y, response.linear_velocity.z]
-            == velocity
-        )
+        deadline = time.monotonic() + 3
+        confirmed = False
+        attempts = 0
+        while time.monotonic() < deadline:
+            # Repeating the same seed is idempotent. A publish return value or
+            # elapsed time never substitutes for observed service confirmation.
+            self.wind_publisher.publish(msg)
+            attempts += 1
+            time.sleep(0.2)
+            okay, response = self.node.request(
+                "/world/default/wind_info", Empty(), Empty, Wind, 500
+            )
+            confirmed = bool(
+                okay
+                and response.enable_wind
+                and [
+                    response.linear_velocity.x,
+                    response.linear_velocity.y,
+                    response.linear_velocity.z,
+                ]
+                == velocity
+            )
+            if confirmed:
+                break
         return dict(
             start_sim_s=start,
             end_sim_s=self.snapshot()["sim_s"],
             confirmed=confirmed,
             requested_enu_mps=velocity,
+            confirmation_attempts=attempts,
         )
 
     def receive_stats(self, m):

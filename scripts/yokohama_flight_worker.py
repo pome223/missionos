@@ -63,6 +63,11 @@ def flight_trial(config, obs, run, field):
     cargo_frames = []
     last_cargo_sim_s = -10.0
     payload_receipt = None
+    wind_profile = config["world"].get("wind", {}).get("profile")
+    wind_zone = None
+    wind_transitions = []
+    wind_profile_active = False
+    last_diagnostic_sim_s = -10.0
     decisions = None
     next_connector = None
     landing_xy = (
@@ -74,8 +79,39 @@ def flight_trial(config, obs, run, field):
         events.write(json.dumps(row) + "\n")
         print(json.dumps(row), flush=True)
 
+    def update_profile_wind():
+        nonlocal wind_zone
+        from yokohama_wind_profile import requested_wind
+
+        snap = obs.snapshot()
+        pose = snap["poses"].get("x500_0")
+        zone, velocity = requested_wind(wind_profile, pose, snap["sim_s"], wind_zone)
+        if zone == wind_zone:
+            return
+        receipt = obs.activate_wind(velocity)
+        receipt.update(
+            run_id=config["run_id"],
+            world_sha256=config["world"]["world_sha256"],
+            phase=phase,
+            sequence=len(wind_transitions),
+            previous_zone=wind_zone,
+            zone=zone,
+            observation_sim_s=snap["sim_s"],
+            vehicle=pose,
+        )
+        wind_transitions.append(receipt)
+        (ROOT / "wind-transitions.json").write_text(json.dumps(wind_transitions, indent=2) + "\n")
+        event("wind_zone_requested", receipt=receipt)
+        if not receipt["confirmed"]:
+            raise RuntimeError("Wind zone change was not confirmed by Gazebo")
+        wind_zone = zone
+        if len(wind_transitions) == 1:
+            (ROOT / "wind-activation.json").write_text(json.dumps(receipt, indent=2) + "\n")
+
     def sample():
-        nonlocal last_video_sim_s, last_cargo_sim_s
+        nonlocal last_video_sim_s, last_cargo_sim_s, last_diagnostic_sim_s
+        if wind_profile_active:
+            update_profile_wind()
         raw = {
             key: run([BIN + "listener", key, "-n", "1"], 5)
             for key in [
@@ -136,6 +172,28 @@ def flight_trial(config, obs, run, field):
             row["payload_joint"] = snap["payload_joint"]
         if config["world"].get("wind"):
             row["wind_probe"] = {k: snap["poses"].get(k) for k in ("wind_witness", "wind_control")}
+            if wind_profile:
+                row["wind_zone"] = wind_zone
+                row["wind_transition_sequence"] = len(wind_transitions) - 1
+            if row["arming_state"] == 2 and row["sim_s"] - last_diagnostic_sim_s >= 5:
+                diagnostic = dict(
+                    run_id=config["run_id"],
+                    sim_s=row["sim_s"],
+                    phase=phase,
+                    raw_px4={
+                        key: run([BIN + "listener", key, "-n", "1"], 5)
+                        for key in (
+                            "trajectory_setpoint",
+                            "vehicle_local_position_setpoint",
+                            "position_setpoint_triplet",
+                            "vehicle_attitude_setpoint",
+                            "actuator_motors",
+                        )
+                    },
+                )
+                with (ROOT / "wind-diagnostics.jsonl").open("a") as diagnostic_file:
+                    diagnostic_file.write(json.dumps(diagnostic) + "\n")
+                last_diagnostic_sim_s = row["sim_s"]
         trajectory.write(json.dumps(row) + "\n")
         if (
             config["world"].get("payload_delivery")
@@ -267,6 +325,22 @@ def flight_trial(config, obs, run, field):
             floor=run([BIN + "param", "show", "SIM_BAT_MIN_PCT"]),
             source="PX4 battery_simulator; time-based, no current sensor",
         )
+        if config["world"].get("wind"):
+            event(
+                "wind_ap_parameters",
+                values={
+                    k: run([BIN + "param", "show", k])
+                    for k in (
+                        "MPC_THR_MAX",
+                        "MPC_THR_HOVER",
+                        "MPC_TILTMAX_AIR",
+                        "MPC_XY_VEL_MAX",
+                        "MPC_ACC_HOR",
+                        "MPC_JERK_AUTO",
+                        "MPC_YAW_MODE",
+                    )
+                },
+            )
         wait_for(lambda r: r["position_valid"] is True and r["preflight_pass"] is True, 90)
         event("preflight_observed", observation=sample())
         if "simulator_initial_heading_deg" in config:
@@ -383,9 +457,16 @@ def flight_trial(config, obs, run, field):
                     raise RuntimeError("Cargo did not take off attached to the vehicle")
                 event("payload_airborne_observed", observation=carried)
             if phase == "SEA-TAKEOFF" and config["world"].get("wind", {}).get("after_takeoff"):
-                activation = obs.activate_wind(config["world"]["wind"]["velocity_enu_mps"])
-                activation.update(run_id=config["run_id"], phase=phase)
-                (ROOT / "wind-activation.json").write_text(json.dumps(activation, indent=2) + "\n")
+                if wind_profile:
+                    wind_profile_active = True
+                    update_profile_wind()
+                    activation = wind_transitions[0]
+                else:
+                    activation = obs.activate_wind(config["world"]["wind"]["velocity_enu_mps"])
+                    activation.update(run_id=config["run_id"], phase=phase)
+                    (ROOT / "wind-activation.json").write_text(
+                        json.dumps(activation, indent=2) + "\n"
+                    )
                 event("wind_activated", activation=activation)
                 if not activation["confirmed"]:
                     raise RuntimeError("Wind activation was not confirmed by Gazebo")

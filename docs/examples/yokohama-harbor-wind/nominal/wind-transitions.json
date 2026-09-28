@@ -1,0 +1,36 @@
+[
+  {
+    "start_sim_s": 61.52,
+    "end_sim_s": 61.728,
+    "confirmed": true,
+    "requested_enu_mps": [
+      6.0,
+      0,
+      0
+    ],
+    "run_id": "yokohama-29880f17cae8",
+    "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+    "phase": "SEA-TAKEOFF",
+    "sequence": 0,
+    "previous_zone": null,
+    "zone": "offshore",
+    "observation_sim_s": 61.52,
+    "vehicle": {
+      "id": 48,
+      "xyz": [
+        1351.5969381204984,
+        364.9330973831445,
+        15.433647617295595
+      ],
+      "quat_wxyz": [
+        -0.11683963558445659,
+        -0.0001561903258074222,
+        -0.0010509754822119002,
+        0.9931502256011472
+      ],
+      "sensor_sim_s": 61.588,
+      "received_monotonic_s": 72.701403323,
+      "age_s": 0.006730917000012937
+    }
+  }
+]

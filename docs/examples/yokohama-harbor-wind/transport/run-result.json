@@ -1,0 +1,9 @@
+{
+  "run_id": "wind-transport-7cd643f68031",
+  "status": "passed",
+  "image_id": "sha256:79968fe25aa19d51c49fbd4a863ea9380f4efe6d9afabd1c579ddeffeb8b8c93",
+  "flight_invoked": false,
+  "px4_invoked": false,
+  "gpu_requested": false,
+  "teleported_marker": true
+}

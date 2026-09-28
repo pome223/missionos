@@ -1,0 +1,32 @@
+[
+  {
+    "arguments": [
+      "--wind-profile",
+      "harbor-nominal"
+    ],
+    "exit_code": 2,
+    "reason": "yokohama_sitl.py: error: Wind profile requires sea fixture flight, delayed onset and no uniform wind"
+  },
+  {
+    "arguments": [
+      "--wind-profile",
+      "harbor-nominal",
+      "--wind-after-takeoff",
+      "--sea-round-trip",
+      "--decision-backend",
+      "fixture",
+      "--wind-east-mps",
+      "6"
+    ],
+    "exit_code": 2,
+    "reason": "yokohama_sitl.py: error: Wind profile requires sea fixture flight, delayed onset and no uniform wind"
+  },
+  {
+    "arguments": [
+      "--wind-east-mps",
+      "12"
+    ],
+    "exit_code": 2,
+    "reason": "yokohama_sitl.py: error: Wind must be finite and in [0, 8] m/s"
+  }
+]

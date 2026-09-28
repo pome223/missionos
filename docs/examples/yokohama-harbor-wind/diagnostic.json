@@ -1,0 +1,31 @@
+{
+  "run_id": "yokohama-29880f17cae8",
+  "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+  "status": "failed",
+  "reason": "SEA-INBOUND-COAST arrival timeout",
+  "arrival_timeout_wall_s": 435,
+  "final_sim_s": 512.604,
+  "final_target_error_m": 718.0178904185809,
+  "tail_window_sim_s": 30,
+  "tail_velocity_median_mps": 0.5836330264347227,
+  "tail_trajectory_velocity_setpoint_median_mps": 0.5819377420723685,
+  "tail_first_four_motors_max_normalized": 0.83626,
+  "tail_pitch_range_deg": [
+    -35.6,
+    -35.5
+  ],
+  "requested_cruise_groundspeed_mps": 8,
+  "root_cause_verified": false,
+  "finding": "Low speed is already present in the AP trajectory setpoint; total motor saturation is not established. Investigate trajectory generation before asserting insufficient propulsion.",
+  "native_vla_wam_invoked": false,
+  "city_reached": false,
+  "cargo_released": false,
+  "hashes": {
+    "config.json": "d2f8e5905000ad5dba38d4ae2d244c2cbcb64a93d7316018c017539798b505e2",
+    "flight-trajectory.jsonl": "6f5491aecdf3ce4090a4037593bbf0708c714b251ccc5cbedd62a60d4c28dab2",
+    "wind-diagnostics.jsonl": "b1d14b9d31bb2c6dacf7a9d21ff4920ccfea988a97d44f43e6635e9fcd1f15d9",
+    "parameter-diagnostic.json": "4203540c0c8ff8c4b13845fccefd2299a52c235089ef5f4df949d3bc89e2195f",
+    "worker-result.json": "4e3ef55d6e2c3221b1060b206b891395cf30d20477ef4031ca162d6ec2114e32",
+    "result.json": "a1e0ddd567da17c0cbedb2bfcae94d6eaaca076f5403183d41525ab5d741835a"
+  }
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "case": "transport-smoke",
+    "gazebo_commands": "7 confirmed",
+    "initial_verifier": "failed",
+    "corrected_offline_verifier": "passed",
+    "reason": "initial constant-wind window crossed the next step; same-tick pose tie"
+  },
+  {
+    "case": "transport-portable",
+    "status": "passed",
+    "scope": "teleported marker; earlier activation label reused flight phase"
+  },
+  {
+    "case": "transport-labeled",
+    "status": "failed",
+    "confirmed_changes": 5,
+    "reason": "set_pose transport response was not received; raw logs retained"
+  },
+  {
+    "case": "transport-confirmed",
+    "status": "failed",
+    "confirmed_changes": 6,
+    "reason": "last wind seed service confirmation missing; raw logs retained"
+  },
+  {
+    "case": "transport-retry",
+    "status": "passed",
+    "scope": "transport-marker-only",
+    "reason": "bounded idempotent pose and wind transport; observations and matching response required"
+  }
+]

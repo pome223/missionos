@@ -108,6 +108,7 @@ def verify(root, bundle):
     result, config = read(root / "result.json"), read(root / "config.json")
     world = config["world"]
     checks = {}
+    checks["not_a_teleported_marker_smoke"] = config.get("wind_validation_scope") is None
     checks["run_finished_successfully"] = (
         result["status"] == "passed" and result.get("cleanup") is True
     )
@@ -285,6 +286,10 @@ def verify(root, bundle):
 
         output["wind_verification"] = verify_wind(root, config, rows)
         checks["wind_force_runtime"] = output["wind_verification"]["status"] == "passed"
+        if config["world"]["wind"].get("profile"):
+            checks["all_wind_zones_exercised"] = output["wind_verification"]["profile"][
+                "all_zones_exercised"
+            ]
     output["status"] = "passed" if all(checks.values()) else "failed"
     output["evidence_hashes"] = {
         n: sha256(root / n)

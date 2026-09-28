@@ -1,0 +1,247 @@
+{
+  "status": "passed",
+  "checks": {
+    "plugin_and_vector": true,
+    "vehicle_wind_enabled": true,
+    "cargo_wind_enabled": true,
+    "airborne_wind_activation": true,
+    "force_observed_against_unpowered_control": true,
+    "profile_observed_transitions": true
+  },
+  "samples": [
+    {
+      "sim_s": 70.004,
+      "elapsed_since_activation_start_s": 8.484000000000002,
+      "witness_x_m": 38.50964330097735,
+      "expected_x_m": 38.91700540491401,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 70.344,
+      "elapsed_since_activation_start_s": 8.823999999999991,
+      "witness_x_m": 40.546021391255884,
+      "expected_x_m": 40.953557064689534,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 70.68,
+      "elapsed_since_activation_start_s": 9.160000000000004,
+      "witness_x_m": 42.55938052507426,
+      "expected_x_m": 42.96704170765345,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 71.012,
+      "elapsed_since_activation_start_s": 9.491999999999997,
+      "witness_x_m": 44.549450518196224,
+      "expected_x_m": 44.95720263844056,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 71.36,
+      "elapsed_since_activation_start_s": 9.839999999999996,
+      "witness_x_m": 46.635963261927316,
+      "expected_x_m": 47.04378482018184,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 71.704,
+      "elapsed_since_activation_start_s": 10.18399999999999,
+      "witness_x_m": 48.698889940531565,
+      "expected_x_m": 49.10676112543739,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 72.052,
+      "elapsed_since_activation_start_s": 10.532000000000004,
+      "witness_x_m": 50.786097873645986,
+      "expected_x_m": 51.194005312925825,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 72.132,
+      "elapsed_since_activation_start_s": 10.612000000000002,
+      "witness_x_m": 51.26594873400985,
+      "expected_x_m": 51.67386295416756,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 75.2,
+      "elapsed_since_activation_start_s": 13.68,
+      "witness_x_m": 69.67211249713785,
+      "expected_x_m": 70.08010773301058,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 75.24,
+      "elapsed_since_activation_start_s": 13.719999999999992,
+      "witness_x_m": 69.91210836858355,
+      "expected_x_m": 70.32010377279167,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 75.584,
+      "elapsed_since_activation_start_s": 14.064,
+      "witness_x_m": 71.9760785667954,
+      "expected_x_m": 72.38407517740877,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 75.916,
+      "elapsed_since_activation_start_s": 14.395999999999994,
+      "witness_x_m": 73.96805760590321,
+      "expected_x_m": 74.37605505360952,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 76.268,
+      "elapsed_since_activation_start_s": 14.747999999999998,
+      "witness_x_m": 76.08004146600466,
+      "expected_x_m": 76.4880395493348,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 76.6,
+      "elapsed_since_activation_start_s": 15.079999999999991,
+      "witness_x_m": 78.07203042677959,
+      "expected_x_m": 78.4800289386541,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 76.928,
+      "elapsed_since_activation_start_s": 15.407999999999994,
+      "witness_x_m": 80.04002242866211,
+      "expected_x_m": 80.44802124666403,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 77.276,
+      "elapsed_since_activation_start_s": 15.755999999999993,
+      "witness_x_m": 82.12801625116981,
+      "expected_x_m": 82.5360153021526,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 77.66,
+      "elapsed_since_activation_start_s": 16.139999999999993,
+      "witness_x_m": 84.43201141786393,
+      "expected_x_m": 84.84001064818514,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 77.996,
+      "elapsed_since_activation_start_s": 16.475999999999992,
+      "witness_x_m": 86.44800841031038,
+      "expected_x_m": 86.85600775038573,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 78.336,
+      "elapsed_since_activation_start_s": 16.815999999999995,
+      "witness_x_m": 88.4880061984881,
+      "expected_x_m": 88.89600561801048,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 78.668,
+      "elapsed_since_activation_start_s": 17.148000000000003,
+      "witness_x_m": 90.4800046269042,
+      "expected_x_m": 90.88800410197393,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 78.708,
+      "elapsed_since_activation_start_s": 17.187999999999995,
+      "witness_x_m": 90.72000446875964,
+      "expected_x_m": 91.12800394936617,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 79.056,
+      "elapsed_since_activation_start_s": 17.535999999999994,
+      "witness_x_m": 92.80800331871309,
+      "expected_x_m": 93.21600283921876,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 79.384,
+      "elapsed_since_activation_start_s": 17.863999999999997,
+      "witness_x_m": 94.776002532278,
+      "expected_x_m": 95.18400207960727,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 79.728,
+      "elapsed_since_activation_start_s": 18.20799999999999,
+      "witness_x_m": 96.84000193238376,
+      "expected_x_m": 97.2480014998252,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    }
+  ],
+  "profile": {
+    "status": "passed",
+    "checks": {
+      "canonical_profile": true,
+      "position_bound_confirmed_transitions": true,
+      "piecewise_force_observed": true
+    },
+    "observed_zones": [
+      "offshore"
+    ],
+    "all_zones_exercised": false,
+    "force_samples_per_transition": [
+      1289
+    ],
+    "maximum_witness_error_m": 0,
+    "coverage_note": "Passed means observed transitions and forces agree; unvisited zones are untested"
+  },
+  "limitation": "Uniform built-in force approximation; no calibrated wind envelope"
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "parameter": "MPC_XY_CRUISE",
+    "returncode": 0,
+    "stdout": "Symbols: x = used, + = saved, * = unsaved\nx + MPC_XY_CRUISE [628,1124] : 8.0000\n\n 1058/2024 parameters used.\n"
+  },
+  {
+    "parameter": "MPC_XY_TRAJ_P",
+    "returncode": 0,
+    "stdout": "Symbols: x = used, + = saved, * = unsaved\nx   MPC_XY_TRAJ_P [631,1127] : 0.5000\n\n 1058/2024 parameters used.\n"
+  },
+  {
+    "parameter": "MPC_XY_ERR_MAX",
+    "returncode": 0,
+    "stdout": "Symbols: x = used, + = saved, * = unsaved\nx   MPC_XY_ERR_MAX [629,1125] : 2.0000\n\n 1058/2024 parameters used.\n"
+  },
+  {
+    "parameter": "MPC_ACC_HOR",
+    "returncode": 0,
+    "stdout": "Symbols: x = used, + = saved, * = unsaved\nx   MPC_ACC_HOR [592,1088] : 1.0000\n\n 1058/2024 parameters used.\n"
+  },
+  {
+    "parameter": "MPC_XY_VEL_MAX",
+    "returncode": 0,
+    "stdout": "Symbols: x = used, + = saved, * = unsaved\nx   MPC_XY_VEL_MAX [635,1131] : 12.0000\n\n 1058/2024 parameters used.\n"
+  },
+  {
+    "parameter": "MPC_TILTMAX_AIR",
+    "returncode": 0,
+    "stdout": "Symbols: x = used, + = saved, * = unsaved\nx   MPC_TILTMAX_AIR [617,1113] : 45.0000\n\n 1058/2024 parameters used.\n"
+  }
+]

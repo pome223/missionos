@@ -60,7 +60,7 @@ def test_wind_requires_force_and_vehicle_and_cargo_flags(tmp_path, fault):
     assert (verify_wind(tmp_path, config, rows)["status"] == "passed") == (fault is None)
 
 
-@pytest.mark.parametrize("speed", [-1, 0, 6, math.nan, math.inf])
+@pytest.mark.parametrize("speed", [-1, 0, 9, math.nan, math.inf])
 def test_invalid_wind_rejected_before_files(tmp_path, speed):
     with pytest.raises(ValueError):
         add_wind(tmp_path, {}, speed)

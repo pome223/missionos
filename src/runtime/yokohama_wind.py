@@ -9,8 +9,8 @@ from src.runtime.yokohama_scene import sha256, sphere
 
 
 def add_wind(root, world, east_mps, *, after_takeoff=False):
-    if not math.isfinite(east_mps) or not 0 < east_mps <= 5:
-        raise ValueError("Wind must be finite, eastward and in (0, 5] m/s")
+    if not math.isfinite(east_mps) or not 0 < east_mps <= 8:
+        raise ValueError("Wind must be finite, eastward and in (0, 8] m/s")
     path = root / "models/worlds/default.sdf"
     tree = ET.parse(path)
     node = tree.getroot().find("world")
@@ -97,16 +97,28 @@ def verify_wind(root, config, rows):
     if spec.get("after_takeoff"):
         path = root / "wind-activation.json"
         activation = json.loads(path.read_text()) if path.exists() else {}
-        checks["airborne_wind_activation"] = (
+        transport_only = config.get("wind_validation_scope") == "transport-marker-only"
+        activation_check = (
+            "transport_seed_activation" if transport_only else "airborne_wind_activation"
+        )
+        checks[activation_check] = (
             activation.get("confirmed") is True
-            and activation.get("phase") == "SEA-TAKEOFF"
+            and activation.get("phase")
+            == ("transport-marker-only" if transport_only else "SEA-TAKEOFF")
             and activation.get("requested_enu_mps") == spec["velocity_enu_mps"]
             and activation.get("run_id") == config.get("run_id")
             and 0 <= activation.get("end_sim_s", -1) - activation.get("start_sim_s", 0) <= 5
         )
         start = activation.get("start_sim_s", 0)
         end = activation.get("end_sim_s", 0)
-    usable = [r for r in rows if end + 8 <= r["sim_s"] <= end + 18]
+    transitions = []
+    if spec.get("profile"):
+        path = root / "wind-transitions.json"
+        transitions = json.loads(path.read_text()) if path.exists() else []
+    # The constant-seed check ends before a later zone command. The profile
+    # verifier below independently checks the complete piecewise response.
+    next_start = transitions[1]["start_sim_s"] if len(transitions) > 1 else math.inf
+    usable = [r for r in rows if end + 8 <= r["sim_s"] <= end + 18 and r["sim_s"] < next_start]
     samples = []
     for r in usable:
         pair = r.get("wind_probe", {})
@@ -141,9 +153,16 @@ def verify_wind(root, config, rows):
     checks["force_observed_against_unpowered_control"] = bool(len(samples) >= 3) and all(
         s["fresh"] and s["error_m"] < 0.15 and s["control_displacement_m"] < 0.001 for s in samples
     )
+    profile = None
+    if spec.get("profile"):
+        from src.runtime.yokohama_wind_profile import verify_profile
+
+        profile = verify_profile(config, rows, transitions)
+        checks["profile_observed_transitions"] = profile["status"] == "passed"
     return dict(
         status="passed" if all(checks.values()) else "failed",
         checks=checks,
         samples=samples,
+        **({"profile": profile} if profile else {}),
         limitation="Uniform built-in force approximation; no calibrated wind envelope",
     )
