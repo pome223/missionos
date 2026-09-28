@@ -42,6 +42,11 @@ jobs:
             packages/missionos-gateway \
             scripts/smoke_missionos_real_hardware_arm_disarm_route.py \
             scripts/smoke_mission_designer_envelope_violation_advisory.py \
+            scripts/check_yokohama_pad_advisory.py \
+            scripts/export_yokohama_pad_advisory.py \
+            scripts/verify_yokohama_pad_advisory.py \
+            scripts/yokohama_pad_advisory_host.py \
+            scripts/yokohama_pad_advisory_worker.py \
             scripts/smoke_px4_gazebo_mission_designer_execute_sitl_gateway.py \
             scripts/smoke_px4_gazebo_mission_designer_prompt_to_sitl_e2e.py \
             scripts/smoke_px4_gazebo_mission_designer_sitl_delivery_epic_exit.py \
@@ -53,6 +58,7 @@ jobs:
             src/config \
             src/gateway \
             src/runtime/runtime_claim_evidence.py \
+            src/runtime/yokohama_pad_advisory_contract.py \
             src/runtime/task_store.py \
             src/runtime/missionos_real_hardware_dispatch_runtime.py \
             src/runtime/px4_gazebo_mission_designer_sitl_runner.py \
@@ -97,6 +103,11 @@ jobs:
         run: |
           python scripts/check_yokohama_pad_state.py \
             --bundle docs/examples/yokohama-pad-state
+
+      - name: Recompute live pad advisory and delivery receipts without GPU
+        run: |
+          python scripts/check_yokohama_pad_advisory.py \
+            --bundle docs/examples/yokohama-pad-advisory
 
       - name: Verify Jev mode selection through the Gateway
         env:

@@ -119,7 +119,9 @@ veto. Decide by practical usefulness with model-enabled/disabled mission
 behavior and total time/energy/cost. Do not require superiority to ideal Rules.
 Current recorded inference establishes localization/forecast capability but
 not improved delivery or waiting time. Proceed to optional city pad-wait
-advisory integration; its live deployment is not yet complete.
+advisory integration. The [fixed-pad-camera CPU follow-up](yokohama-pad-advisory.md)
+now completes a simulated delivery/return; native VLA/ANWM joint integration,
+moving onboard-camera support and mission advantage remain unverified.
 
 Keep the frozen training/evaluation source and metrics intact. Their historical
 `status=failed` remains reproducible and is not the current adoption decision.

@@ -1,0 +1,992 @@
+{
+  "run_id": "yokohama-c410139f4ad7",
+  "status": "passed",
+  "phase": "flight",
+  "physical_execution_invoked": false,
+  "vla_invoked": false,
+  "wam_invoked": false,
+  "gpu_requested": false,
+  "container": "missionos-yokohama-c410139f4ad7",
+  "image_id": "sha256:79968fe25aa19d51c49fbd4a863ea9380f4efe6d9afabd1c579ddeffeb8b8c93",
+  "world": {
+    "schema": "missionos.yokohama-world.v1",
+    "phase": "flight",
+    "mesh_conversion": {
+      "collision-prisms.obj": {
+        "triangles_with_normals": 6132,
+        "zero_area_faces_omitted": 0
+      },
+      "road.obj": {
+        "triangles_with_normals": 1059,
+        "zero_area_faces_omitted": 0
+      },
+      "bridge.obj": {
+        "triangles_with_normals": 925,
+        "zero_area_faces_omitted": 1
+      },
+      "terrain.obj": {
+        "triangles_with_normals": 20591,
+        "zero_area_faces_omitted": 0
+      },
+      "building.obj": {
+        "triangles_with_normals": 13335,
+        "zero_area_faces_omitted": 5
+      }
+    },
+    "frame": {
+      "source_origin_xyz_m": [
+        55.0,
+        -50.0,
+        2.889856912895725
+      ],
+      "source_to_world_matrix": [
+        [
+          1.0000945821779128,
+          -0.0019084901209801713,
+          0.0
+        ],
+        [
+          0.0019084879714106843,
+          1.0000945799321406,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "home_lon_lat": [
+        139.64480691720166,
+        35.44765024667082
+      ],
+      "world_vertical_origin": "authored launch-pad top; source ground +0.12 m",
+      "world_geodetic_altitude_m": 0,
+      "geodetic_altitude_role": "synthetic PX4/Gazebo origin, not source orthometric or real ellipsoid height",
+      "horizontal_conversion": "local Jacobian of EPSG:6677 inverse projection and GRS80 geodesic at D1; metres, true east/north",
+      "px4_local_ned": "[world north - observed EKF origin north, world east - observed EKF origin east, -(world up - observed EKF origin up)]"
+    },
+    "points": [
+      {
+        "id": "D1",
+        "label": "\u5e02\u8857\u5730\u5165\u53e3",
+        "xyz_m": [
+          55.0,
+          -50.0,
+          18.0
+        ],
+        "mandatory_observation": true,
+        "world_xyz_m": [
+          0.0,
+          0.0,
+          15.110143087104275
+        ]
+      },
+      {
+        "id": "D2",
+        "label": "\u89d21\uff1a\u518d\u89b3\u6e2c",
+        "xyz_m": [
+          20.0,
+          -110.622,
+          18.0
+        ],
+        "mandatory_observation": true,
+        "world_xyz_m": [
+          -34.88761388811289,
+          -60.6945307036456,
+          15.110143087104275
+        ]
+      },
+      {
+        "id": "D3",
+        "label": "\u89d22\uff1a\u914d\u9001\u524d\u5224\u65ad",
+        "xyz_m": [
+          162.894,
+          -193.122,
+          18.0
+        ],
+        "mandatory_observation": true,
+        "world_xyz_m": [
+          108.17735177259866,
+          -142.92962206786046,
+          15.110143087104275
+        ]
+      },
+      {
+        "id": "DELIVERY",
+        "label": "\u4eee\u60f3\u914d\u9001\u30b9\u30da\u30fc\u30b9",
+        "xyz_m": [
+          207.894,
+          -115.179,
+          18.0
+        ],
+        "mandatory_observation": false,
+        "world_xyz_m": [
+          153.03285452510517,
+          -64.89336826549612,
+          15.110143087104275
+        ]
+      }
+    ],
+    "probes": {},
+    "source_sha256": {
+      "scene.json": "180303fc3c4645c867be137dd895b5c9a6e32b1b3b3c2dc663d3fb0d1a19c03a",
+      "route.json": "f6b5d79ba0bbb84e8b258c2105e919f2168191df1f7678e282d48cb328ef23c9",
+      "collision-prisms.obj": "c4efd9acb7fc2bfe3e8bfa903d4ebff0369d95a81ac53480b472223b86c55073",
+      "collision-footprints.geojson": "494deab12304ac5f1f63eb7f7d45275b9aab642493df0526261f7f865eb3e37b"
+    },
+    "world_sha256": "bcf30c60baccd7c86bf2477d3064f8bf6e1bd0d7e1b2ebcbf0631bc82205f821",
+    "model_sha256": {
+      "models/x500/model.config": "52fdda8e66faa5095434d54e4dcaad5a6a8833cd014e0a5b439349ed8b4a1b67",
+      "models/x500/model.sdf": "6939156dfeccd79cb3515b1d0e657f8c21a6486c264bcd38333798da690c169d",
+      "models/x500_base/model.config": "4856afbdeb52f19468f56ddaf4be57c04688f347b8cef2f609daacd2d014d437",
+      "models/x500_base/model.sdf": "22de6897c6a782b378062d8cd39d391130a6ba57086f521e401f978d20b9c4e5"
+    },
+    "asset_sha256": {
+      "bridge.obj": "797c63e3a3256e74c5ada828bafa6cdbc1147781931232ed6757e23dad4a7428",
+      "building.obj": "032f3f1ec66478f1a385e186a414691952c271244790fc433a6619e18a7c841a",
+      "collision-prisms.obj": "789cbe6d047c2374d83639aeee4df4d390bcb2466bf1e00e20f6b15589e0bb83",
+      "road.obj": "7fb55e80a44f9f6020f5a31f3b9991fde680fb42ea50cb36c1b0b46af668e331",
+      "terrain.obj": "c7548e273f9226d53362f00f5873a1b22b49063854519cef6d643c7fca082e01"
+    },
+    "source_buildings": 153,
+    "source_bridges": 4,
+    "source_geometry_triangles": 35916,
+    "vla_invoked": false,
+    "wam_invoked": false,
+    "gpu_requested": false,
+    "physical_execution": false,
+    "sea_extension": {
+      "schema": "missionos.yokohama-sea-extension.v1",
+      "offshore_distance_m": 1000,
+      "coast_to_city_entry_m": 400,
+      "coast_world_xyz_m": [
+        386.1720648824816,
+        104.26474142489603,
+        15.110143087104275
+      ],
+      "ship_hold_world_xyz_m": [
+        1351.6022270886856,
+        364.9265949871361,
+        15.110143087104275
+      ],
+      "ship_deck_world_xyz_m": [
+        1351.6022270886856,
+        364.9265949871361,
+        0
+      ],
+      "launch_contact_topic": "launch_pad",
+      "source_connector_clearance_m": 5.582773621331227,
+      "sea_airspeed_mps": 8,
+      "city_airspeed_mps": 3,
+      "coastal_gateway_role": "authored boundary beyond the source crop, not surveyed shoreline",
+      "stationary_ship": true,
+      "wind_mps": 0,
+      "payload_release_present": true
+    },
+    "payload_delivery": {
+      "schema": "missionos.yokohama-payload.v1",
+      "entity": "delivery_payload",
+      "mass_kg": 0.05,
+      "size_m": [
+        0.12,
+        0.12,
+        0.08
+      ],
+      "pad_world_xyz_m": [
+        153.03285452510517,
+        -64.89336826549612,
+        -0.16885691289572513
+      ],
+      "hover_world_xyz_m": [
+        153.03285452510517,
+        -64.89336826549612,
+        2.831143087104275
+      ],
+      "pad_acceptance_radius_m": 1.5,
+      "rest_height_tolerance_m": 0.08,
+      "stability_sim_s": 3,
+      "maximum_motion_m": 0.05,
+      "maximum_speed_mps": 0.1,
+      "maximum_observation_age_s": 0.5,
+      "maximum_contact_age_sim_s": 0.5,
+      "maximum_sample_gap_sim_s": 1,
+      "receipt_max_age_worker_s": 5,
+      "detach_topic": "/model/x500_0/delivery_payload/detach",
+      "joint_topic": "/model/x500_0/delivery_payload/state",
+      "receiver": "independent host verifier of simulated pad contact and resting cargo",
+      "physical_receipt_verified": false
+    },
+    "pad_queue": {
+      "schema": "missionos.yokohama-pad-queue.v1",
+      "lead_entity": "queue_lead",
+      "parcel_entity": "queue_parcel",
+      "lead_start_xyz_m": [
+        153.83285452510518,
+        -64.09336826549612,
+        1.0311430871042748
+      ],
+      "lead_up_xyz_m": [
+        153.83285452510518,
+        -64.09336826549612,
+        6.831143087104275
+      ],
+      "lead_end_xyz_m": [
+        165.83285452510518,
+        -64.09336826549612,
+        6.831143087104275
+      ],
+      "departure_building_clearance_m": 19.727666012801308,
+      "wait_xyz_m": [
+        108.17735177259866,
+        -142.92962206786046,
+        15.110143087104275
+      ],
+      "approach_xyz_m": [
+        153.03285452510517,
+        -64.89336826549612,
+        15.110143087104275
+      ],
+      "pad_xyz_m": [
+        153.03285452510517,
+        -64.89336826549612,
+        -0.16885691289572513
+      ],
+      "trigger_phase": "02-D3",
+      "occupied_duration_sim_s": 15,
+      "unload_duration_sim_s": 5,
+      "ascent_duration_sim_s": 6,
+      "departure_duration_sim_s": 12,
+      "stable_clear_sim_s": 5,
+      "maximum_wait_sim_s": 90,
+      "maximum_wait_wall_s": 180,
+      "maximum_sample_gap_sim_s": 2,
+      "maximum_observation_age_s": 1,
+      "response_max_age_s": 2,
+      "minimum_battery_fraction": 0.2,
+      "pad_exclusion_radius_m": 6,
+      "approach_exclusion_radius_m": 3,
+      "lead_motion": "scripted poses; no lead autopilot or unloading physics",
+      "observation_source": "Gazebo pose telemetry, not image perception",
+      "judge_backend": "deterministic CPU fixture; no learned model",
+      "approved_actions": [
+        "wait_at_current_hold",
+        "enter_delivery_approach"
+      ],
+      "communication_fallback": "retain current AP hold within local limits; terminate owned SITL on deadline"
+    },
+    "pad_state_advisory": {
+      "mode": "assist",
+      "camera_entity": "pad_state_camera",
+      "topic": "/yokohama/pad-state/image",
+      "camera_source": "fixed delivery-pad camera, not onboard",
+      "weights_sha256": "2f648169418c9b8e7a1f4dec4e51cd8a792df8bec1611168e691207cc7ab67af",
+      "model_kind": "CPU learned lead state, not ANWM or VLA",
+      "request_interval_sim_s": 2,
+      "activation": "city pad-wait only; lazy load; release at exit",
+      "unknown_behavior": "fresh current Rules; no fixed aggregate percentage gate"
+    }
+  },
+  "source_sha256": {
+    "yokohama_scene.py": "ad9ad3de307d590f052fd7b8a1f4623dd43714fdcf7b68424ffe35ea86e62be9",
+    "yokohama_sea.py": "7b2452561b1ca0aa5f51e1b86096dd844d91d19f537415840935956ae6feaee3",
+    "yokohama_wind.py": "a8e960e41583863d5b98aafdd436dcc8598cf98e3a3881b58f577d8cc1646c84",
+    "yokohama_wind_profile.py": "f2e3ee920d20981d6fee5362373ea81863bb060a3c485ed74a0355b04e0d2761",
+    "yokohama_sitl.py": "75578eebb90161d0d3752079c5ecdb096a0a986bc151b1b04221813d19c51576",
+    "yokohama_sitl_worker.py": "233518edcceee5ccea3a0052e9a98d7ee12893fe8a2b94b08d70266c75ea121c",
+    "ship_urban_camera_worker.py": "d1410467349d7bc5526a46afe2e84a9cf8e44d7a3fc391d8b0361ad78696d6c7",
+    "ship_onboard_entrypoint.sh": "b45b89f4bc9cf4ecab5f3d041866a436d6133574717e122a9e02f86e4c977364",
+    "yokohama_flight_worker.py": "25d0eded51928c1297aa7dd8f3551fcd37bec10cb86fa62bc5d0a507c5eced1c",
+    "yokohama_pad_queue.py": "528971136a196d127ab4a1cbd3960c7c07d39838dec9204518bcda2e4c56042b",
+    "yokohama_pad_advisory_contract.py": "5237acf1f6fecdc3ae233ddf786a46918e8cea47218e68a075f98b39542d359b",
+    "yokohama_pad_worker.py": "bfdf369e4b4524dd85b53fd924c4c2131f9d23478293262fb62215886a40c6b3",
+    "yokohama_decision_worker.py": "27779338c1ff027d3cad53d984fcd5223297038159b77998427c6ab5e8434a98",
+    "yokohama_pad_advisory_host.py": "78bc89e4e59ad504dc34b94ce388da48f35c5979395faff1367d67d50de05847",
+    "yokohama_pad_advisory_worker.py": "89cda63df33cd4afd2f29a1900e6df9dd7cde77f33f1676b1bbfcd58c5f3346b",
+    "yokohama_pad_state.py": "646a27b316991d6b95bb963aa278265b9b7099d3384d3d6cc13b82fd4b6c3b76",
+    "ship_anwm.py": "78e4680405eb0202eac2dbc0ba8035577b1765cf8f76961e83f6f6ae2a431509",
+    "mission_assurance_agent.py": "d703ad596121d94fe8ef4880b4fb0e539caefae473f2ac1eb0086db6794966a4",
+    "yokohama_payload.py": "65be8f3b8ec0b4e7886dc71cd9b58e6f7104809749862638fd31738bdd4d892e",
+    "verify_yokohama_payload.py": "b524a558591ea0b5dc1d6e82097b9ebbf5f08783d2f89b54ac872dc3643bbba8"
+  },
+  "started_utc": "2026-09-28T16:16:07.607579+00:00",
+  "worker_exit_code": 0,
+  "observed": {
+    "status": "passed",
+    "holds": [
+      {
+        "duration_sim_s": 30.064000000000004,
+        "samples": 89,
+        "max_horizontal_error_m": 0.07829251144141326,
+        "max_vertical_error_m": 0.3697283691213471,
+        "max_px4_speed_mps": 0.04055648530136703,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.063769791000027,
+        "max_sample_gap_sim_s": 0.4160000000000039,
+        "start_sim_s": 31.252,
+        "end_sim_s": 61.316,
+        "point": "SEA-TAKEOFF",
+        "target_world_xyz_m": [
+          1351.6022270886856,
+          364.9265949871361,
+          15.110143087104275
+        ],
+        "passed": true
+      },
+      {
+        "duration_sim_s": 30.196000000000026,
+        "samples": 93,
+        "max_horizontal_error_m": 0.08495028997420905,
+        "max_vertical_error_m": 0.4685481772526483,
+        "max_px4_speed_mps": 0.05214085634126083,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.024912124999900698,
+        "max_sample_gap_sim_s": 0.40799999999998704,
+        "start_sim_s": 204.664,
+        "end_sim_s": 234.86,
+        "point": "SEA-INBOUND-COAST",
+        "target_world_xyz_m": [
+          386.1720648824816,
+          104.26474142489603,
+          15.110143087104275
+        ],
+        "passed": true
+      },
+      {
+        "duration_sim_s": 30.188000000000045,
+        "samples": 89,
+        "max_horizontal_error_m": 0.06331423487843187,
+        "max_vertical_error_m": 0.4866151925797517,
+        "max_px4_speed_mps": 0.058920646635962845,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.020524499999964974,
+        "max_sample_gap_sim_s": 0.4159999999999968,
+        "start_sim_s": 381.352,
+        "end_sim_s": 411.54,
+        "point": "00-D1",
+        "target_world_xyz_m": [
+          0.0,
+          0.0,
+          15.110143087104275
+        ],
+        "passed": true
+      },
+      {
+        "duration_sim_s": 30.108000000000004,
+        "samples": 91,
+        "max_horizontal_error_m": 0.1210871313285406,
+        "max_vertical_error_m": 0.49218258992041086,
+        "max_px4_speed_mps": 0.08106690940204887,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.021567416999914713,
+        "max_sample_gap_sim_s": 0.4159999999999968,
+        "start_sim_s": 448.06,
+        "end_sim_s": 478.168,
+        "point": "01-D2",
+        "target_world_xyz_m": [
+          -34.88761388811289,
+          -60.6945307036456,
+          15.110143087104275
+        ],
+        "passed": true
+      },
+      {
+        "duration_sim_s": 30.20399999999995,
+        "samples": 95,
+        "max_horizontal_error_m": 0.08510066823309151,
+        "max_vertical_error_m": 0.4595069856693357,
+        "max_px4_speed_mps": 0.0810779507634474,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.034495292000201516,
+        "max_sample_gap_sim_s": 0.41200000000003456,
+        "start_sim_s": 542.96,
+        "end_sim_s": 573.164,
+        "point": "02-D3",
+        "target_world_xyz_m": [
+          108.17735177259866,
+          -142.92962206786046,
+          15.110143087104275
+        ],
+        "passed": true
+      },
+      {
+        "duration_sim_s": 30.21199999999999,
+        "samples": 102,
+        "max_horizontal_error_m": 0.0893755262811961,
+        "max_vertical_error_m": 0.4726722879377778,
+        "max_px4_speed_mps": 0.07883672938421532,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.07066558399992573,
+        "max_sample_gap_sim_s": 0.41200000000003456,
+        "start_sim_s": 644.96,
+        "end_sim_s": 675.172,
+        "point": "03-DELIVERY",
+        "target_world_xyz_m": [
+          153.03285452510517,
+          -64.89336826549612,
+          15.110143087104275
+        ],
+        "passed": true
+      },
+      {
+        "duration_sim_s": 30.220000000000027,
+        "samples": 127,
+        "max_horizontal_error_m": 0.036649357766614155,
+        "max_vertical_error_m": 0.47281528095961933,
+        "max_px4_speed_mps": 0.0394203259753138,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.20215254100003222,
+        "max_sample_gap_sim_s": 0.38800000000003365,
+        "start_sim_s": 695.736,
+        "end_sim_s": 725.956,
+        "point": "PAYLOAD-LOW",
+        "target_world_xyz_m": [
+          153.03285452510517,
+          -64.89336826549612,
+          2.831143087104275
+        ],
+        "passed": true
+      },
+      {
+        "duration_sim_s": 30.39199999999994,
+        "samples": 101,
+        "max_horizontal_error_m": 0.06674860585924894,
+        "max_vertical_error_m": 0.4431036570360014,
+        "max_px4_speed_mps": 0.05177715422848189,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.08933924999996634,
+        "max_sample_gap_sim_s": 0.41200000000003456,
+        "start_sim_s": 746.668,
+        "end_sim_s": 777.06,
+        "point": "PAYLOAD-CLIMB",
+        "target_world_xyz_m": [
+          153.03285452510517,
+          -64.89336826549612,
+          15.110143087104275
+        ],
+        "passed": true
+      },
+      {
+        "duration_sim_s": 30.103999999999928,
+        "samples": 97,
+        "max_horizontal_error_m": 0.13735835850507408,
+        "max_vertical_error_m": 0.47593389291576393,
+        "max_px4_speed_mps": 0.08914935613900979,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.05175037499998325,
+        "max_sample_gap_sim_s": 0.40800000000001546,
+        "start_sim_s": 819.46,
+        "end_sim_s": 849.564,
+        "point": "04-D3",
+        "target_world_xyz_m": [
+          108.17735177259866,
+          -142.92962206786046,
+          15.110143087104275
+        ],
+        "passed": true
+      },
+      {
+        "duration_sim_s": 30.036000000000058,
+        "samples": 90,
+        "max_horizontal_error_m": 0.06913002314204593,
+        "max_vertical_error_m": 0.4988422853779504,
+        "max_px4_speed_mps": 0.0647638178306375,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.02098766699987209,
+        "max_sample_gap_sim_s": 0.41600000000005366,
+        "start_sim_s": 917.3,
+        "end_sim_s": 947.336,
+        "point": "05-D2",
+        "target_world_xyz_m": [
+          -34.88761388811289,
+          -60.6945307036456,
+          15.110143087104275
+        ],
+        "passed": true
+      },
+      {
+        "duration_sim_s": 30.295999999999935,
+        "samples": 89,
+        "max_horizontal_error_m": 0.07884370058158924,
+        "max_vertical_error_m": 0.5120503824518838,
+        "max_px4_speed_mps": 0.07187637511728036,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.02029375100028119,
+        "max_sample_gap_sim_s": 0.41600000000005366,
+        "start_sim_s": 980.98,
+        "end_sim_s": 1011.276,
+        "point": "06-D1",
+        "target_world_xyz_m": [
+          0.0,
+          0.0,
+          15.110143087104275
+        ],
+        "passed": true
+      },
+      {
+        "duration_sim_s": 30.236000000000104,
+        "samples": 91,
+        "max_horizontal_error_m": 0.1062641748330957,
+        "max_vertical_error_m": 0.4770828812674388,
+        "max_px4_speed_mps": 0.050254995771564843,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.027501915999891935,
+        "max_sample_gap_sim_s": 0.41200000000003456,
+        "start_sim_s": 1079.764,
+        "end_sim_s": 1110.0,
+        "point": "SEA-OUTBOUND-COAST",
+        "target_world_xyz_m": [
+          386.1720648824816,
+          104.26474142489603,
+          15.110143087104275
+        ],
+        "passed": true
+      },
+      {
+        "duration_sim_s": 30.076000000000022,
+        "samples": 88,
+        "max_horizontal_error_m": 0.09736335135759924,
+        "max_vertical_error_m": 0.35337799234071454,
+        "max_px4_speed_mps": 0.06294221635754496,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.019681333000335144,
+        "max_sample_gap_sim_s": 0.41600000000016735,
+        "start_sim_s": 1250.516,
+        "end_sim_s": 1280.592,
+        "point": "SEA-RETURN",
+        "target_world_xyz_m": [
+          1351.6022270886856,
+          364.9265949871361,
+          15.110143087104275
+        ],
+        "passed": true
+      }
+    ],
+    "frames": [
+      {
+        "onboard_rgb": {
+          "file": "images/SEA-TAKEOFF-onboard_rgb.png",
+          "sha256": "328997d48723e115b92bfcf18436cc7220dff4205494e320f2cdbed2a682e1c3",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 61.0
+        },
+        "onboard_depth": {
+          "file": "images/SEA-TAKEOFF-onboard_depth.f32",
+          "sha256": "6b773e92f1c21387fecd428f808c60fec91ba08b4af52a927252c834f1e152be",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 13,
+          "sensor_sim_s": 61.0,
+          "finite_fraction": 0.45842881944444447,
+          "finite_min_m": 57.931053161621094,
+          "finite_max_m": 797.4006958007812,
+          "encoding": "little-endian float32, axial camera depth"
+        },
+        "down_rgb": {
+          "file": "images/SEA-TAKEOFF-down_rgb.png",
+          "sha256": "bd51b81f078756ed6334c4581777d9e1635e10e2f491f0ca2bf142d12ae82e03",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 61.0
+        }
+      },
+      {
+        "onboard_rgb": {
+          "file": "images/SEA-INBOUND-COAST-onboard_rgb.png",
+          "sha256": "309a388e558dae091f4fae07576af8bab8c2068510071a3fea71b04c8a29d23c",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 234.5
+        },
+        "onboard_depth": {
+          "file": "images/SEA-INBOUND-COAST-onboard_depth.f32",
+          "sha256": "228d6a5d551752f899064173806f95b781ca5179c239f349052c0ee475ae31e8",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 13,
+          "sensor_sim_s": 234.5,
+          "finite_fraction": 0.6325,
+          "finite_min_m": 57.702903747558594,
+          "finite_max_m": 720.747314453125,
+          "encoding": "little-endian float32, axial camera depth"
+        },
+        "down_rgb": {
+          "file": "images/SEA-INBOUND-COAST-down_rgb.png",
+          "sha256": "91f801a90105e9bf162cd4c1c1965f949e32b98c280de6db8475e61456eeb722",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 234.5
+        }
+      },
+      {
+        "onboard_rgb": {
+          "file": "images/00-D1-onboard_rgb.png",
+          "sha256": "666016fadd61c09299ad8b2d41e70b5e8faa75eee13fc82e813042da0d3090f1",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 411.0
+        },
+        "onboard_depth": {
+          "file": "images/00-D1-onboard_depth.f32",
+          "sha256": "6577afa2eeb606bb870f1c35663281a7d768ebbea8274a630919e56b19a06673",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 13,
+          "sensor_sim_s": 411.0,
+          "finite_fraction": 0.8131814236111111,
+          "finite_min_m": 40.09600067138672,
+          "finite_max_m": 787.6481323242188,
+          "encoding": "little-endian float32, axial camera depth"
+        },
+        "down_rgb": {
+          "file": "images/00-D1-down_rgb.png",
+          "sha256": "3e344e4b2ada1be43b6f9ab1354a53bb5b7744a17984daf7ae45cd525ac0f3e9",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 411.0
+        }
+      },
+      {
+        "onboard_rgb": {
+          "file": "images/01-D2-onboard_rgb.png",
+          "sha256": "5cbcf357b6ec059799070974de2e39b42cef32e0caa251e5959c4928f1c730a9",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 477.5
+        },
+        "onboard_depth": {
+          "file": "images/01-D2-onboard_depth.f32",
+          "sha256": "106bcc2901d7f088a22f1550e3077450b54c1c4a6b4d459df2aa7089f5354990",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 13,
+          "sensor_sim_s": 477.5,
+          "finite_fraction": 0.9248871527777778,
+          "finite_min_m": 21.756702423095703,
+          "finite_max_m": 772.8369140625,
+          "encoding": "little-endian float32, axial camera depth"
+        },
+        "down_rgb": {
+          "file": "images/01-D2-down_rgb.png",
+          "sha256": "70cbb60bd4a3cc6d07cd8a308927c7e0bcdeb175a3f0e564c15822c43507fd86",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 478.0
+        }
+      },
+      {
+        "onboard_rgb": {
+          "file": "images/02-D3-onboard_rgb.png",
+          "sha256": "a795908835c7064d33abfb8bed1890dec9d9d9d122cac2e3a698924d634281d5",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 572.5
+        },
+        "onboard_depth": {
+          "file": "images/02-D3-onboard_depth.f32",
+          "sha256": "429e757b14cb350d5f3996961fb2a7ce15791ae0472f65899f66b73041ff1c14",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 13,
+          "sensor_sim_s": 572.5,
+          "finite_fraction": 0.6241579861111111,
+          "finite_min_m": 25.135698318481445,
+          "finite_max_m": 798.8582763671875,
+          "encoding": "little-endian float32, axial camera depth"
+        },
+        "down_rgb": {
+          "file": "images/02-D3-down_rgb.png",
+          "sha256": "28ddb071e04b6238f1da1b4301449b14eabdfe7cc9f141d8e8d9e684dcd71f11",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 572.5
+        }
+      },
+      {
+        "onboard_rgb": {
+          "file": "images/03-DELIVERY-onboard_rgb.png",
+          "sha256": "d2a02faaea154c739465a4d37a6170c4bb606aff3790ad6f399aed8128c37a2b",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 674.5
+        },
+        "onboard_depth": {
+          "file": "images/03-DELIVERY-onboard_depth.f32",
+          "sha256": "38ed56778151a0979eeeb2c67dac71fa684cae9feeb3f8cd7e1bb1a590542036",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 13,
+          "sensor_sim_s": 674.5,
+          "finite_fraction": 0.4858984375,
+          "finite_min_m": 45.30052947998047,
+          "finite_max_m": 755.149658203125,
+          "encoding": "little-endian float32, axial camera depth"
+        },
+        "down_rgb": {
+          "file": "images/03-DELIVERY-down_rgb.png",
+          "sha256": "c43329aad78a16ad659e4383883c875dbdee721302d182d080140a2a3c9b1499",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 674.5
+        }
+      },
+      {
+        "onboard_rgb": {
+          "file": "images/PAYLOAD-LOW-onboard_rgb.png",
+          "sha256": "ab62174673dccbb3827179fad6639ce562999bafbf79343ec906b7368e1a04a1",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 725.5
+        },
+        "onboard_depth": {
+          "file": "images/PAYLOAD-LOW-onboard_depth.f32",
+          "sha256": "a0e87b9fd9397f52bbd431d102cb3ff0959bb95ec2b95dd39ee51fbfa0ef37e1",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 13,
+          "sensor_sim_s": 725.5,
+          "finite_fraction": 0.5725173611111111,
+          "finite_min_m": 12.179511070251465,
+          "finite_max_m": 751.9241943359375,
+          "encoding": "little-endian float32, axial camera depth"
+        },
+        "down_rgb": {
+          "file": "images/PAYLOAD-LOW-down_rgb.png",
+          "sha256": "b5ffa7bc99774be2ffa038fa97dfd232c257eb149e314652c950f0a6801ef414",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 725.5
+        }
+      },
+      {
+        "onboard_rgb": {
+          "file": "images/PAYLOAD-CLIMB-onboard_rgb.png",
+          "sha256": "8b81a7d925388c22d7343e6f71c51653aae5cdd83cd104865418c75ef7d91f2c",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 776.5
+        },
+        "onboard_depth": {
+          "file": "images/PAYLOAD-CLIMB-onboard_depth.f32",
+          "sha256": "6c2c729ada1fc97c9d6c555c2888bd623889fd6652862b9b7815bed5f836f713",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 13,
+          "sensor_sim_s": 776.5,
+          "finite_fraction": 0.8531857638888889,
+          "finite_min_m": 31.619525909423828,
+          "finite_max_m": 774.1430053710938,
+          "encoding": "little-endian float32, axial camera depth"
+        },
+        "down_rgb": {
+          "file": "images/PAYLOAD-CLIMB-down_rgb.png",
+          "sha256": "d2f59686e0f25a80879e66bdc008bb49691a8f4cfbb860712bb8e10dd20f6d13",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 776.5
+        }
+      },
+      {
+        "onboard_rgb": {
+          "file": "images/04-D3-onboard_rgb.png",
+          "sha256": "eb967b28ab73e691a75a235ac7ef3768f30da8536ed282174801c0080597e6b4",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 849.0
+        },
+        "onboard_depth": {
+          "file": "images/04-D3-onboard_depth.f32",
+          "sha256": "41db12cbd1ad74a54abc58c6a87d52a700979c5c3c388768438e72e97db464ba",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 13,
+          "sensor_sim_s": 849.0,
+          "finite_fraction": 0.9361501736111111,
+          "finite_min_m": 15.137398719787598,
+          "finite_max_m": 595.2701416015625,
+          "encoding": "little-endian float32, axial camera depth"
+        },
+        "down_rgb": {
+          "file": "images/04-D3-down_rgb.png",
+          "sha256": "05e1b1391e967acdc3c333fa37a4038103a48beca81e0876edecf686c74b3256",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 849.0
+        }
+      },
+      {
+        "onboard_rgb": {
+          "file": "images/05-D2-onboard_rgb.png",
+          "sha256": "125ee27581753f2d93f2cdf1477f9e651f281b2967a1edad9f495faa511a9562",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 947.0
+        },
+        "onboard_depth": {
+          "file": "images/05-D2-onboard_depth.f32",
+          "sha256": "1630fa249386436bc7647ecc39206a50abf80328dac4a58ace0c88f8af44e490",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 13,
+          "sensor_sim_s": 947.0,
+          "finite_fraction": 0.6102690972222222,
+          "finite_min_m": 40.19241714477539,
+          "finite_max_m": 775.4857177734375,
+          "encoding": "little-endian float32, axial camera depth"
+        },
+        "down_rgb": {
+          "file": "images/05-D2-down_rgb.png",
+          "sha256": "c2a49a21d54927188f0e5dbd9347d540e1577a29e3828abc7e1dc6600045ab0f",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 947.0
+        }
+      },
+      {
+        "onboard_rgb": {
+          "file": "images/06-D1-onboard_rgb.png",
+          "sha256": "f8f40c2120fecd7db069d9b87b66a75153a06c8d7674bd4c1ddf25abcdb9f01a",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 1011.0
+        },
+        "onboard_depth": {
+          "file": "images/06-D1-onboard_depth.f32",
+          "sha256": "5e6f6d69ab0f75375314971bc5e3ecc6ea94b716e39afaf62d27d161520586a6",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 13,
+          "sensor_sim_s": 1011.0,
+          "finite_fraction": 0.7425564236111111,
+          "finite_min_m": 39.76155090332031,
+          "finite_max_m": 763.720947265625,
+          "encoding": "little-endian float32, axial camera depth"
+        },
+        "down_rgb": {
+          "file": "images/06-D1-down_rgb.png",
+          "sha256": "08b1dd4745b4df3fb125cb4756f8d1e57952d9b2f520e0dddc478b3a9e7fd908",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 1011.0
+        }
+      },
+      {
+        "onboard_rgb": {
+          "file": "images/SEA-OUTBOUND-COAST-onboard_rgb.png",
+          "sha256": "ad12e45168143ac8b1c0151f1166d53840949ed64ac06f38a725af0284c4d519",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 1109.5
+        },
+        "onboard_depth": {
+          "file": "images/SEA-OUTBOUND-COAST-onboard_depth.f32",
+          "sha256": "0515583025763990d135e993ef5dc4121e0f8667332e1e8c7966e9e51c6152c4",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 13,
+          "sensor_sim_s": 1109.5,
+          "finite_fraction": 0.4618229166666667,
+          "finite_min_m": 57.999935150146484,
+          "finite_max_m": 787.84375,
+          "encoding": "little-endian float32, axial camera depth"
+        },
+        "down_rgb": {
+          "file": "images/SEA-OUTBOUND-COAST-down_rgb.png",
+          "sha256": "9166ea76ecc6ad4bc9df2c31f026795fc3f65c4ae1b3ca7b7fa4762823831c49",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 1109.5
+        }
+      },
+      {
+        "onboard_rgb": {
+          "file": "images/SEA-RETURN-onboard_rgb.png",
+          "sha256": "044d915a890c5ca726919998417d1106bf485149069809c65d4a1e21b9d88af3",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 1280.5
+        },
+        "onboard_depth": {
+          "file": "images/SEA-RETURN-onboard_depth.f32",
+          "sha256": "73efec6c029969013adab5dc536a78f9a916b96b2fd91cf3e305c7943e4da1f6",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 13,
+          "sensor_sim_s": 1280.5,
+          "finite_fraction": 0.46491319444444446,
+          "finite_min_m": 57.10182189941406,
+          "finite_max_m": 787.0673828125,
+          "encoding": "little-endian float32, axial camera depth"
+        },
+        "down_rgb": {
+          "file": "images/SEA-RETURN-down_rgb.png",
+          "sha256": "090bf586cac51087ac1814f778b53d057469017111150e758a3e1185a95eae2d",
+          "width": 640,
+          "height": 360,
+          "pixel_format": 3,
+          "sensor_sim_s": 1280.5
+        }
+      }
+    ],
+    "landing_on_launch_pad_observed": true,
+    "simulation_duration_s": 1300.516,
+    "gazebo_runtime_invoked": true,
+    "px4_runtime_invoked": true,
+    "vla_invoked": false,
+    "wam_invoked": false,
+    "physical_execution_invoked": false,
+    "payload_delivery_verified": true,
+    "payload_receipt_id": "f238fada2e130c385adf8dde8ab4662e3359485c4fb41c245e8af6f1cd360de5",
+    "native_model_flight": false,
+    "city_decision_updates": 0,
+    "city_decision_backend": null,
+    "run_id": "yokohama-c410139f4ad7",
+    "world_sha256": "bcf30c60baccd7c86bf2477d3064f8bf6e1bd0d7e1b2ebcbf0631bc82205f821"
+  },
+  "pad_supervisor_stopped": true,
+  "cpu_pad_state_inference_calls": 14,
+  "cpu_pad_state_released": true,
+  "payload_receiver_stopped": true,
+  "nvidia_device_absent": true,
+  "cleanup": true,
+  "finished_utc": "2026-09-28T16:39:23.784052+00:00"
+}

@@ -1,0 +1,535 @@
+{
+  "situation": {
+    "situation_id": "3bd84e6cef4f78cb93a5f9cc3fa4d7bb8940e8051c6855c43775233a0bbb2d9b",
+    "observed_at": "2026-09-28T16:26:12.300435+00:00",
+    "mission_contract": {
+      "objective": "wait for lead, deliver cargo and return"
+    },
+    "progress": {
+      "region": "city",
+      "phase": "pad_wait"
+    },
+    "observations": {
+      "current_rules_action": "wait_at_current_hold",
+      "auxiliary_signal": "future_occupancy_reobserve"
+    },
+    "constraints": {
+      "mode": "assist",
+      "allowed_actions": [
+        "wait_at_current_hold",
+        "enter_delivery_approach"
+      ],
+      "unknown_fallback": "current_rules",
+      "forecast_authorizes_entry": false
+    },
+    "uncertainty": {
+      "source": "learned CPU image forecast + deterministic mission judge",
+      "forecast": {
+        "schema": "missionos.pad-state-advisory.v1",
+        "request_id": "3bd84e6cef4f78cb93a5f9cc3fa4d7bb8940e8051c6855c43775233a0bbb2d9b",
+        "model_sha256": "2f648169418c9b8e7a1f4dec4e51cd8a792df8bec1611168e691207cc7ab67af",
+        "camera_entity": "pad_state_camera",
+        "history_sha256": "7fef26708aee59b19ef05fee408ea216677e2644e25d9f4d685407d3d0d704cd",
+        "status": "computed",
+        "reason": "measured_camera_history",
+        "flight_authority_created": false,
+        "forecast": {
+          "schema": "missionos.pad-state-forecast.v1",
+          "supported": true,
+          "input_last_stamp_ns": 577252000000,
+          "detections": [
+            {
+              "uv": [
+                164,
+                126
+              ],
+              "xyz_m": [
+                1.1370055956146004,
+                0.8000007708726046,
+                0.9608006648470073
+              ],
+              "score": 1.2311092374969117,
+              "margin": 0.7733292952354809,
+              "supported": true
+            },
+            {
+              "uv": [
+                164,
+                126
+              ],
+              "xyz_m": [
+                1.1370055956146004,
+                0.8000007708726046,
+                0.9608006648470073
+              ],
+              "score": 1.2231788301997748,
+              "margin": 0.7684531076248198,
+              "supported": true
+            },
+            {
+              "uv": [
+                164,
+                126
+              ],
+              "xyz_m": [
+                1.1370055956146004,
+                0.8000007708726046,
+                0.9608006648470073
+              ],
+              "score": 1.222431789084587,
+              "margin": 0.7704368485572373,
+              "supported": true
+            },
+            {
+              "uv": [
+                164,
+                126
+              ],
+              "xyz_m": [
+                1.1370055956146004,
+                0.8000007708726046,
+                0.9608006648470073
+              ],
+              "score": 1.1890452490102572,
+              "margin": 0.7370982606438086,
+              "supported": true
+            },
+            {
+              "uv": [
+                164,
+                126
+              ],
+              "xyz_m": [
+                1.1370055956146004,
+                0.8000007708726046,
+                0.9608006648470073
+              ],
+              "score": 1.096221788510484,
+              "margin": 0.6462234935004537,
+              "supported": true
+            },
+            {
+              "uv": [
+                164,
+                126
+              ],
+              "xyz_m": [
+                1.1370055956146004,
+                0.8000007708726046,
+                0.9608006648470073
+              ],
+              "score": 1.0281077440296469,
+              "margin": 0.5780738928780025,
+              "supported": true
+            },
+            {
+              "uv": [
+                164,
+                126
+              ],
+              "xyz_m": [
+                1.1370055956146004,
+                0.8000007708726046,
+                0.9608006648470073
+              ],
+              "score": 1.0281077440296469,
+              "margin": 0.5780738928780025,
+              "supported": true
+            },
+            {
+              "uv": [
+                164,
+                120
+              ],
+              "xyz_m": [
+                1.0669531821247569,
+                0.800000698888756,
+                1.4374211807633093
+              ],
+              "score": 1.087582534066561,
+              "margin": 0.4517232375099477,
+              "supported": true
+            },
+            {
+              "uv": [
+                164,
+                120
+              ],
+              "xyz_m": [
+                1.0669531821247569,
+                0.800000698888756,
+                1.4374211807633093
+              ],
+              "score": 1.087582534066561,
+              "margin": 0.4517232375099477,
+              "supported": true
+            },
+            {
+              "uv": [
+                164,
+                120
+              ],
+              "xyz_m": [
+                1.0669531821247569,
+                0.800000698888756,
+                1.4374211807633093
+              ],
+              "score": 1.0513550199036477,
+              "margin": 0.5600368502011526,
+              "supported": true
+            },
+            {
+              "uv": [
+                164,
+                120
+              ],
+              "xyz_m": [
+                1.0669531821247569,
+                0.800000698888756,
+                1.4374211807633093
+              ],
+              "score": 1.016116574001743,
+              "margin": 0.6059210641448026,
+              "supported": true
+            },
+            {
+              "uv": [
+                164,
+                120
+              ],
+              "xyz_m": [
+                1.0669531821247569,
+                0.800000698888756,
+                1.4374211807633093
+              ],
+              "score": 0.995808696386327,
+              "margin": 0.5856131865293867,
+              "supported": true
+            },
+            {
+              "uv": [
+                164,
+                120
+              ],
+              "xyz_m": [
+                1.0669531821247569,
+                0.800000698888756,
+                1.4374211807633093
+              ],
+              "score": 0.995808696386327,
+              "margin": 0.5856131865293867,
+              "supported": true
+            },
+            {
+              "uv": [
+                163,
+                121
+              ],
+              "xyz_m": [
+                0.7971711393409467,
+                0.8000000064612621,
+                1.1985971762963703
+              ],
+              "score": 0.9761610772952264,
+              "margin": 0.6242078931280869,
+              "supported": true
+            },
+            {
+              "uv": [
+                163,
+                121
+              ],
+              "xyz_m": [
+                0.7971711393409467,
+                0.8000000064612621,
+                1.1985971762963703
+              ],
+              "score": 0.985209239930786,
+              "margin": 0.636269816634293,
+              "supported": true
+            },
+            {
+              "uv": [
+                163,
+                121
+              ],
+              "xyz_m": [
+                0.7971711393409467,
+                0.8000000064612621,
+                1.1985971762963703
+              ],
+              "score": 0.9683272568887108,
+              "margin": 0.6235740750248254,
+              "supported": true
+            }
+          ],
+          "support_distance": 0.42589790969776925,
+          "forecasts": [
+            {
+              "offset_s": 0.0,
+              "stamp_ns": 577252000000,
+              "xyz_relative_to_pad_m": [
+                0.7324804577925645,
+                0.7999999436167058,
+                1.2212535986420805
+              ],
+              "occupancy_score": 0.9541459845060155,
+              "empirical_xy_radius_m": 0.24270612910498068,
+              "state": "occupied"
+            },
+            {
+              "offset_s": 0.25,
+              "stamp_ns": 577502000000,
+              "xyz_relative_to_pad_m": [
+                0.7282412870288483,
+                0.7999999436167058,
+                1.1573829314991109
+              ],
+              "occupancy_score": 0.8786579369292973,
+              "empirical_xy_radius_m": 0.3688068293850897,
+              "state": "occupied"
+            },
+            {
+              "offset_s": 0.5,
+              "stamp_ns": 577752000000,
+              "xyz_relative_to_pad_m": [
+                0.3832130994384542,
+                0.7999999436167058,
+                1.1252970838107728
+              ],
+              "occupancy_score": 0.9520835698026006,
+              "empirical_xy_radius_m": 0.5302243483728618,
+              "state": "occupied"
+            },
+            {
+              "offset_s": 0.75,
+              "stamp_ns": 578002000000,
+              "xyz_relative_to_pad_m": [
+                0.33124175224253477,
+                0.7999999436167058,
+                1.1962777250397345
+              ],
+              "occupancy_score": 0.9292565387480908,
+              "empirical_xy_radius_m": 0.6443845299595004,
+              "state": "occupied"
+            },
+            {
+              "offset_s": 1.0,
+              "stamp_ns": 578252000000,
+              "xyz_relative_to_pad_m": [
+                0.14594803466336803,
+                0.7999999436167058,
+                1.1994526930686311
+              ],
+              "occupancy_score": 0.9292565387480908,
+              "empirical_xy_radius_m": 0.8202146600987821,
+              "state": "occupied"
+            },
+            {
+              "offset_s": 1.25,
+              "stamp_ns": 578502000000,
+              "xyz_relative_to_pad_m": [
+                -0.1056195121320691,
+                0.7999999436167058,
+                1.1592578597703407
+              ],
+              "occupancy_score": 0.9154583154680653,
+              "empirical_xy_radius_m": 1.0752778900841218,
+              "state": "occupied"
+            },
+            {
+              "offset_s": 1.5,
+              "stamp_ns": 578752000000,
+              "xyz_relative_to_pad_m": [
+                -0.06764047357407876,
+                0.7999999436167058,
+                1.1434058696224934
+              ],
+              "occupancy_score": 0.9308178414526759,
+              "empirical_xy_radius_m": 1.2171162898627397,
+              "state": "occupied"
+            },
+            {
+              "offset_s": 1.75,
+              "stamp_ns": 579002000000,
+              "xyz_relative_to_pad_m": [
+                -0.20235186334568922,
+                0.7999999436167058,
+                1.1543368622929726
+              ],
+              "occupancy_score": 0.8801320507863785,
+              "empirical_xy_radius_m": 1.42793539028859,
+              "state": "occupied"
+            },
+            {
+              "offset_s": 2.0,
+              "stamp_ns": 579252000000,
+              "xyz_relative_to_pad_m": [
+                -0.2642814198755786,
+                0.7999999436167058,
+                1.1508038989779712
+              ],
+              "occupancy_score": 0.8801320507863785,
+              "empirical_xy_radius_m": 1.615930672814894,
+              "state": "occupied"
+            },
+            {
+              "offset_s": 2.25,
+              "stamp_ns": 579502000000,
+              "xyz_relative_to_pad_m": [
+                -0.25262716693252607,
+                0.7999999436167058,
+                1.1773301416639952
+              ],
+              "occupancy_score": 0.9631689809126052,
+              "empirical_xy_radius_m": 1.8532122558448805,
+              "state": "occupied"
+            },
+            {
+              "offset_s": 2.5,
+              "stamp_ns": 579752000000,
+              "xyz_relative_to_pad_m": [
+                -0.355946914504346,
+                0.7999999436167058,
+                1.2961401260078078
+              ],
+              "occupancy_score": 0.9102127264804785,
+              "empirical_xy_radius_m": 2.0168994956174195,
+              "state": "occupied"
+            },
+            {
+              "offset_s": 2.75,
+              "stamp_ns": 580002000000,
+              "xyz_relative_to_pad_m": [
+                -0.2676065916773126,
+                0.7999999436167058,
+                1.3381995955046977
+              ],
+              "occupancy_score": 0.9487249655227634,
+              "empirical_xy_radius_m": 2.261892236840265,
+              "state": "occupied"
+            },
+            {
+              "offset_s": 3.0,
+              "stamp_ns": 580252000000,
+              "xyz_relative_to_pad_m": [
+                -0.3155355524585909,
+                0.7999999436167058,
+                1.3623291921912821
+              ],
+              "occupancy_score": 0.9487249655227634,
+              "empirical_xy_radius_m": 2.375585041437641,
+              "state": "occupied"
+            },
+            {
+              "offset_s": 3.25,
+              "stamp_ns": 580502000000,
+              "xyz_relative_to_pad_m": [
+                -0.3724416321997258,
+                0.7999999436167058,
+                1.460579671140738
+              ],
+              "occupancy_score": 0.9496172348455593,
+              "empirical_xy_radius_m": 2.582402563975838,
+              "state": "occupied"
+            },
+            {
+              "offset_s": 3.5,
+              "stamp_ns": 580752000000,
+              "xyz_relative_to_pad_m": [
+                -0.39004555600404756,
+                0.7999999436167058,
+                1.6372602581793407
+              ],
+              "occupancy_score": 0.976699051995043,
+              "empirical_xy_radius_m": 2.7022425359506177,
+              "state": "occupied"
+            },
+            {
+              "offset_s": 3.75,
+              "stamp_ns": 581002000000,
+              "xyz_relative_to_pad_m": [
+                -0.553266521269484,
+                0.7999999436167058,
+                1.6753007693299957
+              ],
+              "occupancy_score": 0.9677451052476643,
+              "empirical_xy_radius_m": 3.0087595119296253,
+              "state": "occupied"
+            },
+            {
+              "offset_s": 4.0,
+              "stamp_ns": 581252000000,
+              "xyz_relative_to_pad_m": [
+                -0.6511784378305375,
+                0.7999999436167058,
+                1.8218281384075357
+              ],
+              "occupancy_score": 0.9677451052479,
+              "empirical_xy_radius_m": 3.1246542639243886,
+              "state": "occupied"
+            }
+          ],
+          "compute_seconds": 0.05225712503306568,
+          "model_kind": "learned CPU object/state model; not ANWM or VLA",
+          "interval_collision_verified": false,
+          "action_conditioning_verified": false,
+          "flight_admitted": false,
+          "dispatch_invoked": false
+        },
+        "host_seconds": 0.10874937498010695
+      }
+    },
+    "source_refs": [
+      "3bd84e6cef4f78cb93a5f9cc3fa4d7bb8940e8051c6855c43775233a0bbb2d9b"
+    ],
+    "source_schema_version": "missionos.aircraft-situation-request.v1",
+    "input_digest": "b14a3afa57e0371544d1b72cc192ce2da44e84d53a417c404f0eab645d830f89",
+    "execution_scope": "simulation",
+    "allowed_response_kinds": [
+      "abort",
+      "continue",
+      "hold",
+      "operator_escalation",
+      "replan",
+      "return"
+    ],
+    "schema_version": "missionos_mission_situation.v1"
+  },
+  "proposal": {
+    "proposal_id": "mission_response_proposal_be0d62076c38",
+    "generated_at": "2026-09-28T16:26:12.300945+00:00",
+    "situation_ref": "mission_situation:3bd84e6cef4f78cb93a5f9cc3fa4d7bb8940e8051c6855c43775233a0bbb2d9b",
+    "situation_input_digest": "b14a3afa57e0371544d1b72cc192ce2da44e84d53a417c404f0eab645d830f89",
+    "proposed_response_kind": "hold",
+    "parameters": {
+      "action": "wait_at_current_hold"
+    },
+    "rationale": "Current Rules plus optional future occupancy; unknown falls back to current Rules.",
+    "expected_outcome": "Bounded wait or independently checked entry.",
+    "uncertainty": "Fixed pad camera; CPU fixture judge; no native VLA/ANWM.",
+    "operator_question": "Within the explicit simulator approval.",
+    "judgment_status": "proposal_guardrail_passed",
+    "judgment_mode": "deterministic_routing",
+    "fallback_mode": "operator_escalation_only",
+    "model_inference_invoked": false,
+    "model_invocation_evidence": {
+      "invocation_kind": "deterministic_fixture"
+    },
+    "blocking_reasons": [],
+    "schema_version": "missionos_mission_response_proposal.v1",
+    "operator_review_required": true,
+    "operator_approval_required": false,
+    "llm_judgment_in_gate": false,
+    "operator_approved": false,
+    "approval_recorded": false,
+    "dispatch_authority_created": false,
+    "dispatch_request_sent": false,
+    "command_ack_observed": false,
+    "runtime_progress_observed": false,
+    "landing_observed": false,
+    "delivery_completion_claimed": false,
+    "physical_execution_invoked": false,
+    "progress_counted": false
+  }
+}

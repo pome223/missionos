@@ -1,5 +1,7 @@
 # Learning the lead aircraft's position and pad occupancy
 
+**2026-09-29 follow-up:** [A full delivery/return flight](../yokohama-pad-advisory/REPORT.md) now integrates the fixed-pad-camera CPU advisory. Joint native VLA/ANWM flight, moving onboard-camera support and mission benefit remain unverified. The learning-time record below is preserved.
+
 **A small CPU model changed its advisory from waiting to reviewing entry in all three new timing sequences, with zero false-clear occupied targets. The owner has removed the fixed 90% adoption gate: proceed with advisory integration and decide adoption by practical usefulness. This does not improve native ANWM imagery or VLA weights.**
 
 [Interactive observations and forecasts](index.html) · [Departure video](videos/state-depart.mp4) · [Stall video](videos/state-stall.mp4) · [Reentry video](videos/state-reenter.mp4)

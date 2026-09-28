@@ -143,7 +143,7 @@ def verify(root, bundle):
             and result.get("physical_execution_invoked") is False
         )
     else:
-        checks["no_models_invoked"] = all(
+        checks["no_native_models_invoked"] = all(
             result[k] is False
             for k in ["vla_invoked", "wam_invoked", "physical_execution_invoked", "gpu_requested"]
         )

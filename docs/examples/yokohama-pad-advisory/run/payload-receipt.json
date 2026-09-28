@@ -1,0 +1,2052 @@
+{
+  "schema": "missionos.yokohama-payload-receipt.v1",
+  "run_id": "yokohama-c410139f4ad7",
+  "config_sha256": "59e4cd7eae699e30c4e5fc2e54bb0076ac89f2f5427e42d90cbc64fbf2cbf24b",
+  "request_sha256": "bf0a48861da1b372990661c3af9e1666ac5b51efc5a72b5d1b460a059b110a79",
+  "payload_delivery_verified": true,
+  "physical_receipt_verified": false,
+  "assessment": {
+    "verified": true,
+    "checks": {
+      "release_bound_to_observed_hold": true,
+      "same_run_and_entities": true,
+      "ordered_finite_clock": true,
+      "cargo_carried_over_sea": true,
+      "joint_detached_after_request": true,
+      "cargo_landed_and_stable_on_pad": true
+    },
+    "entity_ids": [
+      60,
+      29
+    ],
+    "evidence_sha256": "dc62044712723fc679d8d9b910b6d0d4222960db15e7ef07d1086878ffa68159",
+    "evidence": {
+      "carry_start": {
+        "run_id": "yokohama-c410139f4ad7",
+        "world_sha256": "bcf30c60baccd7c86bf2477d3064f8bf6e1bd0d7e1b2ebcbf0631bc82205f821",
+        "phase": "SEA-INBOUND-COAST",
+        "sim_s": 61.316,
+        "wall_s": 58.45768652699985,
+        "vehicle": {
+          "id": 60,
+          "xyz": [
+            1351.5396566610643,
+            364.87876994512726,
+            15.38197010412708
+          ],
+          "quat_wxyz": [
+            -0.13758143782376805,
+            0.0020372764703959355,
+            0.0003879060323992304,
+            0.9904882871593375
+          ],
+          "sensor_sim_s": 61.396,
+          "received_monotonic_s": 1047.728364267,
+          "age_s": 0.015812042000106885
+        },
+        "local_ned": [
+          -0.04306,
+          -0.05849,
+          -15.07454
+        ],
+        "velocity_ned": [
+          0.0217,
+          -0.00492,
+          -0.01234
+        ],
+        "position_valid": true,
+        "heading_ned_rad": -1.83557,
+        "reset_counters": [
+          4.0,
+          2.0,
+          2.0
+        ],
+        "battery_fraction": 0.98627,
+        "preflight_pass": true,
+        "nav_state": 4.0,
+        "arming_state": 2.0,
+        "landed": false,
+        "mission_id": 2611769120.0,
+        "mission_valid": true,
+        "mission_count": 2.0,
+        "raw_px4": {
+          "vehicle_local_position": "\nTOPIC: vehicle_local_position\n vehicle_local_position\n    timestamp: 61384000 (0.000000 seconds ago)\n    timestamp_sample: 61376000 (8000 us before timestamp)\n    ref_timestamp: 4048000\n    ref_lat: 35.450939\n    ref_lon: 139.659695\n    x: -0.04306\n    y: -0.05849\n    z: -15.07454\n    delta_xy: [0.00000, 0.00000]\n    delta_z: -0.70536\n    vx: 0.02170\n    vy: -0.00492\n    vz: -0.01234\n    z_deriv: -0.00046\n    delta_vxy: [-0.00003, 0.00053]\n    delta_vz: -0.00006\n    ax: 0.01541\n    ay: 0.04310\n    az: -0.01027\n    heading: -1.83557\n    heading_var: 0.08120\n    unaided_heading: 2.86458\n    delta_heading: 0.26900\n    tilt_var: 0.00003\n    ref_alt: 0.71264\n    dist_bottom: 15.08881\n    dist_bottom_var: 9.74314\n    delta_dist_bottom: -0.70536\n    eph: 0.15138\n    epv: 0.16582\n    evh: 0.08712\n    evv: 0.05467\n    vxy_max: inf\n    vz_max: inf\n    hagl_min: inf\n    hagl_max_z: inf\n    hagl_max_xy: inf\n    xy_valid: True\n    z_valid: True\n    v_xy_valid: True\n    v_z_valid: True\n    xy_reset_counter: 4\n    z_reset_counter: 2\n    vxy_reset_counter: 4\n    vz_reset_counter: 1\n    heading_reset_counter: 2\n    heading_good_for_control: True\n    xy_global: True\n    z_global: True\n    dist_bottom_valid: False\n    dist_bottom_reset_counter: 2\n    dist_bottom_sensor_bitfield: 0\n    dead_reckoning: False\n",
+          "vehicle_status": "\nTOPIC: vehicle_status\n vehicle_status\n    timestamp: 61348000 (0.040000 seconds ago)\n    armed_time: 10900000\n    takeoff_time: 12628000\n    nav_state_timestamp: 27768000\n    valid_nav_states_mask: 2147411327\n    can_set_nav_states_mask: 8308095\n    arming_state: 2\n    latest_arming_reason: 3\n    latest_disarming_reason: 0\n    nav_state_user_intention: 4\n    nav_state: 4\n    executor_in_charge: 0\n    nav_state_display: 4\n    accepts_offboard_setpoints: False\n    hil_state: 0\n    vehicle_type: 1\n    failsafe: False\n    failsafe_and_user_took_over: False\n    failsafe_defer_state: 0\n    gcs_connection_lost: True\n    gcs_connection_lost_counter: 0\n    high_latency_data_link_lost: False\n    is_vtol: False\n    is_vtol_tailsitter: False\n    in_transition_mode: False\n    in_transition_to_fw: False\n    system_type: 2\n    system_id: 1\n    component_id: 1\n    safety_button_available: True\n    safety_off: True\n    power_input_valid: True\n    usb_connected: False\n    open_drone_id_system_present: False\n    open_drone_id_system_healthy: False\n    parachute_system_present: False\n    parachute_system_healthy: False\n    traffic_avoidance_system_present: False\n    rc_calibration_in_progress: False\n    calibration_enabled: False\n    pre_flight_checks_pass: True\n\n",
+          "vehicle_land_detected": "\nTOPIC: vehicle_land_detected\n vehicle_land_detected\n    timestamp: 60976000 (0.416000 seconds ago)\n    freefall: False\n    ground_contact: False\n    maybe_landed: False\n    landed: False\n    in_ground_effect: False\n    in_descend: False\n    has_low_throttle: False\n    vertical_movement: False\n    horizontal_movement: False\n    rotational_movement: False\n    close_to_ground_or_skipped_check: True\n    at_rest: False\n\n",
+          "mission_result": "\nTOPIC: mission_result\n mission_result\n    timestamp: 27084000 (34.312000 seconds ago)\n    mission_id: 2611769120\n    geofence_id: 0\n    home_position_counter: 143\n    seq_reached: 0\n    seq_current: 1\n    seq_total: 2\n    item_changed_index: 0\n    item_do_jump_remaining: 0\n    valid: True\n    warning: False\n    finished: False\n    failure: False\n    item_do_jump_changed: False\n    execution_mode: 0\n\n",
+          "battery_status": "\nTOPIC: battery_status\n battery_status\n    timestamp: 61396000 (0.004000 seconds ago)\n    voltage_v: 16.17481\n    current_a: -1.00000\n    current_average_a: 5.46519\n    discharged_mah: 0.00000\n    remaining: 0.98627\n    scale: 1.00153\n    time_remaining_s: nan\n    temperature: nan\n    voltage_cell_v: [0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000]\n    max_cell_voltage_delta: 0.00000\n    full_charge_capacity_wh: 0.00000\n    remaining_capacity_wh: 0.00000\n    nominal_voltage: 0.00000\n    internal_resistance_estimate: 0.00500\n    ocv_estimate: 16.15481\n    ocv_estimate_filtered: 16.18000\n    volt_based_soc_estimate: 0.98889\n    voltage_prediction: 0.00000\n    prediction_error: 0.00000\n    estimation_covariance_norm: 6.01332\n    capacity: 0\n    cycle_count: 0\n    average_time_to_empty: 0\n    manufacture_date: 0\n    state_of_health: 0\n    max_error: 0\n    interface_error: 0\n    faults: 0\n    over_discharge_count: 0\n    connected: True\n    cell_count: 4\n    source: 0\n    priority: 0\n    id: 1\n    is_powering_off: False\n    is_required: False\n    warning: 0\n\n",
+          "vehicle_global_position": "\nTOPIC: vehicle_global_position\n vehicle_global_position\n    timestamp: 61400000 (0.004000 seconds ago)\n    timestamp_sample: 61392000 (8000 us before timestamp)\n    lat: 35.450938\n    lon: 139.659695\n    alt: 15.78715\n    alt_ellipsoid: 15.78715\n    delta_alt: 0.70536\n    delta_terrain: 0.70536\n    eph: 0.15050\n    epv: 0.16520\n    terrain_alt: 0.69521\n    lat_lon_valid: True\n    alt_valid: True\n    lat_lon_reset_counter: 4\n    alt_reset_counter: 2\n    terrain_reset_counter: 2\n    terrain_alt_valid: False\n    dead_reckoning: False\n\n",
+          "home_position": "\nTOPIC: home_position\n home_position\n    timestamp: 10900000 (50.507999 seconds ago)\n    lat: 35.450939\n    lon: 139.659695\n    alt: 0.69041\n    x: -0.00272\n    y: -0.00929\n    z: 0.02222\n    roll: -0.00046\n    pitch: -0.00033\n    yaw: 1.57377\n    update_count: 143\n    valid_alt: True\n    valid_hpos: True\n    valid_lpos: True\n    manual_home: False\n\n"
+        },
+        "px4_relative_altitude_m": 15.09674,
+        "payload": {
+          "id": 29,
+          "xyz": [
+            1351.5386357207087,
+            364.8784246091423,
+            15.122128902596609
+          ],
+          "quat_wxyz": [
+            -0.13758143782376805,
+            0.002037276470395938,
+            0.0003879060323992356,
+            0.9904882871593375
+          ],
+          "sensor_sim_s": 61.396,
+          "received_monotonic_s": 1047.728364267,
+          "age_s": 0.015812042000106885
+        },
+        "payload_joint": null,
+        "queue_lead": {
+          "id": 36,
+          "xyz": [
+            153.83285452510518,
+            -64.09336826549612,
+            1.0311430871042748
+          ],
+          "quat_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "sensor_sim_s": 61.396,
+          "received_monotonic_s": 1047.728364267,
+          "age_s": 0.015812042000106885
+        },
+        "queue_parcel": {
+          "id": 48,
+          "xyz": [
+            153.83285452510518,
+            -64.09336826549612,
+            0.5311430871042748
+          ],
+          "quat_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "sensor_sim_s": 61.396,
+          "received_monotonic_s": 1047.728364267,
+          "age_s": 0.015812042000106885
+        }
+      },
+      "carry_end": {
+        "run_id": "yokohama-c410139f4ad7",
+        "world_sha256": "bcf30c60baccd7c86bf2477d3064f8bf6e1bd0d7e1b2ebcbf0631bc82205f821",
+        "phase": "SEA-INBOUND-COAST",
+        "sim_s": 234.86,
+        "wall_s": 235.570584608,
+        "vehicle": {
+          "id": 60,
+          "xyz": [
+            386.16508275015843,
+            104.25860950622956,
+            15.517365127407569
+          ],
+          "quat_wxyz": [
+            -0.13031476259251912,
+            -8.018117444895213e-05,
+            -0.0011289087782654626,
+            0.9914720277377497
+          ],
+          "sensor_sim_s": 234.872,
+          "received_monotonic_s": 1224.83843939,
+          "age_s": 0.018633082999940598
+        },
+        "local_ned": [
+          -261.10034,
+          -963.33783,
+          -15.08684
+        ],
+        "velocity_ned": [
+          0.00319,
+          0.00419,
+          0.0007
+        ],
+        "position_valid": true,
+        "heading_ned_rad": -1.83448,
+        "reset_counters": [
+          4.0,
+          2.0,
+          2.0
+        ],
+        "battery_fraction": 0.93818,
+        "preflight_pass": true,
+        "nav_state": 4.0,
+        "arming_state": 2.0,
+        "landed": false,
+        "mission_id": 267898253.0,
+        "mission_valid": true,
+        "mission_count": 2.0,
+        "raw_px4": {
+          "vehicle_local_position": "\nTOPIC: vehicle_local_position\n vehicle_local_position\n    timestamp: 234856000 (0.000000 seconds ago)\n    timestamp_sample: 234856000 (0 us before timestamp)\n    ref_timestamp: 4048000\n    ref_lat: 35.450939\n    ref_lon: 139.659695\n    x: -261.10034\n    y: -963.33783\n    z: -15.08684\n    delta_xy: [0.00000, 0.00000]\n    delta_z: -0.70536\n    vx: 0.00319\n    vy: 0.00419\n    vz: 0.00070\n    z_deriv: 0.00226\n    delta_vxy: [-0.00003, 0.00053]\n    delta_vz: -0.00006\n    ax: -0.01629\n    ay: 0.00247\n    az: -0.00509\n    heading: -1.83448\n    heading_var: 0.00206\n    unaided_heading: 2.86865\n    delta_heading: 0.26900\n    tilt_var: 0.00002\n    ref_alt: 0.71264\n    dist_bottom: 15.10431\n    dist_bottom_var: 60.28847\n    delta_dist_bottom: -0.70536\n    eph: 0.15140\n    epv: 0.16494\n    evh: 0.08696\n    evv: 0.05408\n    vxy_max: inf\n    vz_max: inf\n    hagl_min: inf\n    hagl_max_z: inf\n    hagl_max_xy: inf\n    xy_valid: True\n    z_valid: True\n    v_xy_valid: True\n    v_z_valid: True\n    xy_reset_counter: 4\n    z_reset_counter: 2\n    vxy_reset_counter: 4\n    vz_reset_counter: 1\n    heading_reset_counter: 2\n    heading_good_for_control: True\n    xy_global: True\n    z_global: True\n    dist_bottom_valid: False\n    dist_bottom_reset_counter: 2\n    dist_bottom_sensor_bitfield: 0\n    dead_reckoning: False\n",
+          "vehicle_status": "\nTOPIC: vehicle_status\n vehicle_status\n    timestamp: 234396000 (0.468000 seconds ago)\n    armed_time: 10900000\n    takeoff_time: 12628000\n    nav_state_timestamp: 201320000\n    valid_nav_states_mask: 2147411327\n    can_set_nav_states_mask: 8308095\n    arming_state: 2\n    latest_arming_reason: 3\n    latest_disarming_reason: 0\n    nav_state_user_intention: 4\n    nav_state: 4\n    executor_in_charge: 0\n    nav_state_display: 4\n    accepts_offboard_setpoints: False\n    hil_state: 0\n    vehicle_type: 1\n    failsafe: False\n    failsafe_and_user_took_over: False\n    failsafe_defer_state: 0\n    gcs_connection_lost: True\n    gcs_connection_lost_counter: 0\n    high_latency_data_link_lost: False\n    is_vtol: False\n    is_vtol_tailsitter: False\n    in_transition_mode: False\n    in_transition_to_fw: False\n    system_type: 2\n    system_id: 1\n    component_id: 1\n    safety_button_available: True\n    safety_off: True\n    power_input_valid: True\n    usb_connected: False\n    open_drone_id_system_present: False\n    open_drone_id_system_healthy: False\n    parachute_system_present: False\n    parachute_system_healthy: False\n    traffic_avoidance_system_present: False\n    rc_calibration_in_progress: False\n    calibration_enabled: False\n    pre_flight_checks_pass: True\n\n",
+          "vehicle_land_detected": "\nTOPIC: vehicle_land_detected\n vehicle_land_detected\n    timestamp: 234336000 (0.532000 seconds ago)\n    freefall: False\n    ground_contact: False\n    maybe_landed: False\n    landed: False\n    in_ground_effect: False\n    in_descend: False\n    has_low_throttle: False\n    vertical_movement: False\n    horizontal_movement: False\n    rotational_movement: False\n    close_to_ground_or_skipped_check: True\n    at_rest: False\n\n",
+          "mission_result": "\nTOPIC: mission_result\n mission_result\n    timestamp: 200120000 (34.756001 seconds ago)\n    mission_id: 267898253\n    geofence_id: 0\n    home_position_counter: 143\n    seq_reached: 0\n    seq_current: 1\n    seq_total: 2\n    item_changed_index: 0\n    item_do_jump_remaining: 0\n    valid: True\n    warning: False\n    finished: False\n    failure: False\n    item_do_jump_changed: False\n    execution_mode: 0\n\n",
+          "battery_status": "\nTOPIC: battery_status\n battery_status\n    timestamp: 234876000 (0.004000 seconds ago)\n    voltage_v: 16.08825\n    current_a: -1.00000\n    current_average_a: 0.17019\n    discharged_mah: 0.00000\n    remaining: 0.93818\n    scale: 1.00692\n    time_remaining_s: nan\n    temperature: nan\n    voltage_cell_v: [0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000]\n    max_cell_voltage_delta: 0.00000\n    full_charge_capacity_wh: 0.00000\n    remaining_capacity_wh: 0.00000\n    nominal_voltage: 0.00000\n    internal_resistance_estimate: 0.00500\n    ocv_estimate: 16.06825\n    ocv_estimate_filtered: 16.18000\n    volt_based_soc_estimate: 0.98889\n    voltage_prediction: 0.00000\n    prediction_error: 0.00000\n    estimation_covariance_norm: 6.01332\n    capacity: 0\n    cycle_count: 0\n    average_time_to_empty: 0\n    manufacture_date: 0\n    state_of_health: 0\n    max_error: 0\n    interface_error: 0\n    faults: 0\n    over_discharge_count: 0\n    connected: True\n    cell_count: 4\n    source: 0\n    priority: 0\n    id: 1\n    is_powering_off: False\n    is_required: False\n    warning: 0\n\n",
+          "vehicle_global_position": "\nTOPIC: vehicle_global_position\n vehicle_global_position\n    timestamp: 234880000 (0.004000 seconds ago)\n    timestamp_sample: 234880000 (0 us before timestamp)\n    lat: 35.448590\n    lon: 139.649060\n    alt: 15.79937\n    alt_ellipsoid: 15.79937\n    delta_alt: 0.70536\n    delta_terrain: 0.70536\n    eph: 0.15094\n    epv: 0.16459\n    terrain_alt: 0.69521\n    lat_lon_valid: True\n    alt_valid: True\n    lat_lon_reset_counter: 4\n    alt_reset_counter: 2\n    terrain_reset_counter: 2\n    terrain_alt_valid: False\n    dead_reckoning: False\n\n",
+          "home_position": "\nTOPIC: home_position\n home_position\n    timestamp: 10900000 (223.988007 seconds ago)\n    lat: 35.450939\n    lon: 139.659695\n    alt: 0.69041\n    x: -0.00272\n    y: -0.00929\n    z: 0.02222\n    roll: -0.00046\n    pitch: -0.00033\n    yaw: 1.57377\n    update_count: 143\n    valid_alt: True\n    valid_hpos: True\n    valid_lpos: True\n    manual_home: False\n\n"
+        },
+        "px4_relative_altitude_m": 15.10896,
+        "payload": {
+          "id": 29,
+          "xyz": [
+            386.16504761096513,
+            104.25919661221937,
+            15.257522356369495
+          ],
+          "quat_wxyz": [
+            -0.13031476259251912,
+            -8.018117444894952e-05,
+            -0.0011289087782654572,
+            0.9914720277377497
+          ],
+          "sensor_sim_s": 234.872,
+          "received_monotonic_s": 1224.83843939,
+          "age_s": 0.018633082999940598
+        },
+        "payload_joint": null,
+        "queue_lead": {
+          "id": 36,
+          "xyz": [
+            153.83285452510518,
+            -64.09336826549612,
+            1.0311430871042748
+          ],
+          "quat_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "sensor_sim_s": 234.872,
+          "received_monotonic_s": 1224.83843939,
+          "age_s": 0.018633082999940598
+        },
+        "queue_parcel": {
+          "id": 48,
+          "xyz": [
+            153.83285452510518,
+            -64.09336826549612,
+            0.5311430871042748
+          ],
+          "quat_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "sensor_sim_s": 234.872,
+          "received_monotonic_s": 1224.83843939,
+          "age_s": 0.018633082999940598
+        }
+      },
+      "stable_observations": [
+        {
+          "run_id": "yokohama-c410139f4ad7",
+          "world_sha256": "bcf30c60baccd7c86bf2477d3064f8bf6e1bd0d7e1b2ebcbf0631bc82205f821",
+          "phase": "PAYLOAD-VERIFY",
+          "sim_s": 727.628,
+          "wall_s": 779.1226820229999,
+          "vehicle": {
+            "id": 60,
+            "xyz": [
+              153.06785816176028,
+              -64.8970119061254,
+              3.3317311988629505
+            ],
+            "quat_wxyz": [
+              0.7069814136377376,
+              -0.0010838455717819267,
+              -0.0010985749093246372,
+              0.7072304427714713
+            ],
+            "sensor_sim_s": 727.644,
+            "received_monotonic_s": 1768.402354179,
+            "age_s": 0.006816042000082234
+          },
+          "local_ned": [
+            -430.6232,
+            -1195.94971,
+            -2.83818
+          ],
+          "velocity_ned": [
+            0.02094,
+            0.00367,
+            0.00125
+          ],
+          "position_valid": true,
+          "heading_ned_rad": 0.00012,
+          "reset_counters": [
+            4.0,
+            2.0,
+            2.0
+          ],
+          "battery_fraction": 0.80162,
+          "preflight_pass": true,
+          "nav_state": 4.0,
+          "arming_state": 2.0,
+          "landed": false,
+          "mission_id": 2592536806.0,
+          "mission_valid": true,
+          "mission_count": 2.0,
+          "raw_px4": {
+            "vehicle_local_position": "\nTOPIC: vehicle_local_position\n vehicle_local_position\n    timestamp: 727616000 (0.004000 seconds ago)\n    timestamp_sample: 727604000 (12000 us before timestamp)\n    ref_timestamp: 4048000\n    ref_lat: 35.450939\n    ref_lon: 139.659695\n    x: -430.62320\n    y: -1195.94971\n    z: -2.83818\n    delta_xy: [0.00000, 0.00000]\n    delta_z: -0.70536\n    vx: 0.02094\n    vy: 0.00367\n    vz: 0.00125\n    z_deriv: -0.00697\n    delta_vxy: [-0.00003, 0.00053]\n    delta_vz: -0.00006\n    ax: 0.00238\n    ay: -0.02974\n    az: 0.05724\n    heading: 0.00012\n    heading_var: 0.00896\n    unaided_heading: -1.59790\n    delta_heading: 0.26900\n    tilt_var: 0.00002\n    ref_alt: 0.71264\n    dist_bottom: 2.85732\n    dist_bottom_var: 163.62563\n    delta_dist_bottom: -0.70536\n    eph: 0.15101\n    epv: 0.16475\n    evh: 0.08660\n    evv: 0.05388\n    vxy_max: inf\n    vz_max: inf\n    hagl_min: inf\n    hagl_max_z: inf\n    hagl_max_xy: inf\n    xy_valid: True\n    z_valid: True\n    v_xy_valid: True\n    v_z_valid: True\n    xy_reset_counter: 4\n    z_reset_counter: 2\n    vxy_reset_counter: 4\n    vz_reset_counter: 1\n    heading_reset_counter: 2\n    heading_good_for_control: True\n    xy_global: True\n    z_global: True\n    dist_bottom_valid: False\n    dist_bottom_reset_counter: 2\n    dist_bottom_sensor_bitfield: 0\n    dead_reckoning: False\n",
+            "vehicle_status": "\nTOPIC: vehicle_status\n vehicle_status\n    timestamp: 727360000 (0.264000 seconds ago)\n    armed_time: 10900000\n    takeoff_time: 12628000\n    nav_state_timestamp: 692272000\n    valid_nav_states_mask: 2147411327\n    can_set_nav_states_mask: 8308095\n    arming_state: 2\n    latest_arming_reason: 3\n    latest_disarming_reason: 0\n    nav_state_user_intention: 4\n    nav_state: 4\n    executor_in_charge: 0\n    nav_state_display: 4\n    accepts_offboard_setpoints: False\n    hil_state: 0\n    vehicle_type: 1\n    failsafe: False\n    failsafe_and_user_took_over: False\n    failsafe_defer_state: 0\n    gcs_connection_lost: True\n    gcs_connection_lost_counter: 0\n    high_latency_data_link_lost: False\n    is_vtol: False\n    is_vtol_tailsitter: False\n    in_transition_mode: False\n    in_transition_to_fw: False\n    system_type: 2\n    system_id: 1\n    component_id: 1\n    safety_button_available: True\n    safety_off: True\n    power_input_valid: True\n    usb_connected: False\n    open_drone_id_system_present: False\n    open_drone_id_system_healthy: False\n    parachute_system_present: False\n    parachute_system_healthy: False\n    traffic_avoidance_system_present: False\n    rc_calibration_in_progress: False\n    calibration_enabled: False\n    pre_flight_checks_pass: True\n\n",
+            "vehicle_land_detected": "\nTOPIC: vehicle_land_detected\n vehicle_land_detected\n    timestamp: 726728000 (0.900000 seconds ago)\n    freefall: False\n    ground_contact: False\n    maybe_landed: False\n    landed: False\n    in_ground_effect: False\n    in_descend: False\n    has_low_throttle: False\n    vertical_movement: False\n    horizontal_movement: False\n    rotational_movement: False\n    close_to_ground_or_skipped_check: True\n    at_rest: False\n\n",
+            "mission_result": "\nTOPIC: mission_result\n mission_result\n    timestamp: 689764000 (37.872002 seconds ago)\n    mission_id: 2592536806\n    geofence_id: 0\n    home_position_counter: 143\n    seq_reached: 0\n    seq_current: 1\n    seq_total: 2\n    item_changed_index: 0\n    item_do_jump_remaining: 0\n    valid: True\n    warning: False\n    finished: False\n    failure: False\n    item_do_jump_changed: False\n    execution_mode: 0\n\n",
+            "battery_status": "\nTOPIC: battery_status\n battery_status\n    timestamp: 727636000 (0.004000 seconds ago)\n    voltage_v: 15.84240\n    current_a: -1.00000\n    current_average_a: 0.00001\n    discharged_mah: 0.00000\n    remaining: 0.80162\n    scale: 1.02254\n    time_remaining_s: nan\n    temperature: nan\n    voltage_cell_v: [0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000]\n    max_cell_voltage_delta: 0.00000\n    full_charge_capacity_wh: 0.00000\n    remaining_capacity_wh: 0.00000\n    nominal_voltage: 0.00000\n    internal_resistance_estimate: 0.00500\n    ocv_estimate: 15.82240\n    ocv_estimate_filtered: 16.18000\n    volt_based_soc_estimate: 0.98889\n    voltage_prediction: 0.00000\n    prediction_error: 0.00000\n    estimation_covariance_norm: 6.01332\n    capacity: 0\n    cycle_count: 0\n    average_time_to_empty: 0\n    manufacture_date: 0\n    state_of_health: 0\n    max_error: 0\n    interface_error: 0\n    faults: 0\n    over_discharge_count: 0\n    connected: True\n    cell_count: 4\n    source: 0\n    priority: 0\n    id: 1\n    is_powering_off: False\n    is_required: False\n    warning: 0\n\n",
+            "vehicle_global_position": "\nTOPIC: vehicle_global_position\n vehicle_global_position\n    timestamp: 727640000 (0.004000 seconds ago)\n    timestamp_sample: 727628000 (12000 us before timestamp)\n    lat: 35.447065\n    lon: 139.646493\n    alt: 3.55102\n    alt_ellipsoid: 3.55102\n    delta_alt: 0.70536\n    delta_terrain: 0.70536\n    eph: 0.15055\n    epv: 0.16440\n    terrain_alt: 0.69521\n    lat_lon_valid: True\n    alt_valid: True\n    lat_lon_reset_counter: 4\n    alt_reset_counter: 2\n    terrain_reset_counter: 2\n    terrain_alt_valid: False\n    dead_reckoning: False\n\n",
+            "home_position": "\nTOPIC: home_position\n home_position\n    timestamp: 10900000 (716.748047 seconds ago)\n    lat: 35.450939\n    lon: 139.659695\n    alt: 0.69041\n    x: -0.00272\n    y: -0.00929\n    z: 0.02222\n    roll: -0.00046\n    pitch: -0.00033\n    yaw: 1.57377\n    update_count: 143\n    valid_alt: True\n    valid_hpos: True\n    valid_lpos: True\n    manual_home: False\n\n"
+          },
+          "px4_relative_altitude_m": 2.86061,
+          "payload": {
+            "id": 29,
+            "xyz": [
+              153.07728848735002,
+              -64.91058970158116,
+              -0.15365764720490246
+            ],
+            "quat_wxyz": [
+              0.7069910940737258,
+              -0.0035391817072743885,
+              -0.0016229609375192251,
+              0.7072117314433312
+            ],
+            "sensor_sim_s": 727.644,
+            "received_monotonic_s": 1768.402354179,
+            "age_s": 0.006816042000082234
+          },
+          "payload_joint": {
+            "state": "detached",
+            "observed_sim_s": 726.616,
+            "wall_elapsed_s": 777.6759177299999
+          },
+          "queue_lead": {
+            "id": 36,
+            "xyz": [
+              165.83285452510518,
+              -64.09336826549612,
+              6.831143087104275
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 727.644,
+            "received_monotonic_s": 1768.402354179,
+            "age_s": 0.006816042000082234
+          },
+          "queue_parcel": {
+            "id": 48,
+            "xyz": [
+              153.83285452510518,
+              -64.09336826549612,
+              -0.018856912895725136
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 727.644,
+            "received_monotonic_s": 1768.402354179,
+            "age_s": 0.006816042000082234
+          }
+        },
+        {
+          "run_id": "yokohama-c410139f4ad7",
+          "world_sha256": "bcf30c60baccd7c86bf2477d3064f8bf6e1bd0d7e1b2ebcbf0631bc82205f821",
+          "phase": "PAYLOAD-VERIFY",
+          "sim_s": 727.756,
+          "wall_s": 779.474710148,
+          "vehicle": {
+            "id": 60,
+            "xyz": [
+              153.06929348641555,
+              -64.89376803528216,
+              3.3318926111324814
+            ],
+            "quat_wxyz": [
+              0.7069677074694531,
+              -0.0008460028487529914,
+              -0.0014628645720634683,
+              0.7072438086698316
+            ],
+            "sensor_sim_s": 727.776,
+            "received_monotonic_s": 1768.743544513,
+            "age_s": 0.017653083000141123
+          },
+          "local_ned": [
+            -430.61826,
+            -1195.94714,
+            -2.83915
+          ],
+          "velocity_ned": [
+            0.02083,
+            0.00023,
+            0.0063
+          ],
+          "position_valid": true,
+          "heading_ned_rad": 0.00015,
+          "reset_counters": [
+            4.0,
+            2.0,
+            2.0
+          ],
+          "battery_fraction": 0.80158,
+          "preflight_pass": true,
+          "nav_state": 4.0,
+          "arming_state": 2.0,
+          "landed": false,
+          "mission_id": 2592536806.0,
+          "mission_valid": true,
+          "mission_count": 2.0,
+          "raw_px4": {
+            "vehicle_local_position": "\nTOPIC: vehicle_local_position\n vehicle_local_position\n    timestamp: 727760000 (0.004000 seconds ago)\n    timestamp_sample: 727748000 (12000 us before timestamp)\n    ref_timestamp: 4048000\n    ref_lat: 35.450939\n    ref_lon: 139.659695\n    x: -430.61826\n    y: -1195.94714\n    z: -2.83915\n    delta_xy: [0.00000, 0.00000]\n    delta_z: -0.70536\n    vx: 0.02083\n    vy: 0.00023\n    vz: 0.00630\n    z_deriv: -0.00197\n    delta_vxy: [-0.00003, 0.00053]\n    delta_vz: -0.00006\n    ax: -0.01267\n    ay: -0.03186\n    az: 0.02835\n    heading: 0.00015\n    heading_var: 0.00899\n    unaided_heading: -1.59794\n    delta_heading: 0.26900\n    tilt_var: 0.00002\n    ref_alt: 0.71264\n    dist_bottom: 2.85977\n    dist_bottom_var: 163.65446\n    delta_dist_bottom: -0.70536\n    eph: 0.15165\n    epv: 0.16508\n    evh: 0.08706\n    evv: 0.05398\n    vxy_max: inf\n    vz_max: inf\n    hagl_min: inf\n    hagl_max_z: inf\n    hagl_max_xy: inf\n    xy_valid: True\n    z_valid: True\n    v_xy_valid: True\n    v_z_valid: True\n    xy_reset_counter: 4\n    z_reset_counter: 2\n    vxy_reset_counter: 4\n    vz_reset_counter: 1\n    heading_reset_counter: 2\n    heading_good_for_control: True\n    xy_global: True\n    z_global: True\n    dist_bottom_valid: False\n    dist_bottom_reset_counter: 2\n    dist_bottom_sensor_bitfield: 0\n    dead_reckoning: False\n",
+            "vehicle_status": "\nTOPIC: vehicle_status\n vehicle_status\n    timestamp: 727360000 (0.408000 seconds ago)\n    armed_time: 10900000\n    takeoff_time: 12628000\n    nav_state_timestamp: 692272000\n    valid_nav_states_mask: 2147411327\n    can_set_nav_states_mask: 8308095\n    arming_state: 2\n    latest_arming_reason: 3\n    latest_disarming_reason: 0\n    nav_state_user_intention: 4\n    nav_state: 4\n    executor_in_charge: 0\n    nav_state_display: 4\n    accepts_offboard_setpoints: False\n    hil_state: 0\n    vehicle_type: 1\n    failsafe: False\n    failsafe_and_user_took_over: False\n    failsafe_defer_state: 0\n    gcs_connection_lost: True\n    gcs_connection_lost_counter: 0\n    high_latency_data_link_lost: False\n    is_vtol: False\n    is_vtol_tailsitter: False\n    in_transition_mode: False\n    in_transition_to_fw: False\n    system_type: 2\n    system_id: 1\n    component_id: 1\n    safety_button_available: True\n    safety_off: True\n    power_input_valid: True\n    usb_connected: False\n    open_drone_id_system_present: False\n    open_drone_id_system_healthy: False\n    parachute_system_present: False\n    parachute_system_healthy: False\n    traffic_avoidance_system_present: False\n    rc_calibration_in_progress: False\n    calibration_enabled: False\n    pre_flight_checks_pass: True\n\n",
+            "vehicle_land_detected": "\nTOPIC: vehicle_land_detected\n vehicle_land_detected\n    timestamp: 727728000 (0.044000 seconds ago)\n    freefall: False\n    ground_contact: False\n    maybe_landed: False\n    landed: False\n    in_ground_effect: False\n    in_descend: False\n    has_low_throttle: False\n    vertical_movement: False\n    horizontal_movement: False\n    rotational_movement: False\n    close_to_ground_or_skipped_check: True\n    at_rest: False\n\n",
+            "mission_result": "\nTOPIC: mission_result\n mission_result\n    timestamp: 689764000 (38.015999 seconds ago)\n    mission_id: 2592536806\n    geofence_id: 0\n    home_position_counter: 143\n    seq_reached: 0\n    seq_current: 1\n    seq_total: 2\n    item_changed_index: 0\n    item_do_jump_remaining: 0\n    valid: True\n    warning: False\n    finished: False\n    failure: False\n    item_do_jump_changed: False\n    execution_mode: 0\n\n",
+            "battery_status": "\nTOPIC: battery_status\n battery_status\n    timestamp: 727784000 (0.000000 seconds ago)\n    voltage_v: 15.84232\n    current_a: -1.00000\n    current_average_a: 0.00001\n    discharged_mah: 0.00000\n    remaining: 0.80158\n    scale: 1.02254\n    time_remaining_s: nan\n    temperature: nan\n    voltage_cell_v: [0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000]\n    max_cell_voltage_delta: 0.00000\n    full_charge_capacity_wh: 0.00000\n    remaining_capacity_wh: 0.00000\n    nominal_voltage: 0.00000\n    internal_resistance_estimate: 0.00500\n    ocv_estimate: 15.82232\n    ocv_estimate_filtered: 16.18000\n    volt_based_soc_estimate: 0.98889\n    voltage_prediction: 0.00000\n    prediction_error: 0.00000\n    estimation_covariance_norm: 6.01332\n    capacity: 0\n    cycle_count: 0\n    average_time_to_empty: 0\n    manufacture_date: 0\n    state_of_health: 0\n    max_error: 0\n    interface_error: 0\n    faults: 0\n    over_discharge_count: 0\n    connected: True\n    cell_count: 4\n    source: 0\n    priority: 0\n    id: 1\n    is_powering_off: False\n    is_required: False\n    warning: 0\n\n",
+            "vehicle_global_position": "\nTOPIC: vehicle_global_position\n vehicle_global_position\n    timestamp: 727788000 (0.000000 seconds ago)\n    timestamp_sample: 727788000 (0 us before timestamp)\n    lat: 35.447065\n    lon: 139.646493\n    alt: 3.55196\n    alt_ellipsoid: 3.55196\n    delta_alt: 0.70536\n    delta_terrain: 0.70536\n    eph: 0.15161\n    epv: 0.16499\n    terrain_alt: 0.69521\n    lat_lon_valid: True\n    alt_valid: True\n    lat_lon_reset_counter: 4\n    alt_reset_counter: 2\n    terrain_reset_counter: 2\n    terrain_alt_valid: False\n    dead_reckoning: False\n\n",
+            "home_position": "\nTOPIC: home_position\n home_position\n    timestamp: 10900000 (716.892029 seconds ago)\n    lat: 35.450939\n    lon: 139.659695\n    alt: 0.69041\n    x: -0.00272\n    y: -0.00929\n    z: 0.02222\n    roll: -0.00046\n    pitch: -0.00033\n    yaw: 1.57377\n    update_count: 143\n    valid_alt: True\n    valid_hpos: True\n    valid_lpos: True\n    manual_home: False\n\n"
+          },
+          "px4_relative_altitude_m": 2.86155,
+          "payload": {
+            "id": 29,
+            "xyz": [
+              153.0772884873078,
+              -64.91058970156568,
+              -0.15352570670881172
+            ],
+            "quat_wxyz": [
+              0.7069910940721834,
+              -0.0035391822159469006,
+              -0.0016229611708632997,
+              0.707211731441792
+            ],
+            "sensor_sim_s": 727.776,
+            "received_monotonic_s": 1768.743544513,
+            "age_s": 0.017653083000141123
+          },
+          "payload_joint": {
+            "state": "detached",
+            "observed_sim_s": 726.616,
+            "wall_elapsed_s": 777.6759177299999
+          },
+          "queue_lead": {
+            "id": 36,
+            "xyz": [
+              165.83285452510518,
+              -64.09336826549612,
+              6.831143087104275
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 727.776,
+            "received_monotonic_s": 1768.743544513,
+            "age_s": 0.017653083000141123
+          },
+          "queue_parcel": {
+            "id": 48,
+            "xyz": [
+              153.83285452510518,
+              -64.09336826549612,
+              -0.018856912895725136
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 727.776,
+            "received_monotonic_s": 1768.743544513,
+            "age_s": 0.017653083000141123
+          }
+        },
+        {
+          "run_id": "yokohama-c410139f4ad7",
+          "world_sha256": "bcf30c60baccd7c86bf2477d3064f8bf6e1bd0d7e1b2ebcbf0631bc82205f821",
+          "phase": "PAYLOAD-VERIFY",
+          "sim_s": 728.02,
+          "wall_s": 779.8160064809999,
+          "vehicle": {
+            "id": 60,
+            "xyz": [
+              153.07029006257068,
+              -64.88740069480893,
+              3.3304050826107376
+            ],
+            "quat_wxyz": [
+              0.7069377341880535,
+              -0.00033858496534521046,
+              -0.0017698457835210496,
+              0.7072734923543966
+            ],
+            "sensor_sim_s": 728.08,
+            "received_monotonic_s": 1769.088231888,
+            "age_s": 0.01425733299993226
+          },
+          "local_ned": [
+            -430.61035,
+            -1195.94446,
+            -2.84108
+          ],
+          "velocity_ned": [
+            0.01626,
+            -0.00759,
+            0.01253
+          ],
+          "position_valid": true,
+          "heading_ned_rad": 4e-05,
+          "reset_counters": [
+            4.0,
+            2.0,
+            2.0
+          ],
+          "battery_fraction": 0.8015,
+          "preflight_pass": true,
+          "nav_state": 4.0,
+          "arming_state": 2.0,
+          "landed": false,
+          "mission_id": 2592536806.0,
+          "mission_valid": true,
+          "mission_count": 2.0,
+          "raw_px4": {
+            "vehicle_local_position": "\nTOPIC: vehicle_local_position\n vehicle_local_position\n    timestamp: 728056000 (0.004000 seconds ago)\n    timestamp_sample: 728056000 (0 us before timestamp)\n    ref_timestamp: 4048000\n    ref_lat: 35.450939\n    ref_lon: 139.659695\n    x: -430.61035\n    y: -1195.94446\n    z: -2.84108\n    delta_xy: [0.00000, 0.00000]\n    delta_z: -0.70536\n    vx: 0.01626\n    vy: -0.00759\n    vz: 0.01253\n    z_deriv: 0.00282\n    delta_vxy: [-0.00003, 0.00053]\n    delta_vz: -0.00006\n    ax: -0.02172\n    ay: -0.03147\n    az: 0.01974\n    heading: 0.00004\n    heading_var: 0.00904\n    unaided_heading: -1.59806\n    delta_heading: 0.26900\n    tilt_var: 0.00002\n    ref_alt: 0.71264\n    dist_bottom: 2.86323\n    dist_bottom_var: 163.71854\n    delta_dist_bottom: -0.70536\n    eph: 0.15205\n    epv: 0.16531\n    evh: 0.08749\n    evv: 0.05417\n    vxy_max: inf\n    vz_max: inf\n    hagl_min: inf\n    hagl_max_z: inf\n    hagl_max_xy: inf\n    xy_valid: True\n    z_valid: True\n    v_xy_valid: True\n    v_z_valid: True\n    xy_reset_counter: 4\n    z_reset_counter: 2\n    vxy_reset_counter: 4\n    vz_reset_counter: 1\n    heading_reset_counter: 2\n    heading_good_for_control: True\n    xy_global: True\n    z_global: True\n    dist_bottom_valid: False\n    dist_bottom_reset_counter: 2\n    dist_bottom_sensor_bitfield: 0\n    dead_reckoning: False\n",
+            "vehicle_status": "\nTOPIC: vehicle_status\n vehicle_status\n    timestamp: 727868000 (0.196000 seconds ago)\n    armed_time: 10900000\n    takeoff_time: 12628000\n    nav_state_timestamp: 692272000\n    valid_nav_states_mask: 2147411327\n    can_set_nav_states_mask: 8308095\n    arming_state: 2\n    latest_arming_reason: 3\n    latest_disarming_reason: 0\n    nav_state_user_intention: 4\n    nav_state: 4\n    executor_in_charge: 0\n    nav_state_display: 4\n    accepts_offboard_setpoints: False\n    hil_state: 0\n    vehicle_type: 1\n    failsafe: False\n    failsafe_and_user_took_over: False\n    failsafe_defer_state: 0\n    gcs_connection_lost: True\n    gcs_connection_lost_counter: 0\n    high_latency_data_link_lost: False\n    is_vtol: False\n    is_vtol_tailsitter: False\n    in_transition_mode: False\n    in_transition_to_fw: False\n    system_type: 2\n    system_id: 1\n    component_id: 1\n    safety_button_available: True\n    safety_off: True\n    power_input_valid: True\n    usb_connected: False\n    open_drone_id_system_present: False\n    open_drone_id_system_healthy: False\n    parachute_system_present: False\n    parachute_system_healthy: False\n    traffic_avoidance_system_present: False\n    rc_calibration_in_progress: False\n    calibration_enabled: False\n    pre_flight_checks_pass: True\n\n",
+            "vehicle_land_detected": "\nTOPIC: vehicle_land_detected\n vehicle_land_detected\n    timestamp: 727728000 (0.340000 seconds ago)\n    freefall: False\n    ground_contact: False\n    maybe_landed: False\n    landed: False\n    in_ground_effect: False\n    in_descend: False\n    has_low_throttle: False\n    vertical_movement: False\n    horizontal_movement: False\n    rotational_movement: False\n    close_to_ground_or_skipped_check: True\n    at_rest: False\n\n",
+            "mission_result": "\nTOPIC: mission_result\n mission_result\n    timestamp: 689764000 (38.312000 seconds ago)\n    mission_id: 2592536806\n    geofence_id: 0\n    home_position_counter: 143\n    seq_reached: 0\n    seq_current: 1\n    seq_total: 2\n    item_changed_index: 0\n    item_do_jump_remaining: 0\n    valid: True\n    warning: False\n    finished: False\n    failure: False\n    item_do_jump_changed: False\n    execution_mode: 0\n\n",
+            "battery_status": "\nTOPIC: battery_status\n battery_status\n    timestamp: 728084000 (0.000000 seconds ago)\n    voltage_v: 15.84217\n    current_a: -1.00000\n    current_average_a: 0.00001\n    discharged_mah: 0.00000\n    remaining: 0.80150\n    scale: 1.02255\n    time_remaining_s: nan\n    temperature: nan\n    voltage_cell_v: [0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000]\n    max_cell_voltage_delta: 0.00000\n    full_charge_capacity_wh: 0.00000\n    remaining_capacity_wh: 0.00000\n    nominal_voltage: 0.00000\n    internal_resistance_estimate: 0.00500\n    ocv_estimate: 15.82217\n    ocv_estimate_filtered: 16.18000\n    volt_based_soc_estimate: 0.98889\n    voltage_prediction: 0.00000\n    prediction_error: 0.00000\n    estimation_covariance_norm: 6.01332\n    capacity: 0\n    cycle_count: 0\n    average_time_to_empty: 0\n    manufacture_date: 0\n    state_of_health: 0\n    max_error: 0\n    interface_error: 0\n    faults: 0\n    over_discharge_count: 0\n    connected: True\n    cell_count: 4\n    source: 0\n    priority: 0\n    id: 1\n    is_powering_off: False\n    is_required: False\n    warning: 0\n\n",
+            "vehicle_global_position": "\nTOPIC: vehicle_global_position\n vehicle_global_position\n    timestamp: 728088000 (0.000000 seconds ago)\n    timestamp_sample: 728088000 (0 us before timestamp)\n    lat: 35.447065\n    lon: 139.646493\n    alt: 3.55381\n    alt_ellipsoid: 3.55381\n    delta_alt: 0.70536\n    delta_terrain: 0.70536\n    eph: 0.15030\n    epv: 0.16427\n    terrain_alt: 0.69521\n    lat_lon_valid: True\n    alt_valid: True\n    lat_lon_reset_counter: 4\n    alt_reset_counter: 2\n    terrain_reset_counter: 2\n    terrain_alt_valid: False\n    dead_reckoning: False\n\n",
+            "home_position": "\nTOPIC: home_position\n home_position\n    timestamp: 10900000 (717.192017 seconds ago)\n    lat: 35.450939\n    lon: 139.659695\n    alt: 0.69041\n    x: -0.00272\n    y: -0.00929\n    z: 0.02222\n    roll: -0.00046\n    pitch: -0.00033\n    yaw: 1.57377\n    update_count: 143\n    valid_alt: True\n    valid_hpos: True\n    valid_lpos: True\n    manual_home: False\n\n"
+          },
+          "px4_relative_altitude_m": 2.8634,
+          "payload": {
+            "id": 29,
+            "xyz": [
+              153.0772884872106,
+              -64.91058970153004,
+              -0.15322184374811787
+            ],
+            "quat_wxyz": [
+              0.7069910940686323,
+              -0.003539183387435394,
+              -0.0016229617082619034,
+              0.707211731438246
+            ],
+            "sensor_sim_s": 728.08,
+            "received_monotonic_s": 1769.088231888,
+            "age_s": 0.01425733299993226
+          },
+          "payload_joint": {
+            "state": "detached",
+            "observed_sim_s": 726.616,
+            "wall_elapsed_s": 777.6759177299999
+          },
+          "queue_lead": {
+            "id": 36,
+            "xyz": [
+              165.83285452510518,
+              -64.09336826549612,
+              6.831143087104275
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 728.08,
+            "received_monotonic_s": 1769.088231888,
+            "age_s": 0.01425733299993226
+          },
+          "queue_parcel": {
+            "id": 48,
+            "xyz": [
+              153.83285452510518,
+              -64.09336826549612,
+              -0.018856912895725136
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 728.08,
+            "received_monotonic_s": 1769.088231888,
+            "age_s": 0.01425733299993226
+          }
+        },
+        {
+          "run_id": "yokohama-c410139f4ad7",
+          "world_sha256": "bcf30c60baccd7c86bf2477d3064f8bf6e1bd0d7e1b2ebcbf0631bc82205f821",
+          "phase": "PAYLOAD-VERIFY",
+          "sim_s": 728.224,
+          "wall_s": 780.178086231,
+          "vehicle": {
+            "id": 60,
+            "xyz": [
+              153.06968212242427,
+              -64.88487210021486,
+              3.3287703161031423
+            ],
+            "quat_wxyz": [
+              0.7069288752970546,
+              -0.0001169825499250712,
+              -0.0018084513597210687,
+              0.7072823206400709
+            ],
+            "sensor_sim_s": 728.24,
+            "received_monotonic_s": 1769.250048555,
+            "age_s": 0.21452512500013654
+          },
+          "local_ned": [
+            -430.60638,
+            -1195.94287,
+            -2.8399
+          ],
+          "velocity_ned": [
+            0.01292,
+            -0.01062,
+            0.01562
+          ],
+          "position_valid": true,
+          "heading_ned_rad": 0.00014,
+          "reset_counters": [
+            4.0,
+            2.0,
+            2.0
+          ],
+          "battery_fraction": 0.80145,
+          "preflight_pass": true,
+          "nav_state": 4.0,
+          "arming_state": 2.0,
+          "landed": false,
+          "mission_id": 2592536806.0,
+          "mission_valid": true,
+          "mission_count": 2.0,
+          "raw_px4": {
+            "vehicle_local_position": "\nTOPIC: vehicle_local_position\n vehicle_local_position\n    timestamp: 728252000 (0.000000 seconds ago)\n    timestamp_sample: 728248000 (4000 us before timestamp)\n    ref_timestamp: 4048000\n    ref_lat: 35.450939\n    ref_lon: 139.659695\n    x: -430.60638\n    y: -1195.94287\n    z: -2.83990\n    delta_xy: [0.00000, 0.00000]\n    delta_z: -0.70536\n    vx: 0.01292\n    vy: -0.01062\n    vz: 0.01562\n    z_deriv: 0.00665\n    delta_vxy: [-0.00003, 0.00053]\n    delta_vz: -0.00006\n    ax: -0.02924\n    ay: -0.02997\n    az: 0.00546\n    heading: 0.00014\n    heading_var: 0.00907\n    unaided_heading: -1.59809\n    delta_heading: 0.26900\n    tilt_var: 0.00002\n    ref_alt: 0.71264\n    dist_bottom: 2.85900\n    dist_bottom_var: 163.75699\n    delta_dist_bottom: -0.70536\n    eph: 0.15177\n    epv: 0.16513\n    evh: 0.08726\n    evv: 0.05409\n    vxy_max: inf\n    vz_max: inf\n    hagl_min: inf\n    hagl_max_z: inf\n    hagl_max_xy: inf\n    xy_valid: True\n    z_valid: True\n    v_xy_valid: True\n    v_z_valid: True\n    xy_reset_counter: 4\n    z_reset_counter: 2\n    vxy_reset_counter: 4\n    vz_reset_counter: 1\n    heading_reset_counter: 2\n    heading_good_for_control: True\n    xy_global: True\n    z_global: True\n    dist_bottom_valid: False\n    dist_bottom_reset_counter: 2\n    dist_bottom_sensor_bitfield: 0\n    dead_reckoning: False\n",
+            "vehicle_status": "\nTOPIC: vehicle_status\n vehicle_status\n    timestamp: 727868000 (0.384000 seconds ago)\n    armed_time: 10900000\n    takeoff_time: 12628000\n    nav_state_timestamp: 692272000\n    valid_nav_states_mask: 2147411327\n    can_set_nav_states_mask: 8308095\n    arming_state: 2\n    latest_arming_reason: 3\n    latest_disarming_reason: 0\n    nav_state_user_intention: 4\n    nav_state: 4\n    executor_in_charge: 0\n    nav_state_display: 4\n    accepts_offboard_setpoints: False\n    hil_state: 0\n    vehicle_type: 1\n    failsafe: False\n    failsafe_and_user_took_over: False\n    failsafe_defer_state: 0\n    gcs_connection_lost: True\n    gcs_connection_lost_counter: 0\n    high_latency_data_link_lost: False\n    is_vtol: False\n    is_vtol_tailsitter: False\n    in_transition_mode: False\n    in_transition_to_fw: False\n    system_type: 2\n    system_id: 1\n    component_id: 1\n    safety_button_available: True\n    safety_off: True\n    power_input_valid: True\n    usb_connected: False\n    open_drone_id_system_present: False\n    open_drone_id_system_healthy: False\n    parachute_system_present: False\n    parachute_system_healthy: False\n    traffic_avoidance_system_present: False\n    rc_calibration_in_progress: False\n    calibration_enabled: False\n    pre_flight_checks_pass: True\n\n",
+            "vehicle_land_detected": "\nTOPIC: vehicle_land_detected\n vehicle_land_detected\n    timestamp: 727728000 (0.524000 seconds ago)\n    freefall: False\n    ground_contact: False\n    maybe_landed: False\n    landed: False\n    in_ground_effect: False\n    in_descend: False\n    has_low_throttle: False\n    vertical_movement: False\n    horizontal_movement: False\n    rotational_movement: False\n    close_to_ground_or_skipped_check: True\n    at_rest: False\n\n",
+            "mission_result": "\nTOPIC: mission_result\n mission_result\n    timestamp: 689764000 (38.487999 seconds ago)\n    mission_id: 2592536806\n    geofence_id: 0\n    home_position_counter: 143\n    seq_reached: 0\n    seq_current: 1\n    seq_total: 2\n    item_changed_index: 0\n    item_do_jump_remaining: 0\n    valid: True\n    warning: False\n    finished: False\n    failure: False\n    item_do_jump_changed: False\n    execution_mode: 0\n\n",
+            "battery_status": "\nTOPIC: battery_status\n battery_status\n    timestamp: 728244000 (0.008000 seconds ago)\n    voltage_v: 15.84209\n    current_a: -1.00000\n    current_average_a: 0.00001\n    discharged_mah: 0.00000\n    remaining: 0.80145\n    scale: 1.02256\n    time_remaining_s: nan\n    temperature: nan\n    voltage_cell_v: [0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000]\n    max_cell_voltage_delta: 0.00000\n    full_charge_capacity_wh: 0.00000\n    remaining_capacity_wh: 0.00000\n    nominal_voltage: 0.00000\n    internal_resistance_estimate: 0.00500\n    ocv_estimate: 15.82209\n    ocv_estimate_filtered: 16.18000\n    volt_based_soc_estimate: 0.98889\n    voltage_prediction: 0.00000\n    prediction_error: 0.00000\n    estimation_covariance_norm: 6.01332\n    capacity: 0\n    cycle_count: 0\n    average_time_to_empty: 0\n    manufacture_date: 0\n    state_of_health: 0\n    max_error: 0\n    interface_error: 0\n    faults: 0\n    over_discharge_count: 0\n    connected: True\n    cell_count: 4\n    source: 0\n    priority: 0\n    id: 1\n    is_powering_off: False\n    is_required: False\n    warning: 0\n\n",
+            "vehicle_global_position": "\nTOPIC: vehicle_global_position\n vehicle_global_position\n    timestamp: 728252000 (0.000000 seconds ago)\n    timestamp_sample: 728248000 (4000 us before timestamp)\n    lat: 35.447065\n    lon: 139.646493\n    alt: 3.55253\n    alt_ellipsoid: 3.55253\n    delta_alt: 0.70536\n    delta_terrain: 0.70536\n    eph: 0.15177\n    epv: 0.16513\n    terrain_alt: 0.69521\n    lat_lon_valid: True\n    alt_valid: True\n    lat_lon_reset_counter: 4\n    alt_reset_counter: 2\n    terrain_reset_counter: 2\n    terrain_alt_valid: False\n    dead_reckoning: False\n\n",
+            "home_position": "\nTOPIC: home_position\n home_position\n    timestamp: 10900000 (717.351990 seconds ago)\n    lat: 35.450939\n    lon: 139.659695\n    alt: 0.69041\n    x: -0.00272\n    y: -0.00929\n    z: 0.02222\n    roll: -0.00046\n    pitch: -0.00033\n    yaw: 1.57377\n    update_count: 143\n    valid_alt: True\n    valid_hpos: True\n    valid_lpos: True\n    manual_home: False\n\n"
+          },
+          "px4_relative_altitude_m": 2.86212,
+          "payload": {
+            "id": 29,
+            "xyz": [
+              153.07728848715945,
+              -64.91058970151128,
+              -0.15306191587406848
+            ],
+            "quat_wxyz": [
+              0.7069910940667626,
+              -0.0035391840040084385,
+              -0.001622961991103343,
+              0.7072117314363806
+            ],
+            "sensor_sim_s": 728.24,
+            "received_monotonic_s": 1769.250048555,
+            "age_s": 0.21452512500013654
+          },
+          "payload_joint": {
+            "state": "detached",
+            "observed_sim_s": 726.616,
+            "wall_elapsed_s": 777.6759177299999
+          },
+          "queue_lead": {
+            "id": 36,
+            "xyz": [
+              165.83285452510518,
+              -64.09336826549612,
+              6.831143087104275
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 728.24,
+            "received_monotonic_s": 1769.250048555,
+            "age_s": 0.21452512500013654
+          },
+          "queue_parcel": {
+            "id": 48,
+            "xyz": [
+              153.83285452510518,
+              -64.09336826549612,
+              -0.018856912895725136
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 728.24,
+            "received_monotonic_s": 1769.250048555,
+            "age_s": 0.21452512500013654
+          }
+        },
+        {
+          "run_id": "yokohama-c410139f4ad7",
+          "world_sha256": "bcf30c60baccd7c86bf2477d3064f8bf6e1bd0d7e1b2ebcbf0631bc82205f821",
+          "phase": "PAYLOAD-VERIFY",
+          "sim_s": 728.52,
+          "wall_s": 780.51475344,
+          "vehicle": {
+            "id": 60,
+            "xyz": [
+              153.06689725757124,
+              -64.88201951136799,
+              3.3253748269597936
+            ],
+            "quat_wxyz": [
+              0.7069127650256868,
+              -0.00015603422719250837,
+              -0.0018459500236164153,
+              0.7072983180847869
+            ],
+            "sensor_sim_s": 728.54,
+            "received_monotonic_s": 1769.796190638,
+            "age_s": 0.0050507919997926365
+          },
+          "local_ned": [
+            -430.60406,
+            -1195.94092,
+            -2.83514
+          ],
+          "velocity_ned": [
+            0.00742,
+            -0.01225,
+            0.01504
+          ],
+          "position_valid": true,
+          "heading_ned_rad": 0.00026,
+          "reset_counters": [
+            4.0,
+            2.0,
+            2.0
+          ],
+          "battery_fraction": 0.80137,
+          "preflight_pass": true,
+          "nav_state": 4.0,
+          "arming_state": 2.0,
+          "landed": false,
+          "mission_id": 2592536806.0,
+          "mission_valid": true,
+          "mission_count": 2.0,
+          "raw_px4": {
+            "vehicle_local_position": "\nTOPIC: vehicle_local_position\n vehicle_local_position\n    timestamp: 728508000 (0.008000 seconds ago)\n    timestamp_sample: 728504000 (4000 us before timestamp)\n    ref_timestamp: 4048000\n    ref_lat: 35.450939\n    ref_lon: 139.659695\n    x: -430.60406\n    y: -1195.94092\n    z: -2.83514\n    delta_xy: [0.00000, 0.00000]\n    delta_z: -0.70536\n    vx: 0.00742\n    vy: -0.01225\n    vz: 0.01504\n    z_deriv: 0.00903\n    delta_vxy: [-0.00003, 0.00053]\n    delta_vz: -0.00006\n    ax: -0.02844\n    ay: -0.02324\n    az: -0.01225\n    heading: 0.00026\n    heading_var: 0.00911\n    unaided_heading: -1.59818\n    delta_heading: 0.26900\n    tilt_var: 0.00002\n    ref_alt: 0.71264\n    dist_bottom: 2.85399\n    dist_bottom_var: 163.80826\n    delta_dist_bottom: -0.70536\n    eph: 0.15141\n    epv: 0.16494\n    evh: 0.08699\n    evv: 0.05401\n    vxy_max: inf\n    vz_max: inf\n    hagl_min: inf\n    hagl_max_z: inf\n    hagl_max_xy: inf\n    xy_valid: True\n    z_valid: True\n    v_xy_valid: True\n    v_z_valid: True\n    xy_reset_counter: 4\n    z_reset_counter: 2\n    vxy_reset_counter: 4\n    vz_reset_counter: 1\n    heading_reset_counter: 2\n    heading_good_for_control: True\n    xy_global: True\n    z_global: True\n    dist_bottom_valid: False\n    dist_bottom_reset_counter: 2\n    dist_bottom_sensor_bitfield: 0\n    dead_reckoning: False\n",
+            "vehicle_status": "\nTOPIC: vehicle_status\n vehicle_status\n    timestamp: 728376000 (0.144000 seconds ago)\n    armed_time: 10900000\n    takeoff_time: 12628000\n    nav_state_timestamp: 692272000\n    valid_nav_states_mask: 2147411327\n    can_set_nav_states_mask: 8308095\n    arming_state: 2\n    latest_arming_reason: 3\n    latest_disarming_reason: 0\n    nav_state_user_intention: 4\n    nav_state: 4\n    executor_in_charge: 0\n    nav_state_display: 4\n    accepts_offboard_setpoints: False\n    hil_state: 0\n    vehicle_type: 1\n    failsafe: False\n    failsafe_and_user_took_over: False\n    failsafe_defer_state: 0\n    gcs_connection_lost: True\n    gcs_connection_lost_counter: 0\n    high_latency_data_link_lost: False\n    is_vtol: False\n    is_vtol_tailsitter: False\n    in_transition_mode: False\n    in_transition_to_fw: False\n    system_type: 2\n    system_id: 1\n    component_id: 1\n    safety_button_available: True\n    safety_off: True\n    power_input_valid: True\n    usb_connected: False\n    open_drone_id_system_present: False\n    open_drone_id_system_healthy: False\n    parachute_system_present: False\n    parachute_system_healthy: False\n    traffic_avoidance_system_present: False\n    rc_calibration_in_progress: False\n    calibration_enabled: False\n    pre_flight_checks_pass: True\n\n",
+            "vehicle_land_detected": "\nTOPIC: vehicle_land_detected\n vehicle_land_detected\n    timestamp: 727728000 (0.796000 seconds ago)\n    freefall: False\n    ground_contact: False\n    maybe_landed: False\n    landed: False\n    in_ground_effect: False\n    in_descend: False\n    has_low_throttle: False\n    vertical_movement: False\n    horizontal_movement: False\n    rotational_movement: False\n    close_to_ground_or_skipped_check: True\n    at_rest: False\n\n",
+            "mission_result": "\nTOPIC: mission_result\n mission_result\n    timestamp: 689764000 (38.764000 seconds ago)\n    mission_id: 2592536806\n    geofence_id: 0\n    home_position_counter: 143\n    seq_reached: 0\n    seq_current: 1\n    seq_total: 2\n    item_changed_index: 0\n    item_do_jump_remaining: 0\n    valid: True\n    warning: False\n    finished: False\n    failure: False\n    item_do_jump_changed: False\n    execution_mode: 0\n\n",
+            "battery_status": "\nTOPIC: battery_status\n battery_status\n    timestamp: 728536000 (0.000000 seconds ago)\n    voltage_v: 15.84195\n    current_a: -1.00000\n    current_average_a: 0.00001\n    discharged_mah: 0.00000\n    remaining: 0.80137\n    scale: 1.02257\n    time_remaining_s: nan\n    temperature: nan\n    voltage_cell_v: [0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000]\n    max_cell_voltage_delta: 0.00000\n    full_charge_capacity_wh: 0.00000\n    remaining_capacity_wh: 0.00000\n    nominal_voltage: 0.00000\n    internal_resistance_estimate: 0.00500\n    ocv_estimate: 15.82195\n    ocv_estimate_filtered: 16.18000\n    volt_based_soc_estimate: 0.98889\n    voltage_prediction: 0.00000\n    prediction_error: 0.00000\n    estimation_covariance_norm: 6.01332\n    capacity: 0\n    cycle_count: 0\n    average_time_to_empty: 0\n    manufacture_date: 0\n    state_of_health: 0\n    max_error: 0\n    interface_error: 0\n    faults: 0\n    over_discharge_count: 0\n    connected: True\n    cell_count: 4\n    source: 0\n    priority: 0\n    id: 1\n    is_powering_off: False\n    is_required: False\n    warning: 0\n\n",
+            "vehicle_global_position": "\nTOPIC: vehicle_global_position\n vehicle_global_position\n    timestamp: 728540000 (0.000000 seconds ago)\n    timestamp_sample: 728536000 (4000 us before timestamp)\n    lat: 35.447065\n    lon: 139.646493\n    alt: 3.54725\n    alt_ellipsoid: 3.54725\n    delta_alt: 0.70536\n    delta_terrain: 0.70536\n    eph: 0.15136\n    epv: 0.16485\n    terrain_alt: 0.69521\n    lat_lon_valid: True\n    alt_valid: True\n    lat_lon_reset_counter: 4\n    alt_reset_counter: 2\n    terrain_reset_counter: 2\n    terrain_alt_valid: False\n    dead_reckoning: False\n\n",
+            "home_position": "\nTOPIC: home_position\n home_position\n    timestamp: 10900000 (717.644043 seconds ago)\n    lat: 35.450939\n    lon: 139.659695\n    alt: 0.69041\n    x: -0.00272\n    y: -0.00929\n    z: 0.02222\n    roll: -0.00046\n    pitch: -0.00033\n    yaw: 1.57377\n    update_count: 143\n    valid_alt: True\n    valid_hpos: True\n    valid_lpos: True\n    manual_home: False\n\n"
+          },
+          "px4_relative_altitude_m": 2.85684,
+          "payload": {
+            "id": 29,
+            "xyz": [
+              153.07728848706353,
+              -64.91058970147611,
+              -0.15276205111022587
+            ],
+            "quat_wxyz": [
+              0.7069910940632587,
+              -0.0035391851600831874,
+              -0.0016229625214311794,
+              0.7072117314328807
+            ],
+            "sensor_sim_s": 728.54,
+            "received_monotonic_s": 1769.796190638,
+            "age_s": 0.0050507919997926365
+          },
+          "payload_joint": {
+            "state": "detached",
+            "observed_sim_s": 726.616,
+            "wall_elapsed_s": 777.6759177299999
+          },
+          "queue_lead": {
+            "id": 36,
+            "xyz": [
+              165.83285452510518,
+              -64.09336826549612,
+              6.831143087104275
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 728.54,
+            "received_monotonic_s": 1769.796190638,
+            "age_s": 0.0050507919997926365
+          },
+          "queue_parcel": {
+            "id": 48,
+            "xyz": [
+              153.83285452510518,
+              -64.09336826549612,
+              -0.018856912895725136
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 728.54,
+            "received_monotonic_s": 1769.796190638,
+            "age_s": 0.0050507919997926365
+          }
+        },
+        {
+          "run_id": "yokohama-c410139f4ad7",
+          "world_sha256": "bcf30c60baccd7c86bf2477d3064f8bf6e1bd0d7e1b2ebcbf0631bc82205f821",
+          "phase": "PAYLOAD-VERIFY",
+          "sim_s": 728.728,
+          "wall_s": 780.8796576479999,
+          "vehicle": {
+            "id": 60,
+            "xyz": [
+              153.06361379631014,
+              -64.88139115167634,
+              3.323444018375443
+            ],
+            "quat_wxyz": [
+              0.7068919712350399,
+              -0.0004494622294959193,
+              -0.001932730051236501,
+              0.707318742535282
+            ],
+            "sensor_sim_s": 728.752,
+            "received_monotonic_s": 1770.007925555,
+            "age_s": 0.15821662500002276
+          },
+          "local_ned": [
+            -430.60275,
+            -1195.93799,
+            -2.8324
+          ],
+          "velocity_ned": [
+            0.00297,
+            -0.01246,
+            0.01245
+          ],
+          "position_valid": true,
+          "heading_ned_rad": 0.00017,
+          "reset_counters": [
+            4.0,
+            2.0,
+            2.0
+          ],
+          "battery_fraction": 0.80132,
+          "preflight_pass": true,
+          "nav_state": 4.0,
+          "arming_state": 2.0,
+          "landed": false,
+          "mission_id": 2592536806.0,
+          "mission_valid": true,
+          "mission_count": 2.0,
+          "raw_px4": {
+            "vehicle_local_position": "\nTOPIC: vehicle_local_position\n vehicle_local_position\n    timestamp: 728752000 (0.000000 seconds ago)\n    timestamp_sample: 728744000 (8000 us before timestamp)\n    ref_timestamp: 4048000\n    ref_lat: 35.450939\n    ref_lon: 139.659695\n    x: -430.60275\n    y: -1195.93799\n    z: -2.83240\n    delta_xy: [0.00000, 0.00000]\n    delta_z: -0.70536\n    vx: 0.00297\n    vy: -0.01246\n    vz: 0.01245\n    z_deriv: 0.00731\n    delta_vxy: [-0.00003, 0.00053]\n    delta_vz: -0.00006\n    ax: -0.01961\n    ay: -0.02353\n    az: 0.00173\n    heading: 0.00017\n    heading_var: 0.00915\n    unaided_heading: -1.59833\n    delta_heading: 0.26900\n    tilt_var: 0.00002\n    ref_alt: 0.71264\n    dist_bottom: 2.85267\n    dist_bottom_var: 163.85632\n    delta_dist_bottom: -0.70536\n    eph: 0.15192\n    epv: 0.16519\n    evh: 0.08738\n    evv: 0.05407\n    vxy_max: inf\n    vz_max: inf\n    hagl_min: inf\n    hagl_max_z: inf\n    hagl_max_xy: inf\n    xy_valid: True\n    z_valid: True\n    v_xy_valid: True\n    v_z_valid: True\n    xy_reset_counter: 4\n    z_reset_counter: 2\n    vxy_reset_counter: 4\n    vz_reset_counter: 1\n    heading_reset_counter: 2\n    heading_good_for_control: True\n    xy_global: True\n    z_global: True\n    dist_bottom_valid: False\n    dist_bottom_reset_counter: 2\n    dist_bottom_sensor_bitfield: 0\n    dead_reckoning: False\n",
+            "vehicle_status": "\nTOPIC: vehicle_status\n vehicle_status\n    timestamp: 728376000 (0.376000 seconds ago)\n    armed_time: 10900000\n    takeoff_time: 12628000\n    nav_state_timestamp: 692272000\n    valid_nav_states_mask: 2147411327\n    can_set_nav_states_mask: 8308095\n    arming_state: 2\n    latest_arming_reason: 3\n    latest_disarming_reason: 0\n    nav_state_user_intention: 4\n    nav_state: 4\n    executor_in_charge: 0\n    nav_state_display: 4\n    accepts_offboard_setpoints: False\n    hil_state: 0\n    vehicle_type: 1\n    failsafe: False\n    failsafe_and_user_took_over: False\n    failsafe_defer_state: 0\n    gcs_connection_lost: True\n    gcs_connection_lost_counter: 0\n    high_latency_data_link_lost: False\n    is_vtol: False\n    is_vtol_tailsitter: False\n    in_transition_mode: False\n    in_transition_to_fw: False\n    system_type: 2\n    system_id: 1\n    component_id: 1\n    safety_button_available: True\n    safety_off: True\n    power_input_valid: True\n    usb_connected: False\n    open_drone_id_system_present: False\n    open_drone_id_system_healthy: False\n    parachute_system_present: False\n    parachute_system_healthy: False\n    traffic_avoidance_system_present: False\n    rc_calibration_in_progress: False\n    calibration_enabled: False\n    pre_flight_checks_pass: True\n\n",
+            "vehicle_land_detected": "\nTOPIC: vehicle_land_detected\n vehicle_land_detected\n    timestamp: 728728000 (0.024000 seconds ago)\n    freefall: False\n    ground_contact: False\n    maybe_landed: False\n    landed: False\n    in_ground_effect: False\n    in_descend: False\n    has_low_throttle: False\n    vertical_movement: False\n    horizontal_movement: False\n    rotational_movement: False\n    close_to_ground_or_skipped_check: True\n    at_rest: False\n\n",
+            "mission_result": "\nTOPIC: mission_result\n mission_result\n    timestamp: 689764000 (38.987999 seconds ago)\n    mission_id: 2592536806\n    geofence_id: 0\n    home_position_counter: 143\n    seq_reached: 0\n    seq_current: 1\n    seq_total: 2\n    item_changed_index: 0\n    item_do_jump_remaining: 0\n    valid: True\n    warning: False\n    finished: False\n    failure: False\n    item_do_jump_changed: False\n    execution_mode: 0\n\n",
+            "battery_status": "\nTOPIC: battery_status\n battery_status\n    timestamp: 728744000 (0.008000 seconds ago)\n    voltage_v: 15.84184\n    current_a: -1.00000\n    current_average_a: 0.00001\n    discharged_mah: 0.00000\n    remaining: 0.80132\n    scale: 1.02257\n    time_remaining_s: nan\n    temperature: nan\n    voltage_cell_v: [0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000]\n    max_cell_voltage_delta: 0.00000\n    full_charge_capacity_wh: 0.00000\n    remaining_capacity_wh: 0.00000\n    nominal_voltage: 0.00000\n    internal_resistance_estimate: 0.00500\n    ocv_estimate: 15.82184\n    ocv_estimate_filtered: 16.18000\n    volt_based_soc_estimate: 0.98889\n    voltage_prediction: 0.00000\n    prediction_error: 0.00000\n    estimation_covariance_norm: 6.01332\n    capacity: 0\n    cycle_count: 0\n    average_time_to_empty: 0\n    manufacture_date: 0\n    state_of_health: 0\n    max_error: 0\n    interface_error: 0\n    faults: 0\n    over_discharge_count: 0\n    connected: True\n    cell_count: 4\n    source: 0\n    priority: 0\n    id: 1\n    is_powering_off: False\n    is_required: False\n    warning: 0\n\n",
+            "vehicle_global_position": "\nTOPIC: vehicle_global_position\n vehicle_global_position\n    timestamp: 728752000 (0.000000 seconds ago)\n    timestamp_sample: 728744000 (8000 us before timestamp)\n    lat: 35.447065\n    lon: 139.646493\n    alt: 3.54504\n    alt_ellipsoid: 3.54504\n    delta_alt: 0.70536\n    delta_terrain: 0.70536\n    eph: 0.15192\n    epv: 0.16519\n    terrain_alt: 0.69521\n    lat_lon_valid: True\n    alt_valid: True\n    lat_lon_reset_counter: 4\n    alt_reset_counter: 2\n    terrain_reset_counter: 2\n    terrain_alt_valid: False\n    dead_reckoning: False\n\n",
+            "home_position": "\nTOPIC: home_position\n home_position\n    timestamp: 10900000 (717.852051 seconds ago)\n    lat: 35.450939\n    lon: 139.659695\n    alt: 0.69041\n    x: -0.00272\n    y: -0.00929\n    z: 0.02222\n    roll: -0.00046\n    pitch: -0.00033\n    yaw: 1.57377\n    update_count: 143\n    valid_alt: True\n    valid_hpos: True\n    valid_lpos: True\n    manual_home: False\n\n"
+          },
+          "px4_relative_altitude_m": 2.8546300000000002,
+          "payload": {
+            "id": 29,
+            "xyz": [
+              153.07728848699574,
+              -64.91058970145126,
+              -0.15255014667711042
+            ],
+            "quat_wxyz": [
+              0.7069910940607824,
+              -0.0035391859770428995,
+              -0.0016229628961962883,
+              0.7072117314304079
+            ],
+            "sensor_sim_s": 728.752,
+            "received_monotonic_s": 1770.007925555,
+            "age_s": 0.15821662500002276
+          },
+          "payload_joint": {
+            "state": "detached",
+            "observed_sim_s": 726.616,
+            "wall_elapsed_s": 777.6759177299999
+          },
+          "queue_lead": {
+            "id": 36,
+            "xyz": [
+              165.83285452510518,
+              -64.09336826549612,
+              6.831143087104275
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 728.752,
+            "received_monotonic_s": 1770.007925555,
+            "age_s": 0.15821662500002276
+          },
+          "queue_parcel": {
+            "id": 48,
+            "xyz": [
+              153.83285452510518,
+              -64.09336826549612,
+              -0.018856912895725136
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 728.752,
+            "received_monotonic_s": 1770.007925555,
+            "age_s": 0.15821662500002276
+          }
+        },
+        {
+          "run_id": "yokohama-c410139f4ad7",
+          "world_sha256": "bcf30c60baccd7c86bf2477d3064f8bf6e1bd0d7e1b2ebcbf0631bc82205f821",
+          "phase": "PAYLOAD-VERIFY",
+          "sim_s": 728.956,
+          "wall_s": 781.2176423559999,
+          "vehicle": {
+            "id": 60,
+            "xyz": [
+              153.0582708269077,
+              -64.88177712042543,
+              3.3215312653428586
+            ],
+            "quat_wxyz": [
+              0.7068642494501399,
+              -0.0006660178826704112,
+              -0.0019468902847723881,
+              0.7073462369219825
+            ],
+            "sensor_sim_s": 728.988,
+            "received_monotonic_s": 1770.463241846,
+            "age_s": 0.04088608400002158
+          },
+          "local_ned": [
+            -430.60242,
+            -1195.93762,
+            -2.83091
+          ],
+          "velocity_ned": [
+            -0.00077,
+            -0.01603,
+            0.01154
+          ],
+          "position_valid": true,
+          "heading_ned_rad": 8e-05,
+          "reset_counters": [
+            4.0,
+            2.0,
+            2.0
+          ],
+          "battery_fraction": 0.80125,
+          "preflight_pass": true,
+          "nav_state": 4.0,
+          "arming_state": 2.0,
+          "landed": false,
+          "mission_id": 2592536806.0,
+          "mission_valid": true,
+          "mission_count": 2.0,
+          "raw_px4": {
+            "vehicle_local_position": "\nTOPIC: vehicle_local_position\n vehicle_local_position\n    timestamp: 728992000 (0.004000 seconds ago)\n    timestamp_sample: 728984000 (8000 us before timestamp)\n    ref_timestamp: 4048000\n    ref_lat: 35.450939\n    ref_lon: 139.659695\n    x: -430.60242\n    y: -1195.93762\n    z: -2.83091\n    delta_xy: [0.00000, 0.00000]\n    delta_z: -0.70536\n    vx: -0.00077\n    vy: -0.01603\n    vz: 0.01154\n    z_deriv: 0.00643\n    delta_vxy: [-0.00003, 0.00053]\n    delta_vz: -0.00006\n    ax: -0.02131\n    ay: -0.03048\n    az: -0.00533\n    heading: 0.00008\n    heading_var: 0.00919\n    unaided_heading: -1.59843\n    delta_heading: 0.26900\n    tilt_var: 0.00002\n    ref_alt: 0.71264\n    dist_bottom: 2.85116\n    dist_bottom_var: 163.90439\n    delta_dist_bottom: -0.70536\n    eph: 0.15071\n    epv: 0.16448\n    evh: 0.08650\n    evv: 0.05383\n    vxy_max: inf\n    vz_max: inf\n    hagl_min: inf\n    hagl_max_z: inf\n    hagl_max_xy: inf\n    xy_valid: True\n    z_valid: True\n    v_xy_valid: True\n    v_z_valid: True\n    xy_reset_counter: 4\n    z_reset_counter: 2\n    vxy_reset_counter: 4\n    vz_reset_counter: 1\n    heading_reset_counter: 2\n    heading_good_for_control: True\n    xy_global: True\n    z_global: True\n    dist_bottom_valid: False\n    dist_bottom_reset_counter: 2\n    dist_bottom_sensor_bitfield: 0\n    dead_reckoning: False\n",
+            "vehicle_status": "\nTOPIC: vehicle_status\n vehicle_status\n    timestamp: 728884000 (0.116000 seconds ago)\n    armed_time: 10900000\n    takeoff_time: 12628000\n    nav_state_timestamp: 692272000\n    valid_nav_states_mask: 2147411327\n    can_set_nav_states_mask: 8308095\n    arming_state: 2\n    latest_arming_reason: 3\n    latest_disarming_reason: 0\n    nav_state_user_intention: 4\n    nav_state: 4\n    executor_in_charge: 0\n    nav_state_display: 4\n    accepts_offboard_setpoints: False\n    hil_state: 0\n    vehicle_type: 1\n    failsafe: False\n    failsafe_and_user_took_over: False\n    failsafe_defer_state: 0\n    gcs_connection_lost: True\n    gcs_connection_lost_counter: 0\n    high_latency_data_link_lost: False\n    is_vtol: False\n    is_vtol_tailsitter: False\n    in_transition_mode: False\n    in_transition_to_fw: False\n    system_type: 2\n    system_id: 1\n    component_id: 1\n    safety_button_available: True\n    safety_off: True\n    power_input_valid: True\n    usb_connected: False\n    open_drone_id_system_present: False\n    open_drone_id_system_healthy: False\n    parachute_system_present: False\n    parachute_system_healthy: False\n    traffic_avoidance_system_present: False\n    rc_calibration_in_progress: False\n    calibration_enabled: False\n    pre_flight_checks_pass: True\n\n",
+            "vehicle_land_detected": "\nTOPIC: vehicle_land_detected\n vehicle_land_detected\n    timestamp: 728728000 (0.272000 seconds ago)\n    freefall: False\n    ground_contact: False\n    maybe_landed: False\n    landed: False\n    in_ground_effect: False\n    in_descend: False\n    has_low_throttle: False\n    vertical_movement: False\n    horizontal_movement: False\n    rotational_movement: False\n    close_to_ground_or_skipped_check: True\n    at_rest: False\n\n",
+            "mission_result": "\nTOPIC: mission_result\n mission_result\n    timestamp: 689764000 (39.236000 seconds ago)\n    mission_id: 2592536806\n    geofence_id: 0\n    home_position_counter: 143\n    seq_reached: 0\n    seq_current: 1\n    seq_total: 2\n    item_changed_index: 0\n    item_do_jump_remaining: 0\n    valid: True\n    warning: False\n    finished: False\n    failure: False\n    item_do_jump_changed: False\n    execution_mode: 0\n\n",
+            "battery_status": "\nTOPIC: battery_status\n battery_status\n    timestamp: 728996000 (0.004000 seconds ago)\n    voltage_v: 15.84172\n    current_a: -1.00000\n    current_average_a: 0.00001\n    discharged_mah: 0.00000\n    remaining: 0.80125\n    scale: 1.02258\n    time_remaining_s: nan\n    temperature: nan\n    voltage_cell_v: [0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000]\n    max_cell_voltage_delta: 0.00000\n    full_charge_capacity_wh: 0.00000\n    remaining_capacity_wh: 0.00000\n    nominal_voltage: 0.00000\n    internal_resistance_estimate: 0.00500\n    ocv_estimate: 15.82172\n    ocv_estimate_filtered: 16.18000\n    volt_based_soc_estimate: 0.98889\n    voltage_prediction: 0.00000\n    prediction_error: 0.00000\n    estimation_covariance_norm: 6.01332\n    capacity: 0\n    cycle_count: 0\n    average_time_to_empty: 0\n    manufacture_date: 0\n    state_of_health: 0\n    max_error: 0\n    interface_error: 0\n    faults: 0\n    over_discharge_count: 0\n    connected: True\n    cell_count: 4\n    source: 0\n    priority: 0\n    id: 1\n    is_powering_off: False\n    is_required: False\n    warning: 0\n\n",
+            "vehicle_global_position": "\nTOPIC: vehicle_global_position\n vehicle_global_position\n    timestamp: 729000000 (0.000000 seconds ago)\n    timestamp_sample: 728992000 (8000 us before timestamp)\n    lat: 35.447065\n    lon: 139.646493\n    alt: 3.54352\n    alt_ellipsoid: 3.54352\n    delta_alt: 0.70536\n    delta_terrain: 0.70536\n    eph: 0.15113\n    epv: 0.16474\n    terrain_alt: 0.69521\n    lat_lon_valid: True\n    alt_valid: True\n    lat_lon_reset_counter: 4\n    alt_reset_counter: 2\n    terrain_reset_counter: 2\n    terrain_alt_valid: False\n    dead_reckoning: False\n\n",
+            "home_position": "\nTOPIC: home_position\n home_position\n    timestamp: 10900000 (718.099976 seconds ago)\n    lat: 35.450939\n    lon: 139.659695\n    alt: 0.69041\n    x: -0.00272\n    y: -0.00929\n    z: 0.02222\n    roll: -0.00046\n    pitch: -0.00033\n    yaw: 1.57377\n    update_count: 143\n    valid_alt: True\n    valid_hpos: True\n    valid_lpos: True\n    manual_home: False\n\n"
+          },
+          "px4_relative_altitude_m": 2.85311,
+          "payload": {
+            "id": 29,
+            "xyz": [
+              153.07728848692028,
+              -64.91058970142359,
+              -0.15231425306288757
+            ],
+            "quat_wxyz": [
+              0.7069910940580243,
+              -0.003539186886488844,
+              -0.0016229633133877403,
+              0.7072117314276565
+            ],
+            "sensor_sim_s": 728.988,
+            "received_monotonic_s": 1770.463241846,
+            "age_s": 0.04088608400002158
+          },
+          "payload_joint": {
+            "state": "detached",
+            "observed_sim_s": 726.616,
+            "wall_elapsed_s": 777.6759177299999
+          },
+          "queue_lead": {
+            "id": 36,
+            "xyz": [
+              165.83285452510518,
+              -64.09336826549612,
+              6.831143087104275
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 728.988,
+            "received_monotonic_s": 1770.463241846,
+            "age_s": 0.04088608400002158
+          },
+          "queue_parcel": {
+            "id": 48,
+            "xyz": [
+              153.83285452510518,
+              -64.09336826549612,
+              -0.018856912895725136
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 728.988,
+            "received_monotonic_s": 1770.463241846,
+            "age_s": 0.04088608400002158
+          }
+        },
+        {
+          "run_id": "yokohama-c410139f4ad7",
+          "world_sha256": "bcf30c60baccd7c86bf2477d3064f8bf6e1bd0d7e1b2ebcbf0631bc82205f821",
+          "phase": "PAYLOAD-VERIFY",
+          "sim_s": 729.224,
+          "wall_s": 781.5837529400001,
+          "vehicle": {
+            "id": 60,
+            "xyz": [
+              153.05028827473348,
+              -64.88330336119738,
+              3.319360103639308
+            ],
+            "quat_wxyz": [
+              0.7068408214367782,
+              -0.0005279041173966095,
+              -0.0014027747250021734,
+              0.707371053048465
+            ],
+            "sensor_sim_s": 729.24,
+            "received_monotonic_s": 1770.751571471,
+            "age_s": 0.11866941699986455
+          },
+          "local_ned": [
+            -430.6041,
+            -1195.94336,
+            -2.83073
+          ],
+          "velocity_ned": [
+            -0.00457,
+            -0.02309,
+            0.01195
+          ],
+          "position_valid": true,
+          "heading_ned_rad": 1e-05,
+          "reset_counters": [
+            4.0,
+            2.0,
+            2.0
+          ],
+          "battery_fraction": 0.80118,
+          "preflight_pass": true,
+          "nav_state": 4.0,
+          "arming_state": 2.0,
+          "landed": false,
+          "mission_id": 2592536806.0,
+          "mission_valid": true,
+          "mission_count": 2.0,
+          "raw_px4": {
+            "vehicle_local_position": "\nTOPIC: vehicle_local_position\n vehicle_local_position\n    timestamp: 729248000 (0.004000 seconds ago)\n    timestamp_sample: 729244000 (4000 us before timestamp)\n    ref_timestamp: 4048000\n    ref_lat: 35.450939\n    ref_lon: 139.659695\n    x: -430.60410\n    y: -1195.94336\n    z: -2.83073\n    delta_xy: [0.00000, 0.00000]\n    delta_z: -0.70536\n    vx: -0.00457\n    vy: -0.02309\n    vz: 0.01195\n    z_deriv: 0.00573\n    delta_vxy: [-0.00003, 0.00053]\n    delta_vz: -0.00006\n    ax: -0.00862\n    ay: -0.02326\n    az: 0.01197\n    heading: 0.00001\n    heading_var: 0.00923\n    unaided_heading: -1.59849\n    delta_heading: 0.26900\n    tilt_var: 0.00002\n    ref_alt: 0.71264\n    dist_bottom: 2.85138\n    dist_bottom_var: 163.95766\n    delta_dist_bottom: -0.70536\n    eph: 0.15054\n    epv: 0.16442\n    evh: 0.08643\n    evv: 0.05384\n    vxy_max: inf\n    vz_max: inf\n    hagl_min: inf\n    hagl_max_z: inf\n    hagl_max_xy: inf\n    xy_valid: True\n    z_valid: True\n    v_xy_valid: True\n    v_z_valid: True\n    xy_reset_counter: 4\n    z_reset_counter: 2\n    vxy_reset_counter: 4\n    vz_reset_counter: 1\n    heading_reset_counter: 2\n    heading_good_for_control: True\n    xy_global: True\n    z_global: True\n    dist_bottom_valid: False\n    dist_bottom_reset_counter: 2\n    dist_bottom_sensor_bitfield: 0\n    dead_reckoning: False\n",
+            "vehicle_status": "\nTOPIC: vehicle_status\n vehicle_status\n    timestamp: 728884000 (0.368000 seconds ago)\n    armed_time: 10900000\n    takeoff_time: 12628000\n    nav_state_timestamp: 692272000\n    valid_nav_states_mask: 2147411327\n    can_set_nav_states_mask: 8308095\n    arming_state: 2\n    latest_arming_reason: 3\n    latest_disarming_reason: 0\n    nav_state_user_intention: 4\n    nav_state: 4\n    executor_in_charge: 0\n    nav_state_display: 4\n    accepts_offboard_setpoints: False\n    hil_state: 0\n    vehicle_type: 1\n    failsafe: False\n    failsafe_and_user_took_over: False\n    failsafe_defer_state: 0\n    gcs_connection_lost: True\n    gcs_connection_lost_counter: 0\n    high_latency_data_link_lost: False\n    is_vtol: False\n    is_vtol_tailsitter: False\n    in_transition_mode: False\n    in_transition_to_fw: False\n    system_type: 2\n    system_id: 1\n    component_id: 1\n    safety_button_available: True\n    safety_off: True\n    power_input_valid: True\n    usb_connected: False\n    open_drone_id_system_present: False\n    open_drone_id_system_healthy: False\n    parachute_system_present: False\n    parachute_system_healthy: False\n    traffic_avoidance_system_present: False\n    rc_calibration_in_progress: False\n    calibration_enabled: False\n    pre_flight_checks_pass: True\n\n",
+            "vehicle_land_detected": "\nTOPIC: vehicle_land_detected\n vehicle_land_detected\n    timestamp: 728728000 (0.524000 seconds ago)\n    freefall: False\n    ground_contact: False\n    maybe_landed: False\n    landed: False\n    in_ground_effect: False\n    in_descend: False\n    has_low_throttle: False\n    vertical_movement: False\n    horizontal_movement: False\n    rotational_movement: False\n    close_to_ground_or_skipped_check: True\n    at_rest: False\n\n",
+            "mission_result": "\nTOPIC: mission_result\n mission_result\n    timestamp: 689764000 (39.487999 seconds ago)\n    mission_id: 2592536806\n    geofence_id: 0\n    home_position_counter: 143\n    seq_reached: 0\n    seq_current: 1\n    seq_total: 2\n    item_changed_index: 0\n    item_do_jump_remaining: 0\n    valid: True\n    warning: False\n    finished: False\n    failure: False\n    item_do_jump_changed: False\n    execution_mode: 0\n\n",
+            "battery_status": "\nTOPIC: battery_status\n battery_status\n    timestamp: 729244000 (0.008000 seconds ago)\n    voltage_v: 15.84159\n    current_a: -1.00000\n    current_average_a: 0.00001\n    discharged_mah: 0.00000\n    remaining: 0.80118\n    scale: 1.02259\n    time_remaining_s: nan\n    temperature: nan\n    voltage_cell_v: [0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000]\n    max_cell_voltage_delta: 0.00000\n    full_charge_capacity_wh: 0.00000\n    remaining_capacity_wh: 0.00000\n    nominal_voltage: 0.00000\n    internal_resistance_estimate: 0.00500\n    ocv_estimate: 15.82159\n    ocv_estimate_filtered: 16.18000\n    volt_based_soc_estimate: 0.98889\n    voltage_prediction: 0.00000\n    prediction_error: 0.00000\n    estimation_covariance_norm: 6.01332\n    capacity: 0\n    cycle_count: 0\n    average_time_to_empty: 0\n    manufacture_date: 0\n    state_of_health: 0\n    max_error: 0\n    interface_error: 0\n    faults: 0\n    over_discharge_count: 0\n    connected: True\n    cell_count: 4\n    source: 0\n    priority: 0\n    id: 1\n    is_powering_off: False\n    is_required: False\n    warning: 0\n\n",
+            "vehicle_global_position": "\nTOPIC: vehicle_global_position\n vehicle_global_position\n    timestamp: 729248000 (0.004000 seconds ago)\n    timestamp_sample: 729244000 (4000 us before timestamp)\n    lat: 35.447065\n    lon: 139.646493\n    alt: 3.54336\n    alt_ellipsoid: 3.54336\n    delta_alt: 0.70536\n    delta_terrain: 0.70536\n    eph: 0.15054\n    epv: 0.16442\n    terrain_alt: 0.69521\n    lat_lon_valid: True\n    alt_valid: True\n    lat_lon_reset_counter: 4\n    alt_reset_counter: 2\n    terrain_reset_counter: 2\n    terrain_alt_valid: False\n    dead_reckoning: False\n\n",
+            "home_position": "\nTOPIC: home_position\n home_position\n    timestamp: 10900000 (718.351990 seconds ago)\n    lat: 35.450939\n    lon: 139.659695\n    alt: 0.69041\n    x: -0.00272\n    y: -0.00929\n    z: 0.02222\n    roll: -0.00046\n    pitch: -0.00033\n    yaw: 1.57377\n    update_count: 143\n    valid_alt: True\n    valid_hpos: True\n    valid_lpos: True\n    manual_home: False\n\n"
+          },
+          "px4_relative_altitude_m": 2.85295,
+          "payload": {
+            "id": 29,
+            "xyz": [
+              153.0772884868397,
+              -64.91058970139404,
+              -0.15206236666125977
+            ],
+            "quat_wxyz": [
+              0.7069910940550802,
+              -0.003539187857592402,
+              -0.0016229637588634747,
+              0.7072117314247175
+            ],
+            "sensor_sim_s": 729.24,
+            "received_monotonic_s": 1770.751571471,
+            "age_s": 0.11866941699986455
+          },
+          "payload_joint": {
+            "state": "detached",
+            "observed_sim_s": 726.616,
+            "wall_elapsed_s": 777.6759177299999
+          },
+          "queue_lead": {
+            "id": 36,
+            "xyz": [
+              165.83285452510518,
+              -64.09336826549612,
+              6.831143087104275
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 729.24,
+            "received_monotonic_s": 1770.751571471,
+            "age_s": 0.11866941699986455
+          },
+          "queue_parcel": {
+            "id": 48,
+            "xyz": [
+              153.83285452510518,
+              -64.09336826549612,
+              -0.018856912895725136
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 729.24,
+            "received_monotonic_s": 1770.751571471,
+            "age_s": 0.11866941699986455
+          }
+        },
+        {
+          "run_id": "yokohama-c410139f4ad7",
+          "world_sha256": "bcf30c60baccd7c86bf2477d3064f8bf6e1bd0d7e1b2ebcbf0631bc82205f821",
+          "phase": "PAYLOAD-VERIFY",
+          "sim_s": 729.456,
+          "wall_s": 781.941530648,
+          "vehicle": {
+            "id": 60,
+            "xyz": [
+              153.0411612574903,
+              -64.88542684922926,
+              3.3169550846604157
+            ],
+            "quat_wxyz": [
+              0.7068290290423087,
+              -7.94898917807903e-05,
+              -0.0005772842555241211,
+              0.7073841842502224
+            ],
+            "sensor_sim_s": 729.48,
+            "received_monotonic_s": 1771.221151555,
+            "age_s": 0.0068646249999346765
+          },
+          "local_ned": [
+            -430.60504,
+            -1195.94995,
+            -2.82993
+          ],
+          "velocity_ned": [
+            -0.00529,
+            -0.02598,
+            0.01279
+          ],
+          "position_valid": true,
+          "heading_ned_rad": 6e-05,
+          "reset_counters": [
+            4.0,
+            2.0,
+            2.0
+          ],
+          "battery_fraction": 0.80112,
+          "preflight_pass": true,
+          "nav_state": 4.0,
+          "arming_state": 2.0,
+          "landed": false,
+          "mission_id": 2592536806.0,
+          "mission_valid": true,
+          "mission_count": 2.0,
+          "raw_px4": {
+            "vehicle_local_position": "\nTOPIC: vehicle_local_position\n vehicle_local_position\n    timestamp: 729448000 (0.004000 seconds ago)\n    timestamp_sample: 729444000 (4000 us before timestamp)\n    ref_timestamp: 4048000\n    ref_lat: 35.450939\n    ref_lon: 139.659695\n    x: -430.60504\n    y: -1195.94995\n    z: -2.82993\n    delta_xy: [0.00000, 0.00000]\n    delta_z: -0.70536\n    vx: -0.00529\n    vy: -0.02598\n    vz: 0.01279\n    z_deriv: 0.00634\n    delta_vxy: [-0.00003, 0.00053]\n    delta_vz: -0.00006\n    ax: -0.00477\n    ay: -0.00391\n    az: 0.00500\n    heading: 0.00006\n    heading_var: 0.00926\n    unaided_heading: -1.59853\n    delta_heading: 0.26900\n    tilt_var: 0.00002\n    ref_alt: 0.71264\n    dist_bottom: 2.85065\n    dist_bottom_var: 163.99771\n    delta_dist_bottom: -0.70536\n    eph: 0.15066\n    epv: 0.16449\n    evh: 0.08650\n    evv: 0.05384\n    vxy_max: inf\n    vz_max: inf\n    hagl_min: inf\n    hagl_max_z: inf\n    hagl_max_xy: inf\n    xy_valid: True\n    z_valid: True\n    v_xy_valid: True\n    v_z_valid: True\n    xy_reset_counter: 4\n    z_reset_counter: 2\n    vxy_reset_counter: 4\n    vz_reset_counter: 1\n    heading_reset_counter: 2\n    heading_good_for_control: True\n    xy_global: True\n    z_global: True\n    dist_bottom_valid: False\n    dist_bottom_reset_counter: 2\n    dist_bottom_sensor_bitfield: 0\n    dead_reckoning: False\n",
+            "vehicle_status": "\nTOPIC: vehicle_status\n vehicle_status\n    timestamp: 729392000 (0.064000 seconds ago)\n    armed_time: 10900000\n    takeoff_time: 12628000\n    nav_state_timestamp: 692272000\n    valid_nav_states_mask: 2147411327\n    can_set_nav_states_mask: 8308095\n    arming_state: 2\n    latest_arming_reason: 3\n    latest_disarming_reason: 0\n    nav_state_user_intention: 4\n    nav_state: 4\n    executor_in_charge: 0\n    nav_state_display: 4\n    accepts_offboard_setpoints: False\n    hil_state: 0\n    vehicle_type: 1\n    failsafe: False\n    failsafe_and_user_took_over: False\n    failsafe_defer_state: 0\n    gcs_connection_lost: True\n    gcs_connection_lost_counter: 0\n    high_latency_data_link_lost: False\n    is_vtol: False\n    is_vtol_tailsitter: False\n    in_transition_mode: False\n    in_transition_to_fw: False\n    system_type: 2\n    system_id: 1\n    component_id: 1\n    safety_button_available: True\n    safety_off: True\n    power_input_valid: True\n    usb_connected: False\n    open_drone_id_system_present: False\n    open_drone_id_system_healthy: False\n    parachute_system_present: False\n    parachute_system_healthy: False\n    traffic_avoidance_system_present: False\n    rc_calibration_in_progress: False\n    calibration_enabled: False\n    pre_flight_checks_pass: True\n\n",
+            "vehicle_land_detected": "\nTOPIC: vehicle_land_detected\n vehicle_land_detected\n    timestamp: 728728000 (0.732000 seconds ago)\n    freefall: False\n    ground_contact: False\n    maybe_landed: False\n    landed: False\n    in_ground_effect: False\n    in_descend: False\n    has_low_throttle: False\n    vertical_movement: False\n    horizontal_movement: False\n    rotational_movement: False\n    close_to_ground_or_skipped_check: True\n    at_rest: False\n\n",
+            "mission_result": "\nTOPIC: mission_result\n mission_result\n    timestamp: 689764000 (39.703999 seconds ago)\n    mission_id: 2592536806\n    geofence_id: 0\n    home_position_counter: 143\n    seq_reached: 0\n    seq_current: 1\n    seq_total: 2\n    item_changed_index: 0\n    item_do_jump_remaining: 0\n    valid: True\n    warning: False\n    finished: False\n    failure: False\n    item_do_jump_changed: False\n    execution_mode: 0\n\n",
+            "battery_status": "\nTOPIC: battery_status\n battery_status\n    timestamp: 729464000 (0.008000 seconds ago)\n    voltage_v: 15.84149\n    current_a: -1.00000\n    current_average_a: 0.00001\n    discharged_mah: 0.00000\n    remaining: 0.80112\n    scale: 1.02260\n    time_remaining_s: nan\n    temperature: nan\n    voltage_cell_v: [0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000]\n    max_cell_voltage_delta: 0.00000\n    full_charge_capacity_wh: 0.00000\n    remaining_capacity_wh: 0.00000\n    nominal_voltage: 0.00000\n    internal_resistance_estimate: 0.00500\n    ocv_estimate: 15.82148\n    ocv_estimate_filtered: 16.18000\n    volt_based_soc_estimate: 0.98889\n    voltage_prediction: 0.00000\n    prediction_error: 0.00000\n    estimation_covariance_norm: 6.01332\n    capacity: 0\n    cycle_count: 0\n    average_time_to_empty: 0\n    manufacture_date: 0\n    state_of_health: 0\n    max_error: 0\n    interface_error: 0\n    faults: 0\n    over_discharge_count: 0\n    connected: True\n    cell_count: 4\n    source: 0\n    priority: 0\n    id: 1\n    is_powering_off: False\n    is_required: False\n    warning: 0\n\n",
+            "vehicle_global_position": "\nTOPIC: vehicle_global_position\n vehicle_global_position\n    timestamp: 729480000 (0.000000 seconds ago)\n    timestamp_sample: 729476000 (4000 us before timestamp)\n    lat: 35.447065\n    lon: 139.646493\n    alt: 3.54248\n    alt_ellipsoid: 3.54248\n    delta_alt: 0.70536\n    delta_terrain: 0.70536\n    eph: 0.15062\n    epv: 0.16458\n    terrain_alt: 0.69521\n    lat_lon_valid: True\n    alt_valid: True\n    lat_lon_reset_counter: 4\n    alt_reset_counter: 2\n    terrain_reset_counter: 2\n    terrain_alt_valid: False\n    dead_reckoning: False\n\n",
+            "home_position": "\nTOPIC: home_position\n home_position\n    timestamp: 10900000 (718.583984 seconds ago)\n    lat: 35.450939\n    lon: 139.659695\n    alt: 0.69041\n    x: -0.00272\n    y: -0.00929\n    z: 0.02222\n    roll: -0.00046\n    pitch: -0.00033\n    yaw: 1.57377\n    update_count: 143\n    valid_alt: True\n    valid_hpos: True\n    valid_lpos: True\n    manual_home: False\n\n"
+          },
+          "px4_relative_altitude_m": 2.85207,
+          "payload": {
+            "id": 29,
+            "xyz": [
+              153.07728848676297,
+              -64.91058970136591,
+              -0.15182247485018568
+            ],
+            "quat_wxyz": [
+              0.7069910940522763,
+              -0.003539188782453178,
+              -0.0016229641831262008,
+              0.7072117314219186
+            ],
+            "sensor_sim_s": 729.48,
+            "received_monotonic_s": 1771.221151555,
+            "age_s": 0.0068646249999346765
+          },
+          "payload_joint": {
+            "state": "detached",
+            "observed_sim_s": 726.616,
+            "wall_elapsed_s": 777.6759177299999
+          },
+          "queue_lead": {
+            "id": 36,
+            "xyz": [
+              165.83285452510518,
+              -64.09336826549612,
+              6.831143087104275
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 729.48,
+            "received_monotonic_s": 1771.221151555,
+            "age_s": 0.0068646249999346765
+          },
+          "queue_parcel": {
+            "id": 48,
+            "xyz": [
+              153.83285452510518,
+              -64.09336826549612,
+              -0.018856912895725136
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 729.48,
+            "received_monotonic_s": 1771.221151555,
+            "age_s": 0.0068646249999346765
+          }
+        },
+        {
+          "run_id": "yokohama-c410139f4ad7",
+          "world_sha256": "bcf30c60baccd7c86bf2477d3064f8bf6e1bd0d7e1b2ebcbf0631bc82205f821",
+          "phase": "PAYLOAD-VERIFY",
+          "sim_s": 729.724,
+          "wall_s": 782.281417273,
+          "vehicle": {
+            "id": 60,
+            "xyz": [
+              153.0305923333666,
+              -64.88821287324511,
+              3.3140843972183385
+            ],
+            "quat_wxyz": [
+              0.7068191506555794,
+              0.00034766761932219787,
+              0.0002298476945695939,
+              0.7073941719888488
+            ],
+            "sensor_sim_s": 729.752,
+            "received_monotonic_s": 1771.531056388,
+            "age_s": 0.03684833400006937
+          },
+          "local_ned": [
+            -430.60828,
+            -1195.96191,
+            -2.82733
+          ],
+          "velocity_ned": [
+            -0.00625,
+            -0.0254,
+            0.01289
+          ],
+          "position_valid": true,
+          "heading_ned_rad": -2e-05,
+          "reset_counters": [
+            4.0,
+            2.0,
+            2.0
+          ],
+          "battery_fraction": 0.80104,
+          "preflight_pass": true,
+          "nav_state": 4.0,
+          "arming_state": 2.0,
+          "landed": false,
+          "mission_id": 2592536806.0,
+          "mission_valid": true,
+          "mission_count": 2.0,
+          "raw_px4": {
+            "vehicle_local_position": "\nTOPIC: vehicle_local_position\n vehicle_local_position\n    timestamp: 729752000 (0.000000 seconds ago)\n    timestamp_sample: 729752000 (0 us before timestamp)\n    ref_timestamp: 4048000\n    ref_lat: 35.450939\n    ref_lon: 139.659695\n    x: -430.60828\n    y: -1195.96191\n    z: -2.82733\n    delta_xy: [0.00000, 0.00000]\n    delta_z: -0.70536\n    vx: -0.00625\n    vy: -0.02540\n    vz: 0.01289\n    z_deriv: 0.00736\n    delta_vxy: [-0.00003, 0.00053]\n    delta_vz: -0.00006\n    ax: 0.00312\n    ay: 0.01759\n    az: -0.00553\n    heading: -0.00002\n    heading_var: 0.00931\n    unaided_heading: -1.59864\n    delta_heading: 0.26900\n    tilt_var: 0.00002\n    ref_alt: 0.71264\n    dist_bottom: 2.84471\n    dist_bottom_var: 164.06178\n    delta_dist_bottom: -0.70536\n    eph: 0.15106\n    epv: 0.16473\n    evh: 0.08692\n    evv: 0.05403\n    vxy_max: inf\n    vz_max: inf\n    hagl_min: inf\n    hagl_max_z: inf\n    hagl_max_xy: inf\n    xy_valid: True\n    z_valid: True\n    v_xy_valid: True\n    v_z_valid: True\n    xy_reset_counter: 4\n    z_reset_counter: 2\n    vxy_reset_counter: 4\n    vz_reset_counter: 1\n    heading_reset_counter: 2\n    heading_good_for_control: True\n    xy_global: True\n    z_global: True\n    dist_bottom_valid: False\n    dist_bottom_reset_counter: 2\n    dist_bottom_sensor_bitfield: 0\n    dead_reckoning: False\n",
+            "vehicle_status": "\nTOPIC: vehicle_status\n vehicle_status\n    timestamp: 729392000 (0.360000 seconds ago)\n    armed_time: 10900000\n    takeoff_time: 12628000\n    nav_state_timestamp: 692272000\n    valid_nav_states_mask: 2147411327\n    can_set_nav_states_mask: 8308095\n    arming_state: 2\n    latest_arming_reason: 3\n    latest_disarming_reason: 0\n    nav_state_user_intention: 4\n    nav_state: 4\n    executor_in_charge: 0\n    nav_state_display: 4\n    accepts_offboard_setpoints: False\n    hil_state: 0\n    vehicle_type: 1\n    failsafe: False\n    failsafe_and_user_took_over: False\n    failsafe_defer_state: 0\n    gcs_connection_lost: True\n    gcs_connection_lost_counter: 0\n    high_latency_data_link_lost: False\n    is_vtol: False\n    is_vtol_tailsitter: False\n    in_transition_mode: False\n    in_transition_to_fw: False\n    system_type: 2\n    system_id: 1\n    component_id: 1\n    safety_button_available: True\n    safety_off: True\n    power_input_valid: True\n    usb_connected: False\n    open_drone_id_system_present: False\n    open_drone_id_system_healthy: False\n    parachute_system_present: False\n    parachute_system_healthy: False\n    traffic_avoidance_system_present: False\n    rc_calibration_in_progress: False\n    calibration_enabled: False\n    pre_flight_checks_pass: True\n\n",
+            "vehicle_land_detected": "\nTOPIC: vehicle_land_detected\n vehicle_land_detected\n    timestamp: 729728000 (0.024000 seconds ago)\n    freefall: False\n    ground_contact: False\n    maybe_landed: False\n    landed: False\n    in_ground_effect: False\n    in_descend: False\n    has_low_throttle: False\n    vertical_movement: False\n    horizontal_movement: False\n    rotational_movement: False\n    close_to_ground_or_skipped_check: True\n    at_rest: False\n\n",
+            "mission_result": "\nTOPIC: mission_result\n mission_result\n    timestamp: 689764000 (39.987999 seconds ago)\n    mission_id: 2592536806\n    geofence_id: 0\n    home_position_counter: 143\n    seq_reached: 0\n    seq_current: 1\n    seq_total: 2\n    item_changed_index: 0\n    item_do_jump_remaining: 0\n    valid: True\n    warning: False\n    finished: False\n    failure: False\n    item_do_jump_changed: False\n    execution_mode: 0\n\n",
+            "battery_status": "\nTOPIC: battery_status\n battery_status\n    timestamp: 729744000 (0.008000 seconds ago)\n    voltage_v: 15.84135\n    current_a: -1.00000\n    current_average_a: 0.00001\n    discharged_mah: 0.00000\n    remaining: 0.80104\n    scale: 1.02261\n    time_remaining_s: nan\n    temperature: nan\n    voltage_cell_v: [0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000]\n    max_cell_voltage_delta: 0.00000\n    full_charge_capacity_wh: 0.00000\n    remaining_capacity_wh: 0.00000\n    nominal_voltage: 0.00000\n    internal_resistance_estimate: 0.00500\n    ocv_estimate: 15.82135\n    ocv_estimate_filtered: 16.18000\n    volt_based_soc_estimate: 0.98889\n    voltage_prediction: 0.00000\n    prediction_error: 0.00000\n    estimation_covariance_norm: 6.01332\n    capacity: 0\n    cycle_count: 0\n    average_time_to_empty: 0\n    manufacture_date: 0\n    state_of_health: 0\n    max_error: 0\n    interface_error: 0\n    faults: 0\n    over_discharge_count: 0\n    connected: True\n    cell_count: 4\n    source: 0\n    priority: 0\n    id: 1\n    is_powering_off: False\n    is_required: False\n    warning: 0\n\n",
+            "vehicle_global_position": "\nTOPIC: vehicle_global_position\n vehicle_global_position\n    timestamp: 729752000 (0.000000 seconds ago)\n    timestamp_sample: 729752000 (0 us before timestamp)\n    lat: 35.447065\n    lon: 139.646493\n    alt: 3.53997\n    alt_ellipsoid: 3.53997\n    delta_alt: 0.70536\n    delta_terrain: 0.70536\n    eph: 0.15106\n    epv: 0.16473\n    terrain_alt: 0.69521\n    lat_lon_valid: True\n    alt_valid: True\n    lat_lon_reset_counter: 4\n    alt_reset_counter: 2\n    terrain_reset_counter: 2\n    terrain_alt_valid: False\n    dead_reckoning: False\n\n",
+            "home_position": "\nTOPIC: home_position\n home_position\n    timestamp: 10900000 (718.851990 seconds ago)\n    lat: 35.450939\n    lon: 139.659695\n    alt: 0.69041\n    x: -0.00272\n    y: -0.00929\n    z: 0.02222\n    roll: -0.00046\n    pitch: -0.00033\n    yaw: 1.57377\n    update_count: 143\n    valid_alt: True\n    valid_hpos: True\n    valid_lpos: True\n    manual_home: False\n\n"
+          },
+          "px4_relative_altitude_m": 2.84956,
+          "payload": {
+            "id": 29,
+            "xyz": [
+              153.077288486676,
+              -64.91058970133402,
+              -0.15155059746430172
+            ],
+            "quat_wxyz": [
+              0.7069910940490994,
+              -0.0035391898306290164,
+              -0.0016229646639574161,
+              0.7072117314187453
+            ],
+            "sensor_sim_s": 729.752,
+            "received_monotonic_s": 1771.531056388,
+            "age_s": 0.03684833400006937
+          },
+          "payload_joint": {
+            "state": "detached",
+            "observed_sim_s": 726.616,
+            "wall_elapsed_s": 777.6759177299999
+          },
+          "queue_lead": {
+            "id": 36,
+            "xyz": [
+              165.83285452510518,
+              -64.09336826549612,
+              6.831143087104275
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 729.752,
+            "received_monotonic_s": 1771.531056388,
+            "age_s": 0.03684833400006937
+          },
+          "queue_parcel": {
+            "id": 48,
+            "xyz": [
+              153.83285452510518,
+              -64.09336826549612,
+              -0.018856912895725136
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 729.752,
+            "received_monotonic_s": 1771.531056388,
+            "age_s": 0.03684833400006937
+          }
+        },
+        {
+          "run_id": "yokohama-c410139f4ad7",
+          "world_sha256": "bcf30c60baccd7c86bf2477d3064f8bf6e1bd0d7e1b2ebcbf0631bc82205f821",
+          "phase": "PAYLOAD-VERIFY",
+          "sim_s": 729.856,
+          "wall_s": 782.6392050649999,
+          "vehicle": {
+            "id": 60,
+            "xyz": [
+              153.02472663624218,
+              -64.88987265802118,
+              3.3125640542222623
+            ],
+            "quat_wxyz": [
+              0.7068253542007424,
+              0.0006374457322083963,
+              0.0006653978864792161,
+              0.7073874960497861
+            ],
+            "sensor_sim_s": 729.912,
+            "received_monotonic_s": 1771.906691722,
+            "age_s": 0.018997375000026295
+          },
+          "local_ned": [
+            -430.60901,
+            -1195.96875,
+            -2.82508
+          ],
+          "velocity_ned": [
+            -0.00515,
+            -0.0242,
+            0.0118
+          ],
+          "position_valid": true,
+          "heading_ned_rad": 9e-05,
+          "reset_counters": [
+            4.0,
+            2.0,
+            2.0
+          ],
+          "battery_fraction": 0.80099,
+          "preflight_pass": true,
+          "nav_state": 4.0,
+          "arming_state": 2.0,
+          "landed": false,
+          "mission_id": 2592536806.0,
+          "mission_valid": true,
+          "mission_count": 2.0,
+          "raw_px4": {
+            "vehicle_local_position": "\nTOPIC: vehicle_local_position\n vehicle_local_position\n    timestamp: 729896000 (0.000000 seconds ago)\n    timestamp_sample: 729896000 (0 us before timestamp)\n    ref_timestamp: 4048000\n    ref_lat: 35.450939\n    ref_lon: 139.659695\n    x: -430.60901\n    y: -1195.96875\n    z: -2.82508\n    delta_xy: [0.00000, 0.00000]\n    delta_z: -0.70536\n    vx: -0.00515\n    vy: -0.02420\n    vz: 0.01180\n    z_deriv: 0.00754\n    delta_vxy: [-0.00003, 0.00053]\n    delta_vz: -0.00006\n    ax: -0.00276\n    ay: 0.03171\n    az: -0.01047\n    heading: 0.00009\n    heading_var: 0.00933\n    unaided_heading: -1.59864\n    delta_heading: 0.26900\n    tilt_var: 0.00002\n    ref_alt: 0.71264\n    dist_bottom: 2.84320\n    dist_bottom_var: 164.09062\n    delta_dist_bottom: -0.70536\n    eph: 0.15171\n    epv: 0.16507\n    evh: 0.08734\n    evv: 0.05412\n    vxy_max: inf\n    vz_max: inf\n    hagl_min: inf\n    hagl_max_z: inf\n    hagl_max_xy: inf\n    xy_valid: True\n    z_valid: True\n    v_xy_valid: True\n    v_z_valid: True\n    xy_reset_counter: 4\n    z_reset_counter: 2\n    vxy_reset_counter: 4\n    vz_reset_counter: 1\n    heading_reset_counter: 2\n    heading_good_for_control: True\n    xy_global: True\n    z_global: True\n    dist_bottom_valid: False\n    dist_bottom_reset_counter: 2\n    dist_bottom_sensor_bitfield: 0\n    dead_reckoning: False\n",
+            "vehicle_status": "\nTOPIC: vehicle_status\n vehicle_status\n    timestamp: 729892000 (0.012000 seconds ago)\n    armed_time: 10900000\n    takeoff_time: 12628000\n    nav_state_timestamp: 692272000\n    valid_nav_states_mask: 2147411327\n    can_set_nav_states_mask: 8308095\n    arming_state: 2\n    latest_arming_reason: 3\n    latest_disarming_reason: 0\n    nav_state_user_intention: 4\n    nav_state: 4\n    executor_in_charge: 0\n    nav_state_display: 4\n    accepts_offboard_setpoints: False\n    hil_state: 0\n    vehicle_type: 1\n    failsafe: False\n    failsafe_and_user_took_over: False\n    failsafe_defer_state: 0\n    gcs_connection_lost: True\n    gcs_connection_lost_counter: 0\n    high_latency_data_link_lost: False\n    is_vtol: False\n    is_vtol_tailsitter: False\n    in_transition_mode: False\n    in_transition_to_fw: False\n    system_type: 2\n    system_id: 1\n    component_id: 1\n    safety_button_available: True\n    safety_off: True\n    power_input_valid: True\n    usb_connected: False\n    open_drone_id_system_present: False\n    open_drone_id_system_healthy: False\n    parachute_system_present: False\n    parachute_system_healthy: False\n    traffic_avoidance_system_present: False\n    rc_calibration_in_progress: False\n    calibration_enabled: False\n    pre_flight_checks_pass: True\n\n",
+            "vehicle_land_detected": "\nTOPIC: vehicle_land_detected\n vehicle_land_detected\n    timestamp: 729728000 (0.180000 seconds ago)\n    freefall: False\n    ground_contact: False\n    maybe_landed: False\n    landed: False\n    in_ground_effect: False\n    in_descend: False\n    has_low_throttle: False\n    vertical_movement: False\n    horizontal_movement: False\n    rotational_movement: False\n    close_to_ground_or_skipped_check: True\n    at_rest: False\n\n",
+            "mission_result": "\nTOPIC: mission_result\n mission_result\n    timestamp: 689764000 (40.147999 seconds ago)\n    mission_id: 2592536806\n    geofence_id: 0\n    home_position_counter: 143\n    seq_reached: 0\n    seq_current: 1\n    seq_total: 2\n    item_changed_index: 0\n    item_do_jump_remaining: 0\n    valid: True\n    warning: False\n    finished: False\n    failure: False\n    item_do_jump_changed: False\n    execution_mode: 0\n\n",
+            "battery_status": "\nTOPIC: battery_status\n battery_status\n    timestamp: 729916000 (0.004000 seconds ago)\n    voltage_v: 15.84126\n    current_a: -1.00000\n    current_average_a: 0.00001\n    discharged_mah: 0.00000\n    remaining: 0.80099\n    scale: 1.02261\n    time_remaining_s: nan\n    temperature: nan\n    voltage_cell_v: [0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000]\n    max_cell_voltage_delta: 0.00000\n    full_charge_capacity_wh: 0.00000\n    remaining_capacity_wh: 0.00000\n    nominal_voltage: 0.00000\n    internal_resistance_estimate: 0.00500\n    ocv_estimate: 15.82126\n    ocv_estimate_filtered: 16.18000\n    volt_based_soc_estimate: 0.98889\n    voltage_prediction: 0.00000\n    prediction_error: 0.00000\n    estimation_covariance_norm: 6.01332\n    capacity: 0\n    cycle_count: 0\n    average_time_to_empty: 0\n    manufacture_date: 0\n    state_of_health: 0\n    max_error: 0\n    interface_error: 0\n    faults: 0\n    over_discharge_count: 0\n    connected: True\n    cell_count: 4\n    source: 0\n    priority: 0\n    id: 1\n    is_powering_off: False\n    is_required: False\n    warning: 0\n\n",
+            "vehicle_global_position": "\nTOPIC: vehicle_global_position\n vehicle_global_position\n    timestamp: 729920000 (0.004000 seconds ago)\n    timestamp_sample: 729920000 (0 us before timestamp)\n    lat: 35.447065\n    lon: 139.646493\n    alt: 3.53747\n    alt_ellipsoid: 3.53747\n    delta_alt: 0.70536\n    delta_terrain: 0.70536\n    eph: 0.15124\n    epv: 0.16490\n    terrain_alt: 0.69521\n    lat_lon_valid: True\n    alt_valid: True\n    lat_lon_reset_counter: 4\n    alt_reset_counter: 2\n    terrain_reset_counter: 2\n    terrain_alt_valid: False\n    dead_reckoning: False\n\n",
+            "home_position": "\nTOPIC: home_position\n home_position\n    timestamp: 10900000 (719.031982 seconds ago)\n    lat: 35.450939\n    lon: 139.659695\n    alt: 0.69041\n    x: -0.00272\n    y: -0.00929\n    z: 0.02222\n    roll: -0.00046\n    pitch: -0.00033\n    yaw: 1.57377\n    update_count: 143\n    valid_alt: True\n    valid_hpos: True\n    valid_lpos: True\n    manual_home: False\n\n"
+          },
+          "px4_relative_altitude_m": 2.84706,
+          "payload": {
+            "id": 29,
+            "xyz": [
+              153.07728848662484,
+              -64.91058970131526,
+              -0.15139066959025232
+            ],
+            "quat_wxyz": [
+              0.7069910940472305,
+              -0.0035391904472031805,
+              -0.0016229649467993763,
+              0.7072117314168792
+            ],
+            "sensor_sim_s": 729.912,
+            "received_monotonic_s": 1771.906691722,
+            "age_s": 0.018997375000026295
+          },
+          "payload_joint": {
+            "state": "detached",
+            "observed_sim_s": 726.616,
+            "wall_elapsed_s": 777.6759177299999
+          },
+          "queue_lead": {
+            "id": 36,
+            "xyz": [
+              165.83285452510518,
+              -64.09336826549612,
+              6.831143087104275
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 729.912,
+            "received_monotonic_s": 1771.906691722,
+            "age_s": 0.018997375000026295
+          },
+          "queue_parcel": {
+            "id": 48,
+            "xyz": [
+              153.83285452510518,
+              -64.09336826549612,
+              -0.018856912895725136
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 729.912,
+            "received_monotonic_s": 1771.906691722,
+            "age_s": 0.018997375000026295
+          }
+        },
+        {
+          "run_id": "yokohama-c410139f4ad7",
+          "world_sha256": "bcf30c60baccd7c86bf2477d3064f8bf6e1bd0d7e1b2ebcbf0631bc82205f821",
+          "phase": "PAYLOAD-VERIFY",
+          "sim_s": 730.224,
+          "wall_s": 782.974320565,
+          "vehicle": {
+            "id": 60,
+            "xyz": [
+              153.0151288338461,
+              -64.89286475392525,
+              3.310367138607091
+            ],
+            "quat_wxyz": [
+              0.706821403169766,
+              0.0014815808384150318,
+              0.001303681646063532,
+              0.7073892912346836
+            ],
+            "sensor_sim_s": 730.224,
+            "received_monotonic_s": 1772.256613847,
+            "age_s": 0.004196625000076892
+          },
+          "local_ned": [
+            -430.60941,
+            -1195.98303,
+            -2.82358
+          ],
+          "velocity_ned": [
+            -0.00226,
+            -0.01926,
+            0.00919
+          ],
+          "position_valid": true,
+          "heading_ned_rad": 0.0004,
+          "reset_counters": [
+            4.0,
+            2.0,
+            2.0
+          ],
+          "battery_fraction": 0.80091,
+          "preflight_pass": true,
+          "nav_state": 4.0,
+          "arming_state": 2.0,
+          "landed": false,
+          "mission_id": 2592536806.0,
+          "mission_valid": true,
+          "mission_count": 2.0,
+          "raw_px4": {
+            "vehicle_local_position": "\nTOPIC: vehicle_local_position\n vehicle_local_position\n    timestamp: 730200000 (0.000000 seconds ago)\n    timestamp_sample: 730200000 (0 us before timestamp)\n    ref_timestamp: 4048000\n    ref_lat: 35.450939\n    ref_lon: 139.659695\n    x: -430.60941\n    y: -1195.98303\n    z: -2.82358\n    delta_xy: [0.00000, 0.00000]\n    delta_z: -0.70536\n    vx: -0.00226\n    vy: -0.01926\n    vz: 0.00919\n    z_deriv: 0.00461\n    delta_vxy: [-0.00003, 0.00053]\n    delta_vz: -0.00006\n    ax: 0.00515\n    ay: 0.03927\n    az: 0.01030\n    heading: 0.00040\n    heading_var: 0.00938\n    unaided_heading: -1.59866\n    delta_heading: 0.26900\n    tilt_var: 0.00002\n    ref_alt: 0.71264\n    dist_bottom: 2.84341\n    dist_bottom_var: 164.15150\n    delta_dist_bottom: -0.70536\n    eph: 0.15042\n    epv: 0.16437\n    evh: 0.08634\n    evv: 0.05386\n    vxy_max: inf\n    vz_max: inf\n    hagl_min: inf\n    hagl_max_z: inf\n    hagl_max_xy: inf\n    xy_valid: True\n    z_valid: True\n    v_xy_valid: True\n    v_z_valid: True\n    xy_reset_counter: 4\n    z_reset_counter: 2\n    vxy_reset_counter: 4\n    vz_reset_counter: 1\n    heading_reset_counter: 2\n    heading_good_for_control: True\n    xy_global: True\n    z_global: True\n    dist_bottom_valid: False\n    dist_bottom_reset_counter: 2\n    dist_bottom_sensor_bitfield: 0\n    dead_reckoning: False\n",
+            "vehicle_status": "\nTOPIC: vehicle_status\n vehicle_status\n    timestamp: 729892000 (0.312000 seconds ago)\n    armed_time: 10900000\n    takeoff_time: 12628000\n    nav_state_timestamp: 692272000\n    valid_nav_states_mask: 2147411327\n    can_set_nav_states_mask: 8308095\n    arming_state: 2\n    latest_arming_reason: 3\n    latest_disarming_reason: 0\n    nav_state_user_intention: 4\n    nav_state: 4\n    executor_in_charge: 0\n    nav_state_display: 4\n    accepts_offboard_setpoints: False\n    hil_state: 0\n    vehicle_type: 1\n    failsafe: False\n    failsafe_and_user_took_over: False\n    failsafe_defer_state: 0\n    gcs_connection_lost: True\n    gcs_connection_lost_counter: 0\n    high_latency_data_link_lost: False\n    is_vtol: False\n    is_vtol_tailsitter: False\n    in_transition_mode: False\n    in_transition_to_fw: False\n    system_type: 2\n    system_id: 1\n    component_id: 1\n    safety_button_available: True\n    safety_off: True\n    power_input_valid: True\n    usb_connected: False\n    open_drone_id_system_present: False\n    open_drone_id_system_healthy: False\n    parachute_system_present: False\n    parachute_system_healthy: False\n    traffic_avoidance_system_present: False\n    rc_calibration_in_progress: False\n    calibration_enabled: False\n    pre_flight_checks_pass: True\n\n",
+            "vehicle_land_detected": "\nTOPIC: vehicle_land_detected\n vehicle_land_detected\n    timestamp: 729728000 (0.480000 seconds ago)\n    freefall: False\n    ground_contact: False\n    maybe_landed: False\n    landed: False\n    in_ground_effect: False\n    in_descend: False\n    has_low_throttle: False\n    vertical_movement: False\n    horizontal_movement: False\n    rotational_movement: False\n    close_to_ground_or_skipped_check: True\n    at_rest: False\n\n",
+            "mission_result": "\nTOPIC: mission_result\n mission_result\n    timestamp: 689764000 (40.447998 seconds ago)\n    mission_id: 2592536806\n    geofence_id: 0\n    home_position_counter: 143\n    seq_reached: 0\n    seq_current: 1\n    seq_total: 2\n    item_changed_index: 0\n    item_do_jump_remaining: 0\n    valid: True\n    warning: False\n    finished: False\n    failure: False\n    item_do_jump_changed: False\n    execution_mode: 0\n\n",
+            "battery_status": "\nTOPIC: battery_status\n battery_status\n    timestamp: 730216000 (0.000000 seconds ago)\n    voltage_v: 15.84111\n    current_a: -1.00000\n    current_average_a: 0.00001\n    discharged_mah: 0.00000\n    remaining: 0.80091\n    scale: 1.02262\n    time_remaining_s: nan\n    temperature: nan\n    voltage_cell_v: [0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000]\n    max_cell_voltage_delta: 0.00000\n    full_charge_capacity_wh: 0.00000\n    remaining_capacity_wh: 0.00000\n    nominal_voltage: 0.00000\n    internal_resistance_estimate: 0.00500\n    ocv_estimate: 15.82111\n    ocv_estimate_filtered: 16.18000\n    volt_based_soc_estimate: 0.98889\n    voltage_prediction: 0.00000\n    prediction_error: 0.00000\n    estimation_covariance_norm: 6.01332\n    capacity: 0\n    cycle_count: 0\n    average_time_to_empty: 0\n    manufacture_date: 0\n    state_of_health: 0\n    max_error: 0\n    interface_error: 0\n    faults: 0\n    over_discharge_count: 0\n    connected: True\n    cell_count: 4\n    source: 0\n    priority: 0\n    id: 1\n    is_powering_off: False\n    is_required: False\n    warning: 0\n\n",
+            "vehicle_global_position": "\nTOPIC: vehicle_global_position\n vehicle_global_position\n    timestamp: 730216000 (0.004000 seconds ago)\n    timestamp_sample: 730216000 (0 us before timestamp)\n    lat: 35.447065\n    lon: 139.646492\n    alt: 3.53620\n    alt_ellipsoid: 3.53620\n    delta_alt: 0.70536\n    delta_terrain: 0.70536\n    eph: 0.15125\n    epv: 0.16489\n    terrain_alt: 0.69521\n    lat_lon_valid: True\n    alt_valid: True\n    lat_lon_reset_counter: 4\n    alt_reset_counter: 2\n    terrain_reset_counter: 2\n    terrain_alt_valid: False\n    dead_reckoning: False\n\n",
+            "home_position": "\nTOPIC: home_position\n home_position\n    timestamp: 10900000 (719.328003 seconds ago)\n    lat: 35.450939\n    lon: 139.659695\n    alt: 0.69041\n    x: -0.00272\n    y: -0.00929\n    z: 0.02222\n    roll: -0.00046\n    pitch: -0.00033\n    yaw: 1.57377\n    update_count: 143\n    valid_alt: True\n    valid_hpos: True\n    valid_lpos: True\n    manual_home: False\n\n"
+          },
+          "px4_relative_altitude_m": 2.84579,
+          "payload": {
+            "id": 29,
+            "xyz": [
+              153.07728848652508,
+              -64.91058970127868,
+              -0.151078810235856
+            ],
+            "quat_wxyz": [
+              0.7069910940435852,
+              -0.003539191649523109,
+              -0.0016229654983413422,
+              0.7072117314132408
+            ],
+            "sensor_sim_s": 730.224,
+            "received_monotonic_s": 1772.256613847,
+            "age_s": 0.004196625000076892
+          },
+          "payload_joint": {
+            "state": "detached",
+            "observed_sim_s": 726.616,
+            "wall_elapsed_s": 777.6759177299999
+          },
+          "queue_lead": {
+            "id": 36,
+            "xyz": [
+              165.83285452510518,
+              -64.09336826549612,
+              6.831143087104275
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 730.224,
+            "received_monotonic_s": 1772.256613847,
+            "age_s": 0.004196625000076892
+          },
+          "queue_parcel": {
+            "id": 48,
+            "xyz": [
+              153.83285452510518,
+              -64.09336826549612,
+              -0.018856912895725136
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 730.224,
+            "received_monotonic_s": 1772.256613847,
+            "age_s": 0.004196625000076892
+          }
+        },
+        {
+          "run_id": "yokohama-c410139f4ad7",
+          "world_sha256": "bcf30c60baccd7c86bf2477d3064f8bf6e1bd0d7e1b2ebcbf0631bc82205f821",
+          "phase": "PAYLOAD-VERIFY",
+          "sim_s": 730.352,
+          "wall_s": 783.3305757319999,
+          "vehicle": {
+            "id": 60,
+            "xyz": [
+              153.0120170847534,
+              -64.89425423661562,
+              3.3094662593845583
+            ],
+            "quat_wxyz": [
+              0.7067950961193907,
+              0.0017787526399201893,
+              0.0014739040332612879,
+              0.7074145572064007
+            ],
+            "sensor_sim_s": 730.368,
+            "received_monotonic_s": 1772.606771264,
+            "age_s": 0.01029220800000985
+          },
+          "local_ned": [
+            -430.60934,
+            -1195.9884,
+            -2.82371
+          ],
+          "velocity_ned": [
+            -0.00149,
+            -0.01473,
+            0.00879
+          ],
+          "position_valid": true,
+          "heading_ned_rad": 0.00042,
+          "reset_counters": [
+            4.0,
+            2.0,
+            2.0
+          ],
+          "battery_fraction": 0.80087,
+          "preflight_pass": true,
+          "nav_state": 4.0,
+          "arming_state": 2.0,
+          "landed": false,
+          "mission_id": 2592536806.0,
+          "mission_valid": true,
+          "mission_count": 2.0,
+          "raw_px4": {
+            "vehicle_local_position": "\nTOPIC: vehicle_local_position\n vehicle_local_position\n    timestamp: 730344000 (0.000000 seconds ago)\n    timestamp_sample: 730344000 (0 us before timestamp)\n    ref_timestamp: 4048000\n    ref_lat: 35.450939\n    ref_lon: 139.659695\n    x: -430.60934\n    y: -1195.98840\n    z: -2.82371\n    delta_xy: [0.00000, 0.00000]\n    delta_z: -0.70536\n    vx: -0.00149\n    vy: -0.01473\n    vz: 0.00879\n    z_deriv: 0.00351\n    delta_vxy: [-0.00003, 0.00053]\n    delta_vz: -0.00006\n    ax: 0.00551\n    ay: 0.04087\n    az: 0.00539\n    heading: 0.00042\n    heading_var: 0.00941\n    unaided_heading: -1.59872\n    delta_heading: 0.26900\n    tilt_var: 0.00002\n    ref_alt: 0.71264\n    dist_bottom: 2.84452\n    dist_bottom_var: 164.18034\n    delta_dist_bottom: -0.70536\n    eph: 0.15106\n    epv: 0.16470\n    evh: 0.08678\n    evv: 0.05396\n    vxy_max: inf\n    vz_max: inf\n    hagl_min: inf\n    hagl_max_z: inf\n    hagl_max_xy: inf\n    xy_valid: True\n    z_valid: True\n    v_xy_valid: True\n    v_z_valid: True\n    xy_reset_counter: 4\n    z_reset_counter: 2\n    vxy_reset_counter: 4\n    vz_reset_counter: 1\n    heading_reset_counter: 2\n    heading_good_for_control: True\n    xy_global: True\n    z_global: True\n    dist_bottom_valid: False\n    dist_bottom_reset_counter: 2\n    dist_bottom_sensor_bitfield: 0\n    dead_reckoning: False\n",
+            "vehicle_status": "\nTOPIC: vehicle_status\n vehicle_status\n    timestamp: 729892000 (0.456000 seconds ago)\n    armed_time: 10900000\n    takeoff_time: 12628000\n    nav_state_timestamp: 692272000\n    valid_nav_states_mask: 2147411327\n    can_set_nav_states_mask: 8308095\n    arming_state: 2\n    latest_arming_reason: 3\n    latest_disarming_reason: 0\n    nav_state_user_intention: 4\n    nav_state: 4\n    executor_in_charge: 0\n    nav_state_display: 4\n    accepts_offboard_setpoints: False\n    hil_state: 0\n    vehicle_type: 1\n    failsafe: False\n    failsafe_and_user_took_over: False\n    failsafe_defer_state: 0\n    gcs_connection_lost: True\n    gcs_connection_lost_counter: 0\n    high_latency_data_link_lost: False\n    is_vtol: False\n    is_vtol_tailsitter: False\n    in_transition_mode: False\n    in_transition_to_fw: False\n    system_type: 2\n    system_id: 1\n    component_id: 1\n    safety_button_available: True\n    safety_off: True\n    power_input_valid: True\n    usb_connected: False\n    open_drone_id_system_present: False\n    open_drone_id_system_healthy: False\n    parachute_system_present: False\n    parachute_system_healthy: False\n    traffic_avoidance_system_present: False\n    rc_calibration_in_progress: False\n    calibration_enabled: False\n    pre_flight_checks_pass: True\n\n",
+            "vehicle_land_detected": "\nTOPIC: vehicle_land_detected\n vehicle_land_detected\n    timestamp: 729728000 (0.624000 seconds ago)\n    freefall: False\n    ground_contact: False\n    maybe_landed: False\n    landed: False\n    in_ground_effect: False\n    in_descend: False\n    has_low_throttle: False\n    vertical_movement: False\n    horizontal_movement: False\n    rotational_movement: False\n    close_to_ground_or_skipped_check: True\n    at_rest: False\n\n",
+            "mission_result": "\nTOPIC: mission_result\n mission_result\n    timestamp: 689764000 (40.596001 seconds ago)\n    mission_id: 2592536806\n    geofence_id: 0\n    home_position_counter: 143\n    seq_reached: 0\n    seq_current: 1\n    seq_total: 2\n    item_changed_index: 0\n    item_do_jump_remaining: 0\n    valid: True\n    warning: False\n    finished: False\n    failure: False\n    item_do_jump_changed: False\n    execution_mode: 0\n\n",
+            "battery_status": "\nTOPIC: battery_status\n battery_status\n    timestamp: 730364000 (0.004000 seconds ago)\n    voltage_v: 15.84104\n    current_a: -1.00000\n    current_average_a: 0.00001\n    discharged_mah: 0.00000\n    remaining: 0.80087\n    scale: 1.02263\n    time_remaining_s: nan\n    temperature: nan\n    voltage_cell_v: [0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000]\n    max_cell_voltage_delta: 0.00000\n    full_charge_capacity_wh: 0.00000\n    remaining_capacity_wh: 0.00000\n    nominal_voltage: 0.00000\n    internal_resistance_estimate: 0.00500\n    ocv_estimate: 15.82104\n    ocv_estimate_filtered: 16.18000\n    volt_based_soc_estimate: 0.98889\n    voltage_prediction: 0.00000\n    prediction_error: 0.00000\n    estimation_covariance_norm: 6.01332\n    capacity: 0\n    cycle_count: 0\n    average_time_to_empty: 0\n    manufacture_date: 0\n    state_of_health: 0\n    max_error: 0\n    interface_error: 0\n    faults: 0\n    over_discharge_count: 0\n    connected: True\n    cell_count: 4\n    source: 0\n    priority: 0\n    id: 1\n    is_powering_off: False\n    is_required: False\n    warning: 0\n\n",
+            "vehicle_global_position": "\nTOPIC: vehicle_global_position\n vehicle_global_position\n    timestamp: 730368000 (0.004000 seconds ago)\n    timestamp_sample: 730368000 (0 us before timestamp)\n    lat: 35.447065\n    lon: 139.646492\n    alt: 3.53645\n    alt_ellipsoid: 3.53645\n    delta_alt: 0.70536\n    delta_terrain: 0.70536\n    eph: 0.15060\n    epv: 0.16453\n    terrain_alt: 0.69521\n    lat_lon_valid: True\n    alt_valid: True\n    lat_lon_reset_counter: 4\n    alt_reset_counter: 2\n    terrain_reset_counter: 2\n    terrain_alt_valid: False\n    dead_reckoning: False\n\n",
+            "home_position": "\nTOPIC: home_position\n home_position\n    timestamp: 10900000 (719.475952 seconds ago)\n    lat: 35.450939\n    lon: 139.659695\n    alt: 0.69041\n    x: -0.00272\n    y: -0.00929\n    z: 0.02222\n    roll: -0.00046\n    pitch: -0.00033\n    yaw: 1.57377\n    update_count: 143\n    valid_alt: True\n    valid_hpos: True\n    valid_lpos: True\n    manual_home: False\n\n"
+          },
+          "px4_relative_altitude_m": 2.84604,
+          "payload": {
+            "id": 29,
+            "xyz": [
+              153.07728848647903,
+              -64.9105897012618,
+              -0.15093487514921156
+            ],
+            "quat_wxyz": [
+              0.7069910940419023,
+              -0.003539192204440142,
+              -0.0016229657528992376,
+              0.7072117314115618
+            ],
+            "sensor_sim_s": 730.368,
+            "received_monotonic_s": 1772.606771264,
+            "age_s": 0.01029220800000985
+          },
+          "payload_joint": {
+            "state": "detached",
+            "observed_sim_s": 726.616,
+            "wall_elapsed_s": 777.6759177299999
+          },
+          "queue_lead": {
+            "id": 36,
+            "xyz": [
+              165.83285452510518,
+              -64.09336826549612,
+              6.831143087104275
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 730.368,
+            "received_monotonic_s": 1772.606771264,
+            "age_s": 0.01029220800000985
+          },
+          "queue_parcel": {
+            "id": 48,
+            "xyz": [
+              153.83285452510518,
+              -64.09336826549612,
+              -0.018856912895725136
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 730.368,
+            "received_monotonic_s": 1772.606771264,
+            "age_s": 0.01029220800000985
+          }
+        },
+        {
+          "run_id": "yokohama-c410139f4ad7",
+          "world_sha256": "bcf30c60baccd7c86bf2477d3064f8bf6e1bd0d7e1b2ebcbf0631bc82205f821",
+          "phase": "PAYLOAD-VERIFY",
+          "sim_s": 730.628,
+          "wall_s": 783.6712717319999,
+          "vehicle": {
+            "id": 60,
+            "xyz": [
+              153.0090131835549,
+              -64.89754034291397,
+              3.3072185442229802
+            ],
+            "quat_wxyz": [
+              0.7067061682444382,
+              0.0017151003410215662,
+              0.0015230981668267324,
+              0.7075034490149559
+            ],
+            "sensor_sim_s": 730.672,
+            "received_monotonic_s": 1772.940178639,
+            "age_s": 0.017581042000074376
+          },
+          "local_ned": [
+            -430.61307,
+            -1195.99438,
+            -2.82399
+          ],
+          "velocity_ned": [
+            -0.00295,
+            -0.00117,
+            0.00981
+          ],
+          "position_valid": true,
+          "heading_ned_rad": 0.00019,
+          "reset_counters": [
+            4.0,
+            2.0,
+            2.0
+          ],
+          "battery_fraction": 0.80078,
+          "preflight_pass": true,
+          "nav_state": 4.0,
+          "arming_state": 2.0,
+          "landed": false,
+          "mission_id": 2592536806.0,
+          "mission_valid": true,
+          "mission_count": 2.0,
+          "raw_px4": {
+            "vehicle_local_position": "\nTOPIC: vehicle_local_position\n vehicle_local_position\n    timestamp: 730648000 (0.004000 seconds ago)\n    timestamp_sample: 730648000 (0 us before timestamp)\n    ref_timestamp: 4048000\n    ref_lat: 35.450939\n    ref_lon: 139.659695\n    x: -430.61307\n    y: -1195.99438\n    z: -2.82399\n    delta_xy: [0.00000, 0.00000]\n    delta_z: -0.70536\n    vx: -0.00295\n    vy: -0.00117\n    vz: 0.00981\n    z_deriv: 0.00341\n    delta_vxy: [-0.00003, 0.00053]\n    delta_vz: -0.00006\n    ax: 0.00134\n    ay: 0.04174\n    az: 0.00061\n    heading: 0.00019\n    heading_var: 0.00947\n    unaided_heading: -1.59898\n    delta_heading: 0.26900\n    tilt_var: 0.00002\n    ref_alt: 0.71264\n    dist_bottom: 2.84375\n    dist_bottom_var: 164.24123\n    delta_dist_bottom: -0.70536\n    eph: 0.15147\n    epv: 0.16495\n    evh: 0.08705\n    evv: 0.05400\n    vxy_max: inf\n    vz_max: inf\n    hagl_min: inf\n    hagl_max_z: inf\n    hagl_max_xy: inf\n    xy_valid: True\n    z_valid: True\n    v_xy_valid: True\n    v_z_valid: True\n    xy_reset_counter: 4\n    z_reset_counter: 2\n    vxy_reset_counter: 4\n    vz_reset_counter: 1\n    heading_reset_counter: 2\n    heading_good_for_control: True\n    xy_global: True\n    z_global: True\n    dist_bottom_valid: False\n    dist_bottom_reset_counter: 2\n    dist_bottom_sensor_bitfield: 0\n    dead_reckoning: False\n",
+            "vehicle_status": "\nTOPIC: vehicle_status\n vehicle_status\n    timestamp: 730396000 (0.264000 seconds ago)\n    armed_time: 10900000\n    takeoff_time: 12628000\n    nav_state_timestamp: 692272000\n    valid_nav_states_mask: 2147411327\n    can_set_nav_states_mask: 8308095\n    arming_state: 2\n    latest_arming_reason: 3\n    latest_disarming_reason: 0\n    nav_state_user_intention: 4\n    nav_state: 4\n    executor_in_charge: 0\n    nav_state_display: 4\n    accepts_offboard_setpoints: False\n    hil_state: 0\n    vehicle_type: 1\n    failsafe: False\n    failsafe_and_user_took_over: False\n    failsafe_defer_state: 0\n    gcs_connection_lost: True\n    gcs_connection_lost_counter: 0\n    high_latency_data_link_lost: False\n    is_vtol: False\n    is_vtol_tailsitter: False\n    in_transition_mode: False\n    in_transition_to_fw: False\n    system_type: 2\n    system_id: 1\n    component_id: 1\n    safety_button_available: True\n    safety_off: True\n    power_input_valid: True\n    usb_connected: False\n    open_drone_id_system_present: False\n    open_drone_id_system_healthy: False\n    parachute_system_present: False\n    parachute_system_healthy: False\n    traffic_avoidance_system_present: False\n    rc_calibration_in_progress: False\n    calibration_enabled: False\n    pre_flight_checks_pass: True\n\n",
+            "vehicle_land_detected": "\nTOPIC: vehicle_land_detected\n vehicle_land_detected\n    timestamp: 729728000 (0.936000 seconds ago)\n    freefall: False\n    ground_contact: False\n    maybe_landed: False\n    landed: False\n    in_ground_effect: False\n    in_descend: False\n    has_low_throttle: False\n    vertical_movement: False\n    horizontal_movement: False\n    rotational_movement: False\n    close_to_ground_or_skipped_check: True\n    at_rest: False\n\n",
+            "mission_result": "\nTOPIC: mission_result\n mission_result\n    timestamp: 689764000 (40.911999 seconds ago)\n    mission_id: 2592536806\n    geofence_id: 0\n    home_position_counter: 143\n    seq_reached: 0\n    seq_current: 1\n    seq_total: 2\n    item_changed_index: 0\n    item_do_jump_remaining: 0\n    valid: True\n    warning: False\n    finished: False\n    failure: False\n    item_do_jump_changed: False\n    execution_mode: 0\n\n",
+            "battery_status": "\nTOPIC: battery_status\n battery_status\n    timestamp: 730676000 (0.004000 seconds ago)\n    voltage_v: 15.84088\n    current_a: -1.00000\n    current_average_a: 0.00001\n    discharged_mah: 0.00000\n    remaining: 0.80078\n    scale: 1.02264\n    time_remaining_s: nan\n    temperature: nan\n    voltage_cell_v: [0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000]\n    max_cell_voltage_delta: 0.00000\n    full_charge_capacity_wh: 0.00000\n    remaining_capacity_wh: 0.00000\n    nominal_voltage: 0.00000\n    internal_resistance_estimate: 0.00500\n    ocv_estimate: 15.82088\n    ocv_estimate_filtered: 16.18000\n    volt_based_soc_estimate: 0.98889\n    voltage_prediction: 0.00000\n    prediction_error: 0.00000\n    estimation_covariance_norm: 6.01332\n    capacity: 0\n    cycle_count: 0\n    average_time_to_empty: 0\n    manufacture_date: 0\n    state_of_health: 0\n    max_error: 0\n    interface_error: 0\n    faults: 0\n    over_discharge_count: 0\n    connected: True\n    cell_count: 4\n    source: 0\n    priority: 0\n    id: 1\n    is_powering_off: False\n    is_required: False\n    warning: 0\n\n",
+            "vehicle_global_position": "\nTOPIC: vehicle_global_position\n vehicle_global_position\n    timestamp: 730680000 (0.004000 seconds ago)\n    timestamp_sample: 730680000 (0 us before timestamp)\n    lat: 35.447065\n    lon: 139.646492\n    alt: 3.53656\n    alt_ellipsoid: 3.53656\n    delta_alt: 0.70536\n    delta_terrain: 0.70536\n    eph: 0.15142\n    epv: 0.16485\n    terrain_alt: 0.69521\n    lat_lon_valid: True\n    alt_valid: True\n    lat_lon_reset_counter: 4\n    alt_reset_counter: 2\n    terrain_reset_counter: 2\n    terrain_alt_valid: False\n    dead_reckoning: False\n\n",
+            "home_position": "\nTOPIC: home_position\n home_position\n    timestamp: 10900000 (719.788025 seconds ago)\n    lat: 35.450939\n    lon: 139.659695\n    alt: 0.69041\n    x: -0.00272\n    y: -0.00929\n    z: 0.02222\n    roll: -0.00046\n    pitch: -0.00033\n    yaw: 1.57377\n    update_count: 143\n    valid_alt: True\n    valid_hpos: True\n    valid_lpos: True\n    manual_home: False\n\n"
+          },
+          "px4_relative_altitude_m": 2.84615,
+          "payload": {
+            "id": 29,
+            "xyz": [
+              153.07728848638183,
+              -64.91058970122616,
+              -0.1506310121885177
+            ],
+            "quat_wxyz": [
+              0.7069910940383515,
+              -0.0035391933759319374,
+              -0.0016229662902993616,
+              0.7072117314080156
+            ],
+            "sensor_sim_s": 730.672,
+            "received_monotonic_s": 1772.940178639,
+            "age_s": 0.017581042000074376
+          },
+          "payload_joint": {
+            "state": "detached",
+            "observed_sim_s": 726.616,
+            "wall_elapsed_s": 777.6759177299999
+          },
+          "queue_lead": {
+            "id": 36,
+            "xyz": [
+              165.83285452510518,
+              -64.09336826549612,
+              6.831143087104275
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 730.672,
+            "received_monotonic_s": 1772.940178639,
+            "age_s": 0.017581042000074376
+          },
+          "queue_parcel": {
+            "id": 48,
+            "xyz": [
+              153.83285452510518,
+              -64.09336826549612,
+              -0.018856912895725136
+            ],
+            "quat_wxyz": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sensor_sim_s": 730.672,
+            "received_monotonic_s": 1772.940178639,
+            "age_s": 0.017581042000074376
+          }
+        }
+      ],
+      "pad_contacts": [
+        {
+          "topic": "delivery_pad",
+          "sensor_sim_s": 727.628,
+          "wall_elapsed_s": 779.108281231,
+          "collision1": "delivery_pad::link::collision",
+          "collision2": "delivery_payload::payload_link::payload_collision",
+          "depth": [
+            0.02421885505906418,
+            0.025094842310875748,
+            0.02542016995841065,
+            0.024544182706599083
+          ]
+        },
+        {
+          "topic": "delivery_pad",
+          "sensor_sim_s": 727.756,
+          "wall_elapsed_s": 779.444390772,
+          "collision1": "delivery_pad::link::collision",
+          "collision2": "delivery_payload::payload_link::payload_collision",
+          "depth": [
+            0.024090912675773818,
+            0.02496690004968402,
+            0.02529222774254583,
+            0.024416240368635628
+          ]
+        },
+        {
+          "topic": "delivery_pad",
+          "sensor_sim_s": 728.02,
+          "wall_elapsed_s": 779.749124689,
+          "collision1": "delivery_pad::link::collision",
+          "collision2": "delivery_payload::payload_link::payload_collision",
+          "depth": [
+            0.023827031510237406,
+            0.02470301913597614,
+            0.025028346922324696,
+            0.024152359296585962
+          ]
+        },
+        {
+          "topic": "delivery_pad",
+          "sensor_sim_s": 728.224,
+          "wall_elapsed_s": 779.954247023,
+          "collision1": "delivery_pad::link::collision",
+          "collision2": "delivery_payload::payload_link::payload_collision",
+          "depth": [
+            0.02362312333686832,
+            0.024499111157201867,
+            0.02482443901579022,
+            0.023948451195456674
+          ]
+        },
+        {
+          "topic": "delivery_pad",
+          "sensor_sim_s": 728.52,
+          "wall_elapsed_s": 780.497409148,
+          "collision1": "delivery_pad::link::collision",
+          "collision2": "delivery_payload::payload_link::payload_collision",
+          "depth": [
+            0.023327256575509214,
+            0.024203244678196095,
+            0.02452857264160299,
+            0.02365258453891611
+          ]
+        },
+        {
+          "topic": "delivery_pad",
+          "sensor_sim_s": 728.728,
+          "wall_elapsed_s": 780.70499444,
+          "collision1": "delivery_pad::link::collision",
+          "collision2": "delivery_payload::payload_link::payload_collision",
+          "depth": [
+            0.02311935020266223,
+            0.023995338503759622,
+            0.024320666540822794,
+            0.023444678239725403
+          ]
+        },
+        {
+          "topic": "delivery_pad",
+          "sensor_sim_s": 728.956,
+          "wall_elapsed_s": 781.151859064,
+          "collision1": "delivery_pad::link::collision",
+          "collision2": "delivery_payload::payload_link::payload_collision",
+          "depth": [
+            0.02289145283242608,
+            0.02376744135101197,
+            0.02409276946881378,
+            0.02321678095022789
+          ]
+        },
+        {
+          "topic": "delivery_pad",
+          "sensor_sim_s": 729.224,
+          "wall_elapsed_s": 781.4567154810001,
+          "collision1": "delivery_pad::link::collision",
+          "collision2": "delivery_payload::payload_link::payload_collision",
+          "depth": [
+            0.022623573467411617,
+            0.02349956224164193,
+            0.023824890454347103,
+            0.02294890168011679
+          ]
+        },
+        {
+          "topic": "delivery_pad",
+          "sensor_sim_s": 729.456,
+          "wall_elapsed_s": 781.918062523,
+          "collision1": "delivery_pad::link::collision",
+          "collision2": "delivery_payload::payload_link::payload_collision",
+          "depth": [
+            0.022391677897697554,
+            0.023267666893232064,
+            0.02359299518809238,
+            0.02271700619255787
+          ]
+        },
+        {
+          "topic": "delivery_pad",
+          "sensor_sim_s": 729.724,
+          "wall_elapsed_s": 782.2236630650001,
+          "collision1": "delivery_pad::link::collision",
+          "collision2": "delivery_payload::payload_link::payload_collision",
+          "depth": [
+            0.02212379853268298,
+            0.02299978778386208,
+            0.023325116173625815,
+            0.022449126922446716
+          ]
+        },
+        {
+          "topic": "delivery_pad",
+          "sensor_sim_s": 729.856,
+          "wall_elapsed_s": 782.5720648150001,
+          "collision1": "delivery_pad::link::collision",
+          "collision2": "delivery_payload::payload_link::payload_collision",
+          "depth": [
+            0.021991857949914595,
+            0.022867847327008223,
+            0.023193175763515428,
+            0.0223171863864218
+          ]
+        },
+        {
+          "topic": "delivery_pad",
+          "sensor_sim_s": 730.224,
+          "wall_elapsed_s": 782.977935898,
+          "collision1": "delivery_pad::link::collision",
+          "collision2": "delivery_payload::payload_link::payload_collision",
+          "depth": [
+            0.02162402359795418,
+            0.022500013326082313,
+            0.022825341892904694,
+            0.02194935216477656
+          ]
+        },
+        {
+          "topic": "delivery_pad",
+          "sensor_sim_s": 730.352,
+          "wall_elapsed_s": 783.3123651899999,
+          "collision1": "delivery_pad::link::collision",
+          "collision2": "delivery_payload::payload_link::payload_collision",
+          "depth": [
+            0.02149608121466358,
+            0.02237207106489071,
+            0.02269739967704011,
+            0.02182140982681298
+          ]
+        },
+        {
+          "topic": "delivery_pad",
+          "sensor_sim_s": 730.628,
+          "wall_elapsed_s": 783.6168242740001,
+          "collision1": "delivery_pad::link::collision",
+          "collision2": "delivery_payload::payload_link::payload_collision",
+          "depth": [
+            0.021220205450693183,
+            0.022096195564196328,
+            0.022421524274082158,
+            0.021545534160579013
+          ]
+        }
+      ],
+      "detached": {
+        "state": "detached",
+        "observed_sim_s": 726.616,
+        "wall_elapsed_s": 777.6759177299999
+      }
+    },
+    "observed_through_wall_s": 783.6712717319999,
+    "observed_through_sim_s": 730.628
+  },
+  "receipt_id": "f238fada2e130c385adf8dde8ab4662e3359485c4fb41c245e8af6f1cd360de5"
+}

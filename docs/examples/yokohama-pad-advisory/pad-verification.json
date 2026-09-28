@@ -1,0 +1,111 @@
+{
+  "run_id": "yokohama-c410139f4ad7",
+  "checks": {
+    "run_passed": true,
+    "cleanup": true,
+    "supervisor_stopped": true,
+    "no_native_models_or_gpu": true,
+    "one_occupied_wait_entry_receipt_return": true,
+    "event_order": true,
+    "ap_wait_before_entry": true,
+    "pad_initially_occupied": true,
+    "five_seconds_clear_before_proposal": true,
+    "entry_bound_to_response": true,
+    "wait_then_continue": true,
+    "sequences": true,
+    "clear_through_delivery_and_return": true,
+    "sampled_separation_gt_3m": true,
+    "lead_departure_observed": true,
+    "own_cargo_received": true,
+    "returned_landed_disarmed": true,
+    "no_early_approach_dispatch": true
+  },
+  "wait_sim_s": 31.888000000000034,
+  "minimum_sampled_separation_m": 12.796570842993406,
+  "requests": [
+    {
+      "sequence": 0,
+      "request_id": "b24cf9d8420c0af889c8314934dd1a3793d96bddd4da5bdf1ef629b805b6c6dc",
+      "action": "wait_at_current_hold"
+    },
+    {
+      "sequence": 1,
+      "request_id": "b4fb32914ae698794fa2d259c71b8f1d1f027b89807cd66c5583427a82e1770f",
+      "action": "wait_at_current_hold"
+    },
+    {
+      "sequence": 2,
+      "request_id": "3bd84e6cef4f78cb93a5f9cc3fa4d7bb8940e8051c6855c43775233a0bbb2d9b",
+      "action": "wait_at_current_hold"
+    },
+    {
+      "sequence": 3,
+      "request_id": "f37b21993cf386b4a8574adce158b8f4e83236fc046b3ab82fa04ed9f91982e1",
+      "action": "wait_at_current_hold"
+    },
+    {
+      "sequence": 4,
+      "request_id": "455923f7fa917283061f2418f874d61355a472c18a4f5824e3d9a1df864acd18",
+      "action": "wait_at_current_hold"
+    },
+    {
+      "sequence": 5,
+      "request_id": "955d1b3b35281694b402c6e368335917c39562b421c8057c1749e2eabc03c2d7",
+      "action": "wait_at_current_hold"
+    },
+    {
+      "sequence": 6,
+      "request_id": "b29b04634a88bb6689a42b978339ff3f60ca54b9d2c794eea0017d498e6094f9",
+      "action": "wait_at_current_hold"
+    },
+    {
+      "sequence": 7,
+      "request_id": "1bdf5c1f817efc84b972d1e12d79da731507777ae7b91ef33ecf3f6399c5e2eb",
+      "action": "wait_at_current_hold"
+    },
+    {
+      "sequence": 8,
+      "request_id": "c749ef2fc3cc4f9bfdb8d0dd46a69e85e2eece28b654c113e72fc09f0499e70e",
+      "action": "wait_at_current_hold"
+    },
+    {
+      "sequence": 9,
+      "request_id": "c18b4f2e4209713aba78a261f9de1b40c27b9504b69e98c713cba9fec44d9726",
+      "action": "wait_at_current_hold"
+    },
+    {
+      "sequence": 10,
+      "request_id": "a15afbb16ca19bcce00bdef809073dd3d0f5fb43a9fbd787b9fab82f829c3c19",
+      "action": "wait_at_current_hold"
+    },
+    {
+      "sequence": 11,
+      "request_id": "9e53567aa283720ac46e81de2834bff981342673cfb3eddc0b286239c8e30421",
+      "action": "wait_at_current_hold"
+    },
+    {
+      "sequence": 12,
+      "request_id": "f43bc784f998be9296842aa2f7798dfdf2d3c4cf75f2a6224cbff5c548f60a80",
+      "action": "wait_at_current_hold"
+    },
+    {
+      "sequence": 13,
+      "request_id": "5b91f0024a74fc15d0b543b9c0e6254ab22e661da8df950f4886bccd20bc795e",
+      "action": "wait_at_current_hold"
+    },
+    {
+      "sequence": 14,
+      "request_id": "3e56a08580a58c3b565b7844bc15e170cbce164f6cfdc410f5558b787ad99184",
+      "action": "wait_at_current_hold"
+    },
+    {
+      "sequence": 15,
+      "request_id": "b97b8db8d7981f918d24ca331b7d41f7d9a8b9f3d898d7ad498c9b2180eb59d3",
+      "action": "enter_delivery_approach"
+    }
+  ],
+  "observed_wait_samples": 180,
+  "lead_motion_m": 13.328165665236908,
+  "status": "passed",
+  "scope": "CPU PX4 cargo flight; scripted lead, pose-based occupancy, fixture MissionOS judge; no visual/model capability claim"
+}

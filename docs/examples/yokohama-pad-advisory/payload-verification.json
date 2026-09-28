@@ -1,0 +1,23 @@
+{
+  "status": "passed",
+  "run_id": "yokohama-c410139f4ad7",
+  "checks": {
+    "recomputed_delivery": true,
+    "receipt_exactly_recomputed": true,
+    "one_release_and_receipt": true,
+    "bounded_detach_commands": true,
+    "return_after_receipt": true,
+    "receipt_fresh_at_acceptance": true,
+    "models_stopped_before_release": true,
+    "worker_claim_matches_receipt": true,
+    "owned_runtime_finished_and_cleaned": true,
+    "return_landed_disarmed": true
+  },
+  "receipt_id": "f238fada2e130c385adf8dde8ab4662e3359485c4fb41c245e8af6f1cd360de5",
+  "physical_receipt_verified": false,
+  "evidence_hashes": {
+    "flight-trajectory.jsonl": "2a7dfb9a8b9d6351b45e0667f2fe56ca431b3d986e7b8c9f0d4c5d7e3f6f968d",
+    "sensor-events.jsonl": "5da21ee53dda16c5802a8a1989d28afe37920e25ea0dc71a3db7a2b4f376c08e",
+    "payload-joint-events.jsonl": "2981b3945b21e3c13faec5eb8cdfb7e6dc45dfb8793d2ba928e08fab80159fd5"
+  }
+}

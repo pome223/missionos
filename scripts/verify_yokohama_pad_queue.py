@@ -25,7 +25,7 @@ def verify(root):
         run_passed=result["status"] == "passed",
         cleanup=result.get("cleanup") is True,
         supervisor_stopped=result.get("pad_supervisor_stopped") is True,
-        no_models_or_gpu=all(
+        no_native_models_or_gpu=all(
             result.get(k) is False
             for k in ("vla_invoked", "wam_invoked", "gpu_requested", "physical_execution_invoked")
         ),
@@ -96,11 +96,11 @@ def verify(root):
                 checks["entry_bound_to_response"] = permit["permit"]["request_id"] == req[
                     "request_id"
                 ] and permit["permit"]["response_sha256"] == digest(resp)
-        checks["wait_then_continue"] = [r["action"] for r in requests] == [
-            "wait_at_current_hold",
-            "enter_delivery_approach",
-        ]
-        checks["sequences"] = [r["sequence"] for r in requests] == [0, 1]
+        count = len(requests) if c["world"].get("pad_state_advisory") else 2
+        checks["wait_then_continue"] = count >= 2 and [r["action"] for r in requests] == (
+            ["wait_at_current_hold"] * (count - 1) + ["enter_delivery_approach"]
+        )
+        checks["sequences"] = [r["sequence"] for r in requests] == list(range(count))
         after = [r for r in rows if r["wall_s"] >= permit["permit"]["rules_checked_at"]["wall_s"]]
         checks["clear_through_delivery_and_return"] = bool(after) and all(
             all(clearance(c, r)[k] for k in ("pad_clear", "approach_clear")) for r in after

@@ -16,10 +16,14 @@
   "accepted_next_scope": "Integrate as optional city pad-wait advisory and measure enabled/disabled mission effect",
   "uncertainty_behavior": "Defer to fresh observation and independent Rules; retain bounded hold/reobserve or mission-level escalation",
   "deployment": {
-    "live_mission_integration_completed": false,
+    "live_mission_integration_completed": true,
     "flight_authority_created": false,
     "native_anwm_profile_replaced": false,
-    "sea_leg_inference_enabled": false
+    "sea_leg_inference_enabled": false,
+    "integration_scope": "Optional fixed delivery-pad camera CPU advisory through a deterministic Mission Assurance judge; not onboard or native VLA/ANWM joint flight",
+    "native_vla_wam_joint_integration_completed": false,
+    "evidence_reference": "../yokohama-pad-advisory/advisory-verification.json",
+    "evidence_sha256": "8970c13316b3796865d170dcc2b146d42a952b815c186562c8a2c9b6e52c5f02"
   },
   "historical_protocol": {
     "reference": "model/protocol.json",

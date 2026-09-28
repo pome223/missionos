@@ -1,0 +1,10 @@
+{
+  "schema": "missionos.pad-state-advisory.v1",
+  "request_id": "b4fb32914ae698794fa2d259c71b8f1d1f027b89807cd66c5583427a82e1770f",
+  "model_sha256": "2f648169418c9b8e7a1f4dec4e51cd8a792df8bec1611168e691207cc7ab67af",
+  "camera_entity": "pad_state_camera",
+  "history_sha256": null,
+  "status": "unavailable",
+  "reason": "camera_history_not_ready",
+  "flight_authority_created": false
+}

@@ -1,0 +1,19 @@
+{
+  "run_id": "yokohama-c410139f4ad7",
+  "duration_sim_s": 1295.548,
+  "trajectory_rows": 4058,
+  "wait_sim_s": 31.888000000000034,
+  "supported": 12,
+  "inference_calls": 14,
+  "decisions": 16,
+  "action_changes": 0,
+  "signals": {
+    "unavailable_fallback_to_current_rules": 2,
+    "future_occupancy_reobserve": 10,
+    "unknown_fallback_to_current_rules": 3,
+    "sampled_clear_still_requires_current_rules": 1
+  },
+  "airborne_battery_end_fraction": 0.64341,
+  "minimum_sampled_separation_m": 12.796570842993406,
+  "mission_advantage_demonstrated": false
+}
