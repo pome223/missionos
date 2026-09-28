@@ -65,3 +65,8 @@ question is whether WAM evidence can support the mission decision; perfect
 images or beating ideal Rules are not requirements.
 
 [CPU connection report](../examples/yokohama-pad-prediction/REPORT-ja.md)
+
+Follow-up: the [native temporal endpoint diagnostic](yokohama-pad-temporal.md)
+recorded four time-bound hold forecasts. Images did not preserve recognizable
+lead/pad content; the reader returned one match, two unknowns and one false clear.
+This negative endpoint result does not qualify a provider for this adapter.

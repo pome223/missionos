@@ -1,0 +1,31 @@
+{
+  "method": "assistant visual inspection of original native forecasts and aligned source/target images; qualitative post-inference review, not a prespecified statistical gate",
+  "rows": [
+    {
+      "id": "evaluation-depart-16",
+      "prediction_sha256": "c52a975aa7791133cc9fb7cc4d2387e95a21d0045e2c1e795dcb833f5ea340b9",
+      "lead_and_pad_visually_resolved": false,
+      "note": "Generated texture does not preserve a recognizable aircraft and pad scene"
+    },
+    {
+      "id": "evaluation-depart-32",
+      "prediction_sha256": "5504435cc03b6ce7c406c44b035662b8fb2a25c430479b840900f6bf8c9b7d48",
+      "lead_and_pad_visually_resolved": false,
+      "note": "Generated texture does not preserve a recognizable aircraft and pad scene"
+    },
+    {
+      "id": "evaluation-stall-24",
+      "prediction_sha256": "028e20a056c2252389b66f0060c5ff665f07b5f5d8e364419e42ac95a323a274",
+      "lead_and_pad_visually_resolved": false,
+      "note": "Generated texture does not preserve a recognizable aircraft and pad scene"
+    },
+    {
+      "id": "evaluation-reenter-14",
+      "prediction_sha256": "cd7723f95c8bdc84bdd3b307820b2ba3beab5da1d72c675eff4c89559ee9007c",
+      "lead_and_pad_visually_resolved": false,
+      "note": "Generated texture does not preserve a recognizable aircraft and pad scene"
+    }
+  ],
+  "reader_on_generated_images_qualified": false,
+  "native_flight_admitted": false
+}

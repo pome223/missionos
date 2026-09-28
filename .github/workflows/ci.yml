@@ -80,6 +80,14 @@ jobs:
             --native-probe docs/examples/yokohama-pad-native-probe \
             --output /tmp/yokohama-pad-prediction-ci.json
 
+      - name: Reopen native temporal pad evidence without GPU
+        run: |
+          python scripts/probe_yokohama_pad_temporal.py \
+            --inputs docs/examples/yokohama-pad-temporal/prepared/inputs \
+            --output /tmp/unused-pad-temporal-ci
+          python scripts/check_yokohama_pad_temporal.py \
+            --bundle docs/examples/yokohama-pad-temporal
+
       - name: Verify Jev mode selection through the Gateway
         env:
           PYTHONPATH: .:packages/missionos-cli/src:packages/missionos-gateway/src

@@ -1,0 +1,44 @@
+{
+  "forecasts": [
+    {
+      "candidate": {
+        "id": "hold",
+        "delta": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "elapsed_s": 5.711145170000009,
+      "files": {
+        "prediction": {
+          "file": "hold-prediction.png",
+          "sha256": "028e20a056c2252389b66f0060c5ff665f07b5f5d8e364419e42ac95a323a274"
+        },
+        "projection": {
+          "file": "hold-projection.png",
+          "sha256": "c3287477b982ebdb64a47619178703048bd76a5599bf063acc5311b47c8dce03"
+        }
+      },
+      "conditioning": {
+        "metric_geometry_changed": false,
+        "appearance_added_fraction": 0.034058159722222224,
+        "known_fraction": 0.744453125
+      },
+      "model_time_index": 64
+    }
+  ],
+  "peak_cuda_allocated_bytes": 7320341504,
+  "gpu": "NVIDIA L4",
+  "torch_version": "2.9.1+cu129",
+  "schema": "pad_temporal_native_result.v1",
+  "request_sha256": "de5c58c3a4c7de96c779c062353df6427a7e4aaa148c5e4ddefa8e5060325848",
+  "request_total_seconds": 5.752746774000002,
+  "requested_future_stamp_ns": 144000000000,
+  "time_conditioning": "64 frame offsets / 128, 4 Hz acquisition; unvalidated physical forecast",
+  "wam_inference_invoked": true,
+  "dispatch_invoked": false,
+  "aircraft_flown": false,
+  "model_weights_updated": false
+}

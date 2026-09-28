@@ -1,0 +1,26 @@
+{
+  "schema": "yokohama_pad_temporal_request.v1",
+  "history_sha256": "6284ba88e47b6b2878f28cbf15217685a23e130d97ea60b104dbf9c557e10755",
+  "source_run_id": "pad-motion-732c0b1690a4",
+  "world_sha256": "079d743dc70e90904eb3e2f19a0ff5c92514de464386602cf8eab35bb49467a6",
+  "cutoff_stamp_ns": 68500000000,
+  "frame_period_s": 0.25,
+  "model_frame_offset": 64,
+  "requested_horizon_sim_s": 16,
+  "diffusion_steps": 50,
+  "seed": 42,
+  "candidates": [
+    {
+      "id": "hold",
+      "delta": [
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "dispatch_allowed": false,
+  "model_time_alignment_verified": false,
+  "future_ground_truth_used_for_forecast": false
+}

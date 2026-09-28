@@ -1,0 +1,229 @@
+{
+  "schema": "pad_temporal_endpoint_evaluation.v1",
+  "evidence_integrity": "passed",
+  "native_forecasts": 4,
+  "endpoint_matches": 1,
+  "unreadable_forecasts": 2,
+  "persistence_matches": 2,
+  "warm_compute_before_target_count": 4,
+  "model_load_seconds": 16.684295538000015,
+  "cuda_allocated_after_work_bytes": 0,
+  "rows": [
+    {
+      "id": "evaluation-depart-16",
+      "source_state": "occupied",
+      "actual_state": "clear",
+      "predicted_state": "unknown",
+      "reader": {
+        "state": "unknown",
+        "grayscale_rmse": {
+          "occupied": 11.070575714111328,
+          "clear": 10.186943054199219
+        },
+        "class_margin": 0.8836326599121094,
+        "scope": "fixed camera, known lead corridor, development-frame templates; not general object detection"
+      },
+      "actual_target_reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 10.235199928283691,
+          "clear": 0.0
+        },
+        "class_margin": 10.235199928283691,
+        "scope": "fixed camera, known lead corridor, development-frame templates; not general object detection"
+      },
+      "current_image_reader": {
+        "state": "occupied",
+        "grayscale_rmse": {
+          "occupied": 8.903404235839844,
+          "clear": 10.948546409606934
+        },
+        "class_margin": 2.04514217376709,
+        "scope": "fixed camera, known lead corridor, development-frame templates; not general object detection"
+      },
+      "endpoint_match": false,
+      "persistence_match": false,
+      "source_stamp_ns": 68500000000,
+      "target_stamp_ns": 84500000000,
+      "observed_horizon_sim_s": 16.0,
+      "request_total_seconds": 7.447891138999978,
+      "warm_compute_before_target": true,
+      "past_structure_consistency": {
+        "passed": true,
+        "known_pixel_fraction": 0.871711575255102,
+        "reference_edge_pixels": 1877,
+        "matched_edge_fraction": 0.8795950985615344,
+        "luminance_mae": 29.136102791559022,
+        "predicted_edge_density": 0.15151238025560712,
+        "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+      },
+      "prediction_sha256": "c52a975aa7791133cc9fb7cc4d2387e95a21d0045e2c1e795dcb833f5ea340b9",
+      "future_target_sha256": "acf2d966dcc4e02182661f9ad0b94e7b76ce2c433a42357c55f6dfc44f1d280f",
+      "result_sha256": "d61e41809fd9fa6392047e11360ed77cc12df3affa17761ec405b4c54947244c"
+    },
+    {
+      "id": "evaluation-depart-32",
+      "source_state": "clear",
+      "actual_state": "clear",
+      "predicted_state": "clear",
+      "reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 10.199410438537598,
+          "clear": 9.125187873840332
+        },
+        "class_margin": 1.0742225646972656,
+        "scope": "fixed camera, known lead corridor, development-frame templates; not general object detection"
+      },
+      "actual_target_reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 10.235199928283691,
+          "clear": 0.0
+        },
+        "class_margin": 10.235199928283691,
+        "scope": "fixed camera, known lead corridor, development-frame templates; not general object detection"
+      },
+      "current_image_reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 10.235199928283691,
+          "clear": 0.0
+        },
+        "class_margin": 10.235199928283691,
+        "scope": "fixed camera, known lead corridor, development-frame templates; not general object detection"
+      },
+      "endpoint_match": true,
+      "persistence_match": true,
+      "source_stamp_ns": 84500000000,
+      "target_stamp_ns": 100500000000,
+      "observed_horizon_sim_s": 16.0,
+      "request_total_seconds": 5.7508328669999855,
+      "warm_compute_before_target": true,
+      "past_structure_consistency": {
+        "passed": true,
+        "known_pixel_fraction": 0.871711575255102,
+        "reference_edge_pixels": 1756,
+        "matched_edge_fraction": 0.8342824601366743,
+        "luminance_mae": 28.830151580968934,
+        "predicted_edge_density": 0.13630855758019159,
+        "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+      },
+      "prediction_sha256": "5504435cc03b6ce7c406c44b035662b8fb2a25c430479b840900f6bf8c9b7d48",
+      "future_target_sha256": "acf2d966dcc4e02182661f9ad0b94e7b76ce2c433a42357c55f6dfc44f1d280f",
+      "result_sha256": "22e297ad518f5c1960abf6c99d60c26e36ad7c4d4133a9c55cac9bbe3912b8bd"
+    },
+    {
+      "id": "evaluation-stall-24",
+      "source_state": "occupied",
+      "actual_state": "occupied",
+      "predicted_state": "unknown",
+      "reader": {
+        "state": "unknown",
+        "grayscale_rmse": {
+          "occupied": 11.039278984069824,
+          "clear": 10.104663848876953
+        },
+        "class_margin": 0.9346151351928711,
+        "scope": "fixed camera, known lead corridor, development-frame templates; not general object detection"
+      },
+      "actual_target_reader": {
+        "state": "occupied",
+        "grayscale_rmse": {
+          "occupied": 3.3974101543426514,
+          "clear": 10.692828178405762
+        },
+        "class_margin": 7.29541802406311,
+        "scope": "fixed camera, known lead corridor, development-frame templates; not general object detection"
+      },
+      "current_image_reader": {
+        "state": "occupied",
+        "grayscale_rmse": {
+          "occupied": 3.3974101543426514,
+          "clear": 10.692828178405762
+        },
+        "class_margin": 7.29541802406311,
+        "scope": "fixed camera, known lead corridor, development-frame templates; not general object detection"
+      },
+      "endpoint_match": false,
+      "persistence_match": true,
+      "source_stamp_ns": 128000000000,
+      "target_stamp_ns": 144000000000,
+      "observed_horizon_sim_s": 16.0,
+      "request_total_seconds": 5.752746774000002,
+      "warm_compute_before_target": true,
+      "past_structure_consistency": {
+        "passed": true,
+        "known_pixel_fraction": 0.871711575255102,
+        "reference_edge_pixels": 1889,
+        "matched_edge_fraction": 0.8777130757014293,
+        "luminance_mae": 28.700686648833614,
+        "predicted_edge_density": 0.1499348407599625,
+        "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+      },
+      "prediction_sha256": "028e20a056c2252389b66f0060c5ff665f07b5f5d8e364419e42ac95a323a274",
+      "future_target_sha256": "eea18d153f701503670d582234bbae5c038f9ac98297e5cc6fe123049749a4e0",
+      "result_sha256": "d4864ff3c10216459c55f0f48effb9bb2efc255ca8a0bc0211a8bc32a4172221"
+    },
+    {
+      "id": "evaluation-reenter-14",
+      "source_state": "clear",
+      "actual_state": "occupied",
+      "predicted_state": "clear",
+      "reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 10.861653327941895,
+          "clear": 9.844931602478027
+        },
+        "class_margin": 1.0167217254638672,
+        "scope": "fixed camera, known lead corridor, development-frame templates; not general object detection"
+      },
+      "actual_target_reader": {
+        "state": "occupied",
+        "grayscale_rmse": {
+          "occupied": 3.3974101543426514,
+          "clear": 10.692828178405762
+        },
+        "class_margin": 7.29541802406311,
+        "scope": "fixed camera, known lead corridor, development-frame templates; not general object detection"
+      },
+      "current_image_reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 11.30528736114502,
+          "clear": 9.705290794372559
+        },
+        "class_margin": 1.599996566772461,
+        "scope": "fixed camera, known lead corridor, development-frame templates; not general object detection"
+      },
+      "endpoint_match": false,
+      "persistence_match": false,
+      "source_stamp_ns": 185000000000,
+      "target_stamp_ns": 201000000000,
+      "observed_horizon_sim_s": 16.0,
+      "request_total_seconds": 5.658384094999974,
+      "warm_compute_before_target": true,
+      "past_structure_consistency": {
+        "passed": true,
+        "known_pixel_fraction": 0.871711575255102,
+        "reference_edge_pixels": 1832,
+        "matched_edge_fraction": 0.8831877729257642,
+        "luminance_mae": 28.889602719159868,
+        "predicted_edge_density": 0.14867738174169506,
+        "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+      },
+      "prediction_sha256": "cd7723f95c8bdc84bdd3b307820b2ba3beab5da1d72c675eff4c89559ee9007c",
+      "future_target_sha256": "eea18d153f701503670d582234bbae5c038f9ac98297e5cc6fe123049749a4e0",
+      "result_sha256": "e95daaf9f2f2bf438c0abd3fc29880eddacaad39ad3604615464056108390cd1"
+    }
+  ],
+  "time_conditioning": "64 frame offsets with observed 0.25 second cadence; parameter binding is not physical forecast calibration",
+  "timing_limit": "warm request computation only; excludes model load and transport; comparison assumes real-time simulation, not measured live AP timing",
+  "interval_conflict_prediction_verified": false,
+  "native_flight_admitted": false,
+  "mission_judgment_invoked": false,
+  "aircraft_flown": false,
+  "weights_changed": false,
+  "physical_execution": false
+}

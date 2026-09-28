@@ -4,7 +4,7 @@
     "src/runtime/yokohama_pad_prediction.py": "01a0461d901178937f8dffe1b01a66f404e9dfda80f81d84417147a74c20b09f",
     "scripts/check_yokohama_pad_prediction.py": "83c26f8e61221b6d5a57bbbe7ab51a4cdbdaa3d5e0d43bb5776576dfec73d609",
     "tests/test_yokohama_pad_prediction.py": "85e6951f926e41482eb67314dad772c956eb315c696277e08239063b4a1a082f",
-    "docs/agents/yokohama-pad-prediction.md": "175b2b5ad97fc42dae1e2b83b3ae64aab5e55708f70c8121957d99bbbca73403",
+    "docs/agents/yokohama-pad-prediction.md": "51bd3042c001aa18b0bef31878c586d0be6f5b059c8f162bdc3b6c527ce2f59b",
     "docs/examples/yokohama-pad-prediction/REPORT-ja.md": "93457e56526591c314dc2187a579759d90f7e22dd781aedc4e1a65b8ff4f5462",
     "docs/examples/yokohama-pad-prediction/runtime-smoke.json": "5a1bde4cad97d4c1f788630d366e20aa6e1ad55080582611375dc0723f3ed6d3",
     "docs/examples/yokohama-pad-prediction/validation.json": "5187d33b842af473e023ea984640b045b0c8fd928a7eacfc924cba2f9b1d0985"
