@@ -1,0 +1,17 @@
+{
+  "schema": "yokohama_pad_visual_probe.v1",
+  "case_id": "near-clear",
+  "source_run_id": "pad-views-3ac0d1c7dcf4",
+  "world_sha256": "1f60fd64eb44ab3ac528a634b090b4e3574149c34a56caeff80139c00b958e1b",
+  "capture_sha256": "3190f6516b8b4007d224867af3ca996eca182e173aa682728e8a497d2984e895",
+  "observed_at_sim_s": 25.252,
+  "images_sha256": {
+    "rgb": "7993665c7a0609646d9a7431b6b9783fab7395ffe606278e616fdfbd9dc8c874",
+    "down": "31318dece1baa03d9897fcbb31e0db7c8dd22f549f153c17a038bc818f190362"
+  },
+  "history_sha256": "5536559331db194905662e2f7fee4afe188ab30f63ea664dab3706207f39a58e",
+  "prompt": "<image>\nFly forward to the delivery pad on the ground. If another drone is above the pad, wait with zero forward motion. If the pad is empty, move forward. Stay level without turning.\nAction: ",
+  "camera_kind": "static diagnostic rig with aircraft camera transforms",
+  "future_ground_truth_used": false,
+  "dispatch_allowed": false
+}

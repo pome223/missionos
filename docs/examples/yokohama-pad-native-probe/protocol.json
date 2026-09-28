@@ -1,0 +1,47 @@
+{
+  "schema": "yokohama_pad_native_probe_protocol.v1",
+  "scope": "observed camera histories; no AP flight; no trained weights changed",
+  "source_revision": "9dc98cb6caeb7e41fa7bf604c4e0a5e57906001e",
+  "native_cases": [
+    "far-busy",
+    "near-busy",
+    "near-clear",
+    "near-reoccupied"
+  ],
+  "prompt": "fixed identical prompt for every case",
+  "vla_choices": "native bins 0 or 20..58 forward; down/yaw=49; no post-generation rewriting",
+  "primary_gate": {
+    "near-busy": "wait",
+    "near-clear": "short_forward_step",
+    "near-reoccupied": "wait"
+  },
+  "far_busy": "diagnostic not primary gate",
+  "wam": "hold and immutable native VLA target-view prediction; no calibrated departure-time claim",
+  "future_actor_schedule_input": false,
+  "models_at_sea": false,
+  "gpu_inference_case_limit": 4,
+  "gpu_forecast_limit": 8,
+  "model_retry_on_unfavorable_output": false,
+  "training": false,
+  "full_flight_gate": "All primary VLA choices and forecast visible-structure bounds pass; latest observed Rules still independently constrain dispatch",
+  "not_claimed": [
+    "model-value improvement",
+    "live joint flight",
+    "dynamic future-time alignment",
+    "physical execution"
+  ],
+  "simple_comparator": "Current occupancy telemetry from previous CPU trial; no Rules-superiority requirement",
+  "payload_sha256": {
+    "bootstrap.sh": "168ae747045c4f32b50ae1bd7392c5a52741d7860498ac45224f6ee5e2284f56",
+    "inputs.tar.gz": "cdfe97e1cac4e32ae0f9805d407610d32a869110b09448578d0485b649edf516",
+    "motion-adapter.pt": "e4b88ec38ce8f08ff90b692a3b545e573aadaacf0f080a0357409dfc2b308dd3",
+    "probe_yokohama_pad_models.py": "06e4473f75bc0a59492771123512764d9ad9788f3a5eb91553314b55e21198d6",
+    "run-probe.sh": "3c97752aab3c6b40f437d6d6e51c33e70228fb57add03030396908547bda05bb",
+    "ship_aerovla.py": "3cc49ed27d3ff813ce5cebd766e65196fe5ced20bdfc2ebd9ecb8fb45d2f9743",
+    "ship_aerovla_server.py": "867300859825c5dc2d51ff2ae3a6647a78d4699bba2534b0ce77a49fe7b53c7a",
+    "ship_anwm.py": "78e4680405eb0202eac2dbc0ba8035577b1765cf8f76961e83f6f6ae2a431509",
+    "ship_anwm_server.py": "30a0fa5e864279e2d09d8f7482dccacb93cb7961c8e28b46e070d8928ca04545",
+    "yokohama_appearance.py": "450da308c1d884e4fca1766d1143c80fd48b1f22b8aba3b071304100dd065ec9",
+    "yokohama_wam_profile.py": "1dba81457144c67c1562689644f14ce4d2ea5d3cd73f5ddfbf964f86e3ad46c6"
+  }
+}

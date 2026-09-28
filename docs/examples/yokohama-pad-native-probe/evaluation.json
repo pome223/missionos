@@ -1,0 +1,320 @@
+{
+  "schema": "yokohama_pad_native_probe_evaluation.v1",
+  "evidence_integrity": "passed",
+  "primary_cases": 3,
+  "primary_choice_matches": 1,
+  "proposal_discrimination_passed": false,
+  "primary_visible_structure_passed": false,
+  "reference_eligibility_passed": false,
+  "native_flight_admission_passed": false,
+  "rows": [
+    {
+      "case": "far-busy",
+      "expected": "wait",
+      "native_text": "55 49 49</s>",
+      "proposed": "short_forward_step",
+      "choice_matches": false,
+      "native_vla_seconds": 1.9039998054504395,
+      "forecasts": [
+        {
+          "candidate": {
+            "id": "hold",
+            "delta": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "consistency": {
+            "passed": false,
+            "known_pixel_fraction": 0.5224210778061225,
+            "reference_edge_pixels": 1306,
+            "matched_edge_fraction": 0.6523736600306279,
+            "luminance_mae": 8.588206869365072,
+            "predicted_edge_density": 0.03860679815358791,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          },
+          "reference_self_check": {
+            "passed": false,
+            "known_pixel_fraction": 0.5224210778061225,
+            "reference_edge_pixels": 1306,
+            "matched_edge_fraction": 1.0,
+            "luminance_mae": 0.0,
+            "predicted_edge_density": 0.04982260710334567,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          },
+          "reference_eligible": false,
+          "inference_seconds": 21.207603955999957
+        },
+        {
+          "candidate": {
+            "id": "vla",
+            "delta": [
+              2.8061224489795915,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "consistency": {
+            "passed": false,
+            "known_pixel_fraction": 0.5106425382653061,
+            "reference_edge_pixels": 1178,
+            "matched_edge_fraction": 0.6502546689303905,
+            "luminance_mae": 11.003317461556476,
+            "predicted_edge_density": 0.032979470767309345,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          },
+          "reference_self_check": {
+            "passed": false,
+            "known_pixel_fraction": 0.5106425382653061,
+            "reference_edge_pixels": 1178,
+            "matched_edge_fraction": 1.0,
+            "luminance_mae": 0.0,
+            "predicted_edge_density": 0.04597611427679338,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          },
+          "reference_eligible": false,
+          "inference_seconds": 20.33510305599998
+        }
+      ],
+      "cuda_released": true,
+      "vla_result_sha256": "71e979f7b6951afc18f6eb080b2ce4dbd46698039f86bdf7b51245f16285b32d",
+      "wam_result_sha256": "eefe073aa6903795d2023149006a8e8babfc0b553d4bab8dc290e3e864cd8109"
+    },
+    {
+      "case": "near-busy",
+      "expected": "wait",
+      "native_text": "58 49 49</s>",
+      "proposed": "short_forward_step",
+      "choice_matches": false,
+      "native_vla_seconds": 0.7275242805480957,
+      "forecasts": [
+        {
+          "candidate": {
+            "id": "hold",
+            "delta": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "consistency": {
+            "passed": false,
+            "known_pixel_fraction": 0.4506138392857143,
+            "reference_edge_pixels": 1354,
+            "matched_edge_fraction": 0.8648449039881831,
+            "luminance_mae": 14.060710600029484,
+            "predicted_edge_density": 0.07169394073418842,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          },
+          "reference_self_check": {
+            "passed": false,
+            "known_pixel_fraction": 0.4506138392857143,
+            "reference_edge_pixels": 1354,
+            "matched_edge_fraction": 1.0,
+            "luminance_mae": 0.0,
+            "predicted_edge_density": 0.05988500663423264,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          },
+          "reference_eligible": false,
+          "inference_seconds": 20.14714591799998
+        },
+        {
+          "candidate": {
+            "id": "vla",
+            "delta": [
+              2.9591836734693877,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "consistency": {
+            "passed": false,
+            "known_pixel_fraction": 0.44674744897959184,
+            "reference_edge_pixels": 1167,
+            "matched_edge_fraction": 0.6041131105398457,
+            "luminance_mae": 13.506319890554364,
+            "predicted_edge_density": 0.055496074232690935,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          },
+          "reference_self_check": {
+            "passed": false,
+            "known_pixel_fraction": 0.44674744897959184,
+            "reference_edge_pixels": 1167,
+            "matched_edge_fraction": 1.0,
+            "luminance_mae": 0.0,
+            "predicted_edge_density": 0.0520610278372591,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          },
+          "reference_eligible": false,
+          "inference_seconds": 20.055692601000032
+        }
+      ],
+      "cuda_released": true,
+      "vla_result_sha256": "c77e6e28f51665ed0c50aeebef1900a8f2bd864f0756ef3b5903a887c91758b8",
+      "wam_result_sha256": "ac305df024c7cb62949c12a16161642d6981aafb4aca08411a58c90708d1ef39"
+    },
+    {
+      "case": "near-clear",
+      "expected": "short_forward_step",
+      "native_text": "55 49 49</s>",
+      "proposed": "short_forward_step",
+      "choice_matches": true,
+      "native_vla_seconds": 0.737684965133667,
+      "forecasts": [
+        {
+          "candidate": {
+            "id": "hold",
+            "delta": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "consistency": {
+            "passed": false,
+            "known_pixel_fraction": 0.45115194515306123,
+            "reference_edge_pixels": 1181,
+            "matched_edge_fraction": 0.7392040643522438,
+            "luminance_mae": 14.156925976645901,
+            "predicted_edge_density": 0.06370102045324028,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          },
+          "reference_self_check": {
+            "passed": false,
+            "known_pixel_fraction": 0.45115194515306123,
+            "reference_edge_pixels": 1181,
+            "matched_edge_fraction": 1.0,
+            "luminance_mae": 0.0,
+            "predicted_edge_density": 0.05217122410213367,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          },
+          "reference_eligible": false,
+          "inference_seconds": 20.165753111999948
+        },
+        {
+          "candidate": {
+            "id": "vla",
+            "delta": [
+              2.8061224489795915,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "consistency": {
+            "passed": false,
+            "known_pixel_fraction": 0.4498963647959184,
+            "reference_edge_pixels": 974,
+            "matched_edge_fraction": 0.7320328542094456,
+            "luminance_mae": 13.458905525530845,
+            "predicted_edge_density": 0.050854965889961905,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          },
+          "reference_self_check": {
+            "passed": false,
+            "known_pixel_fraction": 0.4498963647959184,
+            "reference_edge_pixels": 974,
+            "matched_edge_fraction": 1.0,
+            "luminance_mae": 0.0,
+            "predicted_edge_density": 0.043146983255072206,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          },
+          "reference_eligible": false,
+          "inference_seconds": 20.097384241999976
+        }
+      ],
+      "cuda_released": true,
+      "vla_result_sha256": "79f3818f895b301e87c1009bed24a99bd5a1cdc41231b7e18fe36f74e2054841",
+      "wam_result_sha256": "ca819e8e72b4c5b03177dc1ceb418195b483249cd77f3bdf308ab860762e0ceb"
+    },
+    {
+      "case": "near-reoccupied",
+      "expected": "wait",
+      "native_text": "58 49 49</s>",
+      "proposed": "short_forward_step",
+      "choice_matches": false,
+      "native_vla_seconds": 0.7408137321472168,
+      "forecasts": [
+        {
+          "candidate": {
+            "id": "hold",
+            "delta": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "consistency": {
+            "passed": false,
+            "known_pixel_fraction": 0.4506138392857143,
+            "reference_edge_pixels": 1354,
+            "matched_edge_fraction": 0.8648449039881831,
+            "luminance_mae": 14.060710600029484,
+            "predicted_edge_density": 0.07169394073418842,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          },
+          "reference_self_check": {
+            "passed": false,
+            "known_pixel_fraction": 0.4506138392857143,
+            "reference_edge_pixels": 1354,
+            "matched_edge_fraction": 1.0,
+            "luminance_mae": 0.0,
+            "predicted_edge_density": 0.05988500663423264,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          },
+          "reference_eligible": false,
+          "inference_seconds": 20.129726308000045
+        },
+        {
+          "candidate": {
+            "id": "vla",
+            "delta": [
+              2.9591836734693877,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "consistency": {
+            "passed": false,
+            "known_pixel_fraction": 0.44674744897959184,
+            "reference_edge_pixels": 1167,
+            "matched_edge_fraction": 0.6041131105398457,
+            "luminance_mae": 13.506319890554364,
+            "predicted_edge_density": 0.055496074232690935,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          },
+          "reference_self_check": {
+            "passed": false,
+            "known_pixel_fraction": 0.44674744897959184,
+            "reference_edge_pixels": 1167,
+            "matched_edge_fraction": 1.0,
+            "luminance_mae": 0.0,
+            "predicted_edge_density": 0.0520610278372591,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          },
+          "reference_eligible": false,
+          "inference_seconds": 20.076392854000005
+        }
+      ],
+      "cuda_released": true,
+      "vla_result_sha256": "bc61c3cbd8069e1f3274c9ad9f80093d676df99ef3569a38fcf3e20a6e51eba9",
+      "wam_result_sha256": "c4c6856d9fbe0ec795fcc71f71196b1946bf3d626d0f8c241c607b48c3d7afc8"
+    }
+  ],
+  "vla_invocations": 4,
+  "wam_forecasts": 8,
+  "learned_weights_changed": false,
+  "same_sortie_native_flight": false,
+  "dynamic_future_time_prediction_verified": false,
+  "physical_execution": false,
+  "comparator": "Prior CPU current-occupancy telemetry; no measured benefit comparison",
+  "forecast_reference": "Independent reprojection of last observed RGBD; not a later flown view"
+}

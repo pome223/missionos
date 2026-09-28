@@ -1,0 +1,42 @@
+[
+  {
+    "passed": false,
+    "known_pixel_fraction": 0.5224210778061225,
+    "reference_edge_pixels": 1306,
+    "matched_edge_fraction": 1.0,
+    "luminance_mae": 0.0,
+    "predicted_edge_density": 0.04982260710334567,
+    "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction",
+    "case": "far-busy"
+  },
+  {
+    "passed": false,
+    "known_pixel_fraction": 0.4506138392857143,
+    "reference_edge_pixels": 1354,
+    "matched_edge_fraction": 1.0,
+    "luminance_mae": 0.0,
+    "predicted_edge_density": 0.05988500663423264,
+    "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction",
+    "case": "near-busy"
+  },
+  {
+    "passed": false,
+    "known_pixel_fraction": 0.45115194515306123,
+    "reference_edge_pixels": 1181,
+    "matched_edge_fraction": 1.0,
+    "luminance_mae": 0.0,
+    "predicted_edge_density": 0.05217122410213367,
+    "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction",
+    "case": "near-clear"
+  },
+  {
+    "passed": false,
+    "known_pixel_fraction": 0.4506138392857143,
+    "reference_edge_pixels": 1354,
+    "matched_edge_fraction": 1.0,
+    "luminance_mae": 0.0,
+    "predicted_edge_density": 0.05988500663423264,
+    "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction",
+    "case": "near-reoccupied"
+  }
+]

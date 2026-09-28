@@ -1,0 +1,10 @@
+{
+  "cleanup_confirmed": true,
+  "elapsed_observed_s": 962.732907,
+  "new_estimated_usd": 0.6645100016250001,
+  "cumulative_estimated_usd": 17.370787036059482,
+  "authorized_total_usd": 20,
+  "invoice_confirmed": false,
+  "cost_estimate_closed": true,
+  "completed_at": "2026-09-28T08:49:31.221927+00:00"
+}

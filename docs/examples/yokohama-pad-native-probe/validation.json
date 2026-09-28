@@ -1,0 +1,36 @@
+{
+  "full_suite": "3553 passed, 2 skipped, 3 warnings in 111.25s",
+  "focused_tests": 8,
+  "ruff": "passed",
+  "public_evidence_reopened": "passed",
+  "input_screen_exit_code": 2,
+  "input_screen_rejection_expected": true,
+  "browser_qa": {
+    "desktop": {
+      "width": 1280,
+      "scroll_width": 1280
+    },
+    "mobile": {
+      "width": 390,
+      "scroll_width": 390,
+      "figure_width": 354,
+      "grid_columns": "354px",
+      "body_font": "16px"
+    },
+    "native_image_sizes": [
+      640,
+      360,
+      224,
+      224
+    ],
+    "case_switches": [
+      "near-busy",
+      "near-clear",
+      "near-reoccupied"
+    ],
+    "console_errors": [],
+    "tab_id": "38",
+    "viewport_reset": true
+  },
+  "source_revision_role": "protocol source_revision is the base repository commit; executed-source and payload hashes identify the newly added runtime bytes"
+}
