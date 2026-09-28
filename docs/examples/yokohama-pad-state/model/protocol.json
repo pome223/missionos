@@ -1,0 +1,154 @@
+{
+  "schema": "missionos.pad-state-protocol.v1",
+  "frozen_at": "2026-09-28T12:34:36.594003+00:00",
+  "weights_sha256": "2f648169418c9b8e7a1f4dec4e51cd8a792df8bec1611168e691207cc7ab67af",
+  "dataset_sha256": "d1bdfb1e8f9a5c007d9b32e4b7e6b2004e4d76056e60542ca74c7207afcb22df",
+  "source_sha256": {
+    "yokohama_pad_state.py": "646a27b316991d6b95bb963aa278265b9b7099d3384d3d6cc13b82fd4b6c3b76",
+    "run_yokohama_pad_state.py": "a753f19d8ca99be405af2dfeb663c22c94dd4183734240e1e6dde47cd30aa357",
+    "capture_yokohama_pad_motion.py": "73570e72e57dd043d34125276a531d31215ab87a5a524ff04180a7ae6143a313"
+  },
+  "evaluation_cases": [
+    {
+      "id": "state-depart",
+      "split": "unseen_test",
+      "knots": [
+        [
+          0,
+          "start"
+        ],
+        [
+          9,
+          "start"
+        ],
+        [
+          17,
+          "up"
+        ],
+        [
+          34,
+          "end"
+        ],
+        [
+          52,
+          "end"
+        ]
+      ],
+      "cutoffs": [
+        5,
+        20,
+        27,
+        34,
+        43
+      ]
+    },
+    {
+      "id": "state-stall",
+      "split": "unseen_test",
+      "knots": [
+        [
+          0,
+          "start"
+        ],
+        [
+          6,
+          "start"
+        ],
+        [
+          14,
+          "up"
+        ],
+        [
+          37,
+          "up"
+        ],
+        [
+          51,
+          "end"
+        ],
+        [
+          60,
+          "end"
+        ]
+      ],
+      "cutoffs": [
+        19,
+        31,
+        40,
+        46,
+        55
+      ]
+    },
+    {
+      "id": "state-reenter",
+      "split": "unseen_test",
+      "knots": [
+        [
+          0,
+          "end"
+        ],
+        [
+          11,
+          "end"
+        ],
+        [
+          27,
+          "up"
+        ],
+        [
+          41,
+          "up"
+        ],
+        [
+          56,
+          "end"
+        ],
+        [
+          64,
+          "end"
+        ]
+      ],
+      "cutoffs": [
+        13,
+        20,
+        25,
+        32,
+        47,
+        58
+      ]
+    }
+  ],
+  "input_shape": [
+    16,
+    180,
+    320,
+    3
+  ],
+  "horizon_s": 4,
+  "timestep_s": 0.25,
+  "evaluation_stride_s": 1,
+  "conditions": {
+    "min_known_match": 0.8,
+    "max_false_clear": 0,
+    "max_mean_xyz_error_m": 1.0,
+    "max_unknown_fraction": 0.2,
+    "min_support_fraction": 0.9
+  },
+  "advisory": "Review entry only when all 17 sampled states are clear; otherwise wait/reobserve.",
+  "capability_only": true,
+  "interval_collision_verified": false,
+  "flight_admitted": false,
+  "comparable_inputs": "same learned image localizations for persistence and constant velocity",
+  "budget": {
+    "ceiling_usd": 20,
+    "cumulative_estimate_usd": 18.532818962573373,
+    "new_gpu_usd": 0
+  },
+  "limitations": [
+    "development reused previous heldout recordings",
+    "three new timing sequences only",
+    "shared camera/appearance/path; correlated windows and possible repeated pixels",
+    "no absence detection, action conditioning or continuous-interval guarantee",
+    "no real VLA, native ANWM, AP hold, dispatch or delivery in this experiment"
+  ]
+}

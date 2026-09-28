@@ -1,0 +1,1455 @@
+{
+  "run_id": "pad-motion-d10a662720a5",
+  "phase": "flight",
+  "world": {
+    "schema": "missionos.yokohama-world.v1",
+    "phase": "flight",
+    "mesh_conversion": {
+      "collision-prisms.obj": {
+        "triangles_with_normals": 6132,
+        "zero_area_faces_omitted": 0
+      },
+      "road.obj": {
+        "triangles_with_normals": 1059,
+        "zero_area_faces_omitted": 0
+      },
+      "bridge.obj": {
+        "triangles_with_normals": 925,
+        "zero_area_faces_omitted": 1
+      },
+      "terrain.obj": {
+        "triangles_with_normals": 20591,
+        "zero_area_faces_omitted": 0
+      },
+      "building.obj": {
+        "triangles_with_normals": 13335,
+        "zero_area_faces_omitted": 5
+      }
+    },
+    "frame": {
+      "source_origin_xyz_m": [
+        55.0,
+        -50.0,
+        2.889856912895725
+      ],
+      "source_to_world_matrix": [
+        [
+          1.0000945821779128,
+          -0.0019084901209801713,
+          0.0
+        ],
+        [
+          0.0019084879714106843,
+          1.0000945799321406,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "home_lon_lat": [
+        139.64480691720166,
+        35.44765024667082
+      ],
+      "world_vertical_origin": "authored launch-pad top; source ground +0.12 m",
+      "world_geodetic_altitude_m": 0,
+      "geodetic_altitude_role": "synthetic PX4/Gazebo origin, not source orthometric or real ellipsoid height",
+      "horizontal_conversion": "local Jacobian of EPSG:6677 inverse projection and GRS80 geodesic at D1; metres, true east/north",
+      "px4_local_ned": "[world north - observed EKF origin north, world east - observed EKF origin east, -(world up - observed EKF origin up)]"
+    },
+    "points": [
+      {
+        "id": "D1",
+        "label": "\u5e02\u8857\u5730\u5165\u53e3",
+        "xyz_m": [
+          55.0,
+          -50.0,
+          18.0
+        ],
+        "mandatory_observation": true,
+        "world_xyz_m": [
+          0.0,
+          0.0,
+          15.110143087104275
+        ]
+      },
+      {
+        "id": "D2",
+        "label": "\u89d21\uff1a\u518d\u89b3\u6e2c",
+        "xyz_m": [
+          20.0,
+          -110.622,
+          18.0
+        ],
+        "mandatory_observation": true,
+        "world_xyz_m": [
+          -34.88761388811289,
+          -60.6945307036456,
+          15.110143087104275
+        ]
+      },
+      {
+        "id": "D3",
+        "label": "\u89d22\uff1a\u914d\u9001\u524d\u5224\u65ad",
+        "xyz_m": [
+          162.894,
+          -193.122,
+          18.0
+        ],
+        "mandatory_observation": true,
+        "world_xyz_m": [
+          108.17735177259866,
+          -142.92962206786046,
+          15.110143087104275
+        ]
+      },
+      {
+        "id": "DELIVERY",
+        "label": "\u4eee\u60f3\u914d\u9001\u30b9\u30da\u30fc\u30b9",
+        "xyz_m": [
+          207.894,
+          -115.179,
+          18.0
+        ],
+        "mandatory_observation": false,
+        "world_xyz_m": [
+          153.03285452510517,
+          -64.89336826549612,
+          15.110143087104275
+        ]
+      }
+    ],
+    "probes": {},
+    "source_sha256": {
+      "scene.json": "180303fc3c4645c867be137dd895b5c9a6e32b1b3b3c2dc663d3fb0d1a19c03a",
+      "route.json": "f6b5d79ba0bbb84e8b258c2105e919f2168191df1f7678e282d48cb328ef23c9",
+      "collision-prisms.obj": "c4efd9acb7fc2bfe3e8bfa903d4ebff0369d95a81ac53480b472223b86c55073",
+      "collision-footprints.geojson": "494deab12304ac5f1f63eb7f7d45275b9aab642493df0526261f7f865eb3e37b"
+    },
+    "world_sha256": "079d743dc70e90904eb3e2f19a0ff5c92514de464386602cf8eab35bb49467a6",
+    "model_sha256": {
+      "models/x500/model.config": "52fdda8e66faa5095434d54e4dcaad5a6a8833cd014e0a5b439349ed8b4a1b67",
+      "models/x500/model.sdf": "6939156dfeccd79cb3515b1d0e657f8c21a6486c264bcd38333798da690c169d",
+      "models/x500_base/model.config": "4856afbdeb52f19468f56ddaf4be57c04688f347b8cef2f609daacd2d014d437",
+      "models/x500_base/model.sdf": "22de6897c6a782b378062d8cd39d391130a6ba57086f521e401f978d20b9c4e5"
+    },
+    "asset_sha256": {
+      "bridge.obj": "797c63e3a3256e74c5ada828bafa6cdbc1147781931232ed6757e23dad4a7428",
+      "building.obj": "032f3f1ec66478f1a385e186a414691952c271244790fc433a6619e18a7c841a",
+      "collision-prisms.obj": "789cbe6d047c2374d83639aeee4df4d390bcb2466bf1e00e20f6b15589e0bb83",
+      "road.obj": "7fb55e80a44f9f6020f5a31f3b9991fde680fb42ea50cb36c1b0b46af668e331",
+      "terrain.obj": "c7548e273f9226d53362f00f5873a1b22b49063854519cef6d643c7fca082e01"
+    },
+    "source_buildings": 153,
+    "source_bridges": 4,
+    "source_geometry_triangles": 35916,
+    "vla_invoked": false,
+    "wam_invoked": false,
+    "gpu_requested": false,
+    "physical_execution": false,
+    "sea_extension": {
+      "schema": "missionos.yokohama-sea-extension.v1",
+      "offshore_distance_m": 1000,
+      "coast_to_city_entry_m": 400,
+      "coast_world_xyz_m": [
+        386.1720648824816,
+        104.26474142489603,
+        15.110143087104275
+      ],
+      "ship_hold_world_xyz_m": [
+        1351.6022270886856,
+        364.9265949871361,
+        15.110143087104275
+      ],
+      "ship_deck_world_xyz_m": [
+        1351.6022270886856,
+        364.9265949871361,
+        0
+      ],
+      "launch_contact_topic": "launch_pad",
+      "source_connector_clearance_m": 5.582773621331227,
+      "sea_airspeed_mps": 8,
+      "city_airspeed_mps": 3,
+      "coastal_gateway_role": "authored boundary beyond the source crop, not surveyed shoreline",
+      "stationary_ship": true,
+      "wind_mps": 0,
+      "payload_release_present": true
+    },
+    "payload_delivery": {
+      "schema": "missionos.yokohama-payload.v1",
+      "entity": "delivery_payload",
+      "mass_kg": 0.05,
+      "size_m": [
+        0.12,
+        0.12,
+        0.08
+      ],
+      "pad_world_xyz_m": [
+        153.03285452510517,
+        -64.89336826549612,
+        -0.16885691289572513
+      ],
+      "hover_world_xyz_m": [
+        153.03285452510517,
+        -64.89336826549612,
+        2.831143087104275
+      ],
+      "pad_acceptance_radius_m": 1.5,
+      "rest_height_tolerance_m": 0.08,
+      "stability_sim_s": 3,
+      "maximum_motion_m": 0.05,
+      "maximum_speed_mps": 0.1,
+      "maximum_observation_age_s": 0.5,
+      "maximum_contact_age_sim_s": 0.5,
+      "maximum_sample_gap_sim_s": 1,
+      "receipt_max_age_worker_s": 5,
+      "detach_topic": "/model/x500_0/delivery_payload/detach",
+      "joint_topic": "/model/x500_0/delivery_payload/state",
+      "receiver": "independent host verifier of simulated pad contact and resting cargo",
+      "physical_receipt_verified": false
+    },
+    "pad_queue": {
+      "schema": "missionos.yokohama-pad-queue.v1",
+      "lead_entity": "queue_lead",
+      "parcel_entity": "queue_parcel",
+      "lead_start_xyz_m": [
+        153.83285452510518,
+        -64.09336826549612,
+        1.0311430871042748
+      ],
+      "lead_up_xyz_m": [
+        153.83285452510518,
+        -64.09336826549612,
+        6.831143087104275
+      ],
+      "lead_end_xyz_m": [
+        165.83285452510518,
+        -64.09336826549612,
+        6.831143087104275
+      ],
+      "departure_building_clearance_m": 19.727666012801308,
+      "wait_xyz_m": [
+        108.17735177259866,
+        -142.92962206786046,
+        15.110143087104275
+      ],
+      "approach_xyz_m": [
+        153.03285452510517,
+        -64.89336826549612,
+        15.110143087104275
+      ],
+      "pad_xyz_m": [
+        153.03285452510517,
+        -64.89336826549612,
+        -0.16885691289572513
+      ],
+      "trigger_phase": "02-D3",
+      "occupied_duration_sim_s": 15,
+      "unload_duration_sim_s": 5,
+      "ascent_duration_sim_s": 6,
+      "departure_duration_sim_s": 12,
+      "stable_clear_sim_s": 5,
+      "maximum_wait_sim_s": 90,
+      "maximum_wait_wall_s": 180,
+      "maximum_sample_gap_sim_s": 2,
+      "maximum_observation_age_s": 1,
+      "response_max_age_s": 2,
+      "minimum_battery_fraction": 0.2,
+      "pad_exclusion_radius_m": 6,
+      "approach_exclusion_radius_m": 3,
+      "lead_motion": "scripted poses; no lead autopilot or unloading physics",
+      "observation_source": "Gazebo pose telemetry, not image perception",
+      "judge_backend": "deterministic CPU fixture; no learned model",
+      "approved_actions": [
+        "wait_at_current_hold",
+        "enter_delivery_approach"
+      ],
+      "communication_fallback": "retain current AP hold within local limits; terminate owned SITL on deadline"
+    }
+  },
+  "timeout_s": 2400,
+  "operator_approval": "explicit CLI --approve-sitl",
+  "hold_duration_sim_s": 30,
+  "hold_horizontal_tolerance_m": 1.0,
+  "hold_vertical_tolerance_m": 0.6,
+  "hold_max_speed_mps": 0.5,
+  "airspeed_mps": 3.0,
+  "wind_mps": 0,
+  "simulator_initial_heading_deg": 90.0,
+  "simulator_heading_runtime": {
+    "px4_git": "381149fb012762f5e38c4a7fdc1b905b28038970",
+    "gz_sim_version": "8.11.0-1~noble",
+    "source": "authored_spawn_yaw_zero_ENU_equals_90deg_NED",
+    "magnetometer_mode": "initialization_only_EKF2_MAG_TYPE_6",
+    "continuous_ground_truth_heading_feed": false,
+    "hardware_applicable": false
+  },
+  "flight_stages": [
+    {
+      "name": "SEA-TAKEOFF",
+      "target_world_xyz_m": [
+        1351.6022270886856,
+        364.9265949871361,
+        15.110143087104275
+      ],
+      "airspeed_mps": 8,
+      "direct_endpoint": true,
+      "items": [
+        {
+          "seq": 0,
+          "command": 22,
+          "latitude_deg": 35.45093847210933,
+          "longitude_deg": 139.65969494127458,
+          "altitude_m": 15.110143087104275,
+          "current": 1,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 0.0
+        },
+        {
+          "seq": 1,
+          "command": 17,
+          "latitude_deg": 35.45093847210933,
+          "longitude_deg": 139.65969494127458,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -105.10933780802716
+        }
+      ],
+      "arrival_timeout_s": 150
+    },
+    {
+      "name": "SEA-INBOUND-COAST",
+      "target_world_xyz_m": [
+        386.1720648824816,
+        104.26474142489603,
+        15.110143087104275
+      ],
+      "airspeed_mps": 8,
+      "direct_endpoint": true,
+      "items": [
+        {
+          "seq": 0,
+          "command": 16,
+          "latitude_deg": 35.44858992717695,
+          "longitude_deg": 139.64906051476842,
+          "altitude_m": 15.110143087104275,
+          "current": 1,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -105.10933780802716
+        },
+        {
+          "seq": 1,
+          "command": 17,
+          "latitude_deg": 35.44858992717695,
+          "longitude_deg": 139.64906051476842,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -105.10933780802716
+        }
+      ],
+      "arrival_timeout_s": 435
+    },
+    {
+      "name": "00-D1",
+      "target_world_xyz_m": [
+        0.0,
+        0.0,
+        15.110143087104275
+      ],
+      "airspeed_mps": 3,
+      "items": [
+        {
+          "seq": 0,
+          "command": 16,
+          "latitude_deg": 35.44854294671442,
+          "longitude_deg": 139.64884783254152,
+          "altitude_m": 15.110143087104275,
+          "current": 1,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -105.10933780802716
+        },
+        {
+          "seq": 1,
+          "command": 16,
+          "latitude_deg": 35.44849596587686,
+          "longitude_deg": 139.64863515056186,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -105.10933780802716
+        },
+        {
+          "seq": 2,
+          "command": 16,
+          "latitude_deg": 35.44844898466426,
+          "longitude_deg": 139.64842246882938,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -105.10933780802716
+        },
+        {
+          "seq": 3,
+          "command": 16,
+          "latitude_deg": 35.44840200307662,
+          "longitude_deg": 139.64820978734414,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -105.10933780802716
+        },
+        {
+          "seq": 4,
+          "command": 16,
+          "latitude_deg": 35.448355021113954,
+          "longitude_deg": 139.6479971061061,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -105.10933780802716
+        },
+        {
+          "seq": 5,
+          "command": 16,
+          "latitude_deg": 35.44830803877626,
+          "longitude_deg": 139.64778442511525,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -105.10933780802716
+        },
+        {
+          "seq": 6,
+          "command": 16,
+          "latitude_deg": 35.44826105606353,
+          "longitude_deg": 139.64757174437165,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -105.10933780802716
+        },
+        {
+          "seq": 7,
+          "command": 16,
+          "latitude_deg": 35.44821407297577,
+          "longitude_deg": 139.64735906387523,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -105.10933780802716
+        },
+        {
+          "seq": 8,
+          "command": 16,
+          "latitude_deg": 35.44816708951299,
+          "longitude_deg": 139.64714638362605,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -105.10933780802716
+        },
+        {
+          "seq": 9,
+          "command": 16,
+          "latitude_deg": 35.44812010567518,
+          "longitude_deg": 139.6469337036241,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -105.10933780802716
+        },
+        {
+          "seq": 10,
+          "command": 16,
+          "latitude_deg": 35.448073121462336,
+          "longitude_deg": 139.64672102386933,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -105.10933780802716
+        },
+        {
+          "seq": 11,
+          "command": 16,
+          "latitude_deg": 35.44802613687448,
+          "longitude_deg": 139.64650834436182,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -105.10933780802716
+        },
+        {
+          "seq": 12,
+          "command": 16,
+          "latitude_deg": 35.447979151911596,
+          "longitude_deg": 139.6462956651015,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -105.10933780802716
+        },
+        {
+          "seq": 13,
+          "command": 16,
+          "latitude_deg": 35.44793216657368,
+          "longitude_deg": 139.64608298608843,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -105.10933780802716
+        },
+        {
+          "seq": 14,
+          "command": 16,
+          "latitude_deg": 35.44788518086076,
+          "longitude_deg": 139.64587030732255,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -105.10933780802716
+        },
+        {
+          "seq": 15,
+          "command": 16,
+          "latitude_deg": 35.4478381947728,
+          "longitude_deg": 139.64565762880392,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -105.10933780802716
+        },
+        {
+          "seq": 16,
+          "command": 16,
+          "latitude_deg": 35.44779120830983,
+          "longitude_deg": 139.64544495053252,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -105.10933780802716
+        },
+        {
+          "seq": 17,
+          "command": 16,
+          "latitude_deg": 35.44774422147185,
+          "longitude_deg": 139.64523227250834,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -105.10933780802716
+        },
+        {
+          "seq": 18,
+          "command": 16,
+          "latitude_deg": 35.44769723425884,
+          "longitude_deg": 139.6450195947314,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -105.10933780802716
+        },
+        {
+          "seq": 19,
+          "command": 16,
+          "latitude_deg": 35.44765024667082,
+          "longitude_deg": 139.64480691720166,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -105.10933780802716
+        },
+        {
+          "seq": 20,
+          "command": 17,
+          "latitude_deg": 35.44765024667082,
+          "longitude_deg": 139.64480691720166,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -150.10942861487504
+        }
+      ],
+      "arrival_timeout_s": 460
+    },
+    {
+      "name": "01-D2",
+      "target_world_xyz_m": [
+        -34.88761388811289,
+        -60.6945307036456,
+        15.110143087104275
+      ],
+      "airspeed_mps": 3,
+      "items": [
+        {
+          "seq": 0,
+          "command": 16,
+          "latitude_deg": 35.447513484148075,
+          "longitude_deg": 139.64471084869555,
+          "altitude_m": 15.110143087104275,
+          "current": 1,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -150.10942861487504
+        },
+        {
+          "seq": 1,
+          "command": 16,
+          "latitude_deg": 35.44737672154579,
+          "longitude_deg": 139.6446147805145,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -150.10942861487504
+        },
+        {
+          "seq": 2,
+          "command": 16,
+          "latitude_deg": 35.44723995886395,
+          "longitude_deg": 139.64451871265848,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -150.10942861487504
+        },
+        {
+          "seq": 3,
+          "command": 16,
+          "latitude_deg": 35.44710319610258,
+          "longitude_deg": 139.6444226451275,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -150.10942861487504
+        },
+        {
+          "seq": 4,
+          "command": 17,
+          "latitude_deg": 35.44710319610258,
+          "longitude_deg": 139.6444226451275,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 119.89069535222592
+        }
+      ],
+      "arrival_timeout_s": 150
+    },
+    {
+      "name": "02-D3",
+      "target_world_xyz_m": [
+        108.17735177259866,
+        -142.92962206786046,
+        15.110143087104275
+      ],
+      "airspeed_mps": 3,
+      "items": [
+        {
+          "seq": 0,
+          "command": 16,
+          "latitude_deg": 35.44702084112497,
+          "longitude_deg": 139.64459773413117,
+          "altitude_m": 15.110143087104275,
+          "current": 1,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 119.89069535222592
+        },
+        {
+          "seq": 1,
+          "command": 16,
+          "latitude_deg": 35.44693848589231,
+          "longitude_deg": 139.64477282277812,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 119.89069535222592
+        },
+        {
+          "seq": 2,
+          "command": 16,
+          "latitude_deg": 35.44685613040461,
+          "longitude_deg": 139.64494791106833,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 119.89069535222592
+        },
+        {
+          "seq": 3,
+          "command": 16,
+          "latitude_deg": 35.446773774661864,
+          "longitude_deg": 139.6451229990018,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 119.89069535222592
+        },
+        {
+          "seq": 4,
+          "command": 16,
+          "latitude_deg": 35.44669141866407,
+          "longitude_deg": 139.64529808657855,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 119.89069535222592
+        },
+        {
+          "seq": 5,
+          "command": 16,
+          "latitude_deg": 35.44660906241125,
+          "longitude_deg": 139.6454731737986,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 119.89069535222592
+        },
+        {
+          "seq": 6,
+          "command": 16,
+          "latitude_deg": 35.446526705903366,
+          "longitude_deg": 139.6456482606619,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 119.89069535222592
+        },
+        {
+          "seq": 7,
+          "command": 16,
+          "latitude_deg": 35.44644434914046,
+          "longitude_deg": 139.64582334716846,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 119.89069535222592
+        },
+        {
+          "seq": 8,
+          "command": 16,
+          "latitude_deg": 35.44636199212251,
+          "longitude_deg": 139.6459984333183,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 119.89069535222592
+        },
+        {
+          "seq": 9,
+          "command": 17,
+          "latitude_deg": 35.44636199212251,
+          "longitude_deg": 139.6459984333183,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 29.89043496791293
+        }
+      ],
+      "arrival_timeout_s": 226
+    },
+    {
+      "name": "03-DELIVERY",
+      "target_world_xyz_m": [
+        153.03285452510517,
+        -64.89336826549612,
+        15.110143087104275
+      ],
+      "airspeed_mps": 3,
+      "items": [
+        {
+          "seq": 0,
+          "command": 16,
+          "latitude_deg": 35.4465026618904,
+          "longitude_deg": 139.64609724747484,
+          "altitude_m": 15.110143087104275,
+          "current": 1,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 29.89043496791293
+        },
+        {
+          "seq": 1,
+          "command": 16,
+          "latitude_deg": 35.44664333157412,
+          "longitude_deg": 139.64619606197525,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 29.89043496791293
+        },
+        {
+          "seq": 2,
+          "command": 16,
+          "latitude_deg": 35.44678400117368,
+          "longitude_deg": 139.64629487681952,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 29.89043496791293
+        },
+        {
+          "seq": 3,
+          "command": 16,
+          "latitude_deg": 35.44692467068908,
+          "longitude_deg": 139.64639369200768,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 29.89043496791293
+        },
+        {
+          "seq": 4,
+          "command": 16,
+          "latitude_deg": 35.44706534012032,
+          "longitude_deg": 139.64649250753976,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 29.89043496791293
+        },
+        {
+          "seq": 5,
+          "command": 17,
+          "latitude_deg": 35.44706534012032,
+          "longitude_deg": 139.64649250753976,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 0.0
+        }
+      ],
+      "arrival_timeout_s": 151
+    },
+    {
+      "name": "PAYLOAD-LOW",
+      "target_world_xyz_m": [
+        153.03285452510517,
+        -64.89336826549612,
+        2.831143087104275
+      ],
+      "airspeed_mps": 3,
+      "items": [
+        {
+          "seq": 0,
+          "command": 16,
+          "latitude_deg": 35.44706534012032,
+          "longitude_deg": 139.64649250753976,
+          "altitude_m": 2.831143087104275,
+          "current": 1,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 0.0
+        },
+        {
+          "seq": 1,
+          "command": 17,
+          "latitude_deg": 35.44706534012032,
+          "longitude_deg": 139.64649250753976,
+          "altitude_m": 2.831143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 0.0
+        }
+      ],
+      "arrival_timeout_s": 150
+    },
+    {
+      "name": "PAYLOAD-CLIMB",
+      "target_world_xyz_m": [
+        153.03285452510517,
+        -64.89336826549612,
+        15.110143087104275
+      ],
+      "airspeed_mps": 3,
+      "items": [
+        {
+          "seq": 0,
+          "command": 16,
+          "latitude_deg": 35.44706534012032,
+          "longitude_deg": 139.64649250753976,
+          "altitude_m": 15.110143087104275,
+          "current": 1,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 0.0
+        },
+        {
+          "seq": 1,
+          "command": 17,
+          "latitude_deg": 35.44706534012032,
+          "longitude_deg": 139.64649250753976,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -150.10956503208706
+        }
+      ],
+      "arrival_timeout_s": 150
+    },
+    {
+      "name": "04-D3",
+      "target_world_xyz_m": [
+        108.17735177259866,
+        -142.92962206786046,
+        15.110143087104275
+      ],
+      "airspeed_mps": 3,
+      "items": [
+        {
+          "seq": 0,
+          "command": 16,
+          "latitude_deg": 35.44692467068908,
+          "longitude_deg": 139.64639369200768,
+          "altitude_m": 15.110143087104275,
+          "current": 1,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -150.10956503208706
+        },
+        {
+          "seq": 1,
+          "command": 16,
+          "latitude_deg": 35.44678400117368,
+          "longitude_deg": 139.64629487681952,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -150.10956503208706
+        },
+        {
+          "seq": 2,
+          "command": 16,
+          "latitude_deg": 35.44664333157412,
+          "longitude_deg": 139.64619606197525,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -150.10956503208706
+        },
+        {
+          "seq": 3,
+          "command": 16,
+          "latitude_deg": 35.4465026618904,
+          "longitude_deg": 139.64609724747484,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -150.10956503208706
+        },
+        {
+          "seq": 4,
+          "command": 16,
+          "latitude_deg": 35.44636199212251,
+          "longitude_deg": 139.6459984333183,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -150.10956503208706
+        },
+        {
+          "seq": 5,
+          "command": 17,
+          "latitude_deg": 35.44636199212251,
+          "longitude_deg": 139.6459984333183,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -60.10930464777408
+        }
+      ],
+      "arrival_timeout_s": 151
+    },
+    {
+      "name": "05-D2",
+      "target_world_xyz_m": [
+        -34.88761388811289,
+        -60.6945307036456,
+        15.110143087104275
+      ],
+      "airspeed_mps": 3,
+      "items": [
+        {
+          "seq": 0,
+          "command": 16,
+          "latitude_deg": 35.44644434914046,
+          "longitude_deg": 139.64582334716846,
+          "altitude_m": 15.110143087104275,
+          "current": 1,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -60.10930464777408
+        },
+        {
+          "seq": 1,
+          "command": 16,
+          "latitude_deg": 35.446526705903366,
+          "longitude_deg": 139.6456482606619,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -60.10930464777408
+        },
+        {
+          "seq": 2,
+          "command": 16,
+          "latitude_deg": 35.44660906241125,
+          "longitude_deg": 139.6454731737986,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -60.10930464777408
+        },
+        {
+          "seq": 3,
+          "command": 16,
+          "latitude_deg": 35.44669141866407,
+          "longitude_deg": 139.64529808657855,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -60.10930464777408
+        },
+        {
+          "seq": 4,
+          "command": 16,
+          "latitude_deg": 35.446773774661864,
+          "longitude_deg": 139.6451229990018,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -60.10930464777408
+        },
+        {
+          "seq": 5,
+          "command": 16,
+          "latitude_deg": 35.44685613040461,
+          "longitude_deg": 139.64494791106833,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -60.10930464777408
+        },
+        {
+          "seq": 6,
+          "command": 16,
+          "latitude_deg": 35.44693848589231,
+          "longitude_deg": 139.64477282277812,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -60.10930464777408
+        },
+        {
+          "seq": 7,
+          "command": 16,
+          "latitude_deg": 35.44702084112497,
+          "longitude_deg": 139.64459773413117,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -60.10930464777408
+        },
+        {
+          "seq": 8,
+          "command": 16,
+          "latitude_deg": 35.44710319610258,
+          "longitude_deg": 139.6444226451275,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": -60.10930464777408
+        },
+        {
+          "seq": 9,
+          "command": 17,
+          "latitude_deg": 35.44710319610258,
+          "longitude_deg": 139.6444226451275,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 29.890571385124968
+        }
+      ],
+      "arrival_timeout_s": 226
+    },
+    {
+      "name": "06-D1",
+      "target_world_xyz_m": [
+        0.0,
+        0.0,
+        15.110143087104275
+      ],
+      "airspeed_mps": 3,
+      "items": [
+        {
+          "seq": 0,
+          "command": 16,
+          "latitude_deg": 35.44723995886395,
+          "longitude_deg": 139.64451871265848,
+          "altitude_m": 15.110143087104275,
+          "current": 1,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 29.890571385124968
+        },
+        {
+          "seq": 1,
+          "command": 16,
+          "latitude_deg": 35.44737672154579,
+          "longitude_deg": 139.6446147805145,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 29.890571385124968
+        },
+        {
+          "seq": 2,
+          "command": 16,
+          "latitude_deg": 35.447513484148075,
+          "longitude_deg": 139.64471084869555,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 29.890571385124968
+        },
+        {
+          "seq": 3,
+          "command": 16,
+          "latitude_deg": 35.44765024667082,
+          "longitude_deg": 139.64480691720166,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 29.890571385124968
+        },
+        {
+          "seq": 4,
+          "command": 17,
+          "latitude_deg": 35.44765024667082,
+          "longitude_deg": 139.64480691720166,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 74.89066219197284
+        }
+      ],
+      "arrival_timeout_s": 150
+    },
+    {
+      "name": "SEA-OUTBOUND-COAST",
+      "target_world_xyz_m": [
+        386.1720648824816,
+        104.26474142489603,
+        15.110143087104275
+      ],
+      "airspeed_mps": 8,
+      "direct_endpoint": true,
+      "items": [
+        {
+          "seq": 0,
+          "command": 16,
+          "latitude_deg": 35.44858992717695,
+          "longitude_deg": 139.64906051476842,
+          "altitude_m": 15.110143087104275,
+          "current": 1,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 74.89066219197284
+        },
+        {
+          "seq": 1,
+          "command": 17,
+          "latitude_deg": 35.44858992717695,
+          "longitude_deg": 139.64906051476842,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 74.89066219197284
+        }
+      ],
+      "arrival_timeout_s": 210
+    },
+    {
+      "name": "SEA-RETURN",
+      "target_world_xyz_m": [
+        1351.6022270886856,
+        364.9265949871361,
+        15.110143087104275
+      ],
+      "airspeed_mps": 8,
+      "direct_endpoint": true,
+      "items": [
+        {
+          "seq": 0,
+          "command": 16,
+          "latitude_deg": 35.45093847210933,
+          "longitude_deg": 139.65969494127458,
+          "altitude_m": 15.110143087104275,
+          "current": 1,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 74.89066219197284
+        },
+        {
+          "seq": 1,
+          "command": 17,
+          "latitude_deg": 35.45093847210933,
+          "longitude_deg": 139.65969494127458,
+          "altitude_m": 15.110143087104275,
+          "current": 0,
+          "frame": 6,
+          "param2": 0.5,
+          "param4": 0
+        }
+      ],
+      "arrival_timeout_s": 435
+    }
+  ],
+  "source_run_id": "yokohama-45d8607fa5c3",
+  "decisions": {
+    "backend": "camera-recording-only"
+  },
+  "diagnostic_cases": [
+    {
+      "id": "far-busy",
+      "camera_xyz": [
+        108.17735177259866,
+        -142.92962206786046,
+        15.110143087104275
+      ],
+      "camera_yaw": 1.0491098217515702,
+      "lead_xyz": [
+        153.83285452510518,
+        -64.09336826549612,
+        1.0311430871042748
+      ]
+    },
+    {
+      "id": "near-busy",
+      "camera_xyz": [
+        143.06599428639694,
+        -82.2329673664574,
+        9.831143087104275
+      ],
+      "camera_yaw": 1.0491098217515702,
+      "lead_xyz": [
+        153.83285452510518,
+        -64.09336826549612,
+        1.0311430871042748
+      ]
+    },
+    {
+      "id": "near-clear",
+      "camera_xyz": [
+        143.06599428639694,
+        -82.2329673664574,
+        4.831143087104275
+      ],
+      "camera_yaw": 1.0491098217515702,
+      "lead_xyz": [
+        165.83285452510518,
+        -64.09336826549612,
+        6.831143087104275
+      ]
+    },
+    {
+      "id": "near-reoccupied",
+      "camera_xyz": [
+        143.06599428639694,
+        -82.2329673664574,
+        4.831143087104275
+      ],
+      "camera_yaw": 1.0491098217515702,
+      "lead_xyz": [
+        153.83285452510518,
+        -64.09336826549612,
+        1.0311430871042748
+      ]
+    }
+  ],
+  "diagnostic_boundary": {
+    "camera_rig": true,
+    "aircraft_flown": false,
+    "camera_pitch_rad": 0.2914567944778671,
+    "source": "scripted lead with measured poses; no lead AP"
+  },
+  "motion_cases": [
+    {
+      "id": "state-depart",
+      "split": "unseen_test",
+      "knots": [
+        [
+          0,
+          "start"
+        ],
+        [
+          9,
+          "start"
+        ],
+        [
+          17,
+          "up"
+        ],
+        [
+          34,
+          "end"
+        ],
+        [
+          52,
+          "end"
+        ]
+      ],
+      "cutoffs": [
+        5,
+        20,
+        27,
+        34,
+        43
+      ]
+    },
+    {
+      "id": "state-stall",
+      "split": "unseen_test",
+      "knots": [
+        [
+          0,
+          "start"
+        ],
+        [
+          6,
+          "start"
+        ],
+        [
+          14,
+          "up"
+        ],
+        [
+          37,
+          "up"
+        ],
+        [
+          51,
+          "end"
+        ],
+        [
+          60,
+          "end"
+        ]
+      ],
+      "cutoffs": [
+        19,
+        31,
+        40,
+        46,
+        55
+      ]
+    },
+    {
+      "id": "state-reenter",
+      "split": "unseen_test",
+      "knots": [
+        [
+          0,
+          "end"
+        ],
+        [
+          11,
+          "end"
+        ],
+        [
+          27,
+          "up"
+        ],
+        [
+          41,
+          "up"
+        ],
+        [
+          56,
+          "end"
+        ],
+        [
+          64,
+          "end"
+        ]
+      ],
+      "cutoffs": [
+        13,
+        20,
+        25,
+        32,
+        47,
+        58
+      ]
+    }
+  ],
+  "motion_case_set": "state-eval-v1"
+}

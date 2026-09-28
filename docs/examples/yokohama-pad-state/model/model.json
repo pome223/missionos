@@ -1,0 +1,13 @@
+{
+  "schema": "missionos.pad-state-model.v1",
+  "weights_sha256": "2f648169418c9b8e7a1f4dec4e51cd8a792df8bec1611168e691207cc7ab67af",
+  "dataset_sha256": "d1bdfb1e8f9a5c007d9b32e4b7e6b2004e4d76056e60542ca74c7207afcb22df",
+  "inference_inputs": [
+    "past RGB",
+    "own camera pose",
+    "timestamps"
+  ],
+  "model_kind": "CPU learned localization and state forecast; not ANWM or VLA",
+  "scope": "fixed camera, known visible lead, known corridor",
+  "flight_admitted": false
+}

@@ -96,3 +96,7 @@ and the serialized 2,048-step update completed. Fresh matches 1/4 → 2/4, RGB M
 lead disappears. Regression also scores 2/4 with two false clears. Qualification
 and flight admission remain false. Cumulative estimate $18.532819/$20, invoice
 unconfirmed; owned VM/disks/capture container removed and CUDA allocation zero.
+
+Follow-up: [CPU position and occupancy learning](yokohama-pad-state.md) preserves
+this native ANWM negative result while evaluating a separate direct-state model.
+It does not qualify or replace the native flight profile.

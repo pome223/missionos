@@ -1,0 +1,146 @@
+{
+  "overlap": [
+    {
+      "case": "state-depart",
+      "scored_windows": 45,
+      "identical_16_frame_training_histories": 16,
+      "source_frames_with_identical_training_pixels": 111,
+      "source_frames": 208
+    },
+    {
+      "case": "state-stall",
+      "scored_windows": 53,
+      "identical_16_frame_training_histories": 25,
+      "source_frames_with_identical_training_pixels": 156,
+      "source_frames": 240
+    },
+    {
+      "case": "state-reenter",
+      "scored_windows": 57,
+      "identical_16_frame_training_histories": 20,
+      "source_frames_with_identical_training_pixels": 133,
+      "source_frames": 256
+    }
+  ],
+  "unsupported": [
+    {
+      "case": "state-depart",
+      "elapsed_s": 28.759999999999998,
+      "score_floor_failed": 0,
+      "margin_floor_failed": 1,
+      "temporal_support_distance": 0.07998337409675403
+    },
+    {
+      "case": "state-depart",
+      "elapsed_s": 29.759999999999998,
+      "score_floor_failed": 0,
+      "margin_floor_failed": 1,
+      "temporal_support_distance": 0.12977413294418752
+    },
+    {
+      "case": "state-depart",
+      "elapsed_s": 30.759999999999998,
+      "score_floor_failed": 0,
+      "margin_floor_failed": 1,
+      "temporal_support_distance": 0.16159440131869265
+    },
+    {
+      "case": "state-depart",
+      "elapsed_s": 31.759999999999998,
+      "score_floor_failed": 0,
+      "margin_floor_failed": 1,
+      "temporal_support_distance": 0.2080237577242483
+    },
+    {
+      "case": "state-stall",
+      "elapsed_s": 46.896,
+      "score_floor_failed": 0,
+      "margin_floor_failed": 1,
+      "temporal_support_distance": 0.058931539384700506
+    },
+    {
+      "case": "state-stall",
+      "elapsed_s": 47.896,
+      "score_floor_failed": 0,
+      "margin_floor_failed": 1,
+      "temporal_support_distance": 0.10043915462497702
+    },
+    {
+      "case": "state-stall",
+      "elapsed_s": 48.896,
+      "score_floor_failed": 0,
+      "margin_floor_failed": 1,
+      "temporal_support_distance": 0.11014717582214491
+    },
+    {
+      "case": "state-stall",
+      "elapsed_s": 49.896,
+      "score_floor_failed": 0,
+      "margin_floor_failed": 1,
+      "temporal_support_distance": 0.10797399687078468
+    },
+    {
+      "case": "state-reenter",
+      "elapsed_s": 16.99600000000001,
+      "score_floor_failed": 0,
+      "margin_floor_failed": 1,
+      "temporal_support_distance": 0.4973371718399955
+    },
+    {
+      "case": "state-reenter",
+      "elapsed_s": 17.99600000000001,
+      "score_floor_failed": 0,
+      "margin_floor_failed": 1,
+      "temporal_support_distance": 0.5479383342086033
+    },
+    {
+      "case": "state-reenter",
+      "elapsed_s": 18.99600000000001,
+      "score_floor_failed": 0,
+      "margin_floor_failed": 1,
+      "temporal_support_distance": 0.6882953006680367
+    },
+    {
+      "case": "state-reenter",
+      "elapsed_s": 19.99600000000001,
+      "score_floor_failed": 0,
+      "margin_floor_failed": 1,
+      "temporal_support_distance": 0.628304212320923
+    },
+    {
+      "case": "state-reenter",
+      "elapsed_s": 50.99600000000001,
+      "score_floor_failed": 0,
+      "margin_floor_failed": 1,
+      "temporal_support_distance": 0.06714099491741589
+    },
+    {
+      "case": "state-reenter",
+      "elapsed_s": 51.99600000000001,
+      "score_floor_failed": 0,
+      "margin_floor_failed": 1,
+      "temporal_support_distance": 0.07385634622173283
+    },
+    {
+      "case": "state-reenter",
+      "elapsed_s": 52.99600000000001,
+      "score_floor_failed": 0,
+      "margin_floor_failed": 1,
+      "temporal_support_distance": 0.06453930983834315
+    },
+    {
+      "case": "state-reenter",
+      "elapsed_s": 53.99600000000001,
+      "score_floor_failed": 0,
+      "margin_floor_failed": 1,
+      "temporal_support_distance": 0.14588993748666673
+    }
+  ],
+  "statement": "Fresh timings are not unseen appearance, geometry or pixel content. No retuning on these results.",
+  "failed_development_attempts": [
+    "one-stage image/history KRR retained locally",
+    "initial detector confused the lead shadow; trained hard negatives fixed development localization"
+  ],
+  "final_test_attempts": 1,
+  "weights_changed_after_evaluation": false
+}

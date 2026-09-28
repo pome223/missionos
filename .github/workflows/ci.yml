@@ -93,6 +93,11 @@ jobs:
           python scripts/check_yokohama_pad_learning.py \
             --bundle docs/examples/yokohama-pad-learning
 
+      - name: Recompute learned CPU pad state from recorded RGB
+        run: |
+          python scripts/check_yokohama_pad_state.py \
+            --bundle docs/examples/yokohama-pad-state
+
       - name: Verify Jev mode selection through the Gateway
         env:
           PYTHONPATH: .:packages/missionos-cli/src:packages/missionos-gateway/src

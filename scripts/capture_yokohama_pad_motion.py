@@ -62,18 +62,66 @@ def actor_xyz(knots, t, points):
 def learning_cases():
     """Fresh motion timings, frozen before native post-training/evaluation."""
     return [
-        dict(id="train-depart", split="train", knots=[[0, "start"], [10, "start"],
-             [18, "up"], [32, "end"], [56, "end"]], cutoffs=[5, 12, 20, 26, 36]),
-        dict(id="train-stall", split="train", knots=[[0, "start"], [5, "start"],
-             [12, "up"], [46, "up"], [58, "end"], [64, "end"]], cutoffs=[6, 16, 24, 32, 46]),
-        dict(id="train-reenter", split="train", knots=[[0, "end"], [6, "end"],
-             [16, "up"], [40, "up"], [54, "end"], [60, "end"]], cutoffs=[6, 10, 18, 28, 42]),
-        dict(id="heldout-depart", split="test", knots=[[0, "start"], [7, "start"],
-             [15, "up"], [31, "end"], [56, "end"]], cutoffs=[18, 36]),
-        dict(id="heldout-stall", split="test", knots=[[0, "start"], [9, "start"],
-             [17, "up"], [49, "up"], [61, "end"], [68, "end"]], cutoffs=[28]),
-        dict(id="heldout-reenter", split="test", knots=[[0, "end"], [9, "end"],
-             [23, "up"], [45, "up"], [57, "end"], [64, "end"]], cutoffs=[17]),
+        dict(
+            id="train-depart",
+            split="train",
+            knots=[[0, "start"], [10, "start"], [18, "up"], [32, "end"], [56, "end"]],
+            cutoffs=[5, 12, 20, 26, 36],
+        ),
+        dict(
+            id="train-stall",
+            split="train",
+            knots=[[0, "start"], [5, "start"], [12, "up"], [46, "up"], [58, "end"], [64, "end"]],
+            cutoffs=[6, 16, 24, 32, 46],
+        ),
+        dict(
+            id="train-reenter",
+            split="train",
+            knots=[[0, "end"], [6, "end"], [16, "up"], [40, "up"], [54, "end"], [60, "end"]],
+            cutoffs=[6, 10, 18, 28, 42],
+        ),
+        dict(
+            id="heldout-depart",
+            split="test",
+            knots=[[0, "start"], [7, "start"], [15, "up"], [31, "end"], [56, "end"]],
+            cutoffs=[18, 36],
+        ),
+        dict(
+            id="heldout-stall",
+            split="test",
+            knots=[[0, "start"], [9, "start"], [17, "up"], [49, "up"], [61, "end"], [68, "end"]],
+            cutoffs=[28],
+        ),
+        dict(
+            id="heldout-reenter",
+            split="test",
+            knots=[[0, "end"], [9, "end"], [23, "up"], [45, "up"], [57, "end"], [64, "end"]],
+            cutoffs=[17],
+        ),
+    ]
+
+
+def state_evaluation_cases():
+    """Unused motion timings for the frozen direct-state learner; no training."""
+    return [
+        dict(
+            id="state-depart",
+            split="unseen_test",
+            knots=[[0, "start"], [9, "start"], [17, "up"], [34, "end"], [52, "end"]],
+            cutoffs=[5, 20, 27, 34, 43],
+        ),
+        dict(
+            id="state-stall",
+            split="unseen_test",
+            knots=[[0, "start"], [6, "start"], [14, "up"], [37, "up"], [51, "end"], [60, "end"]],
+            cutoffs=[19, 31, 40, 46, 55],
+        ),
+        dict(
+            id="state-reenter",
+            split="unseen_test",
+            knots=[[0, "end"], [11, "end"], [27, "up"], [41, "up"], [56, "end"], [64, "end"]],
+            cutoffs=[13, 20, 25, 32, 47, 58],
+        ),
     ]
 
 
@@ -246,7 +294,9 @@ def main():
     p.add_argument("--approve-sitl", action="store_true")
     p.add_argument("--source-rig", type=Path, required=True)
     p.add_argument("--output-dir", type=Path, required=True)
-    p.add_argument("--case-set", choices=["temporal-v1", "learning-v1"], default="temporal-v1")
+    p.add_argument(
+        "--case-set", choices=["temporal-v1", "learning-v1", "state-eval-v1"], default="temporal-v1"
+    )
     a = p.parse_args()
     if not a.approve_sitl:
         p.error("Explicit --approve-sitl required")
@@ -264,7 +314,11 @@ def main():
     shutil.copy2(__file__, root / Path(__file__).name)
     config = json.loads((source / "config.json").read_text())
     config["run_id"] = "pad-motion-" + uuid4().hex[:12]
-    config["motion_cases"] = learning_cases() if a.case_set == "learning-v1" else cases()
+    config["motion_cases"] = {
+        "temporal-v1": cases,
+        "learning-v1": learning_cases,
+        "state-eval-v1": state_evaluation_cases,
+    }[a.case_set]()
     config["motion_case_set"] = a.case_set
     config["decisions"] = {"backend": "camera-recording-only"}
     near = config["diagnostic_cases"][1]
