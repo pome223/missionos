@@ -57,6 +57,13 @@ def summarize(config, request, receipt):
         if any(f["state"] != "unknown" for f in entries):
             raise ValueError("Unsupported observation cannot declare occupancy")
         return "unknown_fallback_to_current_rules"
+    if policy.get("reentry_risk_advisory", False):
+        try:
+            from src.runtime.yokohama_pad_reentry_risk import possible_reentry
+        except ModuleNotFoundError:
+            from yokohama_pad_reentry_risk import possible_reentry
+        if possible_reentry(config, request, forecast):
+            return "possible_reentry_reobserve"
     future = [f["state"] for f in entries if f["stamp_ns"] / 1e9 > now]
     if "occupied" in future:
         return "future_occupancy_reobserve"
@@ -67,9 +74,9 @@ def summarize(config, request, receipt):
 
 def selected_action(config, request, receipt, baseline):
     signal = summarize(config, request, receipt)
-    if (
-        config["world"]["pad_state_advisory"]["mode"] == "assist"
-        and signal == "future_occupancy_reobserve"
-    ):
+    if config["world"]["pad_state_advisory"]["mode"] == "assist" and signal in {
+        "future_occupancy_reobserve",
+        "possible_reentry_reobserve",
+    }:
         return "wait_at_current_hold"
     return baseline

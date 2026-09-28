@@ -1,0 +1,22 @@
+{
+  "status": "passed",
+  "aircraft_flown": false,
+  "native_inference": false,
+  "cases": [
+    {
+      "id": "test-risk-return-medium",
+      "frames": 244,
+      "capture_sha256": "2f34540dc58e64ef6ceda8af003c0cb817bdd80fc73d2c7b3372d042206d2a4d"
+    },
+    {
+      "id": "test-risk-return-slow",
+      "frames": 264,
+      "capture_sha256": "2533f6e35592eb6c4b3f81e98bba8bdb4ad80ee7d7f1d3851ed8471104f207b8"
+    },
+    {
+      "id": "test-risk-depart",
+      "frames": 216,
+      "capture_sha256": "a4f1cf33431255f84d49fd915f065f6afe3e9c3b042de7f5427d674b847aa8a8"
+    }
+  ]
+}

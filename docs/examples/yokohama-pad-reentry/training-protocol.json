@@ -1,0 +1,192 @@
+{
+  "schema": "missionos.pad-reentry-protocol.v1",
+  "frozen_at": "2026-09-28T23:11:59.404741+00:00",
+  "cases": [
+    {
+      "id": "train-return",
+      "split": "train",
+      "knots": [
+        [
+          0,
+          "end"
+        ],
+        [
+          10,
+          "end"
+        ],
+        [
+          25,
+          "up"
+        ],
+        [
+          39,
+          "up"
+        ],
+        [
+          53,
+          "end"
+        ],
+        [
+          60,
+          "end"
+        ]
+      ],
+      "cutoffs": []
+    },
+    {
+      "id": "development-return",
+      "split": "development",
+      "knots": [
+        [
+          0,
+          "end"
+        ],
+        [
+          8,
+          "end"
+        ],
+        [
+          25,
+          "up"
+        ],
+        [
+          39,
+          "up"
+        ],
+        [
+          54,
+          "end"
+        ],
+        [
+          62,
+          "end"
+        ]
+      ],
+      "cutoffs": []
+    },
+    {
+      "id": "test-return-fast",
+      "split": "unseen_test",
+      "knots": [
+        [
+          0,
+          "end"
+        ],
+        [
+          12,
+          "end"
+        ],
+        [
+          25,
+          "up"
+        ],
+        [
+          39,
+          "up"
+        ],
+        [
+          53,
+          "end"
+        ],
+        [
+          61,
+          "end"
+        ]
+      ],
+      "cutoffs": []
+    },
+    {
+      "id": "test-return-slow",
+      "split": "unseen_test",
+      "knots": [
+        [
+          0,
+          "end"
+        ],
+        [
+          7,
+          "end"
+        ],
+        [
+          26,
+          "up"
+        ],
+        [
+          40,
+          "up"
+        ],
+        [
+          56,
+          "end"
+        ],
+        [
+          64,
+          "end"
+        ]
+      ],
+      "cutoffs": []
+    },
+    {
+      "id": "test-depart-control",
+      "split": "unseen_test",
+      "knots": [
+        [
+          0,
+          "start"
+        ],
+        [
+          8,
+          "start"
+        ],
+        [
+          16,
+          "up"
+        ],
+        [
+          32,
+          "end"
+        ],
+        [
+          54,
+          "end"
+        ]
+      ],
+      "cutoffs": []
+    }
+  ],
+  "existing_weights_sha256": "2f648169418c9b8e7a1f4dec4e51cd8a792df8bec1611168e691207cc7ab67af",
+  "endpoints": [
+    "advisory changes current-Rules entry to wait before measured reoccupation",
+    "false additional waits",
+    "first permitted entry and next 4 seconds measured occupancy"
+  ],
+  "comparison": [
+    "current Rules",
+    "existing learned model",
+    "post-trained model",
+    "constant velocity from the same image localizations",
+    "measured-future oracle for scoring only"
+  ],
+  "candidate_actions": [
+    "wait_at_current_hold",
+    "enter_delivery_approach"
+  ],
+  "decision_stride_s": 1,
+  "current_clear_window_s": 5,
+  "future_horizon_s": 4,
+  "training": "Existing train split plus train-return; development selection uses existing development plus development-return only",
+  "evaluation": "Three new timings withheld from fitting and selection; older state-eval data are regression only",
+  "adoption": "No fixed 90% threshold and no requirement to beat ideal Rules; report practical changed decisions and regressions, not flight benefit from replay",
+  "headroom": "Reentry can interrupt an entry despite 5 seconds of past clearance. Independent current Rules remain mandatory. Individual decision opportunities and first-entry timelines are both scored; correlated windows are not independent missions.",
+  "limits": [
+    "fixed camera and known visible lead/corridor",
+    "scripted lead; no second autopilot",
+    "fixture own-aircraft hold for decision replay",
+    "no native ANWM, VLA, dispatch, cargo flight or battery measurement"
+  ],
+  "budget": {
+    "new_gpu_usd": 0,
+    "cumulative_estimate_usd": 18.532818962573373,
+    "ceiling_usd": 20
+  }
+}

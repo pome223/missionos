@@ -1,0 +1,752 @@
+[
+  {
+    "case": "test-return-fast",
+    "arrival_s": 8,
+    "method": "current_rules",
+    "first_entry_s": 13.780000000000001,
+    "reoccupation_next_4s": false,
+    "frame_index": 55,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-fast",
+    "arrival_s": 8,
+    "method": "existing",
+    "first_entry_s": 13.780000000000001,
+    "reoccupation_next_4s": false,
+    "frame_index": 55,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-fast",
+    "arrival_s": 8,
+    "method": "post_trained",
+    "first_entry_s": 13.780000000000001,
+    "reoccupation_next_4s": false,
+    "frame_index": 55,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-fast",
+    "arrival_s": 8,
+    "method": "constant_velocity",
+    "first_entry_s": 13.780000000000001,
+    "reoccupation_next_4s": false,
+    "frame_index": 55,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-fast",
+    "arrival_s": 8,
+    "method": "oracle",
+    "first_entry_s": 13.780000000000001,
+    "reoccupation_next_4s": false,
+    "frame_index": 55,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-fast",
+    "arrival_s": 10,
+    "method": "current_rules",
+    "first_entry_s": 15.780000000000001,
+    "reoccupation_next_4s": true,
+    "frame_index": 63,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-fast",
+    "arrival_s": 10,
+    "method": "existing",
+    "first_entry_s": 15.780000000000001,
+    "reoccupation_next_4s": true,
+    "frame_index": 63,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-fast",
+    "arrival_s": 10,
+    "method": "post_trained",
+    "first_entry_s": 15.780000000000001,
+    "reoccupation_next_4s": true,
+    "frame_index": 63,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-fast",
+    "arrival_s": 10,
+    "method": "constant_velocity",
+    "first_entry_s": 15.780000000000001,
+    "reoccupation_next_4s": true,
+    "frame_index": 63,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-fast",
+    "arrival_s": 10,
+    "method": "oracle",
+    "first_entry_s": 51.78,
+    "reoccupation_next_4s": false,
+    "frame_index": 207,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-fast",
+    "arrival_s": 12,
+    "method": "current_rules",
+    "first_entry_s": 17.78,
+    "reoccupation_next_4s": true,
+    "frame_index": 71,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-fast",
+    "arrival_s": 12,
+    "method": "existing",
+    "first_entry_s": 17.78,
+    "reoccupation_next_4s": true,
+    "frame_index": 71,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-fast",
+    "arrival_s": 12,
+    "method": "post_trained",
+    "first_entry_s": 17.78,
+    "reoccupation_next_4s": true,
+    "frame_index": 71,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-fast",
+    "arrival_s": 12,
+    "method": "constant_velocity",
+    "first_entry_s": 17.78,
+    "reoccupation_next_4s": true,
+    "frame_index": 71,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-fast",
+    "arrival_s": 12,
+    "method": "oracle",
+    "first_entry_s": 51.78,
+    "reoccupation_next_4s": false,
+    "frame_index": 207,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-fast",
+    "arrival_s": 14,
+    "method": "current_rules",
+    "first_entry_s": 51.78,
+    "reoccupation_next_4s": false,
+    "frame_index": 207,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-fast",
+    "arrival_s": 14,
+    "method": "existing",
+    "first_entry_s": 51.78,
+    "reoccupation_next_4s": false,
+    "frame_index": 207,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-fast",
+    "arrival_s": 14,
+    "method": "post_trained",
+    "first_entry_s": 51.78,
+    "reoccupation_next_4s": false,
+    "frame_index": 207,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-fast",
+    "arrival_s": 14,
+    "method": "constant_velocity",
+    "first_entry_s": 51.78,
+    "reoccupation_next_4s": false,
+    "frame_index": 207,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-fast",
+    "arrival_s": 14,
+    "method": "oracle",
+    "first_entry_s": 51.78,
+    "reoccupation_next_4s": false,
+    "frame_index": 207,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-fast",
+    "arrival_s": 16,
+    "method": "current_rules",
+    "first_entry_s": 51.78,
+    "reoccupation_next_4s": false,
+    "frame_index": 207,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-fast",
+    "arrival_s": 16,
+    "method": "existing",
+    "first_entry_s": 51.78,
+    "reoccupation_next_4s": false,
+    "frame_index": 207,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-fast",
+    "arrival_s": 16,
+    "method": "post_trained",
+    "first_entry_s": 51.78,
+    "reoccupation_next_4s": false,
+    "frame_index": 207,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-fast",
+    "arrival_s": 16,
+    "method": "constant_velocity",
+    "first_entry_s": 51.78,
+    "reoccupation_next_4s": false,
+    "frame_index": 207,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-fast",
+    "arrival_s": 16,
+    "method": "oracle",
+    "first_entry_s": 51.78,
+    "reoccupation_next_4s": false,
+    "frame_index": 207,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-slow",
+    "arrival_s": 8,
+    "method": "current_rules",
+    "first_entry_s": 13.788000000000011,
+    "reoccupation_next_4s": false,
+    "frame_index": 55,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-slow",
+    "arrival_s": 8,
+    "method": "existing",
+    "first_entry_s": 13.788000000000011,
+    "reoccupation_next_4s": false,
+    "frame_index": 55,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-slow",
+    "arrival_s": 8,
+    "method": "post_trained",
+    "first_entry_s": 13.788000000000011,
+    "reoccupation_next_4s": false,
+    "frame_index": 55,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-slow",
+    "arrival_s": 8,
+    "method": "constant_velocity",
+    "first_entry_s": 13.788000000000011,
+    "reoccupation_next_4s": false,
+    "frame_index": 55,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-slow",
+    "arrival_s": 8,
+    "method": "oracle",
+    "first_entry_s": 13.788000000000011,
+    "reoccupation_next_4s": false,
+    "frame_index": 55,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-slow",
+    "arrival_s": 10,
+    "method": "current_rules",
+    "first_entry_s": 15.788000000000011,
+    "reoccupation_next_4s": true,
+    "frame_index": 63,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-slow",
+    "arrival_s": 10,
+    "method": "existing",
+    "first_entry_s": 15.788000000000011,
+    "reoccupation_next_4s": true,
+    "frame_index": 63,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-slow",
+    "arrival_s": 10,
+    "method": "post_trained",
+    "first_entry_s": 15.788000000000011,
+    "reoccupation_next_4s": true,
+    "frame_index": 63,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-slow",
+    "arrival_s": 10,
+    "method": "constant_velocity",
+    "first_entry_s": 15.788000000000011,
+    "reoccupation_next_4s": true,
+    "frame_index": 63,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-slow",
+    "arrival_s": 10,
+    "method": "oracle",
+    "first_entry_s": 53.78800000000001,
+    "reoccupation_next_4s": false,
+    "frame_index": 215,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-slow",
+    "arrival_s": 12,
+    "method": "current_rules",
+    "first_entry_s": 17.78800000000001,
+    "reoccupation_next_4s": true,
+    "frame_index": 71,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-slow",
+    "arrival_s": 12,
+    "method": "existing",
+    "first_entry_s": 17.78800000000001,
+    "reoccupation_next_4s": true,
+    "frame_index": 71,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-slow",
+    "arrival_s": 12,
+    "method": "post_trained",
+    "first_entry_s": 17.78800000000001,
+    "reoccupation_next_4s": true,
+    "frame_index": 71,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-slow",
+    "arrival_s": 12,
+    "method": "constant_velocity",
+    "first_entry_s": 53.78800000000001,
+    "reoccupation_next_4s": false,
+    "frame_index": 215,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-slow",
+    "arrival_s": 12,
+    "method": "oracle",
+    "first_entry_s": 53.78800000000001,
+    "reoccupation_next_4s": false,
+    "frame_index": 215,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-slow",
+    "arrival_s": 14,
+    "method": "current_rules",
+    "first_entry_s": 53.78800000000001,
+    "reoccupation_next_4s": false,
+    "frame_index": 215,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-slow",
+    "arrival_s": 14,
+    "method": "existing",
+    "first_entry_s": 53.78800000000001,
+    "reoccupation_next_4s": false,
+    "frame_index": 215,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-slow",
+    "arrival_s": 14,
+    "method": "post_trained",
+    "first_entry_s": 53.78800000000001,
+    "reoccupation_next_4s": false,
+    "frame_index": 215,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-slow",
+    "arrival_s": 14,
+    "method": "constant_velocity",
+    "first_entry_s": 53.78800000000001,
+    "reoccupation_next_4s": false,
+    "frame_index": 215,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-slow",
+    "arrival_s": 14,
+    "method": "oracle",
+    "first_entry_s": 53.78800000000001,
+    "reoccupation_next_4s": false,
+    "frame_index": 215,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-slow",
+    "arrival_s": 16,
+    "method": "current_rules",
+    "first_entry_s": 53.78800000000001,
+    "reoccupation_next_4s": false,
+    "frame_index": 215,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-slow",
+    "arrival_s": 16,
+    "method": "existing",
+    "first_entry_s": 53.78800000000001,
+    "reoccupation_next_4s": false,
+    "frame_index": 215,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-slow",
+    "arrival_s": 16,
+    "method": "post_trained",
+    "first_entry_s": 53.78800000000001,
+    "reoccupation_next_4s": false,
+    "frame_index": 215,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-slow",
+    "arrival_s": 16,
+    "method": "constant_velocity",
+    "first_entry_s": 53.78800000000001,
+    "reoccupation_next_4s": false,
+    "frame_index": 215,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-return-slow",
+    "arrival_s": 16,
+    "method": "oracle",
+    "first_entry_s": 53.78800000000001,
+    "reoccupation_next_4s": false,
+    "frame_index": 215,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-depart-control",
+    "arrival_s": 8,
+    "method": "current_rules",
+    "first_entry_s": 29.848000000000013,
+    "reoccupation_next_4s": false,
+    "frame_index": 119,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-depart-control",
+    "arrival_s": 8,
+    "method": "existing",
+    "first_entry_s": 29.848000000000013,
+    "reoccupation_next_4s": false,
+    "frame_index": 119,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-depart-control",
+    "arrival_s": 8,
+    "method": "post_trained",
+    "first_entry_s": 29.848000000000013,
+    "reoccupation_next_4s": false,
+    "frame_index": 119,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-depart-control",
+    "arrival_s": 8,
+    "method": "constant_velocity",
+    "first_entry_s": 29.848000000000013,
+    "reoccupation_next_4s": false,
+    "frame_index": 119,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-depart-control",
+    "arrival_s": 8,
+    "method": "oracle",
+    "first_entry_s": 29.848000000000013,
+    "reoccupation_next_4s": false,
+    "frame_index": 119,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-depart-control",
+    "arrival_s": 10,
+    "method": "current_rules",
+    "first_entry_s": 29.848000000000013,
+    "reoccupation_next_4s": false,
+    "frame_index": 119,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-depart-control",
+    "arrival_s": 10,
+    "method": "existing",
+    "first_entry_s": 29.848000000000013,
+    "reoccupation_next_4s": false,
+    "frame_index": 119,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-depart-control",
+    "arrival_s": 10,
+    "method": "post_trained",
+    "first_entry_s": 29.848000000000013,
+    "reoccupation_next_4s": false,
+    "frame_index": 119,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-depart-control",
+    "arrival_s": 10,
+    "method": "constant_velocity",
+    "first_entry_s": 29.848000000000013,
+    "reoccupation_next_4s": false,
+    "frame_index": 119,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-depart-control",
+    "arrival_s": 10,
+    "method": "oracle",
+    "first_entry_s": 29.848000000000013,
+    "reoccupation_next_4s": false,
+    "frame_index": 119,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-depart-control",
+    "arrival_s": 12,
+    "method": "current_rules",
+    "first_entry_s": 29.848000000000013,
+    "reoccupation_next_4s": false,
+    "frame_index": 119,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-depart-control",
+    "arrival_s": 12,
+    "method": "existing",
+    "first_entry_s": 29.848000000000013,
+    "reoccupation_next_4s": false,
+    "frame_index": 119,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-depart-control",
+    "arrival_s": 12,
+    "method": "post_trained",
+    "first_entry_s": 29.848000000000013,
+    "reoccupation_next_4s": false,
+    "frame_index": 119,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-depart-control",
+    "arrival_s": 12,
+    "method": "constant_velocity",
+    "first_entry_s": 29.848000000000013,
+    "reoccupation_next_4s": false,
+    "frame_index": 119,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-depart-control",
+    "arrival_s": 12,
+    "method": "oracle",
+    "first_entry_s": 29.848000000000013,
+    "reoccupation_next_4s": false,
+    "frame_index": 119,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-depart-control",
+    "arrival_s": 14,
+    "method": "current_rules",
+    "first_entry_s": 29.848000000000013,
+    "reoccupation_next_4s": false,
+    "frame_index": 119,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-depart-control",
+    "arrival_s": 14,
+    "method": "existing",
+    "first_entry_s": 29.848000000000013,
+    "reoccupation_next_4s": false,
+    "frame_index": 119,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-depart-control",
+    "arrival_s": 14,
+    "method": "post_trained",
+    "first_entry_s": 29.848000000000013,
+    "reoccupation_next_4s": false,
+    "frame_index": 119,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-depart-control",
+    "arrival_s": 14,
+    "method": "constant_velocity",
+    "first_entry_s": 29.848000000000013,
+    "reoccupation_next_4s": false,
+    "frame_index": 119,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-depart-control",
+    "arrival_s": 14,
+    "method": "oracle",
+    "first_entry_s": 29.848000000000013,
+    "reoccupation_next_4s": false,
+    "frame_index": 119,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-depart-control",
+    "arrival_s": 16,
+    "method": "current_rules",
+    "first_entry_s": 29.848000000000013,
+    "reoccupation_next_4s": false,
+    "frame_index": 119,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-depart-control",
+    "arrival_s": 16,
+    "method": "existing",
+    "first_entry_s": 29.848000000000013,
+    "reoccupation_next_4s": false,
+    "frame_index": 119,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-depart-control",
+    "arrival_s": 16,
+    "method": "post_trained",
+    "first_entry_s": 29.848000000000013,
+    "reoccupation_next_4s": false,
+    "frame_index": 119,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-depart-control",
+    "arrival_s": 16,
+    "method": "constant_velocity",
+    "first_entry_s": 29.848000000000013,
+    "reoccupation_next_4s": false,
+    "frame_index": 119,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  },
+  {
+    "case": "test-depart-control",
+    "arrival_s": 16,
+    "method": "oracle",
+    "first_entry_s": 29.848000000000013,
+    "reoccupation_next_4s": false,
+    "frame_index": 119,
+    "permitted_entry": true,
+    "dispatch_invoked": false
+  }
+]

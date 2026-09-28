@@ -1,0 +1,91 @@
+{
+  "source": "previous state-reenter diagnostic only, not new heldout result",
+  "episodes": [
+    {
+      "arrival": 8,
+      "first": {
+        "current": {
+          "t": 13.99600000000001,
+          "current": "enter_delivery_approach",
+          "oracle": "enter_delivery_approach",
+          "reoccupied": false
+        },
+        "oracle": {
+          "t": 13.99600000000001,
+          "current": "enter_delivery_approach",
+          "oracle": "enter_delivery_approach",
+          "reoccupied": false
+        }
+      }
+    },
+    {
+      "arrival": 10,
+      "first": {
+        "current": {
+          "t": 15.99600000000001,
+          "current": "enter_delivery_approach",
+          "oracle": "enter_delivery_approach",
+          "reoccupied": false
+        },
+        "oracle": {
+          "t": 15.99600000000001,
+          "current": "enter_delivery_approach",
+          "oracle": "enter_delivery_approach",
+          "reoccupied": false
+        }
+      }
+    },
+    {
+      "arrival": 12,
+      "first": {
+        "current": {
+          "t": 17.99600000000001,
+          "current": "enter_delivery_approach",
+          "oracle": "wait_at_current_hold",
+          "reoccupied": true
+        },
+        "oracle": {
+          "t": 53.99600000000001,
+          "current": "enter_delivery_approach",
+          "oracle": "enter_delivery_approach",
+          "reoccupied": false
+        }
+      }
+    },
+    {
+      "arrival": 14,
+      "first": {
+        "current": {
+          "t": 19.99600000000001,
+          "current": "enter_delivery_approach",
+          "oracle": "wait_at_current_hold",
+          "reoccupied": true
+        },
+        "oracle": {
+          "t": 53.99600000000001,
+          "current": "enter_delivery_approach",
+          "oracle": "enter_delivery_approach",
+          "reoccupied": false
+        }
+      }
+    },
+    {
+      "arrival": 16,
+      "first": {
+        "current": {
+          "t": 53.99600000000001,
+          "current": "enter_delivery_approach",
+          "oracle": "enter_delivery_approach",
+          "reoccupied": false
+        },
+        "oracle": {
+          "t": 53.99600000000001,
+          "current": "enter_delivery_approach",
+          "oracle": "enter_delivery_approach",
+          "reoccupied": false
+        }
+      }
+    }
+  ],
+  "oracle_avoids": 2
+}

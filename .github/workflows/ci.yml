@@ -43,6 +43,12 @@ jobs:
             scripts/smoke_missionos_real_hardware_arm_disarm_route.py \
             scripts/smoke_mission_designer_envelope_violation_advisory.py \
             scripts/check_yokohama_pad_advisory.py \
+            scripts/run_yokohama_pad_reentry.py \
+            scripts/evaluate_yokohama_pad_reentry.py \
+            scripts/check_yokohama_pad_reentry.py \
+            scripts/export_yokohama_pad_reentry.py \
+            src/runtime/yokohama_pad_reentry_risk.py \
+            tests/test_yokohama_pad_reentry.py \
             scripts/export_yokohama_pad_advisory.py \
             scripts/verify_yokohama_pad_advisory.py \
             scripts/yokohama_pad_advisory_host.py \
@@ -108,6 +114,13 @@ jobs:
         run: |
           python scripts/check_yokohama_pad_advisory.py \
             --bundle docs/examples/yokohama-pad-advisory
+
+      - name: Recompute returning-lead advice from recorded RGB
+        run: |
+          python scripts/check_yokohama_pad_reentry.py \
+            --bundle docs/examples/yokohama-pad-reentry-learning
+          python scripts/check_yokohama_pad_reentry.py \
+            --bundle docs/examples/yokohama-pad-reentry
 
       - name: Verify Jev mode selection through the Gateway
         env:

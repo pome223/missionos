@@ -241,7 +241,8 @@ class PadAdvisoryHost:
                     "current_rules_action"
                 ] == "wait_at_current_hold" or (
                     s["constraints"]["mode"] == "assist"
-                    and s["observations"]["auxiliary_signal"] == "future_occupancy_reobserve"
+                    and s["observations"]["auxiliary_signal"]
+                    in {"future_occupancy_reobserve", "possible_reentry_reobserve"}
                 )
                 choice = "wait_at_current_hold" if should_wait else "enter_delivery_approach"
                 return ModelJudgment(

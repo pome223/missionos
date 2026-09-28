@@ -1,0 +1,7 @@
+{
+  "frames": 716,
+  "repeated_training_or_development_frames": 399,
+  "evaluation_windows": 152,
+  "identical_rgb_histories": 46,
+  "scope": "byte-identical RGB only; camera/appearance/path shared; timing schedules differ"
+}

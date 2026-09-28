@@ -1,0 +1,147 @@
+{
+  "schema": "missionos.pad-reentry-risk-protocol.v1",
+  "frozen_at": "2026-09-28T23:23:34.764254+00:00",
+  "cases": [
+    {
+      "id": "test-risk-return-medium",
+      "split": "unseen_test",
+      "knots": [
+        [
+          0,
+          "end"
+        ],
+        [
+          9,
+          "end"
+        ],
+        [
+          23.5,
+          "up"
+        ],
+        [
+          37.5,
+          "up"
+        ],
+        [
+          52,
+          "end"
+        ],
+        [
+          61,
+          "end"
+        ]
+      ],
+      "cutoffs": []
+    },
+    {
+      "id": "test-risk-return-slow",
+      "split": "unseen_test",
+      "knots": [
+        [
+          0,
+          "end"
+        ],
+        [
+          12,
+          "end"
+        ],
+        [
+          30.5,
+          "up"
+        ],
+        [
+          44.5,
+          "up"
+        ],
+        [
+          58,
+          "end"
+        ],
+        [
+          66,
+          "end"
+        ]
+      ],
+      "cutoffs": []
+    },
+    {
+      "id": "test-risk-depart",
+      "split": "unseen_test",
+      "knots": [
+        [
+          0,
+          "start"
+        ],
+        [
+          7,
+          "start"
+        ],
+        [
+          15,
+          "up"
+        ],
+        [
+          30,
+          "end"
+        ],
+        [
+          54,
+          "end"
+        ]
+      ],
+      "cutoffs": []
+    }
+  ],
+  "existing_weights_sha256": "2f648169418c9b8e7a1f4dec4e51cd8a792df8bec1611168e691207cc7ab67af",
+  "endpoints": [
+    "advisory changes current-Rules entry to wait before measured reoccupation",
+    "false additional waits",
+    "first permitted entry and next 4 seconds measured occupancy"
+  ],
+  "comparison": [
+    "current Rules",
+    "existing learned model",
+    "post-trained model",
+    "constant velocity from the same image localizations",
+    "measured-future oracle for scoring only"
+  ],
+  "candidate_actions": [
+    "wait_at_current_hold",
+    "enter_delivery_approach"
+  ],
+  "decision_stride_s": 1,
+  "current_clear_window_s": 5,
+  "future_horizon_s": 4,
+  "training": "No further training; reuse the post-trained model frozen before the first evaluation",
+  "evaluation": "Fresh timings not read when adding the risk policy; old evaluations remain diagnosis/regression",
+  "adoption": "No fixed 90% threshold and no requirement to beat ideal Rules; report practical changed decisions and regressions, not flight benefit from replay",
+  "headroom": "Reentry can interrupt an entry despite 5 seconds of past clearance. Independent current Rules remain mandatory. Individual decision opportunities and first-entry timelines are both scored; correlated windows are not independent missions.",
+  "limits": [
+    "fixed camera and known visible lead/corridor",
+    "scripted lead; no second autopilot",
+    "fixture own-aircraft hold for decision replay",
+    "no native ANWM, VLA, dispatch, cargo flight or battery measurement"
+  ],
+  "budget": {
+    "new_gpu_usd": 0,
+    "cumulative_estimate_usd": 18.532818962573373,
+    "ceiling_usd": 20
+  },
+  "risk_followup": true,
+  "risk_source_sha256": {
+    "src/runtime/yokohama_pad_reentry_risk.py": "aded502c42818fecbdcdb15a756fd296ded0fa343fb84d7b83071297ff7082bd",
+    "src/runtime/yokohama_pad_advisory_contract.py": "3ccb271d50fb3e845607becc00b9ba22fc8b4d9dcced8da3be91f04b7d99df31",
+    "scripts/yokohama_pad_advisory_host.py": "1681d8cb41658c1b60aef37efa0f6b4c0abc5772a2d93a37ccbc6b2ec6c6c313"
+  },
+  "training_protocol_sha256": "708b3014bb208fa84ad45e2ed52c1a185c32094b7a56acb4ccef6188687024ed",
+  "risk_policy": {
+    "inward_trend_m_per_s": 0.25,
+    "forecast_center_enters_current_pad_radius": true,
+    "supported_history_required": true,
+    "occupancy_labels_unchanged": true,
+    "unknown_only_is_not_a_warning": true,
+    "current_rules_unchanged": true,
+    "retained_after_horizon": false,
+    "max_recheck_interval_sim_s": 2
+  }
+}
