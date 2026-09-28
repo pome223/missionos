@@ -123,6 +123,8 @@ def export(run, out):
         decisions=decisions,
         scene=scene,
         closed_sim_s=read(run / "pad-advisory-closed.json")["closed_sim_s"],
+        source_trajectory_sha256=sha(run / "flight-trajectory.jsonl"),
+        projection="One display row per simulator timestamp, keeping its last observation; verification uses every original row.",
     )
     write(out / "replay.json", payload)
     battery = next(

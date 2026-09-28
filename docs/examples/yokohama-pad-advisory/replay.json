@@ -69463,5 +69463,7 @@
       0
     ]
   },
-  "closed_sim_s": 605.052
+  "closed_sim_s": 605.052,
+  "source_trajectory_sha256": "4bfe8c5023871b529f90d3de72ecaf5706630a04b85ff73652ea0b501b8fd5f1",
+  "projection": "One display row per simulator timestamp, keeping its last observation; verification uses every original row."
 }

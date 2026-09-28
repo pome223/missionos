@@ -44,8 +44,8 @@
     },
     {
       "path": "index.html",
-      "sha256": "33c17b022c8178aefa6e93eb6ccb4e16552693f2d018838e0a722f3f51e10307",
-      "bytes": 830304
+      "sha256": "b93795762f3319b5ea7f3715518b6d928c254099a6242b984358b103ef1f3980",
+      "bytes": 830401
     },
     {
       "path": "metrics.json",
@@ -64,8 +64,8 @@
     },
     {
       "path": "replay.json",
-      "sha256": "3ddcb1741e4788b6ff99d0c19e9568f21295ab32ed152ad72dd9d891405af5f7",
-      "bytes": 1387112
+      "sha256": "a61026043692637e7d5543d733ce9f384d0775264f7746abde45271f14fd8c9d",
+      "bytes": 1387338
     },
     {
       "path": "run/config.json",
