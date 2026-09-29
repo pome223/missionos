@@ -26,19 +26,63 @@ in each session receipt; this document records the contract and findings.
 | B / B′ | Reproduce moving training scenes (24 pairs, 1024 updates) | No config passed. Region weight 4 → orange texture (14/15). Weight 0 → lead fades in place (tight/latest: static 8/8 at 1.5 px, moving 0/16). Background conditioning → lead vanishes. |
 | C1 | One pair, 1024 updates | 1 of 2 seeds places the lead at 2.99 px; shape degraded. |
 | C2 | 50 vs 250 sampling steps | No improvement; colour appears near the true spot around t≈750 then fades; 250 steps take ~20 s. |
-| D | Same weights, swap inputs A–D | Pretrained: swapping moving/still history changes the lead's future region by 0.6–0.7 (0–255); swapping the conditioning image by 6–7. After C1: history swap 45 on the trained pair (lead drawn even with a lead-free conditioning image), but on an unseen moving pair it paints the memorized pattern. |
+| D | Same weights, swap inputs A–D | Base + motion-v4, before C1: swapping moving/still history changes the lead's future region by 0.6–0.7 (0–255); swapping the conditioning image by 6–7. After C1: history swap 45 on the trained pair; the unseen pair has misplaced/deformed coloured patterns. These are image-change magnitudes, not accuracy scores. |
 
 Facts: history frames reach every block's cross-attention directly; the
-conditioning image shares the target frame's positional slot. The pretrained
-weights do not use the history to place another object. Post-training can make
-them use it, but at this scale it learns per-example memorization, not a
-transferable motion rule.
+conditioning image shares the target frame's positional slot. In D's two
+histories and two generation seeds, C1 training increases sensitivity to the
+history. One trained-example output has a colour-centre error of 2.99 px, with
+degraded shape. The lead-free conditioning variant has a near-target pattern
+but fails the fixed colour readout. Transferable motion prediction was not
+demonstrated. D did not test the unadapted base checkpoint.
 
-Inference (not ablated architecturally): the pretrained prior gives no motion
-rule to build on, and small correlated data cannot force one. Sub-token lead size
-lets unsupported small blobs fade in late denoising. An earlier claim that no
-pathway carries motion, or that frozen early blocks withhold it, was wrong and
-is withdrawn.
+Inference: the trained-example/unseen-example difference is consistent with
+overfitting; small-object representation, the learning objective and conditioning
+may contribute. These experiments do not establish that the base model has no
+motion knowledge, that memorization is the only mechanism, or how much data or
+training is required. An earlier claim that no pathway carries motion, or that
+frozen early blocks withhold it, was wrong and is withdrawn.
+
+## Session R: host-only supplementary analysis
+
+Keep the uploaded `rule-protocol.json`, 144 planned forecasts and original gate
+unchanged. `analyze_yokohama_pad_wam_rule.py freeze` reads only the staged inputs,
+verifies their hashes, and writes a separate, non-overwriting supplement plan.
+It neither reads predictions nor changes the GPU payload. Classify the original
+24 moving-target ids by exact equality of their 16 observed RGB images:
+
+- `constant_history`: 6 ids, all frames identical; their histories also occur in
+  training. Their future transition timing is not specified by observed motion.
+- `changing_history`: 18 ids, with changing images and no exact training-history
+  match in this payload. This alone does not prove a transferable motion rule.
+- `static_reference`: the original 8 static-target ids, reported separately.
+
+The 1,940 training pairs contain 726 distinct image histories, or 1,452 distinct
+history/horizon combinations, from 36 sequences. Ten identical-input groups have
+different training future images. Separate sequence ids and many adjacent pairs
+do not eliminate memorization or input ambiguity.
+
+`score` recomputes the input audit to reject regrouping, calls the original
+evaluator unchanged, and retains its entire result. Supplementary summaries
+cover each checkpoint, both final moving-history seeds, the seed-42 still-history
+comparison, and final per-sequence results. Report expected/observed counts,
+unreadable outputs, median error including misses, persistence, constant-velocity
+extrapolation, and paired history-swap outcomes. A missing/duplicate forecast or
+unfinished run blocks supplementary scoring; there is no supplementary pass
+flag or replacement threshold. The original frozen gate remains authoritative
+for this diagnostic, not for flight adoption.
+
+Example host commands, with experiment paths supplied by the caller:
+
+```sh
+python scripts/analyze_yokohama_pad_wam_rule.py freeze --staged "$staged" --output "$plan"
+python scripts/analyze_yokohama_pad_wam_rule.py score --staged "$staged" --prepared "$prepared" --results "$results" --plan "$plan" --output "$output"
+```
+
+The run does not evaluate training-pair forecasts. A failed validation gate cannot
+separate failure to fit training examples from failure to generalize. Neither
+failure nor success settles ANWM's general capacity, and a three-second forecast
+must still extend past inference/communication latency before live use.
 
 ## Boundaries
 
