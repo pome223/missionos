@@ -189,8 +189,12 @@ class CityDecisions:
                 and self.config.get("decisions", {}).get("wam_profile") == "motion-v4"
             )
             if operation == "stop":
-                # Cleanup must remain possible while the aircraft is moving.
-                self.sample()
+                # Cleanup must remain possible while the aircraft is moving, and
+                # even after a pad guard has revoked continuation.
+                try:
+                    self.sample()
+                except ValueError:
+                    pass
             else:
                 self.held(
                     row,

@@ -65,14 +65,20 @@ def verify(root):
             and e["permit"]["cycle"] == 3
         )
         or e["event"] in ("pad_hold_moved", "pad_entry_reconfirmed")
-        or (e["event"] == "city_response" and e.get("cycle") == 3 and e["operation"] != "wam")
+        or (
+            e["event"] == "city_response"
+            and e.get("cycle") == 3
+            and e["operation"] in ("authorize", "activate")
+        )
         or (e["event"] == "city_segment_dispatched" and e["phase"] == "02-D3")
     ]
     checks = dict(
         fault_injected_at_d3_wam_request=queue.get("fault_lead_return") == "on_d3_wam_request"
         and config["decisions"]["backend"] == "fixture"
         and bool(entry and wam_request and trigger)
-        and entry["wall_s"] < wam_request["wall_s"] <= trigger["wall_s"],
+        # The trigger runs inside the same exchange, just before the request event.
+        and entry["wall_s"] < trigger["wall_s"] <= wam_request["wall_s"]
+        and wam_request["wall_s"] - trigger["wall_s"] < 1,
         reoccupation_observed_during_d3_inference=bool(reoccupied)
         and wam_request is not None
         and wam_request["wall_s"] < reoccupied["wall_s"] < inference_end,
