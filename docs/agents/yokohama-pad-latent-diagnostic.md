@@ -74,3 +74,29 @@ compare 50 versus 250 sampling steps before changing the loss or retraining.
 Keep both seeds and unreadable results. More sampling steps may be diagnostic
 but worsen flight latency; no new forecast or improved flight is implied by
 this proposed check.
+
+## Frozen-weight sampling trace
+
+`trace_yokohama_pad_sampling.py --root RUN` validates history-only input on CPU.
+`--execute-inference` is separately opt-in on a capped worker. It restores the
+retained final parameters, freezes every parameter, and compares 50/250 steps
+with seeds 42/43 and a fixed three-second forecast horizon. No optimizer,
+training target, or cached future latent is sent to that worker.
+
+Each of four ordinary native forecasts has a traced replay. The replay uses
+the unmodified upstream progressive sampler and records all x_t, predicted
+x0, and next-sample tensors. It must match the ordinary decoded output within
+1e-5. Conditioning and initial-noise hashes must match across step counts for
+each seed; weights must remain identical before and after inference.
+
+All 600 sampling states are retained. Only predicted x0 at seven predeclared
+noise anchors per call is decoded for the contact sheet; a sampled image does
+not establish what happened between those anchors. Timings from uninstrumented
+native calls exclude tracing and extra diagnostic decoding. Step counts alter
+the respaced stochastic sampler, not just its wall time.
+
+`evaluate_yokohama_pad_sampling.py` runs only on the host with the separate
+target/target-latent files. It rejects missing/duplicate/unfinished runs,
+parity or weight changes, missing trace frames, altered hashes, and broken
+trace continuity. Report all seeds, shape limitations and latency, and do not
+turn a training-pair readout improvement into deployment or generalization.
