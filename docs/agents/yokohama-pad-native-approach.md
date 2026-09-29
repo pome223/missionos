@@ -15,10 +15,62 @@ python scripts/verify_yokohama_pad_queue.py RUN --output RUN/pad-verification.js
 ```
 
 `--decision-backend native --native-service-config SERVICE` replaces the
-fixture with the pinned AeroVLA and motion-v4 ANWM services. The combination
-requires `--occupied-pad`, the motion-v4 profile, and no pad-state advisory,
-hold recovery or paired capture; `--occupied-pad` with a model backend is
-refused unless `--pad-approach-decision` is given.
+fixture with the pinned AeroVLA and motion-v4 ANWM services.
+`--pad-approach-decision` requires `--occupied-pad`, a decision backend, the
+motion-v4 profile, and no pad-state advisory, hold recovery or paired capture.
+Without it, `--occupied-pad` with a model backend runs the city-only mode below.
+
+## City models with the Rules-plus-advisory queue
+
+The models make only the D1/D2 building-constrained steps. The session is
+revoked and the models are stopped at D2, before the pad is reported occupied.
+Waiting is decided by the pose Rules and the MissionOS fixture judge. The
+optional CPU pad-state advisory (`--pad-state-advisory assist`) can only change
+the proposal to `wait_at_current_hold`. It can never admit entry.
+
+```sh
+python scripts/yokohama_sitl.py --phase flight --approve-sitl --output-dir RUN \
+  --sea-round-trip --deliver-payload --occupied-pad --pad-state-advisory assist \
+  --decision-backend native --native-service-config SERVICE --wam-profile motion-v4 \
+  --timeout-seconds 3000
+```
+
+The mode requires cargo delivery, zero wind and the motion-v4 profile. Proposal
+size is bounded from the proposal observation, as described below.
+`verify_yokohama_pad_queue.py` replaces its no-models check with
+`city_models_stopped_before_pad_wait`:
+
+- `city_session_revoked` must come before `pad_occupied_reported`;
+- no non-stop `city_request` may follow the pad report.
+
+Run `verify_yokohama_decisions.py`, `verify_yokohama_pad_advisory.py`,
+`verify_yokohama_payload.py` and `verify_yokohama_sitl.py` on the same run.
+
+### Observed native run (2026-09-29, `yokohama-64b4376e193b`)
+
+The run used one L4 cloud GPU for the model services. The GPU was deleted after
+the D2 model stop was verified. Delivery and return were AP-only on CPU.
+
+| Step | Observation |
+|---|---|
+| D1, D2 | Native VLA about 17 s, WAM about 50 s per cycle. Both candidates passed the unchanged city WAM gate. Final target error was 0.14 m and 0.09 m. |
+| Pad wait | Pad reported occupied at 934 s. Rules reaffirmed the wait about every 2 s until entry was granted at 970 s. |
+| Advisory | 15 inference calls, 13 supported. The advisory changed 0 actions compared with the Rules proposal on the same observations. |
+| Delivery, return | One release, one receipt, then a landed and disarmed ship return. |
+
+All five verifiers passed: decisions, pad_queue (19 checks), pad_advisory,
+payload and sitl (21 checks). The estimated incremental cloud cost was $0.50.
+
+Limits of this run:
+
+- It shows that the combination runs end to end. It does not show that the
+  advisory adds safety or saves time, because the Rules were already waiting.
+- The WAM gate checks visible structure consistency only. It does not predict
+  free space or collisions.
+- The lead aircraft is scripted and occupancy is pose-based.
+- This is a single simulator run, not physical execution.
+
+Flight evidence is kept outside the repository.
 
 ## Authority split
 
