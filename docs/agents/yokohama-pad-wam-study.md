@@ -84,6 +84,26 @@ separate failure to fit training examples from failure to generalize. Neither
 failure nor success settles ANWM's general capacity, and a three-second forecast
 must still extend past inference/communication latency before live use.
 
+## Session R result (30,000 updates, 1,940 training pairs)
+
+Completed: 144/144 forecasts, no gaps or duplicates; weights retained in the
+evidence archive (sha256 589c35ce...). Estimated $3.02, cumulative $27.19 of $29.
+
+- Changing-history held-out ids (18): lead readable 0/18 at 30k on both seeds
+  (1/18 at 8k and 16k); in the lead's future region every forecast is closer to
+  the current image than to the real future (0/18); moving and still histories
+  behave the same. Persistence 44.9 px, constant-velocity extrapolation 13.0 px.
+- Constant-history ids (6): lead drawn where it is now (0.8-3.4 px) in 5/6, the
+  persistence answer; onset timing is not predicted.
+- Static reference (8): 8/8 at 0.5-0.8 px.
+- The original 24-id gate fails and is kept as a record only; none of the
+  usefulness indicators written before results
+  (`usefulness-indicators.json`) is met.
+
+Reading: at this scale the adapted ANWM renders stationary leads precisely but
+erases moving ones rather than placing them; more updates did not help. This is
+one scene, camera and training recipe, not a general statement about ANWM.
+
 ## Boundaries
 
 Every diagnostic uses one scene, one lead appearance and a fixed camera; the
