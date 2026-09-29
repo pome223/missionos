@@ -1,6 +1,5 @@
 """The rule-learning gate passes only on complete, motion-using, better-than-persistence forecasts."""
 
-
 import numpy as np
 from PIL import Image
 
