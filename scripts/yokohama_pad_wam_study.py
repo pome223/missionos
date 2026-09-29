@@ -18,8 +18,9 @@ from PIL import Image
 CROPS = {
     # The earlier regional study's crop (lead body ~16x7 px after resizing).
     "wide": (256, 48, 584, 328),
-    # Covers the lead within ~8 m of the pad from the ground to 7 m (~32x13 px).
-    "tight": (310, 80, 480, 250),
+    # 200 px square on the pad chosen from training frames only: 99% / 95% of lead
+    # views within 4 m / 6 m of the pad, lead body ~27 px (1.7x the wide crop).
+    "tight": (227, 62, 427, 262),
 }
 OFFSETS = (4, 12)  # 4 Hz: one and three seconds ahead
 HISTORY = 16
