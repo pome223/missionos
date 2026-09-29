@@ -45,3 +45,32 @@ PYTHONPATH=. python -m pytest -q tests/test_yokohama_pad_latents.py tests/test_y
 python scripts/diagnose_yokohama_pad_latents.py --root RUN
 python scripts/evaluate_yokohama_pad_latents.py --root RUN --results RESULTS --output OUTPUT
 ```
+
+## Retained-evidence denoising audit
+
+`scripts/analyze_yokohama_pad_denoising.py --root RUN --results RESULTS
+--output OUTPUT [--image IMAGE] [--weights]` performs no inference, training,
+cloud operation, or accelerator call. `--weights` requires CPU Torch and loads
+only the retained selected parameters with `weights_only=True`, CPU mapping,
+and receipt checks. It checks that all expected updates and teacher records
+exist, and the native evidence is complete before reporting diagnostics.
+
+For the pinned 1,000-step linear EPSILON schedule, the inferred unclipped
+latent x0 error is epsilon MSE multiplied by `(1-alpha_bar)/alpha_bar`.
+Do not compare raw epsilon MSE across noise levels as if it measured image
+quality. The converted quantity is not RGB error or a new optimization loss.
+All teacher inputs contain the true future. Three one-step teacher checks
+cannot locate the failure inside an unsaved multi-step generation trajectory.
+
+The audit reports foreground and background separately, records raw synthetic
+colour readouts without treating texture as aircraft, and keeps the prior fit
+criterion unchanged. Parameter changes show that updates were applied, not
+that optimization or the limited trainable scope was sufficient. No learned
+weight adoption follows from this analysis.
+
+For the next inference diagnosis, hold the retained weights, pair and seeds
+fixed; capture the denoised image estimate along the ordinary sampler and
+compare 50 versus 250 sampling steps before changing the loss or retraining.
+Keep both seeds and unreadable results. More sampling steps may be diagnostic
+but worsen flight latency; no new forecast or improved flight is implied by
+this proposed check.
