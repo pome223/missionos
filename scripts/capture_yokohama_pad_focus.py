@@ -149,6 +149,67 @@ def native_focus_cases():
     ]
 
 
+DIRECTIONS_DEG = (-30, 0, 45, 90, 135, 180)
+HELD_OUT_DIRECTION_DEG = 135
+
+
+def wam_improve_points(policy):
+    """Named lead waypoints: on-pad start, hover at 5/7 m, 12 m exits by bearing."""
+    start = policy["lead_start_xyz_m"]
+    pad_z = policy["pad_xyz_m"][2]
+    points = {"start": start}
+    for h in (5, 7):
+        up = [start[0], start[1], pad_z + h]
+        points[f"up{h}"] = up
+        for deg in DIRECTIONS_DEG:
+            a = math.radians(deg)
+            points[f"end{h}_{deg}"] = [up[0] + 12 * math.cos(a), up[1] + 12 * math.sin(a), up[2]]
+    return points
+
+
+def wam_improve_cases():
+    """Frozen, sequence-level train/val/test lead motions for the WAM study.
+
+    Timing and path combinations are drawn once from a fixed seed. Test holds
+    out new timing combinations and every exit at the 135 degree bearing.
+    """
+    import random
+
+    rng = random.Random(20260929)
+    kinds = ["depart"] * 3 + ["stall"] + ["return"] * 2
+
+    def knots(kind, deg, h):
+        up, end = f"up{h}", f"end{h}_{deg}"
+        if kind == "depart":
+            u, a, d = rng.choice([4, 8, 12, 16]), rng.choice([4, 6, 9]), rng.choice([8, 12, 16])
+            k = [[0, "start"], [u, "start"], [u + a, up], [u + a + d, end]]
+        elif kind == "stall":
+            u, a, w, d = (rng.choice(v) for v in ([4, 8], [4, 6, 9], [6, 12], [8, 12, 16]))
+            k = [[0, "start"], [u, "start"], [u + a, up], [u + a + w, up], [u + a + w + d, end]]
+        else:
+            w, d, hov, a = (rng.choice(v) for v in ([3, 6], [8, 12, 16], [2, 5], [4, 6, 9]))
+            k = [[0, end], [w, end], [w + d, up], [w + d + hov, up], [w + d + hov + a, "start"]]
+        return k + [[k[-1][0] + 6, k[-1][1]]]
+
+    cases, seen = [], set()
+    plan = [("train", 36), ("val", 8), ("test", 12)]
+    for split, count in plan:
+        n = 0
+        while n < count:
+            kind = kinds[n % len(kinds)]
+            pool = [d for d in DIRECTIONS_DEG if d != HELD_OUT_DIRECTION_DEG]
+            deg = HELD_OUT_DIRECTION_DEG if split == "test" and n % 3 == 0 else rng.choice(pool)
+            h = rng.choice([5, 7])
+            k = knots(kind, deg, h)
+            key = json.dumps(k)
+            if key in seen:
+                continue
+            seen.add(key)
+            cases.append(dict(id=f"wam-{split}-{n:02d}-{kind}", split=split, knots=k, cutoffs=[]))
+            n += 1
+    return cases
+
+
 def worker():
     from gz.msgs10.boolean_pb2 import Boolean
     from gz.msgs10.pose_pb2 import Pose
@@ -178,7 +239,10 @@ def worker():
 
     obs = MotionObserver(config)
     policy = config["world"]["pad_queue"]
-    points = {k: policy[f"lead_{k}_xyz_m"] for k in ("start", "up", "end")}
+    points = config.get("motion_points") or {
+        k: policy[f"lead_{k}_xyz_m"] for k in ("start", "up", "end")
+    }
+    store_depth = config.get("store_depth", True)
     receipt = dict(status="failed", aircraft_flown=False, native_inference=False, cases=[])
 
     def set_pose(name, xyz):
@@ -263,7 +327,7 @@ def worker():
                     assets = {}
                     for kind, data in [
                         ("rgb", png_rgb(640, 360, rgb.data)),
-                        ("depth", zlib.compress(bytes(depth.data))),
+                        *([("depth", zlib.compress(bytes(depth.data)))] if store_depth else []),
                     ]:
                         name = f"{i:04d}-{kind}." + ("png" if kind == "rgb" else "z")
                         (folder / name).write_bytes(data)
@@ -284,7 +348,8 @@ def worker():
                     )
                     last_stamp = s
                 time.sleep(0.01)
-            if len(records) < 100:
+            need = int(case["knots"][-1][0] * 4 * 0.9) if config.get("motion_points") else 100
+            if len(records) < need:
                 raise ValueError("Incomplete dynamic recording")
             gaps = [(b["stamp_ns"] - a["stamp_ns"]) / 1e9 for a, b in zip(records, records[1:])]
             if max(abs(g - 0.25) for g in gaps) > 0.004000001:
@@ -320,7 +385,13 @@ def main():
     p.add_argument("--output-dir", type=Path, required=True)
     p.add_argument(
         "--case-set",
-        choices=["temporal-v1", "learning-v1", "state-eval-v1", "native-focus-v1"],
+        choices=[
+            "temporal-v1",
+            "learning-v1",
+            "state-eval-v1",
+            "native-focus-v1",
+            "wam-improve-v1",
+        ],
         default="temporal-v1",
     )
     a = p.parse_args()
@@ -345,7 +416,12 @@ def main():
         "learning-v1": learning_cases,
         "state-eval-v1": state_evaluation_cases,
         "native-focus-v1": native_focus_cases,
+        "wam-improve-v1": wam_improve_cases,
     }[a.case_set]()
+    if a.case_set == "wam-improve-v1":
+        # Depth is not a regional WAM input; RGB alone keeps the study within disk.
+        config["motion_points"] = wam_improve_points(config["world"]["pad_queue"])
+        config["store_depth"] = False
     config["motion_case_set"] = a.case_set
     config["decisions"] = {"backend": "camera-recording-only"}
     near = config["diagnostic_cases"][1]
@@ -414,7 +490,9 @@ def main():
                 stdout=out,
                 stderr=err,
                 check=True,
-                timeout=1700,
+                timeout=max(
+                    1700, 300 + sum(c["knots"][-1][0] + 10 for c in config["motion_cases"])
+                ),
             )
     finally:
         logs = subprocess.run(["docker", "logs", name], capture_output=True, text=True, timeout=15)
