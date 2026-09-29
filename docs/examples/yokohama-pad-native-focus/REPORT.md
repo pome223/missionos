@@ -12,6 +12,17 @@ The frozen intervention changes crop, horizon, conditioning, trainable scope and
 
 Warm after-inference latency had a **4.52 wall-second median**, excluding startup and transport. At a hypothetical 1x simulation-to-real-time rate, all 28 requested endpoints already pass before inference completes. Actual flight-clock freshness, interval occupancy, moving-action alternatives and mission benefit remain unverified. Existing AP-only sea operation and registered flight weights are unchanged.
 
+## Why it did not improve
+
+A GPU-free, post-hoc diagnosis recomputes the following from the published bundle ([diagnosis](diagnosis.json)). It explains the result; it does not attribute the failure to one changed factor.
+
+- **Almost no headroom.** Only 3 of 26 known targets change state within the horizon, so even a perfect forecast could gain at most 3 over persistence. Exactly one condition is clear-now/occupied-later. Native forecasts never chose the wrong state; every loss was an unreadable image.
+- **Conditioning encodes persistence.** ANWM predicts views conditioned on ego motion. Here the action is zero and the geometry conditioning image is the latest observation, so lead motion is available only through the 16 past frames. Before training, readable 4-second forecasts came only from stationary histories identical to training; unseen histories scored 0/9.
+- **The lead is small for the generator.** It spans about 40×10 pixels in the 224×224 input, about 5×1 latent cells; at most 1.1% of pixels differ from background. VAE round trips remain readable on all three development probes, so the loss happens during generation.
+- **Training memorized.** 208 pairs share 104 histories; 4,096 updates are about 20 per pair. Median training loss fell about fivefold from the first to the last 512 updates; four-second RGB error on training-identical histories improved from 9.35 to 4.11, but worsened from 9.76 to 29.04 on unseen histories, where invented texture appears.
+
+The cue exists in the input: in return-21 the lead closes from 9.9 m to 7.1 m during the history and moves about 30 pixels. Generation does not preserve it. The clear-now/occupied-within-4-seconds window lasts only about 1.75 seconds per approach, and at this speed no clear-to-occupied change occurs within one second. Tuning crop, loss or update count under the same evaluation is unlikely to show improvement. A retry first needs transition-dense evaluation, moving-object training data, a larger lead in the input, and inference that finishes before the forecast time. The fixed-camera [CPU state model](../yokohama-pad-state/REPORT-ja.md), which reads lead position directly, has already shown the wait-to-consider-entry switch.
+
 ## E2E / Runtime Verification
 
 The actual runtime boundary was CPU Gazebo recording (736 frames) → past-only payload → native L4 ANWM inference and weight updates → checkpoint reload → host-side withheld-target evaluation. All 149 downloaded files passed their remote hashes. The maintained source differs from exact executed Python only in documented formatting and closure capture. The independent CPU checker reopens all public hashes, 59 receipt bindings and 56 paired forecasts without GPU.

@@ -106,6 +106,39 @@ Do not claim zero in-process CUDA allocation. Training targets and training-only
 reader labels were on the GPU host; evaluation targets and actor trajectories
 were withheld from native model inputs.
 
+## Post-hoc failure diagnosis
+
+`diagnosis.json` explains the negative result; it is not a new experiment, a
+native rerun, attribution to one changed factor, or an adoption change.
+
+```sh
+python scripts/diagnose_yokohama_pad_focus.py \
+  --bundle docs/examples/yokohama-pad-native-focus --write
+```
+
+- Inputs are the published bundle plus `docs/examples/yokohama-pad-queue/protocol.json`
+  for pad geometry. The script first rejects unless that geometry reproduces all
+  28 `truth.json` future and current labels at the bound capture indices.
+- Recorded actor poses are used only to explain ground truth (distance at
+  -3.75, 0, +1 and +4 seconds, and the clear-to-occupied window). They were never
+  native model inputs; `actor_pose_model_input` stays false.
+- Headroom counts known targets whose future state differs from the current
+  pose state. Groups split paired conditions by exact training-history overlap
+  and horizon; they remain correlated, not independent missions.
+- Object scale compares the last history crop with the training background at
+  the training ROI threshold (any channel > 20), with 8-connected components and
+  the VAE stride of 8. Components are changed regions, not a validated detector.
+- `check_yokohama_pad_focus.py` recomputes the diagnosis and rejects any drift.
+
+Recorded diagnosis: 3/26 known targets change state, one clear-now/occupied-later
+condition, zero wrong-state native outputs, 0/9 readable unseen four-second
+forecasts before training, a median lead component of about 40×10 pixels, and
+four-second RGB error 9.35→4.11 on training-identical histories versus
+9.76→29.04 on unseen ones. The clear-to-occupied window is 1.75 seconds for the
+four-second horizon and absent for one second. Only the reports, `index.html`,
+`diagnosis.json` and the manifest were added or edited; receipts, forecasts and
+evaluation files are unchanged.
+
 ## Separate maintained capture entrypoint
 
 The original run used the extended `capture_yokohama_pad_motion.py`; its exact

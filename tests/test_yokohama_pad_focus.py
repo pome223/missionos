@@ -11,6 +11,9 @@ import pytest
 
 from scripts.yokohama_pad_focus_data import CROP, crop, sha, validate, write
 from scripts.capture_yokohama_pad_focus import native_focus_cases
+from scripts import diagnose_yokohama_pad_focus as diagnosis
+
+BUNDLE = Path(__file__).resolve().parents[1] / "docs/examples/yokohama-pad-native-focus"
 
 
 def dataset(tmp_path):
@@ -152,3 +155,28 @@ elif args[0] == "inspect":
     assert (output / "fixture-worker-invocation.json").is_file()
     assert json.loads((output / "config.json").read_text())["motion_cases"] == native_focus_cases()
     assert json.loads((output / "cleanup.json").read_text())["removed"] is True
+
+
+def test_changed_regions_are_eight_connected():
+    mask = np.zeros((6, 6), bool)
+    mask[0, 0] = mask[1, 1] = mask[4, 2:5] = True
+    assert [c[:3] for c in diagnosis.components(mask)] == [[3, 3, 1], [2, 2, 2]]
+
+
+def test_published_diagnosis_recomputes_without_gpu():
+    result = json.loads(json.dumps(diagnosis.diagnose(BUNDLE)))
+    assert result == json.loads((BUNDLE / "diagnosis.json").read_text())
+    assert result["actor_pose_model_input"] is False and result["native_rerun"] is False
+    assert result["headroom"]["max_gain_over_persistence"] == 3
+    assert result["headroom"]["clear_to_occupied_opportunities"] == 1
+    assert all(v["wrong_state"] == 0 for v in result["failure_mode"].values())
+
+
+def test_diagnosis_rejects_geometry_that_does_not_reproduce_truth(tmp_path, monkeypatch):
+    source = Path(diagnosis.REPO / diagnosis.GEOMETRY)
+    moved = json.loads(source.read_text())
+    moved["pad_queue"]["pad_xyz_m"][0] += 6
+    (tmp_path / "protocol.json").write_text(json.dumps(moved))
+    monkeypatch.setattr(diagnosis, "GEOMETRY", str(tmp_path / "protocol.json"))
+    with pytest.raises(ValueError, match="geometry"):
+        diagnosis.diagnose(BUNDLE)

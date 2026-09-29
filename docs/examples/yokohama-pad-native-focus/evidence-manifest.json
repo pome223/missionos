@@ -1,8 +1,8 @@
 {
   "schema": "native_pad_focus_public_evidence.v1",
   "files": {
-    "REPORT-ja.md": "f3c0021d5993dfe2b9a30fe02cb090b70ab0af0dcecfe82a39a252ec1ff81cdb",
-    "REPORT.md": "51965624440ad539277b8a2a9a6ed2f3d24d5c5b0b3eb737e7afb684df07a0ab",
+    "REPORT-ja.md": "19e4c2fe91db8603043d6d16d4a9dfefa78a3602dc4c6fab1371717a27d56090",
+    "REPORT.md": "51e6f4cc0799cd30882201303e2ff449c77ad21ee16664d909001199e538ccca",
     "adoption.json": "194040a8e6ccfe210c3039080db4ea2167f44140b28cfc2ce64716c670211dcc",
     "budget-authorization.json": "d67c043f4f7ae3ea531ef8928cfc12041b628ccc123debe52fd5a2c8d7feffa7",
     "capture/capture-result.json": "73fda4f7eb2af0433865ddd8ea0a445f63f23d338e84584f86b0b28045bf6636",
@@ -13,6 +13,7 @@
     "capture/focus-stall.json": "0c6b5f1c683102834b5cf84866dbcad675792c350373eee2f64a5efae372f8e7",
     "comparison.png": "abddf649807a2effe3c8a4cb87610f66432a5129cf0bdc1e84a28090d471e3e1",
     "cost.json": "e25aef491fbf192914a6051e66e7429b625d893f75b45871a7ed4b0904af7566",
+    "diagnosis.json": "cf52b220a67ccd5228888251ba24a44479f55dfb8170f700f2e30683cd415509",
     "evaluation.json": "69ceaf8a716fec142b31cd8c60fc67ddc1243087d7ce46c826e095f6c18b3d4a",
     "executed-source/ship_anwm.py": "78e4680405eb0202eac2dbc0ba8035577b1765cf8f76961e83f6f6ae2a431509",
     "executed-source/ship_anwm_server.py": "30a0fa5e864279e2d09d8f7482dccacb93cb7961c8e28b46e070d8928ca04545",
@@ -49,7 +50,7 @@
     "images/focus-stall-37-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
     "images/focus-stall-49-t04.png": "f98d8dba49fec605ca36ad09b52dc3290299b5fd038bd370422a53fa5585da03",
     "images/focus-stall-49-t16.png": "f98d8dba49fec605ca36ad09b52dc3290299b5fd038bd370422a53fa5585da03",
-    "index.html": "e4d41f3e5c9ca8a8595384bdf81c2b70dd5f936b6c57eee5bd3e716d5c3bf3ef",
+    "index.html": "c48a950c39201111faa333000e4c5db42d8f1f43f677cc910f1bd3fde611c252",
     "overlap.json": "464637606357d3d1c8029a36025e547ee2073b63cad514a4aac7bbc0fb0c5cdc",
     "prepared/admission.json": "efc75330e81f677c54ca5173d5373432d2e45474ec5929ce04cad3bca4b88ece",
     "prepared/capture-bindings.json": "079cdb8f900d6c98e0ddd1e857c3d7a8eada7fddd53b02619e56f3d92d802d37",

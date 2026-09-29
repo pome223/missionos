@@ -9,6 +9,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from scripts.diagnose_yokohama_pad_focus import diagnose
 from scripts.evaluate_yokohama_pad_focus import evaluate
 from scripts.yokohama_pad_focus_data import sha
 
@@ -44,6 +45,9 @@ def check(bundle):
             old = original["methods"][stage]
             if row["state"] != old["state"] or abs(row["rgb_mae"] - old["rgb_mae"]) > 1e-9:
                 raise ValueError("Saved image metric changed")
+    diagnosis = json.loads(json.dumps(diagnose(bundle)))
+    if diagnosis != json.loads((bundle / "diagnosis.json").read_text()):
+        raise ValueError("Post-hoc diagnosis changed")
     cost = json.loads((bundle / "cost.json").read_text())
     if (
         not cost["cleanup_confirmed"]

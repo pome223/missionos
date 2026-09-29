@@ -48,6 +48,7 @@ jobs:
             scripts/check_yokohama_pad_reentry.py \
             scripts/export_yokohama_pad_reentry.py \
             scripts/check_yokohama_pad_focus.py \
+            scripts/diagnose_yokohama_pad_focus.py \
             scripts/capture_yokohama_pad_focus.py \
             scripts/evaluate_yokohama_pad_focus.py \
             scripts/export_yokohama_pad_focus.py \
