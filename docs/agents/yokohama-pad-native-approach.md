@@ -151,6 +151,19 @@ stops with a pad-reoccupation reason, no D3 upload or dispatch exists, and the
 model session and simulator are released (`verify_yokohama_pad_approach_fault.py`).
 A failed flight alone is not a passing fault test.
 
+After the `proposal_observation` bound was introduced, the latency run was
+repeated on CPU (fixture backend, `--fixture-cold-start`, run
+`yokohama-c1b1328b77fb`):
+
+- D1, D2 and D3 all arrived, with final target errors of 0.10, 0.07 and 0.10 m.
+- The first entry permission was 85 s old at the pre-authority
+  reconfirmation. A fresh permission admitted the D3 step.
+- The second reconfirmation passed at the reached endpoint.
+- Delivery and a landed, disarmed ship return completed.
+- The decisions, pad_queue (23 checks), payload and sitl verifiers passed.
+
+The pad-state advisory is not part of this mode.
+
 ## Verification
 
 `verify_yokohama_decisions.py` reopens every configured cycle, including the
