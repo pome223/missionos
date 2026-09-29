@@ -44,6 +44,30 @@ def round_robin(rows, count):
     return picked
 
 
+def stratified(rows, count, phases=("departing", "returning", "landing", "ascending", "hover")):
+    """Balance motion phases (lateral and vertical), each pick from an unused sequence."""
+    groups = {
+        p: sorted((r for r in rows if r["phase_now"] == p), key=lambda r: r["id"]) for p in phases
+    }
+    used, picked = set(), []
+
+    def sequence(r):
+        return r["id"].split("-")[2]
+
+    while len(picked) < count and any(groups.values()):
+        for p in phases:
+            if not groups[p] or len(picked) >= count:
+                continue
+            fresh = [r for r in groups[p] if sequence(r) not in used] or groups[p]
+            first = sequence(fresh[0])
+            same = [r for r in fresh if sequence(r) == first]
+            choice = same[len(same) // 2]
+            groups[p].remove(choice)
+            used.add(first)
+            picked.append(choice)
+    return picked
+
+
 def select(truth):
     tight = {base(t["id"]): t for t in truth if t["id"].endswith("-tight")}
 
@@ -58,15 +82,14 @@ def select(truth):
         for t in train
         if moved(t) is not None and moved(t) < 1.5 and t["phase_now"] in ("on_pad", "hover")
     ]
-    moving = round_robin(moving12, 12) + round_robin(moving04, 4)
+    moving = stratified(moving12, 12) + stratified(moving04, 4)
     static_pick = round_robin(static, 8)
     val = [t for k, t in tight.items() if t["split"] == "val"]
-    phases = ["departing", "returning", "ascending", "landing", "on_pad", "hover"]
-    evaluation = []
-    for i in range(min(16, len(val))):
-        pool = [t for t in val if t["phase_now"] == phases[i % len(phases)] and t not in evaluation]
-        pool = pool or [t for t in val if t not in evaluation]
-        evaluation.append(round_robin(pool, 1)[0])
+    evaluation = stratified(
+        val,
+        min(16, len(val)),
+        phases=("departing", "returning", "ascending", "landing", "on_pad", "hover"),
+    )
     ids = lambda rows: [base(t["id"]) for t in rows]  # noqa: E731
     return ids(moving), ids(moving + static_pick), ids(evaluation)
 
