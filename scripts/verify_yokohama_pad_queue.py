@@ -30,6 +30,22 @@ def verify(root):
     if approach:
         # Model participation is verified separately by verify_yokohama_decisions.
         checks["no_physical_execution"] = result.get("physical_execution_invoked") is False
+    elif c.get("decisions"):
+        # City models (verified by verify_yokohama_decisions) must be revoked and
+        # stopped before the pad wait; the queue itself stays Rules + advisory.
+        names = [e["event"] for e in events]
+        checks["no_physical_execution"] = result.get("physical_execution_invoked") is False
+        checks["city_models_stopped_before_pad_wait"] = (
+            "city_session_revoked" in names
+            and "pad_occupied_reported" in names
+            and names.index("city_session_revoked") < names.index("pad_occupied_reported")
+            and not any(
+                e["event"] == "city_request"
+                and e["wall_s"] > events[names.index("pad_occupied_reported")]["wall_s"]
+                and e.get("operation") != "stop"
+                for e in events
+            )
+        )
     else:
         checks["no_native_models_or_gpu"] = all(
             result.get(k) is False

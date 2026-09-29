@@ -204,7 +204,20 @@ def test_reoccupation_during_reconfirmation_grants_nothing(tmp_path, monkeypatch
     "extra,message",
     [
         (["--pad-approach-decision"], "Pad approach decision requires"),
-        (["--occupied-pad", "--decision-backend", "fixture"], "only through --pad-approach"),
+        (["--occupied-pad", "--decision-backend", "fixture"], "motion-v4 profile"),
+        (
+            [
+                "--occupied-pad",
+                "--decision-backend",
+                "fixture",
+                "--wam-profile",
+                "motion-v4",
+                "--pad-approach-decision",
+                "--pad-state-advisory",
+                "assist",
+            ],
+            "no advisory",
+        ),
         (
             ["--occupied-pad", "--decision-backend", "fixture", "--pad-approach-decision"],
             "motion-v4",

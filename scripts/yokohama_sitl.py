@@ -115,13 +115,13 @@ def main():
         parser.error("Pad-state advisory requires --occupied-pad")
     if args.occupied_pad and (
         not args.deliver_payload
-        or (args.decision_backend and not args.pad_approach_decision)
         or args.wind_east_mps
         or args.wind_profile
+        or (args.decision_backend and args.wam_profile != "motion-v4")
     ):
         parser.error(
-            "Occupied-pad trial requires cargo delivery, zero wind, and a model backend "
-            "only through --pad-approach-decision"
+            "Occupied-pad trial requires cargo delivery, zero wind, and the motion-v4 "
+            "profile for any city model backend"
         )
     if args.fault_lead_return_on_d3_wam and (
         not args.pad_approach_decision or args.decision_backend != "fixture"
@@ -326,12 +326,13 @@ def main():
                 sea_leg_present=args.sea_round_trip,
                 payload_release_present=args.deliver_payload,
             )
-            if args.pad_approach_decision:
-                from src.runtime.yokohama_native import PAD_APPROACH_PROFILE
-
+            if args.occupied_pad:
                 # Measure the proposal-size bound from the model's own observation;
                 # hold drift during inference stays bounded separately (0.5 m).
                 config["decisions"]["size_bound_origin"] = "proposal_observation"
+            if args.pad_approach_decision:
+                from src.runtime.yokohama_native import PAD_APPROACH_PROFILE
+
                 config["decisions"]["pad_approach"] = dict(
                     wait_authority="pose Rules and fixture MissionOS judge; VLA grammar has no hold",
                     wam_profile=PAD_APPROACH_PROFILE,
