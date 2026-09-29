@@ -90,9 +90,27 @@ python scripts/evaluate_yokohama_pad_reentry.py --root FIRST --output FIRST/eval
 python scripts/run_yokohama_pad_reentry.py freeze-followup --root SECOND --parent FIRST
 python scripts/run_yokohama_pad_reentry.py capture --root SECOND --source-rig RIG --approve-sitl
 python scripts/evaluate_yokohama_pad_reentry.py --root SECOND --output SECOND/evaluation
-python scripts/check_yokohama_pad_reentry.py --bundle docs/examples/yokohama-pad-reentry-learning
-python scripts/check_yokohama_pad_reentry.py --bundle docs/examples/yokohama-pad-reentry
+python scripts/check_yokohama_pad_reentry_sources.py --bundle docs/examples/yokohama-pad-reentry-learning
+python scripts/check_yokohama_pad_reentry_sources.py --bundle docs/examples/yokohama-pad-reentry
 ```
+
+Each bundle pins its sources in `source-sha256.json`, and the pins include the
+checker itself. When shared code such as `src/runtime/yokohama_pad_queue.py`
+changes later, `check_yokohama_pad_reentry_sources.py` runs two separate
+checks instead of rewriting the pins:
+
+- **Frozen reproduction.** It runs the unchanged
+  `check_yokohama_pad_reentry.py` from a temporary copy of `scripts/` and
+  `src/`. Each changed file is restored from `docs/examples/yokohama-frozen-sources`,
+  and only when the copy's hash equals the pin. A module imported from outside
+  that copy fails the check.
+- **Current-code equivalence.** It replays every recorded executor check with
+  the current queue Rules. The replay must reproduce each recorded action and
+  judgment identity.
+
+A pass means the evidence still reproduces with the code it was recorded with,
+and that the current Rules decide the same on those records. It does not
+re-validate the current code on new situations.
 
 `RIG` is a previously verified raw static camera capture with `assets`, `models`
 and world hash, not the reduced public example. Never overwrite prior attempts.

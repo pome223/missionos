@@ -58,6 +58,8 @@ jobs:
             tests/test_yokohama_pad_focus.py \
             src/runtime/yokohama_pad_reentry_risk.py \
             tests/test_yokohama_pad_reentry.py \
+            scripts/check_yokohama_pad_reentry_sources.py \
+            tests/test_yokohama_pad_reentry_sources.py \
             scripts/export_yokohama_pad_advisory.py \
             scripts/verify_yokohama_pad_advisory.py \
             scripts/yokohama_pad_advisory_host.py \
@@ -126,9 +128,9 @@ jobs:
 
       - name: Recompute returning-lead advice from recorded RGB
         run: |
-          python scripts/check_yokohama_pad_reentry.py \
+          python scripts/check_yokohama_pad_reentry_sources.py \
             --bundle docs/examples/yokohama-pad-reentry-learning
-          python scripts/check_yokohama_pad_reentry.py \
+          python scripts/check_yokohama_pad_reentry_sources.py \
             --bundle docs/examples/yokohama-pad-reentry
 
       - name: Reopen native regional pad forecasts without GPU
