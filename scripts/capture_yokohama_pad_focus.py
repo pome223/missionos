@@ -125,6 +125,30 @@ def state_evaluation_cases():
     ]
 
 
+def native_focus_cases():
+    """New timing sequences frozen for the native regional-forecast follow-up."""
+    return [
+        dict(
+            id="focus-depart",
+            split="test",
+            knots=[[0, "start"], [8, "start"], [17, "up"], [35, "end"], [52, "end"]],
+            cutoffs=[5, 19, 25, 38],
+        ),
+        dict(
+            id="focus-stall",
+            split="test",
+            knots=[[0, "start"], [7, "start"], [16, "up"], [40, "up"], [57, "end"], [64, "end"]],
+            cutoffs=[5, 22, 37, 49],
+        ),
+        dict(
+            id="focus-return",
+            split="test",
+            knots=[[0, "end"], [13, "end"], [30, "up"], [44, "up"], [61, "end"], [68, "end"]],
+            cutoffs=[16, 21, 26, 36, 49, 57],
+        ),
+    ]
+
+
 def worker():
     from gz.msgs10.boolean_pb2 import Boolean
     from gz.msgs10.pose_pb2 import Pose
@@ -295,7 +319,9 @@ def main():
     p.add_argument("--source-rig", type=Path, required=True)
     p.add_argument("--output-dir", type=Path, required=True)
     p.add_argument(
-        "--case-set", choices=["temporal-v1", "learning-v1", "state-eval-v1"], default="temporal-v1"
+        "--case-set",
+        choices=["temporal-v1", "learning-v1", "state-eval-v1", "native-focus-v1"],
+        default="temporal-v1",
     )
     a = p.parse_args()
     if not a.approve_sitl:
@@ -318,6 +344,7 @@ def main():
         "temporal-v1": cases,
         "learning-v1": learning_cases,
         "state-eval-v1": state_evaluation_cases,
+        "native-focus-v1": native_focus_cases,
     }[a.case_set]()
     config["motion_case_set"] = a.case_set
     config["decisions"] = {"backend": "camera-recording-only"}
@@ -381,7 +408,7 @@ def main():
                     name,
                     "python3",
                     "-u",
-                    "/mission/capture_yokohama_pad_motion.py",
+                    "/mission/" + Path(__file__).name,
                     "--worker",
                 ],
                 stdout=out,

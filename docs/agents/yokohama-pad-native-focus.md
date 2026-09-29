@@ -105,3 +105,15 @@ subsequent process-exit GPU query was empty and owned VM/disks were removed.
 Do not claim zero in-process CUDA allocation. Training targets and training-only
 reader labels were on the GPU host; evaluation targets and actor trajectories
 were withheld from native model inputs.
+
+## Separate maintained capture entrypoint
+
+The original run used the extended `capture_yokohama_pad_motion.py`; its exact
+source is retained at `capture/executed_capture.py` in the evidence bundle.
+The maintained equivalent is now `scripts/capture_yokohama_pad_focus.py`, with
+the Docker worker path derived from that script's basename. Camera worker and
+case function ASTs are unchanged. Use this new name with the same arguments
+for a future capture; the original command in reports describes the historical
+execution. The older motion entrypoint is restored byte-for-byte so previously
+frozen CPU experiments continue to verify. Neither historical protocols nor
+predictions were rewritten, and no new capture or GPU result is claimed.
