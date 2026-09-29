@@ -433,8 +433,60 @@ passage. Do not claim a different passage was used without supporting evidence.
     return agent
 
 
+def build_missionos_yokohama_delivery_planner_agent(
+    *, model_id: str | None = None
+) -> LlmAgent:
+    agent = _agent(
+        name="missionos_yokohama_delivery_planner_agent",
+        role="Yokohama harbour delivery request interpreter",
+        model_id=model_id,
+        instruction="""
+Interpret one operator chat request for the Yokohama harbour drone delivery
+simulator. Exactly one route exists: take off from a ship 1 km offshore, fly
+over the sea, pass two city waypoints between buildings, wait near the harbour
+delivery pad while another aircraft occupies it, deliver a 50 g parcel on the
+pad, and return to the ship. You cannot add destinations, change the aircraft,
+approve, or start anything; the operator approves separately.
+Return exactly these four JSON fields, without extra fields:
+supported: true only if the request asks for this delivery or an equivalent;
+destination_id: "yokohama_harbour_pad" when supported, otherwise "";
+summary: two or three plain Japanese sentences describing this plan;
+reason: plain Japanese reason when unsupported, otherwise "".
+""".strip(),
+    )
+    agent.generate_content_config.max_output_tokens = 512
+    return agent
+
+
+def build_missionos_yokohama_pad_judge_agent(*, model_id: str | None = None) -> LlmAgent:
+    agent = _agent(
+        name="missionos_yokohama_pad_judge_agent",
+        role="Delivery pad entry judge",
+        model_id=model_id,
+        instruction="""
+A delivery drone is holding near a harbour delivery pad that another aircraft
+recently used. Deterministic Rules have already observed the pad and approach
+clear for the required window and would allow entry. You may only add a
+bounded wait; you cannot authorize entry, change the destination or steer.
+Use only the supplied facts: the other aircraft's distance from the pad and how
+it changed over the window, its altitude, the camera advisory signal (a learned
+estimate, not proof), battery, and the remaining wait budget. Choose wait when
+the facts suggest the pad may be reoccupied soon; otherwise choose enter.
+Return exactly these four JSON fields, without extra fields:
+observation_id: copy the supplied id;
+action: enter or wait;
+wait_seconds: 0 for enter, 1 to remaining_wait_seconds for wait;
+rationale: concise plain Japanese for the operator, without internal field names.
+""".strip(),
+    )
+    agent.generate_content_config.max_output_tokens = 512
+    return agent
+
+
 MISSIONOS_AGENT_BUILDERS = {
     "missionos_go2_supervisor_agent": build_missionos_go2_supervisor_agent,
+    "missionos_yokohama_delivery_planner_agent": build_missionos_yokohama_delivery_planner_agent,
+    "missionos_yokohama_pad_judge_agent": build_missionos_yokohama_pad_judge_agent,
     "missionos_chief_agent": build_missionos_chief_agent,
     "missionos_situation_judge_agent": build_missionos_situation_judge_agent,
     "missionos_response_planner_agent": build_missionos_response_planner_agent,

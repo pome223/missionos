@@ -1631,7 +1631,15 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
     )
     if go2_response is not None:
         return go2_response
-    coordinate_route = request.get("coordinate_route") if isinstance(request.get("coordinate_route"), Mapping) else None
+    # The one-route Yokohama harbour delivery uses the same conversation boundary.
+    from src.gateway.yokohama_delivery_chat import service as yokohama_chat_service
+    yokohama_response = yokohama_chat_service().handle(
+        request, text, session_id, mission_designer_context,
+        _missionos_register_mission_designer_context,
+    )
+    if yokohama_response is not None:
+        return yokohama_response
+    coordinate_route =request.get("coordinate_route") if isinstance(request.get("coordinate_route"), Mapping) else None
     turtlebot3_home_mission_requested = (
         _missionos_instruction_requests_turtlebot3_home_mission(
             text,
@@ -6511,12 +6519,15 @@ class GatewayServer:
         try:
             await self._startup_gateway()
             from src.gateway.go2_delivery_chat import service as go2_chat_service
+            from src.gateway.yokohama_delivery_chat import service as yokohama_chat_service
             try:
                 # Fence interrupted workers before accepting the first request.
                 go2_chat_service()
+                yokohama_chat_service()
                 yield
             finally:
                 go2_chat_service().close()
+                yokohama_chat_service().close()
                 await self._shutdown_gateway()
         finally:
             self._release_gateway_process_lock()

@@ -75,15 +75,18 @@ def verify(root):
                 raise ValueError("Response/forecast/judgment binding changed")
             signal = summarize(config, req, receipt)
             s, p = judgment["situation"], judgment["proposal"]
+            # A pad mission judge acts after the advisory; the fixture judgment
+            # is bound to the advisory-stage action it saw.
+            stage = resp.get("mission_judge", {}).get("prior_action", resp["proposed_action"])
             baseline = propose(config, req)["proposed_action"]
             if (
                 s["input_digest"] != digest([req, receipt])
                 or s["uncertainty"]["forecast"] != receipt
                 or s["observations"] != dict(current_rules_action=baseline, auxiliary_signal=signal)
-                or p["parameters"] != dict(action=resp["proposed_action"])
+                or p["parameters"] != dict(action=stage)
                 or p["situation_input_digest"] != s["input_digest"]
                 or p["proposed_response_kind"]
-                != ("hold" if resp["proposed_action"] == "wait_at_current_hold" else "continue")
+                != ("hold" if stage == "wait_at_current_hold" else "continue")
                 or p["judgment_status"] != "proposal_guardrail_passed"
                 or any(
                     p.get(k) is not False
@@ -126,9 +129,9 @@ def verify(root):
                     status=receipt["status"],
                     supported=receipt.get("forecast", {}).get("supported"),
                     signal=signal,
-                    action=resp["proposed_action"],
+                    action=stage,
                     baseline_action=baseline,
-                    action_changed=resp["proposed_action"] != baseline,
+                    action_changed=stage != baseline,
                     host_seconds=receipt.get("host_seconds"),
                 )
             )

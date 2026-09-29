@@ -80,6 +80,19 @@ def main():
         help="Opt-in learned CPU forecasts from a fixed pad camera during the occupied-pad hold",
     )
     parser.add_argument(
+        "--pad-mission-judge",
+        choices=["gateway", "fixture"],
+        help=(
+            "Ask a mission judge before a Rules pad entry; it may only add a bounded wait "
+            "(gateway: the MissionOS Gateway answers with its LLM; fixture: no LLM)"
+        ),
+    )
+    parser.add_argument(
+        "--approval-manifest",
+        type=Path,
+        help="MissionOS chat approval record bound into the run configuration",
+    )
+    parser.add_argument(
         "--wind-east-mps",
         type=float,
         default=0,
@@ -139,6 +152,15 @@ def main():
             "Pad approach decision requires --occupied-pad, a decision backend, the motion-v4 "
             "WAM profile, and no advisory, hold recovery or paired capture"
         )
+    if args.pad_mission_judge and (
+        args.pad_state_advisory != "assist" or args.pad_approach_decision
+    ):
+        parser.error(
+            "Pad mission judge requires --occupied-pad --pad-state-advisory assist "
+            "and no pad approach decision"
+        )
+    if args.approval_manifest and not args.approval_manifest.is_file():
+        parser.error("Approval manifest must be an existing file")
     if args.recovery_radius_m is not None and (
         not args.recover_city_hold or not 1 <= args.recovery_radius_m <= 3
     ):
@@ -259,6 +281,16 @@ def main():
             model_bundle = REPO / "docs/examples/yokohama-pad-state"
             world = add_camera(root, world, model_bundle, args.pad_state_advisory)
             shutil.copytree(model_bundle / "model", root / "pad-state-model")
+        if args.pad_mission_judge:
+            # Asked only when Rules and advisory allow entry; the budget keeps the
+            # whole wait inside maximum_wait_sim_s (about 36 s observed plus 30 s).
+            world["pad_queue"]["mission_judge"] = dict(
+                mode=args.pad_mission_judge,
+                max_decisions=2,
+                max_added_wait_s=30,
+                judge_timeout_s=20,
+                authority="may only add a bounded wait to a Rules entry",
+            )
         if args.wind_profile:
             from src.runtime.yokohama_wind_profile import make_profile
 
@@ -284,6 +316,15 @@ def main():
             "airspeed_mps": 3.0,
             "wind_mps": args.wind_east_mps,
         }
+        if args.approval_manifest:
+            import hashlib
+
+            manifest = args.approval_manifest.read_bytes()
+            approval = json.loads(manifest)["approval"]
+            config["operator_approval"] = (
+                "MissionOS chat approval " + approval["operator_approval_ref"]
+            )
+            config["operator_approval_manifest_sha256"] = hashlib.sha256(manifest).hexdigest()
         if args.capture_motion_views:
             config["motion_capture"] = dict(
                 phases=["01-D2", "02-D3", "03-DELIVERY"],
