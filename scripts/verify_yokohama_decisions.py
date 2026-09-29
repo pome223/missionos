@@ -193,6 +193,9 @@ def verify(root):
             group["authorize"][1]["next_target_world_xyz_m"],
             config,
             REPO / "docs/examples/yokohama-urban-scene",
+            origin=vr["observation"]["vehicle"]["xyz"]
+            if config["decisions"].get("size_bound_origin") == "proposal_observation"
+            else None,
         )
         if pad:
             from src.runtime.yokohama_pad_queue import clearance, segment_distance

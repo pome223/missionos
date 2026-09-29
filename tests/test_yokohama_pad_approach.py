@@ -242,3 +242,22 @@ def test_fault_return_starts_only_at_the_d3_wam_request(tmp_path):
     queue.trigger_fault("wam", 3)
     assert queue.fault_started_sim_s == 42.0
     assert events == ["fault_lead_return_triggered"]
+
+
+def test_proposal_size_is_bounded_from_the_models_own_observation():
+    pytest.importorskip("shapely")
+    from src.runtime.yokohama_native import geometry_rules
+
+    frame = json.loads((REPO / "docs/examples/yokohama-px4-sitl/summary.json").read_text())["frame"]
+    config = {"world": {"frame": frame}}
+    bundle = REPO / "docs/examples/yokohama-urban-scene"
+    seen = [0.004, 0.012, 15.524]
+    target = [-1.415, -2.409, 15.524]
+    d2 = [-34.88761388811289, -60.6945307036456, 15.110143087104275]
+    sagged = [0.004, 0.012, 15.31]  # 0.214 m of AP hold drift during inference
+    with pytest.raises(ValueError, match="Unbounded"):
+        geometry_rules(sagged, target, d2, config, bundle)
+    rules = geometry_rules(sagged, target, d2, config, bundle, origin=seen)
+    assert rules["start_world_xyz_m"] == sagged and rules["proposal_origin_world_xyz_m"] == seen
+    with pytest.raises(ValueError, match="Unbounded"):
+        geometry_rules(sagged, [target[0], target[1], 15.8], d2, config, bundle, origin=seen)

@@ -181,6 +181,11 @@ class DecisionHost:
                 raise ValueError("Model approach step leaves the wait-to-approach corridor")
         return c
 
+    def proposal_origin(self, proposal):
+        if self.config["decisions"].get("size_bound_origin") == "proposal_observation":
+            return proposal["input_observation"]["vehicle"]["xyz"]
+        return None
+
     def capture(self, message):
         entry = message["capture"]
         path = self.root / entry["file"]
@@ -400,6 +405,7 @@ class DecisionHost:
             message["next_target_world_xyz_m"],
             self.config,
             self.bundle,
+            origin=self.proposal_origin(proposal),
         )
         if self.pad_cycle(message["cycle"]):
             rules["pad"] = self.require_pad_approach(row, candidate["target_world_xyz_m"])
@@ -541,6 +547,7 @@ class DecisionHost:
             prepared["rules"]["next_target_world_xyz_m"],
             self.config,
             self.bundle,
+            origin=self.proposal_origin(proposal),
         )
         if self.pad_cycle(message["cycle"]):
             rules["pad"] = self.require_pad_approach(

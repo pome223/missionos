@@ -43,6 +43,14 @@ refused unless `--pad-approach-decision` is given.
   separation loss at every sample. Models stop after the D3 step, before any
   cargo release.
 
+In this mode `size_bound_origin` is `proposal_observation`: the 0.5–5.01 m and
+0.205 m vertical proposal bounds are measured from the observation the VLA saw,
+recorded as `proposal_origin_world_xyz_m`. Mapped clearance is still checked on
+the leg flown from the current held position, and hold drift during inference
+remains capped at 0.5 m. A CPU run with model-scale latency (retained as
+`fixture-02-latency`) otherwise failed at D2 when 56 s of AP hold sag (0.209 m)
+was attributed to the model. Existing modes keep the original bound.
+
 The reached endpoint becomes the pad hold only if it is the consumed model
 permit's target and within the 5.01 m model-translation bound of the authored
 wait point (`approved_hold`). Requests made at a moved hold carry

@@ -141,14 +141,20 @@ def executor_heading(candidate, row):
     )
 
 
-def geometry_rules(start, target, next_target, config, bundle):
-    """Constrain the proposed leg AND its connection to the authored AP route."""
+def geometry_rules(start, target, next_target, config, bundle, origin=None):
+    """Constrain the proposed leg AND its connection to the authored AP route.
+
+    ``origin`` (opt-in) is the observation the model saw: the proposal-size bound
+    is measured from it, so bounded AP hold drift during inference is not read as
+    model output. Clearance is always checked on the leg flown from ``start``.
+    """
     from shapely.geometry import LineString, shape
 
+    bound = start if origin is None else origin
     if (
-        not np.isfinite([start, target, next_target]).all()
-        or not 0.5 <= math.dist(start, target) <= 5.01
-        or abs(target[2] - start[2]) > 0.205
+        not np.isfinite([start, target, next_target, bound]).all()
+        or not 0.5 <= math.dist(bound, target) <= 5.01
+        or abs(target[2] - bound[2]) > 0.205
     ):
         raise ValueError("Unbounded candidate")
     source = to_source(np.array([start, target, next_target]), config["world"]["frame"])
@@ -174,6 +180,7 @@ def geometry_rules(start, target, next_target, config, bundle):
         target_world_xyz_m=target,
         next_target_world_xyz_m=next_target,
         minimum_centerline_clearances_m=distances,
+        **({} if origin is None else {"proposal_origin_world_xyz_m": origin}),
     )
 
 

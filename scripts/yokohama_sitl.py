@@ -329,6 +329,9 @@ def main():
             if args.pad_approach_decision:
                 from src.runtime.yokohama_native import PAD_APPROACH_PROFILE
 
+                # Measure the proposal-size bound from the model's own observation;
+                # hold drift during inference stays bounded separately (0.5 m).
+                config["decisions"]["size_bound_origin"] = "proposal_observation"
                 config["decisions"]["pad_approach"] = dict(
                     wait_authority="pose Rules and fixture MissionOS judge; VLA grammar has no hold",
                     wam_profile=PAD_APPROACH_PROFILE,
