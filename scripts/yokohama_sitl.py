@@ -62,6 +62,19 @@ def main():
         help="CPU-only: ask MissionOS to wait for a scripted lead aircraft to unload and leave",
     )
     parser.add_argument(
+        "--pad-approach-decision",
+        action="store_true",
+        help=(
+            "After the pose-Rules wait clears, add a D3 model step toward the pad "
+            "(VLA proposes, WAM forecasts, Rules and fresh pad reconfirmation constrain)"
+        ),
+    )
+    parser.add_argument(
+        "--fault-lead-return-on-d3-wam",
+        action="store_true",
+        help="CPU fixture fault injection: the departed lead flies back when D3 WAM is requested",
+    )
+    parser.add_argument(
         "--pad-state-advisory",
         choices=["assist", "shadow"],
         help="Opt-in learned CPU forecasts from a fixed pad camera during the occupied-pad hold",
@@ -101,9 +114,31 @@ def main():
     if args.pad_state_advisory and not args.occupied_pad:
         parser.error("Pad-state advisory requires --occupied-pad")
     if args.occupied_pad and (
-        not args.deliver_payload or args.decision_backend or args.wind_east_mps or args.wind_profile
+        not args.deliver_payload
+        or (args.decision_backend and not args.pad_approach_decision)
+        or args.wind_east_mps
+        or args.wind_profile
     ):
-        parser.error("Occupied-pad trial requires cargo delivery, no model backend and zero wind")
+        parser.error(
+            "Occupied-pad trial requires cargo delivery, zero wind, and a model backend "
+            "only through --pad-approach-decision"
+        )
+    if args.fault_lead_return_on_d3_wam and (
+        not args.pad_approach_decision or args.decision_backend != "fixture"
+    ):
+        parser.error("Lead-return fault needs the fixture pad approach")
+    if args.pad_approach_decision and (
+        not args.occupied_pad
+        or not args.decision_backend
+        or args.pad_state_advisory
+        or args.recover_city_hold
+        or args.capture_paired_views
+        or args.wam_profile != "motion-v4"
+    ):
+        parser.error(
+            "Pad approach decision requires --occupied-pad, a decision backend, the motion-v4 "
+            "WAM profile, and no advisory, hold recovery or paired capture"
+        )
     if args.recovery_radius_m is not None and (
         not args.recover_city_hold or not 1 <= args.recovery_radius_m <= 3
     ):
@@ -212,6 +247,12 @@ def main():
             from src.runtime.yokohama_pad_queue import extend_world as add_pad_queue
 
             world = add_pad_queue(root, REPO / "docs/examples/yokohama-urban-scene", world)
+            if args.pad_approach_decision:
+                # A reached model endpoint may become the pad hold only within the
+                # same translation bound that constrains every model segment.
+                world["pad_queue"].update(model_hold_max_offset_m=5.01, reconfirm_timeout_wall_s=30)
+                if args.fault_lead_return_on_d3_wam:
+                    world["pad_queue"]["fault_lead_return"] = "on_d3_wam_request"
         if args.pad_state_advisory:
             from scripts.yokohama_pad_advisory_host import add_camera
 
@@ -267,7 +308,7 @@ def main():
                 backend=args.decision_backend,
                 wam_profile=args.wam_profile,
                 capture_paired_views=args.capture_paired_views,
-                points=["D1", "D2"],
+                points=["D1", "D2", "D3"] if args.pad_approach_decision else ["D1", "D2"],
                 camera_rate_hz=4,
                 inference_timeout_s=75,
                 startup_timeout_s=300 if args.wam_profile == "motion-v4" else 180,
@@ -285,6 +326,21 @@ def main():
                 sea_leg_present=args.sea_round_trip,
                 payload_release_present=args.deliver_payload,
             )
+            if args.pad_approach_decision:
+                from src.runtime.yokohama_native import PAD_APPROACH_PROFILE
+
+                config["decisions"]["pad_approach"] = dict(
+                    wait_authority="pose Rules and fixture MissionOS judge; VLA grammar has no hold",
+                    wam_profile=PAD_APPROACH_PROFILE,
+                    structure_fraction_min=0.9,
+                    known_pixel_fraction_floor=0.3,
+                    discriminability_controls=["mirrored", "uniform"],
+                    corridor_lateral_max_m=1.0,
+                    reconfirmations=[
+                        "before_model_approach_authority",
+                        "model_endpoint_before_delivery_connector",
+                    ],
+                )
             if args.recover_city_hold:
                 config["decisions"]["hold_recovery"] = dict(
                     max_attempts=3,

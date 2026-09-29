@@ -304,6 +304,58 @@ def forecast_consistency(predicted, reference, mask):
     )
 
 
+PAD_APPROACH_PROFILE = "pad_approach_structure.v1"
+
+
+def _interior(mask):
+    inner = mask.copy()
+    for dy, dx in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+        inner &= np.roll(mask, (dy, dx), (0, 1))
+    inner[:4] = inner[-4:] = False
+    inner[:, :4] = inner[:, -4:] = False
+    return inner
+
+
+def _structure_bounds(check):
+    return (
+        check["reference_edge_pixels"] >= 100
+        and check["matched_edge_fraction"] >= 0.55
+        and check["luminance_mae"] <= 45
+        and check["predicted_edge_density"] <= 0.35
+    )
+
+
+def pad_structure_consistency(predicted, reference, mask, hold_mask):
+    """Pad-approach variant of the frozen gate for sky-dominated harbour views.
+
+    Sky has no depth and can be neither verified nor predicted structurally, so
+    full-frame coverage is replaced by the share of the hold view's visible
+    structure that remains known at the candidate pose (>= 0.9, with a 0.3
+    full-frame floor). Edge, luminance and density bounds are unchanged. Those
+    bounds are lenient, so the view is admissible only if they reject both a
+    mirrored and a uniform image of the same reference; otherwise fail closed.
+    """
+    check = forecast_consistency(predicted, reference, mask)
+    fraction = float(_interior(mask).sum() / max(int(_interior(hold_mask).sum()), 1))
+    r = np.asarray(reference)
+    controls = {
+        "mirrored": forecast_consistency(np.ascontiguousarray(r[:, ::-1]), r, mask),
+        "uniform": forecast_consistency(np.full_like(r, int(round(float(r.mean())))), r, mask),
+    }
+    discriminative = not any(_structure_bounds(c) for c in controls.values())
+    return dict(
+        check,
+        profile=PAD_APPROACH_PROFILE,
+        structure_fraction=fraction,
+        view_discriminative=discriminative,
+        control_passed={name: _structure_bounds(c) for name, c in controls.items()},
+        passed=check["known_pixel_fraction"] >= 0.3
+        and fraction >= 0.9
+        and _structure_bounds(check)
+        and discriminative,
+    )
+
+
 def write_request(folder, arrays, config, candidate, vla_response_sha256):
     from scripts.yokohama_wam_profile import (
         APPEARANCE_POLICY,

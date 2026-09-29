@@ -33,6 +33,19 @@ def attempt_name(cycle, attempt=0):
     return name + (f"-attempt-{attempt:02d}" if attempt else "")
 
 
+POINT_PHASES = {"D1": "00-D1", "D2": "01-D2", "D3": "02-D3"}
+
+
+def decision_phases(config):
+    """Approved model-decision holds by cycle; D3 exists only for the pad approach."""
+    points = config.get("decisions", {}).get("points", ["D1", "D2"])
+    if points not in (["D1", "D2"], ["D1", "D2", "D3"]) or (
+        "D3" in points and not config["decisions"].get("pad_approach")
+    ):
+        raise ValueError("Unapproved model decision points")
+    return {i: POINT_PHASES[name] for i, name in enumerate(points, 1)}
+
+
 def require_city_request(config, message):
     """Gate model startup and calls by both the approved phase and measured position.
 
@@ -41,7 +54,7 @@ def require_city_request(config, message):
     if message["operation"] == "stop":
         return
     cycle = message.get("cycle")
-    expected = {1: "00-D1", 2: "01-D2"}.get(cycle)
+    expected = decision_phases(config).get(cycle)
     row = message.get("observation", {})
     stages = [s for s in config.get("flight_stages", []) if s["name"] == expected]
     xyz = row.get("vehicle", {}).get("xyz", [])
@@ -74,6 +87,10 @@ class CityDecisions:
         self.completed = []
         self.paired_view = None
         self.attempt = 0
+        # Optional executor-side check between a passing forecast and authority.
+        self.before_authorize = None
+        # Optional CPU fault-injection observer; it cannot change a request.
+        self.on_request = None
 
     def held(self, anchor, *, require_stationary_view=True, max_view_drift_rad=0.03):
         row = self.sample()
@@ -136,6 +153,8 @@ class CityDecisions:
         if self.attempt:
             message["attempt"] = self.attempt
         require_city_request(self.config, message)
+        if self.on_request:
+            self.on_request(operation, self.cycle)
         stem = self.root / "decisions" / f"{self.sequence:03d}"
         temp = stem.with_name(stem.name + "-request.tmp")
         temp.write_text(json.dumps(message, allow_nan=False))
@@ -362,6 +381,8 @@ class CityDecisions:
                 decision_backend="fixture",
                 future_observations_sent_to_model=False,
             )
+        if self.before_authorize:
+            self.before_authorize()
         current = self.held(anchor, max_view_drift_rad=0.25 if refresh else 0.03)
         permit = self.exchange("authorize", current, next_target_world_xyz_m=next_target)
         if (

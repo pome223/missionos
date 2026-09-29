@@ -31,6 +31,7 @@ from src.runtime.yokohama_native import (
     executor_altitude,
     geometry_rules,
     load_capture,
+    pad_structure_consistency,
     past_view,
     read_asset,
     vla_candidate,
@@ -158,6 +159,28 @@ class DecisionHost:
         (self.folder / "shutdown.json").write_text(json.dumps(self.stop_receipt, indent=2) + "\n")
         return self.stop_receipt
 
+    def pad_cycle(self, cycle):
+        from scripts.yokohama_decision_worker import decision_phases
+
+        return decision_phases(self.config).get(cycle) == "02-D3"
+
+    def require_pad_approach(self, row, target=None):
+        """Host Rules for the D3 model step: current clear pad and approach corridor."""
+        from src.runtime.yokohama_pad_queue import clearance, segment_distance
+
+        c = clearance(self.config, row)
+        if not (c["pad_clear"] and c["approach_clear"]):
+            raise ValueError("Pad or approach not clear for a model approach step")
+        if target is not None:
+            p = self.config["world"]["pad_queue"]
+            wait, approach = p["wait_xyz_m"], p["approach_xyz_m"]
+            limit = self.config["decisions"]["pad_approach"]["corridor_lateral_max_m"]
+            if segment_distance(target, wait, approach) > limit or math.dist(
+                target, approach
+            ) >= math.dist(wait, approach):
+                raise ValueError("Model approach step leaves the wait-to-approach corridor")
+        return c
+
     def capture(self, message):
         entry = message["capture"]
         path = self.root / entry["file"]
@@ -176,6 +199,8 @@ class DecisionHost:
 
     def vla(self, message, output):
         path, capture, _ = self.capture(message)
+        if self.pad_cycle(message["cycle"]):
+            self.require_pad_approach(message["observation"])
         last = capture["frames"][-1]
         images = {
             key: read_asset(path.parent, last["assets"][sensor + "_png"])
@@ -321,6 +346,9 @@ class DecisionHost:
             if [f["candidate"] for f in forecasts] != request["candidates"]:
                 raise ValueError("Forecast candidate mismatch")
         checks = []
+        pad = self.pad_cycle(message["cycle"])
+        if pad:
+            _, hold_mask = past_view(arrays, ship_anwm.action_pose(pose, [0, 0, 0, 0]))
         for index, item in enumerate(request["candidates"]):
             target = ship_anwm.action_pose(pose, item["delta"])
             reference, mask = past_view(arrays, target)
@@ -339,7 +367,12 @@ class DecisionHost:
             else:
                 predicted = reference.copy()
                 Image.fromarray(predicted).save(output / (item["id"] + "-prediction.png"))
-            checks.append(dict(candidate=item, **forecast_consistency(predicted, reference, mask)))
+            check = (
+                pad_structure_consistency(predicted, reference, mask, hold_mask)
+                if pad
+                else forecast_consistency(predicted, reference, mask)
+            )
+            checks.append(dict(candidate=item, **check))
         result = dict(
             checks=checks,
             passed=all(c["passed"] for c in checks),
@@ -368,6 +401,8 @@ class DecisionHost:
             self.config,
             self.bundle,
         )
+        if self.pad_cycle(message["cycle"]):
+            rules["pad"] = self.require_pad_approach(row, candidate["target_world_xyz_m"])
         from pyproj import Geod
 
         lon, lat = self.config["world"]["frame"]["home_lon_lat"]
@@ -402,7 +437,7 @@ class DecisionHost:
             )
         )
         # Reconnect from the actual model endpoint, not the old authored stop.
-        expected_next = {1: "01-D2", 2: "02-D3"}[message["cycle"]]
+        expected_next = {1: "01-D2", 2: "02-D3", 3: "03-DELIVERY"}[message["cycle"]]
         stage = next(s for s in self.config["flight_stages"] if s["name"] == expected_next)
         if stage["target_world_xyz_m"] != message["next_target_world_xyz_m"]:
             raise ValueError("City connector target is outside the approved stage")
@@ -507,6 +542,10 @@ class DecisionHost:
             self.config,
             self.bundle,
         )
+        if self.pad_cycle(message["cycle"]):
+            rules["pad"] = self.require_pad_approach(
+                current, prepared["candidate"]["target_world_xyz_m"]
+            )
         permit = dict(
             prepared,
             prepared_permit_sha256=digest(prepared),

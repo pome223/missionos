@@ -75,6 +75,7 @@ def flight_trial(config, obs, run, field):
     wind_profile_active = False
     last_diagnostic_sim_s = -10.0
     decisions = None
+    model_phases = []
     next_connector = None
     landing_xy = (
         config["world"].get("sea_extension", {}).get("ship_deck_world_xyz_m", [0, 0, 0])[:2]
@@ -314,7 +315,7 @@ def flight_trial(config, obs, run, field):
 
     def activate(*, expires_at_wall_s=None):
         for _ in range(4):
-            if pad_queue and phase == "03-DELIVERY":
+            if pad_queue and (phase == "03-DELIVERY" or (phase == "02-D3" and pad_queue.entered)):
                 pad_queue.require_dispatch(sample)
             if expires_at_wall_s is not None and time.monotonic() - started > expires_at_wall_s:
                 raise ValueError("City activation expired before mode command")
@@ -332,11 +333,14 @@ def flight_trial(config, obs, run, field):
 
             pad_queue = PadQueue(ROOT, config, obs, event)
         if config.get("decisions"):
-            from yokohama_decision_worker import CityDecisions, physical_heading
+            from yokohama_decision_worker import CityDecisions, decision_phases, physical_heading
 
             decisions = CityDecisions(
                 ROOT, config, sample, event, lambda: time.monotonic() - started
             )
+            model_phases = list(decision_phases(config).values())
+            if pad_queue and config["world"]["pad_queue"].get("fault_lead_return"):
+                decisions.on_request = pad_queue.trigger_fault
         discovery_deadline = time.monotonic() + 30
         while time.monotonic() < discovery_deadline:
             snap = obs.snapshot()
@@ -459,6 +463,9 @@ def flight_trial(config, obs, run, field):
                     models_active=bool(decisions and decisions.active),
                     session_closed=bool(decisions and decisions.closed),
                 )
+            if pad_queue and phase == "03-DELIVERY" and pad_queue.hold is not None:
+                # The model endpoint is a new hold; entry needs fresh clear evidence.
+                pad_queue.reconfirm(sample, "model_endpoint_before_delivery_connector")
             upload(next_connector or phase)
             next_connector = None
             if i == 0:
@@ -578,7 +585,13 @@ def flight_trial(config, obs, run, field):
                     time.sleep(0.3)
                 else:
                     raise TimeoutError("No verified pad receipt; return remains unauthorized")
-            if decisions and phase in ("00-D1", "01-D2"):
+            if decisions and phase in model_phases:
+                if phase == "02-D3":
+                    # The first entry permission predates model inference; reissue it
+                    # from fresh clear observations just before any model authority.
+                    decisions.before_authorize = lambda: pad_queue.reconfirm(
+                        sample, "before_model_approach_authority"
+                    )
                 permit = decisions.prepare_segment(
                     obs, config["flight_stages"][i + 1]["target_world_xyz_m"], upload
                 )
@@ -649,7 +662,9 @@ def flight_trial(config, obs, run, field):
                 if hashlib.sha256(connector.read_bytes()).hexdigest() != permit["connector_sha256"]:
                     raise ValueError("AP connector differs from independently checked route")
                 next_connector = permit["connector_name"]
-                if phase == "01-D2":
+                if phase == "02-D3":
+                    pad_queue.move_hold(candidate["target_world_xyz_m"], permit["permit_id"])
+                if phase == model_phases[-1]:
                     decisions.stop()
         phase = "return_land"
         run([BIN + "commander", "land"])
@@ -684,7 +699,7 @@ def flight_trial(config, obs, run, field):
             payload_receipt_id=payload_receipt["receipt_id"] if payload_receipt else None,
             native_model_flight=bool(
                 decisions
-                and len(decisions.completed) == 2
+                and len(decisions.completed) == len(model_phases)
                 and config["decisions"]["backend"] == "native"
             ),
             city_decision_updates=len(decisions.completed) if decisions else 0,
