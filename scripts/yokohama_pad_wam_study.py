@@ -62,6 +62,10 @@ def detect_lead(rgb, name, min_pixels=6):
     xs, ys = xs[near], ys[near]
     if len(xs) < min_pixels:
         return dict(present=False, pixels=int(mask.sum()))
+    stray = int(mask.sum()) - int(len(xs))
+    if stray > max(40, 3 * len(xs)):
+        # Orange texture spread well beyond one body is not read as a lead.
+        return dict(present=False, corrupted=True, pixels=int(mask.sum()), stray_pixels=stray)
     center = to_original([float(xs.mean()), float(ys.mean())], name)
     return dict(
         present=True,

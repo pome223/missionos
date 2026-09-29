@@ -165,12 +165,32 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--prepared", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)
-    p.add_argument("--stage", choices=["diagnostic"], default="diagnostic")
+    p.add_argument("--stage", choices=["diagnostic", "diagnostic-rerun"], default="diagnostic")
     a = p.parse_args()
-    configs = [
-        dict(name=f"{crop}-{cond}", crop=crop, conditioning=cond, before=cond == "latest")
-        for crop in ("wide", "tight")
-        for cond in ("latest", "background")
-    ]
+    if a.stage == "diagnostic":
+        configs = [
+            dict(name=f"{crop}-{cond}", crop=crop, conditioning=cond, before=cond == "latest")
+            for crop in ("wide", "tight")
+            for cond in ("latest", "background")
+        ]
+    else:
+        # After session B: the wide/latest/ROI-4 run painted orange texture. Test the
+        # region weight first, then crop and conditioning, all without it.
+        configs = [
+            dict(name="wide-latest-roi0", crop="wide", conditioning="latest", roi_weight=0.0),
+            dict(
+                name="tight-latest-roi0",
+                crop="tight",
+                conditioning="latest",
+                roi_weight=0.0,
+                before=True,
+            ),
+            dict(
+                name="tight-background-roi0",
+                crop="tight",
+                conditioning="background",
+                roi_weight=0.0,
+            ),
+        ]
     gate = dict(offset=12, presence_fraction=0.8, median_error_px=6.0, fraction_of_persistence=0.5)
     print(json.dumps(stage(a.prepared, a.output, configs, 1024, gate)))

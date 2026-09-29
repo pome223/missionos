@@ -272,7 +272,7 @@ def run(root):
                         if area > 0
                         else torch.zeros((), device="cuda")
                     )
-                    loss = ordinary + protocol["roi_weight"] * roi_loss
+                    loss = ordinary + config.get("roi_weight", protocol["roi_weight"]) * roi_loss
                 if not torch.isfinite(loss):
                     raise ValueError("Nonfinite loss")
                 loss.backward()
@@ -290,6 +290,7 @@ def run(root):
                         gradient=float(grad),
                     )
                 )
+            (out / config["name"]).mkdir(parents=True, exist_ok=True)
             write(out / config["name"] / "training.json", losses)
             summary["configs"].append(
                 dict(
