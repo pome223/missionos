@@ -64,7 +64,8 @@
         "known_matches": 5,
         "known_targets": 5,
         "median_rgb_mae": 3.097
-      }
+      },
+      "histories_static": true
     },
     {
       "exact_training_history_overlap": true,
@@ -79,7 +80,8 @@
         "known_matches": 3,
         "known_targets": 5,
         "median_rgb_mae": 4.11
-      }
+      },
+      "histories_static": true
     },
     {
       "exact_training_history_overlap": false,
@@ -112,9 +114,22 @@
       }
     }
   ],
+  "mean_rgb_mae_by_horizon": {
+    "1s": {
+      "before": 6.84,
+      "after": 7.833
+    },
+    "4s": {
+      "before": 9.641,
+      "after": 21.78
+    }
+  },
   "training": {
     "pairs": 208,
-    "unique_histories": 104,
+    "history_files": 104,
+    "distinct_history_pixels": 59,
+    "moving_history_files": 56,
+    "post_training_training_set_forecasts": 0,
     "updates": 4096,
     "updates_per_pair": 19.692,
     "first_512": {

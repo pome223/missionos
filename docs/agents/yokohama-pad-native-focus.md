@@ -130,14 +130,30 @@ python scripts/diagnose_yokohama_pad_focus.py \
   the VAE stride of 8. Components are changed regions, not a validated detector.
 - `check_yokohama_pad_focus.py` recomputes the diagnosis and rejects any drift.
 
-Recorded diagnosis: 3/26 known targets change state, one clear-now/occupied-later
-condition, zero wrong-state native outputs, 0/9 readable unseen four-second
-forecasts before training, a median lead component of about 40×10 pixels, and
-four-second RGB error 9.35→4.11 on training-identical histories versus
-9.76→29.04 on unseen ones. The clear-to-occupied window is 1.75 seconds for the
-four-second horizon and absent for one second. Only the reports, `index.html`,
-`diagnosis.json` and the manifest were added or edited; receipts, forecasts and
-evaluation files are unchanged.
+Before and after share crop, horizon and conditioning; the before/after delta is
+the training change (data, trainable scope, losses together). The combined crop/
+horizon/conditioning change is relative to the earlier native experiment. Keep
+these two comparisons separate.
+
+Recorded facts: 3/26 known targets change state, one clear-now/occupied-later
+condition, zero wrong-state native outputs but visibly corrupted unreadable
+images, mean four-second RGB error 9.64→21.78, median 9.35→4.11 on the five
+stationary training-identical histories versus 9.76→29.04 on unseen ones, 0/9
+readable unseen four-second forecasts before training, 59 distinct history
+pixel contents among 104 training history files (56 with motion), zero
+post-training forecasts on training scenes, and a median lead component of
+about 40×10 pixels. The clear-to-occupied window is 1.75 seconds for the
+four-second horizon and absent for one second.
+
+Report as untested hypotheses, never as causes: persistence bias from the
+latest-frame conditioning image (auxiliary input, not an output constraint),
+overfitting, and texture from the 8× moving-region weight. The small
+anticipation denominator limits measuring decision value; it does not explain
+why the model's own endpoint agreement stayed low. Do not describe CPU advice
+as solving returning-lead anticipation (post-training alone waited in 0/8).
+
+Only the reports, `index.html`, `diagnosis.json` and the manifest were added or
+edited; receipts, forecasts and evaluation files are unchanged.
 
 ## Separate maintained capture entrypoint
 

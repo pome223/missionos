@@ -9,6 +9,7 @@ not a new experiment, a native rerun or an adoption change.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import statistics
@@ -142,8 +143,26 @@ def diagnose(bundle):
                 )
             groups.append(group)
 
+    mean_by_horizon = {
+        f"{horizon:g}s": {
+            stage: r(
+                statistics.mean(
+                    row["methods"][stage]["rgb_mae"] for row in rows if row["horizon_s"] == horizon
+                )
+            )
+            for stage in stages
+        }
+        for horizon in sorted({row["horizon_s"] for row in rows})
+    }
+
     pairs = [s for s in data["samples"] if s["split"] == "train"]
     histories = {s["history"] for s in pairs}
+    contents, moving = set(), 0
+    for site in sorted(histories):
+        with np.load(bundle / "prepared/dataset" / site, allow_pickle=False) as a:
+            rgb = a["rgb"]
+        contents.add(hashlib.sha256(rgb.tobytes()).hexdigest())
+        moving += bool(changed(rgb[-1], rgb[0]).any())
 
     def window(rows):
         return dict(
@@ -153,7 +172,13 @@ def diagnose(bundle):
 
     learning = dict(
         pairs=len(pairs),
-        unique_histories=len(histories),
+        history_files=len(histories),
+        distinct_history_pixels=len(contents),
+        moving_history_files=moving,
+        post_training_training_set_forecasts=sum(
+            Path(x["file"]).parts[:2] in {("after", s["id"]) for s in pairs}
+            for x in json.loads((bundle / "results/forecast-manifest.json").read_text())["records"]
+        ),
         updates=len(training),
         updates_per_pair=r(len(training) / len(pairs)),
         first_512=window(training[:WINDOW]),
@@ -192,6 +217,14 @@ def diagnose(bundle):
                 },
             )
         )
+    overlapping = {
+        row["id"].rsplit("-", 1)[0] for row in rows if row["exact_training_history_overlap"]
+    }
+    for group in groups:
+        if group["exact_training_history_overlap"]:
+            group["histories_static"] = all(
+                m["largest_component_shift_px"] == 0 for m in motion if m["history"] in overlapping
+            )
     widths = [s["largest_components_wh"][0][0] for s in scale]
     heights = [s["largest_components_wh"][0][1] for s in scale]
 
@@ -221,6 +254,7 @@ def diagnose(bundle):
         headroom=headroom,
         failure_mode=failure_mode,
         by_history_overlap=groups,
+        mean_rgb_mae_by_horizon=mean_by_horizon,
         training=learning,
         development=dict(
             native_passed=sum(x["passed"] for x in development["rows"]),

@@ -170,6 +170,8 @@ def test_published_diagnosis_recomputes_without_gpu():
     assert result["headroom"]["max_gain_over_persistence"] == 3
     assert result["headroom"]["clear_to_occupied_opportunities"] == 1
     assert all(v["wrong_state"] == 0 for v in result["failure_mode"].values())
+    assert result["training"]["distinct_history_pixels"] < result["training"]["history_files"]
+    assert result["training"]["post_training_training_set_forecasts"] == 0
 
 
 def test_diagnosis_rejects_geometry_that_does_not_reproduce_truth(tmp_path, monkeypatch):

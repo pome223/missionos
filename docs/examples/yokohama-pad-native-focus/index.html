@@ -7,7 +7,7 @@
 <p>GPU累計概算 <b>$19.75 / $23</b> · <a href="REPORT-ja.md">レポート</a> · <a href="evaluation.json">数値と全条件</a></p>
 <table><thead><tr><th>方法</th><th>一致</th><th>誤った空き</th><th>不明</th><th>未来の占有を先読み</th></tr></thead><tbody id="counts"></tbody></table>
 <p class="small">3場面・14観測×2時間。正解が境界で不明な2条件を一致数から除外。相関する条件で、独立した28飛行ではありません。</p>
-<p class="note"><b>改善しなかった理由：</b>状態が変わる条件は26件中3件だけで、現在画像の維持との差は最大3件です。先行機は入力で約40×10画素と小さく、生成の過程で消えます。学習は同じ履歴の暗記に寄り、新しい履歴の4秒先は画像誤差が悪化しました。<a href="REPORT-ja.md#なぜ改善しなかったか">詳しく</a> · <a href="diagnosis.json">再計算</a></p>
+<p class="note"><b>改善しなかった理由（再集計）：</b>状態が変わる3件では、学習前後とも判断に使える予測を出せませんでした。4秒先の画像誤差は平均9.64→21.78に悪化し、改善したのは学習と同じ静止場面だけです。学習用の履歴は画像として59種類しかありません。過学習と整合しますが、原因は未確定です。先読みの対象も1件だけで、効果を確かめるには評価の作り直しが必要です。<a href="REPORT-ja.md#なぜ改善しなかったか">詳しく</a> · <a href="diagnosis.json">再集計</a></p>
 <label for="case">比較する条件</label><select id="case"></select><button id="previous">前</button><button id="next">次</button><p id="status"></p>
 <div class="grid"><figure><img id="current" alt="推論前の実観測の切り出し"><figcaption>推論前の実観測 / 入力領域</figcaption></figure><figure><img id="before" alt="実ANWMの学習前予測"><figcaption id="before-caption"></figcaption></figure><figure><img id="after" alt="実ANWMの学習後予測"><figcaption id="after-caption"></figcaption></figure><figure><img id="actual" alt="同じ未来時刻の実観測"><figcaption>指定した未来時刻の実観測</figcaption></figure></div>
 <div class="source"><p>元の全画面（推論前）</p><img id="full" alt="切り出し前の全画面観測"></div>

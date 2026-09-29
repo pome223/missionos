@@ -14,14 +14,25 @@ Warm after-inference latency had a **4.52 wall-second median**, excluding startu
 
 ## Why it did not improve
 
-A GPU-free, post-hoc diagnosis recomputes the following from the published bundle ([diagnosis](diagnosis.json)). It explains the result; it does not attribute the failure to one changed factor.
+A GPU-free, post-hoc recount of the published bundle ([diagnosis](diagnosis.json)). Crop, horizon and conditioning are identical before and after training; the difference is the training itself (data, trainable scope and losses together), so no single factor is attributed.
 
-- **Almost no headroom.** Only 3 of 26 known targets change state within the horizon, so even a perfect forecast could gain at most 3 over persistence. Exactly one condition is clear-now/occupied-later. Native forecasts never chose the wrong state; every loss was an unreadable image.
-- **Conditioning encodes persistence.** ANWM predicts views conditioned on ego motion. Here the action is zero and the geometry conditioning image is the latest observation, so lead motion is available only through the 16 past frames. Before training, readable 4-second forecasts came only from stationary histories identical to training; unseen histories scored 0/9.
-- **The lead is small for the generator.** It spans about 40×10 pixels in the 224×224 input, about 5×1 latent cells; at most 1.1% of pixels differ from background. VAE round trips remain readable on all three development probes, so the loss happens during generation.
-- **Training memorized.** 208 pairs share 104 histories; 4,096 updates are about 20 per pair. Median training loss fell about fivefold from the first to the last 512 updates; four-second RGB error on training-identical histories improved from 9.35 to 4.11, but worsened from 9.76 to 29.04 on unseen histories, where invented texture appears.
+**Confirmed facts**
 
-The cue exists in the input: in return-21 the lead closes from 9.9 m to 7.1 m during the history and moves about 30 pixels. Generation does not preserve it. The clear-now/occupied-within-4-seconds window lasts only about 1.75 seconds per approach, and at this speed no clear-to-occupied change occurs within one second. Tuning crop, loss or update count under the same evaluation is unlikely to show improvement. A retry first needs transition-dense evaluation, moving-object training data, a larger lead in the input, and inference that finishes before the forecast time. The fixed-camera [CPU state model](../yokohama-pad-state/REPORT-ja.md), which reads lead position directly, has already shown the wait-to-consider-entry switch.
+- **No decision-usable forecast on the three state-change conditions.** Every non-match, before and after, is unreadable; wrong-state outputs are zero. The unreadable images are visibly corrupted. The reader also fails on two actual future images, so generation and reading need separate evaluation.
+- **Four-second forecasts worsened.** Mean four-second RGB error rose from 9.64 to 21.78. It improved 9.35→4.11 (median) on the five training-identical histories, all stationary, and worsened 9.76→29.04 on unseen ones. Before training, unseen four-second forecasts were readable in 0/9.
+- **Low training diversity.** 208 pairs use 104 history files but only 59 distinct history pixel contents. 56 files contain motion, yet no post-training forecast was made on training scenes, so whether moving scenes became reproducible is unknown.
+- **Small lead.** About 40×10 pixels in the 224×224 input, roughly 5×1 latent cells. VAE round trips stay readable on all three development probes.
+- **The cue is in the input.** In return-21 the lead closes from 9.9 m to 7.1 m over the 3.75-second history and moves about 30 pixels.
+- **Too few anticipation conditions.** Only 3 of 26 known targets change state; persistence scores 23/26, so the margin over it is at most 3, and one condition is clear-now/occupied-later. That state lasts about 1.75 seconds per approach and never occurs within one second at this speed. This limits measuring anticipation value; it does not explain why WAM's own 13/26 did not improve.
+- **Forecasts arrive late.** Median warm inference is 4.52 seconds, so at 1x real time every 1- and 4-second endpoint passes before completion.
+
+**Untested hypotheses**
+
+- Using the latest observation as the conditioning image may bias toward persistence; it is an auxiliary input, not an output constraint.
+- Overfitting to few similar histories is consistent with gains only on training-identical stationary scenes, but is not isolated.
+- The 8× moving-region weight may cause the invented texture; no weight-only comparison exists.
+
+Repeating post-training under the same evaluation is unlikely to show decision value. A retry first needs independent recordings with many approaches, forecast times that include processing latency, and separate generation and reading evaluation. This concerns the current training method, not native WAM use in general. The fixed-camera [CPU state model](../yokohama-pad-state/REPORT-ja.md) showed the wait-to-consider-entry switch on a different evaluation set, but [post-training alone waited before a returning lead in 0/8 decisions](../yokohama-pad-reentry-learning/REPORT-ja.md); returning-lead anticipation remains unsolved there too.
 
 ## E2E / Runtime Verification
 
