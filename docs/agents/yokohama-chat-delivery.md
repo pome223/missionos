@@ -1,0 +1,128 @@
+# Yokohama harbour delivery from MissionOS chat
+
+The Yokohama PX4/Gazebo delivery runs from the normal MissionOS conversation
+route. It follows the Go2 delivery pattern:
+
+1. A DeepSeek planner interprets the request against a one-route catalog.
+2. The operator approves the exact plan in chat.
+3. A Gateway worker launches the simulator.
+4. Every verifier must pass before the task is reported complete.
+
+This is simulation only; no hardware is used.
+
+## Flow
+
+| Chat turn | What happens |
+|---|---|
+| `横浜の配送パッドへ荷物を届けて` | `missionos_yokohama_delivery_planner_agent` (DeepSeek) returns `supported`, `destination_id`, `summary` and `reason`. Only `yokohama_harbour_pad` is accepted. The Gateway builds a proposal from fixed server data: route, city-model backend, pad-queue limits, simulator arguments, input hashes and agent configuration. |
+| `/approve` | Records the approval, bound to the proposal digest and the session. |
+| `/run` | Rechecks the proposal digest, input hashes, simulator arguments and agent configuration. It refuses if another `missionos-yokohama-*` container is running, then launches `scripts/yokohama_sitl.py` with `--approval-manifest`. |
+| `/status` | Reports the current stage, the latest pad-judge rationale and the verifier results. |
+
+The `yokohama_sitl.py` arguments are:
+
+```
+--phase flight --sea-round-trip --deliver-payload --occupied-pad
+--pad-state-advisory assist --pad-mission-judge gateway
+--decision-backend {fixture|native} --wam-profile motion-v4 --timeout-seconds 3000
+```
+
+The simulator process receives no model API keys or Gateway credentials. After
+it exits, the Gateway runs the five verifiers: decisions, pad_queue,
+pad_advisory, payload and sitl. The task is `completed` only if the run passed
+and all five verifiers passed. Otherwise it is `needs_attention`.
+
+## Gateway environment
+
+| Variable | Meaning |
+|---|---|
+| `RUN_MISSIONOS_YOKOHAMA_AGENTS=1` | Enables the two DeepSeek agents. Also requires `DEEPSEEK_API_KEY` and the DeepSeek LiteLLM provider. |
+| `RUN_MISSIONOS_YOKOHAMA_DELIVERY_SIM=1` | Enables `/run`. |
+| `MISSIONOS_YOKOHAMA_SITL_PYTHON` | Python environment for the simulator and verifiers. |
+| `MISSIONOS_YOKOHAMA_CITY_MODELS` | `fixture` (default, no GPU) or `native`. |
+| `MISSIONOS_YOKOHAMA_NATIVE_SERVICE_CONFIG` | Service file, required for `native`. GPU provisioning stays outside the Gateway. |
+| `MISSIONOS_YOKOHAMA_OUTPUT_ROOT` | Run directory (default `output/yokohama-chat`). |
+
+Supply the key from a secret store at process start; never write it to a file
+in the repository.
+
+## Pad mission judge
+
+`--pad-mission-judge gateway|fixture` adds `world.pad_queue.mission_judge`:
+
+- `max_decisions=2`
+- `max_added_wait_s=30`
+- `judge_timeout_s=20`
+
+It requires `--pad-state-advisory assist`, which keeps a 2 s request cadence
+and supplies the CPU forecast. It is refused with `--pad-approach-decision`.
+
+**Host side (`MissionJudgeGate`).**
+
+- The judge is asked only when the Rules/advisory action is
+  `enter_delivery_approach`. The request, `pad-judge/NNN/request.json`,
+  contains:
+  - pad facts: the clear window, the lead's distance from the pad and its
+    change, the lead's altitude and battery;
+  - the advisory signal;
+  - the remaining wait budget.
+- While the answer is pending, the aircraft is told to wait. A valid `wait`
+  holds for at most the remaining budget. A valid `enter` becomes
+  `no_objection`.
+- The following fall back to the Rules action: a timeout (`unavailable`), a
+  malformed or unbound answer (`invalid`), an exhausted budget, or an
+  exhausted decision count.
+- If the pad becomes unclear, pending or held judgments are discarded.
+
+**Gateway side.** The worker answers each request once, with
+`missionos_yokohama_pad_judge_agent` (DeepSeek), and records the decision and
+rationale on the task. The executor's Rules never depend on this answer.
+
+**Executor side (`judge_overlay` in `require_response`).**
+
+- The receipt's `prior_action` must equal the recomputed Rules/advisory action.
+- A Rules wait must be `not_consulted`.
+- A changed action can only turn entry into a wait, and only within the budget.
+
+`verify_yokohama_pad_queue.py` also requires that:
+
+- every receipt matches its request/response record by hash;
+- the judge only added waiting;
+- the judge stayed within its budget and decision count.
+
+`verify_yokohama_pad_advisory.py` binds its fixture judgment to the pre-judge
+action (`prior_action`).
+
+## Observed chat run (2026-09-30, fixture city models)
+
+The production Gateway ran on `127.0.0.1:18791`, with the key loaded from a
+secret store into the process environment. Chat turns were sent over HTTP to
+`/missionos/autonomy-conversation/run`. The task was
+`yokohama_ef18ddcee96748f3` and the simulator run was `yokohama-78d588052d40`.
+
+- **Planner:** DeepSeek (`deepseek-v4-flash`) accepted the request and wrote
+  the plan summary. `/approve` then `/run` launched the flight.
+- **City steps:** D1 and D2 were reached with the fixture city models.
+- **Pad queue:** the pad was reported occupied at 618 s. When the Rules first
+  allowed entry, the judge was asked and answered `wait` 6 s. It was asked
+  again and answered `wait` 21 s, the remaining budget. At 31 s after the
+  first judge-caused wait, the budget was exhausted and entry came from the
+  Rules at 683 s. The total pad wait was 61 s of simulation time.
+- **Completion:** cargo was received and the aircraft landed on the ship. All
+  five verifiers passed: decisions, pad_queue (23 checks, including the four
+  mission-judge checks), pad_advisory, payload and sitl. `/status` then
+  reported `completed`.
+
+The first judge rationale said the lead might still be inside the 6 m pad
+radius while it was 11.4 m away. The executor's Rules did not depend on that
+statement, which is why the judge may only add a bounded wait.
+
+## Limits
+
+- Only one route and destination exist. The planner cannot add either.
+- Chat shows the 2D track and text. The 3D scene is visible only in the
+  simulator and recorded images.
+- A pad-judge answer is a proposal to wait, not an approval or a dispatch.
+  Entry always comes from the Rules.
+- A Gateway restart during a flight leaves the task `needs_attention`. The
+  outcome is not resumed or claimed.
