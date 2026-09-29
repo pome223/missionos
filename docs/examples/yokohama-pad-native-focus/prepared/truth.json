@@ -1,0 +1,478 @@
+[
+  {
+    "id": "focus-depart-05-t04",
+    "state": "occupied",
+    "current_state": "occupied",
+    "stamp_ns": 8752000000,
+    "target_sha256": "73bb5d27db7bf2cce9989a31a940ab7a39b81ca153119fbbff0bd5aa11c717c9",
+    "history_pixels_sha256": "39135695912dc22300260841e32636ffa13697b9b60644bbee3eb7a7566529b6",
+    "exact_training_history_overlap": true,
+    "actual_reader": {
+      "state": "occupied",
+      "scores": {
+        "occupied": 0.0,
+        "clear": 9.151069641113281
+      },
+      "margin": 9.151069641113281
+    }
+  },
+  {
+    "id": "focus-depart-05-t16",
+    "state": "occupied",
+    "current_state": "occupied",
+    "stamp_ns": 11752000000,
+    "target_sha256": "545c5b87ac65c66cb3cba37c201dcd336fede5b286760ceabf63613ab78753c6",
+    "history_pixels_sha256": "39135695912dc22300260841e32636ffa13697b9b60644bbee3eb7a7566529b6",
+    "exact_training_history_overlap": true,
+    "actual_reader": {
+      "state": "unknown",
+      "scores": {
+        "occupied": 9.565389633178711,
+        "clear": 9.331018447875977
+      },
+      "margin": 0.23437118530273438
+    }
+  },
+  {
+    "id": "focus-depart-19-t04",
+    "state": "occupied",
+    "current_state": "occupied",
+    "stamp_ns": 22752000000,
+    "target_sha256": "11436ea58026542e766870771f0cab74b82f7dc1bc75aa4c04e23098ea222dce",
+    "history_pixels_sha256": "18d95893818fee98fcc1694d9f119e02bbc4668789e167237e36e017181790b3",
+    "exact_training_history_overlap": false,
+    "actual_reader": {
+      "state": "occupied",
+      "scores": {
+        "occupied": 4.1856465339660645,
+        "clear": 9.990556716918945
+      },
+      "margin": 5.804910182952881
+    }
+  },
+  {
+    "id": "focus-depart-19-t16",
+    "state": "occupied",
+    "current_state": "occupied",
+    "stamp_ns": 25752000000,
+    "target_sha256": "7a0ff471893d2ccf396c535b4851322bd45b16733d420ad95b3369a5dbe5fef2",
+    "history_pixels_sha256": "18d95893818fee98fcc1694d9f119e02bbc4668789e167237e36e017181790b3",
+    "exact_training_history_overlap": false,
+    "actual_reader": {
+      "state": "occupied",
+      "scores": {
+        "occupied": 5.184082508087158,
+        "clear": 9.787458419799805
+      },
+      "margin": 4.6033759117126465
+    }
+  },
+  {
+    "id": "focus-depart-25-t04",
+    "state": "unknown",
+    "current_state": "unknown",
+    "stamp_ns": 28752000000,
+    "target_sha256": "16e526b863bb163d66dfd75b8c6ed57cde91c278f26997b66b6b80a73e8813da",
+    "history_pixels_sha256": "ebc4b7090dd9fac96b5eca52214e44345249e6eb20616583830483241c01aa3d",
+    "exact_training_history_overlap": false,
+    "actual_reader": {
+      "state": "clear",
+      "scores": {
+        "occupied": 9.821651458740234,
+        "clear": 4.263603687286377
+      },
+      "margin": 5.558047771453857
+    }
+  },
+  {
+    "id": "focus-depart-25-t16",
+    "state": "clear",
+    "current_state": "unknown",
+    "stamp_ns": 31752000000,
+    "target_sha256": "5ba6e3ccaf8cfe5623e1912161769863f2ac4bf0db485a22765aae54275d40e7",
+    "history_pixels_sha256": "ebc4b7090dd9fac96b5eca52214e44345249e6eb20616583830483241c01aa3d",
+    "exact_training_history_overlap": false,
+    "actual_reader": {
+      "state": "clear",
+      "scores": {
+        "occupied": 9.837016105651855,
+        "clear": 3.938051700592041
+      },
+      "margin": 5.8989644050598145
+    }
+  },
+  {
+    "id": "focus-depart-38-t04",
+    "state": "clear",
+    "current_state": "clear",
+    "stamp_ns": 41752000000,
+    "target_sha256": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "history_pixels_sha256": "21cee504a3e3fca0912238657fb80abd741d2abd1a56b011e39e869adfca27ef",
+    "exact_training_history_overlap": false,
+    "actual_reader": {
+      "state": "clear",
+      "scores": {
+        "occupied": 9.172558784484863,
+        "clear": 0.0
+      },
+      "margin": 9.172558784484863
+    }
+  },
+  {
+    "id": "focus-depart-38-t16",
+    "state": "clear",
+    "current_state": "clear",
+    "stamp_ns": 44752000000,
+    "target_sha256": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "history_pixels_sha256": "21cee504a3e3fca0912238657fb80abd741d2abd1a56b011e39e869adfca27ef",
+    "exact_training_history_overlap": false,
+    "actual_reader": {
+      "state": "clear",
+      "scores": {
+        "occupied": 9.172558784484863,
+        "clear": 0.0
+      },
+      "margin": 9.172558784484863
+    }
+  },
+  {
+    "id": "focus-stall-05-t04",
+    "state": "occupied",
+    "current_state": "occupied",
+    "stamp_ns": 62252000000,
+    "target_sha256": "73bb5d27db7bf2cce9989a31a940ab7a39b81ca153119fbbff0bd5aa11c717c9",
+    "history_pixels_sha256": "39135695912dc22300260841e32636ffa13697b9b60644bbee3eb7a7566529b6",
+    "exact_training_history_overlap": true,
+    "actual_reader": {
+      "state": "occupied",
+      "scores": {
+        "occupied": 0.0,
+        "clear": 9.151069641113281
+      },
+      "margin": 9.151069641113281
+    }
+  },
+  {
+    "id": "focus-stall-05-t16",
+    "state": "occupied",
+    "current_state": "occupied",
+    "stamp_ns": 65252000000,
+    "target_sha256": "b56e51f9643d35c9b41e25f7acc814a5418c762be67a66e390bc73c1b3f3d0a7",
+    "history_pixels_sha256": "39135695912dc22300260841e32636ffa13697b9b60644bbee3eb7a7566529b6",
+    "exact_training_history_overlap": true,
+    "actual_reader": {
+      "state": "unknown",
+      "scores": {
+        "occupied": 9.228141784667969,
+        "clear": 9.490837097167969
+      },
+      "margin": 0.2626953125
+    }
+  },
+  {
+    "id": "focus-stall-22-t04",
+    "state": "occupied",
+    "current_state": "occupied",
+    "stamp_ns": 79252000000,
+    "target_sha256": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "history_pixels_sha256": "2ccc4ac9fe747c260167074475096f4f9c94034d0120e7cb48463a585b57241a",
+    "exact_training_history_overlap": true,
+    "actual_reader": {
+      "state": "occupied",
+      "scores": {
+        "occupied": 0.0,
+        "clear": 9.516080856323242
+      },
+      "margin": 9.516080856323242
+    }
+  },
+  {
+    "id": "focus-stall-22-t16",
+    "state": "occupied",
+    "current_state": "occupied",
+    "stamp_ns": 82252000000,
+    "target_sha256": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "history_pixels_sha256": "2ccc4ac9fe747c260167074475096f4f9c94034d0120e7cb48463a585b57241a",
+    "exact_training_history_overlap": true,
+    "actual_reader": {
+      "state": "occupied",
+      "scores": {
+        "occupied": 0.0,
+        "clear": 9.516080856323242
+      },
+      "margin": 9.516080856323242
+    }
+  },
+  {
+    "id": "focus-stall-37-t04",
+    "state": "occupied",
+    "current_state": "occupied",
+    "stamp_ns": 94252000000,
+    "target_sha256": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "history_pixels_sha256": "2ccc4ac9fe747c260167074475096f4f9c94034d0120e7cb48463a585b57241a",
+    "exact_training_history_overlap": true,
+    "actual_reader": {
+      "state": "occupied",
+      "scores": {
+        "occupied": 0.0,
+        "clear": 9.516080856323242
+      },
+      "margin": 9.516080856323242
+    }
+  },
+  {
+    "id": "focus-stall-37-t16",
+    "state": "occupied",
+    "current_state": "occupied",
+    "stamp_ns": 97252000000,
+    "target_sha256": "cd11b2c9b43d8375a2f161dabd67dc0f11bdaa74b581ac02346e7b1b8fb8231a",
+    "history_pixels_sha256": "2ccc4ac9fe747c260167074475096f4f9c94034d0120e7cb48463a585b57241a",
+    "exact_training_history_overlap": true,
+    "actual_reader": {
+      "state": "occupied",
+      "scores": {
+        "occupied": 6.5213847160339355,
+        "clear": 9.939187049865723
+      },
+      "margin": 3.417802333831787
+    }
+  },
+  {
+    "id": "focus-stall-49-t04",
+    "state": "clear",
+    "current_state": "clear",
+    "stamp_ns": 106252000000,
+    "target_sha256": "51687a9da2e69c5841428cf011c75d3933d94982756d0c0cfb4876e3a212427a",
+    "history_pixels_sha256": "4816bc5acd2f3e04b191776877b6acf86a74ce2edd794e6c785d63b320f8fbb6",
+    "exact_training_history_overlap": false,
+    "actual_reader": {
+      "state": "clear",
+      "scores": {
+        "occupied": 9.715344429016113,
+        "clear": 2.7532994747161865
+      },
+      "margin": 6.962044954299927
+    }
+  },
+  {
+    "id": "focus-stall-49-t16",
+    "state": "clear",
+    "current_state": "clear",
+    "stamp_ns": 109252000000,
+    "target_sha256": "8584c58f09137585efa544222dc0b1afa467ec0a660f88ded6bb9fc2d187071a",
+    "history_pixels_sha256": "4816bc5acd2f3e04b191776877b6acf86a74ce2edd794e6c785d63b320f8fbb6",
+    "exact_training_history_overlap": false,
+    "actual_reader": {
+      "state": "clear",
+      "scores": {
+        "occupied": 9.549243927001953,
+        "clear": 5.968974590301514
+      },
+      "margin": 3.5802693367004395
+    }
+  },
+  {
+    "id": "focus-return-16-t04",
+    "state": "clear",
+    "current_state": "clear",
+    "stamp_ns": 138252000000,
+    "target_sha256": "022e35ccb3224bf10fe385b7c963697258c9d9ea040e6307d893611e8691f53d",
+    "history_pixels_sha256": "acb308e6be6afcb2a4040858bde13052387b30a33838c9af2135b9cd77aef181",
+    "exact_training_history_overlap": false,
+    "actual_reader": {
+      "state": "clear",
+      "scores": {
+        "occupied": 9.564888954162598,
+        "clear": 3.975616216659546
+      },
+      "margin": 5.589272737503052
+    }
+  },
+  {
+    "id": "focus-return-16-t16",
+    "state": "clear",
+    "current_state": "clear",
+    "stamp_ns": 141252000000,
+    "target_sha256": "51687a9da2e69c5841428cf011c75d3933d94982756d0c0cfb4876e3a212427a",
+    "history_pixels_sha256": "acb308e6be6afcb2a4040858bde13052387b30a33838c9af2135b9cd77aef181",
+    "exact_training_history_overlap": false,
+    "actual_reader": {
+      "state": "clear",
+      "scores": {
+        "occupied": 9.715344429016113,
+        "clear": 2.7532994747161865
+      },
+      "margin": 6.962044954299927
+    }
+  },
+  {
+    "id": "focus-return-21-t04",
+    "state": "unknown",
+    "current_state": "clear",
+    "stamp_ns": 143252000000,
+    "target_sha256": "07c05327be78c14b5a52af9904bfaa49b1d4c991e43e5d6f152b3c129c598564",
+    "history_pixels_sha256": "4c2d8e0e999ea06ff9a7855ad2c67e4782e9caa420ac14e2e7f7f1167470996d",
+    "exact_training_history_overlap": false,
+    "actual_reader": {
+      "state": "unknown",
+      "scores": {
+        "occupied": 8.545097351074219,
+        "clear": 8.13233757019043
+      },
+      "margin": 0.41275978088378906
+    }
+  },
+  {
+    "id": "focus-return-21-t16",
+    "state": "occupied",
+    "current_state": "clear",
+    "stamp_ns": 146252000000,
+    "target_sha256": "cb176f19843efbbeabf0c5c2f4c8b558eb50c815c89db201b7e554fbc53d02e7",
+    "history_pixels_sha256": "4c2d8e0e999ea06ff9a7855ad2c67e4782e9caa420ac14e2e7f7f1167470996d",
+    "exact_training_history_overlap": false,
+    "actual_reader": {
+      "state": "occupied",
+      "scores": {
+        "occupied": 0.006656729616224766,
+        "clear": 9.788350105285645
+      },
+      "margin": 9.78169337566942
+    }
+  },
+  {
+    "id": "focus-return-26-t04",
+    "state": "occupied",
+    "current_state": "occupied",
+    "stamp_ns": 148252000000,
+    "target_sha256": "9b4108014418377c34dc10dd22841fd9222c06c78b03a100253149fa8fca275c",
+    "history_pixels_sha256": "1cddcb21d49d0bfe6edb02d7b56da8267838f64168c9dbb347d12965bd43911a",
+    "exact_training_history_overlap": false,
+    "actual_reader": {
+      "state": "occupied",
+      "scores": {
+        "occupied": 3.8930368423461914,
+        "clear": 9.82953929901123
+      },
+      "margin": 5.936502456665039
+    }
+  },
+  {
+    "id": "focus-return-26-t16",
+    "state": "occupied",
+    "current_state": "occupied",
+    "stamp_ns": 151252000000,
+    "target_sha256": "e9b25a3b5b6d6d1fe958e7a0ac0c21f6539479f1daf3a83568c34a4921187a3e",
+    "history_pixels_sha256": "1cddcb21d49d0bfe6edb02d7b56da8267838f64168c9dbb347d12965bd43911a",
+    "exact_training_history_overlap": false,
+    "actual_reader": {
+      "state": "occupied",
+      "scores": {
+        "occupied": 2.1498467922210693,
+        "clear": 9.463911056518555
+      },
+      "margin": 7.314064264297485
+    }
+  },
+  {
+    "id": "focus-return-36-t04",
+    "state": "occupied",
+    "current_state": "occupied",
+    "stamp_ns": 158252000000,
+    "target_sha256": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "history_pixels_sha256": "2ccc4ac9fe747c260167074475096f4f9c94034d0120e7cb48463a585b57241a",
+    "exact_training_history_overlap": true,
+    "actual_reader": {
+      "state": "occupied",
+      "scores": {
+        "occupied": 0.0,
+        "clear": 9.516080856323242
+      },
+      "margin": 9.516080856323242
+    }
+  },
+  {
+    "id": "focus-return-36-t16",
+    "state": "occupied",
+    "current_state": "occupied",
+    "stamp_ns": 161252000000,
+    "target_sha256": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "history_pixels_sha256": "2ccc4ac9fe747c260167074475096f4f9c94034d0120e7cb48463a585b57241a",
+    "exact_training_history_overlap": true,
+    "actual_reader": {
+      "state": "occupied",
+      "scores": {
+        "occupied": 0.0,
+        "clear": 9.516080856323242
+      },
+      "margin": 9.516080856323242
+    }
+  },
+  {
+    "id": "focus-return-49-t04",
+    "state": "occupied",
+    "current_state": "occupied",
+    "stamp_ns": 171252000000,
+    "target_sha256": "842f9e49e4f8519554845a68996241c4ba5692e74e408b572aab1581798013e8",
+    "history_pixels_sha256": "28a708f784b3a61808d810ef46a8c60b2fcac3f6207a3b7257aaba200b1ae9c6",
+    "exact_training_history_overlap": false,
+    "actual_reader": {
+      "state": "occupied",
+      "scores": {
+        "occupied": 1.6310652494430542,
+        "clear": 9.711956024169922
+      },
+      "margin": 8.080890774726868
+    }
+  },
+  {
+    "id": "focus-return-49-t16",
+    "state": "clear",
+    "current_state": "occupied",
+    "stamp_ns": 174252000000,
+    "target_sha256": "02fa7c0b10b3bd58f2b133d9dc83033f4dbd0683ac516f3275b0714834794418",
+    "history_pixels_sha256": "28a708f784b3a61808d810ef46a8c60b2fcac3f6207a3b7257aaba200b1ae9c6",
+    "exact_training_history_overlap": false,
+    "actual_reader": {
+      "state": "clear",
+      "scores": {
+        "occupied": 9.771681785583496,
+        "clear": 4.437911510467529
+      },
+      "margin": 5.333770275115967
+    }
+  },
+  {
+    "id": "focus-return-57-t04",
+    "state": "clear",
+    "current_state": "clear",
+    "stamp_ns": 179252000000,
+    "target_sha256": "59823dc18133aa768bcebb6ad9ded932b539ddf6429eb0154b48156e777ae710",
+    "history_pixels_sha256": "488e468b6d7baeec0981a71e242350fb0bf85c03b1f8b96b9e89311f28e6aa4e",
+    "exact_training_history_overlap": false,
+    "actual_reader": {
+      "state": "clear",
+      "scores": {
+        "occupied": 9.46384048461914,
+        "clear": 6.998257160186768
+      },
+      "margin": 2.465583324432373
+    }
+  },
+  {
+    "id": "focus-return-57-t16",
+    "state": "clear",
+    "current_state": "clear",
+    "stamp_ns": 182252000000,
+    "target_sha256": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "history_pixels_sha256": "488e468b6d7baeec0981a71e242350fb0bf85c03b1f8b96b9e89311f28e6aa4e",
+    "exact_training_history_overlap": false,
+    "actual_reader": {
+      "state": "clear",
+      "scores": {
+        "occupied": 9.172558784484863,
+        "clear": 0.0
+      },
+      "margin": 9.172558784484863
+    }
+  }
+]

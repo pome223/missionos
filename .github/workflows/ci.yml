@@ -47,6 +47,13 @@ jobs:
             scripts/evaluate_yokohama_pad_reentry.py \
             scripts/check_yokohama_pad_reentry.py \
             scripts/export_yokohama_pad_reentry.py \
+            scripts/check_yokohama_pad_focus.py \
+            scripts/evaluate_yokohama_pad_focus.py \
+            scripts/export_yokohama_pad_focus.py \
+            scripts/prepare_yokohama_pad_focus.py \
+            scripts/train_yokohama_pad_focus.py \
+            scripts/yokohama_pad_focus_data.py \
+            tests/test_yokohama_pad_focus.py \
             src/runtime/yokohama_pad_reentry_risk.py \
             tests/test_yokohama_pad_reentry.py \
             scripts/export_yokohama_pad_advisory.py \
@@ -121,6 +128,11 @@ jobs:
             --bundle docs/examples/yokohama-pad-reentry-learning
           python scripts/check_yokohama_pad_reentry.py \
             --bundle docs/examples/yokohama-pad-reentry
+
+      - name: Reopen native regional pad forecasts without GPU
+        run: |
+          python scripts/check_yokohama_pad_focus.py \
+            --bundle docs/examples/yokohama-pad-native-focus
 
       - name: Verify Jev mode selection through the Gateway
         env:

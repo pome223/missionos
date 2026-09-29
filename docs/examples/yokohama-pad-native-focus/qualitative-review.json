@@ -1,0 +1,24 @@
+{
+  "reviewer": "assistant visual inspection, post-inference; separate from frozen numeric reader",
+  "examples": [
+    {
+      "id": "focus-stall-22-t16",
+      "observation": "Lead shape remains recognizable after training; both before and after reader say occupied."
+    },
+    {
+      "id": "focus-return-21-t16",
+      "observation": "After image contains large invented colored texture, not a dependable lead/pad forecast; both stages unknown."
+    },
+    {
+      "id": "focus-depart-38-t16",
+      "observation": "After image has invented texture despite reader saying clear. Classification match does not establish faithful imagery."
+    },
+    {
+      "id": "focus-depart-25-t16",
+      "observation": "After image is strongly corrupted; both stages unknown."
+    }
+  ],
+  "contact_sheet_sha256": "abddf649807a2effe3c8a4cb87610f66432a5129cf0bdc1e84a28090d471e3e1",
+  "flight_admitted": false,
+  "general_detector_validated": false
+}

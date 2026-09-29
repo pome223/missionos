@@ -1,0 +1,27 @@
+{
+  "schema": "native_pad_focus_forecast.v1",
+  "sample_id": "focus-return-57-t16",
+  "stage": "after",
+  "history_sha256": "6e2cd6d2818a8c6b1fcc017a94684df49645293f2951f8abb8b42dad7c03ada6",
+  "prediction_sha256": "f03a5cedefda2ff9ce15eef85ccadda9b4ba506252e6a41fb54c05df43411b9f",
+  "cutoff_stamp_ns": 178252000000,
+  "future_stamp_ns": 182252000000,
+  "frame_offset": 16,
+  "horizon_sim_s": 4.0,
+  "adapter_sha256": "c17c1e8901f2ea5714728f557e319e38643a1011a7cab9a8b712012ab1490460",
+  "base_sha256": "bdd149cac6ec002ba7dc4ad99ec6f9eb02cd6d4f05320195cf174737b13b0bc2",
+  "seed": 42,
+  "diffusion_steps": 50,
+  "seconds": 4.564951148999853,
+  "reader": {
+    "state": "unknown",
+    "scores": {
+      "occupied": 13.343408584594727,
+      "clear": 12.596684455871582
+    },
+    "margin": 0.7467241287231445
+  },
+  "native_anwm": true,
+  "dispatch_invoked": false,
+  "flight_admitted": false
+}

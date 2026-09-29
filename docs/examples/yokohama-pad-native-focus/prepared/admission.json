@@ -1,0 +1,11 @@
+{
+  "boundary": "offline native endpoint capability; no mission-value adoption",
+  "evaluation_conditions": 28,
+  "changed_state_conditions": 3,
+  "current_state_persistence_errors": 3,
+  "future_truth_oracle_errors": 0,
+  "ideal_rules_win_required": false,
+  "fixed_accuracy_gate": false,
+  "test_reader_matches": 25,
+  "no_flight_or_terminal_benefit_claim": true
+}

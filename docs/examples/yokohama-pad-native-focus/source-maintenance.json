@@ -1,0 +1,17 @@
+{
+  "changes": "Formatting, equivalent tuple deletion and explicit per-step closure capture only; exact GPU source retained",
+  "files": [
+    {
+      "name": "train_yokohama_pad_focus.py",
+      "executed_sha256": "b64084c18b8731fc8cf88b97a1c9cf96f308d65fd7236db0cd0ba183e0cbc10c",
+      "maintained_sha256": "9534ac6f30513266bc55a4a28244c7b0b0e4ee706fa8af200625743f1ea038c6",
+      "normalized_ast_equal": true
+    },
+    {
+      "name": "yokohama_pad_focus_data.py",
+      "executed_sha256": "246c3a6381c8f72c5339d3b31eeee17025cb3f716835cab56a9784744aa97e7c",
+      "maintained_sha256": "8e5ea063704f3accf8aa74b80d2ad2bfc63cf4d7c6d6dd7db7723c7499ad8221",
+      "normalized_ast_equal": true
+    }
+  ]
+}
