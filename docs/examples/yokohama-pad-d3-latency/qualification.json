@@ -1,0 +1,265 @@
+{
+  "schema": "missionos.d3-latency-qualification.v1",
+  "run_id": "yokohama-c1b1328b77fb",
+  "status": "passed",
+  "checks": {
+    "completed_cpu_fixture_without_gpu": true,
+    "all_four_verifiers_pass": true,
+    "three_decision_points": true,
+    "measured_delays_at_least_configured": true,
+    "initial_permit_older_than_30s": true,
+    "two_new_permit_ids": true,
+    "both_reconfirmations_have_five_seconds_clear": true,
+    "d3_authority_after_reconfirmation": true,
+    "both_dispatches_use_latest_fresh_permit": true,
+    "expired_permit_rejected_in_same_state_replay": true,
+    "cleanup": true
+  },
+  "review_revision": "3e80aa450222aa84326154775be5b458ad65f306",
+  "world_sha256": "bb9af02669a5274be1190c27135368ac1215cc909e74fcd55d5a8dcfa22a6da5",
+  "first_permit_age_at_reconfirmation_wall_s": 85.19916178999995,
+  "configured_delays_wall_s": {
+    "start": 170,
+    "vla": 10,
+    "wam": 55
+  },
+  "measured_exchange_latencies": [
+    {
+      "cycle": 1,
+      "operation": "start",
+      "elapsed_wall_s": 170.04248137000008
+    },
+    {
+      "cycle": 1,
+      "operation": "vla",
+      "elapsed_wall_s": 10.168792421000035
+    },
+    {
+      "cycle": 1,
+      "operation": "wam",
+      "elapsed_wall_s": 55.625800776000005
+    },
+    {
+      "cycle": 2,
+      "operation": "vla",
+      "elapsed_wall_s": 10.191814213000043
+    },
+    {
+      "cycle": 2,
+      "operation": "wam",
+      "elapsed_wall_s": 55.754984817000036
+    },
+    {
+      "cycle": 3,
+      "operation": "vla",
+      "elapsed_wall_s": 10.161617504000105
+    },
+    {
+      "cycle": 3,
+      "operation": "wam",
+      "elapsed_wall_s": 55.57877727499999
+    }
+  ],
+  "reconfirmation_windows": [
+    {
+      "reason": "before_model_approach_authority",
+      "clear_window_sim_s": 5.015999999999963
+    },
+    {
+      "reason": "model_endpoint_before_delivery_connector",
+      "clear_window_sim_s": 5.220000000000027
+    }
+  ],
+  "dispatches": [
+    {
+      "request_id": "2bdb419c058197bb030761b83c68262e4d4cc9b004f2e093fb6b32bf4b0a7368",
+      "latest_grant_matches": true,
+      "permit_age_wall_s": 3.452276126000015
+    },
+    {
+      "request_id": "99fd91b61c56e4ac36684ecf1dcb1f59fe9cfd887f42862b34b5c0ab0eba2f8f",
+      "latest_grant_matches": true,
+      "permit_age_wall_s": 3.2496182930001396
+    }
+  ],
+  "stale_permit_replay": {
+    "old_permit_rejection": "Missing or expired pad entry permission",
+    "replacement_accepted": true,
+    "live_dispatch": false
+  },
+  "milestones": [
+    {
+      "event": "city_segment_arrived",
+      "phase": "00-D1",
+      "wall_s": 665.5344477220001
+    },
+    {
+      "event": "city_segment_arrived",
+      "phase": "01-D2",
+      "wall_s": 818.276700334
+    },
+    {
+      "event": "pad_occupied_reported",
+      "phase": "02-D3",
+      "wall_s": 917.3490898780001
+    },
+    {
+      "event": "pad_entry_authorized",
+      "phase": "02-D3",
+      "wall_s": 950.039346476
+    },
+    {
+      "event": "pad_entry_reconfirmed",
+      "phase": "02-D3",
+      "wall_s": 1035.253718974,
+      "reason": "before_model_approach_authority"
+    },
+    {
+      "event": "city_segment_arrived",
+      "phase": "02-D3",
+      "wall_s": 1045.124395312
+    },
+    {
+      "event": "pad_entry_reconfirmed",
+      "phase": "03-DELIVERY",
+      "wall_s": 1050.783209689,
+      "reason": "model_endpoint_before_delivery_connector"
+    },
+    {
+      "event": "payload_received",
+      "phase": "PAYLOAD-VERIFY",
+      "wall_s": 1191.74755342
+    },
+    {
+      "event": "landing_observed",
+      "phase": "return_land",
+      "wall_s": 1774.334469393
+    }
+  ],
+  "verifiers": {
+    "decisions": {
+      "status": "passed",
+      "checks": {
+        "mailboxes_bound": true,
+        "no_revoked_attempt_dispatched": true,
+        "model_requests_inside_approved_city_holds": true,
+        "successful_run_and_shutdown": true,
+        "three_observed_updates": true,
+        "startup_after_inland_hold": true,
+        "shutdown_before_ap_continuation": true,
+        "native_invocation_labels": true,
+        "native_remote_shutdown": true,
+        "reopened_model_permit_and_motion_chains": true
+      }
+    },
+    "pad_queue": {
+      "status": "passed",
+      "checks": {
+        "run_passed": true,
+        "cleanup": true,
+        "supervisor_stopped": true,
+        "no_physical_execution": true,
+        "one_occupied_wait_entry_receipt_return": true,
+        "event_order": true,
+        "ap_wait_before_entry": true,
+        "pad_initially_occupied": true,
+        "five_seconds_clear_before_proposal": true,
+        "entry_bound_to_response": true,
+        "wait_then_continue": true,
+        "two_reconfirmations": true,
+        "one_bound_hold_move": true,
+        "hold_is_consumed_model_endpoint": true,
+        "reconfirm_model_move_reconfirm_order": true,
+        "dispatch_checks_within_30s_of_fresh_permit": true,
+        "sequences": true,
+        "clear_through_delivery_and_return": true,
+        "sampled_separation_gt_3m": true,
+        "lead_departure_observed": true,
+        "own_cargo_received": true,
+        "returned_landed_disarmed": true,
+        "no_early_approach_dispatch": true
+      }
+    },
+    "payload": {
+      "status": "passed",
+      "checks": {
+        "recomputed_delivery": true,
+        "receipt_exactly_recomputed": true,
+        "one_release_and_receipt": true,
+        "bounded_detach_commands": true,
+        "return_after_receipt": true,
+        "receipt_fresh_at_acceptance": true,
+        "models_stopped_before_release": true,
+        "worker_claim_matches_receipt": true,
+        "owned_runtime_finished_and_cleaned": true,
+        "return_landed_disarmed": true
+      }
+    },
+    "sitl": {
+      "status": "passed",
+      "checks": {
+        "not_a_teleported_marker_smoke": true,
+        "run_finished_successfully": true,
+        "world_binding": true,
+        "mesh_binding": true,
+        "model_binding": true,
+        "source_binding": true,
+        "worker_source_binding": true,
+        "cpu_isolated": true,
+        "no_native_models_invoked": true,
+        "worker_binding": true,
+        "trajectory_binding": true,
+        "trajectory_finite_ordered": true,
+        "all_authored_holds": true,
+        "returned_landed_disarmed": true,
+        "payload_delivery_and_return_order": true,
+        "one_km_sea_both_directions": true,
+        "sea_model_sessions_off": true,
+        "sea_observed_motion": true,
+        "contact_sensor_outcome": true,
+        "depth_matches_source": true,
+        "sampled_swept_envelope_clear": true
+      }
+    }
+  },
+  "evidence_manifest": {
+    "config.json": {
+      "bytes": 36995,
+      "sha256": "fc0b0eb1441b02f50192642a0fd91b031ca3a91f8c9ab6eb21e9db06bf931f43"
+    },
+    "result.json": {
+      "bytes": 35180,
+      "sha256": "d162f8479be0f6bd57e8afaf8538fdf243447c142dabf1cd6d5342c77854b91a"
+    },
+    "flight-events.jsonl": {
+      "bytes": 444012,
+      "sha256": "fa864870b24699869973a4ff249d73b8106dfdc450af6e310f2ce359dbcd55ba"
+    },
+    "flight-trajectory.jsonl": {
+      "bytes": 65295565,
+      "sha256": "d6c79d43a3324bf63eacab0fe2c0aa70fa239511da54de807a22cb9dfad420c7"
+    },
+    "codex-review-start.json": {
+      "bytes": 899,
+      "sha256": "24b59a0619a832302ae68f4780403c05cf26e49c31cf5d084332d23198ee8956"
+    },
+    "codex-verification-decisions.json": {
+      "bytes": 5699,
+      "sha256": "7cf8746e3b27ac764c3f2d64fafdcdc5b578d555b16b908e548bc5b3926c9ba7"
+    },
+    "codex-verification-pad_queue.json": {
+      "bytes": 1954,
+      "sha256": "54311bde73e92a7cbcb292477f48890813589e9a82f12932178546e8b19ffe7e"
+    },
+    "codex-verification-payload.json": {
+      "bytes": 916,
+      "sha256": "9f71767bee92a39b7da0cd06333aa83a2e62876f0d39232793b95644e05fb2c1"
+    },
+    "codex-verification-sitl.json": {
+      "bytes": 14013,
+      "sha256": "6c6d5e9466e98065fedd1db820085bb3ae5f8bb86a4f4fcf03e02abd6d77b13d"
+    }
+  },
+  "additional_gpu_usd": 0,
+  "scope": "One CPU PX4/Gazebo fixture flight with model-scale delay; no native-model decision capability or physical execution claim."
+}

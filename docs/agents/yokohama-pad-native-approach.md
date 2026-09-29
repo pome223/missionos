@@ -164,6 +164,16 @@ repeated on CPU (fixture backend, `--fixture-cold-start`, run
 
 The pad-state advisory is not part of this mode.
 
+An independent reopening of the same run passed all four verifiers and eleven
+latency-specific checks. The initial permit was 85.20 wall seconds old when
+replaced; the D3 and delivery dispatch checks used their latest permit IDs at
+ages 3.45 and 3.25 wall seconds. Replaying the recorded D3 dispatch observation
+through `PadQueue.require_dispatch` rejects the expired initial permit and
+accepts its replacement, without sending a flight command. The
+[Japanese report](../examples/yokohama-pad-d3-latency/REPORT-ja.md) and
+[qualification receipt](../examples/yokohama-pad-d3-latency/qualification.json)
+retain the timings, verifier checks and hashes of the private raw evidence.
+
 ## Verification
 
 `verify_yokohama_decisions.py` reopens every configured cycle, including the
