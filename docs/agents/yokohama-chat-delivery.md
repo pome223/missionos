@@ -185,6 +185,44 @@ and simulator run `yokohama-c156d9f5821a`.
 - All five verifiers passed, and `/status` reported `completed`.
 - No simulator container remained after the Gateway stopped.
 
+## Judge A/B on recorded returns (`scripts/evaluate_yokohama_pad_judge.py`)
+
+The reentry bundles hold real pad requests, with camera advisory receipts, and
+captured lead trajectories for three departing and three returning cases. The
+test points are the 133 requests where the Rules and the existing advisory
+allowed entry. Hindsight truth is whether the lead re-entered the 6 m radius
+within 60 s; no arm sees it. Each cell counts the waits at those points.
+
+| Arm | Return, approach visible (32) | Return, lead still holding (24) | No return (77) |
+|---|---|---|---|
+| Rules only | 0 | 0 | 0 |
+| Kinematic rule: inward speed > 0.2 m/s | 32 | 0 | 0 |
+| DeepSeek v1 (flown 2026-09-30) | 32 | 22 | 76 |
+| DeepSeek v2 (computed facts) | 32 | 2 | 0 |
+
+All 266 DeepSeek answers were valid.
+
+- **v1 waited almost everywhere.** Its rationales misread raw distances against
+  the radius.
+- **v2 matches a simple rule.** It waits only on approach. Its two extra waits
+  are at the onset of a return, at -0.12 and -0.15 m/s. Its decisions match a
+  0.1 m/s inward-speed rule in 132 of 133 points. With these facts, the judge
+  does not add information beyond a one-line kinematic rule; it adds an
+  accurate operator explanation.
+- **Cost that remains.** Each Rules entry still waits for the call, about
+  5–10 s.
+- **Unknowable cases.** A return that starts after the decision is not
+  knowable by any arm.
+
+**Chat flight with v2** (2026-09-30, fixture city models; task
+`yokohama_d00df180748e4602`)
+
+- The lead was 6.8 m outside the radius, moving away at 0.95 m/s. DeepSeek
+  answered `enter`, with a factually correct rationale.
+- Judge-caused waiting was 2.5 s, which was the call itself. The whole pad
+  wait was 36.0 s, the same as the Rules-only native run.
+- All five verifiers passed.
+
 ## Limits
 
 - Only one route and destination exist. The planner cannot add either.
