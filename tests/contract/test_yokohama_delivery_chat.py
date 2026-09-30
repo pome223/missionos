@@ -42,6 +42,7 @@ def service(tmp_path, monkeypatch):
     )
     current = YokohamaChatService(TaskStore(str(tmp_path / "tasks.db")))
     monkeypatch.setattr(current, "running_simulators", lambda: [])
+    monkeypatch.setattr(current, "_kill_group", lambda proc: None)
     return current
 
 
@@ -151,6 +152,9 @@ def test_simulator_receives_no_model_keys(service, monkeypatch):
         def send_signal(self, _):
             pass
 
+        def wait(self, timeout=None):
+            return self.returncode
+
     def popen(args, **kwargs):
         seen.update(args=args, env=kwargs["env"])
         return Done()
@@ -233,12 +237,12 @@ def test_completion_requires_run_and_every_verifier(service, monkeypatch, tmp_pa
     run.mkdir()
     (run / "result.json").write_text(json.dumps(dict(status="passed", run_id="r")))
 
-    def verifier(args, **kwargs):
+    def verifier(args, env, identity):
         name = args[1].rsplit("verify_yokohama_", 1)[1][:-3]
         status = "failed" if name == failing else "passed"
         (run / f"verification-{name}.json").write_text(json.dumps(dict(status=status)))
 
-    monkeypatch.setattr(subprocess, "run", verifier)
+    monkeypatch.setattr(service, "_verify", verifier)
     task = service.approve(plan(service), "one")
     service.store.update(task["task_id"], status="running")
     service._finish(task["task_id"], run, service.inputs(), 0)
@@ -270,3 +274,246 @@ def test_restart_does_not_resume_an_inflight_flight(service):
     restarted = YokohamaChatService(service.store)
     assert restarted.store.get(task["task_id"])["status"] == "needs_attention"
     assert restarted.active is None and os.environ["RUN_MISSIONOS_YOKOHAMA_DELIVERY_SIM"] == "1"
+
+
+@pytest.mark.parametrize("stage", ["reserved", "popen", "running", "verification"])
+@pytest.mark.parametrize("cancel", [False, True])
+def test_close_joins_worker_and_preserves_stop(service, monkeypatch, stage, cancel):
+    import threading
+
+    entered, release = threading.Event(), threading.Event()
+    processes = []
+
+    class Process:
+        pid, returncode, interrupts = 99, None, 0
+
+        def poll(self):
+            return self.returncode
+
+        def send_signal(self, _):
+            self.interrupts += 1
+
+        def wait(self, timeout=None):
+            self.returncode = -2
+            return self.returncode
+
+        def kill(self):
+            self.returncode = -9
+
+    def popen(*args, **kwargs):
+        proc = Process()
+        processes.append(proc)
+        if stage == "popen":
+            entered.set()
+            assert release.wait(5)
+        if stage == "verification":
+            proc.returncode = 0
+        return proc
+
+    original = service._worker
+
+    def worker(*args):
+        if stage == "reserved":
+            entered.set()
+            assert release.wait(5)
+        original(*args)
+
+    def follow(*args):
+        entered.set()
+        assert release.wait(5)
+        return 0
+
+    def verify(*args, **kwargs):
+        entered.set()
+        assert release.wait(5)
+        return None
+
+    monkeypatch.setattr(subprocess, "Popen", popen)
+    monkeypatch.setattr(service, "_worker", worker)
+    monkeypatch.setattr(service, "_follow", follow if stage == "running" else lambda *a: 0)
+    monkeypatch.setattr(service, "_verify", verify)
+    monkeypatch.setattr(service, "_judge_pending", lambda *a: None)
+    task = service.approve(plan(service), "one")
+    if stage == "verification":
+        original_finish = service._finish
+
+        def prepare_finish(identity, folder, inputs, code):
+            folder.mkdir(parents=True, exist_ok=True)
+            (folder / "result.json").write_text('{"status":"passed"}')
+            original_finish(identity, folder, inputs, code)
+
+        monkeypatch.setattr(service, "_finish", prepare_finish)
+    service.execute(task)
+    assert entered.wait(5)
+    if cancel:
+        service.cancel(service.store.get(task["task_id"]))
+    closer = threading.Thread(target=service.close)
+    closer.start()
+    assert service.stopping.wait(5)
+    release.set()
+    closer.join(5)
+    assert not closer.is_alive()
+    assert not service.worker.is_alive()
+    assert all(p.poll() is not None for p in processes)
+    assert all(p.interrupts <= 1 for p in processes)
+    assert service.store.get(task["task_id"])["status"] == (
+        "canceled" if cancel else "needs_attention"
+    )
+    with pytest.raises(ValueError):
+        service.execute(task)
+
+
+def test_close_reaps_real_cpu_worker(service, tmp_path):
+    import sys
+    import threading
+    import time
+
+    task = service.approve(plan(service), "one")
+    root = tmp_path / "cpu-runtime"
+    scripts = root / "scripts"
+    scripts.mkdir(parents=True)
+    marker = root / "started"
+    (scripts / "yokohama_sitl.py").write_text(
+        "from pathlib import Path\nimport time\n"
+        f"Path({str(marker)!r}).write_text('ready')\n"
+        "while True: time.sleep(0.05)\n"
+    )
+    service.root = root
+    service._kill_group = YokohamaChatService._kill_group
+    base = service.outputs / task["task_id"]
+    base.mkdir(parents=True)
+    manifest = base / "approved.json"
+    manifest.write_text("{}")
+    service.active = task["task_id"]
+    service.worker = threading.Thread(
+        target=service._worker,
+        args=(task["task_id"], {"python": sys.executable}, base / "run", manifest),
+    )
+    service.worker.start()
+    deadline = time.monotonic() + 5
+    while not marker.exists():
+        assert time.monotonic() < deadline
+        time.sleep(0.01)
+    proc = service.process
+    service.close()
+    assert not service.worker.is_alive()
+    assert proc.poll() is not None
+    assert service.active is None and service.process is None
+    assert service.store.get(task["task_id"])["status"] == "needs_attention"
+
+
+def test_service_restart_waits_for_old_worker(service, monkeypatch):
+    import threading
+
+    release = threading.Event()
+    key = str(service.store.db_path.resolve())
+    monkeypatch.setattr(chat, "get_task_store", lambda: service.store)
+    monkeypatch.setattr(chat, "_services", {key: service})
+    service.worker = threading.Thread(target=release.wait)
+    service.worker.start()
+    service.stopping.set()
+    try:
+        with pytest.raises(ValueError, match="停止中"):
+            chat.service()
+    finally:
+        release.set()
+        service.worker.join(5)
+    restarted = chat.service()
+    assert restarted is not service and not restarted.stopping.is_set()
+
+
+@pytest.mark.parametrize("verification", [False, True])
+@pytest.mark.parametrize("before_registration", [False, True])
+@pytest.mark.parametrize("cancel_only", [False, True])
+def test_stop_reaps_real_process_group_with_stubborn_descendant(
+    service, tmp_path, monkeypatch, verification, before_registration, cancel_only
+):
+    import os
+    import sys
+    import threading
+    import time
+
+    task = service.approve(plan(service), "one")
+    service.root = tmp_path / "process-tree"
+    scripts = service.root / "scripts"
+    scripts.mkdir(parents=True)
+    service._kill_group = YokohamaChatService._kill_group
+    if cancel_only:
+        original_reap = service._reap
+        monkeypatch.setattr(
+            service, "_reap", lambda proc, grace=180: original_reap(proc, grace=0.2)
+        )
+    marker = service.root / "child.pid"
+    child = (
+        "import os,signal,time\nfrom pathlib import Path\n"
+        "signal.signal(signal.SIGINT,signal.SIG_IGN)\n"
+        f"Path({str(marker)!r}).write_text(str(os.getpid()))\n"
+        "while True: time.sleep(.05)\n"
+    )
+    parent = (
+        "import subprocess,signal,sys,time\n"
+        + ("signal.signal(signal.SIGINT,signal.SIG_IGN)\n" if verification or cancel_only else "")
+        + f"subprocess.Popen([sys.executable,'-c',{child!r}])\n"
+        + "while True: time.sleep(.05)\n"
+    )
+    filename = f"verify_yokohama_{chat.VERIFIERS[0]}.py" if verification else "yokohama_sitl.py"
+    (scripts / filename).write_text(parent)
+    base = service.outputs / task["task_id"]
+    base.mkdir(parents=True)
+    run = base / "run"
+    run.mkdir()
+    (run / "result.json").write_text('{"status":"passed"}')
+    manifest = base / "approved.json"
+    manifest.write_text("{}")
+    service.active = task["task_id"]
+    service.store.update(task["task_id"], status="running")
+    target = service._finish if verification else service._worker
+    args = (
+        (task["task_id"], run, {"python": sys.executable}, 0)
+        if verification
+        else (task["task_id"], {"python": sys.executable}, run, manifest)
+    )
+    release_registration = threading.Event()
+    if before_registration:
+        original_popen = subprocess.Popen
+
+        def delayed_popen(*args, **kwargs):
+            proc = original_popen(*args, **kwargs)
+            assert release_registration.wait(5)
+            return proc
+
+        monkeypatch.setattr(subprocess, "Popen", delayed_popen)
+    service.worker = threading.Thread(target=target, args=args)
+    service.worker.start()
+    deadline = time.monotonic() + 5
+    while not marker.exists():
+        assert time.monotonic() < deadline
+        time.sleep(0.01)
+    child_pid = int(marker.read_text())
+    started = time.monotonic()
+    if cancel_only:
+        service.cancel(service.store.get(task["task_id"]))
+        release_registration.set()
+        service.worker.join(5)
+    else:
+        closer = threading.Thread(target=service.close)
+        closer.start()
+        assert service.stopping.wait(5)
+        release_registration.set()
+        closer.join(5)
+        assert not closer.is_alive()
+    assert time.monotonic() - started < 5
+    assert not service.worker.is_alive()
+    assert service.verification_process is None
+    assert service.store.get(task["task_id"])["status"] == (
+        "canceled" if cancel_only else "needs_attention"
+    )
+    try:
+        os.kill(child_pid, 0)
+    except ProcessLookupError:
+        pass
+    else:
+        state = subprocess.run(
+            ["ps", "-o", "stat=", "-p", str(child_pid)], capture_output=True, text=True
+        )
+        assert not state.stdout.strip() or state.stdout.strip().startswith("Z")

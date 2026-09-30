@@ -100,6 +100,7 @@ def verify(root):
         checks["pad_initially_occupied"] = clearance(c, window[0])["pad_clear"] is False
         row_hashes = {digest(r) for r in rows}
         requests, enters, exchanges = [], [], []
+        received_wall_s = {}
         for folder in sorted((root / "pad-decisions").iterdir()):
             req, resp = read(folder / "request.json"), read(folder / "response.json")
             exchanges.append((req, resp))
@@ -110,6 +111,7 @@ def verify(root):
             ]
             if len(observed) != 1:
                 raise ValueError("Response is not bound to one observed receipt")
+            received_wall_s[req["request_id"]] = observed[0]["wall_s"]
             action = require_response(c, req, resp, observed[0])
             if not all(digest(r) in row_hashes for r in [*req["observations"], observed[0]]):
                 raise ValueError("Decision used observations absent from trajectory")
@@ -132,7 +134,9 @@ def verify(root):
             ["wait_at_current_hold"] * (count - entries) + ["enter_delivery_approach"] * entries
         )
         if p.get("mission_judge"):
-            judge, judge_summary = judge_checks(p["mission_judge"], root, exchanges)
+            judge, judge_summary = judge_checks(
+                p["mission_judge"], root, exchanges, received_wall_s
+            )
             checks.update(judge)
             summary.update(judge_summary)
         if approach:
@@ -188,7 +192,7 @@ def verify(root):
     return summary
 
 
-def judge_checks(policy, root, exchanges):
+def judge_checks(policy, root, exchanges, received_wall_s=None):
     """A pad mission judge only added bounded waits, and every receipt matches its record."""
     receipts = [resp["mission_judge"] for _, resp in exchanges]
     records = {}
@@ -201,6 +205,23 @@ def judge_checks(policy, root, exchanges):
         records[request["judge_request_id"]] = (request, answer, digest(content))
     referenced = {r["judge_request_id"] for r in receipts if r.get("judge_request_id")}
     held = [r for r in receipts if r["status"] in ("pending", "hold")]
+    # Reconstruct judge-caused wall time from observations: each run of pending/hold
+    # responses lasts until the release is received, or until a Rules wait (pad not
+    # clear) ends it. Never trust the receipts' own totals.
+    elapsed, start, last = 0.0, None, None
+    for request, response in exchanges:
+        receipt = response["mission_judge"]
+        now = request["observations"][-1]["wall_s"]
+        received = max(now, (received_wall_s or {}).get(request["request_id"], now))
+        if receipt["status"] in ("pending", "hold"):
+            start = now if start is None else start
+            last = received
+        elif start is not None:
+            released = receipt["prior_action"] == "enter_delivery_approach"
+            elapsed += (received if released else now) - start
+            start = None
+    if start is not None:
+        elapsed += last - start
     answered = [a for _, a, _ in records.values() if a and a.get("judge_status") == "valid"]
     return (
         dict(
@@ -216,13 +237,18 @@ def judge_checks(policy, root, exchanges):
             mission_judge_only_added_waiting=all(
                 r["prior_action"] == "enter_delivery_approach" for r in held
             ),
-            mission_judge_within_budget=len(records) <= policy["max_decisions"]
-            and all(r["added_wait_s"] <= policy["max_added_wait_s"] for r in held),
+            mission_judge_within_budget=elapsed <= policy["max_added_wait_s"]
+            and len(records) <= policy["max_decisions"]
+            and all(
+                r["added_wait_s"] <= policy["max_added_wait_s"]
+                for r in receipts
+                if "added_wait_s" in r
+            ),
         ),
         dict(
             judge_requests=len(records),
             judge_statuses=[r["status"] for r in receipts if r["status"] != "not_consulted"],
-            judge_added_wait_s=max((r["added_wait_s"] for r in held), default=0),
+            judge_added_wait_s=elapsed,
             judge_decisions=[
                 dict(
                     a["decision"],

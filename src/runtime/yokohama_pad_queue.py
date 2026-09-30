@@ -13,6 +13,7 @@ import json
 import math
 from pathlib import Path
 import threading
+import time
 import xml.etree.ElementTree as ET
 
 try:
@@ -317,6 +318,19 @@ def require_response(config, request, response, current):
     ):
         raise ValueError("Observation identity or estimator reset changed")
     action = response["proposed_action"]
+    if judge and "wait_deadline_wall_s" in response["mission_judge"]:
+        receipt = response["mission_judge"]
+        deadline = receipt["wait_deadline_wall_s"]
+        # A stale host WAIT cannot extend the approved judge budget on aircraft.
+        if receipt["prior_action"] == ENTER and (
+            (receipt["status"] in JUDGE_WAITS and current["wall_s"] >= deadline)
+            or (
+                action == ENTER
+                and current["wall_s"] > deadline
+                and receipt["status"] != "decisions_exhausted"
+            )
+        ):
+            raise ValueError("Mission judge release exceeded wall-clock deadline")
     if action not in p["approved_actions"] or not config.get("operator_approval"):
         raise ValueError("Action outside preapproved simulator scope")
     if action == "enter_delivery_approach":
@@ -422,67 +436,127 @@ class MissionJudgeGate:
     The judge is asked only when the Rules/advisory action is entry. While its
     answer is pending, or during a judged hold, the response is a wait; nothing it
     returns turns a wait into entry. A late, invalid or over-budget answer leaves
-    the Rules action. ``max_added_wait_s`` bounds the wall time from the first
-    judge-caused wait.
+    the Rules action. ``max_added_wait_s`` bounds the judge-caused wait, summed
+    over runs of pending/hold responses. A Rules wait (pad not clear) closes the
+    current run; its duration is Rules time and is not charged to the judge.
     """
 
-    def __init__(self, root, config):
+    def __init__(self, root, config, clock=time.monotonic):
+        self.clock = clock
         self.config = config
         self.policy = config["world"]["pad_queue"]["mission_judge"]
         self.root = Path(root) / "pad-judge"
         self.issued = 0
         self.pending = None
         self.hold = None
-        self.first_wait = None
+        self.spent = 0.0  # judge-caused seconds from closed runs
+        self.run_start = None  # wall time the current judge-caused run began
+        self.run_start_monotonic = None
+        self.released_wait_s = None
+
+    def _now(self, request):
+        observed = request["observations"][-1]["wall_s"]
+        if self.run_start is None:
+            return observed
+        return max(observed, self.run_start + self.clock() - self.run_start_monotonic)
+
+    def _added(self, now):
+        return self.spent + (0.0 if self.run_start is None else now - self.run_start)
+
+    def _expired(self, now):
+        elapsed = max(
+            now - self.pending["issued_wall_s"],
+            self.clock() - self.pending["issued_monotonic_s"],
+        )
+        return elapsed > self.policy["judge_timeout_s"]
 
     def respond(self, request, response):
+        started = self.clock()
         prior = response["proposed_action"]
-        now = request["observations"][-1]["wall_s"]
+        now = self._now(request)
         receipt = dict(prior_action=prior, mode=self.policy["mode"])
         if prior != ENTER:
-            # The pad is not ready; an earlier judgment belonged to another clear episode.
+            # The pad is not ready: close the judge-caused run and drop any judgment,
+            # which belonged to another clear episode.
+            if self.run_start is not None:
+                self.spent += now - self.run_start
+                self.run_start = None
             self.pending = self.hold = None
-            return self._final(response, receipt, "not_consulted", now)
-        receipt["added_wait_s"] = 0.0 if self.first_wait is None else now - self.first_wait
-        if receipt["added_wait_s"] > self.policy["max_added_wait_s"]:
-            return self._final(response, receipt, "budget_exhausted", now)
+        receipt["added_wait_s"] = (
+            self.released_wait_s if self.released_wait_s is not None else self._added(now)
+        )
+        if prior != ENTER:
+            return self._final(response, receipt, "not_consulted", now, started)
+        if self.released_wait_s is not None:
+            return self._final(response, receipt, "decisions_exhausted", now, started)
+        # Reserve the existing mailbox freshness allowance for executor release.
+        release_at = (
+            self.policy["max_added_wait_s"]
+            - self.config["world"]["pad_queue"]["response_max_age_s"]
+        )
+        if receipt["added_wait_s"] >= release_at:
+            self.pending = self.hold = None
+            return self._final(response, receipt, "budget_exhausted", now, started)
         if self.hold and now < self.hold["until_wall_s"]:
-            return self._final(response, dict(receipt, **self.hold["ref"]), "hold", now)
+            return self._final(response, dict(receipt, **self.hold["ref"]), "hold", now, started)
         self.hold = None
         if self.pending:
             ref = dict(judge_request_id=self.pending["request"]["judge_request_id"])
+            if self._expired(now):
+                self.pending = None
+                return self._final(response, dict(receipt, **ref), "unavailable", now, started)
             path = self.pending["folder"] / "response.json"
             if not path.exists():
-                if now - self.pending["issued_wall_s"] <= self.policy["judge_timeout_s"]:
-                    return self._final(response, dict(receipt, **ref), "pending", now)
+                return self._final(response, dict(receipt, **ref), "pending", now, started)
+            try:
+                answer = json.loads(path.read_text())
+            except (ValueError, OSError):
+                answer = None
+            now = self._now(request)
+            receipt["added_wait_s"] = self._added(now)
+            if self._expired(now):
                 self.pending = None
-                return self._final(response, dict(receipt, **ref), "unavailable", now)
-            answer = json.loads(path.read_text())
+                return self._final(response, dict(receipt, **ref), "unavailable", now, started)
+            if receipt["added_wait_s"] >= release_at:
+                self.pending = None
+                return self._final(response, dict(receipt, **ref), "budget_exhausted", now, started)
             decision = validate_judgment(self.pending["request"], answer)
             self.pending = None
             ref["judgment_sha256"] = digest(answer)
             if decision is None:
-                status = "unavailable" if answer.get("judge_status") == "unavailable" else "invalid"
-                return self._final(response, dict(receipt, **ref), status, now)
+                status = (
+                    "unavailable"
+                    if isinstance(answer, dict) and answer.get("judge_status") == "unavailable"
+                    else "invalid"
+                )
+                return self._final(response, dict(receipt, **ref), status, now, started)
             if decision["action"] == "wait":
                 remaining = self.policy["max_added_wait_s"] - receipt["added_wait_s"]
                 self.hold = dict(
                     until_wall_s=now + min(decision["wait_seconds"], remaining), ref=ref
                 )
-                return self._final(response, dict(receipt, **ref), "hold", now)
-            return self._final(response, dict(receipt, **ref), "no_objection", now)
+                return self._final(response, dict(receipt, **ref), "hold", now, started)
+            return self._final(response, dict(receipt, **ref), "no_objection", now, started)
         if self.issued >= self.policy["max_decisions"]:
-            return self._final(response, receipt, "decisions_exhausted", now)
+            return self._final(response, receipt, "decisions_exhausted", now, started)
         ref = self._issue(request, response, now, receipt["added_wait_s"])
-        return self._final(response, dict(receipt, **ref), "pending", now)
+        return self._final(response, dict(receipt, **ref), "pending", now, started)
 
-    def _final(self, response, receipt, status, now):
-        if status in JUDGE_WAITS and self.first_wait is None:
-            self.first_wait = now
+    def _final(self, response, receipt, status, now, started):
+        if status in JUDGE_WAITS and self.run_start is None:
+            self.run_start, self.run_start_monotonic = now, started
+        if self.run_start is not None:
+            # Only an active judge-caused run carries an aircraft release deadline.
+            receipt["wait_deadline_wall_s"] = (
+                self.run_start + self.policy["max_added_wait_s"] - self.spent
+            )
+            if receipt["prior_action"] == ENTER and status in JUDGE_PASSES:
+                self.released_wait_s = receipt["added_wait_s"]
         receipt["status"] = status
         return dict(response, **judge_overlay(self.policy, receipt["prior_action"], receipt))
 
     def _issue(self, request, response, now, waited):
+        issued_monotonic = self.clock()
         sequence = self.issued
         self.issued += 1
         folder = self.root / f"{sequence:03d}"
@@ -502,7 +576,12 @@ class MissionJudgeGate:
         )
         judge_request["judge_request_id"] = digest(judge_request)
         atomic_json(folder / "request.json", judge_request)
-        self.pending = dict(request=judge_request, folder=folder, issued_wall_s=now)
+        self.pending = dict(
+            request=judge_request,
+            folder=folder,
+            issued_wall_s=now,
+            issued_monotonic_s=issued_monotonic,
+        )
         if self.policy["mode"] == "fixture":
             atomic_json(folder / "response.json", fixture_judgment(judge_request))
         return dict(judge_request_id=judge_request["judge_request_id"])

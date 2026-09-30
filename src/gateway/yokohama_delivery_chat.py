@@ -128,8 +128,12 @@ class YokohamaChatService:
     def __init__(self, store: TaskStore):
         self.store = store
         self.lock = threading.RLock()
+        self.stopping = threading.Event()
+        self.worker: threading.Thread | None = None
         self.active: str | None = None
         self.process: subprocess.Popen | None = None
+        self.interrupted_process: subprocess.Popen | None = None
+        self.verification_process: subprocess.Popen | None = None
         self.root = Path(__file__).resolve().parents[2]
         self.outputs = Path(
             os.environ.get("MISSIONOS_YOKOHAMA_OUTPUT_ROOT", "output/yokohama-chat")
@@ -314,6 +318,8 @@ class YokohamaChatService:
                 raise ValueError(
                     "このGatewayでは横浜配送シミュレータの実行が有効になっていません。"
                 )
+            if self.stopping.is_set():
+                raise ValueError("Gatewayは停止中です。")
             if self.active:
                 raise ValueError(
                     "別の横浜配送を実行中です。その配送が終了してから開始してください。"
@@ -355,15 +361,92 @@ class YokohamaChatService:
                 event_type="yokohama_dispatch_reserved",
                 payload={"proposal_sha256": _digest(proposal)},
             )
-            threading.Thread(
+            self.worker = threading.Thread(
                 target=self._worker, args=(identity, inputs, folder, manifest), daemon=True
-            ).start()
+            )
+            self.worker.start()
             return task
+
+    def _interrupt(self, proc):
+        # Cancellation and shutdown can overlap; interrupt owned cleanup only once.
+        with self.lock:
+            if self.interrupted_process is not proc and proc.poll() is None:
+                self.interrupted_process = proc
+                try:
+                    proc.send_signal(signal.SIGINT)
+                except ProcessLookupError:
+                    pass
+
+    @staticmethod
+    def _kill_group(proc):
+        # Every owned child starts a new session. Reap descendants even if its
+        # leader has exited; a killed parent alone does not end inherited work.
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+
+    def _reap(self, proc, grace=180):
+        try:
+            if proc.poll() is None:
+                self._interrupt(proc)
+                try:
+                    proc.wait(timeout=grace)
+                except subprocess.TimeoutExpired:
+                    self._kill_group(proc)
+                    proc.wait()
+            else:
+                proc.wait()
+        finally:
+            self._kill_group(proc)
+
+    def _verify(self, args, env, identity):
+        proc = None
+        try:
+            with self.lock:
+                if (
+                    self.stopping.is_set()
+                    or self.store.get(identity)["status"] == "cancel_requested"
+                ):
+                    return
+            proc = subprocess.Popen(
+                args,
+                cwd=self.root,
+                env=env,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True,
+            )
+            with self.lock:
+                self.verification_process = proc
+                if (
+                    self.stopping.is_set()
+                    or self.store.get(identity)["status"] == "cancel_requested"
+                ):
+                    self._interrupt(proc)
+            deadline = time.monotonic() + 1800
+            while proc.poll() is None:
+                if (
+                    self.stopping.is_set()
+                    or self.store.get(identity)["status"] == "cancel_requested"
+                ):
+                    break
+                if time.monotonic() >= deadline:
+                    raise subprocess.TimeoutExpired(args, 1800)
+                self.stopping.wait(0.05)
+        finally:
+            if proc:
+                self._reap(proc, grace=1)
+            with self.lock:
+                self.verification_process = None
 
     def _worker(self, identity, inputs, folder, manifest):
         proc = None
+        reaped = False
         proposal = self.store.get(identity)["artifacts"]["yokohama_delivery_proposal"]
         try:
+            if self.stopping.is_set():
+                return
             # The simulator receives neither model API keys nor Gateway credentials.
             env = {key: value for key, value in os.environ.items() if key in SIM_ENV}
             args = [
@@ -378,34 +461,50 @@ class YokohamaChatService:
             ]
             with (manifest.parent / "simulator.log").open("w") as log:
                 proc = subprocess.Popen(
-                    args, cwd=self.root, env=env, stdout=log, stderr=subprocess.STDOUT
+                    args,
+                    cwd=self.root,
+                    env=env,
+                    stdout=log,
+                    stderr=subprocess.STDOUT,
+                    start_new_session=True,
                 )
                 with self.lock:
                     self.process = proc
                     self.store.update(identity, artifacts={"yokohama_worker_pid": proc.pid})
-                    if self.store.get(identity)["status"] == "cancel_requested":
-                        proc.send_signal(signal.SIGINT)
+                    if (
+                        self.stopping.is_set()
+                        or self.store.get(identity)["status"] == "cancel_requested"
+                    ):
+                        self._interrupt(proc)
                     else:
                         self.store.update(identity, status="running")
                 offset, judged = 0, set()
-                while proc.poll() is None:
+                while (
+                    proc.poll() is None
+                    and not self.stopping.is_set()
+                    and self.store.get(identity)["status"] != "cancel_requested"
+                ):
                     offset = self._follow(identity, folder / "flight-events.jsonl", offset)
                     self._judge_pending(identity, folder, proposal, judged)
                     time.sleep(0.5)
                 self._follow(identity, folder / "flight-events.jsonl", offset)
-            self._finish(identity, folder, inputs, proc.returncode)
+            self._reap(proc)
+            reaped = True
+            if not self.stopping.is_set():
+                self._finish(identity, folder, inputs, proc.returncode)
         except Exception as exc:  # noqa: BLE001 - every failure leaves the task for review.
-            self.store.update(
-                identity, status="needs_attention", error=str(exc), ended_at=time.time()
-            )
+            with self.lock:
+                if not self.stopping.is_set():
+                    canceled = self.store.get(identity)["status"] == "cancel_requested"
+                    self.store.update(
+                        identity,
+                        status="canceled" if canceled else "needs_attention",
+                        error=str(exc),
+                        ended_at=time.time(),
+                    )
         finally:
-            if proc and proc.poll() is None:
-                proc.send_signal(signal.SIGINT)
-                try:
-                    proc.wait(timeout=180)
-                except subprocess.TimeoutExpired:
-                    proc.kill()
-                    proc.wait()
+            if proc and not reaped:
+                self._reap(proc)
             with self.lock:
                 self.process = None
                 if self.active == identity:
@@ -478,8 +577,10 @@ class YokohamaChatService:
         if result.get("status") == "passed":
             env = {key: value for key, value in os.environ.items() if key in SIM_ENV}
             for name in VERIFIERS:
+                if self.stopping.is_set():
+                    return
                 output = folder / f"verification-{name}.json"
-                subprocess.run(
+                self._verify(
                     [
                         str(inputs["python"]),
                         str(self.root / f"scripts/verify_yokohama_{name}.py"),
@@ -487,11 +588,8 @@ class YokohamaChatService:
                         "--output",
                         str(output),
                     ],
-                    cwd=self.root,
-                    env=env,
-                    capture_output=True,
-                    timeout=1800,
-                    check=False,
+                    env,
+                    identity,
                 )
                 verification[name] = (
                     json.loads(output.read_text()).get("status") if output.is_file() else "error"
@@ -502,30 +600,33 @@ class YokohamaChatService:
             and len(verification) == len(VERIFIERS)
             and all(status == "passed" for status in verification.values())
         )
-        canceled = self.store.get(identity)["status"] == "cancel_requested"
-        status = "completed" if passed else "canceled" if canceled else "needs_attention"
-        self.store.update(
-            identity,
-            status=status,
-            artifacts={
-                "yokohama_result": {
-                    k: result.get(k)
-                    for k in ("run_id", "status", "reason", "physical_execution_invoked")
+        with self.lock:
+            if self.stopping.is_set():
+                return
+            canceled = self.store.get(identity)["status"] == "cancel_requested"
+            status = "canceled" if canceled else "completed" if passed else "needs_attention"
+            self.store.update(
+                identity,
+                status=status,
+                artifacts={
+                    "yokohama_result": {
+                        k: result.get(k)
+                        for k in ("run_id", "status", "reason", "physical_execution_invoked")
+                    },
+                    "yokohama_verification": verification,
+                    "yokohama_trajectory": self._trajectory(folder),
+                    "yokohama_phase": PHASES[status],
                 },
-                "yokohama_verification": verification,
-                "yokohama_trajectory": self._trajectory(folder),
-                "yokohama_phase": PHASES[status],
-            },
-            error=None
-            if passed
-            else result.get("reason") or "飛行または検証が合格しませんでした。",
-            ended_at=time.time(),
-        )
-        self.store.append_event(
-            identity,
-            event_type="yokohama_runtime_finished",
-            payload=dict(exit_code=code, status=status, verification=verification),
-        )
+                error=None
+                if passed
+                else result.get("reason") or "飛行または検証が合格しませんでした。",
+                ended_at=time.time(),
+            )
+            self.store.append_event(
+                identity,
+                event_type="yokohama_runtime_finished",
+                payload=dict(exit_code=code, status=status, verification=verification),
+            )
 
     @staticmethod
     def _trajectory(folder, points=300):
@@ -542,15 +643,18 @@ class YokohamaChatService:
         return track
 
     def cancel(self, task):
-        if task["status"] in ("proposed", "approved"):
-            return self.store.update(task["task_id"], status="rejected")
-        if task["status"] in ACTIVE:
-            with self.lock:
-                if self.process and self.active == task["task_id"]:
-                    self.process.send_signal(signal.SIGINT)
-            self.store.append_event(task["task_id"], event_type="yokohama_cancel_requested")
-            return self.store.update(task["task_id"], status="cancel_requested")
-        return task
+        with self.lock:
+            task = self.store.get(task["task_id"])
+            if task["status"] in ("proposed", "approved"):
+                return self.store.update(task["task_id"], status="rejected")
+            if task["status"] in ACTIVE:
+                self.store.append_event(task["task_id"], event_type="yokohama_cancel_requested")
+                task = self.store.update(task["task_id"], status="cancel_requested")
+                if self.active == task["task_id"]:
+                    for proc in (self.process, self.verification_process):
+                        if proc:
+                            self._interrupt(proc)
+            return task
 
     def response(self, task, context, intent, message=""):
         artifacts = task["artifacts"]
@@ -676,21 +780,22 @@ class YokohamaChatService:
 
     def close(self):
         with self.lock:
-            proc, identity = self.process, self.active
-        if not proc or proc.poll() is not None:
-            return
-        proc.send_signal(signal.SIGINT)
-        try:
-            proc.wait(timeout=180)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            proc.wait()
-        if identity:
-            self.store.update(
-                identity,
-                status="needs_attention",
-                error="Gatewayの停止によりシミュレータを中断しました。",
-            )
+            self.stopping.set()
+            processes = (self.process, self.verification_process)
+            identity, worker = self.active, self.worker
+            if identity:
+                canceled = self.store.get(identity)["status"] in ("cancel_requested", "canceled")
+                self.store.update(
+                    identity,
+                    status="canceled" if canceled else "needs_attention",
+                    error="Gatewayの停止によりシミュレータを中断しました。",
+                    ended_at=time.time(),
+                )
+        for proc in processes:
+            if proc:
+                self._interrupt(proc)
+        if worker and worker is not threading.current_thread():
+            worker.join()
 
 
 _services: dict[str, YokohamaChatService] = {}
@@ -701,6 +806,11 @@ def service():
     store = get_task_store()
     key = str(store.db_path.resolve())
     with _service_lock:
+        previous = _services.get(key)
+        if previous and previous.stopping.is_set():
+            if previous.worker and previous.worker.is_alive():
+                raise ValueError("前のGatewayの配送workerが停止中です。")
+            del _services[key]
         if key not in _services:
             _services[key] = YokohamaChatService(store)
         return _services[key]
