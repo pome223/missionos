@@ -366,20 +366,36 @@ def judge_overlay(policy, prior, receipt):
 
 
 def judge_situation(config, request, response):
-    """Facts for the mission judge; thresholds stay with the Rules."""
+    """Facts for the mission judge, with derived margins; thresholds stay with the Rules.
+
+    The judge misread raw distances against the radius, so margins, the radial
+    speed (positive when moving away) and the time to the radius are computed here.
+    """
     p = config["world"]["pad_queue"]
     rows = request["observations"]
     first, last = clearance(config, rows[0]), clearance(config, rows[-1])
+    window = rows[-1]["sim_s"] - rows[0]["sim_s"]
+    speed = (
+        (last["horizontal_distance_m"] - first["horizontal_distance_m"]) / window
+        if window > 0
+        else 0.0
+    )
+    margin = last["horizontal_distance_m"] - p["pad_exclusion_radius_m"]
+    approaching = speed < -0.2
     situation = dict(
         rules_action=response["proposed_action"],
-        clear_window_s=round(rows[-1]["sim_s"] - rows[0]["sim_s"], 1),
+        clear_window_s=round(window, 1),
         required_clear_window_s=p["stable_clear_sim_s"],
         lead_horizontal_distance_to_pad_m=round(last["horizontal_distance_m"], 1),
-        lead_distance_change_over_window_m=round(
-            last["horizontal_distance_m"] - first["horizontal_distance_m"], 1
+        pad_exclusion_radius_m=p["pad_exclusion_radius_m"],
+        lead_margin_outside_exclusion_m=round(margin, 1),
+        lead_radial_speed_mps=round(speed, 2),
+        lead_motion="approaching" if approaching else "moving_away" if speed > 0.2 else "holding",
+        seconds_to_exclusion_at_current_speed=round(margin / -speed, 1) if approaching else None,
+        lead_approach_corridor_margin_m=round(
+            last["approach_distance_m"] - p["approach_exclusion_radius_m"], 1
         ),
         lead_altitude_m=round(rows[-1]["queue_lead"]["xyz"][2], 1),
-        pad_exclusion_radius_m=p["pad_exclusion_radius_m"],
         battery_fraction=rows[-1].get("battery_fraction"),
     )
     advisory = response.get("advisory")

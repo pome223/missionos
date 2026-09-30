@@ -447,3 +447,25 @@ def test_executor_rules_wait_clears_the_judge_deadline(tmp_path, monkeypatch):
     q._ask(lambda: observation(12, occupied=True), rows, rows[-1])
     thread.join()
     assert q.judge_deadline is None
+
+
+@pytest.mark.parametrize(
+    "lead_x, motion, seconds",
+    [
+        (lambda t: 20 - t, "approaching", 9.0),  # 1 m/s inward, 9 m outside at the end
+        (lambda t: 10 + t, "moving_away", None),
+        (lambda t: 12, "holding", None),
+    ],
+)
+def test_judge_facts_give_margin_speed_and_time_to_radius(tmp_path, lead_x, motion, seconds):
+    from src.runtime.yokohama_pad_queue import judge_situation
+
+    c = config()
+    rows = [observation(t) for t in range(0, 6)]
+    for row in rows:
+        row["queue_lead"]["xyz"] = [lead_x(row["sim_s"]), 0, 7]
+    request = make_request(c, 0, rows)
+    facts = judge_situation(c, request, propose(c, request))
+    assert facts["lead_motion"] == motion
+    assert facts["seconds_to_exclusion_at_current_speed"] == seconds
+    assert facts["lead_margin_outside_exclusion_m"] == round(lead_x(5) - 6, 1)

@@ -465,13 +465,20 @@ def build_missionos_yokohama_pad_judge_agent(*, model_id: str | None = None) -> 
         model_id=model_id,
         instruction="""
 A delivery drone is holding near a harbour delivery pad that another aircraft
-recently used. Deterministic Rules have already observed the pad and approach
-clear for the required window and would allow entry. You may only add a
-bounded wait; you cannot authorize entry, change the destination or steer.
-Use only the supplied facts: the other aircraft's distance from the pad and how
-it changed over the window, its altitude, the camera advisory signal (a learned
-estimate, not proof), battery, and the remaining wait budget. Choose wait when
-the facts suggest the pad may be reoccupied soon; otherwise choose enter.
+recently used. Deterministic Rules have observed the pad and approach clear for
+the required window and would allow entry now. Entry is re-checked against the
+current pad at execution, and if the other aircraft re-enters the pad area
+during the approach, the delivery is aborted. You may only add a bounded wait;
+you cannot authorize entry, change the destination or steer.
+Decide whether the other aircraft is likely to re-enter the exclusion radius
+within about the next minute. Use the computed facts as given and do not
+recompute them: lead_margin_outside_exclusion_m is how far outside the radius
+it already is; lead_radial_speed_mps is positive when it moves away;
+seconds_to_exclusion_at_current_speed is set only while it approaches. The
+camera advisory is a learned estimate, not proof. Choose wait when it is
+approaching, or when the advisory reports possible re-entry or future
+occupancy. Otherwise choose enter: being near the radius while holding or
+moving away is not by itself a reason to wait.
 Return exactly these four JSON fields, without extra fields:
 observation_id: copy the supplied id;
 action: enter or wait;
