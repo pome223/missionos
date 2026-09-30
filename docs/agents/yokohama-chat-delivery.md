@@ -70,25 +70,45 @@ and supplies the CPU forecast. It is refused with `--pad-approach-decision`.
   holds for at most the remaining budget. A valid `enter` becomes
   `no_objection`.
 - The following fall back to the Rules action: a timeout (`unavailable`), a
-  malformed or unbound answer (`invalid`), an exhausted budget, or an
-  exhausted decision count.
-- If the pad becomes unclear, pending or held judgments are discarded.
+  malformed, unreadable or unbound answer (`invalid`), an exhausted budget,
+  or an exhausted decision count.
+- Only judge-caused waiting is charged: runs of `pending`/`hold` responses,
+  measured on the observation clock and a monotonic host clock, whichever is
+  later. The answer is re-timed after it is read. The gate releases at
+  `max_added_wait_s - response_max_age_s` (28 s), so the executor can accept
+  the release before the 30 s budget ends.
+- If the pad becomes unclear, the Rules wait closes the run. Its time is not
+  charged to the judge, and pending or held judgments are discarded.
 
 **Gateway side.** The worker answers each request once, with
 `missionos_yokohama_pad_judge_agent` (DeepSeek), and records the decision and
 rationale on the task. The executor's Rules never depend on this answer.
+
+The simulator and each verifier run in their own process session. Completion,
+`/cancel` and Gateway shutdown interrupt the process and then kill its process
+group; cleanup has a grace period of up to 180 s. Descendants that start
+another session, and Docker-daemon containers, are not proven to be reaped by
+this path. `execute` still refuses to start while a `missionos-yokohama-*`
+container is running.
 
 **Executor side (`judge_overlay` in `require_response`).**
 
 - The receipt's `prior_action` must equal the recomputed Rules/advisory action.
 - A Rules wait must be `not_consulted`.
 - A changed action can only turn entry into a wait, and only within the budget.
+- During a judge-caused run, the receipt carries `wait_deadline_wall_s`. The
+  aircraft refuses a judge wait at or after that deadline, refuses a release
+  that arrives after it, and aborts if no response comes before it. A Rules
+  wait or an entry clears the deadline. Exceeding the deadline stops the run;
+  it does not guarantee a timely release under processing delay.
 
 `verify_yokohama_pad_queue.py` also requires that:
 
 - every receipt matches its request/response record by hash;
 - the judge only added waiting;
-- the judge stayed within its budget and decision count.
+- the judge stayed within its budget and decision count. The elapsed time is
+  reconstructed from the observations, up to the aircraft's receipt of the
+  release. The receipts' own totals are not trusted.
 
 `verify_yokohama_pad_advisory.py` binds its fixture judgment to the pre-judge
 action (`prior_action`).
@@ -108,6 +128,10 @@ secret store into the process environment. Chat turns were sent over HTTP to
   again and answered `wait` 21 s, the remaining budget. At 31 s after the
   first judge-caused wait, the budget was exhausted and entry came from the
   Rules at 683 s. The total pad wait was 61 s of simulation time.
+- **Budget overrun:** this run predates the release margin. The current
+  verifier measures 31.3 s of judge-caused waiting up to the received release,
+  which is over the 30 s budget, so `mission_judge_within_budget` now fails for
+  this record.
 - **Completion:** cargo was received and the aircraft landed on the ship. All
   five verifiers passed: decisions, pad_queue (23 checks, including the four
   mission-judge checks), pad_advisory, payload and sitl. `/status` then
@@ -134,7 +158,9 @@ monitoring pipeline buffered the "ready" signal. The controller now sends
   creation. Estimated cost was $0.53.
 - **Pad queue:** the pad was reported occupied at 934 s. The judge answered
   `wait` 5 s, then `wait` 18 s. The budget was exhausted and the Rules granted
-  entry at 999 s, after a total pad wait of 62 s of simulation time.
+  entry at 999 s, after a total pad wait of 62 s of simulation time. Like
+  the fixture run, this run predates the release margin. The current verifier
+  measures 31.6 s of judge-caused waiting, over the budget.
 - **Completion:** cargo was received at 1169 s and the aircraft landed on the
   ship at 1760 s.
 - **Verification:** all five verifiers passed. The decisions verifier set
@@ -146,6 +172,18 @@ The first judge rationale again doubted that the lead had left the 6 m radius
 while it was 11.3 m away. It also stated that entry needs human confirmation,
 which is not this run's authority model: entry comes from the Rules inside the
 approved plan.
+
+## Runtime check after the timing fixes (2026-09-30, fixture city models)
+
+The same chat flow ran on the fixed code, with task `yokohama_745b51c0b68b4998`
+and simulator run `yokohama-c156d9f5821a`.
+
+- The judge answered `wait` 5 s, then `wait` 20 s. The gate released at the
+  28 s margin (`budget_exhausted`), and the Rules granted entry.
+- The verifier measured 28.4 s of judge-caused waiting up to the received
+  release, within the 30 s budget.
+- All five verifiers passed, and `/status` reported `completed`.
+- No simulator container remained after the Gateway stopped.
 
 ## Limits
 
