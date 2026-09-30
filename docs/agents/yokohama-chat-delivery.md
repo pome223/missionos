@@ -117,9 +117,41 @@ The first judge rationale said the lead might still be inside the 6 m pad
 radius while it was 11.4 m away. The executor's Rules did not depend on that
 statement, which is why the judge may only add a bounded wait.
 
+## Observed chat run with native city models (2026-09-30)
+
+The Gateway ran with `MISSIONOS_YOKOHAMA_CITY_MODELS=native` and a service file
+for a one-attempt L4 VM. The operator planned and approved task
+`yokohama_70651db0feaa4c25` in chat. Once the VM was bootstrapping and the
+loopback tunnel was open, the cost-capped GPU controller sent that session's
+`/run`. A first GPU session ran idle and never started a flight, because the
+monitoring pipeline buffered the "ready" signal. The controller now sends
+`/run` itself.
+
+- **D1 and D2:** native AeroVLA took about 17 s per cycle and ANWM motion-v4
+  about 50 s. Both passed the city WAM gate, with final target errors of 0.10
+  and 0.05 m. The session was revoked at D2, before the pad wait.
+- **GPU:** the GPU was deleted after the verified model stop, 16.4 minutes after
+  creation. Estimated cost was $0.53.
+- **Pad queue:** the pad was reported occupied at 934 s. The judge answered
+  `wait` 5 s, then `wait` 18 s. The budget was exhausted and the Rules granted
+  entry at 999 s, after a total pad wait of 62 s of simulation time.
+- **Completion:** cargo was received at 1169 s and the aircraft landed on the
+  ship at 1760 s.
+- **Verification:** all five verifiers passed. The decisions verifier set
+  `native_model_flight_verified=true`. The pad_queue verifier ran 23 checks,
+  including the stopped city models and the four mission-judge checks.
+  `/status` reported `completed`.
+
+The first judge rationale again doubted that the lead had left the 6 m radius
+while it was 11.3 m away. It also stated that entry needs human confirmation,
+which is not this run's authority model: entry comes from the Rules inside the
+approved plan.
+
 ## Limits
 
 - Only one route and destination exist. The planner cannot add either.
+- GPU provisioning for native city models is outside the Gateway. It is a
+  separately approved, cost-capped session.
 - Chat shows the 2D track and text. The 3D scene is visible only in the
   simulator and recorded images.
 - A pad-judge answer is a proposal to wait, not an approval or a dispatch.
