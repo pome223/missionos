@@ -42,6 +42,8 @@ jobs:
             packages/missionos-gateway \
             scripts/smoke_missionos_real_hardware_arm_disarm_route.py \
             scripts/smoke_mission_designer_envelope_violation_advisory.py \
+            scripts/yokohama_sitl.py \
+            tests/test_yokohama_sitl_cleanup.py \
             scripts/check_yokohama_pad_advisory.py \
             scripts/run_yokohama_pad_reentry.py \
             scripts/evaluate_yokohama_pad_reentry.py \
