@@ -12,6 +12,7 @@ import subprocess
 import sys
 import time
 from uuid import uuid4
+from typing import Any
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
@@ -20,6 +21,92 @@ from src.runtime.yokohama_scene import build_world, sha256  # noqa: E402
 
 def command(args, timeout=60, check=True):
     return subprocess.run(args, capture_output=True, text=True, timeout=timeout, check=check)
+
+
+def cleanup_error(result: dict[str, Any], field: str, exc: BaseException) -> None:
+    """Keep the original mission failure and retain each finalization failure."""
+    result[field] = type(exc).__name__ + ": " + str(exc)
+    result["status"] = "failed"
+
+
+def reap_owned_worker(worker: Any, result: dict[str, Any]) -> None:
+    """Only the Popen handle created by this run; bounded waits and kill fallback."""
+    try:
+        running = worker.poll() is None
+    except Exception as exc:
+        cleanup_error(result, "worker_poll_error", exc)
+        running = True
+    try:
+        if running:
+            try:
+                worker.terminate()
+            except Exception as exc:
+                cleanup_error(result, "worker_terminate_error", exc)
+    finally:
+        # Even terminate failure or an already-exited child must not skip reaping.
+        try:
+            worker.wait(timeout=5)
+            result["worker_reaped"] = True
+        except Exception as exc:
+            cleanup_error(result, "worker_wait_error", exc)
+            try:
+                try:
+                    worker.kill()
+                except Exception as kill_exc:
+                    cleanup_error(result, "worker_kill_error", kill_exc)
+            finally:
+                try:
+                    worker.wait(timeout=5)
+                    result["worker_reaped"] = True
+                except Exception as reap_exc:
+                    cleanup_error(result, "worker_reap_error", reap_exc)
+                    result["worker_reaped"] = False
+
+
+def cleanup_owned(
+    root: Path, result: dict[str, Any], *, created: bool, container: str, worker: Any
+) -> None:
+    """Required cleanup is independent of diagnostics and result-file writes."""
+    try:
+        if created:
+            result["cleanup"] = False
+            try:
+                removed = command(["docker", "rm", "-f", container], check=False)
+                result["cleanup"] = removed.returncode == 0
+                if not result["cleanup"]:
+                    raise RuntimeError("Owned container removal exited " + str(removed.returncode))
+            except Exception as exc:
+                cleanup_error(result, "container_remove_error", exc)
+    finally:
+        try:
+            if worker is not None:
+                reap_owned_worker(worker, result)
+        finally:
+            result["finished_utc"] = datetime.now(timezone.utc).isoformat()
+            try:
+                (root / "result.json").write_text(json.dumps(result, indent=2, allow_nan=False) + "\n")
+            except Exception as exc:
+                # The caller's stdout summary remains available even on ENOSPC.
+                cleanup_error(result, "result_write_error", exc)
+
+
+def capture_diagnostics(root: Path, result: dict[str, Any], container: str) -> None:
+    """Each bounded diagnostic is optional for cleanup, never a cleanup prerequisite."""
+    try:
+        logs = command(["docker", "logs", container], check=False)
+        (root / "simulator.stdout").write_text(logs.stdout)
+        (root / "simulator.stderr").write_text(logs.stderr)
+    except Exception as exc:
+        cleanup_error(result, "simulator_log_error", exc)
+    try:
+        proc = command(
+            ["docker", "exec", container, "sh", "-c", "ps -eo pid,args; test ! -e /dev/nvidia0"],
+            check=False,
+        )
+        result["nvidia_device_absent"] = proc.returncode == 0
+        (root / "processes.txt").write_text(proc.stdout + proc.stderr)
+    except Exception as exc:
+        cleanup_error(result, "process_diagnostic_error", exc)
 
 
 def main():
@@ -671,60 +758,47 @@ def main():
     except Exception as exc:
         result["reason"] = type(exc).__name__ + ": " + str(exc)
     finally:
-        if pad_supervisor:
-            try:
-                pad_supervisor.close()
-                result["pad_supervisor_stopped"] = True
-                if pad_supervisor.advisory:
-                    result["cpu_pad_state_inference_calls"] = pad_supervisor.advisory.calls
-                    result["cpu_pad_state_released"] = pad_supervisor.advisory.closed
-            except Exception as exc:
-                result["pad_supervisor_error"] = str(exc)
-                result["status"] = "failed"
-        if payload_receiver:
-            try:
-                payload_receiver.close()
-                result["payload_receiver_stopped"] = True
-            except Exception as exc:
-                result["payload_receiver_error"] = str(exc)
-                result["status"] = "failed"
-        if decision_host:
-            try:
-                result["model_shutdown"] = decision_host.close()
-            except Exception as exc:
-                result["model_shutdown_error"] = str(exc)
-                result["status"] = "failed"
-            result["decision_backend"] = args.decision_backend
-            responses = list((root / "decisions").glob("*/native-response.json"))
-            native_rows = [json.loads(p.read_text()) for p in responses]
-            result["vla_invoked"] = any(r.get("vla_inference_invoked") is True for r in native_rows)
-            result["wam_invoked"] = any(r.get("wam_inference_invoked") is True for r in native_rows)
-            result["gpu_requested"] = args.decision_backend == "native"
-        if created:
-            logs = command(["docker", "logs", container], check=False)
-            (root / "simulator.stdout").write_text(logs.stdout)
-            (root / "simulator.stderr").write_text(logs.stderr)
-            proc = command(
-                [
-                    "docker",
-                    "exec",
-                    container,
-                    "sh",
-                    "-c",
-                    "ps -eo pid,args; test ! -e /dev/nvidia0",
-                ],
-                check=False,
-            )
-            (root / "processes.txt").write_text(proc.stdout + proc.stderr)
-            result["nvidia_device_absent"] = proc.returncode == 0
-            result["cleanup"] = (
-                command(["docker", "rm", "-f", container], check=False).returncode == 0
-            )
-        if worker and worker.poll() is None:
-            worker.terminate()
-            worker.wait(timeout=5)
-        result["finished_utc"] = datetime.now(timezone.utc).isoformat()
-        (root / "result.json").write_text(json.dumps(result, indent=2, allow_nan=False) + "\n")
+        try:
+            if pad_supervisor:
+                try:
+                    pad_supervisor.close()
+                    result["pad_supervisor_stopped"] = True
+                    if pad_supervisor.advisory:
+                        result["cpu_pad_state_inference_calls"] = pad_supervisor.advisory.calls
+                        result["cpu_pad_state_released"] = pad_supervisor.advisory.closed
+                except Exception as exc:
+                    result["pad_supervisor_error"] = str(exc)
+                    result["status"] = "failed"
+            if payload_receiver:
+                try:
+                    payload_receiver.close()
+                    result["payload_receiver_stopped"] = True
+                except Exception as exc:
+                    result["payload_receiver_error"] = str(exc)
+                    result["status"] = "failed"
+            if decision_host:
+                try:
+                    result["model_shutdown"] = decision_host.close()
+                except Exception as exc:
+                    result["model_shutdown_error"] = str(exc)
+                    result["status"] = "failed"
+                result["decision_backend"] = args.decision_backend
+                try:
+                    responses = list((root / "decisions").glob("*/native-response.json"))
+                    native_rows = [json.loads(p.read_text()) for p in responses]
+                    result["vla_invoked"] = any(r.get("vla_inference_invoked") is True for r in native_rows)
+                    result["wam_invoked"] = any(r.get("wam_inference_invoked") is True for r in native_rows)
+                except Exception as exc:
+                    cleanup_error(result, "model_diagnostic_error", exc)
+                result["gpu_requested"] = args.decision_backend == "native"
+            if created:
+                capture_diagnostics(root, result, container)
+        except BaseException as exc:
+            # Preserve interruption while the nested finally still owns cleanup.
+            cleanup_error(result, "finalization_interrupted_error", exc)
+            raise
+        finally:
+            cleanup_owned(root, result, created=created, container=container, worker=worker)
     print(
         json.dumps(
             {
@@ -732,6 +806,7 @@ def main():
                 "status": result["status"],
                 "output": str(root),
                 "reason": result.get("reason"),
+                "finalization_errors": {k: v for k, v in result.items() if k.endswith("_error")},
             }
         )
     )
