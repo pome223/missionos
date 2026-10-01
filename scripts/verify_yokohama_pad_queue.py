@@ -21,15 +21,36 @@ def verify(root):
     result = read(root / "result.json")
     rows = read_jsonl(root / "flight-trajectory.jsonl")
     events = read_jsonl(root / "flight-events.jsonl")
+    approach = bool(c.get("decisions", {}).get("pad_approach"))
     checks = dict(
         run_passed=result["status"] == "passed",
         cleanup=result.get("cleanup") is True,
         supervisor_stopped=result.get("pad_supervisor_stopped") is True,
-        no_native_models_or_gpu=all(
+    )
+    if approach:
+        # Model participation is verified separately by verify_yokohama_decisions.
+        checks["no_physical_execution"] = result.get("physical_execution_invoked") is False
+    elif c.get("decisions"):
+        # City models (verified by verify_yokohama_decisions) must be revoked and
+        # stopped before the pad wait; the queue itself stays Rules + advisory.
+        names = [e["event"] for e in events]
+        checks["no_physical_execution"] = result.get("physical_execution_invoked") is False
+        checks["city_models_stopped_before_pad_wait"] = (
+            "city_session_revoked" in names
+            and "pad_occupied_reported" in names
+            and names.index("city_session_revoked") < names.index("pad_occupied_reported")
+            and not any(
+                e["event"] == "city_request"
+                and e["wall_s"] > events[names.index("pad_occupied_reported")]["wall_s"]
+                and e.get("operation") != "stop"
+                for e in events
+            )
+        )
+    else:
+        checks["no_native_models_or_gpu"] = all(
             result.get(k) is False
             for k in ("vla_invoked", "wam_invoked", "gpu_requested", "physical_execution_invoked")
-        ),
-    )
+        )
     summary = dict(run_id=c["run_id"], checks=checks)
     try:
         p = c["world"]["pad_queue"]
@@ -44,9 +65,12 @@ def verify(root):
                 "landing_observed",
             )
         }
+        dispatches = selected["pad_entry_dispatch_checked"]
+        # A D3 model step and its delivery connector are each dispatch-checked.
+        selected["pad_entry_dispatch_checked"] = dispatches[:1] if approach else dispatches
         checks["one_occupied_wait_entry_receipt_return"] = all(
             len(v) == 1 for v in selected.values()
-        )
+        ) and (len(dispatches) >= 2 if approach else True)
         if not checks["one_occupied_wait_entry_receipt_return"]:
             raise ValueError("Missing or repeated mission boundary")
         start, wait, permit, dispatch, received, landed = (selected[k][0] for k in selected)
@@ -75,7 +99,7 @@ def verify(root):
         )
         checks["pad_initially_occupied"] = clearance(c, window[0])["pad_clear"] is False
         row_hashes = {digest(r) for r in rows}
-        requests = []
+        requests, enters = [], []
         for folder in sorted((root / "pad-decisions").iterdir()):
             req, resp = read(folder / "request.json"), read(folder / "response.json")
             observed = [
@@ -92,14 +116,30 @@ def verify(root):
                 dict(sequence=req["sequence"], request_id=req["request_id"], action=action)
             )
             if action == "enter_delivery_approach":
-                checks["five_seconds_clear_before_proposal"] = clear_window(c, req["observations"])
-                checks["entry_bound_to_response"] = permit["permit"]["request_id"] == req[
-                    "request_id"
-                ] and permit["permit"]["response_sha256"] == digest(resp)
-        count = len(requests) if c["world"].get("pad_state_advisory") else 2
-        checks["wait_then_continue"] = count >= 2 and [r["action"] for r in requests] == (
-            ["wait_at_current_hold"] * (count - 1) + ["enter_delivery_approach"]
+                enters.append((req, resp))
+        checks["five_seconds_clear_before_proposal"] = bool(enters) and all(
+            clear_window(c, req["observations"], req.get("hold_xyz_m")) for req, _ in enters
         )
+        checks["entry_bound_to_response"] = (
+            bool(enters)
+            and permit["permit"]["request_id"] == enters[0][0]["request_id"]
+            and permit["permit"]["response_sha256"] == digest(enters[0][1])
+        )
+        entries = 3 if approach else 1
+        count = len(requests) if c["world"].get("pad_state_advisory") else 1 + entries
+        checks["wait_then_continue"] = count >= 1 + entries and [r["action"] for r in requests] == (
+            ["wait_at_current_hold"] * (count - entries) + ["enter_delivery_approach"] * entries
+        )
+        if approach:
+            checks.update(approach_checks(c, events, enters, dispatches))
+            regrants = [e for e in events if e["event"] == "pad_entry_reconfirmed"]
+            if regrants:
+                # Latency qualification: how stale the first permission was when
+                # the fresh pre-authority reconfirmation replaced it.
+                summary["first_permit_age_at_model_authority_s"] = (
+                    regrants[0]["permit"]["rules_checked_at"]["wall_s"]
+                    - permit["permit"]["rules_checked_at"]["wall_s"]
+                )
         checks["sequences"] = [r["sequence"] for r in requests] == list(range(count))
         after = [r for r in rows if r["wall_s"] >= permit["permit"]["rules_checked_at"]["wall_s"]]
         checks["clear_through_delivery_and_return"] = bool(after) and all(
@@ -141,6 +181,65 @@ def verify(root):
         "CPU PX4 cargo flight; scripted lead, pose-based occupancy, fixture MissionOS judge; no visual/model capability claim"
     )
     return summary
+
+
+def approach_checks(c, events, enters, dispatches):
+    """Fresh MissionOS reconfirmation around the one D3 model step."""
+    reconfirmed = [e for e in events if e["event"] == "pad_entry_reconfirmed"]
+    moved = [e for e in events if e["event"] == "pad_hold_moved"]
+    out = dict(
+        two_reconfirmations=[e["reason"] for e in reconfirmed]
+        == ["before_model_approach_authority", "model_endpoint_before_delivery_connector"]
+        and len(enters) == 3
+        and all(
+            e["permit"]["request_id"] == req["request_id"]
+            and e["permit"]["response_sha256"] == digest(resp)
+            for e, (req, resp) in zip(reconfirmed, enters[1:])
+        ),
+        one_bound_hold_move=len(moved) == 1,
+    )
+    if not all(out.values()):
+        return out
+    before, after = reconfirmed
+    hold = moved[0]
+    consumed = [
+        e
+        for e in events
+        if e["event"] == "city_permit_consumed" and e["permit"]["permit_id"] == hold["permit_id"]
+    ]
+    model_upload = [
+        e
+        for e in events
+        if e["event"] == "upload_receipt"
+        and consumed
+        and e["segment"] == consumed[0]["permit"]["upload_name"]
+    ]
+    delivery = [e for e in events if e["event"] == "upload_receipt" and e["phase"] == "03-DELIVERY"]
+    out["hold_is_consumed_model_endpoint"] = (
+        len(consumed) == 1
+        and consumed[0]["permit"]["candidate"]["target_world_xyz_m"] == hold["hold_xyz_m"]
+        and enters[1][0].get("hold_xyz_m") is None
+        and enters[2][0].get("hold_xyz_m") == hold["hold_xyz_m"]
+    )
+    out["reconfirm_model_move_reconfirm_order"] = (
+        len(model_upload) == 1
+        and len(delivery) == 1
+        and before["wall_s"]
+        < model_upload[0]["wall_s"]
+        < consumed[0]["wall_s"]
+        < hold["wall_s"]
+        < after["wall_s"]
+        < delivery[0]["wall_s"]
+    )
+    out["dispatch_checks_within_30s_of_fresh_permit"] = all(
+        any(
+            g["wall_s"] <= d["wall_s"]
+            and d["observation"]["wall_s"] - g["permit"]["rules_checked_at"]["wall_s"] <= 30
+            for g in (before, after)
+        )
+        for d in dispatches
+    )
+    return out
 
 
 def main():

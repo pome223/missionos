@@ -13,10 +13,15 @@ from PIL import Image
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 from scripts import ship_anwm  # noqa: E402
-from scripts.yokohama_decision_worker import physical_heading, require_city_request  # noqa: E402
+from scripts.yokohama_decision_worker import (  # noqa: E402
+    decision_phases,
+    physical_heading,
+    require_city_request,
+)
 from src.runtime.yokohama_native import (  # noqa: E402
     digest,
     forecast_consistency,
+    pad_structure_consistency,
     executor_heading,
     executor_altitude,
     geometry_rules,
@@ -35,6 +40,9 @@ def verify(root):
     events = [json.loads(s) for s in (root / "flight-events.jsonl").read_text().splitlines()]
     rows = [json.loads(s) for s in (root / "flight-trajectory.jsonl").read_text().splitlines()]
     native = config["decisions"]["backend"] == "native"
+    phases = decision_phases(config)
+    names = [s["name"] for s in config["flight_stages"]]
+    continuation = names[names.index(phases[len(phases)]) + 1]
     checks, details = {}, []
     requests = []
     for path in sorted((root / "decisions").glob("*-request.json")):
@@ -61,9 +69,9 @@ def verify(root):
         and result.get("cleanup") is True
         and result.get("model_shutdown", {}).get("session_revoked") is True
     )
-    checks["two_observed_updates"] = (
-        len([e for e in events if e["event"] == "city_segment_arrived"]) == 2
-    )
+    checks["two_observed_updates" if len(phases) == 2 else "three_observed_updates"] = len(
+        [e for e in events if e["event"] == "city_segment_arrived"]
+    ) == len(phases)
     starts = [e for e in events if e["event"] == "city_request" and e["operation"] == "start"]
     entry = [e for e in events if e["event"] == "hold_measured" and e["phase"] == "00-D1"]
     checks["startup_after_inland_hold"] = (
@@ -72,7 +80,7 @@ def verify(root):
     stopped = [e for e in events if e["event"] == "city_response" and e["operation"] == "stop"]
     revoked = [e for e in events if e["event"] == "city_session_revoked"]
     replay = [e for e in events if e["event"] == "city_late_response_rejected"]
-    ap_after = [e for e in events if e["event"] == "upload_receipt" and e["phase"] == "02-D3"]
+    ap_after = [e for e in events if e["event"] == "upload_receipt" and e["phase"] == continuation]
     checks["shutdown_before_ap_continuation"] = (
         len(stopped) == len(revoked) == len(replay) == len(ap_after) == 1
         and revoked[0]["wall_s"]
@@ -87,7 +95,8 @@ def verify(root):
         not native or result["model_shutdown"].get("remote_model_processes_absent") is True
     )
     last_arrival = -1
-    for cycle in (1, 2):
+    for cycle in phases:
+        pad = phases[cycle] == "02-D3"
         group = {
             r["operation"]: (path, r, s)
             for path, r, s in requests
@@ -150,6 +159,10 @@ def verify(root):
             assert raw_wam["identity"] == identity["services"]["wam"]
             assert raw_wam["cuda_allocated_after_request_bytes"] == 0
         recomputed = []
+        if pad:
+            _, hold_mask = past_view(
+                arrays, ship_anwm.action_pose(arrays["poses"][-1], [0, 0, 0, 0])
+            )
         for c in request["candidates"]:
             reference, mask = past_view(
                 arrays, ship_anwm.action_pose(arrays["poses"][-1], c["delta"])
@@ -161,9 +174,12 @@ def verify(root):
                     ship_anwm.digest(wfolder / (c["id"] + "-prediction.png"))
                     == forecast["files"]["prediction"]["sha256"]
                 )
-            recomputed.append(
-                dict(candidate=c, **forecast_consistency(prediction, reference, mask))
+            check = (
+                pad_structure_consistency(prediction, reference, mask, hold_mask)
+                if pad
+                else forecast_consistency(prediction, reference, mask)
             )
+            recomputed.append(dict(candidate=c, **check))
         assert recomputed == ws["value"]["checks"] and all(c["passed"] for c in recomputed)
         permit = ars["value"]
         assert permit["prepared_permit_sha256"] == digest(group["authorize"][2]["value"])
@@ -171,13 +187,29 @@ def verify(root):
         assert permit["vla_response_sha256"] == digest(raw_vla)
         assert permit["wam_assessment_sha256"] == digest(ws["value"])
         assert permit["observation_sha256"] == digest(ar["observation"])
-        assert permit["rules"] == geometry_rules(
+        expected_rules = geometry_rules(
             ar["observation"]["vehicle"]["xyz"],
             candidate["target_world_xyz_m"],
             group["authorize"][1]["next_target_world_xyz_m"],
             config,
             REPO / "docs/examples/yokohama-urban-scene",
+            origin=vr["observation"]["vehicle"]["xyz"]
+            if config["decisions"].get("size_bound_origin") == "proposal_observation"
+            else None,
         )
+        if pad:
+            from src.runtime.yokohama_pad_queue import clearance, segment_distance
+
+            queue = config["world"]["pad_queue"]
+            expected_rules["pad"] = clearance(config, ar["observation"])
+            assert expected_rules["pad"]["pad_clear"] and expected_rules["pad"]["approach_clear"]
+            wait, approach = queue["wait_xyz_m"], queue["approach_xyz_m"]
+            assert (
+                segment_distance(candidate["target_world_xyz_m"], wait, approach)
+                <= config["decisions"]["pad_approach"]["corridor_lateral_max_m"]
+            )
+            assert math.dist(candidate["target_world_xyz_m"], approach) < math.dist(wait, approach)
+        assert permit["rules"] == expected_rules
         for key in ("upload", "connector"):
             assert (
                 ship_anwm.digest(root / (permit[key + "_name"] + "-upload.py"))
@@ -278,6 +310,7 @@ def verify(root):
         details.append(
             dict(
                 cycle=cycle,
+                phase=phases[cycle],
                 vla_bins=candidate["bins"],
                 observed_movement_m=moved,
                 final_target_error_m=error,
@@ -286,7 +319,7 @@ def verify(root):
                 wam_host_seconds=ws["elapsed_s"],
             )
         )
-    checks["reopened_model_permit_and_motion_chains"] = len(details) == 2
+    checks["reopened_model_permit_and_motion_chains"] = len(details) == len(phases)
     return dict(
         status="passed" if all(checks.values()) else "failed",
         checks=checks,

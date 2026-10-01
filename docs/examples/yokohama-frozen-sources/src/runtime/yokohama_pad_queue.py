@@ -161,25 +161,8 @@ def clearance(config, row):
     )
 
 
-def approved_hold(config, hold=None):
-    """The authored wait point, or one bounded model endpoint beyond it."""
+def require_wait(config, row):
     p = config["world"]["pad_queue"]
-    if hold is None:
-        return p["wait_xyz_m"]
-    limit = p.get("model_hold_max_offset_m")
-    if (
-        limit is None
-        or len(hold) != 3
-        or not all(math.isfinite(v) for v in hold)
-        or math.dist(hold, p["wait_xyz_m"]) > limit
-    ):
-        raise ValueError("Pad hold outside the approved model-approach bound")
-    return hold
-
-
-def require_wait(config, row, hold=None):
-    p = config["world"]["pad_queue"]
-    hold = approved_hold(config, hold)
     clearance(config, row)
     speed = row.get("velocity_ned", [])
     battery = row.get("battery_fraction")
@@ -195,17 +178,17 @@ def require_wait(config, row, hold=None):
         and isinstance(battery, (int, float))
         and math.isfinite(battery)
         and battery >= p["minimum_battery_fraction"]
-        and math.dist(row["vehicle"]["xyz"], hold) <= 0.6
+        and math.dist(row["vehicle"]["xyz"], p["wait_xyz_m"]) <= 0.6
     ):
         raise ValueError("Aircraft cannot wait within the approved pad hold")
 
 
-def clear_window(config, rows, hold=None):
+def clear_window(config, rows):
     p = config["world"]["pad_queue"]
     if len(rows) < 2:
         return False
     for row in rows:
-        require_wait(config, row, hold)
+        require_wait(config, row)
         c = clearance(config, row)
         if not (c["pad_clear"] and c["approach_clear"]):
             return False
@@ -224,8 +207,8 @@ def clear_window(config, rows, hold=None):
     )
 
 
-def make_request(config, sequence, rows, camera_history=None, hold=None):
-    require_wait(config, rows[-1], hold)
+def make_request(config, sequence, rows, camera_history=None):
+    require_wait(config, rows[-1])
     r = dict(
         schema="missionos.aircraft-situation-request.v1",
         run_id=config["run_id"],
@@ -237,8 +220,6 @@ def make_request(config, sequence, rows, camera_history=None, hold=None):
     )
     if config["world"].get("pad_state_advisory"):
         r["pad_camera_history"] = camera_history
-    if hold is not None:
-        r["hold_xyz_m"] = hold
     return dict(r, request_id=digest(r))
 
 
@@ -252,11 +233,8 @@ def propose(config, request):
     ):
         raise ValueError("Unbound aircraft request")
     rows = request["observations"]
-    hold = request.get("hold_xyz_m")
-    require_wait(config, rows[-1], hold)
-    action = (
-        "enter_delivery_approach" if clear_window(config, rows, hold) else "wait_at_current_hold"
-    )
+    require_wait(config, rows[-1])
+    action = "enter_delivery_approach" if clear_window(config, rows) else "wait_at_current_hold"
     return dict(
         schema="missionos.aircraft-response-proposal.v1",
         request_id=request_id,
@@ -273,7 +251,7 @@ def propose(config, request):
 
 def require_response(config, request, response, current):
     """Executor-side Rules revalidate an untrusted proposal against fresh facts."""
-    require_wait(config, current, request.get("hold_xyz_m"))
+    require_wait(config, current)
     expected = propose(config, request)
     if config["world"].get("pad_state_advisory"):
         receipt = response.get("advisory", {})
