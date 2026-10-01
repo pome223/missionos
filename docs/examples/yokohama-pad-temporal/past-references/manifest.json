@@ -1,0 +1,27 @@
+{
+  "schema": "pad_past_reference_rasters.v1",
+  "source": "original macOS arm64 NumPy 2.4.6 reconstruction, reopened after CI discrepancy; no future frames",
+  "past_view_source_sha256": "489a97a6969c3096a1f3a95ed8124c4f62577e1ee9dc6550216bf8d140363838",
+  "samples": {
+    "evaluation-depart-16": {
+      "file": "evaluation-depart-16.npz",
+      "sha256": "f194eee69d43f9d93d94f2ffa72ff7c47f2785c8fd7140f814b0eec48d7455e3",
+      "history_sha256": "6284ba88e47b6b2878f28cbf15217685a23e130d97ea60b104dbf9c557e10755"
+    },
+    "evaluation-depart-32": {
+      "file": "evaluation-depart-32.npz",
+      "sha256": "46f18746f1bd59a2b147662577a7273cb6ff4d945f61f277abe28a93a248abdb",
+      "history_sha256": "f234e7df2a44d1ce024d1cb568225507b77a47db8ab7a855d98b42acae7f862c"
+    },
+    "evaluation-stall-24": {
+      "file": "evaluation-stall-24.npz",
+      "sha256": "62e34be272dbd9b2bf61bd3074d55344e0c2be2df708080a50db7c44dd540887",
+      "history_sha256": "0be3653497d4213cd65f72c95a5f3e19e34f6aac8b890b05aa5ab56edf5ea2e5"
+    },
+    "evaluation-reenter-14": {
+      "file": "evaluation-reenter-14.npz",
+      "sha256": "9315bfb51edf6a5ff2a4cdbeb7c3abd5ef01cc1b9f7b05779cb4917800b14f1d",
+      "history_sha256": "0420524031f56c04dcefea78d15591904067e71a79c819d3524cc0be6775fff2"
+    }
+  }
+}

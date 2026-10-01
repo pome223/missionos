@@ -1,0 +1,10 @@
+{
+  "status": "optional_replay_advisory_retained",
+  "fixed_accuracy_gate": false,
+  "ideal_rules_win_required": false,
+  "first_entry_improved_conditions": 2,
+  "mission_benefit_demonstrated": false,
+  "flight_default_changed": false,
+  "native_vla_anwm": false,
+  "remaining_first_entry_reoccupation_conditions": 2
+}

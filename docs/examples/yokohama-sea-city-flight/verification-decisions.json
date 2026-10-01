@@ -1,0 +1,122 @@
+{
+  "status": "passed",
+  "checks": {
+    "mailboxes_bound": true,
+    "model_requests_inside_approved_city_holds": true,
+    "successful_run_and_shutdown": true,
+    "two_observed_updates": true,
+    "startup_after_inland_hold": true,
+    "shutdown_before_ap_continuation": true,
+    "native_invocation_labels": true,
+    "native_remote_shutdown": true,
+    "reopened_model_permit_and_motion_chains": true
+  },
+  "cycles": [
+    {
+      "cycle": 1,
+      "vla_bins": [
+        48,
+        49,
+        49
+      ],
+      "observed_movement_m": 2.4738984069429653,
+      "final_target_error_m": 0.03975729331537196,
+      "forecast_checks": [
+        {
+          "candidate": {
+            "id": "hold",
+            "delta": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "passed": true,
+          "known_pixel_fraction": 0.7323620854591837,
+          "reference_edge_pixels": 1816,
+          "matched_edge_fraction": 0.9895374449339207,
+          "luminance_mae": 5.5544670313222815,
+          "predicted_edge_density": 0.0573380139875364,
+          "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+        },
+        {
+          "candidate": {
+            "id": "vla",
+            "delta": [
+              2.452444266637907,
+              0.006644584632851558,
+              -0.004169081211696124,
+              0.004681176746910598
+            ]
+          },
+          "passed": true,
+          "known_pixel_fraction": 0.7284956951530612,
+          "reference_edge_pixels": 1777,
+          "matched_edge_fraction": 0.9898705683736635,
+          "luminance_mae": 7.116798438796629,
+          "predicted_edge_density": 0.06160917024594424,
+          "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+        }
+      ],
+      "vla_host_seconds": 16.997812832996715,
+      "wam_host_seconds": 51.98065833299188
+    },
+    {
+      "cycle": 2,
+      "vla_bins": [
+        57,
+        49,
+        48
+      ],
+      "observed_movement_m": 3.0131747113853606,
+      "final_target_error_m": 0.09262277681207853,
+      "forecast_checks": [
+        {
+          "candidate": {
+            "id": "hold",
+            "delta": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "passed": true,
+          "known_pixel_fraction": 0.8403220663265306,
+          "reference_edge_pixels": 1763,
+          "matched_edge_fraction": 1.0,
+          "luminance_mae": 2.0449435537425282,
+          "predicted_edge_density": 0.04579736267906271,
+          "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+        },
+        {
+          "candidate": {
+            "id": "vla",
+            "delta": [
+              2.898962340516559,
+              -0.05346455723381416,
+              0.0011874320604814415,
+              -0.025492369093775835
+            ]
+          },
+          "passed": true,
+          "known_pixel_fraction": 0.8339046556122449,
+          "reference_edge_pixels": 1735,
+          "matched_edge_fraction": 0.8386167146974063,
+          "luminance_mae": 6.585591829581118,
+          "predicted_edge_density": 0.0351560632856938,
+          "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+        }
+      ],
+      "vla_host_seconds": 16.642197541950736,
+      "wam_host_seconds": 49.74769270903198
+    }
+  ],
+  "native_model_flight_verified": true,
+  "generic_obstacle_recognition_verified": false,
+  "payload_delivery_verified": false,
+  "sea_leg_verified": false,
+  "physical_execution_verified": false,
+  "energy_savings_verified": false
+}

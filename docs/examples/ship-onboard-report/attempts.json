@@ -1,0 +1,74 @@
+[
+  {
+    "directory_name": "01-brake_stop-onboard_stopping",
+    "run_id": "ba96b9d9d608492da198e5c0faa76c96",
+    "recorded_status": "completed",
+    "case": "brake_stop",
+    "policy": "onboard_stopping",
+    "included_in_completed_flight_comparison": true,
+    "result_sha256": "3a27ded15717b6349a6a71ebcb9929f5a13ee6a3579a70eae18f311d3baa8dd7",
+    "worker_failures": []
+  },
+  {
+    "directory_name": "02-brake_stop-onboard_vlm_forecast",
+    "run_id": "14aec915fac046aabe05aac174b5f2d5",
+    "recorded_status": "completed",
+    "case": "brake_stop",
+    "policy": "onboard_vlm_forecast",
+    "included_in_completed_flight_comparison": true,
+    "result_sha256": "1a735961b9f84805d6fe3eb241254d70767d25d94ee9bd013f0c2fe1e6c9e940",
+    "worker_failures": []
+  },
+  {
+    "directory_name": "03-short_clear-onboard_vlm_forecast",
+    "run_id": "07e2600be08340059138a5b5f56d556b",
+    "recorded_status": "completed",
+    "case": "short_clear",
+    "policy": "onboard_vlm_forecast",
+    "included_in_completed_flight_comparison": true,
+    "result_sha256": "b80013fa0c50814679d26b8ed53557487c46b61cdc734d1984c49279668c08b9",
+    "worker_failures": []
+  },
+  {
+    "directory_name": "04-short_clear-onboard_stopping",
+    "run_id": "96ac66e2d5da455f82f01e26edb9f14f",
+    "recorded_status": "blocked",
+    "case": "short_clear",
+    "policy": "onboard_stopping",
+    "included_in_completed_flight_comparison": false,
+    "result_sha256": "a48b89ce998190f1036fc695ae1f6f40379cd4363944a7bf511673246cf6b8b6",
+    "worker_failures": [
+      "TimeoutError: phase timeout: outbound"
+    ]
+  },
+  {
+    "directory_name": "05-long_block-onboard_stopping",
+    "run_id": "e8c3f5dc5a464ddbb777a3660ffed561",
+    "recorded_status": "completed",
+    "case": "long_block",
+    "policy": "onboard_stopping",
+    "included_in_completed_flight_comparison": true,
+    "result_sha256": "095ab87f8ffe1002993847b4ccf3fa9a94167e47b8f3aff8cd2e211c5d862c48",
+    "worker_failures": []
+  },
+  {
+    "directory_name": "06-long_block-onboard_vlm_forecast",
+    "run_id": "889807c5a9a141dd9f5228b26657395d",
+    "recorded_status": "completed",
+    "case": "long_block",
+    "policy": "onboard_vlm_forecast",
+    "included_in_completed_flight_comparison": true,
+    "result_sha256": "eac453d9ff2a27d0d6032e52cbafc01da63a156a95bd5b4eb034673cb9cd0dc1",
+    "worker_failures": []
+  },
+  {
+    "directory_name": "07-short_clear-onboard_stopping-infra-retry",
+    "run_id": "4b594ae37947455a8364539299fa3658",
+    "recorded_status": "completed",
+    "case": "short_clear",
+    "policy": "onboard_stopping",
+    "included_in_completed_flight_comparison": true,
+    "result_sha256": "dfc266d839c5a72418d658852b3269e3c403d3ddfc04f903cbe1e179be5a0840",
+    "worker_failures": []
+  }
+]

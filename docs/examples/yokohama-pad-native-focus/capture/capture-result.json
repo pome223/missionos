@@ -1,0 +1,22 @@
+{
+  "status": "passed",
+  "aircraft_flown": false,
+  "native_inference": false,
+  "cases": [
+    {
+      "id": "focus-depart",
+      "frames": 208,
+      "capture_sha256": "6d9fe020457aa2df25caae91df24fed83cbcc7617dccb48e48c001cdd30b3cd2"
+    },
+    {
+      "id": "focus-stall",
+      "frames": 256,
+      "capture_sha256": "0c6b5f1c683102834b5cf84866dbcad675792c350373eee2f64a5efae372f8e7"
+    },
+    {
+      "id": "focus-return",
+      "frames": 272,
+      "capture_sha256": "c55685c91fadd38160ee51ca64f6895112e0efda5f51a298da6bd8bf32df0745"
+    }
+  ]
+}

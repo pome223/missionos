@@ -1,0 +1,160 @@
+{
+  "detector_trace": [
+    {
+      "iteration": 1,
+      "patches": 5760,
+      "mse": 0.003029168301904952
+    },
+    {
+      "iteration": 2,
+      "patches": 6480,
+      "mse": 0.004857698650281617
+    },
+    {
+      "iteration": 3,
+      "patches": 7200,
+      "mse": 0.006652427078199348
+    }
+  ],
+  "trials": [
+    {
+      "factor": 0.25,
+      "regularization": 0.001,
+      "mean_xyz_error_m": 0.2518665693944393,
+      "known_match_fraction": 0.8869297509095998,
+      "false_clear": 0,
+      "unknown_fraction": 0.11307024909040023
+    },
+    {
+      "factor": 0.25,
+      "regularization": 0.01,
+      "mean_xyz_error_m": 0.22990634389737305,
+      "known_match_fraction": 0.8978449482227819,
+      "false_clear": 0,
+      "unknown_fraction": 0.10215505177721802
+    },
+    {
+      "factor": 0.25,
+      "regularization": 0.1,
+      "mean_xyz_error_m": 0.2292723674005003,
+      "known_match_fraction": 0.903162608452281,
+      "false_clear": 0,
+      "unknown_fraction": 0.096837391547719
+    },
+    {
+      "factor": 0.5,
+      "regularization": 0.001,
+      "mean_xyz_error_m": 0.23283555964685504,
+      "known_match_fraction": 0.9000839630562553,
+      "false_clear": 0,
+      "unknown_fraction": 0.09991603694374475
+    },
+    {
+      "factor": 0.5,
+      "regularization": 0.01,
+      "mean_xyz_error_m": 0.2358334228814838,
+      "known_match_fraction": 0.9056815001399384,
+      "false_clear": 0,
+      "unknown_fraction": 0.09431849986006158
+    },
+    {
+      "factor": 0.5,
+      "regularization": 0.1,
+      "mean_xyz_error_m": 0.2572080181560266,
+      "known_match_fraction": 0.9045619927232018,
+      "false_clear": 0,
+      "unknown_fraction": 0.09543800727679821
+    },
+    {
+      "factor": 1,
+      "regularization": 0.001,
+      "mean_xyz_error_m": 0.24967400985461838,
+      "known_match_fraction": 0.906801007556675,
+      "false_clear": 0,
+      "unknown_fraction": 0.09319899244332494
+    },
+    {
+      "factor": 1,
+      "regularization": 0.01,
+      "mean_xyz_error_m": 0.26668974134010953,
+      "known_match_fraction": 0.9003638399104394,
+      "false_clear": 0,
+      "unknown_fraction": 0.0996361600895606
+    },
+    {
+      "factor": 1,
+      "regularization": 0.1,
+      "mean_xyz_error_m": 0.2825638194260556,
+      "known_match_fraction": 0.8869297509095998,
+      "false_clear": 0,
+      "unknown_fraction": 0.11307024909040023
+    },
+    {
+      "factor": 2,
+      "regularization": 0.001,
+      "mean_xyz_error_m": 0.27644781304937877,
+      "known_match_fraction": 0.8936467954100196,
+      "false_clear": 0,
+      "unknown_fraction": 0.1063532045899804
+    },
+    {
+      "factor": 2,
+      "regularization": 0.01,
+      "mean_xyz_error_m": 0.2941761331675327,
+      "known_match_fraction": 0.8835712286593899,
+      "false_clear": 0,
+      "unknown_fraction": 0.11642877134061014
+    },
+    {
+      "factor": 2,
+      "regularization": 0.1,
+      "mean_xyz_error_m": 0.32006557598400137,
+      "known_match_fraction": 0.8639798488664987,
+      "false_clear": 0,
+      "unknown_fraction": 0.13602015113350127
+    }
+  ],
+  "selected_trial": 6,
+  "localization": [
+    {
+      "split": "train",
+      "frames": 960,
+      "mean_xyz_error_m": 0.02096770984965398,
+      "q99_xyz_error_m": 0.1583329567912673,
+      "unsupported_frames": 4
+    },
+    {
+      "split": "development",
+      "frames": 1000,
+      "mean_xyz_error_m": 0.021899276919549533,
+      "q99_xyz_error_m": 0.1574361504385019,
+      "unsupported_frames": 3
+    }
+  ],
+  "training_seconds": 11.252376458025537,
+  "training_windows": 212,
+  "development_windows": 222,
+  "seed": 42,
+  "model_kind": "supervised convolution/ridge localization + kernel-ridge state forecast",
+  "anwm_weights_changed": false,
+  "vla_training": false,
+  "gpu_requested": false,
+  "flight_admitted": false,
+  "training_cases": [
+    "train-depart",
+    "train-stall",
+    "train-reenter",
+    "train-return"
+  ],
+  "development_cases": [
+    "heldout-depart",
+    "heldout-stall",
+    "heldout-reenter",
+    "development-return"
+  ],
+  "protocol_sha256": "708b3014bb208fa84ad45e2ed52c1a185c32094b7a56acb4ccef6188687024ed",
+  "weights_sha256": "5632f67c65845428a45f0eca9294b53609ea1f789b92e9fe149b2782bc2f00ff",
+  "frozen_at": "2026-09-28T23:18:02.971697+00:00",
+  "evaluation_accessed": false,
+  "saved_reloaded_identical": true
+}

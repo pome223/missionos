@@ -1,0 +1,50 @@
+{
+  "forecasts": [
+    {
+      "candidate": {
+        "id": "hold",
+        "delta": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "elapsed_s": 6.9973521480000045,
+      "files": {
+        "prediction": {
+          "file": "hold-prediction.png",
+          "sha256": "c1408d62d0d77a0b507d4df73424132f7333346e5a693c6ee077cb6244b523d2"
+        },
+        "projection": {
+          "file": "hold-projection.png",
+          "sha256": "eb59724258a45f8ce102bb09a35fdf3796371a68fe3cb59dbea96f89521d0039"
+        }
+      },
+      "conditioning": {
+        "metric_geometry_changed": false,
+        "appearance_added_fraction": 0.034058159722222224,
+        "known_fraction": 0.7458940972222222
+      },
+      "model_time_index": 1
+    }
+  ],
+  "peak_cuda_allocated_bytes": 7321750528,
+  "gpu": "NVIDIA L4",
+  "torch_version": "2.9.1+cu129",
+  "schema": "pad_learning_forecast.v1",
+  "sample_id": "train-depart-20-t01",
+  "stage": "ablation-50-1",
+  "history_sha256": "66c35187e7fafcb16b2732618e7883ae0fa23de3e3b0998b9a75de23bdec8e7d",
+  "model_frame_offset": 1,
+  "requested_horizon_sim_s": 0.25,
+  "cutoff_stamp_ns": 22752000000,
+  "requested_future_stamp_ns": 23002000000,
+  "diffusion_steps": 50,
+  "seed": 42,
+  "request_total_seconds": 7.062334039999996,
+  "adapter_sha256": "e4b88ec38ce8f08ff90b692a3b545e573aadaacf0f080a0357409dfc2b308dd3",
+  "native_inference_invoked": true,
+  "flight_admitted": false,
+  "dispatch_invoked": false
+}

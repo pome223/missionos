@@ -1,0 +1,13 @@
+[
+  {
+    "run_id": "yokohama-6ce82b75afcf",
+    "backend": "fixture",
+    "status": "failed",
+    "reason": "TimeoutError: Phase timeout: 01-D2",
+    "model_arrivals": 1,
+    "cause": "City world z was sent as offshore-home-relative altitude; second goal retained approximately 0.19 m vertical error above the unchanged 0.15 m bound.",
+    "fix": "Bind world goal altitude to observed PX4 global-minus-home altitude before upload.",
+    "gpu_requested": false,
+    "cleanup_confirmed": true
+  }
+]

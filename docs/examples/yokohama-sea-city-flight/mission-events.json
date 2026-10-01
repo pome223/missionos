@@ -1,0 +1,618 @@
+[
+  {
+    "event": "sea_ap_only_observed",
+    "phase": "SEA-TAKEOFF",
+    "wall_s": 4.302608168999999,
+    "models_active": false,
+    "session_closed": false,
+    "observation": {
+      "sim_s": 8.008,
+      "nav_state": 4.0,
+      "arming_state": 1.0,
+      "landed": true,
+      "velocity_ned": [
+        0.00339,
+        0.01586,
+        -0.00595
+      ],
+      "world_xyz_m": [
+        1351.6022270886856,
+        364.9265949871361,
+        -0.013003203509815736
+      ]
+    }
+  },
+  {
+    "event": "hold_measured",
+    "phase": "SEA-TAKEOFF",
+    "wall_s": 59.761129485999994,
+    "metrics": {
+      "duration_sim_s": 30.28,
+      "samples": 91,
+      "max_horizontal_error_m": 0.09895391589345945,
+      "max_vertical_error_m": 0.08965229170077826,
+      "max_px4_speed_mps": 0.04616942819658914,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.019790999999997894,
+      "max_sample_gap_sim_s": 0.4160000000000039,
+      "start_sim_s": 33.1,
+      "end_sim_s": 63.38,
+      "point": "SEA-TAKEOFF",
+      "target_world_xyz_m": [
+        1351.6022270886856,
+        364.9265949871361,
+        15.110143087104275
+      ],
+      "passed": true
+    }
+  },
+  {
+    "event": "sea_ap_only_observed",
+    "phase": "SEA-INBOUND-COAST",
+    "wall_s": 59.808739236,
+    "models_active": false,
+    "session_closed": false,
+    "observation": {
+      "sim_s": 63.38,
+      "nav_state": 4.0,
+      "arming_state": 2.0,
+      "landed": false,
+      "velocity_ned": [
+        0.00346,
+        0.01849,
+        -0.00273
+      ],
+      "world_xyz_m": [
+        1351.6370846836287,
+        364.8826429898383,
+        15.106207014125717
+      ]
+    }
+  },
+  {
+    "event": "hold_measured",
+    "phase": "SEA-INBOUND-COAST",
+    "wall_s": 261.199479911,
+    "metrics": {
+      "duration_sim_s": 30.103999999999985,
+      "samples": 91,
+      "max_horizontal_error_m": 0.0931760682384328,
+      "max_vertical_error_m": 0.15128478325959804,
+      "max_px4_speed_mps": 0.05849473651534812,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.019745166000006975,
+      "max_sample_gap_sim_s": 0.41200000000000614,
+      "start_sim_s": 234.56,
+      "end_sim_s": 264.664,
+      "point": "SEA-INBOUND-COAST",
+      "target_world_xyz_m": [
+        386.1720648824816,
+        104.26474142489603,
+        15.110143087104275
+      ],
+      "passed": true
+    }
+  },
+  {
+    "event": "hold_measured",
+    "phase": "00-D1",
+    "wall_s": 437.821555658,
+    "metrics": {
+      "duration_sim_s": 30.072000000000003,
+      "samples": 90,
+      "max_horizontal_error_m": 0.07317369675353931,
+      "max_vertical_error_m": 0.1735879562590732,
+      "max_px4_speed_mps": 0.06200843974815041,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.021901415999991514,
+      "max_sample_gap_sim_s": 0.4159999999999968,
+      "start_sim_s": 411.16,
+      "end_sim_s": 441.232,
+      "point": "00-D1",
+      "target_world_xyz_m": [
+        0.0,
+        0.0,
+        15.110143087104275
+      ],
+      "passed": true
+    }
+  },
+  {
+    "event": "city_request",
+    "phase": "00-D1",
+    "wall_s": 437.908571242,
+    "operation": "start",
+    "cycle": 1,
+    "request_sha256": "c5e80c3f02d9cc10862741bfb55ac4c45bfea33968865eeca607a3f8eb8b48f2"
+  },
+  {
+    "event": "city_response",
+    "phase": "00-D1",
+    "wall_s": 609.0068387370001,
+    "operation": "start",
+    "cycle": 1,
+    "response_sha256": "050248b9e49487444a639e47155782c1b87e57fa6f2251875e07ea061899711d"
+  },
+  {
+    "event": "city_request",
+    "phase": "00-D1",
+    "wall_s": 615.411526365,
+    "operation": "vla",
+    "cycle": 1,
+    "request_sha256": "1728887603096a8dafa677aeb9d29c90812ae6c23fdb941b2d88b8de6a5eb790"
+  },
+  {
+    "event": "city_response",
+    "phase": "00-D1",
+    "wall_s": 632.498146998,
+    "operation": "vla",
+    "cycle": 1,
+    "response_sha256": "5b083848fc64061a9511fd41986d892d0508c374a60749d0d65aa76edfe10566"
+  },
+  {
+    "event": "city_request",
+    "phase": "00-D1",
+    "wall_s": 638.978007126,
+    "operation": "wam",
+    "cycle": 1,
+    "request_sha256": "5da75bdf32589565c0b91a7f866616d687342ee67faf73be2dd085e9b067f41f"
+  },
+  {
+    "event": "city_response",
+    "phase": "00-D1",
+    "wall_s": 691.044879691,
+    "operation": "wam",
+    "cycle": 1,
+    "response_sha256": "1e66aec20f92f2b3f139bf730d352a8adef4ed4119c82f468547657be13f2731"
+  },
+  {
+    "event": "city_request",
+    "phase": "00-D1",
+    "wall_s": 691.0796976500001,
+    "operation": "authorize",
+    "cycle": 1,
+    "request_sha256": "3d13605ab63c2a1d3902dec90bcb068271d9c97c7de927198a160ab1cbaceda3"
+  },
+  {
+    "event": "city_response",
+    "phase": "00-D1",
+    "wall_s": 691.112678483,
+    "operation": "authorize",
+    "cycle": 1,
+    "response_sha256": "5696b7a62443cfe8a993396b0175b6c104a718675d2027cfcef5862e93cd3786"
+  },
+  {
+    "event": "city_request",
+    "phase": "00-D1",
+    "wall_s": 694.378931318,
+    "operation": "activate",
+    "cycle": 1,
+    "request_sha256": "60efcb5ed9d258894ccc1ec5179a79005ecdcfecb7b1f4172acf17a227597baa"
+  },
+  {
+    "event": "city_response",
+    "phase": "00-D1",
+    "wall_s": 694.410214443,
+    "operation": "activate",
+    "cycle": 1,
+    "response_sha256": "23ec5dd5f06b8ebd64d3863b160f28f8496c3ee0668ff8efbc9efd8e7c7c2155"
+  },
+  {
+    "event": "city_segment_dispatched",
+    "phase": "00-D1",
+    "wall_s": 694.815352027,
+    "permit_id": "1a1327f09a134ef097fd6f205632249d"
+  },
+  {
+    "event": "city_segment_arrived",
+    "phase": "00-D1",
+    "wall_s": 699.972526904,
+    "permit_id": "1a1327f09a134ef097fd6f205632249d",
+    "observation": {
+      "sim_s": 703.228,
+      "nav_state": 4.0,
+      "arming_state": 2.0,
+      "landed": false,
+      "velocity_ned": [
+        -0.0268,
+        0.00406,
+        0.01189
+      ],
+      "world_xyz_m": [
+        -1.1304208944577652,
+        -2.2027337601856,
+        15.236272015781637
+      ]
+    }
+  },
+  {
+    "event": "hold_measured",
+    "phase": "01-D2",
+    "wall_s": 763.056345599,
+    "metrics": {
+      "duration_sim_s": 30.244000000000028,
+      "samples": 91,
+      "max_horizontal_error_m": 0.13844982267412123,
+      "max_vertical_error_m": 0.16827114221712414,
+      "max_px4_speed_mps": 0.06651989852668147,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.018470542000045498,
+      "max_sample_gap_sim_s": 0.41599999999994,
+      "start_sim_s": 735.928,
+      "end_sim_s": 766.172,
+      "point": "01-D2",
+      "target_world_xyz_m": [
+        -34.88761388811289,
+        -60.6945307036456,
+        15.110143087104275
+      ],
+      "passed": true
+    }
+  },
+  {
+    "event": "city_request",
+    "phase": "01-D2",
+    "wall_s": 769.575237351,
+    "operation": "vla",
+    "cycle": 2,
+    "request_sha256": "42a5e422dccf44a6a44bf6a4f5297e4a4d2fe21c523f376b0957ca617f766666"
+  },
+  {
+    "event": "city_response",
+    "phase": "01-D2",
+    "wall_s": 786.228812692,
+    "operation": "vla",
+    "cycle": 2,
+    "response_sha256": "640d77c5a3d246d1c997034dfeb4cd9535bb8e821a89ba8fbcb7bae8fc6d44c5"
+  },
+  {
+    "event": "city_request",
+    "phase": "01-D2",
+    "wall_s": 792.621886945,
+    "operation": "wam",
+    "cycle": 2,
+    "request_sha256": "d88ac93a36518eda5b8d09bc72d31f45508babe50e8c14ee38b38a7fb338c4e3"
+  },
+  {
+    "event": "city_response",
+    "phase": "01-D2",
+    "wall_s": 842.429012509,
+    "operation": "wam",
+    "cycle": 2,
+    "response_sha256": "8e94e477af7f5fddb8d1d7b5d5dd8e625881d49df72a2ff4aef34ab523bf6a0c"
+  },
+  {
+    "event": "city_request",
+    "phase": "01-D2",
+    "wall_s": 842.4677269260001,
+    "operation": "authorize",
+    "cycle": 2,
+    "request_sha256": "e8d9c4f289fa3c043bdbb42feae709c47491729f54ed4a45408dc7e5c539bda2"
+  },
+  {
+    "event": "city_response",
+    "phase": "01-D2",
+    "wall_s": 842.503680968,
+    "operation": "authorize",
+    "cycle": 2,
+    "response_sha256": "4c494c8d4ab5f8df463959dd70333e06dadcfc3b1947ca647a86e004049f7e44"
+  },
+  {
+    "event": "city_request",
+    "phase": "01-D2",
+    "wall_s": 845.7478933030001,
+    "operation": "activate",
+    "cycle": 2,
+    "request_sha256": "1ff6991e2a055efb837159475d29990b953ca33e7cb6fc6b324dfc4fe29a25ec"
+  },
+  {
+    "event": "city_response",
+    "phase": "01-D2",
+    "wall_s": 845.778783053,
+    "operation": "activate",
+    "cycle": 2,
+    "response_sha256": "596e72a4e589bd71957e2804d75ac602e900169db5a3b3af156200e5a0571d42"
+  },
+  {
+    "event": "city_segment_dispatched",
+    "phase": "01-D2",
+    "wall_s": 846.191117178,
+    "permit_id": "d1aed626f5d6463793a62fedd4f888b6"
+  },
+  {
+    "event": "city_segment_arrived",
+    "phase": "01-D2",
+    "wall_s": 852.0103300970001,
+    "permit_id": "d1aed626f5d6463793a62fedd4f888b6",
+    "observation": {
+      "sim_s": 854.948,
+      "nav_state": 4.0,
+      "arming_state": 2.0,
+      "landed": false,
+      "velocity_ned": [
+        -0.01981,
+        -0.00983,
+        0.00421
+      ],
+      "world_xyz_m": [
+        -32.296109072637236,
+        -62.19217229878741,
+        15.066348590611234
+      ]
+    }
+  },
+  {
+    "event": "city_session_revoked",
+    "phase": "01-D2",
+    "wall_s": 852.011285722,
+    "completed_updates": 2
+  },
+  {
+    "event": "city_request",
+    "phase": "01-D2",
+    "wall_s": 852.042941389,
+    "operation": "stop",
+    "cycle": 2,
+    "request_sha256": "0c8dc14e02477a15bb3bc5e1f5b3c0e788423ca61a71dec0493e0d2edee47f2a"
+  },
+  {
+    "event": "city_response",
+    "phase": "01-D2",
+    "wall_s": 858.8355191420001,
+    "operation": "stop",
+    "cycle": 2,
+    "response_sha256": "42ed7a3c291a2e68cab451203956360526bff2e95d621fe8fddc3a5f6f37706d"
+  },
+  {
+    "event": "city_late_response_rejected",
+    "phase": "01-D2",
+    "wall_s": 858.835601017,
+    "session_revoked": true
+  },
+  {
+    "event": "hold_measured",
+    "phase": "02-D3",
+    "wall_s": 953.514424435,
+    "metrics": {
+      "duration_sim_s": 30.26400000000001,
+      "samples": 91,
+      "max_horizontal_error_m": 0.08836322760340473,
+      "max_vertical_error_m": 0.04348348662791679,
+      "max_px4_speed_mps": 0.07114092282224065,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.02021416600007342,
+      "max_sample_gap_sim_s": 0.41200000000003456,
+      "start_sim_s": 926.016,
+      "end_sim_s": 956.28,
+      "point": "02-D3",
+      "target_world_xyz_m": [
+        108.17735177259866,
+        -142.92962206786046,
+        15.110143087104275
+      ],
+      "passed": true
+    }
+  },
+  {
+    "event": "hold_measured",
+    "phase": "03-DELIVERY",
+    "wall_s": 1023.7142934679999,
+    "metrics": {
+      "duration_sim_s": 30.004000000000133,
+      "samples": 90,
+      "max_horizontal_error_m": 0.08663627409659509,
+      "max_vertical_error_m": 0.1504248850246377,
+      "max_px4_speed_mps": 0.052500641900837745,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.020691082999974242,
+      "max_sample_gap_sim_s": 0.41200000000003456,
+      "start_sim_s": 996.376,
+      "end_sim_s": 1026.38,
+      "point": "03-DELIVERY",
+      "target_world_xyz_m": [
+        153.03285452510517,
+        -64.89336826549612,
+        15.110143087104275
+      ],
+      "passed": true
+    }
+  },
+  {
+    "event": "hold_measured",
+    "phase": "04-D3",
+    "wall_s": 1094.2127907489999,
+    "metrics": {
+      "duration_sim_s": 30.360000000000127,
+      "samples": 91,
+      "max_horizontal_error_m": 0.1332887001247446,
+      "max_vertical_error_m": 0.17260853368206774,
+      "max_px4_speed_mps": 0.0850643673931688,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.022307749999981752,
+      "max_sample_gap_sim_s": 0.41599999999994,
+      "start_sim_s": 1066.552,
+      "end_sim_s": 1096.912,
+      "point": "04-D3",
+      "target_world_xyz_m": [
+        108.17735177259866,
+        -142.92962206786046,
+        15.110143087104275
+      ],
+      "passed": true
+    }
+  },
+  {
+    "event": "hold_measured",
+    "phase": "05-D2",
+    "wall_s": 1189.5149077919998,
+    "metrics": {
+      "duration_sim_s": 30.11999999999989,
+      "samples": 90,
+      "max_horizontal_error_m": 0.11778264080779186,
+      "max_vertical_error_m": 0.1758280905494658,
+      "max_px4_speed_mps": 0.08583007631360932,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.01867712499984009,
+      "max_sample_gap_sim_s": 0.41600000000016735,
+      "start_sim_s": 1161.864,
+      "end_sim_s": 1191.984,
+      "point": "05-D2",
+      "target_world_xyz_m": [
+        -34.88761388811289,
+        -60.6945307036456,
+        15.110143087104275
+      ],
+      "passed": true
+    }
+  },
+  {
+    "event": "hold_measured",
+    "phase": "06-D1",
+    "wall_s": 1256.2225533639999,
+    "metrics": {
+      "duration_sim_s": 30.107999999999947,
+      "samples": 90,
+      "max_horizontal_error_m": 0.07600524430229968,
+      "max_vertical_error_m": 0.16769597642854528,
+      "max_px4_speed_mps": 0.08542677215018721,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.02297441600012462,
+      "max_sample_gap_sim_s": 0.41200000000003456,
+      "start_sim_s": 1228.576,
+      "end_sim_s": 1258.684,
+      "point": "06-D1",
+      "target_world_xyz_m": [
+        0.0,
+        0.0,
+        15.110143087104275
+      ],
+      "passed": true
+    }
+  },
+  {
+    "event": "sea_ap_only_observed",
+    "phase": "SEA-OUTBOUND-COAST",
+    "wall_s": 1256.2917832389999,
+    "models_active": false,
+    "session_closed": true,
+    "observation": {
+      "sim_s": 1258.784,
+      "nav_state": 4.0,
+      "arming_state": 2.0,
+      "landed": false,
+      "velocity_ned": [
+        -0.00337,
+        0.00425,
+        -0.00185
+      ],
+      "world_xyz_m": [
+        -0.010135564723949128,
+        0.009306063685445055,
+        15.250233667640044
+      ]
+    }
+  },
+  {
+    "event": "hold_measured",
+    "phase": "SEA-OUTBOUND-COAST",
+    "wall_s": 1361.979970038,
+    "metrics": {
+      "duration_sim_s": 30.036000000000058,
+      "samples": 90,
+      "max_horizontal_error_m": 0.10139353781591945,
+      "max_vertical_error_m": 0.16373680493384946,
+      "max_px4_speed_mps": 0.06838958838887686,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.01996937500007334,
+      "max_sample_gap_sim_s": 0.41599999999994,
+      "start_sim_s": 1334.388,
+      "end_sim_s": 1364.424,
+      "point": "SEA-OUTBOUND-COAST",
+      "target_world_xyz_m": [
+        386.1720648824816,
+        104.26474142489603,
+        15.110143087104275
+      ],
+      "passed": true
+    }
+  },
+  {
+    "event": "sea_ap_only_observed",
+    "phase": "SEA-RETURN",
+    "wall_s": 1362.0435282039998,
+    "models_active": false,
+    "session_closed": true,
+    "observation": {
+      "sim_s": 1364.528,
+      "nav_state": 4.0,
+      "arming_state": 2.0,
+      "landed": false,
+      "velocity_ned": [
+        -0.02576,
+        -0.00671,
+        0.0056
+      ],
+      "world_xyz_m": [
+        386.17055746118734,
+        104.31306393333051,
+        15.220342653192828
+      ]
+    }
+  },
+  {
+    "event": "hold_measured",
+    "phase": "SEA-RETURN",
+    "wall_s": 1560.437722378,
+    "metrics": {
+      "duration_sim_s": 30.172000000000025,
+      "samples": 90,
+      "max_horizontal_error_m": 0.09452626762063936,
+      "max_vertical_error_m": 0.02210975414584304,
+      "max_px4_speed_mps": 0.0697386872546365,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.020155790999979217,
+      "max_sample_gap_sim_s": 0.41599999999994,
+      "start_sim_s": 1532.624,
+      "end_sim_s": 1562.796,
+      "point": "SEA-RETURN",
+      "target_world_xyz_m": [
+        1351.6022270886856,
+        364.9265949871361,
+        15.110143087104275
+      ],
+      "passed": true
+    }
+  },
+  {
+    "event": "landing_observed",
+    "phase": "return_land",
+    "wall_s": 1579.854324594,
+    "observation": {
+      "sim_s": 1582.3,
+      "nav_state": 4.0,
+      "arming_state": 1.0,
+      "landed": true,
+      "velocity_ned": [
+        -0.00917,
+        -0.01071,
+        -0.00385
+      ],
+      "world_xyz_m": [
+        1351.5681266052568,
+        364.9403607841784,
+        -0.013001013559532426
+      ]
+    }
+  }
+]

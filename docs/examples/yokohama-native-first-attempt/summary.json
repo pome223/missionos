@@ -1,0 +1,59 @@
+{
+  "run_id": "yokohama-1db5e937c115",
+  "status": "not_qualified",
+  "model_updates_observed": 0,
+  "native_vla_invoked": true,
+  "native_wam_invoked": false,
+  "world_sha256": "3d14db4c116d1f0892126e004be4249ab90edcdac9322aaa32a11a076db5bb3d",
+  "source_sha256": {
+    "yokohama_scene.py": "ad9ad3de307d590f052fd7b8a1f4623dd43714fdcf7b68424ffe35ea86e62be9",
+    "yokohama_sitl.py": "b6f7a4af869d2c6c0fbada0f1eabe78b1a7ca0f3da1dcd49a42fb82dc44395fb",
+    "yokohama_sitl_worker.py": "5152fcd618f5fc10190fa94cc5834df16a1b9b6bffb6a460f8dd63b907ace765",
+    "ship_urban_camera_worker.py": "d1410467349d7bc5526a46afe2e84a9cf8e44d7a3fc391d8b0361ad78696d6c7",
+    "ship_onboard_entrypoint.sh": "b45b89f4bc9cf4ecab5f3d041866a436d6133574717e122a9e02f86e4c977364",
+    "yokohama_flight_worker.py": "556ce27672edc4abca86d0093da9993da283935fb45ed64e8ce21232ebb12d87",
+    "yokohama_decision_worker.py": "e45dfa07ea89807bf156e29012bc6e99f6f2be063526a135dc975f988c9079c0",
+    "yokohama_decision_host.py": "102b57a0d4d8909eb6ae0e57a5706fed99ea4eaa1d42001b69c87b7597649fb3",
+    "yokohama_native.py": "52574d155a26a9569dd76bfa8f6096eec48a247e297769cf882d8d8b3b4252fa",
+    "ship_anwm.py": "978e813357d08db3eb41ff0ec9a403d5813297d53c33b2a67794f7829a8f3f7f",
+    "ship_anwm_server.py": "48f5630464e1f9b29e3345e765108059311c5940a245543bd9dd3063358e577f",
+    "ship_aerovla.py": "4c4cb15d4a090caddfd6cc97311f05d99137df393d07475a5e888b7d5bc76340",
+    "ship_aerovla_server.py": "95e9a39f365d5b975625a60c33050bf80741c3f167a1eb856d12ef3e47598fa4",
+    "ship_vla_adapter.py": "0a155c594218e92875daf91e6bbaaf84152eb9a2f93929a64c3666a63e828dca",
+    "smoke_px4_gazebo_sitl_mission_upload.py": "424dac5e40ac45d1012653a891581a1dd4e1d5091700703f725dffc580e45e01",
+    "verify_yokohama_decisions.py": "49c405e0c1f9e9b2edeaefa0ef91f38242aad182ecf810dc3c06862d0a0e8958",
+    "verify_yokohama_sitl.py": "f74c83b67834f56db29112e127a95bd6131dd5b069e4dd036db47b596a407b52"
+  },
+  "error": "ValueError: ValueError: Unbound native VLA result",
+  "holds_completed": 1,
+  "cycles": [],
+  "vla_calls": [
+    {
+      "vla_inference_invoked": true,
+      "generated_text": "79 48 0</s>",
+      "generated_token_ids": [
+        29955,
+        29929,
+        29871,
+        29946,
+        29947,
+        29871,
+        29900,
+        2
+      ],
+      "request_sha256": "6dae9959b2acc8388c29644aa91424523b976e9b472655169e07fd75e5d0d4f3",
+      "input_images_sha256": {
+        "rgb": "e0b3b7660269f17f0e3ca6a8894149a6065a2c376896194143141d4c7f60cdaa",
+        "down": "fc54a5ea6647d4c55fae9a83aa0c0cb8de396f31f188bbce79c30aa2b98039c4"
+      },
+      "elapsed_s": null,
+      "inference_s": null,
+      "cuda_allocated_after_request_bytes": 9568256
+    }
+  ],
+  "duration_sim_s": 255.092,
+  "duration_wall_s": 255.89970653299997,
+  "payload_delivery_verified": false,
+  "generic_obstacle_recognition_verified": false,
+  "energy_savings_verified": false
+}

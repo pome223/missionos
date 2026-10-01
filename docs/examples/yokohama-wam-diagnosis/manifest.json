@@ -1,0 +1,197 @@
+{
+  "scope": "Reviewed publication raster/metric/source record; original flight unchanged",
+  "source_commit": "871581aae7c4a0451d5ed1d02747a01f88a0c328",
+  "raw_evidence_archive_sha256": "2a72f93b322ce9763f58ceab6b5a43dcfd1727b552f4e970a7450d890d3c32d6",
+  "files": [
+    {
+      "path": "ATTRIBUTION.md",
+      "bytes": 1671,
+      "sha256": "708fbd48ee2734a7497aa5ba57013e90f12d3becf0d6a4093d56aa267e6eb7b1"
+    },
+    {
+      "path": "README.md",
+      "bytes": 1587,
+      "sha256": "bfe3d758786d4092db078f9d9777b783fd82224d77d97ab95ebaf1cf5b0beaa8"
+    },
+    {
+      "path": "REPORT-ja.md",
+      "bytes": 8879,
+      "sha256": "f342bc7b88c7f7f2e0ac66347836a373045457518d5b7146e43b0e04c42beac3"
+    },
+    {
+      "path": "budget-cleanup.json",
+      "bytes": 788,
+      "sha256": "72cf836299aa77d26296460b3ca5108a42fcbf8d5e40869d5a9dd6715914b18c"
+    },
+    {
+      "path": "cases.json",
+      "bytes": 5299,
+      "sha256": "64da73f6ba2dd2c6f9338139e89988b7ef95009f6a120a7af4dfc9a75a9bbdff"
+    },
+    {
+      "path": "checkpoint-metadata.json",
+      "bytes": 1326,
+      "sha256": "a73bbd0303205c768c8759baa4acf6c024012ac2f4f01abb610b1416f1cb87d4"
+    },
+    {
+      "path": "download-clarification.json",
+      "bytes": 440,
+      "sha256": "0183e33ab904d0c8fdf312692770649e438e31a7c1384f31bdcb1115eca7efee"
+    },
+    {
+      "path": "images/city-known-mask.npy",
+      "bytes": 50304,
+      "sha256": "0fe98324f35c2a93a294f94ea6885c36780b29a3aa442cb212e65db9cfa6d736"
+    },
+    {
+      "path": "images/city-observed.png",
+      "bytes": 11925,
+      "sha256": "33aa5d18fa92a15b71f1cce0d97dfd3ab958192405da045ec64f53a75731c1df"
+    },
+    {
+      "path": "images/city-past-reference.png",
+      "bytes": 9616,
+      "sha256": "949e590f55dfc7dbf979118e537b492eefbb9496840cb3406fd374a5477a4e0f"
+    },
+    {
+      "path": "images/city_full_t0.png",
+      "bytes": 38522,
+      "sha256": "e24b62f455c0cc45e0875f8a2b8bb2e06da5c0f2ee8130c6533105c3206112ad"
+    },
+    {
+      "path": "images/city_full_t4.png",
+      "bytes": 56780,
+      "sha256": "b1934ca65722693a264a00ec50233f2316f8b4c985f335a87cbddc9e7a8e4407"
+    },
+    {
+      "path": "images/city_original_t4.png",
+      "bytes": 62079,
+      "sha256": "bbace67e23fcffb45cce080561c2ebd577a3f6fec074591689c7f73df71d9e4b"
+    },
+    {
+      "path": "images/city_rgbd_t0.png",
+      "bytes": 58650,
+      "sha256": "41197abba15f3eeaaee696b76e084d7a2f715edfca0c0e9132aa7961fe85533f"
+    },
+    {
+      "path": "images/hold-prediction.png",
+      "bytes": 62079,
+      "sha256": "bbace67e23fcffb45cce080561c2ebd577a3f6fec074591689c7f73df71d9e4b"
+    },
+    {
+      "path": "images/hold-projection.png",
+      "bytes": 12005,
+      "sha256": "bc886804dbbcb5193c9f12207d1012b51e006d78daecb166090425bc569c7ef9"
+    },
+    {
+      "path": "images/original-flight-hold.png",
+      "bytes": 62079,
+      "sha256": "bbace67e23fcffb45cce080561c2ebd577a3f6fec074591689c7f73df71d9e4b"
+    },
+    {
+      "path": "images/reference-observed.png",
+      "bytes": 77349,
+      "sha256": "c8c22dfb54c0e7046051a5a43e9b0211a3d370629eec91f037ac73e23c30e9a9"
+    },
+    {
+      "path": "images/reference_full_t0.png",
+      "bytes": 79649,
+      "sha256": "80ab5b2adb80900f3c882e0bbbfd7da7aed7a5f05d471a7e66485826437eebe2"
+    },
+    {
+      "path": "images/reference_full_t4.png",
+      "bytes": 80054,
+      "sha256": "2edd6803cc923b1273f9f92dedb2060db00121bc469dc7573b8c648944156958"
+    },
+    {
+      "path": "images/vae-city-mode.png",
+      "bytes": 32252,
+      "sha256": "2727b5ef332aafdef1909083d62645f64d6d3a3706e7853c2eb88501641e9117"
+    },
+    {
+      "path": "images/vae-city-sample.png",
+      "bytes": 32464,
+      "sha256": "2af097eac1f524d0fef963613397328f721988cf2a0449425207d02fb767a518"
+    },
+    {
+      "path": "images/vae-projection-mode.png",
+      "bytes": 31440,
+      "sha256": "7bdbfb22b935a829eb2d2866e9d6be8680280d59d63819b20a5e2bfdd4a37f2a"
+    },
+    {
+      "path": "images/vae-projection-sample.png",
+      "bytes": 31432,
+      "sha256": "418c70745f00d6b998cb9d77ec4ece6e471922d11787819bad234ca56cb210d4"
+    },
+    {
+      "path": "images/vae-reference-mode.png",
+      "bytes": 78966,
+      "sha256": "ae07ded7591f6bf34ef1a25c62ab17769998990d432828b1a2976eac744761a7"
+    },
+    {
+      "path": "images/vae-reference-sample.png",
+      "bytes": 78960,
+      "sha256": "5967ca575135d8de15c418db85e941e8b6d996f0156129e7353508ada1867af3"
+    },
+    {
+      "path": "index.html",
+      "bytes": 7398,
+      "sha256": "edf92db48987ae204cb42513906d0da6c23fd32b764898eaf9a9bca9526ed723"
+    },
+    {
+      "path": "input-contract-audit.json",
+      "bytes": 1400,
+      "sha256": "fd0ff326d9efebdcaf622b4aaa42efb800b2585895910ecb6543fd14b61a9f3b"
+    },
+    {
+      "path": "projection-difference.json",
+      "bytes": 655,
+      "sha256": "51f8ee8a7ccaec3283b717042b554f3b112140b8d5e30d08ae9fb155329cd293"
+    },
+    {
+      "path": "protocol.json",
+      "bytes": 3655,
+      "sha256": "1c69059c56cf061261dbf411c976914a42b8ebd40bc7a718fc032d65799611f3"
+    },
+    {
+      "path": "reference-manifest.json",
+      "bytes": 957,
+      "sha256": "98274c415dfb9e626c6aeba302e5bf171a017d62fb3aeadbe7e305e70315c664"
+    },
+    {
+      "path": "reproduce/diagnose.py",
+      "bytes": 6053,
+      "sha256": "3e7aee9401c625e243b5819534d99f6700b7fb6e6f50583b362dfc5d3669fd73"
+    },
+    {
+      "path": "reproduce/frozen_metrics.py",
+      "bytes": 3480,
+      "sha256": "dfded19e47b295af506fd33c508ee1d76f5cbe1934f904546c7fec9168ebabb6"
+    },
+    {
+      "path": "reproduce/verify_bundle.py",
+      "bytes": 2664,
+      "sha256": "33b3fcf32ef4d85ca2fa4007019b5c1a505037515f922d3c902e4922e927095f"
+    },
+    {
+      "path": "summary.json",
+      "bytes": 9430,
+      "sha256": "b6ae38ede109e5854106af1983429ac617e70c55b925610120d77461046cd40c"
+    },
+    {
+      "path": "upstream-compatibility.json",
+      "bytes": 748,
+      "sha256": "ca30ad04fd54f58af347b552cdabe538635f4d844d1ae42075fcb047070d253b"
+    },
+    {
+      "path": "vae-reconstruction.json",
+      "bytes": 2855,
+      "sha256": "0b4fafc9843fc8563e56ae374452e28e4e075d458ed601299a106672c796fa9d"
+    },
+    {
+      "path": "validation.json",
+      "bytes": 1043,
+      "sha256": "77f9e3cc50cd7f909e183f2515e78267f0bd610ecad8079b0351fcbfcd0d30ba"
+    }
+  ]
+}

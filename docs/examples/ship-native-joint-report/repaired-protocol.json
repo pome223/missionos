@@ -1,0 +1,74 @@
+{
+  "schema_version": "ship_native_joint_qualification.v1",
+  "frozen_at_utc": "2026-09-26T09:41:40.893480+00:00",
+  "source_revision": "f9c21384916ba0aa0778da5b7527d598303879bb",
+  "purpose": "Sequential native VLA motion and native WAM route decision in the same simulator flight",
+  "compact_cases": [],
+  "offshore_distance_m": 1000,
+  "urban_distance_m": 200,
+  "separate_extension": {
+    "case": "static_center",
+    "offshore_distance_m": 1000,
+    "conditional_on_all_compact_pass": false
+  },
+  "timeout_s": 900,
+  "required_compact_completed": 0,
+  "required_extension_completed": 1,
+  "vla_max_input_age_s": 2,
+  "vla_target_error_m": 0.25,
+  "vla_altitude_error_m": 0.15,
+  "wam_position_error_m": 5,
+  "wam_exchange_limit_s": 75,
+  "wam_stationarity_m": 1.5,
+  "wam_candidate_agreement_m": 5,
+  "wam_ego_drift_m": 0.5,
+  "dispatch_input_age_s": 2,
+  "same_flight_chain_required": true,
+  "observed_delivery_and_stable_recovery_required": true,
+  "no_observed_or_swept_geometry_collision_required": true,
+  "all_attempts_retained": true,
+  "retry_policy": "No retry to replace a rejected model proposal; preserve failures and qualify actual implementation repairs as a separate cohort",
+  "rule_superiority_required": false,
+  "gpu_mode": "one L4; VLA exits after one response; WAM weights in CPU between calls",
+  "cohort": "precision-repair-targeted-1km-v6",
+  "repair": "Canonical derived permit values at production; exact verifier equality preserved. Native models and level-inspection action space unchanged from v5. Historical failed certificates remain failed.",
+  "association": {
+    "search_margin_target_widths": 0.5,
+    "minimum_interval_iou": 0.5,
+    "width_ratio": [
+      0.5,
+      2
+    ],
+    "expected_competing_regions": 1,
+    "edge_clipping_allowed": false,
+    "future_observations_used_for_association": false
+  },
+  "completed_evidence_storage": "lossless APFS compression after verification with identical hashes; no data removal",
+  "vla_decoding_policy": "aerovla_inspection_grammar.v1",
+  "output_rewriting": false,
+  "all_native_bins_and_land_available": false,
+  "native_forward_bins": [
+    0,
+    98
+  ],
+  "native_vertical_bins": [
+    47,
+    51
+  ],
+  "native_yaw_bins": [
+    0,
+    98
+  ],
+  "terminal_proposals_available": true,
+  "mission_phase": "urban_entry_short_level_inspection",
+  "model_action_space_changed": true,
+  "independent_verifier_limits_unchanged": true,
+  "study_kind": "targeted_1km_followup",
+  "planned_attempts": 1,
+  "numeric_permit_precision": {
+    "derived_position_m": 1e-09,
+    "derived_heading_rad": 1e-12,
+    "nominal_duration_s": 1e-09
+  },
+  "prior_qualification_not_pooled": true
+}

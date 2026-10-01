@@ -1,0 +1,86 @@
+[
+  {
+    "input": "city",
+    "posterior": "mode",
+    "rgb_mae": 0.9449006164965986,
+    "visible_consistency": {
+      "passed": true,
+      "known_pixel_fraction": 0.9298469387755102,
+      "reference_edge_pixels": 4323,
+      "matched_edge_fraction": 1.0,
+      "luminance_mae": 0.9321630658436226,
+      "predicted_edge_density": 0.09222822359396433,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    }
+  },
+  {
+    "input": "city",
+    "posterior": "sample",
+    "rgb_mae": 0.9482023278061225,
+    "visible_consistency": {
+      "passed": true,
+      "known_pixel_fraction": 0.9298469387755102,
+      "reference_edge_pixels": 4323,
+      "matched_edge_fraction": 1.0,
+      "luminance_mae": 0.9359139231824429,
+      "predicted_edge_density": 0.09218535665294925,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    }
+  },
+  {
+    "input": "projection",
+    "posterior": "mode",
+    "rgb_mae": 0.9381111819727891,
+    "visible_consistency": {
+      "passed": true,
+      "known_pixel_fraction": 0.9298469387755102,
+      "reference_edge_pixels": 4292,
+      "matched_edge_fraction": 1.0,
+      "luminance_mae": 0.9293624256973028,
+      "predicted_edge_density": 0.08963477366255145,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    }
+  },
+  {
+    "input": "projection",
+    "posterior": "sample",
+    "rgb_mae": 0.9362709927721088,
+    "visible_consistency": {
+      "passed": true,
+      "known_pixel_fraction": 0.9298469387755102,
+      "reference_edge_pixels": 4292,
+      "matched_edge_fraction": 1.0,
+      "luminance_mae": 0.9272190786465485,
+      "predicted_edge_density": 0.08965620713305898,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    }
+  },
+  {
+    "input": "reference",
+    "posterior": "mode",
+    "rgb_mae": 6.384001647534014,
+    "visible_consistency": {
+      "passed": true,
+      "known_pixel_fraction": 0.9298469387755102,
+      "reference_edge_pixels": 13704,
+      "matched_edge_fraction": 0.9975919439579685,
+      "luminance_mae": 5.806891575217192,
+      "predicted_edge_density": 0.28212877229080935,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    }
+  },
+  {
+    "input": "reference",
+    "posterior": "sample",
+    "rgb_mae": 6.383529974489796,
+    "visible_consistency": {
+      "passed": true,
+      "known_pixel_fraction": 0.9298469387755102,
+      "reference_edge_pixels": 13704,
+      "matched_edge_fraction": 0.9976649153531816,
+      "luminance_mae": 5.805905635573846,
+      "predicted_edge_density": 0.28212877229080935,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    }
+  }
+]

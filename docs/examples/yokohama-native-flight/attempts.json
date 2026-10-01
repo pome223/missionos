@@ -1,0 +1,118 @@
+{
+  "cpu_development_and_qualification": [
+    {
+      "id": "01-fixture-flight",
+      "run_id": "yokohama-2827c3313b7b",
+      "kind": "development_cpu_fixture",
+      "runner_status": "failed",
+      "result_sha256": "f06f152aa95b47912a2de712801afbeacfdb85e6a105d1da4206a03d2deb25b0",
+      "reason": "Rejected heading-frame mismatch before model segment execution; simulator/PX4 frames separated.",
+      "native_inference": false,
+      "error": null
+    },
+    {
+      "id": "02-fixture-flight",
+      "run_id": "yokohama-41256fe56d8d",
+      "kind": "development_cpu_fixture",
+      "runner_status": "failed",
+      "result_sha256": "7b42cd027d781651fa33c9ea95d7c90774c40fd8a5fffd97ef37d6bade4213a1",
+      "reason": "Rejected expired activation authority after mission upload; added post-ACK fresh permit.",
+      "native_inference": false,
+      "error": null
+    },
+    {
+      "id": "03-fixture-flight",
+      "run_id": "yokohama-8cf1c61fde0b",
+      "kind": "development_cpu_fixture",
+      "runner_status": "passed",
+      "result_sha256": "b90e8058b374206c50a5ac13c4b422dd41db2aad44acc56ed2a708b6d96ed70b",
+      "reason": "Flight completed; independent decision verifier rejected an observation gap during synchronous upload; made upload asynchronous.",
+      "native_inference": false,
+      "error": null
+    },
+    {
+      "id": "04-fixture-final",
+      "run_id": "yokohama-434f95f57f7d",
+      "kind": "development_cpu_fixture",
+      "runner_status": "passed",
+      "result_sha256": "0f6b9eb19fdca346ad6ad26d2f6128549ff527c4ceb23a1e5ba510083245b9ea",
+      "reason": "Both verifiers passed on 441c100f; prefinal qualification before binding hardening.",
+      "native_inference": false,
+      "error": null
+    },
+    {
+      "id": "04b-fixture-final",
+      "run_id": "yokohama-13645c4f3d6c",
+      "kind": "development_cpu_fixture",
+      "runner_status": "passed",
+      "result_sha256": "cb0c08d0b7e618356f3d8cba40ff8ebf9ca99bcea3643610152d657346707d53",
+      "reason": "Both verifiers passed on final frozen source 96b0c3ef; explicit CPU model doubles.",
+      "native_inference": false,
+      "error": null
+    },
+    {
+      "id": "06-revised-fixture",
+      "run_id": "yokohama-86328bc23b51",
+      "kind": "development_cpu_fixture",
+      "runner_status": "failed",
+      "reason": "ValueError: RGBD/Gazebo pose join exceeds 12 ms",
+      "full_test_suite_concurrent": true,
+      "cause_of_join_gap_proven": false,
+      "native_inference": false
+    },
+    {
+      "id": "06b-revised-fixture-isolated",
+      "run_id": "yokohama-cf58d737ae9b",
+      "kind": "revised_cpu_qualification",
+      "runner_status": "passed",
+      "both_verifiers": "passed",
+      "concurrent_full_test_suite": false,
+      "native_inference": false
+    }
+  ],
+  "infrastructure": [
+    {
+      "id": "a1",
+      "status": "SSH_readiness_timeout_before_models",
+      "native_calls": 0,
+      "task_resources_deleted": true,
+      "receipt_sha256": "9c6eec26c7eb5b97d1e9c1cb88a86914c0809cd69741a86cf259698b9361aaf1"
+    }
+  ],
+  "native_frozen_trials": [
+    {
+      "run_id": "yokohama-1db5e937c115",
+      "source_revision": "96b0c3ef13e9c62b8a4c36a92bc217a2e40c7d7b",
+      "status": "failed",
+      "vla_invoked": true,
+      "wam_invoked": false,
+      "model_segment_dispatches": 0,
+      "model_updates": 0,
+      "reason": "ValueError: ValueError: Unbound native VLA result",
+      "result_sha256": "c60ad5849225c51abfd80986ad8ca15a85af928430e3e92f3065c6c38a831494"
+    },
+    {
+      "run_id": "yokohama-b95aa9e3c929",
+      "source_revision": "035e2b539cf0660257a923fb36dbb5002afff219",
+      "status": "failed",
+      "vla_invoked": true,
+      "wam_invoked": false,
+      "model_segment_dispatches": 0,
+      "model_updates": 0,
+      "reason": "ValueError: ValueError: Unbound native VLA result",
+      "result_sha256": "cfe8cdaa259ad0e04222ff77960f4ee79de27cfca6af90a8752fe92c3033c298"
+    },
+    {
+      "run_id": "yokohama-e9da88bd375a",
+      "source_revision": "fa0d0d216bf6b8bebce6e915564f7473ce5496ad",
+      "status": "failed",
+      "vla_invoked": true,
+      "wam_invoked": true,
+      "model_segment_dispatches": 0,
+      "model_updates": 0,
+      "reason": "ValueError: WAM visible-structure consistency rejected; no segment dispatched",
+      "result_sha256": "7536bea70b362c8e013137c6dc6229a8b6e76701a9c3b4bd89e558a8f2e51cb8"
+    }
+  ],
+  "pooled_success_rate_not_estimated": true
+}

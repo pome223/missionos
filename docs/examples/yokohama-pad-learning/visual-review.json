@@ -1,0 +1,8 @@
+{
+  "schema": "pad_learning_visual_review.v1",
+  "reviewer": "assistant visual inspection after inference",
+  "scope": "all eight before/after forecast pairs plus short-time development output",
+  "finding": "Background and pad-like structure recover; the small lead aircraft disappears or becomes unreadable in all eight after forecasts, including both occupied outcomes in each cohort.",
+  "metric_separation": "Frozen grayscale reader reports every after image clear. Image-wide MAE improvement is not temporal occupancy capability.",
+  "adoption": false
+}

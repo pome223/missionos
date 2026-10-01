@@ -1,0 +1,69 @@
+{
+  "schema_version": "ship_urban_runtime_comparison.v1",
+  "status": "compared",
+  "verified_runs": 4,
+  "comparison_scope": "simulator_state_baseline",
+  "cases": [
+    {
+      "case": "short_clear",
+      "observed_actions": {
+        "wait": {
+          "run_id": "07e8f5d4c7024759a69d026e5d249ae4",
+          "policy": "constant_velocity",
+          "urban_elapsed_s": 57.317127776000234,
+          "max_outbound_lateral_m": 0.1954816888827141,
+          "collision_observed": false,
+          "geometric_clearance_verified": true
+        },
+        "detour": {
+          "run_id": "81462cfe930e4852aa9b164526af2a41",
+          "policy": "always_detour",
+          "urban_elapsed_s": 86.17595204000008,
+          "max_outbound_lateral_m": 85.20119836323443,
+          "collision_observed": false,
+          "geometric_clearance_verified": true
+        }
+      },
+      "rule_action": "wait",
+      "best_observed_action": "wait",
+      "rule_gain_over_opposite_action_s": 28.85882426399985,
+      "headroom_over_rule_s": 0.0
+    },
+    {
+      "case": "long_block",
+      "observed_actions": {
+        "detour": {
+          "run_id": "acb96effcd07474aaa28ca9749d1dd7c",
+          "policy": "constant_velocity",
+          "urban_elapsed_s": 105.68651054800011,
+          "max_outbound_lateral_m": 85.22641728882493,
+          "collision_observed": false,
+          "geometric_clearance_verified": true
+        },
+        "wait": {
+          "run_id": "e0b2e1f01a4946db93cba1d9c87ee223",
+          "policy": "always_wait",
+          "urban_elapsed_s": 142.2270041480001,
+          "max_outbound_lateral_m": 0.2252818099016435,
+          "collision_observed": false,
+          "geometric_clearance_verified": true
+        }
+      },
+      "rule_action": "detour",
+      "best_observed_action": "detour",
+      "rule_gain_over_opposite_action_s": 36.54049359999999,
+      "headroom_over_rule_s": 0.0
+    }
+  ],
+  "mean_observed_headroom_over_rule_s": 0.0,
+  "learned_model_comparison_admitted": false,
+  "vla_invoked": false,
+  "wam_invoked": false,
+  "limitations": [
+    "Two cases, one run per candidate action; no statistical or held-out efficacy claim.",
+    "The best observed wait/detour action is an offline comparator, not a dispatch policy.",
+    "Privileged simulator position history; camera-matched observations are not implemented.",
+    "Comparison interval is urban entry to delivery hover; common return detour is excluded.",
+    "Elapsed seconds are worker wall-clock time, including simulator load and control overhead."
+  ]
+}

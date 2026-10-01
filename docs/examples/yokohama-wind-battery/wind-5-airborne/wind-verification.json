@@ -1,0 +1,220 @@
+{
+  "status": "passed",
+  "checks": {
+    "plugin_and_vector": true,
+    "vehicle_wind_enabled": true,
+    "cargo_wind_enabled": true,
+    "airborne_wind_activation": true,
+    "force_observed_against_unpowered_control": true
+  },
+  "samples": [
+    {
+      "sim_s": 70.8,
+      "elapsed_since_activation_start_s": 8.54,
+      "witness_x_m": 32.49057429194654,
+      "expected_x_m": 32.710302336709745,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 71.132,
+      "elapsed_since_activation_start_s": 8.872000000000007,
+      "witness_x_m": 34.14782196003645,
+      "expected_x_m": 34.36762463054549,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 71.476,
+      "elapsed_since_activation_start_s": 9.216000000000001,
+      "witness_x_m": 35.86571765311565,
+      "expected_x_m": 36.08557635045286,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 71.824,
+      "elapsed_since_activation_start_s": 9.564,
+      "witness_x_m": 37.60416025833412,
+      "expected_x_m": 37.824059622607884,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 72.152,
+      "elapsed_since_activation_start_s": 9.892000000000003,
+      "witness_x_m": 39.243080340202006,
+      "expected_x_m": 39.4630073494113,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 72.48,
+      "elapsed_since_activation_start_s": 10.220000000000006,
+      "witness_x_m": 40.8822790182276,
+      "expected_x_m": 41.10222613555044,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 72.82,
+      "elapsed_since_activation_start_s": 10.559999999999995,
+      "witness_x_m": 42.581666413047614,
+      "expected_x_m": 42.80162858306654,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 72.86,
+      "elapsed_since_activation_start_s": 10.600000000000001,
+      "witness_x_m": 42.78160607496613,
+      "expected_x_m": 43.00156970861309,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 75.944,
+      "elapsed_since_activation_start_s": 13.684000000000005,
+      "witness_x_m": 58.20009132583423,
+      "expected_x_m": 58.42008944192707,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 75.984,
+      "elapsed_since_activation_start_s": 13.723999999999997,
+      "witness_x_m": 58.40008797415267,
+      "expected_x_m": 58.62008615402458,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 76.336,
+      "elapsed_since_activation_start_s": 14.076,
+      "witness_x_m": 60.16006330553035,
+      "expected_x_m": 60.380061946799685,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 76.66,
+      "elapsed_since_activation_start_s": 14.399999999999999,
+      "witness_x_m": 61.78004676520624,
+      "expected_x_m": 62.000045706010276,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 77.012,
+      "elapsed_since_activation_start_s": 14.752000000000002,
+      "witness_x_m": 63.54003366375596,
+      "expected_x_m": 63.76003283405126,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 77.348,
+      "elapsed_since_activation_start_s": 15.088000000000001,
+      "witness_x_m": 65.22002461126363,
+      "expected_x_m": 65.44002393459576,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 77.68,
+      "elapsed_since_activation_start_s": 15.420000000000009,
+      "witness_x_m": 66.88001807650042,
+      "expected_x_m": 67.10001750641604,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 78.04,
+      "elapsed_since_activation_start_s": 15.780000000000008,
+      "witness_x_m": 68.68001295594615,
+      "expected_x_m": 68.90001246622147,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 78.404,
+      "elapsed_since_activation_start_s": 16.144,
+      "witness_x_m": 70.50000927435678,
+      "expected_x_m": 70.72000884001343,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 78.744,
+      "elapsed_since_activation_start_s": 16.484,
+      "witness_x_m": 72.20000680879481,
+      "expected_x_m": 72.42000640996599,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 79.08,
+      "elapsed_since_activation_start_s": 16.82,
+      "witness_x_m": 73.88000503839173,
+      "expected_x_m": 74.10000466397742,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 79.436,
+      "elapsed_since_activation_start_s": 17.17600000000001,
+      "witness_x_m": 75.66000368539343,
+      "expected_x_m": 75.88000332878703,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 79.476,
+      "elapsed_since_activation_start_s": 17.216,
+      "witness_x_m": 75.86000355993764,
+      "expected_x_m": 76.08000320493477,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 79.812,
+      "elapsed_since_activation_start_s": 17.552,
+      "witness_x_m": 77.54000267434186,
+      "expected_x_m": 77.76000233036767,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 80.148,
+      "elapsed_since_activation_start_s": 17.887999999999998,
+      "witness_x_m": 79.22000203030436,
+      "expected_x_m": 79.44000169395325,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    }
+  ],
+  "limitation": "Uniform built-in force approximation; no calibrated wind envelope"
+}

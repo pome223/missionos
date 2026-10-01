@@ -1,0 +1,47 @@
+{
+  "training_needed": true,
+  "rows": [
+    {
+      "id": "train-depart-36-t16",
+      "target": "clear",
+      "predicted": "unknown",
+      "passed": false,
+      "vae_reader": {
+        "state": "clear",
+        "scores": {
+          "occupied": 9.644631385803223,
+          "clear": 4.194408893585205
+        },
+        "margin": 5.450222492218018
+      }
+    },
+    {
+      "id": "train-stall-24-t16",
+      "target": "occupied",
+      "predicted": "occupied",
+      "passed": true,
+      "vae_reader": {
+        "state": "occupied",
+        "scores": {
+          "occupied": 4.892085075378418,
+          "clear": 10.70345687866211
+        },
+        "margin": 5.811371803283691
+      }
+    },
+    {
+      "id": "train-return-20-t16",
+      "target": "occupied",
+      "predicted": "unknown",
+      "passed": false,
+      "vae_reader": {
+        "state": "occupied",
+        "scores": {
+          "occupied": 5.142051696777344,
+          "clear": 11.211222648620605
+        },
+        "margin": 6.069170951843262
+      }
+    }
+  ]
+}

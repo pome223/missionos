@@ -1,0 +1,13 @@
+{
+  "status": "not_adopted",
+  "native_anwm_post_training_performed": true,
+  "native_vla_performed": false,
+  "fixed_accuracy_gate": false,
+  "ideal_rules_win_required": false,
+  "wait_decision_benefit_demonstrated": false,
+  "reentry_anticipation_before": 0,
+  "reentry_anticipation_after": 0,
+  "flight_admitted": false,
+  "reason": "No useful reentry anticipation; endpoint matches 13/26 to 12/26; motion forecasts have visible artifacts. At 1x speed all requested endpoints precede inference completion.",
+  "registered_flight_weights_changed": false
+}

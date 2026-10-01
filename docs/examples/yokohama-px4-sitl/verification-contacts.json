@@ -1,0 +1,26 @@
+{
+  "run_id": "yokohama-90137d96a4eb",
+  "phase": "contacts",
+  "checks": {
+    "run_finished_successfully": true,
+    "world_binding": true,
+    "mesh_binding": true,
+    "model_binding": true,
+    "source_binding": true,
+    "worker_source_binding": true,
+    "cpu_isolated": true,
+    "no_models_invoked": true,
+    "worker_binding": true,
+    "contact_cases": true,
+    "positive_negative_contacts": true
+  },
+  "status": "passed",
+  "evidence_hashes": {
+    "config.json": "1a961e554790b0af5fa0869468929b0788b46e05e444b5d7821b10e933dc5ad5",
+    "result.json": "c851b94c53d6482359be220ecde0ba47e5b5b92ffd379de19d7fb63fad48831c",
+    "worker-result.json": "9fc6f3a4298f4df8c4328497260e5c5aac6cf12e3278c3808dda079c0a863e83",
+    "sensor-events.jsonl": "f3cb9cdb0f50988e0e6267d20758bfa6ad9f2dcef12ae9db83c6502212bbdfb1",
+    "container-inspect.json": "70f1d88eb8b68b848f192490c51f25a47af70a6474103342ea3908ec7008a329",
+    "probe-trajectory.jsonl": "3f511251ab46d414076be13a9aaac8feb9650f5b0b4561536ad34f001cbf1007"
+  }
+}

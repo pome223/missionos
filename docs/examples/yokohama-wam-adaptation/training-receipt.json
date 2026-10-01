@@ -1,0 +1,131 @@
+{
+  "schema_version": "anwm_head_training_receipt.v1",
+  "total_parameters": 1134100256,
+  "trainable_parameters": 2692256,
+  "trainable_names": [
+    "final_layer.linear.weight",
+    "final_layer.linear.bias",
+    "final_layer.fuse_supervised.weight",
+    "final_layer.fuse_supervised.bias"
+  ],
+  "base_checkpoint_sha256": "bdd149cac6ec002ba7dc4ad99ec6f9eb02cd6d4f05320195cf174737b13b0bc2",
+  "frozen_parameters_sha256": "9aba948da4fcf47902306d53b1d06a081628ca750f9f2996b005cbc989965fbb",
+  "initial_head_sha256": "5d3e53edbcb70d029eb473b8a2c8b087f3447838028f986db5a4a267b5ecc5b5",
+  "torch_version": "2.9.1+cu129",
+  "gpu": "NVIDIA L4",
+  "steps": 512,
+  "training_seconds": 46.32686696300004,
+  "head_change_l2": 9.722470656064983,
+  "final_head_sha256": "2910d4954a5d0ac1cea555bab99c94511d2ffb8d673e04f4558ba8bf5c84829c",
+  "frozen_base_unchanged": true,
+  "checkpoint_reloaded": true,
+  "adapter_sha256": "7d69f3d7eccfee89cdd43b0fe22f5622da3d7cc03d2554be64f02d05c1a07222",
+  "before": [
+    {
+      "sample": "test-12-hold",
+      "image": "before-test-12-hold.png",
+      "sha256": "6a232a4fcbc8cacc9b0a7c1023cf3437dd61c580ab5162a2dafda559ac3b02d5",
+      "elapsed_s": 21.03642272799999
+    },
+    {
+      "sample": "test-12-forward",
+      "image": "before-test-12-forward.png",
+      "sha256": "10e5509b3747c0d6692dde310126faacd8c05ed05c70553fe95dddcc58bb13d5",
+      "elapsed_s": 20.74079962799999
+    },
+    {
+      "sample": "test-13-hold",
+      "image": "before-test-13-hold.png",
+      "sha256": "79a925793a906f65daea4e2fb138b0ed386fef505a16cd1d642c003703d1193c",
+      "elapsed_s": 20.761131878000015
+    },
+    {
+      "sample": "test-13-forward",
+      "image": "before-test-13-forward.png",
+      "sha256": "46650339b29adeae2ce9adbce67bad39cd9d8405ad5430219978af247b83a1bf",
+      "elapsed_s": 20.636352272000067
+    },
+    {
+      "sample": "test-14-hold",
+      "image": "before-test-14-hold.png",
+      "sha256": "80344075e81e406429a6961f2914981f2495a95b3b43c717cd82a0a8e2ae7e85",
+      "elapsed_s": 20.638111303000073
+    },
+    {
+      "sample": "test-14-forward",
+      "image": "before-test-14-forward.png",
+      "sha256": "59d94b0a8a25aed6503efcb10572f1b0c662c5b0171e9e641651aed6e396b975",
+      "elapsed_s": 20.597591738999995
+    },
+    {
+      "sample": "test-15-hold",
+      "image": "before-test-15-hold.png",
+      "sha256": "811b13533f4bf6d9153180f74784127d94a91baa38302776975a4023b372938b",
+      "elapsed_s": 20.635283059000017
+    },
+    {
+      "sample": "test-15-forward",
+      "image": "before-test-15-forward.png",
+      "sha256": "1047a27f65cad6d2ed2c9cddcf17d5d866c81c1dab4df92d0f2a36c1baa49627",
+      "elapsed_s": 20.54550588099994
+    }
+  ],
+  "after": [
+    {
+      "sample": "test-12-hold",
+      "image": "after-test-12-hold.png",
+      "sha256": "5a9bea97653fc8ddbe7b5305dd7a5d06b41a8aa6a234310e7ed57c1b38ce7602",
+      "elapsed_s": 20.784497359000056
+    },
+    {
+      "sample": "test-12-forward",
+      "image": "after-test-12-forward.png",
+      "sha256": "126b36542d0d738e1c4d6dc59f56f59caa87eafc1db433e194c0052a8fe1434e",
+      "elapsed_s": 20.65460937599994
+    },
+    {
+      "sample": "test-13-hold",
+      "image": "after-test-13-hold.png",
+      "sha256": "9beba1a1cfa1d54c69884a771b8a5d70aeb45e0b5d0ed891b9c872b5ac2d1356",
+      "elapsed_s": 20.80353590699997
+    },
+    {
+      "sample": "test-13-forward",
+      "image": "after-test-13-forward.png",
+      "sha256": "c4c38923babb0b8988b3effd93abf979a1937c821d90a280b5cf4865156ce198",
+      "elapsed_s": 21.03049260499995
+    },
+    {
+      "sample": "test-14-hold",
+      "image": "after-test-14-hold.png",
+      "sha256": "1bcee2365000bb3e7c1b35b8ce44d824b1d9f8596813f8598534415bfb0e3db5",
+      "elapsed_s": 20.880317373000025
+    },
+    {
+      "sample": "test-14-forward",
+      "image": "after-test-14-forward.png",
+      "sha256": "80c4f81cf7f2c75ab15cb28a12b10924c9897654259d7ed0b997ae533335a4b5",
+      "elapsed_s": 20.981012598000007
+    },
+    {
+      "sample": "test-15-hold",
+      "image": "after-test-15-hold.png",
+      "sha256": "3f6a7135515711a2da682bd6ede1b19fe2e9d8b0d75d9f2a9719e69b7cdb53c9",
+      "elapsed_s": 20.8015719
+    },
+    {
+      "sample": "test-15-forward",
+      "image": "after-test-15-forward.png",
+      "sha256": "43662624bdf942ef6d4363b029face324538fe1406ccb2dfd766165ae4cddc4a",
+      "elapsed_s": 20.765915585000016
+    }
+  ],
+  "max_cuda_allocated_bytes": 6797384192,
+  "protocol_sha256": "0077dc97cc412081c497fd1703d9c6c900b904164e4eb1553c90c950224bee0d",
+  "training_targets_uploaded": true,
+  "test_targets_uploaded": false,
+  "flight_invoked": false,
+  "vla_invoked": false,
+  "inference_calls": 16,
+  "total_model_seconds": 537.5039163250001
+}

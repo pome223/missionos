@@ -1,0 +1,26 @@
+{
+  "schema_version": "adaptation_publication_checks.v1",
+  "full_pytest": {
+    "passed": 3363,
+    "warnings": 3,
+    "seconds": 102.66,
+    "source": "f4b160135622e1b9a5f1c26991d0bb8f8c87db85"
+  },
+  "local_links": 33,
+  "browser": {
+    "selector_cases": 8,
+    "loaded_images_per_case": 4,
+    "console_errors": 0,
+    "console_warnings": 0,
+    "desktop_verified": true,
+    "narrow_viewport_width": 390,
+    "narrow_scroll_width": 390,
+    "temporary_viewport_reset": true
+  },
+  "archived_remote_files_sha256_verified": 49,
+  "claims": {
+    "native_flight_qualified": false,
+    "minimum_feasibility_passed": false
+  },
+  "training_rerun_by_public_verifier": false
+}

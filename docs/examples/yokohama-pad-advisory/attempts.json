@@ -1,0 +1,48 @@
+{
+  "setup_attempts": [
+    {
+      "stage": "scene preparation",
+      "result": {
+        "run_id": "yokohama-f0b8ca8298d4",
+        "status": "failed",
+        "phase": "flight",
+        "physical_execution_invoked": false,
+        "vla_invoked": false,
+        "wam_invoked": false,
+        "gpu_requested": false,
+        "container": "missionos-yokohama-f0b8ca8298d4",
+        "reason": "ModuleNotFoundError: No module named 'pyproj'",
+        "finished_utc": "2026-09-28T15:59:51.039416+00:00"
+      }
+    },
+    {
+      "stage": "dedicated Python environment import",
+      "status": "failed_before_simulator",
+      "reason": "missing pydantic_settings; resolved by reusing development site packages"
+    }
+  ],
+  "full_flight_attempts": [
+    {
+      "run_id": "yokohama-68836303671e",
+      "status": "failed",
+      "model_inferences": 0,
+      "cargo_received": true,
+      "ship_return_completed": false,
+      "cleanup": true,
+      "reason": {
+        "reason": "Stopped owned simulator after city wait used only current Rules; zero learned model invocations. Cargo receipt observed; return not completed.",
+        "root_cause": "Image arrived about 0.24 simulated seconds after its measured pose; recorder compared against latest pose instead of timestamp-joined history.",
+        "diagnostics": [
+          "recorder-diagnostic",
+          "recorder-diagnostic-world"
+        ],
+        "diagnostic_is_not_live_mission_model_use": true
+      }
+    },
+    {
+      "run_id": "yokohama-c410139f4ad7",
+      "status": "passed",
+      "path": "run/result.json"
+    }
+  ]
+}

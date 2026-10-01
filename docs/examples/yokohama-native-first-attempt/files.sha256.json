@@ -1,0 +1,16 @@
+{
+  "REPORT-ja.md": "816a4a731e8f7f9350487e5ccff633f10445b5377eee335f50ee23a8ca11eeae",
+  "browser-checks.json": "144cb297e4975306a130173bd3caff8091bd154a3b2fdf8e1597d646e2147e7a",
+  "evidence-manifest.json": "80b120ee5b9f2a0c446bb1a0accaba08e8a60bccf96ea5155be2efebcb832f2a",
+  "failure-receipt.json": "05dcd175b0f74c29f86946699ae596b9bfd32af423a4c28bcd38810b66909578",
+  "images/00-D1-onboard_rgb.png": "8d1af02d2fec1c3bcad6129e9762290e8d2362f0b5b21505a4b3327405d75179",
+  "index.html": "302cd34075ee4236be99815a78fdd7faa8a0adf9918733abeb784dc02efc5151",
+  "model-wait-hold.json": "ae70d6d2571c1ddd4780fe4903c8d095c626a1f864e437716b6e40c0e3043b11",
+  "offline-proposal-check.json": "f7dcbee8b44992a6289610f5943ee7bb9e2dc8eac568e82a74ef25aeeb5146c4",
+  "onboard-timelapse.mp4": "9d2fdd8c9aa568f747231e55a1a9e8a439726dba834893241bed98cb28ba589f",
+  "summary.json": "d437ff4fe67dfe43752158c490bedb3b02e951f908264aa2c7db7dd4de55e12d",
+  "trajectory.json": "acad733859d2543aafe36380909883de9690f1df5c0a41163543f0c8f3b47d1a",
+  "verification-decisions.json": "fb765b02070b5614d63a06f77ee49321685a364cf9add316409c533abe8441a4",
+  "verification-flight.json": "d3fa5d4f526ad48051c924eecb1f6d27a394dadf1310ebc8482a0d773a63d856",
+  "video-metadata.json": "316397732ccad3ea3c1d54196400a673e767283f5437667b297f936836ce87de"
+}

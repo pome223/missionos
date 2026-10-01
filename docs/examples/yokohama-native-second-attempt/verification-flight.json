@@ -1,0 +1,5 @@
+{
+  "status": "not_completed",
+  "reason": "D1 native response rejected before any model-segment dispatch; required seven holds and return are absent. No complete-flight qualification is claimed.",
+  "run_id": "yokohama-b95aa9e3c929"
+}

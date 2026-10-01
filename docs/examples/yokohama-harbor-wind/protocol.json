@@ -1,0 +1,38 @@
+{
+  "schema": "missionos.harbor-wind-protocol.v1",
+  "frozen_utc": "2026-09-28T03:11:32.988495+00:00",
+  "assumption_source": "user-supplied scenario; not observed or forecast Yokohama weather",
+  "profiles": {
+    "nominal": {
+      "offshore": 6,
+      "harbor": 5,
+      "coast": 4,
+      "city": 3
+    },
+    "upper": {
+      "offshore": 8,
+      "harbor": 7,
+      "coast": 6,
+      "city": 4
+    }
+  },
+  "city_gusts_mps": [
+    8,
+    10,
+    12
+  ],
+  "gusts_status": "planned only; no timing protocol or runtime implementation yet",
+  "this_trial": "nominal only; one attempt; after successful calm takeoff hold; uniform ENU +X follows observed vehicle zone",
+  "bounds": "unchanged holds, cargo receipt and arrival timeouts; no controller retuning",
+  "failure_policy": "preserve all attempts; do not extend timeouts or reduce force to pass",
+  "gpu_increment_usd": 0,
+  "previous_cumulative_gpu_estimate_usd": 16.706277034434482,
+  "source_sha256": {
+    "src/runtime/yokohama_wind.py": "87f864a3728d307c2ce9aa185d87ece1e1a29848948555adc854605f8fd4b9ea",
+    "src/runtime/yokohama_wind_profile.py": "20d131be8fdb2bfe954bd9cac4a9169a2fae0e3ec216fe20b145fabbb198a4c4",
+    "scripts/yokohama_sitl.py": "f2d49c3ced9e0a181dc28d37f21878932f9d94e4c4dee24c29ea992f138263f3",
+    "scripts/yokohama_flight_worker.py": "ec08ef64e35d80db4ccef880af39ec4f8e5f47b364d5b5b270ecad38350369c3",
+    "scripts/yokohama_sitl_worker.py": "a7eaa3b7944ab3170c9de1911a8a8b519b340c4bb5c50eaf9d3d58b82f42f7fc",
+    "scripts/verify_yokohama_sitl.py": "de289eaa25a9e7bbeebf39c9fc1876d54eb8e6cfb644e9bea2e2b4dd3da4df16"
+  }
+}

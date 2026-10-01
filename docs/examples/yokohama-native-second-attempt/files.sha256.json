@@ -1,0 +1,14 @@
+{
+  "REPORT-ja.md": "93a2b7f97286edb330d8e9e26ac11f8dd79e3560597b06a7b19f104cf4dedcce",
+  "browser-checks.json": "56903e5149f8d85840bd0cc1f3ee31264168bb745a7392b9dfb2fcbd506c925a",
+  "evidence-manifest.json": "19a7b48ed56f7647c096267eb806425734394e0f93a21746dd78aa003e22bcd6",
+  "failure-receipt.json": "0fe9da723a359a15d84e15a272d16ab69d0d6ff41be5286b7010e29cf19f63ea",
+  "images/00-D1-onboard_rgb.png": "3a6c9624eb3e00efade578710311013492a5a89548c74f469b123cc95b9019ea",
+  "index.html": "7b1fa5cd0ad20b2b2410007e16178f6f8381d5f4454ddf223fdf42a2d14cf4f7",
+  "onboard-timelapse.mp4": "3a312bb4237b153c8a459109fb9401bbecd78b1059220be140f9e043427941aa",
+  "summary.json": "838c06d4ce42b7f8cf1bbcbbc87d0a33e2c074e42c9c76b3690a964c160a6190",
+  "trajectory.json": "a439eefd80eb524427ece93b5938ca371b870e55da26a19e2388b1edafdbec26",
+  "verification-decisions.json": "fb765b02070b5614d63a06f77ee49321685a364cf9add316409c533abe8441a4",
+  "verification-flight.json": "7b590356b19b3b382e2a8396be0877e0ed14f1635ad406fcb228a2ff602015d5",
+  "video-metadata.json": "46a74a03032fde774f3263d6ab31e94bfeb2d20ba2e9b95b7904af97f25fa90c"
+}

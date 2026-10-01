@@ -1,0 +1,65 @@
+{
+  "status": "passed",
+  "qualification_scope": "paired_capture_only",
+  "flight_terminal_status": "pending",
+  "run_id": "yokohama-e13923f20e45",
+  "pairs": [
+    {
+      "cycle": 1,
+      "input_cutoff_sim_s": 74.252,
+      "input_capture_sha256": "ff60c4aebc385d4c32dd7374bac78b5603ef963ca3d7a299be92097e0be2f263",
+      "request_sha256": "65cbe826ae976859cd9b353e3ac909e874ee909cb2237e52df5c2c3f44d7decd",
+      "history_sha256": "321e3a056ca2601af17e532577a8c5296156cdfe4e6fb8dc28b1e3550ed5e377",
+      "outcomes": {
+        "hold": {
+          "stamp_ns": 75252000000,
+          "elapsed_after_input_s": 1.0,
+          "target_camera_error_m": 0.024756135785585137,
+          "target_camera_rotation_error_rad": 0.0011445215727719344,
+          "source_capture_sha256": "b77dfaeb60393a51e7300bc19485136d413218237a7ed200d72c7bae73eb7810",
+          "actual_rgb_sha256": "0ff74238a5f2c63d3da23bce34a4b22367f603b8911a0fa25563e0241503399c",
+          "model_time_alignment_verified": false
+        },
+        "endpoint": {
+          "stamp_ns": 90500000000,
+          "elapsed_after_input_s": 16.248000000000005,
+          "target_camera_error_m": 0.13599511999051286,
+          "target_camera_rotation_error_rad": 0.02372407502912458,
+          "source_capture_sha256": "5a85a85facf290fc1a515d483799d22bb83ddf62957cfe919b3d7e269b7b049a",
+          "actual_rgb_sha256": "2bbcd2eb5fb075909df3572a78f3d4b934572fab4a59c2ae1240fdca9056bd92",
+          "model_time_alignment_verified": false
+        }
+      }
+    },
+    {
+      "cycle": 2,
+      "input_cutoff_sim_s": 173.252,
+      "input_capture_sha256": "7ae8949e5591b1b2a7e7d7e1b20f9b067d856f59579b6f6409db6098083d913f",
+      "request_sha256": "84d9c954ac55823774e193bf5b6d6d7e2e4060c8c184ca0b6c9dbe7fcbb8bf61",
+      "history_sha256": "b9ffd9fedef402e472d247c159a6386eef3d1d9fb02a653c0491d6f89e1bc67c",
+      "outcomes": {
+        "hold": {
+          "stamp_ns": 174252000000,
+          "elapsed_after_input_s": 1.0,
+          "target_camera_error_m": 0.018772492943408135,
+          "target_camera_rotation_error_rad": 0.002785622986847747,
+          "source_capture_sha256": "a4c9134f88b5cd5c94ef0fb9a60b109993672d34ddc073121a9f573ac7d52d22",
+          "actual_rgb_sha256": "0655acbebcd0e1cd5d1112e046994130c73d7ba3f86d22ff60a5bf5811a6c492",
+          "model_time_alignment_verified": false
+        },
+        "endpoint": {
+          "stamp_ns": 190000000000,
+          "elapsed_after_input_s": 16.74799999999999,
+          "target_camera_error_m": 0.10862381746270619,
+          "target_camera_rotation_error_rad": 0.005221310322045147,
+          "source_capture_sha256": "fcbf06c27a3447e2f81b8ae19b4ef9ddcb04e688c27ba66c10236e6e1e950936",
+          "actual_rgb_sha256": "e5f77970f46abe9b11cfc0e34bc89b5f9c4bc4885da7990485b3e3955029cd05",
+          "model_time_alignment_verified": false
+        }
+      }
+    }
+  ],
+  "real_model_flight": false,
+  "future_images_in_model_payload": false,
+  "outcome_use": "offline evaluation only; not flight authorization"
+}

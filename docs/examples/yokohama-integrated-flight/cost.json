@@ -1,0 +1,31 @@
+{
+  "new_estimated_usd": 0.707743500674286,
+  "cumulative_estimated_usd": 14.710124818926188,
+  "authorized_total_usd": 15,
+  "cleanup_confirmed": true,
+  "cost_estimate_closed": true,
+  "invoice_confirmed": false,
+  "elapsed_observed_s": 1526.782327,
+  "integration_attempts": [
+    {
+      "run_id": "yokohama-69a58ecbd93a",
+      "status": "failed",
+      "estimated_usd": 0.4563751807436165,
+      "cleanup_confirmed": true
+    },
+    {
+      "run_id": "yokohama-84e200069b7b",
+      "status": "failed",
+      "estimated_usd": 0.47457973189598984,
+      "cleanup_confirmed": true
+    },
+    {
+      "run_id": "yokohama-280d65f068d7",
+      "status": "passed",
+      "estimated_usd": 0.707743500674286,
+      "cleanup_confirmed": true
+    }
+  ],
+  "integration_added_estimated_usd": 1.6386984133138924,
+  "prior_motion_study_estimated_usd": 13.071426405612295
+}

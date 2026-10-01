@@ -1,0 +1,355 @@
+{
+  "run_id": "yokohama-d8034ac7c65b",
+  "phase": "flight",
+  "checks": {
+    "run_finished_successfully": true,
+    "world_binding": true,
+    "mesh_binding": true,
+    "model_binding": true,
+    "source_binding": true,
+    "worker_source_binding": true,
+    "cpu_isolated": true,
+    "no_models_invoked": true,
+    "worker_binding": true,
+    "trajectory_binding": true,
+    "trajectory_finite_ordered": true,
+    "seven_measured_holds": true,
+    "returned_landed_disarmed": true,
+    "contact_sensor_outcome": true,
+    "depth_matches_source": true,
+    "sampled_swept_envelope_clear": true
+  },
+  "holds_recomputed": [
+    {
+      "duration_sim_s": 30.391999999999996,
+      "samples": 92,
+      "max_horizontal_error_m": 0.06932456565934124,
+      "max_vertical_error_m": 0.10620834487637687,
+      "max_px4_speed_mps": 0.0449368212048872,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.02404383299995061,
+      "max_sample_gap_sim_s": 0.4160000000000039,
+      "passed": true,
+      "point": "00-D1"
+    },
+    {
+      "duration_sim_s": 30.051999999999992,
+      "samples": 91,
+      "max_horizontal_error_m": 0.19017808868908562,
+      "max_vertical_error_m": 0.083558703273237,
+      "max_px4_speed_mps": 0.09909775274949477,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.02080129199998737,
+      "max_sample_gap_sim_s": 0.4159999999999968,
+      "passed": true,
+      "point": "01-D2"
+    },
+    {
+      "duration_sim_s": 30.02799999999999,
+      "samples": 93,
+      "max_horizontal_error_m": 0.13307504572416332,
+      "max_vertical_error_m": 0.07239307730703892,
+      "max_px4_speed_mps": 0.08514134953123541,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.021776124999860258,
+      "max_sample_gap_sim_s": 0.41200000000000614,
+      "passed": true,
+      "point": "02-D3"
+    },
+    {
+      "duration_sim_s": 30.283999999999992,
+      "samples": 92,
+      "max_horizontal_error_m": 0.1310566408768182,
+      "max_vertical_error_m": 0.0901928400204639,
+      "max_px4_speed_mps": 0.07044436670167459,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.019803207999984807,
+      "max_sample_gap_sim_s": 0.4159999999999968,
+      "passed": true,
+      "point": "03-DELIVERY"
+    },
+    {
+      "duration_sim_s": 30.25999999999999,
+      "samples": 92,
+      "max_horizontal_error_m": 0.0802621132219218,
+      "max_vertical_error_m": 0.11371445971644611,
+      "max_px4_speed_mps": 0.07406809434567625,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.02217820800001391,
+      "max_sample_gap_sim_s": 0.4159999999999968,
+      "passed": true,
+      "point": "04-D3"
+    },
+    {
+      "duration_sim_s": 30.324000000000012,
+      "samples": 92,
+      "max_horizontal_error_m": 0.05579519904836723,
+      "max_vertical_error_m": 0.09038703172805995,
+      "max_px4_speed_mps": 0.052089666921569,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.020833416999948895,
+      "max_sample_gap_sim_s": 0.4159999999999968,
+      "passed": true,
+      "point": "05-D2"
+    },
+    {
+      "duration_sim_s": 30.120000000000005,
+      "samples": 91,
+      "max_horizontal_error_m": 0.1389813644148192,
+      "max_vertical_error_m": 0.09497631265460349,
+      "max_px4_speed_mps": 0.07033601424590392,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.020698541999990994,
+      "max_sample_gap_sim_s": 0.41600000000005366,
+      "passed": true,
+      "point": "06-D1"
+    }
+  ],
+  "depth_check": {
+    "samples": [
+      {
+        "pixel": [
+          60,
+          90
+        ],
+        "source_ray_depth_m": 29.46361870602374,
+        "gazebo_depth_m": 29.4636287689209,
+        "absolute_error_m": 1.0062897157325779e-05
+      },
+      {
+        "pixel": [
+          60,
+          180
+        ],
+        "source_ray_depth_m": 22.249883893250786,
+        "gazebo_depth_m": 22.24989128112793,
+        "absolute_error_m": 7.387877143827382e-06
+      },
+      {
+        "pixel": [
+          60,
+          270
+        ],
+        "source_ray_depth_m": 22.249883893250786,
+        "gazebo_depth_m": 22.249893188476562,
+        "absolute_error_m": 9.295225776639882e-06
+      },
+      {
+        "pixel": [
+          60,
+          330
+        ],
+        "source_ray_depth_m": 22.24988389325078,
+        "gazebo_depth_m": 22.249893188476562,
+        "absolute_error_m": 9.295225783745309e-06
+      },
+      {
+        "pixel": [
+          160,
+          90
+        ],
+        "source_ray_depth_m": 91.02469832770565,
+        "gazebo_depth_m": 91.02471923828125,
+        "absolute_error_m": 2.0910575599941694e-05
+      },
+      {
+        "pixel": [
+          160,
+          180
+        ],
+        "source_ray_depth_m": 34.311755426362836,
+        "gazebo_depth_m": 34.311763763427734,
+        "absolute_error_m": 8.33706489800079e-06
+      },
+      {
+        "pixel": [
+          160,
+          270
+        ],
+        "source_ray_depth_m": 34.311755426362836,
+        "gazebo_depth_m": 34.311767578125,
+        "absolute_error_m": 1.215176216362579e-05
+      },
+      {
+        "pixel": [
+          160,
+          330
+        ],
+        "source_ray_depth_m": 34.31175542636285,
+        "gazebo_depth_m": 34.311767578125,
+        "absolute_error_m": 1.2151762149414935e-05
+      },
+      {
+        "pixel": [
+          260,
+          90
+        ],
+        "source_ray_depth_m": 93.47953206534797,
+        "gazebo_depth_m": 93.47954559326172,
+        "absolute_error_m": 1.352791375097695e-05
+      },
+      {
+        "pixel": [
+          260,
+          180
+        ],
+        "source_ray_depth_m": 93.479532065348,
+        "gazebo_depth_m": 93.47952270507812,
+        "absolute_error_m": 9.36026987119476e-06
+      },
+      {
+        "pixel": [
+          260,
+          270
+        ],
+        "source_ray_depth_m": 91.33040344765838,
+        "gazebo_depth_m": 91.33045196533203,
+        "absolute_error_m": 4.851767364755233e-05
+      },
+      {
+        "pixel": [
+          260,
+          330
+        ],
+        "source_ray_depth_m": 54.808424835578755,
+        "gazebo_depth_m": 54.80845642089844,
+        "absolute_error_m": 3.158531968239231e-05
+      },
+      {
+        "pixel": [
+          380,
+          90
+        ],
+        "source_ray_depth_m": 121.91251184550562,
+        "gazebo_depth_m": 121.91263580322266,
+        "absolute_error_m": 0.00012395771703666014
+      },
+      {
+        "pixel": [
+          380,
+          180
+        ],
+        "source_ray_depth_m": 121.91251184550562,
+        "gazebo_depth_m": 121.91264343261719,
+        "absolute_error_m": 0.00013158711156791014
+      },
+      {
+        "pixel": [
+          380,
+          270
+        ],
+        "source_ray_depth_m": 90.364150206107,
+        "gazebo_depth_m": 90.36421203613281,
+        "absolute_error_m": 6.183002581394703e-05
+      },
+      {
+        "pixel": [
+          380,
+          330
+        ],
+        "source_ray_depth_m": 54.87527777246054,
+        "gazebo_depth_m": 54.87530517578125,
+        "absolute_error_m": 2.740332070771956e-05
+      },
+      {
+        "pixel": [
+          480,
+          90
+        ],
+        "source_ray_depth_m": 28.818937620510464,
+        "gazebo_depth_m": 28.81894874572754,
+        "absolute_error_m": 1.1125217074692273e-05
+      },
+      {
+        "pixel": [
+          480,
+          180
+        ],
+        "source_ray_depth_m": 28.818937620510464,
+        "gazebo_depth_m": 28.81894302368164,
+        "absolute_error_m": 5.403171176254773e-06
+      },
+      {
+        "pixel": [
+          480,
+          270
+        ],
+        "source_ray_depth_m": 28.818937620510464,
+        "gazebo_depth_m": 28.81894302368164,
+        "absolute_error_m": 5.403171176254773e-06
+      },
+      {
+        "pixel": [
+          480,
+          330
+        ],
+        "source_ray_depth_m": 28.818937620510464,
+        "gazebo_depth_m": 28.818941116333008,
+        "absolute_error_m": 3.495822543442273e-06
+      },
+      {
+        "pixel": [
+          580,
+          90
+        ],
+        "source_ray_depth_m": 28.617039232665054,
+        "gazebo_depth_m": 28.61705207824707,
+        "absolute_error_m": 1.2845582016751678e-05
+      },
+      {
+        "pixel": [
+          580,
+          180
+        ],
+        "source_ray_depth_m": 28.617039232665054,
+        "gazebo_depth_m": 28.617046356201172,
+        "absolute_error_m": 7.123536118314178e-06
+      },
+      {
+        "pixel": [
+          580,
+          270
+        ],
+        "source_ray_depth_m": 28.617163530993697,
+        "gazebo_depth_m": 28.617170333862305,
+        "absolute_error_m": 6.802868607991286e-06
+      },
+      {
+        "pixel": [
+          580,
+          330
+        ],
+        "source_ray_depth_m": 28.617252637299053,
+        "gazebo_depth_m": 28.617258071899414,
+        "absolute_error_m": 5.434600360842978e-06
+      }
+    ],
+    "max_error_m": 0.00013158711156791014,
+    "tolerance_m": 0.05,
+    "passed": true
+  },
+  "sampled_swept_centerline_clearance_m": 7.687469438889515,
+  "assumed_radius_m": 1,
+  "measured_path_length_m": 688.5795162307054,
+  "sim_duration_s": 544.036,
+  "wall_duration_s": 545.6809365409999,
+  "status": "passed",
+  "evidence_hashes": {
+    "config.json": "22cb3449bfbdd149269fe41aedf7e42c467f2d5580ccfaec3871618d7fe45ae1",
+    "result.json": "fcb0d5562cafb02dee4066a2298da457da096a5337111d707233234de50c28c2",
+    "worker-result.json": "e69103e069d8221b71af08a6bee6b8a14a4b20d162e42ab7b62d6dd7a5bcb8a2",
+    "sensor-events.jsonl": "2fbdd604efdbe7247a59692900ebb7125d86992b141d4848b56a94e1258eb7ed",
+    "container-inspect.json": "01473fb66f16d9a4593af0e1d4bd53ee5ee656109f05d17af7cce92adff2d16e",
+    "flight-trajectory.jsonl": "9e50383ca4ce8baee5e994c4635b45056e279886bf751732038df79574da51ca",
+    "flight-events.jsonl": "51899cbdea37c3280dfde899ca7514b80832a7e51b0442ad7692b0e463d5a953",
+    "hold-results.json": "ecb5512f0afbdf84e4830fa2b5e49f12a7ad2b409599d59e67474e231409e231",
+    "video-frames.json": "b1dd33732a0eb1a859360cfa8cf439958cdd96e65a747771c8d67c564f4e3b74"
+  }
+}

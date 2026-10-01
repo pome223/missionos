@@ -1,0 +1,234 @@
+{
+  "schema": "yokohama_pad_model_input_screen.v1",
+  "native_inference_invoked": false,
+  "gpu_requested": false,
+  "flight_qualification_admitted": false,
+  "interpretation": "Passing only admits further measurement; failing is input/gate incompatibility, not model error",
+  "candidates": "Hold plus endpoint translations of the fixed forward range; not every intermediate pose",
+  "rows": [
+    {
+      "case": "far-busy",
+      "candidates": [
+        {
+          "delta": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "self_check": {
+            "passed": false,
+            "known_pixel_fraction": 0.5224210778061225,
+            "reference_edge_pixels": 1306,
+            "matched_edge_fraction": 1.0,
+            "luminance_mae": 0.0,
+            "predicted_edge_density": 0.04982260710334567,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          }
+        },
+        {
+          "delta": [
+            1.0204081632653061,
+            0,
+            0,
+            0
+          ],
+          "self_check": {
+            "passed": false,
+            "known_pixel_fraction": 0.5200494260204082,
+            "reference_edge_pixels": 1331,
+            "matched_edge_fraction": 1.0,
+            "luminance_mae": 0.0,
+            "predicted_edge_density": 0.05100789453514218,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          }
+        },
+        {
+          "delta": [
+            2.9591836734693877,
+            0,
+            0,
+            0
+          ],
+          "self_check": {
+            "passed": false,
+            "known_pixel_fraction": 0.5114795918367347,
+            "reference_edge_pixels": 1204,
+            "matched_edge_fraction": 1.0,
+            "luminance_mae": 0.0,
+            "predicted_edge_density": 0.046913965087281795,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          }
+        }
+      ]
+    },
+    {
+      "case": "near-busy",
+      "candidates": [
+        {
+          "delta": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "self_check": {
+            "passed": false,
+            "known_pixel_fraction": 0.4506138392857143,
+            "reference_edge_pixels": 1354,
+            "matched_edge_fraction": 1.0,
+            "luminance_mae": 0.0,
+            "predicted_edge_density": 0.05988500663423264,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          }
+        },
+        {
+          "delta": [
+            1.0204081632653061,
+            0,
+            0,
+            0
+          ],
+          "self_check": {
+            "passed": false,
+            "known_pixel_fraction": 0.44957748724489793,
+            "reference_edge_pixels": 1297,
+            "matched_edge_fraction": 1.0,
+            "luminance_mae": 0.0,
+            "predicted_edge_density": 0.05749623193545527,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          }
+        },
+        {
+          "delta": [
+            2.9591836734693877,
+            0,
+            0,
+            0
+          ],
+          "self_check": {
+            "passed": false,
+            "known_pixel_fraction": 0.44674744897959184,
+            "reference_edge_pixels": 1167,
+            "matched_edge_fraction": 1.0,
+            "luminance_mae": 0.0,
+            "predicted_edge_density": 0.0520610278372591,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          }
+        }
+      ]
+    },
+    {
+      "case": "near-clear",
+      "candidates": [
+        {
+          "delta": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "self_check": {
+            "passed": false,
+            "known_pixel_fraction": 0.45115194515306123,
+            "reference_edge_pixels": 1181,
+            "matched_edge_fraction": 1.0,
+            "luminance_mae": 0.0,
+            "predicted_edge_density": 0.05217122410213367,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          }
+        },
+        {
+          "delta": [
+            1.0204081632653061,
+            0,
+            0,
+            0
+          ],
+          "self_check": {
+            "passed": false,
+            "known_pixel_fraction": 0.451171875,
+            "reference_edge_pixels": 1136,
+            "matched_edge_fraction": 1.0,
+            "luminance_mae": 0.0,
+            "predicted_edge_density": 0.0501811114056012,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          }
+        },
+        {
+          "delta": [
+            2.9591836734693877,
+            0,
+            0,
+            0
+          ],
+          "self_check": {
+            "passed": false,
+            "known_pixel_fraction": 0.44955755739795916,
+            "reference_edge_pixels": 974,
+            "matched_edge_fraction": 1.0,
+            "luminance_mae": 0.0,
+            "predicted_edge_density": 0.043179500820144524,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          }
+        }
+      ]
+    },
+    {
+      "case": "near-reoccupied",
+      "candidates": [
+        {
+          "delta": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "self_check": {
+            "passed": false,
+            "known_pixel_fraction": 0.4506138392857143,
+            "reference_edge_pixels": 1354,
+            "matched_edge_fraction": 1.0,
+            "luminance_mae": 0.0,
+            "predicted_edge_density": 0.05988500663423264,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          }
+        },
+        {
+          "delta": [
+            1.0204081632653061,
+            0,
+            0,
+            0
+          ],
+          "self_check": {
+            "passed": false,
+            "known_pixel_fraction": 0.44957748724489793,
+            "reference_edge_pixels": 1297,
+            "matched_edge_fraction": 1.0,
+            "luminance_mae": 0.0,
+            "predicted_edge_density": 0.05749623193545527,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          }
+        },
+        {
+          "delta": [
+            2.9591836734693877,
+            0,
+            0,
+            0
+          ],
+          "self_check": {
+            "passed": false,
+            "known_pixel_fraction": 0.44674744897959184,
+            "reference_edge_pixels": 1167,
+            "matched_edge_fraction": 1.0,
+            "luminance_mae": 0.0,
+            "predicted_edge_density": 0.0520610278372591,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          }
+        }
+      ]
+    }
+  ]
+}

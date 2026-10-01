@@ -1,0 +1,6 @@
+{
+  "status": "not_completed",
+  "run_id": "yokohama-e9da88bd375a",
+  "reason": "Required model movement, seven holds and return are absent. Complete-flight verifier raises KeyError: holds on this incomplete result; no passing verdict was produced.",
+  "verifier_error_sha256": "ae9f24bcead4a21efb9277492d21f7c739195232884e76a3d8ca0d032b0f89cc"
+}

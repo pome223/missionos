@@ -1,0 +1,1 @@
+{"status": "publication_record_verified", "updates": 2048, "test_cases": 5, "before_passes": 4, "after_passes": 4, "qualified_cases": ["test-motion-12-forward", "test-motion-14-forward", "test-motion-15-forward", "test-motion-16-hold"], "native_flight_qualified": false, "raw_training_rerun": false}

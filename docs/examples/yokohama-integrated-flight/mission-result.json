@@ -1,0 +1,16 @@
+{
+  "run_id": "yokohama-280d65f068d7",
+  "source_revision": "f79a199c64f52cb2faa8aa19f1babd1084e6b685",
+  "trajectory_points": 5035,
+  "measured_path_m": 696.5116508764709,
+  "seven_holds_passed": true,
+  "delivery_waypoint_hold_passed": true,
+  "returned_landed_disarmed": true,
+  "native_updates": 2,
+  "real_observation_vla_calls": 2,
+  "native_wam_forecasts": 4,
+  "city_only": true,
+  "payload_release_verified": false,
+  "sea_leg_verified": false,
+  "physical_execution_verified": false
+}

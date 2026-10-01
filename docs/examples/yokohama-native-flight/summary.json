@@ -1,0 +1,110 @@
+{
+  "run_id": "yokohama-e9da88bd375a",
+  "status": "not_qualified",
+  "model_updates_observed": 0,
+  "native_vla_invoked": true,
+  "native_wam_invoked": true,
+  "world_sha256": "3d14db4c116d1f0892126e004be4249ab90edcdac9322aaa32a11a076db5bb3d",
+  "source_sha256": {
+    "yokohama_scene.py": "ad9ad3de307d590f052fd7b8a1f4623dd43714fdcf7b68424ffe35ea86e62be9",
+    "yokohama_sitl.py": "b6f7a4af869d2c6c0fbada0f1eabe78b1a7ca0f3da1dcd49a42fb82dc44395fb",
+    "yokohama_sitl_worker.py": "5152fcd618f5fc10190fa94cc5834df16a1b9b6bffb6a460f8dd63b907ace765",
+    "ship_urban_camera_worker.py": "d1410467349d7bc5526a46afe2e84a9cf8e44d7a3fc391d8b0361ad78696d6c7",
+    "ship_onboard_entrypoint.sh": "b45b89f4bc9cf4ecab5f3d041866a436d6133574717e122a9e02f86e4c977364",
+    "yokohama_flight_worker.py": "556ce27672edc4abca86d0093da9993da283935fb45ed64e8ce21232ebb12d87",
+    "yokohama_decision_worker.py": "e45dfa07ea89807bf156e29012bc6e99f6f2be063526a135dc975f988c9079c0",
+    "yokohama_decision_host.py": "1ce09ac361d856f9198691b685221d2f9fd06dd42ccf6240f3dcd142afd2787e",
+    "yokohama_native.py": "52574d155a26a9569dd76bfa8f6096eec48a247e297769cf882d8d8b3b4252fa",
+    "ship_anwm.py": "4a64a0fa90aab8913529a8948edc9cef53d1c86d04becbf81250c67aceddcf21",
+    "ship_anwm_server.py": "2507e4637643934e3a142572515d32afb5e66685fda0e5bc7451a4a73fd5fafc",
+    "ship_aerovla.py": "89c8ad6faba9e5ca516b6636ccd67f447488bb8d9346d2429d84f6740cf9c203",
+    "ship_aerovla_server.py": "fb457dd44278bb0aaaa5ff52b4ccf60f1f2e68b3fd34600ca3e40436c42e5c15",
+    "ship_vla_adapter.py": "0a155c594218e92875daf91e6bbaaf84152eb9a2f93929a64c3666a63e828dca",
+    "smoke_px4_gazebo_sitl_mission_upload.py": "424dac5e40ac45d1012653a891581a1dd4e1d5091700703f725dffc580e45e01",
+    "verify_yokohama_decisions.py": "49c405e0c1f9e9b2edeaefa0ef91f38242aad182ecf810dc3c06862d0a0e8958",
+    "verify_yokohama_sitl.py": "f74c83b67834f56db29112e127a95bd6131dd5b069e4dd036db47b596a407b52"
+  },
+  "error": "ValueError: WAM visible-structure consistency rejected; no segment dispatched",
+  "holds_completed": 1,
+  "cycles": [
+    {
+      "cycle": 1,
+      "request_sha256": "b6633168816f962ec733e5aa3f853f5ba15e71e2adc92374cdb4c615355a858b",
+      "response_sha256": "c94a53c0c5c5d1fa12f080922c64a884b392ff0d36d4fc32d134b48aeade070c",
+      "assessment": {
+        "checks": [
+          {
+            "candidate": {
+              "id": "hold",
+              "delta": [
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "passed": false,
+            "known_pixel_fraction": 0.7028858418367347,
+            "reference_edge_pixels": 2943,
+            "matched_edge_fraction": 0.835881753312946,
+            "luminance_mae": 52.228101016974776,
+            "predicted_edge_density": 0.15268798911194284,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          },
+          {
+            "candidate": {
+              "id": "vla",
+              "delta": [
+                4.69685426802624,
+                -1.2204446732473553,
+                0.030846273508840838,
+                -0.2426308910227717
+              ]
+            },
+            "passed": false,
+            "known_pixel_fraction": 0.5961216517857143,
+            "reference_edge_pixels": 1830,
+            "matched_edge_fraction": 0.8398907103825136,
+            "luminance_mae": 58.3683928989335,
+            "predicted_edge_density": 0.23339239744575574,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          }
+        ],
+        "passed": false,
+        "vla_response_sha256": "aa57851a5185d3282866737cbc426c1f60db4982b436725a8aadedea20aeb79e",
+        "native_wam_invoked": true
+      },
+      "error": null
+    }
+  ],
+  "vla_calls": [
+    {
+      "vla_inference_invoked": true,
+      "generated_text": "95 49 38</s>",
+      "generated_token_ids": [
+        29929,
+        29945,
+        29871,
+        29946,
+        29929,
+        29871,
+        29941,
+        29947,
+        2
+      ],
+      "request_sha256": "d4bab1ac4f902864496956db84f2011bc2f3b79c317c40acc3ebde6006b70e90",
+      "input_images_sha256": {
+        "rgb": "50ff499885c50ebf656ad1298f99496fe9b2bf02d9a61acaf727e4bdf18e6f2a",
+        "down": "545062c4670bead6c92757c61ea26c4d8c6541db2a30470df6bb8e991dfab553"
+      },
+      "elapsed_s": null,
+      "inference_s": null,
+      "cuda_allocated_after_request_bytes": 0
+    }
+  ],
+  "duration_sim_s": 310.832,
+  "duration_wall_s": 311.775301644,
+  "payload_delivery_verified": false,
+  "generic_obstacle_recognition_verified": false,
+  "energy_savings_verified": false
+}

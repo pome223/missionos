@@ -1,0 +1,24 @@
+{
+  "error": null,
+  "cleanup_errors": [],
+  "cleanup_confirmed": true,
+  "elapsed_observed_s": 646.289023,
+  "new_estimated_usd": 0.41492851022854693,
+  "cumulative_estimated_usd": 10.443404430658711,
+  "authorized_total_usd": 13,
+  "invoice_confirmed": false,
+  "cost_estimate_closed": true,
+  "completed_at": "2026-09-27T03:16:27.409038+00:00",
+  "prior_estimated_usd": 10.028475920430164,
+  "automatic_delete_after_s": 3600,
+  "gpu": "one NVIDIA L4, g2-standard-16",
+  "instance_absent": true,
+  "boot_disk_absent": true,
+  "pricing_basis": {
+    "vm_hourly_usd": 1.147208384,
+    "disk_hourly_reserve_usd": 0.04,
+    "ip_hourly_reserve_usd": 0.01,
+    "transfer_reserve_usd": 0.2
+  },
+  "model_calls_scope": "six offline ANWM cases, six VAE-only reconstructions; no flight or VLA"
+}

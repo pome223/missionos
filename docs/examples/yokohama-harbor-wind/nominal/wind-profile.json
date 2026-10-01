@@ -1,0 +1,42 @@
+{
+  "schema": "missionos.yokohama-wind-profile.v1",
+  "name": "harbor-nominal",
+  "speeds_mps": {
+    "offshore": 6.0,
+    "harbor": 5.0,
+    "coast": 4.0,
+    "city": 3.0
+  },
+  "origin_xy_m": [
+    0.0,
+    0.0
+  ],
+  "outward_unit_xy": [
+    0.965430162206204,
+    0.2606618535622401
+  ],
+  "coast_boundary_m": 400,
+  "offshore_boundary_m": 900.0,
+  "city_bounds_xy_m": [
+    [
+      -49.88761388811289,
+      168.03285452510517
+    ],
+    [
+      -157.92962206786046,
+      15.0
+    ]
+  ],
+  "hysteresis_m": 5.0,
+  "direction_enu": [
+    1,
+    0,
+    0
+  ],
+  "onset": "after_observed_takeoff_hold",
+  "weather_source": "user_supplied_scenario_assumption_not_observation",
+  "height_model": "constant_with_height_not_surface_wind_extrapolation",
+  "spatial_model": "global_wind_seed_follows_one_vehicle_zone_not_a_spatial_flow_field",
+  "gusts": false,
+  "building_wakes": false
+}

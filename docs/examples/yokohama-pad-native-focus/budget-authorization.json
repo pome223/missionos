@@ -1,0 +1,13 @@
+{
+  "schema": "missionos.compute-budget-authorization.v1",
+  "recorded_at": "2026-09-29T00:29:17.491777+00:00",
+  "user_instruction": "Add USD 3 GPU budget; GPU post-training authorized if needed",
+  "previous_ceiling_usd": 20,
+  "additional_authorized_usd": 3,
+  "authorized_total_usd": 23,
+  "prior_estimated_usd": 18.532818962573373,
+  "estimated_headroom_usd": 4.467181037426627,
+  "prior_receipt_sha256": "7907dc219a72d64041ee406699cc9d622f624e66eff980f85c6a4750e780ce0d",
+  "invoice_confirmed": false,
+  "scope": "Native VLA/ANWM urban pad-wait capability; no physical deployment"
+}

@@ -1,0 +1,13 @@
+{
+  "known_pixel_fraction_before_erosion": 0.7661431760204082,
+  "known_region_rgb_mae_observed_vs_projection": 1.568683557914087,
+  "unknown_region_rgb_mae_observed_vs_projection": 216.6675757059258,
+  "unknown_region_dominant_observed_rgb": [
+    218,
+    218,
+    218
+  ],
+  "unknown_region_dominant_observed_rgb_fraction": 0.9803136185444009,
+  "unknown_region_projection_black_fraction": 0.966933696949037,
+  "interpretation": "The main conditioning-image difference is the observed uniform sky replaced with black where depth is absent. This is a post-hoc CPU decomposition, not an additional GPU intervention or a metric depth/free-space claim."
+}

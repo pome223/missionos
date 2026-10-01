@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "source_run": "yokohama-f9411b75693b",
+  "train": 12,
+  "test": 5,
+  "train_test_requested_separation_m": 19.776510107683023,
+  "conservative_actual_separation_lower_bound_m": 19.176510107683022,
+  "past_only_model_inputs": true,
+  "test_future_images_uploaded": false,
+  "test_future_poses_uploaded": false,
+  "prior_studies": [
+    {
+      "study": "yokohama-wam-adapt-20260927",
+      "manifest_sha256": "7822ef2c4e010681749d925aa7820e1803e85447db67b7419f8e408851cc396f",
+      "min_test_to_previous_training_site_m": 17.759639940447126
+    },
+    {
+      "study": "yokohama-wam-attention-20260927",
+      "manifest_sha256": "8d57d691067b4c1195eb3826305df46c2dcb78bfe90f57beddcb2bad86bd9bec",
+      "min_test_to_previous_training_site_m": 17.759639940447126
+    },
+    {
+      "study": "yokohama-wam-block-20260927",
+      "manifest_sha256": "b48a097e5176dd74b3642606e31cce081518fd739d9019d587c216bd384267ad",
+      "min_test_to_previous_training_site_m": 17.759639940447126
+    }
+  ],
+  "evaluation_claim": "Previously inspected city region; held out only from this continuation, not pristine unseen geography",
+  "capture_failed_attempt_retained": true
+}

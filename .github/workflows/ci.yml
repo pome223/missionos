@@ -42,6 +42,28 @@ jobs:
             packages/missionos-gateway \
             scripts/smoke_missionos_real_hardware_arm_disarm_route.py \
             scripts/smoke_mission_designer_envelope_violation_advisory.py \
+            scripts/yokohama_sitl.py \
+            tests/test_yokohama_sitl_cleanup.py \
+            scripts/check_yokohama_pad_advisory.py \
+            scripts/run_yokohama_pad_reentry.py \
+            scripts/evaluate_yokohama_pad_reentry.py \
+            scripts/check_yokohama_pad_reentry.py \
+            scripts/export_yokohama_pad_reentry.py \
+            scripts/check_yokohama_pad_focus.py \
+            scripts/diagnose_yokohama_pad_focus.py \
+            scripts/capture_yokohama_pad_focus.py \
+            scripts/evaluate_yokohama_pad_focus.py \
+            scripts/export_yokohama_pad_focus.py \
+            scripts/prepare_yokohama_pad_focus.py \
+            scripts/train_yokohama_pad_focus.py \
+            scripts/yokohama_pad_focus_data.py \
+            tests/test_yokohama_pad_focus.py \
+            src/runtime/yokohama_pad_reentry_risk.py \
+            tests/test_yokohama_pad_reentry.py \
+            scripts/export_yokohama_pad_advisory.py \
+            scripts/verify_yokohama_pad_advisory.py \
+            scripts/yokohama_pad_advisory_host.py \
+            scripts/yokohama_pad_advisory_worker.py \
             scripts/smoke_px4_gazebo_mission_designer_execute_sitl_gateway.py \
             scripts/smoke_px4_gazebo_mission_designer_prompt_to_sitl_e2e.py \
             scripts/smoke_px4_gazebo_mission_designer_sitl_delivery_epic_exit.py \
@@ -53,6 +75,7 @@ jobs:
             src/config \
             src/gateway \
             src/runtime/runtime_claim_evidence.py \
+            src/runtime/yokohama_pad_advisory_contract.py \
             src/runtime/task_store.py \
             src/runtime/missionos_real_hardware_dispatch_runtime.py \
             src/runtime/px4_gazebo_mission_designer_sitl_runner.py \
@@ -70,6 +93,50 @@ jobs:
         env:
           PYTHONPATH: .:packages/missionos-cli/src:packages/missionos-gateway/src
         run: python -m pytest -q
+
+      - name: Verify urban-only decision control with CPU doubles
+        run: python scripts/smoke_ship_urban_loop.py --output-dir /tmp/ship-urban-loop-ci
+
+      - name: Verify WAM-informed pad selection with CPU doubles
+        run: |
+          python scripts/check_yokohama_pad_prediction.py \
+            --native-probe docs/examples/yokohama-pad-native-probe \
+            --output /tmp/yokohama-pad-prediction-ci.json
+
+      - name: Reopen native temporal pad evidence without GPU
+        run: |
+          python scripts/probe_yokohama_pad_temporal.py \
+            --inputs docs/examples/yokohama-pad-temporal/prepared/inputs \
+            --output /tmp/unused-pad-temporal-ci
+          python scripts/check_yokohama_pad_temporal.py \
+            --bundle docs/examples/yokohama-pad-temporal
+
+      - name: Reopen conditional dynamic WAM post-training without GPU
+        run: |
+          python scripts/check_yokohama_pad_learning.py \
+            --bundle docs/examples/yokohama-pad-learning
+
+      - name: Recompute learned CPU pad state from recorded RGB
+        run: |
+          python scripts/check_yokohama_pad_state.py \
+            --bundle docs/examples/yokohama-pad-state
+
+      - name: Recompute live pad advisory and delivery receipts without GPU
+        run: |
+          python scripts/check_yokohama_pad_advisory.py \
+            --bundle docs/examples/yokohama-pad-advisory
+
+      - name: Recompute returning-lead advice from recorded RGB
+        run: |
+          python scripts/check_yokohama_pad_reentry.py \
+            --bundle docs/examples/yokohama-pad-reentry-learning
+          python scripts/check_yokohama_pad_reentry.py \
+            --bundle docs/examples/yokohama-pad-reentry
+
+      - name: Reopen native regional pad forecasts without GPU
+        run: |
+          python scripts/check_yokohama_pad_focus.py \
+            --bundle docs/examples/yokohama-pad-native-focus
 
       - name: Verify Jev mode selection through the Gateway
         env:

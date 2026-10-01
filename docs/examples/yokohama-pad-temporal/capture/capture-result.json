@@ -1,0 +1,27 @@
+{
+  "status": "passed",
+  "aircraft_flown": false,
+  "native_inference": false,
+  "cases": [
+    {
+      "id": "development-depart",
+      "frames": 192,
+      "capture_sha256": "fdc062373eef45f6df72a0be9d14ac89e44a217529d531949633cad063af9eaf"
+    },
+    {
+      "id": "evaluation-depart",
+      "frames": 200,
+      "capture_sha256": "35db8388b1927e2290d97dba09c3fe5fe0adb172ceacd9664f0f65b8bb819015"
+    },
+    {
+      "id": "evaluation-stall",
+      "frames": 264,
+      "capture_sha256": "f640aed45836af8754e1741c011eb7e5deea521f8b85770ffc5265130e09efd4"
+    },
+    {
+      "id": "evaluation-reenter",
+      "frames": 232,
+      "capture_sha256": "26268a130a44ce0da745086b9527b66f358d821da7df8504d1451656f27b054a"
+    }
+  ]
+}

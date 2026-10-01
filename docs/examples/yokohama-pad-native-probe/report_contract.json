@@ -1,0 +1,13 @@
+{
+  "schema": "yokohama_pad_native_report_contract.v1",
+  "captured_before_native_results": true,
+  "required_evidence": ["input image hashes", "native action bins", "immutable VLA to WAM delta", "native predicted pixels", "remote process and resource cleanup", "bounded cost receipt"],
+  "primary_evaluation": "near busy -> wait; near clear -> forward; near reoccupied -> wait",
+  "far_view": "diagnostic of observability; excluded from primary gate",
+  "cases_independent": false,
+  "reoccupied_case": "Repeated scene state, not an unseen generalization test",
+  "forecast_reference": "Past-only RGBD reprojection into candidate view; no later AP-flown frame is present",
+  "gate_not_improvement_proof": true,
+  "training_policy": "Diagnose the failure first; no tuning on the frozen probe cases and no retrospective relabeling of a failed probe",
+  "public_boundary": "No cloud project IDs, IP addresses, workstation paths or model weights in public artifacts"
+}

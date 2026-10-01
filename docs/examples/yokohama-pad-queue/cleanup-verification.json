@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "checks": {
+    "rejected": true,
+    "injected_error_observed": true,
+    "payload_receiver_stopped": true,
+    "owned_container_removed": true,
+    "no_gpu_or_models": true
+  },
+  "run_id": "yokohama-b7b38a12f4cb",
+  "scope": "Expected timeout and injected cleanup error; not a delivery flight",
+  "fault_injection_source_sha256": "3eb58096b6ef4ec2c6850e81e6df6059e9d6eafce2dba6be953fc0a4e91fbe71"
+}

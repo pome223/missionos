@@ -1,0 +1,12 @@
+{
+  "runtime_smoke": "8/8 passed",
+  "focused_tests": "13 passed",
+  "full_suite": "3566 passed, 2 skipped, 3 warnings in 113.53s",
+  "ruff": "passed",
+  "diff_check": "passed",
+  "gpu_requested": false,
+  "native_model_inference_invoked": false,
+  "same_sortie_native_flight": false,
+  "production_boundary": "PredictionRegistry -> receive_prediction_evidence -> MissionAssuranceAgent -> immutable candidate selection",
+  "limitation": "Synthetic semantic predictions and fixture judge only; no aircraft executor connected"
+}

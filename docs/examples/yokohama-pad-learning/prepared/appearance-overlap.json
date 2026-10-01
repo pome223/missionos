@@ -1,0 +1,37 @@
+{
+  "rows": [
+    {
+      "id": "heldout-depart-18-t64",
+      "historical_rgb_exact_training_overlap": false
+    },
+    {
+      "id": "heldout-depart-36-t64",
+      "historical_rgb_exact_training_overlap": true
+    },
+    {
+      "id": "heldout-stall-28-t64",
+      "historical_rgb_exact_training_overlap": true
+    },
+    {
+      "id": "heldout-reenter-17-t64",
+      "historical_rgb_exact_training_overlap": false
+    },
+    {
+      "id": "regression-evaluation-depart-16",
+      "historical_rgb_exact_training_overlap": false
+    },
+    {
+      "id": "regression-evaluation-depart-32",
+      "historical_rgb_exact_training_overlap": false
+    },
+    {
+      "id": "regression-evaluation-stall-24",
+      "historical_rgb_exact_training_overlap": true
+    },
+    {
+      "id": "regression-evaluation-reenter-14",
+      "historical_rgb_exact_training_overlap": false
+    }
+  ],
+  "scope": "Temporal sequences separated; identical stationary image content is not novel appearance"
+}

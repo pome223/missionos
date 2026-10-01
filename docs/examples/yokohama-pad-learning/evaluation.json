@@ -1,0 +1,801 @@
+{
+  "schema": "pad_learning_evaluation.v1",
+  "evidence_integrity": "passed",
+  "training_performed": true,
+  "aggregates": {
+    "before": {
+      "fresh": {
+        "count": 4,
+        "endpoint_matches": 1,
+        "unknown": 2,
+        "false_clear": 1,
+        "mean_rgb_mae": 33.71087272799745,
+        "max_rgb_mae": 34.37250212585034,
+        "persistence_matches": 2,
+        "request_seconds_min": 5.7457611479999855,
+        "request_seconds_max": 5.788974321000012
+      },
+      "previously_inspected_regression": {
+        "count": 4,
+        "endpoint_matches": 1,
+        "unknown": 2,
+        "false_clear": 1,
+        "mean_rgb_mae": 33.83583286830357,
+        "max_rgb_mae": 34.001242293792515,
+        "persistence_matches": 2,
+        "request_seconds_min": 5.797543290000021,
+        "request_seconds_max": 5.878010444999973
+      },
+      "fresh_distinct_rgb_history": {
+        "count": 2,
+        "endpoint_matches": 0,
+        "unknown": 1,
+        "false_clear": 1,
+        "mean_rgb_mae": 33.81650257759354,
+        "max_rgb_mae": 34.37250212585034,
+        "persistence_matches": 0,
+        "request_seconds_min": 5.787884899000005,
+        "request_seconds_max": 5.788974321000012
+      }
+    },
+    "after": {
+      "fresh": {
+        "count": 4,
+        "endpoint_matches": 2,
+        "unknown": 0,
+        "false_clear": 2,
+        "mean_rgb_mae": 6.322365274234693,
+        "max_rgb_mae": 6.525310905612245,
+        "persistence_matches": 2,
+        "request_seconds_min": 5.915311705999898,
+        "request_seconds_max": 6.10364140899992
+      },
+      "previously_inspected_regression": {
+        "count": 4,
+        "endpoint_matches": 2,
+        "unknown": 0,
+        "false_clear": 2,
+        "mean_rgb_mae": 6.254369618941326,
+        "max_rgb_mae": 6.312785661139456,
+        "persistence_matches": 2,
+        "request_seconds_min": 5.926082773999951,
+        "request_seconds_max": 5.990092855000057
+      },
+      "fresh_distinct_rgb_history": {
+        "count": 2,
+        "endpoint_matches": 1,
+        "unknown": 0,
+        "false_clear": 1,
+        "mean_rgb_mae": 6.410561490221088,
+        "max_rgb_mae": 6.525310905612245,
+        "persistence_matches": 0,
+        "request_seconds_min": 5.915311705999898,
+        "request_seconds_max": 6.10364140899992
+      }
+    }
+  },
+  "rows": [
+    {
+      "id": "heldout-depart-18-t64",
+      "stage": "before",
+      "cohort": "fresh",
+      "source_state": "occupied",
+      "actual_state": "clear",
+      "predicted_state": "unknown",
+      "reader": {
+        "state": "unknown",
+        "grayscale_rmse": {
+          "occupied": 10.482197761535645,
+          "clear": 9.51540470123291
+        },
+        "class_margin": 0.9667930603027344
+      },
+      "actual_reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 10.235199928283691,
+          "clear": 0.0
+        },
+        "class_margin": 10.235199928283691
+      },
+      "current_image_reader": {
+        "state": "occupied",
+        "grayscale_rmse": {
+          "occupied": 9.69930648803711,
+          "clear": 10.725972175598145
+        },
+        "class_margin": 1.0266656875610352
+      },
+      "endpoint_match": false,
+      "persistence_match": false,
+      "historical_rgb_exact_training_overlap": false,
+      "target_rgb_exact_training_overlap": true,
+      "rgb_mae": 33.26050302933673,
+      "source_stamp_ns": 205000000000,
+      "target_stamp_ns": 221000000000,
+      "request_total_seconds": 5.787884899000005,
+      "result_sha256": "628422696c287a08c993d6275ead07acca5b238397e1a3b4c38ab3df7e2ebefc",
+      "prediction_sha256": "bb4d5c99082ac1f1cb011fdfdff2be459faee8b53b20d660511fc13ee4a78349",
+      "target_sha256": "acf2d966dcc4e02182661f9ad0b94e7b76ce2c433a42357c55f6dfc44f1d280f"
+    },
+    {
+      "id": "heldout-depart-18-t64",
+      "stage": "after",
+      "cohort": "fresh",
+      "source_state": "occupied",
+      "actual_state": "clear",
+      "predicted_state": "clear",
+      "reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 8.104700088500977,
+          "clear": 6.580707550048828
+        },
+        "class_margin": 1.5239925384521484
+      },
+      "actual_reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 10.235199928283691,
+          "clear": 0.0
+        },
+        "class_margin": 10.235199928283691
+      },
+      "current_image_reader": {
+        "state": "occupied",
+        "grayscale_rmse": {
+          "occupied": 9.69930648803711,
+          "clear": 10.725972175598145
+        },
+        "class_margin": 1.0266656875610352
+      },
+      "endpoint_match": true,
+      "persistence_match": false,
+      "historical_rgb_exact_training_overlap": false,
+      "target_rgb_exact_training_overlap": true,
+      "rgb_mae": 6.295812074829932,
+      "source_stamp_ns": 205000000000,
+      "target_stamp_ns": 221000000000,
+      "request_total_seconds": 6.10364140899992,
+      "result_sha256": "dc4f671e6c87197f02bfcd979f21381f9770c0f0de3bac8088505595a098a9a4",
+      "prediction_sha256": "49fc4580b5348879911ab75896b621c275c09cdedeba487d266944461d6697a6",
+      "target_sha256": "acf2d966dcc4e02182661f9ad0b94e7b76ce2c433a42357c55f6dfc44f1d280f"
+    },
+    {
+      "id": "heldout-depart-36-t64",
+      "stage": "before",
+      "cohort": "fresh",
+      "source_state": "clear",
+      "actual_state": "clear",
+      "predicted_state": "clear",
+      "reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 10.06716251373291,
+          "clear": 8.953081130981445
+        },
+        "class_margin": 1.1140813827514648
+      },
+      "actual_reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 10.235199928283691,
+          "clear": 0.0
+        },
+        "class_margin": 10.235199928283691
+      },
+      "current_image_reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 10.235199928283691,
+          "clear": 0.0
+        },
+        "class_margin": 10.235199928283691
+      },
+      "endpoint_match": true,
+      "persistence_match": true,
+      "historical_rgb_exact_training_overlap": true,
+      "target_rgb_exact_training_overlap": true,
+      "rgb_mae": 33.578935480442176,
+      "source_stamp_ns": 223000000000,
+      "target_stamp_ns": 239000000000,
+      "request_total_seconds": 5.764641713999993,
+      "result_sha256": "f678cedc2a834154553ae263d4207d2cd4c338a82030054ba138b7cd50c2c352",
+      "prediction_sha256": "033dd66c793895e9bd6fce3ff3c5ae181a4c7dc8fc521a84e1b75f15d7c3ddcf",
+      "target_sha256": "acf2d966dcc4e02182661f9ad0b94e7b76ce2c433a42357c55f6dfc44f1d280f"
+    },
+    {
+      "id": "heldout-depart-36-t64",
+      "stage": "after",
+      "cohort": "fresh",
+      "source_state": "clear",
+      "actual_state": "clear",
+      "predicted_state": "clear",
+      "reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 8.019977569580078,
+          "clear": 6.475558280944824
+        },
+        "class_margin": 1.544419288635254
+      },
+      "actual_reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 10.235199928283691,
+          "clear": 0.0
+        },
+        "class_margin": 10.235199928283691
+      },
+      "current_image_reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 10.235199928283691,
+          "clear": 0.0
+        },
+        "class_margin": 10.235199928283691
+      },
+      "endpoint_match": true,
+      "persistence_match": true,
+      "historical_rgb_exact_training_overlap": true,
+      "target_rgb_exact_training_overlap": true,
+      "rgb_mae": 6.155552455357143,
+      "source_stamp_ns": 223000000000,
+      "target_stamp_ns": 239000000000,
+      "request_total_seconds": 5.966598014000056,
+      "result_sha256": "0f5298027adbca172f12ab867420bab8c775d2697e5693f329c0fc1aba9c67f3",
+      "prediction_sha256": "74825aad977cef72ac07375fcb47921a520f5dd29f29e93310cceef35b854ac4",
+      "target_sha256": "acf2d966dcc4e02182661f9ad0b94e7b76ce2c433a42357c55f6dfc44f1d280f"
+    },
+    {
+      "id": "heldout-stall-28-t64",
+      "stage": "before",
+      "cohort": "fresh",
+      "source_state": "occupied",
+      "actual_state": "occupied",
+      "predicted_state": "unknown",
+      "reader": {
+        "state": "unknown",
+        "grayscale_rmse": {
+          "occupied": 11.039278984069824,
+          "clear": 10.104663848876953
+        },
+        "class_margin": 0.9346151351928711
+      },
+      "actual_reader": {
+        "state": "occupied",
+        "grayscale_rmse": {
+          "occupied": 3.3974101543426514,
+          "clear": 10.692828178405762
+        },
+        "class_margin": 7.29541802406311
+      },
+      "current_image_reader": {
+        "state": "occupied",
+        "grayscale_rmse": {
+          "occupied": 3.3974101543426514,
+          "clear": 10.692828178405762
+        },
+        "class_margin": 7.29541802406311
+      },
+      "endpoint_match": false,
+      "persistence_match": true,
+      "historical_rgb_exact_training_overlap": true,
+      "target_rgb_exact_training_overlap": true,
+      "rgb_mae": 33.63155027636054,
+      "source_stamp_ns": 272000000000,
+      "target_stamp_ns": 288000000000,
+      "request_total_seconds": 5.7457611479999855,
+      "result_sha256": "230bef5f9991cfe03fa9f8798af714daaf1ef2a1deabd4dfbe7ea38cff505ca2",
+      "prediction_sha256": "028e20a056c2252389b66f0060c5ff665f07b5f5d8e364419e42ac95a323a274",
+      "target_sha256": "eea18d153f701503670d582234bbae5c038f9ac98297e5cc6fe123049749a4e0"
+    },
+    {
+      "id": "heldout-stall-28-t64",
+      "stage": "after",
+      "cohort": "fresh",
+      "source_state": "occupied",
+      "actual_state": "occupied",
+      "predicted_state": "clear",
+      "reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 8.106314659118652,
+          "clear": 6.584779739379883
+        },
+        "class_margin": 1.5215349197387695
+      },
+      "actual_reader": {
+        "state": "occupied",
+        "grayscale_rmse": {
+          "occupied": 3.3974101543426514,
+          "clear": 10.692828178405762
+        },
+        "class_margin": 7.29541802406311
+      },
+      "current_image_reader": {
+        "state": "occupied",
+        "grayscale_rmse": {
+          "occupied": 3.3974101543426514,
+          "clear": 10.692828178405762
+        },
+        "class_margin": 7.29541802406311
+      },
+      "endpoint_match": false,
+      "persistence_match": true,
+      "historical_rgb_exact_training_overlap": true,
+      "target_rgb_exact_training_overlap": true,
+      "rgb_mae": 6.312785661139456,
+      "source_stamp_ns": 272000000000,
+      "target_stamp_ns": 288000000000,
+      "request_total_seconds": 5.978591990000041,
+      "result_sha256": "39200e7c9e5cf43cdf83c9a4ba795c5d2830cf5f914579a0dffd74359cdfff43",
+      "prediction_sha256": "1b7480f0f127681ada1d2bbd4bdad3e099dfb2412dab14b6cd1c1cc0405618d8",
+      "target_sha256": "eea18d153f701503670d582234bbae5c038f9ac98297e5cc6fe123049749a4e0"
+    },
+    {
+      "id": "heldout-reenter-17-t64",
+      "stage": "before",
+      "cohort": "fresh",
+      "source_state": "unknown",
+      "actual_state": "occupied",
+      "predicted_state": "clear",
+      "reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 10.801224708557129,
+          "clear": 9.783426284790039
+        },
+        "class_margin": 1.0177984237670898
+      },
+      "actual_reader": {
+        "state": "occupied",
+        "grayscale_rmse": {
+          "occupied": 3.3974101543426514,
+          "clear": 10.692828178405762
+        },
+        "class_margin": 7.29541802406311
+      },
+      "current_image_reader": {
+        "state": "unknown",
+        "grayscale_rmse": {
+          "occupied": 9.51020622253418,
+          "clear": 9.405773162841797
+        },
+        "class_margin": 0.10443305969238281
+      },
+      "endpoint_match": false,
+      "persistence_match": false,
+      "historical_rgb_exact_training_overlap": false,
+      "target_rgb_exact_training_overlap": true,
+      "rgb_mae": 34.37250212585034,
+      "source_stamp_ns": 330000000000,
+      "target_stamp_ns": 346000000000,
+      "request_total_seconds": 5.788974321000012,
+      "result_sha256": "981307979931ef5c52a26894b6763c0e6aa1a49d34b23552101b5819e7f9567d",
+      "prediction_sha256": "4f77b922f98548224f143d10e0915e16d736c34937cec108343464a6053903a8",
+      "target_sha256": "eea18d153f701503670d582234bbae5c038f9ac98297e5cc6fe123049749a4e0"
+    },
+    {
+      "id": "heldout-reenter-17-t64",
+      "stage": "after",
+      "cohort": "fresh",
+      "source_state": "unknown",
+      "actual_state": "occupied",
+      "predicted_state": "clear",
+      "reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 8.029438018798828,
+          "clear": 6.4871931076049805
+        },
+        "class_margin": 1.5422449111938477
+      },
+      "actual_reader": {
+        "state": "occupied",
+        "grayscale_rmse": {
+          "occupied": 3.3974101543426514,
+          "clear": 10.692828178405762
+        },
+        "class_margin": 7.29541802406311
+      },
+      "current_image_reader": {
+        "state": "unknown",
+        "grayscale_rmse": {
+          "occupied": 9.51020622253418,
+          "clear": 9.405773162841797
+        },
+        "class_margin": 0.10443305969238281
+      },
+      "endpoint_match": false,
+      "persistence_match": false,
+      "historical_rgb_exact_training_overlap": false,
+      "target_rgb_exact_training_overlap": true,
+      "rgb_mae": 6.525310905612245,
+      "source_stamp_ns": 330000000000,
+      "target_stamp_ns": 346000000000,
+      "request_total_seconds": 5.915311705999898,
+      "result_sha256": "4f109012b3a0f708f8a20f1fa626856bf7147589620a82d9d041dbec61339448",
+      "prediction_sha256": "cd0b1bb8efc16bfd47a5cea5dfce0f32ebd101ccc805659efa64a0efe3003363",
+      "target_sha256": "eea18d153f701503670d582234bbae5c038f9ac98297e5cc6fe123049749a4e0"
+    },
+    {
+      "id": "regression-evaluation-depart-16",
+      "stage": "before",
+      "cohort": "previously_inspected_regression",
+      "source_state": "occupied",
+      "actual_state": "clear",
+      "predicted_state": "unknown",
+      "reader": {
+        "state": "unknown",
+        "grayscale_rmse": {
+          "occupied": 11.070575714111328,
+          "clear": 10.186943054199219
+        },
+        "class_margin": 0.8836326599121094
+      },
+      "actual_reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 10.235199928283691,
+          "clear": 0.0
+        },
+        "class_margin": 10.235199928283691
+      },
+      "current_image_reader": {
+        "state": "occupied",
+        "grayscale_rmse": {
+          "occupied": 8.903404235839844,
+          "clear": 10.948546409606934
+        },
+        "class_margin": 2.04514217376709
+      },
+      "endpoint_match": false,
+      "persistence_match": false,
+      "historical_rgb_exact_training_overlap": false,
+      "target_rgb_exact_training_overlap": true,
+      "rgb_mae": 33.835326318027214,
+      "source_stamp_ns": 68500000000,
+      "target_stamp_ns": 84500000000,
+      "request_total_seconds": 5.797543290000021,
+      "result_sha256": "69ade8850b30e0c17c30b69d03bbf0943fdaf14831403dd8ad33fee8dfb83a75",
+      "prediction_sha256": "c52a975aa7791133cc9fb7cc4d2387e95a21d0045e2c1e795dcb833f5ea340b9",
+      "target_sha256": "acf2d966dcc4e02182661f9ad0b94e7b76ce2c433a42357c55f6dfc44f1d280f"
+    },
+    {
+      "id": "regression-evaluation-depart-16",
+      "stage": "after",
+      "cohort": "previously_inspected_regression",
+      "source_state": "occupied",
+      "actual_state": "clear",
+      "predicted_state": "clear",
+      "reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 8.09842586517334,
+          "clear": 6.58556604385376
+        },
+        "class_margin": 1.51285982131958
+      },
+      "actual_reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 10.235199928283691,
+          "clear": 0.0
+        },
+        "class_margin": 10.235199928283691
+      },
+      "current_image_reader": {
+        "state": "occupied",
+        "grayscale_rmse": {
+          "occupied": 8.903404235839844,
+          "clear": 10.948546409606934
+        },
+        "class_margin": 2.04514217376709
+      },
+      "endpoint_match": true,
+      "persistence_match": false,
+      "historical_rgb_exact_training_overlap": false,
+      "target_rgb_exact_training_overlap": true,
+      "rgb_mae": 6.293985172193878,
+      "source_stamp_ns": 68500000000,
+      "target_stamp_ns": 84500000000,
+      "request_total_seconds": 5.926082773999951,
+      "result_sha256": "2c7e85356b0ddc151197c8673fb30923c773e7d9ea90f9ccd620c5f5beb77d4b",
+      "prediction_sha256": "aeb15f51878293333d615b56a4db1f8f1c7ea46d22ef39d60a1e3639f7c2bb8a",
+      "target_sha256": "acf2d966dcc4e02182661f9ad0b94e7b76ce2c433a42357c55f6dfc44f1d280f"
+    },
+    {
+      "id": "regression-evaluation-depart-32",
+      "stage": "before",
+      "cohort": "previously_inspected_regression",
+      "source_state": "clear",
+      "actual_state": "clear",
+      "predicted_state": "clear",
+      "reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 10.199410438537598,
+          "clear": 9.125187873840332
+        },
+        "class_margin": 1.0742225646972656
+      },
+      "actual_reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 10.235199928283691,
+          "clear": 0.0
+        },
+        "class_margin": 10.235199928283691
+      },
+      "current_image_reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 10.235199928283691,
+          "clear": 0.0
+        },
+        "class_margin": 10.235199928283691
+      },
+      "endpoint_match": true,
+      "persistence_match": true,
+      "historical_rgb_exact_training_overlap": false,
+      "target_rgb_exact_training_overlap": true,
+      "rgb_mae": 33.875212585034014,
+      "source_stamp_ns": 84500000000,
+      "target_stamp_ns": 100500000000,
+      "request_total_seconds": 5.872300299000017,
+      "result_sha256": "a68b55368669f55a28f92cb6966aa8fa6abeee2602bd501832452850e4926d7b",
+      "prediction_sha256": "5504435cc03b6ce7c406c44b035662b8fb2a25c430479b840900f6bf8c9b7d48",
+      "target_sha256": "acf2d966dcc4e02182661f9ad0b94e7b76ce2c433a42357c55f6dfc44f1d280f"
+    },
+    {
+      "id": "regression-evaluation-depart-32",
+      "stage": "after",
+      "cohort": "previously_inspected_regression",
+      "source_state": "clear",
+      "actual_state": "clear",
+      "predicted_state": "clear",
+      "reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 8.02076244354248,
+          "clear": 6.496482849121094
+        },
+        "class_margin": 1.5242795944213867
+      },
+      "actual_reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 10.235199928283691,
+          "clear": 0.0
+        },
+        "class_margin": 10.235199928283691
+      },
+      "current_image_reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 10.235199928283691,
+          "clear": 0.0
+        },
+        "class_margin": 10.235199928283691
+      },
+      "endpoint_match": true,
+      "persistence_match": true,
+      "historical_rgb_exact_training_overlap": false,
+      "target_rgb_exact_training_overlap": true,
+      "rgb_mae": 6.129524075255102,
+      "source_stamp_ns": 84500000000,
+      "target_stamp_ns": 100500000000,
+      "request_total_seconds": 5.988757798999927,
+      "result_sha256": "c373b36047f3a62568be258dc8e670100e2e158cf37d38c95f0fe35ab1fc41e9",
+      "prediction_sha256": "db345adb66b89e0b7ba7b5a134c95c97457ed7b0bd55b159fe248a86ff10d59e",
+      "target_sha256": "acf2d966dcc4e02182661f9ad0b94e7b76ce2c433a42357c55f6dfc44f1d280f"
+    },
+    {
+      "id": "regression-evaluation-stall-24",
+      "stage": "before",
+      "cohort": "previously_inspected_regression",
+      "source_state": "occupied",
+      "actual_state": "occupied",
+      "predicted_state": "unknown",
+      "reader": {
+        "state": "unknown",
+        "grayscale_rmse": {
+          "occupied": 11.039278984069824,
+          "clear": 10.104663848876953
+        },
+        "class_margin": 0.9346151351928711
+      },
+      "actual_reader": {
+        "state": "occupied",
+        "grayscale_rmse": {
+          "occupied": 3.3974101543426514,
+          "clear": 10.692828178405762
+        },
+        "class_margin": 7.29541802406311
+      },
+      "current_image_reader": {
+        "state": "occupied",
+        "grayscale_rmse": {
+          "occupied": 3.3974101543426514,
+          "clear": 10.692828178405762
+        },
+        "class_margin": 7.29541802406311
+      },
+      "endpoint_match": false,
+      "persistence_match": true,
+      "historical_rgb_exact_training_overlap": true,
+      "target_rgb_exact_training_overlap": true,
+      "rgb_mae": 33.63155027636054,
+      "source_stamp_ns": 128000000000,
+      "target_stamp_ns": 144000000000,
+      "request_total_seconds": 5.865683015000059,
+      "result_sha256": "fbf04ff9793e9adb164392a26159624c0a5aaad917bb06688c14c4ae48cee966",
+      "prediction_sha256": "028e20a056c2252389b66f0060c5ff665f07b5f5d8e364419e42ac95a323a274",
+      "target_sha256": "eea18d153f701503670d582234bbae5c038f9ac98297e5cc6fe123049749a4e0"
+    },
+    {
+      "id": "regression-evaluation-stall-24",
+      "stage": "after",
+      "cohort": "previously_inspected_regression",
+      "source_state": "occupied",
+      "actual_state": "occupied",
+      "predicted_state": "clear",
+      "reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 8.106314659118652,
+          "clear": 6.584779739379883
+        },
+        "class_margin": 1.5215349197387695
+      },
+      "actual_reader": {
+        "state": "occupied",
+        "grayscale_rmse": {
+          "occupied": 3.3974101543426514,
+          "clear": 10.692828178405762
+        },
+        "class_margin": 7.29541802406311
+      },
+      "current_image_reader": {
+        "state": "occupied",
+        "grayscale_rmse": {
+          "occupied": 3.3974101543426514,
+          "clear": 10.692828178405762
+        },
+        "class_margin": 7.29541802406311
+      },
+      "endpoint_match": false,
+      "persistence_match": true,
+      "historical_rgb_exact_training_overlap": true,
+      "target_rgb_exact_training_overlap": true,
+      "rgb_mae": 6.312785661139456,
+      "source_stamp_ns": 128000000000,
+      "target_stamp_ns": 144000000000,
+      "request_total_seconds": 5.956803050000076,
+      "result_sha256": "635b22502d70bfc7aff7c77864efcf4b6f00cf46e0594c8e0c2a73e52b20d3dc",
+      "prediction_sha256": "1b7480f0f127681ada1d2bbd4bdad3e099dfb2412dab14b6cd1c1cc0405618d8",
+      "target_sha256": "eea18d153f701503670d582234bbae5c038f9ac98297e5cc6fe123049749a4e0"
+    },
+    {
+      "id": "regression-evaluation-reenter-14",
+      "stage": "before",
+      "cohort": "previously_inspected_regression",
+      "source_state": "clear",
+      "actual_state": "occupied",
+      "predicted_state": "clear",
+      "reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 10.861653327941895,
+          "clear": 9.844931602478027
+        },
+        "class_margin": 1.0167217254638672
+      },
+      "actual_reader": {
+        "state": "occupied",
+        "grayscale_rmse": {
+          "occupied": 3.3974101543426514,
+          "clear": 10.692828178405762
+        },
+        "class_margin": 7.29541802406311
+      },
+      "current_image_reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 11.30528736114502,
+          "clear": 9.705290794372559
+        },
+        "class_margin": 1.599996566772461
+      },
+      "endpoint_match": false,
+      "persistence_match": false,
+      "historical_rgb_exact_training_overlap": false,
+      "target_rgb_exact_training_overlap": true,
+      "rgb_mae": 34.001242293792515,
+      "source_stamp_ns": 185000000000,
+      "target_stamp_ns": 201000000000,
+      "request_total_seconds": 5.878010444999973,
+      "result_sha256": "dc59841d23f0b16415502a5befe46d97130acdc4272c7a5aa6b727d6b941d41f",
+      "prediction_sha256": "cd7723f95c8bdc84bdd3b307820b2ba3beab5da1d72c675eff4c89559ee9007c",
+      "target_sha256": "eea18d153f701503670d582234bbae5c038f9ac98297e5cc6fe123049749a4e0"
+    },
+    {
+      "id": "regression-evaluation-reenter-14",
+      "stage": "after",
+      "cohort": "previously_inspected_regression",
+      "source_state": "clear",
+      "actual_state": "occupied",
+      "predicted_state": "clear",
+      "reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 8.03427791595459,
+          "clear": 6.530473709106445
+        },
+        "class_margin": 1.5038042068481445
+      },
+      "actual_reader": {
+        "state": "occupied",
+        "grayscale_rmse": {
+          "occupied": 3.3974101543426514,
+          "clear": 10.692828178405762
+        },
+        "class_margin": 7.29541802406311
+      },
+      "current_image_reader": {
+        "state": "clear",
+        "grayscale_rmse": {
+          "occupied": 11.30528736114502,
+          "clear": 9.705290794372559
+        },
+        "class_margin": 1.599996566772461
+      },
+      "endpoint_match": false,
+      "persistence_match": false,
+      "historical_rgb_exact_training_overlap": false,
+      "target_rgb_exact_training_overlap": true,
+      "rgb_mae": 6.28118356717687,
+      "source_stamp_ns": 185000000000,
+      "target_stamp_ns": 201000000000,
+      "request_total_seconds": 5.990092855000057,
+      "result_sha256": "1b9f1f852e42b78af978daabf8c4c6cee3b67a8e3f0f4ff7dee6ef037e0bb801",
+      "prediction_sha256": "9e34b994cf74886e11d33bccbc83b306b653e30ddd3361dd7cbac0832a9e5fe1",
+      "target_sha256": "eea18d153f701503670d582234bbae5c038f9ac98297e5cc6fe123049749a4e0"
+    }
+  ],
+  "development_gate": [
+    {
+      "id": "train-depart-20-t64",
+      "passed": false,
+      "rgb_mae": 33.93637728528912
+    },
+    {
+      "id": "train-stall-24-t64",
+      "passed": false,
+      "rgb_mae": 33.63155027636054
+    },
+    {
+      "id": "train-reenter-10-t64",
+      "passed": false,
+      "rgb_mae": 34.08974410076531
+    }
+  ],
+  "qualification_checks": {
+    "fresh_matches": false,
+    "no_false_clear": false,
+    "rgb_mae": true,
+    "prior_successes_preserved": true
+  },
+  "endpoint_candidate_qualified": false,
+  "frozen_reader_sha256": "247f26aec4cbbe76e89871a30863adf484dadd3f02eba20c71d61ddbba0500b4",
+  "native_inference_calls": 23,
+  "cuda_allocated_after_work_bytes": 0,
+  "flight_admitted": false,
+  "mission_judgment_invoked": false,
+  "interval_occupancy_verified": false,
+  "both_action_candidates_verified": false,
+  "ap_dispatch_invoked": false,
+  "scope": "same camera, object and path; held-out timing only, not unseen appearances",
+  "timing_limit": "warm computation only; model loading and transport excluded; no measured live AP timing"
+}

@@ -1,0 +1,14 @@
+{
+  "additional_gpu_estimate_usd": 0,
+  "cumulative_estimate_usd": 16.706277034434482,
+  "authorized_total_usd": 17,
+  "invoice_confirmed": false,
+  "paid_gpu_allocated_in_followup": false,
+  "all_owned_sitl_containers_removed": true,
+  "source_cost_sha256": "50f2531dbc69e8f4f92f10c9de032354c9f6e090df8ffb2f61fd736b5551442d",
+  "run_ids": [
+    "yokohama-a7514e6c798a",
+    "yokohama-61e8fc3796c0",
+    "yokohama-38933914c00d"
+  ]
+}

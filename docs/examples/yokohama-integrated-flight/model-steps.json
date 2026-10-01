@@ -1,0 +1,607 @@
+[
+  {
+    "cycle": 1,
+    "wam_profile": "motion-v4",
+    "input_request": {
+      "schema_version": "yokohama_anwm_request.v2",
+      "run_id": "yokohama-280d65f068d7",
+      "world_sha256": "3d14db4c116d1f0892126e004be4249ab90edcdac9322aaa32a11a076db5bb3d",
+      "plan_sha256": "edb7950a2f0da09fd084fcb49aefba6b5d847dd4d2fd9d3586b818b79751c405",
+      "source_kind": "yokohama_rgbd_hold",
+      "ego_source": "Gazebo_model_pose_simulator_ground_truth",
+      "history_sha256": "8a3e2ee70d307956b9003556cea4244495de6c1b311483042a47fbba1c7e825d",
+      "delta_frame": "body_frd_at_observation",
+      "num_timesteps": 1,
+      "nominal_horizon_s": 1,
+      "model_time_alignment_verified": false,
+      "future_ground_truth_used_for_forecast": false,
+      "dispatch_allowed": false,
+      "seed": 42,
+      "diffusion_steps": 250,
+      "candidates": [
+        {
+          "id": "hold",
+          "delta": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "id": "vla",
+          "delta": [
+            1.6488852590662542,
+            0.052873369401035375,
+            0.09084176527092325,
+            0.020977030653118067
+          ]
+        }
+      ],
+      "vla_response_sha256": "95dacb65da6df952c02f568d2930a67b1350a1b6f4eb414fe4549d6a1d68e88f",
+      "adapter_sha256": "e4b88ec38ce8f08ff90b692a3b545e573aadaacf0f080a0357409dfc2b308dd3",
+      "appearance_policy": "positive_infinite_upward_rays_past_only_no_metric_fill"
+    },
+    "service_identity": {
+      "schema_version": "ship_anwm_static_service.v1",
+      "session_id": "d3bc339f4fc6404cac5edbb8727c20c2",
+      "model_revision": "dfe59001de57a96d6620313897f09436c6940983",
+      "checkpoint_sha256": "bdd149cac6ec002ba7dc4ad99ec6f9eb02cd6d4f05320195cf174737b13b0bc2",
+      "upstream_revision": "657a80268505fa9149c4df502e35aa0f5bce11e5",
+      "vae_revision": "f04b2c4b98319346dad8c65879f680b1997b204a",
+      "server_sha256": "30a0fa5e864279e2d09d8f7482dccacb93cb7961c8e28b46e070d8928ca04545",
+      "helper_sha256": "78e4680405eb0202eac2dbc0ba8035577b1765cf8f76961e83f6f6ae2a431509",
+      "diffusion_steps": 250,
+      "load_seconds": 15.312208482000074,
+      "cpu_between_requests": true,
+      "candidate_contracts": [
+        "yokohama_anwm_request.v2"
+      ],
+      "adapter_sha256": "e4b88ec38ce8f08ff90b692a3b545e573aadaacf0f080a0357409dfc2b308dd3",
+      "model_time_index": 1,
+      "appearance_policy": "positive_infinite_upward_rays_past_only_no_metric_fill",
+      "appearance_sha256": "450da308c1d884e4fca1766d1143c80fd48b1f22b8aba3b071304100dd065ec9",
+      "profile_sha256": "1dba81457144c67c1562689644f14ce4d2ea5d3cd73f5ddfbf964f86e3ad46c6"
+    },
+    "native_vla_response": {
+      "schema_version": "ship_aerovla_live_invocation.v1",
+      "request_sha256": "636d7a4e9e596778eea61a7dd29c9ab4ec96010b3b193126e3c97134f552698a",
+      "service": {
+        "schema_version": "ship_aerovla_service.v1",
+        "session_id": "08d25946c395434586e25129033bdd6d",
+        "base_revision": "47a0ec7fc4ec123775a391911046cf33cf9ed83f",
+        "adapter_revision": "196f2f3253b69df6e90ac10b6ae041c7b3a9569e",
+        "adapter_sha256": "05b11cf66d2a7bba9af3fefc5afa9e9af4fe1f2a567ddeca4fca73192060b846",
+        "upstream_revision": "2c5ae0987a484ab92f00dd9d9ed493cb3e98e492",
+        "weights_sha256": {
+          "model-00001-of-00003.safetensors": "10d8636256018712c5e5c823d12e22b5797f99bb721bd123bf6bf2379892be85",
+          "model-00002-of-00003.safetensors": "2050b14f21d48904d269f48d5a980fecea87cd7b36641d9b0f015e72d1fe216a",
+          "model-00003-of-00003.safetensors": "ea65305a1577f36f721965bf84c8caec0a948ce7ce84d754701637376c531fef"
+        },
+        "custom_code_sha256": {
+          "configuration_prismatic.py": "68cc5ae34f1b46af3168d8d479cb81bb776965653453fd904aa8eefb6c8f9f68",
+          "modeling_prismatic.py": "9ce241c5ca09a4bed73654d0ca509baaff0fc5887d0bdd62e360ca8254f7794a",
+          "processing_prismatic.py": "06563586bbc73d36501a14a231a3174904ede830d33174d0c625ece8e931ef1e"
+        },
+        "runtime_sha256": {
+          "ship_aerovla_server.py": "867300859825c5dc2d51ff2ae3a6647a78d4699bba2534b0ce77a49fe7b53c7a",
+          "ship_aerovla.py": "3cc49ed27d3ff813ce5cebd766e65196fe5ced20bdfc2ebd9ecb8fb45d2f9743",
+          "ship_anwm.py": "78e4680405eb0202eac2dbc0ba8035577b1765cf8f76961e83f6f6ae2a431509"
+        },
+        "gpu": "NVIDIA L4",
+        "torch_version": "2.9.1+cu129",
+        "load_seconds": 18.171382619999918,
+        "warmup_completed": true,
+        "dispatch_capability": false,
+        "exit_after_request": false,
+        "cpu_between_requests": true,
+        "decoding_policy": "aerovla_compact_city_grammar.v2",
+        "inspection_level_flight": true,
+        "vertical_bin_range": [
+          47,
+          51
+        ],
+        "yaw_bin_range": [
+          45,
+          53
+        ],
+        "forward_bin_range": [
+          20,
+          58
+        ],
+        "hold_bin_allowed": false,
+        "terminal_proposal_allowed": false,
+        "compact_city_flight": true,
+        "short_segment_flight": true
+      },
+      "input_images_sha256": {
+        "rgb": "bf2498fdfab6e0d1f0bcd57a73233ecab5ab549f1bcdcc6040eda41894584972",
+        "down": "620c209cb27cf8ac32f107ca338e9b79eb683912665a6e832cb6acf5f7fa6590"
+      },
+      "generated_text": "33 50 49</s>",
+      "generated_token_ids": [
+        29871,
+        29941,
+        29941,
+        29871,
+        29945,
+        29900,
+        29871,
+        29946,
+        29929,
+        2
+      ],
+      "input_token_ids": [
+        [
+          1,
+          529,
+          3027,
+          29958,
+          13,
+          29943,
+          368,
+          7812,
+          14432,
+          3412,
+          278,
+          11952,
+          11183,
+          278,
+          28289,
+          17132,
+          29889,
+          341,
+          2365,
+          475,
+          3171,
+          29889,
+          13,
+          4276,
+          29901,
+          29871
+        ]
+      ],
+      "pixel_values_shape": [
+        1,
+        6,
+        224,
+        224
+      ],
+      "mosaic_sha256": "2e22640fe2f9b2b89d254e195d5520eacfa1395e5f2fe9d02b15181a83201175",
+      "mosaic_rgb_sha256": "077fa087af826f16acbc6089362a3609b2fd6c3474447d19ad2b69527d382def",
+      "started_at_unix_s": 1790513822.3351872,
+      "completed_at_unix_s": 1790513823.1627622,
+      "inference_seconds": 0.8275749683380127,
+      "peak_cuda_allocated_bytes": 15876611072,
+      "cuda_allocated_before_gc_bytes": 9568256,
+      "gc_collected_objects": 254,
+      "cuda_workspaces_cleared": true,
+      "cuda_allocated_after_request_bytes": 0,
+      "vla_inference_invoked": true,
+      "dispatch_invoked": false,
+      "physical_execution_invoked": false
+    },
+    "checks": [
+      {
+        "candidate": {
+          "id": "hold",
+          "delta": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "passed": true,
+        "known_pixel_fraction": 0.7244499362244898,
+        "reference_edge_pixels": 1697,
+        "matched_edge_fraction": 0.9840895698291102,
+        "luminance_mae": 3.5873269142595134,
+        "predicted_edge_density": 0.05730398899587345,
+        "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+      },
+      {
+        "candidate": {
+          "id": "vla",
+          "delta": [
+            1.6488852590662542,
+            0.052873369401035375,
+            0.09084176527092325,
+            0.020977030653118067
+          ]
+        },
+        "passed": true,
+        "known_pixel_fraction": 0.7209622130102041,
+        "reference_edge_pixels": 1786,
+        "matched_edge_fraction": 0.8818589025755879,
+        "luminance_mae": 8.280985947938262,
+        "predicted_edge_density": 0.05191430545957153,
+        "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+      }
+    ],
+    "wam_exchange_wall_s": 51.58056245802436,
+    "original_forecast_sha256": {
+      "hold": "486b8b448c97913f547510c472666d38b27d9b1a6c3b9e3eb90d97359c147252",
+      "vla": "2792acf9748fc345298956e3a4fe250234c0fe10ed60cbfc60c989c23694e9b6"
+    },
+    "permit": {
+      "run_id": "yokohama-280d65f068d7",
+      "config_sha256": "edb7950a2f0da09fd084fcb49aefba6b5d847dd4d2fd9d3586b818b79751c405",
+      "cycle": 1,
+      "permit_id": "99454b769715450ca51664d94f092d56",
+      "candidate": {
+        "bins": [
+          33,
+          50,
+          49
+        ],
+        "target_world_xyz_m": [
+          -0.806307421,
+          -1.459818215,
+          14.993098853
+        ],
+        "target_heading_ned_rad": -2.6225,
+        "target_heading_world_ned_rad": -2.637966992275,
+        "heading_source": "Gazebo_camera_pose_for_geometry_PX4_EKF_for_yaw_command",
+        "delta_body_frd": [
+          1.683673469387755,
+          0.0,
+          0.1020408163265305,
+          0.0
+        ]
+      },
+      "executor_heading_ned_rad": -2.5915338381686706,
+      "heading_mapping_observation_sha256": "8020cf5383982cab5c7fe58dad5b487daccc465e38a65125d816143a31af5be0",
+      "rules": {
+        "allowed": true,
+        "source": "frozen_collision_prisms_not_model_perception",
+        "margin_m": 2,
+        "start_world_xyz_m": [
+          0.018225331520560422,
+          -0.024268541899759993,
+          15.096222586240014
+        ],
+        "target_world_xyz_m": [
+          -0.806307421,
+          -1.459818215,
+          14.993098853
+        ],
+        "next_target_world_xyz_m": [
+          -34.88761388811289,
+          -60.6945307036456,
+          15.110143087104275
+        ],
+        "minimum_centerline_clearances_m": [
+          24.158292110087608,
+          22.05596005106645
+        ]
+      },
+      "observation_sha256": "a5323af19449640aa1dcb1a724b1ea2e70d9708ff386e0d34efe4334570a1dcc",
+      "vla_response_sha256": "95dacb65da6df952c02f568d2930a67b1350a1b6f4eb414fe4549d6a1d68e88f",
+      "wam_assessment_sha256": "248e3b1d7fea7bd86d6f173fee71135dbe4747e00a7a7459f502a25fc0b6c605",
+      "expires_at_worker_wall_s": 318.00430943599997,
+      "upload_name": "city-01",
+      "upload_sha256": "af87ac47b6734b9b05ac27cc790527873ce5306c7fdb02d29251cb4e0bfc389c",
+      "connector_name": "city-01-connect",
+      "connector_sha256": "901de2e1943586b6bb3786840f9e1496dc3911716999647b7fa958e0438fa3d3",
+      "physical_execution_invoked": false,
+      "prepared_permit_sha256": "23e60811ec7ab492050f8d1e41383ed535be4f7145a75c38ab345db607141f6f"
+    },
+    "arrival_sim_s": 325.016,
+    "arrival_xyz_m": [
+      -0.8359778995334683,
+      -1.5365778553143548,
+      14.994018209538341
+    ],
+    "observed_target_error_m": 0.08229960445857988,
+    "actual_camera": {
+      "source_sha256": "127c3408d79db8cef16aba16c168ddfe38f73d11a8b0738c20fb29206244db02",
+      "sensor_sim_s": 323.252,
+      "before_settled_arrival_s": 1.76400000000001,
+      "exact_future_image_alignment_verified": false
+    },
+    "native_cuda_allocated_after_request_bytes": 0
+  },
+  {
+    "cycle": 2,
+    "wam_profile": "motion-v4",
+    "input_request": {
+      "schema_version": "yokohama_anwm_request.v2",
+      "run_id": "yokohama-280d65f068d7",
+      "world_sha256": "3d14db4c116d1f0892126e004be4249ab90edcdac9322aaa32a11a076db5bb3d",
+      "plan_sha256": "edb7950a2f0da09fd084fcb49aefba6b5d847dd4d2fd9d3586b818b79751c405",
+      "source_kind": "yokohama_rgbd_hold",
+      "ego_source": "Gazebo_model_pose_simulator_ground_truth",
+      "history_sha256": "9268c8057c34e3a6ac8d77224d387fcacd970c2e2af926e02ebf206862eccc37",
+      "delta_frame": "body_frd_at_observation",
+      "num_timesteps": 1,
+      "nominal_horizon_s": 1,
+      "model_time_alignment_verified": false,
+      "future_ground_truth_used_for_forecast": false,
+      "dispatch_allowed": false,
+      "seed": 42,
+      "diffusion_steps": 250,
+      "candidates": [
+        {
+          "id": "hold",
+          "delta": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "id": "vla",
+          "delta": [
+            2.6934148900827135,
+            0.002498704547917896,
+            0.11016861367917485,
+            -0.0035926155898953205
+          ]
+        }
+      ],
+      "vla_response_sha256": "a08fbc0c070af820d95f9bf659093ca9d24bfde234c0c70c071d1cd0b6ca1b5f",
+      "adapter_sha256": "e4b88ec38ce8f08ff90b692a3b545e573aadaacf0f080a0357409dfc2b308dd3",
+      "appearance_policy": "positive_infinite_upward_rays_past_only_no_metric_fill"
+    },
+    "service_identity": {
+      "schema_version": "ship_anwm_static_service.v1",
+      "session_id": "d3bc339f4fc6404cac5edbb8727c20c2",
+      "model_revision": "dfe59001de57a96d6620313897f09436c6940983",
+      "checkpoint_sha256": "bdd149cac6ec002ba7dc4ad99ec6f9eb02cd6d4f05320195cf174737b13b0bc2",
+      "upstream_revision": "657a80268505fa9149c4df502e35aa0f5bce11e5",
+      "vae_revision": "f04b2c4b98319346dad8c65879f680b1997b204a",
+      "server_sha256": "30a0fa5e864279e2d09d8f7482dccacb93cb7961c8e28b46e070d8928ca04545",
+      "helper_sha256": "78e4680405eb0202eac2dbc0ba8035577b1765cf8f76961e83f6f6ae2a431509",
+      "diffusion_steps": 250,
+      "load_seconds": 15.312208482000074,
+      "cpu_between_requests": true,
+      "candidate_contracts": [
+        "yokohama_anwm_request.v2"
+      ],
+      "adapter_sha256": "e4b88ec38ce8f08ff90b692a3b545e573aadaacf0f080a0357409dfc2b308dd3",
+      "model_time_index": 1,
+      "appearance_policy": "positive_infinite_upward_rays_past_only_no_metric_fill",
+      "appearance_sha256": "450da308c1d884e4fca1766d1143c80fd48b1f22b8aba3b071304100dd065ec9",
+      "profile_sha256": "1dba81457144c67c1562689644f14ce4d2ea5d3cd73f5ddfbf964f86e3ad46c6"
+    },
+    "native_vla_response": {
+      "schema_version": "ship_aerovla_live_invocation.v1",
+      "request_sha256": "817c84b150e7076f11ba3fab57c9b5e60407d31b0eb3267c85ec65b2f8b6f437",
+      "service": {
+        "schema_version": "ship_aerovla_service.v1",
+        "session_id": "08d25946c395434586e25129033bdd6d",
+        "base_revision": "47a0ec7fc4ec123775a391911046cf33cf9ed83f",
+        "adapter_revision": "196f2f3253b69df6e90ac10b6ae041c7b3a9569e",
+        "adapter_sha256": "05b11cf66d2a7bba9af3fefc5afa9e9af4fe1f2a567ddeca4fca73192060b846",
+        "upstream_revision": "2c5ae0987a484ab92f00dd9d9ed493cb3e98e492",
+        "weights_sha256": {
+          "model-00001-of-00003.safetensors": "10d8636256018712c5e5c823d12e22b5797f99bb721bd123bf6bf2379892be85",
+          "model-00002-of-00003.safetensors": "2050b14f21d48904d269f48d5a980fecea87cd7b36641d9b0f015e72d1fe216a",
+          "model-00003-of-00003.safetensors": "ea65305a1577f36f721965bf84c8caec0a948ce7ce84d754701637376c531fef"
+        },
+        "custom_code_sha256": {
+          "configuration_prismatic.py": "68cc5ae34f1b46af3168d8d479cb81bb776965653453fd904aa8eefb6c8f9f68",
+          "modeling_prismatic.py": "9ce241c5ca09a4bed73654d0ca509baaff0fc5887d0bdd62e360ca8254f7794a",
+          "processing_prismatic.py": "06563586bbc73d36501a14a231a3174904ede830d33174d0c625ece8e931ef1e"
+        },
+        "runtime_sha256": {
+          "ship_aerovla_server.py": "867300859825c5dc2d51ff2ae3a6647a78d4699bba2534b0ce77a49fe7b53c7a",
+          "ship_aerovla.py": "3cc49ed27d3ff813ce5cebd766e65196fe5ced20bdfc2ebd9ecb8fb45d2f9743",
+          "ship_anwm.py": "78e4680405eb0202eac2dbc0ba8035577b1765cf8f76961e83f6f6ae2a431509"
+        },
+        "gpu": "NVIDIA L4",
+        "torch_version": "2.9.1+cu129",
+        "load_seconds": 18.171382619999918,
+        "warmup_completed": true,
+        "dispatch_capability": false,
+        "exit_after_request": false,
+        "cpu_between_requests": true,
+        "decoding_policy": "aerovla_compact_city_grammar.v2",
+        "inspection_level_flight": true,
+        "vertical_bin_range": [
+          47,
+          51
+        ],
+        "yaw_bin_range": [
+          45,
+          53
+        ],
+        "forward_bin_range": [
+          20,
+          58
+        ],
+        "hold_bin_allowed": false,
+        "terminal_proposal_allowed": false,
+        "compact_city_flight": true,
+        "short_segment_flight": true
+      },
+      "input_images_sha256": {
+        "rgb": "b78d591815e1b3e98a58ce318df44431a37608915d77cc6f9522716da762358e",
+        "down": "ec8df06ea9ed5e0be877f5f1c6c4e564537bbec3906ddd0d0d7a964c7b554653"
+      },
+      "generated_text": "53 49 49</s>",
+      "generated_token_ids": [
+        29945,
+        29941,
+        29871,
+        29946,
+        29929,
+        29871,
+        29946,
+        29929,
+        2
+      ],
+      "input_token_ids": [
+        [
+          1,
+          529,
+          3027,
+          29958,
+          13,
+          29943,
+          368,
+          7812,
+          14432,
+          3412,
+          278,
+          11952,
+          11183,
+          278,
+          28289,
+          17132,
+          29889,
+          341,
+          2365,
+          475,
+          3171,
+          29889,
+          13,
+          4276,
+          29901,
+          29871
+        ]
+      ],
+      "pixel_values_shape": [
+        1,
+        6,
+        224,
+        224
+      ],
+      "mosaic_sha256": "44f0e8615f56175d1cd4695b0d90c2f4d87bafa228f79a18103f75378412c8bc",
+      "mosaic_rgb_sha256": "f284c9b5c907fe64a4fdf0d4981a11acc1ca595c5b836dc29c46cc9753d56f16",
+      "started_at_unix_s": 1790513977.5440881,
+      "completed_at_unix_s": 1790513978.301996,
+      "inference_seconds": 0.7579078674316406,
+      "peak_cuda_allocated_bytes": 15875595264,
+      "cuda_allocated_before_gc_bytes": 9568256,
+      "gc_collected_objects": 254,
+      "cuda_workspaces_cleared": true,
+      "cuda_allocated_after_request_bytes": 0,
+      "vla_inference_invoked": true,
+      "dispatch_invoked": false,
+      "physical_execution_invoked": false
+    },
+    "checks": [
+      {
+        "candidate": {
+          "id": "hold",
+          "delta": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "passed": true,
+        "known_pixel_fraction": 0.8383290816326531,
+        "reference_edge_pixels": 1491,
+        "matched_edge_fraction": 1.0,
+        "luminance_mae": 2.203325091923417,
+        "predicted_edge_density": 0.04219760365157855,
+        "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+      },
+      {
+        "candidate": {
+          "id": "vla",
+          "delta": [
+            2.6934148900827135,
+            0.002498704547917896,
+            0.11016861367917485,
+            -0.0035926155898953205
+          ]
+        },
+        "passed": true,
+        "known_pixel_fraction": 0.8344626913265306,
+        "reference_edge_pixels": 1645,
+        "matched_edge_fraction": 1.0,
+        "luminance_mae": 2.6848499323302275,
+        "predicted_edge_density": 0.04571292094578457,
+        "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+      }
+    ],
+    "wam_exchange_wall_s": 48.98408595804358,
+    "original_forecast_sha256": {
+      "hold": "a5b9c91577a49771706362a72e7239589adf7be49362dc3a8f0136a0daf15bfe",
+      "vla": "aa9465fd4f9299ebbe29ef26036d373178417254ae880223b7e48d709890dda0"
+    },
+    "permit": {
+      "run_id": "yokohama-280d65f068d7",
+      "config_sha256": "edb7950a2f0da09fd084fcb49aefba6b5d847dd4d2fd9d3586b818b79751c405",
+      "cycle": 2,
+      "permit_id": "fe33e5db888d4225bb46348ce54125aa",
+      "candidate": {
+        "bins": [
+          53,
+          49,
+          49
+        ],
+        "target_world_xyz_m": [
+          -32.574480679,
+          -62.101612237,
+          15.020389398
+        ],
+        "target_heading_ned_rad": 2.09256,
+        "target_heading_world_ned_rad": 2.099166240655,
+        "heading_source": "Gazebo_camera_pose_for_geometry_PX4_EKF_for_yaw_command",
+        "delta_body_frd": [
+          2.7040816326530615,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "executor_heading_ned_rad": 2.0868883530526348,
+      "heading_mapping_observation_sha256": "fade1dfb060ea223a0adc3add4d7266e03b5412008ee6ea9a6feabdd5ce1ff7e",
+      "rules": {
+        "allowed": true,
+        "source": "frozen_collision_prisms_not_model_perception",
+        "margin_m": 2,
+        "start_world_xyz_m": [
+          -34.92600135063199,
+          -60.68523679131277,
+          15.107064473976596
+        ],
+        "target_world_xyz_m": [
+          -32.574480679,
+          -62.101612237,
+          15.020389398
+        ],
+        "next_target_world_xyz_m": [
+          108.17735177259866,
+          -142.92962206786046,
+          15.110143087104275
+        ],
+        "minimum_centerline_clearances_m": [
+          22.01460655304974,
+          7.6410382151154
+        ]
+      },
+      "observation_sha256": "67fb94baa46df505dfb8cebaa649079fd7e52d68f3aaa927fb12d8e767c7bf80",
+      "vla_response_sha256": "a08fbc0c070af820d95f9bf659093ca9d24bfde234c0c70c071d1cd0b6ca1b5f",
+      "wam_assessment_sha256": "d4b0fc39b274c2c9551c1d0e6c46f0106631059c65594c88b3370895c014d588",
+      "expires_at_worker_wall_s": 470.296570588,
+      "upload_name": "city-02",
+      "upload_sha256": "28e8cfd567add85773ddf321e1526ef3348b389cde492ae199bf5b813bf8f8b6",
+      "connector_name": "city-02-connect",
+      "connector_sha256": "329db2cd172679f665487045ad26b93208da7d84de73807ab6409f6d2d7c2b73",
+      "physical_execution_invoked": false,
+      "prepared_permit_sha256": "a17d3e8f87dcea2da2ba4c5164f09c06689b883a8a301754885b75356dafa95a"
+    },
+    "arrival_sim_s": 476.524,
+    "arrival_xyz_m": [
+      -32.495067584279305,
+      -62.18267228240878,
+      15.006498217868572
+    ],
+    "observed_target_error_m": 0.11432469313422834,
+    "actual_camera": {
+      "source_sha256": "1080c040151070b4bca3412a4e7b3357b3e48c27d3eeb7794d1600a9728cd589",
+      "sensor_sim_s": 474.752,
+      "before_settled_arrival_s": 1.7719999999999914,
+      "exact_future_image_alignment_verified": false
+    },
+    "native_cuda_allocated_after_request_bytes": 0
+  }
+]

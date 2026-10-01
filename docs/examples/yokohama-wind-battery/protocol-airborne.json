@@ -1,0 +1,33 @@
+{
+  "schema": "missionos.wind-stress-protocol.v1",
+  "frozen_utc": "2026-09-28T02:01:06.371487+00:00",
+  "cases": [
+    {
+      "east_mps": 2,
+      "condition": "always, one attempt"
+    },
+    {
+      "east_mps": 5,
+      "condition": "only if 2 m/s passes all verifiers, one attempt"
+    }
+  ],
+  "wind_force": "Gazebo8 WindEffects mass*(wind-link velocity), coefficient 1/s; stock rotor drag remains active",
+  "limits": "No CFD, building wakes or measured airframe calibration. No operational wind rating. No model advantage comparison.",
+  "backend": "fixture",
+  "native_models": false,
+  "gpu_spend_usd": 0,
+  "cumulative_gpu_estimate_usd": 16.706277034434482,
+  "bounds": "Existing 13 holds and cargo receiver, city decisions and return bounds unchanged",
+  "failure_policy": "Preserve every attempt; do not rerun adverse outcomes to replace them",
+  "source_sha256": {
+    "src/runtime/yokohama_wind.py": "5e480151384124e6016d0c1f6061358ecf60ceb491abaf3703f8878a4c94c116",
+    "scripts/yokohama_sitl.py": "faf924a6c517fd2298642f10dd092207f381e1acc3ea96afd977047002b0ce39",
+    "scripts/yokohama_flight_worker.py": "2ffc27ea89e7cc0b8cd70320088d712ed2dc7269a88cfb07911c555aaa88b83a",
+    "scripts/yokohama_sitl_worker.py": "a7eaa3b7944ab3170c9de1911a8a8b519b340c4bb5c50eaf9d3d58b82f42f7fc",
+    "scripts/verify_yokohama_sitl.py": "6aa5457ddeb3f739c7737fb04199683bc21b942e8ace3011516490d3692b6f3f"
+  },
+  "case_revision": "airborne-onset-v1",
+  "wind_onset": "After successful SEA-TAKEOFF hold; no windy launch claim",
+  "retained_previous_attempt": "wind-2: preflight failed; observed pitch 67.064 degrees before arming",
+  "reason": "Separate initial spawn/deck stability from airborne AP disturbance rejection. Force coefficient and safety bounds unchanged."
+}

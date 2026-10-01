@@ -1,0 +1,450 @@
+[
+  {
+    "case": "test-return-fast",
+    "time": 15.780000000000001,
+    "methods": {
+      "existing": {
+        "supported": false,
+        "support_distance": 0.3543311585606395,
+        "unsupported_frames": 2,
+        "states": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "signal": "unknown_fallback_to_current_rules"
+      },
+      "post_trained": {
+        "supported": true,
+        "support_distance": 0.18225767676035465,
+        "unsupported_frames": 0,
+        "states": [
+          "clear",
+          "clear",
+          "clear",
+          "clear",
+          "clear",
+          "clear",
+          "clear",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "signal": "unknown_fallback_to_current_rules"
+      }
+    }
+  },
+  {
+    "case": "test-return-fast",
+    "time": 16.78,
+    "methods": {
+      "existing": {
+        "supported": false,
+        "support_distance": 0.4606145813819245,
+        "unsupported_frames": 2,
+        "states": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "signal": "unknown_fallback_to_current_rules"
+      },
+      "post_trained": {
+        "supported": true,
+        "support_distance": 0.1957137367979654,
+        "unsupported_frames": 0,
+        "states": [
+          "clear",
+          "clear",
+          "clear",
+          "clear",
+          "clear",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "signal": "unknown_fallback_to_current_rules"
+      }
+    }
+  },
+  {
+    "case": "test-return-fast",
+    "time": 17.78,
+    "methods": {
+      "existing": {
+        "supported": false,
+        "support_distance": 0.3818056162302458,
+        "unsupported_frames": 2,
+        "states": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "signal": "unknown_fallback_to_current_rules"
+      },
+      "post_trained": {
+        "supported": true,
+        "support_distance": 0.1482009643186527,
+        "unsupported_frames": 0,
+        "states": [
+          "clear",
+          "clear",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "signal": "unknown_fallback_to_current_rules"
+      }
+    }
+  },
+  {
+    "case": "test-return-fast",
+    "time": 18.78,
+    "methods": {
+      "existing": {
+        "supported": false,
+        "support_distance": 0.5682057595393529,
+        "unsupported_frames": 2,
+        "states": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "signal": "unknown_fallback_to_current_rules"
+      },
+      "post_trained": {
+        "supported": true,
+        "support_distance": 0.22040014343856945,
+        "unsupported_frames": 0,
+        "states": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "signal": "unknown_fallback_to_current_rules"
+      }
+    }
+  },
+  {
+    "case": "test-return-slow",
+    "time": 14.788000000000011,
+    "methods": {
+      "existing": {
+        "supported": false,
+        "support_distance": 0.6548740628194387,
+        "unsupported_frames": 2,
+        "states": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "signal": "unknown_fallback_to_current_rules"
+      },
+      "post_trained": {
+        "supported": true,
+        "support_distance": 0.31966433164976316,
+        "unsupported_frames": 0,
+        "states": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "signal": "unknown_fallback_to_current_rules"
+      }
+    }
+  },
+  {
+    "case": "test-return-slow",
+    "time": 15.788000000000011,
+    "methods": {
+      "existing": {
+        "supported": false,
+        "support_distance": 0.6897324868619946,
+        "unsupported_frames": 2,
+        "states": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "signal": "unknown_fallback_to_current_rules"
+      },
+      "post_trained": {
+        "supported": true,
+        "support_distance": 0.32253278946151936,
+        "unsupported_frames": 0,
+        "states": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "signal": "unknown_fallback_to_current_rules"
+      }
+    }
+  },
+  {
+    "case": "test-return-slow",
+    "time": 16.78800000000001,
+    "methods": {
+      "existing": {
+        "supported": false,
+        "support_distance": 0.6632651407985686,
+        "unsupported_frames": 1,
+        "states": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "signal": "unknown_fallback_to_current_rules"
+      },
+      "post_trained": {
+        "supported": true,
+        "support_distance": 0.21184003240840898,
+        "unsupported_frames": 0,
+        "states": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "signal": "unknown_fallback_to_current_rules"
+      }
+    }
+  },
+  {
+    "case": "test-return-slow",
+    "time": 17.78800000000001,
+    "methods": {
+      "existing": {
+        "supported": true,
+        "support_distance": 0.7234599334327909,
+        "unsupported_frames": 0,
+        "states": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "signal": "unknown_fallback_to_current_rules"
+      },
+      "post_trained": {
+        "supported": true,
+        "support_distance": 0.14690640523841036,
+        "unsupported_frames": 0,
+        "states": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "signal": "unknown_fallback_to_current_rules"
+      }
+    }
+  }
+]

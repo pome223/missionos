@@ -1,0 +1,77 @@
+{
+  "schema_version": "missionos.city_integration_protocol.v1",
+  "declared_before_gpu": true,
+  "goal": "Two fresh native VLA+WAM updates dispatched through independent Rules/AP, delivery waypoint, city return/landing/disarm",
+  "wam_profile": "motion-v4",
+  "adapter_sha256": "e4b88ec38ce8f08ff90b692a3b545e573aadaacf0f080a0357409dfc2b308dd3",
+  "appearance": "Observed historical positive-infinite upward rays only; no added metric geometry",
+  "model_time_index": 1,
+  "acceptance": {
+    "native_updates": 2,
+    "native_vla_calls": 2,
+    "native_wam_candidate_forecasts": 4,
+    "delivery_waypoint": true,
+    "city_return_landing_disarm": true,
+    "city_contacts_observed": 0,
+    "independent_rules": true,
+    "unchanged_visible_structure_gate": true,
+    "shutdown_before_AP_remainder": true,
+    "late_authority_rejected": true
+  },
+  "ideal_rules_superiority_required": false,
+  "pixel_perfect_images_required": false,
+  "vla_decoding": {
+    "forward_bins": [
+      20,
+      58
+    ],
+    "yaw_bins": [
+      45,
+      53
+    ],
+    "vertical_bins": [
+      47,
+      51
+    ],
+    "hold_and_terminal_preserved": false,
+    "output_rewriting": false,
+    "decoding_policy": "aerovla_compact_city_grammar.v2",
+    "role": "parameter_selection_only_for_preapproved_translation",
+    "legacy_grammars_unchanged": true
+  },
+  "flight_scope": "one static-building zero-wind city SITL mission; authored connectors; no sea leg/ship/parcel release/hardware",
+  "source_revision": "f79a199c64f52cb2faa8aa19f1babd1084e6b685",
+  "one_attempt": true,
+  "model_retries": 0,
+  "max_runtime_s": 2300,
+  "maximum_cumulative_estimated_usd": 14.967264452474122,
+  "payload_sha256": {
+    "ship_anwm_server.py": "30a0fa5e864279e2d09d8f7482dccacb93cb7961c8e28b46e070d8928ca04545",
+    "yokohama_wam_profile.py": "1dba81457144c67c1562689644f14ce4d2ea5d3cd73f5ddfbf964f86e3ad46c6",
+    "yokohama_appearance.py": "450da308c1d884e4fca1766d1143c80fd48b1f22b8aba3b071304100dd065ec9",
+    "ship_aerovla.py": "3cc49ed27d3ff813ce5cebd766e65196fe5ced20bdfc2ebd9ecb8fb45d2f9743",
+    "ship_aerovla_server.py": "867300859825c5dc2d51ff2ae3a6647a78d4699bba2534b0ce77a49fe7b53c7a",
+    "ship_anwm.py": "78e4680405eb0202eac2dbc0ba8035577b1765cf8f76961e83f6f6ae2a431509",
+    "bootstrap.sh": "168ae747045c4f32b50ae1bd7392c5a52741d7860498ac45224f6ee5e2284f56",
+    "motion-adapter.pt": "e4b88ec38ce8f08ff90b692a3b545e573aadaacf0f080a0357409dfc2b308dd3",
+    "remote_lifecycle.py": "44295e8510906f5b0a3c7d684261a5c59e521c974a1c8ce5806d59559ac68751"
+  },
+  "controller_sha256": "a6d49ab487bde29606eac8e8b20ca53018fed431596460e89b391ac8800d8f95",
+  "revision_purpose": "Restrict VLA to parameters of a requested translation; independent Rules and WAM retain reject authority",
+  "previous_failed_run": "yokohama-84e200069b7b",
+  "previous_failed_protocol_sha256": "678b96d391e535c4e15cf0563cfb0bd02248d0406c07c5f9cfd522a52ca1cd70",
+  "cold_start_delay_qualification": {
+    "start": 170,
+    "vla": 10,
+    "wam": 55
+  },
+  "inference_wait_physical_yaw_limit_rad": 0.25,
+  "capture_and_upload_yaw_limit_rad": 0.03,
+  "world_and_EKF_arrival_yaw_limit_rad": 0.05,
+  "intermediate_cpu_failure_run": "yokohama-2e6a5f977ed4",
+  "translation_contract_tests": {
+    "passed": 3412,
+    "elapsed_s": 106.38,
+    "stdout_sha256": "93edad6f42342b489acb23a0e518333939e8bf17a2e2244f5eeaa435bf7a528c"
+  }
+}

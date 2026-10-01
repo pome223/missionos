@@ -1,0 +1,48 @@
+{
+  "schema": "missionos.urban-scene-geometry-check.v1",
+  "status": "passed",
+  "mesh_objects": 237,
+  "source_triangle_count": 35916,
+  "line_of_sight_method": "two-sided segment / original 3D triangle intersection, Moller-Trumbore",
+  "line_of_sight_checks": [
+    {
+      "from_before": "D1",
+      "from_after": "D2",
+      "target": "D3",
+      "before_triangle_hit_buildings": [
+        "bldg_19332410-cd96-430a-aed7-02dd727fc597",
+        "bldg_3a0315eb-e305-4099-afc3-2ee7332fe924"
+      ],
+      "after_triangle_hit_buildings": []
+    },
+    {
+      "from_before": "D2",
+      "from_after": "D3",
+      "target": "DELIVERY",
+      "before_triangle_hit_buildings": [
+        "bldg_19332410-cd96-430a-aed7-02dd727fc597",
+        "bldg_3a0315eb-e305-4099-afc3-2ee7332fe924"
+      ],
+      "after_triangle_hit_buildings": []
+    }
+  ],
+  "route_centerline_triangle_intersections": 0,
+  "short_legs_count": 18,
+  "max_short_leg_m": 18.3338,
+  "coordinate_origin_roundtrip_max_deg": 0.0,
+  "glb_structure_checked": true,
+  "collision_proxy_edge_incidence_counts": {
+    "2": 9198
+  },
+  "collision_proxy_consistent_winding": true,
+  "collision_proxy_horizontal_expansion_m": 0.02,
+  "collision_proxy_topology_simplification_m": 0.005,
+  "native_flight": false,
+  "gpu_spend_usd": 0,
+  "limitations": [
+    "No simulator flight or renderer-based perception test",
+    "No wind, trees, wires, traffic, people or source-data accuracy margin",
+    "Source-triangle meshes not certified watertight; conservative footprint prisms are the separate collision proxy",
+    "Altitude is source vertical datum, not PX4 home-relative altitude"
+  ]
+}

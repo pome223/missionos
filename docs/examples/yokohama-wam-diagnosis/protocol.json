@@ -1,0 +1,82 @@
+{
+  "frozen_at": "2026-09-27T03:05:20.441672+00:00",
+  "purpose": "Locate the first stage losing observed street structure; no mission dispatch and no superiority claim",
+  "source_commit": "871581aae7c4a0451d5ed1d02747a01f88a0c328",
+  "seed": 42,
+  "diffusion_steps": 250,
+  "hold_action_normalized": [
+    -0.3333333333333333,
+    0,
+    0,
+    0
+  ],
+  "context_size": 16,
+  "cases": [
+    {
+      "id": "city_original_t4",
+      "scene": "city",
+      "projection": "rgbd",
+      "time_steps": 4
+    },
+    {
+      "id": "city_rgbd_t0",
+      "scene": "city",
+      "projection": "rgbd",
+      "time_steps": 0
+    },
+    {
+      "id": "city_full_t4",
+      "scene": "city",
+      "projection": "full_observed",
+      "time_steps": 4
+    },
+    {
+      "id": "city_full_t0",
+      "scene": "city",
+      "projection": "full_observed",
+      "time_steps": 0
+    },
+    {
+      "id": "reference_full_t4",
+      "scene": "reference",
+      "projection": "full_observed",
+      "time_steps": 4
+    },
+    {
+      "id": "reference_full_t0",
+      "scene": "reference",
+      "projection": "full_observed",
+      "time_steps": 0
+    }
+  ],
+  "vae_reconstruction": "mode and fixed-seed sample on city RGB, RGBD projection, and official first archive RGB",
+  "metrics": "unchanged past_view and forecast_consistency plus full-frame RGB MAE; no threshold adjustment",
+  "reference": {
+    "dataset_revision": "f0fcc70df0b3c8c26286adbfb39ccdf5e3b7ad83",
+    "source_url": "https://huggingface.co/datasets/EmbodiedCity/ANWM-Dataset/resolve/f0fcc70df0b3c8c26286adbfb39ccdf5e3b7ad83/airvln_16-000000.tar",
+    "member": "302OLP89E75X7MFPRR58QG7CIDVACC_processed/226.jpg",
+    "sha256": "9dfaf17d62ed88774447a159ff752a8525299bcf2c2541d08f473488db6793c0",
+    "license": "apache-2.0",
+    "selection": "first archived RGB file of first trajectory of first shard, fixed before viewing/inference; repeat 16 times for stationary identity diagnostic",
+    "limitations": "No trajectory labels or depth used. Synthetic static context, not held-out navigation benchmark. Dataset metadata declares Apache-2.0; raw reference media remains private in this diagnostic.",
+    "download_notes": "Earlier full-trajectory attempt aborted on metadata >192MiB; consecutive-frame range attempt interrupted after sparse frame IDs found. No images selected by inference result."
+  },
+  "interpretation_limits": [
+    "Single scene, single seed. No generalized domain conclusion.",
+    "All cases are stationary identities, not future ground truth or obstacle prediction.",
+    "Full-observed projection and zero time are diagnostic interventions, not operational fixes.",
+    "Preserve all outcomes and runtime errors. No favorable-case selection."
+  ],
+  "payload_sha256": {
+    "bootstrap.sh": "418abb320f9c608040fd2c8c62069ff7e0726757375f608df9926c0cc97ba99f",
+    "diagnose.py": "3e7aee9401c625e243b5819534d99f6700b7fb6e6f50583b362dfc5d3669fd73",
+    "frozen_metrics.py": "dfded19e47b295af506fd33c508ee1d76f5cbe1934f904546c7fec9168ebabb6",
+    "history.npz": "bf603ee0363d949874d6f47dce8798e38c816d24302cbe48c2ace589d0b9dc11",
+    "hold-prediction.png": "bbace67e23fcffb45cce080561c2ebd577a3f6fec074591689c7f73df71d9e4b",
+    "hold-projection.png": "bc886804dbbcb5193c9f12207d1012b51e006d78daecb166090425bc569c7ef9",
+    "reference.jpg": "9dfaf17d62ed88774447a159ff752a8525299bcf2c2541d08f473488db6793c0",
+    "request.json": "4b7b8feac69828be5f72742246e066bb387b47115e3b53630c68d10338a32027",
+    "ship_anwm.py": "4a64a0fa90aab8913529a8948edc9cef53d1c86d04becbf81250c67aceddcf21",
+    "ship_anwm_server.py": "2507e4637643934e3a142572515d32afb5e66685fda0e5bc7451a4a73fd5fafc"
+  }
+}

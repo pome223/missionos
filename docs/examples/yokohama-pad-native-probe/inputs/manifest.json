@@ -1,0 +1,21 @@
+{
+  "schema": "yokohama_pad_probe_inputs.v1",
+  "cases": [
+    {
+      "id": "far-busy",
+      "request_sha256": "3b73f1b4e9cc841d062d86bc3b22b6bc20489da9aac5f76345e337ae2215523f"
+    },
+    {
+      "id": "near-busy",
+      "request_sha256": "c3eec7ac28248aa2c35c660e0d8a338555f74b8267c86a756ec7211be32922fe"
+    },
+    {
+      "id": "near-clear",
+      "request_sha256": "1416c2db55730c54a65f2c9549e6300a00a2ca11ec1cbda4608b935281eadfc5"
+    },
+    {
+      "id": "near-reoccupied",
+      "request_sha256": "48bd1dae303ad8b1518bd53b23e34f732db7e9362b3049a1ac23624917a3a9af"
+    }
+  ]
+}

@@ -1,0 +1,111 @@
+{
+  "schema_version": "yokohama_pad_queue_design_screen.v1",
+  "evidence_kind": "analytical_authored_scenarios",
+  "assumptions": {
+    "decision_latency_s": 70,
+    "wait_limit_s": 120,
+    "alternate_travel_s": 90,
+    "fresh_clear_window_s": 2,
+    "unload_s": 30,
+    "delivery_deadline_s": 240
+  },
+  "splits": {
+    "design": {
+      "cases": [
+        {
+          "case": "design-1",
+          "initial_observation": "A occupied",
+          "clearance_truth_s": 100,
+          "delivery_completion_s": {
+            "wait_A": 132,
+            "approved_alternate_B": 190
+          },
+          "oracle_choice": "wait_A",
+          "oracle_completion_s": 132
+        },
+        {
+          "case": "design-2",
+          "initial_observation": "A occupied",
+          "clearance_truth_s": 140,
+          "delivery_completion_s": {
+            "wait_A": 172,
+            "approved_alternate_B": 190
+          },
+          "oracle_choice": "wait_A",
+          "oracle_completion_s": 172
+        },
+        {
+          "case": "design-3",
+          "initial_observation": "A occupied",
+          "clearance_truth_s": 300,
+          "delivery_completion_s": {
+            "wait_A": null,
+            "approved_alternate_B": 190
+          },
+          "oracle_choice": "approved_alternate_B",
+          "oracle_completion_s": 190
+        }
+      ],
+      "fixed_wait_deliveries": 2,
+      "fixed_B_deliveries": 3,
+      "fixed_B_mean_s": 190,
+      "current_occupancy_only_mean_s": 190,
+      "oracle_mean_s": 164.66666666666666,
+      "oracle_headroom_s": 25.333333333333343
+    },
+    "reserved_evaluation": {
+      "cases": [
+        {
+          "case": "reserved_evaluation-1",
+          "initial_observation": "A occupied",
+          "clearance_truth_s": 90,
+          "delivery_completion_s": {
+            "wait_A": 122,
+            "approved_alternate_B": 190
+          },
+          "oracle_choice": "wait_A",
+          "oracle_completion_s": 122
+        },
+        {
+          "case": "reserved_evaluation-2",
+          "initial_observation": "A occupied",
+          "clearance_truth_s": 170,
+          "delivery_completion_s": {
+            "wait_A": 202,
+            "approved_alternate_B": 190
+          },
+          "oracle_choice": "approved_alternate_B",
+          "oracle_completion_s": 190
+        },
+        {
+          "case": "reserved_evaluation-3",
+          "initial_observation": "A occupied",
+          "clearance_truth_s": 310,
+          "delivery_completion_s": {
+            "wait_A": null,
+            "approved_alternate_B": 190
+          },
+          "oracle_choice": "approved_alternate_B",
+          "oracle_completion_s": 190
+        }
+      ],
+      "fixed_wait_deliveries": 2,
+      "fixed_B_deliveries": 3,
+      "fixed_B_mean_s": 190,
+      "current_occupancy_only_mean_s": 190,
+      "oracle_mean_s": 167.33333333333334,
+      "oracle_headroom_s": 22.666666666666657
+    }
+  },
+  "model_or_training_admitted": false,
+  "blockers": [
+    "No observed clips showing that remaining occupancy is inferable",
+    "Current VLA translation contract has no mission-level WAIT/ALTERNATE choice",
+    "Current WAM target-view prediction has no validated long-horizon pad-clearance forecast",
+    "Fleet queue ETA and tracked-departure comparators have not been evaluated"
+  ],
+  "simulation_flights": 0,
+  "model_calls": 0,
+  "gpu_spend_usd": 0,
+  "delivery_return_or_model_benefit_verified": false
+}

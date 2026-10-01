@@ -1,0 +1,119 @@
+{
+  "schema_version": "anwm_paired_protocol.v1",
+  "frozen_at_utc": "2026-09-27T04:26:24.280619+00:00",
+  "seed": 42,
+  "diffusion_steps": 250,
+  "future_images_uploaded": false,
+  "source_base_commit": "deadbef6a53a1bcc2a9c581f6afe46f4deff25d3",
+  "source_sha256": {
+    "src/runtime/yokohama_paired.py": "ed4ee02124c0d18d99c6e7569fe413e07a300df6602a359f9c6ccaa9a22c0840",
+    "scripts/verify_yokohama_paired.py": "c62ca48e5c43e932f67a0f2dfb888b8d2b7e036fa0f63101967dbec16c57f003"
+  },
+  "cases": [
+    {
+      "id": "D1-hold-native-t4",
+      "pair": "D1-hold",
+      "projection": "native",
+      "time_steps": 4
+    },
+    {
+      "id": "D1-hold-appearance-t4",
+      "pair": "D1-hold",
+      "projection": "appearance",
+      "time_steps": 4
+    },
+    {
+      "id": "D1-hold-appearance-t1",
+      "pair": "D1-hold",
+      "projection": "appearance",
+      "time_steps": 1
+    },
+    {
+      "id": "D1-vla-native-t4",
+      "pair": "D1-vla",
+      "projection": "native",
+      "time_steps": 4
+    },
+    {
+      "id": "D1-vla-appearance-t4",
+      "pair": "D1-vla",
+      "projection": "appearance",
+      "time_steps": 4
+    },
+    {
+      "id": "D1-vla-appearance-t1",
+      "pair": "D1-vla",
+      "projection": "appearance",
+      "time_steps": 1
+    },
+    {
+      "id": "D2-hold-native-t4",
+      "pair": "D2-hold",
+      "projection": "native",
+      "time_steps": 4
+    },
+    {
+      "id": "D2-hold-appearance-t4",
+      "pair": "D2-hold",
+      "projection": "appearance",
+      "time_steps": 4
+    },
+    {
+      "id": "D2-hold-appearance-t1",
+      "pair": "D2-hold",
+      "projection": "appearance",
+      "time_steps": 1
+    },
+    {
+      "id": "D2-vla-native-t4",
+      "pair": "D2-vla",
+      "projection": "native",
+      "time_steps": 4
+    },
+    {
+      "id": "D2-vla-appearance-t4",
+      "pair": "D2-vla",
+      "projection": "appearance",
+      "time_steps": 4
+    },
+    {
+      "id": "D2-vla-appearance-t1",
+      "pair": "D2-vla",
+      "projection": "appearance",
+      "time_steps": 1
+    }
+  ],
+  "absolute_bounds": {
+    "rgb_mae_max": 15,
+    "fraction_pixels_max_channel_error_over_40_max": 0.1,
+    "inference_seconds_max": 75,
+    "target_camera_error_m_max": 0.3,
+    "target_camera_rotation_error_rad_max": 0.05
+  },
+  "threshold_rationale": "Conservative near-view appearance check: mean channel error below 6% of range and at least 90% of pixels within 40 in every channel; not a navigation success or free-space metric.",
+  "manual_requirement": "No invented water, skyline, or route-changing geometry; numeric pass alone is insufficient.",
+  "progression_requirement": "One nonzero-time condition must pass all four held-out cases and visual inspection before considering a separately frozen native flight; no automatic dispatch.",
+  "time_semantics": "t1/t4 are dataset index offsets, not validated physical seconds. Hold truth is at +1 observed simulator second; moving truth is first frame after AP settles at commanded endpoint. No time-zero case.",
+  "scope": "offline view diagnostic from fixed CPU fixture commands; no real VLA call or model-controlled flight",
+  "source_commit": "20e5c0c2bc75de72fdd8287111e58a8f10d4b69e",
+  "capture_verification_sha256": "98aea1d695a451ce48b03fe93827bf6002e40151812ebb695aa6934bc2ecb395",
+  "capture_qualification_scope": "paired_capture_only",
+  "flight_run_id": "yokohama-e13923f20e45",
+  "amendment": "Rejected pose-mismatched and preflight/arrival-failed CPU attempts retained. Same numeric bounds/cases; one authored preflight heading reference with init-only magnetometer. Data qualification may precede completion of remaining AP route. No GPU calls before this freeze.",
+  "input_members": [
+    "inputs/D1/request.json",
+    "inputs/D1/history.npz",
+    "inputs/D1/last-raw-depth.npy",
+    "inputs/D2/request.json",
+    "inputs/D2/history.npz",
+    "inputs/D2/last-raw-depth.npy"
+  ],
+  "payload_sha256": {
+    "bootstrap.sh": "14a936176caf7a75da500e7173443d7b1f822749ab74152c3e2c64ba0da7addb",
+    "diagnose.py": "d6c1ce7185a76deb010fe2dfc802309692513a78c604ae51ecad74a1ecd7c3d6",
+    "inputs.tar.gz": "546f574e66c28d8457a37a8ddce075dd58cc11c19aa8016ad47f387a74647b9b",
+    "paired_appearance.py": "5be9458b7538d2afe6252658fa85c6ce26c095a7a1b250c92de8643f498d0ec3",
+    "ship_anwm.py": "4a64a0fa90aab8913529a8948edc9cef53d1c86d04becbf81250c67aceddcf21",
+    "ship_anwm_server.py": "2507e4637643934e3a142572515d32afb5e66685fda0e5bc7451a4a73fd5fafc"
+  }
+}

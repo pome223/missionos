@@ -45,6 +45,10 @@ was sent, what was observed, and what remains unproven.
   in the TurtleBot3 Recovery loop.
 - Read `docs/concepts/replay-evidence.md` for publication-safe,
   machine-readable Recovery evidence and its limits.
+- Read [ship-based delivery](ship-delivery.md) for the first stationary-ship
+  round-trip fixture, opt-in PX4/Gazebo run, and staged path toward a fleet.
+- Read [urban wait/detour decisions](ship-urban-decisions.md) for the model-free
+  scenario comparison before VLA/WAM integration.
 - Read `docs/concepts/real-hardware-bridge.md` for the first contract-first
   hardware bridge slices and their limits.
 - Read `docs/concepts/recovery-delegation.md` for the opt-in two-phase

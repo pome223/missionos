@@ -1,0 +1,22 @@
+[
+  {
+    "duration_sim_s": 30.104,
+    "samples": 93,
+    "max_horizontal_error_m": 0.05658238000629759,
+    "max_vertical_error_m": 0.0567247146362142,
+    "max_px4_speed_mps": 0.036919677680066494,
+    "all_auto_loiter": true,
+    "all_airborne_armed": true,
+    "max_pose_age_s": 0.019451249999995923,
+    "max_sample_gap_sim_s": 0.41200000000000614,
+    "start_sim_s": 32.008,
+    "end_sim_s": 62.112,
+    "point": "00-D1",
+    "target_world_xyz_m": [
+      0.0,
+      0.0,
+      15.110143087104275
+    ],
+    "passed": true
+  }
+]

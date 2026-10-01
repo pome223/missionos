@@ -1,0 +1,40 @@
+{
+  "runtime_source_revision": "51d6de5962fb1f70cc53e85bfb06fd8a85449042",
+  "focused_tests_passed": 71,
+  "adapter_tests_passed": 88,
+  "source_ci": {
+    "run_id": 36327895277,
+    "conclusion": "success",
+    "python_versions": [
+      "3.11",
+      "3.13"
+    ]
+  },
+  "browser": {
+    "status": "passed",
+    "surface": "Codex in-app browser",
+    "desktop_width": 1280,
+    "mobile_width": 390,
+    "horizontal_overflow": false,
+    "holds_display": "11 / 11",
+    "last_measured_point": "6989 / 6989",
+    "final_phase": "return_land",
+    "controls_checked": [
+      "play",
+      "pause",
+      "seek-end",
+      "city",
+      "overview",
+      "top",
+      "follow",
+      "hold-image-select"
+    ],
+    "comparison_images_loaded": 8,
+    "video_duration_s": 197.458333,
+    "video_playback_observed_s": 10.704025,
+    "final_tab_console_errors": [],
+    "limitation": "The first browser tab crashed after a video native-control interaction. A fresh tab passed replay, image and responsive checks; the crash cause was not isolated."
+  },
+  "relative_links_checked": 29,
+  "private_path_and_credential_marker_scan": "passed"
+}

@@ -1,0 +1,109 @@
+{
+  "run_id": "52387a937a5a453fa8b7eb07ee0fd502",
+  "frozen_decoder_results": [
+    {
+      "file": "hold-prediction.png",
+      "substantial_warm_spans": [
+        [
+          118,
+          162,
+          45
+        ],
+        [
+          26,
+          36,
+          11
+        ]
+      ],
+      "decoded": {
+        "interval_px": [
+          118,
+          162
+        ],
+        "obstacle_x_m": -0.25211266351084904
+      }
+    },
+    {
+      "file": "hold-projection.png",
+      "substantial_warm_spans": [
+        [
+          119,
+          162,
+          44
+        ]
+      ],
+      "decoded": {
+        "interval_px": [
+          119,
+          162
+        ],
+        "obstacle_x_m": -0.07009871679155866
+      }
+    },
+    {
+      "file": "right_5m-prediction.png",
+      "substantial_warm_spans": [
+        [
+          104,
+          147,
+          44
+        ],
+        [
+          0,
+          28,
+          29
+        ],
+        [
+          38,
+          48,
+          11
+        ]
+      ],
+      "rejection": "Main predicted obstacle missing, clipped or ambiguous"
+    },
+    {
+      "file": "right_5m-projection.png",
+      "substantial_warm_spans": [
+        [
+          105,
+          148,
+          44
+        ]
+      ],
+      "decoded": {
+        "interval_px": [
+          105,
+          148
+        ],
+        "obstacle_x_m": -0.1967785876701802
+      }
+    }
+  ],
+  "runtime_bounds_unchanged": true,
+  "native_gpu_reruns": 0,
+  "input_shape": {
+    "rgb": [
+      16,
+      360,
+      640,
+      3
+    ],
+    "depth": [
+      16,
+      360,
+      640
+    ],
+    "poses": [
+      16,
+      4,
+      4
+    ],
+    "intrinsics": [
+      3,
+      3
+    ],
+    "stamps_ns": [
+      16
+    ]
+  }
+}

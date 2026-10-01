@@ -1,0 +1,104 @@
+{
+  "schema_version": "ship_native_joint_public_evidence.v1",
+  "scope": "one aircraft; stationary synthetic PX4/Gazebo scene; no physical execution",
+  "cohort": "original-20260926",
+  "attempts": [
+    {
+      "directory": "01-static_center",
+      "case": "static_center",
+      "offshore_distance_m": 100,
+      "source_revision": "5212b82cf3b3d2854089523d9b8943336324166c",
+      "status": "completed",
+      "run_id": "48c8acd1b7e6487a9cac9987ae67a31e",
+      "delivery_verified": true,
+      "recovery_verified": true,
+      "vla_invoked": true,
+      "wam_invoked": true,
+      "container_removed": true,
+      "integration_verified": true,
+      "raw_sha256": {
+        "config.json": "899337ec696ab97d2bbab2b5f7fd5f384c5df1905828b755fd3ccc207578c445",
+        "result.json": "10bf2f132f983bf17187327bf9a1a53488eee93524708761c316f72782632149",
+        "events.jsonl": "1b1d41f5d76e394e9cc562c5bac7eceabecf2000200a742e131f25f9fc2edc6c",
+        "telemetry.jsonl": "e9aa8da3469c716a979c37992e4a9bd1023b0164976b1d4c6bfcae11294b4785",
+        "anwm-http-response.json": "69d0507fc8881651f42a94ccc9b04ae2058023b85dc5351e391c3a904b8e245e",
+        "anwm-http-invocation.json": "08c01aaf05b55d9d4631cf9e25b1e449113016c1854a21ffd19c3b279c415364",
+        "vla-execution.json": "fcccdbf62eb9762f1de516c350f7b23ef86b8d6f7eca3dd51121736adaaa8e50"
+      },
+      "wam_exchange_s": 50.60839637502795
+    },
+    {
+      "directory": "02-static_near",
+      "case": "static_near",
+      "offshore_distance_m": 100,
+      "source_revision": "5212b82cf3b3d2854089523d9b8943336324166c",
+      "status": "completed",
+      "run_id": "943b41c0d262419dae28e42cf91f1a70",
+      "delivery_verified": true,
+      "recovery_verified": true,
+      "vla_invoked": true,
+      "wam_invoked": true,
+      "container_removed": true,
+      "integration_verified": true,
+      "raw_sha256": {
+        "config.json": "4f02b332fa3cbf69944ce393eafb0934800495e64a213a64963d44b070d2cdee",
+        "result.json": "4a6e6aa51e8184aeebf2a14e36535389c239168dc586ee34c6214d892613c6af",
+        "events.jsonl": "0f19153cd0654dd239516b9e77afb2640025c5149221d05f9913ca2912ce0436",
+        "telemetry.jsonl": "9da91cf81ecf8d8404e7ef0c5c46b2e8bea8b5e069a319c89601be24beaedbf6",
+        "anwm-http-response.json": "2ef1f54aa7046510f5e7c44cd9918268b40d738879f6cd6dbc27820b6229a8e4",
+        "anwm-http-invocation.json": "e56b4ace1245aaf5a1b4a94e437cc4997a5ce83f3eac506c8e763e9cbbfed317",
+        "vla-execution.json": "3df9f634ab330e0367b7c6671b46ce444142f7c06973a645d64302c71020157d"
+      },
+      "wam_exchange_s": 46.887192750000395
+    },
+    {
+      "directory": "03-static_clear",
+      "case": "static_clear",
+      "offshore_distance_m": 100,
+      "source_revision": "5212b82cf3b3d2854089523d9b8943336324166c",
+      "status": "completed",
+      "run_id": "44b7a80908af42eb9b2960c32ac2cd9b",
+      "delivery_verified": true,
+      "recovery_verified": true,
+      "vla_invoked": true,
+      "wam_invoked": true,
+      "container_removed": true,
+      "integration_verified": true,
+      "raw_sha256": {
+        "config.json": "d83f391ad72d471754bb8fb1a4bbc182431ecfde582bc4f6523a2dbd8775d06e",
+        "result.json": "1423d47667d2279218bfd528f92b2c7108bfa11cb90f934f5eefc8c05f992c7d",
+        "events.jsonl": "cbf5e143e7b4396276475f5959e92db48df547ddb5972ff9e7278cf866fd20f9",
+        "telemetry.jsonl": "e8b56475b54b751c0cd632f2d9a4470670296145c69159ab73c60fc70f5c9ab5",
+        "anwm-http-response.json": "c68d9d4b2f1a5f536057c1d887fd31246f96bc081f264b297ac65d60eac58551",
+        "anwm-http-invocation.json": "445e14afca4136f313cbddf9985c1ef02881cf434c1a084039d94f1a2beed863",
+        "vla-execution.json": "902b1b9268c99672961b841f73d1b38846f3cbfa9b1d18e355818e2b8f89cbbc"
+      },
+      "wam_exchange_s": 45.8481691670022
+    },
+    {
+      "directory": "04-full-route-static_center",
+      "case": "static_center",
+      "offshore_distance_m": 1000,
+      "source_revision": "5212b82cf3b3d2854089523d9b8943336324166c",
+      "status": "blocked",
+      "run_id": "52387a937a5a453fa8b7eb07ee0fd502",
+      "delivery_verified": false,
+      "recovery_verified": false,
+      "vla_invoked": true,
+      "wam_invoked": true,
+      "container_removed": true,
+      "integration_verified": false,
+      "raw_sha256": {
+        "config.json": "948d434385b34b6c271d776224cf00833fbfaaee04efc9180873cfa568d70f53",
+        "result.json": "6459a6e3dc5962e41c58c64fbf573d0242357df621ef1b079ce1c0b2cc074b28",
+        "events.jsonl": "9d95f5b9c5892e64937ecd3a08d9451f464614426ecebfff65ea3078e900cb43",
+        "telemetry.jsonl": "648363eba2690f6f2552c49e51e63f3ceb15cd6b2b6019312f0dbd6a7ed242b4",
+        "anwm-http-response.json": "824861807c4bc8d2992f9d59a7c7c1e1b9dd4e253c43dc2f7ea513a690d3c88a",
+        "anwm-http-invocation.json": "795da27c2fb27808e04905599eb72897453466fcbf159a739bdd079fd05d6800",
+        "vla-execution.json": "a082b379a1b0d927aba1193e529d349f70b09d410767f14e2c6f7de3a45025da"
+      },
+      "wam_exchange_s": 46.86202562501421
+    }
+  ],
+  "raw_evidence_published": false
+}

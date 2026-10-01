@@ -1,0 +1,8 @@
+{
+  "image": "sha256:79968fe25aa19d51c49fbd4a863ea9380f4efe6d9afabd1c579ddeffeb8b8c93",
+  "network": "none",
+  "device_requests": null,
+  "cpu_only": true,
+  "software_rendering": true,
+  "aircraft_flown": false
+}

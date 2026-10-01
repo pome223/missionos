@@ -1,0 +1,148 @@
+{
+  "evaluation_conditions": 28,
+  "exact_history_overlap": 10,
+  "exact_future_pixel_overlap": 10,
+  "rows": [
+    {
+      "id": "focus-depart-05-t04",
+      "history_in_train": true,
+      "target_pixels_in_train": true
+    },
+    {
+      "id": "focus-depart-05-t16",
+      "history_in_train": true,
+      "target_pixels_in_train": false
+    },
+    {
+      "id": "focus-depart-19-t04",
+      "history_in_train": false,
+      "target_pixels_in_train": false
+    },
+    {
+      "id": "focus-depart-19-t16",
+      "history_in_train": false,
+      "target_pixels_in_train": false
+    },
+    {
+      "id": "focus-depart-25-t04",
+      "history_in_train": false,
+      "target_pixels_in_train": false
+    },
+    {
+      "id": "focus-depart-25-t16",
+      "history_in_train": false,
+      "target_pixels_in_train": false
+    },
+    {
+      "id": "focus-depart-38-t04",
+      "history_in_train": false,
+      "target_pixels_in_train": true
+    },
+    {
+      "id": "focus-depart-38-t16",
+      "history_in_train": false,
+      "target_pixels_in_train": true
+    },
+    {
+      "id": "focus-stall-05-t04",
+      "history_in_train": true,
+      "target_pixels_in_train": true
+    },
+    {
+      "id": "focus-stall-05-t16",
+      "history_in_train": true,
+      "target_pixels_in_train": false
+    },
+    {
+      "id": "focus-stall-22-t04",
+      "history_in_train": true,
+      "target_pixels_in_train": true
+    },
+    {
+      "id": "focus-stall-22-t16",
+      "history_in_train": true,
+      "target_pixels_in_train": true
+    },
+    {
+      "id": "focus-stall-37-t04",
+      "history_in_train": true,
+      "target_pixels_in_train": true
+    },
+    {
+      "id": "focus-stall-37-t16",
+      "history_in_train": true,
+      "target_pixels_in_train": false
+    },
+    {
+      "id": "focus-stall-49-t04",
+      "history_in_train": false,
+      "target_pixels_in_train": false
+    },
+    {
+      "id": "focus-stall-49-t16",
+      "history_in_train": false,
+      "target_pixels_in_train": false
+    },
+    {
+      "id": "focus-return-16-t04",
+      "history_in_train": false,
+      "target_pixels_in_train": false
+    },
+    {
+      "id": "focus-return-16-t16",
+      "history_in_train": false,
+      "target_pixels_in_train": false
+    },
+    {
+      "id": "focus-return-21-t04",
+      "history_in_train": false,
+      "target_pixels_in_train": false
+    },
+    {
+      "id": "focus-return-21-t16",
+      "history_in_train": false,
+      "target_pixels_in_train": false
+    },
+    {
+      "id": "focus-return-26-t04",
+      "history_in_train": false,
+      "target_pixels_in_train": false
+    },
+    {
+      "id": "focus-return-26-t16",
+      "history_in_train": false,
+      "target_pixels_in_train": false
+    },
+    {
+      "id": "focus-return-36-t04",
+      "history_in_train": true,
+      "target_pixels_in_train": true
+    },
+    {
+      "id": "focus-return-36-t16",
+      "history_in_train": true,
+      "target_pixels_in_train": true
+    },
+    {
+      "id": "focus-return-49-t04",
+      "history_in_train": false,
+      "target_pixels_in_train": false
+    },
+    {
+      "id": "focus-return-49-t16",
+      "history_in_train": false,
+      "target_pixels_in_train": false
+    },
+    {
+      "id": "focus-return-57-t04",
+      "history_in_train": false,
+      "target_pixels_in_train": false
+    },
+    {
+      "id": "focus-return-57-t16",
+      "history_in_train": false,
+      "target_pixels_in_train": true
+    }
+  ],
+  "fit_or_selection_performed": false
+}

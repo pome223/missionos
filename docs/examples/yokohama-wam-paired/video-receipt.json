@@ -1,0 +1,12 @@
+{
+  "source_run_id": "yokohama-e13923f20e45",
+  "frames": 273,
+  "sim_start_s": 5.016,
+  "sim_end_s": 610.44,
+  "nominal_video_seconds": 68.25,
+  "nominal_fps": 4,
+  "sha256": "2ad238ebbade6dfdda7b63816526519a4ce678445e619029f6c123ff192f5cd0",
+  "real_model_control": false,
+  "source": "original onboard Gazebo camera PNGs; sampled approximately every two simulator seconds",
+  "effective_speed_factor": 8.87068131868132
+}

@@ -1,0 +1,50 @@
+{
+  "scope": "Recorded holds only; not whole-flight success",
+  "holds": [
+    {
+      "point": "SEA-TAKEOFF",
+      "passed": true,
+      "metrics": {
+        "duration_sim_s": 30.364,
+        "samples": 90,
+        "max_horizontal_error_m": 0.0581485142473322,
+        "max_vertical_error_m": 0.3100546293297839,
+        "max_px4_speed_mps": 0.030765804068803405,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.021271667000064554,
+        "max_sample_gap_sim_s": 0.4160000000000039
+      }
+    },
+    {
+      "point": "SEA-INBOUND-COAST",
+      "passed": true,
+      "metrics": {
+        "duration_sim_s": 30.340000000000032,
+        "samples": 88,
+        "max_horizontal_error_m": 0.9062346594869067,
+        "max_vertical_error_m": 0.5014952888465825,
+        "max_px4_speed_mps": 0.4226962429452147,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.019468917000040165,
+        "max_sample_gap_sim_s": 0.6119999999999663
+      }
+    },
+    {
+      "point": "00-D1",
+      "passed": true,
+      "metrics": {
+        "duration_sim_s": 30.192000000000007,
+        "samples": 89,
+        "max_horizontal_error_m": 0.13666907601801434,
+        "max_vertical_error_m": 0.4605597310841816,
+        "max_px4_speed_mps": 0.04252261633531032,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.0216597080000156,
+        "max_sample_gap_sim_s": 0.41599999999994
+      }
+    }
+  ]
+}

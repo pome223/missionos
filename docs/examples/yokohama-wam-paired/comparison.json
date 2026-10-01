@@ -1,0 +1,482 @@
+{
+  "schema_version": "yokohama_wam_paired_comparison.v1",
+  "summary_ja": "12件すべて基準未達。投影の空情報を残しても、実WAMは水面や別の建物を生成しました。実VLA＋WAM飛行への移行条件は満たしていません。",
+  "pairs": [
+    {
+      "id": "D1-hold",
+      "label_ja": "D1 · 停止",
+      "before": "assets/D1-before.png",
+      "actual": "assets/D1-hold.png",
+      "stamp_ns": 75252000000,
+      "elapsed_after_input_s": 1.0,
+      "target_camera_error_m": 0.024756135785585137,
+      "target_camera_rotation_error_rad": 0.0011445215727719344,
+      "source_capture_sha256": "b77dfaeb60393a51e7300bc19485136d413218237a7ed200d72c7bae73eb7810",
+      "actual_rgb_sha256": "0ff74238a5f2c63d3da23bce34a4b22367f603b8911a0fa25563e0241503399c",
+      "model_time_alignment_verified": false,
+      "actual_raw": "assets/D1-hold-raw.png",
+      "actual_cropped_sha256": "70b05319316dffc0617f96138db48bfa790fe81e2408f183f9cde5cda3f2331e"
+    },
+    {
+      "id": "D1-vla",
+      "label_ja": "D1 · 約2.8 m移動",
+      "before": "assets/D1-before.png",
+      "actual": "assets/D1-endpoint.png",
+      "stamp_ns": 90500000000,
+      "elapsed_after_input_s": 16.248000000000005,
+      "target_camera_error_m": 0.13599511999051286,
+      "target_camera_rotation_error_rad": 0.02372407502912458,
+      "source_capture_sha256": "5a85a85facf290fc1a515d483799d22bb83ddf62957cfe919b3d7e269b7b049a",
+      "actual_rgb_sha256": "2bbcd2eb5fb075909df3572a78f3d4b934572fab4a59c2ae1240fdca9056bd92",
+      "model_time_alignment_verified": false,
+      "actual_raw": "assets/D1-endpoint-raw.png",
+      "actual_cropped_sha256": "b33364c4dc0f5330fe07564ab955366b06efb264c6b164bbff56229d7998858f"
+    },
+    {
+      "id": "D2-hold",
+      "label_ja": "D2 · 停止",
+      "before": "assets/D2-before.png",
+      "actual": "assets/D2-hold.png",
+      "stamp_ns": 174252000000,
+      "elapsed_after_input_s": 1.0,
+      "target_camera_error_m": 0.018772492943408135,
+      "target_camera_rotation_error_rad": 0.002785622986847747,
+      "source_capture_sha256": "a4c9134f88b5cd5c94ef0fb9a60b109993672d34ddc073121a9f573ac7d52d22",
+      "actual_rgb_sha256": "0655acbebcd0e1cd5d1112e046994130c73d7ba3f86d22ff60a5bf5811a6c492",
+      "model_time_alignment_verified": false,
+      "actual_raw": "assets/D2-hold-raw.png",
+      "actual_cropped_sha256": "052457c9afbcab5b916e1a99cf70e64619b87fcac3735053d38897b486481bbb"
+    },
+    {
+      "id": "D2-vla",
+      "label_ja": "D2 · 約2.8 m移動",
+      "before": "assets/D2-before.png",
+      "actual": "assets/D2-endpoint.png",
+      "stamp_ns": 190000000000,
+      "elapsed_after_input_s": 16.74799999999999,
+      "target_camera_error_m": 0.10862381746270619,
+      "target_camera_rotation_error_rad": 0.005221310322045147,
+      "source_capture_sha256": "fcbf06c27a3447e2f81b8ae19b4ef9ddcb04e688c27ba66c10236e6e1e950936",
+      "actual_rgb_sha256": "e5f77970f46abe9b11cfc0e34bc89b5f9c4bc4885da7990485b3e3955029cd05",
+      "model_time_alignment_verified": false,
+      "actual_raw": "assets/D2-endpoint-raw.png",
+      "actual_cropped_sha256": "f2a38d23676cc0ed83ffafae0c1497c0fc19ca021c7133d60845aa415b985f5b"
+    }
+  ],
+  "cases": [
+    {
+      "id": "D1-hold-native-t4",
+      "pair": "D1-hold",
+      "projection": "native",
+      "time_steps": 4,
+      "elapsed_s": 20.81106393699997,
+      "prediction_sha256": "f9f4f23700c47ad3b42994e2aac08fc342702933a0afa20335d9d0282bf30ce7",
+      "normalized_action": [
+        [
+          [
+            -0.3333333432674408,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ]
+      ],
+      "rel_t": 0.03125,
+      "model_time_alignment_verified": false,
+      "dispatch_allowed": false,
+      "metrics": {
+        "rgb_mae": 43.262044270833336,
+        "fraction_pixels_max_channel_error_over_40": 0.4535435267857143
+      },
+      "projection_metrics": {
+        "rgb_mae": 52.3083878082483,
+        "fraction_pixels_max_channel_error_over_40": 0.24089205994897958
+      },
+      "numeric_pass": false,
+      "image": "assets/D1-hold-native-t4.png",
+      "label_ja": "元の投影 / t4",
+      "manual_review": "rejected_scene_inconsistency",
+      "manual_note": "Invented water and/or changed building structure relative to the withheld simulator view."
+    },
+    {
+      "id": "D1-hold-appearance-t4",
+      "pair": "D1-hold",
+      "projection": "appearance",
+      "time_steps": 4,
+      "elapsed_s": 19.629662128000007,
+      "prediction_sha256": "1e4477e14e4380c8677161f9cf89b7c6f7989d1fc6e2466dfba0e483b5a21452",
+      "normalized_action": [
+        [
+          [
+            -0.3333333432674408,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ]
+      ],
+      "rel_t": 0.03125,
+      "model_time_alignment_verified": false,
+      "dispatch_allowed": false,
+      "metrics": {
+        "rgb_mae": 38.90547273596939,
+        "fraction_pixels_max_channel_error_over_40": 0.28455835459183676
+      },
+      "projection_metrics": {
+        "rgb_mae": 2.6878122342687076,
+        "fraction_pixels_max_channel_error_over_40": 0.01251594387755102
+      },
+      "numeric_pass": false,
+      "image": "assets/D1-hold-appearance-t4.png",
+      "label_ja": "空の外観を補う / t4",
+      "manual_review": "rejected_scene_inconsistency",
+      "manual_note": "Invented water and/or changed building structure relative to the withheld simulator view."
+    },
+    {
+      "id": "D1-hold-appearance-t1",
+      "pair": "D1-hold",
+      "projection": "appearance",
+      "time_steps": 1,
+      "elapsed_s": 19.676393513999983,
+      "prediction_sha256": "d7fab6aba64984b7ba5ae4f217ca2a1189d063aa3e1375e4be7d03b576752631",
+      "normalized_action": [
+        [
+          [
+            -0.3333333432674408,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ]
+      ],
+      "rel_t": 0.0078125,
+      "model_time_alignment_verified": false,
+      "dispatch_allowed": false,
+      "metrics": {
+        "rgb_mae": 36.64271763392857,
+        "fraction_pixels_max_channel_error_over_40": 0.26034359056122447
+      },
+      "projection_metrics": {
+        "rgb_mae": 2.6878122342687076,
+        "fraction_pixels_max_channel_error_over_40": 0.01251594387755102
+      },
+      "numeric_pass": false,
+      "image": "assets/D1-hold-appearance-t1.png",
+      "label_ja": "空の外観を補う / t1",
+      "manual_review": "rejected_scene_inconsistency",
+      "manual_note": "Invented water and/or changed building structure relative to the withheld simulator view."
+    },
+    {
+      "id": "D1-vla-native-t4",
+      "pair": "D1-vla",
+      "projection": "native",
+      "time_steps": 4,
+      "elapsed_s": 19.713755702000014,
+      "prediction_sha256": "503aa71629b7d4af58cc46d8edc7700bb38e452ecb76b5977e962477f23f1c05",
+      "normalized_action": [
+        [
+          [
+            -0.10314491391181946,
+            -0.001378282904624939,
+            0.0018849051557481289,
+            -0.005811702460050583
+          ]
+        ]
+      ],
+      "rel_t": 0.03125,
+      "model_time_alignment_verified": false,
+      "dispatch_allowed": false,
+      "metrics": {
+        "rgb_mae": 44.72793765943877,
+        "fraction_pixels_max_channel_error_over_40": 0.46121651785714285
+      },
+      "projection_metrics": {
+        "rgb_mae": 53.67030054209184,
+        "fraction_pixels_max_channel_error_over_40": 0.28653140943877553
+      },
+      "numeric_pass": false,
+      "image": "assets/D1-vla-native-t4.png",
+      "label_ja": "元の投影 / t4",
+      "manual_review": "rejected_scene_inconsistency",
+      "manual_note": "Invented water and/or changed building structure relative to the withheld simulator view."
+    },
+    {
+      "id": "D1-vla-appearance-t4",
+      "pair": "D1-vla",
+      "projection": "appearance",
+      "time_steps": 4,
+      "elapsed_s": 19.672436118999997,
+      "prediction_sha256": "8ef185d1ba030b0a1ca5d019fa23c8bde2bfbf7e3395bc134dbabb102651e549",
+      "normalized_action": [
+        [
+          [
+            -0.10314491391181946,
+            -0.001378282904624939,
+            0.0018849051557481289,
+            -0.005811702460050583
+          ]
+        ]
+      ],
+      "rel_t": 0.03125,
+      "model_time_alignment_verified": false,
+      "dispatch_allowed": false,
+      "metrics": {
+        "rgb_mae": 42.43155426232993,
+        "fraction_pixels_max_channel_error_over_40": 0.3342833227040816
+      },
+      "projection_metrics": {
+        "rgb_mae": 8.73871306335034,
+        "fraction_pixels_max_channel_error_over_40": 0.07876275510204081
+      },
+      "numeric_pass": false,
+      "image": "assets/D1-vla-appearance-t4.png",
+      "label_ja": "空の外観を補う / t4",
+      "manual_review": "rejected_scene_inconsistency",
+      "manual_note": "Invented water and/or changed building structure relative to the withheld simulator view."
+    },
+    {
+      "id": "D1-vla-appearance-t1",
+      "pair": "D1-vla",
+      "projection": "appearance",
+      "time_steps": 1,
+      "elapsed_s": 19.725431850000007,
+      "prediction_sha256": "5fd925f17568e54a1d284846974fdc5e76d6ebca3571e7bfc9d7f47d9b75d169",
+      "normalized_action": [
+        [
+          [
+            -0.10314491391181946,
+            -0.001378282904624939,
+            0.0018849051557481289,
+            -0.005811702460050583
+          ]
+        ]
+      ],
+      "rel_t": 0.0078125,
+      "model_time_alignment_verified": false,
+      "dispatch_allowed": false,
+      "metrics": {
+        "rgb_mae": 40.42196800595238,
+        "fraction_pixels_max_channel_error_over_40": 0.30668048469387754
+      },
+      "projection_metrics": {
+        "rgb_mae": 8.73871306335034,
+        "fraction_pixels_max_channel_error_over_40": 0.07876275510204081
+      },
+      "numeric_pass": false,
+      "image": "assets/D1-vla-appearance-t1.png",
+      "label_ja": "空の外観を補う / t1",
+      "manual_review": "rejected_scene_inconsistency",
+      "manual_note": "Invented water and/or changed building structure relative to the withheld simulator view."
+    },
+    {
+      "id": "D2-hold-native-t4",
+      "pair": "D2-hold",
+      "projection": "native",
+      "time_steps": 4,
+      "elapsed_s": 19.657210534,
+      "prediction_sha256": "1e9d9ffc0667aaecdb02c73edb15d9eb0f742e8fe161cdb16c96f65d4827c239",
+      "normalized_action": [
+        [
+          [
+            -0.3333333432674408,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ]
+      ],
+      "rel_t": 0.03125,
+      "model_time_alignment_verified": false,
+      "dispatch_allowed": false,
+      "metrics": {
+        "rgb_mae": 39.732979910714285,
+        "fraction_pixels_max_channel_error_over_40": 0.4323580994897959
+      },
+      "projection_metrics": {
+        "rgb_mae": 21.458904655612244,
+        "fraction_pixels_max_channel_error_over_40": 0.10403380102040816
+      },
+      "numeric_pass": false,
+      "image": "assets/D2-hold-native-t4.png",
+      "label_ja": "元の投影 / t4",
+      "manual_review": "rejected_scene_inconsistency",
+      "manual_note": "Invented water and/or changed building structure relative to the withheld simulator view."
+    },
+    {
+      "id": "D2-hold-appearance-t4",
+      "pair": "D2-hold",
+      "projection": "appearance",
+      "time_steps": 4,
+      "elapsed_s": 19.647372203999964,
+      "prediction_sha256": "bac30f0cb502c4780efa51047e004402829f46955bcbb36e8c17e73e72148e02",
+      "normalized_action": [
+        [
+          [
+            -0.3333333432674408,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ]
+      ],
+      "rel_t": 0.03125,
+      "model_time_alignment_verified": false,
+      "dispatch_allowed": false,
+      "metrics": {
+        "rgb_mae": 55.4250106292517,
+        "fraction_pixels_max_channel_error_over_40": 0.48495296556122447
+      },
+      "projection_metrics": {
+        "rgb_mae": 1.4483019770408163,
+        "fraction_pixels_max_channel_error_over_40": 0.011878188775510204
+      },
+      "numeric_pass": false,
+      "image": "assets/D2-hold-appearance-t4.png",
+      "label_ja": "空の外観を補う / t4",
+      "manual_review": "rejected_scene_inconsistency",
+      "manual_note": "Invented water and/or changed building structure relative to the withheld simulator view."
+    },
+    {
+      "id": "D2-hold-appearance-t1",
+      "pair": "D2-hold",
+      "projection": "appearance",
+      "time_steps": 1,
+      "elapsed_s": 19.602712054999984,
+      "prediction_sha256": "da8b8247ca6268839efe8f3625582627a1c4834888af7e1bd42498b86150b71d",
+      "normalized_action": [
+        [
+          [
+            -0.3333333432674408,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ]
+      ],
+      "rel_t": 0.0078125,
+      "model_time_alignment_verified": false,
+      "dispatch_allowed": false,
+      "metrics": {
+        "rgb_mae": 42.46514269770408,
+        "fraction_pixels_max_channel_error_over_40": 0.3606704400510204
+      },
+      "projection_metrics": {
+        "rgb_mae": 1.4483019770408163,
+        "fraction_pixels_max_channel_error_over_40": 0.011878188775510204
+      },
+      "numeric_pass": false,
+      "image": "assets/D2-hold-appearance-t1.png",
+      "label_ja": "空の外観を補う / t1",
+      "manual_review": "rejected_scene_inconsistency",
+      "manual_note": "Invented water and/or changed building structure relative to the withheld simulator view."
+    },
+    {
+      "id": "D2-vla-native-t4",
+      "pair": "D2-vla",
+      "projection": "native",
+      "time_steps": 4,
+      "elapsed_s": 19.591850083000054,
+      "prediction_sha256": "66cc3e5eaa084970d91f6cfd7e0fdd5a686dc091bee74bd618785e0c931a6910",
+      "normalized_action": [
+        [
+          [
+            -0.1064310371875763,
+            -8.331881690537557e-05,
+            0.0005084341973997653,
+            0.001127367839217186
+          ]
+        ]
+      ],
+      "rel_t": 0.03125,
+      "model_time_alignment_verified": false,
+      "dispatch_allowed": false,
+      "metrics": {
+        "rgb_mae": 44.38075972576531,
+        "fraction_pixels_max_channel_error_over_40": 0.5295958227040817
+      },
+      "projection_metrics": {
+        "rgb_mae": 20.781874468537413,
+        "fraction_pixels_max_channel_error_over_40": 0.09873246173469388
+      },
+      "numeric_pass": false,
+      "image": "assets/D2-vla-native-t4.png",
+      "label_ja": "元の投影 / t4",
+      "manual_review": "rejected_scene_inconsistency",
+      "manual_note": "Invented water and/or changed building structure relative to the withheld simulator view."
+    },
+    {
+      "id": "D2-vla-appearance-t4",
+      "pair": "D2-vla",
+      "projection": "appearance",
+      "time_steps": 4,
+      "elapsed_s": 19.583608787999992,
+      "prediction_sha256": "c7830f614e24da01a47daba9b01735d4c6bf5e11dd332bd561d731763b78b6a1",
+      "normalized_action": [
+        [
+          [
+            -0.1064310371875763,
+            -8.331881690537557e-05,
+            0.0005084341973997653,
+            0.001127367839217186
+          ]
+        ]
+      ],
+      "rel_t": 0.03125,
+      "model_time_alignment_verified": false,
+      "dispatch_allowed": false,
+      "metrics": {
+        "rgb_mae": 58.515605070153065,
+        "fraction_pixels_max_channel_error_over_40": 0.5303930165816326
+      },
+      "projection_metrics": {
+        "rgb_mae": 1.7179660926870748,
+        "fraction_pixels_max_channel_error_over_40": 0.010423309948979591
+      },
+      "numeric_pass": false,
+      "image": "assets/D2-vla-appearance-t4.png",
+      "label_ja": "空の外観を補う / t4",
+      "manual_review": "rejected_scene_inconsistency",
+      "manual_note": "Invented water and/or changed building structure relative to the withheld simulator view."
+    },
+    {
+      "id": "D2-vla-appearance-t1",
+      "pair": "D2-vla",
+      "projection": "appearance",
+      "time_steps": 1,
+      "elapsed_s": 19.605318935000014,
+      "prediction_sha256": "a94649eff1cf31ac08887285c79003e650fdd1670d6d3ee1fbd4636a0cd363e8",
+      "normalized_action": [
+        [
+          [
+            -0.1064310371875763,
+            -8.331881690537557e-05,
+            0.0005084341973997653,
+            0.001127367839217186
+          ]
+        ]
+      ],
+      "rel_t": 0.0078125,
+      "model_time_alignment_verified": false,
+      "dispatch_allowed": false,
+      "metrics": {
+        "rgb_mae": 50.61610464498299,
+        "fraction_pixels_max_channel_error_over_40": 0.4730947066326531
+      },
+      "projection_metrics": {
+        "rgb_mae": 1.7179660926870748,
+        "fraction_pixels_max_channel_error_over_40": 0.010423309948979591
+      },
+      "numeric_pass": false,
+      "image": "assets/D2-vla-appearance-t1.png",
+      "label_ja": "空の外観を補う / t1",
+      "manual_review": "rejected_scene_inconsistency",
+      "manual_note": "Invented water and/or changed building structure relative to the withheld simulator view."
+    }
+  ],
+  "native_flight_qualified": false,
+  "cumulative_estimated_usd": 10.878197414147774,
+  "gpu_resources_deleted": true,
+  "real_vla_invoked": false,
+  "real_wam_invocations": 12,
+  "model_controlled_flight": false
+}

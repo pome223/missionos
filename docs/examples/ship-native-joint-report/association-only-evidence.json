@@ -1,0 +1,130 @@
+{
+  "schema_version": "ship_native_joint_report.v1",
+  "source_revision": "3696d5b71a9d16871dcd3f25d5f5ebda1237d4d4",
+  "cohort_attempts": 3,
+  "verified_native_flights": 2,
+  "all_four_native_flights_completed": false,
+  "rule_superiority_evaluated": false,
+  "physical_execution_invoked": false,
+  "cohort": "association-repair-v2",
+  "runs": [
+    {
+      "directory": "01-static_center",
+      "run_id": "66a4b97b391148c2ab096a8c54a7f39c",
+      "case": "static_center",
+      "offshore_distance_m": 100,
+      "status": "completed",
+      "vla_invoked": true,
+      "wam_invoked": true,
+      "same_flight_native_integration_verified": true,
+      "delivery_verified": true,
+      "recovery_verified": true,
+      "container_removed": true,
+      "observed_elapsed_s": 457.16513349900004,
+      "vla_displacement_m": 2.837417884926365,
+      "vla_target_error_m": 0.0796289212775844,
+      "vla_altitude_error_m": 0.04000999999999877,
+      "vla_host_exchange_s": 0.9225247079739347,
+      "vla_input_to_permit_s": 0.9896182089999996,
+      "wam_max_prediction_error_m": 0.5504642194749572,
+      "wam_exchange_s": 48.535801791993435,
+      "stage_times_s": {
+        "vla_execution_observed": 74.319423367,
+        "native_history_started": 74.36041361699999,
+        "native_history_captured": 85.94130058,
+        "urban_decision": 138.571050645,
+        "anwm_dispatch_revalidated": 142.176465688,
+        "urban_requested": 142.76284835500002,
+        "vla_mission_resumed": 145.544412732
+      },
+      "raw_sha256": {
+        "config.json": "a22918286d05062ee5c9e3d16c65366eca3be9dc54137af526a88cbd506d485d",
+        "result.json": "366a6cffbbfa52383f043089c12abb30d1e604c0a8005a157a81fe85fb58516e",
+        "events.jsonl": "2a3bf25bebaefcc7288ce01cf68da591f639605e39d4fef85a111fcb7374df95",
+        "telemetry.jsonl": "5262d0e31ed54c376f767dbf055e8061b3f6c70d6db228488538cfe283ed1046",
+        "anwm-http-response.json": "a1139fad41b7d87715161d58e773b5ae14070fce4242cea2f6b49f3f1b990c7e",
+        "vla-execution.json": "02c1ebfc444b35a1d8f6566fc32b584e2603308ef96fc51a20c1712ca6c651a5"
+      }
+    },
+    {
+      "directory": "02-static_near",
+      "run_id": "42f70091fc7648f98fd52607da9e18fe",
+      "case": "static_near",
+      "offshore_distance_m": 100,
+      "status": "completed",
+      "vla_invoked": true,
+      "wam_invoked": true,
+      "same_flight_native_integration_verified": true,
+      "delivery_verified": true,
+      "recovery_verified": true,
+      "container_removed": true,
+      "observed_elapsed_s": 464.731425337,
+      "vla_displacement_m": 4.830284169735781,
+      "vla_target_error_m": 0.06428663457021944,
+      "vla_altitude_error_m": 0.024239183673469,
+      "vla_host_exchange_s": 0.994483583024703,
+      "vla_input_to_permit_s": 1.1013204590000214,
+      "wam_max_prediction_error_m": 0.24678947930944695,
+      "wam_exchange_s": 45.316261790983845,
+      "stage_times_s": {
+        "vla_execution_observed": 75.50490532599997,
+        "native_history_started": 75.54546061799999,
+        "native_history_captured": 87.30722912399995,
+        "urban_decision": 136.32912347899992,
+        "anwm_dispatch_revalidated": 140.001581106,
+        "urban_requested": 140.594289064,
+        "vla_mission_resumed": 143.37089398199998
+      },
+      "raw_sha256": {
+        "config.json": "fe8e8997de71ba987650e05a92172f72d58c1f4d359842cc0069ae8b5e0f66e8",
+        "result.json": "2b35d1a4be2c4d873abf3f6154a29c028cd1cfac4b246bae8bc8c8e8f6f3ca40",
+        "events.jsonl": "adb37f057ba1b8629c4e9cd190e8b8498eaa0f4abcad40dedfda6ca074d3396a",
+        "telemetry.jsonl": "2afd50d2884a6aa730c1e2b3ad46f4566da2fe64756d51f9603e0a79e91b437e",
+        "anwm-http-response.json": "a476e42d34375d914465d986861b05cb20df4c58ddd7011fd9f7824dd8474da3",
+        "vla-execution.json": "b419cfb2405204a8128017ffbc4d4698fb1bcfaf58db4c839c204cd891feff1e"
+      }
+    },
+    {
+      "directory": "03-static_clear",
+      "run_id": "288142800e2d4cb38173574473b3bb05",
+      "case": "static_clear",
+      "offshore_distance_m": 100,
+      "status": "blocked",
+      "vla_invoked": true,
+      "wam_invoked": true,
+      "same_flight_native_integration_verified": false,
+      "delivery_verified": true,
+      "recovery_verified": true,
+      "container_removed": true,
+      "observed_elapsed_s": 409.7141938949999,
+      "vla_displacement_m": null,
+      "vla_target_error_m": null,
+      "vla_altitude_error_m": null,
+      "vla_host_exchange_s": null,
+      "vla_input_to_permit_s": null,
+      "wam_max_prediction_error_m": 2.5361098452885393,
+      "wam_exchange_s": 45.043112459010445,
+      "stage_times_s": null,
+      "raw_sha256": {
+        "config.json": "500075256f7f40bd04a6576e647e1d43f472837e44eb0d69dc9cd2c2b996eb67",
+        "result.json": "bef131216147408b59f3f8ff5cded05bd546b5b30ab4bf2c368a0cea88551bf7",
+        "events.jsonl": "fb5e7ef0b717672eb4bc4c1c31ae2528f5ff505e8e5dfffea2cc4d34f27f5da1",
+        "telemetry.jsonl": "15a9d3b6581383f7abdbec89b1d13f2b07d032b20a17b9300cfe3e1f6ab6c03c",
+        "anwm-http-response.json": "4530ab1a1843b4178d02ccc3d0446a39fc9ddc6a13155dec40132a27d36387b0",
+        "vla-execution.json": "df193641e0a4af05c2421fcd3925f298b7080ef4e5f3c480e6f07ed24df8e1c7"
+      }
+    }
+  ],
+  "cloud": {
+    "cleanup_confirmed": true,
+    "elapsed_observed_s": 2206.597653,
+    "new_estimated_usd_including_transfer_reserve": 0.9338214473017563,
+    "cumulative_estimated_usd": 4.418875098715225,
+    "invoice_confirmed": false
+  },
+  "cloud_evidence": {
+    "archive_sha256": "68cbcae7a8657b0b84d434f22efc9367b9f048949fea8a43258059d8390aa33d",
+    "remote_files_verified": 74,
+    "all_attempted_model_results_matched": true
+  }
+}

@@ -1,0 +1,202 @@
+{
+  "schema_version": "anwm_changed_parameters_audit.v1",
+  "status": "verified",
+  "source": "separate CPU process; saved adapter compared with released EMA final block and prior attention adapter",
+  "adapter_sha256": "852b0b0fa40ae73b3f396601e5c05b72f8dc667802490e8d4ceb0c4317056ca9",
+  "protocol_sha256": "7ab42d8ca2038f2c18aec9c1996feb389f33f660d3d6079722163c2d59974718",
+  "cuda_initialized": false,
+  "parameters": [
+    {
+      "name": "blocks.27.attn.qkv.weight",
+      "parameters": 3981312,
+      "initial_sha256": "b2b2e5aeccb7996b4a1cb130bbf9ab39421c61d366fc3f068f1b782cf5c50c00",
+      "final_sha256": "181684cef7324feb3541405de7d1efcea5a69d878753c4470f15787975ec5ff9",
+      "change_l2": 6.918651103973389,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.attn.qkv.bias",
+      "parameters": 3456,
+      "initial_sha256": "166bb9bc28fbcbb042fb3ac3a8828512026b000db0883d50b9251cf73cfb7d43",
+      "final_sha256": "0faed4be0280e4bbdf66e0cf6abe9b704b6bf8e26f9cad88ca41de8cbe71c749",
+      "change_l2": 0.13404163718223572,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.attn.proj.weight",
+      "parameters": 1327104,
+      "initial_sha256": "c1168f7f7994aea7f7bd0dc74f84ded8d45b73fed597dbe86ce9e5c20e408299",
+      "final_sha256": "cdb8fa384140aa57481a86abb359115a8254e7d352e1893bc9984d306a2e1f9c",
+      "change_l2": 3.5588653087615967,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.attn.proj.bias",
+      "parameters": 1152,
+      "initial_sha256": "c81e6a2ba5f094fa5ea95be736c928ece8ae7c7857da8a5cc2d909d39df4b434",
+      "final_sha256": "de42feb3cb4eb4e76c14b06e86a57ce0d6d7b72cbfb836a1340a21fa49246a5c",
+      "change_l2": 0.08838717639446259,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.cttn.in_proj_weight",
+      "parameters": 3981312,
+      "initial_sha256": "b40eaef1545b70bd506540baf48911f3d39f294f14cf0b0022d6b0f2bd95d772",
+      "final_sha256": "691ebaa7bd9f7a71cc13bd4b8ad14be79f91d486b6f987aa64046fcc117e15fa",
+      "change_l2": 8.113885879516602,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.cttn.in_proj_bias",
+      "parameters": 3456,
+      "initial_sha256": "dbdff97c0de7f28b626de47f0a1aeaf585e919c16ef5237ba9312e74b2358787",
+      "final_sha256": "229c886a093861888b77a23e1f95baab97f6050980b1b8294438a6c3720b165d",
+      "change_l2": 0.16416515409946442,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.cttn.bias_k",
+      "parameters": 1152,
+      "initial_sha256": "5941c40883fc6b057561d88b00bd6d539d34fb00cd23e434e666fcbfdfe13e6a",
+      "final_sha256": "52211b53e09bc19b90e43ada7ae33de197c44ec323e17c6b57a6ce8c8e7ba96b",
+      "change_l2": 0.15080997347831726,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.cttn.bias_v",
+      "parameters": 1152,
+      "initial_sha256": "aefd10b1f9916fdb00289cdff86af90d20cdcf7ba410a9745b2a76d6f5502be4",
+      "final_sha256": "7d9ca052970601030efc203aa3a0cfd223fd2fb29b0facd1b595e15d75ac9d48",
+      "change_l2": 0.1137312725186348,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.cttn.out_proj.weight",
+      "parameters": 1327104,
+      "initial_sha256": "a38eb2faba8c99354cf692722d636d94dc7192fd8d6d52c14346b0c65232e03e",
+      "final_sha256": "0c6e7a0a27e13dbb97d76cbcbb13dcb690ce5bbafba31b759de65906ef21d471",
+      "change_l2": 3.4902350902557373,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.cttn.out_proj.bias",
+      "parameters": 1152,
+      "initial_sha256": "ee7589307c26d13f5b9341f99dbef280c26d266b9e258057ab994a52a4a9183b",
+      "final_sha256": "3df62aeb955c52b05a12b1106814165a4ebb5f27cd6f21337b1aa0765aeb6a3c",
+      "change_l2": 0.051074638962745667,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.adaLN_modulation.1.weight",
+      "parameters": 18579456,
+      "initial_sha256": "4b9d21ea70b59160359c50b3b334cff662f38f8c13e585a2e1cac1642f3e8abf",
+      "final_sha256": "93f16b15cf3d91c329b3f9f6a1527c405b547f08eb7fa742027cd624023906e5",
+      "change_l2": 14.250799179077148,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.adaLN_modulation.1.bias",
+      "parameters": 16128,
+      "initial_sha256": "92db6b8c26e2e665e800d250f1fe2872d349b4065b6ef5bcf2799c817fea33e9",
+      "final_sha256": "b5b34b6fdfc653d26673a4b7b17e6158af46cef421062d32b2d01075586b5475",
+      "change_l2": 0.6214444637298584,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.mlp.fc1.weight",
+      "parameters": 5308416,
+      "initial_sha256": "54ad830220b52b8b70bac7214ffb281162a08ba2754f470a65308fcb99f8a98c",
+      "final_sha256": "9f7be6c64873dbf45a943883c53152bfd7bbe61034dd40eb0e8733f9377a5524",
+      "change_l2": 9.586519241333008,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.mlp.fc1.bias",
+      "parameters": 4608,
+      "initial_sha256": "098cb23087588c92fd502b57601b6ccc46ccb6f8be51db11e808b64d056af20d",
+      "final_sha256": "3f299baa2829084dc865a4bd3f74498c2ad53883bce862f52f62342abe9993a6",
+      "change_l2": 0.20243056118488312,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.mlp.fc2.weight",
+      "parameters": 5308416,
+      "initial_sha256": "50007402fe72743a05f93d6a0225a6983967a5745e119af6ff2067d063ca8a07",
+      "final_sha256": "01d6248642f5de0c50eb18610a55ea9894598929cfc23ff3b608c91693c009ab",
+      "change_l2": 2.9670863151550293,
+      "all_finite": true
+    },
+    {
+      "name": "blocks.27.mlp.fc2.bias",
+      "parameters": 1152,
+      "initial_sha256": "9b053cd49d748ab438f3e6e5ddbebbc5f076025fe4750cfde8dcb2410849ef47",
+      "final_sha256": "61e818a93ee43b823b1618292946ba4d6a01c250aac9cb79ebdbe74900dadf5d",
+      "change_l2": 0.029781820252537727,
+      "all_finite": true
+    },
+    {
+      "name": "final_layer.linear.weight",
+      "parameters": 36864,
+      "initial_sha256": "c2d411e9b62d07cd8640a0cdad9d8ef0e2efcbbce10e80ae26e07affc46582fd",
+      "final_sha256": "472ae414b705f81608415e55385f0a0fc8ca8ef76e3397831bc9538ac6226c76",
+      "change_l2": 0.6940909028053284,
+      "all_finite": true
+    },
+    {
+      "name": "final_layer.linear.bias",
+      "parameters": 32,
+      "initial_sha256": "e18d297303e979206e598f3d37f4e8eb5ea357a59928fc1c050138c32751bc55",
+      "final_sha256": "ee913ef8a5ed4f87ba16ba340e9cf31e246bd098e411ed09e8755a8614d80c75",
+      "change_l2": 0.007408881094306707,
+      "all_finite": true
+    },
+    {
+      "name": "final_layer.fuse_supervised.weight",
+      "parameters": 2654208,
+      "initial_sha256": "fa785371f0d0064fd7389d16ab297e57b060a358b1715e4be89959f88879a682",
+      "final_sha256": "980416244822eca1badd42252bdd6a5eb0e255ae0123ab7892e861e692df28c8",
+      "change_l2": 5.103893280029297,
+      "all_finite": true
+    },
+    {
+      "name": "final_layer.fuse_supervised.bias",
+      "parameters": 1152,
+      "initial_sha256": "52a2f99f96d38ab522998c9369340aec18e914f5aa541e5196affd763c69d98c",
+      "final_sha256": "8984efc053d9cbb2a83d540af6801c5758ac734e5ad2da7436f3e395bbf50aef",
+      "change_l2": 0.01885855197906494,
+      "all_finite": true
+    },
+    {
+      "name": "final_layer.attn.mha.in_proj_weight",
+      "parameters": 3981312,
+      "initial_sha256": "1e2496695f9db266cdbc229b6dfc12fd81d0dc36cc3422c4b1cf1dc425108bd6",
+      "final_sha256": "842beab987083246b2fd878247d7c2d0634b30f35561d32c87a457597d50d065",
+      "change_l2": 4.795102119445801,
+      "all_finite": true
+    },
+    {
+      "name": "final_layer.attn.mha.in_proj_bias",
+      "parameters": 3456,
+      "initial_sha256": "797f78f8551f2828387a49f2470f7af42bd6e16e533088cbf64962ced53fc39b",
+      "final_sha256": "ad6e6963d426838b033ddca7ccf02bea3c6925dd8c3b68c2e0bab02d6b265c79",
+      "change_l2": 0.1172761544585228,
+      "all_finite": true
+    },
+    {
+      "name": "final_layer.attn.mha.out_proj.weight",
+      "parameters": 1327104,
+      "initial_sha256": "aa6c5719dc90a5f33b79f1fbe83d4c15d811bbb5ad64722a462f931301d26659",
+      "final_sha256": "eee646ab42beeb3a9cbb26aa857f061a2e1196674b6fc66a816e936f7393c6ce",
+      "change_l2": 1.1407420635223389,
+      "all_finite": true
+    },
+    {
+      "name": "final_layer.attn.mha.out_proj.bias",
+      "parameters": 1152,
+      "initial_sha256": "3fba981e602f15b1ff0a58d9d64aeaf12ccd8822ba50e1776c7e4df6288b6f46",
+      "final_sha256": "450d3e0ba74fbdcf5de9595ab85c131d7d9febcfc628073e8104308f5ba64944",
+      "change_l2": 0.016063177958130836,
+      "all_finite": true
+    }
+  ]
+}

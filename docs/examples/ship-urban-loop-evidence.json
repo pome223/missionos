@@ -1,0 +1,213 @@
+{
+  "schema_version": "ship_urban_loop_public_evidence.v1",
+  "scope": "CPU-only CLI/process/HTTP with explicit model and AP doubles",
+  "summary": {
+    "schema_version": "ship_urban_loop_smoke.v1",
+    "cases": [
+      {
+        "case": "unapproved",
+        "expected": true
+      },
+      {
+        "case": "none",
+        "expected": true,
+        "returncode": 0,
+        "completed_updates": 2,
+        "failure": null,
+        "processes_reaped": true,
+        "late_response_rejected": true,
+        "receipt_sha256": "7e22314abcbd7d48a7e65ef158cb21ac184d58c0a33a9a182aa6c3fc946a243a"
+      },
+      {
+        "case": "offshore_entry",
+        "expected": true,
+        "returncode": 1,
+        "completed_updates": 0,
+        "failure": "LoopRejected:invalid_or_outside_urban_observation",
+        "processes_reaped": true,
+        "late_response_rejected": null,
+        "receipt_sha256": "30009e2d4a93e1e7446a1d8bbd3743960880be99018c9849e63084dfc2cfb118"
+      },
+      {
+        "case": "wrong_phase",
+        "expected": true,
+        "returncode": 1,
+        "completed_updates": 0,
+        "failure": "LoopRejected:invalid_or_outside_urban_observation",
+        "processes_reaped": true,
+        "late_response_rejected": null,
+        "receipt_sha256": "8cfaba279affe74375c0d197027d753bbc0d2bace0d42e6a8b049731de32cddb"
+      },
+      {
+        "case": "stale_observation",
+        "expected": true,
+        "returncode": 1,
+        "completed_updates": 0,
+        "failure": "LoopRejected:invalid_or_outside_urban_observation",
+        "processes_reaped": true,
+        "late_response_rejected": null,
+        "receipt_sha256": "c000387e2ba4396180d8325e533a265a191f39333acb080bd8244729d26b6775"
+      },
+      {
+        "case": "reused_image",
+        "expected": true,
+        "returncode": 1,
+        "completed_updates": 0,
+        "failure": "LoopRejected:urban_fresh_image_required",
+        "processes_reaped": true,
+        "late_response_rejected": true,
+        "receipt_sha256": "ad13999ea3f8df3b09bb11b3ace01bfcbc35a6ffd21f0a91c6a4c31f4ec2067a"
+      },
+      {
+        "case": "cross_cycle",
+        "expected": true,
+        "returncode": 1,
+        "completed_updates": 1,
+        "failure": "LoopRejected:urban_stale_or_unbound_response",
+        "processes_reaped": true,
+        "late_response_rejected": true,
+        "receipt_sha256": "e450894a42fe51b590b821c806d728d56dd148be30ee281adefa3bdb523ce9b3"
+      },
+      {
+        "case": "unsafe_candidate",
+        "expected": true,
+        "returncode": 1,
+        "completed_updates": 0,
+        "failure": "LoopRejected:urban_candidate_outside_approved_segment",
+        "processes_reaped": true,
+        "late_response_rejected": true,
+        "receipt_sha256": "df12acb5a27341142d98d9406f6d339da9e22cfd1fcf03aa17a2cf5fd7c028cf"
+      },
+      {
+        "case": "rules_rejection",
+        "expected": true,
+        "returncode": 1,
+        "completed_updates": 0,
+        "failure": "LoopRejected:urban_independent_rules_rejected",
+        "processes_reaped": true,
+        "late_response_rejected": true,
+        "receipt_sha256": "7f5ba415555763c7d17583a6a4da540f645bb79d8a6258b656e2892c4ff5da1a"
+      },
+      {
+        "case": "http_failure",
+        "expected": true,
+        "returncode": 1,
+        "completed_updates": 0,
+        "failure": "ValueError:urban_model_http_response_rejected",
+        "processes_reaped": true,
+        "late_response_rejected": true,
+        "receipt_sha256": "d271a8e86caacb4d69549eb8811f7800e3853a133d3fc592ec75202d9a4c8be5"
+      },
+      {
+        "case": "timeout",
+        "expected": true,
+        "returncode": 1,
+        "completed_updates": 0,
+        "failure": "LoopRejected:urban_model_timeout",
+        "processes_reaped": true,
+        "late_response_rejected": true,
+        "receipt_sha256": "46a815aff68b82755577aa064e00dff7dfb87bf3db1bf1463a45c4ea6b754222"
+      },
+      {
+        "case": "hold_loss",
+        "expected": true,
+        "returncode": 1,
+        "completed_updates": 0,
+        "failure": "LoopRejected:urban_hold_not_observed",
+        "processes_reaped": true,
+        "late_response_rejected": null,
+        "receipt_sha256": "c2dbbaaa1f6ad34f9a445ee16850c7ec77340c7bddf7fe77bf50f4062dfd8c0c"
+      },
+      {
+        "case": "shutdown_failure",
+        "expected": true,
+        "returncode": 1,
+        "completed_updates": 2,
+        "failure": "urban_model_shutdown_not_verified",
+        "processes_reaped": true,
+        "late_response_rejected": true,
+        "receipt_sha256": "a01ebdc5071107cfcb109045edf3315c8a01f0192bbab68f3b99db650c88356f"
+      },
+      {
+        "case": "arrival_failure",
+        "expected": true,
+        "returncode": 1,
+        "completed_updates": 0,
+        "failure": "LoopRejected:urban_target_or_stable_hold_not_observed",
+        "processes_reaped": true,
+        "late_response_rejected": true,
+        "receipt_sha256": "ae95d541b40a7399fab9b6f0f5bd49e62ce06b49d8f0dec4b62a0ac3ba6d554b"
+      },
+      {
+        "case": "tracking_deviation",
+        "expected": true,
+        "returncode": 1,
+        "completed_updates": 0,
+        "failure": "LoopRejected:urban_segment_tracking_violated",
+        "processes_reaped": true,
+        "late_response_rejected": true,
+        "receipt_sha256": "2bda7c7b33e313362f0c0b76e49d577b871979d3aee065764332b4eba4f8c22b"
+      },
+      {
+        "case": "offshore_drift",
+        "expected": true,
+        "returncode": 1,
+        "completed_updates": 0,
+        "failure": "LoopRejected:invalid_or_outside_urban_observation",
+        "processes_reaped": true,
+        "late_response_rejected": null,
+        "receipt_sha256": "82f88a768e5f8cf1363bffde6a798ff094ead8401f295a55377d1bdb8612039f"
+      },
+      {
+        "case": "reserve_exhausted",
+        "expected": true,
+        "returncode": 1,
+        "completed_updates": 0,
+        "failure": "LoopRejected:invalid_or_outside_urban_observation",
+        "processes_reaped": true,
+        "late_response_rejected": null,
+        "receipt_sha256": "9b182963c43491ca4d5616a8dd4015b526f7d040c080d4203a265521c7debff8"
+      }
+    ],
+    "all_expected": true,
+    "native_model_calls": 0,
+    "new_simulator_flights": 0,
+    "gpu_spend_usd": 0
+  },
+  "protocol": {
+    "schema_version": "ship_urban_loop_smoke_protocol.v1",
+    "expected": {
+      "none": null,
+      "offshore_entry": "invalid_or_outside_urban_observation",
+      "wrong_phase": "invalid_or_outside_urban_observation",
+      "stale_observation": "invalid_or_outside_urban_observation",
+      "reused_image": "urban_fresh_image_required",
+      "cross_cycle": "urban_stale_or_unbound_response",
+      "unsafe_candidate": "urban_candidate_outside_approved_segment",
+      "rules_rejection": "urban_independent_rules_rejected",
+      "http_failure": "urban_model_http_response_rejected",
+      "timeout": "urban_model_timeout",
+      "hold_loss": "urban_hold_not_observed",
+      "shutdown_failure": "urban_model_shutdown_not_verified",
+      "arrival_failure": "urban_target_or_stable_hold_not_observed",
+      "tracking_deviation": "urban_segment_tracking_violated",
+      "offshore_drift": "invalid_or_outside_urban_observation",
+      "reserve_exhausted": "invalid_or_outside_urban_observation"
+    },
+    "retry_allowed": false,
+    "gpu_spend_usd": 0,
+    "source_sha256": {
+      "src/runtime/ship_urban_loop.py": "2b152a5db7163107a93ce2dbbc4ae698ab352773362df6e95ba45b88c44b6a2a",
+      "src/runtime/ship_urban_loop_fixture.py": "7021eec8b0b0f261f849c2aaa872525d59402da70db0fdc95239d978098e1e65",
+      "src/runtime/ship_urban_loop_verifier.py": "98633777b57a03e1bbbc1786983297ef7805169866d361a00456942f1b35dc3f",
+      "src/runtime/ship_urban_model_processes.py": "dda74f1fec1bc7112a05eb10509ca1717e4b858032558ba1c07bdcf0d51c2a2a",
+      "scripts/ship_urban_loop_fixture_worker.py": "39b477ea497084cb4002392fdbb42fbccbeb1f42ed78cfaa32ac11403269616f",
+      "scripts/smoke_ship_urban_loop.py": "dcb079e146915f7c5f170cc55da95f0a914709d4dbee806db9fa049ad7c66ce9",
+      "packages/missionos-cli/src/missionos_cli/ship_delivery_command.py": "cbaf6cc82ca831865cdcdced895fed84d270bdecc315eba66e88fd7e7c64b954"
+    }
+  },
+  "native_model_adapter_connected": false,
+  "px4_adapter_connected": false,
+  "physical_execution_invoked": false,
+  "energy_savings_verified": false
+}

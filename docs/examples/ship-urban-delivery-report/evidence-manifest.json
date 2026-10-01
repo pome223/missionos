@@ -1,0 +1,184 @@
+{
+  "schema_version": "ship_urban_report_evidence.v1",
+  "implementation_revision": "ffe1d81",
+  "raw_evidence_location": "Separate private local archive; not bundled in this report",
+  "reverification_after_archival": "passed; identical comparison",
+  "contract_tests_passed": 169,
+  "gzip_files_crc_verified": 44,
+  "display_sampling": "Every second urban-interval sample plus the terminal sample; seconds and coordinates rounded to three decimal places; measured metrics use full records.",
+  "replay_data_sha256": "7046cd290366e37d47d24ba8f89b11f70717095c7064be9d3c4f8c6f81aa8577",
+  "runs": [
+    {
+      "run_id": "07e8f5d4c7024759a69d026e5d249ae4",
+      "case": "short_clear",
+      "policy": "constant_velocity",
+      "image_id": "sha256:79968fe25aa19d51c49fbd4a863ea9380f4efe6d9afabd1c579ddeffeb8b8c93",
+      "world_sha256": "87c4bed2bcdc07e3ab29ca3c0d9fb928afc0cb0b5fc1a06a4295e05e7a6e07cc",
+      "plan_sha256": "c9fca428e3a116ac93f8370c78356df6c1024de87748b9bac0c22b704cd4c7d1",
+      "verification": {
+        "verified": true,
+        "delivery_verified": true,
+        "recovery_verified": true,
+        "reasons": [],
+        "entity_ids": [
+          66,
+          25,
+          11
+        ],
+        "recovery_stability_samples": 7,
+        "minimum_simulated_battery_remaining": 0.88063,
+        "urban_verification": {
+          "verified": true,
+          "reasons": [],
+          "action": "wait",
+          "policy": "constant_velocity",
+          "urban_elapsed_s": 57.317127776000234,
+          "max_outbound_lateral_m": 0.1954816888827141,
+          "collision_observed": false,
+          "geometric_clearance_verified": true,
+          "observation_source": "gazebo_pose_history",
+          "learned_model_comparison_admitted": false
+        }
+      },
+      "source_files_sha256": {
+        "telemetry.jsonl": "242c11e7985cf12cf12de67eefd269d2b81fb0cf505d5a79c9a41b9d0d9490aa",
+        "events.jsonl": "c973ebe14bf09cc5c7d26a4368736f87bcbfe569f62cffa9c23caaad9eaca74d",
+        "worker.py": "29ee5ae7fae62945f39ddd50393a53facc7fcd37666c6c7a85ac7918b1f7e346",
+        "urban_policy.py": "54c21bf5fd5877c75ddaa8af00a29d4059501e9598033dd8be93bcd95a5fcdd6",
+        "ship_urban_sitl_stage.py": "9da67e4b3e2ac95f4d33a3120c536484278a7a26256bc9c20848692233d0228e",
+        "worker.stdout": "c973ebe14bf09cc5c7d26a4368736f87bcbfe569f62cffa9c23caaad9eaca74d",
+        "worker.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "config.json": "968d9d7f07c88f6d8317f67cd131f1c7091bef2a94e00be666b591c44dc02ee7"
+      }
+    },
+    {
+      "run_id": "81462cfe930e4852aa9b164526af2a41",
+      "case": "short_clear",
+      "policy": "always_detour",
+      "image_id": "sha256:79968fe25aa19d51c49fbd4a863ea9380f4efe6d9afabd1c579ddeffeb8b8c93",
+      "world_sha256": "87c4bed2bcdc07e3ab29ca3c0d9fb928afc0cb0b5fc1a06a4295e05e7a6e07cc",
+      "plan_sha256": "ac5a7f9165efbc63c4a0fc8b0cddd719d23e8ac5fe902675385ea43368f47bf6",
+      "verification": {
+        "verified": true,
+        "delivery_verified": true,
+        "recovery_verified": true,
+        "reasons": [],
+        "entity_ids": [
+          66,
+          25,
+          11
+        ],
+        "recovery_stability_samples": 7,
+        "minimum_simulated_battery_remaining": 0.86813,
+        "urban_verification": {
+          "verified": true,
+          "reasons": [],
+          "action": "detour",
+          "policy": "always_detour",
+          "urban_elapsed_s": 86.17595204000008,
+          "max_outbound_lateral_m": 85.20119836323443,
+          "collision_observed": false,
+          "geometric_clearance_verified": true,
+          "observation_source": "gazebo_pose_history",
+          "learned_model_comparison_admitted": false
+        }
+      },
+      "source_files_sha256": {
+        "telemetry.jsonl": "c614d28402ba3ee099ad099f35f98d93237f1ebca2bd7822d27504e4b29c0e90",
+        "events.jsonl": "35b39a8b8037b6b1998b970adc537c263c64b640863a570e8dc236a07b527e34",
+        "worker.py": "29ee5ae7fae62945f39ddd50393a53facc7fcd37666c6c7a85ac7918b1f7e346",
+        "urban_policy.py": "54c21bf5fd5877c75ddaa8af00a29d4059501e9598033dd8be93bcd95a5fcdd6",
+        "ship_urban_sitl_stage.py": "9da67e4b3e2ac95f4d33a3120c536484278a7a26256bc9c20848692233d0228e",
+        "worker.stdout": "35b39a8b8037b6b1998b970adc537c263c64b640863a570e8dc236a07b527e34",
+        "worker.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "config.json": "a6bc15c0418587ff2742f18bb98b26509d5bd3570552f0242dfbfc763e036144"
+      }
+    },
+    {
+      "run_id": "acb96effcd07474aaa28ca9749d1dd7c",
+      "case": "long_block",
+      "policy": "constant_velocity",
+      "image_id": "sha256:79968fe25aa19d51c49fbd4a863ea9380f4efe6d9afabd1c579ddeffeb8b8c93",
+      "world_sha256": "87c4bed2bcdc07e3ab29ca3c0d9fb928afc0cb0b5fc1a06a4295e05e7a6e07cc",
+      "plan_sha256": "84d1b94fff2538a32fa9b25a95258f30014e7d6b86cada0bf01dc37f9b2ba223",
+      "verification": {
+        "verified": true,
+        "delivery_verified": true,
+        "recovery_verified": true,
+        "reasons": [],
+        "entity_ids": [
+          66,
+          25,
+          11
+        ],
+        "recovery_stability_samples": 7,
+        "minimum_simulated_battery_remaining": 0.86473,
+        "urban_verification": {
+          "verified": true,
+          "reasons": [],
+          "action": "detour",
+          "policy": "constant_velocity",
+          "urban_elapsed_s": 105.68651054800011,
+          "max_outbound_lateral_m": 85.22641728882493,
+          "collision_observed": false,
+          "geometric_clearance_verified": true,
+          "observation_source": "gazebo_pose_history",
+          "learned_model_comparison_admitted": false
+        }
+      },
+      "source_files_sha256": {
+        "telemetry.jsonl": "9989e4e4010b0c637f7a5f255b40c246b981ea5f83c823d9f4627283289d20ea",
+        "events.jsonl": "d5a1c8d146c5133643f969e9012bbfd7489ff229b3bd53b1f79d3074c9fb7312",
+        "worker.py": "29ee5ae7fae62945f39ddd50393a53facc7fcd37666c6c7a85ac7918b1f7e346",
+        "urban_policy.py": "54c21bf5fd5877c75ddaa8af00a29d4059501e9598033dd8be93bcd95a5fcdd6",
+        "ship_urban_sitl_stage.py": "9da67e4b3e2ac95f4d33a3120c536484278a7a26256bc9c20848692233d0228e",
+        "worker.stdout": "d5a1c8d146c5133643f969e9012bbfd7489ff229b3bd53b1f79d3074c9fb7312",
+        "worker.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "config.json": "2b7ec8c658c470bf41f98cd083d37a81c1c51958909aa27b8646e3ec56ece5f2"
+      }
+    },
+    {
+      "run_id": "e0b2e1f01a4946db93cba1d9c87ee223",
+      "case": "long_block",
+      "policy": "always_wait",
+      "image_id": "sha256:79968fe25aa19d51c49fbd4a863ea9380f4efe6d9afabd1c579ddeffeb8b8c93",
+      "world_sha256": "87c4bed2bcdc07e3ab29ca3c0d9fb928afc0cb0b5fc1a06a4295e05e7a6e07cc",
+      "plan_sha256": "21c19dc22a7f23cfbc779507ed902e28f34443c4571c845b798592e22eee6113",
+      "verification": {
+        "verified": true,
+        "delivery_verified": true,
+        "recovery_verified": true,
+        "reasons": [],
+        "entity_ids": [
+          66,
+          25,
+          11
+        ],
+        "recovery_stability_samples": 7,
+        "minimum_simulated_battery_remaining": 0.84823,
+        "urban_verification": {
+          "verified": true,
+          "reasons": [],
+          "action": "wait",
+          "policy": "always_wait",
+          "urban_elapsed_s": 142.2270041480001,
+          "max_outbound_lateral_m": 0.2252818099016435,
+          "collision_observed": false,
+          "geometric_clearance_verified": true,
+          "observation_source": "gazebo_pose_history",
+          "learned_model_comparison_admitted": false
+        }
+      },
+      "source_files_sha256": {
+        "telemetry.jsonl": "88a2cea549bfdfd0107d4a3d028ef53c25a83b7767a5af9081747727309f6c34",
+        "events.jsonl": "2dbbc5c37f9d3c63ca6d001a52ca3582d26cbe71f71e28c9a13e029451de379e",
+        "worker.py": "29ee5ae7fae62945f39ddd50393a53facc7fcd37666c6c7a85ac7918b1f7e346",
+        "urban_policy.py": "54c21bf5fd5877c75ddaa8af00a29d4059501e9598033dd8be93bcd95a5fcdd6",
+        "ship_urban_sitl_stage.py": "9da67e4b3e2ac95f4d33a3120c536484278a7a26256bc9c20848692233d0228e",
+        "worker.stdout": "2dbbc5c37f9d3c63ca6d001a52ca3582d26cbe71f71e28c9a13e029451de379e",
+        "worker.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "config.json": "293dabce42ded4c4b6a0142721d35d1b419ee9fb0783d68ea95e0f3c429d5962"
+      }
+    }
+  ]
+}

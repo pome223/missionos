@@ -1,0 +1,13 @@
+{
+  "native_io_integrity": "passed",
+  "source_camera_run_id": "pad-views-3ac0d1c7dcf4",
+  "cpu_rig_capture": "passed",
+  "native_vla_calls": 4,
+  "native_wam_forecasts": 8,
+  "native_flight_admission": false,
+  "owned_simulator_removed": true,
+  "owned_vm_and_disk_removed": true,
+  "cuda_compute_processes_after": [],
+  "input_screen_expected_exit_code": 2,
+  "extra_gpu_usd": 0.6645100016250001
+}

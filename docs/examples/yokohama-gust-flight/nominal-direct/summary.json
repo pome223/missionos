@@ -1,0 +1,143 @@
+{
+  "case": "nominal-direct",
+  "run_id": "yokohama-5a405a1b1170",
+  "world_sha256": "f557d0dbb626d160f0c4c6efd47d3b8b3aa07f642de6d4d5de8efeafa1d08d50",
+  "wind": {
+    "schema": "missionos.yokohama-wind.v1",
+    "after_takeoff": true,
+    "velocity_enu_mps": [
+      6.0,
+      0,
+      0
+    ],
+    "force_scale_per_s": 1,
+    "force_law": "mass * 1/s * (wind_velocity - link_velocity)",
+    "time_constant_s": 1,
+    "gusts": false,
+    "building_wakes": false,
+    "calibrated_aerodynamics": false,
+    "affected_links": [
+      "x500_0/base_link",
+      "delivery_payload/payload_link"
+    ],
+    "witness_start_xyz_m": [
+      0,
+      3000,
+      100
+    ],
+    "control_start_xyz_m": [
+      0,
+      3010,
+      100
+    ],
+    "profile": {
+      "schema": "missionos.yokohama-wind-profile.v1",
+      "name": "harbor-nominal",
+      "speeds_mps": {
+        "offshore": 6.0,
+        "harbor": 5.0,
+        "coast": 4.0,
+        "city": 3.0
+      },
+      "origin_xy_m": [
+        0.0,
+        0.0
+      ],
+      "outward_unit_xy": [
+        0.965430162206204,
+        0.2606618535622401
+      ],
+      "coast_boundary_m": 400,
+      "offshore_boundary_m": 900.0,
+      "city_bounds_xy_m": [
+        [
+          -49.88761388811289,
+          168.03285452510517
+        ],
+        [
+          -157.92962206786046,
+          15.0
+        ]
+      ],
+      "hysteresis_m": 5.0,
+      "direction_enu": [
+        1,
+        0,
+        0
+      ],
+      "onset": "after_observed_takeoff_hold",
+      "weather_source": "user_supplied_scenario_assumption_not_observation",
+      "height_model": "constant_with_height_not_surface_wind_extrapolation",
+      "spatial_model": "global_wind_seed_follows_one_vehicle_zone_not_a_spatial_flow_field",
+      "gusts": false,
+      "building_wakes": false
+    }
+  },
+  "observed_cargo_link": "payload_link",
+  "metadata_note": "Wind links match observed SDF elements.",
+  "status": "failed",
+  "reason": "ValueError: WAM visible-structure consistency rejected; no segment dispatched",
+  "last_phase": "01-D2",
+  "final_target_error_m": 0.09124881367101276,
+  "arrival_timeout_wall_s": 150,
+  "duration_sim_s": 709.512,
+  "decision_backend": "fixture",
+  "native_vla_invoked": false,
+  "native_wam_invoked": false,
+  "gpu_requested": false,
+  "cleanup": true,
+  "holds_passed": 4,
+  "holds_recorded": 4,
+  "holds_required": 13,
+  "max_hold_horizontal_error_m": 0.1530564065604184,
+  "max_hold_vertical_error_m": 0.5010149237437673,
+  "final_observed_pitch_deg": -16.076340630153787,
+  "receipt_present": false,
+  "cargo": null,
+  "final_observed_tilt_deg": 18.496835830378732,
+  "completion_verified": false,
+  "verifiers": {
+    "decision-verification.json": "failed"
+  },
+  "evidence_hashes": {
+    "config.json": "bca8e31d416e734982399dc16b712815537e2450bdce5d11a2d64fdcd192500e",
+    "result.json": "a852113bafa0a8b089762f228ce6696bf10b4c168a06ff5b03160b53627c65d9",
+    "worker-result.json": "490e50492edd15f57dd3d43670abd3085545c67e44a4fc7351f2fbfbd433ae56",
+    "flight-trajectory.jsonl": "3d7e36d75387c7c6afbbdca470e634fb92af5bed6e614e7af55080d263fca5fe",
+    "flight-events.jsonl": "056ce7eabe65bee6ee37971628c1f6cbde3ff0f76d9c7b95b4d13bddfe62add4"
+  },
+  "source_sha256": {
+    "yokohama_scene.py": "ad9ad3de307d590f052fd7b8a1f4623dd43714fdcf7b68424ffe35ea86e62be9",
+    "yokohama_sea.py": "7b2452561b1ca0aa5f51e1b86096dd844d91d19f537415840935956ae6feaee3",
+    "yokohama_wind.py": "a8e960e41583863d5b98aafdd436dcc8598cf98e3a3881b58f577d8cc1646c84",
+    "yokohama_wind_profile.py": "d4d19b5c3bd4d8fad90abfe1ef92b6a44a5d047d63c745041d2653489da3ee6c",
+    "yokohama_sitl.py": "845277c34b49c4fcd733140adc5a92adb58a108e3c3e3031f55361be96f86c68",
+    "yokohama_sitl_worker.py": "c13e5a86a51049a684d81433a9d5be45f18958e2157965885afb1d568f3ba79d",
+    "ship_urban_camera_worker.py": "d1410467349d7bc5526a46afe2e84a9cf8e44d7a3fc391d8b0361ad78696d6c7",
+    "ship_onboard_entrypoint.sh": "b45b89f4bc9cf4ecab5f3d041866a436d6133574717e122a9e02f86e4c977364",
+    "yokohama_flight_worker.py": "ec08ef64e35d80db4ccef880af39ec4f8e5f47b364d5b5b270ecad38350369c3",
+    "yokohama_payload.py": "65be8f3b8ec0b4e7886dc71cd9b58e6f7104809749862638fd31738bdd4d892e",
+    "verify_yokohama_payload.py": "b524a558591ea0b5dc1d6e82097b9ebbf5f08783d2f89b54ac872dc3643bbba8",
+    "yokohama_decision_worker.py": "d8f3d98f81f50780575e09167c6cccf5a8f726cbd16a140d9a210addc4eac31d",
+    "yokohama_decision_host.py": "2ab063982c4646215cc4acb3c5de1a378e4c85e827a322308d775803e2ec51e7",
+    "yokohama_native.py": "45d482af2828b4a04c7dbe27281c26fa0833461d5728a3a547a20b93367c4732",
+    "ship_anwm.py": "78e4680405eb0202eac2dbc0ba8035577b1765cf8f76961e83f6f6ae2a431509",
+    "yokohama_appearance.py": "450da308c1d884e4fca1766d1143c80fd48b1f22b8aba3b071304100dd065ec9",
+    "yokohama_wam_profile.py": "1dba81457144c67c1562689644f14ce4d2ea5d3cd73f5ddfbf964f86e3ad46c6",
+    "ship_anwm_server.py": "30a0fa5e864279e2d09d8f7482dccacb93cb7961c8e28b46e070d8928ca04545",
+    "ship_aerovla.py": "3cc49ed27d3ff813ce5cebd766e65196fe5ced20bdfc2ebd9ecb8fb45d2f9743",
+    "ship_aerovla_server.py": "867300859825c5dc2d51ff2ae3a6647a78d4699bba2534b0ce77a49fe7b53c7a",
+    "ship_vla_adapter.py": "0a155c594218e92875daf91e6bbaaf84152eb9a2f93929a64c3666a63e828dca",
+    "smoke_px4_gazebo_sitl_mission_upload.py": "424dac5e40ac45d1012653a891581a1dd4e1d5091700703f725dffc580e45e01",
+    "verify_yokohama_decisions.py": "57845c90e9ff41c4c9380d34df703f5c14863a6e3854fbf5f73767af1ae1c2d3",
+    "verify_yokohama_sitl.py": "ea5e4562c85e37239e77a6183c67f0afaf86f4865123cc51fc1dc14593cf182e"
+  },
+  "publication_verifier_sha256": {
+    "src/runtime/yokohama_wind.py": "a8e960e41583863d5b98aafdd436dcc8598cf98e3a3881b58f577d8cc1646c84",
+    "src/runtime/yokohama_wind_profile.py": "f2e3ee920d20981d6fee5362373ea81863bb060a3c485ed74a0355b04e0d2761",
+    "scripts/verify_yokohama_sitl.py": "ea5e4562c85e37239e77a6183c67f0afaf86f4865123cc51fc1dc14593cf182e",
+    "scripts/verify_yokohama_decisions.py": "57845c90e9ff41c4c9380d34df703f5c14863a6e3854fbf5f73767af1ae1c2d3",
+    "scripts/verify_yokohama_payload.py": "b524a558591ea0b5dc1d6e82097b9ebbf5f08783d2f89b54ac872dc3643bbba8"
+  },
+  "native_wind_flight_verified": false
+}

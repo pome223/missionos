@@ -1,0 +1,12 @@
+{
+  "schema": "missionos.observed-camera-timelapse.v1",
+  "run_id": "yokohama-e9da88bd375a",
+  "source": "actual CPU-rendered Gazebo onboard RGB; no model predictions",
+  "frames": 150,
+  "playback_speed": 8,
+  "source_start_sim_s": 4.568,
+  "source_end_sim_s": 315.252,
+  "source_frame_manifest_sha256": "f2569c9657b2fc8d9881a450e92152e12054f1504826fd08c2dd449df1412b58",
+  "video_sha256": "536fe32fe026a5b4bf412e439231dfd29a7849f07949f7a273f0b0e222443080",
+  "video_bytes": 334047
+}

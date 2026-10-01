@@ -1,0 +1,23 @@
+{
+  "full_suite": {
+    "command": "PYTHONPATH=.:packages/missionos-core/src:packages/missionos-cli/src:packages/missionos-gateway/src:$SCENE_DEPS python -m pytest -q",
+    "passed": 3355,
+    "warnings": 3,
+    "log_sha256": "1ecb7acf3149babe75e2501f65055e7db74b34d12222939380657c474b231635"
+  },
+  "source_commit": "20e5c0c2",
+  "paired_data_unchanged_after_flight_completion": true,
+  "sitl_reverification": "passed",
+  "decision_reverification": "passed",
+  "paired_reverification": "passed",
+  "physical_execution": false,
+  "publication_ui": {
+    "desktop_inspected": true,
+    "pair_selector_options_verified": 4,
+    "all_displayed_images_loaded": true,
+    "video_duration_s": 68.25,
+    "video_playback_verified": true,
+    "local_links_verified": 36,
+    "narrow_viewport_tested": false
+  }
+}

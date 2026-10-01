@@ -1,0 +1,10 @@
+{
+  "dataset_revision": "f0fcc70df0b3c8c26286adbfb39ccdf5e3b7ad83",
+  "source_url": "https://huggingface.co/datasets/EmbodiedCity/ANWM-Dataset/resolve/f0fcc70df0b3c8c26286adbfb39ccdf5e3b7ad83/airvln_16-000000.tar",
+  "member": "302OLP89E75X7MFPRR58QG7CIDVACC_processed/226.jpg",
+  "sha256": "9dfaf17d62ed88774447a159ff752a8525299bcf2c2541d08f473488db6793c0",
+  "license": "apache-2.0",
+  "selection": "first archived RGB file of first trajectory of first shard, fixed before viewing/inference; repeat 16 times for stationary identity diagnostic",
+  "limitations": "No trajectory labels or depth used. Synthetic static context, not held-out navigation benchmark. Dataset metadata declares Apache-2.0; raw reference media remains private in this diagnostic.",
+  "download_notes": "Earlier full-trajectory attempt aborted on metadata >192MiB; consecutive-frame range attempt interrupted after sparse frame IDs found. No images selected by inference result."
+}

@@ -20,6 +20,16 @@ Each example should include commands, observed evidence, and limitations.
   two-Recovery export and verification with a deterministic fixture. It is a
   contract smoke, not evidence of a new simulator or physical run.
 
+- [Yokohama CPU PX4/Gazebo flight](yokohama-px4-sitl/REPORT-ja.md) verifies
+  source-derived city collisions, seven measured AP holds, and a return landing.
+  Includes an observed 3D replay and onboard camera recording; native VLA/WAM
+  and payload delivery are not part of this flight.
+
+- [Yokohama native model trial](yokohama-native-flight/REPORT-ja.md) records real
+  AeroVLA and ANWM calls at D1, CUDA workspace release, and a WAM-image rejection
+  before model-segment dispatch. Includes original predictions, observed video
+  and all three failed frozen trials; repeated native movement remains unverified.
+
 ## Example Checklist
 
 Each example should state:

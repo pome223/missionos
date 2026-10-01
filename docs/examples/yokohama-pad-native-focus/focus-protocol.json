@@ -1,0 +1,33 @@
+{
+  "schema": "pad_native_focus_protocol.v1",
+  "steps": 4096,
+  "lr": 5e-05,
+  "seed": 42,
+  "evaluation_steps": 50,
+  "model_work_seconds_max": 2600,
+  "roi_extra_weight": 8.0,
+  "x0_roi_weight": 0.1,
+  "flight_admitted": false,
+  "vla_training": false,
+  "dataset_sha256": "db3adc0e2e52a2ab35c5195ad4bc7ee1c06f5859c2c5b630c61b0a6f04f764bb",
+  "source_sha256": {
+    "train_yokohama_pad_focus.py": "b64084c18b8731fc8cf88b97a1c9cf96f308d65fd7236db0cd0ba183e0cbc10c",
+    "yokohama_pad_focus_data.py": "246c3a6381c8f72c5339d3b31eeee17025cb3f716835cab56a9784744aa97e7c",
+    "ship_anwm.py": "78e4680405eb0202eac2dbc0ba8035577b1765cf8f76961e83f6f6ae2a431509",
+    "ship_anwm_server.py": "30a0fa5e864279e2d09d8f7482dccacb93cb7961c8e28b46e070d8928ca04545",
+    "yokohama_appearance.py": "450da308c1d884e4fca1766d1143c80fd48b1f22b8aba3b071304100dd065ec9",
+    "yokohama_wam_profile.py": "1dba81457144c67c1562689644f14ce4d2ea5d3cd73f5ddfbf964f86e3ad46c6"
+  },
+  "initial_adapter_sha256": "5b78a8c97e6ed42ece769bf1d5bdeb35e8352ae8b64f7f4c27b0edc6b7518542",
+  "development_ids": [
+    "train-depart-36-t16",
+    "train-stall-24-t16",
+    "train-return-20-t16"
+  ],
+  "purpose": "Preserve the lead in native ANWM regional short-horizon RGB; hold-only offline capability, not flight adoption",
+  "adoption": "No fixed accuracy gate or ideal-Rules victory; useful occupied anticipation and regression accounting precede any flight integration",
+  "evaluation": "All 28 fixed endpoints, including unreadable truth; same camera and appearance, new timings only",
+  "conditioning": "Past 16 regional images; exact hold projection is current crop; no future image, actor position or schedule",
+  "training": "Prior training sequences only; previous negative native adapter; final two transformer blocks and existing output heads",
+  "frozen_before_native_inference": true
+}

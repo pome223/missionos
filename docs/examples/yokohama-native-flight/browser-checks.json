@@ -1,0 +1,16 @@
+{
+  "desktop_width": 1280,
+  "narrow_width": 360,
+  "horizontal_overflow": false,
+  "actual_camera_loaded": true,
+  "prediction_images_loaded": [
+    224,
+    224
+  ],
+  "video_ready_state": 4,
+  "video_duration_s": 39.333333,
+  "play_pause_observed": true,
+  "end_slider_observed_sim_s": 310.8,
+  "console_errors": [],
+  "viewport_reset": true
+}

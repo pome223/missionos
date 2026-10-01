@@ -1,0 +1,122 @@
+{
+  "schema": "missionos.urban-scene-provenance.v1",
+  "dataset": "3D都市モデル（Project PLATEAU）横浜市（2024年度）",
+  "dataset_url": "https://www.geospatial.jp/ckan/dataset/plateau-14100-yokohama-shi-2024",
+  "license": "CC-BY-4.0",
+  "license_url": "https://creativecommons.org/licenses/by/4.0/",
+  "source_policy_url": "https://www.mlit.go.jp/plateau/site-policy/",
+  "archive": {
+    "url": "https://assets.cms.plateau.reearth.io/assets/04/96d45a-a30b-4c9f-88c0-c1323b5a0f86/14100_yokohama-shi_city_2024_citygml_2_op.zip",
+    "etag": "\"2c99b5e91db110c36a65160a9b12735a\"",
+    "archive_bytes": 2777093929,
+    "downloaded_compressed_bytes": 46605226,
+    "members": [
+      {
+        "name": "udx/bldg/53391531_bldg_6697_op.gml",
+        "compressed": 14945987,
+        "size": 120858447,
+        "offset": 1006945658,
+        "crc": 3883803681,
+        "method": 8,
+        "compressed_sha256": "35c38a7237f2cf934cf1926b58abbcc79b5b1526620757ae2e9458c783a98486",
+        "uncompressed_sha256": "c03262f18010e7a89159e692833707f9a0cddd2f55cc9b45c10eaad929af3699"
+      },
+      {
+        "name": "udx/bldg/53391541_bldg_6697_op.gml",
+        "compressed": 1227261,
+        "size": 9612556,
+        "offset": 1253577785,
+        "crc": 2164389750,
+        "method": 8,
+        "compressed_sha256": "4f330802abce5d04c0a67892be532832c67e743a31d9713ae47918fb3497ff5e",
+        "uncompressed_sha256": "0733da354b72a90d6ddbd120b3ec62ee14093b7d540a59ebb76fb8578e6aa23e"
+      },
+      {
+        "name": "udx/dem/533915_dem_6697_00_op.gml",
+        "compressed": 29326873,
+        "size": 458657353,
+        "offset": 2288538267,
+        "crc": 1381930963,
+        "method": 8,
+        "compressed_sha256": "68cb96294a75ae80d02ccda75b46085d0fb0e3973cada2156179a7ded03a278d",
+        "uncompressed_sha256": "421f2e5b24877718295fbe26df523b38e336fc3b3a4af4fff5cd5c9407f14193"
+      },
+      {
+        "name": "udx/tran/53391531_tran_6697_op.gml",
+        "compressed": 941894,
+        "size": 6913750,
+        "offset": 2651728260,
+        "crc": 3401563,
+        "method": 8,
+        "compressed_sha256": "9a4629c7af5fb2a5abfcce8ae4114c6058dd69b08be1eeedf3b6272f2620f525",
+        "uncompressed_sha256": "3b3d9950444a15b9681dc8ed53630dcf742e1d4837bcfc08852995cd166954d0"
+      },
+      {
+        "name": "udx/tran/53391541_tran_6697_op.gml",
+        "compressed": 16780,
+        "size": 122670,
+        "offset": 2652819634,
+        "crc": 2349803766,
+        "method": 8,
+        "compressed_sha256": "2eacb012748c24ba0b4558efb31d4d5cad14915956bb31f7b338967e7fbde3cf",
+        "uncompressed_sha256": "4781b3d9f9e574b65a2ce4e38a9b8ab267db59cd4ab4823de0868ec7a8c50dc2"
+      },
+      {
+        "name": "udx/brid/53391531_brid_6697_op.gml",
+        "compressed": 98884,
+        "size": 1008579,
+        "offset": 2691430326,
+        "crc": 2040851120,
+        "method": 8,
+        "compressed_sha256": "931cdd1617698314da60ab3ad0509c5cd4e72d993a0c5d01e983605aa93fdc6f",
+        "uncompressed_sha256": "cdc37d233dd6cf8cf60b207a6a71ff18c7bbba2af5e76e307f8d6181a69d1fdd"
+      },
+      {
+        "name": "udx/brid/53391541_brid_6697_op.gml",
+        "compressed": 47547,
+        "size": 438183,
+        "offset": 2727196333,
+        "crc": 1552692438,
+        "method": 8,
+        "compressed_sha256": "7d02b25d6703134fd7932c713ab616ed9cfd56a771acd0530018ae3f7e06bc35",
+        "uncompressed_sha256": "1170e2c3da2b58dbffb2642f827d73f3974f2cc9bcc87afc7aff728193c3f0fb"
+      }
+    ]
+  },
+  "metadata_discrepancy": "Catalog and archive path identify 2024; bundled README heading identifies 2025年度 and creation date 2025-10-28. Kept as a provenance discrepancy, not silently reconciled.",
+  "source_readme_sha256": "68692e8e59381b6ad7d8cb6a6242f33bc717f3d575a18e97c953b5d79367593e",
+  "source_crs": "EPSG:6697, posList order latitude longitude source vertical height",
+  "horizontal_transform": "EPSG:6668 to EPSG:6677, always_xy; longitude/latitude to easting/northing; origin subtracted",
+  "origin_lon_lat": [
+    139.6442,
+    35.4481
+  ],
+  "aoi_m": [
+    -300,
+    -300,
+    300,
+    300
+  ],
+  "crop_policy": "Select whole buildings and bridges intersecting the AOI. Retain intersecting road polygons and TIN triangles. Geometry may extend beyond AOI; no sidewalls invented at the crop boundary.",
+  "building_lod": "LOD2; source LOD1 fallback implemented but unused in this crop",
+  "vertical_policy": "Source height unchanged, including source road LOD1 z=0. Not AGL or PX4 home-relative altitude.",
+  "visual_modifications": [
+    "Faces triangulated with interior rings preserved; vertices rounded to 1 mm",
+    "Uniform materials, no photographic textures",
+    "Roads only in HTML draped to nearest TIN vertex + 0.08 m for visibility; GLB/scene.json preserve source z=0",
+    "Synthetic water reference plane z=-0.08 m; no hydrodynamics or measured tidal level",
+    "Synthetic route, three observation locations and delivery pad"
+  ],
+  "collision_policy": "Source meshes in buildings-bridges.obj. Conservative whole-height footprint prisms in collision-prisms.obj, expanded 0.02 m then simplified 0.005 m with source-footprint containment asserted; courtyards retained. Not watertightness-certified source meshes or tested simulator collisions.",
+  "third_party_renderer": {
+    "name": "Three.js",
+    "version": "r160",
+    "source_url": "https://raw.githubusercontent.com/mrdoob/three.js/r160/build/three.min.js",
+    "license": "MIT",
+    "sha256": "170c6789f43217c96b3170f4b42fafe135de7f7cd48497a4218f9757ee1d49fa"
+  },
+  "gpu_spend_usd": 0,
+  "simulation_execution": false,
+  "vla_inference": false,
+  "wam_inference": false
+}

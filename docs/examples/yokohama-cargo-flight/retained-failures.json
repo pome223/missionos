@@ -1,0 +1,26 @@
+[
+  {
+    "schema": "missionos.retained-preinference-failure.v1",
+    "run_id": "yokohama-0b2b90a54d4b",
+    "source_revision": "d5b452bafb87b0bb6a7388d8161f4e6dc2a8c4f3",
+    "status": "failed",
+    "phase": "00-D1",
+    "reason": "Copied lifecycle argv selected an old experiment wrapper targeting a deleted old VM. Native start/stop failed before inference.",
+    "vla_invoked": false,
+    "wam_invoked": false,
+    "payload_release_observed": false,
+    "runtime_cleanup_verified": true,
+    "cloud_cleanup_confirmed": true,
+    "estimated_usd": 0.5486324642027176,
+    "invoice_confirmed": false,
+    "raw_evidence_sha256": {
+      "native-flight/result.json": "c1c670c1b416e130dc202bfb82eba9f085c59b321f829fc2e85b14b892133eef",
+      "native-flight/worker-result.json": "76a565278c7cf95c84966b4ec15a2f6632a8a9c5677347ba13d5a495e376069a",
+      "native-flight/flight-events.jsonl": "e8767ca636953ad9372d749ebae0a92c02c0f384518ecef039f0589a6eba482f",
+      "failed-native-start.stderr": "dbf3fe710910eb37aa40defbe60de0b2c64fc632a49c6d64cab3953e1b1ff9f6",
+      "failed-native-stop.stderr": "dbf3fe710910eb37aa40defbe60de0b2c64fc632a49c6d64cab3953e1b1ff9f6",
+      "controller-completion.json": "80dfedfbe15bb4c1f8c0a48133a6898b98dbe1e7f699623671d94bab22163d94"
+    },
+    "correction": "Single reviewed resource manifest for controller and lifecycle; reject stale argv before cloud allocation; collect and release the GPU after verified city shutdown."
+  }
+]

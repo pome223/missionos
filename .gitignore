@@ -28,3 +28,9 @@ output/
 .idea/
 .vscode/
 .playwright-cli/
+
+# Reviewed, hash-bound public reentry evidence (not local runtime state)
+!docs/examples/yokohama-pad-reentry-learning/data/
+!docs/examples/yokohama-pad-reentry-learning/data/**
+!docs/examples/yokohama-pad-reentry/data/
+!docs/examples/yokohama-pad-reentry/data/**

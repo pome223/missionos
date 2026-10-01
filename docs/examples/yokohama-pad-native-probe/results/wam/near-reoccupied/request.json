@@ -1,0 +1,40 @@
+{
+  "schema_version": "yokohama_anwm_request.v2",
+  "run_id": "pad-views-3ac0d1c7dcf4",
+  "world_sha256": "1f60fd64eb44ab3ac528a634b090b4e3574149c34a56caeff80139c00b958e1b",
+  "plan_sha256": "9a7907c5b3c1beec82114073adff2aaf1cd3c7c70e0a121fed0e973b3961c31b",
+  "history_sha256": "c7490a1094ba2c3ea0f39a966c1cedf3a4cd4f4ff67339ccd57f09f01d4bae83",
+  "source_kind": "yokohama_rgbd_hold",
+  "ego_source": "Gazebo_model_pose_simulator_ground_truth",
+  "delta_frame": "body_frd_at_observation",
+  "num_timesteps": 1,
+  "nominal_horizon_s": 1,
+  "model_time_alignment_verified": false,
+  "future_ground_truth_used_for_forecast": false,
+  "dispatch_allowed": false,
+  "seed": 42,
+  "diffusion_steps": 250,
+  "adapter_sha256": "e4b88ec38ce8f08ff90b692a3b545e573aadaacf0f080a0357409dfc2b308dd3",
+  "appearance_policy": "positive_infinite_upward_rays_past_only_no_metric_fill",
+  "candidates": [
+    {
+      "id": "hold",
+      "delta": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "vla",
+      "delta": [
+        2.9591836734693877,
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "vla_response_sha256": "bc61c3cbd8069e1f3274c9ad9f80093d676df99ef3569a38fcf3e20a6e51eba9"
+}

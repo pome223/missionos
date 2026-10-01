@@ -1,0 +1,31 @@
+{
+  "schema_version": "ship_vla_format_diagnosis.v1",
+  "run_id": "08e18dcef01d4214a48158d1bcf50340",
+  "source_revision": "73d69feb532fe84ce0b04c266353ba34fd654070",
+  "original_generated_text": "故4924 49</s>",
+  "generated_token_ids": [
+    31969,
+    29946,
+    29929,
+    29906,
+    29946,
+    29871,
+    29946,
+    29929,
+    2
+  ],
+  "input_pixel_values_shape": [
+    1,
+    6,
+    224,
+    224
+  ],
+  "model_inference_s": 0.7319827079772949,
+  "response_sha256": "cb3ccdf4d87427acd68e229fd6b627f1fe692fc68ee01c2c669d6bbd2c17786f",
+  "direct_rejection": "candidate_rejected:malformed_action",
+  "wam_invoked": false,
+  "delivery_verified": false,
+  "recovery_verified": false,
+  "old_attempt_reinterpreted": false,
+  "repair_scope": "Opt-in generation-time syntax mask; native bins 0..98 and LAND remain possible; independent action guards unchanged; no output rewriting or same-version retry"
+}

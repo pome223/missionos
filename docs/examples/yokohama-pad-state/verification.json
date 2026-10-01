@@ -1,0 +1,25 @@
+{
+  "unit_and_contract_tests": {
+    "passed": 3588,
+    "skipped": 2
+  },
+  "actual_boundary": "CPU Gazebo recording, image preprocessing, real NumPy fit, save/reload, RGB-only inference",
+  "gpu_used": false,
+  "aircraft_flown": false,
+  "flight_admitted": false,
+  "public_reopen": {
+    "files_verified": 197,
+    "forecasts_recomputed": 155,
+    "result": "passed",
+    "capability_result": "failed"
+  },
+  "browser_qa": {
+    "desktop": true,
+    "width_390": true,
+    "horizontal_overflow": false,
+    "video_seek": true,
+    "case_selection": true,
+    "play_pause": true,
+    "console_errors": 0
+  }
+}

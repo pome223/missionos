@@ -1,0 +1,13 @@
+{
+  "scope": "original evidence unchanged; concurrency fault diagnosis",
+  "run_id": "288142800e2d4cb38173574473b3bb05",
+  "observed_at_s": 63.9563898209999,
+  "ack_received_at_s": 63.95816923799998,
+  "gap_ms": 1.7794170000797749,
+  "source_hashes": {
+    "vla-execution.json": "df193641e0a4af05c2421fcd3925f298b7080ef4e5f3c480e6f07ed24df8e1c7",
+    "vla-transport.jsonl": "4ca09ac9664c3e4227474e19fab4f27ab69e6d118b1105ef530a048e77a3d2a1",
+    "result.json": "bef131216147408b59f3f8ff5cded05bd546b5b30ab4bf2c368a0cea88551bf7"
+  },
+  "repair": "require ACK timestamp <= sample timestamp; keep independent verifier unchanged"
+}

@@ -1,0 +1,55 @@
+{
+  "scope": "recorded holds only; not full mission verification",
+  "run_id": "yokohama-372932c0bec8",
+  "source_trajectory_sha256": "c732f5c5bd97dbe815a6e2f9f92f25617a37c8dc5c20b7734b3977af613d280b",
+  "holds": [
+    {
+      "point": "SEA-TAKEOFF",
+      "passed": true,
+      "recomputed_fields_match": true,
+      "metrics": {
+        "duration_sim_s": 30.124,
+        "samples": 89,
+        "max_horizontal_error_m": 0.0669656089405749,
+        "max_vertical_error_m": 0.2517203199232956,
+        "max_px4_speed_mps": 0.03385039143052854,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.11927000000002863,
+        "max_sample_gap_sim_s": 0.4160000000000039
+      }
+    },
+    {
+      "point": "SEA-INBOUND-COAST",
+      "passed": true,
+      "recomputed_fields_match": true,
+      "metrics": {
+        "duration_sim_s": 30.387999999999977,
+        "samples": 89,
+        "max_horizontal_error_m": 0.9191411225202304,
+        "max_vertical_error_m": 0.45589441793775265,
+        "max_px4_speed_mps": 0.4213641395515285,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.020651708000059443,
+        "max_sample_gap_sim_s": 0.6159999999999854
+      }
+    },
+    {
+      "point": "00-D1",
+      "passed": true,
+      "recomputed_fields_match": true,
+      "metrics": {
+        "duration_sim_s": 30.18399999999997,
+        "samples": 89,
+        "max_horizontal_error_m": 0.148656284683901,
+        "max_vertical_error_m": 0.4107108092028682,
+        "max_px4_speed_mps": 0.06089030300466569,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.021344624999983353,
+        "max_sample_gap_sim_s": 0.41600000000005366
+      }
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "focused_tests": {
+    "passed": 5,
+    "seconds": 0.98
+  },
+  "full_suite": {
+    "passed": 3571,
+    "skipped": 2,
+    "warnings": 3,
+    "seconds": 110.82
+  },
+  "source_commit": "fd5920575466a668af76f0110e1fcd2075bc2822",
+  "worktree_changes": "temporal recording, preparation, native diagnostic, re-evaluation and tests",
+  "runtime": {
+    "actual_cpu_gazebo_capture_frames": 888,
+    "actual_native_wam_calls": 4,
+    "remote_files_verified": 32,
+    "aircraft_flown": false,
+    "native_flight_admitted": false
+  },
+  "browser": {
+    "viewports": [
+      {
+        "width": 1200,
+        "height": 850
+      },
+      {
+        "width": 390,
+        "height": 844
+      }
+    ],
+    "case_selection_passed": 4,
+    "images_loaded": 12,
+    "actual_video_source_and_target_seek_passed": 4,
+    "video_dimensions": [
+      640,
+      360
+    ],
+    "narrow_horizontal_overflow": false,
+    "console_errors": 0,
+    "native_playback": "full local MP4 blob allows seeking even on static servers without range responses"
+  },
+  "replay_repair": {
+    "focused_tests_passed": 6,
+    "seconds": 1.71,
+    "macos_real_cli_passed": true,
+    "linux_x86_pure_evidence_reader_passed": true,
+    "linux_loader_limit": "pure evidence functions isolated from unrelated src.runtime package initialization; full CLI remains covered by CI",
+    "original_evaluation_unchanged": true,
+    "first_ci_full_tests_passed": 3571,
+    "first_ci_failed_stage": "background numerical readback across CPU architectures"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "full_suite": {
+    "passed": 3389,
+    "warnings": 3,
+    "seconds": 106.21,
+    "source_commit": "d2b36e72509ed5f0725df85e2ecc411758f95351"
+  },
+  "runtime_boundaries": [
+    "approved CPU PX4/Gazebo AP acquisition and cleanup",
+    "SITL and lossless motion hash verification",
+    "past-only train/test export",
+    "trainer CLI no-GPU preflight",
+    "real L4 training, saved-tensor audit, 10 forecasts and owned-resource deletion"
+  ],
+  "publication_checks": {
+    "local_links": 28,
+    "private_identifier_scan": "passed",
+    "real_browser_case_switch": [
+      "forward 1",
+      "forward 2 failure",
+      "hold"
+    ],
+    "real_browser_trajectory_seek_and_playback": "passed",
+    "viewport_widths": [
+      390,
+      934
+    ],
+    "horizontal_overflow": false,
+    "decoded_video": {
+      "duration_s": 5,
+      "ready_state": 4
+    },
+    "console_errors": 0
+  },
+  "limitations": "Published verifier checks receipts and images; does not rerun GPU training or all raw sensor bytes"
+}

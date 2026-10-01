@@ -1,0 +1,47 @@
+{
+  "schema": "pad_temporal_protocol.v1",
+  "scope": "native endpoint availability diagnostic, not mission benefit or flight",
+  "source_commit": "fd5920575466a668af76f0110e1fcd2075bc2822",
+  "capture": "02-capture",
+  "reader_training": "development-depart only; grayscale high-pass nearest templates",
+  "reader_gate": {
+    "per_class_recall_min": 0.85,
+    "maximum_rmse": 24,
+    "minimum_class_margin": 1
+  },
+  "native": {
+    "cases": 4,
+    "candidates": [
+      "hold"
+    ],
+    "frame_period_s": 0.25,
+    "frame_offset": 64,
+    "requested_horizon_s": 16,
+    "diffusion_steps": 50,
+    "seed": 42,
+    "training": false,
+    "resample": false
+  },
+  "withheld": "future frames, lead poses and schedules never uploaded to native inference",
+  "full_flight_admitted": false,
+  "continuation_condition": "reader and perfect-reference CPU screens pass before paid native inference",
+  "time_reference": "pinned upstream rollout.py num_timesteps/128 and infer.py input_fps=4; no physical accuracy claimed from parameter conversion",
+  "prior_custom_adapter": "motion-v4 was adapted with rel_t=1/128 and one-second static-world targets; not dynamic-time calibrated",
+  "comparison": "frozen current-image persistence endpoint baseline; not ideal Rules or mission value",
+  "source_files_sha256": {
+    "scripts/capture_yokohama_pad_motion.py": "fc29e7630a5b0d31debb2fdb02d76b286cb95244ee9838c8fbee7ff046337b26",
+    "scripts/prepare_yokohama_pad_temporal.py": "e723c76f4117c74f305f01450e8b913d3e7049511077964e316663d1a982e569",
+    "scripts/probe_yokohama_pad_temporal.py": "7dfefbbff6225f70b8f754cdfc68674d41a5fa0894779f8c325c164bff1046e6"
+  },
+  "payload_sha256": {
+    "ship_anwm_server.py": "30a0fa5e864279e2d09d8f7482dccacb93cb7961c8e28b46e070d8928ca04545",
+    "inputs.tar.gz": "53b3bd4ea7433db41b7fb4312519d5f8d1d55d307819feddaa0c5d364e883b6d",
+    "yokohama_wam_profile.py": "1dba81457144c67c1562689644f14ce4d2ea5d3cd73f5ddfbf964f86e3ad46c6",
+    "yokohama_appearance.py": "450da308c1d884e4fca1766d1143c80fd48b1f22b8aba3b071304100dd065ec9",
+    "run-probe.sh": "8b2dc31a36574a194aa0dec754311874e5e7abbb9a31b3dcbf73af8ef0d94e3d",
+    "probe_yokohama_pad_temporal.py": "7dfefbbff6225f70b8f754cdfc68674d41a5fa0894779f8c325c164bff1046e6",
+    "ship_anwm.py": "78e4680405eb0202eac2dbc0ba8035577b1765cf8f76961e83f6f6ae2a431509",
+    "bootstrap.sh": "d9a671da4950828b5f4d44c1ca2a0b5249e091207c45d50c61fd2af815e0520d",
+    "motion-adapter.pt": "e4b88ec38ce8f08ff90b692a3b545e573aadaacf0f080a0357409dfc2b308dd3"
+  }
+}

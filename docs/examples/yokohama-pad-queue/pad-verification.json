@@ -1,0 +1,41 @@
+{
+  "run_id": "yokohama-45d8607fa5c3",
+  "checks": {
+    "run_passed": true,
+    "cleanup": true,
+    "supervisor_stopped": true,
+    "no_models_or_gpu": true,
+    "one_occupied_wait_entry_receipt_return": true,
+    "event_order": true,
+    "ap_wait_before_entry": true,
+    "pad_initially_occupied": true,
+    "five_seconds_clear_before_proposal": true,
+    "entry_bound_to_response": true,
+    "wait_then_continue": true,
+    "sequences": true,
+    "clear_through_delivery_and_return": true,
+    "sampled_separation_gt_3m": true,
+    "lead_departure_observed": true,
+    "own_cargo_received": true,
+    "returned_landed_disarmed": true,
+    "no_early_approach_dispatch": true
+  },
+  "wait_sim_s": 31.5,
+  "minimum_sampled_separation_m": 12.816509327064885,
+  "requests": [
+    {
+      "sequence": 0,
+      "request_id": "1c988b3ff439556da45c9a7aaeeb3137b77dec729402ebd0fef98d2608d0fc07",
+      "action": "wait_at_current_hold"
+    },
+    {
+      "sequence": 1,
+      "request_id": "2aa0ad13d6253038e7fac6cf2a09d706a0405884d1887c490a0dbb7d8185a81a",
+      "action": "enter_delivery_approach"
+    }
+  ],
+  "observed_wait_samples": 132,
+  "lead_motion_m": 13.328165665236908,
+  "status": "passed",
+  "scope": "CPU PX4 cargo flight; scripted lead, pose-based occupancy, fixture MissionOS judge; no visual/model capability claim"
+}

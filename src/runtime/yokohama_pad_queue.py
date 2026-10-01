@@ -1,0 +1,341 @@
+"""CPU-only occupied-pad scene and aircraft-to-MissionOS decision mailbox.
+
+The lead aircraft is a scripted Gazebo entity, not a second PX4 aircraft.
+The host judge is a deterministic fixture, not VLA/WAM or an LLM. Simulator
+poses stand in for a future perception source. Proposals grant no authority.
+"""
+
+from __future__ import annotations
+
+import json
+import math
+from pathlib import Path
+import threading
+import xml.etree.ElementTree as ET
+
+try:
+    from src.runtime.yokohama_payload import atomic_json, digest, fresh_pose
+    from src.runtime.yokohama_pad_advisory_contract import selected_action
+except ModuleNotFoundError:  # frozen worker copy inside the isolated container
+    from yokohama_payload import atomic_json, digest, fresh_pose
+    from yokohama_pad_advisory_contract import selected_action
+
+
+def segment_distance(point, start, end):
+    d = [b - a for a, b in zip(start, end)]
+    n = sum(v * v for v in d)
+    f = max(0, min(1, sum((p - a) * v for p, a, v in zip(point, start, d)) / n)) if n else 0
+    return math.dist(point, [a + f * v for a, v in zip(start, d)])
+
+
+def extend_world(root, bundle, world):
+    from shapely.geometry import LineString, shape
+    from src.runtime.yokohama_scene import camera, sha256, to_source
+
+    pad = world["payload_delivery"]["pad_world_xyz_m"]
+    wait = world["points"][2]["world_xyz_m"]
+    approach = world["points"][3]["world_xyz_m"]
+    start = [pad[0] + 0.8, pad[1] + 0.8, pad[2] + 1.2]
+    up = [*start[:2], pad[2] + 7]
+    footprints = json.loads((bundle / "collision-footprints.geojson").read_text())["features"]
+    choices = []
+    for k in range(16):
+        end = [
+            up[0] + 12 * math.cos(k * math.pi / 8),
+            up[1] + 12 * math.sin(k * math.pi / 8),
+            up[2],
+        ]
+        line = LineString(to_source([start, up, end], world["frame"])[:, :2])
+        clearance = min(line.distance(shape(f["geometry"])) for f in footprints)
+        route_clearance = min(
+            segment_distance(end, wait, approach),
+            segment_distance(end, approach, world["payload_delivery"]["hover_world_xyz_m"]),
+        )
+        if clearance > 3 and route_clearance > 6:
+            choices.append((clearance, end))
+    if not choices:
+        raise ValueError("No mapped departure corridor for the scripted lead aircraft")
+    clearance, end = max(choices)
+    path = root / "models/worlds/default.sdf"
+    tree = ET.parse(path)
+    node = tree.getroot().find("world")
+
+    def model(name, xyz):
+        m = ET.SubElement(node, "model", name=name)
+        ET.SubElement(m, "static").text = "true"
+        ET.SubElement(m, "pose").text = " ".join(map(str, [*xyz, 0, 0, 0]))
+        return ET.SubElement(m, "link", name="link")
+
+    def box(link, name, xyz, size, color):
+        for kind in ("visual", "collision"):
+            part = ET.SubElement(link, kind, name=name)
+            ET.SubElement(part, "pose").text = " ".join(map(str, [*xyz, 0, 0, 0]))
+            ET.SubElement(ET.SubElement(ET.SubElement(part, "geometry"), "box"), "size").text = size
+            if kind == "visual":
+                mat = ET.SubElement(part, "material")
+                ET.SubElement(mat, "diffuse").text = color
+                ET.SubElement(mat, "ambient").text = color
+
+    link = model("queue_lead", start)
+    box(link, "body", [0, 0, 0], ".8 .6 .25", ".95 .5 .05 1")
+    for i, (x, y) in enumerate([(-0.6, -0.6), (-0.6, 0.6), (0.6, -0.6), (0.6, 0.6)]):
+        box(link, f"rotor_{i}", [x, y, 0.1], ".5 .5 .04", ".08 .1 .12 1")
+    box(
+        model("queue_parcel", [*start[:2], start[2] - 0.5]),
+        "cargo",
+        [0, 0, 0],
+        ".3 .3 .3",
+        ".1 .7 .4 1",
+    )
+    camera_link = model("queue_camera", [0, 0, 0])
+    camera(
+        camera_link,
+        "queue_rgb",
+        [pad[0] + 16, pad[1] - 16, pad[2] + 12],
+        [0, math.atan2(10, math.sqrt(512)), 3 * math.pi / 4],
+        "/yokohama/queue",
+        rate_hz=4,
+    )
+    tree.write(path, encoding="utf-8", xml_declaration=True)
+    world["world_sha256"] = sha256(path)
+    world["pad_queue"] = dict(
+        schema="missionos.yokohama-pad-queue.v1",
+        lead_entity="queue_lead",
+        parcel_entity="queue_parcel",
+        lead_start_xyz_m=start,
+        lead_up_xyz_m=up,
+        lead_end_xyz_m=end,
+        departure_building_clearance_m=clearance,
+        wait_xyz_m=wait,
+        approach_xyz_m=approach,
+        pad_xyz_m=pad,
+        trigger_phase="02-D3",
+        occupied_duration_sim_s=15,
+        unload_duration_sim_s=5,
+        ascent_duration_sim_s=6,
+        departure_duration_sim_s=12,
+        stable_clear_sim_s=5,
+        maximum_wait_sim_s=90,
+        maximum_wait_wall_s=180,
+        maximum_sample_gap_sim_s=2,
+        maximum_observation_age_s=1,
+        response_max_age_s=2,
+        minimum_battery_fraction=0.2,
+        pad_exclusion_radius_m=6,
+        approach_exclusion_radius_m=3,
+        lead_motion="scripted poses; no lead autopilot or unloading physics",
+        observation_source="Gazebo pose telemetry, not image perception",
+        judge_backend="deterministic CPU fixture; no learned model",
+        approved_actions=["wait_at_current_hold", "enter_delivery_approach"],
+        communication_fallback="retain current AP hold within local limits; terminate owned SITL on deadline",
+    )
+    return world
+
+
+def clearance(config, row):
+    p = config["world"]["pad_queue"]
+    if (
+        row.get("run_id") != config["run_id"]
+        or row.get("world_sha256") != config["world"]["world_sha256"]
+    ):
+        raise ValueError("Foreign pad observation")
+    if not math.isfinite(row["sim_s"]) or not math.isfinite(row["wall_s"]):
+        raise ValueError("Invalid pad clock")
+    if not all(
+        fresh_pose(row, name, p["maximum_observation_age_s"]) for name in ("vehicle", "queue_lead")
+    ):
+        raise ValueError("Stale or missing pad pose")
+    lead = row["queue_lead"]["xyz"]
+    horizontal = math.dist(lead[:2], p["pad_xyz_m"][:2])
+    route = min(
+        segment_distance(lead, p["wait_xyz_m"], p["approach_xyz_m"]),
+        segment_distance(
+            lead, p["approach_xyz_m"], config["world"]["payload_delivery"]["hover_world_xyz_m"]
+        ),
+    )
+    return dict(
+        pad_clear=horizontal > p["pad_exclusion_radius_m"],
+        approach_clear=route > p["approach_exclusion_radius_m"],
+        horizontal_distance_m=horizontal,
+        approach_distance_m=route,
+    )
+
+
+def require_wait(config, row):
+    p = config["world"]["pad_queue"]
+    clearance(config, row)
+    speed = row.get("velocity_ned", [])
+    battery = row.get("battery_fraction")
+    if not (
+        row["phase"] in (p["trigger_phase"], "03-DELIVERY")
+        and row["nav_state"] == 4
+        and row["arming_state"] == 2
+        and row["landed"] is False
+        and row.get("position_valid") is True
+        and len(speed) == 3
+        and all(math.isfinite(v) for v in speed)
+        and math.hypot(*speed) <= 0.3
+        and isinstance(battery, (int, float))
+        and math.isfinite(battery)
+        and battery >= p["minimum_battery_fraction"]
+        and math.dist(row["vehicle"]["xyz"], p["wait_xyz_m"]) <= 0.6
+    ):
+        raise ValueError("Aircraft cannot wait within the approved pad hold")
+
+
+def clear_window(config, rows):
+    p = config["world"]["pad_queue"]
+    if len(rows) < 2:
+        return False
+    for row in rows:
+        require_wait(config, row)
+        c = clearance(config, row)
+        if not (c["pad_clear"] and c["approach_clear"]):
+            return False
+    return (
+        rows[-1]["sim_s"] - rows[0]["sim_s"] >= p["stable_clear_sim_s"]
+        and all(
+            0 < b["sim_s"] - a["sim_s"] <= p["maximum_sample_gap_sim_s"]
+            for a, b in zip(rows, rows[1:])
+        )
+        and all(
+            a["reset_counters"] == rows[0]["reset_counters"]
+            and a["queue_lead"]["id"] == rows[0]["queue_lead"]["id"]
+            and a["vehicle"]["id"] == rows[0]["vehicle"]["id"]
+            for a in rows
+        )
+    )
+
+
+def make_request(config, sequence, rows, camera_history=None):
+    require_wait(config, rows[-1])
+    r = dict(
+        schema="missionos.aircraft-situation-request.v1",
+        run_id=config["run_id"],
+        config_sha256=digest(config),
+        sequence=sequence,
+        incident="delivery_pad_occupied",
+        observations=rows,
+        source="simulator_pose_fixture",
+    )
+    if config["world"].get("pad_state_advisory"):
+        r["pad_camera_history"] = camera_history
+    return dict(r, request_id=digest(r))
+
+
+def propose(config, request):
+    content = dict(request)
+    request_id = content.pop("request_id")
+    if (
+        digest(content) != request_id
+        or request["config_sha256"] != digest(config)
+        or request["run_id"] != config["run_id"]
+    ):
+        raise ValueError("Unbound aircraft request")
+    rows = request["observations"]
+    require_wait(config, rows[-1])
+    action = "enter_delivery_approach" if clear_window(config, rows) else "wait_at_current_hold"
+    return dict(
+        schema="missionos.aircraft-response-proposal.v1",
+        request_id=request_id,
+        run_id=config["run_id"],
+        sequence=request["sequence"],
+        config_sha256=digest(config),
+        proposed_action=action,
+        observation_sha256=digest(rows[-1]),
+        backend="fixture",
+        approval_granted=False,
+        dispatch_authority_created=False,
+    )
+
+
+def require_response(config, request, response, current):
+    """Executor-side Rules revalidate an untrusted proposal against fresh facts."""
+    require_wait(config, current)
+    expected = propose(config, request)
+    if config["world"].get("pad_state_advisory"):
+        receipt = response.get("advisory", {})
+        judgment_hash = response.get("mission_assurance_sha256", "")
+        if (
+            not isinstance(judgment_hash, str)
+            or len(judgment_hash) != 64
+            or any(c not in "0123456789abcdef" for c in judgment_hash)
+        ):
+            raise ValueError("Missing mission judgment identity")
+        expected.update(
+            proposed_action=selected_action(config, request, receipt, expected["proposed_action"]),
+            backend="cpu_state_advisory_fixture",
+            advisory=receipt,
+            mission_assurance_sha256=judgment_hash,
+        )
+    if response != expected:
+        raise ValueError("Foreign, changed or unexpected mission response")
+    p = config["world"]["pad_queue"]
+    previous = request["observations"][-1]
+    if not all(
+        0 <= current[k] - previous[k] <= p["response_max_age_s"] for k in ("sim_s", "wall_s")
+    ):
+        raise ValueError("Expired mission response")
+    if (
+        current["reset_counters"] != previous["reset_counters"]
+        or current["vehicle"]["id"] != previous["vehicle"]["id"]
+        or current["queue_lead"]["id"] != previous["queue_lead"]["id"]
+    ):
+        raise ValueError("Observation identity or estimator reset changed")
+    action = response["proposed_action"]
+    if action not in p["approved_actions"] or not config.get("operator_approval"):
+        raise ValueError("Action outside preapproved simulator scope")
+    if action == "enter_delivery_approach":
+        c = clearance(config, current)
+        if not c["pad_clear"] or not c["approach_clear"]:
+            raise ValueError("Pad reoccupied; old continuation rejected")
+    return action
+
+
+class PadSupervisor:
+    """Host-side MissionOS fixture. Commands remain on the aircraft side."""
+
+    def __init__(self, root, config):
+        self.root, self.config = Path(root), config
+        self.advisory = None
+        if config["world"].get("pad_state_advisory"):
+            from scripts.yokohama_pad_advisory_host import PadAdvisoryHost
+
+            self.advisory = PadAdvisoryHost(root, config)
+        self.stop_event = threading.Event()
+        self.thread = threading.Thread(target=self.loop, daemon=True)
+        self.thread.start()
+
+    def loop(self):
+        sequence = 0
+        try:
+            while not self.stop_event.wait(0.02):
+                if self.advisory and (self.root / "pad-advisory-closed.json").exists():
+                    self.advisory.close()
+                folder = self.root / "pad-decisions" / f"{sequence:03d}"
+                path = folder / "request.json"
+                if not path.exists():
+                    continue
+                request = json.loads(path.read_text())
+                if request["sequence"] != sequence:
+                    raise ValueError("Out-of-order pad request")
+                response = propose(self.config, request)
+                if self.advisory:
+                    if self.advisory.closed:
+                        raise ValueError("Pad request after advisory exit")
+                    response = self.advisory.respond(request, folder, response)
+                    if (self.root / "pad-advisory-closed.json").exists():
+                        self.advisory.close()
+                        raise ValueError("Late pad response after advisory exit")
+                atomic_json(folder / "response.json", response)
+                sequence += 1
+        except Exception as exc:
+            atomic_json(self.root / "pad-supervisor-error.json", dict(error=str(exc)))
+
+    def close(self):
+        self.stop_event.set()
+        self.thread.join(timeout=5)
+        if self.thread.is_alive():
+            raise RuntimeError("Pad supervisor did not stop")
+        if self.advisory:
+            self.advisory.close()

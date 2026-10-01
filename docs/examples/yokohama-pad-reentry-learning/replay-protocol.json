@@ -1,0 +1,19 @@
+{
+  "schema": "missionos.pad-reentry-replay.v1",
+  "frozen_at": "2026-09-28T23:12:44.666052+00:00",
+  "arrival_times_sim_s": [
+    8,
+    10,
+    12,
+    14,
+    16
+  ],
+  "episode_decision_stride_s": 2,
+  "first_decision_after_arrival_s": 5,
+  "ready_window_s": 5,
+  "horizon_s": 4,
+  "selection": "all predeclared arrivals for every new case, not selected after forecasts",
+  "boundary": "synthetic held own aircraft with measured lead trajectory and RGB; stop replay episode at first permitted entry; no dispatch or physical outcome",
+  "endpoint": "next four seconds sampled pad or approach reoccupation after first permission; not collision or mission completion",
+  "no_arrival_phase_warmup": true
+}

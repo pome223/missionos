@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "checks": {
+    "portable_links": true,
+    "pad-verification.json": true,
+    "verification.json": true,
+    "payload-verification.json": true,
+    "cleanup-verification.json": true,
+    "onboard_full_decode": true,
+    "queue_full_decode": true,
+    "frozen_flight_source_hashes": true,
+    "standalone_embedded_replay": true
+  },
+  "browser_qa": {
+    "desktop_width": 1280,
+    "mobile_width": 390,
+    "horizontal_overflow": false,
+    "slider_final_state_verified": true,
+    "range_switch_verified": true,
+    "queue_video_browser_ended": true,
+    "queue_video_duration_s": 74.041667,
+    "viewport_reset": true
+  },
+  "limits": "Source camera decode and sampled runtime evidence; no learned models, hardware or wind flight"
+}

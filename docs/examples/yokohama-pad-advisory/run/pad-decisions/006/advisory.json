@@ -1,0 +1,455 @@
+{
+  "schema": "missionos.pad-state-advisory.v1",
+  "request_id": "b29b04634a88bb6689a42b978339ff3f60ca54b9d2c794eea0017d498e6094f9",
+  "model_sha256": "2f648169418c9b8e7a1f4dec4e51cd8a792df8bec1611168e691207cc7ab67af",
+  "camera_entity": "pad_state_camera",
+  "history_sha256": "beb9e0cb3e43a1486f8694935fe4b4f4ba1826ca18b8d6022cf3ec3714cb89b6",
+  "status": "computed",
+  "reason": "measured_camera_history",
+  "flight_authority_created": false,
+  "forecast": {
+    "schema": "missionos.pad-state-forecast.v1",
+    "supported": true,
+    "input_last_stamp_ns": 585752000000,
+    "detections": [
+      {
+        "uv": [
+          164,
+          120
+        ],
+        "xyz_m": [
+          1.0669531821247569,
+          0.800000698888756,
+          1.4374211807633093
+        ],
+        "score": 0.9785382520618625,
+        "margin": 0.5404663577932318,
+        "supported": true
+      },
+      {
+        "uv": [
+          164,
+          120
+        ],
+        "xyz_m": [
+          1.0669531821247569,
+          0.800000698888756,
+          1.4374211807633093
+        ],
+        "score": 0.9785382520618625,
+        "margin": 0.5404663577932318,
+        "supported": true
+      },
+      {
+        "uv": [
+          164,
+          120
+        ],
+        "xyz_m": [
+          1.0669531821247569,
+          0.800000698888756,
+          1.4374211807633093
+        ],
+        "score": 0.9785382520618625,
+        "margin": 0.5404663577932318,
+        "supported": true
+      },
+      {
+        "uv": [
+          164,
+          120
+        ],
+        "xyz_m": [
+          1.0669531821247569,
+          0.800000698888756,
+          1.4374211807633093
+        ],
+        "score": 0.9785382520618625,
+        "margin": 0.5404663577932318,
+        "supported": true
+      },
+      {
+        "uv": [
+          164,
+          120
+        ],
+        "xyz_m": [
+          1.0669531821247569,
+          0.800000698888756,
+          1.4374211807633093
+        ],
+        "score": 0.9785382520618625,
+        "margin": 0.5404663577932318,
+        "supported": true
+      },
+      {
+        "uv": [
+          164,
+          120
+        ],
+        "xyz_m": [
+          1.0669531821247569,
+          0.800000698888756,
+          1.4374211807633093
+        ],
+        "score": 0.9785382520618625,
+        "margin": 0.5404663577932318,
+        "supported": true
+      },
+      {
+        "uv": [
+          164,
+          120
+        ],
+        "xyz_m": [
+          1.0669531821247569,
+          0.800000698888756,
+          1.4374211807633093
+        ],
+        "score": 0.9785382520618625,
+        "margin": 0.5404663577932318,
+        "supported": true
+      },
+      {
+        "uv": [
+          164,
+          120
+        ],
+        "xyz_m": [
+          1.0669531821247569,
+          0.800000698888756,
+          1.4374211807633093
+        ],
+        "score": 0.9785382520618625,
+        "margin": 0.5404663577932318,
+        "supported": true
+      },
+      {
+        "uv": [
+          164,
+          120
+        ],
+        "xyz_m": [
+          1.0669531821247569,
+          0.800000698888756,
+          1.4374211807633093
+        ],
+        "score": 0.9785382520618625,
+        "margin": 0.5404663577932318,
+        "supported": true
+      },
+      {
+        "uv": [
+          164,
+          120
+        ],
+        "xyz_m": [
+          1.0669531821247569,
+          0.800000698888756,
+          1.4374211807633093
+        ],
+        "score": 0.9785382520618625,
+        "margin": 0.5404663577932318,
+        "supported": true
+      },
+      {
+        "uv": [
+          164,
+          120
+        ],
+        "xyz_m": [
+          1.0669531821247569,
+          0.800000698888756,
+          1.4374211807633093
+        ],
+        "score": 0.9785382520618625,
+        "margin": 0.5404663577932318,
+        "supported": true
+      },
+      {
+        "uv": [
+          164,
+          120
+        ],
+        "xyz_m": [
+          1.0669531821247569,
+          0.800000698888756,
+          1.4374211807633093
+        ],
+        "score": 0.9785382520618625,
+        "margin": 0.5404663577932318,
+        "supported": true
+      },
+      {
+        "uv": [
+          164,
+          120
+        ],
+        "xyz_m": [
+          1.0669531821247569,
+          0.800000698888756,
+          1.4374211807633093
+        ],
+        "score": 0.9785382520618625,
+        "margin": 0.5404663577932318,
+        "supported": true
+      },
+      {
+        "uv": [
+          164,
+          120
+        ],
+        "xyz_m": [
+          1.0669531821247569,
+          0.800000698888756,
+          1.4374211807633093
+        ],
+        "score": 0.9785382520618625,
+        "margin": 0.5404663577932318,
+        "supported": true
+      },
+      {
+        "uv": [
+          164,
+          120
+        ],
+        "xyz_m": [
+          1.0669531821247569,
+          0.800000698888756,
+          1.4374211807633093
+        ],
+        "score": 0.9785382520618625,
+        "margin": 0.5404663577932318,
+        "supported": true
+      },
+      {
+        "uv": [
+          164,
+          120
+        ],
+        "xyz_m": [
+          1.0669531821247569,
+          0.800000698888756,
+          1.4374211807633093
+        ],
+        "score": 0.9785382520618625,
+        "margin": 0.5404663577932318,
+        "supported": true
+      }
+    ],
+    "support_distance": 0.036030439314378264,
+    "forecasts": [
+      {
+        "offset_s": 0.0,
+        "stamp_ns": 585752000000,
+        "xyz_relative_to_pad_m": [
+          1.0759397874856862,
+          0.8000007008017742,
+          1.4371641828582542
+        ],
+        "occupancy_score": 0.9673081777731473,
+        "empirical_xy_radius_m": 0.24270612910498068,
+        "state": "occupied"
+      },
+      {
+        "offset_s": 0.25,
+        "stamp_ns": 586002000000,
+        "xyz_relative_to_pad_m": [
+          1.0815033205398035,
+          0.8000007008017742,
+          1.446668166986069
+        ],
+        "occupancy_score": 0.9622183718185591,
+        "empirical_xy_radius_m": 0.3688068293850897,
+        "state": "occupied"
+      },
+      {
+        "offset_s": 0.5,
+        "stamp_ns": 586252000000,
+        "xyz_relative_to_pad_m": [
+          1.0805368259851935,
+          0.8000007008017742,
+          1.4916433124808417
+        ],
+        "occupancy_score": 0.9596534506597402,
+        "empirical_xy_radius_m": 0.5302243483728618,
+        "state": "occupied"
+      },
+      {
+        "offset_s": 0.75,
+        "stamp_ns": 586502000000,
+        "xyz_relative_to_pad_m": [
+          1.0804373794401383,
+          0.8000007008017742,
+          1.535527187900247
+        ],
+        "occupancy_score": 0.9667192200002123,
+        "empirical_xy_radius_m": 0.6443845299595004,
+        "state": "occupied"
+      },
+      {
+        "offset_s": 1.0,
+        "stamp_ns": 586752000000,
+        "xyz_relative_to_pad_m": [
+          1.07206220430079,
+          0.8000007008017742,
+          1.5784281007672256
+        ],
+        "occupancy_score": 0.9667192200002123,
+        "empirical_xy_radius_m": 0.8202146600987821,
+        "state": "occupied"
+      },
+      {
+        "offset_s": 1.25,
+        "stamp_ns": 587002000000,
+        "xyz_relative_to_pad_m": [
+          1.0696074884313844,
+          0.8000007008017742,
+          1.6204268653746472
+        ],
+        "occupancy_score": 0.9621837108099492,
+        "empirical_xy_radius_m": 1.0752778900841218,
+        "state": "occupied"
+      },
+      {
+        "offset_s": 1.5,
+        "stamp_ns": 587252000000,
+        "xyz_relative_to_pad_m": [
+          1.06773491464275,
+          0.8000007008017742,
+          1.7108642314177134
+        ],
+        "occupancy_score": 0.9623527805965053,
+        "empirical_xy_radius_m": 1.2171162898627397,
+        "state": "occupied"
+      },
+      {
+        "offset_s": 1.75,
+        "stamp_ns": 587502000000,
+        "xyz_relative_to_pad_m": [
+          1.0627075373742916,
+          0.8000007008017742,
+          1.8052813433715482
+        ],
+        "occupancy_score": 0.9667518755077132,
+        "empirical_xy_radius_m": 1.42793539028859,
+        "state": "occupied"
+      },
+      {
+        "offset_s": 2.0,
+        "stamp_ns": 587752000000,
+        "xyz_relative_to_pad_m": [
+          1.05659764603107,
+          0.8000007008017742,
+          1.8762302972880789
+        ],
+        "occupancy_score": 0.9667518755077132,
+        "empirical_xy_radius_m": 1.615930672814894,
+        "state": "occupied"
+      },
+      {
+        "offset_s": 2.25,
+        "stamp_ns": 588002000000,
+        "xyz_relative_to_pad_m": [
+          1.0654120170325165,
+          0.8000007008017742,
+          1.9727406785440524
+        ],
+        "occupancy_score": 0.9746946061992229,
+        "empirical_xy_radius_m": 1.8532122558448805,
+        "state": "occupied"
+      },
+      {
+        "offset_s": 2.5,
+        "stamp_ns": 588252000000,
+        "xyz_relative_to_pad_m": [
+          1.0772056184890006,
+          0.8000007008017742,
+          2.087028456908933
+        ],
+        "occupancy_score": 0.9692495530179026,
+        "empirical_xy_radius_m": 2.0168994956174195,
+        "state": "occupied"
+      },
+      {
+        "offset_s": 2.75,
+        "stamp_ns": 588502000000,
+        "xyz_relative_to_pad_m": [
+          1.0824482413284133,
+          0.8000007008017742,
+          2.1839676004000683
+        ],
+        "occupancy_score": 0.9704988086638002,
+        "empirical_xy_radius_m": 2.261892236840265,
+        "state": "occupied"
+      },
+      {
+        "offset_s": 3.0,
+        "stamp_ns": 588752000000,
+        "xyz_relative_to_pad_m": [
+          1.0875409576780495,
+          0.8000007008017742,
+          2.2713363342103574
+        ],
+        "occupancy_score": 0.9704988086638002,
+        "empirical_xy_radius_m": 2.375585041437641,
+        "state": "occupied"
+      },
+      {
+        "offset_s": 3.25,
+        "stamp_ns": 589002000000,
+        "xyz_relative_to_pad_m": [
+          1.098483052669374,
+          0.8000007008017742,
+          2.396131792867065
+        ],
+        "occupancy_score": 0.9713853543159305,
+        "empirical_xy_radius_m": 2.582402563975838,
+        "state": "occupied"
+      },
+      {
+        "offset_s": 3.5,
+        "stamp_ns": 589252000000,
+        "xyz_relative_to_pad_m": [
+          1.1043203465182225,
+          0.8000007008017742,
+          2.5246775298717816
+        ],
+        "occupancy_score": 0.9731741196124848,
+        "empirical_xy_radius_m": 2.7022425359506177,
+        "state": "occupied"
+      },
+      {
+        "offset_s": 3.75,
+        "stamp_ns": 589502000000,
+        "xyz_relative_to_pad_m": [
+          1.112349277148411,
+          0.8000007008017742,
+          2.625226183520896
+        ],
+        "occupancy_score": 0.9610975843720566,
+        "empirical_xy_radius_m": 3.0087595119296253,
+        "state": "occupied"
+      },
+      {
+        "offset_s": 4.0,
+        "stamp_ns": 589752000000,
+        "xyz_relative_to_pad_m": [
+          1.1170410445943384,
+          0.8000007008017742,
+          2.7437274345060847
+        ],
+        "occupancy_score": 0.9610975843721121,
+        "empirical_xy_radius_m": 3.1246542639243886,
+        "state": "occupied"
+      }
+    ],
+    "compute_seconds": 0.04498945898376405,
+    "model_kind": "learned CPU object/state model; not ANWM or VLA",
+    "interval_collision_verified": false,
+    "action_conditioning_verified": false,
+    "flight_admitted": false,
+    "dispatch_invoked": false
+  },
+  "host_seconds": 0.06702658301219344
+}

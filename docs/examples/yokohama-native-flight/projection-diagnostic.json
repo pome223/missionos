@@ -1,0 +1,45 @@
+{
+  "diagnostic_only": true,
+  "in_runtime": false,
+  "scope": "Recorded service projection against independent past RGBD reprojection; no new inference, no future observation",
+  "checks": [
+    {
+      "candidate": {
+        "id": "hold",
+        "delta": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "passed": true,
+      "known_pixel_fraction": 0.7028858418367347,
+      "reference_edge_pixels": 2943,
+      "matched_edge_fraction": 0.9983010533469249,
+      "luminance_mae": 1.0828040527768328,
+      "predicted_edge_density": 0.0923500056708631,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    },
+    {
+      "candidate": {
+        "id": "vla",
+        "delta": [
+          4.69685426802624,
+          -1.2204446732473553,
+          0.030846273508840838,
+          -0.2426308910227717
+        ]
+      },
+      "passed": false,
+      "known_pixel_fraction": 0.5961216517857143,
+      "reference_edge_pixels": 1830,
+      "matched_edge_fraction": 0.9715846994535519,
+      "luminance_mae": 0.8875107262656992,
+      "predicted_edge_density": 0.06753368326033901,
+      "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+    }
+  ],
+  "native_prediction_rejection_unchanged": true,
+  "learned_model_root_cause_proven": false
+}

@@ -1,0 +1,121 @@
+[
+  {
+    "sample": "train-motion-00-forward",
+    "known_fraction": 0.863125,
+    "appearance_added_fraction": 0.1289453125,
+    "metric_geometry_changed": false,
+    "time_index": 1
+  },
+  {
+    "sample": "train-motion-01-forward",
+    "known_fraction": 0.8581770833333333,
+    "appearance_added_fraction": 0.13396701388888888,
+    "metric_geometry_changed": false,
+    "time_index": 1
+  },
+  {
+    "sample": "train-motion-02-forward",
+    "known_fraction": 0.8719401041666667,
+    "appearance_added_fraction": 0.11948784722222222,
+    "metric_geometry_changed": false,
+    "time_index": 1
+  },
+  {
+    "sample": "train-motion-03-forward",
+    "known_fraction": 0.8678342013888889,
+    "appearance_added_fraction": 0.1234375,
+    "metric_geometry_changed": false,
+    "time_index": 1
+  },
+  {
+    "sample": "train-motion-04-forward",
+    "known_fraction": 0.4221050347222222,
+    "appearance_added_fraction": 0.4099652777777778,
+    "metric_geometry_changed": false,
+    "time_index": 1
+  },
+  {
+    "sample": "train-motion-05-forward",
+    "known_fraction": 0.4352560763888889,
+    "appearance_added_fraction": 0.43785590277777775,
+    "metric_geometry_changed": false,
+    "time_index": 1
+  },
+  {
+    "sample": "train-motion-06-forward",
+    "known_fraction": 0.4414192708333333,
+    "appearance_added_fraction": 0.4300217013888889,
+    "metric_geometry_changed": false,
+    "time_index": 1
+  },
+  {
+    "sample": "train-motion-07-forward",
+    "known_fraction": 0.4289019097222222,
+    "appearance_added_fraction": 0.44036024305555554,
+    "metric_geometry_changed": false,
+    "time_index": 1
+  },
+  {
+    "sample": "train-motion-08-forward",
+    "known_fraction": 0.43611979166666665,
+    "appearance_added_fraction": 0.4306510416666667,
+    "metric_geometry_changed": false,
+    "time_index": 1
+  },
+  {
+    "sample": "train-motion-09-forward",
+    "known_fraction": 0.43711371527777776,
+    "appearance_added_fraction": 0.42496527777777776,
+    "metric_geometry_changed": false,
+    "time_index": 1
+  },
+  {
+    "sample": "train-motion-10-hold",
+    "known_fraction": 0.9334765625,
+    "appearance_added_fraction": 0.06460069444444444,
+    "metric_geometry_changed": false,
+    "time_index": 1
+  },
+  {
+    "sample": "train-motion-11-hold",
+    "known_fraction": 0.9349696180555556,
+    "appearance_added_fraction": 0.06298177083333334,
+    "metric_geometry_changed": false,
+    "time_index": 1
+  },
+  {
+    "sample": "test-motion-12-forward",
+    "known_fraction": 0.9003602430555555,
+    "appearance_added_fraction": 0.08583333333333333,
+    "metric_geometry_changed": false,
+    "time_index": 1
+  },
+  {
+    "sample": "test-motion-13-forward",
+    "known_fraction": 0.8709809027777777,
+    "appearance_added_fraction": 0.08658854166666667,
+    "metric_geometry_changed": false,
+    "time_index": 1
+  },
+  {
+    "sample": "test-motion-14-forward",
+    "known_fraction": 0.8354600694444444,
+    "appearance_added_fraction": 0.09548177083333333,
+    "metric_geometry_changed": false,
+    "time_index": 1
+  },
+  {
+    "sample": "test-motion-15-forward",
+    "known_fraction": 0.9179383680555555,
+    "appearance_added_fraction": 0.07442274305555556,
+    "metric_geometry_changed": false,
+    "time_index": 1
+  },
+  {
+    "sample": "test-motion-16-hold",
+    "known_fraction": 0.5608680555555555,
+    "appearance_added_fraction": 0.3517578125,
+    "metric_geometry_changed": false,
+    "time_index": 1
+  }
+]

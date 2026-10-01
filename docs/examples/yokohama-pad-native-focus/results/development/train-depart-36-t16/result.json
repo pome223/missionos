@@ -1,0 +1,27 @@
+{
+  "schema": "native_pad_focus_forecast.v1",
+  "sample_id": "train-depart-36-t16",
+  "stage": "development",
+  "history_sha256": "ecbd7608cd61cc5544f412e5f2e1f876f39dd67efa7ff128607a7c0b5fdb9d1f",
+  "prediction_sha256": "4558df73d339fdbaeb35726027a872e338ee7f247f5ef3a70cdd9e2a102ad709",
+  "cutoff_stamp_ns": 38752000000,
+  "future_stamp_ns": 42752000000,
+  "frame_offset": 16,
+  "horizon_sim_s": 4.0,
+  "adapter_sha256": "5b78a8c97e6ed42ece769bf1d5bdeb35e8352ae8b64f7f4c27b0edc6b7518542",
+  "base_sha256": "bdd149cac6ec002ba7dc4ad99ec6f9eb02cd6d4f05320195cf174737b13b0bc2",
+  "seed": 42,
+  "diffusion_steps": 50,
+  "seconds": 5.442754891999925,
+  "reader": {
+    "state": "unknown",
+    "scores": {
+      "occupied": 6.6839280128479,
+      "clear": 6.376212120056152
+    },
+    "margin": 0.30771589279174805
+  },
+  "native_anwm": true,
+  "dispatch_invoked": false,
+  "flight_admitted": false
+}

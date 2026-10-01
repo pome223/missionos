@@ -1,0 +1,8 @@
+# Sources and image transformations
+
+- Yokohama simulation imagery derives from the [existing Project PLATEAU scene and attribution](../yokohama-urban-scene/ATTRIBUTION.md). City observations are actual captured simulator pixels, centre-cropped and resized to 224×224 by ANWM's transform. Forecast and VAE reconstruction PNGs are generated diagnostics, not camera observations.
+- Reference input: [EmbodiedCity/ANWM-Dataset](https://huggingface.co/datasets/EmbodiedCity/ANWM-Dataset/tree/f0fcc70df0b3c8c26286adbfb39ccdf5e3b7ad83), revision `f0fcc70df0b3c8c26286adbfb39ccdf5e3b7ad83`, `airvln_16-000000.tar`, member `302OLP89E75X7MFPRR58QG7CIDVACC_processed/226.jpg`. The dataset metadata declares Apache-2.0. The original 512×512 JPEG is retained privately. The public reference observation is centre-cropped to 512×384, resized to 224×224, and saved as PNG. The reference forecasts and reconstructions are model outputs from that transformed input. Source JPEG SHA-256: `9dfaf17d62ed88774447a159ff752a8525299bcf2c2541d08f473488db6793c0`.
+- ANWM checkpoint: [EmbodiedCity/ANWM](https://huggingface.co/EmbodiedCity/ANWM/tree/dfe59001de57a96d6620313897f09436c6940983), model metadata Apache-2.0; source [EmbodiedCity/ANWM.code](https://github.com/EmbodiedCity/ANWM.code/tree/657a80268505fa9149c4df502e35aa0f5bce11e5). Checkpoint SHA-256: `bdd149cac6ec002ba7dc4ad99ec6f9eb02cd6d4f05320195cf174737b13b0bc2`.
+- VAE: [stabilityai/sd-vae-ft-ema](https://huggingface.co/stabilityai/sd-vae-ft-ema/tree/f04b2c4b98319346dad8c65879f680b1997b204a).
+
+The repository includes the [Apache-2.0 license text](../../../LICENSE). No endorsement by these data/model providers is implied.

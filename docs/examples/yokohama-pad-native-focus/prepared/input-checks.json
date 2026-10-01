@@ -1,0 +1,6 @@
+{
+  "status": "passed",
+  "training_pairs": 208,
+  "test_pairs": 28,
+  "gpu_requested": false
+}

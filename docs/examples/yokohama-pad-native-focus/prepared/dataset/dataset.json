@@ -1,0 +1,2202 @@
+{
+  "schema": "pad_native_focus_dataset.v1",
+  "crop_xyxy": [
+    256,
+    48,
+    584,
+    328
+  ],
+  "test_targets_uploaded": false,
+  "samples": [
+    {
+      "id": "train-depart-04-t04",
+      "split": "train",
+      "history": "histories/train-depart-04.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 6752000000,
+      "target": "train-targets/train-depart-04-t04.png"
+    },
+    {
+      "id": "train-depart-04-t16",
+      "split": "train",
+      "history": "histories/train-depart-04.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 6752000000,
+      "target": "train-targets/train-depart-04-t16.png"
+    },
+    {
+      "id": "train-depart-06-t04",
+      "split": "train",
+      "history": "histories/train-depart-06.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 8752000000,
+      "target": "train-targets/train-depart-06-t04.png"
+    },
+    {
+      "id": "train-depart-06-t16",
+      "split": "train",
+      "history": "histories/train-depart-06.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 8752000000,
+      "target": "train-targets/train-depart-06-t16.png"
+    },
+    {
+      "id": "train-depart-08-t04",
+      "split": "train",
+      "history": "histories/train-depart-08.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 10752000000,
+      "target": "train-targets/train-depart-08-t04.png"
+    },
+    {
+      "id": "train-depart-08-t16",
+      "split": "train",
+      "history": "histories/train-depart-08.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 10752000000,
+      "target": "train-targets/train-depart-08-t16.png"
+    },
+    {
+      "id": "train-depart-10-t04",
+      "split": "train",
+      "history": "histories/train-depart-10.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 12752000000,
+      "target": "train-targets/train-depart-10-t04.png"
+    },
+    {
+      "id": "train-depart-10-t16",
+      "split": "train",
+      "history": "histories/train-depart-10.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 12752000000,
+      "target": "train-targets/train-depart-10-t16.png"
+    },
+    {
+      "id": "train-depart-12-t04",
+      "split": "train",
+      "history": "histories/train-depart-12.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 14752000000,
+      "target": "train-targets/train-depart-12-t04.png"
+    },
+    {
+      "id": "train-depart-12-t16",
+      "split": "train",
+      "history": "histories/train-depart-12.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 14752000000,
+      "target": "train-targets/train-depart-12-t16.png"
+    },
+    {
+      "id": "train-depart-14-t04",
+      "split": "train",
+      "history": "histories/train-depart-14.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 16752000000,
+      "target": "train-targets/train-depart-14-t04.png"
+    },
+    {
+      "id": "train-depart-14-t16",
+      "split": "train",
+      "history": "histories/train-depart-14.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 16752000000,
+      "target": "train-targets/train-depart-14-t16.png"
+    },
+    {
+      "id": "train-depart-16-t04",
+      "split": "train",
+      "history": "histories/train-depart-16.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 18752000000,
+      "target": "train-targets/train-depart-16-t04.png"
+    },
+    {
+      "id": "train-depart-16-t16",
+      "split": "train",
+      "history": "histories/train-depart-16.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 18752000000,
+      "target": "train-targets/train-depart-16-t16.png"
+    },
+    {
+      "id": "train-depart-18-t04",
+      "split": "train",
+      "history": "histories/train-depart-18.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 20752000000,
+      "target": "train-targets/train-depart-18-t04.png"
+    },
+    {
+      "id": "train-depart-18-t16",
+      "split": "train",
+      "history": "histories/train-depart-18.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 20752000000,
+      "target": "train-targets/train-depart-18-t16.png"
+    },
+    {
+      "id": "train-depart-20-t04",
+      "split": "train",
+      "history": "histories/train-depart-20.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 22752000000,
+      "target": "train-targets/train-depart-20-t04.png"
+    },
+    {
+      "id": "train-depart-20-t16",
+      "split": "train",
+      "history": "histories/train-depart-20.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 22752000000,
+      "target": "train-targets/train-depart-20-t16.png"
+    },
+    {
+      "id": "train-depart-22-t04",
+      "split": "train",
+      "history": "histories/train-depart-22.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 24752000000,
+      "target": "train-targets/train-depart-22-t04.png"
+    },
+    {
+      "id": "train-depart-22-t16",
+      "split": "train",
+      "history": "histories/train-depart-22.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 24752000000,
+      "target": "train-targets/train-depart-22-t16.png"
+    },
+    {
+      "id": "train-depart-24-t04",
+      "split": "train",
+      "history": "histories/train-depart-24.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 26752000000,
+      "target": "train-targets/train-depart-24-t04.png"
+    },
+    {
+      "id": "train-depart-24-t16",
+      "split": "train",
+      "history": "histories/train-depart-24.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 26752000000,
+      "target": "train-targets/train-depart-24-t16.png"
+    },
+    {
+      "id": "train-depart-26-t04",
+      "split": "train",
+      "history": "histories/train-depart-26.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 28752000000,
+      "target": "train-targets/train-depart-26-t04.png"
+    },
+    {
+      "id": "train-depart-26-t16",
+      "split": "train",
+      "history": "histories/train-depart-26.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 28752000000,
+      "target": "train-targets/train-depart-26-t16.png"
+    },
+    {
+      "id": "train-depart-28-t04",
+      "split": "train",
+      "history": "histories/train-depart-28.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 30752000000,
+      "target": "train-targets/train-depart-28-t04.png"
+    },
+    {
+      "id": "train-depart-28-t16",
+      "split": "train",
+      "history": "histories/train-depart-28.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 30752000000,
+      "target": "train-targets/train-depart-28-t16.png"
+    },
+    {
+      "id": "train-depart-30-t04",
+      "split": "train",
+      "history": "histories/train-depart-30.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 32752000000,
+      "target": "train-targets/train-depart-30-t04.png"
+    },
+    {
+      "id": "train-depart-30-t16",
+      "split": "train",
+      "history": "histories/train-depart-30.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 32752000000,
+      "target": "train-targets/train-depart-30-t16.png"
+    },
+    {
+      "id": "train-depart-32-t04",
+      "split": "train",
+      "history": "histories/train-depart-32.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 34752000000,
+      "target": "train-targets/train-depart-32-t04.png"
+    },
+    {
+      "id": "train-depart-32-t16",
+      "split": "train",
+      "history": "histories/train-depart-32.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 34752000000,
+      "target": "train-targets/train-depart-32-t16.png"
+    },
+    {
+      "id": "train-depart-34-t04",
+      "split": "train",
+      "history": "histories/train-depart-34.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 36752000000,
+      "target": "train-targets/train-depart-34-t04.png"
+    },
+    {
+      "id": "train-depart-34-t16",
+      "split": "train",
+      "history": "histories/train-depart-34.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 36752000000,
+      "target": "train-targets/train-depart-34-t16.png"
+    },
+    {
+      "id": "train-depart-36-t04",
+      "split": "train",
+      "history": "histories/train-depart-36.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 38752000000,
+      "target": "train-targets/train-depart-36-t04.png"
+    },
+    {
+      "id": "train-depart-36-t16",
+      "split": "train",
+      "history": "histories/train-depart-36.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 38752000000,
+      "target": "train-targets/train-depart-36-t16.png"
+    },
+    {
+      "id": "train-depart-38-t04",
+      "split": "train",
+      "history": "histories/train-depart-38.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 40752000000,
+      "target": "train-targets/train-depart-38-t04.png"
+    },
+    {
+      "id": "train-depart-38-t16",
+      "split": "train",
+      "history": "histories/train-depart-38.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 40752000000,
+      "target": "train-targets/train-depart-38-t16.png"
+    },
+    {
+      "id": "train-depart-40-t04",
+      "split": "train",
+      "history": "histories/train-depart-40.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 42752000000,
+      "target": "train-targets/train-depart-40-t04.png"
+    },
+    {
+      "id": "train-depart-40-t16",
+      "split": "train",
+      "history": "histories/train-depart-40.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 42752000000,
+      "target": "train-targets/train-depart-40-t16.png"
+    },
+    {
+      "id": "train-depart-42-t04",
+      "split": "train",
+      "history": "histories/train-depart-42.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 44752000000,
+      "target": "train-targets/train-depart-42-t04.png"
+    },
+    {
+      "id": "train-depart-42-t16",
+      "split": "train",
+      "history": "histories/train-depart-42.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 44752000000,
+      "target": "train-targets/train-depart-42-t16.png"
+    },
+    {
+      "id": "train-depart-44-t04",
+      "split": "train",
+      "history": "histories/train-depart-44.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 46752000000,
+      "target": "train-targets/train-depart-44-t04.png"
+    },
+    {
+      "id": "train-depart-44-t16",
+      "split": "train",
+      "history": "histories/train-depart-44.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 46752000000,
+      "target": "train-targets/train-depart-44-t16.png"
+    },
+    {
+      "id": "train-depart-46-t04",
+      "split": "train",
+      "history": "histories/train-depart-46.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 48752000000,
+      "target": "train-targets/train-depart-46-t04.png"
+    },
+    {
+      "id": "train-depart-46-t16",
+      "split": "train",
+      "history": "histories/train-depart-46.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 48752000000,
+      "target": "train-targets/train-depart-46-t16.png"
+    },
+    {
+      "id": "train-depart-48-t04",
+      "split": "train",
+      "history": "histories/train-depart-48.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 50752000000,
+      "target": "train-targets/train-depart-48-t04.png"
+    },
+    {
+      "id": "train-depart-48-t16",
+      "split": "train",
+      "history": "histories/train-depart-48.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 50752000000,
+      "target": "train-targets/train-depart-48-t16.png"
+    },
+    {
+      "id": "train-depart-50-t04",
+      "split": "train",
+      "history": "histories/train-depart-50.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 52752000000,
+      "target": "train-targets/train-depart-50-t04.png"
+    },
+    {
+      "id": "train-depart-50-t16",
+      "split": "train",
+      "history": "histories/train-depart-50.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 52752000000,
+      "target": "train-targets/train-depart-50-t16.png"
+    },
+    {
+      "id": "train-stall-04-t04",
+      "split": "train",
+      "history": "histories/train-stall-04.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 64500000000,
+      "target": "train-targets/train-stall-04-t04.png"
+    },
+    {
+      "id": "train-stall-04-t16",
+      "split": "train",
+      "history": "histories/train-stall-04.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 64500000000,
+      "target": "train-targets/train-stall-04-t16.png"
+    },
+    {
+      "id": "train-stall-06-t04",
+      "split": "train",
+      "history": "histories/train-stall-06.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 66500000000,
+      "target": "train-targets/train-stall-06-t04.png"
+    },
+    {
+      "id": "train-stall-06-t16",
+      "split": "train",
+      "history": "histories/train-stall-06.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 66500000000,
+      "target": "train-targets/train-stall-06-t16.png"
+    },
+    {
+      "id": "train-stall-08-t04",
+      "split": "train",
+      "history": "histories/train-stall-08.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 68500000000,
+      "target": "train-targets/train-stall-08-t04.png"
+    },
+    {
+      "id": "train-stall-08-t16",
+      "split": "train",
+      "history": "histories/train-stall-08.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 68500000000,
+      "target": "train-targets/train-stall-08-t16.png"
+    },
+    {
+      "id": "train-stall-10-t04",
+      "split": "train",
+      "history": "histories/train-stall-10.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 70500000000,
+      "target": "train-targets/train-stall-10-t04.png"
+    },
+    {
+      "id": "train-stall-10-t16",
+      "split": "train",
+      "history": "histories/train-stall-10.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 70500000000,
+      "target": "train-targets/train-stall-10-t16.png"
+    },
+    {
+      "id": "train-stall-12-t04",
+      "split": "train",
+      "history": "histories/train-stall-12.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 72500000000,
+      "target": "train-targets/train-stall-12-t04.png"
+    },
+    {
+      "id": "train-stall-12-t16",
+      "split": "train",
+      "history": "histories/train-stall-12.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 72500000000,
+      "target": "train-targets/train-stall-12-t16.png"
+    },
+    {
+      "id": "train-stall-14-t04",
+      "split": "train",
+      "history": "histories/train-stall-14.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 74500000000,
+      "target": "train-targets/train-stall-14-t04.png"
+    },
+    {
+      "id": "train-stall-14-t16",
+      "split": "train",
+      "history": "histories/train-stall-14.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 74500000000,
+      "target": "train-targets/train-stall-14-t16.png"
+    },
+    {
+      "id": "train-stall-16-t04",
+      "split": "train",
+      "history": "histories/train-stall-16.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 76500000000,
+      "target": "train-targets/train-stall-16-t04.png"
+    },
+    {
+      "id": "train-stall-16-t16",
+      "split": "train",
+      "history": "histories/train-stall-16.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 76500000000,
+      "target": "train-targets/train-stall-16-t16.png"
+    },
+    {
+      "id": "train-stall-18-t04",
+      "split": "train",
+      "history": "histories/train-stall-18.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 78500000000,
+      "target": "train-targets/train-stall-18-t04.png"
+    },
+    {
+      "id": "train-stall-18-t16",
+      "split": "train",
+      "history": "histories/train-stall-18.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 78500000000,
+      "target": "train-targets/train-stall-18-t16.png"
+    },
+    {
+      "id": "train-stall-20-t04",
+      "split": "train",
+      "history": "histories/train-stall-20.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 80500000000,
+      "target": "train-targets/train-stall-20-t04.png"
+    },
+    {
+      "id": "train-stall-20-t16",
+      "split": "train",
+      "history": "histories/train-stall-20.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 80500000000,
+      "target": "train-targets/train-stall-20-t16.png"
+    },
+    {
+      "id": "train-stall-22-t04",
+      "split": "train",
+      "history": "histories/train-stall-22.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 82500000000,
+      "target": "train-targets/train-stall-22-t04.png"
+    },
+    {
+      "id": "train-stall-22-t16",
+      "split": "train",
+      "history": "histories/train-stall-22.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 82500000000,
+      "target": "train-targets/train-stall-22-t16.png"
+    },
+    {
+      "id": "train-stall-24-t04",
+      "split": "train",
+      "history": "histories/train-stall-24.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 84500000000,
+      "target": "train-targets/train-stall-24-t04.png"
+    },
+    {
+      "id": "train-stall-24-t16",
+      "split": "train",
+      "history": "histories/train-stall-24.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 84500000000,
+      "target": "train-targets/train-stall-24-t16.png"
+    },
+    {
+      "id": "train-stall-26-t04",
+      "split": "train",
+      "history": "histories/train-stall-26.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 86500000000,
+      "target": "train-targets/train-stall-26-t04.png"
+    },
+    {
+      "id": "train-stall-26-t16",
+      "split": "train",
+      "history": "histories/train-stall-26.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 86500000000,
+      "target": "train-targets/train-stall-26-t16.png"
+    },
+    {
+      "id": "train-stall-28-t04",
+      "split": "train",
+      "history": "histories/train-stall-28.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 88500000000,
+      "target": "train-targets/train-stall-28-t04.png"
+    },
+    {
+      "id": "train-stall-28-t16",
+      "split": "train",
+      "history": "histories/train-stall-28.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 88500000000,
+      "target": "train-targets/train-stall-28-t16.png"
+    },
+    {
+      "id": "train-stall-30-t04",
+      "split": "train",
+      "history": "histories/train-stall-30.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 90500000000,
+      "target": "train-targets/train-stall-30-t04.png"
+    },
+    {
+      "id": "train-stall-30-t16",
+      "split": "train",
+      "history": "histories/train-stall-30.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 90500000000,
+      "target": "train-targets/train-stall-30-t16.png"
+    },
+    {
+      "id": "train-stall-32-t04",
+      "split": "train",
+      "history": "histories/train-stall-32.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 92500000000,
+      "target": "train-targets/train-stall-32-t04.png"
+    },
+    {
+      "id": "train-stall-32-t16",
+      "split": "train",
+      "history": "histories/train-stall-32.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 92500000000,
+      "target": "train-targets/train-stall-32-t16.png"
+    },
+    {
+      "id": "train-stall-34-t04",
+      "split": "train",
+      "history": "histories/train-stall-34.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 94500000000,
+      "target": "train-targets/train-stall-34-t04.png"
+    },
+    {
+      "id": "train-stall-34-t16",
+      "split": "train",
+      "history": "histories/train-stall-34.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 94500000000,
+      "target": "train-targets/train-stall-34-t16.png"
+    },
+    {
+      "id": "train-stall-36-t04",
+      "split": "train",
+      "history": "histories/train-stall-36.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 96500000000,
+      "target": "train-targets/train-stall-36-t04.png"
+    },
+    {
+      "id": "train-stall-36-t16",
+      "split": "train",
+      "history": "histories/train-stall-36.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 96500000000,
+      "target": "train-targets/train-stall-36-t16.png"
+    },
+    {
+      "id": "train-stall-38-t04",
+      "split": "train",
+      "history": "histories/train-stall-38.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 98500000000,
+      "target": "train-targets/train-stall-38-t04.png"
+    },
+    {
+      "id": "train-stall-38-t16",
+      "split": "train",
+      "history": "histories/train-stall-38.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 98500000000,
+      "target": "train-targets/train-stall-38-t16.png"
+    },
+    {
+      "id": "train-stall-40-t04",
+      "split": "train",
+      "history": "histories/train-stall-40.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 100500000000,
+      "target": "train-targets/train-stall-40-t04.png"
+    },
+    {
+      "id": "train-stall-40-t16",
+      "split": "train",
+      "history": "histories/train-stall-40.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 100500000000,
+      "target": "train-targets/train-stall-40-t16.png"
+    },
+    {
+      "id": "train-stall-42-t04",
+      "split": "train",
+      "history": "histories/train-stall-42.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 102500000000,
+      "target": "train-targets/train-stall-42-t04.png"
+    },
+    {
+      "id": "train-stall-42-t16",
+      "split": "train",
+      "history": "histories/train-stall-42.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 102500000000,
+      "target": "train-targets/train-stall-42-t16.png"
+    },
+    {
+      "id": "train-stall-44-t04",
+      "split": "train",
+      "history": "histories/train-stall-44.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 104500000000,
+      "target": "train-targets/train-stall-44-t04.png"
+    },
+    {
+      "id": "train-stall-44-t16",
+      "split": "train",
+      "history": "histories/train-stall-44.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 104500000000,
+      "target": "train-targets/train-stall-44-t16.png"
+    },
+    {
+      "id": "train-stall-46-t04",
+      "split": "train",
+      "history": "histories/train-stall-46.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 106500000000,
+      "target": "train-targets/train-stall-46-t04.png"
+    },
+    {
+      "id": "train-stall-46-t16",
+      "split": "train",
+      "history": "histories/train-stall-46.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 106500000000,
+      "target": "train-targets/train-stall-46-t16.png"
+    },
+    {
+      "id": "train-stall-48-t04",
+      "split": "train",
+      "history": "histories/train-stall-48.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 108500000000,
+      "target": "train-targets/train-stall-48-t04.png"
+    },
+    {
+      "id": "train-stall-48-t16",
+      "split": "train",
+      "history": "histories/train-stall-48.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 108500000000,
+      "target": "train-targets/train-stall-48-t16.png"
+    },
+    {
+      "id": "train-stall-50-t04",
+      "split": "train",
+      "history": "histories/train-stall-50.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 110500000000,
+      "target": "train-targets/train-stall-50-t04.png"
+    },
+    {
+      "id": "train-stall-50-t16",
+      "split": "train",
+      "history": "histories/train-stall-50.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 110500000000,
+      "target": "train-targets/train-stall-50-t16.png"
+    },
+    {
+      "id": "train-stall-52-t04",
+      "split": "train",
+      "history": "histories/train-stall-52.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 112500000000,
+      "target": "train-targets/train-stall-52-t04.png"
+    },
+    {
+      "id": "train-stall-52-t16",
+      "split": "train",
+      "history": "histories/train-stall-52.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 112500000000,
+      "target": "train-targets/train-stall-52-t16.png"
+    },
+    {
+      "id": "train-stall-54-t04",
+      "split": "train",
+      "history": "histories/train-stall-54.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 114500000000,
+      "target": "train-targets/train-stall-54-t04.png"
+    },
+    {
+      "id": "train-stall-54-t16",
+      "split": "train",
+      "history": "histories/train-stall-54.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 114500000000,
+      "target": "train-targets/train-stall-54-t16.png"
+    },
+    {
+      "id": "train-stall-56-t04",
+      "split": "train",
+      "history": "histories/train-stall-56.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 116500000000,
+      "target": "train-targets/train-stall-56-t04.png"
+    },
+    {
+      "id": "train-stall-56-t16",
+      "split": "train",
+      "history": "histories/train-stall-56.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 116500000000,
+      "target": "train-targets/train-stall-56-t16.png"
+    },
+    {
+      "id": "train-stall-58-t04",
+      "split": "train",
+      "history": "histories/train-stall-58.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 118500000000,
+      "target": "train-targets/train-stall-58-t04.png"
+    },
+    {
+      "id": "train-stall-58-t16",
+      "split": "train",
+      "history": "histories/train-stall-58.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 118500000000,
+      "target": "train-targets/train-stall-58-t16.png"
+    },
+    {
+      "id": "train-reenter-04-t04",
+      "split": "train",
+      "history": "histories/train-reenter-04.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 129252000000,
+      "target": "train-targets/train-reenter-04-t04.png"
+    },
+    {
+      "id": "train-reenter-04-t16",
+      "split": "train",
+      "history": "histories/train-reenter-04.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 129252000000,
+      "target": "train-targets/train-reenter-04-t16.png"
+    },
+    {
+      "id": "train-reenter-06-t04",
+      "split": "train",
+      "history": "histories/train-reenter-06.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 131252000000,
+      "target": "train-targets/train-reenter-06-t04.png"
+    },
+    {
+      "id": "train-reenter-06-t16",
+      "split": "train",
+      "history": "histories/train-reenter-06.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 131252000000,
+      "target": "train-targets/train-reenter-06-t16.png"
+    },
+    {
+      "id": "train-reenter-08-t04",
+      "split": "train",
+      "history": "histories/train-reenter-08.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 133252000000,
+      "target": "train-targets/train-reenter-08-t04.png"
+    },
+    {
+      "id": "train-reenter-08-t16",
+      "split": "train",
+      "history": "histories/train-reenter-08.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 133252000000,
+      "target": "train-targets/train-reenter-08-t16.png"
+    },
+    {
+      "id": "train-reenter-10-t04",
+      "split": "train",
+      "history": "histories/train-reenter-10.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 135252000000,
+      "target": "train-targets/train-reenter-10-t04.png"
+    },
+    {
+      "id": "train-reenter-10-t16",
+      "split": "train",
+      "history": "histories/train-reenter-10.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 135252000000,
+      "target": "train-targets/train-reenter-10-t16.png"
+    },
+    {
+      "id": "train-reenter-12-t04",
+      "split": "train",
+      "history": "histories/train-reenter-12.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 137252000000,
+      "target": "train-targets/train-reenter-12-t04.png"
+    },
+    {
+      "id": "train-reenter-12-t16",
+      "split": "train",
+      "history": "histories/train-reenter-12.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 137252000000,
+      "target": "train-targets/train-reenter-12-t16.png"
+    },
+    {
+      "id": "train-reenter-14-t04",
+      "split": "train",
+      "history": "histories/train-reenter-14.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 139252000000,
+      "target": "train-targets/train-reenter-14-t04.png"
+    },
+    {
+      "id": "train-reenter-14-t16",
+      "split": "train",
+      "history": "histories/train-reenter-14.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 139252000000,
+      "target": "train-targets/train-reenter-14-t16.png"
+    },
+    {
+      "id": "train-reenter-16-t04",
+      "split": "train",
+      "history": "histories/train-reenter-16.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 141252000000,
+      "target": "train-targets/train-reenter-16-t04.png"
+    },
+    {
+      "id": "train-reenter-16-t16",
+      "split": "train",
+      "history": "histories/train-reenter-16.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 141252000000,
+      "target": "train-targets/train-reenter-16-t16.png"
+    },
+    {
+      "id": "train-reenter-18-t04",
+      "split": "train",
+      "history": "histories/train-reenter-18.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 143252000000,
+      "target": "train-targets/train-reenter-18-t04.png"
+    },
+    {
+      "id": "train-reenter-18-t16",
+      "split": "train",
+      "history": "histories/train-reenter-18.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 143252000000,
+      "target": "train-targets/train-reenter-18-t16.png"
+    },
+    {
+      "id": "train-reenter-20-t04",
+      "split": "train",
+      "history": "histories/train-reenter-20.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 145252000000,
+      "target": "train-targets/train-reenter-20-t04.png"
+    },
+    {
+      "id": "train-reenter-20-t16",
+      "split": "train",
+      "history": "histories/train-reenter-20.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 145252000000,
+      "target": "train-targets/train-reenter-20-t16.png"
+    },
+    {
+      "id": "train-reenter-22-t04",
+      "split": "train",
+      "history": "histories/train-reenter-22.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 147252000000,
+      "target": "train-targets/train-reenter-22-t04.png"
+    },
+    {
+      "id": "train-reenter-22-t16",
+      "split": "train",
+      "history": "histories/train-reenter-22.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 147252000000,
+      "target": "train-targets/train-reenter-22-t16.png"
+    },
+    {
+      "id": "train-reenter-24-t04",
+      "split": "train",
+      "history": "histories/train-reenter-24.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 149252000000,
+      "target": "train-targets/train-reenter-24-t04.png"
+    },
+    {
+      "id": "train-reenter-24-t16",
+      "split": "train",
+      "history": "histories/train-reenter-24.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 149252000000,
+      "target": "train-targets/train-reenter-24-t16.png"
+    },
+    {
+      "id": "train-reenter-26-t04",
+      "split": "train",
+      "history": "histories/train-reenter-26.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 151252000000,
+      "target": "train-targets/train-reenter-26-t04.png"
+    },
+    {
+      "id": "train-reenter-26-t16",
+      "split": "train",
+      "history": "histories/train-reenter-26.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 151252000000,
+      "target": "train-targets/train-reenter-26-t16.png"
+    },
+    {
+      "id": "train-reenter-28-t04",
+      "split": "train",
+      "history": "histories/train-reenter-28.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 153252000000,
+      "target": "train-targets/train-reenter-28-t04.png"
+    },
+    {
+      "id": "train-reenter-28-t16",
+      "split": "train",
+      "history": "histories/train-reenter-28.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 153252000000,
+      "target": "train-targets/train-reenter-28-t16.png"
+    },
+    {
+      "id": "train-reenter-30-t04",
+      "split": "train",
+      "history": "histories/train-reenter-30.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 155252000000,
+      "target": "train-targets/train-reenter-30-t04.png"
+    },
+    {
+      "id": "train-reenter-30-t16",
+      "split": "train",
+      "history": "histories/train-reenter-30.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 155252000000,
+      "target": "train-targets/train-reenter-30-t16.png"
+    },
+    {
+      "id": "train-reenter-32-t04",
+      "split": "train",
+      "history": "histories/train-reenter-32.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 157252000000,
+      "target": "train-targets/train-reenter-32-t04.png"
+    },
+    {
+      "id": "train-reenter-32-t16",
+      "split": "train",
+      "history": "histories/train-reenter-32.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 157252000000,
+      "target": "train-targets/train-reenter-32-t16.png"
+    },
+    {
+      "id": "train-reenter-34-t04",
+      "split": "train",
+      "history": "histories/train-reenter-34.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 159252000000,
+      "target": "train-targets/train-reenter-34-t04.png"
+    },
+    {
+      "id": "train-reenter-34-t16",
+      "split": "train",
+      "history": "histories/train-reenter-34.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 159252000000,
+      "target": "train-targets/train-reenter-34-t16.png"
+    },
+    {
+      "id": "train-reenter-36-t04",
+      "split": "train",
+      "history": "histories/train-reenter-36.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 161252000000,
+      "target": "train-targets/train-reenter-36-t04.png"
+    },
+    {
+      "id": "train-reenter-36-t16",
+      "split": "train",
+      "history": "histories/train-reenter-36.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 161252000000,
+      "target": "train-targets/train-reenter-36-t16.png"
+    },
+    {
+      "id": "train-reenter-38-t04",
+      "split": "train",
+      "history": "histories/train-reenter-38.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 163252000000,
+      "target": "train-targets/train-reenter-38-t04.png"
+    },
+    {
+      "id": "train-reenter-38-t16",
+      "split": "train",
+      "history": "histories/train-reenter-38.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 163252000000,
+      "target": "train-targets/train-reenter-38-t16.png"
+    },
+    {
+      "id": "train-reenter-40-t04",
+      "split": "train",
+      "history": "histories/train-reenter-40.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 165252000000,
+      "target": "train-targets/train-reenter-40-t04.png"
+    },
+    {
+      "id": "train-reenter-40-t16",
+      "split": "train",
+      "history": "histories/train-reenter-40.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 165252000000,
+      "target": "train-targets/train-reenter-40-t16.png"
+    },
+    {
+      "id": "train-reenter-42-t04",
+      "split": "train",
+      "history": "histories/train-reenter-42.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 167252000000,
+      "target": "train-targets/train-reenter-42-t04.png"
+    },
+    {
+      "id": "train-reenter-42-t16",
+      "split": "train",
+      "history": "histories/train-reenter-42.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 167252000000,
+      "target": "train-targets/train-reenter-42-t16.png"
+    },
+    {
+      "id": "train-reenter-44-t04",
+      "split": "train",
+      "history": "histories/train-reenter-44.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 169252000000,
+      "target": "train-targets/train-reenter-44-t04.png"
+    },
+    {
+      "id": "train-reenter-44-t16",
+      "split": "train",
+      "history": "histories/train-reenter-44.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 169252000000,
+      "target": "train-targets/train-reenter-44-t16.png"
+    },
+    {
+      "id": "train-reenter-46-t04",
+      "split": "train",
+      "history": "histories/train-reenter-46.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 171252000000,
+      "target": "train-targets/train-reenter-46-t04.png"
+    },
+    {
+      "id": "train-reenter-46-t16",
+      "split": "train",
+      "history": "histories/train-reenter-46.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 171252000000,
+      "target": "train-targets/train-reenter-46-t16.png"
+    },
+    {
+      "id": "train-reenter-48-t04",
+      "split": "train",
+      "history": "histories/train-reenter-48.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 173252000000,
+      "target": "train-targets/train-reenter-48-t04.png"
+    },
+    {
+      "id": "train-reenter-48-t16",
+      "split": "train",
+      "history": "histories/train-reenter-48.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 173252000000,
+      "target": "train-targets/train-reenter-48-t16.png"
+    },
+    {
+      "id": "train-reenter-50-t04",
+      "split": "train",
+      "history": "histories/train-reenter-50.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 175252000000,
+      "target": "train-targets/train-reenter-50-t04.png"
+    },
+    {
+      "id": "train-reenter-50-t16",
+      "split": "train",
+      "history": "histories/train-reenter-50.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 175252000000,
+      "target": "train-targets/train-reenter-50-t16.png"
+    },
+    {
+      "id": "train-reenter-52-t04",
+      "split": "train",
+      "history": "histories/train-reenter-52.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 177252000000,
+      "target": "train-targets/train-reenter-52-t04.png"
+    },
+    {
+      "id": "train-reenter-52-t16",
+      "split": "train",
+      "history": "histories/train-reenter-52.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 177252000000,
+      "target": "train-targets/train-reenter-52-t16.png"
+    },
+    {
+      "id": "train-reenter-54-t04",
+      "split": "train",
+      "history": "histories/train-reenter-54.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 179252000000,
+      "target": "train-targets/train-reenter-54-t04.png"
+    },
+    {
+      "id": "train-reenter-54-t16",
+      "split": "train",
+      "history": "histories/train-reenter-54.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 179252000000,
+      "target": "train-targets/train-reenter-54-t16.png"
+    },
+    {
+      "id": "train-return-04-t04",
+      "split": "train",
+      "history": "histories/train-return-04.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 9000000000,
+      "target": "train-targets/train-return-04-t04.png"
+    },
+    {
+      "id": "train-return-04-t16",
+      "split": "train",
+      "history": "histories/train-return-04.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 9000000000,
+      "target": "train-targets/train-return-04-t16.png"
+    },
+    {
+      "id": "train-return-06-t04",
+      "split": "train",
+      "history": "histories/train-return-06.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 11000000000,
+      "target": "train-targets/train-return-06-t04.png"
+    },
+    {
+      "id": "train-return-06-t16",
+      "split": "train",
+      "history": "histories/train-return-06.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 11000000000,
+      "target": "train-targets/train-return-06-t16.png"
+    },
+    {
+      "id": "train-return-08-t04",
+      "split": "train",
+      "history": "histories/train-return-08.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 13000000000,
+      "target": "train-targets/train-return-08-t04.png"
+    },
+    {
+      "id": "train-return-08-t16",
+      "split": "train",
+      "history": "histories/train-return-08.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 13000000000,
+      "target": "train-targets/train-return-08-t16.png"
+    },
+    {
+      "id": "train-return-10-t04",
+      "split": "train",
+      "history": "histories/train-return-10.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 15000000000,
+      "target": "train-targets/train-return-10-t04.png"
+    },
+    {
+      "id": "train-return-10-t16",
+      "split": "train",
+      "history": "histories/train-return-10.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 15000000000,
+      "target": "train-targets/train-return-10-t16.png"
+    },
+    {
+      "id": "train-return-12-t04",
+      "split": "train",
+      "history": "histories/train-return-12.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 17000000000,
+      "target": "train-targets/train-return-12-t04.png"
+    },
+    {
+      "id": "train-return-12-t16",
+      "split": "train",
+      "history": "histories/train-return-12.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 17000000000,
+      "target": "train-targets/train-return-12-t16.png"
+    },
+    {
+      "id": "train-return-14-t04",
+      "split": "train",
+      "history": "histories/train-return-14.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 19000000000,
+      "target": "train-targets/train-return-14-t04.png"
+    },
+    {
+      "id": "train-return-14-t16",
+      "split": "train",
+      "history": "histories/train-return-14.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 19000000000,
+      "target": "train-targets/train-return-14-t16.png"
+    },
+    {
+      "id": "train-return-16-t04",
+      "split": "train",
+      "history": "histories/train-return-16.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 21000000000,
+      "target": "train-targets/train-return-16-t04.png"
+    },
+    {
+      "id": "train-return-16-t16",
+      "split": "train",
+      "history": "histories/train-return-16.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 21000000000,
+      "target": "train-targets/train-return-16-t16.png"
+    },
+    {
+      "id": "train-return-18-t04",
+      "split": "train",
+      "history": "histories/train-return-18.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 23000000000,
+      "target": "train-targets/train-return-18-t04.png"
+    },
+    {
+      "id": "train-return-18-t16",
+      "split": "train",
+      "history": "histories/train-return-18.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 23000000000,
+      "target": "train-targets/train-return-18-t16.png"
+    },
+    {
+      "id": "train-return-20-t04",
+      "split": "train",
+      "history": "histories/train-return-20.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 25000000000,
+      "target": "train-targets/train-return-20-t04.png"
+    },
+    {
+      "id": "train-return-20-t16",
+      "split": "train",
+      "history": "histories/train-return-20.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 25000000000,
+      "target": "train-targets/train-return-20-t16.png"
+    },
+    {
+      "id": "train-return-22-t04",
+      "split": "train",
+      "history": "histories/train-return-22.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 27000000000,
+      "target": "train-targets/train-return-22-t04.png"
+    },
+    {
+      "id": "train-return-22-t16",
+      "split": "train",
+      "history": "histories/train-return-22.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 27000000000,
+      "target": "train-targets/train-return-22-t16.png"
+    },
+    {
+      "id": "train-return-24-t04",
+      "split": "train",
+      "history": "histories/train-return-24.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 29000000000,
+      "target": "train-targets/train-return-24-t04.png"
+    },
+    {
+      "id": "train-return-24-t16",
+      "split": "train",
+      "history": "histories/train-return-24.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 29000000000,
+      "target": "train-targets/train-return-24-t16.png"
+    },
+    {
+      "id": "train-return-26-t04",
+      "split": "train",
+      "history": "histories/train-return-26.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 31000000000,
+      "target": "train-targets/train-return-26-t04.png"
+    },
+    {
+      "id": "train-return-26-t16",
+      "split": "train",
+      "history": "histories/train-return-26.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 31000000000,
+      "target": "train-targets/train-return-26-t16.png"
+    },
+    {
+      "id": "train-return-28-t04",
+      "split": "train",
+      "history": "histories/train-return-28.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 33000000000,
+      "target": "train-targets/train-return-28-t04.png"
+    },
+    {
+      "id": "train-return-28-t16",
+      "split": "train",
+      "history": "histories/train-return-28.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 33000000000,
+      "target": "train-targets/train-return-28-t16.png"
+    },
+    {
+      "id": "train-return-30-t04",
+      "split": "train",
+      "history": "histories/train-return-30.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 35000000000,
+      "target": "train-targets/train-return-30-t04.png"
+    },
+    {
+      "id": "train-return-30-t16",
+      "split": "train",
+      "history": "histories/train-return-30.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 35000000000,
+      "target": "train-targets/train-return-30-t16.png"
+    },
+    {
+      "id": "train-return-32-t04",
+      "split": "train",
+      "history": "histories/train-return-32.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 37000000000,
+      "target": "train-targets/train-return-32-t04.png"
+    },
+    {
+      "id": "train-return-32-t16",
+      "split": "train",
+      "history": "histories/train-return-32.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 37000000000,
+      "target": "train-targets/train-return-32-t16.png"
+    },
+    {
+      "id": "train-return-34-t04",
+      "split": "train",
+      "history": "histories/train-return-34.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 39000000000,
+      "target": "train-targets/train-return-34-t04.png"
+    },
+    {
+      "id": "train-return-34-t16",
+      "split": "train",
+      "history": "histories/train-return-34.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 39000000000,
+      "target": "train-targets/train-return-34-t16.png"
+    },
+    {
+      "id": "train-return-36-t04",
+      "split": "train",
+      "history": "histories/train-return-36.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 41000000000,
+      "target": "train-targets/train-return-36-t04.png"
+    },
+    {
+      "id": "train-return-36-t16",
+      "split": "train",
+      "history": "histories/train-return-36.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 41000000000,
+      "target": "train-targets/train-return-36-t16.png"
+    },
+    {
+      "id": "train-return-38-t04",
+      "split": "train",
+      "history": "histories/train-return-38.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 43000000000,
+      "target": "train-targets/train-return-38-t04.png"
+    },
+    {
+      "id": "train-return-38-t16",
+      "split": "train",
+      "history": "histories/train-return-38.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 43000000000,
+      "target": "train-targets/train-return-38-t16.png"
+    },
+    {
+      "id": "train-return-40-t04",
+      "split": "train",
+      "history": "histories/train-return-40.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 45000000000,
+      "target": "train-targets/train-return-40-t04.png"
+    },
+    {
+      "id": "train-return-40-t16",
+      "split": "train",
+      "history": "histories/train-return-40.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 45000000000,
+      "target": "train-targets/train-return-40-t16.png"
+    },
+    {
+      "id": "train-return-42-t04",
+      "split": "train",
+      "history": "histories/train-return-42.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 47000000000,
+      "target": "train-targets/train-return-42-t04.png"
+    },
+    {
+      "id": "train-return-42-t16",
+      "split": "train",
+      "history": "histories/train-return-42.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 47000000000,
+      "target": "train-targets/train-return-42-t16.png"
+    },
+    {
+      "id": "train-return-44-t04",
+      "split": "train",
+      "history": "histories/train-return-44.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 49000000000,
+      "target": "train-targets/train-return-44-t04.png"
+    },
+    {
+      "id": "train-return-44-t16",
+      "split": "train",
+      "history": "histories/train-return-44.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 49000000000,
+      "target": "train-targets/train-return-44-t16.png"
+    },
+    {
+      "id": "train-return-46-t04",
+      "split": "train",
+      "history": "histories/train-return-46.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 51000000000,
+      "target": "train-targets/train-return-46-t04.png"
+    },
+    {
+      "id": "train-return-46-t16",
+      "split": "train",
+      "history": "histories/train-return-46.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 51000000000,
+      "target": "train-targets/train-return-46-t16.png"
+    },
+    {
+      "id": "train-return-48-t04",
+      "split": "train",
+      "history": "histories/train-return-48.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 53000000000,
+      "target": "train-targets/train-return-48-t04.png"
+    },
+    {
+      "id": "train-return-48-t16",
+      "split": "train",
+      "history": "histories/train-return-48.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 53000000000,
+      "target": "train-targets/train-return-48-t16.png"
+    },
+    {
+      "id": "train-return-50-t04",
+      "split": "train",
+      "history": "histories/train-return-50.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 55000000000,
+      "target": "train-targets/train-return-50-t04.png"
+    },
+    {
+      "id": "train-return-50-t16",
+      "split": "train",
+      "history": "histories/train-return-50.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 55000000000,
+      "target": "train-targets/train-return-50-t16.png"
+    },
+    {
+      "id": "train-return-52-t04",
+      "split": "train",
+      "history": "histories/train-return-52.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 57000000000,
+      "target": "train-targets/train-return-52-t04.png"
+    },
+    {
+      "id": "train-return-52-t16",
+      "split": "train",
+      "history": "histories/train-return-52.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 57000000000,
+      "target": "train-targets/train-return-52-t16.png"
+    },
+    {
+      "id": "train-return-54-t04",
+      "split": "train",
+      "history": "histories/train-return-54.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 59000000000,
+      "target": "train-targets/train-return-54-t04.png"
+    },
+    {
+      "id": "train-return-54-t16",
+      "split": "train",
+      "history": "histories/train-return-54.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 59000000000,
+      "target": "train-targets/train-return-54-t16.png"
+    },
+    {
+      "id": "focus-depart-05-t04",
+      "split": "test",
+      "history": "histories/focus-depart-05.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 7752000000
+    },
+    {
+      "id": "focus-depart-05-t16",
+      "split": "test",
+      "history": "histories/focus-depart-05.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 7752000000
+    },
+    {
+      "id": "focus-depart-19-t04",
+      "split": "test",
+      "history": "histories/focus-depart-19.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 21752000000
+    },
+    {
+      "id": "focus-depart-19-t16",
+      "split": "test",
+      "history": "histories/focus-depart-19.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 21752000000
+    },
+    {
+      "id": "focus-depart-25-t04",
+      "split": "test",
+      "history": "histories/focus-depart-25.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 27752000000
+    },
+    {
+      "id": "focus-depart-25-t16",
+      "split": "test",
+      "history": "histories/focus-depart-25.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 27752000000
+    },
+    {
+      "id": "focus-depart-38-t04",
+      "split": "test",
+      "history": "histories/focus-depart-38.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 40752000000
+    },
+    {
+      "id": "focus-depart-38-t16",
+      "split": "test",
+      "history": "histories/focus-depart-38.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 40752000000
+    },
+    {
+      "id": "focus-stall-05-t04",
+      "split": "test",
+      "history": "histories/focus-stall-05.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 61252000000
+    },
+    {
+      "id": "focus-stall-05-t16",
+      "split": "test",
+      "history": "histories/focus-stall-05.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 61252000000
+    },
+    {
+      "id": "focus-stall-22-t04",
+      "split": "test",
+      "history": "histories/focus-stall-22.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 78252000000
+    },
+    {
+      "id": "focus-stall-22-t16",
+      "split": "test",
+      "history": "histories/focus-stall-22.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 78252000000
+    },
+    {
+      "id": "focus-stall-37-t04",
+      "split": "test",
+      "history": "histories/focus-stall-37.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 93252000000
+    },
+    {
+      "id": "focus-stall-37-t16",
+      "split": "test",
+      "history": "histories/focus-stall-37.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 93252000000
+    },
+    {
+      "id": "focus-stall-49-t04",
+      "split": "test",
+      "history": "histories/focus-stall-49.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 105252000000
+    },
+    {
+      "id": "focus-stall-49-t16",
+      "split": "test",
+      "history": "histories/focus-stall-49.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 105252000000
+    },
+    {
+      "id": "focus-return-16-t04",
+      "split": "test",
+      "history": "histories/focus-return-16.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 137252000000
+    },
+    {
+      "id": "focus-return-16-t16",
+      "split": "test",
+      "history": "histories/focus-return-16.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 137252000000
+    },
+    {
+      "id": "focus-return-21-t04",
+      "split": "test",
+      "history": "histories/focus-return-21.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 142252000000
+    },
+    {
+      "id": "focus-return-21-t16",
+      "split": "test",
+      "history": "histories/focus-return-21.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 142252000000
+    },
+    {
+      "id": "focus-return-26-t04",
+      "split": "test",
+      "history": "histories/focus-return-26.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 147252000000
+    },
+    {
+      "id": "focus-return-26-t16",
+      "split": "test",
+      "history": "histories/focus-return-26.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 147252000000
+    },
+    {
+      "id": "focus-return-36-t04",
+      "split": "test",
+      "history": "histories/focus-return-36.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 157252000000
+    },
+    {
+      "id": "focus-return-36-t16",
+      "split": "test",
+      "history": "histories/focus-return-36.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 157252000000
+    },
+    {
+      "id": "focus-return-49-t04",
+      "split": "test",
+      "history": "histories/focus-return-49.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 170252000000
+    },
+    {
+      "id": "focus-return-49-t16",
+      "split": "test",
+      "history": "histories/focus-return-49.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 170252000000
+    },
+    {
+      "id": "focus-return-57-t04",
+      "split": "test",
+      "history": "histories/focus-return-57.npz",
+      "offset": 4,
+      "cutoff_stamp_ns": 178252000000
+    },
+    {
+      "id": "focus-return-57-t16",
+      "split": "test",
+      "history": "histories/focus-return-57.npz",
+      "offset": 16,
+      "cutoff_stamp_ns": 178252000000
+    }
+  ],
+  "assets": {
+    "background.png": "559d6eab460b2618e71fb3ace5d680f526aa1732963016e8a30c2f5fa71e7a2d",
+    "histories/focus-depart-05.npz": "7fcd2268937d5c7cfab66c3f5416cf8d0e2b6882c8b1c71e1bf77f03f1c4b092",
+    "histories/focus-depart-19.npz": "abb133c3fa77eabd17d4575f272fe747216bdde9fcf34d4e7fe068769788811c",
+    "histories/focus-depart-25.npz": "7feb5279318ed0e7d63bcd575c2b9110ad949d10746b8ea6e5d497b07dc1f17e",
+    "histories/focus-depart-38.npz": "a2396f68e0562ad982f836278aff91de95f17008e1b436c1b5c86d07fabdb1ab",
+    "histories/focus-return-16.npz": "75c1717b81fc960121c90df4a55152dd7201b0a1c24fcbf508d595b38fb794f3",
+    "histories/focus-return-21.npz": "7b8e9f588afdb9e1835177e229f524c07bb86a5deb710cdf279a0af76f0c2c55",
+    "histories/focus-return-26.npz": "3109e978293c6b3383de172d59dc4133586bdf2e9ad5a29bba7d75c29cebd0b5",
+    "histories/focus-return-36.npz": "da49ee9734ee87b9725e9d8ff61b353ac1f4c3456d2a5b4370e6ef6351e476d6",
+    "histories/focus-return-49.npz": "409e6a5b2d27d4d180e9b1bf7d9c0d96ac8969f629a70ad0d16d0975766a391e",
+    "histories/focus-return-57.npz": "6e2cd6d2818a8c6b1fcc017a94684df49645293f2951f8abb8b42dad7c03ada6",
+    "histories/focus-stall-05.npz": "b28b668e4b56b186791b54143dc1a909da962e38c7de1701f35635fe77816d90",
+    "histories/focus-stall-22.npz": "8183757b6fcd49b1b1ab444b74456de0f03856555b9e322abb9d24df1d9cc4c3",
+    "histories/focus-stall-37.npz": "daafb80826f9fee17f7ba4fa6c80aaf4c739c8903a75c3567d652f402d3571b1",
+    "histories/focus-stall-49.npz": "578e010077897d6271fb7cab8fcb9388499af16bcbfe082571608047db459b4b",
+    "histories/train-depart-04.npz": "7a28f8897d63c1cf2335dbb17b6ef9fe5117a8ea88c18a8cbcde1521b615fd06",
+    "histories/train-depart-06.npz": "2be81ebe301a45fb3d4d5a6fffd1bc2487a000fef1ee7adc6814afe8f2c7e025",
+    "histories/train-depart-08.npz": "3ef8f4890df5b91462b91559bfd8e5db8c5f73faa8df0988a8d657984cb59e88",
+    "histories/train-depart-10.npz": "4c01a9dae323fa47be57eeac60f6c8341db9acd03c40d3019b3427e0fe7c2da3",
+    "histories/train-depart-12.npz": "7efda4a20534562aae76d1f5b03d5afa1808bf46180c9172d0231eaef100d94e",
+    "histories/train-depart-14.npz": "b105cbcd76b2f158ae192a7340703758ff2d1833333a8f63524e9c77f6e62668",
+    "histories/train-depart-16.npz": "72efcec9f5b14d0442103752e1fc34bd6709869d33d2081bebaae84939b72484",
+    "histories/train-depart-18.npz": "04be1e8b984208bd2d03bafa0ad0c1f13eebe48979731b7f33bce18d1655be7a",
+    "histories/train-depart-20.npz": "40a113f345294224f4b2234e73dcc08e7f37c5d23b1808afdd57f4c7d309af8c",
+    "histories/train-depart-22.npz": "8af296e7b43691a04fa281bc0c5609c0fd32660bc0325cdf51cfbcc7d24fb377",
+    "histories/train-depart-24.npz": "940c436e4757af3e00900010c363313b4bc63d8be331ade0e2e6e65f47ed8505",
+    "histories/train-depart-26.npz": "16890a59ccd14393ac63d96aab98119ff4c520bdeac1e6c3f1d0ee66d3ad32f3",
+    "histories/train-depart-28.npz": "d2643b356f90f830084e397bf0640f8f7843a9fab70d88cee89a3106f70a46cc",
+    "histories/train-depart-30.npz": "bbf773c2e6a35b2efb3f1d49d15ef4db900654b425beb43def2f29340fd74a98",
+    "histories/train-depart-32.npz": "d752646739db8277a1efa0a8c82e31282053f6de81b86a33871d66592a807fa1",
+    "histories/train-depart-34.npz": "4999a017c58ea7beef71c170fc5be28c1efe08f02173d42d16ec6b3550c25410",
+    "histories/train-depart-36.npz": "ecbd7608cd61cc5544f412e5f2e1f876f39dd67efa7ff128607a7c0b5fdb9d1f",
+    "histories/train-depart-38.npz": "921e8d8fb2463f02ad847790960ea4d6e42ace19bb783b4242b873d1cd4d69a5",
+    "histories/train-depart-40.npz": "9531f03ff2edb8bfe793c8487ecb7fe74b4de7127a8da7a4674d5e4bb141a545",
+    "histories/train-depart-42.npz": "8ab9130f15992d02e64a378c92f8c59d207350050323041cc1be7b67d693721a",
+    "histories/train-depart-44.npz": "099fb2524d2aa2d7751c14acb62b05dcace2497a76141b33f75ae2b5a917f706",
+    "histories/train-depart-46.npz": "75d35115c24f445db0a25a0615780b4de2ed4dbcc495e3a0a2062a859c98e306",
+    "histories/train-depart-48.npz": "90ba9d49b65b1f4ac5c231c738645f9e27c9d1fea1bdab022e1c1fa7799ebd4b",
+    "histories/train-depart-50.npz": "c25f3def456198d7176864f582867dacdcb063b0c0d44e1719c84268df968410",
+    "histories/train-reenter-04.npz": "6168769ce852a716176614e04a7e09917b4811ea84445a6906c729d16135858d",
+    "histories/train-reenter-06.npz": "d7366cafdfdf2c066651deb03664ab06f61f952b31742d58880ed282af76fee9",
+    "histories/train-reenter-08.npz": "ce64647fda85d32c7e1b1694c6d9c15227a9f2fb620b6ea1af36024cd235443e",
+    "histories/train-reenter-10.npz": "bb64d06457868b31fe2b2a8eb4282721a63963ad96ff2c8730c1c045d80d3681",
+    "histories/train-reenter-12.npz": "f06f4a79c75adb3034fcf49459e6728340fc9e2858db3426c26069454aaa5ed6",
+    "histories/train-reenter-14.npz": "9800e20dd2bd7ba49f27ebfebaa34b02f83873389475e4bc9e2c802464a8b72c",
+    "histories/train-reenter-16.npz": "3d891b1a6ffd9f27ea0b1b557eb52005ac17f01909ab382d1bba767e21917c32",
+    "histories/train-reenter-18.npz": "be996938cd046ea6bee65241334b69f4f64f7318b138fef0f83a972ed9986579",
+    "histories/train-reenter-20.npz": "6e33e0ab8d1babc7030af9a038158a82b5b50150c655b5c207b1abe45e1189da",
+    "histories/train-reenter-22.npz": "6839bcd620ec7abbea9f443a8f93a0e8c06fbbc569f5668a115cb9e590611ae0",
+    "histories/train-reenter-24.npz": "a27a04402f591ac3eef8636b459bb855dfe117de4fdfe1dadd3b4890410b292e",
+    "histories/train-reenter-26.npz": "4b3938d7d16e2738a51c091c5b3758511129d2e7902acf7db00c65dcc22190cd",
+    "histories/train-reenter-28.npz": "b786ce717a4562b40035a6b9eb68adbbe1e9731c03f329cb995ce010b8f63bd0",
+    "histories/train-reenter-30.npz": "670cf3ee9ba4a74038e235b5df3c6bf4b9b4bd4f7b1873b842a46fdf3f018bd8",
+    "histories/train-reenter-32.npz": "da49ee9734ee87b9725e9d8ff61b353ac1f4c3456d2a5b4370e6ef6351e476d6",
+    "histories/train-reenter-34.npz": "52fe6ea365c70b4b4027c80eed23f3512407482852d4317c18b6129a678aeca7",
+    "histories/train-reenter-36.npz": "8838171e090aa05c0ef65c8fe2dbf7f4bd1a00baad957a48e2da8a1910f49522",
+    "histories/train-reenter-38.npz": "e23649a9c758ba607e5a5b2e74a8744714a345d2c31035b7f40c237ad211aaeb",
+    "histories/train-reenter-40.npz": "3938ce507c4a5b56efcfd1c8fbf250a51b98b50e8cad1491adda23cbe4cffd26",
+    "histories/train-reenter-42.npz": "8453b5d43cdc37dc1451c0ae39606d3d2032e60e46a778075d9dc0b8a4038968",
+    "histories/train-reenter-44.npz": "2ebdd4a986eaa54a936010553da00b6b422de0f329125d3de309f117bb34a9d8",
+    "histories/train-reenter-46.npz": "1f4057783183eb23b488114a7bb2f34fffabd68a0770d947c5092cffb1dba6e7",
+    "histories/train-reenter-48.npz": "63cf24ac022d43d4dab77f8d98b0b9c597a4e6a57127845332ad06a9d2897d24",
+    "histories/train-reenter-50.npz": "0c0c27e08993d7d076b77fdd6b86e9b28c29e32cf8819812742cd399239a9a57",
+    "histories/train-reenter-52.npz": "6ccad7da27946310b2921439851e9f0bfa6d97fdbd262c93c76e22999a57acce",
+    "histories/train-reenter-54.npz": "5cc17c77f4aec7195c8dda2b020a05eb148edbe7da726049cc39b6e94a824366",
+    "histories/train-return-04.npz": "e56d0d35dede99f9c2d1c6b2e4740160647434f6f647495bcdfb1066221f55e2",
+    "histories/train-return-06.npz": "da7a749912d554bdd4d016095956c803ffefb5783aba96f7b7430469a7f48c83",
+    "histories/train-return-08.npz": "2da9fbbf945ddf0746159466beba017538a8765f51e653a76ffc42c92f4ddeb1",
+    "histories/train-return-10.npz": "dfe397c227b6699d55cf96917f4a2f989b36d730ff3416821def84d29028fe87",
+    "histories/train-return-12.npz": "f410c24dd922d11ad01331f82643a3622c21f55c085d5ff48646feeb7fccc0fa",
+    "histories/train-return-14.npz": "8686b4104b7ea443ac19509fbe174af47e0f1bc4fd813bcbd4b02346eeb9c3e9",
+    "histories/train-return-16.npz": "3aefd7eedf7fb7cee61ce26f087f4181b2aee4a0ec4bba983fd41087028593d6",
+    "histories/train-return-18.npz": "b81338e85c4b06a8e24dbc12d13e83ee3b37fe309e55089f7a504f3f9d828e4d",
+    "histories/train-return-20.npz": "f0427e291ef52157f91c913daf4c5ca557f4e7cf6e8c0e4fe6bd474e633b9e44",
+    "histories/train-return-22.npz": "226be25e90a1b40aedf892b1715fb0796149176ee67571924f88792b7fd02dc2",
+    "histories/train-return-24.npz": "92d01bfeb79e5eb12b2731559c99f9a4b4aaeac2ff4e83f762a3297fed07f318",
+    "histories/train-return-26.npz": "68d59c5973cf2d2c8ceee377cd486ab43a1d437b1c28f2dc93e60fbc08fc4ea8",
+    "histories/train-return-28.npz": "25920346e0b53313b6d7a96d2e0a2ec9cb07caaf3c22f7a03bd936eb625d95ce",
+    "histories/train-return-30.npz": "84c84d74825ec287b4c123be978a4afb62093c9d5bc12c05980db4541c69ea4b",
+    "histories/train-return-32.npz": "047890aff7d8e469c91d00f27c6ee0a6fba92bb0a33945f828ade20102a76b50",
+    "histories/train-return-34.npz": "8766727839db18ba1a2d23be192b70b2d413343d49e2887f132d0282d51360c8",
+    "histories/train-return-36.npz": "1335b06c5674f66b8b1a09f399a6936de12c978e8b1da0a837478e6a153b9269",
+    "histories/train-return-38.npz": "111610f5a09f2c43ffb2fe69a89c24040b4fd4a3fb6289340ef4e1a6fe0080a3",
+    "histories/train-return-40.npz": "622c261e313b4dee1aa55c0e3eaa8663f8c80b05b06e961a6acbc3a0526a3f59",
+    "histories/train-return-42.npz": "a83c7bf8b42b44a20445704485924b6e374d2b925f8b0646de05008c22f16872",
+    "histories/train-return-44.npz": "e9dbb017ca2ea58d42430e56b494c7a69019be2f2bfaf8b5bfa5858441ebcfd0",
+    "histories/train-return-46.npz": "3b260a4c47a064202d330300c988d08e40673fc987f2b4018dabdb409f3cf40e",
+    "histories/train-return-48.npz": "b9bf97647248cc5f54d108add5fe03f38a100592248c7e272bae4eac74a7ba7f",
+    "histories/train-return-50.npz": "5cf613d3fe87e442f2bb28e9d2e63810f938d7eb7145ab011c65be86519e67d7",
+    "histories/train-return-52.npz": "b60595f3a1fc1cbd9cb79b433293642361ffd52641c49edde8ffbede973613f1",
+    "histories/train-return-54.npz": "afc75caec0ce97492580ba7fd02597e4e7d4c0ab7887e71b019593b204d688fe",
+    "histories/train-stall-04.npz": "2a885e774fa65c6e12ad24f97e3c3b07369ab52aef6cda0b6a047a7029788e41",
+    "histories/train-stall-06.npz": "396a73e0cc6803ca365af1693b28972930f4b33093cc6538c6139bb292f30c16",
+    "histories/train-stall-08.npz": "32f98caff23ee1a4cee87c6133f21dbcf63bc428c2c12b7109f3d657de7989f1",
+    "histories/train-stall-10.npz": "b82bba8778260cd83e1a36c99a684fd489193b98e9af0082fe39bafca2187645",
+    "histories/train-stall-12.npz": "9a99c1af00a5f33513fb060949157c4d67e782a3b322041a159cd7271a32cb6e",
+    "histories/train-stall-14.npz": "8b1cbf26db4858fb039f3cdb9fd812c0a8f63f7b0e24993f856ca5b1d9508aa0",
+    "histories/train-stall-16.npz": "c6af7dc985ab745abd6b65767bf41a114e7b6299b37d378431cb21fb5cae09d6",
+    "histories/train-stall-18.npz": "f74862ca24957e3c96aa4bca204601e099a1db6877c40e5060cca3f3167b7edc",
+    "histories/train-stall-20.npz": "cd42ad48a599bb13c301df4dc6e35deb4b3cca42804bcab355c23f8c5be45fac",
+    "histories/train-stall-22.npz": "17e5e07f6dda173d47da83b9faa7d07500e09e96c436b64f39ad58ac175d1ec6",
+    "histories/train-stall-24.npz": "7ecbb9212a724ef61bdac5b3e1027b800a1742ea337ee7cc10180d2d3e667cbf",
+    "histories/train-stall-26.npz": "0b0123e6a8841af183c9407baf370e442265276a2d0de91682710f6f5a23930b",
+    "histories/train-stall-28.npz": "b2d4f4adfa5818e1b95d22866542bbd9a6e6228b4e37e6b8d1dc0f884af48d5e",
+    "histories/train-stall-30.npz": "5f0db695a822be27dab720eba9196743b5f319fe3f0e5161d77ae236b42a19ed",
+    "histories/train-stall-32.npz": "54afe22210e2470293a13c55765790792ab702924b1e3c417e1d36917f57ff4d",
+    "histories/train-stall-34.npz": "3fb548448fbfc403f623f1a061c9fef89ef677d93487d4ffff9bad69b31f2e0e",
+    "histories/train-stall-36.npz": "cfe52ac7a430bfea13b820ddecb8a1a3a9fb832810ba2ce2eaf121c8cd471472",
+    "histories/train-stall-38.npz": "f319e93af1440b46a04bd9fb311e80f1897767837ad2d9c0261a721b726f78e1",
+    "histories/train-stall-40.npz": "6a77bc71396a98a00fd9c9d2086bfed16de04f6d9558a5cfd4824cbe3be5e25c",
+    "histories/train-stall-42.npz": "38b53ef6e96238dfb610308c8bfb2e176d3703b057454a1de46423e6f18c6af0",
+    "histories/train-stall-44.npz": "e8f05c09d242408d219e62b0c570a533ae63f445eb868449aeba2a0c207f9c0d",
+    "histories/train-stall-46.npz": "676bd77f6b32c458711e5c14767a75080454e0c2845f3592902cc09518c873e5",
+    "histories/train-stall-48.npz": "1c65ee992e4e37b7b74cfe3a2e9552c472405474b5a710e264c2f44c70435578",
+    "histories/train-stall-50.npz": "757b7ec4d49d210c37056654d7370961533bbc29e7dfd947352468ea7cb70411",
+    "histories/train-stall-52.npz": "e6de07d5fa773ac67ccbe90233491caf67662f49e7b445de000e5d496a773601",
+    "histories/train-stall-54.npz": "b573495bf8bba9b5eb7d74e01ab1ab178754f9ce7ac0a111d8838188b43afda3",
+    "histories/train-stall-56.npz": "8f006051606033f7b9e2d720baa552e8f1f9150ceb7f4dec56576453f853fd0b",
+    "histories/train-stall-58.npz": "7aa6139a88b0d2834dc8e945ecb854185bddb6e963e2378d5f65d8dc6bf13029",
+    "reader.npz": "2b3ad566ccf8cdb111e779bda9d5931b6658d19d2bb3151e092e88945a7adf86",
+    "train-targets/train-depart-04-t04.png": "73bb5d27db7bf2cce9989a31a940ab7a39b81ca153119fbbff0bd5aa11c717c9",
+    "train-targets/train-depart-04-t16.png": "73bb5d27db7bf2cce9989a31a940ab7a39b81ca153119fbbff0bd5aa11c717c9",
+    "train-targets/train-depart-06-t04.png": "73bb5d27db7bf2cce9989a31a940ab7a39b81ca153119fbbff0bd5aa11c717c9",
+    "train-targets/train-depart-06-t16.png": "73bb5d27db7bf2cce9989a31a940ab7a39b81ca153119fbbff0bd5aa11c717c9",
+    "train-targets/train-depart-08-t04.png": "73bb5d27db7bf2cce9989a31a940ab7a39b81ca153119fbbff0bd5aa11c717c9",
+    "train-targets/train-depart-08-t16.png": "655b399b6001551c01f40b2a185491e25a06f5f93c2dc2fb5ce61b688234445a",
+    "train-targets/train-depart-10-t04.png": "2425fa289c544232bd7d3cc40f49314c339b2e935ffdafca82f69c1ba08c2676",
+    "train-targets/train-depart-10-t16.png": "238b42ed942ab0deff1cb63a4f88494c1a7ddbb76d6cf24164c00c52125bc7f8",
+    "train-targets/train-depart-12-t04.png": "67efa9803b6a55dce3d43091153bc3fdea2be1dce4a53a5e34e24bb0ce7aadc7",
+    "train-targets/train-depart-12-t16.png": "c5dbc25b80955b0701915f39d4134617f070c1a16c17a3288d803483d1a4bc78",
+    "train-targets/train-depart-14-t04.png": "a9eda893fda06bd998b0cbb3ff14bc71823f5d4579d67087167d446eda48a1de",
+    "train-targets/train-depart-14-t16.png": "6696ce5fb4c9d7b880358494ba2ad89baf7e29d7e10c765036db3fa4366cc233",
+    "train-targets/train-depart-16-t04.png": "73c4ccfd8f7a1bad3f3054950caa902b01a9752a4bb8684e9be51ea2788258e1",
+    "train-targets/train-depart-16-t16.png": "41af0d0e6d51abfe0a59079d3beb3ed71d9bbcfcbc0305fe43b3dbe115d45f1f",
+    "train-targets/train-depart-18-t04.png": "79c1347dda65aee351c92bf0a96b7103e2e0eadc74916b9b03bfd695ede94e1d",
+    "train-targets/train-depart-18-t16.png": "9f2f3568a20fc80d4d07bc96f414f737fdef0991677c0f4106c5f69616a3c93c",
+    "train-targets/train-depart-20-t04.png": "9ada6a96d9c94b6eb249b7abf7e5e78a085e8abb9f3b2e1496a6041ae95b4e16",
+    "train-targets/train-depart-20-t16.png": "0e74bc8a781fa029d2746aeac8aeb6768d03bd713e96159121d8138f8f34b4fa",
+    "train-targets/train-depart-22-t04.png": "913299d4ca25eac59c47f1db0146a5f78a3f0b938d7ac70b8f95be3792e92486",
+    "train-targets/train-depart-22-t16.png": "fdeda78b73a6abdd2ffc919834a3258a512a85aa3fb85ff7fa89577e1d42dc52",
+    "train-targets/train-depart-24-t04.png": "4f48dae9916b164bd5467a623778b31d0826556a66c92662ea6e5e782b1eb95b",
+    "train-targets/train-depart-24-t16.png": "b81dfe58e4bec82ffb92fe9b471ad06078748dced9f73213bf4713aa381215f6",
+    "train-targets/train-depart-26-t04.png": "9887134c96191b32628d1918399890df78c06f9e0805db5456ddf3640120d35e",
+    "train-targets/train-depart-26-t16.png": "a3d24afda033e02d03b3e7d9ff2b6940c679ef0af49dc00110adfc822a01db96",
+    "train-targets/train-depart-28-t04.png": "1bd5c7c5b65f20240ef7a01f0a39b6a8c73d829d3db091071f67591aa8ba1820",
+    "train-targets/train-depart-28-t16.png": "ac926c85e5ad28cb54c332e0587fe38b9177d3737af1ebb8722534019b230701",
+    "train-targets/train-depart-30-t04.png": "8901eacc29d3f75dbc3a2a3985e4ff37d84cc484a43263d22b321d669af9fcef",
+    "train-targets/train-depart-30-t16.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-depart-32-t04.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-depart-32-t16.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-depart-34-t04.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-depart-34-t16.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-depart-36-t04.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-depart-36-t16.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-depart-38-t04.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-depart-38-t16.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-depart-40-t04.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-depart-40-t16.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-depart-42-t04.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-depart-42-t16.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-depart-44-t04.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-depart-44-t16.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-depart-46-t04.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-depart-46-t16.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-depart-48-t04.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-depart-48-t16.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-depart-50-t04.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-depart-50-t16.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-reenter-04-t04.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-reenter-04-t16.png": "43649c728e1a811768aece8cdbbcf3bf959fce87c5ece82633b876a666ed8c89",
+    "train-targets/train-reenter-06-t04.png": "ef7daf78b1f17d2c7635af990c5c7cfb90a3b5b0ecbde33b33b27e848f9f0dc9",
+    "train-targets/train-reenter-06-t16.png": "d74a4f7cbc983ac866d58facd8aa80ba97cceb6050fd0e7fd446cd76b599373a",
+    "train-targets/train-reenter-08-t04.png": "bc74743f5646ce7eef01a2f59ccbb5022e6d566b1952801b72a4056f1e485702",
+    "train-targets/train-reenter-08-t16.png": "ccf833943077b9503d330ef9ba3734191f0431c46f226e47b004464ed0163781",
+    "train-targets/train-reenter-10-t04.png": "8fbf685b3267737f7c8e324bacf059549a6e64a8d8eaea29398a6522c6719b23",
+    "train-targets/train-reenter-10-t16.png": "0c5e00303f7b0f1e8029cbb2da03e443204c209b95996676d84444240538f5b6",
+    "train-targets/train-reenter-12-t04.png": "c86dc148214c2bf1efa6ce74dfcba84d1835d2908d7927fc5e120037a8798dd0",
+    "train-targets/train-reenter-12-t16.png": "2e8487868959e1a8f26fe24e6d18cd9c6bb4deb975ae029f072b6fc0155edf00",
+    "train-targets/train-reenter-14-t04.png": "6b2199adf6b788dada2cc7a15517a2511b726a82bc2ef9387391538cce691fe6",
+    "train-targets/train-reenter-14-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-reenter-16-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-reenter-16-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-reenter-18-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-reenter-18-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-reenter-20-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-reenter-20-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-reenter-22-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-reenter-22-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-reenter-24-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-reenter-24-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-reenter-26-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-reenter-26-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-reenter-28-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-reenter-28-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-reenter-30-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-reenter-30-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-reenter-32-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-reenter-32-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-reenter-34-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-reenter-34-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-reenter-36-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-reenter-36-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-reenter-38-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-reenter-38-t16.png": "41af0d0e6d51abfe0a59079d3beb3ed71d9bbcfcbc0305fe43b3dbe115d45f1f",
+    "train-targets/train-reenter-40-t04.png": "1e26fa4f4a897dd99e7c9ef8733a4a47b9033477a89cea3627d9fa5932deaba1",
+    "train-targets/train-reenter-40-t16.png": "aad35cb54e69ab2aed7d5957e4bf5a27d43b5f3a5287ee506e777535177db6c9",
+    "train-targets/train-reenter-42-t04.png": "6fd64ce9571c4ba79adadc37d9599d8e8c1cca4d433abf25da15965eab312dc6",
+    "train-targets/train-reenter-42-t16.png": "eafb224d0ffbe25e1713980563ea017d5144a31b46e934c7051aacdc63f22a82",
+    "train-targets/train-reenter-44-t04.png": "7d41f745dc7488e10c344b17f1aabd5605b69ae59f0d6805ea2a1e9cbcd38636",
+    "train-targets/train-reenter-44-t16.png": "f6f426f0bc9fee12b96702ae26877e7c1ab3626e5f190128442de3f3793d76f2",
+    "train-targets/train-reenter-46-t04.png": "2d49834d04717776e1c0df81e65677ca6469d16b2141289bf7ab1cc07d9a1103",
+    "train-targets/train-reenter-46-t16.png": "8aa33d9eaa97e58f7c9fd53eceaf31a5b64506d854a3a1774be3345f98dc9f9f",
+    "train-targets/train-reenter-48-t04.png": "9887134c96191b32628d1918399890df78c06f9e0805db5456ddf3640120d35e",
+    "train-targets/train-reenter-48-t16.png": "473cda3cc6e4a1ff177aa1ad4e481330ed3fc570698b6d1291e21ab9c2f5c218",
+    "train-targets/train-reenter-50-t04.png": "864c3bea726edec96c699f4412cf0953750309962e5115084447c2dc2dd319f0",
+    "train-targets/train-reenter-50-t16.png": "5e41447235cb0c4f4a826a90e99d336c2d1f37fb27fde2e716026be02d8de2c5",
+    "train-targets/train-reenter-52-t04.png": "2c56c9e5f8c26f4dee2135ac9730812e6581a7fe8412cfe0c5f55a0a36ae9a66",
+    "train-targets/train-reenter-52-t16.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-reenter-54-t04.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-reenter-54-t16.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-return-04-t04.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-return-04-t16.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-return-06-t04.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-return-06-t16.png": "2976d3cd586b55d38aa87faf530f602229e88e00fb0f38741fe775f14c857f24",
+    "train-targets/train-return-08-t04.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-return-08-t16.png": "00df2f5ed55da3324d8058d25510d014dea45528a011c4fd1973c84f0b91f8fa",
+    "train-targets/train-return-10-t04.png": "d72dc59ec21d682cdd9a70f3706890fd8c738c8888a7ce66afafae093a0d6ecb",
+    "train-targets/train-return-10-t16.png": "1ec34cff720984b12dfb2e148a8b96adc3c3f6ae7fe2e159c69cbad5ec7d551d",
+    "train-targets/train-return-12-t04.png": "3a51833b9d7a9e413972b6388a6fe80269d59a27c0ef0768c4646ef8951dcd5b",
+    "train-targets/train-return-12-t16.png": "76defbdf84a60c0278627ee19c5100625379dc01008a8332fb8d079e1c6f8743",
+    "train-targets/train-return-14-t04.png": "1b2bf03f4f6f9e63e809bc6e6576e254f6d45294b4bb16d7648b0a999caa8e8b",
+    "train-targets/train-return-14-t16.png": "10190d3b5b80cd214ef7e14ab4b17ad1b48b4debae7429febb67252e457713b4",
+    "train-targets/train-return-16-t04.png": "b1d883fa52a20e76126b1401f0672e3dcffdfbcae65d3f69153a5092ea910873",
+    "train-targets/train-return-16-t16.png": "ecb90f109c605c4cffd060a0e7612ad7b9bab1b8f945081c65c3cb23b8feb075",
+    "train-targets/train-return-18-t04.png": "9b5e93dd0abfa9a7dee171f85796182159037d158703faa950123ef13bf6c318",
+    "train-targets/train-return-18-t16.png": "1e7c453ecdc068e0c17c03ca5f8b2cd287b7128ab2294eb41d70a762b72b041b",
+    "train-targets/train-return-20-t04.png": "f9b2800da228534fb598fe067d15cd07a0e3db7032db489eb803594f60d09796",
+    "train-targets/train-return-20-t16.png": "9d265399705ca60d9837bc0f450a9e06ca09afa517103b4ef0b4d3ed8b2d73a8",
+    "train-targets/train-return-22-t04.png": "a48cea331c7ae93f212a1c86b1ffa80b5992d4d881f5227d4a9b1caa524ad650",
+    "train-targets/train-return-22-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-return-24-t04.png": "9d87330bb79e758e3e00f196256a8f8ca60fc39e520fd2385047d629228102b7",
+    "train-targets/train-return-24-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-return-26-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-return-26-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-return-28-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-return-28-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-return-30-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-return-30-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-return-32-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-return-32-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-return-34-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-return-34-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-return-36-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-return-36-t16.png": "40886c2286f73b780cc33d8025e06fcf88ae55b79ffcc835428853fe7926bd97",
+    "train-targets/train-return-38-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-return-38-t16.png": "9c71ae9b1bbe0b02acd2e9955639fa1e56fca3c3c13a1e3abc7e3f64a093fc0e",
+    "train-targets/train-return-40-t04.png": "9637e07d14feebbbfea5a927468ad8473ab42a8a43995fc65fc64e6ba4ef78d8",
+    "train-targets/train-return-40-t16.png": "5bd39d62b2a9a39b3a36b377b945ab9a960c8fafbe394bde8c5fa1d41294dd6d",
+    "train-targets/train-return-42-t04.png": "17f6184c4d88ba377fba8fe8490a07d8f1e6177c27cc8f3b890ba3095a085365",
+    "train-targets/train-return-42-t16.png": "f05c2cc2f5645188dd0d1b0a391983e0e06e6e9f94720b496613260f21873fae",
+    "train-targets/train-return-44-t04.png": "3266a94abaeb02d00f0cd46d5572d7d57a807e3d94a80344b4c45fa1fe80378e",
+    "train-targets/train-return-44-t16.png": "d6ae7fb79d18d55272960592ea265713c99bf90306c96af19c7bb75f79d6cadf",
+    "train-targets/train-return-46-t04.png": "a49fd9b93d660353f1f995fdcf7091d9842380f8f960951f73128e020302504d",
+    "train-targets/train-return-46-t16.png": "892b12532252af788858a49edbfeb9cc73dd6708b0f95b95c4782497b4dd12ed",
+    "train-targets/train-return-48-t04.png": "0f8d66d28ad022ad9e29b300a4bd27f4de3a94e427ecd2601f6e4146678ce30f",
+    "train-targets/train-return-48-t16.png": "b109f49465117bd98b51e4ec9c84b42664c40ac0d27a9f92bd9f3be43038fe81",
+    "train-targets/train-return-50-t04.png": "cdef0cf19358e74fd8f47be62ad346fb1dfcaacb1e716d833312a333d11b9acb",
+    "train-targets/train-return-50-t16.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-return-52-t04.png": "66d4c19f7b858bcae3c9e1a3ec7d9750d671afcdc1f4b60a131ba7e03ca67114",
+    "train-targets/train-return-52-t16.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-return-54-t04.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-return-54-t16.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-stall-04-t04.png": "73bb5d27db7bf2cce9989a31a940ab7a39b81ca153119fbbff0bd5aa11c717c9",
+    "train-targets/train-stall-04-t16.png": "e40f0b4bed4be33c6305a1379f76ac7ea48e2f794a169eb511fb2a993fd221f2",
+    "train-targets/train-stall-06-t04.png": "e19e14f62e8daaedaa2301a458937695042e113e4450a3ea83004c8f646c793f",
+    "train-targets/train-stall-06-t16.png": "572cd00092de862a95bcf8696b9d507396f74491ae3ee6206d20241a5658687c",
+    "train-targets/train-stall-08-t04.png": "a86d0b08acd7740268b4979c2c80e863cb12d0543e425481b4f714e73d348654",
+    "train-targets/train-stall-08-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-10-t04.png": "6eac1b1bde75589c7320870fe02c02741b9be6658dd3e1f35eaa422b80296a56",
+    "train-targets/train-stall-10-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-12-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-12-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-14-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-14-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-16-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-16-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-18-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-18-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-20-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-20-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-22-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-22-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-24-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-24-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-26-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-26-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-28-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-28-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-30-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-30-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-32-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-32-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-34-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-34-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-36-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-36-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-38-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-38-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-40-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-40-t16.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-42-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-42-t16.png": "f249092af1b5a54888b6ee89a92068cffaab5f8894a01625ae8dc228a80bf9da",
+    "train-targets/train-stall-44-t04.png": "ae8736192cfa3b5abf1a9df1aef49ecc48e5961734563c2fa989f97c61eb048a",
+    "train-targets/train-stall-44-t16.png": "2a0f3207047541644825cba207d5e7e7c877942483cdd3cc906f653505834d98",
+    "train-targets/train-stall-46-t04.png": "6be63e1ce77672be7be04fe3f3be2a5c426e3aa08be9aedeccd7c1c36087c991",
+    "train-targets/train-stall-46-t16.png": "691404a57430c7dd46af8663e0414cf7a94fcdc0ee30518bcc6af4a03efaac21",
+    "train-targets/train-stall-48-t04.png": "1b7fb2e3978e376c211b95d9cf1cb33f85a72cb6fef49db94ae320bd7dc3fd88",
+    "train-targets/train-stall-48-t16.png": "03e95ffba76a0449cad8c0e233791860437363d71abdc414822b4bf57157c7b6",
+    "train-targets/train-stall-50-t04.png": "8e55f1adf191d0efce6b8091a323bac8debdd414d13716a0a5cd2493bea341f9",
+    "train-targets/train-stall-50-t16.png": "34b5ceac511bd6b7319970558df74bb0df5475df36f55a1226dd6794e8c17689",
+    "train-targets/train-stall-52-t04.png": "9a56023d7195310e00c7f746012d0ee49ade52db648793b25633104a12328cc4",
+    "train-targets/train-stall-52-t16.png": "a9302e74944ee1c4ace0c9b11724ed8050758c0c139ef742962e890933f4525a",
+    "train-targets/train-stall-54-t04.png": "5d3502f6157300d6032164256a8876246bac3d81067875ab64bf0633914fa89f",
+    "train-targets/train-stall-54-t16.png": "a8476eed4a5dc59fbdd4eca5680b669af11a9950e98bdaed7464cbddc5414ebc",
+    "train-targets/train-stall-56-t04.png": "2fddabc82228fa220fa0c237898a706aeaa0807b7f17bd5fd63ab0f591b97493",
+    "train-targets/train-stall-56-t16.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-stall-58-t04.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d",
+    "train-targets/train-stall-58-t16.png": "bc0ec116d1b3295181f6cd843953af36bd64693d78a0a55eb856820067f8809d"
+  }
+}

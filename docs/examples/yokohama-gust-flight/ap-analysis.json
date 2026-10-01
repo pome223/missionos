@@ -1,0 +1,306 @@
+[
+  {
+    "case": "nominal",
+    "run_id": "yokohama-29880f17cae8",
+    "status": "failed",
+    "cleanup": true,
+    "sea_inbound_waypoint_count": 50,
+    "speed_window_sim_s": [
+      150,
+      240
+    ],
+    "speed_samples": 264,
+    "actual_speed_median_mps": 0.5825465943584945,
+    "trajectory_speed_median_mps": 0.5819372552088412,
+    "final_current_mission_index": 1.0,
+    "coast_hold": null,
+    "holds_passed": 1,
+    "final_phase": "SEA-INBOUND-COAST",
+    "final_sim_s": 512.604,
+    "applied_gust_ids": [],
+    "applied_gust_peaks_mps": [],
+    "gust_zones": [],
+    "gust_transition_count": 0,
+    "snapshot_diagnostics": [
+      {
+        "run_id": "yokohama-29880f17cae8",
+        "sim_s": 154.216,
+        "phase": "SEA-INBOUND-COAST",
+        "raw_px4": {
+          "trajectory_setpoint": "\nTOPIC: trajectory_setpoint\n trajectory_setpoint\n    timestamp: 154296000 (0.004000 seconds ago)\n    position: [-19.32631, -71.28394, -15.12048]\n    velocity: [-0.15383, -0.56124, -0.00000]\n    acceleration: [0.00000, 0.00000, 0.00000]\n    jerk: [0.00000, 0.00000, 0.00000]\n    yaw: -1.83450\n    yawspeed: 0.00000\n",
+          "vehicle_local_position_setpoint": "\nTOPIC: vehicle_local_position_setpoint\n vehicle_local_position_setpoint\n    timestamp: 154296000 (0.008000 seconds ago)\n    x: -19.32631\n    y: -71.28394\n    z: -15.12048\n    vx: -0.15643\n    vy: -0.58225\n    vz: 0.00217\n    acceleration: [-0.09870, -7.24784, -0.02004]\n    thrust: [-0.00666, -0.48945, -0.66225]\n    yaw: -1.83450\n    yawspeed: 0.00000\n",
+          "position_setpoint_triplet": "\nTOPIC: position_setpoint_triplet\n position_setpoint_triplet\n    timestamp: 105364000 (48.947998 seconds ago)\n  previous (position_setpoint):\n    timestamp: 78332000 (75.980003 seconds ago)\n    lat: 35.450891\n    lon: 139.659482\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.80394\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 0\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n  current (position_setpoint):\n    timestamp: 105364000 (48.947998 seconds ago)\n    lat: 35.450844\n    lon: 139.659269\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.80394\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 0\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n  next (position_setpoint):\n    timestamp: 105364000 (48.947998 seconds ago)\n    lat: 35.450798\n    lon: 139.659057\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.80394\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 0\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n",
+          "vehicle_attitude_setpoint": "\nTOPIC: vehicle_attitude_setpoint\n vehicle_attitude_setpoint\n    timestamp: 154312000 (0.004000 seconds ago)\n    yaw_sp_move_rate: 0.00000\n    q_d: [0.59521, -0.19943, -0.24115, -0.74014] (Roll: 8.5 deg, Pitch: -35.6 deg, Yaw: -105.1 deg)\n    thrust_body: [0.00000, 0.00000, -0.82353]\n",
+          "actuator_motors": "\nTOPIC: actuator_motors\n actuator_motors\n    timestamp: 154320000 (0.000000 seconds ago)\n    timestamp_sample: 154320000 (0 us before timestamp)\n    control: [0.81197, 0.83653, 0.81797, 0.82765, nan, nan, nan, nan, nan, nan, nan, nan]\n    reversible_flags: 0\n\n"
+        }
+      },
+      {
+        "run_id": "yokohama-29880f17cae8",
+        "sim_s": 159.332,
+        "phase": "SEA-INBOUND-COAST",
+        "raw_px4": {
+          "trajectory_setpoint": "\nTOPIC: trajectory_setpoint\n trajectory_setpoint\n    timestamp: 159412000 (0.000000 seconds ago)\n    position: [-20.11044, -74.15199, -15.12048]\n    velocity: [-0.15316, -0.56142, -0.00000]\n    acceleration: [0.00000, 0.00000, 0.00000]\n    jerk: [0.00000, 0.00000, 0.00000]\n    yaw: -1.83450\n    yawspeed: 0.00000\n",
+          "vehicle_local_position_setpoint": "\nTOPIC: vehicle_local_position_setpoint\n vehicle_local_position_setpoint\n    timestamp: 159412000 (0.004000 seconds ago)\n    x: -20.11044\n    y: -74.15199\n    z: -15.12048\n    vx: -0.13785\n    vy: -0.57322\n    vz: 0.01768\n    acceleration: [-0.08539, -7.29157, 0.13688]\n    thrust: [-0.00568, -0.48481, -0.65203]\n    yaw: -1.83450\n    yawspeed: 0.00000\n",
+          "position_setpoint_triplet": "\nTOPIC: position_setpoint_triplet\n position_setpoint_triplet\n    timestamp: 105364000 (54.056000 seconds ago)\n  previous (position_setpoint):\n    timestamp: 78332000 (81.087997 seconds ago)\n    lat: 35.450891\n    lon: 139.659482\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.80394\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 0\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n  current (position_setpoint):\n    timestamp: 105364000 (54.056000 seconds ago)\n    lat: 35.450844\n    lon: 139.659269\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.80394\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 0\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n  next (position_setpoint):\n    timestamp: 105364000 (54.056000 seconds ago)\n    lat: 35.450798\n    lon: 139.659057\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.80394\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 0\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n",
+          "vehicle_attitude_setpoint": "\nTOPIC: vehicle_attitude_setpoint\n vehicle_attitude_setpoint\n    timestamp: 159420000 (0.004000 seconds ago)\n    yaw_sp_move_rate: 0.00000\n    q_d: [0.59524, -0.19973, -0.24240, -0.73962] (Roll: 8.6 deg, Pitch: -35.7 deg, Yaw: -105.1 deg)\n    thrust_body: [0.00000, 0.00000, -0.81224]\n",
+          "actuator_motors": "\nTOPIC: actuator_motors\n actuator_motors\n    timestamp: 159428000 (0.000000 seconds ago)\n    timestamp_sample: 159428000 (0 us before timestamp)\n    control: [0.80084, 0.82543, 0.80694, 0.81576, nan, nan, nan, nan, nan, nan, nan, nan]\n    reversible_flags: 0\n\n"
+        }
+      },
+      {
+        "run_id": "yokohama-29880f17cae8",
+        "sim_s": 164.448,
+        "phase": "SEA-INBOUND-COAST",
+        "raw_px4": {
+          "trajectory_setpoint": "\nTOPIC: trajectory_setpoint\n trajectory_setpoint\n    timestamp: 164512000 (0.012000 seconds ago)\n    position: [-20.88367, -76.99004, -15.12048]\n    velocity: [-0.15279, -0.56152, -0.00000]\n    acceleration: [0.00000, 0.00000, 0.00000]\n    jerk: [0.00000, 0.00000, 0.00000]\n    yaw: -1.83450\n    yawspeed: 0.00000\n",
+          "vehicle_local_position_setpoint": "\nTOPIC: vehicle_local_position_setpoint\n vehicle_local_position_setpoint\n    timestamp: 164528000 (0.004000 seconds ago)\n    x: -20.88367\n    y: -76.99004\n    z: -15.12048\n    vx: -0.14642\n    vy: -0.56034\n    vz: -0.02587\n    acceleration: [-0.08833, -7.19563, -0.01898]\n    thrust: [-0.00597, -0.48615, -0.66255]\n    yaw: -1.83450\n    yawspeed: 0.00000\n",
+          "position_setpoint_triplet": "\nTOPIC: position_setpoint_triplet\n position_setpoint_triplet\n    timestamp: 105364000 (59.172001 seconds ago)\n  previous (position_setpoint):\n    timestamp: 78332000 (86.208000 seconds ago)\n    lat: 35.450891\n    lon: 139.659482\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.80394\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 0\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n  current (position_setpoint):\n    timestamp: 105364000 (59.175999 seconds ago)\n    lat: 35.450844\n    lon: 139.659269\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.80394\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 0\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n  next (position_setpoint):\n    timestamp: 105364000 (59.175999 seconds ago)\n    lat: 35.450798\n    lon: 139.659057\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.80394\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 0\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n",
+          "vehicle_attitude_setpoint": "\nTOPIC: vehicle_attitude_setpoint\n vehicle_attitude_setpoint\n    timestamp: 164544000 (0.000000 seconds ago)\n    yaw_sp_move_rate: 0.00000\n    q_d: [0.59540, -0.19827, -0.24030, -0.74057] (Roll: 8.5 deg, Pitch: -35.4 deg, Yaw: -105.1 deg)\n    thrust_body: [0.00000, 0.00000, -0.82206]\n",
+          "actuator_motors": "\nTOPIC: actuator_motors\n actuator_motors\n    timestamp: 164548000 (0.000000 seconds ago)\n    timestamp_sample: 164548000 (0 us before timestamp)\n    control: [0.81082, 0.83497, 0.81699, 0.82548, nan, nan, nan, nan, nan, nan, nan, nan]\n    reversible_flags: 0\n\n"
+        }
+      },
+      {
+        "run_id": "yokohama-29880f17cae8",
+        "sim_s": 169.544,
+        "phase": "SEA-INBOUND-COAST",
+        "raw_px4": {
+          "trajectory_setpoint": "\nTOPIC: trajectory_setpoint\n trajectory_setpoint\n    timestamp: 169612000 (0.004000 seconds ago)\n    position: [-21.66130, -79.85000, -15.12048]\n    velocity: [-0.15258, -0.56158, -0.00000]\n    acceleration: [0.00000, 0.00000, 0.00000]\n    jerk: [0.00000, 0.00000, 0.00000]\n    yaw: -1.83450\n    yawspeed: 0.00000\n",
+          "vehicle_local_position_setpoint": "\nTOPIC: vehicle_local_position_setpoint\n vehicle_local_position_setpoint\n    timestamp: 169620000 (0.000000 seconds ago)\n    x: -21.66130\n    y: -79.85000\n    z: -15.12048\n    vx: -0.16508\n    vy: -0.55189\n    vz: -0.01017\n    acceleration: [-0.10022, -7.21164, -0.02145]\n    thrust: [-0.00678, -0.48770, -0.66319]\n    yaw: -1.83450\n    yawspeed: 0.00000\n",
+          "position_setpoint_triplet": "\nTOPIC: position_setpoint_triplet\n position_setpoint_triplet\n    timestamp: 105364000 (64.260002 seconds ago)\n  previous (position_setpoint):\n    timestamp: 78332000 (91.292000 seconds ago)\n    lat: 35.450891\n    lon: 139.659482\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.80394\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 0\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n  current (position_setpoint):\n    timestamp: 105364000 (64.260002 seconds ago)\n    lat: 35.450844\n    lon: 139.659269\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.80394\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 0\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n  next (position_setpoint):\n    timestamp: 105364000 (64.260002 seconds ago)\n    lat: 35.450798\n    lon: 139.659057\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.80394\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 0\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n",
+          "vehicle_attitude_setpoint": "\nTOPIC: vehicle_attitude_setpoint\n vehicle_attitude_setpoint\n    timestamp: 169628000 (0.004000 seconds ago)\n    yaw_sp_move_rate: 0.00000\n    q_d: [0.59534, -0.19847, -0.24015, -0.74061] (Roll: 8.4 deg, Pitch: -35.4 deg, Yaw: -105.1 deg)\n    thrust_body: [0.00000, 0.00000, -0.82296]\n",
+          "actuator_motors": "\nTOPIC: actuator_motors\n actuator_motors\n    timestamp: 169636000 (0.000000 seconds ago)\n    timestamp_sample: 169636000 (0 us before timestamp)\n    control: [0.81165, 0.83543, 0.81819, 0.82657, nan, nan, nan, nan, nan, nan, nan, nan]\n    reversible_flags: 0\n\n"
+        }
+      }
+    ],
+    "raw_hashes": {
+      "config.json": "d2f8e5905000ad5dba38d4ae2d244c2cbcb64a93d7316018c017539798b505e2",
+      "result.json": "a1e0ddd567da17c0cbedb2bfcae94d6eaaca076f5403183d41525ab5d741835a",
+      "flight-trajectory.jsonl": "6f5491aecdf3ce4090a4037593bbf0708c714b251ccc5cbedd62a60d4c28dab2",
+      "wind-diagnostics.jsonl": "b1d14b9d31bb2c6dacf7a9d21ff4920ccfea988a97d44f43e6635e9fcd1f15d9",
+      "wind-transitions.json": "f0bec3024616b4602b5d9758f6f9ea03450c6740c131a9df86388d79794a4dd4"
+    }
+  },
+  {
+    "case": "nominal-direct",
+    "run_id": "yokohama-5a405a1b1170",
+    "status": "failed",
+    "cleanup": true,
+    "sea_inbound_waypoint_count": 1,
+    "speed_window_sim_s": [
+      150,
+      240
+    ],
+    "speed_samples": 265,
+    "actual_speed_median_mps": 2.9307816931323973,
+    "trajectory_speed_median_mps": 7.999999014256189,
+    "final_current_mission_index": 4.0,
+    "coast_hold": {
+      "duration_sim_s": 30.156000000000006,
+      "samples": 89,
+      "max_horizontal_error_m": 0.1530564065604184,
+      "max_vertical_error_m": 0.47875448556366607,
+      "max_px4_speed_mps": 0.05138814941209695,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.02091941699995914,
+      "max_sample_gap_sim_s": 0.4159999999999968,
+      "start_sim_s": 391.664,
+      "end_sim_s": 421.82,
+      "point": "SEA-INBOUND-COAST",
+      "target_world_xyz_m": [
+        386.1720648824816,
+        104.26474142489603,
+        15.110143087104275
+      ],
+      "passed": true
+    },
+    "holds_passed": 4,
+    "final_phase": "01-D2",
+    "final_sim_s": 714.352,
+    "applied_gust_ids": [],
+    "applied_gust_peaks_mps": [],
+    "gust_zones": [],
+    "gust_transition_count": 0,
+    "snapshot_diagnostics": [
+      {
+        "run_id": "yokohama-5a405a1b1170",
+        "sim_s": 153.444,
+        "phase": "SEA-INBOUND-COAST",
+        "raw_px4": {
+          "trajectory_setpoint": "\nTOPIC: trajectory_setpoint\n trajectory_setpoint\n    timestamp: 153484000 (0.020000 seconds ago)\n    position: [-55.11354, -203.33369, -15.12285]\n    velocity: [-2.09280, -7.72141, -0.00000]\n    acceleration: [0.00000, 0.00000, 0.00000]\n    jerk: [0.00000, 0.00000, 0.00000]\n    yaw: -1.83450\n    yawspeed: 0.00000\n",
+          "vehicle_local_position_setpoint": "\nTOPIC: vehicle_local_position_setpoint\n vehicle_local_position_setpoint\n    timestamp: 153516000 (0.000000 seconds ago)\n    x: -55.13550\n    y: -203.41472\n    z: -15.12285\n    vx: -1.24976\n    vy: -8.59815\n    vz: 0.01233\n    acceleration: [-1.26864, -14.93302, 0.04161]\n    thrust: [-0.05248, -0.61772, -0.61994]\n    yaw: -1.83450\n    yawspeed: 0.00000\n",
+          "position_setpoint_triplet": "\nTOPIC: position_setpoint_triplet\n position_setpoint_triplet\n    timestamp: 78516000 (75.000000 seconds ago)\n  previous (position_setpoint):\n    timestamp: 78516000 (75.000000 seconds ago)\n    lat: nan\n    lon: nan\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 0.00000\n    yaw: nan\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: 0.00000\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: False\n    type: 5\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n  current (position_setpoint):\n    timestamp: 78516000 (75.000000 seconds ago)\n    lat: 35.448590\n    lon: 139.649060\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.77449\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 0\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n  next (position_setpoint):\n    timestamp: 78516000 (75.000000 seconds ago)\n    lat: 35.448590\n    lon: 139.649060\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.77449\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 2\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n",
+          "vehicle_attitude_setpoint": "\nTOPIC: vehicle_attitude_setpoint\n vehicle_attitude_setpoint\n    timestamp: 153524000 (0.004000 seconds ago)\n    yaw_sp_move_rate: 0.00000\n    q_d: [0.58048, -0.26485, -0.27623, -0.71874] (Roll: 7.2 deg, Pitch: -44.5 deg, Yaw: -105.1 deg)\n    thrust_body: [0.00000, 0.00000, -0.87668]\n",
+          "actuator_motors": "\nTOPIC: actuator_motors\n actuator_motors\n    timestamp: 153532000 (0.000000 seconds ago)\n    timestamp_sample: 153532000 (0 us before timestamp)\n    control: [0.86327, 0.89191, 0.86929, 0.88227, nan, nan, nan, nan, nan, nan, nan, nan]\n    reversible_flags: 0\n\n"
+        }
+      },
+      {
+        "run_id": "yokohama-5a405a1b1170",
+        "sim_s": 158.528,
+        "phase": "SEA-INBOUND-COAST",
+        "raw_px4": {
+          "trajectory_setpoint": "\nTOPIC: trajectory_setpoint\n trajectory_setpoint\n    timestamp: 158584000 (0.016000 seconds ago)\n    position: [-59.00998, -217.71138, -15.12285]\n    velocity: [-2.09280, -7.72141, -0.00000]\n    acceleration: [0.00000, 0.00000, 0.00000]\n    jerk: [0.00000, 0.00000, 0.00000]\n    yaw: -1.83450\n    yawspeed: 0.00000\n",
+          "vehicle_local_position_setpoint": "\nTOPIC: vehicle_local_position_setpoint\n vehicle_local_position_setpoint\n    timestamp: 158608000 (0.000000 seconds ago)\n    x: -59.02864\n    y: -217.78024\n    z: -15.12285\n    vx: -1.24214\n    vy: -8.60627\n    vz: 0.00865\n    acceleration: [-1.23338, -14.95965, 0.02985]\n    thrust: [-0.05096, -0.61815, -0.62025]\n    yaw: -1.83450\n    yawspeed: 0.00000\n",
+          "position_setpoint_triplet": "\nTOPIC: position_setpoint_triplet\n position_setpoint_triplet\n    timestamp: 78516000 (80.096001 seconds ago)\n  previous (position_setpoint):\n    timestamp: 78516000 (80.096001 seconds ago)\n    lat: nan\n    lon: nan\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 0.00000\n    yaw: nan\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: 0.00000\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: False\n    type: 5\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n  current (position_setpoint):\n    timestamp: 78516000 (80.096001 seconds ago)\n    lat: 35.448590\n    lon: 139.649060\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.77449\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 0\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n  next (position_setpoint):\n    timestamp: 78516000 (80.096001 seconds ago)\n    lat: 35.448590\n    lon: 139.649060\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.77449\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 2\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n",
+          "vehicle_attitude_setpoint": "\nTOPIC: vehicle_attitude_setpoint\n vehicle_attitude_setpoint\n    timestamp: 158616000 (0.000000 seconds ago)\n    yaw_sp_move_rate: 0.00000\n    q_d: [0.58081, -0.26407, -0.27697, -0.71848] (Roll: 7.4 deg, Pitch: -44.5 deg, Yaw: -105.1 deg)\n    thrust_body: [0.00000, 0.00000, -0.87722]\n",
+          "actuator_motors": "\nTOPIC: actuator_motors\n actuator_motors\n    timestamp: 158620000 (0.000000 seconds ago)\n    timestamp_sample: 158620000 (0 us before timestamp)\n    control: [0.86358, 0.89250, 0.86945, 0.88336, nan, nan, nan, nan, nan, nan, nan, nan]\n    reversible_flags: 0\n\n"
+        }
+      },
+      {
+        "run_id": "yokohama-5a405a1b1170",
+        "sim_s": 163.632,
+        "phase": "SEA-INBOUND-COAST",
+        "raw_px4": {
+          "trajectory_setpoint": "\nTOPIC: trajectory_setpoint\n trajectory_setpoint\n    timestamp: 163684000 (0.008000 seconds ago)\n    position: [-62.91661, -232.12648, -15.12285]\n    velocity: [-2.09280, -7.72141, -0.00000]\n    acceleration: [0.00000, 0.00000, 0.00000]\n    jerk: [0.00000, 0.00000, 0.00000]\n    yaw: -1.83450\n    yawspeed: 0.00000\n",
+          "vehicle_local_position_setpoint": "\nTOPIC: vehicle_local_position_setpoint\n vehicle_local_position_setpoint\n    timestamp: 163692000 (0.004000 seconds ago)\n    x: -62.91661\n    y: -232.12648\n    z: -15.12285\n    vx: -1.25731\n    vy: -8.61796\n    vz: 0.00126\n    acceleration: [-1.27845, -14.99091, 0.01273]\n    thrust: [-0.05278, -0.61884, -0.62109]\n    yaw: -1.83450\n    yawspeed: 0.00000\n",
+          "position_setpoint_triplet": "\nTOPIC: position_setpoint_triplet\n position_setpoint_triplet\n    timestamp: 78516000 (85.183998 seconds ago)\n  previous (position_setpoint):\n    timestamp: 78516000 (85.183998 seconds ago)\n    lat: nan\n    lon: nan\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 0.00000\n    yaw: nan\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: 0.00000\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: False\n    type: 5\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n  current (position_setpoint):\n    timestamp: 78516000 (85.183998 seconds ago)\n    lat: 35.448590\n    lon: 139.649060\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.77449\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 0\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n  next (position_setpoint):\n    timestamp: 78516000 (85.183998 seconds ago)\n    lat: 35.448590\n    lon: 139.649060\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.77449\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 2\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n",
+          "vehicle_attitude_setpoint": "\nTOPIC: vehicle_attitude_setpoint\n vehicle_attitude_setpoint\n    timestamp: 163700000 (0.004000 seconds ago)\n    yaw_sp_move_rate: 0.00000\n    q_d: [0.58053, -0.26475, -0.27633, -0.71871] (Roll: 7.2 deg, Pitch: -44.5 deg, Yaw: -105.1 deg)\n    thrust_body: [0.00000, 0.00000, -0.87833]\n",
+          "actuator_motors": "\nTOPIC: actuator_motors\n actuator_motors\n    timestamp: 163708000 (0.000000 seconds ago)\n    timestamp_sample: 163708000 (0 us before timestamp)\n    control: [0.86481, 0.89358, 0.87103, 0.88391, nan, nan, nan, nan, nan, nan, nan, nan]\n    reversible_flags: 0\n\n"
+        }
+      },
+      {
+        "run_id": "yokohama-5a405a1b1170",
+        "sim_s": 168.748,
+        "phase": "SEA-INBOUND-COAST",
+        "raw_px4": {
+          "trajectory_setpoint": "\nTOPIC: trajectory_setpoint\n trajectory_setpoint\n    timestamp: 168744000 (0.016000 seconds ago)\n    position: [-66.79703, -246.44380, -15.12285]\n    velocity: [-2.09280, -7.72141, -0.00000]\n    acceleration: [0.00000, 0.00000, 0.00000]\n    jerk: [0.00000, 0.00000, 0.00000]\n    yaw: -1.83450\n    yawspeed: 0.00000\n",
+          "vehicle_local_position_setpoint": "\nTOPIC: vehicle_local_position_setpoint\n vehicle_local_position_setpoint\n    timestamp: 168768000 (0.000000 seconds ago)\n    x: -66.81577\n    y: -246.51294\n    z: -15.12285\n    vx: -1.27107\n    vy: -8.63210\n    vz: -0.00085\n    acceleration: [-1.29516, -15.00170, 0.00570]\n    thrust: [-0.05345, -0.61907, -0.62137]\n    yaw: -1.83450\n    yawspeed: 0.00000\n",
+          "position_setpoint_triplet": "\nTOPIC: position_setpoint_triplet\n position_setpoint_triplet\n    timestamp: 78516000 (90.260002 seconds ago)\n  previous (position_setpoint):\n    timestamp: 78516000 (90.260002 seconds ago)\n    lat: nan\n    lon: nan\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 0.00000\n    yaw: nan\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: 0.00000\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: False\n    type: 5\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n  current (position_setpoint):\n    timestamp: 78516000 (90.260002 seconds ago)\n    lat: 35.448590\n    lon: 139.649060\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.77449\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 0\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n  next (position_setpoint):\n    timestamp: 78516000 (90.260002 seconds ago)\n    lat: 35.448590\n    lon: 139.649060\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.77449\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 2\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n",
+          "vehicle_attitude_setpoint": "\nTOPIC: vehicle_attitude_setpoint\n vehicle_attitude_setpoint\n    timestamp: 168776000 (0.004000 seconds ago)\n    yaw_sp_move_rate: 0.00000\n    q_d: [0.58042, -0.26500, -0.27609, -0.71879] (Roll: 7.2 deg, Pitch: -44.5 deg, Yaw: -105.1 deg)\n    thrust_body: [0.00000, 0.00000, -0.87876]\n",
+          "actuator_motors": "\nTOPIC: actuator_motors\n actuator_motors\n    timestamp: 168784000 (0.000000 seconds ago)\n    timestamp_sample: 168784000 (0 us before timestamp)\n    control: [0.86528, 0.89386, 0.87141, 0.88452, nan, nan, nan, nan, nan, nan, nan, nan]\n    reversible_flags: 0\n\n"
+        }
+      }
+    ],
+    "raw_hashes": {
+      "config.json": "bca8e31d416e734982399dc16b712815537e2450bdce5d11a2d64fdcd192500e",
+      "result.json": "a852113bafa0a8b089762f228ce6696bf10b4c168a06ff5b03160b53627c65d9",
+      "flight-trajectory.jsonl": "3d7e36d75387c7c6afbbdca470e634fb92af5bed6e614e7af55080d263fca5fe",
+      "wind-diagnostics.jsonl": "71cee00d7cf792f0a593955a1ef5f0446f0a76df1b843c4efa7ebd9e0b92db9f",
+      "wind-transitions.json": "b787a6844971c72de8a0c85a8da652005263f68dd7f9949400e6223ffe43764d"
+    }
+  },
+  {
+    "case": "gust-flight",
+    "run_id": "yokohama-372932c0bec8",
+    "status": "failed",
+    "cleanup": true,
+    "sea_inbound_waypoint_count": 1,
+    "speed_window_sim_s": [
+      150,
+      240
+    ],
+    "speed_samples": 261,
+    "actual_speed_median_mps": 2.926065571514077,
+    "trajectory_speed_median_mps": 7.999999014256189,
+    "final_current_mission_index": 20.0,
+    "coast_hold": {
+      "duration_sim_s": 30.387999999999977,
+      "samples": 89,
+      "max_horizontal_error_m": 0.9191411225202304,
+      "max_vertical_error_m": 0.45589441793775265,
+      "max_px4_speed_mps": 0.4213641395515285,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.020651708000059443,
+      "max_sample_gap_sim_s": 0.6159999999999854,
+      "start_sim_s": 410.904,
+      "end_sim_s": 441.292,
+      "point": "SEA-INBOUND-COAST",
+      "target_world_xyz_m": [
+        386.1720648824816,
+        104.26474142489603,
+        15.110143087104275
+      ],
+      "passed": true
+    },
+    "holds_passed": 3,
+    "final_phase": "00-D1",
+    "final_sim_s": 627.76,
+    "applied_gust_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "applied_gust_peaks_mps": [
+      7.688735766620865,
+      7.947263800313033,
+      7.914099258353002,
+      6.511557428673419,
+      6.6697947955708035,
+      6.801897641476505,
+      5.057734287641449,
+      5.025007637124764,
+      8.100030548499056,
+      9.153487979297026
+    ],
+    "gust_zones": [
+      "offshore",
+      "harbor",
+      "coast",
+      "city"
+    ],
+    "gust_transition_count": 10,
+    "snapshot_diagnostics": [
+      {
+        "run_id": "yokohama-372932c0bec8",
+        "sim_s": 152.9,
+        "phase": "SEA-INBOUND-COAST",
+        "raw_px4": {
+          "trajectory_setpoint": "\nTOPIC: trajectory_setpoint\n trajectory_setpoint\n    timestamp: 152900000 (0.004000 seconds ago)\n    position: [-52.78247, -194.70067, -15.01548]\n    velocity: [-2.09279, -7.72141, -0.00000]\n    acceleration: [0.00000, 0.00000, 0.00000]\n    jerk: [0.00000, 0.00000, 0.00000]\n    yaw: -1.83450\n    yawspeed: 0.00000\n",
+          "vehicle_local_position_setpoint": "\nTOPIC: vehicle_local_position_setpoint\n vehicle_local_position_setpoint\n    timestamp: 152908000 (0.000000 seconds ago)\n    x: -52.78247\n    y: -194.70067\n    z: -15.01548\n    vx: -1.32268\n    vy: -8.67524\n    vz: -0.00245\n    acceleration: [-1.40997, -14.98865, 0.01072]\n    thrust: [-0.05823, -0.61898, -0.62171]\n    yaw: -1.83450\n    yawspeed: 0.00000\n",
+          "position_setpoint_triplet": "\nTOPIC: position_setpoint_triplet\n position_setpoint_triplet\n    timestamp: 75168000 (77.744003 seconds ago)\n  previous (position_setpoint):\n    timestamp: 75168000 (77.744003 seconds ago)\n    lat: nan\n    lon: nan\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 0.00000\n    yaw: nan\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: 0.00000\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: False\n    type: 5\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n  current (position_setpoint):\n    timestamp: 75168000 (77.744003 seconds ago)\n    lat: 35.448590\n    lon: 139.649060\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.70000\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 0\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n  next (position_setpoint):\n    timestamp: 75168000 (77.744003 seconds ago)\n    lat: 35.448590\n    lon: 139.649060\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.70000\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 2\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n",
+          "vehicle_attitude_setpoint": "\nTOPIC: vehicle_attitude_setpoint\n vehicle_attitude_setpoint\n    timestamp: 152916000 (0.004000 seconds ago)\n    yaw_sp_move_rate: 0.00000\n    q_d: [0.57955, -0.26702, -0.27413, -0.71950] (Roll: 6.9 deg, Pitch: -44.6 deg, Yaw: -105.1 deg)\n    thrust_body: [0.00000, 0.00000, -0.87923]\n",
+          "actuator_motors": "\nTOPIC: actuator_motors\n actuator_motors\n    timestamp: 152920000 (0.000000 seconds ago)\n    timestamp_sample: 152920000 (0 us before timestamp)\n    control: [0.86569, 0.89446, 0.87155, 0.88521, nan, nan, nan, nan, nan, nan, nan, nan]\n    reversible_flags: 0\n\n"
+        }
+      },
+      {
+        "run_id": "yokohama-372932c0bec8",
+        "sim_s": 158.004,
+        "phase": "SEA-INBOUND-COAST",
+        "raw_px4": {
+          "trajectory_setpoint": "\nTOPIC: trajectory_setpoint\n trajectory_setpoint\n    timestamp: 158056000 (0.020000 seconds ago)\n    position: [-56.72197, -209.23734, -15.01548]\n    velocity: [-2.09280, -7.72141, -0.00000]\n    acceleration: [0.00000, 0.00000, 0.00000]\n    jerk: [0.00000, 0.00000, 0.00000]\n    yaw: -1.83450\n    yawspeed: 0.00000\n",
+          "vehicle_local_position_setpoint": "\nTOPIC: vehicle_local_position_setpoint\n vehicle_local_position_setpoint\n    timestamp: 158080000 (0.004000 seconds ago)\n    x: -56.74046\n    y: -209.30557\n    z: -15.01548\n    vx: -1.33791\n    vy: -8.70525\n    vz: 0.01008\n    acceleration: [-1.44989, -15.10869, 0.02702]\n    thrust: [-0.05926, -0.61754, -0.62037]\n    yaw: -1.83450\n    yawspeed: 0.00000\n",
+          "position_setpoint_triplet": "\nTOPIC: position_setpoint_triplet\n position_setpoint_triplet\n    timestamp: 75168000 (82.919998 seconds ago)\n  previous (position_setpoint):\n    timestamp: 75168000 (82.919998 seconds ago)\n    lat: nan\n    lon: nan\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 0.00000\n    yaw: nan\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: 0.00000\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: False\n    type: 5\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n  current (position_setpoint):\n    timestamp: 75168000 (82.919998 seconds ago)\n    lat: 35.448590\n    lon: 139.649060\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.70000\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 0\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n  next (position_setpoint):\n    timestamp: 75168000 (82.919998 seconds ago)\n    lat: 35.448590\n    lon: 139.649060\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.70000\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 2\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n",
+          "vehicle_attitude_setpoint": "\nTOPIC: vehicle_attitude_setpoint\n vehicle_attitude_setpoint\n    timestamp: 158096000 (0.000000 seconds ago)\n    yaw_sp_move_rate: 0.00000\n    q_d: [0.57939, -0.26739, -0.27377, -0.71962] (Roll: 6.8 deg, Pitch: -44.6 deg, Yaw: -105.1 deg)\n    thrust_body: [0.00000, 0.00000, -0.87738]\n",
+          "actuator_motors": "\nTOPIC: actuator_motors\n actuator_motors\n    timestamp: 158100000 (0.000000 seconds ago)\n    timestamp_sample: 158100000 (0 us before timestamp)\n    control: [0.86407, 0.89257, 0.86941, 0.88347, nan, nan, nan, nan, nan, nan, nan, nan]\n    reversible_flags: 0\n\n"
+        }
+      },
+      {
+        "run_id": "yokohama-372932c0bec8",
+        "sim_s": 163.22,
+        "phase": "SEA-INBOUND-COAST",
+        "raw_px4": {
+          "trajectory_setpoint": "\nTOPIC: trajectory_setpoint\n trajectory_setpoint\n    timestamp: 163236000 (0.004000 seconds ago)\n    position: [-60.66911, -223.80159, -15.01548]\n    velocity: [-2.09280, -7.72141, -0.00000]\n    acceleration: [0.00000, 0.00000, 0.00000]\n    jerk: [0.00000, 0.00000, 0.00000]\n    yaw: -1.83450\n    yawspeed: 0.00000\n",
+          "vehicle_local_position_setpoint": "\nTOPIC: vehicle_local_position_setpoint\n vehicle_local_position_setpoint\n    timestamp: 163244000 (0.000000 seconds ago)\n    x: -60.66911\n    y: -223.80159\n    z: -15.01548\n    vx: -1.29507\n    vy: -8.66700\n    vz: 0.01424\n    acceleration: [-1.36074, -15.03224, 0.02377]\n    thrust: [-0.05593, -0.61782, -0.62035]\n    yaw: -1.83450\n    yawspeed: 0.00000\n",
+          "position_setpoint_triplet": "\nTOPIC: position_setpoint_triplet\n position_setpoint_triplet\n    timestamp: 75168000 (88.080002 seconds ago)\n  previous (position_setpoint):\n    timestamp: 75168000 (88.084000 seconds ago)\n    lat: nan\n    lon: nan\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 0.00000\n    yaw: nan\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: 0.00000\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: False\n    type: 5\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n  current (position_setpoint):\n    timestamp: 75168000 (88.084000 seconds ago)\n    lat: 35.448590\n    lon: 139.649060\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.70000\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 0\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n  next (position_setpoint):\n    timestamp: 75168000 (88.084000 seconds ago)\n    lat: 35.448590\n    lon: 139.649060\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.70000\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 2\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n",
+          "vehicle_attitude_setpoint": "\nTOPIC: vehicle_attitude_setpoint\n vehicle_attitude_setpoint\n    timestamp: 163252000 (0.004000 seconds ago)\n    yaw_sp_move_rate: 0.00000\n    q_d: [0.58000, -0.26599, -0.27513, -0.71914] (Roll: 7.0 deg, Pitch: -44.6 deg, Yaw: -105.1 deg)\n    thrust_body: [0.00000, 0.00000, -0.87733]\n",
+          "actuator_motors": "\nTOPIC: actuator_motors\n actuator_motors\n    timestamp: 163260000 (0.000000 seconds ago)\n    timestamp_sample: 163260000 (0 us before timestamp)\n    control: [0.86407, 0.89228, 0.87004, 0.88292, nan, nan, nan, nan, nan, nan, nan, nan]\n    reversible_flags: 0\n\n"
+        }
+      },
+      {
+        "run_id": "yokohama-372932c0bec8",
+        "sim_s": 168.332,
+        "phase": "SEA-INBOUND-COAST",
+        "raw_px4": {
+          "trajectory_setpoint": "\nTOPIC: trajectory_setpoint\n trajectory_setpoint\n    timestamp: 168396000 (0.008000 seconds ago)\n    position: [-64.62343, -238.39256, -15.01548]\n    velocity: [-2.09280, -7.72141, -0.00000]\n    acceleration: [0.00000, 0.00000, 0.00000]\n    jerk: [0.00000, 0.00000, 0.00000]\n    yaw: -1.83450\n    yawspeed: 0.00000\n",
+          "vehicle_local_position_setpoint": "\nTOPIC: vehicle_local_position_setpoint\n vehicle_local_position_setpoint\n    timestamp: 168412000 (0.000000 seconds ago)\n    x: -64.62343\n    y: -238.39256\n    z: -15.01548\n    vx: -1.32802\n    vy: -8.66826\n    vz: 0.00296\n    acceleration: [-1.40798, -15.00150, 0.00632]\n    thrust: [-0.05805, -0.61850, -0.62121]\n    yaw: -1.83450\n    yawspeed: 0.00000\n",
+          "position_setpoint_triplet": "\nTOPIC: position_setpoint_triplet\n position_setpoint_triplet\n    timestamp: 75168000 (93.248001 seconds ago)\n  previous (position_setpoint):\n    timestamp: 75168000 (93.248001 seconds ago)\n    lat: nan\n    lon: nan\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 0.00000\n    yaw: nan\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: 0.00000\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: False\n    type: 5\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n  current (position_setpoint):\n    timestamp: 75168000 (93.248001 seconds ago)\n    lat: 35.448590\n    lon: 139.649060\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.70000\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 0\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n  next (position_setpoint):\n    timestamp: 75168000 (93.248001 seconds ago)\n    lat: 35.448590\n    lon: 139.649060\n    vx: 0.00000\n    vy: 0.00000\n    vz: 0.00000\n    alt: 15.70000\n    yaw: 4.44868\n    loiter_radius: 80.00000\n    loiter_minor_radius: 0.00000\n    loiter_orientation: 0.00000\n    acceptance_radius: 0.50000\n    alt_acceptance_radius: nan\n    cruising_speed: -1.00000\n    cruising_throttle: nan\n    valid: True\n    type: 2\n    loiter_direction_counter_clockwise: False\n    loiter_pattern: 0\n    gliding_enabled: False\n\n",
+          "vehicle_attitude_setpoint": "\nTOPIC: vehicle_attitude_setpoint\n vehicle_attitude_setpoint\n    timestamp: 168420000 (0.000000 seconds ago)\n    yaw_sp_move_rate: 0.00000\n    q_d: [0.57952, -0.26708, -0.27407, -0.71952] (Roll: 6.8 deg, Pitch: -44.6 deg, Yaw: -105.1 deg)\n    thrust_body: [0.00000, 0.00000, -0.87855]\n",
+          "actuator_motors": "\nTOPIC: actuator_motors\n actuator_motors\n    timestamp: 168424000 (0.000000 seconds ago)\n    timestamp_sample: 168424000 (0 us before timestamp)\n    control: [0.86523, 0.89355, 0.87119, 0.88424, nan, nan, nan, nan, nan, nan, nan, nan]\n    reversible_flags: 0\n\n"
+        }
+      }
+    ],
+    "raw_hashes": {
+      "config.json": "28ad190219a9870983c77ef2e48f7dfe56772395dedd080b1bf51bfa15ea3eee",
+      "result.json": "ddf88007d2384b177b859460d33ae9f351ed28b78cef355f980f60cb2cf85f95",
+      "flight-trajectory.jsonl": "c732f5c5bd97dbe815a6e2f9f92f25617a37c8dc5c20b7734b3977af613d280b",
+      "wind-diagnostics.jsonl": "c2b4314c419ae81ee7aca839c6065c8bf16721ffc0df88681192c464f0f94331",
+      "wind-transitions.json": "c87584b3ed627ed822e13c63eb1358d8350241ca88cb2f4d49cb79dde6fc9c79"
+    }
+  }
+]

@@ -1,0 +1,32 @@
+{
+  "status": "passed",
+  "aircraft_flown": false,
+  "native_inference": false,
+  "cases": [
+    {
+      "id": "train-return",
+      "frames": 240,
+      "capture_sha256": "56afd87f39db3cb675da53d9a1f00d0539a28b9db91eb21d27465b81e778dab5"
+    },
+    {
+      "id": "development-return",
+      "frames": 248,
+      "capture_sha256": "016980cc04391c44faa0af2bf6c0c3ad42a1e717131a009508ca30a4d7cc71e5"
+    },
+    {
+      "id": "test-return-fast",
+      "frames": 244,
+      "capture_sha256": "c021f9859ca10d5433f84fdc76007f80e3879bd6687fbca9ff00860fd4219823"
+    },
+    {
+      "id": "test-return-slow",
+      "frames": 256,
+      "capture_sha256": "5f9c48f6af816b1fbbc16873c804cd79719569345932090e6cd72f8a1c88ada9"
+    },
+    {
+      "id": "test-depart-control",
+      "frames": 216,
+      "capture_sha256": "380ca611a5dd15476eb9bfd5cb0003010ddaea05dea94a5a9f6993fc5b47e576"
+    }
+  ]
+}

@@ -1,0 +1,191 @@
+{
+  "run_id": "yokohama-6acc29204d62",
+  "status": "passed",
+  "model_updates_observed": 2,
+  "native_vla_invoked": true,
+  "native_wam_invoked": true,
+  "world_sha256": "a8fbab64f63f3595fbe7c472db61827f0ef907258d9c99bc56d22fe089da4e16",
+  "source_sha256": {
+    "yokohama_scene.py": "ad9ad3de307d590f052fd7b8a1f4623dd43714fdcf7b68424ffe35ea86e62be9",
+    "yokohama_sea.py": "ba96c40195f6139438d98bf6a3c32d2d0980fe85fa064dba855d9f4ed878de51",
+    "yokohama_sitl.py": "6e2387bad541cf7e83bb6df08a7194b75f1a6461e4db98c39a3a547b72b4952e",
+    "yokohama_sitl_worker.py": "5b1c27a4e4ef0b3e4466d2ab5e6417684d8bdc798b9507c8930d0e050545e02c",
+    "ship_urban_camera_worker.py": "d1410467349d7bc5526a46afe2e84a9cf8e44d7a3fc391d8b0361ad78696d6c7",
+    "ship_onboard_entrypoint.sh": "b45b89f4bc9cf4ecab5f3d041866a436d6133574717e122a9e02f86e4c977364",
+    "yokohama_flight_worker.py": "d8ddbc0a9ec83e32a36393c0a372892ca0bef9d13eb7e1d9ef85bb3f6dd1034f",
+    "yokohama_payload.py": "65be8f3b8ec0b4e7886dc71cd9b58e6f7104809749862638fd31738bdd4d892e",
+    "verify_yokohama_payload.py": "b524a558591ea0b5dc1d6e82097b9ebbf5f08783d2f89b54ac872dc3643bbba8",
+    "yokohama_decision_worker.py": "d8f3d98f81f50780575e09167c6cccf5a8f726cbd16a140d9a210addc4eac31d",
+    "yokohama_decision_host.py": "2ab063982c4646215cc4acb3c5de1a378e4c85e827a322308d775803e2ec51e7",
+    "yokohama_native.py": "45d482af2828b4a04c7dbe27281c26fa0833461d5728a3a547a20b93367c4732",
+    "ship_anwm.py": "78e4680405eb0202eac2dbc0ba8035577b1765cf8f76961e83f6f6ae2a431509",
+    "yokohama_appearance.py": "450da308c1d884e4fca1766d1143c80fd48b1f22b8aba3b071304100dd065ec9",
+    "yokohama_wam_profile.py": "1dba81457144c67c1562689644f14ce4d2ea5d3cd73f5ddfbf964f86e3ad46c6",
+    "ship_anwm_server.py": "30a0fa5e864279e2d09d8f7482dccacb93cb7961c8e28b46e070d8928ca04545",
+    "ship_aerovla.py": "3cc49ed27d3ff813ce5cebd766e65196fe5ced20bdfc2ebd9ecb8fb45d2f9743",
+    "ship_aerovla_server.py": "867300859825c5dc2d51ff2ae3a6647a78d4699bba2534b0ce77a49fe7b53c7a",
+    "ship_vla_adapter.py": "0a155c594218e92875daf91e6bbaaf84152eb9a2f93929a64c3666a63e828dca",
+    "smoke_px4_gazebo_sitl_mission_upload.py": "424dac5e40ac45d1012653a891581a1dd4e1d5091700703f725dffc580e45e01",
+    "verify_yokohama_decisions.py": "57845c90e9ff41c4c9380d34df703f5c14863a6e3854fbf5f73767af1ae1c2d3",
+    "verify_yokohama_sitl.py": "9a03f0321a7ebec48398453cb96c090d5068b825673565e96e5fc1edb607f25c"
+  },
+  "error": null,
+  "holds_completed": 13,
+  "cycles": [
+    {
+      "cycle": 1,
+      "request_sha256": "cee2d9ab8466e3aca268623ba46c020e72bce040ccc60c7d15aa4b8f5dea753f",
+      "response_sha256": "5babae95aff4a24feafb1929c9fe26cdc6af6db672b904baa7a4e6766234d627",
+      "assessment": {
+        "checks": [
+          {
+            "candidate": {
+              "id": "hold",
+              "delta": [
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "passed": true,
+            "known_pixel_fraction": 0.7229950573979592,
+            "reference_edge_pixels": 1914,
+            "matched_edge_fraction": 0.9926854754440961,
+            "luminance_mae": 3.3766206319890464,
+            "predicted_edge_density": 0.06012073765746892,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          },
+          {
+            "candidate": {
+              "id": "vla",
+              "delta": [
+                2.9999196354250426,
+                -0.04333900238657162,
+                -0.022333681569646657,
+                -0.027663600328792448
+              ]
+            },
+            "passed": true,
+            "known_pixel_fraction": 0.7288345025510204,
+            "reference_edge_pixels": 1807,
+            "matched_edge_fraction": 0.9728832318760376,
+            "luminance_mae": 7.859794002369883,
+            "predicted_edge_density": 0.06029532403609516,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          }
+        ],
+        "passed": true,
+        "vla_response_sha256": "af03bace42e3e5264bd8aaa494bdbf2d4d94c45399ed7feffc1cbe971975a560",
+        "native_wam_invoked": true
+      },
+      "error": null
+    },
+    {
+      "cycle": 2,
+      "request_sha256": "dab8a869fcf36320cd049ea733cc5c31323706fe42ccbe72b17b0828b29d8a19",
+      "response_sha256": "fb909b3c22f04c865a2adad356d0f4a5b64743a94a675423a4f125651b034b07",
+      "assessment": {
+        "checks": [
+          {
+            "candidate": {
+              "id": "hold",
+              "delta": [
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "passed": true,
+            "known_pixel_fraction": 0.8391262755102041,
+            "reference_edge_pixels": 1716,
+            "matched_edge_fraction": 0.9994172494172494,
+            "luminance_mae": 2.87471499144974,
+            "predicted_edge_density": 0.047335170055101655,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          },
+          {
+            "candidate": {
+              "id": "vla",
+              "delta": [
+                2.6751853949005864,
+                0.01433618517269708,
+                0.016663535686278763,
+                -0.0004525892599693826
+              ]
+            },
+            "passed": true,
+            "known_pixel_fraction": 0.8353595344387755,
+            "reference_edge_pixels": 1729,
+            "matched_edge_fraction": 1.0,
+            "luminance_mae": 4.251302238657597,
+            "predicted_edge_density": 0.04728617440057259,
+            "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+          }
+        ],
+        "passed": true,
+        "vla_response_sha256": "002368b20fa07c13caad20df437745bde87ab8746e5c053d364668a7e3c2059d",
+        "native_wam_invoked": true
+      },
+      "error": null
+    }
+  ],
+  "vla_calls": [
+    {
+      "vla_inference_invoked": true,
+      "generated_text": "58 49 48</s>",
+      "generated_token_ids": [
+        29945,
+        29947,
+        29871,
+        29946,
+        29929,
+        29871,
+        29946,
+        29947,
+        2
+      ],
+      "request_sha256": "297013a1045c2f6bd671377580df77dc92e7fb0b9b31a25e14aa95920d000daa",
+      "input_images_sha256": {
+        "rgb": "f35c686a753dcbfad14ff59c62e9ff26d462ff6bec00531b5b5fd62212252259",
+        "down": "238c26d9d260b08ce23510bf019114f6deca923c6ecba892f4c2455ad7ab9fb0"
+      },
+      "elapsed_s": null,
+      "inference_s": null,
+      "cuda_allocated_after_request_bytes": 0
+    },
+    {
+      "vla_inference_invoked": true,
+      "generated_text": "53 49 49</s>",
+      "generated_token_ids": [
+        29945,
+        29941,
+        29871,
+        29946,
+        29929,
+        29871,
+        29946,
+        29929,
+        2
+      ],
+      "request_sha256": "b5d9486924e6ab50de9810478ccec5194835ce00fb05a3517f734552c2028cba",
+      "input_images_sha256": {
+        "rgb": "8245f324020c4f1a887ea0a26d015569d7046fe776ca6b5583d50a48b075bf97",
+        "down": "7c5ebda19db9d294c5b4cd8d8369616cafa2413bb8b2d2fceab495cb927657ef"
+      },
+      "elapsed_s": null,
+      "inference_s": null,
+      "cuda_allocated_after_request_bytes": 0
+    }
+  ],
+  "duration_sim_s": 1687.432,
+  "duration_wall_s": 1698.2902042340002,
+  "payload_delivery_verified": true,
+  "generic_obstacle_recognition_verified": false,
+  "energy_savings_verified": false,
+  "source_revision": "819b90c13ffc03a5fbd3773aeecb91278e988380",
+  "wam_profile": "motion-v4",
+  "maximum_target_error_m": 0.10101421743729176,
+  "physical_receipt_verified": false
+}

@@ -1,0 +1,13 @@
+{
+  "html_sha256": "302cd34075ee4236be99815a78fdd7faa8a0adf9918733abeb784dc02efc5151",
+  "desktop_width": 1280,
+  "narrow_width": 360,
+  "horizontal_overflow": false,
+  "time_slider_end_sim_s": 255,
+  "replay_play_pause_observed": true,
+  "video_ready_state": 4,
+  "video_duration_s": 32.333333,
+  "loaded_camera_width": 640,
+  "console_errors": [],
+  "scope": "first failed native attempt only; revised trial not yet available"
+}

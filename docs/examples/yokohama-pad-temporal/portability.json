@@ -1,0 +1,96 @@
+{
+  "schema": "pad_temporal_cpu_portability.v1",
+  "failed_ci": "https://github.com/pome223/missionos/actions/runs/36409099248",
+  "original_evaluation_sha256": "b584351c9ff5870388c9cb65beb3abe6b705bc9423bae0858558fec415a38f44",
+  "classification_and_gate_outcomes_unchanged": true,
+  "comparison_tolerance_unchanged": true,
+  "fix": "Reopen original background reference/mask bound to historical input hash; re-run reader and forecast consistency with original raster",
+  "original_environment": "macOS arm64 NumPy 2.4.6 Pillow 12.3.0",
+  "reproduced_environment": "Linux x86_64 NumPy 2.5.3 Pillow 12.3.0",
+  "rows": [
+    {
+      "id": "evaluation-depart-16",
+      "original_arm64": {
+        "passed": true,
+        "known_pixel_fraction": 0.871711575255102,
+        "reference_edge_pixels": 1877,
+        "matched_edge_fraction": 0.8795950985615344,
+        "luminance_mae": 29.136102791559022,
+        "predicted_edge_density": 0.15151238025560712,
+        "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+      },
+      "x86_reconstruction": {
+        "passed": true,
+        "known_pixel_fraction": 0.871711575255102,
+        "reference_edge_pixels": 1877,
+        "matched_edge_fraction": 0.8795950985615344,
+        "luminance_mae": 29.13515017109064,
+        "predicted_edge_density": 0.15151238025560712,
+        "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+      }
+    },
+    {
+      "id": "evaluation-depart-32",
+      "original_arm64": {
+        "passed": true,
+        "known_pixel_fraction": 0.871711575255102,
+        "reference_edge_pixels": 1756,
+        "matched_edge_fraction": 0.8342824601366743,
+        "luminance_mae": 28.830151580968934,
+        "predicted_edge_density": 0.13630855758019159,
+        "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+      },
+      "x86_reconstruction": {
+        "passed": true,
+        "known_pixel_fraction": 0.871711575255102,
+        "reference_edge_pixels": 1756,
+        "matched_edge_fraction": 0.8342824601366743,
+        "luminance_mae": 28.828833154240687,
+        "predicted_edge_density": 0.13630855758019159,
+        "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+      }
+    },
+    {
+      "id": "evaluation-stall-24",
+      "original_arm64": {
+        "passed": true,
+        "known_pixel_fraction": 0.871711575255102,
+        "reference_edge_pixels": 1889,
+        "matched_edge_fraction": 0.8777130757014293,
+        "luminance_mae": 28.700686648833614,
+        "predicted_edge_density": 0.1499348407599625,
+        "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+      },
+      "x86_reconstruction": {
+        "passed": true,
+        "known_pixel_fraction": 0.871711575255102,
+        "reference_edge_pixels": 1889,
+        "matched_edge_fraction": 0.8777130757014293,
+        "luminance_mae": 28.69985596378518,
+        "predicted_edge_density": 0.1499348407599625,
+        "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+      }
+    },
+    {
+      "id": "evaluation-reenter-14",
+      "original_arm64": {
+        "passed": true,
+        "known_pixel_fraction": 0.871711575255102,
+        "reference_edge_pixels": 1832,
+        "matched_edge_fraction": 0.8831877729257642,
+        "luminance_mae": 28.889602719159868,
+        "predicted_edge_density": 0.14867738174169506,
+        "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+      },
+      "x86_reconstruction": {
+        "passed": true,
+        "known_pixel_fraction": 0.871711575255102,
+        "reference_edge_pixels": 1835,
+        "matched_edge_fraction": 0.8833787465940055,
+        "luminance_mae": 28.88349832719846,
+        "predicted_edge_density": 0.14867738174169506,
+        "interpretation": "visible_structure_consistency_only_not_free_space_or_collision_prediction"
+      }
+    }
+  ]
+}

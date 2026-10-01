@@ -1,0 +1,131 @@
+{
+  "schema": "missionos.pad-reentry-evaluation.v1",
+  "status": "replayed",
+  "metrics": {
+    "new_timing": {
+      "windows": 152,
+      "current_entry_windows": 64,
+      "impending_reoccupation_windows": 8,
+      "methods": {
+        "current_rules": {
+          "anticipated_waits": 0,
+          "missed_reentries": 8,
+          "additional_wait_without_reoccupation_next_4s": 0,
+          "changed_decisions": 0
+        },
+        "existing": {
+          "anticipated_waits": 0,
+          "missed_reentries": 8,
+          "additional_wait_without_reoccupation_next_4s": 0,
+          "changed_decisions": 0
+        },
+        "post_trained": {
+          "anticipated_waits": 0,
+          "missed_reentries": 8,
+          "additional_wait_without_reoccupation_next_4s": 0,
+          "changed_decisions": 0
+        },
+        "constant_velocity": {
+          "anticipated_waits": 1,
+          "missed_reentries": 7,
+          "additional_wait_without_reoccupation_next_4s": 0,
+          "changed_decisions": 1
+        },
+        "oracle": {
+          "anticipated_waits": 8,
+          "missed_reentries": 0,
+          "additional_wait_without_reoccupation_next_4s": 0,
+          "changed_decisions": 8
+        }
+      }
+    },
+    "previous_regression": {
+      "windows": 149,
+      "current_entry_windows": 50,
+      "impending_reoccupation_windows": 4,
+      "methods": {
+        "current_rules": {
+          "anticipated_waits": 0,
+          "missed_reentries": 4,
+          "additional_wait_without_reoccupation_next_4s": 0,
+          "changed_decisions": 0
+        },
+        "existing": {
+          "anticipated_waits": 0,
+          "missed_reentries": 4,
+          "additional_wait_without_reoccupation_next_4s": 0,
+          "changed_decisions": 0
+        },
+        "post_trained": {
+          "anticipated_waits": 0,
+          "missed_reentries": 4,
+          "additional_wait_without_reoccupation_next_4s": 0,
+          "changed_decisions": 0
+        },
+        "constant_velocity": {
+          "anticipated_waits": 0,
+          "missed_reentries": 4,
+          "additional_wait_without_reoccupation_next_4s": 0,
+          "changed_decisions": 0
+        },
+        "oracle": {
+          "anticipated_waits": 4,
+          "missed_reentries": 0,
+          "additional_wait_without_reoccupation_next_4s": 0,
+          "changed_decisions": 4
+        }
+      }
+    }
+  },
+  "episode_metrics": {
+    "current_rules": {
+      "episodes": 15,
+      "entries": 15,
+      "entries_followed_by_reoccupation": 4,
+      "first_entry_elapsed_sum_s": 455.0800000000001
+    },
+    "existing": {
+      "episodes": 15,
+      "entries": 15,
+      "entries_followed_by_reoccupation": 4,
+      "first_entry_elapsed_sum_s": 455.0800000000001
+    },
+    "post_trained": {
+      "episodes": 15,
+      "entries": 15,
+      "entries_followed_by_reoccupation": 4,
+      "first_entry_elapsed_sum_s": 455.0800000000001
+    },
+    "constant_velocity": {
+      "episodes": 15,
+      "entries": 15,
+      "entries_followed_by_reoccupation": 3,
+      "first_entry_elapsed_sum_s": 491.0800000000001
+    },
+    "oracle": {
+      "episodes": 15,
+      "entries": 15,
+      "entries_followed_by_reoccupation": 0,
+      "first_entry_elapsed_sum_s": 599.0799999999999
+    }
+  },
+  "inference_calls": 602,
+  "shared_mission_judgments": 903,
+  "conditions": {
+    "own_aircraft": "synthetic stable hold",
+    "lead": "measured Gazebo poses",
+    "model": "real CPU inference from recorded RGB",
+    "mission_judge": "shared MissionAssuranceAgent with deterministic fixture",
+    "native_anwm": false,
+    "vla": false,
+    "gpu": false,
+    "aircraft_flown": false,
+    "mission_benefit_demonstrated": false
+  },
+  "weights_sha256": {
+    "existing": "2f648169418c9b8e7a1f4dec4e51cd8a792df8bec1611168e691207cc7ab67af",
+    "post_trained": "5632f67c65845428a45f0eca9294b53609ea1f789b92e9fe149b2782bc2f00ff"
+  },
+  "protocol_sha256": "708b3014bb208fa84ad45e2ed52c1a185c32094b7a56acb4ccef6188687024ed",
+  "replay_protocol_sha256": "6bc138b812e57321ec58be5e8ef3141f7235066b71184bbd197bd6c5500722ed"
+}

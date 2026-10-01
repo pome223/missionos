@@ -1,0 +1,22 @@
+{
+  "schema": "pad_temporal_inputs.v1",
+  "samples": [
+    {
+      "id": "evaluation-depart-16",
+      "request_sha256": "c168a81b0bf3841d3a654917a723f14159e017c52a1e3051bff798744b666c38"
+    },
+    {
+      "id": "evaluation-depart-32",
+      "request_sha256": "2727da91c441b551b99142293632e0585281b02ef5a0d3d9ccd01ded7061f920"
+    },
+    {
+      "id": "evaluation-stall-24",
+      "request_sha256": "de5c58c3a4c7de96c779c062353df6427a7e4aaa148c5e4ddefa8e5060325848"
+    },
+    {
+      "id": "evaluation-reenter-14",
+      "request_sha256": "21c6c831efd2c9afe381095665e2954c0cc24347207da4d582d8836d58b0c256"
+    }
+  ],
+  "future_targets_included": false
+}

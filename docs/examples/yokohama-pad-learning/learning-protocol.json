@@ -1,0 +1,41 @@
+{
+  "schema": "pad_wam_learning_protocol.v1",
+  "steps": 2048,
+  "lr": 5e-05,
+  "seed": 42,
+  "gradient_clip": 1.0,
+  "roi_extra_weight": 4.0,
+  "evaluation_steps": 50,
+  "evaluation_frame_offset": 64,
+  "development_rgb_mae_max": 12,
+  "model_work_seconds_max": 2400,
+  "flight_admitted": false,
+  "vla_training": false,
+  "dataset_sha256": "31d88118e142617817652453af76cbfcb98c58c79e882c34edf1efea231d1437",
+  "source_sha256": {
+    "ship_anwm.py": "78e4680405eb0202eac2dbc0ba8035577b1765cf8f76961e83f6f6ae2a431509",
+    "ship_anwm_server.py": "30a0fa5e864279e2d09d8f7482dccacb93cb7961c8e28b46e070d8928ca04545",
+    "train_yokohama_pad_wam.py": "75411eb0bfebacbd1c8eed2cb1508c73bf595658dbc133e856eb3886b249ea1e",
+    "yokohama_appearance.py": "450da308c1d884e4fca1766d1143c80fd48b1f22b8aba3b071304100dd065ec9",
+    "yokohama_pad_learning_data.py": "a9fce0340e2a3b2349a0b1edd4a305155b6d826af2c244e54109e12f0723bec3",
+    "yokohama_wam_profile.py": "1dba81457144c67c1562689644f14ce4d2ea5d3cd73f5ddfbf964f86e3ad46c6"
+  },
+  "purpose": "Supervised dynamic endpoint capability, not mission benefit or an aircraft waiting policy",
+  "training_trigger": "Any of three fixed development 50-step/64-frame forecasts has wrong/unknown state or RGB MAE above 12; never use held-out outcomes to trigger or tune training",
+  "learning_scope": "Existing final block and output/attention heads only; base, VAE and time embedding frozen",
+  "loss": "Upstream diffusion loss plus 4x latent epsilon MSE inside prior development-only motion mask",
+  "time_contract": "All training uses actual 4 Hz acquisition offsets /128; offsets 1,16,64 mean .25,4,16 seconds",
+  "ablation": "Same training observation: 50/250 sampling steps crossed with frame offset 1/64; no checkpoint selection on test data",
+  "evaluation": "Four newly recorded timing cases plus four previously inspected regression cases, before and after one serialized adapter update",
+  "candidate_qualification": {
+    "fresh_matches_min": 3,
+    "fresh_count": 4,
+    "false_clear_max": 0,
+    "pixel_mae_max": 12,
+    "prior_successes_preserved": true
+  },
+  "adoption": "No flight or mission adoption even if endpoint gate passes; interval occupancy and both-action validation remain required",
+  "comparison": "Current image persistence and before/after native weights. Ideal Rules superiority not required",
+  "maximum_gpu_instances": 1,
+  "resampling": false
+}

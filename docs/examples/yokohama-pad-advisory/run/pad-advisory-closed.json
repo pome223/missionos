@@ -1,0 +1,6 @@
+{
+  "schema": "missionos.pad-advisory-close.v1",
+  "run_id": "yokohama-c410139f4ad7",
+  "closed_sim_s": 605.052,
+  "reason": "pad wait ended"
+}

@@ -1,0 +1,521 @@
+{
+  "schema": "native_pad_focus_diagnosis.v1",
+  "post_hoc": true,
+  "native_rerun": false,
+  "actor_pose_model_input": false,
+  "adoption_changed": false,
+  "attribution": "Correlational; the combined crop/horizon/conditioning/scope/loss change stays unattributed",
+  "geometry_source": {
+    "path": "docs/examples/yokohama-pad-queue/protocol.json",
+    "sha256": "91b95bb36be0135e367eb98418c722c9d29ed5e5b4af5c3532c73d405f4ce90e"
+  },
+  "headroom": {
+    "known_targets": 26,
+    "persistence_matches": 23,
+    "state_change_conditions": [
+      {
+        "id": "focus-depart-25-t16",
+        "current": "unknown",
+        "future": "clear",
+        "before": "unknown",
+        "after": "unknown"
+      },
+      {
+        "id": "focus-return-21-t16",
+        "current": "clear",
+        "future": "occupied",
+        "before": "unknown",
+        "after": "unknown"
+      },
+      {
+        "id": "focus-return-49-t16",
+        "current": "occupied",
+        "future": "clear",
+        "before": "unknown",
+        "after": "unknown"
+      }
+    ],
+    "max_gain_over_persistence": 3,
+    "clear_to_occupied_opportunities": 1
+  },
+  "failure_mode": {
+    "before": {
+      "matches": 13,
+      "wrong_state": 0,
+      "unknown": 13
+    },
+    "after": {
+      "matches": 12,
+      "wrong_state": 0,
+      "unknown": 14
+    }
+  },
+  "by_history_overlap": [
+    {
+      "exact_training_history_overlap": true,
+      "horizon_s": 1.0,
+      "conditions": 5,
+      "before": {
+        "known_matches": 5,
+        "known_targets": 5,
+        "median_rgb_mae": 5.033
+      },
+      "after": {
+        "known_matches": 5,
+        "known_targets": 5,
+        "median_rgb_mae": 3.097
+      },
+      "histories_static": true
+    },
+    {
+      "exact_training_history_overlap": true,
+      "horizon_s": 4.0,
+      "conditions": 5,
+      "before": {
+        "known_matches": 3,
+        "known_targets": 5,
+        "median_rgb_mae": 9.354
+      },
+      "after": {
+        "known_matches": 3,
+        "known_targets": 5,
+        "median_rgb_mae": 4.11
+      },
+      "histories_static": true
+    },
+    {
+      "exact_training_history_overlap": false,
+      "horizon_s": 1.0,
+      "conditions": 9,
+      "before": {
+        "known_matches": 5,
+        "known_targets": 7,
+        "median_rgb_mae": 7.233
+      },
+      "after": {
+        "known_matches": 3,
+        "known_targets": 7,
+        "median_rgb_mae": 11.149
+      }
+    },
+    {
+      "exact_training_history_overlap": false,
+      "horizon_s": 4.0,
+      "conditions": 9,
+      "before": {
+        "known_matches": 0,
+        "known_targets": 9,
+        "median_rgb_mae": 9.761
+      },
+      "after": {
+        "known_matches": 1,
+        "known_targets": 9,
+        "median_rgb_mae": 29.041
+      }
+    }
+  ],
+  "mean_rgb_mae_by_horizon": {
+    "1s": {
+      "before": 6.84,
+      "after": 7.833
+    },
+    "4s": {
+      "before": 9.641,
+      "after": 21.78
+    }
+  },
+  "training": {
+    "pairs": 208,
+    "history_files": 104,
+    "distinct_history_pixels": 59,
+    "moving_history_files": 56,
+    "post_training_training_set_forecasts": 0,
+    "updates": 4096,
+    "updates_per_pair": 19.692,
+    "first_512": {
+      "median_loss": 0.278,
+      "median_roi": 0.033
+    },
+    "last_512": {
+      "median_loss": 0.053,
+      "median_roi": 0.006
+    },
+    "gradient_clipped_fraction": 0.81
+  },
+  "development": {
+    "native_passed": 1,
+    "vae_round_trip_matches": 3,
+    "probes": 3,
+    "vae_round_trip_min_margin": 5.45
+  },
+  "object_scale": {
+    "crop_px": [
+      224,
+      224
+    ],
+    "latent_stride": 8,
+    "median_largest_component_wh_px": [
+      39.5,
+      10.0
+    ],
+    "median_largest_component_wh_latent": [
+      4.938,
+      1.25
+    ],
+    "max_changed_pixel_fraction": 0.011,
+    "histories": [
+      {
+        "history": "focus-depart-05",
+        "changed_pixel_fraction": 0.011,
+        "largest_components_wh": [
+          [
+            39,
+            34
+          ],
+          [
+            11,
+            5
+          ]
+        ]
+      },
+      {
+        "history": "focus-depart-19",
+        "changed_pixel_fraction": 0.007,
+        "largest_components_wh": [
+          [
+            43,
+            10
+          ],
+          [
+            30,
+            13
+          ]
+        ]
+      },
+      {
+        "history": "focus-depart-25",
+        "changed_pixel_fraction": 0.006,
+        "largest_components_wh": [
+          [
+            40,
+            8
+          ],
+          [
+            29,
+            11
+          ]
+        ]
+      },
+      {
+        "history": "focus-depart-38",
+        "changed_pixel_fraction": 0.005,
+        "largest_components_wh": [
+          [
+            37,
+            7
+          ],
+          [
+            19,
+            10
+          ]
+        ]
+      },
+      {
+        "history": "focus-return-16",
+        "changed_pixel_fraction": 0.006,
+        "largest_components_wh": [
+          [
+            38,
+            8
+          ],
+          [
+            19,
+            12
+          ]
+        ]
+      },
+      {
+        "history": "focus-return-21",
+        "changed_pixel_fraction": 0.006,
+        "largest_components_wh": [
+          [
+            39,
+            9
+          ],
+          [
+            28,
+            11
+          ]
+        ]
+      },
+      {
+        "history": "focus-return-26",
+        "changed_pixel_fraction": 0.007,
+        "largest_components_wh": [
+          [
+            42,
+            10
+          ],
+          [
+            30,
+            12
+          ]
+        ]
+      },
+      {
+        "history": "focus-return-36",
+        "changed_pixel_fraction": 0.008,
+        "largest_components_wh": [
+          [
+            43,
+            10
+          ],
+          [
+            23,
+            14
+          ]
+        ]
+      },
+      {
+        "history": "focus-return-49",
+        "changed_pixel_fraction": 0.007,
+        "largest_components_wh": [
+          [
+            41,
+            10
+          ],
+          [
+            30,
+            12
+          ]
+        ]
+      },
+      {
+        "history": "focus-return-57",
+        "changed_pixel_fraction": 0.006,
+        "largest_components_wh": [
+          [
+            38,
+            8
+          ],
+          [
+            29,
+            12
+          ]
+        ]
+      },
+      {
+        "history": "focus-stall-05",
+        "changed_pixel_fraction": 0.011,
+        "largest_components_wh": [
+          [
+            39,
+            34
+          ],
+          [
+            11,
+            5
+          ]
+        ]
+      },
+      {
+        "history": "focus-stall-22",
+        "changed_pixel_fraction": 0.008,
+        "largest_components_wh": [
+          [
+            43,
+            10
+          ],
+          [
+            23,
+            14
+          ]
+        ]
+      },
+      {
+        "history": "focus-stall-37",
+        "changed_pixel_fraction": 0.008,
+        "largest_components_wh": [
+          [
+            43,
+            10
+          ],
+          [
+            23,
+            14
+          ]
+        ]
+      },
+      {
+        "history": "focus-stall-49",
+        "changed_pixel_fraction": 0.006,
+        "largest_components_wh": [
+          [
+            39,
+            9
+          ],
+          [
+            29,
+            12
+          ]
+        ]
+      }
+    ]
+  },
+  "motion_in_history": [
+    {
+      "history": "focus-depart-05",
+      "largest_component_shift_px": 0.0,
+      "lead_distance_m": {
+        "-3.75s": 1.131,
+        "0s": 1.131,
+        "+1s": 1.131,
+        "+4s": 1.131
+      }
+    },
+    {
+      "history": "focus-depart-19",
+      "largest_component_shift_px": 33.282,
+      "lead_distance_m": {
+        "-3.75s": 1.131,
+        "0s": 2.196,
+        "+1s": 2.797,
+        "+4s": 4.766
+      }
+    },
+    {
+      "history": "focus-depart-25",
+      "largest_component_shift_px": 31.47,
+      "lead_distance_m": {
+        "-3.75s": 3.599,
+        "0s": 6.008,
+        "+1s": 6.707,
+        "+4s": 8.746
+      }
+    },
+    {
+      "history": "focus-depart-38",
+      "largest_component_shift_px": 5.519,
+      "lead_distance_m": {
+        "-3.75s": 12.242,
+        "0s": 12.825,
+        "+1s": 12.825,
+        "+4s": 12.825
+      }
+    },
+    {
+      "history": "focus-return-16",
+      "largest_component_shift_px": 20.263,
+      "lead_distance_m": {
+        "-3.75s": 12.825,
+        "0s": 10.74,
+        "+1s": 9.958,
+        "+4s": 7.936
+      }
+    },
+    {
+      "history": "focus-return-21",
+      "largest_component_shift_px": 29.881,
+      "lead_distance_m": {
+        "-3.75s": 9.885,
+        "0s": 7.136,
+        "+1s": 6.454,
+        "+4s": 4.353
+      }
+    },
+    {
+      "history": "focus-return-26",
+      "largest_component_shift_px": 35.574,
+      "lead_distance_m": {
+        "-3.75s": 6.261,
+        "0s": 3.656,
+        "+1s": 3.036,
+        "+4s": 1.154
+      }
+    },
+    {
+      "history": "focus-return-36",
+      "largest_component_shift_px": 0.0,
+      "lead_distance_m": {
+        "-3.75s": 1.131,
+        "0s": 1.131,
+        "+1s": 1.131,
+        "+4s": 1.131
+      }
+    },
+    {
+      "history": "focus-return-49",
+      "largest_component_shift_px": 37.348,
+      "lead_distance_m": {
+        "-3.75s": 1.9,
+        "0s": 4.411,
+        "+1s": 5.129,
+        "+4s": 7.175
+      }
+    },
+    {
+      "history": "focus-return-57",
+      "largest_component_shift_px": 29.547,
+      "lead_distance_m": {
+        "-3.75s": 7.315,
+        "0s": 10.039,
+        "+1s": 10.687,
+        "+4s": 12.825
+      }
+    },
+    {
+      "history": "focus-stall-05",
+      "largest_component_shift_px": 0.0,
+      "lead_distance_m": {
+        "-3.75s": 1.131,
+        "0s": 1.131,
+        "+1s": 1.131,
+        "+4s": 1.131
+      }
+    },
+    {
+      "history": "focus-stall-22",
+      "largest_component_shift_px": 0.0,
+      "lead_distance_m": {
+        "-3.75s": 1.131,
+        "0s": 1.131,
+        "+1s": 1.131,
+        "+4s": 1.131
+      }
+    },
+    {
+      "history": "focus-stall-37",
+      "largest_component_shift_px": 0.0,
+      "lead_distance_m": {
+        "-3.75s": 1.131,
+        "0s": 1.131,
+        "+1s": 1.131,
+        "+4s": 1.723
+      }
+    },
+    {
+      "history": "focus-stall-49",
+      "largest_component_shift_px": 33.587,
+      "lead_distance_m": {
+        "-3.75s": 4.636,
+        "0s": 7.245,
+        "+1s": 7.936,
+        "+4s": 10.039
+      }
+    }
+  ],
+  "clear_to_occupied_window_s": {
+    "focus-depart": {
+      "+1s": 0.0,
+      "+4s": 0.0
+    },
+    "focus-return": {
+      "+1s": 0.0,
+      "+4s": 1.75
+    },
+    "focus-stall": {
+      "+1s": 0.0,
+      "+4s": 0.0
+    }
+  }
+}

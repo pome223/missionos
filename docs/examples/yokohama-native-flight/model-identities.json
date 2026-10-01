@@ -1,0 +1,60 @@
+{
+  "vla": {
+    "schema_version": "ship_aerovla_service.v1",
+    "session_id": "2d4982fb24404841ae30ab39e419625b",
+    "base_revision": "47a0ec7fc4ec123775a391911046cf33cf9ed83f",
+    "adapter_revision": "196f2f3253b69df6e90ac10b6ae041c7b3a9569e",
+    "adapter_sha256": "05b11cf66d2a7bba9af3fefc5afa9e9af4fe1f2a567ddeca4fca73192060b846",
+    "upstream_revision": "2c5ae0987a484ab92f00dd9d9ed493cb3e98e492",
+    "weights_sha256": {
+      "model-00001-of-00003.safetensors": "10d8636256018712c5e5c823d12e22b5797f99bb721bd123bf6bf2379892be85",
+      "model-00002-of-00003.safetensors": "2050b14f21d48904d269f48d5a980fecea87cd7b36641d9b0f015e72d1fe216a",
+      "model-00003-of-00003.safetensors": "ea65305a1577f36f721965bf84c8caec0a948ce7ce84d754701637376c531fef"
+    },
+    "custom_code_sha256": {
+      "configuration_prismatic.py": "68cc5ae34f1b46af3168d8d479cb81bb776965653453fd904aa8eefb6c8f9f68",
+      "modeling_prismatic.py": "9ce241c5ca09a4bed73654d0ca509baaff0fc5887d0bdd62e360ca8254f7794a",
+      "processing_prismatic.py": "06563586bbc73d36501a14a231a3174904ede830d33174d0c625ece8e931ef1e"
+    },
+    "runtime_sha256": {
+      "ship_aerovla_server.py": "fb457dd44278bb0aaaa5ff52b4ccf60f1f2e68b3fd34600ca3e40436c42e5c15",
+      "ship_aerovla.py": "89c8ad6faba9e5ca516b6636ccd67f447488bb8d9346d2429d84f6740cf9c203",
+      "ship_anwm.py": "4a64a0fa90aab8913529a8948edc9cef53d1c86d04becbf81250c67aceddcf21"
+    },
+    "gpu": "NVIDIA L4",
+    "torch_version": "2.9.1+cu129",
+    "load_seconds": 18.099633392999976,
+    "warmup_completed": true,
+    "dispatch_capability": false,
+    "exit_after_request": false,
+    "cpu_between_requests": true,
+    "decoding_policy": "aerovla_short_segment_grammar.v1",
+    "inspection_level_flight": true,
+    "vertical_bin_range": [
+      47,
+      51
+    ],
+    "yaw_bin_range": [
+      38,
+      60
+    ],
+    "short_segment_flight": true
+  },
+  "wam": {
+    "schema_version": "ship_anwm_static_service.v1",
+    "session_id": "4df9d0e4d3394319b5d10a0ffc5f2de1",
+    "model_revision": "dfe59001de57a96d6620313897f09436c6940983",
+    "checkpoint_sha256": "bdd149cac6ec002ba7dc4ad99ec6f9eb02cd6d4f05320195cf174737b13b0bc2",
+    "upstream_revision": "657a80268505fa9149c4df502e35aa0f5bce11e5",
+    "vae_revision": "f04b2c4b98319346dad8c65879f680b1997b204a",
+    "server_sha256": "2507e4637643934e3a142572515d32afb5e66685fda0e5bc7451a4a73fd5fafc",
+    "helper_sha256": "4a64a0fa90aab8913529a8948edc9cef53d1c86d04becbf81250c67aceddcf21",
+    "diffusion_steps": 250,
+    "load_seconds": 15.060960960999864,
+    "cpu_between_requests": true,
+    "candidate_contracts": [
+      "ship_anwm_request.v1",
+      "yokohama_anwm_request.v1"
+    ]
+  }
+}

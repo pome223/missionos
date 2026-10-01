@@ -1,0 +1,137 @@
+{
+  "schema_version": "anwm_head_training_receipt.v1",
+  "total_parameters": 1134100256,
+  "trainable_parameters": 8005280,
+  "trainable_names": [
+    "final_layer.linear.weight",
+    "final_layer.linear.bias",
+    "final_layer.fuse_supervised.weight",
+    "final_layer.fuse_supervised.bias",
+    "final_layer.attn.mha.in_proj_weight",
+    "final_layer.attn.mha.in_proj_bias",
+    "final_layer.attn.mha.out_proj.weight",
+    "final_layer.attn.mha.out_proj.bias"
+  ],
+  "base_checkpoint_sha256": "bdd149cac6ec002ba7dc4ad99ec6f9eb02cd6d4f05320195cf174737b13b0bc2",
+  "frozen_parameters_sha256": "60d4594b78df8f4808110c55941be79aa163ef2282065dd6a82c02be81594271",
+  "initial_head_sha256": "3473ad3aa3e1b3c69675a46ad3d6229296786def655f72954a0d2de38b87f586",
+  "torch_version": "2.9.1+cu129",
+  "gpu": "NVIDIA L4",
+  "learning_kind": "attention-v2",
+  "initial_adapter_sha256": "7d69f3d7eccfee89cdd43b0fe22f5622da3d7cc03d2554be64f02d05c1a07222",
+  "steps": 2048,
+  "training_seconds": 188.933140751,
+  "head_change_l2": 12.088678465876102,
+  "final_head_sha256": "9a151f2687951d30df91f13f10339c9100239b96fe656165dd11fe917c915b82",
+  "frozen_base_unchanged": true,
+  "checkpoint_reloaded": true,
+  "adapter_sha256": "0a0375fff9acced7c5b46c29236f4ff9c48063342772ef13441634fbb9b33458",
+  "before": [
+    {
+      "sample": "test-v2-12-hold",
+      "image": "before-test-v2-12-hold.png",
+      "sha256": "74a3fb8748f52eb9ce4b2cc7e4e57ec1bd139d66d4efdda03bf19cb692c343f9",
+      "elapsed_s": 21.07654637899998
+    },
+    {
+      "sample": "test-v2-12-forward",
+      "image": "before-test-v2-12-forward.png",
+      "sha256": "4b0364c223597b2f2637c2f2251a7d6b81e1d80aa9b9d6d4ff7da0ab74c5fcc9",
+      "elapsed_s": 20.745018167000012
+    },
+    {
+      "sample": "test-v2-13-hold",
+      "image": "before-test-v2-13-hold.png",
+      "sha256": "5c291d402bf2a2eb2f45cc8801162f91a8163f4bdac9c503a6ac52a76b329c4e",
+      "elapsed_s": 20.633251143999985
+    },
+    {
+      "sample": "test-v2-13-forward",
+      "image": "before-test-v2-13-forward.png",
+      "sha256": "c9864b5d8b70185bab75fc515f4c3367884ec4fae170ec0276019efa53ae153f",
+      "elapsed_s": 20.589605405000043
+    },
+    {
+      "sample": "test-v2-14-hold",
+      "image": "before-test-v2-14-hold.png",
+      "sha256": "b9a3706ed334d06090303f6485c563132479a1f5324bab3a3e20d8bceac30409",
+      "elapsed_s": 20.733261577999997
+    },
+    {
+      "sample": "test-v2-14-forward",
+      "image": "before-test-v2-14-forward.png",
+      "sha256": "e58aa3bb8c54a5c9ca3dace7c7a7de963448a9e043647df83960e4fc82641b0f",
+      "elapsed_s": 20.592041328999926
+    },
+    {
+      "sample": "test-v2-15-hold",
+      "image": "before-test-v2-15-hold.png",
+      "sha256": "2a1d3db53105b08a4afa132b4a474f39e93643f770b86f4e446cea0e0c20d204",
+      "elapsed_s": 20.84273164900003
+    },
+    {
+      "sample": "test-v2-15-forward",
+      "image": "before-test-v2-15-forward.png",
+      "sha256": "317d2ad4c328ae122b99895d65ee48d3abf106eb6da87e9b96e26412b3a963f0",
+      "elapsed_s": 20.662319284999967
+    }
+  ],
+  "after": [
+    {
+      "sample": "test-v2-12-hold",
+      "image": "after-test-v2-12-hold.png",
+      "sha256": "88925b7b2514e559c658c45f046475208f4151c027ff59c90a8b0c7f9e215b8d",
+      "elapsed_s": 20.741203971999994
+    },
+    {
+      "sample": "test-v2-12-forward",
+      "image": "after-test-v2-12-forward.png",
+      "sha256": "9e81ae7c19896996fc1af45e3145af065fbd3dc1dbbd97a2da3487a49ec92132",
+      "elapsed_s": 21.076730879000024
+    },
+    {
+      "sample": "test-v2-13-hold",
+      "image": "after-test-v2-13-hold.png",
+      "sha256": "16a30abd64c950ded17fcd16abc383d3e8d0aea9cf42324d9f998dfe6f384afa",
+      "elapsed_s": 20.966302117000055
+    },
+    {
+      "sample": "test-v2-13-forward",
+      "image": "after-test-v2-13-forward.png",
+      "sha256": "3e3392189e296f3452846f2cdaac0003e6189cfd6d14de5f32e56624701ca25f",
+      "elapsed_s": 20.859030669999925
+    },
+    {
+      "sample": "test-v2-14-hold",
+      "image": "after-test-v2-14-hold.png",
+      "sha256": "bd401ace0c25672d3a1e67803083d8ce3ef21fe63cebbaa6e9951422d23c369e",
+      "elapsed_s": 20.959681568000065
+    },
+    {
+      "sample": "test-v2-14-forward",
+      "image": "after-test-v2-14-forward.png",
+      "sha256": "b4a6dea11e14959823a7a5cec0d68fff46192c7edfd4cf6833012b16177179a6",
+      "elapsed_s": 20.831384212000103
+    },
+    {
+      "sample": "test-v2-15-hold",
+      "image": "after-test-v2-15-hold.png",
+      "sha256": "fe0dc09ad895e21ea64a8371f2e3838fd18198dca6b112fdb50b658ad8aa629a",
+      "elapsed_s": 20.760709272999975
+    },
+    {
+      "sample": "test-v2-15-forward",
+      "image": "after-test-v2-15-forward.png",
+      "sha256": "52403d32e020a4dd2ac41ec5bd9707a7d9d96a4d01019b8feaf5913c8a70ee13",
+      "elapsed_s": 20.839364270000033
+    }
+  ],
+  "max_cuda_allocated_bytes": 6861992448,
+  "protocol_sha256": "a6954e4240169302ba4e6b79237b8bd99255ce40233468f0c3194d0dd1329dd1",
+  "training_targets_uploaded": true,
+  "test_targets_uploaded": false,
+  "flight_invoked": false,
+  "vla_invoked": false,
+  "inference_calls": 16,
+  "total_model_seconds": 678.009510728
+}

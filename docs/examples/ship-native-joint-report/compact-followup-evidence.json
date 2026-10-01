@@ -1,0 +1,147 @@
+{
+  "schema_version": "ship_native_joint_report.v1",
+  "source_revision": "f9c21384916ba0aa0778da5b7527d598303879bb",
+  "cohort_attempts": 3,
+  "verified_native_flights": 3,
+  "all_four_native_flights_completed": false,
+  "compact_followup_completed": true,
+  "planned_attempts": 3,
+  "study_kind": "compact_100m_followup",
+  "rule_superiority_evaluated": false,
+  "physical_execution_invoked": false,
+  "cohort": "precision-repair-compact-100m-v7",
+  "vla_decoding_policy": "aerovla_inspection_grammar.v1",
+  "native_vertical_bins": [
+    47,
+    51
+  ],
+  "runs": [
+    {
+      "directory": "01-static_center",
+      "run_id": "de9de9dd3e91484295e97172233e8825",
+      "case": "static_center",
+      "offshore_distance_m": 100,
+      "status": "completed",
+      "vla_invoked": true,
+      "wam_invoked": true,
+      "same_flight_native_integration_verified": true,
+      "delivery_verified": true,
+      "recovery_verified": true,
+      "container_removed": true,
+      "observed_elapsed_s": 456.387378167,
+      "vla_displacement_m": 2.831297883339019,
+      "vla_target_error_m": 0.046518145038650954,
+      "vla_altitude_error_m": 0.019250000000003098,
+      "vla_host_exchange_s": 1.0406623339513317,
+      "vla_input_to_permit_s": 1.1130607919999989,
+      "wam_max_prediction_error_m": 0.6295820458017927,
+      "wam_exchange_s": 49.120458458026405,
+      "stage_times_s": {
+        "vla_execution_observed": 72.583913075,
+        "native_history_started": 72.619584784,
+        "native_history_captured": 83.680155289,
+        "urban_decision": 136.60096652200002,
+        "anwm_dispatch_revalidated": 140.206972648,
+        "urban_requested": 140.25909839800002,
+        "vla_mission_resumed": 143.5799569
+      },
+      "raw_sha256": {
+        "config.json": "f00a76412a542a039a654b0d20014a51e280b474462130029de33f6b79d3f192",
+        "result.json": "cc91c31f46fadbacd1774354a74dfdd2ef50c52da53c22649f304eb92297501e",
+        "events.jsonl": "322e79403a203d852565287617b7dfd1c606d3b646403ab053405655e811228d",
+        "telemetry.jsonl": "bdffc08f11866a052de8b55a70e2d7558a27a030fca7520a06feac5725275e6b",
+        "anwm-http-response.json": "44faf3d9addc047a6d20032e167cd17af8464038328641e846bcf0cf959c2ae3",
+        "vla-execution.json": "57b71c80886206b7f5cc800a85d9d230f4c2451f696d4d02c6f9c8083f52ace9"
+      }
+    },
+    {
+      "directory": "02-static_near",
+      "run_id": "2ea80905ebfd40fe9e61f3ae3ed1e081",
+      "case": "static_near",
+      "offshore_distance_m": 100,
+      "status": "completed",
+      "vla_invoked": true,
+      "wam_invoked": true,
+      "same_flight_native_integration_verified": true,
+      "delivery_verified": true,
+      "recovery_verified": true,
+      "container_removed": true,
+      "observed_elapsed_s": 458.044069833,
+      "vla_displacement_m": 4.826806953059137,
+      "vla_target_error_m": 0.08189145800143452,
+      "vla_altitude_error_m": 0.01771918400000061,
+      "vla_host_exchange_s": 1.0097401660168543,
+      "vla_input_to_permit_s": 1.0799579999999196,
+      "wam_max_prediction_error_m": 0.20451148039648182,
+      "wam_exchange_s": 45.568836999998894,
+      "stage_times_s": {
+        "vla_execution_observed": 76.10539236699992,
+        "native_history_started": 76.14150103399993,
+        "native_history_captured": 87.87612087299999,
+        "urban_decision": 137.233059853,
+        "anwm_dispatch_revalidated": 140.890912104,
+        "urban_requested": 141.486767688,
+        "vla_mission_resumed": 144.27054531399995
+      },
+      "raw_sha256": {
+        "config.json": "28641102f2f907ad599daf67277ee1116acc05716f179989f2e749240f98c540",
+        "result.json": "7d98fa16fb2b56d858abc6c1c133b2db8b2aad6c78558a8deb2bdf3849d49d23",
+        "events.jsonl": "c096e0e5d16113f1e4167b1d9b43cbabfd800d01d42a15eca3975e3d8c96c977",
+        "telemetry.jsonl": "8eecb2b6e5a37b219a202924a3ae70ed1fb523db22d5b6db8dec19dae537dd77",
+        "anwm-http-response.json": "c03196317a0796269af269574648ed9a742d36d1e7f361ef64a18607f996921b",
+        "vla-execution.json": "9f510888de55b40a56b450688dc728fc51c18231c3813f9e5bd030edec62a9cd"
+      }
+    },
+    {
+      "directory": "03-static_clear",
+      "run_id": "67e50c81f54c4b7fbedf9eccd6eae05f",
+      "case": "static_clear",
+      "offshore_distance_m": 100,
+      "status": "completed",
+      "vla_invoked": true,
+      "wam_invoked": true,
+      "same_flight_native_integration_verified": true,
+      "delivery_verified": true,
+      "recovery_verified": true,
+      "container_removed": true,
+      "observed_elapsed_s": 411.1602822709999,
+      "vla_displacement_m": 4.893634399196571,
+      "vla_target_error_m": 0.07738884775077977,
+      "vla_altitude_error_m": 0.01800918400000029,
+      "vla_host_exchange_s": 0.9503467089962214,
+      "vla_input_to_permit_s": 1.038304541999878,
+      "wam_max_prediction_error_m": 2.333389499036514,
+      "wam_exchange_s": 44.87278604198946,
+      "stage_times_s": {
+        "vla_execution_observed": 75.17745449299991,
+        "native_history_started": 75.21808032600006,
+        "native_history_captured": 86.95284829000002,
+        "urban_decision": 136.06318093699997,
+        "anwm_dispatch_revalidated": 141.228256439,
+        "urban_requested": 141.8205016899999,
+        "vla_mission_resumed": 144.62262498299992
+      },
+      "raw_sha256": {
+        "config.json": "09582ca4261ef2dd0c41ec3d4dba0903e83319bd2c442a9f3dce1dd6004bc55f",
+        "result.json": "af226508c9048330d23014bb67cb20b7c985b65bdc8c40b510620956668dcff8",
+        "events.jsonl": "278f0329ae4ec6f1c131ec4b3dacb3446af21b195ee281afa6efebd2915d4334",
+        "telemetry.jsonl": "02b593e8bc538d28016777081d172071c40db1c8084132f7a71264dcdc240786",
+        "anwm-http-response.json": "9b64d24278262317016b97b5a39cd168474c540f9b0273db6d5bf21d9b20f6d7",
+        "vla-execution.json": "67807370ae0ac8fda781ec1b3d08926e5c035fafac40410b4601c16aae8d31c8"
+      }
+    }
+  ],
+  "cloud": {
+    "cleanup_confirmed": true,
+    "elapsed_observed_s": 2221.040652,
+    "new_estimated_usd_including_transfer_reserve": 0.9386245804942297,
+    "cumulative_estimated_usd": 8.42824140943092,
+    "invoice_confirmed": false,
+    "authorized_total_usd": 11
+  },
+  "cloud_evidence": {
+    "archive_sha256": "4a0ac6f1c93cdf0eea7d2571322ab1b1ae4a46bc2637804af4ab9f9c78455aff",
+    "remote_files_verified": 74,
+    "all_attempted_model_results_matched": true
+  }
+}

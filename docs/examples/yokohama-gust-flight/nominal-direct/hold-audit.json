@@ -1,0 +1,71 @@
+{
+  "scope": "recorded holds only; not full mission verification",
+  "run_id": "yokohama-5a405a1b1170",
+  "source_trajectory_sha256": "3d7e36d75387c7c6afbbdca470e634fb92af5bed6e614e7af55080d263fca5fe",
+  "holds": [
+    {
+      "point": "SEA-TAKEOFF",
+      "passed": true,
+      "recomputed_fields_match": true,
+      "metrics": {
+        "duration_sim_s": 30.108,
+        "samples": 90,
+        "max_horizontal_error_m": 0.0487828136526459,
+        "max_vertical_error_m": 0.2911903106541889,
+        "max_px4_speed_mps": 0.050881787507908956,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.021194041000001107,
+        "max_sample_gap_sim_s": 0.4159999999999968
+      }
+    },
+    {
+      "point": "SEA-INBOUND-COAST",
+      "passed": true,
+      "recomputed_fields_match": true,
+      "metrics": {
+        "duration_sim_s": 30.156000000000006,
+        "samples": 89,
+        "max_horizontal_error_m": 0.1530564065604184,
+        "max_vertical_error_m": 0.47875448556366607,
+        "max_px4_speed_mps": 0.05138814941209695,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.02091941699995914,
+        "max_sample_gap_sim_s": 0.4159999999999968
+      }
+    },
+    {
+      "point": "00-D1",
+      "passed": true,
+      "recomputed_fields_match": true,
+      "metrics": {
+        "duration_sim_s": 30.18399999999997,
+        "samples": 89,
+        "max_horizontal_error_m": 0.1313065205225262,
+        "max_vertical_error_m": 0.5010149237437673,
+        "max_px4_speed_mps": 0.047068495833200365,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.022171042000081798,
+        "max_sample_gap_sim_s": 0.47199999999998
+      }
+    },
+    {
+      "point": "01-D2",
+      "passed": true,
+      "recomputed_fields_match": true,
+      "metrics": {
+        "duration_sim_s": 30.02800000000002,
+        "samples": 89,
+        "max_horizontal_error_m": 0.14071308812846897,
+        "max_vertical_error_m": 0.13441889110968042,
+        "max_px4_speed_mps": 0.04980940573827397,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.02061279099996227,
+        "max_sample_gap_sim_s": 0.41200000000003456
+      }
+    }
+  ]
+}

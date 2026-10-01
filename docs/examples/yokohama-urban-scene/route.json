@@ -1,0 +1,320 @@
+{
+  "schema": "missionos.urban-route-design.v1",
+  "status": "design_only_not_dispatched",
+  "waypoints": [
+    {
+      "id": "D1",
+      "label": "市街地入口",
+      "xyz_m": [
+        55.0,
+        -50.0,
+        18.0
+      ],
+      "mandatory_observation": true
+    },
+    {
+      "id": "D2",
+      "label": "角1：再観測",
+      "xyz_m": [
+        20.0,
+        -110.622,
+        18.0
+      ],
+      "mandatory_observation": true
+    },
+    {
+      "id": "D3",
+      "label": "角2：配送前判断",
+      "xyz_m": [
+        162.894,
+        -193.122,
+        18.0
+      ],
+      "mandatory_observation": true
+    },
+    {
+      "id": "DELIVERY",
+      "label": "仮想配送スペース",
+      "xyz_m": [
+        207.894,
+        -115.179,
+        18.0
+      ],
+      "mandatory_observation": false
+    }
+  ],
+  "return_policy": "reverse proposed urban route; AP handoff after verified urban model shutdown",
+  "max_proposed_leg_m": 20,
+  "short_legs": [
+    {
+      "from": [
+        55.0,
+        -50.0,
+        18.0
+      ],
+      "to": [
+        46.25,
+        -65.156,
+        18.0
+      ]
+    },
+    {
+      "from": [
+        46.25,
+        -65.156,
+        18.0
+      ],
+      "to": [
+        37.5,
+        -80.311,
+        18.0
+      ]
+    },
+    {
+      "from": [
+        37.5,
+        -80.311,
+        18.0
+      ],
+      "to": [
+        28.75,
+        -95.466,
+        18.0
+      ]
+    },
+    {
+      "from": [
+        28.75,
+        -95.466,
+        18.0
+      ],
+      "to": [
+        20.0,
+        -110.622,
+        18.0
+      ]
+    },
+    {
+      "from": [
+        20.0,
+        -110.622,
+        18.0
+      ],
+      "to": [
+        35.877,
+        -119.789,
+        18.0
+      ]
+    },
+    {
+      "from": [
+        35.877,
+        -119.789,
+        18.0
+      ],
+      "to": [
+        51.754,
+        -128.955,
+        18.0
+      ]
+    },
+    {
+      "from": [
+        51.754,
+        -128.955,
+        18.0
+      ],
+      "to": [
+        67.631,
+        -138.122,
+        18.0
+      ]
+    },
+    {
+      "from": [
+        67.631,
+        -138.122,
+        18.0
+      ],
+      "to": [
+        83.508,
+        -147.289,
+        18.0
+      ]
+    },
+    {
+      "from": [
+        83.508,
+        -147.289,
+        18.0
+      ],
+      "to": [
+        99.386,
+        -156.455,
+        18.0
+      ]
+    },
+    {
+      "from": [
+        99.386,
+        -156.455,
+        18.0
+      ],
+      "to": [
+        115.263,
+        -165.622,
+        18.0
+      ]
+    },
+    {
+      "from": [
+        115.263,
+        -165.622,
+        18.0
+      ],
+      "to": [
+        131.14,
+        -174.789,
+        18.0
+      ]
+    },
+    {
+      "from": [
+        131.14,
+        -174.789,
+        18.0
+      ],
+      "to": [
+        147.017,
+        -183.955,
+        18.0
+      ]
+    },
+    {
+      "from": [
+        147.017,
+        -183.955,
+        18.0
+      ],
+      "to": [
+        162.894,
+        -193.122,
+        18.0
+      ]
+    },
+    {
+      "from": [
+        162.894,
+        -193.122,
+        18.0
+      ],
+      "to": [
+        171.894,
+        -177.533,
+        18.0
+      ]
+    },
+    {
+      "from": [
+        171.894,
+        -177.533,
+        18.0
+      ],
+      "to": [
+        180.894,
+        -161.945,
+        18.0
+      ]
+    },
+    {
+      "from": [
+        180.894,
+        -161.945,
+        18.0
+      ],
+      "to": [
+        189.894,
+        -146.356,
+        18.0
+      ]
+    },
+    {
+      "from": [
+        189.894,
+        -146.356,
+        18.0
+      ],
+      "to": [
+        198.894,
+        -130.768,
+        18.0
+      ]
+    },
+    {
+      "from": [
+        198.894,
+        -130.768,
+        18.0
+      ],
+      "to": [
+        207.894,
+        -115.179,
+        18.0
+      ]
+    }
+  ],
+  "delivery_pad": {
+    "center_xyz_m": [
+      207.894,
+      -115.179,
+      2.721
+    ],
+    "radius_m": 3,
+    "synthetic": true,
+    "landing_tested": false
+  },
+  "sea_connection": {
+    "status": "interface_only_no_offshore_trajectory_verified",
+    "autopilot_only": true,
+    "models_off_until_verified_urban_hold": true
+  },
+  "checks": {
+    "urban_route_length_m": 325.0,
+    "geometry_min_horizontal_clearance_m": 7.698,
+    "assumed_vehicle_radius_m": 1,
+    "residual_horizontal_clearance_m": 6.698,
+    "altitude_source_datum_m": 18,
+    "sampled_ground_clearance_min_m": 14.704,
+    "ground_samples": 101,
+    "pad_center_all_buildings_clearance_m": 18.747,
+    "turn_angles_deg": [
+      90,
+      90
+    ],
+    "visibility_probes": [
+      {
+        "observer_before": "D1",
+        "observer_after": "D2",
+        "target": "D3",
+        "before_blocker_ids": [
+          "bldg_3a0315eb-e305-4099-afc3-2ee7332fe924",
+          "bldg_19332410-cd96-430a-aed7-02dd727fc597"
+        ],
+        "after_line_clear": true,
+        "method": "line segment against conservative 2.5D footprint prisms at z=18 m; not RGB or WAM perception"
+      },
+      {
+        "observer_before": "D2",
+        "observer_after": "D3",
+        "target": "DELIVERY",
+        "before_blocker_ids": [
+          "bldg_3a0315eb-e305-4099-afc3-2ee7332fe924",
+          "bldg_19332410-cd96-430a-aed7-02dd727fc597"
+        ],
+        "after_line_clear": true,
+        "method": "line segment against conservative 2.5D footprint prisms at z=18 m; not RGB or WAM perception"
+      }
+    ],
+    "rules_or_flight_certification": false
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "status": "failed",
+  "checks": {
+    "mailboxes_bound": true,
+    "no_revoked_attempt_dispatched": true,
+    "model_requests_inside_approved_city_holds": true,
+    "successful_run_and_shutdown": false,
+    "two_observed_updates": false,
+    "startup_after_inland_hold": true,
+    "shutdown_before_ap_continuation": false,
+    "native_invocation_labels": true,
+    "native_remote_shutdown": true,
+    "cycle_1_complete": false,
+    "cycle_2_complete": false,
+    "reopened_model_permit_and_motion_chains": false
+  },
+  "cycles": [],
+  "native_model_flight_verified": false,
+  "generic_obstacle_recognition_verified": false,
+  "payload_delivery_verified": false,
+  "sea_leg_verified": false,
+  "physical_execution_verified": false,
+  "energy_savings_verified": false
+}

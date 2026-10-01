@@ -1,0 +1,90 @@
+{
+  "situation": {
+    "situation_id": "b24cf9d8420c0af889c8314934dd1a3793d96bddd4da5bdf1ef629b805b6c6dc",
+    "observed_at": "2026-09-28T16:26:07.644025+00:00",
+    "mission_contract": {
+      "objective": "wait for lead, deliver cargo and return"
+    },
+    "progress": {
+      "region": "city",
+      "phase": "pad_wait"
+    },
+    "observations": {
+      "current_rules_action": "wait_at_current_hold",
+      "auxiliary_signal": "unavailable_fallback_to_current_rules"
+    },
+    "constraints": {
+      "mode": "assist",
+      "allowed_actions": [
+        "wait_at_current_hold",
+        "enter_delivery_approach"
+      ],
+      "unknown_fallback": "current_rules",
+      "forecast_authorizes_entry": false
+    },
+    "uncertainty": {
+      "source": "learned CPU image forecast + deterministic mission judge",
+      "forecast": {
+        "schema": "missionos.pad-state-advisory.v1",
+        "request_id": "b24cf9d8420c0af889c8314934dd1a3793d96bddd4da5bdf1ef629b805b6c6dc",
+        "model_sha256": "2f648169418c9b8e7a1f4dec4e51cd8a792df8bec1611168e691207cc7ab67af",
+        "camera_entity": "pad_state_camera",
+        "history_sha256": null,
+        "status": "unavailable",
+        "reason": "camera_history_not_ready",
+        "flight_authority_created": false
+      }
+    },
+    "source_refs": [
+      "b24cf9d8420c0af889c8314934dd1a3793d96bddd4da5bdf1ef629b805b6c6dc"
+    ],
+    "source_schema_version": "missionos.aircraft-situation-request.v1",
+    "input_digest": "428856b5af629462ecdfe64ee4cd2ff230e2e903bdcaff4ceab28c9d8948ea6f",
+    "execution_scope": "simulation",
+    "allowed_response_kinds": [
+      "abort",
+      "continue",
+      "hold",
+      "operator_escalation",
+      "replan",
+      "return"
+    ],
+    "schema_version": "missionos_mission_situation.v1"
+  },
+  "proposal": {
+    "proposal_id": "mission_response_proposal_ada4aae69485",
+    "generated_at": "2026-09-28T16:26:07.644416+00:00",
+    "situation_ref": "mission_situation:b24cf9d8420c0af889c8314934dd1a3793d96bddd4da5bdf1ef629b805b6c6dc",
+    "situation_input_digest": "428856b5af629462ecdfe64ee4cd2ff230e2e903bdcaff4ceab28c9d8948ea6f",
+    "proposed_response_kind": "hold",
+    "parameters": {
+      "action": "wait_at_current_hold"
+    },
+    "rationale": "Current Rules plus optional future occupancy; unknown falls back to current Rules.",
+    "expected_outcome": "Bounded wait or independently checked entry.",
+    "uncertainty": "Fixed pad camera; CPU fixture judge; no native VLA/ANWM.",
+    "operator_question": "Within the explicit simulator approval.",
+    "judgment_status": "proposal_guardrail_passed",
+    "judgment_mode": "deterministic_routing",
+    "fallback_mode": "operator_escalation_only",
+    "model_inference_invoked": false,
+    "model_invocation_evidence": {
+      "invocation_kind": "deterministic_fixture"
+    },
+    "blocking_reasons": [],
+    "schema_version": "missionos_mission_response_proposal.v1",
+    "operator_review_required": true,
+    "operator_approval_required": false,
+    "llm_judgment_in_gate": false,
+    "operator_approved": false,
+    "approval_recorded": false,
+    "dispatch_authority_created": false,
+    "dispatch_request_sent": false,
+    "command_ack_observed": false,
+    "runtime_progress_observed": false,
+    "landing_observed": false,
+    "delivery_completion_claimed": false,
+    "physical_execution_invoked": false,
+    "progress_counted": false
+  }
+}

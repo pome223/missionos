@@ -1,0 +1,283 @@
+{
+  "status": "passed",
+  "checks": {
+    "plugin_and_vector": true,
+    "vehicle_wind_enabled": true,
+    "cargo_wind_enabled": true,
+    "airborne_wind_activation": true,
+    "force_observed_against_unpowered_control": true,
+    "profile_observed_transitions": true
+  },
+  "samples": [
+    {
+      "sim_s": 70.76,
+      "elapsed_since_activation_start_s": 8.600000000000009,
+      "witness_x_m": 39.53967324120217,
+      "expected_x_m": 39.61170912847731,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 71.1,
+      "elapsed_since_activation_start_s": 8.939999999999998,
+      "witness_x_m": 41.57656993187673,
+      "expected_x_m": 41.64860153387748,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 71.448,
+      "elapsed_since_activation_start_s": 9.287999999999997,
+      "witness_x_m": 43.662239808764824,
+      "expected_x_m": 43.734266731724965,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 71.788,
+      "elapsed_since_activation_start_s": 9.628,
+      "witness_x_m": 45.70057230670651,
+      "expected_x_m": 45.7725948252789,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 72.144,
+      "elapsed_since_activation_start_s": 9.984000000000009,
+      "witness_x_m": 47.83529875120915,
+      "expected_x_m": 47.90731708761983,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 72.476,
+      "elapsed_since_activation_start_s": 10.316000000000003,
+      "witness_x_m": 49.82643097308681,
+      "expected_x_m": 49.898445902017684,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 72.532,
+      "elapsed_since_activation_start_s": 10.372,
+      "witness_x_m": 50.16230880868657,
+      "expected_x_m": 50.23432321174934,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 75.6,
+      "elapsed_since_activation_start_s": 13.439999999999998,
+      "witness_x_m": 68.56813360582308,
+      "expected_x_m": 68.64013485924052,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 75.66,
+      "elapsed_since_activation_start_s": 13.5,
+      "witness_x_m": 68.92812632061953,
+      "expected_x_m": 69.00012749919503,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 75.68,
+      "elapsed_since_activation_start_s": 13.52000000000001,
+      "witness_x_m": 69.04812398143712,
+      "expected_x_m": 69.12012513579936,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 76.048,
+      "elapsed_since_activation_start_s": 13.888000000000005,
+      "witness_x_m": 71.25608789428415,
+      "expected_x_m": 71.32808866224362,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 76.384,
+      "elapsed_since_activation_start_s": 14.224000000000004,
+      "witness_x_m": 73.27206420205505,
+      "expected_x_m": 73.34406470002934,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 76.716,
+      "elapsed_since_activation_start_s": 14.555999999999997,
+      "witness_x_m": 75.26404707969921,
+      "expected_x_m": 75.33604737139666,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 77.06,
+      "elapsed_since_activation_start_s": 14.900000000000006,
+      "witness_x_m": 77.32803415329282,
+      "expected_x_m": 77.40003428073896,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 77.388,
+      "elapsed_since_activation_start_s": 15.228000000000009,
+      "witness_x_m": 79.29602516653182,
+      "expected_x_m": 79.36802517385603,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 77.76,
+      "elapsed_since_activation_start_s": 15.600000000000009,
+      "witness_x_m": 81.52801782424653,
+      "expected_x_m": 81.60001772841876,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 78.108,
+      "elapsed_since_activation_start_s": 15.948000000000008,
+      "witness_x_m": 83.6160129335466,
+      "expected_x_m": 83.68801276553191,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 78.44,
+      "elapsed_since_activation_start_s": 16.28,
+      "witness_x_m": 85.60800954878023,
+      "expected_x_m": 85.68000932853138,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 78.808,
+      "elapsed_since_activation_start_s": 16.64800000000001,
+      "witness_x_m": 87.816006850163,
+      "expected_x_m": 87.88800658641331,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 79.14,
+      "elapsed_since_activation_start_s": 16.980000000000004,
+      "witness_x_m": 89.80800510293334,
+      "expected_x_m": 89.88000480980155,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 79.492,
+      "elapsed_since_activation_start_s": 17.332000000000008,
+      "witness_x_m": 91.92000376196032,
+      "expected_x_m": 91.99200344537171,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 79.816,
+      "elapsed_since_activation_start_s": 17.656000000000006,
+      "witness_x_m": 93.86400286648555,
+      "expected_x_m": 93.93600253362904,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    },
+    {
+      "sim_s": 80.172,
+      "elapsed_since_activation_start_s": 18.012,
+      "witness_x_m": 96.00000215317617,
+      "expected_x_m": 96.07200180688093,
+      "error_m": 0,
+      "control_displacement_m": 0.0,
+      "fresh": true
+    }
+  ],
+  "profile": {
+    "status": "passed",
+    "checks": {
+      "canonical_profile": true,
+      "position_bound_confirmed_transitions": true,
+      "scheduled_gusts_observed": true,
+      "piecewise_force_observed": true
+    },
+    "observed_zones": [
+      "offshore",
+      "harbor",
+      "coast",
+      "city"
+    ],
+    "all_zones_exercised": true,
+    "force_samples_per_transition": [
+      5,
+      27,
+      28,
+      27,
+      28,
+      27,
+      28,
+      28,
+      27,
+      28,
+      27,
+      28,
+      27,
+      27,
+      27,
+      27,
+      28,
+      25,
+      25,
+      27,
+      11
+    ],
+    "maximum_witness_error_m": 0,
+    "expected_gust_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "observed_gust_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "coverage_note": "Passed means observed transitions and forces agree; unvisited zones are untested"
+  },
+  "limitation": "Uniform built-in force approximation; no calibrated wind envelope"
+}

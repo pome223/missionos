@@ -1,0 +1,89 @@
+{
+  "frozen_at_utc": "2026-09-27T02:15:24.633247+00:00",
+  "source_revision": "fa0d0d216bf6b8bebce6e915564f7473ce5496ad",
+  "cpu_qualification_run": "yokohama-cf58d737ae9b",
+  "cohort": "one new corrected city flight after explicit cuBLAS workspace release; both earlier failed native cohorts preserved",
+  "attempts": 1,
+  "model_retries": 0,
+  "rules_superiority_required": false,
+  "native_start": "after observed inland D1 hold only",
+  "stop": "after second observed model segment, before AP D3 continuation",
+  "world": "unchanged source scene, 4 Hz onboard cameras",
+  "limits": {
+    "startup_wall_s": 180,
+    "each_model_exchange_wall_s": 75,
+    "total_runner_wall_s": 1500,
+    "max_hold_drift_m": 0.5,
+    "max_hold_speed_mps": 0.3,
+    "max_heading_drift_rad": 0.03,
+    "max_segment_m": 5.01,
+    "max_tracking_error_m": 1,
+    "max_target_error_m": 0.25,
+    "max_altitude_error_m": 0.15,
+    "max_yaw_error_rad": 0.05,
+    "min_rules_prism_clearance_m": 2,
+    "min_known_pixels_fraction": 0.6,
+    "min_reference_edges": 100,
+    "min_edge_correspondence": 0.55,
+    "max_luminance_mae": 45,
+    "max_prediction_edge_density": 0.35
+  },
+  "required": [
+    "two actual native model/permit/motion chains",
+    "seven AP holds",
+    "returned landed and disarmed",
+    "launch-pad contact",
+    "no city contact",
+    "remote model termination observed",
+    "late authority rejected"
+  ],
+  "nonclaims": [
+    "generic obstacle recognition",
+    "WAM future metric depth",
+    "unseen space safety",
+    "parcel delivery",
+    "sea leg",
+    "physical execution",
+    "energy savings"
+  ],
+  "payload_sha256": {
+    "ship_anwm_server.py": "2507e4637643934e3a142572515d32afb5e66685fda0e5bc7451a4a73fd5fafc",
+    "ship_aerovla.py": "89c8ad6faba9e5ca516b6636ccd67f447488bb8d9346d2429d84f6740cf9c203",
+    "ship_aerovla_server.py": "fb457dd44278bb0aaaa5ff52b4ccf60f1f2e68b3fd34600ca3e40436c42e5c15",
+    "ship_anwm.py": "4a64a0fa90aab8913529a8948edc9cef53d1c86d04becbf81250c67aceddcf21",
+    "remote_lifecycle.py": "0e267b0d5b5d0f82676ece09067c82cd6093ee76a7f9c9b9180c2a132af3c868"
+  },
+  "changed_conditions": {
+    "explicit_cublas_workspace_release": true,
+    "private_api_required_or_fail_closed": true,
+    "acceptance_bounds_unchanged": true,
+    "decoder_unchanged_from_035e2b53": true
+  },
+  "cpu_qualification_source_note": "Source 035e2b53; CPU qualification runs alone after full tests complete.",
+  "prior_native_attempts": [
+    {
+      "run_id": "yokohama-1db5e937c115",
+      "status": "failed",
+      "vla_calls": 1,
+      "wam_calls": 0,
+      "dispatches": 0,
+      "retained": true
+    },
+    {
+      "run_id": "yokohama-b95aa9e3c929",
+      "status": "failed",
+      "vla_calls": 1,
+      "wam_calls": 0,
+      "dispatches": 0,
+      "retained": true
+    }
+  ],
+  "diagnostic_note": "Synthetic AeroVLA diagnostic completed before this new flight. Fresh owned model services start only at D1. Reused VM has warmed file caches; not a cold-start benchmark.",
+  "budget": {
+    "same_vm": true,
+    "no_new_allocation": true,
+    "maximum_cumulative_estimate_usd": 10.532534804786572,
+    "cleanup_controller_resumes_by_utc": "2026-09-27T02:38:00Z"
+  },
+  "private_protocol_sha256": "7559fdfa2694d775b44aa10ff1d8cff84d6c26594ed3d143183a5d753c244b63"
+}

@@ -1,0 +1,2061 @@
+<!doctype html>
+<html lang="en" data-visualize-standalone>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; style-src 'unsafe-inline' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; img-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; font-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; media-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; worker-src blob:; connect-src blob: data:; frame-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>船からの配送 — 市街地判断の実測レポート</title>
+<style>:root{color-scheme:light dark;background:light-dark(rgb(255 255 255), rgb(24 24 24))}html,body{margin:0}body{box-sizing:border-box;padding:1rem;background:inherit}iframe{display:block;width:100%;height:calc(100vh - 2rem);margin:0 auto;border:0}</style>
+<style>
+.report-wrap{max-width:1000px;margin:0 auto;font:16px/1.7 system-ui,sans-serif;color:light-dark(#182026,#e8e8e8)}
+.report-wrap header,.report-wrap section,.report-wrap footer{margin:24px 0}.report-wrap h1{font-size:1.7rem;line-height:1.35;font-weight:600}.report-wrap h2{font-size:1.2rem;font-weight:600}.eyebrow{font-size:.8rem;letter-spacing:.06em;color:light-dark(#536069,#b4bcc1)}
+.report-wrap a{color:light-dark(#175c9b,#99c8ee)}.report-wrap iframe{width:100%;height:620px}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid light-dark(#d1d7dc,#41484e)}td{font-variant-numeric:tabular-nums}
+@media(max-width:560px){.report-wrap iframe{height:1070px}.report-wrap h1{font-size:1.4rem}th,td{padding:8px 4px}}
+</style></head>
+<body>
+<main class="report-wrap"><header><p class="eyebrow">2026-09-25 · STEP 2 前半 · PX4 / GAZEBO</p>
+<h1>船からの配送：市街地で待つか、迂回するか</h1>
+<p>観測した障害物の動きから待機・迂回を選ぶ仕組みを実装し、最終版の同じコードで実行した4試験すべてで、配送・帰還・着艦後の静止を検証した。</p>
+<p>以下は位置記録の再生。条件と時間を切り替えると、待機と迂回の違いを確認できる。</p></header>
+<iframe id="codex-visualization" sandbox="allow-scripts" referrerpolicy="no-referrer" title="船からの配送 — 市街地判断の実測レポート" data-srcdoc="&lt;!doctype html&gt;
+&lt;html lang=&quot;en&quot; data-visualize-standalone&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;utf-8&quot;&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;
+&lt;meta name=&quot;referrer&quot; content=&quot;no-referrer&quot;&gt;
+&lt;meta http-equiv=&quot;Content-Security-Policy&quot; content=&quot;default-src &#x27;none&#x27;; script-src &#x27;unsafe-inline&#x27; &#x27;unsafe-eval&#x27; &#x27;wasm-unsafe-eval&#x27; blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; style-src &#x27;unsafe-inline&#x27; blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; img-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; font-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; media-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; worker-src blob:; connect-src blob: data:; frame-src &#x27;none&#x27;; object-src &#x27;none&#x27;; base-uri &#x27;none&#x27;; form-action &#x27;none&#x27;&quot;&gt;
+&lt;title&gt;船からの配送 — 市街地判断の実測レポート&lt;/title&gt;
+&lt;style&gt;:root {
+  color-scheme: light dark;
+  background-color: var(
+    --background,
+    var(--color-background-primary, light-dark(rgb(255 255 255), rgb(24 24 24)))
+  ) !important;
+
+  /* Agent-facing contract; keep in sync with SKILL.md. */
+  --background: var(
+    --color-background-primary,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --card: color-mix(in oklab, var(--foreground) 5%, var(--background));
+  --card-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --popover: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255), rgb(45 45 45))
+  );
+  --popover-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --primary: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --primary-foreground: var(
+    --color-text-inverse,
+    light-dark(rgb(255 255 255), rgb(13 13 13))
+  );
+  --secondary: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255 / 96%), rgb(54 54 54 / 96%))
+  );
+  --secondary-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --muted: color-mix(in srgb, var(--foreground) 10%, transparent);
+  --muted-foreground: var(
+    --color-text-secondary,
+    light-dark(rgb(26 28 31 / 49.4%), rgb(255 255 255 / 49.8%))
+  );
+  --accent: var(
+    --color-background-info,
+    light-dark(rgb(229 242 255), rgb(13 39 63))
+  );
+  --accent-foreground: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --destructive: var(
+    --color-text-warning,
+    light-dark(rgb(226 85 7), rgb(255 133 73))
+  );
+  --border: var(
+    --color-border-secondary,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+  --input: var(
+    --color-border-primary,
+    light-dark(
+      rgb(26 28 31 / 11.8%),
+      color-mix(in oklab, rgb(0 0 0) 10%, transparent)
+    )
+  );
+  --ring: var(
+    --color-ring-primary,
+    light-dark(rgb(51 156 255), rgb(131 195 255 / 76%))
+  );
+  --font-size-base: var(--font-text-md-size, 14px);
+  --blue: light-dark(rgb(51 156 255), rgb(51 156 255));
+  --orange: light-dark(rgb(226 85 7), rgb(251 106 34));
+  --green: light-dark(rgb(0 162 64), rgb(64 201 119));
+  --red: light-dark(rgb(224 46 42), rgb(255 103 100));
+  --purple: light-dark(rgb(146 79 247), rgb(173 123 249));
+  --yellow: light-dark(rgb(255 195 0), rgb(255 210 64));
+  --viz-series-1: var(--primary);
+  --viz-series-2: light-dark(rgb(243 136 59), rgb(245 154 86));
+  --viz-series-3: light-dark(rgb(93 201 119), rgb(116 213 139));
+  --viz-series-4: light-dark(rgb(235 119 177), rgb(240 143 192));
+  --viz-series-5: light-dark(rgb(155 121 236), rgb(170 145 239));
+  --viz-series-6: light-dark(rgb(58 185 177), rgb(90 203 194));
+
+  /* Internal implementation variables; not part of the agent contract. */
+  --font-sans: -apple-system, system-ui, &quot;Segoe UI&quot;, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, &quot;Liberation Mono&quot;,
+    monospace;
+  --font-size-normal: max(11px, var(--font-size-base));
+  --font-size-tooltip: calc(var(--font-size-base) - 1px);
+  --font-size-small: max(11px, calc(var(--font-size-base) - 2px));
+  --font-size-h1: calc(var(--font-size-normal) * 1.7142857143);
+  --font-size-h2: calc(var(--font-size-normal) * 1.4285714286);
+  --font-size-h3: calc(var(--font-size-normal) * 1.2857142857);
+  --font-weight-normal: 430;
+  --font-weight-medium: 500;
+  --icon-size: 16px;
+  --line-height-normal: calc(var(--font-size-normal) * 1.5);
+  --line-height-tooltip: calc(var(--font-size-tooltip) * 1.4285714286);
+  --line-height-small: calc(var(--font-size-small) + 4px);
+  --corner-shape: round;
+  --radius: var(--border-radius-lg, 10px);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-2xl: calc(var(--radius) * 1.6);
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px -1px rgb(0 0 0 / 8%);
+  --checkmark-image: url(&quot;data:image/svg+xml,%3Csvg xmlns=&#x27;http://www.w3.org/2000/svg&#x27; viewBox=&#x27;0 0 17 17&#x27;%3E%3Cpath d=&#x27;M12.8961 3.64101C13.1297 3.41418 13.4984 3.37523 13.7779 3.56581C14.0571 3.75635 14.1554 4.11331 14.0299 4.41347L13.9615 4.53847L7.71151 13.7045C7.59411 13.8767 7.4063 13.9877 7.19881 14.0072C6.99136 14.0267 6.78564 13.9533 6.63826 13.806L2.88826 10.056L2.79842 9.9457C2.6192 9.67407 2.64927 9.30496 2.88826 9.06581C3.12738 8.82669 3.49647 8.79676 3.76815 8.97597L3.8785 9.06581L7.03084 12.2182L12.8053 3.74941L12.8961 3.64101Z&#x27;/%3E%3C/svg%3E&quot;);
+
+  /* Legacy aliases; not part of the current agent contract. */
+  --viz-bg: transparent;
+  --viz-panel: var(--card);
+  --viz-border: var(--border);
+  --viz-text: var(--foreground);
+  --viz-muted: var(--muted-foreground);
+  --viz-accent: var(--primary);
+  --viz-accent-text: var(--primary-foreground);
+  --viz-accent-bg: var(--accent);
+  --viz-font-size: var(--font-size-base);
+  --viz-warning: var(--destructive);
+}
+
+:root[data-theme=&quot;light&quot;] {
+  color-scheme: light;
+}
+
+:root[data-theme=&quot;dark&quot;] {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html &gt; body {
+  /* Preserve MCP aliases for older inline renderers without creating :root cycles. */
+  --color-background-primary: var(
+    --background,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --color-text-primary: var(
+    --foreground,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --color-border-secondary: var(
+    --border,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+
+  margin: 0;
+  padding: var(--visualize-paint-gutter, 0px);
+  color: var(--foreground);
+  background: transparent !important;
+  font-family: var(--font-sans) !important;
+  font-size: var(--font-size-normal);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+}
+
+.cursor-interaction {
+  cursor: var(--cursor-interaction, pointer);
+}
+
+a {
+  color: color-mix(in srgb, var(--viz-accent) 80%, var(--viz-text) 20%);
+  cursor: var(--cursor-interaction, pointer);
+  font-weight: var(--font-weight-medium, 500);
+  text-decoration: none;
+  text-underline-offset: 2px;
+}
+
+a:is(:hover, :focus-visible) {
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-decoration-thickness: 0.5px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin-block: 0;
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h3,
+h4,
+h5,
+h6 {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.3;
+}
+
+b,
+strong,
+th {
+  font-weight: var(--font-weight-medium);
+}
+
+code:not(pre code) {
+  display: inline;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  corner-shape: var(--corner-shape);
+  background: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  word-break: break-word;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--foreground);
+  font: inherit;
+  text-align: start;
+}
+
+.table :is(th, td) {
+  padding-block: 10px;
+  padding-inline: 0 24px;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.table-responsive &gt; .table :is(th, td) {
+  overflow-wrap: break-word;
+}
+
+.table :is(th, td):last-child {
+  padding-inline-end: 0;
+}
+
+.table :is(caption, thead th) {
+  font-weight: 600;
+}
+
+.table thead th {
+  padding-block: 8px;
+  border-bottom-color: color-mix(in srgb, var(--foreground) 16%, transparent);
+}
+
+.table tbody tr:last-child :is(th, td) {
+  border-bottom: 0;
+}
+
+.table.table-sm :is(th, td) {
+  padding-block: 6px;
+}
+
+.table.table-sm :is(th, td):not(:last-child) {
+  padding-inline-end: 16px;
+}
+
+.table :is(.text-end, [align=&quot;right&quot;]) {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.table :is(.text-center, [align=&quot;center&quot;]) {
+  text-align: center;
+}
+
+.table .text-nowrap {
+  white-space: nowrap;
+}
+
+#widget {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  background: transparent !important;
+}
+
+.card {
+  min-width: 0;
+  padding: 12px;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  border-radius: var(--radius-2xl);
+  corner-shape: var(--corner-shape);
+  color: var(--card-foreground);
+  background: var(--card);
+}
+
+#widget &gt; :not(.card, .progress) {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  width: max-content;
+  max-width: min(
+    20rem,
+    var(--tooltip-available-width, calc(100vw - 10px)),
+    calc(100vw - 10px)
+  );
+  max-height: min(
+    var(--tooltip-available-height, calc(100vh - 10px)),
+    calc(100vh - 10px)
+  );
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  color: var(--popover-foreground);
+  background: var(--popover);
+  box-shadow: none;
+  font-size: var(--font-size-tooltip);
+  line-height: var(--line-height-tooltip);
+  overflow-wrap: break-word;
+  white-space: normal;
+  pointer-events: none;
+  user-select: none;
+}
+
+.viz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(max(180px, 24%), 1fr));
+  gap: 10px;
+}
+
+.viz-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.viz-stat-value {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+.viz-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+hr {
+  width: 100%;
+  height: 1px;
+  margin-block: 6px;
+  border: 0;
+  background: var(--border);
+}
+
+.nav {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+}
+
+.progress {
+  display: flex;
+  height: 8px;
+  margin-block: calc((var(--line-height-normal, 1.5em) - 8px) / 2);
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+}
+
+.progress-bar:only-child {
+  border-radius: var(--radius-full);
+}
+
+.progress-bar {
+  height: 100%;
+  flex-shrink: 0;
+  border: 0;
+  background: var(--viz-series-1);
+}
+
+.viz-badge {
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  color: var(--accent-foreground);
+  background: var(--accent);
+  font-weight: var(--font-weight-medium);
+}
+
+small,
+.text-small,
+.viz-badge {
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.text-muted {
+  color: var(--muted-foreground);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.viz-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.viz-controls &gt; .form-label {
+  display: grid;
+  min-width: min(100%, 260px);
+  flex: 1 1 280px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin-bottom: 0;
+}
+
+.viz-controls &gt; .form-label &gt; :is(.form-control, .form-range, .form-select) {
+  grid-column: 1 / -1;
+}
+
+.btn,
+.nav-link,
+.form-check-input,
+.form-control,
+.form-range,
+.form-select {
+  font: inherit;
+}
+
+.btn,
+.nav-link {
+  appearance: button;
+  display: inline-flex;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0 8px;
+  -webkit-app-region: no-drag;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: var(--cursor-interaction, pointer);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.btn:is(.btn-block, .viz-tile) {
+  inline-size: 100%;
+}
+
+.btn.viz-tile {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+a.btn {
+  cursor: var(--cursor-interaction, pointer);
+  text-decoration: none;
+}
+
+.btn:not(:disabled):hover,
+.nav-link:not(:disabled):not([aria-disabled=&quot;true&quot;]):hover {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn-primary {
+  border-color: transparent;
+  color: var(--primary-foreground);
+  background: var(--foreground);
+  background-clip: padding-box;
+}
+
+.btn-primary .text-muted {
+  color: color-mix(in srgb, var(--primary-foreground) 50%, transparent);
+}
+
+.btn-primary:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 80%, transparent);
+  background-clip: padding-box;
+}
+
+.btn-ghost {
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.btn-ghost:not(:disabled):hover {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.nav-pills .nav-link {
+  min-width: 0;
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.nav-justified .nav-link {
+  flex: 1 1 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.nav-pills .nav-link.active {
+  color: var(--foreground);
+  background: var(--muted);
+}
+
+.btn:disabled,
+.nav-link:disabled,
+.nav-link[aria-disabled=&quot;true&quot;] {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+[data-lucide] {
+  stroke-width: 1.6;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--foreground);
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  color: var(--foreground);
+  background: var(--secondary);
+}
+
+.form-control::placeholder {
+  color: var(--muted-foreground);
+}
+
+.form-control[type=&quot;file&quot;] {
+  padding: 0;
+  overflow: hidden;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control[type=&quot;file&quot;]::file-selector-button {
+  min-height: 26px;
+  margin-right: 8px;
+  padding: 0 8px;
+  border: 0;
+  border-right: 1px solid var(--input);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: inherit;
+  font: inherit;
+}
+
+.form-control[type=&quot;file&quot;]:not(:disabled):hover::file-selector-button {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-control-color[type=&quot;color&quot;] {
+  width: 40px;
+  height: 28px;
+  padding: 3px;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control-color[type=&quot;color&quot;]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.form-control-color[type=&quot;color&quot;]::-webkit-color-swatch {
+  border: 0;
+  border-radius: calc(var(--radius-lg) - 4px);
+  corner-shape: var(--corner-shape);
+}
+
+textarea.form-control {
+  height: auto;
+  min-height: 72px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.form-control:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.form-select {
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  margin: 0;
+  padding: 0 32px 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  color: var(--foreground);
+  background-color: var(--secondary);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted-foreground) 50%),
+    linear-gradient(135deg, var(--muted-foreground) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 50%,
+    calc(100% - 10px) 50%;
+  background-repeat: no-repeat;
+  background-size: 4px 4px;
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-select:not(:disabled):hover {
+  background-color: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-select:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-check {
+  display: flex;
+  min-height: 20px;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-check-input {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  margin: 0;
+  border: 1px solid var(--input);
+  color: var(--primary-foreground);
+  background-color: transparent;
+  cursor: var(--cursor-interaction, default);
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    box-shadow 150ms;
+}
+
+.form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;] {
+  border-color: var(--input);
+  border-radius: var(--radius-sm);
+  corner-shape: var(--corner-shape);
+  background-color: var(--secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input:not(:disabled):not(:checked):hover {
+  background-color: var(--card);
+}
+
+.form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;]:checked {
+  border-color: var(--primary);
+  background-color: var(--primary);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input[type=&quot;checkbox&quot;]:checked::before {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--primary-foreground);
+  content: &quot;&quot;;
+  mask: var(--checkmark-image) center / 12px 12px no-repeat;
+}
+
+.form-check-input[type=&quot;radio&quot;] {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+}
+
+.form-check-input[type=&quot;radio&quot;]:checked {
+  border: 2px solid var(--primary);
+  background:
+    radial-gradient(circle, var(--primary-foreground) 0 2.5px, transparent 3px),
+    var(--primary);
+}
+
+.form-check:not(.form-switch) .form-check-input:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+}
+
+.form-switch .form-check-input:disabled,
+.form-switch .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-check-label {
+  color: var(--foreground);
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-switch .form-check-input {
+  position: relative;
+  width: 32px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+  box-shadow: none;
+  transition: background-color 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid light-dark(var(--primary-foreground), var(--foreground));
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+  box-shadow: var(--shadow-sm);
+  content: &quot;&quot;;
+  transform: translate(2px, -50%);
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input:checked {
+  background: var(--primary);
+}
+
+.form-switch .form-check-input:checked::before {
+  transform: translate(14px, -50%);
+}
+
+.form-switch .form-check-input:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.form-range {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 28px;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  outline: none;
+  border: 0;
+  accent-color: var(--primary);
+  background: linear-gradient(
+      color-mix(in srgb, var(--foreground) 7%, transparent),
+      color-mix(in srgb, var(--foreground) 7%, transparent)
+    )
+    center / 100% 2px no-repeat;
+}
+
+.form-range::-webkit-slider-runnable-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-webkit-slider-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range::-moz-range-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-moz-range-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.btn:not(.btn-primary, .viz-tile):is(
+  [aria-pressed=&quot;true&quot;],
+  [aria-selected=&quot;true&quot;],
+  .is-selected
+) {
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+  background: var(--primary);
+}
+
+.btn.viz-tile:is([aria-pressed=&quot;true&quot;], [aria-selected=&quot;true&quot;], .is-selected) {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.btn:focus-visible,
+.nav-link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+@media (pointer: coarse) {
+  .btn,
+  .nav-link,
+  .form-control,
+  .form-select {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Keep small-screen WebKit from zooming when a text field receives focus. */
+  .form-control,
+  .form-select {
+    font-size: max(16px, var(--font-size-normal));
+  }
+
+  .form-control[type=&quot;file&quot;]::file-selector-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .form-control-color[type=&quot;color&quot;] {
+    width: 44px;
+    height: 44px;
+  }
+
+  .form-control:is(
+    [type=&quot;date&quot;],
+    [type=&quot;datetime-local&quot;],
+    [type=&quot;month&quot;],
+    [type=&quot;time&quot;],
+    [type=&quot;week&quot;]
+  ) {
+    min-width: 0;
+    max-width: 100%;
+    padding-block: 8px;
+  }
+
+  .form-check {
+    min-height: 44px;
+    padding-inline: 15px;
+  }
+
+  .form-check-input {
+    position: relative;
+  }
+
+  .form-check-input::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    content: &quot;&quot;;
+    transform: translate(-50%, -50%);
+  }
+
+  .form-check-label {
+    display: inline-flex;
+    min-width: 44px;
+    min-height: 44px;
+    align-items: center;
+  }
+
+  .form-range {
+    height: 44px;
+    touch-action: pan-y;
+  }
+
+  .form-range::-webkit-slider-runnable-track {
+    height: 44px;
+  }
+
+  .form-range::-moz-range-track {
+    height: 44px;
+  }
+
+  .form-range::-webkit-slider-thumb {
+    margin-top: 12px;
+  }
+}
+
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+#widget &gt; svg {
+  width: 100%;
+}
+
+/* Model-authored chart rules can otherwise stretch icons after these styles load. */
+svg.lucide {
+  display: block;
+  width: var(--icon-size) !important;
+  height: var(--icon-size) !important;
+  flex: none;
+  margin: 0 !important;
+  stroke-width: 1.6;
+}
+
+.text-warning,
+.text-destructive {
+  color: var(--destructive);
+}
+
+html&gt;body{padding:0}&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;script type=&quot;application/json&quot; id=&quot;codex-visualization-widget-state&quot;&gt;__CODEX_VISUALIZATION_WIDGET_STATE__&lt;/script&gt;
+&lt;script&gt;(() =&gt; {
+  const root = document.documentElement;
+  const mediaQuery = globalThis.matchMedia(&quot;(prefers-color-scheme: dark)&quot;);
+  const apply = Reflect.apply;
+  const isArray = Array.isArray;
+  const hasOwn = Object.hasOwn;
+  const parentWindow = globalThis.parent;
+  const stringify = JSON.stringify;
+  const parse = JSON.parse;
+  const encode = TextEncoder.prototype.encode.bind(new TextEncoder());
+  const initialStateElement = document.getElementById(
+    &quot;codex-visualization-widget-state&quot;,
+  );
+  const initialGlobals = parse(initialStateElement?.textContent ?? &quot;{}&quot;);
+  initialStateElement?.remove();
+  /** @type {Record&lt;string, unknown&gt; | null} */
+  let state = initialGlobals.widgetState ?? null;
+  const statePersistence = initialGlobals.statePersistence ?? &quot;none&quot;;
+  let nextStateRequestId = 0;
+  /** @type {Map&lt;number, { resolve: () =&gt; void; reject: (error: Error) =&gt; void; timeout: ReturnType&lt;typeof globalThis.setTimeout&gt;; serializedState: string }&gt;} */
+  const pendingStateWrites = new Map();
+  const persistenceError = () =&gt;
+    Object.assign(
+      new Error(&quot;The host could not persist the widget state update&quot;),
+      {
+        code: -32000,
+        data: { code: &quot;widget_state_persistence_failed&quot;, retryable: false },
+      },
+    );
+  /**
+   * @param {object} prototype
+   * @param {string} property
+   */
+  const getPrototypeGetter = (prototype, property) =&gt; {
+    // oxlint-disable-next-line typescript/unbound-method -- invoked through captured Reflect.apply
+    const getter = Object.getOwnPropertyDescriptor(prototype, property)?.get;
+    if (getter == null) {
+      throw new Error(`Missing ${property} getter`);
+    }
+    return getter;
+  };
+  const getMessageData = getPrototypeGetter(MessageEvent.prototype, &quot;data&quot;);
+  const getMessagePorts = getPrototypeGetter(MessageEvent.prototype, &quot;ports&quot;);
+  const getMessageSource = getPrototypeGetter(MessageEvent.prototype, &quot;source&quot;);
+  // oxlint-disable-next-line typescript/unbound-method -- captured before the untrusted fragment runs
+  const addHostMessageListener = MessagePort.prototype.addEventListener;
+  // oxlint-disable-next-line typescript/unbound-method -- captured before the untrusted fragment runs
+  const postHostMessage = MessagePort.prototype.postMessage;
+  // oxlint-disable-next-line typescript/unbound-method -- captured before the untrusted fragment runs
+  const startHostPort = MessagePort.prototype.start;
+  // oxlint-disable-next-line typescript/unbound-method -- captured before the untrusted fragment runs
+  const stopMessagePropagation = Event.prototype.stopImmediatePropagation;
+  /** @type {MessagePort | null} */
+  let hostPort = null;
+  const postToHost = (type, payload) =&gt; {
+    if (hostPort != null) {
+      apply(postHostMessage, hostPort, [{ type, ...payload }]);
+    }
+  };
+  const openExternal = ({ href }) =&gt; {
+    if (globalThis.navigator.userActivation?.isActive === true) {
+      postToHost(&quot;open-external&quot;, { href });
+    }
+  };
+  const sendFollowUpMessage = ({ context, prompt, title }) =&gt; {
+    if (globalThis.navigator.userActivation?.isActive === true) {
+      postToHost(&quot;follow-up&quot;, { context, prompt, title });
+    }
+    return Promise.resolve();
+  };
+  /**
+   * @param {Record&lt;string, unknown&gt; | ((previous: Record&lt;string, unknown&gt; | null) =&gt; Record&lt;string, unknown&gt;)} next
+   * @returns {Promise&lt;void&gt;}
+   */
+  const setWidgetState = async (next) =&gt; {
+    const nextState = typeof next === &quot;function&quot; ? next(state) : next;
+    if (
+      nextState == null ||
+      typeof nextState !== &quot;object&quot; ||
+      isArray(nextState)
+    ) {
+      throw new TypeError(&quot;Widget state must be a JSON object&quot;);
+    }
+    const inputState = stringify(
+      nextState,
+      (_key, /** @type {unknown} */ value) =&gt; {
+        if (
+          typeof value === &quot;undefined&quot; ||
+          typeof value === &quot;function&quot; ||
+          typeof value === &quot;symbol&quot; ||
+          (typeof value === &quot;number&quot; &amp;&amp; !Number.isFinite(value))
+        ) {
+          throw new TypeError(&quot;Widget state must be a JSON object&quot;);
+        }
+        return value;
+      },
+    );
+    const parsedState = parse(inputState);
+    if (
+      parsedState == null ||
+      typeof parsedState !== &quot;object&quot; ||
+      isArray(parsedState)
+    ) {
+      throw new TypeError(&quot;Widget state must be a JSON object&quot;);
+    }
+    const storedState = {
+      modelContent: null,
+      privateContent: null,
+      ...parsedState,
+    };
+    const serializedState = stringify(storedState);
+    if (encode(serializedState).length &gt; 16 * 1024) {
+      throw new TypeError(
+        &quot;Widget state must be a JSON object of at most 16 KiB&quot;,
+      );
+    }
+    if (
+      hasOwn(storedState, &quot;imageIds&quot;) &amp;&amp;
+      (!isArray(storedState.imageIds) ||
+        storedState.imageIds.some(
+          (/** @type {unknown} */ id) =&gt; typeof id !== &quot;string&quot;,
+        ))
+    ) {
+      throw new TypeError(&quot;Widget state imageIds must be an array of strings&quot;);
+    }
+    if (storedState.imageIds?.length &gt; 0) {
+      throw Object.assign(
+        new TypeError(&quot;Visualization state does not support image attachments&quot;),
+        { code: -32602, data: { code: &quot;images_unsupported&quot; } },
+      );
+    }
+    state = storedState;
+    globalThis.openai.widgetState = state;
+    globalThis.dispatchEvent(
+      new CustomEvent(&quot;openai:set_globals&quot;, {
+        detail: { globals: { widgetState: state } },
+      }),
+    );
+    if (statePersistence === &quot;none&quot;) {
+      throw persistenceError();
+    }
+    const id = ++nextStateRequestId;
+    return new Promise((resolve, reject) =&gt; {
+      const timeout = globalThis.setTimeout(() =&gt; {
+        pendingStateWrites.delete(id);
+        reject(persistenceError());
+      }, 30_000);
+      pendingStateWrites.set(id, { resolve, reject, timeout, serializedState });
+      postToHost(&quot;widget-state-write&quot;, { id, state: serializedState });
+    });
+  };
+  const syncTheme = () =&gt; {
+    const theme = mediaQuery.matches ? &quot;dark&quot; : &quot;light&quot;;
+    root.dataset.theme = theme;
+    globalThis.openai = {
+      ...globalThis.openai,
+      openExternal,
+      sendFollowUpMessage,
+      setWidgetState,
+      theme,
+      visualizationStyleVariables: {},
+      visualizationTheme: theme,
+      widgetState: state,
+      statePersistence,
+      stateModelContext: &quot;none&quot;,
+    };
+    globalThis.dispatchEvent(
+      new CustomEvent(&quot;openai:set_globals&quot;, {
+        detail: { globals: globalThis.openai },
+      }),
+    );
+  };
+  const sendHeight = () =&gt; {
+    postToHost(&quot;height&quot;, {
+      height: Math.ceil(
+        Math.max(
+          document.body.scrollHeight,
+          document.body.getBoundingClientRect().height,
+        ),
+      ),
+    });
+  };
+
+  globalThis.addEventListener(
+    &quot;message&quot;,
+    (event) =&gt; {
+      const data = apply(getMessageData, event, []);
+      const ports = apply(getMessagePorts, event, []);
+      const source = apply(getMessageSource, event, []);
+      if (
+        hostPort != null ||
+        source !== parentWindow ||
+        typeof data !== &quot;object&quot; ||
+        data?.type !== &quot;codex-visualization-initialize&quot; ||
+        !isArray(ports) ||
+        ports.length !== 1
+      ) {
+        return;
+      }
+      apply(stopMessagePropagation, event, []);
+      const nextHostPort = ports[0];
+      try {
+        apply(addHostMessageListener, nextHostPort, [
+          &quot;message&quot;,
+          (event) =&gt; {
+            const data = apply(getMessageData, event, []);
+            if (typeof data === &quot;object&quot; &amp;&amp; data?.type === &quot;measure&quot;) {
+              sendHeight();
+            } else if (
+              typeof data === &quot;object&quot; &amp;&amp;
+              data?.type === &quot;widget-state-result&quot;
+            ) {
+              /** @type {unknown} */
+              const id = data.id;
+              if (typeof id !== &quot;number&quot;) {
+                return;
+              }
+              const pending = pendingStateWrites.get(id);
+              if (pending != null) {
+                pendingStateWrites.delete(id);
+                globalThis.clearTimeout(pending.timeout);
+                if (data.ok === true) {
+                  pending.resolve();
+                } else {
+                  pending.reject(persistenceError());
+                }
+              }
+            }
+          },
+        ]);
+        apply(startHostPort, nextHostPort, []);
+      } catch {
+        return;
+      }
+      hostPort = nextHostPort;
+      for (const [id, { serializedState }] of pendingStateWrites) {
+        postToHost(&quot;widget-state-write&quot;, { id, state: serializedState });
+      }
+      sendHeight();
+    },
+    { capture: true },
+  );
+  document.currentScript?.remove();
+  mediaQuery.addEventListener(&quot;change&quot;, syncTheme);
+  globalThis.addEventListener(&quot;click&quot;, (event) =&gt; {
+    if (event.defaultPrevented) {
+      return;
+    }
+    let element = null;
+    if (event.target instanceof globalThis.Element) {
+      element = event.target;
+    } else if (event.target instanceof globalThis.Node) {
+      element = event.target.parentElement;
+    }
+    const link = element?.closest(&quot;a[href]&quot;);
+    const href = link?.getAttribute(&quot;href&quot;);
+    if (href == null) {
+      return;
+    }
+    if (href.startsWith(&quot;#&quot;)) {
+      let id;
+      try {
+        id = decodeURIComponent(href.slice(1));
+      } catch {
+        return;
+      }
+      const target = id.length === 0 ? root : document.getElementById(id);
+      if (
+        target == null ||
+        globalThis.navigator.userActivation?.isActive !== true
+      ) {
+        return;
+      }
+      event.preventDefault();
+      postToHost(&quot;scroll-to&quot;, {
+        top: target.getBoundingClientRect().top + globalThis.scrollY,
+      });
+      return;
+    }
+    event.preventDefault();
+    openExternal({ href });
+  });
+  new ResizeObserver(sendHeight).observe(document.body);
+  syncTheme();
+})();
+&lt;/script&gt;
+&lt;div id=&quot;ship-urban-replay&quot;&gt;
+  &lt;h3&gt;PX4 / Gazebo 市街地の実測軌跡&lt;/h3&gt;
+  &lt;div class=&quot;viz-controls&quot;&gt;
+    &lt;label class=&quot;form-label&quot;&gt;条件
+      &lt;select class=&quot;form-select&quot; id=&quot;ship-case&quot;&gt;
+        &lt;option value=&quot;short_clear&quot;&gt;短い閉塞&lt;/option&gt;
+        &lt;option value=&quot;long_block&quot;&gt;長い閉塞&lt;/option&gt;
+      &lt;/select&gt;
+    &lt;/label&gt;
+    &lt;button type=&quot;button&quot; class=&quot;btn&quot; id=&quot;ship-play&quot;&gt;再生&lt;/button&gt;
+    &lt;output class=&quot;tabular-nums&quot; id=&quot;ship-clock&quot; aria-live=&quot;off&quot;&gt;&lt;/output&gt;
+  &lt;/div&gt;
+  &lt;label class=&quot;form-label&quot; for=&quot;ship-time&quot;&gt;市街地入口からの経過時間（実時間・秒）&lt;/label&gt;
+  &lt;input class=&quot;form-range&quot; id=&quot;ship-time&quot; type=&quot;range&quot; min=&quot;0&quot; max=&quot;100&quot; value=&quot;0&quot; step=&quot;0.1&quot;&gt;
+  &lt;div class=&quot;ship-panels&quot;&gt;
+    &lt;section&gt;&lt;h3 id=&quot;ship-wait-heading&quot;&gt;待機&lt;/h3&gt;&lt;div id=&quot;ship-wait-map&quot;&gt;&lt;/div&gt;&lt;/section&gt;
+    &lt;section&gt;&lt;h3 id=&quot;ship-detour-heading&quot;&gt;迂回&lt;/h3&gt;&lt;div id=&quot;ship-detour-map&quot;&gt;&lt;/div&gt;&lt;/section&gt;
+  &lt;/div&gt;
+  &lt;div class=&quot;viz-row text-small&quot;&gt;&lt;span&gt;● 機体&lt;/span&gt;&lt;span&gt;斜線：建物&lt;/span&gt;&lt;span&gt;破線の箱：移動障害物&lt;/span&gt;&lt;span&gt;単位：m&lt;/span&gt;&lt;/div&gt;
+  &lt;div class=&quot;text-small&quot; id=&quot;ship-result&quot; aria-live=&quot;polite&quot;&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;style&gt;
+#ship-urban-replay .ship-panels {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+#ship-urban-replay .ship-map {display:block;width:100%;overflow:visible}
+#ship-urban-replay .ship-map text {fill:var(--foreground);font-size:12px;font-weight:400}
+#ship-urban-replay .ship-map .structure {stroke:var(--border);fill:none;stroke-width:1}
+#ship-urban-replay .ship-map .building {fill:var(--muted);stroke:var(--border);stroke-width:1}
+#ship-urban-replay .ship-map .obstacle {fill:var(--muted);stroke:var(--foreground);stroke-dasharray:4 3;stroke-width:1}
+@media(max-width:520px) {#ship-urban-replay .ship-panels {grid-template-columns:minmax(0,1fr)}}
+&lt;/style&gt;
+&lt;script id=&quot;ship-records&quot; type=&quot;application/json&quot;&gt;[{&quot;case&quot;:&quot;short_clear&quot;,&quot;action&quot;:&quot;wait&quot;,&quot;policy&quot;:&quot;constant_velocity&quot;,&quot;duration&quot;:57.317127776000234,&quot;run_id&quot;:&quot;07e8f5d4c7024759a69d026e5d249ae4&quot;,&quot;buildings&quot;:[{&quot;name&quot;:&quot;urban_building_0_0&quot;,&quot;xyz&quot;:[-45.0,145.0,22.5],&quot;size&quot;:[35,30,45]},{&quot;name&quot;:&quot;urban_building_0_2&quot;,&quot;xyz&quot;:[45.0,145.0,22.5],&quot;size&quot;:[35,30,45]},{&quot;name&quot;:&quot;urban_building_1_0&quot;,&quot;xyz&quot;:[-45.0,265.0,22.5],&quot;size&quot;:[35,30,45]},{&quot;name&quot;:&quot;urban_building_1_2&quot;,&quot;xyz&quot;:[45.0,265.0,22.5],&quot;size&quot;:[35,30,45]},{&quot;name&quot;:&quot;urban_building_2_0&quot;,&quot;xyz&quot;:[-45.0,345.0,22.5],&quot;size&quot;:[35,30,45]},{&quot;name&quot;:&quot;urban_building_2_2&quot;,&quot;xyz&quot;:[45.0,345.0,22.5],&quot;size&quot;:[35,30,45]}],&quot;obstacleNorth&quot;:170.0,&quot;points&quot;:[[0.03,-0.001,69.294,29.923,0],[1.089,-0.006,69.567,29.92,0.91],[2.178,-0.005,69.693,29.926,3.709],[3.263,0.007,69.743,29.928,5.601],[4.321,0.022,69.741,29.941,7.433],[5.396,0.034,69.738,29.95,9.327],[6.482,0.026,69.749,29.953,12.161],[7.059,0.012,69.764,29.955,13.107],[11.679,0.056,69.809,29.932,16.0],[12.255,0.044,69.81,29.933,16.0],[12.827,0.015,70.219,29.964,16.0],[13.916,-0.086,73.597,29.975,16.0],[14.999,-0.11,80.079,30.016,16.0],[16.085,-0.092,89.712,30.04,16.0],[17.174,-0.027,102.139,29.962,16.0],[18.264,0.073,114.39,29.904,16.0],[19.344,0.104,126.792,29.869,16.0],[20.42,0.067,139.58,29.855,16.0],[21.507,0.032,152.438,29.835,16.0],[22.594,0.012,165.603,29.818,16.0],[23.683,-0.017,178.56,29.817,16.0],[24.77,-0.02,191.714,29.834,16.0],[25.864,0.007,204.133,29.835,16.0],[26.951,0.016,217.202,29.835,16.0],[28.048,0.048,230.346,29.841,16.0],[29.139,0.085,243.212,29.848,16.0],[30.225,0.079,255.701,29.846,16.0],[31.315,0.026,268.445,29.857,16.0],[32.405,-0.145,278.646,29.885,16.0],[33.495,-0.183,286.489,29.921,16.0],[34.586,-0.073,292.163,29.933,16.0],[35.672,0.001,295.689,29.929,16.0],[36.761,0.035,297.689,29.919,16.0],[37.851,0.033,298.394,28.84,16.0],[38.936,-0.005,298.271,27.366,16.0],[40.022,-0.071,298.239,25.801,16.0],[41.109,-0.111,298.207,24.193,16.0],[42.2,-0.108,298.216,22.591,16.0],[43.287,-0.107,298.277,20.969,16.0],[44.371,-0.095,298.385,19.372,16.0],[45.458,-0.056,298.478,17.723,16.0],[46.546,-0.015,298.57,16.053,16.0],[47.637,0.003,298.654,14.421,16.0],[48.734,0.008,298.759,12.795,16.0],[49.823,0.009,298.853,11.163,16.0],[50.919,-0.001,298.977,9.526,16.0],[52.009,-0.025,299.064,7.905,16.0],[53.097,0.001,299.139,6.261,16.0],[54.182,0.004,299.21,4.784,16.0],[55.271,-0.01,299.253,3.89,16.0],[57.316,0.002,299.322,3.16,16.0]]},{&quot;case&quot;:&quot;short_clear&quot;,&quot;action&quot;:&quot;detour&quot;,&quot;policy&quot;:&quot;always_detour&quot;,&quot;duration&quot;:86.17595204000008,&quot;run_id&quot;:&quot;81462cfe930e4852aa9b164526af2a41&quot;,&quot;buildings&quot;:[{&quot;name&quot;:&quot;urban_building_0_0&quot;,&quot;xyz&quot;:[-45.0,145.0,22.5],&quot;size&quot;:[35,30,45]},{&quot;name&quot;:&quot;urban_building_0_2&quot;,&quot;xyz&quot;:[45.0,145.0,22.5],&quot;size&quot;:[35,30,45]},{&quot;name&quot;:&quot;urban_building_1_0&quot;,&quot;xyz&quot;:[-45.0,265.0,22.5],&quot;size&quot;:[35,30,45]},{&quot;name&quot;:&quot;urban_building_1_2&quot;,&quot;xyz&quot;:[45.0,265.0,22.5],&quot;size&quot;:[35,30,45]},{&quot;name&quot;:&quot;urban_building_2_0&quot;,&quot;xyz&quot;:[-45.0,345.0,22.5],&quot;size&quot;:[35,30,45]},{&quot;name&quot;:&quot;urban_building_2_2&quot;,&quot;xyz&quot;:[45.0,345.0,22.5],&quot;size&quot;:[35,30,45]}],&quot;obstacleNorth&quot;:170.0,&quot;points&quot;:[[0.03,-0.003,69.354,29.923,0],[1.093,0.0,69.578,29.925,0.912],[2.182,-0.003,69.658,29.935,3.714],[3.273,-0.003,69.689,29.958,5.594],[7.413,-0.019,69.759,29.98,14.046],[8.49,-0.031,69.782,29.988,15.918],[9.582,-0.044,69.796,30.0,16.0],[10.155,0.389,69.814,30.045,16.0],[11.243,3.864,69.965,30.064,16.0],[12.33,10.366,70.117,30.087,16.0],[13.419,20.196,70.151,30.101,16.0],[14.507,32.26,70.108,30.004,16.0],[15.597,44.688,69.964,29.935,16.0],[16.683,56.715,69.805,29.851,16.0],[17.772,66.473,69.672,29.838,16.0],[18.859,74.129,69.642,29.889,16.0],[19.946,79.32,69.698,29.928,16.0],[21.021,82.573,69.746,29.931,16.0],[22.111,84.317,69.87,29.949,16.0],[23.197,84.68,71.646,29.937,16.0],[24.288,84.755,74.847,29.977,16.0],[25.38,84.677,81.143,30.008,16.0],[26.465,84.618,90.661,30.047,16.0],[27.555,84.614,103.087,29.984,16.0],[28.653,84.691,115.491,29.94,16.0],[29.74,84.782,128.139,29.904,16.0],[30.834,84.813,140.993,29.895,16.0],[31.921,84.836,153.863,29.893,16.0],[33.01,84.901,166.828,29.891,16.0],[34.102,84.968,179.9,29.894,16.0],[35.192,85.045,193.087,29.884,16.0],[36.282,85.087,204.713,29.889,16.0],[37.368,85.094,213.807,29.906,16.0],[38.455,85.145,220.413,29.941,16.0],[39.545,85.192,224.811,29.975,16.0],[40.635,85.2,227.486,29.969,16.0],[41.722,84.703,228.856,29.982,16.0],[42.813,82.575,228.921,29.961,16.0],[43.9,77.937,228.866,29.983,16.0],[44.986,70.102,228.821,30.028,16.0],[46.071,59.081,228.807,30.044,16.0],[47.165,46.427,228.928,30.012,16.0],[48.25,34.005,229.129,30.007,16.0],[49.334,23.239,229.346,30.018,16.0],[50.419,14.548,229.54,30.068,16.0],[51.499,8.242,229.645,30.109,16.0],[52.585,4.025,229.65,30.117,16.0],[53.675,1.594,229.574,30.089,16.0],[54.761,0.529,230.454,30.059,16.0],[55.851,0.371,232.766,30.053,16.0],[56.942,0.319,237.895,30.043,16.0],[58.029,0.299,246.212,30.072,16.0],[59.117,0.297,257.592,30.05,16.0],[60.206,0.321,269.799,29.972,16.0],[61.298,0.312,279.544,29.916,16.0],[62.386,0.261,287.133,29.923,16.0],[63.473,0.177,292.661,29.937,16.0],[64.562,0.109,296.037,29.941,16.0],[65.65,0.063,297.917,29.89,16.0],[66.738,0.036,298.375,28.62,16.0],[67.826,-0.012,298.274,27.081,16.0],[68.912,-0.04,298.211,25.499,16.0],[69.992,-0.059,298.151,23.887,16.0],[71.074,-0.066,298.184,22.3,16.0],[72.162,-0.076,298.262,20.671,16.0],[73.251,-0.046,298.371,19.079,16.0],[74.34,0.002,298.477,17.46,16.0],[75.43,0.028,298.573,15.827,16.0],[76.508,0.019,298.671,14.237,16.0],[77.597,-0.005,298.795,12.62,16.0],[78.687,-0.012,298.914,11.008,16.0],[79.774,-0.016,299.015,9.37,16.0],[80.865,-0.009,299.115,7.72,16.0],[81.952,-0.006,299.215,6.09,16.0],[83.041,0.008,299.296,4.683,16.0],[84.129,0.025,299.309,3.848,16.0],[86.175,0.008,299.301,3.174,16.0]]},{&quot;case&quot;:&quot;long_block&quot;,&quot;action&quot;:&quot;detour&quot;,&quot;policy&quot;:&quot;constant_velocity&quot;,&quot;duration&quot;:105.68651054800011,&quot;run_id&quot;:&quot;acb96effcd07474aaa28ca9749d1dd7c&quot;,&quot;buildings&quot;:[{&quot;name&quot;:&quot;urban_building_0_0&quot;,&quot;xyz&quot;:[-45.0,145.0,22.5],&quot;size&quot;:[35,30,45]},{&quot;name&quot;:&quot;urban_building_0_2&quot;,&quot;xyz&quot;:[45.0,145.0,22.5],&quot;size&quot;:[35,30,45]},{&quot;name&quot;:&quot;urban_building_1_0&quot;,&quot;xyz&quot;:[-45.0,265.0,22.5],&quot;size&quot;:[35,30,45]},{&quot;name&quot;:&quot;urban_building_1_2&quot;,&quot;xyz&quot;:[45.0,265.0,22.5],&quot;size&quot;:[35,30,45]},{&quot;name&quot;:&quot;urban_building_2_0&quot;,&quot;xyz&quot;:[-45.0,345.0,22.5],&quot;size&quot;:[35,30,45]},{&quot;name&quot;:&quot;urban_building_2_2&quot;,&quot;xyz&quot;:[45.0,345.0,22.5],&quot;size&quot;:[35,30,45]}],&quot;obstacleNorth&quot;:170.0,&quot;points&quot;:[[0.03,0.024,69.297,29.97,0],[1.088,0.018,69.543,29.973,0.069],[2.188,0.014,69.633,29.976,0.28],[3.282,0.005,69.661,29.984,0.422],[7.416,-0.015,69.733,30.015,1.054],[8.487,0.02,69.754,30.014,1.193],[9.559,0.029,69.775,30.027,1.332],[10.133,0.134,69.786,30.059,1.473],[11.217,1.876,69.85,30.097,1.614],[12.279,5.646,69.984,30.12,1.752],[13.35,10.745,70.09,30.139,1.893],[14.432,18.533,70.141,30.153,2.104],[15.505,27.973,70.143,30.077,2.244],[16.573,37.206,70.058,30.011,2.383],[17.658,46.836,69.915,29.975,2.594],[18.732,56.237,69.776,29.946,2.737],[19.79,64.323,69.688,29.945,2.875],[20.881,70.437,69.658,29.97,3.087],[21.964,75.899,69.673,30.009,3.229],[23.029,79.662,69.698,30.038,3.367],[24.094,82.152,69.708,30.047,3.51],[25.191,83.84,69.71,30.046,3.722],[26.268,84.679,70.497,30.049,3.863],[27.327,84.732,72.058,30.044,4.004],[28.412,84.749,74.554,30.07,4.216],[29.495,84.682,79.326,30.084,4.355],[30.557,84.634,86.173,30.107,4.495],[31.631,84.604,93.833,30.105,4.634],[32.715,84.59,103.872,30.036,4.848],[33.785,84.636,113.81,29.986,4.987],[34.847,84.713,123.489,29.955,5.126],[35.931,84.777,132.975,29.935,5.338],[37.017,84.838,143.644,29.92,5.479],[38.078,84.897,153.759,29.915,5.618],[39.16,84.947,163.187,29.916,5.829],[40.249,84.99,173.881,29.919,5.97],[41.312,85.028,184.103,29.924,6.11],[42.376,85.073,193.978,29.927,6.253],[43.464,85.087,203.035,29.925,6.465],[44.54,85.09,210.702,29.94,6.604],[45.601,85.111,216.772,29.963,6.743],[46.683,85.154,221.178,29.974,6.953],[47.769,85.207,224.712,29.979,7.095],[48.826,85.223,226.982,29.983,7.232],[49.903,85.22,228.307,30.001,7.441],[50.971,84.123,228.918,30.004,7.582],[52.038,82.358,228.95,30.031,7.72],[53.105,79.1,228.891,30.034,7.861],[54.195,73.765,228.809,30.057,8.073],[55.271,66.121,228.745,30.103,8.214],[56.331,56.798,228.782,30.094,8.353],[57.415,47.785,228.887,30.079,8.565],[58.505,37.47,229.033,30.053,8.706],[59.565,28.267,229.204,29.985,8.845],[60.637,21.038,229.381,29.975,9.057],[61.724,14.154,229.55,30.016,9.195],[62.791,8.982,229.636,30.061,9.335],[63.858,5.484,229.646,30.093,9.475],[64.942,2.948,229.622,30.113,9.686],[66.02,1.298,229.571,30.125,9.826],[67.081,0.507,230.361,30.126,9.966],[68.158,0.404,231.913,30.119,10.177],[69.248,0.375,235.196,30.127,10.318],[70.308,0.343,240.425,30.149,10.455],[71.375,0.327,246.852,30.168,10.597],[72.466,0.298,256.142,30.138,10.809],[73.536,0.293,265.961,30.066,10.949],[74.597,0.325,274.303,30.001,11.089],[75.684,0.322,281.057,29.975,11.301],[76.767,0.258,287.138,29.979,11.441],[77.824,0.197,291.651,29.994,11.581],[78.898,0.163,294.6,30.007,11.791],[79.983,0.128,296.769,30.014,11.931],[81.041,0.087,298.072,29.916,12.071],[82.111,0.061,298.49,28.945,12.21],[83.2,0.043,298.396,27.745,12.421],[84.273,-0.011,298.343,26.482,12.561],[85.333,-0.069,298.268,25.241,12.701],[86.419,-0.1,298.227,24.031,12.911],[87.505,-0.094,298.248,22.723,13.053],[88.561,-0.068,298.284,21.457,13.192],[89.641,-0.044,298.33,20.257,13.402],[90.727,-0.014,298.394,18.965,13.545],[91.796,0.004,298.457,17.646,13.686],[92.86,0.006,298.531,16.398,13.827],[93.947,-0.003,298.615,15.165,14.039],[95.033,-0.024,298.723,13.846,14.179],[96.091,-0.032,298.833,12.57,14.319],[97.172,-0.015,298.921,11.395,14.531],[98.257,0.007,298.989,10.059,14.672],[99.314,0.018,299.026,8.782,14.81],[100.384,0.021,299.076,7.622,14.949],[101.467,0.016,299.168,6.014,15.09],[102.556,0.003,299.244,4.652,15.09],[103.64,-0.005,299.269,3.984,15.501],[105.686,-0.021,299.301,3.354,15.784]]},{&quot;case&quot;:&quot;long_block&quot;,&quot;action&quot;:&quot;wait&quot;,&quot;policy&quot;:&quot;always_wait&quot;,&quot;duration&quot;:142.2270041480001,&quot;run_id&quot;:&quot;e0b2e1f01a4946db93cba1d9c87ee223&quot;,&quot;buildings&quot;:[{&quot;name&quot;:&quot;urban_building_0_0&quot;,&quot;xyz&quot;:[-45.0,145.0,22.5],&quot;size&quot;:[35,30,45]},{&quot;name&quot;:&quot;urban_building_0_2&quot;,&quot;xyz&quot;:[45.0,145.0,22.5],&quot;size&quot;:[35,30,45]},{&quot;name&quot;:&quot;urban_building_1_0&quot;,&quot;xyz&quot;:[-45.0,265.0,22.5],&quot;size&quot;:[35,30,45]},{&quot;name&quot;:&quot;urban_building_1_2&quot;,&quot;xyz&quot;:[45.0,265.0,22.5],&quot;size&quot;:[35,30,45]},{&quot;name&quot;:&quot;urban_building_2_0&quot;,&quot;xyz&quot;:[-45.0,345.0,22.5],&quot;size&quot;:[35,30,45]},{&quot;name&quot;:&quot;urban_building_2_2&quot;,&quot;xyz&quot;:[45.0,345.0,22.5],&quot;size&quot;:[35,30,45]}],&quot;obstacleNorth&quot;:170.0,&quot;points&quot;:[[0.029,0.013,69.177,29.829,0],[1.086,-0.007,69.512,29.823,0.069],[2.174,-0.013,69.653,29.82,0.278],[3.258,-0.005,69.707,29.816,0.42],[4.319,-0.004,69.715,29.813,0.557],[5.395,-0.009,69.711,29.822,0.698],[6.479,-0.016,69.716,29.83,0.91],[7.553,-0.028,69.728,29.838,1.05],[8.618,-0.03,69.737,29.847,1.19],[9.696,-0.014,69.747,29.861,1.402],[10.779,0.004,69.758,29.867,1.542],[11.842,0.013,69.774,29.864,1.681],[12.927,0.027,69.777,29.865,1.893],[14.01,0.026,69.79,29.867,2.034],[15.07,0.021,69.812,29.866,2.172],[16.154,0.016,69.819,29.868,2.382],[17.235,0.013,69.822,29.883,2.523],[18.298,-0.006,69.825,29.896,2.662],[19.364,-0.02,69.838,29.898,2.801],[20.452,-0.008,69.842,29.895,3.013],[21.533,-0.004,69.832,29.882,3.153],[22.593,-0.013,69.819,29.873,3.292],[23.677,-0.024,69.817,29.875,3.502],[24.761,-0.015,69.834,29.873,3.643],[25.818,0.003,69.851,29.862,3.781],[26.9,0.02,69.83,29.853,3.993],[27.988,0.036,69.804,29.852,4.135],[29.055,0.034,69.809,29.856,4.276],[30.123,0.01,69.811,29.855,4.415],[31.224,0.004,69.796,29.847,4.626],[32.295,0.008,69.798,29.832,4.766],[33.356,0.012,69.814,29.834,4.905],[34.443,0.029,69.835,29.842,5.117],[35.529,0.039,69.851,29.85,5.257],[36.587,0.045,69.867,29.861,5.396],[37.666,0.053,69.87,29.862,5.608],[38.75,0.052,69.866,29.858,5.75],[39.813,0.036,69.863,29.856,5.891],[40.882,0.034,69.861,29.85,6.03],[41.964,0.031,69.852,29.846,6.242],[43.053,0.021,69.833,29.846,6.382],[44.11,0.014,69.828,29.857,6.523],[45.197,0.012,69.832,29.872,6.733],[46.281,0.012,69.828,29.885,6.876],[47.343,0.03,69.824,29.892,7.014],[48.415,0.016,69.831,29.897,7.156],[49.497,-0.002,69.833,29.899,7.367],[50.571,0.007,69.839,29.895,7.507],[51.634,0.006,69.861,29.889,7.646],[52.72,-0.01,69.872,29.873,7.855],[53.809,-0.011,69.878,29.864,7.997],[54.865,-0.001,69.868,29.864,8.136],[55.944,-0.007,69.851,29.865,8.348],[57.032,-0.011,69.84,29.864,8.489],[58.101,-0.005,69.834,29.864,8.629],[59.166,0.003,69.841,29.85,8.771],[60.266,0.008,69.855,29.834,8.982],[61.341,0.004,69.855,29.821,9.122],[62.404,-0.008,69.842,29.818,9.261],[63.485,-0.018,69.834,29.818,9.472],[64.571,-0.025,69.855,29.818,9.614],[65.626,-0.026,69.885,29.822,9.752],[66.703,-0.026,69.907,29.822,9.964],[67.786,-0.029,69.908,29.827,10.104],[68.856,-0.025,69.905,29.831,10.244],[69.926,-0.024,69.898,29.84,10.384],[71.008,-0.03,69.882,29.851,10.595],[72.083,-0.034,69.865,29.857,10.734],[73.145,-0.014,69.839,29.861,10.873],[74.241,0.013,69.811,29.861,11.085],[75.33,0.027,69.794,29.862,11.226],[76.388,0.033,69.787,29.857,11.365],[77.468,0.031,69.798,29.855,11.577],[78.552,0.025,69.828,29.859,11.718],[79.625,0.036,69.85,29.856,11.856],[80.703,0.038,69.852,29.848,11.996],[81.799,0.011,69.852,29.847,12.208],[82.87,-0.002,69.837,29.847,12.346],[83.936,-0.002,69.814,29.854,12.488],[85.016,-0.002,69.795,29.869,12.7],[86.101,-0.001,69.79,29.869,12.841],[87.188,-0.01,69.81,29.853,12.841],[88.275,-0.015,69.823,29.847,13.18],[88.844,-0.019,69.825,29.847,13.25],[92.979,-0.024,69.885,29.841,13.884],[94.052,-0.014,69.882,29.842,14.023],[95.123,0.012,69.862,29.848,14.165],[95.694,0.021,69.985,29.868,14.305],[96.777,0.015,71.778,29.883,14.446],[97.835,-0.0,75.584,29.898,14.584],[98.905,-0.003,80.843,29.922,14.726],[99.989,-0.002,88.557,29.946,14.938],[101.056,-0.018,98.244,29.902,15.078],[102.124,-0.025,107.625,29.863,15.216],[103.212,-0.032,118.493,29.823,15.427],[104.301,-0.059,131.077,29.791,15.427],[105.383,-0.075,142.69,29.774,15.427],[106.47,-0.074,153.234,29.772,15.909],[107.557,-0.052,163.946,29.78,16.0],[108.649,-0.027,177.016,29.782,16.0],[109.737,0.018,189.957,29.77,16.0],[110.827,0.061,203.098,29.748,16.0],[111.919,0.052,216.287,29.735,16.0],[113.007,0.024,229.189,29.736,16.0],[114.096,0.028,242.182,29.746,16.0],[115.184,0.043,255.338,29.762,16.0],[116.272,0.024,268.115,29.772,16.0],[117.361,-0.141,278.483,29.779,16.0],[118.446,-0.225,286.31,29.801,16.0],[119.53,-0.166,292.003,29.815,16.0],[120.608,-0.07,295.599,29.814,16.0],[121.693,0.028,297.675,29.786,16.0],[122.784,0.087,298.415,28.684,16.0],[123.875,0.109,298.31,27.203,16.0],[124.962,0.085,298.28,25.597,16.0],[126.053,0.028,298.224,23.999,16.0],[127.141,-0.02,298.234,22.388,16.0],[128.229,0.003,298.283,20.764,16.0],[129.308,0.031,298.377,19.141,16.0],[130.397,-0.003,298.473,17.513,16.0],[131.474,-0.025,298.584,15.892,16.0],[132.56,-0.031,298.678,14.239,16.0],[133.65,-0.002,298.787,12.623,16.0],[134.743,0.004,298.905,10.997,16.0],[135.828,-0.004,298.993,9.381,16.0],[136.919,0.002,299.069,7.743,16.0],[138.005,0.011,299.15,6.118,16.0],[139.093,-0.006,299.239,4.635,16.0],[140.181,-0.02,299.274,3.757,16.0],[142.225,0.008,299.345,3.049,16.0]]}]&lt;/script&gt;
+&lt;script&gt;
+(() =&gt; {
+  const root = document.getElementById(&#x27;ship-urban-replay&#x27;);
+  const records = JSON.parse(document.getElementById(&#x27;ship-records&#x27;).textContent);
+  const select = root.querySelector(&#x27;#ship-case&#x27;);
+  const slider = root.querySelector(&#x27;#ship-time&#x27;);
+  const play = root.querySelector(&#x27;#ship-play&#x27;);
+  const clock = root.querySelector(&#x27;#ship-clock&#x27;);
+  const result = root.querySelector(&#x27;#ship-result&#x27;);
+  const ns = &#x27;http://www.w3.org/2000/svg&#x27;;
+  let time = 0, playing = false, previous = 0, frame = null;
+  function node(tag, attrs = {}, text = &#x27;&#x27;) {
+    const n = document.createElementNS(ns, tag);
+    Object.entries(attrs).forEach(([k,v]) =&gt; n.setAttribute(k,v));
+    if(text) n.textContent = text;
+    return n;
+  }
+  function active() {return records.filter(r =&gt; r.case === select.value)}
+  function save() {
+    if(window.openai?.setWidgetState) window.openai.setWidgetState({modelContent:{case:select.value},privateContent:{time}}).catch(() =&gt; {});
+  }
+  function stop() {playing=false;play.textContent=&#x27;再生&#x27;;if(frame) cancelAnimationFrame(frame);frame=null}
+  function apply(state) {
+    stop();const c=state?.modelContent?.case;
+    if([&#x27;short_clear&#x27;,&#x27;long_block&#x27;].includes(c)) select.value=c;
+    time=Number.isFinite(state?.privateContent?.time)?Math.max(0,state.privateContent.time):0;
+    draw();
+  }
+  function draw() {
+    const runs=active();if(runs.length!==2) return;
+    const max=Math.max(...runs.map(r=&gt;r.duration));time=Math.min(time,max);
+    slider.max=String(max);slider.value=String(time);clock.textContent=time.toFixed(1)+&#x27; / &#x27;+max.toFixed(1)+&#x27; 秒&#x27;;
+    for(const run of runs) {
+      const el=root.querySelector(&#x27;#ship-&#x27;+run.action+&#x27;-map&#x27;);
+      const width=el.clientWidth; if(!width) continue;
+      const height=360, pad={l:40,r:24,t:24,b:32};
+      const xs=runs.flatMap(r=&gt;[...r.points.map(p=&gt;p[1]),...r.buildings.flatMap(b=&gt;[b.xyz[0]-b.size[0]/2,b.xyz[0]+b.size[0]/2])]);
+      const ys=runs.flatMap(r=&gt;[...r.points.map(p=&gt;p[2]),...r.buildings.flatMap(b=&gt;[b.xyz[1]-b.size[1]/2,b.xyz[1]+b.size[1]/2])]);
+      const x0=Math.min(...xs)-20,x1=Math.max(...xs)+20,y0=Math.min(...ys)-25,y1=Math.max(...ys)+20;
+      const scale=Math.min((width-pad.l-pad.r)/(x1-x0),(height-pad.t-pad.b)/(y1-y0));
+      const mx=pad.l+(width-pad.l-pad.r-(x1-x0)*scale)/2;
+      const my=pad.t+(height-pad.t-pad.b-(y1-y0)*scale)/2;
+      const x=v=&gt;mx+(v-x0)*scale,y=v=&gt;my+(y1-v)*scale;
+      const svg=node(&#x27;svg&#x27;,{class:&#x27;ship-map&#x27;,viewBox:&#x27;0 0 &#x27;+width+&#x27; &#x27;+height,role:&#x27;img&#x27;,&#x27;aria-label&#x27;:run.action===&#x27;wait&#x27;?&#x27;待機ルートの観測軌跡&#x27;:&#x27;迂回ルートの観測軌跡&#x27;});
+      svg.append(node(&#x27;title&#x27;,{},(run.action===&#x27;wait&#x27;?&#x27;待機&#x27;:&#x27;迂回&#x27;)+&#x27; &#x27;+run.duration.toFixed(1)+&#x27;秒&#x27;));
+      svg.append(node(&#x27;desc&#x27;,{},&#x27;合成市街地。位置記録に基づく再生。飛行中のカメラ映像ではありません。&#x27;));
+      svg.append(node(&#x27;rect&#x27;,{x:x(x0),y:y(y1),width:(x1-x0)*scale,height:(y1-y0)*scale,class:&#x27;structure&#x27;}));
+      for(const b of run.buildings) {
+        svg.append(node(&#x27;rect&#x27;,{x:x(b.xyz[0]-b.size[0]/2),y:y(b.xyz[1]+b.size[1]/2),width:b.size[0]*scale,height:b.size[1]*scale,class:&#x27;building&#x27;}));
+        for(let d=5;d&lt;b.size[0];d+=8) svg.append(node(&#x27;line&#x27;,{x1:x(b.xyz[0]-b.size[0]/2+d),y1:y(b.xyz[1]-b.size[1]/2),x2:x(b.xyz[0]-b.size[0]/2+d-4),y2:y(b.xyz[1]+b.size[1]/2),class:&#x27;structure&#x27;}));
+      }
+      svg.append(node(&#x27;line&#x27;,{x1:x(x0),x2:x(x1),y1:y(100),y2:y(100),class:&#x27;structure&#x27;}));
+      svg.append(node(&#x27;text&#x27;,{x:x(x0)+4,y:y(100)-6},&#x27;海岸線&#x27;));
+      const color=run.action===&#x27;wait&#x27;?&#x27;var(--viz-series-1)&#x27;:&#x27;var(--viz-series-2)&#x27;;
+      const path=run.points.map((p,i)=&gt;(i?&#x27;L&#x27;:&#x27;M&#x27;)+x(p[1])+&#x27;,&#x27;+y(p[2])).join(&#x27; &#x27;);
+      svg.append(node(&#x27;path&#x27;,{d:path,fill:&#x27;none&#x27;,stroke:color,&#x27;stroke-width&#x27;:2,opacity:0.35}));
+      const visited=run.points.filter(p=&gt;p[0]&lt;=time);
+      const p=visited.length?visited[visited.length-1]:run.points[0];
+      if(visited.length&gt;1) svg.append(node(&#x27;path&#x27;,{d:visited.map((p,i)=&gt;(i?&#x27;L&#x27;:&#x27;M&#x27;)+x(p[1])+&#x27;,&#x27;+y(p[2])).join(&#x27; &#x27;),fill:&#x27;none&#x27;,stroke:color,&#x27;stroke-width&#x27;:2}));
+      svg.append(node(&#x27;rect&#x27;,{x:x(p[4]-8),y:y(run.obstacleNorth+4),width:16*scale,height:8*scale,class:&#x27;obstacle&#x27;}));
+      svg.append(node(&#x27;circle&#x27;,{cx:x(p[1]),cy:y(p[2]),r:5,fill:color}));
+      svg.append(node(&#x27;text&#x27;,{x:x(0),y:y(300)-10,&#x27;text-anchor&#x27;:&#x27;middle&#x27;},&#x27;配送地点&#x27;));
+      svg.append(node(&#x27;text&#x27;,{x:x(0),y:y(70)+16,&#x27;text-anchor&#x27;:&#x27;middle&#x27;},&#x27;入口&#x27;));
+      svg.append(node(&#x27;text&#x27;,{x:x(x1)-3,y:y(y0)-7,&#x27;text-anchor&#x27;:&#x27;end&#x27;},&#x27;東 →&#x27;));
+      svg.append(node(&#x27;text&#x27;,{x:x(x0)+4,y:y(y1)+16},&#x27;北 ↑&#x27;));
+      svg.append(node(&#x27;line&#x27;,{x1:mx,x2:mx+50*scale,y1:height-10,y2:height-10,stroke:&#x27;var(--foreground)&#x27;,&#x27;stroke-width&#x27;:1}));
+      svg.append(node(&#x27;text&#x27;,{x:mx+25*scale,y:height-16,&#x27;text-anchor&#x27;:&#x27;middle&#x27;},&#x27;50 m&#x27;));
+      el.replaceChildren(svg);
+      root.querySelector(&#x27;#ship-&#x27;+run.action+&#x27;-heading&#x27;).textContent=(run.action===&#x27;wait&#x27;?&#x27;待機&#x27;:&#x27;迂回&#x27;)+&#x27; · &#x27;+run.duration.toFixed(1)+&#x27; 秒&#x27;+(run.policy===&#x27;constant_velocity&#x27;?&#x27;（速度ルール）&#x27;:&#x27;&#x27;);
+    }
+    result.textContent=&#x27;配送・帰還を検証済み／接触記録なし／VLA・WAM 未使用&#x27;;
+  }
+  select.addEventListener(&#x27;change&#x27;,()=&gt;{stop();time=0;draw();save()});
+  slider.addEventListener(&#x27;input&#x27;,()=&gt;{stop();time=Number(slider.value);draw()});
+  slider.addEventListener(&#x27;change&#x27;,save);
+  function animate(stamp) {
+    if(!playing) return;
+    if(previous) time+=(stamp-previous)/1000*4;
+    previous=stamp;const max=Math.max(...active().map(r=&gt;r.duration));
+    draw();if(time&gt;=max){stop();save();return}frame=requestAnimationFrame(animate);
+  }
+  play.addEventListener(&#x27;click&#x27;,()=&gt;{
+    if(playing){stop();save();return}
+    if(window.matchMedia(&#x27;(prefers-reduced-motion: reduce)&#x27;).matches){time=Math.min(Number(slider.max),time+10);draw();save();return}
+    if(time&gt;=Number(slider.max))time=0;playing=true;previous=0;play.textContent=&#x27;一時停止&#x27;;frame=requestAnimationFrame(animate);
+  });
+  new ResizeObserver(draw).observe(root);
+  window.addEventListener(&#x27;openai:set_globals&#x27;,event=&gt;{if(event.detail?.globals?.widgetState) apply(event.detail.globals.widgetState)});
+  apply(window.openai?.widgetState);
+})();
+&lt;/script&gt;
+
+&lt;script src=&quot;https://unpkg.com/@floating-ui/core@1.7.3/dist/floating-ui.core.umd.min.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;https://unpkg.com/@floating-ui/dom@1.7.4/dist/floating-ui.dom.umd.min.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+(() =&gt; {
+  if (window.FloatingUIDOM == null) {
+    return;
+  }
+  const { autoUpdate, computePosition, flip, offset, shift, size } =
+    window.FloatingUIDOM;
+  const tooltipPlacements = new Set([&quot;top&quot;, &quot;right&quot;, &quot;bottom&quot;, &quot;left&quot;]);
+  const tooltipId = `codex-visualization-tooltip-${
+    window.crypto?.randomUUID?.() ?? Date.now().toString(36)
+  }`;
+  const tooltipGap = 5;
+  const hoverDelay = 700;
+  const skipDelay = 300;
+  let activeTrigger = null;
+  let pendingTrigger = null;
+  let tooltip = null;
+  let openTimeout = null;
+  let autoUpdateCleanup = null;
+  let positionRequest = 0;
+  let skipDelayUntil = 0;
+  let lastPointerWasTouch = false;
+  let pinnedByTouch = false;
+
+  const getTrigger = (event) =&gt; {
+    for (const target of event.composedPath()) {
+      if (target?.nodeType === Node.ELEMENT_NODE) {
+        const trigger = target.closest(&quot;[data-tooltip]&quot;);
+        if (trigger) return trigger;
+      }
+    }
+    return null;
+  };
+  const containsTarget = (trigger, target) =&gt;
+    target?.nodeType != null &amp;&amp; trigger.contains(target);
+  const getContent = (trigger) =&gt;
+    trigger.getAttribute(&quot;data-tooltip&quot;)?.trim() ?? &quot;&quot;;
+  const getPlacement = (trigger) =&gt; {
+    const placement = trigger.getAttribute(&quot;data-tooltip-placement&quot;);
+    return tooltipPlacements.has(placement) ? placement : &quot;top&quot;;
+  };
+  const getTooltip = () =&gt; {
+    if (tooltip == null) {
+      tooltip = document.createElement(&quot;div&quot;);
+      tooltip.id = tooltipId;
+      tooltip.className = &quot;tooltip&quot;;
+      tooltip.setAttribute(&quot;role&quot;, &quot;tooltip&quot;);
+    }
+    return tooltip;
+  };
+  const setDescribedBy = (trigger, described) =&gt; {
+    const ids = new Set(
+      (trigger.getAttribute(&quot;aria-describedby&quot;) ?? &quot;&quot;)
+        .split(/\s+/)
+        .filter(Boolean),
+    );
+    if (described) {
+      ids.add(tooltipId);
+    } else {
+      ids.delete(tooltipId);
+    }
+    if (ids.size === 0) {
+      trigger.removeAttribute(&quot;aria-describedby&quot;);
+    } else {
+      trigger.setAttribute(&quot;aria-describedby&quot;, [...ids].join(&quot; &quot;));
+    }
+  };
+  const clearOpenTimeout = () =&gt; {
+    if (openTimeout != null) {
+      window.clearTimeout(openTimeout);
+      openTimeout = null;
+    }
+    pendingTrigger = null;
+  };
+  const closeTooltip = (activateSkipDelay = true) =&gt; {
+    clearOpenTimeout();
+    pinnedByTouch = false;
+    positionRequest += 1;
+    autoUpdateCleanup?.();
+    autoUpdateCleanup = null;
+    if (activeTrigger == null) {
+      return;
+    }
+    setDescribedBy(activeTrigger, false);
+    activeTrigger = null;
+    tooltip?.remove();
+    if (activateSkipDelay) {
+      skipDelayUntil = Date.now() + skipDelay;
+    }
+  };
+  const updatePosition = (trigger, floating) =&gt; {
+    const request = ++positionRequest;
+    void computePosition(trigger, floating, {
+      middleware: [
+        offset(tooltipGap),
+        flip({ padding: tooltipGap }),
+        shift({ padding: tooltipGap }),
+        size({
+          padding: tooltipGap,
+          apply({ availableHeight, availableWidth, elements }) {
+            elements.floating.style.setProperty(
+              &quot;--tooltip-available-width&quot;,
+              `${Math.max(0, availableWidth)}px`,
+            );
+            elements.floating.style.setProperty(
+              &quot;--tooltip-available-height&quot;,
+              `${Math.max(0, availableHeight)}px`,
+            );
+          },
+        }),
+      ],
+      placement: getPlacement(trigger),
+      strategy: &quot;fixed&quot;,
+    })
+      .then(({ x, y }) =&gt; {
+        if (activeTrigger !== trigger || request !== positionRequest) {
+          return;
+        }
+        const scale = window.devicePixelRatio || 1;
+        floating.style.transform = `translate(${Math.round(x * scale) / scale}px, ${Math.round(y * scale) / scale}px)`;
+        floating.style.visibility = &quot;visible&quot;;
+      })
+      .catch(() =&gt; {
+        if (activeTrigger === trigger &amp;&amp; request === positionRequest) {
+          closeTooltip(false);
+        }
+      });
+  };
+  const openTooltip = (trigger) =&gt; {
+    const content = getContent(trigger);
+    if (!trigger.isConnected || content.length === 0) {
+      return;
+    }
+    clearOpenTimeout();
+    if (activeTrigger === trigger) {
+      return;
+    }
+    closeTooltip();
+    const floating = getTooltip();
+    floating.textContent = content;
+    floating.style.visibility = &quot;hidden&quot;;
+    floating.style.transform = &quot;translate(0, 0)&quot;;
+    document.body.appendChild(floating);
+    activeTrigger = trigger;
+    setDescribedBy(trigger, true);
+    autoUpdateCleanup = autoUpdate(trigger, floating, () =&gt; {
+      updatePosition(trigger, floating);
+    });
+  };
+  const requestOpen = (trigger, immediate = false) =&gt; {
+    if (
+      getContent(trigger).length === 0 ||
+      activeTrigger === trigger ||
+      pendingTrigger === trigger
+    ) {
+      return;
+    }
+    clearOpenTimeout();
+    pendingTrigger = trigger;
+    const delay =
+      immediate || activeTrigger != null || Date.now() &lt; skipDelayUntil
+        ? 0
+        : hoverDelay;
+    if (delay === 0) {
+      openTooltip(trigger);
+      return;
+    }
+    openTimeout = window.setTimeout(() =&gt; {
+      openTimeout = null;
+      pendingTrigger = null;
+      openTooltip(trigger);
+    }, delay);
+  };
+  const handlePointerOpen = (event) =&gt; {
+    if (event.pointerType === &quot;touch&quot;) {
+      return;
+    }
+    const trigger = getTrigger(event);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    requestOpen(trigger);
+  };
+  const handlePointer = (event) =&gt; {
+    lastPointerWasTouch =
+      event.type === &quot;pointerdown&quot; &amp;&amp; event.pointerType === &quot;touch&quot;;
+  };
+  const handleTouchClick = (event) =&gt; {
+    const isTouch = event.pointerType === &quot;touch&quot; || lastPointerWasTouch;
+    lastPointerWasTouch = false;
+    if (!isTouch || event.detail === 0) {
+      return;
+    }
+    const trigger = getTrigger(event);
+    if (
+      trigger == null ||
+      !trigger.isConnected ||
+      getContent(trigger).length === 0 ||
+      (pinnedByTouch &amp;&amp; activeTrigger === trigger)
+    ) {
+      if (pinnedByTouch) {
+        closeTooltip();
+      }
+      return;
+    }
+    openTooltip(trigger);
+    pinnedByTouch = activeTrigger === trigger;
+    window.setTimeout(() =&gt; {
+      if (activeTrigger === trigger &amp;&amp; !trigger.isConnected) {
+        closeTooltip(false);
+      }
+    }, 0);
+  };
+  const handleLeave = (event) =&gt; {
+    if (pinnedByTouch) {
+      return;
+    }
+    const trigger = getTrigger(event);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const handleFocusIn = (event) =&gt; {
+    const trigger = getTrigger(event);
+    if (trigger?.matches(&quot;:focus-visible&quot;)) {
+      requestOpen(trigger, true);
+    }
+  };
+  const handleKeyDown = (event) =&gt; {
+    if (event.key === &quot;Escape&quot;) {
+      closeTooltip();
+    }
+  };
+  const handleContextMenu = (event) =&gt; {
+    lastPointerWasTouch = false;
+    const trigger = getTrigger(event);
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const handlers = {
+    pointerover: handlePointerOpen,
+    pointerdown: handlePointer,
+    pointercancel: handlePointer,
+    click: handleTouchClick,
+    pointerout: handleLeave,
+    focusin: handleFocusIn,
+    focusout: handleLeave,
+    keydown: handleKeyDown,
+    contextmenu: handleContextMenu,
+  };
+  const roots = new Map();
+  const handledEvents = new WeakSet();
+  const handleEvent = (event) =&gt; {
+    if (handledEvents.has(event)) return;
+    handledEvents.add(event);
+    handlers[event.type](event);
+  };
+  const discoverRoots = (node) =&gt; {
+    if (node.shadowRoot) listen(node.shadowRoot);
+    for (const element of node.querySelectorAll(&quot;*&quot;)) {
+      if (element.shadowRoot) listen(element.shadowRoot);
+    }
+  };
+  const listen = (root) =&gt; {
+    if (roots.has(root)) return;
+    for (const type of Object.keys(handlers)) root.addEventListener(type, handleEvent);
+    const observer = new window.MutationObserver((records) =&gt; {
+      for (const { addedNodes } of records) {
+        for (const node of addedNodes) {
+          if (node.nodeType === Node.ELEMENT_NODE) discoverRoots(node);
+        }
+      }
+      for (const [root, cleanup] of roots) {
+        if (root.host &amp;&amp; !root.host.isConnected) {
+          cleanup();
+          roots.delete(root);
+        }
+      }
+      if (activeTrigger &amp;&amp; !activeTrigger.isConnected) closeTooltip(false);
+    });
+    observer.observe(root, { childList: true, subtree: true });
+    roots.set(root, () =&gt; {
+      observer.disconnect();
+      for (const type of Object.keys(handlers)) root.removeEventListener(type, handleEvent);
+    });
+    discoverRoots(root);
+  };
+  const destroy = () =&gt; {
+    closeTooltip(false);
+    lastPointerWasTouch = false;
+    for (const cleanup of roots.values()) cleanup();
+    roots.clear();
+    tooltip = null;
+  };
+
+  // Events between children of one shadow root never reach the document.
+  listen(document);
+  window.addEventListener(&quot;pagehide&quot;, destroy, { once: true });
+})();
+&lt;/script&gt;
+&lt;script id=&quot;codex-visualization-tabs&quot;&gt;
+(() =&gt; {
+  const selector = &#x27;.nav[role=&quot;tablist&quot;] [role=&quot;tab&quot;]&#x27;;
+  const disabled = &#x27;:disabled,[aria-disabled=&quot;true&quot;]&#x27;;
+  const selectTab = (selected) =&gt; {
+    const panelId = selected.getAttribute(&quot;aria-controls&quot;);
+    for (const tab of selected.closest(&#x27;[role=&quot;tablist&quot;]&#x27;).querySelectorAll(&#x27;[role=&quot;tab&quot;]&#x27;)) {
+      const active = tab === selected;
+      tab.classList.toggle(&quot;active&quot;, active);
+      tab.setAttribute(&quot;aria-selected&quot;, String(active));
+      const id = tab.getAttribute(&quot;aria-controls&quot;);
+      const panel = id &amp;&amp; document.getElementById(id);
+      if (panel != null) {
+        panel.hidden = id !== panelId;
+        if (!panel.hidden &amp;&amp; selected.id) {
+          panel.setAttribute(&quot;aria-labelledby&quot;, selected.id);
+        }
+      }
+    }
+  };
+  const interact = (event) =&gt; {
+    const tab = event.target?.closest?.(selector);
+    if (event.defaultPrevented || tab == null || tab.matches(disabled)) {
+      return;
+    }
+    if (event.type === &quot;click&quot;) {
+      selectTab(tab);
+      return;
+    }
+    const tabs = Array.from(
+      tab.closest(&#x27;[role=&quot;tablist&quot;]&#x27;).querySelectorAll(&#x27;[role=&quot;tab&quot;]&#x27;),
+    ).filter((candidate) =&gt; !candidate.matches(disabled));
+    const current = tabs.indexOf(tab);
+    let next;
+    if (event.key === &quot;ArrowRight&quot; || event.key === &quot;ArrowDown&quot;) {
+      next = (current + 1) % tabs.length;
+    } else if (event.key === &quot;ArrowLeft&quot; || event.key === &quot;ArrowUp&quot;) {
+      next = (current + tabs.length - 1) % tabs.length;
+    } else if (event.key === &quot;Home&quot;) {
+      next = 0;
+    } else if (event.key === &quot;End&quot;) {
+      next = tabs.length - 1;
+    } else {
+      return;
+    }
+    event.preventDefault();
+    tabs[next].focus();
+    selectTab(tabs[next]);
+  };
+
+  for (const list of document.querySelectorAll(&#x27;.nav[role=&quot;tablist&quot;]&#x27;)) {
+    const selected =
+      list.querySelector(&#x27;[role=&quot;tab&quot;][aria-selected=&quot;true&quot;]&#x27;) ??
+      list.querySelector(&#x27;[role=&quot;tab&quot;].active&#x27;) ??
+      list.querySelector(&#x27;[role=&quot;tab&quot;]&#x27;);
+    if (selected != null) {
+      selectTab(selected);
+    }
+  }
+  document.addEventListener(&quot;click&quot;, interact);
+  document.addEventListener(&quot;keydown&quot;, interact);
+  window.addEventListener(&quot;pagehide&quot;, () =&gt; {
+    document.removeEventListener(&quot;click&quot;, interact);
+    document.removeEventListener(&quot;keydown&quot;, interact);
+  }, { once: true });
+})();
+&lt;/script&gt;
+&lt;script id=&quot;codex-visualization-lucide&quot; async src=&quot;https://unpkg.com/lucide@1.17.0/dist/umd/lucide.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+(() =&gt; {
+  const initialize = () =&gt; {
+    globalThis.lucide?.createIcons({ attrs: { width: 16, height: 16 } });
+  };
+  if (globalThis.lucide != null) {
+    initialize();
+    return;
+  }
+  document
+    .getElementById(&quot;codex-visualization-lucide&quot;)
+    ?.addEventListener(&quot;load&quot;, initialize, { once: true });
+})();
+&lt;/script&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;
+"></iframe>
+<script>(() => {
+  const frame = document.getElementById("codex-visualization");
+  if (!(frame instanceof HTMLIFrameElement)) {
+    return;
+  }
+  let viewportHeight = globalThis.innerHeight;
+  const storageKey = `codex:visualization-widget-state-v2:${JSON.stringify([
+    globalThis.location.pathname,
+    globalThis.location.search,
+  ])}`;
+  const parseState = (serializedState) => {
+    if (
+      typeof serializedState !== "string" ||
+      new TextEncoder().encode(serializedState).length > 16 * 1024
+    ) {
+      throw new TypeError(
+        "Widget state must be a JSON object of at most 16 KiB",
+      );
+    }
+    /** @type {unknown} */
+    const state = JSON.parse(serializedState);
+    if (
+      state == null ||
+      typeof state !== "object" ||
+      Array.isArray(state) ||
+      ("imageIds" in state &&
+        (!Array.isArray(state.imageIds) || state.imageIds.length > 0))
+    ) {
+      throw new TypeError("Widget state must be a JSON object");
+    }
+    const storedState = { modelContent: null, privateContent: null, ...state };
+    const canonicalState = JSON.stringify(
+      storedState,
+      (_key, /** @type {unknown} */ value) => {
+        if (typeof value === "number" && !Number.isFinite(value)) {
+          throw new TypeError("Widget state must contain finite numbers");
+        }
+        return value;
+      },
+    );
+    if (new TextEncoder().encode(canonicalState).length > 16 * 1024) {
+      throw new TypeError(
+        "Widget state must be a JSON object of at most 16 KiB",
+      );
+    }
+    return storedState;
+  };
+  let storage = null;
+  let state = null;
+  try {
+    const localStorage = globalThis.localStorage;
+    const probeKey = `${storageKey}:probe`;
+    localStorage.setItem(probeKey, "1");
+    localStorage.removeItem(probeKey);
+    storage = localStorage;
+    const savedState = storage.getItem(storageKey);
+    if (savedState != null) {
+      try {
+        state = parseState(savedState);
+      } catch {
+        // Invalid saved state does not disable future writes.
+      }
+    }
+  } catch {
+    storage = null;
+  }
+  const initialGlobals = {
+    widgetState: state,
+    statePersistence: storage == null ? "none" : "local",
+  };
+
+  const channel = new MessageChannel();
+  channel.port1.addEventListener("message", (event) => {
+    const data = event.data;
+    if (typeof data !== "object" || data == null) {
+      return;
+    }
+    if (data.type === "widget-state-write") {
+      if (!Number.isSafeInteger(data.id) || data.id <= 0) {
+        return;
+      }
+      let ok = false;
+      try {
+        if (storage != null) {
+          const state = parseState(data.state);
+          storage.setItem(storageKey, JSON.stringify(state));
+          ok = true;
+        }
+      } catch {
+        // Storage denial, quota limits, and invalid state return a failed receipt.
+      }
+      channel.port1.postMessage({
+        type: "widget-state-result",
+        id: data.id,
+        ok,
+      });
+      return;
+    }
+    if (data.type === "height") {
+      const height = data.height;
+      if (
+        typeof height === "number" &&
+        Number.isFinite(height) &&
+        height >= 0 &&
+        height <= 10_000
+      ) {
+        frame.style.height = Math.ceil(height) + "px";
+      }
+      return;
+    }
+    if (data.type === "scroll-to") {
+      const top = data.top;
+      if (
+        typeof top === "number" &&
+        Number.isFinite(top) &&
+        top >= 0 &&
+        globalThis.navigator.userActivation?.isActive === true
+      ) {
+        globalThis.scrollTo({
+          top: Math.ceil(
+            globalThis.scrollY + frame.getBoundingClientRect().top + top,
+          ),
+        });
+      }
+      return;
+    }
+    if (data.type === "open-external") {
+      const rawHref = data.href;
+      if (typeof rawHref !== "string") {
+        return;
+      }
+      let href;
+      try {
+        const url = new URL(rawHref, document.baseURI);
+        if (url.protocol !== "https:") {
+          return;
+        }
+        href = url.href;
+      } catch {
+        return;
+      }
+      if (globalThis.navigator.userActivation?.isActive === true) {
+        const anchor = document.createElement("a");
+        anchor.href = href;
+        anchor.rel = "noopener noreferrer";
+        anchor.target = "_blank";
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+      }
+      return;
+    }
+    if (data.type === "follow-up") {
+      const prompt = data.prompt;
+      if (
+        typeof prompt !== "string" ||
+        globalThis.navigator.userActivation?.isActive !== true
+      ) {
+        return;
+      }
+      const title = data.title;
+      globalThis.prompt(typeof title === "string" ? title : prompt, prompt);
+    }
+  });
+  channel.port1.start();
+  const srcdoc = frame.dataset.srcdoc;
+  if (srcdoc == null) {
+    return;
+  }
+  globalThis.addEventListener("resize", () => {
+    const height = Number.parseFloat(frame.style.height);
+    if (!Number.isFinite(height) || height <= viewportHeight) {
+      frame.style.removeProperty("height");
+    }
+    viewportHeight = globalThis.innerHeight;
+    channel.port1.postMessage({ type: "measure" });
+  });
+  frame.addEventListener(
+    "load",
+    () => {
+      frame.contentWindow?.postMessage(
+        { type: "codex-visualization-initialize" },
+        "*",
+        [channel.port2],
+      );
+    },
+    { once: true },
+  );
+  // Match the trusted bootstrap element, not the same text in an authored title.
+  frame.srcdoc = srcdoc.replace(
+    '<script type="application/json" id="codex-visualization-widget-state">__CODEX_VISUALIZATION_WIDGET_STATE__<\/script>',
+    () =>
+      '<script type="application/json" id="codex-visualization-widget-state">' +
+      JSON.stringify(initialGlobals).replaceAll("<", "\\u003c") +
+      "<\/script>",
+  );
+  delete frame.dataset.srcdoc;
+})();
+</script>
+<section><h2>実測結果</h2><div class="table-wrap"><table><thead><tr><th>条件</th><th>待機</th><th>迂回</th><th>速度ルールの選択</th><th>反対の動作との差</th></tr></thead><tbody><tr><th>短い閉塞</th><td>57.3秒</td><td>86.2秒</td><td>待機</td><td>28.9秒</td></tr><tr><th>長い閉塞</th><td>142.2秒</td><td>105.7秒</td><td>迂回</td><td>36.5秒</td></tr></tbody></table></div>
+<p>市街地入口の保持を観測してから、配送地点の低空保持を観測するまでのworker実時間。シミュレータ負荷や制御処理を含む。荷物の接地と帰航は別に検証した。各候補1試行。</p>
+<p>この2条件では単純な速度ルールが最良の動作を選んだ。学習モデルによる追加の改善余地は示せておらず、VLA/WAMは未接続。</p></section>
+<section><h2>検証範囲</h2><p>ドローン1機、静止船、50gの合成荷物、海上100m＋市街地200m。判断入力はGazeboの位置履歴。カメラ認識、実機の強風耐性、移動船への着艦、10機の協調は未検証。</p>
+<p>接触通知とサンプル間の幾何的離隔を別々に確認した。無通知を連続した安全計測とは扱わず、平面の再生図だけから接地や安全を判定していない。</p>
+<p>調整中の停止を成功に数えず、修正後の同一コードで得た最終4試験を比較した。関連テスト169件と保存先での証跡再検証を通過。</p></section>
+<section><h2>次の一手</h2><p>カメラから得る観測を共通化し、障害物が減速・停止する条件で、予測が単純な速度ルールを改善できるかを測る。</p></section>
+<footer><a href="REPORT-ja.md">詳細レポート</a> · <a href="comparison.json">比較JSON</a> · <a href="evidence-manifest.json">証跡マニフェスト</a> · <a href="replay-data.json">表示用データ</a><p>実装 ffe1d81 · 元の証跡はローカル保管 · 表示データは間引きあり</p></footer></main>
+</body>
+</html>

@@ -1,0 +1,324 @@
+{
+  "schema_version": "anwm_attention_adaptation_comparison.v1",
+  "cases": [
+    {
+      "id": "test-v2-12-hold",
+      "site": "test-v2-12",
+      "action": "hold",
+      "label_ja": "区画1 · 停止",
+      "actual": "images/test-v2-12-hold-actual.png",
+      "raw_actual": "images/test-v2-12-hold-raw.png",
+      "actual_raw_sha256": "8ae6bbed50e4fba2875ccf34414b90020da077805b48dbdb816a5a6ea76013c6",
+      "context": "images/test-v2-12-context.png",
+      "manual_after_pass": false,
+      "manual_status": "Visual inspection failed: corridor retains unsupported water-like reflections; ground/wall boundaries and small foreground structures are not sufficiently preserved.",
+      "target_sim_s": 84.5,
+      "input_cutoff_sim_s": 83.5,
+      "before": {
+        "sample": "test-v2-12-hold",
+        "image": "images/before-test-v2-12-hold.png",
+        "sha256": "74a3fb8748f52eb9ce4b2cc7e4e57ec1bd139d66d4efdda03bf19cb692c343f9",
+        "elapsed_s": 21.07654637899998,
+        "metrics": {
+          "rgb_mae": 16.89605256164966,
+          "fraction_pixels_max_channel_error_over_40": 0.09223533163265306
+        },
+        "numeric_pass": false
+      },
+      "after": {
+        "sample": "test-v2-12-hold",
+        "image": "images/after-test-v2-12-hold.png",
+        "sha256": "88925b7b2514e559c658c45f046475208f4151c027ff59c90a8b0c7f9e215b8d",
+        "elapsed_s": 20.741203971999994,
+        "metrics": {
+          "rgb_mae": 13.093444409013605,
+          "fraction_pixels_max_channel_error_over_40": 0.08587771045918367
+        },
+        "numeric_pass": true
+      },
+      "projection_mae": 22.257573341836736,
+      "manual_status_ja": "目視：未達。通路に水面のような反射が残り、路面と壁の境界や手前の小さな構造物を十分に保てていません。"
+    },
+    {
+      "id": "test-v2-12-forward",
+      "site": "test-v2-12",
+      "action": "forward",
+      "label_ja": "区画1 · 2.8 m前進",
+      "actual": "images/test-v2-12-forward-actual.png",
+      "raw_actual": "images/test-v2-12-forward-raw.png",
+      "actual_raw_sha256": "0edbcda33a30e5c5e3fb2db9afb8d47baa351780db2d4bd27dc1702874632ca5",
+      "context": "images/test-v2-12-context.png",
+      "manual_after_pass": false,
+      "manual_status": "Visual inspection failed: corridor retains unsupported water-like reflections; ground/wall boundaries and small foreground structures are not sufficiently preserved.",
+      "target_sim_s": 85.5,
+      "input_cutoff_sim_s": 83.5,
+      "before": {
+        "sample": "test-v2-12-forward",
+        "image": "images/before-test-v2-12-forward.png",
+        "sha256": "4b0364c223597b2f2637c2f2251a7d6b81e1d80aa9b9d6d4ff7da0ab74c5fcc9",
+        "elapsed_s": 20.745018167000012,
+        "metrics": {
+          "rgb_mae": 16.49697730654762,
+          "fraction_pixels_max_channel_error_over_40": 0.10859773596938775
+        },
+        "numeric_pass": false
+      },
+      "after": {
+        "sample": "test-v2-12-forward",
+        "image": "images/after-test-v2-12-forward.png",
+        "sha256": "9e81ae7c19896996fc1af45e3145af065fbd3dc1dbbd97a2da3487a49ec92132",
+        "elapsed_s": 21.076730879000024,
+        "metrics": {
+          "rgb_mae": 13.874667835884354,
+          "fraction_pixels_max_channel_error_over_40": 0.0839046556122449
+        },
+        "numeric_pass": true
+      },
+      "projection_mae": 14.034266050170068,
+      "manual_status_ja": "目視：未達。通路に水面のような反射が残り、路面と壁の境界や手前の小さな構造物を十分に保てていません。"
+    },
+    {
+      "id": "test-v2-13-hold",
+      "site": "test-v2-13",
+      "action": "hold",
+      "label_ja": "区画2 · 停止",
+      "actual": "images/test-v2-13-hold-actual.png",
+      "raw_actual": "images/test-v2-13-hold-raw.png",
+      "actual_raw_sha256": "8b3650b6a012f28e2e1e985cffd8ea04125e2dd756f96374f4e2f275bd5f62f4",
+      "context": "images/test-v2-13-context.png",
+      "manual_after_pass": false,
+      "manual_status": "Visual inspection failed: corridor retains unsupported water-like reflections; ground/wall boundaries and small foreground structures are not sufficiently preserved.",
+      "target_sim_s": 91.0,
+      "input_cutoff_sim_s": 90.0,
+      "before": {
+        "sample": "test-v2-13-hold",
+        "image": "images/before-test-v2-13-hold.png",
+        "sha256": "5c291d402bf2a2eb2f45cc8801162f91a8163f4bdac9c503a6ac52a76b329c4e",
+        "elapsed_s": 20.633251143999985,
+        "metrics": {
+          "rgb_mae": 17.399181547619047,
+          "fraction_pixels_max_channel_error_over_40": 0.10957429846938775
+        },
+        "numeric_pass": false
+      },
+      "after": {
+        "sample": "test-v2-13-hold",
+        "image": "images/after-test-v2-13-hold.png",
+        "sha256": "16a30abd64c950ded17fcd16abc383d3e8d0aea9cf42324d9f998dfe6f384afa",
+        "elapsed_s": 20.966302117000055,
+        "metrics": {
+          "rgb_mae": 14.801777742346939,
+          "fraction_pixels_max_channel_error_over_40": 0.09849330357142858
+        },
+        "numeric_pass": true
+      },
+      "projection_mae": 14.82728130314626,
+      "manual_status_ja": "目視：未達。通路に水面のような反射が残り、路面と壁の境界や手前の小さな構造物を十分に保てていません。"
+    },
+    {
+      "id": "test-v2-13-forward",
+      "site": "test-v2-13",
+      "action": "forward",
+      "label_ja": "区画2 · 2.8 m前進",
+      "actual": "images/test-v2-13-forward-actual.png",
+      "raw_actual": "images/test-v2-13-forward-raw.png",
+      "actual_raw_sha256": "920de9f796312ee360a16d4df1319b8115f8786435e103d8dd550aed56f3f40c",
+      "context": "images/test-v2-13-context.png",
+      "manual_after_pass": false,
+      "manual_status": "Visual inspection failed: corridor retains unsupported water-like reflections; ground/wall boundaries and small foreground structures are not sufficiently preserved.",
+      "target_sim_s": 92.0,
+      "input_cutoff_sim_s": 90.0,
+      "before": {
+        "sample": "test-v2-13-forward",
+        "image": "images/before-test-v2-13-forward.png",
+        "sha256": "c9864b5d8b70185bab75fc515f4c3367884ec4fae170ec0276019efa53ae153f",
+        "elapsed_s": 20.589605405000043,
+        "metrics": {
+          "rgb_mae": 17.129577221513607,
+          "fraction_pixels_max_channel_error_over_40": 0.1276905293367347
+        },
+        "numeric_pass": false
+      },
+      "after": {
+        "sample": "test-v2-13-forward",
+        "image": "images/after-test-v2-13-forward.png",
+        "sha256": "3e3392189e296f3452846f2cdaac0003e6189cfd6d14de5f32e56624701ca25f",
+        "elapsed_s": 20.859030669999925,
+        "metrics": {
+          "rgb_mae": 15.010549532312925,
+          "fraction_pixels_max_channel_error_over_40": 0.10018734056122448
+        },
+        "numeric_pass": false
+      },
+      "projection_mae": 14.215567867772108,
+      "manual_status_ja": "目視：未達。通路に水面のような反射が残り、路面と壁の境界や手前の小さな構造物を十分に保てていません。"
+    },
+    {
+      "id": "test-v2-14-hold",
+      "site": "test-v2-14",
+      "action": "hold",
+      "label_ja": "区画3 · 停止",
+      "actual": "images/test-v2-14-hold-actual.png",
+      "raw_actual": "images/test-v2-14-hold-raw.png",
+      "actual_raw_sha256": "32f7cfc7b7839a6d20585ceb3b4cf04718adf55fb075faa8879663e28721d0f5",
+      "context": "images/test-v2-14-context.png",
+      "manual_after_pass": false,
+      "manual_status": "Visual inspection failed: corridor retains unsupported water-like reflections; ground/wall boundaries and small foreground structures are not sufficiently preserved.",
+      "target_sim_s": 97.5,
+      "input_cutoff_sim_s": 96.5,
+      "before": {
+        "sample": "test-v2-14-hold",
+        "image": "images/before-test-v2-14-hold.png",
+        "sha256": "b9a3706ed334d06090303f6485c563132479a1f5324bab3a3e20d8bceac30409",
+        "elapsed_s": 20.733261577999997,
+        "metrics": {
+          "rgb_mae": 18.498804209183675,
+          "fraction_pixels_max_channel_error_over_40": 0.10957429846938775
+        },
+        "numeric_pass": false
+      },
+      "after": {
+        "sample": "test-v2-14-hold",
+        "image": "images/after-test-v2-14-hold.png",
+        "sha256": "bd401ace0c25672d3a1e67803083d8ce3ef21fe63cebbaa6e9951422d23c369e",
+        "elapsed_s": 20.959681568000065,
+        "metrics": {
+          "rgb_mae": 15.194296077806122,
+          "fraction_pixels_max_channel_error_over_40": 0.10371492346938775
+        },
+        "numeric_pass": false
+      },
+      "projection_mae": 21.611162042942176,
+      "manual_status_ja": "目視：未達。通路に水面のような反射が残り、路面と壁の境界や手前の小さな構造物を十分に保てていません。"
+    },
+    {
+      "id": "test-v2-14-forward",
+      "site": "test-v2-14",
+      "action": "forward",
+      "label_ja": "区画3 · 2.8 m前進",
+      "actual": "images/test-v2-14-forward-actual.png",
+      "raw_actual": "images/test-v2-14-forward-raw.png",
+      "actual_raw_sha256": "29b783438e71db715a6ec3770d0e95985908d8172b6c70a1b3845182812b4d50",
+      "context": "images/test-v2-14-context.png",
+      "manual_after_pass": false,
+      "manual_status": "Visual inspection failed: corridor retains unsupported water-like reflections; ground/wall boundaries and small foreground structures are not sufficiently preserved.",
+      "target_sim_s": 98.5,
+      "input_cutoff_sim_s": 96.5,
+      "before": {
+        "sample": "test-v2-14-forward",
+        "image": "images/before-test-v2-14-forward.png",
+        "sha256": "e58aa3bb8c54a5c9ca3dace7c7a7de963448a9e043647df83960e4fc82641b0f",
+        "elapsed_s": 20.592041328999926,
+        "metrics": {
+          "rgb_mae": 19.609341783588434,
+          "fraction_pixels_max_channel_error_over_40": 0.15989716198979592
+        },
+        "numeric_pass": false
+      },
+      "after": {
+        "sample": "test-v2-14-forward",
+        "image": "images/after-test-v2-14-forward.png",
+        "sha256": "b4a6dea11e14959823a7a5cec0d68fff46192c7edfd4cf6833012b16177179a6",
+        "elapsed_s": 20.831384212000103,
+        "metrics": {
+          "rgb_mae": 16.502331792091837,
+          "fraction_pixels_max_channel_error_over_40": 0.11569276147959184
+        },
+        "numeric_pass": false
+      },
+      "projection_mae": 14.254736660289115,
+      "manual_status_ja": "目視：未達。通路に水面のような反射が残り、路面と壁の境界や手前の小さな構造物を十分に保てていません。"
+    },
+    {
+      "id": "test-v2-15-hold",
+      "site": "test-v2-15",
+      "action": "hold",
+      "label_ja": "区画4 · 停止",
+      "actual": "images/test-v2-15-hold-actual.png",
+      "raw_actual": "images/test-v2-15-hold-raw.png",
+      "actual_raw_sha256": "22c7f7e2ade721a2a2cdcf7154329739cf39d890fc889362e5b54541011b993d",
+      "context": "images/test-v2-15-context.png",
+      "manual_after_pass": false,
+      "manual_status": "Visual inspection failed: corridor retains unsupported water-like reflections; ground/wall boundaries and small foreground structures are not sufficiently preserved.",
+      "target_sim_s": 104.0,
+      "input_cutoff_sim_s": 103.0,
+      "before": {
+        "sample": "test-v2-15-hold",
+        "image": "images/before-test-v2-15-hold.png",
+        "sha256": "2a1d3db53105b08a4afa132b4a474f39e93643f770b86f4e446cea0e0c20d204",
+        "elapsed_s": 20.84273164900003,
+        "metrics": {
+          "rgb_mae": 20.43775244472789,
+          "fraction_pixels_max_channel_error_over_40": 0.12599649234693877
+        },
+        "numeric_pass": false
+      },
+      "after": {
+        "sample": "test-v2-15-hold",
+        "image": "images/after-test-v2-15-hold.png",
+        "sha256": "fe0dc09ad895e21ea64a8371f2e3838fd18198dca6b112fdb50b658ad8aa629a",
+        "elapsed_s": 20.760709272999975,
+        "metrics": {
+          "rgb_mae": 15.519132653061224,
+          "fraction_pixels_max_channel_error_over_40": 0.10953443877551021
+        },
+        "numeric_pass": false
+      },
+      "projection_mae": 19.420373618197278,
+      "manual_status_ja": "目視：未達。通路に水面のような反射が残り、路面と壁の境界や手前の小さな構造物を十分に保てていません。"
+    },
+    {
+      "id": "test-v2-15-forward",
+      "site": "test-v2-15",
+      "action": "forward",
+      "label_ja": "区画4 · 2.8 m前進",
+      "actual": "images/test-v2-15-forward-actual.png",
+      "raw_actual": "images/test-v2-15-forward-raw.png",
+      "actual_raw_sha256": "3d83e85e98fa6a894e5d7436eb04f049a04eb3a0ada010e565f5ec331a8faf99",
+      "context": "images/test-v2-15-context.png",
+      "manual_after_pass": false,
+      "manual_status": "Visual inspection failed: corridor retains unsupported water-like reflections; ground/wall boundaries and small foreground structures are not sufficiently preserved.",
+      "target_sim_s": 105.0,
+      "input_cutoff_sim_s": 103.0,
+      "before": {
+        "sample": "test-v2-15-forward",
+        "image": "images/before-test-v2-15-forward.png",
+        "sha256": "317d2ad4c328ae122b99895d65ee48d3abf106eb6da87e9b96e26412b3a963f0",
+        "elapsed_s": 20.662319284999967,
+        "metrics": {
+          "rgb_mae": 19.83566512542517,
+          "fraction_pixels_max_channel_error_over_40": 0.15764508928571427
+        },
+        "numeric_pass": false
+      },
+      "after": {
+        "sample": "test-v2-15-forward",
+        "image": "images/after-test-v2-15-forward.png",
+        "sha256": "52403d32e020a4dd2ac41ec5bd9707a7d9d96a4d01019b8feaf5913c8a70ee13",
+        "elapsed_s": 20.839364270000033,
+        "metrics": {
+          "rgb_mae": 15.841962957057824,
+          "fraction_pixels_max_channel_error_over_40": 0.11190609056122448
+        },
+        "numeric_pass": false
+      },
+      "projection_mae": 14.510317017431973,
+      "manual_status_ja": "目視：未達。通路に水面のような反射が残り、路面と壁の境界や手前の小さな構造物を十分に保てていません。"
+    }
+  ],
+  "steps": 2048,
+  "trainable_parameters": 8005280,
+  "total_parameters": 1134100256,
+  "cumulative_estimated_usd": 11.94979777545099,
+  "minimum_feasibility_passed": false,
+  "native_flight_qualified": false,
+  "manual_inspection_complete": true,
+  "passed_sites": [],
+  "aggregate": {
+    "mean_rgb_mae_before": 18.28791902503189,
+    "mean_rgb_mae_after": 14.979770374946854,
+    "relative_mae_reduction": 0.1808925687803491
+  },
+  "summary_ja": "対応層まで追加学習し、平均RGB誤差は18.29から14.98に減りました。数値基準は3／8枚で通過しましたが、通路の表現が曖昧で、目視を含む最低条件は0／4地点です。",
+  "summary_en": "Projection-attention adaptation reduced mean RGB error from 18.29 to 14.98. Numeric passes increased to 3/8, but ambiguous corridor appearance failed manual qualification: 0/4 sites met the full minimum."
+}

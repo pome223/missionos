@@ -1,0 +1,27 @@
+{
+  "run_id": "yokohama-1db5e937c115",
+  "status": "rejected_before_dispatch",
+  "source_revision": "96b0c3ef13e9c62b8a4c36a92bc217a2e40c7d7b",
+  "generated_text": "79 48 0</s>",
+  "bins": [
+    79,
+    48,
+    0
+  ],
+  "decoded_forward_m": 4.030612244897959,
+  "decoded_down_m": -0.1020408163265305,
+  "decoded_yaw_rad": -1.1,
+  "cuda_allocated_after_request_bytes": 9568256,
+  "startup_host_s": 167.7096115410095,
+  "vla_host_s": 16.426608167006634,
+  "native_inference_s": 0.6988589763641357,
+  "vla_calls": 1,
+  "wam_calls": 0,
+  "model_segment_dispatches": 0,
+  "model_updates": 0,
+  "native_response_sha256": "eae8aff22a93e11d0b713b1b3ad3ab182e7a626824bc3e6d0e8ebb2b515923f0",
+  "warmup_is_not_a_flight_observation": true,
+  "remote_process_shutdown_observed": true,
+  "task_resources_deleted": true,
+  "original_thresholds_preserved": true
+}

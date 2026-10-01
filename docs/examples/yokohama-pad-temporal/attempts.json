@@ -1,0 +1,30 @@
+{
+  "attempts": [
+    {
+      "id": "01-capture",
+      "status": "aborted during viewpoint development",
+      "reason": "ascending lead left camera field of view",
+      "camera_height_above_pad_m": 5,
+      "raw_source_hash": "9febd12e9b18bab66c0d9a76423289b8b2b7c2ab620c720f51c9575d4b3b2f55",
+      "world_sha256": "bd8dfc93fe92c467a3489f70ddf515fad020637f47791f077c3eb69abed49651",
+      "owned_container_removed": true,
+      "native_inference": false,
+      "raw_records_retained_privately": true
+    },
+    {
+      "id": "02-capture",
+      "status": "passed",
+      "camera_height_above_pad_m": 10,
+      "recorded_frames": 888,
+      "owned_container_removed": true,
+      "aircraft_flown": false
+    }
+  ],
+  "paid_native": {
+    "attempts": 1,
+    "forecasts": 4,
+    "seed": 42,
+    "resampling": false,
+    "weight_updates": false
+  }
+}

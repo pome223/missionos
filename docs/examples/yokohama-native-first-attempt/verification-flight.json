@@ -1,0 +1,6 @@
+{
+  "status": "not_completed",
+  "runner_status": "failed",
+  "verification_command_result": "exit 1 with KeyError: holds; complete-flight verifier cannot qualify this incomplete run",
+  "complete_flight_verified": false
+}

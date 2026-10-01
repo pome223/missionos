@@ -1,0 +1,1003 @@
+{
+  "schema_version": "ship_onboard_comparison.v1",
+  "status": "verified_local_vlm_comparison",
+  "step2_native_vla_wam_completed": false,
+  "runs": [
+    {
+      "run_id": "ba96b9d9d608492da198e5c0faa76c96",
+      "case": "brake_stop",
+      "policy": "onboard_stopping",
+      "action": "detour",
+      "urban_elapsed_s": 85.19350287099996,
+      "sampled_urban_distance_m": 423.1166789484507,
+      "delivery_verified": true,
+      "recovery_verified": true,
+      "collision_observed": false,
+      "geometric_clearance_verified": true,
+      "image_verification": {
+        "verified": true,
+        "reasons": [],
+        "image_observations_checked": 5,
+        "maximum_obstacle_position_error_m": 0.28572960889387966,
+        "projection_limit_m": 2.0,
+        "truth_used_for_policy": false
+      },
+      "inference_elapsed_s": 0,
+      "model_proposal": null,
+      "matched_image_rule_replay": {
+        "onboard_wait": {
+          "action": "wait",
+          "policy": "onboard_wait",
+          "estimated_obstacle_vx_mps": 2.8503339916342973,
+          "estimated_remaining_wait_s": 2.753366548265643,
+          "estimated_extra_detour_s": 22.166666666666664,
+          "observation_source": "onboard_rgb_px4_ego_mapped_plane",
+          "vla_invoked": false,
+          "wam_invoked": false
+        },
+        "onboard_detour": {
+          "action": "detour",
+          "policy": "onboard_detour",
+          "estimated_obstacle_vx_mps": 2.8503339916342973,
+          "estimated_remaining_wait_s": 2.753366548265643,
+          "estimated_extra_detour_s": 22.166666666666664,
+          "observation_source": "onboard_rgb_px4_ego_mapped_plane",
+          "vla_invoked": false,
+          "wam_invoked": false
+        },
+        "onboard_velocity": {
+          "action": "wait",
+          "policy": "onboard_velocity",
+          "estimated_obstacle_vx_mps": 2.8503339916342973,
+          "estimated_remaining_wait_s": 2.753366548265643,
+          "estimated_extra_detour_s": 22.166666666666664,
+          "observation_source": "onboard_rgb_px4_ego_mapped_plane",
+          "vla_invoked": false,
+          "wam_invoked": false
+        },
+        "onboard_stopping": {
+          "action": "detour",
+          "policy": "onboard_stopping",
+          "estimated_obstacle_vx_mps": 2.8503339916342973,
+          "estimated_remaining_wait_s": 2.753366548265643,
+          "estimated_extra_detour_s": 22.166666666666664,
+          "observation_source": "onboard_rgb_px4_ego_mapped_plane",
+          "vla_invoked": false,
+          "wam_invoked": false,
+          "estimated_acceleration_mps2": -0.4287746359944801,
+          "estimated_current_vx_mps": 2.3911026890782945
+        }
+      },
+      "observation_history": [
+        {
+          "observed_at_s": 41.94748214499987,
+          "obstacle_x_m": 0.04638861432661081,
+          "center_x_px": 327.0,
+          "image_sha256": "df935a9daf3db4162225bd62664cecf33088f4749d25a6c11c0e9539709be313",
+          "sensor_stamp_s": 45.7,
+          "marker_heading_correction_rad": -0.013357015998157251
+        },
+        {
+          "observed_at_s": 42.48501097799999,
+          "obstacle_x_m": 1.686608158480991,
+          "center_x_px": 337.5,
+          "image_sha256": "ddc6b816cd937b9b2554324173786e4bfef2889e5e38777326652643e35d30a5",
+          "sensor_stamp_s": 46.2,
+          "marker_heading_correction_rad": -0.01482698678250785
+        },
+        {
+          "observed_at_s": 43.01804410399973,
+          "obstacle_x_m": 3.343773390505618,
+          "center_x_px": 348.0,
+          "image_sha256": "9211f9c4c26ee9186f50521664244c9ed5f3bbc08eb55b4d42af97636cddec69",
+          "sensor_stamp_s": 46.7,
+          "marker_heading_correction_rad": -0.01568524864125692
+        },
+        {
+          "observed_at_s": 43.55763527099998,
+          "obstacle_x_m": 4.8084583467447555,
+          "center_x_px": 356.5,
+          "image_sha256": "664c2a19d7a5c76018f5ece80651ebb91073e61fb1ebb1c3f8393e2e318eeacf",
+          "sensor_stamp_s": 47.2,
+          "marker_heading_correction_rad": -0.01605614438372191
+        },
+        {
+          "observed_at_s": 44.08954589599989,
+          "obstacle_x_m": 6.151985736049643,
+          "center_x_px": 365.5,
+          "image_sha256": "c9b2343ebaa21aa5c71546cb6c12ca9df2aa744ac5db18501cd98e90fea1c832",
+          "sensor_stamp_s": 47.8,
+          "marker_heading_correction_rad": -0.01899516016794034
+        }
+      ],
+      "world_sha256": "bb83dac7d8dbd6c507bc827465c3ba40d7d50bb89efa8a11d89452237408f913",
+      "sources_sha256": {
+        "ship_delivery_sitl.py": "592f13e53de947b1064152c4102a31e74325158e5f1070812be074e54042cfda",
+        "ship_onboard.py": "0ec5d3e262d4bb3681956a974cdebb1bba442ed0a733d39c4493f3fe7045e5f5",
+        "ship_onboard_model.py": "95e16400dc7f56cbce5df58e8414b6c4461f7cc60f4b79fecccb28336a6ea998",
+        "ship_urban_world.py": "ce1362929b5fb7bcffac91451e071044c19ef9fbb7e7f33876e2508ee2ed5781",
+        "ship_urban_decision.py": "54c21bf5fd5877c75ddaa8af00a29d4059501e9598033dd8be93bcd95a5fcdd6",
+        "ship_delivery_sitl_worker.py": "2b271cc73f1af38970036d4220784c483a04a363d6e75eaa2cbbe0e178f34e52",
+        "ship_urban_sitl_stage.py": "a72ba1a13c9436a3357a2fc4f038c6424a44e8c3df12b65820454f9a9186f701",
+        "ship_onboard_camera.py": "9fe04bc73df40278e4d57caa1c6ff1cfced432d6be92880ddb46fc672e5a11a9",
+        "ship_onboard_entrypoint.sh": "b45b89f4bc9cf4ecab5f3d041866a436d6133574717e122a9e02f86e4c977364",
+        "ship_urban_camera_worker.py": "d1410467349d7bc5526a46afe2e84a9cf8e44d7a3fc391d8b0361ad78696d6c7"
+      },
+      "image_id": "sha256:79968fe25aa19d51c49fbd4a863ea9380f4efe6d9afabd1c579ddeffeb8b8c93",
+      "scenario_parameters": {
+        "scenario_id": "stationary-ship-v1",
+        "vehicle_id": "drone-1",
+        "payload_id": "parcel-1",
+        "ship_id": "ship-1",
+        "vehicle_count": 1,
+        "ship_speed_mps": 0,
+        "offshore_distance_m": 100.0,
+        "urban_distance_m": 200.0,
+        "cruise_altitude_m": 30,
+        "wind_mps": 4,
+        "max_wind_mps": 10,
+        "airspeed_mps": 12,
+        "battery_wh": 220,
+        "reserve_wh": 40,
+        "power_w": 1500,
+        "urban_blockage_s": 0,
+        "max_wait_s": 30,
+        "urban_detour_offset_m": 80,
+        "max_mission_s": 900,
+        "urban_perception_ready": true
+      },
+      "vision_language_model_invoked": false,
+      "model_runtime_invocation_evidence": null,
+      "native_flight_vla_invoked": false,
+      "action_conditioned_wam_invoked": false
+    },
+    {
+      "run_id": "14aec915fac046aabe05aac174b5f2d5",
+      "case": "brake_stop",
+      "policy": "onboard_vlm_forecast",
+      "action": "detour",
+      "urban_elapsed_s": 94.11910366799975,
+      "sampled_urban_distance_m": 423.2165509703442,
+      "delivery_verified": true,
+      "recovery_verified": true,
+      "collision_observed": false,
+      "geometric_clearance_verified": true,
+      "image_verification": {
+        "verified": true,
+        "reasons": [],
+        "image_observations_checked": 5,
+        "maximum_obstacle_position_error_m": 0.3664376895549277,
+        "projection_limit_m": 2.0,
+        "truth_used_for_policy": false
+      },
+      "inference_elapsed_s": 8.42813679203391,
+      "model_proposal": {
+        "action": "detour",
+        "predicted_clearance_seconds": 120,
+        "reason": "The obstacle's eastward velocity is approximately 2.87 m/s. To reach the required 14m, it needs to travel roughly 7.85m, which would take about 2.7 seconds. However, the provided history shows no clear trend of continuous motion, and without a reliable forecast, the default 120-second clearance is assumed, which exceeds the detour cost of 22.17 seconds."
+      },
+      "matched_image_rule_replay": {
+        "onboard_wait": {
+          "action": "wait",
+          "policy": "onboard_wait",
+          "estimated_obstacle_vx_mps": 2.843679981946799,
+          "estimated_remaining_wait_s": 2.759989644020047,
+          "estimated_extra_detour_s": 22.166666666666664,
+          "observation_source": "onboard_rgb_px4_ego_mapped_plane",
+          "vla_invoked": false,
+          "wam_invoked": false
+        },
+        "onboard_detour": {
+          "action": "detour",
+          "policy": "onboard_detour",
+          "estimated_obstacle_vx_mps": 2.843679981946799,
+          "estimated_remaining_wait_s": 2.759989644020047,
+          "estimated_extra_detour_s": 22.166666666666664,
+          "observation_source": "onboard_rgb_px4_ego_mapped_plane",
+          "vla_invoked": false,
+          "wam_invoked": false
+        },
+        "onboard_velocity": {
+          "action": "wait",
+          "policy": "onboard_velocity",
+          "estimated_obstacle_vx_mps": 2.843679981946799,
+          "estimated_remaining_wait_s": 2.759989644020047,
+          "estimated_extra_detour_s": 22.166666666666664,
+          "observation_source": "onboard_rgb_px4_ego_mapped_plane",
+          "vla_invoked": false,
+          "wam_invoked": false
+        },
+        "onboard_stopping": {
+          "action": "wait",
+          "policy": "onboard_stopping",
+          "estimated_obstacle_vx_mps": 2.843679981946799,
+          "estimated_remaining_wait_s": 2.759989644020047,
+          "estimated_extra_detour_s": 22.166666666666664,
+          "observation_source": "onboard_rgb_px4_ego_mapped_plane",
+          "vla_invoked": false,
+          "wam_invoked": false,
+          "estimated_acceleration_mps2": -0.2607820613784968,
+          "estimated_current_vx_mps": 2.5651246613211307
+        }
+      },
+      "observation_history": [
+        {
+          "observed_at_s": 41.961229269999876,
+          "obstacle_x_m": 0.07649817850357853,
+          "center_x_px": 331.0,
+          "image_sha256": "4d8f27db20846320938293a0fc9a46de904a4e5ae251aa814a93cc00d4b10ae5",
+          "sensor_stamp_s": 45.8,
+          "marker_heading_correction_rad": -0.019952502715751552
+        },
+        {
+          "observed_at_s": 42.49375481199968,
+          "obstacle_x_m": 1.6304212955014012,
+          "center_x_px": 341.0,
+          "image_sha256": "49eb51de3c294c0e3b4892c6471a2d391e337cbe2335a54941fc2a0a6b337343",
+          "sensor_stamp_s": 46.2,
+          "marker_heading_correction_rad": -0.021610683799175537
+        },
+        {
+          "observed_at_s": 43.029259395999816,
+          "obstacle_x_m": 3.2624040124541263,
+          "center_x_px": 351.5,
+          "image_sha256": "ade8da2b647df0ce7d7d32ae37f1bbf3973b974b994f40d91e630eb7f14564e9",
+          "sensor_stamp_s": 46.7,
+          "marker_heading_correction_rad": -0.023162195050140055
+        },
+        {
+          "observed_at_s": 43.565018021000014,
+          "obstacle_x_m": 5.123282646722692,
+          "center_x_px": 362.5,
+          "image_sha256": "1d5ceb35d9e22077b7d671ce9d027bd77f2bff89d80f5991a2f73295e2acad7d",
+          "sensor_stamp_s": 47.3,
+          "marker_heading_correction_rad": -0.02415362633231008
+        },
+        {
+          "observed_at_s": 44.09753664599975,
+          "obstacle_x_m": 6.151472698919721,
+          "center_x_px": 369.5,
+          "image_sha256": "b2181de395d990861012684512bdef02687e441287347a70fa9764bdc9116b4e",
+          "sensor_stamp_s": 47.8,
+          "marker_heading_correction_rad": -0.025077528319459336
+        }
+      ],
+      "world_sha256": "bb83dac7d8dbd6c507bc827465c3ba40d7d50bb89efa8a11d89452237408f913",
+      "sources_sha256": {
+        "ship_delivery_sitl.py": "592f13e53de947b1064152c4102a31e74325158e5f1070812be074e54042cfda",
+        "ship_onboard.py": "0ec5d3e262d4bb3681956a974cdebb1bba442ed0a733d39c4493f3fe7045e5f5",
+        "ship_onboard_model.py": "95e16400dc7f56cbce5df58e8414b6c4461f7cc60f4b79fecccb28336a6ea998",
+        "ship_urban_world.py": "ce1362929b5fb7bcffac91451e071044c19ef9fbb7e7f33876e2508ee2ed5781",
+        "ship_urban_decision.py": "54c21bf5fd5877c75ddaa8af00a29d4059501e9598033dd8be93bcd95a5fcdd6",
+        "ship_delivery_sitl_worker.py": "2b271cc73f1af38970036d4220784c483a04a363d6e75eaa2cbbe0e178f34e52",
+        "ship_urban_sitl_stage.py": "a72ba1a13c9436a3357a2fc4f038c6424a44e8c3df12b65820454f9a9186f701",
+        "ship_onboard_camera.py": "9fe04bc73df40278e4d57caa1c6ff1cfced432d6be92880ddb46fc672e5a11a9",
+        "ship_onboard_entrypoint.sh": "b45b89f4bc9cf4ecab5f3d041866a436d6133574717e122a9e02f86e4c977364",
+        "ship_urban_camera_worker.py": "d1410467349d7bc5526a46afe2e84a9cf8e44d7a3fc391d8b0361ad78696d6c7"
+      },
+      "image_id": "sha256:79968fe25aa19d51c49fbd4a863ea9380f4efe6d9afabd1c579ddeffeb8b8c93",
+      "scenario_parameters": {
+        "scenario_id": "stationary-ship-v1",
+        "vehicle_id": "drone-1",
+        "payload_id": "parcel-1",
+        "ship_id": "ship-1",
+        "vehicle_count": 1,
+        "ship_speed_mps": 0,
+        "offshore_distance_m": 100.0,
+        "urban_distance_m": 200.0,
+        "cruise_altitude_m": 30,
+        "wind_mps": 4,
+        "max_wind_mps": 10,
+        "airspeed_mps": 12,
+        "battery_wh": 220,
+        "reserve_wh": 40,
+        "power_w": 1500,
+        "urban_blockage_s": 0,
+        "max_wait_s": 30,
+        "urban_detour_offset_m": 80,
+        "max_mission_s": 900,
+        "urban_perception_ready": true
+      },
+      "vision_language_model_invoked": true,
+      "model_runtime_invocation_evidence": {
+        "schema_version": "runtime_invocation_evidence.v1",
+        "invocation_kind": "http_loopback",
+        "invocation_target": "http://127.0.0.1:11434/api/chat:gemma4:26b",
+        "invocation_started_at": "2026-09-25T05:25:16.131012+00:00",
+        "invocation_completed_at": "2026-09-25T05:25:24.559775+00:00",
+        "invocation_exit_code": 0,
+        "invocation_stdout_sha256": "4832fd3847bd72cb2a8e82fdb84c178114e9303ddabff332ef06c42101490985",
+        "invocation_stdout_preimage": "{\"created_at\": \"2026-09-25T05:25:24.5587Z\", \"done\": true, \"done_reason\": \"stop\", \"eval_count\": 119, \"eval_duration\": 3252283000, \"load_duration\": 2428584, \"message\": {\"content\": \"{\\\"action\\\": \\\"detour\\\", \\\"predicted_clearance_seconds\\\": 120, \\\"reason\\\": \\\"The obstacle's eastward velocity is approximately 2.87 m/s. To reach the required 14m, it needs to travel roughly 7.85m, which would take about 2.7 seconds. However, the provided history shows no clear trend of continuous motion, and without a reliable forecast, the default 120-second clearance is assumed, which exceeds the detour cost of 22.17 seconds.\\\"}\", \"role\": \"assistant\"}, \"model\": \"gemma4:26b\", \"prompt_eval_cached_count\": 0, \"prompt_eval_count\": 1040, \"prompt_eval_duration\": 5036661000, \"total_duration\": 8427322417}",
+        "invocation_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "invocation_stderr_preimage": "",
+        "run_id": "14aec915fac046aabe05aac174b5f2d5",
+        "execution_scope": "sim",
+        "request_sha256": "52dfbc373f18af66ea0ceef4fd07ab95f94009a20f076fd2320c04a305bf7c85",
+        "model_digest": "5571076f3d70050487b26b341705799e0ab29b808164f90d20d4cf84f699d251",
+        "invocation_stdout_hash_binding_source": "invocation_stdout_preimage",
+        "invocation_stderr_hash_binding_source": "invocation_stderr_preimage",
+        "invocation_output_hashes_verified": true
+      },
+      "native_flight_vla_invoked": false,
+      "action_conditioned_wam_invoked": false
+    },
+    {
+      "run_id": "07e2600be08340059138a5b5f56d556b",
+      "case": "short_clear",
+      "policy": "onboard_vlm_forecast",
+      "action": "detour",
+      "urban_elapsed_s": 93.40816466700016,
+      "sampled_urban_distance_m": 423.242152321449,
+      "delivery_verified": true,
+      "recovery_verified": true,
+      "collision_observed": false,
+      "geometric_clearance_verified": true,
+      "image_verification": {
+        "verified": true,
+        "reasons": [],
+        "image_observations_checked": 5,
+        "maximum_obstacle_position_error_m": 0.16326008795809477,
+        "projection_limit_m": 2.0,
+        "truth_used_for_policy": false
+      },
+      "inference_elapsed_s": 8.833019500016235,
+      "model_proposal": {
+        "action": "wait",
+        "predicted_clearance_seconds": 120,
+        "reason": "The obstacle's eastward velocity is approximately 1.88 m/s. To reach the required 14m, it needs to travel ~9.91m, which would take about 5.27 seconds. However, without a reliable forecast provided in the prompt and following the instruction to use 120 for no credible clearance, I must evaluate the detour cost. Since the detour adds 22.16 seconds and the current trajectory suggests clearance well under that threshold, waiting is the optimal choice."
+      },
+      "matched_image_rule_replay": {
+        "onboard_wait": {
+          "action": "wait",
+          "policy": "onboard_wait",
+          "estimated_obstacle_vx_mps": 1.8697268540176708,
+          "estimated_remaining_wait_s": 5.302350002688692,
+          "estimated_extra_detour_s": 22.166666666666664,
+          "observation_source": "onboard_rgb_px4_ego_mapped_plane",
+          "vla_invoked": false,
+          "wam_invoked": false
+        },
+        "onboard_detour": {
+          "action": "detour",
+          "policy": "onboard_detour",
+          "estimated_obstacle_vx_mps": 1.8697268540176708,
+          "estimated_remaining_wait_s": 5.302350002688692,
+          "estimated_extra_detour_s": 22.166666666666664,
+          "observation_source": "onboard_rgb_px4_ego_mapped_plane",
+          "vla_invoked": false,
+          "wam_invoked": false
+        },
+        "onboard_velocity": {
+          "action": "wait",
+          "policy": "onboard_velocity",
+          "estimated_obstacle_vx_mps": 1.8697268540176708,
+          "estimated_remaining_wait_s": 5.302350002688692,
+          "estimated_extra_detour_s": 22.166666666666664,
+          "observation_source": "onboard_rgb_px4_ego_mapped_plane",
+          "vla_invoked": false,
+          "wam_invoked": false
+        },
+        "onboard_stopping": {
+          "action": "wait",
+          "policy": "onboard_stopping",
+          "estimated_obstacle_vx_mps": 1.8697268540176708,
+          "estimated_remaining_wait_s": 5.302350002688692,
+          "estimated_extra_detour_s": 22.166666666666664,
+          "observation_source": "onboard_rgb_px4_ego_mapped_plane",
+          "vla_invoked": false,
+          "wam_invoked": false,
+          "estimated_acceleration_mps2": 0.29075888733117655,
+          "estimated_current_vx_mps": 2.180590767480809
+        }
+      },
+      "observation_history": [
+        {
+          "observed_at_s": 42.567144936000204,
+          "obstacle_x_m": 0.08802910851026949,
+          "center_x_px": 329.0,
+          "image_sha256": "49870b877dc654afc0a7db4566f363a363596977496591b26972b1c3b1a73ce7",
+          "sensor_stamp_s": 46.4,
+          "marker_heading_correction_rad": -0.015942782194484695
+        },
+        {
+          "observed_at_s": 43.10015031100011,
+          "obstacle_x_m": 0.9202878786759755,
+          "center_x_px": 334.0,
+          "image_sha256": "07efcac03d499ba7be293881d654a0f054331524445174b22846691138d7cad1",
+          "sensor_stamp_s": 46.8,
+          "marker_heading_correction_rad": -0.016635470276898295
+        },
+        {
+          "observed_at_s": 43.63774627000021,
+          "obstacle_x_m": 1.9235819120425206,
+          "center_x_px": 341.0,
+          "image_sha256": "bb49c155a3ede4912e7f773995fb0a392d221c2da8a923f88da353bca7f1eaa0",
+          "sensor_stamp_s": 47.3,
+          "marker_heading_correction_rad": -0.0187891385357965
+        },
+        {
+          "observed_at_s": 44.17267127000014,
+          "obstacle_x_m": 3.1332250617825763,
+          "center_x_px": 349.0,
+          "image_sha256": "089535aa8db37471705964fd502b0db537ea8f0b67c29f2d374412bd4f038f72",
+          "sensor_stamp_s": 47.9,
+          "marker_heading_correction_rad": -0.020374527239286233
+        },
+        {
+          "observed_at_s": 44.705438394999874,
+          "obstacle_x_m": 4.086053810572285,
+          "center_x_px": 355.5,
+          "image_sha256": "2d0f8dfceedceea55a5292b17211369cd164b2595ec4173a2053357c52623437",
+          "sensor_stamp_s": 48.4,
+          "marker_heading_correction_rad": -0.022207534812213867
+        }
+      ],
+      "world_sha256": "bb83dac7d8dbd6c507bc827465c3ba40d7d50bb89efa8a11d89452237408f913",
+      "sources_sha256": {
+        "ship_delivery_sitl.py": "592f13e53de947b1064152c4102a31e74325158e5f1070812be074e54042cfda",
+        "ship_onboard.py": "0ec5d3e262d4bb3681956a974cdebb1bba442ed0a733d39c4493f3fe7045e5f5",
+        "ship_onboard_model.py": "95e16400dc7f56cbce5df58e8414b6c4461f7cc60f4b79fecccb28336a6ea998",
+        "ship_urban_world.py": "ce1362929b5fb7bcffac91451e071044c19ef9fbb7e7f33876e2508ee2ed5781",
+        "ship_urban_decision.py": "54c21bf5fd5877c75ddaa8af00a29d4059501e9598033dd8be93bcd95a5fcdd6",
+        "ship_delivery_sitl_worker.py": "2b271cc73f1af38970036d4220784c483a04a363d6e75eaa2cbbe0e178f34e52",
+        "ship_urban_sitl_stage.py": "a72ba1a13c9436a3357a2fc4f038c6424a44e8c3df12b65820454f9a9186f701",
+        "ship_onboard_camera.py": "9fe04bc73df40278e4d57caa1c6ff1cfced432d6be92880ddb46fc672e5a11a9",
+        "ship_onboard_entrypoint.sh": "b45b89f4bc9cf4ecab5f3d041866a436d6133574717e122a9e02f86e4c977364",
+        "ship_urban_camera_worker.py": "d1410467349d7bc5526a46afe2e84a9cf8e44d7a3fc391d8b0361ad78696d6c7"
+      },
+      "image_id": "sha256:79968fe25aa19d51c49fbd4a863ea9380f4efe6d9afabd1c579ddeffeb8b8c93",
+      "scenario_parameters": {
+        "scenario_id": "stationary-ship-v1",
+        "vehicle_id": "drone-1",
+        "payload_id": "parcel-1",
+        "ship_id": "ship-1",
+        "vehicle_count": 1,
+        "ship_speed_mps": 0,
+        "offshore_distance_m": 100.0,
+        "urban_distance_m": 200.0,
+        "cruise_altitude_m": 30,
+        "wind_mps": 4,
+        "max_wind_mps": 10,
+        "airspeed_mps": 12,
+        "battery_wh": 220,
+        "reserve_wh": 40,
+        "power_w": 1500,
+        "urban_blockage_s": 0,
+        "max_wait_s": 30,
+        "urban_detour_offset_m": 80,
+        "max_mission_s": 900,
+        "urban_perception_ready": true
+      },
+      "vision_language_model_invoked": true,
+      "model_runtime_invocation_evidence": {
+        "schema_version": "runtime_invocation_evidence.v1",
+        "invocation_kind": "http_loopback",
+        "invocation_target": "http://127.0.0.1:11434/api/chat:gemma4:26b",
+        "invocation_started_at": "2026-09-25T05:29:48.721873+00:00",
+        "invocation_completed_at": "2026-09-25T05:29:57.555667+00:00",
+        "invocation_exit_code": 0,
+        "invocation_stdout_sha256": "16ca8c82522dc574c149c8cb704db2348f5857c61ae433c2c280a6e758cd3f2b",
+        "invocation_stdout_preimage": "{\"created_at\": \"2026-09-25T05:29:57.553675Z\", \"done\": true, \"done_reason\": \"stop\", \"eval_count\": 133, \"eval_duration\": 3675631000, \"load_duration\": 2503375, \"message\": {\"content\": \"{\\\"action\\\": \\\"wait\\\", \\\"predicted_clearance_seconds\\\": 120, \\\"reason\\\": \\\"The obstacle's eastward velocity is approximately 1.88 m/s. To reach the required 14m, it needs to travel ~9.91m, which would take about 5.27 seconds. However, without a reliable forecast provided in the prompt and following the instruction to use 120 for no credible clearance, I must evaluate the detour cost. Since the detour adds 22.16 seconds and the current trajectory suggests clearance well under that threshold, waiting is the optimal choice.\\\"}\", \"role\": \"assistant\"}, \"model\": \"gemma4:26b\", \"prompt_eval_cached_count\": 0, \"prompt_eval_count\": 1043, \"prompt_eval_duration\": 5057267000, \"total_duration\": 8831465667}",
+        "invocation_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "invocation_stderr_preimage": "",
+        "run_id": "07e2600be08340059138a5b5f56d556b",
+        "execution_scope": "sim",
+        "request_sha256": "89edf16bdc42b9767b938da950586545e1435faa617d31e491d37df8aee43d0c",
+        "model_digest": "5571076f3d70050487b26b341705799e0ab29b808164f90d20d4cf84f699d251",
+        "invocation_stdout_hash_binding_source": "invocation_stdout_preimage",
+        "invocation_stderr_hash_binding_source": "invocation_stderr_preimage",
+        "invocation_output_hashes_verified": true
+      },
+      "native_flight_vla_invoked": false,
+      "action_conditioned_wam_invoked": false
+    },
+    {
+      "run_id": "e8c3f5dc5a464ddbb777a3660ffed561",
+      "case": "long_block",
+      "policy": "onboard_stopping",
+      "action": "detour",
+      "urban_elapsed_s": 84.09557441299967,
+      "sampled_urban_distance_m": 423.0443639146852,
+      "delivery_verified": true,
+      "recovery_verified": true,
+      "collision_observed": false,
+      "geometric_clearance_verified": true,
+      "image_verification": {
+        "verified": true,
+        "reasons": [],
+        "image_observations_checked": 5,
+        "maximum_obstacle_position_error_m": 0.1406864623383375,
+        "projection_limit_m": 2.0,
+        "truth_used_for_policy": false
+      },
+      "inference_elapsed_s": 0,
+      "model_proposal": null,
+      "matched_image_rule_replay": {
+        "onboard_wait": {
+          "action": "wait",
+          "policy": "onboard_wait",
+          "estimated_obstacle_vx_mps": 0.14891632460406057,
+          "estimated_remaining_wait_s": 91.48831841390941,
+          "estimated_extra_detour_s": 22.166666666666664,
+          "observation_source": "onboard_rgb_px4_ego_mapped_plane",
+          "vla_invoked": false,
+          "wam_invoked": false
+        },
+        "onboard_detour": {
+          "action": "detour",
+          "policy": "onboard_detour",
+          "estimated_obstacle_vx_mps": 0.14891632460406057,
+          "estimated_remaining_wait_s": 91.48831841390941,
+          "estimated_extra_detour_s": 22.166666666666664,
+          "observation_source": "onboard_rgb_px4_ego_mapped_plane",
+          "vla_invoked": false,
+          "wam_invoked": false
+        },
+        "onboard_velocity": {
+          "action": "detour",
+          "policy": "onboard_velocity",
+          "estimated_obstacle_vx_mps": 0.14891632460406057,
+          "estimated_remaining_wait_s": 91.48831841390941,
+          "estimated_extra_detour_s": 22.166666666666664,
+          "observation_source": "onboard_rgb_px4_ego_mapped_plane",
+          "vla_invoked": false,
+          "wam_invoked": false
+        },
+        "onboard_stopping": {
+          "action": "detour",
+          "policy": "onboard_stopping",
+          "estimated_obstacle_vx_mps": 0.14891632460406057,
+          "estimated_remaining_wait_s": 91.48831841390941,
+          "estimated_extra_detour_s": 22.166666666666664,
+          "observation_source": "onboard_rgb_px4_ego_mapped_plane",
+          "vla_invoked": false,
+          "wam_invoked": false,
+          "estimated_acceleration_mps2": 0.1406184543889384,
+          "estimated_current_vx_mps": 0.2992988938920389
+        }
+      },
+      "observation_history": [
+        {
+          "observed_at_s": 41.89655768600005,
+          "obstacle_x_m": 0.0573826411890969,
+          "center_x_px": 328.0,
+          "image_sha256": "8d2910847c1f696a8142dd27e6ac295e7a36c28d933d08bc2d8ce152d3f0e06b",
+          "sensor_stamp_s": 45.8,
+          "marker_heading_correction_rad": -0.014849102341680243
+        },
+        {
+          "observed_at_s": 42.428306144999624,
+          "obstacle_x_m": 0.05224908103762227,
+          "center_x_px": 329.0,
+          "image_sha256": "37c6e8d1e27a76499c988daa3a02bc039019afb2fe8c306605c96519b413e6d3",
+          "sensor_stamp_s": 46.2,
+          "marker_heading_correction_rad": -0.016287137590641015
+        },
+        {
+          "observed_at_s": 42.96563714500007,
+          "obstacle_x_m": 0.13617369670403753,
+          "center_x_px": 330.5,
+          "image_sha256": "4296c7aa58ff1aa64f99af95fd7431c45f3557f3ff115154837c13e12abcbd9d",
+          "sensor_stamp_s": 46.7,
+          "marker_heading_correction_rad": -0.018341197083752397
+        },
+        {
+          "observed_at_s": 43.50227164500029,
+          "obstacle_x_m": 0.37334768743823804,
+          "center_x_px": 332.0,
+          "image_sha256": "0c150eac6707133449ea99801b24024daf31cc7f7e8c739c84cf83726416348c",
+          "sensor_stamp_s": 47.3,
+          "marker_heading_correction_rad": -0.018750241474357082
+        },
+        {
+          "observed_at_s": 44.03543156199976,
+          "obstacle_x_m": 0.37589587759461446,
+          "center_x_px": 333.0,
+          "image_sha256": "4113e9bd1f40ef963ba1619912035d333f30aaafdba65f9bb3738690cc5f3c68",
+          "sensor_stamp_s": 47.8,
+          "marker_heading_correction_rad": -0.019834807630662005
+        }
+      ],
+      "world_sha256": "bb83dac7d8dbd6c507bc827465c3ba40d7d50bb89efa8a11d89452237408f913",
+      "sources_sha256": {
+        "ship_delivery_sitl.py": "592f13e53de947b1064152c4102a31e74325158e5f1070812be074e54042cfda",
+        "ship_onboard.py": "0ec5d3e262d4bb3681956a974cdebb1bba442ed0a733d39c4493f3fe7045e5f5",
+        "ship_onboard_model.py": "95e16400dc7f56cbce5df58e8414b6c4461f7cc60f4b79fecccb28336a6ea998",
+        "ship_urban_world.py": "ce1362929b5fb7bcffac91451e071044c19ef9fbb7e7f33876e2508ee2ed5781",
+        "ship_urban_decision.py": "54c21bf5fd5877c75ddaa8af00a29d4059501e9598033dd8be93bcd95a5fcdd6",
+        "ship_delivery_sitl_worker.py": "2b271cc73f1af38970036d4220784c483a04a363d6e75eaa2cbbe0e178f34e52",
+        "ship_urban_sitl_stage.py": "a72ba1a13c9436a3357a2fc4f038c6424a44e8c3df12b65820454f9a9186f701",
+        "ship_onboard_camera.py": "9fe04bc73df40278e4d57caa1c6ff1cfced432d6be92880ddb46fc672e5a11a9",
+        "ship_onboard_entrypoint.sh": "b45b89f4bc9cf4ecab5f3d041866a436d6133574717e122a9e02f86e4c977364",
+        "ship_urban_camera_worker.py": "d1410467349d7bc5526a46afe2e84a9cf8e44d7a3fc391d8b0361ad78696d6c7"
+      },
+      "image_id": "sha256:79968fe25aa19d51c49fbd4a863ea9380f4efe6d9afabd1c579ddeffeb8b8c93",
+      "scenario_parameters": {
+        "scenario_id": "stationary-ship-v1",
+        "vehicle_id": "drone-1",
+        "payload_id": "parcel-1",
+        "ship_id": "ship-1",
+        "vehicle_count": 1,
+        "ship_speed_mps": 0,
+        "offshore_distance_m": 100.0,
+        "urban_distance_m": 200.0,
+        "cruise_altitude_m": 30,
+        "wind_mps": 4,
+        "max_wind_mps": 10,
+        "airspeed_mps": 12,
+        "battery_wh": 220,
+        "reserve_wh": 40,
+        "power_w": 1500,
+        "urban_blockage_s": 0,
+        "max_wait_s": 30,
+        "urban_detour_offset_m": 80,
+        "max_mission_s": 900,
+        "urban_perception_ready": true
+      },
+      "vision_language_model_invoked": false,
+      "model_runtime_invocation_evidence": null,
+      "native_flight_vla_invoked": false,
+      "action_conditioned_wam_invoked": false
+    },
+    {
+      "run_id": "889807c5a9a141dd9f5228b26657395d",
+      "case": "long_block",
+      "policy": "onboard_vlm_forecast",
+      "action": "detour",
+      "urban_elapsed_s": 91.46020516600038,
+      "sampled_urban_distance_m": 423.26821098991934,
+      "delivery_verified": true,
+      "recovery_verified": true,
+      "collision_observed": false,
+      "geometric_clearance_verified": true,
+      "image_verification": {
+        "verified": true,
+        "reasons": [],
+        "image_observations_checked": 5,
+        "maximum_obstacle_position_error_m": 0.07205798975924235,
+        "projection_limit_m": 2.0,
+        "truth_used_for_policy": false
+      },
+      "inference_elapsed_s": 7.340283208992332,
+      "model_proposal": {
+        "action": "detour",
+        "predicted_clearance_seconds": 120,
+        "reason": "The obstacle's eastward movement is extremely slow (moving only ~0.28m in ~2.14s), suggesting it will not reach the required 14m threshold within the 22.16s detour cost threshold."
+      },
+      "matched_image_rule_replay": {
+        "onboard_wait": {
+          "action": "wait",
+          "policy": "onboard_wait",
+          "estimated_obstacle_vx_mps": 0.13403791873259666,
+          "estimated_remaining_wait_s": 101.76942674513839,
+          "estimated_extra_detour_s": 22.166666666666664,
+          "observation_source": "onboard_rgb_px4_ego_mapped_plane",
+          "vla_invoked": false,
+          "wam_invoked": false
+        },
+        "onboard_detour": {
+          "action": "detour",
+          "policy": "onboard_detour",
+          "estimated_obstacle_vx_mps": 0.13403791873259666,
+          "estimated_remaining_wait_s": 101.76942674513839,
+          "estimated_extra_detour_s": 22.166666666666664,
+          "observation_source": "onboard_rgb_px4_ego_mapped_plane",
+          "vla_invoked": false,
+          "wam_invoked": false
+        },
+        "onboard_velocity": {
+          "action": "detour",
+          "policy": "onboard_velocity",
+          "estimated_obstacle_vx_mps": 0.13403791873259666,
+          "estimated_remaining_wait_s": 101.76942674513839,
+          "estimated_extra_detour_s": 22.166666666666664,
+          "observation_source": "onboard_rgb_px4_ego_mapped_plane",
+          "vla_invoked": false,
+          "wam_invoked": false
+        },
+        "onboard_stopping": {
+          "action": "detour",
+          "policy": "onboard_stopping",
+          "estimated_obstacle_vx_mps": 0.13403791873259666,
+          "estimated_remaining_wait_s": 101.76942674513839,
+          "estimated_extra_detour_s": 22.166666666666664,
+          "observation_source": "onboard_rgb_px4_ego_mapped_plane",
+          "vla_invoked": false,
+          "wam_invoked": false,
+          "estimated_acceleration_mps2": 0.13884082391038896,
+          "estimated_current_vx_mps": 0.2826694418349588
+        }
+      },
+      "observation_history": [
+        {
+          "observed_at_s": 42.479408228000466,
+          "obstacle_x_m": 0.07205798975924235,
+          "center_x_px": 329.0,
+          "image_sha256": "e3d88cf6b57d178711a48614a38027a6cfe881f6d65c0e08d1355dd546c4c1de",
+          "sensor_stamp_s": 46.3,
+          "marker_heading_correction_rad": -0.016085749784183007
+        },
+        {
+          "observed_at_s": 43.01666402000046,
+          "obstacle_x_m": 0.07289213282520057,
+          "center_x_px": 330.0,
+          "image_sha256": "16ab01afea05ee1e1da2ea9486d781690cc35e50baabb47213e8c4ed4ca49925",
+          "sensor_stamp_s": 46.7,
+          "marker_heading_correction_rad": -0.01785670731666908
+        },
+        {
+          "observed_at_s": 43.55238060300053,
+          "obstacle_x_m": 0.1363210734801158,
+          "center_x_px": 331.5,
+          "image_sha256": "ddc0bbc92601ca146ca15fa76038f984d48954d18b95d02647b1640bb52a6bd0",
+          "sensor_stamp_s": 47.3,
+          "marker_heading_correction_rad": -0.020178890564383017
+        },
+        {
+          "observed_at_s": 44.08474743700026,
+          "obstacle_x_m": 0.27450662493289973,
+          "center_x_px": 332.5,
+          "image_sha256": "d7395b2cb13e85a1ccefb05e3418c35e613a6a01813fd2a64594ca317c0da48b",
+          "sensor_stamp_s": 47.8,
+          "marker_heading_correction_rad": -0.020730704720860027
+        },
+        {
+          "observed_at_s": 44.620443104000515,
+          "obstacle_x_m": 0.35903784847219206,
+          "center_x_px": 334.0,
+          "image_sha256": "28b1bfe5c90c2bc6e1c811e30eb7a5a321a5549d75512c264a3bf235b586cdea",
+          "sensor_stamp_s": 48.3,
+          "marker_heading_correction_rad": -0.02202644004410896
+        }
+      ],
+      "world_sha256": "bb83dac7d8dbd6c507bc827465c3ba40d7d50bb89efa8a11d89452237408f913",
+      "sources_sha256": {
+        "ship_delivery_sitl.py": "592f13e53de947b1064152c4102a31e74325158e5f1070812be074e54042cfda",
+        "ship_onboard.py": "0ec5d3e262d4bb3681956a974cdebb1bba442ed0a733d39c4493f3fe7045e5f5",
+        "ship_onboard_model.py": "95e16400dc7f56cbce5df58e8414b6c4461f7cc60f4b79fecccb28336a6ea998",
+        "ship_urban_world.py": "ce1362929b5fb7bcffac91451e071044c19ef9fbb7e7f33876e2508ee2ed5781",
+        "ship_urban_decision.py": "54c21bf5fd5877c75ddaa8af00a29d4059501e9598033dd8be93bcd95a5fcdd6",
+        "ship_delivery_sitl_worker.py": "2b271cc73f1af38970036d4220784c483a04a363d6e75eaa2cbbe0e178f34e52",
+        "ship_urban_sitl_stage.py": "a72ba1a13c9436a3357a2fc4f038c6424a44e8c3df12b65820454f9a9186f701",
+        "ship_onboard_camera.py": "9fe04bc73df40278e4d57caa1c6ff1cfced432d6be92880ddb46fc672e5a11a9",
+        "ship_onboard_entrypoint.sh": "b45b89f4bc9cf4ecab5f3d041866a436d6133574717e122a9e02f86e4c977364",
+        "ship_urban_camera_worker.py": "d1410467349d7bc5526a46afe2e84a9cf8e44d7a3fc391d8b0361ad78696d6c7"
+      },
+      "image_id": "sha256:79968fe25aa19d51c49fbd4a863ea9380f4efe6d9afabd1c579ddeffeb8b8c93",
+      "scenario_parameters": {
+        "scenario_id": "stationary-ship-v1",
+        "vehicle_id": "drone-1",
+        "payload_id": "parcel-1",
+        "ship_id": "ship-1",
+        "vehicle_count": 1,
+        "ship_speed_mps": 0,
+        "offshore_distance_m": 100.0,
+        "urban_distance_m": 200.0,
+        "cruise_altitude_m": 30,
+        "wind_mps": 4,
+        "max_wind_mps": 10,
+        "airspeed_mps": 12,
+        "battery_wh": 220,
+        "reserve_wh": 40,
+        "power_w": 1500,
+        "urban_blockage_s": 0,
+        "max_wait_s": 30,
+        "urban_detour_offset_m": 80,
+        "max_mission_s": 900,
+        "urban_perception_ready": true
+      },
+      "vision_language_model_invoked": true,
+      "model_runtime_invocation_evidence": {
+        "schema_version": "runtime_invocation_evidence.v1",
+        "invocation_kind": "http_loopback",
+        "invocation_target": "http://127.0.0.1:11434/api/chat:gemma4:26b",
+        "invocation_started_at": "2026-09-25T05:42:23.138245+00:00",
+        "invocation_completed_at": "2026-09-25T05:42:30.479017+00:00",
+        "invocation_exit_code": 0,
+        "invocation_stdout_sha256": "40252c91917396ee452ebb5165031ea61d623db269428969c4626fe63744c529",
+        "invocation_stdout_preimage": "{\"created_at\": \"2026-09-25T05:42:30.478141Z\", \"done\": true, \"done_reason\": \"stop\", \"eval_count\": 77, \"eval_duration\": 2104388000, \"load_duration\": 3000583, \"message\": {\"content\": \"{\\\"action\\\": \\\"detour\\\", \\\"predicted_clearance_seconds\\\": 120, \\\"reason\\\": \\\"The obstacle's eastward movement is extremely slow (moving only ~0.28m in ~2.14s), suggesting it will not reach the required 14m threshold within the 22.16s detour cost threshold.\\\"}\", \"role\": \"assistant\"}, \"model\": \"gemma4:26b\", \"prompt_eval_cached_count\": 0, \"prompt_eval_count\": 1045, \"prompt_eval_duration\": 5009405000, \"total_duration\": 7339527917}",
+        "invocation_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "invocation_stderr_preimage": "",
+        "run_id": "889807c5a9a141dd9f5228b26657395d",
+        "execution_scope": "sim",
+        "request_sha256": "951cc976ef2fd81d83bc14a9f531654395d929a681a36163bff076d6508aaa1f",
+        "model_digest": "5571076f3d70050487b26b341705799e0ab29b808164f90d20d4cf84f699d251",
+        "invocation_stdout_hash_binding_source": "invocation_stdout_preimage",
+        "invocation_stderr_hash_binding_source": "invocation_stderr_preimage",
+        "invocation_output_hashes_verified": true
+      },
+      "native_flight_vla_invoked": false,
+      "action_conditioned_wam_invoked": false
+    },
+    {
+      "run_id": "4b594ae37947455a8364539299fa3658",
+      "case": "short_clear",
+      "policy": "onboard_stopping",
+      "action": "wait",
+      "urban_elapsed_s": 60.125012152000636,
+      "sampled_urban_distance_m": 255.275704717203,
+      "delivery_verified": true,
+      "recovery_verified": true,
+      "collision_observed": false,
+      "geometric_clearance_verified": true,
+      "image_verification": {
+        "verified": true,
+        "reasons": [],
+        "image_observations_checked": 11,
+        "maximum_obstacle_position_error_m": 0.30847719279813823,
+        "projection_limit_m": 2.0,
+        "truth_used_for_policy": false
+      },
+      "inference_elapsed_s": 0,
+      "model_proposal": null,
+      "matched_image_rule_replay": {
+        "onboard_wait": {
+          "action": "wait",
+          "policy": "onboard_wait",
+          "estimated_obstacle_vx_mps": 1.797436712478486,
+          "estimated_remaining_wait_s": 5.618595315889868,
+          "estimated_extra_detour_s": 22.166666666666664,
+          "observation_source": "onboard_rgb_px4_ego_mapped_plane",
+          "vla_invoked": false,
+          "wam_invoked": false
+        },
+        "onboard_detour": {
+          "action": "detour",
+          "policy": "onboard_detour",
+          "estimated_obstacle_vx_mps": 1.797436712478486,
+          "estimated_remaining_wait_s": 5.618595315889868,
+          "estimated_extra_detour_s": 22.166666666666664,
+          "observation_source": "onboard_rgb_px4_ego_mapped_plane",
+          "vla_invoked": false,
+          "wam_invoked": false
+        },
+        "onboard_velocity": {
+          "action": "wait",
+          "policy": "onboard_velocity",
+          "estimated_obstacle_vx_mps": 1.797436712478486,
+          "estimated_remaining_wait_s": 5.618595315889868,
+          "estimated_extra_detour_s": 22.166666666666664,
+          "observation_source": "onboard_rgb_px4_ego_mapped_plane",
+          "vla_invoked": false,
+          "wam_invoked": false
+        },
+        "onboard_stopping": {
+          "action": "wait",
+          "policy": "onboard_stopping",
+          "estimated_obstacle_vx_mps": 1.797436712478486,
+          "estimated_remaining_wait_s": 5.618595315889868,
+          "estimated_extra_detour_s": 22.166666666666664,
+          "observation_source": "onboard_rgb_px4_ego_mapped_plane",
+          "vla_invoked": false,
+          "wam_invoked": false,
+          "estimated_acceleration_mps2": 0.028458741934401736,
+          "estimated_current_vx_mps": 1.8279760528869233
+        }
+      },
+      "observation_history": [
+        {
+          "observed_at_s": 42.579953768999985,
+          "obstacle_x_m": 0.04323843077460832,
+          "center_x_px": 329.0,
+          "image_sha256": "eff3ca44fa5aa12d3128073a2e2b8f5a0b8763ed4976b625f66bae26f375c7c7",
+          "sensor_stamp_s": 46.2,
+          "marker_heading_correction_rad": -0.0171928685228232
+        },
+        {
+          "observed_at_s": 43.11729089400069,
+          "obstacle_x_m": 0.7446113251160031,
+          "center_x_px": 333.0,
+          "image_sha256": "390b42ef3cac8f5b889a86edf2a681e937d02f6cd1faeed2a32d21dade67ecec",
+          "sensor_stamp_s": 46.6,
+          "marker_heading_correction_rad": -0.016990964035283024
+        },
+        {
+          "observed_at_s": 43.654889061000176,
+          "obstacle_x_m": 1.9589806106172605,
+          "center_x_px": 341.0,
+          "image_sha256": "8abaa95c4277272f8256980c45b4cbfaf209a073015c563814c0e88bb20f54fb",
+          "sensor_stamp_s": 47.2,
+          "marker_heading_correction_rad": -0.01867570872490676
+        },
+        {
+          "observed_at_s": 44.18775185300001,
+          "obstacle_x_m": 2.980831206271329,
+          "center_x_px": 348.0,
+          "image_sha256": "8985e172c3b571c8606e6be41f1f4e063a22501092e0e3a0a17056c931c54ab3",
+          "sensor_stamp_s": 47.7,
+          "marker_heading_correction_rad": -0.020714518792705666
+        },
+        {
+          "observed_at_s": 44.72617235300004,
+          "obstacle_x_m": 3.900930506659895,
+          "center_x_px": 354.5,
+          "image_sha256": "aa39eabd000f89758c40fddad30138e72db178d402a149c8a8055a7dc488a6c1",
+          "sensor_stamp_s": 48.2,
+          "marker_heading_correction_rad": -0.023230560824705287
+        }
+      ],
+      "world_sha256": "bb83dac7d8dbd6c507bc827465c3ba40d7d50bb89efa8a11d89452237408f913",
+      "sources_sha256": {
+        "ship_delivery_sitl.py": "592f13e53de947b1064152c4102a31e74325158e5f1070812be074e54042cfda",
+        "ship_onboard.py": "0ec5d3e262d4bb3681956a974cdebb1bba442ed0a733d39c4493f3fe7045e5f5",
+        "ship_onboard_model.py": "95e16400dc7f56cbce5df58e8414b6c4461f7cc60f4b79fecccb28336a6ea998",
+        "ship_urban_world.py": "ce1362929b5fb7bcffac91451e071044c19ef9fbb7e7f33876e2508ee2ed5781",
+        "ship_urban_decision.py": "54c21bf5fd5877c75ddaa8af00a29d4059501e9598033dd8be93bcd95a5fcdd6",
+        "ship_delivery_sitl_worker.py": "2b271cc73f1af38970036d4220784c483a04a363d6e75eaa2cbbe0e178f34e52",
+        "ship_urban_sitl_stage.py": "a72ba1a13c9436a3357a2fc4f038c6424a44e8c3df12b65820454f9a9186f701",
+        "ship_onboard_camera.py": "9fe04bc73df40278e4d57caa1c6ff1cfced432d6be92880ddb46fc672e5a11a9",
+        "ship_onboard_entrypoint.sh": "b45b89f4bc9cf4ecab5f3d041866a436d6133574717e122a9e02f86e4c977364",
+        "ship_urban_camera_worker.py": "d1410467349d7bc5526a46afe2e84a9cf8e44d7a3fc391d8b0361ad78696d6c7"
+      },
+      "image_id": "sha256:79968fe25aa19d51c49fbd4a863ea9380f4efe6d9afabd1c579ddeffeb8b8c93",
+      "scenario_parameters": {
+        "scenario_id": "stationary-ship-v1",
+        "vehicle_id": "drone-1",
+        "payload_id": "parcel-1",
+        "ship_id": "ship-1",
+        "vehicle_count": 1,
+        "ship_speed_mps": 0,
+        "offshore_distance_m": 100.0,
+        "urban_distance_m": 200.0,
+        "cruise_altitude_m": 30,
+        "wind_mps": 4,
+        "max_wind_mps": 10,
+        "airspeed_mps": 12,
+        "battery_wh": 220,
+        "reserve_wh": 40,
+        "power_w": 1500,
+        "urban_blockage_s": 0,
+        "max_wait_s": 30,
+        "urban_detour_offset_m": 80,
+        "max_mission_s": 900,
+        "urban_perception_ready": true
+      },
+      "vision_language_model_invoked": false,
+      "model_runtime_invocation_evidence": null,
+      "native_flight_vla_invoked": false,
+      "action_conditioned_wam_invoked": false
+    }
+  ],
+  "pairs": [
+    {
+      "case": "short_clear",
+      "rule_action": "wait",
+      "model_action": "detour",
+      "rule_urban_elapsed_s": 60.125012152000636,
+      "model_urban_elapsed_s": 93.40816466700016,
+      "model_minus_rule_s": 33.28315251499953,
+      "inference_elapsed_s": 8.833019500016235,
+      "model_differs_from_rule_on_same_images": true
+    },
+    {
+      "case": "long_block",
+      "rule_action": "detour",
+      "model_action": "detour",
+      "rule_urban_elapsed_s": 84.09557441299967,
+      "model_urban_elapsed_s": 91.46020516600038,
+      "model_minus_rule_s": 7.364630753000711,
+      "inference_elapsed_s": 7.340283208992332,
+      "model_differs_from_rule_on_same_images": false
+    },
+    {
+      "case": "brake_stop",
+      "rule_action": "detour",
+      "model_action": "detour",
+      "rule_urban_elapsed_s": 85.19350287099996,
+      "model_urban_elapsed_s": 94.11910366799975,
+      "model_minus_rule_s": 8.925600796999788,
+      "inference_elapsed_s": 8.42813679203391,
+      "model_differs_from_rule_on_same_images": true
+    }
+  ],
+  "model_digest": "5571076f3d70050487b26b341705799e0ab29b808164f90d20d4cf84f699d251",
+  "mean_model_minus_rule_s": 16.52446135500001,
+  "limitations": [
+    "One run per case and policy; exploratory matched-scenario comparison, not statistical superiority evidence.",
+    "Separate flights have different actual images; saved-frame rule replay uses exactly the model's recorded observations.",
+    "Known red obstacle, mapped depth plane, surveyed cyan visual marker and PX4 ego state; not general urban perception.",
+    "General vision-language model proposes obstacle clearance time; no native flight-trained VLA or action-conditioned WAM is invoked.",
+    "Wall time includes inference and simulator resource contention; it is not an onboard-compute latency measurement.",
+    "One vehicle, stationary simulated ship, compact 100m offshore / 200m inland route; no physical flight or 10-drone operation."
+  ]
+}

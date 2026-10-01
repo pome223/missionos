@@ -1,0 +1,22 @@
+{
+  "status": "passed",
+  "aircraft_flown": false,
+  "native_inference": false,
+  "cases": [
+    {
+      "id": "state-depart",
+      "frames": 208,
+      "capture_sha256": "a02da7d7e3554f947c4bdc7b8c974e461fab242325ac5c236060abc2501e2a47"
+    },
+    {
+      "id": "state-stall",
+      "frames": 240,
+      "capture_sha256": "e865e95aba878db228e35c9366bfa28597596820da4ba3efc7e7ad7cee1eba0c"
+    },
+    {
+      "id": "state-reenter",
+      "frames": 256,
+      "capture_sha256": "401a2c966d35286acfa08652450b1afae9a2cbfa694b706d8d75f7ed69db71f1"
+    }
+  ]
+}

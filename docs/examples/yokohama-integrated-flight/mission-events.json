@@ -1,0 +1,429 @@
+[
+  {
+    "event": "hold_measured",
+    "phase": "00-D1",
+    "wall_s": 59.899822027,
+    "metrics": {
+      "duration_sim_s": 30.211999999999996,
+      "samples": 92,
+      "max_horizontal_error_m": 0.0710234624480507,
+      "max_vertical_error_m": 0.08948211453858157,
+      "max_px4_speed_mps": 0.04665503724143835,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.022336167000005958,
+      "max_sample_gap_sim_s": 0.4159999999999968,
+      "start_sim_s": 32.904,
+      "end_sim_s": 63.116,
+      "point": "00-D1",
+      "target_world_xyz_m": [
+        0.0,
+        0.0,
+        15.110143087104275
+      ],
+      "passed": true
+    }
+  },
+  {
+    "event": "city_request",
+    "phase": "00-D1",
+    "wall_s": 59.966744652,
+    "operation": "start",
+    "cycle": 1,
+    "request_sha256": "f0e6c6e6ffc8955084532295e5ca54a01620a69ce447f315c6c95de145b4d81c"
+  },
+  {
+    "event": "city_response",
+    "phase": "00-D1",
+    "wall_s": 230.652117355,
+    "operation": "start",
+    "cycle": 1,
+    "response_sha256": "91a469ccb1dd2654cdc7a9ea0a88e1c4bb0ea8b15c7f9efef71e3225088d3bf5"
+  },
+  {
+    "event": "city_request",
+    "phase": "00-D1",
+    "wall_s": 237.185964566,
+    "operation": "vla",
+    "cycle": 1,
+    "request_sha256": "1df097a9c307dd452a3b5ce367ef35a791040cbd7d4ac509d4f009d06d77169c"
+  },
+  {
+    "event": "city_response",
+    "phase": "00-D1",
+    "wall_s": 254.387355241,
+    "operation": "vla",
+    "cycle": 1,
+    "response_sha256": "f42f658bbfce843d47a5c9bbfa33d5b0a8bcb1c764e0c525c8720d2d422d460e"
+  },
+  {
+    "event": "city_request",
+    "phase": "00-D1",
+    "wall_s": 261.07892282700004,
+    "operation": "wam",
+    "cycle": 1,
+    "request_sha256": "cdcf1ce758221e11615be889fc0104886feedfb5c3706499a1381cf2c4043928"
+  },
+  {
+    "event": "city_response",
+    "phase": "00-D1",
+    "wall_s": 312.75061568399997,
+    "operation": "wam",
+    "cycle": 1,
+    "response_sha256": "e523a88c555643159d8941424a3cf32c2154d5429f9c6aa9b336aa711273955f"
+  },
+  {
+    "event": "city_request",
+    "phase": "00-D1",
+    "wall_s": 312.77690822600005,
+    "operation": "authorize",
+    "cycle": 1,
+    "request_sha256": "1e4d7d204aa6f7b31cac0a3ed3077529efdb5e7d1f01d6f3881ece0625954f45"
+  },
+  {
+    "event": "city_response",
+    "phase": "00-D1",
+    "wall_s": 312.809624643,
+    "operation": "authorize",
+    "cycle": 1,
+    "response_sha256": "cc910e07bdaf55768ee8f8a5627740737fd343e4cdcecd06c22c41d5513e74ab"
+  },
+  {
+    "event": "city_request",
+    "phase": "00-D1",
+    "wall_s": 316.01141185200004,
+    "operation": "activate",
+    "cycle": 1,
+    "request_sha256": "4c86ccfe943e8f10f125c4590ebf33b0db702b0eb4be2e075b70a5bab99f90fc"
+  },
+  {
+    "event": "city_response",
+    "phase": "00-D1",
+    "wall_s": 316.04598185300006,
+    "operation": "activate",
+    "cycle": 1,
+    "response_sha256": "450287b85ba0c6535f7c65bb51e7ceec30c0f1d9693ba7f2348f99ff6124884a"
+  },
+  {
+    "event": "city_segment_dispatched",
+    "phase": "00-D1",
+    "wall_s": 316.441795019,
+    "permit_id": "99454b769715450ca51664d94f092d56"
+  },
+  {
+    "event": "city_segment_arrived",
+    "phase": "00-D1",
+    "wall_s": 322.45991347999995,
+    "permit_id": "99454b769715450ca51664d94f092d56",
+    "observation": {
+      "sim_s": 325.016,
+      "nav_state": 4.0,
+      "arming_state": 2.0,
+      "landed": false,
+      "heading_ned_rad": -2.59165,
+      "velocity_ned": [
+        0.0373,
+        0.05108,
+        -8e-05
+      ],
+      "world_xyz_m": [
+        -0.8359778995334683,
+        -1.5365778553143548,
+        14.994018209538341
+      ]
+    }
+  },
+  {
+    "event": "hold_measured",
+    "phase": "01-D2",
+    "wall_s": 385.76990884199995,
+    "metrics": {
+      "duration_sim_s": 30.015999999999963,
+      "samples": 92,
+      "max_horizontal_error_m": 0.08165184501054576,
+      "max_vertical_error_m": 0.08170249953367836,
+      "max_px4_speed_mps": 0.0949349777479302,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.022838541999988138,
+      "max_sample_gap_sim_s": 0.4159999999999968,
+      "start_sim_s": 358.124,
+      "end_sim_s": 388.14,
+      "point": "01-D2",
+      "target_world_xyz_m": [
+        -34.88761388811289,
+        -60.6945307036456,
+        15.110143087104275
+      ],
+      "passed": true
+    }
+  },
+  {
+    "event": "city_request",
+    "phase": "01-D2",
+    "wall_s": 392.54856680299997,
+    "operation": "vla",
+    "cycle": 2,
+    "request_sha256": "92ebed3172fa2a2341773fb04f8e749b1042e88a25d775b9d0408c73abc79bc8"
+  },
+  {
+    "event": "city_response",
+    "phase": "01-D2",
+    "wall_s": 409.255672519,
+    "operation": "vla",
+    "cycle": 2,
+    "response_sha256": "d3bd15971e65665b56d90c6f3820c016b2494ba3e660c1e3fec1d49c5676c2d0"
+  },
+  {
+    "event": "city_request",
+    "phase": "01-D2",
+    "wall_s": 416.00562418899995,
+    "operation": "wam",
+    "cycle": 2,
+    "request_sha256": "1c5e852fa785c83d7b2950f70202a053258ee3f9b6e46b63653aba6dedf08377"
+  },
+  {
+    "event": "city_response",
+    "phase": "01-D2",
+    "wall_s": 465.02640233700004,
+    "operation": "wam",
+    "cycle": 2,
+    "response_sha256": "7ecb04b6df92ee0bb9caa220473f9b6c941f349368bc4a11f565b3cd554f8336"
+  },
+  {
+    "event": "city_request",
+    "phase": "01-D2",
+    "wall_s": 465.056194087,
+    "operation": "authorize",
+    "cycle": 2,
+    "request_sha256": "2abf5dbe18dd698112bc421f44d4cd36d5a163db52c111db5cbaf439eb0a1d4c"
+  },
+  {
+    "event": "city_response",
+    "phase": "01-D2",
+    "wall_s": 465.15688296200005,
+    "operation": "authorize",
+    "cycle": 2,
+    "response_sha256": "9a62fabd30be3d28c06fd7d2b4e3671e74d7bca7b0af4229f22b8730e5d58beb"
+  },
+  {
+    "event": "city_request",
+    "phase": "01-D2",
+    "wall_s": 468.29800029700004,
+    "operation": "activate",
+    "cycle": 2,
+    "request_sha256": "41ec615c2e94ee128842a0fd070d4fc32f1a62b1bae460f84e46ec846e2fac9c"
+  },
+  {
+    "event": "city_response",
+    "phase": "01-D2",
+    "wall_s": 468.410650005,
+    "operation": "activate",
+    "cycle": 2,
+    "response_sha256": "f816b572664b396fb40be538f6eddfac13afc36f59d005c6950ab4a1b2de33a4"
+  },
+  {
+    "event": "city_segment_dispatched",
+    "phase": "01-D2",
+    "wall_s": 468.794416339,
+    "permit_id": "fe33e5db888d4225bb46348ce54125aa"
+  },
+  {
+    "event": "city_segment_arrived",
+    "phase": "01-D2",
+    "wall_s": 474.43245455,
+    "permit_id": "fe33e5db888d4225bb46348ce54125aa",
+    "observation": {
+      "sim_s": 476.524,
+      "nav_state": 4.0,
+      "arming_state": 2.0,
+      "landed": false,
+      "heading_ned_rad": 2.08701,
+      "velocity_ned": [
+        -0.00821,
+        0.00277,
+        0.00671
+      ],
+      "world_xyz_m": [
+        -32.495067584279305,
+        -62.18267228240878,
+        15.006498217868572
+      ]
+    }
+  },
+  {
+    "event": "city_session_revoked",
+    "phase": "01-D2",
+    "wall_s": 474.43324859100005,
+    "completed_updates": 2
+  },
+  {
+    "event": "city_request",
+    "phase": "01-D2",
+    "wall_s": 474.468207258,
+    "operation": "stop",
+    "cycle": 2,
+    "request_sha256": "864260887291742b08d0e12eefd793951ab381b8709ceea16d3110c87563222a"
+  },
+  {
+    "event": "city_response",
+    "phase": "01-D2",
+    "wall_s": 481.28872055299996,
+    "operation": "stop",
+    "cycle": 2,
+    "response_sha256": "32d5a93cfc37c2f4a35eac01a7e78ea9c1e9b4d1c7845941fcd5cf9c613b443a"
+  },
+  {
+    "event": "city_late_response_rejected",
+    "phase": "01-D2",
+    "wall_s": 481.28899646900004,
+    "session_revoked": true
+  },
+  {
+    "event": "hold_measured",
+    "phase": "02-D3",
+    "wall_s": 579.523487973,
+    "metrics": {
+      "duration_sim_s": 30.072000000000003,
+      "samples": 92,
+      "max_horizontal_error_m": 0.057480078650903585,
+      "max_vertical_error_m": 0.040868023248281204,
+      "max_px4_speed_mps": 0.07706117115642612,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.02238250000004882,
+      "max_sample_gap_sim_s": 0.41599999999994,
+      "start_sim_s": 551.208,
+      "end_sim_s": 581.28,
+      "point": "02-D3",
+      "target_world_xyz_m": [
+        108.17735177259866,
+        -142.92962206786046,
+        15.110143087104275
+      ],
+      "passed": true
+    }
+  },
+  {
+    "event": "hold_measured",
+    "phase": "03-DELIVERY",
+    "wall_s": 650.366456047,
+    "metrics": {
+      "duration_sim_s": 30.388000000000034,
+      "samples": 92,
+      "max_horizontal_error_m": 0.05626550067621349,
+      "max_vertical_error_m": 0.03317673617840455,
+      "max_px4_speed_mps": 0.04873825294365813,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.019878875000017615,
+      "max_sample_gap_sim_s": 0.41599999999994,
+      "start_sim_s": 621.644,
+      "end_sim_s": 652.032,
+      "point": "03-DELIVERY",
+      "target_world_xyz_m": [
+        153.03285452510517,
+        -64.89336826549612,
+        15.110143087104275
+      ],
+      "passed": true
+    }
+  },
+  {
+    "event": "hold_measured",
+    "phase": "04-D3",
+    "wall_s": 724.124982873,
+    "metrics": {
+      "duration_sim_s": 30.132000000000062,
+      "samples": 92,
+      "max_horizontal_error_m": 0.10931343721858013,
+      "max_vertical_error_m": 0.04953574849021791,
+      "max_px4_speed_mps": 0.08458508320029011,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.020036042000015186,
+      "max_sample_gap_sim_s": 0.41600000000005366,
+      "start_sim_s": 695.564,
+      "end_sim_s": 725.696,
+      "point": "04-D3",
+      "target_world_xyz_m": [
+        108.17735177259866,
+        -142.92962206786046,
+        15.110143087104275
+      ],
+      "passed": true
+    }
+  },
+  {
+    "event": "hold_measured",
+    "phase": "05-D2",
+    "wall_s": 820.364101834,
+    "metrics": {
+      "duration_sim_s": 30.360000000000014,
+      "samples": 93,
+      "max_horizontal_error_m": 0.08736934895065308,
+      "max_vertical_error_m": 0.0995019082131261,
+      "max_px4_speed_mps": 0.09370126199790482,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.024322291999965273,
+      "max_sample_gap_sim_s": 0.41600000000005366,
+      "start_sim_s": 791.124,
+      "end_sim_s": 821.484,
+      "point": "05-D2",
+      "target_world_xyz_m": [
+        -34.88761388811289,
+        -60.6945307036456,
+        15.110143087104275
+      ],
+      "passed": true
+    }
+  },
+  {
+    "event": "hold_measured",
+    "phase": "06-D1",
+    "wall_s": 887.8782418640001,
+    "metrics": {
+      "duration_sim_s": 30.275999999999954,
+      "samples": 92,
+      "max_horizontal_error_m": 0.07623738025076995,
+      "max_vertical_error_m": 0.09612297993492369,
+      "max_px4_speed_mps": 0.07234585060665193,
+      "all_auto_loiter": true,
+      "all_airborne_armed": true,
+      "max_pose_age_s": 0.02141408300008152,
+      "max_sample_gap_sim_s": 0.41600000000005366,
+      "start_sim_s": 858.5,
+      "end_sim_s": 888.776,
+      "point": "06-D1",
+      "target_world_xyz_m": [
+        0.0,
+        0.0,
+        15.110143087104275
+      ],
+      "passed": true
+    }
+  },
+  {
+    "event": "landing_observed",
+    "phase": "return_land",
+    "wall_s": 907.261004582,
+    "observation": {
+      "sim_s": 908.188,
+      "nav_state": 4.0,
+      "arming_state": 1.0,
+      "landed": true,
+      "heading_ned_rad": -0.0,
+      "velocity_ned": [
+        0.01204,
+        -0.00717,
+        -0.00729
+      ],
+      "world_xyz_m": [
+        0.0075142996989006495,
+        -0.018214531057269116,
+        -0.013012429673605636
+      ]
+    }
+  }
+]

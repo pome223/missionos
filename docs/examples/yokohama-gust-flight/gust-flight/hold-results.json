@@ -1,0 +1,62 @@
+[
+  {
+    "duration_sim_s": 30.124,
+    "samples": 89,
+    "max_horizontal_error_m": 0.0669656089405749,
+    "max_vertical_error_m": 0.2517203199232956,
+    "max_px4_speed_mps": 0.03385039143052854,
+    "all_auto_loiter": true,
+    "all_airborne_armed": true,
+    "max_pose_age_s": 0.11927000000002863,
+    "max_sample_gap_sim_s": 0.4160000000000039,
+    "start_sim_s": 30.992,
+    "end_sim_s": 61.116,
+    "point": "SEA-TAKEOFF",
+    "target_world_xyz_m": [
+      1351.6022270886856,
+      364.9265949871361,
+      15.110143087104275
+    ],
+    "passed": true
+  },
+  {
+    "duration_sim_s": 30.387999999999977,
+    "samples": 89,
+    "max_horizontal_error_m": 0.9191411225202304,
+    "max_vertical_error_m": 0.45589441793775265,
+    "max_px4_speed_mps": 0.4213641395515285,
+    "all_auto_loiter": true,
+    "all_airborne_armed": true,
+    "max_pose_age_s": 0.020651708000059443,
+    "max_sample_gap_sim_s": 0.6159999999999854,
+    "start_sim_s": 410.904,
+    "end_sim_s": 441.292,
+    "point": "SEA-INBOUND-COAST",
+    "target_world_xyz_m": [
+      386.1720648824816,
+      104.26474142489603,
+      15.110143087104275
+    ],
+    "passed": true
+  },
+  {
+    "duration_sim_s": 30.18399999999997,
+    "samples": 89,
+    "max_horizontal_error_m": 0.148656284683901,
+    "max_vertical_error_m": 0.4107108092028682,
+    "max_px4_speed_mps": 0.06089030300466569,
+    "all_auto_loiter": true,
+    "all_airborne_armed": true,
+    "max_pose_age_s": 0.021344624999983353,
+    "max_sample_gap_sim_s": 0.41600000000005366,
+    "start_sim_s": 595.236,
+    "end_sim_s": 625.42,
+    "point": "00-D1",
+    "target_world_xyz_m": [
+      0.0,
+      0.0,
+      15.110143087104275
+    ],
+    "passed": true
+  }
+]
