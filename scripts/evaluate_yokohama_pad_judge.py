@@ -3,8 +3,9 @@
 
 The reentry bundles hold real pad requests (5 s clear windows with camera advisory
 receipts) and the captured lead trajectory. At every request where the Rules and the
-existing advisory allowed entry, the ground truth is whether the lead re-entered the
-pad exclusion radius within the horizon. Arms:
+existing advisory allowed entry, hindsight classification distinguishes an observed return, a fully observed
+no-return horizon, and a censored horizon. An observed return stays valid even
+when the rest of the horizon is truncated. Arms:
 
 - ``rules``: always enter.
 - ``kinematic``: wait only while the lead approaches (the same computed facts).
@@ -80,7 +81,9 @@ def v1_situation(config, request, response):
 
 
 def points(bundle, horizon_s):
-    """Recorded Rules-entry requests with hindsight ground truth."""
+    """Recorded Rules-entry requests; missing future observations are censored."""
+    if not math.isfinite(horizon_s) or horizon_s <= 0:
+        raise ValueError("Horizon must be finite and positive")
     config = json.loads((bundle / "capture-config.json").read_text())
     evaluation = json.loads((bundle / "evaluation/evaluation.json").read_text())
     config["run_id"] = "pad-reentry-offline-replay"
@@ -121,6 +124,7 @@ def points(bundle, horizon_s):
                     sim_s=now,
                     reentered=any(d <= p["pad_exclusion_radius_m"] for d in future),
                     horizon_truncated=captures[case][-1][0] < now + horizon_s,
+                    observed_future_s=max(0.0, min(horizon_s, captures[case][-1][0] - now)),
                     motion=v2["lead_motion"],
                     facts_v1=v1_situation(config, request, response),
                     facts_v2=v2,
@@ -176,13 +180,76 @@ def register_v1():
     registry.MISSIONOS_AGENT_BUILDERS[V1_AGENT] = build
 
 
+def truth_classification(row):
+    """An observed positive is known; an unobserved future is never a negative."""
+    if row["reentered"] is True:
+        return "observed_return"
+    if row.get("horizon_truncated") is False:
+        return "fully_observed_no_return"
+    return "censored"
+
+
+def context_sha256(row):
+    """Bind saved answers to public source request facts, without rationales."""
+    return digest({k: row[k] for k in ("bundle", "case", "sim_s", "facts_v1", "facts_v2")})
+
+
+def replay_answers(rows, recorded, horizon_s):
+    """Replay a complete saved A/B without importing or calling the provider."""
+    if recorded.get("schema") not in {
+        "yokohama_pad_judge_ab.v1",
+        "yokohama_pad_judge_ab.v2",
+        "yokohama_pad_judge_answers.v1",
+    }:
+        raise ValueError("Unsupported recorded answers schema")
+    if recorded.get("horizon_s") != horizon_s:
+        raise ValueError("Saved answers use a different primary horizon")
+
+    def key(r):
+        return r["bundle"], r["case"], r["sim_s"]
+
+    answers = {key(r): r for r in recorded["rows"]}
+    if len(answers) != len(recorded["rows"]) or len(answers) != len(rows):
+        raise ValueError("Duplicate or missing recorded answer point")
+    if set(answers) != {key(r) for r in rows}:
+        raise ValueError("Recorded answers do not match source points")
+    for row in rows:
+        saved = answers[key(row)]
+        expected = context_sha256(saved) if "facts_v1" in saved else saved.get("context_sha256")
+        if expected != context_sha256(row):
+            raise ValueError("Recorded answers are unbound to source facts")
+        for arm in ("deepseek_v1", "deepseek_v2"):
+            answer = saved[arm]
+            if answer.get("status") not in {"valid", "invalid", "unavailable"}:
+                raise ValueError("Unknown saved answer status")
+            clean = {"status": answer["status"]}
+            if answer["status"] == "valid":
+                action, wait = answer.get("action"), answer.get("wait_seconds")
+                if (
+                    action not in {"enter", "wait"}
+                    or isinstance(wait, bool)
+                    or not isinstance(wait, (int, float))
+                    or not math.isfinite(wait)
+                    or (wait != 0 if action == "enter" else not 0 < wait <= 28)
+                ):
+                    raise ValueError("Invalid recorded action or wait bound")
+                clean.update(action=action, wait_seconds=wait)
+            row[arm] = clean
+    return ["deepseek_v1", "deepseek_v2"]
+
+
 def summarize_arms(rows, arms):
     groups = dict(
-        reentry_visible=lambda r: r["reentered"] and r["motion"] == "approaching",
-        reentry_not_visible=lambda r: r["reentered"] and r["motion"] != "approaching",
-        no_reentry=lambda r: not r["reentered"],
+        reentry_visible=lambda r: (
+            truth_classification(r) == "observed_return" and r["motion"] == "approaching"
+        ),
+        reentry_not_visible=lambda r: (
+            truth_classification(r) == "observed_return" and r["motion"] != "approaching"
+        ),
+        fully_observed_no_return=lambda r: truth_classification(r) == "fully_observed_no_return",
+        censored=lambda r: truth_classification(r) == "censored",
     )
-    summary = {}
+    summary: dict[str, dict[str, dict[str, int | float]]] = {}
     for arm in arms:
         summary[arm] = {}
         for name, member in groups.items():
@@ -204,9 +271,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--horizon-s", type=float, default=60)
-    parser.add_argument("--live", action="store_true", help="Call DeepSeek for the judge arms")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--live", action="store_true", help="Call DeepSeek for the judge arms")
+    mode.add_argument(
+        "--replay", type=Path, help="Replay saved answers offline; no provider import or HTTP"
+    )
     parser.add_argument("--workers", type=int, default=6)
     args = parser.parse_args()
+    if not math.isfinite(args.horizon_s) or args.horizon_s <= 0:
+        parser.error("--horizon-s must be finite and positive")
     rows = [r for b in BUNDLES for r in points(REPO / b, args.horizon_s)]
     for r in rows:
         r["rules"] = dict(status="valid", action="enter", wait_seconds=0)
@@ -217,6 +290,8 @@ def main():
             wait_seconds=10 if approaching else 0,
         )
     arms = ["rules", "kinematic"]
+    if args.replay:
+        arms += replay_answers(rows, json.loads(args.replay.read_text()), args.horizon_s)
     if args.live:
         from src.intelligence import yokohama_delivery_agents as agents
 
@@ -237,12 +312,20 @@ def main():
         arms += ["deepseek_v1", "deepseek_v2"]
     args.output.mkdir(parents=True, exist_ok=True)
     result = dict(
-        schema="yokohama_pad_judge_ab.v1",
+        schema="yokohama_pad_judge_ab.v2",
         horizon_s=args.horizon_s,
         points=len(rows),
         summary=summarize_arms(rows, arms),
-        truth="lead re-entered the pad exclusion radius within the horizon (hindsight only)",
-        rows=[copy.deepcopy(r) for r in rows],
+        truth="observed return / fully observed no-return / censored within the primary horizon (hindsight only)",
+        truth_counts={
+            name: sum(truth_classification(r) == name for r in rows)
+            for name in ("observed_return", "fully_observed_no_return", "censored")
+        },
+        horizon_truncated_points=sum(r["horizon_truncated"] for r in rows),
+        external_api_calls=None if args.live else 0,
+        provider_requests_requested=2 * len(rows) if args.live else 0,
+        answer_source="live" if args.live else "saved" if args.replay else "rules-only",
+        rows=[dict(copy.deepcopy(r), truth_status=truth_classification(r)) for r in rows],
     )
     (args.output / "judge-ab.json").write_text(
         json.dumps(result, ensure_ascii=False, indent=1) + "\n"

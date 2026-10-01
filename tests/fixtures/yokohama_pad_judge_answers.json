@@ -1,0 +1,2135 @@
+{
+ "schema": "yokohama_pad_judge_answers.v1",
+ "horizon_s": 60,
+ "points": 133,
+ "rows": [
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-medium",
+   "sim_s": 11.5,
+   "context_sha256": "bfa09168fc254b948c1d23a65a56a473afbab98379dd40f2f531a06f8000248e",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-medium",
+   "sim_s": 12.5,
+   "context_sha256": "abee33fa8bd98926a500e3fee3033273d394e563ef7b66af5ff8cca9aee54fa5",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-medium",
+   "sim_s": 13.5,
+   "context_sha256": "ac753a0580fe18d6d3eefb64fbb7206a479f292811450837a07e68dbacac4c46",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-medium",
+   "sim_s": 14.5,
+   "context_sha256": "1dca5bfa05d5d50435b99cc861427216da4035ed67f37f481afc7fd120bd83e0",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-medium",
+   "sim_s": 15.5,
+   "context_sha256": "985f77a551310aaf93892e0edf04282425387084d072e4af5beea38c5089293e",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-medium",
+   "sim_s": 16.5,
+   "context_sha256": "b4782fe192f236040f08ef725d3e6472c7c1139c53530c2eb12b59e402b5ac42",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 6
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-medium",
+   "sim_s": 17.5,
+   "context_sha256": "e02033631f1987f98e910baf0a828fb2d6a3c9f4077e1fe2e0c1ea77f7bbba2f",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 6
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-medium",
+   "sim_s": 18.5,
+   "context_sha256": "15598aa3f13b85d0242123dc59a916c88d7bb4a0f5205b971c6835fbcea8739d",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 6
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-medium",
+   "sim_s": 19.5,
+   "context_sha256": "056a9b69dd2bbd4adb37c9ebb7eeaee42077284f1bb8b8e600b64161e53d057e",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 6
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-medium",
+   "sim_s": 20.5,
+   "context_sha256": "57cba05d51492c56b2857cfa928d1b5d358a0beaae5a2ec7f363eeb57705c9c6",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 6
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-medium",
+   "sim_s": 21.5,
+   "context_sha256": "8901873864906e2e0cc387dbd41678883fc700f1ff08f41cc17e090222cd1b8b",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-medium",
+   "sim_s": 22.5,
+   "context_sha256": "ebf6e040fbfa5cad500a18e2bc4bb4ac7218d8176761a505cc9038f2a43af2f6",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-medium",
+   "sim_s": 54.5,
+   "context_sha256": "3ea69eed6084dd0758a9ae9d85d18d3a9ac1add9bdd86099e6ad48b00b30acf4",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-medium",
+   "sim_s": 55.5,
+   "context_sha256": "d25dc57688d9958283707137e08792aa28c3e9a84c1f85f1d8dd9aab8a8653c0",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 8
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-medium",
+   "sim_s": 56.5,
+   "context_sha256": "6e4f865729fe4a3103799349aab4b9a5f48ecc93c5b821a0467a1646b30165f9",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-medium",
+   "sim_s": 57.5,
+   "context_sha256": "7b1bcbe2b108ce6294f2de4fc5a733a4daaa78dc4d70336bce640abc39f6168d",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-medium",
+   "sim_s": 58.5,
+   "context_sha256": "34f12d165f8fb1cb66bdb00c6d1cc55f4cc1a48e9b9b6d82963c1e3afe1981ac",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 6
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-medium",
+   "sim_s": 59.5,
+   "context_sha256": "39f8cc7312a7e17a997b7d5c82e592daf3f29631a88c210abc49fee6a178c008",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-medium",
+   "sim_s": 60.5,
+   "context_sha256": "caa37408f55f0c369e0c28b89aededf21aaeac5ca85852ab1d9c851e65c875c7",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 12
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-medium",
+   "sim_s": 61.5,
+   "context_sha256": "f7daffa688f29f7b3093b4a9495bd232a6cae61c979fa503027dc99f310fad3a",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-medium",
+   "sim_s": 62.5,
+   "context_sha256": "0aad3069de73148bc9bd7605d55e81a0972c427b9e67f5b0ccf5421d430153d3",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-slow",
+   "sim_s": 73.5,
+   "context_sha256": "0004a6241c54e2d5d7bc9fa8edeade794f19fc12c5925f9172cca6cc3ef95a1c",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-slow",
+   "sim_s": 74.5,
+   "context_sha256": "560d866a0a5a6d220edc5e5da5028fe63134f9a3629fe2b3d99fbe32b9bc1325",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-slow",
+   "sim_s": 75.5,
+   "context_sha256": "c0344415fff681b96871a801fc09d5826fcb555a0f3b4f35b23e361f985a99cf",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-slow",
+   "sim_s": 76.5,
+   "context_sha256": "f8b5c7b9f2bfa41fef6406132ff7389b8ec8e84b2db6f6bd94572eeef008f347",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-slow",
+   "sim_s": 77.5,
+   "context_sha256": "c23ed148f2b0aa9f2c8f59017551c8dc08aaa617d1cf4409814328037f60d092",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-slow",
+   "sim_s": 78.5,
+   "context_sha256": "5b4a378e95e2d688e786fa5ab65b59debfd6b0cfa7803f2529fea41e4d470544",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-slow",
+   "sim_s": 79.5,
+   "context_sha256": "81b684a764a1580f9cfc68874191213bc65c6757fea05af573f2620900e3fdfa",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-slow",
+   "sim_s": 80.5,
+   "context_sha256": "2a90a792b49d14d9f33b0fb08505509c3284e0fe36ccfd9f13ee692192e4922a",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-slow",
+   "sim_s": 81.5,
+   "context_sha256": "830eec41ad49654721e4ab84cecc08fb5ab4b8a51cbbdf41ca43175c5ec91b98",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-slow",
+   "sim_s": 82.5,
+   "context_sha256": "c552694af22d2547429ec3159172880acce5a62cde3d12a45991ac7019c7fe49",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 6
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-slow",
+   "sim_s": 83.5,
+   "context_sha256": "8d5dfc6a53816dc9c16a115a9f2b79f71e8d5184bde66a53962379ea02bba780",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-slow",
+   "sim_s": 84.5,
+   "context_sha256": "63f78a76129de274d31c35ea39ed5ad7fd24dad69488fa9a5982e33ef9376d19",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-slow",
+   "sim_s": 85.5,
+   "context_sha256": "99ba471e88608a32bbdd73142d461c19539138afe0d8ad6774232fcc2d39e402",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 6
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-slow",
+   "sim_s": 86.5,
+   "context_sha256": "97760f7b63dabd9d89d9f449b13eec21a026592b3c37611c48ad12ea4b2f1d79",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 6
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-slow",
+   "sim_s": 87.5,
+   "context_sha256": "ae2c2b1a98afc1fe139dc5d40c996265dec6a9a5d402d7fb9d544dfc36e6381c",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-slow",
+   "sim_s": 88.5,
+   "context_sha256": "afb91b2d27cbfb1caec1df8b60f67a3ca1cee060902f6f1817dbf6e50fd18bfc",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-slow",
+   "sim_s": 89.5,
+   "context_sha256": "a988adf03835432d6f42abf9ab2d5f119a00439cc1e09ad1fb38532d7b61af7d",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-slow",
+   "sim_s": 123.5,
+   "context_sha256": "c3965e27fc961736edeb704a613e5ccb0b5300e89a8cd2d2a2c6db7aed70d8fe",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-slow",
+   "sim_s": 124.5,
+   "context_sha256": "2d06f7934aaed1e61aee0930340d5ed81a7f73478c5d62d4effcda7421a1c3f4",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-slow",
+   "sim_s": 125.5,
+   "context_sha256": "09b9344913ea09282941f212e37de8b47d545c7ebf6d44940dfe93b270f52752",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 8
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-slow",
+   "sim_s": 126.5,
+   "context_sha256": "0db44f5dc9069b5f0b6c07135c1eea473b492ca9475cd731fda0f753b74b0958",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 6
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-slow",
+   "sim_s": 127.5,
+   "context_sha256": "b8ed6b21c784b4ed1360dd16deb35b41aa50f4bfac766858f494df9c537ce77c",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-slow",
+   "sim_s": 128.5,
+   "context_sha256": "d1378b2376600b10f82e8534dd2eed01a2fc65eb9fce76f22181cfe4129c81ad",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-return-slow",
+   "sim_s": 129.5,
+   "context_sha256": "d849e0888366c02f311560116052736895f562f6e11613694b8b1575326436ac",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-depart",
+   "sim_s": 161.752,
+   "context_sha256": "0685cd5baf4d58f6d5311ff9e638aca0a78714ea0de8ea6c4c50a2dbfc38532f",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-depart",
+   "sim_s": 162.752,
+   "context_sha256": "58b4fb701e2c114a1c892e99189b03f342cb1696d8983ab102c6276d1f93f1fd",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-depart",
+   "sim_s": 163.752,
+   "context_sha256": "de03a7c7b69fed2c64e589c6d19aa576dface2cbc0ecfe2e6cfc35f191e75a3b",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-depart",
+   "sim_s": 164.752,
+   "context_sha256": "2be33535a37153ef7843a84237334b38f25d27d64238ab936f1ed4b826147c6f",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-depart",
+   "sim_s": 165.752,
+   "context_sha256": "d7c18ee7ba0ea95533d971cc90b017e291024251c86af6450d41e80a4c1b468c",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-depart",
+   "sim_s": 166.752,
+   "context_sha256": "de8df3f8b93d3b7db87f43f8b562be73b1065347faecdbc01a73d48adb6af8b7",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-depart",
+   "sim_s": 167.752,
+   "context_sha256": "72d84f79237df3b0ffe5d0b5bef91ddcf88406f54b1572d46fe7c94d9128d01d",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-depart",
+   "sim_s": 168.752,
+   "context_sha256": "eae8205d83bde2d0312444ab3c5718b4918d84ba0ae8aa9dd90e152647cc95f7",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-depart",
+   "sim_s": 169.752,
+   "context_sha256": "eae598b12aac07e5e97c82a3b734f188e09a7e91abcc79fe686a54dc39938602",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-depart",
+   "sim_s": 170.752,
+   "context_sha256": "25391193b9d17300d75a86d52e487f5c24c8870ee0f96db1d80e43de6026444f",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-depart",
+   "sim_s": 171.752,
+   "context_sha256": "7da23d65984fe7d1898d895a2eef1ac9359a64a59285eb948e194109065fe738",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-depart",
+   "sim_s": 172.752,
+   "context_sha256": "2375ee9e57f252e505023dc8d348e6e72e959b63aa590eb7c4d474cabc0439a1",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-depart",
+   "sim_s": 173.752,
+   "context_sha256": "18d9b44df6b7015945240960731dba8e941b53a2db827c2138613719ea45b7e1",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-depart",
+   "sim_s": 174.752,
+   "context_sha256": "0670681c00ade771346f17762071ee6f486f0ffd55bad0ab8268d3243c7972b8",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-depart",
+   "sim_s": 175.752,
+   "context_sha256": "39f4e1d410387813a2a5e9b588b9196533cfbdd3ab3198d0e2afae2f0a66e3e6",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-depart",
+   "sim_s": 176.752,
+   "context_sha256": "2f9d3eaa6903b5fc6fa6350f6b65867134556f82bccc4e98544b55ba58bc74c8",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-depart",
+   "sim_s": 177.752,
+   "context_sha256": "fcee1ebff9e521eb2e3121ce13971075bc85d9d374dbfee85376fa24ec6a481a",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-depart",
+   "sim_s": 178.752,
+   "context_sha256": "06b8672cf69123ab6ef162de7e9f08b3f8c8958065ac6fe22d55b7b3c3d600f5",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-depart",
+   "sim_s": 179.752,
+   "context_sha256": "1dbd4bb3c19a1ff20f34fedb0d96cdcb2b1fece46bb81f03992e5b6ba570d3db",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-depart",
+   "sim_s": 180.752,
+   "context_sha256": "b9a0568204d33f44cc6da9db03e1c8b5307a62188a72100ad809248ab014d226",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-depart",
+   "sim_s": 181.752,
+   "context_sha256": "1c2c574088c18da8ad94e10140b9961adbca893d5910c1beebc40fd623b46a6b",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-depart",
+   "sim_s": 182.752,
+   "context_sha256": "65efb1e313b36e29ad2c34102e8cccdc2856aa46092c4afe7a22c795ee958a54",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-depart",
+   "sim_s": 183.752,
+   "context_sha256": "44886f29effcf2032aaef47542f30180c61cb76e07d29b402c9dd0c6cf8a47c1",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry",
+   "case": "test-risk-depart",
+   "sim_s": 184.752,
+   "context_sha256": "0cd4ab1ef71274f2605039c02d71233ffad003eaa1c11f27295c549fcab49149",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-fast",
+   "sim_s": 134.752,
+   "context_sha256": "2dba52cb249854f5140961574fb95d355c1814251e106aff8bc03f4afc9b9f4b",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-fast",
+   "sim_s": 135.752,
+   "context_sha256": "25f15175aa75c06f8be1165a1fcc5629f71199844c891ba41687ff0028a94366",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-fast",
+   "sim_s": 136.752,
+   "context_sha256": "947b680893b8a3c546eb1d9a5f57c0b984ce3f406068b54b7b5f101bba3cdefa",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-fast",
+   "sim_s": 137.752,
+   "context_sha256": "ae8adb16e91c3d5df78422b9f93a1c60b59e4b64e4164bf41e1db3887ae1a17d",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-fast",
+   "sim_s": 138.752,
+   "context_sha256": "db84e732d67218c15f38abd4daf0b3408969fdc1530366bb770510ac17b0679c",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-fast",
+   "sim_s": 139.752,
+   "context_sha256": "41dca41b53414691028b1ed4e9b206d083196b08aa76b0d74057dd3849ceb985",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-fast",
+   "sim_s": 140.752,
+   "context_sha256": "b0eda94bfd31c9550f914fff6ba72fecf5c901e5d1951f3b864598ecd9084fc3",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-fast",
+   "sim_s": 141.752,
+   "context_sha256": "83f71bcb4043017a2ad1ca11a94fc2ba21879b0e94ebc205e1f716c2ee25a5f7",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-fast",
+   "sim_s": 142.752,
+   "context_sha256": "2c5b49822e0fff7c5939ff1b616b3173e6fb392a35af3063c611fa5274b60e18",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 6
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-fast",
+   "sim_s": 143.752,
+   "context_sha256": "278fe2e036a16095e87dee05b0251075b661c3e8564bb1bf3ab9a7ac6729e53c",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-fast",
+   "sim_s": 144.752,
+   "context_sha256": "6c1419ff6ad3f92eab36cd9aeb0f589e77e4c0193bb7bd704a904632156d9a26",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 6
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-fast",
+   "sim_s": 145.752,
+   "context_sha256": "631eba5ee48a916a9470f9f7432110dc090be9e4ac9d867cb714f99c2e6f953a",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 6
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-fast",
+   "sim_s": 146.752,
+   "context_sha256": "000e69559849ca9e095f401c3d609cb64394a17365011a0e9b758d30d4f3097b",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 6
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-fast",
+   "sim_s": 147.752,
+   "context_sha256": "61a93f96369569d4e2a473207071350078e4b5ddcd5f934316206ec54af4458f",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-fast",
+   "sim_s": 179.752,
+   "context_sha256": "8b9e61c4d9987b8ce2be96c623d2a020b6fc4316abfd25cdb231a927e6c48676",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-fast",
+   "sim_s": 180.752,
+   "context_sha256": "b02a827f9e16dab80993ff5ffdbead4383d180f2fd7baa0cd7750c144a488baa",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-fast",
+   "sim_s": 181.752,
+   "context_sha256": "3ed3245aad8e93feb7be71ce65865a2bc9d4522f9ef7dd61a09aa4ac02e3607d",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-fast",
+   "sim_s": 182.752,
+   "context_sha256": "0af4a350c29df8d1fbabe4cdaac4b70883a678af0327f268d590e64ee4179445",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-fast",
+   "sim_s": 183.752,
+   "context_sha256": "36710aaa798279758f8c13f3086a2118ed65a842d06c6289e22c06fefe309092",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-fast",
+   "sim_s": 184.752,
+   "context_sha256": "fc47390e4737cf363e52d3959f618f7c8f65a62b56dfc38155d677c555a21122",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-fast",
+   "sim_s": 185.752,
+   "context_sha256": "fc195df944898bfb81631930f877bbe8aab462cff2a390f56f619048f923f85e",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-slow",
+   "sim_s": 196.752,
+   "context_sha256": "5f68651f76f6a3e6143c56a9b4040b30b486a3a94bb1e3bb2c253cfc16a98c16",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-slow",
+   "sim_s": 197.752,
+   "context_sha256": "90a8e0662ae82b0fd67599926e8b1a4c23c0ecb721970ab85697c2eb8b72d111",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-slow",
+   "sim_s": 198.752,
+   "context_sha256": "6de348decf1b727d6a840d13bcf545e291c7549d89f291fec1bbcf3c28f57ade",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-slow",
+   "sim_s": 199.752,
+   "context_sha256": "a9cac5ae75cd2ae2563a8d17544d1d249d4752d1ce8e857eef0d635d60065470",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-slow",
+   "sim_s": 200.752,
+   "context_sha256": "7821f0309ccc72425742a276823f8fb82c879dceecbc6e635eaf64fd59a11717",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 6
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-slow",
+   "sim_s": 201.752,
+   "context_sha256": "1443ae7b4ba36b66eaf211cdfaf9c1984b50b1c280924b67a124968a896f022b",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 12
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-slow",
+   "sim_s": 202.752,
+   "context_sha256": "38925e390e8dab81a4caf5a7b0e8c6aeaafc8d9f52d4693a1f33254f26f02be5",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 12
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-slow",
+   "sim_s": 203.752,
+   "context_sha256": "1505a5620ba24ac7b8e98e8e4deefe8aa88ec4507797370240b4548d190c2b3e",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 6
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-slow",
+   "sim_s": 204.752,
+   "context_sha256": "a0e0899c6e5d6604f60e8cbaafb93f7cef180d1e5b70b35e29e39ee9504021fb",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-slow",
+   "sim_s": 205.752,
+   "context_sha256": "e61b4c252bdb579b6bb3559b02477a67b0cb243050b787b4f8f3ee7a05868ad7",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 6
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-slow",
+   "sim_s": 206.752,
+   "context_sha256": "84f32889cf0d315afc460c8dabdf5f54556319f800bed78d3aae2f4dbc13f37c",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-slow",
+   "sim_s": 207.752,
+   "context_sha256": "b1909d70a8969847af9dae635aa1f98318e81a41faae843378fbd60e316ea4a6",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-slow",
+   "sim_s": 208.752,
+   "context_sha256": "71f0c431fb7fd5649d5b7773e342d190367ba0834249184770364b25541ffd0d",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-slow",
+   "sim_s": 243.752,
+   "context_sha256": "77454cd172a92907f17da663d309b547eb4c14c635b2f9f3959ffe03519fcdbe",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-slow",
+   "sim_s": 244.752,
+   "context_sha256": "bb44e65e713f6fd733305da026a80e363f46fa17b6b5817d226b861285b435d1",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-slow",
+   "sim_s": 245.752,
+   "context_sha256": "7ce2ec067a0b5d9c0309709845479cd41f6e215c32463f89e5d1f9c790713792",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 6
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-slow",
+   "sim_s": 246.752,
+   "context_sha256": "44c2d50ee1f922f953d47b9bc90a00bd161415aa791402d4d85328ed3cb098cb",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 8
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-slow",
+   "sim_s": 247.752,
+   "context_sha256": "4ef3e86496b49f2802cb0023a1f6f2b41eae4282fe1a1a16b374115ad003a926",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 8
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-slow",
+   "sim_s": 248.752,
+   "context_sha256": "472a87a647afb63aa944d33b0b806672ebada98aff1916aaa0a1596c414e677c",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-slow",
+   "sim_s": 249.752,
+   "context_sha256": "8ee3f0882ce498a36e021185622c2a33176daad1c5b4cf2e197e3192da8645f2",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-return-slow",
+   "sim_s": 250.752,
+   "context_sha256": "a5b8f7652ea13e98008986a0b58133dc21befdc3989270f12529cfb0018365e2",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-depart-control",
+   "sim_s": 285.0,
+   "context_sha256": "d28783ba9c01edb8069aa5bf0c85d6c78fc6d7bb29b26b3de1d394bc58780a45",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-depart-control",
+   "sim_s": 286.0,
+   "context_sha256": "7a4e71c2ed81a24f17155825574237bd3106ee9a7688353c37cc9b07fec45531",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 6
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-depart-control",
+   "sim_s": 287.0,
+   "context_sha256": "ca2993a20fce28998e7e3da3f1d6d4cff17befb81c17564abb12b4b6d674c88d",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 12
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-depart-control",
+   "sim_s": 288.0,
+   "context_sha256": "81cf5a4ccae2855710de55a0aa6898d4e57b5f95afb13f62f2a66de68b3b4955",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-depart-control",
+   "sim_s": 289.0,
+   "context_sha256": "da37f434506ad6eabee636aed0e073c7dc45e64391456555f717eb3248838c69",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 28
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-depart-control",
+   "sim_s": 290.0,
+   "context_sha256": "224476d319f71851cad098119ebc255c3f47d4f84a1c9e2b1f7f54af2676d97b",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-depart-control",
+   "sim_s": 291.0,
+   "context_sha256": "ad782b52183c15e90752dd44cd41632ef06f3a058656af42f1d4742d122d384e",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-depart-control",
+   "sim_s": 292.0,
+   "context_sha256": "4f13b7cab179a1d1bed6b6d5949ab29ff5007980a2c41170879ce7239fa5cdcb",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-depart-control",
+   "sim_s": 293.0,
+   "context_sha256": "c2e80410a2aa7bff08d89436e73bdcb5a2d155a15db28f4739f99c870b93a735",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-depart-control",
+   "sim_s": 294.0,
+   "context_sha256": "c01dd0a6487e47359ff5fbcb12c3c1be977d5a20793a016ca7726f4b3a1bdc35",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-depart-control",
+   "sim_s": 295.0,
+   "context_sha256": "2013f074445093970d0eaf9c864ce94324ea3f8f7268bc8994668072d5134a48",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-depart-control",
+   "sim_s": 296.0,
+   "context_sha256": "f679c3c392cb0c7fcf5ef1206727df74aeef361279887f7546af7ef4e625e596",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-depart-control",
+   "sim_s": 297.0,
+   "context_sha256": "4a6aff208549e8d1efd8cc0a946f3155b0e67307685de7da3d0fe0f96214694d",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-depart-control",
+   "sim_s": 298.0,
+   "context_sha256": "bd6346f5a92adb84caea9317f688b238fea6d6c8ad2ba2c74d9cac2b2ab03e0a",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-depart-control",
+   "sim_s": 299.0,
+   "context_sha256": "b769fcaded607716de8cd3657d2bcf008e84dd6be25a1b2faf56fe96c1b63ed5",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-depart-control",
+   "sim_s": 300.0,
+   "context_sha256": "96bcbe63a4b3a746d12541669f5fcd7b19430390b8bec91bdd53209f808ca25e",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-depart-control",
+   "sim_s": 301.0,
+   "context_sha256": "6cf8c896ba8176d8cd1a815fc227be4e2a9e6d0a3bc60a4f7dd4e9d79e204eea",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-depart-control",
+   "sim_s": 302.0,
+   "context_sha256": "5c85125c4f9742c028cbac6e0d61102a8a275bce5aa414871326bdeb2dd692ad",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-depart-control",
+   "sim_s": 303.0,
+   "context_sha256": "8a0cf5124c38df890543dae7148fb48505a09b4668304131d613a19f9f13f006",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-depart-control",
+   "sim_s": 304.0,
+   "context_sha256": "102c040f10c36f82393b03c2bd572a51486e5cde5b9d243dad506c7bc8bf0b18",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-depart-control",
+   "sim_s": 305.0,
+   "context_sha256": "1dd5779735122171ef8dab92427508a19372676abcf69da45cce983af3fe7ac8",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  },
+  {
+   "bundle": "yokohama-pad-reentry-learning",
+   "case": "test-depart-control",
+   "sim_s": 306.0,
+   "context_sha256": "28e4e89c5ce0a2bfce6e99642db792f847dfab242825fe15f978d090e74814ab",
+   "deepseek_v1": {
+    "status": "valid",
+    "action": "wait",
+    "wait_seconds": 5
+   },
+   "deepseek_v2": {
+    "status": "valid",
+    "action": "enter",
+    "wait_seconds": 0
+   }
+  }
+ ]
+}

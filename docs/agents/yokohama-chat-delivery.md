@@ -132,10 +132,11 @@ secret store into the process environment. Chat turns were sent over HTTP to
   verifier measures 31.3 s of judge-caused waiting up to the received release,
   which is over the 30 s budget, so `mission_judge_within_budget` now fails for
   this record.
-- **Completion:** cargo was received and the aircraft landed on the ship. All
-  five verifiers passed: decisions, pad_queue (23 checks, including the four
+- **Historical completion:** cargo was received and the aircraft landed on the ship.
+  At the time, all five verifiers passed: decisions, pad_queue (23 checks, including the four
   mission-judge checks), pad_advisory, payload and sitl. `/status` then
-  reported `completed`.
+  reported `completed`. This is not a current-verifier pass: the recorded
+  judge-budget check now fails as noted above.
 
 The first judge rationale said the lead might still be inside the 6 m pad
 radius while it was 11.4 m away. The executor's Rules did not depend on that
@@ -163,10 +164,12 @@ monitoring pipeline buffered the "ready" signal. The controller now sends
   measures 31.6 s of judge-caused waiting, over the budget.
 - **Completion:** cargo was received at 1169 s and the aircraft landed on the
   ship at 1760 s.
-- **Verification:** all five verifiers passed. The decisions verifier set
+- **Historical verification:** all five then-current verifiers passed. The decisions verifier set
   `native_model_flight_verified=true`. The pad_queue verifier ran 23 checks,
   including the stopped city models and the four mission-judge checks.
-  `/status` reported `completed`.
+  `/status` reported `completed` at the time. The current judge-budget check
+  fails on this native run. No native city-model flight passing the corrected
+  budget verifier has been performed.
 
 The first judge rationale again doubted that the lead had left the 6 m radius
 while it was 11.3 m away. It also stated that entry needs human confirmation,
@@ -187,32 +190,57 @@ and simulator run `yokohama-c156d9f5821a`.
 
 ## Judge A/B on recorded returns (`scripts/evaluate_yokohama_pad_judge.py`)
 
-The reentry bundles hold real pad requests, with camera advisory receipts, and
-captured lead trajectories for three departing and three returning cases. The
-test points are the 133 requests where the Rules and the existing advisory
-allowed entry. Hindsight truth is whether the lead re-entered the 6 m radius
-within 60 s; no arm sees it. Each cell counts the waits at those points.
+The reentry bundles hold real pad requests with camera advisory receipts and
+captured lead trajectories for three departing and three returning cases. There
+are 133 Rules/advisory entry points. The primary horizon remains **60 s** after
+each request. Hindsight labels use only captured lead samples inside the 6 m
+radius and are never inputs to an arm:
 
-| Arm | Return, approach visible (32) | Return, lead still holding (24) | No return (77) |
-|---|---|---|---|
-| Rules only | 0 | 0 | 0 |
-| Kinematic rule: inward speed > 0.2 m/s | 32 | 0 | 0 |
-| DeepSeek v1 (flown 2026-09-30) | 32 | 22 | 76 |
-| DeepSeek v2 (computed facts) | 32 | 2 | 0 |
+- `observed_return`: at least one sampled return within 60 s. It remains a
+  positive even if the rest of the horizon is truncated.
+- `fully_observed_no_return`: the capture reaches the full 60 s horizon and
+  contains no sampled return.
+- `censored`: no sampled return was observed, but the capture ends before 60 s.
+  It cannot establish a negative outcome.
 
-All 266 DeepSeek answers were valid.
+**Recomputed result:** 132/133 points have truncated horizons. The 56 observed
+returns remain positives. All 77 former "no return" candidates have only 4–27 s
+of future coverage and are censored; there are **zero confirmed 60 s negatives**.
+The table counts actions, not independent flights or a false-wait rate.
 
-- **v1 waited almost everywhere.** Its rationales misread raw distances against
-  the radius.
-- **v2 matches a simple rule.** It waits only on approach. Its two extra waits
-  are at the onset of a return, at -0.12 and -0.15 m/s. Its decisions match a
-  0.1 m/s inward-speed rule in 132 of 133 points. With these facts, the judge
-  does not add information beyond a one-line kinematic rule; it adds an
-  accurate operator explanation.
-- **Cost that remains.** Each Rules entry still waits for the call, about
-  5–10 s.
-- **Unknowable cases.** A return that starts after the decision is not
-  knowable by any arm.
+| Arm | Observed return, approach visible (32) | Observed return, lead holding (24) | Confirmed no return at 60 s (0) | Censored (77; 4–27 s coverage) |
+|---|---|---|---|---|
+| Rules only | 0 | 0 | N/A | 0 |
+| Kinematic rule: inward speed > 0.2 m/s | 32 | 0 | N/A | 0 |
+| DeepSeek v1 (flown 2026-09-30) | 32 | 22 | N/A | 76 |
+| DeepSeek v2 (computed facts) | 32 | 2 | N/A | 0 |
+
+These are the original 266 saved valid DeepSeek answers, replayed without any
+provider call. The public fixture retains point identities, source-context
+hashes, actions and bounded wait seconds; it excludes free-form rationales,
+provider responses, credentials and private state. Reproduce from the committed
+capture bundles and this minimal fixture:
+
+```sh
+python scripts/evaluate_yokohama_pad_judge.py \
+  --replay tests/fixtures/yokohama_pad_judge_answers.json \
+  --output output/yokohama-judge-replay
+```
+
+- **v1 often waited.** The observed actions are 32/32 and 22/24 waits on the
+  two positive groups, and 76/77 waits on censored points. "Only added delay"
+  and a false-wait claim are not supported by this censored dataset.
+- **v2 action agreement.** It waited at 32/32 approaching-return points and
+  2/24 holding-return points, versus 0/77 censored points. Its actions agree
+  with a 0.1 m/s inward-speed rule at 132/133 points. This is action agreement,
+  not a proof of model quality, explanation accuracy or zero erroneous waits.
+- **Latency evidence.** The v2 chat flight below records 2.5 s of judge-caused
+  waiting for its one `enter` answer. The A/B answer file has no per-call timing;
+  it does not establish a 2–10 s or 5–10 s distribution. That single flight
+  observation is not a general API latency benchmark.
+- **Limits.** Correlated requests from six captured cases do not demonstrate
+  event-level reliability. Returns between camera samples or after the
+  available horizon cannot be resolved by this evaluation.
 
 **Chat flight with v2** (2026-09-30, fixture city models; task
 `yokohama_d00df180748e4602`)
