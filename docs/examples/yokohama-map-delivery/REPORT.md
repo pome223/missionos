@@ -75,6 +75,7 @@ of the provider path inject mock responses; they are not real Jev invocations.
 No new flight or external API call is needed to export this recording.
 
 ```sh
+python -m pip install -e ".[dev,urban-map]"
 PYTHONPATH=.:packages/missionos-core/src:packages/missionos-cli/src:packages/missionos-gateway/src \
   python -m pytest -q
 python scripts/yokohama_map_server.py
