@@ -68,7 +68,7 @@ recording of the GUI or a new flight.*
 coordinates, meshes, display materials and collision proxies, and added the
 demonstration route. [Source, license and attribution](docs/examples/yokohama-urban-scene/ATTRIBUTION.md).
 
-[Open the video afresh on GitHub](https://github.com/user-attachments/assets/2230d559-6cf9-4b80-b559-25ffa761ec21)
+Playback recovery: [open the video afresh on GitHub](https://github.com/user-attachments/assets/2230d559-6cf9-4b80-b559-25ffa761ec21).
 
 If playback reports “Request has expired”, reopen this GitHub link or reload the
 README. GitHub redirects to short-lived storage URLs; share the GitHub link
