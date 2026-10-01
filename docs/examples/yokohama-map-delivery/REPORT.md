@@ -36,7 +36,8 @@ retain irreversible reservation, replay, restart and crash-boundary coverage.
 The retained flight used private execution commit
 `04ed47cf04f0bd94540fb73a994bb0e3aab0ee5b`, which is not a public checkout target.
 The [source correspondence receipt](source-provenance.json) compares all 55
-approved runtime hashes with that commit's Git blobs and this publication;
+approved runtime hashes with that commit's Git blobs and the historical public
+snapshot `5431fe1a2508ab2c79662e1f5a6cc8d6afbef65f`;
 all 55 recorded hashes match the private execution source. Of 56 audited files
 (including the separate launcher), 53 runtime files remain byte-identical.
 The three differences close the private live boundary:
@@ -49,10 +50,25 @@ The three differences close the private live boundary:
 
 The mission uploader SHA-256 is
 `b3673e9edc9ac89e0397937ccb18a63b9fd3aef5ecdc86cc97c34a3ae01b25af`
-in the saved approval, private snapshot and public source. Flight worker,
+in the saved approval, private snapshot and historical public snapshot. Flight worker,
 altitude conversion, Rules, goal planning, cargo receiver and return verification
-also retain their recorded runtime hashes. The receipt contains no private
+also retained their recorded runtime hashes in that snapshot. The receipt contains no private
 ledger, grant identity, runtime logs or credentials.
+
+The correspondence test hashes Git blobs from that fixed public snapshot, not
+later working-tree files, and also verifies the receipt itself is unchanged.
+CI fetches only that specific historical commit with a two-minute limit; missing
+history fails the test. For a shallow local clone, fetch it explicitly:
+
+```sh
+git fetch --no-tags --depth=1 origin 5431fe1a2508ab2c79662e1f5a6cc8d6afbef65f
+```
+
+A subsequent cleanup correction, commit
+`74bb276ea33f54d979f50e67c8b15fce2769f4f1`, separates diagnostic failures from
+owned-container removal and bounded worker reaping in `yokohama_sitl.py`.
+It changes current runner bytes; it does not rewrite the historical receipt or
+establish another flight. Flight controls and safety thresholds remain unchanged.
 
 The remaining publication changes add the camera exporter/media, documentation,
 mock/export tests and the CI geometry dependency. They do not establish another

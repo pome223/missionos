@@ -22,6 +22,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Fetch immutable public evidence snapshot
+        timeout-minutes: 2
+        run: git fetch --no-tags --depth=1 origin 5431fe1a2508ab2c79662e1f5a6cc8d6afbef65f
+
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
