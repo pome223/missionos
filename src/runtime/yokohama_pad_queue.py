@@ -1,8 +1,10 @@
 """CPU-only occupied-pad scene and aircraft-to-MissionOS decision mailbox.
 
 The lead aircraft is a scripted Gazebo entity, not a second PX4 aircraft.
-The host judge is a deterministic fixture, not VLA/WAM or an LLM. Simulator
-poses stand in for a future perception source. Proposals grant no authority.
+The host judge is a deterministic fixture, not VLA/WAM or an LLM. An optional
+mission judge (a Gateway-hosted LLM or a fixture) is asked only when that
+judge would allow entry, and can only add a bounded wait. Simulator poses
+stand in for a future perception source. Proposals grant no authority.
 """
 
 from __future__ import annotations
@@ -11,14 +13,20 @@ import json
 import math
 from pathlib import Path
 import threading
+import time
 import xml.etree.ElementTree as ET
 
 try:
     from src.runtime.yokohama_payload import atomic_json, digest, fresh_pose
-    from src.runtime.yokohama_pad_advisory_contract import selected_action
+    from src.runtime.yokohama_pad_advisory_contract import selected_action, summarize
 except ModuleNotFoundError:  # frozen worker copy inside the isolated container
     from yokohama_payload import atomic_json, digest, fresh_pose
-    from yokohama_pad_advisory_contract import selected_action
+    from yokohama_pad_advisory_contract import selected_action, summarize
+
+WAIT, ENTER = "wait_at_current_hold", "enter_delivery_approach"
+# Mission judge statuses that hold the aircraft, and those that leave the Rules action.
+JUDGE_WAITS = {"pending", "hold"}
+JUDGE_PASSES = {"no_objection", "unavailable", "invalid", "budget_exhausted", "decisions_exhausted"}
 
 
 def segment_distance(point, start, end):
@@ -290,6 +298,11 @@ def require_response(config, request, response, current):
             advisory=receipt,
             mission_assurance_sha256=judgment_hash,
         )
+    judge = config["world"]["pad_queue"].get("mission_judge")
+    if judge:
+        expected.update(
+            judge_overlay(judge, expected["proposed_action"], response.get("mission_judge"))
+        )
     if response != expected:
         raise ValueError("Foreign, changed or unexpected mission response")
     p = config["world"]["pad_queue"]
@@ -305,6 +318,19 @@ def require_response(config, request, response, current):
     ):
         raise ValueError("Observation identity or estimator reset changed")
     action = response["proposed_action"]
+    if judge and "wait_deadline_wall_s" in response["mission_judge"]:
+        receipt = response["mission_judge"]
+        deadline = receipt["wait_deadline_wall_s"]
+        # A stale host WAIT cannot extend the approved judge budget on aircraft.
+        if receipt["prior_action"] == ENTER and (
+            (receipt["status"] in JUDGE_WAITS and current["wall_s"] >= deadline)
+            or (
+                action == ENTER
+                and current["wall_s"] > deadline
+                and receipt["status"] != "decisions_exhausted"
+            )
+        ):
+            raise ValueError("Mission judge release exceeded wall-clock deadline")
     if action not in p["approved_actions"] or not config.get("operator_approval"):
         raise ValueError("Action outside preapproved simulator scope")
     if action == "enter_delivery_approach":
@@ -312,6 +338,269 @@ def require_response(config, request, response, current):
         if not c["pad_clear"] or not c["approach_clear"]:
             raise ValueError("Pad reoccupied; old continuation rejected")
     return action
+
+
+def judge_overlay(policy, prior, receipt):
+    """Executor-side check: a mission judge may only turn a Rules entry into a wait."""
+    if not isinstance(receipt, dict) or receipt.get("prior_action") != prior:
+        raise ValueError("Mission judge receipt not bound to the Rules action")
+    status = receipt.get("status")
+    if prior == WAIT:
+        if status != "not_consulted":
+            raise ValueError("Mission judge consulted without a Rules entry")
+        action = WAIT
+    elif status in JUDGE_WAITS:
+        added = receipt.get("added_wait_s")
+        if (
+            isinstance(added, bool)
+            or not isinstance(added, (int, float))
+            or not 0 <= added <= policy["max_added_wait_s"]
+        ):
+            raise ValueError("Mission judge wait outside its budget")
+        action = WAIT
+    elif status in JUDGE_PASSES:
+        action = prior
+    else:
+        raise ValueError("Unknown mission judge status")
+    return dict(proposed_action=action, mission_judge=receipt)
+
+
+def judge_situation(config, request, response):
+    """Facts for the mission judge, with derived margins; thresholds stay with the Rules.
+
+    The judge misread raw distances against the radius, so margins, the radial
+    speed (positive when moving away) and the time to the radius are computed here.
+    """
+    p = config["world"]["pad_queue"]
+    rows = request["observations"]
+    first, last = clearance(config, rows[0]), clearance(config, rows[-1])
+    window = rows[-1]["sim_s"] - rows[0]["sim_s"]
+    speed = (
+        (last["horizontal_distance_m"] - first["horizontal_distance_m"]) / window
+        if window > 0
+        else 0.0
+    )
+    margin = last["horizontal_distance_m"] - p["pad_exclusion_radius_m"]
+    approaching = speed < -0.2
+    situation = dict(
+        rules_action=response["proposed_action"],
+        clear_window_s=round(window, 1),
+        required_clear_window_s=p["stable_clear_sim_s"],
+        lead_horizontal_distance_to_pad_m=round(last["horizontal_distance_m"], 1),
+        pad_exclusion_radius_m=p["pad_exclusion_radius_m"],
+        lead_margin_outside_exclusion_m=round(margin, 1),
+        lead_radial_speed_mps=round(speed, 2),
+        lead_motion="approaching" if approaching else "moving_away" if speed > 0.2 else "holding",
+        seconds_to_exclusion_at_current_speed=round(margin / -speed, 1) if approaching else None,
+        lead_approach_corridor_margin_m=round(
+            last["approach_distance_m"] - p["approach_exclusion_radius_m"], 1
+        ),
+        lead_altitude_m=round(rows[-1]["queue_lead"]["xyz"][2], 1),
+        battery_fraction=rows[-1].get("battery_fraction"),
+    )
+    advisory = response.get("advisory")
+    if advisory:
+        situation["camera_advisory"] = dict(
+            signal=summarize(config, request, advisory),
+            status=advisory.get("status"),
+            supported=advisory.get("forecast", {}).get("supported"),
+        )
+    return situation
+
+
+def fixture_judgment(judge_request):
+    return dict(
+        judge_request_id=judge_request["judge_request_id"],
+        judge_status="valid",
+        decision=dict(
+            observation_id=judge_request["observation_id"],
+            action="enter",
+            wait_seconds=0,
+            rationale="固定の判定です（LLMなし）。ルールの進入判断に異論はありません。",
+        ),
+        invocation=dict(invocation_kind="deterministic_fixture"),
+    )
+
+
+def validate_judgment(judge_request, answer):
+    """The host accepts only a bound, bounded enter/wait decision; anything else is invalid."""
+    decision = answer.get("decision") if isinstance(answer, dict) else None
+    if (
+        not isinstance(decision, dict)
+        or answer.get("judge_request_id") != judge_request["judge_request_id"]
+        or answer.get("judge_status") != "valid"
+        or decision.get("observation_id") != judge_request["observation_id"]
+        or decision.get("action") not in ("enter", "wait")
+        or not isinstance(decision.get("rationale"), str)
+        or not decision["rationale"].strip()
+    ):
+        return None
+    seconds = decision.get("wait_seconds")
+    if isinstance(seconds, bool) or not isinstance(seconds, (int, float)):
+        return None
+    if decision["action"] == "wait":
+        if not 1 <= seconds <= judge_request["remaining_wait_seconds"]:
+            return None
+    elif seconds != 0:
+        return None
+    return decision
+
+
+class MissionJudgeGate:
+    """Host side: consult a mission judge (Gateway LLM or fixture) before a Rules entry.
+
+    The judge is asked only when the Rules/advisory action is entry. While its
+    answer is pending, or during a judged hold, the response is a wait; nothing it
+    returns turns a wait into entry. A late, invalid or over-budget answer leaves
+    the Rules action. ``max_added_wait_s`` bounds the judge-caused wait, summed
+    over runs of pending/hold responses. A Rules wait (pad not clear) closes the
+    current run; its duration is Rules time and is not charged to the judge.
+    """
+
+    def __init__(self, root, config, clock=time.monotonic):
+        self.clock = clock
+        self.config = config
+        self.policy = config["world"]["pad_queue"]["mission_judge"]
+        self.root = Path(root) / "pad-judge"
+        self.issued = 0
+        self.pending = None
+        self.hold = None
+        self.spent = 0.0  # judge-caused seconds from closed runs
+        self.run_start = None  # wall time the current judge-caused run began
+        self.run_start_monotonic = None
+        self.released_wait_s = None
+
+    def _now(self, request):
+        observed = request["observations"][-1]["wall_s"]
+        if self.run_start is None:
+            return observed
+        return max(observed, self.run_start + self.clock() - self.run_start_monotonic)
+
+    def _added(self, now):
+        return self.spent + (0.0 if self.run_start is None else now - self.run_start)
+
+    def _expired(self, now):
+        elapsed = max(
+            now - self.pending["issued_wall_s"],
+            self.clock() - self.pending["issued_monotonic_s"],
+        )
+        return elapsed > self.policy["judge_timeout_s"]
+
+    def respond(self, request, response):
+        started = self.clock()
+        prior = response["proposed_action"]
+        now = self._now(request)
+        receipt = dict(prior_action=prior, mode=self.policy["mode"])
+        if prior != ENTER:
+            # The pad is not ready: close the judge-caused run and drop any judgment,
+            # which belonged to another clear episode.
+            if self.run_start is not None:
+                self.spent += now - self.run_start
+                self.run_start = None
+            self.pending = self.hold = None
+        receipt["added_wait_s"] = (
+            self.released_wait_s if self.released_wait_s is not None else self._added(now)
+        )
+        if prior != ENTER:
+            return self._final(response, receipt, "not_consulted", now, started)
+        if self.released_wait_s is not None:
+            return self._final(response, receipt, "decisions_exhausted", now, started)
+        # Reserve the existing mailbox freshness allowance for executor release.
+        release_at = (
+            self.policy["max_added_wait_s"]
+            - self.config["world"]["pad_queue"]["response_max_age_s"]
+        )
+        if receipt["added_wait_s"] >= release_at:
+            self.pending = self.hold = None
+            return self._final(response, receipt, "budget_exhausted", now, started)
+        if self.hold and now < self.hold["until_wall_s"]:
+            return self._final(response, dict(receipt, **self.hold["ref"]), "hold", now, started)
+        self.hold = None
+        if self.pending:
+            ref = dict(judge_request_id=self.pending["request"]["judge_request_id"])
+            if self._expired(now):
+                self.pending = None
+                return self._final(response, dict(receipt, **ref), "unavailable", now, started)
+            path = self.pending["folder"] / "response.json"
+            if not path.exists():
+                return self._final(response, dict(receipt, **ref), "pending", now, started)
+            try:
+                answer = json.loads(path.read_text())
+            except (ValueError, OSError):
+                answer = None
+            now = self._now(request)
+            receipt["added_wait_s"] = self._added(now)
+            if self._expired(now):
+                self.pending = None
+                return self._final(response, dict(receipt, **ref), "unavailable", now, started)
+            if receipt["added_wait_s"] >= release_at:
+                self.pending = None
+                return self._final(response, dict(receipt, **ref), "budget_exhausted", now, started)
+            decision = validate_judgment(self.pending["request"], answer)
+            self.pending = None
+            ref["judgment_sha256"] = digest(answer)
+            if decision is None:
+                status = (
+                    "unavailable"
+                    if isinstance(answer, dict) and answer.get("judge_status") == "unavailable"
+                    else "invalid"
+                )
+                return self._final(response, dict(receipt, **ref), status, now, started)
+            if decision["action"] == "wait":
+                remaining = self.policy["max_added_wait_s"] - receipt["added_wait_s"]
+                self.hold = dict(
+                    until_wall_s=now + min(decision["wait_seconds"], remaining), ref=ref
+                )
+                return self._final(response, dict(receipt, **ref), "hold", now, started)
+            return self._final(response, dict(receipt, **ref), "no_objection", now, started)
+        if self.issued >= self.policy["max_decisions"]:
+            return self._final(response, receipt, "decisions_exhausted", now, started)
+        ref = self._issue(request, response, now, receipt["added_wait_s"])
+        return self._final(response, dict(receipt, **ref), "pending", now, started)
+
+    def _final(self, response, receipt, status, now, started):
+        if status in JUDGE_WAITS and self.run_start is None:
+            self.run_start, self.run_start_monotonic = now, started
+        if self.run_start is not None:
+            # Only an active judge-caused run carries an aircraft release deadline.
+            receipt["wait_deadline_wall_s"] = (
+                self.run_start + self.policy["max_added_wait_s"] - self.spent
+            )
+            if receipt["prior_action"] == ENTER and status in JUDGE_PASSES:
+                self.released_wait_s = receipt["added_wait_s"]
+        receipt["status"] = status
+        return dict(response, **judge_overlay(self.policy, receipt["prior_action"], receipt))
+
+    def _issue(self, request, response, now, waited):
+        issued_monotonic = self.clock()
+        sequence = self.issued
+        self.issued += 1
+        folder = self.root / f"{sequence:03d}"
+        folder.mkdir(parents=True)
+        judge_request = dict(
+            schema="missionos.yokohama-pad-judge-request.v1",
+            run_id=self.config["run_id"],
+            sequence=sequence,
+            observation_id=f"pad_judge_{sequence + 1}",
+            pad_request_id=request["request_id"],
+            issued_wall_s=now,
+            situation=judge_situation(self.config, request, response),
+            remaining_wait_seconds=int(self.policy["max_added_wait_s"] - waited),
+            decisions_remaining=self.policy["max_decisions"] - self.issued,
+            allowed_actions=["enter", "wait"],
+            authority="Rules already allow entry; the judge may only add a bounded wait",
+        )
+        judge_request["judge_request_id"] = digest(judge_request)
+        atomic_json(folder / "request.json", judge_request)
+        self.pending = dict(
+            request=judge_request,
+            folder=folder,
+            issued_wall_s=now,
+            issued_monotonic_s=issued_monotonic,
+        )
+        if self.policy["mode"] == "fixture":
+            atomic_json(folder / "response.json", fixture_judgment(judge_request))
+        return dict(judge_request_id=judge_request["judge_request_id"])
 
 
 class PadSupervisor:
@@ -324,6 +613,9 @@ class PadSupervisor:
             from scripts.yokohama_pad_advisory_host import PadAdvisoryHost
 
             self.advisory = PadAdvisoryHost(root, config)
+        self.judge = None
+        if config["world"]["pad_queue"].get("mission_judge"):
+            self.judge = MissionJudgeGate(root, config)
         self.stop_event = threading.Event()
         self.thread = threading.Thread(target=self.loop, daemon=True)
         self.thread.start()
@@ -349,6 +641,8 @@ class PadSupervisor:
                     if (self.root / "pad-advisory-closed.json").exists():
                         self.advisory.close()
                         raise ValueError("Late pad response after advisory exit")
+                if self.judge:
+                    response = self.judge.respond(request, response)
                 atomic_json(folder / "response.json", response)
                 sequence += 1
         except Exception as exc:

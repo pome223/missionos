@@ -28,6 +28,7 @@ class PadQueue:
         self.sequence = 0
         self.hold = None
         self.fault_started_sim_s = None
+        self.judge_deadline = None
         self.camera = None
         if config["world"].get("pad_state_advisory"):
             from yokohama_pad_advisory_worker import PadCameraRecorder
@@ -115,6 +116,8 @@ class PadQueue:
         last_request_sim_s = -1
         while time.monotonic() < deadline:
             row = sample()
+            if self.judge_deadline is not None and row["wall_s"] >= self.judge_deadline:
+                raise TimeoutError("Mission judge wall-clock budget exhausted before release")
             require_wait(self.config, row)
             if row["reset_counters"] != anchor_resets or not 0 <= row["sim_s"] - last_sim_s <= 2:
                 raise ValueError("Queue wait estimator or clock continuity lost")
@@ -128,11 +131,15 @@ class PadQueue:
             else:
                 tail = []
             ready = clear_window(self.config, tail)
-            periodic = self.camera and row["sim_s"] - last_request_sim_s >= 2
+            deadline_near = (
+                self.judge_deadline is not None
+                and row["wall_s"] >= self.judge_deadline - self.policy["response_max_age_s"] - 2
+            )
+            periodic = self.camera and (row["sim_s"] - last_request_sim_s >= 2 or deadline_near)
             if waiting_acknowledged and not ready and not periodic:
                 time.sleep(0.2)
                 continue
-            if self.camera and row["sim_s"] - last_request_sim_s < 2:
+            if self.camera and row["sim_s"] - last_request_sim_s < 2 and not deadline_near:
                 time.sleep(0.2)
                 continue
             evidence = tail if ready else [row]
@@ -171,6 +178,8 @@ class PadQueue:
         while not response_path.exists():
             current = sample()
             require_wait(self.config, current, self.hold)
+            if self.judge_deadline is not None and current["wall_s"] >= self.judge_deadline:
+                raise TimeoutError("Mission judge wall-clock budget exhausted awaiting response")
             if time.monotonic() > response_deadline:
                 self.event(
                     "missionos_response_timeout",
@@ -181,6 +190,12 @@ class PadQueue:
         response = json.loads(response_path.read_text())
         current = sample()
         action = require_response(self.config, request, response, current)
+        receipt = response.get("mission_judge", {})
+        # The deadline bounds only a judge-caused wait; a Rules wait or an entry clears it.
+        if receipt.get("status") in ("pending", "hold"):
+            self.judge_deadline = receipt.get("wait_deadline_wall_s")
+        else:
+            self.judge_deadline = None
         self.event("missionos_advice_received", response=response, observation=current)
         self.sequence += 1
         return request, response, current, action

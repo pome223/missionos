@@ -61,6 +61,12 @@ jobs:
             src/runtime/yokohama_pad_reentry_risk.py \
             tests/test_yokohama_pad_reentry.py \
             scripts/check_yokohama_pad_reentry_sources.py \
+            scripts/evaluate_yokohama_pad_judge.py \
+            tests/test_yokohama_pad_judge_evaluation.py \
+            src/intelligence/yokohama_delivery_agents.py \
+            tests/contract/test_yokohama_delivery_chat.py \
+            tests/test_yokohama_delivery_agents.py \
+            tests/test_yokohama_pad_mission_judge.py \
             tests/test_yokohama_pad_reentry_sources.py \
             scripts/export_yokohama_pad_advisory.py \
             scripts/verify_yokohama_pad_advisory.py \
