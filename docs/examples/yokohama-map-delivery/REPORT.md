@@ -66,6 +66,17 @@ not part of this publication. H.264/yuv420p and MP4 fast-start are used for brow
 compatibility. The GitHub README player must be checked after the reviewed video
 attachment is uploaded; a thumbnail link remains available if embedding fails.
 
+## Opening the attached video
+
+The README embeds the [original GitHub video link](https://github.com/user-attachments/assets/2230d559-6cf9-4b80-b559-25ffa761ec21), and also provides
+an explicit link to open it afresh. It never saves a signed storage redirect.
+GitHub attachment requests can redirect to storage URLs valid for 300 seconds.
+An expired redirect is distinct from a missing video: reopen the original GitHub
+link or reload the README to request the current redirect. Do not bookmark or
+share the temporary storage address. A [repository MP4 copy](camera-timelapse.mp4)
+is available as a fallback. This does not guarantee indefinite playback in a tab
+left open or control GitHub/browser caching.
+
 ## Offline verification
 
 The exact final source must pass its tests and a loopback HTTP fixture smoke

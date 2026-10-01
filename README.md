@@ -68,8 +68,14 @@ recording of the GUI or a new flight.*
 coordinates, meshes, display materials and collision proxies, and added the
 demonstration route. [Source, license and attribution](docs/examples/yokohama-urban-scene/ATTRIBUTION.md).
 
+[Open the video afresh on GitHub](https://github.com/user-attachments/assets/2230d559-6cf9-4b80-b559-25ffa761ec21)
+
+If playback reports “Request has expired”, reopen this GitHub link or reload the
+README. GitHub redirects to short-lived storage URLs; share the GitHub link
+rather than the temporary redirect. A repository copy is available below.
+
 [Video preview](docs/examples/yokohama-map-delivery/preview.png) ·
-[Download MP4](docs/examples/yokohama-map-delivery/camera-timelapse.mp4)
+[Repository MP4 copy](docs/examples/yokohama-map-delivery/camera-timelapse.mp4)
 
 [Result and video limits](docs/examples/yokohama-map-delivery/REPORT.md) ·
 [GUI and authority contract](docs/agents/yokohama-map-goal.md)
