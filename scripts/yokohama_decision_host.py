@@ -21,6 +21,11 @@ import numpy as np
 from PIL import Image
 
 from scripts import ship_anwm
+from scripts.yokohama_altitude_contract import (
+    SCHEMA,
+    compile_mission,
+    recheck_mapping,
+)
 from scripts.yokohama_wam_profile import MOTION_CONTRACT, validate_service_profile
 from scripts.smoke_px4_gazebo_sitl_mission_upload import _inner_upload_script
 from src.runtime.yokohama_native import (
@@ -421,7 +426,8 @@ class DecisionHost:
             executor_heading(candidate, row) if world_frame else candidate["target_heading_ned_rad"]
         )
         offshore = bool(self.config["world"].get("sea_extension"))
-        command_altitude = executor_altitude(xyz[2], row) if offshore else xyz[2]
+        mapped_contract = self.config.get("altitude_transport_contract") == SCHEMA
+        command_altitude = executor_altitude(xyz[2], row) if offshore or mapped_contract else xyz[2]
         item = dict(
             seq=0,
             command=16,
@@ -437,9 +443,30 @@ class DecisionHost:
 
         name = attempt_name(message["cycle"], message.get("attempt", 0))
         script = self.root / (name + "-upload.py")
+        altitude_mapping = None
+        if mapped_contract:
+            world_item = dict(item, world_z_m=xyz[2])
+            del world_item["altitude_m"]
+            altitude_mapping = compile_mission(
+                [world_item, dict(world_item, seq=1, command=17, current=0)],
+                row,
+                segment=name,
+                run_id=self.config["run_id"],
+                world_sha256=self.config["world"]["world_sha256"],
+            )
+            (self.root / (name + "-altitude-mapping.json")).write_text(
+                json.dumps(altitude_mapping, allow_nan=False) + "\n"
+            )
+        if altitude_mapping is not None:
+            (self.root / (name + "-altitude-items.json")).write_text(
+                json.dumps(altitude_mapping["mission_items"], allow_nan=False) + "\n"
+            )
         script.write_text(
             _inner_upload_script(
-                [item, dict(item, seq=1, command=17, current=0)], reuse_mavlink_session=True
+                [item, dict(item, seq=1, command=17, current=0)], reuse_mavlink_session=True,
+                runtime_items_path="/mission/" + name + "-altitude-items.json" if altitude_mapping else None,
+                prepared_binding_path="/mission/" + name + "-upload-binding.json"
+                if self.config.get("mission_upload_preparation") else None,
             )
         )
         # Reconnect from the actual model endpoint, not the old authored stop.
@@ -479,7 +506,26 @@ class DecisionHost:
             )
         )
         connector = self.root / (connector_name + "-upload.py")
-        connector.write_text(_inner_upload_script(connector_items, reuse_mavlink_session=True))
+        if mapped_contract:
+            # Freeze the approved connector geometry; bind transport to a fresh
+            # observation at its actual dispatch, after the model segment.
+            for index, connector_item in enumerate(connector_items):
+                connector_item.pop("altitude_m")
+                step = min(index + 1, count)
+                connector_item["world_z_m"] = xyz[2] + (next_xyz[2] - xyz[2]) * step / count
+            (self.root / (connector_name + "-world-items.json")).write_text(
+                json.dumps(connector_items, allow_nan=False) + "\n"
+            )
+            connector.write_text(
+                _inner_upload_script(
+                    reuse_mavlink_session=True,
+                    runtime_items_path="/mission/" + connector_name + "-altitude-items.json",
+                    prepared_binding_path="/mission/" + connector_name + "-upload-binding.json"
+                    if self.config.get("mission_upload_preparation") else None,
+                )
+            )
+        else:
+            connector.write_text(_inner_upload_script(connector_items, reuse_mavlink_session=True))
         permit = dict(
             run_id=self.config["run_id"],
             config_sha256=digest(self.config),
@@ -502,9 +548,14 @@ class DecisionHost:
         proposal["prepared_observation"] = row
         if message.get("attempt"):
             permit["attempt"] = message["attempt"]
-        if offshore:
+        if offshore or mapped_contract:
             permit["executor_relative_altitude_m"] = command_altitude
             permit["altitude_mapping_observation_sha256"] = digest(row)
+        if altitude_mapping is not None:
+            permit["altitude_transport_sha256"] = digest(altitude_mapping)
+            permit["connector_world_items_sha256"] = ship_anwm.digest(
+                self.root / (connector_name + "-world-items.json")
+            )
         proposal["prepared_permit"] = permit
         return permit
 
@@ -515,7 +566,14 @@ class DecisionHost:
             raise ValueError("Activation does not bind the uploaded mission")
         current = message["observation"]
         old = proposal["input_observation"]
-        if self.config["world"].get("sea_extension"):
+        if self.config.get("altitude_transport_contract") == SCHEMA:
+            mapping = json.loads(
+                (self.root / (prepared["upload_name"] + "-altitude-mapping.json")).read_text()
+            )
+            if digest(mapping) != prepared["altitude_transport_sha256"]:
+                raise ValueError("Changed city altitude transport")
+            recheck_mapping(mapping, current)
+        elif self.config["world"].get("sea_extension"):
             if (
                 abs(
                     executor_altitude(0, current)

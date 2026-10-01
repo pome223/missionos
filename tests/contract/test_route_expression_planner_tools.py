@@ -34,6 +34,9 @@ def _geocode_fetcher(url: str) -> Any:
                 "type": "bridge",
             }
         ]
+    if "日本橋" in decoded or "nihonbashi" in decoded:
+        return "fixture_nominatim", [{"lat": "35.684", "lon": "139.774",
+                                      "display_name": "Nihonbashi, Tokyo", "place_id": "nihonbashi", "type": "bridge"}]
     raise AssertionError(f"unexpected geocode URL: {url}")
 
 
@@ -144,6 +147,7 @@ def test_japanese_route_expression_keeps_followup_recovery_sentence_out_of_place
             "計画してください。飛行経路上の障害物を検出した場合は、安全にHOLDして"
             "Recovery Agentが回避案を提案してください。"
         ),
+        geocode_fetcher=_geocode_fetcher,
         weather_fetcher=_weather_fetcher,
         terrain_fetcher=_terrain_fetcher,
     )
@@ -180,6 +184,7 @@ def test_japanese_route_expression_treats_fifty_percent_as_mid_route_obstacle(
             "東京駅から日本橋まで飛行し、経路の50%地点に衝突判定付き障害物を"
             "配置するPX4/Gazeboミッションを計画してください。"
         ),
+        geocode_fetcher=_geocode_fetcher,
         weather_fetcher=_weather_fetcher,
         terrain_fetcher=_terrain_fetcher,
     )
@@ -242,6 +247,7 @@ def test_chief_route_binds_japanese_altitude_without_confusing_wind_speed(
             "東京駅から日本橋まで高度45mで飛行し、風速3m/s、気温5度、"
             "0.5kgの荷物、経路の50%地点に障害物を置いてください。"
         ),
+        geocode_fetcher=_geocode_fetcher,
         weather_fetcher=_weather_fetcher,
         terrain_fetcher=_terrain_fetcher,
     )
@@ -279,6 +285,7 @@ def test_japanese_route_expression_preserves_two_route_obstacles(
             "東京駅から日本橋まで飛行し、経路の50%と75%進行時点に"
             "衝突判定付き障害物を置いてください。"
         ),
+        geocode_fetcher=_geocode_fetcher,
         weather_fetcher=_weather_fetcher,
         terrain_fetcher=_terrain_fetcher,
     )

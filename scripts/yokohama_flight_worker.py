@@ -6,9 +6,112 @@ import math
 import sys
 import time
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 ROOT = Path("/mission")
 BIN = "/opt/px4-gazebo/bin/px4-"
+
+if TYPE_CHECKING or __package__:
+    from .yokohama_altitude_contract import (
+        SCHEMA,
+        UPLOAD_PREPARATION_SCHEMA,
+        validate_upload_preparation,
+        mission_wire_items,
+        AltitudeReferenceChanged,
+        AltitudeOffsetChanged,
+        compile_mission,
+        digest as altitude_digest,
+        recheck_mapping,
+    )
+else:
+    from yokohama_altitude_contract import (
+        SCHEMA,
+        UPLOAD_PREPARATION_SCHEMA,
+        validate_upload_preparation,
+        mission_wire_items,
+        AltitudeReferenceChanged,
+        AltitudeOffsetChanged,
+        compile_mission,
+        digest as altitude_digest,
+        recheck_mapping,
+    )
+
+
+def prepare_altitude_upload(
+    root,
+    config,
+    name,
+    observation,
+    now_worker_wall_s,
+    *,
+    expected_world_items_sha256=None,
+):
+    """Compile only the transport representation of an immutable world template."""
+    import hashlib
+
+    stage = next((s for s in config["flight_stages"] if s["name"] == name), None)
+    if stage is not None:
+        items = stage["items"]
+    else:
+        raw = (root / (name + "-world-items.json")).read_bytes()
+        if (
+            not expected_world_items_sha256
+            or hashlib.sha256(raw).hexdigest() != expected_world_items_sha256
+        ):
+            raise ValueError("Connector world template differs from its permit")
+        items = json.loads(raw)
+    mapping = compile_mission(
+        items,
+        observation,
+        segment=name,
+        run_id=config["run_id"],
+        world_sha256=config["world"]["world_sha256"],
+        now_worker_wall_s=now_worker_wall_s,
+    )
+    (root / (name + "-altitude-items.json")).write_text(
+        json.dumps(mapping["mission_items"], allow_nan=False) + "\n"
+    )
+    (root / (name + "-altitude-mapping.json")).write_text(
+        json.dumps(mapping, allow_nan=False) + "\n"
+    )
+    return mapping
+
+
+def send_mapped_mission_command(
+    run,
+    event,
+    mapping,
+    current,
+    clock,
+    *,
+    expires_at_wall_s=None,
+    pad_permission=None,
+    pad_check=None,
+):
+    """Final deadline barrier after observation/validation, immediately before send."""
+    recheck_mapping(mapping, current, clock())
+    identity = altitude_digest(mapping)
+    if pad_check is not None:
+        pad_check()
+    command_wall_s = clock()
+    if not 0 <= command_wall_s - current["altitude_capture"]["end_worker_wall_s"] <= 2:
+        raise ValueError("Altitude observation expired before mode command")
+    if expires_at_wall_s is not None and (
+        not math.isfinite(expires_at_wall_s) or command_wall_s > expires_at_wall_s
+    ):
+        raise ValueError("City activation expired before mode command")
+    if pad_permission is not None:
+        age = command_wall_s - pad_permission["rules_checked_at"]["wall_s"]
+        if not math.isfinite(age) or not 0 <= age <= 30:
+            raise ValueError("Missing or expired pad entry permission")
+    run([BIN + "commander", "mode", "auto:mission"])
+    event(
+        "altitude_transport_command_sent",
+        segment=mapping["segment"],
+        mapping_sha256=identity,
+        observation=current,
+        dispatched_at_worker_wall_s=command_wall_s,
+    )
 
 
 def hold_metrics(rows, target):
@@ -52,8 +155,11 @@ def hold_passes(metrics, config):
 
 
 def flight_trial(config, obs, run, field):
+    if config.get("altitude_transport_contract") != SCHEMA:
+        raise ValueError("Unified altitude transport contract required before flight")
     started = time.monotonic()
     phase = "preflight"
+    altitude_collector = None
     events = (ROOT / "flight-events.jsonl").open("w", buffering=1)
     trajectory = (ROOT / "flight-trajectory.jsonl").open("w", buffering=1)
     holds = []
@@ -77,6 +183,8 @@ def flight_trial(config, obs, run, field):
     decisions = None
     model_phases = []
     next_connector = None
+    active_altitude_mapping = None
+    connector_world_hashes = {}
     landing_xy = (
         config["world"].get("sea_extension", {}).get("ship_deck_world_xyz_m", [0, 0, 0])[:2]
     )
@@ -133,6 +241,8 @@ def flight_trial(config, obs, run, field):
             pad_queue.update_actor()
         if wind_profile_active:
             update_profile_wind()
+        capture_begin = time.monotonic() - started
+        capture_before = obs.snapshot()["sim_s"]
         raw = {
             key: run([BIN + "listener", key, "-n", "1"], 5)
             for key in [
@@ -143,9 +253,11 @@ def flight_trial(config, obs, run, field):
                 "battery_status",
             ]
         }
-        if config["world"].get("sea_extension"):
+        if config.get("altitude_transport_contract") == SCHEMA or config["world"].get(
+            "sea_extension"
+        ):
             for key in ("vehicle_global_position", "home_position"):
-                raw[key] = run([BIN + "listener", key, "-n", "1"], 5)
+                raw[key] = run([BIN + "listener", key, "-n", "1"], 0.2)
         snap = obs.snapshot()
         v = snap["poses"].get("x500_0")
         if not v or v["age_s"] > 2 or snap["sim_s"] is None:
@@ -178,7 +290,9 @@ def flight_trial(config, obs, run, field):
         )
         if any(x is None or not math.isfinite(x) for x in row["local_ned"] + row["velocity_ned"]):
             raise RuntimeError("Invalid PX4 local state")
-        if config["world"].get("sea_extension"):
+        if config.get("altitude_transport_contract") == SCHEMA or config["world"].get(
+            "sea_extension"
+        ):
             global_alt = field(raw["vehicle_global_position"], "alt")
             home_alt = field(raw["home_position"], "alt")
             row["px4_relative_altitude_m"] = (
@@ -187,6 +301,12 @@ def flight_trial(config, obs, run, field):
                 and home_alt is not None
                 and field(raw["home_position"], "valid_alt") is True
                 else None
+            )
+        if config.get("altitude_transport_contract") == SCHEMA:
+            row["altitude_capture"] = dict(
+                begin_worker_wall_s=capture_begin,
+                end_worker_wall_s=row["wall_s"],
+                sim_before_s=capture_before,
             )
         if config["world"].get("payload_delivery"):
             row["payload"] = snap["poses"].get("delivery_payload")
@@ -287,20 +407,102 @@ def flight_trial(config, obs, run, field):
             time.sleep(0.3)
         raise TimeoutError("Phase timeout: " + phase)
 
-    def upload(name):
+    prepared_protocols = {}
+
+    def prepare_upload_protocol(name):
+        if name in prepared_protocols:
+            raise ValueError("Upload preparation already outstanding")
+        from concurrent.futures import ThreadPoolExecutor
+        from uuid import uuid4
+
         old = field(run([BIN + "listener", "mission_result", "-n", "1"]), "mission_id")
+        transaction = dict(
+            transaction_id=uuid4().hex,
+            run_id=config["run_id"],
+            world_sha256=config["world"]["world_sha256"],
+            segment=name,
+            worker_epoch_monotonic_s=started,
+            reuse_mavlink_session=name != config["flight_stages"][0]["name"],
+        )
+        (ROOT / "upload-transaction.json").write_text(json.dumps(transaction, allow_nan=False))
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(run, ["python3", str(ROOT / "upload-prepare.py")], 40)
+            while not future.done():
+                sample()
+                time.sleep(0.1)
+            preparation = json.loads(future.result().splitlines()[-1])
+        validate_upload_preparation(transaction, preparation)
+        event("upload_protocol_prepared", segment=name, transaction=transaction, preparation=preparation)
+        prepared_protocols[name] = (transaction, preparation, old)
+        return preparation
+
+    def upload(name):
+        nonlocal active_altitude_mapping
+        active_altitude_mapping = None
+        transaction = preparation = None
+        if config.get("mission_upload_preparation") == UPLOAD_PREPARATION_SCHEMA:
+            if name not in prepared_protocols:
+                prepare_upload_protocol(name)
+            transaction, preparation, old = prepared_protocols.pop(name)
+        else:
+            old = field(run([BIN + "listener", "mission_result", "-n", "1"]), "mission_id")
+        if config.get("altitude_transport_contract") == SCHEMA:
+            if (
+                name in {s["name"] for s in config["flight_stages"]}
+                or name in connector_world_hashes
+            ):
+                active_altitude_mapping = prepare_altitude_upload(
+                    ROOT,
+                    config,
+                    name,
+                    sample(),
+                    time.monotonic() - started,
+                    expected_world_items_sha256=connector_world_hashes.get(name),
+                )
+            else:
+                active_altitude_mapping = json.loads(
+                    (ROOT / (name + "-altitude-mapping.json")).read_text()
+                )
+        if transaction is not None:
+            if active_altitude_mapping["observation"]["altitude_capture"]["begin_worker_wall_s"] < preparation["prepared_at_worker_wall_s"]:
+                raise ValueError("Altitude mapping predates session/clear preparation")
+            (ROOT / (name + "-upload-binding.json")).write_text(json.dumps(
+                dict(transaction=transaction, preparation=preparation,
+                     mapping=active_altitude_mapping,
+                     mapping_sha256=altitude_digest(active_altitude_mapping)), allow_nan=False))
+        send_argv = ["python3", str(ROOT / (name + "-upload.py"))]
+        if transaction is not None:
+            send_argv.append(transaction["transaction_id"])
         if decisions and name.startswith("city-"):
             from concurrent.futures import ThreadPoolExecutor
 
             with ThreadPoolExecutor(max_workers=1) as pool:
-                future = pool.submit(run, ["python3", str(ROOT / (name + "-upload.py"))], 40)
+                future = pool.submit(run, send_argv, 40)
                 while not future.done():
                     sample()
                     time.sleep(0.1)
                 uploaded = future.result()
         else:
-            uploaded = run(["python3", str(ROOT / (name + "-upload.py"))], 40)
+            uploaded = run(send_argv, 40)
         receipt = json.loads(uploaded.splitlines()[-1])
+        if transaction is not None and (
+            receipt.get("transaction_id") != transaction["transaction_id"]
+            or receipt.get("transaction_sha256") != altitude_digest(transaction)
+            or receipt.get("mapping_sha256") != altitude_digest(active_altitude_mapping)
+            or receipt.get("preparation") != preparation
+            or receipt.get("mission_items_wire") != mission_wire_items(active_altitude_mapping["mission_items"])
+        ):
+            raise ValueError("Upload receipt belongs to a different preparation")
+        if active_altitude_mapping is not None:
+            if receipt["mission_items"] != active_altitude_mapping["mission_items"]:
+                raise ValueError("Uploaded altitude differs from mapped mission")
+            event(
+                "altitude_transport_prepared",
+                segment=name,
+                transaction_id=transaction["transaction_id"] if transaction else None,
+                mapping=active_altitude_mapping,
+                mapping_sha256=altitude_digest(active_altitude_mapping),
+            )
         event("upload_receipt", segment=name, receipt=receipt)
         if receipt.get("mission_ack_type") != 0:
             raise RuntimeError("Mission rejected")
@@ -315,11 +517,26 @@ def flight_trial(config, obs, run, field):
 
     def activate(*, expires_at_wall_s=None):
         for _ in range(4):
-            if pad_queue and (phase == "03-DELIVERY" or (phase == "02-D3" and pad_queue.entered)):
-                pad_queue.require_dispatch(sample)
             if expires_at_wall_s is not None and time.monotonic() - started > expires_at_wall_s:
                 raise ValueError("City activation expired before mode command")
-            run([BIN + "commander", "mode", "auto:mission"])
+            current = sample()
+            pad_check_required = pad_queue and (
+                phase == "03-DELIVERY" or (phase == "02-D3" and pad_queue.entered)
+            )
+            if active_altitude_mapping is None:
+                raise ValueError("Missing altitude transport before activation")
+            send_mapped_mission_command(
+                run,
+                event,
+                active_altitude_mapping,
+                current,
+                lambda: time.monotonic() - started,
+                expires_at_wall_s=expires_at_wall_s,
+                pad_permission=pad_queue.permission if pad_check_required else None,
+                pad_check=(lambda: pad_queue.require_dispatch(lambda: current))
+                if pad_check_required
+                else None,
+            )
             try:
                 wait_for(lambda r: r["nav_state"] == 3, 3)
                 return
@@ -328,6 +545,13 @@ def flight_trial(config, obs, run, field):
         raise RuntimeError("AUTO MISSION not observed")
 
     try:
+        if config.get("altitude_diagnostics"):
+            from yokohama_altitude import AltitudeCollector
+
+            altitude_collector = AltitudeCollector(
+                obs, config, lambda: phase, ROOT / "altitude-diagnostics.jsonl"
+            )
+            altitude_collector.start()
         if config["world"].get("pad_queue"):
             from yokohama_pad_worker import PadQueue
 
@@ -471,6 +695,19 @@ def flight_trial(config, obs, run, field):
             if i == 0:
                 run([BIN + "commander", "arm"])
                 wait_for(lambda r: r["arming_state"] == 2, 10)
+                if active_altitude_mapping is not None:
+                    current = sample()
+                    try:
+                        recheck_mapping(
+                            active_altitude_mapping, current, time.monotonic() - started
+                        )
+                    except (AltitudeReferenceChanged, AltitudeOffsetChanged):
+                        if current["landed"] is not True:
+                            raise
+                        # Same approved world mission; bind the final armed home
+                        # reference. No auto mode command has been sent yet.
+                        event("altitude_home_rebind_before_takeoff", observation=current)
+                        upload(phase)
             activate()
             wait_for(
                 lambda r: (
@@ -593,7 +830,9 @@ def flight_trial(config, obs, run, field):
                         sample, "before_model_approach_authority"
                     )
                 permit = decisions.prepare_segment(
-                    obs, config["flight_stages"][i + 1]["target_world_xyz_m"], upload
+                    obs, config["flight_stages"][i + 1]["target_world_xyz_m"], upload,
+                    prepare_upload=prepare_upload_protocol
+                    if config.get("mission_upload_preparation") == UPLOAD_PREPARATION_SCHEMA else None,
                 )
                 candidate = permit["candidate"]
                 # Mission upload does not itself move the vehicle. Recheck hold
@@ -662,6 +901,8 @@ def flight_trial(config, obs, run, field):
                 if hashlib.sha256(connector.read_bytes()).hexdigest() != permit["connector_sha256"]:
                     raise ValueError("AP connector differs from independently checked route")
                 next_connector = permit["connector_name"]
+                if config.get("altitude_transport_contract") == SCHEMA:
+                    connector_world_hashes[next_connector] = permit["connector_world_items_sha256"]
                 if phase == "02-D3":
                     pad_queue.move_hold(candidate["target_world_xyz_m"], permit["permit_id"])
                 if phase == model_phases[-1]:
@@ -719,5 +960,14 @@ def flight_trial(config, obs, run, field):
                     if not primary_failure:
                         raise
         finally:
-            events.close()
-            trajectory.close()
+            try:
+                if altitude_collector:
+                    altitude_collector.close()
+                    event(
+                        "altitude_collector_closed",
+                        error_type=altitude_collector.error,
+                        thread_alive=altitude_collector.thread.is_alive(),
+                    )
+            finally:
+                events.close()
+                trajectory.close()

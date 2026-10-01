@@ -48,6 +48,8 @@ SOURCES = (
     "scripts/yokohama_sitl.py",
     "scripts/yokohama_pad_worker.py",
     "scripts/yokohama_flight_worker.py",
+    "scripts/yokohama_altitude_contract.py",
+    "scripts/smoke_px4_gazebo_sitl_mission_upload.py",
     "scripts/yokohama_decision_host.py",
     "scripts/yokohama_pad_advisory_host.py",
     "src/runtime/yokohama_pad_queue.py",
@@ -124,10 +126,20 @@ def _atomic(path: Path, value: dict) -> None:
     temporary.replace(path)
 
 
+def judge_label(proposal):
+    judge = proposal["agents"].get("judge", {})
+    if judge.get("backend") == "jev":
+        return ("Jev live（実APIは実行時・最大2送信）" if judge.get("mode") == "live"
+                else "Jev contract fixture（実モデル未実行・API 0）")
+    return "DeepSeek"
+
+
 class YokohamaChatService:
     def __init__(self, store: TaskStore):
         self.store = store
-        self.lock = threading.RLock()
+        from src.gateway.yokohama_dispatch import shared_dispatch
+        self.dispatch = shared_dispatch(store)
+        self.lock = self.dispatch.lock
         self.stopping = threading.Event()
         self.worker: threading.Thread | None = None
         self.active: str | None = None
@@ -320,7 +332,7 @@ class YokohamaChatService:
                 )
             if self.stopping.is_set():
                 raise ValueError("Gatewayは停止中です。")
-            if self.active:
+            if self.active or self.dispatch.owner is not None:
                 raise ValueError(
                     "別の横浜配送を実行中です。その配送が終了してから開始してください。"
                 )
@@ -355,16 +367,28 @@ class YokohamaChatService:
             task = self.store.update(
                 identity, status="starting", artifacts={"yokohama_output_directory": str(folder)}
             )
-            self.active = identity
-            self.store.append_event(
-                identity,
-                event_type="yokohama_dispatch_reserved",
-                payload={"proposal_sha256": _digest(proposal)},
-            )
-            self.worker = threading.Thread(
-                target=self._worker, args=(identity, inputs, folder, manifest), daemon=True
-            )
-            self.worker.start()
+            self.dispatch.reserve(identity)
+            try:
+                self.active = identity
+                self.store.append_event(
+                    identity,
+                    event_type="yokohama_dispatch_reserved",
+                    payload={"proposal_sha256": _digest(proposal)},
+                )
+                self.worker = threading.Thread(
+                    target=self._worker, args=(identity, inputs, folder, manifest), daemon=True
+                )
+                self.worker.start()
+            except Exception:
+                self.active = None
+                self.worker = None
+                self.dispatch.release(identity)
+                try:
+                    self.store.update(identity, status="needs_attention", error="配送workerを開始できませんでした")
+                except Exception:
+                    # Preserve the original failure when the store itself is unavailable.
+                    pass
+                raise
             return task
 
     def _interrupt(self, proc):
@@ -509,6 +533,7 @@ class YokohamaChatService:
                 self.process = None
                 if self.active == identity:
                     self.active = None
+                self.dispatch.release(identity)
 
     def _follow(self, identity, path, offset):
         if not path.is_file():
@@ -549,7 +574,54 @@ class YokohamaChatService:
             content = {k: v for k, v in request.items() if k != "judge_request_id"}
             if digest(content) != request.get("judge_request_id"):
                 raise ValueError("Unbound pad judge request")
-            answer = agents.judge(request, proposal["agents"])
+            if proposal["agents"].get("judge", proposal["agents"]).get("backend") == "jev":
+                from src.intelligence.yokohama_pad_jev import admit_mailbox
+
+                try:
+                    admission = admit_mailbox(
+                        folder,
+                        request_path,
+                        request,
+                        self.store.get(identity)["artifacts"].get("plan_sha256"),
+                    )
+                    selected = proposal["agents"].get("judge", proposal["agents"])
+                    if selected.get("mode") == "live":
+                        from src.intelligence.yokohama_jev_live import BoundedTransport, LiveLedger
+                        from src.intelligence.yokohama_pad_jev import judge as pad_judge
+                        task = self.store.get(identity)
+                        plan = task["artifacts"]["plan"]
+                        if plan["mission_judge"] != selected or digest(plan) != task["artifacts"]["plan_sha256"]:
+                            raise ValueError("Live judge differs from approved plan")
+                        approval = task["artifacts"]["approval"]
+                        if approval["plan_sha256"] != digest(plan):
+                            raise ValueError("Live approval mismatch")
+                        transport = BoundedTransport(ledger=LiveLedger(), task_id=identity,
+                            plan_sha256=digest(plan), request=request, admission=admission)
+                        answer = pad_judge(request, selected, transport=transport)
+                        slot = None
+                    else:
+                        slot = self.store.reserve_external_request(
+                            budget_id="fixture:" + identity, request_id=request["judge_request_id"],
+                            task_id=identity, maximum=2)
+                        if slot is None:
+                            raise ValueError("Duplicate request or exhausted fixture decision slots")
+                        answer = agents.judge(request, proposal["agents"])
+                    if time.monotonic() > admission["host_deadline_monotonic_s"]:
+                        answer = dict(
+                            judge_request_id=request["judge_request_id"], judge_status="unavailable",
+                            invocation=answer.get("invocation", {})
+                        )
+                    answer["admission"] = admission
+                    answer["fixture_decision_slot"] = slot
+                except (ValueError, OSError, KeyError, StopIteration) as exc:
+                    answer = dict(
+                        judge_request_id=request["judge_request_id"],
+                        judge_status="unavailable",
+                        error_type=type(exc).__name__,
+                        invocation={"inference_invoked": False, "external_api_calls": 0},
+                    )
+            else:
+                answer = agents.judge(request, proposal["agents"])
             _atomic(request_path.parent / "response.json", answer)
             decision = answer.get("decision", {})
             record = dict(
@@ -560,6 +632,9 @@ class YokohamaChatService:
                 rationale=decision.get("rationale"),
                 model_id=answer.get("invocation", {}).get("model_id"),
                 response_sha256=answer.get("invocation", {}).get("response_sha256"),
+                invocation=answer.get("invocation", {}),
+                admission=answer.get("admission"),
+                fixture_decision_slot=answer.get("fixture_decision_slot"),
             )
             task = self.store.get(identity)
             decisions = task["artifacts"].get("yokohama_judge_decisions", [])
@@ -673,7 +748,12 @@ class YokohamaChatService:
             verification=artifacts.get("yokohama_verification", {}),
             trajectory=artifacts.get("yokohama_trajectory", []),
             physical_execution_invoked=False,
-            llm_judgment_invoked=any(j.get("judge_status") == "valid" for j in judgments),
+            llm_judgment_invoked=any(
+                j.get("judge_status") == "valid"
+                and j.get("invocation", {}).get("inference_invoked",
+                    artifacts["yokohama_delivery_proposal"]["agents"].get("judge", {}).get("backend") != "jev")
+                for j in judgments
+            ),
             error=task.get("error"),
         )
         context = dict(context, summary={**context.get("summary", {}), **summary})
@@ -682,7 +762,7 @@ class YokohamaChatService:
             if judgments:
                 latest = judgments[-1]
                 lines.append(
-                    "DeepSeekの判断："
+                    judge_label(artifacts["yokohama_delivery_proposal"]) + "の判断："
                     + (
                         latest.get("rationale")
                         or f"応答を確認できません（{latest['judge_status']}）"
@@ -749,7 +829,7 @@ class YokohamaChatService:
                         "mission_designer_plan",
                         proposal["planner"]["summary"]
                         + f"\n街中の判断地点は{models}で進路を提案・確認し、ルールが制限します。"
-                        "パッドの順番待ちはルールが判断し、DeepSeekは最大2回・合計30秒まで"
+                        f"パッドの順番待ちはルールが判断し、{judge_label(proposal)}は最大2回・合計30秒まで"
                         "待ち時間を追加することだけを提案できます。シミュレーションです。"
                         " /approve で計画を承認し、/run で開始できます。",
                     )

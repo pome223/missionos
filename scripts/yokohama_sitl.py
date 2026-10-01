@@ -111,10 +111,12 @@ def capture_diagnostics(root: Path, result: dict[str, Any], container: str) -> N
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--goal-plan", type=Path, help="Approved pre-departure map goal manifest")
     parser.add_argument("--phase", choices=["contacts", "flight"], required=True)
     parser.add_argument("--approve-sitl", action="store_true")
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--timeout-seconds", type=int, default=900)
+    parser.add_argument("--altitude-diagnostics", action="store_true")
     parser.add_argument("--decision-backend", choices=["fixture", "native"])
     parser.add_argument("--native-service-config", type=Path)
     parser.add_argument(
@@ -295,6 +297,34 @@ def main():
         parser.error("WAM profile requires explicit decisions")
     if args.fixture_cold_start and args.decision_backend != "fixture":
         parser.error("Cold-start fixture delays require --decision-backend fixture")
+    goal_plan = None
+    if args.goal_plan:
+        if (
+            not (
+                args.phase == "flight"
+                and args.sea_round_trip
+                and args.deliver_payload
+                and args.occupied_pad
+                and args.decision_backend == "fixture"
+            )
+            or args.pad_state_advisory
+            or args.pad_mission_judge
+            or args.wind_east_mps
+            or args.wind_profile
+            or args.recover_city_hold
+            or args.pad_approach_decision
+        ):
+            parser.error(
+                "Map goals require CPU fixture sea/payload flight without learned pad advisory, native models, wind or hold recovery"
+            )
+        from src.runtime.yokohama_goal import approved_map_plan
+
+        try:
+            goal_plan = approved_map_plan(args.goal_plan)
+            if goal_plan["execution_target"] != "px4_gazebo_fixture":
+                parser.error("This approval is for kinematic fixture only")
+        except (ValueError, KeyError, OSError) as exc:
+            parser.error(str(exc))
     root = args.output_dir.resolve()
     if root.exists():
         parser.error("Output directory must not exist; preserve previous attempts")
@@ -343,6 +373,7 @@ def main():
             REPO / "docs/examples/yokohama-urban-scene",
             args.phase,
             camera_rate_hz=4 if args.decision_backend or args.capture_motion_views else 2,
+            goal_plan=goal_plan,
         )
         from src.runtime.yokohama_sea import extend_world, flight_stops
 
@@ -378,6 +409,14 @@ def main():
                 judge_timeout_s=20,
                 authority="may only add a bounded wait to a Rules entry",
             )
+        if goal_plan:
+            world["pad_queue"]["mission_judge"] = dict(
+                mode="gateway",
+                max_decisions=2,
+                max_added_wait_s=30,
+                judge_timeout_s=20,
+                authority="may only add bounded wait to Rules entry; fixture, no API",
+            )
         if args.wind_profile:
             from src.runtime.yokohama_wind_profile import make_profile
 
@@ -396,6 +435,7 @@ def main():
             "world": world,
             "timeout_s": args.timeout_seconds,
             "operator_approval": "explicit CLI --approve-sitl",
+            "altitude_diagnostics": args.altitude_diagnostics,
             "hold_duration_sim_s": 30,
             "hold_horizontal_tolerance_m": 1.0,
             "hold_vertical_tolerance_m": 0.6,
@@ -403,6 +443,15 @@ def main():
             "airspeed_mps": 3.0,
             "wind_mps": args.wind_east_mps,
         }
+        if args.goal_plan:
+            from src.runtime.yokohama_payload import digest
+
+            manifest = json.loads(args.goal_plan.read_text())
+            config["map_approval"] = manifest["approval"]
+            config["map_plan_sha256"] = digest(goal_plan)
+            config["operator_approval"] = (
+                "MissionOS map approval " + manifest["approval"]["approval_ref"]
+            )
         if args.approval_manifest:
             import hashlib
 
@@ -523,7 +572,7 @@ def main():
                             command=22 if index == 0 else 16,
                             latitude_deg=glat,
                             longitude_deg=glon,
-                            altitude_m=xyz[2],
+                            world_z_m=xyz[2],
                             current=int(step == 1),
                             frame=6,
                             param2=0.5,
@@ -540,7 +589,11 @@ def main():
                 )
                 items.append(dict(items[-1], seq=len(items), command=17, current=0, param4=yaw))
                 (root / (name + "-upload.py")).write_text(
-                    _inner_upload_script(items, reuse_mavlink_session=index > 0)
+                    _inner_upload_script(
+                        reuse_mavlink_session=index > 0,
+                        runtime_items_path="/mission/" + name + "-altitude-items.json",
+                        prepared_binding_path="/mission/" + name + "-upload-binding.json",
+                    )
                 )
                 stages.append(
                     dict(
@@ -554,6 +607,12 @@ def main():
                 )
                 previous = target
             config["flight_stages"] = stages
+            from scripts.yokohama_altitude_contract import SCHEMA, UPLOAD_PREPARATION_SCHEMA
+
+            config["altitude_transport_contract"] = SCHEMA
+            config["mission_upload_preparation"] = UPLOAD_PREPARATION_SCHEMA
+            (root / "upload-prepare.py").write_text(_inner_upload_script(
+                preparation_only_path="/mission/upload-transaction.json"))
         if args.recover_city_hold:
             from src.runtime.yokohama_native import recovery_envelopes
 
@@ -575,7 +634,15 @@ def main():
             REPO / "scripts/ship_onboard_entrypoint.sh",
         ]
         if args.phase == "flight":
-            sources.append(REPO / "scripts/yokohama_flight_worker.py")
+            sources.extend(
+                [
+                    REPO / "scripts/yokohama_flight_worker.py",
+                    REPO / "scripts/yokohama_altitude_contract.py",
+                    REPO / "scripts/smoke_px4_gazebo_sitl_mission_upload.py",
+                ]
+            )
+            if args.altitude_diagnostics:
+                sources.append(REPO / "scripts/yokohama_altitude.py")
         if args.occupied_pad:
             sources.extend(
                 [
@@ -624,7 +691,6 @@ def main():
                     "scripts/ship_aerovla.py",
                     "scripts/ship_aerovla_server.py",
                     "src/runtime/ship_vla_adapter.py",
-                    "scripts/smoke_px4_gazebo_sitl_mission_upload.py",
                     "scripts/verify_yokohama_decisions.py",
                     "scripts/verify_yokohama_sitl.py",
                 ]

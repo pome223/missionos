@@ -23,12 +23,23 @@ def configuration():
         raise ValueError("横浜配送のAgentが有効になっていません。")
     if not os.getenv("DEEPSEEK_API_KEY", "").strip():
         raise ValueError("DeepSeekの接続情報がありません。")
-    if any(llm_provider_label(name) != PROVIDER for name in (PLANNER, JUDGE)):
+    backend = os.environ.get("MISSIONOS_YOKOHAMA_JUDGE_BACKEND", "deepseek")
+    if backend not in {"deepseek", "jev"}:
+        raise ValueError("Unknown pad judge backend")
+    names = (PLANNER, JUDGE) if backend == "deepseek" else (PLANNER,)
+    if any(llm_provider_label(name) != PROVIDER for name in names):
         raise ValueError("横浜配送のAgentにはDeepSeek接続が必要です。")
+    from src.intelligence.yokohama_pad_jev import configuration as pad_configuration
+
+    selected_judge = (
+        pad_configuration()
+        if backend == "jev"
+        else dict(agent_name=JUDGE, model_id=agent_model_label(agent_name=JUDGE))
+    )
     return dict(
         provider=PROVIDER,
         planner=dict(agent_name=PLANNER, model_id=agent_model_label(agent_name=PLANNER)),
-        judge=dict(agent_name=JUDGE, model_id=agent_model_label(agent_name=JUDGE)),
+        judge=selected_judge,
         planner_timeout_seconds=30,
         judge_timeout_seconds=20,
     )
@@ -100,6 +111,11 @@ def valid_decision(request, output):
 
 def judge(request, expected):
     """Answer one pad-judge request; any failure is reported, never turned into entry."""
+    pad_config = expected.get("judge", expected)
+    if pad_config.get("backend") == "jev":
+        from src.intelligence.yokohama_pad_jev import judge as pad_judge
+
+        return pad_judge(request, pad_config)
     base = dict(judge_request_id=request["judge_request_id"], request_sha256=digest(request))
     try:
         if configuration() != expected:

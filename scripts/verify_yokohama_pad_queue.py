@@ -13,6 +13,18 @@ from src.runtime.yokohama_pad_queue import clearance, clear_window, digest, requ
 from src.runtime.yokohama_payload import read_jsonl  # noqa: E402
 
 
+def response_sequence_checks(requests, entries, repeated_waits):
+    # Pending/hold judge responses add bounded waits; safety and budget evidence
+    # are independently verified below, so receipt count is not fixed at two.
+    count = len(requests) if repeated_waits else 1 + entries
+    return dict(
+        wait_then_continue=count >= 1 + entries
+        and [r["action"] for r in requests]
+        == ["wait_at_current_hold"] * (count - entries) + ["enter_delivery_approach"] * entries,
+        sequences=[r["sequence"] for r in requests] == list(range(count)),
+    )
+
+
 def verify(root):
     def read(p):
         return json.loads(p.read_text())
@@ -129,10 +141,10 @@ def verify(root):
             and permit["permit"]["response_sha256"] == digest(enters[0][1])
         )
         entries = 3 if approach else 1
-        count = len(requests) if c["world"].get("pad_state_advisory") else 1 + entries
-        checks["wait_then_continue"] = count >= 1 + entries and [r["action"] for r in requests] == (
-            ["wait_at_current_hold"] * (count - entries) + ["enter_delivery_approach"] * entries
-        )
+        checks.update(response_sequence_checks(
+            requests, entries,
+            bool(c["world"].get("pad_state_advisory") or p.get("mission_judge")),
+        ))
         if p.get("mission_judge"):
             judge, judge_summary = judge_checks(
                 p["mission_judge"], root, exchanges, received_wall_s
@@ -149,7 +161,6 @@ def verify(root):
                     regrants[0]["permit"]["rules_checked_at"]["wall_s"]
                     - permit["permit"]["rules_checked_at"]["wall_s"]
                 )
-        checks["sequences"] = [r["sequence"] for r in requests] == list(range(count))
         after = [r for r in rows if r["wall_s"] >= permit["permit"]["rules_checked_at"]["wall_s"]]
         checks["clear_through_delivery_and_return"] = bool(after) and all(
             all(clearance(c, r)[k] for k in ("pad_clear", "approach_clear")) for r in after

@@ -243,6 +243,18 @@ def verify(root):
             and e["wall_s"] < consume["wall_s"]
             for e in events
         )
+
+        from scripts.yokohama_altitude_contract import SCHEMA, verify_mapping
+
+        if config.get("altitude_transport_contract") == SCHEMA:
+            mapping = read(root / (permit["upload_name"] + "-altitude-mapping.json"))
+            verify_mapping(mapping)
+            assert digest(mapping) == permit["altitude_transport_sha256"]
+            assert mapping["observation"] == group["authorize"][1]["observation"]
+            assert (
+                ship_anwm.digest(root / (permit["connector_name"] + "-world-items.json"))
+                == permit["connector_world_items_sha256"]
+            )
         if config["decisions"].get("wam_profile") == "motion-v4":
             mapping_row = group["authorize"][1]["observation"]
             assert permit["heading_mapping_observation_sha256"] == digest(mapping_row)

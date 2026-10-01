@@ -209,7 +209,7 @@ def sphere(world, name, xyz, gravity):
     contact_sensor(link, name, ["collision"])
 
 
-def build_world(root, bundle, phase, *, camera_rate_hz=2):
+def build_world(root, bundle, phase, *, camera_rate_hz=2, goal_plan=None):
     root, bundle = Path(root), Path(bundle)
     expected = json.loads((bundle / "files.sha256.json").read_text())
     for name in [
@@ -223,6 +223,10 @@ def build_world(root, bundle, phase, *, camera_rate_hz=2):
     scene = json.loads((bundle / "scene.json").read_text())
     route = json.loads((bundle / "route.json").read_text())
     frame = build_frame(scene, route)
+    if goal_plan is not None:
+        from src.runtime.yokohama_goal import source_route
+
+        route = source_route(goal_plan, route)
     assets = root / "assets"
     assets.mkdir()
     for kind in ["building", "bridge", "terrain", "road"]:
@@ -372,6 +376,7 @@ def build_world(root, bundle, phase, *, camera_rate_hz=2):
     return {
         "schema": "missionos.yokohama-world.v1",
         "phase": phase,
+        **({"goal_plan": goal_plan, "source_route": route} if goal_plan is not None else {}),
         "mesh_conversion": mesh_conversion,
         "frame": frame,
         "points": points,

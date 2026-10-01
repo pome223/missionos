@@ -1460,6 +1460,35 @@ class TaskStore:
             conn.commit()
 
 
+    def reserve_external_request(self, *, budget_id, request_id, task_id, maximum=2):
+        """Persist an irreversible pre-send slot. Failure/crash never refunds it."""
+        if not budget_id or not request_id or isinstance(maximum, bool) or maximum < 1:
+            raise ValueError("Invalid request budget")
+        with sqlite3.connect(self.db_path, timeout=10) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS external_request_budget ("
+                "budget_id TEXT NOT NULL, request_id TEXT NOT NULL, task_id TEXT NOT NULL, "
+                "slot INTEGER NOT NULL, consumed_at REAL NOT NULL, "
+                "PRIMARY KEY(budget_id, request_id))"
+            )
+            if conn.execute(
+                "SELECT 1 FROM external_request_budget WHERE budget_id=? AND request_id=?",
+                (budget_id, request_id),
+            ).fetchone():
+                return None
+            count = conn.execute(
+                "SELECT count(*) FROM external_request_budget WHERE budget_id=?", (budget_id,)
+            ).fetchone()[0]
+            if count >= maximum:
+                return None
+            conn.execute(
+                "INSERT INTO external_request_budget VALUES (?,?,?,?,?)",
+                (budget_id, request_id, task_id, count + 1, time.time()),
+            )
+            return count + 1
+
+
 _task_store: TaskStore | None = None
 
 

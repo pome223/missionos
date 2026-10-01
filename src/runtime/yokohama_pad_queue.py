@@ -583,6 +583,7 @@ class MissionJudgeGate:
             sequence=sequence,
             observation_id=f"pad_judge_{sequence + 1}",
             pad_request_id=request["request_id"],
+            rules_response_sha256=digest(response),
             issued_wall_s=now,
             situation=judge_situation(self.config, request, response),
             remaining_wait_seconds=int(self.policy["max_added_wait_s"] - waited),
@@ -591,6 +592,7 @@ class MissionJudgeGate:
             authority="Rules already allow entry; the judge may only add a bounded wait",
         )
         judge_request["judge_request_id"] = digest(judge_request)
+        atomic_json(folder / "input-response.json", response)
         atomic_json(folder / "request.json", judge_request)
         self.pending = dict(
             request=judge_request,

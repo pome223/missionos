@@ -26,6 +26,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+urban-map = ["shapely>=2.0,<3.0", "pyproj>=3.6,<4.0"]
 prediction = [
   "scikit-learn>=1.5,<2.0",
 ]

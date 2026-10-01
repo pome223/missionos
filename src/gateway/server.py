@@ -6362,7 +6362,7 @@ class GatewayServer:
                         {"detail": "Gateway API key is required for browser requests"},
                         status_code=401,
                     )
-            if path in {"/", "/health", "/protocol"}:
+            if path in {"/", "/health", "/protocol", "/missionos/yokohama/map"} or (request.method == "GET" and path in {"/missionos/yokohama/map/assets/three.min.js", "/missionos/yokohama/map/assets/scene.json"}):
                 return await call_next(request)
             if not api_key:
                 client_host = request.client.host if request.client is not None else ""
@@ -8715,6 +8715,12 @@ class GatewayServer:
         # --- health / root / protocol ---
         from src.gateway.go2_delivery_routes import build_go2_delivery_router
         self.app.include_router(build_go2_delivery_router())
+
+        from src.gateway.yokohama_map import build_yokohama_map_router
+        self.app.include_router(build_yokohama_map_router(
+            self.task_store,
+            lambda request: self._resolve_http_user_id(request, None, default_user_id="yokohama-map"),
+        ))
 
         self.app.include_router(
             build_real_hardware_router(
