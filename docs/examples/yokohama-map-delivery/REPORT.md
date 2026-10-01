@@ -31,6 +31,36 @@ credential loading. It supplies no private grant, ledger or automatic initialize
 the consumed original grant remains separate and unchanged. Offline mock tests
 retain irreversible reservation, replay, restart and crash-boundary coverage.
 
+## Execution snapshot and public source
+
+The retained flight used private execution commit
+`04ed47cf04f0bd94540fb73a994bb0e3aab0ee5b`, which is not a public checkout target.
+The [source correspondence receipt](source-provenance.json) compares all 55
+approved runtime hashes with that commit's Git blobs and this publication;
+all 55 recorded hashes match the private execution source. Of 56 audited files
+(including the separate launcher), 53 runtime files remain byte-identical.
+The three differences close the private live boundary:
+
+| File | Public change |
+|---|---|
+| `src/intelligence/yokohama_jev_live.py` | Disables live sends, replaces private grant identity, and removes the private-account default grant location. Mock tests inject an absolute isolated ledger path. |
+| `src/intelligence/yokohama_pad_jev.py` | Rejects live configuration before credential, ledger or HTTP access. |
+| `scripts/run_yokohama_jev_live_gateway.py` | Rejects launch before loading credentials. |
+
+The mission uploader SHA-256 is
+`b3673e9edc9ac89e0397937ccb18a63b9fd3aef5ecdc86cc97c34a3ae01b25af`
+in the saved approval, private snapshot and public source. Flight worker,
+altitude conversion, Rules, goal planning, cargo receiver and return verification
+also retain their recorded runtime hashes. The receipt contains no private
+ledger, grant identity, runtime logs or credentials.
+
+The remaining publication changes add the camera exporter/media, documentation,
+mock/export tests and the CI geometry dependency. They do not establish another
+simulator flight. The public HTTP/browser fixture smoke is a separate check of
+goal selection, approval, fixture receipt/return and UI rendering. It is not
+PX4/Gazebo flight evidence and did not invoke Jev. The one retained full flight
+and the public fixture smoke must be read as distinct observations.
+
 ## Video
 
 The video and preview depict the **Yokohama City / Project PLATEAU** 3D city
@@ -63,8 +93,13 @@ The public export receipt records video codec, size, duration, source timing and
 hashes. This export is 110.92 s, 640×480, 2662 encoded
 frames and 3,174,886 bytes (3.03 MiB), within the 8 MiB preparation cap. Raw runtime logs, private database, budget identity and credentials are
 not part of this publication. H.264/yuv420p and MP4 fast-start are used for browser
-compatibility. The GitHub README player must be checked after the reviewed video
-attachment is uploaded; a thumbnail link remains available if embedding fails.
+compatibility. The uploaded GitHub README player was checked in an anonymous
+Chrome browser: controls were present, duration was 110.92 s, resolution was
+640×480, playback advanced and no media error occurred. After a 315 s wait, the
+old temporary redirect returned 403; the canonical GitHub attachment returned
+200 with the same MP4 hash and a new browser played it. These observations
+verify reopening after expiry, not uninterrupted playback in an indefinitely
+open tab.
 
 ## Opening the attached video
 
@@ -79,8 +114,11 @@ left open or control GitHub/browser caching.
 
 ## Offline verification
 
-The exact final source must pass its tests and a loopback HTTP fixture smoke
-before PR publication. The smoke exercises goal selection → approval → fixture
+The initial public snapshot passed 3,929 tests, changed-file lint and source
+type checking. Its loopback HTTP fixture smoke exercised the production
+Gateway boundary; anonymous Chrome rendered the GUI and completed the fixture
+flow. Subsequent review changes require their own tests and CI results, recorded
+in the PR rather than inheriting that earlier test count. The smoke exercises goal selection → approval → fixture
 runner → cargo/return verification without a simulator or provider API. Tests
 of the provider path inject mock responses; they are not real Jev invocations.
 No new flight or external API call is needed to export this recording.

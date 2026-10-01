@@ -204,7 +204,9 @@ Public runtime sets `LIVE_ENABLED = False`. Selecting live mode fails before
 credential loading, ledger use or HTTP. Environment changes cannot enable it.
 Mock-only tests inject provider responses and explicitly patch the source flag;
 no production grant registration or initializer is supplied. Missing or consumed
-ledgers continue to fail closed. A future live execution requires its own
+ledgers continue to fail closed. Public code has no default ledger path and
+never resolves the original OS-account grant directory. Mock tests inject an
+explicit absolute temporary path; fixture configuration opens no grant file. A future live execution requires its own
 operator authorization, independently reviewed grant and credential handling.
 
 The preserved common-ledger contract binds one delivery to its full approved

@@ -280,22 +280,41 @@ def test_missing_ledger_runtime_and_initializer_fail_closed(tmp_path):
     with pytest.raises(ValueError, match="never recreate"):
         ledger.claim("new", "plan")
 
-def test_grant_path_is_shared_across_worktrees_and_environment(tmp_path):
+def test_public_default_ledger_never_resolves_private_home(monkeypatch, tmp_path):
+    import src.intelligence.yokohama_jev_live as live
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Public fixture must not inspect private grants")
+
+    monkeypatch.setenv("HOME", str(tmp_path / "alternate-home"))
+    monkeypatch.setenv("MISSIONOS_STATE_ROOT", str(tmp_path / "alternate-state"))
+    monkeypatch.setattr(Path, "is_file", forbidden)
+    monkeypatch.setattr(sqlite3, "connect", forbidden)
+    assert not hasattr(live, "GRANT_ROOT") and not hasattr(live, "LEDGER")
+    with pytest.raises(ValueError, match="no default live ledger"):
+        LiveLedger()
+    with pytest.raises(ValueError, match="absolute"):
+        LiveLedger("relative.db")
+    monkeypatch.setenv("MISSIONOS_YOKOHAMA_JEV_MODE", "fixture")
+    assert configuration()["mode"] == "fixture"
+
+
+def test_explicit_mock_ledger_remains_bound_across_cwd_and_environment(ledger, tmp_path):
     import os
-    from src.intelligence.yokohama_jev_live import LEDGER
+
     env = os.environ.copy()
     env["HOME"] = str(tmp_path / "alternate-home")
     env["MISSIONOS_STATE_ROOT"] = str(tmp_path / "alternate-state")
-    # Absolute PYTHONPATH, so cwd can vary without using original checkout.
     env["PYTHONPATH"] = str(Path(__file__).resolve().parents[1])
     for cwd in (tmp_path, tmp_path / "other-worktree"):
         cwd.mkdir(exist_ok=True)
-        result = subprocess.run([sys.executable, "-c",
-            "from src.intelligence.yokohama_jev_live import LEDGER; print(LEDGER)"],
-            cwd=cwd, env=env, capture_output=True, text=True, timeout=10)
-        assert result.returncode == 0
-        assert result.stdout.strip() == str(LEDGER)
-    assert not LEDGER.is_relative_to(Path(__file__).resolve().parents[1])
+        code = ("from src.intelligence.yokohama_jev_live import LiveLedger; "
+                f"s=LiveLedger({str(ledger.path)!r}); "
+                "s.claim('unapproved-other-task','other-plan')")
+        result = subprocess.run([sys.executable, "-c", code], cwd=cwd, env=env,
+                                capture_output=True, text=True, timeout=10)
+        assert result.returncode != 0 and "already consumed" in result.stderr
+
 
 
 def test_missing_entire_grant_fails_closed_no_runtime_initializer(tmp_path):

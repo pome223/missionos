@@ -1,7 +1,6 @@
 """One explicitly authorized delivery budget; no automatic ledger recreation."""
 import json
 import os
-import pwd
 from pathlib import Path
 import sqlite3
 import time
@@ -15,11 +14,8 @@ MODEL = "jev-1.13.0"
 MAX_BYTES = 32768
 # Conservative whole official 64k context, rounded UP to 65536 tokens.
 MAX_REQUEST_USD = 65536 * 0.042 / 1_000_000
-ROOT = Path(__file__).resolve().parents[2]
-# OS account home, not HOME/state-root/cwd/worktree environment overrides.
-# No registration/recreation entrypoint exists in the reviewed runtime.
-GRANT_ROOT = Path(pwd.getpwuid(os.getuid()).pw_dir) / "works" / "missionos-grants"
-LEDGER = GRANT_ROOT / BUDGET_ID / "budget.sqlite3"
+# Public fixtures have no default filesystem grant location. Tests explicitly
+# inject an isolated absolute path; the consumed private grant is never resolved.
 
 
 class NoRedirect(HTTPRedirectHandler):
@@ -28,8 +24,12 @@ class NoRedirect(HTTPRedirectHandler):
 
 
 class LiveLedger:
-    def __init__(self, path=LEDGER):
+    def __init__(self, path=None):
+        if path is None:
+            raise ValueError("Public demonstration has no default live ledger; explicit mock ledger required")
         self.path = Path(path)
+        if not self.path.is_absolute():
+            raise ValueError("Explicit ledger path must be absolute")
 
     def connect(self):
         if (self.path.is_symlink() or not self.path.is_file()

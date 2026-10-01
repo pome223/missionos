@@ -1,0 +1,401 @@
+{
+  "schema": "yokohama_public_source_provenance.v1",
+  "recorded_execution_commit": "04ed47cf04f0bd94540fb73a994bb0e3aab0ee5b",
+  "initial_public_comparison_commit": "4dad63001ddcac16f2b540f006e71d4bad62a721",
+  "approved_runtime_files": 55,
+  "files": [
+    {
+      "path": "scripts/run_yokohama_jev_live_gateway.py",
+      "recorded_sha256": "352005471be0d910075ed59414dc6d4d9d341ddec3117eccee425b0c3fc8b41f",
+      "public_sha256": "d5571f3122b087a38c5b4fb7679a36218e351b0b7bc4cece5342613201eb39ec",
+      "approved_manifest_bound": false,
+      "role": "closed_live_boundary"
+    },
+    {
+      "path": "scripts/smoke_px4_gazebo_sitl_mission_upload.py",
+      "recorded_sha256": "b3673e9edc9ac89e0397937ccb18a63b9fd3aef5ecdc86cc97c34a3ae01b25af",
+      "public_sha256": "b3673e9edc9ac89e0397937ccb18a63b9fd3aef5ecdc86cc97c34a3ae01b25af",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/verify_yokohama_decisions.py",
+      "recorded_sha256": "3dd039700162e99206c88e0445975b6bb468f52b030bae42d0801592c2186cd4",
+      "public_sha256": "3dd039700162e99206c88e0445975b6bb468f52b030bae42d0801592c2186cd4",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/verify_yokohama_motion.py",
+      "recorded_sha256": "c5b9d716ab7c4d16abbaf9f741a2c543e7cbac10cefeb4ceff201d52380ee485",
+      "public_sha256": "c5b9d716ab7c4d16abbaf9f741a2c543e7cbac10cefeb4ceff201d52380ee485",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/verify_yokohama_pad_advisory.py",
+      "recorded_sha256": "6f63a70af8dcc55622c5270590185b40e2806f32e765a56954f950c0712b49b5",
+      "public_sha256": "6f63a70af8dcc55622c5270590185b40e2806f32e765a56954f950c0712b49b5",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/verify_yokohama_pad_approach_fault.py",
+      "recorded_sha256": "155ffe08e4ef5a74a6de6eeabac651494dac1228140988c0728d3dfea497bf21",
+      "public_sha256": "155ffe08e4ef5a74a6de6eeabac651494dac1228140988c0728d3dfea497bf21",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/verify_yokohama_pad_queue.py",
+      "recorded_sha256": "a53925ed547fda20d006151c823dc05d4eb77c7837abdfcbd05ee664ca54cabc",
+      "public_sha256": "a53925ed547fda20d006151c823dc05d4eb77c7837abdfcbd05ee664ca54cabc",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/verify_yokohama_paired.py",
+      "recorded_sha256": "c62ca48e5c43e932f67a0f2dfb888b8d2b7e036fa0f63101967dbec16c57f003",
+      "public_sha256": "c62ca48e5c43e932f67a0f2dfb888b8d2b7e036fa0f63101967dbec16c57f003",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/verify_yokohama_payload.py",
+      "recorded_sha256": "b524a558591ea0b5dc1d6e82097b9ebbf5f08783d2f89b54ac872dc3643bbba8",
+      "public_sha256": "b524a558591ea0b5dc1d6e82097b9ebbf5f08783d2f89b54ac872dc3643bbba8",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/verify_yokohama_recovery.py",
+      "recorded_sha256": "6b9d2fac42f1b380e2076b994e57a9a8d6663e2dd6b4eedc053a09f5bf7d0a1a",
+      "public_sha256": "6b9d2fac42f1b380e2076b994e57a9a8d6663e2dd6b4eedc053a09f5bf7d0a1a",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/verify_yokohama_sitl.py",
+      "recorded_sha256": "dc689bb8968d382a9d09437363db11868d810cff4456b73eb9f1ff3ea494e8db",
+      "public_sha256": "dc689bb8968d382a9d09437363db11868d810cff4456b73eb9f1ff3ea494e8db",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/yokohama_adaptation_worker.py",
+      "recorded_sha256": "ee4e10cfb6e970ac70fdb682611353cf0c5e6863e65410b3b10ef9f8e46c331b",
+      "public_sha256": "ee4e10cfb6e970ac70fdb682611353cf0c5e6863e65410b3b10ef9f8e46c331b",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/yokohama_altitude.py",
+      "recorded_sha256": "8061bc5c0cb55c54f3983fb4ff71e24926f966eb9398b5e08b77a33f05542d10",
+      "public_sha256": "8061bc5c0cb55c54f3983fb4ff71e24926f966eb9398b5e08b77a33f05542d10",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/yokohama_altitude_contract.py",
+      "recorded_sha256": "71fc461c952ad2a0c34c46358bfdf204c1c3ef9d3fc58259ee29e3fa2efa4195",
+      "public_sha256": "71fc461c952ad2a0c34c46358bfdf204c1c3ef9d3fc58259ee29e3fa2efa4195",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/yokohama_appearance.py",
+      "recorded_sha256": "450da308c1d884e4fca1766d1143c80fd48b1f22b8aba3b071304100dd065ec9",
+      "public_sha256": "450da308c1d884e4fca1766d1143c80fd48b1f22b8aba3b071304100dd065ec9",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/yokohama_cloud_lifecycle.py",
+      "recorded_sha256": "5661c0673484c730ffdeb94c9afec9c49b79830eca71f560fe68cdb61e76cea6",
+      "public_sha256": "5661c0673484c730ffdeb94c9afec9c49b79830eca71f560fe68cdb61e76cea6",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/yokohama_decision_host.py",
+      "recorded_sha256": "0fea7ae722cdc5cdf95714bb11f5b22297ab21ab92cda0f0060ee325f314073a",
+      "public_sha256": "0fea7ae722cdc5cdf95714bb11f5b22297ab21ab92cda0f0060ee325f314073a",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/yokohama_decision_worker.py",
+      "recorded_sha256": "888d991c7dc3c8082daba746419188e912af2e8d1543e6f6b4332521bf37988d",
+      "public_sha256": "888d991c7dc3c8082daba746419188e912af2e8d1543e6f6b4332521bf37988d",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/yokohama_flight_worker.py",
+      "recorded_sha256": "ca3af906aa054bb7aae3947800281e7d2e31cf5d29e76fcec8962efd461d62cd",
+      "public_sha256": "ca3af906aa054bb7aae3947800281e7d2e31cf5d29e76fcec8962efd461d62cd",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/yokohama_map_server.py",
+      "recorded_sha256": "c437cfe11e093968dbf2883445de204d7d479ee82275fe93663edddbe617a52a",
+      "public_sha256": "c437cfe11e093968dbf2883445de204d7d479ee82275fe93663edddbe617a52a",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/yokohama_motion_data.py",
+      "recorded_sha256": "08bd6626097319f6ad3cdd1a52f60757c077177ed2181da792dd19379c1246ba",
+      "public_sha256": "08bd6626097319f6ad3cdd1a52f60757c077177ed2181da792dd19379c1246ba",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/yokohama_motion_recorder.py",
+      "recorded_sha256": "553729fd6aafbf346d9b6db61c2a42c6f9361b329de71c707fcb89a0c08eae0c",
+      "public_sha256": "553729fd6aafbf346d9b6db61c2a42c6f9361b329de71c707fcb89a0c08eae0c",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/yokohama_pad_advisory_host.py",
+      "recorded_sha256": "1681d8cb41658c1b60aef37efa0f6b4c0abc5772a2d93a37ccbc6b2ec6c6c313",
+      "public_sha256": "1681d8cb41658c1b60aef37efa0f6b4c0abc5772a2d93a37ccbc6b2ec6c6c313",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/yokohama_pad_advisory_worker.py",
+      "recorded_sha256": "89cda63df33cd4afd2f29a1900e6df9dd7cde77f33f1676b1bbfcd58c5f3346b",
+      "public_sha256": "89cda63df33cd4afd2f29a1900e6df9dd7cde77f33f1676b1bbfcd58c5f3346b",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/yokohama_pad_focus_data.py",
+      "recorded_sha256": "8e5ea063704f3accf8aa74b80d2ad2bfc63cf4d7c6d6dd7db7723c7499ad8221",
+      "public_sha256": "8e5ea063704f3accf8aa74b80d2ad2bfc63cf4d7c6d6dd7db7723c7499ad8221",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/yokohama_pad_learning_data.py",
+      "recorded_sha256": "a9fce0340e2a3b2349a0b1edd4a305155b6d826af2c244e54109e12f0723bec3",
+      "public_sha256": "a9fce0340e2a3b2349a0b1edd4a305155b6d826af2c244e54109e12f0723bec3",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/yokohama_pad_state.py",
+      "recorded_sha256": "646a27b316991d6b95bb963aa278265b9b7099d3384d3d6cc13b82fd4b6c3b76",
+      "public_sha256": "646a27b316991d6b95bb963aa278265b9b7099d3384d3d6cc13b82fd4b6c3b76",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/yokohama_pad_worker.py",
+      "recorded_sha256": "143699920729a4fac6c69e43a6d9b242186ab20f2295d8b5b6343800d59b74e3",
+      "public_sha256": "143699920729a4fac6c69e43a6d9b242186ab20f2295d8b5b6343800d59b74e3",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/yokohama_sitl.py",
+      "recorded_sha256": "919062412b369dea3d2108881da646fb7f69e6c77e16af92323c861679536417",
+      "public_sha256": "919062412b369dea3d2108881da646fb7f69e6c77e16af92323c861679536417",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/yokohama_sitl_worker.py",
+      "recorded_sha256": "233518edcceee5ccea3a0052e9a98d7ee12893fe8a2b94b08d70266c75ea121c",
+      "public_sha256": "233518edcceee5ccea3a0052e9a98d7ee12893fe8a2b94b08d70266c75ea121c",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/yokohama_wam_profile.py",
+      "recorded_sha256": "1dba81457144c67c1562689644f14ce4d2ea5d3cd73f5ddfbf964f86e3ad46c6",
+      "public_sha256": "1dba81457144c67c1562689644f14ce4d2ea5d3cd73f5ddfbf964f86e3ad46c6",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "scripts/yokohama_wind_transport_worker.py",
+      "recorded_sha256": "fbbbe370938e3ecc6e87beb40305f24dc4187fbeb39c5d9ca306aaa23cd8da83",
+      "public_sha256": "fbbbe370938e3ecc6e87beb40305f24dc4187fbeb39c5d9ca306aaa23cd8da83",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "src/gateway/yokohama_delivery_chat.py",
+      "recorded_sha256": "7448671720262a5be4f68c842fbead9ae3b76031bf1ae32a791e69d4c8a3b95d",
+      "public_sha256": "7448671720262a5be4f68c842fbead9ae3b76031bf1ae32a791e69d4c8a3b95d",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "src/gateway/yokohama_dispatch.py",
+      "recorded_sha256": "45436f444440fc07ec2926b965c54ac199e5b7cbb3ae8aa35ad1f058f6459597",
+      "public_sha256": "45436f444440fc07ec2926b965c54ac199e5b7cbb3ae8aa35ad1f058f6459597",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "src/gateway/yokohama_map.py",
+      "recorded_sha256": "c963362503f6793ac6bae2b768a6b5e3d1cc99e20399058d5edf4d13c7cdb066",
+      "public_sha256": "c963362503f6793ac6bae2b768a6b5e3d1cc99e20399058d5edf4d13c7cdb066",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "src/intelligence/jev_assurance.py",
+      "recorded_sha256": "daadb66ea2fe44a7da0d56185e20c796afaf84c1187ceffcec0cb9db9fba55d8",
+      "public_sha256": "daadb66ea2fe44a7da0d56185e20c796afaf84c1187ceffcec0cb9db9fba55d8",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "src/intelligence/yokohama_delivery_agents.py",
+      "recorded_sha256": "c826e5448d90e6f9adc918068c809d0b580836331f6126cf07ccd9d1e892c068",
+      "public_sha256": "c826e5448d90e6f9adc918068c809d0b580836331f6126cf07ccd9d1e892c068",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "src/intelligence/yokohama_jev_live.py",
+      "recorded_sha256": "d9574453b2962ad757dd0f7332cd93360c8bace600984a36ee4924415a3617b5",
+      "public_sha256": "4812104a077dc5175df39464b8c75515d67f2b3b099972428ec1d13a0ddc0538",
+      "approved_manifest_bound": true,
+      "role": "closed_live_boundary"
+    },
+    {
+      "path": "src/intelligence/yokohama_pad_jev.py",
+      "recorded_sha256": "50c7301dead88cc86d6b60264bd2b964f01682c5b8d10726e919f5dc785a647f",
+      "public_sha256": "7ba983e524ea884e1e7621c3017b3545f2adbc5ffad7d86914419c16b5b5dbbf",
+      "approved_manifest_bound": true,
+      "role": "closed_live_boundary"
+    },
+    {
+      "path": "src/runtime/task_store.py",
+      "recorded_sha256": "458655ab36fc43b031a0f2cce48bb71ef5688d3027499a52c988c56e22f26c80",
+      "public_sha256": "458655ab36fc43b031a0f2cce48bb71ef5688d3027499a52c988c56e22f26c80",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "src/runtime/yokohama_adaptation.py",
+      "recorded_sha256": "bc49bfc457b29b4e4bb9249b6128add1bf5efd5bf95e18b9cecc630f5fc5dee9",
+      "public_sha256": "bc49bfc457b29b4e4bb9249b6128add1bf5efd5bf95e18b9cecc630f5fc5dee9",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "src/runtime/yokohama_goal.py",
+      "recorded_sha256": "658dd87637a1d1162f9a16e6f60c14ccebb1b3cbfc1c64f45174efb7f49d538d",
+      "public_sha256": "658dd87637a1d1162f9a16e6f60c14ccebb1b3cbfc1c64f45174efb7f49d538d",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "src/runtime/yokohama_goal_fixture.py",
+      "recorded_sha256": "d6dd1c281f085b2cb97a0ccd11b5a61b6dcabeab0d836db209b61a9c376db3b4",
+      "public_sha256": "d6dd1c281f085b2cb97a0ccd11b5a61b6dcabeab0d836db209b61a9c376db3b4",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "src/runtime/yokohama_mission_response.py",
+      "recorded_sha256": "5f03ed67fef51dfb62f24692c068e4fe2c69e2de3aeb4d82d4ee73c2a4c2c952",
+      "public_sha256": "5f03ed67fef51dfb62f24692c068e4fe2c69e2de3aeb4d82d4ee73c2a4c2c952",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "src/runtime/yokohama_motion.py",
+      "recorded_sha256": "95071a2a5097b524d9029e64c886f6f977fc55dcc8dc4fc0c210e5bdcc962081",
+      "public_sha256": "95071a2a5097b524d9029e64c886f6f977fc55dcc8dc4fc0c210e5bdcc962081",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "src/runtime/yokohama_native.py",
+      "recorded_sha256": "0f16f25db09f7de43bdff30ea031ea9e6bb5ac0a85b839e5aa304e95d1d93c44",
+      "public_sha256": "0f16f25db09f7de43bdff30ea031ea9e6bb5ac0a85b839e5aa304e95d1d93c44",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "src/runtime/yokohama_pad_advisory_contract.py",
+      "recorded_sha256": "3ccb271d50fb3e845607becc00b9ba22fc8b4d9dcced8da3be91f04b7d99df31",
+      "public_sha256": "3ccb271d50fb3e845607becc00b9ba22fc8b4d9dcced8da3be91f04b7d99df31",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "src/runtime/yokohama_pad_prediction.py",
+      "recorded_sha256": "01a0461d901178937f8dffe1b01a66f404e9dfda80f81d84417147a74c20b09f",
+      "public_sha256": "01a0461d901178937f8dffe1b01a66f404e9dfda80f81d84417147a74c20b09f",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "src/runtime/yokohama_pad_queue.py",
+      "recorded_sha256": "62d912e00677709cc3aa5ae98239f883c0bbe1f1f0e0eef3015236941c2dbf08",
+      "public_sha256": "62d912e00677709cc3aa5ae98239f883c0bbe1f1f0e0eef3015236941c2dbf08",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "src/runtime/yokohama_pad_reentry_risk.py",
+      "recorded_sha256": "aded502c42818fecbdcdb15a756fd296ded0fa343fb84d7b83071297ff7082bd",
+      "public_sha256": "aded502c42818fecbdcdb15a756fd296ded0fa343fb84d7b83071297ff7082bd",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "src/runtime/yokohama_paired.py",
+      "recorded_sha256": "ed4ee02124c0d18d99c6e7569fe413e07a300df6602a359f9c6ccaa9a22c0840",
+      "public_sha256": "ed4ee02124c0d18d99c6e7569fe413e07a300df6602a359f9c6ccaa9a22c0840",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "src/runtime/yokohama_payload.py",
+      "recorded_sha256": "c98cb5368bca468280e2f35d0bbc8a48ab79dc90398ac15619b74353717e1af0",
+      "public_sha256": "c98cb5368bca468280e2f35d0bbc8a48ab79dc90398ac15619b74353717e1af0",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "src/runtime/yokohama_scene.py",
+      "recorded_sha256": "c0022edd89205c9a87218d5f2b3325e23334a9ed77ac1e4fc4189c69d15e51b5",
+      "public_sha256": "c0022edd89205c9a87218d5f2b3325e23334a9ed77ac1e4fc4189c69d15e51b5",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "src/runtime/yokohama_sea.py",
+      "recorded_sha256": "7b2452561b1ca0aa5f51e1b86096dd844d91d19f537415840935956ae6feaee3",
+      "public_sha256": "7b2452561b1ca0aa5f51e1b86096dd844d91d19f537415840935956ae6feaee3",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "src/runtime/yokohama_wind.py",
+      "recorded_sha256": "a8e960e41583863d5b98aafdd436dcc8598cf98e3a3881b58f577d8cc1646c84",
+      "public_sha256": "a8e960e41583863d5b98aafdd436dcc8598cf98e3a3881b58f577d8cc1646c84",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    },
+    {
+      "path": "src/runtime/yokohama_wind_profile.py",
+      "recorded_sha256": "f2e3ee920d20981d6fee5362373ea81863bb060a3c485ed74a0355b04e0d2761",
+      "public_sha256": "f2e3ee920d20981d6fee5362373ea81863bb060a3c485ed74a0355b04e0d2761",
+      "approved_manifest_bound": true,
+      "role": "unchanged_runtime"
+    }
+  ],
+  "claim": "Retained simulator evidence from a private execution snapshot; no new flight of the public live-disabled package."
+}
