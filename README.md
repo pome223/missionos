@@ -58,7 +58,7 @@ decision; the city VLA/WAM models were CPU fixtures. `continue` adds no extra
 waiting: independent Rules still decide whether entry is safe. This is simulator
 evidence, not physical delivery or a demonstration of native city-model quality.
 
-[![Recorded Yokohama delivery camera timelapse](docs/examples/yokohama-map-delivery/preview.png)](docs/examples/yokohama-map-delivery/camera-timelapse.mp4)
+https://github.com/user-attachments/assets/2230d559-6cf9-4b80-b559-25ffa761ec21
 
 *Saved simulation camera images, played at 12× speed; inset cameras are from the
 same run. Frames are held between recorded samples. This is not a screen
@@ -68,8 +68,8 @@ recording of the GUI or a new flight.*
 coordinates, meshes, display materials and collision proxies, and added the
 demonstration route. [Source, license and attribution](docs/examples/yokohama-urban-scene/ATTRIBUTION.md).
 
-<!-- Replace the above playback link with a GitHub video attachment after public
-review and verify the README player in a real browser. No attachment exists yet. -->
+[Video preview](docs/examples/yokohama-map-delivery/preview.png) ·
+[Download MP4](docs/examples/yokohama-map-delivery/camera-timelapse.mp4)
 
 [Result and video limits](docs/examples/yokohama-map-delivery/REPORT.md) ·
 [GUI and authority contract](docs/agents/yokohama-map-goal.md)
