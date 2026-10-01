@@ -5,16 +5,25 @@
   "interpolation": false,
   "audio": false,
   "source_frame_count": 634,
+  "provider_claim": "none; camera images alone do not prove model invocation",
+  "attribution": {
+    "source": "Yokohama City / Project PLATEAU, 2024 catalog",
+    "source_url": "https://www.geospatial.jp/ckan/dataset/plateau-14100-yokohama-shi-2024",
+    "license": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "modifications": "MissionOS scene transformations and demonstration route",
+    "details": "docs/examples/yokohama-urban-scene/ATTRIBUTION.md"
+  },
   "source_start_sim_s": 4.336,
   "source_end_sim_s": 1334.252,
   "duration_s": 110.916667,
   "width": 640,
-  "height": 440,
+  "height": 480,
   "codec": "h264",
   "pixel_format": "yuv420p",
   "encoded_frame_count": 2662,
-  "size_bytes": 3300099,
-  "sha256": "b159dc49cd20bf62664b21dc79e68431f6c7c1247016541a89187e42002f297b",
+  "size_bytes": 3174886,
+  "sha256": "e0224de5a27baf90aff737081d2c02b33ed7186095c987709070951f6e6839d3",
   "maximum_source_gap_sim_s": 2.5,
   "frames": [
     {

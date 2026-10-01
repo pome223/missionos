@@ -33,9 +33,19 @@ retain irreversible reservation, replay, restart and crash-boundary coverage.
 
 ## Video
 
+The video and preview depict the **Yokohama City / Project PLATEAU** 3D city
+model, licensed under **CC BY 4.0**. MissionOS selected the neighborhood,
+transformed coordinates and geometry, added display materials and conservative
+collision proxies, and added the demonstration route/pad. These modifications
+are not municipal or MLIT-authored plans. [Full attribution, source and license](../yokohama-urban-scene/ATTRIBUTION.md)
+apply to the derived video and preview as well as the scene. Credits and the
+source dataset URL are visible in the video and preview themselves.
+
 `camera-timelapse.mp4` is an offline export of this run's actual saved simulator
 camera images at **12× simulation time**, with no audio. The primary stream is
-634 onboard images from simulation 4.336 s to 1334.252 s. Their spacing is
+634 onboard images from simulation 4.336 s to 1334.252 s. The exporter makes no provider/model invocation claim from camera images alone;
+Jev execution above is established separately by the verified run evidence.
+Their spacing is
 1.748–2.500 simulation seconds. A previous camera image is held until the next
 recorded sample; no intermediate camera motion is synthesized. Any source gap
 above 3 s is explicitly labelled by the exporter.
@@ -50,8 +60,8 @@ playback speed are shown, and landing/disarm are established by verifier
 evidence rather than by interpreting the video alone.
 
 The public export receipt records video codec, size, duration, source timing and
-hashes. This export is 110.92 s, 640×440, 2662 encoded
-frames and 3,300,099 bytes (3.15 MiB), within the 8 MiB preparation cap. Raw runtime logs, private database, budget identity and credentials are
+hashes. This export is 110.92 s, 640×480, 2662 encoded
+frames and 3,174,886 bytes (3.03 MiB), within the 8 MiB preparation cap. Raw runtime logs, private database, budget identity and credentials are
 not part of this publication. H.264/yuv420p and MP4 fast-start are used for browser
 compatibility. The GitHub README player must be checked after the reviewed video
 attachment is uploaded; a thumbnail link remains available if embedding fails.

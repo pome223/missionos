@@ -50,6 +50,7 @@ def export(run: Path, output: Path, *, speed: float = 12, max_bytes: int = 8 * 1
     generated = output / "rendered-frames"
     generated.mkdir()
     font, small = ImageFont.load_default(size=16), ImageFont.load_default(size=13)
+    credit_font = ImageFont.load_default(size=10)
     durations, provenance, concat = [], [], []
     for i, frame in enumerate(onboard):
         image = frame["image"]
@@ -59,12 +60,12 @@ def export(run: Path, output: Path, *, speed: float = 12, max_bytes: int = 8 * 1
         duration = interval / speed if interval else 1 / 24
         durations.append(duration)
         with Image.open(run / image["file"]) as original:
-            canvas = Image.new("RGB", (640, 440), "#102b33")
+            canvas = Image.new("RGB", (640, 480), "#102b33")
             canvas.paste(original.convert("RGB"), (0, 80))
         draw = ImageDraw.Draw(canvas)
-        draw.text((12, 6), f"CPU PX4/Gazebo | Recorded cameras | {speed:g}x | SIM {stamp:.3f}s",
+        draw.text((12, 6), f"Recorded simulator cameras | {speed:g}x | SIM {stamp:.3f}s",
                   fill="#8feac9", font=font)
-        draw.text((12, 30), "City VLA/WAM fixtures; run used one real Jev decision",
+        draw.text((12, 30), "Recorded images; provider/model use documented separately",
                   fill="white", font=small)
         gap = "SOURCE GAP" if interval > 3 else "Camera sampling"
         draw.text((12, 53), f"{gap}: next image +{interval:.3f} sim s; held frames, no interpolation",
@@ -80,6 +81,12 @@ def export(run: Path, output: Path, *, speed: float = 12, max_bytes: int = 8 * 1
             draw.rectangle((378, 268, 638, 438), outline="#8feac9", width=2)
             draw.text((384, 271), f"{label} | SIM {meta['sensor_sim_s']:.2f}s",
                       fill="white", font=small)
+        draw.text((12, 444),
+                  "Yokohama City / Project PLATEAU | CC BY 4.0 | MissionOS modifications",
+                  fill="#d2e0e5", font=small)
+        draw.text((12, 465),
+                  "Source: https://www.geospatial.jp/ckan/dataset/plateau-14100-yokohama-shi-2024",
+                  fill="#d2e0e5", font=credit_font)
         target = generated / f"frame-{i:04d}.png"
         canvas.save(target)
         # Relative generated paths only; no source path is embedded in public receipts.
@@ -108,6 +115,15 @@ def export(run: Path, output: Path, *, speed: float = 12, max_bytes: int = 8 * 1
     receipt = {"schema": "missionos.recorded-camera-timelapse.v1", "speed": speed,
                "source_kind": "recorded_simulator_camera_images", "interpolation": False,
                "audio": False, "source_frame_count": len(onboard),
+               "provider_claim": "none; camera images alone do not prove model invocation",
+               "attribution": {
+                   "source": "Yokohama City / Project PLATEAU, 2024 catalog",
+                   "source_url": "https://www.geospatial.jp/ckan/dataset/plateau-14100-yokohama-shi-2024",
+                   "license": "CC BY 4.0",
+                   "license_url": "https://creativecommons.org/licenses/by/4.0/",
+                   "modifications": "MissionOS scene transformations and demonstration route",
+                   "details": "docs/examples/yokohama-urban-scene/ATTRIBUTION.md",
+               },
                "source_start_sim_s": onboard[0]["image"]["sensor_sim_s"],
                "source_end_sim_s": onboard[-1]["image"]["sensor_sim_s"],
                "duration_s": float(probe["format"]["duration"]),

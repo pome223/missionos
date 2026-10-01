@@ -64,6 +64,10 @@ evidence, not physical delivery or a demonstration of native city-model quality.
 same run. Frames are held between recorded samples. This is not a screen
 recording of the GUI or a new flight.*
 
+3D scene: **Yokohama City / Project PLATEAU**, **CC BY 4.0**. MissionOS modified
+coordinates, meshes, display materials and collision proxies, and added the
+demonstration route. [Source, license and attribution](docs/examples/yokohama-urban-scene/ATTRIBUTION.md).
+
 <!-- Replace the above playback link with a GitHub video attachment after public
 review and verify the README player in a real browser. No attachment exists yet. -->
 
