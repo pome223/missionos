@@ -1,0 +1,4459 @@
+{
+  "schema": "missionos.recorded-camera-timelapse.v1",
+  "speed": 12.0,
+  "source_kind": "recorded_simulator_camera_images",
+  "interpolation": false,
+  "audio": false,
+  "source_frame_count": 634,
+  "source_start_sim_s": 4.336,
+  "source_end_sim_s": 1334.252,
+  "duration_s": 110.916667,
+  "width": 640,
+  "height": 440,
+  "codec": "h264",
+  "pixel_format": "yuv420p",
+  "encoded_frame_count": 2662,
+  "size_bytes": 3300099,
+  "sha256": "b159dc49cd20bf62664b21dc79e68431f6c7c1247016541a89187e42002f297b",
+  "maximum_source_gap_sim_s": 2.5,
+  "frames": [
+    {
+      "sensor_sim_s": 4.336,
+      "camera_image_sha256": "50e1c90ff01705b1de387f67a1ae7f8e4f473394ccfbc9d12f476a3792814b67",
+      "next_sample_sim_seconds": 2.1639999999999997,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 6.5,
+      "camera_image_sha256": "19fb1c0b809025e5c1005d18d9e9cd7e1daec4199fe11b478f8f6a29ac0fc7db",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 8.5,
+      "camera_image_sha256": "19fb1c0b809025e5c1005d18d9e9cd7e1daec4199fe11b478f8f6a29ac0fc7db",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 10.5,
+      "camera_image_sha256": "19fb1c0b809025e5c1005d18d9e9cd7e1daec4199fe11b478f8f6a29ac0fc7db",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 12.5,
+      "camera_image_sha256": "19fb1c0b809025e5c1005d18d9e9cd7e1daec4199fe11b478f8f6a29ac0fc7db",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 14.5,
+      "camera_image_sha256": "19fb1c0b809025e5c1005d18d9e9cd7e1daec4199fe11b478f8f6a29ac0fc7db",
+      "next_sample_sim_seconds": 2.251999999999999,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 16.752,
+      "camera_image_sha256": "19fb1c0b809025e5c1005d18d9e9cd7e1daec4199fe11b478f8f6a29ac0fc7db",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 18.752,
+      "camera_image_sha256": "e0dc220d9da2fe64f78f945cf7dd31aff8f78956b5327abce5bc272ceac92c88",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 20.752,
+      "camera_image_sha256": "7e7467cd472a6e0c74efd37f645fa4d41bb18b7cfd79afff73dbcacfb76dd9b2",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 22.752,
+      "camera_image_sha256": "c3f402126b09099e6b15fb9b9ebfbca317a0761583aebe1be2266276e6104bf3",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 24.752,
+      "camera_image_sha256": "373083aef72f96fe0979db4bf0c06b47549bab6e311c062dfaa6300e92d4e3b4",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 26.752,
+      "camera_image_sha256": "c81ee705b9be7d124700096d0a5e658143b61268459e68a2b4313d60e4451e9a",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 29.252,
+      "camera_image_sha256": "08764d5d8f368f26f89ca5f18203c272bde9230b5f9062d35816e9e7c0f18e0b",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 31.252,
+      "camera_image_sha256": "585d7962b7567705515c06c5ac4114ce78ebeb51e7e66cc0fa39fc74ddf77924",
+      "next_sample_sim_seconds": 2.0000000000000036,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 33.252,
+      "camera_image_sha256": "590859e84a546256a165863822a640b167133c533129a5bd9fc2d3c254cdbd91",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 35.252,
+      "camera_image_sha256": "aca0ae4512d2d4537f4e5f2d1ea403ce097503459ed54375c425d6cfbe6ba453",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 37.252,
+      "camera_image_sha256": "96df6279a1cd6146fc7fa3c771c1652bc4d562846cf7b6e1f8b0b709801d97c7",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 39.752,
+      "camera_image_sha256": "3edd21c263d4825a2475e3f5ee10931c698e88b7c371a9961667604b6095f5f9",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 41.752,
+      "camera_image_sha256": "503a7048f5f11676acb6a437a1545cdf5ed6d42c64ad6b3521d49ff96b34149e",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 43.752,
+      "camera_image_sha256": "c40bec7d166c3d6cd8ff4e8993665d3d16a2d0dd7d72557b409f4259a263277e",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 46.252,
+      "camera_image_sha256": "fc4fd6fc72d31f624b238b4593be0154389a9105837dfa90dabf158aa2d76d47",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 48.252,
+      "camera_image_sha256": "e2cad1f670bfbb7b3edc392e2b6f1489459a0b5acd1fa3244a2989233932de8f",
+      "next_sample_sim_seconds": 2.2479999999999976,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 50.5,
+      "camera_image_sha256": "d651d6fcc6b1d7302143621daa453277233d6bdaff8cb4f9f5eb28e153a02d99",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 53.0,
+      "camera_image_sha256": "c9d66bbe7c76b68c24fa5c99745dbd98b47e6dca266ae364d6b94e8f92af3c22",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 55.0,
+      "camera_image_sha256": "b1dbc7f63846b8124f8509289ff9502da2b7a5c65e162a8842af57d8fb829fc9",
+      "next_sample_sim_seconds": 2.2520000000000024,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 57.252,
+      "camera_image_sha256": "3b7a3c8ded34fd2c952b9cbb60497350633e7b3ec6d5135dc52bc5f03ade4b66",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 59.252,
+      "camera_image_sha256": "7ba95d021266767f87ec15f5f47aca1ce668703cce987dd41a9d618105e8808c",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 61.752,
+      "camera_image_sha256": "a2ea289a62f64b90ca236a4021a22ec3394e7e198af7f3eb8cc5aee854601973",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 63.752,
+      "camera_image_sha256": "86afe27994f5d3498e84a513b4741b886b556bc41398745be1acfd8895fdd495",
+      "next_sample_sim_seconds": 1.999999999999993,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 65.752,
+      "camera_image_sha256": "adb2677a78e8a64a930483f6447b6b5b8cfed93c7ffe14df4d499a73ef6ecf70",
+      "next_sample_sim_seconds": 2.2480000000000047,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 68.0,
+      "camera_image_sha256": "c196a3324c3a492264191f483c4133a1815ac9f5a7abd2fcba3bbc6d6a1cfe2c",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 70.0,
+      "camera_image_sha256": "b906f7667e0bd72e90530244d3e637f603262fc0c53c8c3c6153529a86910a05",
+      "next_sample_sim_seconds": 2.2519999999999953,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 72.252,
+      "camera_image_sha256": "d3349b1b69fdfc4fe6393665beaa8a08597a6aeee2b967b8f5ead31ceafe4872",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 74.252,
+      "camera_image_sha256": "df772ea411de8804ac61665ac92c03365557773fb7473c338a33223fc74d26e6",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 76.252,
+      "camera_image_sha256": "24ba0f294cbb76b3105a3b4371069c94b3ab179a6aef19455b893ca7c956dbc6",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 78.752,
+      "camera_image_sha256": "2abcc3f03b99db5de603b061aa6665163b842151c4f6450a7c695b82e3e3ea45",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 80.752,
+      "camera_image_sha256": "942672bafa07ef1d778fcdeb8142963c02ff434f26b29a04f94b64128085a8e2",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 82.752,
+      "camera_image_sha256": "c1343babae54be8220242a1f7a7a5d01b07939a0a20a0e8010c7eb0b3b6aeb9e",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 84.752,
+      "camera_image_sha256": "01dc8e6b270109c8fec17dee36e4635feee22ac80e90308c221195231c3e96c9",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 86.752,
+      "camera_image_sha256": "47a607fb98e851d4ba2253d4e4610525408084d495eb4f8b1c6f092bd4e15ed7",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 89.252,
+      "camera_image_sha256": "3005b1f4536d34ad4ca7c3e45e66d9f71d84d73863fbc9d908ae405c68d36f1b",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 91.252,
+      "camera_image_sha256": "b58aec8427393a03f979d8fd3373c9d3abc375c71397a5b3dea4efded03fdeac",
+      "next_sample_sim_seconds": 2.2480000000000047,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 93.5,
+      "camera_image_sha256": "6bd450076267b3599dfdfd8f42c43207b4f69a925c364bfe08a25c8cccdb7379",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 95.5,
+      "camera_image_sha256": "cd749db1cbb3b6469a6af917d8b5355c3904dce50b356486b73b493d56df4a6d",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 97.5,
+      "camera_image_sha256": "40e068f4b821e48c94fe5ec966190336ab7603c49051b384644a4be9ea751a78",
+      "next_sample_sim_seconds": 2.2519999999999953,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 99.752,
+      "camera_image_sha256": "8504b2fce06c00f7784fc65e4013d3b6b69886020750704974580a49da2ae4a8",
+      "next_sample_sim_seconds": 2.2480000000000047,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 102.0,
+      "camera_image_sha256": "5e0893a499281a4bcb869f0e501fe2d64281e034c02cd041dfbde26fb6614398",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 104.0,
+      "camera_image_sha256": "c1fb1c489fffc3769134e30d6822c28f68554764e801510edf88cc90af6f51d9",
+      "next_sample_sim_seconds": 2.2519999999999953,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 106.252,
+      "camera_image_sha256": "950c3e88d4a773029e4820fc0b0aab7d62f8e45323e0e65046f0553e3034cc58",
+      "next_sample_sim_seconds": 2.2480000000000047,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 108.5,
+      "camera_image_sha256": "ec20e1083bfe6ca9a6331512e49a47d5845ad1abc98a0a873d76025a258a3f2f",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 110.5,
+      "camera_image_sha256": "fc61e9a59389044138e0adf85dd79d57a7269583115d75f18f2194eaa83771be",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 112.5,
+      "camera_image_sha256": "8fdb0e92c9bfacc1aea7a615d123a816daed1cf94aa1c82a58052dcdd68a35c1",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 114.5,
+      "camera_image_sha256": "4a0025a8d018e26ee162291949eb272dea7a356e94e33db88a13d95c4c503e3b",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 116.5,
+      "camera_image_sha256": "5fc982d31ccb4d809cc8f3842d84c90cf4c8fe7c948ad32b89f625aedd183411",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 118.5,
+      "camera_image_sha256": "f23e958fa1a907b2e5bf9ee5a1eb3f9337f10087618c9c6ef830a04ccad97ad2",
+      "next_sample_sim_seconds": 2.2519999999999953,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 120.752,
+      "camera_image_sha256": "5f2ff98be148dbebb9099bfd64146cddab36fea96c132ee031c9fdc429fe2b20",
+      "next_sample_sim_seconds": 2.2480000000000047,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 123.0,
+      "camera_image_sha256": "1db28affc3e3e637692017293134924b0366ff1821670d922157471c69e82579",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 125.0,
+      "camera_image_sha256": "59231ad495135f7b26b133b153561915affcec422e7bca5263a2961fd1fb3856",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 127.0,
+      "camera_image_sha256": "27d7df8a64d13658b95e2a062162306f4bba05eb4c23ee0cd357c66ef671e156",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 129.5,
+      "camera_image_sha256": "5e607324e35e9edbb40e6bf8f0c6f893975c22dd5e37aab65bbdc000e5837437",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 131.5,
+      "camera_image_sha256": "f2e2c1d8d2f9de222b1dc4c25ea7d80369f95441d7ec626ffef58a29360e99f7",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 133.5,
+      "camera_image_sha256": "68e12f155efed12155ab6def2691e391d82b0117b976c7fe3fc2643b7d5716aa",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 135.5,
+      "camera_image_sha256": "dc808726985df1faaa9f2e19bb41137c132b21e2210745516a91676672f58c9d",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 137.5,
+      "camera_image_sha256": "9e625503a814a5e3d361573ccf34965a0bb3faef9adcdc678ffbcef94be3c063",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 139.5,
+      "camera_image_sha256": "1f26c6d96c48e6cece7823b3d81354292f0cb6b79cc09774c582a0e2f956d625",
+      "next_sample_sim_seconds": 2.2520000000000095,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 141.752,
+      "camera_image_sha256": "9780b414fe69958fba3c2e619f3d2cdfadc6c2bba2e43cd08e0411efd48f12d7",
+      "next_sample_sim_seconds": 2.2479999999999905,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 144.0,
+      "camera_image_sha256": "c181ebce5085a91637f5f9f81e46fc85e79e37a6c3f47b0d71c4cf4d31255e5d",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 146.0,
+      "camera_image_sha256": "3bd6230876d3d4bcfe25b96d2253a92e5b0fe8a6d349b76036748f10bdc09112",
+      "next_sample_sim_seconds": 2.2520000000000095,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 148.252,
+      "camera_image_sha256": "7fd3f78379c775f689168c53b680aab47bbe0fc30a64906790097428509050e6",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 150.252,
+      "camera_image_sha256": "f5294ec5cb459c9851a74fa846cf361794775a51d73f9b9a68ded3f461e124ca",
+      "next_sample_sim_seconds": 2.2479999999999905,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 152.5,
+      "camera_image_sha256": "6c5b6a0fe130652f2a03ca7eaf547e468f89476f6da349c880e04a5e8a1ac152",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 154.5,
+      "camera_image_sha256": "5f260b9c140e0e6753387edbecc95bb636a7becba1a0a75410769db0ca5cdb96",
+      "next_sample_sim_seconds": 2.2520000000000095,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 156.752,
+      "camera_image_sha256": "8c2c037aa54e2c68277c860cce08193416c3dde8ccedbdee3aa3d23a895af4ff",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 158.752,
+      "camera_image_sha256": "32ceaeebe16ec1b50439bb3a6de56ec9bdf6b6653360bc1c60a9cdc7fd5f5f58",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 161.252,
+      "camera_image_sha256": "f39acfe5d286a049d1e0eb9370cbeb86b029c66a42fd8db91bf234702a5ce1a8",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 163.252,
+      "camera_image_sha256": "17b8f53dbb17f706b58e0dcdb9f4dd2b4530da615a915b0c9a61bbbb676fadcc",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 165.252,
+      "camera_image_sha256": "45003c3dd0f019a25f4c9c3ba6eb7a3c0bfc1dbe5cf1eda2555680a70c7d5f34",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 167.252,
+      "camera_image_sha256": "7828d8959de4bf3376dc5a139855c408805b0f7cbc4d03b79ab9c322f6afd604",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 169.752,
+      "camera_image_sha256": "e975e5e1f2b4ab7f51ec54cc0b70000c3de77327bdf835257a4b9e15827979c8",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 171.752,
+      "camera_image_sha256": "8b57dd546b303c64d81671d75dbb28d3418473a979fbbdd99fe18a34c9be0137",
+      "next_sample_sim_seconds": 2.2479999999999905,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 174.0,
+      "camera_image_sha256": "c4ac68718c38b8ab4870334ef56b8d9b631d3f53a97783e2443def31e0d2972d",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 176.5,
+      "camera_image_sha256": "33fdf8dedef62df252be39a70a22ba9cda01710311fee83191c01454f0ba5064",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 178.5,
+      "camera_image_sha256": "3cab0fd1ee276f0527950a950dd7425cda8ed06d02258ab915e025e812186cf2",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 180.5,
+      "camera_image_sha256": "b2f53bdcaa9ae3cb97726ba5e9098f8c676c5fa66c1c8691aea4d26a6bd2b2e1",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 182.5,
+      "camera_image_sha256": "6347d79f6ebebb8270688d8c9c52bddbf6b3a47a863ed9a498e85904f97d0f5c",
+      "next_sample_sim_seconds": 2.2520000000000095,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 184.752,
+      "camera_image_sha256": "53ffa1782a8c5479ed1f2f4abe486c3f7aad9ff2b59a2fa635cfaa603e0b613e",
+      "next_sample_sim_seconds": 2.2479999999999905,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 187.0,
+      "camera_image_sha256": "82507ac7a8ae2ddcb1d221905566a4d5454e6511e8c927006b9f232cfb855e0e",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 189.0,
+      "camera_image_sha256": "5be71a11e5a5c0c8a129047eb6d58abad4bdcdaa818a1d7125d1b0e356634587",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 191.0,
+      "camera_image_sha256": "245caaa110ee080c2c2045b0ca8925447e04e82496cf6d1af1b15f87b52f3e25",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 193.0,
+      "camera_image_sha256": "7aece1277306f0480bc81618070a76baaa91a19aee90636b0cf153cee1839885",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 195.5,
+      "camera_image_sha256": "4ef08bf47160a73f2dc774c93dc372853d2cf07935b469baed2b2892fe97d5cd",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 197.5,
+      "camera_image_sha256": "dc23ab50f157d770683b1aaa49eacea8a976fd4cd40d990cbd9da23b89d111f5",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 199.5,
+      "camera_image_sha256": "de282753d56b3415bfd83c1c25e056cc33079879804cc3148c9a737576c7601e",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 201.5,
+      "camera_image_sha256": "fc9ef6c6bb6c0fe151f97ac3b1c1a5351e1b4c50c0559105e8de2ca20d423a08",
+      "next_sample_sim_seconds": 2.2520000000000095,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 203.752,
+      "camera_image_sha256": "6387664ac6fda525af832e8b8b39f9c0510f7defff9ba5e2438eb2f397e25d3b",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 205.752,
+      "camera_image_sha256": "52f49109d63cc81cd55c57a9894bef006d9ca75d9529acffe9b6501ce576c884",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 207.752,
+      "camera_image_sha256": "5a98abeaa1b88c8fb2564449c86313574d76ed4dce15c94a65098b39056d1355",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 209.752,
+      "camera_image_sha256": "656f2130f32afc68f251aaa944a37a610c9bc308f5ca3689b989238f3fbe5a80",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 212.252,
+      "camera_image_sha256": "bca7e6760b53acc52660df8325f2112bd42d402afe239a410da2c19925b48d05",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 214.252,
+      "camera_image_sha256": "172b7ab3d56accfbbfcd9bd4f9336f5a2f58a9766c233ebcba75bc39a6996e73",
+      "next_sample_sim_seconds": 2.2479999999999905,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 216.5,
+      "camera_image_sha256": "d8f2bc629c88acff7f7640d19b2f67ef25e74db4d7c5ad21d10cf3e058e9b24a",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 218.5,
+      "camera_image_sha256": "0fb1672bee0739c550dbabeba54f4cc245ffedb39caaf18112e0bf49582e817b",
+      "next_sample_sim_seconds": 2.2520000000000095,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 220.752,
+      "camera_image_sha256": "d838fc4612e9a95edba0cb52c86638e03b2361bca5ac9b45920ec46e88c03ef6",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 222.752,
+      "camera_image_sha256": "38354fc36b4a3b5a18322fbf98b19cd1570e386b75e34aa1b0042127e65a43a0",
+      "next_sample_sim_seconds": 2.2479999999999905,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 225.0,
+      "camera_image_sha256": "45281e5b9ea733968ee9aa8c5e5a6bb194f7b07323c18a3334b61509a7daaa5c",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 227.0,
+      "camera_image_sha256": "db2252ffe9f32a0a2a98bd5176e18c5a3fd4962f0e20fc6e8283b5af1f285188",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 229.5,
+      "camera_image_sha256": "6a97b08ca8a581dab45bfad07128a5d713fee075e0e7b09e44a069fc82d6c2d5",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 231.5,
+      "camera_image_sha256": "e97b352f37cec0cfbdc670aadc10f60d60a6ff9ca2d8096f41e889cdd6f5a8d0",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 233.5,
+      "camera_image_sha256": "38a69e1ed76151ce1a484601109825bafb7486395e214ec0b11eb7ec7f332111",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 235.5,
+      "camera_image_sha256": "0b27b54bf0b93ad201466392dbef482a37eb616f2538d20b6cc4003efd987281",
+      "next_sample_sim_seconds": 2.2520000000000095,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 237.752,
+      "camera_image_sha256": "33371a419049e5d24c8c9a977a7702c2a74a0622a26fafeccc320a84e9f9465b",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 239.752,
+      "camera_image_sha256": "cb0a46269c5704658f7abc4ff3e405ce89fe1028ab184bc1b81e6643b9452843",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 241.752,
+      "camera_image_sha256": "9a0cc5db486d61f20ec66640b788763b4b24618d945e1f142819a26c13ed9dd4",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 243.752,
+      "camera_image_sha256": "5ab2e3ad12acb3f57d2a283b1ae87e6f1645cf34aca9442b9582f25651c40791",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 245.752,
+      "camera_image_sha256": "781f54f42e12b41088f943dee4ab64bbd3d255124ebc9963478ce31d07343f1f",
+      "next_sample_sim_seconds": 2.2479999999999905,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 248.0,
+      "camera_image_sha256": "55a6e363a67ac818cb473b731e4e836ff2717127887027d29cdbe88e000ddf15",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 250.0,
+      "camera_image_sha256": "857ba74b5a3e2fd15ab01a0b61fa590616c0546ddb09114cc05c49d50554b133",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 252.0,
+      "camera_image_sha256": "534bb14f992557df65d5f19185c28159910186d89d41a707abd3e50ada3524a8",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 254.0,
+      "camera_image_sha256": "f06f50a1232552bd5ebde85dd9a861a865e2ef6d6e2e2703b21092d4493345a8",
+      "next_sample_sim_seconds": 2.2520000000000095,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 256.252,
+      "camera_image_sha256": "6866826ec3a9a638ee5a729fa3cdc7b4de113d2cf2526fe71162593abf1adc8d",
+      "next_sample_sim_seconds": 2.2479999999999905,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 258.5,
+      "camera_image_sha256": "c72013b630a23c655b968572b19f2349c602e17ee32b2e8269b3c448c57f5901",
+      "next_sample_sim_seconds": 2.2520000000000095,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 260.752,
+      "camera_image_sha256": "20033227b20340ddbcb2349187d5194e2adf0b002bd86cab1ff7e6d0c178d361",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 262.752,
+      "camera_image_sha256": "8033746b0dd04e24a6dd6f9cea21ee6b49b82edeaf60dee07be4aa0b8cdaf9e7",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 264.752,
+      "camera_image_sha256": "c5dd5f2fe11b757472ef37fb9f67014fa184630d9522cb25643094ab3f92f174",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 267.252,
+      "camera_image_sha256": "b874f19a283d38dcbde0c5c576485a18c44c2e9072ded5026ba9d82623065e0a",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 269.252,
+      "camera_image_sha256": "9e17aa3c66e6d3d221229cd7be823b285df7648ef3f5dea76486505d36b07656",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 271.252,
+      "camera_image_sha256": "edc87ffa6669ff2f1f54f015969967c76ec1f00cf2117d04ff24d806a9c7d037",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 273.252,
+      "camera_image_sha256": "dad4d3a042d35d031c24b2f22ac6930f6b7f1ffe09f87d9d6df9f2843964c1ec",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 275.752,
+      "camera_image_sha256": "5bbbf7938d98c1b4f1052e34a273dbf5899be9978d7c2c569c60da0f5e68bb83",
+      "next_sample_sim_seconds": 2.2479999999999905,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 278.0,
+      "camera_image_sha256": "c775da1f8c1e0ea44e532213db08877bc41b4b142863a586317be5ff9242df93",
+      "next_sample_sim_seconds": 2.2520000000000095,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 280.252,
+      "camera_image_sha256": "48ede2aaca4dd862b2c916c6712cdd3875701372c6798cb89bcb07f6cb2a6bba",
+      "next_sample_sim_seconds": 2.2479999999999905,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 282.5,
+      "camera_image_sha256": "5ca9ec5840c213bc35f6a46f664b7fbc5803e9cefa5a4825fdfc2794f830078c",
+      "next_sample_sim_seconds": 2.2520000000000095,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 284.752,
+      "camera_image_sha256": "a411240ebc869a2ab5df1453061ed849b540ba80a4376529421b82e174414752",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 287.252,
+      "camera_image_sha256": "26d0e4c4a5f38cb2b293526135a4b0d271922eb643a20d987b437e15c29c0eed",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 289.252,
+      "camera_image_sha256": "c95bd736deca22e6fc8c4261e989f744eab737ee1ab8992dda33a0c589ed3790",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 291.252,
+      "camera_image_sha256": "55f55eb931901cbc534ed435a0cdda398ce650be77356ba8af9bfa2351422ded",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 293.752,
+      "camera_image_sha256": "76aa4e7b3db5c8bb8e34dbabdde0f7ee424f36d6f0079d02e080fd8ac82c3370",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 295.752,
+      "camera_image_sha256": "12108047fd1a7590fd3d4888731b9c7ebe5a77a0e9b52128f9dc78fb3d222934",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 297.752,
+      "camera_image_sha256": "ffd48fa0f19dd7e92c02a0ed986e19bb74bbe48a74d7981b4fcd65873f30036e",
+      "next_sample_sim_seconds": 2.2479999999999905,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 300.0,
+      "camera_image_sha256": "4b592fd54eb17b4188e8b21d24320445e5248bc13513cdeec4d9f134482f3ec4",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 302.0,
+      "camera_image_sha256": "99760de6c31ee74cbf5d50f5e7e47adce87033fa08775093453f8b8fc2c0e729",
+      "next_sample_sim_seconds": 2.2520000000000095,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 304.252,
+      "camera_image_sha256": "bc1b474cc2e547451ce1481ed63f584221fa0072d3c7cf9f0fd5570a67f77732",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 306.252,
+      "camera_image_sha256": "86889d1882a923a8a1e8eb0e8c7b7dba06ac2e8caf17c71c4b5f25f90dd14150",
+      "next_sample_sim_seconds": 2.2479999999999905,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 308.5,
+      "camera_image_sha256": "9e643015355f4b50a05e95f420a99996dc167835aa39537d44686f5e6d39734f",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 310.5,
+      "camera_image_sha256": "f82b5e76b00285770d29566fe1d935d04911d489ba832edd394b8956135f554e",
+      "next_sample_sim_seconds": 2.2520000000000095,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 312.752,
+      "camera_image_sha256": "492cc80a34675ac49b470ab5af8a965612ce2830d13867690f17d80206dbd148",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 314.752,
+      "camera_image_sha256": "8dbebe7ec2592dce2af5cd882ec700775b22bf385949d8ae280ccbbcbbbcd895",
+      "next_sample_sim_seconds": 2.2479999999999905,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 317.0,
+      "camera_image_sha256": "9f0f7f7c4ccea5085e7e544c8e9b54820bf4fa190d527f87c34f399365c3fac4",
+      "next_sample_sim_seconds": 2.2520000000000095,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 319.252,
+      "camera_image_sha256": "75f077ef7b99c045b81cf5cb399fde5438531bef6488d446a719952e81ef87cb",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 321.252,
+      "camera_image_sha256": "57cd074c878d8bbb4933983fac4917ba70ca9754cb25c6a84870b790f8523dc5",
+      "next_sample_sim_seconds": 2.2479999999999905,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 323.5,
+      "camera_image_sha256": "a701004c260973ee3ca03425b30e1f3cc78b4f38f1a8f158c9637e891cda64fa",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 325.5,
+      "camera_image_sha256": "c715e8e380b3e4e228ed012102dbffe939d5d4e4fa3cbf4f2851e8f3fa675a5b",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 327.5,
+      "camera_image_sha256": "bc0f3cba5d9bf46ce4ef9ec95f6f2a1d81860ef50a62b05420b806915b4105fe",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 329.5,
+      "camera_image_sha256": "64d8b195f2046389313bb60d1d410cd7be6f8904598149f39840cf9fd1126c21",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 331.5,
+      "camera_image_sha256": "6ecb1cef14a23a8e12ffd67ab6a3ba0a8847b35da429172f7e426a5e0210a6e9",
+      "next_sample_sim_seconds": 2.2520000000000095,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 333.752,
+      "camera_image_sha256": "bd138cb1e92996dd547698c99318aaefd32c4273470ccbf20bd6a12d55bd715e",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 335.752,
+      "camera_image_sha256": "a3268f9ed7b541f8c8f3c7f6fe8a97ebdaf022c9e49dac2bdf07f20a52287a67",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 337.752,
+      "camera_image_sha256": "455484838b7b9d417523bd251b378aa0eda9d98ebe85f67128ae0dd0407e97fd",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 339.752,
+      "camera_image_sha256": "5904adbadf1b1d36a8746c8d4579a6a2ee7fb2e2364f37dbb1ade61c320e218c",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 341.752,
+      "camera_image_sha256": "857f7cffb713bff144a97717e0dc6715454655044d5098fd7e84ace49e166f40",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 343.752,
+      "camera_image_sha256": "0ae066e6dce279f673e70f9961c644c7c7ae0bc833658b0a0c2177f8f4118c34",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 345.752,
+      "camera_image_sha256": "3dd048d26d617942b37136f05a2a311bc45210fa789adfaa83a5afeababb5fdb",
+      "next_sample_sim_seconds": 2.2479999999999905,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 348.0,
+      "camera_image_sha256": "d811df612b7ec9cff03eb64d66edd09ad3341141c57ca9a156f7a47d7d30247b",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 350.0,
+      "camera_image_sha256": "31d1c2a21cb7e9c6fb8b5f655cc9fa03b4b1fd7b1568b42259afb79705e972c6",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 352.0,
+      "camera_image_sha256": "c6b91eabac0b3d54fbdc04efcca5894b10c4572ae751d008b17956d5f8f58688",
+      "next_sample_sim_seconds": 2.2520000000000095,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 354.252,
+      "camera_image_sha256": "9082fd88e2bb4f4c39490af4c34a077777117c24ce762ffdcf51133d2d4f2a39",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 356.252,
+      "camera_image_sha256": "6068c3b756516f998dac905b8a09d59b78946775d064fabc0e9afd1ea09d8df1",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 358.252,
+      "camera_image_sha256": "ca41faa578abb3310ce8183113c80db7d578f4ffb7e4e3234449924617916b2f",
+      "next_sample_sim_seconds": 2.2479999999999905,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 360.5,
+      "camera_image_sha256": "5c9af344e4afc6e70dbfa46b08419dc671951efd3379800dc9c2cfea008dd394",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 362.5,
+      "camera_image_sha256": "f051ba98ec8933e47dabd0d5c62e4d3b820c138867480b2a7b90bd6bec19f83c",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 364.5,
+      "camera_image_sha256": "ebf233a6e9ee10ab13a085a1088f88580e18521709263e59cdb10076a2c5bc8c",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 366.5,
+      "camera_image_sha256": "aca91c7cc29f8f591cd1be254af0ad047c322beeaae4abeaadf673962b8c09b0",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 368.5,
+      "camera_image_sha256": "e7327af7770377e091dfff7c62c43bb47e6173e9d5cc107220149976f5a5d86a",
+      "next_sample_sim_seconds": 2.2520000000000095,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 370.752,
+      "camera_image_sha256": "c8a692f75f0864d911c91063b982998262b9108e000f0bd1e253dd79b5c32417",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 372.752,
+      "camera_image_sha256": "b254df9b1803cb785b796d49e0599a3f8c5e78e8bb535a504d4bf2c8812b8c2b",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 374.752,
+      "camera_image_sha256": "4ea8316337a674ee9047ff7fb410211c91ffee5818f5926092eeb03f54abb645",
+      "next_sample_sim_seconds": 2.2479999999999905,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 377.0,
+      "camera_image_sha256": "13cbdcf442bda962227dc4b12628474e23d3741eeca181f07661b95ca9f31ea6",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 379.0,
+      "camera_image_sha256": "2350e61dd299c0a005b4c5bc8d3373fa7b1dbf0dbce64ed68ba201dafc8e65ce",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 381.0,
+      "camera_image_sha256": "64df9f58d522c381c2a53fa0909e2da5fafb2d22ca06ad501bebf126804c0895",
+      "next_sample_sim_seconds": 2.2520000000000095,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 383.252,
+      "camera_image_sha256": "d397930d1bd47f6a3ef69482b47621230f649ae1d1bfea19c827e66e0befca26",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 385.252,
+      "camera_image_sha256": "9b80512e065542f6b799589e925bf14aa130fddfe9c252e3b96c032c369bd1db",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 387.252,
+      "camera_image_sha256": "0e75dcf9be26927c78bc56a8880d58b4d1749e7c822818e04b5e96b620782359",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 389.252,
+      "camera_image_sha256": "c7e0c2f5c9b178f84f11bc6978bdc0ac16dd900e3df6a81d7cd421c6c89ba6c8",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 391.252,
+      "camera_image_sha256": "f9afdc4566ec7197b3fd6831d2000dd9fecc82cc7a8d94b83c5ff9399dd2b8d1",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 393.252,
+      "camera_image_sha256": "06784e3b3e3d3a92912b6a4ab784781e1cbfa04ffe06af2cfdfb8f03c47c6d2b",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 395.252,
+      "camera_image_sha256": "0439befe268caf0ee1807c552eed95e1639252e933e5dd103aae96171042f56d",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 397.752,
+      "camera_image_sha256": "4fb95773a65111313b99bc26f89fb086c22daa315d69ce0cc3a1f3da93317891",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 399.752,
+      "camera_image_sha256": "500895a6bae5b94e0d57ecbb47225cdd2e9d3836d0c1d7830eaeba940de1bd44",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 401.752,
+      "camera_image_sha256": "44e331b780e902a6cb6357e7d68f029b3324641df8034cb691ca9e39defc9bba",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 403.752,
+      "camera_image_sha256": "73d98a3ebb5a0e30e75c1bb4b6a9e1cc17f13a283431918fcccae17511ebc853",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 405.752,
+      "camera_image_sha256": "f3d69201a8ad8f42249db6ed8459aa486a4969104c1a4e1cd0e4a9137389979b",
+      "next_sample_sim_seconds": 2.2479999999999905,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 408.0,
+      "camera_image_sha256": "92c6c4a446842cbc05fb6ec0a5f686622cba2272d75f65ab80becda0a67e5f16",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 410.0,
+      "camera_image_sha256": "3a1e979a79bbf2a662de9c75a2336edf745b3ec610d48afc0f080f1de98893ba",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 412.0,
+      "camera_image_sha256": "f58d0a748d32dc95fdc85351869b6855dc60f7cf0acb2d58c006059af0df178d",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 414.0,
+      "camera_image_sha256": "0cb55cf0fc3b592eea0c7b81d63e48623fa19e4f7104dd326918b977d8c3cb73",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 416.0,
+      "camera_image_sha256": "fed9084a8d8cec317be380854b5cda5a49ed695ae8ea05da9e49e8ae21692035",
+      "next_sample_sim_seconds": 2.2520000000000095,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 418.252,
+      "camera_image_sha256": "e6660911470bcab9faea956368ce924beee69f1ef1b7dad518c91a16796004f7",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 420.252,
+      "camera_image_sha256": "ec9e1ca85b37d32bf0d8e37be813ec1710590ca5c7db372b1a84f01e726c9247",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 422.252,
+      "camera_image_sha256": "ca0dcde7273fb4adbc78ca543189c70633e60975aa21ce8e6082d9b6b9da15c7",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 424.252,
+      "camera_image_sha256": "435dd2de42e96c336a785c26ef38b5d390acd994970396b7927becfaaafee2cf",
+      "next_sample_sim_seconds": 2.2479999999999905,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 426.5,
+      "camera_image_sha256": "17a7901a1940a3ff5900316044f6ad83eed60b4174ced15b5a43c6758fb2a959",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 428.5,
+      "camera_image_sha256": "4cd4759e434c1ac165e93baa3f81acabdedacee519b994600faed657c56018c1",
+      "next_sample_sim_seconds": 2.2520000000000095,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 430.752,
+      "camera_image_sha256": "96db2e5bd7ce850d68d25fd695e1b10c685ed072676b9ad2d4117c0c9242ae62",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 432.752,
+      "camera_image_sha256": "d849e8fa14ad657f663863c0d545342eeea60ddf24091f01c81f485f2793be73",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 434.752,
+      "camera_image_sha256": "ac2c947febc5fe7f92c3fabce3cb074e8343dffecd4fb59431ffbc78decadfab",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 436.752,
+      "camera_image_sha256": "9ab11e991da596afc8f7d3f90282ddd93cec445a0694e590fa03474002fb2824",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 438.752,
+      "camera_image_sha256": "643b740ff02a0ee8ec0608fc473a62acd93f833317db8157133812a12f2840f1",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 440.752,
+      "camera_image_sha256": "aa1ebf0f1de5e05e1d6871a53e981b336a7c7aba84cbecb9f895f662a0c9b9eb",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 443.252,
+      "camera_image_sha256": "46e95daf32cbafa649e70db27dfe0d28faf04758a27eaa0ba5afada86dc041fb",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 445.252,
+      "camera_image_sha256": "ca8e3ddff2c844bc63367b0e09ad997b33e5e44907bffc1a7a237e965a4e9178",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 447.252,
+      "camera_image_sha256": "404af8849b6f869b829995e399d535b203e63db6b2836ef10a023b473912a91d",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 449.752,
+      "camera_image_sha256": "60e2210f33c3365e7ee92ceb8df4c95a3dfe9bda7186bdd1dbfe2a67ac2fd858",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 451.752,
+      "camera_image_sha256": "7443f30acba0d83677001f0e1087235b66bb3e47a4f2df56e026e222ee298524",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 453.752,
+      "camera_image_sha256": "d59b5b73b9eb485a031d9d647ff68cbdf6c88a09ac11982b461c684d3bf93ee4",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 455.752,
+      "camera_image_sha256": "82deb68967b7bff39e96e595186768f6c82d85cc96a9529c3ef815c20164b251",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 457.752,
+      "camera_image_sha256": "18f8b01ee99a47a0e1bc0f573515c9ef87654dd666c0e5140b856a2bc3115b17",
+      "next_sample_sim_seconds": 2.2479999999999905,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 460.0,
+      "camera_image_sha256": "f7850d6742bf8db69cff6139cd85e5eaf81fd0108ba36f1b6e6907bffab3ea51",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 462.0,
+      "camera_image_sha256": "724d4dbccb2aebd8049fcf313b0301d6b1f31eec3c31a1c7b16813f35f8bf94a",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 464.0,
+      "camera_image_sha256": "9ea493fa1a8f21d3ae304112a6d0814f0c406b20b02e60a0205eb7e7dde8ac71",
+      "next_sample_sim_seconds": 2.2520000000000095,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 466.252,
+      "camera_image_sha256": "3ab9e26b1d502d2b6ec383e844dfe069134f452da32ef0cfd800577eefcbed19",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 468.252,
+      "camera_image_sha256": "32761f8a9333e4d21c76f873e28777d0a6a2c76e30734031a65d508892e77bb2",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 470.252,
+      "camera_image_sha256": "28dcfca3ebfad2af81735742156a70507177112dacd2868c6a281bb2c4e19d7a",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 472.252,
+      "camera_image_sha256": "17a49021252ec8f6a6cd3a9c1f7dd93aa8e87c33d005c8d9219dd263152c3b1f",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 474.252,
+      "camera_image_sha256": "68e8b0a4a6804f9386cc8ab256b7c6a741661f98a8cb644842f7c02959791ffe",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 476.252,
+      "camera_image_sha256": "de855c176872b0c7c9af61402ca7463164f8bdc5ce6a9c08d2bf54e426490e40",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 478.252,
+      "camera_image_sha256": "49b5329f2663552f76491a7b53025d3f6b5cf3ac6b6bccdc47a739a4e29de45f",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 480.252,
+      "camera_image_sha256": "a6023ac80d38cf067794bac7ea057784b304b3fe46d183bb530c111f5e9a41ea",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 482.252,
+      "camera_image_sha256": "53114d3346dfd307a6e0020f0cd78157eea5cf4863661d0274cbc0e187a959c8",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 484.252,
+      "camera_image_sha256": "381b24c488ec3f8b1fd1739700cf42c8803ad1b4fac6e47adc6afc175f196f0a",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 486.252,
+      "camera_image_sha256": "40d57879629263c9e263976ec6b9377acbb00221daa8ded2cfbd1ec6fd6c9849",
+      "next_sample_sim_seconds": 2.2479999999999905,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 488.5,
+      "camera_image_sha256": "daf48cc78be2c5cefef98cafd5cd7aca1750fe5ddb02eff91bd8d3b05cf28767",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 490.5,
+      "camera_image_sha256": "27571e13cc527af453f61109f191162e81485a6497a19551f26a9413670a91b7",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 492.5,
+      "camera_image_sha256": "8224dcaeece6b2f984f25a0c8d3f5fd7899d717aa147398c24260ff766986efe",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 494.5,
+      "camera_image_sha256": "bd89875658f0ebc7baf331613350863b40ed49215ca1b2834c6a4d6e2d55ccff",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 496.5,
+      "camera_image_sha256": "9ee1e86aed06fe3884e4283bf4aec73e0cf3cf688d6f01ca5a780d5b8f6680d5",
+      "next_sample_sim_seconds": 2.2520000000000095,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 498.752,
+      "camera_image_sha256": "4ebc2776e36e81600c379498693ee7e6b394dcc9983c455cd8b20793e9628bab",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 500.752,
+      "camera_image_sha256": "19bf1ad276b8c343043365ffbd34a5a6f4b30df032be85e07521a31c01fa964d",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 502.752,
+      "camera_image_sha256": "7449bb284cd298748a3af92e5960178c2da241de6eb8fe7a54bdf3dafbd8455f",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 504.752,
+      "camera_image_sha256": "0f4526c46b96ab01f09eba865773af2a1c3d321dff31d4cc9b672c1f978afb8e",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 506.752,
+      "camera_image_sha256": "0525b7a8be2752392d1aee7261d3ad584107e0db76b85f5df9b64c5270c587b8",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 508.752,
+      "camera_image_sha256": "5d158d134a1f0958e865c6cd471ca781868fd8e7630fe13ef5593d5623e7d8ca",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 510.752,
+      "camera_image_sha256": "eba9c57535554d6aa76ec8d925a89f1d3b25dccf8d9a4c2496f479aac36ea0b6",
+      "next_sample_sim_seconds": 1.9999999999999432,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 512.752,
+      "camera_image_sha256": "a8ddb8a18668d239581a17e4390d1c2c0a7a5911b05a48bdc65b65fecece0b7e",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 514.752,
+      "camera_image_sha256": "eef65c7938912398d57d3d26ac7ac76c9d3d0912a04cac0e4e2e888451080399",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 516.752,
+      "camera_image_sha256": "07ad3698ac10ceda4485e5dbfa344fd6bf4355f7de0568d737c38a6aa2f3da50",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 519.0,
+      "camera_image_sha256": "b90feeb30230fa12610594e3f2239df9ccc069d18e7c821c7f3b24b38c95f20c",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 519.0
+    },
+    {
+      "sensor_sim_s": 521.0,
+      "camera_image_sha256": "a56c7e496a753139f64462a33b5e10f1d6ec3180a59b1cc3bbe547061d6858b0",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 521.0
+    },
+    {
+      "sensor_sim_s": 523.0,
+      "camera_image_sha256": "db061028f439237e28c93104c54fb91f3f0a9a43e7ef2e1e295c24f5d2d027d5",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 523.0
+    },
+    {
+      "sensor_sim_s": 525.252,
+      "camera_image_sha256": "aa6c10b819e1e60e245fb33897dee47a0dd7cba563e35ced636711e99242cd65",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 525.252
+    },
+    {
+      "sensor_sim_s": 527.252,
+      "camera_image_sha256": "b189bd80cae33aef39afe34add19fc059450e888e5ac0f87196f4afb2ab1fa44",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 527.0
+    },
+    {
+      "sensor_sim_s": 529.252,
+      "camera_image_sha256": "e4bc623f7d3837f9eb22192c9f39c36c9f970f57f5a1432b456eca2673839492",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 529.252
+    },
+    {
+      "sensor_sim_s": 531.752,
+      "camera_image_sha256": "b50218f14ba58e222bc3be8695accd6bcf1a1aceb221ed010dab1e62d963f94a",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 531.752
+    },
+    {
+      "sensor_sim_s": 533.752,
+      "camera_image_sha256": "147572dc96c66dc9bdc633880f8358af4329b838f272bb98d43cae60ea8f66c2",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 533.752
+    },
+    {
+      "sensor_sim_s": 536.0,
+      "camera_image_sha256": "2fc6a242f49e563bad0c0a9f205a3191f75806832a7c6c34cd5ee35c20b7b2fa",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 536.0
+    },
+    {
+      "sensor_sim_s": 538.252,
+      "camera_image_sha256": "812542965291e4edf0f801bae1ea04a7e392480c315f2a764377be3f50b54f8d",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 537.752
+    },
+    {
+      "sensor_sim_s": 540.252,
+      "camera_image_sha256": "282b65a7e975b0bdb65cefca9aa78b3b4ee7123eedfb2323b88f118d9ccc4bd1",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 540.252
+    },
+    {
+      "sensor_sim_s": 542.252,
+      "camera_image_sha256": "4357208b08f7a5d97e61b0d682d0eaf8c399f6a8a312bfa070b59560be41b540",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 542.252
+    },
+    {
+      "sensor_sim_s": 544.5,
+      "camera_image_sha256": "4d459b1cd110271a2ce9a0bd72bd8e20cb25b35d0f5af515cf52535065b7bc3b",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 544.5
+    },
+    {
+      "sensor_sim_s": 546.752,
+      "camera_image_sha256": "6da2906e76f4d08314fa6b6bfec5cfcc0345c9aa60c8a88dd6f8952744cf9b34",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 546.752
+    },
+    {
+      "sensor_sim_s": 548.752,
+      "camera_image_sha256": "634ac134cee326d94a3b8b9a9eb491de5e03f08020244455f0d55db80ac78368",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 548.752
+    },
+    {
+      "sensor_sim_s": 551.252,
+      "camera_image_sha256": "178ec7f4faa2e1d0b5275e94554d2a62a1c121f944bc3bf6113e6ff7ce69559b",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 551.252
+    },
+    {
+      "sensor_sim_s": 553.252,
+      "camera_image_sha256": "060f52c413b4cbb76ff99fe8bf278ce1d7b61f2ec286dfd5bb00a0743d8013d9",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 553.0
+    },
+    {
+      "sensor_sim_s": 555.252,
+      "camera_image_sha256": "9c07fc2929a6204e8e83b7d1be56f5d390aa470761bc0729e557900585d43dbc",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 555.0
+    },
+    {
+      "sensor_sim_s": 557.5,
+      "camera_image_sha256": "ffe22b9f291b5ff3794a20cd94a3cdfd762c540fce003195f720d340db26d9d8",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 557.252
+    },
+    {
+      "sensor_sim_s": 559.5,
+      "camera_image_sha256": "d409116b10c6251c8023248bd55fd0da1aef097f4f18daf95839d596f9aecb68",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 559.252
+    },
+    {
+      "sensor_sim_s": 561.5,
+      "camera_image_sha256": "7b26bd59c96fa3256e8ee1d4e04ee2f0dee6b2897caefe74fcea0b318ed491b5",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 561.5
+    },
+    {
+      "sensor_sim_s": 563.5,
+      "camera_image_sha256": "2288a0e047a89b1266ddd4cd139fbccb5152096287d37a7a3ce6e72a125dd058",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 563.252
+    },
+    {
+      "sensor_sim_s": 565.5,
+      "camera_image_sha256": "33eacc80cfddcb6c65e1298d759d412b985c90329160ba762c32973b377f4d56",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 565.5
+    },
+    {
+      "sensor_sim_s": 567.5,
+      "camera_image_sha256": "ca76e58ab8dedd147a96a60b6d8805ce5ea204ad4d5e73da110af7e29236c0b0",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 567.5
+    },
+    {
+      "sensor_sim_s": 569.5,
+      "camera_image_sha256": "7753fd38fc1c9dd09fac4de380eb5bc153e7a2f343355df2a183932ba594e8c0",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 569.5
+    },
+    {
+      "sensor_sim_s": 571.5,
+      "camera_image_sha256": "89738d489d5dd6ad4463c25e7ba77a0dc5a905fb0b23da05455b563cb6142d44",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 571.5
+    },
+    {
+      "sensor_sim_s": 573.5,
+      "camera_image_sha256": "03458ded48af049e00206d71b8ccc76d38df09193e42591ba8977b1ddc61f074",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 573.5
+    },
+    {
+      "sensor_sim_s": 575.752,
+      "camera_image_sha256": "78f75c1ee3e435498d7e9d53a18aa1a167d1ac97e170b0ba2fc5b572bb480dc2",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 575.752
+    },
+    {
+      "sensor_sim_s": 578.0,
+      "camera_image_sha256": "62b054eedbb26252a35c18ac9e6407a8d371cde03eb3a2b23d1d166b28233707",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 578.0
+    },
+    {
+      "sensor_sim_s": 580.0,
+      "camera_image_sha256": "fb5105d12f8581ab77fca26721a08b34ebbfd3be169bb4accd04e050940af54d",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 579.752
+    },
+    {
+      "sensor_sim_s": 582.252,
+      "camera_image_sha256": "4381d68d39f2f127418cb4779b7caa954f6c793a955a76510c2de03cde0fd1cc",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 582.252
+    },
+    {
+      "sensor_sim_s": 584.252,
+      "camera_image_sha256": "1fc37ea8d22a4dd03c677b9b798b3406be162dcef5b9f925c7c257ccdd94b436",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 584.252
+    },
+    {
+      "sensor_sim_s": 586.252,
+      "camera_image_sha256": "595496230dcfeabd89a9c4275fb160bd3cf64f657a3769bc5e77675bd82caf1a",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 586.0
+    },
+    {
+      "sensor_sim_s": 588.252,
+      "camera_image_sha256": "98b78349a62ad5f418c77515c46b6f06cb2ccdff307b498ef8f031342b5c6184",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 588.0
+    },
+    {
+      "sensor_sim_s": 590.252,
+      "camera_image_sha256": "6ec6aec74e8fa78e532fdc209519d70d36cff940634e6d1212ef4b800f7f9d37",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 590.252
+    },
+    {
+      "sensor_sim_s": 592.5,
+      "camera_image_sha256": "22f75eb50ab4733527a907c57c797423ff207b53012d926e452f376b304e1a8d",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 592.5
+    },
+    {
+      "sensor_sim_s": 594.5,
+      "camera_image_sha256": "0b276fafd2305f1906b2a69f1a198d84dab85b756c95b81e9926442db20d0d61",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 594.252
+    },
+    {
+      "sensor_sim_s": 596.5,
+      "camera_image_sha256": "6d8937f2c3db9615846ac5ea04ccbbf238565c59478b622e9c90055f9c31b496",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 596.252
+    },
+    {
+      "sensor_sim_s": 598.752,
+      "camera_image_sha256": "0fe0eac27d85b7ecefdfbf06faa8f4ddeb331f895e66213b6b09f9974884284d",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 598.752
+    },
+    {
+      "sensor_sim_s": 600.752,
+      "camera_image_sha256": "1ac265475c556fbf9f7889a644b6f72375cedd77e8a0c385c886b5ccdb77d884",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 600.752
+    },
+    {
+      "sensor_sim_s": 602.752,
+      "camera_image_sha256": "94a36308a325e88c5e15673cb84d1ecc9f2d8dc18f9d4973d85b67640acdd3bf",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 602.752
+    },
+    {
+      "sensor_sim_s": 604.752,
+      "camera_image_sha256": "82298aa0f4cc9de481e3028bd72c3b4b80f12ac48ed01107299190bd6bf4facd",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 604.5
+    },
+    {
+      "sensor_sim_s": 606.752,
+      "camera_image_sha256": "bf14bd2862fc23fdf062566b757562b2abc8d3aba2edfdb7ee8b0cc88569ad9c",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 606.752
+    },
+    {
+      "sensor_sim_s": 609.0,
+      "camera_image_sha256": "7ba4b6ba23d13de8e6971705b52a3b6777a104b9fc422b48564da7c7a0fc61fa",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 609.0
+    },
+    {
+      "sensor_sim_s": 611.0,
+      "camera_image_sha256": "23d7283b9a9e8a0393e1f420abdb3749bc6694f2793ee3681be77f3b7dc0e81f",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 610.752
+    },
+    {
+      "sensor_sim_s": 613.0,
+      "camera_image_sha256": "cf753c8e27a59b9e06c805e6524168f2d6b70cba76b683513dac1152d9ddcaed",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "e61963315af95f9ae2a8b37735d18bab0c85f8fda14d90202424c75d18d2e73a",
+      "inset_sensor_sim_s": 612.752
+    },
+    {
+      "sensor_sim_s": 615.0,
+      "camera_image_sha256": "58874810f58365d812985d84957c0c886271e753134cf5f6c3b1f9316141c347",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "bba29526af4ee1cebb10f3f4148699552b8e950952771747fc4c67c457fa4de0",
+      "inset_sensor_sim_s": 615.0
+    },
+    {
+      "sensor_sim_s": 617.252,
+      "camera_image_sha256": "07b9abf085ea151b4f0ff9a1f8fccffa36c93c8e96ccef02de840647cb345018",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "a93831cd233686f31260a269508b373f015520740ebbf11ad959419f86c8b48e",
+      "inset_sensor_sim_s": 617.252
+    },
+    {
+      "sensor_sim_s": 619.252,
+      "camera_image_sha256": "c31c3a8949ead6ed60980dec32b39351b01a92009bd41f084b80f126f736d565",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "15ef617a3bb4a7ba263ee5c0dd7bd254eca25403aaa75b921355ca4da13cf6e2",
+      "inset_sensor_sim_s": 619.252
+    },
+    {
+      "sensor_sim_s": 621.252,
+      "camera_image_sha256": "2908dd822845955d48cc7a932dabbb8b693566b7b248125e9a622ccac5a5bb22",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": "15ef617a3bb4a7ba263ee5c0dd7bd254eca25403aaa75b921355ca4da13cf6e2",
+      "inset_sensor_sim_s": 621.0
+    },
+    {
+      "sensor_sim_s": 623.5,
+      "camera_image_sha256": "22ee64501e84c0584f39d26481878d9817a2c129fb544586f80fef28a5e574ce",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "15ef617a3bb4a7ba263ee5c0dd7bd254eca25403aaa75b921355ca4da13cf6e2",
+      "inset_sensor_sim_s": 623.5
+    },
+    {
+      "sensor_sim_s": 625.752,
+      "camera_image_sha256": "fc9041537b69ef071ce462521701049ef67ac06b9432e48f9462223f2899864e",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "15ef617a3bb4a7ba263ee5c0dd7bd254eca25403aaa75b921355ca4da13cf6e2",
+      "inset_sensor_sim_s": 625.5
+    },
+    {
+      "sensor_sim_s": 627.752,
+      "camera_image_sha256": "095a95635b0f720e256e30fc0a64118dafa42af45517c545dd9361f1d76ade7b",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "15ef617a3bb4a7ba263ee5c0dd7bd254eca25403aaa75b921355ca4da13cf6e2",
+      "inset_sensor_sim_s": 627.752
+    },
+    {
+      "sensor_sim_s": 629.752,
+      "camera_image_sha256": "2343f4e9eb67668b162f04bbeed6db17617f91c3f3637496d5d4c463a056117c",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": "8e76ba48f6c81a8f3742f088c3b75d8209f362cae9ffceb3bc71c6ee571d0b1a",
+      "inset_sensor_sim_s": 629.752
+    },
+    {
+      "sensor_sim_s": 632.0,
+      "camera_image_sha256": "86c7863478199f1869fe40d156c0de72ae2c86f078f593bb2a2e729d609e9088",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "c80c3e908466cf8175520b282d98af2168eebdbb60d9747c88f8b485853eac1d",
+      "inset_sensor_sim_s": 631.752
+    },
+    {
+      "sensor_sim_s": 634.252,
+      "camera_image_sha256": "c6a3328bcebb7a5de3ceb6a6cc19babfacab73ca71a3c19f981efac4ea3474d8",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "cf61ab1e5ada1090f3feb587d1850a03fc8d5c94ed40cc6663237bea15659060",
+      "inset_sensor_sim_s": 634.252
+    },
+    {
+      "sensor_sim_s": 636.252,
+      "camera_image_sha256": "6eda16cb92ff836bb1bd6cb890fa33aad2aaa9de86b620a730cecb6c22a28b7d",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "2d996d05f0425163935783eebc421429ed6808537fd025bb4b29aa19be5b68c1",
+      "inset_sensor_sim_s": 636.0
+    },
+    {
+      "sensor_sim_s": 638.252,
+      "camera_image_sha256": "4bd2d9c66b5cc67d51f19a0d8938c4865b4dba93cfdad7579a47d2343b54a26b",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": "679fa49f2e9cd85afea1d5602aaf8a6aba5d99aea93779fbcf05520f18a72759",
+      "inset_sensor_sim_s": 638.252
+    },
+    {
+      "sensor_sim_s": 640.5,
+      "camera_image_sha256": "61db5364766125d759f5c4944434d6c3aed6bc79e1f59b00ac2e5121d4de8361",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "bed1f8f3ff457a888c8f15d3bcb10a6a193047052645e377a3ee4b506c142c8a",
+      "inset_sensor_sim_s": 640.5
+    },
+    {
+      "sensor_sim_s": 642.752,
+      "camera_image_sha256": "0f343807d4deeb872c12033353b5f1f2adf3a14930163fd764fdc559302d8170",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": "55fb9ec0e12a99de83f6f054d51e4d1eeef4eb82468dc81e533b4217f6720267",
+      "inset_sensor_sim_s": 642.5
+    },
+    {
+      "sensor_sim_s": 645.0,
+      "camera_image_sha256": "d9f18d9b50980552cab9ebc364ad62ef9485d8248e35f254ce1330d852f9e66d",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "90ba085224be7ce7550b183a369b1cdfc0d43272f1332f070b73f5ad8dee9a1d",
+      "inset_sensor_sim_s": 645.0
+    },
+    {
+      "sensor_sim_s": 647.0,
+      "camera_image_sha256": "26653c90fcbd1c32dcce2d3b1cf8c24e866a3f585de1a331b5c904bdad878158",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "8e60bd5a9404a3623e5fa8cececabfdcfd392c2e48f2099e4618cb7177320f26",
+      "inset_sensor_sim_s": 647.0
+    },
+    {
+      "sensor_sim_s": 649.0,
+      "camera_image_sha256": "c642e00416a9e8d1801f062458292aa060d0d4b8778f471fb935c644eb9ee966",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "8e60bd5a9404a3623e5fa8cececabfdcfd392c2e48f2099e4618cb7177320f26",
+      "inset_sensor_sim_s": 648.752
+    },
+    {
+      "sensor_sim_s": 651.0,
+      "camera_image_sha256": "10582c6ca8163cf5e3714ef5a09f49248bf2197fa45465bbca463989a28e4681",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "8e60bd5a9404a3623e5fa8cececabfdcfd392c2e48f2099e4618cb7177320f26",
+      "inset_sensor_sim_s": 651.0
+    },
+    {
+      "sensor_sim_s": 653.252,
+      "camera_image_sha256": "6ce5c200573af3d79b6d5e2808a209aa8f5bdd2312a339308d41a57d4a49e0a0",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "8e60bd5a9404a3623e5fa8cececabfdcfd392c2e48f2099e4618cb7177320f26",
+      "inset_sensor_sim_s": 653.252
+    },
+    {
+      "sensor_sim_s": 655.252,
+      "camera_image_sha256": "000beeaed1602c8a41f3de832aab0dc154b867ed7c4306eb45100aa06d43deec",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "8e60bd5a9404a3623e5fa8cececabfdcfd392c2e48f2099e4618cb7177320f26",
+      "inset_sensor_sim_s": 655.252
+    },
+    {
+      "sensor_sim_s": 657.252,
+      "camera_image_sha256": "dbe3278203d8614fd59fe919f6c33562c73a0b3bb0a5e9d8570830c0d6637444",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "8e60bd5a9404a3623e5fa8cececabfdcfd392c2e48f2099e4618cb7177320f26",
+      "inset_sensor_sim_s": 657.252
+    },
+    {
+      "sensor_sim_s": 659.252,
+      "camera_image_sha256": "98b9659ecc72fd745ddaa7065c147b09d524d214a860fe3c04c53a994800da20",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": "8e60bd5a9404a3623e5fa8cececabfdcfd392c2e48f2099e4618cb7177320f26",
+      "inset_sensor_sim_s": 659.252
+    },
+    {
+      "sensor_sim_s": 661.752,
+      "camera_image_sha256": "51088366bc143abbe629e2f5982ca296bd5694dc2cce0c6dc8398bec3bf84c5a",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": "8e60bd5a9404a3623e5fa8cececabfdcfd392c2e48f2099e4618cb7177320f26",
+      "inset_sensor_sim_s": 661.752
+    },
+    {
+      "sensor_sim_s": 664.0,
+      "camera_image_sha256": "fdf759fddde6bb6012193bb93e3a1b9921787cf52e8ddfee3191da971b23751f",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "8e60bd5a9404a3623e5fa8cececabfdcfd392c2e48f2099e4618cb7177320f26",
+      "inset_sensor_sim_s": 664.0
+    },
+    {
+      "sensor_sim_s": 666.0,
+      "camera_image_sha256": "d7bcc61665b629c49696a3de1f3a13d1aa8c2e5a69d16cacd5a9c820a028b6b8",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "8e60bd5a9404a3623e5fa8cececabfdcfd392c2e48f2099e4618cb7177320f26",
+      "inset_sensor_sim_s": 666.0
+    },
+    {
+      "sensor_sim_s": 668.252,
+      "camera_image_sha256": "144ce302070924de58a2a13d0d222b41eff3364d9899b902b76cb5c3cb259f2d",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "8e60bd5a9404a3623e5fa8cececabfdcfd392c2e48f2099e4618cb7177320f26",
+      "inset_sensor_sim_s": 668.252
+    },
+    {
+      "sensor_sim_s": 670.252,
+      "camera_image_sha256": "80249be5838a9a4a814242bf528a0d07b7f9b259f4ebe6ee05913dd3053a874b",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "8e60bd5a9404a3623e5fa8cececabfdcfd392c2e48f2099e4618cb7177320f26",
+      "inset_sensor_sim_s": 670.252
+    },
+    {
+      "sensor_sim_s": 672.252,
+      "camera_image_sha256": "04c8eec26348729d39576112ebe1edc546a5efc69ca324409213ae6095ae13a7",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "8e60bd5a9404a3623e5fa8cececabfdcfd392c2e48f2099e4618cb7177320f26",
+      "inset_sensor_sim_s": 672.0
+    },
+    {
+      "sensor_sim_s": 674.252,
+      "camera_image_sha256": "bd3d063df39c58e6b53281f028909651539fb59fac9fcc375c3c14a964d579d3",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": "0c0434667e26e5d1756ff07b1d8342acc2e5552b53b62529010f57fd93ad3583",
+      "inset_sensor_sim_s": 674.252
+    },
+    {
+      "sensor_sim_s": 676.5,
+      "camera_image_sha256": "6e276f647a4dd32397ad1ceee0e5214accdb7f9b5160a7e13d4a2cb6369654d1",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "5fbdc329c46d57519a53bd7024c8de203b744d7009cfe369b3a7b82ca6a2cfc8",
+      "inset_sensor_sim_s": 676.5
+    },
+    {
+      "sensor_sim_s": 678.5,
+      "camera_image_sha256": "c18b78f6023e662185d9b714d2a91359e4ef321dfebf39f5bf45d4e0e3ec324c",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "29ca2562e48fe18316197c2b4e5e91a8de324b3570bfe7387a111b18aaec75ec",
+      "inset_sensor_sim_s": 678.252
+    },
+    {
+      "sensor_sim_s": 680.752,
+      "camera_image_sha256": "b5e157168fdb4601e6df45c07ecb9eb490a6a32616afd9088e2579587544c00f",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": "9f7e296755cdc78d1820ee26b0fc04e262caef18a1717fa4d1ea38c5a374dec0",
+      "inset_sensor_sim_s": 680.252
+    },
+    {
+      "sensor_sim_s": 683.0,
+      "camera_image_sha256": "17967d55f8f717d19697ef066d27ac0d07322b9284f2c66432b1a870f3576334",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "7f74248e4205d9bcefa6886c6094c93be58c9487c7ec9fb9851ba8fe68204f67",
+      "inset_sensor_sim_s": 683.0
+    },
+    {
+      "sensor_sim_s": 685.252,
+      "camera_image_sha256": "b1e4e917361b6f98d08725faeaa48689a55ab72b9bdc745c5373df44b2e3a772",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": "2d8754372f2a08f657daa157c9fee608ff8995b4b7429ff19aaf284bd796f3b6",
+      "inset_sensor_sim_s": 685.0
+    },
+    {
+      "sensor_sim_s": 687.5,
+      "camera_image_sha256": "276ffab57e7d94ffa00bca626b51dd9ad83e90135172193d51c9461c5dd46587",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "a6dfe98dfe35850358d2b59ac57f149c7a0a1857230246fdd497c45e56d76c42",
+      "inset_sensor_sim_s": 687.5
+    },
+    {
+      "sensor_sim_s": 689.752,
+      "camera_image_sha256": "a6d27d875cdc95d8bbc9532b38f9ca27a0770b5fb77f9a0eb7ea9a687c87406c",
+      "next_sample_sim_seconds": 1.7480000000000473,
+      "inset_sha256": "97cff2500e4e8f083b784df4936d5cfff58cef4c4e40074e1a978c40b488ca50",
+      "inset_sensor_sim_s": 689.752
+    },
+    {
+      "sensor_sim_s": 691.5,
+      "camera_image_sha256": "a318fc6418bae58426e63b1483e6a4c47d7e36f79943e528a79ea12c33faeed0",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "21612dad4c42659eff35c67e23c19b0e1f0dd814878a291fd6f4bdbe3cabf2e3",
+      "inset_sensor_sim_s": 691.5
+    },
+    {
+      "sensor_sim_s": 693.5,
+      "camera_image_sha256": "de616891c881d6bcc3f05c6bb7ec304caf7d6678ae5fa7438ff83a29dc2c7feb",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "bac880db9123a519ff3dc9be76b67e153f1d8ad097809df97db9511b21834833",
+      "inset_sensor_sim_s": 693.252
+    },
+    {
+      "sensor_sim_s": 695.5,
+      "camera_image_sha256": "908798e33936e6a7eeabc04b6a045d6edb459b645d5497b6bd566bee7bcd17a5",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "99794fca5e0483cc258482072f089d717a99e1fcdcb82eb8850c8fa2a15bcd05",
+      "inset_sensor_sim_s": 695.252
+    },
+    {
+      "sensor_sim_s": 697.5,
+      "camera_image_sha256": "9cb9b021dad7cd7abbe00dd960a7374bc7663be53ac4cd63724ff372116ef17a",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "4927d9ec730cbebe6059c7d7b61cf0637bf4bf2128c9c891ca5b1353f141f932",
+      "inset_sensor_sim_s": 697.252
+    },
+    {
+      "sensor_sim_s": 699.5,
+      "camera_image_sha256": "5286b6c00ddf8154b36b83d1f009c56f24e8811928969d568ebd25557b6a7dd7",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "2c90af420f1b831adab3f9afeded04b541c96af9a4947d1ecf29bc0a4a6d2ef8",
+      "inset_sensor_sim_s": 699.252
+    },
+    {
+      "sensor_sim_s": 701.5,
+      "camera_image_sha256": "78c0c1a436c0b812c297723f0f727ae041c8fccc991b66c8382de1272fc9de55",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "b29507b99c41d17bf692728c8b3943bb7183ffc8925716a228534f243cf45474",
+      "inset_sensor_sim_s": 701.252
+    },
+    {
+      "sensor_sim_s": 703.5,
+      "camera_image_sha256": "be2fc5d42a63459703f9935e1b0a470686faad69850b0487860ac8476437aab5",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "6a888a88b0b9ac9b4473f16eae1de6b72f32da12caccf4b741a2e4eb7291ca05",
+      "inset_sensor_sim_s": 703.252
+    },
+    {
+      "sensor_sim_s": 705.5,
+      "camera_image_sha256": "ac2a4ee9c82f62cc7b7ace15862680befd3b624484565509bb862f27a5812107",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "49d857349ad2d0a9306182c698ddd3364c3f4d781e75e8c7ba7c0e0213097d5b",
+      "inset_sensor_sim_s": 705.252
+    },
+    {
+      "sensor_sim_s": 707.5,
+      "camera_image_sha256": "99ba752b387564066e2f7012badc3a709117d4757e94ab6e77966ead7f6588ce",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "fd2c8d776e0bc6fa6dab5d533bd58aaa7dc5a1531062110a7edc17e851ae5fbd",
+      "inset_sensor_sim_s": 707.252
+    },
+    {
+      "sensor_sim_s": 709.5,
+      "camera_image_sha256": "7994d8502cac9cd2dd8096b35fa2d29dc5aeefb9ef23ced657f419c3001dc276",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "d5547a51125d5808101b653f28bc975e51d735b462ae215f1c86bf78eef04b97",
+      "inset_sensor_sim_s": 709.252
+    },
+    {
+      "sensor_sim_s": 711.5,
+      "camera_image_sha256": "b8fd1ef21db548cbbd5e81ea9f91a6b9378d7c6a8cbb244cdd8e5cebf65abd5d",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "2dec11aaed157eb09cba8cf0ca15dbf394bfc5c0a3d3910987128ac08aef567d",
+      "inset_sensor_sim_s": 711.252
+    },
+    {
+      "sensor_sim_s": 713.752,
+      "camera_image_sha256": "62015f51a232284ac3714ffc61ac64f7451afd19f8b7bf0f4365b33e31e3ad54",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": "b58d4ad8c5a6677178c3508ec8b13b925bd06aeb49161483a68cac315dc810e5",
+      "inset_sensor_sim_s": 713.5
+    },
+    {
+      "sensor_sim_s": 716.252,
+      "camera_image_sha256": "a4eda0e2b94cd7549dc8cf872c2ff6ea97020b7cec9f58fa430794058e1cbb3b",
+      "next_sample_sim_seconds": 1.7480000000000473,
+      "inset_sha256": "ef17b022d18e21dc91b5bfb16ba12f4622a414856135c21d39ba743827d8a3b4",
+      "inset_sensor_sim_s": 716.252
+    },
+    {
+      "sensor_sim_s": 718.0,
+      "camera_image_sha256": "47bab82e096a6e4f72763c5cd368a097efd6ae339ba8443632ead5f58cd3b024",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "58c92dc290e83373003c7b06ac27aa3d1398f686c6a0e1ff8dc98f72d704ffc3",
+      "inset_sensor_sim_s": 718.0
+    },
+    {
+      "sensor_sim_s": 720.252,
+      "camera_image_sha256": "9babecdaaaa158e73db95d760a30809e8d19cdac4ede5177856da5a75f7ec21f",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "fc62f30996a23926c70f0ab682414d7f538fac6febcb75525ce5cf17f80f0a93",
+      "inset_sensor_sim_s": 720.252
+    },
+    {
+      "sensor_sim_s": 722.252,
+      "camera_image_sha256": "b519fa6bda20216853270a3393e1724d7c1a2d6fa3ea098f7f801b8e36edf955",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "96de4e05e8fe32798dc247722a46541a876747074b73a214260cd18c01aaa723",
+      "inset_sensor_sim_s": 722.252
+    },
+    {
+      "sensor_sim_s": 724.252,
+      "camera_image_sha256": "37f12aaa66a94e3d0223311559c12ef3632b93376e86384cb90d421161dd9bda",
+      "next_sample_sim_seconds": 1.7480000000000473,
+      "inset_sha256": "534b069696ea65cb198c86a237847c0dae32b765629508c9e80524ab00b8b3ee",
+      "inset_sensor_sim_s": 724.252
+    },
+    {
+      "sensor_sim_s": 726.0,
+      "camera_image_sha256": "d30548abec1230080b3e800171fef410a2c54a3afa9560e60138165a73faa371",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "41bf8a993d7f19564413b78848be676bd2e46f82652322c27d48b109b008aacf",
+      "inset_sensor_sim_s": 726.0
+    },
+    {
+      "sensor_sim_s": 728.252,
+      "camera_image_sha256": "feef2122f6b6ae7a3133d2a3b4cc15244381cc122b264bbd1c646332f6060838",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": "fe611495191ebece795b2228abe73f34c59664230c89df57a840f9736b0e409f",
+      "inset_sensor_sim_s": 728.252
+    },
+    {
+      "sensor_sim_s": 730.752,
+      "camera_image_sha256": "e2c793fbeb2338a63ced8dd6bef2f37faecc293a8e541c8bce18aba2de46ae2f",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "2acce06997c6dd923148c19cf15b32ca21de4f81e7af7290c1e79092d4cd6325",
+      "inset_sensor_sim_s": 730.752
+    },
+    {
+      "sensor_sim_s": 732.752,
+      "camera_image_sha256": "8cdb9dab101ea3a8a2cbbdadd89437625f9204e6d6cacd0486427337e78e7421",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": "87d9d48a58b014ed57f257f2c5fd789c93a5a0bad167d0032f8845ee063c21b3",
+      "inset_sensor_sim_s": 732.5
+    },
+    {
+      "sensor_sim_s": 735.0,
+      "camera_image_sha256": "1a94a3137d8c0369df2352eca80fd5f9e4c4f0a74056726fb0fe304c872c3c9c",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "b9d701b70c55ea37398649f01ce35ff122767cfb469104ffc451df0d1f344738",
+      "inset_sensor_sim_s": 735.0
+    },
+    {
+      "sensor_sim_s": 737.252,
+      "camera_image_sha256": "c180318d9d2cef252dc523fe4f64e3e647998214e11f15a2b80223474649a9bc",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "56f8e98e9013cfb5c190334b09445dbe8babd3c3b13e5a41ed8097f7e07f86ec",
+      "inset_sensor_sim_s": 737.0
+    },
+    {
+      "sensor_sim_s": 739.252,
+      "camera_image_sha256": "bb5bc46ac81474beca39e75e3305ffc03e7e0e6f97b8410daa0752d092a88c2b",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "eb45b0f3e8bef289be873387866bc21555ea0ee12e2adb30d38d70f3994293d5",
+      "inset_sensor_sim_s": 739.252
+    },
+    {
+      "sensor_sim_s": 741.252,
+      "camera_image_sha256": "0b8732db2ce0c513c0d9de0581721d84c1152517f1c9411072396ab3fa8673a2",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "3821decd8a70739f0c842c7983f637684eacc17419040272b70bf2b6c02614e9",
+      "inset_sensor_sim_s": 741.0
+    },
+    {
+      "sensor_sim_s": 743.252,
+      "camera_image_sha256": "f11338fb8fece72d837deb55029ccd7c706d8aaa18150fae2c56fc33651c425d",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": "20ec4a3ea165cf13ea370db95b49fe11ca1d41bd7c30c2032c04a5510b674804",
+      "inset_sensor_sim_s": 743.0
+    },
+    {
+      "sensor_sim_s": 745.5,
+      "camera_image_sha256": "062b8e822c2e1c956d803ce46f3013f088de1ade68e1c137016c1de4ec68376e",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "3ec7a704ca06f46c74d0b6f92bea8b7f91d149a10857c0d932ddd7b3297f9a2e",
+      "inset_sensor_sim_s": 745.5
+    },
+    {
+      "sensor_sim_s": 747.752,
+      "camera_image_sha256": "ec281f17de7a2605de58321a910c6c093916a4298e649e446603f01c69d89388",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": "91636f8d41f37f819bb8ee0e52b146128b8e1c6119c85d39f26e165c436b0d8b",
+      "inset_sensor_sim_s": 747.5
+    },
+    {
+      "sensor_sim_s": 750.0,
+      "camera_image_sha256": "22ee122a149c3819aa5a016132b291005321852e75b9cb5e703a0e5aa2cbcdfc",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "302bff802e804e0e55ecdc19811164fb83344004533977f0f4407608f6dcace1",
+      "inset_sensor_sim_s": 750.0
+    },
+    {
+      "sensor_sim_s": 752.252,
+      "camera_image_sha256": "45008f344b9805d3bcc2276f2e2755aaccccfe124aff51bceda54e2d8d674b99",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": "5daea44a2ede41ddad4c4b38c921d4f3f299f849f70d4446cf99b7504f61e7bc",
+      "inset_sensor_sim_s": 752.0
+    },
+    {
+      "sensor_sim_s": 754.5,
+      "camera_image_sha256": "28452a11de6f622a52c2141db6021ab042216150592b3380fbcf353a6093c03c",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "7f3792d658a8995acd31c4776474a4003cab5c7a9267d12add2716bb6e42a0e4",
+      "inset_sensor_sim_s": 754.5
+    },
+    {
+      "sensor_sim_s": 756.5,
+      "camera_image_sha256": "a5103ba40de264479b63f860c50a2acf33208de0c13450b05f369a0ecd8e000a",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "3a2cdd55eaba239707d328b445ee0ca55b6c12a4581995019b2d48b939709920",
+      "inset_sensor_sim_s": 756.5
+    },
+    {
+      "sensor_sim_s": 758.752,
+      "camera_image_sha256": "f7342aa052f3c319ce6c25fd4693fef8d6b5cbf1f09d097d67eaab6b44d3b871",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "461256a49f7dc466e43d9fd28920a8d65b1fe519c69562561976021cb4f4d9da",
+      "inset_sensor_sim_s": 758.5
+    },
+    {
+      "sensor_sim_s": 760.752,
+      "camera_image_sha256": "f2ef6d6bf71dcf386bc89e30cf55bbc5587e39980624e121902533a1b0c54fe1",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": "afc466456621b05b870f246153867bc3a23715a04b7f4eddccf1abf2d615c080",
+      "inset_sensor_sim_s": 760.252
+    },
+    {
+      "sensor_sim_s": 763.0,
+      "camera_image_sha256": "c7920081987fdd2bc20624b41c36114c9c6ed6bc87948e5e3a36b5b413462f16",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "ccee75acd3d656d25766b04967ce8a3570c6459e6f6eec30fabcd27812c046d5",
+      "inset_sensor_sim_s": 762.752
+    },
+    {
+      "sensor_sim_s": 765.0,
+      "camera_image_sha256": "0a9c98d1f3e742d99bfeedd5971e3cfc429f32d34a7d69a558395dce0692491c",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "1bf8d1714d2c7678a3e180e5b3f05bcaee010ef58668f1d28bf45fcd4552a79b",
+      "inset_sensor_sim_s": 764.5
+    },
+    {
+      "sensor_sim_s": 767.252,
+      "camera_image_sha256": "8f085fe1bbc817e7946037a1ac3250d3cde4f80f292b4e98b886fb2dc141b503",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": "6627f7b283a7ac6ce851e77a9fc29e39f441744b07671b015bf209d8b58220f0",
+      "inset_sensor_sim_s": 767.0
+    },
+    {
+      "sensor_sim_s": 769.5,
+      "camera_image_sha256": "642ed5ad9dd97e521cd83e168bed757e46dcbb587e7d3ea82fb40a04a28cc6e6",
+      "next_sample_sim_seconds": 1.7519999999999527,
+      "inset_sha256": "d059d84bfad7476f027b7f210b86945ec0691238b5ff22eb28f196deac47b2bd",
+      "inset_sensor_sim_s": 769.5
+    },
+    {
+      "sensor_sim_s": 771.252,
+      "camera_image_sha256": "6e4baad0237ff5ba4bbffa56b068493506cd829657aa9f55a3216d26f7b12bdf",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": "feea8a7f9c8fdf44de93e144b9f380d137061349a5aea10b43d6eb85dd32ee71",
+      "inset_sensor_sim_s": 771.252
+    },
+    {
+      "sensor_sim_s": 773.752,
+      "camera_image_sha256": "724a003a446b269581b1cc7b81cf58dd99851c15c4620d7f9e0542363b9f91fa",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "15dac71acf3c019144e2187ea67ec41bd200673057d43ba185d1def50b39c062",
+      "inset_sensor_sim_s": 773.752
+    },
+    {
+      "sensor_sim_s": 775.752,
+      "camera_image_sha256": "60e4feae518c67a6b266334778aa9315e451aa5030a34edbc830c2e1338d3c29",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": "2e8694a1c1eb59ef59839fb964d6167a8736ca6dc888c51427625a983ccfa57e",
+      "inset_sensor_sim_s": 775.5
+    },
+    {
+      "sensor_sim_s": 778.0,
+      "camera_image_sha256": "e2851562918e2ae6787bb969dd0990c74b5f23f729fd9e95f67e022ef5a9565f",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "87dc4973347670ee2555e2ddbc5b63c6a5be75b77dcd913f064069b726d5a618",
+      "inset_sensor_sim_s": 777.752
+    },
+    {
+      "sensor_sim_s": 780.0,
+      "camera_image_sha256": "d88a2e8f10eac3ce0f83870b536ae5fab5136c2bacca79ba12b71bcbb8586341",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "18a1f5d2741c90c5271e26989ee6ade1292c70dd91e4007c3c3a751464a57083",
+      "inset_sensor_sim_s": 779.752
+    },
+    {
+      "sensor_sim_s": 782.0,
+      "camera_image_sha256": "4ebf2ffb580c4c1d3145dde44a989ab259006198606e6076fe77a13d3a456386",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "652d408e7ab74a3d746849ef9455cdc542321187e7c3607dd62d7208109d9e7b",
+      "inset_sensor_sim_s": 782.0
+    },
+    {
+      "sensor_sim_s": 784.252,
+      "camera_image_sha256": "0bd141664493f734d6793d637afad222277ebc77ff0212b79119c6fa97fdbca3",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "90038559507c5180ca0c11c7e844bc9a3d064184ee4bd3f44fce1911387be9f3",
+      "inset_sensor_sim_s": 784.252
+    },
+    {
+      "sensor_sim_s": 786.252,
+      "camera_image_sha256": "987cf7ee169dcd8fd8ad69be541d115bbbed22e255f9a79f8f15e67bcfe1a8a5",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "4422fd4af82eeec46e55ca936beb42c044a82a1bb6c1fb2e883737bd7dc1a46d",
+      "inset_sensor_sim_s": 786.252
+    },
+    {
+      "sensor_sim_s": 788.252,
+      "camera_image_sha256": "439e37f0f5dae5a014e64157fe9c9fd7d8325535d845359b042d73db0956fae9",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": "0eca393a46626b895739d6df66fce4f66bfedda21dce14492170599acb205164",
+      "inset_sensor_sim_s": 788.252
+    },
+    {
+      "sensor_sim_s": 790.752,
+      "camera_image_sha256": "f73bcd311eb1ace0443c9258fca2c236b0753f37d5ff2d7bf96475d5bbc558ac",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": "3476730474029f26e2c2b8093bfe350383a6201a97e433efa99b8891cf2d2763",
+      "inset_sensor_sim_s": 790.752
+    },
+    {
+      "sensor_sim_s": 793.0,
+      "camera_image_sha256": "deeb88b98076e9df24ce38b05ba95b4075a152d06310bc4bbcf6593c40ef3157",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "674ed2d259a16e3310eadc9a2f4517a4cb0b6d03852da5ebdd2187642e56e92b",
+      "inset_sensor_sim_s": 793.0
+    },
+    {
+      "sensor_sim_s": 795.252,
+      "camera_image_sha256": "050f218dc44c00258e3ff2251f465d4830b9f2f4a89a0275f922b48bbb853486",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": "0f93d785488c9751c91ceaf3a6a570b440b082b4752b1fb76e5af9eecaf3be04",
+      "inset_sensor_sim_s": 795.0
+    },
+    {
+      "sensor_sim_s": 797.5,
+      "camera_image_sha256": "9828be7870ecbb3b987e67e134ae9e31b90457c6beb29ce44972990ed750adc3",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "5afd6e34e474eb189755a657370bd399c36a43c4b86bede4c4601d365b86a815",
+      "inset_sensor_sim_s": 797.5
+    },
+    {
+      "sensor_sim_s": 799.752,
+      "camera_image_sha256": "48089d7f30baad1fded749798935387a3aac1bf57e699e3c71089e6965e0cd40",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "c7511ae4d5abc8424e3e0b9ec4d42e822e3c22ff61b9dea4880e0bc5a6b86a2a",
+      "inset_sensor_sim_s": 799.752
+    },
+    {
+      "sensor_sim_s": 801.752,
+      "camera_image_sha256": "ecc8e2c0ebf2a4b9919b87ee33741975a13f61f6036e4f2a057a666c6a07688e",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": "4fd48d4df4fa1c1a76b1025c7b40fe7fc72f9b0ecd4badc283e1d3fe764c2801",
+      "inset_sensor_sim_s": 801.752
+    },
+    {
+      "sensor_sim_s": 804.252,
+      "camera_image_sha256": "1519b8feceaa5c11e45094fca4c80f42c2acde1cc17216bc9f061b303453fa18",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": "1a170e196655663d5a2947476152751ce0265c0cd460908b858339ea778b9e6f",
+      "inset_sensor_sim_s": 804.252
+    },
+    {
+      "sensor_sim_s": 806.5,
+      "camera_image_sha256": "87721bee66639a747d0d90f0b19884b6ec1b56f7ff30160e57640722981d678c",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "b6c2ea89476e51e8213cd00b30327ae2320ea5c424618523c6149191768de344",
+      "inset_sensor_sim_s": 806.5
+    },
+    {
+      "sensor_sim_s": 808.5,
+      "camera_image_sha256": "c03eca2b0c69bc96c425d1737cae3fe368896cd271eac51111b9668a556ffff0",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "eca351dd5b3945f75c0c330cd24259b72c92c19cfb6e486f6bc85f23ad831fa1",
+      "inset_sensor_sim_s": 808.5
+    },
+    {
+      "sensor_sim_s": 810.5,
+      "camera_image_sha256": "5df94a6d71348880def1a010b7301755bd2cc0ab4ec6c3979fee71ae5b0c7572",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "3843d78fdf55115131b501fcc78309a7709d942b4c68fb61796901bdb4635608",
+      "inset_sensor_sim_s": 810.5
+    },
+    {
+      "sensor_sim_s": 812.5,
+      "camera_image_sha256": "61720edf5dc85bb248dda6801ab7548ccc3bd58e0fcbe70889436e2e73658689",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "3efdebfbb20db4ae004655b662e6ab09bfa0b42cabeb6fcd99ec992c841388bb",
+      "inset_sensor_sim_s": 812.5
+    },
+    {
+      "sensor_sim_s": 814.5,
+      "camera_image_sha256": "4b4f7368176f997c63adfa6886738e8f62a4d7d65d26a4be6d22860779719a8e",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": "af7dfb42cd691f17f32d6cca85063d7853f7a029b1b6a9e99e0f80c2083ea466",
+      "inset_sensor_sim_s": 814.5
+    },
+    {
+      "sensor_sim_s": 816.5,
+      "camera_image_sha256": "1c41c700a404976f860080cdcac1714da52739d6321837eec25b1a92f46bba55",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": "af7dfb42cd691f17f32d6cca85063d7853f7a029b1b6a9e99e0f80c2083ea466",
+      "inset_sensor_sim_s": 814.5
+    },
+    {
+      "sensor_sim_s": 818.752,
+      "camera_image_sha256": "5a0d7005745d87a829221e95d9a7a6018525a2f90727c9a91b5c161af9674219",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 820.752,
+      "camera_image_sha256": "cd29dbabd578bfe300fe5d54799201613fa42e97b1710b02369d846178d4d1a7",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 823.0,
+      "camera_image_sha256": "95f21340207ea624cf6b69a9ba85e2a9939110b86a3d67bc70e514ef9f38c9bc",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 825.0,
+      "camera_image_sha256": "f89ddcaa759dba5ec41df2fe3ac3115ddb5506dfdbe9ad94570239bb75d6fcee",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 827.0,
+      "camera_image_sha256": "7143ca2dacd85b36c197521907acadec9fb8157d2d94bc885b98a6997d00be2a",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 829.0,
+      "camera_image_sha256": "b40d3683b1b8544cf335107d00ff13cbf7ac777a5b85f90d4ab6256ef0058371",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 831.252,
+      "camera_image_sha256": "c41dbb77d31127823c8690121e857d5d09e8e1358c09912816a5bc606304f082",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 833.252,
+      "camera_image_sha256": "940824f44c1199f2218395c8af13b4c8e4b693ec04b09a9c47172fda6139515d",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 835.252,
+      "camera_image_sha256": "ceae2c93dd47c95b87fbdae74f033ff7d3be969d6d04ee55b08b324366bda188",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 837.5,
+      "camera_image_sha256": "679f96b76c3ed3bf483eb2866f80a56efbe2bd78552f0d2282099bd1ece62bb6",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 839.752,
+      "camera_image_sha256": "c11197cc6731397fc2fb583e3050c246d943b10279b7c3b81e9f57f4f20cf13f",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 841.752,
+      "camera_image_sha256": "765505a0ea8346b1288276db2c664e63f7a610bf6097e20eeaa6eba2e5bba5e3",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 844.0,
+      "camera_image_sha256": "93d99e7d6902d3f1a14893c317208cd4b38f5b31ce1a9a7744f30aa18634fcb0",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 846.0,
+      "camera_image_sha256": "74e7f7a0d0cbd3bf2107f19cfa7860f24d34fc5de45fd70fe10a3c16ce4191f8",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 848.0,
+      "camera_image_sha256": "7cc12205c184e607a868f47bce3d99ee767b633eb8e483dbf02ac947790a730d",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 850.252,
+      "camera_image_sha256": "a4bdff7f9a4967ad9042a95b7a6c22222bf51a429f89ff9050305ab08d36f22a",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 852.252,
+      "camera_image_sha256": "fd21264c04a38885cae41d17e5622173e6936d1e8df8f9c6376619c99e01e849",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 854.5,
+      "camera_image_sha256": "0025611f551a0b9d8a370f0595bb869724695153b47e5d028ac784385344cdbf",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 856.5,
+      "camera_image_sha256": "adc951cb0422534ee5465f5e45743a446f879ac82fa991ceced6433e7cbc3e2d",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 858.752,
+      "camera_image_sha256": "31093790031ddaf0c88e483f5c00cb18db3cb5630346a135233a025e7292b5cd",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 861.0,
+      "camera_image_sha256": "71310c8b88f6be6ba31eb0e09d0ab7592766a5fff6783a8f6ed39be5e793d22b",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 863.252,
+      "camera_image_sha256": "866c45856573e2000a621e302e2be08ac82a3e1151ea48bf669359b3e3338b69",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 865.252,
+      "camera_image_sha256": "3daba457d922c3c1bcaea74700e5a957581d82273ec4784652025246dd35d9f6",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 867.252,
+      "camera_image_sha256": "e534ccaf356f561136502edc376fd740c6375388a296a1c64ad40aa1b2685e28",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 869.5,
+      "camera_image_sha256": "7105c19bc2a27bbdb43de7a94cc2a2d231c384b99c467fc4e09f5f611256d2a6",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 871.5,
+      "camera_image_sha256": "ed0403a2d08b43621be2cb754ff7e2a4ff732cfe95b57cb03388f2eeced46fa8",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 873.752,
+      "camera_image_sha256": "4f8237a77dff20ef2791d650d9c5040170f16d134db187c058e5684b6cd8481e",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 876.252,
+      "camera_image_sha256": "d7bb1f1a5dc38652306665e8bd036e69741344d80e1ca05becad9d9887566b33",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 878.252,
+      "camera_image_sha256": "f4806d12a2335be36f3d0c8561bd1befd490ab0c0fdc9ddfd2da3aeefe62f228",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 880.5,
+      "camera_image_sha256": "945237dd3766b638a0e26b94f9b0bcc915c584295af044432ed0c422217fd7bd",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 882.5,
+      "camera_image_sha256": "b517db9c392a1ad0cc2ef890989e61e4bb8782770eb577bf0688fbfb1470112c",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 884.752,
+      "camera_image_sha256": "67b03c0d16d31ad8239dcf5d8e67bcb5d649c83ff11d0166f53cd5231f8be21b",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 887.0,
+      "camera_image_sha256": "df81016441a9ffa4363cc70c0985652a9ae2401236719208a5d9016a1801beb2",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 889.0,
+      "camera_image_sha256": "90a8e92ac6c98f859f57839f4162301a3938914a3e318d643eca07e49abba6ae",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 891.0,
+      "camera_image_sha256": "407e1d645a56af6664bb15e899518f31de2aa652a6746ad46412383298551e85",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 893.252,
+      "camera_image_sha256": "68b03cb2872738bba9b5eccdfb4d367f9a26be1a14ecdd75cfbf7e55961dff36",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 895.5,
+      "camera_image_sha256": "fe0450a6ceb0433531bacc1b12b421e2142e298d6ed0b290921ba7bb8b4ad5b4",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 897.752,
+      "camera_image_sha256": "29dd08354969209853176ef9dbe0e177611250132a9340f9331128d25e203806",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 900.0,
+      "camera_image_sha256": "b6dadf1a34388b4ab1a82c6dbe1923a65620458ec227dd1c3e3d61421e1e21ba",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 902.252,
+      "camera_image_sha256": "3a40740099c953f0c0ac95be2a5aa9d69b553439a9b2e2194ae39da0311ba6f6",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 904.5,
+      "camera_image_sha256": "85a9ba51a56fb0a2a13735b3e1d60f97aef328d5a6550622d96d7732e91c1beb",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 906.752,
+      "camera_image_sha256": "5a5d638af9001cc0c3d61b9acf4b631bac7f8ec77750ea4937541341732cdbe7",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 908.752,
+      "camera_image_sha256": "99d8da69b5ddd71d05caadbefb0e2c6e546498d1d8d8e048194f4f15d5cd76b4",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 911.0,
+      "camera_image_sha256": "23534c6ae7e44407b3f8c5be8836d785fcb52b982fca130165e28a004e465d4e",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 913.252,
+      "camera_image_sha256": "84077ab1766b3fa6b98edef2201e493111db73e0e8f9499c2ffb1c8ef49e98d4",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 915.5,
+      "camera_image_sha256": "a730d6b692d147875437e9125a3cda245b0ee1cb79174a2102a953d2165085e9",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 917.752,
+      "camera_image_sha256": "079a8df140eb368a8d08240368225591ad8a3049cf444e82046903956685a93a",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 920.0,
+      "camera_image_sha256": "22ff8dcb5d9d5fd4f1723bd54676f0ac58d18d7202421e3f2db448a3ea812141",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 922.252,
+      "camera_image_sha256": "86e1ff56303408db4f5fa9e871e8b854320637f64174ac6a74eb663171e1a026",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 924.5,
+      "camera_image_sha256": "c9766beee173a098f021031976aa0ea86c32c5a6fbf3b53bac7fdd194c0cf9d4",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 926.752,
+      "camera_image_sha256": "58e53e4abdb3d3bc7524cb405ce526b8076e39a42aa63d1dcc24351c50f5e465",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 929.0,
+      "camera_image_sha256": "134f47cecc325f82a566f75c7713870cf4fbfbe446f29b53fb0cf8efb1475f8c",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 931.0,
+      "camera_image_sha256": "c5c6bdc8f66ac4f92c4abf22481a43041e7a7a00ca02672f55d0f6988180d7a6",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 933.252,
+      "camera_image_sha256": "8b5dc5d0d84c8063c1043dcc0cdd6f7cbc391469aa366f5eb87d654e48d02433",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 935.252,
+      "camera_image_sha256": "40b5b3360be029f9e4f1b214d37ea507f5397bf2be33643760adfd190d57b589",
+      "next_sample_sim_seconds": 2.5,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 937.752,
+      "camera_image_sha256": "a92a970d61241c25a72d60ab7a6c26a4aac8a68bef8c858c16a2c700717ed564",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 939.752,
+      "camera_image_sha256": "944b5d94572d9f1364fb07bccd72e5abf965a35ec836d859c0c321261bf28ac5",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 942.0,
+      "camera_image_sha256": "fd3fd31deb0cd98e139e0273ced3d2681dfeeb7f16c9bf7aa948849e1569680b",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 944.0,
+      "camera_image_sha256": "e4303b550d6d7ac4e88db059160e820020bbbbe2ac2656344011085ab022ed01",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 946.252,
+      "camera_image_sha256": "44be40d059714b285aa4639fb23714dd62bc10bab160dd7c5e28273745945a34",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 948.252,
+      "camera_image_sha256": "d4858cd26303778c9b21cca9cd822874eeb285a4666b459194555b683606fb3c",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 950.5,
+      "camera_image_sha256": "63eee88e8ab62246651414258776879bef237e69e0aa65c3591c812223396354",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 952.752,
+      "camera_image_sha256": "175d38693b7f914f384c2c4624d39b944f6c2688ed19b885cfa0032566750128",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 954.752,
+      "camera_image_sha256": "5fa29235fd0fbb051840fb4d13d6e65ddb806d5344a968273ef30d5a9ea11d2a",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 956.752,
+      "camera_image_sha256": "3520e6a715fc6fb147846894b35ad18693d549aa82dad4bd7410b9b88de7f364",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 958.752,
+      "camera_image_sha256": "b3e35a0b3492c13244caed295c85252207aee954d6d44d36a07daab71661b441",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 960.752,
+      "camera_image_sha256": "7df151eba814765f9fd4d13f8b55458ed766d98d1d33e5b0e8da5d4f69045e70",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 962.752,
+      "camera_image_sha256": "d72e12e47fbcab1c205d01ee13af551cee0066e205f88ca841d1d73bba592074",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 965.0,
+      "camera_image_sha256": "428fda23a28d7ffc71198aaabe0fb44c94590fbb68d75b00ad5a1bcbf519a749",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 967.0,
+      "camera_image_sha256": "907fd9b541c56641a8bb2d73ad817fbf545e015e9c6911fcaf43cc21defcc91c",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 969.0,
+      "camera_image_sha256": "31afb42cc0d0f00c5e198f2074c08453eef2ef7155e847885036f08987147055",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 971.252,
+      "camera_image_sha256": "593935c479505fff37bb6ff555eafe67cca4d8d1c4114efd07749db045652ecf",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 973.252,
+      "camera_image_sha256": "ae81639e6a5813b2e9a1a2ae65399aa13e247ffa84dfcf1d34b19f239be8f20a",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 975.252,
+      "camera_image_sha256": "2f347cd94719f45c8812842b98db937f9fdeb5559b1600cf78970732f5b64495",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 977.252,
+      "camera_image_sha256": "1c76bdd7db3d57616177a15ca44dc1fcfb0841c594a9131006c63f97e9734b2d",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 979.252,
+      "camera_image_sha256": "2e04ec73d5f20be33513a2e966fdca9bcd498e033b1bdc4274c0b2148e9e3e23",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 981.5,
+      "camera_image_sha256": "857f8043f934cb6e504e20126130ebae6c4af91a1f9febbf0ada550ed65ba6e0",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 983.5,
+      "camera_image_sha256": "e8b58cb1c28f402396e6d7b8f68112d73d399903fc832accc4cc6b9117b59858",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 985.5,
+      "camera_image_sha256": "c2635d65d42d9f17e7e83c53667b39e4efed46144cc715513429fc0fe63c1e8e",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 987.752,
+      "camera_image_sha256": "975a7c31c33a8900b74c64ada80ae792be2a86e10fea8f7aa6fc8cffe2fbfcf1",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 989.752,
+      "camera_image_sha256": "544b4925230ac76dfbeca21c9a01bc48ccbcf3fa78bfe503b91b5b5002c333a9",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 992.0,
+      "camera_image_sha256": "ecdf4df7cae7513524f25277fdc463889448ee5b1dd2c28d2a5da9d169b6abab",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 994.0,
+      "camera_image_sha256": "3fc36f7e238bf50e489e220015258954cccf9a16fd290479370bd245072e533a",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 996.0,
+      "camera_image_sha256": "f5f171718d3873db27c54fce7f313dd4b22b96f109d3168e3b5649d545f9c31b",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 998.0,
+      "camera_image_sha256": "8c4cc337b7d64cbba14084d4979d39037b482f4c62f1e42cdc0c20f6f0c125e6",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1000.252,
+      "camera_image_sha256": "7acaa61a200df2320bb3582f4ae6790a30dd3f3657283ee5bdc0015a2a3b14e4",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1002.252,
+      "camera_image_sha256": "a45177e96e6279ca6e1a9b76e31f26952e53971c6179014fa07e73e8abfc3800",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1004.252,
+      "camera_image_sha256": "0b6062308827108243c93dc1012165f0957bdc4413df23a4390617f274033b35",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1006.252,
+      "camera_image_sha256": "5c16aff94bf0da469dfc46a7c6e9ac1b7c5a416206d7f93699cb276947d417dc",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1008.5,
+      "camera_image_sha256": "ae69dfc8db3c57eddb0a110f0006e1a5918530d65ef7984ec4081bc8d9d89bca",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1010.5,
+      "camera_image_sha256": "615b79d475341db46657c77956ba51c1257e72e77b28cd0ffd887c6312527a51",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1012.5,
+      "camera_image_sha256": "3ccbe6f47fe1df4e75bad3253ed03c422e85167283fac5925d2e9a318c4659e0",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1014.5,
+      "camera_image_sha256": "c11cb4ad7b931486f4d19ef2e454252922a4723914a93627c55872a1bc98bcc9",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1016.752,
+      "camera_image_sha256": "e80e8e54c2c577d35294c3f15aab433537163adb8be75ea1f472192d4d2e1584",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1018.752,
+      "camera_image_sha256": "6285c938db6fdbeeda8fdeca291b6eaae930b6f2d00b45ffd5e07f6a7cc79dde",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1021.0,
+      "camera_image_sha256": "a6e709d3aca38a5524ab51c5c5e146af9ac0af2f2828d0e0b567341f4e0f901e",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1023.0,
+      "camera_image_sha256": "c6ce5ff7067d0cc3b1c9ce572e391ca335b4c875cb1cddfeabacae5aceeee6f8",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1025.0,
+      "camera_image_sha256": "a8c0562926261b30d49fe46f07723713aed0e2ebcd8dc9ba94ec837dc953049e",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1027.252,
+      "camera_image_sha256": "bbc28ad30cecbb11d76cb71b5990d4c9631baeb4ddb2240e440803f62552c725",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1029.252,
+      "camera_image_sha256": "b3b7b83330bcd8377c287b8d3ba98d65326d181aa557a80d34a5e3855e92ed99",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1031.252,
+      "camera_image_sha256": "428c6607acb3ba1208914a1d129cd767a22799126c65d1e14fe7e55ee9f51056",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1033.252,
+      "camera_image_sha256": "b9a971182ff8e7f0febe8d518382d3b64e9139566d49b6f08ca794741718e315",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1035.252,
+      "camera_image_sha256": "51e27d711e786f9294b9d0d41944a990db9e9a8cbc6362cabec74436b4857cba",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1037.5,
+      "camera_image_sha256": "6439600e73d65fe3544ef7faf4f9b54fcd1c820900e966e8d499f2215caee721",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1039.5,
+      "camera_image_sha256": "e7799eecb7a028fbc46c93300433f1c871fd90c6ddfd23331f2d109904d5d4db",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1041.5,
+      "camera_image_sha256": "50e4d2598ca24a3d7546fd87ba3093468d6466411e23359590873ff7c60ca8b7",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1043.5,
+      "camera_image_sha256": "571704ee96e3f4c21b80eb86d92490c240427658b17d4adf7ece2cbadb650a81",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1045.752,
+      "camera_image_sha256": "a840d3e6b6006a5efd42a26a6ef871cb17eb8a42b655f89e851f01f554d3aa3f",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1047.752,
+      "camera_image_sha256": "74e7fdcfb37667375a64c861da1cdddc6d2e618e8ee11d8d5eb423d227ae79ba",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1049.752,
+      "camera_image_sha256": "2425f826eab5a0cea9e3f0c8734fe8e09a5f18804db0e7576412e418c7d7486a",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1052.0,
+      "camera_image_sha256": "d78015947942e3aa232aeff956914cb11cfd9ede7c5167b66bc3cdcd96dcec6e",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1054.252,
+      "camera_image_sha256": "04e1220151ee56168a6ea7bca6da657e47861c5b2caae7c33857dccfaff34beb",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1056.252,
+      "camera_image_sha256": "0be06d223aa4fc50555343315bf95aade19fe41c4c0e30c0e949900ce311f450",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1058.252,
+      "camera_image_sha256": "210f62ff01607f5887297ca284655429147dbc6296ee1acd912d991db930466d",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1060.5,
+      "camera_image_sha256": "7b43acc74aabf14597d5936ce5a0a39b99d0ca91e358c1b3c09a02b0d24eb792",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1062.5,
+      "camera_image_sha256": "87d38552cc9c5984dce89fd03c2e11c09d322536cfdb7b2021a76ad0f482f4a2",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1064.5,
+      "camera_image_sha256": "99f4ddfb8f217e0035cb6714cff88675258b5bc98a960ab3f2c14bea2ab4d1f3",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1066.5,
+      "camera_image_sha256": "7a6371506843f78ca23027a8478f6af1992f8a9e6497aad1989913a40274fa92",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1068.752,
+      "camera_image_sha256": "45dfd95b8353a0e0871409606df0bc8398240fede904aa5c43ee1d30f879c54f",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1070.752,
+      "camera_image_sha256": "99ca3f68d99950c4b03bbc9cd3ff3e5a01f1729f92a21a43921c0e49068e9674",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1072.752,
+      "camera_image_sha256": "a1997ffa7f3fb8eaa88559993e11365a807c074199b4fb38ef06688cf9a0e3fd",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1074.752,
+      "camera_image_sha256": "a8c12d1706efe81bddf29f0f3082e4dd39d5176cb6c5df2dd68def6d1d107976",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1076.752,
+      "camera_image_sha256": "c889241b7dab24ef5974a352cf0075898d46e317aac923be345a7eee2ffd3dcd",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1079.0,
+      "camera_image_sha256": "5e3247bac5c80a69cdb83bc71e012f4b6f6dc2bbd9a3ae7f6b2908f96d43e5bb",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1081.0,
+      "camera_image_sha256": "85023b10895edf1f22ce07a9d0ad4fe6a37e57e3e2255ae07e522cd7be272a8e",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1083.0,
+      "camera_image_sha256": "00ef96c966389eab725dd29c75e403c021cb2e1b7da2f074e1935a98b89a6a73",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1085.252,
+      "camera_image_sha256": "3e9559c78e8e01a924f140d11c1ae24923cd7760c7986eb376833fbf514b0e54",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1087.252,
+      "camera_image_sha256": "8cbaea752e460ef329f1964238567eb024a7992d773bc3b0be997b95c1fb7e9c",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1089.252,
+      "camera_image_sha256": "18d510f4acb3302a513cddb61bb045c8e8e9ab6e34ab9f7a0408632acac522ae",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1091.252,
+      "camera_image_sha256": "7be6f07042b9491892a74d2323ac3bf736dcc5f6c8b1be7137dc038e5b3b358e",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1093.252,
+      "camera_image_sha256": "a8883e0724f8200fe10a04fe26ad6b194059e3a25b1d9c43861022e7dc68253a",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1095.5,
+      "camera_image_sha256": "b84d05a6b13fa74a849edcb9a32052c2082816983fd06f0bdbf3031829e87085",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1097.5,
+      "camera_image_sha256": "6e14ba1358323e56c8f031a02534437ac6b49eb1e5309188a56b7e407fc6d500",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1099.5,
+      "camera_image_sha256": "e030f3b00f0ca4b663debf8bf0340c881fc0966f0a98f0e2fbd1b7096fc5ecf7",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1101.752,
+      "camera_image_sha256": "7f7e2b40c52b9f9780969cf038745ae2170b146587832062d4946d7e6e321a59",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1103.752,
+      "camera_image_sha256": "2419091f31ce0f54a9345f725dc36c946bd3e3f4dcc006e922f2878d6021ce64",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1105.752,
+      "camera_image_sha256": "fef2b7f9cac27d1b5570251d0f2c906d8a44018ee7d03994a588bfa99d517658",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1107.752,
+      "camera_image_sha256": "f5312475e2fe6844ddc66b750ca6568888d8b1f1f94729717a23218f32136d5f",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1109.752,
+      "camera_image_sha256": "b618d6d05bbc7d8925dacf94845665498c62f8f426f899d8722fdd044d5a4d28",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1112.0,
+      "camera_image_sha256": "ad75ec4cd88e916e1c3c7ee8fe85f502536746e8947865bee1345195d4ad12a9",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1114.0,
+      "camera_image_sha256": "03e70eee1b2297351dc4058ccc4146410b9bbaa29110060b3b0cca4d5ba60b03",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1116.252,
+      "camera_image_sha256": "7265494d3b26f4dda5de48d8a3507ccf01f4f8897b32e86f42cec718c64fb7c2",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1118.252,
+      "camera_image_sha256": "47224b59bbe5b6223c66887a59e2724fa2592e84fc567c4f4c5924cd8c4e76f2",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1120.252,
+      "camera_image_sha256": "86108ec5f3e73483082c58bdc5756ff3edb86f9037d30a13dccc71bf3d8f98d9",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1122.252,
+      "camera_image_sha256": "a6e8084157d0c85a5c1be8f554ee4bf009e9ceb54381557323bc2a3de9ff3edd",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1124.252,
+      "camera_image_sha256": "21962c97f835b934e5568ed3e86a07f29afbc6f5b5a555c687c4ff16db54d132",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1126.5,
+      "camera_image_sha256": "cd1b2203b3bd41e3ad07f9ced28d52079899b70abb06539860160623e1a65b44",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1128.5,
+      "camera_image_sha256": "d73d159886b717da458905dbe34829663cc6aa748bd4b514f4e78d0316ea561f",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1130.5,
+      "camera_image_sha256": "9a89a2355c398f79549737c360f6bb4860e9986ebb6ab8a1fc22588096e73873",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1132.5,
+      "camera_image_sha256": "3007855a19ed2d16125474a7922493d7d94c0f6f3ab52ff0186fd394830d13e7",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1134.752,
+      "camera_image_sha256": "efb2e3b172b02e3c82cc6816a8e19af7cb024a697c445fe80bb0b6e25b662962",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1136.752,
+      "camera_image_sha256": "683356ee1a0fa035d0845dc689a63482c87b57ecb9fe211ade883e671e63c0e7",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1138.752,
+      "camera_image_sha256": "9a8acf7810e2c93a7fd9d4493f49b3eadafbfd1f7227b79784d2524bfc4febb0",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1140.752,
+      "camera_image_sha256": "1b4d510ccf56bbc67c71b2067f26ef4ee1677a8517756e75446de2d2ec14cd8f",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1143.0,
+      "camera_image_sha256": "7e9c67f930179414c8a5f653e6743977243a37c423193e384cf91c82608568a2",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1145.0,
+      "camera_image_sha256": "09f8bfaac48ed25f494f2e8efd22da5b2cc1b2c423fae42d671ad42a4167aa1b",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1147.252,
+      "camera_image_sha256": "313483c969fcfa0a7f4d09be02e50aecac684440942fbec2c08aa24e6d170439",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1149.5,
+      "camera_image_sha256": "fc7a6256f8d9dcabd5d1c0e84f996d762920b0376aca8f2a76ec52c9a0acea45",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1151.5,
+      "camera_image_sha256": "bb2b0682f421b9f3172e3a78c77f738861e82922b6ce88679407041a4a065cfc",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1153.5,
+      "camera_image_sha256": "6ad83b660d8aa407d02e73c872da952b87837049f5a4182482461bfd422e9303",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1155.752,
+      "camera_image_sha256": "f8edd5de4b6d1d294738de2616e25171b7ffdf795d805a849720fa26673e93f8",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1157.752,
+      "camera_image_sha256": "63c1dca2983ec24dbadab76635e3fccc5b7bf320b26b19cb5c5ca338db518c2a",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1159.752,
+      "camera_image_sha256": "456951ffee2f32bbd8a7065dc14eaf39df10ecdafc5770b0ab964a1cc85e636a",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1161.752,
+      "camera_image_sha256": "022be277b31d76c6c6a09f73a1ab0683e24053c97dcf171d8bc25849a2d940ce",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1164.0,
+      "camera_image_sha256": "71b8f26bbf4cd977ea88d931af7db012e9471ab200ca9210d9f442c7cb81c00a",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1166.0,
+      "camera_image_sha256": "2562b31fe00bef61789e788d90c37115d513a0b1775355a5c26bbd918f43c120",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1168.0,
+      "camera_image_sha256": "645cbb4888b2886d4a3dbb856fad62fe082dc1b5053cd3b8737adf0c473f875b",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1170.0,
+      "camera_image_sha256": "aa5f8f336653d6775200259cc56314b1d42fdc8e48194468530b38996ff1a213",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1172.252,
+      "camera_image_sha256": "81d6a946d053ad07942d785b34a380dd2e8e73dc8f0e5bb5e782c938c55a1bd2",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1174.252,
+      "camera_image_sha256": "52e8a30d88068b284d9d630010cbc99321637addf1ca0211b440badd06630021",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1176.252,
+      "camera_image_sha256": "1ea1a76548537a287ab45a5dcbe13bfc54978dee572491765196ef32d99a5bba",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1178.252,
+      "camera_image_sha256": "39f08085de3b67a95a30d39cc62b3fbc59101febb3b70d4bf60264106204470b",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1180.5,
+      "camera_image_sha256": "3fc722d2d189c6af58eb6eabcfb724a445486aaf4cc2011877e717cc1c5c60e9",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1182.5,
+      "camera_image_sha256": "f432ca861e3821546ae6d487063056399d08851be9469ecfd447a0bd9c075acd",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1184.5,
+      "camera_image_sha256": "c242fb57c67357d55f3fa2df60c2b88e71a2cdeb1fb2c2bf71bca9a76b804f48",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1186.5,
+      "camera_image_sha256": "35aeeb56ae057c84b2d6693b9f6137ac2977716c9e51b1a4bf7f6168b7910fe0",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1188.752,
+      "camera_image_sha256": "3558af0ca8182d0ad2fe9f4787b801b40f60676c16959f9c6134a8f6406cd82b",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1190.752,
+      "camera_image_sha256": "398ba65b14bc5ac9afd5f1509030db6ef5a624c572c83fb72db17f8145078fef",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1192.752,
+      "camera_image_sha256": "ed1342ab00be9a4a9512580806c400e9d718080b070d8f2914ec3d09039b4221",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1194.752,
+      "camera_image_sha256": "c7beda681b1175d786de3a452a9b5b352a8e6646e62163be512ff04b691d0e5c",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1197.0,
+      "camera_image_sha256": "06cb504a140b5c1ef3ea6391537a1dfb1e294fc8803b9fe8fb2438a951c65c41",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1199.0,
+      "camera_image_sha256": "eaec657ec1f40431bdc243c7f6e8014a8eac4ddd305ed2c582fe4b8bbde2e97c",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1201.0,
+      "camera_image_sha256": "1653e9ef4b56ccf043fe2f8a4546176e28df4e56e8547cf33532dfc126128082",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1203.252,
+      "camera_image_sha256": "e322ec7e6a2a03e8ac0646a0def99cf6997996d1dfb91b9d6afc99421e8f44b9",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1205.252,
+      "camera_image_sha256": "f153e83047af75e9a49527349dfa84b976a22d31285e9d2a061e14ee5ef817bf",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1207.252,
+      "camera_image_sha256": "d3bd5c35c4ee6380d6c69ef5f7ef973fecb333abcd7ef2921de6d55de95bf19b",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1209.252,
+      "camera_image_sha256": "0cf4df20b8eb76904ca7fcb0c60e1e9d6e3da0062302d6fe1584789ddef8531b",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1211.5,
+      "camera_image_sha256": "d490eddaf6cd93af83b66d75de42919a24efc856591ec945dc91857cce5f1386",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1213.5,
+      "camera_image_sha256": "090c02aef8a348a41e19a5007f2f85dbca0c7b9549442d70d2f5d5c697434841",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1215.5,
+      "camera_image_sha256": "42b6db14b1fc55e0515f4ccaaf54306bf8ed08d218246ef4f97843174bdcbd82",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1217.752,
+      "camera_image_sha256": "c46dc7f098767de012cb1e4c1a40280679a6ccd4588d6d7d054f1cf4bd109488",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1219.752,
+      "camera_image_sha256": "a3cc06299f461f8b14c6540a9577ea58ee9abbdbc2f7d28d64fc3e695353d1e6",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1221.752,
+      "camera_image_sha256": "e60b01ffb5db12a0cc78644b898a9a8fc7398b94a3f4b9288f6a9055bbaace55",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1223.752,
+      "camera_image_sha256": "04699bd1e2f648998a2f33c14657a6d9e7004c850568890f4d8360fce8b4d220",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1225.752,
+      "camera_image_sha256": "791916af2fd77e21bf5035904a0fcffece3eebbed1e46f02a92ea40019106a56",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1228.0,
+      "camera_image_sha256": "10b102b64001bcd014c8662ee8206b275ea5dec3acfca4eaa3d8e40db450ac5b",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1230.0,
+      "camera_image_sha256": "84c2ce32bef9816eec6c53da427be0da002a91a72fe890b111fc8acede408d98",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1232.0,
+      "camera_image_sha256": "8763b1be51cacf442ef46f284f924f7086a2ea9b16dc1ab85a7e4eaecd8bec8e",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1234.252,
+      "camera_image_sha256": "b4a6bf77c90ba2f791981caa40ec4edeb7f3cbe25f322fe361f00f69bd7ca93f",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1236.252,
+      "camera_image_sha256": "132b351e655dda6944847093f78ccadc3e70ed48c60c8c087262455a9e0fabc2",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1238.252,
+      "camera_image_sha256": "d066adda7b7898d847660b343ab160f4b7fb5b958753cb77227d6e46a8f6a25c",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1240.252,
+      "camera_image_sha256": "afc882922972a270eca93f7ad112517820b0add9eeb48fe64326d629da00a6e7",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1242.5,
+      "camera_image_sha256": "64af9d141b129f35a382c797674094baac5469c5b2733309c2ea722aed4d5d60",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1244.5,
+      "camera_image_sha256": "a985345e8dc3382b24e2ef72fc6ec2e0da7a60501d3f1799956ec29c2f205a18",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1246.5,
+      "camera_image_sha256": "c078beffc6aa216237213bd8d35303a9a9b5e4e6a7622812394f7103be956a4a",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1248.752,
+      "camera_image_sha256": "a66c1e2d0eaa300b6cc5bd53c60d2f19b41d776e6e3ebfeeee677582d1127fbc",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1250.752,
+      "camera_image_sha256": "ebc75fa3dfa788b4f3f8417d570f34729f26d6a99e499b9d0e662a1303381595",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1252.752,
+      "camera_image_sha256": "7bd4c2e3599e9c60c407b4f377f51453342986c396bb588c4c741a1c9aaab284",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1255.0,
+      "camera_image_sha256": "da40ba4fdebf75bf7a58906dc571944a201f6a18aba5024a1ae213564219a4f0",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1257.0,
+      "camera_image_sha256": "3485e38c7c526d43daa77c2cb7a602b6d4133736638fe67a2eab771df56ee5d9",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1259.0,
+      "camera_image_sha256": "c5a47142fe0876b489c387c995007cf5750ae59dc6a54448706f33cdedfc67d2",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1261.252,
+      "camera_image_sha256": "1fc863f15b107dc6436c870c9f19db6016e8877ff7a76719155ecbb7fb613315",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1263.252,
+      "camera_image_sha256": "d9b64dbbcc5ab2b73bc75c90449d054c68541223e6547cfa6b9093f2a2c7445f",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1265.252,
+      "camera_image_sha256": "00a43ddff290dd8b70c190d79dad178bc761d212d1d76bdc11c85900bcb300dc",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1267.252,
+      "camera_image_sha256": "a10bb3749d57783df44021fd39e8bb6dd1c454cce4d09c2d94fc8b5c99faa90a",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1269.5,
+      "camera_image_sha256": "7f5754a0ab637ce613c5d79cedaab96725232a14de3e275a09302c74617f2ea3",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1271.5,
+      "camera_image_sha256": "179e056a0153af2ba56b701234db4cb96a57d45767af321fddadafd66e925401",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1273.5,
+      "camera_image_sha256": "41a22023f3b1d00213b9ce5cd18d2d78a492cbb05ab42149d39a2bbc61157ea0",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1275.752,
+      "camera_image_sha256": "17267f4c223e60ed694c363a96f256066a1cd4cda81ec962ba7f8a2922814e64",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1277.752,
+      "camera_image_sha256": "cca961a26e7967684c93591c3a0e4b2caf7fde1a097f98c6024317b4d36d2f7c",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1279.752,
+      "camera_image_sha256": "b3763bd3d8c601e1938adc395cc22e8c70cb5f260325474545dcdae2792a567d",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1282.0,
+      "camera_image_sha256": "0a3e6b0d31e44b2f752d45cf269f7ef0420e544fd31fdde94efcf426387be832",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1284.252,
+      "camera_image_sha256": "6a5d391b42cb26cd150e5b9ec5713b5f0114d0a72785abc28e1231b508306ad0",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1286.252,
+      "camera_image_sha256": "2b511a66fce8d3a74a1c55ec0b53676e13c3e974fef88487bdbeccf9451687d4",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1288.252,
+      "camera_image_sha256": "699fc283f5b333212671f3c23f4343d5ae921df945f1e3bcdcd402d9b9f44b20",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1290.5,
+      "camera_image_sha256": "1a540db92c6fd56edb16332d3f5c2f496b3cd86424cc8c3f61340f5a37333e05",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1292.5,
+      "camera_image_sha256": "e9745743b4b4c5cc2af9081ba77aaec0d30147c814cd653fa9bc3579f80d9951",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1294.5,
+      "camera_image_sha256": "cd6982393bfb09794e8b3a491fc8a9de811c09e847b4f22b5d491d9183c68eca",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1296.752,
+      "camera_image_sha256": "261b8a18c698e1688991bb12102c9f91fa53fe4ecda18fee6030d77e45d92528",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1298.752,
+      "camera_image_sha256": "a00306a8f0814800e87ef6d9ae4c610ccc750df71db57220a7be15bd6bcd89a8",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1300.752,
+      "camera_image_sha256": "298bcaed0603187a5075bc96d0ecf91977315b0ad53830435d95ddf003250c35",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1303.0,
+      "camera_image_sha256": "0452a10d2591762fce2e005164ec315cda47fae1e11a0f98d7d6bb9a2e2a6bea",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1305.0,
+      "camera_image_sha256": "6737e9e3c951ac352e7b1c6f3d0d63948346f12dc565b86eb701b91ada655fd4",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1307.252,
+      "camera_image_sha256": "6c6ab0dc522410879ad655c73605784c8a3cba6299f80404a78d70f7f78480a2",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1309.252,
+      "camera_image_sha256": "8ad1ac5d0db4962995312790d8806c78351939d33d19cb421cea7ca12c45ad97",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1311.252,
+      "camera_image_sha256": "38a206ad6f7d30ebf83968ff13924bf9c792d6db846b2e789a63e13943fb7340",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1313.5,
+      "camera_image_sha256": "ded608e7a77f1ce1ab99955720a89162b63f862f7cc7b216f8d176b428eb243c",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1315.5,
+      "camera_image_sha256": "575da2e3812013b9fbb4ab2d37add273eeccd5a4c943aacc2175b3eaac05b2bf",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1317.752,
+      "camera_image_sha256": "ea58d3a56421962c34dd184b41c942491f6de7a18ba58fb8a3a5d43b32449f4f",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1319.752,
+      "camera_image_sha256": "b1315d03af238fbeeba2e46bfd845777fbe67dae4397d347b00d801b18173b68",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1321.752,
+      "camera_image_sha256": "02c17b34dff989bd37162709b2d85a86128971d6343122df23306705f089fa59",
+      "next_sample_sim_seconds": 2.2480000000000473,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1324.0,
+      "camera_image_sha256": "1722735d4821d09a66eef21fe8be8746f5509e64900cd6a7410419e1e86c823c",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1326.0,
+      "camera_image_sha256": "1b861a819218ba9c64c42d83217df8673eedffc3930d70f26246e0e82ee93c28",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1328.0,
+      "camera_image_sha256": "0f82c1d4dea01f8e2537e205fb207b211620e46d53546364645873c930ae3c14",
+      "next_sample_sim_seconds": 2.2519999999999527,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1330.252,
+      "camera_image_sha256": "445b9b3b1465b5ea2056dfbe2b8197bdda19583d82a8cd4e98971f3804be085d",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1332.252,
+      "camera_image_sha256": "99db042d53f40004067fb64d54790ddaf836a1d47ec21ef9fc75e2dfce1ec4b5",
+      "next_sample_sim_seconds": 2.0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    },
+    {
+      "sensor_sim_s": 1334.252,
+      "camera_image_sha256": "b09fd2db67e1e11c5dff6f0bfba00caf25f549fdcedfc31a262ab2f9d56195c5",
+      "next_sample_sim_seconds": 0,
+      "inset_sha256": null,
+      "inset_sensor_sim_s": null
+    }
+  ]
+}

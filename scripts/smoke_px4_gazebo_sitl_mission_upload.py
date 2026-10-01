@@ -204,11 +204,29 @@ def _mission_upload_item_tuples(
 
 
 def _inner_upload_script(
-    items: Sequence[Any] | None = None, *, reuse_mavlink_session: bool = False
+    items: Sequence[Any] | None = None,
+    *,
+    reuse_mavlink_session: bool = False,
+    runtime_items_path: str | None = None,
+    preparation_only_path: str | None = None,
+    prepared_binding_path: str | None = None,
 ) -> str:
-    mission_items_json = json.dumps(_mission_upload_item_tuples(items), sort_keys=True)
+    if preparation_only_path and prepared_binding_path:
+        raise ValueError("Preparation and send phases are separate")
+    # A runtime-mapped template fails closed if its checked sidecar is absent.
+    # No authored world-Z value is sent as a relative-home altitude.
+    mission_items_json = (
+        json.dumps(() if preparation_only_path else _mission_upload_item_tuples(items), sort_keys=True)
+        if runtime_items_path is None
+        else None
+    )
+    items_expression = (
+        f"json.loads({mission_items_json!r})"
+        if runtime_items_path is None
+        else f"json.load(open({runtime_items_path!r}))"
+    )
     return textwrap.dedent(f"""
-        import json, socket, struct, subprocess, time
+        import hashlib, json, math, socket, struct, subprocess, sys, time
         MAVLINK2_MAGIC=0xFD
         MAVLINK_MSG_ID_MISSION_CLEAR_ALL=45
         MAVLINK_MSG_ID_MISSION_ACK=47
@@ -236,28 +254,87 @@ def _inner_upload_script(
         def mission_item_int(seqno, command, lat, lon, alt, current, frame_kind, param1, param2, param3, param4, seq):
             payload=struct.pack('<ffffiifHHBBBBBB',float(param1),float(param2),float(param3),float(param4),int(lat*10000000),int(lon*10000000),float(alt),seqno,command,1,1,frame_kind,current,1,0)
             return frame(73, payload, seq)
+        def digest(value):
+            return hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
+        transaction=None; preparation=None; binding=None
+        if {bool(preparation_only_path)!r}:
+            transaction=json.load(open({preparation_only_path!r}))
+        if {bool(prepared_binding_path)!r}:
+            binding=json.load(open({prepared_binding_path!r}))
+            transaction=binding['transaction']; preparation=binding['preparation']
+            if len(sys.argv)!=2 or sys.argv[1]!=transaction['transaction_id']:
+                raise ValueError('Superseded upload transaction')
+            if (preparation['schema']!='missionos.mavlink-upload-preparation.v1'
+                or preparation['transaction_sha256']!=digest(transaction)
+                or preparation['transaction_id']!=transaction['transaction_id']
+                or preparation['clear_outcome'] not in ('acknowledged','unconfirmed')
+                or preparation['clear_ack_type'] not in (None,0)
+                or (preparation['clear_outcome']=='acknowledged')!=(preparation['clear_ack_type']==0)):
+                raise ValueError('Unbound upload preparation')
+            if not isinstance(preparation['prepared_at_worker_wall_s'],(int,float)) or not math.isfinite(preparation['prepared_at_worker_wall_s']) or preparation['prepared_at_worker_wall_s']<0:
+                raise ValueError('Unbound upload preparation')
+        if transaction is not None:
+            if (not isinstance(transaction['transaction_id'],str) or len(transaction['transaction_id'])!=32
+                or not all(isinstance(transaction[k],str) and transaction[k] for k in ('run_id','world_sha256','segment'))
+                or type(transaction['reuse_mavlink_session']) is not bool
+                or not isinstance(transaction['worker_epoch_monotonic_s'],(int,float))
+                or not math.isfinite(transaction['worker_epoch_monotonic_s'])):
+                raise ValueError('Invalid upload transaction')
+        reuse={reuse_mavlink_session!r} if transaction is None else transaction['reuse_mavlink_session']
         start_result=None
-        if not {reuse_mavlink_session!r}:
+        if not reuse and binding is None:
             subprocess.run(['/opt/px4-gazebo/bin/px4-mavlink','stop-all'], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             start_result=subprocess.run(['/opt/px4-gazebo/bin/px4-mavlink','start','-u','{PX4_MAVLINK_PORT}','-r','400000','-t','127.0.0.1','-o','{GCS_MAVLINK_PORT}','-m','onboard'], check=False, text=True, capture_output=True)
             time.sleep(1.0)
-        items=[tuple(item) for item in json.loads({mission_items_json!r})]
-        requests=[]; ack=None; clear_ack=None; seq=0
+        items=[tuple(item) for item in {items_expression}]
+        if binding is not None:
+            mapping=binding['mapping']
+            if (mapping['run_id']!=transaction['run_id'] or mapping['world_sha256']!=transaction['world_sha256']
+                or mapping['segment']!=transaction['segment'] or mapping['mission_items']!=[list(i) for i in items]
+                or binding['mapping_sha256']!=digest(mapping)
+                or mapping['observation']['wall_s']<preparation['prepared_at_worker_wall_s']):
+                raise ValueError('Unbound mapped upload')
+        wire_items={{}}
+        requests=[]; ack=None; clear_ack=None if preparation is None else preparation['clear_ack_type']; seq=0
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             sock.settimeout(12)
             sock.bind(('127.0.0.1',{GCS_MAVLINK_PORT}))
-            sock.sendto(mission_clear_all(seq), ('127.0.0.1',{PX4_MAVLINK_PORT})); seq+=1
-            clear_deadline=time.monotonic()+3
-            while time.monotonic()<clear_deadline and clear_ack is None:
-                try: data,addr=sock.recvfrom(4096)
-                except socket.timeout: break
-                decoded=decode(data)
-                if not decoded: continue
-                mid,payload=decoded
-                if mid==MAVLINK_MSG_ID_MISSION_ACK and len(payload)>=3:
-                    clear_ack=payload[2]
-                    break
+            if binding is None:
+                sock.sendto(mission_clear_all(seq), ('127.0.0.1',{PX4_MAVLINK_PORT})); seq+=1
+                clear_deadline=time.monotonic()+3
+                while time.monotonic()<clear_deadline and clear_ack is None:
+                    remaining=clear_deadline-time.monotonic()
+                    if remaining<=0: break
+                    sock.settimeout(min(.1,remaining))
+                    try: data,addr=sock.recvfrom(4096)
+                    except socket.timeout: continue
+                    decoded=decode(data)
+                    if not decoded: continue
+                    mid,payload=decoded
+                    if transaction is not None and (data[5:7]!=bytes([1,1]) or len(payload)<3 or payload[:2]!=bytes([255,190])): continue
+                    if mid==MAVLINK_MSG_ID_MISSION_ACK and len(payload)>=3:
+                        clear_ack=payload[2]
+                        break
+                if transaction is not None and clear_ack not in (None,0):
+                    raise ValueError('Clear mission rejected')
+            if {bool(preparation_only_path)!r}:
+                prepared_at=time.monotonic()-transaction['worker_epoch_monotonic_s']
+                if not math.isfinite(prepared_at) or prepared_at<0:
+                    raise ValueError('Invalid preparation clock')
+                print(json.dumps({{'schema':'missionos.mavlink-upload-preparation.v1',
+                    'transaction_id':transaction['transaction_id'],'transaction_sha256':digest(transaction),
+                    'prepared_at_worker_wall_s':prepared_at,
+                    'clear_ack_type':clear_ack,
+                    'clear_outcome':'acknowledged' if clear_ack==0 else 'unconfirmed',
+                    'mavlink_session_reused':reuse}},sort_keys=True))
+                sys.exit(0)
+            if binding is not None:
+                now=time.monotonic()-transaction['worker_epoch_monotonic_s']
+                age=now-mapping['observation']['wall_s']
+                if not math.isfinite(age) or not 0<=age<=2:
+                    raise ValueError('Mapped observation expired before mission count')
+            sock.settimeout(12)
             sock.sendto(mission_count(len(items), seq), ('127.0.0.1',{PX4_MAVLINK_PORT})); seq+=1
             deadline=time.monotonic()+12
             while time.monotonic()<deadline and ack is None:
@@ -266,16 +343,28 @@ def _inner_upload_script(
                 decoded=decode(data)
                 if not decoded: continue
                 mid,payload=decoded
+                if binding is not None:
+                    if data[5:7]!=bytes([1,1]): continue
+                    if mid==MAVLINK_MSG_ID_MISSION_ACK and (len(payload)<3 or payload[:2]!=bytes([255,190])): continue
+                    if mid==MAVLINK_MSG_ID_MISSION_REQUEST_INT and (len(payload)<4 or payload[2:4]!=bytes([255,190])): continue
                 if mid==MAVLINK_MSG_ID_MISSION_REQUEST_INT and len(payload)>=2:
                     rq=struct.unpack('<H',payload[:2])[0]
                     if rq < len(items):
                         requests.append(rq)
-                        sock.sendto(mission_item_int(*items[rq], seq), ('127.0.0.1',{PX4_MAVLINK_PORT})); seq+=1
+                        packet=mission_item_int(*items[rq], seq)
+                        actual=struct.unpack('<ffffiifHHBBBBBB',packet[10:10+packet[1]])
+                        wire_items[rq]=[actual[7],actual[8],actual[4]/1e7,actual[5]/1e7,actual[6],actual[12],actual[11],*actual[:4]]
+                        sock.sendto(packet, ('127.0.0.1',{PX4_MAVLINK_PORT})); seq+=1
                 elif mid==MAVLINK_MSG_ID_MISSION_ACK and len(payload)>=3:
                     if payload[2] != 0 or set(requests) == set(range(len(items))):
                         ack=payload[2]
                         break
-        print(json.dumps({{'mission_items':items,'mission_request_sequences':requests,'mission_ack_type':ack,'mission_ack_observed':ack is not None,'mission_clear_all_ack_type':clear_ack,'mavlink_session_reused':{reuse_mavlink_session!r},'mavlink_start_returncode':None if start_result is None else start_result.returncode,'mavlink_start_stderr_tail':None if start_result is None else start_result.stderr[-500:]}}, sort_keys=True))
+        result={{'mission_items':items,'mission_request_sequences':requests,'mission_ack_type':ack,'mission_ack_observed':ack is not None,'mission_clear_all_ack_type':clear_ack,'mavlink_session_reused':reuse,'mavlink_start_returncode':None if start_result is None else start_result.returncode,'mavlink_start_stderr_tail':None if start_result is None else start_result.stderr[-500:]}}
+        if binding is not None:
+            result.update(mission_items_wire=[wire_items[i] for i in sorted(wire_items)],
+                transaction_id=transaction['transaction_id'],transaction_sha256=digest(transaction),
+                mapping_sha256=binding['mapping_sha256'],preparation=preparation)
+        print(json.dumps(result, sort_keys=True))
     """)
 
 

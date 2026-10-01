@@ -307,11 +307,12 @@ class CityDecisions:
             time.sleep(0.05)
         raise TimeoutError("AP recovery stable hold deadline")
 
-    def prepare_segment(self, obs, next_target, upload):
+    def prepare_segment(self, obs, next_target, upload, *, prepare_upload=None):
         """Retry only before activation, with revoked authority and new imagery."""
+        preparation_args = dict(prepare_upload=prepare_upload) if prepare_upload else {}
         policy = self.config["decisions"].get("hold_recovery")
         if not policy:
-            prepared = self.decide(obs, next_target)
+            prepared = self.decide(obs, next_target, **preparation_args)
             upload(prepared["upload_name"])
             return self.activation_permit(prepared)
         self.cycle += 1
@@ -322,7 +323,7 @@ class CityDecisions:
         for attempt in range(1, policy["max_attempts"] + 1):
             self.attempt = attempt
             try:
-                prepared = self.decide(obs, next_target, new_cycle=False)
+                prepared = self.decide(obs, next_target, new_cycle=False, **preparation_args)
                 upload(prepared["upload_name"])
                 return self.activation_permit(prepared)
             except HoldInterrupted:
@@ -332,7 +333,7 @@ class CityDecisions:
                 self.recover_hold(anchor)
         raise AssertionError("Recovery attempt bound")
 
-    def decide(self, obs, next_target, *, new_cycle=True):
+    def decide(self, obs, next_target, *, new_cycle=True, prepare_upload=None):
         if new_cycle:
             self.cycle += 1
         anchor = self.sample()
@@ -385,6 +386,8 @@ class CityDecisions:
                 decision_backend="fixture",
                 future_observations_sent_to_model=False,
             )
+        if prepare_upload:
+            prepare_upload(name)
         if self.before_authorize:
             self.before_authorize()
         current = self.held(anchor, max_view_drift_rad=0.25 if refresh else 0.03)

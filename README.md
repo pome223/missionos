@@ -45,6 +45,35 @@ connects chat approval, simulated receipt and return, and read-only operator vie
 It uses a learned locomotion policy and simulator geometry; it does not claim
 WAM-assisted navigation or physical delivery.
 
+## Yokohama: choose a delivery destination on the 3D map
+
+Select a safe destination before departure, inspect the route and constraints,
+and approve the bound goal, route and scene. Moving the marker invalidates the
+approval. Destination changes during flight are rejected.
+
+One CPU PX4/Gazebo simulator delivery reached a destination 10 m east of the
+original pad, verified cargo receipt, returned to the ship and landed/disarmed.
+All four applicable verifiers passed. Jev made one real bounded `continue`
+decision; the city VLA/WAM models were CPU fixtures. `continue` adds no extra
+waiting: independent Rules still decide whether entry is safe. This is simulator
+evidence, not physical delivery or a demonstration of native city-model quality.
+
+[![Recorded Yokohama delivery camera timelapse](docs/examples/yokohama-map-delivery/preview.png)](docs/examples/yokohama-map-delivery/camera-timelapse.mp4)
+
+*Saved simulation camera images, played at 12× speed; inset cameras are from the
+same run. Frames are held between recorded samples. This is not a screen
+recording of the GUI or a new flight.*
+
+<!-- Replace the above playback link with a GitHub video attachment after public
+review and verify the README player in a real browser. No attachment exists yet. -->
+
+[Result and video limits](docs/examples/yokohama-map-delivery/REPORT.md) ·
+[GUI and authority contract](docs/agents/yokohama-map-goal.md)
+
+The public demo defaults to fixtures and makes no external API calls. Live Jev
+execution is disabled in this distribution; the private test grant is consumed
+and is not included. A future live run needs a separately reviewed authorization.
+
 ## What Has Actually Run
 
 The same contract and authority mechanism has been exercised over five

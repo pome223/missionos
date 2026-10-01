@@ -517,3 +517,100 @@ def test_stop_reaps_real_process_group_with_stubborn_descendant(
             ["ps", "-o", "stat=", "-p", str(child_pid)], capture_output=True, text=True
         )
         assert not state.stdout.strip() or state.stdout.strip().startswith("Z")
+
+
+def test_map_reservation_fences_chat_before_container_creation(service, monkeypatch):
+    from src.gateway.yokohama_map import MapService, MapRequest
+    monkeypatch.setenv("MISSIONOS_YOKOHAMA_MAP_BACKEND", "fixture")
+    monkeypatch.setenv("RUN_MISSIONOS_YOKOHAMA_MAP_FIXTURE", "1")
+    map_service = MapService(service.store, service.outputs / "map")
+    task = map_service.select(MapRequest(session_id="same_gateway_session", goal_xy_m=[217.894, -115.179]), "operator")
+    body = MapRequest(session_id="same_gateway_session", task_id=task["task_id"], plan_sha256=task["artifacts"]["plan_sha256"])
+    map_service.action("approve", body, "operator")
+    entered, release = threading.Event(), threading.Event()
+    original = map_service._run
+    def blocked(*args):
+        entered.set()
+        release.wait(5)
+        return original(*args)
+    monkeypatch.setattr(map_service, "_run", blocked)
+    approved_chat = service.approve(plan(service), "one")
+    try:
+        map_service.action("execute", body, "operator")
+        assert entered.wait(2)
+        assert service.running_simulators() == []  # dispatch must fence the pre-Docker window
+        with pytest.raises(ValueError, match="別の横浜配送"):
+            service.execute(approved_chat)
+    finally:
+        map_service.action("cancel", body, "operator")
+        release.set()
+        map_service.worker.join(10)
+    assert service.dispatch.owner is None
+
+
+def test_chat_reservation_fences_map_preparation(service, monkeypatch):
+    from src.gateway.yokohama_map import MapService, MapRequest
+    monkeypatch.setenv("MISSIONOS_YOKOHAMA_MAP_BACKEND", "fixture")
+    monkeypatch.setenv("RUN_MISSIONOS_YOKOHAMA_MAP_FIXTURE", "1")
+    map_service = MapService(service.store, service.outputs / "map")
+    task = map_service.select(MapRequest(session_id="same_gateway_session", goal_xy_m=[217.894, -115.179]), "operator")
+    body = MapRequest(session_id="same_gateway_session", task_id=task["task_id"], plan_sha256=task["artifacts"]["plan_sha256"])
+    map_service.action("approve", body, "operator")
+    # Existing chat tests stub the worker. Preserve its dispatch reservation until explicit cleanup.
+    monkeypatch.setattr(service, "_worker", lambda *args: None)
+    started = service.execute(service.approve(plan(service), "one"))
+    try:
+        with pytest.raises(ValueError, match="配送"):
+            map_service.action("execute", body, "operator")
+    finally:
+        service.dispatch.release(started["task_id"])
+
+
+@pytest.mark.parametrize("failure", ["event", "thread"])
+def test_chat_preparation_failure_releases_shared_dispatch(service, monkeypatch, failure):
+    approved = service.approve(plan(service), "one")
+    if failure == "event":
+        original = service.store.append_event
+        def fail(*args, **kwargs):
+            if kwargs.get("event_type") == "yokohama_dispatch_reserved":
+                raise OSError("fixture database failure")
+            return original(*args, **kwargs)
+        monkeypatch.setattr(service.store, "append_event", fail)
+    else:
+        monkeypatch.setattr(threading.Thread, "start", lambda self: (_ for _ in ()).throw(OSError("fixture thread failure")))
+    with pytest.raises(OSError):
+        service.execute(approved)
+    assert service.dispatch.owner is None and service.active is None and service.worker is None
+
+
+@pytest.mark.parametrize("backend,invoked,label", [("jev", False, "Jev contract fixture"), ("deepseek", True, "DeepSeek")])
+def test_response_reports_fixture_and_real_judge_separately(service, backend, invoked, label):
+    task = plan(service)
+    task["artifacts"]["yokohama_delivery_proposal"]["agents"]["judge"]["backend"] = backend
+    task["artifacts"]["yokohama_judge_decisions"] = [
+        dict(judge_status="valid", rationale="Adapter template", invocation={"inference_invoked": invoked})
+    ]
+    response = service.response(task, {}, "status")
+    assert response["llm_judgment_invoked"] is invoked
+    assert label in response["message"]
+
+
+@pytest.mark.parametrize("changed_source", [
+    "scripts/yokohama_altitude_contract.py",
+    "scripts/smoke_px4_gazebo_sitl_mission_upload.py",
+])
+def test_altitude_transport_dependency_change_invalidates_chat_approval(service,tmp_path,monkeypatch,changed_source):
+    root=tmp_path/"source-fixture"
+    for name in chat.SOURCES:
+        target=root/name
+        target.parent.mkdir(parents=True,exist_ok=True)
+        target.write_bytes((service.root/name).read_bytes())
+    service.root=root
+    approved=service.approve(plan(service),"one")
+    changed=root/changed_source
+    changed.write_bytes(changed.read_bytes()+b"\n# changed transport implementation\n")
+    started=[]
+    monkeypatch.setattr(service,"_worker",lambda *args: started.append(args))
+    with pytest.raises(ValueError,match="変化"):
+        service.execute(approved)
+    assert not started and service.active is None

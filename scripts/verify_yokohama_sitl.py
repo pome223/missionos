@@ -108,6 +108,25 @@ def verify(root, bundle):
     result, config = read(root / "result.json"), read(root / "config.json")
     world = config["world"]
     checks = {}
+    if world.get("goal_plan"):
+        from src.runtime.yokohama_goal import source_route
+        from src.runtime.yokohama_payload import digest
+
+        plan = world["goal_plan"]
+        approved_route = source_route(plan, read(bundle / "route.json"))
+        approval = config.get("map_approval", {})
+        checks["map_goal_approval_binding"] = (
+            approval.get("plan_sha256") == digest(plan) == config.get("map_plan_sha256")
+            and approval.get("scene_version") == plan["scene_version"]
+        )
+        checks["map_goal_route_binding"] = world.get("source_route") == approved_route and [
+            p["xyz_m"] for p in world["points"]
+        ] == [p["xyz_m"] for p in approved_route["waypoints"]]
+        checks["map_goal_receiver_binding"] = np.allclose(
+            world["payload_delivery"]["pad_world_xyz_m"],
+            to_world(approved_route["delivery_pad"]["center_xyz_m"], world["frame"]),
+            atol=1e-8,
+        )
     checks["not_a_teleported_marker_smoke"] = config.get("wind_validation_scope") is None
     checks["run_finished_successfully"] = (
         result["status"] == "passed" and result.get("cleanup") is True
@@ -184,6 +203,20 @@ def verify(root, bundle):
         flight_events = [
             json.loads(line) for line in (root / "flight-events.jsonl").read_text().splitlines()
         ]
+        if "altitude_transport_contract" in config:
+            from scripts.yokohama_altitude_contract import verify_transport_evidence
+
+            try:
+                output["altitude_transport"] = verify_transport_evidence(
+                    root, config, flight_events
+                )
+                checks["unified_altitude_transport"] = (
+                    output["altitude_transport"]["status"] == "passed"
+                )
+            except (ValueError, KeyError, TypeError, StopIteration, OSError) as exc:
+                checks["unified_altitude_transport"] = False
+                output["altitude_transport"] = dict(status="failed", reason=str(exc))
+
         holds = []
         for hold in observed["holds"]:
             measured = recorded_hold_rows(rows, flight_events, hold)

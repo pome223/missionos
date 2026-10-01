@@ -45,7 +45,7 @@ def extend_world(root, bundle, world):
 
     if not world.get("sea_extension"):
         raise ValueError("Cargo extension requires the stationary ship scenario")
-    route = json.loads((bundle / "route.json").read_text())
+    route = world.get("source_route") or json.loads((bundle / "route.json").read_text())
     pad = to_world(route["delivery_pad"]["center_xyz_m"], world["frame"]).tolist()
     ship = world["sea_extension"]["ship_deck_world_xyz_m"]
     path = root / "models/worlds/default.sdf"
