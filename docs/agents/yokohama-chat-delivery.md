@@ -16,7 +16,7 @@ This is simulation only; no hardware is used.
 |---|---|
 | `横浜の配送パッドへ荷物を届けて` | `missionos_yokohama_delivery_planner_agent` (DeepSeek) returns `supported`, `destination_id`, `summary` and `reason`. Only `yokohama_harbour_pad` is accepted. The Gateway builds a proposal from fixed server data: route, city-model backend, pad-queue limits, simulator arguments, input hashes and agent configuration. |
 | `/approve` | Records the approval, bound to the proposal digest and the session. |
-| `/run` | Rechecks the proposal digest, input hashes, simulator arguments and agent configuration. It refuses if another `missionos-yokohama-*` container is running, then launches `scripts/yokohama_sitl.py` with `--approval-manifest`. |
+| `/run` | Rechecks the proposal digest, input hashes, simulator arguments and agent configuration. It refuses if another `missionos-yokohama-*` container is running, then launches `scripts/run_yokohama_vehicle_service.py` with `--approval-manifest`. The service admits the request once and invokes the fixed-route simulator runner. |
 | `/status` | Reports the current stage, the latest pad-judge rationale and the verifier results. |
 
 The `yokohama_sitl.py` arguments are:
@@ -30,7 +30,8 @@ The `yokohama_sitl.py` arguments are:
 The simulator process receives no model API keys or Gateway credentials. After
 it exits, the Gateway runs the five verifiers: decisions, pad_queue,
 pad_advisory, payload and sitl. The task is `completed` only if the run passed
-and all five verifiers passed. Otherwise it is `needs_attention`.
+and all five verifiers passed, and the vehicle-service receipt matches the exact
+approved request and result. Otherwise it is `needs_attention`.
 
 ## Gateway environment
 
@@ -112,6 +113,45 @@ container is running.
 
 `verify_yokohama_pad_advisory.py` binds its fixture judgment to the pre-judge
 action (`prior_action`).
+
+## Fixed-route pad activation retries
+
+The worker can send `auto:mission` at most four times, waiting three seconds
+for observed AUTO_MISSION after each call. One logical pad entry is therefore
+distinct from the number of mode commands. For fixed-route runs with the
+altitude transport contract, the queue verifier checks every command; it does
+not discard later sends or treat a successful CLI exit as acceptance.
+
+- Exactly one entry grant and one prepared/uploaded delivery mission must
+  precede alternating dispatch-check/command events, in journal and clock order.
+  The independent altitude verifier still requires the mapped upload and ACK.
+- Every send uses the same grant and mapping, with a trajectory-bound fresh
+  observation, permission age at most 30 s, and raw vehicle-status age including
+  capture and send delay at most 2 s.
+- Before a retry, all recorded samples through the actual send must remain in
+  HOLD with unchanged transition timestamp, mission identity/count, uploaded
+  current index, unreached start, pose identities and reset counters. Pad and
+  approach clearance, separation, altitude origin and ordinary HOLD Rules also
+  remain applicable. Missing records, wall gaps over 2 s, excessive simulation
+  gaps, failsafe/takeover or external executor ownership reject the retry.
+- The final send requires a fresh, bound raw AUTO_MISSION observation with a
+  newer PX4 transition timestamp. A send or upload ACK alone does not establish
+  mission activation, cargo receipt or delivery completion.
+
+Multiple sends are restricted to the reviewed PX4 commit
+`381149fb012762f5e38c4a7fdc1b905b28038970`, also present in the startup evidence.
+Its [Commander mode command](https://github.com/PX4/PX4-Autopilot/blob/381149fb012762f5e38c4a7fdc1b905b28038970/src/modules/commander/Commander.cpp#L358-L412)
+does not select a mission index. Its
+[Navigator activation](https://github.com/PX4/PX4-Autopilot/blob/381149fb012762f5e38c4a7fdc1b905b28038970/src/modules/navigator/navigator_mode.cpp#L53-L75)
+depends on an inactive-to-active transition. This is not a general idempotency
+claim: same-mode requests can affect failsafe/ownership, and unobserved changes
+between samples cannot be excluded. The record cannot establish which send
+caused activation or why an earlier send did not produce an observed transition.
+
+Legacy evidence without the transport contract retains its original path.
+Reassessment outputs must be separate from the original run and verifier files;
+retain their hashes and original failure status. A passing offline reassessment
+is not a new simulator flight, physical-safety qualification or AI-value result.
 
 ## Observed chat run (2026-09-30, fixture city models)
 
