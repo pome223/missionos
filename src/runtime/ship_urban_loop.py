@@ -15,6 +15,13 @@ import re
 import time
 from uuid import uuid4
 
+from .ship_urban_goal_contract import (
+    context_digest,
+    segment_clearance,
+    validate_goal_forecast,
+    validate_goal_observation,
+)
+
 
 def digest(value):
     return hashlib.sha256(
@@ -62,6 +69,9 @@ class UrbanLoopPlan:
     segment_timeout_s: float = 60.0
     total_timeout_s: float = 600.0
     reserve_fraction: float = 0.2
+    goal_ned_m: tuple[float, float, float] | None = None
+    fixture_goal_policy: bool = False
+    clearance_m: float = 0.25
 
     def __post_init__(self):
         if (
@@ -87,6 +97,7 @@ class UrbanLoopPlan:
             "segment_timeout_s",
             "total_timeout_s",
             "reserve_fraction",
+            "clearance_m",
         ):
             if not finite(getattr(self, name)) or getattr(self, name) <= 0:
                 raise ValueError("urban_loop_invalid_limit:" + name)
@@ -98,6 +109,20 @@ class UrbanLoopPlan:
             or not self.contains(self.entry_ned_m)
         ):
             raise ValueError("urban_loop_corridor_must_be_inland")
+        if type(self.fixture_goal_policy) is not bool:
+            raise ValueError("urban_goal_policy_must_be_explicit")
+        if self.fixture_goal_policy:
+            if (
+                self.execution_scope != "fixture"
+                or self.updates > 3
+                or self.max_leg_m > 5
+                or self.clearance_m < 0.25
+                or not self.contains(self.goal_ned_m)
+                or math.dist(self.entry_ned_m, self.goal_ned_m) <= self.target_error_m
+            ):
+                raise ValueError("urban_goal_requires_bounded_fixture_approval")
+        elif self.goal_ned_m is not None:
+            raise ValueError("urban_goal_requires_explicit_fixture_policy")
 
     def contains(self, point):
         return vector(point) and all(
@@ -161,6 +186,11 @@ class UrbanLoopRuntime:
             or not self.plan.reserve_fraction <= row["battery_fraction"] <= 1
         ):
             raise LoopRejected("invalid_or_outside_urban_observation")
+        if self.plan.fixture_goal_policy:
+            validate_goal_observation(
+                row, now_s=now, max_age_s=self.plan.observation_age_s,
+                lower_ned_m=self.plan.lower_ned_m, upper_ned_m=self.plan.upper_ned_m,
+            )
         previous = self.last_observation
         if previous and (
             row["sequence"] <= previous["sequence"]
@@ -205,6 +235,8 @@ class UrbanLoopRuntime:
                     or math.dist(nearest, row["position_ned_m"]) > self.plan.hold_drift_m
                 ):
                     raise LoopRejected("urban_segment_tracking_violated")
+                if self.plan.fixture_goal_policy:
+                    self.require_goal_clearance(permit, row)
             okay = (
                 row.get("ap_mode") == "hold"
                 and math.hypot(*row["velocity_ned_mps"]) <= self.plan.hold_speed_mps
@@ -217,13 +249,18 @@ class UrbanLoopRuntime:
                 raise LoopRejected("urban_target_or_stable_hold_not_observed")
             time.sleep(self.poll_s)
 
-    def monitored(self, operation, timeout_s, anchor):
+    def monitored(self, operation, timeout_s, anchor, *, expected_goal_context=None):
         pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="urban-model")
         future = pool.submit(operation)
         end = self.clock() + timeout_s
         try:
             while True:
-                self.observe(held=True, anchor=anchor)
+                row = self.observe(held=True, anchor=anchor)
+                if (
+                    expected_goal_context is not None
+                    and context_digest(row) != expected_goal_context
+                ):
+                    raise LoopRejected("urban_goal_context_changed_during_inference")
                 if self.clock() > end:
                     raise LoopRejected("urban_model_timeout")
                 if future.done():
@@ -264,12 +301,22 @@ class UrbanLoopRuntime:
             "observation": observation,
             "proposal": proposal,
         }
+        if self.plan.fixture_goal_policy:
+            request["approved_goal"] = {
+                "position_ned_m": list(self.plan.goal_ned_m),
+                "tolerance_m": self.plan.target_error_m,
+                "max_leg_m": self.plan.max_leg_m,
+                "clearance_m": self.plan.clearance_m,
+            }
         self.pending = request
         self.record("model_requested", request=request, request_sha256=digest(request))
         response = self.monitored(
             lambda: self.models.infer(request),
             self.plan.inference_timeout_s,
             observation["position_ned_m"],
+            expected_goal_context=(
+                context_digest(observation) if self.plan.fixture_goal_policy else None
+            ),
         )
         self.accept_response(request, response)
         return response
@@ -291,6 +338,8 @@ class UrbanLoopRuntime:
         self.record("model_received", response=response, response_sha256=digest(response))
 
     def authorize(self, vla, wam, observation):
+        if self.plan.fixture_goal_policy:
+            validate_goal_forecast(vla, wam, observation)
         candidates = vla.get("candidates")
         if (
             not isinstance(candidates, list)
@@ -317,6 +366,15 @@ class UrbanLoopRuntime:
             or constraint.get("observation_sha256") != digest(observation)
         ):
             raise LoopRejected("urban_independent_rules_rejected")
+        if self.plan.fixture_goal_policy and (
+            constraint.get("observation_context_sha256") != context_digest(observation)
+            or constraint.get("constraint_source") != "observed_fixture_boxes"
+            or constraint.get("blocking_obstacle_ids") != []
+            or not segment_clearance(
+                start, target, observation, self.plan.clearance_m
+            )["allowed"]
+        ):
+            raise LoopRejected("urban_goal_geometry_rejected")
         permit = {
             "schema_version": "ship_urban_segment_permit.v1",
             "permit_id": uuid4().hex,
@@ -339,11 +397,22 @@ class UrbanLoopRuntime:
         self.record("segment_authorized", permit=permit)
         return permit
 
+    def require_goal_clearance(self, permit, observation):
+        """Recheck the observed world before dispatch and throughout the leg."""
+        if (
+            context_digest(observation) != permit["rules"]["observation_context_sha256"]
+            or not segment_clearance(
+                permit["start_ned_m"], permit["target_ned_m"],
+                observation, self.plan.clearance_m,
+            )["allowed"]
+        ):
+            raise LoopRejected("urban_goal_context_changed_after_forecast")
+
     def run(self):
         if self.used:
             raise LoopRejected("urban_session_is_single_use")
         self.used, self.started = True, self.clock()
-        failure, completed, stop_verified = None, 0, False
+        failure, completed, stop_verified, goal_reached = None, 0, False, False
         try:
             entry = self.observe()
             if math.dist(entry["position_ned_m"], self.plan.entry_ned_m) > self.plan.target_error_m:
@@ -368,7 +437,9 @@ class UrbanLoopRuntime:
                 wam = self.request("wam", observation, proposal=vla)
                 current = self.observe(held=True, anchor=observation["position_ned_m"])
                 permit = self.authorize(vla, wam, current)
-                self.observe(held=True, anchor=permit["start_ned_m"])
+                dispatch_observation = self.observe(held=True, anchor=permit["start_ned_m"])
+                if self.plan.fixture_goal_policy:
+                    self.require_goal_clearance(permit, dispatch_observation)
                 if not self.active or self.clock() > permit["expires_at_s"]:
                     raise LoopRejected("urban_permit_expired_before_dispatch")
                 ack = self.ap.dispatch(permit)
@@ -381,8 +452,22 @@ class UrbanLoopRuntime:
                 self.last_arrival_s = arrived["observed_at_s"]
                 completed += 1
                 self.record("segment_arrived", permit_sha256=digest(permit), observation=arrived)
+                if self.plan.fixture_goal_policy and (
+                    math.dist(arrived["position_ned_m"], self.plan.goal_ned_m)
+                    <= self.plan.target_error_m
+                ):
+                    goal_reached = True
+                    self.record("goal_arrival_observed", observation=arrived)
+                    break
+            if self.plan.fixture_goal_policy and not goal_reached:
+                raise LoopRejected("urban_goal_not_observed_within_update_budget")
             self.ap.hold()
             exit_row = self.observe(held=True)
+            if self.plan.fixture_goal_policy and (
+                math.dist(exit_row["position_ned_m"], self.plan.goal_ned_m)
+                > self.plan.target_error_m
+            ):
+                raise LoopRejected("urban_goal_hold_lost_before_exit")
             self.record("ap_exit_hold_observed", observation=exit_row)
         except Exception as exc:
             failure = f"{type(exc).__name__}:{exc}"
@@ -409,6 +494,11 @@ class UrbanLoopRuntime:
         if failure is None:
             try:
                 row = self.observe(held=True)
+                if self.plan.fixture_goal_policy and (
+                    math.dist(row["position_ned_m"], self.plan.goal_ned_m)
+                    > self.plan.target_error_m
+                ):
+                    raise LoopRejected("urban_goal_hold_lost_before_handoff")
                 receipt = self.ap.return_handoff()
                 if receipt.get("ap_return_observed") is not True:
                     raise LoopRejected("urban_ap_return_handoff_not_observed")
@@ -426,6 +516,7 @@ class UrbanLoopRuntime:
             "plan": asdict(self.plan),
             "plan_sha256": self.plan_sha256,
             "completed_updates": completed,
+            "goal_reached": goal_reached,
             "failure": failure,
             "model_shutdown_verified": stop_verified,
             "events": self.events,

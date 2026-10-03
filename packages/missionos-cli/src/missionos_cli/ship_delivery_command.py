@@ -139,13 +139,24 @@ def px4_plan_command(scenario: Path | None, output: Path | None) -> None:
     default="none",
     help="Explicit fixture fault; see the urban loop contract.",
 )
-def urban_loop_smoke_command(output_dir, approve_fixture, fault):
-    """Exercise two urban decision updates; no PX4, native models, GPU or flight."""
+@click.option(
+    "--goal-responsive", is_flag=True,
+    help="Exercise up to three observed-geometry fixture segments to an approved goal.",
+)
+@click.option(
+    "--obstacle-side", type=click.Choice(["none", "left", "right"]), default="none",
+    help="Change the fixture world after its first arrival; requires --goal-responsive.",
+)
+def urban_loop_smoke_command(output_dir, approve_fixture, fault, goal_responsive, obstacle_side):
+    """Exercise bounded CPU control; no PX4, native models, GPU or flight."""
     from src.runtime.ship_urban_loop_fixture import run_fixture
     from src.runtime.ship_urban_loop_verifier import verify_urban_loop
 
     try:
-        result = run_fixture(output_dir, approved=approve_fixture, fault=fault)
+        result = run_fixture(
+            output_dir, approved=approve_fixture, fault=fault,
+            goal_responsive=goal_responsive, obstacle_side=obstacle_side,
+        )
         verification = verify_urban_loop(result)
         _emit_report(verification, output_dir / "verification.json")
         click.echo(f"Saved control receipt: {output_dir / 'result.json'}")
