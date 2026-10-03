@@ -7,6 +7,7 @@ Native lifecycle commands are supplied explicitly; this module allocates no VM.
 from __future__ import annotations
 
 import base64
+import copy
 import io
 import json
 import math
@@ -56,9 +57,79 @@ def exchange(port, path, payload=None, timeout=75):
     return json.loads(raw)
 
 
+def validate_native_services(config, identities, source_hashes):
+    """Check pinned service contracts without reading files or contacting services."""
+    if set(identities) != {"vla", "wam"} or not all(
+        isinstance(identity, dict) for identity in identities.values()
+    ):
+        raise ValueError("Both native service identities are required")
+    source_names = (
+        "yokohama_appearance.py", "yokohama_wam_profile.py", "ship_anwm_server.py",
+        "ship_anwm.py", "ship_aerovla_server.py", "ship_aerovla.py",
+    )
+    if any(
+        not isinstance(source_hashes.get(name), str)
+        or len(source_hashes[name]) != 64
+        or any(c not in "0123456789abcdef" for c in source_hashes[name])
+        for name in source_names
+    ):
+        raise ValueError("Frozen native source hashes are required")
+    if any(v.get("cpu_between_requests") is not True for v in identities.values()):
+        raise ValueError("Serial CPU-between-requests residency required")
+    if identities["vla"].get("exit_after_request") is not False:
+        raise ValueError("One-shot VLA cannot serve a repeated city session")
+    wam_profile = config["decisions"].get("wam_profile", "legacy")
+    compact = wam_profile == "motion-v4"
+    if (
+        identities["vla"].get("short_segment_flight") is not True
+        or identities["vla"].get("yaw_bin_range") != ([45, 53] if compact else [38, 60])
+        or (
+            compact
+            and (
+                identities["vla"].get("compact_city_flight") is not True
+                or identities["vla"].get("forward_bin_range") != [20, 58]
+                or identities["vla"].get("hold_bin_allowed") is not False
+                or identities["vla"].get("terminal_proposal_allowed") is not False
+                or identities["vla"].get("decoding_policy")
+                != "aerovla_compact_city_grammar.v2"
+            )
+        )
+    ):
+        raise ValueError("City translation phase requires bounded native decoding")
+    contract = MOTION_CONTRACT if compact else "yokohama_anwm_request.v1"
+    if contract not in identities["wam"].get("candidate_contracts", []):
+        raise ValueError("Native WAM does not support this action contract")
+    validate_service_profile(
+        identities["wam"],
+        wam_profile,
+        appearance_sha256=source_hashes["yokohama_appearance.py"],
+        profile_sha256=source_hashes["yokohama_wam_profile.py"],
+    )
+    if (
+        identities["wam"].get("server_sha256") != source_hashes["ship_anwm_server.py"]
+        or identities["wam"].get("helper_sha256") != source_hashes["ship_anwm.py"]
+        or identities["wam"].get("checkpoint_sha256") != ship_anwm.MODEL_SHA256
+        or identities["wam"].get("upstream_revision") != ship_anwm.UPSTREAM_REVISION
+        or any(
+            identities["vla"].get("runtime_sha256", {}).get(name) != source_hashes[name]
+            for name in ("ship_aerovla_server.py", "ship_aerovla.py", "ship_anwm.py")
+        )
+    ):
+        raise ValueError("Native services differ from the frozen source/checkpoint")
+
+
 class DecisionHost:
-    def __init__(self, root, config, bundle, backend, service_config=None):
+    def __init__(
+        self, root, config, bundle, backend, service_config=None, *,
+        detached=False, capture_root=None, http_exchange=None, mock_http=False,
+    ):
+        if mock_http and not detached:
+            raise ValueError("Mock HTTP requires a detached shadow host")
         self.root, self.config, self.bundle = Path(root), config, Path(bundle)
+        self.capture_root = self.root if capture_root is None else Path(capture_root)
+        self.detached, self.mock_http = detached, mock_http
+        self.http_exchange = http_exchange
+        self.attachment_attempted = False
         self.backend, self.service_config = backend, service_config
         self.identity, self.pending = None, {}
         self.attempts = {}
@@ -69,10 +140,17 @@ class DecisionHost:
         self.folder = self.root / "decisions"
         self.folder.mkdir()
         self.process = None
-        self.thread = threading.Thread(target=self.serve, daemon=True)
-        self.thread.start()
+        self.thread = None
+        if not detached:
+            self.thread = threading.Thread(target=self.serve, daemon=True)
+            self.thread.start()
+
+    def _exchange(self, *args, **kwargs):
+        return (getattr(self, "http_exchange", None) or exchange)(*args, **kwargs)
 
     def lifecycle(self, operation):
+        if getattr(self, "detached", False):
+            raise ValueError("Detached shadow host does not own service lifecycle")
         argv = self.service_config[operation + "_argv"]
         if not isinstance(argv, list) or not argv or not all(isinstance(s, str) for s in argv):
             raise ValueError("Lifecycle requires explicit argv")
@@ -94,72 +172,68 @@ class DecisionHost:
         return receipt
 
     def start(self):
+        if getattr(self, "detached", False):
+            raise ValueError("Detached shadow host must attach existing services")
         if self.active or self.closed:
             raise ValueError("Model session is single use")
         if self.backend == "native":
             receipt = self.lifecycle("start")
             identities = {
-                name: exchange(self.service_config[name + "_port"], "health")
+                name: self._exchange(self.service_config[name + "_port"], "health")
                 for name in ("vla", "wam")
             }
-            if any(v.get("cpu_between_requests") is not True for v in identities.values()):
-                raise ValueError("Serial CPU-between-requests residency required")
-            if identities["vla"].get("exit_after_request") is not False:
-                raise ValueError("One-shot VLA cannot serve a repeated city session")
-            wam_profile = self.config["decisions"].get("wam_profile", "legacy")
-            compact = wam_profile == "motion-v4"
-            if (
-                identities["vla"].get("short_segment_flight") is not True
-                or identities["vla"].get("yaw_bin_range") != ([45, 53] if compact else [38, 60])
-                or (
-                    compact
-                    and (
-                        identities["vla"].get("compact_city_flight") is not True
-                        or identities["vla"].get("forward_bin_range") != [20, 58]
-                        or identities["vla"].get("hold_bin_allowed") is not False
-                        or identities["vla"].get("terminal_proposal_allowed") is not False
-                        or identities["vla"].get("decoding_policy")
-                        != "aerovla_compact_city_grammar.v2"
-                    )
-                )
-            ):
-                raise ValueError("City translation phase requires bounded native decoding")
-            contract = MOTION_CONTRACT if wam_profile == "motion-v4" else "yokohama_anwm_request.v1"
-            if contract not in identities["wam"].get("candidate_contracts", []):
-                raise ValueError("Native WAM does not support this action contract")
             sources = self.root / "sources"
-            validate_service_profile(
-                identities["wam"],
-                wam_profile,
-                appearance_sha256=ship_anwm.digest(sources / "yokohama_appearance.py"),
-                profile_sha256=ship_anwm.digest(sources / "yokohama_wam_profile.py"),
-            )
-            if (
-                identities["wam"].get("server_sha256")
-                != ship_anwm.digest(sources / "ship_anwm_server.py")
-                or identities["wam"].get("helper_sha256")
-                != ship_anwm.digest(sources / "ship_anwm.py")
-                or identities["wam"].get("checkpoint_sha256") != ship_anwm.MODEL_SHA256
-                or identities["wam"].get("upstream_revision") != ship_anwm.UPSTREAM_REVISION
-                or any(
-                    identities["vla"].get("runtime_sha256", {}).get(name)
-                    != ship_anwm.digest(sources / name)
-                    for name in ("ship_aerovla_server.py", "ship_aerovla.py", "ship_anwm.py")
+            validate_native_services(self.config, identities, {
+                name: ship_anwm.digest(sources / name)
+                for name in (
+                    "yokohama_appearance.py", "yokohama_wam_profile.py", "ship_anwm_server.py",
+                    "ship_anwm.py", "ship_aerovla_server.py", "ship_aerovla.py",
                 )
-            ):
-                raise ValueError("Native services differ from the frozen source/checkpoint")
+            })
             identity = dict(backend="native", services=identities, lifecycle=receipt)
         else:
             identity = dict(backend="fixture", models_invoked=False)
         self.identity, self.active = identity, True
         return identity
 
+    def attach_existing_services(self, *, expected_services, source_hashes):
+        """Attach once to explicitly pinned services without owning their lifecycle."""
+        if not getattr(self, "detached", False) or self.backend != "native":
+            raise ValueError("Attaching requires a detached native-protocol host")
+        if self.active or self.closed or self.attachment_attempted:
+            raise ValueError("Model attachment is single use")
+        self.attachment_attempted = True
+        expected = copy.deepcopy(expected_services)
+        validate_native_services(self.config, expected, source_hashes)
+        identities = {
+            name: self._exchange(self.service_config[name + "_port"], "health")
+            for name in ("vla", "wam")
+        }
+        if identities != expected:
+            raise ValueError("Existing service identity differs from the approved identity")
+        if self.mock_http:
+            if any(v.get("fixture") is not True for v in identities.values()):
+                raise ValueError("Mock HTTP requires explicit fixture service identities")
+        elif any(v.get("fixture") is True for v in identities.values()):
+            raise ValueError("Native attachment rejects fixture service identities")
+        validate_native_services(self.config, identities, source_hashes)
+        self.identity = dict(
+            backend="native", services=copy.deepcopy(identities),
+            externally_owned_services=True, mock_http=self.mock_http,
+        )
+        self.active = True
+        return copy.deepcopy(self.identity)
+
     def stop(self):
         if self.closed and self.stop_receipt is not None:
             return self.stop_receipt
         self.active, self.closed = False, True
         self.pending.clear()
-        receipt = self.lifecycle("stop") if self.backend == "native" else {"fixture_stopped": True}
+        receipt = (
+            dict(remote_cleanup_verified=False, externally_owned_services=True)
+            if getattr(self, "detached", False)
+            else self.lifecycle("stop") if self.backend == "native" else {"fixture_stopped": True}
+        )
         self.stop_receipt = dict(receipt, session_revoked=True)
         (self.folder / "shutdown.json").write_text(json.dumps(self.stop_receipt, indent=2) + "\n")
         return self.stop_receipt
@@ -193,10 +267,11 @@ class DecisionHost:
 
     def capture(self, message):
         entry = message["capture"]
-        path = self.root / entry["file"]
+        capture_root = getattr(self, "capture_root", self.root)
+        path = capture_root / entry["file"]
         if (
             path.is_symlink()
-            or not path.resolve().is_relative_to(self.root.resolve())
+            or not path.resolve().is_relative_to(capture_root.resolve())
             or ship_anwm.digest(path) != entry["sha256"]
         ):
             raise ValueError("Unbound city capture")
@@ -208,6 +283,8 @@ class DecisionHost:
         return path, record, arrays
 
     def vla(self, message, output):
+        if getattr(self, "detached", False) and (not self.active or self.closed):
+            raise ValueError("Detached model session revoked or not attached")
         path, capture, _ = self.capture(message)
         if self.pad_cycle(message["cycle"]):
             self.require_pad_approach(message["observation"])
@@ -247,7 +324,7 @@ class DecisionHost:
         )
         (output / "native-request.json").write_text(json.dumps(request, indent=2) + "\n")
         if self.backend == "native":
-            response = exchange(
+            response = self._exchange(
                 self.service_config["vla_port"],
                 "infer",
                 {
@@ -284,12 +361,14 @@ class DecisionHost:
             vla_response_sha256=digest(response),
             input_observation=row,
             preliminary_rules=rules,
-            native_vla_invoked=self.backend == "native",
+            native_vla_invoked=self.backend == "native" and not getattr(self, "mock_http", False),
         )
         self.pending[message["cycle"]] = result
         return result
 
     def wam(self, message, output):
+        if getattr(self, "detached", False) and (not self.active or self.closed):
+            raise ValueError("Detached model session revoked or not attached")
         proposal = self.pending[message["cycle"]]
         if message["vla"] != proposal:
             raise ValueError("Cross-cycle VLA proposal")
@@ -328,7 +407,7 @@ class DecisionHost:
             output / "input", arrays, self.config, candidate, proposal["vla_response_sha256"]
         )
         if self.backend == "native":
-            response = exchange(
+            response = self._exchange(
                 self.service_config["wam_port"],
                 "infer",
                 {
@@ -346,7 +425,9 @@ class DecisionHost:
                 response.get("identity") != self.identity["services"]["wam"]
                 or response.get("request_sha256") != ship_anwm.digest(output / "input/request.json")
                 or response.get("history_sha256") != request["history_sha256"]
-                or response.get("wam_inference_invoked") is not True
+                or response.get("wam_inference_invoked")
+                is not (not getattr(self, "mock_http", False))
+                or (getattr(self, "mock_http", False) and response.get("fixture") is not True)
                 or response.get("dispatch_allowed") is not False
                 or response.get("cuda_allocated_after_request_bytes") != 0
             ):
@@ -387,12 +468,14 @@ class DecisionHost:
             checks=checks,
             passed=all(c["passed"] for c in checks),
             vla_response_sha256=proposal["vla_response_sha256"],
-            native_wam_invoked=self.backend == "native",
+            native_wam_invoked=self.backend == "native" and not getattr(self, "mock_http", False),
         )
         proposal["wam"] = result
         return result
 
     def authorize(self, message, output):
+        if getattr(self, "detached", False):
+            raise ValueError("Detached shadow host cannot authorize dispatch")
         proposal = self.pending[message["cycle"]]
         if not proposal.get("wam", {}).get("passed"):
             raise ValueError("WAM prediction did not meet visible-structure bounds")
@@ -560,6 +643,8 @@ class DecisionHost:
         return permit
 
     def activate(self, message, output):
+        if getattr(self, "detached", False):
+            raise ValueError("Detached shadow host cannot activate dispatch")
         proposal = self.pending[message["cycle"]]
         prepared = proposal["prepared_permit"]
         if message["prepared_permit_sha256"] != digest(prepared):
@@ -709,7 +794,8 @@ class DecisionHost:
 
     def close(self):
         self.stop_event.set()
-        self.thread.join(timeout=self.config["decisions"].get("startup_timeout_s", 180) + 10)
-        if self.thread.is_alive():
-            raise RuntimeError("Decision host still running; remote cleanup must reconcile")
+        if self.thread is not None:
+            self.thread.join(timeout=self.config["decisions"].get("startup_timeout_s", 180) + 10)
+            if self.thread.is_alive():
+                raise RuntimeError("Decision host still running; remote cleanup must reconcile")
         return self.stop()
