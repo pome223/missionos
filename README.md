@@ -60,7 +60,7 @@ In a human-approved delivery to Meeting Room A, **two actual DeepSeek judgments
 (`wait` → `reroute`) passed Rules checks**. Navigation resumed, and the verifier
 confirmed simulated receipt, return to reception, and a five-second terminal hold.
 
-[![Unitree Go2 in the MuJoCo office simulation, with the robot, blocked passage, mission status, and route map visible; click to watch the delivery video](docs/assets/go2-agent-delivery-20260925/media/agent-poster.jpg)](https://github.com/user-attachments/assets/75c35e50-9a9d-4b73-9849-31459c473841)
+![Unitree Go2 in the MuJoCo office simulation, with the robot, blocked passage, mission status, and route map visible](docs/assets/go2-agent-delivery-20260925/media/agent-poster.jpg)
 
 <details>
 <summary>Play video: Agent-directed waiting, replanning, delivery, and return</summary>
@@ -88,7 +88,7 @@ governed runs banked **8 + 8 blocks with ExtraTrees** and **9 + 4 with neural
 ACWM**, each on two known cases. These demonstrate the integrated execution path;
 the larger stopping-strategy comparisons are reported separately below.
 
-[![Saved-action block-stacking simulator replay: continuing to ten collapses for zero points, WAM stopping banks eight, and a post-hoc nine-block stopping counterfactual banks nine](docs/assets/block-stacking-20260918/centered-game-replay.gif)](https://github.com/user-attachments/assets/84d5a72f-932e-4791-a8c0-9a06d9e8c47b)
+![Saved-action block-stacking simulator replay: continuing to ten collapses for zero points, WAM stopping banks eight, and a post-hoc nine-block stopping counterfactual banks nine](docs/assets/block-stacking-20260918/centered-game-replay.gif)
 
 <details>
 <summary>Play video: the same stacking start, three stopping choices</summary>
