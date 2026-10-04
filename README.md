@@ -60,10 +60,18 @@ In a human-approved delivery to Meeting Room A, **two actual DeepSeek judgments
 (`wait` → `reroute`) passed Rules checks**. Navigation resumed, and the verifier
 confirmed simulated receipt, return to reception, and a five-second terminal hold.
 
-[![Unitree Go2 in the MuJoCo office simulation, with the robot, blocked passage, mission status, and route map visible; click to watch the delivery video](docs/assets/go2-agent-delivery-20260925/media/agent-poster.jpg)](docs/assets/go2-agent-delivery-20260925/media/agent.mp4)
+[![Unitree Go2 in the MuJoCo office simulation, with the robot, blocked passage, mission status, and route map visible; click to watch the delivery video](docs/assets/go2-agent-delivery-20260925/media/agent-poster.jpg)](https://github.com/user-attachments/assets/75c35e50-9a9d-4b73-9849-31459c473841)
 
-**[Watch: Agent-directed waiting, replanning, delivery, and return (MP4)](docs/assets/go2-agent-delivery-20260925/media/agent.mp4)** ·
-[Watch: yielding to a moving obstacle (MP4)](docs/assets/go2-agent-delivery-20260925/media/moving.mp4) ·
+<details>
+<summary>Play video: Agent-directed waiting, replanning, delivery, and return</summary>
+
+https://github.com/user-attachments/assets/75c35e50-9a9d-4b73-9849-31459c473841
+
+</details>
+
+**[Watch the Go2 delivery video](https://github.com/user-attachments/assets/75c35e50-9a9d-4b73-9849-31459c473841)** ·
+[Watch: yielding to a moving obstacle](https://github.com/user-attachments/assets/b76b62e3-ab74-4889-ad87-4fcade744232) ·
+[Repository MP4 copies](docs/assets/go2-agent-delivery-20260925/media) ·
 [Results and verification](docs/assets/go2-agent-delivery-20260925/report-en.md) ·
 [Run the opt-in example](docs/examples/go2-indoor-delivery.md)
 
@@ -80,9 +88,17 @@ governed runs banked **8 + 8 blocks with ExtraTrees** and **9 + 4 with neural
 ACWM**, each on two known cases. These demonstrate the integrated execution path;
 the larger stopping-strategy comparisons are reported separately below.
 
-[![Saved-action block-stacking simulator replay: continuing to ten collapses for zero points, WAM stopping banks eight, and a post-hoc nine-block stopping counterfactual banks nine](docs/assets/block-stacking-20260918/centered-game-replay.gif)](docs/assets/block-stacking-20260918/centered-game-replay.mp4)
+[![Saved-action block-stacking simulator replay: continuing to ten collapses for zero points, WAM stopping banks eight, and a post-hoc nine-block stopping counterfactual banks nine](docs/assets/block-stacking-20260918/centered-game-replay.gif)](https://github.com/user-attachments/assets/84d5a72f-932e-4791-a8c0-9a06d9e8c47b)
 
-**[Watch the stacking replay (MP4)](docs/assets/block-stacking-20260918/centered-game-replay.mp4)** ·
+<details>
+<summary>Play video: the same stacking start, three stopping choices</summary>
+
+https://github.com/user-attachments/assets/84d5a72f-932e-4791-a8c0-9a06d9e8c47b
+
+</details>
+
+**[Watch the stacking replay](https://github.com/user-attachments/assets/84d5a72f-932e-4791-a8c0-9a06d9e8c47b)** ·
+[Repository MP4 copy](docs/assets/block-stacking-20260918/centered-game-replay.mp4) ·
 [Still image](docs/assets/block-stacking-20260918/centered-game-replay-poster.png) ·
 [Replay evidence](docs/agents/block-stacking-wam-technical-report-20260918.md#66-video-the-same-start-three-termination-choices) ·
 [ExtraTrees governed run](docs/agents/stacking-mission-e2e.md) ·
