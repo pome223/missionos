@@ -22,7 +22,7 @@ actions; humans and deterministic rules keep execution authority.
      Bounded Dispatch        ← deterministic rules constrain what may run
            │
            ▼
-   PX4 / Nav2 / GR00T        ← executor applies actions
+   Robot / policy adapter   ← executor applies actions
            │
            ▼
         Verifier             ← non-model evidence decides
@@ -40,10 +40,75 @@ ACK is not success. Observed progress is not mission completion.
 > LLM judges. Human approves. Rules constrain. Executor acts. Verifier checks.
 > Repair loops.
 
-An opt-in [Go2 indoor delivery example](docs/examples/go2-indoor-delivery.md)
-connects chat approval, simulated receipt and return, and read-only operator views.
-It uses a learned locomotion policy and simulator geometry; it does not claim
-WAM-assisted navigation or physical delivery.
+## What MissionOS Can Supervise
+
+MissionOS assigns missions, monitors progress, handles exceptions, and checks
+outcomes through robot-specific execution adapters. The following paths have
+recorded **simulator evidence**; they are not physical-robot deployments.
+
+| Robot or task | Mission-level supervision | Recorded example |
+| --- | --- | --- |
+| **Drones — PX4 / Gazebo** | Approved routes, obstacle recovery, delivery checks, and return | [Yokohama map-selected delivery](#yokohama-choose-a-delivery-destination-on-the-3d-map) |
+| **Wheeled robots — TurtleBot3 / Nav2** | Room delivery, approved navigation, and observed route tracking | [House delivery](#what-has-actually-run) |
+| **Robot dogs — Unitree Go2 / MuJoCo** | Indoor delivery, waiting or replanning around blockage, simulated receipt, and return | [Go2 images and videos](#unitree-go2-indoor-delivery-and-return) |
+| **Block stacking — SmolVLA with ExtraTrees or neural ACWM** | Forecast evidence, continue-or-stop judgments, bounded execution, and tower verification | [Stacking animation and results](#block-stacking-predict-execute-and-stop) |
+| **Robot-arm repair — GR00T, Cosmos Policy, VLA-0 / LIBERO Panda** | Bounded repair attempts and checks of target and preserved conditions | [Measured repair limits](#where-the-manipulation-repair-frontier-currently-is) |
+
+### Unitree Go2: indoor delivery and return
+
+In a human-approved delivery to Meeting Room A, **two actual DeepSeek judgments
+(`wait` → `reroute`) passed Rules checks**. Navigation resumed, and the verifier
+confirmed simulated receipt, return to reception, and a five-second terminal hold.
+
+![Unitree Go2 in the MuJoCo office simulation, with the robot, blocked passage, mission status, and route map visible](docs/assets/go2-agent-delivery-20260925/media/agent-poster.jpg)
+
+<details>
+<summary>Play video: Agent-directed waiting, replanning, delivery, and return</summary>
+
+https://github.com/user-attachments/assets/75c35e50-9a9d-4b73-9849-31459c473841
+
+</details>
+
+**[Watch the Go2 delivery video](https://github.com/user-attachments/assets/75c35e50-9a9d-4b73-9849-31459c473841)** ·
+[Watch: yielding to a moving obstacle](https://github.com/user-attachments/assets/b76b62e3-ab74-4889-ad87-4fcade744232) ·
+[Repository MP4 copies](docs/assets/go2-agent-delivery-20260925/media) ·
+[Results and verification](docs/assets/go2-agent-delivery-20260925/report-en.md) ·
+[Run the opt-in example](docs/examples/go2-indoor-delivery.md)
+
+*Recorded MuJoCo physics at approximately 3× playback speed. The separate
+moving-obstacle video uses local yielding with zero LLM judgments. Both runs use
+simulator geometry and a learned walking policy; physical delivery, camera-based
+navigation, and WAM-assisted navigation are outside these results.*
+
+### Block stacking: predict, execute, and stop
+
+**MissionOS connected prediction, actual DeepSeek judgments, bounded human
+preapproval, Rules, SmolVLA execution, and measured verification.** The later
+governed runs banked **8 + 8 blocks with ExtraTrees** and **9 + 4 with neural
+ACWM**, each on two known cases. These demonstrate the integrated execution path;
+the larger stopping-strategy comparisons are reported separately below.
+
+![Saved-action block-stacking simulator replay: continuing to ten collapses for zero points, WAM stopping banks eight, and a post-hoc nine-block stopping counterfactual banks nine](docs/assets/block-stacking-20260918/centered-game-replay.gif)
+
+<details>
+<summary>Play video: the same stacking start, three stopping choices</summary>
+
+https://github.com/user-attachments/assets/84d5a72f-932e-4791-a8c0-9a06d9e8c47b
+
+</details>
+
+**[Watch the stacking replay](https://github.com/user-attachments/assets/84d5a72f-932e-4791-a8c0-9a06d9e8c47b)** ·
+[Repository MP4 copy](docs/assets/block-stacking-20260918/centered-game-replay.mp4) ·
+[Still image](docs/assets/block-stacking-20260918/centered-game-replay-poster.png) ·
+[Replay evidence](docs/agents/block-stacking-wam-technical-report-20260918.md#66-video-the-same-start-three-termination-choices) ·
+[ExtraTrees governed run](docs/agents/stacking-mission-e2e.md) ·
+[Neural ACWM governed run](docs/assets/acwm-governed-stacking-20260921/REPORT.md)
+
+*The animation is an earlier saved-action simulator replay at 4× speed, not
+footage of the later DeepSeek-governed runs. It shows both the benefit and the
+cost of stopping: the ninth placement was safe, so banking eight was conservative.
+Completed panels freeze. The simulator stages the grasp; this is stacking and
+release evidence, not autonomous picking or physical robot execution.*
 
 ## Yokohama: choose a delivery destination on the 3D map
 
@@ -86,14 +151,15 @@ and is not included. A future live run needs a separately reviewed authorization
 
 ## What Has Actually Run
 
-The same contract and authority mechanism has been exercised over five
-bounded simulator paths, plus governed ExtraTrees- and neural ACWM-assisted stacking loops. All
-results below are simulator evidence.
+The same contract and authority mechanism has been exercised over six bounded
+simulator paths, plus governed ExtraTrees- and neural ACWM-assisted stacking
+loops. All results below are simulator evidence.
 
 | Stack | Exercised | Observed |
 | ----- | --------- | -------- |
 | **PX4 / Gazebo SITL** | Outbound mission with two collision obstacles at ~50% and ~75% route progress | Two separate LLM proposals and two separate human approvals; second centerline rejoin observed; saved outbound and return telemetry |
 | **TurtleBot3 / ROS2 Nav2** | Chat request to deliver to a named room in `turtlebot3_house` | Three real doorways traversed from front yard to bedroom dropoff; AMCL-corrected observed trail against the approved plan |
+| **Unitree Go2 / MuJoCo** | Human-approved indoor delivery with a temporary passage closure | Two DeepSeek judgments (`wait` → `reroute`) passed Rules checks; simulated receipt, return, and a five-second terminal hold were verified. [Report and videos](docs/assets/go2-agent-delivery-20260925/report-en.md) |
 | **GR00T N1.7 / LIBERO Panda** | Natural asymmetric partial failures continued **without resetting the world**, under a new contract, human approval, and one dispatch per loop | Native single-attempt cohort: target repair 0/5 loops; each execution's Contract-bound preserve predicates maintained 16/16 across 6 original-world attempts + 10 diagnostic clones |
 | **Cosmos Policy / LIBERO Panda** | Seed-aligned 3 cm diagnostic fixture with a 3/3 stable scripted control and 128-action policy ceiling | No target contact, about 1 nm target motion, and `[true, false, true]` after 128 actions |
 | **VLA-0 / LIBERO Panda** | The same 3 cm snapshot, instruction, action ceiling, and scripted control | Target engagement 3/3; terminal conjunction 2/3; both successful traces lost the repaired predicate on the fifth stationary hold step, so 20-step stable completion was 0/2 replays |
@@ -112,8 +178,8 @@ approved plan is orange and the AMCL-corrected observed trail is blue. The PX4
 image is a sanitized, display-only summary derived from a reviewed SITL run;
 raw task identifiers and runtime artifacts are intentionally not published.
 
-An outdoor MAVLink drone, an indoor Nav2 ground robot, and three manipulation
-policies are entirely different stacks, but the tower is the same: vehicles
+An outdoor MAVLink drone, an indoor Nav2 ground robot, a Go2 robot dog, and
+manipulation policies are different stacks, but the tower is the same: vehicles
 and policies plug in as adapters while the control plane — proposal, approval,
 dispatch, evidence — stays fixed.
 
@@ -283,6 +349,8 @@ agents.
 | ----- | ----------------- |
 | PX4 / Gazebo SITL | Physical flight, payload delivery, and delivery completion |
 | TurtleBot3 / ROS2 Nav2 | Physical robot execution, real actuator/E-stop validation, and delivery completion |
+| Unitree Go2 / MuJoCo | Physical delivery, camera-based perception, WAM-assisted navigation, and a matched performance improvement over simple rules |
+| SmolVLA stacking / ExtraTrees or neural ACWM | Autonomous picking, physical robot execution, and general superiority over strong stopping rules; the known-case governed runs are integration evidence |
 | GR00T N1.7 / LIBERO Panda | General Repair rate, a difference from diagnostic clone re-entry, the unmeasured max-two-attempt protocol, independent controller ACK, real Panda execution, and physical safety |
 | Cosmos Policy / LIBERO Panda | General Repair rate, semantic grounding across tasks, same-world Repair, independent controller ACK, real Panda execution, and physical safety |
 | VLA-0 / LIBERO Panda | Stable Repair on the admitted fixture, a general nominal or Repair rate, a natural policy-failure result, same-world Repair, independent controller ACK, real Panda execution, and physical safety |
