@@ -45,7 +45,8 @@ def build_environment(args: argparse.Namespace) -> dict[str, str]:
         raise ValueError("starship_gateway_invalid_port")
     live_shadow = getattr(args, "enable_live_jev_shadow", False)
     live_supervisor = getattr(args, "enable_live_flight_supervisor", False)
-    if (args.enable_live_models or live_shadow or live_supervisor) and not args.project:
+    live_director = getattr(args, "enable_live_mission_director", False)
+    if (args.enable_live_models or live_shadow or live_supervisor or live_director) and not args.project:
         raise ValueError("starship_gateway_secret_project_required")
     for value in (args.project, args.deepseek_secret, args.jev_secret):
         if value and not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", value):
@@ -89,6 +90,7 @@ def build_environment(args: argparse.Namespace) -> dict[str, str]:
             "MISSIONOS_STARSHIP_JEV_MODE": "off",
             "MISSIONOS_STARSHIP_JEV_SHADOW_MODE": "fixture" if args.fixture_planner else "off",
             "MISSIONOS_STARSHIP_FLIGHT_SUPERVISOR_MODE": "fixture" if args.fixture_planner else "off",
+            "MISSIONOS_STARSHIP_MISSION_DIRECTOR_MODE": "fixture" if args.fixture_planner else "off",
             "LITELLM_LOG": "ERROR",
         }
     )
@@ -107,12 +109,15 @@ def build_environment(args: argparse.Namespace) -> dict[str, str]:
     elif live_shadow:
         env["TYPESAFE_API_KEY"] = _read_secret(args.project, args.jev_secret)
         env["MISSIONOS_STARSHIP_JEV_SHADOW_MODE"] = "live"
-    if live_supervisor:
+    if live_supervisor or live_director:
         if "DEEPSEEK_API_KEY" not in env:
             env["DEEPSEEK_API_KEY"] = _read_secret(args.project, args.deepseek_secret)
         if "TYPESAFE_API_KEY" not in env:
             env["TYPESAFE_API_KEY"] = _read_secret(args.project, args.jev_secret)
-        env["MISSIONOS_STARSHIP_FLIGHT_SUPERVISOR_MODE"] = "live"
+        if live_supervisor:
+            env["MISSIONOS_STARSHIP_FLIGHT_SUPERVISOR_MODE"] = "live"
+        if live_director:
+            env["MISSIONOS_STARSHIP_MISSION_DIRECTOR_MODE"] = "live"
         env["MISSIONOS_AGENT_MISSIONOS_STARSHIP_PLANNER_AGENT_LLM_BACKEND"] = "deepseek"
         env["MISSIONOS_AGENT_MISSIONOS_STARSHIP_PLANNER_AGENT_DEEPSEEK_API_BASE"] = "https://api.deepseek.com"
     return env
@@ -132,6 +137,8 @@ def main() -> int:
                         help="Enable separately approved Jev shadow with at most 22 calls per plan")
     parser.add_argument("--enable-live-flight-supervisor", action="store_true",
                         help="Enable separately approved in-flight Jev (one) and conditional DeepSeek (one) proposals")
+    parser.add_argument("--enable-live-mission-director", action="store_true",
+                        help="Enable separately approved mission decisions: at most five Jev and five conditional DeepSeek calls per plan")
     args = parser.parse_args()
     try:
         env = build_environment(args)

@@ -315,7 +315,7 @@ def _sample(s, v, phase, command=None, diagnostics=None):
 
 
 def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, supervision=None, return_policy="fixed_v1",
-             booster_policy="fixed_v1", catch_config=None):
+             booster_policy="fixed_v1", catch_config=None, mission_director=None, mission_case=None, return_sites=None):
     """Run continuous 6DOF. Short initialized cases are clearly separate flights."""
     if scenario not in ("launch", "engine_out", "entry_perturbation", "gimbal_step", "flap_asymmetry", "deployment_no_effect"):
         raise ValueError("unknown 6DOF scenario")
@@ -330,6 +330,10 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
         raise ValueError("supervision is only supported by deployment_no_effect")
     if scenario == "deployment_no_effect" and supervision is None:
         supervision = FlightSupervision(None, "standalone-hold")
+    if mission_case not in (None, "normal", "release_fault", "fuel_shortage", "tower_unavailable", "operations_notice"):
+        raise ValueError("unknown mission management case")
+    if mission_director is not None and (mission_case is None or scenario != "launch" or booster_policy != "fixed_v1"):
+        raise ValueError("mission director requires its explicit launch case")
     return_record = new_record(return_policy)
     if return_policy != "fixed_v1" and scenario != "deployment_no_effect":
         raise ValueError("retained return policy requires deployment_no_effect")
@@ -368,12 +372,32 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
     contact_receipt = None
     sequencer_state, release_attempts, release_acknowledged = None, 0, False
     next_sample = 0.
+    deployment_hold_until, diagnostic_due = None, None
+    mechanism_status, managed_return_selected = "not_collected", False
+    fuel_fault_applied = False
+    def director_observation():
+        from .starship_mission_director import fuel_sensor
+        # This proxy is distinct from the plant log. The provider gets bounded
+        # sensor values, command inventory and tool outputs, never mass/inertia,
+        # engine truth, scenario identity or future faults. Fuel is quantized.
+        return {"time_s": s.time_s, "phase": "orbital_coast", "released_count": released,
+            "release_acknowledged": release_acknowledged, "sequencer_state": sequencer_state or "running",
+            "fuel_kg": fuel_sensor(s.propellant_kg, s.time_s, "ship"), "return_deadline_s": return_time,
+            "tower_ready": mission_case != "tower_unavailable",
+            "numerical_tools": {"orbit_release_feasible": bool(bound_orbit_above(orbit, g["target_perigee_m"]-1000)
+                and o["dynamic_pressure_pa"] < 1 and env.norm(s.omega_body_rad_s) < g["release_max_rate_rad_s"]),
+                "retained_payload_possible": released < p["payload"]["count"],
+                "capture_corridor_certified": False, "mechanism_status": mechanism_status},
+            "operations_notice": "Payload operations: suspend remaining deployment; return with the remaining manifest."
+                if mission_case == "operations_notice" and released >= 1 else ""}
     def event(name, detail="", **fields):
         events.append({"time_s": s.time_s, "event": name, "detail": detail, **fields})
     event("initial_state", "surface release, main engines already spooled" if phase == "stack_ascent" else "independent initialized atmospheric test; not a continuation of launch")
     while s.time_s < limit-1e-9:
         if supervision is not None:
             supervision.pace(s.time_s)
+        if mission_director is not None:
+            mission_director.pace("ship", s.time_s)
         ps = point_state(s)
         o = dyn.observe(s, v)
         altitude = o["altitude_m"]
@@ -422,11 +446,64 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                 event("orbit_not_reached", "ascent reserve/time limit; no state projection to target orbit", orbit=orbit)
                 continue
         elif phase == "orbital_coast":
-            if next_release is not None and s.time_s >= next_release and sequencer_state not in ("inhibited", "skipped"):
+            if mission_case == "fuel_shortage" and not fuel_fault_applied:
+                # Explicit synthetic reservoir-loss fault. No measured SpaceX
+                # leak, vent recoil or thermal model is claimed.
+                lost = max(0., s.propellant_kg-24000.)
+                s = replace(s, propellant_kg=s.propellant_kg-lost)
+                fuel_fault_applied = True
+                event("synthetic_propellant_loss", "reservoir loss without modeled vent recoil", lost_propellant_kg=lost)
+            if mission_director is not None:
+                if deployment_hold_until is not None and s.time_s >= deployment_hold_until:
+                    sequencer_state, next_release = "skipped", None
+                    event("managed_hold_expired", "preapproved hold expiry disables further release")
+                    deployment_hold_until = None
+                if diagnostic_due is not None and s.time_s >= diagnostic_due:
+                    mechanism_status = "blocked" if mission_case == "release_fault" else "clear"
+                    diagnostic_due = None
+                    event("managed_mechanism_diagnostic", "separate synthetic actuator/latch status channel; two seconds elapsed", mechanism_status=mechanism_status)
+                row = director_observation()
+                mission_director.confirm("ship", row)
+                if "deployment_start" not in mission_director.finished:
+                    point = "deployment_start"
+                elif "deployment_monitor" not in mission_director.finished and (released >= 1 or sequencer_state == "inhibited"):
+                    point = "deployment_monitor"
+                elif (mechanism_status != "not_collected" and "deployment_diagnostic" not in mission_director.finished):
+                    point = "deployment_diagnostic"
+                elif not managed_return_selected and s.time_s >= return_time-90.:
+                    point = "return_selection"
+                else:
+                    point = None
+                action = mission_director.update(point, row) if point else None
+                if action is not None:
+                    event("managed_mission_command", "independently checked preapproved mission decision", point=point, action=action)
+                    if action == "stop_deployment":
+                        sequencer_state, next_release = "skipped", None
+                    elif action == "hold":
+                        sequencer_state = "held"
+                        deployment_hold_until = s.time_s+mission_director.envelope["maximum_hold_s"]
+                    elif action == "collect_status":
+                        # The command consumes time and suppresses release until
+                        # the distinct mechanism channel has produced a report.
+                        diagnostic_due = s.time_s+2.
+                        sequencer_state = "held"
+                    elif action == "continue" and sequencer_state == "held":
+                        sequencer_state = "running"
+                        next_release = max(next_release or s.time_s, s.time_s)
+                    elif action in ("fixed_return", "retained_return"):
+                        managed_return_selected = True
+                        return_policy = "fixed_v1" if action == "fixed_return" else CONDITIONED_POLICY_ID
+                        return_record = new_record(return_policy)
+            if mission_case is not None and mission_director is None and s.propellant_kg < p["ship"]["return_reserve_kg"]:
+                sequencer_state, next_release = "skipped", None
+            # Coast dynamics continue while the first decision is pending;
+            # the timeline cannot release a payload before that decision.
+            deployment_started = mission_director is None or "deployment_start" in mission_director.finished
+            if deployment_started and next_release is not None and s.time_s >= next_release and sequencer_state not in ("inhibited", "skipped", "held"):
                 # Independent composition/impulse verifier checks conservation.
                 if bound_orbit_above(orbit, g["target_perigee_m"]-1000) and o["dynamic_pressure_pa"] < 1 and env.norm(s.omega_body_rad_s) < g["release_max_rate_rad_s"]:
-                    if scenario == "deployment_no_effect" and release_attempts == 0:
-                        release_attempts, release_acknowledged, sequencer_state = 1, True, "inhibited"
+                    if scenario == "deployment_no_effect" and release_attempts == 0 or mission_case == "release_fault":
+                        release_attempts, release_acknowledged, sequencer_state = release_attempts+1, True, "inhibited"
                         event("payload_release_attempt_acknowledged", "synthetic accepted release command without physical separation; not a SpaceX fault model",
                               release_attempt_count=release_attempts, payload_released_count=released)
                         event("deployment_interlock_inhibited", "automatic local interlock prevents further release attempts after missing separation effect")
@@ -442,6 +519,8 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                             (0., 0., p["payload"]["center_z_m"]), payload_inertia(p),
                             (reduced_mass*p["payload"]["release_speed_mps"], 0., 0.))
                         v, released = after, released+1
+                        if mission_case is not None:
+                            release_attempts, release_acknowledged = release_attempts+1, True
                         samples.append(_sample(s, v, phase))
                         satellites.append({"id": f"satellite_{released:02d}", "release_state": asdict(child), "vehicle": asdict(child_vehicle), "receipt": receipt})
                         event("payload_released", f"finite rigid payload {released}; +J / -J with angular reaction", receipt=receipt)
@@ -468,6 +547,10 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                     event("deployment_skip_command", "bounded supervisor command disables remaining deployment sequence; later observations required",
                           **supervision_command)
             if s.time_s >= return_time:
+                if mission_director is not None and not managed_return_selected:
+                    return_policy = CONDITIONED_POLICY_ID
+                    return_record = new_record(return_policy)
+                    event("managed_return_deadline_fallback", "no valid decision can delay the scheduled deorbit")
                 if return_policy in (POLICY_ID, CONTINUOUS_POLICY_ID, CONDITIONED_POLICY_ID) and released < p["payload"]["count"]:
                     observed = _sample(s, v, phase)
                     observed["retained_return"] = "activation"
@@ -657,7 +740,8 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                                            control_policy="net_thrust_trim_v1", duration_s=30.)
         else:
             from .starship_sixdof_booster import simulate_booster
-            booster_run = simulate_booster(p, stage_state)
+            booster_run = simulate_booster(p, stage_state, mission_director=mission_director,
+                return_sites=return_sites, tower_ready=mission_case != "tower_unavailable")
     result = {"scenario": scenario, "samples": samples, "events": events, "booster_separation_state": stage_state, "satellites": satellites, "booster_run": booster_run,
             "retained_return": return_record,
             "outcome": {"termination": termination, "phase": phase, "duration_s": s.time_s, "integration_steps": steps,
@@ -669,6 +753,10 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                         "contact_receipt": contact_receipt, "starship_vehicle_validated": False,
                         "six_dof_integrated": True, "attitude_prescribed": False},
             "initial_state": samples[0], "final_state": asdict(s), "final_vehicle": asdict(v)}
+    if mission_director is not None:
+        result["mission_director"] = mission_director.finish()
+    if mission_case is not None:
+        result["mission_management_case"] = mission_case
     if supervision is not None:
         result["supervision"] = supervision.finish(sequencer_state=sequencer_state, simulation_time_s=s.time_s)
     if booster_policy == "predictive_return_v1":

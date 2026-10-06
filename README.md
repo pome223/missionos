@@ -115,6 +115,18 @@ release evidence, not autonomous picking or physical robot execution.*
 
 ### Starship-inspired six-degree-of-freedom mission simulation
 
+An opt-in [mission decision envelope](docs/examples/starship-mission-decisions.md)
+now connects normal deployment monitoring, mechanism diagnostics, terminal
+return selection and booster diversion. The operator approves the scope once;
+MissionOS decides within it, independent checks constrain execution, and later
+observations verify effects. In one live release-fault run, Jev selected a
+mechanism diagnostic and retained-payload return: recorded contact speed changed
+from 238.74 to 3.22 m/s. **This slice is not complete:** a live normal run stopped
+after an invalid provider response and impacted at 619.78 m/s; only three of the
+five scripted condition comparisons passed. [Results and boundaries](docs/examples/starship-mission-decisions.md)
+remain separate from the existing videos below, which document the earlier
+fixture implementation.
+
 **Chat → review the plan → `/approve` once → `/run` in a separate simulator
 process → verify the saved outputs. This operator workflow runs in the public
 fixture.**
@@ -272,7 +284,7 @@ loops. All results below are simulator evidence.
 | **VLA-0 / LIBERO Panda** | The same 3 cm snapshot, instruction, action ceiling, and scripted control | Target engagement 3/3; terminal conjunction 2/3; both successful traces lost the repaired predicate on the fifth stationary hold step, so 20-step stable completion was 0/2 replays |
 | **SmolVLA / ExtraTrees / DeepSeek stacking** | ExtraTrees forecasts through Mission Assurance, bounded human preapproval, Rules, ticketed execution, and measured verification | Final two-case DeepSeek run banked 8 + 8 points; 18 LLM judgments, 208 SmolVLA inference chunks, and 5,112 motor steps |
 | **SmolVLA / neural ACWM / DeepSeek stacking** | Online future-video forecasts through Assurance, bounded preapproval, Rules, ticketed execution, and measured verification | Two known cases banked 9 + 4 points; 15 actual DeepSeek judgments, 169 SmolVLA inference chunks, and 4,260 motor steps. [Integration report](docs/assets/acwm-governed-stacking-20260921/REPORT.md) |
-| **Starship-inspired 6DOF simulator / MissionOS** | Explicit simulation approval, provider-key-free flight worker environment, saved-state replay, and bounded deployment supervision | One recorded Jev route led to a fixed skip procedure with later observed sequencer changes. Launch-derived tower catch remains unsuccessful; no physical flight or model-value claim. [Videos and public fixture](docs/examples/starship-mission-showcase.md) |
+| **Starship-inspired 6DOF simulator / MissionOS** | One approved mission envelope, provider-key-free flight worker environment, live Jev decisions, later observations and saved-state replay | In one release-fault run Jev selected a diagnostic and return guidance, changing contact speed from 238.74 to 3.22 m/s. A live normal run failed; the completion gate and launch-derived catch remain unmet. [Decision results](docs/examples/starship-mission-decisions.md) · [Earlier videos](docs/examples/starship-mission-showcase.md) |
 
 | PX4 drone · two separately approved obstacle recoveries | TurtleBot3 · house delivery to a named room |
 | -------------------------------------------------------- | --------------------------------------------- |

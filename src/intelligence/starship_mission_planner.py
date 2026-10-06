@@ -20,9 +20,10 @@ from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_ope
 
 from src.runtime.starship_flight import SCENARIOS
 from src.runtime.starship_sixdof_catalog import SIXDOF_DESCRIPTIONS, SIXDOF_SCENARIOS
+from src.runtime.starship_mission_director import SCENARIOS as MANAGED_SCENARIOS
 
 
-PLANNER_SCENARIOS = (*SCENARIOS, "dispenser_comparison", "dispenser_jev_shadow", *SIXDOF_SCENARIOS)
+PLANNER_SCENARIOS = (*SCENARIOS, "dispenser_comparison", "dispenser_jev_shadow", *SIXDOF_SCENARIOS, *MANAGED_SCENARIOS)
 MAX_DEEPSEEK_CALLS = 2
 MAX_INPUT_CHARS = 2000
 MAX_OUTPUT_TOKENS = 600
@@ -37,6 +38,7 @@ JEV_REQUEST_MAX_BYTES = 4096
 JEV_RESPONSE_MAX_BYTES = 65536
 
 _DESCRIPTIONS = {
+    **{name: "Preapproved mission-wide decisions and same-start fixed-timeline comparison: "+case+". Local development 6DOF; capture unqualified and diversion not guaranteed." for name, case in MANAGED_SCENARIOS.items()},
     **SIXDOF_DESCRIPTIONS,
     "flight14_inspired": "Flight 14 inspired five-stage physical surrogate; no real flight validation",
     "counterfactual_nominal": "Counterfactual nominal physical surrogate without injected faults",

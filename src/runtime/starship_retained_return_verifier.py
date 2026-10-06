@@ -313,7 +313,7 @@ def _contact_outcome(run):
     return speed <= 5, speed
 
 
-def verify_retained_return(run, profile, expected_policy="fixed_v1"):
+def verify_retained_return(run, profile, expected_policy="fixed_v1", *, expected_management_case=None):
     """Check stored policy evidence; a pass does not imply a successful return.
 
     The preceding saved step and every earlier stored ballistic sample are
@@ -362,7 +362,10 @@ def verify_retained_return(run, profile, expected_policy="fixed_v1"):
                      "fixed_policy", "Fixed policy cannot activate or contain adaptive commands")
         else:
             _profile(profile)
-            _require(run.get("scenario") == "deployment_no_effect", "scenario", "Adaptive policy requires the approved retained-payload scenario")
+            managed = (expected_management_case in ("normal", "release_fault", "fuel_shortage", "tower_unavailable", "operations_notice")
+                and run.get("scenario") == "launch" and run.get("mission_management_case") == expected_management_case
+                and type(run.get("mission_director")) is dict)
+            _require(run.get("scenario") == "deployment_no_effect" or managed, "scenario", "Adaptive policy requires the approved retained-payload or explicitly bound managed scenario")
             released = run.get("outcome", {}).get("payload_released_count") if type(run.get("outcome")) is dict else None
             release_events = grouped.get("payload_released", [])
             _require(type(released) is int and released == len(release_events) and 0 <= released <= profile["payload"]["count"],

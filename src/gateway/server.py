@@ -8941,8 +8941,9 @@ class GatewayServer:
                 expected_scenario = None
                 if action == "plan":
                     from src.runtime.starship_sixdof_catalog import SIXDOF_SCENARIOS
+                    from src.runtime.starship_mission_director import SCENARIOS as MANAGED_SCENARIOS
                     if (set(value) != {"action", "session_id", "starship_context", "scenario", "request"}
-                            or context is not None or value.get("scenario") not in SIXDOF_SCENARIOS
+                            or context is not None or value.get("scenario") not in (*SIXDOF_SCENARIOS, *MANAGED_SCENARIOS)
                             or not isinstance(value.get("request"), str) or len(value["request"]) > 1200):
                         raise ValueError("catalog plan required")
                     scenario = value["scenario"]

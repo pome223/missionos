@@ -15,6 +15,7 @@ from typing import Any
 from urllib.parse import quote
 
 from src.runtime.starship_sixdof_catalog import SIXDOF_SCENARIOS
+from src.runtime.starship_mission_director import SCENARIOS as MANAGED_SCENARIOS
 
 
 AMBIGUOUS_CONFIRMATIONS = {
@@ -90,6 +91,16 @@ def _response(text: str, action: str, result: dict, session_id: str) -> dict:
                     f"\nJev shadow: {shadow['mode']}; 最大API呼出し {shadow['maximum_provider_calls']}回。"
                     "60系列の最初の観測失敗後だけを分類し、履歴ルールの実行は変更しません。"
                     "この呼出し範囲も /approve の対象です。"
+                )
+            if plan.get("mission_envelope"):
+                scope = plan["mission_envelope"]
+                response["message"] += (
+                    f"\nミッション管制: {scope['mode']}。/approve は各操作ではなく、表示した判断範囲を承認します。"
+                    f"\nJev最大{scope['maximum_jev_calls']}回、DeepSeek最大{scope['maximum_llm_calls']}回。"
+                    "放出の継続・保留・見送り、機構状態診断1回、帰還方式、キャッチか退避かを範囲内で決めます。"
+                    "保留は合計30秒。帰還時刻は変更不可。応答期限は75秒。独立した実行チェックを通し、後続観測を検証します。"
+                    "範囲外は引継ぎ要求を記録し、今回は事前承認済みの代替動作を実行します。飛行中の承認受付は未実装です。"
+                    "\n"+"\n".join(plan["limitations"])
                 )
             if plan.get("flight_supervision"):
                 scope = plan["flight_supervision"]
@@ -242,7 +253,7 @@ def maybe_handle_starship_chat(payload: Mapping[str, Any], *, expected_scenario:
         raw = raw.get("text", raw.get("instruction", ""))
     text = raw.strip() if isinstance(raw, str) else ""
     explicit = (expected_scenario is not None or "starship" in text.lower() or "スターシップ" in text
-                or any(scenario in text.lower() for scenario in SIXDOF_SCENARIOS)
+                or any(scenario in text.lower() for scenario in (*SIXDOF_SCENARIOS, *MANAGED_SCENARIOS))
                 or (bool(payload.get("starship_context")) and any(
                     marker in text.lower() for marker in ("6dof", "sixdof", "6自由度", "六自由度", "六軸", "6軸", "キャッチ", "catch", "姿勢連続"))))
     command = COMMANDS.get(text)

@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from src.runtime.starship_sixdof_catalog import SIXDOF_SCENARIOS, SUPERVISED_SCENARIOS, RETAINED_RETURN_SCENARIOS, CATCH_CATALOG, LAUNCH_CATCH_SCENARIO, BOOSTER_RECOVERY_POLICY  # noqa: E402
+from src.runtime.starship_mission_director import SCENARIOS as MANAGED_SCENARIOS, SCOPE  # noqa: E402
 
 
 def sixdof_evidence(scenario: str, plan: dict, study: dict, verification: dict) -> dict:
@@ -138,6 +139,9 @@ def run(port: int, scenario: str, output: Path) -> dict:
     approved = turn("/approve")["operation_result"]
     assert approved["status"] == "approved" and approved["execution"] == {}
     assert approved["approval"]["authenticated_operator_identity"] is False
+    if scenario in MANAGED_SCENARIOS:
+        assert approved["approval"]["scope"] == SCOPE
+        assert approved["approval"]["mission_envelope"] == approved["plan"]["mission_envelope"]
     if scenario in RETAINED_RETURN_SCENARIOS:
         assert approved["approval"]["return_policy"] == approved["plan"]["return_policy"]
     if scenario in CATCH_CATALOG:
@@ -149,7 +153,7 @@ def run(port: int, scenario: str, output: Path) -> dict:
     launched = turn("/run")["operation_result"]
     assert launched["status"] == "running" and launched["execution"]["subprocess_spawned"] is True
     assert turn("/run")["operation_result"]["status"] == "blocked"
-    deadline = time.monotonic() + (1200 if scenario == LAUNCH_CATCH_SCENARIO else 600 if scenario in SIXDOF_SCENARIOS else
+    deadline = time.monotonic() + (1500 if scenario in MANAGED_SCENARIOS else 1200 if scenario == LAUNCH_CATCH_SCENARIO else 600 if scenario in SIXDOF_SCENARIOS else
                                    480 if scenario == "dispenser_jev_shadow" else 300)
     while time.monotonic() < deadline:
         response = turn("/status")
@@ -199,6 +203,15 @@ def run(port: int, scenario: str, output: Path) -> dict:
             scenario, result["plan"], json.loads((output / "study.json").read_text()),
             json.loads((output / "verification.json").read_text()),
         ))
+    if scenario in MANAGED_SCENARIOS:
+        study = json.loads((output/"study.json").read_text())
+        verdict = json.loads((output/"verification.json").read_text())
+        assert verdict["passed"] is True and study["case"] == MANAGED_SCENARIOS[scenario]
+        assert study["envelope"] == result["plan"]["mission_envelope"]
+        assert len(study["runs"]) == 2
+        summary["mission_management"] = {"decisions": len(study["runs"][1]["mission_director"]["records"]),
+            "comparison": study["comparison"], "human_inflight_commands": 0,
+            "comparison_success_required_for_completion": True, "model_value_demonstrated": False}
     (output / "chat-receipt.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n")
     (output / "chat-transcript.json").write_text(json.dumps(turns, ensure_ascii=False, indent=2) + "\n")
     return summary
@@ -207,7 +220,7 @@ def run(port: int, scenario: str, output: Path) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", type=int, required=True)
-    parser.add_argument("--scenario", choices=("dispenser_comparison", "flight14_inspired", "dispenser_jev_shadow", *SIXDOF_SCENARIOS), required=True)
+    parser.add_argument("--scenario", choices=("dispenser_comparison", "flight14_inspired", "dispenser_jev_shadow", *SIXDOF_SCENARIOS, *MANAGED_SCENARIOS), required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
     if not 1 <= args.port <= 65535:

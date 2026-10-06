@@ -314,8 +314,25 @@ def _booster_envelope(booster, profile, last, path):
     _require(_near(tilt, outcome.get("final_tilt_deg"), 1e-4) and _near(rate, outcome.get("final_body_rate_rad_s")), path, "Booster terminal attitude/rate differs from trajectory")
     launch = profile.get("launch")
     _require(type(launch) is dict and _number(launch.get("latitude_deg")) and _number(launch.get("longitude_deg")), path, "Missing return target")
-    lat = math.radians(launch["latitude_deg"])
-    lon = math.radians(launch["longitude_deg"])+_EARTH_RATE*last["time_s"]
+    target_coordinates = launch
+    if "active_return_site" in booster:
+        from hashlib import sha256
+        import json
+        site = booster["active_return_site"]
+        _require(type(site) is dict and site.get("schema") == "missionos.starship_return_site.v1"
+            and site.get("site_id") in ("capture", "divert") and site.get("elevation_m") == 0., path, "Invalid explicit return site")
+        latitude = math.radians(launch["latitude_deg"])
+        prime = _A/math.sqrt(1-e2*math.sin(latitude)**2)
+        expected_lon = launch["longitude_deg"]+(math.degrees(30000./(prime*math.cos(latitude))) if site["site_id"] == "divert" else 0.)
+        expected_lon = (expected_lon+180.) % 360.-180.
+        _require(_near(site.get("latitude_deg"), launch["latitude_deg"], 1e-10)
+            and _near(site.get("longitude_deg"), expected_lon, 1e-10), path, "Return site not original capture or declared 30 km east target")
+        recorded_hash = sha256(json.dumps(booster["active_return_site"], sort_keys=True,
+            separators=(",", ":"), allow_nan=False).encode()).hexdigest()
+        _require(recorded_hash == booster.get("return_site_sha256"), path, "Return site hash differs")
+        target_coordinates = booster["active_return_site"]
+    lat = math.radians(target_coordinates["latitude_deg"])
+    lon = math.radians(target_coordinates["longitude_deg"])+_EARTH_RATE*last["time_s"]
     n = _A/math.sqrt(1-e2*math.sin(lat)**2)
     target = [n*math.cos(lat)*math.cos(lon), n*math.cos(lat)*math.sin(lon), n*(1-e2)*math.sin(lat)]
     distance = _A*math.atan2(_norm(_cross(position, target)), sum(a*b for a, b in zip(position, target)))

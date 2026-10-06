@@ -11,6 +11,7 @@ from src.gateway import server, starship_chat
 from src.intelligence.starship_mission_planner import plan_starship_request
 from src.runtime.starship_mission_control import StarshipMissionService
 from src.runtime.starship_sixdof_catalog import SIXDOF_SCENARIOS
+from src.runtime.starship_mission_director import SCENARIOS as MANAGED_SCENARIOS
 
 ROOT = Path(__file__).resolve().parents[2]
 HTML = ROOT / "src/runtime/assets/starship_operator.html"
@@ -64,7 +65,7 @@ def test_default_full_launch_preserves_all_catalog_choices_and_requires_explicit
     select = re.search(r'<select id="scenario">([\s\S]*?)</select>', HTML.read_text()).group(1)
     options = re.findall(r'<option value="([^"]+)"', select)
     assert options[0] == "sixdof_launch"
-    assert len(options) == len(set(options)) and set(options) == set(SIXDOF_SCENARIOS)
+    assert len(options) == len(set(options)) and set(options) == set(SIXDOF_SCENARIOS) | set(MANAGED_SCENARIOS)
     javascript("""
 assert.equal(ui('scenario').value,'sixdof_launch');assert.equal(calls.length,0);
 assert.equal(ui('approve').disabled,true);assert.equal(ui('run').disabled,true);
@@ -352,7 +353,7 @@ def test_default_full_launch_asset_and_plan_only_boundary(loopback_gateway, monk
     assert asset.status_code == 200
     options = re.findall(r'<option value="([^"]+)"',
         re.search(r'<select id="scenario">([\s\S]*?)</select>', asset.text).group(1))
-    assert options[0] == "sixdof_launch" and set(options) == set(SIXDOF_SCENARIOS)
+    assert options[0] == "sixdof_launch" and set(options) == set(SIXDOF_SCENARIOS) | set(MANAGED_SCENARIOS)
     assert "Launch + 26 payload releases" in asset.text
     payload = {**operator_payload(), "scenario": options[0]}
     value = loopback_gateway.post("/missionos/starship/operator/actions",
@@ -365,6 +366,20 @@ def test_default_full_launch_asset_and_plan_only_boundary(loopback_gateway, monk
     denied = loopback_gateway.post("/missionos/starship/operator/actions", headers=browser_headers(),
         json={**operator_payload("run"), "starship_context": value["starship_context"]}).json()
     assert denied["operation_result"]["status"] == "blocked"
+
+
+@pytest.mark.parametrize("scenario", MANAGED_SCENARIOS)
+def test_managed_operator_plan_displays_envelope_without_execution(loopback_gateway, monkeypatch, scenario):
+    monkeypatch.setenv("MISSIONOS_STARSHIP_MISSION_DIRECTOR_MODE", "fixture")
+    monkeypatch.setattr("src.runtime.starship_mission_control.subprocess.Popen",
+        lambda *a, **k: pytest.fail("Planning cannot start a worker"))
+    response = loopback_gateway.post("/missionos/starship/operator/actions", headers=browser_headers(),
+        json={**operator_payload(), "scenario": scenario})
+    assert response.status_code == 200
+    value = response.json()
+    assert value["operation_result"]["plan"]["scenario"] == scenario
+    assert value["operation_result"]["approval"] is None
+    assert "各操作ではなく" in value["message"]
 
 
 def test_full_launch_selected_focus_cannot_be_changed_to_catch_by_planner_text(loopback_gateway, monkeypatch):

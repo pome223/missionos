@@ -166,7 +166,7 @@ def _coast_control_profile(profile, observed, *, include_spooled_tvc=False):
                                    "max_angular_acceleration_rad_s2": alpha}}, frequency, alpha
 
 
-def simulate_booster(profile, separation_state_dict, duration_s=None, *, guidance_policy="fixed_v1"):
+def simulate_booster(profile, separation_state_dict, duration_s=None, *, guidance_policy="fixed_v1", mission_director=None, return_sites=None, tower_ready=True):
     """Continue from the exact supplied state for at most 2000 elapsed seconds.
 
     The return site is the rotating launch location. This is a geometric target,
@@ -207,10 +207,30 @@ def simulate_booster(profile, separation_state_dict, duration_s=None, *, guidanc
     def event(name, detail, **fields):
         events.append({"time_s": state.time_s, "event": name, "detail": detail, **fields})
 
+    active_site = return_sites.divert if return_sites is not None else None
+    # Capture corridor has not been qualified from launch for this controller.
+    # The same independent restriction applies to the fixed-timeline comparator.
+    def director_observation():
+        from .starship_mission_director import fuel_sensor
+        return {"time_s": state.time_s, "phase": "booster_return", "released_count": 0,
+            "release_acknowledged": False, "sequencer_state": "running",
+            "fuel_kg": fuel_sensor(state.propellant_kg, state.time_s, "booster"), "return_deadline_s": start_time+duration,
+            "tower_ready": tower_ready, "operations_notice": "",
+            "numerical_tools": {"orbit_release_feasible": False, "retained_payload_possible": False,
+                "capture_corridor_certified": False, "mechanism_status": "not_collected"}}
     event("booster_return_start", "Exact separated state inherited; no position, velocity, attitude, rate or fault-state reset.")
     while state.time_s < start_time+duration-1e-9:
+        if mission_director is not None:
+            mission_director.pace("booster", state.time_s)
+            row = director_observation()
+            action = mission_director.update("booster_selection", row)
+            if action is not None:
+                active_site = return_sites.site(action)
+                event("managed_booster_command", "preapproved early return-site decision; finite control integrates the trajectory",
+                    action=action, return_site_sha256=active_site.sha256)
+            mission_director.confirm("booster", row)
         observed = dyn.observe(state, booster)
-        up, east, north, velocity, displacement, site_distance = _navigation(state, profile)
+        up, east, north, velocity, displacement, site_distance = _navigation(state, profile, return_site=active_site)
         altitude, vertical = observed["altitude_m"], env.dot(velocity, up)
         horizontal_velocity = _horizontal(velocity, up)
         mass = observed["mass_kg"]
@@ -355,7 +375,7 @@ def simulate_booster(profile, separation_state_dict, duration_s=None, *, guidanc
         samples.append(final)
     else:
         samples[-1] = final
-    up, _, _, _, _, distance = _navigation(state, profile)
+    up, _, _, _, _, distance = _navigation(state, profile, return_site=active_site)
     tilt = math.degrees(math.acos(max(-1., min(1., env.dot(dyn.rotate(state.q_body_to_eci, (0., 0., 1.)), up)))))
     rate = env.norm(state.omega_body_rad_s)
     envelope = (contact_receipt is not None
@@ -371,6 +391,8 @@ def simulate_booster(profile, separation_state_dict, duration_s=None, *, guidanc
             "booster_separation_state": separation_state_dict, "initial_state": samples[0],
             "final_state": asdict(state), "final_vehicle": asdict(booster), "contact": contact_receipt,
             "guidance_configuration": configuration, "guidance_policy": guidance_policy,
+            **({"active_return_site": active_site.to_dict(), "return_site_sha256": active_site.sha256,
+                "capture_inhibited": True, "divert_destination_reached": bool(envelope)} if active_site else {}),
             "outcome": {"termination": termination, "phase": phase, "duration_s": state.time_s-start_time,
                         "start_time_s": start_time, "end_time_s": state.time_s, "integration_steps": steps,
                         "max_altitude_m": max(max_altitude, final["altitude_m"]), "max_body_rate_rad_s": max(max_rate, rate),
@@ -385,6 +407,6 @@ def simulate_booster(profile, separation_state_dict, duration_s=None, *, guidanc
             "limitations": ["Generic closed-loop return guidance and assumed actuator/aerodynamic parameters, not SpaceX flight software.",
                             "site_return_v2/v3 are optional bounded development trials: measured-drag one-dimensional burn preview and RCS-authority coast control; no terminal capture guarantee. v3 preserves spool-down TVC and attempts impact mitigation even when the burn cannot fully arrest descent.",
                             "Three-center-engine powered slew references the historical staging arrangement; slew throttle and control law are engineering assumptions, not a measured V3 flip sequence.",
-                            "Return target is the launch-site ground location; catch tower, mechanisms, contact loads and structural survival are unmodeled.",
+                            "Return target is the declared model-test site when supplied, otherwise the launch-site ground location; catch tower, mechanisms, contact loads and structural survival are unmodeled.",
                             "No separate entry burn is introduced. Configured boostback count defaults to the V3 planned 33; fixed_v1/site_return_v1 final burn selects one to three, while v2/v3 can select up to the configured gimballed count. Neither reproduces Flight 14's 13-to-five-to-three landing sequence.",
                             "Shared propellant reservoir, no feed-path momentum, slosh, combustion or TPS model."]}
