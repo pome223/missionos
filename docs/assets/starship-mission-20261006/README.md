@@ -4,6 +4,13 @@ Open `index.html` directly for the offline CG replay. Its data and scripts are
 embedded; no service, provider, simulator or private record is needed. The
 three MP4s and posters are local companion files.
 
+The nominal numerical flight covers launch, stage separation, 26 recorded
+payload-separation states, orbital propagation and Ship return.
+`nominal-flight.gif` previews the complete 36-second movie at twice playback
+speed in 18 seconds, including the payload-phase counter from 0 to 26. It does
+not claim that each payload or V3-specific deployment hardware is visually
+resolved. The full MP4 and saved-state replay retain the original display.
+
 These are historical numerical records. Nominal Ship contact is not a verified
 landing or booster tower catch. The deployment intervention confirmed a skip
 sequencer operation with zero payloads released. The isolated return did not
@@ -59,3 +66,15 @@ the omitted orbit. All state interpolation is for display only. Do not use
 these clips as dynamics, continuous collision, landing, service or hardware
 verification. Geometry and plumes are illustrative, not engineering CAD or a
 flow solution. Keep the final videos/posters below 30 MiB total.
+
+To regenerate only the nominal animated preview from its existing MP4:
+
+```sh
+python export_saved_media.py --rebuild-page --make-previews --preview-case nominal-flight --check
+```
+
+This transform uses 640×360 at approximately 6 fps, with an embedded animated
+preview label. It retains the previous GIF in ignored `captures/`, grants no
+new model or flight invocation, and keeps the aggregate media cap at 30 MiB.
+The nominal full-movie preview has a 6 MiB encoding cap; the other previews
+retain their 3 MiB caps and existing bytes.

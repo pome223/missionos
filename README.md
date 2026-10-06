@@ -6,7 +6,9 @@
 
 **Give the AI a control tower, not a joystick.**
 
-MissionOS is a control plane for AI-driven robots. VLA/LLM agents propose
+MissionOS is a control plane for AI-driven robots. Its working loop turns a
+chat request into a displayed plan, records explicit operator approval, executes
+through a bounded adapter, and checks later observations. VLA/LLM agents propose
 actions; humans and deterministic rules keep execution authority.
 
 ```text
@@ -53,7 +55,7 @@ recorded **simulator evidence**; they are not physical-robot deployments.
 | **Robot dogs — Unitree Go2 / MuJoCo** | Indoor delivery, waiting or replanning around blockage, simulated receipt, and return | [Go2 images and videos](#unitree-go2-indoor-delivery-and-return) |
 | **Block stacking — SmolVLA with ExtraTrees or neural ACWM** | Forecast evidence, continue-or-stop judgments, bounded execution, and tower verification | [Stacking animation and results](#block-stacking-predict-execute-and-stop) |
 | **Robot-arm repair — GR00T, Cosmos Policy, VLA-0 / LIBERO Panda** | Bounded repair attempts and checks of target and preserved conditions | [Measured repair limits](#where-the-manipulation-repair-frontier-currently-is) |
-| **Spacecraft development — Starship-inspired 6DOF simulator** | Source-bound simulation approval, bounded deployment supervision, and saved-state verification | [Flight, supervision, and negative return videos](#starship-inspired-six-degree-of-freedom-mission-simulation) |
+| **Spacecraft development — Starship-inspired 6DOF simulator** | Source-bound simulation approval, bounded deployment supervision, and saved-state verification | [Launch, 26-payload release, supervision and return videos](#starship-inspired-six-degree-of-freedom-mission-simulation) |
 
 ### Unitree Go2: indoor delivery and return
 
@@ -113,17 +115,27 @@ release evidence, not autonomous picking or physical robot execution.*
 
 ### Starship-inspired six-degree-of-freedom mission simulation
 
-**MissionOS connects a coupled numerical spacecraft model to approval, Rules,
-execution, and later observations.** Position, quaternion, angular rate, fuel,
-finite engines/gimbals, and control surfaces evolve through the simulator. The
-2D/3D replay uses recorded states and a common playback clock; an AI proposal
-does not set the vehicle pose or operate its low-level controls.
+**Chat → review the plan → `/approve` once → `/run` in a separate simulator
+process → verify the saved outputs. This operator workflow runs in the public
+fixture.**
+
+The separate saved full-flight example covers **launch → stage separation →
+orbital conditions → 26 payload releases → Ship return attempt**. Its mission
+scale references SpaceX's [Flight 14 / Starlink V3 deployment](https://www.spacex.com/launches/starship-flight-14).
+The released satellites have their own recorded positions and attitudes, and
+the 3D replay reads their recorded separation states.
+
+The simulator jointly integrates position, attitude, angular rate, fuel and
+finite engine/gimbal/control-surface states. The replay reads those recorded
+states on a common clock. Choose `Starship sixdof_launch` in chat or **Launch +
+26 payload releases** in the operator console for the full numerical scenario;
+`Starship sixdof_gimbal_step` is the shorter 30-second setup check.
 
 *Animated previews from the saved clips; complete MP4s are linked below.*
 
-| Launch, separation, and rigid payload release | Deployment supervision | Return development: catch not reached |
+| Launch and 26 payload releases | Missing-release supervision | Return attempt |
 | --- | --- | --- |
-| ![Saved numerical six-DOF launch and separation replay, not physical spacecraft footage](docs/assets/starship-mission-20261006/nominal-flight.gif) | ![Saved deployment-supervision replay showing observation, bounded skip operation, and later sequencer evidence](docs/assets/starship-mission-20261006/deployment-supervision.gif) | ![Saved 60-second booster return development ending without catch handoff and below fuel reserve](docs/assets/starship-mission-20261006/return-negative.gif) |
+| ![Saved numerical launch, separation and 26-payload release replay, not physical spacecraft footage](docs/assets/starship-mission-20261006/nominal-flight.gif) | ![Saved deployment-supervision replay showing observation, bounded skip operation, and later sequencer evidence](docs/assets/starship-mission-20261006/deployment-supervision.gif) | ![Saved 60-second booster return development ending without catch handoff and below fuel reserve](docs/assets/starship-mission-20261006/return-negative.gif) |
 
 <details>
 <summary>Complete video: numerical launch, separation, and Ship return</summary>
@@ -152,28 +164,44 @@ does not set the vehicle pose or operate its low-level controls.
 [Offline replay and media provenance](docs/assets/starship-mission-20261006/index.html) ·
 [Public fixture and claim boundaries](docs/examples/starship-mission-showcase.md)
 
-*These are saved numerical simulator replays. The nominal record releases 26
-rigid payload bodies; it does not verify Starlink service or landing after hull
-contact. The supervision record contains one Jev route to a fixed skip
-procedure, Rules checks, and later measured sequencer states; DeepSeek was not
-called, and the mission still failed its return objectives. The 60-second return
-development record reached no catch handoff and ended below its support fuel
-reserve. None establishes SpaceX engineering fidelity, physical execution, or
-an LLM advantage.*
+*These are saved numerical simulator replays. Starlink V3 is the mission
+reference; the satellite bodies and display geometry use declared assumptions.
+Satellite hardware deployment, link acquisition, orbit raising and service are
+not simulated. The catch experiment is a separate return-development record.*
 
-Launch-derived catch, fresh-launch robustness, qualified capture/divert with
-later effects, and the complete operator catch workflow remain unfinished.
-The separate near-tower initialized support fixture is not a launch-derived
-capture. The [public quickstart](docs/examples/starship-mission-showcase.md#try-the-bounded-public-fixture)
-uses a deterministic planner and a fixed 30-second gimbal test; it does not
-regenerate these historical full-flight videos or invoke external models.
+<details>
+<summary>What the records establish, and what remains unfinished</summary>
+
+The nominal record reaches its configured orbital conditions and releases all
+26 finite payload bodies. Low-speed Ship hull contact remains a recorded return
+outcome rather than verified landing.
+
+The anomaly record shows a fault routing service (Jev) selecting a fixed skip
+procedure, Rules checks, and two later observations confirming the sequencer
+change. The conditional reasoning model (DeepSeek) was not called. Zero
+payloads separated in this fault case; its interlock already prevented release,
+so the skip does not establish an AI advantage over Rules.
+
+The 60-second return-development record reached no catch handoff and ended
+below its support fuel reserve. Launch-derived catch, fresh-launch robustness,
+qualified capture/divert with later effects, and the complete operator catch
+workflow remain unfinished. The initialized near-tower support fixture is a
+separate experiment. These records do not establish SpaceX engineering fidelity,
+physical execution, satellite service or model advantage.
+
+The [public quickstart](docs/examples/starship-mission-showcase.md#try-the-bounded-public-fixture)
+starts with a deterministic planner and the short gimbal test to check the
+operator workflow. That test is separate from the historical full-flight video.
 The dedicated Starship launcher defaults its planner/model backend to off;
 `--fixture-planner` explicitly selects the keyless deterministic example.
 Generic MissionOS chat below retains its separate DeepSeek default. Flight
 simulator processes omit provider keys from their environment. The separately
 opted-in live Jev shadow observer receives its own Typesafe key; it is a
 provider observer, not a flight simulator. These same-user processes do not
-provide OS credential isolation.
+provide OS credential isolation. The public smoke uses a test operator and
+does not authenticate human identity.
+
+</details>
 
 ## Yokohama: choose a delivery destination on the 3D map
 

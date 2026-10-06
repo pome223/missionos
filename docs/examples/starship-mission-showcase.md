@@ -1,14 +1,14 @@
 # Starship-inspired simulation through MissionOS
 
-MissionOS connects an opt-in spacecraft simulation to its ordinary approval
-and evidence loop. The simulator integrates position, velocity, quaternion,
-angular rate, fuel, and finite engine/gimbal/control-surface states. Those
-recorded states drive the synchronized 2D/3D replay; the AI does not set the
-vehicle's pose or act as a flight controller.
+**A chat request becomes a displayed simulation plan. The operator approves
+that plan once, the simulator executes in a separate process, and the verifier
+checks the receipt and saved outputs.** This bounded operator workflow runs in
+the public fixture.
 
-The demonstration is numerical development software. It does not establish
-SpaceX vehicle fidelity, physical spacecraft execution, Starlink service,
-successful launch-derived tower catch, or an improvement from using an LLM.
+The separate saved full-flight example includes launch, stage separation,
+orbital conditions, 26 finite satellite releases and a Ship return attempt.
+Position, attitude, angular rate, fuel and actuators evolve in the simulator;
+the recorded states drive the synchronized 2D/3D replay.
 
 ## Watch the recorded simulations
 
@@ -17,8 +17,8 @@ contains three separately labelled records:
 
 | Record | What it shows | Limit |
 | --- | --- | --- |
-| [Nominal flight](../assets/starship-mission-20261006/nominal-flight.mp4) | Launch, separation, 26 rigid payload releases, and Ship return | Low-speed hull contact is not validated landing; the booster did not reach tower catch |
-| [Deployment supervision](../assets/starship-mission-20261006/deployment-supervision.mp4) | A recorded Jev route, fixed skip procedure, Rules, and later measured sequencer states | DeepSeek was not called; no payload separated, and the mission did not complete |
+| [Launch and 26-payload release](../assets/starship-mission-20261006/nominal-flight.mp4) | Launch, separation, orbital conditions, 26 independent payload bodies, and Ship return | Low-speed hull contact is not validated landing; the booster did not reach tower catch |
+| [Missing-release supervision](../assets/starship-mission-20261006/deployment-supervision.mp4) | Fault routing (Jev), a fixed skip procedure, Rules, and later measured sequencer states | The conditional reasoning model (DeepSeek) was not called; no payload separated, and the mission did not complete |
 | [Negative return development](../assets/starship-mission-20261006/return-negative.mp4) | A 60-second continuation from a saved launch-derived booster state | No handoff; final fuel 3.569 t was below the 6.918 t support reserve |
 
 These videos replay saved simulator records, not a new flight or a live GUI
@@ -30,6 +30,30 @@ GitHub displays HTML source rather than running the replay. Download the whole
 media bundle, or serve the checkout with
 `python -m http.server 8000 --bind 127.0.0.1` and open
 `http://127.0.0.1:8000/docs/assets/starship-mission-20261006/index.html`.
+
+## Launch and payload release: the Starlink V3 reference
+
+SpaceX's [Flight 14 report](https://www.spacex.com/launches/starship-flight-14)
+reports the release of 26 Starlink V3 satellites and initial contact. Satellite
+checkout and orbit raising are subsequent operational stages. That provides
+the mission reference for this example. The current simulator covers the launch and rigid-body release
+portion, with each released body continuing on its own trajectory.
+
+“V3” identifies two different things here: the vehicle profile is inspired by
+Starship V3; the 26-payload mission references Starlink V3. The payload model is
+parameterized rather than an identified V3 spacecraft. Its current assumed
+mass, inertia and separation impulse are described in the
+[six-DOF contract](../agents/starship-sixdof-contract.md).
+The 3D satellites are illustrative shapes; their visible panels are not a
+computed unfolding sequence. Antenna/solar-array deployment, collision-free
+extraction from the dispenser, link acquisition, orbit raising and customer
+service remain outside this model.
+
+To request the full numerical launch-and-release scenario, use
+`Starship sixdof_launch` in chat or **Launch + 26 payload releases** in the
+operator console, then review and approve that plan before running it. The
+short setup check below uses `Starship sixdof_gimbal_step`. Neither choice
+invokes a real spacecraft or proves completion of Starlink commissioning.
 
 ## Try the bounded public fixture
 

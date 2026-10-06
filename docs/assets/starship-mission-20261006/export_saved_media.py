@@ -257,36 +257,55 @@ def serve(port):
     ThreadingHTTPServer(("127.0.0.1", port), Handler).serve_forever()
 
 
-def previews(manifest, ffmpeg):
+def previews(manifest, ffmpeg, selected_case=None):
     """Transform existing MP4 bytes only; no CG capture or model invocation."""
-    selections = [("nominal-flight", 0.0, 12.0, 1.0, "launch and stage-separation excerpt"),
+    selections = [("nominal-flight", 0.0, 36.0, 2.0, "full nominal display: launch, payload-release count 0 to 26, Ship return"),
                   ("deployment-supervision", 3.5, 24.5, 2.0, "observations, skip command and both later-effect observations"),
                   ("return-negative", 18.0, 12.0, 1.0, "final approach, reserve crossing and unsuccessful endpoint")]
     entries = []
     for case, start, interval, speed, description in selections:
+        if selected_case is not None and case != selected_case:
+            continue
         movie = HERE / (case + ".mp4")
         original = next(x for x in manifest["media"] if x["filename"] == movie.name)
         if sha(movie.read_bytes()) != original["sha256"]:
             raise ValueError("preview_requires_unchanged_source_movie")
         target = HERE / (case + ".gif")
+        captures = HERE / "captures"
+        captures.mkdir(exist_ok=True)
+        maximum_bytes = (6 if case == "nominal-flight" else 3) * 1024 * 1024
+        temporary = captures / (case + "-preview-next-" + str(maximum_bytes) + ".gif")
+        colours = 96 if case == "nominal-flight" else 128
         filters = (f"[0:v]setpts=PTS/{speed},fps=6,scale=640:-1:flags=lanczos,"
                    "drawtext=font=Arial:text='Animated preview / full MP4 linked':"
                    "fontsize=10:fontcolor=white:x=16:y=48:box=1:boxcolor=black@0.7,"
-                   "split[a][b];[a]palettegen=max_colors=128:stats_mode=diff[p];"
+                   f"split[a][b];[a]palettegen=max_colors={colours}:stats_mode=diff[p];"
                    "[b][p]paletteuse=dither=sierra2_4a")
         command = [ffmpeg, "-hide_banner", "-loglevel", "error", "-n", "-ss", str(start),
                    "-t", str(interval), "-i", str(movie), "-filter_complex", filters,
-                   "-an", "-loop", "2", str(target)]
+                   "-an", "-loop", "2", str(temporary)]
         subprocess.run(command, check=True)
-        if target.stat().st_size > 3 * 1024 * 1024:
-            raise ValueError("preview_exceeds_declared_three_MiB_cap")
+        if temporary.stat().st_size > maximum_bytes:
+            raise ValueError("preview_exceeds_declared_per_case_byte_cap")
+        if target.exists():
+            archive = captures / (case + "-" + sha(target.read_bytes())[:16] + ".gif")
+            if archive.exists():
+                if archive.read_bytes() != target.read_bytes():
+                    raise ValueError("previous_preview_archive_mismatch")
+            else:
+                with archive.open("xb") as stream:
+                    stream.write(target.read_bytes())
+        temporary.replace(target)
         entries.append({"filename": target.name, "bytes": target.stat().st_size, "sha256": sha(target.read_bytes()),
             "source_movie_filename": movie.name, "source_movie_sha256": original["sha256"],
             "source_movie_start_s": start, "source_movie_interval_s": interval,
             "preview_speed_vs_source_movie": speed, "target_fps": 6, "width": 640, "height": 360,
             "loop_repetitions": 2, "caption": "Animated preview; full MP4 linked", "excerpt": description,
-            "transformation": "FFmpeg saved-MP4 excerpt, display-time rescale, 128-colour palette and label; no new rendered physical state"})
-    manifest["media"] += entries
+            "palette_colours": colours,
+            "maximum_preview_bytes": maximum_bytes,
+            "transformation": "FFmpeg saved-MP4 excerpt, display-time rescale, bounded palette and label; no new rendered physical state"})
+    replaced = {x["filename"] for x in entries}
+    manifest["media"] = [x for x in manifest["media"] if x["filename"] not in replaced] + entries
     manifest["public_media_total_bytes"] = sum(x["bytes"] for x in manifest["media"])
     if manifest["public_media_total_bytes"] > manifest["media_maximum_total_bytes"]:
         raise ValueError("all_public_media_exceed_thirty_MiB_cap")
@@ -303,6 +322,8 @@ def main():
     parser.add_argument("--port", type=int, default=18766)
     parser.add_argument("--make-previews", action="store_true", help="create three labelled GIF excerpts from existing MP4s only")
     parser.add_argument("--ffmpeg", default="ffmpeg", help="installed FFmpeg executable for the opt-in preview transform")
+    parser.add_argument("--preview-case", choices=("nominal-flight", "deployment-supervision", "return-negative"),
+                        help="transform only one GIF, retaining the other media")
     args = parser.parse_args()
     if args.nominal:
         if not all((args.supervision, args.return_record, args.nominal_verification, args.supervision_verification, args.return_verification)):
@@ -328,7 +349,7 @@ def main():
             manifest["standalone_page_sha256"] = sha((HERE / "index.html").read_bytes())
             (HERE / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2)+"\n")
     if args.make_previews:
-        manifest = previews(manifest, args.ffmpeg)
+        manifest = previews(manifest, args.ffmpeg, args.preview_case)
         (HERE / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2)+"\n")
     if args.check:
         for name, expected in manifest["renderer_sources_sha256"].items():

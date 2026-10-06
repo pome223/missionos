@@ -128,7 +128,7 @@
     "starship_cg_renderer.js": "572fc8a9b432158afae63175d867142bec267a96c3fc06ae6c9db1c938704582",
     "replay.js": "b9ac04cdb4945eae688b947ffa3cf7ae153b6dd90be03431e19729109fd2ecfb",
     "page-template.html": "16cf97fee82d6ed193becbb2a43402c67e3216bc7e62643e94acc3dc57e7f34e",
-    "export_saved_media.py": "0d69dcc54f1a836398c660f3ee6129b1340e08c8f322554b0c23550c8c632618"
+    "export_saved_media.py": "815c938ceb9f96de8385698909f8b984dd5bbd2a537a4a3741a64cd92ff341e9"
   },
   "standalone_page_sha256": "8d8d3cd9a8bdb6001e38f531e2d4b6c6d3174c4f8a805e26ecf0696b956092a1",
   "media": [
@@ -184,23 +184,6 @@
       "sha256": "0c0a30d7ed6e3639d910f5651f56d98c8aff862eb91692202cfe79cddb57bd93"
     },
     {
-      "filename": "nominal-flight.gif",
-      "bytes": 1472704,
-      "sha256": "62ca2b1c82d7252f47765826085b7bebcb81558cf9011db9fd66d69d28d807e2",
-      "source_movie_filename": "nominal-flight.mp4",
-      "source_movie_sha256": "b005d34f05fa8d144d9028e30fa075a720fb26f2ee8845a685a3590bc207d95c",
-      "source_movie_start_s": 0.0,
-      "source_movie_interval_s": 12.0,
-      "preview_speed_vs_source_movie": 1.0,
-      "target_fps": 6,
-      "width": 640,
-      "height": 360,
-      "loop_repetitions": 2,
-      "caption": "Animated preview; full MP4 linked",
-      "excerpt": "launch and stage-separation excerpt",
-      "transformation": "FFmpeg saved-MP4 excerpt, display-time rescale, 128-colour palette and label; no new rendered physical state"
-    },
-    {
       "filename": "deployment-supervision.gif",
       "bytes": 3121254,
       "sha256": "e409daa8dbe1a30b4503686fa524b6f8fcc8bd99fa0ee6c4ba54487126f43292",
@@ -233,9 +216,28 @@
       "caption": "Animated preview; full MP4 linked",
       "excerpt": "final approach, reserve crossing and unsuccessful endpoint",
       "transformation": "FFmpeg saved-MP4 excerpt, display-time rescale, 128-colour palette and label; no new rendered physical state"
+    },
+    {
+      "filename": "nominal-flight.gif",
+      "bytes": 4165930,
+      "sha256": "0f007a065d4dbe90688628981ec9694549d6eff43dee95f4463b494c8f6611f9",
+      "source_movie_filename": "nominal-flight.mp4",
+      "source_movie_sha256": "b005d34f05fa8d144d9028e30fa075a720fb26f2ee8845a685a3590bc207d95c",
+      "source_movie_start_s": 0.0,
+      "source_movie_interval_s": 36.0,
+      "preview_speed_vs_source_movie": 2.0,
+      "target_fps": 6,
+      "width": 640,
+      "height": 360,
+      "loop_repetitions": 2,
+      "caption": "Animated preview; full MP4 linked",
+      "excerpt": "full nominal display: launch, payload-release count 0 to 26, Ship return",
+      "palette_colours": 96,
+      "maximum_preview_bytes": 6291456,
+      "transformation": "FFmpeg saved-MP4 excerpt, display-time rescale, bounded palette and label; no new rendered physical state"
     }
   ],
-  "public_media_total_bytes": 9138011,
+  "public_media_total_bytes": 11831237,
   "capture_pipeline": "CUA page controls -> saved canvas MediaRecorder -> bounded exclusive same-origin loopback writer -> FFmpeg H.264; generated captures ignored",
   "media_verification": {
     "complete_ffmpeg_decode_passed": true,
@@ -288,9 +290,22 @@
     "new_CG_capture": false,
     "new_simulator_or_model_or_hardware_calls": 0,
     "nominal": {
-      "duration_s": 12.0,
-      "frames": 72,
-      "excerpt": "launch and stage separation"
+      "duration_s": 18.0,
+      "frames": 108,
+      "source_movie_start_s": 0.0,
+      "source_movie_duration_s": 36.0,
+      "playback_speed_vs_MP4": 2.0,
+      "coverage": "launch, payload phase/counter0–26 and Shipreturn",
+      "individual_V3_hardware_unfolding_claimed": false,
+      "Cua_native_GIF_visual_check": {
+        "complete": true,
+        "width": 640,
+        "height": 360,
+        "visible_payload_counter": "16/26",
+        "visible_saved_time_s": 755.92
+      },
+      "prior_launch_only_preview_sha256": "62ca2b1c82d7252f47765826085b7bebcb81558cf9011db9fd66d69d28d807e2",
+      "prior_preview_and_first_size_guard_failure_retained_ignored": true
     },
     "supervision": {
       "duration_s": 12.34,

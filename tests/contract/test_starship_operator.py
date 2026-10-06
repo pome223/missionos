@@ -10,6 +10,7 @@ import pytest
 from src.gateway import server, starship_chat
 from src.intelligence.starship_mission_planner import plan_starship_request
 from src.runtime.starship_mission_control import StarshipMissionService
+from src.runtime.starship_sixdof_catalog import SIXDOF_SCENARIOS
 
 ROOT = Path(__file__).resolve().parents[2]
 HTML = ROOT / "src/runtime/assets/starship_operator.html"
@@ -30,12 +31,15 @@ global.setTimeout=(fn,ms)=>{timers.set(++timerId,{fn,ms});return timerId;};
 global.clearTimeout=id=>timers.delete(id);global.setInterval=()=>0;
 let respond,queue=[],calls=[];
 global.fetch=async (url,options)=>{calls.push({url,options,payload:JSON.parse(options.body)});if(respond)return respond(url,options);if(!queue.length)throw Error('Unexpected request');return {ok:true,json:async()=>queue.shift()};};
-const source=fs.readFileSync(process.argv[1],'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
+const html=fs.readFileSync(process.argv[1],'utf8');
+const scenarioOptions=[...html.match(/<select id="scenario">([\s\S]*?)<\/select>/)[1].matchAll(/<option value="([^"]+)"/g)].map(x=>x[1]);
+document.getElementById('scenario').value=scenarioOptions[0];
+const source=html.match(/<script>([\s\S]*?)<\/script>/)[1];
 vm.runInThisContext(source);
 const ui=id=>document.getElementById(id),flush=()=>new Promise(resolve=>setImmediate(resolve));
 const own=ui('session').textContent,checksum='a'.repeat(64),now=Date.now()/1000;
-function response(status='awaiting_approval',session=own) {
- const plan={id:'plan',sha256:checksum,session_id:session,scenario:'sixdof_launch_catch',expires_at_epoch_s:now+900,simulation:{maximum_wall_time_s:900}};
+function response(status='awaiting_approval',session=own,scenario='sixdof_launch_catch') {
+ const plan={id:'plan',sha256:checksum,session_id:session,scenario,expires_at_epoch_s:now+900,simulation:{maximum_wall_time_s:900}};
  const context={session_id:session,plan_id:plan.id,plan_sha256:checksum};
  const grant={session_id:session,plan_id:plan.id,plan_sha256:checksum,expires_at_epoch_s:now+300,consumed_by_run:null};
  const result={status,plan,approval:status==='awaiting_approval'?null:grant,execution:{},mission_completed:false,physical_execution:false};
@@ -54,6 +58,26 @@ def javascript(code):
         text=True, capture_output=True, timeout=15,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_default_full_launch_preserves_all_catalog_choices_and_requires_explicit_approval():
+    select = re.search(r'<select id="scenario">([\s\S]*?)</select>', HTML.read_text()).group(1)
+    options = re.findall(r'<option value="([^"]+)"', select)
+    assert options[0] == "sixdof_launch"
+    assert len(options) == len(set(options)) and set(options) == set(SIXDOF_SCENARIOS)
+    javascript("""
+assert.equal(ui('scenario').value,'sixdof_launch');assert.equal(calls.length,0);
+assert.equal(ui('approve').disabled,true);assert.equal(ui('run').disabled,true);
+ui('run').onclick();await flush();assert.equal(calls.length,0);
+queue.push(response('awaiting_approval',own,'sixdof_launch'));ui('plan').onclick();await flush();
+assert.equal(calls.length,1);assert.equal(calls[0].payload.action,'plan');
+assert.equal(calls[0].payload.scenario,'sixdof_launch');assert.equal(calls[0].payload.starship_context,null);
+assert.equal(ui('approve').disabled,false);assert.equal(ui('run').disabled,true);
+ui('run').onclick();await flush();assert.equal(calls.length,1);
+const v=response('approved',own,'sixdof_launch');v.starship_context.plan_sha256='b'.repeat(64);
+assert.equal(MissionOSStarshipOperator.permissions(v.operation_result,v.starship_context,own,now).run,false);
+assert.equal(timers.size,0);
+""")
 
 
 def test_client_never_dispatches_without_explicit_buttons():
@@ -319,6 +343,39 @@ def test_real_same_origin_console_can_plan_and_approve_without_generic_fallback(
     assert approved.json()["operation_result"]["execution"] == {}
     assert approved.json()["operation_result"]["physical_execution"] is False
     assert approved.json()["operation_result"]["approval"]["authenticated_operator_identity"] is False
+
+
+def test_default_full_launch_asset_and_plan_only_boundary(loopback_gateway, monkeypatch):
+    monkeypatch.setattr("src.runtime.starship_mission_control.subprocess.Popen",
+        lambda *a, **k: pytest.fail("Default selection cannot start a worker"))
+    asset = loopback_gateway.get("/missionos/starship/operator")
+    assert asset.status_code == 200
+    options = re.findall(r'<option value="([^"]+)"',
+        re.search(r'<select id="scenario">([\s\S]*?)</select>', asset.text).group(1))
+    assert options[0] == "sixdof_launch" and set(options) == set(SIXDOF_SCENARIOS)
+    assert "Launch + 26 payload releases" in asset.text
+    payload = {**operator_payload(), "scenario": options[0]}
+    value = loopback_gateway.post("/missionos/starship/operator/actions",
+        headers=browser_headers(), json=payload).json()
+    result = value["operation_result"]
+    assert result["status"] == "awaiting_approval" and result["plan"]["scenario"] == "sixdof_launch"
+    assert result["approval"] is None and result["execution"] == {}
+    assert result["planner_invocation"]["model_inference_invoked"] is False
+    assert result["physical_execution"] is False and result["mission_completed"] is False
+    denied = loopback_gateway.post("/missionos/starship/operator/actions", headers=browser_headers(),
+        json={**operator_payload("run"), "starship_context": value["starship_context"]}).json()
+    assert denied["operation_result"]["status"] == "blocked"
+
+
+def test_full_launch_selected_focus_cannot_be_changed_to_catch_by_planner_text(loopback_gateway, monkeypatch):
+    monkeypatch.setattr("src.runtime.starship_mission_control.subprocess.Popen",
+        lambda *a, **k: pytest.fail("Mismatched choice cannot start a worker"))
+    value = loopback_gateway.post("/missionos/starship/operator/actions", headers=browser_headers(),
+        json={**operator_payload(), "scenario": "sixdof_launch", "request": "sixdof_launch_catch"}).json()
+    assert value["operation_result"]["status"] == "blocked"
+    assert value["operation_result"]["reason"] == "planner_scenario_mismatch"
+    assert value["operation_result"]["approval"] is None
+    assert "starship_context" not in value
 
 
 def test_selected_gimbal_with_conflicting_explicit_engine_out_id_is_blocked_without_pending_plan(loopback_gateway, monkeypatch, tmp_path):
