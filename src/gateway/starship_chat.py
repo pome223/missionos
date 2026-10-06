@@ -103,6 +103,8 @@ def _response(text: str, action: str, result: dict, session_id: str) -> dict:
                     "範囲外は引継ぎ要求を記録し、今回は事前承認済みの代替動作を実行します。飛行中の承認受付は未実装です。"
                     "\n"+"\n".join(plan["limitations"])
                 )
+                if "splashdown_goal" in scope:
+                    response["message"] += "\nタワーキャッチ不適格時は海側のモデル着水区域へ。速度・姿勢・残燃料を独立検証します。波浪・水中挙動・実海域の安全性は未検証です。"
             if plan.get("flight_supervision"):
                 scope = plan["flight_supervision"]
                 response["message"] += (

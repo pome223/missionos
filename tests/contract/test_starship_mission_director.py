@@ -119,7 +119,8 @@ def test_plan_and_single_consumption_scope(tmp_path, monkeypatch, scenario):
     state = service.plan("operator", "Starship "+scenario)
     plan = state["plan"]
     assert plan["backend"] == "starship_mission_management"
-    assert plan["mission_envelope"] == contract("fixture")
+    expected = contract("fixture", splashdown=scenario == "sixdof_managed_splashdown")
+    assert plan["mission_envelope"] == expected
     assert plan["model_authority"] == "bounded_mission_decision_candidate"
     assert state["approval"] is None
     ref = ("operator", plan["id"], plan["sha256"])

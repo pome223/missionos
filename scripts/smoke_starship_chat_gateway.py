@@ -209,6 +209,14 @@ def run(port: int, scenario: str, output: Path) -> dict:
         assert verdict["passed"] is True and study["case"] == MANAGED_SCENARIOS[scenario]
         assert study["envelope"] == result["plan"]["mission_envelope"]
         assert len(study["runs"]) == 2
+        if scenario == "sixdof_managed_splashdown":
+            from src.runtime.starship_splashdown import load_goal
+            assert study["envelope"]["schema"] == "missionos.starship_mission_envelope.v3"
+            assert study["envelope"]["splashdown_goal"] == load_goal().to_dict()
+            booster_records = [r for r in study["runs"][1]["mission_director"]["records"] if r["request"]["point"] == "booster_selection"]
+            assert len(booster_records) == 1 and booster_records[0]["dispatch"]["action"] == "splashdown"
+            assert study["runs"][1]["booster_run"]["splashdown"]["controlled_water_entry_envelope_met"] is True
+            assert not any(r.get("code") == "splashdown_record_invalid" for r in verdict["issues"])
         summary["mission_management"] = {"decisions": len(study["runs"][1]["mission_director"]["records"]),
             "comparison": study["comparison"], "human_inflight_commands": 0,
             "comparison_success_required_for_completion": True, "model_value_demonstrated": False}

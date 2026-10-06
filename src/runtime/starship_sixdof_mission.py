@@ -315,7 +315,7 @@ def _sample(s, v, phase, command=None, diagnostics=None):
 
 
 def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, supervision=None, return_policy="fixed_v1",
-             booster_policy="fixed_v1", catch_config=None, mission_director=None, mission_case=None, return_sites=None):
+             booster_policy="fixed_v1", catch_config=None, mission_director=None, mission_case=None, return_sites=None, splashdown_goal=None):
     """Run continuous 6DOF. Short initialized cases are clearly separate flights."""
     if scenario not in ("launch", "engine_out", "entry_perturbation", "gimbal_step", "flap_asymmetry", "deployment_no_effect"):
         raise ValueError("unknown 6DOF scenario")
@@ -334,6 +334,8 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
         raise ValueError("unknown mission management case")
     if mission_director is not None and (mission_case is None or scenario != "launch" or booster_policy != "fixed_v1" or return_policy != "fixed_v1"):
         raise ValueError("mission director requires its explicit launch case")
+    if mission_director is not None and mission_director.envelope.get("splashdown_goal") != (splashdown_goal.to_dict() if splashdown_goal is not None else None):
+        raise ValueError("unapproved_splashdown_goal")
     return_record = new_record(return_policy)
     if return_policy != "fixed_v1" and scenario != "deployment_no_effect":
         raise ValueError("retained return policy requires deployment_no_effect")
@@ -744,7 +746,7 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
         else:
             from .starship_sixdof_booster import simulate_booster
             booster_run = simulate_booster(p, stage_state, mission_director=mission_director,
-                return_sites=return_sites, tower_ready=mission_case != "tower_unavailable")
+                return_sites=return_sites, tower_ready=mission_case != "tower_unavailable", splashdown_goal=splashdown_goal)
     result = {"scenario": scenario, "samples": samples, "events": events, "booster_separation_state": stage_state, "satellites": satellites, "booster_run": booster_run,
             "retained_return": return_record,
             "outcome": {"termination": termination, "phase": phase, "duration_s": s.time_s, "integration_steps": steps,

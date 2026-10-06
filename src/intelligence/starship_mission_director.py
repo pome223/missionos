@@ -15,7 +15,7 @@ def fixture_decision(request):
     row, point = request["observation"], request["point"]
     tools = row["numerical_tools"]
     if point == "booster_selection":
-        action = "capture" if row["tower_ready"] and tools["capture_corridor_certified"] else "divert"
+        action = "capture" if row["tower_ready"] and tools["capture_corridor_certified"] else "splashdown" if "splashdown" in request["allowed_actions"] else "divert"
     elif point == "return_selection":
         action = "retained_return" if tools["retained_payload_present"] else "fixed_return"
     elif point == "deployment_diagnostic":
@@ -40,7 +40,7 @@ class MissionAgent:
                 "allowed_actions", "envelope_sha256", "decision_deadline_s"}
                 or request["schema"] != "missionos.starship_director_request.v2"
                 or request["envelope_sha256"] != digest(self.envelope)
-                or request["point"] not in POINTS or request["allowed_actions"] != POINTS[request["point"]]):
+                or request["point"] not in POINTS or request["allowed_actions"] != self.envelope["decision_points"][request["point"]]):
             raise ValueError("invalid_director_request")
         row = validate_observation(request["observation"])
         deadline = request["decision_deadline_s"]

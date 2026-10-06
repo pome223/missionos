@@ -166,7 +166,7 @@ def _coast_control_profile(profile, observed, *, include_spooled_tvc=False):
                                    "max_angular_acceleration_rad_s2": alpha}}, frequency, alpha
 
 
-def simulate_booster(profile, separation_state_dict, duration_s=None, *, guidance_policy="fixed_v1", mission_director=None, return_sites=None, tower_ready=True):
+def simulate_booster(profile, separation_state_dict, duration_s=None, *, guidance_policy="fixed_v1", mission_director=None, return_sites=None, tower_ready=True, splashdown_goal=None):
     """Continue from the exact supplied state for at most 2000 elapsed seconds.
 
     The return site is the rotating launch location. This is a geometric target,
@@ -176,6 +176,11 @@ def simulate_booster(profile, separation_state_dict, duration_s=None, *, guidanc
     from .starship_sixdof_mission import _attitude, control, vehicle
     from .starship_sixdof_contact import find_contact, hull_clearance
     configuration = _configuration(profile)
+    if splashdown_goal is not None:
+        from .starship_splashdown import SplashdownGoal
+        if type(splashdown_goal) is not SplashdownGoal or return_sites is None or guidance_policy != "fixed_v1":
+            raise ValueError("splashdown_requires_approved_goal_and_fixed_base_guidance")
+        splashdown_goal.validate_site(return_sites.divert)
     if guidance_policy not in ("fixed_v1", "site_return_v1", "site_return_v2", "site_return_v3"):
         raise ValueError("unknown_booster_guidance_policy")
     site_feedback = guidance_policy in ("site_return_v1", "site_return_v2", "site_return_v3")
@@ -225,7 +230,7 @@ def simulate_booster(profile, separation_state_dict, duration_s=None, *, guidanc
             row = director_observation()
             action = mission_director.update("booster_selection", row)
             if action is not None:
-                active_site = return_sites.site(action)
+                active_site = return_sites.divert if action == "splashdown" else return_sites.site(action)
                 event("managed_booster_command", "preapproved early return-site decision; finite control integrates the trajectory",
                     action=action, return_site_sha256=active_site.sha256)
             mission_director.confirm("booster", row)
@@ -312,9 +317,12 @@ def simulate_booster(profile, separation_state_dict, duration_s=None, *, guidanc
                       maximum_engine_count=profile["booster"]["gimbal_engine_count"] if drag_aware else 3)
         if phase == "booster_landing_burn":
             height = altitude
-            if site_feedback:
+            if site_feedback or splashdown_goal is not None:
                 height = hull_clearance(state, booster, length, radius)["signed_clearance_m"]
-            desired_vertical = -max(configuration["landing_target_speed_mps"], min(100., max(0., height)/6))
+            # Aim below the admitted downward-entry limit while avoiding an
+            # unnecessarily prolonged low-altitude powered descent.
+            contact_target = .75*splashdown_goal.maximum_downward_speed_mps if splashdown_goal is not None else configuration["landing_target_speed_mps"]
+            desired_vertical = -max(contact_target, min(100., max(0., height)/6))
             vertical_acceleration = max(.5, g+(desired_vertical-vertical)/configuration["landing_velocity_tau_s"])
             horizontal_acceleration = env.scale(horizontal_velocity, -1/configuration["landing_horizontal_tau_s"])
             if site_feedback:
@@ -387,7 +395,7 @@ def simulate_booster(profile, separation_state_dict, duration_s=None, *, guidanc
     if termination == "time_limit":
         event("time_limit", "Return integration horizon reached; no terminal success inferred.")
     clearance = hull_clearance(state, booster, length, radius)
-    return {"scenario": "booster_return", "body_id": "booster", "samples": samples, "events": events,
+    result = {"scenario": "booster_return", "body_id": "booster", "samples": samples, "events": events,
             "booster_separation_state": separation_state_dict, "initial_state": samples[0],
             "final_state": asdict(state), "final_vehicle": asdict(booster), "contact": contact_receipt,
             "guidance_configuration": configuration, "guidance_policy": guidance_policy,
@@ -410,3 +418,8 @@ def simulate_booster(profile, separation_state_dict, duration_s=None, *, guidanc
                             "Return target is the declared model-test site when supplied, otherwise the launch-site ground location; catch tower, mechanisms, contact loads and structural survival are unmodeled.",
                             "No separate entry burn is introduced. Configured boostback count defaults to the V3 planned 33; fixed_v1/site_return_v1 final burn selects one to three, while v2/v3 can select up to the configured gimballed count. Neither reproduces Flight 14's 13-to-five-to-three landing sequence.",
                             "Shared propellant reservoir, no feed-path momentum, slosh, combustion or TPS model."]}
+    if splashdown_goal is not None:
+        from .starship_splashdown import entry_result
+        result["splashdown"] = entry_result(result, splashdown_goal)
+        result["limitations"].append("Controlled water-entry envelope at a synthetic offshore area; no waves, buoyancy, structural survival or real clearance validation.")
+    return result

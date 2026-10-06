@@ -7,20 +7,23 @@ from __future__ import annotations
 
 import math
 
-from .starship_mission_director import RESPONSE_FAULTS, contract, digest, check_action, fallback_action, validate_observation
+from .starship_mission_director import RESPONSE_FAULTS, canonical_contract, digest, check_action, fallback_action, validate_observation
 from .starship_sixdof_verifier import verify_study
 from .starship_retained_return_verifier import verify_retained_return
 
 
 def metrics(run):
     contact = run["outcome"].get("contact_receipt")
-    return {"released": run["outcome"]["payload_released_count"],
+    result = {"released": run["outcome"]["payload_released_count"],
             "orbit": run["outcome"]["orbit_gate_reached"], "termination": run["outcome"]["termination"],
             "contact_speed_mps": contact["surface_relative_speed_mps"] if contact else None,
             "remaining_fuel_kg": run["final_state"]["propellant_kg"],
             "return_time_s": next((e["time_s"] for e in run["events"] if e["event"] == "return_requested"), None),
             "booster_destination": run["booster_run"].get("active_return_site", {}).get("site_id"),
             "booster_destination_reached": run["booster_run"].get("divert_destination_reached", False)}
+    if "splashdown" in run["booster_run"]:
+        result["controlled_water_entry_envelope_met"] = run["booster_run"]["splashdown"]["controlled_water_entry_envelope_met"]
+    return result
 
 
 def comparison(case, baseline, managed):
@@ -30,7 +33,7 @@ def comparison(case, baseline, managed):
     # happened to be called. Deployment count alone is not success after an
     # explicit suspension notice. Preserve fuel and contact tradeoffs as data.
     if case == "normal":
-        accepted = same and all(r["dispatch"]["action"] in ("continue", "fixed_return", "divert")
+        accepted = same and all(r["dispatch"]["action"] in ("continue", "fixed_return", "divert", "splashdown")
                                for r in managed["mission_director"]["records"] if r["dispatch"])
     else:
         speed_a, speed_b = a["contact_speed_mps"], b["contact_speed_mps"]
@@ -50,7 +53,7 @@ def verify(study, *, expected_case, expected_envelope, expected_run_id=None, exp
     issues, physical = [], []
     try:
         if (study.get("schema") != "missionos.starship_managed_study.v1" or study.get("case") != expected_case
-                or study.get("envelope") != expected_envelope or expected_envelope != contract(expected_envelope["mode"])
+                or study.get("envelope") != expected_envelope or expected_envelope != canonical_contract(expected_envelope)
                 or study.get("physical_execution") is not False or len(study["runs"]) != 2):
             raise ValueError("managed_input_binding")
         baseline, managed = study["runs"]
@@ -64,6 +67,13 @@ def verify(study, *, expected_case, expected_envelope, expected_run_id=None, exp
                 raise ValueError("case_mismatch")
             if run["booster_run"]["active_return_site"] != study["return_sites"]["sites"][1]:
                 raise ValueError("unapproved_return_destination")
+            if "splashdown_goal" in expected_envelope:
+                from .starship_splashdown_verifier import verify_splashdown
+                water = verify_splashdown(run["booster_run"], expected_envelope["splashdown_goal"])
+                if not water["passed"]:
+                    issues.append({"code":"splashdown_record_invalid","details":water["issues"]})
+            elif "splashdown" in run["booster_run"]:
+                raise ValueError("unapproved_splashdown_goal")
         if baseline["initial_state"] != managed["initial_state"]:
             raise ValueError("different_start_state")
         return_check = verify_retained_return(managed, study["profile"],

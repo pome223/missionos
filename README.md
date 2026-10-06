@@ -115,6 +115,17 @@ release evidence, not autonomous picking or physical robot execution.*
 
 ### Starship-inspired six-degree-of-freedom mission simulation
 
+An optional [offshore splashdown mission](docs/examples/starship-splashdown.md)
+now connects the same launch and 26-payload release flight to a separately
+approved booster water-entry goal when tower capture is unqualified. One
+scripted Gateway run met its model entry limits at 1.88 m/s with 11.42 t fuel
+remaining. Waves, buoyancy, structural survival and real clearance are unverified;
+this is not new live AI inference or recovered-hardware evidence.
+The descent target was selected using this same deterministic trajectory after
+an insufficient-reserve probe. Two ±1 t separation-fuel probes then failed:
+the −1 t case impacted at 165 m/s with 81.6 t unspent; its cause is undiagnosed.
+Robust recovery remains unqualified.
+
 An opt-in [mission decision envelope](docs/examples/starship-mission-decisions.md)
 now connects normal deployment monitoring, mechanism diagnostics, terminal
 return selection and booster diversion. The operator approves the scope once;

@@ -26,6 +26,7 @@ def main():
     parser.add_argument("--approve-simulation", action="store_true")
     parser.add_argument("--case", choices=tuple(sorted(set(SCENARIOS.values()))), required=True)
     parser.add_argument("--response-fault", choices=RESPONSE_FAULTS, help="Explicit fixture-only response failure; never live inference")
+    parser.add_argument("--splashdown", action="store_true", help="Separate approved offshore controlled-water-entry goal")
     parser.add_argument("--director-mode", choices=("fixture", "live"), default="fixture")
     parser.add_argument("--mailbox", type=Path)
     parser.add_argument("--run-id", default="standalone")
@@ -45,7 +46,9 @@ def main():
     catch = json.loads((ROOT/CATCH_PROFILE).read_text())
     sites = ReturnSites.from_dict(json.loads((ROOT/"examples/spaceflight/starship-return-sites-model-test.json").read_text()),
                                  profile=p, catch_config=catch)
-    envelope = contract(args.director_mode)
+    envelope = contract(args.director_mode, splashdown=args.splashdown)
+    from src.runtime.starship_splashdown import load_goal
+    splashdown_goal = load_goal() if args.splashdown else None
     fixture = None
     if not args.mailbox:
         from src.intelligence.starship_mission_director import fixture_decision
@@ -54,7 +57,7 @@ def main():
     runs, started = [], time.monotonic()
     for name, director in (("fixed_timeline", None), ("missionos", actor)):
         print(json.dumps({"status": "running", "controller": name, "case": args.case}), flush=True)
-        run = simulate(p, mission_case=args.case, mission_director=director, return_sites=sites)
+        run = simulate(p, mission_case=args.case, mission_director=director, return_sites=sites, splashdown_goal=splashdown_goal)
         # Keep each completed branch recoverable if a later branch fails,
         # without storing an extra uncompressed copy of the full study.
         with gzip.open(args.output_dir/(name+".json.gz"), "wt", encoding="utf-8") as checkpoint:
@@ -91,6 +94,9 @@ def main():
     panel += '<p>'+html.escape(args.director_mode)+' / 比較合格: '+str(study["comparison"]["comparison_accepted"])+'. 合成応答はAI推論ではありません。</p>'
     panel += '<table><tr><th>判断点</th><th>実行</th><th>T+ 指令</th><th>T+ 後続観測</th></tr>'+decisions+'</table>'
     panel += '<details><summary>固定タイムラインとの比較</summary><pre>'+html.escape(json.dumps(study["comparison"], indent=2))+'</pre></details>'
+    if args.splashdown:
+        water = runs[1]["booster_run"]["splashdown"]
+        panel += '<h3>Super Heavy / 制御スプラッシュダウン</h3><p>海側のモデル区域での水面進入条件: '+str(water["controlled_water_entry_envelope_met"])+'. 波浪・浮力・構造・実海域の安全性は未検証。</p><pre>'+html.escape(json.dumps(water,indent=2))+'</pre>'
     panel += '<p>衛星は汎用剛体。ShipとBoosterは独立した時計で順次積分。実時間の並行管制、キャッチ・退避先到達、実機精度、人の作業量削減、AI優位性は未検証です。</p></section>'
     rendered = rendered.replace('</body>', panel+'</body>')
     (args.output_dir/"report.html").write_text(rendered)

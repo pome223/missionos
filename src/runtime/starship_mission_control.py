@@ -372,7 +372,7 @@ class StarshipMissionService:
         if scenario in MANAGED_SCENARIOS:
             from .starship_mission_director import contract
             try:
-                envelope = contract(os.environ.get(DIRECTOR_MODE_ENV, "off"))
+                envelope = contract(os.environ.get(DIRECTOR_MODE_ENV, "off"), splashdown=scenario == "sixdof_managed_splashdown")
             except ValueError as exc:
                 raise StarshipMissionError("mission_director_not_configured") from exc
             response_fault = "invalid_deployment_monitor" if scenario == "sixdof_managed_invalid_response" else None
@@ -503,7 +503,7 @@ class StarshipMissionService:
         if plan["scenario"] in MANAGED_SCENARIOS:
             from .starship_mission_director import contract as director_contract
             try:
-                current = director_contract(plan["mission_envelope"]["mode"])
+                current = director_contract(plan["mission_envelope"]["mode"], splashdown=plan["scenario"] == "sixdof_managed_splashdown")
             except (ValueError, KeyError, TypeError) as exc:
                 raise StarshipMissionError("mission_envelope_not_current") from exc
             if plan["mission_envelope"] != current:
@@ -986,6 +986,8 @@ def execute_worker(state_dir: Path, run_id: str) -> int:
                 response_fault = plan["simulation"].get("response_fault")
                 if response_fault:
                     args.extend(["--response-fault", response_fault])
+                if plan["scenario"] == "sixdof_managed_splashdown":
+                    args.append("--splashdown")
                 code = _run_simulator(args, timeout=plan["simulation"]["maximum_wall_time_s"])
                 result["simulator_process_returncode"] = code
                 if code:

@@ -165,6 +165,28 @@ The standalone verdict JSON currently has no run/verifier identity fields. Its
 association with a study relies on the manifest and signed worker receipt; it
 is not standalone provenance or independent runtime attestation.
 
+## Optional offshore-entry contract
+
+`sixdof_managed_splashdown` requires `mission_envelope.v3` with the exact
+`starship-splashdown-goal.json` object. It keeps all five decision points and
+uses `capture/splashdown` at booster selection; capture dispatch is rejected
+because that controller is not connected/qualified for this trial. Fallback
+selects the preapproved offshore goal. Existing v2 scenarios keep their original
+capture/divert behavior. Old source-bound approvals do not acquire this goal.
+
+The original divert site's geographic declaration is a location reference.
+The distinct water-entry goal binds its SHA-256 and its own approved area,
+speed, attitude, rate and fuel limits. It does not relabel the old failed
+surface-contact result. Both same-start comparison branches use the same
+water-entry local controller; unchanged outcomes do not show model value.
+
+Common six-DOF/contact verification runs first. The separate splashdown verifier
+recomputes contact-point Earth-relative speed and normal/tangential components,
+target distance and final pose/rate/reserve, and checks every producer flag.
+Record validity and `controlled_water_entry_envelope_met` are separate outputs.
+The surface is a sea-level ellipsoid proxy: water response and real clearance
+remain explicitly false.
+
 ## Operating references
 
 [NASA cFS Stored Command](https://software.nasa.gov/software/GSC-16009-1)

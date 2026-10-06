@@ -19,6 +19,7 @@ SCENARIOS = {
     "sixdof_managed_tower_unavailable": "tower_unavailable",
     "sixdof_managed_operations_notice": "operations_notice",
     "sixdof_managed_invalid_response": "normal",
+    "sixdof_managed_splashdown": "normal",
 }
 POINTS = {
     "deployment_start": ["continue", "hold", "stop_deployment", "collect_status"],
@@ -43,6 +44,8 @@ def source_hashes(root):
         "src/intelligence/starship_mission_planner.py", "src/runtime/starship_return_sites.py",
         "src/gateway/server.py", "src/gateway/starship_chat.py", "src/runtime/assets/starship_operator.html",
         "scripts/start_starship_gateway.py",
+        "src/runtime/starship_splashdown.py", "src/runtime/starship_splashdown_verifier.py",
+        "examples/spaceflight/starship-splashdown-goal.json",
         "examples/spaceflight/starship-return-sites-model-test.json")
     return {name: sha256((root/name).read_bytes()).hexdigest() for name in names}
 
@@ -58,10 +61,10 @@ def fuel_sensor(fuel_kg, time_s, body):
     return max(0., round((fuel_kg+noise)/100.)*100.)
 
 
-def contract(mode):
+def contract(mode, *, splashdown=False):
     if mode not in ("fixture", "live"):
         raise ValueError("mission_director_not_configured")
-    return {"schema": "missionos.starship_mission_envelope.v2", "mode": mode,
+    result = {"schema": "missionos.starship_mission_envelope.v2", "mode": mode,
             "scope": SCOPE, "decision_points": json.loads(json.dumps(POINTS)), "maximum_decisions": 5,
             "maximum_jev_calls": 5 if mode == "live" else 0,
             "maximum_llm_calls": 5 if mode == "live" else 0,
@@ -77,6 +80,19 @@ def contract(mode):
             "out_of_scope": "record_escalation_and_apply_preapproved_fallback",
             "pending_time_policy": "integrate_and_pace_simulation_while_provider_pending",
             "physical_execution_authorized": False}
+    if splashdown:
+        from .starship_splashdown import load_goal
+        result.update(schema="missionos.starship_mission_envelope.v3", splashdown_goal=load_goal().to_dict(), capture_controller_connected=False)
+        result["decision_points"]["booster_selection"] = ["capture", "splashdown"]
+        result["booster_sites"] = ["capture", "splashdown"]
+        result["initial_plan"]["booster"] = result["no_response"]["booster"] = "splashdown"
+    return result
+
+
+def canonical_contract(envelope):
+    if type(envelope) is not dict:
+        raise ValueError("invalid_mission_envelope")
+    return contract(envelope.get("mode"), splashdown="splashdown_goal" in envelope)
 
 
 def validate_observation(row):
@@ -102,11 +118,11 @@ def validate_observation(row):
 
 def check_action(envelope, point, action, observation, *, elapsed_s, observation_requests, hold_used_s):
     """No model opinion or text can extend the immutable grant."""
-    if envelope != contract(envelope.get("mode")):
+    if envelope != canonical_contract(envelope):
         return "envelope_mismatch"
     if type(elapsed_s) not in (int, float) or not math.isfinite(elapsed_s) or elapsed_s < 0:
         return "invalid_decision_clock"
-    if point not in POINTS or type(action) is not str or action not in POINTS[point]:
+    if point not in POINTS or type(action) is not str or action not in envelope["decision_points"][point]:
         return "outside_approved_choices"
     if elapsed_s >= envelope["decision_expiry_s"]:
         return "decision_expired"
@@ -124,6 +140,8 @@ def check_action(envelope, point, action, observation, *, elapsed_s, observation
             return "hold_budget_exhausted"
         if action == "collect_status" and observation_requests >= envelope["maximum_observation_requests"]:
             return "observation_budget_exhausted"
+    if action == "capture" and envelope.get("capture_controller_connected") is False:
+        return "capture_controller_not_connected"
     if action == "capture" and (not observation["tower_ready"]
             or not observation["numerical_tools"]["capture_corridor_certified"]):
         return "capture_not_certified"
@@ -137,7 +155,7 @@ def fallback_action(envelope, point, row, *, observation_requests, hold_used_s):
     notice invalidates routine continuation without interpreting its contents.
     """
     if point == "booster_selection":
-        return "divert"
+        return envelope["no_response"]["booster"]
     if point == "return_selection":
         return "fixed_return"
     # A temporary per-slot orbit/pressure/rate gate is not a permanent abort.
@@ -159,7 +177,7 @@ def publish(path, value):
 
 class MissionDirector:
     def __init__(self, envelope, mailbox=None, run_id="standalone", *, fixture_decider=None, response_fault=None):
-        if envelope != contract(envelope.get("mode")):
+        if envelope != canonical_contract(envelope):
             raise ValueError("invalid_mission_envelope")
         self.envelope = json.loads(json.dumps(envelope))
         self.mailbox = Path(mailbox) if mailbox else None
@@ -201,7 +219,7 @@ class MissionDirector:
             if not math.isfinite(deadline) or deadline <= row["time_s"]:
                 raise ValueError("invalid_decision_deadline")
             request = {"schema": "missionos.starship_director_request.v2", "request_id": token,
-                       "point": point, "observation": row, "allowed_actions": POINTS[point],
+                       "point": point, "observation": row, "allowed_actions": self.envelope["decision_points"][point],
                        "decision_deadline_s": deadline,
                        "envelope_sha256": digest(self.envelope)}
             record = {"request": request, "clock_id": clock_id, "response": None,
