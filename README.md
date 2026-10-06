@@ -121,9 +121,13 @@ return selection and booster diversion. The operator approves the scope once;
 MissionOS decides within it, independent checks constrain execution, and later
 observations verify effects. In one live release-fault run, Jev selected a
 mechanism diagnostic and retained-payload return: recorded contact speed changed
-from 238.74 to 3.22 m/s. **This slice is not complete:** a live normal run stopped
-after an invalid provider response and impacted at 619.78 m/s; only three of the
-five scripted condition comparisons passed. [Results and boundaries](docs/examples/starship-mission-decisions.md)
+from 238.74 to 3.22 m/s. **This slice is not complete:** the earlier live normal
+run stopped after an invalid reply and impacted at 619.78 m/s. The v2 fallback
+preserves the approved nominal plan in four response-error/timeout fixtures:
+retain 26 releases and the baseline 4.55 m/s contact. These are regression
+fixtures, not new live inference. The earlier five-condition gate passed only
+three conditions; retained-payload and fuel-loss recovery remain unqualified.
+[Results and boundaries](docs/examples/starship-mission-decisions.md)
 remain separate from the existing videos below, which document the earlier
 fixture implementation.
 

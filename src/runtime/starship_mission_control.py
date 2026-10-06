@@ -375,10 +375,14 @@ class StarshipMissionService:
                 envelope = contract(os.environ.get(DIRECTOR_MODE_ENV, "off"))
             except ValueError as exc:
                 raise StarshipMissionError("mission_director_not_configured") from exc
+            response_fault = "invalid_deployment_monitor" if scenario == "sixdof_managed_invalid_response" else None
+            if response_fault and envelope["mode"] != "fixture":
+                raise StarshipMissionError("fixture_response_fault_only")
             plan.update(backend="starship_mission_management", mission_envelope=envelope,
                 release_policy="missionos_decides_within_approved_envelope",
                 model_authority="bounded_mission_decision_candidate", jev_authority="bounded_mission_decision_candidate",
                 simulation={"case": MANAGED_SCENARIOS[scenario], "profile": SIXDOF_PROFILE,
+                    "response_fault": response_fault,
                     "profile_sha256": plan["source_sha256"][SIXDOF_PROFILE], "dt_scale": 1.,
                     "duration_override_s": None, "maximum_wall_time_s": 1200},
                 verification_scope="decision_scope_execution_later_observation_and_same_start_comparison",
@@ -496,6 +500,14 @@ class StarshipMissionService:
             raise StarshipMissionError("approval_binding_expired_or_consumed")
         if plan["source_sha256"] != _plan_sources(plan):
             raise StarshipMissionError("approved_source_changed")
+        if plan["scenario"] in MANAGED_SCENARIOS:
+            from .starship_mission_director import contract as director_contract
+            try:
+                current = director_contract(plan["mission_envelope"]["mode"])
+            except (ValueError, KeyError, TypeError) as exc:
+                raise StarshipMissionError("mission_envelope_not_current") from exc
+            if plan["mission_envelope"] != current:
+                raise StarshipMissionError("mission_envelope_not_current")
 
     def execute(self, session_id: str, plan_id: str, plan_sha256: str) -> dict:
         with self._lock():
@@ -971,6 +983,9 @@ def execute_worker(state_dir: Path, run_id: str) -> int:
                 args = [sys.executable, str(REPO/"scripts/run_starship_managed_mission.py"), "--approve-simulation",
                     "--case", plan["simulation"]["case"], "--director-mode", plan["mission_envelope"]["mode"],
                     "--mailbox", str(run_dir/"supervision"), "--run-id", run_id, "--output-dir", str(output)]
+                response_fault = plan["simulation"].get("response_fault")
+                if response_fault:
+                    args.extend(["--response-fault", response_fault])
                 code = _run_simulator(args, timeout=plan["simulation"]["maximum_wall_time_s"])
                 result["simulator_process_returncode"] = code
                 if code:
@@ -983,8 +998,11 @@ def execute_worker(state_dir: Path, run_id: str) -> int:
                         or study["provenance"]["dt_scale"] != 1.
                         or study["provenance"]["duration_override_s"] is not None):
                     raise StarshipMissionError("managed_execution_input_binding_mismatch")
+                if study.get("response_fault") != response_fault:
+                    raise StarshipMissionError("managed_response_fault_binding_mismatch")
                 verdict = verify(study, expected_case=plan["simulation"]["case"],
-                                 expected_envelope=plan["mission_envelope"], expected_run_id=run_id)
+                                 expected_envelope=plan["mission_envelope"], expected_run_id=run_id,
+                                 expected_response_fault=response_fault)
                 _write(output/"verification.json", verdict)
                 manifest = _read(output/"manifest.json")
                 manifest["files"]["verification.json"] = sha256((output/"verification.json").read_bytes()).hexdigest()

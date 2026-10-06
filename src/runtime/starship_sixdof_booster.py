@@ -216,7 +216,7 @@ def simulate_booster(profile, separation_state_dict, duration_s=None, *, guidanc
             "release_acknowledged": False, "sequencer_state": "running",
             "fuel_kg": fuel_sensor(state.propellant_kg, state.time_s, "booster"), "return_deadline_s": start_time+duration,
             "tower_ready": tower_ready, "operations_notice": "",
-            "numerical_tools": {"orbit_release_feasible": False, "retained_payload_possible": False,
+            "numerical_tools": {"orbit_release_feasible": False, "retained_payload_present": False,
                 "capture_corridor_certified": False, "mechanism_status": "not_collected"}}
     event("booster_return_start", "Exact separated state inherited; no position, velocity, attitude, rate or fault-state reset.")
     while state.time_s < start_time+duration-1e-9:

@@ -32,6 +32,39 @@ simulation, not superiority over a conventional flight manager. The scripted
 policy achieved the same release-fault improvement. Human workload was not
 measured.
 
+The subsequent v2 contract addresses the response-error path: when current
+the persistent constraints permit the approved nominal sequence, a rejected or missing
+AI reply preserves that sequence and the initial return plan. It does not
+automatically stop deployment or select different return guidance. Initial
+timeout handling resolves before the first release slot. Interlocks, unresolved
+notices and previously stopped sequences still prevent continuation. This
+requires a fresh plan and approval; it is not an unconditional safety guarantee.
+Temporary release-gate excursions skip individual slots without permanently
+aborting a running sequence. The gate still applies to every actual release.
+
+Four pre-review v2 six-DOF response-failure fixtures preserve the exact baseline
+terminal metrics: invalid monitoring reply, invalid return reply, missing initial
+reply and missing monitoring reply. Each releases all 26 payloads and contacts
+at 4.55 m/s. The monitoring-error fixture also passes the Gateway approval,
+separate worker, later-observation and artifact-verification chain.
+[Response-fallback evidence](../assets/starship-mission-decisions-20261007/fallback-summary.json)
+is separate from the older live inference records. No new model calls occurred
+in these regressions. Three archived CLI pairs were not rechecked by the final
+verifier; their grants and source snapshots remain historical. Separate final
+Gateway records cover the current monitoring-error path. These checks do not
+qualify other return conditions.
+The original five-condition gate was not rerun under v2.
+
+Combining a release fault with an invalid return reply still impacts at
+238.74 m/s on the initial fixed plan. It is worse than the old 3.22 m/s retained
+guidance result in that single case. Keeping the initial plan avoids an automatic
+switch to an unqualified controller; it does not solve payload-retained recovery.
+
+The 26-versus-25 retained-payload discrepancy remains unresolved. The saved
+25-payload return loses attitude tracking around 50 km and never enters the
+terminal burn. The single 26-payload low-speed contact therefore establishes
+neither robust retained-payload recovery nor an operational fallback.
+
 This is a development simulation. Fixture decisions are scripted, not AI.
 The live option uses Jev and conditional DeepSeek within the displayed budget.
 Satellite bodies are generic rigid payloads; no unfolding, communications or

@@ -13,7 +13,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from src.runtime.starship_mission_director import SCENARIOS, MissionDirector, contract, source_hashes  # noqa: E402
+from src.runtime.starship_mission_director import RESPONSE_FAULTS, SCENARIOS, MissionDirector, contract, source_hashes  # noqa: E402
 from src.runtime.starship_mission_director_verifier import comparison, verify  # noqa: E402
 from src.runtime.starship_return_sites import ReturnSites  # noqa: E402
 from src.runtime.starship_sixdof_catalog import SIXDOF_PROFILE, CATCH_PROFILE  # noqa: E402
@@ -24,7 +24,8 @@ from src.runtime.starship_sixdof_report import build_report  # noqa: E402
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--approve-simulation", action="store_true")
-    parser.add_argument("--case", choices=tuple(SCENARIOS.values()), required=True)
+    parser.add_argument("--case", choices=tuple(sorted(set(SCENARIOS.values()))), required=True)
+    parser.add_argument("--response-fault", choices=RESPONSE_FAULTS, help="Explicit fixture-only response failure; never live inference")
     parser.add_argument("--director-mode", choices=("fixture", "live"), default="fixture")
     parser.add_argument("--mailbox", type=Path)
     parser.add_argument("--run-id", default="standalone")
@@ -34,6 +35,8 @@ def main():
         parser.error("Explicit --approve-simulation required")
     if args.director_mode == "live" and not args.mailbox:
         parser.error("Live decisions require the credential-free worker mailbox and host broker")
+    if args.response_fault and args.director_mode != "fixture":
+        parser.error("Synthetic response faults require fixture mode")
     if args.output_dir.exists() and any(args.output_dir.iterdir()):
         parser.error("Choose a fresh output directory; failed attempts are preserved")
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -47,7 +50,7 @@ def main():
     if not args.mailbox:
         from src.intelligence.starship_mission_director import fixture_decision
         fixture = fixture_decision
-    actor = MissionDirector(envelope, args.mailbox, args.run_id, fixture_decider=fixture)
+    actor = MissionDirector(envelope, args.mailbox, args.run_id, fixture_decider=fixture, response_fault=args.response_fault)
     runs, started = [], time.monotonic()
     for name, director in (("fixed_timeline", None), ("missionos", actor)):
         print(json.dumps({"status": "running", "controller": name, "case": args.case}), flush=True)
@@ -61,6 +64,7 @@ def main():
     if source_hashes(ROOT) != sources:
         raise ValueError("sources_changed_during_execution")
     study = {"schema": "missionos.starship_managed_study.v1", "case": args.case, "profile": p,
+             "response_fault": args.response_fault,
              "return_sites": sites.to_dict(), "envelope": envelope, "runs": runs,
              "comparison": comparison(args.case, *runs), "physical_execution": False,
              "provenance": {"source_sha256": sources, "wall_time_s": time.monotonic()-started,
@@ -70,7 +74,8 @@ def main():
     # Validate the saved JSON representation, as the production worker does.
     # Dataclass tuple fields are not accepted as if they were stored JSON lists.
     study = json.loads(json.dumps(study, allow_nan=False))
-    verdict = verify(study, expected_case=args.case, expected_envelope=envelope, expected_run_id=args.run_id)
+    verdict = verify(study, expected_case=args.case, expected_envelope=envelope, expected_run_id=args.run_id,
+                     expected_response_fault=args.response_fault)
     (args.output_dir/"study.json").write_text(json.dumps(study, allow_nan=False, separators=(",", ":")))
     (args.output_dir/"verification.json").write_text(json.dumps(verdict, indent=2, allow_nan=False))
     # The replay is the actual managed trajectory; the full pair is in study.json.

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import math
 
-from .starship_mission_director import contract, digest, check_action, validate_observation
+from .starship_mission_director import RESPONSE_FAULTS, contract, digest, check_action, fallback_action, validate_observation
 from .starship_sixdof_verifier import verify_study
 from .starship_retained_return_verifier import verify_retained_return
 
@@ -46,7 +46,7 @@ def comparison(case, baseline, managed):
             "human_workload_measured": False, "physical_success_claimed": False}
 
 
-def verify(study, *, expected_case, expected_envelope, expected_run_id=None):
+def verify(study, *, expected_case, expected_envelope, expected_run_id=None, expected_response_fault=None):
     issues, physical = [], []
     try:
         if (study.get("schema") != "missionos.starship_managed_study.v1" or study.get("case") != expected_case
@@ -71,6 +71,9 @@ def verify(study, *, expected_case, expected_envelope, expected_run_id=None):
         if not return_check["passed"]:
             issues.append({"code": "return_record_invalid", "details": return_check["issues"]})
         record = managed["mission_director"]
+        if (study.get("response_fault") != expected_response_fault or record.get("response_fault") != expected_response_fault
+                or expected_response_fault is not None and (expected_envelope["mode"] != "fixture" or expected_response_fault not in RESPONSE_FAULTS)):
+            raise ValueError("response_fault_binding")
         if record["envelope"] != expected_envelope or len(record["records"]) > 5:
             raise ValueError("envelope_or_decision_budget")
         seen, reads, hold = set(), 0, 0.
@@ -89,14 +92,30 @@ def verify(study, *, expected_case, expected_envelope, expected_run_id=None):
             if dispatch["time_s"] != row["time_s"]:
                 raise ValueError("dispatch_clock_mismatch")
             elapsed = dispatch["time_s"]-request["observation"]["time_s"]
+            deadline = request["decision_deadline_s"]
+            if (request["schema"] != "missionos.starship_director_request.v2"
+                    or type(deadline) not in (int, float) or not math.isfinite(deadline)
+                    or not request["observation"]["time_s"] < deadline <= request["observation"]["time_s"]+expected_envelope["decision_expiry_s"]):
+                raise ValueError("invalid_decision_deadline")
+            if request["point"] == "deployment_start":
+                cutoffs = [e["time_s"] for e in managed["events"] if e["event"] == "orbit_cutoff_command"]
+                if len(cutoffs) != 1:
+                    raise ValueError("initial_deadline_orbit_anchor")
+                scheduled = cutoffs[0]+study["profile"]["guidance"]["orbit_release_delay_s"]-study["profile"]["integration"]["coast_dt_s"]
+                if deadline != min(scheduled, request["observation"]["time_s"]+expected_envelope["decision_expiry_s"]):
+                    raise ValueError("initial_deadline_schedule_mismatch")
+            if response.get("mode") == "timeout_fallback" and dispatch["time_s"] < deadline:
+                raise ValueError("premature_timeout")
             reason = check_action(expected_envelope, request["point"], response.get("action"), row,
                                   elapsed_s=elapsed, observation_requests=reads, hold_used_s=hold)
+            if dispatch["time_s"] >= deadline:
+                reason = reason or "decision_deadline_reached"
             bound = (response.get("request_id") == request["request_id"] and response.get("request_sha256") == digest(request)
                      and response.get("mode") == expected_envelope["mode"])
             reason = reason or (None if bound else "response_binding_mismatch")
             if dispatch["rules_accepted"] is not (reason is None) or dispatch["rejection"] != reason:
                 raise ValueError("independent_rules_replay_mismatch")
-            fallback = "divert" if request["point"] == "booster_selection" else "retained_return" if request["point"] == "return_selection" else "stop_deployment"
+            fallback = fallback_action(expected_envelope, request["point"], row, observation_requests=reads, hold_used_s=hold)
             if dispatch["action"] != (fallback if reason else response["action"]):
                 raise ValueError("dispatch_action_mismatch")
             action = dispatch["action"]
@@ -129,6 +148,11 @@ def verify(study, *, expected_case, expected_envelope, expected_run_id=None):
                     raise ValueError("return_selection_not_applied")
         if reads != record["observation_requests"] or hold != record["hold_used_s"]:
             raise ValueError("resource_accounting")
+        if expected_response_fault:
+            kind, point = expected_response_fault.split("_", 1)
+            matching = [item for item in record["records"] if item["request"]["point"] == point]
+            if len(matching) != 1 or (kind == "invalid" and matching[0]["response"].get("synthetic_response_fault") != "invalid_action") or (kind == "timeout" and matching[0]["response"]["mode"] != "timeout_fallback"):
+                raise ValueError("response_fault_not_exercised")
         for run in study["runs"]:
             if not all(math.isfinite(x) for x in metrics(run).values() if type(x) in (int, float)):
                 raise ValueError("nonfinite_outcome")

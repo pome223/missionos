@@ -18,6 +18,7 @@ SCENARIOS = {
     "sixdof_managed_fuel_shortage": "fuel_shortage",
     "sixdof_managed_tower_unavailable": "tower_unavailable",
     "sixdof_managed_operations_notice": "operations_notice",
+    "sixdof_managed_invalid_response": "normal",
 }
 POINTS = {
     "deployment_start": ["continue", "hold", "stop_deployment", "collect_status"],
@@ -26,6 +27,7 @@ POINTS = {
     "return_selection": ["fixed_return", "retained_return"],
     "booster_selection": ["capture", "divert"],
 }
+RESPONSE_FAULTS = tuple(f"{kind}_{point}" for kind in ("invalid", "timeout") for point in POINTS)
 FIELDS = {"time_s", "phase", "released_count", "release_acknowledged", "sequencer_state",
           "fuel_kg", "return_deadline_s", "tower_ready", "numerical_tools", "operations_notice"}
 SCOPE = "local_simulation_and_mission_decision_envelope"
@@ -59,7 +61,7 @@ def fuel_sensor(fuel_kg, time_s, body):
 def contract(mode):
     if mode not in ("fixture", "live"):
         raise ValueError("mission_director_not_configured")
-    return {"schema": "missionos.starship_mission_envelope.v1", "mode": mode,
+    return {"schema": "missionos.starship_mission_envelope.v2", "mode": mode,
             "scope": SCOPE, "decision_points": json.loads(json.dumps(POINTS)), "maximum_decisions": 5,
             "maximum_jev_calls": 5 if mode == "live" else 0,
             "maximum_llm_calls": 5 if mode == "live" else 0,
@@ -68,7 +70,10 @@ def contract(mode):
             "minimum_return_fuel_kg": 28000., "return_time_change_allowed": False,
             "return_choices": ["fixed_v1", "mass_state_terminal_v3"],
             "booster_sites": ["capture", "divert"],
-            "no_response": {"deployment": "stop_deployment", "return": "retained_return", "booster": "divert"},
+            "initial_plan": {"deployment": "continue_subject_to_release_constraints", "return": "fixed_v1", "booster": "divert"},
+            "no_response": {"deployment": "preserve_running_plan_subject_to_per_slot_gates_and_persistent_constraints_else_inhibit",
+                            "return": "fixed_return", "booster": "divert"},
+            "initial_decision_deadline": "before_first_planned_release",
             "out_of_scope": "record_escalation_and_apply_preapproved_fallback",
             "pending_time_policy": "integrate_and_pace_simulation_while_provider_pending",
             "physical_execution_authorized": False}
@@ -87,7 +92,7 @@ def validate_observation(row):
             or type(row["operations_notice"]) is not str or len(row["operations_notice"]) > 1000):
         raise ValueError("invalid_director_observation")
     tools = row["numerical_tools"]
-    if (type(tools) is not dict or set(tools) != {"orbit_release_feasible", "retained_payload_possible",
+    if (type(tools) is not dict or set(tools) != {"orbit_release_feasible", "retained_payload_present",
             "capture_corridor_certified", "mechanism_status"}
             or any(type(tools[k]) is not bool for k in tools if k != "mechanism_status")
             or tools["mechanism_status"] not in ("not_collected", "clear", "blocked", "unknown")):
@@ -108,8 +113,9 @@ def check_action(envelope, point, action, observation, *, elapsed_s, observation
     if point.startswith("deployment"):
         if observation["time_s"] >= observation["return_deadline_s"]:
             return "return_deadline_reached"
-        if action == "continue" and (not observation["numerical_tools"]["orbit_release_feasible"]
-                or observation["sequencer_state"] in ("inhibited", "skipped")
+        # Continue activates the queue, never an unconditional physical release.
+        # The executor rechecks orbit/pressure/rate at every release slot.
+        if action == "continue" and (observation["sequencer_state"] in ("inhibited", "skipped")
                 or observation["numerical_tools"]["mechanism_status"] == "blocked"
                 or observation["fuel_kg"]-100. < envelope["minimum_return_fuel_kg"]):
             return "release_envelope_not_met"
@@ -124,6 +130,26 @@ def check_action(envelope, point, action, observation, *, elapsed_s, observation
     return None
 
 
+def fallback_action(envelope, point, row, *, observation_requests, hold_used_s):
+    """A preapproved continuation, not a new model decision or safety certificate.
+
+    Never resurrect a stopped sequence or override an interlock. An unresolved
+    notice invalidates routine continuation without interpreting its contents.
+    """
+    if point == "booster_selection":
+        return "divert"
+    if point == "return_selection":
+        return "fixed_return"
+    # A temporary per-slot orbit/pressure/rate gate is not a permanent abort.
+    # Keeping the sequence running never bypasses the executor's release gate.
+    if (point.startswith("deployment") and row["sequencer_state"] == "running"
+            and not row["operations_notice"] and row["time_s"] < row["return_deadline_s"]
+            and row["numerical_tools"]["mechanism_status"] != "blocked"
+            and row["fuel_kg"]-100. >= envelope["minimum_return_fuel_kg"]):
+        return "continue"
+    return "stop_deployment"
+
+
 def publish(path, value):
     temporary = path.with_suffix(".tmp")
     with temporary.open("w", encoding="utf-8") as stream:
@@ -132,7 +158,7 @@ def publish(path, value):
 
 
 class MissionDirector:
-    def __init__(self, envelope, mailbox=None, run_id="standalone", *, fixture_decider=None):
+    def __init__(self, envelope, mailbox=None, run_id="standalone", *, fixture_decider=None, response_fault=None):
         if envelope != contract(envelope.get("mode")):
             raise ValueError("invalid_mission_envelope")
         self.envelope = json.loads(json.dumps(envelope))
@@ -141,6 +167,9 @@ class MissionDirector:
             raise ValueError("director_mailbox_required")
         self.run_id = run_id
         self.fixture_decider = fixture_decider
+        if response_fault is not None and (envelope["mode"] != "fixture" or response_fault not in RESPONSE_FAULTS):
+            raise ValueError("fixture_response_fault_only")
+        self.response_fault = response_fault
         self.records, self.pending, self.finished = [], {}, set()
         self.observation_requests, self.hold_used_s = 0, 0.
         self._pace = {}
@@ -153,7 +182,7 @@ class MissionDirector:
             if delay > 0:
                 time.sleep(min(delay, 2.))
 
-    def update(self, point, row):
+    def update(self, point, row, *, decision_deadline_s=None):
         row = validate_observation(row)
         clock_id = "booster" if point == "booster_selection" else "ship"
         self.confirm(clock_id, row)
@@ -164,8 +193,16 @@ class MissionDirector:
             if len(self.records) >= self.envelope["maximum_decisions"]:
                 return None
             token = f"{self.run_id}:{len(self.records)+1}"
-            request = {"schema": "missionos.starship_director_request.v1", "request_id": token,
+            if decision_deadline_s is not None and (type(decision_deadline_s) not in (int, float)
+                    or not math.isfinite(decision_deadline_s) or decision_deadline_s <= row["time_s"]):
+                raise ValueError("invalid_decision_deadline")
+            deadline = min(row["time_s"]+self.envelope["decision_expiry_s"],
+                           row["time_s"]+self.envelope["decision_expiry_s"] if decision_deadline_s is None else decision_deadline_s)
+            if not math.isfinite(deadline) or deadline <= row["time_s"]:
+                raise ValueError("invalid_decision_deadline")
+            request = {"schema": "missionos.starship_director_request.v2", "request_id": token,
                        "point": point, "observation": row, "allowed_actions": POINTS[point],
+                       "decision_deadline_s": deadline,
                        "envelope_sha256": digest(self.envelope)}
             record = {"request": request, "clock_id": clock_id, "response": None,
                       "dispatch": None, "later_observation": None}
@@ -178,26 +215,35 @@ class MissionDirector:
                 record["response"] = self.fixture_decider(request)
         elif request["point"] != point:
             return None
-        record = self.records[-1]
+        record = next(item for item in self.records if item["request"]["request_id"] == request["request_id"])
         response = record["response"]
         if response is None and self.mailbox and (self.mailbox/"response.json").is_file():
             try:
                 candidate = json.loads((self.mailbox/"response.json").read_text())
-                if candidate.get("request_id") == request["request_id"]:
+                if type(candidate) is dict and candidate.get("request_id") == request["request_id"]:
                     response = candidate
             except (ValueError, OSError):
                 pass
+        if response is not None and type(response) is not dict:
+            response = {"request_id": request["request_id"], "action": None,
+                        "mode": "malformed_response", "model_inference_invoked": False}
+        if self.response_fault == "timeout_"+point:
+            response = None
+        elif response is not None and self.response_fault == "invalid_"+point:
+            response = {**response, "action": None, "synthetic_response_fault": "invalid_action"}
         elapsed = row["time_s"]-request["observation"]["time_s"]
-        if response is None and elapsed < self.envelope["decision_expiry_s"]:
+        if response is None and row["time_s"] < request["decision_deadline_s"]:
             return None
-        fallback = ("divert" if point == "booster_selection" else "retained_return"
-                    if point == "return_selection" else "stop_deployment")
+        fallback = fallback_action(self.envelope, point, row,
+            observation_requests=self.observation_requests, hold_used_s=self.hold_used_s)
         response = response or {"request_id": request["request_id"], "action": fallback,
                                 "mode": "timeout_fallback", "model_inference_invoked": False}
         # Bind the exact observation and envelope, not just an action string.
         action = response.get("action")
         reason = check_action(self.envelope, point, action, row, elapsed_s=elapsed,
                               observation_requests=self.observation_requests, hold_used_s=self.hold_used_s)
+        if row["time_s"] >= request["decision_deadline_s"]:
+            reason = reason or "decision_deadline_reached"
         if (response.get("request_id") != request["request_id"]
                 or response.get("request_sha256") != digest(request)
                 or response.get("mode") != self.envelope["mode"]):
@@ -223,6 +269,7 @@ class MissionDirector:
 
     def finish(self):
         return {"schema": "missionos.starship_director_record.v1", "envelope": self.envelope,
+                "response_fault": self.response_fault,
                 "records": self.records, "observation_requests": self.observation_requests,
                 "hold_used_s": self.hold_used_s, "human_inflight_commands": 0,
                 "human_workload_measured": False, "model_value_demonstrated": False}

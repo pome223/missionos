@@ -26,23 +26,40 @@ checks subsequent observations. A provider answer is never approval or execution
 
 Limits: five assessments per flight, at most five Jev and five conditional
 DeepSeek calls in live mode, one mechanism-status request, total hold budget
-30 simulated seconds, 75 simulated seconds per response. A pending model never
+30 simulated seconds, at most 75 simulated seconds per response. Initial
+assessment expires before the first planned release slot (about 45 seconds after
+orbit insertion in this profile, about 44.5 seconds after the request). A pending model never
 freezes the plant; integration is paced while awaiting the host broker.
 The scheduled return cannot be delayed. Release feasibility, fuel floor and
 qualified capture authority remain independent dispatch conditions. A notice
 cannot change these limits. The configured 28 t release fuel floor is a
 development-profile constraint, not a certified state-dependent return reserve.
-Initial deployment cannot start while its decision is pending; orbital dynamics
-continue. Later monitoring runs alongside the already authorized sequence.
+The v2 grant also approves an initial nominal deployment plan, fixed return
+guidance and diversion. Initial deployment cannot start while its decision is
+pending; the model or the preapproved fallback resolves before the first slot.
+Orbital dynamics continue. Later monitoring runs alongside the authorized sequence.
 The stored verifier checks observation release inventories against independently
 validated separation events and rejects release before the start decision.
 
 Out-of-scope, expired and invalid decisions record a reason and apply the
-preapproved fallback: disable further deployment, retained-payload return mode,
-or divert. Hold expiry disables remaining releases. An escalation request can
+preapproved fallback: continue the approved nominal release plan only when the
+current sequencer is running, no notice is unresolved and persistent fuel,
+mechanism and return-time constraints hold; otherwise inhibit further releases.
+A temporary perigee/pressure/rate gate keeps the sequence queued: the executor
+independently skips that release slot and reevaluates at the next slot. Keep the initially
+approved fixed return policy instead of forcing retained-payload guidance.
+Divert remains the booster fallback. Never restart a held, inhibited or stopped
+sequence through fallback. Hold expiry still disables remaining releases. An escalation request can
 be recorded, but this first slice does not yet accept a new human grant during
 flight. It uses the preapproved no-response behavior. This limitation must not
 be described as a working asynchronous human handoff.
+
+This changes the displayed contract to `mission_envelope.v2` and requests to
+`director_request.v2`. Existing approval objects cannot silently acquire the
+new fallback permissions: create and approve a new plan. The fallback is a
+bounded simulator operating policy, not a certified safe mode. Plant faults,
+valid decisions to suspend deployment, and insufficient fuel can still lead to
+the unsuccessful returns below. Do not claim that continuing is always safe.
 
 ## Observations and tools
 
@@ -54,6 +71,8 @@ The release tracker and mechanism status are explicit synthetic sensors. Fuel
 has reproducible bounded synthetic noise and 100 kg quantization; the release
 check subtracts the 100 kg error bound. This is not a calibrated sensor model.
 The development GNC still uses ideal plant state for its local controller.
+`retained_payload_present` is an inventory observation, not a return-feasibility
+certificate. It replaces the misleading name `retained_payload_possible`.
 
 `collect_status` requests a separate actuator/latch-status channel and holds
 deployment for at least two simulated seconds. The simulator supplies a later
@@ -128,6 +147,64 @@ For live inference, keep `--fixture-planner` and add
 This separately opts into only the displayed per-plan provider budget.
 Stop the live Gateway after the bounded run. Never publish keys, raw session
 databases, local paths or unsanitized run directories.
+
+For the production-boundary response-error fixture, use the same keyless launcher
+and `--scenario sixdof_managed_invalid_response`. The displayed plan binds
+`invalid_deployment_monitor`, and the worker injects an invalid action into a
+scripted reply. Live mode rejects this scenario. This is not new model inference.
+The standalone CLI also accepts fixture-only `--response-fault` values for
+invalid replies or missing replies at a declared decision point. The verifier
+requires that the configured point was exercised, checks the fallback against
+fresh observations, and retains the original normal-outcome comparison gate.
+The verifier recomputes the start deadline from the orbit-cutoff event and
+profile, rejects premature timeout labels, and enforces a strictly positive
+request window. `MISSIONOS_STARSHIP_FULL_FALLBACK_TEST=1` opts into four full-flight
+pytest regressions; they are skipped in ordinary fixture CI.
+
+The standalone verdict JSON currently has no run/verifier identity fields. Its
+association with a study relies on the manifest and signed worker receipt; it
+is not standalone provenance or independent runtime attestation.
+
+## Operating references
+
+[NASA cFS Stored Command](https://software.nasa.gov/software/GSC-16009-1)
+supports onboard absolute/relative command sequences. NASA's
+[Initialization / Safe Mode guidance](https://swehb.nasa.gov/spaces/SWEHBVC/pages/85426332/9.10%2BInitialization%2B-%2BSafe%2BMode)
+describes mission-phase-dependent safing and timely critical activity completion.
+These inform separating a rejected reasoning response from an actual plant
+fault. Neither source prescribes this payload-continuation policy, identifies
+SpaceX's fallback logic, or certifies this simulator.
+
+## Response-failure regression, 2026-10-07
+
+The [v2 summary](../assets/starship-mission-decisions-20261007/fallback-summary.json)
+binds four same-start full-flight fixture comparisons to source/profile hashes.
+All four passed record verification and exact normal-outcome equality:
+`invalid_deployment_monitor`, `invalid_return_selection`,
+`timeout_deployment_start`, `timeout_deployment_monitor`. Each retains 26
+releases, 4.546834477 m/s contact, the original return time and fuel remainder.
+The Gateway monitoring-error scenario additionally passed fresh approval,
+worker-signature, HTTP artifact-hash, replay and cross-session checks.
+
+Reproduce it with the keyless launcher and `sixdof_managed_invalid_response`,
+or the standalone CLI with `--case normal --response-fault FAULT` and a fresh
+output directory. All are opt-in synthetic response fixtures, not model
+performance results. The original five-condition gate was not rerun under v2;
+the historical negative live record is unchanged. Exact equality in these
+nominal fixtures checks preservation of the same approved controls, not general
+robustness or model value. Their source snapshots precede the review fixes;
+a separate post-review Gateway record covers the final worker logic.
+
+A combined release fault and invalid return-selection reply was also run after
+review. Both baseline and fallback impacted at 238.74 m/s, with all 26 payloads
+retained. This is worse than the old v1 retained-guidance contact at 3.22 m/s in
+that one condition. v2 keeps the initially approved fixed plan instead of
+automatically selecting an unqualified adaptive controller. This tradeoff is
+not a safe-return claim and remains a blocker for general fault recovery.
+
+Late deployment/diagnostic requests can still obstruct return-selection
+bookkeeping outside the current profile's early decision times. That preexisting
+unqualified scheduling edge is not fixed or exercised by these regressions.
 
 ## Recorded development results, 2026-10-06
 

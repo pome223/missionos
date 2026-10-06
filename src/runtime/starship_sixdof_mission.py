@@ -332,7 +332,7 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
         supervision = FlightSupervision(None, "standalone-hold")
     if mission_case not in (None, "normal", "release_fault", "fuel_shortage", "tower_unavailable", "operations_notice"):
         raise ValueError("unknown mission management case")
-    if mission_director is not None and (mission_case is None or scenario != "launch" or booster_policy != "fixed_v1"):
+    if mission_director is not None and (mission_case is None or scenario != "launch" or booster_policy != "fixed_v1" or return_policy != "fixed_v1"):
         raise ValueError("mission director requires its explicit launch case")
     return_record = new_record(return_policy)
     if return_policy != "fixed_v1" and scenario != "deployment_no_effect":
@@ -386,7 +386,7 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
             "tower_ready": mission_case != "tower_unavailable",
             "numerical_tools": {"orbit_release_feasible": bool(bound_orbit_above(orbit, g["target_perigee_m"]-1000)
                 and o["dynamic_pressure_pa"] < 1 and env.norm(s.omega_body_rad_s) < g["release_max_rate_rad_s"]),
-                "retained_payload_possible": released < p["payload"]["count"],
+                "retained_payload_present": released < p["payload"]["count"],
                 "capture_corridor_certified": False, "mechanism_status": mechanism_status},
             "operations_notice": "Payload operations: suspend remaining deployment; return with the remaining manifest."
                 if mission_case == "operations_notice" and released >= 1 else ""}
@@ -474,7 +474,10 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                     point = "return_selection"
                 else:
                     point = None
-                action = mission_director.update(point, row) if point else None
+                # Resolve start or its preapproved continuation before the
+                # first release slot, rather than holding past that slot.
+                deadline = next_release-p["integration"]["coast_dt_s"] if point == "deployment_start" and next_release is not None else None
+                action = mission_director.update(point, row, decision_deadline_s=deadline) if point else None
                 if action is not None:
                     event("managed_mission_command", "independently checked preapproved mission decision", point=point, action=action)
                     if action == "stop_deployment":
@@ -548,9 +551,9 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                           **supervision_command)
             if s.time_s >= return_time:
                 if mission_director is not None and not managed_return_selected:
-                    return_policy = CONDITIONED_POLICY_ID
+                    return_policy = "fixed_v1"
                     return_record = new_record(return_policy)
-                    event("managed_return_deadline_fallback", "no valid decision can delay the scheduled deorbit")
+                    event("managed_return_deadline_fallback", "keep the approved initial return plan; no decision can delay deorbit")
                 if return_policy in (POLICY_ID, CONTINUOUS_POLICY_ID, CONDITIONED_POLICY_ID) and released < p["payload"]["count"]:
                     observed = _sample(s, v, phase)
                     observed["retained_return"] = "activation"

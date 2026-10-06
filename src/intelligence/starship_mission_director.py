@@ -17,7 +17,7 @@ def fixture_decision(request):
     if point == "booster_selection":
         action = "capture" if row["tower_ready"] and tools["capture_corridor_certified"] else "divert"
     elif point == "return_selection":
-        action = "retained_return" if tools["retained_payload_possible"] else "fixed_return"
+        action = "retained_return" if tools["retained_payload_present"] else "fixed_return"
     elif point == "deployment_diagnostic":
         action = "continue" if tools["mechanism_status"] == "clear" else "stop_deployment"
     elif row["fuel_kg"] < 28000 or "suspend remaining deployment" in row["operations_notice"].lower():
@@ -37,12 +37,16 @@ class MissionAgent:
 
     def assess(self, request):
         if (type(request) is not dict or set(request) != {"schema", "request_id", "point", "observation",
-                "allowed_actions", "envelope_sha256"}
-                or request["schema"] != "missionos.starship_director_request.v1"
+                "allowed_actions", "envelope_sha256", "decision_deadline_s"}
+                or request["schema"] != "missionos.starship_director_request.v2"
                 or request["envelope_sha256"] != digest(self.envelope)
                 or request["point"] not in POINTS or request["allowed_actions"] != POINTS[request["point"]]):
             raise ValueError("invalid_director_request")
         row = validate_observation(request["observation"])
+        deadline = request["decision_deadline_s"]
+        if (type(deadline) not in (int, float) or not math.isfinite(deadline)
+                or not row["time_s"] < deadline <= row["time_s"]+self.envelope["decision_expiry_s"]):
+            raise ValueError("invalid_director_deadline")
         if self.envelope["mode"] == "fixture":
             return fixture_decision(request)
         if os.environ.get(MODE_ENV) != "live" or not self.transport._run_active():
@@ -52,6 +56,7 @@ class MissionAgent:
         self.calls += 1
         actions = request["allowed_actions"]
         public = {"point": request["point"], "observation": row, "allowed_actions": actions,
+                  "decision_deadline_s": deadline,
                   "approved_scope": self.envelope,
                   "role": "Choose mission-level decisions. Numerical estimators are your tools. No low-level flight control."}
         jev, llm = _receipt("live", "typesafe", public), _receipt("live", "deepseek", public)
