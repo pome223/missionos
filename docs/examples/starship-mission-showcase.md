@@ -60,6 +60,10 @@ test and its source/profile bindings, then enter `/approve`, `/run`, and
 `/status`. Approval and execution are separate steps. `yes` or `OK` is not an
 approval. The fixture planner uses deterministic catalog matching, not LLM
 inference, and makes no provider call.
+The dedicated Starship launcher defaults its model backend and planner to off;
+`--fixture-planner` enables this deterministic path explicitly. Generic
+MissionOS chat's DeepSeek default is a separate entrypoint. Live Starship
+providers require their own explicit opt-in rather than inheriting that default.
 
 The same Gateway serves the operator console at
 `http://127.0.0.1:18794/missionos/starship/operator`. It keeps plan, approval,
@@ -72,10 +76,14 @@ another attempt so earlier failed or incomplete evidence is preserved.
 
 ## What the operating loop verifies
 
-The regular route binds a plan to its software and profile, consumes approval
-once, starts a separate credential-free worker, and checks its signed receipt
-and served artifact hashes. Unapproved, stale, source-changed, duplicate, and
-cross-session requests are rejected.
+The regular flight route binds a plan to its software and profile, consumes
+approval once, starts a simulator with provider keys omitted from its process
+environment, and checks its signed receipt and served artifact hashes.
+Unapproved, stale, source-changed, duplicate, and cross-session requests are
+rejected. The distinct opt-in live `dispenser_jev_shadow` worker is a provider
+observer/broker and receives its own `TYPESAFE_API_KEY`; it is not a flight
+simulator. Environment filtering and local signing operate under the same OS
+user and do not promise OS credential isolation or authenticated human identity.
 
 The longer `sixdof_deployment_supervised` scenario injects an explicit synthetic
 fault: a release command is accepted without a separated body. Fresh reports

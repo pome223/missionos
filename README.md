@@ -167,6 +167,13 @@ The separate near-tower initialized support fixture is not a launch-derived
 capture. The [public quickstart](docs/examples/starship-mission-showcase.md#try-the-bounded-public-fixture)
 uses a deterministic planner and a fixed 30-second gimbal test; it does not
 regenerate these historical full-flight videos or invoke external models.
+The dedicated Starship launcher defaults its planner/model backend to off;
+`--fixture-planner` explicitly selects the keyless deterministic example.
+Generic MissionOS chat below retains its separate DeepSeek default. Flight
+simulator processes omit provider keys from their environment. The separately
+opted-in live Jev shadow observer receives its own Typesafe key; it is a
+provider observer, not a flight simulator. These same-user processes do not
+provide OS credential isolation.
 
 ## Yokohama: choose a delivery destination on the 3D map
 
@@ -203,9 +210,11 @@ rather than the temporary redirect. A repository copy is available below.
 [Result and video limits](docs/examples/yokohama-map-delivery/REPORT.md) ·
 [GUI and authority contract](docs/agents/yokohama-map-goal.md)
 
-The public demo defaults to fixtures and makes no external API calls. Live Jev
-execution is disabled in this distribution; the private test grant is consumed
-and is not included. A future live run needs a separately reviewed authorization.
+This Yokohama demo defaults to fixtures and makes no external API calls. Live
+Jev execution for this Yokohama demo is disabled in this distribution; its
+private test grant is consumed and is not included. This does not disable the
+separate opt-in Starship provider paths. A future live Yokohama run needs a
+separately reviewed authorization.
 
 ## What Has Actually Run
 
@@ -223,7 +232,7 @@ loops. All results below are simulator evidence.
 | **VLA-0 / LIBERO Panda** | The same 3 cm snapshot, instruction, action ceiling, and scripted control | Target engagement 3/3; terminal conjunction 2/3; both successful traces lost the repaired predicate on the fifth stationary hold step, so 20-step stable completion was 0/2 replays |
 | **SmolVLA / ExtraTrees / DeepSeek stacking** | ExtraTrees forecasts through Mission Assurance, bounded human preapproval, Rules, ticketed execution, and measured verification | Final two-case DeepSeek run banked 8 + 8 points; 18 LLM judgments, 208 SmolVLA inference chunks, and 5,112 motor steps |
 | **SmolVLA / neural ACWM / DeepSeek stacking** | Online future-video forecasts through Assurance, bounded preapproval, Rules, ticketed execution, and measured verification | Two known cases banked 9 + 4 points; 15 actual DeepSeek judgments, 169 SmolVLA inference chunks, and 4,260 motor steps. [Integration report](docs/assets/acwm-governed-stacking-20260921/REPORT.md) |
-| **Starship-inspired 6DOF simulator / MissionOS** | Explicit simulation approval, credential-free worker, saved-state replay, and bounded deployment supervision | One recorded Jev route led to a fixed skip procedure with later observed sequencer changes. Launch-derived tower catch remains unsuccessful; no physical flight or model-value claim. [Videos and public fixture](docs/examples/starship-mission-showcase.md) |
+| **Starship-inspired 6DOF simulator / MissionOS** | Explicit simulation approval, provider-key-free flight worker environment, saved-state replay, and bounded deployment supervision | One recorded Jev route led to a fixed skip procedure with later observed sequencer changes. Launch-derived tower catch remains unsuccessful; no physical flight or model-value claim. [Videos and public fixture](docs/examples/starship-mission-showcase.md) |
 
 | PX4 drone · two separately approved obstacle recoveries | TurtleBot3 · house delivery to a named room |
 | -------------------------------------------------------- | --------------------------------------------- |

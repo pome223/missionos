@@ -84,6 +84,10 @@ EXPECTED_RUNNER_ROOTS = {
         "src/intelligence/turtlebot3_recovery_planner.py",
         "_invoke_adk_response_text_async",
     ): ("single_agent_root", "agent"),
+    (
+        "src/intelligence/starship_mission_planner.py",
+        "_invoke_deepseek",
+    ): ("single_agent_root", "agent"),
     ("src/tools/subagents.py", "SubagentManager._worker_loop"): (
         "single_agent_root",
         "resolved_agent",
@@ -163,4 +167,4 @@ def test_every_production_runner_has_an_explicit_v2_root_classification() -> Non
     assert sum(
         classification == "single_agent_root"
         for classification, _agent in EXPECTED_RUNNER_ROOTS.values()
-    ) == 13
+    ) == 14

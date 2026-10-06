@@ -8993,9 +8993,20 @@ class GatewayServer:
                 path = await run_in_threadpool(service.read_artifact, session_id, plan_id, name)
             except (ValueError, PermissionError, KeyError, RuntimeError, OSError):
                 raise HTTPException(status_code=404, detail="Verified Starship artifact unavailable") from None
+            headers = {"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"}
+            if name == "report.html":
+                # A direct report link must have the same opaque-origin boundary
+                # as the operator's sandboxed iframe. Reports contain their own
+                # replay scripts/data; they need no Gateway fetch or authority.
+                headers["Content-Security-Policy"] = (
+                    "sandbox allow-scripts; default-src 'none'; "
+                    "script-src 'unsafe-inline'; style-src 'unsafe-inline'; "
+                    "img-src data: blob:; connect-src 'none'; "
+                    "base-uri 'none'; form-action 'none'; frame-ancestors 'self'"
+                )
             return FileResponse(
                 path, media_type="text/html" if name == "report.html" else "application/json",
-                headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
+                headers=headers,
             )
 
 

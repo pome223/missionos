@@ -294,6 +294,30 @@ def test_cli_context_is_bound_to_gateway_session_and_new_domain_focus(service, t
     _remember_mission_designer_context(context, {"routed_action": "plan"}, session_id="chat-a")
 
 
+@pytest.mark.parametrize("action", ["clarification", "status", "approve", "other_plan", None])
+def test_cli_other_domain_response_clears_starship_approval_focus(service, tmp_path, action):
+    context, client = chat_context(tmp_path), ChatClient()
+    cli._handle_chat_input(context, client, "Starship", session_id="chat-a")
+    assert cli._stored_starship_context(context, "chat-a")
+
+    class OtherDomainClient:
+        def __init__(self):
+            self.requests = []
+
+        def conversation(self, instruction, **kwargs):
+            self.requests.append((instruction, kwargs))
+            return {"routing_source": "go2_delivery_fixed_catalog", "routed_action": action}
+
+    other = OtherDomainClient()
+    cli._handle_chat_input(context, other, "Go2 delivery status", session_id="chat-a")
+    assert not cli._stored_starship_context(context, "chat-a")
+    cli._handle_chat_input(context, other, "/approve", session_id="chat-a")
+    assert "starship_context" not in other.requests[-1][1]
+    cli._handle_chat_input(context, other, "/run", session_id="chat-a")
+    assert "starship_context" not in other.requests[-1][1]
+    assert [call[0] for call in service.calls] == ["plan"]
+
+
 def test_gateway_client_carries_reference_on_existing_route(monkeypatch):
     client = MissionOSGatewayClient("http://127.0.0.1:18881")
     requests = []

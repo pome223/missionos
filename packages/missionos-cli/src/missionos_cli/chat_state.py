@@ -140,11 +140,13 @@ def _remember_starship_context(ctx: click.Context, payload: dict[str, Any], *, s
         state["starship_context"] = dict(context)
         state["starship_gateway_url"] = str(ctx.obj.get("missionos_gateway_url") or "")
         _save_state(ctx.obj["missionos_state_path"], state)
-    elif payload.get("routed_action") in {"plan", "mission_designer_plan", "fixture_plan"} and (
+    elif (
         payload.get("routing_source") != "starship_scoped_mission_control"
-    ) and isinstance(state.get("starship_context"), dict) and state["starship_context"].get("session_id") == session_id:
-        # A newly selected mission takes focus; old Starship approval is never
-        # silently reused for a different mission's slash commands.
+        and isinstance(state.get("starship_context"), dict)
+        and state["starship_context"].get("session_id") == session_id
+    ):
+        # Any response from another domain takes focus, including clarification
+        # and status. Its next slash command must not target an old spacecraft plan.
         state.pop("starship_context", None)
         state.pop("starship_gateway_url", None)
         _save_state(ctx.obj["missionos_state_path"], state)

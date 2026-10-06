@@ -54,7 +54,7 @@ def provider(choice="continue", probabilities=None):
 def test_fixture_never_uses_http_or_credentials(monkeypatch):
     monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)
     monkeypatch.setattr(
-        "src.intelligence.jev_assurance.urlopen", lambda *a, **kw: pytest.fail("external API")
+        "src.intelligence.jev_assurance._provider_opener", lambda: pytest.fail("external API")
     )
     answer = judge(request(), configuration())
     assert answer["decision"]["action"] == "enter"
