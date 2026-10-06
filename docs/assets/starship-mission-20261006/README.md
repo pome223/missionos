@@ -6,10 +6,17 @@ three MP4s and posters are local companion files.
 
 The nominal numerical flight covers launch, stage separation, 26 recorded
 payload-separation states, orbital propagation and Ship return.
-`nominal-flight.gif` previews the complete 36-second movie at twice playback
-speed in 18 seconds, including the payload-phase counter from 0 to 26. It does
+`nominal-flight.gif` previews launch through the 26th payload release at twice
+playback speed. It ends on the recorded 26/26 frame, with a short display hold
+for readability, and omits return. The hold grants no simulated time credit. It does
 not claim that each payload or V3-specific deployment hardware is visually
 resolved. The full MP4 and saved-state replay retain the original display.
+
+The manifest's `nominal_operator_chain` binds this historical 26-release record
+to the reviewed MissionOS Gateway plan, explicit approval, consumed grant,
+worker receipt and served-artifact digests. It records a test operator and
+fixture planner, with no provider inference. This is saved local-record linkage;
+it does not assert a new current-public full flight or authenticated human identity.
 
 These are historical numerical records. Nominal Ship contact is not a verified
 landing or booster tower catch. The deployment intervention confirmed a skip
@@ -76,5 +83,5 @@ python export_saved_media.py --rebuild-page --make-previews --preview-case nomin
 This transform uses 640×360 at approximately 6 fps, with an embedded animated
 preview label. It retains the previous GIF in ignored `captures/`, grants no
 new model or flight invocation, and keeps the aggregate media cap at 30 MiB.
-The nominal full-movie preview has a 6 MiB encoding cap; the other previews
+The nominal launch/deployment preview has a 6 MiB encoding cap; the other previews
 retain their 3 MiB caps and existing bytes.

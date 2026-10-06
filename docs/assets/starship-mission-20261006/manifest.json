@@ -128,7 +128,7 @@
     "starship_cg_renderer.js": "572fc8a9b432158afae63175d867142bec267a96c3fc06ae6c9db1c938704582",
     "replay.js": "b9ac04cdb4945eae688b947ffa3cf7ae153b6dd90be03431e19729109fd2ecfb",
     "page-template.html": "16cf97fee82d6ed193becbb2a43402c67e3216bc7e62643e94acc3dc57e7f34e",
-    "export_saved_media.py": "815c938ceb9f96de8385698909f8b984dd5bbd2a537a4a3741a64cd92ff341e9"
+    "export_saved_media.py": "f073c4dc2766ce04978b0d8e9c15fc0cd10fa16803e9e24f96775ed9d4dc6f55"
   },
   "standalone_page_sha256": "8d8d3cd9a8bdb6001e38f531e2d4b6c6d3174c4f8a805e26ecf0696b956092a1",
   "media": [
@@ -219,25 +219,39 @@
     },
     {
       "filename": "nominal-flight.gif",
-      "bytes": 4165930,
-      "sha256": "0f007a065d4dbe90688628981ec9694549d6eff43dee95f4463b494c8f6611f9",
+      "bytes": 3217968,
+      "sha256": "1ed9297d76193a9efacb1c44b554b0a81aa4e04396697d03611b36bbecdba5a1",
       "source_movie_filename": "nominal-flight.mp4",
       "source_movie_sha256": "b005d34f05fa8d144d9028e30fa075a720fb26f2ee8845a685a3590bc207d95c",
       "source_movie_start_s": 0.0,
-      "source_movie_interval_s": 36.0,
+      "source_movie_interval_s": 25.708333333333332,
       "preview_speed_vs_source_movie": 2.0,
       "target_fps": 6,
       "width": 640,
       "height": 360,
       "loop_repetitions": 2,
       "caption": "Animated preview; full MP4 linked",
-      "excerpt": "full nominal display: launch, payload-release count 0 to 26, Ship return",
+      "excerpt": "launch through recorded 26th payload release; return omitted",
       "palette_colours": 96,
       "maximum_preview_bytes": 6291456,
-      "transformation": "FFmpeg saved-MP4 excerpt, display-time rescale, bounded palette and label; no new rendered physical state"
+      "terminal_display_hold_s": 0.5,
+      "display_hold_creates_simulated_time_credit": false,
+      "transformation": "FFmpeg saved-MP4 excerpt, display-time rescale, bounded palette and label; no new rendered physical state",
+      "release_completion_endpoint": {
+        "recorded_release_count": 26,
+        "recorded_26th_release_time_s": 900.7000000000407,
+        "mapped_source_movie_event_time_s": 25.66615384615531,
+        "last_source_frame_index": 616,
+        "source_movie_frame_time_s": 25.666666666666668,
+        "verified_frame_counter": "26/26",
+        "verified_frame_displayed_saved_time_s": 900.77,
+        "return_segment_included": false,
+        "verification": "source frame 615 shows 25/26; frame 616 shows 26/26",
+        "reviewed_source_movie_sha256": "b005d34f05fa8d144d9028e30fa075a720fb26f2ee8845a685a3590bc207d95c"
+      }
     }
   ],
-  "public_media_total_bytes": 11831237,
+  "public_media_total_bytes": 10883275,
   "capture_pipeline": "CUA page controls -> saved canvas MediaRecorder -> bounded exclusive same-origin loopback writer -> FFmpeg H.264; generated captures ignored",
   "media_verification": {
     "complete_ffmpeg_decode_passed": true,
@@ -290,22 +304,22 @@
     "new_CG_capture": false,
     "new_simulator_or_model_or_hardware_calls": 0,
     "nominal": {
-      "duration_s": 18.0,
-      "frames": 108,
+      "duration_s": 13.34,
+      "frames": 80,
       "source_movie_start_s": 0.0,
-      "source_movie_duration_s": 36.0,
+      "source_movie_duration_s": 25.708333333333332,
       "playback_speed_vs_MP4": 2.0,
-      "coverage": "launch, payload phase/counter0–26 and Shipreturn",
+      "coverage": "launch through recorded 26th release; return omitted",
+      "terminal_display_hold_s": 0.5,
+      "display_hold_creates_simulated_time_credit": false,
+      "last_source_frame_index": 616,
+      "last_source_frame_time_s": 25.666666666666668,
+      "last_source_counter": "26/26",
+      "last_source_displayed_saved_time_s": 900.77,
+      "sequential_final_GIF_frame_visually_checked": true,
+      "reviewed_source_movie_sha256": "b005d34f05fa8d144d9028e30fa075a720fb26f2ee8845a685a3590bc207d95c",
       "individual_V3_hardware_unfolding_claimed": false,
-      "Cua_native_GIF_visual_check": {
-        "complete": true,
-        "width": 640,
-        "height": 360,
-        "visible_payload_counter": "16/26",
-        "visible_saved_time_s": 755.92
-      },
-      "prior_launch_only_preview_sha256": "62ca2b1c82d7252f47765826085b7bebcb81558cf9011db9fd66d69d28d807e2",
-      "prior_preview_and_first_size_guard_failure_retained_ignored": true
+      "prior_full_preview_and_failed25of26_trim_retained_ignored": true
     },
     "supervision": {
       "duration_s": 12.34,
@@ -321,5 +335,41 @@
       "source_movie_duration_s": 12.0
     },
     "scope": "animated saved-MP4 display excerpts only; no new mission execution or physical validation"
+  },
+  "nominal_operator_chain": {
+    "schema": "missionos.starship_historical_nominal_operator_chain_review.v1",
+    "scope": "reviewed historical local-simulation plan, explicit approval, consumed grant, worker receipt and served-artifact linkage; not independent process/source/human or physical attestation",
+    "historical_saved_record": true,
+    "test_operator": true,
+    "authenticated_human_identity_verified": false,
+    "approval_scope": "local_simulation_only",
+    "stored_explicit_approval_integrity_reviewed": true,
+    "approval_consumption_binding_reviewed": true,
+    "stored_worker_receipt_integrity_reviewed": true,
+    "plan_request_approval_worker_linkage_reviewed": true,
+    "chat_receipt_sha256": "b20775069f9b12a76b3b30a1b09f5979571db0b5c8b6d52d24d4ab6d69e61f62",
+    "chat_transcript_sha256": "c23bea4b2645e161499dcb785548aad220af23ff139b64b4751fba138b858ca0",
+    "signed_worker_receipt_sha256": "425626e9eddb73988c11f51b516cf666c6a61ee5c10917a51123e31a6557f03d",
+    "served_artifact_sha256": {
+      "manifest.json": "53cf9c09fa2a4c50a741ce1a628974929fc01987be5e4287fbf496bc74332257",
+      "report.html": "fc36de4312b3ed431151c3626b5d475af15983d5137233145ace286ee1a18d1f",
+      "study.json": "0387b21c2b16516c3565376ee919fec9da319d47c7a6c490569a99c8f19c6086",
+      "verification.json": "634d229ded8881904038a19b7a83875c18cc8bb7d65f6c4a42b0e94583d0ca1b"
+    },
+    "plan_source_hash_count": 16,
+    "plan_source_map_sha256": "17012da763f69987a2c23fa60ea426d26713e3a041b94b805751df7b7422ec83",
+    "recorded_generator_source_hash_count": 11,
+    "recorded_source_map_sha256": "d80f40fce684848695a1e048d46ed65f950c1d9f3b5ccd88fae46b7d93b3d4c3",
+    "recorded_generator_map_matches_approved_map": true,
+    "profile_id": "v3-inspired-open-model-development-v1",
+    "profile_sha256": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "planner_inference": false,
+    "provider_credentials_present_in_worker": false,
+    "individual_release_LLM_decisions": false,
+    "source_authenticated": false,
+    "independent_process_runtime_attestation": false,
+    "current_public_fullflight_reexecuted": false,
+    "physical_execution": false,
+    "distinction_from_current_public_gimbal_smoke": "historical complete nominal numerical record; current public initialized 30-second actuator HTTP smoke is separate"
   }
 }

@@ -73,7 +73,9 @@ ignored evidence and is not committed.
 
 The current public-port software checks passed 3,159 tests across 98
 Starship/Jev files, with one skip because native Basilisk was not installed
-(288.22 s). A separate 72-test existing Go2/Yokohama/ship fixture subset passed.
+(288.22 s). A separate Go2/Yokohama/ship fixture subset had 70 passes and two
+missing-optional-dependency failures; those two checks then passed with an
+isolated dependency overlay (72 unique checks across two invocations).
 AST/Ruff checks covered 220 Python files; the 85-module import closure and
 existing CLI help also passed. These fixed-fixture checks made no new private
 return-campaign, provider, native Basilisk, or hardware invocation. They are
@@ -85,6 +87,26 @@ This smoke covers the initialized actuator and production HTTP/child/artifact
 boundary, not full launch, catch, native Basilisk, or later-effect supervision.
 Stop the owned Gateway after checking it. If relevant production source changes,
 restart it and repeat the affected boundary with a fresh plan and output.
+
+### Historical nominal launch receipt
+
+The public nominal media has a separate, matched historical Gateway fixture
+chain for `sixdof_launch`. A retained plan, explicit test-operator approval,
+request, worker receipt and four served artifacts were cross-checked against
+the [media manifest](../assets/starship-mission-20261006/manifest.json).
+The study and verification digests exactly match the published nominal source
+and stored-verdict digests. Plan self-hash, profile/source bindings, one-use
+approval/run bindings and both local HMAC signatures passed the saved-record
+cross-check. The same record contains 26 finite payload-separation events.
+
+This is historical simulator execution with a deterministic planner, no
+provider inference and no authenticated human identity. The retained signing
+key stayed local. The published manifest contains only allowlisted facts and
+digests; it does not export keys, raw approval/request/receipt objects, private
+identifiers or provider transcripts. Local same-user signature validation is
+not independent source/runtime attestation. No new full flight was run for
+this provenance check; the public-checkout smoke above remains the separate
+30-second gimbal test.
 
 To exercise the longer deployment boundary separately, explicitly budget the
 full numerical run, restart a fixture Gateway, and use:

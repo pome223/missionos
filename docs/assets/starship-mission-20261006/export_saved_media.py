@@ -259,7 +259,21 @@ def serve(port):
 
 def previews(manifest, ffmpeg, selected_case=None):
     """Transform existing MP4 bytes only; no CG capture or model invocation."""
-    selections = [("nominal-flight", 0.0, 36.0, 2.0, "full nominal display: launch, payload-release count 0 to 26, Ship return"),
+    nominal = next(c for c in json.loads((HERE / "data.json").read_bytes())["cases"] if c["id"] == "nominal-flight")
+    releases = [e for e in nominal["events"] if e["event"] == "payload_released"]
+    if len(releases) != 26:
+        raise ValueError("recorded_twenty_six_release_endpoint_required")
+    deployment = nominal["segments"][1]
+    event_time = releases[-1]["time_s"]
+    movie_time = (nominal["segments"][0]["video_s"]
+                  + (event_time - deployment["start_s"]) * deployment["video_s"]
+                  / (deployment["end_s"] - deployment["start_s"]))
+    movie_rate = next(x for x in manifest["media"] if x["filename"] == "nominal-flight.mp4")["avg_frame_rate"]
+    numerator, denominator = map(int, movie_rate.split("/"))
+    source_fps = numerator / denominator
+    completion_frame = math.ceil(movie_time * source_fps)
+    nominal_end = (completion_frame + 1) / source_fps
+    selections = [("nominal-flight", 0.0, nominal_end, 2.0, "launch through recorded 26th payload release; return omitted"),
                   ("deployment-supervision", 3.5, 24.5, 2.0, "observations, skip command and both later-effect observations"),
                   ("return-negative", 18.0, 12.0, 1.0, "final approach, reserve crossing and unsuccessful endpoint")]
     entries = []
@@ -270,19 +284,31 @@ def previews(manifest, ffmpeg, selected_case=None):
         original = next(x for x in manifest["media"] if x["filename"] == movie.name)
         if sha(movie.read_bytes()) != original["sha256"]:
             raise ValueError("preview_requires_unchanged_source_movie")
+        if case == "nominal-flight" and original["sha256"] != "b005d34f05fa8d144d9028e30fa075a720fb26f2ee8845a685a3590bc207d95c":
+            raise ValueError("reviewed_release_frame_endpoint_requires_bound_known_movie")
         target = HERE / (case + ".gif")
         captures = HERE / "captures"
         captures.mkdir(exist_ok=True)
         maximum_bytes = (6 if case == "nominal-flight" else 3) * 1024 * 1024
         temporary = captures / (case + "-preview-next-" + str(maximum_bytes) + ".gif")
         colours = 96 if case == "nominal-flight" else 128
-        filters = (f"[0:v]setpts=PTS/{speed},fps=6,scale=640:-1:flags=lanczos,"
+        hold = 0.5 if case == "nominal-flight" else 0.0
+        hold_frames = round(hold * 6)
+        timing = (f"[0:v]split[motion_source][terminal_source];"
+                  f"[motion_source]trim=end_frame={completion_frame + 1},setpts=PTS/{speed},fps=6[motion];"
+                  f"[terminal_source]select='eq(n,{completion_frame})',loop=loop={hold_frames - 1}:size=1:start=0,"
+                  "setpts=N/(6*TB),fps=6[held];[motion][held]concat=n=2:v=1:a=0") if hold else f"[0:v]setpts=PTS/{speed},fps=6"
+        title = ("drawbox=x=0:y=21:w=640:h=25:color=0x070e18:t=fill,"
+                 "drawtext=font=Arial:text='Saved 6DOF / launch and payload deployment':"
+                 "fontsize=14:fontcolor=white:x=16:y=26,") if case == "nominal-flight" else ""
+        filters = (timing + ",scale=640:-1:flags=lanczos," + title +
                    "drawtext=font=Arial:text='Animated preview / full MP4 linked':"
                    "fontsize=10:fontcolor=white:x=16:y=48:box=1:boxcolor=black@0.7,"
                    f"split[a][b];[a]palettegen=max_colors={colours}:stats_mode=diff[p];"
                    "[b][p]paletteuse=dither=sierra2_4a")
+        input_limit = [] if case == "nominal-flight" else ["-t", str(interval)]
         command = [ffmpeg, "-hide_banner", "-loglevel", "error", "-n", "-ss", str(start),
-                   "-t", str(interval), "-i", str(movie), "-filter_complex", filters,
+                   *input_limit, "-i", str(movie), "-filter_complex", filters,
                    "-an", "-loop", "2", str(temporary)]
         subprocess.run(command, check=True)
         if temporary.stat().st_size > maximum_bytes:
@@ -303,7 +329,16 @@ def previews(manifest, ffmpeg, selected_case=None):
             "loop_repetitions": 2, "caption": "Animated preview; full MP4 linked", "excerpt": description,
             "palette_colours": colours,
             "maximum_preview_bytes": maximum_bytes,
+            "terminal_display_hold_s": hold, "display_hold_creates_simulated_time_credit": False,
             "transformation": "FFmpeg saved-MP4 excerpt, display-time rescale, bounded palette and label; no new rendered physical state"})
+        if case == "nominal-flight":
+            entries[-1]["release_completion_endpoint"] = {
+                "recorded_release_count": len(releases), "recorded_26th_release_time_s": event_time,
+                "mapped_source_movie_event_time_s": movie_time, "last_source_frame_index": completion_frame,
+                "source_movie_frame_time_s": completion_frame / source_fps,
+                "verified_frame_counter": "26/26", "verified_frame_displayed_saved_time_s": 900.77,
+                "return_segment_included": False, "verification": "source frame 615 shows 25/26; frame 616 shows 26/26",
+                "reviewed_source_movie_sha256": original["sha256"]}
     replaced = {x["filename"] for x in entries}
     manifest["media"] = [x for x in manifest["media"] if x["filename"] not in replaced] + entries
     manifest["public_media_total_bytes"] = sum(x["bytes"] for x in manifest["media"])
@@ -352,6 +387,16 @@ def main():
         manifest = previews(manifest, args.ffmpeg, args.preview_case)
         (HERE / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2)+"\n")
     if args.check:
+        chain = manifest.get("nominal_operator_chain")
+        if chain is not None:
+            study = next(x for x in manifest["sources"] if x["public_case_id"] == "nominal-historical-sixdof")
+            verdict = next(x for x in manifest["saved_verdicts"] if x["public_case_id"] == "nominal-stored-consistency")
+            if (chain["served_artifact_sha256"]["study.json"] != study["file_sha256"]
+                    or chain["served_artifact_sha256"]["verification.json"] != verdict["file_sha256"]
+                    or any(chain[k] is not False for k in ("source_authenticated", "independent_process_runtime_attestation",
+                                                          "authenticated_human_identity_verified", "current_public_fullflight_reexecuted",
+                                                          "physical_execution", "planner_inference", "individual_release_LLM_decisions"))):
+                raise ValueError("historical_nominal_operator_chain_binding_or_scope_mismatch")
         for name, expected in manifest["renderer_sources_sha256"].items():
             if sha((HERE / name).read_bytes()) != expected:
                 raise ValueError("renderer_source_manifest_hash_mismatch")

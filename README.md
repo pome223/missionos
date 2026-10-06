@@ -119,8 +119,9 @@ release evidence, not autonomous picking or physical robot execution.*
 process → verify the saved outputs. This operator workflow runs in the public
 fixture.**
 
-The separate saved full-flight example covers **launch → stage separation →
-orbital conditions → 26 payload releases → Ship return attempt**. Its mission
+The saved numerical-flight preview covers **launch → stage separation →
+orbital conditions → 26 payload releases**, ending with the release count at
+26. The complete MP4 also retains the Ship return attempt. Its mission
 scale references SpaceX's [Flight 14 / Starlink V3 deployment](https://www.spacex.com/launches/starship-flight-14).
 The released satellites have their own recorded positions and attitudes, and
 the 3D replay reads their recorded separation states.
@@ -137,8 +138,20 @@ states on a common clock. Choose `Starship sixdof_launch` in chat or **Launch +
 | --- | --- | --- |
 | ![Saved numerical launch, separation and 26-payload release replay, not physical spacecraft footage](docs/assets/starship-mission-20261006/nominal-flight.gif) | ![Saved deployment-supervision replay showing observation, bounded skip operation, and later sequencer evidence](docs/assets/starship-mission-20261006/deployment-supervision.gif) | ![Saved 60-second booster return development ending without catch handoff and below fuel reserve](docs/assets/starship-mission-20261006/return-negative.gif) |
 
+*Generic rigid-body payloads; satellite unfolding, communications and orbit
+raising are not implemented.*
+
+**MissionOS at the release boundary:** this historical `sixdof_launch` fixture
+passed displayed plan → explicit test-operator approval → separate simulator
+process → worker receipt and saved-output verification
+([record provenance](docs/assets/starship-mission-20261006/manifest.json)).
+The plan binds the fixed mission and payload configuration to source/profile hashes;
+deterministic release gates check bound orbit, perigee, dynamic pressure and
+angular rate before each separation. No LLM chooses the individual releases,
+and test approval does not authenticate human identity.
+
 <details>
-<summary>Complete video: numerical launch, separation, and Ship return</summary>
+<summary>Complete video: numerical launch, 26 payload releases, and Ship return</summary>
 
 [Open or download the complete recorded MP4](docs/assets/starship-mission-20261006/nominal-flight.mp4)
 
@@ -166,8 +179,7 @@ states on a common clock. Choose `Starship sixdof_launch` in chat or **Launch +
 
 *These are saved numerical simulator replays. Starlink V3 is the mission
 reference; the satellite bodies and display geometry use declared assumptions.
-Satellite hardware deployment, link acquisition, orbit raising and service are
-not simulated. The catch experiment is a separate return-development record.*
+The catch experiment is a separate return-development record.*
 
 <details>
 <summary>What the records establish, and what remains unfinished</summary>

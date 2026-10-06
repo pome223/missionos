@@ -10,6 +10,33 @@ orbital conditions, 26 finite satellite releases and a Ship return attempt.
 Position, attitude, angular rate, fuel and actuators evolve in the simulator;
 the recorded states drive the synchronized 2D/3D replay.
 
+![Saved numerical launch through the 26th payload release](../assets/starship-mission-20261006/nominal-flight.gif)
+
+*Generic rigid-body payloads; satellite unfolding, communications and orbit
+raising are not implemented. The preview ends at 26 releases; the complete
+MP4 retains the subsequent return attempt.*
+
+## Where MissionOS enters the release sequence
+
+For a new `sixdof_launch` request, MissionOS binds the fixed flight and payload
+configuration to source/profile hashes in the displayed plan. A one-use
+approval permits the separate simulator process to run. Its deterministic
+release gates check bound orbit, perigee, dynamic pressure and measured angular
+rate before each separation. The operator approves the bounded numerical
+mission; the LLM does not select individual releases or steer the vehicle.
+
+The historical 26-release media comes from a MissionOS Gateway fixture run:
+displayed plan → explicit test-operator approval → separate simulator process
+→ signed worker receipt and saved-output verification. Its retained receipt
+matches the nominal study and verifier digests in the
+[media manifest](../assets/starship-mission-20261006/manifest.json).
+This is historical simulator evidence, with a deterministic planner and no
+authenticated human identity or LLM-selected releases. The current public
+checkout's real HTTP smoke is the separate 30-second gimbal fixture; this PR
+does not reexecute the historical full flight. The missing-release record
+shows a bounded skip with two later sequencer observations and zero released
+bodies. Keep those records and the current smoke distinct.
+
 ## Watch the recorded simulations
 
 The [offline replay and media bundle](../assets/starship-mission-20261006/index.html)
