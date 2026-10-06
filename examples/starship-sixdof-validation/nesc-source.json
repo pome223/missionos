@@ -1,0 +1,45 @@
+{
+  "schema": "missionos.sixdof_nesc_rotation_source.v1",
+  "source_url": "https://nescacademy.nasa.gov/workshop/FlightSim/2015/atmos_scn_02/Atmos_02_sim_01.csv",
+  "source_sha256": "deb423c19bcdd1b99fdf6c0d2bbd1b6c1db5b68410a8e1dbe7a6cedb1b724f79",
+  "source_bytes": 114000,
+  "subset_file": "nesc-case02-sim01-angular-rates.csv",
+  "subset_sha256": "e56d647786fa10588ec85c336f3b46ad8dae2008b35a413a8d0713a3e1155320",
+  "subset_bytes": 18518,
+  "sample_count": 301,
+  "selection": "All rows in source order; only time and three bodyAngularRateWrtEi_deg_s columns. No resampling or tuned row selection.",
+  "source_kind": "published_simulation_checkcase_results_not_flight_telemetry",
+  "time_unit": "s",
+  "angular_rate_unit": "degree_per_second",
+  "angular_rate_frame": "Angular velocity of body relative to Earth-centered inertial frame, expressed in body axes.",
+  "retrieved_utc": "2026-10-04T07:28:07.582785+00:00",
+  "references": [
+    {
+      "url": "https://nescacademy.nasa.gov/flightsim/2015/atmospheric/acc02",
+      "purpose": "Case02 definition and errata: specified initial rates refer to local NED frame."
+    },
+    {
+      "url": "https://nescacademy.nasa.gov/flightsim/2015/bodies",
+      "purpose": "Published brick mass and principal inertias."
+    }
+  ],
+  "model": {
+    "mass_slug": 0.155404754,
+    "principal_inertia_slug_ft2": [
+      0.00189422,
+      0.006211019,
+      0.007194665
+    ],
+    "external_moment_zero": true,
+    "source_initial_inertial_rate_deg_s": [
+      9.999999999960824,
+      19.999999999978947,
+      29.999999999939774
+    ],
+    "duration_s": 30.0
+  },
+  "scope": "Only decoupled torque-free rotational rates are compared. Translation, geodesy, J2 gravity, local attitude and atmosphere from the full NASA case are not reproduced here.",
+  "nasa_full_checkcase_passed": false,
+  "nasa_certification": false,
+  "starship_fidelity_validated": false
+}

@@ -196,6 +196,7 @@ class MissionOSGatewayClient:
         robot_profile: str | None = None,
         go2_scenario: str | None = None,
         go2_supervision_mode: str | None = None,
+        starship_context: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "operator_instruction": instruction,
@@ -215,6 +216,8 @@ class MissionOSGatewayClient:
             payload["go2_scenario"] = go2_scenario
         if go2_supervision_mode:
             payload["go2_supervision_mode"] = go2_supervision_mode
+        if starship_context:
+            payload["starship_context"] = starship_context
         return self._request("POST", CONVERSATION_ROUTE, json=payload)
 
     def recovery_dispatch(

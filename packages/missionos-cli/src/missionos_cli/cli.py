@@ -91,6 +91,7 @@ from .chat_state import (
     _remember_sitl_task_id_from_payload as _remember_sitl_task_id_from_payload,
     _save_state as _save_state,
     _stored_mission_designer_context as _stored_mission_designer_context,
+    _stored_starship_context as _stored_starship_context,
     _stored_sitl_task_id as _stored_sitl_task_id,
 )
 from .console_output import (
@@ -4226,6 +4227,21 @@ def _update_chat_suggestion_from_conversation(
         _clear_chat_suggestion(ctx)
         return
     action = str(payload.get("routed_action") or payload.get("route") or "")
+    if payload.get("routing_source") == "starship_scoped_mission_control":
+        operation = payload.get("operation_result")
+        operation = operation if isinstance(operation, dict) else {}
+        if operation.get("status") in {"blocked", "failed", "rejected"}:
+            _clear_chat_suggestion(ctx)
+            return
+        if payload.get("starship_context") and action == "plan":
+            _set_chat_suggestion(ctx, raw="/approve", label="approve Starship simulation")
+        elif payload.get("starship_context") and action == "approve":
+            _set_chat_suggestion(ctx, raw="/run", label="run Starship simulation")
+        elif payload.get("starship_context") and action in {"execute", "status"}:
+            _set_chat_suggestion(ctx, raw="/status", label="Starship status")
+        else:
+            _clear_chat_suggestion(ctx)
+        return
     repair_prompt = payload.get("missionos_repair_prompt")
     if isinstance(repair_prompt, dict) and repair_prompt.get("suggested_command") == "/repair":
         _set_chat_suggestion(ctx, raw="/repair", label="repair")
@@ -4377,7 +4393,9 @@ def _handle_chat_input(
                 return True
     if raw in {"/quit", "/exit", "exit", "quit", "q"}:
         return False
-    if not raw.startswith("/"):
+    starship_context = _stored_starship_context(ctx, session_id)
+    starship_turn = bool(starship_context) or "starship" in raw.lower() or "スターシップ" in raw
+    if not raw.startswith("/") and not starship_turn:
         stored_task_id = _stored_sitl_task_id(ctx)
         lower = raw.lower()
         if any(token in lower for token in ("prepare", "ready", "execution request")):
@@ -4447,6 +4465,15 @@ def _handle_chat_input(
             _update_chat_suggestion_from_conversation(ctx, payload, client)
             return True
         if raw == "/status":
+            if starship_context:
+                payload = client.conversation(
+                    "/status", session_id=session_id, client_surface="chat",
+                    starship_context=starship_context,
+                )
+                _remember_mission_designer_context(ctx, payload, session_id=session_id)
+                _print_conversation_result(payload)
+                _update_chat_suggestion_from_conversation(ctx, payload, client)
+                return True
             ctx.invoke(status_command)
             return True
         if raw.startswith("/review-recovery"):
@@ -4705,7 +4732,7 @@ def _handle_chat_input(
             else:
                 _clear_chat_suggestion(ctx)
             return True
-        if not raw.startswith("/") and not _looks_like_mission_planning_request(raw):
+        if not starship_turn and not raw.startswith("/") and not _looks_like_mission_planning_request(raw):
             recovery_request = _natural_language_recovery_request(raw)
             if recovery_request is not None:
                 task_id = _resolve_operator_recovery_task_id(
@@ -4759,6 +4786,7 @@ def _handle_chat_input(
                             client_surface="chat",
                             robot_profile=robot_profile or None,
                             **_go2_chat_kwargs(ctx),
+                            **({"starship_context": starship_context} if starship_context else {}),
                         )
 
                     payload = (
@@ -4767,13 +4795,13 @@ def _handle_chat_input(
                             client,
                             conversation,
                         )
-                        if robot_profile == "turtlebot3" and intent == "run"
+                        if robot_profile == "turtlebot3" and intent == "run" and not starship_context
                         else conversation()
                     )
                 _remember_mission_designer_context(ctx, payload, session_id=session_id)
                 _maybe_open_turtlebot3_companion_terminals(ctx, payload)
                 _print_conversation_result(payload)
-                if robot_profile == "turtlebot3" and intent == "run":
+                if robot_profile == "turtlebot3" and intent == "run" and not starship_context:
                     _maybe_start_turtlebot3_chat_task_status_monitor(
                         ctx,
                         client,
@@ -4796,6 +4824,7 @@ def _handle_chat_input(
                 client_surface="chat",
                 robot_profile=robot_profile or None,
                 **_go2_chat_kwargs(ctx),
+                **({"starship_context": starship_context} if starship_context else {}),
             )
         _remember_mission_designer_context(ctx, payload, session_id=session_id)
         _maybe_open_turtlebot3_companion_terminals(ctx, payload)

@@ -115,12 +115,48 @@ def _stored_mission_designer_context(ctx: click.Context, session_id: str) -> dic
     return dict(context)
 
 
+def _stored_starship_context(ctx: click.Context, session_id: str) -> dict[str, str]:
+    state = _load_state(ctx.obj["missionos_state_path"])
+    context = state.get("starship_context")
+    if not isinstance(context, dict) or set(context) != {"plan_id", "plan_sha256", "session_id"}:
+        return {}
+    if any(not isinstance(value, str) or not value for value in context.values()):
+        return {}
+    if context["session_id"] != session_id:
+        return {}
+    if state.get("starship_gateway_url", "") != str(ctx.obj.get("missionos_gateway_url") or ""):
+        return {}
+    return dict(context)
+
+
+def _remember_starship_context(ctx: click.Context, payload: dict[str, Any], *, session_id: str) -> None:
+    context = payload.get("starship_context")
+    state = _load_state(ctx.obj["missionos_state_path"])
+    if isinstance(context, dict) and set(context) == {"plan_id", "plan_sha256", "session_id"}:
+        if context.get("session_id") != session_id or any(
+            not isinstance(value, str) or not value for value in context.values()
+        ):
+            return
+        state["starship_context"] = dict(context)
+        state["starship_gateway_url"] = str(ctx.obj.get("missionos_gateway_url") or "")
+        _save_state(ctx.obj["missionos_state_path"], state)
+    elif payload.get("routed_action") in {"plan", "mission_designer_plan", "fixture_plan"} and (
+        payload.get("routing_source") != "starship_scoped_mission_control"
+    ) and isinstance(state.get("starship_context"), dict) and state["starship_context"].get("session_id") == session_id:
+        # A newly selected mission takes focus; old Starship approval is never
+        # silently reused for a different mission's slash commands.
+        state.pop("starship_context", None)
+        state.pop("starship_gateway_url", None)
+        _save_state(ctx.obj["missionos_state_path"], state)
+
+
 def _remember_mission_designer_context(
     ctx: click.Context,
     payload: dict[str, Any],
     *,
     session_id: str,
 ) -> None:
+    _remember_starship_context(ctx, payload, session_id=session_id)
     context = _mission_designer_context_ref(payload)
     if not context:
         return

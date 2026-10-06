@@ -423,3 +423,64 @@ def test_shadow_primary_unavailable_and_code_only_candidate_reports_zero_inferen
     assert result.model_inference_invoked is False
     assert result.judgment_status == "not_configured"
     assert result.blocking_reasons == ("incumbent_not_configured",)
+
+
+def test_direct_shadow_invalid_profile_stops_before_primary_call():
+    slow = Reasoner()
+    result = MissionAssuranceAgent(
+        JevCascadeShadowJudge(slow, jev=ForbiddenJev(), fast_path="typo")
+    ).evaluate(situation())
+    assert slow.calls == 0
+    assert result.model_inference_invoked is False
+
+
+def test_cascade_respects_explicit_fixture_invocation_false():
+    from src.runtime.mission_assurance_policy_fixture import FixtureJudge
+
+    class FixtureRoute:
+        def judge(self, prompt):
+            base = FixtureJudge().judge(prompt)
+            return ModelJudgment(
+                base.output,
+                {"assessment_route": "need_observation", "provider": "fixture"},
+                model_inference_invoked=False,
+            )
+
+    result = MissionAssuranceAgent(JevCascadeJudge(FixtureJudge(), jev=FixtureRoute())).evaluate(
+        situation()
+    )
+    assert result.proposed_response_kind == "operator_escalation"
+    assert result.model_inference_invoked is False
+    assert result.model_invocation_evidence["jev_cascade"]["jev_invoked"] is False
+
+
+def test_cascade_shadow_retains_both_provider_failures_without_error_message_secrets():
+    from src.intelligence.mission_assurance_agent import MissionAssuranceJudgeError
+
+    marker = "fixture-sensitive-error-text"
+
+    class InvalidJev:
+        def judge(self, prompt):
+            raise MissionAssuranceJudgeError(
+                "invalid_jev_probability_sum",
+                status="failed",
+                invoked=True,
+                invocation_evidence={"response_sha256": "a" * 64},
+            )
+
+    class FailedPrimary:
+        def judge(self, prompt):
+            raise TimeoutError(marker)
+
+    result = MissionAssuranceAgent(
+        JevCascadeShadowJudge(FailedPrimary(), jev=InvalidJev())
+    ).evaluate(situation())
+    shadow = result.model_invocation_evidence["jev_cascade_shadow"]
+    assert shadow["incumbent_error_type"] == "TimeoutError"
+    assert (
+        shadow["invocation_evidence"]["jev_cascade"]["jev_failure"]["reason"]
+        == "invalid_jev_probability_sum"
+    )
+    assert result.model_inference_invoked is True
+    assert result.proposed_response_kind == "operator_escalation"
+    assert marker not in str(result.to_dict())

@@ -19,6 +19,10 @@ Each example should include commands, observed evidence, and limitations.
 - [PX4 Recovery Replay Bundle](recovery-replay-bundle.md) exercises sanitized
   two-Recovery export and verification with a deterministic fixture. It is a
   contract smoke, not evidence of a new simulator or physical run.
+- [Starship-inspired simulation through MissionOS](starship-mission-showcase.md)
+  provides saved six-DOF videos, bounded deployment supervision, a negative
+  return result, and a source-bound 30-second public fixture. Catch, physical
+  execution, satellite service, and model advantage remain unclaimed.
 
 - [Yokohama CPU PX4/Gazebo flight](yokohama-px4-sitl/REPORT-ja.md) verifies
   source-derived city collisions, seven measured AP holds, and a return landing.

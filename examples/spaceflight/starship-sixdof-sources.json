@@ -1,0 +1,807 @@
+{
+  "schema_version": "missionos.starship_sixdof_research.v1",
+  "checked_on": "2026-10-04",
+  "status": "research_requirements_not_runtime_evidence",
+  "target": {
+    "reference_flight": 14,
+    "ship_generation": 3,
+    "booster_generation": 3,
+    "engine_generation": 3
+  },
+  "scope": "Full mission with integrated 3D translation and rigid-body attitude; no SpaceX flight software, CFD, TPS survival or physical execution claim.",
+  "classification_contract": {
+    "model_origin": [
+      "public_physics",
+      "generic_approximation",
+      "operator_reported",
+      "spacex_unknown"
+    ],
+    "runtime_implementation_status": [
+      "not_implemented",
+      "implemented_unverified",
+      "verified_generic"
+    ],
+    "research_implementation_status": "not_attested_by_research",
+    "observation_role": [
+      "input",
+      "calibration",
+      "held_out_evaluation",
+      "display_only"
+    ]
+  },
+  "rights_and_integrity": {
+    "source_urls_are_not_downloaded_artifact_hashes": true,
+    "null_sha256_means_source_bytes_not_vendored": true,
+    "only_facts_short_summaries_and_original_contracts_committed": true,
+    "no_runtime_or_private_outputs_included": true
+  },
+  "sources": [
+    {
+      "id": "SX-SPEC",
+      "publisher": "SpaceX",
+      "title": "Starship vehicle overview",
+      "publication_date": null,
+      "url": "https://www.spacex.com/vehicles/starship",
+      "locator": "Overview; Starship; Super Heavy; Raptor Engines",
+      "read_method": "browser_rendered_text",
+      "retrieved_on": "2026-10-04",
+      "supports": "Current nominal dimensions, capacities and engine counts; not loaded mass or flight telemetry.",
+      "license_or_rights": "SpaceX copyright; no bulk content or assets redistributed.",
+      "source_file_sha256": null
+    },
+    {
+      "id": "SX-V3",
+      "publisher": "SpaceX",
+      "title": "Introducing Starship V3",
+      "publication_date": "2026-05-12",
+      "url": "https://www.spacex.com/updates#starship-v3",
+      "locator": "Super Heavy; Starship; Raptor 3 change highlights",
+      "read_method": "browser_rendered_text",
+      "retrieved_on": "2026-10-04",
+      "supports": "V3 configuration changes, 3 booster grid fins, engine nominal thrust; not coefficient maps or flight software.",
+      "license_or_rights": "SpaceX copyright; facts and links only.",
+      "source_file_sha256": null
+    },
+    {
+      "id": "SX-F14",
+      "publisher": "SpaceX",
+      "title": "Starship Flight 14",
+      "publication_date": "2026-09-28",
+      "url": "https://www.spacex.com/launches/starship-flight-14",
+      "locator": "Postflight narrative; timeline explicitly marked approximate",
+      "read_method": "browser_rendered_text",
+      "retrieved_on": "2026-10-04",
+      "supports": "Reported engine events, 26 satellites, early Pacific return; planned timeline is not actual event telemetry.",
+      "license_or_rights": "SpaceX copyright; facts and links only.",
+      "source_file_sha256": null
+    },
+    {
+      "id": "SX-ORB",
+      "publisher": "SpaceX",
+      "title": "Starship to Orbit",
+      "publication_date": "2026-09-15",
+      "url": "https://www.spacex.com/updates#orbital-starship",
+      "locator": "Initial orbit design",
+      "read_method": "browser_rendered_text",
+      "retrieved_on": "2026-10-04",
+      "supports": "Passive suborbital coast, health assessment, single sea-level engine insertion/deorbit, mission continuation decisions.",
+      "license_or_rights": "SpaceX copyright; facts and links only.",
+      "source_file_sha256": null
+    },
+    {
+      "id": "NASA-NESC",
+      "publisher": "NASA Engineering and Safety Center",
+      "title": "Check-Cases for Verification of 6-Degree-of-Freedom Flight Vehicle Simulations",
+      "publication_date": "2015-01-01",
+      "url": "https://nescacademy.nasa.gov/flightsim/2015",
+      "locator": "Models; Initial Conditions; Trajectory Data; Errata",
+      "read_method": "official_web_text",
+      "retrieved_on": "2026-10-04",
+      "supports": "Public generic atmospheric/orbital EOM comparison cases, including attitude, wind and staging; not a Starship model.",
+      "license_or_rights": "NASA report public; check each downloaded model/data license before redistribution.",
+      "source_file_sha256": null
+    },
+    {
+      "id": "NASA-NESC-REPORT",
+      "publisher": "NASA",
+      "title": "NASA/TM-2015-218675 Vol. I",
+      "publication_date": "2015-01-01",
+      "url": "https://ntrs.nasa.gov/citations/20150001263",
+      "locator": "Abstract; downloadable report",
+      "read_method": "official_web_text",
+      "retrieved_on": "2026-10-04",
+      "supports": "Verification methodology and scope; 7 independently implemented simulation tools.",
+      "license_or_rights": "US government public report; consult listed distribution/copyright terms.",
+      "source_file_sha256": null
+    },
+    {
+      "id": "NASA-DYNAMICS",
+      "publisher": "NASA / Rheinfurth and Wilson",
+      "title": "Methods of Applied Dynamics (NASA-RP-1262)",
+      "publication_date": "1991-05-01",
+      "url": "https://ntrs.nasa.gov/citations/19910015989",
+      "locator": "Chapter 3, pp.53-55; equations 3.48-3.49; impact dynamics",
+      "read_method": "official_pdf_text",
+      "retrieved_on": "2026-10-04",
+      "supports": "Mass-flow rotational effects depend on geometry; generic jet damping and impulse treatment.",
+      "license_or_rights": "NTRS: Work of the US Gov. Public Use Permitted.",
+      "source_file_sha256": null
+    },
+    {
+      "id": "NASA-US76",
+      "publisher": "NOAA / NASA / USAF",
+      "title": "U.S. Standard Atmosphere, 1976",
+      "publication_date": "1976-10-01",
+      "url": "https://ntrs.nasa.gov/citations/19770009539",
+      "locator": "Parts 1-2 equations; Part 4 tables to 1000 km",
+      "read_method": "official_web_text",
+      "retrieved_on": "2026-10-04",
+      "supports": "Reference atmospheric properties with distinct lower/upper formulations; not flight-specific weather.",
+      "license_or_rights": "NTRS: Work of the US Gov. Public Use Permitted.",
+      "source_file_sha256": null
+    },
+    {
+      "id": "NASA-GRAM",
+      "publisher": "NASA Marshall Space Flight Center",
+      "title": "Earth-GRAM 2026 User Guide",
+      "publication_date": "2026-05-01",
+      "url": "https://ntrs.nasa.gov/citations/20260004497",
+      "locator": "Sections 1-4; Appendices A-F",
+      "read_method": "official_web_text",
+      "retrieved_on": "2026-10-04",
+      "supports": "Geographical, seasonal and height variation plus perturbations; acquisition/execution not performed by this research.",
+      "license_or_rights": "User guide: US government public work; software distribution license not assessed.",
+      "source_file_sha256": null
+    },
+    {
+      "id": "NASA-APAS",
+      "publisher": "NASA / Rockwell International",
+      "title": "Aerodynamic Preliminary Analysis System II, Part I: Theory",
+      "publication_date": "1991-04-01",
+      "url": "https://ntrs.nasa.gov/citations/19910013767",
+      "locator": "pp.70-72; Appendix C pp.116-117",
+      "read_method": "official_pdf_text",
+      "retrieved_on": "2026-10-04",
+      "supports": "Geometry-dependent panel forces/moments and modified-Newtonian hypersonic approximation with scope limits.",
+      "license_or_rights": "NTRS: Work of the US Gov. Public Use Permitted.",
+      "source_file_sha256": null
+    },
+    {
+      "id": "NASA-THRUST",
+      "publisher": "NASA Glenn Research Center",
+      "title": "Rocket Thrust Equation",
+      "publication_date": null,
+      "url": "https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/rocket-thrust-equation/",
+      "locator": "Thrust Equation",
+      "read_method": "official_web_text",
+      "retrieved_on": "2026-10-04",
+      "supports": "F = mdot*Ve + Ae*(pe-pa); not a Raptor performance map.",
+      "license_or_rights": "NASA educational page; linked, no assets copied.",
+      "source_file_sha256": null
+    },
+    {
+      "id": "NASA-ROCKET-EQUATION",
+      "publisher": "NASA Glenn Research Center",
+      "title": "Ideal Rocket Equation",
+      "publication_date": null,
+      "url": "https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/ideal-rocket-equation/",
+      "locator": "Variable mass derivation",
+      "read_method": "official_web_text",
+      "retrieved_on": "2026-10-04",
+      "supports": "Analytic ideal finite-mass propulsion comparison without external forces.",
+      "license_or_rights": "NASA educational page; linked, no assets copied.",
+      "source_file_sha256": null
+    },
+    {
+      "id": "NASA-TVC",
+      "publisher": "NASA / Orr et al.",
+      "title": "Advanced Modeling of Control-Structure Interaction in Thrust Vector Control Systems",
+      "publication_date": "2023-02",
+      "url": "https://ntrs.nasa.gov/citations/20230000427",
+      "locator": "Introduction; Sections 2 and 6; AAS 23-153",
+      "read_method": "official_pdf_text",
+      "retrieved_on": "2026-10-04",
+      "supports": "SLS TVC actuator/engine/structure coupling and test-based validation; no transfer of RS-25 constants to Raptor.",
+      "license_or_rights": "NTRS: Public Use Permitted.",
+      "source_file_sha256": null
+    },
+    {
+      "id": "NASA-SG",
+      "publisher": "NASA / Sutton and Graves",
+      "title": "A General Stagnation-Point Convective Heating Equation for Arbitrary Gas Mixtures",
+      "publication_date": "1971-11-01",
+      "url": "https://ntrs.nasa.gov/citations/19720003329",
+      "locator": "NASA-TR-R-376; abstract and report",
+      "read_method": "official_web_text",
+      "retrieved_on": "2026-10-04",
+      "supports": "Axisymmetric blunt-body stagnation convective heating in equilibrium gas; not tile/hinge thermal survival.",
+      "license_or_rights": "NTRS: Work of the US Gov. Public Use Permitted.",
+      "source_file_sha256": null
+    },
+    {
+      "id": "NASA-HS",
+      "publisher": "NASA Advanced Supercomputing",
+      "title": "SpaceX Starship Hot Staging - From Concept to Flight",
+      "publication_date": "2024-11-16",
+      "url": "https://www.nas.nasa.gov/SC24/research/project24.php",
+      "locator": "Narrative; Quick Facts",
+      "read_method": "official_web_text",
+      "retrieved_on": "2026-10-04",
+      "supports": "IFT2 plume-interaction CFD comparison; 500-million-cell scale and large computational cost; event separation alone is not that model.",
+      "license_or_rights": "NASA public webpage; linked, no animation copied.",
+      "source_file_sha256": null
+    },
+    {
+      "id": "NAIF-FRAMES",
+      "publisher": "NASA/JPL NAIF",
+      "title": "SPICE Reference Frames",
+      "publication_date": null,
+      "url": "https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/req/frames.html",
+      "locator": "Frames Supported; Kernels Needed; ICRF vs J2000",
+      "read_method": "official_web_text",
+      "retrieved_on": "2026-10-04",
+      "supports": "Explicit inertial/body-fixed frame definitions and Earth orientation kernel requirements.",
+      "license_or_rights": "NAIF documentation; software/kernel terms must be checked separately.",
+      "source_file_sha256": null
+    },
+    {
+      "id": "BSK-TANK",
+      "publisher": "University of Colorado AVS Lab",
+      "title": "Basilisk 2.12.0 fuelTank module",
+      "publication_date": null,
+      "url": "https://avslab.github.io/basilisk/Documentation/simulation/dynamics/FuelTank/fuelTank.html",
+      "locator": "Executive Summary; User Guide; setUpdateOnly",
+      "read_method": "official_project_documentation",
+      "retrieved_on": "2026-10-04",
+      "supports": "Stateful mass properties, thruster coupling, depletion contribution switch; generic tank models.",
+      "license_or_rights": "Basilisk project ISC source license; pin installed version/commit and retain license on reuse.",
+      "source_file_sha256": null
+    }
+  ],
+  "public_nominal_facts": [
+    {
+      "parameter_id": "stack.height_m",
+      "value": 124,
+      "units": "m",
+      "parameter_origin": "reported_nominal",
+      "source_ids": [
+        "SX-SPEC"
+      ],
+      "vehicle_scope": "current_intro_nominal_not_flight_loaded_mass",
+      "uncertainty": {
+        "kind": "not_quantified",
+        "range": null
+      }
+    },
+    {
+      "parameter_id": "ship.height_m",
+      "value": 52,
+      "units": "m",
+      "parameter_origin": "reported_nominal",
+      "source_ids": [
+        "SX-SPEC"
+      ],
+      "vehicle_scope": "current_intro_nominal_not_flight_loaded_mass",
+      "uncertainty": {
+        "kind": "not_quantified",
+        "range": null
+      }
+    },
+    {
+      "parameter_id": "booster.height_m",
+      "value": 72,
+      "units": "m",
+      "parameter_origin": "reported_nominal",
+      "source_ids": [
+        "SX-SPEC"
+      ],
+      "vehicle_scope": "current_intro_nominal_not_flight_loaded_mass",
+      "uncertainty": {
+        "kind": "not_quantified",
+        "range": null
+      }
+    },
+    {
+      "parameter_id": "vehicle.diameter_m",
+      "value": 9,
+      "units": "m",
+      "parameter_origin": "reported_nominal",
+      "source_ids": [
+        "SX-SPEC"
+      ],
+      "vehicle_scope": "current_intro_nominal_not_flight_loaded_mass",
+      "uncertainty": {
+        "kind": "not_quantified",
+        "range": null
+      }
+    },
+    {
+      "parameter_id": "ship.propellant_capacity_kg",
+      "value": 1600000,
+      "units": "kg",
+      "parameter_origin": "reported_nominal",
+      "source_ids": [
+        "SX-SPEC"
+      ],
+      "vehicle_scope": "current_intro_nominal_not_flight_loaded_mass",
+      "uncertainty": {
+        "kind": "not_quantified",
+        "range": null
+      }
+    },
+    {
+      "parameter_id": "booster.propellant_capacity_kg",
+      "value": 3650000,
+      "units": "kg",
+      "parameter_origin": "reported_nominal",
+      "source_ids": [
+        "SX-SPEC"
+      ],
+      "vehicle_scope": "current_intro_nominal_not_flight_loaded_mass",
+      "uncertainty": {
+        "kind": "not_quantified",
+        "range": null
+      }
+    },
+    {
+      "parameter_id": "ship.sea_level_engine_count",
+      "value": 3,
+      "units": "count",
+      "parameter_origin": "reported_nominal",
+      "source_ids": [
+        "SX-SPEC"
+      ],
+      "vehicle_scope": "current_intro_nominal_not_flight_loaded_mass",
+      "uncertainty": {
+        "kind": "not_quantified",
+        "range": null
+      }
+    },
+    {
+      "parameter_id": "ship.vacuum_engine_count",
+      "value": 3,
+      "units": "count",
+      "parameter_origin": "reported_nominal",
+      "source_ids": [
+        "SX-SPEC"
+      ],
+      "vehicle_scope": "current_intro_nominal_not_flight_loaded_mass",
+      "uncertainty": {
+        "kind": "not_quantified",
+        "range": null
+      }
+    },
+    {
+      "parameter_id": "booster.engine_count",
+      "value": 33,
+      "units": "count",
+      "parameter_origin": "reported_nominal",
+      "source_ids": [
+        "SX-SPEC"
+      ],
+      "vehicle_scope": "current_intro_nominal_not_flight_loaded_mass",
+      "uncertainty": {
+        "kind": "not_quantified",
+        "range": null
+      }
+    },
+    {
+      "parameter_id": "booster.maneuverable_engine_count",
+      "value": 13,
+      "units": "count",
+      "parameter_origin": "reported_nominal",
+      "source_ids": [
+        "SX-SPEC"
+      ],
+      "vehicle_scope": "current_intro_nominal_not_flight_loaded_mass",
+      "uncertainty": {
+        "kind": "not_quantified",
+        "range": null
+      }
+    },
+    {
+      "parameter_id": "booster.grid_fin_count",
+      "value": 3,
+      "units": "count",
+      "parameter_origin": "reported_nominal",
+      "source_ids": [
+        "SX-V3"
+      ],
+      "vehicle_scope": "V3",
+      "uncertainty": {
+        "kind": "not_quantified",
+        "range": null
+      }
+    },
+    {
+      "parameter_id": "raptor3.sea_level_thrust_tf",
+      "value": 250,
+      "units": "tf",
+      "parameter_origin": "reported_nominal",
+      "source_ids": [
+        "SX-V3"
+      ],
+      "vehicle_scope": "V3_reported_nominal_condition_unspecified",
+      "uncertainty": {
+        "kind": "not_quantified",
+        "range": null
+      }
+    },
+    {
+      "parameter_id": "raptor3.vacuum_thrust_tf",
+      "value": 275,
+      "units": "tf",
+      "parameter_origin": "reported_nominal",
+      "source_ids": [
+        "SX-V3"
+      ],
+      "vehicle_scope": "V3_reported_nominal_condition_unspecified",
+      "uncertainty": {
+        "kind": "not_quantified",
+        "range": null
+      }
+    },
+    {
+      "parameter_id": "flight14.satellites_reported_deployed",
+      "value": 26,
+      "units": "count",
+      "parameter_origin": "reported_nominal",
+      "source_ids": [
+        "SX-F14"
+      ],
+      "vehicle_scope": "Flight14_operator_reported_postflight",
+      "uncertainty": {
+        "kind": "not_quantified",
+        "range": null
+      }
+    }
+  ],
+  "coverage_requirements": [
+    {
+      "id": "M01",
+      "priority": "A",
+      "model": "rigid_body_sixdof",
+      "source_ids": [
+        "NASA-NESC",
+        "NASA-DYNAMICS"
+      ],
+      "unknown_parameter_groups": [
+        "inertia_tensor",
+        "mass_distribution"
+      ],
+      "requirement": "Quaternion/body-rate integration coupled to physical force/torque.",
+      "model_origin": [
+        "public_physics",
+        "generic_approximation"
+      ],
+      "implementation_status": "not_attested_by_research",
+      "vehicle_validation_status": "not_validated"
+    },
+    {
+      "id": "M02",
+      "priority": "A",
+      "model": "earth_frames_gravity",
+      "source_ids": [
+        "NASA-NESC",
+        "NAIF-FRAMES"
+      ],
+      "unknown_parameter_groups": [
+        "flight_epoch_and_frame_of_public_hud"
+      ],
+      "requirement": "WGS84, central+J2, Earth rotation, distinct air-relative/inertial velocities.",
+      "model_origin": [
+        "public_physics",
+        "generic_approximation"
+      ],
+      "implementation_status": "not_attested_by_research",
+      "vehicle_validation_status": "not_validated"
+    },
+    {
+      "id": "M03",
+      "priority": "A",
+      "model": "tank_mass_cg_inertia",
+      "source_ids": [
+        "NASA-DYNAMICS",
+        "BSK-TANK"
+      ],
+      "unknown_parameter_groups": [
+        "tank_geometry",
+        "header_main_split",
+        "reserves",
+        "internal_flow_paths"
+      ],
+      "requirement": "Conservation-compatible variable mass model with explicitly declared exhaust/flow approximation.",
+      "model_origin": [
+        "public_physics",
+        "generic_approximation"
+      ],
+      "implementation_status": "not_attested_by_research",
+      "vehicle_validation_status": "not_validated"
+    },
+    {
+      "id": "M04",
+      "priority": "A",
+      "model": "per_engine_propulsion",
+      "source_ids": [
+        "SX-V3",
+        "SX-SPEC",
+        "NASA-THRUST",
+        "NASA-ROCKET-EQUATION"
+      ],
+      "unknown_parameter_groups": [
+        "isp_map",
+        "throttle_envelope",
+        "restart_envelope",
+        "ignition_transient"
+      ],
+      "requirement": "Finite thrust/flow, engine modes, event-resolved depletion.",
+      "model_origin": [
+        "public_physics",
+        "generic_approximation"
+      ],
+      "implementation_status": "not_attested_by_research",
+      "vehicle_validation_status": "not_validated"
+    },
+    {
+      "id": "M05",
+      "priority": "A",
+      "model": "actuators_and_control_allocation",
+      "source_ids": [
+        "SX-V3",
+        "NASA-TVC"
+      ],
+      "unknown_parameter_groups": [
+        "gimbal_limits_rates",
+        "flap_limits_rates",
+        "rcs_layout_thrust",
+        "actuator_transfer_function"
+      ],
+      "requirement": "Commands separated from achieved bounded actuator state; no direct ideal attitude forcing.",
+      "model_origin": [
+        "public_physics",
+        "generic_approximation"
+      ],
+      "implementation_status": "not_attested_by_research",
+      "vehicle_validation_status": "not_validated"
+    },
+    {
+      "id": "M06",
+      "priority": "A",
+      "model": "aerodynamic_forces_moments",
+      "source_ids": [
+        "NASA-APAS"
+      ],
+      "unknown_parameter_groups": [
+        "coefficient_database",
+        "aero_geometry",
+        "pressure_center",
+        "control_surface_interference"
+      ],
+      "requirement": "Geometry/table based 3 force + 3 moment model with regime coverage and extrapolation flags.",
+      "model_origin": [
+        "public_physics",
+        "generic_approximation"
+      ],
+      "implementation_status": "not_attested_by_research",
+      "vehicle_validation_status": "not_validated"
+    },
+    {
+      "id": "M07",
+      "priority": "A",
+      "model": "atmosphere_wind",
+      "source_ids": [
+        "NASA-US76",
+        "NASA-NESC"
+      ],
+      "unknown_parameter_groups": [
+        "flight_weather"
+      ],
+      "requirement": "Layered reference atmosphere and explicit upper regime, vector wind.",
+      "model_origin": [
+        "public_physics",
+        "generic_approximation"
+      ],
+      "implementation_status": "not_attested_by_research",
+      "vehicle_validation_status": "not_validated"
+    },
+    {
+      "id": "M08",
+      "priority": "A",
+      "model": "staging",
+      "source_ids": [
+        "NASA-NESC",
+        "NASA-HS",
+        "SX-V3"
+      ],
+      "unknown_parameter_groups": [
+        "separation_impulse",
+        "interstage_pressure_loads"
+      ],
+      "requirement": "Stack split with mass, linear/angular momentum accounting; hot-stage overlap.",
+      "model_origin": [
+        "public_physics",
+        "generic_approximation"
+      ],
+      "implementation_status": "not_attested_by_research",
+      "vehicle_validation_status": "not_validated"
+    },
+    {
+      "id": "M09",
+      "priority": "A",
+      "model": "guidance_navigation_control",
+      "source_ids": [
+        "SX-ORB",
+        "NASA-NESC"
+      ],
+      "unknown_parameter_groups": [
+        "spacex_gnc_fdir",
+        "control_gains_and_thresholds"
+      ],
+      "requirement": "Generic closed-loop guidance and bounded control; reference trajectory not truth reset.",
+      "model_origin": [
+        "public_physics",
+        "generic_approximation"
+      ],
+      "implementation_status": "not_attested_by_research",
+      "vehicle_validation_status": "not_validated"
+    },
+    {
+      "id": "M10",
+      "priority": "B",
+      "model": "aerothermal_and_material_response",
+      "source_ids": [
+        "NASA-SG"
+      ],
+      "unknown_parameter_groups": [
+        "tps_thickness_material_contact",
+        "local_transition",
+        "damage_thresholds"
+      ],
+      "requirement": "Stagnation proxy and optional thermal balance separately scoped; no TPS survival inference.",
+      "model_origin": [
+        "public_physics",
+        "generic_approximation"
+      ],
+      "implementation_status": "not_attested_by_research",
+      "vehicle_validation_status": "not_validated"
+    },
+    {
+      "id": "M11",
+      "priority": "A",
+      "model": "payload_release_and_orbits",
+      "source_ids": [
+        "SX-F14",
+        "NASA-NESC"
+      ],
+      "unknown_parameter_groups": [
+        "pez_ejection_state",
+        "satellite_mass_inertia",
+        "commissioning_controller"
+      ],
+      "requirement": "Independently propagated payloads, reaction/mass conservation; release differs from service.",
+      "model_origin": [
+        "public_physics",
+        "generic_approximation"
+      ],
+      "implementation_status": "not_attested_by_research",
+      "vehicle_validation_status": "not_validated"
+    },
+    {
+      "id": "M12",
+      "priority": "A",
+      "model": "surface_contact",
+      "source_ids": [
+        "NASA-DYNAMICS"
+      ],
+      "unknown_parameter_groups": [
+        "structural_contact_limits",
+        "catcher_mechanics",
+        "hydrodynamic_response"
+      ],
+      "requirement": "First geometry contact, precontact r/v/q/omega/m, no forced zero-velocity success.",
+      "model_origin": [
+        "public_physics",
+        "generic_approximation"
+      ],
+      "implementation_status": "not_attested_by_research",
+      "vehicle_validation_status": "not_validated"
+    },
+    {
+      "id": "M13",
+      "priority": "B",
+      "model": "sensors_and_communication",
+      "source_ids": [
+        "SX-ORB",
+        "SX-V3"
+      ],
+      "unknown_parameter_groups": [
+        "sensor_errors_latency_fdir",
+        "real_communications_conditions"
+      ],
+      "requirement": "Truth versus observations, delayed/missing measurements, no future state access.",
+      "model_origin": [
+        "public_physics",
+        "generic_approximation"
+      ],
+      "implementation_status": "not_attested_by_research",
+      "vehicle_validation_status": "not_validated"
+    },
+    {
+      "id": "M14",
+      "priority": "C",
+      "model": "variable_reference_atmosphere",
+      "source_ids": [
+        "NASA-GRAM"
+      ],
+      "unknown_parameter_groups": [
+        "flight_specific_wind_density"
+      ],
+      "requirement": "GRAM or equivalent pinned data/model only after acquisition and implementation checks.",
+      "model_origin": [
+        "public_physics",
+        "generic_approximation"
+      ],
+      "implementation_status": "not_attested_by_research",
+      "vehicle_validation_status": "not_validated"
+    },
+    {
+      "id": "M15",
+      "priority": "C",
+      "model": "coupled_flexible_flow_thermal_effects",
+      "source_ids": [
+        "BSK-TANK",
+        "NASA-TVC",
+        "NASA-HS",
+        "NASA-SG"
+      ],
+      "unknown_parameter_groups": [
+        "vehicle_fem",
+        "slosh_identification",
+        "plume_cfd",
+        "local_tps_properties"
+      ],
+      "requirement": "Generic extensions are possible; require their own validation and vehicle parameters.",
+      "model_origin": [
+        "public_physics",
+        "generic_approximation"
+      ],
+      "implementation_status": "not_attested_by_research",
+      "vehicle_validation_status": "not_validated"
+    }
+  ],
+  "verification_requirements": {
+    "external_case_sets": [
+      {
+        "source_id": "NASA-NESC",
+        "cases": [
+          "atmospheric_02",
+          "atmospheric_03",
+          "atmospheric_05",
+          "atmospheric_07",
+          "atmospheric_08",
+          "atmospheric_17",
+          "orbital_08A",
+          "orbital_08B",
+          "orbital_09A",
+          "orbital_09B",
+          "orbital_09C",
+          "orbital_09D"
+        ],
+        "conditions": "Current corrected 2015 cases; preserve errata and pin downloaded input/output checksums."
+      }
+    ],
+    "independent_implementation": "Native Basilisk, matched force/mass/frame conventions, continuous state propagation; source parameters themselves remain unvalidated.",
+    "forbidden_promotions": [
+      "nominal_spec_to_as_flown_state",
+      "scheduled_event_to_observed_event",
+      "public_hud_fit_to_independent_validation",
+      "quaternion_animation_to_sixdof_dynamics",
+      "generic_model_agreement_to_starship_validation",
+      "payload_release_to_operational_service",
+      "surface_contact_to_reuse"
+    ]
+  },
+  "runtime_execution_performed_by_this_research": false,
+  "starship_vehicle_validated": false,
+  "physical_execution_invoked": false
+}

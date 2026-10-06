@@ -1,0 +1,59 @@
+{
+  "schema": "missionos.starship_return_sites.v1",
+  "profile_id": "two_synthetic_model_return_sites_30km_east_v1",
+  "coordinate_datum": "WGS84_ellipsoid",
+  "derivation": "same_geodetic_latitude_wgs84_parallel_arc_30000m_east",
+  "nominal_east_distance_m": 30000.0,
+  "sites": [
+    {
+      "schema": "missionos.starship_return_site.v1",
+      "site_id": "capture",
+      "latitude_deg": 25.997,
+      "longitude_deg": -97.155,
+      "elevation_m": 0.0,
+      "terminal_goal": "surrogate_pin_support",
+      "surface_footprint_radius_m": 0.2,
+      "maximum_contact_ground_speed_mps": 0.1,
+      "maximum_contact_vertical_speed_mps": 3.0,
+      "maximum_contact_tilt_deg": 0.8,
+      "maximum_contact_body_rate_rad_s": 0.01,
+      "minimum_contact_propellant_kg": 1000.0,
+      "support_height_m": 100.0,
+      "pin_clearance_center_m": 3.4,
+      "support_points_body_m": [
+        [
+          -6.0,
+          0.0,
+          60.0
+        ],
+        [
+          6.0,
+          0.0,
+          60.0
+        ]
+      ]
+    },
+    {
+      "schema": "missionos.starship_return_site.v1",
+      "site_id": "divert",
+      "latitude_deg": 25.997,
+      "longitude_deg": -96.85536033914616,
+      "elevation_m": 0.0,
+      "terminal_goal": "model_surface_contact",
+      "surface_footprint_radius_m": 5000.0,
+      "maximum_contact_ground_speed_mps": 3.0,
+      "maximum_contact_vertical_speed_mps": 2.0,
+      "maximum_contact_tilt_deg": 5.0,
+      "maximum_contact_body_rate_rad_s": 0.02,
+      "minimum_contact_propellant_kg": 1000.0,
+      "support_height_m": 0.0,
+      "pin_clearance_center_m": 0.0,
+      "support_points_body_m": []
+    }
+  ],
+  "synthetic_model_sites": true,
+  "surveyed_mission_coordinates": false,
+  "spacex_clearance_verified": false,
+  "safe_landing_area_verified": false,
+  "wave_or_water_contact_model": false
+}

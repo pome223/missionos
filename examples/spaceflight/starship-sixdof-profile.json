@@ -1,0 +1,565 @@
+{
+  "schema": "missionos.starship_sixdof_profile.v1",
+  "profile_id": "v3-inspired-open-model-development-v1",
+  "claim": "Engineering development configuration, not identified SpaceX flight parameters. No telemetry fit.",
+  "launch": {
+    "latitude_deg": 25.997,
+    "longitude_deg": -97.155,
+    "azimuth_deg": 90.0,
+    "release_base_altitude_m": 15.0,
+    "main_engines_initially_spooled": true
+  },
+  "geometry": {
+    "radius_m": 4.5,
+    "booster_length_m": 72.0,
+    "ship_length_m": 52.0
+  },
+  "booster": {
+    "dry_mass_kg": 250000.0,
+    "propellant_kg": 3650000.0,
+    "dry_com_z_m": 32.0,
+    "tank_center_z_m": 35.0,
+    "tank_length_m": 55.0,
+    "engine_count": 33,
+    "gimbal_engine_count": 13,
+    "engine_thrust_n": 2451662.5,
+    "engine_isp_s": 330.0,
+    "separation_reserve_kg": 260000.0,
+    "dry_inertia_kg_m2": null,
+    "dry_inertia_model": "homogeneous_cylinder_when_tensor_is_null",
+    "hull_cp_z_m": 32.0,
+    "engine_positions_body_m": [
+      [
+        1.05,
+        0.0,
+        0.0
+      ],
+      [
+        -0.5249999999999998,
+        0.9093266739736606,
+        0.0
+      ],
+      [
+        -0.5250000000000005,
+        -0.9093266739736603,
+        0.0
+      ],
+      [
+        2.3,
+        0.0,
+        0.0
+      ],
+      [
+        1.860739087062379,
+        1.351906080272688,
+        0.0
+      ],
+      [
+        0.7107390870623791,
+        2.1874299874788528,
+        0.0
+      ],
+      [
+        -0.7107390870623789,
+        2.187429987478853,
+        0.0
+      ],
+      [
+        -1.8607390870623788,
+        1.3519060802726883,
+        0.0
+      ],
+      [
+        -2.3,
+        2.816687638038912e-16,
+        0.0
+      ],
+      [
+        -1.860739087062379,
+        -1.3519060802726879,
+        0.0
+      ],
+      [
+        -0.7107390870623793,
+        -2.1874299874788528,
+        0.0
+      ],
+      [
+        0.7107390870623785,
+        -2.187429987478853,
+        0.0
+      ],
+      [
+        1.8607390870623788,
+        -1.3519060802726885,
+        0.0
+      ],
+      [
+        3.65,
+        0.0,
+        0.0
+      ],
+      [
+        3.4713562844773103,
+        1.127912029468558,
+        0.0
+      ],
+      [
+        2.9529120294685582,
+        2.145416170867527,
+        0.0
+      ],
+      [
+        2.145416170867527,
+        2.9529120294685582,
+        0.0
+      ],
+      [
+        1.127912029468558,
+        3.4713562844773103,
+        0.0
+      ],
+      [
+        2.2349804084439197e-16,
+        3.65,
+        0.0
+      ],
+      [
+        -1.1279120294685578,
+        3.4713562844773107,
+        0.0
+      ],
+      [
+        -2.1454161708675263,
+        2.9529120294685582,
+        0.0
+      ],
+      [
+        -2.952912029468558,
+        2.1454161708675272,
+        0.0
+      ],
+      [
+        -3.4713562844773103,
+        1.1279120294685583,
+        0.0
+      ],
+      [
+        -3.65,
+        4.469960816887839e-16,
+        0.0
+      ],
+      [
+        -3.471356284477311,
+        -1.127912029468556,
+        0.0
+      ],
+      [
+        -2.9529120294685582,
+        -2.1454161708675263,
+        0.0
+      ],
+      [
+        -2.1454161708675272,
+        -2.952912029468558,
+        0.0
+      ],
+      [
+        -1.1279120294685585,
+        -3.4713562844773103,
+        0.0
+      ],
+      [
+        -6.704941225331759e-16,
+        -3.65,
+        0.0
+      ],
+      [
+        1.1279120294685574,
+        -3.4713562844773107,
+        0.0
+      ],
+      [
+        2.145416170867526,
+        -2.9529120294685587,
+        0.0
+      ],
+      [
+        2.952912029468558,
+        -2.1454161708675277,
+        0.0
+      ],
+      [
+        3.4713562844773103,
+        -1.127912029468559,
+        0.0
+      ]
+    ],
+    "grid_fin_panels": [
+      {
+        "name": "grid_fin_0",
+        "position_body_m": [
+          5.5,
+          0.0,
+          68.0
+        ],
+        "normal_body": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "hinge_axis_body": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "area_m2": 4.5
+      },
+      {
+        "name": "grid_fin_1",
+        "position_body_m": [
+          -2.749999999999999,
+          4.763139720814413,
+          68.0
+        ],
+        "normal_body": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "hinge_axis_body": [
+          -0.49999999999999983,
+          0.8660254037844387,
+          0.0
+        ],
+        "area_m2": 4.5
+      },
+      {
+        "name": "grid_fin_2",
+        "position_body_m": [
+          -2.7500000000000027,
+          -4.7631397208144115,
+          68.0
+        ],
+        "normal_body": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "hinge_axis_body": [
+          -0.5000000000000004,
+          -0.8660254037844384,
+          0.0
+        ],
+        "area_m2": 4.5
+      }
+    ]
+  },
+  "ship": {
+    "dry_mass_kg": 120000.0,
+    "propellant_kg": 1600000.0,
+    "dry_com_z_m": 24.0,
+    "tank_center_z_m": 20.0,
+    "tank_length_m": 32.0,
+    "engine_count": 6,
+    "gimbal_engine_count": 3,
+    "engine_thrust_n": 2451662.5,
+    "vacuum_thrust_n": 2696828.75,
+    "engine_isp_s": 365.0,
+    "ascent_reserve_kg": 75000.0,
+    "return_reserve_kg": 28000.0,
+    "dry_inertia_kg_m2": null,
+    "dry_inertia_model": "homogeneous_cylinder_when_tensor_is_null",
+    "hull_cp_z_m": 24.0,
+    "engine_positions_body_m": [
+      [
+        1.12,
+        0.0,
+        0.0
+      ],
+      [
+        -0.5599999999999998,
+        0.9699484522385714,
+        0.0
+      ],
+      [
+        -0.5600000000000005,
+        -0.9699484522385711,
+        0.0
+      ],
+      [
+        1.4250000000000003,
+        2.46817240078565,
+        0.0
+      ],
+      [
+        -2.85,
+        3.4902433775699566e-16,
+        0.0
+      ],
+      [
+        1.424999999999998,
+        -2.4681724007856514,
+        0.0
+      ]
+    ],
+    "flap_panels": [
+      {
+        "name": "flap_aft_-1",
+        "position_body_m": [
+          -6.0,
+          0.0,
+          10.0
+        ],
+        "normal_body": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "hinge_axis_body": [
+          0.0,
+          0.0,
+          -1.0
+        ],
+        "area_m2": 22.0
+      },
+      {
+        "name": "flap_aft_1",
+        "position_body_m": [
+          6.0,
+          0.0,
+          10.0
+        ],
+        "normal_body": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "hinge_axis_body": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "area_m2": 22.0
+      },
+      {
+        "name": "flap_forward_-1",
+        "position_body_m": [
+          -6.0,
+          0.0,
+          38.0
+        ],
+        "normal_body": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "hinge_axis_body": [
+          0.0,
+          0.0,
+          -1.0
+        ],
+        "area_m2": 12.0
+      },
+      {
+        "name": "flap_forward_1",
+        "position_body_m": [
+          6.0,
+          0.0,
+          38.0
+        ],
+        "normal_body": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "hinge_axis_body": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "area_m2": 12.0
+      }
+    ]
+  },
+  "payload": {
+    "count": 26,
+    "mass_each_kg": 1700.0,
+    "dimensions_m": [
+      5.0,
+      3.0,
+      0.3
+    ],
+    "center_z_m": 39.0,
+    "interval_s": 15.0,
+    "release_speed_mps": 0.45
+  },
+  "actuators": {
+    "max_gimbal_deg": 8.0,
+    "gimbal_rate_deg_s": 12.0,
+    "gimbal_tau_s": 0.2,
+    "throttle_tau_s": 0.35,
+    "throttle_rate_s": 2.0,
+    "rcs_thrust_n": 10000.0,
+    "rcs_isp_s": 250.0,
+    "rcs_radius_m": 4.0,
+    "flap_limit_deg": 60.0,
+    "flap_rate_deg_s": 25.0,
+    "flap_tau_s": 0.25,
+    "grid_fin_limit_deg": 25.0
+  },
+  "aero": {
+    "axial_cd": 0.35,
+    "crossflow_cd": 1.1,
+    "panel_normal_coefficient": 1.5,
+    "panel_tangential_coefficient": 0.02,
+    "forward_flap_area_m2": 12.0,
+    "aft_flap_area_m2": 22.0
+  },
+  "guidance": {
+    "attitude_frequency_rad_s": 0.28,
+    "attitude_damping_ratio": 1.0,
+    "max_angular_acceleration_rad_s2": 0.03,
+    "target_altitude_m": 275000.0,
+    "target_perigee_m": 220000.0,
+    "deorbit_perigee_m": 20000.0,
+    "max_q_pa": 35000.0,
+    "max_ascent_s": 800.0,
+    "coast_before_return_s": 1800.0,
+    "flip_altitude_m": 2000.0,
+    "landing_target_speed_mps": 2.0,
+    "pitch_program_time_deg": [
+      [
+        0.0,
+        90.0
+      ],
+      [
+        10.0,
+        90.0
+      ],
+      [
+        40.0,
+        82.5
+      ],
+      [
+        100.0,
+        55.5
+      ],
+      [
+        156.66666666666666,
+        30.0
+      ]
+    ],
+    "ascent_altitude_response_s": 100.0,
+    "ascent_velocity_response_s": 35.0,
+    "entry_alpha_deg": 70.0,
+    "landing_velocity_response_s": 1.5,
+    "landing_height_response_s": 6.0,
+    "landing_horizontal_response_s": 8.0,
+    "landing_max_tilt_deg": 15.0,
+    "orbit_release_delay_s": 45.0,
+    "release_max_rate_rad_s": 0.01,
+    "deorbit_max_alignment_deg": 5.0,
+    "deorbit_throttle": 0.5,
+    "flip_min_throttle": 0.4
+  },
+  "integration": {
+    "powered_dt_s": 0.1,
+    "coast_dt_s": 0.25,
+    "sample_interval_s": 2.0,
+    "max_duration_s": 10000.0
+  },
+  "uncertainty_groups": {
+    "public_design_anchors": [
+      "geometry",
+      "booster.engine_count",
+      "ship.engine_count"
+    ],
+    "unidentified_vehicle_assumptions": [
+      "booster.dry_mass_kg",
+      "ship.dry_mass_kg",
+      "propellant loading",
+      "CG and inertia distribution",
+      "engine layout",
+      "engine performance",
+      "gimbal limits",
+      "actuator dynamics",
+      "RCS design and shared propellant reservoir",
+      "aerodynamic coefficients",
+      "flap geometry",
+      "payload properties",
+      "finite box satellite inertia and co-located stowage centroids",
+      "grid fin solid plate proxy",
+      "dry homogeneous-cylinder inertia fallback"
+    ],
+    "mission_design_assumptions": [
+      "launch azimuth",
+      "pitch program",
+      "orbit targets",
+      "PD gains",
+      "control allocation",
+      "reserve thresholds",
+      "release impulse",
+      "return timing",
+      "landing guidance",
+      "launch position",
+      "already-spooled pad release",
+      "truth-state navigation without sensing delay"
+    ],
+    "unimplemented_model_structure": [
+      "hot-staging plume interaction",
+      "flexible modes",
+      "propellant slosh",
+      "jet damping and feed path momentum",
+      "Mach/Reynolds dependent identified aero database",
+      "rarefied gas flow",
+      "TPS conduction and ablation",
+      "engine combustion and feed system",
+      "real navigation estimator and latency",
+      "mechanical pad/catch contacts",
+      "satellite commissioning and network service"
+    ]
+  },
+  "perturbation_initial_state": {
+    "altitude_m": 45000.0,
+    "east_speed_mps": 1600.0,
+    "vertical_speed_mps": -450.0,
+    "propellant_kg": 45000.0,
+    "body_rate_deg_s": [
+      1.0,
+      -0.5,
+      0.75
+    ],
+    "gimbal_step_deg": [
+      3.0,
+      -2.0
+    ],
+    "flap_step_deg": [
+      20.0,
+      -10.0
+    ]
+  },
+  "booster_return": {
+    "max_duration_s": 1200.0,
+    "boostback_max_slew_s": 90.0,
+    "boostback_max_burn_s": 70.0,
+    "boostback_engine_count": 33,
+    "boostback_slew_throttle": 0.4,
+    "boostback_alignment_deg": 20.0,
+    "boostback_velocity_tolerance_mps": 30.0,
+    "boostback_velocity_tau_s": 25.0,
+    "boostback_max_horizontal_speed_mps": 700.0,
+    "boostback_upward_acceleration_mps2": 2.0,
+    "landing_reserve_kg": 60000.0,
+    "landing_ignition_altitude_m": 2000.0,
+    "landing_velocity_tau_s": 1.5,
+    "landing_horizontal_tau_s": 8.0,
+    "landing_target_speed_mps": 2.0,
+    "landing_max_tilt_deg": 15.0,
+    "landing_ignition_margin_m": 300.0,
+    "contact_speed_limit_mps": 5.0,
+    "contact_tilt_limit_deg": 10.0,
+    "contact_rate_limit_rad_s": 0.05,
+    "return_site_tolerance_m": 1000.0
+  }
+}

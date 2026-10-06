@@ -24,13 +24,14 @@ import os
 import re
 import subprocess
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlsplit
 import time
 import uuid
 from typing import Any, Dict, Optional
 
 from fastapi import Body, FastAPI, HTTPException, Query, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from starlette.concurrency import run_in_threadpool
 from pathlib import Path
 from pydantic import ValidationError
@@ -182,6 +183,7 @@ from src.gateway.missionos_operations import (
     get_missionos_operations_registry,
     run_missionos_operation,
 )
+from src.gateway.starship_chat import get_starship_service, handle_starship_tower_operator, maybe_handle_starship_chat
 from src.gateway.real_hardware_routes import build_real_hardware_router
 from src.gateway.hardware_adapter_routes import build_hardware_adapter_router
 from src.runtime.missionos_payload_split_plan import (
@@ -231,6 +233,37 @@ MISSIONOS_AUTONOMY_CONVERSATION_AGENT_TIMEOUT_MAX_SECONDS = {
     "disabled": 12,
 }
 _LOOPBACK_CLIENT_HOSTS = frozenset({"127.0.0.1", "::1", "localhost", "testclient"})
+def _starship_operator_same_origin(request: Request, host: str, port: int) -> bool:
+    """Admit the served loopback console without trusting Host alone.
+
+    This identifies a same-origin client, not an authenticated human. A
+    configured API key remains required by the ordinary authentication check.
+    Cross-origin browser clients retain the explicit CORS/key contract.
+    """
+    if (host not in {"127.0.0.1", "::1", "localhost"}
+            or request.client is None or request.client.host not in _LOOPBACK_CLIENT_HOSTS
+            or request.method != "POST" or request.url.path != "/missionos/starship/operator/actions"
+            or request.headers.get("X-MissionOS-Operator") != "starship-v1"
+            or request.headers.get("Sec-Fetch-Site") != "same-origin"
+            or request.headers.get("Content-Type", "").split(";", 1)[0].strip().lower() != "application/json"):
+        return False
+    try:
+        origin = urlsplit(request.headers.get("Origin", ""))
+        referer = urlsplit(request.headers.get("Referer", ""))
+        scheme = request.url.scheme
+        resolved_port = request.url.port or (443 if scheme == "https" else 80)
+        expected_host = f"[{host}]" if host == "::1" else host
+        expected_origin = f"{scheme}://{expected_host}" + (f":{port}" if port != (443 if scheme == "https" else 80) else "")
+        return (scheme in {"http", "https"} and request.url.hostname == host and resolved_port == port
+                and request.headers.get("Origin") == expected_origin
+                and origin.scheme == scheme and origin.netloc == urlsplit(expected_origin).netloc
+                and referer.scheme == scheme and referer.netloc == origin.netloc
+                and referer.path == "/missionos/starship/operator"
+                and not referer.username and not referer.password)
+    except (ValueError, TypeError):
+        return False
+
+
 _GATEWAY_PROCESS_OWNER_ID = (
     f"missionos_gateway_process_{os.getpid()}_{uuid.uuid4().hex[:12]}"
 )
@@ -1615,6 +1648,9 @@ def run_missionos_autonomy_conversation(payload: Mapping[str, Any] | None = None
     the graph is explicitly disabled or rolled back.
     """
     request = dict(payload or {})
+    starship_response = maybe_handle_starship_chat(request)
+    if starship_response is not None:
+        return starship_response
     text = _missionos_instruction_text(request)
     client_surface = _missionos_client_surface(request)
     session_id = _missionos_request_session_id(request)
@@ -6352,12 +6388,15 @@ class GatewayServer:
             path = request.url.path
             origin = str(request.headers.get("Origin") or "").strip()
             if origin:
-                if origin not in allowed_cors_origins:
+                starship_console = _starship_operator_same_origin(
+                    request, self.settings.gateway_host, self.settings.gateway_port,
+                )
+                if origin not in allowed_cors_origins and not starship_console:
                     return JSONResponse(
                         {"detail": "Browser origin is not allowed"},
                         status_code=403,
                     )
-                if not api_key:
+                if not api_key and not starship_console:
                     return JSONResponse(
                         {"detail": "Gateway API key is required for browser requests"},
                         status_code=401,
@@ -8865,6 +8904,100 @@ class GatewayServer:
             except Exception:
                 payload = {}
             return await run_in_threadpool(run_missionos_autonomy_conversation, payload)
+
+        @self.app.get("/missionos/starship/operator")
+        async def missionos_starship_operator():
+            # Static same-origin client; approval and execution retain the
+            # existing conversation service's plan/source/one-use checks.
+            path = Path(__file__).resolve().parents[1] / "runtime/assets/starship_operator.html"
+            return FileResponse(
+                path, media_type="text/html",
+                headers={
+                    "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",
+                    "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline'; "
+                    "style-src 'unsafe-inline'; connect-src 'self'; frame-src 'self'; "
+                    "base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+                },
+            )
+
+
+        @self.app.post("/missionos/starship/operator/actions")
+        async def missionos_starship_operator_action(request: Request):
+            # Never fall through to the generic conversation/hardware router.
+            # Only catalog simulation plans and the existing exact commands
+            # enter the Starship authority service.
+            try:
+                if len(await request.body()) > 8192:
+                    raise ValueError("oversized")
+                value = await request.json()
+                if not isinstance(value, dict):
+                    raise ValueError("object required")
+                action = value.get("action")
+                session = value.get("session_id")
+                if (not isinstance(session, str)
+                        or not re.fullmatch(r"starship-operator-[a-f0-9]{24}", session)):
+                    raise ValueError("session required")
+                context = value.get("starship_context")
+                expected_scenario = None
+                if action == "plan":
+                    from src.runtime.starship_sixdof_catalog import SIXDOF_SCENARIOS
+                    if (set(value) != {"action", "session_id", "starship_context", "scenario", "request"}
+                            or context is not None or value.get("scenario") not in SIXDOF_SCENARIOS
+                            or not isinstance(value.get("request"), str) or len(value["request"]) > 1200):
+                        raise ValueError("catalog plan required")
+                    scenario = value["scenario"]
+                    expected_scenario = scenario
+                    instruction = (f"Starship {scenario} のシミュレーション計画を作成してください。"
+                                   f"選択するscenarioは {scenario} です。 補足: {value['request']}")
+                elif (action in {"approve", "reject", "run", "status"}
+                        and set(value) == {"action", "session_id", "starship_context"}):
+                    if context is None and action != "status":
+                        raise ValueError("displayed context required")
+                    instruction = "/" + action
+                elif action in {"tower_status", "tower_resolve"}:
+                    base = {"action", "session_id", "starship_context", "run_id"}
+                    expected = base if action == "tower_status" else base | {"request_id", "request_sha256", "observed_evidence_sha256", "choice"}
+                    if (set(value) != expected or type(context) is not dict
+                            or set(context) != {"session_id", "plan_id", "plan_sha256"}
+                            or context.get("session_id") != session or type(value.get("run_id")) is not str
+                            or re.fullmatch(r"[a-f0-9]{32}", value["run_id"]) is None
+                            or any(type(context[name]) is not str or not context[name] for name in context)
+                            or re.fullmatch(r"[a-f0-9]{64}", context["plan_sha256"]) is None):
+                        raise ValueError("bound tower run required")
+                    if action == "tower_resolve" and (type(value.get("request_id")) is not str
+                            or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}", value["request_id"]) is None
+                            or any(type(value.get(name)) is not str or re.fullmatch(r"[a-f0-9]{64}", value[name]) is None
+                                   for name in ("request_sha256", "observed_evidence_sha256"))
+                            or value.get("choice") not in {"continue_capture", "divert"}):
+                        raise ValueError("bounded tower choice required")
+                else:
+                    raise ValueError("unsupported action")
+            except (ValueError, TypeError, UnicodeError, RecursionError):
+                raise HTTPException(status_code=400, detail="Invalid bounded Starship operator action") from None
+            if action in {"tower_status", "tower_resolve"}:
+                return await run_in_threadpool(handle_starship_tower_operator, value)
+            response = await run_in_threadpool(maybe_handle_starship_chat, {
+                "operator_instruction": instruction, "session_id": session, "starship_context": context,
+            }, expected_scenario=expected_scenario)
+            if response is None:
+                raise HTTPException(status_code=400, detail="Starship operator route unavailable")
+            return response
+
+
+        @self.app.get("/missionos/starship/sessions/{session_id}/plans/{plan_id}/artifacts/{name}")
+        async def missionos_starship_artifact(session_id: str, plan_id: str, name: str):
+            # Existing Gateway authentication applies. Session references bind local
+            # operator context; they do not assert a separate authenticated identity.
+            try:
+                service = get_starship_service()
+                path = await run_in_threadpool(service.read_artifact, session_id, plan_id, name)
+            except (ValueError, PermissionError, KeyError, RuntimeError, OSError):
+                raise HTTPException(status_code=404, detail="Verified Starship artifact unavailable") from None
+            return FileResponse(
+                path, media_type="text/html" if name == "report.html" else "application/json",
+                headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
+            )
+
 
         @self.app.get("/missionos/form2a-operator-review")
         async def missionos_form2a_operator_review():

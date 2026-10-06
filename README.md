@@ -53,6 +53,7 @@ recorded **simulator evidence**; they are not physical-robot deployments.
 | **Robot dogs — Unitree Go2 / MuJoCo** | Indoor delivery, waiting or replanning around blockage, simulated receipt, and return | [Go2 images and videos](#unitree-go2-indoor-delivery-and-return) |
 | **Block stacking — SmolVLA with ExtraTrees or neural ACWM** | Forecast evidence, continue-or-stop judgments, bounded execution, and tower verification | [Stacking animation and results](#block-stacking-predict-execute-and-stop) |
 | **Robot-arm repair — GR00T, Cosmos Policy, VLA-0 / LIBERO Panda** | Bounded repair attempts and checks of target and preserved conditions | [Measured repair limits](#where-the-manipulation-repair-frontier-currently-is) |
+| **Spacecraft development — Starship-inspired 6DOF simulator** | Source-bound simulation approval, bounded deployment supervision, and saved-state verification | [Flight, supervision, and negative return videos](#starship-inspired-six-degree-of-freedom-mission-simulation) |
 
 ### Unitree Go2: indoor delivery and return
 
@@ -110,6 +111,63 @@ cost of stopping: the ninth placement was safe, so banking eight was conservativ
 Completed panels freeze. The simulator stages the grasp; this is stacking and
 release evidence, not autonomous picking or physical robot execution.*
 
+### Starship-inspired six-degree-of-freedom mission simulation
+
+**MissionOS connects a coupled numerical spacecraft model to approval, Rules,
+execution, and later observations.** Position, quaternion, angular rate, fuel,
+finite engines/gimbals, and control surfaces evolve through the simulator. The
+2D/3D replay uses recorded states and a common playback clock; an AI proposal
+does not set the vehicle pose or operate its low-level controls.
+
+*Animated previews from the saved clips; complete MP4s are linked below.*
+
+| Launch, separation, and rigid payload release | Deployment supervision | Return development: catch not reached |
+| --- | --- | --- |
+| ![Saved numerical six-DOF launch and separation replay, not physical spacecraft footage](docs/assets/starship-mission-20261006/nominal-flight.gif) | ![Saved deployment-supervision replay showing observation, bounded skip operation, and later sequencer evidence](docs/assets/starship-mission-20261006/deployment-supervision.gif) | ![Saved 60-second booster return development ending without catch handoff and below fuel reserve](docs/assets/starship-mission-20261006/return-negative.gif) |
+
+<details>
+<summary>Complete video: numerical launch, separation, and Ship return</summary>
+
+[Open or download the complete recorded MP4](docs/assets/starship-mission-20261006/nominal-flight.mp4)
+
+</details>
+
+<details>
+<summary>Complete video: deployment supervision and later observed effect</summary>
+
+[Open or download the complete recorded MP4](docs/assets/starship-mission-20261006/deployment-supervision.mp4)
+
+</details>
+
+<details>
+<summary>Complete video: negative return development, no catch handoff</summary>
+
+[Open or download the complete recorded MP4](docs/assets/starship-mission-20261006/return-negative.mp4)
+
+</details>
+
+[Nominal-flight MP4](docs/assets/starship-mission-20261006/nominal-flight.mp4) ·
+[Supervision MP4](docs/assets/starship-mission-20261006/deployment-supervision.mp4) ·
+[Negative-return MP4](docs/assets/starship-mission-20261006/return-negative.mp4) ·
+[Offline replay and media provenance](docs/assets/starship-mission-20261006/index.html) ·
+[Public fixture and claim boundaries](docs/examples/starship-mission-showcase.md)
+
+*These are saved numerical simulator replays. The nominal record releases 26
+rigid payload bodies; it does not verify Starlink service or landing after hull
+contact. The supervision record contains one Jev route to a fixed skip
+procedure, Rules checks, and later measured sequencer states; DeepSeek was not
+called, and the mission still failed its return objectives. The 60-second return
+development record reached no catch handoff and ended below its support fuel
+reserve. None establishes SpaceX engineering fidelity, physical execution, or
+an LLM advantage.*
+
+Launch-derived catch, fresh-launch robustness, qualified capture/divert with
+later effects, and the complete operator catch workflow remain unfinished.
+The separate near-tower initialized support fixture is not a launch-derived
+capture. The [public quickstart](docs/examples/starship-mission-showcase.md#try-the-bounded-public-fixture)
+uses a deterministic planner and a fixed 30-second gimbal test; it does not
+regenerate these historical full-flight videos or invoke external models.
+
 ## Yokohama: choose a delivery destination on the 3D map
 
 Select a safe destination before departure, inspect the route and constraints,
@@ -151,7 +209,7 @@ and is not included. A future live run needs a separately reviewed authorization
 
 ## What Has Actually Run
 
-The same contract and authority mechanism has been exercised over six bounded
+The same contract and authority mechanism has been exercised over several bounded
 simulator paths, plus governed ExtraTrees- and neural ACWM-assisted stacking
 loops. All results below are simulator evidence.
 
@@ -165,6 +223,7 @@ loops. All results below are simulator evidence.
 | **VLA-0 / LIBERO Panda** | The same 3 cm snapshot, instruction, action ceiling, and scripted control | Target engagement 3/3; terminal conjunction 2/3; both successful traces lost the repaired predicate on the fifth stationary hold step, so 20-step stable completion was 0/2 replays |
 | **SmolVLA / ExtraTrees / DeepSeek stacking** | ExtraTrees forecasts through Mission Assurance, bounded human preapproval, Rules, ticketed execution, and measured verification | Final two-case DeepSeek run banked 8 + 8 points; 18 LLM judgments, 208 SmolVLA inference chunks, and 5,112 motor steps |
 | **SmolVLA / neural ACWM / DeepSeek stacking** | Online future-video forecasts through Assurance, bounded preapproval, Rules, ticketed execution, and measured verification | Two known cases banked 9 + 4 points; 15 actual DeepSeek judgments, 169 SmolVLA inference chunks, and 4,260 motor steps. [Integration report](docs/assets/acwm-governed-stacking-20260921/REPORT.md) |
+| **Starship-inspired 6DOF simulator / MissionOS** | Explicit simulation approval, credential-free worker, saved-state replay, and bounded deployment supervision | One recorded Jev route led to a fixed skip procedure with later observed sequencer changes. Launch-derived tower catch remains unsuccessful; no physical flight or model-value claim. [Videos and public fixture](docs/examples/starship-mission-showcase.md) |
 
 | PX4 drone · two separately approved obstacle recoveries | TurtleBot3 · house delivery to a named room |
 | -------------------------------------------------------- | --------------------------------------------- |
@@ -354,6 +413,7 @@ agents.
 | GR00T N1.7 / LIBERO Panda | General Repair rate, a difference from diagnostic clone re-entry, the unmeasured max-two-attempt protocol, independent controller ACK, real Panda execution, and physical safety |
 | Cosmos Policy / LIBERO Panda | General Repair rate, semantic grounding across tasks, same-world Repair, independent controller ACK, real Panda execution, and physical safety |
 | VLA-0 / LIBERO Panda | Stable Repair on the admitted fixture, a general nominal or Repair rate, a natural policy-failure result, same-world Repair, independent controller ACK, real Panda execution, and physical safety |
+| Starship-inspired spacecraft simulator | SpaceX vehicle validation, physical flight, Starlink service, launch-derived tower-catch completion, fault/wind/latency robustness, or LLM/Jev superiority over deterministic Rules |
 
 Start here for each path: the [Chat Quickstart](#chat-quickstart) and the
 [obstacle recovery run](docs/examples/missionos-chat-obstacle-recovery.md) for
