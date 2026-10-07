@@ -93,11 +93,18 @@ class JevCascadeJudge:
 
         def provider_error(provider, exc, *, prior_invoked):
             unavailable = isinstance(exc, MissionAssuranceJudgeUnavailable)
-            status = exc.status if isinstance(exc, MissionAssuranceJudgeError) else ("not_configured" if unavailable else "failed")
-            invoked = exc.invoked if isinstance(exc, MissionAssuranceJudgeError) else not unavailable
+            status = (
+                exc.status
+                if isinstance(exc, MissionAssuranceJudgeError)
+                else ("not_configured" if unavailable else "failed")
+            )
+            invoked = (
+                exc.invoked if isinstance(exc, MissionAssuranceJudgeError) else not unavailable
+            )
             if isinstance(exc, MissionAssuranceJudgeError):
                 audit[f"{provider}_failure"] = {
-                    "reason": str(exc), "invocation_evidence": dict(exc.invocation_evidence),
+                    "reason": str(exc),
+                    "invocation_evidence": dict(exc.invocation_evidence),
                 }
             reason = f"{provider}_{status}"
             audit.update(route="human_review", reason=reason)
@@ -137,7 +144,7 @@ class JevCascadeJudge:
 
         try:
             first = self.jev.judge(deepcopy(prompt))
-            audit["jev_invoked"] = True
+            audit["jev_invoked"] = first.model_inference_invoked
             audit["jev"] = {
                 "output": dict(first.output),
                 "invocation_evidence": dict(first.invocation_evidence),
@@ -166,6 +173,11 @@ class JevCascadeShadowJudge:
         self.primary, self.jev, self.fast_path = primary, jev, fast_path
 
     def judge(self, prompt):
+        profile = (
+            self.fast_path if self.fast_path is not None else os.getenv(FAST_PATH_ENV, "disabled")
+        )
+        if profile not in FAST_PATHS:
+            raise MissionAssuranceJudgeUnavailable("invalid_fast_path_profile")
         with ThreadPoolExecutor(max_workers=1) as pool:
             future = pool.submit(self.primary.judge, deepcopy(prompt))
 
@@ -211,7 +223,9 @@ class JevCascadeShadowJudge:
         if primary_error is not None:
             unavailable = isinstance(primary_error, MissionAssuranceJudgeUnavailable)
             typed = isinstance(primary_error, MissionAssuranceJudgeError)
-            status = primary_error.status if typed else ("not_configured" if unavailable else "failed")
+            status = (
+                primary_error.status if typed else ("not_configured" if unavailable else "failed")
+            )
             invoked = primary_error.invoked if typed else not unavailable
             shadow["incumbent_error_type"] = type(primary_error).__name__
             if typed:

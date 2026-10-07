@@ -11,7 +11,7 @@ import json
 import math
 import os
 import time
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
 
 from src.intelligence.mission_assurance_agent import (
     MISSION_RESPONSE_KINDS,
@@ -19,6 +19,21 @@ from src.intelligence.mission_assurance_agent import (
     MissionAssuranceJudgeError,
     ModelJudgment,
 )
+
+
+JEV_ENDPOINT = "https://api.typesafe.ai/v1/systemone"
+MAX_RESPONSE_BYTES = 64 * 1024
+
+
+class _NoRedirect(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        # A bearer credential must never follow a provider-controlled Location.
+        return None
+
+
+def _provider_opener():
+    # Never inherit http(s)_proxy from a user's environment for a keyed request.
+    return build_opener(ProxyHandler({}), _NoRedirect())
 
 
 def _digest(value):
@@ -42,24 +57,70 @@ class JevAssuranceJudge:
         if not key:
             raise MissionAssuranceJudgeUnavailable("TYPESAFE_API_KEY_required")
         request = Request(
-            "https://api.typesafe.ai/v1/systemone",
+            JEV_ENDPOINT,
             data=json.dumps(payload, allow_nan=False).encode(),
             headers={"Content-Type": "application/json", "Authorization": f"Bearer {key}"},
         )
-        with urlopen(request, timeout=self.timeout) as response:
-            body = response.read()
+        try:
+            with _provider_opener().open(request, timeout=self.timeout) as response:
+                body = response.read(MAX_RESPONSE_BYTES + 1)
+        except Exception as exc:
+            # HTTP error bodies, proxy URLs, and provider exception messages can
+            # contain private data. Retain only the exception class and bindings.
+            raise MissionAssuranceJudgeError(
+                "jev_transport_failed",
+                status="failed",
+                invoked=False,
+                invocation_evidence={
+                    "schema_version": "runtime_invocation_evidence.v1",
+                    "invocation_kind": "decision_api",
+                    "provider": "typesafe",
+                    "request_sha256": _digest(payload),
+                    "validation_reason": "jev_transport_failed",
+                    "error_type": type(exc).__name__,
+                    "call_attempted": True,
+                    "model_inference_status": "unconfirmed_after_attempt",
+                    "complete_response_observed": False,
+                    "raw_response_recorded": False,
+                    "dispatch_authority_created": False,
+                },
+            ) from None
+        if len(body) > MAX_RESPONSE_BYTES:
+            raise MissionAssuranceJudgeError(
+                "jev_response_too_large",
+                status="failed",
+                invoked=False,
+                invocation_evidence={
+                    "schema_version": "runtime_invocation_evidence.v1",
+                    "invocation_kind": "decision_api",
+                    "provider": "typesafe",
+                    "request_sha256": _digest(payload),
+                    "validation_reason": "jev_response_too_large",
+                    "call_attempted": True,
+                    "model_inference_status": "unconfirmed_after_attempt",
+                    "maximum_response_bytes": MAX_RESPONSE_BYTES,
+                    "response_bytes_read": len(body),
+                    "complete_response_observed": False,
+                    "raw_response_recorded": False,
+                    "dispatch_authority_created": False,
+                },
+            )
         try:
             return json.loads(body)
         except (ValueError, UnicodeError) as exc:
             raise MissionAssuranceJudgeError(
-                "invalid_jev_json", status="failed", invoked=True,
+                "invalid_jev_json",
+                status="failed",
+                invoked=True,
                 invocation_evidence={
                     "schema_version": "runtime_invocation_evidence.v1",
-                    "invocation_kind": "decision_api", "provider": "typesafe",
+                    "invocation_kind": "decision_api",
+                    "provider": "typesafe",
                     "request_sha256": _digest(payload),
                     "response_sha256": hashlib.sha256(body).hexdigest(),
                     "response_hash_encoding": "raw_bytes",
-                    "validation_reason": "invalid_jev_json", "raw_response_recorded": False,
+                    "validation_reason": "invalid_jev_json",
+                    "raw_response_recorded": False,
                     "dispatch_authority_created": False,
                 },
             ) from exc
@@ -126,11 +187,19 @@ class JevAssuranceJudge:
             return self._interpret_response(raw, prompt, payload, allowed, criteria, start, started)
         except (ValueError, KeyError, TypeError, AttributeError) as exc:
             known = {
-                "invalid_jev_choice", "invalid_jev_distribution", "invalid_jev_probability_sum",
-                "invalid_jev_review", "invalid_jev_assessment_route",
-                "invalid_jev_routing_distribution", "invalid_jev_routing_probability_sum",
+                "invalid_jev_choice",
+                "invalid_jev_distribution",
+                "invalid_jev_probability_sum",
+                "invalid_jev_review",
+                "invalid_jev_assessment_route",
+                "invalid_jev_routing_distribution",
+                "invalid_jev_routing_probability_sum",
             }
-            reason = str(exc) if type(exc) is ValueError and str(exc) in known else "invalid_jev_response_schema"
+            reason = (
+                str(exc)
+                if type(exc) is ValueError and str(exc) in known
+                else "invalid_jev_response_schema"
+            )
             try:
                 response_hash = hashlib.sha256(
                     json.dumps(raw, sort_keys=True, allow_nan=True).encode()
@@ -149,16 +218,22 @@ class JevAssuranceJudge:
                     if math.isfinite(total):
                         sums[name] = total
             raise MissionAssuranceJudgeError(
-                reason, status="failed", invoked=True,
+                reason,
+                status="failed",
+                invoked=True,
                 invocation_evidence={
                     "schema_version": "runtime_invocation_evidence.v1",
-                    "invocation_kind": "decision_api", "provider": "typesafe",
+                    "invocation_kind": "decision_api",
+                    "provider": "typesafe",
                     "requested_model_id": self.model,
-                    "prompt_sha256": _digest(prompt), "request_sha256": _digest(payload),
+                    "prompt_sha256": _digest(prompt),
+                    "request_sha256": _digest(payload),
                     "response_sha256": response_hash,
                     "response_hash_encoding": "sorted_json_allow_nan",
-                    "validation_reason": reason, "probability_sums": sums,
-                    "started_at": started, "completed_at": _utc(),
+                    "validation_reason": reason,
+                    "probability_sums": sums,
+                    "started_at": started,
+                    "completed_at": _utc(),
                     "latency_ms": (time.perf_counter() - start) * 1000,
                     "raw_response_recorded": False,
                     "dispatch_authority_created": False,
@@ -190,17 +265,25 @@ class JevAssuranceJudge:
             routing = raw["answers"]["assessment_route"]
             labels = set(payload["questions"]["assessment_route"]["criteria"])
             distribution = routing["probabilities"]
-            if (routing.get("type") != "choice" or routing.get("choice") not in labels
-                    or set(distribution) != labels):
+            if (
+                routing.get("type") != "choice"
+                or routing.get("choice") not in labels
+                or set(distribution) != labels
+            ):
                 raise ValueError("invalid_jev_assessment_route")
             values = [*distribution.values(), routing["confidence"]]
-            if any(type(n) not in (int, float) or not math.isfinite(n) or not 0 <= n <= 1 for n in values):
+            if any(
+                type(n) not in (int, float) or not math.isfinite(n) or not 0 <= n <= 1
+                for n in values
+            ):
                 raise ValueError("invalid_jev_routing_distribution")
             if not math.isclose(sum(distribution.values()), 1, abs_tol=0.01):
                 raise ValueError("invalid_jev_routing_probability_sum")
-            routing_evidence = {"assessment_route": routing["choice"],
-                                "assessment_route_probabilities": distribution,
-                                "assessment_route_confidence": routing["confidence"]}
+            routing_evidence = {
+                "assessment_route": routing["choice"],
+                "assessment_route_probabilities": distribution,
+                "assessment_route_confidence": routing["confidence"],
+            }
         return ModelJudgment(
             output={
                 "proposed_response_kind": choice,
@@ -249,20 +332,60 @@ class JevShadowJudge:
                 result = self.shadow.judge(prompt)
                 return {
                     "status": "observed",
+                    "model_inference_invoked": result.model_inference_invoked,
                     "output": dict(result.output),
                     "invocation_evidence": dict(result.invocation_evidence),
                 }
             except MissionAssuranceJudgeError as exc:
-                return {"status": exc.status, "error_type": type(exc).__name__,
-                        "validation_reason": str(exc), "invocation_evidence": exc.invocation_evidence}
+                return {
+                    "status": exc.status,
+                    "error_type": type(exc).__name__,
+                    "validation_reason": str(exc),
+                    "invocation_evidence": exc.invocation_evidence,
+                    "model_inference_invoked": exc.invoked,
+                }
+            except MissionAssuranceJudgeUnavailable as exc:
+                return {
+                    "status": "not_configured",
+                    "error_type": type(exc).__name__,
+                    "model_inference_invoked": False,
+                }
             except Exception as exc:
-                return {"status": "failed", "error_type": type(exc).__name__}
+                return {
+                    "status": "failed",
+                    "error_type": type(exc).__name__,
+                    "model_inference_invoked": True,
+                }
 
         with ThreadPoolExecutor(max_workers=1) as pool:
             future = pool.submit(run_shadow)
-            result = self.primary.judge(prompt)
+            primary_error = None
+            try:
+                result = self.primary.judge(prompt)
+            except Exception as exc:
+                primary_error = exc
+                result = None
             shadow = future.result()
         shadow["used_for_decision"] = False
+        if primary_error is not None:
+            typed = isinstance(primary_error, MissionAssuranceJudgeError)
+            unavailable = isinstance(primary_error, MissionAssuranceJudgeUnavailable)
+            status = (
+                primary_error.status if typed else ("not_configured" if unavailable else "failed")
+            )
+            invoked = primary_error.invoked if typed else not unavailable
+            shadow["incumbent_error_type"] = type(primary_error).__name__
+            if typed:
+                shadow["incumbent_failure"] = {
+                    "reason": str(primary_error),
+                    "invocation_evidence": dict(primary_error.invocation_evidence),
+                }
+            raise MissionAssuranceJudgeError(
+                f"incumbent_{status}",
+                status=status,
+                invoked=invoked or shadow["model_inference_invoked"],
+                invocation_evidence={"jev_shadow": shadow},
+            ) from primary_error
         if shadow["status"] == "observed":
             shadow["agrees_with_primary"] = (
                 shadow["output"]["proposed_response_kind"]
@@ -271,4 +394,6 @@ class JevShadowJudge:
         return ModelJudgment(
             output=result.output,
             invocation_evidence={**result.invocation_evidence, "jev_shadow": shadow},
+            model_inference_invoked=result.model_inference_invoked
+            or shadow["model_inference_invoked"],
         )

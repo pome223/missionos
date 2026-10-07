@@ -1,0 +1,16 @@
+{
+  "schema": "missionos.starship_splashdown_goal.v1",
+  "goal_id": "controlled_offshore_water_entry_model_v1",
+  "reference_site_sha256": "ae084d90ff631bf7a091fa3868a73fcdb564f9939072e6e8b749f3dcd6474721",
+  "area_radius_m": 10000.0,
+  "maximum_contact_speed_mps": 5.0,
+  "maximum_downward_speed_mps": 2.0,
+  "maximum_horizontal_speed_mps": 3.0,
+  "maximum_tilt_deg": 5.0,
+  "maximum_body_rate_rad_s": 0.02,
+  "minimum_propellant_kg": 10000.0,
+  "surface": "WGS84_zero_elevation_sea_level_proxy",
+  "water_response_modeled": false,
+  "clearance_verified": false,
+  "physical_execution": false
+}

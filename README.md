@@ -6,7 +6,9 @@
 
 **Give the AI a control tower, not a joystick.**
 
-MissionOS is a control plane for AI-driven robots. VLA/LLM agents propose
+MissionOS is a control plane for AI-driven robots. Its working loop turns a
+chat request into a displayed plan, records explicit operator approval, executes
+through a bounded adapter, and checks later observations. VLA/LLM agents propose
 actions; humans and deterministic rules keep execution authority.
 
 ```text
@@ -53,6 +55,7 @@ recorded **simulator evidence**; they are not physical-robot deployments.
 | **Robot dogs — Unitree Go2 / MuJoCo** | Indoor delivery, waiting or replanning around blockage, simulated receipt, and return | [Go2 images and videos](#unitree-go2-indoor-delivery-and-return) |
 | **Block stacking — SmolVLA with ExtraTrees or neural ACWM** | Forecast evidence, continue-or-stop judgments, bounded execution, and tower verification | [Stacking animation and results](#block-stacking-predict-execute-and-stop) |
 | **Robot-arm repair — GR00T, Cosmos Policy, VLA-0 / LIBERO Panda** | Bounded repair attempts and checks of target and preserved conditions | [Measured repair limits](#where-the-manipulation-repair-frontier-currently-is) |
+| **Spacecraft development — Starship-inspired 6DOF simulator** | Source-bound simulation approval, bounded deployment supervision, and saved-state verification | [Launch, 26-payload release, supervision and return videos](#starship-inspired-six-degree-of-freedom-mission-simulation) |
 
 ### Unitree Go2: indoor delivery and return
 
@@ -110,6 +113,143 @@ cost of stopping: the ninth placement was safe, so banking eight was conservativ
 Completed panels freeze. The simulator stages the grasp; this is stacking and
 release evidence, not autonomous picking or physical robot execution.*
 
+### Starship-inspired six-degree-of-freedom mission simulation
+
+The [MissionOS flight-control contract](docs/agents/starship-mission-control-contract.md)
+sets the goal: the operator approves delegated bounds, and MissionOS owns
+mission decisions within them. This simulator is a development baseline;
+return qualification and the complete mission-control acceptance gate remain open.
+
+An optional [offshore splashdown mission](docs/examples/starship-splashdown.md)
+now connects the same launch and 26-payload release flight to a separately
+approved booster water-entry goal when tower capture is unqualified. One
+scripted Gateway run met its model entry limits at 1.88 m/s with 11.42 t fuel
+remaining. Waves, buoyancy, structural survival and real clearance are unverified;
+this is not new live AI inference or recovered-hardware evidence.
+The descent target was selected using this same deterministic trajectory after
+an insufficient-reserve probe. Two ±1 t separation-fuel probes then failed:
+the −1 t case impacted at 165 m/s with 81.6 t unspent. Saved commands show that
+the terminal alignment gate kept the engines off; a powered-alignment candidate
+worsened all three initialized fuel cases and was rejected.
+Robust recovery remains unqualified.
+
+An opt-in [mission decision envelope](docs/examples/starship-mission-decisions.md)
+now connects normal deployment monitoring, mechanism diagnostics, terminal
+return selection and booster diversion. The operator approves the scope once;
+MissionOS decides within it, independent checks constrain execution, and later
+observations verify effects. The current scope includes one bounded reassessment
+during a hold; a fixture exercises hold → reassess → resume. In one historical live release-fault run, Jev selected a
+mechanism diagnostic and retained-payload return: recorded contact speed changed
+from 238.74 to 3.22 m/s. **This slice is not complete:** the earlier live normal
+run stopped after an invalid reply and impacted at 619.78 m/s. The v2 fallback
+preserves the approved nominal plan in four response-error/timeout fixtures:
+retain 26 releases and the baseline 4.55 m/s contact. These are regression
+fixtures, not new live inference. The earlier five-condition gate passed only
+three conditions; retained-payload and fuel-loss recovery remain unqualified.
+[Results and boundaries](docs/examples/starship-mission-decisions.md)
+remain separate from the existing videos below, which document the earlier
+fixture implementation.
+
+**Chat → review the plan → `/approve` once → `/run` in a separate simulator
+process → verify the saved outputs. This operator workflow runs in the public
+fixture.**
+
+The saved numerical-flight preview covers **launch → stage separation →
+orbital conditions → 26 payload releases**, ending with the release count at
+26. The complete MP4 also retains the Ship return attempt. Its mission
+scale references SpaceX's [Flight 14 / Starlink V3 deployment](https://www.spacex.com/launches/starship-flight-14).
+The released satellites have their own recorded positions and attitudes, and
+the 3D replay reads their recorded separation states.
+
+The simulator jointly integrates position, attitude, angular rate, fuel and
+finite engine/gimbal/control-surface states. The replay reads those recorded
+states on a common clock. Choose `Starship sixdof_launch` in chat or **Launch +
+26 payload releases** in the operator console for the full numerical scenario;
+`Starship sixdof_gimbal_step` is the shorter 30-second setup check.
+
+*Animated previews from the saved clips; complete MP4s are linked below.*
+
+| Launch and 26 payload releases | Missing-release supervision | Return attempt |
+| --- | --- | --- |
+| ![Saved numerical launch, separation and 26-payload release replay, not physical spacecraft footage](docs/assets/starship-mission-20261006/nominal-flight.gif) | ![Saved deployment-supervision replay showing observation, bounded skip operation, and later sequencer evidence](docs/assets/starship-mission-20261006/deployment-supervision.gif) | ![Saved 60-second booster return development ending without catch handoff and below fuel reserve](docs/assets/starship-mission-20261006/return-negative.gif) |
+
+*Generic rigid-body payloads; satellite unfolding, communications and orbit
+raising are not implemented.*
+
+**MissionOS at the release boundary:** this historical `sixdof_launch` fixture
+passed displayed plan → explicit test-operator approval → separate simulator
+process → worker receipt and saved-output verification
+([record provenance](docs/assets/starship-mission-20261006/manifest.json)).
+The plan binds the fixed mission and payload configuration to source/profile hashes;
+deterministic release gates check bound orbit, perigee, dynamic pressure and
+angular rate before each separation. No LLM chooses the individual releases,
+and test approval does not authenticate human identity.
+
+<details>
+<summary>Complete video: numerical launch, 26 payload releases, and Ship return</summary>
+
+[Open or download the complete recorded MP4](docs/assets/starship-mission-20261006/nominal-flight.mp4)
+
+</details>
+
+<details>
+<summary>Complete video: deployment supervision and later observed effect</summary>
+
+[Open or download the complete recorded MP4](docs/assets/starship-mission-20261006/deployment-supervision.mp4)
+
+</details>
+
+<details>
+<summary>Complete video: negative return development, no catch handoff</summary>
+
+[Open or download the complete recorded MP4](docs/assets/starship-mission-20261006/return-negative.mp4)
+
+</details>
+
+[Nominal-flight MP4](docs/assets/starship-mission-20261006/nominal-flight.mp4) ·
+[Supervision MP4](docs/assets/starship-mission-20261006/deployment-supervision.mp4) ·
+[Negative-return MP4](docs/assets/starship-mission-20261006/return-negative.mp4) ·
+[Offline replay and media provenance](docs/assets/starship-mission-20261006/index.html) ·
+[Public fixture and claim boundaries](docs/examples/starship-mission-showcase.md)
+
+*These are saved numerical simulator replays. Starlink V3 is the mission
+reference; the satellite bodies and display geometry use declared assumptions.
+The catch experiment is a separate return-development record.*
+
+<details>
+<summary>What the records establish, and what remains unfinished</summary>
+
+The nominal record reaches its configured orbital conditions and releases all
+26 finite payload bodies. Low-speed Ship hull contact remains a recorded return
+outcome rather than verified landing.
+
+The anomaly record shows a fault routing service (Jev) selecting a fixed skip
+procedure, Rules checks, and two later observations confirming the sequencer
+change. The conditional reasoning model (DeepSeek) was not called. Zero
+payloads separated in this fault case; its interlock already prevented release,
+so the skip does not establish an AI advantage over Rules.
+
+The 60-second return-development record reached no catch handoff and ended
+below its support fuel reserve. Launch-derived catch, fresh-launch robustness,
+qualified capture/divert with later effects, and the complete operator catch
+workflow remain unfinished. The initialized near-tower support fixture is a
+separate experiment. These records do not establish SpaceX engineering fidelity,
+physical execution, satellite service or model advantage.
+
+The [public quickstart](docs/examples/starship-mission-showcase.md#try-the-bounded-public-fixture)
+starts with a deterministic planner and the short gimbal test to check the
+operator workflow. That test is separate from the historical full-flight video.
+The dedicated Starship launcher defaults its planner/model backend to off;
+`--fixture-planner` explicitly selects the keyless deterministic example.
+Generic MissionOS chat below retains its separate DeepSeek default. Flight
+simulator processes omit provider keys from their environment. The separately
+opted-in live Jev shadow observer receives its own Typesafe key; it is a
+provider observer, not a flight simulator. These same-user processes do not
+provide OS credential isolation. The public smoke uses a test operator and
+does not authenticate human identity.
+
+</details>
+
 ## Yokohama: choose a delivery destination on the 3D map
 
 Select a safe destination before departure, inspect the route and constraints,
@@ -145,13 +285,15 @@ rather than the temporary redirect. A repository copy is available below.
 [Result and video limits](docs/examples/yokohama-map-delivery/REPORT.md) ·
 [GUI and authority contract](docs/agents/yokohama-map-goal.md)
 
-The public demo defaults to fixtures and makes no external API calls. Live Jev
-execution is disabled in this distribution; the private test grant is consumed
-and is not included. A future live run needs a separately reviewed authorization.
+This Yokohama demo defaults to fixtures and makes no external API calls. Live
+Jev execution for this Yokohama demo is disabled in this distribution; its
+private test grant is consumed and is not included. This does not disable the
+separate opt-in Starship provider paths. A future live Yokohama run needs a
+separately reviewed authorization.
 
 ## What Has Actually Run
 
-The same contract and authority mechanism has been exercised over six bounded
+The same contract and authority mechanism has been exercised over several bounded
 simulator paths, plus governed ExtraTrees- and neural ACWM-assisted stacking
 loops. All results below are simulator evidence.
 
@@ -165,6 +307,7 @@ loops. All results below are simulator evidence.
 | **VLA-0 / LIBERO Panda** | The same 3 cm snapshot, instruction, action ceiling, and scripted control | Target engagement 3/3; terminal conjunction 2/3; both successful traces lost the repaired predicate on the fifth stationary hold step, so 20-step stable completion was 0/2 replays |
 | **SmolVLA / ExtraTrees / DeepSeek stacking** | ExtraTrees forecasts through Mission Assurance, bounded human preapproval, Rules, ticketed execution, and measured verification | Final two-case DeepSeek run banked 8 + 8 points; 18 LLM judgments, 208 SmolVLA inference chunks, and 5,112 motor steps |
 | **SmolVLA / neural ACWM / DeepSeek stacking** | Online future-video forecasts through Assurance, bounded preapproval, Rules, ticketed execution, and measured verification | Two known cases banked 9 + 4 points; 15 actual DeepSeek judgments, 169 SmolVLA inference chunks, and 4,260 motor steps. [Integration report](docs/assets/acwm-governed-stacking-20260921/REPORT.md) |
+| **Starship-inspired 6DOF simulator / MissionOS** | One approved mission envelope, provider-key-free flight worker environment, live Jev decisions, later observations and saved-state replay | In one release-fault run Jev selected a diagnostic and return guidance, changing contact speed from 238.74 to 3.22 m/s. A live normal run failed; the completion gate and launch-derived catch remain unmet. [Decision results](docs/examples/starship-mission-decisions.md) · [Earlier videos](docs/examples/starship-mission-showcase.md) |
 
 | PX4 drone · two separately approved obstacle recoveries | TurtleBot3 · house delivery to a named room |
 | -------------------------------------------------------- | --------------------------------------------- |
@@ -354,6 +497,7 @@ agents.
 | GR00T N1.7 / LIBERO Panda | General Repair rate, a difference from diagnostic clone re-entry, the unmeasured max-two-attempt protocol, independent controller ACK, real Panda execution, and physical safety |
 | Cosmos Policy / LIBERO Panda | General Repair rate, semantic grounding across tasks, same-world Repair, independent controller ACK, real Panda execution, and physical safety |
 | VLA-0 / LIBERO Panda | Stable Repair on the admitted fixture, a general nominal or Repair rate, a natural policy-failure result, same-world Repair, independent controller ACK, real Panda execution, and physical safety |
+| Starship-inspired spacecraft simulator | SpaceX vehicle validation, physical flight, Starlink service, launch-derived tower-catch completion, fault/wind/latency robustness, or LLM/Jev superiority over deterministic Rules |
 
 Start here for each path: the [Chat Quickstart](#chat-quickstart) and the
 [obstacle recovery run](docs/examples/missionos-chat-obstacle-recovery.md) for

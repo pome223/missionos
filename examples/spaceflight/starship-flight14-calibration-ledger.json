@@ -1,0 +1,228 @@
+{
+  "schema": "missionos.starship_public_anchor_calibration.v1",
+  "reviewed_on": "2026-10-03",
+  "classification": "development_calibration_not_vehicle_validation",
+  "source_sha256": {
+    "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+    "src/runtime/starship_flight.py": "3f12eb6f2d3fcb72c4fea50e877c5b5f4467ef4b97a0cd37c9f9a4c1c12c9620",
+    "examples/spaceflight/starship-flight14-observations.json": "2b2ccd569dfdfbbc372c4165655b613ed6fc6ef2bb76f9f6b9a58225d37bd823"
+  },
+  "observation_source": {
+    "broadcast_url": "https://x.com/i/broadcasts/1qxvvenMPMQxB",
+    "official_entry_url": "https://www.spacex.com/launches/starship-flight-14",
+    "original_media_sha256": null,
+    "raw_frame_sha256": null,
+    "raw_telemetry": false,
+    "altitude_datum": "unknown broadcast datum",
+    "sensor_uncertainty": null
+  },
+  "used_observation": {
+    "id": "V11",
+    "time_s": 1551,
+    "altitude_m": 276000,
+    "observation": "One central engine indicator and visible plume; exact ignition/cutoff not measured",
+    "altitude_display_resolution_m": 1000,
+    "sensor_uncertainty": null
+  },
+  "search": {
+    "initial_grid": {
+      "suborbital_target_altitude_m": [
+        275000,
+        350000
+      ],
+      "ascent_altitude_response_s": [
+        200,
+        300,
+        400
+      ],
+      "orbit_gate_delay_s": [
+        900
+      ]
+    },
+    "adaptive_followup": {
+      "suborbital_target_altitude_m": [
+        275000
+      ],
+      "ascent_altitude_response_s": [
+        300,
+        400
+      ],
+      "orbit_gate_delay_s": [
+        1000
+      ]
+    },
+    "number_of_candidates": 8,
+    "selection_rule": "Choose lowest absolute V11 altitude residual among candidates whose finite single-SL insertion burn includes V11 time; no claimed tolerance pass.",
+    "preregistered_search": false,
+    "excluded_from_tuning": [
+      "V17",
+      "V18",
+      "V19",
+      "V20",
+      "V21",
+      "V22",
+      "V23",
+      "V24",
+      "V25"
+    ],
+    "other_orbital_observations_are_independent_holdout": false,
+    "why_not_independent": "275 km baseline guidance goal was already informed by orbital broadcast readings."
+  },
+  "selected_profile_path": "examples/spaceflight/starship-flight14-calibrated-profile.json",
+  "selected_profile_sha256": "9d0d6efda46c07f297063f8b5b7febe62795cb18f4eac0c5640d72c8b18b6898",
+  "known_negative_result": "Selected candidate post-insertion apogee exceeds the frozen 450 km engineering diagnostic ceiling. Do not relax that ceiling or treat one fitted observation as mission or vehicle validation.",
+  "candidates": [
+    {
+      "candidate_number": 1,
+      "profile_id": "calibration-v11-target275000-response200-gate900",
+      "profile_overrides": {
+        "suborbital_target_altitude_m": 275000,
+        "ascent_altitude_response_s": 200,
+        "orbit_gate_delay_s": 900
+      },
+      "altitude_at_v11_interpolated_m": 250569.68109424226,
+      "altitude_residual_m": -25430.31890575774,
+      "finite_insertion_burn_start_s": 1444.228512348933,
+      "finite_insertion_burn_end_s": 1496.1087340855504,
+      "burn_interval_contains_v11_time": false,
+      "post_insertion_apogee_m": 1772000.123868784,
+      "selected": false,
+      "development_artifact": "output/starship-3d-calibration/calibration-v11-target275000-response200-gate900/run.json",
+      "development_artifact_sha256": "cc83a69ce22ca50e9460b9a58a73a77130a3d95907716559d55c54c85c329717",
+      "runtime_receipt_status": "development run; independent frozen-study verification is separate"
+    },
+    {
+      "candidate_number": 2,
+      "profile_id": "calibration-v11-target275000-response300-gate900",
+      "profile_overrides": {
+        "suborbital_target_altitude_m": 275000,
+        "ascent_altitude_response_s": 300,
+        "orbit_gate_delay_s": 900
+      },
+      "altitude_at_v11_interpolated_m": 275306.83027530584,
+      "altitude_residual_m": -693.1697246941621,
+      "finite_insertion_burn_start_s": 1446.3880875924135,
+      "finite_insertion_burn_end_s": 1458.4380215547046,
+      "burn_interval_contains_v11_time": false,
+      "post_insertion_apogee_m": 349216.87931077834,
+      "selected": false,
+      "development_artifact": "output/starship-3d-calibration/calibration-v11-target275000-response300-gate900/run.json",
+      "development_artifact_sha256": "d66cb5ea86d82da39696db9f75086226d12968e0b75d4b519368c403dac29f8d",
+      "runtime_receipt_status": "development run; independent frozen-study verification is separate"
+    },
+    {
+      "candidate_number": 3,
+      "profile_id": "calibration-v11-target275000-response400-gate900",
+      "profile_overrides": {
+        "suborbital_target_altitude_m": 275000,
+        "ascent_altitude_response_s": 400,
+        "orbit_gate_delay_s": 900
+      },
+      "altitude_at_v11_interpolated_m": 269665.0953470822,
+      "altitude_residual_m": -6334.904652917816,
+      "finite_insertion_burn_start_s": 1447.661905430816,
+      "finite_insertion_burn_end_s": 1458.9415945828425,
+      "burn_interval_contains_v11_time": false,
+      "post_insertion_apogee_m": 321401.04912887886,
+      "selected": false,
+      "development_artifact": "output/starship-3d-calibration/calibration-v11-target275000-response400-gate900/run.json",
+      "development_artifact_sha256": "66524bb49004086fd0d0a6697ec583461be71ff35022eb888fee1ee46bd75bd7",
+      "runtime_receipt_status": "development run; independent frozen-study verification is separate"
+    },
+    {
+      "candidate_number": 4,
+      "profile_id": "calibration-v11-target350000-response200-gate900",
+      "profile_overrides": {
+        "suborbital_target_altitude_m": 350000,
+        "ascent_altitude_response_s": 200,
+        "orbit_gate_delay_s": 900
+      },
+      "altitude_at_v11_interpolated_m": 372011.4660171707,
+      "altitude_residual_m": 96011.4660171707,
+      "finite_insertion_burn_start_s": 1449.0884615954476,
+      "finite_insertion_burn_end_s": 1459.2559325991663,
+      "burn_interval_contains_v11_time": false,
+      "post_insertion_apogee_m": 401807.2984278118,
+      "selected": false,
+      "development_artifact": "output/starship-3d-calibration/calibration-v11-target350000-response200-gate900/run.json",
+      "development_artifact_sha256": "abe0c491bfe56143be3e0deef2068363a4116978642e439f33adbc580ad5a82c",
+      "runtime_receipt_status": "development run; independent frozen-study verification is separate"
+    },
+    {
+      "candidate_number": 5,
+      "profile_id": "calibration-v11-target350000-response300-gate900",
+      "profile_overrides": {
+        "suborbital_target_altitude_m": 350000,
+        "ascent_altitude_response_s": 300,
+        "orbit_gate_delay_s": 900
+      },
+      "altitude_at_v11_interpolated_m": 390983.3942277945,
+      "altitude_residual_m": 114983.39422779449,
+      "finite_insertion_burn_start_s": 1446.367674205778,
+      "finite_insertion_burn_end_s": 1456.3461674357297,
+      "burn_interval_contains_v11_time": false,
+      "post_insertion_apogee_m": 393374.0386893209,
+      "selected": false,
+      "development_artifact": "output/starship-3d-calibration/calibration-v11-target350000-response300-gate900/run.json",
+      "development_artifact_sha256": "0a0b4c976d1b1b3149f15c03600d46645182a961abd583567ed340453b8b05ff",
+      "runtime_receipt_status": "development run; independent frozen-study verification is separate"
+    },
+    {
+      "candidate_number": 6,
+      "profile_id": "calibration-v11-target350000-response400-gate900",
+      "profile_overrides": {
+        "suborbital_target_altitude_m": 350000,
+        "ascent_altitude_response_s": 400,
+        "orbit_gate_delay_s": 900
+      },
+      "altitude_at_v11_interpolated_m": 385742.4217635521,
+      "altitude_residual_m": 109742.42176355212,
+      "finite_insertion_burn_start_s": 1447.6773177218622,
+      "finite_insertion_burn_end_s": 1457.4838657885323,
+      "burn_interval_contains_v11_time": false,
+      "post_insertion_apogee_m": 385794.3434055904,
+      "selected": false,
+      "development_artifact": "output/starship-3d-calibration/calibration-v11-target350000-response400-gate900/run.json",
+      "development_artifact_sha256": "5c74dc6f18e23f1f6c7503321232fb592f9f3fc0c4888a4a781d1cdc40a0e603",
+      "runtime_receipt_status": "development run; independent frozen-study verification is separate"
+    },
+    {
+      "candidate_number": 7,
+      "profile_id": "calibration-v11-target275000-response300-gate1000",
+      "profile_overrides": {
+        "suborbital_target_altitude_m": 275000.0,
+        "ascent_altitude_response_s": 300,
+        "orbit_gate_delay_s": 1000
+      },
+      "altitude_at_v11_interpolated_m": 274112.266824172,
+      "altitude_residual_m": -1887.7331758280052,
+      "finite_insertion_burn_start_s": 1546.3880875924135,
+      "finite_insertion_burn_end_s": 1561.8329782989806,
+      "burn_interval_contains_v11_time": true,
+      "post_insertion_apogee_m": 456872.9581929147,
+      "selected": true,
+      "development_artifact": "output/starship-3d-calibration/calibration-v11-target275000-response300-gate1000/run.json",
+      "development_artifact_sha256": "dabd839ebc6c1f57b322dfdad1203a58dc27fe626053cbe4da0db782c8fab42e",
+      "runtime_receipt_status": "development run; independent frozen-study verification is separate"
+    },
+    {
+      "candidate_number": 8,
+      "profile_id": "calibration-v11-target275000-response400-gate1000",
+      "profile_overrides": {
+        "suborbital_target_altitude_m": 275000.0,
+        "ascent_altitude_response_s": 400,
+        "orbit_gate_delay_s": 1000
+      },
+      "altitude_at_v11_interpolated_m": 268548.2494175268,
+      "altitude_residual_m": -7451.750582473178,
+      "finite_insertion_burn_start_s": 1547.661905430816,
+      "finite_insertion_burn_end_s": 1562.192630041018,
+      "burn_interval_contains_v11_time": true,
+      "post_insertion_apogee_m": 425423.3255648073,
+      "selected": false,
+      "development_artifact": "output/starship-3d-calibration/calibration-v11-target275000-response400-gate1000/run.json",
+      "development_artifact_sha256": "28149d7678f86af6ca1178abdcad7f2fc4c17efc9faf55f230b654dd17281f4e",
+      "runtime_receipt_status": "development run; independent frozen-study verification is separate"
+    }
+  ]
+}

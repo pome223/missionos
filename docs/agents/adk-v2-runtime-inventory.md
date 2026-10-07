@@ -46,11 +46,17 @@ scope without updating this contract and reviewing its classification.
 | `_invoke_adk_gemini_response_text_async` in the arm/disarm planner | one props-removed bench proposal judgment |
 | `_invoke_adk_perception_response_async` | one TurtleBot perception judgment |
 | `_invoke_adk_response_text_async` | one TurtleBot recovery judgment |
+| `src/intelligence/starship_mission_planner.py::_invoke_deepseek` | one opt-in fixed-catalog simulation-plan proposal; no approval or dispatch authority |
 | `SubagentManager._worker_loop` | one explicitly requested background Agent job |
 
 These entries describe individual inference roots, not alternative operational
 composition roots: Recovery and Assurance remain leaves of the governed incident
 chain whenever their result can reach recovery approval or dispatch.
+The Starship planner constructs `Runner(agent=agent)` with one `LlmAgent` and
+no local multi-stage orchestration. Its validated catalog selection remains a
+proposal; the separate source/profile-bound simulator approval and Rules/run
+boundary creates and consumes execution authority. It is not a replacement for
+the governed Recovery/Assurance incident Workflow.
 
 ## Completion Boundary
 

@@ -71,9 +71,12 @@ def _adk_output(assessment, label="replan"):
 
 def test_non_json_jev_response_is_fingerprinted_without_echoing_body(monkeypatch):
     import io
+    from types import SimpleNamespace
     import src.intelligence.jev_assurance as module
     monkeypatch.setenv("TYPESAFE_API_KEY", "fixture-key")
-    monkeypatch.setattr(module, "urlopen", lambda *a, **k: io.BytesIO(b"SENSITIVE_PROVIDER_ECHO"))
+    monkeypatch.setattr(module, "_provider_opener", lambda: SimpleNamespace(
+        open=lambda *a, **k: io.BytesIO(b"SENSITIVE_PROVIDER_ECHO"),
+    ))
     result = assurance.MissionAssuranceAgent(JevAssuranceJudge()).evaluate(situation())
     assert result.judgment_status == "failed"
     assert result.blocking_reasons == ("invalid_jev_json",)

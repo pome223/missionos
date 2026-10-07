@@ -1,0 +1,1860 @@
+{
+  "schema": "missionos.starship_mission_decisions_public_summary.v1",
+  "date": "2026-10-06",
+  "scope": "public_source_synthetic_development_simulation",
+  "fixtures": [
+    {
+      "case": "normal",
+      "mode": "fixture",
+      "origin": "opt_in_same_start_cli",
+      "record_verified": true,
+      "comparison": {
+        "baseline": {
+          "released": 26,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 4.54683447721646,
+          "remaining_fuel_kg": 74210.51402538114,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false
+        },
+        "managed": {
+          "released": 26,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 4.54683447721646,
+          "remaining_fuel_kg": 74210.51402538114,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false
+        },
+        "normal_outcomes_equal": true,
+        "comparison_accepted": true,
+        "comparison_is_model_value_proof": false,
+        "human_workload_measured": false,
+        "physical_success_claimed": false
+      },
+      "decisions": [
+        {
+          "point": "deployment_start",
+          "action": "continue",
+          "dispatch_time_s": 480.7000000000408,
+          "later_observation_time_s": 480.9500000000408,
+          "clock": "ship",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": null,
+          "llm_invocation": null
+        },
+        {
+          "point": "deployment_monitor",
+          "action": "continue",
+          "dispatch_time_s": 525.9500000000407,
+          "later_observation_time_s": 526.2000000000407,
+          "clock": "ship",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": null,
+          "llm_invocation": null
+        },
+        {
+          "point": "return_selection",
+          "action": "fixed_return",
+          "dispatch_time_s": 2190.7000000000407,
+          "later_observation_time_s": 2190.9500000000407,
+          "clock": "ship",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": null,
+          "llm_invocation": null
+        },
+        {
+          "point": "booster_selection",
+          "action": "divert",
+          "dispatch_time_s": 135.59999999999658,
+          "later_observation_time_s": 135.69999999999658,
+          "clock": "booster",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": null,
+          "llm_invocation": null
+        }
+      ],
+      "envelope": {
+        "schema": "missionos.starship_mission_envelope.v1",
+        "mode": "fixture",
+        "scope": "local_simulation_and_mission_decision_envelope",
+        "decision_points": {
+          "deployment_start": [
+            "continue",
+            "hold",
+            "stop_deployment",
+            "collect_status"
+          ],
+          "deployment_monitor": [
+            "continue",
+            "hold",
+            "stop_deployment",
+            "collect_status"
+          ],
+          "deployment_diagnostic": [
+            "continue",
+            "stop_deployment"
+          ],
+          "return_selection": [
+            "fixed_return",
+            "retained_return"
+          ],
+          "booster_selection": [
+            "capture",
+            "divert"
+          ]
+        },
+        "maximum_decisions": 5,
+        "maximum_jev_calls": 0,
+        "maximum_llm_calls": 0,
+        "maximum_observation_requests": 1,
+        "maximum_hold_s": 30.0,
+        "decision_expiry_s": 75.0,
+        "minimum_return_fuel_kg": 28000.0,
+        "return_time_change_allowed": false,
+        "return_choices": [
+          "fixed_v1",
+          "mass_state_terminal_v3"
+        ],
+        "booster_sites": [
+          "capture",
+          "divert"
+        ],
+        "no_response": {
+          "deployment": "stop_deployment",
+          "return": "retained_return",
+          "booster": "divert"
+        },
+        "out_of_scope": "record_escalation_and_apply_preapproved_fallback",
+        "pending_time_policy": "integrate_and_pace_simulation_while_provider_pending",
+        "physical_execution_authorized": false
+      },
+      "study_sha256": "1c799d64c4c0d62a7b1de8f57848d486eb1dd0c9a558e5cac9f795f644ec6b35",
+      "profile_sha256": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+      "source_sha256": {
+        "src/runtime/starship_sixdof_catalog.py": "b07494ad48a61a7e9735039615d9d5e91f2fcc23b76179e267c10199fe592ac1",
+        "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+        "scripts/run_starship_sixdof.py": "1581a9b0cc2b3a4ce31155d9b622102c357764dde9a50cf6e870e77e3e07928f",
+        "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+        "src/runtime/starship_sixdof_mission.py": "8622af232763d3d3a1963f12dd6e17a47aadd5dda2932eaae87d2fb8b3e66eaf",
+        "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+        "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+        "src/runtime/starship_sixdof_booster.py": "5a9f67588002314d3500ec320ccd8643c047cfce1e444d87341fba1a0a0d98ca",
+        "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+        "src/runtime/starship_sixdof_report.py": "dddf2677c97034ef608771c43b3cf3fac2fcbe7e33b39756809fdfce38e26f61",
+        "src/runtime/starship_sixdof_verifier.py": "1c14589a5ef25cd26e289cf971e82ad810d84247572835e321c473331b4fe90a",
+        "src/runtime/assets/starship_sixdof_replay.js": "0d678bc2ba3e01c0377e701f89e6970c60da28d1909739037e53182365a7d44b",
+        "src/runtime/starship_flight_supervision.py": "6087ec0e7a6a050d044e52abff997bdc7efb310aadc61182adc91e7d9bc0fccc",
+        "src/runtime/starship_retained_return.py": "79cbc17f09717290d82451f24386f7fec8344f054c8b1752357f8ead67c9fbfc",
+        "src/runtime/starship_retained_return_verifier.py": "d7ca80382970d3e6d0f800fb90c07acd36ccf18e388344c2879bf2c2d2d3dae3",
+        "src/runtime/starship_attitude_reference.py": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a",
+        "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+        "src/runtime/starship_booster_catch_verifier.py": "915f92136e247904a268b0aecb8b7d32d80a6f5dc81163e8503a1a5752ae1490",
+        "src/runtime/starship_booster_control.py": "abde531ec46d5c45325511e35bd15c60a7cf9f81067be4266f01a3933be22cf4",
+        "src/runtime/starship_booster_recovery.py": "c8d8d5f4935525d649668f8b8bb5fe501ebc945e5fa45b02ef9cf29553286575",
+        "src/runtime/starship_fin_allocation.py": "f81f1c35b243e45642c9bdfb4d976beefa46c19a3c297640cb6a85a9dd66b025",
+        "src/runtime/starship_landing_context.py": "2ba967f103f828bf06fd0403b8f7c23a44eef268f8e357bf9e945a481bc62e07",
+        "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+        "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f",
+        "src/runtime/starship_wind_verifier.py": "cdf7203c8980eaf1afb99de5c68f30ed223a84e865ebc76a2d8f4c88debc7412",
+        "examples/spaceflight/starship-catch-profile.json": "9692beee1929febdf1341301d2f890ac007cc1f209ac081f62fd5a095c7626d2",
+        "src/runtime/assets/starship_cg_models.js": "7b0f53ba496c848b93ca93fdd5feea88a28a55085081b786f902e887a9724a7b",
+        "src/runtime/assets/starship_cg_renderer.js": "572fc8a9b432158afae63175d867142bec267a96c3fc06ae6c9db1c938704582",
+        "src/runtime/starship_flight_broker.py": "791e343b9ccdf1aabacadbeba9b7c9175f7cf8fe73f64611002a46afb68c88ce",
+        "src/runtime/starship_flight_supervision_verifier.py": "1e11fef51574eb4d7c927934fd3d5618c53ef6784b4d250e064633533f4ae42d",
+        "src/intelligence/starship_flight_supervisor.py": "5895442e8ae0e96f0985b231ce2351aa45de1a6302ba29a540a7cf62884e4b4e",
+        "src/intelligence/space_ops_investigator.py": "14a4da02afdba76fb7962e0d8bede0e8bf1ba1da44f0f4ff73812a43024655a9",
+        "src/agents/model_config.py": "cfcd0f82873cedaa2e67fe6b991a207b4ba4365cdbe63c98795afddaeaf965f9",
+        "src/runtime/starship_mission_control.py": "2c8e86ec04bc41010a491108537f664d62e0aa01bcccb09470b3e0d90ec7644c",
+        "scripts/run_starship_mission_worker.py": "ae4dbbd82e8d5a2573226bfa420944d01d4d7af9e4590ad66de5f4ff22f1baf2",
+        "scripts/run_starship_managed_mission.py": "a81cc6a50040612135d4e6650b59c783fc88ebaf7738127b3a8377306bd0d465",
+        "src/runtime/starship_mission_director.py": "d19737c252b05db1edcbdcfefce2e6cf4dc2c740aa6e031cb6538d03fe803ce4",
+        "src/runtime/starship_mission_director_verifier.py": "dede5b1b1b5092a145e3c8edf7e7ef7b52cbcc7aedd91bd8c438b56d5d1089ea",
+        "src/intelligence/starship_mission_director.py": "ddf7e94bb48d7331ca2b1a1413863941bfc87ca1eb16e91424de65da3f1a5c13",
+        "src/intelligence/starship_mission_planner.py": "62a829a7bd324c9514de954e4d8fd8b0d20e63fe52ed4a2edc51f06c369631c3",
+        "src/runtime/starship_return_sites.py": "cf9e057825f523840b5027522c1f71a7093c88d4f1d904e5feaebc60e6991a60",
+        "src/gateway/server.py": "0258e10316d9c3573d2e76ace239f2a7a9a205818d6b8392036f8aefdc42065c",
+        "src/gateway/starship_chat.py": "ebe6888a97dd6821db8c77d84a699b278bc025ef9af03a3055ab24d05321eb7e",
+        "src/runtime/assets/starship_operator.html": "c1dfe4639ac58ab26b80807d7ef6946ddfb8d39c3bb08100dc336f7074e165ee",
+        "scripts/start_starship_gateway.py": "57bd50992a9ec9ea251f8e239d9a798dc01db85f58a12d871602601458d0cab4",
+        "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6"
+      },
+      "human_inflight_commands": 0,
+      "human_workload_measured": false
+    },
+    {
+      "case": "tower_unavailable",
+      "mode": "fixture",
+      "origin": "opt_in_same_start_cli",
+      "record_verified": true,
+      "comparison": {
+        "baseline": {
+          "released": 26,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 4.54683447721646,
+          "remaining_fuel_kg": 74210.51402538114,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false
+        },
+        "managed": {
+          "released": 26,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 4.54683447721646,
+          "remaining_fuel_kg": 74210.51402538114,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false
+        },
+        "normal_outcomes_equal": null,
+        "comparison_accepted": true,
+        "comparison_is_model_value_proof": false,
+        "human_workload_measured": false,
+        "physical_success_claimed": false
+      },
+      "decisions": [
+        {
+          "point": "deployment_start",
+          "action": "continue",
+          "dispatch_time_s": 480.7000000000408,
+          "later_observation_time_s": 480.9500000000408,
+          "clock": "ship",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": null,
+          "llm_invocation": null
+        },
+        {
+          "point": "deployment_monitor",
+          "action": "continue",
+          "dispatch_time_s": 525.9500000000407,
+          "later_observation_time_s": 526.2000000000407,
+          "clock": "ship",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": null,
+          "llm_invocation": null
+        },
+        {
+          "point": "return_selection",
+          "action": "fixed_return",
+          "dispatch_time_s": 2190.7000000000407,
+          "later_observation_time_s": 2190.9500000000407,
+          "clock": "ship",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": null,
+          "llm_invocation": null
+        },
+        {
+          "point": "booster_selection",
+          "action": "divert",
+          "dispatch_time_s": 135.59999999999658,
+          "later_observation_time_s": 135.69999999999658,
+          "clock": "booster",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": null,
+          "llm_invocation": null
+        }
+      ],
+      "envelope": {
+        "schema": "missionos.starship_mission_envelope.v1",
+        "mode": "fixture",
+        "scope": "local_simulation_and_mission_decision_envelope",
+        "decision_points": {
+          "deployment_start": [
+            "continue",
+            "hold",
+            "stop_deployment",
+            "collect_status"
+          ],
+          "deployment_monitor": [
+            "continue",
+            "hold",
+            "stop_deployment",
+            "collect_status"
+          ],
+          "deployment_diagnostic": [
+            "continue",
+            "stop_deployment"
+          ],
+          "return_selection": [
+            "fixed_return",
+            "retained_return"
+          ],
+          "booster_selection": [
+            "capture",
+            "divert"
+          ]
+        },
+        "maximum_decisions": 5,
+        "maximum_jev_calls": 0,
+        "maximum_llm_calls": 0,
+        "maximum_observation_requests": 1,
+        "maximum_hold_s": 30.0,
+        "decision_expiry_s": 75.0,
+        "minimum_return_fuel_kg": 28000.0,
+        "return_time_change_allowed": false,
+        "return_choices": [
+          "fixed_v1",
+          "mass_state_terminal_v3"
+        ],
+        "booster_sites": [
+          "capture",
+          "divert"
+        ],
+        "no_response": {
+          "deployment": "stop_deployment",
+          "return": "retained_return",
+          "booster": "divert"
+        },
+        "out_of_scope": "record_escalation_and_apply_preapproved_fallback",
+        "pending_time_policy": "integrate_and_pace_simulation_while_provider_pending",
+        "physical_execution_authorized": false
+      },
+      "study_sha256": "57a19516a23d3677390768bab4786d5547eeaac7d3376d1c619ba574ce2211ed",
+      "profile_sha256": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+      "source_sha256": {
+        "src/runtime/starship_sixdof_catalog.py": "b07494ad48a61a7e9735039615d9d5e91f2fcc23b76179e267c10199fe592ac1",
+        "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+        "scripts/run_starship_sixdof.py": "1581a9b0cc2b3a4ce31155d9b622102c357764dde9a50cf6e870e77e3e07928f",
+        "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+        "src/runtime/starship_sixdof_mission.py": "8622af232763d3d3a1963f12dd6e17a47aadd5dda2932eaae87d2fb8b3e66eaf",
+        "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+        "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+        "src/runtime/starship_sixdof_booster.py": "5a9f67588002314d3500ec320ccd8643c047cfce1e444d87341fba1a0a0d98ca",
+        "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+        "src/runtime/starship_sixdof_report.py": "dddf2677c97034ef608771c43b3cf3fac2fcbe7e33b39756809fdfce38e26f61",
+        "src/runtime/starship_sixdof_verifier.py": "1c14589a5ef25cd26e289cf971e82ad810d84247572835e321c473331b4fe90a",
+        "src/runtime/assets/starship_sixdof_replay.js": "0d678bc2ba3e01c0377e701f89e6970c60da28d1909739037e53182365a7d44b",
+        "src/runtime/starship_flight_supervision.py": "6087ec0e7a6a050d044e52abff997bdc7efb310aadc61182adc91e7d9bc0fccc",
+        "src/runtime/starship_retained_return.py": "79cbc17f09717290d82451f24386f7fec8344f054c8b1752357f8ead67c9fbfc",
+        "src/runtime/starship_retained_return_verifier.py": "d7ca80382970d3e6d0f800fb90c07acd36ccf18e388344c2879bf2c2d2d3dae3",
+        "src/runtime/starship_attitude_reference.py": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a",
+        "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+        "src/runtime/starship_booster_catch_verifier.py": "915f92136e247904a268b0aecb8b7d32d80a6f5dc81163e8503a1a5752ae1490",
+        "src/runtime/starship_booster_control.py": "abde531ec46d5c45325511e35bd15c60a7cf9f81067be4266f01a3933be22cf4",
+        "src/runtime/starship_booster_recovery.py": "c8d8d5f4935525d649668f8b8bb5fe501ebc945e5fa45b02ef9cf29553286575",
+        "src/runtime/starship_fin_allocation.py": "f81f1c35b243e45642c9bdfb4d976beefa46c19a3c297640cb6a85a9dd66b025",
+        "src/runtime/starship_landing_context.py": "2ba967f103f828bf06fd0403b8f7c23a44eef268f8e357bf9e945a481bc62e07",
+        "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+        "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f",
+        "src/runtime/starship_wind_verifier.py": "cdf7203c8980eaf1afb99de5c68f30ed223a84e865ebc76a2d8f4c88debc7412",
+        "examples/spaceflight/starship-catch-profile.json": "9692beee1929febdf1341301d2f890ac007cc1f209ac081f62fd5a095c7626d2",
+        "src/runtime/assets/starship_cg_models.js": "7b0f53ba496c848b93ca93fdd5feea88a28a55085081b786f902e887a9724a7b",
+        "src/runtime/assets/starship_cg_renderer.js": "572fc8a9b432158afae63175d867142bec267a96c3fc06ae6c9db1c938704582",
+        "src/runtime/starship_flight_broker.py": "791e343b9ccdf1aabacadbeba9b7c9175f7cf8fe73f64611002a46afb68c88ce",
+        "src/runtime/starship_flight_supervision_verifier.py": "1e11fef51574eb4d7c927934fd3d5618c53ef6784b4d250e064633533f4ae42d",
+        "src/intelligence/starship_flight_supervisor.py": "5895442e8ae0e96f0985b231ce2351aa45de1a6302ba29a540a7cf62884e4b4e",
+        "src/intelligence/space_ops_investigator.py": "14a4da02afdba76fb7962e0d8bede0e8bf1ba1da44f0f4ff73812a43024655a9",
+        "src/agents/model_config.py": "cfcd0f82873cedaa2e67fe6b991a207b4ba4365cdbe63c98795afddaeaf965f9",
+        "src/runtime/starship_mission_control.py": "2c8e86ec04bc41010a491108537f664d62e0aa01bcccb09470b3e0d90ec7644c",
+        "scripts/run_starship_mission_worker.py": "ae4dbbd82e8d5a2573226bfa420944d01d4d7af9e4590ad66de5f4ff22f1baf2",
+        "scripts/run_starship_managed_mission.py": "a81cc6a50040612135d4e6650b59c783fc88ebaf7738127b3a8377306bd0d465",
+        "src/runtime/starship_mission_director.py": "d19737c252b05db1edcbdcfefce2e6cf4dc2c740aa6e031cb6538d03fe803ce4",
+        "src/runtime/starship_mission_director_verifier.py": "dede5b1b1b5092a145e3c8edf7e7ef7b52cbcc7aedd91bd8c438b56d5d1089ea",
+        "src/intelligence/starship_mission_director.py": "ddf7e94bb48d7331ca2b1a1413863941bfc87ca1eb16e91424de65da3f1a5c13",
+        "src/intelligence/starship_mission_planner.py": "62a829a7bd324c9514de954e4d8fd8b0d20e63fe52ed4a2edc51f06c369631c3",
+        "src/runtime/starship_return_sites.py": "cf9e057825f523840b5027522c1f71a7093c88d4f1d904e5feaebc60e6991a60",
+        "src/gateway/server.py": "0258e10316d9c3573d2e76ace239f2a7a9a205818d6b8392036f8aefdc42065c",
+        "src/gateway/starship_chat.py": "ebe6888a97dd6821db8c77d84a699b278bc025ef9af03a3055ab24d05321eb7e",
+        "src/runtime/assets/starship_operator.html": "c1dfe4639ac58ab26b80807d7ef6946ddfb8d39c3bb08100dc336f7074e165ee",
+        "scripts/start_starship_gateway.py": "57bd50992a9ec9ea251f8e239d9a798dc01db85f58a12d871602601458d0cab4",
+        "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6"
+      },
+      "human_inflight_commands": 0,
+      "human_workload_measured": false
+    },
+    {
+      "case": "operations_notice",
+      "mode": "fixture",
+      "origin": "opt_in_same_start_cli",
+      "record_verified": true,
+      "comparison": {
+        "baseline": {
+          "released": 26,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 4.54683447721646,
+          "remaining_fuel_kg": 74210.51402538114,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false
+        },
+        "managed": {
+          "released": 1,
+          "orbit": true,
+          "termination": "surface_impact",
+          "contact_speed_mps": 619.7758816007901,
+          "remaining_fuel_kg": 92993.86569263248,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false
+        },
+        "normal_outcomes_equal": null,
+        "comparison_accepted": false,
+        "comparison_is_model_value_proof": false,
+        "human_workload_measured": false,
+        "physical_success_claimed": false
+      },
+      "decisions": [
+        {
+          "point": "deployment_start",
+          "action": "continue",
+          "dispatch_time_s": 480.7000000000408,
+          "later_observation_time_s": 480.9500000000408,
+          "clock": "ship",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": null,
+          "llm_invocation": null
+        },
+        {
+          "point": "deployment_monitor",
+          "action": "stop_deployment",
+          "dispatch_time_s": 525.9500000000407,
+          "later_observation_time_s": 526.2000000000407,
+          "clock": "ship",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": null,
+          "llm_invocation": null
+        },
+        {
+          "point": "return_selection",
+          "action": "retained_return",
+          "dispatch_time_s": 2190.7000000000407,
+          "later_observation_time_s": 2190.9500000000407,
+          "clock": "ship",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": null,
+          "llm_invocation": null
+        },
+        {
+          "point": "booster_selection",
+          "action": "divert",
+          "dispatch_time_s": 135.59999999999658,
+          "later_observation_time_s": 135.69999999999658,
+          "clock": "booster",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": null,
+          "llm_invocation": null
+        }
+      ],
+      "envelope": {
+        "schema": "missionos.starship_mission_envelope.v1",
+        "mode": "fixture",
+        "scope": "local_simulation_and_mission_decision_envelope",
+        "decision_points": {
+          "deployment_start": [
+            "continue",
+            "hold",
+            "stop_deployment",
+            "collect_status"
+          ],
+          "deployment_monitor": [
+            "continue",
+            "hold",
+            "stop_deployment",
+            "collect_status"
+          ],
+          "deployment_diagnostic": [
+            "continue",
+            "stop_deployment"
+          ],
+          "return_selection": [
+            "fixed_return",
+            "retained_return"
+          ],
+          "booster_selection": [
+            "capture",
+            "divert"
+          ]
+        },
+        "maximum_decisions": 5,
+        "maximum_jev_calls": 0,
+        "maximum_llm_calls": 0,
+        "maximum_observation_requests": 1,
+        "maximum_hold_s": 30.0,
+        "decision_expiry_s": 75.0,
+        "minimum_return_fuel_kg": 28000.0,
+        "return_time_change_allowed": false,
+        "return_choices": [
+          "fixed_v1",
+          "mass_state_terminal_v3"
+        ],
+        "booster_sites": [
+          "capture",
+          "divert"
+        ],
+        "no_response": {
+          "deployment": "stop_deployment",
+          "return": "retained_return",
+          "booster": "divert"
+        },
+        "out_of_scope": "record_escalation_and_apply_preapproved_fallback",
+        "pending_time_policy": "integrate_and_pace_simulation_while_provider_pending",
+        "physical_execution_authorized": false
+      },
+      "study_sha256": "035edce2afad6eda68a0c02f9356b697b517ae04890fd90f670c50e3b7bf7a94",
+      "profile_sha256": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+      "source_sha256": {
+        "src/runtime/starship_sixdof_catalog.py": "b07494ad48a61a7e9735039615d9d5e91f2fcc23b76179e267c10199fe592ac1",
+        "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+        "scripts/run_starship_sixdof.py": "1581a9b0cc2b3a4ce31155d9b622102c357764dde9a50cf6e870e77e3e07928f",
+        "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+        "src/runtime/starship_sixdof_mission.py": "8622af232763d3d3a1963f12dd6e17a47aadd5dda2932eaae87d2fb8b3e66eaf",
+        "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+        "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+        "src/runtime/starship_sixdof_booster.py": "5a9f67588002314d3500ec320ccd8643c047cfce1e444d87341fba1a0a0d98ca",
+        "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+        "src/runtime/starship_sixdof_report.py": "dddf2677c97034ef608771c43b3cf3fac2fcbe7e33b39756809fdfce38e26f61",
+        "src/runtime/starship_sixdof_verifier.py": "1c14589a5ef25cd26e289cf971e82ad810d84247572835e321c473331b4fe90a",
+        "src/runtime/assets/starship_sixdof_replay.js": "0d678bc2ba3e01c0377e701f89e6970c60da28d1909739037e53182365a7d44b",
+        "src/runtime/starship_flight_supervision.py": "6087ec0e7a6a050d044e52abff997bdc7efb310aadc61182adc91e7d9bc0fccc",
+        "src/runtime/starship_retained_return.py": "79cbc17f09717290d82451f24386f7fec8344f054c8b1752357f8ead67c9fbfc",
+        "src/runtime/starship_retained_return_verifier.py": "d7ca80382970d3e6d0f800fb90c07acd36ccf18e388344c2879bf2c2d2d3dae3",
+        "src/runtime/starship_attitude_reference.py": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a",
+        "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+        "src/runtime/starship_booster_catch_verifier.py": "915f92136e247904a268b0aecb8b7d32d80a6f5dc81163e8503a1a5752ae1490",
+        "src/runtime/starship_booster_control.py": "abde531ec46d5c45325511e35bd15c60a7cf9f81067be4266f01a3933be22cf4",
+        "src/runtime/starship_booster_recovery.py": "c8d8d5f4935525d649668f8b8bb5fe501ebc945e5fa45b02ef9cf29553286575",
+        "src/runtime/starship_fin_allocation.py": "f81f1c35b243e45642c9bdfb4d976beefa46c19a3c297640cb6a85a9dd66b025",
+        "src/runtime/starship_landing_context.py": "2ba967f103f828bf06fd0403b8f7c23a44eef268f8e357bf9e945a481bc62e07",
+        "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+        "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f",
+        "src/runtime/starship_wind_verifier.py": "cdf7203c8980eaf1afb99de5c68f30ed223a84e865ebc76a2d8f4c88debc7412",
+        "examples/spaceflight/starship-catch-profile.json": "9692beee1929febdf1341301d2f890ac007cc1f209ac081f62fd5a095c7626d2",
+        "src/runtime/assets/starship_cg_models.js": "7b0f53ba496c848b93ca93fdd5feea88a28a55085081b786f902e887a9724a7b",
+        "src/runtime/assets/starship_cg_renderer.js": "572fc8a9b432158afae63175d867142bec267a96c3fc06ae6c9db1c938704582",
+        "src/runtime/starship_flight_broker.py": "791e343b9ccdf1aabacadbeba9b7c9175f7cf8fe73f64611002a46afb68c88ce",
+        "src/runtime/starship_flight_supervision_verifier.py": "1e11fef51574eb4d7c927934fd3d5618c53ef6784b4d250e064633533f4ae42d",
+        "src/intelligence/starship_flight_supervisor.py": "5895442e8ae0e96f0985b231ce2351aa45de1a6302ba29a540a7cf62884e4b4e",
+        "src/intelligence/space_ops_investigator.py": "14a4da02afdba76fb7962e0d8bede0e8bf1ba1da44f0f4ff73812a43024655a9",
+        "src/agents/model_config.py": "cfcd0f82873cedaa2e67fe6b991a207b4ba4365cdbe63c98795afddaeaf965f9",
+        "src/runtime/starship_mission_control.py": "2c8e86ec04bc41010a491108537f664d62e0aa01bcccb09470b3e0d90ec7644c",
+        "scripts/run_starship_mission_worker.py": "ae4dbbd82e8d5a2573226bfa420944d01d4d7af9e4590ad66de5f4ff22f1baf2",
+        "scripts/run_starship_managed_mission.py": "a81cc6a50040612135d4e6650b59c783fc88ebaf7738127b3a8377306bd0d465",
+        "src/runtime/starship_mission_director.py": "d19737c252b05db1edcbdcfefce2e6cf4dc2c740aa6e031cb6538d03fe803ce4",
+        "src/runtime/starship_mission_director_verifier.py": "dede5b1b1b5092a145e3c8edf7e7ef7b52cbcc7aedd91bd8c438b56d5d1089ea",
+        "src/intelligence/starship_mission_director.py": "ddf7e94bb48d7331ca2b1a1413863941bfc87ca1eb16e91424de65da3f1a5c13",
+        "src/intelligence/starship_mission_planner.py": "62a829a7bd324c9514de954e4d8fd8b0d20e63fe52ed4a2edc51f06c369631c3",
+        "src/runtime/starship_return_sites.py": "cf9e057825f523840b5027522c1f71a7093c88d4f1d904e5feaebc60e6991a60",
+        "src/gateway/server.py": "0258e10316d9c3573d2e76ace239f2a7a9a205818d6b8392036f8aefdc42065c",
+        "src/gateway/starship_chat.py": "ebe6888a97dd6821db8c77d84a699b278bc025ef9af03a3055ab24d05321eb7e",
+        "src/runtime/assets/starship_operator.html": "c1dfe4639ac58ab26b80807d7ef6946ddfb8d39c3bb08100dc336f7074e165ee",
+        "scripts/start_starship_gateway.py": "57bd50992a9ec9ea251f8e239d9a798dc01db85f58a12d871602601458d0cab4",
+        "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6"
+      },
+      "human_inflight_commands": 0,
+      "human_workload_measured": false
+    },
+    {
+      "case": "fuel_shortage",
+      "mode": "fixture",
+      "origin": "opt_in_same_start_cli",
+      "record_verified": true,
+      "comparison": {
+        "baseline": {
+          "released": 0,
+          "orbit": true,
+          "termination": "time_limit",
+          "contact_speed_mps": null,
+          "remaining_fuel_kg": 21031.058163606976,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false
+        },
+        "managed": {
+          "released": 0,
+          "orbit": true,
+          "termination": "time_limit",
+          "contact_speed_mps": null,
+          "remaining_fuel_kg": 21031.058163606976,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false
+        },
+        "normal_outcomes_equal": null,
+        "comparison_accepted": false,
+        "comparison_is_model_value_proof": false,
+        "human_workload_measured": false,
+        "physical_success_claimed": false
+      },
+      "decisions": [
+        {
+          "point": "deployment_start",
+          "action": "stop_deployment",
+          "dispatch_time_s": 480.7000000000408,
+          "later_observation_time_s": 480.9500000000408,
+          "clock": "ship",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": null,
+          "llm_invocation": null
+        },
+        {
+          "point": "return_selection",
+          "action": "retained_return",
+          "dispatch_time_s": 2190.7000000000407,
+          "later_observation_time_s": 2190.9500000000407,
+          "clock": "ship",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": null,
+          "llm_invocation": null
+        },
+        {
+          "point": "booster_selection",
+          "action": "divert",
+          "dispatch_time_s": 135.59999999999658,
+          "later_observation_time_s": 135.69999999999658,
+          "clock": "booster",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": null,
+          "llm_invocation": null
+        }
+      ],
+      "envelope": {
+        "schema": "missionos.starship_mission_envelope.v1",
+        "mode": "fixture",
+        "scope": "local_simulation_and_mission_decision_envelope",
+        "decision_points": {
+          "deployment_start": [
+            "continue",
+            "hold",
+            "stop_deployment",
+            "collect_status"
+          ],
+          "deployment_monitor": [
+            "continue",
+            "hold",
+            "stop_deployment",
+            "collect_status"
+          ],
+          "deployment_diagnostic": [
+            "continue",
+            "stop_deployment"
+          ],
+          "return_selection": [
+            "fixed_return",
+            "retained_return"
+          ],
+          "booster_selection": [
+            "capture",
+            "divert"
+          ]
+        },
+        "maximum_decisions": 5,
+        "maximum_jev_calls": 0,
+        "maximum_llm_calls": 0,
+        "maximum_observation_requests": 1,
+        "maximum_hold_s": 30.0,
+        "decision_expiry_s": 75.0,
+        "minimum_return_fuel_kg": 28000.0,
+        "return_time_change_allowed": false,
+        "return_choices": [
+          "fixed_v1",
+          "mass_state_terminal_v3"
+        ],
+        "booster_sites": [
+          "capture",
+          "divert"
+        ],
+        "no_response": {
+          "deployment": "stop_deployment",
+          "return": "retained_return",
+          "booster": "divert"
+        },
+        "out_of_scope": "record_escalation_and_apply_preapproved_fallback",
+        "pending_time_policy": "integrate_and_pace_simulation_while_provider_pending",
+        "physical_execution_authorized": false
+      },
+      "study_sha256": "1e3a45171d46c1ad351188cb95ed37fd79a5ec458e6cfa9fbdfc57d1906097f6",
+      "profile_sha256": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+      "source_sha256": {
+        "src/runtime/starship_sixdof_catalog.py": "b07494ad48a61a7e9735039615d9d5e91f2fcc23b76179e267c10199fe592ac1",
+        "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+        "scripts/run_starship_sixdof.py": "1581a9b0cc2b3a4ce31155d9b622102c357764dde9a50cf6e870e77e3e07928f",
+        "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+        "src/runtime/starship_sixdof_mission.py": "8622af232763d3d3a1963f12dd6e17a47aadd5dda2932eaae87d2fb8b3e66eaf",
+        "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+        "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+        "src/runtime/starship_sixdof_booster.py": "5a9f67588002314d3500ec320ccd8643c047cfce1e444d87341fba1a0a0d98ca",
+        "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+        "src/runtime/starship_sixdof_report.py": "dddf2677c97034ef608771c43b3cf3fac2fcbe7e33b39756809fdfce38e26f61",
+        "src/runtime/starship_sixdof_verifier.py": "1c14589a5ef25cd26e289cf971e82ad810d84247572835e321c473331b4fe90a",
+        "src/runtime/assets/starship_sixdof_replay.js": "0d678bc2ba3e01c0377e701f89e6970c60da28d1909739037e53182365a7d44b",
+        "src/runtime/starship_flight_supervision.py": "6087ec0e7a6a050d044e52abff997bdc7efb310aadc61182adc91e7d9bc0fccc",
+        "src/runtime/starship_retained_return.py": "79cbc17f09717290d82451f24386f7fec8344f054c8b1752357f8ead67c9fbfc",
+        "src/runtime/starship_retained_return_verifier.py": "d7ca80382970d3e6d0f800fb90c07acd36ccf18e388344c2879bf2c2d2d3dae3",
+        "src/runtime/starship_attitude_reference.py": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a",
+        "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+        "src/runtime/starship_booster_catch_verifier.py": "915f92136e247904a268b0aecb8b7d32d80a6f5dc81163e8503a1a5752ae1490",
+        "src/runtime/starship_booster_control.py": "abde531ec46d5c45325511e35bd15c60a7cf9f81067be4266f01a3933be22cf4",
+        "src/runtime/starship_booster_recovery.py": "c8d8d5f4935525d649668f8b8bb5fe501ebc945e5fa45b02ef9cf29553286575",
+        "src/runtime/starship_fin_allocation.py": "f81f1c35b243e45642c9bdfb4d976beefa46c19a3c297640cb6a85a9dd66b025",
+        "src/runtime/starship_landing_context.py": "2ba967f103f828bf06fd0403b8f7c23a44eef268f8e357bf9e945a481bc62e07",
+        "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+        "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f",
+        "src/runtime/starship_wind_verifier.py": "cdf7203c8980eaf1afb99de5c68f30ed223a84e865ebc76a2d8f4c88debc7412",
+        "examples/spaceflight/starship-catch-profile.json": "9692beee1929febdf1341301d2f890ac007cc1f209ac081f62fd5a095c7626d2",
+        "src/runtime/assets/starship_cg_models.js": "7b0f53ba496c848b93ca93fdd5feea88a28a55085081b786f902e887a9724a7b",
+        "src/runtime/assets/starship_cg_renderer.js": "572fc8a9b432158afae63175d867142bec267a96c3fc06ae6c9db1c938704582",
+        "src/runtime/starship_flight_broker.py": "791e343b9ccdf1aabacadbeba9b7c9175f7cf8fe73f64611002a46afb68c88ce",
+        "src/runtime/starship_flight_supervision_verifier.py": "1e11fef51574eb4d7c927934fd3d5618c53ef6784b4d250e064633533f4ae42d",
+        "src/intelligence/starship_flight_supervisor.py": "5895442e8ae0e96f0985b231ce2351aa45de1a6302ba29a540a7cf62884e4b4e",
+        "src/intelligence/space_ops_investigator.py": "14a4da02afdba76fb7962e0d8bede0e8bf1ba1da44f0f4ff73812a43024655a9",
+        "src/agents/model_config.py": "cfcd0f82873cedaa2e67fe6b991a207b4ba4365cdbe63c98795afddaeaf965f9",
+        "src/runtime/starship_mission_control.py": "2c8e86ec04bc41010a491108537f664d62e0aa01bcccb09470b3e0d90ec7644c",
+        "scripts/run_starship_mission_worker.py": "ae4dbbd82e8d5a2573226bfa420944d01d4d7af9e4590ad66de5f4ff22f1baf2",
+        "scripts/run_starship_managed_mission.py": "a81cc6a50040612135d4e6650b59c783fc88ebaf7738127b3a8377306bd0d465",
+        "src/runtime/starship_mission_director.py": "d19737c252b05db1edcbdcfefce2e6cf4dc2c740aa6e031cb6538d03fe803ce4",
+        "src/runtime/starship_mission_director_verifier.py": "dede5b1b1b5092a145e3c8edf7e7ef7b52cbcc7aedd91bd8c438b56d5d1089ea",
+        "src/intelligence/starship_mission_director.py": "ddf7e94bb48d7331ca2b1a1413863941bfc87ca1eb16e91424de65da3f1a5c13",
+        "src/intelligence/starship_mission_planner.py": "62a829a7bd324c9514de954e4d8fd8b0d20e63fe52ed4a2edc51f06c369631c3",
+        "src/runtime/starship_return_sites.py": "cf9e057825f523840b5027522c1f71a7093c88d4f1d904e5feaebc60e6991a60",
+        "src/gateway/server.py": "0258e10316d9c3573d2e76ace239f2a7a9a205818d6b8392036f8aefdc42065c",
+        "src/gateway/starship_chat.py": "ebe6888a97dd6821db8c77d84a699b278bc025ef9af03a3055ab24d05321eb7e",
+        "src/runtime/assets/starship_operator.html": "c1dfe4639ac58ab26b80807d7ef6946ddfb8d39c3bb08100dc336f7074e165ee",
+        "scripts/start_starship_gateway.py": "57bd50992a9ec9ea251f8e239d9a798dc01db85f58a12d871602601458d0cab4",
+        "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6"
+      },
+      "human_inflight_commands": 0,
+      "human_workload_measured": false
+    },
+    {
+      "case": "release_fault",
+      "mode": "fixture",
+      "origin": "gateway_chat_approve_run",
+      "record_verified": true,
+      "comparison": {
+        "baseline": {
+          "released": 0,
+          "orbit": true,
+          "termination": "surface_impact",
+          "contact_speed_mps": 238.74080544008334,
+          "remaining_fuel_kg": 94027.22303843673,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false
+        },
+        "managed": {
+          "released": 0,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 3.221142071690643,
+          "remaining_fuel_kg": 45297.86623837951,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false
+        },
+        "normal_outcomes_equal": null,
+        "comparison_accepted": true,
+        "comparison_is_model_value_proof": false,
+        "human_workload_measured": false,
+        "physical_success_claimed": false
+      },
+      "decisions": [
+        {
+          "point": "deployment_start",
+          "action": "continue",
+          "dispatch_time_s": 480.9500000000408,
+          "later_observation_time_s": 481.2000000000408,
+          "clock": "ship",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": null,
+          "llm_invocation": null
+        },
+        {
+          "point": "deployment_monitor",
+          "action": "collect_status",
+          "dispatch_time_s": 526.2000000000407,
+          "later_observation_time_s": 526.4500000000407,
+          "clock": "ship",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": null,
+          "llm_invocation": null
+        },
+        {
+          "point": "deployment_diagnostic",
+          "action": "stop_deployment",
+          "dispatch_time_s": 528.4500000000407,
+          "later_observation_time_s": 528.7000000000407,
+          "clock": "ship",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": null,
+          "llm_invocation": null
+        },
+        {
+          "point": "return_selection",
+          "action": "retained_return",
+          "dispatch_time_s": 2190.9500000000407,
+          "later_observation_time_s": 2191.2000000000407,
+          "clock": "ship",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": null,
+          "llm_invocation": null
+        },
+        {
+          "point": "booster_selection",
+          "action": "divert",
+          "dispatch_time_s": 135.69999999999658,
+          "later_observation_time_s": 135.79999999999657,
+          "clock": "booster",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": null,
+          "llm_invocation": null
+        }
+      ],
+      "envelope": {
+        "schema": "missionos.starship_mission_envelope.v1",
+        "mode": "fixture",
+        "scope": "local_simulation_and_mission_decision_envelope",
+        "decision_points": {
+          "deployment_start": [
+            "continue",
+            "hold",
+            "stop_deployment",
+            "collect_status"
+          ],
+          "deployment_monitor": [
+            "continue",
+            "hold",
+            "stop_deployment",
+            "collect_status"
+          ],
+          "deployment_diagnostic": [
+            "continue",
+            "stop_deployment"
+          ],
+          "return_selection": [
+            "fixed_return",
+            "retained_return"
+          ],
+          "booster_selection": [
+            "capture",
+            "divert"
+          ]
+        },
+        "maximum_decisions": 5,
+        "maximum_jev_calls": 0,
+        "maximum_llm_calls": 0,
+        "maximum_observation_requests": 1,
+        "maximum_hold_s": 30.0,
+        "decision_expiry_s": 75.0,
+        "minimum_return_fuel_kg": 28000.0,
+        "return_time_change_allowed": false,
+        "return_choices": [
+          "fixed_v1",
+          "mass_state_terminal_v3"
+        ],
+        "booster_sites": [
+          "capture",
+          "divert"
+        ],
+        "no_response": {
+          "deployment": "stop_deployment",
+          "return": "retained_return",
+          "booster": "divert"
+        },
+        "out_of_scope": "record_escalation_and_apply_preapproved_fallback",
+        "pending_time_policy": "integrate_and_pace_simulation_while_provider_pending",
+        "physical_execution_authorized": false
+      },
+      "study_sha256": "c8a9f1c6a87a45c8446817118f45a3d930bb52e373360cd6b7fdffbadc53734a",
+      "profile_sha256": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+      "source_sha256": {
+        "src/runtime/starship_sixdof_catalog.py": "b07494ad48a61a7e9735039615d9d5e91f2fcc23b76179e267c10199fe592ac1",
+        "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+        "scripts/run_starship_sixdof.py": "1581a9b0cc2b3a4ce31155d9b622102c357764dde9a50cf6e870e77e3e07928f",
+        "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+        "src/runtime/starship_sixdof_mission.py": "8622af232763d3d3a1963f12dd6e17a47aadd5dda2932eaae87d2fb8b3e66eaf",
+        "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+        "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+        "src/runtime/starship_sixdof_booster.py": "5a9f67588002314d3500ec320ccd8643c047cfce1e444d87341fba1a0a0d98ca",
+        "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+        "src/runtime/starship_sixdof_report.py": "dddf2677c97034ef608771c43b3cf3fac2fcbe7e33b39756809fdfce38e26f61",
+        "src/runtime/starship_sixdof_verifier.py": "1c14589a5ef25cd26e289cf971e82ad810d84247572835e321c473331b4fe90a",
+        "src/runtime/assets/starship_sixdof_replay.js": "0d678bc2ba3e01c0377e701f89e6970c60da28d1909739037e53182365a7d44b",
+        "src/runtime/starship_flight_supervision.py": "6087ec0e7a6a050d044e52abff997bdc7efb310aadc61182adc91e7d9bc0fccc",
+        "src/runtime/starship_retained_return.py": "79cbc17f09717290d82451f24386f7fec8344f054c8b1752357f8ead67c9fbfc",
+        "src/runtime/starship_retained_return_verifier.py": "d7ca80382970d3e6d0f800fb90c07acd36ccf18e388344c2879bf2c2d2d3dae3",
+        "src/runtime/starship_attitude_reference.py": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a",
+        "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+        "src/runtime/starship_booster_catch_verifier.py": "915f92136e247904a268b0aecb8b7d32d80a6f5dc81163e8503a1a5752ae1490",
+        "src/runtime/starship_booster_control.py": "abde531ec46d5c45325511e35bd15c60a7cf9f81067be4266f01a3933be22cf4",
+        "src/runtime/starship_booster_recovery.py": "c8d8d5f4935525d649668f8b8bb5fe501ebc945e5fa45b02ef9cf29553286575",
+        "src/runtime/starship_fin_allocation.py": "f81f1c35b243e45642c9bdfb4d976beefa46c19a3c297640cb6a85a9dd66b025",
+        "src/runtime/starship_landing_context.py": "2ba967f103f828bf06fd0403b8f7c23a44eef268f8e357bf9e945a481bc62e07",
+        "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+        "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f",
+        "src/runtime/starship_wind_verifier.py": "cdf7203c8980eaf1afb99de5c68f30ed223a84e865ebc76a2d8f4c88debc7412",
+        "examples/spaceflight/starship-catch-profile.json": "9692beee1929febdf1341301d2f890ac007cc1f209ac081f62fd5a095c7626d2",
+        "src/runtime/assets/starship_cg_models.js": "7b0f53ba496c848b93ca93fdd5feea88a28a55085081b786f902e887a9724a7b",
+        "src/runtime/assets/starship_cg_renderer.js": "572fc8a9b432158afae63175d867142bec267a96c3fc06ae6c9db1c938704582",
+        "src/runtime/starship_flight_broker.py": "791e343b9ccdf1aabacadbeba9b7c9175f7cf8fe73f64611002a46afb68c88ce",
+        "src/runtime/starship_flight_supervision_verifier.py": "1e11fef51574eb4d7c927934fd3d5618c53ef6784b4d250e064633533f4ae42d",
+        "src/intelligence/starship_flight_supervisor.py": "5895442e8ae0e96f0985b231ce2351aa45de1a6302ba29a540a7cf62884e4b4e",
+        "src/intelligence/space_ops_investigator.py": "14a4da02afdba76fb7962e0d8bede0e8bf1ba1da44f0f4ff73812a43024655a9",
+        "src/agents/model_config.py": "cfcd0f82873cedaa2e67fe6b991a207b4ba4365cdbe63c98795afddaeaf965f9",
+        "src/runtime/starship_mission_control.py": "2c8e86ec04bc41010a491108537f664d62e0aa01bcccb09470b3e0d90ec7644c",
+        "scripts/run_starship_mission_worker.py": "ae4dbbd82e8d5a2573226bfa420944d01d4d7af9e4590ad66de5f4ff22f1baf2",
+        "scripts/run_starship_managed_mission.py": "a81cc6a50040612135d4e6650b59c783fc88ebaf7738127b3a8377306bd0d465",
+        "src/runtime/starship_mission_director.py": "d19737c252b05db1edcbdcfefce2e6cf4dc2c740aa6e031cb6538d03fe803ce4",
+        "src/runtime/starship_mission_director_verifier.py": "dede5b1b1b5092a145e3c8edf7e7ef7b52cbcc7aedd91bd8c438b56d5d1089ea",
+        "src/intelligence/starship_mission_director.py": "ddf7e94bb48d7331ca2b1a1413863941bfc87ca1eb16e91424de65da3f1a5c13",
+        "src/intelligence/starship_mission_planner.py": "62a829a7bd324c9514de954e4d8fd8b0d20e63fe52ed4a2edc51f06c369631c3",
+        "src/runtime/starship_return_sites.py": "cf9e057825f523840b5027522c1f71a7093c88d4f1d904e5feaebc60e6991a60",
+        "src/gateway/server.py": "0258e10316d9c3573d2e76ace239f2a7a9a205818d6b8392036f8aefdc42065c",
+        "src/gateway/starship_chat.py": "ebe6888a97dd6821db8c77d84a699b278bc025ef9af03a3055ab24d05321eb7e",
+        "src/runtime/assets/starship_operator.html": "c1dfe4639ac58ab26b80807d7ef6946ddfb8d39c3bb08100dc336f7074e165ee",
+        "scripts/start_starship_gateway.py": "57bd50992a9ec9ea251f8e239d9a798dc01db85f58a12d871602601458d0cab4",
+        "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6"
+      },
+      "human_inflight_commands": 0,
+      "human_workload_measured": false,
+      "gateway_evidence": {
+        "worker_receipt_verified": true,
+        "provider_credentials_present_in_process": false,
+        "authenticated_human_identity_verified": false,
+        "artifact_sha256": {
+          "manifest.json": "5fe6bcc805ab99768b6227d549fa64ce94781abb2d361823d1a701f2a42df5be",
+          "report.html": "2de7b03f3e1215c71d956d0dee0df606b138b29b023c13b65c2a626d29282b35",
+          "study.json": "c8a9f1c6a87a45c8446817118f45a3d930bb52e373360cd6b7fdffbadc53734a",
+          "verification.json": "f60284dec290a74f93a3c19148a3b68f88a4f38bae6d09e5cd79b337cc3e0c45"
+        }
+      }
+    }
+  ],
+  "live": [
+    {
+      "case": "normal",
+      "mode": "live",
+      "origin": "gateway_chat_approve_run",
+      "record_verified": true,
+      "comparison": {
+        "baseline": {
+          "released": 26,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 4.54683447721646,
+          "remaining_fuel_kg": 74210.51402538114,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false
+        },
+        "managed": {
+          "released": 1,
+          "orbit": true,
+          "termination": "surface_impact",
+          "contact_speed_mps": 619.7758816007901,
+          "remaining_fuel_kg": 92993.86569263248,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false
+        },
+        "normal_outcomes_equal": false,
+        "comparison_accepted": false,
+        "comparison_is_model_value_proof": false,
+        "human_workload_measured": false,
+        "physical_success_claimed": false
+      },
+      "decisions": [
+        {
+          "point": "deployment_start",
+          "action": "continue",
+          "dispatch_time_s": 480.9500000000408,
+          "later_observation_time_s": 481.2000000000408,
+          "clock": "ship",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": {
+            "schema_version": "runtime_invocation_evidence.v1",
+            "provider": "typesafe",
+            "status": "succeeded",
+            "requested_model_id": "jev-1.13.0",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "complete_response_observed": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "model_inference_status": "confirmed_by_valid_response",
+            "reserved_call_slot": 1,
+            "maximum_instance_calls": 5,
+            "latency_ms": 203.323,
+            "retries": 0
+          },
+          "llm_invocation": {
+            "schema_version": "runtime_invocation_evidence.v1",
+            "provider": "deepseek",
+            "status": "not_routed",
+            "requested_model_id": null,
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "complete_response_observed": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "model_inference_status": "not_invoked",
+            "reserved_call_slot": 1,
+            "maximum_instance_calls": 5,
+            "latency_ms": 0.0,
+            "retries": 0
+          }
+        },
+        {
+          "point": "deployment_monitor",
+          "action": "stop_deployment",
+          "dispatch_time_s": 526.2000000000407,
+          "later_observation_time_s": 526.4500000000407,
+          "clock": "ship",
+          "rules_accepted": false,
+          "rejection": "outside_approved_choices",
+          "jev_invocation": {
+            "schema_version": "runtime_invocation_evidence.v1",
+            "provider": "typesafe",
+            "status": "invalid_response",
+            "requested_model_id": "jev-1.13.0",
+            "model_id": null,
+            "call_attempted": true,
+            "response_received": true,
+            "complete_response_observed": true,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "model_inference_status": "unconfirmed_after_attempt",
+            "reserved_call_slot": 2,
+            "maximum_instance_calls": 5,
+            "latency_ms": 190.024,
+            "retries": 0
+          },
+          "llm_invocation": {
+            "schema_version": "runtime_invocation_evidence.v1",
+            "provider": "deepseek",
+            "status": "not_routed",
+            "requested_model_id": null,
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "complete_response_observed": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "model_inference_status": "not_invoked",
+            "reserved_call_slot": 2,
+            "maximum_instance_calls": 5,
+            "latency_ms": 0.0,
+            "retries": 0
+          }
+        },
+        {
+          "point": "return_selection",
+          "action": "retained_return",
+          "dispatch_time_s": 2190.9500000000407,
+          "later_observation_time_s": 2191.2000000000407,
+          "clock": "ship",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": {
+            "schema_version": "runtime_invocation_evidence.v1",
+            "provider": "typesafe",
+            "status": "succeeded",
+            "requested_model_id": "jev-1.13.0",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "complete_response_observed": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "model_inference_status": "confirmed_by_valid_response",
+            "reserved_call_slot": 3,
+            "maximum_instance_calls": 5,
+            "latency_ms": 220.451,
+            "retries": 0
+          },
+          "llm_invocation": {
+            "schema_version": "runtime_invocation_evidence.v1",
+            "provider": "deepseek",
+            "status": "not_routed",
+            "requested_model_id": null,
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "complete_response_observed": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "model_inference_status": "not_invoked",
+            "reserved_call_slot": 3,
+            "maximum_instance_calls": 5,
+            "latency_ms": 0.0,
+            "retries": 0
+          }
+        },
+        {
+          "point": "booster_selection",
+          "action": "divert",
+          "dispatch_time_s": 135.89999999999657,
+          "later_observation_time_s": 135.99999999999656,
+          "clock": "booster",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": {
+            "schema_version": "runtime_invocation_evidence.v1",
+            "provider": "typesafe",
+            "status": "succeeded",
+            "requested_model_id": "jev-1.13.0",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "complete_response_observed": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "model_inference_status": "confirmed_by_valid_response",
+            "reserved_call_slot": 4,
+            "maximum_instance_calls": 5,
+            "latency_ms": 185.974,
+            "retries": 0
+          },
+          "llm_invocation": {
+            "schema_version": "runtime_invocation_evidence.v1",
+            "provider": "deepseek",
+            "status": "not_routed",
+            "requested_model_id": null,
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "complete_response_observed": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "model_inference_status": "not_invoked",
+            "reserved_call_slot": 4,
+            "maximum_instance_calls": 5,
+            "latency_ms": 0.0,
+            "retries": 0
+          }
+        }
+      ],
+      "envelope": {
+        "schema": "missionos.starship_mission_envelope.v1",
+        "mode": "live",
+        "scope": "local_simulation_and_mission_decision_envelope",
+        "decision_points": {
+          "deployment_start": [
+            "continue",
+            "hold",
+            "stop_deployment",
+            "collect_status"
+          ],
+          "deployment_monitor": [
+            "continue",
+            "hold",
+            "stop_deployment",
+            "collect_status"
+          ],
+          "deployment_diagnostic": [
+            "continue",
+            "stop_deployment"
+          ],
+          "return_selection": [
+            "fixed_return",
+            "retained_return"
+          ],
+          "booster_selection": [
+            "capture",
+            "divert"
+          ]
+        },
+        "maximum_decisions": 5,
+        "maximum_jev_calls": 5,
+        "maximum_llm_calls": 5,
+        "maximum_observation_requests": 1,
+        "maximum_hold_s": 30.0,
+        "decision_expiry_s": 75.0,
+        "minimum_return_fuel_kg": 28000.0,
+        "return_time_change_allowed": false,
+        "return_choices": [
+          "fixed_v1",
+          "mass_state_terminal_v3"
+        ],
+        "booster_sites": [
+          "capture",
+          "divert"
+        ],
+        "no_response": {
+          "deployment": "stop_deployment",
+          "return": "retained_return",
+          "booster": "divert"
+        },
+        "out_of_scope": "record_escalation_and_apply_preapproved_fallback",
+        "pending_time_policy": "integrate_and_pace_simulation_while_provider_pending",
+        "physical_execution_authorized": false
+      },
+      "study_sha256": "290cc56a9b75d04dfb07bad0886a8c71976e1d4eea3421eb068d0286901524fb",
+      "profile_sha256": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+      "source_sha256": {
+        "src/runtime/starship_sixdof_catalog.py": "b07494ad48a61a7e9735039615d9d5e91f2fcc23b76179e267c10199fe592ac1",
+        "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+        "scripts/run_starship_sixdof.py": "1581a9b0cc2b3a4ce31155d9b622102c357764dde9a50cf6e870e77e3e07928f",
+        "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+        "src/runtime/starship_sixdof_mission.py": "8622af232763d3d3a1963f12dd6e17a47aadd5dda2932eaae87d2fb8b3e66eaf",
+        "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+        "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+        "src/runtime/starship_sixdof_booster.py": "5a9f67588002314d3500ec320ccd8643c047cfce1e444d87341fba1a0a0d98ca",
+        "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+        "src/runtime/starship_sixdof_report.py": "dddf2677c97034ef608771c43b3cf3fac2fcbe7e33b39756809fdfce38e26f61",
+        "src/runtime/starship_sixdof_verifier.py": "1c14589a5ef25cd26e289cf971e82ad810d84247572835e321c473331b4fe90a",
+        "src/runtime/assets/starship_sixdof_replay.js": "0d678bc2ba3e01c0377e701f89e6970c60da28d1909739037e53182365a7d44b",
+        "src/runtime/starship_flight_supervision.py": "6087ec0e7a6a050d044e52abff997bdc7efb310aadc61182adc91e7d9bc0fccc",
+        "src/runtime/starship_retained_return.py": "79cbc17f09717290d82451f24386f7fec8344f054c8b1752357f8ead67c9fbfc",
+        "src/runtime/starship_retained_return_verifier.py": "d7ca80382970d3e6d0f800fb90c07acd36ccf18e388344c2879bf2c2d2d3dae3",
+        "src/runtime/starship_attitude_reference.py": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a",
+        "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+        "src/runtime/starship_booster_catch_verifier.py": "915f92136e247904a268b0aecb8b7d32d80a6f5dc81163e8503a1a5752ae1490",
+        "src/runtime/starship_booster_control.py": "abde531ec46d5c45325511e35bd15c60a7cf9f81067be4266f01a3933be22cf4",
+        "src/runtime/starship_booster_recovery.py": "c8d8d5f4935525d649668f8b8bb5fe501ebc945e5fa45b02ef9cf29553286575",
+        "src/runtime/starship_fin_allocation.py": "f81f1c35b243e45642c9bdfb4d976beefa46c19a3c297640cb6a85a9dd66b025",
+        "src/runtime/starship_landing_context.py": "2ba967f103f828bf06fd0403b8f7c23a44eef268f8e357bf9e945a481bc62e07",
+        "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+        "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f",
+        "src/runtime/starship_wind_verifier.py": "cdf7203c8980eaf1afb99de5c68f30ed223a84e865ebc76a2d8f4c88debc7412",
+        "examples/spaceflight/starship-catch-profile.json": "9692beee1929febdf1341301d2f890ac007cc1f209ac081f62fd5a095c7626d2",
+        "src/runtime/assets/starship_cg_models.js": "7b0f53ba496c848b93ca93fdd5feea88a28a55085081b786f902e887a9724a7b",
+        "src/runtime/assets/starship_cg_renderer.js": "572fc8a9b432158afae63175d867142bec267a96c3fc06ae6c9db1c938704582",
+        "src/runtime/starship_flight_broker.py": "791e343b9ccdf1aabacadbeba9b7c9175f7cf8fe73f64611002a46afb68c88ce",
+        "src/runtime/starship_flight_supervision_verifier.py": "1e11fef51574eb4d7c927934fd3d5618c53ef6784b4d250e064633533f4ae42d",
+        "src/intelligence/starship_flight_supervisor.py": "5895442e8ae0e96f0985b231ce2351aa45de1a6302ba29a540a7cf62884e4b4e",
+        "src/intelligence/space_ops_investigator.py": "14a4da02afdba76fb7962e0d8bede0e8bf1ba1da44f0f4ff73812a43024655a9",
+        "src/agents/model_config.py": "cfcd0f82873cedaa2e67fe6b991a207b4ba4365cdbe63c98795afddaeaf965f9",
+        "src/runtime/starship_mission_control.py": "2c8e86ec04bc41010a491108537f664d62e0aa01bcccb09470b3e0d90ec7644c",
+        "scripts/run_starship_mission_worker.py": "ae4dbbd82e8d5a2573226bfa420944d01d4d7af9e4590ad66de5f4ff22f1baf2",
+        "scripts/run_starship_managed_mission.py": "a81cc6a50040612135d4e6650b59c783fc88ebaf7738127b3a8377306bd0d465",
+        "src/runtime/starship_mission_director.py": "d19737c252b05db1edcbdcfefce2e6cf4dc2c740aa6e031cb6538d03fe803ce4",
+        "src/runtime/starship_mission_director_verifier.py": "dede5b1b1b5092a145e3c8edf7e7ef7b52cbcc7aedd91bd8c438b56d5d1089ea",
+        "src/intelligence/starship_mission_director.py": "ddf7e94bb48d7331ca2b1a1413863941bfc87ca1eb16e91424de65da3f1a5c13",
+        "src/intelligence/starship_mission_planner.py": "62a829a7bd324c9514de954e4d8fd8b0d20e63fe52ed4a2edc51f06c369631c3",
+        "src/runtime/starship_return_sites.py": "cf9e057825f523840b5027522c1f71a7093c88d4f1d904e5feaebc60e6991a60",
+        "src/gateway/server.py": "0258e10316d9c3573d2e76ace239f2a7a9a205818d6b8392036f8aefdc42065c",
+        "src/gateway/starship_chat.py": "ebe6888a97dd6821db8c77d84a699b278bc025ef9af03a3055ab24d05321eb7e",
+        "src/runtime/assets/starship_operator.html": "c1dfe4639ac58ab26b80807d7ef6946ddfb8d39c3bb08100dc336f7074e165ee",
+        "scripts/start_starship_gateway.py": "57bd50992a9ec9ea251f8e239d9a798dc01db85f58a12d871602601458d0cab4",
+        "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6"
+      },
+      "human_inflight_commands": 0,
+      "human_workload_measured": false,
+      "gateway_evidence": {
+        "worker_receipt_verified": true,
+        "provider_credentials_present_in_process": false,
+        "authenticated_human_identity_verified": false,
+        "artifact_sha256": {
+          "manifest.json": "2ea05574dd1699f22f6204b807d08c6684536d019a5b9498b721b074c114a6cd",
+          "report.html": "e81f42dc4c7857e9ceace847a1425f0a2181575e02650da46edd468fc16db3f1",
+          "study.json": "290cc56a9b75d04dfb07bad0886a8c71976e1d4eea3421eb068d0286901524fb",
+          "verification.json": "65e3c6d6ba93b7acb08ec2472aa1b1740326f26e27d614e254bdbac9f3627f81"
+        }
+      }
+    },
+    {
+      "case": "release_fault",
+      "mode": "live",
+      "origin": "gateway_chat_approve_run",
+      "record_verified": true,
+      "comparison": {
+        "baseline": {
+          "released": 0,
+          "orbit": true,
+          "termination": "surface_impact",
+          "contact_speed_mps": 238.74080544008334,
+          "remaining_fuel_kg": 94027.22303843673,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false
+        },
+        "managed": {
+          "released": 0,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 3.221142071690643,
+          "remaining_fuel_kg": 45297.86623837951,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false
+        },
+        "normal_outcomes_equal": null,
+        "comparison_accepted": true,
+        "comparison_is_model_value_proof": false,
+        "human_workload_measured": false,
+        "physical_success_claimed": false
+      },
+      "decisions": [
+        {
+          "point": "deployment_start",
+          "action": "continue",
+          "dispatch_time_s": 481.2000000000408,
+          "later_observation_time_s": 481.4500000000408,
+          "clock": "ship",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": {
+            "schema_version": "runtime_invocation_evidence.v1",
+            "provider": "typesafe",
+            "status": "succeeded",
+            "requested_model_id": "jev-1.13.0",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "complete_response_observed": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "model_inference_status": "confirmed_by_valid_response",
+            "reserved_call_slot": 1,
+            "maximum_instance_calls": 5,
+            "latency_ms": 254.411,
+            "retries": 0
+          },
+          "llm_invocation": {
+            "schema_version": "runtime_invocation_evidence.v1",
+            "provider": "deepseek",
+            "status": "not_routed",
+            "requested_model_id": null,
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "complete_response_observed": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "model_inference_status": "not_invoked",
+            "reserved_call_slot": 1,
+            "maximum_instance_calls": 5,
+            "latency_ms": 0.0,
+            "retries": 0
+          }
+        },
+        {
+          "point": "deployment_monitor",
+          "action": "collect_status",
+          "dispatch_time_s": 526.2000000000407,
+          "later_observation_time_s": 526.4500000000407,
+          "clock": "ship",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": {
+            "schema_version": "runtime_invocation_evidence.v1",
+            "provider": "typesafe",
+            "status": "succeeded",
+            "requested_model_id": "jev-1.13.0",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "complete_response_observed": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "model_inference_status": "confirmed_by_valid_response",
+            "reserved_call_slot": 2,
+            "maximum_instance_calls": 5,
+            "latency_ms": 239.662,
+            "retries": 0
+          },
+          "llm_invocation": {
+            "schema_version": "runtime_invocation_evidence.v1",
+            "provider": "deepseek",
+            "status": "not_routed",
+            "requested_model_id": null,
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "complete_response_observed": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "model_inference_status": "not_invoked",
+            "reserved_call_slot": 2,
+            "maximum_instance_calls": 5,
+            "latency_ms": 0.0,
+            "retries": 0
+          }
+        },
+        {
+          "point": "deployment_diagnostic",
+          "action": "stop_deployment",
+          "dispatch_time_s": 528.7000000000407,
+          "later_observation_time_s": 528.9500000000407,
+          "clock": "ship",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": {
+            "schema_version": "runtime_invocation_evidence.v1",
+            "provider": "typesafe",
+            "status": "succeeded",
+            "requested_model_id": "jev-1.13.0",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "complete_response_observed": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "model_inference_status": "confirmed_by_valid_response",
+            "reserved_call_slot": 3,
+            "maximum_instance_calls": 5,
+            "latency_ms": 307.287,
+            "retries": 0
+          },
+          "llm_invocation": {
+            "schema_version": "runtime_invocation_evidence.v1",
+            "provider": "deepseek",
+            "status": "not_routed",
+            "requested_model_id": null,
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "complete_response_observed": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "model_inference_status": "not_invoked",
+            "reserved_call_slot": 3,
+            "maximum_instance_calls": 5,
+            "latency_ms": 0.0,
+            "retries": 0
+          }
+        },
+        {
+          "point": "return_selection",
+          "action": "retained_return",
+          "dispatch_time_s": 2190.9500000000407,
+          "later_observation_time_s": 2191.2000000000407,
+          "clock": "ship",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": {
+            "schema_version": "runtime_invocation_evidence.v1",
+            "provider": "typesafe",
+            "status": "succeeded",
+            "requested_model_id": "jev-1.13.0",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "complete_response_observed": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "model_inference_status": "confirmed_by_valid_response",
+            "reserved_call_slot": 4,
+            "maximum_instance_calls": 5,
+            "latency_ms": 178.741,
+            "retries": 0
+          },
+          "llm_invocation": {
+            "schema_version": "runtime_invocation_evidence.v1",
+            "provider": "deepseek",
+            "status": "not_routed",
+            "requested_model_id": null,
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "complete_response_observed": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "model_inference_status": "not_invoked",
+            "reserved_call_slot": 4,
+            "maximum_instance_calls": 5,
+            "latency_ms": 0.0,
+            "retries": 0
+          }
+        },
+        {
+          "point": "booster_selection",
+          "action": "divert",
+          "dispatch_time_s": 135.89999999999657,
+          "later_observation_time_s": 135.99999999999656,
+          "clock": "booster",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": {
+            "schema_version": "runtime_invocation_evidence.v1",
+            "provider": "typesafe",
+            "status": "succeeded",
+            "requested_model_id": "jev-1.13.0",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "complete_response_observed": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "model_inference_status": "confirmed_by_valid_response",
+            "reserved_call_slot": 5,
+            "maximum_instance_calls": 5,
+            "latency_ms": 203.458,
+            "retries": 0
+          },
+          "llm_invocation": {
+            "schema_version": "runtime_invocation_evidence.v1",
+            "provider": "deepseek",
+            "status": "not_routed",
+            "requested_model_id": null,
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "complete_response_observed": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "model_inference_status": "not_invoked",
+            "reserved_call_slot": 5,
+            "maximum_instance_calls": 5,
+            "latency_ms": 0.0,
+            "retries": 0
+          }
+        }
+      ],
+      "envelope": {
+        "schema": "missionos.starship_mission_envelope.v1",
+        "mode": "live",
+        "scope": "local_simulation_and_mission_decision_envelope",
+        "decision_points": {
+          "deployment_start": [
+            "continue",
+            "hold",
+            "stop_deployment",
+            "collect_status"
+          ],
+          "deployment_monitor": [
+            "continue",
+            "hold",
+            "stop_deployment",
+            "collect_status"
+          ],
+          "deployment_diagnostic": [
+            "continue",
+            "stop_deployment"
+          ],
+          "return_selection": [
+            "fixed_return",
+            "retained_return"
+          ],
+          "booster_selection": [
+            "capture",
+            "divert"
+          ]
+        },
+        "maximum_decisions": 5,
+        "maximum_jev_calls": 5,
+        "maximum_llm_calls": 5,
+        "maximum_observation_requests": 1,
+        "maximum_hold_s": 30.0,
+        "decision_expiry_s": 75.0,
+        "minimum_return_fuel_kg": 28000.0,
+        "return_time_change_allowed": false,
+        "return_choices": [
+          "fixed_v1",
+          "mass_state_terminal_v3"
+        ],
+        "booster_sites": [
+          "capture",
+          "divert"
+        ],
+        "no_response": {
+          "deployment": "stop_deployment",
+          "return": "retained_return",
+          "booster": "divert"
+        },
+        "out_of_scope": "record_escalation_and_apply_preapproved_fallback",
+        "pending_time_policy": "integrate_and_pace_simulation_while_provider_pending",
+        "physical_execution_authorized": false
+      },
+      "study_sha256": "16d1713d0eddddb4da29f15fb5c862f30db77a406a6a55f3ec7f0fba63413765",
+      "profile_sha256": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+      "source_sha256": {
+        "src/runtime/starship_sixdof_catalog.py": "b07494ad48a61a7e9735039615d9d5e91f2fcc23b76179e267c10199fe592ac1",
+        "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+        "scripts/run_starship_sixdof.py": "1581a9b0cc2b3a4ce31155d9b622102c357764dde9a50cf6e870e77e3e07928f",
+        "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+        "src/runtime/starship_sixdof_mission.py": "8622af232763d3d3a1963f12dd6e17a47aadd5dda2932eaae87d2fb8b3e66eaf",
+        "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+        "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+        "src/runtime/starship_sixdof_booster.py": "5a9f67588002314d3500ec320ccd8643c047cfce1e444d87341fba1a0a0d98ca",
+        "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+        "src/runtime/starship_sixdof_report.py": "dddf2677c97034ef608771c43b3cf3fac2fcbe7e33b39756809fdfce38e26f61",
+        "src/runtime/starship_sixdof_verifier.py": "1c14589a5ef25cd26e289cf971e82ad810d84247572835e321c473331b4fe90a",
+        "src/runtime/assets/starship_sixdof_replay.js": "0d678bc2ba3e01c0377e701f89e6970c60da28d1909739037e53182365a7d44b",
+        "src/runtime/starship_flight_supervision.py": "6087ec0e7a6a050d044e52abff997bdc7efb310aadc61182adc91e7d9bc0fccc",
+        "src/runtime/starship_retained_return.py": "79cbc17f09717290d82451f24386f7fec8344f054c8b1752357f8ead67c9fbfc",
+        "src/runtime/starship_retained_return_verifier.py": "d7ca80382970d3e6d0f800fb90c07acd36ccf18e388344c2879bf2c2d2d3dae3",
+        "src/runtime/starship_attitude_reference.py": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a",
+        "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+        "src/runtime/starship_booster_catch_verifier.py": "915f92136e247904a268b0aecb8b7d32d80a6f5dc81163e8503a1a5752ae1490",
+        "src/runtime/starship_booster_control.py": "abde531ec46d5c45325511e35bd15c60a7cf9f81067be4266f01a3933be22cf4",
+        "src/runtime/starship_booster_recovery.py": "c8d8d5f4935525d649668f8b8bb5fe501ebc945e5fa45b02ef9cf29553286575",
+        "src/runtime/starship_fin_allocation.py": "f81f1c35b243e45642c9bdfb4d976beefa46c19a3c297640cb6a85a9dd66b025",
+        "src/runtime/starship_landing_context.py": "2ba967f103f828bf06fd0403b8f7c23a44eef268f8e357bf9e945a481bc62e07",
+        "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+        "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f",
+        "src/runtime/starship_wind_verifier.py": "cdf7203c8980eaf1afb99de5c68f30ed223a84e865ebc76a2d8f4c88debc7412",
+        "examples/spaceflight/starship-catch-profile.json": "9692beee1929febdf1341301d2f890ac007cc1f209ac081f62fd5a095c7626d2",
+        "src/runtime/assets/starship_cg_models.js": "7b0f53ba496c848b93ca93fdd5feea88a28a55085081b786f902e887a9724a7b",
+        "src/runtime/assets/starship_cg_renderer.js": "572fc8a9b432158afae63175d867142bec267a96c3fc06ae6c9db1c938704582",
+        "src/runtime/starship_flight_broker.py": "791e343b9ccdf1aabacadbeba9b7c9175f7cf8fe73f64611002a46afb68c88ce",
+        "src/runtime/starship_flight_supervision_verifier.py": "1e11fef51574eb4d7c927934fd3d5618c53ef6784b4d250e064633533f4ae42d",
+        "src/intelligence/starship_flight_supervisor.py": "5895442e8ae0e96f0985b231ce2351aa45de1a6302ba29a540a7cf62884e4b4e",
+        "src/intelligence/space_ops_investigator.py": "14a4da02afdba76fb7962e0d8bede0e8bf1ba1da44f0f4ff73812a43024655a9",
+        "src/agents/model_config.py": "cfcd0f82873cedaa2e67fe6b991a207b4ba4365cdbe63c98795afddaeaf965f9",
+        "src/runtime/starship_mission_control.py": "2c8e86ec04bc41010a491108537f664d62e0aa01bcccb09470b3e0d90ec7644c",
+        "scripts/run_starship_mission_worker.py": "ae4dbbd82e8d5a2573226bfa420944d01d4d7af9e4590ad66de5f4ff22f1baf2",
+        "scripts/run_starship_managed_mission.py": "a81cc6a50040612135d4e6650b59c783fc88ebaf7738127b3a8377306bd0d465",
+        "src/runtime/starship_mission_director.py": "d19737c252b05db1edcbdcfefce2e6cf4dc2c740aa6e031cb6538d03fe803ce4",
+        "src/runtime/starship_mission_director_verifier.py": "dede5b1b1b5092a145e3c8edf7e7ef7b52cbcc7aedd91bd8c438b56d5d1089ea",
+        "src/intelligence/starship_mission_director.py": "ddf7e94bb48d7331ca2b1a1413863941bfc87ca1eb16e91424de65da3f1a5c13",
+        "src/intelligence/starship_mission_planner.py": "62a829a7bd324c9514de954e4d8fd8b0d20e63fe52ed4a2edc51f06c369631c3",
+        "src/runtime/starship_return_sites.py": "cf9e057825f523840b5027522c1f71a7093c88d4f1d904e5feaebc60e6991a60",
+        "src/gateway/server.py": "0258e10316d9c3573d2e76ace239f2a7a9a205818d6b8392036f8aefdc42065c",
+        "src/gateway/starship_chat.py": "ebe6888a97dd6821db8c77d84a699b278bc025ef9af03a3055ab24d05321eb7e",
+        "src/runtime/assets/starship_operator.html": "c1dfe4639ac58ab26b80807d7ef6946ddfb8d39c3bb08100dc336f7074e165ee",
+        "scripts/start_starship_gateway.py": "57bd50992a9ec9ea251f8e239d9a798dc01db85f58a12d871602601458d0cab4",
+        "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6"
+      },
+      "human_inflight_commands": 0,
+      "human_workload_measured": false,
+      "gateway_evidence": {
+        "worker_receipt_verified": true,
+        "provider_credentials_present_in_process": false,
+        "authenticated_human_identity_verified": false,
+        "artifact_sha256": {
+          "manifest.json": "94aca70b7aeae2f48afe323fc661ad3998740b240431f0163bde3aa3c1ebdebb",
+          "report.html": "5f10071315b72e481e0a350729d0ecea2bebe3d57de6712c6d13b7e31c5326b9",
+          "study.json": "16d1713d0eddddb4da29f15fb5c862f30db77a406a6a55f3ec7f0fba63413765",
+          "verification.json": "f60284dec290a74f93a3c19148a3b68f88a4f38bae6d09e5cd79b337cc3e0c45"
+        }
+      }
+    }
+  ],
+  "completion_gate_passed": false,
+  "model_superiority_demonstrated": false,
+  "human_workload_measured": false,
+  "physical_execution": false,
+  "mission_success_demonstrated": false,
+  "raw_session_data_included": false,
+  "limitations": [
+    "Ship and booster clocks integrated sequentially, not concurrently",
+    "Generic rigid payloads, no Starlink unfolding/comms/orbit raising",
+    "Booster capture not qualified and divert destination not reached",
+    "Synthetic ideal release tracker and latch channels, bounded noisy fuel gauge",
+    "First tuple-representation failure and subsequent storage failures retained separately",
+    "Full-suite rerun interrupted by storage exhaustion; 244 targeted tests passed",
+    "Claude Opus 5.5 high review blocked by expired login; no review findings obtained"
+  ],
+  "final_boundary_checks": {
+    "targeted_tests_passed": 244,
+    "full_suite_passed": false,
+    "full_suite_limitation": "storage_exhaustion",
+    "normal_gateway": {
+      "case": "normal",
+      "mode": "fixture",
+      "origin": "final_pending_start_guard_gateway_chat",
+      "record_verified": true,
+      "comparison": {
+        "baseline": {
+          "released": 26,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 4.54683447721646,
+          "remaining_fuel_kg": 74210.51402538114,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false
+        },
+        "managed": {
+          "released": 26,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 4.54683447721646,
+          "remaining_fuel_kg": 74210.51402538114,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false
+        },
+        "normal_outcomes_equal": true,
+        "comparison_accepted": true,
+        "comparison_is_model_value_proof": false,
+        "human_workload_measured": false,
+        "physical_success_claimed": false
+      },
+      "decisions": [
+        {
+          "point": "deployment_start",
+          "action": "continue",
+          "dispatch_time_s": 480.9500000000408,
+          "later_observation_time_s": 481.2000000000408,
+          "clock": "ship",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": null,
+          "llm_invocation": null
+        },
+        {
+          "point": "deployment_monitor",
+          "action": "continue",
+          "dispatch_time_s": 526.2000000000407,
+          "later_observation_time_s": 526.4500000000407,
+          "clock": "ship",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": null,
+          "llm_invocation": null
+        },
+        {
+          "point": "return_selection",
+          "action": "fixed_return",
+          "dispatch_time_s": 2190.9500000000407,
+          "later_observation_time_s": 2191.2000000000407,
+          "clock": "ship",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": null,
+          "llm_invocation": null
+        },
+        {
+          "point": "booster_selection",
+          "action": "divert",
+          "dispatch_time_s": 135.69999999999658,
+          "later_observation_time_s": 135.79999999999657,
+          "clock": "booster",
+          "rules_accepted": true,
+          "rejection": null,
+          "jev_invocation": null,
+          "llm_invocation": null
+        }
+      ],
+      "envelope": {
+        "schema": "missionos.starship_mission_envelope.v1",
+        "mode": "fixture",
+        "scope": "local_simulation_and_mission_decision_envelope",
+        "decision_points": {
+          "deployment_start": [
+            "continue",
+            "hold",
+            "stop_deployment",
+            "collect_status"
+          ],
+          "deployment_monitor": [
+            "continue",
+            "hold",
+            "stop_deployment",
+            "collect_status"
+          ],
+          "deployment_diagnostic": [
+            "continue",
+            "stop_deployment"
+          ],
+          "return_selection": [
+            "fixed_return",
+            "retained_return"
+          ],
+          "booster_selection": [
+            "capture",
+            "divert"
+          ]
+        },
+        "maximum_decisions": 5,
+        "maximum_jev_calls": 0,
+        "maximum_llm_calls": 0,
+        "maximum_observation_requests": 1,
+        "maximum_hold_s": 30.0,
+        "decision_expiry_s": 75.0,
+        "minimum_return_fuel_kg": 28000.0,
+        "return_time_change_allowed": false,
+        "return_choices": [
+          "fixed_v1",
+          "mass_state_terminal_v3"
+        ],
+        "booster_sites": [
+          "capture",
+          "divert"
+        ],
+        "no_response": {
+          "deployment": "stop_deployment",
+          "return": "retained_return",
+          "booster": "divert"
+        },
+        "out_of_scope": "record_escalation_and_apply_preapproved_fallback",
+        "pending_time_policy": "integrate_and_pace_simulation_while_provider_pending",
+        "physical_execution_authorized": false
+      },
+      "study_sha256": "0c9f708c3d99b401e79b3bbcc2bf742ece3282863635aa22bc122fe594d12218",
+      "profile_sha256": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+      "source_sha256": {
+        "src/runtime/starship_sixdof_catalog.py": "b07494ad48a61a7e9735039615d9d5e91f2fcc23b76179e267c10199fe592ac1",
+        "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+        "scripts/run_starship_sixdof.py": "1581a9b0cc2b3a4ce31155d9b622102c357764dde9a50cf6e870e77e3e07928f",
+        "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+        "src/runtime/starship_sixdof_mission.py": "68f5a9a85e3eed60f21f4409263f319c6cf8854f0d50ddfcb4244b17c767871d",
+        "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+        "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+        "src/runtime/starship_sixdof_booster.py": "072b1df79577f9fd61e657ba630448d559ae9afcb2dd5f8cecfa190f87b8e27e",
+        "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+        "src/runtime/starship_sixdof_report.py": "dddf2677c97034ef608771c43b3cf3fac2fcbe7e33b39756809fdfce38e26f61",
+        "src/runtime/starship_sixdof_verifier.py": "1c14589a5ef25cd26e289cf971e82ad810d84247572835e321c473331b4fe90a",
+        "src/runtime/assets/starship_sixdof_replay.js": "0d678bc2ba3e01c0377e701f89e6970c60da28d1909739037e53182365a7d44b",
+        "src/runtime/starship_flight_supervision.py": "6087ec0e7a6a050d044e52abff997bdc7efb310aadc61182adc91e7d9bc0fccc",
+        "src/runtime/starship_retained_return.py": "79cbc17f09717290d82451f24386f7fec8344f054c8b1752357f8ead67c9fbfc",
+        "src/runtime/starship_retained_return_verifier.py": "d7ca80382970d3e6d0f800fb90c07acd36ccf18e388344c2879bf2c2d2d3dae3",
+        "src/runtime/starship_attitude_reference.py": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a",
+        "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+        "src/runtime/starship_booster_catch_verifier.py": "915f92136e247904a268b0aecb8b7d32d80a6f5dc81163e8503a1a5752ae1490",
+        "src/runtime/starship_booster_control.py": "abde531ec46d5c45325511e35bd15c60a7cf9f81067be4266f01a3933be22cf4",
+        "src/runtime/starship_booster_recovery.py": "c8d8d5f4935525d649668f8b8bb5fe501ebc945e5fa45b02ef9cf29553286575",
+        "src/runtime/starship_fin_allocation.py": "f81f1c35b243e45642c9bdfb4d976beefa46c19a3c297640cb6a85a9dd66b025",
+        "src/runtime/starship_landing_context.py": "2ba967f103f828bf06fd0403b8f7c23a44eef268f8e357bf9e945a481bc62e07",
+        "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+        "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f",
+        "src/runtime/starship_wind_verifier.py": "cdf7203c8980eaf1afb99de5c68f30ed223a84e865ebc76a2d8f4c88debc7412",
+        "examples/spaceflight/starship-catch-profile.json": "9692beee1929febdf1341301d2f890ac007cc1f209ac081f62fd5a095c7626d2",
+        "src/runtime/assets/starship_cg_models.js": "7b0f53ba496c848b93ca93fdd5feea88a28a55085081b786f902e887a9724a7b",
+        "src/runtime/assets/starship_cg_renderer.js": "572fc8a9b432158afae63175d867142bec267a96c3fc06ae6c9db1c938704582",
+        "src/runtime/starship_flight_broker.py": "791e343b9ccdf1aabacadbeba9b7c9175f7cf8fe73f64611002a46afb68c88ce",
+        "src/runtime/starship_flight_supervision_verifier.py": "1e11fef51574eb4d7c927934fd3d5618c53ef6784b4d250e064633533f4ae42d",
+        "src/intelligence/starship_flight_supervisor.py": "5895442e8ae0e96f0985b231ce2351aa45de1a6302ba29a540a7cf62884e4b4e",
+        "src/intelligence/space_ops_investigator.py": "14a4da02afdba76fb7962e0d8bede0e8bf1ba1da44f0f4ff73812a43024655a9",
+        "src/agents/model_config.py": "cfcd0f82873cedaa2e67fe6b991a207b4ba4365cdbe63c98795afddaeaf965f9",
+        "src/runtime/starship_mission_control.py": "2c8e86ec04bc41010a491108537f664d62e0aa01bcccb09470b3e0d90ec7644c",
+        "scripts/run_starship_mission_worker.py": "ae4dbbd82e8d5a2573226bfa420944d01d4d7af9e4590ad66de5f4ff22f1baf2",
+        "scripts/run_starship_managed_mission.py": "a81cc6a50040612135d4e6650b59c783fc88ebaf7738127b3a8377306bd0d465",
+        "src/runtime/starship_mission_director.py": "d19737c252b05db1edcbdcfefce2e6cf4dc2c740aa6e031cb6538d03fe803ce4",
+        "src/runtime/starship_mission_director_verifier.py": "e616470b61065ff96120ab66218208a3b6bf5f9a0a800d5b467a1ef82f694f99",
+        "src/intelligence/starship_mission_director.py": "ddf7e94bb48d7331ca2b1a1413863941bfc87ca1eb16e91424de65da3f1a5c13",
+        "src/intelligence/starship_mission_planner.py": "62a829a7bd324c9514de954e4d8fd8b0d20e63fe52ed4a2edc51f06c369631c3",
+        "src/runtime/starship_return_sites.py": "cf9e057825f523840b5027522c1f71a7093c88d4f1d904e5feaebc60e6991a60",
+        "src/gateway/server.py": "0258e10316d9c3573d2e76ace239f2a7a9a205818d6b8392036f8aefdc42065c",
+        "src/gateway/starship_chat.py": "ebe6888a97dd6821db8c77d84a699b278bc025ef9af03a3055ab24d05321eb7e",
+        "src/runtime/assets/starship_operator.html": "c1dfe4639ac58ab26b80807d7ef6946ddfb8d39c3bb08100dc336f7074e165ee",
+        "scripts/start_starship_gateway.py": "57bd50992a9ec9ea251f8e239d9a798dc01db85f58a12d871602601458d0cab4",
+        "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6"
+      },
+      "human_inflight_commands": 0,
+      "human_workload_measured": false,
+      "gateway_evidence": {
+        "worker_receipt_verified": true,
+        "provider_credentials_present_in_process": false,
+        "authenticated_human_identity_verified": false,
+        "artifact_sha256": {
+          "manifest.json": "30eb89c317fd843c3e3cec462c94f9ac3fd5948cbe5b31c5f2b1622f6cb2841c",
+          "report.html": "b8318de94c5115305823595b20b8d5d897a60d5ab835cab92adfbfe6a6b6d7c3",
+          "study.json": "0c9f708c3d99b401e79b3bbcc2bf742ece3282863635aa22bc122fe594d12218",
+          "verification.json": "2f3f4de35e632d4175eb2b5db5b905bedb18ab9e0ea2804fc64b5584a5a60a5f"
+        }
+      }
+    }
+  }
+}

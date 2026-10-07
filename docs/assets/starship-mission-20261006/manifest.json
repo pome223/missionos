@@ -1,0 +1,375 @@
+{
+  "schema": "missionos.starship_saved_public_media_manifest.v1",
+  "sources": [
+    {
+      "public_case_id": "nominal-historical-sixdof",
+      "file_sha256": "0387b21c2b16516c3565376ee919fec9da319d47c7a6c490569a99c8f19c6086",
+      "decoded_bytes_sha256": "0387b21c2b16516c3565376ee919fec9da319d47c7a6c490569a99c8f19c6086"
+    },
+    {
+      "public_case_id": "live-routing-historical-sixdof",
+      "file_sha256": "e24e263ac5f4cae1bf4ce5fa202698a8f7fa13c88ee76408abbd7c9f7a794f81",
+      "decoded_bytes_sha256": "e24e263ac5f4cae1bf4ce5fa202698a8f7fa13c88ee76408abbd7c9f7a794f81"
+    },
+    {
+      "public_case_id": "isolated-return-18",
+      "file_sha256": "fd3d43516e917ca7d91a981561477676faf3c28533c7561981ca3d9ae312e818",
+      "decoded_bytes_sha256": "2b20b863b66b878a1bb6c64fe9fa242ddb10268b6ed4af9de785522bd3218d00"
+    }
+  ],
+  "saved_verdicts": [
+    {
+      "public_case_id": "nominal-stored-consistency",
+      "file_sha256": "634d229ded8881904038a19b7a83875c18cc8bb7d65f6c4a42b0e94583d0ca1b",
+      "decoded_bytes_sha256": "634d229ded8881904038a19b7a83875c18cc8bb7d65f6c4a42b0e94583d0ca1b"
+    },
+    {
+      "public_case_id": "supervision-stored-consistency",
+      "file_sha256": "8914f69fb27ed370dda3c9174ddbf9ee28b90bdcb90ff0f4f9468d0e857b6808",
+      "decoded_bytes_sha256": "8914f69fb27ed370dda3c9174ddbf9ee28b90bdcb90ff0f4f9468d0e857b6808"
+    },
+    {
+      "public_case_id": "return-18-stored-causal-arithmetic",
+      "file_sha256": "1fb6889c385742d49680259f208ba5a8c6f2f9d946977d103cc1f7dc96b29b69",
+      "decoded_bytes_sha256": "1fb6889c385742d49680259f208ba5a8c6f2f9d946977d103cc1f7dc96b29b69"
+    }
+  ],
+  "historical_source_versions": {
+    "nominal": {
+      "src/runtime/starship_sixdof.py": "ad70a63c1d4146d9154385a3d0d25d2074bb70caf6df95ff8e21a1eb07f5c6fe",
+      "src/runtime/starship_sixdof_mission.py": "8579a283b786e74abd1e5332e495a9be918339d57ace587eed494edc9196d50d",
+      "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+      "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+      "src/runtime/starship_sixdof_booster.py": "2e64fe7ddb5c650b0e4a2108d56567675edd5b2a21008b384528b7bd959b7fcf",
+      "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+      "scripts/run_starship_sixdof.py": "e99654fc3fcfc8dcc4b0c421e928a35fa211bb2afad906ca2c37d45e92658f17",
+      "src/runtime/starship_sixdof_report.py": "4838f1636be1735ba6972352773faea5025c927f5cef6a3783bfa882f5a580a7",
+      "src/runtime/assets/starship_sixdof_replay.js": "e2e12af90ed3c956261d29b86015e30c929e35918cac0dd9aa470d655c08f34a",
+      "src/runtime/assets/starship_cg_models.js": "93248ade282664763e42975eee9c3cf56ef5acb86dc4eecd42dda9bb384fb197",
+      "src/runtime/assets/starship_cg_renderer.js": "535d2c48978577bfab803acfd44899fcc01e8ab8d50fbe6aa1205e4ff7b3ec2c"
+    },
+    "supervision": {
+      "src/runtime/starship_sixdof.py": "ad70a63c1d4146d9154385a3d0d25d2074bb70caf6df95ff8e21a1eb07f5c6fe",
+      "src/runtime/starship_sixdof_mission.py": "85d88ad24ac3e604d4e9491ba338de944330268e67603c98446c405622040d88",
+      "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+      "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+      "src/runtime/starship_sixdof_booster.py": "2e64fe7ddb5c650b0e4a2108d56567675edd5b2a21008b384528b7bd959b7fcf",
+      "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+      "scripts/run_starship_sixdof.py": "8fb2ebe558e37d60371b2365f48b82a9df00eb26f15329df047944c0fac9b5fb",
+      "src/runtime/starship_flight_supervision.py": "089d1d21a1b77f4959d66e1deb2121d6d26c6cc4a4418af1015af09d6e47fd8f",
+      "src/runtime/starship_sixdof_report.py": "547d46b3a8a28c53ddb71eead571a10e26edf2daf9d05e8e9976825512861f5d",
+      "src/runtime/assets/starship_sixdof_replay.js": "e2e12af90ed3c956261d29b86015e30c929e35918cac0dd9aa470d655c08f34a",
+      "src/runtime/assets/starship_cg_models.js": "93248ade282664763e42975eee9c3cf56ef5acb86dc4eecd42dda9bb384fb197",
+      "src/runtime/assets/starship_cg_renderer.js": "535d2c48978577bfab803acfd44899fcc01e8ab8d50fbe6aa1205e4ff7b3ec2c"
+    },
+    "return_measurement_source_map_sha256": "024da63356707cfb67fd77aca6dad5fe13ab640a5c9c89efb0604d3a1cad320c"
+  },
+  "return_verifier_sha256": "87f60c229dc6ddeeae3619d45b2ea6a11813400f3ede47bd1f97b177cb55b524",
+  "verification_scope": "stored-output consistency / saved causal arithmetic; no new integration, vehicle certification, human authentication or physical admission",
+  "authority": "LLM judges. Human approves. Rules constrain. Executor acts. Verifier checks. Repair loops.",
+  "redaction": "allowlist numerical display fields, semantic events, safe status facts; exclude controller/request/IDs/keys/HMAC/private paths/provider payloads",
+  "display": {
+    "numeric_values_rounded": false,
+    "downsampling": "nominal and supervision clip windows with original bracketing samples; return all 601 original samples",
+    "coincident_event_times": "last saved post-event row selected for drawing; zero duration or stability credit",
+    "seek_policy": "video elapsed time maps only to declared clip windows; jumps over omitted orbit intervals; never interpolates through gaps",
+    "engine_states": "lossless columns; only main engines drawn",
+    "interpolation": "display-only linear position and quaternion slerp; never an executed state",
+    "illustrative_geometry_and_plumes": true,
+    "satellite_service_verified": false
+  },
+  "operator_fixture": {
+    "duration_s": 30.0,
+    "scenario": "gimbal_step",
+    "verified_runtime_smoke": true,
+    "test_operator": true,
+    "authenticated_human_identity_verified": false,
+    "historical_receipt": true,
+    "current_public_runtime_smoke_included": false,
+    "provider_inference": false,
+    "full_launch_reexecuted": false,
+    "physical_execution": false,
+    "note": "Separate initialized operator fixture; not this nominal flight or return continuation",
+    "receipt_file_sha256": "4b059a8e81f15ce5363c175fe8c41ce8a676dc9a163c0f4d9d953b71b2f7c457",
+    "study_file_sha256": "7b8db3c45aae650161dc43cb9e33597526177d1dda9237666ca680643b28f2f6"
+  },
+  "physical_execution": false,
+  "mission_completed": false,
+  "model_value_demonstrated": false,
+  "source_authenticated": false,
+  "runtime_invocation_independently_verified": false,
+  "media_maximum_total_bytes": 31457280,
+  "saved_verdict_results": {
+    "nominal": {
+      "passed": true,
+      "scope": "stored six-DOF output consistency; no dynamics reexecution, source/profile binding, numerical certification, vehicle fidelity or mission-success certification"
+    },
+    "supervision": {
+      "passed": true,
+      "observed_effect": true,
+      "scope": "saved observation, fixed command scope, Rules and subsequent sequencer state consistency; not approval authentication or physical execution"
+    },
+    "return": {
+      "passed": true,
+      "arithmetic_record_integrity_passed": true,
+      "source_bound_arithmetic_passed": true,
+      "positive_time_transitions_checked": 600,
+      "durable_command_attempts_checked": 600,
+      "dynamics_replayed": false,
+      "source_authenticated": false,
+      "physical_invocation_admitted": false,
+      "arrival_admitted": false,
+      "support_admitted": false
+    }
+  },
+  "curated_dataset_sha256": "4710db4426eaf9643525014a09ce0d59101410b0fc615b4da6e57495e4b3ad8c",
+  "renderer_sources_sha256": {
+    "starship_cg_models.js": "7b0f53ba496c848b93ca93fdd5feea88a28a55085081b786f902e887a9724a7b",
+    "starship_cg_renderer.js": "572fc8a9b432158afae63175d867142bec267a96c3fc06ae6c9db1c938704582",
+    "replay.js": "b9ac04cdb4945eae688b947ffa3cf7ae153b6dd90be03431e19729109fd2ecfb",
+    "page-template.html": "16cf97fee82d6ed193becbb2a43402c67e3216bc7e62643e94acc3dc57e7f34e",
+    "export_saved_media.py": "f073c4dc2766ce04978b0d8e9c15fc0cd10fa16803e9e24f96775ed9d4dc6f55"
+  },
+  "standalone_page_sha256": "8d8d3cd9a8bdb6001e38f531e2d4b6c6d3174c4f8a805e26ecf0696b956092a1",
+  "media": [
+    {
+      "filename": "nominal-flight.mp4",
+      "bytes": 2224790,
+      "sha256": "b005d34f05fa8d144d9028e30fa075a720fb26f2ee8845a685a3590bc207d95c",
+      "duration_s": 36.0,
+      "codec_name": "h264",
+      "width": 960,
+      "height": 540,
+      "pix_fmt": "yuvj420p",
+      "avg_frame_rate": "24/1",
+      "nb_frames": "864"
+    },
+    {
+      "filename": "nominal-flight.jpg",
+      "bytes": 40569,
+      "sha256": "a4b8fe82b6bcbb595c91ad5b35eaaa6c045c8cb5868d3fe8a59d8952e6d1487d"
+    },
+    {
+      "filename": "deployment-supervision.mp4",
+      "bytes": 975867,
+      "sha256": "a75f46f6bdcfcbd75dad35208fac82b6a7f2944d00513112ff98fcf43cb31c85",
+      "duration_s": 28.0,
+      "codec_name": "h264",
+      "width": 960,
+      "height": 540,
+      "pix_fmt": "yuvj420p",
+      "avg_frame_rate": "24/1",
+      "nb_frames": "672"
+    },
+    {
+      "filename": "deployment-supervision.jpg",
+      "bytes": 94048,
+      "sha256": "4fcaebc621c987dcb5edbc7cf68529b4c77e8465bca5aeac537a5d9e59131862"
+    },
+    {
+      "filename": "return-negative.mp4",
+      "bytes": 550249,
+      "sha256": "dd6709a0334d2ba02a824dbcd57a4eebeecdf114395b42942e363c1667afeb5e",
+      "duration_s": 30.0,
+      "codec_name": "h264",
+      "width": 960,
+      "height": 540,
+      "pix_fmt": "yuvj420p",
+      "avg_frame_rate": "24/1",
+      "nb_frames": "720"
+    },
+    {
+      "filename": "return-negative.jpg",
+      "bytes": 46488,
+      "sha256": "0c0a30d7ed6e3639d910f5651f56d98c8aff862eb91692202cfe79cddb57bd93"
+    },
+    {
+      "filename": "deployment-supervision.gif",
+      "bytes": 3121254,
+      "sha256": "e409daa8dbe1a30b4503686fa524b6f8fcc8bd99fa0ee6c4ba54487126f43292",
+      "source_movie_filename": "deployment-supervision.mp4",
+      "source_movie_sha256": "a75f46f6bdcfcbd75dad35208fac82b6a7f2944d00513112ff98fcf43cb31c85",
+      "source_movie_start_s": 3.5,
+      "source_movie_interval_s": 24.5,
+      "preview_speed_vs_source_movie": 2.0,
+      "target_fps": 6,
+      "width": 640,
+      "height": 360,
+      "loop_repetitions": 2,
+      "caption": "Animated preview; full MP4 linked",
+      "excerpt": "observations, skip command and both later-effect observations",
+      "transformation": "FFmpeg saved-MP4 excerpt, display-time rescale, 128-colour palette and label; no new rendered physical state"
+    },
+    {
+      "filename": "return-negative.gif",
+      "bytes": 612042,
+      "sha256": "af4f295202daa6e2cd469de82f10dac2a5529fcf055f3795c776de13f4cfe1d6",
+      "source_movie_filename": "return-negative.mp4",
+      "source_movie_sha256": "dd6709a0334d2ba02a824dbcd57a4eebeecdf114395b42942e363c1667afeb5e",
+      "source_movie_start_s": 18.0,
+      "source_movie_interval_s": 12.0,
+      "preview_speed_vs_source_movie": 1.0,
+      "target_fps": 6,
+      "width": 640,
+      "height": 360,
+      "loop_repetitions": 2,
+      "caption": "Animated preview; full MP4 linked",
+      "excerpt": "final approach, reserve crossing and unsuccessful endpoint",
+      "transformation": "FFmpeg saved-MP4 excerpt, display-time rescale, 128-colour palette and label; no new rendered physical state"
+    },
+    {
+      "filename": "nominal-flight.gif",
+      "bytes": 3217968,
+      "sha256": "1ed9297d76193a9efacb1c44b554b0a81aa4e04396697d03611b36bbecdba5a1",
+      "source_movie_filename": "nominal-flight.mp4",
+      "source_movie_sha256": "b005d34f05fa8d144d9028e30fa075a720fb26f2ee8845a685a3590bc207d95c",
+      "source_movie_start_s": 0.0,
+      "source_movie_interval_s": 25.708333333333332,
+      "preview_speed_vs_source_movie": 2.0,
+      "target_fps": 6,
+      "width": 640,
+      "height": 360,
+      "loop_repetitions": 2,
+      "caption": "Animated preview; full MP4 linked",
+      "excerpt": "launch through recorded 26th payload release; return omitted",
+      "palette_colours": 96,
+      "maximum_preview_bytes": 6291456,
+      "terminal_display_hold_s": 0.5,
+      "display_hold_creates_simulated_time_credit": false,
+      "transformation": "FFmpeg saved-MP4 excerpt, display-time rescale, bounded palette and label; no new rendered physical state",
+      "release_completion_endpoint": {
+        "recorded_release_count": 26,
+        "recorded_26th_release_time_s": 900.7000000000407,
+        "mapped_source_movie_event_time_s": 25.66615384615531,
+        "last_source_frame_index": 616,
+        "source_movie_frame_time_s": 25.666666666666668,
+        "verified_frame_counter": "26/26",
+        "verified_frame_displayed_saved_time_s": 900.77,
+        "return_segment_included": false,
+        "verification": "source frame 615 shows 25/26; frame 616 shows 26/26",
+        "reviewed_source_movie_sha256": "b005d34f05fa8d144d9028e30fa075a720fb26f2ee8845a685a3590bc207d95c"
+      }
+    }
+  ],
+  "public_media_total_bytes": 10883275,
+  "capture_pipeline": "CUA page controls -> saved canvas MediaRecorder -> bounded exclusive same-origin loopback writer -> FFmpeg H.264; generated captures ignored",
+  "media_verification": {
+    "complete_ffmpeg_decode_passed": true,
+    "native_chrome_cua_playback": [
+      {
+        "filename": "nominal-flight.mp4",
+        "ready_state": 4,
+        "paused": false,
+        "observed_time_s": 5.193473,
+        "duration_s": 36,
+        "video_width": 960,
+        "video_height": 540,
+        "media_error": null
+      },
+      {
+        "filename": "deployment-supervision.mp4",
+        "ready_state": 4,
+        "paused": false,
+        "observed_time_s": 0.114192,
+        "duration_s": 28,
+        "video_width": 960,
+        "video_height": 540,
+        "media_error": null
+      },
+      {
+        "filename": "return-negative.mp4",
+        "ready_state": 4,
+        "paused": false,
+        "observed_time_s": 0.117389,
+        "duration_s": 30,
+        "video_width": 960,
+        "video_height": 540,
+        "media_error": null
+      }
+    ],
+    "exporter_check_passed": true,
+    "ruff_check_passed": true,
+    "new_model_calls": 0,
+    "new_simulator_integrations": 0,
+    "new_hardware_calls": 0,
+    "scope": "portable saved-display export, container decode and browser playback; not new mission execution or scientific validation"
+  },
+  "entire_portable_report_requires_network": false,
+  "current_verifier_recheck_of_historical_trace": false,
+  "animated_preview_verification": {
+    "complete_ffmpeg_decode_passed": true,
+    "caption_embedded": "Animated preview / full MP4 linked",
+    "source_movies_and_posters_unchanged": true,
+    "curated_dataset_unchanged": true,
+    "new_CG_capture": false,
+    "new_simulator_or_model_or_hardware_calls": 0,
+    "nominal": {
+      "duration_s": 13.34,
+      "frames": 80,
+      "source_movie_start_s": 0.0,
+      "source_movie_duration_s": 25.708333333333332,
+      "playback_speed_vs_MP4": 2.0,
+      "coverage": "launch through recorded 26th release; return omitted",
+      "terminal_display_hold_s": 0.5,
+      "display_hold_creates_simulated_time_credit": false,
+      "last_source_frame_index": 616,
+      "last_source_frame_time_s": 25.666666666666668,
+      "last_source_counter": "26/26",
+      "last_source_displayed_saved_time_s": 900.77,
+      "sequential_final_GIF_frame_visually_checked": true,
+      "reviewed_source_movie_sha256": "b005d34f05fa8d144d9028e30fa075a720fb26f2ee8845a685a3590bc207d95c",
+      "individual_V3_hardware_unfolding_claimed": false,
+      "prior_full_preview_and_failed25of26_trim_retained_ignored": true
+    },
+    "supervision": {
+      "duration_s": 12.34,
+      "frames": 74,
+      "source_movie_start_s": 3.5,
+      "source_movie_duration_s": 24.5,
+      "playback_speed_vs_MP4": 2.0
+    },
+    "return": {
+      "duration_s": 12.0,
+      "frames": 72,
+      "source_movie_start_s": 18.0,
+      "source_movie_duration_s": 12.0
+    },
+    "scope": "animated saved-MP4 display excerpts only; no new mission execution or physical validation"
+  },
+  "nominal_operator_chain": {
+    "schema": "missionos.starship_historical_nominal_operator_chain_review.v1",
+    "scope": "reviewed historical local-simulation plan, explicit approval, consumed grant, worker receipt and served-artifact linkage; not independent process/source/human or physical attestation",
+    "historical_saved_record": true,
+    "test_operator": true,
+    "authenticated_human_identity_verified": false,
+    "approval_scope": "local_simulation_only",
+    "stored_explicit_approval_integrity_reviewed": true,
+    "approval_consumption_binding_reviewed": true,
+    "stored_worker_receipt_integrity_reviewed": true,
+    "plan_request_approval_worker_linkage_reviewed": true,
+    "chat_receipt_sha256": "b20775069f9b12a76b3b30a1b09f5979571db0b5c8b6d52d24d4ab6d69e61f62",
+    "chat_transcript_sha256": "c23bea4b2645e161499dcb785548aad220af23ff139b64b4751fba138b858ca0",
+    "signed_worker_receipt_sha256": "425626e9eddb73988c11f51b516cf666c6a61ee5c10917a51123e31a6557f03d",
+    "served_artifact_sha256": {
+      "manifest.json": "53cf9c09fa2a4c50a741ce1a628974929fc01987be5e4287fbf496bc74332257",
+      "report.html": "fc36de4312b3ed431151c3626b5d475af15983d5137233145ace286ee1a18d1f",
+      "study.json": "0387b21c2b16516c3565376ee919fec9da319d47c7a6c490569a99c8f19c6086",
+      "verification.json": "634d229ded8881904038a19b7a83875c18cc8bb7d65f6c4a42b0e94583d0ca1b"
+    },
+    "plan_source_hash_count": 16,
+    "plan_source_map_sha256": "17012da763f69987a2c23fa60ea426d26713e3a041b94b805751df7b7422ec83",
+    "recorded_generator_source_hash_count": 11,
+    "recorded_source_map_sha256": "d80f40fce684848695a1e048d46ed65f950c1d9f3b5ccd88fae46b7d93b3d4c3",
+    "recorded_generator_map_matches_approved_map": true,
+    "profile_id": "v3-inspired-open-model-development-v1",
+    "profile_sha256": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "planner_inference": false,
+    "provider_credentials_present_in_worker": false,
+    "individual_release_LLM_decisions": false,
+    "source_authenticated": false,
+    "independent_process_runtime_attestation": false,
+    "current_public_fullflight_reexecuted": false,
+    "physical_execution": false,
+    "distinction_from_current_public_gimbal_smoke": "historical complete nominal numerical record; current public initialized 30-second actuator HTTP smoke is separate"
+  }
+}

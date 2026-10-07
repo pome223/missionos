@@ -26,6 +26,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+spaceflight = ["scipy>=1.11.0,<2.0.0"]
+spaceflight-native = ["bsk==2.12.0", "scipy>=1.11.0,<2.0.0"]
 urban-map = ["shapely>=2.0,<3.0", "pyproj>=3.6,<4.0"]
 prediction = [
   "scikit-learn>=1.5,<2.0",
@@ -56,6 +58,9 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["src*", "scripts*"]
+
+[tool.setuptools.package-data]
+"src.runtime" = ["assets/starship_*.js", "assets/starship_operator.html"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

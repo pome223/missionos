@@ -1,0 +1,114 @@
+{
+  "schema": "missionos.starship_public_research.v1",
+  "status": "research_only_not_runtime_configuration",
+  "checked_on": "2026-10-03",
+  "target": {
+    "flight": 14,
+    "ship_generation": 3,
+    "booster_generation": 3,
+    "engine_generation": 3,
+    "launch_site": "Starbase Pad 2",
+    "mission_date": "2026-09-28"
+  },
+  "claim_boundary": {
+    "new_simulator_run_performed": false,
+    "flight_telemetry_ingested": false,
+    "vehicle_parameters_calibrated": false,
+    "starship_vehicle_validated": false,
+    "physical_execution_invoked": false,
+    "source_read_method": "official_pages_rendered_in_browser",
+    "unknown_values_must_not_default_to_zero": true
+  },
+  "sources": {
+    "flight14": {
+      "url": "https://www.spacex.com/launches/starship-flight-14",
+      "section": "Post-flight narrative and approximate Flight Timeline",
+      "article_date": "2026-09-28"
+    },
+    "v3": {
+      "url": "https://www.spacex.com/updates#starship-v3",
+      "section": "Introducing Starship V3, vehicle and Raptor change highlights",
+      "article_date": "2026-05-12"
+    },
+    "orbit_design": {
+      "url": "https://www.spacex.com/updates#orbital-starship",
+      "section": "Starship to Orbit, Initial orbit design",
+      "article_date": "2026-09-15"
+    },
+    "starlink_v3": {
+      "url": "https://starlink.com/ls/updates/starlink-version-3-satellites",
+      "section": "Starlink Version 3 Satellites",
+      "article_date": null
+    }
+  },
+  "published_approximate_schedule": {
+    "source": "flight14",
+    "time_basis": "seconds_after_planned_liftoff",
+    "classification": "published_approximate_plan_not_observed_times",
+    "events": [
+      {"event": "max_dynamic_pressure", "planned_t_plus_s": 58, "observed_t_plus_s": null},
+      {"event": "booster_most_engines_off", "planned_t_plus_s": 140, "observed_t_plus_s": null},
+      {"event": "hot_staging", "planned_t_plus_s": 142, "observed_t_plus_s": null},
+      {"event": "booster_boostback_start", "planned_t_plus_s": 147, "observed_t_plus_s": null},
+      {"event": "booster_boostback_end", "planned_t_plus_s": 187, "observed_t_plus_s": null},
+      {"event": "booster_landing_burn_start", "planned_t_plus_s": 396, "observed_t_plus_s": null},
+      {"event": "booster_landing_burn_end", "planned_t_plus_s": 421, "observed_t_plus_s": null},
+      {"event": "ship_ascent_cutoff", "planned_t_plus_s": 491, "observed_t_plus_s": null},
+      {"event": "orbit_insertion_start", "planned_t_plus_s": 1517, "observed_t_plus_s": null},
+      {"event": "orbit_insertion_end", "planned_t_plus_s": 1536, "observed_t_plus_s": null},
+      {"event": "deployment_start", "planned_t_plus_s": 2047, "observed_t_plus_s": null},
+      {"event": "deployment_end", "planned_t_plus_s": 3879, "observed_t_plus_s": null},
+      {"event": "deorbit_start", "planned_t_plus_s": 31957, "observed_t_plus_s": null},
+      {"event": "deorbit_end", "planned_t_plus_s": 31968, "observed_t_plus_s": null},
+      {"event": "ship_entry", "planned_t_plus_s": 34136, "observed_t_plus_s": null},
+      {"event": "ship_landing_burn_start", "planned_t_plus_s": 35411, "observed_t_plus_s": null},
+      {"event": "ship_flip", "planned_t_plus_s": 35413, "observed_t_plus_s": null},
+      {"event": "ship_water_contact", "planned_t_plus_s": 35430, "observed_t_plus_s": null}
+    ],
+    "warning": "The post-flight narrative reports an early return; the retained schedule is not the flown timeline. Visual samples are documented separately and do not fill event times without event-specific evidence."
+  },
+  "operator_reported_outcome": {
+    "source": "flight14",
+    "classification": "operator_report_not_independent_runtime_receipt",
+    "booster_ascent_engine_shutdown_count": 1,
+    "ship_ascent_vacuum_engine_shutdown_count": 1,
+    "ship_achieved_initial_suborbital_trajectory": true,
+    "ship_orbit_go_after_health_review": true,
+    "ship_inserted_into_orbit": true,
+    "payload_type": "Starlink V3",
+    "satellites_deployed": 26,
+    "satellites_contacted": 26,
+    "early_return": true,
+    "ship_return_region": "Northern Pacific Ocean",
+    "ship_splashdown_on_target": true,
+    "booster_disposition": "Gulf splashdown and flight termination system demonstration",
+    "satellite_checkout_completed": null,
+    "satellite_orbit_raise_completed": null,
+    "customer_service_started": null,
+    "ship_recovery_verified": null,
+    "ship_reflight_verified": null
+  },
+  "design_facts": [
+    {"field": "booster_grid_fin_count", "value": 3, "unit": "count", "source": "v3", "classification": "generation_design"},
+    {"field": "booster_hot_stage", "value": "integrated", "source": "v3", "classification": "generation_design"},
+    {"field": "sea_level_raptor_rated_thrust", "value": 250, "unit": "metric_tonne_force", "source": "v3", "classification": "published_design_not_flight_throttle"},
+    {"field": "vacuum_raptor_rated_thrust", "value": 275, "unit": "metric_tonne_force", "source": "v3", "classification": "published_design_not_flight_throttle"},
+    {"field": "starlink_v3_laser_count", "value": 6, "unit": "count", "source": "starlink_v3", "classification": "published_design_not_link_receipt"},
+    {"field": "starlink_v3_laser_capacity_each", "value": 400, "unit": "Gbps", "source": "starlink_v3", "classification": "published_design_not_measured_throughput"}
+  ],
+  "unresolved_flight_inputs": {
+    "ship_dry_mass_kg": null,
+    "booster_dry_mass_kg": null,
+    "initial_loaded_propellant_kg": null,
+    "entry_header_reserve_kg": null,
+    "ship_inertia_tensor_kg_m2": null,
+    "aerodynamic_coefficient_tables": null,
+    "throttle_and_specific_impulse_curves": null,
+    "entry_state_eci_with_epoch": null,
+    "deployment_orbit_state_with_epoch": null,
+    "per_satellite_release_state": null,
+    "tps_material_and_failure_limits": null,
+    "landing_ground_relative_velocity_mps": null,
+    "satellite_service_acceptance_receipts": null
+  }
+}
