@@ -8,6 +8,13 @@ collection, decisions and replanning across deployment, Ship return and booster
 recovery. Local guidance and numerical estimators are tools; the AI does not
 replace the fast attitude or engine-control loops.
 
+The operational purpose is sustainable high-cadence flight: operators approve
+delegated bounds and handle exceptions while MissionOS manages routine missions.
+The [high-cadence operating requirements](starship-high-cadence-operations.md)
+use three launch opportunities in 24 simulated hours as a project workload
+assumption, not a claim about SpaceX's achieved rate. Single-flight recovery
+qualification remains the first prerequisite; fleet execution is not implemented.
+
 ```text
 LLM judges. Human approves. Rules constrain.
 Executor acts. Verifier checks. Repair loops.
