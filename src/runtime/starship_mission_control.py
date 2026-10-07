@@ -376,6 +376,8 @@ class StarshipMissionService:
             except ValueError as exc:
                 raise StarshipMissionError("mission_director_not_configured") from exc
             response_fault = "invalid_deployment_monitor" if scenario == "sixdof_managed_invalid_response" else None
+            if scenario == "sixdof_managed_hold":
+                response_fault = "hold_deployment_start"
             if response_fault and envelope["mode"] != "fixture":
                 raise StarshipMissionError("fixture_response_fault_only")
             plan.update(backend="starship_mission_management", mission_envelope=envelope,

@@ -220,6 +220,7 @@ def simulate_booster(profile, separation_state_dict, duration_s=None, *, guidanc
         return {"time_s": state.time_s, "phase": "booster_return", "released_count": 0,
             "release_acknowledged": False, "sequencer_state": "running",
             "fuel_kg": fuel_sensor(state.propellant_kg, state.time_s, "booster"), "return_deadline_s": start_time+duration,
+            "hold_expires_at_s": None,
             "tower_ready": tower_ready, "operations_notice": "",
             "numerical_tools": {"orbit_release_feasible": False, "retained_payload_present": False,
                 "capture_corridor_certified": False, "mechanism_status": "not_collected"}}
@@ -333,6 +334,8 @@ def simulate_booster(profile, separation_state_dict, duration_s=None, *, guidanc
             requested = env.add(env.scale(up, vertical_acceleration), horizontal_acceleration)
             target = _attitude(env.unit(requested), north)
             alignment = env.dot(dyn.rotate(state.q_body_to_eci, (0., 0., 1.)), env.unit(requested))
+            guidance.update(terminal_thrust_alignment_cosine=float(alignment),
+                            terminal_braking_alignment_gate_met=bool(alignment > .5))
             if alignment > .5:
                 count, throttle = _landing_engine_demand(state, booster, mass*env.norm(requested)/alignment,
                                                           min(profile["booster"]["gimbal_engine_count"] if drag_aware else 3, profile["booster"]["engine_count"]))

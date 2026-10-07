@@ -211,12 +211,21 @@ def run(port: int, scenario: str, output: Path) -> dict:
         assert len(study["runs"]) == 2
         if scenario == "sixdof_managed_splashdown":
             from src.runtime.starship_splashdown import load_goal
-            assert study["envelope"]["schema"] == "missionos.starship_mission_envelope.v3"
+            assert study["envelope"]["schema"] == "missionos.starship_mission_envelope.v4"
             assert study["envelope"]["splashdown_goal"] == load_goal().to_dict()
             booster_records = [r for r in study["runs"][1]["mission_director"]["records"] if r["request"]["point"] == "booster_selection"]
             assert len(booster_records) == 1 and booster_records[0]["dispatch"]["action"] == "splashdown"
             assert study["runs"][1]["booster_run"]["splashdown"]["controlled_water_entry_envelope_met"] is True
             assert not any(r.get("code") == "splashdown_record_invalid" for r in verdict["issues"])
+        if scenario == "sixdof_managed_hold":
+            records = study["runs"][1]["mission_director"]["records"]
+            start = next(r for r in records if r["request"]["point"] == "deployment_start")
+            reassess = next(r for r in records if r["request"]["point"] == "deployment_reassessment")
+            assert start["dispatch"]["action"] == "hold" and start["dispatch"]["rules_accepted"] is True
+            assert reassess["dispatch"]["action"] == "continue" and reassess["dispatch"]["rules_accepted"] is True
+            assert reassess["later_observation"]["sequencer_state"] == "running"
+            assert start["dispatch"]["time_s"]+5 <= reassess["dispatch"]["time_s"] < start["dispatch"]["time_s"]+30
+            assert study["runs"][1]["outcome"]["payload_released_count"] == 26
         summary["mission_management"] = {"decisions": len(study["runs"][1]["mission_director"]["records"]),
             "comparison": study["comparison"], "human_inflight_commands": 0,
             "comparison_success_required_for_completion": True, "model_value_demonstrated": False}

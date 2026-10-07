@@ -3,8 +3,8 @@
 This opt-in development slice connects mission decisions across deployment,
 return and booster recovery. Numerical tools belong to MissionOS. They are
 neither replaced by language models nor treated as the project's adversary.
-Normal monitoring starts before a deployment interlock. Existing scenarios and
-their narrow approvals retain their original behavior.
+Normal monitoring starts before a deployment interlock. Unmanaged simulation
+and narrow supervision scenarios retain their separate approval formats.
 
 ## Authority and contract
 
@@ -21,10 +21,11 @@ checks subsequent observations. A provider answer is never approval or execution
 | Deployment start, without an alarm | Continue, bounded hold, stop remaining releases, collect mechanism status |
 | Deployment monitoring after the first attempt | Same four choices |
 | After a mechanism diagnostic | Continue or stop |
+| Once during an explicit hold | Continue, collect mechanism status, or stop |
 | Return selection before the fixed deorbit time | Fixed terminal guidance or the existing retained-payload guidance |
 | Early booster return | Decide capture or divert, subject to independent arrival qualification |
 
-Limits: five assessments per flight, at most five Jev and five conditional
+Limits: six assessments per flight, at most six Jev and six conditional
 DeepSeek calls in live mode, one mechanism-status request, total hold budget
 30 simulated seconds, at most 75 simulated seconds per response. Initial
 assessment expires before the first planned release slot (about 45 seconds after
@@ -34,7 +35,7 @@ The scheduled return cannot be delayed. Release feasibility, fuel floor and
 qualified capture authority remain independent dispatch conditions. A notice
 cannot change these limits. The configured 28 t release fuel floor is a
 development-profile constraint, not a certified state-dependent return reserve.
-The v2 grant also approves an initial nominal deployment plan, fixed return
+The grant also approves an initial nominal deployment plan, fixed return
 guidance and diversion. Initial deployment cannot start while its decision is
 pending; the model or the preapproved fallback resolves before the first slot.
 Orbital dynamics continue. Later monitoring runs alongside the authorized sequence.
@@ -49,14 +50,41 @@ A temporary perigee/pressure/rate gate keeps the sequence queued: the executor
 independently skips that release slot and reevaluates at the next slot. Keep the initially
 approved fixed return policy instead of forcing retained-payload guidance.
 Divert remains the booster fallback. Never restart a held, inhibited or stopped
-sequence through fallback. Hold expiry still disables remaining releases. An escalation request can
+sequence through fallback. An explicit hold schedules one reassessment five
+seconds after dispatch. The request must bind the actual hold's 30-second expiry;
+its deadline cannot extend that expiry or the immutable return deadline. Only
+a valid checked decision can resume the held sequence. A status request may use
+the existing one-observation budget and diagnostic point before expiry. Hold
+expiry disables remaining releases, including while an answer is pending.
+There is no second hold or repeated reassessment budget. An escalation request can
 be recorded, but this first slice does not yet accept a new human grant during
 flight. It uses the preapproved no-response behavior. This limitation must not
 be described as a working asynchronous human handoff.
 
-This changes the displayed contract to `mission_envelope.v2` and requests to
-`director_request.v2`. Existing approval objects cannot silently acquire the
-new fallback permissions: create and approve a new plan. The fallback is a
+`hold_used_s` reserves the entire 30-second allowance when a hold is selected;
+it is not the measured duration of waiting. Actual waiting comes from the
+hold and resume/expiry event times. The extra reassessment is omitted when no
+hold is selected, so normal runs do not incur an extra provider call.
+Hold is rejected unless more than `maximum_hold_s + decision_expiry_s` remains
+before return (105 seconds here), reserving time for the return decision.
+This bound has no additional integration-step or post-dispatch observation
+margin. In a last-window hold followed by two timeouts, return fallback can
+occur on the deorbit step and lack a later orbital observation. A first
+deployment assessment created at/after return can likewise have a nonpositive
+deadline and raise `invalid_decision_deadline`. Those late schedules are not
+qualified. Accepted runs use the profile's early deployment window; do not
+generalize their verification to return-adjacent holds or late release starts.
+Requests expose only presently eligible choices. A used mechanism-status
+budget or a remaining diagnostic window of at most two seconds removes
+`collect_status`; dispatch checks these limits again against fresh state.
+Collecting status preserves an inhibited/skipped state. A clear status report
+alone cannot unlatch an interlock. The verifier checks release-free pause
+intervals, absence of release after stop/inhibit/expiry, and an actual resume
+event with a later running state (or a separately observed new interlock).
+
+The current contract is `mission_envelope.v4`, with `director_request.v3`.
+Historical v2/v3 approvals cannot acquire the reassessment or increased call
+budget: create and approve a new plan. The fallback is a
 bounded simulator operating policy, not a certified safe mode. Plant faults,
 valid decisions to suspend deployment, and insufficient fuel can still lead to
 the unsuccessful returns below. Do not claim that continuing is always safe.
@@ -64,13 +92,18 @@ the unsuccessful returns below. Do not claim that continuing is always safe.
 ## Observations and tools
 
 The strict provider boundary contains simulation time, phase, release tracker,
-ACK, sequencer, quantized fuel gauge, return deadline, tower status, four tool
+ACK, sequencer, executor hold-expiry timer, quantized fuel gauge, return deadline, tower status, four tool
 fields and a bounded operations notice. It excludes scenario name, future fault
 schedule, true inertia/mass, physical force histories and terminal outcomes.
 The release tracker and mechanism status are explicit synthetic sensors. Fuel
 has reproducible bounded synthetic noise and 100 kg quantization; the release
 check subtracts the 100 kg error bound. This is not a calibrated sensor model.
 The development GNC still uses ideal plant state for its local controller.
+The hold timer is command-ledger state, not hidden physical truth or a fault
+schedule. `response_invalid` marks a missing/non-string action; it does not set
+`escalation_requested`. A string outside the approved choices records a
+system-generated referral, not proof that the model explicitly asked a human.
+The verifier replays both flags. Human notification remains unimplemented.
 `retained_payload_present` is an inventory observation, not a return-feasibility
 certificate. It replaces the misleading name `retained_payload_possible`.
 
@@ -161,18 +194,58 @@ profile, rejects premature timeout labels, and enforces a strictly positive
 request window. `MISSIONOS_STARSHIP_FULL_FALLBACK_TEST=1` opts into four full-flight
 pytest regressions; they are skipped in ordinary fixture CI.
 
-The standalone verdict JSON currently has no run/verifier identity fields. Its
-association with a study relies on the manifest and signed worker receipt; it
-is not standalone provenance or independent runtime attestation.
+The current managed verdict records a canonical JSON study digest, expected
+and observed run IDs, and fingerprints of the named verifier source files.
+Canonical digests are distinct from byte hashes in the artifact manifest.
+Invalid studies have no accepted canonical digest. Historical verdicts lack
+these fields. These identifiers bind the result to its input; they are not a
+signature or proof that the fingerprinted files executed. Signed worker
+receipts and artifact manifests remain the runtime evidence boundary.
+For failed verdicts, retain the original study byte hash/manifest and supply
+the expected run ID: a standalone failed verdict with null canonical digest
+and no identified run is not independently bound to an invalid input.
 
 ## Optional offshore-entry contract
 
-`sixdof_managed_splashdown` requires `mission_envelope.v3` with the exact
-`starship-splashdown-goal.json` object. It keeps all five decision points and
+Current v4 hold and entry verification, with fresh output directories:
+
+```sh
+python scripts/start_starship_gateway.py --fixture-planner \
+  --state-dir output/hold-entry-state --port 18935
+python scripts/smoke_starship_chat_gateway.py --port 18935 \
+  --scenario sixdof_managed_hold --output-dir output/hold-entry-http
+python scripts/smoke_starship_chat_gateway.py --port 18935 \
+  --scenario sixdof_managed_splashdown --output-dir output/entry-http
+python scripts/run_starship_managed_mission.py --approve-simulation --case normal \
+  --response-fault hold_deployment_monitor --run-id hold-monitor --output-dir output/hold-monitor
+python scripts/run_starship_managed_mission.py --approve-simulation --case normal \
+  --response-fault timeout_deployment_reassessment --run-id hold-timeout --output-dir output/hold-timeout
+```
+
+[The v4 summary](../assets/starship-hold-reassessment-20261007/summary.json)
+binds each stored study/verdict and its source snapshot. Final HTTP hold and
+entry checks exercise consumed approval, the key-free separate worker, later
+observations, signed receipt/artifact hashes and cross-session rejection.
+The final summary covers fresh post-review initial hold, post-release hold,
+timeout, interlock-diagnostic and offshore-entry runs under the final source.
+Pre-review snapshots remain historical local records. A separate batch whose
+source changed during execution is excluded and its errors are preserved.
+There are no new model calls.
+
+`sixdof_managed_splashdown` requires `mission_envelope.v4` with the exact
+`starship-splashdown-goal.json` object. It shares the bounded hold reassessment and
 uses `capture/splashdown` at booster selection; capture dispatch is rejected
 because that controller is not connected/qualified for this trial. Fallback
-selects the preapproved offshore goal. Existing v2 scenarios keep their original
+selects the preapproved offshore goal. Other current managed scenarios keep their
 capture/divert behavior. Old source-bound approvals do not acquire this goal.
+
+The historical v3 nominal entry and sensitivities retain their original source
+snapshots. New hold-path checks do not requalify those results. The
+`sixdof_managed_hold` fixture injects a valid initial hold, then uses the normal
+fixture policy at reassessment; live mode rejects this injection. It tests
+execution and later state, not the quality of an AI decision. An unnecessary
+hold still fails the normal no-intervention comparator even if all payloads
+are eventually released.
 
 The original divert site's geographic declaration is a location reference.
 The distinct water-entry goal binds its SHA-256 and its own approved area,

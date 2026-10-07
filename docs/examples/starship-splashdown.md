@@ -27,7 +27,17 @@ separation states, not fresh launches or proof of robust recovery. No subsequent
 controller adjustment was made to make those failures pass.
 The −1 t case requested terminal braking but its recorded landing-burn samples
 show no main-engine thrust above the reporting threshold. The ignition/alignment
-failure mechanism remains undiagnosed; this is not explained by fuel scarcity.
+failure mechanism was initially undiagnosed; this is not explained by fuel scarcity.
+
+A subsequent saved-record diagnosis identifies the immediate no-thrust gate:
+all 67 sampled terminal commands disable the main engines, and the thrust axis
+remains at least 62.7 degrees away from the requested direction, outside the gate.
+A finite powered-alignment candidate was rejected: it consumed all fuel and
+impacted at about 607–611 m/s in the −1 t, nominal and +1 t initialized cases.
+The original controller is retained. This diagnosis does not qualify a fix,
+explain the separate retained-payload Ship failure, or establish robust recovery.
+[Diagnosis and rejected-candidate provenance](../assets/starship-hold-reassessment-20261007/summary.json)
+includes the initialized separation fixture and exact rejected source patch.
 
 The finite controller uses hull-to-surface clearance during terminal descent
 and uses the empirically selected 1.5 m/s downward target. The 2 m/s entry limit
@@ -48,7 +58,8 @@ python scripts/smoke_starship_chat_gateway.py --port 18932 \
   --scenario sixdof_managed_splashdown --output-dir output/splashdown-http
 ```
 
-Use fresh directories. The operator approves the v3 goal before running.
+Use fresh directories. The operator approves the v4 scope and goal before running;
+historical v3 results remain tied to their earlier code.
 Fixture decisions are scripted; this example does not claim new Jev/DeepSeek
 inference or AI superiority. The original return/catch failure records remain
 separate from this goal.

@@ -20,17 +20,20 @@ SCENARIOS = {
     "sixdof_managed_operations_notice": "operations_notice",
     "sixdof_managed_invalid_response": "normal",
     "sixdof_managed_splashdown": "normal",
+    "sixdof_managed_hold": "normal",
 }
 POINTS = {
     "deployment_start": ["continue", "hold", "stop_deployment", "collect_status"],
     "deployment_monitor": ["continue", "hold", "stop_deployment", "collect_status"],
     "deployment_diagnostic": ["continue", "stop_deployment"],
+    "deployment_reassessment": ["continue", "collect_status", "stop_deployment"],
     "return_selection": ["fixed_return", "retained_return"],
     "booster_selection": ["capture", "divert"],
 }
-RESPONSE_FAULTS = tuple(f"{kind}_{point}" for kind in ("invalid", "timeout") for point in POINTS)
+RESPONSE_FAULTS = tuple(f"{kind}_{point}" for kind in ("invalid", "timeout") for point in POINTS)+(
+    "hold_deployment_start", "hold_deployment_monitor")
 FIELDS = {"time_s", "phase", "released_count", "release_acknowledged", "sequencer_state",
-          "fuel_kg", "return_deadline_s", "tower_ready", "numerical_tools", "operations_notice"}
+          "fuel_kg", "return_deadline_s", "tower_ready", "numerical_tools", "operations_notice", "hold_expires_at_s"}
 SCOPE = "local_simulation_and_mission_decision_envelope"
 MODE_ENV = "MISSIONOS_STARSHIP_MISSION_DIRECTOR_MODE"
 
@@ -64,11 +67,13 @@ def fuel_sensor(fuel_kg, time_s, body):
 def contract(mode, *, splashdown=False):
     if mode not in ("fixture", "live"):
         raise ValueError("mission_director_not_configured")
-    result = {"schema": "missionos.starship_mission_envelope.v2", "mode": mode,
-            "scope": SCOPE, "decision_points": json.loads(json.dumps(POINTS)), "maximum_decisions": 5,
-            "maximum_jev_calls": 5 if mode == "live" else 0,
-            "maximum_llm_calls": 5 if mode == "live" else 0,
+    result = {"schema": "missionos.starship_mission_envelope.v4", "mode": mode,
+            "scope": SCOPE, "decision_points": json.loads(json.dumps(POINTS)), "maximum_decisions": 6,
+            "maximum_jev_calls": 6 if mode == "live" else 0,
+            "maximum_llm_calls": 6 if mode == "live" else 0,
             "maximum_observation_requests": 1, "maximum_hold_s": 30.,
+            "hold_reassessment_after_s": 5.,
+            "hold_expiry": "stop_deployment_no_automatic_resume",
             "decision_expiry_s": 75.,
             "minimum_return_fuel_kg": 28000., "return_time_change_allowed": False,
             "return_choices": ["fixed_v1", "mass_state_terminal_v3"],
@@ -82,7 +87,7 @@ def contract(mode, *, splashdown=False):
             "physical_execution_authorized": False}
     if splashdown:
         from .starship_splashdown import load_goal
-        result.update(schema="missionos.starship_mission_envelope.v3", splashdown_goal=load_goal().to_dict(), capture_controller_connected=False)
+        result.update(splashdown_goal=load_goal().to_dict(), capture_controller_connected=False)
         result["decision_points"]["booster_selection"] = ["capture", "splashdown"]
         result["booster_sites"] = ["capture", "splashdown"]
         result["initial_plan"]["booster"] = result["no_response"]["booster"] = "splashdown"
@@ -101,6 +106,9 @@ def validate_observation(row):
     for key in ("time_s", "fuel_kg", "return_deadline_s"):
         if type(row[key]) not in (int, float) or not math.isfinite(row[key]) or row[key] < 0:
             raise ValueError("invalid_director_observation")
+    expires = row["hold_expires_at_s"]
+    if expires is not None and (type(expires) not in (int, float) or not math.isfinite(expires) or expires < 0):
+        raise ValueError("invalid_director_observation")
     if (type(row["released_count"]) is not int or not 0 <= row["released_count"] <= 26
             or type(row["release_acknowledged"]) is not bool or type(row["tower_ready"]) is not bool
             or row["sequencer_state"] not in ("running", "inhibited", "skipped", "held")
@@ -129,6 +137,9 @@ def check_action(envelope, point, action, observation, *, elapsed_s, observation
     if point.startswith("deployment"):
         if observation["time_s"] >= observation["return_deadline_s"]:
             return "return_deadline_reached"
+        if point == "deployment_reassessment" and (observation["sequencer_state"] != "held"
+                or observation["hold_expires_at_s"] is None or observation["time_s"] >= observation["hold_expires_at_s"]):
+            return "hold_not_active"
         # Continue activates the queue, never an unconditional physical release.
         # The executor rechecks orbit/pressure/rate at every release slot.
         if action == "continue" and (observation["sequencer_state"] in ("inhibited", "skipped")
@@ -136,16 +147,28 @@ def check_action(envelope, point, action, observation, *, elapsed_s, observation
                 or observation["fuel_kg"]-100. < envelope["minimum_return_fuel_kg"]):
             return "release_envelope_not_met"
         if action == "hold" and (hold_used_s >= envelope["maximum_hold_s"]
-                or observation["return_deadline_s"]-observation["time_s"] <= envelope["maximum_hold_s"]):
+                or observation["return_deadline_s"]-observation["time_s"] <= envelope["maximum_hold_s"]+envelope["decision_expiry_s"]):
             return "hold_budget_exhausted"
+        if action == "hold" and observation["sequencer_state"] != "running":
+            return "hold_cannot_override_sequence_state"
         if action == "collect_status" and observation_requests >= envelope["maximum_observation_requests"]:
             return "observation_budget_exhausted"
+        end = observation["hold_expires_at_s"] or observation["return_deadline_s"]
+        if action == "collect_status" and end-observation["time_s"] <= 2.:
+            return "diagnostic_window_exhausted"
     if action == "capture" and envelope.get("capture_controller_connected") is False:
         return "capture_controller_not_connected"
     if action == "capture" and (not observation["tower_ready"]
             or not observation["numerical_tools"]["capture_corridor_certified"]):
         return "capture_not_certified"
     return None
+
+
+def eligible_actions(envelope, point, row, *, observation_requests, hold_used_s):
+    """Only expose currently executable members of the approved choices."""
+    return [a for a in envelope["decision_points"][point]
+            if check_action(envelope, point, a, row, elapsed_s=0,
+                            observation_requests=observation_requests, hold_used_s=hold_used_s) is None]
 
 
 def fallback_action(envelope, point, row, *, observation_requests, hold_used_s):
@@ -208,6 +231,13 @@ class MissionDirector:
             return None
         request = self.pending.get(clock_id)
         if request is None:
+            if point == "deployment_reassessment":
+                holds = [r["dispatch"] for r in self.records if r["dispatch"] and r["dispatch"]["action"] == "hold"]
+                expires = holds[0]["time_s"]+self.envelope["maximum_hold_s"] if len(holds) == 1 else None
+                if (expires is None or row["sequencer_state"] != "held" or row["hold_expires_at_s"] != expires
+                        or not holds[0]["time_s"]+self.envelope["hold_reassessment_after_s"] <= row["time_s"] < expires
+                        or decision_deadline_s is None or decision_deadline_s > expires):
+                    raise ValueError("hold_reassessment_not_approved")
             if len(self.records) >= self.envelope["maximum_decisions"]:
                 return None
             token = f"{self.run_id}:{len(self.records)+1}"
@@ -218,8 +248,10 @@ class MissionDirector:
                            row["time_s"]+self.envelope["decision_expiry_s"] if decision_deadline_s is None else decision_deadline_s)
             if not math.isfinite(deadline) or deadline <= row["time_s"]:
                 raise ValueError("invalid_decision_deadline")
-            request = {"schema": "missionos.starship_director_request.v2", "request_id": token,
-                       "point": point, "observation": row, "allowed_actions": self.envelope["decision_points"][point],
+            request = {"schema": "missionos.starship_director_request.v3", "request_id": token,
+                       "point": point, "observation": row,
+                       "allowed_actions": eligible_actions(self.envelope, point, row,
+                           observation_requests=self.observation_requests, hold_used_s=self.hold_used_s),
                        "decision_deadline_s": deadline,
                        "envelope_sha256": digest(self.envelope)}
             record = {"request": request, "clock_id": clock_id, "response": None,
@@ -249,6 +281,10 @@ class MissionDirector:
             response = None
         elif response is not None and self.response_fault == "invalid_"+point:
             response = {**response, "action": None, "synthetic_response_fault": "invalid_action"}
+        elif response is not None and (self.response_fault == "hold_"+point
+                or point == "deployment_start" and self.response_fault in (
+                    "invalid_deployment_reassessment", "timeout_deployment_reassessment")):
+            response = {**response, "action": "hold", "synthetic_response_fault": "hold_action"}
         elapsed = row["time_s"]-request["observation"]["time_s"]
         if response is None and row["time_s"] < request["decision_deadline_s"]:
             return None
@@ -261,7 +297,9 @@ class MissionDirector:
         reason = check_action(self.envelope, point, action, row, elapsed_s=elapsed,
                               observation_requests=self.observation_requests, hold_used_s=self.hold_used_s)
         if row["time_s"] >= request["decision_deadline_s"]:
-            reason = reason or "decision_deadline_reached"
+            reason = "decision_deadline_reached"
+        if action not in request["allowed_actions"]:
+            reason = reason or "outside_request_choices"
         if (response.get("request_id") != request["request_id"]
                 or response.get("request_sha256") != digest(request)
                 or response.get("mode") != self.envelope["mode"]):
@@ -273,7 +311,8 @@ class MissionDirector:
             self.hold_used_s += self.envelope["maximum_hold_s"]
         record.update(response=response, dispatch={"action": applied, "time_s": row["time_s"],
                       "rules_accepted": reason is None, "rejection": reason, "observation": row,
-                      "escalation_requested": reason == "outside_approved_choices"})
+                      "escalation_requested": reason == "outside_approved_choices" and type(action) is str,
+                      "response_invalid": type(action) is not str})
         self.finished.add(point)
         del self.pending[clock_id]
         return applied

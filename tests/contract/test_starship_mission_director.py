@@ -16,7 +16,7 @@ from src.runtime import starship_mission_control as control
 def row(t=100., **updates):
     result = {"time_s": t, "phase": "orbital_coast", "released_count": 0,
         "release_acknowledged": False, "sequencer_state": "running", "fuel_kg": 50000.,
-        "return_deadline_s": 2000., "tower_ready": True, "operations_notice": "",
+        "return_deadline_s": 2000., "tower_ready": True, "operations_notice": "", "hold_expires_at_s": None,
         "numerical_tools": {"orbit_release_feasible": True, "retained_payload_present": True,
             "capture_corridor_certified": False, "mechanism_status": "not_collected"}}
     result.update(updates)
@@ -24,7 +24,7 @@ def row(t=100., **updates):
 
 
 def request(point="deployment_start", observation=None, mode="fixture"):
-    return {"schema": "missionos.starship_director_request.v2", "request_id": "run:1", "point": point,
+    return {"schema": "missionos.starship_director_request.v3", "request_id": "run:1", "point": point,
             "observation": observation or row(), "allowed_actions": POINTS[point],
             "decision_deadline_s": (observation or row())["time_s"]+75.,
             "envelope_sha256": digest(contract(mode))}
@@ -109,7 +109,7 @@ def test_request_response_binding_later_state_and_timeout(tmp_path):
     timeout = MissionDirector(contract("fixture"), tmp_path, "timeout-run")
     assert timeout.update("deployment_start", row()) is None
     assert timeout.update("deployment_start", row(175.)) == "continue"
-    assert timeout.records[0]["dispatch"]["rejection"] == "decision_expired"
+    assert timeout.records[0]["dispatch"]["rejection"] == "decision_deadline_reached"
 
 
 @pytest.mark.parametrize("scenario", SCENARIOS)
@@ -150,7 +150,7 @@ def test_live_provider_can_decide_from_normal_observation(monkeypatch):
     assert answer["model_inference_invoked"] is True
     assert "scenario" not in json.dumps(seen[0]["state"])
     assert len(seen) == 1
-    for _ in range(4):
+    for _ in range(5):
         agent.assess(request(mode="live"))
     with pytest.raises(ValueError, match="call_budget_exhausted"):
         agent.assess(request(mode="live"))
@@ -239,6 +239,188 @@ def test_valid_diagnostic_resume_survives_temporary_release_gate():
     assert actor.records[0]["dispatch"]["rules_accepted"] is True
 
 
+@pytest.mark.parametrize("kind", [None, "invalid", "timeout"])
+def test_hold_has_one_bounded_reassessment_and_no_implicit_restart(kind):
+    fault = "hold_deployment_start" if kind is None else kind+"_deployment_reassessment"
+    actor = MissionDirector(contract("fixture"), fixture_decider=fixture_decision, response_fault=fault)
+    assert actor.update("deployment_start", row()) == "hold"
+    held = row(105., sequencer_state="held", hold_expires_at_s=130.)
+    result = actor.update("deployment_reassessment", held, decision_deadline_s=130.)
+    if kind == "timeout":
+        assert result is None
+        result = actor.update("deployment_reassessment", row(130., sequencer_state="skipped"))
+    assert result == ("continue" if kind is None else "stop_deployment")
+    assert actor.hold_used_s == 30.
+    assert actor.records[-1]["request"]["decision_deadline_s"] == 130.
+    assert actor.update("deployment_reassessment", held) is None
+    if kind == "invalid":
+        assert actor.records[-1]["dispatch"]["escalation_requested"] is False
+        assert actor.records[-1]["dispatch"]["response_invalid"] is True
+
+
+@pytest.mark.parametrize("updates", [
+    {"time_s": 130.}, {"hold_expires_at_s": None}, {"sequencer_state": "inhibited"},
+    {"sequencer_state": "skipped"},
+])
+def test_reassessment_cannot_resume_an_expired_or_inhibited_hold(updates):
+    observed = row(105., sequencer_state="held", hold_expires_at_s=130.)
+    observed.update(updates)
+    assert check_action(contract("fixture"), "deployment_reassessment", "continue", observed,
+                        elapsed_s=0, observation_requests=0, hold_used_s=30) == "hold_not_active"
+
+
+def test_verifier_rejects_an_unearned_reassessment(monkeypatch):
+    from src.runtime import starship_mission_director_verifier as verifier
+    study = stub_study(monkeypatch)
+    item = study["runs"][1]["mission_director"]["records"][0]
+    item["request"]["point"] = "deployment_reassessment"
+    item["request"]["allowed_actions"] = POINTS["deployment_reassessment"]
+    item["request"]["observation"].update(sequencer_state="held", hold_expires_at_s=130.)
+    item["response"]["request_sha256"] = digest(item["request"])
+    result = verifier.verify(study, expected_case="normal", expected_envelope=contract("fixture"))
+    assert {"code": "hold_reassessment_binding"} in result["issues"]
+
+
+def test_verifier_rejects_a_fabricated_human_referral(monkeypatch):
+    from src.runtime import starship_mission_director_verifier as verifier
+    study = stub_study(monkeypatch)
+    study["runs"][1]["mission_director"]["records"][0]["dispatch"]["escalation_requested"] = True
+    result = verifier.verify(study, expected_case="normal", expected_envelope=contract("fixture"))
+    assert {"code": "referral_semantics_mismatch"} in result["issues"]
+
+
+@pytest.mark.parametrize("state", ["held", "inhibited", "skipped"])
+def test_hold_cannot_launder_a_stopped_sequence_into_a_resumable_state(state):
+    actor = MissionDirector(contract("fixture"), fixture_decider=fixture_decision,
+                            response_fault="hold_deployment_monitor")
+    assert actor.update("deployment_monitor", row(sequencer_state=state)) == "stop_deployment"
+    assert actor.records[0]["dispatch"]["rejection"] == "hold_cannot_override_sequence_state"
+
+
+def test_actor_rejects_a_reassessment_without_an_actual_granted_hold():
+    actor = MissionDirector(contract("fixture"), fixture_decider=fixture_decision)
+    with pytest.raises(ValueError, match="hold_reassessment_not_approved"):
+        actor.update("deployment_reassessment", row(105., sequencer_state="held", hold_expires_at_s=130.),
+                     decision_deadline_s=130.)
+
+
+def test_exhausted_or_too_late_diagnostics_are_not_offered():
+    actor = MissionDirector(contract("fixture"), fixture_decider=fixture_decision, response_fault="hold_deployment_start")
+    actor.update("deployment_start", row())
+    actor.observation_requests = 1
+    actor.update("deployment_reassessment", row(105., sequencer_state="held", hold_expires_at_s=130.), decision_deadline_s=130.)
+    assert "collect_status" not in actor.records[-1]["request"]["allowed_actions"]
+    assert check_action(contract("fixture"), "deployment_reassessment", "collect_status",
+        row(128., sequencer_state="held", hold_expires_at_s=130.), elapsed_s=0,
+        observation_requests=0, hold_used_s=30) == "diagnostic_window_exhausted"
+
+
+def test_hold_reserves_the_return_decision_window():
+    assert check_action(contract("fixture"), "deployment_monitor", "hold", row(return_deadline_s=200.),
+        elapsed_s=0, observation_requests=0, hold_used_s=0) == "hold_budget_exhausted"
+
+
+def test_clear_diagnostic_cannot_resume_a_latched_interlock():
+    observed=row(sequencer_state="inhibited")
+    observed["numerical_tools"]["mechanism_status"]="clear"
+    actor=MissionDirector(contract("fixture"),fixture_decider=fixture_decision)
+    assert actor.update("deployment_diagnostic",observed)=="stop_deployment"
+    assert actor.records[0]["dispatch"]["rejection"]=="release_envelope_not_met"
+
+
+def hold_study(monkeypatch, timeout=False):
+    from src.runtime import starship_mission_director_verifier as verifier
+    study=stub_study(monkeypatch)
+    actor=MissionDirector(contract("fixture"),fixture_decider=fixture_decision,
+        response_fault="timeout_deployment_reassessment" if timeout else "hold_deployment_start")
+    actor.update("deployment_start",row(),decision_deadline_s=125.)
+    actor.update("deployment_reassessment",row(105.,sequencer_state="held",hold_expires_at_s=130.),decision_deadline_s=130.)
+    if timeout:
+        actor.update("deployment_reassessment",row(130.,sequencer_state="skipped"))
+    actor.confirm("ship",row(131. if timeout else 106.,sequencer_state="skipped" if timeout else "running"))
+    managed=study["runs"][1]
+    managed["mission_director"]=actor.finish()
+    managed["final_state"]["time_s"]=2100.
+    managed["events"][1]["action"]="hold"
+    if timeout:
+        managed["events"].extend([{"event":"managed_hold_expired","time_s":130.},
+            {"event":"managed_mission_command","time_s":130.,"action":"stop_deployment"}])
+    else:
+        managed["events"].extend([{"event":"managed_mission_command","time_s":105.,"action":"continue"},
+            {"event":"managed_deployment_resumed","time_s":105.}])
+    study["response_fault"]=actor.response_fault
+    study["comparison"]=verifier.comparison("normal",*study["runs"])
+    return study
+
+
+@pytest.mark.parametrize("mutation,code", [("during","release_during_hold_or_diagnostic"),
+    ("after","release_after_hold_expiry"),("no_expiry","hold_expiry_event_missing"),
+    ("after_inhibit","release_after_inhibit"),("no_resume","resume_effect_not_observed")])
+def test_verifier_checks_pause_intervals_not_only_snapshot_counts(monkeypatch,mutation,code):
+    from src.runtime import starship_mission_director_verifier as verifier
+    study=hold_study(monkeypatch,timeout=mutation in ("after","no_expiry"))
+    fault=study["response_fault"]
+    assert verifier.verify(study,expected_case="normal",expected_envelope=contract("fixture"),expected_response_fault=fault)["passed"]
+    managed=study["runs"][1]
+    if mutation in ("during","after","after_inhibit"):
+        t=103. if mutation=="during" else 131.
+        managed["events"].append({"event":"payload_released","time_s":t})
+        managed["outcome"]["payload_released_count"]=1
+        if mutation=="after_inhibit":
+            managed["events"].append({"event":"deployment_interlock_inhibited","time_s":110.})
+        for item in managed["mission_director"]["records"]:
+            for observed in (item["request"]["observation"],item["dispatch"]["observation"],item["later_observation"]):
+                observed["released_count"]=int(observed["time_s"]>t)
+            item["response"]["request_sha256"]=digest(item["request"])
+    elif mutation=="no_expiry":
+        managed["events"]=[e for e in managed["events"] if e["event"]!="managed_hold_expired"]
+    else:
+        managed["mission_director"]["records"][-1]["later_observation"]["sequencer_state"]="held"
+    study["comparison"]=verifier.comparison("normal",*study["runs"])
+    result=verifier.verify(study,expected_case="normal",expected_envelope=contract("fixture"),expected_response_fault=fault)
+    assert {"code":code} in result["issues"]
+
+
+def test_verdict_identity_separates_different_valid_runs(monkeypatch):
+    from src.runtime import starship_mission_director_verifier as verifier
+    a=stub_study(monkeypatch)
+    first=verifier.verify(a,expected_case="normal",expected_envelope=contract("fixture"))
+    assert first["passed"]
+    item=a["runs"][1]["mission_director"]["records"][0]
+    item["request"]["request_id"]=item["response"]["request_id"]="other:1"
+    item["response"]["request_sha256"]=digest(item["request"])
+    second=verifier.verify(a,expected_case="normal",expected_envelope=contract("fixture"))
+    assert second["passed"]
+    assert first["study_canonical_sha256"]!=second["study_canonical_sha256"]
+    assert first["observed_run_id"]!=second["observed_run_id"]
+    assert first["verifier_source_sha256"]==second["verifier_source_sha256"]
+
+
+def test_physical_hold_status_diagnostic_resume_chain():
+    from pathlib import Path
+    from src.runtime.starship_return_sites import ReturnSites
+    from src.runtime.starship_sixdof_mission import simulate
+    root=Path(__file__).resolve().parents[2]
+    p=json.loads((root/"examples/spaceflight/starship-sixdof-profile.json").read_text())
+    c=json.loads((root/"examples/spaceflight/starship-catch-profile.json").read_text())
+    sites=ReturnSites.from_dict(json.loads((root/"examples/spaceflight/starship-return-sites-model-test.json").read_text()),profile=p,catch_config=c)
+    def decide(request):
+        reply=fixture_decision(request)
+        if request["point"]=="deployment_reassessment":
+            reply["action"]="collect_status"
+        return reply
+    actor=MissionDirector(contract("fixture"),fixture_decider=decide,response_fault="hold_deployment_start")
+    run=simulate(p,duration_s=550.,mission_case="normal",mission_director=actor,return_sites=sites)
+    points={r["request"]["point"]:r for r in actor.records}
+    assert points["deployment_reassessment"]["dispatch"]["action"]=="collect_status"
+    assert points["deployment_diagnostic"]["dispatch"]["rules_accepted"] is True
+    assert points["deployment_diagnostic"]["later_observation"]["sequencer_state"]=="running"
+    collected=next(e for e in run["events"] if e["event"]=="managed_mechanism_diagnostic")
+    assert collected["time_s"] >= points["deployment_reassessment"]["dispatch"]["time_s"]+2.
+    assert run["outcome"]["payload_released_count"]>0
+    assert not any(e["event"]=="managed_hold_expired" for e in run["events"])
+
+
 def test_late_valid_mailbox_reply_is_rejected(tmp_path):
     actor = MissionDirector(contract("fixture"), tmp_path, "late")
     assert actor.update("deployment_start", row(), decision_deadline_s=120.) is None
@@ -257,13 +439,14 @@ def test_old_contract_cannot_acquire_new_fallback_authority():
         MissionDirector(old)
 
 
-def test_approved_old_envelope_is_rejected_before_process_spawn(tmp_path, monkeypatch):
+@pytest.mark.parametrize("version", [1, 2, 3])
+def test_approved_old_envelope_is_rejected_before_process_spawn(tmp_path, monkeypatch, version):
     monkeypatch.setenv(MODE_ENV, "fixture")
     service = control.StarshipMissionService(tmp_path, planner=lambda text: plan_starship_request(text, "fixture"))
     service.plan("migration", "Starship sixdof_managed_normal")
     state = service._load("migration")
     plan = state["plan"]
-    plan["mission_envelope"]["schema"] = "missionos.starship_mission_envelope.v1"
+    plan["mission_envelope"]["schema"] = f"missionos.starship_mission_envelope.v{version}"
     plan["sha256"] = control._digest({k:v for k,v in plan.items() if k != "sha256"})
     service._save("migration", state)
     # Even a locally signed approval of a correctly self-hashed old contract

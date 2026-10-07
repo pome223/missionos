@@ -123,14 +123,17 @@ remaining. Waves, buoyancy, structural survival and real clearance are unverifie
 this is not new live AI inference or recovered-hardware evidence.
 The descent target was selected using this same deterministic trajectory after
 an insufficient-reserve probe. Two ±1 t separation-fuel probes then failed:
-the −1 t case impacted at 165 m/s with 81.6 t unspent; its cause is undiagnosed.
+the −1 t case impacted at 165 m/s with 81.6 t unspent. Saved commands show that
+the terminal alignment gate kept the engines off; a powered-alignment candidate
+worsened all three initialized fuel cases and was rejected.
 Robust recovery remains unqualified.
 
 An opt-in [mission decision envelope](docs/examples/starship-mission-decisions.md)
 now connects normal deployment monitoring, mechanism diagnostics, terminal
 return selection and booster diversion. The operator approves the scope once;
 MissionOS decides within it, independent checks constrain execution, and later
-observations verify effects. In one live release-fault run, Jev selected a
+observations verify effects. The current scope includes one bounded reassessment
+during a hold; a fixture exercises hold → reassess → resume. In one historical live release-fault run, Jev selected a
 mechanism diagnostic and retained-payload return: recorded contact speed changed
 from 238.74 to 3.22 m/s. **This slice is not complete:** the earlier live normal
 run stopped after an invalid reply and impacted at 619.78 m/s. The v2 fallback

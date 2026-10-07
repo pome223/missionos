@@ -374,7 +374,7 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
     contact_receipt = None
     sequencer_state, release_attempts, release_acknowledged = None, 0, False
     next_sample = 0.
-    deployment_hold_until, diagnostic_due = None, None
+    deployment_hold_until, reassessment_due, diagnostic_due = None, None, None
     mechanism_status, managed_return_selected = "not_collected", False
     fuel_fault_applied = False
     def director_observation():
@@ -385,6 +385,7 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
         return {"time_s": s.time_s, "phase": "orbital_coast", "released_count": released,
             "release_acknowledged": release_acknowledged, "sequencer_state": sequencer_state or "running",
             "fuel_kg": fuel_sensor(s.propellant_kg, s.time_s, "ship"), "return_deadline_s": return_time,
+            "hold_expires_at_s": deployment_hold_until,
             "tower_ready": mission_case != "tower_unavailable",
             "numerical_tools": {"orbit_release_feasible": bool(bound_orbit_above(orbit, g["target_perigee_m"]-1000)
                 and o["dynamic_pressure_pa"] < 1 and env.norm(s.omega_body_rad_s) < g["release_max_rate_rad_s"]),
@@ -460,14 +461,21 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                     sequencer_state, next_release = "skipped", None
                     event("managed_hold_expired", "preapproved hold expiry disables further release")
                     deployment_hold_until = None
+                    reassessment_due = None
                 if diagnostic_due is not None and s.time_s >= diagnostic_due:
                     mechanism_status = "blocked" if mission_case == "release_fault" else "clear"
                     diagnostic_due = None
                     event("managed_mechanism_diagnostic", "separate synthetic actuator/latch status channel; two seconds elapsed", mechanism_status=mechanism_status)
                 row = director_observation()
                 mission_director.confirm("ship", row)
-                if "deployment_start" not in mission_director.finished:
+                pending = mission_director.pending.get("ship")
+                if pending is not None:
+                    point = pending["point"]
+                elif "deployment_start" not in mission_director.finished:
                     point = "deployment_start"
+                elif (reassessment_due is not None and s.time_s >= reassessment_due
+                      and "deployment_reassessment" not in mission_director.finished):
+                    point = "deployment_reassessment"
                 elif "deployment_monitor" not in mission_director.finished and (released >= 1 or sequencer_state == "inhibited"):
                     point = "deployment_monitor"
                 elif (mechanism_status != "not_collected" and "deployment_diagnostic" not in mission_director.finished):
@@ -479,22 +487,34 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                 # Resolve start or its preapproved continuation before the
                 # first release slot, rather than holding past that slot.
                 deadline = next_release-p["integration"]["coast_dt_s"] if point == "deployment_start" and next_release is not None else None
+                if point is not None and point.startswith("deployment"):
+                    bounds = [return_time]
+                    if deadline is not None:
+                        bounds.append(deadline)
+                    if deployment_hold_until is not None:
+                        bounds.append(deployment_hold_until)
+                    deadline = min(bounds)
                 action = mission_director.update(point, row, decision_deadline_s=deadline) if point else None
                 if action is not None:
                     event("managed_mission_command", "independently checked preapproved mission decision", point=point, action=action)
                     if action == "stop_deployment":
                         sequencer_state, next_release = "skipped", None
+                        deployment_hold_until, reassessment_due = None, None
                     elif action == "hold":
                         sequencer_state = "held"
                         deployment_hold_until = s.time_s+mission_director.envelope["maximum_hold_s"]
+                        reassessment_due = s.time_s+mission_director.envelope["hold_reassessment_after_s"]
                     elif action == "collect_status":
                         # The command consumes time and suppresses release until
                         # the distinct mechanism channel has produced a report.
                         diagnostic_due = s.time_s+2.
-                        sequencer_state = "held"
+                        if sequencer_state not in ("inhibited", "skipped"):
+                            sequencer_state = "held"
                     elif action == "continue" and sequencer_state == "held":
                         sequencer_state = "running"
                         next_release = max(next_release or s.time_s, s.time_s)
+                        deployment_hold_until, reassessment_due = None, None
+                        event("managed_deployment_resumed", "checked resume of a held sequence; interlocks remain latched")
                     elif action in ("fixed_return", "retained_return"):
                         managed_return_selected = True
                         return_policy = "fixed_v1" if action == "fixed_return" else CONDITIONED_POLICY_ID

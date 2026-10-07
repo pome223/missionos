@@ -38,9 +38,11 @@ class MissionAgent:
     def assess(self, request):
         if (type(request) is not dict or set(request) != {"schema", "request_id", "point", "observation",
                 "allowed_actions", "envelope_sha256", "decision_deadline_s"}
-                or request["schema"] != "missionos.starship_director_request.v2"
+                or request["schema"] != "missionos.starship_director_request.v3"
                 or request["envelope_sha256"] != digest(self.envelope)
-                or request["point"] not in POINTS or request["allowed_actions"] != self.envelope["decision_points"][request["point"]]):
+                or request["point"] not in POINTS or type(request["allowed_actions"]) is not list
+                or not request["allowed_actions"]
+                or request["allowed_actions"] != [a for a in self.envelope["decision_points"][request["point"]] if a in request["allowed_actions"]]):
             raise ValueError("invalid_director_request")
         row = validate_observation(request["observation"])
         deadline = request["decision_deadline_s"]
@@ -61,7 +63,7 @@ class MissionAgent:
                   "role": "Choose mission-level decisions. Numerical estimators are your tools. No low-level flight control."}
         jev, llm = _receipt("live", "typesafe", public), _receipt("live", "deepseek", public)
         for receipt in (jev, llm):
-            receipt.update(maximum_instance_calls=5, reserved_call_slot=self.calls)
+            receipt.update(maximum_instance_calls=self.envelope["maximum_jev_calls"] if receipt is jev else self.envelope["maximum_llm_calls"], reserved_call_slot=self.calls)
         llm["status"] = "not_routed"
         criteria = {action: f"Choose {action} under the supplied observation and approval scope." for action in actions}
         criteria["deep_reasoning"] = "The observation, operations notice or conflicting evidence requires further reasoning among the approved choices."

@@ -1,0 +1,310 @@
+{
+  "kind": "synthetic_initialized_separation_not_a_new_launch",
+  "origin_study_sha256": "05d7502dec328e34f18983c22de3dd535618e3d1492ee6bf8f6f633fb734ee2e",
+  "profile_sha256": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+  "separation_state": {
+    "time_s": 135.59999999999658,
+    "r_eci_m": [
+      -630946.6952026254,
+      -5766040.807216623,
+      2809862.3487559804
+    ],
+    "v_eci_mps": [
+      1366.9065629683955,
+      -1319.5568702564785,
+      562.3178678658271
+    ],
+    "q_body_to_eci": [
+      0.43703253205767334,
+      0.5772433977065825,
+      -0.13481480564446224,
+      0.6764743852552475
+    ],
+    "omega_body_rad_s": [
+      0.008061206548824144,
+      7.399560234594481e-05,
+      6.874626282106226e-05
+    ],
+    "propellant_kg": 260000.0,
+    "engine_states": [
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": -1.9475651219706194e-05,
+        "gimbal_y_rad": -1.6199669904013613e-06,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": -1.932282666206779e-05,
+        "gimbal_y_rad": -1.708200289892676e-06,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": -1.932282666206779e-05,
+        "gimbal_y_rad": -1.5317336909100464e-06,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": -1.9596940551165235e-05,
+        "gimbal_y_rad": -1.6199669904013611e-06,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": -1.9554318421192198e-05,
+        "gimbal_y_rad": -1.7511444181387165e-06,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": -1.944273223624988e-05,
+        "gimbal_y_rad": -1.832216527037185e-06,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": -1.93048041263113e-05,
+        "gimbal_y_rad": -1.8322165270371853e-06,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": -1.9193217941368976e-05,
+        "gimbal_y_rad": -1.7511444181387165e-06,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": -1.9150595811395946e-05,
+        "gimbal_y_rad": -1.6199669904013613e-06,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": -1.9193217941368976e-05,
+        "gimbal_y_rad": -1.4887895626640057e-06,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": -1.93048041263113e-05,
+        "gimbal_y_rad": -1.407717453765537e-06,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": -1.9442732236249876e-05,
+        "gimbal_y_rad": -1.407717453765537e-06,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": -1.9554318421192198e-05,
+        "gimbal_y_rad": -1.4887895626640057e-06,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 1.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 0.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 0.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 0.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 0.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 0.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 0.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 0.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 0.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 0.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 0.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 0.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      },
+      {
+        "throttle": 0.0,
+        "gimbal_x_rad": 0.0,
+        "gimbal_y_rad": 0.0,
+        "available": true
+      }
+    ],
+    "flap_angles_rad": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  }
+}

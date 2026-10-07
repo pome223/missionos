@@ -7,6 +7,18 @@ The operator approves the scope before flight. MissionOS then chooses within
 it; an independent check constrains each execution and later observations
 show what actually changed.
 
+The current scope also permits one reassessment during a 30-second hold.
+MissionOS can wait five seconds, inspect fresh observations, and choose to
+resume, request the existing mechanism diagnostic, or stop. Without a valid
+answer before expiry, releases stop. This requires a new approval; older
+plans do not acquire extra decisions. The `sixdof_managed_hold` fixture makes
+that hold-and-resume path visible without calling a model.
+Both initial and post-release hold fixtures resume and release 26 payloads;
+their terminal metrics equal the fixed baseline. The normal no-intervention
+comparator still rejects the deliberately unnecessary hold. A missing
+reassessment reply expires at 30 seconds and releases none; that is not a
+qualified safe return. [Source-bound hold evidence](../assets/starship-hold-reassessment-20261007/summary.json).
+
 The five conditions cover normal operation, a release fault, fuel loss, tower
 unavailability and a deployment suspension notice. Each has the same-start
 fixed-timeline comparison. Normal operation should remain unchanged; abnormal
