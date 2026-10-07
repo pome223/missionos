@@ -1,5 +1,10 @@
 # Mission-wide Starship decision envelope
 
+The [flight-control contract](starship-mission-control-contract.md) defines the
+mission-wide goal, authority split, acceptance criteria and post-merge work order.
+This page describes the implemented development envelope, not completion of that
+contract.
+
 This opt-in development slice connects mission decisions across deployment,
 return and booster recovery. Numerical tools belong to MissionOS. They are
 neither replaced by language models nor treated as the project's adversary.

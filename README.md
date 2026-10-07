@@ -115,6 +115,11 @@ release evidence, not autonomous picking or physical robot execution.*
 
 ### Starship-inspired six-degree-of-freedom mission simulation
 
+The [MissionOS flight-control contract](docs/agents/starship-mission-control-contract.md)
+sets the goal: the operator approves delegated bounds, and MissionOS owns
+mission decisions within them. This simulator is a development baseline;
+return qualification and the complete mission-control acceptance gate remain open.
+
 An optional [offshore splashdown mission](docs/examples/starship-splashdown.md)
 now connects the same launch and 26-payload release flight to a separately
 approved booster water-entry goal when tower capture is unqualified. One
