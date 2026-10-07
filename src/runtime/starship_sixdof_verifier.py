@@ -434,7 +434,54 @@ def _verify_run(run, profile, path, budget, *, booster_policy="fixed_v1", catch_
     return observed
 
 
-def verify_study(study: dict, expected_scenario: str | None = None) -> dict:
+def _return_allocation_scope(run, scope, path):
+    """Recorded command-cycle use, not processor or dynamics attestation."""
+    samples = run.get("samples")
+    _require(type(samples) is list, path, "Expected sample list")
+    receipts = [s["controller"].get("development_fin_allocation")
+                for s in samples if type(s) is dict and type(s.get("controller")) is dict]
+    _require(not any(receipts) or scope is not None and scope["bounded_ship_flaps"],
+             path, "Undeclared Ship surface allocation", "development_scope")
+    if scope is None or not scope["bounded_ship_flaps"]:
+        return
+    record = run.get("retained_return")
+    _require(type(record) is dict, path, "Missing retained-return policy")
+    activation = record.get("activation")
+    active_time = activation.get("time_s") if type(activation) is dict else None
+    _require(active_time is None or _number(active_time), path, "Invalid activation time")
+    eligible_count, receipt_count = 0, 0
+    potential = False
+    for sample in samples:
+        _require(type(sample) is dict, path, "Expected sample objects")
+        q, time = sample.get("dynamic_pressure_pa"), sample.get("time_s")
+        eligible = (active_time is not None and _number(q) and _number(time) and time >= active_time
+                    and sample.get("phase") in ("ballistic_return", "landing_burn") and q > 50.)
+        potential = potential or eligible
+        controller = sample.get("controller")
+        receipt = controller.get("development_fin_allocation") if type(controller) is dict else None
+        if sample.get("command") is not None and eligible:
+            eligible_count += 1
+            _require(type(receipt) is dict and receipt.get("surface_family") == "ship_flap"
+                     and receipt.get("policy_id") == "finite_moment_priority_fins_v1"
+                     and receipt.get("actual_state_assigned") is False
+                     and receipt.get("prediction_is_execution") is False,
+                     path, "Eligible Ship control cycle lacks its allocation receipt", "allocation_use")
+            indices, targets = receipt.get("fin_indices"), receipt.get("command_angles_rad")
+            command = sample["command"]
+            _require(indices == [3, 4, 5, 6] and type(targets) is list and len(targets) == 4
+                     and type(command) is dict and type(command.get("flap_angles_rad")) is list
+                     and len(command["flap_angles_rad"]) == 7
+                     and all(_near(targets[j], command["flap_angles_rad"][i], 1e-9)
+                             for j, i in enumerate(indices)),
+                     path, "Allocation receipt differs from recorded flap commands", "allocation_use")
+            receipt_count += 1
+        elif receipt is not None:
+            _require(False, path, "Allocation receipt outside the declared application", "allocation_use")
+    _require(not potential or eligible_count > 0 and receipt_count == eligible_count,
+             path, "Active high-pressure interval lacks recorded allocation use", "allocation_use")
+
+
+def verify_study(study: dict, expected_scenario: str | None = None, *, expected_development_return_qualification=None) -> dict:
     """Verify stored-output integrity; ``passed`` never means mission success.
 
     ``expected_scenario='all'`` requires exactly the five CLI scenarios. Other
@@ -466,6 +513,21 @@ def verify_study(study: dict, expected_scenario: str | None = None) -> dict:
                  for key in ("radius_m", "ship_length_m", "booster_length_m")), "$.profile.geometry", "Missing configured envelope geometry")
         runs = study.get("runs")
         _require(type(runs) is list and 1 <= len(runs) <= len(SCENARIOS), "$.runs", "Expected one to five scenarios")
+        scope = expected_development_return_qualification
+        if scope is not None:
+            _require(type(scope) is dict and set(scope) == {"release_limit", "bounded_ship_flaps", "application"}
+                     and scope["application"] == "retained_policy_active_only_v1"
+                     and type(scope["release_limit"]) is int and 0 <= scope["release_limit"] <= payload["count"]
+                     and type(scope["bounded_ship_flaps"]) is bool and len(runs) == 1,
+                     "$.runs", "Invalid expected local development scope", "development_scope")
+        for run in runs:
+            _require(type(run) is dict, "$.runs", "Expected run objects")
+            _require(run.get("development_return_qualification") == scope,
+                     "$.runs", "Development return scope differs from caller expectation", "development_scope")
+            _return_allocation_scope(run, scope, "$.runs")
+            if scope is not None:
+                _require(run.get("scenario") == "launch" and run.get("outcome", {}).get("payload_released_count", -1) <= scope["release_limit"],
+                         "$.runs", "Experiment release limit or scenario differs", "development_scope")
         names = [run.get("scenario") if type(run) is dict else None for run in runs]
         _require(all(type(name) is str and name in (*SCENARIOS, *SUPERVISED_SCENARIOS) for name in names), "$.runs", "Unknown scenario")
         _require(len(set(names)) == len(names), "$.runs", "Duplicate scenarios")

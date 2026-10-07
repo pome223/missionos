@@ -313,7 +313,8 @@ def _contact_outcome(run):
     return speed <= 5, speed
 
 
-def verify_retained_return(run, profile, expected_policy="fixed_v1", *, expected_management_case=None):
+def verify_retained_return(run, profile, expected_policy="fixed_v1", *, expected_management_case=None,
+                           expected_development_return_qualification=None):
     """Check stored policy evidence; a pass does not imply a successful return.
 
     The preceding saved step and every earlier stored ballistic sample are
@@ -365,7 +366,14 @@ def verify_retained_return(run, profile, expected_policy="fixed_v1", *, expected
             managed = (expected_management_case in ("normal", "release_fault", "fuel_shortage", "tower_unavailable", "operations_notice")
                 and run.get("scenario") == "launch" and run.get("mission_management_case") == expected_management_case
                 and type(run.get("mission_director")) is dict)
-            _require(run.get("scenario") == "deployment_no_effect" or managed, "scenario", "Adaptive policy requires the approved retained-payload or explicitly bound managed scenario")
+            scope = expected_development_return_qualification
+            development = (type(scope) is dict and set(scope) == {"release_limit", "bounded_ship_flaps", "application"}
+                and scope["application"] == "retained_policy_active_only_v1"
+                and type(scope["release_limit"]) is int and 0 <= scope["release_limit"] <= profile["payload"]["count"]
+                and type(scope["bounded_ship_flaps"]) is bool and run.get("development_return_qualification") == scope
+                and run.get("scenario") == "launch" and "mission_director" not in run)
+            _require(run.get("scenario") == "deployment_no_effect" or managed or development,
+                     "scenario", "Adaptive policy requires its managed or explicitly declared development scope")
             released = run.get("outcome", {}).get("payload_released_count") if type(run.get("outcome")) is dict else None
             release_events = grouped.get("payload_released", [])
             _require(type(released) is int and released == len(release_events) and 0 <= released <= profile["payload"]["count"],

@@ -315,7 +315,8 @@ def _sample(s, v, phase, command=None, diagnostics=None):
 
 
 def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, supervision=None, return_policy="fixed_v1",
-             booster_policy="fixed_v1", catch_config=None, mission_director=None, mission_case=None, return_sites=None, splashdown_goal=None):
+             booster_policy="fixed_v1", catch_config=None, mission_director=None, mission_case=None, return_sites=None, splashdown_goal=None,
+             _development_return_qualification=None):
     """Run continuous 6DOF. Short initialized cases are clearly separate flights."""
     if scenario not in ("launch", "engine_out", "entry_perturbation", "gimbal_step", "flap_asymmetry", "deployment_no_effect"):
         raise ValueError("unknown 6DOF scenario")
@@ -336,8 +337,21 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
         raise ValueError("mission director requires its explicit launch case")
     if mission_director is not None and mission_director.envelope.get("splashdown_goal") != (splashdown_goal.to_dict() if splashdown_goal is not None else None):
         raise ValueError("unapproved_splashdown_goal")
+    development = _development_return_qualification
+    if development is not None and (type(development) is not dict
+            or set(development) != {"release_limit", "bounded_ship_flaps", "application"}
+            or development["application"] != "retained_policy_active_only_v1"
+            or type(development["release_limit"]) is not int
+            or not 0 <= development["release_limit"] <= profile["payload"]["count"]
+            or type(development["bounded_ship_flaps"]) is not bool
+            or scenario != "launch" or return_policy != CONDITIONED_POLICY_ID or dt_scale != 1.
+            or any(x is not None for x in (supervision, mission_director, mission_case, return_sites, splashdown_goal, catch_config))
+            or booster_policy != "fixed_v1"):
+        raise ValueError("invalid_development_return_qualification")
+    if development is not None:
+        development = dict(development)
     return_record = new_record(return_policy)
-    if return_policy != "fixed_v1" and scenario != "deployment_no_effect":
+    if return_policy != "fixed_v1" and scenario != "deployment_no_effect" and development is None:
         raise ValueError("retained return policy requires deployment_no_effect")
     previous_budget = None
     return_frame = None
@@ -396,6 +410,8 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
     def event(name, detail="", **fields):
         events.append({"time_s": s.time_s, "event": name, "detail": detail, **fields})
     event("initial_state", "surface release, main engines already spooled" if phase == "stack_ascent" else "independent initialized atmospheric test; not a continuation of launch")
+    if development is not None:
+        event("development_return_qualification", "explicit local experiment; not a MissionOS grant", **development)
     while s.time_s < limit-1e-9:
         if supervision is not None:
             supervision.pace(s.time_s)
@@ -524,6 +540,8 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
             # Coast dynamics continue while the first decision is pending;
             # the timeline cannot release a payload before that decision.
             deployment_started = mission_director is None or "deployment_start" in mission_director.finished
+            if development is not None and released >= development["release_limit"]:
+                next_release = None
             if deployment_started and next_release is not None and s.time_s >= next_release and sequencer_state not in ("inhibited", "skipped", "held"):
                 # Independent composition/impulse verifier checks conservation.
                 if bound_orbit_above(orbit, g["target_perigee_m"]-1000) and o["dynamic_pressure_pa"] < 1 and env.norm(s.omega_body_rad_s) < g["release_max_rate_rad_s"]:
@@ -675,7 +693,13 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                 # Engines provide finite TVC authority for the flip; waiting
                 # for alignment with all main engines off can strand the turn.
                 throttle, count = g["flip_min_throttle"], 3
-        command, diagnostics = control(s, v, target, throttle, count, p, use_flaps=phase in ("ballistic_return", "landing_burn"))
+        bounded_ship_flaps = bool(development and development["bounded_ship_flaps"]
+                                  and return_record["status"] in ("active", "triggered")
+                                  and phase in ("ballistic_return", "landing_burn"))
+        control_interval = p["integration"]["powered_dt_s"] if throttle > 0 or altitude < 100000 else p["integration"]["coast_dt_s"]
+        command, diagnostics = control(s, v, target, throttle, count, p, use_flaps=phase in ("ballistic_return", "landing_burn"),
+            development_fin_allocation=bounded_ship_flaps, control_interval_s=control_interval,
+            development_fin_policy="finite_moment_priority_fins_v1" if bounded_ship_flaps else "finite_regularized_fins_v1")
         if reference_diagnostics is not None:
             diagnostics["attitude_reference"] = reference_diagnostics
         if scenario in ("gimbal_step", "flap_asymmetry", "entry_perturbation"):
@@ -780,6 +804,8 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
             "initial_state": samples[0], "final_state": asdict(s), "final_vehicle": asdict(v)}
     if mission_director is not None:
         result["mission_director"] = mission_director.finish()
+    if development is not None:
+        result["development_return_qualification"] = dict(development)
     if mission_case is not None:
         result["mission_management_case"] = mission_case
     if supervision is not None:

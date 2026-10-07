@@ -65,6 +65,30 @@ reapproval remain incomplete. Return selection checks the grant but has no
 state-dependent feasibility gate. Partial retained-payload return and combined
 hold/reassessment/return-response failures remain unqualified.
 
+The [surface-allocation experiment](../examples/starship-return-allocation.md)
+improves the tested 25/26-retained returns without increasing RCS authority.
+Its initial domain sweep stops on the zero-retained pose failure. A reviewed
+active-only sweep passes 17 of 18 tested retained counts and stops on the
+15-retained reserve failure; counts 17–24 remain unexecuted. The allocator
+remains unavailable to MissionOS grants; this is not full return qualification.
+The fixed-return fallback is unchanged. These retained-policy results cannot
+qualify that fallback; step 2 must check both choices and no-response behavior.
+
+The opt-in reproducible launch boundary is:
+
+```sh
+python scripts/run_starship_return_qualification.py --approve-simulation \
+  --retained 25 --output-dir output/return-qualification-example
+```
+
+`result.json` separates stored-record checks from the provisional speed, pose,
+rate and reserve gate. It does not certify recovery. Use a fresh output directory.
+For a short paired allocation test, first produce a legacy reference with
+`--legacy-allocation`, then pass its single-run `study.json` to
+`scripts/run_starship_entry_allocation_comparison.py --approve-simulation
+--run-record ... --output-dir ...`. That checkpoint experiment uses 0.1 s steps,
+not the production variable-step schedule. No API key or model call is required.
+
 After merging the current development baseline, the work order is:
 
 1. Diagnose the 25-retained-payload failure and qualify at least one Ship return
