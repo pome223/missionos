@@ -160,7 +160,13 @@
         "src/runtime/starship_retained_return_verifier.py": "397f91f21f5bb82d4ab6d7c4e2ffceb9f81da94d4b9d3825ad3509aab7507bda",
         "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5"
       },
-      "verification_sha256": "612ab4603892d715f844e8a3cd21629354f80b0ff674dc0db6207cbec6016028"
+      "verification_sha256": "612ab4603892d715f844e8a3cd21629354f80b0ff674dc0db6207cbec6016028",
+      "historical_source_annotation": {
+        "predates_application_and_recorded_use_scope": true,
+        "rerun_under_current_scope": false,
+        "current_verifier_acceptance_claimed": false,
+        "interpretation": "historical nominal allocation result; use its recorded source/checker snapshot"
+      }
     },
     {
       "result": {
@@ -429,7 +435,11 @@
     "First25/26 full-flight verdicts were invalid due to pre-serialization Python tuples; stored canonical JSON was rechecked without reexecuting dynamics.",
     "Short pairs use0.1s fixed steps rather than the historical variable-step sequence. The preregistered50\u2013600Pa attitude gate does not distinguish baseline/candidate; divergence occurs beyond that window.",
     "Booster controller and its failed fuel probes remain unchanged.",
-    "The initial zero-retained admission stop is historical. After review, the actually active1\u201326 domain was tested separately; it stops on the15-retained reserve failure, with17\u201324 not run. All fixed thresholds remain unchanged."
+    "The initial zero-retained admission stop is historical. After review, the actually active1\u201326 domain was tested separately; it stops on the15-retained reserve failure, with17\u201324 not run. All fixed thresholds remain unchanged.",
+    "The zero-retained pose row is a historical two-field-scope record, not a rerun accepted under the current application/use-witness checker.",
+    "Retained15 has163.39deg terminal attitude-target error and negative estimated fuel margin at activation; reserve failure is an outcome, not a diagnosed root cause.",
+    "The largest terminal error is at the first terminal command, with significant entry error/rates already present. Quaternion maxima alone do not identify the cause or the axis of control loss.",
+    "Passing17of18 deterministic tested inventories is not perturbation-robustness evidence."
   ],
   "candidate_enabled_in_missionos": false,
   "reviewed_active_domain": {
@@ -1296,6 +1306,314 @@
     "terminal_fuel_consumed_kg": 83720.46674345058,
     "maximum_sampled_terminal_attitude_error_deg": 163.38508519276868,
     "new_dynamics_executed_for_diagnosis": false,
-    "underlying_control_cause_unresolved": true
+    "underlying_control_cause_unresolved": true,
+    "failure_classification": "unresolved entry/terminal attitude-control failure with downstream reserve shortfall",
+    "negative_fuel_margin_does_not_inhibit_trigger": true
+  },
+  "retained15_adjacent_saved_record_comparison": {
+    "new_dynamics_executed": false,
+    "new_model_inference_invoked": false,
+    "cases": [
+      {
+        "retained_count": 14,
+        "study_sha256": "a85c4273336c0c039357b94809d68f857d4485a6fe7e77016b6a30c5d789ffa1",
+        "budget": {
+          "time_s": 4853.750000002753,
+          "altitude_m": 5657.321290271357,
+          "vertical_speed_mps": -130.14149800732912,
+          "mach": 0.4387257446297367,
+          "thrust_axis_angle_rad": 1.5442143690035472,
+          "transverse_rate_rad_s": 0.004917735754570585,
+          "slew_accel_estimate_rad_s2": 0.03,
+          "preparation_time_s": 16.581514217895283,
+          "required_altitude_m": 5666.349744285362,
+          "fuel_budget_estimate_kg": 63756.73715126153,
+          "fuel_margin_estimate_kg": 37467.81756930224,
+          "propellant_kg": 101224.55472056377,
+          "thrust_axis_angle_deg": 88.47696600736079
+        },
+        "last_ballistic_control": {
+          "time_s": 4852.450000002748,
+          "phase": "ballistic_return",
+          "altitude_m": 5827.147165896371,
+          "pressure_pa": 6652.517780774719,
+          "attitude_error_deg": 15.378125227508452,
+          "body_rate_rad_s": 0.01712211440488127,
+          "body_rates_rad_s": [
+            -0.00447301255372102,
+            0.0020516986162455474,
+            0.01639967966687743
+          ],
+          "fuel_kg": 101224.55659056893,
+          "thrust_n": 0.0014526221826059143,
+          "reference_mode": "bounded_roll_reacquisition",
+          "reference_projection_norm": 0.11395640383621643
+        },
+        "first_terminal_control": {
+          "time_s": 4853.750000002753,
+          "phase": "landing_burn",
+          "altitude_m": 5657.321290271357,
+          "pressure_pa": 6665.986118945059,
+          "attitude_error_deg": 101.64927601273347,
+          "body_rate_rad_s": 0.030394889040195733,
+          "body_rates_rad_s": [
+            -0.004206860583515039,
+            0.0025468507970922492,
+            0.02999441872772381
+          ],
+          "fuel_kg": 101224.55472056377,
+          "thrust_n": 0.0014526221826059143,
+          "reference_mode": "bounded_roll_reacquisition",
+          "reference_projection_norm": 0.9789113844654325
+        },
+        "peak_terminal_error": {
+          "time_s": 4855.75000000276,
+          "phase": "landing_burn",
+          "altitude_m": 5399.058730877936,
+          "pressure_pa": 7422.505794255174,
+          "attitude_error_deg": 102.7896006709153,
+          "body_rate_rad_s": 0.09091654776586715,
+          "body_rates_rad_s": [
+            0.04360270275005842,
+            0.05154051892036415,
+            0.060894974176633296
+          ],
+          "fuel_kg": 99862.90128864664,
+          "thrust_n": 2932290.596450848,
+          "reference_mode": "bounded_roll_reacquisition",
+          "reference_projection_norm": 0.9663126172968095
+        },
+        "terminal_duration_s": 72.07528181698308,
+        "terminal_fuel_used_kg": 47722.2118167347,
+        "first_high_pressure_ballistic_error_exceedance": {
+          "5": {
+            "time_s": 4217.2500000004375,
+            "altitude_m": 68635.0186149627,
+            "pressure_pa": 2696.7112576310074,
+            "attitude_error_deg": 5.133588041265049,
+            "thrust_axis_tracking_error_deg": 3.9801623096409373,
+            "body_rate_rad_s": 0.018778412498225698,
+            "reference_mode": "legacy_geographic",
+            "reference_projection_norm": 0.9861976714861401
+          },
+          "20": {
+            "time_s": 4233.250000000496,
+            "altitude_m": 66435.88695360068,
+            "pressure_pa": 3547.0852640074017,
+            "attitude_error_deg": 23.40882428358673,
+            "thrust_axis_tracking_error_deg": 14.674465051542944,
+            "body_rate_rad_s": 0.07388081011147384,
+            "reference_mode": "legacy_geographic",
+            "reference_projection_norm": 0.9860986496789167
+          },
+          "60": {
+            "time_s": 4238.650000000515,
+            "altitude_m": 65735.23661443312,
+            "pressure_pa": 3850.9136702999217,
+            "attitude_error_deg": 66.62880971577614,
+            "thrust_axis_tracking_error_deg": 12.975668821114194,
+            "body_rate_rad_s": 0.08825752377872623,
+            "reference_mode": "legacy_geographic",
+            "reference_projection_norm": 0.9861042860344383
+          }
+        }
+      },
+      {
+        "retained_count": 15,
+        "study_sha256": "7e5d942787d23e33f3b377cfaef178fb64b6e718ec35de8c645c2e2e327bb8b3",
+        "budget": {
+          "time_s": 4471.500000001352,
+          "altitude_m": 12895.180339624174,
+          "vertical_speed_mps": -165.91674558601275,
+          "mach": 0.6268050075281469,
+          "thrust_axis_angle_rad": 2.432468660318422,
+          "transverse_rate_rad_s": 0.17153089928892082,
+          "slew_accel_estimate_rad_s2": 0.03,
+          "preparation_time_s": 27.525519924962207,
+          "required_altitude_m": 12900.925715037327,
+          "fuel_budget_estimate_kg": 99922.72852089455,
+          "fuel_margin_estimate_kg": -3078.0945042483363,
+          "propellant_kg": 96844.63401664622,
+          "thrust_axis_angle_deg": 139.37018803408702
+        },
+        "last_ballistic_control": {
+          "time_s": 4471.300000001352,
+          "phase": "ballistic_return",
+          "altitude_m": 12928.24314252846,
+          "pressure_pa": 4571.34685698894,
+          "attitude_error_deg": 123.64428200933656,
+          "body_rate_rad_s": 0.46497998079744873,
+          "body_rates_rad_s": [
+            0.11603643820722308,
+            0.126348161380229,
+            -0.43217828458451346
+          ],
+          "fuel_kg": 96848.90768517464,
+          "thrust_n": 0.0014526230943083102,
+          "reference_mode": "legacy_geographic",
+          "reference_projection_norm": 0.6890362940168894
+        },
+        "first_terminal_control": {
+          "time_s": 4471.500000001352,
+          "phase": "landing_burn",
+          "altitude_m": 12895.180339624174,
+          "pressure_pa": 4635.396654869083,
+          "attitude_error_deg": 163.38508519276868,
+          "body_rate_rad_s": 0.4576826536208783,
+          "body_rates_rad_s": [
+            0.10587450613407628,
+            0.13495717232415377,
+            -0.42432365243359105
+          ],
+          "fuel_kg": 96844.63401664622,
+          "thrust_n": 0.0014526230943083102,
+          "reference_mode": "bounded_roll_reacquisition",
+          "reference_projection_norm": 0.9905380362950101
+        },
+        "peak_terminal_error": {
+          "time_s": 4471.500000001352,
+          "phase": "landing_burn",
+          "altitude_m": 12895.180339624174,
+          "pressure_pa": 4635.396654869083,
+          "attitude_error_deg": 163.38508519276868,
+          "body_rate_rad_s": 0.4576826536208783,
+          "body_rates_rad_s": [
+            0.10587450613407628,
+            0.13495717232415377,
+            -0.42432365243359105
+          ],
+          "fuel_kg": 96844.63401664622,
+          "thrust_n": 0.0014526230943083102,
+          "reference_mode": "bounded_roll_reacquisition",
+          "reference_projection_norm": 0.9905380362950101
+        },
+        "terminal_duration_s": 136.83804906656405,
+        "terminal_fuel_used_kg": 83720.46674345058,
+        "first_high_pressure_ballistic_error_exceedance": {
+          "5": {
+            "time_s": 4249.600000000545,
+            "altitude_m": 63251.50575752277,
+            "pressure_pa": 5156.628402983538,
+            "attitude_error_deg": 5.131740013897095,
+            "thrust_axis_tracking_error_deg": 5.112438064610453,
+            "body_rate_rad_s": 0.008123650450612287,
+            "reference_mode": "legacy_geographic",
+            "reference_projection_norm": 0.9862152849215268
+          },
+          "20": {
+            "time_s": 4265.600000000603,
+            "altitude_m": 62065.28000753187,
+            "pressure_pa": 5760.065295176435,
+            "attitude_error_deg": 22.025240782497406,
+            "thrust_axis_tracking_error_deg": 16.25370599659007,
+            "body_rate_rad_s": 0.048069498826156555,
+            "reference_mode": "legacy_geographic",
+            "reference_projection_norm": 0.9859835316881747
+          },
+          "60": {
+            "time_s": 4289.600000000691,
+            "altitude_m": 59889.71135460213,
+            "pressure_pa": 7058.825210797679,
+            "attitude_error_deg": 60.49181407469679,
+            "thrust_axis_tracking_error_deg": 60.49175918671548,
+            "body_rate_rad_s": 0.03883065688572573,
+            "reference_mode": "legacy_geographic",
+            "reference_projection_norm": 0.9846430212071153
+          }
+        }
+      },
+      {
+        "retained_count": 16,
+        "study_sha256": "34e5fd77a88bc3ad8b8aba73eb8f94d0ce42a97dfc29a7852faf57d16e9174a7",
+        "budget": {
+          "time_s": 4861.350000002776,
+          "altitude_m": 6125.60040939413,
+          "vertical_speed_mps": -145.4671379459534,
+          "mach": 0.4964120944825535,
+          "thrust_axis_angle_rad": 1.5072667470125234,
+          "transverse_rate_rad_s": 0.004775808095429679,
+          "slew_accel_estimate_rad_s2": 0.03,
+          "preparation_time_s": 16.403997834713408,
+          "required_altitude_m": 6133.921838453682,
+          "fuel_budget_estimate_kg": 65676.42755842987,
+          "fuel_margin_estimate_kg": 36933.107435553946,
+          "propellant_kg": 102609.53499398382,
+          "thrust_axis_angle_deg": 86.36002320423037
+        },
+        "last_ballistic_control": {
+          "time_s": 4859.850000002771,
+          "phase": "ballistic_return",
+          "altitude_m": 6344.774884763174,
+          "pressure_pa": 7987.916227741047,
+          "attitude_error_deg": 2.7461201457448485,
+          "body_rate_rad_s": 0.00920211979174638,
+          "body_rates_rad_s": [
+            -0.002039140021196019,
+            -0.0052440716998205725,
+            -0.0072815265324482695
+          ],
+          "fuel_kg": 102609.53500915229,
+          "thrust_n": 0.0014526230943083102,
+          "reference_mode": "transport_ill_conditioned",
+          "reference_projection_norm": 0.08961017518568554
+        },
+        "first_terminal_control": {
+          "time_s": 4861.350000002776,
+          "phase": "landing_burn",
+          "altitude_m": 6125.60040939413,
+          "pressure_pa": 8005.9091746676395,
+          "attitude_error_deg": 96.71595695450318,
+          "body_rate_rad_s": 0.0072024263504349255,
+          "body_rates_rad_s": [
+            -0.003146387295415431,
+            -0.0035928526203589306,
+            -0.005391345135406163
+          ],
+          "fuel_kg": 102609.53499398382,
+          "thrust_n": 0.0014526230943083102,
+          "reference_mode": "bounded_roll_reacquisition",
+          "reference_projection_norm": 0.9837599591157108
+        },
+        "peak_terminal_error": {
+          "time_s": 4863.350000002783,
+          "phase": "landing_burn",
+          "altitude_m": 5837.919239391573,
+          "pressure_pa": 8694.84978176295,
+          "attitude_error_deg": 98.03588277033771,
+          "body_rate_rad_s": 0.06866745707443557,
+          "body_rates_rad_s": [
+            0.04529122488514907,
+            0.048093828296069584,
+            0.018732546257796426
+          ],
+          "fuel_kg": 101252.4216966186,
+          "thrust_n": 2932290.596450848,
+          "reference_mode": "bounded_roll_reacquisition",
+          "reference_projection_norm": 0.9695638922251464
+        },
+        "terminal_duration_s": 75.61863186982919,
+        "terminal_fuel_used_kg": 51980.83224727486,
+        "first_high_pressure_ballistic_error_exceedance": {
+          "5": {
+            "time_s": 4793.850000002531,
+            "altitude_m": 18195.135147675872,
+            "pressure_pa": 9665.97301031435,
+            "attitude_error_deg": 5.000338740813493,
+            "thrust_axis_tracking_error_deg": 4.5816139173595,
+            "body_rate_rad_s": 0.011714875666613065,
+            "reference_mode": "legacy_geographic",
+            "reference_projection_norm": 0.8095822951355062
+          },
+          "20": null,
+          "60": null
+        }
+      }
+    ],
+    "findings": [
+      "Retained15 is already off target and rotating before the flip/landing phase; terminal maximum occurs at the first terminal command.",
+      "The earlier trigger is explained by larger preparation-time estimate from measured tilt/rate and descent state, not a distinct fixed-altitude setting.",
+      "Negative estimated fuel margin does not inhibit the current terminal trigger; this is a feasibility-check gap.",
+      "The cause of the earlier entry tracking divergence remains unresolved; maxima and timing alone do not prove a particular allocator/reference defect."
+    ]
   }
 }

@@ -17,7 +17,10 @@ old flight. They are control-tool evidence, not return qualification or AI calls
 
 The final candidate activates the new allocator only while the retained-return
 policy is active, preserving the nominal controller after all payloads release.
-Fresh launch-derived runs give:
+Launch-derived records give the following results. The zero-retained row is
+historical: it predates the explicit `application` field and recorded-use checks.
+It was not rerun under the current scope; its archived verifier/source snapshot
+applies, and the current verifier does not accept it as current-format evidence.
 
 | Retained payloads | Contact speed | Tilt | Remaining fuel | Declared entry gate |
 |---|---:|---:|---:|---|
@@ -34,15 +37,29 @@ to the zero-retained case impacted at 8.46 m/s and was rejected.
 After independent review, the active retained-payload domain was evaluated
 separately, keeping the same four thresholds and the zero-retained failure.
 Counts 1–14, 16, 25 and 26 pass. Count 15 contacts at 4.82 m/s but retains only
-13.12 t, failing the 28 t reserve. The sweep stops there; counts 17–24 remain
-unexecuted. Full 0–26 qualification remains incomplete.
+13.12 t, failing the 28 t reserve. Its terminal attitude-target error reaches
+163.39 degrees, and the fuel estimate already exceeds onboard fuel when terminal
+guidance activates. This is an unresolved attitude/control failure with a fuel
+reserve shortfall, not simply low propellant loading. The sweep stops there;
+counts 17–24 remain unexecuted. Full 0–26 qualification remains incomplete;
+17 passing deterministic cases do not establish robustness to perturbations.
 
 The saved 15-retained record starts terminal guidance around 12.90 km, with a
 fuel estimate of 99.92 t against 96.84 t onboard. The terminal segment consumes
-83.72 t over 136.84 seconds. This explains the reserve failure's immediate
-budget context; the underlying attitude/control cause remains unresolved.
+83.72 t over 136.84 seconds. The negative estimated fuel margin does not inhibit
+the current trigger; this feasibility-check gap also belongs to step 4.
+The underlying attitude/control cause remains unresolved.
 
-Record checks pass for the final three runs. The first full 25/26 trials initially
+A read-only comparison with 14 and 16 retained shows that 15 is already off
+target before the flip: its last sampled entry command has 123.64 degrees of
+attitude-target error and 0.465 rad/s body rate. The terminal maximum occurs at
+the first terminal command. The measured tilt/rate raise the preparation estimate
+to 27.53 seconds (about 16.4–16.6 seconds in the adjacent cases), explaining the
+earlier state-based trigger. This localizes the fault before terminal activation;
+it does not yet identify why entry tracking diverged.
+
+Record checks pass under the respective captured checkers for the initial three
+records, and under the reviewed scope for the 18 later runs. The first full 25/26 trials initially
 failed verification because their CLI passed Python tuples to strict JSON
 checkers. Reopening their persisted JSON passes both checkers without new
 dynamics. The original failed verdicts remain recorded; the caller now serializes

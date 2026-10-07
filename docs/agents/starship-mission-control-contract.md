@@ -69,10 +69,17 @@ The [surface-allocation experiment](../examples/starship-return-allocation.md)
 improves the tested 25/26-retained returns without increasing RCS authority.
 Its initial domain sweep stops on the zero-retained pose failure. A reviewed
 active-only sweep passes 17 of 18 tested retained counts and stops on the
-15-retained reserve failure; counts 17–24 remain unexecuted. The allocator
+15-retained attitude/control failure with insufficient reserve: terminal tracking
+error reaches 163.39 degrees, and the trigger's 99.92 t fuel estimate exceeds
+96.84 t onboard. The control cause remains unresolved; counts 17–24 are unexecuted.
+The zero-retained pose record predates the current application/use-witness scope.
+The allocator
 remains unavailable to MissionOS grants; this is not full return qualification.
 The fixed-return fallback is unchanged. These retained-policy results cannot
 qualify that fallback; step 2 must check both choices and no-response behavior.
+The current recorded-use checker assumes the declared three-hull/four-flap Ship
+layout (indices 3–6 in seven panels); alternative layouts need explicit changes
+and verification, not silent reuse of this checker.
 
 The opt-in reproducible launch boundary is:
 
