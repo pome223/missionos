@@ -1,5 +1,11 @@
 # Preparing a usable return tool for MissionOS
 
+Current state: steps3–5 now have a source-bound39-flight Ship return census,
+fresh choice/fallback checks and five actual-Jev HTTP evaluations. See
+[the current mission-control results](starship-state-return.md). The experiments
+below retain their historical failures and incomplete coverage; they are not
+rewritten as successes.
+
 Repeated flights need guidance that can return with a changed payload inventory.
 This development step extends the bounded finite-actuator allocator to Ship
 flaps. The vehicle coefficients, RCS force and actuator limits are unchanged.

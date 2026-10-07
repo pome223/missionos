@@ -1,0 +1,729 @@
+{
+  "schema": "missionos.starship_steps345_summary.v1",
+  "qualified_ship_cases": 39,
+  "inventory_range": [
+    0,
+    26
+  ],
+  "selected_initial_fuel_perturbations_kg": [
+    -1000,
+    1000
+  ],
+  "qualification_source_sha256": {
+    "src/runtime/starship_sixdof_mission.py": "30d6015383d90a9e604de59184996d290c10b29f76f54eed34b7ec61f5cc6b9e",
+    "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+    "src/runtime/starship_entry_trim.py": "b753a5023e78f6446ded41f23aa530f2e5735ff10370b5855202ca5e9f13c219",
+    "src/runtime/starship_fin_allocation.py": "2e00e960830d9b5a281fd41f5f37702e824111e063262430b98636ed35ca1745",
+    "src/runtime/starship_retained_return.py": "d7e21b771ae798f18799675685526c3d3d3f24be7cdfe3659b0e4ce822592eea",
+    "src/runtime/starship_retained_return_verifier.py": "0c0036a8bb355de40bf37e8e15757b955b1955b55a12601066136ca579a10e66",
+    "src/runtime/starship_sixdof_verifier.py": "de66e858ca113c6054c7fa416786f8653d66872041fb9a0576432b1cc0906682",
+    "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+    "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+    "src/runtime/starship_attitude_reference.py": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a",
+    "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+    "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f",
+    "src/runtime/starship_return_feasibility.py": "1b50ec2d8dcb1492e025b49edd804ceed34199e9216b7d5d1f455fff7a7130f7",
+    "src/runtime/starship_return_feasibility_verifier.py": "bf7af500b5c495f23ab8518fe1cbda0f832c74b48d57eeb9ca3269754ba6bbba",
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5"
+  },
+  "fixture_five": [
+    {
+      "case": "normal",
+      "record_verification_passed": true,
+      "comparison": {
+        "baseline": {
+          "released": 26,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 4.608259493361677,
+          "remaining_fuel_kg": 62394.30546504836,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "controlled_water_entry_envelope_met": true
+        },
+        "managed": {
+          "released": 26,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 4.608259493361677,
+          "remaining_fuel_kg": 62394.30546504836,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "controlled_water_entry_envelope_met": true
+        },
+        "normal_outcomes_equal": true,
+        "comparison_accepted": true,
+        "comparison_is_model_value_proof": false,
+        "human_workload_measured": false,
+        "physical_success_claimed": false
+      },
+      "jev_calls": 0,
+      "llm_calls": 0,
+      "decisions": [
+        {
+          "point": "deployment_start",
+          "action": "continue",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "deployment_monitor",
+          "action": "continue",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "return_selection",
+          "action": "state_return",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "booster_selection",
+          "action": "splashdown",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        }
+      ],
+      "final_body_rate_rad_s": 0.003031432577058173,
+      "return_execution_checks": 1
+    },
+    {
+      "case": "release_fault",
+      "record_verification_passed": true,
+      "comparison": {
+        "baseline": {
+          "released": 0,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 3.473183152898391,
+          "remaining_fuel_kg": 45231.488448047014,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "controlled_water_entry_envelope_met": true
+        },
+        "managed": {
+          "released": 0,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 3.473183152898391,
+          "remaining_fuel_kg": 45231.488448047014,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "controlled_water_entry_envelope_met": true
+        },
+        "normal_outcomes_equal": null,
+        "comparison_accepted": true,
+        "comparison_is_model_value_proof": false,
+        "human_workload_measured": false,
+        "physical_success_claimed": false
+      },
+      "jev_calls": 0,
+      "llm_calls": 0,
+      "decisions": [
+        {
+          "point": "deployment_start",
+          "action": "continue",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "deployment_monitor",
+          "action": "collect_status",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "deployment_diagnostic",
+          "action": "stop_deployment",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "return_selection",
+          "action": "state_return",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "booster_selection",
+          "action": "splashdown",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        }
+      ],
+      "final_body_rate_rad_s": 0.003556253722334686,
+      "return_execution_checks": 1
+    },
+    {
+      "case": "fuel_shortage",
+      "record_verification_passed": true,
+      "comparison": {
+        "baseline": {
+          "released": 0,
+          "orbit": true,
+          "termination": "return_infeasible_bounded_coast",
+          "contact_speed_mps": null,
+          "remaining_fuel_kg": 22365.431392690436,
+          "return_time_s": null,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "controlled_water_entry_envelope_met": true
+        },
+        "managed": {
+          "released": 0,
+          "orbit": true,
+          "termination": "return_infeasible_bounded_coast",
+          "contact_speed_mps": null,
+          "remaining_fuel_kg": 22365.43696945758,
+          "return_time_s": null,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "controlled_water_entry_envelope_met": true
+        },
+        "normal_outcomes_equal": null,
+        "comparison_accepted": true,
+        "comparison_is_model_value_proof": false,
+        "human_workload_measured": false,
+        "physical_success_claimed": false
+      },
+      "jev_calls": 0,
+      "llm_calls": 0,
+      "decisions": [
+        {
+          "point": "deployment_start",
+          "action": "stop_deployment",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "return_selection",
+          "action": "defer_return",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "booster_selection",
+          "action": "splashdown",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        }
+      ],
+      "final_body_rate_rad_s": 0.0011286154972890605,
+      "return_execution_checks": 0
+    },
+    {
+      "case": "tower_unavailable",
+      "record_verification_passed": true,
+      "comparison": {
+        "baseline": {
+          "released": 26,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 4.608259493361677,
+          "remaining_fuel_kg": 62394.30546504836,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "controlled_water_entry_envelope_met": true
+        },
+        "managed": {
+          "released": 26,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 4.608259493361677,
+          "remaining_fuel_kg": 62394.30546504836,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "controlled_water_entry_envelope_met": true
+        },
+        "normal_outcomes_equal": null,
+        "comparison_accepted": true,
+        "comparison_is_model_value_proof": false,
+        "human_workload_measured": false,
+        "physical_success_claimed": false
+      },
+      "jev_calls": 0,
+      "llm_calls": 0,
+      "decisions": [
+        {
+          "point": "deployment_start",
+          "action": "continue",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "deployment_monitor",
+          "action": "continue",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "return_selection",
+          "action": "state_return",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "booster_selection",
+          "action": "splashdown",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        }
+      ],
+      "final_body_rate_rad_s": 0.003031432577058173,
+      "return_execution_checks": 1
+    },
+    {
+      "case": "operations_notice",
+      "record_verification_passed": true,
+      "comparison": {
+        "baseline": {
+          "released": 26,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 4.608259493361677,
+          "remaining_fuel_kg": 62394.30546504836,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "controlled_water_entry_envelope_met": true
+        },
+        "managed": {
+          "released": 1,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 3.5141722945197325,
+          "remaining_fuel_kg": 45743.35648244802,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "controlled_water_entry_envelope_met": true
+        },
+        "normal_outcomes_equal": null,
+        "comparison_accepted": true,
+        "comparison_is_model_value_proof": false,
+        "human_workload_measured": false,
+        "physical_success_claimed": false
+      },
+      "jev_calls": 0,
+      "llm_calls": 0,
+      "decisions": [
+        {
+          "point": "deployment_start",
+          "action": "continue",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "deployment_monitor",
+          "action": "stop_deployment",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "return_selection",
+          "action": "state_return",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "booster_selection",
+          "action": "splashdown",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        }
+      ],
+      "final_body_rate_rad_s": 0.0035451938910395432,
+      "return_execution_checks": 1
+    }
+  ],
+  "live_five": [
+    {
+      "case": "normal",
+      "record_verification_passed": true,
+      "comparison": {
+        "baseline": {
+          "released": 26,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 4.608259493361677,
+          "remaining_fuel_kg": 62394.30546504836,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "controlled_water_entry_envelope_met": true
+        },
+        "managed": {
+          "released": 26,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 4.608259493361677,
+          "remaining_fuel_kg": 62394.30546504836,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "controlled_water_entry_envelope_met": true
+        },
+        "normal_outcomes_equal": true,
+        "comparison_accepted": true,
+        "comparison_is_model_value_proof": false,
+        "human_workload_measured": false,
+        "physical_success_claimed": false
+      },
+      "jev_calls": 4,
+      "llm_calls": 0,
+      "decisions": [
+        {
+          "point": "deployment_start",
+          "action": "continue",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "deployment_monitor",
+          "action": "continue",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "return_selection",
+          "action": "state_return",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "booster_selection",
+          "action": "splashdown",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        }
+      ],
+      "final_body_rate_rad_s": 0.003031432577058173,
+      "return_execution_checks": 1
+    },
+    {
+      "case": "release_fault",
+      "record_verification_passed": true,
+      "comparison": {
+        "baseline": {
+          "released": 0,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 3.473183152898391,
+          "remaining_fuel_kg": 45231.488448047014,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false
+        },
+        "managed": {
+          "released": 0,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 3.473183152898391,
+          "remaining_fuel_kg": 45231.488448047014,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false
+        },
+        "normal_outcomes_equal": null,
+        "comparison_accepted": true,
+        "comparison_is_model_value_proof": false,
+        "human_workload_measured": false,
+        "physical_success_claimed": false
+      },
+      "jev_calls": 5,
+      "llm_calls": 0,
+      "decisions": [
+        {
+          "point": "deployment_start",
+          "action": "continue",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "deployment_monitor",
+          "action": "collect_status",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "deployment_diagnostic",
+          "action": "stop_deployment",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "return_selection",
+          "action": "state_return",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "booster_selection",
+          "action": "divert",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        }
+      ],
+      "final_body_rate_rad_s": 0.003556253722334686,
+      "return_execution_checks": 1
+    },
+    {
+      "case": "fuel_shortage",
+      "record_verification_passed": true,
+      "comparison": {
+        "baseline": {
+          "released": 0,
+          "orbit": true,
+          "termination": "return_infeasible_bounded_coast",
+          "contact_speed_mps": null,
+          "remaining_fuel_kg": 22365.431392690436,
+          "return_time_s": null,
+          "booster_destination": "divert",
+          "booster_destination_reached": false
+        },
+        "managed": {
+          "released": 0,
+          "orbit": true,
+          "termination": "return_infeasible_bounded_coast",
+          "contact_speed_mps": null,
+          "remaining_fuel_kg": 22365.436955045163,
+          "return_time_s": null,
+          "booster_destination": "divert",
+          "booster_destination_reached": false
+        },
+        "normal_outcomes_equal": null,
+        "comparison_accepted": true,
+        "comparison_is_model_value_proof": false,
+        "human_workload_measured": false,
+        "physical_success_claimed": false
+      },
+      "jev_calls": 3,
+      "llm_calls": 0,
+      "decisions": [
+        {
+          "point": "deployment_start",
+          "action": "stop_deployment",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "return_selection",
+          "action": "defer_return",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "booster_selection",
+          "action": "divert",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        }
+      ],
+      "final_body_rate_rad_s": 0.0011286119682293659,
+      "return_execution_checks": 0
+    },
+    {
+      "case": "tower_unavailable",
+      "record_verification_passed": true,
+      "comparison": {
+        "baseline": {
+          "released": 26,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 4.608259493361677,
+          "remaining_fuel_kg": 62394.30546504836,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false
+        },
+        "managed": {
+          "released": 26,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 4.608259493361677,
+          "remaining_fuel_kg": 62394.30546504836,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false
+        },
+        "normal_outcomes_equal": null,
+        "comparison_accepted": true,
+        "comparison_is_model_value_proof": false,
+        "human_workload_measured": false,
+        "physical_success_claimed": false
+      },
+      "jev_calls": 3,
+      "llm_calls": 0,
+      "decisions": [
+        {
+          "point": "deployment_start",
+          "action": "continue",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "deployment_monitor",
+          "action": "continue",
+          "rules_accepted": false,
+          "fallback_rules_accepted": true,
+          "observed_later": true
+        },
+        {
+          "point": "return_selection",
+          "action": "state_return",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "booster_selection",
+          "action": "divert",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        }
+      ],
+      "final_body_rate_rad_s": 0.003031432577058173,
+      "return_execution_checks": 1
+    },
+    {
+      "case": "operations_notice",
+      "record_verification_passed": true,
+      "comparison": {
+        "baseline": {
+          "released": 26,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 4.608259493361677,
+          "remaining_fuel_kg": 62394.30546504836,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false
+        },
+        "managed": {
+          "released": 1,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 3.5141722945197325,
+          "remaining_fuel_kg": 45743.35648244802,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false
+        },
+        "normal_outcomes_equal": null,
+        "comparison_accepted": true,
+        "comparison_is_model_value_proof": false,
+        "human_workload_measured": false,
+        "physical_success_claimed": false
+      },
+      "jev_calls": 4,
+      "llm_calls": 0,
+      "decisions": [
+        {
+          "point": "deployment_start",
+          "action": "continue",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "deployment_monitor",
+          "action": "stop_deployment",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "return_selection",
+          "action": "state_return",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        },
+        {
+          "point": "booster_selection",
+          "action": "divert",
+          "rules_accepted": true,
+          "fallback_rules_accepted": false,
+          "observed_later": true
+        }
+      ],
+      "final_body_rate_rad_s": 0.0035451938910395432,
+      "return_execution_checks": 1
+    }
+  ],
+  "live_total_jev_calls": 19,
+  "live_total_llm_calls": 0,
+  "compound_failures": [
+    {
+      "condition": "hold_then_reassessment_and_return_timeout",
+      "record_verification_passed": true,
+      "comparison_accepted": false,
+      "released_count": 0,
+      "contact_speed_mps": 3.473183152898391,
+      "remaining_fuel_kg": 45231.488448047014,
+      "mission_goal_met": false,
+      "scope": "forced hold and lost decisions forfeit deployment but checked return stays in model contact envelope"
+    },
+    {
+      "condition": "hold_then_reassessment_timeout_invalid_return",
+      "record_verification_passed": true,
+      "comparison_accepted": false,
+      "released_count": 0,
+      "contact_speed_mps": 3.473183152898391,
+      "remaining_fuel_kg": 45231.488448047014,
+      "mission_goal_met": false,
+      "scope": "forced hold and lost decisions forfeit deployment but checked return stays in model contact envelope"
+    }
+  ],
+  "boundaries": {
+    "physical_execution": false,
+    "real_starship_validated": false,
+    "structural_recovery_verified": false,
+    "fleet_workload_reduction_measured": false,
+    "ai_script_superiority_acceptance_gate": false,
+    "state_dependent_return_check": "source/profile/backend, tested numerical consumption envelope, analytic deorbit correction, fresh orbit/pose/engine/fuel bounds; not a per-state trajectory rollout or formal reachable-set proof",
+    "fuel_shortage": "returns inhibited; real bounded30s orbital coast, no Ship contact/recovery",
+    "booster": "live normal has modeled controlled water entry; otherlivecases use legacydivert; robustness and real survival remain unqualified"
+  }
+}

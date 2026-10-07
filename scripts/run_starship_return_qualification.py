@@ -23,6 +23,8 @@ from src.runtime import starship_sixdof as dyn, starship_physics as env  # noqa:
 SOURCES=("scripts/run_starship_return_qualification.py","src/runtime/starship_sixdof_mission.py",
          "src/runtime/starship_sixdof.py","src/runtime/starship_sixdof_separation.py",
          "src/runtime/starship_sixdof_contact.py","src/runtime/starship_fin_allocation.py",
+         "src/runtime/starship_entry_trim.py",
+         "src/runtime/starship_return_feasibility.py", "src/runtime/starship_return_feasibility_verifier.py",
          "src/runtime/starship_physics.py","src/runtime/starship_retained_return.py",
          "src/runtime/starship_attitude_reference.py","src/runtime/starship_sixdof_booster.py",
          "src/runtime/starship_wind.py","src/runtime/starship_sixdof_verifier.py",
@@ -42,6 +44,8 @@ def main(argv=None):
     parser.add_argument("--approve-simulation",action="store_true")
     parser.add_argument("--retained",type=int,required=True)
     parser.add_argument("--legacy-allocation",action="store_true")
+    parser.add_argument("--wind-trim",action="store_true",help="Experimental shared wind-bank/trim/state-terminal policy, including zero retained")
+    parser.add_argument("--initial-fuel-offset-kg",type=float,default=0.,help="Explicit launch initial-condition perturbation in [-1000,1000] kg")
     parser.add_argument("--output-dir",type=Path,required=True)
     args=parser.parse_args(argv)
     if not args.approve_simulation or not 0 <= args.retained <= 26:
@@ -49,12 +53,18 @@ def main(argv=None):
     if args.output_dir.exists():
         parser.error("use a fresh output directory; failed outcomes cannot be overwritten")
     profile=json.loads((ROOT/"examples/spaceflight/starship-sixdof-profile.json").read_text())
+    if not math.isfinite(args.initial_fuel_offset_kg) or abs(args.initial_fuel_offset_kg)>1000.:
+        parser.error("initial-fuel perturbation must be finite and within +/-1000 kg")
+    profile["ship"]["propellant_kg"] += args.initial_fuel_offset_kg
+    if args.wind_trim and args.legacy_allocation:
+        parser.error("wind-trim requires bounded allocation")
+    policy_id = "trimmed_state_terminal_v4" if args.wind_trim else "mass_state_terminal_v3"
     scope={"release_limit":profile["payload"]["count"]-args.retained,"bounded_ship_flaps":not args.legacy_allocation,
-           "application":"retained_policy_active_only_v1"}
+           "application":"wind_trim_state_return_v2" if args.wind_trim else "retained_policy_active_only_v1"}
     before=sources()
     args.output_dir.mkdir(parents=True)
     write(args.output_dir/"inputs.json",{"source_sha256":before,"scope":scope,"profile":profile,
-        "allocation_application":"only while retained-return policy is active or triggered; zero-retained uses unchanged nominal allocation",
+        "allocation_application":"active state return including zero retained" if args.wind_trim else "only while retained-return policy is active or triggered; zero-retained uses unchanged nominal allocation",
         "qualification_limits":{"contact_speed_mps":5.,"tilt_deg":5.,"body_rate_rad_s":.02,
                                 "fuel_reserve_kg":profile["ship"]["return_reserve_kg"]},
         "missionos_approval":None,"model_inference_invoked":False,"physical_execution":False})
@@ -63,7 +73,7 @@ def main(argv=None):
         dest.parent.mkdir(parents=True,exist_ok=True)
         dest.write_bytes((ROOT/name).read_bytes())
     try:
-        run=json.loads(json.dumps(simulate(profile,return_policy="mass_state_terminal_v3",
+        run=json.loads(json.dumps(simulate(profile,return_policy=policy_id,
             _development_return_qualification=scope),allow_nan=False))
         run["development_source_sha256"]=before
         study={"schema":"missionos.starship_sixdof_study.v1","profile":profile,"runs":[run],
@@ -71,7 +81,7 @@ def main(argv=None):
                              "source_sha256":before,"hashes_are_execution_attestation":False}}
         write(args.output_dir/"study.json",study)
         record=verify_study(study,expected_scenario="launch",expected_development_return_qualification=scope)
-        policy=verify_retained_return(run,profile,expected_policy="mass_state_terminal_v3",
+        policy=verify_retained_return(run,profile,expected_policy=policy_id,
             expected_development_return_qualification=scope)
         write(args.output_dir/"verification.json",{"record":record,"return_policy":policy})
         outcome=run["outcome"]
@@ -86,6 +96,7 @@ def main(argv=None):
             and tilt<=5. and rate<=.02
             and contact["propellant_kg"]>=profile["ship"]["return_reserve_kg"])
         result={"retained_count":args.retained,"scope":scope,"termination":outcome["termination"],
+            "initial_fuel_offset_kg":args.initial_fuel_offset_kg,
             "final_phase":outcome["phase"],"released_count":outcome["payload_released_count"],
             "contact_speed_mps":contact["surface_relative_speed_mps"] if contact else None,
             "remaining_fuel_kg":run["final_state"]["propellant_kg"],"policy_status":run["retained_return"]["status"],

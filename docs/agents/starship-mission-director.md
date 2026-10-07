@@ -1,5 +1,23 @@
 # Mission-wide Starship decision envelope
 
+## Current version5 boundary
+
+The current envelope is `missionos.starship_mission_envelope.v5`; requestsv4.
+Return actions are `state_return` or `defer_return`, with source-qualifiedv4GNC
+available for every retained inventory includingzero. Proposals and no-response
+fallbacks both check fresh quantitative model-domain receipts. Before deorbit the
+executor checks again, and before terminal burn it enforces the qualified terminal
+fuel/propulsion domain. No qualified option inhibits execution without claiming
+safe recovery. Return deferral is a bounded30sorbital coast, not a delayed burn.
+The modelsource and qualification asset hashes are inside the immutable envelope.
+
+The source/profile/backend and fuel/orbit/pose/engine constraints, independent
+physical-state binding, preserved negative trials and actual19Jev receipts are
+in [the mission-control contract](starship-mission-control-contract.md). Below is
+historicalv4context; its unchecked fixed-return fallback is superseded for the
+current managed envelope, and old grants cannot silently acquirev5authority.
+
+
 The [flight-control contract](starship-mission-control-contract.md) defines the
 mission-wide goal, authority split, acceptance criteria and post-merge work order.
 This page describes the implemented development envelope, not completion of that

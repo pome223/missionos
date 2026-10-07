@@ -28,7 +28,7 @@ def test_splashdown_scope_is_separate_immutable_approval():
     legacy=contract("fixture")
     water=contract("fixture",splashdown=True)
     assert "splashdown" not in legacy["decision_points"]["booster_selection"]
-    assert water["schema"]=="missionos.starship_mission_envelope.v4"
+    assert water["schema"]=="missionos.starship_mission_envelope.v5"
     assert water["splashdown_goal"]==goal.to_dict()
     actor=MissionDirector(water,fixture_decider=fixture_decision)
     assert actor.update("booster_selection",row(phase="booster_return"))=="splashdown"

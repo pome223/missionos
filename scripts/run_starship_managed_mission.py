@@ -57,7 +57,8 @@ def main():
     runs, started = [], time.monotonic()
     for name, director in (("fixed_timeline", None), ("missionos", actor)):
         print(json.dumps({"status": "running", "controller": name, "case": args.case}), flush=True)
-        run = simulate(p, mission_case=args.case, mission_director=director, return_sites=sites, splashdown_goal=splashdown_goal)
+        run = simulate(p, mission_case=args.case, mission_director=director, return_sites=sites, splashdown_goal=splashdown_goal,
+            return_policy="fixed_v1" if director is not None else "trimmed_state_terminal_v4")
         # Keep each completed branch recoverable if a later branch fails,
         # without storing an extra uncompressed copy of the full study.
         with gzip.open(args.output_dir/(name+".json.gz"), "wt", encoding="utf-8") as checkpoint:

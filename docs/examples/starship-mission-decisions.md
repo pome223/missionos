@@ -1,5 +1,11 @@
 # MissionOS decides within an approved mission scope
 
+Current state: steps3–5 now have a source-bound39-flight Ship return census,
+fresh choice/fallback checks and five actual-Jev HTTP evaluations. See
+[the current mission-control results](starship-state-return.md). The experiments
+below retain their historical failures and incomplete coverage; they are not
+rewritten as successes.
+
 This development slice connects decisions across a Starship-inspired flight:
 start deployment, monitor the first release, request a mechanism diagnostic if
 needed, select terminal return guidance, and decide capture or diversion.

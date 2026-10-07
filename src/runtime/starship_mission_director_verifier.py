@@ -9,7 +9,7 @@ import math
 from hashlib import sha256
 from pathlib import Path
 
-from .starship_mission_director import RESPONSE_FAULTS, canonical_contract, digest, check_action, eligible_actions, fallback_action, validate_observation
+from .starship_mission_director import RESPONSE_FAULTS, COMPOUND_FAULTS, canonical_contract, digest, check_action, eligible_actions, fallback_action, validate_observation
 from .starship_sixdof_verifier import verify_study
 from .starship_retained_return_verifier import verify_retained_return
 
@@ -35,8 +35,12 @@ def comparison(case, baseline, managed):
     # happened to be called. Deployment count alone is not success after an
     # explicit suspension notice. Preserve fuel and contact tradeoffs as data.
     if case == "normal":
-        accepted = same and all(r["dispatch"]["action"] in ("continue", "fixed_return", "divert", "splashdown")
+        accepted = same and all(r["dispatch"]["action"] in ("continue", "state_return", "divert", "splashdown")
                                for r in managed["mission_director"]["records"] if r["dispatch"])
+    elif case == "fuel_shortage":
+        accepted = (a["orbit"] and b["orbit"] and b["released"] == 0
+            and b["termination"] == "return_infeasible_bounded_coast" and b["contact_speed_mps"] is None
+            and b["remaining_fuel_kg"] >= 1000.)
     else:
         speed_a, speed_b = a["contact_speed_mps"], b["contact_speed_mps"]
         accepted = (a["orbit"] == b["orbit"] and a["return_time_s"] == b["return_time_s"]
@@ -49,6 +53,63 @@ def comparison(case, baseline, managed):
     return {"baseline": a, "managed": b, "normal_outcomes_equal": same if case == "normal" else None,
             "comparison_accepted": bool(accepted), "comparison_is_model_value_proof": False,
             "human_workload_measured": False, "physical_success_claimed": False}
+
+
+def _bind_return_observation(run, profile, row):
+    """Bind the margin inputs to a separately recorded integrated state."""
+    proof = row["numerical_tools"].get("return_feasibility")
+    if type(proof) is not dict or type(proof.get("inputs")) is not dict:
+        raise ValueError("return_state_missing")
+    inputs = proof["inputs"]
+    witnesses = [s for s in run["samples"] if s.get("return_execution_observation") == row
+                 and s["time_s"] == row["time_s"]]
+    if len(witnesses) != 1:
+        raise ValueError("return_state_not_bound_to_trajectory")
+    state = witnesses[0]
+    for name in ("r_eci_m", "v_eci_mps", "q_body_to_eci", "omega_body_rad_s"):
+        if inputs.get(name) != state.get(name):
+            raise ValueError("return_navigation_does_not_match_observed_state")
+    if abs(row["fuel_kg"]-state["propellant_kg"]) > 100.+1e-6:
+        raise ValueError("return_fuel_sensor_outside_declared_uncertainty")
+    p, a = profile["ship"], profile["actuators"]
+    expected = {"available_landing_engines": sum(e["available"] for e in state["engine_states"][:3]),
+        "dry_and_payload_mass_kg": p["dry_mass_kg"]+(26-row["released_count"])*profile["payload"]["mass_each_kg"],
+        "engine_isp_s": p["engine_isp_s"], "deorbit_perigee_m": profile["guidance"]["deorbit_perigee_m"],
+        "rcs_thrust_n": a["rcs_thrust_n"], "rcs_isp_s": a["rcs_isp_s"]}
+    if any(inputs.get(k) != v for k, v in expected.items()):
+        raise ValueError("return_model_parameter_mismatch")
+
+
+def _return_execution_checks(run, profile, expected_envelope):
+    from .starship_return_feasibility_verifier import verify as verify_margin, load_certificate, registered
+    checks = run.get("return_execution_checks", [])
+    for item in checks:
+        row = validate_observation(item["observation"])
+        _bind_return_observation(run, profile, row)
+        if item["time_s"] != row["time_s"] or item["feasibility"] != row["numerical_tools"]["return_feasibility"]:
+            raise ValueError("return_execution_not_fresh")
+        certificate, identity = load_certificate()
+        if not registered(profile, identity):
+            certificate = None
+        result = verify_margin(item["feasibility"], certificate, identity, time_s=row["time_s"],
+            fuel_kg=row["fuel_kg"], released_count=row["released_count"])
+        if not result["passed"]:
+            raise ValueError("return_execution_margin_not_verified")
+        if item["action"] == "state_return" and not item["feasibility"]["return_admitted"]:
+            raise ValueError("unchecked_return_execution")
+        if item["action"] == "defer_return" and not item["feasibility"]["bounded_coast_admitted"]:
+            raise ValueError("unchecked_coast_execution")
+    if run["retained_return"]["policy_id"] == "trimmed_state_terminal_v4":
+        if len(checks) != 1 or checks[0]["action"] != "state_return":
+            raise ValueError("missing_execution_time_return_check")
+        terminal = run["retained_return"].get("terminal_feasibility")
+        certificate, _ = load_certificate()
+        state = run["retained_return"]["trigger"]["state"]
+        if (type(terminal) is not dict or terminal.get("passed") is not True
+                or abs(terminal["required_fuel_kg"]-certificate["maximum_terminal_consumption_kg"]-29000.) > 1e-6
+                or abs(terminal["fuel_lower_bound_kg"]-(state["propellant_kg"]-100.)) > 1e-6
+                or terminal["fuel_lower_bound_kg"] < terminal["required_fuel_kg"]):
+            raise ValueError("terminal_fuel_margin_not_verified")
 
 
 def _sequence_effects(run, records, envelope, profile):
@@ -155,7 +216,7 @@ def verify(study, *, expected_case, expected_envelope, expected_run_id=None, exp
                 raise ValueError("dispatch_clock_mismatch")
             elapsed = dispatch["time_s"]-request["observation"]["time_s"]
             deadline = request["decision_deadline_s"]
-            if (request["schema"] != "missionos.starship_director_request.v3"
+            if (request["schema"] != "missionos.starship_director_request.v4"
                     or type(deadline) not in (int, float) or not math.isfinite(deadline)
                     or not request["observation"]["time_s"] < deadline <= request["observation"]["time_s"]+expected_envelope["decision_expiry_s"]):
                 raise ValueError("invalid_decision_deadline")
@@ -191,6 +252,11 @@ def verify(study, *, expected_case, expected_envelope, expected_run_id=None, exp
                     or dispatch.get("response_invalid") is not (not action_type_valid)):
                 raise ValueError("referral_semantics_mismatch")
             fallback = fallback_action(expected_envelope, request["point"], row, observation_requests=reads, hold_used_s=hold)
+            fallback_reason = check_action(expected_envelope, request["point"], fallback, row, elapsed_s=0,
+                observation_requests=reads, hold_used_s=hold) if reason else None
+            if (dispatch.get("fallback_rules_accepted") is not (reason is not None and fallback_reason is None)
+                    or dispatch.get("fallback_rejection") != fallback_reason):
+                raise ValueError("fallback_not_independently_rechecked")
             if dispatch["action"] != (fallback if reason else response["action"]):
                 raise ValueError("dispatch_action_mismatch")
             action = dispatch["action"]
@@ -222,14 +288,51 @@ def verify(study, *, expected_case, expected_envelope, expected_run_id=None, exp
             if not any(e["event"] in ("managed_mission_command", "managed_booster_command")
                        and e.get("action") == action and e["time_s"] == dispatch["time_s"] for e in events):
                 raise ValueError("execution_event_missing")
-            if action in ("retained_return", "fixed_return"):
-                expected = "mass_state_terminal_v3" if action == "retained_return" else "fixed_v1"
+            if action in ("state_return", "defer_return", "inhibit_return"):
+                expected = "trimmed_state_terminal_v4" if action == "state_return" else "fixed_v1"
                 if managed["retained_return"]["policy_id"] != expected:
                     raise ValueError("return_selection_not_applied")
+                from .starship_return_feasibility_verifier import verify as verify_return_margin, load_certificate
+                certificate, identity = load_certificate()
+                if certificate is not None and certificate.get("source_sha256"):
+                    from .starship_return_feasibility_verifier import registered
+                    if not registered(study["profile"], identity):
+                        certificate = None
+                checked = verify_return_margin(row["numerical_tools"].get("return_feasibility"), certificate,
+                    identity, time_s=row["time_s"], fuel_kg=row["fuel_kg"], released_count=row["released_count"])
+                if not checked["passed"]:
+                    raise ValueError("independent_return_margin_failed")
+                _bind_return_observation(managed, study["profile"], row)
+                if action == "state_return" and not dispatch["return_feasibility"]["return_admitted"]:
+                    raise ValueError("unqualified_return_dispatched")
+                if action == "defer_return":
+                    if not dispatch["return_feasibility"]["bounded_coast_admitted"]:
+                        raise ValueError("unchecked_coast_dispatched")
+                    if any(e["event"] == "return_requested" for e in managed["events"]):
+                        raise ValueError("inhibited_return_executed")
+                    final_time = managed["samples"][-1]["time_s"]
+                    if not 30.-1e-6 <= final_time-dispatch["time_s"] <= 30.+study["profile"]["integration"]["coast_dt_s"]+1e-6:
+                        raise ValueError("bounded_return_coast_duration_mismatch")
         if reads != record["observation_requests"] or hold != record["hold_used_s"]:
             raise ValueError("resource_accounting")
         _sequence_effects(managed, record["records"], expected_envelope, study["profile"])
-        if expected_response_fault:
+        for run in (baseline, managed):
+            _return_execution_checks(run, study["profile"], expected_envelope)
+        if expected_response_fault in COMPOUND_FAULTS:
+            by_point = {r["request"]["point"]: r for r in record["records"]}
+            for point in ("deployment_start", "deployment_reassessment", "return_selection"):
+                if point not in by_point:
+                    raise ValueError("compound_fault_point_missing")
+            if by_point["deployment_start"]["dispatch"]["action"] != "hold":
+                raise ValueError("compound_hold_not_executed")
+            if by_point["deployment_reassessment"]["response"].get("mode") != "timeout_fallback":
+                raise ValueError("compound_reassessment_timeout_missing")
+            tail = by_point["return_selection"]
+            if expected_response_fault == COMPOUND_FAULTS[0] and tail["response"].get("mode") != "timeout_fallback":
+                raise ValueError("compound_return_timeout_missing")
+            if expected_response_fault == COMPOUND_FAULTS[1] and tail["response"].get("synthetic_response_fault") != "compound_invalid_return":
+                raise ValueError("compound_invalid_return_missing")
+        elif expected_response_fault:
             kind, point = expected_response_fault.split("_", 1)
             matching = [item for item in record["records"] if item["request"]["point"] == point]
             if (len(matching) != 1

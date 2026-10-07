@@ -291,7 +291,7 @@ def test_verifier_does_not_import_or_invoke_simulator():
     source = (ROOT/"src/runtime/starship_sixdof_verifier.py").read_text()
     relative_imports = [node.module for node in ast.walk(ast.parse(source))
                         if isinstance(node, ast.ImportFrom) and node.level]
-    assert sorted(relative_imports) == ["starship_booster_recovery_verifier", "starship_wind_verifier"]
+    assert sorted(relative_imports) == ["starship_booster_recovery_verifier", "starship_return_feasibility_verifier", "starship_wind_verifier"]
     wind_source = (ROOT/"src/runtime/starship_wind_verifier.py").read_text()
     assert not [node for node in ast.walk(ast.parse(wind_source))
                 if isinstance(node, ast.ImportFrom) and node.level]

@@ -20,7 +20,8 @@ _A = 6_378_137.0
 _B = _A * (1 - 1 / 298.257223563)
 _EARTH_RATE = 7.292115e-5
 _STATE_FIELDS = ("time_s", "r_eci_m", "v_eci_mps", "q_body_to_eci", "omega_body_rad_s", "propellant_kg")
-_TERMINATIONS = {"time_limit", "numerical_failure", "angular_rate_envelope_exceeded", "surface_impact", "low_speed_surface_contact"}
+_TERMINATIONS = {"time_limit", "numerical_failure", "angular_rate_envelope_exceeded", "surface_impact", "low_speed_surface_contact",
+                 "return_infeasible_bounded_coast", "no_qualified_return_policy", "terminal_model_domain_unqualified"}
 
 
 class _Invalid(Exception):
@@ -434,12 +435,17 @@ def _verify_run(run, profile, path, budget, *, booster_policy="fixed_v1", catch_
     return observed
 
 
-def _return_allocation_scope(run, scope, path):
+def _return_allocation_scope(run, scope, path, profile=None):
     """Recorded command-cycle use, not processor or dynamics attestation."""
     samples = run.get("samples")
     _require(type(samples) is list, path, "Expected sample list")
     receipts = [s["controller"].get("development_fin_allocation")
                 for s in samples if type(s) is dict and type(s.get("controller")) is dict]
+    if scope is None and run.get("return_qualification_sha256") and profile is not None:
+        from .starship_return_feasibility_verifier import registered
+        _require(registered(profile, run["return_qualification_sha256"]), path,
+                 "Registered return qualification does not bind current profile/source", "return_qualification")
+        scope = {"bounded_ship_flaps": True, "application": "wind_trim_state_return_v2"}
     _require(not any(receipts) or scope is not None and scope["bounded_ship_flaps"],
              path, "Undeclared Ship surface allocation", "development_scope")
     if scope is None or not scope["bounded_ship_flaps"]:
@@ -454,8 +460,12 @@ def _return_allocation_scope(run, scope, path):
     for sample in samples:
         _require(type(sample) is dict, path, "Expected sample objects")
         q, time = sample.get("dynamic_pressure_pa"), sample.get("time_s")
+        trim = record.get("entry_trim", {})
+        preposition = (scope["application"] == "wind_trim_state_return_v2" and type(trim) is dict
+                       and trim.get("status") == "prepared" and _number(trim.get("time_s"))
+                       and _number(time) and time >= trim["time_s"] and sample.get("phase") == "ballistic_return")
         eligible = (active_time is not None and _number(q) and _number(time) and time >= active_time
-                    and sample.get("phase") in ("ballistic_return", "landing_burn") and q > 50.)
+                    and sample.get("phase") in ("ballistic_return", "landing_burn") and (q > 50. or preposition))
         potential = potential or eligible
         controller = sample.get("controller")
         receipt = controller.get("development_fin_allocation") if type(controller) is dict else None
@@ -474,6 +484,10 @@ def _return_allocation_scope(run, scope, path):
                      and all(_near(targets[j], command["flap_angles_rad"][i], 1e-9)
                              for j, i in enumerate(indices)),
                      path, "Allocation receipt differs from recorded flap commands", "allocation_use")
+            if preposition and q <= 50.:
+                _require(receipt.get("mode") == "low_pressure_preposition"
+                         and all(_near(targets[j], trim["trim_angles_rad"][i], 1e-9) for j, i in enumerate(indices)),
+                         path, "Prepositioning differs from static trim witness", "allocation_use")
             receipt_count += 1
         elif receipt is not None:
             _require(False, path, "Allocation receipt outside the declared application", "allocation_use")
@@ -516,15 +530,17 @@ def verify_study(study: dict, expected_scenario: str | None = None, *, expected_
         scope = expected_development_return_qualification
         if scope is not None:
             _require(type(scope) is dict and set(scope) == {"release_limit", "bounded_ship_flaps", "application"}
-                     and scope["application"] == "retained_policy_active_only_v1"
+                     and scope["application"] in ("retained_policy_active_only_v1", "wind_trim_state_return_v2")
                      and type(scope["release_limit"]) is int and 0 <= scope["release_limit"] <= payload["count"]
                      and type(scope["bounded_ship_flaps"]) is bool and len(runs) == 1,
                      "$.runs", "Invalid expected local development scope", "development_scope")
+            _require(scope["application"] != "wind_trim_state_return_v2" or scope["bounded_ship_flaps"],
+                     "$.runs", "Wind-trim requires bounded physical allocation", "development_scope")
         for run in runs:
             _require(type(run) is dict, "$.runs", "Expected run objects")
             _require(run.get("development_return_qualification") == scope,
                      "$.runs", "Development return scope differs from caller expectation", "development_scope")
-            _return_allocation_scope(run, scope, "$.runs")
+            _return_allocation_scope(run, scope, "$.runs", profile)
             if scope is not None:
                 _require(run.get("scenario") == "launch" and run.get("outcome", {}).get("payload_released_count", -1) <= scope["release_limit"],
                          "$.runs", "Experiment release limit or scenario differs", "development_scope")

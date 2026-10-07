@@ -313,6 +313,62 @@ def _contact_outcome(run):
     return speed <= 5, speed
 
 
+def _entry_trim_witness(record, samples, profile, retained):
+    trim = record.get("entry_trim")
+    if trim is None:
+        return False
+    _require(type(trim) is dict and trim.get("status") == "prepared"
+             and trim.get("actual_state_assigned") is False and trim.get("trim_is_execution") is False
+             and trim.get("global_optimum_proven") is False, "entry_trim", "Invalid static trim claim")
+    state = trim.get("state")
+    _require(type(state) is dict and state.get("entry_trim") == "preparation"
+             and state.get("phase") == "ballistic_return" and _near(state.get("time_s"), trim.get("time_s"))
+             and sum(s == state for s in samples) == 1, "entry_trim", "Static trim lacks its saved pre-command state")
+    _state(state, profile, retained)
+    angles, q = trim.get("trim_angles_rad"), trim.get("target_q_body_to_eci")
+    count = 3+len(profile["ship"]["flap_panels"])
+    limit = math.radians(profile["actuators"]["flap_limit_deg"])
+    _require(_vector(angles, count) and angles[:3] == [0., 0., 0.]
+             and all(abs(x) <= limit+1e-10 for x in angles[3:]) and _vector(q, 4)
+             and _near(_dot(q, q), 1., 1e-8), "entry_trim", "Static trim exceeds physical limits")
+    relative = _environment(state)["relative"]
+    axis = _rotate(q, [0., 0., 1.])
+    _require(_near(_dot(axis, relative)/_norm(relative), math.cos(math.radians(profile["guidance"]["entry_alpha_deg"])), 1e-8),
+             "entry_trim", "Trim changed the configured flow/axis angle")
+    # Independent scalar plate law, divided by q=0.5*rho*|air|^2. Density
+    # cancels; the stationary hypothetical pose has no rotational local flow.
+    # Neither the optimizer nor the dynamics/vehicle builder is imported.
+    inverse = [q[0], *[-x for x in q[1:]]]
+    air = [x/_norm(relative) for x in _rotate(inverse, relative)]
+    _, com, _ = _mass_properties(profile, state["propellant_kg"], retained)
+    radius, length = profile["geometry"]["radius_m"], profile["geometry"]["ship_length_m"]
+    panels = []
+    for j in range(3):
+        panels.append({"position_body_m": [0., 0., profile["ship"]["hull_cp_z_m"]],
+            "normal_body": [float(i == j) for i in range(3)], "hinge_axis_body": [1., 0., 0.],
+            "area_m2": math.pi*radius**2 if j == 2 else 2*radius*length,
+            "cn": profile["aero"]["axial_cd" if j == 2 else "crossflow_cd"], "ct": 0.})
+    for panel in profile["ship"]["flap_panels"]:
+        panels.append({**panel, "cn": profile["aero"]["panel_normal_coefficient"],
+                       "ct": profile["aero"]["panel_tangential_coefficient"]})
+    torque = [0., 0., 0.]
+    for angle, panel in zip(angles, panels):
+        base, hinge = panel["normal_body"], panel["hinge_axis_body"]
+        normal = [x*math.cos(angle)+y*math.sin(angle)+h*_dot(hinge, base)*(1-math.cos(angle))
+                  for x, y, h in zip(base, _cross(hinge, base), hinge)]
+        vn = _dot(air, normal)
+        tangent = [x-vn*n for x, n in zip(air, normal)]
+        force = [-panel["area_m2"]*(panel["cn"]*vn*abs(vn)*n+panel["ct"]*_norm(tangent)*t)
+                 for n, t in zip(normal, tangent)]
+        lever = [panel["position_body_m"][0], panel["position_body_m"][1], panel["position_body_m"][2]-com]
+        torque = [x+y for x, y in zip(torque, _cross(lever, force))]
+    _require(_norm(torque) <= 1.01e-4
+             and _vector(trim.get("predicted_torque_per_pressure_nm_pa"))
+             and all(_near(a, b, 1e-6) for a, b in zip(torque, trim["predicted_torque_per_pressure_nm_pa"])),
+             "entry_trim", "Independent plate law does not confirm static trim witness")
+    return True
+
+
 def verify_retained_return(run, profile, expected_policy="fixed_v1", *, expected_management_case=None,
                            expected_development_return_qualification=None):
     """Check stored policy evidence; a pass does not imply a successful return.
@@ -329,7 +385,7 @@ def verify_retained_return(run, profile, expected_policy="fixed_v1", *, expected
               "mission_completed": False, "physical_execution": False,
               "scope": "saved composition, policy budget, adjacent crossing and event/state binding; not flight certification"}
     try:
-        _require(type(expected_policy) is str and expected_policy in ("fixed_v1", "mass_state_terminal_v1", "mass_state_terminal_v2", "mass_state_terminal_v3"),
+        _require(type(expected_policy) is str and expected_policy in ("fixed_v1", "mass_state_terminal_v1", "mass_state_terminal_v2", "mass_state_terminal_v3", "trimmed_state_terminal_v4"),
                  "approval_policy", "Unknown expected policy")
         _require(type(run) is dict, "run", "Expected saved run")
         record = run.get("retained_return")
@@ -368,17 +424,24 @@ def verify_retained_return(run, profile, expected_policy="fixed_v1", *, expected
                 and type(run.get("mission_director")) is dict)
             scope = expected_development_return_qualification
             development = (type(scope) is dict and set(scope) == {"release_limit", "bounded_ship_flaps", "application"}
-                and scope["application"] == "retained_policy_active_only_v1"
+                and scope["application"] in ("retained_policy_active_only_v1", "wind_trim_state_return_v2")
                 and type(scope["release_limit"]) is int and 0 <= scope["release_limit"] <= profile["payload"]["count"]
                 and type(scope["bounded_ship_flaps"]) is bool and run.get("development_return_qualification") == scope
                 and run.get("scenario") == "launch" and "mission_director" not in run)
-            _require(run.get("scenario") == "deployment_no_effect" or managed or development,
+            from .starship_return_feasibility_verifier import registered
+            admitted_v4 = (expected_policy == "trimmed_state_terminal_v4"
+                           and registered(profile, run.get("return_qualification_sha256")))
+            _require(run.get("scenario") == "deployment_no_effect" or managed or development or admitted_v4,
                      "scenario", "Adaptive policy requires its managed or explicitly declared development scope")
+            zero_retained_enabled = expected_policy == "trimmed_state_terminal_v4" and (
+                admitted_v4 or development and scope["application"] == "wind_trim_state_return_v2")
             released = run.get("outcome", {}).get("payload_released_count") if type(run.get("outcome")) is dict else None
             release_events = grouped.get("payload_released", [])
             _require(type(released) is int and released == len(release_events) and 0 <= released <= profile["payload"]["count"],
                      "payload", "Released count disagrees with physical release events")
             retained = profile["payload"]["count"]-released
+            if expected_policy == "trimmed_state_terminal_v4":
+                result["entry_trim_witness_verified"] = _entry_trim_witness(record, samples, profile, retained)
             activation, trigger = record.get("activation"), record.get("trigger")
             returns = grouped.get("return_requested", [])
             orbit_events = grouped.get("orbit_cutoff_command", [])
@@ -401,9 +464,9 @@ def verify_retained_return(run, profile, expected_policy="fixed_v1", *, expected
             if activation is None:
                 _require(record.get("status") == "not_activated" and trigger is None and count == 0
                          and not policy_events and not any("retained_return" in s for s in samples)
-                         and (retained == 0 or (not returns and not activation_due)), "activation", "Missing or contradictory policy activation")
+                         and (retained == 0 and not zero_retained_enabled or (not returns and not activation_due)), "activation", "Missing or contradictory policy activation")
             else:
-                _require(type(activation) is dict and retained > 0 and len(returns) == 1,
+                _require(type(activation) is dict and (retained > 0 or zero_retained_enabled) and len(returns) == 1,
                          "activation", "Activation requires a return request with retained payload")
                 _require(type(activation.get("payload_retained_count")) is int and activation["payload_retained_count"] == retained
                          and _near(activation.get("payload_retained_mass_kg"), retained*profile["payload"]["mass_each_kg"]),

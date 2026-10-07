@@ -27,6 +27,7 @@ from src.runtime.starship_sixdof_mission import _attitude, _sample, control, poi
 SOURCES = ("scripts/run_starship_entry_allocation_comparison.py", "src/runtime/starship_fin_allocation.py",
            "src/runtime/starship_sixdof_mission.py", "src/runtime/starship_sixdof.py",
            "src/runtime/starship_physics.py", "src/runtime/starship_attitude_reference.py",
+           "src/runtime/starship_entry_trim.py",
            "src/runtime/starship_wind.py", "examples/spaceflight/starship-sixdof-profile.json")
 
 
@@ -70,11 +71,12 @@ def inputs(run, profile, *, checkpoint_time_s=None):
     return state, body, seed
 
 
-def continue_entry(initial, body, seed, profile, duration, *, candidate, checkpoint=None):
+def continue_entry(initial, body, seed, profile, duration, *, candidate, checkpoint=None, wind_trim=False):
     state = initial
     g = profile["guidance"]
     reference = ConditionedGeographicFrame(seed["controller"]["target_q_body_to_eci"], state.time_s,
-        maximum_roll_rate_rad_s=g["max_angular_acceleration_rad_s2"]/g["attitude_frequency_rad_s"])
+        maximum_roll_rate_rad_s=.01 if candidate and wind_trim else g["max_angular_acceleration_rad_s2"]/g["attitude_frequency_rad_s"])
+    prepared = None
     end = state.time_s+duration
     samples, metrics = [], []
     maximum_steps = math.ceil(duration/profile["integration"]["powered_dt_s"])+1
@@ -89,11 +91,22 @@ def continue_entry(initial, body, seed, profile, duration, *, candidate, checkpo
         axis = env.add(env.scale(flow, math.cos(math.radians(g["entry_alpha_deg"]))),
                        env.scale(lift, math.sin(math.radians(g["entry_alpha_deg"]))))
         preferred = _attitude(axis, env.scale(north, -1))
-        target = reference.target(axis, env.scale(north, -1), preferred, time_s=state.time_s)
+        if candidate and wind_trim:
+            from src.runtime.starship_entry_trim import prepare_entry_trim, entry_preferred
+            if prepared is None:
+                prepared = prepare_entry_trim(state, body, axis, flow, preferred)
+                if prepared["status"] != "prepared":
+                    raise ValueError("checkpoint_has_no_static_trim_candidate")
+            preferred, span = entry_preferred(axis, flow, preferred, prepared)
+            target = reference.target(axis, span, preferred, time_s=state.time_s, force_bridge=True)
+        else:
+            target = reference.target(axis, env.scale(north, -1), preferred, time_s=state.time_s)
         dt = min(profile["integration"]["powered_dt_s"], end-state.time_s)
         command, diagnostic = control(state, body, target, 0., 0, profile, use_flaps=True,
-            development_fin_allocation=candidate, control_interval_s=dt,
-            development_fin_policy=MOMENT_PRIORITY_POLICY_ID if candidate else "finite_regularized_fins_v1")
+            development_fin_allocation=candidate or wind_trim, control_interval_s=dt,
+            development_fin_policy=MOMENT_PRIORITY_POLICY_ID if candidate or wind_trim else "finite_regularized_fins_v1",
+            trim_angles_rad=prepared["trim_angles_rad"] if prepared else None,
+            development_entry_preposition=bool(prepared))
         diagnostic["attitude_reference"] = reference.diagnostics
         observed = dyn.observe(state, body)
         sample = _sample(state, body, "ballistic_return", command, diagnostic)
@@ -125,7 +138,8 @@ def continue_entry(initial, body, seed, profile, duration, *, candidate, checkpo
         "propellant_used_kg":initial.propellant_kg-state.propellant_kg,
         "final_time_s":state.time_s,"final_dynamic_pressure_pa":dyn.observe(state,body)["dynamic_pressure_pa"],
         "sampled_metrics_are_continuous_extrema":False,"return_qualified":False}
-    return {"method":"bounded_moment_priority" if candidate else "legacy_clipped_inverse",
+    return {"method":"wind_trimmed" if candidate and wind_trim else "bounded_moment_priority" if candidate or wind_trim else "legacy_clipped_inverse",
+        "static_trim_prediction": prepared,
         "initial_state":asdict(initial),"final_state":asdict(state),"samples":samples,
         "metrics":metrics,"summary":summary,"physical_execution":False,"model_inference_invoked":False}
 
@@ -138,9 +152,11 @@ def main(argv=None):
     parser.add_argument("--output-dir",type=Path,required=True)
     parser.add_argument("--duration-s",type=float,default=180.)
     parser.add_argument("--checkpoint-time-s",type=float)
+    parser.add_argument("--wind-trim",action="store_true",help="Compare existing bounded allocation with model-based wind-bank/prepositioning")
     args = parser.parse_args(argv)
-    if not args.approve_simulation or not math.isfinite(args.duration_s) or not 0 < args.duration_s <= 200.:
-        parser.error("explicit opt-in and a duration in (0, 200] seconds are required")
+    maximum_duration = 280. if args.wind_trim else 200.
+    if not args.approve_simulation or not math.isfinite(args.duration_s) or not 0 < args.duration_s <= maximum_duration:
+        parser.error("explicit opt-in and bounded positive duration are required")
     if args.output_dir.exists():
         parser.error("use a fresh output directory; preserve failed comparisons")
     before = sources()
@@ -157,6 +173,7 @@ def main(argv=None):
         "initial_state":asdict(initial),"retained_count":profile["payload"]["count"]-len(run["satellites"]),
         "source_sha256":before,"duration_s":args.duration_s,"candidate_policy":MOMENT_PRIORITY_POLICY_ID,
         "checkpoint_time_s":args.checkpoint_time_s,
+        "wind_trim": args.wind_trim,
         "criteria":{"pressure_window_pa":[50.,600.],"candidate_maximum_attitude_error_deg":5.},
         "scope":"local_development_checkpoint_continuation","production_policy_admitted":False})
     for name in before:
@@ -166,7 +183,7 @@ def main(argv=None):
     results=[]
     try:
         for candidate in (False,True):
-            method="bounded_moment_priority" if candidate else "legacy_clipped_inverse"
+            method="wind_trimmed" if candidate and args.wind_trim else "bounded_moment_priority" if candidate or args.wind_trim else "legacy_clipped_inverse"
             def checkpoint(record):
                 write(args.output_dir/(method+"-progress.json"),record)
                 print(json.dumps({"method":method,"steps":record["integration_steps"],
@@ -174,7 +191,7 @@ def main(argv=None):
                     "pressure_pa":record["latest_metric"]["dynamic_pressure_pa"],
                     "attitude_error_deg":record["latest_metric"]["attitude_error_deg"]}),flush=True)
             result=continue_entry(initial,body,seed,profile,args.duration_s,candidate=candidate,
-                                  checkpoint=checkpoint)
+                                  checkpoint=checkpoint,wind_trim=args.wind_trim)
             filename=result["method"]+".json"
             write(args.output_dir/filename,result)
             item={"method":result["method"],"file":filename,

@@ -24,7 +24,7 @@ def row(t=100., **updates):
 
 
 def request(point="deployment_start", observation=None, mode="fixture"):
-    return {"schema": "missionos.starship_director_request.v3", "request_id": "run:1", "point": point,
+    return {"schema": "missionos.starship_director_request.v4", "request_id": "run:1", "point": point,
             "observation": observation or row(), "allowed_actions": POINTS[point],
             "decision_deadline_s": (observation or row())["time_s"]+75.,
             "envelope_sha256": digest(contract(mode))}
@@ -167,7 +167,7 @@ def test_worker_environment_never_contains_director_keys(monkeypatch):
 @pytest.mark.parametrize("kind", ["invalid", "timeout"])
 @pytest.mark.parametrize("point,expected", [
     ("deployment_start", "continue"), ("deployment_monitor", "continue"),
-    ("return_selection", "fixed_return"), ("booster_selection", "divert"),
+    ("return_selection", "inhibit_return"), ("booster_selection", "divert"),
 ])
 def test_response_failures_preserve_preapproved_nominal_actions(kind, point, expected):
     actor = MissionDirector(contract("fixture"), fixture_decider=fixture_decision, response_fault=kind+"_"+point)
@@ -195,8 +195,26 @@ def test_invalid_response_never_overrides_inhibit_or_new_notice(updates):
 
 def test_malformed_reply_does_not_crash_or_select_new_return():
     actor = MissionDirector(contract("fixture"), fixture_decider=lambda _: ["retained_return"])
-    assert actor.update("return_selection", row()) == "fixed_return"
+    assert actor.update("return_selection", row()) == "inhibit_return"
     assert actor.records[0]["dispatch"]["rules_accepted"] is False
+
+
+def test_execution_recheck_normalizes_native_integrator_scalars(monkeypatch):
+    import numpy as np
+    from src.runtime import starship_return_feasibility_verifier as guard
+    seen = []
+    def inspect_proof(proof, *args, **kwargs):
+        seen.append(proof)
+        assert all(type(x) is float for x in proof["inputs"]["r_eci_m"])
+        return {"passed": True, "reason": None}
+    monkeypatch.setattr(guard, "verify", inspect_proof)
+    observation = row()
+    observation["numerical_tools"]["return_feasibility"] = {
+        "inputs": {"r_eci_m": [np.float64(1.), np.float64(2.), np.float64(3.)]},
+        "return_admitted": True, "bounded_coast_admitted": True}
+    assert check_action(contract("fixture"), "return_selection", "state_return", observation,
+        elapsed_s=0, observation_requests=0, hold_used_s=0) is None
+    assert seen
 
 
 def test_initial_deadline_is_bound_and_cannot_wait_past_release_slot():

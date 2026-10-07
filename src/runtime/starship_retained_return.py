@@ -16,6 +16,7 @@ from . import starship_sixdof as dyn
 POLICY_ID = "mass_state_terminal_v1"
 CONTINUOUS_POLICY_ID = "mass_state_terminal_v2"
 CONDITIONED_POLICY_ID = "mass_state_terminal_v3"
+TRIMMED_POLICY_ID = "trimmed_state_terminal_v4"
 
 
 def terminal_budget(state, profile):
@@ -79,7 +80,7 @@ def terminal_budget(state, profile):
 
 
 def new_record(policy):
-    if policy not in ("fixed_v1", POLICY_ID, CONTINUOUS_POLICY_ID, CONDITIONED_POLICY_ID):
+    if policy not in ("fixed_v1", POLICY_ID, CONTINUOUS_POLICY_ID, CONDITIONED_POLICY_ID, TRIMMED_POLICY_ID):
         raise ValueError("unknown return policy")
     return {"schema": "missionos.starship_retained_return.v1", "policy_id": policy,
             "status": "fixed" if policy == "fixed_v1" else "not_activated",
