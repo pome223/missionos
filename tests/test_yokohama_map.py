@@ -158,6 +158,9 @@ def test_router_real_http_boundary(tmp_path, monkeypatch):
         TaskStore(str(tmp_path / "tasks.db")), lambda request: "operator"
     )
     app.include_router(router)
+    # Exercise real HTTP/worker/observation boundaries without the operator UI's
+    # presentation delay; that accumulated delay can outlast the test's join.
+    router.map_service().delay = 0
     with TestClient(app) as client:
         assert client.get("/missionos/yokohama/map").status_code == 200
         task = client.post(
@@ -168,6 +171,7 @@ def test_router_real_http_boundary(tmp_path, monkeypatch):
         assert client.post("/missionos/yokohama/map/approve", json=b).status_code == 200
         assert client.post("/missionos/yokohama/map/execute", json=b).status_code == 200
         router.map_service().worker.join(timeout=10)
+        assert not router.map_service().worker.is_alive(), "fixture worker did not finish"
         state = client.get("/missionos/yokohama/map/state?session_id=test_session_123456").json()
         assert state["task"]["status"] == "completed"
 
