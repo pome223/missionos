@@ -38,16 +38,23 @@ def write(path, value):
     path.write_text(json.dumps(value, indent=2, allow_nan=False)+"\n")
 
 
-def inputs(run, profile):
+def inputs(run, profile, *, checkpoint_time_s=None):
     if (run.get("retained_return", {}).get("policy_id") != "mass_state_terminal_v3"
             or not 0 <= len(run.get("satellites", [])) <= profile["payload"]["count"]):
         raise ValueError("requires_recorded_conditioned_ship_return")
     rows = [s for s in run["samples"] if s["phase"] == "ballistic_return" and "controller" in s]
-    first = next(i for i, s in enumerate(rows) if s["dynamic_pressure_pa"] > 50.)
-    eligible = [s for s in rows[:first] if s["dynamic_pressure_pa"] <= 40.]
-    if not eligible:
-        raise ValueError("missing_pre_gate_checkpoint")
-    seed = eligible[-1]
+    if checkpoint_time_s is None:
+        first = next(i for i, s in enumerate(rows) if s["dynamic_pressure_pa"] > 50.)
+        eligible = [s for s in rows[:first] if s["dynamic_pressure_pa"] <= 40.]
+        if not eligible:
+            raise ValueError("missing_pre_gate_checkpoint")
+        seed = eligible[-1]
+    else:
+        if type(checkpoint_time_s) not in (int, float) or not math.isfinite(checkpoint_time_s) or not rows:
+            raise ValueError("invalid_recorded_checkpoint_time")
+        seed = min(rows, key=lambda s: abs(s["time_s"]-checkpoint_time_s))
+        if abs(seed["time_s"]-checkpoint_time_s) > 1e-5:
+            raise ValueError("requested_checkpoint_not_recorded")
     if seed["controller"].get("attitude_reference", {}).get("mode") != "legacy_geographic":
         raise ValueError("checkpoint_reference_state_not_restorable")
     state = dyn.state_from_dict({key: seed[key] for key in ("time_s", "r_eci_m", "v_eci_mps",
@@ -108,6 +115,9 @@ def continue_entry(initial, body, seed, profile, duration, *, candidate, checkpo
         raise ValueError("entry_step_limit_reached")
     window = [m for m in metrics if 50. <= m["dynamic_pressure_pa"] <= 600.]
     summary = {"integration_steps":len(metrics),"window_sample_count":len(window),
+        "maximum_whole_interval_attitude_error_deg":max(m["attitude_error_deg"] for m in metrics),
+        "maximum_whole_interval_body_rate_rad_s":max(m["body_rate_rad_s"] for m in metrics),
+        "pressure_range_pa":[min(m["dynamic_pressure_pa"] for m in metrics),max(m["dynamic_pressure_pa"] for m in metrics)],
         "maximum_sampled_attitude_error_deg":max((m["attitude_error_deg"] for m in window),default=None),
         "maximum_sampled_body_rate_rad_s":max((m["body_rate_rad_s"] for m in window),default=None),
         "maximum_sampled_aero_torque_component_nm":max((max(abs(x) for x in m["aero_torque_body_nm"]) for m in window),default=None),
@@ -127,6 +137,7 @@ def main(argv=None):
     parser.add_argument("--profile",type=Path,default=ROOT/"examples/spaceflight/starship-sixdof-profile.json")
     parser.add_argument("--output-dir",type=Path,required=True)
     parser.add_argument("--duration-s",type=float,default=180.)
+    parser.add_argument("--checkpoint-time-s",type=float)
     args = parser.parse_args(argv)
     if not args.approve_simulation or not math.isfinite(args.duration_s) or not 0 < args.duration_s <= 200.:
         parser.error("explicit opt-in and a duration in (0, 200] seconds are required")
@@ -140,11 +151,12 @@ def main(argv=None):
             raise ValueError("requires_single_source_run")
         run = run["runs"][0]
     profile = json.loads(args.profile.read_text())
-    initial, body, seed = inputs(run, profile)
+    initial, body, seed = inputs(run, profile, checkpoint_time_s=args.checkpoint_time_s)
     args.output_dir.mkdir(parents=True)
     write(args.output_dir/"inputs.json",{"record_sha256":sha256(raw).hexdigest(),"profile":profile,
         "initial_state":asdict(initial),"retained_count":profile["payload"]["count"]-len(run["satellites"]),
         "source_sha256":before,"duration_s":args.duration_s,"candidate_policy":MOMENT_PRIORITY_POLICY_ID,
+        "checkpoint_time_s":args.checkpoint_time_s,
         "criteria":{"pressure_window_pa":[50.,600.],"candidate_maximum_attitude_error_deg":5.},
         "scope":"local_development_checkpoint_continuation","production_policy_admitted":False})
     for name in before:

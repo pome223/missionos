@@ -72,6 +72,15 @@ active-only sweep passes 17 of 18 tested retained counts and stops on the
 15-retained attitude/control failure with insufficient reserve: terminal tracking
 error reaches 163.39 degrees, and the trigger's 99.92 t fuel estimate exceeds
 96.84 t onboard. The control cause remains unresolved; counts 17–24 are unexecuted.
+The subsequent checkpoint diagnostic finds a 0.1 s surface limit cycle hidden by
+the two-second samples. A frozen 120 s nonlinear-endpoint candidate fails its
+predeclared whole-interval attitude/rate gate and is rejected. Static balanced
+poses do not prove reachable transfers; the prepositioning draft did not pass
+its target-frame trim criterion and has no flight trial. The original allocator,
+return trigger and fallback remain unchanged. Do not admit a full-domain sweep
+on these records, or treat the cause as solved by a nonlinear optimizer.
+The rejected endpoint artifact is a zero-context patch against `6e849bfb`;
+reproduce only in an isolated checkout using `git apply --unidiff-zero`.
 The zero-retained pose record predates the current application/use-witness scope.
 The allocator
 remains unavailable to MissionOS grants; this is not full return qualification.

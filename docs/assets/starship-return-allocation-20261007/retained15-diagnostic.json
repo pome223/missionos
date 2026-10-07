@@ -1,0 +1,541 @@
+{
+  "schema": "missionos.starship_return_diagnostic.v1",
+  "source_base_commit": "6e849bfb7e99b722ab0917a6561003cac49da17b",
+  "input_record_sha256": "7e5d942787d23e33f3b377cfaef178fb64b6e718ec35de8c645c2e2e327bb8b3",
+  "checkpoint_time_s": 4201.6000000003705,
+  "retained_count": 15,
+  "candidate_source_sha256": {
+    "scripts/run_starship_entry_allocation_comparison.py": "8494e8eedfd3019b4454a386692e6667a85e3b79b7fb9975ffaa3212449a4913",
+    "src/runtime/starship_fin_allocation.py": "8599e63c391cd186b2168d0cc4833c957186d66960ba0d8a436ad583aae7fad3",
+    "src/runtime/starship_sixdof_mission.py": "bd7e504d42118d92005fd50343ececcb8dff60a627f33217ea9fc332ea5e00c2",
+    "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+    "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+    "src/runtime/starship_attitude_reference.py": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a",
+    "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f",
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5"
+  },
+  "rejected_patch_sha256": "091b3fbb1b83effab5f55563b0b7f066356ffe8d0a167958192d918858569d3f",
+  "declared_before_execution": {
+    "duration_s": 120.0,
+    "candidate_gate": {
+      "maximum_whole_interval_attitude_error_deg": 5.0,
+      "maximum_whole_interval_body_rate_rad_s": 0.02,
+      "criterion_precedes_execution": true
+    },
+    "maximum_trajectories": 2,
+    "maximum_wall_seconds": 300,
+    "automatic_retry": false
+  },
+  "observed_comparison": {
+    "source_unchanged": true,
+    "results": [
+      {
+        "method": "bounded_moment_priority",
+        "file": "bounded_moment_priority.json",
+        "sha256": "f64e21cc45f1c72d2b428754ccca7259c7a9ee2abc68322eae4ff840cc895e8f",
+        "integration_steps": 1200,
+        "window_sample_count": 0,
+        "maximum_whole_interval_attitude_error_deg": 115.56337937396273,
+        "maximum_whole_interval_body_rate_rad_s": 0.11684377397900429,
+        "pressure_range_pa": [
+          2601.2471515296747,
+          14298.517988454289
+        ],
+        "maximum_sampled_attitude_error_deg": null,
+        "maximum_sampled_body_rate_rad_s": null,
+        "maximum_sampled_aero_torque_component_nm": null,
+        "maximum_sampled_residual_over_jet_capacity": null,
+        "propellant_used_kg": 2216.8823731321754,
+        "final_time_s": 4321.6000000003705,
+        "final_dynamic_pressure_pa": 14334.07219005884,
+        "sampled_metrics_are_continuous_extrema": false,
+        "return_qualified": false
+      },
+      {
+        "method": "bounded_nonlinear",
+        "file": "bounded_nonlinear.json",
+        "sha256": "0b6aa2febf0c5aa20a3659c6ac40eb878444e9a5787cf399f74a254b067dd601",
+        "integration_steps": 1200,
+        "window_sample_count": 0,
+        "maximum_whole_interval_attitude_error_deg": 170.2455060340831,
+        "maximum_whole_interval_body_rate_rad_s": 0.37991179652741625,
+        "pressure_range_pa": [
+          2601.2471515296747,
+          14640.804902894906
+        ],
+        "maximum_sampled_attitude_error_deg": null,
+        "maximum_sampled_body_rate_rad_s": null,
+        "maximum_sampled_aero_torque_component_nm": null,
+        "maximum_sampled_residual_over_jet_capacity": null,
+        "propellant_used_kg": 2395.0912274258735,
+        "final_time_s": 4321.6000000003705,
+        "final_dynamic_pressure_pa": 14685.212104419636,
+        "sampled_metrics_are_continuous_extrema": false,
+        "return_qualified": false
+      }
+    ],
+    "initial_states_equal": true,
+    "only_allocation_policy_changed": true,
+    "new_full_flight_executed": false,
+    "return_qualified": false,
+    "missionos_approval": null
+  },
+  "candidate_accepted": false,
+  "full_flight_runs_admitted": false,
+  "whole_interval_gate_used": true,
+  "early_50_600_pa_window_empty": true,
+  "control_trace": [
+    {
+      "time_s": 4225.600000000458,
+      "actual_angles_rad": [
+        0.8666306810440706,
+        -0.9017007270479296,
+        0.9162980939083067,
+        -0.8509141384391052
+      ],
+      "command_angles_rad": [
+        0.9278558697822139,
+        -0.8468958030604687,
+        0.7635817911455607,
+        -1.0471975511965939
+      ],
+      "predicted_endpoint_angles_rad": [
+        0.8868153984487199,
+        -0.883632642230724,
+        0.8726648626084488,
+        -0.8945473697389634
+      ],
+      "aero_torque_body_nm": [
+        82483.81206806726,
+        80994.16391464937,
+        -160.48589980619363
+      ]
+    },
+    {
+      "time_s": 4225.700000000458,
+      "actual_angles_rad": [
+        0.8868149574136042,
+        -0.8836330370175184,
+        0.8726648627781175,
+        -0.8945473697389634
+      ],
+      "command_angles_rad": [
+        0.8252972136362076,
+        -0.9380818022831849,
+        1.0253811674509354,
+        -0.7418310651786364
+      ],
+      "predicted_endpoint_angles_rad": [
+        0.8665337904770818,
+        -0.9015837034437206,
+        0.9162980940779757,
+        -0.8509141384391052
+      ],
+      "aero_torque_body_nm": [
+        83011.13030127101,
+        80331.25062678826,
+        1919.0468938708964
+      ]
+    },
+    {
+      "time_s": 4225.800000000459,
+      "actual_angles_rad": [
+        0.8665342336196151,
+        -0.9015833112225107,
+        0.9162980939560585,
+        -0.8509141385638347
+      ],
+      "command_angles_rad": [
+        0.9277198047823283,
+        -0.8468578797627828,
+        -1.0471975511965939,
+        -1.0471975511965939
+      ],
+      "predicted_endpoint_angles_rad": [
+        0.8867058899038212,
+        -0.8835414334981869,
+        0.8726648626562004,
+        -0.894547369863693
+      ],
+      "aero_torque_body_nm": [
+        82554.19314075114,
+        81292.97036761299,
+        -160.87997909486876
+      ]
+    },
+    {
+      "time_s": 4225.900000000459,
+      "actual_angles_rad": [
+        0.8867054491540896,
+        -0.8835418277123593,
+        0.8726648626562004,
+        -0.8945473698636929
+      ],
+      "command_angles_rad": [
+        0.8252529486830644,
+        -0.9379428224055584,
+        1.0253811672566713,
+        -0.7418310608627423
+      ],
+      "predicted_endpoint_angles_rad": [
+        0.8664457916278074,
+        -0.9014767451384297,
+        0.9162980939560585,
+        -0.8509141385638346
+      ],
+      "aero_torque_body_nm": [
+        83088.59084629091,
+        80622.1722652177,
+        1927.598243013459
+      ]
+    },
+    {
+      "time_s": 4226.000000000459,
+      "actual_angles_rad": [
+        0.8664462343003619,
+        -0.9014763532613346,
+        0.9162980938323327,
+        -0.8509141385775485
+      ],
+      "command_angles_rad": [
+        0.9275921314754432,
+        -0.8468319187254416,
+        0.7635817889050731,
+        -1.0471975511965939
+      ],
+      "predicted_endpoint_angles_rad": [
+        0.8866048108661524,
+        -0.883461178599133,
+        0.8726648625324747,
+        -0.8945473698774067
+      ],
+      "aero_torque_body_nm": [
+        82633.08357131577,
+        81582.82665490522,
+        -161.2445497594381
+      ]
+    },
+    {
+      "time_s": 4226.10000000046,
+      "actual_angles_rad": [
+        0.8866043704022116,
+        -0.8834615722298438,
+        0.8726648626480307,
+        -0.8945473698774067
+      ],
+      "command_angles_rad": [
+        0.8252170219033479,
+        -0.9378133177749803,
+        1.0253811671651716,
+        -0.7418310767005671
+      ],
+      "predicted_endpoint_angles_rad": [
+        0.8663661921751121,
+        -0.9013802531990477,
+        0.9162980939478889,
+        -0.8509141385775496
+      ],
+      "aero_torque_body_nm": [
+        83174.91120716972,
+        80903.80315885934,
+        1936.75667619062
+      ]
+    },
+    {
+      "time_s": 4226.20000000046,
+      "actual_angles_rad": [
+        0.8663666343783453,
+        -0.9013798616767188,
+        0.9162980938220798,
+        -0.8509141389868651
+      ],
+      "command_angles_rad": [
+        0.9274722083909239,
+        -0.8468173592620918,
+        -1.0471975511965939,
+        -1.0471975511965939
+      ],
+      "predicted_endpoint_angles_rad": [
+        0.8865119172057786,
+        -0.8833916983924847,
+        0.8726648625222215,
+        -0.8945473702867233
+      ],
+      "aero_torque_body_nm": [
+        82720.5765487314,
+        81863.65741270715,
+        -161.56492146825985
+      ]
+    },
+    {
+      "time_s": 4226.30000000046,
+      "actual_angles_rad": [
+        0.8865114770323049,
+        -0.8833920914329978,
+        0.8726648625222216,
+        -0.8945473702867233
+      ],
+      "command_angles_rad": [
+        0.8251888844230648,
+        -0.9376925128696896,
+        1.025381171037543,
+        -0.7418310718189352
+      ],
+      "predicted_endpoint_angles_rad": [
+        0.8662946475239148,
+        -0.9012938518724919,
+        0.9162980938220799,
+        -0.8509141389868655
+      ],
+      "aero_torque_body_nm": [
+        83269.99405731971,
+        81176.25569916223,
+        1946.5399330904183
+      ]
+    }
+  ],
+  "static_existence_probes": {
+    "schema": "missionos.starship_static_trim_diagnostic.v1",
+    "scope": "saved-state static existence probes, not a trajectory or feasible transfer proof",
+    "model_changed": false,
+    "physical_execution": false,
+    "results": [
+      {
+        "retained_count": 15,
+        "time_s": 4201.6000000003705,
+        "record_sha256": "7e5d942787d23e33f3b377cfaef178fb64b6e718ec35de8c645c2e2e327bb8b3",
+        "dynamic_pressure_pa": 2601.2471515296747,
+        "actual_angles_deg": [
+          52.5433086767766,
+          -51.61913677711355,
+          52.50001314817928,
+          -53.758303849800484
+        ],
+        "actual_aero_torque_body_nm": [
+          59353.42148886071,
+          55726.762646275514,
+          -702.9366380653355
+        ],
+        "example_trim_angles_deg": [
+          24.376484037507623,
+          48.93285166974203,
+          -10.94003465155083,
+          46.66893971387771
+        ],
+        "independent_trim_torque_body_nm": [
+          -1.2689270079135895e-08,
+          -1.7863931134343147e-07,
+          1.0395888239145279e-07
+        ],
+        "best_norm_nm": 2.0712819839909006e-07,
+        "max_angle_change_deg": 100.55198844685559,
+        "starts": 18,
+        "global_optimum_proven": false,
+        "trim_is_achieved_flight": false,
+        "optimizer": "scipy.least_squares finite static box; no dynamics or vehicle-parameter change"
+      },
+      {
+        "retained_count": 15,
+        "time_s": 4225.600000000458,
+        "record_sha256": "7e5d942787d23e33f3b377cfaef178fb64b6e718ec35de8c645c2e2e327bb8b3",
+        "dynamic_pressure_pa": 3933.4993282127107,
+        "actual_angles_deg": [
+          49.65428042037344,
+          -51.6636460437242,
+          52.500013556827945,
+          -48.75378886057138
+        ],
+        "actual_aero_torque_body_nm": [
+          82483.81206806726,
+          80994.16391464937,
+          -160.48589980619363
+        ],
+        "example_trim_angles_deg": [
+          24.51189719635493,
+          49.263800962380685,
+          -11.484606668771397,
+          47.32490105520304
+        ],
+        "independent_trim_torque_body_nm": [
+          1.3154931366443634e-07,
+          3.6612618714571e-06,
+          -1.0619114618748426e-06
+        ],
+        "best_norm_nm": 3.814240335632286e-06,
+        "max_angle_change_deg": 100.92744700610488,
+        "starts": 18,
+        "global_optimum_proven": false,
+        "trim_is_achieved_flight": false,
+        "optimizer": "scipy.least_squares finite static box; no dynamics or vehicle-parameter change"
+      },
+      {
+        "retained_count": 15,
+        "time_s": 4241.600000000516,
+        "record_sha256": "7e5d942787d23e33f3b377cfaef178fb64b6e718ec35de8c645c2e2e327bb8b3",
+        "dynamic_pressure_pa": 4788.365060170359,
+        "actual_angles_deg": [
+          49.37835583429688,
+          -51.82912173669656,
+          52.50001324203755,
+          -48.75378927060617
+        ],
+        "actual_aero_torque_body_nm": [
+          95546.00015624546,
+          96813.27436764364,
+          1875.7774630550412
+        ],
+        "example_trim_angles_deg": [
+          -49.60458028755631,
+          -24.21566125208734,
+          -47.390854047790825,
+          11.969910977975143
+        ],
+        "independent_trim_torque_body_nm": [
+          -8.149072527885437e-10,
+          -3.5564880818128586e-08,
+          -7.392372936010361e-09
+        ],
+        "best_norm_nm": 3.635586850030108e-08,
+        "max_angle_change_deg": 99.89086728982836,
+        "starts": 18,
+        "global_optimum_proven": false,
+        "trim_is_achieved_flight": false,
+        "optimizer": "scipy.least_squares finite static box; no dynamics or vehicle-parameter change"
+      },
+      {
+        "retained_count": 16,
+        "time_s": 4269.850000000624,
+        "record_sha256": "34e5fd77a88bc3ad8b8aba73eb8f94d0ce42a97dfc29a7852faf57d16e9174a7",
+        "dynamic_pressure_pa": 5554.3363105087765,
+        "actual_angles_deg": [
+          52.77012338366821,
+          -51.79873145318035,
+          47.95338242961574,
+          -49.17048640772193
+        ],
+        "actual_aero_torque_body_nm": [
+          15.226927260875527,
+          -33.47690967744711,
+          1.2316129892678873
+        ],
+        "example_trim_angles_deg": [
+          52.29629850686359,
+          -52.23201558121025,
+          48.498459397605494,
+          -48.57899109623306
+        ],
+        "independent_trim_torque_body_nm": [
+          1.3592652976512909e-06,
+          1.3701646821573377e-06,
+          -1.0822986951097846e-08
+        ],
+        "best_norm_nm": 1.930033810089393e-06,
+        "max_angle_change_deg": 0.5914953114888727,
+        "starts": 18,
+        "global_optimum_proven": false,
+        "trim_is_achieved_flight": false,
+        "optimizer": "scipy.least_squares finite static box; no dynamics or vehicle-parameter change"
+      }
+    ]
+  },
+  "fixed_target_roll_probes": {
+    "time_s": 3995.600000000036,
+    "actual_entry_state_unchanged": true,
+    "results": [
+      {
+        "roll_offset_deg": -90,
+        "minimum_found_norm_nm_pa": 24.03683474067622,
+        "moment_nm_pa": [
+          -8.264985960607252,
+          7.417602686694484,
+          -21.31756556935822
+        ],
+        "angles_deg": [
+          -2.7348172340332844,
+          52.11463923793885,
+          -52.00542319696451,
+          3.4625785675604686
+        ],
+        "static_only": true,
+        "global_optimum_proven": false
+      },
+      {
+        "roll_offset_deg": -45,
+        "minimum_found_norm_nm_pa": 24.7033275025311,
+        "moment_nm_pa": [
+          8.18858900370824,
+          7.9725032435896015,
+          21.900698433077682
+        ],
+        "angles_deg": [
+          1.0114934262496784,
+          -50.71005821548826,
+          50.594301298278324,
+          -1.7007880697193278
+        ],
+        "static_only": true,
+        "global_optimum_proven": false
+      },
+      {
+        "roll_offset_deg": 0,
+        "minimum_found_norm_nm_pa": 31.92794522999291,
+        "moment_nm_pa": [
+          17.524427791736578,
+          22.749343799531374,
+          -13.955481857405035
+        ],
+        "angles_deg": [
+          59.99999999601966,
+          -40.28460578517898,
+          40.40610976446981,
+          -52.49266842943366
+        ],
+        "static_only": true,
+        "global_optimum_proven": false
+      },
+      {
+        "roll_offset_deg": 45,
+        "minimum_found_norm_nm_pa": 32.88889354410353,
+        "moment_nm_pa": [
+          18.48852579695465,
+          -23.52515959836087,
+          13.653592870829536
+        ],
+        "angles_deg": [
+          -41.710224885303425,
+          59.9999999963513,
+          -53.059407248147316,
+          41.82227310259479
+        ],
+        "static_only": true,
+        "global_optimum_proven": false
+      },
+      {
+        "roll_offset_deg": 90,
+        "minimum_found_norm_nm_pa": 24.036834740676216,
+        "moment_nm_pa": [
+          8.264985960607486,
+          -7.417602686694971,
+          -21.317565569357956
+        ],
+        "angles_deg": [
+          -52.1146392379387,
+          2.73481723403506,
+          -3.4625785675636087,
+          52.00542319696431
+        ],
+        "static_only": true,
+        "global_optimum_proven": false
+      }
+    ],
+    "dynamics_invoked": false
+  },
+  "static_transfer_or_global_optimum_proven": false,
+  "pretrim_draft_flight_invoked": false,
+  "steps_3_4_5_completed": false,
+  "missionos_model_call": false,
+  "physical_execution": false,
+  "production_guidance_changed": false,
+  "claim": "Local control-tool diagnostic only; no launch replay, return qualification, AI comparison, robustness or real vehicle validation.",
+  "rejected_patch_application": "git apply --unidiff-zero in an isolated checkout of source_base_commit"
+}

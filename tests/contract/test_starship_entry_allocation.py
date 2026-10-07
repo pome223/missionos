@@ -114,6 +114,25 @@ def test_comparison_requires_opt_in_and_does_not_overwrite_failures(tmp_path):
     assert (tmp_path/"failure.json").read_text()=="preserve this failed run"
 
 
+def test_explicit_checkpoint_uses_recorded_state_and_rejects_invented_time(configured):
+    profile, body, state = configured
+    seed = _sample(state, body, "ballistic_return")
+    seed["controller"] = {"attitude_reference": {"mode": "legacy_geographic"},
+                          "target_q_body_to_eci": list(state.q_body_to_eci)}
+    run = {"retained_return": {"policy_id": "mass_state_terminal_v3"},
+           "satellites": [{}], "samples": [seed]}
+    restored, _, _ = experiment.inputs(run, profile, checkpoint_time_s=state.time_s)
+    assert asdict(restored) == asdict(state)
+    with pytest.raises(ValueError, match="not_recorded"):
+        experiment.inputs(run, profile, checkpoint_time_s=state.time_s+.5)
+    for invalid in (True, float("inf"), float("nan")):
+        with pytest.raises(ValueError, match="invalid_recorded"):
+            experiment.inputs(run, profile, checkpoint_time_s=invalid)
+    seed["controller"]["attitude_reference"]["mode"] = "bounded_roll_reacquisition"
+    with pytest.raises(ValueError, match="not_restorable"):
+        experiment.inputs(run, profile, checkpoint_time_s=state.time_s)
+
+
 def test_full_flight_experiment_cannot_pass_as_production_approval(configured):
     profile,_,_=configured
     scope={"release_limit":1,"bounded_ship_flaps":True,"application":"retained_policy_active_only_v1"}

@@ -1,0 +1,257 @@
+--- a/src/runtime/starship_fin_allocation.py
++++ b/src/runtime/starship_fin_allocation.py
+@@ -15,0 +16 @@
++from . import starship_physics as env
+@@ -19 +20,2 @@
+-POLICIES = (POLICY_ID, MOMENT_PRIORITY_POLICY_ID)
++NONLINEAR_POLICY_ID = "finite_nonlinear_moment_fins_v1"
++POLICIES = (POLICY_ID, MOMENT_PRIORITY_POLICY_ID, NONLINEAR_POLICY_ID)
+@@ -20,0 +23,77 @@
++
++
++def frozen_surface_model(vehicle, observed, indices):
++    """Same bidirectional plates, frozen flow/rates/COM; no dynamics shortcut.
++
++    Vectorized evaluation and analytic angle derivatives are only used by the
++    optimizer. The integrator still evaluates the original loads at RK stages.
++    Local velocities include the measured body rate and the configured wind.
++    """
++    panels = [vehicle.aero_panels[i] for i in indices]
++    normal = np.array([p.normal_body for p in panels])
++    hinge = np.array([p.hinge_axis_body for p in panels])
++    parallel = hinge*np.sum(hinge*normal, axis=1)[:, None]
++    perpendicular = normal-parallel
++    crossed = np.cross(hinge, normal)
++    lever = np.array([p.position_body_m for p in panels])-observed["com_body_m"]
++    air = np.array([observed["panel_loads"][i]["local_air_velocity_body_mps"] for i in indices])
++    density = env.standard_atmosphere(observed["altitude_m"])["density_kg_m3"]
++    normal_scale = .5*density*np.array([p.area_m2*p.normal_coefficient for p in panels])
++    tangent_scale = .5*density*np.array([p.area_m2*p.tangential_coefficient for p in panels])
++    constant = np.array(observed["aero_torque_body_nm"])-np.sum(
++        [observed["panel_loads"][i]["torque_body_nm"] for i in indices], axis=0)
++
++    def evaluate(angles, *, derivative=False):
++        angles = np.asarray(angles)
++        c, s = np.cos(angles)[..., None], np.sin(angles)[..., None]
++        n = parallel+c*perpendicular+s*crossed
++        vn = np.sum(air*n, axis=-1)
++        tangent = air-vn[..., None]*n
++        speed = np.linalg.norm(tangent, axis=-1)
++        force = -normal_scale[..., None]*(vn*np.abs(vn))[..., None]*n-tangent_scale[..., None]*speed[..., None]*tangent
++        moment = constant+np.sum(np.cross(lever, force), axis=-2)
++        if not derivative:
++            return moment
++        dn = -s*perpendicular+c*crossed
++        dvn = np.sum(air*dn, axis=-1)
++        dt = -dvn[..., None]*n-vn[..., None]*dn
++        dspeed = np.divide(np.sum(tangent*dt, axis=-1), speed, out=np.zeros_like(speed), where=speed > 1e-12)
++        df = -normal_scale[..., None]*(2*np.abs(vn)[..., None]*dvn[..., None]*n+(vn*np.abs(vn))[..., None]*dn)
++        df -= tangent_scale[..., None]*(dspeed[..., None]*tangent+speed[..., None]*dt)
++        return moment, np.swapaxes(np.cross(lever, df), -1, -2)
++
++    return evaluate
++
++
++def nonlinear_endpoint(model, desired, actual, linear, scale, lower, upper):
++    """Finite, deterministic multistart + safeguarded Gauss-Newton steps.
++
++    This is a local nonlinear solve, not a proof of a global optimum. Every
++    accepted step improves the true frozen-flow moment cost. Hold and the old
++    linear endpoint are included, so a worse prediction cannot replace either.
++    All starts and steps remain inside the physically reachable endpoint box.
++    """
++    corners = np.array(list(product(*zip(lower, upper))))
++    starts = np.vstack((actual, linear, (lower+upper)/2, corners))
++    errors = (model(starts)-desired)/scale
++    costs = np.sum(errors**2, axis=1)
++    angles = starts[int(np.argmin(costs))].copy()
++    history = [float(np.min(costs))]
++    for _ in range(8):
++        moment, jac = model(angles, derivative=True)
++        residual = (moment-desired)/scale
++        step = bounded_least_squares(jac/scale[:, None], -residual, lower-angles, upper-angles)
++        trials = np.clip(angles+np.array([1., .5, .25, .125, .0625, .03125, .015625, .0078125])[:, None]*step, lower, upper)
++        trial_costs = np.sum(((model(trials)-desired)/scale)**2, axis=1)
++        best = int(np.argmin(trial_costs))
++        if trial_costs[best] >= history[-1]-1e-14:
++            break
++        angles = trials[best]
++        history.append(float(trial_costs[best]))
++    moment, jac = model(angles, derivative=True)
++    gradient = (jac/scale[:, None]).T@((moment-desired)/scale)
++    return angles, gradient, {"allocation_priority": "bounded_nonlinear_endpoint_moment_error",
++        "nonlinear_hold_objective": float(costs[0]), "nonlinear_linear_endpoint_objective": float(costs[1]),
++        "nonlinear_seed_minimum_objective": float(np.min(costs)), "nonlinear_objective_history": history,
++        "nonlinear_iterations": len(history)-1, "maximum_nonlinear_iterations": 8,
++        "nonlinear_global_optimum_proven": False}
+@@ -197,0 +277,8 @@
++    gradient = matrix.T@(matrix@delta-rhs)
++    objective = float(np.linalg.norm(matrix@delta-rhs)**2)
++    if policy_id == NONLINEAR_POLICY_ID:
++        model = frozen_surface_model(vehicle, observed, indices)
++        endpoints, gradient, priority_receipt = nonlinear_endpoint(model, base_moment+np.asarray(demand),
++            actual, endpoints, scale, actual+lower, actual+upper)
++        delta = endpoints-actual
++        objective = priority_receipt["nonlinear_objective_history"][-1]
+@@ -207,2 +294,2 @@
+-    gradient = matrix.T@(matrix@delta-rhs)
+-    diagnostic = {"schema": "missionos.starship_fin_allocation.v1" if policy_id == POLICY_ID else "missionos.starship_fin_allocation.v2",
++    diagnostic = {"schema": ("missionos.starship_fin_allocation.v1" if policy_id == POLICY_ID else
++        "missionos.starship_fin_allocation.v3" if policy_id == NONLINEAR_POLICY_ID else "missionos.starship_fin_allocation.v2"),
+@@ -217 +304 @@
+-        "predicted_residual_torque_body_nm": remaining.tolist(), "objective": float(np.linalg.norm(matrix@delta-rhs)**2),
++        "predicted_residual_torque_body_nm": remaining.tolist(), "objective": objective,
+--- a/src/runtime/starship_sixdof_mission.py
++++ b/src/runtime/starship_sixdof_mission.py
+@@ -192 +192 @@
+-            ("finite_regularized_fins_v1", "finite_moment_priority_fins_v1") or
++            ("finite_regularized_fins_v1", "finite_moment_priority_fins_v1", "finite_nonlinear_moment_fins_v1") or
+--- a/scripts/run_starship_entry_allocation_comparison.py
++++ b/scripts/run_starship_entry_allocation_comparison.py
+@@ -24 +24 @@
+-from src.runtime.starship_fin_allocation import MOMENT_PRIORITY_POLICY_ID  # noqa: E402
++from src.runtime.starship_fin_allocation import MOMENT_PRIORITY_POLICY_ID, NONLINEAR_POLICY_ID  # noqa: E402
+@@ -41 +41 @@
+-def inputs(run, profile):
++def inputs(run, profile, *, checkpoint_time_s=None):
+@@ -46,5 +46,12 @@
+-    first = next(i for i, s in enumerate(rows) if s["dynamic_pressure_pa"] > 50.)
+-    eligible = [s for s in rows[:first] if s["dynamic_pressure_pa"] <= 40.]
+-    if not eligible:
+-        raise ValueError("missing_pre_gate_checkpoint")
+-    seed = eligible[-1]
++    if checkpoint_time_s is None:
++        first = next(i for i, s in enumerate(rows) if s["dynamic_pressure_pa"] > 50.)
++        eligible = [s for s in rows[:first] if s["dynamic_pressure_pa"] <= 40.]
++        if not eligible:
++            raise ValueError("missing_pre_gate_checkpoint")
++        seed = eligible[-1]
++    else:
++        if type(checkpoint_time_s) not in (int, float) or not math.isfinite(checkpoint_time_s) or not rows:
++            raise ValueError("invalid_recorded_checkpoint_time")
++        seed = min(rows, key=lambda s: abs(s["time_s"]-checkpoint_time_s))
++        if abs(seed["time_s"]-checkpoint_time_s) > 1e-5:
++            raise ValueError("requested_checkpoint_not_recorded")
+@@ -66 +73,2 @@
+-def continue_entry(initial, body, seed, profile, duration, *, candidate, checkpoint=None):
++def continue_entry(initial, body, seed, profile, duration, *, candidate, checkpoint=None,
++                   candidate_policy=MOMENT_PRIORITY_POLICY_ID, baseline_policy=None):
+@@ -86,0 +95 @@
++        policy = candidate_policy if candidate else baseline_policy
+@@ -88,2 +97,2 @@
+-            development_fin_allocation=candidate, control_interval_s=dt,
+-            development_fin_policy=MOMENT_PRIORITY_POLICY_ID if candidate else "finite_regularized_fins_v1")
++            development_fin_allocation=policy is not None, control_interval_s=dt,
++            development_fin_policy=policy or "finite_regularized_fins_v1")
+@@ -110,0 +120,3 @@
++        "maximum_whole_interval_attitude_error_deg":max(m["attitude_error_deg"] for m in metrics),
++        "maximum_whole_interval_body_rate_rad_s":max(m["body_rate_rad_s"] for m in metrics),
++        "pressure_range_pa":[min(m["dynamic_pressure_pa"] for m in metrics),max(m["dynamic_pressure_pa"] for m in metrics)],
+@@ -118 +130,4 @@
+-    return {"method":"bounded_moment_priority" if candidate else "legacy_clipped_inverse",
++    policy = candidate_policy if candidate else baseline_policy
++    method = {None: "legacy_clipped_inverse", MOMENT_PRIORITY_POLICY_ID: "bounded_moment_priority",
++              NONLINEAR_POLICY_ID: "bounded_nonlinear"}[policy]
++    return {"method":method,
+@@ -129,0 +145,3 @@
++    parser.add_argument("--checkpoint-time-s",type=float)
++    parser.add_argument("--candidate-policy",choices=(MOMENT_PRIORITY_POLICY_ID, NONLINEAR_POLICY_ID),default=MOMENT_PRIORITY_POLICY_ID)
++    parser.add_argument("--baseline-policy",choices=("legacy", MOMENT_PRIORITY_POLICY_ID),default="legacy")
+@@ -143 +161,4 @@
+-    initial, body, seed = inputs(run, profile)
++    initial, body, seed = inputs(run, profile, checkpoint_time_s=args.checkpoint_time_s)
++    baseline_policy = None if args.baseline_policy == "legacy" else args.baseline_policy
++    if baseline_policy == args.candidate_policy:
++        parser.error("comparison requires different allocation policies")
+@@ -147 +168,2 @@
+-        "source_sha256":before,"duration_s":args.duration_s,"candidate_policy":MOMENT_PRIORITY_POLICY_ID,
++        "source_sha256":before,"duration_s":args.duration_s,"candidate_policy":args.candidate_policy,
++        "baseline_policy":baseline_policy, "checkpoint_time_s":args.checkpoint_time_s,
+@@ -157 +179,2 @@
+-            method="bounded_moment_priority" if candidate else "legacy_clipped_inverse"
++            method = ("bounded_nonlinear" if args.candidate_policy == NONLINEAR_POLICY_ID else "bounded_moment_priority") if candidate else (
++                "bounded_moment_priority" if baseline_policy else "legacy_clipped_inverse")
+@@ -165 +188 @@
+-                                  checkpoint=checkpoint)
++                                  checkpoint=checkpoint,candidate_policy=args.candidate_policy,baseline_policy=baseline_policy)
+--- /dev/null
++++ b/tests/contract/test_starship_nonlinear_allocation.py
+@@ -0,0 +1,78 @@
++"""Independent plate-law checks for the finite nonlinear endpoint allocator."""
++from dataclasses import asdict, replace
++import json
++import math
++from pathlib import Path
++
++import numpy as np
++import pytest
++
++from src.runtime import starship_fin_allocation as fin, starship_sixdof as dyn, starship_physics as env
++from src.runtime.starship_sixdof_mission import _attitude, control, vehicle
++
++
++@pytest.fixture
++def configured():
++    profile = json.loads((Path(__file__).parents[2]/"examples/spaceflight/starship-sixdof-profile.json").read_text())
++    body = vehicle(profile, payload_count=15)
++    point = env.surface_state(25.9, -97.1, 63000., 100000., time_s=4200.)
++    up, east, north = env.local_frame(point)
++    axis = env.add(env.scale(east, math.cos(math.radians(70.))), env.scale(up, math.sin(math.radians(70.))))
++    state = dyn.State6DOF(point.time_s, point.r, env.add(point.v, env.scale(east, 3000.)),
++        _attitude(axis, env.scale(north, -1)), (.002, -.003, .001), 100000.,
++        tuple(dyn.EngineState() for _ in body.engines),
++        (0., 0., 0., *np.radians([49., -51., 52.5, -49.])))
++    return profile, body, state
++
++
++@pytest.mark.parametrize("angles", ([49., -51., 52.5, -49.], [-60., 60., -60., 60.], [0., 0., 0., 0.]))
++def test_frozen_map_matches_original_integrator_loads_and_derivatives(configured, angles):
++    _, body, state = configured
++    observed = dyn.observe(state, body)
++    model = fin.frozen_surface_model(body, observed, [3, 4, 5, 6])
++    values = np.radians(angles)
++    moment, jac = model(values, derivative=True)
++    physical = dyn.observe(replace(state, flap_angles_rad=(0., 0., 0., *values)), body)
++    assert moment == pytest.approx(physical["aero_torque_body_nm"], abs=1e-7, rel=1e-12)
++    for i in range(4):
++        lo, hi = values.copy(), values.copy()
++        lo[i] -= 1e-6
++        hi[i] += 1e-6
++        numeric = (model(hi)-model(lo))/2e-6
++        assert jac[:, i] == pytest.approx(numeric, rel=2e-7, abs=1e-3)
++    assert model(np.array([values, values])).shape == (2, 3)
++
++
++@pytest.mark.parametrize("demand", ([0., 0., 0.], [200000., -150000., 50000.], [1e7, -1e7, 1e7]))
++def test_nonlinear_prediction_improves_hold_and_linear_candidate_with_same_bounds(configured, demand):
++    profile, body, state = configured
++    before = asdict(state)
++    observed = dyn.observe(state, body)
++    _, _, receipt = fin.allocate_fins(state, body, demand, observed, profile, interval_s=.1,
++                                    policy_id=fin.NONLINEAR_POLICY_ID)
++    angles = np.array(receipt["predicted_endpoint_angles_rad"])
++    delta = angles-np.array(receipt["actual_angles_rad"])
++    assert np.all(delta >= np.array(receipt["reachable_delta_lower_rad"])-1e-12)
++    assert np.all(delta <= np.array(receipt["reachable_delta_upper_rad"])+1e-12)
++    physical = dyn.observe(replace(state, flap_angles_rad=(0., 0., 0., *angles)), body)
++    remaining = np.array(demand)-(np.array(physical["aero_torque_body_nm"])-observed["aero_torque_body_nm"])
++    cost = float(np.sum((remaining/receipt["moment_scale_nm"])**2))
++    assert cost == pytest.approx(receipt["objective"], abs=1e-12)
++    assert cost <= receipt["nonlinear_hold_objective"]+1e-12
++    assert cost <= receipt["nonlinear_linear_endpoint_objective"]+1e-12
++    assert np.all(np.diff(receipt["nonlinear_objective_history"]) < 0.)
++    assert receipt["nonlinear_iterations"] <= 8
++    assert asdict(state) == before
++    assert receipt["nonlinear_global_optimum_proven"] is False
++
++
++def test_nonlinear_commands_still_require_finite_physical_execution(configured):
++    profile, body, state = configured
++    command, diagnostic = control(state, body, state.q_body_to_eci, 0., 0, profile, use_flaps=True,
++        development_fin_allocation=True, development_fin_policy=fin.NONLINEAR_POLICY_ID)
++    receipt = diagnostic["development_fin_allocation"]
++    following = dyn.step(state, body, command, .1)
++    assert following.flap_angles_rad[3:] == pytest.approx(receipt["predicted_endpoint_angles_rad"], abs=1e-5)
++    assert following.r_eci_m != state.r_eci_m
++    assert following.propellant_kg < state.propellant_kg
++    assert all(not engine.enabled for engine in command.engines[:6])
