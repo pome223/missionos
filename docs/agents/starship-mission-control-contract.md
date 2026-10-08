@@ -113,6 +113,49 @@ the initial `state_return` plan; the fuel-shortage selection had only inhibition
 available. They do not demonstrate an AI-induced return-policy improvement.
 Numerical tools are part of MissionOS; scripted parity is not an AI-value gate.
 
+### Hold/resume coverage
+
+The follow-up on production source `21fbc06f` executes the existing
+`hold_deployment_start` and `hold_deployment_monitor` response fixtures through
+the managed CLI. Both holds last 5 s and resume before their next release slot;
+their 26 release timestamps and contact metrics match the fixed baseline.
+They do not exercise the hypothesized release-timing shift.
+
+`scripts/probe_starship_delayed_hold.py` runs the same worker with a credential-free
+fixture mailbox. The host withholds the reassessment reply for 20 wall seconds;
+the simulator continues its paced clock. In the recorded trial the accepted hold
+lasts 25.25 s, before its 30 s expiry, and the remaining 25 releases shift by 10.75 s.
+Selection and execution both match the existing `retained0` corridor. Maximum
+checked position/velocity residuals are 1.921 m / 0.002366 m/s; at deorbit they
+are 0.174 m / 0.000909 m/s. All 26 bodies release and the four Ship contact limits
+pass at 4.60835 m/s. No corridor, dynamics source or tolerance is modified.
+
+The host delay is measured in wall time; the actual simulated delay must always
+be read from the command/observation receipts. The probe's process exit indicates
+record verification, not recovery; its saved flight still requires outcome audit.
+`hold-resume-summary.json` separately checks accepted hold/resume, later running
+state, 26 releases, actual timing shift, both return admissions and Ship contact.
+The ordinary `normal` comparison remains false because the hold is deliberately
+forced (and the delayed flight's metrics are not identical). It is not reused as
+the hold-probe acceptance criterion. These finite cases do not qualify every
+latency, hold duration or disturbance. No new inference or human-workload result
+is claimed.
+
+```sh
+python scripts/run_starship_managed_mission.py --approve-simulation \
+  --case normal --splashdown --director-mode fixture \
+  --response-fault hold_deployment_monitor \
+  --run-id hold-review-hold_deployment_monitor \
+  --output-dir output/hold-resume-review-20261008/hold_deployment_monitor
+python scripts/probe_starship_delayed_hold.py --approve-simulation \
+  --output-dir output/hold-resume-review-20261008/delayed-monitor
+```
+
+[Saved hold/resume evidence](../assets/starship-state-return-qualification/hold-resume-summary.json)
+includes production source and probe hashes. The existing 39-flight qualification
+remains unchanged; the new delayed hold is follow-up evidence, not a new admission
+corridor.
+
 ### Environment and requalification
 
 Use `pip install -e '.[spaceflight-qualified]'` for the recorded numerical backend

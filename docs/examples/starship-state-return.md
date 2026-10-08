@@ -36,6 +36,21 @@ five, with the following Ship outcomes:
 All five now declare the same separate booster water-entry goal and meet its
 modeled conditions. These nominal results do not qualify booster robustness.
 
+A follow-up checks whether a permitted hold causes return admission to fail.
+The two existing fixtures resume after 5 s, before the next release slot, so
+neither changes release timing. A delayed-response probe actually holds for
+25.25 s and delays the remaining 25 releases by 10.75 s. It releases all 26,
+passes both return checks and contacts at 4.60835 m/s. The largest checked
+position difference is 1.921 m (limit 12 m); at deorbit it is 0.174 m.
+The existing tolerances and guidance remain unchanged. These three cases do
+not cover every hold duration or response history. The 30 s bound is an expiry
+that stops deployment, not permission to resume at the deadline.
+
+[Hold/resume evidence](../assets/starship-state-return-qualification/hold-resume-summary.json)
+records the actual timing, matching residuals and later observations. These
+forced holds are tested separately from the ordinary normal-flight comparison,
+which requires no hold; its false result is retained.
+
 A passed record or comparison check is not a successful whole mission. After
 entry is committed, a terminal fuel or propulsion violation is logged and the
 existing controller continues as unqualified best effort. The final outcome is
