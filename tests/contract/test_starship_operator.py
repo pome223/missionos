@@ -370,6 +370,9 @@ def test_default_full_launch_asset_and_plan_only_boundary(loopback_gateway, monk
 
 @pytest.mark.parametrize("scenario", MANAGED_SCENARIOS)
 def test_managed_operator_plan_displays_envelope_without_execution(loopback_gateway, monkeypatch, scenario):
+    from src.runtime import starship_return_feasibility as qualification
+    # Isolate plan rendering from optional numerical qualification availability.
+    monkeypatch.setattr(qualification, "readiness", lambda *a, **k: ({}, "fixture", None))
     monkeypatch.setenv("MISSIONOS_STARSHIP_MISSION_DIRECTOR_MODE", "fixture")
     monkeypatch.setattr("src.runtime.starship_mission_control.subprocess.Popen",
         lambda *a, **k: pytest.fail("Planning cannot start a worker"))
@@ -555,3 +558,28 @@ def test_real_fixture_planner_and_explicit_http_approval_remain_bound(gateway, m
     assert approved["mission_completed"] is False
     assert approved["execution"] == {}
     assert turn("/reject", context)["operation_result"]["status"] == "rejected"
+
+
+def test_backend_mismatch_is_explained_before_operator_approval(loopback_gateway, monkeypatch):
+    from src.runtime import starship_return_feasibility as qualification
+    monkeypatch.setenv('MISSIONOS_STARSHIP_MISSION_DIRECTOR_MODE', 'fixture')
+    monkeypatch.setattr(qualification, 'readiness', lambda *a, **k: (None, 'fixture', 'return_qualification_backend_mismatch'))
+    response = loopback_gateway.post('/missionos/starship/operator/actions', headers=browser_headers(),
+        json={**operator_payload(), 'scenario': 'sixdof_managed_normal'})
+    value = response.json()
+    assert value['operation_result']['status'] == 'blocked'
+    assert value['operation_result']['reason'] == 'return_qualification_backend_mismatch'
+    assert value['operation_result']['approval'] is None
+    assert value['operation_result']['execution'] is None
+    assert 'spaceflight-qualified' in value['message']
+
+
+def test_unresolved_return_is_not_rendered_as_mission_success():
+    javascript(r'''
+const value=response('verified');
+value.operation_result.execution={verification:{comparison:{comparison_accepted:true,comparison_scope:'inhibit_and_observe_30s_only',ship_return_qualified:false,managed:{orbit:true,released:0,termination:'return_inhibited_unresolved'}}}};
+queue.push(value);ui('refresh').onclick();await flush();
+const labels=ui('objectives').children.flatMap(row=>row.children.map(cell=>cell.textContent)).join(' ');
+assert.match(labels,/帰還未解決/);
+assert.match(labels,/全体成功ではない/);
+''')

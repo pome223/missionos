@@ -1,53 +1,62 @@
 # A return tool MissionOS can use
 
-MissionOS can make deployment and return decisions inside a preflight-approved
-scope, execute them through a separate credential-free simulator, and check later
-observations. The return tool now covers every retained inventory from 0 to 26 in
-the declared model profile; it no longer relies on the fortunate 26-retained case.
+MissionOS controls deployment and selects permitted actions inside a scope
+approved before flight. A separate simulator executes the commands, and independent
+checks compare them with later observations. The shared Ship return tool handles
+retained inventories from 0 to 26 in a finite set of modeled flights.
 
-The common controller prepares a balanced flap configuration and an entry bank
-from the current mass, geometry and flow. Actual roll, flap motion and thrust
-remain finite and are integrated in six degrees of freedom. Physical coefficients,
-RCS force and the speed/pose/rate/reserve thresholds were not increased or relaxed.
+The controller prepares entry bank and flap trim from the current mass, geometry
+and flow. Roll, flap motion and thrust remain finite and are integrated in six
+degrees of freedom. The physical coefficients and original contact limits remain
+unchanged: 5 m/s, 5 degrees tilt, 0.02 rad/s rotation and 28 t reserve.
 
-All 27 inventories and 12 selected initial-fuel perturbations pass: 39 flights
-with the same source. Speed is at most 5 m/s, contact tilt 5 degrees, body rate
-0.02 rad/s and reserve at least 28 t. This is modeled contact qualification, not
-thermal protection, structural survival, recovery, reuse or SpaceX validation.
+![Inventory and selected fuel-probe results](../assets/starship-state-return-qualification/qualification-census.png)
 
-![Frozen inventory and fuel-probe census](../assets/starship-state-return-qualification/qualification-census.png)
+The current rerun passes 39/39 cases: 27 inventories and 12 selected initial-fuel
+perturbations. Maximum contact speed is 4.691 m/s, maximum tilt 2.755 degrees,
+and minimum remaining fuel 45.231 t, matching the previous census.
+It does not qualify a wide range of orbits. Each execution must match the recorded
+coast trajectory for its retained inventory, including time, position, velocity,
+attitude and fuel. Both AI choices and fallbacks receive this check, again before
+deorbit. Small matching tolerances account for sampled data; they are not evidence
+of robustness to physical disturbances.
 
-Return decisions and no-response fallbacks now share a fresh numerical check.
-It checks the qualified source/profile/backend, fuel uncertainty, an analytic
-deorbit correction, orbital state, attitude and propulsion availability. It uses
-the tested consumption envelope; it does not predict a complete new trajectory
-for every state or prove all combinations inside a rectangular bound safe.
+The current fixture evaluation covers all five conditions; normal flight runs
+through the real Gateway approval and worker boundary. Record checks pass for all
+five, with the following Ship outcomes:
 
-Five current conditions pass their declared scenario checks with actual Jev
-decisions over the real HTTP approval/run boundary:
+| Condition | Released | Ship result |
+|---|---:|---|
+| Normal | 26 | 4.608 m/s contact, all four modeled contact limits met |
+| Release fault | 0 | 3.473 m/s contact with retained inventory |
+| Fuel shortage | 0 | Return prohibited; 30 s observation; **return unresolved** |
+| Tower unavailable | 26 | 4.608 m/s contact |
+| Operations notice | 1 | 3.514 m/s contact with 25 bodies retained |
 
-| Condition | Observed MissionOS behavior |
-|---|---|
-| Normal | Continue deployment; 26 bodies release; checked state-based return |
-| Release fault | Collect a distinct mechanism report, stop deployment, return with retained inventory |
-| Fuel shortage | Stop deployment and inhibit the infeasible return; integrate a bounded 30 s orbital coast |
-| Tower unavailable | Keep deployment/return and choose the permitted diversion |
-| Operations notice | Stop after one release and return with 25 bodies retained |
+All five now declare the same separate booster water-entry goal and meet its
+modeled conditions. These nominal results do not qualify booster robustness.
 
-There are 19 actual Jev inference receipts and no conditional DeepSeek call in
-this evaluation. The normal flight equals the updated fixed-timeline result.
-This measures executed AI decisions and regression behavior; outperforming a
-scenario-encoded script is not an acceptance criterion.
+A passed record or comparison check is not a successful whole mission. After
+entry is committed, a terminal fuel or propulsion violation is logged and the
+existing controller continues as unqualified best effort. The final outcome is
+kept even if it is an impact. The late engine-loss probe records a two-engine
+terminal phase and a 22.735 m/s impact. It verifies failure preservation, not
+a successful recovery.
 
-Two forced-hold/compound-response failures also return with retained inventory
-inside the modeled contact gate. They lose the deployment objective and fail the
-normal-mission comparison. Return recovery must not be reported as full mission
-success. The fuel-shortage coast is likewise an unresolved mission, not a return.
+The previous evaluation at `6185ef92` contains 19 actual Jev inference receipts
+and no DeepSeek calls. Jev chose additional observations and deployment changes.
+Its four available returns kept the initial return policy; the fuel-shortage
+case had only inhibition available. These runs do not show an AI-induced change
+of return policy. Their booster goals also differed and must not be combined
+into a single recovery-success count. Script parity is not an AI-value gate.
 
-The live normal scenario includes modeled booster water entry. Booster robustness,
-water survival, tower catch, in-flight human reapproval and three-flight-per-day
-fleet scheduling remain separate work.
+Managed planning checks the qualified source and numerical environment before
+approval. Use `pip install -e '.[spaceflight-qualified]'` for the recorded backend.
+A changed covered source requires requalification. Model contact is separate from
+thermal protection, structural survival, water survival, reuse and SpaceX fidelity.
+Booster robustness and high-cadence fleet workload remain future work.
 
-[Qualification and source](../assets/starship-state-return-qualification/qualification.json)
-· [Decisions, results and limits](../assets/starship-state-return-qualification/steps345-summary.json)
-· [Earlier rejected candidates](starship-return-allocation.md)
+[Current qualification](../assets/starship-state-return-qualification/qualification.json)
+· [Review corrections and current checks](../assets/starship-state-return-qualification/review-fixes-summary.json)
+· [Historical Jev decisions](https://github.com/pome223/missionos/blob/6185ef92/docs/assets/starship-state-return-qualification/steps345-summary.json)
+· [Implementation contract](../agents/starship-mission-control-contract.md)

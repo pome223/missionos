@@ -11,7 +11,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from src.runtime.starship_return_feasibility import CORE_SOURCES, POLICY, sources, backend, digest, normalized_profile, deorbit_fuel  # noqa: E402
+from src.runtime.starship_return_feasibility import CORE_SOURCES, MATCH_LIMITS, POLICY, sources, backend, digest, normalized_profile, deorbit_fuel  # noqa: E402
 from src.runtime.starship_retained_return_verifier import verify_retained_return  # noqa: E402
 from src.runtime.starship_sixdof_verifier import verify_study  # noqa: E402
 
@@ -23,7 +23,7 @@ def main():
     args = parser.parse_args()
     current = sources()
     base = json.loads((ROOT/"examples/spaceflight/starship-sixdof-profile.json").read_text())
-    references, rows, total, terminal, deorbit = [], [], [], [], []
+    references, corridors, rows, total, terminal, deorbit = [], [], [], [], [], []
     required = [(n, 0) for n in range(27)]+[(n, offset) for n in (0, 14, 15, 16, 25, 26) for offset in (-1000, 1000)]
     for n, offset in required:
         name = f"retained{n}" if offset == 0 else f"retained{n}-fuel{offset:+d}"
@@ -55,20 +55,38 @@ def main():
             "dry_and_payload_mass_kg": base["ship"]["dry_mass_kg"]+n*base["payload"]["mass_each_kg"]}
         deorbit.append(deorbit_fuel(inputs))
         rows.append(result)
-        if n == 0 and offset == 0:
-            references.append({k: start[k] for k in ("time_s", "r_eci_m", "v_eci_mps", "q_body_to_eci", "omega_body_rad_s", "propellant_kg")})
-    certificate = {"schema": "missionos.starship_state_return_qualification.v1", "policy_id": POLICY,
+        references.append({"case_id": name, "retained_count": n, **{k: start[k] for k in
+            ("time_s", "r_eci_m", "v_eci_mps", "q_body_to_eci", "omega_body_rad_s", "propellant_kg")}})
+        samples = {s["time_s"]: s for s in run["samples"] if s["phase"] == "orbital_coast"
+                   and start["time_s"]-92. <= s["time_s"] <= start["time_s"]}
+        samples[start["time_s"]] = start
+        packed = [[s["time_s"], *s["r_eci_m"], *s["v_eci_mps"], *s["q_body_to_eci"],
+                   *s["omega_body_rad_s"], s["propellant_kg"]] for _, s in sorted(samples.items())]
+        if len(packed) < 40 or any(not 0 < b[0]-a[0] <= MATCH_LIMITS["sample_gap_s"] for a, b in zip(packed, packed[1:])):
+            raise ValueError("incomplete_coast_corridor:"+name)
+        corridors.append({"case_id": name, "retained_count": n, "initial_fuel_offset_kg": offset,
+                          "study_sha256": result["study_sha256"], "samples": packed})
+    certificate = {"schema": "missionos.starship_state_return_qualification.v2", "policy_id": POLICY,
         "qualification_complete": True, "retained_counts": list(range(27)),
         "source_sha256": current, "backend": backend(),
         "normalized_profile_sha256": digest(normalized_profile(base)),
         "maximum_return_consumption_kg": max(total), "maximum_terminal_consumption_kg": max(terminal),
         "maximum_reference_deorbit_fuel_kg": max(deorbit), "reference_states": references,
+        "coast_corridors": corridors, "matching_tolerances": MATCH_LIMITS,
+        "coast_sample_columns": ["time_s", "r_x_m", "r_y_m", "r_z_m", "v_x_mps", "v_y_mps", "v_z_mps",
+                                 "q_w", "q_x", "q_y", "q_z", "omega_x_rad_s", "omega_y_rad_s", "omega_z_rad_s", "fuel_kg"],
+        "interpolation_is_physical_robustness_proof": False,
         "case_count": len(rows), "cases": rows,
         "thresholds": {"speed_mps": 5., "tilt_deg": 5., "body_rate_rad_s": .02, "reserve_kg": 28000.},
         "qualified_initial_fuel_offset_kg": [-1000., 1000.], "physical_recovery_certified": False,
         "scope": "frozen simulation-profile inventory census and selected initial-fuel perturbations; not every state combination or real vehicle"}
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(certificate, indent=2, allow_nan=False)+"\n")
+    # One packed sample per line keeps the complete evidence small and reviewable.
+    encoded = json.dumps(certificate, indent=2, allow_nan=False)
+    import re
+    encoded = re.sub(r'\[\n\s+([-+0-9.eE]+(?:,\n\s+[-+0-9.eE]+){14})\n\s+\]',
+                     lambda match: '['+re.sub(r'\s+', ' ', match[1])+']', encoded)
+    args.output.write_text(encoded+"\n")
     print(json.dumps({"cases": len(rows), "qualification_complete": True, "maximum_return_consumption_kg": max(total),
         "maximum_terminal_consumption_kg": max(terminal), "physical_recovery_certified": False}))
 

@@ -4,6 +4,8 @@ import json
 import math
 from pathlib import Path
 
+MATCH_LIMITS = {"sample_gap_s": 2.01, "position_m": 12., "velocity_mps": .05,
+                "attitude_deg": .1, "body_rate_rad_s": .0002, "fuel_kg": 100.1}
 CORE_SOURCES = ("src/runtime/starship_sixdof_mission.py", "src/runtime/starship_sixdof.py",
     "src/runtime/starship_entry_trim.py", "src/runtime/starship_fin_allocation.py",
     "src/runtime/starship_retained_return.py", "src/runtime/starship_retained_return_verifier.py",
@@ -17,7 +19,10 @@ CORE_SOURCES = ("src/runtime/starship_sixdof_mission.py", "src/runtime/starship_
 def registered(profile, identity):
     certificate, expected_id = load_certificate()
     if (not identity or identity != expected_id or type(certificate) is not dict
+            or certificate.get("schema") != "missionos.starship_state_return_qualification.v2"
             or certificate.get("qualification_complete") is not True
+            or certificate.get("matching_tolerances") != MATCH_LIMITS
+            or len(certificate.get("coast_corridors", [])) != 39
             or certificate.get("retained_counts") != list(range(27))
             or certificate.get("policy_id") != "trimmed_state_terminal_v4"
             or set(certificate.get("source_sha256", {})) != set(CORE_SOURCES)):
@@ -39,6 +44,33 @@ def _cross(a, b):
 
 def _norm(a):
     return math.sqrt(sum(x*x for x in a))
+
+
+def _coast_match(x, certificate):
+    if not certificate or certificate.get("matching_tolerances") != MATCH_LIMITS:
+        return None
+    for item in certificate.get("coast_corridors", []):
+        if item["retained_count"] != x["retained_count"]:
+            continue
+        points = item["samples"]
+        for index in range(1, len(points)):
+            left, right = points[index-1], points[index]
+            dt = right[0]-left[0]
+            if dt <= 0 or dt > 2.01 or not left[0] <= x["time_s"] <= right[0]:
+                continue
+            weight = (x["time_s"]-left[0])/dt
+            ref = [a*(1-weight)+b*weight for a, b in zip(left[1:], right[1:])]
+            sign = 1 if sum(a*b for a, b in zip(left[7:11], right[7:11])) >= 0 else -1
+            q = [(1-weight)*a+weight*sign*b for a, b in zip(left[7:11], right[7:11])]
+            cosine = abs(sum(a*b for a, b in zip(q, x["q_body_to_eci"]))/ _norm(q))
+            errors = {"position_m": _norm([a-b for a, b in zip(ref[:3], x["r_eci_m"])]),
+                "velocity_mps": _norm([a-b for a, b in zip(ref[3:6], x["v_eci_mps"])]),
+                "attitude_deg": 2*math.degrees(math.acos(min(1., cosine))),
+                "body_rate_rad_s": _norm([a-b for a, b in zip(ref[10:13], x["omega_body_rad_s"])]),
+                "fuel_kg": abs(ref[13]-x["fuel_observed_kg"])}
+            if all(value <= MATCH_LIMITS[key] for key, value in errors.items()):
+                return {"case_id": item["case_id"], "sample_times_s": [left[0], right[0]], "errors": errors}
+    return None
 
 
 def _kinematics(x):
@@ -101,9 +133,20 @@ def verify(proof, certificate, identity, *, time_s, fuel_kg, released_count):
         required = (certificate["maximum_return_consumption_kg"]+29000.
                     +max(0., deorbit-certificate["maximum_reference_deorbit_fuel_kg"])) if supported else None
         margin = fuel_kg-100.-required if required is not None else None
-        domain = (supported and x["orbit_status"] == "bound" and 150000. <= x["perigee_altitude_m"] <= 350000.
-            and 150000. <= x["apogee_altitude_m"] <= 600000. and x["body_rate_rad_s"] <= .01
-            and x["coast_axis_error_deg"] <= 5. and x["available_landing_engines"] == 3)
+        matched = _coast_match(x, certificate if supported else None)
+        saved = proof.get("coast_evidence_match")
+        if matched is None:
+            if saved is not None:
+                raise ValueError("unsupported_coast_match")
+        elif (type(saved) is not dict or saved.get("case_id") != matched["case_id"]
+                or saved.get("sample_times_s") != matched["sample_times_s"]
+                or set(saved.get("errors", {})) != set(matched["errors"])
+                or any(not math.isfinite(saved["errors"][k]) or abs(saved["errors"][k]-v) > 1e-5
+                       for k, v in matched["errors"].items())):
+            raise ValueError("coast_match_not_reproduced")
+        domain = (supported and matched is not None and x["orbit_status"] == "bound"
+            and x["body_rate_rad_s"] <= .01 and x["coast_axis_error_deg"] <= 5.
+            and x["available_landing_engines"] == 3 and 0 <= x["retained_count"] <= 26)
         coast_required = 120.*x["rcs_thrust_n"]/(x["rcs_isp_s"]*9.80665)*3.+1000.
         coast_margin = fuel_kg-100.-coast_required
         coast = x["orbit_status"] == "bound" and x["perigee_altitude_m"] >= 150000. and x["body_rate_rad_s"] <= .01 and coast_margin >= 0.

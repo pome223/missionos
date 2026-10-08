@@ -24,7 +24,7 @@ def row(t=100., **updates):
 
 
 def request(point="deployment_start", observation=None, mode="fixture"):
-    return {"schema": "missionos.starship_director_request.v4", "request_id": "run:1", "point": point,
+    return {"schema": "missionos.starship_director_request.v5", "request_id": "run:1", "point": point,
             "observation": observation or row(), "allowed_actions": POINTS[point],
             "decision_deadline_s": (observation or row())["time_s"]+75.,
             "envelope_sha256": digest(contract(mode))}
@@ -114,6 +114,9 @@ def test_request_response_binding_later_state_and_timeout(tmp_path):
 
 @pytest.mark.parametrize("scenario", SCENARIOS)
 def test_plan_and_single_consumption_scope(tmp_path, monkeypatch, scenario):
+    from src.runtime import starship_return_feasibility as qualification
+    # This test isolates approval consumption; qualification has its own checks.
+    monkeypatch.setattr(qualification, "readiness", lambda *a, **k: ({}, "fixture", None))
     monkeypatch.setenv(MODE_ENV, "fixture")
     service = control.StarshipMissionService(tmp_path, planner=lambda text: plan_starship_request(text, "fixture"))
     state = service.plan("operator", "Starship "+scenario)
@@ -167,7 +170,7 @@ def test_worker_environment_never_contains_director_keys(monkeypatch):
 @pytest.mark.parametrize("kind", ["invalid", "timeout"])
 @pytest.mark.parametrize("point,expected", [
     ("deployment_start", "continue"), ("deployment_monitor", "continue"),
-    ("return_selection", "inhibit_return"), ("booster_selection", "divert"),
+    ("return_selection", "halt_unresolved_return"), ("booster_selection", "divert"),
 ])
 def test_response_failures_preserve_preapproved_nominal_actions(kind, point, expected):
     actor = MissionDirector(contract("fixture"), fixture_decider=fixture_decision, response_fault=kind+"_"+point)
@@ -195,7 +198,7 @@ def test_invalid_response_never_overrides_inhibit_or_new_notice(updates):
 
 def test_malformed_reply_does_not_crash_or_select_new_return():
     actor = MissionDirector(contract("fixture"), fixture_decider=lambda _: ["retained_return"])
-    assert actor.update("return_selection", row()) == "inhibit_return"
+    assert actor.update("return_selection", row()) == "halt_unresolved_return"
     assert actor.records[0]["dispatch"]["rules_accepted"] is False
 
 
@@ -459,6 +462,8 @@ def test_old_contract_cannot_acquire_new_fallback_authority():
 
 @pytest.mark.parametrize("version", [1, 2, 3])
 def test_approved_old_envelope_is_rejected_before_process_spawn(tmp_path, monkeypatch, version):
+    from src.runtime import starship_return_feasibility as qualification
+    monkeypatch.setattr(qualification, "readiness", lambda *a, **k: ({}, "fixture", None))
     monkeypatch.setenv(MODE_ENV, "fixture")
     service = control.StarshipMissionService(tmp_path, planner=lambda text: plan_starship_request(text, "fixture"))
     service.plan("migration", "Starship sixdof_managed_normal")
@@ -603,3 +608,29 @@ def test_verifier_rejects_forged_inventory_or_release_before_start(monkeypatch, 
     result = verifier.verify(study, expected_case="normal", expected_envelope=contract("fixture"))
     assert result["passed"] is False
     assert {"code": expected} in result["issues"]
+
+
+@pytest.mark.parametrize('reason', ['return_qualification_backend_mismatch', 'return_qualification_source_mismatch'])
+def test_unqualified_environment_is_rejected_before_approval_and_worker(tmp_path, monkeypatch, reason):
+    from src.runtime import starship_return_feasibility as qualification
+    monkeypatch.setenv(MODE_ENV, 'fixture')
+    monkeypatch.setattr(qualification, 'readiness', lambda *a, **k: (None, 'fixture', reason))
+    service = control.StarshipMissionService(tmp_path, planner=lambda text: plan_starship_request(text, 'fixture'))
+    with pytest.raises(control.StarshipMissionError, match=reason):
+        service.plan('blocked', 'Starship sixdof_managed_normal')
+    assert service.current('blocked') is None
+    assert not list(tmp_path.glob('run-*'))
+
+
+def test_environment_change_after_approval_cannot_spawn_worker(tmp_path, monkeypatch):
+    from src.runtime import starship_return_feasibility as qualification
+    monkeypatch.setenv(MODE_ENV, 'fixture')
+    monkeypatch.setattr(qualification, 'readiness', lambda *a, **k: ({}, 'fixture', None))
+    service = control.StarshipMissionService(tmp_path, planner=lambda text: plan_starship_request(text, 'fixture'))
+    plan = service.plan('changed', 'Starship sixdof_managed_normal')['plan']
+    ref = ('changed', plan['id'], plan['sha256'])
+    service.approve(*ref)
+    monkeypatch.setattr(qualification, 'readiness', lambda *a, **k: (None, 'fixture', 'return_qualification_backend_mismatch'))
+    with pytest.raises(control.StarshipMissionError, match='return_qualification_backend_mismatch'):
+        service.execute(*ref)
+    assert not list(tmp_path.glob('run-*'))

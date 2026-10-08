@@ -56,59 +56,80 @@ reasoning belongs in MissionOS's toolset. Report real model decisions and their
 observed effects without treating script parity as evidence against their value.
 Claims about unique AI advantage or reduced human workload need separate evidence.
 
-## Current qualified simulation domain
+## Current bounded return evidence and execution contract
 
-Steps3–5 are now implemented for this bounded model profile:
+Step 3 is a finite launch-to-contact census, not qualification of an orbital box.
+`trimmed_state_terminal_v4` covers 0–26 retained inventories and selected initial
+fuel offsets of ±1000 kg at 0/14/15/16/25/26. Its four original contact limits are
+5 m/s, 5 degrees, 0.02 rad/s and 28 t reserve. Physical coefficients, geometry,
+actuator force and the integrated state are not changed to pass those limits.
 
-1. `trimmed_state_terminal_v4` uses common model-based bank/trim preparation,
-   finite surface prepositioning and state-based terminal timing for 0–26 retained
-   inventories. The frozen census has39passing flights:27inventories and12initial
-   fuel ±1000kg probes for inventories0/14/15/16/25/26. All four original limits
-   remain5m/s,5deg,.02rad/s and28t. No aerodynamic coefficient, geometry, RCS
-   force or physical state is fitted/reset to make a flight pass.
-2. Both model decisions and fallback return choices pass fresh authority and
-   quantitative model-domain admission. Before deorbit the executor checks again.
-   Registration binds physical source/profile/backend to the qualified data.
-   Fuel has a100kg observation bound; required fuel combines the tested consumption
-   envelope,28treserve,1tmargin and analytic deorbit correction. Orbital state,
-   coast attitude/rate and three landing engines are checked. Terminal execution
-   separately checks source-qualified terminal consumption/reserve/propulsion.
-3. The latest five conditions were run in fixture and actual-Jev mode. Each live
-   run uses HTTP plan/approve/run, a consumed test-operator grant, a separate key-free
-   worker, signed receipt/artifact hashes and later observations. There are19Jev
-   inference receipts and0conditional DeepSeek calls. Numerical reasoning remains
-   a tool for MissionOS; parity with the fixture is not an AI-value rejection.
+Step 4 uses qualification schema v2 and mission envelope v6. Every case contributes
+its actual state at deorbit and its final 92 seconds of saved orbital-coast samples.
+The table retains inventory, initial-fuel perturbation, study hash, time, inertial
+position/velocity, full quaternion, angular velocity and fuel. Runtime admission
+must match a corridor for the current inventory; it cannot borrow another count,
+extrapolate time, or use the former 150–350 km / 600 km assumed orbital box.
 
-The admission guard is a tested-model-domain check, **not** a per-state full
-trajectory rollout or a formal reachable-set guarantee for every combination.
-Outside its profile/backend/state domain, return is unknown. A checked30scoast
-uses a worst-case12-RCS-jet fuel bound plus1tcoastreserve. Its completion means
-an unresolved mission, not recovered hardware or guaranteed indefinite survival.
-If neither return nor coast is admitted, execution is inhibited without a safe
-recovery claim. A terminal-domain failure stops the simulator rather than silently
-commanding an unchecked burn; no physical fallback guarantee is claimed.
+Two-second sample interpolation has explicit numerical matching tolerances:
+12 m position, 0.05 m/s velocity, 0.1 degree full attitude, 0.0002 rad/s angular
+velocity and 100.1 kg observed fuel (including the existing 100 kg gauge bound).
+The maximum bracketing gap is 2.01 s. These are numerical matching tolerances,
+not independently flown physical perturbations or a proof between samples.
+They are fixed in both implementations and recorded in the qualification asset.
+The producer and an independent scalar checker reproduce the selected case,
+sample times, residuals, fuel margin and admission. Inputs are bound to separately
+saved pre-command integrated state. Source/profile/backend registration, three
+available landing engines, attitude/rate checks, empirical consumption plus 28 t
+reserve and 1 t margin, and an analytic deorbit-fuel correction also remain required.
 
-Independent verification recomputes scalar fuel/orbit/pose margins, binds inputs
-and model parameters to integrated pre-command states, checks both accepted and
-fallback decisions, execution-time receipts and the terminal margin, and verifies
-later observations. Raw native numeric values cross a canonical JSON boundary
-before the same strict checker; its numeric/type constraints are not weakened.
-Static trim witnesses are checked by a separate scalar plate implementation.
-Stored consistency is not processor/hardware execution attestation.
+A return choice is rechecked at dispatch and immediately before deorbit, including
+no-response fallbacks. `inhibit_return` means no return burn and a checked 30 s
+observation window, with **no later retry decision**. The run ends as
+`return_inhibited_unresolved`. If even that coast resource bound is unavailable,
+`halt_unresolved_return` records that the simulation has no qualified continuation.
+Neither endpoint is a completed return or recovered vehicle.
 
-The normal fixture and live flight preserve the fixed-timeline outcome. Fuel
-shortage deliberately stops deployment and returns no contact/recovery claim.
-Two compound hold/reassessment/return response failures forfeit deployment but
-retain qualified modeled contact. Their normal-comparison result stays false;
-return recovery is not whole mission success.
+After deorbit, a terminal fuel/propulsion violation cannot cancel entry. The
+preapproved response is to record `terminal_return_domain_violation` and continue
+the existing finite controller as `unqualified_best_effort_terminal_guidance`.
+The simulator preserves the final contact or horizon outcome. Verification checks
+that the failure flag, event and later result agree; it must not reinterpret a
+well-formed failure record as qualified return. `terminal_engine_out` is an explicit
+opt-in synthetic late-failure probe, outside the nominal qualification census.
+
+Step 5 separates record checks, scenario checks and terminal mission results.
+The fuel-shortage comparison checks inhibition and a 30 s observation only; its
+`ship_return_qualified` is false and the Ship outcome remains unresolved.
+The normal/release-fault/tower-unavailable/operations-notice cases can establish
+modeled Ship contact, not whole-mission success. Booster diversion and splashdown
+are different goals and must be recorded separately. Compound response failures
+can preserve Ship contact while losing the deployment objective.
+
+The 19 actual Jev receipts belong to the historical `6185ef92` evaluation (envelope
+v5); they are not relabelled as inference on this revision. In those live runs,
+Jev selected diagnostics and deployment changes. Four return selections retained
+the initial `state_return` plan; the fuel-shortage selection had only inhibition
+available. They do not demonstrate an AI-induced return-policy improvement.
+Numerical tools are part of MissionOS; scripted parity is not an AI-value gate.
+
+### Environment and requalification
+
+Use `pip install -e '.[spaceflight-qualified]'` for the recorded numerical backend
+(NumPy 2.4.6 / SciPy 1.17.1). The broader `spaceflight` extra remains useful for
+unqualified development. Managed planning and pre-execution checks reject missing
+qualification, changed source/profile or a backend mismatch with explicit reasons,
+before launching a worker. A dependency mismatch must not silently turn a mission
+into a coast-only run. Old approval envelopes cannot acquire v6 authority.
 
 The qualification asset is
 `docs/assets/starship-state-return-qualification/qualification.json`.
-`build_starship_return_qualification.py` refuses missing/failed/mismatched cases,
-changed sources and invalid independently checked JSON. Model-policy registration
-requires complete current-source data; ordinary verification still refuses undeclared
-experimental scope. Older v3/failed endpoint/global-zero records remain historical.
-The current use-witness checker assumes the declared three-hull/four-flap layout.
+Its 15 source hashes cover the dynamics, guidance, admission and independent
+checkers. Editing any covered file invalidates registration. The current builder
+requires all 39 trials from the new exact source; it does not rewrite old hashes
+or accept a mixture of runs. This costs 39 full CPU simulations even for a guard-only
+edit. A future reviewed compatibility mechanism could reduce that cost; none is
+assumed here. Failed and historical source-bound records remain preserved.
 
 Runtime commands:
 
@@ -120,13 +141,14 @@ python scripts/run_starship_managed_mission.py --approve-simulation \
   --output-dir output/mission-control-example
 ```
 
-Use fresh directories and the optional `spaceflight` dependencies; the qualified
-backend versions are in the asset. Do not overwrite failures or automatically
+Use fresh directories and `spaceflight-qualified` for managed execution; the
+qualified backend versions are in the asset. Do not overwrite failures or automatically
 rerun a failed bounded trial. SDK credentials belong only to the host broker.
 
 [Current results](../examples/starship-state-return.md) and
-[decision/source summary](../assets/starship-state-return-qualification/steps345-summary.json)
+[current verification summary](../assets/starship-state-return-qualification/review-fixes-summary.json)
 keep the first failed integration, old negative controllers, nominal water entry
 and limits distinct. Booster water-entry robustness and true recovery/reuse,
 continuous monitoring, in-flight human reapproval and multi-flight readiness/shared
-resources/human workload remain outside completed steps3–5.
+resources/human workload remain outside this bounded revision. Fuel-shortage
+recovery remains unresolved; five completed comparison checks do not close that gap.

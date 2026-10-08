@@ -11,6 +11,7 @@ from __future__ import annotations
 import math
 
 SCENARIOS = ("launch", "engine_out", "entry_perturbation", "gimbal_step", "flap_asymmetry")
+FAILURE_SCENARIOS = ("terminal_engine_out",)
 SUPERVISED_SCENARIOS = ("deployment_no_effect",)
 MAX_SAMPLES = 250_000
 MAX_JSON_NODES = 5_000_000
@@ -21,7 +22,8 @@ _B = _A * (1 - 1 / 298.257223563)
 _EARTH_RATE = 7.292115e-5
 _STATE_FIELDS = ("time_s", "r_eci_m", "v_eci_mps", "q_body_to_eci", "omega_body_rad_s", "propellant_kg")
 _TERMINATIONS = {"time_limit", "numerical_failure", "angular_rate_envelope_exceeded", "surface_impact", "low_speed_surface_contact",
-                 "return_infeasible_bounded_coast", "no_qualified_return_policy", "terminal_model_domain_unqualified"}
+                 "return_infeasible_bounded_coast", "return_inhibited_unresolved",
+                 "no_qualified_return_policy", "terminal_model_domain_unqualified"}
 
 
 class _Invalid(Exception):
@@ -507,7 +509,7 @@ def verify_study(study: dict, expected_scenario: str | None = None, *, expected_
               "mission_completed": False, "physical_execution": False, "observed_outcomes": [],
               "checks": ["finite_bounded_json", "state_and_quaternion", "ordered_time", "event_outcome_linkage", "observed_orbit_and_release_gates", "contact_kinematics", "claim_boundaries"]}
     try:
-        _require(expected_scenario is None or type(expected_scenario) is str and expected_scenario in (*SCENARIOS, *SUPERVISED_SCENARIOS, "all"), "$", "Unknown expected scenario", "invalid_expected_scenario")
+        _require(expected_scenario is None or type(expected_scenario) is str and expected_scenario in (*SCENARIOS, *FAILURE_SCENARIOS, *SUPERVISED_SCENARIOS, "all"), "$", "Unknown expected scenario", "invalid_expected_scenario")
         _json_tree(study)
         _require(type(study) is dict and study.get("schema") == "missionos.starship_sixdof_study.v1", "$", "Unsupported study schema", "invalid_schema")
         provenance = study.get("provenance")
@@ -545,7 +547,7 @@ def verify_study(study: dict, expected_scenario: str | None = None, *, expected_
                 _require(run.get("scenario") == "launch" and run.get("outcome", {}).get("payload_released_count", -1) <= scope["release_limit"],
                          "$.runs", "Experiment release limit or scenario differs", "development_scope")
         names = [run.get("scenario") if type(run) is dict else None for run in runs]
-        _require(all(type(name) is str and name in (*SCENARIOS, *SUPERVISED_SCENARIOS) for name in names), "$.runs", "Unknown scenario")
+        _require(all(type(name) is str and name in (*SCENARIOS, *FAILURE_SCENARIOS, *SUPERVISED_SCENARIOS) for name in names), "$.runs", "Unknown scenario")
         _require(len(set(names)) == len(names), "$.runs", "Duplicate scenarios")
         if booster_policy == "predictive_return_v1":
             _require(names == ["launch"] and type(study.get("catch_profile")) is dict,

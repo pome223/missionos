@@ -211,7 +211,7 @@ def run(port: int, scenario: str, output: Path) -> dict:
         assert len(study["runs"]) == 2
         if scenario == "sixdof_managed_splashdown":
             from src.runtime.starship_splashdown import load_goal
-            assert study["envelope"]["schema"] == "missionos.starship_mission_envelope.v5"
+            assert study["envelope"]["schema"] == "missionos.starship_mission_envelope.v6"
             assert study["envelope"]["splashdown_goal"] == load_goal().to_dict()
             booster_records = [r for r in study["runs"][1]["mission_director"]["records"] if r["request"]["point"] == "booster_selection"]
             assert len(booster_records) == 1 and booster_records[0]["dispatch"]["action"] == "splashdown"

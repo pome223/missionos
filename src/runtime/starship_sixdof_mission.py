@@ -336,7 +336,7 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
              booster_policy="fixed_v1", catch_config=None, mission_director=None, mission_case=None, return_sites=None, splashdown_goal=None,
              _development_return_qualification=None):
     """Run continuous 6DOF. Short initialized cases are clearly separate flights."""
-    if scenario not in ("launch", "engine_out", "entry_perturbation", "gimbal_step", "flap_asymmetry", "deployment_no_effect"):
+    if scenario not in ("launch", "engine_out", "entry_perturbation", "gimbal_step", "flap_asymmetry", "deployment_no_effect", "terminal_engine_out"):
         raise ValueError("unknown 6DOF scenario")
     if booster_policy not in ("fixed_v1", "predictive_return_v1"):
         raise ValueError("unknown booster policy")
@@ -390,8 +390,8 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
         raise ValueError("dt_scale must be in (0,2]")
     p, g = profile, profile["guidance"]
     ship, booster = vehicle(p), vehicle(p, "booster")
-    v = stack_vehicle(p, ship, booster) if scenario in ("launch", "engine_out", "deployment_no_effect") else ship
-    phase = "stack_ascent" if scenario in ("launch", "engine_out", "deployment_no_effect") else scenario
+    v = stack_vehicle(p, ship, booster) if scenario in ("launch", "engine_out", "deployment_no_effect", "terminal_engine_out") else ship
+    phase = "stack_ascent" if scenario in ("launch", "engine_out", "deployment_no_effect", "terminal_engine_out") else scenario
     initial = p["perturbation_initial_state"]
     initial_altitude = dyn.mass_properties(v, v.propellant_capacity_kg).com_body_m[2]+p["launch"]["release_base_altitude_m"] if phase == "stack_ascent" else initial["altitude_m"]
     base = env.surface_state(p["launch"]["latitude_deg"], p["launch"]["longitude_deg"], initial_altitude, v.propellant_capacity_kg)
@@ -421,8 +421,8 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
     deployment_hold_until, reassessment_due, diagnostic_due = None, None, None
     mechanism_status, managed_return_selected = "not_collected", False
     fuel_fault_applied = False
-    return_defer_started = None
-    return_inhibit_started = None
+    return_observation_started = None
+    return_halt_started = None
     return_execution_checks = []
     def director_observation():
         from .starship_mission_director import fuel_sensor
@@ -501,11 +501,11 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                 event("orbit_not_reached", "ascent reserve/time limit; no state projection to target orbit", orbit=orbit)
                 continue
         elif phase == "orbital_coast":
-            if return_defer_started is not None and s.time_s >= return_defer_started+30.:
-                termination = "return_infeasible_bounded_coast"
+            if return_observation_started is not None and s.time_s >= return_observation_started+30.:
+                termination = "return_inhibited_unresolved"
                 event(termination, "30 seconds of real integration; no return or recovery claimed")
                 break
-            if return_inhibit_started is not None and s.time_s > return_inhibit_started:
+            if return_halt_started is not None and s.time_s > return_halt_started:
                 termination = "no_qualified_return_policy"
                 event(termination, "no new return burn; physical recovery unresolved")
                 break
@@ -581,10 +581,10 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                         return_record = new_record(return_policy)
                         qualification_identity = mission_director.envelope["return_qualification_sha256"]
                         registered_return = True
-                    elif action in ("defer_return", "inhibit_return"):
+                    elif action in ("inhibit_return", "halt_unresolved_return"):
                         managed_return_selected = True
-                        return_defer_started = s.time_s if action == "defer_return" else None
-                        return_inhibit_started = s.time_s if action == "inhibit_return" else None
+                        return_observation_started = s.time_s if action == "inhibit_return" else None
+                        return_halt_started = s.time_s if action == "halt_unresolved_return" else None
                         return_policy, return_record = "fixed_v1", new_record("fixed_v1")
                     if point == "return_selection":
                         witness = _sample(s, v, phase)
@@ -644,7 +644,7 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                     sequencer_state, next_release = "skipped", None
                     event("deployment_skip_command", "bounded supervisor command disables remaining deployment sequence; later observations required",
                           **supervision_command)
-            if s.time_s >= return_time and return_defer_started is None and return_inhibit_started is None:
+            if s.time_s >= return_time and return_observation_started is None and return_halt_started is None:
                 if mission_director is not None or registered_return:
                     from .starship_return_feasibility import evaluate
                     from .starship_mission_director import fuel_sensor, check_action, fallback_action
@@ -658,7 +658,7 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                             "return_selection", current, observation_requests=mission_director.observation_requests,
                             hold_used_s=mission_director.hold_used_s))
                     else:
-                        choice = "state_return" if proof["return_admitted"] else "defer_return" if proof["bounded_coast_admitted"] else "inhibit_return"
+                        choice = "state_return" if proof["return_admitted"] else "inhibit_return" if proof["bounded_coast_admitted"] else "halt_unresolved_return"
                     return_execution_checks.append({"time_s": s.time_s, "action": choice, "observation": current,
                         "feasibility": proof, "physical_recovery_certified": False})
                     event("return_execution_checked", "fresh independent margins before deorbit", action=choice)
@@ -667,8 +667,8 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                     samples.append(witness)
                     if choice != "state_return":
                         return_policy, return_record = "fixed_v1", new_record("fixed_v1")
-                        return_defer_started = s.time_s if choice == "defer_return" else None
-                        return_inhibit_started = s.time_s if choice == "inhibit_return" else None
+                        return_observation_started = s.time_s if choice == "inhibit_return" else None
+                        return_halt_started = s.time_s if choice == "halt_unresolved_return" else None
                         continue
                     return_policy = TRIMMED_POLICY_ID
                     managed_return_selected = True
@@ -753,17 +753,22 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                 return_record["evaluation_count"] += 1
                 flip_due = budget["trigger"]
                 if flip_due:
+                    if scenario == "terminal_engine_out" and not failed_engine:
+                        states = list(s.engine_states)
+                        states[0] = replace(states[0], available=False, throttle=0.)
+                        s, failed_engine = replace(s, engine_states=tuple(states)), True
+                        event("terminal_engine_fault", "explicit synthetic loss of one landing engine after deorbit", engine_index=0)
+                        observed = _sample(s, v, phase)
+                        budget = terminal_budget(observed, p)
                     if registered_return and return_policy == TRIMMED_POLICY_ID:
-                        from .starship_return_feasibility import certificate_ready
+                        from .starship_return_feasibility import certificate_ready, terminal_receipt
                         certified, _ = certificate_ready(p)
-                        required_terminal = (certified["maximum_terminal_consumption_kg"]+29000.) if certified else math.inf
-                        if (observed["propellant_kg"]-100. < required_terminal
-                                or budget["available_landing_engines"] != 3
-                                or budget["aligned_net_acceleration_mps2"] <= 0):
-                            raise ValueError("terminal_return_outside_qualified_fuel_or_propulsion_domain")
-                        return_record["terminal_feasibility"] = {"required_fuel_kg": required_terminal,
-                            "fuel_lower_bound_kg": observed["propellant_kg"]-100., "passed": True,
-                            "physical_recovery_certified": False}
+                        receipt = terminal_receipt(observed, budget, certified)
+                        return_record["terminal_feasibility"] = receipt
+                        if not receipt["passed"]:
+                            event("terminal_return_domain_violation",
+                                  "entry already committed; continue existing finite guidance as unqualified best effort",
+                                  terminal_feasibility=receipt)
                     if previous_budget is not None:
                         previous_budget["state"]["retained_return"] = "previous"
                         samples.append(previous_budget["state"])
@@ -920,6 +925,7 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                         "payload_released_count": released, "payload_6dof_separation_implemented": True,
                         "booster_return_6dof_implemented": True, "booster_return_invoked": booster_run is not None,
                         "contact_receipt": contact_receipt, "starship_vehicle_validated": False,
+                        "terminal_qualification_violated": return_record.get("terminal_feasibility", {}).get("passed") is False,
                         "six_dof_integrated": True, "attitude_prescribed": False},
             "initial_state": samples[0], "final_state": asdict(s), "final_vehicle": asdict(v)}
     if mission_director is not None:

@@ -1,22 +1,26 @@
 # Mission-wide Starship decision envelope
 
-## Current version5 boundary
+## Current version 6 boundary
 
-The current envelope is `missionos.starship_mission_envelope.v5`; requestsv4.
-Return actions are `state_return` or `defer_return`, with source-qualifiedv4GNC
-available for every retained inventory includingzero. Proposals and no-response
-fallbacks both check fresh quantitative model-domain receipts. Before deorbit the
-executor checks again, and before terminal burn it enforces the qualified terminal
-fuel/propulsion domain. No qualified option inhibits execution without claiming
-safe recovery. Return deferral is a bounded30sorbital coast, not a delayed burn.
-The modelsource and qualification asset hashes are inside the immutable envelope.
+The current envelope is `missionos.starship_mission_envelope.v6`; requests v5.
+Return actions are `state_return` or `inhibit_return`. The latter prohibits
+return and observes 30 seconds of bounded coast before ending unresolved;
+it is not a delayed return or a successful recovery. If neither action passes
+independent checks, the adapter records `halt_unresolved_return`.
 
-The source/profile/backend and fuel/orbit/pose/engine constraints, independent
-physical-state binding, preserved negative trials and actual19Jev receipts are
-in [the mission-control contract](starship-mission-control-contract.md). Below is
-historicalv4context; its unchecked fixed-return fallback is superseded for the
-current managed envelope, and old grants cannot silently acquirev5authority.
+Return admission matches inventory-specific saved coast samples, including time,
+position, velocity, full attitude, rate and observed fuel. Fixed numerical matching
+tolerances do not certify a physical perturbation box. The executor rechecks at
+deorbit. A later terminal-domain violation is recorded and the existing finite
+controller continues as unqualified best effort, preserving the final outcome.
 
+Planning rejects an incompatible qualification source/profile/backend before
+approval. The hashes and late-failure response are part of the immutable envelope.
+See [the current contract](starship-mission-control-contract.md) for matching
+semantics, environment setup, requalification cost and evidence versions.
+
+The sections below preserve historical v4/v5 behavior and measurements.
+Old grants cannot acquire the current authority or be treated as current trials.
 
 The [flight-control contract](starship-mission-control-contract.md) defines the
 mission-wide goal, authority split, acceptance criteria and post-merge work order.

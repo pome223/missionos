@@ -101,7 +101,8 @@ def _response(text: str, action: str, result: dict, session_id: str) -> dict:
                     "保留は合計30秒。5秒後に1回再判断し、有効な判断と独立チェックで再開できます。期限まで未解決なら放出を停止します。判断は最大6回。"
                     "保留は帰還まで105秒超が残る場合のみ。観測予算や時間を使い切った手段は選択肢から外れます。追加観測でインターロック停止は解除されません。"
                     "帰還時刻は変更不可。応答期限は最大75秒（このプロファイルの初回は軌道投入から約45秒、最初の放出前まで）。独立した実行チェックを通し、後続観測を検証します。"
-                    "応答不正・未応答だけでは帰還方式を変更せず、持続的な制約を満たす承認済みシーケンスを維持します。各放出時点の条件を外れた場合は、その放出を見送ります。"
+                    "帰還は試験記録に一致する範囲と燃料余裕を再検査します。成立を確認できなければ帰還を禁止し、許可された30秒の軌道観測後に未解決として終了します。自動再試行はありません。"
+                    "再突入後に終端条件を外れた場合は未検証の緊急継続として既存誘導を続け、最終結果を残します。各放出時点の条件を外れた場合は、その放出を見送ります。"
                     "範囲外は引継ぎ要求を記録し、今回は事前承認済みの代替動作を実行します。飛行中の承認受付は未実装です。"
                     "\n"+"\n".join(plan["limitations"])
                 )
@@ -343,12 +344,18 @@ def maybe_handle_starship_chat(payload: Mapping[str, Any], *, expected_scenario:
         response["operation_result"]["planner_invocation"] = exc.invocation
         return response
     except (StarshipChatError, StarshipMissionError) as exc:
+        explanation = {
+            "return_qualification_backend_mismatch": "帰還試験とNumPy・SciPyの版が一致しません。spaceflight-qualified環境を使用してください。飛行は開始していません。",
+            "return_qualification_source_mismatch": "帰還試験後に対象ソースが変更されています。このソースでの再検証が必要です。飛行は開始していません。",
+            "return_qualification_profile_mismatch": "機体設定が帰還試験の対象外です。飛行は開始していません。",
+            "return_qualification_missing_or_incomplete": "現在の帰還試験記録が未完成、または未対応です。飛行は開始していません。",
+        }.get(str(exc), "The Starship request was blocked. Review the current plan with /status, then approve that exact plan before /run.")
         return _blocked(
             text,
             action,
             session_id,
             str(exc),
-            "The Starship request was blocked. Review the current plan with /status, then approve that exact plan before /run.",
+            explanation,
         )
     except Exception:
         # Provider, I/O and unexpected implementation failures can contain secret

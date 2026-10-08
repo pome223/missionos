@@ -27,7 +27,7 @@ POINTS = {
     "deployment_monitor": ["continue", "hold", "stop_deployment", "collect_status"],
     "deployment_diagnostic": ["continue", "stop_deployment"],
     "deployment_reassessment": ["continue", "collect_status", "stop_deployment"],
-    "return_selection": ["state_return", "defer_return"],
+    "return_selection": ["state_return", "inhibit_return"],
     "booster_selection": ["capture", "divert"],
 }
 COMPOUND_FAULTS = ("hold_then_reassessment_and_return_timeout", "hold_then_reassessment_timeout_invalid_return")
@@ -70,7 +70,7 @@ def contract(mode, *, splashdown=False):
         raise ValueError("mission_director_not_configured")
     from .starship_return_feasibility import load_certificate, sources as return_sources
     _, qualification_identity = load_certificate()
-    result = {"schema": "missionos.starship_mission_envelope.v5", "mode": mode,
+    result = {"schema": "missionos.starship_mission_envelope.v6", "mode": mode,
             "scope": SCOPE, "decision_points": json.loads(json.dumps(POINTS)), "maximum_decisions": 6,
             "maximum_jev_calls": 6 if mode == "live" else 0,
             "maximum_llm_calls": 6 if mode == "live" else 0,
@@ -79,13 +79,14 @@ def contract(mode, *, splashdown=False):
             "hold_expiry": "stop_deployment_no_automatic_resume",
             "decision_expiry_s": 75.,
             "minimum_return_fuel_kg": 28000., "return_time_change_allowed": False,
-            "return_choices": ["trimmed_state_terminal_v4", "bounded_orbital_coast_30s"],
-            "return_qualification_sha256": qualification_identity, "maximum_return_defer_s": 30.,
+            "return_choices": ["trimmed_state_terminal_v4", "inhibit_return_observe_30s_no_retry"],
+            "return_qualification_sha256": qualification_identity, "return_inhibit_observation_s": 30.,
+            "terminal_domain_violation": "record_and_continue_unqualified_best_effort_terminal_guidance",
             "return_model_source_sha256": digest(return_sources()),
             "booster_sites": ["capture", "divert"],
             "initial_plan": {"deployment": "continue_subject_to_release_constraints", "return": "trimmed_state_terminal_v4_subject_to_fresh_feasibility", "booster": "divert"},
             "no_response": {"deployment": "preserve_running_plan_subject_to_per_slot_gates_and_persistent_constraints_else_inhibit",
-                            "return": "checked_state_return_else_checked_bounded_coast_else_inhibit", "booster": "divert"},
+                            "return": "checked_state_return_else_inhibit_and_observe_30s_else_halt_unresolved", "booster": "divert"},
             "initial_decision_deadline": "before_first_planned_release",
             "out_of_scope": "record_escalation_and_apply_preapproved_fallback",
             "pending_time_policy": "integrate_and_pace_simulation_while_provider_pending",
@@ -205,11 +206,11 @@ def fallback_action(envelope, point, row, *, observation_requests, hold_used_s):
     if point == "booster_selection":
         return envelope["no_response"]["booster"]
     if point == "return_selection":
-        for action in ("state_return", "defer_return"):
+        for action in ("state_return", "inhibit_return"):
             if check_action(envelope, point, action, row, elapsed_s=0,
                             observation_requests=observation_requests, hold_used_s=hold_used_s) is None:
                 return action
-        return "inhibit_return"
+        return "halt_unresolved_return"
     # A temporary per-slot orbit/pressure/rate gate is not a permanent abort.
     # Keeping the sequence running never bypasses the executor's release gate.
     if (point.startswith("deployment") and row["sequencer_state"] == "running"
@@ -277,7 +278,7 @@ class MissionDirector:
                            row["time_s"]+self.envelope["decision_expiry_s"] if decision_deadline_s is None else decision_deadline_s)
             if not math.isfinite(deadline) or deadline <= row["time_s"]:
                 raise ValueError("invalid_decision_deadline")
-            request = {"schema": "missionos.starship_director_request.v4", "request_id": token,
+            request = {"schema": "missionos.starship_director_request.v5", "request_id": token,
                        "point": point, "observation": row,
                        "allowed_actions": eligible_actions(self.envelope, point, row,
                            observation_requests=self.observation_requests, hold_used_s=self.hold_used_s),
@@ -345,7 +346,7 @@ class MissionDirector:
         fallback_reason = (check_action(self.envelope, point, fallback, row, elapsed_s=0,
             observation_requests=self.observation_requests, hold_used_s=self.hold_used_s) if reason else None)
         if point == "return_selection" and fallback_reason:
-            applied = "inhibit_return"
+            applied = "halt_unresolved_return"
         if applied == "collect_status":
             self.observation_requests += 1
         if applied == "hold":

@@ -13,6 +13,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 CERTIFICATE = "docs/assets/starship-state-return-qualification/qualification.json"
 POLICY = "trimmed_state_terminal_v4"
+# Numerical matching tolerances for interpolation of saved 2 s coast samples.
+# These are not a qualified physical perturbation box or a reachability proof.
+MATCH_LIMITS = {"sample_gap_s": 2.01, "position_m": 12., "velocity_mps": .05,
+                "attitude_deg": .1, "body_rate_rad_s": .0002, "fuel_kg": 100.1}
 CORE_SOURCES = ("src/runtime/starship_sixdof_mission.py", "src/runtime/starship_sixdof.py",
     "src/runtime/starship_entry_trim.py", "src/runtime/starship_fin_allocation.py",
     "src/runtime/starship_retained_return.py", "src/runtime/starship_retained_return_verifier.py",
@@ -56,17 +60,57 @@ def load_certificate():
         return None, None
 
 
-def certificate_ready(profile, *, check_backend=True):
+def readiness(profile, *, check_backend=True):
     value, identity = load_certificate()
-    if (type(value) is not dict or value.get("schema") != "missionos.starship_state_return_qualification.v1"
+    if (type(value) is not dict or value.get("schema") != "missionos.starship_state_return_qualification.v2"
             or value.get("qualification_complete") is not True or value.get("policy_id") != POLICY
             or value.get("retained_counts") != list(range(27))
-            or value.get("source_sha256") != sources()
-            or value.get("normalized_profile_sha256") != digest(normalized_profile(profile))
-            or not 1599000. <= profile["ship"]["propellant_kg"] <= 1601000.
-            or check_backend and value.get("backend") != backend()):
-        return None, identity
+            or value.get("matching_tolerances") != MATCH_LIMITS or len(value.get("coast_corridors", [])) != 39):
+        return None, identity, "return_qualification_missing_or_incomplete"
+    if value.get("source_sha256") != sources():
+        return None, identity, "return_qualification_source_mismatch"
+    if (value.get("normalized_profile_sha256") != digest(normalized_profile(profile))
+            or not 1599000. <= profile["ship"]["propellant_kg"] <= 1601000.):
+        return None, identity, "return_qualification_profile_mismatch"
+    if check_backend and value.get("backend") != backend():
+        return None, identity, "return_qualification_backend_mismatch"
+    return value, identity, None
+
+
+def certificate_ready(profile, *, check_backend=True):
+    value, identity, _ = readiness(profile, check_backend=check_backend)
     return value, identity
+
+
+def match_coast(inputs, certificate):
+    """Match one inventory-specific saved trajectory; never extrapolate time."""
+    if certificate is None or certificate.get("matching_tolerances") != MATCH_LIMITS:
+        return None
+    now = inputs["time_s"]
+    for corridor in certificate.get("coast_corridors", []):
+        if corridor["retained_count"] != inputs["retained_count"]:
+            continue
+        for a, b in zip(corridor["samples"], corridor["samples"][1:]):
+            gap = b[0]-a[0]
+            if not (0 < gap <= MATCH_LIMITS["sample_gap_s"] and a[0] <= now <= b[0]):
+                continue
+            fraction = (now-a[0])/gap
+            predicted = [x+fraction*(y-x) for x, y in zip(a[1:], b[1:])]
+            # Quaternions describe the same orientation with either sign.
+            qa, qb = a[7:11], b[7:11]
+            sign = -1. if sum(x*y for x, y in zip(qa, qb)) < 0 else 1.
+            q = [x+fraction*(sign*y-x) for x, y in zip(qa, qb)]
+            length = math.sqrt(sum(x*x for x in q))
+            dot = abs(sum(x*y/length for x, y in zip(q, inputs["q_body_to_eci"])))
+            errors = {"position_m": math.dist(predicted[:3], inputs["r_eci_m"]),
+                "velocity_mps": math.dist(predicted[3:6], inputs["v_eci_mps"]),
+                "attitude_deg": math.degrees(2*math.acos(min(1., dot))),
+                "body_rate_rad_s": math.dist(predicted[10:13], inputs["omega_body_rad_s"]),
+                "fuel_kg": abs(predicted[13]-inputs["fuel_observed_kg"])}
+            if all(error <= MATCH_LIMITS[key] for key, error in errors.items()):
+                return {"case_id": corridor["case_id"], "sample_times_s": [a[0], b[0]],
+                        "errors": errors}
+    return None
 
 
 def deorbit_fuel(inputs):
@@ -88,9 +132,8 @@ def calculate(inputs, certificate):
     if supported:
         required = (certificate["maximum_return_consumption_kg"]+28000.+1000.
             +max(0., deorbit_fuel(inputs)-certificate["maximum_reference_deorbit_fuel_kg"]))
-    domain = (supported and inputs["orbit_status"] == "bound"
-        and 150000. <= inputs["perigee_altitude_m"] <= 350000.
-        and 150000. <= inputs["apogee_altitude_m"] <= 600000.
+    matched = match_coast(inputs, certificate)
+    domain = (supported and matched is not None and inputs["orbit_status"] == "bound"
         and inputs["body_rate_rad_s"] <= .01 and inputs["coast_axis_error_deg"] <= 5.
         and inputs["available_landing_engines"] == 3 and 0 <= inputs["retained_count"] <= 26)
     margin = inputs["fuel_observed_kg"]-100.-required if required is not None else None
@@ -102,12 +145,26 @@ def calculate(inputs, certificate):
              and inputs["body_rate_rad_s"] <= .01 and coast_margin >= 0.)
     return {"schema": "missionos.starship_return_feasibility.v1", "time_s": inputs["time_s"],
         "inputs": inputs, "profile_and_source_qualified": supported, "within_tested_state_domain": bool(domain),
+        "coast_evidence_match": matched,
         "return_required_fuel_kg": required, "return_fuel_margin_kg": margin,
         "return_admitted": bool(domain and margin is not None and margin >= 0.),
         "coast_required_fuel_kg": coast_required, "coast_fuel_margin_kg": coast_margin,
         "bounded_coast_admitted": bool(coast), "maximum_coast_s": 30.,
         "is_trajectory_rollout": False, "physical_recovery_certified": False,
-        "claim_scope": "tested simulation profile and fresh fuel/orbit/attitude/resource margins; not a per-trajectory proof"}
+        "claim_scope": "inventory-specific saved coast interpolation with explicit numerical tolerances and fresh margins; not a physical perturbation envelope or per-trajectory proof"}
+
+
+def terminal_receipt(observed, budget, certificate):
+    """Record a late limit violation; entry cannot be undone by an exception."""
+    required = certificate["maximum_terminal_consumption_kg"]+29000. if certificate else None
+    lower = observed["propellant_kg"]-100.
+    passed = (required is not None and lower >= required and budget["available_landing_engines"] == 3
+              and budget["aligned_net_acceleration_mps2"] > 0)
+    return {"time_s": observed["time_s"], "required_fuel_kg": required,
+            "fuel_lower_bound_kg": lower, "available_landing_engines": budget["available_landing_engines"],
+            "aligned_net_acceleration_mps2": budget["aligned_net_acceleration_mps2"], "passed": passed,
+            "continuation": "qualified_terminal_guidance" if passed else "unqualified_best_effort_terminal_guidance",
+            "physical_recovery_certified": False}
 
 
 def evaluate(profile, state, released_count, fuel_observed_kg):

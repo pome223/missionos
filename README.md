@@ -117,8 +117,10 @@ release evidence, not autonomous picking or physical robot execution.*
 
 The [MissionOS flight-control contract](docs/agents/starship-mission-control-contract.md)
 sets the goal: the operator approves delegated bounds, and MissionOS owns
-mission decisions within them. This simulator is a development baseline;
-return qualification and the complete mission-control acceptance gate remain open.
+mission decisions within them. The [Ship return census](docs/examples/starship-state-return.md)
+covers 0–26 retained inventories and selected fuel perturbations. Return admission
+is restricted to recorded coast trajectories with explicit matching tolerances;
+the complete mission-control acceptance gate remains open.
 
 An optional [offshore splashdown mission](docs/examples/starship-splashdown.md)
 now connects the same launch and 26-payload release flight to a separately
@@ -138,14 +140,13 @@ now connects normal deployment monitoring, mechanism diagnostics, terminal
 return selection and booster diversion. The operator approves the scope once;
 MissionOS decides within it, independent checks constrain execution, and later
 observations verify effects. The current scope includes one bounded reassessment
-during a hold; a fixture exercises hold → reassess → resume. In one historical live release-fault run, Jev selected a
-mechanism diagnostic and retained-payload return: recorded contact speed changed
-from 238.74 to 3.22 m/s. **This slice is not complete:** the earlier live normal
-run stopped after an invalid reply and impacted at 619.78 m/s. The v2 fallback
-preserves the approved nominal plan in four response-error/timeout fixtures:
-retain 26 releases and the baseline 4.55 m/s contact. These are regression
-fixtures, not new live inference. The earlier five-condition gate passed only
-three conditions; retained-payload and fuel-loss recovery remain unqualified.
+during a hold; a fixture exercises hold → reassess → resume. The evaluation at
+`6185ef92` recorded 19 actual Jev inferences, including mechanism diagnostics and
+deployment changes. Its return choices retained the initial return plan, or
+inhibited an infeasible return; they did not demonstrate an AI-induced return-policy
+improvement. The current fixed comparator also uses the improved Ship guidance.
+Fuel shortage remains unresolved after a bounded observation window. A terminal
+qualification violation is recorded and the final flight outcome is preserved.
 [Results and boundaries](docs/examples/starship-mission-decisions.md)
 remain separate from the existing videos below, which document the earlier
 fixture implementation.
