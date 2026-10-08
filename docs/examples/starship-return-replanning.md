@@ -95,3 +95,11 @@ binds the results to their executed source files. The
 defines the tool's restricted scope and commands. M1 still needs observed-state
 uncertainty, recovery-area/time constraints, bounded waiting, repeated AI
 decisions and the three end-to-end cases.
+
+Before that connection, execution and prediction will share one return
+controller. The current forecast's copied phase logic is an intermediate
+implementation. M1 will also evaluate a following-orbit opportunity within an
+initial development ceiling of 6,000 seconds beyond the original return plan;
+the current short-coast tool does not implement that yet. Recovery-area access
+and waiting resources must be established before such a delay can be selected.
+See the [integration decisions](../agents/starship-return-replanning-m1.md#decisions-before-operational-integration-review-of-pr-127).

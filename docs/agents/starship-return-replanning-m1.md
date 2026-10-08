@@ -171,3 +171,85 @@ The osculating two-body period at the recorded return state is approximately
 90.85 minutes, during which the modeled Earth rotates about 22.77 degrees.
 One additional orbit therefore does not imply revisiting the same recovery area.
 This screen admits no one-orbit waiting scenario and no waiting-endurance claim.
+
+## Decisions before operational integration (review of PR #127)
+
+These are requirements for the next implementation, **not implemented grants**.
+The current 180-second input bound and 4,000-second prediction horizon remain
+unchanged. In the tested origin, nominal return is 90 seconds ahead: that bound
+permits at most 90 seconds of postponement beyond the original plan, not 180.
+The two-point displacement measurement cannot establish an 800 km reachable
+corridor or justify linear extrapolation to later orbits.
+
+### One return controller for execution and prediction
+
+Extract the return phase transitions and command generation into a shared,
+stateful component called by both the flight loop and the forecast. Remove the
+mirrored phase machine before MissionOS can dispatch a predicted return. Keep
+the plant integration/contact path shared too; do not duplicate its sampling,
+event ordering or finite-actuator behavior in a new wrapper.
+
+The restart contract must preserve phase, planned request time, return-policy
+status, trim preparation/attempt count/next attempt, transported reference frame
+quaternion/time/bridging state, landing-frame state and prior terminal budget.
+Vehicle position/velocity/attitude/rate/fuel and all actuator states remain
+separate plant state. A forecast copies its input context and cannot mutate the
+executor's context. Scope remains post-deployment Ship return; existing fixed
+and legacy return policies must keep their behavior.
+
+The predictor answers what this Executor would do. Independence belongs to
+constraint/result checks: recovery geometry and time, fuel/resources, authority,
+freshness, and explicit observation/model/numerical uncertainty. An uncertainty
+sweep is empirical coverage, not a proof that every possible state is safe.
+
+Acceptance for extraction: preserve sampled commands, physical states, event
+ordering and outcomes against frozen records, including normal, retained-load,
+terminal-engine-fault and unresolved-return paths. Add restart/context-isolation
+checks. Merely importing the new function from both callers is insufficient.
+The mission file is qualification-bound: extraction invalidates the current
+certificate. Add the new dependency to source binding and requalify before
+enabling the changed runtime. The current builder requires fresh evidence for
+all 39 cases; never replace old source hashes to label old runs as new execution.
+Begin with a bounded representative check before spending on the full census.
+
+### M1 covers a later orbital opportunity
+
+Keep same-pass adjustments as regression/engineering probes. M1's operational
+target includes evaluating a return opportunity on the following orbit, with a
+first development search ceiling of **6,000 seconds beyond the original planned
+return request**. This covers roughly one additional modeled orbit, not a claim
+of arbitrary hours/days of loiter. A fixed original deadline prevents a moving
+six-thousand-second window from permitting unlimited postponement.
+
+NASA's [Dragon return procedure](https://www.nasa.gov/reference/nasa-spacex-crew-launch-return-operations/)
+includes an approximately 48-hour backup opportunity after a wave-off. This
+supports considering later opportunities, not copying that endurance or timing
+to Starship. The first M1 scope does not reproduce such a 48-hour operation.
+Neither a following orbit nor the 6,000-second ceiling guarantees an approved
+recovery site is reachable. Waiting for weather to clear within 60 seconds must
+not be invented to fit the existing tool.
+
+Before the scenario, freeze recovery-area geometry, supported time intervals,
+recovery-resource assumptions, and waiting-resource bounds. Recheck actual
+availability from later observations; a forecast recovery time is not a future
+fact. Power/thermal/propellant bounds must be explicit modeled assumptions or
+supported data with expiry, never free/infinite waiting. If the later opportunity
+is unreachable, exceeds resources, or remains uncertain, preserve that result
+and leave the successful-replanning milestone incomplete.
+
+For the **first later-orbit technical screen**, plan at most four fixed 6DOF
+forecasts from the same origin: original request, +60 seconds, +one osculating
+period, and +one period+60 seconds. Compute and freeze the period from the origin;
+do not tune candidate times or recovery areas after seeing terminal outcomes.
+Ceilings: two CPU workers, 900 wall seconds per forecast, 1,800 seconds for the
+whole batch, no hosted model calls, no automatic retry. Include rejected/failed
+candidates in that budget. These are planning caps, not an experiment run by
+this documentation change. The future horizon must include both bounded coast
+and the remaining descent; raising only `180` is not sufficient.
+
+Measure later-orbit runtime before fixing the live tool budget; 48 seconds was
+measured only for the short coast. Live computation must finish before a fixed
+decision deadline with time left for revalidation and execution. Its budget
+must count uncertainty checks and repeated requests, advance the flight clock,
+and use a checked preapproved continuation on expiry. Do not freeze the flight
+or remove uncertainty checks just to fit a candidate count.
