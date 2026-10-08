@@ -1,0 +1,126 @@
+{
+  "schema": "missionos.starship_return_delay_screen.v1",
+  "cases": [
+    {
+      "delay_s": 0,
+      "checks": {
+        "profile_only_requested_coast_change": true,
+        "core_source_matches": true,
+        "source_snapshot_matches": true,
+        "study_unchanged": true,
+        "backend_matches": true,
+        "declared_inputs_match": true,
+        "record_verified": true,
+        "policy_verified": true,
+        "orbit_and_26_releases": true
+      },
+      "contact": {
+        "time_s": 4929.856429758704,
+        "speed_mps": 4.608259493361677,
+        "tilt_deg": 2.374862690722787,
+        "body_rate_rad_s": 0.003031432577058173,
+        "reserve_kg": 62394.30546504836,
+        "latitude_deg": 4.882801542375486,
+        "longitude_deg": 165.2781946210071
+      },
+      "contact_limits_met": true,
+      "return_requested_s": [
+        2280.7000000000407
+      ],
+      "study_sha256": "de518263f1a1c19e1f210cef37abad97b36e51e33f18274fb6a98a0fe2b54b0a",
+      "executed_probe_sha256": "028d513696a3b1fc0dc5d99d6c247c5ca20bba90612b239c4d557a3ab6dfd6a4",
+      "original_verdict": {
+        "record_verified": false,
+        "policy_verified": false,
+        "contact_limits_met": false
+      },
+      "record_issues": [],
+      "policy_issues": []
+    },
+    {
+      "delay_s": 60,
+      "checks": {
+        "profile_only_requested_coast_change": true,
+        "core_source_matches": true,
+        "source_snapshot_matches": true,
+        "study_unchanged": true,
+        "backend_matches": true,
+        "declared_inputs_match": true,
+        "record_verified": true,
+        "policy_verified": true,
+        "orbit_and_26_releases": true
+      },
+      "contact": {
+        "time_s": 4970.591479233129,
+        "speed_mps": 4.610282524309427,
+        "tilt_deg": 2.3811905095541888,
+        "body_rate_rad_s": 0.0030232284145807965,
+        "reserve_kg": 62394.20342496561,
+        "latitude_deg": 6.019157801623628,
+        "longitude_deg": 167.51984413506779
+      },
+      "contact_limits_met": true,
+      "return_requested_s": [
+        2340.7000000000407
+      ],
+      "study_sha256": "4a40316e4b75626f7e324fdd93bdc882e9168e33f63d9669830e1e528fbaa77a",
+      "executed_probe_sha256": "028d513696a3b1fc0dc5d99d6c247c5ca20bba90612b239c4d557a3ab6dfd6a4",
+      "original_verdict": {
+        "record_verified": false,
+        "policy_verified": false,
+        "contact_limits_met": false
+      },
+      "record_issues": [],
+      "policy_issues": []
+    }
+  ],
+  "paired_checks": {
+    "return_request_delayed_60_s": true,
+    "same_nonempty_pre_return_prefix": true,
+    "same_26_release_events": true,
+    "same_booster_separation_state": true
+  },
+  "common_prefix_sample_count": 1194,
+  "contact_shift": {
+    "great_circle_distance_m_spherical_6371008_8": 278449.4382630917,
+    "time_s": 40.73504947442507,
+    "fuel_difference_kg": -0.10204008274740772
+  },
+  "gate_passed": true,
+  "baseline_certificate_ready": true,
+  "core_source_sha256": {
+    "src/runtime/starship_sixdof_mission.py": "ad97aed9cdc14e48c1fde113dd41bb2033b0eb20a77c51b5f07488831a494ac2",
+    "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+    "src/runtime/starship_entry_trim.py": "b753a5023e78f6446ded41f23aa530f2e5735ff10370b5855202ca5e9f13c219",
+    "src/runtime/starship_fin_allocation.py": "2e00e960830d9b5a281fd41f5f37702e824111e063262430b98636ed35ca1745",
+    "src/runtime/starship_retained_return.py": "d7e21b771ae798f18799675685526c3d3d3f24be7cdfe3659b0e4ce822592eea",
+    "src/runtime/starship_retained_return_verifier.py": "0c0036a8bb355de40bf37e8e15757b955b1955b55a12601066136ca579a10e66",
+    "src/runtime/starship_sixdof_verifier.py": "95f34e44c815fe8e88143091a2f3e48da8e1e3df0658d2b0531e5f93db950f11",
+    "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+    "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+    "src/runtime/starship_attitude_reference.py": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a",
+    "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+    "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f",
+    "src/runtime/starship_return_feasibility.py": "fc6dca48da343d941a7eeeae38377990b1c2e00c8c51c1dce949d57c9a0a6de4",
+    "src/runtime/starship_return_feasibility_verifier.py": "7c45a036761872fc191a418c18a7170ff9acd4278ddb76aa2e52e9d35b64a914",
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5"
+  },
+  "backend": {
+    "numpy": "2.4.6",
+    "scipy": "1.17.1"
+  },
+  "audit_script_sha256": "a3e1f47b0d9727a984e8c16315d682bb41309617b127d2eb59010bdca2aee38e",
+  "limits": {
+    "speed_mps": 5.0,
+    "tilt_deg": 5.0,
+    "body_rate_rad_s": 0.02,
+    "reserve_kg": 28000.0
+  },
+  "dynamics_executed_by_audit": false,
+  "model_calls": 0,
+  "online_rollout": false,
+  "recovery_area_qualified": false,
+  "waiting_endurance_qualified": false,
+  "milestone_complete": false,
+  "physical_execution": false
+}
