@@ -55,7 +55,7 @@ recorded **simulator evidence**; they are not physical-robot deployments.
 | **Robot dogs — Unitree Go2 / MuJoCo** | Indoor delivery, waiting or replanning around blockage, simulated receipt, and return | [Go2 images and videos](#unitree-go2-indoor-delivery-and-return) |
 | **Block stacking — SmolVLA with ExtraTrees or neural ACWM** | Forecast evidence, continue-or-stop judgments, bounded execution, and tower verification | [Stacking animation and results](#block-stacking-predict-execute-and-stop) |
 | **Robot-arm repair — GR00T, Cosmos Policy, VLA-0 / LIBERO Panda** | Bounded repair attempts and checks of target and preserved conditions | [Measured repair limits](#where-the-manipulation-repair-frontier-currently-is) |
-| **Spacecraft development — Starship-inspired 6DOF simulator** | Source-bound simulation approval, bounded deployment supervision, and saved-state verification | [Launch, 26-payload release, supervision and return videos](#starship-inspired-six-degree-of-freedom-mission-simulation) |
+| **Spacecraft development — Starship-inspired 6DOF simulator** | Once-approved scope, live AI return replanning, checked fallback and measured contact | [Launch, 26-payload release, supervision and return videos](#starship-inspired-six-degree-of-freedom-mission-simulation) |
 
 ### Unitree Go2: indoor delivery and return
 

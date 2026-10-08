@@ -608,3 +608,24 @@ than `message` were compared against the three saved plans and are unchanged.
 A newly started production Gateway passed real HTTP planning, approval and
 rejection with the corrected scope. No new flight or model call is attributed
 to this copy check; the summary records the one changed source hash explicitly.
+
+
+Validation after the display correction: **3,350 Starship regressions passed,
+5 skipped**, with two existing dependency deprecation warnings. Changed-file
+Ruff, local links and publication-path checks passed. The full development ledger
+contains nine flights across successive implementations (including two failed
+attempts), 67 online forecasts, six observation screens and two standalone grid
+refinement forecasts. These versions are not pooled into a reliability rate.
+There were no automatic retries. Raw studies, input/source snapshots, HTTP
+transcripts and provider receipts are retained locally; public JSON is a reviewed
+subset without credentials, private databases or workstation paths.
+
+For a reproducible HTTP run, install the `spaceflight-qualified` extra and start
+`scripts/start_starship_gateway.py` with `--fixture-planner` and, for the normal
+and changed live cases, `--enable-live-mission-director --project "$M1_SECRET_PROJECT"`.
+The planning selector stays fixture; **inflight Jev is live**. Use
+`scripts/smoke_starship_chat_gateway.py --port PORT --scenario SCENARIO --output-dir FRESH_DIR`
+for `sixdof_m1_normal`, `sixdof_m1_replan` and (on a fixture Gateway)
+`sixdof_m1_timeout`. The smoke requires case acceptance, not merely a valid
+record. A fixture-only changed flight cannot satisfy its actual-AI acceptance
+criterion even if its physical contact passes. No model key enters the simulator.

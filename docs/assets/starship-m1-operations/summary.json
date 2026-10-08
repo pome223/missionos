@@ -2151,5 +2151,87 @@
     "authority_payload_and_nonmessage_response_fields_unchanged_for_three_saved_plans": true,
     "fresh_loopback_http_plan_approve_reject_passed": true,
     "new_simulation_or_model_calls": 0
+  },
+  "development_run_accounting": {
+    "full_flights": 9,
+    "flight_forecasts": 67,
+    "additional_observation_screen_forecasts": 6,
+    "additional_step_refinement_forecasts": 2,
+    "history": [
+      {
+        "label": "e2e-normal",
+        "case": "normal",
+        "forecasts": 6,
+        "termination": "return_unresolved",
+        "included_in_final_three": false
+      },
+      {
+        "label": "e2e-normal-v2",
+        "case": "normal",
+        "forecasts": 3,
+        "termination": "low_speed_surface_contact",
+        "included_in_final_three": false
+      },
+      {
+        "label": "e2e-replan",
+        "case": "recovery_update",
+        "forecasts": 9,
+        "termination": "return_unresolved",
+        "included_in_final_three": false
+      },
+      {
+        "label": "final-normal",
+        "case": "normal",
+        "forecasts": 3,
+        "termination": "low_speed_surface_contact",
+        "included_in_final_three": false
+      },
+      {
+        "label": "final-replan",
+        "case": "recovery_update",
+        "forecasts": 9,
+        "termination": "low_speed_surface_contact",
+        "included_in_final_three": false
+      },
+      {
+        "label": "final-timeout",
+        "case": "decision_timeout",
+        "forecasts": 9,
+        "termination": "low_speed_surface_contact",
+        "included_in_final_three": false
+      },
+      {
+        "label": "reviewed-normal",
+        "case": "normal",
+        "forecasts": 4,
+        "termination": "low_speed_surface_contact",
+        "included_in_final_three": true
+      },
+      {
+        "label": "reviewed-replan",
+        "case": "recovery_update",
+        "forecasts": 12,
+        "termination": "low_speed_surface_contact",
+        "included_in_final_three": true
+      },
+      {
+        "label": "reviewed-timeout",
+        "case": "decision_timeout",
+        "forecasts": 12,
+        "termination": "low_speed_surface_contact",
+        "included_in_final_three": true
+      }
+    ],
+    "automatic_retries": 0,
+    "different_development_versions_not_pooled_as_success_rate": true
+  },
+  "verification_checks": {
+    "starship_regression_passed": 3350,
+    "skipped": 5,
+    "warnings": 2,
+    "changed_file_ruff": "passed",
+    "markdown_links": "passed",
+    "publication_path_scan": "passed",
+    "ci_status_at_publication": "pending"
   }
 }
