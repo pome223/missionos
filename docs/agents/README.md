@@ -4,6 +4,10 @@ This layer is for AI coding agents and maintainers. It is allowed to be detailed
 Prefer explicit field names, route boundaries, runtime checks, and negative
 examples over simplified prose.
 
+## Research reports
+
+- [From candidate headroom to contact-limited repair (September 17, 2026)](contact-repair-negative-result-20260917.md): bounded simulator results, local improvements, failed natural contact release, and the decision to pause this research line.
+
 ## Reading Map by Change Target
 
 Use this table to find the minimum you must read before touching code or public
