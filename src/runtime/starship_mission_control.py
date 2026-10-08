@@ -24,6 +24,7 @@ import time
 from typing import Callable
 import uuid
 
+from .starship_replanning import SCENARIOS as M1_SCENARIOS, SCOPE as M1_SCOPE
 from .starship_flight import SCENARIOS
 from .starship_mission_director import SCENARIOS as MANAGED_SCENARIOS, MODE_ENV as DIRECTOR_MODE_ENV, SCOPE as DIRECTOR_SCOPE
 from .starship_sixdof_catalog import (
@@ -35,7 +36,7 @@ from .starship_sixdof_catalog import (
 )
 
 REPO = Path(__file__).resolve().parents[2]
-CATALOG = (*SCENARIOS, "dispenser_comparison", "dispenser_jev_shadow", *SIXDOF_SCENARIOS, *MANAGED_SCENARIOS)
+CATALOG = (*SCENARIOS, "dispenser_comparison", "dispenser_jev_shadow", *SIXDOF_SCENARIOS, *MANAGED_SCENARIOS, *M1_SCENARIOS)
 PLAN_TTL_S = 900
 APPROVAL_TTL_S = 300
 ARTIFACT_NAMES = frozenset({"report.html", "study.json", "verification.json", "manifest.json"})
@@ -115,6 +116,9 @@ def _read(path: Path) -> dict:
 
 
 def _sources(scenario: str) -> dict:
+    if scenario in M1_SCENARIOS:
+        from .starship_replanning import source_hashes
+        return source_hashes()
     if scenario in MANAGED_SCENARIOS:
         from .starship_mission_director import source_hashes
         return source_hashes(REPO)
@@ -145,7 +149,7 @@ def worker_environment() -> dict[str, str]:
 def process_environment(plan: dict) -> dict[str, str]:
     """Only the Jev observer broker may receive its own provider credential."""
     env = worker_environment()
-    if plan["scenario"] in MANAGED_SCENARIOS:
+    if plan["scenario"] in (*MANAGED_SCENARIOS, *M1_SCENARIOS):
         mode = plan["mission_envelope"]["mode"]
         if os.environ.get(DIRECTOR_MODE_ENV) != mode:
             raise StarshipMissionError("mission_director_configuration_changed")
@@ -397,6 +401,28 @@ class StarshipMissionService:
                     "ShipとBoosterは独立した時計で順次積分する開発モデル。実時間の並行管制と実機精度は未検証です。",
                     "キャッチ到達条件が未認定のため退避します。退避先への安全な到達も保証しません。",
                     "fixtureは合成応答でありAI推論ではありません。人の作業量削減・AI優位性は未測定です。"])
+        if scenario in M1_SCENARIOS:
+            from .starship_return_feasibility import readiness
+            from .starship_replanning import contract as m1_contract
+            _, _, reason = readiness(_read(REPO / SIXDOF_PROFILE))
+            if reason:
+                raise StarshipMissionError(reason)
+            try:
+                envelope = m1_contract(os.environ.get(DIRECTOR_MODE_ENV, "off"))
+            except ValueError as exc:
+                raise StarshipMissionError("m1_not_configured") from exc
+            if M1_SCENARIOS[scenario] == "decision_timeout" and envelope["mode"] != "fixture":
+                raise StarshipMissionError("m1_timeout_fixture_only")
+            plan.update(backend="starship_return_replanning", mission_envelope=envelope,
+                release_policy="approved_26_payload_sequence_then_bounded_ai_return_control",
+                model_authority="bounded_return_replanning", jev_authority="bounded_return_replanning",
+                simulation={"case": M1_SCENARIOS[scenario], "profile": SIXDOF_PROFILE,
+                    "profile_sha256": plan["source_sha256"][SIXDOF_PROFILE], "dt_scale": 1.,
+                    "maximum_wall_time_s": 1800},
+                verification_scope="launch_continuation_repeated_decisions_forecasts_fresh_dispatch_contact_and_area",
+                limitations=["開発用の観測・回収区域・待機資源の仮定を承認します。実機の回収許可ではありません。",
+                    "予測と実行は共有の6DOF。制約・観測不確かさ・実際の接触は別に確認します。",
+                    "人は範囲を承認。Jevは帰還を判断。未応答時にも現在の状態と回収条件を検算します。"])
         plan["sha256"] = _digest(plan)
         state = {"status": "awaiting_approval", "plan": plan, "approval": None,
                  "execution": {}, "planner_invocation": result.get("invocation", {}),
@@ -441,6 +467,9 @@ class StarshipMissionService:
             if plan["scenario"] == LAUNCH_CATCH_SCENARIO:
                 grant["scope"] = "local_launch_connected_booster_catch_simulation"
                 grant["booster_recovery"] = plan["booster_recovery"]
+            if plan["scenario"] in M1_SCENARIOS:
+                grant["scope"] = M1_SCOPE
+                grant["mission_envelope"] = plan["mission_envelope"]
             if plan["scenario"] in MANAGED_SCENARIOS:
                 grant["scope"] = DIRECTOR_SCOPE
                 grant["mission_envelope"] = plan["mission_envelope"]
@@ -492,7 +521,7 @@ class StarshipMissionService:
                     and state.get("execution", {}).get("started_at_epoch_s") == consumed)
         if (grant["session_id"] != plan["session_id"] or grant["plan_id"] != plan["id"]
                 or grant["plan_sha256"] != plan["sha256"] or grant["consumed_by_run"] != consumed_by_run
-                or grant["scope"] != (DIRECTOR_SCOPE if plan["scenario"] in MANAGED_SCENARIOS else TOWER_GRANT_SCOPE if plan.get("tower_supervision") is not None else "local_launch_connected_booster_catch_simulation" if plan["scenario"] == LAUNCH_CATCH_SCENARIO else "local_initialized_booster_catch_simulation" if plan["scenario"] in CATCH_CATALOG else "local_simulation_and_bounded_flight_supervision_and_retained_return" if plan["scenario"] in RETAINED_RETURN_SCENARIOS else "local_simulation_and_bounded_flight_supervision" if plan["scenario"] in SUPERVISED_SCENARIOS else "local_simulation_and_jev_shadow" if plan["scenario"] == "dispenser_jev_shadow" else "local_simulation_only")
+                or grant["scope"] != (M1_SCOPE if plan["scenario"] in M1_SCENARIOS else DIRECTOR_SCOPE if plan["scenario"] in MANAGED_SCENARIOS else TOWER_GRANT_SCOPE if plan.get("tower_supervision") is not None else "local_launch_connected_booster_catch_simulation" if plan["scenario"] == LAUNCH_CATCH_SCENARIO else "local_initialized_booster_catch_simulation" if plan["scenario"] in CATCH_CATALOG else "local_simulation_and_bounded_flight_supervision_and_retained_return" if plan["scenario"] in RETAINED_RETURN_SCENARIOS else "local_simulation_and_bounded_flight_supervision" if plan["scenario"] in SUPERVISED_SCENARIOS else "local_simulation_and_jev_shadow" if plan["scenario"] == "dispenser_jev_shadow" else "local_simulation_only")
                 or grant.get("mission_envelope") != plan.get("mission_envelope")
                 or grant.get("jev_shadow") != plan.get("jev_shadow")
                 or grant.get("flight_supervision") != plan.get("flight_supervision")
@@ -506,6 +535,12 @@ class StarshipMissionService:
             raise StarshipMissionError("approval_binding_expired_or_consumed")
         if plan["source_sha256"] != _plan_sources(plan):
             raise StarshipMissionError("approved_source_changed")
+        if plan["scenario"] in M1_SCENARIOS:
+            from .starship_return_feasibility import readiness
+            from .starship_replanning import contract as m1_contract
+            _, _, reason = readiness(_read(REPO / SIXDOF_PROFILE))
+            if reason or plan["mission_envelope"] != m1_contract(plan["mission_envelope"]["mode"]):
+                raise StarshipMissionError(reason or "m1_envelope_not_current")
         if plan["scenario"] in MANAGED_SCENARIOS:
             from .starship_return_feasibility import readiness
             _, _, reason = readiness(_read(REPO / SIXDOF_PROFILE))
@@ -536,7 +571,7 @@ class StarshipMissionService:
             run_id = uuid.uuid4().hex
             run_dir = self.root / ("run-" + run_id)
             run_dir.mkdir(mode=0o700)
-            if state["plan"]["scenario"] in SUPERVISED_SCENARIOS or state["plan"]["scenario"] in MANAGED_SCENARIOS:
+            if state["plan"]["scenario"] in SUPERVISED_SCENARIOS or state["plan"]["scenario"] in (*MANAGED_SCENARIOS, *M1_SCENARIOS):
                 (run_dir / "supervision").mkdir(mode=0o700)
             state["approval"]["consumed_by_run"] = run_id
             unsigned = {key: value for key, value in state["approval"].items() if key != "signature"}
@@ -563,6 +598,10 @@ class StarshipMissionService:
                 state["execution"].update(status="failed", failure_reason="worker_spawn_failed")
             self._save(session_id, state)
             if state["execution"].get("subprocess_spawned"):
+                if state["plan"]["scenario"] in M1_SCENARIOS:
+                    from src.intelligence.starship_replanning import serve
+                    Thread(target=serve, args=(run_dir / "supervision", state["plan"]["mission_envelope"], child,
+                        lambda: state["plan"]["source_sha256"] == _sources(state["plan"]["scenario"])), daemon=True).start()
                 if state["plan"]["scenario"] in MANAGED_SCENARIOS:
                     from src.intelligence.starship_mission_director import serve_director
                     Thread(target=serve_director, args=(run_dir / "supervision", state["plan"]["mission_envelope"], child,
@@ -922,6 +961,10 @@ class StarshipMissionService:
                         execution.update(status="failed", failure_reason="worker_receipt_binding_invalid")
                     else:
                         result_status = "verified" if receipt["verification_passed"] else "failed"
+                        if (state["plan"]["scenario"] in M1_SCENARIOS
+                                and result_status == "verified"
+                                and not receipt["verification"].get("case_accepted", False)):
+                            result_status = "unresolved"
                         execution.update(status=result_status, worker_receipt_verified=True,
                                          verification=receipt["verification"], artifact_sha256=receipt["artifact_sha256"],
                                          provider_credentials_present=receipt["provider_credentials_present"],
@@ -931,8 +974,10 @@ class StarshipMissionService:
                             execution["simulator_provider_credentials_present"] = receipt.get("simulator_provider_credentials_present")
                         state.update(status=result_status, message=(
                             "シミュレーションの保存記録を検証しました。実機の再現成功や衛星サービス開始を示すものではありません。"
-                            if result_status == "verified" else "シミュレーションまたは保存記録の検証に失敗しました。"))
-                        if result_status == "verified":
+                            if result_status == "verified" else
+                            "保存記録の検証は通過しましたが、この便の帰還・判断の達成条件は未達です。未解決として記録します。"
+                            if result_status == "unresolved" else "シミュレーションまたは保存記録の検証に失敗しました。"))
+                        if result_status in {"verified", "unresolved"}:
                             execution["artifacts"] = sorted(receipt["artifact_sha256"])
                     self._save(session_id, state)
                 elif self.clock() - execution["started_at_epoch_s"] > max(600, state["plan"].get("simulation", {}).get("maximum_wall_time_s", 300)+300):
@@ -946,7 +991,9 @@ class StarshipMissionService:
             raise StarshipMissionError("artifact_not_allowlisted")
         state = self.status(session_id, plan_id)
         execution = state["execution"]
-        if state["status"] != "verified" or name not in execution.get("artifact_sha256", {}):
+        if (state["status"] not in {"verified", "unresolved"}
+                or not execution.get("worker_receipt_verified")
+                or name not in execution.get("artifact_sha256", {})):
             raise StarshipMissionError("verified_artifact_unavailable")
         path = self.root / ("run-" + execution["run_id"]) / "results" / name
         if (path.is_symlink() or not path.resolve().is_relative_to(self.root)
@@ -988,6 +1035,31 @@ def execute_worker(state_dir: Path, run_id: str) -> int:
                    {"DEEPSEEK_API_KEY", "TYPESAFE_API_KEY", "GOOGLE_APPLICATION_CREDENTIALS", "JEV_API_KEY"} - allowed_keys):
                 raise StarshipMissionError("provider_credentials_in_worker")
             output = run_dir / "results"
+            if plan["scenario"] in M1_SCENARIOS:
+                from .starship_replanning_verifier import verify
+                args = [sys.executable, str(REPO/"scripts/run_starship_m1.py"), "--approve-simulation",
+                    "--case", plan["simulation"]["case"], "--mode", plan["mission_envelope"]["mode"],
+                    "--mailbox", str(run_dir/"supervision"), "--run-id", run_id, "--output-dir", str(output)]
+                code = _run_simulator(args, timeout=plan["simulation"]["maximum_wall_time_s"])
+                result["simulator_process_returncode"] = code
+                if code:
+                    raise StarshipMissionError("m1_simulator_process_failed")
+                study = _read(output/"study.json")
+                if (study["profile"] != _read(REPO/SIXDOF_PROFILE)
+                        or plan["source_sha256"] != _sources(plan["scenario"])):
+                    raise StarshipMissionError("m1_execution_input_binding_mismatch")
+                verdict = verify(study, expected_envelope=plan["mission_envelope"],
+                    expected_case=plan["simulation"]["case"], expected_sources=plan["source_sha256"])
+                _write(output/"verification.json", verdict)
+                manifest = _read(output/"manifest.json")
+                manifest["files"]["verification.json"] = sha256((output/"verification.json").read_bytes()).hexdigest()
+                _write(output/"manifest.json", manifest)
+                result.update(verification=verdict, verification_passed=verdict["passed"],
+                    artifact_sha256={name:sha256((output/name).read_bytes()).hexdigest() for name in ARTIFACT_NAMES},
+                    ended_at_epoch_s=service.clock())
+                result["signature"] = service._signature(result)
+                _write(run_dir/"result.json", result)
+                return 0 if verdict["passed"] else 2
             if plan["scenario"] in MANAGED_SCENARIOS:
                 from .starship_mission_director_verifier import verify
                 args = [sys.executable, str(REPO/"scripts/run_starship_managed_mission.py"), "--approve-simulation",

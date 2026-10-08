@@ -115,6 +115,14 @@ release evidence, not autonomous picking or physical robot execution.*
 
 ### Starship-inspired six-degree-of-freedom mission simulation
 
+**M1: AI-directed return replanning now has an executed simulation record.**
+After a recovery-area update, Jev requested forecasts, waited for fresh status
+and selected a later orbital return inside a once-approved scope. The Ship then
+met the fixed study area's time and contact limits. Normal operation preserved
+the original result, and a persistent decision-service outage used a checked
+fallback. [Three flights, decisions and limits](docs/examples/starship-m1-operations.md).
+
+
 The [MissionOS flight-control contract](docs/agents/starship-mission-control-contract.md)
 sets the goal: the operator approves delegated bounds, and MissionOS owns
 mission decisions within them. The [Ship return census](docs/examples/starship-state-return.md)

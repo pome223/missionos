@@ -391,3 +391,212 @@ The [compact screen](../assets/starship-return-replanning-m1/opportunity-screen.
 preserves source hashes, candidate identities, actual transition times and these
 false claim flags. M1's repeated AI decisions and three operational E2Es remain
 unfinished.
+
+## Integrated M1 actor (following PR #128)
+
+The registered catalog entries are `sixdof_m1_normal`, `sixdof_m1_replan` and
+`sixdof_m1_timeout`. Each uses the existing chat plan → `/approve` → `/run`
+boundary. Approval binds the complete operations contract, code/profile hashes,
+call and compute budgets, immutable original deadline and fallback. The host
+alone holds provider credentials. The separate worker rechecks the signed
+single-use grant and records a signed artifact receipt. Existing test-operator
+approval does not authenticate a real operator. This integration does not add
+in-flight human notification/approval delivery.
+
+`starship_replanning_executor` runs launch and all 26 releases with the existing
+production simulator, then continues its exact position, velocity, attitude,
+rates, propellant and finite actuators after T+1000.7 s. It calls the shared
+`ReturnController` and plant/contact stepper. It never replaces the plant with
+a forecast. The initial launch/deployment controller remains deterministic;
+M1 adds repeated post-deployment return supervision, not AI engine control or
+continuous LLM inference throughout ascent. Booster recovery remains outside M1.
+
+The two opportunity times are frozen from the first synthetic navigation
+estimate: the original cutoff-plus-coast schedule and one osculating period
+later. Neither monitoring nor repeated predictions can move the original
+schedule +6,000 s deadline. A normal return still requires numerical checks;
+`keep_plan` does not bypass them. Jev chooses whether to request evaluation,
+wait, refresh the published recovery status and select a return. DeepSeek is
+called only if Jev actually requests deeper reasoning, with a separate cap.
+
+### Observation and uncertainty scope
+
+Only the sensor adapter reads the plant for navigation/gauge telemetry.
+Position, velocity, attitude, angular rate and fuel are quantized before the
+prediction boundary. Perfect actuator position/health telemetry is an explicit
+model assumption. The model receives the operational notice, budgets, predicted
+contact quantities and constraint rejections, not the scenario name, future
+notice, plant mass, inertia or hidden fault schedule. This is a synthetic sensor
+adapter, not a flight-qualified navigation filter. Existing low-level GNC still
+has the simulator's mass/inertia information; M1 does not fix that limitation.
+
+Each tool request evaluates the estimated center and two fixed joint
+perturbations: position components (±2,∓2,±1) m, velocity (±0.002,∓0.002,±0.001)
+m/s, ±0.01° attitude, ±0.00001 rad/s per body-rate component and ±100 kg fuel.
+All three must pass. A fourth forecast halves both powered and coast
+integration/control intervals from the estimated center and must pass the same
+contact, area and time checks. This is **sampled uncertainty and grid sensitivity,
+not coverage of an entire uncertainty box, numerical convergence or a safety
+proof**. A 20 km footprint and 30 s arrival padding apply to each of the four
+forecasts as additional declared engineering margins; they do not bound the
+coarse/fine discrepancy. Numerical step refinement is reported separately; reproducing the Executor is not independent physics
+validation. The old 39-trajectory certificate and its tolerances are unchanged.
+
+### Fixed study areas and finite waiting resources
+
+`examples/spaceflight/starship-m1-operations.json` freezes two 125 km radius
+circles around (5° N, 165° E) and (5° N, 143° E). These are **engineering targets
+calibrated using the previous opportunity screen**, not independently chosen
+real recovery sites. They are fixed before the M1 scenarios and new runs and
+are not repositioned after a failed candidate. Inclusion demonstrates operation
+within these declared synthetic areas, not arbitrary target guidance, surveyed
+ocean clearance, weather validity, recovery-vessel reachability or cross-range
+capability. No physical safe-ocean claim follows from a latitude/longitude test.
+
+The notice sequence distinguishes current information from predicted recovery.
+Normal operation has an available primary area. The changed case withdraws it;
+the western team's availability remains unknown until a later published notice.
+The AI does not see that later message in advance. The revised notice supplies
+an availability interval, which is rechecked at dispatch and against actual
+contact time/location. This is a recovery-asset scheduling scenario, not a claim
+that weather clears within minutes.
+
+Waiting resources are finite **accounting bounds**, not full subsystem models:
+30 kWh initially, 4 kW draw, minimum 12 kWh; temperature upper bound starting
+295 K and rising at 0.001 K/s, maximum 310 K; propellant-loss bound 0.02 kg/s,
+deducted from predicted and measured terminal fuel margins. The resource clock
+starts at the original return time and cannot reset. These assumptions expire
+at the fixed deadline. Heat flow, actual vent dynamics, battery faults, slosh
+and long-duration Starship endurance remain unmodeled.
+
+### Async work, revisions and independent checks
+
+A pending model/tool job advances the finite plant by at least the elapsed wall
+time, with measured start/end/elapsed values in the record. Outside pending work
+the numerical simulation can run faster than real time. Maximums: 12 Jev calls,
+2 conditional DeepSeek calls, 12 forecasts, 2 forecast workers, 180 s per forecast,
+600 s per batch, 35 s per decision, 4 plan revisions and 1,800 s per worker run.
+No automatic retry is performed. A tool or model timeout cannot manufacture an
+admission. Unanswered reassessment follows the preapproved numerical evaluation
+and current checks; if no return is admitted, the result remains unresolved.
+
+Request IDs, request hash, authority hash and revision bind a response. Candidate
+selection checks the authority, all four contact results, resource margins,
+current area availability and the current measured state against the forecast's
+coast samples. The same independent scalar checker runs immediately before
+return dispatch; it rejects expired notices, missed times and state drift.
+The verifier repeats these checks from saved records, checks the commanded
+return time, later activation event, actual contact geometry/time and unchanged
+original contact limits. `verified` is record validity; unresolved operation or
+an impact must never become a successful contact merely through verification.
+
+The three HTTP E2Es and compact outcome evidence determine completion. Merely
+registering the actor or passing unit tests does not close M1. For the normal
+case compare the physical contact and timing with the original timeline. For
+the changed case require an actual Jev decision, a later revised plan and actual
+contact in its checked area/time. For the timeout case require a recorded
+missing response, checked fallback and the final observed outcome.
+
+
+### Review corrections and completion gate
+
+The first integrated normal flight was preserved as unresolved: numerical
+forecast results still contained NumPy scalars after being written to JSON, so
+the strict in-process constraint checker rejected otherwise finite contact
+results. The tool now returns the reloaded JSON value. A regression test injects
+actual NumPy scalar values across that process boundary. The verifier is not
+relaxed. This run is not counted as a successful normal flight.
+
+The actor uses only the current notice's published expiry and a bounded periodic
+monitor interval; the future scenario update time is not an actor trigger.
+`keep_plan` requests only the mandatory nominal check, `evaluate_returns` adds
+alternatives, and a requested ground-status refresh consumes a control step and
+records the delivered observation. Waiting continues monitoring. In the timeout
+case, all decisions after service loss remain unanswered; the following choice
+is genuinely a checked fallback, not a later fixture response mislabeled as one.
+
+Record validity remains separate from `case_accepted`. The latter additionally
+requires nominal return for the normal case, a model-attributed following-orbit
+selection and contact for the changed case, and persistent missing responses
+plus a checked fallback for the timeout case. All require actual contact within
+the independent limits and the selected fixed area/time. The HTTP smoke asserts
+this case gate. The existing independent six-DOF sample and rigid-body contact
+kinematics checks are also applied; a controller-supplied speed alone cannot
+satisfy the gate.
+
+A development replan attempt also remained unresolved after the live model kept
+waiting despite a feasible future candidate. That failed flight is retained.
+The action descriptions now explain that selecting an opportunity **books a
+future burn**, while waiting consumes a finite opportunity; they do not assert
+that the original opportunity is unavailable. The later runs are development
+validation after that correction, not a held-out evaluation of model quality.
+
+Completion attribution follows the revision actually dispatched. An earlier AI
+selection that was withheld and replaced by fallback cannot count as executed
+AI replanning. Exhausting the model-call budget creates its own request identity,
+explicit `budget_exhausted` record and later observation, with no provider call;
+the fallback cannot borrow the preceding model response. The timeout validator
+requires missing responses from the registered update stage onward, including
+later monitoring, rather than trusting only individual injection flags.
+
+A requested recovery-status refresh retrieves the currently published coordinator
+message. It may return the same message, and records `information_changed`.
+It is not a second independent sensor or guaranteed new information. The later
+published update is what changes recovery availability in this scenario.
+Report single-choice calls separately from calls with multiple available actions;
+invoking a model alone does not establish a meaningful tradeoff.
+
+For this M1 Gateway route, record-valid but case-unsatisfied results have status
+`unresolved`, retain signed/hash-checked artifacts for inspection, and are not
+reported as `verified` success. Record-invalid results remain `failed`. This
+does not change the older routes' definition of record verification.
+
+
+### Numerical sensitivity discovered before final acceptance
+
+Halving powered/coast integration and control intervals shifted contact by
+77.291 km (nominal) and 76.572 km (later orbit), with arrival shifts 10.510 s and
+10.415 s. Contact speeds remained 4.597/4.595 m/s. The original 20 km padding
+cannot be presented as a bound on this discrepancy. No contact limit, target
+center/radius or old certificate tolerance was enlarged. Instead, **every online
+candidate now includes the half-step center forecast**, and all four forecasts
+must fit the unchanged area and time windows with the same padding. This raises
+tool use from three to four forecasts per opportunity while keeping the original
+12-forecast flight cap and two-worker cap. Three opportunities/refreshes exhaust
+that budget. A half-step failure rejects the candidate; it is not averaged away.
+
+This is a finite-resolution development acceptance criterion. Two grids and
+three observation points do not prove asymptotic convergence or bound all
+intermediate trajectories. The measured location sensitivity remains a material
+limitation for future real-site guidance or tighter recovery regions.
+
+
+### M1 execution evidence
+
+The final flight-source snapshot is recorded in
+[`summary.json`](../assets/starship-m1-operations/summary.json), including hashes
+of all 62 bound source/configuration inputs. Three fresh loopback Gateway runs
+passed their registered case gates: normal (3 live Jev calls), recovery update
+(10 live Jev calls), persistent outage (fixture responses before loss; none
+afterward). DeepSeek calls: zero. All released 26 payloads, used no human
+inflight commands, and met contact and fixed area/time conditions. Normal
+final state/contact exactly matched the original timeline. Updated/outage cases
+returned at T+7731.450 s and contacted at T+10378.626705 s, approximately
+(5.340555° N, 143.003176° E), at 4.613326 m/s, 2.396269°, 0.00302825 rad/s,
+with 62.433932 t remaining before the declared loss accounting bound.
+
+The tests exercise `/approve` and `/run` over real HTTP, one-time authority,
+ambiguous/unapproved commands, changed hashes, session isolation, credential-free
+simulator processes, signed worker receipts and hash-checked artifact retrieval.
+Approvals use a **test operator**, not authenticated human identity. A normal
+flight uses four forecasts; changed/outage flights use twelve, including fresh
+forecasts after the recovery notice changes. All computation/model waits advance
+the plant, and the same independent checks gate AI and fallback dispatch.
+
+An earlier normal flight failed on the JSON boundary, and an earlier live
+replan stayed unresolved after excessive waiting. Both are preserved and listed
+as development failures. The final cases are development validation of the
+implemented scenario, not a held-out benchmark or an assurance of general
+mission reliability. M1 is complete at this bounded simulation milestone;
+fleet operations, real recovery safety, authentication/escalation and booster
+recovery remain outside it.

@@ -154,7 +154,7 @@ def _response(text: str, action: str, result: dict, session_id: str) -> dict:
                     "\n" + "\n".join(plan["limitations"])
                 )
         execution = result.get("execution")
-        if result.get("status") == "verified" and isinstance(execution, dict):
+        if result.get("status") in {"verified", "unresolved"} and isinstance(execution, dict):
             if plan.get("backend") == "starship_sixdof":
                 for outcome in execution.get("verification", {}).get("observed_outcomes", []):
                     response["message"] += (
