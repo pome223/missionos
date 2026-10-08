@@ -97,3 +97,77 @@ no recovery area or wait-resource admission was demonstrated.
 Current implementation and evidence status are recorded in the
 [timing-probe report](../examples/starship-return-replanning.md). Completion of
 the two-flight gate does not close M1.
+
+## Second gate: saved-state return predictions
+
+The next tool maps an absolute deorbit-request time to a predicted contact
+position/time, contact speed/attitude/rate and propellant. It does not yet choose
+or approve a recovery area. Freeze the area/time availability requirements
+before selecting a candidate; do not put an area under a computed endpoint and
+then count it as independently demonstrated target guidance.
+
+For the first reproduction test, take the last saved `orbital_coast` sample at
+or before the nominal return request minus 90 seconds, after all 26 releases.
+Preserve position, velocity, attitude, angular rate, fuel and every finite engine
+and flap state. Both forecasts use this identical origin and the nominal
+profile. Vary only the requested return time, nominal versus +60 seconds.
+The full-flight records are compared **after** the forecast; no future sample
+is an input to its dynamics or control.
+
+The development forecast accepts only orbital-coast origins, retained counts
+0–26, a return request within 180 seconds of the origin, and a positive prediction
+horizon of at most 4,000 seconds beyond the origin that includes that request.
+Those are software bounds, not a qualified flight envelope. Only the two tested
+zero-retained candidates are covered by this screen. Entry/terminal restarts,
+pending releases and persistent mission-director state are unsupported.
+
+The forecast reuses the plant, actuator control, trim preparation and terminal
+budget. Its small return phase machine currently mirrors the production one
+without editing the 15 source files bound by the old certificate. Exact suffix
+checks expose divergence in this mirror; it must not become a separately
+approved production controller. A shared resumable production controller and
+its requalification are prerequisites for dispatch through this path.
+
+Use the fixed backend from `spaceflight-qualified`. Two CPU forecasts, each
+limited to 900 wall seconds; no search, hosted model or new full flight:
+
+```sh
+python scripts/study_starship_return_candidates.py --approve-simulation \
+  --nominal output/return-delay/nominal --delayed output/return-delay/delay60 \
+  --delay-s 0 --output-dir output/return-candidates/nominal
+python scripts/study_starship_return_candidates.py --approve-simulation \
+  --nominal output/return-delay/nominal --delayed output/return-delay/delay60 \
+  --delay-s 60 --output-dir output/return-candidates/delay60
+```
+
+The caller enforces wall-time limits. Each command requires a fresh directory
+and preserves source copies, input/backend hashes, prediction, reference suffix
+and checks. The shared `write_verified_input` function serializes strict JSON,
+creates a new artifact and reads it back before verification. The full-flight
+timing probe uses the same boundary. No verifier is relaxed to accept tuples.
+
+Independent record checks compare physical state and finite actuators at shared
+sample times, phase-event times, final state and contact receipt exactly; sample
+coverage must be at least 95% and is reported. They also check time advancement,
+fuel monotonicity and material-point speed relative to the rotating surface.
+Exit 0 means reproduction checks and source binding passed; contact limits are
+reported separately. Neither result means recovery-area or flight admission.
+
+This input is explicitly saved **plant state**, not a sensor-state estimate.
+It must not be given to Jev/DeepSeek as if it were available telemetry. Subsequent
+work must propagate observation uncertainty, model waiting resources and expiry,
+advance the plant during computation and check the current state before dispatch.
+Matching the original simulation cannot establish model accuracy or robustness.
+
+### What the displacement does and does not establish
+
+The measured 278.45 km displacement applies to this origin and 60-second change.
+It does not establish that every delay or orbit has that displacement. Current
+bank selection minimizes aerodynamic trim/control problems; it is not feedback
+on a desired contact latitude/longitude. Aerodynamic lateral motion is possible,
+but no specified cross-range target is qualified here.
+
+The osculating two-body period at the recorded return state is approximately
+90.85 minutes, during which the modeled Earth rotates about 22.77 degrees.
+One additional orbit therefore does not imply revisiting the same recovery area.
+This screen admits no one-orbit waiting scenario and no waiting-endurance claim.

@@ -21,6 +21,7 @@ from src.runtime.starship_sixdof_mission import simulate  # noqa: E402
 from src.runtime.starship_sixdof_verifier import verify_study  # noqa: E402
 from src.runtime.starship_retained_return_verifier import verify_retained_return  # noqa: E402
 from src.runtime.starship_return_feasibility import backend  # noqa: E402
+from src.runtime.starship_artifacts import write_verified_input  # noqa: E402
 from src.runtime import starship_physics as env  # noqa: E402
 
 POLICY = "trimmed_state_terminal_v4"
@@ -67,6 +68,7 @@ def main(argv=None):
     profile["guidance"]["coast_before_return_s"] += args.delay_s
     before = sources()
     before["scripts/probe_starship_return_delay.py"] = sha256(Path(__file__).read_bytes()).hexdigest()
+    before["src/runtime/starship_artifacts.py"] = sha256((ROOT/"src/runtime/starship_artifacts.py").read_bytes()).hexdigest()
     args.output_dir.mkdir(parents=True)
     write(args.output_dir/"inputs.json", {"delay_s": args.delay_s, "profile": profile,
         "baseline_coast_s": baseline_coast, "scope": SCOPE, "limits": LIMITS,
@@ -82,10 +84,7 @@ def main(argv=None):
         study = {"schema": "missionos.starship_sixdof_study.v1", "profile": profile, "runs": [run],
                  "provenance": {"physical_execution_invoked": False, "starship_vehicle_validated": False,
                                 "source_sha256": before, "hashes_are_execution_attestation": False}}
-        write(args.output_dir/"study.json", study)
-        # Verifiers consume the actual serialized artifact, not dataclass tuples
-        # retained by the in-memory plant. This also covers the storage boundary.
-        study = json.loads((args.output_dir/"study.json").read_text())
+        study = write_verified_input(args.output_dir/"study.json", study)
         run = study["runs"][0]
         record = verify_study(study, expected_scenario="launch", expected_development_return_qualification=SCOPE)
         policy = verify_retained_return(run, profile, expected_policy=POLICY,

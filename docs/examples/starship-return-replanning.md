@@ -59,3 +59,39 @@ python scripts/verify_starship_return_delay.py \
 
 The audit refuses to overwrite a previous verdict. The full flight records are
 retained locally; only the reviewed compact audit is published.
+
+## Next step: predict both returns from the same coast state
+
+An offline candidate tool now starts from the saved Ship state at T+2190.7 s,
+after all 26 payloads were released. It predicts a return request at T+2280.7 s
+or T+2340.7 s, without repeating launch. Both predictions reproduce the contact
+locations, times and four contact-limit measurements in the table above exactly.
+
+| Reproduction check | Original time | +60 seconds |
+|---|---:|---:|
+| Physical samples matched exactly | 1,377 / 1,377 | 1,397 / 1,397 |
+| Final state and finite actuators | Exact match | Exact match |
+| Return/ignition/terminal event times | Exact match | Exact match |
+| Process wall time, two concurrent CPU workers | 48.36 s | 48.83 s |
+
+This makes the next operational question measurable: which candidate contact
+location and time fits an available, approved recovery area? The present tool
+does not yet select that area or authorize a return. Its input is a saved complete
+plant state, not a noisy sensor estimate. Identical results from the same model
+establish reproduction, not physical accuracy. A future live connection must
+also account for the flight advancing during these roughly 48-second calculations.
+
+Two input checks initially failed before integration because a three-vector
+norm was used for a four-component quaternion. After that fix, two predictions
+matched the final state but failed the unchanged 95% sample-coverage check:
+the forecast omitted the original attitude-driven logging condition. Fixing
+that logging condition and running the same pair once more produced the results
+above. All failed records remain preserved. Four return predictions were
+integrated in total; no new full flight or hosted inference was run.
+
+The [candidate audit](../assets/starship-return-replanning-m1/candidate-screen.json)
+binds the results to their executed source files. The
+[milestone contract](../agents/starship-return-replanning-m1.md#second-gate-saved-state-return-predictions)
+defines the tool's restricted scope and commands. M1 still needs observed-state
+uncertainty, recovery-area/time constraints, bounded waiting, repeated AI
+decisions and the three end-to-end cases.
