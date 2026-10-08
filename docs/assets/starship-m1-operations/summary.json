@@ -2137,5 +2137,19 @@
     ],
     "fallback": "first_currently_admissible_candidate_else_bounded_coast_unresolved",
     "physical_execution_authorized": false
+  },
+  "post_flight_display_followup": {
+    "flight_source_commit": "ba87a306",
+    "changed_after_flights": [
+      "src/gateway/starship_chat.py"
+    ],
+    "current_sha256": {
+      "src/gateway/starship_chat.py": "67dc3e6f72aee5b29edb1f08c5b9497a22dbe4b6b13160a0c0674c9db786c29b"
+    },
+    "boundary": "M1 approval display text only",
+    "flight_rerun_after_copy_change": false,
+    "authority_payload_and_nonmessage_response_fields_unchanged_for_three_saved_plans": true,
+    "fresh_loopback_http_plan_approve_reject_passed": true,
+    "new_simulation_or_model_calls": 0
   }
 }

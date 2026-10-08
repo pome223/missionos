@@ -476,3 +476,25 @@ def test_refined_grid_must_also_reach_the_unchanged_area_and_contact_limits():
     c["trials"][3]["integration_scale"] = 1.0
     assert "uncertainty_or_refinement_trials_missing" in admit(c, e, o, n, 2280.0)["reasons"]
 
+
+def test_m1_chat_displays_its_return_delegation_not_the_older_director_scope(tmp_path, monkeypatch):
+    from src.runtime.starship_mission_control import StarshipMissionService
+    from src.gateway.starship_chat import _response
+
+    monkeypatch.setenv("MISSIONOS_STARSHIP_MISSION_DIRECTOR_MODE", "fixture")
+
+    def planner(_):
+        return {
+            "proposal": {
+                "scenario": "sixdof_m1_replan",
+                "rationale": "Test",
+                "uncertainties": ["Synthetic"],
+            },
+            "invocation": {"model_inference_invoked": False, "provider": "fixture"},
+        }
+
+    state = StarshipMissionService(tmp_path, planner=planner).plan("display-test", "Starship M1")
+    message = _response("Starship M1", "plan", state, "display-test")["message"]
+    assert "最大6000秒" in message and "計画更新最大4回" in message
+    assert "帰還時刻は変更不可" not in message and "保留は合計30秒" not in message
+    assert "放出・タワーキャッチの追加権限" in message

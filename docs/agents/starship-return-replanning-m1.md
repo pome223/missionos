@@ -600,3 +600,11 @@ implemented scenario, not a held-out benchmark or an assurance of general
 mission reliability. M1 is complete at this bounded simulation milestone;
 fleet operations, real recovery safety, authentication/escalation and booster
 recovery remain outside it.
+
+The three full flights correspond to commit `ba87a306`. A following display-only
+change removes inherited older-director wording ("return time cannot change")
+from M1's approval message. The approved authority and all response fields other
+than `message` were compared against the three saved plans and are unchanged.
+A newly started production Gateway passed real HTTP planning, approval and
+rejection with the corrected scope. No new flight or model call is attributed
+to this copy check; the summary records the one changed source hash explicitly.
