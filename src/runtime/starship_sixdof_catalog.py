@@ -32,7 +32,7 @@ SIXDOF_DESCRIPTIONS = {
 SIXDOF_SOURCES = (
     "src/runtime/starship_sixdof_catalog.py", SIXDOF_PROFILE,
     "scripts/run_starship_sixdof.py", "src/runtime/starship_sixdof.py",
-    "src/runtime/starship_sixdof_mission.py", "src/runtime/starship_sixdof_separation.py",
+    "src/runtime/starship_sixdof_mission.py", "src/runtime/starship_ship_return.py", "src/runtime/starship_sixdof_separation.py",
     "src/runtime/starship_sixdof_contact.py", "src/runtime/starship_sixdof_booster.py",
     "src/runtime/starship_physics.py", "src/runtime/starship_sixdof_report.py",
     "src/runtime/starship_sixdof_verifier.py", "src/runtime/assets/starship_sixdof_replay.js",

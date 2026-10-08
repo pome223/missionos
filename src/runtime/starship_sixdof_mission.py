@@ -16,10 +16,9 @@ import numpy as np
 from . import starship_physics as env
 from . import starship_sixdof as dyn
 from .starship_sixdof_separation import attach_payload, release_payload
-from .starship_sixdof_contact import find_contact, hull_clearance
+from .starship_ship_return import ReturnController, control_interval, record_sample, advance_plant
 from .starship_flight_supervision import FlightSupervision
-from .starship_retained_return import POLICY_ID, CONTINUOUS_POLICY_ID, CONDITIONED_POLICY_ID, TRIMMED_POLICY_ID, new_record, terminal_budget
-from .starship_attitude_reference import ParallelTransportFrame, ConditionedGeographicFrame
+from .starship_retained_return import CONDITIONED_POLICY_ID, TRIMMED_POLICY_ID, new_record
 from .starship_wind import wind_from_profile
 
 
@@ -380,12 +379,7 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
     return_record = new_record(return_policy)
     if return_policy != "fixed_v1" and scenario != "deployment_no_effect" and development is None and not registered_return:
         raise ValueError("retained return policy requires deployment_no_effect")
-    previous_budget = None
-    return_frame = None
-    entry_prepared = None
-    next_trim_attempt_s = 0.
-    trim_attempts = 0
-    landing_frame_started = False
+    return_controller = None
     if not math.isfinite(dt_scale) or not 0 < dt_scale <= 2:
         raise ValueError("dt_scale must be in (0,2]")
     p, g = profile, profile["guidance"]
@@ -462,7 +456,6 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
         tangent = env.unit(tangent_vec) if env.norm(tangent_vec) > 1 else east
         orbit = env.orbital_elements(ps)
         target, throttle, count = _attitude(tangent, north), 0., 0
-        reference_diagnostics = None
         if phase == "stack_ascent":
             t = s.time_s
             program = g["pitch_program_time_deg"]
@@ -677,156 +670,25 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                     return_policy = "fixed_v1"
                     return_record = new_record(return_policy)
                     event("managed_return_deadline_fallback", "keep the approved initial return plan; no decision can delay deorbit")
-                if return_policy in (POLICY_ID, CONTINUOUS_POLICY_ID, CONDITIONED_POLICY_ID, TRIMMED_POLICY_ID) and (
-                        released < p["payload"]["count"] or return_policy == TRIMMED_POLICY_ID):
-                    observed = _sample(s, v, phase)
-                    observed["retained_return"] = "activation"
-                    samples.append(observed)
-                    return_record.update(status="active", activation={"time_s": s.time_s,
-                        "payload_retained_count": p["payload"]["count"]-released,
-                        "payload_retained_mass_kg": (p["payload"]["count"]-released)*p["payload"]["mass_each_kg"],
-                        "state": observed})
-                    event("retained_return_activated", "preapproved deterministic local guidance; no safe-return guarantee",
-                          policy_id=return_policy)
-                phase = "deorbit_slew"
-                event("return_requested", "configured mission timing; no fitted observed return time")
+                return_controller = ReturnController(return_policy, return_time, released,
+                    allocation_enabled=bool(development and development["bounded_ship_flaps"] or registered_return and return_policy == TRIMMED_POLICY_ID),
+                    registered=registered_return, terminal_engine_out=scenario == "terminal_engine_out",
+                    failed_engine=failed_engine, record=return_record)
+                return_controller.start(s, v, p, samples, event)
+                phase = return_controller.phase
                 continue
-        elif phase in ("deorbit_slew", "deorbit_burn"):
-            target = _attitude(env.scale(tangent, -1), north)
-            axis = dyn.rotate(s.q_body_to_eci, (0., 0., 1.))
-            if env.dot(axis, env.scale(tangent, -1)) > math.cos(math.radians(g["deorbit_max_alignment_deg"])):
-                if phase == "deorbit_slew":
-                    phase = "deorbit_burn"
-                    event("deorbit_ignition_command", "attitude error below 5 degrees")
-                throttle, count = g["deorbit_throttle"], 3
-            if orbit["perigee_altitude_m"] <= g["deorbit_perigee_m"] or s.propellant_kg <= p["ship"]["return_reserve_kg"]:
-                phase = "ballistic_return"
-                event("deorbit_cutoff_command", "measured perigee or return reserve threshold")
+        elif phase in ("deorbit_slew", "deorbit_burn", "ballistic_return", "landing_burn"):
+            step = return_controller.update(s, v, p, samples, event)
+            s, phase = step.state, return_controller.phase
+            failed_engine = return_controller.failed_engine
+            if step.transition_only:
                 continue
-        elif phase == "ballistic_return":
-            # 70 degrees between +Z and actual air-relative velocity; a target
-            # along the tangent would be nose-first, not broadside entry.
-            flow = env.unit(env.air_relative_velocity(ps))
-            lift_up = env.add(up, env.scale(flow, -env.dot(up, flow)))
-            lift_up = env.unit(lift_up) if env.norm(lift_up) > 1e-8 else north
-            entry_axis = env.add(env.scale(flow, math.cos(math.radians(g["entry_alpha_deg"]))), env.scale(lift_up, math.sin(math.radians(g["entry_alpha_deg"]))))
-            target = _attitude(entry_axis, env.scale(north, -1))
-            if return_policy == TRIMMED_POLICY_ID and return_record["status"] == "active":
-                from .starship_entry_trim import prepare_entry_trim, entry_preferred, MAXIMUM_ROLL_RATE_RAD_S
-                if (entry_prepared is None and trim_attempts < 3 and s.time_s >= next_trim_attempt_s and o["dynamic_pressure_pa"] > 1e-12):
-                    actual_axis = dyn.rotate(s.q_body_to_eci, (0., 0., 1.))
-                    if env.dot(actual_axis, entry_axis) > math.cos(math.radians(5.)) and env.norm(s.omega_body_rad_s) < .02:
-                        prepared = prepare_entry_trim(s, v, entry_axis, flow, target)
-                        trim_attempts += 1
-                        next_trim_attempt_s = s.time_s+30.
-                        if prepared["status"] == "prepared":
-                            entry_prepared = prepared
-                            witness = _sample(s, v, phase)
-                            witness["entry_trim"] = "preparation"
-                            samples.append(witness)
-                            prepared["state"] = witness
-                            return_record["entry_trim"] = prepared
-                            event("entry_trim_prepared", "static prediction; actual bounded roll and surface motion still required")
-                preferred, reference = entry_preferred(entry_axis, flow, target, entry_prepared or {})
-                if return_frame is None:
-                    return_frame = ConditionedGeographicFrame(target, s.time_s,
-                        maximum_roll_rate_rad_s=MAXIMUM_ROLL_RATE_RAD_S)
-                target = return_frame.target(entry_axis, reference, preferred, time_s=s.time_s, force_bridge=True)
-                reference_diagnostics = {**return_frame.diagnostics, "basis": (entry_prepared or {}).get("basis", "legacy_pending_trim")}
-            elif return_policy == CONTINUOUS_POLICY_ID and return_record["status"] == "active":
-                # Select roll once, then parallel-transport the target frame.
-                # The actual body remains governed by finite moments/actuators.
-                if return_frame is None:
-                    return_frame = ParallelTransportFrame(target)
-                target = return_frame.target(entry_axis)
-                reference_diagnostics = return_frame.diagnostics
-            elif return_policy == CONDITIONED_POLICY_ID and return_record["status"] == "active":
-                if return_frame is None:
-                    return_frame = ConditionedGeographicFrame(target, s.time_s,
-                        maximum_roll_rate_rad_s=g["max_angular_acceleration_rad_s2"]/g["attitude_frequency_rad_s"])
-                target = return_frame.target(entry_axis, env.scale(north, -1), target, time_s=s.time_s)
-                reference_diagnostics = return_frame.diagnostics
-            flip_due = altitude < g["flip_altitude_m"] and radial < 0
-            if return_record["status"] == "active":
-                observed = _sample(s, v, phase)
-                budget = terminal_budget(observed, p)
-                return_record["evaluation_count"] += 1
-                flip_due = budget["trigger"]
-                if flip_due:
-                    if scenario == "terminal_engine_out" and not failed_engine:
-                        states = list(s.engine_states)
-                        states[0] = replace(states[0], available=False, throttle=0.)
-                        s, failed_engine = replace(s, engine_states=tuple(states)), True
-                        event("terminal_engine_fault", "explicit synthetic loss of one landing engine after deorbit", engine_index=0)
-                        observed = _sample(s, v, phase)
-                        budget = terminal_budget(observed, p)
-                    if registered_return and return_policy == TRIMMED_POLICY_ID:
-                        from .starship_return_feasibility import certificate_ready, terminal_receipt
-                        certified, _ = certificate_ready(p)
-                        receipt = terminal_receipt(observed, budget, certified)
-                        return_record["terminal_feasibility"] = receipt
-                        if not receipt["passed"]:
-                            event("terminal_return_domain_violation",
-                                  "entry already committed; continue existing finite guidance as unqualified best effort",
-                                  terminal_feasibility=receipt)
-                    if previous_budget is not None:
-                        previous_budget["state"]["retained_return"] = "previous"
-                        samples.append(previous_budget["state"])
-                    observed["retained_return"] = "trigger"
-                    samples.append(observed)
-                    return_record.update(status="triggered", trigger={"time_s": s.time_s,
-                        "state": observed, "budget": budget, "previous": previous_budget})
-                    event("retained_return_terminal_trigger", "mass/state preparation estimate crossed; actual 6DOF outcome remains unverified",
-                          policy_id=return_policy, required_altitude_m=budget["required_altitude_m"])
-                else:
-                    previous_budget = {"state": observed, "budget": budget}
-            if flip_due:
-                phase = "landing_burn"
-                event("flip_and_landing_command", "generic PD + bounded engine/RCS actuation")
-                continue
-        elif phase == "landing_burn":
-            vertical = env.dot(env.air_relative_velocity(ps), up)
-            clearance = hull_clearance(s, v, p["geometry"]["ship_length_m"], p["geometry"]["radius_m"])["signed_clearance_m"]
-            desired = -max(g["landing_target_speed_mps"], min(100., max(0., clearance)/g["landing_height_response_s"]))
-            acceleration = env.norm(env.gravity_acceleration(s.r_eci_m))+(desired-vertical)/g["landing_velocity_response_s"]
-            horizontal = env.add(env.air_relative_velocity(ps), env.scale(up, -vertical))
-            lateral = env.scale(horizontal, -1/g["landing_horizontal_response_s"])
-            lateral_limit = max(0., acceleration)*math.tan(math.radians(g["landing_max_tilt_deg"]))
-            if env.norm(lateral) > lateral_limit:
-                lateral = env.scale(lateral, lateral_limit/env.norm(lateral))
-            landing_axis = env.add(env.scale(up, max(.1, acceleration)), lateral)
-            target = _attitude(landing_axis, north)
-            if return_frame is not None:
-                # Preserve the transported roll reference during the terminal
-                # axis change; do not inject a new geographic roll alignment.
-                if return_policy in (CONDITIONED_POLICY_ID, TRIMMED_POLICY_ID):
-                    target = return_frame.target(landing_axis, north, target, time_s=s.time_s,
-                        force_bridge=not landing_frame_started or return_policy == TRIMMED_POLICY_ID,
-                        defer_geographic_reacquisition=return_policy == TRIMMED_POLICY_ID)
-                    landing_frame_started = True
-                else:
-                    target = return_frame.target(landing_axis)
-                reference_diagnostics = return_frame.diagnostics
-            tilt = env.dot(dyn.rotate(s.q_body_to_eci, (0., 0., 1.)), up)
-            if tilt > .5:
-                force = max(0., acceleration)*o["mass_kg"]/tilt
-                count = max(1, min(3, math.ceil(force/p["ship"]["engine_thrust_n"])))
-                throttle = max(.4, min(1., force/(count*p["ship"]["engine_thrust_n"])))
-            else:
-                # Engines provide finite TVC authority for the flip; waiting
-                # for alignment with all main engines off can strand the turn.
-                throttle, count = g["flip_min_throttle"], 3
-        bounded_ship_flaps = bool((development and development["bounded_ship_flaps"] or registered_return and return_policy == TRIMMED_POLICY_ID)
-                                  and return_record["status"] in ("active", "triggered")
-                                  and phase in ("ballistic_return", "landing_burn"))
-        control_interval = p["integration"]["powered_dt_s"] if throttle > 0 or altitude < 100000 else p["integration"]["coast_dt_s"]
-        command, diagnostics = control(s, v, target, throttle, count, p, use_flaps=phase in ("ballistic_return", "landing_burn"),
-            development_fin_allocation=bounded_ship_flaps, control_interval_s=control_interval,
-            trim_angles_rad=entry_prepared["trim_angles_rad"] if entry_prepared is not None else None,
-            development_entry_preposition=bounded_ship_flaps and phase == "ballistic_return" and entry_prepared is not None,
-            development_fin_policy="finite_moment_priority_fins_v1" if bounded_ship_flaps else "finite_regularized_fins_v1")
-        if reference_diagnostics is not None:
-            diagnostics["attitude_reference"] = reference_diagnostics
+            target, throttle, count = step.target, step.throttle, step.count
+        if return_controller is not None:
+            command, diagnostics = return_controller.command(step, v, p, altitude)
+        else:
+            command, diagnostics = control(s, v, target, throttle, count, p,
+                control_interval_s=control_interval(p, throttle, altitude))
         if scenario in ("gimbal_step", "flap_asymmetry", "entry_perturbation"):
             # Open-loop physical response tests. No attitude stabilization hides
             # cross-axis response or torque from offset geometry.
@@ -839,10 +701,7 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                 flap_commands[6] = math.radians(initial["flap_step_deg"][1])
             command = dyn.Command6DOF(tuple(commands), tuple(flap_commands))
             diagnostics = {"controller": "open_loop_perturbation", "initial_body_rates_nonzero": True}
-        angular_sample_due = bool(samples and env.norm(s.omega_body_rad_s)*(s.time_s-samples[-1]["time_s"]) > .2)
-        if s.time_s >= next_sample-1e-9 or angular_sample_due or not samples or samples[-1]["phase"] != phase:
-            samples.append(_sample(s, v, phase, command, diagnostics))
-            next_sample = s.time_s+p["integration"]["sample_interval_s"]
+        next_sample = record_sample(s, v, phase, command, diagnostics, samples, next_sample, p)
         max_altitude = max(max_altitude, altitude)
         max_rate = max(max_rate, env.norm(s.omega_body_rad_s))
         max_error = max(max_error, diagnostics.get("attitude_error_deg", 0.))
@@ -854,16 +713,13 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
         dt = min(limit-s.time_s, dt*dt_scale)
         length = p["geometry"]["ship_length_m"]+(p["geometry"]["booster_length_m"] if phase == "stack_ascent" else 0)
         try:
-            if altitude < max(2000., length+2*o["air_speed_mps"]*dt):
-                s, receipt = find_contact(s, v, command, dt, length, p["geometry"]["radius_m"])
-                if receipt["contact"]:
-                    contact_receipt = receipt
-                    termination = "surface_impact" if receipt["surface_relative_speed_mps"] > 5 else "low_speed_surface_contact"
-                    event(termination, "cylinder-envelope first bracketed contact; no water/structure response", contact=receipt)
-                    steps += 1
-                    break
-            else:
-                s = dyn.step(s, v, command, dt)
+            s, receipt = advance_plant(s, v, command, dt, length, p["geometry"]["radius_m"], altitude, o["air_speed_mps"])
+            if receipt is not None and receipt["contact"]:
+                contact_receipt = receipt
+                termination = "surface_impact" if receipt["surface_relative_speed_mps"] > 5 else "low_speed_surface_contact"
+                event(termination, "cylinder-envelope first bracketed contact; no water/structure response", contact=receipt)
+                steps += 1
+                break
         except (ValueError, OverflowError, FloatingPointError) as exc:
             termination = "numerical_failure"
             event(termination, f"{type(exc).__name__}: {exc}; last finite state retained")

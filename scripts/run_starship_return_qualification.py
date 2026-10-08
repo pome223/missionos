@@ -20,7 +20,7 @@ from src.runtime.starship_sixdof_verifier import verify_study  # noqa: E402
 from src.runtime.starship_retained_return_verifier import verify_retained_return  # noqa: E402
 from src.runtime import starship_sixdof as dyn, starship_physics as env  # noqa: E402
 
-SOURCES=("scripts/run_starship_return_qualification.py","src/runtime/starship_sixdof_mission.py",
+SOURCES=("scripts/run_starship_return_qualification.py","src/runtime/starship_sixdof_mission.py", "src/runtime/starship_ship_return.py",
          "src/runtime/starship_sixdof.py","src/runtime/starship_sixdof_separation.py",
          "src/runtime/starship_sixdof_contact.py","src/runtime/starship_fin_allocation.py",
          "src/runtime/starship_entry_trim.py",
