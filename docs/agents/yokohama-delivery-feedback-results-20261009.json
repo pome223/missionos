@@ -1,11 +1,11 @@
 {
   "schema": "missionos.yokohama.delivery-feedback-qualification.v1",
-  "recorded_utc": "2026-10-09T10:37:54.406472+00:00",
-  "status": "cpu_final_source_qualified_native_not_run",
+  "recorded_utc": "2026-10-09T21:58:30.760928+00:00",
+  "status": "cpu_four_scenarios_and_one_native_full_delivery_qualified",
   "runtime_source_commit": "2e8ee9c2cfb28763b353473bee541c622f18fa8d",
   "verification_source_commit": "2e8ee9c2cfb28763b353473bee541c622f18fa8d",
   "verification_source_sha256": "709284326e906b3717a5f2dd02666b747ebc261a2452dbf75e5d137482fdc073",
-  "verification_note": "All four fresh CPU scenarios ran the same final runtime and independent verifier sources. Verification preserves fixed authored routes, altitude, waiting, and deadline limits; no final flight evidence was reclassified by a post-flight source change.",
+  "verification_note": "All four CPU scenarios and the one native full-delivery trial use byte-identical runtime and independent verifier files. CPU runs are bound to 2e8ee9c; the native run is bound to 98058c0. No route, altitude, waiting or deadline limit changed after either flight.",
   "simulator_image_id": "sha256:79968fe25aa19d51c49fbd4a863ea9380f4efe6d9afabd1c579ddeffeb8b8c93",
   "cpu_candidate_rejection": {
     "status": "passed",
@@ -74,10 +74,30 @@
     }
   },
   "native_full_delivery": {
-    "status": "not_run",
-    "new_cloud_vm_creates": 0,
-    "new_native_flights": 0,
-    "reason": "CPU-only execution scope; separate GPU/cloud authorization required."
+    "status": "passed",
+    "runtime_source_commit": "98058c021313111f8a903b3650bdac1c4dbec219",
+    "verification_source_commit": "98058c021313111f8a903b3650bdac1c4dbec219",
+    "runtime_source_closure_sha256": "c30f6cd151ed72709c401b34d7e7c450440ae015f0ced423c359639da19854b3",
+    "new_cloud_vm_creates": 1,
+    "new_native_flights": 1,
+    "maximum_attempts": 1,
+    "mission_outcome": "passed",
+    "recovery_outcome": "not_needed",
+    "native_model_inference": true,
+    "vla_inference_calls": 2,
+    "wam_inference_calls": 2,
+    "model_control_scope": "Two inland D1 legs with the approved goal-distance adapter; the authored AP route carries cargo to the receiving pad and returns to the ship.",
+    "simulated_payload_receipt_verified": true,
+    "complete_authored_return_verified": true,
+    "ship_landing_and_disarm_verified": true,
+    "model_reentry_prevented": true,
+    "remote_model_processes_absent": true,
+    "owned_vm_and_boot_disk_absent": true,
+    "remote_evidence_archive_verified": true,
+    "gpu_released_before_local_delivery_and_return_completed": true,
+    "verdict_sha256": "f38695632cb65edd6afb498a39fe50ced6ed1c3f17cd03fa79cc9862aa860b2c",
+    "physical_execution": false,
+    "raw_unmodified_model_control": false
   },
   "physical_execution": false,
   "raw_unmodified_model_control": false,
@@ -106,13 +126,13 @@
       "exact_head": "2e8ee9c2cfb28763b353473bee541c622f18fa8d",
       "url": "https://github.com/pome223/missionos/actions/runs/37910849307"
     },
-    "this_result_summary_commit_ci": "not_run_local_only"
+    "this_result_summary_commit_ci": "Exact result-summary commit checks are recorded on the draft pull request and in the private preservation index."
   },
   "limitations": [
-    "Stationary authored ship and coast in CPU PX4/Gazebo simulation.",
-    "Fixture decisions do not demonstrate native VLA/WAM delivery success.",
+    "Stationary authored ship and coast in PX4/Gazebo simulation.",
+    "Native VLA/WAM inference qualifies only the two approved D1 legs with the goal-distance adapter; the rest of the delivery and return uses the authored AP route.",
     "The receiving station observes simulated cargo contact; there is no human or physical receipt.",
-    "Recovery qualifies the D1 decision boundary, not arbitrary failures on later route stages.",
+    "CPU rejection/timeout recovery qualifies the D1 decision boundary, not arbitrary failures on later route stages.",
     "The full delivery catalog has fixed 2100-second overall and 500-second recovery limits; legacy mission/recovery contracts remain unchanged."
   ],
   "runtime_source_closure_sha256": "c30f6cd151ed72709c401b34d7e7c450440ae015f0ced423c359639da19854b3"
