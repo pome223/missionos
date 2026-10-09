@@ -408,10 +408,10 @@ class StarshipMissionService:
             if reason:
                 raise StarshipMissionError(reason)
             try:
-                envelope = m1_contract(os.environ.get(DIRECTOR_MODE_ENV, "off"))
+                envelope = m1_contract(os.environ.get(DIRECTOR_MODE_ENV, "off"), M1_SCENARIOS[scenario])
             except ValueError as exc:
                 raise StarshipMissionError("m1_not_configured") from exc
-            if M1_SCENARIOS[scenario] == "decision_timeout" and envelope["mode"] != "fixture":
+            if M1_SCENARIOS[scenario] in ("decision_timeout", "event_timeout") and envelope["mode"] != "fixture":
                 raise StarshipMissionError("m1_timeout_fixture_only")
             plan.update(backend="starship_return_replanning", mission_envelope=envelope,
                 release_policy="approved_26_payload_sequence_then_bounded_ai_return_control",
@@ -539,7 +539,7 @@ class StarshipMissionService:
             from .starship_return_feasibility import readiness
             from .starship_replanning import contract as m1_contract
             _, _, reason = readiness(_read(REPO / SIXDOF_PROFILE))
-            if reason or plan["mission_envelope"] != m1_contract(plan["mission_envelope"]["mode"]):
+            if reason or plan["mission_envelope"] != m1_contract(plan["mission_envelope"]["mode"], M1_SCENARIOS[plan["scenario"]]):
                 raise StarshipMissionError(reason or "m1_envelope_not_current")
         if plan["scenario"] in MANAGED_SCENARIOS:
             from .starship_return_feasibility import readiness
@@ -1049,7 +1049,8 @@ def execute_worker(state_dir: Path, run_id: str) -> int:
                         or plan["source_sha256"] != _sources(plan["scenario"])):
                     raise StarshipMissionError("m1_execution_input_binding_mismatch")
                 verdict = verify(study, expected_envelope=plan["mission_envelope"],
-                    expected_case=plan["simulation"]["case"], expected_sources=plan["source_sha256"])
+                    expected_case=plan["simulation"]["case"], expected_sources=plan["source_sha256"],
+                    expected_run_id=run_id)
                 _write(output/"verification.json", verdict)
                 manifest = _read(output/"manifest.json")
                 manifest["files"]["verification.json"] = sha256((output/"verification.json").read_bytes()).hexdigest()

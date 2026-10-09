@@ -42,6 +42,8 @@ def report(study, verdict):
             for r in study["decisions"]
         ),
         "human_inflight_commands": 0,
+        "supervision_events": study.get("supervision_events", []),
+        "event_scope": study["envelope"].get("event_supervision"),
     }
     rows = "".join(
         "<tr>"
@@ -71,7 +73,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--approve-simulation", action="store_true")
     parser.add_argument(
-        "--case", choices=("normal", "recovery_update", "decision_timeout"), required=True
+        "--case",
+        choices=(
+            "normal",
+            "recovery_update",
+            "decision_timeout",
+            "event_normal",
+            "event_tradeoff",
+            "event_timeout",
+        ),
+        required=True,
     )
     parser.add_argument("--mode", choices=("fixture", "live"), default="fixture")
     parser.add_argument("--mailbox", type=Path)
@@ -84,17 +95,17 @@ def main():
         or (args.mode == "live" and not args.mailbox)
     ):
         parser.error("explicit opt-in, fresh output and a live host broker are required")
-    if args.case == "decision_timeout" and args.mode != "fixture":
+    if args.case in ("decision_timeout", "event_timeout") and args.mode != "fixture":
         parser.error("synthetic timeout is fixture only")
     p = json.loads((ROOT / "examples/spaceflight/starship-sixdof-profile.json").read_text())
     _, _, error = readiness(p)
     if error:
         parser.error(error)
     args.output_dir.mkdir(mode=0o700, parents=True)
-    envelope, sources = contract(args.mode), source_hashes()
+    envelope, sources = contract(args.mode, args.case), source_hashes()
     write_verified_input(
         args.output_dir / "inputs.json",
-        {"case": args.case, "envelope": envelope, "source_sha256": sources},
+        {"case": args.case, "run_id": args.run_id, "envelope": envelope, "source_sha256": sources},
     )
     for name in sources:
         target = args.output_dir / "source" / name
@@ -116,7 +127,11 @@ def main():
         study["runtime_failure"] = type(error).__name__ + ":" + str(error)
     study = write_verified_input(args.output_dir / "study.json", study)
     verdict = verify(
-        study, expected_envelope=envelope, expected_case=args.case, expected_sources=sources
+        study,
+        expected_envelope=envelope,
+        expected_case=args.case,
+        expected_sources=sources,
+        expected_run_id=args.run_id,
     )
     if sources != source_hashes() or "runtime_failure" in study:
         verdict["passed"] = False

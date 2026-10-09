@@ -56,3 +56,5 @@ Real water entry, recovery crews, Starship accuracy and booster recovery are
 outside this milestone.
 
 Implementation and evidence requirements: [M1 contract](../agents/starship-return-replanning-m1.md).
+
+Next stage: [responding to changes in orbit](starship-orbit-events.md) adds event-triggered reassessment and a two-option operational tradeoff. Its new tests are reported separately from the three M1 flights above.
