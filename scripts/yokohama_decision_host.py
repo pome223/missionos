@@ -34,6 +34,7 @@ from scripts.yokohama_altitude_contract import (
     compile_mission,
     recheck_mapping,
 )
+from scripts.yokohama_goal_distance_adapter import adapt_candidate, validate_adaptation
 from scripts.yokohama_wam_profile import MOTION_CONTRACT, validate_service_profile
 from scripts.smoke_px4_gazebo_sitl_mission_upload import _inner_upload_script
 from src.runtime.yokohama_native import (
@@ -492,6 +493,19 @@ class DecisionHost:
                 response["generated_text"] = "58 49 49"
         (output / "native-response.json").write_text(json.dumps(response, indent=2) + "\n")
         candidate = vla_candidate(response["generated_text"], row)
+        try:
+            candidate, adjustment = adapt_candidate(self.config, candidate, row, digest(response))
+        except ValueError as exc:
+            if self.config["decisions"].get("goal_distance_adapter") is not None:
+                (output / "vehicle-distance-adjustment-rejected.json").write_text(json.dumps({
+                    "original_candidate": candidate, "vla_response_sha256": digest(response),
+                    "input_observation_sha256": digest(row), "config_sha256": digest(self.config),
+                    "executed_candidate": None, "reason": str(exc),
+                    "grants_dispatch_authority": False,
+                }, indent=2, allow_nan=False) + "\n")
+            raise
+        if adjustment is not None:
+            (output / "vehicle-distance-adjustment.json").write_text(json.dumps(adjustment, indent=2, allow_nan=False) + "\n")
         rules = geometry_rules(
             row["vehicle"]["xyz"],
             candidate["target_world_xyz_m"],
@@ -507,6 +521,8 @@ class DecisionHost:
             preliminary_rules=rules,
             native_vla_invoked=self.backend == "native" and not getattr(self, "mock_http", False),
         )
+        if adjustment is not None:
+            result["vehicle_distance_adjustment"] = adjustment
         self.pending[message["cycle"]] = result
         return result
 
@@ -515,6 +531,7 @@ class DecisionHost:
             raise ValueError("Detached model session revoked or not attached")
         feedback = self.feedback_guard(message, model="wam")
         proposal = self.pending[message["cycle"]]
+        validate_adaptation(self.config, proposal)
         if message["vla"] != proposal:
             raise ValueError("Cross-cycle VLA proposal")
         _, capture, arrays = self.capture(message)
@@ -630,6 +647,7 @@ class DecisionHost:
             raise ValueError("Detached shadow host cannot authorize dispatch")
         feedback = self.feedback_guard(message)
         proposal = self.pending[message["cycle"]]
+        validate_adaptation(self.config, proposal)
         if not proposal.get("wam", {}).get("passed"):
             raise ValueError("WAM prediction did not meet visible-structure bounds")
         row, old = message["observation"], proposal["input_observation"]
@@ -789,6 +807,8 @@ class DecisionHost:
             connector_sha256=ship_anwm.digest(connector) if connector is not None else None,
             physical_execution_invoked=False,
         )
+        if proposal.get("vehicle_distance_adjustment") is not None:
+            permit["vehicle_distance_adjustment"] = copy.deepcopy(proposal["vehicle_distance_adjustment"])
         proposal["prepared_observation"] = row
         if message.get("attempt"):
             permit["attempt"] = message["attempt"]
@@ -809,7 +829,10 @@ class DecisionHost:
             raise ValueError("Detached shadow host cannot activate dispatch")
         feedback = self.feedback_guard(message)
         proposal = self.pending[message["cycle"]]
+        validate_adaptation(self.config, proposal)
         prepared = proposal["prepared_permit"]
+        if prepared.get("vehicle_distance_adjustment") != proposal.get("vehicle_distance_adjustment"):
+            raise ValueError("Prepared permit vehicle adjustment changed")
         if message["prepared_permit_sha256"] != digest(prepared):
             raise ValueError("Activation does not bind the uploaded mission")
         current = message["observation"]

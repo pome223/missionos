@@ -409,6 +409,9 @@ class CityDecisions:
         vla = self.exchange(
             "vla", self.held(anchor), capture=capture, next_target_world_xyz_m=next_target
         )
+        if vla.get("vehicle_distance_adjustment") is not None:
+            self.event("vehicle_candidate_distance_adjusted", cycle=self.cycle,
+                       receipt=vla["vehicle_distance_adjustment"])
         if refresh:
             anchor = self.sample()
         # A new uninterrupted history follows the VLA call; old imagery is not
@@ -504,6 +507,7 @@ class CityDecisions:
             permit.get("prepared_permit_sha256") != digest(prepared)
             or permit.get("observation_sha256") != digest(current)
             or permit.get("candidate") != prepared["candidate"]
+            or permit.get("vehicle_distance_adjustment") != prepared.get("vehicle_distance_adjustment")
             or self.clock() > permit["expires_at_worker_wall_s"]
         ):
             raise ValueError("Activation permit is stale or unbound")

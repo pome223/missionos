@@ -47,6 +47,17 @@ def feedback_policy(config):
     if not isinstance(config, dict) or not isinstance(config.get("decisions", {}), dict):
         raise ValueError("Invalid feedback configuration")
     decisions = config.get("decisions", {})
+    if decisions.get("goal_distance_adapter") is not None:
+        if __package__:
+            from .yokohama_goal_distance_adapter import POLICY
+        else:
+            from yokohama_goal_distance_adapter import POLICY
+        if decisions["goal_distance_adapter"] != POLICY:
+            raise ValueError("Unsupported explicit vehicle distance adapter")
+        if "endpoint_feedback" not in decisions:
+            raise ValueError("Vehicle distance adapter requires the bounded endpoint policy")
+        if config.get("candidate_recovery") is not None:
+            raise ValueError("Vehicle distance adapter cannot change the fixed CPU rejection trial")
     if "endpoint_feedback" not in decisions:
         return None
     policy = decisions["endpoint_feedback"]

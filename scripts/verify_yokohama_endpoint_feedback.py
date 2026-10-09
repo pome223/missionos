@@ -144,6 +144,8 @@ def verify(root):
         required_sources = {"yokohama_decision_worker.py", "yokohama_decision_host.py",
                             "yokohama_flight_worker.py", "yokohama_endpoint_feedback.py",
                             "yokohama_native.py"}
+        if config.get("decisions", {}).get("goal_distance_adapter"):
+            required_sources.add("yokohama_goal_distance_adapter.py")
         require(required_sources <= {Path(name).name for name in sources}, "source_manifest_incomplete")
         checks["source_binding"] = True
         map_path = root / "collision-footprints.geojson"
@@ -274,7 +276,14 @@ def verify(root):
             vfolder = vpath.with_name(vpath.name.removesuffix("-request.json"))
             wfolder = wpath.with_name(wpath.name.removesuffix("-request.json"))
             raw_vla, native_request = read(vfolder / "native-response.json"), read(vfolder / "native-request.json")
-            candidate = vla_candidate(raw_vla["generated_text"], vr["observation"])
+            from scripts.yokohama_goal_distance_adapter import adapt_candidate
+            original = vla_candidate(raw_vla["generated_text"], vr["observation"])
+            candidate, adjustment = adapt_candidate(config, original, vr["observation"], digest(raw_vla))
+            require(vs["value"].get("vehicle_distance_adjustment") == adjustment,
+                    "unbound_vehicle_candidate_adjustment")
+            if adjustment is not None:
+                require(read(vfolder / "vehicle-distance-adjustment.json") == adjustment,
+                        "vehicle_candidate_adjustment_evidence_changed")
             require(candidate == vs["value"]["candidate"] and digest(raw_vla) == vs["value"]["vla_response_sha256"],
                     "vla_candidate_rewritten")
             require(native_request["input_row_sha256"] == digest(vr["observation"])
@@ -329,6 +338,9 @@ def verify(root):
             require(image_checks == ws["value"]["checks"] and all(c["passed"] for c in image_checks),
                     "image_consistency_not_verified")
             permit = ars["value"]
+            require(permit.get("vehicle_distance_adjustment") == adjustment
+                    and authorized["value"].get("vehicle_distance_adjustment") == adjustment,
+                    "vehicle_distance_adjustment_permit_binding")
             require(permit["prepared_permit_sha256"] == digest(authorized["value"])
                     and permit["candidate"] == candidate
                     and permit["vla_response_sha256"] == digest(raw_vla)
@@ -440,6 +452,8 @@ def verify(root):
         "observed_goal_arrival_verified": control and goal_observed,
         "observed_map_clearance_verified": checks.get("sampled_map_clearance", False),
         "native_model_use_verified": control and native,
+        "raw_model_output_control_verified": control and native and not config.get("decisions", {}).get("goal_distance_adapter"),
+        "vehicle_distance_adapter_control_verified": control and bool(config.get("decisions", {}).get("goal_distance_adapter")),
         "recorded_model_shutdown_verified": checks.get("recorded_model_shutdown", False),
         "current_remote_cleanup_verified": False, "ap_exit_execution_verified": False,
         "physical_execution_verified": False, "dynamic_obstacle_avoidance_verified": False,

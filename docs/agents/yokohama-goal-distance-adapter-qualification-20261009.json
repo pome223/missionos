@@ -1,0 +1,39 @@
+{
+  "schema": "yokohama.vehicle-goal-distance-adapter-offline-qualification.v1",
+  "created_utc": "2026-10-09T01:37:43.460808+00:00",
+  "base_commit": "a8beaa08dc264d4e95aafd3b5a7735ad1430fb24",
+  "final_source_closure_sha256": "2a7e0587a1300e94319129cc098e2ada1296bf35f4de079fb14ea6a295d6155e",
+  "source_closure_file_count": 885,
+  "tests": {
+    "passed": 4449,
+    "skipped": 1,
+    "targeted_passed": 117,
+    "python": "3.13",
+    "maintained_and_changed_file_lint": "passed",
+    "gateway_cpu_fixture_smoke": "passed"
+  },
+  "real_cli_plan_compilation": "passed; source-bound native-adapter plan, no flight or inference",
+  "adapter": "Closest point on immutable original translation; no extension or yaw/heading repair",
+  "example": {
+    "original_distance_m": 2.193877551020408,
+    "remaining_goal_distance_m": 1.2,
+    "executed_distance_m": 1.2,
+    "fixture_only": true
+  },
+  "authority": "Adjustment binds original response, observation, config and selected candidate through WAM/authorization/activation; unchanged Rules/expiry/revocation apply",
+  "prior_cpu_recovery_evidence_unchanged": true,
+  "claim_limits": {
+    "new_flights": 0,
+    "native_model_inference": false,
+    "gpu_requested": false,
+    "cloud_creates": 0,
+    "live_adapter_control_qualified": false,
+    "physical_execution": false,
+    "delivery_success": false
+  },
+  "remaining_execution_gates": [
+    "Paid trial budget approval",
+    "Separate source-bound native endpoint admission/controller/recovery and applicable live verifier"
+  ],
+  "initial_full_suite_issue": "One existing Mac os.killpg PermissionError; initial log retained; no related code or thresholds changed"
+}

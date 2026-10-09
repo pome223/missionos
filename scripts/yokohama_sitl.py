@@ -34,6 +34,10 @@ def build_endpoint_feedback_config(base_config: dict) -> dict:
     config = copy.deepcopy(base_config)
     world = config["world"]
     decisions = config["decisions"]
+    if decisions.get("goal_distance_adapter") is not None:
+        from scripts.yokohama_goal_distance_adapter import POLICY
+        if decisions["goal_distance_adapter"] != POLICY:
+            raise ValueError("Unsupported endpoint candidate adapter")
     if any(world.get(key) for key in (
         "sea_extension", "payload_delivery", "pad_queue", "wind", "goal_plan",
         "dynamic_actors", "actors",
@@ -143,6 +147,9 @@ def write_endpoint_feedback_plan(args) -> int:
                             arrival_timeout_s=150, items=[item, dict(item, seq=1, command=17, current=0)])],
     )
     config = build_endpoint_feedback_config(config)
+    if getattr(args, "goal_distance_adapter", False):
+        from scripts.yokohama_goal_distance_adapter import POLICY
+        config["decisions"]["goal_distance_adapter"] = dict(POLICY)
     root.mkdir(parents=True)
     (root / "config.json").write_text(json.dumps(config, indent=2, allow_nan=False) + "\n")
     for index, stage in enumerate(config["flight_stages"]):
@@ -289,6 +296,8 @@ def main(argv=None):
     parser.add_argument("--candidate-recovery", action="store_true",
                         help="Separately approved CPU rejection/return qualification")
     parser.add_argument("--fixture-reject-second-candidate", action="store_true")
+    parser.add_argument("--goal-distance-adapter", action="store_true",
+                        help="CPU plan: explicitly shorten VLA translations along their original ray")
     parser.add_argument(
         "--capture-paired-views",
         action="store_true",
@@ -383,6 +392,8 @@ def main(argv=None):
         help="Explicit recovery-only radius, 1..3 m; requires mapped clearance",
     )
     args = parser.parse_args(argv)
+    if args.goal_distance_adapter and (not args.endpoint_feedback or not args.plan_only):
+        parser.error("Goal-distance adaptation requires endpoint planning; a fresh native runtime approval is still required")
     if args.fixture_reject_second_candidate and not args.candidate_recovery:
         parser.error("Fault injection requires candidate recovery")
     if args.candidate_recovery and (
@@ -904,6 +915,7 @@ def main(argv=None):
                 for p in [
                     "scripts/yokohama_decision_worker.py",
                     "scripts/yokohama_decision_host.py",
+                    "scripts/yokohama_goal_distance_adapter.py",
                     "src/runtime/yokohama_native.py",
                     "scripts/ship_anwm.py",
                     "scripts/yokohama_appearance.py",
