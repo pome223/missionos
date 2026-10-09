@@ -123,6 +123,20 @@ def test_exited_worker_is_reaped_without_signals_or_foreign_container(tmp_path, 
     assert worker.calls == ["poll", "wait"] and result["worker_reaped"]
 
 
+def test_recovery_stops_owned_container_for_preservation_before_removal(tmp_path, monkeypatch):
+    calls = []
+    def command(args, **kwargs):
+        calls.append(args)
+        return SimpleNamespace(returncode=0)
+    monkeypatch.setattr(runner, "command", command)
+    worker, result = Worker(exited=True), dict(status="failed")
+    runner.cleanup_owned(tmp_path, result, created=True, container="owned", worker=worker,
+                         preserve_container=True)
+    assert calls == [["docker", "stop", "--time", "10", "owned"]]
+    assert result["container_stopped_for_preservation"] is True
+    assert result["cleanup"] is False and result["worker_reaped"] is True
+
+
 def test_result_disk_full_is_after_all_cleanup_and_retains_original(tmp_path, monkeypatch):
     calls = diagnostic_failure(tmp_path, monkeypatch, "none")
     monkeypatch.setattr(Path, "write_text", lambda *a, **k: (_ for _ in ()).throw(OSError(errno.ENOSPC, "fixture")))

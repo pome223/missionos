@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -18,6 +19,157 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 from src.runtime.yokohama_scene import build_world, sha256  # noqa: E402
 from scripts.yokohama_local_preflight import image_id, prepare_models  # noqa: E402
+
+
+def build_endpoint_feedback_config(base_config: dict) -> dict:
+    """Derive the bounded inland two-cycle plan, without any runtime side effect.
+
+    Input is a current scene configuration, never a previous run or receipt. The
+    first D1 upload is retained; the sole exit returns to that same fixed point.
+    """
+    import math
+    from scripts.yokohama_endpoint_feedback import feedback_policy
+    from scripts.yokohama_altitude_contract import SCHEMA, UPLOAD_PREPARATION_SCHEMA
+
+    config = copy.deepcopy(base_config)
+    world = config["world"]
+    decisions = config["decisions"]
+    if any(world.get(key) for key in (
+        "sea_extension", "payload_delivery", "pad_queue", "wind", "goal_plan",
+        "dynamic_actors", "actors",
+    )) or config.get("motion_capture") or config.get("wind_mps", 0):
+        raise ValueError("Endpoint feedback requires an inland static scene")
+    if (decisions.get("backend") not in ("fixture", "native")
+            or decisions.get("wam_profile") != "motion-v4"
+            or any(decisions.get(key) for key in (
+                "hold_recovery", "pad_approach", "capture_paired_views",
+                "sea_leg_present", "payload_release_present",
+            ))):
+        raise ValueError("Endpoint feedback is incompatible with expanded mission modes")
+    points = world["points"]
+    if len(points) < 2 or [point["id"] for point in points[:2]] != ["D1", "D2"]:
+        raise ValueError("Endpoint feedback requires the original D1/D2 source points")
+    entry = list(points[0]["world_xyz_m"])
+    prior_goal = list(points[1]["world_xyz_m"])
+    if any(len(p) != 3 or not all(math.isfinite(x) for x in p) for p in (entry, prior_goal)):
+        raise ValueError("Endpoint feedback coordinates must be finite XYZ")
+    distance = math.dist(entry, prior_goal)
+    if distance < 4:
+        raise ValueError("Original D1/D2 segment is too short for the fixed four-metre goal")
+    goal = [a + 4 * (b - a) / distance for a, b in zip(entry, prior_goal)]
+    stages = config["flight_stages"]
+    if not stages or stages[0]["name"] != "00-D1" or stages[0]["target_world_xyz_m"] != entry:
+        raise ValueError("Endpoint feedback requires the authored D1 entry stage")
+    entry_stage = copy.deepcopy(stages[0])
+    exit_stage = copy.deepcopy(entry_stage)
+    exit_stage.update(name="01-FEEDBACK-EXIT", target_world_xyz_m=list(entry), direct_endpoint=True)
+    # The exit has the same geodetic target and altitude as entry, but is an
+    # ordinary waypoint/hold, never a second takeoff. Runtime altitude binding
+    # remains the common upload preparation contract.
+    waypoint = copy.deepcopy(entry_stage["items"][-1])
+    waypoint.update(seq=0, command=16, current=1, param4=0)
+    exit_stage["items"] = [waypoint, dict(waypoint, seq=1, command=17, current=0)]
+    config["flight_stages"] = [entry_stage, exit_stage]
+    config["altitude_transport_contract"] = SCHEMA
+    config["mission_upload_preparation"] = UPLOAD_PREPARATION_SCHEMA
+    config["hold_horizontal_tolerance_m"] = 0.25
+    decisions.update(points=["D1"], sea_leg_present=False, payload_release_present=False,
+                     size_bound_origin="proposal_observation")
+    decisions["endpoint_feedback"] = dict(
+        schema_version="yokohama_native_endpoint_feedback.v1",
+        entry_phase="00-D1", exit_phase="01-FEEDBACK-EXIT",
+        entry_world_xyz_m=entry, goal_world_xyz_m=goal, exit_world_xyz_m=list(entry),
+        corridor_half_width_m=0.5, tracking_tube_m=1.0, clearance_m=2.0,
+        goal_tolerance_m=0.5, minimum_progress_m=0.1, max_segment_m=3.0,
+        max_cycles=2, max_vla_requests=2, max_wam_requests=2,
+        total_timeout_s=600, map_sha256=world["source_sha256"]["collision-footprints.geojson"],
+    )
+    feedback_policy(config)
+    return config
+
+
+def write_endpoint_feedback_plan(args) -> int:
+    """CPU-only config/source compilation. Never extracts models or starts a host."""
+    import hashlib
+    from src.runtime.yokohama_scene import build_frame, to_world
+    from src.runtime.yokohama_execution_service import FEEDBACK_SOURCES
+    from scripts.yokohama_altitude_contract import SCHEMA, UPLOAD_PREPARATION_SCHEMA
+    from scripts.smoke_px4_gazebo_sitl_mission_upload import _inner_upload_script
+
+    root = args.output_dir.resolve()
+    if root.exists():
+        raise ValueError("Output directory must not exist; preserve previous attempts")
+    bundle = REPO / "docs/examples/yokohama-urban-scene"
+    expected = json.loads((bundle / "files.sha256.json").read_text())
+    names = ("scene.json", "route.json", "collision-prisms.obj", "collision-footprints.geojson")
+    for name in names:
+        if sha256(bundle / name) != expected[name]:
+            raise ValueError("Source asset hash mismatch: " + name)
+    scene = json.loads((bundle / "scene.json").read_text())
+    route = json.loads((bundle / "route.json").read_text())
+    frame = build_frame(scene, route)
+    points = [dict(p, world_xyz_m=to_world(p["xyz_m"], frame).tolist()) for p in route["waypoints"]]
+    entry = points[0]["world_xyz_m"]
+    lon, lat = frame["home_lon_lat"]
+    item = dict(seq=0, command=22, latitude_deg=lat, longitude_deg=lon, world_z_m=entry[2],
+                current=1, frame=6, param2=0.5, param4=0)
+    world = dict(schema="missionos.yokohama-source-scene-plan.v1", frame=frame,
+                 points=points, source_sha256={n: expected[n] for n in names},
+                 compiled_world_source_only=True)
+    # This binds a compiled source description, not an extracted Gazebo SDF.
+    # The explicit marker prevents this planning hash being claimed as runtime
+    # simulator-world provenance.
+    world["world_sha256"] = hashlib.sha256(json.dumps(
+        world, sort_keys=True, separators=(",", ":"), allow_nan=False,
+    ).encode()).hexdigest()
+    config = dict(
+        run_id="yokohama-feedback-plan-" + uuid4().hex[:12], phase="flight",
+        plan_only=True, execution_qualified=False, compiled_world_source_only=True,
+        operator_approval="none; local CPU configuration plan only",
+        world=world,
+        timeout_s=args.timeout_seconds, altitude_diagnostics=False,
+        hold_duration_sim_s=30, hold_horizontal_tolerance_m=1.0,
+        hold_vertical_tolerance_m=0.6, hold_max_speed_mps=0.5, airspeed_mps=3.0, wind_mps=0,
+        altitude_transport_contract=SCHEMA, mission_upload_preparation=UPLOAD_PREPARATION_SCHEMA,
+        decisions=dict(backend=args.decision_backend, wam_profile="motion-v4",
+                       capture_paired_views=False, points=["D1", "D2"], camera_rate_hz=4,
+                       inference_timeout_s=75, startup_timeout_s=300, fixture_delay_s={},
+                       shutdown_timeout_s=65, hold_drift_m=0.5, hold_speed_mps=0.3,
+                       maximum_model_translation_m=5.01, model_target_error_m=0.25,
+                       model_altitude_error_m=0.15, rules_margin_m=2,
+                       failure_response="bounded_stop_of_owned_SITL_container",
+                       sea_leg_present=False, payload_release_present=False),
+        flight_stages=[dict(name="00-D1", target_world_xyz_m=entry, airspeed_mps=3,
+                            arrival_timeout_s=150, items=[item, dict(item, seq=1, command=17, current=0)])],
+    )
+    config = build_endpoint_feedback_config(config)
+    root.mkdir(parents=True)
+    (root / "config.json").write_text(json.dumps(config, indent=2, allow_nan=False) + "\n")
+    for index, stage in enumerate(config["flight_stages"]):
+        name = stage["name"]
+        (root / (name + "-upload.py")).write_text(_inner_upload_script(
+            reuse_mavlink_session=index > 0,
+            runtime_items_path="/mission/" + name + "-altitude-items.json",
+            prepared_binding_path="/mission/" + name + "-upload-binding.json",
+        ))
+    (root / "upload-prepare.py").write_text(_inner_upload_script(
+        preparation_only_path="/mission/upload-transaction.json"))
+    (root / "sources").mkdir()
+    for name in FEEDBACK_SOURCES:
+        shutil.copy2(REPO / name, root / "sources" / Path(name).name)
+    result = dict(
+        schema_version="yokohama_endpoint_feedback_plan.v1", status="planned",
+        plan_only=True, execution_qualified=False, compiled_world_source_only=True,
+        physical_execution_invoked=False,
+        simulator_invoked=False, vla_invoked=False, wam_invoked=False, gpu_requested=False,
+        config_sha256=sha256(root / "config.json"),
+        source_sha256={name: sha256(root / "sources" / Path(name).name) for name in FEEDBACK_SOURCES},
+        limitation="CPU plan only; new controller and live SITL qualification are required before execution",
+    )
+    (root / "plan-result.json").write_text(json.dumps(result, indent=2) + "\n")
+    print(json.dumps(dict(status="planned", output=str(root), simulator_invoked=False,
+                          vla_invoked=False, wam_invoked=False)))
+    return 0
 
 
 def command(args, timeout=60, check=True):
@@ -65,16 +217,21 @@ def reap_owned_worker(worker: Any, result: dict[str, Any]) -> None:
 
 
 def cleanup_owned(
-    root: Path, result: dict[str, Any], *, created: bool, container: str, worker: Any
+    root: Path, result: dict[str, Any], *, created: bool, container: str, worker: Any,
+    preserve_container: bool = False,
 ) -> None:
     """Required cleanup is independent of diagnostics and result-file writes."""
     try:
         if created:
             result["cleanup"] = False
             try:
-                removed = command(["docker", "rm", "-f", container], check=False)
-                result["cleanup"] = removed.returncode == 0
-                if not result["cleanup"]:
+                removed = command(
+                    ["docker", "stop", "--time", "10", container] if preserve_container
+                    else ["docker", "rm", "-f", container], check=False)
+                result["cleanup"] = removed.returncode == 0 and not preserve_container
+                result["container_stopped_for_preservation"] = (
+                    preserve_container and removed.returncode == 0)
+                if removed.returncode != 0:
                     raise RuntimeError("Owned container removal exited " + str(removed.returncode))
             except Exception as exc:
                 cleanup_error(result, "container_remove_error", exc)
@@ -121,6 +278,17 @@ def main(argv=None):
     parser.add_argument("--decision-backend", choices=["fixture", "native"])
     parser.add_argument("--native-service-config", type=Path)
     parser.add_argument("--local-image-id", type=image_id)
+    parser.add_argument(
+        "--endpoint-feedback", action="store_true",
+        help="Opt-in inland two-cycle endpoint feedback (CPU plan only until qualified)",
+    )
+    parser.add_argument(
+        "--plan-only", action="store_true",
+        help="Compile an endpoint-feedback config without Docker, SITL or model calls",
+    )
+    parser.add_argument("--candidate-recovery", action="store_true",
+                        help="Separately approved CPU rejection/return qualification")
+    parser.add_argument("--fixture-reject-second-candidate", action="store_true")
     parser.add_argument(
         "--capture-paired-views",
         action="store_true",
@@ -215,6 +383,29 @@ def main(argv=None):
         help="Explicit recovery-only radius, 1..3 m; requires mapped clearance",
     )
     args = parser.parse_args(argv)
+    if args.fixture_reject_second_candidate and not args.candidate_recovery:
+        parser.error("Fault injection requires candidate recovery")
+    if args.candidate_recovery and (
+        not args.endpoint_feedback or args.plan_only or not args.approval_manifest
+        or not args.approve_sitl or args.decision_backend != "fixture"
+        or not args.fixture_reject_second_candidate or not args.local_image_id
+    ):
+        parser.error("Recovery needs a fresh source-bound CPU approval and fixed image")
+    if args.plan_only and not args.endpoint_feedback:
+        parser.error("--plan-only currently requires --endpoint-feedback")
+    if args.endpoint_feedback:
+        if not args.plan_only and not args.candidate_recovery:
+            parser.error("Endpoint-feedback runtime is blocked until controller and SITL qualification; use --plan-only")
+        if args.phase != "flight" or not args.decision_backend or args.wam_profile != "motion-v4":
+            parser.error("Endpoint-feedback planning requires --phase flight, an explicit backend, and --wam-profile motion-v4")
+        if any((args.sea_round_trip, args.deliver_payload, args.occupied_pad,
+                args.pad_approach_decision, args.fault_lead_return_on_d3_wam,
+                args.pad_state_advisory, args.pad_mission_judge, args.capture_paired_views,
+                args.capture_motion_views, args.goal_plan, args.recover_city_hold,
+                args.recovery_radius_m is not None, args.wind_east_mps, args.wind_profile,
+                args.wind_after_takeoff, args.gust_seed is not None, args.fixture_cold_start,
+                args.altitude_diagnostics, args.approval_manifest and not args.candidate_recovery)):
+            parser.error("Endpoint feedback permits only the fixed inland static scene without extra modes or reused approvals")
     if args.pad_state_advisory and not args.occupied_pad:
         parser.error("Pad-state advisory requires --occupied-pad")
     if args.occupied_pad and (
@@ -285,12 +476,14 @@ def main(argv=None):
         args.phase != "flight" or args.capture_motion_views or args.capture_paired_views
     ):
         parser.error("Sea round trip requires flight without dataset capture")
-    if not args.approve_sitl:
+    if not args.approve_sitl and not args.plan_only:
         parser.error("Explicit --approve-sitl is required; no hardware execution is supported")
     if args.decision_backend and args.phase != "flight":
         parser.error("City decisions require --phase flight")
-    if bool(args.native_service_config) != (args.decision_backend == "native"):
+    if not args.plan_only and bool(args.native_service_config) != (args.decision_backend == "native"):
         parser.error("Native decisions require exactly one explicit --native-service-config")
+    if args.plan_only and args.native_service_config:
+        parser.error("CPU planning does not accept or read native service credentials/configuration")
     if args.capture_paired_views and args.decision_backend != "fixture":
         parser.error("Paired capture currently requires the CPU fixture backend")
     if args.capture_motion_views and (args.phase != "flight" or args.decision_backend):
@@ -299,6 +492,23 @@ def main(argv=None):
         parser.error("WAM profile requires explicit decisions")
     if args.fixture_cold_start and args.decision_backend != "fixture":
         parser.error("Cold-start fixture delays require --decision-backend fixture")
+    if args.endpoint_feedback and args.plan_only:
+        try:
+            return write_endpoint_feedback_plan(args)
+        except (ValueError, OSError, KeyError) as exc:
+            parser.error(str(exc))
+    if args.candidate_recovery:
+        from src.runtime.yokohama_execution_service import (
+            admit_recovery_request, recovery_arguments,
+        )
+        expected = recovery_arguments(args.local_image_id)
+        if args.timeout_seconds != 900:
+            parser.error("Recovery total flight limit is fixed at 900 seconds")
+        admit_recovery_request(args.approval_manifest.read_bytes(), REPO, expected)
+        # An atomic, persistent claim prevents replay even after process failure.
+        claim = args.approval_manifest.parent / "flight-attempt-claimed.json"
+        with claim.open("x") as stream:
+            json.dump({"approval": sha256(args.approval_manifest), "flight_attempt": 1}, stream)
     goal_plan = None
     if args.goal_plan:
         if (
@@ -598,6 +808,22 @@ def main(argv=None):
             config["mission_upload_preparation"] = UPLOAD_PREPARATION_SCHEMA
             (root / "upload-prepare.py").write_text(_inner_upload_script(
                 preparation_only_path="/mission/upload-transaction.json"))
+        if args.candidate_recovery:
+            from scripts.yokohama_candidate_recovery import LIMITS, map_clearance, policy
+            config = build_endpoint_feedback_config(config)
+            config["candidate_recovery"] = dict(LIMITS)
+            config["fixture_reject_second_candidate"] = True
+            policy(config)
+            config["recovery_map_qualification"] = map_clearance(
+                config, REPO / "docs/examples/yokohama-urban-scene/collision-footprints.geojson")
+            shutil.copy2(REPO / "docs/examples/yokohama-urban-scene/collision-footprints.geojson",
+                         root / "recovery-map.geojson")
+            for index, stage in enumerate(config["flight_stages"]):
+                name = stage["name"]
+                (root / (name + "-upload.py")).write_text(_inner_upload_script(
+                    reuse_mavlink_session=index > 0,
+                    runtime_items_path="/mission/" + name + "-altitude-items.json",
+                    prepared_binding_path="/mission/" + name + "-upload-binding.json"))
         if args.recover_city_hold:
             from src.runtime.yokohama_native import recovery_envelopes
 
@@ -626,6 +852,16 @@ def main(argv=None):
                     REPO / "scripts/smoke_px4_gazebo_sitl_mission_upload.py",
                 ]
             )
+            if config.get("decisions", {}).get("endpoint_feedback"):
+                sources.extend([
+                    REPO / "scripts/yokohama_endpoint_feedback.py",
+                    REPO / "src/runtime/yokohama_shadow_http.py",
+                ])
+            if args.candidate_recovery:
+                sources.extend([
+                    REPO / "scripts/yokohama_candidate_recovery.py",
+                    REPO / "scripts/verify_yokohama_candidate_recovery.py",
+                ])
             if args.altitude_diagnostics:
                 sources.append(REPO / "scripts/yokohama_altitude.py")
         if args.occupied_pad:
@@ -720,6 +956,9 @@ def main(argv=None):
             "-d",
             "--name",
             container,
+            "--label", "missionos.owner=" + run_id,
+            "--label", "missionos.scope=yokohama-candidate-recovery"
+            if args.candidate_recovery else "missionos.scope=yokohama-sitl",
             "--network",
             "none",
             "--cpus",
@@ -807,6 +1046,10 @@ def main(argv=None):
             if worker.returncode == 0 and result.get("observed", {}).get("status") == "passed"
             else "failed"
         )
+        if args.candidate_recovery:
+            result["mission_outcome"] = "failed"
+            result["recovery_outcome"] = result.get("observed", {}).get(
+                "recovery_outcome", "unverified")
     except Exception as exc:
         result["reason"] = type(exc).__name__ + ": " + str(exc)
     finally:
@@ -850,7 +1093,8 @@ def main(argv=None):
             cleanup_error(result, "finalization_interrupted_error", exc)
             raise
         finally:
-            cleanup_owned(root, result, created=created, container=container, worker=worker)
+            cleanup_owned(root, result, created=created, container=container, worker=worker,
+                          preserve_container=args.candidate_recovery)
     print(
         json.dumps(
             {

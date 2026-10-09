@@ -12,6 +12,13 @@ ROOT = Path("/mission")
 BIN = "/opt/px4-gazebo/bin/px4-"
 
 if TYPE_CHECKING or __package__:
+    from .yokohama_endpoint_feedback import (
+        feedback_policy,
+        goal_reached,
+        validate_feedback_candidate,
+        validate_feedback_observation,
+    )
+    from .yokohama_decision_worker import physical_heading
     from .yokohama_altitude_contract import (
         SCHEMA,
         UPLOAD_PREPARATION_SCHEMA,
@@ -24,6 +31,13 @@ if TYPE_CHECKING or __package__:
         recheck_mapping,
     )
 else:
+    from yokohama_endpoint_feedback import (
+        feedback_policy,
+        goal_reached,
+        validate_feedback_candidate,
+        validate_feedback_observation,
+    )
+    from yokohama_decision_worker import physical_heading
     from yokohama_altitude_contract import (
         SCHEMA,
         UPLOAD_PREPARATION_SCHEMA,
@@ -154,7 +168,175 @@ def hold_passes(metrics, config):
     )
 
 
+def execute_model_segments(
+    config,
+    decisions,
+    obs,
+    next_target,
+    upload,
+    activate,
+    wait_for,
+    run,
+    event,
+    clock,
+    *,
+    prepare_upload=None,
+):
+    """Execute the approved model segment(s), recording each observed endpoint.
+
+    The callbacks are the flight worker's existing PX4/observation boundary.
+    Endpoint feedback keeps one goal and has no AP connector between cycles.
+    """
+    feedback = feedback_policy(config)
+    if feedback and decisions.completed:
+        raise ValueError("Endpoint feedback session has already executed")
+    model_goal = list(feedback["goal_world_xyz_m"] if feedback else next_target)
+    deadline = clock() + feedback["total_timeout_s"] if feedback else None
+    if feedback:
+        decisions.endpoint_deadline = deadline
+
+    def check_deadline():
+        if deadline is not None and clock() >= deadline:
+            raise TimeoutError("Endpoint feedback total deadline expired")
+
+    def remaining(timeout):
+        check_deadline()
+        return min(timeout, max(0.0, deadline - clock())) if deadline is not None else timeout
+
+    for _ in range(feedback["max_cycles"] if feedback else 1):
+        check_deadline()
+        permit = decisions.prepare_segment(
+            obs,
+            model_goal,
+            upload,
+            prepare_upload=prepare_upload,
+        )
+        candidate = permit["candidate"]
+        target_model = candidate["target_world_xyz_m"]
+        # Mission upload does not itself move the vehicle. Recheck hold
+        # and the bound two-second issuance age before activation.
+        check_deadline()
+        if feedback:
+            validate_feedback_candidate(
+                config,
+                permit["rules"].get("start_world_xyz_m"),
+                target_model,
+                origin=permit["rules"].get("proposal_origin_world_xyz_m"),
+            )
+        if clock() > permit["expires_at_worker_wall_s"]:
+            raise ValueError("City permit expired before mission activation")
+        check_deadline()
+        activation_expires = permit["expires_at_worker_wall_s"]
+        if deadline is not None:
+            activation_expires = min(activation_expires, deadline)
+        activate(expires_at_wall_s=activation_expires)
+        check_deadline()
+        event("city_segment_dispatched", permit_id=permit["permit_id"])
+
+        def at_model_target(r):
+            check_deadline()
+            if feedback:
+                validate_feedback_observation(config, r)
+            begin = permit["rules"]["start_world_xyz_m"]
+            delta = [b - a for a, b in zip(begin, target_model)]
+            length2 = sum(x * x for x in delta)
+            fraction = max(
+                0.0,
+                min(
+                    1.0,
+                    sum((p - a) * d for p, a, d in zip(r["vehicle"]["xyz"], begin, delta))
+                    / length2,
+                ),
+            )
+            nearest = [a + fraction * d for a, d in zip(begin, delta)]
+            if math.dist(r["vehicle"]["xyz"], nearest) > 1:
+                raise ValueError("City segment left the 1 m tracking tube")
+            return (
+                math.dist(r["vehicle"]["xyz"], target_model) <= 0.25
+                and abs(r["vehicle"]["xyz"][2] - target_model[2]) <= 0.15
+                and math.hypot(*r["velocity_ned"]) <= 0.3
+                and abs(
+                    math.remainder(
+                        r["heading_ned_rad"]
+                        - permit.get(
+                            "executor_heading_ned_rad", candidate["target_heading_ned_rad"]
+                        ),
+                        2 * math.pi,
+                    )
+                )
+                <= 0.05
+                and abs(
+                    math.remainder(
+                        physical_heading(r) - candidate["target_heading_world_ned_rad"],
+                        2 * math.pi,
+                    )
+                )
+                <= 0.05
+            )
+
+        arrived = wait_for(at_model_target, remaining(45))
+        check_deadline()
+        run([BIN + "commander", "mode", "auto:loiter"])
+        check_deadline()
+        stable = None
+        stable_samples = 0
+        previous_settle_sim_s = None
+
+        def settled(r):
+            nonlocal stable, stable_samples, previous_settle_sim_s
+            okay = at_model_target(r) and r["nav_state"] == 4
+            if feedback and okay:
+                validate_feedback_observation(config, r, held=True)
+            if (
+                feedback
+                and previous_settle_sim_s is not None
+                and r["sim_s"] < previous_settle_sim_s
+            ):
+                raise ValueError("Endpoint settling simulation clock regressed")
+            distinct_sample = previous_settle_sim_s is None or r["sim_s"] > previous_settle_sim_s
+            previous_settle_sim_s = r["sim_s"]
+            if not okay:
+                stable, stable_samples = None, 0
+            elif stable is None:
+                stable, stable_samples = r["sim_s"], 1
+            elif not feedback or distinct_sample:
+                stable_samples += 1
+            return (
+                stable is not None
+                and r["sim_s"] - stable >= 2
+                and (not feedback or stable_samples >= 3)
+            )
+
+        arrived = wait_for(settled, remaining(20))
+        check_deadline()
+        completed = dict(permit=permit, arrived=arrived)
+        if feedback:
+            completed.update(stable_since_sim_s=stable, stable_samples=stable_samples)
+        decisions.completed.append(completed)
+        event("city_segment_arrived", permit_id=permit["permit_id"], observation=arrived)
+        decisions.record_arrival(obs, permit, arrived)
+        check_deadline()
+        if feedback and goal_reached(config, arrived):
+            break
+    if feedback:
+        decisions.stop()
+        check_deadline()
+        if not decisions.closed or decisions.active:
+            raise ValueError("Endpoint feedback session remains active before AP exit")
+        event(
+            "city_endpoint_feedback_completed",
+            completed_updates=len(decisions.completed),
+            model_goal_reached=goal_reached(config, arrived),
+            goal_world_xyz_m=model_goal,
+            exit_world_xyz_m=feedback["exit_world_xyz_m"],
+        )
+        if not permit.get("connector_name") or not permit.get("connector_sha256"):
+            raise ValueError("Endpoint feedback has no approved final AP exit")
+    return permit
+
+
 def flight_trial(config, obs, run, field):
+    endpoint_feedback = feedback_policy(config)
     if config.get("altitude_transport_contract") != SCHEMA:
         raise ValueError("Unified altitude transport contract required before flight")
     started = time.monotonic()
@@ -185,11 +367,15 @@ def flight_trial(config, obs, run, field):
     next_connector = None
     active_altitude_mapping = None
     connector_world_hashes = {}
+    recovery_state = {}
     landing_xy = (
         config["world"].get("sea_extension", {}).get("ship_deck_world_xyz_m", [0, 0, 0])[:2]
     )
 
     def event(name, **data):
+        if name == "candidate_rejected":
+            recovery_state.update(anchor=data["observation"],
+                                  deadline=data["recovery_deadline_wall_s"])
         row = dict(event=name, phase=phase, wall_s=time.monotonic() - started, **data)
         events.write(json.dumps(row) + "\n")
         print(json.dumps(row), flush=True)
@@ -237,6 +423,8 @@ def flight_trial(config, obs, run, field):
 
     def sample():
         nonlocal last_video_sim_s, last_cargo_sim_s, last_diagnostic_sim_s, last_queue_sim_s
+        if recovery_state and time.monotonic() - started >= recovery_state["deadline"]:
+            raise TimeoutError("Recovery observation deadline exceeded")
         if pad_queue:
             pad_queue.update_actor()
         if wind_profile_active:
@@ -344,6 +532,14 @@ def flight_trial(config, obs, run, field):
                 with (ROOT / "wind-diagnostics.jsonl").open("a") as diagnostic_file:
                     diagnostic_file.write(json.dumps(diagnostic) + "\n")
                 last_diagnostic_sim_s = row["sim_s"]
+        if recovery_state:
+            if __package__:
+                from .yokohama_candidate_recovery import validate_sample
+            else:
+                from yokohama_candidate_recovery import validate_sample
+            if time.monotonic() - started >= recovery_state["deadline"]:
+                raise TimeoutError("Recovery observation deadline exceeded")
+            validate_sample(config, row, recovery_state["anchor"], landing=phase == "recovery_land")
         trajectory.write(json.dumps(row) + "\n")
         if pad_queue:
             pad_queue.guard(row)
@@ -432,7 +628,12 @@ def flight_trial(config, obs, run, field):
                 time.sleep(0.1)
             preparation = json.loads(future.result().splitlines()[-1])
         validate_upload_preparation(transaction, preparation)
-        event("upload_protocol_prepared", segment=name, transaction=transaction, preparation=preparation)
+        event(
+            "upload_protocol_prepared",
+            segment=name,
+            transaction=transaction,
+            preparation=preparation,
+        )
         prepared_protocols[name] = (transaction, preparation, old)
         return preparation
 
@@ -464,16 +665,26 @@ def flight_trial(config, obs, run, field):
                     (ROOT / (name + "-altitude-mapping.json")).read_text()
                 )
         if transaction is not None:
-            if active_altitude_mapping["observation"]["altitude_capture"]["begin_worker_wall_s"] < preparation["prepared_at_worker_wall_s"]:
+            if (
+                active_altitude_mapping["observation"]["altitude_capture"]["begin_worker_wall_s"]
+                < preparation["prepared_at_worker_wall_s"]
+            ):
                 raise ValueError("Altitude mapping predates session/clear preparation")
-            (ROOT / (name + "-upload-binding.json")).write_text(json.dumps(
-                dict(transaction=transaction, preparation=preparation,
-                     mapping=active_altitude_mapping,
-                     mapping_sha256=altitude_digest(active_altitude_mapping)), allow_nan=False))
+            (ROOT / (name + "-upload-binding.json")).write_text(
+                json.dumps(
+                    dict(
+                        transaction=transaction,
+                        preparation=preparation,
+                        mapping=active_altitude_mapping,
+                        mapping_sha256=altitude_digest(active_altitude_mapping),
+                    ),
+                    allow_nan=False,
+                )
+            )
         send_argv = ["python3", str(ROOT / (name + "-upload.py"))]
         if transaction is not None:
             send_argv.append(transaction["transaction_id"])
-        if decisions and name.startswith("city-"):
+        if decisions and (name.startswith("city-") or config.get("candidate_recovery")):
             from concurrent.futures import ThreadPoolExecutor
 
             with ThreadPoolExecutor(max_workers=1) as pool:
@@ -490,7 +701,8 @@ def flight_trial(config, obs, run, field):
             or receipt.get("transaction_sha256") != altitude_digest(transaction)
             or receipt.get("mapping_sha256") != altitude_digest(active_altitude_mapping)
             or receipt.get("preparation") != preparation
-            or receipt.get("mission_items_wire") != mission_wire_items(active_altitude_mapping["mission_items"])
+            or receipt.get("mission_items_wire")
+            != mission_wire_items(active_altitude_mapping["mission_items"])
         ):
             raise ValueError("Upload receipt belongs to a different preparation")
         if active_altitude_mapping is not None:
@@ -829,72 +1041,42 @@ def flight_trial(config, obs, run, field):
                     decisions.before_authorize = lambda: pad_queue.reconfirm(
                         sample, "before_model_approach_authority"
                     )
-                permit = decisions.prepare_segment(
-                    obs, config["flight_stages"][i + 1]["target_world_xyz_m"], upload,
-                    prepare_upload=prepare_upload_protocol
-                    if config.get("mission_upload_preparation") == UPLOAD_PREPARATION_SCHEMA else None,
-                )
+                try:
+                    permit = execute_model_segments(
+                        config,
+                        decisions,
+                        obs,
+                        config["flight_stages"][i + 1]["target_world_xyz_m"],
+                        upload,
+                        activate,
+                        wait_for,
+                        run,
+                        event,
+                        lambda: time.monotonic() - started,
+                        prepare_upload=prepare_upload_protocol
+                        if config.get("mission_upload_preparation") == UPLOAD_PREPARATION_SCHEMA
+                        else None,
+                    )
+                except Exception as rejection:
+                    if not config.get("candidate_recovery"):
+                        raise
+                    if __package__:
+                        from .yokohama_candidate_recovery import recover
+                    else:
+                        from yokohama_candidate_recovery import recover
+
+                    def recovery_phase(name):
+                        nonlocal phase
+                        phase = name
+
+                    return recover(
+                        config, decisions, rejection, sample=sample, upload=upload,
+                        activate=activate, wait_for=wait_for,
+                        land=lambda: run([BIN + "commander", "land"]),
+                        contacts=lambda: obs.contacts, event=event,
+                        clock=lambda: time.monotonic() - started, set_phase=recovery_phase,
+                    )
                 candidate = permit["candidate"]
-                # Mission upload does not itself move the vehicle. Recheck hold
-                # and the bound two-second issuance age before activation.
-                if time.monotonic() - started > permit["expires_at_worker_wall_s"]:
-                    raise ValueError("City permit expired before mission activation")
-                activate(expires_at_wall_s=permit["expires_at_worker_wall_s"])
-                event("city_segment_dispatched", permit_id=permit["permit_id"])
-                target_model = candidate["target_world_xyz_m"]
-
-                def at_model_target(r):
-                    begin = permit["rules"]["start_world_xyz_m"]
-                    delta = [b - a for a, b in zip(begin, target_model)]
-                    length2 = sum(x * x for x in delta)
-                    fraction = max(
-                        0.0,
-                        min(
-                            1.0,
-                            sum((p - a) * d for p, a, d in zip(r["vehicle"]["xyz"], begin, delta))
-                            / length2,
-                        ),
-                    )
-                    nearest = [a + fraction * d for a, d in zip(begin, delta)]
-                    if math.dist(r["vehicle"]["xyz"], nearest) > 1:
-                        raise ValueError("City segment left the 1 m tracking tube")
-                    return (
-                        math.dist(r["vehicle"]["xyz"], target_model) <= 0.25
-                        and abs(r["vehicle"]["xyz"][2] - target_model[2]) <= 0.15
-                        and math.hypot(*r["velocity_ned"]) <= 0.3
-                        and abs(
-                            math.remainder(
-                                r["heading_ned_rad"]
-                                - permit.get(
-                                    "executor_heading_ned_rad", candidate["target_heading_ned_rad"]
-                                ),
-                                2 * math.pi,
-                            )
-                        )
-                        <= 0.05
-                        and abs(
-                            math.remainder(
-                                physical_heading(r) - candidate["target_heading_world_ned_rad"],
-                                2 * math.pi,
-                            )
-                        )
-                        <= 0.05
-                    )
-
-                arrived = wait_for(at_model_target, 45)
-                run([BIN + "commander", "mode", "auto:loiter"])
-                stable = None
-
-                def settled(r):
-                    nonlocal stable
-                    okay = at_model_target(r) and r["nav_state"] == 4
-                    stable = (r["sim_s"] if stable is None else stable) if okay else None
-                    return stable is not None and r["sim_s"] - stable >= 2
-
-                arrived = wait_for(settled, 20)
-                decisions.completed.append(dict(permit=permit, arrived=arrived))
-                event("city_segment_arrived", permit_id=permit["permit_id"], observation=arrived)
-                decisions.record_arrival(obs, permit, arrived)
                 import hashlib
 
                 connector = ROOT / (permit["connector_name"] + "-upload.py")
@@ -945,6 +1127,11 @@ def flight_trial(config, obs, run, field):
             ),
             city_decision_updates=len(decisions.completed) if decisions else 0,
             city_decision_backend=config.get("decisions", {}).get("backend"),
+            **(
+                {"model_goal_reached": goal_reached(config, decisions.completed[-1]["arrived"])}
+                if endpoint_feedback and decisions and decisions.completed
+                else {}
+            ),
         )
     finally:
         primary_failure = sys.exc_info()[0] is not None

@@ -12,6 +12,9 @@ from pathlib import Path
 
 TARGET = "px4_gazebo_yokohama_harbour_delivery"
 ROUTE_ID = "yokohama_ship_to_harbour_pad_v1"
+FEEDBACK_SCHEMA = "yokohama_endpoint_feedback_proposal.v1"
+FEEDBACK_TARGET = "px4_gazebo_yokohama_native_endpoint_feedback"
+FEEDBACK_ROUTE_ID = "yokohama_inland_endpoint_feedback_v1"
 SOURCES = (
     "scripts/run_yokohama_vehicle_service.py",
     "src/runtime/yokohama_execution_service.py",
@@ -31,6 +34,54 @@ SOURCES = (
     "docs/examples/yokohama-urban-scene/files.sha256.json",
     "docs/examples/yokohama-pad-state/model/model.json",
 )
+FEEDBACK_SOURCES = SOURCES + (
+    "scripts/yokohama_endpoint_feedback.py",
+    "src/runtime/yokohama_scene.py",
+    "src/runtime/yokohama_shadow_http.py",
+    "src/runtime/ship_aerovla_host.py",
+    "scripts/verify_yokohama_decisions.py",
+    "scripts/verify_yokohama_sitl.py",
+    "scripts/verify_yokohama_endpoint_feedback.py",
+)
+
+
+def recovery_arguments(image: str) -> list[str]:
+    from scripts.yokohama_local_preflight import image_id
+    return ["--phase", "flight", "--endpoint-feedback", "--candidate-recovery",
+            "--fixture-reject-second-candidate", "--decision-backend", "fixture",
+            "--wam-profile", "motion-v4", "--timeout-seconds", "900",
+            "--local-image-id", image_id(image)]
+
+
+def recovery_input_hashes(root: Path) -> dict:
+    # Bind the full Python execution closure, shell entrypoint, and frozen scene.
+    names = sorted({str(p.relative_to(root)) for directory in ("src", "scripts", "packages")
+                    for p in (root / directory).rglob("*.py")})
+    names += ["scripts/ship_onboard_entrypoint.sh", *[
+        "docs/examples/yokohama-urban-scene/" + name
+        for name in ("scene.json", "route.json", "collision-prisms.obj",
+                     "collision-footprints.geojson", "files.sha256.json")]]
+    return {name: sha256((root / name).read_bytes()).hexdigest() for name in names}
+
+
+def admit_recovery_request(raw: bytes, root: Path, simulator_arguments: list[str]) -> dict:
+    from scripts.yokohama_candidate_recovery import LIMITS
+    manifest = json.loads(raw)
+    proposal, approval = manifest["proposal"], manifest["approval"]
+    if (proposal.get("schema") != "yokohama.candidate-recovery-proposal.v1"
+            or proposal.get("limits") != LIMITS
+            or proposal.get("city_models") != "fixture"
+            or proposal.get("physical_execution_invoked") is not False
+            or not proposal.get("proposal_id")
+            or proposal.get("simulator_arguments") != recovery_arguments(proposal.get("image_id"))
+            or simulator_arguments != proposal["simulator_arguments"]
+            or proposal.get("input_sha256") != recovery_input_hashes(root)
+            or approval.get("approved_proposal_sha256") != proposal_digest(proposal)
+            or approval.get("maximum_actual_flight_trials") != 1
+            or not all(approval.get(k) for k in (
+                "operator_approval_ref", "actor_session_id", "approved_at"))):
+        raise ValueError("Recovery proposal/source/limits/approval mismatch")
+    return manifest
 
 
 def proposal_digest(value: dict) -> str:
@@ -63,6 +114,62 @@ def arguments(models: str, service: Path | None = None, judge: str = "gateway",
         from scripts.yokohama_local_preflight import image_id
         args += ["--local-image-id", image_id(local_image_id)]
     return args
+
+
+def feedback_arguments(models: str) -> list[str]:
+    """Separate CPU-plan catalog; it cannot dispatch native services or a flight."""
+    if models not in ("fixture", "native"):
+        raise ValueError("Unsupported endpoint-feedback backend")
+    return [
+        "--phase", "flight", "--endpoint-feedback", "--plan-only",
+        "--decision-backend", models, "--wam-profile", "motion-v4",
+        "--timeout-seconds", "900",
+    ]
+
+
+def feedback_input_hashes(root: Path) -> dict:
+    return {name: sha256((root / name).read_bytes()).hexdigest() for name in FEEDBACK_SOURCES}
+
+
+def validate_feedback_request(raw: bytes, root: Path) -> dict:
+    return admit_feedback_request(raw, root)[0]
+
+
+def admit_feedback_request(raw: bytes, root: Path) -> tuple[dict, None]:
+    """Validate a newly approved CPU plan through a separate, non-dispatch API.
+
+    The existing service executable intentionally continues using admit_request
+    and rejects this schema. No native configuration or credential is opened.
+    A future execution mode requires its own controller and qualification.
+    """
+    from scripts.yokohama_endpoint_feedback import FIXED
+
+    manifest = json.loads(raw)
+    proposal, approval = manifest["proposal"], manifest["approval"]
+    if (
+        proposal.get("schema_version") != FEEDBACK_SCHEMA
+        or not proposal.get("proposal_id")
+        or proposal.get("execution_target") != FEEDBACK_TARGET
+        or proposal.get("route") != {"route_id": FEEDBACK_ROUTE_ID}
+        or proposal.get("destination_id") != "yokohama_inland_entry"
+        or proposal.get("execution_mode") != "plan_only"
+        or proposal.get("physical_execution_invoked") is not False
+        or proposal.get("endpoint_feedback_limits") != FIXED
+        or any(key in proposal for key in ("pad_queue", "payload_delivery", "sea_extension"))
+    ):
+        raise ValueError("Unsupported endpoint-feedback CPU plan")
+    if (
+        approval.get("approved_proposal_sha256") != proposal_digest(proposal)
+        or not approval.get("operator_approval_ref")
+        or not approval.get("actor_session_id")
+        or not approval.get("approved_at")
+    ):
+        raise ValueError("Missing or changed endpoint-feedback approval")
+    if proposal.get("simulator_arguments") != feedback_arguments(proposal.get("city_models")):
+        raise ValueError("Arguments differ from the endpoint-feedback CPU-plan catalog")
+    if proposal.get("input_sha256") != feedback_input_hashes(root):
+        raise ValueError("Approved endpoint-feedback inputs changed")
+    return manifest, None
 
 
 def validate_request(raw: bytes, root: Path) -> dict:

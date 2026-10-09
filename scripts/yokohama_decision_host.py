@@ -12,6 +12,7 @@ import io
 import json
 import math
 from pathlib import Path
+import re
 import subprocess
 import threading
 import time
@@ -22,6 +23,12 @@ import numpy as np
 from PIL import Image
 
 from scripts import ship_anwm
+from scripts.yokohama_endpoint_feedback import (
+    feedback_policy,
+    validate_feedback_candidate,
+    validate_feedback_map,
+    validate_feedback_request,
+)
 from scripts.yokohama_altitude_contract import (
     SCHEMA,
     compile_mission,
@@ -131,9 +138,18 @@ class DecisionHost:
         self.http_exchange = http_exchange
         self.attachment_attempted = False
         self.backend, self.service_config = backend, service_config
+        feedback = feedback_policy(config)
+        if feedback is not None and (detached or mock_http or backend != config["decisions"]["backend"]):
+            raise ValueError("Endpoint feedback requires its explicit non-shadow backend")
         self.identity, self.pending = None, {}
         self.attempts = {}
         self.active, self.closed = False, False
+        self.feedback_deadline = None
+        self.feedback_failed = False
+        self.feedback_activated = {}
+        self.feedback_vla_capture_end = {}
+        self.feedback_model_requests = {"vla": 0, "wam": 0}
+        self.feedback_requested = set()
         self.stop_receipt = None
         self.stop_event = threading.Event()
         self.lock = threading.Lock()
@@ -146,11 +162,89 @@ class DecisionHost:
             self.thread.start()
 
     def _exchange(self, *args, **kwargs):
+        if feedback_policy(getattr(self, "config", {})) is not None:
+            from src.runtime.yokohama_shadow_http import exchange as bounded_exchange
+
+            remaining = self.feedback_deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError("Endpoint feedback total deadline exceeded")
+            kwargs["timeout"] = min(kwargs.get("timeout", 75), remaining)
+            return (getattr(self, "http_exchange", None) or bounded_exchange)(*args, **kwargs)
         return (getattr(self, "http_exchange", None) or exchange)(*args, **kwargs)
+
+    def feedback_guard(self, message, *, model=None):
+        """Independently bind endpoint continuation and reserve each model call."""
+        policy = feedback_policy(self.config)
+        if policy is None:
+            return None
+        if self.closed or not self.active or self.feedback_failed:
+            raise ValueError("Endpoint feedback session is inactive")
+        if self.feedback_deadline is None or time.monotonic() >= self.feedback_deadline:
+            raise TimeoutError("Endpoint feedback total deadline exceeded")
+        validate_feedback_map(self.config, self.bundle)
+        validate_feedback_request(self.config, message)
+        if (message.get("run_id") != self.config["run_id"]
+                or message.get("config_sha256") != digest(self.config)):
+            raise ValueError("Endpoint feedback run/config mismatch")
+        cycle = message["cycle"]
+        if cycle == 2 and message["previous_segment"]["permit"] != self.feedback_activated.get(1):
+            raise ValueError("Endpoint feedback predecessor was not activated by this host")
+        if model is not None:
+            key = (cycle, model)
+            if (key in self.feedback_requested
+                    or self.feedback_model_requests[model] >= policy[f"max_{model}_requests"]):
+                raise ValueError("Endpoint feedback model request budget exhausted")
+            if model == "wam" and (cycle, "vla") not in self.feedback_requested:
+                raise ValueError("Endpoint feedback WAM requires this cycle's VLA")
+            self.feedback_requested.add(key)
+            self.feedback_model_requests[model] += 1
+        return policy
+
+    def feedback_capture(self, message, record, model):
+        if feedback_policy(self.config) is None:
+            return
+        first, last = record["frames"][0], record["frames"][-1]
+        row = message["observation"]
+        cutoff = (message["previous_segment"]["arrival"]["sim_s"]
+                  if message["cycle"] == 2 else -math.inf)
+        if model == "wam":
+            cutoff = max(cutoff, self.feedback_vla_capture_end[message["cycle"]])
+        if first["stamp_ns"] / 1e9 <= cutoff:
+            raise ValueError("Endpoint feedback requires a fresh post-boundary capture")
+        rotation = ship_anwm.rotation(row["vehicle"]["quat_wxyz"])
+        captured_rotation = ship_anwm.rotation(last["pose"]["quat_wxyz"])
+        if (math.dist(row["vehicle"]["xyz"], last["pose"]["xyz"]) > 0.5
+                or np.arccos(np.clip((np.trace(rotation.T @ captured_rotation) - 1) / 2, -1, 1)) > 0.03):
+            raise ValueError("Endpoint feedback capture/observation pose mismatch")
+        if model == "vla":
+            self.feedback_vla_capture_end[message["cycle"]] = last["stamp_ns"] / 1e9
+
+    def feedback_rules(self, rules, start, candidate, *, origin=None, final=False):
+        policy = feedback_policy(self.config)
+        if policy is not None:
+            target = candidate["target_world_xyz_m"]
+            rules["endpoint_feedback"] = validate_feedback_candidate(
+                self.config, start, target, origin=origin,
+            )
+            if final:
+                rules["exit_connection"] = geometry_rules(
+                    start, target, policy["exit_world_xyz_m"], self.config, self.bundle,
+                    origin=origin,
+                )
+        return rules
 
     def lifecycle(self, operation):
         if getattr(self, "detached", False):
             raise ValueError("Detached shadow host does not own service lifecycle")
+        feedback = feedback_policy(self.config)
+        timeout = self.config["decisions"].get("startup_timeout_s", 180) if operation == "start" else 60
+        if feedback is not None and operation == "start":
+            if self.feedback_deadline is None:
+                raise ValueError("Endpoint feedback startup requires a session deadline")
+            remaining = self.feedback_deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError("Endpoint feedback total deadline exceeded before startup")
+            timeout = min(timeout, remaining)
         argv = self.service_config[operation + "_argv"]
         if not isinstance(argv, list) or not argv or not all(isinstance(s, str) for s in argv):
             raise ValueError("Lifecycle requires explicit argv")
@@ -159,11 +253,20 @@ class DecisionHost:
             (self.folder / (operation + ".stderr")).open("w") as err,
         ):
             self.process = subprocess.Popen(argv, stdout=out, stderr=err, stdin=subprocess.DEVNULL)
-            self.process.wait(
-                timeout=self.config["decisions"].get("startup_timeout_s", 180)
-                if operation == "start"
-                else 60
-            )
+            try:
+                self.process.wait(timeout=timeout)
+            except subprocess.TimeoutExpired as exc:
+                if feedback is None:
+                    raise
+                # Reap only this owned local lifecycle child. Remote cleanup
+                # remains a separate stop receipt, even after local timeout.
+                self.process.terminate()
+                try:
+                    self.process.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    self.process.kill()
+                    self.process.wait(timeout=2)
+                raise TimeoutError("Endpoint feedback lifecycle deadline: " + operation) from exc
         if self.process.returncode:
             raise RuntimeError("Model lifecycle failed: " + operation)
         receipt = json.loads((self.folder / (operation + ".stdout")).read_text().splitlines()[-1])
@@ -176,6 +279,12 @@ class DecisionHost:
             raise ValueError("Detached shadow host must attach existing services")
         if self.active or self.closed:
             raise ValueError("Model session is single use")
+        policy = feedback_policy(self.config)
+        if policy is not None:
+            if self.feedback_failed or self.feedback_deadline is not None:
+                raise ValueError("Endpoint feedback model session is single use")
+            validate_feedback_map(self.config, self.bundle)
+            self.feedback_deadline = time.monotonic() + policy["total_timeout_s"]
         if self.backend == "native":
             receipt = self.lifecycle("start")
             identities = {
@@ -190,6 +299,19 @@ class DecisionHost:
                     "ship_anwm.py", "ship_aerovla_server.py", "ship_aerovla.py",
                 )
             })
+            if policy is not None:
+                from src.runtime.ship_aerovla_host import validate_service_identity
+
+                if any(identity.get("fixture") is True for identity in identities.values()):
+                    raise ValueError("Native endpoint feedback rejects fixture identities")
+                validate_service_identity(identities["vla"])
+                wam = identities["wam"]
+                if (wam.get("schema_version") != "ship_anwm_static_service.v1"
+                        or re.fullmatch(r"[0-9a-f]{32}", wam.get("session_id", "")) is None
+                        or wam.get("model_revision") != ship_anwm.MODEL_REVISION
+                        or wam.get("vae_revision") != ship_anwm.VAE_REVISION
+                        or wam.get("diffusion_steps") != 250):
+                    raise ValueError("Unreviewed endpoint feedback native WAM identity")
             identity = dict(backend="native", services=identities, lifecycle=receipt)
         else:
             identity = dict(backend="fixture", models_invoked=False)
@@ -285,7 +407,9 @@ class DecisionHost:
     def vla(self, message, output):
         if getattr(self, "detached", False) and (not self.active or self.closed):
             raise ValueError("Detached model session revoked or not attached")
+        feedback = self.feedback_guard(message, model="vla")
         path, capture, _ = self.capture(message)
+        self.feedback_capture(message, capture, "vla")
         if self.pad_cycle(message["cycle"]):
             self.require_pad_approach(message["observation"])
         last = capture["frames"][-1]
@@ -305,6 +429,7 @@ class DecisionHost:
             if angle > 0
             else "forward-left"
         )
+        destination = "approved nearby goal" if feedback is not None else "delivery pad"
         request = dict(
             schema_version="yokohama_aerovla_request.v1",
             run_id=self.config["run_id"],
@@ -317,7 +442,7 @@ class DecisionHost:
             images_sha256={
                 k: __import__("hashlib").sha256(v).hexdigest() for k, v in images.items()
             },
-            prompt=f"<image>\nFly {direction} along the street toward the delivery pad. Maintain height.\nAction: ",
+            prompt=f"<image>\nFly {direction} along the street toward the {destination}. Maintain height.\nAction: ",
             direction_source="approved_goal_and_simulator_camera_pose",
             future_ground_truth_used=False,
             dispatch_allowed=False,
@@ -337,6 +462,7 @@ class DecisionHost:
                 response.get("request_sha256") != digest(request)
                 or response.get("service") != self.identity["services"]["vla"]
                 or response.get("vla_inference_invoked") is not True
+                or (feedback is not None and response.get("fixture") is True)
                 or response.get("input_images_sha256") != request["images_sha256"]
                 or response.get("dispatch_invoked") is not False
                 or response.get("physical_execution_invoked") is not False
@@ -346,7 +472,24 @@ class DecisionHost:
             ):
                 raise ValueError("Unbound native VLA result")
         else:
-            response = dict(generated_text="55 49 49", fixture=True, vla_inference_invoked=False)
+            forward_bin = 55
+            rejected_fixture = self.config.get("fixture_reject_second_candidate") and message["cycle"] == 2
+            if rejected_fixture:
+                forward_bin = 58
+            elif feedback is not None:
+                # Explicit CPU double: choose before decoding, never repair native output.
+                forward_bin = min(58, math.floor(
+                    math.dist(row["vehicle"]["xyz"], feedback["goal_world_xyz_m"]) * 98 / 5
+                ))
+                if forward_bin < 20:
+                    raise ValueError("Fixture feedback goal needs no admissible translation")
+            response = dict(generated_text=f"{forward_bin} 49 49", fixture=True,
+                            vla_inference_invoked=False)
+            if rejected_fixture:
+                # Explicit CPU fault: repeat the full first-step distance even
+                # though only about one metre remains. The valid level action
+                # overshoots the goal and fails unchanged progress Rules.
+                response["generated_text"] = "58 49 49"
         (output / "native-response.json").write_text(json.dumps(response, indent=2) + "\n")
         candidate = vla_candidate(response["generated_text"], row)
         rules = geometry_rules(
@@ -356,6 +499,7 @@ class DecisionHost:
             self.config,
             self.bundle,
         )
+        self.feedback_rules(rules, row["vehicle"]["xyz"], candidate)
         result = dict(
             candidate=candidate,
             vla_response_sha256=digest(response),
@@ -369,10 +513,12 @@ class DecisionHost:
     def wam(self, message, output):
         if getattr(self, "detached", False) and (not self.active or self.closed):
             raise ValueError("Detached model session revoked or not attached")
+        feedback = self.feedback_guard(message, model="wam")
         proposal = self.pending[message["cycle"]]
         if message["vla"] != proposal:
             raise ValueError("Cross-cycle VLA proposal")
-        _, _, arrays = self.capture(message)
+        _, capture, arrays = self.capture(message)
+        self.feedback_capture(message, capture, "wam")
         row, original = message["observation"], proposal["input_observation"]
         if (
             math.dist(row["vehicle"]["xyz"], original["vehicle"]["xyz"]) > 0.5
@@ -407,18 +553,19 @@ class DecisionHost:
             output / "input", arrays, self.config, candidate, proposal["vla_response_sha256"]
         )
         if self.backend == "native":
+            payload = {
+                "request_id": uuid4().hex,
+                "request_base64": base64.b64encode(
+                    (output / "input/request.json").read_bytes()
+                ).decode(),
+                "history_base64": base64.b64encode(
+                    (output / "input/history.npz").read_bytes()
+                ).decode(),
+            }
             response = self._exchange(
                 self.service_config["wam_port"],
                 "infer",
-                {
-                    "request_id": uuid4().hex,
-                    "request_base64": base64.b64encode(
-                        (output / "input/request.json").read_bytes()
-                    ).decode(),
-                    "history_base64": base64.b64encode(
-                        (output / "input/history.npz").read_bytes()
-                    ).decode(),
-                },
+                payload,
             )
             (output / "native-response.json").write_text(json.dumps(response, indent=2) + "\n")
             if (
@@ -428,6 +575,11 @@ class DecisionHost:
                 or response.get("wam_inference_invoked")
                 is not (not getattr(self, "mock_http", False))
                 or (getattr(self, "mock_http", False) and response.get("fixture") is not True)
+                or (feedback is not None and (
+                    response.get("fixture") is True
+                    or response.get("physical_execution_invoked") is not False
+                    or response.get("request_id") != payload["request_id"]
+                ))
                 or response.get("dispatch_allowed") is not False
                 or response.get("cuda_allocated_after_request_bytes") != 0
             ):
@@ -476,6 +628,7 @@ class DecisionHost:
     def authorize(self, message, output):
         if getattr(self, "detached", False):
             raise ValueError("Detached shadow host cannot authorize dispatch")
+        feedback = self.feedback_guard(message)
         proposal = self.pending[message["cycle"]]
         if not proposal.get("wam", {}).get("passed"):
             raise ValueError("WAM prediction did not meet visible-structure bounds")
@@ -494,6 +647,10 @@ class DecisionHost:
             self.config,
             self.bundle,
             origin=self.proposal_origin(proposal),
+        )
+        self.feedback_rules(
+            rules, row["vehicle"]["xyz"], candidate, origin=self.proposal_origin(proposal),
+            final=feedback is not None and message["cycle"] == feedback["max_cycles"],
         )
         if self.pad_cycle(message["cycle"]):
             rules["pad"] = self.require_pad_approach(row, candidate["target_world_xyz_m"])
@@ -552,63 +709,67 @@ class DecisionHost:
                 if self.config.get("mission_upload_preparation") else None,
             )
         )
-        # Reconnect from the actual model endpoint, not the old authored stop.
-        expected_next = {1: "01-D2", 2: "02-D3", 3: "03-DELIVERY"}[message["cycle"]]
-        stage = next(s for s in self.config["flight_stages"] if s["name"] == expected_next)
-        if stage["target_world_xyz_m"] != message["next_target_world_xyz_m"]:
-            raise ValueError("City connector target is outside the approved stage")
-        connector_name = name + "-connect"
-        connector_items = []
-        next_xyz = stage["target_world_xyz_m"]
-        count = math.ceil(math.dist(xyz, next_xyz) / 20)
-        geod = Geod(ellps="WGS84")
-        for step in range(1, count + 1):
-            point = [a + (b - a) * step / count for a, b in zip(xyz, next_xyz)]
-            lng, lt, _ = geod.fwd(
-                lon, lat, math.degrees(math.atan2(point[0], point[1])), math.hypot(*point[:2])
-            )
+        # Intermediate feedback endpoints confer no authored AP continuation.
+        connector_name, connector = None, None
+        if feedback is None or message["cycle"] == feedback["max_cycles"]:
+            expected_next = (feedback["exit_phase"] if feedback is not None else
+                             {1: "01-D2", 2: "02-D3", 3: "03-DELIVERY"}[message["cycle"]])
+            expected_target = (feedback["exit_world_xyz_m"] if feedback is not None else
+                               message["next_target_world_xyz_m"])
+            stage = next(s for s in self.config["flight_stages"] if s["name"] == expected_next)
+            if stage["target_world_xyz_m"] != expected_target:
+                raise ValueError("City connector target is outside the approved stage")
+            connector_name = name + "-connect"
+            connector_items = []
+            next_xyz = stage["target_world_xyz_m"]
+            count = math.ceil(math.dist(xyz, next_xyz) / 20)
+            geod = Geod(ellps="WGS84")
+            for step in range(1, count + 1):
+                point = [a + (b - a) * step / count for a, b in zip(xyz, next_xyz)]
+                lng, lt, _ = geod.fwd(
+                    lon, lat, math.degrees(math.atan2(point[0], point[1])), math.hypot(*point[:2])
+                )
+                connector_items.append(
+                    dict(
+                        item,
+                        seq=step - 1,
+                        current=int(step == 1),
+                        longitude_deg=lng,
+                        latitude_deg=lt,
+                        altitude_m=executor_altitude(point[2], row) if offshore else point[2],
+                        param2=0.5,
+                        param4=math.degrees(math.atan2(next_xyz[0] - xyz[0], next_xyz[1] - xyz[1])),
+                    )
+                )
             connector_items.append(
                 dict(
-                    item,
-                    seq=step - 1,
-                    current=int(step == 1),
-                    longitude_deg=lng,
-                    latitude_deg=lt,
-                    altitude_m=executor_altitude(point[2], row) if offshore else point[2],
-                    param2=0.5,
-                    param4=math.degrees(math.atan2(next_xyz[0] - xyz[0], next_xyz[1] - xyz[1])),
+                    connector_items[-1],
+                    seq=len(connector_items),
+                    current=0,
+                    command=17,
+                    param4=stage["items"][-1]["param4"],
                 )
             )
-        connector_items.append(
-            dict(
-                connector_items[-1],
-                seq=len(connector_items),
-                current=0,
-                command=17,
-                param4=stage["items"][-1]["param4"],
-            )
-        )
-        connector = self.root / (connector_name + "-upload.py")
-        if mapped_contract:
-            # Freeze the approved connector geometry; bind transport to a fresh
-            # observation at its actual dispatch, after the model segment.
-            for index, connector_item in enumerate(connector_items):
-                connector_item.pop("altitude_m")
-                step = min(index + 1, count)
-                connector_item["world_z_m"] = xyz[2] + (next_xyz[2] - xyz[2]) * step / count
-            (self.root / (connector_name + "-world-items.json")).write_text(
-                json.dumps(connector_items, allow_nan=False) + "\n"
-            )
-            connector.write_text(
-                _inner_upload_script(
-                    reuse_mavlink_session=True,
-                    runtime_items_path="/mission/" + connector_name + "-altitude-items.json",
-                    prepared_binding_path="/mission/" + connector_name + "-upload-binding.json"
-                    if self.config.get("mission_upload_preparation") else None,
+            connector = self.root / (connector_name + "-upload.py")
+            if mapped_contract:
+                # Freeze exit geometry; transport binds again at actual dispatch.
+                for index, connector_item in enumerate(connector_items):
+                    connector_item.pop("altitude_m")
+                    step = min(index + 1, count)
+                    connector_item["world_z_m"] = xyz[2] + (next_xyz[2] - xyz[2]) * step / count
+                (self.root / (connector_name + "-world-items.json")).write_text(
+                    json.dumps(connector_items, allow_nan=False) + "\n"
                 )
-            )
-        else:
-            connector.write_text(_inner_upload_script(connector_items, reuse_mavlink_session=True))
+                connector.write_text(
+                    _inner_upload_script(
+                        reuse_mavlink_session=True,
+                        runtime_items_path="/mission/" + connector_name + "-altitude-items.json",
+                        prepared_binding_path="/mission/" + connector_name + "-upload-binding.json"
+                        if self.config.get("mission_upload_preparation") else None,
+                    )
+                )
+            else:
+                connector.write_text(_inner_upload_script(connector_items, reuse_mavlink_session=True))
         permit = dict(
             run_id=self.config["run_id"],
             config_sha256=digest(self.config),
@@ -625,7 +786,7 @@ class DecisionHost:
             upload_name=name,
             upload_sha256=ship_anwm.digest(script),
             connector_name=connector_name,
-            connector_sha256=ship_anwm.digest(connector),
+            connector_sha256=ship_anwm.digest(connector) if connector is not None else None,
             physical_execution_invoked=False,
         )
         proposal["prepared_observation"] = row
@@ -636,15 +797,17 @@ class DecisionHost:
             permit["altitude_mapping_observation_sha256"] = digest(row)
         if altitude_mapping is not None:
             permit["altitude_transport_sha256"] = digest(altitude_mapping)
-            permit["connector_world_items_sha256"] = ship_anwm.digest(
-                self.root / (connector_name + "-world-items.json")
-            )
+            if connector_name is not None:
+                permit["connector_world_items_sha256"] = ship_anwm.digest(
+                    self.root / (connector_name + "-world-items.json")
+                )
         proposal["prepared_permit"] = permit
         return permit
 
     def activate(self, message, output):
         if getattr(self, "detached", False):
             raise ValueError("Detached shadow host cannot activate dispatch")
+        feedback = self.feedback_guard(message)
         proposal = self.pending[message["cycle"]]
         prepared = proposal["prepared_permit"]
         if message["prepared_permit_sha256"] != digest(prepared):
@@ -692,6 +855,11 @@ class DecisionHost:
             self.bundle,
             origin=self.proposal_origin(proposal),
         )
+        self.feedback_rules(
+            rules, current["vehicle"]["xyz"], prepared["candidate"],
+            origin=self.proposal_origin(proposal),
+            final=feedback is not None and message["cycle"] == feedback["max_cycles"],
+        )
         if self.pad_cycle(message["cycle"]):
             rules["pad"] = self.require_pad_approach(
                 current, prepared["candidate"]["target_world_xyz_m"]
@@ -704,6 +872,8 @@ class DecisionHost:
             expires_at_worker_wall_s=current["wall_s"] + 2,
         )
         del self.pending[message["cycle"]]
+        if feedback is not None:
+            self.feedback_activated[message["cycle"]] = copy.deepcopy(permit)
         return permit
 
     def revoked(self, message):
@@ -786,6 +956,10 @@ class DecisionHost:
                         result["attempt_revoked"] = True
                         raise ValueError("Late result from revoked decision attempt")
                 except Exception as exc:
+                    if feedback_policy(self.config) is not None and message.get("operation") != "stop":
+                        self.feedback_failed = True
+                        self.active = False
+                        self.pending.clear()
                     result["error"] = type(exc).__name__ + ": " + str(exc)
                 result["elapsed_s"] = time.monotonic() - start
                 temp = path.with_name(path.name.replace("-request.json", "-response.tmp"))

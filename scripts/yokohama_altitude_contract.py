@@ -375,7 +375,11 @@ def verify_transport_evidence(root, config, events):
         recheck_mapping(
             event["mapping"], command["observation"], command["dispatched_at_worker_wall_s"]
         )
-        phases.add(command["phase"])
+        # Coverage is the approved mission segment actually commanded. A
+        # recovery phase can command an existing exit segment; conversely a
+        # city command carrying a stage's phase label cannot replace that stage.
+        if command["segment"] in stages:
+            phases.add(command["segment"])
         used.add(identity)
     if phases != set(stages):
         raise ValueError("Missing altitude mission phase")
