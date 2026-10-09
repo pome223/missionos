@@ -34,7 +34,8 @@ jobs:
       - name: Install MissionOS and development dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ".[dev,urban-map,spaceflight]" \
+          # M1 preflight validates the numerical backend against its qualification.
+          python -m pip install -e ".[dev,urban-map,spaceflight-qualified]" \
             -e packages/missionos-core \
             -e packages/missionos-cli \
             -e packages/missionos-gateway
